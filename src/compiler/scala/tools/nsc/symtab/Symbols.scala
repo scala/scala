@@ -311,6 +311,16 @@ trait Symbols requires SymbolTable {
     final def hasFlag(mask: long): boolean = (flags & mask) != 0
     final def resetFlags: unit = { rawflags = rawflags & TopLevelCreationFlags }
 
+    /** The class up to which this symbol is accessible,
+     *  or NoSymbol if it is public or not a class member
+     */
+    final def accessBoundary(base: Symbol): Symbol = {
+      if (hasFlag(PRIVATE)) owner
+      else if (privateWithin != NoSymbol && !phase.erasedTypes) privateWithin
+      else if (hasFlag(PROTECTED)) base
+      else NoSymbol
+    }
+
 // Info and Type -------------------------------------------------------------------
 
     private var infos: TypeHistory = null
@@ -446,7 +456,7 @@ trait Symbols requires SymbolTable {
     }
 
     def getAttributes(clazz: Symbol): List[AttrInfo] =
-      attributes.filter(._1.symbol.isSubClass(clazz))
+      attributes.filter(._1.symbol.isNonBottomSubClass(clazz))
 
     /** Reset symbol to initial state
      */
@@ -484,14 +494,18 @@ trait Symbols requires SymbolTable {
       owner == that || owner != NoSymbol && (owner isNestedIn that)
 
     /** Is this class symbol a subclass of that symbol? */
-    final def isSubClass(that: Symbol): boolean = (
+    final def isNonBottomSubClass(that: Symbol): boolean = {
       this == that || this.isError || that.isError ||
-      info.closurePos(that) >= 0 ||
+      info.closurePos(that) >= 0
+    }
+
+    final def isSubClass(that: Symbol): boolean = {
+      isNonBottomSubClass(that) ||
       this == AllClass ||
       this == AllRefClass &&
       (that == AnyClass ||
        that != AllClass && (that isSubClass AnyRefClass))
-    )
+    }
 
 // Overloaded Alternatives ---------------------------------------------------------
 

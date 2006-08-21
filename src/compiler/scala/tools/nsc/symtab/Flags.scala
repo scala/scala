@@ -117,9 +117,24 @@ object Flags {
   /** Module flags inherited by their module-class */
   final val ModuleToClassFlags = AccessFlags | PACKAGE | CASE;
 
+  private def listToString(ss: List[String]): String = ss.filter("" !=).mkString("", " ", "")
+
   def flagsToString(flags: long): String =
-    (for (val i <- List.range(0, 63)) yield flagToString(flags & (1L << i)))
-      .filter("" !=).mkString("", " ", "");
+    listToString(for (val i <- List.range(0, 63)) yield flagToString(flags & (1L << i)))
+
+  def flagsToString(flags: long, privateWithin: String): String = {
+    var f = flags;
+    val pw =
+      if (privateWithin == "") {
+        ""
+      } else if ((f & PROTECTED) != 0) {
+        f = f & ~PROTECTED
+        "protected["+privateWithin+"]"
+      } else {
+        "private["+privateWithin+"]"
+      }
+    listToString(List(flagsToString(f), pw))
+  }
 
   private def flagToString(flag: long): String = {
     if (flag == IS_ERROR) "<is-error>"
@@ -172,6 +187,7 @@ object Flags {
       case _ => ""
     }
   }
+
   class Flag(mods : int) {
     def isPrivate   = ((mods & PRIVATE  ) != 0);
     def isProtected = ((mods & PROTECTED) != 0);

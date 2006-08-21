@@ -1,0 +1,4 @@
+bug681.scala:10 warning: imported `x' is permanently hidden by definition of value x in class foo
+    import foo.{x};
+           ^
+one warning found

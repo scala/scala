@@ -703,7 +703,7 @@ abstract class GenJVM extends SubComponent {
               case Dynamic =>
                 if (method.owner.hasFlag(Flags.INTERFACE) ||
                     (method.owner.hasFlag(Flags.JAVA) &&
-                     method.owner.isSubClass(definitions.AttributeClass)))
+                     method.owner.isNonBottomSubClass(definitions.AttributeClass)))
                   jcode.emitINVOKEINTERFACE(owner,
                                             javaName(method),
                                             javaType(method).asInstanceOf[JMethodType])

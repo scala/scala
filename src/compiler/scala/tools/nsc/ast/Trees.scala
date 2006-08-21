@@ -1269,6 +1269,12 @@ trait Trees requires Global {
     override def traverse(tree: Tree): unit = tree match {
       case EmptyTree | TypeTree() =>
         ;
+      case Template(parents, body) =>
+        tree.symbol = NoSymbol
+        tree.tpe = null
+        for (val stat <- body)
+          if (stat.isDef) erasedSyms.addEntry(stat.symbol)
+        super.traverse(tree)
       case _: DefTree =>
         erasedSyms.addEntry(tree.symbol)
         tree.symbol = NoSymbol

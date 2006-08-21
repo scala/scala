@@ -69,8 +69,6 @@ abstract class RefChecks extends InfoTransform {
      *    1.8.2  M is of type []S, O is of type ()T and S <: T, or
      *    1.8.3  M is of type ()S, O is of type []T and S <: T, or
      *  2. Check that only abstract classes have deferred members
-     *  3. Check that every member with an `override' modifier
-     *     overrides some other member.
      */
     private def checkAllOverrides(clazz: Symbol): unit = {
 
@@ -113,6 +111,14 @@ abstract class RefChecks extends InfoTransform {
 	  }
 	}
 
+        def overrideAccessError(): unit = {
+          val pwString = if (other.privateWithin == NoSymbol) ""
+                         else other.privateWithin.name.toString
+          val otherAccess = flagsToString(other getFlag (PRIVATE | PROTECTED), pwString)
+	  overrideError("has weaker access privileges; it should be "+
+                        (if (otherAccess == "") "public" else "at least "+otherAccess))
+        }
+
 	//System.out.println(infoString(member) + " overrides " + infoString(other) + " in " + clazz);//DEBUG
 
 	// return if we already checked this combination elsewhere
@@ -136,13 +142,16 @@ abstract class RefChecks extends InfoTransform {
 	}
 
 	if (member hasFlag PRIVATE) { // (1.1)
-	  overrideError("has weaker access privileges; it should not be private");
-        } else if (member.privateWithin != NoSymbol &&
-                   !other.privateWithin.ownerChain.contains(member.privateWithin)) {
-	  overrideError("has weaker access privileges; it should at least be private["+other.privateWithin.name+"]");
-	} else if ((member hasFlag PROTECTED) && !(other hasFlag PROTECTED)) { // 1
-	  overrideError("has weaker access privileges; it should not be protected");
-	} else if (other hasFlag FINAL) { // (1.2)
+	  overrideError("has weaker access privileges; it should not be private")
+        }
+        val mb = member.accessBoundary(member.owner)
+        val ob = other.accessBoundary(member.owner)
+        if (mb != NoSymbol &&
+            (ob == NoSymbol ||
+             mb != ob && !(ob.ownerChain contains mb) ||
+             (other hasFlag PROTECTED) && !(member hasFlag PROTECTED))) {
+          overrideAccessError()
+        } else if (other hasFlag FINAL) { // (1.2)
 	  overrideError("cannot override final member");
 	} else if (!(other hasFlag DEFERRED) && !(member hasFlag (OVERRIDE | ABSOVERRIDE))) { // (1.3)
 	  overrideError("needs `override' modifier");
@@ -230,17 +239,6 @@ abstract class RefChecks extends InfoTransform {
 	       else ""))
 	  }
       }
-
-      // 3. Check that every defined member with an `override' modifier overrides some other member.
-      for (val member <- clazz.info.decls.toList)
-	if ((member hasFlag (OVERRIDE | ABSOVERRIDE)) &&
-	    (clazz.info.baseClasses.tail forall {
-               bc => member.matchingSymbol(bc, clazz.thisType) == NoSymbol
-            })) {
-          // for (val bc <- clazz.info.baseClasses.tail) System.out.println("" + bc + " has " + bc.info.decl(member.name) + ":" + bc.info.decl(member.name).tpe);//DEBUG
-	  unit.error(member.pos, member.toString() + " overrides nothing");
-	  member resetFlag OVERRIDE
-	}
     }
 
   // Basetype Checking --------------------------------------------------------

@@ -56,7 +56,7 @@ abstract class TreePrinters {
 
     def printValueParams(ts: List[ValDef]): unit = {
       print("(")
-      if (!ts.isEmpty) printFlags(ts.head.mods.flags & IMPLICIT, nme.EMPTY.toTypeName)
+      if (!ts.isEmpty) printFlags(ts.head.mods.flags & IMPLICIT, "")
       printSeq(ts){printParam}{print(", ")}
       print(")")
     }
@@ -88,18 +88,17 @@ abstract class TreePrinters {
 
     def printModifiers(tree: Tree, mods: Modifiers): unit = {
       if (tree.symbol == NoSymbol)
-        printFlags(mods.flags, mods.privateWithin)
+        printFlags(mods.flags, mods.privateWithin.toString)
       else if (tree.symbol.privateWithin == NoSymbol ||
                tree.symbol.privateWithin == tree.symbol.owner)
-        printFlags(tree.symbol.flags, nme.EMPTY.toTypeName)
+        printFlags(tree.symbol.flags, "")
       else
-        printFlags(tree.symbol.flags, tree.symbol.privateWithin.name)
+        printFlags(tree.symbol.flags, tree.symbol.privateWithin.name.toString)
     }
 
-    def printFlags(flags: long, privateWithin: Name): unit = {
+    def printFlags(flags: long, privateWithin: String): unit = {
       var mask = if (settings.debug.value) -1 else PrintableFlags
-      val s = flagsToString(flags & mask)
-      if (!privateWithin.isEmpty) print("private[" + privateWithin + "] ")
+      val s = flagsToString(flags & mask, privateWithin.toString)
       if (s.length() != 0) print(s + " ")
     }
 

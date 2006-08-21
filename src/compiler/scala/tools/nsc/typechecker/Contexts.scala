@@ -243,25 +243,22 @@ trait Contexts requires Analyzer {
       /** Is `clazz' a subclass of an enclosing class? */
       def isSubClassOfEnclosing(clazz: Symbol): boolean = {
 	var c = this.enclClass
-	while (c != NoContext && !clazz.isSubClass(c.owner)) c = c.outer.enclClass
+	while (c != NoContext && !clazz.isNonBottomSubClass(c.owner)) c = c.outer.enclClass
 	c != NoContext
       }
 
-      ( pre == NoPrefix
-        ||
-        (!sym.hasFlag(PRIVATE | PROTECTED))
-        ||
-        (accessWithin(sym.owner) || accessWithin(sym.owner.linkedClassOfClass)) &&
-        (!sym.hasFlag(LOCAL) || pre =:= sym.owner.thisType)
-        ||
-        (!sym.hasFlag(PRIVATE) &&
+      (pre == NoPrefix) || {
+        val ab = sym.accessBoundary(sym.owner)
+        ((ab == NoSymbol)
+         ||
+         (accessWithin(ab) || accessWithin(ab.linkedClassOfClass)) &&
+         (!sym.hasFlag(LOCAL) || pre =:= sym.owner.thisType)
+         ||
+         (sym hasFlag PROTECTED) &&
          (superAccess ||
-	  (pre.widen.symbol.isSubClass(sym.owner) && isSubClassOfEnclosing(pre.widen.symbol))))
-      ) && (
-        sym.privateWithin == NoSymbol
-        ||
-        phase.erasedTypes || accessWithin(sym.privateWithin)
-      )
+	  (pre.widen.symbol.isNonBottomSubClass(sym.owner) &&
+           isSubClassOfEnclosing(pre.widen.symbol))))
+      }
     }
 
     def pushTypeBounds(sym: Symbol): unit = {

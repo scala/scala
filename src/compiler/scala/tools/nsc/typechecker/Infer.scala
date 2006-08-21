@@ -20,6 +20,10 @@ trait Infer requires Analyzer {
 
 /* -- Type parameter inference utility functions -------------------------------------- */
 
+  def assertNonCyclic(tvar: TypeVar) = {
+    assert(tvar.constr.inst != tvar, tvar.origin)
+  }
+
   /** The formal parameter types corresponding to `formals'.
    *  If `formals' has a repeated last parameter, a list of
    *  (nargs - params.length + 1) copies of its type is returned. */
@@ -58,7 +62,6 @@ trait Infer requires Analyzer {
     case WildcardType | NoType =>
       throw new NoInstance("undetermined type");
     case TypeVar(origin, constr) =>
-      assert(constr.inst != null);//debug
       if (constr.inst != NoType) instantiate(constr.inst)
       else throw new DeferredNoInstance(() =>
         "no unique instantiation of type variable " + origin + " could be found");
@@ -131,6 +134,7 @@ trait Infer requires Analyzer {
         //Console.println("solveOne2 "+tvar+" "+config+" "+tvar.constr.hibounds);//DEBUG
         tvar.constr.inst = NoType // necessary because hibounds/lobounds may contain tvar
         tvar.constr.inst = if (up) glb(tvar.constr.hibounds) else lub(tvar.constr.lobounds)
+        assertNonCyclic(tvar)//debug
       }
     }
     for (val Pair(tvar, Pair(tparam, variance)) <- config) solveOne(tvar, tparam, variance);
@@ -306,13 +310,16 @@ trait Infer requires Analyzer {
           instantiate(tvar.constr.inst)
         } else if ((variance & COVARIANT) != 0 && !tvar.constr.hibounds.isEmpty) {
           tvar.constr.inst = glb(tvar.constr.hibounds);
+          assertNonCyclic(tvar)//debug
           instantiate(tvar.constr.inst)
         } else if ((variance & CONTRAVARIANT) != 0 && !tvar.constr.lobounds.isEmpty) {
           tvar.constr.inst = lub(tvar.constr.lobounds);
+          assertNonCyclic(tvar)//debug
           instantiate(tvar.constr.inst)
         } else if (!tvar.constr.hibounds.isEmpty && !tvar.constr.lobounds.isEmpty &&
                    glb(tvar.constr.hibounds) <:< lub(tvar.constr.lobounds)) {
           tvar.constr.inst = glb(tvar.constr.hibounds);
+          assertNonCyclic(tvar)//debug
           instantiate(tvar.constr.inst)
         } else {
           WildcardType

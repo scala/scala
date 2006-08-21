@@ -243,7 +243,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
                 pt))
           }
         }
-      else if (pt.symbol.isSubClass(BoxedArrayClass) && tree.tpe.symbol == ObjectClass)
+      else if (pt.symbol.isNonBottomSubClass(BoxedArrayClass) && tree.tpe.symbol == ObjectClass)
         typed {
           atPos(tree.pos) {
             evalOnce(tree, x =>
@@ -321,7 +321,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
             // convert numeric type casts
             atPos(tree.pos)(Apply(Select(qual1, "to" + targClass.name), List()))
           else if (isValueClass(targClass) ||
-                   (targClass == ArrayClass && (qualClass isSubClass BoxedArrayClass)))
+                   (targClass == ArrayClass && (qualClass isNonBottomSubClass BoxedArrayClass)))
             unbox(qual1, targ.tpe)
           else if (targClass == ArrayClass && qualClass == ObjectClass)
             cast(qual1, targ.tpe)

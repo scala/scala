@@ -191,7 +191,7 @@ abstract class TreeInfo {
     case Apply(fn, _) =>
       fn.symbol != null &&
       !fn.symbol.hasFlag(CASE) &&
-      fn.symbol.isSubClass(definitions.SeqClass)
+      fn.symbol.isNonBottomSubClass(definitions.SeqClass)
     case Bind(name, body) =>
       isSequencePattern(body)
     case Alternative(ts) =>

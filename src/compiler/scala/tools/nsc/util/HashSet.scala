@@ -24,13 +24,16 @@ class HashSet[T >: Null <: AnyRef](initialCapacity: int) extends Set[T] {
   }
 
   def addEntry(x: T): unit = {
-    if (used >= (capacity >> 2)) growTable;
-    used = used + 1;
     var h = x.hashCode() % capacity;
-    while (table(h) != null) {
+    var entry = table(h);
+    while (entry != null) {
+      if (entry == x) return
       h = (h + 1) % capacity
+      entry = table(h)
     }
-    table(h) = x
+    table(h) = x;
+    used = used + 1;
+    if (used >= (capacity >> 2)) growTable;
   }
 
   def elements = new Iterator[T] {

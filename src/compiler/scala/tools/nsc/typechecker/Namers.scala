@@ -91,20 +91,10 @@ trait Namers requires Analyzer {
             (!prev.sym.isSourceMethod ||
              nme.isSetterName(sym.name) ||
              sym.owner.isPackageClass)) {
-/*
-      	  if (sym.sourceFile == null && prev.sym.sourceFile == null) {}
-
-      	  else if (sym.sourceFile != null && prev.sym.sourceFile != null &&
-      		     sym.sourceFile.equals(prev.sym.sourceFile)) {}
-      	  else {
-      	    System.err.println("SYM: " + sym.sourceFile);
-      	    System.err.println("PRV: " + prev.sym.sourceFile);
-*/
-     	    doubleDefError(sym.pos, prev.sym);
-//      	  }
-      	}
-      }
-      context.scope enter sym;
+     	   doubleDefError(sym.pos, prev.sym)
+           sym setInfo ErrorType
+      	} else context.scope enter sym
+      } else context.scope enter sym
       sym
     }
 
@@ -509,18 +499,41 @@ trait Namers requires Analyzer {
 	      new Namer(context.makeNewScope(tree, sym)).aliasTypeSig(sym, tparams, rhs)
 
 	    case AbsTypeDef(_, _, lo, hi) =>
-              //System.out.println("bounds of " + sym + ":" + sym.tpe + " = " + typer.typedType(hi).tpe);
-	      TypeBounds(typer.typedType(lo).tpe, typer.typedType(hi).tpe);
+              var lt = typer.typedType(lo).tpe
+              if (lt.isError) lt = AllClass.tpe
+              var ht = typer.typedType(hi).tpe
+              if (ht.isError) ht = AnyClass.tpe
+	      TypeBounds(lt, ht)
 
 	    case Import(expr, selectors) =>
 	      val expr1 = typer.typedQualifier(expr);
 	      val base = expr1.tpe;
 	      typer.checkStable(expr1);
+              def checkNotRedundant(pos: int, from: Name, to: Name): boolean = {
+                if (!base.symbol.isPackage && base.member(from) != NoSymbol) {
+                  val e = context.scope.lookupEntry(to)
+                  def warnRedundant(sym: Symbol) =
+                    context.unit.warning(pos, "imported `"+to+
+                                         "' is permanently hidden by definition of "+sym+
+                                         sym.locationString)
+                  if (e != null && e.owner == context.scope) {
+                    warnRedundant(e.sym); return false
+                  } else if (context eq context.enclClass) {
+                    val defSym = context.prefix.member(to) filter (
+                      sym => sym.exists && context.isAccessible(sym, context.prefix, false))
+                    if (defSym != NoSymbol) { warnRedundant(defSym); return false }
+                  }
+                }
+                true
+              }
 	      def checkSelectors(selectors: List[Pair[Name, Name]]): unit = selectors match {
 	        case Pair(from, to) :: rest =>
-		  if (from != nme.WILDCARD && base != ErrorType &&
-		      base.member(from) == NoSymbol && base.member(from.toTypeName) == NoSymbol)
-		    context.error(tree.pos, from.decode + " is not a member of " + expr);
+		  if (from != nme.WILDCARD && base != ErrorType) {
+		    if (base.member(from) == NoSymbol && base.member(from.toTypeName) == NoSymbol)
+		      context.error(tree.pos, from.decode + " is not a member of " + expr);
+                    if (checkNotRedundant(tree.pos, from, to))
+                      checkNotRedundant(tree.pos, from.toTypeName, to.toTypeName)
+                  }
 		  if (from != nme.WILDCARD && (rest.exists (sel => sel._1 == from)))
 		    context.error(tree.pos, from.decode + " is renamed twice");
 		  if (to != null && to != nme.WILDCARD && (rest exists (sel => sel._2 == to)))
@@ -597,18 +610,19 @@ trait Namers requires Analyzer {
   }
 
   /* Type `elemtp' is contained in type `tp' is one of the following holds:
-   *  - elemtp is the same as some part of tp
+   *  - elemtp is the same as some proper part of tp
    *  - tp is a function type and elemtp is not
    *  - tp and elemtp are function types, and arity of tp is greater than arity of elemtp
    *  - tp and elemtp are both parameterized types with same type constructor and prefix,
    *    and each type argument of elemtp is contained in the corresponding type argument of tp.
    */
   private class ContainsTraverser(elemtp: Type) extends TypeTraverser {
+    var nested = false
     var result = false;
     def traverse(tp: Type): ContainsTraverser = {
       if (!result) {
         if (elemtp =:= tp)
-          result = true
+          result = nested
         else if (isFunctionType(tp) &&
                  (!isFunctionType(elemtp) || tp.typeArgs.length > elemtp.typeArgs.length))
           result = true
@@ -619,7 +633,14 @@ trait Namers requires Analyzer {
           case _ =>
         }
       }
-      if (!result) mapOver(tp);
+      if (!result) {
+        tp match {
+          case SingleType(_, _) => nested = true
+          case TypeRef(_, _, _) => nested = true
+          case _ =>
+        }
+        mapOver(tp)
+      }
       this
     }
   }

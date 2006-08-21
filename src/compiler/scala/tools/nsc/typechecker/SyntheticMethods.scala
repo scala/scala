@@ -30,7 +30,7 @@ trait SyntheticMethods requires Analyzer {
       val sym = clazz.info.nonPrivateMember(name)
       (sym.isTerm &&
        (sym.owner == clazz ||
-        !(ObjectClass isSubClass sym.owner) && !(sym hasFlag DEFERRED)))
+        !(ObjectClass isNonBottomSubClass sym.owner) && !(sym hasFlag DEFERRED)))
     }
 
     def syntheticMethod(name: Name, flags: Int, tpe: Type) =

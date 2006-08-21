@@ -1132,11 +1132,19 @@ trait Parsers requires SyntaxAnalyzer {
 
     /** Modifiers ::= {Modifier}
      *  Modifier  ::= LocalModifier
-     *             |  private [ "[" Id "]" ]
-     *             |  protected | override
+     *             |  override
+     *             |  (private | protected) [ "[" Id "]" ]
      */
     def modifiers(): Modifiers = {
       var privateWithin: Name = nme.EMPTY.toTypeName;
+      def qualifierOpt: unit =
+        if (in.token == LBRACKET) {
+          in.nextToken()
+          if (privateWithin != nme.EMPTY.toTypeName)
+            syntaxError("duplicate private/protected qualifier", false)
+          privateWithin = ident().toTypeName
+          accept(RBRACKET)
+        }
       def loop(mods: int): int = in.token match {
         case ABSTRACT =>
           loop(addMod(mods, Flags.ABSTRACT))
@@ -1146,15 +1154,13 @@ trait Parsers requires SyntaxAnalyzer {
           loop(addMod(mods, Flags.SEALED))
         case PRIVATE =>
           var mods1 = addMod(mods, Flags.PRIVATE)
-          if (in.token == LBRACKET) {
-            in.nextToken()
-            privateWithin = ident().toTypeName
-            accept(RBRACKET)
-            mods1 = mods
-          }
+          qualifierOpt
+          if (privateWithin != nme.EMPTY.toTypeName) mods1 = mods
           loop(mods1)
         case PROTECTED =>
-          loop(addMod(mods, Flags.PROTECTED))
+          val mods1 = addMod(mods, Flags.PROTECTED)
+          qualifierOpt
+          loop(mods1)
         case OVERRIDE =>
           loop(addMod(mods, Flags.OVERRIDE))
         case IMPLICIT =>

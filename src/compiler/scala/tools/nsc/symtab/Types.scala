@@ -1326,7 +1326,8 @@ trait Types requires SymbolTable {
         case ThisType(sym) =>
           def toPrefix(pre: Type, clazz: Symbol): Type =
             if ((pre eq NoType) || (pre eq NoPrefix) || !clazz.isClass) tp
-            else if ((sym isSubClass clazz) && (pre.widen.symbol isSubClass sym)) pre
+            else if ((sym isNonBottomSubClass clazz) &&
+                     (pre.widen.symbol isNonBottomSubClass sym)) pre
             else toPrefix(pre.baseType(clazz).prefix, clazz.owner);
           toPrefix(pre, clazz)
         case TypeRef(prefix, sym, args) if (sym.isTypeParameter) =>
@@ -1341,7 +1342,7 @@ trait Types requires SymbolTable {
                 if (ps.isEmpty) throwError
                 else if (sym eq ps.head) as.head
                 else instParam(ps.tail, as.tail);
-              if (symclazz == clazz && (pre.widen.symbol isSubClass symclazz))
+              if (symclazz == clazz && (pre.widen.symbol isNonBottomSubClass symclazz))
                 pre.baseType(symclazz) match {
                   case TypeRef(_, basesym, baseargs) =>
 //                    System.out.println("instantiating " + sym + " from " + basesym + " with " + basesym.typeParams + " and " + baseargs);//DEBUG

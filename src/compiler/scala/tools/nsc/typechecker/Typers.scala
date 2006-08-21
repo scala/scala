@@ -428,7 +428,7 @@ trait Typers requires Analyzer {
                     throw t;
                 }
                 tree1
-              } else if (clazz.isSubClass(SeqClass)) { // (5.2)
+              } else if (clazz.isNonBottomSubClass(SeqClass)) { // (5.2)
                 val restpe = pt.baseType(clazz)
                 restpe.baseType(SeqClass) match {
                   case TypeRef(pre, seqClass, args) =>
@@ -947,8 +947,9 @@ trait Typers requires Analyzer {
         else
           Triple(FunctionClass(fun.vparams.length), fun.vparams map (x => NoType), WildcardType)
 
-      val Triple(clazz, argpts, respt) =
-        decompose(if (!forCLDC && (pt.symbol isSubClass CodeClass)) pt.typeArgs.head else pt)
+      val codeExpected = !forCLDC && (pt.symbol isNonBottomSubClass CodeClass)
+
+      val Triple(clazz, argpts, respt) = decompose(if (codeExpected) pt.typeArgs.head else pt)
 
       if (fun.vparams.length != argpts.length)
         errorTree(fun, "wrong number of parameters; expected = "+argpts.length)
@@ -974,7 +975,7 @@ trait Typers requires Analyzer {
         val funtpe = typeRef(clazz.tpe.prefix, clazz, formals ::: List(restpe))
         val fun1 = copy.Function(fun, vparams, checkNoEscaping.locals(context.scope, restpe, body))
           .setType(funtpe)
-        if (!forCLDC && (pt.symbol isSubClass CodeClass)) {
+        if (codeExpected) {
           val liftPoint = Apply(Select(Ident(CodeModule), nme.lift_), List(fun1))
           typed(atPos(fun.pos)(liftPoint))
         } else fun1
@@ -999,8 +1000,20 @@ trait Typers requires Analyzer {
               stat.symbol.initialize
               EmptyTree
             case _ =>
-              (if (!inBlock && (!stat.isDef || stat.isInstanceOf[LabelDef]))
-                newTyper(context.make(stat, exprOwner)) else this).typed(stat)
+              val localTyper = if (inBlock || (stat.isDef && !stat.isInstanceOf[LabelDef])) this
+                               else newTyper(context.make(stat, exprOwner))
+              val stat1 = localTyper.typed(stat)
+              val member = stat1.symbol
+              // Check that every defined member with an `override' modifier
+              // overrides some other member
+              if (stat1.isDef &&
+                  (member hasFlag(OVERRIDE | ABSOVERRIDE)) &&
+	          (context.owner.info.baseClasses.tail forall
+                   (bc => member.matchingSymbol(bc, context.owner.thisType) == NoSymbol))) {
+                error(member.pos, member.toString+" overrides nothing")
+	        member resetFlag OVERRIDE
+              }
+              stat1
           }
         }
       val scope = if (inBlock) context.scope else context.owner.info.decls;
@@ -1097,7 +1110,7 @@ trait Typers requires Analyzer {
               val args1 = List.map2(args, formals)(typedArgToPoly)
               if (args1 exists (.tpe.isError)) setError(tree)
               else {
-                if (settings.debug.value) log("infer method inst "+fun+", tparams = "+tparams+", args = "+args1.map(.tpe)+", pt = "+pt+", lobounds = "+tparams.map(.tpe.bounds.lo));//debug
+                if (settings.debug.value) log("infer method inst "+fun+", tparams = "+tparams+", args = "+args1.map(.tpe)+", pt = "+pt+", lobounds = "+tparams.map(.tpe.bounds.lo)+", parambounds = "+tparams.map(.info));//debug
                 val undetparams = inferMethodInstance(fun, tparams, args1, pt)
                 val result = typedApply(tree, fun, args1, mode, pt)
                 context.undetparams = undetparams

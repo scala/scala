@@ -1,0 +1,4 @@
+bug711.scala:11 error: method sayHey overrides nothing
+    def sayHey: Unit
+    ^
+one error found
