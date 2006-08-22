@@ -41,8 +41,8 @@ abstract class Mixin extends InfoTransform {
 
   private def rebindSuper(base: Symbol, member: Symbol, prevowner: Symbol): Symbol =
     atPhase(currentRun.refchecksPhase) {
-      var bcs = base.info.baseClasses.dropWhile(prevowner !=).tail;
-      assert(!bcs.isEmpty/*, "" + prevowner + " " + base.info.baseClasses*/);//DEBUG
+      var bcs = base.info.baseClasses.dropWhile(prevowner !=).tail
+      assert(!bcs.isEmpty/*, "" + prevowner + " " + base.info.baseClasses*/)//DEBUG
       var sym: Symbol = NoSymbol
       if (settings.debug.value) log("starting rebindsuper " + base + " " + member + ":" + member.tpe + " " + prevowner + " " + base.info.baseClasses);
       while (!bcs.isEmpty && sym == NoSymbol) {
@@ -299,7 +299,8 @@ abstract class Mixin extends InfoTransform {
         val sym = stat.symbol
         stat match {
           case _: DefDef if (sym.isModule && sym.owner.isClass && sym.hasFlag(PRIVATE)) =>
-            Console.println("implementing "+sym+sym.locationString)//debug
+            if (settings.debug.value)
+              log("implementing " + sym + sym.locationString)//debug
             val vdef = attributedDef(position(sym), gen.mkModuleVarDef(sym))
             val adef = attributedDef(
               position(sym),
@@ -404,7 +405,8 @@ abstract class Mixin extends InfoTransform {
         case Select(Super(_, _), name) =>
           tree
         case Select(qual, name) if sym.owner.isImplClass && !isStatic(sym) =>
-          if (sym.isMethod) Console.println("####"+sym+sym.isImplOnly+" "+flagsToString(sym.flags))
+          if (sym.isMethod)
+            Console.println("####" + sym + sym.isImplOnly + " " + flagsToString(sym.flags))
           assert(!sym.isMethod, sym)
           val getter = sym.getter(enclInterface)
           assert(getter != NoSymbol)
