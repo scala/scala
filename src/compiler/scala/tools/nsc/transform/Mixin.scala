@@ -223,7 +223,7 @@ abstract class Mixin extends InfoTransform {
           if (isForwarded(sym)) {
             sym setFlag notOVERRIDE;
             self = sym.newValue(sym.pos, nme.SELF)
-              .setFlag(PARAM | SYNTHETIC)
+              .setFlag(PARAM)
               .setInfo(toInterface(currentOwner.typeOfThis));
             enclInterface = currentOwner.toInterface;
             val selfdef = ValDef(self) setType NoType;
