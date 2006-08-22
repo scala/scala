@@ -217,7 +217,7 @@ trait Stream[+a] extends Seq[a] {
   def filter(p: a => Boolean): Stream[a] = {
     def loop(s: Stream[a]): Stream[a] =
       if (s.isEmpty) s
-      else if (p(s.head)) Stream.cons(head, loop(s.tail))
+      else if (p(s.head)) Stream.cons(s.head, loop(s.tail))
       else loop(s.tail)
     loop(this)
   }
