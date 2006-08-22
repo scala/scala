@@ -694,21 +694,19 @@ abstract class GenJVM extends SubComponent {
           case CALL_PRIMITIVE(primitive) =>
             genPrimitive(primitive, instr.pos);
 
-          // TODO: reference the type of the receiver instead of the
-          // method owner.
-          case CALL_METHOD(method, style) =>
-            val owner = javaName(method.owner); // + (if (method.owner.isModuleClass) "$" else "");
+          case call @ CALL_METHOD(method, style) =>
+            val owner: String = javaName(method.owner);
+            //reference the type of the receiver instead of the method owner (if not an interface!)
+            val dynamicOwner  = if (needsInterfaceCall(call.hostClass)) owner else javaName(call.hostClass);
 
             style match {
               case Dynamic =>
-                if (method.owner.hasFlag(Flags.INTERFACE) ||
-                    (method.owner.hasFlag(Flags.JAVA) &&
-                     method.owner.isNonBottomSubClass(definitions.AttributeClass)))
+                if (needsInterfaceCall(method.owner))
                   jcode.emitINVOKEINTERFACE(owner,
                                             javaName(method),
                                             javaType(method).asInstanceOf[JMethodType])
                 else
-                  jcode.emitINVOKEVIRTUAL(owner,
+                  jcode.emitINVOKEVIRTUAL(dynamicOwner,
                                           javaName(method),
                                           javaType(method).asInstanceOf[JMethodType]);
 
@@ -1228,6 +1226,13 @@ abstract class GenJVM extends SubComponent {
 
     def isStaticSymbol(s: Symbol): Boolean =
       s.hasFlag(Flags.STATIC) || s.hasFlag(Flags.STATICMEMBER) || s.owner.isImplClass;
+
+    /** Calls to methods in 'sym' need invokeinterface? */
+    def needsInterfaceCall(sym: Symbol): Boolean =
+      sym.hasFlag(Flags.INTERFACE) ||
+      (sym.hasFlag(Flags.JAVA) &&
+       sym.isNonBottomSubClass(definitions.AttributeClass))
+
 
     def javaType(t: TypeKind): JType = t match {
       case UNIT            => JType.VOID;

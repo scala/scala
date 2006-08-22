@@ -731,7 +731,13 @@ abstract class GenICode extends SubComponent  {
 
             ctx1 = genLoadArguments(args, fun.symbol.info.paramTypes, ctx1)
 
-            ctx1.bb.emit(CALL_METHOD(sym, invokeStyle), tree.pos)
+            val hostClass = fun match {
+              case Select(qualifier, _) if (qualifier.tpe.symbol != definitions.ArrayClass) => qualifier.tpe.symbol;
+              case _ => sym.owner;
+            }
+            if (settings.debug.value && hostClass != sym.owner)
+              log("Set more precise host class for " + sym.fullNameString + " host: " + hostClass);
+            ctx1.bb.emit(CALL_METHOD(sym, invokeStyle) setHostClass hostClass, tree.pos)
             generatedType =
               if (sym.isClassConstructor) UNIT
               else toTypeKind(sym.info.resultType);

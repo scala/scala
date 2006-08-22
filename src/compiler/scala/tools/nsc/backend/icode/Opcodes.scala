@@ -282,7 +282,10 @@ trait Opcodes requires ICodes {
     case class CALL_METHOD(method: Symbol, style: InvokeStyle) extends Instruction {
       /** Returns a string representation of this instruction */
       override def toString(): String =
-        "CALL_METHOD " + method.fullNameString +" ("+style.toString()+")";
+        "CALL_METHOD " + hostClass.fullNameString + method.fullNameString +" ("+style.toString()+")";
+
+      var hostClass: Symbol = method.owner;
+      def setHostClass(cls: Symbol): this.type = { hostClass = cls; this }
 
       override def consumed = {
         var result = method.tpe.paramTypes.length;
