@@ -8,7 +8,7 @@ package scala.tools.nsc.typechecker
 
 import symtab.Flags._
 import util.HashSet
-import scala.tools.nsc.util.Position
+import scala.tools.nsc.util.{Position, Set, HashSet}
 import scala.collection.mutable.{HashMap, ListBuffer}
 
 /** Methods to create symbols and to enter them into scopes. */
@@ -1666,12 +1666,17 @@ trait Typers requires Analyzer {
                 if ((mode & SUPERCONSTRmode) != 0) clazz.info.parents.head
                 else intersectionType(clazz.info.parents)
               else {
-                val ps = clazz.info.parents dropWhile (p => p.symbol.name != mix)
+                val ps = clazz.info.parents filter (p => p.symbol.name == mix)
                 if (ps.isEmpty) {
                   if (settings.debug.value) System.out.println(clazz.info.parents map (.symbol.name));//debug
-                  error(tree.pos, ""+mix+" does not name a base class of "+clazz)
+                  error(tree.pos, ""+mix+" does not name a parent class of "+clazz)
                   ErrorType
-                } else ps.head
+                } else if (ps.tail.isEmpty) {
+                  ps.head
+                } else {
+                  error(tree.pos, "ambiguous parent class qualifier")
+                  ErrorType
+                }
               }
             tree setSymbol clazz setType SuperType(selftype, owntype)
           }
@@ -1957,8 +1962,21 @@ trait Typers requires Analyzer {
       }
 
       def implicitsOfType(tp: Type): List[List[ImplicitInfo]] = {
-        val tp1 = if (isFunctionType(tp)) intersectionType(tp.typeArgs.reverse) else tp
-        tp1.baseClasses map implicitsOfClass
+        def getParts(tp: Type, s: Set[Symbol]): unit = tp match {
+          case TypeRef(pre, sym, args) if (!sym.isPackageClass) =>
+            for (val bc <- sym.info.baseClasses)
+              if (sym.isClass) s.addEntry(sym)
+            getParts(pre, s)
+            for (val arg <- args) getParts(arg, s)
+          case SingleType(pre, _) =>
+            getParts(pre, s)
+          case RefinedType(ps, _) =>
+            for (val p <- ps) getParts(p, s)
+          case _ =>
+        }
+        val classes = new HashSet[Symbol]
+        getParts(tp, classes)
+        classes.elements.map(implicitsOfClass).toList
       }
 
       def implicitsOfClass(clazz: Symbol): List[ImplicitInfo] = (
@@ -1985,4 +2003,3 @@ trait Typers requires Analyzer {
     }
   }
 }
-

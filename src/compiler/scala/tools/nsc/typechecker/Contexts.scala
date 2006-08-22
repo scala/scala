@@ -300,6 +300,7 @@ trait Contexts requires Analyzer {
     def implicitss: List[List[ImplicitInfo]] = {
       if (implicitsRunId != currentRunId) {
 	implicitsRunId = currentRunId
+        implicitsCache = List()
 	val newImplicits: List[ImplicitInfo] =
 	  if (owner != outer.owner && owner.isClass && !owner.isPackageClass) {
             if (!owner.isInitialized) return outer.implicitss

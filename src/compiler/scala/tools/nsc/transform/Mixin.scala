@@ -299,8 +299,6 @@ abstract class Mixin extends InfoTransform {
         val sym = stat.symbol
         stat match {
           case _: DefDef if (sym.isModule && sym.owner.isClass && sym.hasFlag(PRIVATE)) =>
-            if (settings.debug.value)
-              log("implementing " + sym + sym.locationString)//debug
             val vdef = attributedDef(position(sym), gen.mkModuleVarDef(sym))
             val adef = attributedDef(
               position(sym),
