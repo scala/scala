@@ -7,6 +7,8 @@ package scala.tools.nsc.util;
 
 class HashSet[T >: Null <: AnyRef](initialCapacity: int) extends Set[T] {
 
+  def this() = this(16)
+
   private var capacity = initialCapacity;
   private var used = 0;
   private var table = new Array[Object](capacity);
