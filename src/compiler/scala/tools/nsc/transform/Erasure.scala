@@ -416,7 +416,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
             (if (sym2.owner == root) " at line " + Position.line(unit.source, sym2.pos) else sym2.locationString) +
           "\nhave same type" +
           (if (tpe1 =:= tpe2) "" else " after erasure: " + atPhase(phase.next)(sym1.tpe)))
-//      sym2.setInfo(ErrorType)
+        sym1.setInfo(ErrorType)
       }
 
       val decls = root.info.decls
