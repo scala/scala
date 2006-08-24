@@ -22,8 +22,9 @@ object Tokens {
   final val STRINGLIT = 6;
   final val SYMBOLLIT = 7;
 
-  /** identifier */
+  /** identifiers */
   final val IDENTIFIER = 10;
+  final val BACKQUOTED_IDENT = 11;
 
   /** keywords */
   final val IF = 20;

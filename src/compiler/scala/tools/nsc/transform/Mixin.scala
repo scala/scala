@@ -113,7 +113,7 @@ abstract class Mixin extends InfoTransform {
               val imember = member.overriddenSymbol(mixinClass.toInterface)
               if (imember.overridingSymbol(clazz) == NoSymbol &&
                   atPhase(phase.next)(clazz.info)
-                    .findMember(member.name, 0, lateDEFERRED).alternatives.contains(imember)) {
+                    .findMember(member.name, 0, lateDEFERRED, false).alternatives.contains(imember)) {
                 val member1 = addMember(
                   clazz,
                   member.cloneSymbol(clazz) setPos clazz.pos resetFlag (DEFERRED | lateDEFERRED))

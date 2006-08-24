@@ -160,25 +160,25 @@ trait Types requires SymbolTable {
      *  Members appear in linearization order of their owners.
      *  Members with the same owner appear in reverse order of their declarations.
      */
-    def members: List[Symbol] = findMember(nme.ANYNAME, 0, 0).alternatives
+    def members: List[Symbol] = findMember(nme.ANYNAME, 0, 0, false).alternatives
 
     /** A list of all non-private members of this type (defined or inherited) */
-    def nonPrivateMembers: List[Symbol] = findMember(nme.ANYNAME, PRIVATE | BRIDGE, 0).alternatives;
+    def nonPrivateMembers: List[Symbol] = findMember(nme.ANYNAME, PRIVATE | BRIDGE, 0, false).alternatives;
 
     /** A list of all implicit symbols of this type  (defined or inherited) */
-    def implicitMembers: List[Symbol] = findMember(nme.ANYNAME, BRIDGE, IMPLICIT).alternatives;
+    def implicitMembers: List[Symbol] = findMember(nme.ANYNAME, BRIDGE, IMPLICIT, false).alternatives;
 
     /** The member with given name,
      *  an OverloadedSymbol if several exist, NoSymbol if none exist */
-    def member(name: Name): Symbol = findMember(name, BRIDGE, 0)
+    def member(name: Name): Symbol = findMember(name, BRIDGE, 0, false)
 
     /** The non-private member with given name,
      *  an OverloadedSymbol if several exist, NoSymbol if none exist */
-    def nonPrivateMember(name: Name): Symbol = findMember(name, PRIVATE | BRIDGE, 0)
+    def nonPrivateMember(name: Name): Symbol = findMember(name, PRIVATE | BRIDGE, 0, false)
 
     /** The non-local member with given name,
      *  an OverloadedSymbol if several exist, NoSymbol if none exist */
-    def nonLocalMember(name: Name): Symbol = findMember(name, LOCAL | BRIDGE, 0)
+    def nonLocalMember(name: Name): Symbol = findMember(name, LOCAL | BRIDGE, 0, false)
 
     /** The least type instance of given class which is a supertype
      *  of this type */
@@ -377,7 +377,7 @@ trait Types requires SymbolTable {
     }
 
     //todo: use narrow only for modules? (correct? efficiency gain?)
-    def findMember(name: Name, excludedFlags: int, requiredFlags: long): Symbol = {
+    def findMember(name: Name, excludedFlags: int, requiredFlags: long, stableOnly: boolean): Symbol = {
       if (util.Statistics.enabled) findMemberCount = findMemberCount + 1;
       val startTime = if (util.Statistics.enabled) System.currentTimeMillis() else 0l;
 
@@ -405,6 +405,8 @@ trait Types requires SymbolTable {
                   checkMalformedSwitch = savedCheckMalformedSwitch;
                   if (util.Statistics.enabled) findMemberMillis = findMemberMillis + System.currentTimeMillis() - startTime;
                   return sym
+                } else if (stableOnly) {
+                  if (sym.isStable) return sym
                 } else if (member == NoSymbol) {
                   member = sym
                 } else if (members == null) {
@@ -492,7 +494,7 @@ trait Types requires SymbolTable {
     // todo see whether we can do without
     override def isError: boolean = true;
     override def decls: Scope = new ErrorScope(NoSymbol);
-    override def findMember(name: Name, excludedFlags: int, requiredFlags: long): Symbol = {
+    override def findMember(name: Name, excludedFlags: int, requiredFlags: long, stableOnly: boolean): Symbol = {
       var sym = decls lookup name;
       if (sym == NoSymbol) {
         sym = NoSymbol.newErrorSymbol(name);
@@ -1493,7 +1495,7 @@ trait Types requires SymbolTable {
       if (sym.isModuleClass && !phase.flatClasses) adaptToNewRun(pre, sym.sourceModule).moduleClass;
       else if ((pre eq NoPrefix) || (pre eq NoType) || sym.owner.isPackageClass) sym
       else {
-        var rebind0 = pre.member(sym.name)
+        var rebind0 = pre.findMember(sym.name, BRIDGE, 0, true)
         /** The two symbols have the same fully qualified name */
         def corresponds(sym1: Symbol, sym2: Symbol): boolean =
           sym1.name == sym2.name && (sym1.isPackageClass || corresponds(sym1.owner, sym2.owner))

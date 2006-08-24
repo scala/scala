@@ -170,9 +170,11 @@ trait Parsers requires SyntaxAnalyzer {
       case _ => false
     }
 
+    def isIdent = in.token == IDENTIFIER || in.token == BACKQUOTED_IDENT
+
     def isExprIntroToken(token: int): boolean = token match {
       case CHARLIT | INTLIT | LONGLIT | FLOATLIT | DOUBLELIT |
-           STRINGLIT | SYMBOLLIT | TRUE | FALSE | NULL | IDENTIFIER |
+           STRINGLIT | SYMBOLLIT | TRUE | FALSE | NULL | IDENTIFIER | BACKQUOTED_IDENT |
            THIS | SUPER | IF | FOR | NEW | USCORE | TRY | WHILE |
            DO | RETURN | THROW | LPAREN | LBRACE | XMLSTART => true
       case _ => false
@@ -316,7 +318,7 @@ trait Parsers requires SyntaxAnalyzer {
     final val LT   : Name = "<"
 
     def ident(): Name =
-      if (in.token == IDENTIFIER) {
+      if (in.token == IDENTIFIER || in.token == BACKQUOTED_IDENT) {
         val name = in.name.encode
         in.nextToken()
         name
@@ -351,7 +353,10 @@ trait Parsers requires SyntaxAnalyzer {
         if (in.token == DOT)
           t = selectors(t, typeOK, in.skipToken())
       } else {
-        val i = atPos(in.currentPos) { Ident(ident()) }
+        val i = atPos(in.currentPos) {
+          if (in.token == BACKQUOTED_IDENT) new BackQuotedIdent(ident())
+          else Ident(ident())
+        }
         t = i;
         if (in.token == DOT) {
           val pos = in.skipToken();
@@ -703,7 +708,7 @@ trait Parsers requires SyntaxAnalyzer {
         }
       case DOT =>
         atPos(in.skipToken()) {
-          if (in.token == IDENTIFIER) makeClosure(simpleExpr())
+          if (isIdent) makeClosure(simpleExpr())
           else { syntaxError("identifier expected", true); errorTermTree }
         }
       case _ =>
@@ -718,7 +723,7 @@ trait Parsers requires SyntaxAnalyzer {
           val pos = in.skipToken();
           if (isArgument && in.token == USCORE) {
             val pos1 = in.skipToken();
-            if (in.token == IDENTIFIER && in.name == nme.STAR) {
+            if (isIdent && in.name == nme.STAR) {
               in.nextToken();
               t = atPos(pos) {
                 Typed(t, atPos(pos1) { Ident(nme.WILDCARD_STAR.toTypeName) })
@@ -764,7 +769,7 @@ trait Parsers requires SyntaxAnalyzer {
     def postfixExpr(): Tree = {
       val base = opstack
       var top = prefixExpr()
-      while (in.token == IDENTIFIER) {
+      while (isIdent) {
         top = reduceStack(
           true, base, top, precedence(in.name), treeInfo.isLeftAssoc(in.name));
         opstack = OpInfo(top, in.name, in.currentPos) :: opstack;
@@ -786,17 +791,17 @@ trait Parsers requires SyntaxAnalyzer {
     /** PrefixExpr   ::= [`-' | `+' | `~' | `!' | `&'] SimpleExpr
     */
     def prefixExpr(): Tree =
-      if (in.token == IDENTIFIER && in.name == MINUS) {
+      if (isIdent && in.name == MINUS) {
         val name = ident();
         in.token match {
           case INTLIT | LONGLIT | FLOATLIT | DOUBLELIT => literal(false, true)
           case _ => atPos(in.currentPos) { Select(simpleExpr(), name) }
         }
-      } else if (in.token == IDENTIFIER && (in.name == PLUS || in.name == TILDE || in.name == BANG)) {
+      } else if (isIdent && (in.name == PLUS || in.name == TILDE || in.name == BANG)) {
         val pos = in.currentPos;
         val name = ident();
         atPos(pos) { Select(simpleExpr(), name) }
-      } else if (in.token == IDENTIFIER && in.name == AMP) {
+      } else if (isIdent && in.name == AMP) {
         val pos = in.currentPos;
         val name = ident();
         atPos(pos) { Typed(simpleExpr(), Function(List(), EmptyTree)) }
@@ -826,7 +831,7 @@ trait Parsers requires SyntaxAnalyzer {
         case XMLSTART =>
           t = xmlp.xLiteral
           //Console.println("successfully parsed XML at "+t); // DEBUG
-        case IDENTIFIER | THIS | SUPER =>
+        case IDENTIFIER | BACKQUOTED_IDENT | THIS | SUPER =>
           t = path(true, false)
         case LPAREN =>
           val pos = in.skipToken()
@@ -990,9 +995,9 @@ trait Parsers requires SyntaxAnalyzer {
     def pattern(seqOK: boolean): Tree = {
       val pos = in.currentPos
       val t = pattern1(seqOK)
-      if (in.token == IDENTIFIER && in.name == BAR) {
+      if (isIdent && in.name == BAR) {
         val ts = new ListBuffer[Tree] + t;
-        while (in.token == IDENTIFIER && in.name == BAR) {
+        while (isIdent && in.name == BAR) {
           in.nextToken(); ts += pattern1(seqOK);
         }
         atPos(pos) { makeAlternative(ts.toList) }
@@ -1014,7 +1019,7 @@ trait Parsers requires SyntaxAnalyzer {
       //} else {
         val p = pattern2(seqOK);
         p match {
-          case Ident(name) if (treeInfo.isVariableName(name) && in.token == COLON) =>
+          case Ident(name) if (treeInfo.isVarPattern(p) && in.token == COLON) =>
             atPos(in.skipToken()) { Typed(p, type1()) }
           case _ =>
             p
@@ -1034,7 +1039,7 @@ trait Parsers requires SyntaxAnalyzer {
           case Ident(name) =>
             if (name == nme.WILDCARD) {
               in.nextToken(); pattern3(seqOK)
-            } else if (treeInfo.isVariableName(name)) {
+            } else if (treeInfo.isVarPattern(p)) {
               atPos(in.skipToken()) { Bind(name, pattern3(seqOK)) }
             } else {
               p
@@ -1053,7 +1058,7 @@ trait Parsers requires SyntaxAnalyzer {
     def pattern3(seqOK: boolean): Tree = {
       val base = opstack
       var top = simplePattern(seqOK)
-      if (seqOK && in.token == IDENTIFIER) {
+      if (seqOK && isIdent) {
         if (in.name == STAR)
           return atPos(in.skipToken())(Star(top))
         else if (in.name == PLUS)
@@ -1061,7 +1066,7 @@ trait Parsers requires SyntaxAnalyzer {
         else if (in.name == OPT)
           return atPos(in.skipToken())(makeOpt(top))
       }
-      while (in.token == IDENTIFIER && in.name != BAR) {
+      while (isIdent && in.name != BAR) {
         top = reduceStack(
           false, base, top, precedence(in.name), treeInfo.isLeftAssoc(in.name));
         opstack = OpInfo(top, in.name, in.currentPos) :: opstack;
@@ -1085,7 +1090,7 @@ trait Parsers requires SyntaxAnalyzer {
      *                    |  `(' Patterns `)'
      */
     def simplePattern(seqOK: boolean): Tree = in.token match {
-      case IDENTIFIER | THIS =>
+      case IDENTIFIER | BACKQUOTED_IDENT | THIS =>
         var t = stableId();
         in.token match {
           case INTLIT | LONGLIT | FLOATLIT | DOUBLELIT =>
@@ -1290,7 +1295,7 @@ trait Parsers requires SyntaxAnalyzer {
         }
       else {
         val t = typ()
-        if (in.token == IDENTIFIER && in.name == STAR) {
+        if (isIdent && in.name == STAR) {
           in.nextToken();
           atPos(t.pos) {
             AppliedTypeTree(
@@ -1307,7 +1312,7 @@ trait Parsers requires SyntaxAnalyzer {
     def typeParamClauseOpt(owner: Name, implicitViews: ListBuffer[Tree]): List[AbsTypeDef] = {
       def typeParam(): AbsTypeDef = {
         var mods = Modifiers(Flags.PARAM);
-        if (owner.isTypeName && in.token == IDENTIFIER) {
+        if (owner.isTypeName && isIdent) {
           if (in.name == PLUS) {
             in.nextToken();
             mods = mods | Flags.COVARIANT;

@@ -105,7 +105,7 @@ abstract class TreeInfo {
 
   /** Is tree a variable pattern */
   def isVarPattern(pat: Tree): boolean = pat match {
-    case Ident(name) => isVariableName(name)
+    case Ident(name) => isVariableName(name) && !pat.isInstanceOf[BackQuotedIdent]
     case _ => false
   }
 

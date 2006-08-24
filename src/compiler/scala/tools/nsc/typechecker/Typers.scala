@@ -1334,7 +1334,27 @@ trait Typers requires Analyzer {
         }
       }
 
-      /** Attribute an identifier consisting of a simple name o ran outer reference.
+      /** does given name name an identifier visible at this point? */
+      def namesSomeIdent(name: Name): boolean = {
+        var cx = context
+        while (cx != NoContext) {
+          val pre = cx.enclClass.prefix
+          val defEntry = cx.scope.lookupEntry(name)
+          if (defEntry != null && defEntry.sym.exists) return true
+          cx = cx.enclClass
+          if ((pre.member(name) filter (
+            sym => sym.exists && context.isAccessible(sym, pre, false))) != NoSymbol) return true
+          cx = cx.outer
+        }
+        var imports = context.imports;      // impSym != NoSymbol => it is imported from imports.head
+        while (!imports.isEmpty) {
+          if (imports.head.importedSymbol(name) != NoSymbol) return true
+          imports = imports.tail
+        }
+        false
+      }
+
+      /** Attribute an identifier consisting of a simple name or an outer reference.
        *  @param tree      The tree representing the identifier.
        *  @param name      The name of the identifier.
        *  Transformations: (1) Prefix class members with this.
@@ -1353,7 +1373,6 @@ trait Typers requires Analyzer {
 
           var cx = context
           while (defSym == NoSymbol && cx != NoContext) {
-            //if (phase.name == "uncurry") System.out.println("typing " + name + " " + cx.owner + " " + (if (cx.enclClass == null) "null" else cx.enclClass.owner));//DEBUG
             pre = cx.enclClass.prefix
             defEntry = cx.scope.lookupEntry(name)
             if (defEntry != null && defEntry.sym.exists) {
@@ -1500,7 +1519,16 @@ trait Typers requires Analyzer {
         case Bind(name, body) =>
           var vble = tree.symbol
           if (vble == NoSymbol) vble = context.owner.newValue(tree.pos, name)
-          if (vble.name != nme.WILDCARD) namer.enterInScope(vble)
+          if (vble.name != nme.WILDCARD) {
+/*
+            if (namesSomeIdent(vble.name))
+              context.unit.warning(tree.pos,
+                "pattern variable "+vble.name+" shadows a value visible in the environment;\n"+
+                "use backquotes `"+vble.name+"` if you mean to match against that value;\n" +
+                "or rename the variable or use an explicit bind "+vble.name+"@_ to avoid this warning.")
+*/
+            namer.enterInScope(vble)
+          }
           val body1 = typed(body, mode, pt)
           vble.setInfo(if (treeInfo.isSequenceValued(body)) seqType(body1.tpe) else body1.tpe)
           copy.Bind(tree, name, body1) setSymbol vble setType body1.tpe; // buraq, was: pt

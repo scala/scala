@@ -299,8 +299,6 @@ trait PatternMatchers requires (TransMatcher with PatternNodes) extends AnyRef w
       case Ident(name) => // pattern without args or named constant
         if (tree.symbol.isPrimaryConstructor)
           scala.Predef.error("error may not happen: ident is primary constructor"+tree.symbol); // Burak
-        else if (treeInfo.isVariableName(name))
-          scala.Predef.error("this may not happen"); // because id => id @ _
         else
           pVariablePat(tree.pos, tree); // named constant (capitalized variable Foo)
 

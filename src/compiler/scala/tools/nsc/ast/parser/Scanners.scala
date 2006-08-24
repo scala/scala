@@ -280,7 +280,7 @@ trait Scanners requires SyntaxAnalyzer {
               case '`' =>
                 in.next
                 getStringLit('`')
-                token = IDENTIFIER
+                token = IDENTIFIER /*BACKQUOTED_IDENT*/
                 return
               case '\"' =>
                 in.next
@@ -456,8 +456,8 @@ trait Scanners requires SyntaxAnalyzer {
 
     def inLastOfStat(token: int) = token match {
       case CHARLIT | INTLIT | LONGLIT | FLOATLIT | DOUBLELIT | STRINGLIT | SYMBOLLIT |
-           IDENTIFIER | THIS | NULL | TRUE | FALSE | RETURN | USCORE | TYPE | XMLSTART |
-           RPAREN | RBRACKET | RBRACE =>
+           IDENTIFIER | BACKQUOTED_IDENT | THIS | NULL | TRUE | FALSE | RETURN | USCORE |
+           TYPE | XMLSTART | RPAREN | RBRACKET | RBRACE =>
         true
       case _ =>
         false
@@ -895,7 +895,7 @@ trait Scanners requires SyntaxAnalyzer {
 
     /** Returns the string representation of given token. */
     def token2string(token: int): String = token match {
-      case IDENTIFIER =>
+      case IDENTIFIER | BACKQUOTED_IDENT =>
         "identifier"/* + \""+name+"\""*/
       case CHARLIT =>
         "character literal"
@@ -951,7 +951,7 @@ trait Scanners requires SyntaxAnalyzer {
     }
 
     override def toString() = token match {
-      case IDENTIFIER =>
+      case IDENTIFIER | BACKQUOTED_IDENT =>
         "id(" + name + ")"
       case CHARLIT =>
         "char(" + intVal + ")"

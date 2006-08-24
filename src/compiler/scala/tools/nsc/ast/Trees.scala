@@ -515,6 +515,8 @@ trait Trees requires Global {
     override def isType = name.isTypeName
   }
 
+  class BackQuotedIdent(name: Name) extends Ident(name)
+
   def Ident(sym: Symbol): Ident =
     Ident(sym.name) setSymbol sym
 
