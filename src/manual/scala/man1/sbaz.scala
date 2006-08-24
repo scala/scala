@@ -145,9 +145,9 @@ object sbaz extends Command {
         "Update the list of available packages.",
         CmdLine(MBold("update"))),
       Definition(
-        "Upload package description for " & Mono("scala-devel-2.1.5") &
+        "Upload package description for " & Mono("scala-devel-2.1.8") &
         " to the universe",
-        CmdLine(MBold("share") & " scala-devel-2.1.5.advert"))))
+        CmdLine(MBold("share") & " scala-devel-2.1.8.advert"))))
 
   val exitStatus = Section("EXIT STATUS",
 
@@ -160,15 +160,17 @@ object sbaz extends Command {
 
   val seeAlso = Section("SEE ALSO",
 
-    Link(MBold("scala") & "(1)", "scala.html") & ", " &
-    Link(MBold("scalac") & "(1)", "scalac.html") & ", " &
-    Link(MBold("scaladoc") & "(1)", "scaladoc.html"))
+    Link(Bold("fsc") & "(1)", "fsc.html") & ", " &
+    Link(Bold("scala") & "(1)", "scala.html") & ", " &
+    Link(Bold("scalac") & "(1)", "scalac.html") & ", " &
+    Link(Bold("scaladoc") & "(1)", "scaladoc.html") & ", " &
+    Link(Bold("scalap") & "(1)", "scalap.html"))
 
   def manpage = new Document {
     title = command
-    date = "June 8, 2006"
+    date = "August 24, 2006"
     author = "Stephane Micheloud"
-    version = "0.2"
+    version = "0.3"
     sections = List(
       name,
       synopsis,
