@@ -49,6 +49,8 @@ object ObjectRunner {
       }
 
       val method = clsToRun.getMethod("main", List(classOf[Array[String]]).toArray)
+      if((method.getModifiers & Modifier.STATIC) == 0)
+        throw new NoSuchMethodException(objectName + ".main is not static")
 
       method.invoke(null, List(arguments.toArray).toArray)
   }
