@@ -1,8 +1,9 @@
-/* NSC -- new scala compiler
- * Copyright 2005 LAMP/EPFL
+/* NSC -- new Scala compiler
+ * Copyright 2005-2006 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
+
 //todo: rewrite or disllow new T where T is a mixin (currently: <init> not a member of T)
 package scala.tools.nsc.typechecker
 
@@ -88,35 +89,35 @@ trait Typers requires Analyzer {
     /** Mode constants
      */
     val NOmode        = 0x000
-    val EXPRmode      = 0x001;   // these 3 modes are mutually exclusive.
+    val EXPRmode      = 0x001    // these 3 modes are mutually exclusive.
     val PATTERNmode   = 0x002
     val TYPEmode      = 0x004
 
-    val SCCmode       = 0x008;   // orthogonal to above. When set we are
+    val SCCmode       = 0x008    // orthogonal to above. When set we are
                                  // in the this or super constructor call of a constructor.
 
-    val FUNmode       = 0x10;    // orthogonal to above. When set
+    val FUNmode       = 0x10     // orthogonal to above. When set
                                  // we are looking for a method or constructor
 
-    val POLYmode      = 0x020;   // orthogonal to above. When set
+    val POLYmode      = 0x020    // orthogonal to above. When set
                                  // expression types can be polymorphic.
 
-    val QUALmode      = 0x040;   // orthogonal to above. When set
+    val QUALmode      = 0x040    // orthogonal to above. When set
                                  // expressions may be packages and
                                  // Java statics modules.
 
-    val TAPPmode      = 0x080;   // Set for the function/type constructor part
+    val TAPPmode      = 0x080    // Set for the function/type constructor part
                                  // of a type application. When set we do not
                                  // decompose PolyTypes.
 
-    val SUPERCONSTRmode = 0x100; // Set for the `super' in a superclass constructor call
+    val SUPERCONSTRmode = 0x100  // Set for the `super' in a superclass constructor call
                                  // super.<init>
 
-    val SNDTRYmode    = 0x200;   // indicates that an application is typed for the 2nd
+    val SNDTRYmode    = 0x200    // indicates that an application is typed for the 2nd
                                  // time. In that case functions may no longer be
                                  // be coerced with implicit views.
 
-    val LHSmode       = 0x400;   // Set for the left-hand side of an assignment
+    val LHSmode       = 0x400    // Set for the left-hand side of an assignment
 
     val CONSTmode     = 0x800    // expressions should evaluate to constants
                                  // used for attribute arguments
@@ -153,7 +154,7 @@ trait Typers requires Analyzer {
      */
     def checkStable(tree: Tree): Tree =
       if (treeInfo.isPureExpr(tree)) tree
-      else errorTree(tree, "stable identifier required, but "+tree+" found.")
+      else errorTree(tree, "stable identifier required, but " + tree + " found.")
 
     /** Check that type `tp' is not a subtype of itself.
      */
@@ -217,13 +218,14 @@ trait Typers requires Analyzer {
       private var scope: Scope = _
       private var badSymbol: Symbol = _
 
-      /** Check that type `tree' does not refer to private components unless itself is wrapped
-       *  in something private (`owner' tells where the type occurs). */
+      /** Check that type `tree' does not refer to private components unless
+       *  itself is wrapped in something private (`owner' tells where the type occurs).
+       */
       def privates[T <: Tree](owner: Symbol, tree: T): T = {
         check(owner, EmptyScope, tree)
       }
 
-      /**  Check that type `tree' does not refer to entities defined in scope `scope'. */
+      /** Check that type `tree' does not refer to entities defined in scope `scope'. */
       def locals[T <: Tree](scope: Scope, pt: Type, tree: T): T =
         if (isFullyDefined(pt)) tree setType pt else check(NoSymbol, scope, tree)
 
@@ -274,7 +276,7 @@ trait Typers requires Analyzer {
 
     def reenterTypeParams(tparams: List[AbsTypeDef]): List[Symbol] =
       for (val tparam <- tparams) yield {
-        context.scope enter tparam.symbol;
+        context.scope enter tparam.symbol
         tparam.symbol.deSkolemize
       }
 
@@ -295,7 +297,8 @@ trait Typers requires Analyzer {
     /** Post-process an identifier or selection node, performing the following:
      *  (1) Check that non-function pattern expressions are stable
      *  (2) Check that packages and static modules are not used as values
-     *  (3) Turn tree type into stable type if possible and required by context. */
+     *  (3) Turn tree type into stable type if possible and required by context.
+     */
     private def stabilize(tree: Tree, pre: Type, mode: int, pt: Type): Tree = {
       if (tree.symbol.hasFlag(OVERLOADED) && (mode & FUNmode) == 0)
         inferExprAlternative(tree, pt)
@@ -418,14 +421,14 @@ trait Typers requires Analyzer {
                   inferConstructorInstance(tree1, clazz.typeParams, pt)
                 } catch {
                   case npe : NullPointerException =>
-                    logError("CONTEXT: " + context . unit . source .dbg(tree.pos), npe);
-                    throw npe;
+                    logError("CONTEXT: " + context.unit.source.dbg(tree.pos), npe)
+                    throw npe
                   case fe : FatalError =>
-                    logError("CONTEXT: " + context . unit . source .dbg(tree.pos), fe);
-                    throw fe;
+                    logError("CONTEXT: " + context.unit.source.dbg(tree.pos), fe)
+                    throw fe
                   case t : Throwable =>
-                    logError("CONTEXT: " + context . unit . source .dbg(tree.pos), t);
-                    throw t;
+                    logError("CONTEXT: " + context.unit.source.dbg(tree.pos), t)
+                    throw t
                 }
                 tree1
               } else if (clazz.isNonBottomSubClass(SeqClass)) { // (5.2)
@@ -440,7 +443,7 @@ trait Typers requires Analyzer {
                     setError(tree)
                 }
               } else {
-                errorTree(tree, ""+clazz+" is neither a case class nor a sequence class")
+                errorTree(tree, "" + clazz + " is neither a case class nor a sequence class")
               }
             }
           } else if ((mode & FUNmode) != 0) {
@@ -737,7 +740,8 @@ trait Typers requires Analyzer {
           val formals = fn.tpe.paramTypes
           val args2 = if (formals.isEmpty || formals.last.symbol != RepeatedParamClass) args
                       else args.take(formals.length - 1) ::: List(EmptyTree)
-          if (args2.length != formals.length) assert(false, "mismatch "+clazz+" "+formals+" "+args2);//debug
+          if (args2.length != formals.length)
+            assert(false, "mismatch " + clazz + " " + formals + " " + args2);//debug
           Pair(superConstr, args1 ::: args2)
         case Block(stats, expr) =>
           decompose(stats.head)
@@ -751,7 +755,8 @@ trait Typers requires Analyzer {
         if (!superClazz.hasFlag(JAVA)) {
           val superParamAccessors = superClazz.constrParamAccessors
           if (superParamAccessors.length != superArgs.length) {
-            System.out.println(""+superClazz+":"+superClazz.info.decls.toList.filter(.hasFlag(PARAMACCESSOR)))
+            System.out.println("" + superClazz + ":" +
+              superClazz.info.decls.toList.filter(.hasFlag(PARAMACCESSOR)))
             assert(false, "mismatch: "+superParamAccessors+";"+rhs+";"+superClazz.info.decls); //debug
           }
           List.map2(superParamAccessors, superArgs) { (superAcc, superArg) =>
@@ -767,7 +772,8 @@ trait Typers requires Analyzer {
                   if (alias != NoSymbol) {
                     var ownAcc = clazz.info.decl(name).suchThat(.hasFlag(PARAMACCESSOR))
                     if (ownAcc hasFlag ACCESSOR) ownAcc = ownAcc.accessed
-                    if (settings.debug.value) log(""+ownAcc+" has alias "+alias + alias.locationString);//debug
+                    if (settings.debug.value)
+                      log("" + ownAcc + " has alias "+alias + alias.locationString);//debug
                     ownAcc.asInstanceOf[TermSymbol].setAlias(alias)
                   }
                 }
@@ -1147,11 +1153,11 @@ trait Typers requires Analyzer {
                   val sym = attrScope.lookup(name);
                   if (sym == NoSymbol) {
                     error(ntree.pos, "unknown attribute element name: " + name)
-                    attrError = true;
+                    attrError = true
                     null
                   } else if (!names.contains(sym)) {
                     error(ntree.pos, "duplicate value for element " + name)
-                    attrError = true;
+                    attrError = true
                     null
                   } else {
                     names -= sym
@@ -1301,7 +1307,8 @@ trait Typers requires Analyzer {
             case ThisType(clazz) if (clazz == context.enclClass.owner) =>
               qual.tpe.member(name)
             case _  =>
-              qual.tpe.nonLocalMember(name)
+              if (phase.erasedTypes) qual.tpe.member(name)
+              else qual.tpe.nonLocalMember(name)
           }
         if (sym == NoSymbol && name != nme.CONSTRUCTOR && (mode & EXPRmode) != 0) {
           val qual1 = adaptToName(qual, name)
@@ -1327,7 +1334,7 @@ trait Typers requires Analyzer {
         }
       }
 
-      /** Attribute an identifier consisting of a simple name or an outer reference.
+      /** Attribute an identifier consisting of a simple name o ran outer reference.
        *  @param tree      The tree representing the identifier.
        *  @param name      The name of the identifier.
        *  Transformations: (1) Prefix class members with this.
@@ -1335,14 +1342,14 @@ trait Typers requires Analyzer {
        */
       def typedIdent(name: Name): Tree = {
         def ambiguousError(msg: String) =
-          error(tree.pos, "reference to "+name+" is ambiguous;\n"+msg)
+          error(tree.pos, "reference to " + name + " is ambiguous;\n" + msg)
 
-        var defSym: Symbol = tree.symbol;   // the directly found symbol
-        var pre: Type = NoPrefix;        // the prefix type of defSym, if a class member
-        var qual: Tree = EmptyTree;   // the qualififier tree if transformed tree is a select
+        var defSym: Symbol = tree.symbol // the directly found symbol
+        var pre: Type = NoPrefix         // the prefix type of defSym, if a class member
+        var qual: Tree = EmptyTree       // the qualififier tree if transformed tree is a select
 
         if (defSym == NoSymbol) {
-          var defEntry: ScopeEntry = null; // the scope entry of defSym, if defined in a local scope
+          var defEntry: ScopeEntry = null // the scope entry of defSym, if defined in a local scope
 
           var cx = context
           while (defSym == NoSymbol && cx != NoContext) {
@@ -1802,7 +1809,7 @@ trait Typers requires Analyzer {
     /** Types expression or definition `tree' */
     def typed(tree: Tree): Tree = {
       val ret = typed(tree, EXPRmode, WildcardType)
-      ret;
+      ret
     }
 
     /** Types expression `tree' with given prototype `pt' */
