@@ -97,7 +97,7 @@ object MainGenericRunner {
           } catch {
             case e: ClassNotFoundException =>
               Console.println(e)
-            case e: NoSuchMethodError =>
+            case e: NoSuchMethodException =>
               Console.println(e)
             case e: InvocationTargetException =>
               e.getCause.printStackTrace
