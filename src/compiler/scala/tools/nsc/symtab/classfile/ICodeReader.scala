@@ -79,20 +79,21 @@ abstract class ICodeReader extends ClassfileParser {
       }
 
     Console.println(getOwner(jflags).info.decls);
-    val sym = getOwner(jflags).info.decl(name).suchThat(old => old.tpe =:= tpe)
-    assert(sym != NoSymbol,
-           "Could not find symbol for " + name +
-           ": " + tpe + " in " + getOwner(jflags))
+    val sym = getOwner(jflags).info.decl(name).suchThat(old => old.tpe =:= tpe);
+//    assert(sym != NoSymbol, "Could not find symbol for " + name + ": " + tpe + " in " + getOwner(jflags));
     Pair(jflags, sym)
   }
 
   override def parseMethod(): Unit = {
-    val Pair(jflags, sym) = parseMember()
-    this.method = new IMethod(sym)
-    getCode(jflags).addMethod(method)
-    val attributeCount = in.nextChar
-    for (val i <- 0 until attributeCount)
-      parseAttribute();
+    val Pair(jflags, sym) = parseMember();
+    if (sym != NoSymbol) {
+      this.method = new IMethod(sym);
+      getCode(jflags).addMethod(method);
+      val attributeCount = in.nextChar;
+      for (val i <- 0 until attributeCount)
+        parseAttribute();
+    } else
+      if (settings.debug.value) log("Skipping non-existent method.");
   }
 
   def parseAttribute(): Unit = {
@@ -144,7 +145,7 @@ abstract class ICodeReader extends ClassfileParser {
       }
 
       val instr = toUnsignedByte(in.nextByte)
-      if (instr < JVM.pop) instr match {
+      instr match {
         case JVM.nop => parseInstruction
         case JVM.aconst_null => code.emit(CONSTANT(Constant(null)))
         case JVM.iconst_m1   => code.emit(CONSTANT(Constant(-1)))
@@ -166,8 +167,8 @@ abstract class ICodeReader extends ClassfileParser {
         case JVM.bipush      => code.emit(CONSTANT(Constant(in.nextByte))); size = size + 1;
         case JVM.sipush      => code.emit(CONSTANT(Constant(in.nextChar))); size = size + 2;
         case JVM.ldc         => code.emit(CONSTANT(pool.getConstant(in.nextByte))); size = size + 1;
-        case JVM.ldc_w | JVM.ldc2_w => code.emit(CONSTANT(pool.getConstant(in.nextChar))); size = size + 2;
-
+        case JVM.ldc_w       => code.emit(CONSTANT(pool.getConstant(in.nextChar))); size = size + 2;
+        case JVM.ldc2_w      => code.emit(CONSTANT(pool.getConstant(in.nextChar))); size = size + 2;
         case JVM.iload       => code.emit(LOAD_LOCAL(code.getLocal(in.nextByte, INT)));    size = size + 1;
         case JVM.lload       => code.emit(LOAD_LOCAL(code.getLocal(in.nextByte, LONG)));   size = size + 1;
         case JVM.fload       => code.emit(LOAD_LOCAL(code.getLocal(in.nextByte, FLOAT)));  size = size + 1;
@@ -246,8 +247,7 @@ abstract class ICodeReader extends ClassfileParser {
         case JVM.bastore     => code.emit(STORE_ARRAY_ITEM(BYTE))
         case JVM.castore     => code.emit(STORE_ARRAY_ITEM(CHAR))
         case JVM.sastore     => code.emit(STORE_ARRAY_ITEM(SHORT))
-      }
-      else if (instr < JVM.goto) instr match {
+
         case JVM.pop         => code.emit(DROP(INT)); // any 1-word type would do
         case JVM.pop2        => code.emit(DROP(LONG)); // any 2-word type would do
         case JVM.dup         => code.emit(DUP(OBJECT)); // TODO: Is the kind inside DUP ever needed?
@@ -340,8 +340,7 @@ abstract class ICodeReader extends ClassfileParser {
         case JVM.if_icmple   => code.emit(LCJUMP(parseJumpTarget, pc + size, LE, INT))
         case JVM.if_acmpeq   => code.emit(LCJUMP(parseJumpTarget, pc + size, EQ, OBJECT))
         case JVM.if_acmpne   => code.emit(LCJUMP(parseJumpTarget, pc + size, NE, OBJECT))
-      }
-      else instr match {
+
         case JVM.goto        => emit(LJUMP(parseJumpTarget))
         case JVM.jsr         => Predef.error("Cannot handle jsr/ret")
         case JVM.ret         => Predef.error("Cannot handle jsr/ret")
@@ -396,9 +395,12 @@ abstract class ICodeReader extends ClassfileParser {
           val field = pool.getMemberSymbol(in.nextChar, false); size = size + 2;
           code.emit(STORE_FIELD(field, false))
 
-        case JVM.invokevirtual | JVM.invokeinterface  =>
+        case JVM.invokevirtual =>
           val m = pool.getMemberSymbol(in.nextChar, false); size = size + 2;
           code.emit(CALL_METHOD(m, Dynamic))
+        case JVM.invokeinterface  =>
+          val m = pool.getMemberSymbol(in.nextChar, false); size = size + 2;
+          code.emit(CALL_METHOD(m, Dynamic));
         case JVM.invokespecial   =>
           val m = pool.getMemberSymbol(in.nextChar, false); size = size + 2;
           val style = if (m.name == nme.CONSTRUCTOR || m.hasFlag(Flags.PRIVATE)) Static(true)
@@ -470,7 +472,7 @@ abstract class ICodeReader extends ClassfileParser {
         case JVM.goto_w    => code.emit(LJUMP(parseJumpTargetW))
         case JVM.jsr_w     => Predef.error("Cannot handle jsr/ret")
 
-        case _ => Predef.error("Unknown bytecode")
+//        case _ => Predef.error("Unknown bytecode")
       }
       pc = pc + size
     }

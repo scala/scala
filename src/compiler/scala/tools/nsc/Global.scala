@@ -66,10 +66,10 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     val global: Global.this.type = Global.this
   }
 
-  object icodeReader extends ICodeReader {
+/*  object icodeReader extends ICodeReader {
     val global: Global.this.type = Global.this
   }
-
+*/
   object analysis extends TypeFlowAnalysis {
     val global: Global.this.type = Global.this
   }
