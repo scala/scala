@@ -25,17 +25,19 @@ object CompileClient {
   var verbose = false
   var version = false
 
+  /** Convert a filename to an absolute path */
+  def absFileName(path: String) = new File(path).getAbsolutePath()
+
+  /** Convert a sequence of filenames, separated by File.pathSeparator,
+    * into absolute filenames.
+    */
+  def absFileNames(paths: String) = {
+    val sep = File.pathSeparator
+    val pathsList = paths.split(sep).toList
+    pathsList.map(absFileName).mkString("", sep, "")
+  }
+
   def normalize(args: Array[String]): Pair[String, String] = {
-    def absFileName(path: String) = new File(path).getAbsolutePath()
-    def absFileNames(paths: String) = {
-      def afns(sep: char): String =
-        StringOps.decompose(paths, sep)
-          .map(absFileName)
-          .mkString("", String.valueOf(sep), "")
-      if (paths.indexOf(';') > 0) afns(';')
-      else if (paths.indexOf(':') > 0) afns(':')
-      else absFileName(paths)
-    }
     var i = 0
     val vmArgs = new StringBuffer
     var serverAdr = ""
