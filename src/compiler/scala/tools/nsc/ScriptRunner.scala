@@ -146,8 +146,20 @@ object ScriptRunner {
   /** Compile a script using the fsc compilation deamon */
   private def compileWithDaemon(
       settings: GenericRunnerSettings,
-      scriptFile: String): Boolean =
+      scriptFileIn: String): Boolean =
   {
+    val scriptFile = CompileClient.absFileName(scriptFileIn)
+    for {
+      val setting:settings.StringSetting <- List(
+            settings.classpath,
+            settings.sourcepath,
+            settings.bootclasspath,
+            settings.extdirs,
+            settings.outdir)
+    } {
+      setting.value = CompileClient.absFileNames(setting.value)
+    }
+
     val compSettingNames =
       (new Settings(error)).allSettings.map(.name)
 
