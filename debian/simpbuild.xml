@@ -50,9 +50,11 @@
   <property name="lib.dir.name" value="library"/>
   <property name="comp.dir.name" value="compiler"/>
   <property name="dbc.dir.name" value="dbc"/>
+  <property name="actors.dir.name" value="actors"/>
   <property name="src.lib.dir" value="${src.dir}/${lib.dir.name}"/>
   <property name="src.comp.dir" value="${src.dir}/${comp.dir.name}"/>
   <property name="src.dbc.dir" value="${src.dir}/${dbc.dir.name}"/>
+  <property name="src.actors.dir" value="${src.dir}/${actors.dir.name}"/>
   <property name="exec.dir.name" value="exec"/>
 
   <!-- Location of structure of the distribution properties -->
@@ -61,6 +63,11 @@
   <property name="lib.jar.name" value="${dist.name}-${lib.dir.name}.jar"/>
   <property name="lib-dbc.jar.name" value="${dist.name}-dbc.jar"/>
   <property name="comp.jar.name" value="${dist.name}-${comp.dir.name}.jar"/>
+  <property name="actors.jar.name" value="${dist.name}-${actors.dir.name}.jar"/>
+  <property name="libsrc.jar.name" value="${dist.name}-${lib.dir.name}-src.jar"/>
+  <property name="dbcsrc.jar.name" value="${dist.name}-dbc-src.jar"/>
+  <property name="compsrc.jar.name" value="${dist.name}-${comp.dir.name}-src.jar"/>
+  <property name="actorssrc.jar.name" value="${dist.name}-${actors.dir.name}-src.jar"/>
   <property name="scala.exec.name" value="${dist.name}"/>
   <property name="scalac.exec.name" value="scalac"/>
   <property name="scaladoc.exec.name" value="scaladoc"/>
@@ -70,6 +77,7 @@
   <property name="build.lib.dir" value="${build.dir}/${lib.dir.name}"/>
   <property name="build.comp.dir" value="${build.dir}/${comp.dir.name}"/>
   <property name="build.dbc.dir" value="${build.dir}/${dbc.dir.name}"/>
+  <property name="build.actors.dir" value="${build.dir}/${actors.dir.name}"/>
   <property name="build.jar.dir" value="${build.dir}/lib"/>
   <property name="build.bin.dir" value="${build.dir}/bin"/>
   <property name="build.manual.dir" value="${build.dir}/manual.classes"/>
@@ -273,6 +281,20 @@
       <include name="**/*.scala"/>
     </starr>
 
+    <!-- Build Actors -->
+    <mkdir dir="${build.actors.dir}"/>
+    <starr
+      srcdir="${src.actors.dir}"
+      destdir="${build.actors.dir}"
+    >
+      <classpath>
+        <pathelement location="${build.lib.dir}"/>
+        <pathelement location="${build.comp.dir}"/>
+      </classpath>
+      <include name="**/*.scala"/>
+    </starr>
+
+  	
     <!-- Build jars -->
     <mkdir dir="${build.jar.dir}"/>
     <jar destfile="${build.jar.dir}/${comp.jar.name}">
@@ -302,6 +324,12 @@
     </jar>
     <jar destfile="${build.jar.dir}/${lib-dbc.jar.name}">
       <fileset dir="${build.dbc.dir}"/>
+      <manifest>
+        <attribute name="Signature-Version" value="${version.number}"/>
+      </manifest>
+    </jar>
+    <jar destfile="${build.jar.dir}/${actors.jar.name}">
+      <fileset dir="${build.actors.dir}"/>
       <manifest>
         <attribute name="Signature-Version" value="${version.number}"/>
       </manifest>
@@ -341,6 +369,28 @@
       version="${version.number}"
       copyright="${copyright}"
       javaFlags="-Xmx256M -Xms16M"
+    />
+  	
+    <!-- build source jars -->
+    <jar
+      destfile="${build.jar.dir}/${libsrc.jar.name}"
+      basedir="${src.lib.dir}"
+      includes="**/*.scala"
+    />
+    <jar
+      destfile="${build.jar.dir}/${dbcsrc.jar.name}"
+      basedir="${src.dbc.dir}"
+      includes="**/*.scala"
+    />
+    <jar
+      destfile="${build.jar.dir}/${compsrc.jar.name}"
+      basedir="${src.comp.dir}"
+      includes="**/*.scala"
+    />
+    <jar
+      destfile="${build.jar.dir}/${actorssrc.jar.name}"
+      basedir="${src.actors.dir}"
+      includes="**/*.scala"
     />
   </target>
 
@@ -399,7 +449,12 @@
       desc="The Scala library. This is the minimal requirement to run any Scala program."
       link="${sbaz.universe}/${sbaz.lib.name}-${version.number}.sbp"
     >
-      <libset dir="${build.jar.dir}" includes="${lib.jar.name},${lib-dbc.jar.name}"/>
+      <libset dir="${build.jar.dir}" includes="${lib.jar.name}"/>
+      <libset dir="${build.jar.dir}" includes="${dbc.jar.name}"/>
+      <libset dir="${build.jar.dir}" includes="${actors.jar.name}"/>
+      <srcset dir="${build.jar.dir}" includes="${libsrc.jar.name}"/>
+      <srcset dir="${build.jar.dir}" includes="${dbcsrc.jar.name}"/>
+      <srcset dir="${build.jar.dir}" includes="${actorssrc.jar.name}"/>
     </starrsbaz>
     <!-- Create the Scala developper package -->
     <starrsbaz
@@ -417,6 +472,7 @@
       <docset dir="${docs.dir}" includes="README,LICENSE"/>
       <docset dir="${api.lib.pdir}" includes="api/**"/>
       <docset dir="${tooldocs.dir}" includes="*.html"/>
+      <srcset dir="${build.jar.dir}" includes="${compsrc.jar.name}"/>
     </starrsbaz>
     <!-- Creates the empty umbrella Scala package -->
     <starrsbaz
