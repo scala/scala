@@ -56,6 +56,10 @@ PROPERTIES
   <property name="dbc.jar.name" value="scala-dbc.jar"/>
   <property name="actors.jar.name" value="scala-actors.jar"/>
   <property name="comp.jar.name" value="scala-compiler.jar"/>
+  <property name="libsrc.jar.name" value="scala-library-src.jar"/>
+  <property name="dbcsrc.jar.name" value="scala-dbc-src.jar"/>
+  <property name="compsrc.jar.name" value="scala-compiler-src.jar"/>
+  <property name="actorssrc.jar.name" value="scala-actors-src.jar"/>
   <property name="scala.exec.name" value="scala"/>
   <property name="scalac.exec.name" value="scalac"/>
   <property name="scaladoc.exec.name" value="scaladoc"/>
@@ -866,7 +870,30 @@ GENERATES A DISTRIBUTION
         </section>
       </manifest>
     </jar>
-  <!-- Copy executable files -->
+    	
+    <!-- build source jars -->
+    <jar
+      destfile="${dist.current.dir}/lib/${libsrc.jar.name}"
+      basedir="${src.dir}/library"
+      includes="**/*.scala"
+    />
+    <jar
+      destfile="${dist.current.dir}/lib/${dbcsrc.jar.name}"
+      basedir="${src.dir}/dbc"
+      includes="**/*.scala"
+      />
+    <jar
+      destfile="${dist.current.dir}/lib/${compsrc.jar.name}"
+      basedir="${src.dir}/compiler"
+      includes="**/*.scala"
+    />
+    <jar
+      destfile="${dist.current.dir}/lib/${actorssrc.jar.name}"
+      basedir="${src.dir}/actors"
+      includes="**/*.scala"
+    />
+
+    <!-- Copy executable files -->
     <mkdir dir="${dist.current.dir}/bin"/>
     <copy todir="${dist.current.dir}/bin">
       <fileset dir="${strap.dir}/bin"/>
@@ -931,6 +958,7 @@ GENERATES A DISTRIBUTION
       desc="The Scala library. This is the minimal requirement to run any Scala program."
       link="${sbaz.universe}/scala-library-${version.number}.sbp">
       <libset dir="${dist.current.dir}/lib" includes="${lib.jar.name},${dbc.jar.name},${actors.jar.name}"/>
+      <srcset dir="${dist.current.dir}/lib" includes="${libsrc.jar.name},${dbcsrc.jar.name},${actorssrc.jar.name}"/>
     </quicksbaz>
   <!-- Create the Scala developper package -->
     <quicksbaz
@@ -944,6 +972,7 @@ GENERATES A DISTRIBUTION
       <binset dir="${dist.current.dir}/bin" includes="**"/>
       <docset dir="${dist.current.dir}/doc" includes="**"/>
       <libset dir="${dist.current.dir}/lib" includes="${comp.jar.name}"/>
+      <srcset dir="${dist.current.dir}/lib" includes="${compsrc.jar.name}"/>
       <manset dir="${dist.current.dir}/man" includes="**"/>
     </quicksbaz>
   <!-- Creates the empty umbrella Scala package -->
