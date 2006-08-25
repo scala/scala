@@ -140,8 +140,6 @@ abstract class Models {
     def compare(that : HasTree): Int = {
       val idx = KINDS.indexOf(kind);
       val jdx = KINDS.indexOf(that.kind);
-      System.err.println("" + kind + " " + idx);
-      System.err.println("" + that.kind + " " + jdx);
       if (idx != jdx) return idx - jdx;
       val result = tree.symbol.nameString.compare(that.tree.symbol.nameString);
       if (result != 0) result;
