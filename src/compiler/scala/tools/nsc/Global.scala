@@ -29,13 +29,11 @@ import backend.jvm.GenJVM
 import backend.opt.{Inliners, ClosureElimination, DeadCodeElimination}
 import backend.icode.analysis._
 
-class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
+abstract class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
                                                              with Trees
                                                              with CompilationUnits
 {
-
   // sub-components --------------------------------------------------
-
   object treePrinters extends TreePrinters {
     val global: Global.this.type = Global.this
   }
@@ -336,7 +334,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
   object icodeChecker extends checkers.ICodeChecker()
 
   object typer extends analyzer.Typer(
-    analyzer.NoContext.make(EmptyTree, Global.this.definitions.RootClass, new Scope()))
+    analyzer.NoContext.make(EmptyTree, Global.this.definitions.RootClass, newScope))
 
   def phaseDescriptors: List[SubComponent] = List(
     analyzer.namerFactory,

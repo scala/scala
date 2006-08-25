@@ -44,8 +44,9 @@ import Tokens._
 trait Parsers requires SyntaxAnalyzer {
 
   import global._
+  import RequiresIntsAsPositions._;
   private val glob: global.type = global
-  import posAssigner.atPos
+  import global.posAssigner.atPos;
 
   class Parser(unit: global.CompilationUnit) {
 

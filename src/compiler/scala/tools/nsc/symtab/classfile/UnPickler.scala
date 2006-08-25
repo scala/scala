@@ -23,6 +23,7 @@ import java.io.IOException
 abstract class UnPickler {
   val global: Global
   import global._
+  import RequiresIntsAsPositions._;
 
   def unpickle(bytes: Array[byte], offset: int, classRoot: Symbol, moduleRoot: Symbol, filename: String): unit = try {
     new UnPickle(bytes, offset, classRoot, moduleRoot)
@@ -59,7 +60,7 @@ abstract class UnPickler {
 
     /** The scope associated with given symbol */
     private def symScope(sym: Symbol) = symScopes.get(sym) match {
-      case None => val s = new Scope(); symScopes(sym) = s; s
+      case None => val s = newScope; symScopes(sym) = s; s
       case Some(s) => s
     }
 

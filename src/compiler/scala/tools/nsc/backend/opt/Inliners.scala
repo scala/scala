@@ -14,6 +14,7 @@ import scala.tools.nsc.symtab._;
  */
 abstract class Inliners extends SubComponent {
   import global._;
+  import RequiresIntsAsPositions._;
   import icodes._;
   import icodes.opcodes._;
 

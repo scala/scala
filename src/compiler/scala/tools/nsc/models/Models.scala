@@ -31,7 +31,7 @@ abstract class Models {
   object ARG    extends Kind
   object TPARAM extends Kind
 
-  val KINDS = CONSTRUCTOR :: TPARAM :: CLASS :: TRAIT :: OBJECT :: VAL :: VAR :: DEF :: Nil
+  def KINDS = CLASS :: TRAIT :: OBJECT :: CONSTRUCTOR :: TPARAM :: VAL :: VAR :: DEF :: Nil
 
   def labelFor(kind: Kind): String = kind match {
     case OBJECT => "Object"
@@ -85,11 +85,7 @@ abstract class Models {
     }
   }
 
-  abstract class Listener {
-    def add(from: Composite, model: HasTree): Unit
-    def remove(from: Composite, model: HasTree): Unit
-  }
-  abstract class Model extends Listener
+  abstract class Model;
 
   // def textFor(tp : AbsTypeDef) : String = tp.toString()
   def textFor(tree: Tree): String = {
@@ -141,16 +137,26 @@ abstract class Models {
 
     override def toString(): String = tree.toString()
 
-    def compare (ht: HasTree): Int = {
-      val result = tree.symbol.nameString.compare(ht.tree.symbol.nameString)
-      if (result != 0) result
-      else toString().compare(ht.toString())
+    def compare(that : HasTree): Int = {
+      val idx = KINDS.indexOf(kind);
+      val jdx = KINDS.indexOf(that.kind);
+      System.err.println("" + kind + " " + idx);
+      System.err.println("" + that.kind + " " + jdx);
+      if (idx != jdx) return idx - jdx;
+      val result = tree.symbol.nameString.compare(that.tree.symbol.nameString);
+      if (result != 0) result;
+      else toString().compare(that.toString())
+    }
+    def compare [b >: HasTree <% Ordered[b]](that: b): Int = {
+      if (that.isInstanceOf[HasTree]) {
+        compare(that.asInstanceOf[HasTree]);
+      } else -1;
     }
 
     def kind = kindOf(tree.symbol)
 
-    override def    add(from: Composite, model: HasTree): Unit = { parent.add(from, model) }
-    override def remove(from: Composite, model: HasTree): Unit = { parent.remove(from, model) }
+    //override def    add(from: Composite, model: HasTree): Unit = { parent.add(from, model) }
+    //override def remove(from: Composite, model: HasTree): Unit = { parent.remove(from, model) }
   }
 
   class ImportMod(parent0: Composite) extends HasTree(parent0) {
@@ -171,19 +177,10 @@ abstract class Models {
   trait Composite extends Model {
     import scala.collection.mutable._
 
-    class Members extends HashSet[HasTree] with ObservableSet[HasTree, Members]
+    class Members extends HashSet[HasTree]
     // val members = new Members;
     object members extends Members
 
-    object subscriber extends Subscriber[Message[HasTree] with Undoable, Members] {
-      def notify(pub: Members, event: Message[HasTree] with Undoable): Unit = event match {
-        //case Include(elem) =>    add(Composite.this, i.elem)
-        //case  Remove(elem) => remove(Composite.this, i.elem)
-        case i: Include[HasTree] with Undoable  =>    add(Composite.this, i.elem)
-        case r: Remove [HasTree] with Undoable  => remove(Composite.this, r.elem)
-      }
-    }
-    members.subscribe(subscriber)
 
     def isMember(tree: Tree): Boolean = tree.isInstanceOf[Import] // imports welcome anywhere.
 
@@ -310,7 +307,7 @@ abstract class Models {
       } else super.member(tree, members)
 
       def sym = tree0.symbol
-      if (tree0 == null || sym.pos == Position.NOPOS) null
+      if (tree0 == null || sym.pos == NoPos) null
       else if (!acceptPrivate &&
         tree0.isInstanceOf[ValOrDefDef] && tree0.asInstanceOf[ValOrDefDef].mods.isPrivate) null;
       else tree0;
@@ -336,11 +333,9 @@ abstract class Models {
     override def replacedBy(tree0: Tree): Boolean =
       super.replacedBy(tree0) && tree0.isInstanceOf[ModuleDef]
   }
-
   class AliasTypeMod(parent0: Composite) extends MemberMod(parent0) {
-    def treey = tree.asInstanceOf[AliasTypeDef]
-    override def replacedBy(tree0: Tree): Boolean =
-      super.replacedBy(tree0) && tree0.isInstanceOf[AliasTypeDef]
+    def treey = tree.asInstanceOf[AliasTypeDef];
+    override def replacedBy(tree0 : Tree) : Boolean = (super.replacedBy(tree0) && tree0.isInstanceOf[AliasTypeDef]);
   }
 
   class AbsTypeMod(parent0: Composite) extends HasTree(parent0) {
@@ -348,20 +343,20 @@ abstract class Models {
     override def replacedBy(tree0: Tree): Boolean =
       super.replacedBy(tree0) && tree0.isInstanceOf[AbsTypeDef]
   }
+  def SourceMod(original : CompilationUnit) = new SourceMod(original);
 
-  class SourceMod(val original: CompilationUnit) extends Composite with HasClassObjects {
-    update(original)
-    var listener: Listener = null
-    def update(unit: CompilationUnit) = unit.body match {
-      case pdef: PackageDef => update0(pdef.stats)
+  class SourceMod(val original : CompilationUnit) extends Composite with HasClassObjects {
+    update(original);
+    //var listener : Listener = null;
+    def update(unit : CompilationUnit) = unit.body match {
+      case pdef : PackageDef => try {
+	update0(pdef.stats);
+      } catch {
+        case e : Error => members.clear; update0(pdef.stats);
+      }
       case _ =>
     }
 
-    override def add(from: Composite, model: HasTree): Unit =
-      if (listener != null) listener.add(from, model)
-
-    override def remove(from: Composite, model: HasTree): Unit =
-      if (listener != null) listener.remove(from, model)
 
     override def isMember(tree: Tree): Boolean =
       super.isMember(tree) || tree.isInstanceOf[Import]

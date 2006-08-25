@@ -31,7 +31,18 @@ trait Scopes requires SymbolTable {
 
   object NoScopeEntry extends ScopeEntry(NoSymbol, null)
 
-  class Scope(initElems: ScopeEntry)  {
+  def newScope(initElems : ScopeEntry) : Scope = new NormalScope(initElems);
+  final def newScope : Scope = newScope(null : ScopeEntry);
+  final def newScope(base : Scope) : Scope = newScope(base.elems);
+  final def newScope(decls: List[Symbol]) : Scope = {
+    val ret = newScope;
+    decls.foreach(d => ret.enter(d));
+    ret
+  }
+
+  private class NormalScope(initElems : ScopeEntry) extends Scope(initElems);
+
+  abstract class Scope(initElems: ScopeEntry)  {
 
     var elems: ScopeEntry = initElems
 
@@ -79,7 +90,7 @@ trait Scopes requires SymbolTable {
 
     /** Returns a new scope with the same content as this one. */
     def cloneScope: Scope = {
-      val clone = new Scope()
+      val clone = newScope
       this.toList foreach clone.enter
       clone
     }
@@ -216,7 +227,7 @@ trait Scopes requires SymbolTable {
     def elements: Iterator[Symbol] = toList.elements
 
     def filter(p: Symbol => boolean): Scope =
-      if (!(toList forall p)) new Scope(toList filter p) else this
+      if (!(toList forall p)) newScope(toList filter p) else this
 
     def mkString(start: String, sep: String, end: String) =
       toList.map(.defString).mkString(start, sep, end)

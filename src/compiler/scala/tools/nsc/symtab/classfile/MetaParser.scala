@@ -66,7 +66,7 @@ abstract class MetaParser{
       else if (token == "-") { nextToken(); Flags.CONTRAVARIANT }
       else 0;
     assert(token.startsWith("?"));
-    val sym = owner.newTypeParameter(Position.NOPOS, newTypeName(token)).setFlag(vflag)
+    val sym = owner.newTypeParameter(NoPos, newTypeName(token)).setFlag(vflag)
     nextToken()
     val lo =
       if (token == ">") { nextToken(); parseType() }
@@ -106,7 +106,7 @@ abstract class MetaParser{
   }
 
   protected def parseClass(): unit = {
-    locals = new Scope()
+    locals = newScope
     def parse(): Type = {
       nextToken();
       if (token == "[") {
@@ -128,7 +128,7 @@ abstract class MetaParser{
 
   protected def parseMethod(): unit = {
     val globals = locals
-    locals = if (locals == null) new Scope() else new Scope(locals);
+    locals = if (locals == null) newScope else newScope(locals);
     def parse(): Type = {
       nextToken();
       if (token == "[") PolyType(parseTypeParams(), parse())

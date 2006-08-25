@@ -415,7 +415,7 @@ trait Types requires SymbolTable {
                       (member.owner == sym.owner || {
                          if (self == null) self = this.narrow;
                          !self.memberType(member).matches(self.memberType(sym))}))
-                    members = new Scope(List(member, sym));
+                    members = newScope(List(member, sym));
                 } else {
                   var prevEntry = members lookupEntry sym.name;
                   while (prevEntry != null &&
@@ -1070,7 +1070,7 @@ trait Types requires SymbolTable {
     if (phase.erasedTypes)
       if (parents.isEmpty) ObjectClass.tpe else parents.head
     else {
-      val clazz = owner.newRefinementClass(Position.NOPOS);
+      val clazz = owner.newRefinementClass(NoPos);
       val result = new RefinedType(parents, decls) { override def symbol: Symbol = clazz }
       clazz.setInfo(result);
       result
@@ -1079,7 +1079,7 @@ trait Types requires SymbolTable {
 
   /** the canonical creator for a refined type with an initially empty scope */
   def refinedType(parents: List[Type], owner: Symbol): Type =
-    refinedType(parents, owner, new Scope)
+    refinedType(parents, owner, newScope)
 
   /** the canonical creator for a constant type */
   def ConstantType(value: Constant): ConstantType =
@@ -1299,7 +1299,7 @@ trait Types requires SymbolTable {
       val elems = scope.toList
       val elems1 = mapOver(elems)
       if (elems1 eq elems) scope
-      else new Scope(elems1)
+      else newScope(elems1)
     }
 
     /** Map this function over given list of symbols */
@@ -1499,6 +1499,8 @@ trait Types requires SymbolTable {
         /** The two symbols have the same fully qualified name */
         def corresponds(sym1: Symbol, sym2: Symbol): boolean =
           sym1.name == sym2.name && (sym1.isPackageClass || corresponds(sym1.owner, sym2.owner))
+        assert(sym != NoSymbol);
+        assert(rebind0 != NoSymbol);
         if (!corresponds(sym.owner, rebind0.owner)) {
           if (settings.debug.value) Console.println("ADAPT1 pre = "+pre+", sym = "+sym+sym.locationString+", rebind = "+rebind0+rebind0.locationString)
           val bcs = pre.baseClasses.dropWhile(bc => !corresponds(bc, sym.owner));
@@ -1789,6 +1791,7 @@ trait Types requires SymbolTable {
     sym2.isAbstractType && info2.bounds.containsType(info1) ||
     sym2.isAliasType && tp2.memberType(sym2).substThis(tp2.symbol, tp1) =:= tp1.memberType(sym1)
   }
+
 
   /** A function implementing tp1 matches tp2 */
   private def matchesType(tp1: Type, tp2: Type): boolean = Pair(tp1, tp2) match {
@@ -2224,8 +2227,8 @@ trait Types requires SymbolTable {
 // Errors and Diagnostics ---------------------------------------------------------
 
   /** An exception signalling a type error */
-  class TypeError(val pos: int, val msg: String) extends java.lang.Error(msg) {
-    def this(msg: String) = this(Position.NOPOS, msg)
+  class TypeError(val pos: PositionType, val msg: String) extends java.lang.Error(msg) {
+    def this(msg: String) = this(NoPos, msg)
   }
 
   class NoCommonType(tps: List[Type]) extends java.lang.Error(

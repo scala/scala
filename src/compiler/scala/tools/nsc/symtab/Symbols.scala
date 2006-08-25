@@ -23,9 +23,18 @@ trait Symbols requires SymbolTable {
   type AttrInfo = Triple[Type, List[Constant], List[Pair[Name,Constant]]]
 
   val emptySymbolArray = new Array[Symbol](0)
+  type PositionType;
+  val NoPos : PositionType;
+  val FirstPos : PositionType;
+  implicit def coercePosToInt(pos : PositionType) : Int;
+  def coerceIntToPos(pos : Int) : PositionType;
+  object RequiresIntsAsPositions {
+    implicit def coerceIntToPos0(pos : Int) =
+      coerceIntToPos(pos);
+  }
 
   /** The class for all symbols */
-  abstract class Symbol(initOwner: Symbol, initPos: int, initName: Name) {
+  abstract class Symbol(initOwner: Symbol, initPos: PositionType, initName: Name) {
 
     var rawowner = initOwner
     var rawname = initName
@@ -36,9 +45,10 @@ trait Symbols requires SymbolTable {
     var validTo: Period = NoPeriod
 
     def pos = rawpos
-    def setPos(pos: int): this.type = { this.rawpos = pos; this }
+    def setPos(pos: PositionType): this.type = { this.rawpos = pos; this }
 
     def namePos(source: SourceFile) = {
+      val pos : Int = this.pos;
       val buf = source.content
       if (pos == Position.NOPOS) Position.NOPOS
       else if (isTypeParameter) pos - name.length
@@ -74,39 +84,39 @@ trait Symbols requires SymbolTable {
 
 // Creators -------------------------------------------------------------------
 
-    final def newValue(pos: int, name: Name) =
+    final def newValue(pos: PositionType, name: Name) =
       new TermSymbol(this, pos, name)
-    final def newVariable(pos: int, name: Name) =
+    final def newVariable(pos: PositionType, name: Name) =
       newValue(pos, name).setFlag(MUTABLE)
-    final def newValueParameter(pos: int, name: Name) =
+    final def newValueParameter(pos: PositionType, name: Name) =
       newValue(pos, name).setFlag(PARAM)
-    final def newLocalDummy(pos: int) =
+    final def newLocalDummy(pos: PositionType) =
       newValue(pos, nme.LOCAL(this)).setInfo(NoType)
-    final def newMethod(pos: int, name: Name) =
+    final def newMethod(pos: PositionType, name: Name) =
       newValue(pos, name).setFlag(METHOD)
-    final def newLabel(pos: int, name: Name) =
+    final def newLabel(pos: PositionType, name: Name) =
       newMethod(pos, name).setFlag(LABEL)
-    final def newConstructor(pos: int) =
+    final def newConstructor(pos: PositionType) =
       newMethod(pos, nme.CONSTRUCTOR)
-    final def newModule(pos: int, name: Name, clazz: ClassSymbol) =
+    final def newModule(pos: PositionType, name: Name, clazz: ClassSymbol) =
       new ModuleSymbol(this, pos, name).setFlag(MODULE | FINAL).setModuleClass(clazz)
-    final def newModule(pos: int, name: Name) = {
+    final def newModule(pos: PositionType, name: Name) = {
       val m = new ModuleSymbol(this, pos, name).setFlag(MODULE | FINAL)
       m.setModuleClass(new ModuleClassSymbol(m))
     }
-    final def newPackage(pos: int, name: Name) = {
+    final def newPackage(pos: PositionType, name: Name) = {
       assert(name == nme.ROOT || isPackageClass)
       val m = newModule(pos, name).setFlag(JAVA | PACKAGE)
       m.moduleClass.setFlag(JAVA | PACKAGE)
       m
     }
-    final def newThisSym(pos: int) = {
+    final def newThisSym(pos: PositionType) = {
       newValue(pos, nme.this_).setFlag(SYNTHETIC)
     }
     final def newThisSkolem: Symbol =
       new ThisSkolem(owner, pos, name, this)
         .setFlag(SYNTHETIC | FINAL)
-    final def newImport(pos: int) =
+    final def newImport(pos: PositionType) =
       newValue(pos, nme.IMPORT).setFlag(SYNTHETIC)
     final def newOverloaded(pre: Type, alternatives: List[Symbol]): Symbol =
       newValue(alternatives.head.pos, alternatives.head.name)
@@ -115,28 +125,28 @@ trait Symbols requires SymbolTable {
 
     final def newErrorValue(name: Name) =
       newValue(pos, name).setFlag(SYNTHETIC | IS_ERROR).setInfo(ErrorType)
-    final def newAliasType(pos: int, name: Name) =
+    final def newAliasType(pos: PositionType, name: Name) =
       new TypeSymbol(this, pos, name)
-    final def newAbstractType(pos: int, name: Name) =
+    final def newAbstractType(pos: PositionType, name: Name) =
       new TypeSymbol(this, pos, name).setFlag(DEFERRED)
-    final def newTypeParameter(pos: int, name: Name) =
+    final def newTypeParameter(pos: PositionType, name: Name) =
       newAbstractType(pos, name).setFlag(PARAM)
     final def newTypeSkolem: Symbol =
       new TypeSkolem(owner, pos, name, this)
         .setFlag(flags)
-    final def newClass(pos: int, name: Name) =
+    final def newClass(pos: PositionType, name: Name) =
       new ClassSymbol(this, pos, name)
-    final def newModuleClass(pos: int, name: Name) =
+    final def newModuleClass(pos: PositionType, name: Name) =
       new ModuleClassSymbol(this, pos, name)
-    final def newAnonymousClass(pos: int) =
+    final def newAnonymousClass(pos: PositionType) =
       newClass(pos, nme.ANON_CLASS_NAME.toTypeName)
-    final def newAnonymousFunctionClass(pos: int) = {
+    final def newAnonymousFunctionClass(pos: PositionType) = {
       val anonfun = newClass(pos, nme.ANON_FUN_NAME.toTypeName)
       anonfun.attributes =
         Triple(definitions.SerializableAttr.tpe, List(), List()) :: anonfun.attributes
       anonfun
     }
-    final def newRefinementClass(pos: int) =
+    final def newRefinementClass(pos: PositionType) =
       newClass(pos, nme.REFINE_CLASS_NAME.toTypeName)
     final def newErrorClass(name: Name) = {
       val clazz = newClass(pos, name).setFlag(SYNTHETIC | IS_ERROR)
@@ -860,7 +870,7 @@ trait Symbols requires SymbolTable {
   }
 
   /** A class for term symbols */
-  class TermSymbol(initOwner: Symbol, initPos: int, initName: Name) extends Symbol(initOwner, initPos, initName) {
+  class TermSymbol(initOwner: Symbol, initPos: PositionType, initName: Name) extends Symbol(initOwner, initPos, initName) {
     override def isTerm = true
 
     privateWithin = NoSymbol
@@ -896,7 +906,7 @@ trait Symbols requires SymbolTable {
   }
 
   /** A class for module symbols */
-  class ModuleSymbol(initOwner: Symbol, initPos: int, initName: Name) extends TermSymbol(initOwner, initPos, initName) {
+  class ModuleSymbol(initOwner: Symbol, initPos: PositionType, initName: Name) extends TermSymbol(initOwner, initPos, initName) {
 
     private var flatname = nme.EMPTY
 
@@ -923,7 +933,7 @@ trait Symbols requires SymbolTable {
   }
 
   /** A class for type parameters viewed from inside their scopes */
-  class ThisSkolem(initOwner: Symbol, initPos: int, initName: Name, clazz: Symbol) extends TermSymbol(initOwner, initPos, initName) {
+  class ThisSkolem(initOwner: Symbol, initPos: PositionType, initName: Name, clazz: Symbol) extends TermSymbol(initOwner, initPos, initName) {
     override def deSkolemize = clazz
     override def cloneSymbolImpl(owner: Symbol): Symbol = {
       throw new Error("should not clone a this skolem")
@@ -934,7 +944,7 @@ trait Symbols requires SymbolTable {
   /** A class of type symbols. Alias and abstract types are direct instances
    *  of this class. Classes are instances of a subclass.
    */
-  class TypeSymbol(initOwner: Symbol, initPos: int, initName: Name) extends Symbol(initOwner, initPos, initName) {
+  class TypeSymbol(initOwner: Symbol, initPos: PositionType, initName: Name) extends Symbol(initOwner, initPos, initName) {
     override def isType = true
     privateWithin = NoSymbol
     private var tyconCache: Type = null
@@ -994,7 +1004,7 @@ trait Symbols requires SymbolTable {
   }
 
   /** A class for type parameters viewed from inside their scopes */
-  class TypeSkolem(initOwner: Symbol, initPos: int, initName: Name, typeParam: Symbol) extends TypeSymbol(initOwner, initPos, initName) {
+  class TypeSkolem(initOwner: Symbol, initPos: PositionType, initName: Name, typeParam: Symbol) extends TypeSymbol(initOwner, initPos, initName) {
     override def deSkolemize = typeParam
     override def cloneSymbolImpl(owner: Symbol): Symbol = {
       throw new Error("should not clone a type skolem")
@@ -1005,7 +1015,7 @@ trait Symbols requires SymbolTable {
   }
 
   /** A class for class symbols */
-  class ClassSymbol(initOwner: Symbol, initPos: int, initName: Name) extends TypeSymbol(initOwner, initPos, initName) {
+  class ClassSymbol(initOwner: Symbol, initPos: PositionType, initName: Name) extends TypeSymbol(initOwner, initPos, initName) {
 
     /** The classfile from which this class was loaded. Maybe null. */
     var classFile: AbstractFile = _;
@@ -1078,7 +1088,7 @@ trait Symbols requires SymbolTable {
   /** A class for module class symbols
    *  Note: Not all module classes are of this type; when unpickled, we get plain class symbols!
    */
-  class ModuleClassSymbol(owner: Symbol, pos: int, name: Name) extends ClassSymbol(owner, pos, name) {
+  class ModuleClassSymbol(owner: Symbol, pos: PositionType, name: Name) extends ClassSymbol(owner, pos, name) {
     private var module: Symbol = null
     def this(module: TermSymbol) = {
       this(module.owner, module.pos, module.name.toTypeName)
@@ -1090,14 +1100,14 @@ trait Symbols requires SymbolTable {
   }
 
   /** An object repreesenting a missing symbol */
-  object NoSymbol extends Symbol(null, Position.NOPOS, nme.NOSYMBOL) {
+  object NoSymbol extends Symbol(null, NoPos, nme.NOSYMBOL) {
     setInfo(NoType)
     privateWithin = this
     override def setInfo(info: Type): this.type = { assert(info eq NoType); super.setInfo(info) }
     override def enclClass: Symbol = this
     override def toplevelClass: Symbol = this
     override def enclMethod: Symbol = this
-    override def owner: Symbol = throw new Error()
+    override def owner: Symbol = throw new Error("no-symbol does not have owner")
     override def sourceFile: AbstractFile = null
     override def ownerChain: List[Symbol] = List()
     override def alternatives: List[Symbol] = List()

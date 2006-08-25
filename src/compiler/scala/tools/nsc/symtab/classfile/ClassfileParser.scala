@@ -300,8 +300,8 @@ abstract class ClassfileParser {
     val parents = (superType ::
       (for (val i <- List.range(0, ifaceCount))
        yield pool.getSuperClass(in.nextChar).tpe))
-    instanceDefs = new Scope()
-    staticDefs = new Scope()
+    instanceDefs = newScope
+    staticDefs = newScope
     val classInfo = ClassInfoType(parents, instanceDefs, clazz)
     val staticInfo = ClassInfoType(List(), staticDefs, statics)
 
@@ -329,7 +329,7 @@ abstract class ClassfileParser {
         {
           //System.out.println("adding constructor to " + clazz);//DEBUG
           instanceDefs.enter(
-            clazz.newConstructor(Position.NOPOS)
+            clazz.newConstructor(NoPos)
             .setFlag(clazz.flags & ConstrFlags)
             .setInfo(MethodType(List(), clazz.tpe)))
 
@@ -339,7 +339,7 @@ abstract class ClassfileParser {
             val value = instanceDefs.lookup(nme.value)
             if (value != NoSymbol) {
               instanceDefs.enter(
-                clazz.newConstructor(Position.NOPOS)
+                clazz.newConstructor(NoPos)
                 .setFlag(clazz.flags & ConstrFlags)
                 .setInfo(MethodType(List(value.tpe.resultType), clazz.tpe)))
             }
@@ -358,7 +358,7 @@ abstract class ClassfileParser {
       val name = pool.getName(in.nextChar)
       val info = pool.getType(in.nextChar)
       val sym = getOwner(jflags)
-        .newValue(Position.NOPOS, name).setFlag(sflags)
+        .newValue(NoPos, name).setFlag(sflags)
       sym.setInfo(if ((jflags & JAVA_ACC_ENUM) == 0) info else ConstantType(Constant(sym)))
       setPrivateWithin(sym, jflags)
       parseAttributes(sym, info)
@@ -382,7 +382,7 @@ abstract class ClassfileParser {
             info = MethodType(formals, clazz.tpe)
         }
       val sym = getOwner(jflags)
-        .newMethod(Position.NOPOS, name).setFlag(sflags).setInfo(info)
+        .newMethod(NoPos, name).setFlag(sflags).setInfo(info)
       setPrivateWithin(sym, jflags)
       parseAttributes(sym, info)
       getScope(jflags).enter(sym)
@@ -426,9 +426,9 @@ abstract class ClassfileParser {
             }
             val name = fresh.newName("T_" + sym.name)
             val newtparam =
-              if (covariant) clazz.newAbstractType(Position.NOPOS, name)
+              if (covariant) clazz.newAbstractType(NoPos, name)
               else {
-                val s = sym.newTypeParameter(Position.NOPOS, name)
+                val s = sym.newTypeParameter(NoPos, name)
                 newTParams += s
                 s
               }
@@ -485,7 +485,7 @@ abstract class ClassfileParser {
       index = index + 1
       while (sig(index) != '>') {
         val tpname = subName(':'.==).toTypeName
-        val s = sym.newTypeParameter(Position.NOPOS, tpname)
+        val s = sym.newTypeParameter(NoPos, tpname)
         tparams = tparams + tpname -> s
         val ts = new ListBuffer[Type]
         while (sig(index) == ':') {
@@ -637,7 +637,7 @@ abstract class ClassfileParser {
             (jflags & (JAVA_ACC_PUBLIC | JAVA_ACC_PROTECTED)) != 0 &&
             pool.getClassSymbol(outerIndex) == sym) {
           val innerAlias = getOwner(jflags)
-            .newAliasType(Position.NOPOS, pool.getName(nameIndex).toTypeName)
+            .newAliasType(NoPos, pool.getName(nameIndex).toTypeName)
             .setInfo(pool.getClassSymbol(innerIndex).tpe)
           getScope(jflags).enter(innerAlias)
         }

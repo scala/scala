@@ -123,7 +123,7 @@ object CompileServer extends SocketServer {
             } else {
               if (args contains "-verbose")
                 out.println("[Starting new Scala compile server instance]")
-              compiler = new Global(command.settings, reporter) {
+              compiler = new StdGlobal(command.settings, reporter) {
                 override def inform(msg: String) = out.println(msg)
               }
             }

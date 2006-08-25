@@ -53,11 +53,11 @@ trait Typers requires Analyzer {
       override def isCoercible(tp: Type, pt: Type): boolean = (
         tp.isError || pt.isError ||
         context0.implicitsEnabled && // this condition prevents chains of views
-        inferView(Position.NOPOS, tp, pt, false) != EmptyTree
+        inferView(NoPos, tp, pt, false) != EmptyTree
       )
     }
 
-    private def inferView(pos: int, from: Type, to: Type, reportAmbiguous: boolean): Tree = {
+    private def inferView(pos: PositionType, from: Type, to: Type, reportAmbiguous: boolean): Tree = {
       if (settings.debug.value) log("infer view from "+from+" to "+to);//debug
       if (phase.id > currentRun.typerPhase.id) EmptyTree
       else from match {
@@ -68,7 +68,7 @@ trait Typers requires Analyzer {
       }
     }
 
-    private def inferView(pos: int, from: Type, name: Name, tp: Type, reportAmbiguous: boolean): Tree = {
+    private def inferView(pos: PositionType, from: Type, name: Name, tp: Type, reportAmbiguous: boolean): Tree = {
       val to = refinedType(List(WildcardType), NoSymbol)
       val psym = (if (name.isTypeName) to.symbol.newAbstractType(pos, name)
                   else to.symbol.newValue(pos, name)) setInfo tp
@@ -129,9 +129,9 @@ trait Typers requires Analyzer {
     /** Report a type error.
      *  @param pos    The position where to report the error
      *  @param ex     The exception that caused the error */
-    def reportTypeError(pos0: int, ex: TypeError): unit = {
+    def reportTypeError(pos0: PositionType, ex: TypeError): unit = {
       if (settings.debug.value) ex.printStackTrace()
-      val pos = if (ex.pos == Position.NOPOS) pos0 else ex.pos
+      val pos = if (ex.pos == NoPos) pos0 else ex.pos
       ex match {
         case CyclicReference(sym, info: TypeCompleter) =>
           context.unit.error(
@@ -158,7 +158,7 @@ trait Typers requires Analyzer {
 
     /** Check that type `tp' is not a subtype of itself.
      */
-    def checkNonCyclic(pos: int, tp: Type): boolean = {
+    def checkNonCyclic(pos: PositionType, tp: Type): boolean = {
       def checkNotLocked(sym: Symbol): boolean = {
         sym.initialize
         if (sym hasFlag LOCKED) {
@@ -184,7 +184,7 @@ trait Typers requires Analyzer {
       }
     }
 
-    def checkNonCyclic(pos: int, tp: Type, lockedSym: Symbol): boolean = {
+    def checkNonCyclic(pos: PositionType, tp: Type, lockedSym: Symbol): boolean = {
       lockedSym.setFlag(LOCKED)
       val result = checkNonCyclic(pos, tp)
       lockedSym.resetFlag(LOCKED)
@@ -201,7 +201,7 @@ trait Typers requires Analyzer {
       }
     }
 
-    def checkParamsConvertible(pos: int, tpe: Type): unit = tpe match {
+    def checkParamsConvertible(pos: PositionType, tpe: Type): unit = tpe match {
       case MethodType(formals, restpe) =>
         if (formals exists (.symbol.==(ByNameParamClass)))
           error(pos, "methods with `=>'-parameters cannot be converted to function values");
@@ -635,7 +635,7 @@ trait Typers requires Analyzer {
       reenterTypeParams(cdef.tparams)
       val tparams1 = List.mapConserve(cdef.tparams)(typedAbsTypeDef)
       val tpt1 = checkNoEscaping.privates(clazz.thisSym, typedType(cdef.tpt))
-      val impl1 = newTyper(context.make(cdef.impl, clazz, new Scope()))
+      val impl1 = newTyper(context.make(cdef.impl, clazz, newScope))
         .typedTemplate(cdef.impl, parentTypes(cdef.impl))
       val impl2 = addSyntheticMethods(impl1, clazz, context.unit)
       val ret = copy.ClassDef(cdef, cdef.mods, cdef.name, tparams1, tpt1, impl2)
@@ -647,7 +647,7 @@ trait Typers requires Analyzer {
       //System.out.println("sourcefile of " + mdef.symbol + "=" + mdef.symbol.sourceFile);
       attributes(mdef)
       val clazz = mdef.symbol.moduleClass
-      val impl1 = newTyper(context.make(mdef.impl, clazz, new Scope()))
+      val impl1 = newTyper(context.make(mdef.impl, clazz, newScope))
         .typedTemplate(mdef.impl, parentTypes(mdef.impl))
       val impl2 = addSyntheticMethods(impl1, clazz, context.unit)
 
@@ -1768,7 +1768,7 @@ trait Typers requires Analyzer {
             val parents1 = List.mapConserve(templ.parents)(typedType)
             if (parents1 exists (.tpe.isError)) ErrorType
             else {
-              val decls = new Scope()
+              val decls = newScope
               val self = refinedType(parents1 map (.tpe), context.enclClass.owner, decls)
               newTyper(context.make(templ, self.symbol, decls)).typedRefinement(templ.body)
               self
@@ -1909,7 +1909,7 @@ trait Typers requires Analyzer {
      *  @returns A typed tree if the implicit info can be made to conform to `pt', EmptyTree otherwise.
      *  @pre info.tpe does not contain an error
      */
-    private def typedImplicit(pos: int, info: ImplicitInfo, pt: Type, isLocal: boolean): Tree = {
+    private def typedImplicit(pos: PositionType, info: ImplicitInfo, pt: Type, isLocal: boolean): Tree = {
       if (isCompatible(depoly(info.tpe), pt)) {
         val tree = Ident(info.name) setPos pos
         def fail(reason: String, sym1: Symbol, sym2: Symbol): Tree = {
@@ -1939,7 +1939,7 @@ trait Typers requires Analyzer {
      *  @param  reportAmbiguous  should ambiguous errors be reported? False iff we search for a view
      *              to find out whether one type is coercible to another (@see isCoercible)
      */
-    private def inferImplicit(pos: int, pt: Type, isView: boolean, reportAmbiguous: boolean): Tree = {
+    private def inferImplicit(pos: PositionType, pt: Type, isView: boolean, reportAmbiguous: boolean): Tree = {
 
       if (util.Statistics.enabled) implcnt = implcnt + 1
       val startTime = if (util.Statistics.enabled) System.currentTimeMillis() else 0l

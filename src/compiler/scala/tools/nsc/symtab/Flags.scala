@@ -6,7 +6,6 @@
 package scala.tools.nsc.symtab;
 
 object Flags {
-
   // modifiers
   final val IMPLICIT      = 0x00000001;
   final val FINAL         = 0x00000002;

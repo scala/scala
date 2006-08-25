@@ -14,7 +14,7 @@ import scala.xml.{Text,TextBuffer};
 trait MarkupParsers requires SyntaxAnalyzer {
 
   import global._ ;
-  import posAssigner.atPos;
+  //import posAssigner.atPos;
 
 class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean) /*with scala.xml.parsing.MarkupParser[Tree,Tree] */{
 

@@ -97,7 +97,7 @@ abstract class TreeCheckers extends Analyzer {
               }
             case _ =>
           }
-          if (tree.pos == Position.NOPOS && tree != EmptyTree) {
+          if (tree.pos == NoPos && tree != EmptyTree) {
             error(tree.pos, "tree without position: " + tree)
           } else if (tree.tpe == null && phase.id >= currentRun.typerPhase.id) {
             error(tree.pos, "tree without type: " + tree)

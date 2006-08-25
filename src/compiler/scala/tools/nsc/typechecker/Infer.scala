@@ -203,7 +203,7 @@ trait Infer requires Analyzer {
     def foundReqMsg(found: Type, req: Type): String =
       ";\n found   : " + found.toLongString + "\n required: " + req;
 
-    def error(pos: int, msg: String): unit =
+    def error(pos: PositionType, msg: String): unit =
       context.error(pos, msg);
 
     def errorTree(tree: Tree, msg: String): Tree = {
@@ -211,7 +211,7 @@ trait Infer requires Analyzer {
       setError(tree)
     }
 
-    def typeError(pos: int, found: Type, req: Type): unit =
+    def typeError(pos: PositionType, found: Type, req: Type): unit =
       if (!found.isErroneous && !req.isErroneous) {
         error(pos,
           "type mismatch" + foundReqMsg(found, req) +
@@ -441,7 +441,7 @@ trait Infer requires Analyzer {
     }
 
     /** error if arguments not within bounds. */
-    def checkBounds(pos: int, tparams: List[Symbol], targs: List[Type], prefix: String): unit =
+    def checkBounds(pos: PositionType, tparams: List[Symbol], targs: List[Type], prefix: String): unit =
       if (!isWithinBounds(tparams, targs)) {
         if (!(targs exists (.isErroneous)) && !(tparams exists (.isErroneous)))
           error(pos,

@@ -303,7 +303,7 @@ abstract class LambdaLift extends InfoTransform {
       }
     }
 
-    private def addFreeArgs(pos: int, sym: Symbol, args: List[Tree]) = {
+    private def addFreeArgs(pos: PositionType, sym: Symbol, args: List[Tree]) = {
       def freeArg(fv: Symbol) = atPos(pos)(proxyRef(fv))
       val fvs = freeVars(sym).toList
       if (fvs.isEmpty) args else args ::: (fvs map freeArg)

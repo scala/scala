@@ -13,13 +13,14 @@ import scala.xml.{Text,TextBuffer};
 
 import symtab.Flags.MUTABLE;
 
+
 /** this class builds instance of Tree that represent XML */
 abstract class SymbolicXMLBuilder(make: TreeBuilder, p: Parsers # Parser, preserveWS: Boolean ) {
 
   val global: Global;
   import global._;
-  import posAssigner.atPos;
-
+  import RequiresIntsAsPositions._;
+  import global.posAssigner.atPos;
   //import scala.tools.scalac.ast.{TreeList => myTreeList}
 
   var isPattern:Boolean = _;

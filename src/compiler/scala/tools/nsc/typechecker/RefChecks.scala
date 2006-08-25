@@ -376,7 +376,7 @@ abstract class RefChecks extends InfoTransform {
 // Forward reference checking ---------------------------------------------------
 
     class LevelInfo(val outer: LevelInfo) {
-      val scope: Scope = if (outer == null) new Scope() else new Scope(outer.scope);
+      val scope: Scope = if (outer == null) newScope else newScope(outer.scope);
       var maxindex: int = Integer.MIN_VALUE;
       var refpos: int = _;
       var refsym: Symbol = _;

@@ -537,7 +537,7 @@ abstract class ICodeReader extends ClassfileParser {
      *  TODO: 'isArgument' is always false, should be modified accordingly.
      */
     def freshLocal(idx: Int, kind: TypeKind) = {
-      val sym = method.symbol.newVariable(Position.NOPOS, "loc" + idx).setInfo(kind.toType);
+      val sym = method.symbol.newVariable(NoPos, "loc" + idx).setInfo(kind.toType);
       new Local(sym, kind, false)
     }
 

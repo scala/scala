@@ -32,7 +32,7 @@ trait Contexts requires Analyzer {
       val qual = gen.mkAttributedStableRef(pkg)
       sc = sc.makeNewImport(
         Import(qual, List(Pair(nme.WILDCARD, null)))
-        .setSymbol(NoSymbol.newImport(Position.NOPOS).setInfo(ImportType(qual)))
+        .setSymbol(NoSymbol.newImport(NoPos).setInfo(ImportType(qual)))
         .setType(NoType))
       sc.depth = sc.depth + 1
     }
@@ -142,7 +142,7 @@ trait Contexts requires Analyzer {
       make(unit, tree, owner, scope, imports)
 
     def makeNewScope(tree: Tree, owner: Symbol): Context =
-      make(tree, owner, new Scope(scope))
+      make(tree, owner, newScope(scope))
 
     def make(tree: Tree, owner: Symbol): Context =
       make(tree, owner, scope)
@@ -186,13 +186,13 @@ trait Contexts requires Analyzer {
         throw er;
     }
 
-    def error(pos: int, msg: String): unit =
+    def error(pos: PositionType, msg: String): unit =
       if (reportGeneralErrors)
         unit.error(pos, if (checking) "**** ERROR DURING INTERNAL CHECKING ****\n" + msg else msg)
       else
         throw new TypeError(pos, msg)
 
-    def ambiguousError(pos: int, pre: Type, sym1: Symbol, sym2: Symbol, rest: String): unit = {
+    def ambiguousError(pos: PositionType, pre: Type, sym1: Symbol, sym2: Symbol, rest: String): unit = {
       val msg =
 	("ambiguous reference to overloaded definition,\n" +
 	 "both " + sym1 + sym1.locationString + " of type " + pre.memberType(sym1) +

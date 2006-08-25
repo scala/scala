@@ -51,7 +51,7 @@ abstract class OverridingPairs {
        ((bs1(nshifted) & bs2(nshifted) & (nmask | nmask - 1)) != 0))
     }
 
-    private val decls = new Scope;
+    private val decls = newScope;
     { def fillDecls(bcs: List[Symbol], deferredflag: int): unit =
         if (!bcs.isEmpty) {
           fillDecls(bcs.tail, deferredflag)

@@ -190,7 +190,7 @@ trait CodeFactory requires TransMatcher  {
 
   def  GreaterThanOrEquals(left: Tree , right: Tree ): Tree = Apply(Select(left, nme.GE), List(right));
 
-  def ThrowMatchError(pos: Int, obj: Tree ) =
+  def ThrowMatchError(pos: PositionType, obj: Tree ) =
     atPos(pos) {
       Throw(
         New(

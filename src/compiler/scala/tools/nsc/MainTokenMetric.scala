@@ -44,7 +44,7 @@ object MainTokenMetric {
     val command = new CompilerCommand(List.fromArray(args), error, false)
     reporter = new ConsoleReporter()
     try {
-      val compiler = new Global(command.settings, reporter)
+      val compiler = new StdGlobal(command.settings, reporter)
       tokenMetric(compiler, command.files)
     } catch {
       case ex @ FatalError(msg) =>

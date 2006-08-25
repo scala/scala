@@ -66,7 +66,7 @@ abstract class AddInterfaces extends InfoTransform {
   private class LazyImplClassType(iface: Symbol) extends LazyType {
 
     def implDecls(implClass: Symbol, ifaceDecls: Scope): Scope = {
-      val decls = new Scope()
+      val decls = newScope
       for (val sym <- ifaceDecls.elements) {
         if (isInterfaceMember(sym)) {
           if (needsImplMethod(sym)) {

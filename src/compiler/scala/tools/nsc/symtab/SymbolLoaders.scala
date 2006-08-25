@@ -86,7 +86,7 @@ abstract class SymbolLoaders {
 
     protected def doComplete(root: Symbol): unit = {
       assert(root.isPackageClass, root);
-      val scope = new Scope()
+      val scope = newScope
       root.setInfo(new PackageClassInfoType(scope, root));
 
       /** Is the given name a valid input file base name? */
@@ -94,7 +94,7 @@ abstract class SymbolLoaders {
         name.length() > 0 && !name.endsWith("$class") && name.indexOf("$anon") == -1;
 
       def enterPackage(str: String, completer: SymbolLoader): unit = {
-        val pkg = root.newPackage(Position.NOPOS, newTermName(str));
+        val pkg = root.newPackage(NoPos, newTermName(str));
         pkg.moduleClass.setInfo(completer);
         pkg.setInfo(pkg.moduleClass.tpe);
         root.info.decls.enter(pkg)
@@ -103,8 +103,8 @@ abstract class SymbolLoaders {
       def enterClassAndModule(str: String, completer: SymbolLoader): unit = {
 	val owner = if (root.isRoot) definitions.EmptyPackageClass else root;
 	val name = newTermName(str);
-        val clazz = owner.newClass(Position.NOPOS, name.toTypeName);
-        val module = owner.newModule(Position.NOPOS, name);
+        val clazz = owner.newClass(NoPos, name.toTypeName);
+        val module = owner.newModule(NoPos, name);
         clazz.setInfo(completer);
         module.setInfo(completer);
         module.moduleClass.setInfo(moduleClassLoader);

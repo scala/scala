@@ -62,7 +62,7 @@ object Main extends Object with EvalLoop {
       reporter.info(null, command.usageMsg, true)
     else {
       try {
-        object compiler extends Global(command.settings, reporter);
+        object compiler extends StdGlobal(command.settings, reporter);
 /*
         if (command.settings.Xgenerics.value)
           forever(compiler)

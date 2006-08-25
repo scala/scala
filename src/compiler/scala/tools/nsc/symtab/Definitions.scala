@@ -223,8 +223,8 @@ trait Definitions requires SymbolTable {
     }
 
     private def newClass(owner: Symbol, name: Name, parents: List[Type]): Symbol = {
-      val clazz = owner.newClass(Position.NOPOS, name.toTypeName);
-      clazz.setInfo(ClassInfoType(parents, new Scope(), clazz));
+      val clazz = owner.newClass(NoPos, name.toTypeName);
+      clazz.setInfo(ClassInfoType(parents, newScope, clazz));
       owner.info.decls.enter(clazz);
       clazz
     }
@@ -235,18 +235,18 @@ trait Definitions requires SymbolTable {
       clazz.setInfo(
         PolyType(
           List(tparam),
-          ClassInfoType(List(parent(tparam)), new Scope(), clazz)))
+          ClassInfoType(List(parent(tparam)), newScope, clazz)))
     }
 
     private def newAlias(owner: Symbol, name: Name, alias: Type): Symbol = {
-      val tpsym = owner.newAliasType(Position.NOPOS, name.toTypeName);
+      val tpsym = owner.newAliasType(NoPos, name.toTypeName);
       tpsym.setInfo(alias);
       owner.info.decls.enter(tpsym);
       tpsym
     }
 
     private def newMethod(owner: Symbol, name: Name): Symbol = {
-      val msym = owner.newMethod(Position.NOPOS, name.encode);
+      val msym = owner.newMethod(NoPos, name.encode);
       owner.info.decls.enter(msym);
       msym
     }
@@ -264,7 +264,7 @@ trait Definitions requires SymbolTable {
       newMethod(owner, name).setInfo(PolyType(List(),restpe))
 
     private def newTypeParam(owner: Symbol, index: int): Symbol =
-      owner.newTypeParameter(Position.NOPOS, "T" + index)
+      owner.newTypeParameter(NoPos, "T" + index)
         .setInfo(TypeBounds(AllClass.typeConstructor, AnyClass.typeConstructor));
 
     val boxedClass = new HashMap[Symbol, Symbol]
@@ -435,16 +435,16 @@ trait Definitions requires SymbolTable {
       if (isInitialized) return
       isInitialized = true
       RootClass =
-        NoSymbol.newClass(Position.NOPOS, nme.ROOT.toTypeName)
+        NoSymbol.newClass(NoPos, nme.ROOT.toTypeName)
           .setFlag(FINAL | MODULE | PACKAGE | JAVA).setInfo(rootLoader);
-      RootPackage = NoSymbol.newValue(Position.NOPOS, nme.ROOTPKG)
+      RootPackage = NoSymbol.newValue(NoPos, nme.ROOTPKG)
           .setFlag(FINAL | MODULE | PACKAGE | JAVA)
           .setInfo(PolyType(List(), RootClass.tpe));
 
       EmptyPackage =
-        RootClass.newPackage(Position.NOPOS, nme.EMPTY_PACKAGE_NAME).setFlag(FINAL);
+        RootClass.newPackage(NoPos, nme.EMPTY_PACKAGE_NAME).setFlag(FINAL);
       EmptyPackageClass = EmptyPackage.moduleClass;
-      EmptyPackageClass.setInfo(ClassInfoType(List(), new Scope(), EmptyPackageClass));
+      EmptyPackageClass.setInfo(ClassInfoType(List(), newScope, EmptyPackageClass));
 
       EmptyPackage.setInfo(EmptyPackageClass.tpe)
       RootClass.info.decls.enter(EmptyPackage)
@@ -569,7 +569,7 @@ trait Definitions requires SymbolTable {
       String_+ = newMethod(
         StringClass, "+", anyparam, StringClass.typeConstructor) setFlag FINAL;
 
-      PatternWildcard = NoSymbol.newValue(Position.NOPOS, "_").setInfo(AllClass.typeConstructor);
+      PatternWildcard = NoSymbol.newValue(NoPos, "_").setInfo(AllClass.typeConstructor);
 
       BoxedArrayClass = getClass("scala.runtime.BoxedArray")
       BoxedAnyArrayClass = getClass("scala.runtime.BoxedAnyArray")

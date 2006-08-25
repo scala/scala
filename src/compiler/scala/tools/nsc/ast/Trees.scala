@@ -45,16 +45,18 @@ trait Trees requires Global {
   val NoMods = Modifiers(0)
 
   abstract class Tree {
+    {
+      import util.Statistics;
+      if (Statistics.enabled) nodeCount = nodeCount + 1
+    }
 
-    if (util.Statistics.enabled) nodeCount = nodeCount + 1
+    private var rawpos: PositionType = NoPos
 
-    private var posx: int = Position.NOPOS
-
-    def pos = posx
+    def pos = rawpos
 
     var tpe: Type = _
 
-    def setPos(p: int): this.type = { posx = p; this }
+    def setPos(pos: PositionType): this.type = { rawpos = pos; this }
     def setType(tp: Type): this.type = { tpe = tp; this }
 
     def symbol: Symbol = null
@@ -87,7 +89,7 @@ trait Trees requires Global {
     def duplicate: this.type = (duplicator transform this).asInstanceOf[this.type]
 
     def copyAttrs(tree: Tree): this.type = {
-      posx = tree.posx
+      rawpos = tree.rawpos
       tpe = tree.tpe
       if (hasSymbol) symbol = tree.symbol
       this
@@ -1241,13 +1243,13 @@ trait Trees requires Global {
   }
 
   object posAssigner extends Traverser {
-    private var pos: int = _
+    private var pos: PositionType = _
     override def traverse(t: Tree): unit =
-      if (t != EmptyTree && t.pos == Position.NOPOS) {
+      if (t != EmptyTree && t.pos == NoPos) {
         t.setPos(pos)
         super.traverse(t)
       }
-    def atPos[T <: Tree](pos: int)(tree: T): T = {
+    def atPos[T <: Tree](pos: PositionType)(tree: T): T = {
       this.pos = pos
       traverse(tree)
       tree
@@ -1256,7 +1258,7 @@ trait Trees requires Global {
 
   object resetPos extends Traverser {
     override def traverse(t: Tree): unit = {
-      if (t != EmptyTree) t.setPos(Position.NOPOS)
+      if (t != EmptyTree) t.setPos(NoPos)
       super.traverse(t)
     }
   }

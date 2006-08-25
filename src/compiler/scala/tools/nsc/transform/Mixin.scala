@@ -184,12 +184,12 @@ abstract class Mixin extends InfoTransform {
           sourceModule setInfo sym.tpe
           assert(clazz.sourceModule != NoSymbol)//debug
           parents1 = List()
-          decls1 = new Scope(decls.toList filter isForwarded)
+          decls1 = newScope(decls.toList filter isForwarded)
         } else if (!parents.isEmpty) {
           parents1 = parents.head :: (parents.tail map toInterface)
         }
       }
-      //decls1 = atPhase(phase.next)(new Scope(decls1.toList))//debug
+      //decls1 = atPhase(phase.next)(newScope(decls1.toList))//debug
       if ((parents1 eq parents) && (decls1 eq decls)) tp
       else ClassInfoType(parents1, decls1, clazz);
 
@@ -206,7 +206,7 @@ abstract class Mixin extends InfoTransform {
 
   class MixinTransformer extends Transformer {
     private var self: Symbol = _
-    private val rootContext = erasure.NoContext.make(EmptyTree, RootClass, new Scope())
+    private val rootContext = erasure.NoContext.make(EmptyTree, RootClass, newScope)
     private var localTyper: erasure.Typer = _
     private var enclInterface: Symbol = _
 
@@ -246,7 +246,7 @@ abstract class Mixin extends InfoTransform {
       }
     }
 
-    private def selfRef(pos: int) = gen.mkAttributedIdent(self) setPos pos;
+    private def selfRef(pos: PositionType) = gen.mkAttributedIdent(self) setPos pos;
 
     private def staticRef(sym: Symbol) = {
       sym.owner.info
@@ -259,13 +259,13 @@ abstract class Mixin extends InfoTransform {
 
     private def addNewDefs(clazz: Symbol, stats: List[Tree]): List[Tree] = {
       val newDefs = new ListBuffer[Tree]
-      def attributedDef(pos: int, tree: Tree): Tree = {
+      def attributedDef(pos: PositionType, tree: Tree): Tree = {
         if (settings.debug.value) System.out.println("add new def to " + clazz + ": " + tree);
         localTyper.typed { atPos(pos) { tree } }
       }
       def position(sym: Symbol) =
-        if (sym.pos == Position.NOPOS) clazz.pos else sym.pos
-      def addDef(pos: int, tree: Tree): unit =
+        if (sym.pos == NoPos) clazz.pos else sym.pos
+      def addDef(pos: PositionType, tree: Tree): unit =
         newDefs += attributedDef(pos, tree)
       def addDefDef(sym: Symbol, rhs: List[Symbol] => Tree): unit =
         addDef(position(sym), DefDef(sym, vparamss => rhs(vparamss.head)))

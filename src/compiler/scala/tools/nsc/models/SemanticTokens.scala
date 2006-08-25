@@ -36,7 +36,7 @@ class SemanticTokens(val compiler: Global) {
     if (keywords.isEmpty)
       pos
     else if (pos == source.content.length)
-      Position.NOPOS
+      NoPos
     else if (source.beginsWith(pos, " "))
       eatKeywords(source, pos + 1)
     else if (source.beginsWith(pos, keywords.head + " "))
@@ -49,7 +49,7 @@ class SemanticTokens(val compiler: Global) {
     val keywords =
       "package" :: "val" :: "var" :: "def" :: "class" :: "trait" :: "override" :: "case" ::
       "object" :: "sealed" :: "private" :: "protected" :: Nil
-    if (pos != Position.NOPOS) eatKeyword(source, pos, keywords)
+    if (pos != NoPos) eatKeyword(source, pos, keywords)
     else pos
   }
 
@@ -127,12 +127,14 @@ class SemanticTokens(val compiler: Global) {
     private var doLog = true
     def source = unit.source
 
-    def dbg(tree : Tree) = {(
+    def dbg(tree : Tree) = {
+      def treePos : Int = if (tree != null) tree.pos else -1;
+      (
         "TREE=" + tree +
           (if (tree != null) (" CLASS=" + tree.getClass()) else "") +
             " SYM=" + tree.symbol +
               " POS=" +
-                (new Position(source, if (tree != null) tree.pos else -1)).dbgString
+                (new Position(source, treePos)).dbgString
     )}
 
     val symbols = new HashMap[Symbol,Info];
@@ -194,10 +196,10 @@ class SemanticTokens(val compiler: Global) {
       for (val tree : T <- trees) build(tree)
 
     def build(tree0: Tree) : Unit = try {
-      /* if (tree0.pos != Position.NOPOS) */ tree0 match {
+      /* if (tree0.pos != NoPos) */ tree0 match {
       case tree: ImplDef =>
         val pos = eatKeywords(unit.source, tree.pos)
-        if (pos == Position.NOPOS) {
+        if (pos == NoPos) {
           // inner types.
             // System.err.println("NOPOS: " + tree.getClass() + " " + (new Position(unit.source, tree.pos)).dbgString);
           //Thread.dumpStack();
@@ -210,15 +212,15 @@ class SemanticTokens(val compiler: Global) {
         build(tree.impl.body)
       case tree: ValOrDefDef =>
         if (!tree.symbol.hasFlag(Flags.ACCESSOR)) {
-              {
-                val pos = if (tree.name.toString().equals("<init>")) Position.NOPOS else
-            eatKeywords(unit.source, tree.pos);
+          {
+            val pos : Int = if (tree.name.toString().equals("<init>")) NoPos else
+              eatKeywords(unit.source, tree.pos);
           if (false) System.err.println("VALDEF: tree=" + tree + " sym=" + tree.symbol + " pos0=" +
             tree.symbol.pos + " alias=" + tree.symbol.alias + " pos1=" +
             pos + " pos2=" + tree.pos + " " + unit.source.dbg(tree.pos) + " " + tree.symbol.hasFlag(Flags.SYNTHETIC));
 
-                if (pos != Position.NOPOS && !tree.hasFlag(Flags.SYNTHETIC))
-                    buildDef(tree.symbol, pos);
+          if (pos != NoPos && !tree.hasFlag(Flags.SYNTHETIC))
+            buildDef(tree.symbol, pos);
               }
 
               if (tree.isInstanceOf[DefDef]) {
@@ -226,7 +228,7 @@ class SemanticTokens(val compiler: Global) {
                 build(ddef.tparams);
 
                 for (val l0 <- ddef.vparamss; val arg <- l0) {
-                  val pos0 = if (!unit.source.beginsWith(arg.pos, "val ")) arg.pos;
+                  val pos0 : Int = if (!unit.source.beginsWith(arg.pos, "val ")) arg.pos;
                                              else unit.source.skipWhitespace(arg.pos + ("val ").length());
                   buildDef(arg.symbol, pos0);
                   build(arg.tpt);
@@ -252,18 +254,18 @@ class SemanticTokens(val compiler: Global) {
         //System.err.println("PACKAGE: " + tree.name);
         if (false) {
           val pos = eatKeywords(unit.source, tree.pos)
-          if (pos != Position.NOPOS)
+          if (pos != NoPos)
             buildDef(tree.symbol, pos)
         }
         build(tree.stats)
       case tree: Function =>
-        for (val arg <- tree.vparams) if (arg.pos != Position.NOPOS) {
+        for (val arg <- tree.vparams) if (arg.pos != NoPos) {
           val name = arg.name.toString().trim()
           val pos: Int =
             if (unit.source.beginsWith(arg.pos, "val "))
               unit.source.skipWhitespace(arg.pos + ("val ").length())
             else if (unit.source.content(arg.pos) == ':') {
-              var posx = arg.pos
+              var posx : Int = arg.pos
               while (Character.isWhitespace(unit.source.content(posx - 1))) posx = posx - 1
               posx - name.length()
             } else arg.pos
@@ -281,7 +283,7 @@ class SemanticTokens(val compiler: Global) {
           if (false) System.err.println("NO_ORIGINAL: " + tree + " " + tree.tpe + " " + classes(tree.tpe.getClass()));
         }
         if (tree.tpe != null) buildT(tree1, tree.tpe);
-        def buildT( tree : Tree, tpe : Type) : Unit = if (tree.pos != Position.NOPOS) tpe match {
+        def buildT( tree : Tree, tpe : Type) : Unit = if (tree.pos != NoPos) tpe match {
           case tpe0 : TypeRef => tree match {
             case apt : AppliedTypeTree =>
               buildUse(tpe.symbol, apt.tpt.pos, tpe0);
@@ -461,7 +463,7 @@ class SemanticTokens(val compiler: Global) {
         if (tree.symbol != null) buildUse(tree.symbol, tree.pos, tree.tpe);
         //Thread.dumpStack();
       case tree : AliasTypeDef =>
-        System.err.println("ALIAS: " + tree);
+        //System.err.println("ALIAS: " + tree);
         build(tree.rhs); build(tree.tparams); buildDef(tree.symbol, tree.pos);
           case tree : DocDef     => build(tree.definition);
       case tree: Import => build(tree.expr)
@@ -484,9 +486,9 @@ class SemanticTokens(val compiler: Global) {
   def buildSym(term: Symbol, pos: Int, isDef: Boolean, tpe: Type): Unit =
     if (term.hasFlag(Flags.ACCESSOR))
       buildSym(term.accessed, pos, isDef, tpe)
-    else if (pos == Position.NOPOS) {
-      System.err.println("NOPOS: " + term)
-      Thread.dumpStack()
+    else if (pos == NoPos) {
+      //System.err.println("NOPOS: " + term)
+      //Thread.dumpStack()
     }
     else if (term != NoSymbol) {
       val name = NameTransformer.decode(term.name.toString()).toString().trim()
@@ -515,7 +517,7 @@ class SemanticTokens(val compiler: Global) {
       }
     }
 
-  def selectPos(tree : Select): Int = if (tree.pos == Position.NOPOS) Position.NOPOS else {
+  def selectPos(tree : Select): Int = if (tree.pos == NoPos) NoPos else {
     val buf = unit.source.content
     if (tree.pos >= buf.length) {
       if (false) {
@@ -527,7 +529,7 @@ class SemanticTokens(val compiler: Global) {
       return 0
     }
 
-    val pos =
+    val pos : Int =
       if (buf(tree.pos) != '.') tree.pos
       else {
         def f(x : Int) : Int = {

@@ -50,7 +50,7 @@ abstract class ExplicitOuter extends InfoTransform {
       var decls1 = decls
       if (!(clazz hasFlag INTERFACE)) {
         if (!isStatic(clazz)) {
-          decls1 = new Scope(decls1.toList)
+          decls1 = newScope(decls1.toList)
           val outerAcc = clazz.newMethod(clazz.pos, nme.OUTER)
           if (clazz.isTrait || (decls.toList exists (.isClass)))
             outerAcc.expandName(clazz);
@@ -62,7 +62,7 @@ abstract class ExplicitOuter extends InfoTransform {
             setInfo outerClass(clazz).thisType);
         }
         if (clazz.isTrait) {
-          decls1 = new Scope(decls1.toList)
+          decls1 = newScope(decls1.toList)
           decls1 enter makeMixinConstructor(clazz)
         }
       }

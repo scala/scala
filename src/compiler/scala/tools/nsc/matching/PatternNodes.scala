@@ -17,7 +17,7 @@ trait PatternNodes requires TransMatcher {
   /** Intermediate data structure for algebraic + pattern matcher
    */
   class PatternNode {
-  var pos = Position.FIRSTPOS;
+  var pos = FirstPos;
   var tpe: Type  = _;
   var or: PatternNode = _;
   var and: PatternNode = _;

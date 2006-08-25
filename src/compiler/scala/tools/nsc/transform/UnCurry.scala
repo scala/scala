@@ -205,7 +205,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
       val formals = fun.tpe.typeArgs.init
       val restpe = fun.tpe.typeArgs.last
       anonClass setInfo ClassInfoType(
-        List(ObjectClass.tpe, fun.tpe, ScalaObjectClass.tpe), new Scope(), anonClass);
+        List(ObjectClass.tpe, fun.tpe, ScalaObjectClass.tpe), newScope, anonClass);
       val applyMethod = anonClass.newMethod(fun.pos, nme.apply)
         .setFlag(FINAL).setInfo(MethodType(formals, restpe));
       anonClass.info.decls enter applyMethod;
@@ -245,7 +245,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
       }
     }
 
-    def transformArgs(pos: int, args: List[Tree], formals: List[Type]) = {
+    def transformArgs(pos: PositionType, args: List[Tree], formals: List[Type]) = {
       if (formals.isEmpty) {
         assert(args.isEmpty); List()
       } else {

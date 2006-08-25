@@ -48,7 +48,7 @@ trait Namers requires Analyzer {
       sym
     }
 
-    def updatePosFlags(sym: Symbol, pos: int, flags: int): Symbol = {
+    def updatePosFlags(sym: Symbol, pos: PositionType, flags: int): Symbol = {
       if (settings.debug.value) log("overwriting " + sym);
       val lockedFlag = sym.flags & LOCKED;
       sym.reset(NoType);
@@ -74,11 +74,11 @@ trait Namers requires Analyzer {
     def innerNamer: Namer = {
       if (innerNamerCache == null)
         innerNamerCache = if (!isTemplateContext(context)) this
-                          else new Namer(context.make(context.tree, context.owner, new Scope()));
+                          else new Namer(context.make(context.tree, context.owner, newScope));
       innerNamerCache
     }
 
-    private def doubleDefError(pos: int, sym: Symbol): unit =
+    private def doubleDefError(pos: PositionType, sym: Symbol): unit =
       context.error(pos,
         sym.name.toString() + " is already defined as " +
         (if (sym.hasFlag(CASE)) "case class " + sym.name else sym.toString()));
@@ -98,7 +98,7 @@ trait Namers requires Analyzer {
       sym
     }
 
-    private def enterPackageSymbol(pos: int, name: Name): Symbol = {
+    private def enterPackageSymbol(pos: PositionType, name: Name): Symbol = {
       val cscope = if (context.owner == EmptyPackageClass) RootClass.info.decls
                    else context.scope;
       val p: Symbol = cscope.lookup(name);
@@ -107,7 +107,7 @@ trait Namers requires Analyzer {
       } else {
         val cowner = if (context.owner == EmptyPackageClass) RootClass else context.owner;
         val pkg = cowner.newPackage(pos, name);
-        pkg.moduleClass.setInfo(new PackageClassInfoType(new Scope(), pkg.moduleClass));
+        pkg.moduleClass.setInfo(new PackageClassInfoType(newScope, pkg.moduleClass));
         pkg.setInfo(pkg.moduleClass.tpe);
         enterInScope(pkg)
       }
@@ -117,7 +117,7 @@ trait Namers requires Analyzer {
       if (context.owner.isConstructor && !context.inConstructorSuffix) INCONSTRUCTOR
       else 0l;
 
-    private def enterClassSymbol(pos: int, flags: int, name: Name): Symbol = {
+    private def enterClassSymbol(pos: PositionType, flags: int, name: Name): Symbol = {
       var c: Symbol = context.scope.lookup(name);
       if (c.isType && !currentRun.compiles(c) && context.scope == c.owner.info.decls) {
         updatePosFlags(c, pos, flags);
@@ -139,7 +139,7 @@ trait Namers requires Analyzer {
       c
     }
 
-    private def enterModuleSymbol(pos: int, flags: int, name: Name): Symbol = {
+    private def enterModuleSymbol(pos: PositionType, flags: int, name: Name): Symbol = {
       var m: Symbol = context.scope.lookup(name);
       if (m.isModule && !m.isPackage && !currentRun.compiles(m) && (context.scope == m.owner.info.decls)) {
 
@@ -159,7 +159,7 @@ trait Namers requires Analyzer {
       m
     }
 
-    private def enterCaseFactorySymbol(pos: int, flags: int, name: Name): Symbol = {
+    private def enterCaseFactorySymbol(pos: PositionType, flags: int, name: Name): Symbol = {
       var m: Symbol = context.scope.lookup(name);
       if (m.isTerm && !m.isPackage && !currentRun.compiles(m) && context.scope == m.owner.info.decls) {
         updatePosFlags(m, pos, flags)
@@ -385,7 +385,7 @@ trait Namers requires Analyzer {
         }
       }
       val parents = typer.parentTypes(templ) map checkParent
-      val decls = new Scope();
+      val decls = newScope;
       new Namer(context.make(templ, clazz, decls)).enterSyms(templ.body);
 
       ClassInfoType(parents, decls, clazz)
@@ -509,7 +509,7 @@ trait Namers requires Analyzer {
 	      val expr1 = typer.typedQualifier(expr);
 	      val base = expr1.tpe;
 	      typer.checkStable(expr1);
-              def checkNotRedundant(pos: int, from: Name, to: Name): boolean = {
+              def checkNotRedundant(pos: PositionType, from: Name, to: Name): boolean = {
                 if (!base.symbol.isPackage && base.member(from) != NoSymbol) {
                   val e = context.scope.lookupEntry(to)
                   def warnRedundant(sym: Symbol) =

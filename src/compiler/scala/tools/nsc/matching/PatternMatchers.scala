@@ -370,7 +370,7 @@ trait PatternMatchers requires (TransMatcher with PatternNodes) extends AnyRef w
   }
 
 
-  private def newHeader(pos: Int, casted: Symbol, index: Int): Header = {
+  private def newHeader(pos: PositionType, casted: Symbol, index: Int): Header = {
     //Console.println("newHeader(pos,"+casted+","+index+")");
     //Console.println("  casted.tpe"+casted.tpe);
     //Console.println("  casted.pos "+casted.pos+"  equals firstpos?"+(casted.pos == Position.FIRSTPOS));

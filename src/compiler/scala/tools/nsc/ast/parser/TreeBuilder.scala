@@ -13,8 +13,8 @@ abstract class TreeBuilder {
 
   val global: Global
   import global._
-  import posAssigner.atPos
-
+  import RequiresIntsAsPositions._;
+  import posAssigner.atPos;
   def freshName(prefix: String): Name
 
   def freshName(): Name = freshName("x$")

@@ -174,12 +174,12 @@ object Predef {
 
   def assert(assertion: Boolean): Unit = {
     if (!assertion)
-      throw new Error("assertion failed")
+      throw new AssertionError("assertion failed")
   }
 
   def assert(assertion: Boolean, message: Any): Unit = {
     if (!assertion)
-      throw new Error("assertion failed: " + message)
+      throw new AssertionError("assertion failed: " + message)
   }
 
   def assume(assumption: Boolean): Unit = {
