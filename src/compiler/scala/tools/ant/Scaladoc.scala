@@ -23,7 +23,7 @@ package scala.tools.ant {
   import org.apache.tools.ant.types.{EnumeratedAttribute, Reference}
 
   import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
-  import scala.tools.nsc.{Global, StdGlobal, FatalError, Settings}
+  import scala.tools.nsc.{Global, FatalError, Settings}
   import scala.tools.nsc.doc.DocGenerator
 
   /** An Ant task to document Scala code.
@@ -394,7 +394,7 @@ package scala.tools.ant {
                          .replaceAll("&amp;", "&").replaceAll("&quot;", "\"")
 
       // Compiles the actual code
-      object compiler extends StdGlobal(settings, reporter)
+      object compiler extends Global(settings, reporter)
       try {
         val run = new compiler.Run
         run.compile(sourceFiles.map { f: File => f.toString() })

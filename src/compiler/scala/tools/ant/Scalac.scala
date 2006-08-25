@@ -22,7 +22,7 @@ package scala.tools.ant {
   import org.apache.tools.ant.types.{EnumeratedAttribute, Reference}
 
   import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
-  import scala.tools.nsc.{Global, StdGlobal, FatalError, Settings}
+  import scala.tools.nsc.{Global, FatalError, Settings}
 
   /** An Ant task to compile with the new Scala compiler (NSC).
     * This task can take the following parameters as attributes:<ul>
@@ -477,7 +477,7 @@ package scala.tools.ant {
       }
 
       // Compiles the actual code
-      val compiler = new StdGlobal(settings, reporter)
+      val compiler = new Global(settings, reporter)
       try {
         (new compiler.Run).compile(sourceFiles.map { f:File=>f.toString() })
        } catch {

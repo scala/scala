@@ -220,7 +220,7 @@ object ScriptRunner {
 
       if (settings.nocompdaemon.value) {
         val reporter = new ConsoleReporter
-        val compiler = new StdGlobal(settings, reporter)
+        val compiler = new Global(settings, reporter)
         val cr = new compiler.Run
         cr.compileSources(List(wrappedScript(scriptFile)))
         Pair(compiledPath, reporter.errors == 0)

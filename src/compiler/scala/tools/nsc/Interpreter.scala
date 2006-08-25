@@ -81,7 +81,7 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
   settings.outdir.value = classfilePath.getPath
 
   /** the compiler to compile expressions with */
-  val compiler = new StdGlobal(settings, reporter)
+  val compiler = new Global(settings, reporter)
 
   /** class loader used to load compiled code */
   /* A single class loader is used for all commands interpreted by this Interpreter.
