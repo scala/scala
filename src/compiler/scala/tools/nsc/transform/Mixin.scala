@@ -44,7 +44,9 @@ abstract class Mixin extends InfoTransform {
       var bcs = base.info.baseClasses.dropWhile(prevowner !=).tail
       assert(!bcs.isEmpty/*, "" + prevowner + " " + base.info.baseClasses*/)//DEBUG
       var sym: Symbol = NoSymbol
-      if (settings.debug.value) log("starting rebindsuper " + base + " " + member + ":" + member.tpe + " " + prevowner + " " + base.info.baseClasses);
+      if (settings.debug.value)
+        log("starting rebindsuper " + base + " " + member + ":" + member.tpe +
+            " " + prevowner + " " + base.info.baseClasses)
       while (!bcs.isEmpty && sym == NoSymbol) {
         if (settings.debug.value) {
           val other = bcs.head.info.nonPrivateDecl(member.name);
@@ -53,7 +55,7 @@ abstract class Mixin extends InfoTransform {
         sym = member.overridingSymbol(bcs.head).suchThat(sym => !sym.hasFlag(DEFERRED | BRIDGE))
         bcs = bcs.tail
       }
-      assert(sym != NoSymbol, member);
+      assert(sym != NoSymbol, member)
       sym
     }
 
@@ -103,11 +105,11 @@ abstract class Mixin extends InfoTransform {
       val superclazz = clazz.info.parents.head.symbol
       addMixedinMembers(superclazz)
       //System.out.println("adding members of " + clazz.info.baseClasses.tail.takeWhile(superclazz !=) + " to " + clazz);//DEBUG
-      val mixins = clazz.info.baseClasses.tail.takeWhile(superclazz !=);
+      val mixins = clazz.info.baseClasses.tail.takeWhile(superclazz !=)
       def mixinMembers(mixinClass: Symbol): unit = {
         //Console.println("mixin members of "+mixinClass+" to "+clazz+" "+clazz.info.baseClasses)//DEBUG
         if (mixinClass.isImplClass) {
-          addLateInterfaceMembers(mixinClass.toInterface);
+          addLateInterfaceMembers(mixinClass.toInterface)
           for (val member <- mixinClass.info.decls.toList) {
             if (isForwarded(member) && !member.isImplOnly) {
               val imember = member.overriddenSymbol(mixinClass.toInterface)
@@ -144,10 +146,10 @@ abstract class Mixin extends InfoTransform {
                               setInfo member.tpe.resultType)
                 }
             } else if (member hasFlag SUPERACCESSOR) {
-              val member1 = addMember(clazz, member.cloneSymbol(clazz)) setPos clazz.pos;
-              assert(member1.alias != NoSymbol, member1);
-              val alias1 = rebindSuper(clazz, member.alias, mixinClass);
-              member1.asInstanceOf[TermSymbol] setAlias alias1;
+              val member1 = addMember(clazz, member.cloneSymbol(clazz)) setPos clazz.pos
+              assert(member1.alias != NoSymbol, member1)
+              val alias1 = rebindSuper(clazz, member.alias, mixinClass)
+              member1.asInstanceOf[TermSymbol] setAlias alias1
             } else if (member.isMethod && member.isModule && !(member hasFlag (LIFTED | BRIDGE))) {
               addMember(clazz, member.cloneSymbol(clazz))
                 .setPos(clazz.pos)
@@ -191,7 +193,7 @@ abstract class Mixin extends InfoTransform {
       }
       //decls1 = atPhase(phase.next)(newScope(decls1.toList))//debug
       if ((parents1 eq parents) && (decls1 eq decls)) tp
-      else ClassInfoType(parents1, decls1, clazz);
+      else ClassInfoType(parents1, decls1, clazz)
 
     case MethodType(formals, restp) =>
       toInterfaceMap(
@@ -202,7 +204,8 @@ abstract class Mixin extends InfoTransform {
       tp
   }
 
-  protected def newTransformer(unit: CompilationUnit): Transformer = new MixinTransformer;
+  protected def newTransformer(unit: CompilationUnit): Transformer =
+    new MixinTransformer
 
   class MixinTransformer extends Transformer {
     private var self: Symbol = _
@@ -252,7 +255,8 @@ abstract class Mixin extends InfoTransform {
       sym.owner.info
       sym.owner.owner.info
       if (sym.owner.sourceModule == NoSymbol) {
-        assert(false, "" + sym + " in " + sym.owner + " in " + sym.owner.owner + " " + sym.owner.owner.info.decls.toList)//debug
+        assert(false, "" + sym + " in " + sym.owner + " in " + sym.owner.owner +
+                      " " + sym.owner.owner.info.decls.toList)//debug
       }
       Select(gen.mkAttributedRef(sym.owner.sourceModule), sym)
     }
@@ -290,7 +294,10 @@ abstract class Mixin extends InfoTransform {
                   vparams map (vparam => Ident(vparam.symbol)));
           val rhs1 = localTyper.typed(atPos(stat.pos)(rhs0), stat.symbol.tpe.resultType);
           val rhs2 = atPhase(currentRun.mixinPhase)(transform(rhs1))
-          if (settings.debug.value) log("complete super acc " + stat.symbol + stat.symbol.locationString + " " + rhs1 + " " + stat.symbol.alias + stat.symbol.alias.locationString + "/" + stat.symbol.alias.owner.hasFlag(lateINTERFACE))//debug
+          if (settings.debug.value)
+            log("complete super acc " + stat.symbol + stat.symbol.locationString +
+                " " + rhs1 + " " + stat.symbol.alias + stat.symbol.alias.locationString +
+                "/" + stat.symbol.alias.owner.hasFlag(lateINTERFACE))//debug
           copy.DefDef(stat, mods, name, tparams, List(vparams), tpt, rhs2)
         case _ =>
           stat
@@ -328,7 +335,7 @@ abstract class Mixin extends InfoTransform {
                 }
                 if (sym.isSetter) Assign(accessedRef, Ident(vparams.head)) else accessedRef})
             } else if (sym.isModule && !(sym hasFlag LIFTED)) {
-              val vdef = gen.mkModuleVarDef(sym);
+              val vdef = gen.mkModuleVarDef(sym)
               addDef(position(sym), vdef)
               addDef(position(sym), gen.mkModuleAccessDef(sym, vdef.symbol))
             } else if (!sym.isMethod) {
