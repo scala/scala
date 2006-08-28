@@ -1497,7 +1497,7 @@ trait Typers requires Analyzer {
 
         case DocDef(comment, defn) => {
           val ret = typed(defn, mode, pt)
-          if (onlyPresentation) comments(defn . symbol) = comment;
+          if (comments != null) comments(defn . symbol) = comment;
           ret
         }
         case block @ Block(_, _) =>

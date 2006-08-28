@@ -154,12 +154,9 @@ abstract class SymbolLoaders {
 
       for (val Pair(name, file) <- classes.elements) {
       	val loader = if (!file.isSourceFile) {
-          // System.err.println("CLASSFILE: " + file.file + " in " + file);
       	  new ClassfileLoader(file.classFile, file.sourceFile, file.sourcePath);
       	} else {
       	  assert(file.sourceFile != null);
-      	  //System.err.println("SOURCEFILE: " + file.sourceFile + " in " + file);
-
       	  new SourcefileLoader(file.sourceFile);
       	}
       	enterClassAndModule(name, loader);

@@ -415,7 +415,7 @@ trait Scanners requires SyntaxAnalyzer {
         docBuffer = null
         var openComments = 1
         in.next
-        if (in.ch == '*' && settings.doc.value)
+        if (in.ch == '*' && onlyPresentation)
           docBuffer = new StringBuffer("/**")
         while (openComments > 0) {
           do {

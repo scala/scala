@@ -193,7 +193,9 @@ trait Scopes requires SymbolTable {
         while (e != null && e.sym.name != name) e = e.tail;
       } else {
         e = elems
-        while (e != null && e.sym.name != name) e = e.next;
+        while (e != null && e.sym.name != name) {
+          e = e.next;
+        }
       }
       e
     }

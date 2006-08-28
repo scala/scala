@@ -155,7 +155,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     new SourceReader(charset.newDecoder())
   }
 
-  val classPath0 = new ClassPath(onlyPresentation)
+  val classPath0 = new ClassPath(false && onlyPresentation)
 
   val classPath = new classPath0.Build(
     settings.classpath.value,

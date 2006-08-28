@@ -737,6 +737,10 @@ trait Symbols requires SymbolTable {
     def sourceFile_=(f: AbstractFile): unit =
       throw new Error("sourceFile_= inapplicable for "+this)
 
+    def isFromClassFile : Boolean =
+      (if (isModule) moduleClass else toplevelClass).isFromClassFile;
+
+
 // ToString -------------------------------------------------------------------
 
     /** A tag which (in the ideal case) uniquely identifies class symbols */
@@ -1018,14 +1022,18 @@ trait Symbols requires SymbolTable {
   class ClassSymbol(initOwner: Symbol, initPos: PositionType, initName: Name) extends TypeSymbol(initOwner, initPos, initName) {
 
     /** The classfile from which this class was loaded. Maybe null. */
-    var classFile: AbstractFile = _;
+    var classFile: AbstractFile = null;
     private var source: AbstractFile = null
     override def sourceFile = if (owner.isPackageClass) source else super.sourceFile
     override def sourceFile_=(f: AbstractFile): unit = {
       //System.err.println("set source file of " + this + ": " + f);
       source = f
     }
-
+    override def isFromClassFile = {
+      if (classFile != null) true;
+      else if (owner.isPackageClass) false;
+      else super.isFromClassFile;
+    }
     private var thissym: Symbol = this
     override def isClass: boolean = true
     override def reset(completer: Type): unit = {

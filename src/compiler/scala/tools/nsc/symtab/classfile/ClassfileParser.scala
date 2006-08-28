@@ -65,8 +65,9 @@ abstract class ClassfileParser {
     }
     assert(!busy)
     busy = true
-    if (root.isInstanceOf[ClassSymbol]) {
-      root.asInstanceOf[ClassSymbol].classFile = file
+    root match {
+      case cs : ClassSymbol => cs.classFile = file;
+      case _ =>
     }
 
     this.in = new AbstractFileReader(file)
