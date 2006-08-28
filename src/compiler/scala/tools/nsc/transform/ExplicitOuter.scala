@@ -43,8 +43,11 @@ abstract class ExplicitOuter extends InfoTransform {
       if (sym.owner.isTrait && (sym hasFlag SUPERACCESSOR))
         sym.makeNotPrivate(sym.owner);
       if (sym.owner.isTrait && (sym hasFlag PROTECTED)) sym setFlag notPROTECTED
-      if (sym.isConstructor && !isStatic(sym.owner))
-        MethodType(formals ::: List(outerClass(sym.owner).toInterface.thisType), restpe)
+      if (sym.isConstructor && !isStatic(sym.owner)) {
+        // Move outer paramater to first position
+        MethodType(outerClass(sym.owner).toInterface.thisType :: formals, restpe)
+        //MethodType(formals ::: List(outerClass(sym.owner).toInterface.thisType), restpe)
+      }
       else tp
     case ClassInfoType(parents, decls, clazz) =>
       var decls1 = decls
@@ -126,9 +129,11 @@ abstract class ExplicitOuter extends InfoTransform {
             outerParam = NoSymbol
           case DefDef(_, _, _, vparamss, _, _) =>
             if (tree.symbol.isConstructor && !(isStatic(tree.symbol.owner))) {
-              val lastParam = vparamss.head.last
-              assert(lastParam.name.startsWith(nme.OUTER), tree)
-              outerParam = lastParam.symbol
+              // moved outer param to first position
+              val firstParam = vparamss.head.head
+//              val lastParam = vparamss.head.last
+              assert(firstParam.name.startsWith(nme.OUTER), tree)
+              outerParam = firstParam.symbol
             }
           case _ =>
         }
@@ -279,7 +284,9 @@ abstract class ExplicitOuter extends InfoTransform {
                   else { // (4)
                     val outerField = outerMember(clazz.info).accessed;
                     val outerParam = sym.newValueParameter(sym.pos, nme.OUTER) setInfo outerField.info;
-                    List(vparamss.head ::: List(ValDef(outerParam) setType NoType))
+                    // moved outer param to first position
+                    List((ValDef(outerParam) setType NoType) :: vparamss.head)
+//                    List(vparamss.head ::: List(ValDef(outerParam) setType NoType))
                   }
                 val rhs1 =
                   if (sym.isPrimaryConstructor && sym.isClassConstructor && clazz != ArrayClass)
@@ -307,7 +314,9 @@ abstract class ExplicitOuter extends InfoTransform {
                 gen.mkAttributedQualifier(pre)
               }
             }
-            copy.Apply(tree, sel, args ::: List(outerVal))
+            // moved outer parameter to first position
+            copy.Apply(tree, sel, outerVal :: args)
+//            copy.Apply(tree, sel, args ::: List(outerVal))
           case _ =>
             tree
         }
