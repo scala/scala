@@ -9,30 +9,35 @@
 // $Id$
 
 
-package scala.xml;
+package scala.xml
 
 import scala.runtime.compat.StringBuilder
 
 /** unprefixed attributes have the null namespace
  */
-class UnprefixedAttribute(val key: String, val value: String, val next: MetaData) extends MetaData {
+class UnprefixedAttribute(val key: String, val value: Seq[Node], val next: MetaData) extends MetaData {
 
-  // verify that value is a proper attribute value (references, no &lt;)
+  /** same as this(key, Utility.parseAttributeValue(value), next) */
+  def this(key: String, value: String, next: MetaData) =
+    this(key, Utility.parseAttributeValue(value), next)
+
+  /* verify that value is a proper attribute value (references, no &lt)
   Utility.checkAttributeValue(value) match {
-    case null => ;
-    case msg  => throw new MalformedAttributeException(msg);
+    case null =>
+    case msg  => throw new MalformedAttributeException(msg)
   }
+*/
 
   /** returns a copy of this unprefixed attribute with the given next field*/
   def copy(next: MetaData) =
-    new UnprefixedAttribute(key, value, next);
+    new UnprefixedAttribute(key, value, next)
 
   def equals1(m:MetaData) =
-    !m.isPrefixed && (m.key == key) && (m.value == value);
+    !m.isPrefixed && (m.key == key) && (m.value sameElements value)
 
   /** returns null */
   final def getNamespace(owner: Node): String =
-    null;
+    null
 
   /**
    * Gets value of unqualified (unprefixed) attribute with given key.
@@ -40,34 +45,38 @@ class UnprefixedAttribute(val key: String, val value: String, val next: MetaData
    * @param  key
    * @return ..
    */
-  def getValue(key: String): String =
-    if (key == this.key) value else next.getValue(key);
+  def getValue(key: String): Seq[Node] =
+    if (key == this.key) value else next.getValue(key)
 
   /**
-   * Forwards the call to next.
+   * Forwards the call to next (because caller looks for prefixed attribute).
    *
    * @param  namespace
    * @param  scope
    * @param  key
    * @return ..
    */
-  def getValue(namespace: String, scope: NamespaceBinding, key: String): String =
-    next.getValue(namespace, scope, key);
+  def getValue(namespace: String, scope: NamespaceBinding, key: String): Seq[Node] =
+    next.getValue(namespace, scope, key)
 
   override def hashCode() =
-    key.hashCode() * 7 + value.hashCode() * 53 + next.hashCode();
+    key.hashCode() * 7 + value.hashCode() * 53 + next.hashCode()
 
   /** returns false */
-  final def isPrefixed = false;
+  final def isPrefixed = false
 
   def toString1(sb:StringBuilder): Unit = {
-    sb.append(key);
-    sb.append('=');
-    Utility.appendQuoted(value, sb);
+    sb.append(key)
+    sb.append('=')
+    val sb2 = new StringBuilder()
+    for (val c <- value) {
+      Utility.toXML(c, TopScope, sb2, true)
+    }
+    Utility.appendQuoted(sb2.toString(), sb)
   }
 
   def wellformed(scope: NamespaceBinding): Boolean =
-    (null == next.getValue(null, scope, key)) && next.wellformed(scope);
+    (null == next.getValue(null, scope, key)) && next.wellformed(scope)
 
 }
 

@@ -63,7 +63,7 @@ abstract class NodeSeq extends Seq[Node] {
       val y = this(0);
       val v = y.attribute(k);
       if( v != null ) {
-        NodeSeq.fromSeq(Seq.single(Text(v):Node));
+        v // NodeSeq.fromSeq(Seq.single(Text(v):Node));
       } else
         NodeSeq.Empty
 

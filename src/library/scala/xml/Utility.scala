@@ -241,4 +241,77 @@ object Utility extends AnyRef with parsing.TokenTests {
     null
   }
 
+  /** new
+   */
+  def parseAttributeValue(value:String):Seq[Node] = {
+    val zs:Seq[Char] = value
+    val sb = new StringBuilder()
+    val nb = new NodeBuffer()
+    val it = zs.elements
+    while(it.hasNext) {
+      var c = it.next
+      c match {
+        case '&' =>
+          if(sb.length() > 0) {
+            nb += Text(sb.toString())
+            sb.setLength(0)
+          }
+          it.next match {
+            case '#' =>
+              c = it.next
+              val theChar = parseCharRef ({ ()=> c },{ () => c = it.next },{s => throw new RuntimeException(s)})
+              sb.append(theChar)
+
+            case x =>
+              sb.append(x)
+              c = it.next
+              while(c != ';') {
+                sb.append(c)
+                c = it.next
+              }
+              nb += EntityRef(sb.toString())
+              sb.setLength(0)
+          }
+        case x   =>
+          sb.append(x)
+      }
+    }
+    if(sb.length() > 0) {
+      val x = Text(sb.toString())
+      if(nb.length == 0)
+        return x
+      else
+        nb += x
+    }
+    return nb
+  }
+
+  /** CharRef ::= "&amp;#" '0'..'9' {'0'..'9'} ";"
+   *            | "&amp;#x" '0'..'9'|'A'..'F'|'a'..'f' { hexdigit } ";"
+   *
+   * see [66]
+   */
+  def parseCharRef(ch: () => Char, nextch: () => Unit, reportSyntaxError:(String) => Unit): String = {
+    val hex  = (ch() == 'x') && { nextch(); true };
+    val base = if (hex) 16 else 10;
+    var i = 0;
+    while (ch() != ';') {
+      ch() match {
+        case '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' =>
+          i = i * base + Character.digit( ch(), base );
+        case 'a' | 'b' | 'c' | 'd' | 'e' | 'f'
+           | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' =>
+          if (! hex)
+            reportSyntaxError("hex char not allowed in decimal char ref\n"
+                         +"Did you mean to write &#x ?");
+          else
+            i = i * base + Character.digit(ch(), base);
+        case _ =>
+          reportSyntaxError("character '" + ch() + " not allowed in char ref\n");
+      }
+      nextch();
+    }
+    new String(Predef.Array(i.asInstanceOf[char]))
+  }
+
 }

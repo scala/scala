@@ -9,9 +9,9 @@
 // $Id$
 
 
-package scala.xml;
+package scala.xml
 
-import scala.runtime.compat.StringBuilder;
+import scala.runtime.compat.StringBuilder
 
 /** Attribute information item, and linked list of attribute information items.
  *  These are triples consisting of prefix,key,value. To obtain the namespace,
@@ -27,55 +27,55 @@ abstract class MetaData extends Iterable[MetaData] {
 
   /** appends given MetaData items to this MetaData list */
   def append(m: MetaData): MetaData =
-    next.append(copy(m));
+    next.append(copy(m))
 
-  def apply(s:String) = getValue(s);
+  def apply(s:String) = getValue(s)
 
-  def apply(uri:String, scp:NamespaceBinding, k:String)= getValue(uri, scp, k);
+  def apply(uri:String, scp:NamespaceBinding, k:String)= getValue(uri, scp, k)
 
    def containedIn1(m: MetaData): Boolean =
-     m.equals1(this) || containedIn1(m.next);
+     m.equals1(this) || containedIn1(m.next)
 
   /** returns a copy of this MetaData item with next field set to argument */
-  def copy(next: MetaData): MetaData;
+  def copy(next: MetaData): MetaData
 
   /** if owner is the element of this metadata item, returns namespace */
-  def getNamespace(owner: Node): String;
+  def getNamespace(owner: Node): String
 
-  def hasNext = (Null != next);
+  def hasNext = (Null != next)
 
-  def length: Int = length(0);
+  def length: Int = length(0)
 
-  def length(i: Int): Int = next.length(i + 1);
+  def length(i: Int): Int = next.length(i + 1)
 
-  def isPrefixed: Boolean;
+  def isPrefixed: Boolean
 
-  //def containedIn(m:MetaData): Boolean;
+  //def containedIn(m:MetaData): Boolean
 
-  //def deepCopy: MetaData;
+  //def deepCopy: MetaData
 
-  //def deepCopy(tail:MetaData): MetaData;
+  //def deepCopy(tail:MetaData): MetaData
 
   /** deep equals method */
   override def equals(that: Any) = {
     that match {
       case m: MetaData =>
-        var res = (this.length == m.length) && (this.hashCode() == m.hashCode());
-        val it = this.elements;
+        var res = (this.length == m.length) && (this.hashCode() == m.hashCode())
+        val it = this.elements
         while (res && it.hasNext) { res = it.next.containedIn1(m) }
       res
 
-      case _          => false;
+      case _          => false
     }
   }
 
   /** returns an iterator on attributes */
   def elements = new Iterator[MetaData] {
-    var x: MetaData = MetaData.this;
-    def hasNext = Null != x;
+    var x: MetaData = MetaData.this
+    def hasNext = Null != x
     def next = {
-      val y = x;
-      x = x.next;
+      val y = x
+      x = x.next
       y
     }
   }
@@ -85,78 +85,78 @@ abstract class MetaData extends Iterable[MetaData] {
   def nodes = {
     class NodeProxy(last:MetaData) extends Node {
       override def prefix   = last match {
-        case p:PrefixedAttribute => p.pre;
+        case p:PrefixedAttribute => p.pre
         case _ => null
       }
-      override def label = "@"+last.key;
-      override def child = Text(last.value);
+      override def label = "@"+last.key
+      override def child = Text(last.value)
       override def text = last.value
     }
-    val ns = new Array[Node](this.length);
-    var i = 0;
-    val it = elements;
+    val ns = new Array[Node](this.length)
+    var i = 0
+    val it = elements
     while(it.hasNext) {
-      val a = it.next;
-      ns(i) = new NodeProxy(a);
-      i = i + 1;
+      val a = it.next
+      ns(i) = new NodeProxy(a)
+      i = i + 1
     }
-    val seq = array2seq(ns);
-    NodeSeq.fromSeq(seq);
+    val seq = array2seq(ns)
+    NodeSeq.fromSeq(seq)
   }
    */
 
   /** shallow equals method */
-  def equals1(that: MetaData): Boolean;
+  def equals1(that: MetaData): Boolean
 
   /** filters this sequence of meta data */
   def filter(f: MetaData => Boolean): MetaData = {
-    if (f(this)) copy(next filter f) else next filter f;
+    if (f(this)) copy(next filter f) else next filter f
   }
 
   /** returns key of this MetaData item */
-  def key: String;
+  def key: String
 
   /** returns value of this MetaData item */
-  def value: String;
+  def value: Seq[Node]
 
   /** maps this sequence of meta data */
-  def map(f: MetaData => Text): List[Text] = f(this)::(next map f);
+  def map(f: MetaData => Text): List[Text] = f(this)::(next map f)
 
   /** returns Null or the next MetaData item */
-  def next: MetaData;
+  def next: MetaData
 
   /** gets value of unqualified (unprefixed) attribute with given key */
-  def getValue(key: String): String;
+  def getValue(key: String): Seq[Node]
 
   /** gets value of qualified (prefixed) attribute with given key */
-  def getValue(namespace: String, owner: Node, key: String): String =
-    getValue(namespace, owner.scope, key);
+  def getValue(namespace: String, owner: Node, key: String): Seq[Node] =
+    getValue(namespace, owner.scope, key)
 
   /** gets value of qualified (prefixed) attribute with given key */
-  def getValue(namespace: String, scope: NamespaceBinding, key: String): String;
-  override def hashCode(): Int;
+  def getValue(namespace: String, scope: NamespaceBinding, key: String): Seq[Node]
+  override def hashCode(): Int
 
   def toString1(): String = {
-    val sb = new StringBuilder();
-    toString1(sb);
-    sb.toString();
+    val sb = new StringBuilder()
+    toString1(sb)
+    sb.toString()
   }
 
   //appends string representations of single attribute to StringBuilder
-  def toString1(sb:StringBuilder): Unit;
+  def toString1(sb:StringBuilder): Unit
 
   override def toString(): String = {
-    val sb = new StringBuilder();
-    toString(sb);
-    sb.toString();
+    val sb = new StringBuilder()
+    toString(sb)
+    sb.toString()
   }
 
   def toString(sb: StringBuilder): Unit = {
-    sb.append(' ');
-    toString1(sb);
-    next.toString(sb);
+    sb.append(' ')
+    toString1(sb)
+    next.toString(sb)
   }
 
-  def wellformed(scope: NamespaceBinding): Boolean;
+  def wellformed(scope: NamespaceBinding): Boolean
 
 }

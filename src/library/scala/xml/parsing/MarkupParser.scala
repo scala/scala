@@ -103,13 +103,13 @@ trait MarkupParser requires (MarkupParser with MarkupHandler) extends AnyRef wit
 
     m.getValue("version") match {
       case null  => ;
-      case "1.0" => info_ver = Some("1.0"); n = n + 1;
+      case Text("1.0") => info_ver = Some("1.0"); n = n + 1;
       case _     => reportSyntaxError("cannot deal with versions != 1.0");
     }
 
     m.getValue("encoding") match {
       case null => ;
-      case enc  => if (!isValidIANAEncoding(enc.toString()))
+      case Text(enc)  => if (!isValidIANAEncoding(enc.toString()))
                     reportSyntaxError("\"" + enc + "\" is not a valid encoding");
                   else {
                     info_enc = Some(enc.toString());
@@ -118,8 +118,8 @@ trait MarkupParser requires (MarkupParser with MarkupHandler) extends AnyRef wit
     }
     m.getValue("standalone") match {
       case null => ;
-      case "yes" => info_stdl = Some(true);  n = n + 1;
-      case "no"  => info_stdl = Some(false); n = n + 1;
+      case Text("yes") => info_stdl = Some(true);  n = n + 1;
+      case Text("no")  => info_stdl = Some(false); n = n + 1;
       case _     => reportSyntaxError("either 'yes' or 'no' expected");
     }
 
@@ -141,13 +141,13 @@ trait MarkupParser requires (MarkupParser with MarkupHandler) extends AnyRef wit
 
     m.getValue("version") match {
       case null => ;
-      case "1.0" => info_ver = Some("1.0"); n = n + 1;
+      case Text("1.0") => info_ver = Some("1.0"); n = n + 1;
       case _     => reportSyntaxError("cannot deal with versions != 1.0");
     }
 
     m.getValue("encoding") match {
       case null => ;
-      case enc  => if (!isValidIANAEncoding(enc.toString()))
+      case Text(enc)  => if (!isValidIANAEncoding(enc.toString()))
         reportSyntaxError("\"" + enc + "\" is not a valid encoding");
                    else {
                      info_enc = Some(enc.toString());
@@ -405,6 +405,8 @@ trait MarkupParser requires (MarkupParser with MarkupHandler) extends AnyRef wit
    * see [66]
    */
   def xCharRef(ch: () => Char, nextch: () => Unit): String = {
+    Utility.parseCharRef(ch, nextch, &reportSyntaxError)
+    /*
     val hex  = (ch() == 'x') && { nextch(); true };
     val base = if (hex) 16 else 10;
     var i = 0;
@@ -425,6 +427,7 @@ trait MarkupParser requires (MarkupParser with MarkupHandler) extends AnyRef wit
       nextch();
     }
     new String(Predef.Array(i.asInstanceOf[char]))
+    */
   }
 
 
