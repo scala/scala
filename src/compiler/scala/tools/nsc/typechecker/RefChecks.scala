@@ -1,13 +1,14 @@
-/* NSC -- new scala compiler
- * Copyright 2005 LAMP/EPFL
+/* NSC -- new Scala compiler
+ * Copyright 2005-2006 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
-package scala.tools.nsc.typechecker;
 
-import symtab.Flags._;
-import collection.mutable.HashMap;
-import transform.InfoTransform;
+package scala.tools.nsc.typechecker
+
+import symtab.Flags._
+import collection.mutable.HashMap
+import transform.InfoTransform
 
 /** Post-attribution checking and transformation.
  *  //todo: check whether we always check type parameter bounds.
@@ -24,27 +25,30 @@ import transform.InfoTransform;
  *   - Local modules are replaced by variables and classes
  *   - Calls to case factory methods are replaced by new's.
  *   - eliminate branches in a conditional if the condition is a constant
+ *
+ *  @author Martin Odersky
+ *  @version 1.0
  */
 abstract class RefChecks extends InfoTransform {
 
-  import global._;
-  import definitions._;
-  import typer.{typed, typedOperator, atOwner};
-  import posAssigner.atPos;
+  import global._
+  import definitions._
+  import typer.{typed, typedOperator, atOwner}
+  import posAssigner.atPos
 
   /** the following two members override abstract members in Transform */
-  val phaseName: String = "refchecks";
-  override def phaseNewFlags: long = lateMETHOD;
+  val phaseName: String = "refchecks"
+  override def phaseNewFlags: long = lateMETHOD
 
-  def newTransformer(unit: CompilationUnit): RefCheckTransformer = new RefCheckTransformer(unit);
-  override def changesBaseClasses = false;
+  def newTransformer(unit: CompilationUnit): RefCheckTransformer =
+    new RefCheckTransformer(unit)
+  override def changesBaseClasses = false
 
-  def transformInfo(sym: Symbol, tp: Type): Type = {
+  def transformInfo(sym: Symbol, tp: Type): Type =
     if (sym.isModule && !sym.isStatic) {
-      sym setFlag (lateMETHOD | STABLE);
+      sym setFlag (lateMETHOD | STABLE)
       PolyType(List(), tp)
     } else tp
-  }
 
   class RefCheckTransformer(unit: CompilationUnit) extends Transformer {
 
@@ -74,7 +78,7 @@ abstract class RefChecks extends InfoTransform {
      */
     private def checkAllOverrides(clazz: Symbol): unit = {
 
-      val self = clazz.thisType;
+      val self = clazz.thisType
 
       def infoString(sym: Symbol) = (
 	sym.toString() +
@@ -99,7 +103,7 @@ abstract class RefChecks extends InfoTransform {
 
       /* Check that all conditions for overriding `other' by `member' are met. */
       def checkOverride(clazz: Symbol, member: Symbol, other: Symbol): unit = {
-	val pos = if (member.owner == clazz) member.pos else clazz.pos;
+	val pos = if (member.owner == clazz) member.pos else clazz.pos
 
 	def overrideError(msg: String): unit =
 	  if (other.tpe != ErrorType && member.tpe != ErrorType)
@@ -187,7 +191,7 @@ abstract class RefChecks extends InfoTransform {
 	}
       }
 
-      val opc = new overridingPairs.Cursor(clazz);
+      val opc = new overridingPairs.Cursor(clazz)
       while (opc.hasNext) {
 	//System.out.println("overrides " + opc.overriding/* + ":" + opc.overriding.tpe*/ + opc.overriding.locationString + " " + opc.overridden/* + ":" + opc.overridden.tpe*/ + opc.overridden.locationString + opc.overridden.hasFlag(DEFERRED));//DEBUG
 	if (!opc.overridden.isClass) checkOverride(clazz, opc.overriding, opc.overridden);
@@ -224,7 +228,7 @@ abstract class RefChecks extends InfoTransform {
 	    (if (clazz.isAnonymousClass || clazz.isModuleClass) "object creation impossible"
 	     else if (mustBeMixin) clazz.toString() + " needs to be a mixin"
 	     else clazz.toString() + " needs to be abstract") + ", since " + msg);
-	  clazz.setFlag(ABSTRACT);
+	  clazz.setFlag(ABSTRACT)
 	}
 	for (val member <- clazz.tpe.members)
 	  if ((member hasFlag DEFERRED) && !(clazz hasFlag ABSTRACT)) {
@@ -262,8 +266,8 @@ abstract class RefChecks extends InfoTransform {
      *  3. Check that at most one base type is a case-class.
      */
     private def validateBaseTypes(clazz: Symbol): unit = {
-      val seenTypes = new Array[Type](clazz.info.closure.length);
-      var seenCaseClass = if (clazz hasFlag CASE) clazz else NoSymbol;
+      val seenTypes = new Array[Type](clazz.info.closure.length)
+      var seenCaseClass = if (clazz hasFlag CASE) clazz else NoSymbol
 
       def validateTypes(tps: List[Type], includeSuper: boolean): unit = {
 	if (!tps.isEmpty) {
@@ -273,9 +277,9 @@ abstract class RefChecks extends InfoTransform {
       }
 
       def validateType(tp: Type, includeSuper: boolean): unit = {
-	val baseClass = tp.symbol;
+	val baseClass = tp.symbol
 	if (baseClass.isClass) {
-	  val index = clazz.info.closurePos(baseClass);
+	  val index = clazz.info.closurePos(baseClass)
 	  if (index >= 0) {
 	    if (seenTypes(index) != null && !(seenTypes(index) <:< tp))
 	      unit.error(clazz.pos, "illegal inheritance;\n " + clazz +
@@ -286,23 +290,24 @@ abstract class RefChecks extends InfoTransform {
 	    if (baseClass hasFlag CASE) {
 	      if (seenCaseClass != NoSymbol && seenCaseClass != baseClass)
 		unit.error(clazz.pos, "implementation restriction: case " +
-			   seenCaseClass + " and case " + baseClass + " cannot be combined in one object");
+			   seenCaseClass + " and case " + baseClass +
+                           " cannot be combined in one object");
 	      seenCaseClass = baseClass
 	    }
 	  }
-	  validateTypes(tp.parents, includeSuper);
+	  validateTypes(tp.parents, includeSuper)
 	}
       }
 
-      validateTypes(clazz.info.parents, true);
+      validateTypes(clazz.info.parents, true)
     }
 
   // Variance Checking --------------------------------------------------------
 
-    private val ContraVariance = -1;
-    private val NoVariance = 0;
-    private val CoVariance = 1;
-    private val AnyVariance = 2;
+    private val ContraVariance = -1
+    private val NoVariance = 0
+    private val CoVariance = 1
+    private val AnyVariance = 2
 
     /** Check variance of type variables in this type
      */
@@ -314,15 +319,15 @@ abstract class RefChecks extends InfoTransform {
 	else "invariant";
 
       def relativeVariance(tvar: Symbol): int = {
-	val clazz = tvar.owner;
-	var sym = base;
-	var state = CoVariance;
+	val clazz = tvar.owner
+	var sym = base
+	var state = CoVariance
 	while (sym != clazz && state != AnyVariance) {
 	  //System.out.println("flip: " + sym + " " + sym.isParameter());//DEBUG
 	  if ((sym hasFlag PARAM) && !sym.owner.isConstructor) state = -state;
 	  else if (!sym.owner.isClass) state = AnyVariance;
 	  else if (sym.isAliasType) state = NoVariance;
-	  sym = sym.owner;
+	  sym = sym.owner
 	}
 	state
       }
@@ -347,23 +352,23 @@ abstract class RefChecks extends InfoTransform {
 			 " position in type " + all + " of " + base);
 	    }
 	  }
-	  validateVariance(pre, variance);
-	  validateVarianceArgs(args, variance, sym.typeParams);
+	  validateVariance(pre, variance)
+	  validateVarianceArgs(args, variance, sym.typeParams)
 	case ClassInfoType(parents, decls, symbol) =>
-	  validateVariances(parents, variance);
+	  validateVariances(parents, variance)
 	case RefinedType(parents, decls) =>
-	  validateVariances(parents, variance);
+	  validateVariances(parents, variance)
 	case TypeBounds(lo, hi) =>
-	  validateVariance(lo, -variance);
-	  validateVariance(hi, variance);
+	  validateVariance(lo, -variance)
+	  validateVariance(hi, variance)
 	case MethodType(formals, result) =>
-	  validateVariance(result, variance);
+	  validateVariance(result, variance)
 	case PolyType(tparams, result) =>
-	  validateVariance(result, variance);
+	  validateVariance(result, variance)
       }
 
       def validateVariances(tps: List[Type], variance: int): unit =
-	tps foreach (tp => validateVariance(tp, variance));
+	tps foreach (tp => validateVariance(tp, variance))
 
       def validateVarianceArgs(tps: List[Type], variance: int, tparams: List[Symbol]): unit =
 	(tps zip tparams) foreach {
@@ -376,23 +381,23 @@ abstract class RefChecks extends InfoTransform {
 // Forward reference checking ---------------------------------------------------
 
     class LevelInfo(val outer: LevelInfo) {
-      val scope: Scope = if (outer == null) newScope else newScope(outer.scope);
-      var maxindex: int = Integer.MIN_VALUE;
-      var refpos: int = _;
-      var refsym: Symbol = _;
+      val scope: Scope = if (outer == null) newScope else newScope(outer.scope)
+      var maxindex: int = Integer.MIN_VALUE
+      var refpos: int = _
+      var refsym: Symbol = _
     }
 
-    private var currentLevel: LevelInfo = null;
-    private val symIndex = new HashMap[Symbol, int];
+    private var currentLevel: LevelInfo = null
+    private val symIndex = new HashMap[Symbol, int]
 
     private def pushLevel(): unit =
-      currentLevel = new LevelInfo(currentLevel);
+      currentLevel = new LevelInfo(currentLevel)
 
     private def popLevel(): unit =
-      currentLevel = currentLevel.outer;
+      currentLevel = currentLevel.outer
 
     private def enterSyms(stats: List[Tree]): unit = {
-      var index = -1;
+      var index = -1
       for (val stat <- stats) {
 	index = index + 1;
 	stat match {
@@ -409,15 +414,15 @@ abstract class RefChecks extends InfoTransform {
 
     private def enterReference(pos: int, sym: Symbol): unit =
       if (sym.isLocal) {
-	val e = currentLevel.scope.lookupEntry(sym.name);
+	val e = currentLevel.scope.lookupEntry(sym.name)
 	if (e != null && sym == e.sym) {
-          var l = currentLevel;
+          var l = currentLevel
           while (l.scope != e.owner) l = l.outer;
-	  val symindex = symIndex(sym);
+	  val symindex = symIndex(sym)
 	  if (l.maxindex < symindex) {
-	    l.refpos = pos;
-	    l.refsym = sym;
-	    l.maxindex = symindex;
+	    l.refpos = pos
+	    l.refsym = sym
+	    l.maxindex = symindex
 	  }
 	}
       }
@@ -425,17 +430,17 @@ abstract class RefChecks extends InfoTransform {
 // Transformation ------------------------------------------------------------
 
     override def transformStats(stats: List[Tree], exprOwner: Symbol): List[Tree] = {
-      pushLevel();
-      enterSyms(stats);
-      var index = -1;
+      pushLevel()
+      enterSyms(stats)
+      var index = -1
       val stats1 = stats flatMap { stat => index = index + 1; transformStat(stat, index) }
-      popLevel();
+      popLevel()
       stats1
     }
 
     def transformStat(tree: Tree, index: int): List[Tree] = tree match {
       case ModuleDef(mods, name, impl) =>
-	val sym = tree.symbol;
+	val sym = tree.symbol
 	val cdef = ClassDef(mods | MODULE, name, List(), EmptyTree, impl)
 	  .setPos(tree.pos)
           .setSymbol(sym.moduleClass)
@@ -480,7 +485,7 @@ abstract class RefChecks extends InfoTransform {
 
       /* Convert a reference of a case factory to a new of the class it produces. */
       def toConstructor: Tree = {
-	var tpe = tree.tpe;
+	var tpe = tree.tpe
 	while (!tpe.symbol.isClass) tpe = tpe.resultType;
 	assert(tpe.symbol hasFlag CASE);
 	typedOperator(atPos(tree.pos)(Select(New(TypeTree(tpe)), tpe.symbol.primaryConstructor)));
@@ -515,30 +520,30 @@ abstract class RefChecks extends InfoTransform {
         result
       }
 
-      val savedLocalTyper = localTyper;
-      val sym = tree.symbol;
-      var result = tree;
+      val savedLocalTyper = localTyper
+      val sym = tree.symbol
+      var result = tree
       tree match {
 	case ClassDef(mods, name, tparams, tpe, impl) =>
-	  validateVariance(sym, sym.info, CoVariance);
-	  validateVariance(sym, sym.typeOfThis, CoVariance);
+	  validateVariance(sym, sym.info, CoVariance)
+	  validateVariance(sym, sym.typeOfThis, CoVariance)
 
 	case DefDef(_, _, _, _, _, _) =>
-	  validateVariance(sym, sym.tpe, CoVariance);
+	  validateVariance(sym, sym.tpe, CoVariance)
 
 	case ValDef(_, _, _, _) =>
 	  validateVariance(sym, sym.tpe, if (sym.isVariable) NoVariance else CoVariance);
 
 	case AbsTypeDef(_, _, _, _) =>
-	  validateVariance(sym, sym.info, CoVariance);
+	  validateVariance(sym, sym.info, CoVariance)
 
 	case AliasTypeDef(_, _, _, _) =>
-	  validateVariance(sym, sym.info, CoVariance);
+	  validateVariance(sym, sym.info, CoVariance)
 
 	case Template(_, _) =>
-	  localTyper = localTyper.atOwner(tree, currentOwner);
-	  validateBaseTypes(currentOwner);
-	  checkAllOverrides(currentOwner);
+	  localTyper = localTyper.atOwner(tree, currentOwner)
+	  validateBaseTypes(currentOwner)
+	  checkAllOverrides(currentOwner)
 
 	case TypeTree() =>
 	  new TypeTraverser {
@@ -549,7 +554,7 @@ abstract class RefChecks extends InfoTransform {
 	  } traverse tree.tpe
 
 	case TypeApply(fn, args) =>
-	  checkBounds(fn.tpe.typeParams, args map (.tpe));
+	  checkBounds(fn.tpe.typeParams, args map (.tpe))
 	  if (sym.isSourceMethod && sym.hasFlag(CASE)) result = toConstructor;
 
         case Apply(
@@ -570,14 +575,14 @@ abstract class RefChecks extends InfoTransform {
           }
 
 	case New(tpt) =>
-	  enterReference(tree.pos, tpt.tpe.symbol);
+	  enterReference(tree.pos, tpt.tpe.symbol)
 
 	case Ident(name) =>
 	  if (sym.isSourceMethod && sym.hasFlag(CASE))
 	    result = toConstructor
 	  else if (name != nme.WILDCARD && name != nme.WILDCARD_STAR.toTypeName) {
-	    assert(sym != NoSymbol, tree);//debug
-	    enterReference(tree.pos, sym);
+	    assert(sym != NoSymbol, tree)//debug
+	    enterReference(tree.pos, sym)
 	  }
 
 	case Select(qual, name) =>
@@ -592,13 +597,13 @@ abstract class RefChecks extends InfoTransform {
           }
 	case _ =>
       }
-      result = super.transform(result);
-      localTyper = savedLocalTyper;
+      result = super.transform(result)
+      localTyper = savedLocalTyper
       result
     } catch {
       case ex: TypeError =>
 	if (settings.debug.value) ex.printStackTrace();
-	unit.error(tree.pos, ex.getMessage());
+	unit.error(tree.pos, ex.getMessage())
 	tree
     }
   }

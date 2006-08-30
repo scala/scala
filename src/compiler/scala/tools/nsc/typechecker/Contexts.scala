@@ -1,13 +1,19 @@
-/* NSC -- new scala compiler
- * Copyright 2005 LAMP/EPFL
+/* NSC -- new Scala compiler
+ * Copyright 2005-2006 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
-package scala.tools.nsc.typechecker;
+
+package scala.tools.nsc.typechecker
 
 import symtab.Flags._
 import scala.tools.nsc.util.Position
 
+/** This trait ...
+ *
+ *  @author Martin Odersky
+ *  @version 1.0
+ */
 trait Contexts requires Analyzer {
   import global._
 
@@ -22,7 +28,8 @@ trait Contexts requires Analyzer {
     definitions.RootClass,
     definitions.RootClass.info.decls)
 
-  def rootContext(unit: CompilationUnit): Context = rootContext(unit, EmptyTree, false)
+  def rootContext(unit: CompilationUnit): Context =
+    rootContext(unit, EmptyTree, false)
 
   def rootContext(unit: CompilationUnit, tree: Tree, erasedTypes: boolean): Context = {
     import definitions._
@@ -64,21 +71,22 @@ trait Contexts requires Analyzer {
 
   class Context {
     var unit: CompilationUnit = _
-    var tree: Tree = _;                     // Tree associated with this context
-    var owner: Symbol = NoSymbol;                  // The current owner
-    var scope: Scope = _;                   // The current scope
-    var outer: Context = _;                 // The next outer context
-    var enclClass: Context = _;             // The next outer context whose tree is a
+    var tree: Tree = _                      // Tree associated with this context
+    var owner: Symbol = NoSymbol            // The current owner
+    var scope: Scope = _                    // The current scope
+    var outer: Context = _                  // The next outer context
+    var enclClass: Context = _              // The next outer context whose tree is a
                                             // template or package definition
-    var enclMethod: Context = _;            // The next outer context whose tree is a method
-    var variance: int = _;                  // Variance relative to enclosing class.
-    private var _undetparams: List[Symbol] = List(); // Undetermined type parameters, not inherited to child contexts
+    var enclMethod: Context = _             // The next outer context whose tree is a method
+    var variance: int = _                   // Variance relative to enclosing class.
+    private var _undetparams: List[Symbol] = List() // Undetermined type parameters,
+                                                    // not inherited to child contexts
     var depth: int = 0
     var imports: List[ImportInfo] = List()
 
     var prefix: Type = NoPrefix
-    var inConstructorSuffix = false;         // are we in a secondary constructor
-                                             // after the this constructor call?
+    var inConstructorSuffix = false         // are we in a secondary constructor
+                                            // after the this constructor call?
     var reportAmbiguousErrors = false
     var reportGeneralErrors = false
     var implicitsEnabled = false
@@ -93,7 +101,8 @@ trait Contexts requires Analyzer {
       _undetparams = ps
     }
 
-    def make(unit: CompilationUnit, tree: Tree, owner: Symbol, scope: Scope, imports: List[ImportInfo]): Context = {
+    def make(unit: CompilationUnit, tree: Tree, owner: Symbol,
+             scope: Scope, imports: List[ImportInfo]): Context = {
       val c = new Context
       c.unit = unit
       c.tree = tree
@@ -101,12 +110,14 @@ trait Contexts requires Analyzer {
       c.scope = scope
       tree match {
         case Template(_, _) | PackageDef(_, _) =>
-	  c.enclClass = c;
+	  c.enclClass = c
           c.prefix = c.owner.thisType
           c.inConstructorSuffix = false
 	case _ =>
 	  c.enclClass = this.enclClass
-          c.prefix = if (c.owner != this.owner && c.owner.isTerm) NoPrefix else this.prefix
+          c.prefix =
+            if (c.owner != this.owner && c.owner.isTerm) NoPrefix
+            else this.prefix
           c.inConstructorSuffix = this.inConstructorSuffix
       }
       tree match {
@@ -166,7 +177,8 @@ trait Contexts requires Analyzer {
     def makeConstructorContext = {
       var baseContext = enclClass.outer
       //todo: find out why we need next line
-      while (baseContext.tree.isInstanceOf[Template]) baseContext = baseContext.outer
+      while (baseContext.tree.isInstanceOf[Template])
+        baseContext = baseContext.outer
       val argContext = baseContext.makeNewScope(tree, owner)
       for (val sym <- scope.toList) argContext.scope enter sym
       argContext
@@ -178,12 +190,12 @@ trait Contexts requires Analyzer {
       c
     }
 
-    def error(pos : Int, er : Error): Unit = {
-      val msg = er.getMessage();
+    def error(pos: Int, er: Error): Unit = {
+      val msg = er.getMessage()
       if (reportGeneralErrors)
         unit.error(pos, if (checking) "**** ERROR DURING INTERNAL CHECKING ****\n" + msg else msg)
       else
-        throw er;
+        throw er
     }
 
     def error(pos: PositionType, msg: String): unit =
@@ -222,10 +234,17 @@ trait Contexts requires Analyzer {
 
     override def toString(): String = {
       if (this == NoContext) "NoContext"
-      else owner.toString() + " @ " + tree.getClass() + " " + tree.toString() + ", scope = " + scope.hashCode() + " " + scope.toList + "\n:: " + outer.toString()
+      else owner.toString() + " @ " + tree.getClass() +
+           " " + tree.toString() + ", scope = " + scope.hashCode() +
+           " " + scope.toList + "\n:: " + outer.toString()
     }
 
-    /** Is `sym' accessible as a member of tree `site' with type `pre' in current context?
+    /** Is `sym' accessible as a member of tree `site' with type `pre' in
+     *  current context?
+     *
+     *  @param sym ...
+     *  @param pre ...
+     *  @param superAccess ...
      */
     def isAccessible(sym: Symbol, pre: Type, superAccess: boolean): boolean = {
 
@@ -360,7 +379,7 @@ trait Contexts requires Analyzer {
       if (tpeCache == null) tpeCache = pre.memberType(sym)
       tpeCache
     }
-    override def toString = "ImplicitInfo("+name+","+pre+","+sym+")"
+    override def toString = "ImplicitInfo(" + name + "," + pre + "," + sym + ")"
   }
 
   val NoImplicitInfo = new ImplicitInfo(null, null, null)

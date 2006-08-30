@@ -1,15 +1,21 @@
-/* NSC -- new scala compiler
- * Copyright 2005 LAMP/EPFL
+/* NSC -- new Scala compiler
+ * Copyright 2005-2006 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
-package scala.tools.nsc.typechecker;
 
+package scala.tools.nsc.typechecker
+
+/** This class ...
+ *
+ *  @author Martin Odersky
+ *  @version 1.0
+ */
 abstract class ConstantFolder {
 
-  val global: Global;
-  import global._;
-  import definitions._;
+  val global: Global
+  import global._
+  import definitions._
 
   /** If tree is a constant operation, replace with result. */
   def apply(tree: Tree): Tree = fold(tree, tree match {
@@ -18,7 +24,12 @@ abstract class ConstantFolder {
     case _ => null
   })
 
-  /** If tree is a constant value that can be converted to type `pt', perform the conversion */
+  /** If tree is a constant value that can be converted to type `pt', perform
+   *  the conversion.
+   *
+   *  @param tree ...
+   *  @param pt ...
+   */
   def apply(tree: Tree, pt: Type): Tree = fold(tree, tree.tpe match {
     case ConstantType(x) => x convertTo pt
     case _ => null
