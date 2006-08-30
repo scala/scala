@@ -12,7 +12,25 @@
 package scala.util.regexp ;
 
 
-/** regular word expressions.
+/** regular word expressions. users have to instantiate type member _regexpT &lt;: RegExp (from Base) and a type member _labelT &lt;: Label
+ *  Here is a little example:
+<pre>
+  import scala.util.regexp._
+  import scala.util.automata._
+  object MyLang extends WordExp {
+    type _regexpT = RegExp
+    type _labelT = MyChar
+
+    case class MyChar(c:Char) extends Label
+  }
+  import MyLang._
+  // (a* | b)*
+  val rex = Star(Alt(Star(Letter(MyChar('a'))),Letter(MyChar('b'))))
+  object MyBerriSethi extends WordBerrySethi {
+    override val lang = MyLang
+  }
+  val nfa = MyBerriSethi.automatonFrom(Sequ(rex),1)
+</pre>
  */
 abstract class WordExp extends Base {
 

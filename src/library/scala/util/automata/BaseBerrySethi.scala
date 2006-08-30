@@ -52,16 +52,17 @@ abstract class BaseBerrySethi {
     case Eps => emptySet;
     //case x:Letter => emptySet + posMap(x);  // singleton set
     case x:Meta => compFirst( x.r )
-    case x:Sequ   =>
+    case x:Sequ =>
       var tmp = emptySet;
       val it = x.rs.elements;                       // union
       while( it.hasNext ) {
-      val z = it.next;
-      tmp = tmp incl compFirst( z );
-      if( !z.isNullable )
-        return tmp
-      };
-    tmp
+	val z = it.next
+	tmp = tmp incl compFirst( z )
+	if( !z.isNullable )
+          return tmp
+      }
+      tmp
+    case Star(t)  => compFirst(t);
     case _ => error("unexpected pattern " + Platform.getClass(r));
   }
 
