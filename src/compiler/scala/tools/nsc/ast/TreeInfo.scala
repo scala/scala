@@ -8,13 +8,18 @@ package scala.tools.nsc.ast
 
 import symtab.Flags._
 
+/** This class ...
+ *
+ *  @author Martin Odersky
+ *  @version 1.0
+ */
 abstract class TreeInfo {
 
-  val global: Global;
-  import global._;
+  val global: Global
+  import global._
 
-  def isTerm(tree: Tree): boolean = tree.isTerm;
-  def isType(tree: Tree): boolean = tree.isType;
+  def isTerm(tree: Tree): boolean = tree.isTerm
+  def isType(tree: Tree): boolean = tree.isType
 
   def isOwnerDefinition(tree: Tree): boolean = tree match {
     case PackageDef(_, _)
@@ -25,7 +30,7 @@ abstract class TreeInfo {
     case _ => false
   }
 
-  def isDefinition(tree: Tree): boolean = tree.isDef;
+  def isDefinition(tree: Tree): boolean = tree.isDef
 
   def isDeclaration(tree: Tree): boolean = tree match {
     case DefDef(_, _, _, _, _, EmptyTree)
@@ -66,7 +71,7 @@ abstract class TreeInfo {
       false
   }
 
-  /** Is tree a stable & pure expression?
+  /** Is tree a stable and pure expression?
    */
   def isPureExpr(tree: Tree): boolean = tree match {
     case EmptyTree
@@ -124,7 +129,7 @@ abstract class TreeInfo {
     case _ :: stats1 =>
       superCall(stats1, name)
     case _ =>
-      assert(false, "no supercall to " + mix + " in " + stats);
+      assert(false, "no supercall to " + mix + " in " + stats)
   }
 */
   /** Is name a left-associative operator? */
@@ -160,7 +165,7 @@ abstract class TreeInfo {
     case _ => isDefaultCase(cdef)
   }
 
-  private def isSimple(tp: Type): boolean = true;
+  private def isSimple(tp: Type): boolean = true
   /* If we have run-time types, and these are used for pattern matching,
      we should replace this  by something like:
 

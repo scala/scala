@@ -1213,7 +1213,7 @@ trait Trees requires Global {
   }
 
   class TreeSymSubstituter(from: List[Symbol], to: List[Symbol]) extends Traverser {
-    val symSubst = new SubstSymMap(from, to);
+    val symSubst = new SubstSymMap(from, to)
     override def traverse(tree: Tree): unit = {
       def subst(from: List[Symbol], to: List[Symbol]): unit = {
         if (!from.isEmpty)
