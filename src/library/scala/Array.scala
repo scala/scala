@@ -66,7 +66,7 @@ object Array {
    */
   def range(start: Int, end: Int): Array[Int] = {
     val result = new Array[Int](end - start)
-    for (val i <- start until end) result(i - start) = i
+    for (val i <- Iterator.range(start, end)) result(i - start) = i
     result
   }
 }
