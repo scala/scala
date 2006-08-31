@@ -480,13 +480,13 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
      *  in the template.
      */
     private def bridgeDefs(owner: Symbol): List[Tree] = {
-      //System.out.println("computing bridges for " + owner)//DEBUG
+      //Console.println("computing bridges for " + owner)//DEBUG
       val site = owner.thisType
       val bridgesScope = newScope
       val bridgeTarget = new HashMap[Symbol, Symbol]
       var bridges: List[Tree] = List()
-      val opc = atPhase(phase.prev) {         // to avoid DEFERRED flags for interfaces
-        new overridingPairs.Cursor(owner) {
+      val opc = atPhase(phase.prev.prev) {     // bq: who understands prev comment "to avoid DEFERRED flags for interfaces"
+        new overridingPairs.Cursor(owner) {    //     it seems we want types *before* explicitOuter
           override def parents: List[Type] = List(owner.info.parents.head)
           override def exclude(sym: Symbol): boolean =
             !sym.isMethod || (sym hasFlag (PRIVATE | BRIDGE)) || super.exclude(sym)
@@ -495,8 +495,8 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
       while (opc.hasNext) {
         val member = opc.overriding
         val other = opc.overridden
-        //System.out.println("bridge? " + member + ":" + member.tpe + member.locationString + " to " + other + ":" + other.tpe + other.locationString);//DEBUG
-        if (!atPhase(phase.prev)(member hasFlag DEFERRED)) {
+        //Console.println("bridge? " + member + ":" + member.tpe + member.locationString + " to " + other + ":" + other.tpe + other.locationString);//DEBUG
+        if (!atPhase(phase.prev.prev)(member hasFlag DEFERRED)) {
           val otpe = erasure(other.tpe);
           val bridgeNeeded = atPhase(phase.next) (
             !(other.tpe =:= member.tpe) &&

@@ -119,7 +119,7 @@ abstract class OverridingPairs {
         }
         if (nextEntry != null) {
           overridden = nextEntry.sym;
-          //System.out.println("yield: " + overriding + overriding.locationString + " / " + overridden + overridden.locationString);//DEBUG
+          //Console.println("yield: " + overriding + overriding.locationString + " / " + overridden + overridden.locationString);//DEBUG
           visited addEntry nextEntry
         } else {
           do {
@@ -133,4 +133,3 @@ abstract class OverridingPairs {
     next
   }
 }
-
