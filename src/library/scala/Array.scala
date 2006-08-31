@@ -8,31 +8,41 @@
 
 // $Id$
 
+package scala
 
-package scala;
-
-
-import runtime._
-
+/** This object ...
+ *
+ *  @author Martin Odersky
+ *  @version 1.0
+ */
 object Array {
 
-  /** Copy one array to another
-   *  Equaivalent to System.arraycopy(src, srcPos, dest, destPos, length),
-   *  except that this works also for plymorphic and boxed arrays
+  /** Copy one array to another.
+   *  Equivalent to
+   *    <code>System.arraycopy(src, srcPos, dest, destPos, length)</code>,
+   *  except that this works also for polymorphic and boxed arrays.
+   *
+   *  @param src     ...
+   *  @param srcPos  ...
+   *  @param dest    ...
+   *  @param destPos ...
+   *  @param length  ...
    */
   def copy(src: AnyRef, srcPos: Int, dest: AnyRef, destPos: Int, length: Int): Unit = src match {
-    case xs: BoxedArray =>
+    case xs: runtime.BoxedArray =>
       xs.copyTo(srcPos, dest, destPos, length)
     case _ =>
       dest match {
-        case xs: BoxedArray =>
+        case xs: runtime.BoxedArray =>
           xs.copyFrom(src, srcPos, destPos, length)
         case _ =>
           System.arraycopy(src, srcPos, dest, destPos, length)
       }
   }
 
-  /** Concatenate all argument arrays into a single array
+  /** Concatenate all argument arrays into a single array.
+   *
+   *  @param xs ...
    */
   def concat[T](xs: Array[T]*) = {
     var len = 0
@@ -55,22 +65,27 @@ object Array {
    *  @return the sorted array of all integers in range [from;end).
    */
   def range(start: Int, end: Int): Array[Int] = {
-    val result = new Array[Int](end - start);
-    for (val i <- Iterator.range(start, end)) result(i - start) = i
+    val result = new Array[Int](end - start)
+    for (val i <- start until end) result(i - start) = i
     result
   }
 }
 
+/** This class ...
+ *
+ *  @author Martin Odersky
+ *  @version 1.0
+ */
 [cloneable,serializable]
 final class Array[a](_length: Int) extends Seq[a] {
-  def length: Int = throw new Error();
-  def apply(i: Int): a = throw new Error();
-  def update(i: Int, x: a): Unit = throw new Error();
-  def elements: Iterator[a] = throw new Error();
-  def subArray(from: Int, end: Int): Array[a] = throw new Error();
-  def filter(p: a => Boolean): Array[a] = throw new Error();
-  def map[b](f: a => b): Array[b] = throw new Error();
-  def flatMap[b](f: a => Array[b]): Array[b] = throw new Error();
-  def zip[b](that: Array[b]): Array[Tuple2[a,b]] = throw new Error();
-  def zipWithIndex: Array[Tuple2[a,Int]] = throw new Error();
+  def length: Int = throw new Error()
+  def apply(i: Int): a = throw new Error()
+  def update(i: Int, x: a): Unit = throw new Error()
+  def elements: Iterator[a] = throw new Error()
+  def subArray(from: Int, end: Int): Array[a] = throw new Error()
+  def filter(p: a => Boolean): Array[a] = throw new Error()
+  def map[b](f: a => b): Array[b] = throw new Error()
+  def flatMap[b](f: a => Array[b]): Array[b] = throw new Error()
+  def zip[b](that: Array[b]): Array[Tuple2[a,b]] = throw new Error()
+  def zipWithIndex: Array[Tuple2[a,Int]] = throw new Error()
 }

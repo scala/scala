@@ -9,7 +9,7 @@
 // $Id$
 
 
-package scala;
+package scala
 
 
 /** A <code>Cell</code> is a generic wrapper which completely
@@ -19,4 +19,4 @@ package scala;
  *  @author  Martin Odersky
  *  @version 1.0, 08/08/2003
  */
-case class Cell[+T](elem: T);
+case class Cell[+T](elem: T)

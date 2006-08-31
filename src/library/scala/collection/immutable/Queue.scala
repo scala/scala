@@ -9,11 +9,11 @@
 // $Id$
 
 
-package scala.collection.immutable;
+package scala.collection.immutable
 
 
 object Queue {
-  val Empty: Queue[All] = new Queue();
+  val Empty: Queue[All] = new Queue()
 }
 
 /** <code>Queue</code> objects implement data structures that allow to
@@ -24,14 +24,14 @@ object Queue {
  */
 [serializable]
 class Queue[+A](elem: A*) extends Seq[A] {
-  protected val in: List[A] = Nil;
-  protected val out: List[A] = elem.elements.toList;
+  protected val in: List[A] = Nil
+  protected val out: List[A] = elem.elements.toList
 
   protected def mkQueue[A](i: List[A], o: List[A]): Queue[A] =
     new Queue[A]() {
-      override protected val in = i;
+      override protected val in = i
       override protected val out = o
-    };
+    }
 
   /** Returns the <code>n</code>-th element of this queue.
    *  The first element is at position 0.
@@ -42,28 +42,28 @@ class Queue[+A](elem: A*) extends Seq[A] {
    */
   def apply(n: Int): A =
     if (n < out.length) out.apply(n)
-    else in.reverse.apply(n - out.length);
+    else in.reverse.apply(n - out.length)
 
   /** Returns the elements in the list as an iterator
    */
-  def elements: Iterator[A] = (out ::: in.reverse).elements;
+  def elements: Iterator[A] = (out ::: in.reverse).elements
 
   /** Checks if the queue is empty.
    *
    *  @return true, iff there is no element in the queue.
    */
-  def isEmpty: Boolean = in.isEmpty && out.isEmpty;
+  def isEmpty: Boolean = in.isEmpty && out.isEmpty
 
   /** Returns the length of the queue.
    */
-  def length = in.length + out.length;
+  def length = in.length + out.length
 
   /** Creates a new queue with element added at the end
    *  of the old queue.
    *
    *  @param  elem        the element to insert
    */
-  def +[B >: A](elem: B) = mkQueue(elem :: in, out);
+  def +[B >: A](elem: B) = mkQueue(elem :: in, out)
 
   /** Returns a new queue with all all elements provided by
    *  an <code>Iterable</code> object added at the end of
@@ -74,16 +74,16 @@ class Queue[+A](elem: A*) extends Seq[A] {
    *  @param  iter        an iterable object
    */
   def +[B >: A](iter: Iterable[B]) = {
-    var q: List[B] = in;
-    iter.elements.foreach(e => q = e :: q);
-    mkQueue(q, out);
+    var q: List[B] = in
+    iter.elements.foreach(e => q = e :: q)
+    mkQueue(q, out)
   }
 
   /** Returns a new queue with all elements added.
    *
    *  @param  elems       the elements to add.
    */
-  def enqueue [B >: A](elems: B*) = this + elems;
+  def enqueue [B >: A](elems: B*) = this + elems
 
   /** Returns a tuple with the first element in the queue,
    *  and a new queue with this element removed.
@@ -94,8 +94,8 @@ class Queue[+A](elem: A*) extends Seq[A] {
     val Pair(newOut, newIn) =
       if (out.isEmpty) Pair(in.reverse, Nil)
       else Pair(out, in);
-    if (newOut.isEmpty) error("queue empty");
-    else Pair(newOut.head, mkQueue(newIn, newOut.tail));
+    if (newOut.isEmpty) error("queue empty")
+    else Pair(newOut.head, mkQueue(newIn, newOut.tail))
   }
 
   /** Returns the first element in the queue, or throws an error if there
@@ -105,13 +105,13 @@ class Queue[+A](elem: A*) extends Seq[A] {
    */
   def front: A =
     if (out.isEmpty) {
-      if (in.isEmpty) error("queue empty") else in.last;
+      if (in.isEmpty) error("queue empty") else in.last
     } else
-      out.head;
+      out.head
 
   /** Returns a string representation of this queue.
    */
-  override def toString() = mkString("Queue(", ",", ")");
+  override def toString() = mkString("Queue(", ",", ")")
 
   /** Compares two queues for equality by comparing
    *  each element in the queues.
@@ -138,13 +138,13 @@ class Queue[+A](elem: A*) extends Seq[A] {
          compare each element, starting at index 0. */
       (q.length == this.length) && eqe(0);
 
-    case _ => false; /* o is not a queue: not equal to this. */
+    case _ => false /* o is not a queue: not equal to this. */
   }
 
   override def hashCode(): Int =
     if (isEmpty) 0
     else {
       val q: Pair[A,Queue[A]] = dequeue;
-      q._1.hashCode() + q._2.hashCode();
+      q._1.hashCode() + q._2.hashCode()
     }
 }

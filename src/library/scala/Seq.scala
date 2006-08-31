@@ -9,20 +9,20 @@
 // $Id$
 
 
-package scala;
+package scala
 
-import scala.runtime.compat.StringBuilder;
+import scala.runtime.compat.StringBuilder
 
 object Seq {
 
   /** builds a singleton sequence
    *  @author buraq
    */
-  def single[A](x:A) = new Seq[A] {
-    def length = 1;
-    def elements = Iterator.single(x);
-    override def isDefinedAt(x: Int): Boolean = (x == 0);
-    def apply(i:Int) = x; // caller's responsibility to check isDefinedAt
+  def single[A](x: A) = new Seq[A] {
+    def length = 1
+    def elements = Iterator.single(x)
+    override def isDefinedAt(x: Int): Boolean = (x == 0)
+    def apply(i: Int) = x // caller's responsibility to check isDefinedAt
   }
 /*
   implicit def view[A <% Ordered[A]](xs: Seq[A]): Ordered[Seq[A]] =
@@ -55,63 +55,60 @@ object Seq {
 trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Iterable[A] {
 
   /** Returns the length of the sequence.
-  *
-  *  @return the sequence length.
-  */
-  def length: Int;
+   *
+   *  @return the sequence length.
+   */
+  def length: Int
 
   /** Returns the concatenation of two sequences.
    *
    *  @return concatenation of this sequence with argument
    *  @author buraq
    */
-  def concat[B >: A](that:Seq[B]): Seq[B] = new Seq[B] {
-    def length = Seq.this.length + that.length;
-    def elements: Iterator[B] = Seq.this.elements.append(that.elements);
-    def apply(i:Int) = {
-      if(Seq.this.isDefinedAt(i))
-        Seq.this.apply(i)
-      else
-        that.apply(i - Seq.this.length);
-    }
+  def concat[B >: A](that: Seq[B]): Seq[B] = new Seq[B] {
+    def length = Seq.this.length + that.length
+    def elements: Iterator[B] = Seq.this.elements.append(that.elements)
+    def apply(i: Int) =
+      if (Seq.this.isDefinedAt(i)) Seq.this.apply(i)
+      else that.apply(i - Seq.this.length)
   }
 
   /** Is this partial function defined for the index <code>x</code>?
-  *
-  *  @return true, iff <code>x</code> is a legal sequence index.
-  */
-  def isDefinedAt(x: Int): Boolean = (x >= 0) && (x < length);
+   *
+   *  @return true, iff <code>x</code> is a legal sequence index.
+   */
+  def isDefinedAt(x: Int): Boolean = (x >= 0) && (x < length)
 
   /** Returns the index of the first occurence of the specified
-  *  object in this sequence.
-  *
-  *  @param  elem  element to search for.
-  *  @return the index in this sequence of the first occurence of the specified
-  *  element, or -1 if the sequence does not contain this element.
-  */
+   *  object in this sequence.
+   *
+   *  @param  elem  element to search for.
+   *  @return the index in this sequence of the first occurence of the
+   *          specified element, or -1 if the sequence does not contain
+   *          this element.
+   */
   def indexOf[B >: A](elem: B): Int = {
-    val it = elements;
-    var i = 0;
-    var found = false;
+    val it = elements
+    var i = 0
+    var found = false
     while (!found && it.hasNext) {
       if (it.next == elem) {
-        found = true;
+        found = true
       } else {
         i = i + 1
       }
     }
-    if (found) i else -1;
+    if (found) i else -1
   }
 
-  /** Returns the index of the last occurence of the specified
-  *  element in this sequence, or -1 if the sequence does not
-  *  contain this element.
-  *
-  *  @param  elem   element to search for.
-  *  @return the index in this sequence of the last occurence of the
-  *          specified  element, or -1 if the sequence does not contain
-  *          this element.
-  */
+  /** Returns the index of the last occurence of the specified element
+   *  in this sequence, or -1 if the sequence does not contain this element.
+   *
+   *  @param  elem   element to search for.
+   *  @return the index in this sequence of the last occurence of the
+   *          specified element, or -1 if the sequence does not contain
+   *          this element.
+   */
   def lastIndexOf[B >: A](elem: B): Int = {
     var i = length;
     var found = false;
@@ -125,13 +122,17 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Iterable[A] {
   }
 
   /** Returns the sub-sequence starting from index <code>n</code>.
-  */
-  def take(n: Int): Seq[A] = subseq(0, n);
+   *
+   *  @param n ...
+   */
+  def take(n: Int): Seq[A] = subseq(0, n)
 
   /** Returns a new sub-sequence that drops the first <code>n</code>
-  *  elements of this sequence.
-  */
-  def drop(n: Int): Seq[A] = subseq(n, length - n);
+   *  elements of this sequence.
+   *
+   *  @param n ...
+   */
+  def drop(n: Int): Seq[A] = subseq(n, length - n)
 
   /** Returns a subsequence starting from index <code>from</code>
   *  consisting of <code>len</code> elements.
@@ -153,28 +154,29 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Iterable[A] {
       Predef.error("cannot create subsequence");
 
   /** Transform this sequence into a list of all elements.
-  *
-  *  @return  a list which enumerates all elements of this sequence.
-  */
-  def toList: List[A] = elements.toList;
+   *
+   *  @return  a list which enumerates all elements of this sequence.
+   */
+  def toList: List[A] = elements.toList
 
   /** Converts this sequence to a fresh Array */
-  def toArray[B >: A]: Array[B] = elements.copyToArray(new Array[B](length), 0);
+  def toArray[B >: A]: Array[B] =
+    elements.copyToArray(new Array[B](length), 0)
 
   /** Fills the given array <code>xs</code> with the elements of
-  *  this sequence starting at position <code>start</code>.
-  *
-  *  @param  xs the array to fill.
-  *  @param  start starting index.
-  *  @return the given array <code>xs</code> filled with this list.
-  */
+   *  this sequence starting at position <code>start</code>.
+   *
+   *  @param  xs the array to fill.
+   *  @param  start starting index.
+   *  @return the given array <code>xs</code> filled with this list.
+   */
   def copyToArray[B >: A](xs: Array[B], start: Int): Array[B] =
-    elements.copyToArray(xs, start);
+    elements.copyToArray(xs, start)
 
   /** Customizes the <code>toString</code> method.
-  *
-  *  @return a string representation of this sequence.
-  */
+   *
+   *  @return a string representation of this sequence.
+   */
   override def toString() = mkString(stringPrefix+"(", ",", ")")
 
   /** Returns a string representation of this sequence. The resulting string
@@ -204,7 +206,7 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Iterable[A] {
   }
 
   /** Defines the prefix of the string representation.
-  */
-  protected def stringPrefix: String = "Seq";
+   */
+  protected def stringPrefix: String = "Seq"
 }
 

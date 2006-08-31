@@ -9,7 +9,7 @@
 // $Id$
 
 
-package scala;
+package scala
 
 import Predef._
 
@@ -24,7 +24,8 @@ import Predef._
 object MatchError {
 
   // todo: change pattern matcher so that dummy type parameter T can be removed.
-  def fail[T](source: String, line: Int): Nothing = throw new MatchError(source, line);
+  def fail[T](source: String, line: Int): Nothing =
+    throw new MatchError(source, line)
 
   def report(source: String, line: Int, obj: Any) =
     try {
@@ -36,11 +37,12 @@ object MatchError {
 }
 
 final class MatchError(msg: String) extends Error(msg) {
-    def this(source: String, line: Int) =
-      this(" in '" + source + "' at line " + line);
-    def this(source: String, line: Int, obj: String) =
-      this("for object " + obj + " in '" + source + "' at line " + line);
+  def this(source: String, line: Int) =
+    this(" in '" + source + "' at line " + line)
 
-    def this(ob:Any) =
-      this(ob.toString());
+  def this(source: String, line: Int, obj: String) =
+    this("for object " + obj + " in '" + source + "' at line " + line)
+
+  def this(ob: Any) =
+    this(ob.toString())
 }

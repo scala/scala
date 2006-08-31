@@ -9,38 +9,38 @@
 // $Id$
 
 
-package scala.util.automata ;
+package scala.util.automata
+
+import scala.collection.{immutable, mutable, Map}
+import scala.util.regexp.WordExp
 
 
-import scala.util.regexp.WordExp ;
-
-import scala.collection.{immutable,
-			 mutable,
-			 Map } ;
-
-/** this turns a regexp into a NondetWordAutom using the
+/** This class turns a regexp into a NondetWordAutom using the
  *  celebrated position automata construction (also called Berry-Sethi or
  *  Glushkov)
+ *
+ *  @author Burak Emir
+ *  @version 1.0
  */
 abstract class WordBerrySethi extends BaseBerrySethi {
 
-  override val lang: WordExp;
+  override val lang: WordExp
 
-  type _labelT = this.lang._labelT;
+  type _labelT = this.lang._labelT
 
-  import lang.{Alt, Eps, Letter, Meta, RegExp, Sequ, Star} ;
+  import lang.{Alt, Eps, Letter, Meta, RegExp, Sequ, Star}
 
 
-  protected var labels:mutable.HashSet[_labelT] = _ ;
+  protected var labels:mutable.HashSet[_labelT] = _
   // don't let this fool you, only labelAt is a real, surjective mapping
-  protected var labelAt: immutable.TreeMap[Int, _labelT] = _; // new alphabet "gamma"
+  protected var labelAt: immutable.TreeMap[Int, _labelT] = _ // new alphabet "gamma"
 
-  protected var deltaq: Array[mutable.HashMap[_labelT,List[Int]]] = _;    // delta
+  protected var deltaq: Array[mutable.HashMap[_labelT,List[Int]]] = _ // delta
 
-  protected var defaultq: Array[List[Int]] = _;  // default transitions
+  protected var defaultq: Array[List[Int]] = _ // default transitions
 
-  protected var initials:immutable.Set[Int] = _ ;
-  //NondetWordAutom revNfa ;
+  protected var initials:immutable.Set[Int] = _
+  //NondetWordAutom revNfa
 
   // maps a letter to an Integer ( the position )
   // is not *really* needed (preorder determines position!)
@@ -48,34 +48,36 @@ abstract class WordBerrySethi extends BaseBerrySethi {
 
   /** computes first( r ) where the word regexp r */
   protected override def compFirst(r: RegExp): immutable.Set[Int] = r match {
-    case x:Letter => emptySet + x.pos ;//posMap(x);  // singleton set
+    case x:Letter => emptySet + x.pos //posMap(x);  // singleton set
     case Eps      => emptySet /*ignore*/
-    case _        => super.compFirst(r);
+    case _        => super.compFirst(r)
   }
 
   /** computes last( r ) where the word regexp r */
   protected override def compLast(r: RegExp): immutable.Set[Int] = r match {
-    case x:Letter => emptySet + x.pos; //posMap(x) // singleton set
+    case x:Letter => emptySet + x.pos //posMap(x) // singleton set
     case Eps      => emptySet /*ignore*/
     case _        => super.compLast(r)
   }
 
   /** returns the first set of an expression, setting the follow set along
-   *  the way
+   *  the way.
+   *
+   *  @param fol1 ...
+   *  @param r    ...
+   *  @return     ...
    */
-  protected override def compFollow1( fol1:immutable.Set[Int], r:RegExp ): immutable.Set[Int] =
+  protected override def compFollow1(fol1: immutable.Set[Int], r: RegExp): immutable.Set[Int] =
     r match {
-
       case x:Letter =>
         //val i = posMap( x );
-        val i = x.pos;
-        this.follow.update( i, fol1 );
-        emptySet + i;
-
-      case Eps      => emptySet /*ignore*/
-
-      case _ => super.compFollow1(fol1, r)
-
+        val i = x.pos
+        this.follow.update(i, fol1)
+        emptySet + i
+      case Eps =>
+        emptySet /*ignore*/
+      case _ =>
+        super.compFollow1(fol1, r)
     }
 
   /** returns "Sethi-length" of a pattern, creating the set of position
@@ -84,33 +86,33 @@ abstract class WordBerrySethi extends BaseBerrySethi {
 
 
   /** called at the leaves of the regexp */
-  protected def seenLabel( r:RegExp, i:Int, label: _labelT ): Unit = {
+  protected def seenLabel(r: RegExp, i: Int, label: _labelT): Unit = {
     //Console.println("seenLabel (1)");
     //this.posMap.update( r, i );
     this.labelAt = this.labelAt.update( i, label );
     //@ifdef if( label != Wildcard ) {
-      this.labels += label ;
+      this.labels += label
     //@ifdef }
   }
 
   // overriden in BindingBerrySethi
-  protected def seenLabel( r: RegExp, label: _labelT ): Int = {
+  protected def seenLabel(r: RegExp, label: _labelT): Int = {
     //Console.println("seenLabel (2)");
-    pos = pos + 1;
-    seenLabel( r, pos, label );
+    pos = pos + 1
+    seenLabel(r, pos, label)
     pos
   }
 
 
   // todo: replace global variable pos with acc
   override def traverse(r: RegExp): Unit = r match {
-      case a @ Letter( label ) => a.pos = seenLabel( r, label ) ;
-      case Eps                 => /*ignore*/
-      case _                   => super.traverse(r)
+    case a @ Letter(label) => a.pos = seenLabel(r, label)
+    case Eps               => /*ignore*/
+    case _                 => super.traverse(r)
   }
 
 
-  protected def makeTransition(src: Int, dest:Int, label: _labelT ):Unit = {
+  protected def makeTransition(src: Int, dest: Int, label: _labelT ): Unit = {
     //@ifdef compiler if( label == Wildcard )
     //@ifdef compiler   defaultq.update(src, dest::defaultq( src ))
     //@ifdef compiler else
@@ -122,42 +124,41 @@ abstract class WordBerrySethi extends BaseBerrySethi {
   }
 
   protected def initialize(subexpr: Seq[RegExp]): Unit = {
-    //this.posMap = new mutable.HashMap[RegExp,Int]();
-    this.labelAt = new immutable.TreeMap[Int,_labelT]();
-    this.follow = new mutable.HashMap[Int,immutable.Set[Int]]();
-    this.labels = new mutable.HashSet[_labelT]();
+    //this.posMap = new mutable.HashMap[RegExp,Int]()
+    this.labelAt = new immutable.TreeMap[Int,_labelT]()
+    this.follow = new mutable.HashMap[Int,immutable.Set[Int]]()
+    this.labels = new mutable.HashSet[_labelT]()
 
-    this.pos = 0;
+    this.pos = 0
 
     // determine "Sethi-length" of the regexp
-    //activeBinders = new Vector();
-    var it = subexpr.elements;
-    while( it.hasNext )
-      traverse( it.next );
+    //activeBinders = new Vector()
+    var it = subexpr.elements
+    while (it.hasNext)
+      traverse(it.next)
 
-    //assert ( activeBinders.isEmpty() );
-    this.initials = emptySet + 0;
+    //assert(activeBinders.isEmpty())
+    this.initials = emptySet + 0
   }
 
   protected def initializeAutom(): Unit = {
+    finals   = immutable.TreeMap.Empty[Int, Int] // final states
+    deltaq   = new Array[mutable.HashMap[_labelT, List[Int]]](pos) // delta
+    defaultq = new Array[List[Int]](pos) // default transitions
 
-    finals   = immutable.TreeMap.Empty[Int,Int];        // final states
-    deltaq   = new Array[mutable.HashMap[_labelT,List[Int]]]( pos );   // delta
-    defaultq = new Array[List[Int]]( pos );    // default transitions
-
-    var j = 0;
-    while( j < pos ) {
-      deltaq( j ) = new mutable.HashMap[_labelT,List[Int]]();
-      defaultq( j ) = Nil;
+    var j = 0
+    while (j < pos) {
+      deltaq(j) = new mutable.HashMap[_labelT,List[Int]]()
+      defaultq(j) = Nil
       j = j + 1
     }
   }
 
   protected def collectTransitions(): Unit = {  // make transitions
-    //Console.println("WBS.collectTrans, this.follow.keys = "+this.follow.keys);
-    //Console.println("WBS.collectTrans, pos = "+this.follow.keys);
-    var j = 0; while( j < pos ) {
-      //Console.println("WBS.collectTrans, j = "+j);
+    //Console.println("WBS.collectTrans, this.follow.keys = "+this.follow.keys)
+    //Console.println("WBS.collectTrans, pos = "+this.follow.keys)
+    var j = 0; while (j < pos) {
+      //Console.println("WBS.collectTrans, j = "+j)
       val fol = this.follow( j );
       val it = fol.elements;
       while( it.hasNext ) {
@@ -172,89 +173,90 @@ abstract class WordBerrySethi extends BaseBerrySethi {
   }
 
   def automatonFrom(pat: RegExp, finalTag: Int): NondetWordAutom[_labelT] = {
-    this.finalTag = finalTag;
+    this.finalTag = finalTag
 
     pat match {
       case x:Sequ =>
         // (1,2) compute follow + first
-        initialize( x.rs );
-      pos = pos + 1;
-      globalFirst = compFollow( x.rs );
+        initialize(x.rs)
+        pos = pos + 1
+        globalFirst = compFollow(x.rs)
 
-      //System.out.print("someFirst:");debugPrint(someFirst);
-      // (3) make automaton from follow sets
-      initializeAutom();
-      collectTransitions();
+        //System.out.print("someFirst:");debugPrint(someFirst);
+        // (3) make automaton from follow sets
+        initializeAutom()
+        collectTransitions()
 
-      if( x.isNullable ) // initial state is final
-	finals = finals.update( 0, finalTag );
+        if (x.isNullable) // initial state is final
+	  finals = finals.update(0, finalTag)
 
-      var delta1: immutable.TreeMap[Int,Map[_labelT,List[Int]]] =
-        new immutable.TreeMap[Int,Map[_labelT,List[Int]]];
+        var delta1: immutable.TreeMap[Int, Map[_labelT, List[Int]]] =
+          new immutable.TreeMap[Int, Map[_labelT, List[Int]]]
 
-      var i = 0;
-      while( i < deltaq.length ) {
-        delta1 = delta1.update( i, deltaq( i ));
-        i = i + 1;
-      }
-      val finalsArr = new Array[Int](pos);
-      {
-        var k = 0; while(k < pos) {
-          finalsArr(k) = finals.get(k) match {
-            case Some(z) => z;
-            case None => 0; // 0 == not final
-          };
-          k = k + 1;
+        var i = 0
+        while (i < deltaq.length) {
+          delta1 = delta1.update(i, deltaq(i))
+          i = i + 1
         }
-      }
-
-      val initialsArr = new Array[Int](initials.size);
-      val it = initials.elements;
-      {
-        var k = 0; while(k < initials.size) {
-          initialsArr(k) = it.next;
-          k = k + 1;
-        }
-      }
-
-      val deltaArr = new Array[Map[_labelT,immutable.BitSet]](pos);
-      {
-        var k = 0; while(k < pos) {
-          val labels = delta1(k).keys;
-          val hmap =
-            new mutable.HashMap[_labelT,immutable.BitSet];
-          for(val lab <- labels) {
-            val trans = delta1(k);
-            val x = new mutable.BitSet(pos);
-            for(val q <- trans(lab))
-              x += q;
-            hmap.update(lab, x.toImmutable);
+        val finalsArr = new Array[Int](pos)
+        {
+          var k = 0; while (k < pos) {
+            finalsArr(k) = finals.get(k) match {
+              case Some(z) => z
+              case None => 0 // 0 == not final
+            };
+            k = k + 1
           }
-          deltaArr(k) = hmap;
-          k = k + 1;
         }
-      }
-      val defaultArr = new Array[immutable.BitSet](pos);
-      {
-        var k = 0; while(k < pos) {
-          val x = new mutable.BitSet(pos);
-          for(val q <- defaultq(k))
-            x += q;
-          defaultArr(k) = x.toImmutable;
-          k = k + 1;
-        }
-      }
 
-      new NondetWordAutom[_labelT] {
-	type _labelT = WordBerrySethi.this._labelT;
-        val nstates  = pos;
-        val labels   = WordBerrySethi.this.labels.toList;
-        val initials = initialsArr;
-        val finals   = finalsArr;
-        val delta    = deltaArr;
-        val default  = defaultArr;
-      }
-      case z:this.lang._regexpT => automatonFrom(Sequ(z), finalTag);
+        val initialsArr = new Array[Int](initials.size)
+        val it = initials.elements
+        {
+          var k = 0; while (k < initials.size) {
+            initialsArr(k) = it.next
+            k = k + 1
+          }
+        }
+
+        val deltaArr = new Array[Map[_labelT,immutable.BitSet]](pos)
+        {
+          var k = 0; while(k < pos) {
+            val labels = delta1(k).keys
+            val hmap =
+              new mutable.HashMap[_labelT,immutable.BitSet]
+            for (val lab <- labels) {
+              val trans = delta1(k)
+              val x = new mutable.BitSet(pos)
+              for (val q <- trans(lab))
+                x += q
+              hmap.update(lab, x.toImmutable)
+            }
+            deltaArr(k) = hmap
+            k = k + 1
+          }
+        }
+        val defaultArr = new Array[immutable.BitSet](pos)
+        {
+          var k = 0; while(k < pos) {
+            val x = new mutable.BitSet(pos)
+            for (val q <- defaultq(k))
+              x += q
+            defaultArr(k) = x.toImmutable
+            k = k + 1
+          }
+        }
+
+        new NondetWordAutom[_labelT] {
+	  type _labelT = WordBerrySethi.this._labelT
+          val nstates  = pos
+          val labels   = WordBerrySethi.this.labels.toList
+          val initials = initialsArr
+          val finals   = finalsArr
+          val delta    = deltaArr
+          val default  = defaultArr
+        }
+      case z:this.lang._regexpT =>
+       automatonFrom(Sequ(z), finalTag)
     }
   }
 

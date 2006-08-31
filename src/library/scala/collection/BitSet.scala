@@ -9,7 +9,7 @@
 // $Id$
 
 
-package scala.collection;
+package scala.collection
 
 
 /**
@@ -23,29 +23,29 @@ package scala.collection;
 
 abstract class BitSet extends AnyRef with Function1[Int,Boolean] with Set[Int] {
 
-  import scala.runtime.compat.Platform.arraycopy;
-  import scala.runtime.compat.Math.min;
+  import scala.runtime.compat.Platform.arraycopy
+  import scala.runtime.compat.Math.min
 
   /** number of bits in this bitset */
-  def size: Int;
+  def size: Int
 
   /** @return true if bit i is set */
   def contains(i: Int): Boolean =
-    (i < capacity) && ((arr(offset(i)) & mask(i)) != 0);
+    (i < capacity) && ((arr(offset(i)) & mask(i)) != 0)
 
-  def capacity: Int;
+  def capacity: Int
 
-  protected def arr: Array[Int];
+  protected def arr: Array[Int]
 
   /** returns an iterator over the truth values of all bits */
    final def elements: Iterator[Int] = new Iterator[Int] {
-     var i = 0;
+     var i = 0
      def findNext: Unit = {
        while (!BitSet.this.contains(i) && (i < capacity))
-         i = i + 1;
+         i = i + 1
      }
-     findNext;
-     def hasNext: Boolean = i < capacity;
+     findNext
+     def hasNext: Boolean = i < capacity
      def next: Int = { val j = i; i = i + 1; findNext; j }
    }
 
@@ -54,9 +54,9 @@ abstract class BitSet extends AnyRef with Function1[Int,Boolean] with Set[Int] {
    * @return a copy of the array underlying this bitset
    */
   def toArray: Array[Int] = {
-    val length = memsize(capacity);
-    val newarr = new Array[Int](length);
-    arraycopy(newarr, 0, this.arr, 0, length);
+    val length = memsize(capacity)
+    val newarr = new Array[Int](length)
+    arraycopy(newarr, 0, this.arr, 0, length)
     newarr
   }
 
@@ -70,12 +70,12 @@ abstract class BitSet extends AnyRef with Function1[Int,Boolean] with Set[Int] {
     that.isInstanceOf[BitSet] &&
     { val other = that.asInstanceOf[BitSet];
       (size == other.size) && ( size == 0 || {
-        var len = memsize(min(this.capacity, other.capacity));
-        var i = 0;
-        var res = true;
+        var len = memsize(min(this.capacity, other.capacity))
+        var i = 0
+        var res = true
         while((i < len) && res) {
-          res = arr(i) == other.arr(i);
-          i = i + 1;
+          res = arr(i) == other.arr(i)
+          i = i + 1
         }
         res
       })
@@ -91,10 +91,10 @@ abstract class BitSet extends AnyRef with Function1[Int,Boolean] with Set[Int] {
    */
   override def subsetOf(that: Set[Int]): Boolean =
     (that.isInstanceOf[BitSet] && {
-      val other = that.asInstanceOf[BitSet];
-      val len = memsize(min(this.capacity, other.capacity));
-      var i = 0;
-      var res = true;
+      val other = that.asInstanceOf[BitSet]
+      val len = memsize(min(this.capacity, other.capacity))
+      var i = 0
+      var res = true
       while((i < len) && res) {
         res = other.arr(i) == (other.arr(i) | arr(i));
         i = i + 1;
@@ -102,7 +102,7 @@ abstract class BitSet extends AnyRef with Function1[Int,Boolean] with Set[Int] {
       res && (this.capacity <= other.capacity || {
         // if this set is bigger check that the rest is empty
         while (i < memsize(this.capacity) && res) {
-          res == arr(i) == 0;
+          res == arr(i) == 0
           i = i + 1
         }
         res
@@ -111,15 +111,15 @@ abstract class BitSet extends AnyRef with Function1[Int,Boolean] with Set[Int] {
 
 
   /** @return the number of Int cells needed to store <code>n</code> bits */
-  protected final def memsize(n: Int): Int = offset(n + 31);
+  protected final def memsize(n: Int): Int = offset(n + 31)
 
   /** @return the number of bits represented by <code>n</code> words */
-  protected final def nbits(n: Int): Int = n << 5;
+  protected final def nbits(n: Int): Int = n << 5
 
   /** @return the position in the array where the bit resides */
-  protected final def offset(n: Int): Int = n >>> 5;
+  protected final def offset(n: Int): Int = n >>> 5
 
   /** @return a mask with 1 at the position of the bit */
-  protected final def mask(n: Int): Int = 1 << (n & 0x1F);
+  protected final def mask(n: Int): Int = 1 << (n & 0x1F)
 
 }

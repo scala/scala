@@ -9,7 +9,7 @@
 // $Id$
 
 
-package scala.collection.immutable;
+package scala.collection.immutable
 
 
 /** The class <code>BitSet</code>provides an immutable bitset view on an
@@ -29,15 +29,15 @@ package scala.collection.immutable;
 class BitSet(val size: Int, val capacity: Int, ba: Array[Int], copy: Boolean)
   extends collection.BitSet
 {
-  import scala.runtime.compat.Platform.arraycopy;
+  import scala.runtime.compat.Platform.arraycopy
 
   protected val arr: Array[Int]  =
     if (copy) {
-      val arr = new Array[Int](ba.length);
-      arraycopy(ba, 0, arr, 0, ba.length);
+      val arr = new Array[Int](ba.length)
+      arraycopy(ba, 0, arr, 0, ba.length)
       arr
     }
     else
-      ba;
+      ba
 
 }

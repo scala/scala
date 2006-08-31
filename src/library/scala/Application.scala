@@ -9,7 +9,7 @@
 // $Id$
 
 
-package scala;
+package scala
 
 
 /** The <code>Application</code> class can be used to quickly turn objects
@@ -38,16 +38,16 @@ package scala;
 
 trait Application {
 
-    /** The time when execution of this program started.
-     */
-    val executionStart: Long = java.lang.System.currentTimeMillis();
+  /** The time when execution of this program started.
+   */
+  val executionStart: Long = java.lang.System.currentTimeMillis()
 
-    /** The default main method.
-     */
-    def main(args: Array[String]) = {
-        if (java.lang.System.getProperty("scala.time") != null)
-          java.lang.System.out.println("[total " +
-                       (java.lang.System.currentTimeMillis()
-                    - executionStart) + "ms]");
+  /** The default main method.
+   */
+  def main(args: Array[String]) = {
+    if (java.lang.System.getProperty("scala.time") != null) {
+      val total = java.lang.System.currentTimeMillis() - executionStart
+      java.lang.System.out.println("[total " + total + "ms]")
     }
+  }
 }

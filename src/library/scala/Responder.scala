@@ -1,18 +1,40 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2005-2006, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+// $Id$
+
 package scala
 
-/** contains utility methods to build responders
+/** This object contains utility methods to build responders.
+ *
+ *  @author Burak Emir
+ *  @version 1.0
+ *
  *  @see class Responder
  *  @since revision 6897 (will be 2.1.1)
  */
 object Responder {
 
-  /** creates a responder that answer continuations with the constant a */
+  /** Creates a responder that answer continuations with the constant
+   *  <code>a</code>.
+   *
+   *  @param x ...
+   *  @return ...
+   */
   def constant[a](x: a) = new Responder[a] {
     def respond(k: a => unit) = k(x)
   }
 
-  /** executes x and returns true, useful as syntactic convenience in
-   * for comprehensions
+  /** Executes <code>x</code> and returns <code>true</code>, useful
+   *  as syntactic convenience in for comprehensions.
+   *
+   *  @param x ...
+   *  @return ...
    */
   def exec[a](x: => unit): boolean = { x; true  }
 
@@ -38,6 +60,10 @@ object Responder {
  *  in for comprehensions, one can embed domain-specific languages in
  *  Scala while giving the impression that programs in these DSLs are
  *  written in direct style.
+ *
+ *  @author Burak Emir
+ *  @version 1.0
+ *
  *  @since revision 6897 (will be 2.1.1)
  */
 abstract class Responder[+a] {

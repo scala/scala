@@ -9,7 +9,7 @@
 // $Id$
 
 
-package scala.collection;
+package scala.collection
 
 
 /** This class defines the interface of collections that do not contain
@@ -31,14 +31,14 @@ trait Set[A] extends AnyRef with Function1[A, Boolean] with Iterable[A] {
     *
     *  @return number of set elements.
     */
-    def size: Int;
+    def size: Int
 
     /** Checks if this set contains element <code>elem</code>.
      *
      *  @param  elem    the element to check for membership.
      *  @return true, iff <code>elem</code> is contained in this set.
      */
-    def contains(elem: A): Boolean;
+    def contains(elem: A): Boolean
 
     /** This method allows sets to be interpreted as predicates.
      *  It returns true, iff this set contains element <code>elem</code>.
@@ -46,20 +46,20 @@ trait Set[A] extends AnyRef with Function1[A, Boolean] with Iterable[A] {
      *  @param  elem    the element to check for membership.
      *  @return true, iff <code>elem</code> is contained in this set.
      */
-    def apply(elem: A): Boolean = contains(elem);
+    def apply(elem: A): Boolean = contains(elem)
 
     /** Checks if this set is empty.
      *
      *  @return true, iff there is no element in the set.
      */
-    def isEmpty: Boolean = (size == 0);
+    def isEmpty: Boolean = (size == 0)
 
     /** Checks if this set is a subset of set <code>that</code>.
      *
      *  @param  that another set.
      *  @return true, iff the other set is a superset of this set.
      */
-    def subsetOf(that: Set[A]): Boolean = forall(that.contains);
+    def subsetOf(that: Set[A]): Boolean = forall(that.contains)
 
     /** Compares this set with another object and returns true, iff the
      *  other object is also a set which contains the same elements as
@@ -80,12 +80,12 @@ trait Set[A] extends AnyRef with Function1[A, Boolean] with Iterable[A] {
      *
      *  @return    a list containing all set elements.
      */
-    def toList: List[A] = elements.toList;
+    def toList: List[A] = elements.toList
 
     /** Returns a string representation of this set.
      *
      *  @return a string showing all elements of this set.
      */
     override def toString(): String =
-      if (isEmpty) "{}" else toList.mkString("{", ", ", "}");
+      if (isEmpty) "{}" else toList.mkString("{", ", ", "}")
 }

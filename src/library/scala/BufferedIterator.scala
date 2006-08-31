@@ -9,7 +9,7 @@
 // $Id$
 
 
-package scala;
+package scala
 
 
 /** Buffered iterators are iterators which llow to inspect the next
@@ -20,11 +20,11 @@ package scala;
  */
 trait BufferedIterator[+A] extends Iterator[A] {
 
-    /** Checks what the next available element is.
-     *
-     *  @return the current element
-     */
-    def head: A;
+  /** Checks what the next available element is.
+   *
+   *  @return the current element
+   */
+  def head: A
 
-    override def buffered: BufferedIterator[A] = this;
+  override def buffered: BufferedIterator[A] = this
 }

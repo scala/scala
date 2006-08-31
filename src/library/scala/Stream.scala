@@ -9,9 +9,9 @@
 // $Id$
 
 
-package scala;
+package scala
 
-import scala.runtime.compat.StringBuilder;
+import scala.runtime.compat.StringBuilder
 
 /**
  * The object <code>Stream</code> provides helper functions
@@ -23,36 +23,35 @@ import scala.runtime.compat.StringBuilder;
 object Stream {
 
   val empty: Stream[Nothing] = new Stream[Nothing] {
-    def isEmpty = true;
-    def head: Nothing = error("head of empty stream");
-    def tail: Stream[Nothing] = error("tail of empty stream");
-    def printElems(buf: StringBuilder, prefix: String): StringBuilder = buf;
+    def isEmpty = true
+    def head: Nothing = error("head of empty stream")
+    def tail: Stream[Nothing] = error("tail of empty stream")
+    def printElems(buf: StringBuilder, prefix: String): StringBuilder = buf
   }
 
   def cons[a](hd: a, tl: => Stream[a]) = new Stream[a] {
-    def isEmpty = false;
-    def head = hd;
-    private var tlVal: Stream[a] = _;
-    private var tlDefined = false;
+    def isEmpty = false
+    def head = hd
+    private var tlVal: Stream[a] = _
+    private var tlDefined = false
     def tail: Stream[a] = {
-      if (!tlDefined) { tlVal = tl; tlDefined = true; }
+      if (!tlDefined) { tlVal = tl; tlDefined = true }
       tlVal
     }
     def printElems(buf: StringBuilder, prefix: String): StringBuilder = {
-      val buf1 = buf.append(prefix).append(hd);
-      if (tlDefined) tlVal.printElems(buf1, ", ") else buf1 append ", ?";
+      val buf1 = buf.append(prefix).append(hd)
+      if (tlDefined) tlVal.printElems(buf1, ", ") else buf1 append ", ?"
     }
   }
 
   def fromIterator[a](it: Iterator[a]): Stream[a] =
-    if (it.hasNext) cons(it.next, fromIterator(it)) else empty;
+    if (it.hasNext) cons(it.next, fromIterator(it)) else empty
 
-  def concat[a](xs: Seq[Stream[a]]): Stream[a] = concat(xs.elements);
+  def concat[a](xs: Seq[Stream[a]]): Stream[a] = concat(xs.elements)
 
-  def concat[a](xs: Iterator[Stream[a]]): Stream[a] = {
+  def concat[a](xs: Iterator[Stream[a]]): Stream[a] =
     if (xs.hasNext) xs.next append concat(xs)
-    else empty;
-  }
+    else empty
 
   /**
    * Create a stream with element values
@@ -65,7 +64,7 @@ object Stream {
    * @return the stream starting at value <code>start</code>.
    */
   def range(start: Int, end: Int): Stream[Int] =
-    range(start, end, 1);
+    range(start, end, 1)
 
   /**
    * Create a stream with element values
@@ -112,7 +111,7 @@ object Stream {
    * @return the stream starting at value <code>start</code>.
    */
   def from(start: Int, step: Int): Stream[Int] =
-        cons(start, from(start+step, step))
+    cons(start, from(start+step, step))
 
   /**
    * Create an infinite stream starting at <code>start</code>

@@ -9,7 +9,7 @@
 // $Id$
 
 
-package scala.collection;
+package scala.collection
 
 
 /** This is a simple wrapper class for <code>scala.collection.Map</code>.
@@ -21,25 +21,25 @@ package scala.collection;
  */
 trait MapProxy[A, +B] extends Map[A, B] with IterableProxy[Pair[A, B]] {
 
-    def self: Map[A, B];
+    def self: Map[A, B]
 
-    def size: Int = self.size;
+    def size: Int = self.size
 
-    def get(key: A): Option[B] = self.get(key);
+    def get(key: A): Option[B] = self.get(key)
 
-    override def isEmpty: Boolean = self.isEmpty;
+    override def isEmpty: Boolean = self.isEmpty
 
-    override def apply(key: A): B = self.apply(key);
+    override def apply(key: A): B = self.apply(key)
 
-    override def contains(key: A): Boolean = self.contains(key);
+    override def contains(key: A): Boolean = self.contains(key)
 
-    override def isDefinedAt(key: A) = self.isDefinedAt(key);
+    override def isDefinedAt(key: A) = self.isDefinedAt(key)
 
-    override def keys: Iterator[A] = self.keys;
+    override def keys: Iterator[A] = self.keys
 
-    override def values: Iterator[B] = self.values;
+    override def values: Iterator[B] = self.values
 
-    override def foreach(f: (A, B) => Unit) = self.foreach(f);
+    override def foreach(f: (A, B) => Unit) = self.foreach(f)
 
-    override def toList: List[Pair[A, B]] = self.toList;
+    override def toList: List[Pair[A, B]] = self.toList
 }
