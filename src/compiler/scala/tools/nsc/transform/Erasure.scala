@@ -485,8 +485,8 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
       val bridgesScope = newScope
       val bridgeTarget = new HashMap[Symbol, Symbol]
       var bridges: List[Tree] = List()
-      val opc = atPhase(phase.prev.prev) {     // bq: who understands prev comment "to avoid DEFERRED flags for interfaces"
-        new overridingPairs.Cursor(owner) {    //     it seems we want types *before* explicitOuter
+      val opc = atPhase(currentRun.explicitOuterPhase) {
+        new overridingPairs.Cursor(owner) {
           override def parents: List[Type] = List(owner.info.parents.head)
           override def exclude(sym: Symbol): boolean =
             !sym.isMethod || (sym hasFlag (PRIVATE | BRIDGE)) || super.exclude(sym)
@@ -496,7 +496,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
         val member = opc.overriding
         val other = opc.overridden
         //Console.println("bridge? " + member + ":" + member.tpe + member.locationString + " to " + other + ":" + other.tpe + other.locationString);//DEBUG
-        if (!atPhase(phase.prev.prev)(member hasFlag DEFERRED)) {
+        if (!atPhase(currentRun.explicitOuterPhase)(member hasFlag DEFERRED)) {
           val otpe = erasure(other.tpe);
           val bridgeNeeded = atPhase(phase.next) (
             !(other.tpe =:= member.tpe) &&

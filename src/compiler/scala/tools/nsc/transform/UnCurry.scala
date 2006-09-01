@@ -43,7 +43,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
 
 // ------ Type transformation --------------------------------------------------------
 
-  private val uncurry = new TypeMap {
+  private val uncurry: TypeMap = new TypeMap {
     def apply(tp: Type): Type = tp match {
       case MethodType(formals, MethodType(formals1, restpe)) =>
         apply(MethodType(formals ::: formals1, restpe))
@@ -53,6 +53,9 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
         apply(MethodType(List(), restpe))
       case PolyType(tparams, restpe) =>
         PolyType(tparams, apply(MethodType(List(), restpe)))
+      case TypeRef(pre, sym, List(arg1, arg2)) if (arg1.symbol == ByNameParamClass) =>
+        assert(sym == FunctionClass(1))
+        apply(typeRef(pre, definitions.ByNameFunctionClass, List(arg1.typeArgs(0), arg2)))
       case TypeRef(pre, sym, List(arg)) if (sym == ByNameParamClass) =>
         apply(functionType(List(), arg))
       case TypeRef(pre, sym, args) if (sym == RepeatedParamClass) =>
@@ -62,12 +65,24 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
     }
   }
 
+  private val uncurryType = new TypeMap {
+    def apply(tp: Type): Type = tp match {
+      case ClassInfoType(parents, decls, clazz) =>
+        val parents1 = List.mapConserve(parents)(uncurry)
+        if (parents1 eq parents) tp
+        else ClassInfoType(parents1, decls, clazz)
+      case PolyType(_, _) =>
+        mapOver(tp)
+      case _ =>
+        tp
+    }
+  }
+
   /** - return symbol's transformed type,
    *  - if symbol is a def parameter with transformed type T, return () => T
    */
   def transformInfo(sym: Symbol, tp: Type): Type =
-    if (sym.isType) tp
-    else uncurry(tp)
+    if (sym.isType) uncurryType(tp) else uncurry(tp)
 
   class UnCurryTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
 
@@ -393,7 +408,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
               Apply(Select(tree1 setType functionType(List(), tree1.tpe), nme.apply), List())))
           else tree1;
       }
-    } setType uncurryTreeType(tree.tpe);
+    } setType uncurryTreeType(tree.tpe)
 
     def postTransform(tree: Tree): Tree = atPhase(phase.next) {
       def applyUnary(tree: Tree): Tree =
@@ -444,7 +459,12 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
           if (name == nme.WILDCARD_STAR.toTypeName)
             unit.error(tree.pos, " argument does not correspond to `*'-parameter");
           applyUnary(tree);
-        case Select(_, _) =>
+        case Select(qual, name) =>
+          /* Function1.apply to ByNameFunction.apply if qualifier is a ByNameFunction */
+          if (qual.tpe.symbol == ByNameFunctionClass) {
+            assert(tree.symbol.name == nme.apply && tree.symbol.owner == FunctionClass(1), tree.symbol)
+            tree.symbol = getMember(ByNameFunctionClass, nme.apply)
+          }
           applyUnary(tree)
         case TypeApply(_, _) =>
           applyUnary(tree)

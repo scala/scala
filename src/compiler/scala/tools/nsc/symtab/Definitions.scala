@@ -64,6 +64,7 @@ trait Definitions requires SymbolTable {
     var CodeClass: Symbol = _
     var CodeModule: Symbol = _
     var PartialFunctionClass: Symbol = _
+    var ByNameFunctionClass: Symbol = _
     var IterableClass: Symbol = _
       def Iterable_next = getMember(IterableClass, nme.next)
       def Iterable_hasNext = getMember(IterableClass, nme.hasNext)
@@ -506,6 +507,7 @@ trait Definitions requires SymbolTable {
         CodeModule = getModule("scala.reflect.Code")
       }
       PartialFunctionClass = getClass("scala.PartialFunction")
+      ByNameFunctionClass = getClass("scala.ByNameFunction")
       IterableClass = getClass("scala.Iterable")
       IteratorClass = getClass("scala.Iterator")
       SeqClass = getClass("scala.Seq")

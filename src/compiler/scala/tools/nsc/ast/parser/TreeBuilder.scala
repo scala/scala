@@ -157,7 +157,7 @@ abstract class TreeBuilder {
   def makeBlock(stats: List[Tree]): Tree =
     if (stats.isEmpty) Literal(())
     else if (!stats.last.isTerm) Block(stats, Literal(()))
-    else if (stats.length == 1) stats(0)
+    else if (stats.length == 1) stats.head
     else Block(stats.init, stats.last)
 
   /** Create tree for for-comprehension generator &lt;val pat0 &lt;- rhs0&gt; */

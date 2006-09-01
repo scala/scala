@@ -64,7 +64,13 @@ trait Typers requires Analyzer {
         case MethodType(_, _) => EmptyTree
         case OverloadedType(_, _) => EmptyTree
         case PolyType(_, _) => EmptyTree
-        case _ => inferImplicit(pos, functionType(List(from), to), true, reportAmbiguous)
+        case _ =>
+          val result = inferImplicit(pos, functionType(List(from), to), true, reportAmbiguous)
+          if (result != EmptyTree) result
+          else inferImplicit(
+            pos,
+            functionType(List(appliedType(ByNameParamClass.typeConstructor, List(from))), to),
+            true, reportAmbiguous)
       }
     }
 
@@ -203,8 +209,8 @@ trait Typers requires Analyzer {
 
     def checkParamsConvertible(pos: PositionType, tpe: Type): unit = tpe match {
       case MethodType(formals, restpe) =>
-        if (formals exists (.symbol.==(ByNameParamClass)))
-          error(pos, "methods with `=>'-parameters cannot be converted to function values");
+        if (formals.exists(.symbol.==(ByNameParamClass)) && formals.length != 1)
+          error(pos, "methods with `=>'-parameter can be converted to function values only if they are unary")
         if (formals exists (.symbol.==(RepeatedParamClass)))
           error(pos, "methods with `*'-parameters cannot be converted to function values");
         checkParamsConvertible(pos, restpe)
@@ -944,6 +950,8 @@ trait Typers requires Analyzer {
     }
 
     def typedFunction(fun: Function, mode: int, pt: Type): Tree = {
+      val codeExpected = !forCLDC && (pt.symbol isNonBottomSubClass CodeClass)
+
       def decompose(pt: Type): Triple[Symbol, List[Type], Type] =
         if (isFunctionType(pt)
             ||
@@ -952,8 +960,6 @@ trait Typers requires Analyzer {
           Triple(pt.symbol, pt.typeArgs.init, pt.typeArgs.last)
         else
           Triple(FunctionClass(fun.vparams.length), fun.vparams map (x => NoType), WildcardType)
-
-      val codeExpected = !forCLDC && (pt.symbol isNonBottomSubClass CodeClass)
 
       val Triple(clazz, argpts, respt) = decompose(if (codeExpected) pt.typeArgs.head else pt)
 
@@ -1541,9 +1547,6 @@ trait Typers requires Analyzer {
                      else appliedType(ArrayClass.typeConstructor, List(elemtpt1.tpe)))
 
         case fun @ Function(_, _) =>
-/*
-          newTyper(context.makeNewScope(tree, context.owner)).typedFunction(fun, mode, pt)
-*/
           if (tree.symbol == NoSymbol)
             tree.symbol = context.owner.newValue(tree.pos, nme.ANON_FUN_NAME)
               .setFlag(SYNTHETIC).setInfo(NoType)
