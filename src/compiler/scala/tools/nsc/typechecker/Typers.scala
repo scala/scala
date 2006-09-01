@@ -2003,7 +2003,7 @@ trait Typers requires Analyzer {
         def getParts(tp: Type, s: Set[Symbol]): unit = tp match {
           case TypeRef(pre, sym, args) if (!sym.isPackageClass) =>
             for (val bc <- sym.info.baseClasses)
-              if (sym.isClass) s.addEntry(sym)
+              if (sym.isClass) s.addEntry(bc)
             getParts(pre, s)
             for (val arg <- args) getParts(arg, s)
           case SingleType(pre, _) =>
