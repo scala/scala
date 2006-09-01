@@ -1499,6 +1499,7 @@ trait Types requires SymbolTable {
     }
   }
 
+
   object adaptToNewRunMap extends TypeMap {
     private def adaptToNewRun(pre: Type, sym: Symbol): Symbol = {
       if (sym.isModuleClass && !phase.flatClasses)
@@ -1510,7 +1511,7 @@ trait Types requires SymbolTable {
         def corresponds(sym1: Symbol, sym2: Symbol): boolean =
           sym1.name == sym2.name && (sym1.isPackageClass || corresponds(sym1.owner, sym2.owner))
         assert(sym != NoSymbol)
-        assert(rebind0 != NoSymbol)
+        if (rebind0 == NoSymbol) assert(false, ""+pre+"."+sym+"does no longer exist!")
         if (!corresponds(sym.owner, rebind0.owner)) {
           if (settings.debug.value) Console.println("ADAPT1 pre = "+pre+", sym = "+sym+sym.locationString+", rebind = "+rebind0+rebind0.locationString)
           val bcs = pre.baseClasses.dropWhile(bc => !corresponds(bc, sym.owner));
