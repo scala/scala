@@ -23,6 +23,8 @@ abstract class TreeBuilder {
     Select(Ident(nme.scala_) setSymbol definitions.ScalaPackage, name)
   def scalaAnyRefConstr: Tree =
     scalaDot(nme.AnyRef.toTypeName)
+  def scalaUnitConstr: Tree =
+    scalaDot(nme.Unit.toTypeName)
   def scalaScalaObjectConstr: Tree =
     scalaDot(nme.ScalaObject.toTypeName)
   def caseClassConstr: Tree =
@@ -382,9 +384,13 @@ abstract class TreeBuilder {
       }
   }
 
-  /** Create a tree representing a function type */
+  /** Create a tree representing the function type (argtpes) => restpe */
   def makeFunctionTypeTree(argtpes: List[Tree], restpe: Tree): Tree =
     AppliedTypeTree(scalaDot(newTypeName("Function" + argtpes.length)), argtpes ::: List(restpe))
+
+  /** Create a tree representing a the name function type (=> argtpe) => restpe */
+  def makeByNameFunctionTypeTree(argtpe: Tree, restpe: Tree): Tree =
+    AppliedTypeTree(scalaDot(newTypeName("ByNameFunction")), List(argtpe, restpe))
 
   /** Append implicit view section if for `implicitViews' if nonempty */
   def addImplicitViews(owner: Name, vparamss: List[List[ValDef]], implicitViews: List[Tree]): List[List[ValDef]] = {

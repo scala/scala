@@ -22,5 +22,6 @@ package scala;
  */
 trait ByNameFunction[-A, +B] extends AnyRef {
   def apply(x: => A): B
+  override def toString() = "<function>"
 }
 

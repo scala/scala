@@ -509,9 +509,10 @@ trait Parsers requires SyntaxAnalyzer {
     }
 
     /** Type ::= Type1 `=>' Type
-    *         | `(' [Types] `)' `=>' Type
-    *         | Type1
-    */
+     *         | `(' `=>' Type `)' `=>' Type
+     *         | `(' [Types] `)' `=>' Type
+     *         | Type1
+     */
     def typ(): Tree = {
       val t =
         if (in.token == LPAREN) {
@@ -519,6 +520,11 @@ trait Parsers requires SyntaxAnalyzer {
           if (in.token == RPAREN) {
             in.nextToken();
             atPos(accept(ARROW)) { makeFunctionTypeTree(List(), typ()) }
+          } else if (in.token == ARROW) {
+            in.nextToken()
+            val t0 = typ()
+            accept(RPAREN)
+            atPos(accept(ARROW)) { makeByNameFunctionTypeTree(t0, typ()) }
           } else {
             val t0 = typ();
             if (in.token == COMMA) {
@@ -1533,8 +1539,9 @@ trait Parsers requires SyntaxAnalyzer {
     }
 
     /** FunDef ::= FunSig `:' Type `=' Expr
-     *           | this ParamClause ParamClauses `=' ConstrExpr
-     *  FunDcl ::= FunSig `:' Type
+                 | FunSig Block
+     *           | this ParamClause ParamClauses (`=' ConstrExpr | ConstrBlock)
+     *  FunDcl ::= FunSig [`:' Type]
      *  FunSig ::= id [FunTypeParamClause] ParamClauses
      */
     def funDefOrDcl(mods: Modifiers): Tree =
@@ -1542,42 +1549,34 @@ trait Parsers requires SyntaxAnalyzer {
         if (in.token == THIS) {
           in.nextToken();
           val vparamss = paramClauses(nme.CONSTRUCTOR, List(), false);
-          accept(EQUALS);
-          DefDef(mods, nme.CONSTRUCTOR, List(), vparamss, TypeTree(), constrExpr())
+          val rhs = if (in.token == LBRACE) constrBlock()
+                    else { accept(EQUALS); constrExpr() }
+          DefDef(mods, nme.CONSTRUCTOR, List(), vparamss, TypeTree(), rhs)
         } else {
           var newmods = mods;
           val name = ident();
           val implicitViews = new ListBuffer[Tree];
           val tparams = typeParamClauseOpt(name, implicitViews);
           val vparamss = paramClauses(name, implicitViews.toList, false);
-          val restype = typedOpt();
+          var restype = typedOpt();
           val rhs =
-            if (restype.isEmpty || in.token == EQUALS) equalsExpr();
-            else {
+            if (in.token == SEMI || in.token == NEWLINE || in.token == RBRACE) {
+              if (restype.isEmpty) restype = scalaUnitConstr
               newmods = newmods | Flags.DEFERRED;
               EmptyTree
-            }
+            } else if (restype.isEmpty && in.token == LBRACE) {
+              restype = scalaUnitConstr
+              block()
+            } else equalsExpr()
           DefDef(newmods, name, tparams, vparamss, restype, rhs)
         }
       }
 
     /** ConstrExpr      ::=  SelfInvocation
-     *                    |  `{' SelfInvocation {StatementSeparator BlockStat} `}'
-     *  SelfInvocation  ::= this ArgumentExprs {ArgumentExprs}
+     *                    |  ConstrBlock
      */
     def constrExpr(): Tree =
-      if (in.token == LBRACE) {
-        atPos(in.skipToken()) {
-          val statlist = new ListBuffer[Tree];
-          statlist += selfInvocation();
-          val stats =
-            if (in.token == SEMI || in.token == NEWLINE) {
-              in.nextToken(); blockStatSeq(statlist)
-            } else statlist.toList;
-          accept(RBRACE)
-          makeBlock(stats)
-        }
-      } else selfInvocation()
+      if (in.token == LBRACE) constrBlock() else selfInvocation()
 
     /** SelfInvocation  ::= this ArgumentExprs {ArgumentExprs}
      */
@@ -1586,6 +1585,20 @@ trait Parsers requires SyntaxAnalyzer {
         var t = Apply(Ident(nme.CONSTRUCTOR), argumentExprs())
         while (in.token == LPAREN) t = Apply(t, argumentExprs())
         t
+      }
+
+    /** ConstrBlock    ::=  `{' SelfInvocation {StatementSeparator BlockStat} `}'
+     */
+    def constrBlock(): Tree =
+      atPos(in.skipToken()) {
+        val statlist = new ListBuffer[Tree];
+        statlist += selfInvocation();
+        val stats =
+          if (in.token == SEMI || in.token == NEWLINE) {
+            in.nextToken(); blockStatSeq(statlist)
+          } else statlist.toList;
+        accept(RBRACE)
+        makeBlock(stats)
       }
 
     /** TypeDef ::= Id [TypeParamClause] `=' Type
