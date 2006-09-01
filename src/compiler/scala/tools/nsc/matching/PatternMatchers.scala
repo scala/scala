@@ -1,68 +1,73 @@
-/* NSC -- new scala compiler
- * Copyright 2005 LAMP/EPFL
- * @author buraq
+/* NSC -- new Scala compiler
+ * Copyright 2005-2006 LAMP/EPFL
+ * @author Burak Emir
  */
 // $Id$
 
-package scala.tools.nsc.matching ;
+package scala.tools.nsc.matching
 
-import scala.tools.nsc.util.Position;
+import scala.tools.nsc.util.Position
 
-trait PatternMatchers requires (TransMatcher with PatternNodes) extends AnyRef with PatternNodeCreator {
-
-
-  import global._;
-  import typer.typed ;
-  import symtab.Flags;
+/** This trait ...
+ *
+ *  @author Burak Emir
+ *  @version 1.0
+ */
+trait PatternMatchers requires (TransMatcher with PatternNodes)
+                      extends AnyRef with PatternNodeCreator {
+  import global._
+  import typer.typed
+  import symtab.Flags
 
   // -- begin new data structure for matcher
 
-  abstract class Node{}
+  abstract class Node
 
   class Test(var tpe: Type, var casted: Symbol) extends Node {
     var thenp: Node  = _
-    var vbles = List[Symbol]();
+    var vbles = List[Symbol]()
     def bindTo(v: Symbol): this.type = { vbles = v::vbles; this }
-    override def toString() = tpe.toString+"?"
+    override def toString() = tpe.toString + "?"
   }
+
   class Load(var expr: Tree) extends Node {
-    def tpe = expr.tpe;
+    def tpe = expr.tpe
     var thenp: PatNodeList = Snil
   }
-  case class Return(b:Tree) extends Node {}
 
-  abstract class PatNodeList {};
-  case class Snoc(sx:PatNodeList, x:Test) extends PatNodeList;
-  case object Snil extends PatNodeList;
+  case class Return(b:Tree) extends Node
+
+  abstract class PatNodeList
+  case class Snoc(sx: PatNodeList, x:Test) extends PatNodeList
+  case object Snil extends PatNodeList
 
     // -- end
 
- class PatternMatcher  {
+  class PatternMatcher {
 
+    protected var optimize = true
 
+    /** the owner of the pattern matching expression
+     */
+    var owner:Symbol = _
 
-  protected var optimize = true;
+    /** the selector expression
+     */
+    protected var selector: Tree = _
 
-  /** the owner of the pattern matching expression
-   */
-  var owner:Symbol = _ ;
+    /** the root of the pattern node structure
+     */
+    protected var root: PatternNode = _
 
-  /** the selector expression
-   */
-  protected var selector: Tree = _;
+    /** the symbol of the result variable
+     */
+    //protected var resultVar: Symbol = _
 
-  /** the root of the pattern node structure
-   */
-  protected var root: PatternNode = _;
+    def defs = definitions
 
-  /** the symbol of the result variable
-   */
-//  protected var resultVar: Symbol = _;
-
-  def defs = definitions;
-  /** init method, also needed in subclass AlgebraicMatcher
-   */
-  def initialize(selector: Tree, owner: Symbol): Unit = {
+    /** init method, also needed in subclass AlgebraicMatcher
+     */
+    def initialize(selector: Tree, owner: Symbol): Unit = {
 
     //Konsole.println("pm.initialize selector.tpe = "+selector.tpe);
 
@@ -88,105 +93,101 @@ trait PatternMatchers requires (TransMatcher with PatternNodes) extends AnyRef w
     this.root.and = pHeader(selector.pos,
                               selector.tpe.widen,
                               Ident(root.symbol).setType(root.tpe));
-    //Konsole.println("resultType =  "+resultType);
-    this.owner = owner;
-    this.selector = selector;
+      //Konsole.println("resultType =  "+resultType);
+      this.owner = owner
+      this.selector = selector
 
-    //this.optimize = this.optimize && (settings.target.value == "jvm");
-  }
+      //this.optimize = this.optimize && (settings.target.value == "jvm");
+    }
 
-  /** pretty printer
-   */
-  def print(): Unit = { Console.println (
-    root.and.print("", new StringBuffer()).toString()
-  )}
+    /** pretty printer
+     */
+    def print(): Unit =
+      Console.println(root.and.print("", new StringBuffer()).toString())
 
-  /** enters a sequence of cases into the pattern matcher
-   */
-  def construct(cases: List[Tree]): Unit = {
-    cases foreach enter;
-  }
+    /** enters a sequence of cases into the pattern matcher
+     */
+    def construct(cases: List[Tree]): Unit =
+      cases foreach enter
 
-  /** enter a single case into the pattern matcher
-   */
-  protected def enter(caseDef: Tree): Unit = {
-    caseDef match {
+    /** enter a single case into the pattern matcher
+     */
+    protected def enter(caseDef: Tree): Unit = caseDef match {
       case CaseDef(pat, guard, body) =>
-        val env = new CaseEnv;
-        // PatternNode matched = match(pat, root);
-        val target = enter1(pat, -1, root, root.symbol, env);
+        val env = new CaseEnv
+        // PatternNode matched = match(pat, root)
+        val target = enter1(pat, -1, root, root.symbol, env)
         // if (target.and != null)
-        //     unit.error(pat.pos, "duplicate case");
+        //   unit.error(pat.pos, "duplicate case");
       if (null == target.and)
-        target.and = pBody(caseDef.pos, env.getBoundVars(), guard, body);
+        target.and = pBody(caseDef.pos, env.getBoundVars(), guard, body)
       else if (target.and.isInstanceOf[Body])
-        updateBody(target.and.asInstanceOf[Body], env.getBoundVars(), guard, body);
+        updateBody(target.and.asInstanceOf[Body], env.getBoundVars(), guard, body)
       else
-        cunit.error(pat.pos, "duplicate case");
+        cunit.error(pat.pos, "duplicate case")
     }
-  }
 
-  protected def updateBody(tree: Body, bound: Array[ValDef], guard: Tree , body: Tree): Unit = {
-    if (tree.guard(tree.guard.length - 1) == EmptyTree) {
-      cunit.error(body.pos, "unreachable code");
-    } else {
-      val bd = new Array[Array[ValDef]](tree.bound.length + 1);
-      val ng = new Array[Tree](tree.guard.length + 1);
-      val nb = new Array[Tree](tree.body.length + 1);
-      System.arraycopy(tree.bound, 0, bd, 0, tree.bound.length);
-      System.arraycopy(tree.guard, 0, ng, 0, tree.guard.length);
-      System.arraycopy(tree.body, 0, nb, 0, tree.body.length);
-      bd(bd.length - 1) = bound;
-      ng(ng.length - 1) = guard;
-      nb(nb.length - 1) = body;
-      tree.bound = bd ;
-      tree.guard = ng ;
-      tree.body = nb ;
+    protected def updateBody(tree: Body, bound: Array[ValDef],
+                             guard: Tree, body: Tree): Unit =
+      if (tree.guard(tree.guard.length - 1) == EmptyTree) {
+        cunit.error(body.pos, "unreachable code")
+      } else {
+        val bd = new Array[Array[ValDef]](tree.bound.length + 1)
+        val ng = new Array[Tree](tree.guard.length + 1)
+        val nb = new Array[Tree](tree.body.length + 1)
+        System.arraycopy(tree.bound, 0, bd, 0, tree.bound.length)
+        System.arraycopy(tree.guard, 0, ng, 0, tree.guard.length)
+        System.arraycopy(tree.body, 0, nb, 0, tree.body.length)
+        bd(bd.length - 1) = bound
+        ng(ng.length - 1) = guard
+        nb(nb.length - 1) = body
+        tree.bound = bd
+        tree.guard = ng
+        tree.body = nb
+      }
+
+    /** returns the child patterns of a pattern
+     */
+    protected def patternArgs(tree: Tree): List[Tree] = {
+      //Console.println("patternArgs "+tree.toString())
+      val res = tree match {
+        case Bind(_, pat) =>
+          patternArgs(pat)
+
+        case a @ Apply(_, List(av @ ArrayValue(_, ts))) if isSeqApply(a) && isRightIgnoring(av) =>
+          ts.reverse.drop(1).reverse
+
+        case a @ Apply(_, List(av @ ArrayValue(_, ts))) if isSeqApply(a) =>
+          ts
+
+        case a @ Apply(_, args) =>
+          args
+
+        case av @ ArrayValue(_, ts) if isRightIgnoring(av) =>
+          ts.reverse.drop(1).reverse
+
+        case av @ ArrayValue(_, ts) =>
+          ts
+
+        case _ =>
+          List()
+      }
+      //Console.println("patternArgs returns "+res.toString())
+      res
     }
-  }
-
-   /** returns the child patterns of a pattern
-    */
-  protected def patternArgs(tree: Tree):List[Tree] = {
-    //Console.println("patternArgs "+tree.toString());
-    val res = tree match {
-      case Bind(_, pat) =>
-        patternArgs(pat);
-
-      case a @ Apply(_, List(av @ ArrayValue(_, ts))) if isSeqApply(a) && isRightIgnoring(av) =>
-	ts.reverse.drop(1).reverse
-
-      case a @ Apply(_, List(av @ ArrayValue(_, ts))) if isSeqApply(a) =>
-	ts
-
-      case a @ Apply(_, args) =>
-        args;
-
-      case av @ ArrayValue(_, ts) if isRightIgnoring(av) =>
-        ts.reverse.drop(1).reverse
-
-      case av @ ArrayValue(_, ts) =>
-        ts;
-
-      case _ =>
-        List();
-    }
-    //Console.println("patternArgs returns "+res.toString());
-    res
-  }
 
    /* currently no need for extendedSeqApply, ArrayValue in Elem(... _*) style patterns
     * handled in the ArrayValue case
   protected def isExtendedSeqApply( tree: Apply  ): Boolean =  { // NEW
    // Console.print("isSeqApply? "+tree.toString());
    // val res =
-	tree match {
-	  case Apply(_, list) if list.last.isInstanceOf[ArrayValue] =>
+        tree match {
+          case Apply(_, list) if list.last.isInstanceOf[ArrayValue] =>
             (tree.tpe.symbol.flags & Flags.CASE) == 0
-	  case _ => false;
-	}
-	//Console.println(res);
-	//res;
+          case _ => false;
+        }
+        //Console.println(res);
+        //res;
   }
   */
 
@@ -194,30 +195,30 @@ trait PatternMatchers requires (TransMatcher with PatternNodes) extends AnyRef w
 
   protected def patternNode(tree:Tree , header:Header , env: CaseEnv ): PatternNode  = {
     //if(tree!=null) Console.println("patternNode("+tree+","+header+")");
-	//else scala.Predef.error("got null tree in patternNode");
+        //else scala.Predef.error("got null tree in patternNode");
     //Console.println("tree.tpe "+tree.tpe);
     //Console.println("tree.getClass() "+tree.getClass());
     tree match {
       case Bind(name, Typed(Ident( nme.WILDCARD ), tpe)) => // x@_:Type
         if (isSubType(header.getTpe(),tpe.tpe)) {
-          //Console.println("U");
-          val node = pDefaultPat(tree.pos, tpe.tpe);
-          env.newBoundVar( tree.symbol, tree.tpe, header.selector );
-          node;
+          //Console.println("U")
+          val node = pDefaultPat(tree.pos, tpe.tpe)
+          env.newBoundVar(tree.symbol, tree.tpe, header.selector)
+          node
         } else {
-          //Console.println("X");
-          val node = pConstrPat(tree.pos, tpe.tpe);
+          //Console.println("X")
+          val node = pConstrPat(tree.pos, tpe.tpe)
           env.newBoundVar( tree.symbol,
                            tpe.tpe, /*scalac: tree.tpe */
                            typed(Ident( node.casted )));
-          node;
+          node
         }
 
       case Bind(name, Ident(nme.WILDCARD)) => // x @ _
-        val node = pDefaultPat(tree.pos, header.getTpe());
+        val node = pDefaultPat(tree.pos, header.getTpe())
         if ((env != null) && (tree.symbol != defs.PatternWildcard))
           env.newBoundVar( tree.symbol, tree.tpe, header.selector);
-        node;
+        node
 
       case Bind(name, pat) =>
         val node = patternNode(pat, header, env);
@@ -226,7 +227,7 @@ trait PatternMatchers requires (TransMatcher with PatternNodes) extends AnyRef w
           val theValue =  if (casted == NoSymbol) header.selector else Ident( casted).setType(casted.tpe);
           env.newBoundVar(tree.symbol, tree.tpe, theValue);
         }
-       node;
+       node
 
       case t @ Apply(fn, args) =>             // pattern with args
         //Console.println("Apply node: "+t);
@@ -246,7 +247,7 @@ trait PatternMatchers requires (TransMatcher with PatternNodes) extends AnyRef w
                   //Console.println(av.toString()+" IS  N O T  RIGHTIGNORING");
                   pSequencePat(tree.pos, tree.tpe, ts.length);
           }
-	} else if ((fn.symbol != null) &&
+        } else if ((fn.symbol != null) &&
                    fn.symbol.isStable &&
                    !(fn.symbol.isModule &&
                      ((fn.symbol.flags & Flags.CASE) != 0))) {
@@ -261,11 +262,11 @@ trait PatternMatchers requires (TransMatcher with PatternNodes) extends AnyRef w
              pConstrPat(tree.pos, tree.tpe);
           }
       case Typed(Ident( nme.WILDCARD ), tpe) => // x@_:Type
-        val doTest = isSubType(header.getTpe(),tpe.tpe); // this is already an optimization
-          if(doTest)
-            pDefaultPat(tree.pos, tpe.tpe)
-          else
-            pConstrPat(tree.pos, tpe.tpe);
+        val doTest = isSubType(header.getTpe(), tpe.tpe) // this is already an optimization
+        if (doTest)
+          pDefaultPat(tree.pos, tpe.tpe)
+        else
+          pConstrPat(tree.pos, tpe.tpe)
 
       case t @ Typed(ident, tpe) =>       // variable pattern
         //Console.println("Z");
@@ -292,9 +293,9 @@ trait PatternMatchers requires (TransMatcher with PatternNodes) extends AnyRef w
                                              .asInstanceOf[ConstrPat]
                                              .casted))});
           }
-      node;
+      node
 
-      case Ident(nme.WILDCARD) => pDefaultPat(tree.pos, header.getTpe());
+      case Ident(nme.WILDCARD) => pDefaultPat(tree.pos, header.getTpe())
 
       case Ident(name) => // pattern without args or named constant
         if (tree.symbol.isPrimaryConstructor)
@@ -327,17 +328,17 @@ trait PatternMatchers requires (TransMatcher with PatternNodes) extends AnyRef w
 
         }
       case Alternative(ts) =>
-        if(ts.length < 2)
-          scala.Predef.error("ill-formed Alternative");
-        val subroot = pConstrPat(header.pos, header.getTpe());
-        subroot.and = pHeader(header.pos, header.getTpe(), header.selector.duplicate);
-        val subenv = new CaseEnv;
-        var i = 0; while(i < ts.length) {
-          val target = enter1(ts(i), -1, subroot, subroot.symbol, subenv);
-          target.and = pBody(tree.pos);
+        if (ts.length < 2)
+          Predef.error("ill-formed Alternative")
+        val subroot = pConstrPat(header.pos, header.getTpe())
+        subroot.and = pHeader(header.pos, header.getTpe(), header.selector.duplicate)
+        val subenv = new CaseEnv
+        var i = 0; while (i < ts.length) {
+          val target = enter1(ts(i), -1, subroot, subroot.symbol, subenv)
+          target.and = pBody(tree.pos)
           i = i + 1
         }
-        pAltPat(tree.pos, subroot.and.asInstanceOf[Header]);
+        pAltPat(tree.pos, subroot.and.asInstanceOf[Header])
 /*
       case Star(Ident(nme.WILDCARD))  =>
         header.selector match {
@@ -351,41 +352,38 @@ trait PatternMatchers requires (TransMatcher with PatternNodes) extends AnyRef w
         // bind the rest /////////////////////////////////////////////////////
 */
       case _ =>
-        if(tree == null)
-	  scala.Predef.error("unit = " + cunit + "; tree = null");
-        else
-	  scala.Predef.error("unit = " + cunit + "; tree = "+tree);
+        Predef.error("unit = " + cunit + "; tree = " +
+          (if (tree == null) "null" else tree))
     }
   }
 
-  protected def enter(pat: Tree, index: Int, target: PatternNode, casted: Symbol, env: CaseEnv ): PatternNode = {
+  protected def enter(pat: Tree, index: Int, target: PatternNode,
+                      casted: Symbol, env: CaseEnv): PatternNode =
     target match {
       case ConstrPat(newCasted) =>
-        enter1(pat, index, target, newCasted, env);
+        enter1(pat, index, target, newCasted, env)
       case SequencePat(newCasted, len) =>
-        enter1(pat, index, target, newCasted, env);
+        enter1(pat, index, target, newCasted, env)
       case _ =>
-        enter1(pat, index, target, casted, env);
+        enter1(pat, index, target, casted, env)
     }
-  }
-
 
   private def newHeader(pos: PositionType, casted: Symbol, index: Int): Header = {
     //Console.println("newHeader(pos,"+casted+","+index+")");
     //Console.println("  casted.tpe"+casted.tpe);
     //Console.println("  casted.pos "+casted.pos+"  equals firstpos?"+(casted.pos == Position.FIRSTPOS));
-    val ident = typed(Ident(casted));
+    val ident = typed(Ident(casted))
     if (casted.pos == Position.FIRSTPOS) {
       //Console.println("FIRSTPOS");
 
-      //Console.println("DEBUG");
-      //Console.println();
+      //Console.println("DEBUG")
+      //Console.println()
 
       val t = typed(
         Apply(Select( ident, ident.tpe.member(nme.apply)/* scalac: defs.functionApply( 1 )*/),
               List( Literal( Constant(index) ) )));
-      val seqType = t.tpe;
-      pHeader( pos, seqType, t );
+      val seqType = t.tpe
+      pHeader( pos, seqType, t )
     } else {
       //Console.println("NOT FIRSTPOS");
      // Console.println("newHeader :: casted="+casted);
@@ -428,10 +426,10 @@ trait PatternMatchers requires (TransMatcher with PatternNodes) extends AnyRef w
     //System.err.println("patArgs = "+patArgs);
     var curHeader: Header = target.and match {
       case null => null
-      case h: Header => h;    // advance one step in intermediate representation
+      case h: Header => h    // advance one step in intermediate representation
       case b: Body if b.or != null => b.or.asInstanceOf[Header]
       case b: Body =>
-        if(b.guard(b.guard.length - 1) == EmptyTree) {
+        if (b.guard(b.guard.length - 1) == EmptyTree) {
           cunit.error(pat.pos, "unreachable code")
           null
         }
@@ -442,22 +440,22 @@ trait PatternMatchers requires (TransMatcher with PatternNodes) extends AnyRef w
     }
     if (curHeader == null) {                  // check if we have to add a new header
       //assert index >= 0 : casted;
-      if (index < 0) { scala.Predef.error("error entering:" + casted); return null }
+      if (index < 0) { Predef.error("error entering:" + casted); return null }
       target.and = {curHeader = newHeader(pat.pos, casted, index); curHeader}; // (*)
 
-      if(bodycond != null)
+      if (bodycond != null)
         target.and = bodycond(target.and) // restores body with the guards
 
-      curHeader.or = patternNode(pat, curHeader, env);
-      enter(patArgs, curHeader.or, casted, env);
+      curHeader.or = patternNode(pat, curHeader, env)
+      enter(patArgs, curHeader.or, casted, env)
     }
     else {
       // find most recent header
       while (curHeader.next != null)
-      curHeader = curHeader.next;
+        curHeader = curHeader.next
       // create node
-      var patNode = patternNode(pat, curHeader, env);
-      var next: PatternNode = curHeader;
+      var patNode = patternNode(pat, curHeader, env)
+      var next: PatternNode = curHeader
       // add branch to curHeader, but reuse tests if possible
       while (true) {
         if (next.isSameAs(patNode)) {           // test for patNode already present --> reuse
@@ -492,69 +490,74 @@ trait PatternMatchers requires (TransMatcher with PatternNodes) extends AnyRef w
     }
   }
 
-  /** calls enter for an array of patterns, see enter
-   */
-  protected def enter(pats:List[Tree], target1: PatternNode , casted1: Symbol  , env: CaseEnv): PatternNode = {
-    var target = target1;
-    var casted = casted1;
-    target match {
-      case ConstrPat(newCasted) =>
-        casted = newCasted;
-      case SequencePat(newCasted, len) =>
-        casted = newCasted;
-      case RightIgnoringSequencePat(newCasted, _, len) =>
-        casted = newCasted;
-      case _ =>
+    /** calls enter for an array of patterns, see enter
+     *
+     *  @param pats    ...
+     *  @param target1 ...
+     *  @param casted1 ...
+     *  @param env     ...
+     *  @return        ...
+     */
+    protected def enter(pats: List[Tree], target1: PatternNode,
+                        casted1: Symbol, env: CaseEnv): PatternNode = {
+      var target = target1
+      var casted = casted1
+      target match {
+        case ConstrPat(newCasted) =>
+          casted = newCasted
+        case SequencePat(newCasted, len) =>
+          casted = newCasted
+        case RightIgnoringSequencePat(newCasted, _, len) =>
+          casted = newCasted
+        case _ =>
+      }
+      var i = 0; while (i < pats.length) {
+        target = enter1(pats(i), i, target, casted, env)
+        i = i + 1
+      }
+      target
     }
-    var i = 0; while(i < pats.length) {
-      target = enter1(pats(i), i, target, casted, env);
-      i = i + 1
-    }
-    target;
-  }
 
     protected def nCaseComponents(tree: Tree): int = {
-        tree match {
-          case Apply(fn, _) =>
-            val tpe = tree.tpe.symbol.primaryConstructor.tpe;
+      tree match {
+        case Apply(fn, _) =>
+          val tpe = tree.tpe.symbol.primaryConstructor.tpe
           //Console.println("~~~ " + tree.type() + ", " + tree.type().symbol.primaryConstructor());
-            tpe match {
-                // I'm not sure if this is a good idea, but obviously, currently all case classes
-                // without constructor arguments have type NoType
+          tpe match {
+            // I'm not sure if this is a good idea, but obviously, currently all case classes
+            // without constructor arguments have type NoType
             case NoType =>
-                error("this cannot happen");
+              error("this cannot happen")
               0
             case MethodType(args, _) =>
-                args.length;
+              args.length
             case PolyType(tvars, MethodType(args, _)) =>
-                args.length;
+              args.length
             case PolyType(tvars, _) =>
-                0;
+              0
             case _ =>
               error("not yet implemented;" +
                     "pattern matching for " + tree + ": " + tpe);
             }
         }
-      return 0;
+      0
     }
 
 
     //////////// generator methods
 
-  def toTree(): Tree = {
+    def toTree(): Tree =
       if (optimize && isSimpleIntSwitch())
-        intSwitchToTree();
-
-      else /* if (false && optimize && isSimpleSwitch())
-        switchToTree();
-      else */ {
-        //print();
-        generalSwitchToTree();
+        intSwitchToTree()
+      // else if (false && optimize && isSimpleSwitch())
+      //  switchToTree()
+      else {
+        //print()
+        generalSwitchToTree()
       }
-    }
 
-  case class Break(res:Boolean) extends java.lang.Throwable;
-  case class Break2() extends java.lang.Throwable;
+    case class Break(res:Boolean) extends java.lang.Throwable
+    case class Break2() extends java.lang.Throwable
 
     // TODO disentangle this
     protected def isSimpleSwitch(): Boolean  = {
@@ -608,12 +611,12 @@ trait PatternMatchers requires (TransMatcher with PatternNodes) extends AnyRef w
         }
         patNode = patNode.nextH();
       }
-      return true;
+      true
     }
 
   protected def isSimpleIntSwitch(): Boolean = {
     if (isSameType(selector.tpe.widen, defs.IntClass.tpe)) {
-      var patNode = root.and;
+      var patNode = root.and
       while (patNode != null) {
         var node = patNode;
         while (({node = node.or; node}) != null) {
@@ -639,56 +642,54 @@ trait PatternMatchers requires (TransMatcher with PatternNodes) extends AnyRef w
       return false;
   }
 
-  class TagBodyPair(tag1: Int, body1: Tree, next1:TagBodyPair ) {
+  class TagBodyPair(tag1: Int, body1: Tree, next1: TagBodyPair ) {
+    var tag: int = tag1
+    var body: Tree = body1
+    var next: TagBodyPair = next1
 
-    var tag: int = tag1;
-    var body: Tree = body1;
-    var next: TagBodyPair = next1;
-
-    def length(): Int = {
-      if (null == next) 1 else (next.length() + 1);
-    }
+    def length(): Int =
+      if (null == next) 1 else (next.length() + 1)
   }
 
   protected def numCases(patNode1: PatternNode): Int = {
-    var patNode = patNode1;
-    var n = 0;
+    var patNode = patNode1
+    var n = 0
     while (({patNode = patNode.or; patNode}) != null)
     patNode match {
       case DefaultPat() => ;
       case _ =>
-        n = n + 1;
+        n = n + 1
     }
-    n;
+    n
   }
 
   protected def defaultBody(patNode1: PatternNode, otherwise: Tree ): Tree = {
     var patNode = patNode1;
     while (patNode != null) {
-      var node = patNode;
+      var node = patNode
       while (({node = node.or; node}) != null)
       node match {
         case DefaultPat() =>
           return node.and.bodyToTree();
         case _ =>
       }
-      patNode = patNode.nextH();
+      patNode = patNode.nextH()
     }
-    otherwise;
+    otherwise
   }
 
   /** This method translates pattern matching expressions that match
    *  on integers on the top level.
    */
   def intSwitchToTree(): Tree = {
-  def insert1(tag: Int, body: Tree, current: TagBodyPair): TagBodyPair = {
-    if (current == null)
-      return new TagBodyPair(tag, body, null);
-    else if (tag > current.tag)
-      return new TagBodyPair(current.tag, current.body, insert1(tag, body, current.next));
-    else
-      return new TagBodyPair(tag, body, current);
-  }
+    def insert1(tag: Int, body: Tree, current: TagBodyPair): TagBodyPair = {
+      if (current == null)
+        new TagBodyPair(tag, body, null)
+      else if (tag > current.tag)
+        new TagBodyPair(current.tag, current.body, insert1(tag, body, current.next))
+      else
+        new TagBodyPair(tag, body, current)
+    }
 
     //print();
     val ncases = numCases(root.and);
@@ -710,14 +711,14 @@ trait PatternMatchers requires (TransMatcher with PatternNodes) extends AnyRef w
     }
     //
     // if we have more than 2 cases than use a switch statement
-    val _h:Header = root.and.asInstanceOf[Header];
+    val _h:Header = root.and.asInstanceOf[Header]
 
-    val next = _h.next;
-    var mappings: TagBodyPair = null;
-    var defaultBody1: Tree = matchError;
-    var patNode = root.and;
+    val next = _h.next
+    var mappings: TagBodyPair = null
+    var defaultBody1: Tree = matchError
+    var patNode = root.and
     while (patNode != null) {
-      var node = patNode.or;
+      var node = patNode.or
       while (node != null) {
         node match {
           case DefaultPat() =>
@@ -734,11 +735,11 @@ trait PatternMatchers requires (TransMatcher with PatternNodes) extends AnyRef w
           node = node.or;
         }
       }
-      patNode = patNode.nextH();
+      patNode = patNode.nextH()
     }
 
-    var n = mappings.length();
-    var nCases: List[CaseDef] = Nil;
+    var n = mappings.length()
+    var nCases: List[CaseDef] = Nil
     while (mappings != null) {
       nCases = CaseDef(Literal(mappings.tag),
                        mappings.body) :: nCases;
@@ -757,11 +758,11 @@ trait PatternMatchers requires (TransMatcher with PatternNodes) extends AnyRef w
     return Switch(selector, tags, bodies, defaultBody1, resultType);
     */
     nCases = CaseDef(Ident(nme.WILDCARD), Block(List(ValDef(root.symbol, selector)),defaultBody1)) :: nCases;
-    return Match(selector, nCases)
+    Match(selector, nCases)
   }
 
 
-    var exit:Symbol = null;
+    var exit: Symbol = null
     /** simple optimization: if the last pattern is `case _' (no guards), we won't generate the ThrowMatchError
      */
   def generalSwitchToTree(): Tree = {
@@ -830,9 +831,9 @@ trait PatternMatchers requires (TransMatcher with PatternNodes) extends AnyRef w
         node = next;
 
       case _b:Body =>
-        var bound = _b.bound;
-        val guard = _b.guard;
-        val body  = _b.body;
+        var bound = _b.bound
+        val guard = _b.guard
+        val body  = _b.body
         if ((bound.length == 0) &&
             (guard.length == 0) &&
             (body.length == 0)) {
@@ -866,15 +867,13 @@ trait PatternMatchers requires (TransMatcher with PatternNodes) extends AnyRef w
       return res;
     }
 
-
     class TagNodePair(tag1: int, node1: PatternNode, next1: TagNodePair) {
-      var tag: int = tag1;
-      var node: PatternNode = node1;
-      var next: TagNodePair = next1;
+      var tag: int = tag1
+      var node: PatternNode = node1
+      var next: TagNodePair = next1
 
-      def  length(): Int = {
-        return if (null == next)  1 else (next.length() + 1);
-      }
+      def length(): Int =
+        if (null == next) 1 else (next.length() + 1)
     }
 
     protected def toOptTree(node1: PatternNode, selector: Tree): Tree = {
@@ -891,29 +890,29 @@ trait PatternMatchers requires (TransMatcher with PatternNodes) extends AnyRef w
           return new TagNodePair(tag, node, current);
       }
 
-      def  insertNode(tag:int , node:PatternNode , current:TagNodePair ): TagNodePair = {
-        val newnode = node.dup();
-        newnode.or = null;
-        return insert2(tag, newnode, current);
+      def insertNode(tag: int, node: PatternNode, current:TagNodePair): TagNodePair = {
+        val newnode = node.dup()
+        newnode.or = null
+        insert2(tag, newnode, current)
       }
       var node = node1;
       //System.err.println("pm.toOptTree called"+node);
-      var cases: TagNodePair  = null;
-      var defaultCase: PatternNode  = null;
+      var cases: TagNodePair  = null
+      var defaultCase: PatternNode  = null
       while (node != null)
       node match {
         case ConstrPat(casted) =>
-          cases = insertNode(node.getTpe().symbol.tag, node, cases);
-          node = node.or;
+          cases = insertNode(node.getTpe().symbol.tag, node, cases)
+          node = node.or
 
         case DefaultPat() =>
-          defaultCase = node;
-          node = node.or;
+          defaultCase = node
+          node = node.or
 
         case _ =>
-          scala.Predef.error("errare humanum est");
+          scala.Predef.error("errare humanum est")
       }
-      var n = cases.length();
+      var n = cases.length()
       /*
       val tags = new Array[int](n);
       val bodies = new Array[Tree](n);
@@ -938,17 +937,16 @@ trait PatternMatchers requires (TransMatcher with PatternNodes) extends AnyRef w
         { if (defaultCase == null) Literal(false) else toTree(defaultCase.and) },
                         defs.boolean_TYPE());
                         */
-      var nCases: List[CaseDef] = Nil;
+      var nCases: List[CaseDef] = Nil
       while (cases != null) {
         nCases = CaseDef(Literal(Constant(cases.tag)),
                          toTree(cases.node, selector)) :: nCases;
-        cases = cases.next;
+        cases = cases.next
       }
 
-      val defBody = if (defaultCase == null)
-                      Literal(Constant(false))
-                    else
-                      toTree(defaultCase.and);
+      val defBody =
+        if (defaultCase == null) Literal(Constant(false))
+        else toTree(defaultCase.and)
 
       nCases = CaseDef(Ident(nme.WILDCARD), defBody) :: nCases;
       return Match(Apply(Select(selector.duplicate, defs.ScalaObjectClass_tag),
@@ -956,20 +954,23 @@ trait PatternMatchers requires (TransMatcher with PatternNodes) extends AnyRef w
                    nCases);
     }
 
-   /** why not use plain `if's? the reason is that a failing *guard* must still remain
-    *  on the testing path (a kind of backtracking) in order to test subsequent patterns
-    *  consider for instance bug#440
-    *
-    */
-   def myIf(cond:Tree,thenp:Tree,elsep:Tree) = {
-     Or(And(cond,thenp),elsep);
-   }
+    /** why not use plain `if's? the reason is that a failing *guard* must still remain
+     *  on the testing path (a kind of backtracking) in order to test subsequent patterns
+     *  consider for instance bug#440
+     *
+     *  @param cond  ...
+     *  @param thenp ...
+     *  @param elsep ...
+     *  @return      ...
+     */
+    def myIf(cond: Tree, thenp: Tree, elsep: Tree) =
+      Or(And(cond, thenp), elsep)
 
-    protected def toTree(node:PatternNode , selector:Tree ): Tree = {
-      //Console.println("pm.toTree("+node+","+selector+")");
-      //Console.println("pm.toTree selector.tpe = "+selector.tpe+")");
-      if(selector.tpe == null)
-        scala.Predef.error("cannot go on");
+    protected def toTree(node: PatternNode, selector:Tree): Tree = {
+      //Console.println("pm.toTree("+node+","+selector+")")
+      //Console.println("pm.toTree selector.tpe = "+selector.tpe+")")
+      if (selector.tpe == null)
+        scala.Predef.error("cannot go on")
       if (node == null)
         return Literal(Constant(false));
       else

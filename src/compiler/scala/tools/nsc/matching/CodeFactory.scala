@@ -1,51 +1,48 @@
-/*
-** $Id$
-*/
-package scala.tools.nsc.matching ;
+/* NSC -- new Scala compiler
+ * Copyright 2005-2006 LAMP/EPFL
+ * @author Burak Emir
+ */
+// $Id$
 
-import scala.tools.nsc.util.Position;
+package scala.tools.nsc.matching
+
+import scala.tools.nsc.util.Position
 
 trait CodeFactory requires TransMatcher  {
 
-  import global._ ;
+  import global._
 
-  import definitions._;             // standard classes and methods
-  import typer.typed;               // methods to type trees
-  import posAssigner.atPos;         // for filling in tree positions
+  import definitions._             // standard classes and methods
+  import typer.typed               // methods to type trees
+  import posAssigner.atPos         // for filling in tree positions
 
 
   /** returns  `List[ Tuple2[ scala.Int, <elemType> ] ]' */
-  def SeqTraceType( elemType: Type  ):  Type = {
+  def SeqTraceType(elemType: Type): Type =
     appliedType(definitions.ListClass.typeConstructor,
                 List(pairType(definitions.IntClass.info,
                               elemType)))
-  }
 
-
-
-  def pairType(left: Type, right: Type) = {
-    appliedType( definitions.TupleClass(2).typeConstructor,
+  def pairType(left: Type, right: Type) =
+    appliedType(definitions.TupleClass(2).typeConstructor,
                 List(left,right))
-  }
 
   /**  returns `Iterator[ elemType ]' */
-  def _seqIterType( elemType: Type  ):  Type = {
-    appliedType( definitions.IteratorClass.typeConstructor,
+  def _seqIterType(elemType: Type): Type =
+    appliedType(definitions.IteratorClass.typeConstructor,
                 List(elemType))
-  }
 
   /** returns A for T <: Sequence[ A ]
    */
-  def getElemType_Sequence(tpe: Type):  Type = {
-    //System.err.println("getElemType_Sequence("+tpe.widen()+")");
-    val tpe1 = tpe.widen.baseType( definitions.SeqClass );
+  def getElemType_Sequence(tpe: Type): Type = {
+    //System.err.println("getElemType_Sequence("+tpe.widen()+")")
+    val tpe1 = tpe.widen.baseType(definitions.SeqClass)
 
-    if( tpe1 == NoType )
-      Predef.error("arg "+tpe+" not subtype of Seq[ A ]");
+    if (tpe1 == NoType)
+      Predef.error("arg " + tpe + " not subtype of Seq[A]")
 
-    return tpe1.typeArgs( 0 );
+    tpe1.typeArgs(0)
   }
-
 
   // --------- these are new
 
@@ -55,46 +52,38 @@ trait CodeFactory requires TransMatcher  {
     //assert condition != null:"cond is null";
     //assert body != null:"body is null";
     //assert defaultBody != null:"defaultBody is null";
-    var result = defaultBody;
-
-    var i = condition.length-1;
+    var result = defaultBody
+    var i = condition.length - 1
     while (i >= 0) {
-      result = If(condition(i), body(i), result);
+      result = If(condition(i), body(i), result)
       i = i - 1
     }
-
-    return result ;
+    result
   }
 
   /** returns code `<seqObj>.elements' */
-  def  newIterator( seqObj:Tree  ): Tree =
-    Apply(Select(seqObj, newTermName("elements")), List());
-
+  def newIterator(seqObj: Tree): Tree =
+    Apply(Select(seqObj, newTermName("elements")), List())
 
   /** `it.next()'     */
-  def  _next(iter: Tree) =
-    Apply(Select(iter, definitions.Iterator_next), List());
-
+  def _next(iter: Tree) =
+    Apply(Select(iter, definitions.Iterator_next), List())
 
   /** `it.hasNext()'  */
   def _hasNext(iter: Tree) =
-    Apply(Select(iter, definitions.Iterator_hasNext), List());
-
+    Apply(Select(iter, definitions.Iterator_hasNext), List())
 
   /** `!it.hasCur()'  */
-  def  _not_hasNext( iter:Tree  ) =
-    Apply(Select(_hasNext(iter), definitions.Boolean_not), List());
-
+  def _not_hasNext(iter: Tree) =
+    Apply(Select(_hasNext(iter), definitions.Boolean_not), List())
 
   /** `trace.isEmpty' */
   def isEmpty( iter: Tree  ):  Tree =
-    Apply(Select(iter, definitions.List_isEmpty), List());
-
+    Apply(Select(iter, definitions.List_isEmpty), List())
 
   /** `arg.head' */
-  def SeqList_head( arg: Tree ) =
-    Apply(Select(arg, definitions.List_head), List());
-
+  def SeqList_head(arg: Tree) =
+    Apply(Select(arg, definitions.List_head), List())
 
   def Negate(tree: Tree) = tree match {
     case Literal(Constant(value:Boolean))=>
@@ -104,14 +93,14 @@ trait CodeFactory requires TransMatcher  {
   }
 
   /*protected*/ def And(left: Tree, right: Tree): Tree = left match {
-    case Literal(Constant(value:Boolean)) =>
-      if(value) right else left;
+    case Literal(Constant(value: Boolean)) =>
+      if (value) right else left
     case _ =>
       right match {
         case Literal(Constant(true)) =>
-	  left;
+	  left
         case _ =>
-          Apply(Select(left, definitions.Boolean_and), List(right));
+          Apply(Select(left, definitions.Boolean_and), List(right))
       }
   }
 
@@ -122,11 +111,11 @@ trait CodeFactory requires TransMatcher  {
         If(cond, thenp, right)
 */
       case Literal(Constant(value: Boolean))=>
-	if(value) left else right;
+	if(value) left else right
       case _ =>
         right match {
           case Literal(Constant(false)) =>
-	    left;
+	    left
           case _ =>
             Apply(Select(left, definitions.Boolean_or), List(right));
         }
@@ -184,13 +173,16 @@ trait CodeFactory requires TransMatcher  {
     fun;
   }
 */
-  def  Equals(left: Tree , right: Tree ): Tree = Apply(Select(left, nme.EQEQ), List(right));
+  def Equals(left: Tree, right: Tree): Tree =
+    Apply(Select(left, nme.EQEQ), List(right))
 
-  def  Eq(left: Tree , right: Tree ): Tree = Apply(Select(left, nme.eq), List(right));
+  def Eq(left: Tree, right: Tree): Tree =
+    Apply(Select(left, nme.eq), List(right))
 
-  def  GreaterThanOrEquals(left: Tree , right: Tree ): Tree = Apply(Select(left, nme.GE), List(right));
+  def GreaterThanOrEquals(left: Tree, right: Tree): Tree =
+    Apply(Select(left, nme.GE), List(right))
 
-  def ThrowMatchError(pos: PositionType, obj: Tree ) =
+  def ThrowMatchError(pos: PositionType, obj: Tree) =
     atPos(pos) {
       Throw(
         New(
