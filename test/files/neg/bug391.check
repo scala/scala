@@ -4,13 +4,10 @@ bug391.scala:2 error: identifier expected but 'def' found.
 bug391.scala:3 error: ':' expected but '}' found.
   def fun2(val x: Int): Int = x; // the "val x" is illegal
                                 ^
-bug391.scala:4 error: illegal start of simple expression
-}
-^
 bug391.scala:6 error: identifier expected but 'def' found.
 class E(def x: Int); // the "def x" is illegal
         ^
 bug391.scala:6 error: ':' expected but eof found.
 class E(def x: Int); // the "def x" is illegal
                     ^
-5 errors found
+four errors found
