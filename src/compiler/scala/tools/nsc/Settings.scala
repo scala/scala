@@ -87,7 +87,7 @@ class Settings(error: String => unit) {
   val encoding      = StringSetting ("-encoding", "encoding", "Specify character encoding used by source files", encodingDefault)
   val windowtitle   = StringSetting ("-windowtitle", "windowtitle", "Specify window title of generated HTML documentation", windowtitleDefault)
   val documenttitle = StringSetting ("-documenttitle", "documenttitle", "Specify document title of generated HTML documentation", documenttitleDefault)
-  val target        = ChoiceSetting ("-target", "Specify which backend to use",  List("jvm-1.5", "jvm-1.4", "msil", "cldc"), "jvm-1.4")
+  val target        = ChoiceSetting ("-target", "Specify which backend to use", List("jvm-1.5", "jvm-1.4", "msil", "cldc"), "jvm-1.4")
   val migrate       = BooleanSetting("-migrate", "Assist in migrating from Scala version 1.0")
   val debug         = BooleanSetting("-debug", "Output debugging messages")
   val statistics    = BooleanSetting("-statistics", "Print compiler statistics")
@@ -114,15 +114,16 @@ class Settings(error: String => unit) {
   val inline        = BooleanSetting("-Xinline", "Perform inlining when possible")
   val Xcloselim     = BooleanSetting("-Xcloselim", "Perform closure elimination")
   val Xdce          = BooleanSetting("-Xdce", "Perform dead code elimination")
+  val Xdetach       = BooleanSetting("-Xdetach", "Perform detaching of remote closures")
   val Xshowcls      = StringSetting ("-Xshowcls", "class", "Show class info", "")
   val Xshowobj      = StringSetting ("-Xshowobj", "object", "Show object info", "")
   val Xlinearizer   = ChoiceSetting ("-Xlinearizer", "Linearizer to use", List("normal", "dfs", "rpo", "dump"), "rpo")
-  val Xgenerics     = BooleanSetting("-Xgenerics", "Use generic Java types");
-  val Xprintpos     = BooleanSetting("-Xprintpos", "Print tree positions (as offsets)");
-  val Xscript       = BooleanSetting("-Xscript", "compile script file");
-  val XinnerClasses = BooleanSetting("-XinnerClasses", "generate InnerClasses attribute for Java interoperability");
+  val Xgenerics     = BooleanSetting("-Xgenerics", "Use generic Java types")
+  val Xprintpos     = BooleanSetting("-Xprintpos", "Print tree positions (as offsets)")
+  val Xscript       = BooleanSetting("-Xscript", "compile script file")
+  val XinnerClasses = BooleanSetting("-XinnerClasses", "generate InnerClasses attribute for Java interoperability")
 
-  val Xnofancymatch = BooleanSetting("-Xnofancymatch", "don't match outer instances");
+  val Xnofancymatch = BooleanSetting("-Xnofancymatch", "don't match outer instances")
 
   /** A list of all settings */
   def allSettings: List[Setting] = allsettings.reverse
@@ -171,7 +172,7 @@ class Settings(error: String => unit) {
     }
 
     def unparse: List[String] =
-      if(value)
+      if (value)
         List(name)
       else
         Nil
@@ -199,7 +200,7 @@ class Settings(error: String => unit) {
     override def helpSyntax = name + " <" + arg + ">"
 
     def unparse: List[String] =
-      if(value == default)
+      if (value == default)
         Nil
       else
         List(name, value)
@@ -210,9 +211,9 @@ class Settings(error: String => unit) {
    */
   case class ChoiceSetting(nme: String, descr: String, choices: List[String], default: String)
   extends Setting(nme, descr + choices.mkString(" (", ",", ")")) {
-    protected var v: String = default;
+    protected var v: String = default
 
-    def value: String = this.v;
+    def value: String = this.v
     def value_=(s: String): Unit = this.v = s;
 
     protected def argument: String = name.substring(1)
@@ -235,31 +236,31 @@ class Settings(error: String => unit) {
     override def helpSyntax = name + ":<" + argument + ">"
 
     def unparse: List[String] =
-      if(value == default)
+      if (value == default)
         Nil
       else
         List(name + ":" + value)
   }
 
-  /** Same as ChoiceSetting but have a 'level' int which tells the index of the selected
-   * choice. The 'defaultEmpty' is used when this setting is used without specifying any of
-   * the available choices.
+  /** Same as ChoiceSetting but have a <code>level</code> int which tells the
+   *  index of the selected choice. The <code>defaultEmpty</code> is used when
+   *  this setting is used without specifying any of the available choices.
    */
   class DebugSetting(nme: String, descr: String, choices: List[String], default: String, defaultEmpty: String)
-  	extends ChoiceSetting(nme, descr, choices, default) {
+  extends ChoiceSetting(nme, descr, choices, default) {
 
     def indexOf[a](xs: List[a], e: a): Option[Int] = xs match {
       case y :: ys => if (e == y) Some(0) else indexOf(ys, e) match {
           case Some(idx) => Some(1 + idx)
           case None => None
         }
-      case _ => None;
+      case _ => None
     }
     var level: Int = indexOf(choices, default).get;
 
     override def value_=(choice: String): Unit = {
-      this.v     = choice;
-      this.level = indexOf(choices, choice).get;
+      this.v     = choice
+      this.level = indexOf(choices, choice).get
     }
 
     override def tryToSet(args: List[String]): List[String] = args match {
@@ -276,7 +277,7 @@ class Settings(error: String => unit) {
         }
 
       case n :: rest if (n startsWith name) =>
-        value = defaultEmpty;
+        value = defaultEmpty
         rest
 
       case _ => args
