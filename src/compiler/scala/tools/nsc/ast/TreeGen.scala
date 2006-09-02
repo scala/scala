@@ -34,16 +34,20 @@ abstract class TreeGen {
           qual
       }
     case TypeRef(pre, sym, args) =>
-      assert(phase.erasedTypes)
-      if (sym.isModuleClass && !sym.isRoot) {
-        val qual = mkAttributedSelect(mkAttributedQualifier(sym.owner.tpe), sym.sourceModule);
+      if (sym.isRoot) {
+        mkAttributedThis(sym)
+      } else if (sym.isModuleClass) {
+        val qual = mkAttributedSelect(mkAttributedQualifier(pre), sym.sourceModule);
         qual.tpe match {
           case MethodType(List(), restpe) =>
             Apply(qual, List()) setType restpe
           case _ =>
             qual
         }
-      } else mkAttributedThis(sym)
+      } else {
+        assert(phase.erasedTypes, ""+sym+sym.isModuleClass)
+        mkAttributedThis(sym)
+      }
     case _ =>
       throw new Error("bad qualifier: " + tpe)
   }

@@ -373,7 +373,7 @@ trait Contexts requires Analyzer {
     override def toString() = tree.toString()
   }
 
-  class ImplicitInfo(val name: Name, pre: Type, val sym: Symbol) {
+  class ImplicitInfo(val name: Name, val pre: Type, val sym: Symbol) {
     private var tpeCache: Type = null
     def tpe: Type = {
       if (tpeCache == null) tpeCache = pre.memberType(sym)

@@ -1310,7 +1310,7 @@ trait Typers requires Analyzer {
             }
             tree.symbol
           } else qual.tpe match {
-            case ThisType(clazz) if (clazz == context.enclClass.owner) =>
+            case ThisType(clazz) if (context.enclClass.owner.ownerChain contains clazz) =>
               qual.tpe.member(name)
             case _  =>
               if (phase.erasedTypes) qual.tpe.member(name)
@@ -1321,7 +1321,7 @@ trait Typers requires Analyzer {
           if (qual1 ne qual) return typed(copy.Select(tree, qual1, name), mode, pt)
         }
         if (!sym.exists) {
-          if (settings.debug.value) System.err.println("qual = "+qual+":"+qual.tpe+"\nSymbol="+qual.tpe.symbol+"\nsymbol-info = "+qual.tpe.symbol.info+"\nscope-id = "+qual.tpe.symbol.info.decls.hashCode()+"\nmembers = "+qual.tpe.members+"\nfound = "+sym)
+          if (settings.debug.value) System.err.println("qual = "+qual+":"+qual.tpe+"\nSymbol="+qual.tpe.symbol+"\nsymbol-info = "+qual.tpe.symbol.info+"\nscope-id = "+qual.tpe.symbol.info.decls.hashCode()+"\nmembers = "+qual.tpe.members+"\nname = "+name+"\nfound = "+sym+"\nowner = "+context.enclClass.owner)
           if (!qual.tpe.widen.isErroneous) {
             if (context.unit == null) assert(false, "("+qual+":"+qual.tpe+")."+name)
             error(tree.pos,
@@ -1913,15 +1913,22 @@ trait Typers requires Analyzer {
      *  @pre info.tpe does not contain an error
      */
     private def typedImplicit(pos: PositionType, info: ImplicitInfo, pt: Type, isLocal: boolean): Tree = {
-      if (isCompatible(depoly(info.tpe), pt)) {
-        val tree = Ident(info.name) setPos pos
+      def isStable(tp: Type): boolean = tp match {
+        case TypeRef(pre, sym, _) => sym.isPackageClass || sym.isModuleClass && isStable(pre)
+        case _ => tp.isStable
+      }
+      if (isCompatible(depoly(info.tpe), pt) && isStable(info.pre)) {
+        val tree = atPos(pos) {
+          if (info.pre == NoPrefix/*isLocal*/) Ident(info.name)
+          else Select(gen.mkAttributedQualifier(info.pre), info.name)
+        }
         def fail(reason: String, sym1: Symbol, sym2: Symbol): Tree = {
           if (settings.debug.value)
             log(""+tree+" is not a valid implicit value because:\n"+reason + sym1+" "+sym2);
           EmptyTree
         }
         try {
-          if (!isLocal) tree setSymbol info.sym
+//        if (!isLocal) tree setSymbol info.sym
           val tree1 = typed1(tree, EXPRmode, pt)
           if (settings.debug.value) log("typed implicit "+tree1+":"+tree1.tpe+", pt = "+pt);
           val tree2 = adapt(tree1, EXPRmode, pt)
@@ -2000,30 +2007,36 @@ trait Typers requires Analyzer {
       }
 
       def implicitsOfType(tp: Type): List[List[ImplicitInfo]] = {
-        def getParts(tp: Type, s: Set[Symbol]): unit = tp match {
+        def getParts(tp: Type, s: Set[Type]): unit = tp match {
           case TypeRef(pre, sym, args) if (!sym.isPackageClass) =>
             for (val bc <- sym.info.baseClasses)
-              if (sym.isClass) s.addEntry(bc)
+              if (sym.isClass) s.addEntry(tp.baseType(bc))
             getParts(pre, s)
             for (val arg <- args) getParts(arg, s)
+          case ThisType(_) =>
+            getParts(tp.widen, s)
           case SingleType(pre, _) =>
             getParts(pre, s)
+            getParts(tp.widen, s)
           case RefinedType(ps, _) =>
             for (val p <- ps) getParts(p, s)
           case _ =>
         }
-        val classes = new HashSet[Symbol]
-        getParts(tp, classes)
-        classes.elements.map(implicitsOfClass).toList
+        val tps = new HashSet[Type]
+        getParts(tp, tps)
+        tps.elements.map(implicitsOfClass).toList
       }
 
-      def implicitsOfClass(clazz: Symbol): List[ImplicitInfo] = (
-        clazz.initialize.linkedClassOfClass.info.members.toList.filter(.hasFlag(IMPLICIT)) map
-          (sym => new ImplicitInfo(sym.name, clazz.linkedModuleOfClass.tpe, sym))
-      )
+      def implicitsOfClass(tp: Type): List[ImplicitInfo] = tp match {
+        case TypeRef(pre, clazz, _) =>
+          clazz.initialize.linkedClassOfClass.info.members.toList.filter(.hasFlag(IMPLICIT)) map
+            (sym => new ImplicitInfo(sym.name, pre.memberType(clazz.linkedModuleOfClass), sym))
+        case _ =>
+          List()
+      }
 
       var tree = searchImplicit(context.implicitss, true)
-      if (tree == EmptyTree) tree = searchImplicit(implicitsOfType(pt.widen), false)
+      if (tree == EmptyTree) tree = searchImplicit(implicitsOfType(pt), false)
       if (util.Statistics.enabled) impltime = impltime + System.currentTimeMillis() - startTime
       tree
     }
