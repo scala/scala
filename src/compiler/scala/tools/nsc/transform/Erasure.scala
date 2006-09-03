@@ -363,14 +363,14 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
 
     /** A replacement for the standard typer's `typed1' method */
     override protected def typed1(tree: Tree, mode: int, pt: Type): Tree = {
-//      var tree1 = try { //debug
-        var tree1 = super.typed1(adaptMember(tree), mode, pt);
-//      } catch {
-//        case ex: Throwable =>
-//          if (settings.debug.value)
-//            System.out.println("exception when typing " + tree);
-//          throw ex
-//      }
+      var tree1 = try {
+        super.typed1(adaptMember(tree), mode, pt);
+      } catch {
+        case ex: Throwable =>
+          if (settings.debug.value)
+            System.out.println("exception when typing " + tree);
+          throw ex
+      }
       def adaptCase(cdef: CaseDef): CaseDef = {
         val body1 = adaptToType(cdef.body, tree1.tpe)
         copy.CaseDef(cdef, cdef.pat, cdef.guard, body1) setType body1.tpe

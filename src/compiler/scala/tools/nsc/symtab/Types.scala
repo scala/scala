@@ -1057,6 +1057,8 @@ trait Types requires SymbolTable {
       sym.tpe.resultType
     else if (checkMalformedSwitch && !pre.isStable && !pre.isError)
       throw new MalformedType(pre, sym.name.toString())
+    else if (sym.isRootPackage)
+      ThisType(RootClass)
     else {
       var sym1 = rebind(pre, sym)
       val pre1 = removeSuper(pre, sym1)
@@ -1511,7 +1513,7 @@ trait Types requires SymbolTable {
         def corresponds(sym1: Symbol, sym2: Symbol): boolean =
           sym1.name == sym2.name && (sym1.isPackageClass || corresponds(sym1.owner, sym2.owner))
         assert(sym != NoSymbol)
-        if (rebind0 == NoSymbol) assert(false, ""+pre+"."+sym+"does no longer exist!")
+        if (rebind0 == NoSymbol) assert(false, ""+pre+"."+sym+" does no longer exist, phase = "+phase)
         if (!corresponds(sym.owner, rebind0.owner)) {
           if (settings.debug.value) Console.println("ADAPT1 pre = "+pre+", sym = "+sym+sym.locationString+", rebind = "+rebind0+rebind0.locationString)
           val bcs = pre.baseClasses.dropWhile(bc => !corresponds(bc, sym.owner));

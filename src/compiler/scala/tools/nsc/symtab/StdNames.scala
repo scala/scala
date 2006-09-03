@@ -127,6 +127,9 @@ trait StdNames requires SymbolTable {
     def implClassName(name: Name): Name =
       newTypeName(name.toString() + IMPL_CLASS_SUFFIX)
 
+    def interfaceName(implname: Name): Name =
+      implname.subName(0, implname.length - IMPL_CLASS_SUFFIX.length)
+
     def moduleVarName(name: Name): Name =
       newTermName(name.toString() + MODULE_SUFFIX)
 

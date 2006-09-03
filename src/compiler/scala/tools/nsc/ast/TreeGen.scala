@@ -37,7 +37,7 @@ abstract class TreeGen {
       if (sym.isRoot) {
         mkAttributedThis(sym)
       } else if (sym.isModuleClass) {
-        val qual = mkAttributedSelect(mkAttributedQualifier(pre), sym.sourceModule);
+        val qual = mkAttributedRef(pre, sym.sourceModule);
         qual.tpe match {
           case MethodType(List(), restpe) =>
             Apply(qual, List()) setType restpe
@@ -45,7 +45,7 @@ abstract class TreeGen {
             qual
         }
       } else {
-        assert(phase.erasedTypes, ""+sym+sym.isModuleClass)
+        assert(phase.erasedTypes)
         mkAttributedThis(sym)
       }
     case _ =>
@@ -55,8 +55,11 @@ abstract class TreeGen {
   /** Builds a reference to given symbol with given stable prefix. */
   def mkAttributedRef(pre: Type, sym: Symbol): Tree = {
     val qual = mkAttributedQualifier(pre)
-    if (qual == EmptyTree) mkAttributedIdent(sym)
-    else mkAttributedSelect(qual, sym)
+    qual match {
+      case EmptyTree => mkAttributedIdent(sym)
+      case This(clazz) if (qual.symbol.isRoot || qual.symbol.isEmptyPackageClass) => mkAttributedIdent(sym)
+      case _ => mkAttributedSelect(qual, sym)
+    }
   }
 
   /** Builds a reference to given symbol. */

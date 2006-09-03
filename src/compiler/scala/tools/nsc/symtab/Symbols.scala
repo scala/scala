@@ -197,7 +197,7 @@ trait Symbols requires SymbolTable {
     final def isModuleClass = isClass && hasFlag(MODULE)
     final def isPackageClass = isClass && hasFlag(PACKAGE)
     final def isRoot = isPackageClass && name == nme.ROOT.toTypeName
-    final def isRootPackage = isPackage && name == nme.ROOT
+    final def isRootPackage = isPackage && name == nme.ROOTPKG
     final def isEmptyPackage = isPackage && name == nme.EMPTY_PACKAGE_NAME
     final def isEmptyPackageClass = isPackageClass && name == nme.EMPTY_PACKAGE_NAME.toTypeName
 
@@ -640,8 +640,15 @@ trait Symbols requires SymbolTable {
 
     final def toInterface: Symbol =
       if (isImplClass) {
-        assert(!tpe.parents.isEmpty, this)
-        tpe.parents.last.symbol
+        val result =
+          if (phase.erasedTypes) {
+            assert(!tpe.parents.isEmpty, this)
+            tpe.parents.last.symbol
+          } else {
+            owner.info.decl(nme.interfaceName(name))
+          }
+        assert(result != NoSymbol, this)
+        result
       } else this
 
     /** The module corresponding to this module class (note that this
@@ -884,6 +891,12 @@ trait Symbols requires SymbolTable {
     override def isTerm = true
 
     privateWithin = NoSymbol
+
+    override def owner: Symbol = {
+      if (name == nme.MIXIN_CONSTRUCTOR && !phase.erasedTypes && super.owner.isImplClass)
+        super.owner.toInterface
+      else rawowner
+    }
 
     protected var referenced: Symbol = NoSymbol
 
