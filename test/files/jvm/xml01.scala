@@ -180,6 +180,15 @@ object Test {
       )
   );
 
+    // test group node
+    Console println "-- group nodes"
+    val zx1: Node = Group { <a/><b/><c/> }
+    val zy1 = <f>{zx1}</f>
+    Console println zy1.toString()
+
+    val zx2: Node = Group { List(<a/>,zy1,zx1) }
+    Console println zx2.toString()
+
     // test unicode escapes backslash u
 
   Console println ("attribute value normalization");

@@ -101,13 +101,13 @@ trait MarkupParser requires (MarkupParser with MarkupHandler) extends AnyRef wit
 
     xSpace;
 
-    m.getValue("version") match {
+    m("version") match {
       case null  => ;
       case Text("1.0") => info_ver = Some("1.0"); n = n + 1;
       case _     => reportSyntaxError("cannot deal with versions != 1.0");
     }
 
-    m.getValue("encoding") match {
+    m("encoding") match {
       case null => ;
       case Text(enc)  => if (!isValidIANAEncoding(enc.toString()))
                     reportSyntaxError("\"" + enc + "\" is not a valid encoding");
@@ -116,7 +116,7 @@ trait MarkupParser requires (MarkupParser with MarkupHandler) extends AnyRef wit
                     n = n + 1;
                   }
     }
-    m.getValue("standalone") match {
+    m("standalone") match {
       case null => ;
       case Text("yes") => info_stdl = Some(true);  n = n + 1;
       case Text("no")  => info_stdl = Some(false); n = n + 1;
@@ -139,13 +139,13 @@ trait MarkupParser requires (MarkupParser with MarkupHandler) extends AnyRef wit
     var m = xmlProcInstr();
     var n = 0;
 
-    m.getValue("version") match {
+    m("version") match {
       case null => ;
       case Text("1.0") => info_ver = Some("1.0"); n = n + 1;
       case _     => reportSyntaxError("cannot deal with versions != 1.0");
     }
 
-    m.getValue("encoding") match {
+    m("encoding") match {
       case null => ;
       case Text(enc)  => if (!isValidIANAEncoding(enc.toString()))
         reportSyntaxError("\"" + enc + "\" is not a valid encoding");

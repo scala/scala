@@ -60,15 +60,15 @@ class PrefixedAttribute(val pre: String,
     owner.getNamespace(pre)
 
   /** forwards the call to next (because caller looks for unprefixed attribute */
-  def getValue(key: String): Seq[Node] = next.getValue(key)
+  def apply(key: String): Seq[Node] = next(key)
 
   /** gets attribute value of qualified (prefixed) attribute with given key
    */
-  def getValue(namespace: String, scope: NamespaceBinding, key: String): Seq[Node] = {
+  def apply(namespace: String, scope: NamespaceBinding, key: String): Seq[Node] = {
     if (key == this.key && scope.getURI(pre) == namespace)
       value
     else
-      next.getValue(namespace, scope, key)
+      next(namespace, scope, key)
   }
 
   /** returns true */
@@ -91,7 +91,7 @@ class PrefixedAttribute(val pre: String,
   }
 
   def wellformed(scope: NamespaceBinding): Boolean = {
-    (null == next.getValue(scope.getURI(pre), scope, key) &&
+    (null == next(scope.getURI(pre), scope, key) &&
      next.wellformed(scope))
   }
 

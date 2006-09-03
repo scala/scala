@@ -45,8 +45,8 @@ class UnprefixedAttribute(val key: String, val value: Seq[Node], val next: MetaD
    * @param  key
    * @return ..
    */
-  def getValue(key: String): Seq[Node] =
-    if (key == this.key) value else next.getValue(key)
+  def apply(key: String): Seq[Node] =
+    if (key == this.key) value else next(key)
 
   /**
    * Forwards the call to next (because caller looks for prefixed attribute).
@@ -56,8 +56,8 @@ class UnprefixedAttribute(val key: String, val value: Seq[Node], val next: MetaD
    * @param  key
    * @return ..
    */
-  def getValue(namespace: String, scope: NamespaceBinding, key: String): Seq[Node] =
-    next.getValue(namespace, scope, key)
+  def apply(namespace: String, scope: NamespaceBinding, key: String): Seq[Node] =
+    next(namespace, scope, key)
 
   override def hashCode() =
     key.hashCode() * 7 + value.hashCode() * 53 + next.hashCode()
@@ -76,7 +76,7 @@ class UnprefixedAttribute(val key: String, val value: Seq[Node], val next: MetaD
   }
 
   def wellformed(scope: NamespaceBinding): Boolean =
-    (null == next.getValue(null, scope, key)) && next.wellformed(scope)
+    (null == next(null, scope, key)) && next.wellformed(scope)
 
 }
 

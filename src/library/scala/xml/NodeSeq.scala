@@ -61,11 +61,10 @@ abstract class NodeSeq extends Seq[Node] {
     case _ if (that.charAt(0) == '@') && (this.length == 1) =>
       val k = that.substring(1);
       val y = this(0);
-      val v = y.attribute(k);
-      if( v != null ) {
-        v // NodeSeq.fromSeq(Seq.single(Text(v):Node));
-      } else
-        NodeSeq.Empty
+      y.attribute(k) match {
+	case Some(x) => Group(x)
+        case _       => NodeSeq.Empty
+      }
 
     case _   =>
       var zs:List[Node] = Nil

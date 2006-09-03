@@ -29,9 +29,13 @@ abstract class MetaData extends Iterable[MetaData] {
   def append(m: MetaData): MetaData =
     next.append(copy(m))
 
-  def apply(s:String) = getValue(s)
+  def apply(s:String): Seq[Node]
 
-  def apply(uri:String, scp:NamespaceBinding, k:String)= getValue(uri, scp, k)
+  /** convenience method, same as apply(namespace, owner.scope, key) */
+  final def apply(namespace: String, owner: Node, key: String): Seq[Node] =
+    apply(namespace, owner.scope, key)
+
+  def apply(uri:String, scp:NamespaceBinding, k:String): Seq[Node]
 
    def containedIn1(m: MetaData): Boolean =
      m.equals1(this) || containedIn1(m.next)
@@ -80,31 +84,6 @@ abstract class MetaData extends Iterable[MetaData] {
     }
   }
 
-  /* returns a sequences of "pseudo nodes" that contain attribute info.
-     not sure if this useful, and it violates contract for nodes...
-  def nodes = {
-    class NodeProxy(last:MetaData) extends Node {
-      override def prefix   = last match {
-        case p:PrefixedAttribute => p.pre
-        case _ => null
-      }
-      override def label = "@"+last.key
-      override def child = Text(last.value)
-      override def text = last.value
-    }
-    val ns = new Array[Node](this.length)
-    var i = 0
-    val it = elements
-    while(it.hasNext) {
-      val a = it.next
-      ns(i) = new NodeProxy(a)
-      i = i + 1
-    }
-    val seq = array2seq(ns)
-    NodeSeq.fromSeq(seq)
-  }
-   */
-
   /** shallow equals method */
   def equals1(that: MetaData): Boolean
 
@@ -126,14 +105,22 @@ abstract class MetaData extends Iterable[MetaData] {
   def next: MetaData
 
   /** gets value of unqualified (unprefixed) attribute with given key */
-  def getValue(key: String): Seq[Node]
+  final def get(key: String): Option[Seq[Node]] = apply(key) match {
+    case null => None
+    case x    => Some(x)
+  }
+
+  /** same as get(namespace, owner.scope, key) */
+  final def get(namespace: String, owner: Node, key: String): Option[Seq[Node]] =
+    get(namespace, owner.scope, key)
 
   /** gets value of qualified (prefixed) attribute with given key */
-  def getValue(namespace: String, owner: Node, key: String): Seq[Node] =
-    getValue(namespace, owner.scope, key)
+  final def get(namespace: String, scope: NamespaceBinding, key: String): Option[Seq[Node]] =
+    apply(namespace, scope, key) match {
+      case null => None
+      case x    => Some(x)
+    }
 
-  /** gets value of qualified (prefixed) attribute with given key */
-  def getValue(namespace: String, scope: NamespaceBinding, key: String): Seq[Node]
   override def hashCode(): Int
 
   def toString1(): String = {

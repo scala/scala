@@ -104,6 +104,11 @@ object Utility extends AnyRef with parsing.TokenTests {
       case x: SpecialNode =>
         x.toString(sb)
 
+      case g: Group =>
+        for (val c <- g.nodes) {
+          toXML(c, x.scope, sb, stripComment)
+        }
+
       case _  =>
         // print tag with namespace declarations
         sb.append('<')
@@ -113,7 +118,7 @@ object Utility extends AnyRef with parsing.TokenTests {
         }
         x.scope.toString(sb, pscope)
         sb.append('>')
-        for (val c <- x.child.elements) {
+        for (val c <- x.child) {
           toXML(c, x.scope, sb, stripComment)
         }
         sb.append("</")

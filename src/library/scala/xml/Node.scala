@@ -70,7 +70,7 @@ abstract class Node extends NodeSeq {
    * @return value of <code>UnprefixedAttribute</code> with given key
    *         in attributes, if it exists, otherwise <code>null</code>.
    */
-  final def attribute(key: String) = attributes.getValue(key);
+  final def attribute(key: String) = attributes.get(key);
 
   /**
    * Convenience method, looks up a prefixed attribute in attributes of this node.
@@ -81,7 +81,7 @@ abstract class Node extends NodeSeq {
    * @return value of <code>PrefixedAttribute</code> with given namespace
    *         and given key, otherwise <code>null</code>.
    */
-  final def attribute(uri: String, key: String) = attributes.getValue(uri, this, key);
+  final def attribute(uri: String, key: String) = attributes.get(uri, this, key);
 
   /**
    * Returns attribute meaning all attributes of this node, prefixed and unprefixed,
@@ -115,6 +115,7 @@ abstract class Node extends NodeSeq {
    *  attributes and children
    */
   override def equals(x: Any): Boolean = x match {
+    case g:Group => false
     case that: Node =>
       ((that.prefix == this.prefix )
        &&(that.label == this.label )
@@ -134,7 +135,7 @@ abstract class Node extends NodeSeq {
   /**
    *  returns a sequence consisting of only this node
    */
-  final def theSeq = this :: Nil;
+  def theSeq:Seq[Node] = this :: Nil;
 
   /**
    * String representation of this node
