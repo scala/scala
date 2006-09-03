@@ -641,7 +641,7 @@ trait Symbols requires SymbolTable {
     final def toInterface: Symbol =
       if (isImplClass) {
         val result =
-          if (phase.erasedTypes) {
+          if (phase.erasedTypes || phase.name == "erasure") {
             assert(!tpe.parents.isEmpty, this)
             tpe.parents.last.symbol
           } else {
