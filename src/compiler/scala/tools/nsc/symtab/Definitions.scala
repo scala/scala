@@ -6,8 +6,8 @@
 
 package scala.tools.nsc.symtab
 
+import scala.collection.mutable.HashMap
 import scala.tools.nsc.util.Position
-import collection.mutable.HashMap
 import Flags._
 
 trait Definitions requires SymbolTable {
@@ -60,6 +60,9 @@ trait Definitions requires SymbolTable {
     var ScalaObjectClass: Symbol = _
       def ScalaObjectClass_tag = getMember(ScalaObjectClass, nme.tag)
     var AttributeClass: Symbol = _
+    //var ChannelClass: Symbol = _
+    //  def Channel_send = getMember(ChannelClass, nme.send)
+    //  def Channel_receive = getMember(ChannelClass, nme.receive)
     //var RemoteRefClass: Symbol = _
     var CodeClass: Symbol = _
     var CodeModule: Symbol = _
@@ -110,9 +113,9 @@ trait Definitions requires SymbolTable {
           typeRef(sym.typeConstructor.prefix, sym, elems)
         } else NoType;
 
-    val MaxFunctionArity = 9;
-    val FunctionClass: Array[Symbol] = new Array(MaxFunctionArity + 1);
-      def functionApply(n: Int) = getMember(FunctionClass(n), nme.apply);
+    val MaxFunctionArity = 9
+    val FunctionClass: Array[Symbol] = new Array(MaxFunctionArity + 1)
+      def functionApply(n: Int) = getMember(FunctionClass(n), nme.apply)
       def functionType(formals: List[Type], restpe: Type) =
         if (formals.length <= MaxFunctionArity) {
           val sym = FunctionClass(formals.length);
@@ -120,13 +123,13 @@ trait Definitions requires SymbolTable {
         } else NoType;
       def isFunctionType(tp: Type): boolean = tp match {
         case TypeRef(_, sym, args) =>
-          ((args.length > 0) && (args.length - 1 <= MaxFunctionArity) &&
-           (sym == FunctionClass(args.length - 1)))
-          case _ =>
-            false
+          (args.length > 0) && (args.length - 1 <= MaxFunctionArity) &&
+          (sym == FunctionClass(args.length - 1))
+        case _ =>
+          false
       }
 /*    val RemoteFunctionClass: Array[Symbol] = new Array(MaxFunctionArity + 1)
-      def remoteFunctionApply(n:int) = getMember(RemoteFunctionClass(n), nme.apply)
+      def remoteFunctionApply(n: Int) = getMember(RemoteFunctionClass(n), nme.apply)
       def remoteFunctionType(formals: List[Type], restpe: Type) =
         if (formals.length <= MaxFunctionArity) {
           val sym = RemoteFunctionClass(formals.length)
@@ -134,10 +137,10 @@ trait Definitions requires SymbolTable {
         } else NoType;
       def isRemoteFunctionType(tp: Type): boolean = tp match {
         case TypeRef(_, sym, args) =>
-          ((args.length > 0) && (args.length - 1 <= MaxFunctionArity) &&
-           (sym == RemoteFunctionClass(args.length - 1)))
-          case _ =>
-            false
+          (args.length > 0) && (args.length - 1 <= MaxFunctionArity) &&
+          (sym == RemoteFunctionClass(args.length - 1))
+        case _ =>
+          false
       }
 */
     def seqType(arg: Type) =
@@ -209,8 +212,8 @@ trait Definitions requires SymbolTable {
       var i = 0
       var j = fullname.pos('.', i)
       while (j < fullname.length) {
-        sym = sym.info.member(fullname.subName(i, j));
-        i = j + 1;
+        sym = sym.info.member(fullname.subName(i, j))
+        i = j + 1
         j = fullname.pos('.', i)
       }
       val result =
@@ -224,15 +227,15 @@ trait Definitions requires SymbolTable {
     }
 
     private def newClass(owner: Symbol, name: Name, parents: List[Type]): Symbol = {
-      val clazz = owner.newClass(NoPos, name.toTypeName);
-      clazz.setInfo(ClassInfoType(parents, newScope, clazz));
-      owner.info.decls.enter(clazz);
+      val clazz = owner.newClass(NoPos, name.toTypeName)
+      clazz.setInfo(ClassInfoType(parents, newScope, clazz))
+      owner.info.decls.enter(clazz)
       clazz
     }
 
     private def newCovariantPolyClass(owner: Symbol, name: Name, parent: Symbol => Type): Symbol = {
-      val clazz = newClass(owner, name, List());
-      val tparam = newTypeParam(clazz, 0) setFlag COVARIANT;
+      val clazz = newClass(owner, name, List())
+      val tparam = newTypeParam(clazz, 0) setFlag COVARIANT
       clazz.setInfo(
         PolyType(
           List(tparam),
@@ -240,24 +243,24 @@ trait Definitions requires SymbolTable {
     }
 
     private def newAlias(owner: Symbol, name: Name, alias: Type): Symbol = {
-      val tpsym = owner.newAliasType(NoPos, name.toTypeName);
-      tpsym.setInfo(alias);
-      owner.info.decls.enter(tpsym);
+      val tpsym = owner.newAliasType(NoPos, name.toTypeName)
+      tpsym.setInfo(alias)
+      owner.info.decls.enter(tpsym)
       tpsym
     }
 
     private def newMethod(owner: Symbol, name: Name): Symbol = {
-      val msym = owner.newMethod(NoPos, name.encode);
-      owner.info.decls.enter(msym);
+      val msym = owner.newMethod(NoPos, name.encode)
+      owner.info.decls.enter(msym)
       msym
     }
 
     private def newMethod(owner: Symbol, name: Name, formals: List[Type], restpe: Type): Symbol =
-      newMethod(owner, name).setInfo(MethodType(formals, restpe));
+      newMethod(owner, name).setInfo(MethodType(formals, restpe))
 
     private def newPolyMethod(owner: Symbol, name: Name, tcon: Symbol => Type): Symbol = {
-      val msym = newMethod(owner, name);
-      val tparam = newTypeParam(msym, 0);
+      val msym = newMethod(owner, name)
+      val tparam = newTypeParam(msym, 0)
       msym.setInfo(PolyType(List(tparam), tcon(tparam)))
     }
 
@@ -266,7 +269,7 @@ trait Definitions requires SymbolTable {
 
     private def newTypeParam(owner: Symbol, index: int): Symbol =
       owner.newTypeParameter(NoPos, "T" + index)
-        .setInfo(TypeBounds(AllClass.typeConstructor, AnyClass.typeConstructor));
+        .setInfo(TypeBounds(AllClass.typeConstructor, AnyClass.typeConstructor))
 
     val boxedClass = new HashMap[Symbol, Symbol]
     val boxedArrayClass = new HashMap[Symbol, Symbol]
@@ -275,11 +278,11 @@ trait Definitions requires SymbolTable {
 
     private def newValueClass(name: Name, tag: char): Symbol = {
       val clazz =
-        newClass(ScalaPackageClass, name, List(AnyValClass.typeConstructor));
-      boxedClass(clazz) = getClass("scala.runtime.Boxed" + name);
-      boxedArrayClass(clazz) = getClass("scala.runtime.Boxed" + name + "Array");
-      refClass(clazz) = getClass("scala.runtime." + name + "Ref");
-      abbrvTag(clazz) = tag;
+        newClass(ScalaPackageClass, name, List(AnyValClass.typeConstructor))
+      boxedClass(clazz) = getClass("scala.runtime.Boxed" + name)
+      boxedArrayClass(clazz) = getClass("scala.runtime.Boxed" + name + "Array")
+      refClass(clazz) = getClass("scala.runtime." + name + "Ref")
+      abbrvTag(clazz) = tag
       clazz
     }
 
@@ -298,7 +301,7 @@ trait Definitions requires SymbolTable {
       val longparam = List(longtype)
 
       val floattype = if (forCLDC) null else FloatClass.typeConstructor
-      val floatparam =if (forCLDC) null else  List(floattype)
+      val floatparam = if (forCLDC) null else List(floattype)
       val doubletype = if (forCLDC) null else DoubleClass.typeConstructor
       val doubleparam = if (forCLDC) null else List(doubletype)
 
@@ -401,15 +404,15 @@ trait Definitions requires SymbolTable {
 
     /** Is symbol a value class? */
     def isValueClass(sym: Symbol): boolean =
-      (sym eq UnitClass) || (boxedClass contains sym);
+      (sym eq UnitClass) || (boxedClass contains sym)
 
     /** Is symbol a value class? */
     def isNumericValueClass(sym: Symbol): boolean =
-      (sym ne BooleanClass) && (boxedClass contains sym);
+      (sym ne BooleanClass) && (boxedClass contains sym)
 
     /** Is symbol a value or array class? */
     def isUnboxedClass(sym: Symbol): boolean =
-      isValueClass(sym) || sym == ArrayClass;
+      isValueClass(sym) || sym == ArrayClass
 
     def signature(tp: Type): String = {
       def erasure(tp: Type): Type = tp match {
@@ -437,15 +440,15 @@ trait Definitions requires SymbolTable {
       isInitialized = true
       RootClass =
         NoSymbol.newClass(NoPos, nme.ROOT.toTypeName)
-          .setFlag(FINAL | MODULE | PACKAGE | JAVA).setInfo(rootLoader);
+          .setFlag(FINAL | MODULE | PACKAGE | JAVA).setInfo(rootLoader)
       RootPackage = NoSymbol.newValue(NoPos, nme.ROOTPKG)
           .setFlag(FINAL | MODULE | PACKAGE | JAVA)
-          .setInfo(PolyType(List(), RootClass.tpe));
+          .setInfo(PolyType(List(), RootClass.tpe))
 
       EmptyPackage =
-        RootClass.newPackage(NoPos, nme.EMPTY_PACKAGE_NAME).setFlag(FINAL);
-      EmptyPackageClass = EmptyPackage.moduleClass;
-      EmptyPackageClass.setInfo(ClassInfoType(List(), newScope, EmptyPackageClass));
+        RootClass.newPackage(NoPos, nme.EMPTY_PACKAGE_NAME).setFlag(FINAL)
+      EmptyPackageClass = EmptyPackage.moduleClass
+      EmptyPackageClass.setInfo(ClassInfoType(List(), newScope, EmptyPackageClass))
 
       EmptyPackage.setInfo(EmptyPackageClass.tpe)
       RootClass.info.decls.enter(EmptyPackage)
@@ -462,7 +465,7 @@ trait Definitions requires SymbolTable {
       val anyparam = List(AnyClass.typeConstructor)
 
       AnyValClass = newClass(ScalaPackageClass, nme.AnyVal, anyparam)
-        .setFlag(SEALED);
+        .setFlag(SEALED)
 
       ObjectClass = getClass("java.lang.Object")
 
@@ -501,6 +504,7 @@ trait Definitions requires SymbolTable {
       // the scala reference classes
       ScalaObjectClass = getClass("scala.ScalaObject")
       AttributeClass = getClass("scala.Attribute")
+      //ChannelClass = getClass("scala.distributed.Channel")
       //RemoteRefClass = getClass("scala.distributed.RemoteRef")
       if (!forCLDC) {
         CodeClass = getClass("scala.reflect.Code")
