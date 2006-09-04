@@ -72,11 +72,11 @@ abstract class Mixin extends InfoTransform {
       clazz setFlag MIXEDIN
       def newGetter(field: Symbol): Symbol =
         clazz.newMethod(field.pos, nme.getterName(field.name))
-          .setFlag(field.flags & ~(PRIVATE | LOCAL) | ACCESSOR | DEFERRED | SYNTHETIC)
+          .setFlag(field.flags & ~(PRIVATE | LOCAL) | ACCESSOR | DEFERRED)
           .setInfo(MethodType(List(), field.info))
       def newSetter(field: Symbol): Symbol =
         clazz.newMethod(field.pos, nme.getterToSetter(nme.getterName(field.name)))
-          .setFlag(field.flags & ~(PRIVATE | LOCAL) | ACCESSOR | DEFERRED | SYNTHETIC)
+          .setFlag(field.flags & ~(PRIVATE | LOCAL) | ACCESSOR | DEFERRED)
           .setInfo(MethodType(List(field.info), UnitClass.tpe))
       clazz.info
       val impl = implClass(clazz)
