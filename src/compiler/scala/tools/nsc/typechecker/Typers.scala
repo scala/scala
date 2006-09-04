@@ -2015,8 +2015,7 @@ trait Typers requires Analyzer {
             for (val arg <- args) getParts(arg, s)
           case ThisType(_) =>
             getParts(tp.widen, s)
-          case SingleType(pre, _) =>
-            getParts(pre, s)
+          case _: SingletonType =>
             getParts(tp.widen, s)
           case RefinedType(ps, _) =>
             for (val p <- ps) getParts(p, s)

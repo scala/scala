@@ -1525,7 +1525,7 @@ trait Parsers requires SyntaxAnalyzer {
       val tp = typedOpt();
       val rhs = if (tp.isEmpty || in.token == EQUALS) {
         accept(EQUALS);
-        if (tp != EmptyTree && in.token == USCORE) {
+        if (!tp.isEmpty && in.token == USCORE) {
           in.nextToken();
           EmptyTree
         } else
