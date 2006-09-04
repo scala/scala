@@ -622,10 +622,10 @@ trait Symbols requires SymbolTable {
      *  package as this class.
      */
     final def linkedModuleOfClass: Symbol =
-      if (this != NoSymbol)
-        owner.info.decl(name.toTermName).suchThat(
+      if (this.isClass && !this.isAnonymousClass && !this.isRefinementClass) {
+        owner.rawInfo.decl(name.toTermName).suchThat(
           sym => (sym hasFlag MODULE) && (sym.rawInfo ne NoType))
-      else NoSymbol
+      } else NoSymbol
 
     /** For a module its linked class, for a class its linked module or case factory otherwise */
     final def linkedSym: Symbol =
@@ -641,7 +641,7 @@ trait Symbols requires SymbolTable {
     final def toInterface: Symbol =
       if (isImplClass) {
         val result =
-          if (phase.erasedTypes || phase.name == "erasure") {
+          if (phase.next.erasedTypes) {
             assert(!tpe.parents.isEmpty, this)
             tpe.parents.last.symbol
           } else {

@@ -69,7 +69,7 @@ abstract class AddInterfaces extends InfoTransform {
               val e = decls.lookupEntry(impl.name)
               if (e == null) {
                 decls enter impl
-              } else if (true || currentRun.compiles(iface)) {
+              } else {
                 decls.unlink(e)
                 decls enter impl
               }
@@ -86,7 +86,16 @@ abstract class AddInterfaces extends InfoTransform {
       }
   }
 
-  /** A lazy type to set the info of an implementation class */
+  /** A lazy type to set the info of an implementation class
+   *  The parents of an implementation class for trait `iface' are:
+   *    - superclass: Object
+   *    - mixin classes: mixin classes of `iface' where every non-interface trait
+   *                     is mapped to its implementation class, followed by
+   *                     `iface' itself.
+   *  The declarations of a mixin class are
+   *    - for every interface member of `iface' its implemention method, if one is needed.
+   *    - every former member of `iface' that is implementation only
+   */
   private class LazyImplClassType(iface: Symbol) extends LazyType {
 
     /** Compute the decls of implementation class `implClass',
