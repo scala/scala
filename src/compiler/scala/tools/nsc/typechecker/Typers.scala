@@ -1313,7 +1313,7 @@ trait Typers requires Analyzer {
             case ThisType(clazz) if (context.enclClass.owner.ownerChain contains clazz) =>
               qual.tpe.member(name)
             case _  =>
-              if (phase.erasedTypes) qual.tpe.member(name)
+              if (phase.next.erasedTypes) qual.tpe.member(name)
               else qual.tpe.nonLocalMember(name)
           }
         if (sym == NoSymbol && name != nme.CONSTRUCTOR && (mode & EXPRmode) != 0) {
