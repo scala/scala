@@ -8,7 +8,7 @@ package scala.tools.nsc.matching
 
 import scala.tools.nsc.util.Position
 
-trait CodeFactory requires TransMatcher  {
+trait CodeFactory requires transform.ExplicitOuter  {
 
   import global._
 

@@ -13,14 +13,13 @@ import scala.tools.nsc.util.Position
  *  @author Burak Emir
  *  @version 1.0
  */
-trait PatternMatchers requires (TransMatcher with PatternNodes)
-                      extends AnyRef with PatternNodeCreator {
+trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
   import global._
   import typer.typed
   import symtab.Flags
 
   // -- begin new data structure for matcher
-
+                        /*
   abstract class Node
 
   class Test(var tpe: Type, var casted: Symbol) extends Node {
@@ -40,7 +39,7 @@ trait PatternMatchers requires (TransMatcher with PatternNodes)
   abstract class PatNodeList
   case class Snoc(sx: PatNodeList, x:Test) extends PatNodeList
   case object Snil extends PatNodeList
-
+*/
     // -- end
 
   class PatternMatcher {
@@ -64,42 +63,170 @@ trait PatternMatchers requires (TransMatcher with PatternNodes)
     //protected var resultVar: Symbol = _
 
     def defs = definitions
-
+    var handleOuter: Tree=>Tree = _
     /** init method, also needed in subclass AlgebraicMatcher
      */
-    def initialize(selector: Tree, owner: Symbol): Unit = {
+    def initialize(selector: Tree, owner: Symbol, handleOuter:Tree=>Tree): Unit = {
 
-    //Konsole.println("pm.initialize selector.tpe = "+selector.tpe);
+      this.owner = owner
+      this.selector = selector
+      this.handleOuter = handleOuter
+      this.root = pConstrPat(selector.pos, selector.tpe.widen);
 
-    /*
-    this.mk = new PatternNodeCreator {
-      val global = PatternMatcher.this.global;
-      val unit = PatternMatcher.this.unit;
-      val owner = PatternMatcher.this.owner;
-    }
-    */
-    /*
-    this.cf = new CodeFactory {
-      val global = PatternMatcher.this.global;
-      val unit = PatternMatcher.this.unit;
-      val owner = PatternMatcher.this.owner;
-    }
-    */
-    this.root = pConstrPat(selector.pos, selector.tpe.widen);
-    //Konsole.println("selector.tpe "+selector.tpe);
-    //Konsole.println("selector.tpe.widen "+selector.tpe.widen);
-    //Konsole.println("root.symbol "+root.symbol);
-    //Konsole.println("root.symbol.tpe "+root.symbol.tpe);
-    this.root.and = pHeader(selector.pos,
+      this.root.and = pHeader(selector.pos,
                               selector.tpe.widen,
                               Ident(root.symbol).setType(root.tpe));
       //Konsole.println("resultType =  "+resultType);
-      this.owner = owner
-      this.selector = selector
-
       //this.optimize = this.optimize && (settings.target.value == "jvm");
     }
 
+// ---
+  /**
+   *  @param pos ...
+   *  @param tpe ...
+   *  @param len ...
+   *  @return ...
+   */
+  def pSequencePat(pos: PositionType, tpe: Type, len: int) = {
+    //assert (tpe != null)
+    val sym = newVar(FirstPos, tpe)
+    //Console.println("pncrea::sequencePat sym.pos = "+sym.pos)
+    val node = new SequencePat(sym, len)
+    node.pos = pos
+    node.tpe = tpe
+    //Console.println("pncrea::sequencePat sym.pos = "+sym.pos)
+    node
+  }
+
+  /**
+   *  @param pos         ...
+   *  @param tpe         ...
+   *  @param castedRest1 ...
+   *  @param minlen      ...
+   *  @return            ...
+   */
+  def pRightIgnoringSequencePat(pos: PositionType, tpe: Type,
+                                castedRest1: Symbol, minlen: int) = {
+    //assert (tpe != null)
+    val sym = newVar(FirstPos, tpe)
+    var castedRest = if(castedRest1 != null) castedRest1 else newVar(pos, tpe)
+    val node = new RightIgnoringSequencePat(sym, castedRest, minlen)
+    node.pos = pos
+    node.tpe = tpe
+    node
+  }
+
+  /**
+   *  @param pos    ...
+   *  @param tpe    ...
+   *  @param seqpat ...
+   *  @return       ...
+   */
+  def pSeqContainerPat(pos: PositionType, tpe: Type, seqpat: Tree ) = {
+    //assert (tpe != null)
+    val sym = newVar(NoPos, tpe)
+    val node = new SeqContainerPat(sym, seqpat)
+    node.pos = pos
+    node.setType(tpe)
+    node
+  }
+
+  /**
+   *  @param pos ...
+   *  @param tpe ...
+   *  @return    ...
+   */
+  def pDefaultPat(pos: PositionType, tpe: Type) = {
+    //assert (tpe != null)
+    val node = new DefaultPat()
+    node.pos = pos
+    node.setType(tpe)
+    node
+  }
+
+  def pConstrPat(pos: PositionType, tpe: Type) = {
+    //assert (tpe != null)
+    val node = new ConstrPat(newVar(pos, tpe))
+    node.pos = pos
+    node.setType(tpe)
+    node
+  }
+
+  def pConstantPat(pos: PositionType, tpe: Type, value: Any /*AConstant*/) = {
+    //assert (tpe != null)
+    val node = new ConstantPat(value)
+    node.pos = pos
+    node.setType(tpe)
+    node
+  }
+
+  def pVariablePat(pos: PositionType, tree: Tree) = {
+    //assert (tree.tpe != null)
+    val node = new VariablePat(tree)
+    node.pos = pos
+    node.setType(tree.tpe)
+    node
+  }
+
+  /**
+   *  @param pos    ...
+   *  @param header ...
+   *  @return       ...
+   */
+  def pAltPat(pos: PositionType, header: Header) = {
+    val node = new AltPat(header)
+    node.pos = pos
+    node.setType(header.getTpe())
+    node
+  }
+
+  // factories
+
+  def pHeader(pos: PositionType, tpe: Type, selector: Tree) = {
+    //assert (tpe != null)
+    val node = new Header(selector, null)
+    node.pos = pos
+    node.setType(tpe)
+    node
+  }
+
+  def pBody(pos: PositionType) = {
+    val node = new Body(new Array[Array[ValDef]](0),
+                        new Array[Tree](0),
+                        new Array[Tree](0))
+    node.pos = pos
+    node
+  }
+
+  def pBody(pos: PositionType, bound: Array[ValDef], guard: Tree, body: Tree) = {
+    val node = new Body(Predef.Array[Array[ValDef]](bound),
+                        Predef.Array[Tree](guard),
+                        Predef.Array[Tree](body))
+    node.pos = pos
+    node
+  }
+
+  /**
+   *  @param pos  ...
+   *  @param name ...
+   *  @param tpe  ...
+   *  @return     ...
+   */
+  def newVar(pos: PositionType, name: Name, tpe: Type): Symbol = {
+    /** hack: pos has special meaning*/
+    val sym = owner.newVariable(pos, name)
+    //Console.println("patnodcre::newVar sym = "+sym+ "tpe = "+tpe)
+    sym.setInfo(tpe)
+    //System.out.println("PatternNodeCreator::newVar creates symbol "+sym)
+    //System.out.println("owner: "+sym.owner())
+    sym
+  }
+
+  def newVar(pos: PositionType, tpe: Type): Symbol =
+    newVar(pos, cunit.fresh.newName("temp"), tpe).setFlag(Flags.SYNTHETIC)
+
+
+// ---
     /** pretty printer
      */
     def print(): Unit =
@@ -766,7 +893,7 @@ trait PatternMatchers requires (TransMatcher with PatternNodes)
     /** simple optimization: if the last pattern is `case _' (no guards), we won't generate the ThrowMatchError
      */
   def generalSwitchToTree(): Tree = {
-    this.exit = currentOwner.newLabel(root.pos, "exit")
+    this.exit = owner.newLabel(root.pos, "exit")
     .setInfo(new MethodType(List(resultType), resultType));
     //Console.println("resultType:"+resultType.toString());
     val result = exit.newValueParameter(root.pos, "result").setInfo( resultType );
@@ -841,7 +968,7 @@ trait PatternMatchers requires (TransMatcher with PatternNodes)
             }
         var i = guard.length - 1; while(i >= 0) {
         val ts:Seq[Tree] = bound(i).asInstanceOf[Array[Tree]];
-        val temp = currentOwner.newValue(body(i).pos, cunit.fresh.newName("r$"))
+        val temp = owner.newValue(body(i).pos, cunit.fresh.newName("r$"))
           .setFlag(Flags.SYNTHETIC).setInfo(resultType);
           var res0: Tree =
             //Block(
@@ -999,7 +1126,7 @@ trait PatternMatchers requires (TransMatcher with PatternNodes)
                       /** The first outer selection from currently transformed tree
                        */
                       def outerValue: Tree =
-                        outerSelect(gen.mkAttributedThis(currentOwner.enclClass))
+                        outerSelect(gen.mkAttributedThis(owner.enclClass))
 
                       /** The path
                        *     `base'.$outer ... .$outer
@@ -1040,13 +1167,19 @@ trait PatternMatchers requires (TransMatcher with PatternNodes)
                         val sym = tree.symbol
                         tree match {
                           case This(qual) =>
-                            if (sym == currentOwner.enclClass || (sym hasFlag Flags.MODULE) && sym.isStatic) tree
+                            if (sym == owner.enclClass || (sym hasFlag Flags.MODULE) && sym.isStatic) tree
                             else posAssigner.atPos(tree.pos)(outerPath(outerValue, sym)); // (5)
                           case Select(qual,name) =>
                             Select(mytransform(qual),name)
                         }
                       }
-                      theRef = mytransform(theRef)
+                      //theRef = mytransform(theRef)
+                      if(global.settings.debug.value) {
+                      Console.println("theRef "+theRef)
+                      Console.println("mytransform(theRef) "+mytransform(theRef))
+                        Console.println("handleOuter(theRef) "+handleOuter(theRef))
+                      }
+                      theRef = handleOuter(theRef)
                       /*
                       val tpe = prefix.prefix
                       if(
@@ -1163,7 +1296,7 @@ trait PatternMatchers requires (TransMatcher with PatternNodes)
             scala.Predef.error("can't plant this tree");
         }
     }
+  }
 }
 
 
-}

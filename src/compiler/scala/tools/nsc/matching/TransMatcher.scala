@@ -10,62 +10,28 @@ package scala.tools.nsc.matching
  *
  *  @author Burak Emir
  */
-abstract class TransMatcher extends transform.Transform
+trait TransMatcher requires transform.ExplicitOuter /*extends transform.Transform
 with PatternNodes
 with CodeFactory
-with PatternMatchers {
+with PatternMatchers */ {
 
   import global._
   import definitions._
   import posAssigner.atPos
   import typer.typed
   import symtab.Flags
-
+/*
   val phaseName = "transmatcher"
 
   protected def newTransformer(unit: global.CompilationUnit): global.Transformer = {
     new TransMatch
   }
-
-  /** container. classes AlgebraicMatcher and SequenceMatcher get input and
-   *  store their results in here. resembles the 'Memento' design pattern,
-   *  could also be named 'Liaison'
-   */
-  abstract class PartialMatcher {
-
-    /** owner of the code we create (input)
-     */
-    val owner: Symbol
-
-    /** the selector value (input)
-     */
-    val selector: Tree
-
-    /** tree representing the matcher (output)
-     */
-    var tree: Tree  = _
-
-    def pos: int = selector.pos
-
-    //assert( owner != null ) : "owner is null";
-    //assert owner != Symbol.NONE ;
-    //this.owner      = owner;
-
-    //assert root != null;
-    //assert root.type != null;
-    //this.selector   = root;
-
-    //assert this.resultType != Type.NoType;
-    //this.resultType = resultType;
-
-    //this.pos        = root.pos; // for convenience only
-  }
-
+*/
   var cunit: CompilationUnit = _
 
   def fresh = cunit.fresh
 
-  var currentOwner: Symbol = _
+  //var currentOwner: Symbol = _
 
   var resultType: Type = _
 
@@ -186,14 +152,6 @@ with PatternMatchers {
       while (it.hasNext && {c = it.next; !isRegularPattern(c)}) {}
       (!it.hasNext) && isDefaultStar(c)
   }
-
-  class TransMatch extends Transformer {
-
-    override def transformUnit(unit: CompilationUnit) = {
-      cunit = unit
-      super.transformUnit(unit)
-      cunit = null
-    }
 
     /** a casedef with sequence subpatterns like
      *
@@ -318,7 +276,7 @@ with PatternMatchers {
 
     /** handles all translation of pattern matching
      */
-    def handle(sel: Tree, ocases: List[CaseDef]): Tree = {
+    def handlePattern(sel: Tree, ocases: List[CaseDef], owner:Symbol, handleOuter:Tree=>Tree): Tree = {
       // TEMPORARY
       //new NewMatcher().toIR(sel, ocases)
       //
@@ -329,27 +287,13 @@ with PatternMatchers {
       // @todo: remove unused variables
 
       if (containsReg) {
-        // 2. replace nilVariables
-        //@todo: bring over AlgebraicMatcher
-                /*
-        val matcher = new PartialMatcher {
-          val global: TransMatcher.this.global.type = TransMatcher.this.global;
-          val owner = currentOwner;
-          val selector = sel ;
-        }
-        new AlgebraicMatcher() {
-          val tm: TransMatcher.this.type = TransMatcher.this;
-        }.construct( matcher, cases );
-        matcher.tree
-                */
-
         System.out.println("" + sel + " match " + ocases)
         cunit.error(sel.pos, "regular expressions not yet implemented")
         //sel
         EmptyTree
       } else {
         val pm = new PatternMatcher()
-        pm.initialize(sel, currentOwner)
+        pm.initialize(sel, owner,handleOuter)
         pm.construct(cases)
         //if (global.log()) {
         //  global.log("internal pattern matching structure");
@@ -358,54 +302,4 @@ with PatternMatchers {
         pm.toTree()
       }
     }
-
-    override def transform(tree: Tree): Tree = tree match {
-      /* // test code to generate forward jumps
-      case Match(selector, CaseDef(Ident(nme.WILDCARD), EmptyTree, exp)::Nil) => // inserting test-code
-
-        val target1 = currentOwner.newLabel(tree.pos, "target1")
-        .setInfo(new MethodType(List(definitions.IntClass.tpe), definitions.IntClass.tpe));
-
-        val a = currentOwner.newValue(tree.pos, "a").setInfo(definitions.IntClass.tpe);
-        val x = currentOwner.newValueParameter(tree.pos, "x").setInfo(definitions.IntClass.tpe);
-        val y = currentOwner.newValueParameter(tree.pos, "y").setInfo(definitions.IntClass.tpe);
-        val target2 = currentOwner.newLabel(tree.pos, "target2")
-        .setInfo(new MethodType(List(definitions.IntClass.tpe, definitions.IntClass.tpe), definitions.IntClass.tpe));
-
-        val z = currentOwner.newValueParameter(tree.pos, "z").setInfo(definitions.IntClass.tpe);
-        typed { atPos(tree.pos) { Block(
-          List(
-            Apply(Ident(target2), List(Literal(Constant(1)),Literal(Constant(2)))),
-            LabelDef(target1, List(x), exp)),
-            LabelDef(target2, List(y,z), Apply(Select(Ident(y), nme.PLUS), List(Ident(z))))
-        )}};
-*/
-
-      case Match(selector, cases) =>
-        val nselector = transform(selector).setType(selector.tpe)
-        val ncases = cases map { transform }
-/*
-      Console.println("TransMatch translating cases: ")
-      for(val t <- cases) {
-        Console.println(t.pat.toString())
-        Console.println("BODY "+t.body.toString())
-      }
-*/
-        // @todo: remove from partial matcher
-        TransMatcher.this.currentOwner = currentOwner
-        TransMatcher.this.resultType = tree.tpe
-        //Console.println("TransMatcher currentOwner ="+currentOwner+")")
-        //Console.println("TransMatcher selector.tpe ="+selector.tpe+")")
-        //Console.println("TransMatcher resultType ="+resultType+")")
-        val t_untyped = handle(nselector, ncases.asInstanceOf[List[CaseDef]])
-        //Console.println("t_untyped "+t_untyped.toString())
-        val t         = atPos(tree.pos) { typer.atOwner(tree,currentOwner).typed(t_untyped, resultType) }
-        //val t         = atPos(tree.pos) { typed(t_untyped, resultType) }
-        //val t         = atPos(tree.pos) { typed(t_untyped) }
-        //Console.println("t typed "+t.toString())
-        t
-      case _ =>
-        super.transform(tree)
-    }
-  }
 }

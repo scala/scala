@@ -21,7 +21,7 @@ import util.Statistics
 import ast._
 import ast.parser._
 import typechecker._
-import matching.TransMatcher
+//import matching.TransMatcher
 import transform._
 import backend.icode.{ICodes, GenICode, Checkers}
 import backend.ScalaPrimitives
@@ -259,9 +259,9 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     val global: Global.this.type = Global.this
   }
 
-  object transMatcher extends TransMatcher {
-    val global: Global.this.type = Global.this
-  }
+  //object transMatcher extends TransMatcher {
+  //  val global: Global.this.type = Global.this
+  //}
 
 //  object checkDefined extends CheckDefined {
 //    val global: Global.this.type = Global.this
@@ -346,7 +346,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     uncurry,
     tailCalls,
     explicitOuter,
-    transMatcher,
+    //transMatcher,
 //    checkDefined,
     erasure,
     lambdaLift,

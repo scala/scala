@@ -8,7 +8,7 @@ package scala.tools.nsc.matching
 
 import scala.tools.nsc.util.Position
 
-trait PatternNodes requires TransMatcher {
+trait PatternNodes requires transform.ExplicitOuter {
 
   import global._
 

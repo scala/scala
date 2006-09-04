@@ -9,8 +9,12 @@ package scala.tools.nsc.transform
 import symtab._
 import Flags._
 import scala.collection.mutable.{HashMap, ListBuffer}
-
-abstract class ExplicitOuter extends InfoTransform {
+import matching.{TransMatcher, PatternNodes, CodeFactory, PatternMatchers}
+abstract class ExplicitOuter extends InfoTransform
+with TransMatcher
+with PatternNodes
+with CodeFactory
+with PatternMatchers {
   import global._
   import definitions._
   import posAssigner.atPos
@@ -317,6 +321,7 @@ abstract class ExplicitOuter extends InfoTransform {
             // moved outer parameter to first position
             copy.Apply(tree, sel, outerVal :: args)
 //            copy.Apply(tree, sel, args ::: List(outerVal))
+
           case _ =>
             tree
         }
@@ -331,12 +336,20 @@ abstract class ExplicitOuter extends InfoTransform {
      *      without a super qualifier accessed from an inner class or trait.
      *   5. Remove `private' and `protected' modifiers from type symbols
      */
-    private val secondTransformer = new Transformer {
+    private val secondTransformer = new OuterPathTransformer {
 
       /** The second-step transformation method */
       override def transform(tree: Tree): Tree = {
         val sym = tree.symbol
-        val tree1 = super.transform(tree)
+
+        val tree1 =
+          if(tree.isInstanceOf[Match]) {
+            //Console.println("calling super.transform of Match with ncases "+
+            //                tree.asInstanceOf[Match].cases.length)
+            tree
+          } else {
+            super.transform(tree)
+          }
         tree1 match {
           case DefDef(_, _, _, _, _, _) =>
             if (sym.owner.isTrait && (sym hasFlag (ACCESSOR | SUPERACCESSOR)))
@@ -351,6 +364,46 @@ abstract class ExplicitOuter extends InfoTransform {
                 (qsym.isTrait || !(qual.isInstanceOf[Super] || (qsym isSubClass enclClass))))
               sym setFlag notPROTECTED;
             tree1
+
+/*<--- begin transmatch experimental */
+      case Match(selector, cases) =>
+        val tid = cunit.fresh.newName("tidmark")
+
+          if(settings.debug.value)
+            Console.println("transforming patmat with tidmark "+tid+" ncases = "+cases.length)
+        if((cases.length > 1)&&( treeInfo.isDefaultCase(cases(0))))
+          assert(false,"transforming too much, "+tid)
+        val nselector = transform(selector).setType(selector.tpe)
+        val ncases = cases map { transform }
+        ExplicitOuter.this.resultType = tree.tpe
+        //Console.println("TransMatcher currentOwner ="+currentOwner+")")
+        //Console.println("TransMatcher selector.tpe ="+selector.tpe+")")
+        //Console.println("TransMatcher resultType ="+resultType+")")
+          def mytransform(tree: Tree): Tree = {
+            val sym = tree.symbol
+            tree match {
+              case This(qual) =>
+                if (sym == currentOwner.enclClass || (sym hasFlag Flags.MODULE) && sym.isStatic) tree
+                else atPos(tree.pos)(outerPath(outerValue, sym)); // (5)
+              case Select(qual,name) =>
+                Select(mytransform(qual),name)
+            }
+          }
+        val t_untyped = ExplicitOuter.this.handlePattern(nselector, ncases.asInstanceOf[List[CaseDef]], currentOwner, mytransform)
+
+
+        //Console.println("t_untyped "+t_untyped.toString())
+        val t         = atPos(tree.pos) { typer.atOwner(tree,currentOwner).typed(t_untyped, resultType) }
+
+          //t = transform(t)
+        //val t         = atPos(tree.pos) { typed(t_untyped, resultType) }
+        //val t         = atPos(tree.pos) { typed(t_untyped) }
+        //Console.println("t typed "+t.toString())
+          if(settings.debug.value)
+            Console.println("finished translation of "+tid)
+        t
+/*<--- end transmatch experimental */
+
           case _ =>
             if (sym != null && sym.isType) {//(5)
               if (sym hasFlag PRIVATE) sym setFlag notPRIVATE
@@ -360,6 +413,14 @@ abstract class ExplicitOuter extends InfoTransform {
         }
       }
     }
+
+    // needed in TransMatcher
+    override def transformUnit(unit: CompilationUnit) = {
+      cunit = unit
+      super.transformUnit(unit)
+      cunit = null
+    }
+
 
     /** The main transformation method:
      *  First, perform step 1 on whole tree of compilation unit.
