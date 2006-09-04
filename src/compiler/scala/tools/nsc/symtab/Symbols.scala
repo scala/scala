@@ -578,7 +578,8 @@ trait Symbols requires SymbolTable {
     def typeOfThis = thisSym.tpe
 
     /** Sets the type of `this' in a class */
-    def typeOfThis_=(tp: Type): unit = throw new Error("typeOfThis cannot be set for " + this)
+    def typeOfThis_=(tp: Type): unit =
+      throw new Error("typeOfThis cannot be set for " + this)
 
     /** If symbol is a class, the type this.type in this class, otherwise NoPrefix */
     def thisType: Type = NoPrefix
@@ -848,8 +849,8 @@ trait Symbols requires SymbolTable {
       else if (isAbstractType)
         tp match {
           case TypeBounds(lo, hi) =>
-            ((if (lo.symbol == AllClass) "" else " >: " + lo) +
-             (if (hi.symbol == AnyClass) "" else " <: " + hi))
+            (if (lo.symbol == AllClass) "" else " >: " + lo) +
+            (if (hi.symbol == AnyClass) "" else " <: " + hi)
           case _ =>
             "<: " + tp
         }
@@ -1052,9 +1053,9 @@ trait Symbols requires SymbolTable {
       source = f
     }
     override def isFromClassFile = {
-      if (classFile != null) true;
-      else if (owner.isPackageClass) false;
-      else super.isFromClassFile;
+      if (classFile != null) true
+      else if (owner.isPackageClass) false
+      else super.isFromClassFile
     }
     private var thissym: Symbol = this
     override def isClass: boolean = true
@@ -1135,7 +1136,9 @@ trait Symbols requires SymbolTable {
   object NoSymbol extends Symbol(null, NoPos, nme.NOSYMBOL) {
     setInfo(NoType)
     privateWithin = this
-    override def setInfo(info: Type): this.type = { assert(info eq NoType); super.setInfo(info) }
+    override def setInfo(info: Type): this.type = {
+      assert(info eq NoType); super.setInfo(info)
+    }
     override def enclClass: Symbol = this
     override def toplevelClass: Symbol = this
     override def enclMethod: Symbol = this

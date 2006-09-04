@@ -22,6 +22,11 @@ trait Scopes requires SymbolTable {
     override def toString(): String = sym.toString()
   }
 
+  /**
+   *  @param sym   ...
+   *  @param owner ...
+   *  @return      ...
+   */
   def newScopeEntry(sym: Symbol, owner: Scope): ScopeEntry = {
     val e = new ScopeEntry(sym, owner)
     e.next = owner.elems
@@ -31,16 +36,20 @@ trait Scopes requires SymbolTable {
 
   object NoScopeEntry extends ScopeEntry(NoSymbol, null)
 
-  def newScope(initElems : ScopeEntry) : Scope = new NormalScope(initElems);
-  final def newScope : Scope = newScope(null : ScopeEntry);
-  final def newScope(base : Scope) : Scope = newScope(base.elems);
+  /**
+   *  @param initElems ...
+   *  @return          ...
+   */
+  def newScope(initElems: ScopeEntry): Scope = new NormalScope(initElems)
+  final def newScope: Scope = newScope(null: ScopeEntry)
+  final def newScope(base: Scope) : Scope = newScope(base.elems)
   final def newScope(decls: List[Symbol]) : Scope = {
-    val ret = newScope;
-    decls.foreach(d => ret.enter(d));
+    val ret = newScope
+    decls.foreach(d => ret.enter(d))
     ret
   }
 
-  private class NormalScope(initElems : ScopeEntry) extends Scope(initElems);
+  private class NormalScope(initElems: ScopeEntry) extends Scope(initElems)
 
   abstract class Scope(initElems: ScopeEntry)  {
 
@@ -110,6 +119,8 @@ trait Scopes requires SymbolTable {
     }
 
     /** enter a scope entry
+     *
+     *  @param e ...
      */
     def enter(e: ScopeEntry): unit = {
       elemsCache = null
@@ -123,10 +134,14 @@ trait Scopes requires SymbolTable {
     }
 
     /** enter a symbol
+     *
+     *  @param sym ...
      */
     def enter(sym: Symbol): unit = enter(newScopeEntry(sym, this))
 
     /** enter a symbol, asserting that no symbol with same name exists in scope
+     *
+     *  @param sym ...
      */
     def enterUnique(sym: Symbol): unit = {
       assert(lookup(sym.name) == NoSymbol)
@@ -147,6 +162,8 @@ trait Scopes requires SymbolTable {
       }
 
     /** remove entry
+     *
+     *  @param e ...
      */
     def unlink(e: ScopeEntry): unit = {
       if (elems == e) {
@@ -178,13 +195,19 @@ trait Scopes requires SymbolTable {
     }
 
     /** lookup a symbol
+     *
+     *  @param name ...
+     *  @return     ...
      */
     def lookup(name: Name): Symbol = {
       val e = lookupEntry(name)
       if (e == null) NoSymbol else e.sym
     }
 
-    /** lookup a symbol entry matching given name
+    /** lookup a symbol entry matching given name.
+     *
+     *  @param name ...
+     *  @return     ...
      */
     def lookupEntry(name: Name): ScopeEntry = {
       var e: ScopeEntry = null
