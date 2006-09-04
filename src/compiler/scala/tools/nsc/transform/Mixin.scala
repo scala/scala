@@ -67,6 +67,9 @@ abstract class Mixin extends InfoTransform {
     member setFlag MIXEDIN
   }
 
+  /** add getters and setters for all non-module fields of an implementation class
+   *  to its interface.
+   */
   def addLateInterfaceMembers(clazz: Symbol): unit =
     if (!(clazz hasFlag MIXEDIN)) {
       clazz setFlag MIXEDIN
@@ -97,6 +100,16 @@ abstract class Mixin extends InfoTransform {
       if (settings.debug.value) log("new defs of " + clazz + " = " + clazz.info.decls);
     }
 
+  /** Add all members to be mixed in into a (non-trait-) class
+   *  These are:
+   *    for every mixin trait T that is not also inherited by the superclass:
+   *     add late interface members to T and then:
+   *      - if a member M of T is forwarded to the implementation class, a forwarder for M
+   *        unless one exists already
+   *      - for every abstract accessor in T, add a field and an implementation for that acessor
+   *      - for every super accessor in T, add an implementation of that accessor
+   *      - for every module in T, add a module
+   */
   def addMixedinMembers(clazz: Symbol): unit = {
     if (!(clazz hasFlag MIXEDIN) && (clazz != ObjectClass)) {
       assert(!clazz.isTrait, clazz)
@@ -107,7 +120,7 @@ abstract class Mixin extends InfoTransform {
       //System.out.println("adding members of " + clazz.info.baseClasses.tail.takeWhile(superclazz !=) + " to " + clazz);//DEBUG
       val mixins = clazz.info.baseClasses.tail.takeWhile(superclazz !=)
       def mixinMembers(mixinClass: Symbol): unit = {
-        //Console.println("mixin members of "+mixinClass+" to "+clazz+" "+clazz.info.baseClasses)//DEBUG
+        //Console.println("mixin members of "+mixinClass+":"+mixinClass.info.decls+" into "+clazz)//DEBUG
         if (mixinClass.isImplClass) {
           addLateInterfaceMembers(mixinClass.toInterface)
           for (val member <- mixinClass.info.decls.toList) {

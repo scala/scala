@@ -719,10 +719,11 @@ trait Symbols requires SymbolTable {
      *  term symbol rename it by expanding its name to avoid name clashes
      */
     final def makeNotPrivate(base: Symbol): unit =
-      if (isTerm && (this hasFlag PRIVATE)) {
+      if (this hasFlag PRIVATE) {
         setFlag(notPRIVATE)
-        if (!hasFlag(DEFERRED)) setFlag(lateFINAL)
+        if (!hasFlag(DEFERRED) && isTerm) setFlag(lateFINAL)
         expandName(base)
+        if (isModule) moduleClass.makeNotPrivate(base)
       }
 
     /** change name by appending $$<fully-qualified-name-of-class `base'>

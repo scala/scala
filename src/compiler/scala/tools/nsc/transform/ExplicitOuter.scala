@@ -43,8 +43,7 @@ with PatternMatchers {
    */
   def transformInfo(sym: Symbol, tp: Type): Type = tp match {
     case MethodType(formals, restpe) =>
-      //todo: needed?
-      if (sym.owner.isTrait && (sym hasFlag SUPERACCESSOR))
+      if (sym.owner.isTrait && ((sym hasFlag SUPERACCESSOR) || sym.isModule))
         sym.makeNotPrivate(sym.owner);
       if (sym.owner.isTrait && (sym hasFlag PROTECTED)) sym setFlag notPROTECTED
       if (sym.isConstructor && !isStatic(sym.owner)) {
