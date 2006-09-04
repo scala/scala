@@ -80,7 +80,7 @@ abstract class SuperAccessors extends transform.Transform {
 	  val member = sym.overridingSymbol(clazz);
 	  if (mix != nme.EMPTY.toTypeName || member == NoSymbol ||
 	      !((member hasFlag ABSOVERRIDE) && member.isIncompleteIn(clazz)))
-	    unit.error(tree.pos, ""+member+member.locationString+" is accessed from super. It may not be abstract "+
+	    unit.error(tree.pos, ""+sym+sym.locationString+" is accessed from super. It may not be abstract "+
                                  "unless it is overridden by a member declared `abstract' and `override'");
         }
 	if (tree.isTerm && mix == nme.EMPTY.toTypeName &&
