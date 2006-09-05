@@ -99,9 +99,9 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
   */
   private val classLoader = {
     if (parentClassLoader == null)
-      new java.net.URLClassLoader(Predef.Array(classfilePath.toURL))
+      new java.net.URLClassLoader(Array(classfilePath.toURL))
     else
-      new java.net.URLClassLoader(Predef.Array(classfilePath.toURL), parentClassLoader)
+      new java.net.URLClassLoader(Array(classfilePath.toURL), parentClassLoader)
   }
   protected def parentClassLoader : ClassLoader = {
      new java.net.URLClassLoader(

@@ -316,7 +316,7 @@ object Utility extends AnyRef with parsing.TokenTests {
       }
       nextch();
     }
-    new String(Predef.Array(i.asInstanceOf[char]))
+    new String(Array(i.asInstanceOf[char]))
   }
 
 }

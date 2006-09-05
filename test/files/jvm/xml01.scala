@@ -31,7 +31,7 @@ object Test {
   assertEquals(c, parsedxml11);
   assertEquals(parsedxml1, parsedxml11);
   assertSameElements( List(parsedxml1), List(parsedxml11));
-  assertSameElements( Iterator.fromArray(Predef.Array(parsedxml1)).toList, List(parsedxml11));
+  assertSameElements( Iterator.fromArray(Array(parsedxml1)).toList, List(parsedxml11));
 
   val x2 = "<book><author>Peter Buneman</author><author>Dan Suciu</author><title>Data on ze web</title></book>";
 

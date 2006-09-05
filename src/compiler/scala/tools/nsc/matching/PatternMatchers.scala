@@ -199,9 +199,8 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
   }
 
   def pBody(pos: PositionType, bound: Array[ValDef], guard: Tree, body: Tree) = {
-    val node = new Body(Predef.Array[Array[ValDef]](bound),
-                        Predef.Array[Tree](guard),
-                        Predef.Array[Tree](body))
+    val node =
+      new Body(Array[Array[ValDef]](bound), Array[Tree](guard), Array[Tree](body))
     node.pos = pos
     node
   }

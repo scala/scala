@@ -48,7 +48,7 @@ class Location(url: URL) {
     case Some(cl) =>
       cl
     case _ =>
-      val cl = new URLClassLoader(Predef.Array(url));
+      val cl = new URLClassLoader(Array(url));
       lcache(url) = cl;
       cl
   };

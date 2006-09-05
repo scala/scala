@@ -69,23 +69,107 @@ object Array {
     for (val i <- Iterator.range(start, end)) result(i - start) = i
     result
   }
+
+  /** Create an array with given elements.
+   *
+   *  @param xs the elements to put in the array
+   *  @return the array containing elements xs.
+   */
+  def apply[A <: AnyRef](xs: A*): Array[A] = {
+    val array = new Array[A](xs.length)
+    var i = 0
+    for (val x <- xs.elements) { array(i) = x; i = i + 1; }
+    array
+  }
+
+
+/* The following metod clashes with the previous one, and has therefore been
+ * removed. Note that this is a choice between efficiency and generality.
+ * The previous factory method is more efficient than the one that has been
+ * commented out. Since it is anyway possible to create a polymorphic array
+ * using
+ *        new Array[T]
+ * it was preferred to restrict the definition of the factory method.
+
+   def Array[A](xs: A*): Array[A] = {
+    val array = new Array[A](xs.length)
+    var i = 0
+    for (val x <- xs.elements) { array(i) = x; i = i + 1; }
+    array
+  }
+*/
+
+  def apply(xs: Boolean*): Array[Boolean] = {
+    val array = new Array[Boolean](xs.length)
+    var i = 0
+    for (val x <- xs.elements) { array(i) = x; i = i + 1; }
+    array
+  }
+  def apply(xs: Byte*): Array[Byte] = {
+    val array = new Array[Byte](xs.length)
+    var i = 0
+    for (val x <- xs.elements) { array(i) = x; i = i + 1; }
+    array
+  }
+  def apply(xs: Short*): Array[Short] = {
+    val array = new Array[Short](xs.length)
+    var i = 0
+    for (val x <- xs.elements) { array(i) = x; i = i + 1; }
+    array
+  }
+  def apply(xs: Char*): Array[Char] = {
+    val array = new Array[Char](xs.length)
+    var i = 0
+    for (val x <- xs.elements) { array(i) = x; i = i + 1; }
+    array
+  }
+  def apply(xs: Int*): Array[Int] = {
+    val array = new Array[Int](xs.length)
+    var i = 0
+    for (val x <- xs.elements) { array(i) = x; i = i + 1; }
+    array
+  }
+  def apply(xs: Long*): Array[Long] = {
+    val array = new Array[Long](xs.length)
+    var i = 0
+    for (val x <- xs.elements) { array(i) = x; i = i + 1; }
+    array
+  }
+  def apply(xs: Float*): Array[Float] = {
+    val array = new Array[Float](xs.length)
+    var i = 0
+    for (val x <- xs.elements) { array(i) = x; i = i + 1; }
+    array
+  }
+  def apply(xs: Double*): Array[Double] = {
+    val array = new Array[Double](xs.length)
+    var i = 0
+    for (val x <- xs.elements) { array(i) = x; i = i + 1; }
+    array
+  }
+  def apply(xs: Unit*): Array[Unit] = {
+    val array = new Array[Unit](xs.length)
+    var i = 0
+    for (val x <- xs.elements) { array(i) = x; i = i + 1; }
+    array
+  }
+
 }
 
-/** This class ...
+/** This class represents polymorphic arrays. It is never instantiated.
  *
  *  @author Martin Odersky
  *  @version 1.0
  */
-[cloneable,serializable]
-final class Array[a](_length: Int) extends Seq[a] {
+final class Array[A](_length: Int) extends Seq[A] {
   def length: Int = throw new Error()
-  def apply(i: Int): a = throw new Error()
-  def update(i: Int, x: a): Unit = throw new Error()
-  def elements: Iterator[a] = throw new Error()
-  def subArray(from: Int, end: Int): Array[a] = throw new Error()
-  def filter(p: a => Boolean): Array[a] = throw new Error()
-  def map[b](f: a => b): Array[b] = throw new Error()
-  def flatMap[b](f: a => Array[b]): Array[b] = throw new Error()
-  def zip[b](that: Array[b]): Array[Tuple2[a,b]] = throw new Error()
-  def zipWithIndex: Array[Tuple2[a,Int]] = throw new Error()
+  def apply(i: Int): A = throw new Error()
+  def update(i: Int, x: A): Unit = throw new Error()
+  def elements: Iterator[A] = throw new Error()
+  def subArray(from: Int, end: Int): Array[A] = throw new Error()
+  def filter(p: A => Boolean): Array[A] = throw new Error()
+  def map[B](f: A => B): Array[B] = throw new Error()
+  def flatMap[B](f: A => Array[B]): Array[B] = throw new Error()
+  def zip[B](that: Array[B]): Array[Tuple2[A,B]] = throw new Error()
+  def zipWithIndex: Array[Tuple2[A,Int]] = throw new Error()
 }

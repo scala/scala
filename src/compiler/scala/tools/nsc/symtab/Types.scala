@@ -300,7 +300,7 @@ trait Types requires SymbolTable {
      *
      *  Sorting is with respect to Symbol.isLess() on type symbols.
      */
-    def closure: Array[Type] = Predef.Array(this)
+    def closure: Array[Type] = Array(this)
 
     def baseClasses: List[Symbol] = List()
 
@@ -1909,7 +1909,7 @@ trait Types requires SymbolTable {
     var i = 0
     for (val x <- glbs.elements) { result(i) = x; i = i + 1; }
     result
-    // Predef.Array(glbs: _*);
+    // Array(glbs: _*);
   }
 
   /** The least sorted upwards closed upper bound of a non-empty list
@@ -1940,7 +1940,7 @@ trait Types requires SymbolTable {
       lubs = lubs.tail
     }
     arr
-    // todo: replace by  Predef.Array(lubs: _* )
+    // todo: replace by Array(lubs: _* )
   }
 
   /** The minimal symbol (wrt Symbol.isLess) of a list of types */

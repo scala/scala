@@ -1060,8 +1060,7 @@ abstract class GenJVM extends SubComponent {
           }
           jcode.emitINVOKEVIRTUAL(JAVA_LANG_STRINGBUFFER,
                                   "append",
-                                  new JMethodType(stringBufferType,
-                                                  Predef.Array(jtype)));
+                                  new JMethodType(stringBufferType, Array(jtype)));
         case EndConcat =>
           jcode.emitINVOKEVIRTUAL(JAVA_LANG_STRINGBUFFER,
                                   "toString",
