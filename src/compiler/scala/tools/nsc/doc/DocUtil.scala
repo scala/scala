@@ -44,22 +44,22 @@ object DocUtil {
       if (target != null && target.indexOf('<') != -1) throw new Error(target)
 
       val t0 = Text(text)
-			if (target != null)
-			  <a href={(relative + href)} target={(target)}>{t0}</a>;
+      if (target != null)
+        <a href={(relative + href)} target={(target)}>{t0}</a>;
       else
         <a href={(relative + href)}>{t0}</a>;
     }
 
     val header =
-      <meta http-equiv="content-type" content="text/html; charset=iso-8859-1"/>
-      <meta name="generator" content="scaladoc (2.1.0)"/>
+      <meta http-equiv="content-type" content="text/html; charset=iso-8859-1"/>{0}
+      <meta name="generator" content="scaladoc (2.1.8)"/>
       <link rel="stylesheet" type="text/css" href={ relative + "style.css" }/>
       <script type="text/javascript" src={relative + "script.js"}></script>;
 
     def body0(hasBody: Boolean, nodes: NodeSeq): NodeSeq =
       if (!hasBody) nodes else <body onload="init()">{nodes}</body>;
 
-    val dtype = "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">";
+    val dtype = "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">"
 
     def page(title: String, body: NodeSeq, hasBody: Boolean): NodeSeq =
       <html>

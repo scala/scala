@@ -9,20 +9,23 @@
 // $Id$
 
 
-package scala.xml;
+package scala.xml
 
 import scala.runtime.compat.StringBuilder
 
 /**
- * This object provides methods
+ * This object provides methods ...
+ *
+ * @author  Burak Emir
+ * @version 1.0
  */
 object Node {
 
   /** the constant empty attribute sequence */
-  final def NoAttributes: MetaData = Null;
+  final def NoAttributes: MetaData = Null
 
   /** the empty namespace */
-  val EmptyNamespace = "";
+  val EmptyNamespace = ""
 
 }
 
@@ -30,37 +33,39 @@ object Node {
  * An abstract class representing XML with nodes of a labelled tree.
  * This class contains an implementation of a subset of XPath for navigation.
  *
- *  @author  Burak Emir and others
- *  @version 1.1
+ * @author  Burak Emir and others
+ * @version 1.1
  */
 abstract class Node extends NodeSeq {
 
   /** prefix of this node */
-  def prefix: String = null;
+  def prefix: String = null
 
   /** label of this node. I.e. "foo" for &lt;foo/&gt;) */
-  def label: String;
+  def label: String
 
   /** used internally. Atom/Molecule = -1 PI = -2 Comment = -3 EntityRef = -5  */
-  def typeTag$: Int = 0;
+  def typeTag$: Int = 0
 
   /**
    *  method returning the namespace bindings of this node. by default, this is TopScope,
-   *   which means there are no namespace bindings except the predefined one for "xml".
+   *  which means there are no namespace bindings except the predefined one for "xml".
    */
-  def scope: NamespaceBinding = TopScope;
+  def scope: NamespaceBinding = TopScope
 
   /**
    *  convenience, same as getNamespace(this.prefix)
    */
-  def namespace = getNamespace(this.prefix);
+  def namespace = getNamespace(this.prefix)
 
   /**
-   *  convenience method, same as scope.getURI( pre ) but additionally checks if scope is null.
-   *  @param   pre the prefix whose namespace name we would like to obtain
-   *  @return  the namespace if scope != null and prefix was found, else null
+   * Convenience method, same as <code>scope.getURI(pre)</code> but additionally
+   * checks if scope is <code>null</code>.
+   *
+   * @param   pre the prefix whose namespace name we would like to obtain
+   * @return  the namespace if scope != null and prefix was found, else null
    */
-  def getNamespace(pre: String) = if (scope == null) null else scope.getURI(pre);
+  def getNamespace(pre: String) = if (scope == null) null else scope.getURI(pre)
 
   /**
    * Convenience method, looks up an unprefixed attribute in attributes of this node.
@@ -70,7 +75,7 @@ abstract class Node extends NodeSeq {
    * @return value of <code>UnprefixedAttribute</code> with given key
    *         in attributes, if it exists, otherwise <code>null</code>.
    */
-  final def attribute(key: String) = attributes.get(key);
+  final def attribute(key: String) = attributes.get(key)
 
   /**
    * Convenience method, looks up a prefixed attribute in attributes of this node.
@@ -81,38 +86,42 @@ abstract class Node extends NodeSeq {
    * @return value of <code>PrefixedAttribute</code> with given namespace
    *         and given key, otherwise <code>null</code>.
    */
-  final def attribute(uri: String, key: String) = attributes.get(uri, this, key);
+  final def attribute(uri: String, key: String) = attributes.get(uri, this, key)
 
   /**
    * Returns attribute meaning all attributes of this node, prefixed and unprefixed,
-   *  in no particular order. In class Node, this defaults to Null (the empty attribute list).
-   *  @return all attributes of this node
+   * in no particular order. In class Node, this defaults to Null (the empty attribute list).
+   *
+   * @return all attributes of this node
    */
-  def attributes: MetaData =
-    Null;
+  def attributes: MetaData = Null
 
   /**
-   *  returns child axis i.e. all children of this node
-   *  @return all children of this node
+   * Returns child axis i.e. all children of this node.
+   *
+   * @return all children of this node
    */
-  def child:      Seq[Node];
+  def child: Seq[Node]
 
   /**
-   *  Descendant axis (all descendants of this node, not including node itself)
-   *  includes all text nodes, element nodes, comments and processing instructions.
+   * Descendant axis (all descendants of this node, not including node itself)
+   * includes all text nodes, element nodes, comments and processing instructions.
    */
   def descendant: List[Node] =
-    child.toList.flatMap { x => x::x.descendant } ;
+    child.toList.flatMap { x => x::x.descendant }
 
   /**
-   *  Descendant axis (all descendants of this node, including thisa node)
-   *  includes all text nodes, element nodes, comments and processing instructions.
+   * Descendant axis (all descendants of this node, including thisa node)
+   * includes all text nodes, element nodes, comments and processing instructions.
    */
-  def descendant_or_self: List[Node] = this :: descendant;
+  def descendant_or_self: List[Node] = this :: descendant
 
   /**
-   *  returns true if x is structurally equal to this node. Compares prefix, label,
-   *  attributes and children
+   * Returns true if x is structurally equal to this node. Compares prefix,
+   * label, attributes and children.
+   *
+   * @param x ...
+   * @return  ...
    */
   override def equals(x: Any): Boolean = x match {
     case g:Group => false
@@ -128,39 +137,41 @@ abstract class Node extends NodeSeq {
    *  Returns a hashcode. A standard implementation of hashcodes is obtained by calling
    *  Utility.hashCode(pre, label, attributes.hashCode(), child);
    */
-  override def hashCode(): Int;
+  override def hashCode(): Int
 
   // implementations of NodeSeq methods
 
   /**
    *  returns a sequence consisting of only this node
    */
-  def theSeq:Seq[Node] = this :: Nil;
+  def theSeq:Seq[Node] = this :: Nil
 
   /**
    * String representation of this node
    *
    * @param stripComment if true, strips comment nodes from result
+   * @return ...
    */
-  def toString(stripComment: Boolean): String = Utility.toXML(this, stripComment);
+  def toString(stripComment: Boolean): String =
+    Utility.toXML(this, stripComment)
 
   /**
    * Same as <code>toString(false)</code>.
    *
    * @see "toString(Boolean)"
    */
-  override def toString(): String = toString(false);
+  override def toString(): String = toString(false)
 
   /**
    * Appends qualified name of this node to <code>StringBuilder</code>.
    *
-   * @param sb
-   * @return ..
+   * @param sb ...
+   * @return   ...
    */
   def nameToString(sb: StringBuilder): StringBuilder  = {
     if (null != prefix) {
-      sb.append(prefix);
-      sb.append(':');
+      sb.append(prefix)
+      sb.append(':')
     }
     sb.append(label);
   }
@@ -168,13 +179,13 @@ abstract class Node extends NodeSeq {
   /**
    * Returns a type symbol (e.g. DTD, XSD), default <code>null</code>.
    */
-  def xmlType(): TypeSymbol = null;
+  def xmlType(): TypeSymbol = null
 
   /**
    * Returns a text representation of this node. Note that this is not equivalent to
    * the XPath node-test called text(), it is rather an implementation of the
    * XPath function string()
    */
-  override def text: String;
+  override def text: String
 
 }
