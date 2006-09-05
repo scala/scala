@@ -408,12 +408,10 @@ trait Types requires SymbolTable {
             if (sym.getFlag(requiredFlags) == requiredFlags) {
               val excl = sym.getFlag(excluded)
               if (excl == 0) {
-                if (name.isTypeName) {
+                if (name.isTypeName || stableOnly) {
                   checkMalformedSwitch = savedCheckMalformedSwitch;
                   if (util.Statistics.enabled) findMemberMillis = findMemberMillis + System.currentTimeMillis() - startTime;
                   return sym
-                } else if (stableOnly) {
-                  if (sym.isStable) return sym
                 } else if (member == NoSymbol) {
                   member = sym
                 } else if (members == null) {
