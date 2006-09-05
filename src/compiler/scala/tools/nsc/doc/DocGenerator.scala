@@ -130,12 +130,14 @@ abstract class DocGenerator extends Models {
       val x = doctitle concat
         aref("all-classes.html", classesFrame, "All objects and classes")
       val y = <p/><b>Packages</b>
-       <table class="list"><tr><td style="white-space:nowrap;">
-       { {
-         for (val top <- modules.elements.toList) yield
-           {br(aref(urlFor(top._2), classesFrame, top._2.fullNameString('.')))};
-       } }
-       </td></tr></table>;
+        <table class="list" summary="">
+          <tr><td style="white-space:nowrap;">
+          { {
+            for (val top <- modules.elements.toList) yield
+              {br(aref(urlFor(top._2), classesFrame, top._2.fullNameString('.')))};
+          } }
+          </td></tr>
+        </table>;
       x.concat(y)
     }
   }
@@ -145,25 +147,25 @@ abstract class DocGenerator extends Models {
     val title = "All Packages"
     def modules: TreeMap[String, ModuleClassSymbol]
     def body: NodeSeq = {
-      <span><div class="page-title">
+      <div class="page-title">
         Scala 2
         <br/>API Specification
-        </div>
+      </div>
+      <p>
         This document is the API specification for Scala 2.
-        <p/><hr/>
-        <table cellpadding="3" class="member">
+      </p><hr/>
+      <table cellpadding="3" class="member" summary="">
         <tr><td colspan="2" class="title">
-              Package Summary
-            </td>
-        </tr>{ {
+          Package Summary
+        </td></tr>
+        { {
           for (val top <- modules.elements.toList) yield
             <tr><td class="signature">
-            <code>{Text("package")}
-            {(aref(top._2.fullNameString('/') + "$content.html", "_self", top._2.fullNameString('.')))}</code>
+              <code>{Text("package")}
+              {(aref(top._2.fullNameString('/') + "$content.html", "_self", top._2.fullNameString('.')))}</code>
             </td></tr>;
         } }
-      </table>
-      </span>;
+      </table>;
     }
   }
 
@@ -180,21 +182,24 @@ abstract class DocGenerator extends Models {
     }
 
      def body: NodeSeq = {
-      val nav = <table class="navigation"><tr><td valign="top" class="navigation-links">
-                {aref(path0 + "$content.html", contentFrame, navLabel)}
-                </td></tr></table><p/>;
+      val nav =
+        <table class="navigation" summary="">
+          <tr><td valign="top" class="navigation-links">
+            {aref(path0 + "$content.html", contentFrame, navLabel)}
+          </td></tr>
+        </table>;
 
-      val body = <span> { { for (val kind <- KINDS; classes contains kind) yield {
-        val x = <b>{Text(pluralFor(kind))}</b>;
-
-        val y = <table class="list" summary=""><tr><td style="white-space;nowrap;">
-                { {
-                  for (val mmbr <- classes(kind).toList) yield
-                    br(urlFor(mmbr.tree.symbol, contentFrame));
-                } }
-                </td></tr></table>;
-        x.concat(y)
-      } } } </span>;
+      val body = <div>{ { for (val kind <- KINDS; classes contains kind) yield {
+        <p><b>{Text(pluralFor(kind))}</b></p>
+        <table class="list" summary="">
+          <tr><td style="white-space;nowrap;">
+            { {
+              for (val mmbr <- classes(kind).toList) yield
+                br(urlFor(mmbr.tree.symbol, contentFrame));
+            } }
+          </td></tr>
+        </table>
+      } } }</div>;
 
       nav.concat(body)
     }
@@ -235,12 +240,16 @@ abstract class DocGenerator extends Models {
       case _ => NodeSeq.Empty
     }
 
+    /**
+     *  @param mmbr ...
+     *  @return     ...
+     */
     def listMembersShort(mmbr: HasTree): NodeSeq =
       if (mmbr.isInstanceOf[Composite]) {
         val map = organize(mmbr.asInstanceOf[Composite], emptyMap)
         <span> { {
-          for (val kind <- KINDS; map.contains(kind)) yield {
-            val x = <table cellpadding="3" class="member">
+          for (val kind <- KINDS; map contains kind) yield {
+            val x = <table cellpadding="3" class="member" summary="">
             <tr><td colspan="2" class="title">{Text(labelFor(kind))} Summary</td></tr>
              { {
               for (val mmbr <- map(kind).toList) yield shortHeader(mmbr);
@@ -257,18 +266,23 @@ abstract class DocGenerator extends Models {
         val map = organize(mmbr.asInstanceOf[Composite], emptyMap)
         val mmbrx = mmbr
         val pathx = path
-        for (val kind0 <- OBJECT :: CLASS :: Nil; map.contains(kind0)) for (val mmbr <- map(kind0)) {
+        for (val kind0 <- OBJECT :: CLASS :: Nil; map contains kind0) for (val mmbr <- map(kind0)) {
           new ContentFrame {
             def clazz = mmbr.asInstanceOf[ImplMod];
             def kind = kind0;
-            def title = labelFor(kind0) + " " + mmbr.tree.symbol.nameString + " in " + codeFor(mmbrx.kind) + " " + mmbr.tree.symbol.owner.fullNameString('.');
+            def title =
+              labelFor(kind0) + " " + mmbr.tree.symbol.nameString + " in " +
+              codeFor(mmbrx.kind) + " " + mmbr.tree.symbol.owner.fullNameString('.')
           }
         }
         <span> { {
           for (val kind <- KINDS; map.contains(kind) && kind != OBJECT && kind != CLASS) yield {
-            val header = <table cellpadding="3" class="member-detail">
-              <tr><td class="member-title">{Text(labelFor(kind))} Detail</td></tr>
-            </table>;
+            val header =
+              <table cellpadding="3" class="member-detail" summary="">
+                <tr><td class="member-title">
+                  {Text(labelFor(kind))} Detail
+                </td></tr>
+              </table>
             val body = for (val mmbr <- map(kind).toList) yield <span>{fullHeader(mmbr)}</span>;
             header.concat(body)
           }
@@ -351,6 +365,10 @@ abstract class DocGenerator extends Models {
     def surround(open: String, close: String, node: NodeSeq): NodeSeq =
       Text(open).concat(node).concat(Text(close))
 
+    /**
+     *  @param ht ...
+     *  @return   ...
+     */
     def typesFor(ht: HasTree): NodeSeq = {
       val tparams = ht.tree match {
         case cdef: ClassDef     => cdef.tparams
@@ -365,7 +383,7 @@ abstract class DocGenerator extends Models {
     def argsFor(ht: HasTree): NodeSeq = ht.tree match {
       case ddef: DefDef =>
         if (!ddef.vparamss.isEmpty &&
-            (!ddef.vparamss.tail.isEmpty  || !ddef.vparamss.head.isEmpty)) {
+            (!ddef.vparamss.tail.isEmpty || !ddef.vparamss.head.isEmpty)) {
           val nodes = for (val vparams <- ddef.vparamss)
             yield surround("(", ")", forTrees(vparams));
           nodes.flatMap(x => x.toList);
@@ -385,7 +403,7 @@ abstract class DocGenerator extends Models {
   }
 
   abstract class ListClassContentFrame extends ContentFrame0 {
-    def classes: ListMap[Kind,TreeSet[HasTree]]
+    def classes: ListMap[Kind, TreeSet[HasTree]]
     def module: ModuleClassSymbol
 
     def path  = module.fullNameString('/') + "$content"
@@ -400,7 +418,7 @@ abstract class DocGenerator extends Models {
         <p/>
         { {
           for (val kind <- KINDS; classes.contains(kind)) yield {
-            <span><hr/><table cellpadding="3" class="member">
+            <span><hr/><table cellpadding="3" class="member" summary="">
             <tr><td colspan="2" class="title">
                 {labelFor(kind)} Summary
              </td></tr>{ {
@@ -424,18 +442,18 @@ abstract class DocGenerator extends Models {
     // <td class="navigation-enabled">{aref("root-page.html", "_self", "Overview")}</td>
     // <td class="navigation-enabled">{aref("index.html"    , null, "Index"   )}</td>
     def navigation: NodeSeq =
-    <table class="navigation">
-      <tr>
-        <td valign="top" class="navigation-links">
-          <table><tr>
-          </tr></table>
-        </td>
-        <td align="right" valign="top" style="white-space:nowrap;" rowspan="2">
-          {doctitle}
-        </td>
-      </tr>
-      <tr><td></td></tr>
-    </table>;
+      <table class="navigation" summary="">
+        <tr>
+          <td valign="top" class="navigation-links">
+            <table><tr>
+            </tr></table>
+          </td>
+          <td align="right" valign="top" style="white-space:nowrap;" rowspan="2">
+            {doctitle}
+          </td>
+        </tr>
+        <tr><td></td></tr>
+      </table>;
 
     def header0: NodeSeq = <span>
       <hr/> in {aref(urlFor(clazz.tree.symbol.owner), "_self", clazz.tree.symbol.owner.fullNameString('.'))}
@@ -456,7 +474,7 @@ abstract class DocGenerator extends Models {
       val sourceMod = new SourceMod(unit)
       for (val mmbr <- sourceMod.members) mmbr.tree match {
         case cdef:  ImplDef =>
-          assert(cdef.symbol.owner != NoSymbol);
+          assert(cdef.symbol.owner != NoSymbol)
           val sym = cdef.symbol.owner.asInstanceOf[ModuleClassSymbol]
           if (!sym.isEmptyPackageClass) {
             if (!topLevel.contains(sym)) topLevel = topLevel.update(sym, emptyMap);
@@ -468,7 +486,7 @@ abstract class DocGenerator extends Models {
     }
 
     val modules0 = {
-      var modules0 = new TreeMap[String,ModuleClassSymbol]
+      var modules0 = new TreeMap[String, ModuleClassSymbol]
       for (val top <- topLevel.elements)
         modules0 = modules0.insert(top._1.fullNameString, top._1);
       modules0
@@ -546,20 +564,20 @@ abstract class DocGenerator extends Models {
             output.write(bytes, 0, read)
           }
         }
-        input.close();
+        input.close()
         output.close()
       }
     }
   }
 
-  def organize(c: Composite, map0: ListMap[Kind,TreeSet[HasTree]]) = {
+  def organize(c: Composite, map0: ListMap[Kind, TreeSet[HasTree]]) = {
     var map = map0
     //System.err.println("MemBERS: " + c.members.toList)
     for (val mmbr <- c.members.toList) map = organize0(mmbr, map)
     map
   }
 
-  def organize0(mmbr: HasTree, map0: ListMap[Kind,TreeSet[HasTree]]) = {
+  def organize0(mmbr: HasTree, map0: ListMap[Kind, TreeSet[HasTree]]) = {
     var map = map0
     if (!map.contains(mmbr.kind))
       map = map.update(mmbr.kind, new TreeSet[HasTree]);
@@ -626,7 +644,7 @@ abstract class DocGenerator extends Models {
     } } </dl></span>;
   };
 
-  val index = {
+  val index =
     <frameset cols="25%, 75%">
     <frameset rows="50%, 50%">
       <frame src="modules.html" name={modulesFrame}></frame>
@@ -634,7 +652,6 @@ abstract class DocGenerator extends Models {
     </frameset>
     <frame src="root-content.html" name={contentFrame}></frame>
   </frameset>;
-  }
 
   val root = <b></b>
 

@@ -9,27 +9,37 @@
 // $Id$
 
 
-package scala.xml;
+package scala.xml
 
 import scala.runtime.compat.StringBuilder
 
+/** This object ...
+ *
+ *  @author  Burak Emir
+ *  @version 1.0
+ */
 object NodeSeq {
-  final val Empty = new NodeSeq { def theSeq = Nil; }
-  def fromSeq(s:Seq[Node]):NodeSeq = new NodeSeq {
-    def theSeq = s;
+  final val Empty = new NodeSeq { def theSeq = Nil }
+  def fromSeq(s: Seq[Node]): NodeSeq = new NodeSeq {
+    def theSeq = s
   }
-  implicit def view(s:Seq[Node]): NodeSeq = fromSeq(s);
+  implicit def view(s: Seq[Node]): NodeSeq = fromSeq(s)
 }
 
-/** a wrapper around Seq[Node] that adds XPath and comprehension methods */
+/** This class implements a wrapper around Seq[Node] that adds XPath and
+ *  comprehension methods.
+ *
+ *  @author  Burak Emir
+ *  @version 1.0
+ */
 abstract class NodeSeq extends Seq[Node] {
-  import NodeSeq.view; // import view magic for NodeSeq wrappers
-  def theSeq: Seq[Node];
-  def length = theSeq.length;
-  def elements = theSeq.elements ;
-  def apply(i: Int): Node = theSeq.apply( i );
+  import NodeSeq.view // import view magic for NodeSeq wrappers
+  def theSeq: Seq[Node]
+  def length = theSeq.length
+  def elements = theSeq.elements
+  def apply(i: Int): Node = theSeq.apply(i)
 
-  def apply(f: Node => Boolean): NodeSeq = filter(f);
+  def apply(f: Node => Boolean): NodeSeq = filter(f)
 
   /** structural equality */
   override def equals(x: Any) = x match {
@@ -42,39 +52,42 @@ abstract class NodeSeq extends Seq[Node] {
   /** projection function. Similar to XPath, use this \ "foo" to get a list
    *  of all elements of this sequence that are labelled with "foo".
    *  Use \ "_" as a wildcard. The document order is preserved.
+   *
+   *  @param that ...
+   *  @return     ...
    */
   def \(that: String): NodeSeq = that match {
     case "_" =>
-      var zs:List[Node] = List[Node]()
+      var zs: List[Node] = Nil
       val it = this.elements
-      while(it.hasNext) {
+      while (it.hasNext) {
         val x = it.next
         val jt = x.child.elements
-        while(jt.hasNext) {
+        while (jt.hasNext) {
           val y = jt.next
-          if(y.typeTag$ != -1)
+          if (y.typeTag$ != -1)
             zs = y::zs
         }
       }
-    NodeSeq.fromSeq(zs.reverse)
+      NodeSeq.fromSeq(zs.reverse)
 
     case _ if (that.charAt(0) == '@') && (this.length == 1) =>
-      val k = that.substring(1);
-      val y = this(0);
+      val k = that.substring(1)
+      val y = this(0)
       y.attribute(k) match {
 	case Some(x) => Group(x)
         case _       => NodeSeq.Empty
       }
 
     case _   =>
-      var zs:List[Node] = Nil
+      var zs: List[Node] = Nil
       val it = this.elements
-      while(it.hasNext) {
+      while (it.hasNext) {
         val x = it.next
         val jt = x.child.elements
-        while(jt.hasNext) {
+        while (jt.hasNext) {
           val y = jt.next
-          if(y.label == that)
+          if (y.label == that)
             zs = y::zs
         }
       }
@@ -84,18 +97,20 @@ abstract class NodeSeq extends Seq[Node] {
   /** projection function. Similar to XPath, use this \\ 'foo to get a list
    *  of all elements of this sequence that are labelled with "foo".
    *  Use \\ "_" as a wildcard. The document order is preserved.
+   *
+   *  @param that ...
+   *  @return     ...
    */
-
-  def \\ ( that:String ): NodeSeq = that match {
+  def \\ (that: String): NodeSeq = that match {
     case "_" =>
-      var zs:List[Node] = List[Node]()
+      var zs: List[Node] = Nil
       val it = this.elements
-      while(it.hasNext) {
+      while (it.hasNext) {
         val x = it.next
         val jt = x.descendant_or_self.elements
-        while(jt.hasNext) {
+        while (jt.hasNext) {
           val y = jt.next
-          if(y.typeTag$ != -1)
+          if (y.typeTag$ != -1)
             zs = y::zs
         }
       }
@@ -104,14 +119,14 @@ abstract class NodeSeq extends Seq[Node] {
     case _ if that.charAt(0) == '@' =>
       var zs: List[Node] = Nil
       val it = this.elements
-      while(it.hasNext) {
+      while (it.hasNext) {
         val x = it.next
         val jt = x.descendant_or_self.elements
-        while(jt.hasNext) {
+        while (jt.hasNext) {
           val y = jt.next
-          if(y.typeTag$ != -1) {
+          if (y.typeTag$ != -1) {
             val kt = (y \ that).elements
-            while(kt.hasNext) {
+            while (kt.hasNext) {
               zs = (kt.next)::zs
             }
           }
@@ -120,36 +135,42 @@ abstract class NodeSeq extends Seq[Node] {
       zs.reverse
 
     case _ =>
-      var zs:List[Node] = List[Node]()
+      var zs: List[Node] = Nil
       val it = this.elements
-      while(it.hasNext) {
+      while (it.hasNext) {
         val x = it.next
         val jt = x.descendant_or_self.elements
-        while(jt.hasNext) {
+        while (jt.hasNext) {
           val y = jt.next
-          if(y.typeTag$ != -1 && y.label == that)
+          if (y.typeTag$ != -1 && y.label == that)
             zs = y::zs
         }
       }
     zs.reverse
   }
 
-  override def toString():String = theSeq.elements.foldLeft ("") {
-    (s:String,x:Node) => s + x.toString()
+  override def toString(): String = theSeq.elements.foldLeft ("") {
+    (s: String, x: Node) => s + x.toString()
   }
 
   def map(f: Node => NodeSeq): NodeSeq = flatMap(f)
 
-  def flatMap(f:Node => NodeSeq): NodeSeq = { val y = toList flatMap { x => f(x).toList }; y }
+  def flatMap(f: Node => NodeSeq): NodeSeq = {
+    val y = toList flatMap { x => f(x).toList }
+    y
+  }
 
-  def filter(f:Node => Boolean): NodeSeq = { val x = toList filter f; x }
+  def filter(f: Node => Boolean): NodeSeq = {
+    val x = toList filter f
+    x
+  }
 
   def text: String = {
-    val sb = new StringBuilder();
-    val it = elements;
-    while(it.hasNext) {
-      sb.append(it.next.text);
+    val sb = new StringBuilder()
+    val it = elements
+    while (it.hasNext) {
+      sb.append(it.next.text)
     }
-    sb.toString();
+    sb.toString()
   }
 }
