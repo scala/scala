@@ -337,10 +337,21 @@ with PatternMatchers {
      */
     private val secondTransformer = new OuterPathTransformer {
 
+      def handleSelect(tree:Select) = tree match {
+        case Select(qual, name) =>
+          val sym = tree.symbol
+          val enclClass = currentOwner.enclClass
+          if (enclClass != sym.owner && enclClass != sym.moduleClass) // (3)
+            sym.makeNotPrivate(sym.owner);
+          val qsym = qual.tpe.widen.symbol
+          if ((sym hasFlag PROTECTED) && //(4)
+              (qsym.isTrait || !(qual.isInstanceOf[Super] || (qsym isSubClass enclClass))))
+            sym setFlag notPROTECTED;
+      }
+
       /** The second-step transformation method */
       override def transform(tree: Tree): Tree = {
         val sym = tree.symbol
-
         val tree1 =
           if(tree.isInstanceOf[Match]) {
             //Console.println("calling super.transform of Match with ncases "+
@@ -354,18 +365,11 @@ with PatternMatchers {
             if (sym.owner.isTrait && (sym hasFlag (ACCESSOR | SUPERACCESSOR)))
               sym.makeNotPrivate(sym.owner); //(2)
             tree1
-          case Select(qual, name) =>
-            val enclClass = currentOwner.enclClass
-            if (enclClass != sym.owner && enclClass != sym.moduleClass) // (3)
-              sym.makeNotPrivate(sym.owner);
-            val qsym = qual.tpe.widen.symbol
-            if ((sym hasFlag PROTECTED) && //(4)
-                (qsym.isTrait || !(qual.isInstanceOf[Super] || (qsym isSubClass enclClass))))
-              sym setFlag notPROTECTED;
+          case tree @ Select(qual, name) =>
+            handleSelect(tree)
             tree1
 
-/*<--- begin transmatch experimental */
-      case Match(selector, cases) =>
+      case Match(selector, cases) => // <----- transmatch hook
         val tid = cunit.fresh.newName("tidmark")
 
           if(settings.debug.value)
@@ -385,7 +389,13 @@ with PatternMatchers {
                 if (sym == currentOwner.enclClass || (sym hasFlag Flags.MODULE) && sym.isStatic) tree
                 else atPos(tree.pos)(outerPath(outerValue, sym)); // (5)
               case Select(qual,name) =>
-                Select(mytransform(qual),name)
+                val s = copy.Select(tree, mytransform(qual), name)
+                handleSelect(s)
+                s
+              case x =>
+                if(settings.debug.value)
+                  Console.println(x.getClass())
+                x
             }
           }
         val t_untyped = ExplicitOuter.this.handlePattern(nselector, ncases.asInstanceOf[List[CaseDef]], currentOwner, mytransform)

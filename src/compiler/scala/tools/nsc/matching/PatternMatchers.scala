@@ -1113,101 +1113,34 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
             return toTree(node.and);
 
           case ConstrPat(casted) =>
-            var cond = gen.mkIsInstanceOf(selector.duplicate, node.getTpe())
-          if(!settings.Xnofancymatch.value) {
-          // compare outer instance for patterns like foo1.Bar foo2.Bar if not statically known to match
-            casted.tpe match {
-              case TypeRef(prefix,_,_) if (prefix.symbol.isTerm && !prefix.symbol.isPackage) =>
-                selector.tpe match {
-                  case TypeRef(oprefix,_,_) =>
-                    if(oprefix =:= prefix)
-                      {} // statically known to match
-                    else {
-
-                      /* <-- start borrowed from explicitOuter */
-
-                      def outerClass(clazz: Symbol): Symbol =
-                        if (clazz.owner.isClass) clazz.owner
-                        else outerClass(if (clazz.isClassLocalToConstructor) clazz.owner.owner else clazz.owner)
-
-                      /** The first outer selection from currently transformed tree
-                       */
-                      def outerValue: Tree =
-                        outerSelect(gen.mkAttributedThis(owner.enclClass))
-
-                      /** The path
-                       *     `base'.$outer ... .$outer
-                       *  which refers to the outer instance 'to' of value 'base'
-                       */
-                      def outerPath(base: Tree, to: Symbol): Tree =
-                        if (base.tpe.symbol == to) base else outerPath(outerSelect(base), to)
-
-                      /** Select and apply outer accessor from 'base'
-                       */
-                      def outerSelect(base: Tree): Tree = {
-                        val otp = outerClass(base.tpe.symbol).thisType
-                        Apply(
-                          Select(base, outerMember(base.tpe)) setType MethodType(List(), otp),
-                          List()) setType otp
-                      }
-
-                      def outerMember(tp: Type): Symbol = {
-                        var e = tp.symbol.info.decls.elems
-                        // note: tp.decls does not work here, because tp might be a ThisType, in which case
-                        // its decls would be the decls of the required type of the class.
-                        while (e != null && !(e.sym.originalName.startsWith(nme.OUTER) && (e.sym hasFlag Flags.ACCESSOR)))
-                        e = e.next;
-                          assert(e != null, tp)
-                        e.sym
-                      }
-                      /* <-- end borrowed from explicitOuter */
-//                       Console.println(prefix)
-//                       Console.println(prefix.symbol)
-//                       Console.println(prefix.symbol.isModule)
-//                       Console.println("pre.pre "+prefix.prefix)
-//                       Console.println("pre.pre asSF "+prefix.prefix.asSeenFrom(owner.enclClass.tpe, owner.enclClass))
-                      var theRef = gen.mkAttributedRef(prefix.prefix, prefix.symbol) // problem: this needs explicitouter treatment
-
-                      // transform explicitOuter
-                      /** The first-step transformation method */
-                      def mytransform(tree: Tree): Tree = {
-                        val sym = tree.symbol
-                        tree match {
-                          case This(qual) =>
-                            if (sym == owner.enclClass || (sym hasFlag Flags.MODULE) && sym.isStatic) tree
-                            else posAssigner.atPos(tree.pos)(outerPath(outerValue, sym)); // (5)
-                          case Select(qual,name) =>
-                            Select(mytransform(qual),name)
-                        }
-                      }
-                      //theRef = mytransform(theRef)
-                      if(global.settings.debug.value) {
-                      Console.println("theRef "+theRef)
-                      Console.println("mytransform(theRef) "+mytransform(theRef))
-                        Console.println("handleOuter(theRef) "+handleOuter(theRef))
-                      }
-                      theRef = handleOuter(theRef)
-                      /*
-                      val tpe = prefix.prefix
-                      if(
-                      prefix.prefix match {
-                        case ThisType(q) =>
-                          Console.println("hello"+q)
-                          Console.println("but enclClass"+prefix.symbol.enclClass)
-                        case x => Console.println("hola"+x.getClass())
-                      }
-                      */
-                      cond = And(cond,
-                                 Eq(Apply(Select(
-                                   gen.mkAsInstanceOf(selector.duplicate, node.getTpe(), true), nme.OUTER),List()), theRef))
-                    }
-                  case _ =>
-                    //ignore
-                }
+            def outerAlwaysEqual(left: Type, right: Type) = Pair(left,right) match {
+              case Pair(TypeRef(lprefix, _,_), TypeRef(rprefix,_,_)) if lprefix =:= rprefix =>
+                true
               case _ =>
-                //ignore
+                false
             }
-          }
+            var cond = gen.mkIsInstanceOf(selector.duplicate, node.getTpe())
+            // compare outer instance for patterns like foo1.Bar foo2.Bar if not statically known to match
+
+            if(!outerAlwaysEqual(casted.tpe, selector.tpe)) {
+              casted.tpe match {
+                case TypeRef(prefix,_,_) if (prefix.symbol.isTerm && !prefix.symbol.isPackage) =>
+                  var theRef = gen.mkAttributedRef(prefix.prefix, prefix.symbol) // needs explicitouter treatment
+                  if(global.settings.debug.value) {
+                    Console.println("theRef "+theRef)
+                    Console.println("handleOuter(theRef) "+handleOuter(theRef))
+                  }
+                  theRef = handleOuter(theRef)
+
+                  if(node.getTpe().decls.lookup(nme.OUTER) != NoSymbol) { // some guys don't have outers :-(
+                    cond = And(cond,
+                               Eq(Apply(Select(
+                                 gen.mkAsInstanceOf(selector.duplicate, node.getTpe(), true), nme.OUTER),List()), theRef))
+                  }
+                case _ =>
+                  //ignore ;
+              }
+            }
             return myIf(cond,
                       Block(
                         List(ValDef(casted,
