@@ -60,6 +60,12 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Iterable[A] {
    */
   def length: Int
 
+  /** Returns true is length == 0
+   *
+   *  @return the sequence length.
+   */
+  def isEmpty: Boolean = { length == 0 }
+
   /** Returns the concatenation of two sequences.
    *
    *  @return concatenation of this sequence with argument

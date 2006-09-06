@@ -31,7 +31,7 @@ class Stack[+A] extends Seq[A] {
    *
    *  @return true, iff there is no element on the stack.
    */
-  def isEmpty: Boolean = true
+  override def isEmpty: Boolean = true
 
   /** Returns the size of this stack.
    *

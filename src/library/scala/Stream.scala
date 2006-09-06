@@ -23,14 +23,14 @@ import scala.runtime.compat.StringBuilder
 object Stream {
 
   val empty: Stream[Nothing] = new Stream[Nothing] {
-    def isEmpty = true
+    override def isEmpty = true
     def head: Nothing = error("head of empty stream")
     def tail: Stream[Nothing] = error("tail of empty stream")
     def printElems(buf: StringBuilder, prefix: String): StringBuilder = buf
   }
 
   def cons[a](hd: a, tl: => Stream[a]) = new Stream[a] {
-    def isEmpty = false
+    override def isEmpty = false
     def head = hd
     private var tlVal: Stream[a] = _
     private var tlDefined = false
@@ -146,7 +146,7 @@ object Stream {
  */
 trait Stream[+a] extends Seq[a] {
 
-  def isEmpty: Boolean
+  override def isEmpty: Boolean
   def head: a
   def tail: Stream[a]
 

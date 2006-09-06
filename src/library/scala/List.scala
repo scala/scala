@@ -370,7 +370,7 @@ sealed abstract class List[+a] extends Seq[a] with CaseClass {
   /** Returns true if the list does not contain any elements.
    *  @return true, iff the list is empty.
    */
-  def isEmpty: Boolean;
+  override def isEmpty: Boolean;
 
   /** Returns this first element of the list.
    *  @return the first element of this list.
@@ -1079,7 +1079,7 @@ sealed abstract class List[+a] extends Seq[a] with CaseClass {
  */
 [SerialVersionUID(0 - 8256821097970055419L)]
 case object Nil extends List[Nothing] {
-  def isEmpty = true;
+  override def isEmpty = true;
   def head: All = error("head of empty list");
   def tail: List[Nothing] = error("tail of empty list");
 }
@@ -1093,5 +1093,5 @@ case object Nil extends List[Nothing] {
 final case class ::[b](hd: b, private[scala] var tl: List[b]) extends List[b] {
   def head = hd;
   def tail = tl;
-  def isEmpty: boolean = false;
+  override def isEmpty: boolean = false;
 }

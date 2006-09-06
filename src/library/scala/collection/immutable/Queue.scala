@@ -52,7 +52,7 @@ class Queue[+A](elem: A*) extends Seq[A] {
    *
    *  @return true, iff there is no element in the queue.
    */
-  def isEmpty: Boolean = in.isEmpty && out.isEmpty
+  override def isEmpty: Boolean = in.isEmpty && out.isEmpty
 
   /** Returns the length of the queue.
    */

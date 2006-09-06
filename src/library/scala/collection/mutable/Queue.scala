@@ -25,7 +25,7 @@ class Queue[A] extends MutableList[A] {
      *
      *  @return true, iff there is no element in the queue.
      */
-    def isEmpty: Boolean = (first == null);
+    override def isEmpty: Boolean = (first == null);
 
     /** Inserts a single element at the end of the queue.
      *

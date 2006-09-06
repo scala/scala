@@ -24,7 +24,7 @@ class Stack[A] extends MutableList[A] {
      *
      *  @return true, iff there is no element on the stack
      */
-    def isEmpty: Boolean = (first == null);
+    override def isEmpty: Boolean = (first == null);
 
     /** Pushes a single element on top of the stack.
      *

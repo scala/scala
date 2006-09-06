@@ -118,12 +118,27 @@ object Utility extends AnyRef with parsing.TokenTests {
         }
         x.scope.toString(sb, pscope)
         sb.append('>')
-        for (val c <- x.child) {
-          toXML(c, x.scope, sb, stripComment)
-        }
+        sequenceToXML(x.child, pscope, sb, stripComment)
         sb.append("</")
         x.nameToString(sb)
         sb.append('>')
+    }
+  }
+
+  def sequenceToXML(children: Seq[Node], pscope: NamespaceBinding, sb: StringBuilder, stripComment: Boolean): Unit = {
+    if(children.isEmpty)
+      return
+    else if(children exists { y => y.isInstanceOf[Atom[Any]] }) {
+      val it = children.elements
+      val f = it.next
+      toXML(f, f.scope, sb, stripComment)
+      while(it.hasNext) {
+        val x = it.next
+        sb.append(' ')
+        toXML(x, x.scope, sb, stripComment)
+      }
+    } else for (val c <- children) {
+      toXML(c, c.scope, sb, stripComment)
     }
   }
 
@@ -316,7 +331,7 @@ object Utility extends AnyRef with parsing.TokenTests {
       }
       nextch();
     }
-    new String(Array(i.asInstanceOf[char]))
+    String.valueOf(i.asInstanceOf[char])
   }
 
 }

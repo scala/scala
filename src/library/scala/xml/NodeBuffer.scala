@@ -42,10 +42,11 @@ class NodeBuffer extends scala.collection.mutable.ArrayBuffer[Node] {
         val it = ns.elements;
         while(it.hasNext) {
           this &+ it.next;
-          if (it.hasNext)
-            this &+ " ";
+          //if (it.hasNext)
+          //  this &+ " ";
         }
-      case _          => super.+(Text(o.toString()));
+      //case s:String   => super.+(Text(o.toString()));
+      case d          => super.+(new Atom(d));
     }
     this
   }

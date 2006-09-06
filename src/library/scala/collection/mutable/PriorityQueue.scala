@@ -54,7 +54,7 @@ class PriorityQueue[A <% Ordered[A]] extends ResizableArray[A] {
      *
      *  @return true, iff there is no element in the queue.
      */
-    def isEmpty: Boolean = size < 2;
+    override def isEmpty: Boolean = size < 2;
 
     /** Inserts a single element into the priority queue.
      *
