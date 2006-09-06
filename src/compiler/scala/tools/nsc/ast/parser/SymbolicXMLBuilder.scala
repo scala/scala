@@ -153,7 +153,7 @@ abstract class SymbolicXMLBuilder(make: TreeBuilder, p: Parsers # Parser, preser
           true,
           Ident( nme.WILDCARD ),
           Literal(Constant(n)),
-          null, //Predef.Array[Tree](),
+          null, //Array[Tree](),
           null,
           args);
 

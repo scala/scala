@@ -426,7 +426,7 @@ trait MarkupParser requires (MarkupParser with MarkupHandler) extends AnyRef wit
       }
       nextch();
     }
-    new String(Predef.Array(i.asInstanceOf[char]))
+    new String(Array(i.asInstanceOf[char]))
     */
   }
 
