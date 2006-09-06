@@ -7,6 +7,7 @@
 package scala.tools.nsc
 
 import java.io.{File, PrintWriter, StringWriter}
+import java.net.URLClassLoader
 
 import scala.collection.mutable.{ListBuffer, HashSet, ArrayBuffer}
 import scala.collection.immutable.{Map, ListMap}
@@ -14,8 +15,8 @@ import scala.collection.immutable.{Map, ListMap}
 import ast.parser.SyntaxAnalyzer
 import io.PlainFile
 import reporters.{ConsoleReporter, Reporter}
-import util.SourceFile
 import symtab.Flags
+import util.SourceFile
 
 /** An interpreter for Scala code.
 
@@ -97,25 +98,24 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
          shadow the old ones, and old code objects refer to the old
          definitions.
   */
-  private val classLoader = {
+  private val classLoader =
     if (parentClassLoader == null)
-      new java.net.URLClassLoader(Array(classfilePath.toURL))
+      new URLClassLoader(Array(classfilePath.toURL))
     else
-      new java.net.URLClassLoader(Array(classfilePath.toURL), parentClassLoader)
-  }
-  protected def parentClassLoader : ClassLoader = {
-     new java.net.URLClassLoader(
-                    compiler.settings.classpath.value.split(File.pathSeparator).
-                            map(s => new File(s).toURL),
-                    ClassLoader.getSystemClassLoader)
-  }
+      new URLClassLoader(Array(classfilePath.toURL), parentClassLoader)
+
+  protected def parentClassLoader: ClassLoader =
+    new URLClassLoader(
+      compiler.settings.classpath.value.split(File.pathSeparator).
+        map(s => new File(s).toURL),
+      ClassLoader.getSystemClassLoader)
+
   /** the previous requests this interpreter has processed */
   private val prevRequests = new ArrayBuffer[Request]()
 
   /** look up the request that bound a specified term or type */
-  private def reqBinding(vname: Name): Option[Request] = {
+  private def reqBinding(vname: Name): Option[Request] =
     prevRequests.toList.reverse.find(lin => lin.boundNames.contains(vname))
-  }
 
   /** next line number to use */
   private var nextLineNo = 0
@@ -141,7 +141,7 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
   private def codeForImports: String = importLines.mkString("", ";\n", ";\n")
 
   /** generate a string using a routine that wants to write on a stream */
-  private def stringFrom(writer: PrintWriter=>Unit): String = {
+  private def stringFrom(writer: PrintWriter => Unit): String = {
     val stringWriter = new StringWriter()
     val stream = new PrintWriter(stringWriter)
     writer(stream)
@@ -149,13 +149,17 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
     stringWriter.toString
   }
 
-  /** parse a line into a sequence of trees */
+  /** Parse a line into a sequence of trees.
+   *
+   *  @param line ...
+   *  @return     ...
+   */
   private def parse(line: String): List[Tree] = {
     // simple parse: just parse it, nothing else
     def simpleParse(code: String): List[Tree] = {
       val unit =
         new CompilationUnit(
-          new SourceFile("<console>",code.toCharArray()))
+          new SourceFile("<console>", code.toCharArray()))
 
       new compiler.syntaxAnalyzer.Parser(unit).templateStatSeq
     }
@@ -163,53 +167,73 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
     // parse the main code along with the imports
     reporter.reset
     val trees = simpleParse(codeForImports + line)
-    if(reporter.errors > 0)
-      return Nil // the result did not parse, so stop
+    if (reporter.errors > 0)
+      Nil // the result did not parse, so stop
+    else {
+      // parse the imports alone
+      val importTrees = simpleParse(codeForImports)
 
-    // parse the imports alone
-    val importTrees = simpleParse(codeForImports)
-
-    // return just the new trees, not the import trees
-    trees.drop(importTrees.length)
+      // return just the new trees, not the import trees
+      trees.drop(importTrees.length)
+    }
   }
 
-  /** Compile one source file */
+  /** Compile one source file.
+   *
+   *  @param filename
+   */
   def compileFile(filename: String): Unit = {
     val jfile = new File(filename)
-    if(!jfile.exists) {
+    if (!jfile.exists) {
       reporter.error(null, "no such file: " + filename)
-      return ()
+    } else {
+      val cr = new compiler.Run
+      cr.compileSources(List(new SourceFile(PlainFile.fromFile(jfile))))
     }
-    val cr = new compiler.Run
-    cr.compileSources(List(new SourceFile(PlainFile.fromFile(jfile))))
   }
 
   /** Compile an nsc SourceFile.  Returns true if there are
-    * no compilation errors, or false othrewise. */
+   *  no compilation errors, or false othrewise.
+   *
+   *  @param sources ...
+   *  @return        ...
+   */
   def compileSources(sources: List[SourceFile]): Boolean = {
     val cr = new compiler.Run
     reporter.reset
     cr.compileSources(sources)
-    return (reporter.errors == 0)
+    reporter.errors == 0
   }
 
   /** Compile a string.  Returns true if there are no
-    * compilation errors, or false otherwise. */
+   *  compilation errors, or false otherwise.
+   *
+   *  @param code ...
+   *  @return     ...
+   */
   def compileString(code: String): Boolean =
     compileSources(List(new SourceFile("<script>", code.toCharArray)))
 
-  /** build a request from the user.  "tree" is "line" after being parsed */
-  private def buildRequest(trees: List[Tree], line: String,  lineName: String): Request = {
+  /** build a request from the user.  "tree" is "line" after being parsed.
+   *
+   *  @param trees    ...
+   *  @param line     ...
+   *  @param lineName ...
+   *  @return         ...
+   */
+  private def buildRequest(trees: List[Tree], line: String, lineName: String): Request =
     trees match {
       /* This case for assignments is more specialized than desirable: it only
          handles assignments to an identifier.  It would be better to support
          arbitrary paths being assigned, but that is technically difficult
          because of the way objectSourceCode and resultObjectSourceCode are
          implemented in class Request. */
-      case List(Assign(Ident(lhs), _)) => new AssignReq(lhs, line, lineName)
-
-      case _ if trees.forall(t => t.isInstanceOf[ValOrDefDef]) => new DefReq(line, lineName)
-      case List(_:TermTree) | List(_:Ident) | List(_:Select) => new ExprReq(line, lineName)
+      case List(Assign(Ident(lhs), _)) =>
+        new AssignReq(lhs, line, lineName)
+      case _ if trees.forall(t => t.isInstanceOf[ValOrDefDef]) =>
+        new DefReq(line, lineName)
+      case List(_:TermTree) | List(_:Ident) | List(_:Select) =>
+        new ExprReq(line, lineName)
       case List(_:ModuleDef) => new ModuleReq(line, lineName)
       case List(_:ClassDef) => new ClassReq(line, lineName)
       case List(_:AliasTypeDef) => new TypeAliasReq(line, lineName)
@@ -220,32 +244,34 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
         null
       }
     }
-  }
 
-  /** interpret one line of input.  All feedback, including parse errors
-      and evaluation results, are printed via the supplied compiler's
-      reporter.  Values defined are available for future interpreted
-      strings.
-
-      The return value is whether the line was interpreter successfully,
-      e.g. that there were no parse errors.*/
+  /** Interpret one line of input.  All feedback, including parse errors
+   *  and evaluation results, are printed via the supplied compiler's
+   *  reporter.  Values defined are available for future interpreted
+   *  strings.
+   *  The return value is whether the line was interpreter successfully,
+   *  e.g. that there were no parse errors.
+   *
+   *  @param line ...
+   *  @return     ...
+   */
   def interpret(line: String): boolean = {
     // parse
     val trees = parse(line)
-    if(trees.isEmpty) return false  // parse error or empty input
+    if (trees.isEmpty) return false  // parse error or empty input
 
     val lineName = newLineName
 
     // figure out what kind of request
     val req = buildRequest(trees, line, lineName)
-    if(req == null) return false  // a disallowed statement type
+    if (req == null) return false  // a disallowed statement type
 
-    if(!req.compile)
+    if (!req.compile)
       return false  // an error happened during compilation, e.g. a type error
 
     val Pair(interpreterResultString, succeeded) = req.loadAndRun
 
-    if(printResults || !succeeded) {
+    if (printResults || !succeeded) {
       // print the result
       out.print(interpreterResultString)
 
@@ -255,7 +281,7 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
     }
 
     // book-keeping
-    if(succeeded)
+    if (succeeded)
       prevRequests += req
 
     succeeded
@@ -265,8 +291,13 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
   private var binderNum = 0
 
   /** Bind a specified name to a specified value.  The name may
-    * later be used by expressions passed to interpret
-    */
+   *  later be used by expressions passed to interpret.
+   *
+   *  @param name      ...
+   *  @param boundType ...
+   *  @param value     ...
+   *  @return          ...
+   */
   def bind(name: String, boundType: String, value: Any) = {
     // XXX check that name is a valid variable name */
     val binderName = "binder" + binderNum
@@ -312,7 +343,6 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
     argsHolder = List(value).toArray
     setterMethod.invoke(null, argsHolder.asInstanceOf[Array[Object]])
 
-
     interpret("val " + name + " = " + binderName + ".value")
   }
 
@@ -324,9 +354,8 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
       class files for this instance.  This cannot safely be done as commands
       are executed becaus of Java's demand loading.
   */
-  def close: Unit = {
+  def close: Unit =
     Interpreter.deleteRecursively(classfilePath)
-  }
 
   /** A traverser that finds all mentioned identifiers, i.e. things
       that need to be imported.
@@ -369,7 +398,7 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
           mods.isPublic
         } yield name
 
-      if(needsVarName)
+      if (needsVarName)
         compiler.encode(lineName) :: baseNames  // add a var name
       else
         baseNames
@@ -390,12 +419,12 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
 
     /** list of classes defined */
     val classNames =
-      for(val ClassDef(mods, name, _, _, _) <- trees; mods.isPublic)
+      for (val ClassDef(mods, name, _, _, _) <- trees; mods.isPublic)
         yield name
 
     /** list of type aliases defined */
     val typeNames =
-      for(val AliasTypeDef(mods, name, _, _) <- trees; mods.isPublic)
+      for (val AliasTypeDef(mods, name, _, _) <- trees; mods.isPublic)
         yield name
 
     /** all (public) names defined by these statements */
@@ -419,16 +448,16 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
         code.println(codeForImports)
 
         // write an import for each imported variable
-        for{val imv <- usedNames
-            val lastDefiner <- reqBinding(imv).toList } {
-         code.println("import " + lastDefiner.objectName + "." + imv)
+        for {val imv <- usedNames
+             val lastDefiner <- reqBinding(imv).toList } {
+          code.println("import " + lastDefiner.objectName + "." + imv)
         }
 
         // object header
-        code.println("object "+objectName+" {")
+        code.println("object " + objectName + " {")
 
         // the line of code to compute
-        if(needsVarName)
+        if (needsVarName)
           code.println("  val " + lineName + " = " + line)
         else
           code.println("  " + line)
@@ -446,7 +475,7 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
     def resultObjectSourceCode: String =
       stringFrom(code => {
         code.println("object " + resultObjectName)
-        code.println("{ val result:String = {")
+        code.println("{ val result: String = {")
         code.println(objectName + ";")  // evaluate the object, to make sure its constructor is run
         code.print("\"\"")  // print an initial empty string, so later code can
                             // uniformly be: + morestuff
@@ -455,12 +484,11 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
         code.println(";}")
       })
 
-    def resultExtractionCode(code: PrintWriter): Unit = {
-      for(val vname <- namesToPrintForUser) {
+    def resultExtractionCode(code: PrintWriter): Unit =
+      for (val vname <- namesToPrintForUser) {
         code.print(" + \"" + vname + ": " + typeOf(vname) +
-          " = \" + " + objectName + "." + vname + " + \"\\n\"")
+                   " = \" + " + objectName + "." + vname + " + \"\\n\"")
       }
-    }
 
     /** Compile the object file.  Returns whether the compilation succeeded.
         If all goes well, types is computed and set */
@@ -470,21 +498,28 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
 
       // compile the main object
       val objRun = new compiler.Run()
-      objRun.compileSources(List(new SourceFile("<console>", objectSourceCode.toCharArray)))
-      if(reporter.errors > 0) return false
+      objRun.compileSources(
+        List(new SourceFile("<console>", objectSourceCode.toCharArray))
+      )
+      if (reporter.errors > 0) return false
 
       // extract and remember types
       typeOf = findTypes(objRun)
 
       // compile the result-extraction object
-      new compiler.Run().compileSources(List(new SourceFile("<console>", resultObjectSourceCode.toCharArray)))
-      if(reporter.errors > 0) return false
+      new compiler.Run().compileSources(
+        List(new SourceFile("<console>", resultObjectSourceCode.toCharArray))
+      )
 
       // success
-      true
+      reporter.errors == 0
     }
 
-    /** dig the types of all bound variables out of the compiler run */
+    /** Dig the types of all bound variables out of the compiler run.
+     *
+     *  @param objRun ...
+     *  @return       ...
+     */
     def findTypes(objRun: compiler.Run): Map[Name, String] = {
       def getTypes(names: List[Name], nameMap: Name=>Name): Map[Name, String] = {
         names.foldLeft[Map[Name,String]](new ListMap[Name, String]())((map, name) => {
@@ -519,7 +554,7 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
       } catch {
         case e => {
           def caus(e: Throwable): Throwable =
-            if(e.getCause == null) e else caus(e.getCause)
+            if (e.getCause == null) e else caus(e.getCause)
             val orig = caus(e)
             Pair(stringFrom(str => orig.printStackTrace(str)),
                  false)
@@ -530,16 +565,14 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
     /** return a summary of the defined methods */
     def defTypesSummary: String =
       stringFrom(summ => {
-        for(val methname <- defNames) {
+        for (val methname <- defNames)
           summ.println("" + methname + ": " + typeOf(methname))
-        }
       })
   }
 
   /** A sequence of definition's.  val's, var's, def's. */
   private class DefReq(line: String, lineName: String)
-  extends Request(line, lineName) {
-  }
+  extends Request(line, lineName)
 
   /** Assignment of a single variable: lhs = exp */
   private class AssignReq(val lhs: Name, line: String, lineName: String)
@@ -611,9 +644,9 @@ object Interpreter {
   /** Delete a directory tree recursively.  Use with care! */
   def deleteRecursively(path: File): Unit = {
     path match  {
-      case _ if(!path.exists) => ()
-      case _ if(path.isDirectory) =>
-        for(val p <- path.listFiles)
+      case _ if (!path.exists) => ()
+      case _ if (path.isDirectory) =>
+        for (val p <- path.listFiles)
           deleteRecursively(p)
         path.delete
       case _ => path.delete
