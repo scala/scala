@@ -652,6 +652,13 @@ trait Symbols requires SymbolTable {
     final def linkedClassOfClass: Symbol =
       if (isModuleClass) linkedClassOfModule else linkedModuleOfClass.moduleClass
 
+    /** If this symbol is an implementation class, its interface, otherwise the symbol itself
+     *  The method follows two strategies to determine the interface.
+     *   - during or after erasure, it takes the last parent of the implementatation class
+     *     (which is always the interface, by convention)
+     *   - before erasure, it looks up the interface name in the scope of the owner of the class.
+     *     This only works for implementation classes owned by other classes or traits.
+     */
     final def toInterface: Symbol =
       if (isImplClass) {
         val result =

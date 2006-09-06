@@ -481,6 +481,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
      */
     private def bridgeDefs(owner: Symbol): List[Tree] = {
       //Console.println("computing bridges for " + owner)//DEBUG
+      assert(phase == currentRun.erasurePhase)
       val site = owner.thisType
       val bridgesScope = newScope
       val bridgeTarget = new HashMap[Symbol, Symbol]
@@ -514,7 +515,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
               .resetFlag(ACCESSOR | DEFERRED | lateDEFERRED)
               .setInfo(otpe);
             bridgeTarget(bridge) = member
-            owner.info.decls.enter(bridge)
+            atPhase(phase.next) { owner.info.decls.enter(bridge) }
             bridgesScope enter bridge
             bridges =
               atPhase(phase.next) {
