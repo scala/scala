@@ -58,6 +58,10 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
      */
     protected var root: PatternNode = _
 
+    // statistics
+    var nremoved = 0
+    var nsubstituted = 0
+
     /** the symbol of the result variable
      */
     //protected var resultVar: Symbol = _
@@ -67,7 +71,6 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
     /** init method, also needed in subclass AlgebraicMatcher
      */
     def initialize(selector: Tree, owner: Symbol, handleOuter:Tree=>Tree): Unit = {
-
       this.owner = owner
       this.selector = selector
       this.handleOuter = handleOuter
@@ -78,6 +81,8 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
                               Ident(root.symbol).setType(root.tpe));
       //Konsole.println("resultType =  "+resultType);
       //this.optimize = this.optimize && (settings.target.value == "jvm");
+      if(settings.statistics.value)
+	Console.println("could remove "+(nremoved+nsubstituted)+" ValDefs, "+nremoved+" by deleting and "+nsubstituted+" by substitution")
     }
 
 // ---
@@ -235,6 +240,57 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
    */
   def newVar(pos: PositionType, tpe: Type): Symbol =
     newVar(pos, cunit.fresh.newName("temp"), tpe).setFlag(Flags.SYNTHETIC)
+
+// ---
+  def squeezedBlock(tree:Block) = {
+    class RefTraverser(sym:Symbol) extends Traverser {
+      var nref = 0
+      var nsafeRef = 0
+      override def traverse(tree: Tree) = tree match {
+	//case t:This  => incrThis
+	case t:Ident if t.symbol == sym =>
+	  nref = nref + 1
+	  if(sym.owner == currentOwner)  { // oldOwner should match currentOwner
+	    nsafeRef = nsafeRef + 1
+	  } /*else if(nref == 1) {
+	    Console.println("sym owner: "+sym.owner+" but currentOwner = "+currentOwner)
+	  }*/
+	case t if nref > 1 => // abort, no story to tell
+
+	case t       => super . traverse (t)
+      }
+    }
+    class Subst(sym:Symbol,rhs:Tree) extends Transformer {
+      var stop = false
+      override def transform(tree: Tree) = tree match {
+	//case t:This  => incrThis
+	case t:Ident if t.symbol == sym =>
+	  stop = true
+	  rhs
+	case t if stop =>
+	  t
+	case t       =>
+	  super . transform (t)
+      }
+    }
+    tree match {
+      case Block((vd:ValDef):: rest, exp) =>
+	val sym = vd.symbol
+	val rt = new RefTraverser(sym)
+	val t = if(rest.isEmpty) exp else Block(rest, exp) setType tree.tpe
+	rt.atOwner(PatternMatcher.this.owner)(rt.traverse(t))
+	rt.nref match {
+	  case 0 =>
+	    nremoved = nremoved + 1
+	    t
+	  case 1 if rt.nsafeRef == 1 =>
+	    nsubstituted = nsubstituted + 1
+	    new Subst(sym, vd.rhs).transform(t)
+	case i =>
+	  tree
+      }
+    }
+  }
 
 // ---
     /** pretty printer
@@ -835,10 +891,10 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
     else if (ncases == 1) {
       root.and.or match {
         case ConstantPat(value) =>
-          return Block(List(ValDef(root.symbol, selector)),
+          return squeezedBlock(Block(List(ValDef(root.symbol, selector)),
                             If(Equals(Ident(root.symbol), Literal(value)),
                                (root.and.or.and).bodyToTree(),
-                               defaultBody(root.and, matchError)));
+                               defaultBody(root.and, matchError))))
         case _ =>
           return generalSwitchToTree();
       }
@@ -891,7 +947,7 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
     }
     return Switch(selector, tags, bodies, defaultBody1, resultType);
     */
-    nCases = CaseDef(Ident(nme.WILDCARD), Block(List(ValDef(root.symbol, selector)),defaultBody1)) :: nCases;
+    nCases = CaseDef(Ident(nme.WILDCARD), squeezedBlock(Block(List(ValDef(root.symbol, selector)),defaultBody1))) :: nCases;
     Match(selector, nCases)
   }
 
@@ -900,26 +956,14 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
     /** simple optimization: if the last pattern is `case _' (no guards), we won't generate the ThrowMatchError
      */
   def generalSwitchToTree(): Tree = {
-    this.exit = owner.newLabel(root.pos, "exit")
-    .setInfo(new MethodType(List(resultType), resultType));
-    //Console.println("resultType:"+resultType.toString());
+    this.exit = owner.newLabel(root.pos, "exit").setInfo(new MethodType(List(resultType), resultType));
     val result = exit.newValueParameter(root.pos, "result").setInfo( resultType );
-
-    //Console.println("generalSwitchToTree: "+root.or);
-    /*
-    val ts = List(ValDef(root.symbol, selector));
-    val res = If(toTree(root.and),
-                 LabelDef(exit, List(result), Ident(result)),
-                 ThrowMatchError(selector.pos,  resultType // , Ident(root.symbol)
-                               ));
-    return Block(ts, res);
-    */
-    return Block(
+    return squeezedBlock(Block(
       List(
         ValDef(root.symbol, selector),
         toTree(root.and),
         ThrowMatchError(selector.pos,  Ident(root.symbol))),
-      LabelDef(exit, List(result), Ident(result)))
+      LabelDef(exit, List(result), Ident(result))))
   }
 
   /*protected*/ def toTree(node1: PatternNode): Tree = {
@@ -981,12 +1025,13 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
             //Block(
             //  List(Assign(Ident(resultVar), body(i))),
             //  Literal(Constant(true)));
+	    squeezedBlock(
             Block(
               List(
                 ValDef(temp, body(i)),
                 Apply(Ident(exit), List(Ident(temp)))),
               Literal(Constant(true))
-            ); // forward jump
+            )); // forward jump
           if (guard(i) != EmptyTree)
             res0 = And(guard(i), res0);
           res = Or(Block(ts.toList, res0), res);

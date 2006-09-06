@@ -122,6 +122,21 @@ trait Iterable[+A] {
    */
   def find(p: A => Boolean): Option[A] = elements.find(p)
 
+  /** Returns index of the first element satisying a predicate, or -1.
+   *  @param p the predicate
+   *  @return the index of the first element satisfying <code>p</code>, or -1 if such an element does not exist
+   */
+  def indexOf(p: A => Boolean): Int = {
+    val it = elements
+    var i  = 0
+    while(it.hasNext)
+      if(p(it.next))
+	return i
+      else
+	i = i + 1
+    return -1
+  }
+
   /** Combines the elements of this list together using the binary
    *  operator <code>op</code>, from left to right, and starting with
    *  the value <code>z</code>.
