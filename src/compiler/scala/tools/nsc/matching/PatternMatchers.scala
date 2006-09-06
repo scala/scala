@@ -198,9 +198,16 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
     node
   }
 
+  /**
+   *  @param pos   ...
+   *  @param bound ...
+   *  @param guard ...
+   *  @param body  ...
+   *  @return      ...
+   */
   def pBody(pos: PositionType, bound: Array[ValDef], guard: Tree, body: Tree) = {
     val node =
-      new Body(Array[Array[ValDef]](bound), Array[Tree](guard), Array[Tree](body))
+      new Body(Predef.Array(bound), Predef.Array(guard), Predef.Array(body))
     node.pos = pos
     node
   }
@@ -221,9 +228,13 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
     sym
   }
 
+  /**
+   *  @param pos ...
+   *  @param tpe ...
+   *  @return    ...
+   */
   def newVar(pos: PositionType, tpe: Type): Symbol =
     newVar(pos, cunit.fresh.newName("temp"), tpe).setFlag(Flags.SYNTHETIC)
-
 
 // ---
     /** pretty printer
@@ -280,7 +291,8 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
         case Bind(_, pat) =>
           patternArgs(pat)
 
-        case a @ Apply(_, List(av @ ArrayValue(_, ts))) if isSeqApply(a) && isRightIgnoring(av) =>
+        case a @ Apply(_, List(av @ ArrayValue(_, ts)))
+        if isSeqApply(a) && isRightIgnoring(av) =>
           ts.reverse.drop(1).reverse
 
         case a @ Apply(_, List(av @ ArrayValue(_, ts))) if isSeqApply(a) =>
@@ -347,11 +359,13 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
         node
 
       case Bind(name, pat) =>
-        val node = patternNode(pat, header, env);
+        val node = patternNode(pat, header, env)
         if ((env != null) && (tree.symbol != defs.PatternWildcard)) {
-          val casted = node.symbol;
-          val theValue =  if (casted == NoSymbol) header.selector else Ident( casted).setType(casted.tpe);
-          env.newBoundVar(tree.symbol, tree.tpe, theValue);
+          val casted = node.symbol
+          val theValue =
+            if (casted == NoSymbol) header.selector
+            else Ident(casted).setType(casted.tpe)
+          env.newBoundVar(tree.symbol, tree.tpe, theValue)
         }
        node
 
@@ -389,20 +403,15 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
           }
       case Typed(Ident( nme.WILDCARD ), tpe) => // x@_:Type
         val doTest = isSubType(header.getTpe(), tpe.tpe) // this is already an optimization
-        if (doTest)
-          pDefaultPat(tree.pos, tpe.tpe)
-        else
-          pConstrPat(tree.pos, tpe.tpe)
+        if (doTest) pDefaultPat(tree.pos, tpe.tpe)
+        else pConstrPat(tree.pos, tpe.tpe)
 
       case t @ Typed(ident, tpe) =>       // variable pattern
         //Console.println("Z");
         val doTest = isSubType(header.getTpe(),tpe.tpe);
-        val node = {
-          if(doTest)
-            pDefaultPat(tree.pos, tpe.tpe)
-          else
-            pConstrPat(tree.pos, tpe.tpe);
-        }
+        val node =
+          if(doTest) pDefaultPat(tree.pos, tpe.tpe)
+          else pConstrPat(tree.pos, tpe.tpe)
         if ((null != env) /* && (ident.symbol != defs.PatternWildcard) */)
           node match {
             case ConstrPat(casted) =>
@@ -431,17 +440,17 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
 
       case Select(_, name) => // named constant
         if (tree.symbol.isPrimaryConstructor)
-          pConstrPat(tree.pos, tree.tpe);
+          pConstrPat(tree.pos, tree.tpe)
         else
-          pVariablePat(tree.pos, tree);
+          pVariablePat(tree.pos, tree)
 
       case Literal(Constant(value)) =>
-        pConstantPat(tree.pos, tree.tpe, value);
+        pConstantPat(tree.pos, tree.tpe, value)
 
       case av @ ArrayValue(_, ts) =>
         if(isRightIgnoring(av)) {
           val castedRest = ts.last match {
-            case b:Bind => b.symbol;
+            case b:Bind => b.symbol
             case _      => null
           }
           //Console.println("array value "+av+" is right ignoring!")
@@ -506,8 +515,8 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
       //Console.println()
 
       val t = typed(
-        Apply(Select( ident, ident.tpe.member(nme.apply)/* scalac: defs.functionApply( 1 )*/),
-              List( Literal( Constant(index) ) )));
+        Apply(Select(ident, ident.tpe.member(nme.apply)/* scalac: defs.functionApply( 1 )*/),
+              List(Literal(Constant(index)))));
       val seqType = t.tpe
       pHeader( pos, seqType, t )
     } else {
@@ -522,8 +531,8 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
       //val accType = casted.tpe.memberType(ts); // old scalac
       //val accTree = global.typer.typed(Select(ident, ts)); // !
 
-      val accTree = typed(Apply(Select(ident, ts), List())); // nsc !
-      val accType = accTree.tpe;
+      val accTree = typed(Apply(Select(ident, ts), List())) // nsc !
+      val accType = accTree.tpe
       //Console.println("newHeader :: accType="+accType);
       //Console.println("newHeader :: accType.resultType ="+accType.resultType);
       //Console.println("accTree.tpe =="+accTree.tpe);
@@ -532,11 +541,11 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
         // scala case accessor
         case MethodType(_, _) =>
           //Console.println("Hello?!");
-          pHeader(pos, accType.resultType, Apply(accTree, List()));
+          pHeader(pos, accType.resultType, Apply(accTree, List()))
         // jaco case accessor
         case _ =>
           //Console.println("Hola?!");
-          pHeader(pos, accType, accTree);
+          pHeader(pos, accType, accTree)
       }
     }
   }
@@ -545,9 +554,10 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
    *
    *  invariant: ( curHeader == (Header)target.and ) holds
    */
-  protected def enter1(pat: Tree, index: Int, target: PatternNode, casted: Symbol,  env: CaseEnv): PatternNode = {
+  protected def enter1(pat: Tree, index: Int, target: PatternNode,
+                       casted: Symbol, env: CaseEnv): PatternNode = {
     //System.err.println("enter(" + pat + ", " + index + ", " + target + ", " + casted + ")");
-    var bodycond: PatternNode => Body = null; // in case we run into a body (combination of typed pattern and constructor pattern, see bug#644)
+    var bodycond: PatternNode => Body = null // in case we run into a body (combination of typed pattern and constructor pattern, see bug#644)
     val patArgs = patternArgs(pat);      // get pattern arguments
     //System.err.println("patArgs = "+patArgs);
     var curHeader: Header = target.and match {
@@ -611,7 +621,7 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
           } else
             next = next.or;
       }
-      error("must not happen");
+      error("must not happen")
       null
     }
   }
@@ -707,7 +717,7 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
                           funct(inner.or)
 
                         case DefaultPat() =>
-                          funct(inner.and);
+                          funct(inner.and)
 
                         case b:Body =>
                           if ((b.guard.length > 1) ||
@@ -716,18 +726,18 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
 
                           throw Break2() // break outer
                         case _ =>
-                          //Console.println(inner);
-                          throw Break(false);
+                          //Console.println(inner)
+                          throw Break(false)
                       }
                     }
-                    var res = false;
-                    var set = false;
+                    var res = false
+                    var set = false
                     try {
                       funct(inner)
                     } catch {
                       case ex: Break =>
-                        res = ex.res;
-                        set = true;
+                        res = ex.res
+                        set = true
                       case ex: Break2 =>
                     }
                     if(set) return res;
@@ -735,12 +745,12 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
               return false;
           }
         }
-        patNode = patNode.nextH();
+        patNode = patNode.nextH()
       }
       true
     }
 
-  protected def isSimpleIntSwitch(): Boolean = {
+  protected def isSimpleIntSwitch(): Boolean =
     if (isSameType(selector.tpe.widen, defs.IntClass.tpe)) {
       var patNode = root.and
       while (patNode != null) {
@@ -763,10 +773,9 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
         }
         patNode = patNode.nextH();
       }
-      return true;
+      true
     } else
-      return false;
-  }
+      false
 
   class TagBodyPair(tag1: Int, body1: Tree, next1: TagBodyPair ) {
     var tag: int = tag1
@@ -783,8 +792,7 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
     while (({patNode = patNode.or; patNode}) != null)
     patNode match {
       case DefaultPat() => ;
-      case _ =>
-        n = n + 1
+      case _ => n = n + 1
     }
     n
   }
@@ -818,8 +826,8 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
     }
 
     //print();
-    val ncases = numCases(root.and);
-    val matchError = ThrowMatchError(selector.pos, Ident(root.symbol));
+    val ncases = numCases(root.and)
+    val matchError = ThrowMatchError(selector.pos, Ident(root.symbol))
     // without a case, we return a match error if there is no default case
     if (ncases == 0)
       return defaultBody(root.and, matchError);

@@ -253,7 +253,8 @@ trait Types requires SymbolTable {
       val startTime = if (util.Statistics.enabled) System.currentTimeMillis() else 0l
       val result =
         ((this eq that) ||
-         (if (explainSwitch) explain("<", isSubType, this, that) else isSubType(this, that)));
+         (if (explainSwitch) explain("<", isSubType, this, that)
+          else isSubType(this, that)));
       if (util.Statistics.enabled)
         subtypeMillis = subtypeMillis + System.currentTimeMillis() - startTime
       result
@@ -262,13 +263,14 @@ trait Types requires SymbolTable {
     /** Is this type equivalent to that type? */
     def =:=(that: Type): boolean = (
       (this eq that) ||
-      (if (explainSwitch) explain("=", isSameType, this, that) else isSameType(this, that))
+      (if (explainSwitch) explain("=", isSameType, this, that)
+       else isSameType(this, that))
     );
 
     /** Does this type implement symbol `sym' with same or stronger type? */
     def specializes(sym: Symbol): boolean =
       if (explainSwitch) explain("specializes", specializesSym, this, sym)
-      else specializesSym(this, sym);
+      else specializesSym(this, sym)
 
     /** Is this type close enough to that type so that
      *  members with the two type would override each other?
@@ -300,7 +302,7 @@ trait Types requires SymbolTable {
      *
      *  Sorting is with respect to Symbol.isLess() on type symbols.
      */
-    def closure: Array[Type] = Array(this)
+    def closure: Array[Type] = Predef.Array(this)
 
     def baseClasses: List[Symbol] = List()
 
