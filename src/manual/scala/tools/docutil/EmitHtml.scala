@@ -342,8 +342,8 @@ object EmitHtml {
     try {
       val cl = this.getClass.getClassLoader()
       val clasz = cl.loadClass(args(0))
-      val meth = clasz.getDeclaredMethod("manpage", Array[Class]())
-      val doc = meth.invoke(null, Array[Object]()).asInstanceOf[Document]
+      val meth = clasz.getDeclaredMethod("manpage", Predef.Array[Class]())
+      val doc = meth.invoke(null, Predef.Array[Object]()).asInstanceOf[Document]
       emitDocument(doc)
     } catch {
       case ex: Exception =>
