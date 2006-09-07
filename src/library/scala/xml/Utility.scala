@@ -128,7 +128,7 @@ object Utility extends AnyRef with parsing.TokenTests {
   def sequenceToXML(children: Seq[Node], pscope: NamespaceBinding, sb: StringBuilder, stripComment: Boolean): Unit = {
     if(children.isEmpty)
       return
-    else if(children exists { y => y.isInstanceOf[Atom[Any]] }) {
+    else if(children forall { y => y.isInstanceOf[Atom[Any]] && !y.isInstanceOf[Text] }) { // add space
       val it = children.elements
       val f = it.next
       toXML(f, f.scope, sb, stripComment)

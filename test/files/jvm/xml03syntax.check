@@ -1,0 +1,24 @@
+<hello>()</hello>
+passed ok
+<hello>()</hello>
+passed ok
+<hello>world</hello>
+passed ok
+<hello>1.5</hello>
+passed ok
+<hello>5</hello>
+passed ok
+<hello>true</hello>
+passed ok
+<hello>5</hello>
+passed ok
+<hello>27</hello>
+passed ok
+<hello>1 2 3 4</hello>
+1
+2
+3
+4
+<hello>2 4</hello>
+2
+4

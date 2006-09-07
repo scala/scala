@@ -66,10 +66,11 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
   /** checks whether next character starts a Scala block, if yes, skip it.
    * @return true if next character starts a scala block
    */
-  /*[Duplicate]*/ def xCheckEmbeddedBlock: Boolean = {
-    xEmbeddedBlock =
-      enableEmbeddedExpressions && (ch == '{') && { nextch; ch != '{' }
-    xEmbeddedBlock
+  /*[Duplicate]*/ def xCheckEmbeddedBlock:Boolean = {
+    // attentions, side-effect, used in xText
+    xEmbeddedBlock = ( ch == '{' ) && { nextch;( ch != '{' ) }
+    //Console.println("pos = "+pos+" xEmbeddedBlock returns "+xEmbeddedBlock)
+    return xEmbeddedBlock;
   }
 
   /** parse attribute and add it to listmap
@@ -91,7 +92,7 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
           val tmp = xAttributeValue(delim)
           nextch
           Literal(Constant(tmp))
-        case '{' if enableEmbeddedExpressions =>
+        case '{'  =>
           nextch
           xEmbeddedExpr
         case _ =>
@@ -265,14 +266,18 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
    *  @precond ch == '{'
    *  @postcond: xEmbeddedBlock == false!
    */
-  def content_BRACE(p: Int, ts:mutable.ArrayBuffer[Tree]): Unit =
+  def content_BRACE(p: Int, ts:mutable.ArrayBuffer[Tree]): Unit = {
+    //Console.println("content_BRACE, p = "+s.currentPos)
     if (xCheckEmbeddedBlock)
       ts.append(xEmbeddedExpr)
     else {
+      appendText(p, ts, xText)/*
       val str = new StringBuffer("{")
       str.append(xText)
-      appendText(p, ts, str.toString())
+      nextch
+      appendText(p, ts, str.toString())*/
     }
+  }
 
   /** Returns true if it encounters an end tag (without consuming it),
    *  appends trees to ts as side-effect.
@@ -409,27 +414,29 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
   */
   /*[Duplicate]*/ def xText: String = {
     if( xEmbeddedBlock ) Predef.error("internal error: encountered embedded block"); // assert
-
-    if( xCheckEmbeddedBlock ) {
-      return ""
-    } else {
+    //Console.println("xText ch now "+ch)
+    //if( xCheckEmbeddedBlock ) {
+    //  return ""
+    //} else {
       var exit = false;
       while( !exit ) {
         putChar( ch );
-        exit = { nextch; xCheckEmbeddedBlock }||( ch == '<' ) || ( ch == '&' );
+        val expectRBRACE = ch == '}'
+        // TODO check for "}}"
+        nextch
+        if(expectRBRACE) {
+          if(ch == '}')
+            nextch
+          else
+            s.syntaxError("in XML content, please use '}}' to express '}'")
+        }
+        exit = xCheckEmbeddedBlock ||( ch == '<' ) || ( ch == '&' );
       }
       val str = cbuf.toString();
       cbuf.setLength( 0 );
       str
-    }
+    //}
   }
-  //override type Tree = handle.Tree;
-  //override type Tree     = handle.Tree;
-
-  final val PATTERN = true;
-  final val EXPR    = false;
-
-  val enableEmbeddedExpressions: Boolean = true;
 
   //val cbuf = new StringBuffer();
 
@@ -532,9 +539,9 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
       EmptyTree;
   }
 
-  def xEmbeddedExpr:Tree = {
+  def xEmbeddedExpr: Tree = {
     sync;
-    val b = p.expr(true,false);
+    val b = p.block() //p.expr(true,false);
     if(/*s.*/token != RBRACE) {
       reportSyntaxError(" expected end of Scala block");
     }
@@ -558,13 +565,13 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
   //var ch: Char = _;
 
   /** this method assign the next character to ch and advances in input */
-  def nextch: Unit = { s.in.next; /*s.xNext;*/ ch = s.in.ch ; pos = s.currentPos; }
+  def nextch: Unit = { s.in.next; /*s.xNext;*/ ch = s.in.ch ; pos = s.in.cpos; }
 
   //def lookahead = { s.xLookahead }
 
   def init: Unit = {
     ch = s.in.ch;
-    pos = s.currentPos;
+    pos = s.in.cpos;
     //Console.println("\ninit! ch = "+ch);
   }
 
