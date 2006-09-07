@@ -84,10 +84,10 @@ x = <html>
         <tr>
           <td> Tom </td>
           <td> 20 </td>
-        </tr> <tr>
+        </tr><tr>
           <td> Bob </td>
           <td> 22 </td>
-        </tr> <tr>
+        </tr><tr>
           <td> James </td>
           <td> 19 </td>
         </tr>
@@ -104,10 +104,10 @@ y = <html>
         <tr>
           <td> Tom </td>
           <td> 20 </td>
-        </tr> <tr>
+        </tr><tr>
           <td> Bob </td>
           <td> 22 </td>
-        </tr> <tr>
+        </tr><tr>
           <td> James </td>
           <td> 19 </td>
         </tr>
