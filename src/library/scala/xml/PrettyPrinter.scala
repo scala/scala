@@ -128,7 +128,7 @@ class PrettyPrinter( width:Int, step:Int ) {
     val it = n.child.elements;
     while( it.hasNext )
       it.next match {
-        case _:Atom[Any] | _: Molecule[Any] | _:Comment | _:EntityRef | _:ProcInstr =>
+        case _:Atom[Any] | _:Comment | _:EntityRef | _:ProcInstr =>
         case _:Node =>
           return false;
       }
@@ -145,7 +145,7 @@ class PrettyPrinter( width:Int, step:Int ) {
 
       case Text(s) if s.trim() == "" =>
 
-      case _:Atom[Any] | _:Molecule[Any] | _:Comment | _:EntityRef | _:ProcInstr =>
+      case _:Atom[Any] | _:Comment | _:EntityRef | _:ProcInstr =>
         makeBox( ind, node.toString().trim() );
 
       case _ =>
