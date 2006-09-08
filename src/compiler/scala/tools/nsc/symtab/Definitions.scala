@@ -90,6 +90,7 @@ trait Definitions requires SymbolTable {
     var MatchErrorModule: Symbol = _
       def MatchError_fail = getMember(MatchErrorModule, nme.fail)
       def MatchError_report = getMember(MatchErrorModule, nme.report)
+    var IndexOutOfBoundsExceptionClass: Symbol = _
     //var RemoteExecutionModule: Symbol = _
     //  def RemoteExecution_detach = getMember(RemoteExecutionModule, "detach")
     var ScalaRunTimeModule: Symbol = _
@@ -523,6 +524,7 @@ trait Definitions requires SymbolTable {
       ConsoleModule = getModule("scala.Console")
       MatchErrorClass = getClass("scala.MatchError")
       MatchErrorModule = getModule("scala.MatchError")
+      IndexOutOfBoundsExceptionClass = getClass("java.lang.IndexOutOfBoundsException")
       //RemoteExecutionModule = getModule("scala.distributed.RemoteExecution")
       ScalaRunTimeModule = getModule("scala.runtime.ScalaRunTime")
       RepeatedParamClass = newCovariantPolyClass(

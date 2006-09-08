@@ -9,5 +9,20 @@ object Test extends Application {
     case Foo(1) => System.out.println("OK")
     case Bar() => System.out.println("NO")
   }
+
+    try {
+      Bar() caseElement 2
+      throw new NullPointerException("duh")
+    } catch {
+      case x:IndexOutOfBoundsException =>
+    }
+
+    try {
+      f(2) caseElement 2
+      throw new NullPointerException("duh")
+    } catch {
+      case x:IndexOutOfBoundsException =>
+    }
+
 }
 
