@@ -804,8 +804,8 @@ trait Typers requires Analyzer {
             error(fun.pos, "called constructor must precede calling constructor");
         case _ =>
       }
-      def typedSuperCall(tree: Tree): Tree = {
-        val result = typed(tree, EXPRmode | SCCmode, UnitClass.tpe)
+      def typedSuperCall(tree: Tree, pt: Type): Tree = {
+        val result = typed(tree, EXPRmode | SCCmode, pt)
         checkPrecedes(result)
         result
       }
@@ -833,15 +833,16 @@ trait Typers requires Analyzer {
                 meth.owner.isRefinementClass))
             error(ddef.pos, "constructor definition not allowed here "+meth.owner);//debug
           val result = ddef.rhs match {
-            case Block(stat :: stats, expr) =>
-              val stat1 = typedSuperCall(stat)
-              newTyper(context.makeConstructorSuffixContext).typed(
-                copy.Block(ddef.rhs, stats, expr), UnitClass.tpe) match {
-                case block1 @ Block(stats1, expr1) =>
-                  copy.Block(block1, stat1 :: stats1, expr1)
-              }
+            case block @ Block(stat :: stats, expr) =>
+              // the following makes sure not to copy the tree if no subtrees have changed
+              val stat1 = typedSuperCall(stat, WildcardType)
+              val block1 = newTyper(context.makeConstructorSuffixContext)
+                .typedBlock(Block(stats, expr) setPos block.pos, EXPRmode, UnitClass.tpe)
+              val stats1 = if ((stat eq stat1) && (stats eq block1.stats)) block.stats
+                           else stat1 :: block1.stats
+              copy.Block(block, stats1, block1.expr) setType block1.tpe
             case _ =>
-              typedSuperCall(ddef.rhs)
+              typedSuperCall(ddef.rhs, UnitClass.tpe)
           }
           if (meth.isPrimaryConstructor && !phase.erasedTypes && reporter.errors == 0)
             computeParamAliases(meth.owner, vparamss1, result)
@@ -1009,37 +1010,39 @@ trait Typers requires Analyzer {
 
     def typedStats(stats: List[Tree], exprOwner: Symbol): List[Tree] = {
       val inBlock = exprOwner == context.owner
-      val result =
-        List.mapConserve(stats) { stat =>
-          if (context.owner.isRefinementClass && !treeInfo.isDeclaration(stat))
-            errorTree(stat, "only declarations allowed here")
-          stat match {
-            case imp @ Import(_, _) =>
-              context = context.makeNewImport(imp)
-              stat.symbol.initialize
-              EmptyTree
-            case _ =>
-              val localTyper = if (inBlock || (stat.isDef && !stat.isInstanceOf[LabelDef])) this
-                               else newTyper(context.make(stat, exprOwner))
-              localTyper.typed(stat)
-          }
+      def typedStat(stat: Tree): Tree = {
+        if (context.owner.isRefinementClass && !treeInfo.isDeclaration(stat))
+          errorTree(stat, "only declarations allowed here")
+        stat match {
+          case imp @ Import(_, _) =>
+            context = context.makeNewImport(imp)
+            stat.symbol.initialize
+            EmptyTree
+          case _ =>
+            val localTyper = if (inBlock || (stat.isDef && !stat.isInstanceOf[LabelDef])) this
+                             else newTyper(context.make(stat, exprOwner))
+            localTyper.typed(stat)
         }
-      val scope = if (inBlock) context.scope else context.owner.info.decls;
-      var e = scope.elems;
-      while (e != null && e.owner == scope) {
-        if (!e.sym.hasFlag(LOCAL)) {
-          var e1 = scope.lookupNextEntry(e);
-          while (e1 != null && e1.owner == scope) {
-            if (!e1.sym.hasFlag(LOCAL) &&
-                (e.sym.isType || inBlock || (e.sym.tpe matches e1.sym.tpe)))
-              if (!e.sym.isErroneous && !e1.sym.isErroneous)
-                error(e.sym.pos, ""+e1.sym+" is defined twice");
-            e1 = scope.lookupNextEntry(e1);
-          }
-        }
-        e = e.next
       }
-      result
+      def checkNoDoubleDefs(stats: List[Tree]) = {
+        val scope = if (inBlock) context.scope else context.owner.info.decls;
+        var e = scope.elems;
+        while (e != null && e.owner == scope) {
+          if (!e.sym.hasFlag(LOCAL)) {
+            var e1 = scope.lookupNextEntry(e);
+            while (e1 != null && e1.owner == scope) {
+              if (!e1.sym.hasFlag(LOCAL) &&
+                  (e.sym.isType || inBlock || (e.sym.tpe matches e1.sym.tpe)))
+                if (!e.sym.isErroneous && !e1.sym.isErroneous)
+                  error(e.sym.pos, ""+e1.sym+" is defined twice");
+              e1 = scope.lookupNextEntry(e1);
+            }
+          }
+          e = e.next
+        }
+        stats
+      }
+      checkNoDoubleDefs(List.mapConserve(stats)(typedStat))
     }
 
     def typedArg(arg: Tree, mode: int, pt: Type): Tree = {
@@ -1640,7 +1643,6 @@ trait Typers requires Analyzer {
             case ErrorType =>
               expr1
             case _ =>
-//              Console.println(expr1.tpe.isInstanceOf[PolyType])
               errorTree(expr1, "`&' must be applied to method type; cannot be applied to " + expr1.tpe)
           }
 

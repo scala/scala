@@ -188,7 +188,7 @@ trait SyntheticMethods requires Analyzer {
               }
         }
 
-        ts += tagMethod
+        if (clazz.info.nonPrivateDecl(nme.tag) == NoSymbol) ts += tagMethod
         if (clazz.isModuleClass) {
           if (!hasImplementation(nme.toString_)) ts += moduleToStringMethod
         } else {
