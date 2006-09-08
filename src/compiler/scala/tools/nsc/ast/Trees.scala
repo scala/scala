@@ -941,6 +941,9 @@ trait Trees requires Global {
   abstract class Transformer {
     val copy: TreeCopier = new LazyTreeCopier;
     protected var currentOwner: Symbol = definitions.RootClass;
+    protected def currentMethod = currentOwner.enclMethod
+    protected def currentClass = currentOwner.enclClass
+    protected def currentPackage = currentOwner.toplevelClass.owner
     def transform(tree: Tree): Tree = tree match {
       case EmptyTree =>
         tree
@@ -999,7 +1002,9 @@ trait Trees requires Global {
       case ArrayValue(elemtpt, trees) =>
         copy.ArrayValue(tree, transform(elemtpt), transformTrees(trees))
       case Function(vparams, body) =>
-        copy.Function(tree, transformValDefs(vparams), transform(body))
+        atOwner(tree.symbol) {
+          copy.Function(tree, transformValDefs(vparams), transform(body))
+        }
       case Assign(lhs, rhs) =>
         copy.Assign(tree, transform(lhs), transform(rhs))
       case If(cond, thenp, elsep) =>
@@ -1129,7 +1134,9 @@ trait Trees requires Global {
       case ArrayValue(elemtpt, trees) =>
         traverse(elemtpt); traverseTrees(trees)
       case Function(vparams, body) =>
-        traverseTrees(vparams); traverse(body)
+        atOwner(tree.symbol) {
+          traverseTrees(vparams); traverse(body)
+        }
       case Assign(lhs, rhs) =>
         traverse(lhs); traverse(rhs)
       case If(cond, thenp, elsep) =>

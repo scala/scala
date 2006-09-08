@@ -22,9 +22,10 @@ abstract class TreeCheckers extends Analyzer {
   }
 
   def check(unit: CompilationUnit): unit = {
-    val areporter =
-      if (reporter.isInstanceOf[AbstractReporter]) reporter.asInstanceOf[AbstractReporter]
-      else null
+    val areporter = reporter match {
+      case ar: AbstractReporter => ar
+      case _ => null
+    }
 
     val curPrompt = if (areporter != null) {
       val ret = areporter.prompt
@@ -36,9 +37,16 @@ abstract class TreeCheckers extends Analyzer {
     context.checking = true
     tpeOfTree.clear
     val checker = new TreeChecker(context)
+
+    val unit0 = currentRun.currentUnit
+    currentRun.currentUnit = unit
     checker.precheck.traverse(unit.body)
     checker.typed(unit.body)
     checker.postcheck.traverse(unit.body)
+    currentRun.advanceUnit
+    assert(currentRun.currentUnit == unit)
+    currentRun.currentUnit = unit0
+
     if (areporter != null)
       areporter.prompt = curPrompt
   }
@@ -65,7 +73,6 @@ abstract class TreeCheckers extends Analyzer {
       }
       tree
     }
-    override def typed(tree: Tree) = super.typed(tree) // TODO: remove for new compiler
 
     object precheck extends Traverser {
       override def traverse(tree: Tree): unit =

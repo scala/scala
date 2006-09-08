@@ -171,13 +171,12 @@ abstract class Mixin extends InfoTransform {
       assert(phase == currentRun.mixinPhase)
 
       // first complete the superclass with mixed in members
-      val superclazz = clazz.info.parents.head.symbol
-      addMixedinMembers(superclazz)
+      addMixedinMembers(clazz.superClass)
 
       //System.out.println("adding members of " + clazz.info.baseClasses.tail.takeWhile(superclazz !=) + " to " + clazz);//DEBUG
 
       // Mix in all traits that are not inherited by the superclass
-      val mixins = clazz.info.baseClasses.tail.takeWhile(superclazz !=)
+      val mixins = clazz.mixinClasses
 
       /** Mix in members of class mixinClass into class clazz */
       def mixinMembers(mixinClass: Symbol): unit = {

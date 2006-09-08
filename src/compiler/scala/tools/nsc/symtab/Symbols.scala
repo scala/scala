@@ -306,7 +306,11 @@ trait Symbols requires SymbolTable {
 
 // Flags, owner, and name attributes --------------------------------------------------------------
 
-    def owner: Symbol = rawowner
+    def owner: Symbol = {
+      val r = rawowner
+      if ((r.rawflags & IMPLCLASS) != 0 && !phase.next.erasedTypes) r.toInterface
+      else r
+    }
     final def owner_=(owner: Symbol): unit = { rawowner = owner }
 
     def ownerChain: List[Symbol] = this :: owner.ownerChain
@@ -616,6 +620,18 @@ trait Symbols requires SymbolTable {
      *  is an alias, NoSymbol for all others */
     def alias: Symbol = NoSymbol
 
+    /** The superclass of this class */
+    def superClass: Symbol = if (info.parents.isEmpty) NoSymbol else info.parents.head.symbol
+
+    /** The directly or indirectly inherited mixins of this class
+     *  except for mixin classes inherited by the superclass. Mixin classes appear
+     *  in linearlization order.
+     */
+    def mixinClasses: List[Symbol] = {
+      val sc = superClass
+      info.baseClasses.tail.takeWhile(sc ne)
+    }
+
     /** The top-level class containing this symbol */
     def toplevelClass: Symbol =
       if (isClass && owner.isPackageClass) this else owner.toplevelClass
@@ -762,6 +778,8 @@ trait Symbols requires SymbolTable {
         if (isType) name = name.toTypeName
       }
 
+    /** The expanded name of `name' relative to this class as base
+     */
     def expandedName(name: Name): Name =
       newTermName(fullNameString('$') + nme.EXPAND_SEPARATOR_STRING + name)
 
@@ -913,12 +931,6 @@ trait Symbols requires SymbolTable {
     override def isTerm = true
 
     privateWithin = NoSymbol
-
-    override def owner: Symbol = {
-      if (name == nme.MIXIN_CONSTRUCTOR && !phase.erasedTypes && super.owner.isImplClass)
-        super.owner.toInterface
-      else rawowner
-    }
 
     protected var referenced: Symbol = NoSymbol
 
