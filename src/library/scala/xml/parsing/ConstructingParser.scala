@@ -9,28 +9,31 @@
 // $Id$
 
 
-package scala.xml.parsing;
+package scala.xml.parsing
 
+import java.io.File
 
-import scala.io.Source;
+import scala.io.Source
 
 object ConstructingParser {
 
-  def fromFile(inp: java.io.File, preserveWS: Boolean) = {
-    val p = new ConstructingParser(Source.fromFile(inp), preserveWS);
-    p.nextch;
+  def fromFile(inp: File, preserveWS: Boolean) = {
+    val p = new ConstructingParser(Source.fromFile(inp), preserveWS)
+    p.nextch
     p
   }
 
-  def fromSource(inp: scala.io.Source, preserveWS: Boolean) = {
-    val p = new ConstructingParser(inp, preserveWS);
-    p.nextch;
+  def fromSource(inp: Source, preserveWS: Boolean) = {
+    val p = new ConstructingParser(inp, preserveWS)
+    p.nextch
     p
   }
 }
 
-/** an xml parser. parses XML and invokes callback methods of a MarkupHandler. Don't forget to call next.ch on a freshly
- *  instantiated parser in order to initialize it. If you get the parser from the object method, initialization is already done for you.
+/** An xml parser. parses XML and invokes callback methods of a MarkupHandler.
+ *  Don't forget to call next.ch on a freshly instantiated parser in order to
+ *  initialize it. If you get the parser from the object method, initialization
+ *  is already done for you.
  *
  *<pre>
 object parseFromURL {
@@ -56,9 +59,9 @@ with     ExternalSources
 with     MarkupParser  {
 
   // default impl. of Logged
-  override def log(msg:String): Unit = {}
+  override def log(msg: String): Unit = {}
 
-  val preserveWS = presWS;
-  val input = inp;
+  val preserveWS = presWS
+  val input = inp
 }
 

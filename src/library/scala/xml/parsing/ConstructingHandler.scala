@@ -9,28 +9,30 @@
 // $Id$
 
 
-package scala.xml.parsing;
+package scala.xml.parsing
 
-
-/** implementation of MarkupHandler that constructs nodes */
+/** Implementation of MarkupHandler that constructs nodes.
+ *
+ *  @author  Burak Emir
+ *  @version 1.0
+ */
 abstract class ConstructingHandler extends MarkupHandler {
 
-  val preserveWS: Boolean;
+  val preserveWS: Boolean
 
   def elem(pos: int, pre: String, label: String, attrs: MetaData, pscope: NamespaceBinding, nodes: NodeSeq): NodeSeq =
-    Elem(pre, label, attrs, pscope, nodes:_*);
+    Elem(pre, label, attrs, pscope, nodes:_*)
 
+  def procInstr(pos: Int, target: String, txt: String) =
+    ProcInstr(target, txt)
 
-  def procInstr(pos: Int, target: String, txt: String ) =
-    ProcInstr(target, txt);
-
-  def comment(pos: Int, txt: String ) =
-    Comment( txt );
+  def comment(pos: Int, txt: String) =
+    Comment(txt)
 
   def entityRef(pos: Int, n: String) =
-    EntityRef( n );
+    EntityRef(n)
 
   def text(pos: Int, txt:String) =
-    Text( txt );
+    Text(txt)
 
 }

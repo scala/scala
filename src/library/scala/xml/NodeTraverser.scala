@@ -9,9 +9,13 @@
 // $Id$
 
 
-package scala.xml;
+package scala.xml
 
-
+/** This class ...
+ *
+ *  @author  Burak Emir
+ *  @version 1.0
+ */
 abstract class NodeTraverser extends parsing.MarkupHandler {
 
   def traverse(n: Node): Unit = n match {
@@ -20,11 +24,11 @@ abstract class NodeTraverser extends parsing.MarkupHandler {
     case x:Text      => text(0, x.data)
     case x:EntityRef => entityRef(0, x.entityName)
     case _ =>
-      elemStart(0, n.prefix, n.label, n.attributes, n.scope);
+      elemStart(0, n.prefix, n.label, n.attributes, n.scope)
       for (val m <- n.child)
-        traverse(m);
-      elem(0, n.prefix, n.label, n.attributes, n.scope, NodeSeq.fromSeq(n.child));
-      elemEnd(0, n.prefix, n.label);
+        traverse(m)
+      elem(0, n.prefix, n.label, n.attributes, n.scope, NodeSeq.fromSeq(n.child))
+      elemEnd(0, n.prefix, n.label)
   }
 
 }

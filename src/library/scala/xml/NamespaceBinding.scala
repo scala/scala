@@ -9,7 +9,7 @@
 // $Id$
 
 
-package scala.xml;
+package scala.xml
 
 import scala.runtime.compat.StringBuilder
 
@@ -18,21 +18,21 @@ import scala.runtime.compat.StringBuilder
  *  prefix. the absent namespace is represented with the null uri. Neither
  *  prefix nor uri may be empty, which is not checked.
  *
+ *  @author  Burak Emir
  *  @version 1.0
- *  @author Burak Emir
  */
 [serializable]
 class NamespaceBinding(val prefix: String,
                        val uri: String,
                        val parent: NamespaceBinding) extends AnyRef {
 
-  private val serialVersionUID = 0 -  2518644165573446725L;
+  private val serialVersionUID = 0 - 2518644165573446725L
 
   if (null != prefix && 0 == prefix.length())
-    Predef.error("zero length prefix not allowed");
+    Predef.error("zero length prefix not allowed")
 
   def getURI(_prefix: String): String =
-    if (prefix == _prefix) uri else parent.getURI(_prefix);
+    if (prefix == _prefix) uri else parent.getURI(_prefix)
 
   /** Returns some prefix that is mapped to the prefix.
    *
@@ -40,23 +40,23 @@ class NamespaceBinding(val prefix: String,
    *  @return
    */
   def getPrefix(_uri: String): String =
-    if (_uri == uri) uri else parent.getURI(_uri);
+    if (_uri == uri) uri else parent.getURI(_uri)
 
   override def toString(): String = {
-    val sb = new StringBuilder();
-    toString(sb, TopScope);
-    sb.toString();
+    val sb = new StringBuilder()
+    toString(sb, TopScope)
+    sb.toString()
   }
 
   def toString(stop: NamespaceBinding): String = {
-    val sb = new StringBuilder();
-    toString(sb, stop);
-    sb.toString();
+    val sb = new StringBuilder()
+    toString(sb, stop)
+    sb.toString()
   }
 
-  def toString(sb:StringBuilder, stop:NamespaceBinding): Unit = {
+  def toString(sb: StringBuilder, stop: NamespaceBinding): Unit = {
     if (this ne stop) { // contains?
-      sb.append(" xmlns");
+      sb.append(" xmlns")
       if (prefix != null) {
         sb.append(':').append(prefix)
       }
@@ -64,7 +64,7 @@ class NamespaceBinding(val prefix: String,
       .append('"')
       .append(uri)
       .append('"');
-      parent.toString(sb, stop); // copy(ignore)
+      parent.toString(sb, stop) // copy(ignore)
     }
   }
 

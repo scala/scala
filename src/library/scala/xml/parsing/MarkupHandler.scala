@@ -9,17 +9,18 @@
 // $Id$
 
 
-package scala.xml.parsing;
+package scala.xml.parsing
 
-
-import scala.io.Source;
-import scala.collection.mutable.{ HashMap, Map }
-import scala.xml.dtd._ ;
-
-import scala.util.logging._;
+import scala.collection.mutable.{HashMap, Map}
+import scala.io.Source
+import scala.xml.dtd._
+import scala.util.logging.Logged
 
 /** class that handles markup - provides callback methods to MarkupParser.
  *  the default is nonvalidating behaviour
+ *
+ *  @author  Burak Emir
+ *  @version 1.0
  *
  *  @todo can we ignore more entity declarations (i.e. those with extIDs)?
  *  @todo expanding entity references
@@ -30,32 +31,31 @@ abstract class MarkupHandler extends AnyRef with Logged {
   //def log(msg:String) = {}
 
   /** returns true is this markup handler is validing */
-  val isValidating: Boolean = false;
+  val isValidating: Boolean = false
 
-  var decls: List[Decl] = Nil;
+  var decls: List[Decl] = Nil
 
-  var ent:  Map[String, EntityDecl]  = new HashMap[String, EntityDecl]();
+  var ent: Map[String, EntityDecl] = new HashMap[String, EntityDecl]()
 
   def lookupElemDecl(Label: String): ElemDecl =  {
     def lookup(xs:List[Decl]): ElemDecl = xs match {
-      case (z @ ElemDecl(Label, _)) :: zs => return z;
-      case _::zs                        => lookup(zs);
+      case (z @ ElemDecl(Label, _)) :: zs => return z
+      case _::zs                        => lookup(zs)
       case _                            => return null
     }
     lookup(decls)
   }
 
-  def replacementText( entityName: String ): Source = ent.get(entityName) match {
-      case Some(ParsedEntityDecl(_, IntDef(value))) =>
-        Source.fromString(value);
-      case Some(ParameterEntityDecl(_, IntDef(value))) =>
-        Source.fromString(" "+value+" ");
-      case Some(_) =>
-        Source.fromString("<!-- "+entityName+"; -->");
-      case None =>
-        Source.fromString("<!-- unknown entity "+entityName+"; -->")
-    }
-
+  def replacementText(entityName: String): Source = ent.get(entityName) match {
+    case Some(ParsedEntityDecl(_, IntDef(value))) =>
+      Source.fromString(value)
+    case Some(ParameterEntityDecl(_, IntDef(value))) =>
+      Source.fromString(" "+value+" ")
+    case Some(_) =>
+      Source.fromString("<!-- "+entityName+"; -->")
+    case None =>
+      Source.fromString("<!-- unknown entity "+entityName+"; -->")
+  }
 
  //def checkChildren(pos:int, pre: String, label:String,ns:NodeSeq): Unit = {}
 
@@ -72,7 +72,7 @@ abstract class MarkupHandler extends AnyRef with Logged {
 
   /** callback method invoked by MarkupParser after end-tag of element.
    *
-   *  @param pos      the position in the sourcefile
+   *  @param pos      the position in the source file
    *  @param pre      the prefix
    *  @param label    the local name
    *  @param attrs    the attributes (metadata)
@@ -82,31 +82,40 @@ abstract class MarkupHandler extends AnyRef with Logged {
   /** callback method invoked by MarkupParser after parsing an elementm,
    *  between the elemStart and elemEnd callbacks
    *
-   *
-   *  @param pos      the position in the sourcefile
+   *  @param pos      the position in the source file
    *  @param pre      the prefix
    *  @param label    the local name
    *  @param attrs    the attributes (metadata)
    *  @param args     the children of this element
+   *  @return         ...
    */
-  def elem(pos: int, pre: String, label: String, attrs: MetaData, scope:NamespaceBinding, args: NodeSeq): NodeSeq;
+  def elem(pos: int, pre: String, label: String, attrs: MetaData, scope: NamespaceBinding, args: NodeSeq): NodeSeq
 
   /** callback method invoked by MarkupParser after parsing PI.
+   *
+   *  @param pos      the position in the source file
+   *  @param target   ...
+   *  @param txt      ...
+   *  @return         ...
    */
-  def procInstr(pos: Int, target: String, txt: String): NodeSeq;
+  def procInstr(pos: Int, target: String, txt: String): NodeSeq
 
   /** callback method invoked by MarkupParser after parsing comment.
+   *
+   *  @param pos      the position in the source file
+   *  @param comment  ...
+   *  @return         ...
    */
-  def comment(pos: Int, comment: String ): NodeSeq;
+  def comment(pos: Int, comment: String): NodeSeq
 
   /** callback method invoked by MarkupParser after parsing entity ref.
    *  @todo expanding entity references
    */
-  def entityRef(pos: Int, n: String): NodeSeq;
+  def entityRef(pos: Int, n: String): NodeSeq
 
   /** callback method invoked by MarkupParser after parsing text.
    */
-  def text(pos: Int, txt:String): NodeSeq;
+  def text(pos: Int, txt: String): NodeSeq
 
   // DTD handler methods
 
@@ -120,10 +129,10 @@ abstract class MarkupHandler extends AnyRef with Logged {
       case _:ExtDef if !isValidating =>
         ; // ignore (cf REC-xml 4.4.1)
       case _ =>
-        val y =  ParameterEntityDecl(name, edef);
-        decls = y :: decls;
-        ent.update(name, y);
-        //log("ent.get(..) = "+ent.get(name));
+        val y =  ParameterEntityDecl(name, edef)
+        decls = y :: decls
+        ent.update(name, y)
+        //log("ent.get(..) = "+ent.get(name))
     }
   }
 
@@ -131,8 +140,8 @@ abstract class MarkupHandler extends AnyRef with Logged {
     case _:ExtDef if !isValidating =>
       ; // ignore (cf REC-xml 4.8 and 4.4.1)
     case _ =>
-      val y = ParsedEntityDecl(name, edef);
-      decls = y :: decls;
+      val y = ParsedEntityDecl(name, edef)
+      decls = y :: decls
       ent.update(name, y)
   }
 
@@ -143,10 +152,10 @@ abstract class MarkupHandler extends AnyRef with Logged {
     {}
 
   def peReference(name: String): Unit =
-    decls = PEReference( name ) :: decls;
+    decls = PEReference( name ) :: decls
 
   /** report a syntax error */
-  def reportSyntaxError(pos: Int, str: String): Unit;
+  def reportSyntaxError(pos: Int, str: String): Unit
 
 }
 
