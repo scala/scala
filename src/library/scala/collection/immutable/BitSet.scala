@@ -18,7 +18,7 @@ package scala.collection.immutable
  *
  *  @param <code>size</code> represents the number of relevant bits
  *  @param <code>ba</code> array of ints of length <code>n</code>&gt;&gt;&gt;5
- *  @param <code>copy: if yes, then <code>ba</code> is copied and updates will
+ *  @param <code>copy</code> if yes, then <code>ba</code> is copied and updates will
  *               not affect this bitset
  *
  *  @author  Burak Emir, Nikolay Mihaylov
