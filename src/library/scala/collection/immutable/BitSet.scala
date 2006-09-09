@@ -16,9 +16,9 @@ package scala.collection.immutable
  *  int array. Instances can conveniently be created from instances of
  *  Bit indices are between 0..(capacity-1) inclusive
  *
- *  @param <code>n</code> represents the number of relevant bits
- *  @param ba:   array of ints of length <code>n</code>&gt;&gt;&gt;5
- *  @param copy: if yes, then <code>ba</code> is copied and updates will
+ *  @param <code>size</code> represents the number of relevant bits
+ *  @param <code>ba</code> array of ints of length <code>n</code>&gt;&gt;&gt;5
+ *  @param <code>copy: if yes, then <code>ba</code> is copied and updates will
  *               not affect this bitset
  *
  *  @author  Burak Emir, Nikolay Mihaylov
