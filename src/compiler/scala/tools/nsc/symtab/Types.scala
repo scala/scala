@@ -302,7 +302,7 @@ trait Types requires SymbolTable {
      *
      *  Sorting is with respect to Symbol.isLess() on type symbols.
      */
-    def closure: Array[Type] = Predef.Array(this)
+    def closure: Array[Type] = Array(this)
 
     def baseClasses: List[Symbol] = List()
 

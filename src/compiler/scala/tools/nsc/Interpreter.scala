@@ -100,9 +100,9 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
   */
   private val classLoader =
     if (parentClassLoader == null)
-      new URLClassLoader(Predef.Array(classfilePath.toURL))
+      new URLClassLoader(Array(classfilePath.toURL))
     else
-      new URLClassLoader(Predef.Array(classfilePath.toURL), parentClassLoader)
+      new URLClassLoader(Array(classfilePath.toURL), parentClassLoader)
 
   protected def parentClassLoader: ClassLoader =
     new URLClassLoader(

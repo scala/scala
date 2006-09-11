@@ -206,7 +206,7 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
       }
       nextch
     }
-    new String(Predef.Array(i.asInstanceOf[char]))
+    new String(Array(i.asInstanceOf[char]))
   }
 
   /** Comment ::= '<!--' ((Char - '-') | ('-' (Char - '-')))* '-->'
