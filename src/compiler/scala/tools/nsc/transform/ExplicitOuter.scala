@@ -74,9 +74,10 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
       val decls1 = newScope(decls.toList)
       val outerAcc = clazz.newMethod(clazz.pos, nme.OUTER) // 3
       outerAcc.expandName(clazz)
+      val restpe = if (clazz.isTrait) clazz.outerClass.tpe else clazz.outerClass.thisType
       decls1 enter (
         clazz.newOuterAccessor(clazz.pos)
-        setInfo MethodType(List(), clazz.outerClass.thisType))
+        setInfo MethodType(List(), restpe))
       if (!parents.isEmpty) {
         for (val mc <- clazz.mixinClasses) {
           val mixinOuterAcc: Symbol = atPhase(phase.next)(outerAccessor(mc))
