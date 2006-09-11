@@ -392,7 +392,7 @@ abstract class Mixin extends InfoTransform {
 
       /** Attribute given tree and anchor at given position */
       def attributedDef(pos: PositionType, tree: Tree): Tree = {
-        if (settings.debug.value) System.out.println("add new def to " + clazz + ": " + tree);
+        if (settings.debug.value) log("add new def to " + clazz + ": " + tree);
         localTyper.typed { atPos(pos) { tree } }
       }
 

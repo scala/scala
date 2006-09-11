@@ -24,8 +24,6 @@ trait Typers requires Analyzer {
   var implcnt = 0
   var impltime = 0l
 
-  final val xviews = true
-
   private val transformed = new HashMap[Tree, Tree]
 
   private val superDefs = new HashMap[Symbol, ListBuffer[Tree]]
@@ -631,7 +629,7 @@ trait Typers requires Analyzer {
         }
       }
 
-      if (!parents.head.tpe.isError)
+      if (!parents.isEmpty && !parents.head.tpe.isError)
         for (val p <- parents) validateParentClass(p, parents.head.tpe.symbol)
     }
 
@@ -665,7 +663,7 @@ trait Typers requires Analyzer {
         val vdef = copy.ValDef(stat, mods | PRIVATE | LOCAL, nme.getterToLocal(name), tpt, rhs)
         val value = vdef.symbol
         val getter = if (mods hasFlag DEFERRED) value else value.getter(value.owner)
-        assert(getter != NoSymbol, getter);//debug
+        assert(getter != NoSymbol, stat)
         val getterDef: DefDef = {
           val result = DefDef(getter, vparamss =>
               if (mods hasFlag DEFERRED) EmptyTree
@@ -714,7 +712,9 @@ trait Typers requires Analyzer {
       // the following is necessary for templates generated later
       new Namer(context.outer.make(templ, clazz, clazz.info.decls)).enterSyms(templ.body)
       validateParentClasses(parents1, selfType);
-      val body1 = typedStats(templ.body flatMap addGetterSetter, templ.symbol)
+      val body = if (phase.id <= currentRun.typerPhase.id) templ.body flatMap addGetterSetter
+                 else templ.body
+      val body1 = typedStats(body, templ.symbol)
       copy.Template(templ, parents1, body1) setType clazz.tpe
     }
 
@@ -844,7 +844,7 @@ trait Typers requires Analyzer {
             case _ =>
               typedSuperCall(ddef.rhs, UnitClass.tpe)
           }
-          if (meth.isPrimaryConstructor && !phase.erasedTypes && reporter.errors == 0)
+          if (meth.isPrimaryConstructor && phase.id <= currentRun.typerPhase.id && reporter.errors == 0)
             computeParamAliases(meth.owner, vparamss1, result)
           result
         } else transformedOrTyped(ddef.rhs, tpt1.tpe)
@@ -1086,9 +1086,8 @@ trait Typers requires Analyzer {
                 case _ => tp
               }
               if (fun.symbol == List_apply && args.isEmpty) {
-                gen.mkNil setType restpe
-              }
-              else if ((mode & CONSTmode) != 0 && fun.symbol.owner == PredefModule.tpe.symbol && fun.symbol.name == nme.Array) {
+                atPos(tree.pos) { gen.mkNil setType restpe }
+              } else if ((mode & CONSTmode) != 0 && fun.symbol.owner == PredefModule.tpe.symbol && fun.symbol.name == nme.Array) {
                 val elems = new Array[Constant](args1.length)
                 var i = 0;
                 for (val arg <- args1) arg match {
@@ -1665,7 +1664,7 @@ trait Typers requires Analyzer {
           typedTypeApply(typed(fun, funMode(mode) | TAPPmode, WildcardType), args1)
 
         case Apply(Block(stats, expr), args) =>
-          typed1(Block(stats, Apply(expr, args)), mode, pt)
+          typed1(atPos(tree.pos)(Block(stats, Apply(expr, args))), mode, pt)
 
         case Apply(fun, args) =>
           val stableApplication = fun.symbol != null && fun.symbol.isMethod && fun.symbol.isStable
@@ -1680,8 +1679,7 @@ trait Typers requires Analyzer {
             // number of arguments and expected result type.
             if (settings.debug.value) log("trans app "+fun1+":"+fun1.symbol+":"+fun1.tpe+" "+args);//DEBUG
             if (util.Statistics.enabled) appcnt = appcnt + 1
-            if (xviews &&
-                phase.id <= currentRun.typerPhase.id &&
+            if (phase.id <= currentRun.typerPhase.id &&
                 fun1.isInstanceOf[Select] &&
                 !fun1.tpe.isInstanceOf[ImplicitMethodType] &&
                 (fun1.symbol == null || !fun1.symbol.isConstructor) &&
@@ -1708,7 +1706,7 @@ trait Typers requires Analyzer {
               else {
                 val ps = clazz.info.parents filter (p => p.symbol.name == mix)
                 if (ps.isEmpty) {
-                  if (settings.debug.value) System.out.println(clazz.info.parents map (.symbol.name));//debug
+                if (settings.debug.value) System.out.println(clazz.info.parents map (.symbol.name));//debug
                   error(tree.pos, ""+mix+" does not name a parent class of "+clazz)
                   ErrorType
                 } else if (ps.tail.isEmpty) {

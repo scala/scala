@@ -602,7 +602,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
             if (fn.symbol == Any_asInstanceOf || fn.symbol == Any_asInstanceOfErased)
               fn match {
                 case TypeApply(Select(qual, _), List(targ)) =>
-                  if (qual.tpe <:< targ.tpe) Typed(qual, TypeTree(qual.tpe))
+                  if (qual.tpe <:< targ.tpe) atPos(tree.pos) { Typed(qual, TypeTree(qual.tpe)) }
                   else tree
               }
               // todo: get rid of instanceOfErased
@@ -613,7 +613,9 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
                   targ.tpe match {
                     case SingleType(pre, sym) =>
                       val cmpOp = if (targ.tpe <:< AnyValClass.tpe) Any_equals else Object_eq
-                      Apply(Select(qual, cmpOp), List(gen.mkAttributedQualifier(targ.tpe)))
+                      atPos(tree.pos) {
+                        Apply(Select(qual, cmpOp), List(gen.mkAttributedQualifier(targ.tpe)))
+                      }
                     case _ =>
                       tree
                   }

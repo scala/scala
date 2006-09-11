@@ -15,12 +15,15 @@ trait TypingTransformers {
   import global._
 
   abstract class TypingTransformer(unit: CompilationUnit) extends Transformer {
-    var localTyper: analyzer.Typer = analyzer.newTyper(analyzer.rootContext(unit))
+    var localTyper: analyzer.Typer = analyzer.newTyper(
+      analyzer.rootContext(unit, EmptyTree, true))
     private var curTree: Tree = _
 
-    override def atOwner[A](owner: Symbol)(trans: => A): A = {
+    override def atOwner[A](owner: Symbol)(trans: => A): A = atOwner(curTree, owner)(trans)
+
+    def atOwner[A](tree: Tree, owner: Symbol)(trans: => A): A = {
       val savedLocalTyper = localTyper
-      localTyper = localTyper.atOwner(curTree, owner)
+      localTyper = localTyper.atOwner(tree, owner)
       val result = super.atOwner(owner)(trans)
       localTyper = savedLocalTyper
       result

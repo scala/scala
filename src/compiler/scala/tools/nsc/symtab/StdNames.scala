@@ -85,7 +85,9 @@ trait StdNames requires SymbolTable {
     def isSetterName(name: Name) = name.endsWith(SETTER_SUFFIX)
     def isLocalDummyName(name: Name) = name.startsWith(LOCALDUMMY_PREFIX)
 
-//    def originalName(name: Name): Name = {
+    /** If `name' is an expandedName, the original name. Otherwise `name' itself.
+     *  @see Symbol.expandedName
+     */
     def originalName(name: Name): Name = {
       var i = name.length;
       while (i >= 2 && !(name(i - 1) == '$' && name(i - 2) == '$')) i = i - 1;
@@ -94,10 +96,6 @@ trait StdNames requires SymbolTable {
         name.subName(i, name.length)
       } else name
     }
-//    val result = originalName(name)
-//    System.out.println("oroginal " + name + " = " + result)
-//    result
-//    }
 
     def localToGetter(name: Name): Name = {
       assert(isLocalName(name))//debug
@@ -192,7 +190,6 @@ trait StdNames requires SymbolTable {
     val Function = newTermName("Function")
     val Int = newTermName("Int")
     val Labelled = newTermName("Labelled")
-    val List = newTermName("List")
     val Long = newTermName("Long")
     val Nil = newTermName("Nil")
     val Object = newTermName("Object")

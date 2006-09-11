@@ -337,8 +337,8 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     analyzer.NoContext.make(EmptyTree, Global.this.definitions.RootClass, newScope))
 
   def phaseDescriptors: List[SubComponent] = List(
-    analyzer.namerFactory,
-    analyzer.typerFactory,
+    analyzer.namerFactory: SubComponent, // note: types are there because otherwise
+    analyzer.typerFactory: SubComponent, // consistency check after refchecks would fail.
     superAccessors,
     pickler,
     refchecks,

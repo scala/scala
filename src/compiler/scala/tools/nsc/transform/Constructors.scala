@@ -45,10 +45,13 @@ abstract class Constructors extends Transform {
       assert(constr != null && constrBody != null, impl)
 
       val paramAccessors = clazz.constrParamAccessors
-      def parameter(acc: Symbol) = {
-        val accname = nme.getterName(acc.originalName)
-        val ps = constrParams.filter { param => accname == param.name }
-        if (ps.isEmpty) assert(false, "" + accname + " not in " + constrParams)
+
+      def parameter(acc: Symbol): Symbol =
+        parameterNamed(nme.getterName(acc.originalName))
+
+      def parameterNamed(name: Name): Symbol = {
+        val ps = constrParams.filter(param => param.name == name)
+        if (ps.isEmpty) assert(false, "" + name + " not in " + constrParams)
         ps.head
       }
 
@@ -56,9 +59,13 @@ abstract class Constructors extends Transform {
 
       val intoConstructorTransformer = new Transformer {
         override def transform(tree: Tree): Tree = tree match {
-          case Apply(Select(This(_), _), List())
-          if ((tree.symbol hasFlag PARAMACCESSOR) && tree.symbol.owner == clazz) =>
-            gen.mkAttributedIdent(parameter(tree.symbol.accessed)) setPos tree.pos
+          case Apply(Select(This(_), _), List()) =>
+            if ((tree.symbol hasFlag PARAMACCESSOR) && tree.symbol.owner == clazz)
+              gen.mkAttributedIdent(parameter(tree.symbol.accessed)) setPos tree.pos
+            else if (tree.symbol.outerSource == clazz && !clazz.isImplClass)
+              gen.mkAttributedIdent(parameterNamed(nme.OUTER))
+            else
+              super.transform(tree)
           case Select(This(_), _)
           if ((tree.symbol hasFlag PARAMACCESSOR) && tree.symbol.owner == clazz) =>
             gen.mkAttributedIdent(parameter(tree.symbol)) setPos tree.pos

@@ -41,7 +41,7 @@ abstract class LambdaLift extends InfoTransform {
   protected def newTransformer(unit: CompilationUnit): Transformer =
     new LambdaLifter(unit)
 
-  class LambdaLifter(unit: CompilationUnit) extends explicitOuter.OuterPathTransformer {
+  class LambdaLifter(unit: CompilationUnit) extends explicitOuter.OuterPathTransformer(unit) {
 
     /** A map storing free variables of functions and classes */
     private val free = new HashMap[Symbol, SymSet]
@@ -286,11 +286,12 @@ abstract class LambdaLift extends InfoTransform {
 
     private def memberRef(sym: Symbol) = {
       val clazz = sym.owner.enclClass
-      val qual = if (clazz == currentOwner.enclClass) gen.mkAttributedThis(clazz)
+      //Console.println("memberRef from "+currentClass+" to "+sym+" in "+clazz)
+      val qual = if (clazz == currentClass) gen.mkAttributedThis(clazz)
                  else {
                    sym resetFlag(LOCAL | PRIVATE)
                    if (clazz.isStaticOwner) gen.mkAttributedQualifier(clazz.thisType)
-                   else outerPath(outerValue, clazz)
+                   else outerPath(outerValue, currentClass.outerClass, clazz)
                  }
       Select(qual, sym) setType sym.tpe
     }
@@ -360,7 +361,7 @@ abstract class LambdaLift extends InfoTransform {
         case Return(Block(stats, value)) =>
           Block(stats, copy.Return(tree, value)) setType tree.tpe setPos tree.pos
         case Return(expr) =>
-          assert(sym == currentOwner.enclMethod, sym)
+          assert(sym == currentMethod, sym)
           tree
         case Apply(fn, args) =>
           copy.Apply(tree, fn, addFreeArgs(tree.pos, sym, args))

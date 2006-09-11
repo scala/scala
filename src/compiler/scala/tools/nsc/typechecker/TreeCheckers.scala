@@ -22,17 +22,6 @@ abstract class TreeCheckers extends Analyzer {
   }
 
   def check(unit: CompilationUnit): unit = {
-    val areporter = reporter match {
-      case ar: AbstractReporter => ar
-      case _ => null
-    }
-
-    val curPrompt = if (areporter != null) {
-      val ret = areporter.prompt
-      areporter.prompt = true
-      ret
-    } else false
-
     val context = rootContext(unit)
     context.checking = true
     tpeOfTree.clear
@@ -46,9 +35,6 @@ abstract class TreeCheckers extends Analyzer {
     currentRun.advanceUnit
     assert(currentRun.currentUnit == unit)
     currentRun.currentUnit = unit0
-
-    if (areporter != null)
-      areporter.prompt = curPrompt
   }
 
   override def newTyper(context: Context): Typer = new TreeChecker(context)
@@ -99,7 +85,10 @@ abstract class TreeCheckers extends Analyzer {
                 var o = currentOwner
                 while (o != tree.symbol) {
                   o = o.owner
-                  assert(o != NoSymbol, tree)
+                  if (o == NoSymbol) {
+                    error(tree.pos, "tree symbol "+tree.symbol+" does not point to enclosing class; tree = "+tree)
+                    return
+                  }
                 }
               }
             case _ =>
@@ -129,20 +118,28 @@ abstract class TreeCheckers extends Analyzer {
     }
 
     object postcheck extends Traverser {
-      override def traverse(tree: Tree): unit = tree match {
-        case EmptyTree | TypeTree() =>
-          ;
-        case _ =>
-          tpeOfTree.get(tree) match {
-            case Some(oldtpe) =>
-              if (!(oldtpe =:= tree.tpe))
-                error(tree.pos, "types differ\n old: " + oldtpe +
-                      "\n new: " + tree.tpe + "\n tree: " + tree)
-              tree.tpe = oldtpe
-              super.traverse(tree)
-            case None =>
+      override def traverse(tree: Tree): unit =
+        try {
+          tree match {
+            case EmptyTree | TypeTree() =>
+              ;
+            case _ =>
+              tpeOfTree.get(tree) match {
+                case Some(oldtpe) =>
+                  if (!(oldtpe =:= tree.tpe))
+                    error(tree.pos, "types differ\n old: " + oldtpe +
+                          "\n new: " + tree.tpe + "\n tree: " + tree)
+                  tree.tpe = oldtpe
+                  super.traverse(tree)
+                case None =>
+              }
           }
-      }
+        } catch {
+          case ex: Throwable =>
+            if (settings.debug.value)
+              System.out.println("exception when traversing " + tree);
+            throw(ex)
+        }
     }
   }
 }

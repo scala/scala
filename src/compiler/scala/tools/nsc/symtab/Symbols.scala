@@ -124,6 +124,15 @@ trait Symbols requires SymbolTable {
       .setFlag(OVERLOADED)
       .setInfo(OverloadedType(pre, alternatives))
 
+    final def newOuterAccessor(pos: PositionType) = {
+      val sym = newMethod(pos, nme.OUTER)
+      sym setFlag STABLE
+      if (isTrait) sym setFlag DEFERRED
+      sym.expandName(this)
+      sym.referenced = this
+      sym
+    }
+
     final def newErrorValue(name: Name) =
       newValue(pos, name).setFlag(SYNTHETIC | IS_ERROR).setInfo(ErrorType)
     final def newAliasType(pos: PositionType, name: Name) =
@@ -316,8 +325,12 @@ trait Symbols requires SymbolTable {
     def ownerChain: List[Symbol] = this :: owner.ownerChain
 
     def name: Name = rawname
+
     final def name_=(name: Name): unit = { rawname = name }
 
+    /** If this symbol has an expanded name, its original name, otherwise its name itself.
+     *  @see expandName
+     */
     def originalName = nme.originalName(name)
 
     final def flags = {
@@ -616,9 +629,23 @@ trait Symbols requires SymbolTable {
 
     final def implClass: Symbol = owner.info.decl(nme.implClassName(name))
 
+    /** The class that is logically an outer class of given `clazz'.
+     *  This is the enclosing class, except for classes defined locally to constructors,
+     *  where it is the outer class of the enclosing class
+     */
+    final def outerClass: Symbol =
+      if (owner.isClass) owner
+      else if (isClassLocalToConstructor) owner.owner.outerClass
+      else owner.outerClass
+
     /** For a paramaccessor: a superclass paramaccessor for which this symbol
      *  is an alias, NoSymbol for all others */
     def alias: Symbol = NoSymbol
+
+    /** For an outer accessor: The class from which the outer originates.
+     *  For all other symbols: NoSymbol
+     */
+    def outerSource: Symbol = NoSymbol
 
     /** The superclass of this class */
     def superClass: Symbol = if (info.parents.isEmpty) NoSymbol else info.parents.head.symbol
@@ -780,8 +807,10 @@ trait Symbols requires SymbolTable {
 
     /** The expanded name of `name' relative to this class as base
      */
-    def expandedName(name: Name): Name =
+    def expandedName(name: Name): Name = {
+
       newTermName(fullNameString('$') + nme.EXPAND_SEPARATOR_STRING + name)
+    }
 
     def sourceFile: AbstractFile =
       (if (isModule) moduleClass else toplevelClass).sourceFile
@@ -798,7 +827,7 @@ trait Symbols requires SymbolTable {
     /** A tag which (in the ideal case) uniquely identifies class symbols */
     final def tag: int = fullNameString.hashCode()
 
-    /** The simple name of this Symbol (this is always a term name) */
+    /** The simple name of this Symbol */
     final def simpleName: Name = name
 
     /** String representation of symbol's definition key word */
@@ -848,8 +877,8 @@ trait Symbols requires SymbolTable {
     final def fullNameString(separator: char): String = {
       assert(owner != NoSymbol, this)
       var str =
-        if (owner.isRoot || owner.isEmptyPackageClass) simpleName.toString()
-        else owner.fullNameString(separator) + separator + simpleName
+        if (owner.isRoot || owner.isEmptyPackageClass) simpleName.toString
+        else owner.enclClass.fullNameString(separator) + separator + simpleName
       if (str.charAt(str.length - 1) == ' ') str = str.substring(0, str.length - 1)
       str
     }
@@ -952,6 +981,10 @@ trait Symbols requires SymbolTable {
       referenced = alias
       this
     }
+
+    override def outerSource: Symbol =
+      if (name endsWith nme.OUTER) initialize.referenced
+      else NoSymbol
 
     override def moduleClass: Symbol =
       if (hasFlag(MODULE)) referenced else NoSymbol

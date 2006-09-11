@@ -10,65 +10,92 @@ import symtab._
 import Flags._
 import scala.collection.mutable.{HashMap, ListBuffer}
 import matching.{TransMatcher, PatternNodes, CodeFactory, PatternMatchers}
-abstract class ExplicitOuter extends InfoTransform
-with TransMatcher
-with PatternNodes
-with CodeFactory
-with PatternMatchers {
+
+abstract class ExplicitOuter extends InfoTransform with TransMatcher with PatternNodes with CodeFactory with PatternMatchers with TypingTransformers {
   import global._
   import definitions._
   import posAssigner.atPos
 
+  /** The following flags may be set by this phase: */
   override def phaseNewFlags: long = notPRIVATE | notPROTECTED
 
-  /** the following two members override abstract members in Transform */
+  /** the name of the phase: */
   val phaseName: String = "explicitouter"
+
+  /** This class does not change linearization */
   override def changesBaseClasses = false
 
   protected def newTransformer(unit: CompilationUnit): Transformer =
     new ExplicitOuterTransformer(unit)
 
-  private def outerClass(clazz: Symbol): Symbol =
-    if (clazz.owner.isClass) clazz.owner
-    else outerClass(if (clazz.isClassLocalToConstructor) clazz.owner.owner else clazz.owner)
+  /** Is given `clazz' an inner class? */
+  private def isInner(clazz: Symbol) =
+    !clazz.isPackageClass && !clazz.outerClass.isStaticOwner
 
-  private def isStatic(clazz: Symbol) =
-    clazz.isPackageClass || outerClass(clazz).isStaticOwner
+  private def outerField(clazz: Symbol): Symbol = {
+    val result = clazz.info.member(nme.getterToLocal(nme.OUTER))
+    if (result == NoSymbol) assert(false, "no outer field in "+clazz+clazz.info.decls+" at "+phase)
+    result
+  }
+
+  private def outerAccessor(clazz: Symbol): Symbol = {
+    val firstTry = clazz.info.decl(clazz.expandedName(nme.OUTER))
+    if (firstTry != NoSymbol && firstTry.outerSource == clazz) firstTry
+    else {
+      var e = clazz.info.decls.elems;
+      while (e != null && e.sym.outerSource != clazz) e = e.next
+      if (e != null) e.sym else NoSymbol
+    }
+  }
 
   /** The type transformation method:
-   *  1. Add an outer paramter to the formal parameters of a constructor or mixin constructor
-   *     in a non-static class;
-   *  2. Add a mixin constructor $init$ to all mixins except interfaces
-   *  Leave all other types unchanged.
+   *  1. Add an outer parameter to the formal parameters of a constructor
+   *     in a inner non-trait class;
+   *  2. Add a protected $outer field to an inner class which is not a trait.
+   *  3. Add an outer accessor $outer$$C to every inner class with fully qualified name C
+   *     that is not an interface. The outer accesssor is abstract for traits, concrete
+   *     for other classes.
+   *  3a. Also add overriding accessor defs to every class that inherits mixin classes
+   *     with outer accessor defs (unless the superclass already inherits the same mixin).
+   *  4. Add a mixin constructor $init$ to all mixins except interfaces
+   *     Leave all other types unchanged. todo: move to later
+   *  5. Make all super accessors and modules in traits non-private, mangling their names.
+   *  6. Remove protected flag from all members of traits.
    */
   def transformInfo(sym: Symbol, tp: Type): Type = tp match {
     case MethodType(formals, restpe) =>
-      if (sym.owner.isTrait && ((sym hasFlag SUPERACCESSOR) || sym.isModule))
-        sym.makeNotPrivate(sym.owner);
-      if (sym.owner.isTrait && (sym hasFlag PROTECTED)) sym setFlag notPROTECTED
-      if (sym.isConstructor && !isStatic(sym.owner)) {
-        // Move outer paramater to first position
-        MethodType(outerClass(sym.owner).toInterface.thisType :: formals, restpe)
-        //MethodType(formals ::: List(outerClass(sym.owner).toInterface.thisType), restpe)
-      }
+      if (sym.owner.isTrait && ((sym hasFlag SUPERACCESSOR) || sym.isModule)) // 5
+        sym.makeNotPrivate(sym.owner)
+      if (sym.owner.isTrait && (sym hasFlag PROTECTED)) sym setFlag notPROTECTED // 6
+      if (sym.isClassConstructor && isInner(sym.owner)) // 1
+        MethodType(sym.owner.outerClass.thisType :: formals, restpe)
       else tp
     case ClassInfoType(parents, decls, clazz) =>
       var decls1 = decls
       if (!(clazz hasFlag INTERFACE)) {
-        if (!isStatic(clazz)) {
-          decls1 = newScope(decls1.toList)
-          val outerAcc = clazz.newMethod(clazz.pos, nme.OUTER)
-          if (clazz.isTrait || (decls.toList exists (.isClass)))
-            outerAcc.expandName(clazz);
+        if (isInner(clazz)) {
+          if (decls1 eq decls) decls1 = newScope(decls1.toList)
+          val outerAcc = clazz.newMethod(clazz.pos, nme.OUTER) // 3
+          outerAcc.expandName(clazz)
           decls1 enter (
-            outerAcc setFlag (PARAMACCESSOR | ACCESSOR | STABLE)
-                     setInfo MethodType(List(), outerClass(clazz).thisType));
-          decls1 enter (clazz.newValue(clazz.pos, nme.getterToLocal(outerAcc.name))
-            setFlag (LOCAL | PRIVATE | PARAMACCESSOR | (outerAcc getFlag EXPANDEDNAME))
-            setInfo outerClass(clazz).thisType)
+            clazz.newOuterAccessor(clazz.pos)
+              setInfo MethodType(List(), clazz.outerClass.thisType))
+          if (!parents.isEmpty) {
+            for (val mc <- clazz.mixinClasses) {
+              val mixinOuterAcc: Symbol = atPhase(phase.next)(outerAccessor(mc))
+              if (mixinOuterAcc != NoSymbol)
+                decls1 enter (mixinOuterAcc.cloneSymbol(clazz) resetFlag DEFERRED)
+            }
+          }
+          if (!clazz.isTrait) // 2
+            //todo: avoid outer field if superclass has same outer value?
+            decls1 enter (
+              clazz.newValue(clazz.pos, nme.getterToLocal(nme.OUTER))
+                setFlag (PROTECTED | PARAMACCESSOR)
+                setInfo clazz.outerClass.thisType)
         }
-        if (clazz.isTrait) {
-          decls1 = newScope(decls1.toList)
+        if (clazz.isTrait) { // 4 (todo: can go into next phase?)
+          if (decls1 eq decls) decls1 = newScope(decls1.toList)
           decls1 enter makeMixinConstructor(clazz)
         }
       }
@@ -80,16 +107,6 @@ with PatternMatchers {
       tp
   }
 
-  private def outerMember(tp: Type): Symbol = {
-    var e = tp.symbol.info.decls.elems
-      // note: tp.decls does not work here, because tp might be a ThisType, in which case
-      // its decls would be the decls of the required type of the class.
-    while (e != null && !(e.sym.originalName.startsWith(nme.OUTER) && (e.sym hasFlag ACCESSOR)))
-      e = e.next;
-    assert(e != null, tp)
-    e.sym
-  }
-
   private def makeMixinConstructor(clazz: Symbol): Symbol =
     clazz.newMethod(clazz.pos, nme.MIXIN_CONSTRUCTOR) setInfo MethodType(List(), UnitClass.tpe)
 
@@ -97,348 +114,291 @@ with PatternMatchers {
    *  outer parameters of constructors.
    *  The class provides methods for referencing via outer.
    */
-  class OuterPathTransformer extends Transformer {
+  abstract class OuterPathTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
 
     /** The directly enclosing outer parameter, if we are in a constructor */
     protected var outerParam: Symbol = NoSymbol
 
-    /** The first outer selection from currently transformed tree
+    /** The first outer selection from currently transformed tree.
+     *  The result is typed but not positioned.
      */
     protected def outerValue: Tree =
       if (outerParam != NoSymbol) gen.mkAttributedIdent(outerParam)
-      else outerSelect(gen.mkAttributedThis(currentOwner.enclClass))
-
-    /** The path
-     *     `base'.$outer ... .$outer
-     *  which refers to the outer instance 'to' of value 'base'
-     */
-    protected def outerPath(base: Tree, to: Symbol): Tree =
-      if (base.tpe.symbol == to) base else outerPath(outerSelect(base), to)
+      else outerSelect(gen.mkAttributedThis(currentClass))
 
     /** Select and apply outer accessor from 'base'
+     *  The result is typed but not positioned.
      */
     private def outerSelect(base: Tree): Tree = {
-      val otp = outerClass(base.tpe.symbol).thisType
-      Apply(
-        Select(base, outerMember(base.tpe)) setType MethodType(List(), otp),
-        List()) setType otp
+      localTyper.typed(Apply(Select(base, outerAccessor(base.tpe.symbol)), List()))
+    }
+
+    /** The path
+     *     `base'.$outer$$C1 ... .$outer$$Cn
+     *  which refers to the outer instance of class 'to' of value 'base'
+     *  The result is typed but not positioned.
+     */
+    protected def outerPath(base: Tree, from: Symbol, to: Symbol): Tree = {
+      //Console.println("outerPath from "+from+" to "+to+" at "+base+":"+base.tpe)
+      assert(base.tpe.baseType(from.toInterface) != NoType, base.tpe)
+      if (from == to || from.isImplClass && from.toInterface == to) base
+      else outerPath(outerSelect(base), from.outerClass, to)
     }
 
     override def transform(tree: Tree): Tree = {
-      try {//debug
-        val savedOuterParam = outerParam;
+      val savedOuterParam = outerParam;
+      try {
         tree match {
           case Template(_, _) =>
             outerParam = NoSymbol
           case DefDef(_, _, _, vparamss, _, _) =>
-            if (tree.symbol.isConstructor && !(isStatic(tree.symbol.owner))) {
-              // moved outer param to first position
-              val firstParam = vparamss.head.head
-//              val lastParam = vparamss.head.last
-              assert(firstParam.name.startsWith(nme.OUTER), tree)
-              outerParam = firstParam.symbol
+            if (tree.symbol.isClassConstructor && isInner(tree.symbol.owner)) {
+              outerParam = vparamss.head.head.symbol
+              assert(outerParam.name == nme.OUTER)
             }
           case _ =>
         }
-        val result = super.transform(tree);
-        outerParam = savedOuterParam
-        result
+        super.transform(tree)
       } catch {//debug
         case ex: Throwable =>
           System.out.println("exception when transforming " + tree)
           throw ex
+      } finally {
+        outerParam = savedOuterParam
       }
     }
   }
 
-  class ExplicitOuterTransformer(unit: CompilationUnit) extends Transformer {
+  /** The phase performs the following transformations on terms:
+   *   1. An class which is not an interface and is not static gets an outer accessor
+   *      (@see outerDefs)
+   *   1a. A class which is not a trait gets an outer field.
+   *   2. A mixin which is not also an interface gets a mixin constructor
+   *      (@see mixinConstructorDef)
+   *   3. Constructor bodies are augmented by calls to supermixin constructors
+   *      (@see addMixinConstructorCalls)
+   *   4. A constructor of a non-trait inner class gets an outer parameter.
+   *   5. A reference C.this where C refers to an outer class is replaced by a selection
+   *        this.$outer$$C1 ... .$outer$$Cn (@see outerPath)
+   *   7. A call to a constructor Q.<init>(args) or Q.$init$(args) where Q != this and
+   *      the constructor belongs to a non-static class is augmented by an outer argument.
+   *      E.g. Q.<init>(OUTER, args) where OUTER is the qualifier corresponding to the
+   *      singleton type Q.
+   *   8. A call to a constructor this.<init>(args) in a secondary constructor
+   *      is augmented to this.<init>(OUTER, args) where OUTER is the last parameter
+   *      of the secondary constructor.
+   *   9. Remove  `private' modifier from class members M that are accessed from an inner class.
+   *   10.Remove `protected' modifier from class members M that are accessed
+   *      without a super qualifier accessed from an inner class or trait.
+   *   11. Remove `private' and `protected' modifiers from type symbols
+   *   12. Remove `private' modifiers from members of traits
+   *   Note: The whole transform is run in phase explicitOuter.next
+   */
+  class ExplicitOuterTransformer(unit: CompilationUnit) extends OuterPathTransformer(unit) {
 
-    /** The first step performs the following transformations:
-     *   1. A class which is not an interface and is not static gets an outer link
-     *      (@see outerDefs)
-     *   2. A mixin which is not also an interface gets a mixin constructor
-     *      (@see mixinConstructorDef)
-     *   3. Constructor bodies are augmented by calls to supermixin constructors
-     *      (@see addMixinConstructorCalls)
-     *   4. A constructor of a class with an outer link gets an outer parameter.
-     *   5. A reference C.this where C refers to an outer class is replaced by a selection
-     *        this.$outer ... .$outer (@see outerPath)
-     *   7. A call to a constructor Q.<init>(args) or Q.$init$(args) where Q != this and
-     *      the constructor belongs to a non-static class is augmented by an outer argument.
-     *      E.g. Q.<init>(args, OUTER) where OUTER is the qualifier corresponding to the
-     *      singleton type Q.
-     *   8. A call to a constructor this.<init>(args) in a secondary constructor
-     *      is augmented to this.<init>(args, OUTER) where OUTER is the last parameter
-     *      of the secondary constructor.
+    /** The definition tree of the outer accessor of current class
      */
-    private val firstTransformer = new OuterPathTransformer {
+    def outerFieldDef: Tree = {
+      val outerF = outerField(currentClass)
+      ValDef(outerF, EmptyTree)
+    }
 
-      var localTyper: analyzer.Typer = typer
+    /** The definition tree of the outer accessor of current class
+     */
+    def outerAccessorDef: Tree = {
+      val outerAcc = outerAccessor(currentClass)
+      var rhs = if (outerAcc hasFlag DEFERRED) EmptyTree
+                else Select(This(currentClass), outerField(currentClass))
+      localTyper.typed {
+        atPos(currentClass.pos) {
+          DefDef(outerAcc, vparamss => rhs)
+        }
+      }
+    }
 
-      /** The two definitions
-       *    val outer: C.this.type _;
-       *    def outer(): C.this.type  = outer ;
-       *  Here, C is the class enclosing the class `clazz' containing the two definitions.
-       */
-      def outerDefs(clazz: Symbol): List[Tree] = {
-        val outerDef = outerMember(clazz.info)
-        val outerVal = outerDef.accessed
-        List(
-          localTyper.typed {
-            atPos(clazz.pos) {
-              ValDef(outerVal)
-            }
-          },
-          localTyper.typed {
-            atPos(clazz.pos) {
-              DefDef(outerDef, vparamss => Select(This(clazz), outerVal))
-            }
+    /** The definition tree of the outer accessor for class `mixinClass'
+     *  @param mixinClass The mixin class which defines the abstract outer accessor which is
+     *                    implemented by the generated one.
+     *  @pre mixinClass is an inner class
+     */
+    def mixinOuterAccessorDef(mixinClass: Symbol): Tree = {
+      val outerAcc = outerAccessor(mixinClass).overridingSymbol(currentClass)
+      if (outerAcc == NoSymbol) Console.println("cc "+currentClass+":"+currentClass.info.decls)//debug
+      assert(outerAcc != NoSymbol)
+      val path = gen.mkAttributedQualifier(currentClass.thisType.baseType(mixinClass).prefix)
+      val rhs = ExplicitOuterTransformer.this.transform(path)
+      localTyper.typed {
+        atPos(currentClass.pos) {
+          DefDef(outerAcc, vparamss => rhs)
+        }
+      }
+    }
+
+    /** The mixin constructor definition
+     *    def $init$(): Unit = ()
+     */
+    def mixinConstructorDef(clazz: Symbol): Tree =
+      localTyper.typed {
+        val constr = clazz.primaryConstructor
+        atPhase(currentRun.explicitOuterPhase) {
+          // necessary so that we do not include an outer parameter already here
+          // this will be added later in transform.
+          DefDef(constr, vparamss => Block(List(), Literal(())))
+        }
+      }
+
+    /** Add calls to supermixin constructors
+     *     super[mix].$init$()
+     *  to `tree'. `tree' which is assumed to be the body of a constructor of class `clazz'.
+     */
+    def addMixinConstructorCalls(tree: Tree, clazz: Symbol): Tree = {
+      def mixinConstructorCall(mixinClass: Symbol): Tree =
+        atPos(tree.pos) {
+          Apply(
+            localTyper.typedOperator {
+              Select(This(clazz), mixinClass.primaryConstructor)
+            },
+            List()) setType UnitClass.tpe; // don't type this with typed(...),
+          // as constructor arguments might be missing
+        }
+
+      val mixinConstructorCalls: List[Tree] = {
+        for (val mc <- clazz.mixinClasses.reverse; mc.needsImplClass && mc != ScalaObjectClass)
+        yield mixinConstructorCall(mc)
+      }
+
+      //begin mixin constructor calls
+      tree match {
+        case Block(supercall :: stats, expr) =>
+          assert(supercall match {
+            case Apply(Select(Super(_, _), _), _) => true
+            case _ => false
           })
+          copy.Block(tree, supercall :: mixinConstructorCalls ::: stats, expr)
+        case Block(_, _) =>
+          assert(false, tree);  tree
       }
+    }
 
-      /** The mixin constructor definition
-       *    def $init$(): Unit = ()
-       */
-      def mixinConstructorDef(clazz: Symbol): Tree =
-        localTyper.typed {
-          val constr = clazz.primaryConstructor
-          atPhase(currentRun.explicitOuterPhase) {
-            // necessary so that we do not include an outer parameter already here;
-            // this will be added later in transform.
-            DefDef(constr, vparamss => Literal(()))
-          }
-        }
-
-      /** Add calls to supermixin constructors
-       *     super[mix].$init$()
-       *  to `tree'. `tree' which is assumed to be the body of a constructor of class `clazz'.
-       */
-      def addMixinConstructorCalls(tree: Tree, clazz: Symbol): Tree = {
-        def mixinConstructorCall(mixinClass: Symbol): Tree =
-          atPos(tree.pos) {
-            Apply(
-              localTyper.typedOperator {
-                Select(This(clazz), mixinClass.primaryConstructor)
-              },
-              List()) setType UnitClass.tpe; // don't type this with typed(...),
-                                              // as constructor arguments might be missing
-          }
-        /*
-        val mixinConstructorCalls =
-          for (val mixinClass <- clazz.info.parents.tail;
-               !(mixinClass.symbol hasFlag INTERFACE) && mixinClass.symbol != ScalaObjectClass) yield
-            mixinConstructorCall(mixinClass.symbol);
-        tree match {
-        */
-        val mixinConstructorCalls: List[Tree] = {
-          val ps = clazz.info.parents
-          if (ps.isEmpty) List()
-          else {
-            val superClass = ps.head.symbol
-            for {
-              val mclazz <- clazz.info.baseClasses.tail.takeWhile(superClass ne).reverse
-              mclazz.needsImplClass && mclazz != ScalaObjectClass
-            } yield mixinConstructorCall(mclazz)
-          }
-        }
-
-        //val result =
-        tree match {
-          case Block(supercall :: stats, expr) =>
-            assert(supercall match {
-              case Apply(Select(Super(_, _), _), _) => true
-              case _ => false
-            })
-            copy.Block(tree, supercall :: mixinConstructorCalls ::: stats, expr)
-          case Block(_, _) =>
-            assert(false, tree);  tree
-        }
-
-        //System.out.println("new constructor of "+clazz+": "+result);
-        //result
+    /** The main transformation method */
+    override def transform(tree: Tree): Tree = {
+      val sym = tree.symbol
+      if (sym != null && sym.isType) {//(9)
+        if (sym hasFlag PRIVATE) sym setFlag notPRIVATE
+        if (sym hasFlag PROTECTED) sym setFlag notPROTECTED
       }
-
-      /** The first-step transformation method */
-      override def transform(tree: Tree): Tree = {
-        val sym = tree.symbol
-        val tree1 = tree match {
-          case Template(parents, decls) =>
-            val savedLocalTyper = localTyper
-            localTyper = localTyper.atOwner(tree, currentOwner)
-            var decls1 = decls
-            if (!(currentOwner hasFlag INTERFACE) || (currentOwner hasFlag lateINTERFACE)) {
-              if (!isStatic(currentOwner))
-                decls1 = decls1 ::: outerDefs(currentOwner); // (1)
-              if (currentOwner.isTrait)
-                decls1 = decls1 ::: List(mixinConstructorDef(currentOwner)) // (2)
+      tree match {
+        case Template(parents, decls) =>
+          val newDefs = new ListBuffer[Tree]
+          atOwner(tree, currentOwner) {
+            if (!(currentClass hasFlag INTERFACE) || (currentClass hasFlag lateINTERFACE)) {
+              if (isInner(currentClass)) {
+                if (!currentClass.isTrait) newDefs += outerFieldDef // (1a)
+                newDefs += outerAccessorDef // (1)
+              }
+              if (currentClass.isTrait)
+                newDefs += mixinConstructorDef(currentClass)
+              else
+                for (val mc <- currentClass.mixinClasses)
+                  if (outerAccessor(mc) != NoSymbol)
+                    newDefs += mixinOuterAccessorDef(mc)
             }
-            localTyper = savedLocalTyper
-            copy.Template(tree, parents, decls1)
-          case constrDef @ DefDef(mods, name, tparams, vparamss, tpt, rhs)
-          if (sym.isConstructor) =>
+          }
+          super.transform(
+            copy.Template(tree, parents, if (newDefs.isEmpty) decls else decls ::: newDefs.toList))
+
+        case DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
+          if (sym.isClassConstructor) {
             rhs match {
               case Literal(_) =>
-                val rhs1 = Block(List(), rhs) setPos rhs.pos setType rhs.tpe;
+                // replace unit rhs () by empty block {()}
+                val rhs1 = Block(List(), rhs) setPos rhs.pos setType rhs.tpe
                 transform(copy.DefDef(tree, mods, name, tparams, vparamss, tpt, rhs1))
               case _ =>
-                val clazz = sym.owner.toInterface
+                val clazz = sym.owner
                 val vparamss1 =
-                  if (isStatic(clazz)) vparamss
-                  else { // (4)
-                    val outerField = outerMember(clazz.info).accessed;
-                    val outerParam = sym.newValueParameter(sym.pos, nme.OUTER) setInfo outerField.info;
-                    // moved outer param to first position
-                    List((ValDef(outerParam) setType NoType) :: vparamss.head)
-//                    List(vparamss.head ::: List(ValDef(outerParam) setType NoType))
-                  }
+                  if (isInner(clazz)) { // (4)
+                    val outerParam = sym.newValueParameter(sym.pos, nme.OUTER) setInfo outerField(clazz).info
+                    ((ValDef(outerParam) setType NoType) :: vparamss.head) :: vparamss.tail
+                  } else vparamss
+              // todo: move
                 val rhs1 =
                   if (sym.isPrimaryConstructor && sym.isClassConstructor && clazz != ArrayClass)
                     addMixinConstructorCalls(rhs, clazz); // (3)
-                  else rhs;
-                copy.DefDef(tree, mods, name, tparams, vparamss1, tpt, rhs1)
+                  else rhs
+                super.transform(copy.DefDef(tree, mods, name, tparams, vparamss1, tpt, rhs1))
             }
-          case This(qual) =>
-            if (sym == currentOwner.enclClass || (sym hasFlag MODULE) && sym.isStatic) tree
-            else atPos(tree.pos)(outerPath(outerValue, sym)); // (5)
-          case Apply(sel @ Select(qual, name), args)
-          if ((name == nme.CONSTRUCTOR || name == nme.MIXIN_CONSTRUCTOR) && !isStatic(sel.symbol.owner)) =>
+          } else { //todo: see whether we can move this to transformInfo
+            if (sym.owner.isTrait && (sym hasFlag (ACCESSOR | SUPERACCESSOR)))
+              sym.makeNotPrivate(sym.owner); //(2)
+            super.transform(tree)
+          }
+
+        case This(qual) =>
+          if (sym == currentClass || (sym hasFlag MODULE) && sym.isStatic) tree
+          else atPos(tree.pos)(outerPath(outerValue, currentClass.outerClass, sym)) // (5)
+
+        case Select(qual, name) =>
+          if (currentClass != sym.owner && currentClass != sym.moduleClass) // (3)
+            sym.makeNotPrivate(sym.owner)
+          val qsym = qual.tpe.widen.symbol
+          if ((sym hasFlag PROTECTED) && //(4)
+              (qsym.isTrait || !(qual.isInstanceOf[Super] || (qsym isSubClass currentClass))))
+            sym setFlag notPROTECTED
+          super.transform(tree)
+
+        case Apply(sel @ Select(qual, name), args)
+          if (name == nme.CONSTRUCTOR && isInner(sel.symbol.owner)) =>
             val outerVal = atPos(tree.pos) {
-              if (name == nme.MIXIN_CONSTRUCTOR) {
-                val mclazz = sym.owner.toInterface
-                //System.out.println("adding mixin constructor for " + currentOwner.enclClass + " " + mclazz + " " + currentOwner.enclClass.thisType.baseType(mclazz));//DEBUG
-                var pre = currentOwner.enclClass.thisType.baseType(mclazz).prefix
-                if (pre == NoPrefix) pre = outerClass(mclazz).thisType
-                gen.mkAttributedQualifier(pre)
-              } else if (qual.isInstanceOf[This]) {
-                assert(outerParam != NoSymbol); outerValue
+              if (qual.isInstanceOf[This]) { // it's a call between constructors of same class
+                assert(outerParam != NoSymbol)
+                outerValue
               } else {
                 var pre = qual.tpe.prefix
-                if (pre == NoPrefix) pre = outerClass(sym.owner).thisType;
+                if (pre == NoPrefix) pre = sym.owner.outerClass.thisType
                 gen.mkAttributedQualifier(pre)
               }
             }
-            // moved outer parameter to first position
-            copy.Apply(tree, sel, outerVal :: args)
-//            copy.Apply(tree, sel, args ::: List(outerVal))
+            super.transform(copy.Apply(tree, sel, outerVal :: args))
 
-          case _ =>
-            tree
-        }
-        super.transform(tree1)
-      }
-    }
-
-    /** The second step performs the following transformations:
-     *   2. Remove private modifiers from members M of mixins T. (@see makeNotPrivate)
-     *   3. Remove `private' modifier from class members M that are accessed from an inner class.
-     *   4. Remove `protected' modifier from class members M that are accessed
-     *      without a super qualifier accessed from an inner class or trait.
-     *   5. Remove `private' and `protected' modifiers from type symbols
-     */
-    private val secondTransformer = new OuterPathTransformer {
-
-      def handleSelect(tree:Select) = tree match {
-        case Select(qual, name) =>
-          val sym = tree.symbol
-          val enclClass = currentOwner.enclClass
-          if (enclClass != sym.owner && enclClass != sym.moduleClass) // (3)
-            sym.makeNotPrivate(sym.owner);
-          val qsym = qual.tpe.widen.symbol
-          if ((sym hasFlag PROTECTED) && //(4)
-              (qsym.isTrait || !(qual.isInstanceOf[Super] || (qsym isSubClass enclClass))))
-            sym setFlag notPROTECTED;
-      }
-
-      /** The second-step transformation method */
-      override def transform(tree: Tree): Tree = {
-        val sym = tree.symbol
-        val tree1 =
-          if(tree.isInstanceOf[Match]) {
-            //Console.println("calling super.transform of Match with ncases "+
-            //                tree.asInstanceOf[Match].cases.length)
-            tree
-          } else {
-            super.transform(tree)
-          }
-        tree1 match {
-          case DefDef(_, _, _, _, _, _) =>
-            if (sym.owner.isTrait && (sym hasFlag (ACCESSOR | SUPERACCESSOR)))
-              sym.makeNotPrivate(sym.owner); //(2)
-            tree1
-          case tree @ Select(qual, name) =>
-            handleSelect(tree)
-            tree1
-
-      case Match(selector, cases) => // <----- transmatch hook
-        val tid = cunit.fresh.newName("tidmark")
-
+        case Match(selector, cases) => // <----- transmatch hook
+          val tid = unit.fresh.newName("tidmark")
           if(settings.debug.value)
             Console.println("transforming patmat with tidmark "+tid+" ncases = "+cases.length)
-        if((cases.length > 1)&&( treeInfo.isDefaultCase(cases(0))))
-          assert(false,"transforming too much, "+tid)
-        val nselector = transform(selector).setType(selector.tpe)
-        val ncases = cases map { transform }
-        ExplicitOuter.this.resultType = tree.tpe
-        //Console.println("TransMatcher currentOwner ="+currentOwner+")")
-        //Console.println("TransMatcher selector.tpe ="+selector.tpe+")")
-        //Console.println("TransMatcher resultType ="+resultType+")")
-          def mytransform(tree: Tree): Tree = {
-            val sym = tree.symbol
-            tree match {
-              case This(qual) =>
-                if (sym == currentOwner.enclClass || (sym hasFlag Flags.MODULE) && sym.isStatic) tree
-                else atPos(tree.pos)(outerPath(outerValue, sym)); // (5)
-              case Select(qual,name) =>
-                val s = copy.Select(tree, mytransform(qual), name)
-                handleSelect(s)
-                s
-              case x =>
-                if(settings.debug.value)
-                  Console.println(x.getClass())
-                x
-            }
-          }
-        val t_untyped = ExplicitOuter.this.handlePattern(nselector, ncases.asInstanceOf[List[CaseDef]], currentOwner, mytransform)
+          if((cases.length > 1)&&( treeInfo.isDefaultCase(cases(0))))
+            assert(false,"transforming too much, "+tid)
 
+          val nselector = transform(selector)
+          assert(nselector.tpe =:= selector.tpe)
+          val ncases = transformCaseDefs(cases)
 
-        //Console.println("t_untyped "+t_untyped.toString())
-        val t         = atPos(tree.pos) { typer.atOwner(tree,currentOwner).typed(t_untyped, resultType) }
+          ExplicitOuter.this.resultType = tree.tpe
+          //Console.println("TransMatcher currentOwner ="+currentOwner+")")
+          //Console.println("TransMatcher selector.tpe ="+selector.tpe+")")
+          //Console.println("TransMatcher resultType ="+resultType+")")
+
+          val t_untyped = handlePattern(nselector, ncases, currentOwner, transform)
+          //Console.println("t_untyped "+t_untyped.toString())
+          val t = atPos(tree.pos) { localTyper.typed(t_untyped, resultType) }
 
           //t = transform(t)
-        //val t         = atPos(tree.pos) { typed(t_untyped, resultType) }
-        //val t         = atPos(tree.pos) { typed(t_untyped) }
-        //Console.println("t typed "+t.toString())
+          //val t         = atPos(tree.pos) { typed(t_untyped, resultType) }
+          //val t         = atPos(tree.pos) { typed(t_untyped) }
+          //Console.println("t typed "+t.toString())
           if(settings.debug.value)
             Console.println("finished translation of "+tid)
-        t
-/*<--- end transmatch experimental */
+          t
 
-          case _ =>
-            if (sym != null && sym.isType) {//(5)
-              if (sym hasFlag PRIVATE) sym setFlag notPRIVATE
-              if (sym hasFlag PROTECTED) sym setFlag notPROTECTED
-            }
-            tree1
-        }
+        case _ =>
+          super.transform(tree)
       }
     }
 
-    // needed in TransMatcher
-    override def transformUnit(unit: CompilationUnit) = {
+    /** The transformation method for whole compilation units */
+    override def transformUnit(unit: CompilationUnit): unit = {
       cunit = unit
-      super.transformUnit(unit)
-      cunit = null
+      atPhase(phase.next) { super.transformUnit(unit) }
     }
-
-
-    /** The main transformation method:
-     *  First, perform step 1 on whole tree of compilation unit.
-     *  Then, perform step 2 on resulting tree
-     */
-    override def transform(tree: Tree) =
-      atPhase(phase.next) {
-        secondTransformer.transform(firstTransformer.transform(tree))
-      }
   }
 }
 

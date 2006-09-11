@@ -144,7 +144,7 @@ abstract class TreePrinters {
           printModifiers(tree, mods)
           print((if (mods hasFlag TRAIT) "trait " else "class ") + symName(tree, name))
           printTypeParams(tparams)
-          printOpt("requires ", tp); print(" extends "); print(impl)
+          printOpt(" requires ", tp); print(" extends "); print(impl)
 
         case PackageDef(packaged, stats) =>
           printAttributes(tree)

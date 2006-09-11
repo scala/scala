@@ -916,7 +916,7 @@ trait Types requires SymbolTable {
         packagePrefix + str
       else if (sym.isModuleClass)
         objectPrefix + str
-      else if (sym.isAnonymousClass && sym.isInitialized)
+      else if (sym.isAnonymousClass && sym.isInitialized && !settings.debug.value)
         sym.info.parents.mkString("", " with ", "{ ... }")
       else if (sym.isRefinementClass && sym.isInitialized)
         sym.info.toString()
@@ -1719,7 +1719,9 @@ trait Types requires SymbolTable {
           (tparams.head.isContravariant || (tps1.head <:< tps2.head)) &&
           isSubArgs(tps1.tail, tps2.tail, tparams.tail)
         );
-        (sym1 == sym2 && (pre1 <:< pre2) && isSubArgs(args1, args2, sym1.typeParams)
+        (sym1 == sym2 &&
+         (phase.erasedTypes || pre1 <:< pre2) &&
+         isSubArgs(args1, args2, sym1.typeParams)
          ||
          sym1.isAbstractType && !(tp1 =:= tp1.bounds.hi) && (tp1.bounds.hi <:< tp2)
          ||
