@@ -315,11 +315,7 @@ trait Symbols requires SymbolTable {
 
 // Flags, owner, and name attributes --------------------------------------------------------------
 
-    def owner: Symbol = {
-      val r = rawowner
-      if ((r.rawflags & IMPLCLASS) != 0 && !phase.next.erasedTypes) r.toInterface
-      else r
-    }
+    def owner: Symbol = rawowner
     final def owner_=(owner: Symbol): unit = { rawowner = owner }
 
     def ownerChain: List[Symbol] = this :: owner.ownerChain

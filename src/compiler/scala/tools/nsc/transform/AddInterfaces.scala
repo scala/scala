@@ -101,8 +101,10 @@ abstract class AddInterfaces extends InfoTransform {
     /** Compute the decls of implementation class `implClass',
      *  given the decls `ifaceDecls' of its interface
      */
-    def implDecls(implClass: Symbol, ifaceDecls: Scope): Scope = {
+    private def implDecls(implClass: Symbol, ifaceDecls: Scope): Scope = {
       val decls = newScope
+      decls enter (implClass.newMethod(implClass.pos, nme.MIXIN_CONSTRUCTOR)
+        setInfo MethodType(List(), UnitClass.tpe))
       for (val sym <- ifaceDecls.elements) {
         if (isInterfaceMember(sym)) {
           if (needsImplMethod(sym)) {
@@ -127,7 +129,7 @@ abstract class AddInterfaces extends InfoTransform {
         case ClassInfoType(parents, decls, _) =>
           //ClassInfoType(mixinToImplClass(parents) ::: List(iface.tpe), implDecls(sym, decls), sym)
           ClassInfoType(
-            ObjectClass.tpe :: (parents.tail map mixinToImplClass) ::: List(iface.tpe), //!!!
+            ObjectClass.tpe :: (parents.tail map mixinToImplClass) ::: List(iface.tpe),
             implDecls(sym, decls),
             sym)
         case PolyType(tparams, restpe) =>
@@ -211,10 +213,17 @@ abstract class AddInterfaces extends InfoTransform {
     else if (needsImplMethod(tree.symbol)) implMethodDef(tree, tree.symbol)
     else EmptyTree
 
+  /** The mixin constructor definition
+   *    def $init$(): Unit = ()
+   */
+  private def mixinConstructorDef(clazz: Symbol): Tree =
+    DefDef(clazz.primaryConstructor, vparamss => Block(List(), Literal(())))
+
   private def implTemplate(clazz: Symbol, templ: Template): Template = atPos(templ.pos) {
-    val templ1 = Template(templ.parents, templ.body map implMemberDef)
-      .setPos(templ.pos)
-      .setSymbol(clazz.newLocalDummy(templ.pos));
+    val templ1 = atPos(templ.pos) {
+      Template(templ.parents, mixinConstructorDef(clazz) :: (templ.body map implMemberDef))
+      .setSymbol(clazz.newLocalDummy(templ.pos))
+    }
     new ChangeOwnerTraverser(templ.symbol.owner, clazz)(
       new ChangeOwnerTraverser(templ.symbol, templ1.symbol)(templ1))
   }
@@ -234,26 +243,52 @@ abstract class AddInterfaces extends InfoTransform {
     buf.toList
   }
 
+  /** Add calls to supermixin constructors
+   *     super[mix].$init$()
+   *  to `tree'. `tree' which is assumed to be the body of a constructor of class `clazz'.
+   */
+  private def addMixinConstructorCalls(tree: Tree, clazz: Symbol): Tree = {
+    def mixinConstructorCall(mixinClass: Symbol): Tree = atPos(tree.pos) {
+      Apply(Select(This(clazz), mixinClass.primaryConstructor), List())
+    }
+    val mixinConstructorCalls: List[Tree] = {
+      for (val mc <- clazz.mixinClasses.reverse; mc.isImplClass && mc.toInterface != ScalaObjectClass)
+      yield mixinConstructorCall(mc)
+    }
+    tree match { //todo: remove checking code
+      case Block(supercall :: stats, expr) =>
+        assert(supercall match {
+          case Apply(Select(Super(_, _), _), _) => true
+          case _ => false
+        })
+        copy.Block(tree, supercall :: mixinConstructorCalls ::: stats, expr)
+      case Block(_, _) =>
+        assert(false, tree);  tree
+    }
+  }
+
   protected val mixinTransformer = new Transformer {
     override def transformStats(stats: List[Tree], exprOwner: Symbol): List[Tree] =
       (super.transformStats(stats, exprOwner) :::
        super.transformStats(implClassDefs(stats), exprOwner))
     override def transform(tree: Tree): Tree = {
+      val sym = tree.symbol
       val tree1 = tree match {
-        case ClassDef(mods, name, tparams, tpt, impl) =>
-          if (tree.symbol.needsImplClass) {
-            implClass(tree.symbol).initialize // to force lateDEFERRED flags
-            copy.ClassDef(tree, mods | INTERFACE, name, tparams, tpt, ifaceTemplate(impl))
-          }
-          else tree
+        case ClassDef(mods, name, tparams, tpt, impl) if (sym.needsImplClass) =>
+          implClass(sym).initialize // to force lateDEFERRED flags
+          copy.ClassDef(tree, mods | INTERFACE, name, tparams, tpt, ifaceTemplate(impl))
+        case DefDef(mods, name, tparams, vparamss, tpt, rhs)
+        if (sym.isClassConstructor && sym.isPrimaryConstructor && sym.owner != ArrayClass) =>
+          copy.DefDef(tree, mods, name, tparams, vparamss, tpt,
+                      addMixinConstructorCalls(rhs, sym.owner)) // (3)
         case Template(parents, body) =>
-          val parents1 = tree.symbol.owner.info.parents map (t => TypeTree(t) setPos tree.pos)
+          val parents1 = sym.owner.info.parents map (t => TypeTree(t) setPos tree.pos)
           copy.Template(tree, parents1, body)
         case This(_) =>
-          if (tree.symbol.needsImplClass) {
-            val impl = implClass(tree.symbol)
+          if (sym.needsImplClass) {
+            val impl = implClass(sym)
             var owner = currentOwner
-            while (owner != tree.symbol && owner != impl) owner = owner.owner;
+            while (owner != sym && owner != impl) owner = owner.owner;
             if (owner == impl) This(impl) setPos tree.pos
             else tree
           } else tree
@@ -262,13 +297,13 @@ abstract class AddInterfaces extends InfoTransform {
             if (mix == nme.EMPTY.toTypeName) mix
             else {
               val ps = atPhase(currentRun.erasurePhase) {
-                tree.symbol.info.parents dropWhile (p => p.symbol.name != mix)
+                sym.info.parents dropWhile (p => p.symbol.name != mix)
               }
               assert(!ps.isEmpty, tree);
               if (ps.head.symbol.needsImplClass) implClass(ps.head.symbol).name
               else mix
             }
-          if (tree.symbol.needsImplClass) Super(implClass(tree.symbol), mix1) setPos tree.pos
+          if (sym.needsImplClass) Super(implClass(sym), mix1) setPos tree.pos
           else copy.Super(tree, qual, mix1)
         case _ =>
           tree

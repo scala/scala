@@ -70,45 +70,33 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
       if (sym.isClassConstructor && isInner(sym.owner)) // 1
         MethodType(sym.owner.outerClass.thisType :: formals, restpe)
       else tp
-    case ClassInfoType(parents, decls, clazz) =>
-      var decls1 = decls
-      if (!(clazz hasFlag INTERFACE)) {
-        if (isInner(clazz)) {
-          if (decls1 eq decls) decls1 = newScope(decls1.toList)
-          val outerAcc = clazz.newMethod(clazz.pos, nme.OUTER) // 3
-          outerAcc.expandName(clazz)
-          decls1 enter (
-            clazz.newOuterAccessor(clazz.pos)
-              setInfo MethodType(List(), clazz.outerClass.thisType))
-          if (!parents.isEmpty) {
-            for (val mc <- clazz.mixinClasses) {
-              val mixinOuterAcc: Symbol = atPhase(phase.next)(outerAccessor(mc))
-              if (mixinOuterAcc != NoSymbol)
-                decls1 enter (mixinOuterAcc.cloneSymbol(clazz) resetFlag DEFERRED)
-            }
-          }
-          if (!clazz.isTrait) // 2
-            //todo: avoid outer field if superclass has same outer value?
-            decls1 enter (
-              clazz.newValue(clazz.pos, nme.getterToLocal(nme.OUTER))
-                setFlag (PROTECTED | PARAMACCESSOR)
-                setInfo clazz.outerClass.thisType)
-        }
-        if (clazz.isTrait) { // 4 (todo: can go into next phase?)
-          if (decls1 eq decls) decls1 = newScope(decls1.toList)
-          decls1 enter makeMixinConstructor(clazz)
+    case ClassInfoType(parents, decls, clazz) if (isInner(clazz) && !(clazz hasFlag INTERFACE)) =>
+      val decls1 = newScope(decls.toList)
+      val outerAcc = clazz.newMethod(clazz.pos, nme.OUTER) // 3
+      outerAcc.expandName(clazz)
+      decls1 enter (
+        clazz.newOuterAccessor(clazz.pos)
+        setInfo MethodType(List(), clazz.outerClass.thisType))
+      if (!parents.isEmpty) {
+        for (val mc <- clazz.mixinClasses) {
+          val mixinOuterAcc: Symbol = atPhase(phase.next)(outerAccessor(mc))
+          if (mixinOuterAcc != NoSymbol)
+            decls1 enter (mixinOuterAcc.cloneSymbol(clazz) resetFlag DEFERRED)
         }
       }
-      if (decls1 eq decls) tp else ClassInfoType(parents, decls1, clazz)
+      if (!clazz.isTrait) // 2
+        //todo: avoid outer field if superclass has same outer value?
+        decls1 enter (
+          clazz.newValue(clazz.pos, nme.getterToLocal(nme.OUTER))
+          setFlag (PROTECTED | PARAMACCESSOR)
+          setInfo clazz.outerClass.thisType)
+      ClassInfoType(parents, decls1, clazz)
     case PolyType(tparams, restp) =>
       val restp1 = transformInfo(sym, restp)
       if (restp eq restp1) tp else PolyType(tparams, restp1)
     case _ =>
       tp
   }
-
-  private def makeMixinConstructor(clazz: Symbol): Symbol =
-    clazz.newMethod(clazz.pos, nme.MIXIN_CONSTRUCTOR) setInfo MethodType(List(), UnitClass.tpe)
 
   /** A base class for transformers that maintain `outerParam' values for
    *  outer parameters of constructors.
@@ -234,52 +222,6 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
       }
     }
 
-    /** The mixin constructor definition
-     *    def $init$(): Unit = ()
-     */
-    def mixinConstructorDef(clazz: Symbol): Tree =
-      localTyper.typed {
-        val constr = clazz.primaryConstructor
-        atPhase(currentRun.explicitOuterPhase) {
-          // necessary so that we do not include an outer parameter already here
-          // this will be added later in transform.
-          DefDef(constr, vparamss => Block(List(), Literal(())))
-        }
-      }
-
-    /** Add calls to supermixin constructors
-     *     super[mix].$init$()
-     *  to `tree'. `tree' which is assumed to be the body of a constructor of class `clazz'.
-     */
-    def addMixinConstructorCalls(tree: Tree, clazz: Symbol): Tree = {
-      def mixinConstructorCall(mixinClass: Symbol): Tree =
-        atPos(tree.pos) {
-          Apply(
-            localTyper.typedOperator {
-              Select(This(clazz), mixinClass.primaryConstructor)
-            },
-            List()) setType UnitClass.tpe; // don't type this with typed(...),
-          // as constructor arguments might be missing
-        }
-
-      val mixinConstructorCalls: List[Tree] = {
-        for (val mc <- clazz.mixinClasses.reverse; mc.needsImplClass && mc != ScalaObjectClass)
-        yield mixinConstructorCall(mc)
-      }
-
-      //begin mixin constructor calls
-      tree match {
-        case Block(supercall :: stats, expr) =>
-          assert(supercall match {
-            case Apply(Select(Super(_, _), _), _) => true
-            case _ => false
-          })
-          copy.Block(tree, supercall :: mixinConstructorCalls ::: stats, expr)
-        case Block(_, _) =>
-          assert(false, tree);  tree
-      }
-    }
-
     /** The main transformation method */
     override def transform(tree: Tree): Tree = {
       val sym = tree.symbol
@@ -296,9 +238,7 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
                 if (!currentClass.isTrait) newDefs += outerFieldDef // (1a)
                 newDefs += outerAccessorDef // (1)
               }
-              if (currentClass.isTrait)
-                newDefs += mixinConstructorDef(currentClass)
-              else
+              if (!currentClass.isTrait)
                 for (val mc <- currentClass.mixinClasses)
                   if (outerAccessor(mc) != NoSymbol)
                     newDefs += mixinOuterAccessorDef(mc)
@@ -318,15 +258,11 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
                 val clazz = sym.owner
                 val vparamss1 =
                   if (isInner(clazz)) { // (4)
-                    val outerParam = sym.newValueParameter(sym.pos, nme.OUTER) setInfo outerField(clazz).info
+                    val outerParam =
+                      sym.newValueParameter(sym.pos, nme.OUTER) setInfo outerField(clazz).info
                     ((ValDef(outerParam) setType NoType) :: vparamss.head) :: vparamss.tail
                   } else vparamss
-              // todo: move
-                val rhs1 =
-                  if (sym.isPrimaryConstructor && sym.isClassConstructor && clazz != ArrayClass)
-                    addMixinConstructorCalls(rhs, clazz); // (3)
-                  else rhs
-                super.transform(copy.DefDef(tree, mods, name, tparams, vparamss1, tpt, rhs1))
+                super.transform(copy.DefDef(tree, mods, name, tparams, vparamss1, tpt, rhs))
             }
           } else { //todo: see whether we can move this to transformInfo
             if (sym.owner.isTrait && (sym hasFlag (ACCESSOR | SUPERACCESSOR)))
