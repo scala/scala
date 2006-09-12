@@ -354,5 +354,5 @@ abstract class TreePrinters {
 
   def create(writer: PrintWriter): TreePrinter = new TreePrinter(writer)
   def create(stream: OutputStream): TreePrinter = create(new PrintWriter(stream))
-  def create(): TreePrinter = create(System.out)
+  def create(): TreePrinter = create(Console.out)
 }
