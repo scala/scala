@@ -372,12 +372,12 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
   private var curRunId = 0
   override def currentRunId = curRunId
 
-  private var runCount = 0;
+  private var runCount = 0
 
   class Run {
     curRunId = curRunId + 1
     assert(curRunId > 0)
-    //Console.println("starting run: " + id);
+    //Console.println("starting run: " + id)
     var currentUnit: CompilationUnit = _
     curRun = this
     val firstPhase = syntaxAnalyzer.newPhase(NoPhase)
@@ -482,14 +482,16 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
         advancePhase
       }
 
-      if (settings.Xshowcls.value != "") showDef(newTermName(settings.Xshowcls.value), false)
-      if (settings.Xshowobj.value != "") showDef(newTermName(settings.Xshowobj.value), true)
+      if (settings.Xshowcls.value != "")
+        showDef(newTermName(settings.Xshowcls.value), false)
+      if (settings.Xshowobj.value != "")
+        showDef(newTermName(settings.Xshowobj.value), true)
 
       if (reporter.errors == 0) {
         assert(stopped || symData.isEmpty, symData.elements.toList)
       } else {
         for (val Pair(sym, file) <- symSource.elements) {
-          sym.reset(new loaders.SourcefileLoader(file));
+          sym.reset(new loaders.SourcefileLoader(file))
           if (sym.isTerm) sym.moduleClass.reset(loaders.moduleClassLoader)
         }
       }
@@ -613,17 +615,19 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
   def forCLDC: Boolean = settings.target.value == "cldc"
   def onlyPresentation = settings.doc.value
   // position stuff
-  val positionConfiguration : PositionConfiguration = new PositionConfiguration {
-    type PositionType = Int;
-    def coercePosToInt(pos : PositionType) : Int = pos;
-    def coerceIntToPos(pos : Int) : PositionType = pos;
-    val NoPos : PositionType = Position.NOPOS;
-    val FirstPos : PositionType = Position.FIRSTPOS;
+  val positionConfiguration: PositionConfiguration = new PositionConfiguration {
+    type PositionType = Int
+    def coercePosToInt(pos: PositionType): Int = pos
+    def coerceIntToPos(pos: Int): PositionType = pos
+    val NoPos: PositionType = Position.NOPOS
+    val FirstPos: PositionType = Position.FIRSTPOS
   }
-  final type PositionType = positionConfiguration.PositionType;
-  final val FirstPos = positionConfiguration.FirstPos;
-  final val NoPos = positionConfiguration.NoPos;
-  final def coerceIntToPos(pos : Int) : PositionType = positionConfiguration.coerceIntToPos(pos);
-  implicit final def coercePosToInt(pos : PositionType) : Int = positionConfiguration.coercePosToInt(pos);
+  final type PositionType = positionConfiguration.PositionType
+  final val FirstPos = positionConfiguration.FirstPos
+  final val NoPos = positionConfiguration.NoPos
+  final def coerceIntToPos(pos: Int): PositionType =
+    positionConfiguration.coerceIntToPos(pos)
+  implicit final def coercePosToInt(pos: PositionType): Int =
+    positionConfiguration.coercePosToInt(pos)
 
 }

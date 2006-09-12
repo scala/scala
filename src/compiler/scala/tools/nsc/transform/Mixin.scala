@@ -34,21 +34,25 @@ abstract class Mixin extends InfoTransform {
    *      non-lifted private modules have been eliminated in ExplicitOuter)
    *   - field accessors and superaccessors
    */
-  private def isImplementedStatically(sym: Symbol) = (
+  private def isImplementedStatically(sym: Symbol) =
     sym.owner.isImplClass && sym.isMethod &&
-    (!sym.isModule || sym.hasFlag(PRIVATE)) && !(sym hasFlag (ACCESSOR | SUPERACCESSOR))
-  )
+    (!sym.isModule || sym.hasFlag(PRIVATE)) &&
+    !(sym hasFlag (ACCESSOR | SUPERACCESSOR))
 
-  /** A member of a trait is static only if it belongs only to the implementation
-   *  class, not the interface, and it is implemented statically
+  /** A member of a trait is static only if it belongs only to the
+   *  implementation class, not the interface, and it is implemented
+   *  statically.
    */
-  private def isStaticOnly(sym: Symbol) = isImplementedStatically(sym) && sym.isImplOnly
+  private def isStaticOnly(sym: Symbol) =
+    isImplementedStatically(sym) && sym.isImplOnly
 
-  /** A member of a trait is forwarded if it is implemented statically and it is also
-   *  visible in the trait's interface. In that case, a forwarder to the member's
-   *  static implementation will be added to the class that inherits the trait
+  /** A member of a trait is forwarded if it is implemented statically and it
+   *  is also visible in the trait's interface. In that case, a forwarder to
+   *  the member's static implementation will be added to the class that
+   *  inherits the trait.
    */
-  private def isForwarded(sym: Symbol) = isImplementedStatically(sym) && !sym.isImplOnly
+  private def isForwarded(sym: Symbol) =
+    isImplementedStatically(sym) && !sym.isImplOnly
 
   /** Maps the type of an implementation class to its interface;
    *  maps all other types to themselves.
@@ -56,8 +60,8 @@ abstract class Mixin extends InfoTransform {
   private def toInterface(tp: Type): Type =
     atPhase(currentRun.mixinPhase)(tp.symbol.toInterface).tpe
 
-  /** Maps all parts of this type that refer to implementation classes to their
-   *  corresponding interfaces.
+  /** Maps all parts of this type that refer to implementation classes to
+   *  their corresponding interfaces.
    */
   private val toInterfaceMap = new TypeMap {
     def apply(tp: Type): Type = mapOver( tp match {
@@ -67,12 +71,13 @@ abstract class Mixin extends InfoTransform {
     })
   }
 
-  /** The implementation class corresponding to a currently compiled interface
+  /** The implementation class corresponding to a currently compiled interface.
    *  todo: try to use Symbol.implClass instead?
    */
   private def implClass(iface: Symbol): Symbol = erasure.implClass(iface)
 
-  /** Returns the symbol that is accessed by a super-accessor in a mixin composition
+  /** Returns the symbol that is accessed by a super-accessor in a mixin composition.
+   *
    *  @param base       The class in mwhich everything is mixed together
    *  @param member     The symbol statically referred to by the superaccessor in the trait
    *  @param mixinClass The mixin class that produced the superaccessor
@@ -87,7 +92,8 @@ abstract class Mixin extends InfoTransform {
       while (!bcs.isEmpty && sym == NoSymbol) {
         if (settings.debug.value) {
           val other = bcs.head.info.nonPrivateDecl(member.name);
-          log("rebindsuper " + bcs.head + " " + other + " " + other.tpe + " " + other.hasFlag(DEFERRED))
+          log("rebindsuper " + bcs.head + " " + other + " " + other.tpe +
+              " " + other.hasFlag(DEFERRED))
         }
         sym = member.overridingSymbol(bcs.head).suchThat(sym => !sym.hasFlag(DEFERRED | BRIDGE))
         bcs = bcs.tail
@@ -106,9 +112,12 @@ abstract class Mixin extends InfoTransform {
     member setFlag MIXEDIN
   }
 
-  /** Add getters and setters for all non-module fields of an implementation class
-   *  to its interface unless they are already present. This is done only once per class.
-   *  The mixedin flag is used to remember whether late members have been added to an interface.
+  /** Add getters and setters for all non-module fields of an implementation
+   *  class to its interface unless they are already present. This is done
+   *  only once per class. The mixedin flag is used to remember whether late
+   *  members have been added to an interface.
+   *
+   *  @param clazz ...
    */
   def addLateInterfaceMembers(clazz: Symbol): unit =
     if (!(clazz hasFlag MIXEDIN)) {
@@ -155,8 +164,8 @@ abstract class Mixin extends InfoTransform {
    *  These are:
    *    for every mixin trait T that is not also inherited by the superclass:
    *     add late interface members to T and then:
-   *      - if a member M of T is forwarded to the implementation class, add a forwarder for M
-   *        unless one exists already.
+   *      - if a member M of T is forwarded to the implementation class, add
+   *        a forwarder for M unless one exists already.
    *        The alias of the forwarder is the static member it forwards to.
    *      - for every abstract accessor in T, add a field and an implementation for that acessor
    *      - for every super accessor in T, add an implementation of that accessor
@@ -210,7 +219,7 @@ abstract class Mixin extends InfoTransform {
                 clazz,
                 member.cloneSymbol(clazz)
                   setPos clazz.pos
-                  setFlag FINAL resetFlag (DEFERRED | lateDEFERRED));
+                  setFlag FINAL resetFlag (DEFERRED | lateDEFERRED))
               if (!member.isSetter)
                 member.tpe match {
                   case MethodType(List(), ConstantType(_)) =>
@@ -246,7 +255,11 @@ abstract class Mixin extends InfoTransform {
   /** The info transform for this phase does the following:
    *   - The parents of every class are mapped from implementation class to interface
    *   - Implementation classes become modules that inherit nothing
-   *     and that define all
+   *     and that define all.
+   *
+   *  @param sym ...
+   *  @param tp  ...
+   *  @return    ...
    */
   override def transformInfo(sym: Symbol, tp: Type): Type = tp match {
     case ClassInfoType(parents, decls, clazz) =>
@@ -279,8 +292,10 @@ abstract class Mixin extends InfoTransform {
 
     case MethodType(formals, restp) =>
       toInterfaceMap(
-        if (isImplementedStatically(sym)) MethodType(toInterface(sym.owner.typeOfThis) :: formals, restp)
-        else tp)
+        if (isImplementedStatically(sym))
+          MethodType(toInterface(sym.owner.typeOfThis) :: formals, restp)
+        else
+          tp)
 
     case _ =>
       tp
@@ -293,19 +308,21 @@ abstract class Mixin extends InfoTransform {
 
   class MixinTransformer extends Transformer {
 
-    /** Within a static implementation method: the parameter referring to the current object
-     *  undefined evrywhere else.
+    /** Within a static implementation method: the parameter referring to the
+     *  current object undefined evrywhere else.
      */
     private var self: Symbol = _
 
     /** The rootContext used for typing */
-    private val rootContext = erasure.NoContext.make(EmptyTree, RootClass, newScope)
+    private val rootContext =
+      erasure.NoContext.make(EmptyTree, RootClass, newScope)
 
     /** The typer */
     private var localTyper: erasure.Typer = _
 
-    /** Within a static implementation method: the interface type corresponding to the
-     *  implementation module; undefined evrywhere else. */
+    /** Within a static implementation method: the interface type corresponding
+     *  to the implementation module; undefined evrywhere else.
+     */
     private var enclInterface: Symbol = _
 
     /** The first transform; called in a pre-order traversal at phase mixin
@@ -315,7 +332,8 @@ abstract class Mixin extends InfoTransform {
      *   - For every trait, add all late interface members to the class info
      *   - For every static implementation method:
      *       - remove override flag
-     *       - create a new method definition that also has a `self' parameter (which comes first)
+     *       - create a new method definition that also has a `self' parameter
+     *         (which comes first)
      *   - Map implementation class types in type-apply's to their interfaces
      *   - Remove all fields in implementation classes
      */
@@ -326,7 +344,7 @@ abstract class Mixin extends InfoTransform {
           localTyper = erasure.newTyper(rootContext.make(tree, currentOwner))
           atPhase(phase.next)(currentOwner.owner.info)//todo: needed?
           if (!currentOwner.isTrait) addMixedinMembers(currentOwner)
-          else if (currentOwner hasFlag lateINTERFACE) addLateInterfaceMembers(currentOwner);
+          else if (currentOwner hasFlag lateINTERFACE) addLateInterfaceMembers(currentOwner)
           tree
         case DefDef(mods, name, tparams, List(vparams), tpt, rhs) if currentOwner.isImplClass =>
           if (isImplementedStatically(sym)) {
@@ -334,8 +352,8 @@ abstract class Mixin extends InfoTransform {
             self = sym.newValue(sym.pos, nme.SELF)
               .setFlag(PARAM)
               .setInfo(toInterface(currentOwner.typeOfThis));
-            enclInterface = currentOwner.toInterface;
-            val selfdef = ValDef(self) setType NoType;
+            enclInterface = currentOwner.toInterface
+            val selfdef = ValDef(self) setType NoType
             copy.DefDef(tree, mods, name, tparams, List(selfdef :: vparams), tpt, rhs)
           } else {
             EmptyTree
@@ -355,12 +373,15 @@ abstract class Mixin extends InfoTransform {
       }
     }
 
-    /** Create an identifier which references self parameter
+    /** Create an identifier which references self parameter.
+     *
+     *  @param pos ...
      */
-    private def selfRef(pos: PositionType) = gen.mkAttributedIdent(self) setPos pos;
+    private def selfRef(pos: PositionType) =
+      gen.mkAttributedIdent(self) setPos pos
 
-    /** Create a static reference to given symbol `sym' of the form M.sym
-     *  where M is the symbol's implementation module
+    /** Create a static reference to given symbol <code>sym</code> of the
+     *  form <code>M.sym</code> where M is the symbol's implementation module.
      */
     private def staticRef(sym: Symbol) = {
       sym.owner.info  //todo: needed?
@@ -392,7 +413,7 @@ abstract class Mixin extends InfoTransform {
 
       /** Attribute given tree and anchor at given position */
       def attributedDef(pos: PositionType, tree: Tree): Tree = {
-        if (settings.debug.value) log("add new def to " + clazz + ": " + tree);
+        if (settings.debug.value) log("add new def to " + clazz + ": " + tree)
         localTyper.typed { atPos(pos) { tree } }
       }
 
@@ -405,15 +426,18 @@ abstract class Mixin extends InfoTransform {
       def addDef(pos: PositionType, tree: Tree): unit =
         newDefs += attributedDef(pos, tree)
 
-      /** Add new method definition
+      /** Add new method definition.
+       *
        *  @param sym   The method
-       *  @param rhs   A function that maps formal parameters to the method's right-hand side
+       *  @param rhs   A function that maps formal parameters to the method's
+       *               right-hand side
        */
       def addDefDef(sym: Symbol, rhs: List[Symbol] => Tree): unit =
         addDef(position(sym), DefDef(sym, vparamss => rhs(vparamss.head)))
 
-      /** Add `newdefs' to `stats', removing any abstract method definitions in `stats' that
-       *  are matched by some symbol defined in `newdefs'.
+      /** Add `newdefs' to `stats', removing any abstract method definitions
+       *  in <code>stats</code> that are matched by some symbol defined in
+       *  <code>newDefs</code>.
        */
       def add(stats: List[Tree], newDefs: List[Tree]) = {
         val newSyms = newDefs map (.symbol)
@@ -441,8 +465,8 @@ abstract class Mixin extends InfoTransform {
         if (stat.symbol hasFlag SUPERACCESSOR) =>
           val rhs0 =
             Apply(Select(Super(clazz, nme.EMPTY.toTypeName), stat.symbol.alias),
-                  vparams map (vparam => Ident(vparam.symbol)));
-          val rhs1 = localTyper.typed(atPos(stat.pos)(rhs0), stat.symbol.tpe.resultType);
+                  vparams map (vparam => Ident(vparam.symbol)))
+          val rhs1 = localTyper.typed(atPos(stat.pos)(rhs0), stat.symbol.tpe.resultType)
           val rhs2 = atPhase(currentRun.mixinPhase)(transform(rhs1))
           if (settings.debug.value)
             log("complete super acc " + stat.symbol + stat.symbol.locationString +
@@ -469,12 +493,14 @@ abstract class Mixin extends InfoTransform {
                   case MethodType(List(), ConstantType(c)) => Literal(c)
                   case _ => Select(This(clazz), sym.accessed)
                 }
-                if (sym.isSetter) Assign(accessedRef, Ident(vparams.head)) else accessedRef})
+                if (sym.isSetter) Assign(accessedRef, Ident(vparams.head))
+                else accessedRef
+              })
             } else if (sym.isModule && !(sym hasFlag LIFTED | BRIDGE)) {
               // add modules
-              Console.println("add module "+sym+sym.hasFlag(EXPANDEDNAME))
+              //Console.println("add module "+sym+sym.hasFlag(EXPANDEDNAME))//debug
               val vdef = gen.mkModuleVarDef(sym)
-              Console.println("add module "+sym+sym.hasFlag(EXPANDEDNAME)+":"+vdef.symbol.tpe)
+              //Console.println("add module "+sym+sym.hasFlag(EXPANDEDNAME)+":"+vdef.symbol.tpe)//debug
               addDef(position(sym), vdef)
               addDef(position(sym), gen.mkModuleAccessDef(sym, vdef.symbol))
             } else if (!sym.isMethod) {
@@ -497,8 +523,8 @@ abstract class Mixin extends InfoTransform {
       stats1
     }
 
-    /** The transform that gets applied to a tree after it has been completely traversed
-     *  and possible modified by a preTransform.
+    /** The transform that gets applied to a tree after it has been completely
+     *  traversed and possible modified by a preTransform.
      *  This step will
      *    - change every node type that refers to an implementation class to its
      *      corresponding interface, unless the node's symbol is an implementation class.
@@ -507,7 +533,8 @@ abstract class Mixin extends InfoTransform {
      *    - remove widening casts
      *    - change calls to methods which are defined only in implementation classes
      *      to static calls of methods in implementation modules (@see staticCall)
-     *    - change super calls to methods in implementation classes to static calls (@see staticCall)
+     *    - change super calls to methods in implementation classes to static calls
+     *      (@see staticCall)
      *    - change `this' in implementation modules to references to the self parameter
      *    - refer to fields in some implementation class vie an abstract method in the interface.
      */
@@ -536,11 +563,13 @@ abstract class Mixin extends InfoTransform {
           qual
 
         case Apply(Select(qual, _), args) =>
-          /** Changes `qual.m(args)' where m refers to an implementation class method to
-           *    Q.m(S, args) where Q is the implementation module of `m' and
-           *    S is the self parameter for the call, which is determined as follows:
+          /** Changes <code>qual.m(args)</code> where m refers to an implementation
+           *  class method to Q.m(S, args) where Q is the implementation module of
+           *  <code>m</code> and S is the self parameter for the call, which
+           *  is determined as follows:
            *     - if qual != super, qual itself
-           *     - if qual == super, and we are in an implementation class, the current self parameter.
+           *     - if qual == super, and we are in an implementation class,
+           *       the current self parameter.
            *     - if qual == super, and we are not in an implementation class, `this'
            */
           def staticCall(target: Symbol) = {
@@ -557,8 +586,8 @@ abstract class Mixin extends InfoTransform {
             }
           }
           if (isStaticOnly(sym)) {
-            // change calls to methods which are defined only in implementation classes
-            // to static calls of methods in implementation modules
+            // change calls to methods which are defined only in implementation
+            // classes to static calls of methods in implementation modules
             staticCall(sym)
           } else qual match {
             case Super(_, mix) =>
@@ -588,8 +617,11 @@ abstract class Mixin extends InfoTransform {
           tree
 
         case Select(qual, name) if sym.owner.isImplClass && !isStaticOnly(sym) =>
-          // refer to fields in some implementation class via an abstract getter in the interface.
-          if (sym.isMethod) assert(false, "no method allowed here: "+sym+sym.isImplOnly+" "+flagsToString(sym.flags))
+          // refer to fields in some implementation class via an abstract
+          // getter in the interface.
+          if (sym.isMethod)
+            assert(false, "no method allowed here: " + sym + sym.isImplOnly +
+                          " " + flagsToString(sym.flags))
           val getter = sym.getter(enclInterface)
           assert(getter != NoSymbol)
           localTyper.typed {
@@ -599,7 +631,8 @@ abstract class Mixin extends InfoTransform {
           }
 
         case Assign(Apply(lhs @ Select(qual, _), List()), rhs) =>
-          // assign to fields in some implementation class via an abstract setter in the interface.
+          // assign to fields in some implementation class via an abstract
+          // setter in the interface.
           localTyper.typed {
             atPos(tree.pos) {
               Apply(Select(qual, lhs.symbol.setter(enclInterface)) setPos lhs.pos, List(rhs))
