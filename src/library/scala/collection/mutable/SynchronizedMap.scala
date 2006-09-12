@@ -52,7 +52,7 @@ trait SynchronizedMap[A, B] extends Map[A, B] {
         super.values;
     }
 
-    override def foreach(f: (A, B) => Unit) = synchronized {
+    override def foreach(f: Pair[A, B] => Unit) = synchronized {
         super.foreach(f);
     }
 
@@ -96,11 +96,11 @@ trait SynchronizedMap[A, B] extends Map[A, B] {
         super.clear;
     }
 
-    override def map(f: (A, B) => B): Unit = synchronized {
+    override def map(f: Pair[A, B] => B): Unit = synchronized {
         super.map(f);
     }
 
-    override def filter(p: (A, B) => Boolean): Unit = synchronized {
+    override def filter(p: Pair[A, B] => Boolean): Unit = synchronized {
         super.filter(p);
     }
 

@@ -13,7 +13,7 @@ package scala.collection.immutable
 
 
 object Stack {
-  def Empty[A] = new Stack[A]
+  val Empty = new Stack[Nothing]
 }
 
 /** This class implements immutable stacks using a list-based data
@@ -53,11 +53,8 @@ class Stack[+A] extends Seq[A] {
    *  @param   elems      the iterable object.
    *  @return the stack with the new elements on top.
    */
-  def +[B >: A](elems: Iterable[B]): Stack[B] = {
-    var res: Stack[B] = this
-    elems.elements.foreach { elem => res = res + elem }
-    res
-  }
+  def +[B >: A](elems: Iterable[B]): Stack[B] =
+    elems.foldLeft(this: Stack[B]){ (stack, elem) => stack + elem }
 
   /** Push a sequence of elements onto the stack. The last element
    *  of the sequence will be on top of the new stack.
@@ -94,13 +91,13 @@ class Stack[+A] extends Seq[A] {
    *
    *  @return an iterator over all stack elements.
    */
-  def elements: Iterator[A] = toList.elements
-
-  /** Creates a list of all stack elements in LIFO order.
-   *
-   *  @return the created list.
-   */
-  override def toList: List[A] = Nil
+  def elements: Iterator[A] = new Iterator[A] {
+    var that: Stack[A] = Stack.this;
+    def hasNext = !that.isEmpty;
+    def next =
+      if (!hasNext) error("next on empty iterator")
+      else { val res = that.top; that = that.pop; res }
+  }
 
   /** Compares this stack with the given object.
    *
@@ -108,10 +105,7 @@ class Stack[+A] extends Seq[A] {
    *          same elements in the same order.
    */
   override def equals(obj: Any): Boolean =
-    if (obj.isInstanceOf[Stack[A]])
-      toList.equals((obj.asInstanceOf[Stack[A]]).toList)
-    else
-      false
+    obj.isInstanceOf[Stack[A]] && sameElements(obj.asInstanceOf[Stack[A]])
 
   /** Returns the hash code for this stack.
    *
@@ -129,12 +123,9 @@ class Stack[+A] extends Seq[A] {
   protected class Node[+B >: A](elem: B) extends Stack[B] {
     override def isEmpty: Boolean = false
     override def length: Int = Stack.this.length + 1
-    override def +[C >: B](elem: C): Stack[C] = new Node(elem)
-    override def +[C >: B](elems: Iterable[C]): Stack[C] = super.+(elems)
     override def top: B = elem
     override def pop: Stack[B] = Stack.this
     override def apply(n: Int): B = if (n > 0) Stack.this(n - 1) else elem
-    override def toList: List[B] = elem :: Stack.this.toList
     override def hashCode(): Int = elem.hashCode() + Stack.this.hashCode()
   }
 

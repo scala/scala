@@ -62,11 +62,13 @@ class ListMap[A, B] extends AnyRef with Map[A, B] {
 
   /** This returns an iterator over key-value pairs.
    */
-  def elements: Iterator[Pair[A, B]] = toList.elements
-
-  /** This return a list of key-value pairs.
-   */
-  override def toList: List[Pair[A, B]] = Nil
+  def elements: Iterator[Pair[A,B]] = new Iterator[Pair[A,B]] {
+    var that: ListMap[A,B] = ListMap.this;
+    def hasNext = !that.isEmpty;
+    def next: Pair[A,B] =
+      if (!hasNext) error("next on empty iterator")
+      else { val res = Pair(that.key, that.value); that = that.next; res }
+  }
 
   /** Compares two maps for equality.
    *   Two maps are equal iff they contain exactly the
@@ -86,7 +88,14 @@ class ListMap[A, B] extends AnyRef with Map[A, B] {
 
   override def hashCode(): Int = 0
 
-  protected class Node(key: A, value: B) extends ListMap[A, B] {
+  protected def key: A = error("empty map");
+  protected def value: B = error("empty map");
+  protected def next: ListMap[A, B] = error("empty map");
+
+  [serializable]
+  protected class Node(override protected val key: A, override protected val value: B)
+    extends ListMap[A, B]
+  {
     /** Returns the number of mappings in this map.
      *
      *  @return number of mappings.
@@ -144,13 +153,9 @@ class ListMap[A, B] extends AnyRef with Map[A, B] {
         val tail = ListMap.this - k; new tail.Node(key, value)
       }
 
-    /** This return a list of key-value pairs.
-     */
-    override def toList: List[Pair[A, B]] =
-      Pair(key, value) :: ListMap.this.toList
-
     override def hashCode(): Int =
       (key.hashCode() ^ value.hashCode()) + ListMap.this.hashCode()
+
+    override protected def next: ListMap[A,B] = ListMap.this;
   }
 }
-

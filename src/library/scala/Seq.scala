@@ -159,12 +159,6 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Iterable[A] {
     } else
       Predef.error("cannot create subsequence");
 
-  /** Transform this sequence into a list of all elements.
-   *
-   *  @return  a list which enumerates all elements of this sequence.
-   */
-  def toList: List[A] = elements.toList
-
   /** Converts this sequence to a fresh Array */
   def toArray[B >: A]: Array[B] =
     elements.copyToArray(new Array[B](length), 0)

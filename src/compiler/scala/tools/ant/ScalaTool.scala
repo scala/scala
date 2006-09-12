@@ -263,14 +263,10 @@ package scala.tools.ant {
       }
 
     private def expandUnixVar(vars: Map[String,String]): Map[String,String] =
-      vars.map((key:String,vari:String) => vari.
-        replaceAll("#([^#]*)#", "\\$$1")
-      )
+      vars map { case Pair(_, vari) => vari.replaceAll("#([^#]*)#", "\\$$1") }
 
     private def expandWinVar(vars: Map[String,String]): Map[String,String] =
-      vars.map((key:String,vari:String) => vari.
-        replaceAll("#([^#]*)#", "%_$1%")
-      )
+      vars map { case Pair(_, vari) => vari.replaceAll("#([^#]*)#", "%_$1%") }
 
     private def pipeTemplate(template: String, patches: Map[String,String]) = {
       val resourceRoot = "scala/tools/ant/templates/"

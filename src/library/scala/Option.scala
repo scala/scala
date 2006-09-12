@@ -63,7 +63,7 @@ sealed abstract class Option[+A] extends Iterable[A] with CaseClass {
     case Some(x) => Iterator.fromValues(x)
   }
 
-  def toList: List[A] = this match {
+  override def toList: List[A] = this match {
     case None => List()
     case Some(x) => List(x)
   }

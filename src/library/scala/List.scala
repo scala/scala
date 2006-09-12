@@ -470,6 +470,7 @@ sealed abstract class List[+a] extends Seq[a] with CaseClass {
       else {
         val result = these.head; these = these.tail; result
       }
+    override def toList: List[a] = these;
   }
 
   /** Overrides the method in Iterable for efficiency.

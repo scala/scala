@@ -30,9 +30,9 @@ trait Set[A] extends AnyRef with collection.Set[A] {
    */
   def +(elem: A): Set[A]
 
-  /** @return an empty set of the same type as this set
+  /** @return an empty set of arbitrary type
    */
-  def empty: Set[A]
+  def empty[B]: Set[B]
 
   /** <code>incl</code> can be used to add many elements to the set
    *  at the same time.
@@ -44,11 +44,8 @@ trait Set[A] extends AnyRef with collection.Set[A] {
    *
    *  @param that ...
    */
-  def incl(that: Iterable[A]): Set[A] = {
-    var res = this
-    that.elements.foreach(elem => res = res + elem)
-    res
-  }
+  def incl(that: Iterable[A]): Set[A] =
+    that.foldLeft(this)((set, elem) => set + elem)
 
   /** <code>-</code> can be used to remove a single element from
    *  a set.
@@ -62,35 +59,29 @@ trait Set[A] extends AnyRef with collection.Set[A] {
   /** This method removes all the elements provided by an iterator
    *  of the iterable object <code>that</code> from the set.
    */
-  def excl(that: Iterable[A]): Set[A] = {
-    var res = this
-    that.elements.foreach(elem => res = res - elem)
-    res
-  }
+  def excl(that: Iterable[A]): Set[A] =
+    that.foldLeft(this)((set, elem) => set - elem)
 
   /** This method computes an intersection with set <code>that</code>.
    *  It removes all the elements that are not present in <code>that</code>.
    *
    *  @param that ...
    */
-  def intersect(that: scala.collection.Set[A]): Set[A] = filter(that.contains)
+  def intersect(that: collection.Set[A]): Set[A] = filter(that.contains)
+
+  def map[B](f: A => B): Set[B] =
+    foldLeft(empty[B])((set: Set[B], elem: A) => set + f(elem))
 
   /** Method <code>filter</code> removes all elements from the set for
    *  which the predicate <code>p</code> yields the value <code>false</code>.
    *
    *  @param p ...
    */
-  def filter(p: A => Boolean): Set[A] = {
-    var res = this
-    toList foreach {
-      elem => if (!p(elem)) res = res - elem
-    }
-    res
-  }
+  def filter(p: A => Boolean): Set[A] =
+    foldLeft(this)((set, elem) => if (p(elem)) set else set - elem)
 
   /** hashcode for this set */
   override def hashCode() =
-    elements.foldLeft(0)((hash: Int, e: A) => hash + e.hashCode())
+    foldLeft(0)((hash: Int, e: A) => hash + e.hashCode())
 
 }
-

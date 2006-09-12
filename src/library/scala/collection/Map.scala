@@ -98,42 +98,6 @@ trait Map[A, +B] extends AnyRef
       def next = iter.next._2
     }
 
-    /** Executes the given function for all (key, value) pairs
-     *  contained in this map.
-     *
-     *  @param      f   the function to execute.
-     */
-    def foreach(f: (A, B) => Unit) = {
-      val iter = elements
-      while (iter.hasNext) {
-        val Pair(key, value) = iter.next
-        f(key, value)
-      }
-    }
-
-    /** Applies the given predicate to all (key, value) mappings
-     *  contained in this map and returns true if this predicate
-     *  yields true for all mappings.
-     *
-     *  @param      p   the predicate
-     *  @return    true, iff p yields true for all mappings.
-     */
-    def forall(p: (A, B) => Boolean): Boolean = elements.forall {
-      case Pair(key, value) => p(key, value)
-    }
-
-    /** Applies the given predicate to all (key, value) mappings
-     *  contained in this map and returns true if there is at least
-     *  one mapping for which this predicate yields true.
-     *
-     *  @param     p   the predicate
-     *  @return    true, iff there is at least one mapping for which
-     *             p yields true.
-     */
-    def exists(p: (A, B) => Boolean): Boolean = elements.exists {
-      case Pair(key, value) => p(key, value)
-    }
-
     /** Compares two maps structurally; i.e. checks if all mappings
      *  contained in this map are also contained in the other map,
      *  and vice versa.
@@ -150,12 +114,6 @@ trait Map[A, +B] extends AnyRef
         }
       case _ => false
     }
-
-    /** Returns the mappings of this map as a list.
-     *
-     *  @return    a list containing all mappings
-     */
-    def toList: List[Pair[A, B]] = elements.toList
 
     /** Creates a string representation for this map.
      *

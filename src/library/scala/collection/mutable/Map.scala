@@ -104,8 +104,8 @@ trait Map[A, B] extends AnyRef
    *
    * @param f
    */
-  def map(f: (A, B) => B): Unit = elements foreach {
-    case Pair(key, value) => update(key, f(key, value));
+  def map(f: Pair[A, B] => B): Unit = elements foreach {
+    case kv @ Pair(key, _) => update(key, f(kv));
   }
 
   /** This method removes all the mappings for which the predicate
@@ -113,8 +113,8 @@ trait Map[A, B] extends AnyRef
    *
    * @param p
    */
-  def filter(p: (A, B) => Boolean): Unit = toList foreach {
-    case Pair(key, value) => if (!p(key, value)) -=(key);
+  def filter(p: Pair[A, B] => Boolean): Unit = toList foreach {
+    case kv @ Pair(key, _) => if (!p(kv)) -=(key);
   }
 
   /** Send a message to this scriptable object.

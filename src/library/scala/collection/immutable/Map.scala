@@ -101,25 +101,24 @@ trait Map[A, B] extends AnyRef with collection.Map[A, B] {
   /** This function transforms all the values of mappings contained
    *  in this map with function <code>f</code>.
    *
-   *  @param f ...
+   *  @param f A function over key-value pairs
    */
-  def map[C](f: (A, B) => C): Map[A, C] = {
+  def map[C](f: Pair[A, B] => C): Map[A, C] = {
     var res = empty[C]
-    elements foreach {
-      case Pair(key, value) => res = res.update(key, f(key, value))
-    }
+    foreach {
+      case kv @ Pair(key, _) => res = res.update(key, f(kv)) }
     res
   }
 
   /** This method removes all the mappings for which the predicate
    *  <code>p</code> returns <code>false</code>.
    *
-   *  @param p ...
+   *  @param p A prediacte over key-value pairs
    */
-  def filter(p: (A, B) => Boolean): Map[A, B] = {
+  def filter(p: Pair[A, B] => Boolean): Map[A, B] = {
     var res = this
-    toList foreach {
-      case Pair(key, value) => if (!p(key, value)) { res = res.excl(key) }
+    foreach {
+      case kv @ Pair(key, _) => if (!p(kv)) { res = res.excl(key) }
     }
     res
   }

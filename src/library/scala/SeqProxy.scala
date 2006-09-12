@@ -96,9 +96,4 @@ trait SeqProxy[+A] extends Seq[A] with IterableProxy[A] {
   override def copyToArray[B >: A](xs: Array[B], start: Int): Array[B] =
     self.copyToArray(xs, start)
 
-  /** Transform this sequence into a list of all elements.
-   *
-   *  @return  a list which enumerates all elements of this sequence.
-   */
-  override def toList: List[A] = self.toList
 }

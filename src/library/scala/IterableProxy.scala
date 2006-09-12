@@ -101,4 +101,6 @@ trait IterableProxy[+A] extends Iterable[A] with Proxy {
    */
   override def sameElements[B >: A](that: Iterable[B]): Boolean =
     self.sameElements(that)
+
+  override def toList: List[A] = self.toList
 }

@@ -44,7 +44,7 @@ extends Map[A, B]
 
     def elements: Iterator[Pair[A, B]] = imap.elements;
 
-    override def foreach(f: (A, B) => Unit) = imap.foreach(f);
+    override def foreach(f: Pair[A, B] => Unit) = imap.foreach(f);
 
     override def toList: List[Pair[A, B]] = imap.toList;
 
@@ -56,9 +56,9 @@ extends Map[A, B]
 
     override def clear: Unit = { imap = imap.empty; }
 
-    override def map(f: (A, B) => B): Unit = { imap = imap.map(f); }
+    override def map(f: Pair[A, B] => B): Unit = { imap = imap.map(f); }
 
-    override def filter(p: (A, B) => Boolean): Unit = { imap = imap.filter(p); }
+    override def filter(p: Pair[A, B] => Boolean): Unit = { imap = imap.filter(p); }
 
     override def mappingToString(p: Pair[A, B]) = imap.mappingToString(p);
 }

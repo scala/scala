@@ -36,7 +36,9 @@ class ListSet[A] extends AnyRef with Set[A] {
    */
   def size: Int = 0
 
-  def empty = new ListSet[A]
+  override def isEmpty: Boolean = true;
+
+  def empty[B] = new ListSet[B]
 
   /** Checks if this set contains element <code>elem</code>.
    *
@@ -54,18 +56,17 @@ class ListSet[A] extends AnyRef with Set[A] {
    */
   def -(elem: A): ListSet[A] = this
 
-  /** Creates a new iterator over all elements contained in this
-   *  object.
+  /** Creates a new iterator over all elements contained in this set.
    *
    *  @return the new iterator
    */
-  def elements: Iterator[A] = toList.elements
-
-  /** Transform this set into a list of all elements.
-   *
-   *  @return  a list which enumerates all elements of this set.
-   */
-  override def toList: List[A] = Nil
+  def elements: Iterator[A] = new Iterator[A] {
+    var that: ListSet[A] = ListSet.this;
+    def hasNext = !that.isEmpty;
+    def next: A =
+      if (!hasNext) error("next on empty iterator")
+      else { val res = that.elem; that = that.next; res }
+  }
 
   /** Compares two sets for equality.
    *   Two set are equal iff they contain the same elements.
@@ -77,9 +78,11 @@ class ListSet[A] extends AnyRef with Set[A] {
     } else
       false
 
-  override def hashCode(): Int = 0
+  protected def elem: A = error("Set has no elelemnts");
+  protected def next: ListSet[A] = error("Next of an empty set");
 
-  protected class Node(elem: A) extends ListSet[A] {
+  [serializable]
+  protected class Node(override protected val elem: A) extends ListSet[A] {
     /** Returns the number of elements in this set.
      *
      *  @return number of set elements.
@@ -110,12 +113,6 @@ class ListSet[A] extends AnyRef with Set[A] {
       val tail = ListSet.this - e; new tail.Node(elem)
     }
 
-    /** Transform this set into a list of all elements.
-     *
-     *  @return  a list which enumerates all elements of this set.
-     */
-    override def toList: List[A] = elem :: ListSet.this.toList
-
-    override def hashCode(): Int = elem.hashCode() + ListSet.this.hashCode()
+    override protected def next: ListSet[A] = ListSet.this;
   }
 }

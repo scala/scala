@@ -41,9 +41,9 @@ trait MapProxy[A, B] extends Map[A, B] with collection.MapProxy[A, B] {
 
     override def clear: Unit = self.clear;
 
-    override def map(f: (A, B) => B): Unit = self.map(f);
+    override def map(f: Pair[A, B] => B): Unit = self.map(f);
 
-    override def filter(p: (A, B) => Boolean): Unit = self.filter(p);
+    override def filter(p: Pair[A, B] => Boolean): Unit = self.filter(p);
 
     override def toString() = self.toString();
 

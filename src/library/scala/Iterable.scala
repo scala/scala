@@ -178,4 +178,9 @@ trait Iterable[+A] {
     }
     !ita.hasNext && !itb.hasNext && res
   }
+
+  /**
+   * @return a list with all the elements of this iterable object
+   */
+  def toList: List[A] = elements.toList
 }
