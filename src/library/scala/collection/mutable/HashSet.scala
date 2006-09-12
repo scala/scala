@@ -9,8 +9,7 @@
 // $Id$
 
 
-package scala.collection.mutable;
-
+package scala.collection.mutable
 
 /** This class implements mutable sets using a hashtable.
  *
@@ -20,32 +19,32 @@ package scala.collection.mutable;
 [serializable]
 class HashSet[A] extends Set[A] with HashTable[A] {
 
-    def contains(elem: A): Boolean = findEntry(elem) match {
-        case None => false
-        case Some(_) => true
-    }
+  def contains(elem: A): Boolean = findEntry(elem) match {
+    case None => false
+    case Some(_) => true
+  }
 
-    def +=(elem: A): Unit = findEntry(elem) match {
-        case None => addEntry(elem);
-        case Some(_) =>
-    }
+  def +=(elem: A): Unit = findEntry(elem) match {
+    case None => addEntry(elem)
+    case Some(_) =>
+  }
 
-    def -=(elem: A): Unit = removeEntry(elem);
+  def -=(elem: A): Unit = removeEntry(elem)
 
-    def elements = entries;
+  def elements = entries
 
-    def clear = {
-        initTable(table);
-        tableSize = 0;
-    }
+  def clear = {
+    initTable(table)
+    tableSize = 0
+  }
 
-    protected type Entry = A;
+  protected type Entry = A
 
-    protected def entryKey(e: Entry) = e;
+  protected def entryKey(e: Entry) = e
 
-    override def clone(): Set[A] = {
-        val res = new HashSet[A];
-        res ++= this;
-        res
-    }
+  override def clone(): Set[A] = {
+    val res = new HashSet[A]
+    res ++= this
+    res
+  }
 }
