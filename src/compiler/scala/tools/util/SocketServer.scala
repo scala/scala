@@ -59,9 +59,13 @@ abstract class SocketServer {
 
       out = new PrintWriter(clientSocket.getOutputStream(), true)
       in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()))
+      val bufout = new BufferedOutputStream(clientSocket.getOutputStream, 10240)
 
-      session()
+      Console.withOut(bufout) {
+        session()
+      }
 
+      bufout.close()
       out.close()
       in.close()
       clientSocket.close()
