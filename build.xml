@@ -217,7 +217,7 @@ SETUP
       classpathref="quick.classpath"/>
     <taskdef
       name="quickdoc" classname="scala.tools.ant.Scaladoc"
-      classpathref="quick.classpath"/>
+      classpathref="starr.classpath"/> <!-- classpathref="quick.classpath"/> -->
   </target>
 
 <!-- ===========================================================================
