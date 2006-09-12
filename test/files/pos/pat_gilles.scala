@@ -6,6 +6,7 @@ abstract class Table2 {
     case Table2.CellUpdated(row, column) =>
       val foo = Table2.CellUpdated(2,2)
       Console.println("cuckoo")
+    case Table2.Gaga =>
   }}
 
 }
@@ -13,5 +14,5 @@ abstract class Table2 {
 object Table2 {
 
   case class CellUpdated(row: Int, column: Int)
-
+  case object Gaga
 }

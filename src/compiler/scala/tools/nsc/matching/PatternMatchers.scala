@@ -81,8 +81,6 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
                               Ident(root.symbol).setType(root.tpe));
       //Konsole.println("resultType =  "+resultType);
       //this.optimize = this.optimize && (settings.target.value == "jvm");
-      if(settings.statistics.value)
-	Console.println("could remove "+(nremoved+nsubstituted)+" ValDefs, "+nremoved+" by deleting and "+nsubstituted+" by substitution")
     }
 
 // ---
@@ -738,8 +736,8 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
 
     //////////// generator methods
 
-    def toTree(): Tree =
-      if (optimize && isSimpleIntSwitch())
+    def toTree(): Tree = {
+     val t = if (optimize && isSimpleIntSwitch())
         intSwitchToTree()
       // else if (false && optimize && isSimpleSwitch())
       //  switchToTree()
@@ -747,7 +745,10 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
         //print()
         generalSwitchToTree()
       }
-
+      if(settings.statistics.value)
+	Console.println("could remove "+(nremoved+nsubstituted)+" ValDefs, "+nremoved+" by deleting and "+nsubstituted+" by substitution")
+      return t
+    }
     case class Break(res:Boolean) extends java.lang.Throwable
     case class Break2() extends java.lang.Throwable
 
@@ -814,6 +815,7 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
         while (({node = node.or; node}) != null) {
           node match {
             case ConstantPat(_) => ;
+            case DefaultPat() => // experimental: enable simple int switch with default
             case _ =>
               return false;
           }
@@ -912,8 +914,9 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
       while (node != null) {
         node match {
           case DefaultPat() =>
-            if (defaultBody1 != null)
-              scala.Predef.error("not your day today");
+            //experimental: allow default body
+            //if (defaultBody1 != null)
+            //  scala.Predef.error("not your day today");
             defaultBody1 = node.and.bodyToTree();
             node = node.or;
 
@@ -1177,7 +1180,7 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
                   }
                   theRef = handleOuter(theRef)
 
-                  if(node.getTpe().decls.lookup(nme.OUTER) != NoSymbol) { // some guys don't have outers :-(
+                  if(node.getTpe().decls.lookup(nme.OUTER) != NoSymbol) { // some guys don't have outers
                     cond = And(cond,
                                Eq(Apply(Select(
                                  gen.mkAsInstanceOf(selector.duplicate, node.getTpe(), true), nme.OUTER),List()), theRef))
@@ -1187,34 +1190,35 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
               }
             }
             return myIf(cond,
-                      Block(
-                        List(ValDef(casted,
-                                    gen.mkAsInstanceOf(selector.duplicate, node.getTpe(), true))),
-                            toTree(node.and)),
+                        squeezedBlock(Block(
+                          List(ValDef(casted,
+                                      gen.mkAsInstanceOf(selector.duplicate, node.getTpe(), true))),
+                          toTree(node.and))),
                       toTree(node.or, selector.duplicate));
+
           case SequencePat(casted, len) =>
             return (
-          Or(
-            And(
-              And(gen.mkIsInstanceOf(selector.duplicate, node.getTpe()),
-                     Equals(
-                       typed(
-                         Apply(
-                           Select(
-                             gen.mkAsInstanceOf(selector.duplicate,
-                                                node.getTpe(),
-                                                true),
-                             node.getTpe().member(nme.length) /*defs.Seq_length*/),
-                           List())
-                       ),
-                       typed(
-                         Literal(Constant(len))
-                       ))),
-              Block(
-                List(
-                  ValDef(casted,
-                         gen.mkAsInstanceOf(selector.duplicate, node.getTpe(), true))),
-                  toTree(node.and))),
+              Or(
+                And(
+                  And(gen.mkIsInstanceOf(selector.duplicate, node.getTpe()),
+                      Equals(
+                        typed(
+                          Apply(
+                            Select(
+                              gen.mkAsInstanceOf(selector.duplicate,
+                                                 node.getTpe(),
+                                                 true),
+                              node.getTpe().member(nme.length) /*defs.Seq_length*/),
+                            List())
+                        ),
+                        typed(
+                          Literal(Constant(len))
+                        ))),
+                  squeezedBlock(Block(
+                    List(
+                      ValDef(casted,
+                             gen.mkAsInstanceOf(selector.duplicate, node.getTpe(), true))),
+                    toTree(node.and)))),
             toTree(node.or, selector.duplicate)));
 
           case RightIgnoringSequencePat(casted, castedRest, minlen) =>
@@ -1256,8 +1260,6 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
             toTree(node.or, selector.duplicate));
 
           case ConstantPat(value) =>
-            //Console.println("selector = "+selector);
-            //Console.println("selector.tpe = "+selector.tpe);
             return myIf(Equals(selector.duplicate,
                              typed(Literal(Constant(value))).setType(node.tpe)),
                       toTree(node.and),

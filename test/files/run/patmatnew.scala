@@ -1,3 +1,18 @@
+trait Treez requires Shmeez {
+  abstract class Tree
+  case class Beez(i:Int) extends Tree
+  case object HagbardCeline extends Tree
+}
+
+trait Shmeez extends AnyRef with Treez {
+  val tree: Tree
+
+  def foo = tree match {
+    case Beez(2) => 1
+    case HagbardCeline => 0
+  }
+}
+
 object Test {
   import scala.testing.SUnit._
 

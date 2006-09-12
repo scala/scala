@@ -2,6 +2,7 @@ trait Ops requires MyCodes {
   abstract class Instru
   object opcodes {
     case class SWITCH(i:Int) extends Instru
+    case object EmptyInstr extends Instru
   }
 }
 
@@ -12,6 +13,7 @@ trait Blox requires MyCodes {
 
     def bar = foo match {
       case SWITCH(i) => i
+      case EmptyInstr => 0
     }
   }
 }
