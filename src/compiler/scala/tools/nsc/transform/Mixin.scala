@@ -472,7 +472,9 @@ abstract class Mixin extends InfoTransform {
                 if (sym.isSetter) Assign(accessedRef, Ident(vparams.head)) else accessedRef})
             } else if (sym.isModule && !(sym hasFlag LIFTED | BRIDGE)) {
               // add modules
+              Console.println("add module "+sym+sym.hasFlag(EXPANDEDNAME))
               val vdef = gen.mkModuleVarDef(sym)
+              Console.println("add module "+sym+sym.hasFlag(EXPANDEDNAME)+":"+vdef.symbol.tpe)
               addDef(position(sym), vdef)
               addDef(position(sym), gen.mkModuleAccessDef(sym, vdef.symbol))
             } else if (!sym.isMethod) {

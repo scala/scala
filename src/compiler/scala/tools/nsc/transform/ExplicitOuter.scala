@@ -64,34 +64,42 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
    */
   def transformInfo(sym: Symbol, tp: Type): Type = tp match {
     case MethodType(formals, restpe) =>
-      if (sym.owner.isTrait && ((sym hasFlag SUPERACCESSOR) || sym.isModule)) // 5
+      if (sym.owner.isTrait && ((sym hasFlag SUPERACCESSOR) || sym.isModule)) { // 5
+        Console.println("make not private: "+sym+" "+sym.owner)
         sym.makeNotPrivate(sym.owner)
+        Console.println("made not private: "+sym)
+      }
       if (sym.owner.isTrait && (sym hasFlag PROTECTED)) sym setFlag notPROTECTED // 6
       if (sym.isClassConstructor && isInner(sym.owner)) // 1
         MethodType(sym.owner.outerClass.thisType :: formals, restpe)
       else tp
-    case ClassInfoType(parents, decls, clazz) if (isInner(clazz) && !(clazz hasFlag INTERFACE)) =>
-      val decls1 = newScope(decls.toList)
-      val outerAcc = clazz.newMethod(clazz.pos, nme.OUTER) // 3
-      outerAcc.expandName(clazz)
-      val restpe = if (clazz.isTrait) clazz.outerClass.tpe else clazz.outerClass.thisType
-      decls1 enter (
-        clazz.newOuterAccessor(clazz.pos)
-        setInfo MethodType(List(), restpe))
+    case ClassInfoType(parents, decls, clazz) =>
+      var decls1 = decls
+      if (isInner(clazz) && !(clazz hasFlag INTERFACE)) {
+        decls1 = newScope(decls.toList)
+        val outerAcc = clazz.newMethod(clazz.pos, nme.OUTER) // 3
+        outerAcc.expandName(clazz)
+        val restpe = if (clazz.isTrait) clazz.outerClass.tpe else clazz.outerClass.thisType
+        decls1 enter (
+          clazz.newOuterAccessor(clazz.pos)
+          setInfo MethodType(List(), restpe))
+        if (!clazz.isTrait) // 2
+          //todo: avoid outer field if superclass has same outer value?
+          decls1 enter (
+            clazz.newValue(clazz.pos, nme.getterToLocal(nme.OUTER))
+            setFlag (PROTECTED | PARAMACCESSOR)
+            setInfo clazz.outerClass.thisType)
+      }
       if (!parents.isEmpty) {
         for (val mc <- clazz.mixinClasses) {
           val mixinOuterAcc: Symbol = atPhase(phase.next)(outerAccessor(mc))
-          if (mixinOuterAcc != NoSymbol)
+          if (mixinOuterAcc != NoSymbol) {
+            if (decls1 eq decls) decls1 = newScope(decls.toList)
             decls1 enter (mixinOuterAcc.cloneSymbol(clazz) resetFlag DEFERRED)
+          }
         }
       }
-      if (!clazz.isTrait) // 2
-        //todo: avoid outer field if superclass has same outer value?
-        decls1 enter (
-          clazz.newValue(clazz.pos, nme.getterToLocal(nme.OUTER))
-          setFlag (PROTECTED | PARAMACCESSOR)
-          setInfo clazz.outerClass.thisType)
-      ClassInfoType(parents, decls1, clazz)
+      if (decls1 eq decls) tp else ClassInfoType(parents, decls1, clazz)
     case PolyType(tparams, restp) =>
       val restp1 = transformInfo(sym, restp)
       if (restp eq restp1) tp else PolyType(tparams, restp1)
@@ -212,7 +220,7 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
      */
     def mixinOuterAccessorDef(mixinClass: Symbol): Tree = {
       val outerAcc = outerAccessor(mixinClass).overridingSymbol(currentClass)
-      if (outerAcc == NoSymbol) Console.println("cc "+currentClass+":"+currentClass.info.decls)//debug
+      if (outerAcc == NoSymbol) Console.println("cc "+currentClass+":"+currentClass.info.decls+" at "+phase)//debug
       assert(outerAcc != NoSymbol)
       val path = gen.mkAttributedQualifier(currentClass.thisType.baseType(mixinClass).prefix)
       val rhs = ExplicitOuterTransformer.this.transform(path)

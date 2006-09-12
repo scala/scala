@@ -789,7 +789,7 @@ trait Symbols requires SymbolTable {
      *  Do the same for any accessed symbols or setters/getters
      */
     def expandName(base: Symbol): unit =
-      if (this != NoSymbol && !hasFlag(EXPANDEDNAME)) {
+      if (this.isTerm && this != NoSymbol && !hasFlag(EXPANDEDNAME)) {
         setFlag(EXPANDEDNAME)
         if (hasFlag(ACCESSOR)) {
           accessed.expandName(base)
