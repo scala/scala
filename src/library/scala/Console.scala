@@ -58,8 +58,8 @@ object Console {
   private val inFluid = new Fluid[BufferedReader](
     new BufferedReader(new InputStreamReader(java.lang.System.in)))
 
-  private def out = outFluid.value
-  private def in = inFluid.value
+  def out = outFluid.value
+  def in = inFluid.value
 
   /** Set the default output stream.
    *
