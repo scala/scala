@@ -319,9 +319,11 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
             super.transform(copy.Apply(tree, sel, outerVal :: args))
 
         case Match(selector, cases) => // <----- transmatch hook
-          val tid = unit.fresh.newName("tidmark")
-          if (settings.debug.value)
-            Console.println("transforming patmat with tidmark "+tid+" ncases = "+cases.length)
+          val tid = if (settings.debug.value) {
+            val q = unit.fresh.newName("tidmark")
+            Console.println("transforming patmat with tidmark "+q+" ncases = "+cases.length)
+            q
+          } else null
           if ((cases.length > 1) && (treeInfo.isDefaultCase(cases(0))))
             assert(false,"transforming too much, " + tid)
 

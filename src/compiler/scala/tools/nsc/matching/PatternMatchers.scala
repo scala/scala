@@ -1173,17 +1173,24 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
             if(!outerAlwaysEqual(casted.tpe, selector.tpe)) {
               casted.tpe match {
                 case TypeRef(prefix,_,_) if (prefix.symbol.isTerm && !prefix.symbol.isPackage) =>
+                  //var theRef = gen.mkAttributedRef(prefix.symbol) // needs explicitouter treatment
                   var theRef = gen.mkAttributedRef(prefix.prefix, prefix.symbol) // needs explicitouter treatment
                   if(global.settings.debug.value) {
                     Console.println("theRef "+theRef)
+
                     Console.println("handleOuter(theRef) "+handleOuter(theRef))
+                    Console.println("casted.expandedName "+casted.tpe.symbol.expandedName(nme.OUTER))
+                    Console.println("prefix.expandedName "+prefix.symbol.expandedName(nme.OUTER))
+                    Console.println("prefix.prefix.expandedName "+prefix.prefix.symbol.expandedName(nme.OUTER))
                   }
                   theRef = handleOuter(theRef)
 
-                  if(node.getTpe().decls.lookup(nme.OUTER) != NoSymbol) { // some guys don't have outers
+                val outername = casted.tpe.symbol.expandedName(nme.OUTER)
+
+                  if(node.getTpe().decls.lookup(outername) != NoSymbol) { // some guys don't have outers
                     cond = And(cond,
                                Eq(Apply(Select(
-                                 gen.mkAsInstanceOf(selector.duplicate, node.getTpe(), true), nme.OUTER),List()), theRef))
+                                 gen.mkAsInstanceOf(selector.duplicate, node.getTpe(), true), outername),List()), theRef))
                   }
                 case _ =>
                   //ignore ;
