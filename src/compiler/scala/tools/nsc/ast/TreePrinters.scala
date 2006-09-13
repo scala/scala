@@ -6,7 +6,7 @@
 
 package scala.tools.nsc.ast
 
-import java.io.{OutputStream,PrintWriter}
+import java.io.{OutputStream,Writer,PrintWriter}
 import symtab.Flags._
 
 abstract class TreePrinters {
@@ -354,5 +354,22 @@ abstract class TreePrinters {
 
   def create(writer: PrintWriter): TreePrinter = new TreePrinter(writer)
   def create(stream: OutputStream): TreePrinter = create(new PrintWriter(stream))
-  def create(): TreePrinter = create(Console.out)
+  def create(): TreePrinter = {
+    /** A writer that writes to the current Console and
+      * is sensitive to replacement of the Console's
+      * output stream.
+      */
+    object ConsoleWriter extends Writer {
+      override def write(str: String): unit = Console.print(str)
+
+      def write(cbuf: Array[char], off: int, len: int): unit = {
+        val str = new String(cbuf, off, len)
+        write(str)
+      }
+
+      def close = { /* do nothing */ }
+      def flush = { /* do nothing */ }
+    }
+    create(new PrintWriter(ConsoleWriter))
+  }
 }
