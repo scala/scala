@@ -1,12 +1,13 @@
-/* NSC -- new scala compiler
- * Copyright 2005 LAMP/EPFL
- * @author
+/* NSC -- new Scala compiler
+ * Copyright 2005-2006 LAMP/EPFL
+ * @author Martin Odersky
  */
 // $Id$
-package scala.tools.nsc.typechecker;
 
-import scala.collection.mutable.ListBuffer;
-import nsc.symtab.Flags._;
+package scala.tools.nsc.typechecker
+
+import scala.collection.mutable.ListBuffer
+import nsc.symtab.Flags._
 
 /** This phase adds super accessors for all super calls that
  *  either appear in a trait or have as a target a member of some outer class.
@@ -16,24 +17,29 @@ import nsc.symtab.Flags._;
  *  or are overridden by an abstract override.
  *  Finally, the phase also mangles the names of class-members which are private
  *  up to an enclosing non-package class, in order to avoid overriding conflicts.
+ *
+ *  @author  Martin Odersky
+ *  @version 1.0
  */
 abstract class SuperAccessors extends transform.Transform {
   // inherits abstract value `global' and class `Phase' from Transform
 
-  import global._;
-  import posAssigner.atPos;
-  import typer.typed;
+  import global._
+  import posAssigner.atPos
+  import typer.typed
 
   /** the following two members override abstract members in Transform */
-  val phaseName: String = "superaccessors";
+  val phaseName: String = "superaccessors"
 
-  protected def newTransformer(unit: CompilationUnit): Transformer = new SuperAccTransformer(unit);
+  protected def newTransformer(unit: CompilationUnit): Transformer =
+    new SuperAccTransformer(unit)
 
   class SuperAccTransformer(unit: CompilationUnit) extends Transformer {
-    private var validCurrentOwner = true;
-    private var accDefs: List[Pair[Symbol, ListBuffer[Tree]]] = List();
+    private var validCurrentOwner = true
+    private var accDefs: List[Pair[Symbol, ListBuffer[Tree]]] = List()
 
-    private def accDefBuf(clazz: Symbol) = accDefs.dropWhile(._1.!=(clazz)).head._2;
+    private def accDefBuf(clazz: Symbol) =
+      accDefs.dropWhile(._1.!=(clazz)).head._2
 
     private def transformArgs(args: List[Tree], formals: List[Type]) = {
       if (!formals.isEmpty && formals.last.symbol == definitions.ByNameParamClass)
@@ -56,51 +62,51 @@ abstract class SuperAccessors extends transform.Transform {
         }
         super.transform(tree)
       case Template(parents, body) =>
-	val ownAccDefs = new ListBuffer[Tree];
-	accDefs = Pair(currentOwner, ownAccDefs) :: accDefs;
-	val body1 = transformTrees(body);
-	accDefs = accDefs.tail;
-	copy.Template(tree, parents, ownAccDefs.toList ::: body1);
+        val ownAccDefs = new ListBuffer[Tree]
+        accDefs = Pair(currentOwner, ownAccDefs) :: accDefs;
+        val body1 = transformTrees(body)
+        accDefs = accDefs.tail
+        copy.Template(tree, parents, ownAccDefs.toList ::: body1)
       case Select(qual @ This(_), name) =>
-        val sym = tree.symbol;
- 	if ((sym hasFlag PARAMACCESSOR) && (sym.alias != NoSymbol)) {
+        val sym = tree.symbol
+         if ((sym hasFlag PARAMACCESSOR) && (sym.alias != NoSymbol)) {
           val result = typed {
             Select(
               Super(qual.symbol, nme.EMPTY.toTypeName/*qual.symbol.info.parents.head.symbol.name*/) setPos qual.pos,
               sym.alias) setPos tree.pos
           }
-	  if (settings.debug.value)
-	    System.out.println("alias replacement: " + tree + " ==> " + result);//debug
+          if (settings.debug.value)
+            System.out.println("alias replacement: " + tree + " ==> " + result);//debug
           transform(result)
         } else tree
       case Select(sup @ Super(_, mix), name) =>
-        val sym = tree.symbol;
-	val clazz = sup.symbol;
+        val sym = tree.symbol
+        val clazz = sup.symbol
         if (sym hasFlag DEFERRED) {
-	  val member = sym.overridingSymbol(clazz);
-	  if (mix != nme.EMPTY.toTypeName || member == NoSymbol ||
-	      !((member hasFlag ABSOVERRIDE) && member.isIncompleteIn(clazz)))
-	    unit.error(tree.pos, ""+sym+sym.locationString+" is accessed from super. It may not be abstract "+
+          val member = sym.overridingSymbol(clazz);
+          if (mix != nme.EMPTY.toTypeName || member == NoSymbol ||
+              !((member hasFlag ABSOVERRIDE) && member.isIncompleteIn(clazz)))
+            unit.error(tree.pos, ""+sym+sym.locationString+" is accessed from super. It may not be abstract "+
                                  "unless it is overridden by a member declared `abstract' and `override'");
         }
-	if (tree.isTerm && mix == nme.EMPTY.toTypeName &&
-	    (clazz.isTrait || clazz != currentOwner.enclClass || !validCurrentOwner)) {
-	  val supername = nme.superName(sym.name);
-	  var superAcc = clazz.info.decl(supername).suchThat(.alias.==(sym));
-	  if (superAcc == NoSymbol) {
-	    if (settings.debug.value) log("add super acc " + sym + sym.locationString + " to `" + clazz);//debug
+        if (tree.isTerm && mix == nme.EMPTY.toTypeName &&
+            (clazz.isTrait || clazz != currentOwner.enclClass || !validCurrentOwner)) {
+          val supername = nme.superName(sym.name)
+          var superAcc = clazz.info.decl(supername).suchThat(.alias.==(sym))
+          if (superAcc == NoSymbol) {
+            if (settings.debug.value) log("add super acc " + sym + sym.locationString + " to `" + clazz);//debug
             superAcc =
               clazz.newMethod(tree.pos, supername)
-		.setFlag(SUPERACCESSOR | PRIVATE)
-		.setInfo(clazz.thisType.memberType(sym))
-		.setAlias(sym)
+                .setFlag(SUPERACCESSOR | PRIVATE)
+                .setInfo(clazz.thisType.memberType(sym))
+                .setAlias(sym)
             clazz.info.decls enter superAcc;
-	    accDefBuf(clazz) += typed(DefDef(superAcc, vparamss => EmptyTree))
-	  }
-	  atPos(sup.pos) {
-	    Select(gen.mkAttributedThis(clazz), superAcc) setType tree.tpe;
-	  }
-	} else tree
+            accDefBuf(clazz) += typed(DefDef(superAcc, vparamss => EmptyTree))
+          }
+          atPos(sup.pos) {
+            Select(gen.mkAttributedThis(clazz), superAcc) setType tree.tpe;
+          }
+        } else tree
       case Apply(fn, args) =>
         copy.Apply(tree, transform(fn), transformArgs(args, fn.tpe.paramTypes))
       case Function(vparams, body) =>
@@ -117,10 +123,10 @@ abstract class SuperAccessors extends transform.Transform {
     }
 
     private def withInvalidOwner[A](trans: => A): A = {
-      val prevValidCurrentOwner = validCurrentOwner;
-      validCurrentOwner = false;
-      val result = trans;
-      validCurrentOwner = prevValidCurrentOwner;
+      val prevValidCurrentOwner = validCurrentOwner
+      validCurrentOwner = false
+      val result = trans
+      validCurrentOwner = prevValidCurrentOwner
       result
     }
   }
