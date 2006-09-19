@@ -174,7 +174,7 @@ trait Infer requires Analyzer {
       functionType(formals, normalize(restpe))
     case PolyType(List(), restpe) =>
       if (util.Statistics.enabled) normP = normP + 1;
-      normalize(restpe);
+      normalize(restpe)
     case tp1 =>
       if (util.Statistics.enabled) normO = normO + 1;
       tp1
@@ -221,13 +221,13 @@ trait Infer requires Analyzer {
     );
 
     def foundReqMsg(found: Type, req: Type): String =
-      ";\n found   : " + found.toLongString + "\n required: " + req;
+      ";\n found   : " + found.toLongString + "\n required: " + req
 
     def error(pos: PositionType, msg: String): unit =
-      context.error(pos, msg);
+      context.error(pos, msg)
 
     def errorTree(tree: Tree, msg: String): Tree = {
-      if (!tree.isErroneous) error(tree.pos, msg);
+      if (!tree.isErroneous) error(tree.pos, msg)
       setError(tree)
     }
 

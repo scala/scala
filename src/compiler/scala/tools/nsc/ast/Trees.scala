@@ -736,7 +736,7 @@ trait Trees requires Global {
   }
 
   class LazyTreeCopier(copy: TreeCopier) extends TreeCopier {
-    def this() = this(new StrictTreeCopier);
+    def this() = this(new StrictTreeCopier)
     def ClassDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[AbsTypeDef], tpt: Tree, impl: Template) = tree match {
       case t @ ClassDef(mods0, name0, tparams0, tpt0, impl0)
       if (mods0 == mods && (name0 == name) && (tparams0 == tparams) && (tpt0 == tpt) && (impl0 == impl)) => t
@@ -939,8 +939,8 @@ trait Trees requires Global {
   }
 
   abstract class Transformer {
-    val copy: TreeCopier = new LazyTreeCopier;
-    protected var currentOwner: Symbol = definitions.RootClass;
+    val copy: TreeCopier = new LazyTreeCopier
+    protected var currentOwner: Symbol = definitions.RootClass
     protected def currentMethod = currentOwner.enclMethod
     protected def currentClass = currentOwner.enclClass
     protected def currentPackage = currentOwner.toplevelClass.owner
@@ -1064,7 +1064,7 @@ trait Trees requires Global {
     def transformStats(stats: List[Tree], exprOwner: Symbol): List[Tree] =
       List.mapConserve(stats)(stat =>
         if (exprOwner != currentOwner && stat.isTerm) atOwner(exprOwner)(transform(stat))
-        else transform(stat)) filter (EmptyTree !=);
+        else transform(stat)) filter (EmptyTree !=)
     def transformUnit(unit: CompilationUnit): unit = { unit.body = transform(unit.body) }
 
     def atOwner[A](owner: Symbol)(trans: => A): A = {
@@ -1077,7 +1077,7 @@ trait Trees requires Global {
   }
 
   class Traverser {
-    protected var currentOwner: Symbol = definitions.RootClass;
+    protected var currentOwner: Symbol = definitions.RootClass
     def traverse(tree: Tree): unit = tree match {
       case EmptyTree =>
         ;

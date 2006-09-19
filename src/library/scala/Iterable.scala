@@ -11,7 +11,6 @@
 
 package scala
 
-
 /** This object ...
  *
  *  @author  Matthias Zenger
@@ -23,15 +22,15 @@ object Iterable {
     new Ordered[Iterable[A]] {
       def compare[B >: Iterable[A] <% Ordered[B]](that: B): Int = that match {
         case y: Iterable[A] =>
-          val xs = x.elements;
-	  val ys = y.elements;
-	  var res = 0;
-	  while (xs.hasNext && ys.hasNext && (res == 0)) {
-            res = xs.next compare ys.next;
+          val xs = x.elements
+          val ys = y.elements
+          var res = 0
+          while (xs.hasNext && ys.hasNext && (res == 0)) {
+            res = xs.next compare ys.next
           }
-	  if (xs.hasNext) 1
-	  else if (ys.hasNext) -1
-          else res;
+          if (xs.hasNext) 1
+          else if (ys.hasNext) -1
+          else res
         case _ =>
           -(that compare x)
       }
@@ -40,11 +39,11 @@ object Iterable {
   /** The minimum element of a non-empty sequence of ordered elements */
   def min[A <% Ordered[A]](seq: Iterable[A]): A = {
     val xs = seq.elements
-    if (!xs.hasNext) Predef.error("min(<empty>)");
+    if (!xs.hasNext) Predef.error("min(<empty>)")
     var min = xs.next
     while (xs.hasNext) {
       val x = xs.next
-      if (x < min) min = x;
+      if (x < min) min = x
     }
     min
   }
@@ -52,11 +51,11 @@ object Iterable {
   /** The maximum element of a non-empty sequence of ordered elements */
   def max[A <% Ordered[A]](seq: Iterable[A]): A = {
     val xs = seq.elements
-    if (!xs.hasNext) Predef.error("max(<empty>)");
+    if (!xs.hasNext) Predef.error("max(<empty>)")
     var max = xs.next
     while (xs.hasNext) {
       val x = xs.next
-      if (max < x) max = x;
+      if (max < x) max = x
     }
     max
   }
@@ -123,17 +122,19 @@ trait Iterable[+A] {
   def find(p: A => Boolean): Option[A] = elements.find(p)
 
   /** Returns index of the first element satisying a predicate, or -1.
-   *  @param p the predicate
-   *  @return the index of the first element satisfying <code>p</code>, or -1 if such an element does not exist
+   *
+   *  @param  p the predicate
+   *  @return   the index of the first element satisfying <code>p</code>,
+   *            or -1 if such an element does not exist
    */
   def indexOf(p: A => Boolean): Int = {
     val it = elements
-    var i  = 0
-    while(it.hasNext)
-      if(p(it.next))
-	return i
+    var i = 0
+    while (it.hasNext)
+      if (p(it.next))
+        return i
       else
-	i = i + 1
+        i = i + 1
     return -1
   }
 

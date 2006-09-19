@@ -11,7 +11,7 @@ import scala.tools.nsc.util.Position
 
 /** This trait ...
  *
- *  @author Martin Odersky
+ *  @author  Martin Odersky
  *  @version 1.0
  */
 trait Contexts requires Analyzer {
@@ -62,8 +62,8 @@ trait Contexts requires Analyzer {
     var sc = startContext
     while (sc != NoContext) {
       sc.tree match {
-	case Import(qual, _) => qual.tpe = singleType(qual.symbol.owner.thisType, qual.symbol)
-	case _ =>
+        case Import(qual, _) => qual.tpe = singleType(qual.symbol.owner.thisType, qual.symbol)
+        case _ =>
       }
       sc = sc.outer
     }
@@ -78,7 +78,7 @@ trait Contexts requires Analyzer {
     var enclClass: Context = _              // The next outer context whose tree is a
                                             // template or package definition
     var enclMethod: Context = _             // The next outer context whose tree is a method
-    var variance: int = _                   // Variance relative to enclosing class.
+    var variance: int = _                   // Variance relative to enclosing class
     private var _undetparams: List[Symbol] = List() // Undetermined type parameters,
                                                     // not inherited to child contexts
     var depth: int = 0
@@ -101,6 +101,14 @@ trait Contexts requires Analyzer {
       _undetparams = ps
     }
 
+    /**
+     *  @param unit    ...
+     *  @param tree    ...
+     *  @param owner   ...
+     *  @param scope   ...
+     *  @param imports ...
+     *  @return        ...
+     */
     def make(unit: CompilationUnit, tree: Tree, owner: Symbol,
              scope: Scope, imports: List[ImportInfo]): Context = {
       val c = new Context
@@ -110,11 +118,11 @@ trait Contexts requires Analyzer {
       c.scope = scope
       tree match {
         case Template(_, _) | PackageDef(_, _) =>
-	  c.enclClass = c
+          c.enclClass = c
           c.prefix = c.owner.thisType
           c.inConstructorSuffix = false
-	case _ =>
-	  c.enclClass = this.enclClass
+        case _ =>
+          c.enclClass = this.enclClass
           c.prefix =
             if (c.owner != this.owner && c.owner.isTerm) NoPrefix
             else this.prefix
@@ -190,12 +198,12 @@ trait Contexts requires Analyzer {
       c
     }
 
-    def error(pos: Int, er: Error): Unit = {
-      val msg = er.getMessage()
+    def error(pos: Int, err: Error): Unit = {
+      val msg = err.getMessage()
       if (reportGeneralErrors)
         unit.error(pos, if (checking) "**** ERROR DURING INTERNAL CHECKING ****\n" + msg else msg)
       else
-        throw er
+        throw err
     }
 
     def error(pos: PositionType, msg: String): unit =
@@ -204,11 +212,19 @@ trait Contexts requires Analyzer {
       else
         throw new TypeError(pos, msg)
 
-    def ambiguousError(pos: PositionType, pre: Type, sym1: Symbol, sym2: Symbol, rest: String): unit = {
+    /**
+     *  @param pos  ...
+     *  @param pre  ...
+     *  @param sym1 ...
+     *  @param sym2 ...
+     *  @param rest ...
+     */
+    def ambiguousError(pos: PositionType, pre: Type, sym1: Symbol,
+                       sym2: Symbol, rest: String): unit = {
       val msg =
-	("ambiguous reference to overloaded definition,\n" +
-	 "both " + sym1 + sym1.locationString + " of type " + pre.memberType(sym1) +
-	 "\nand  " + sym2 + sym2.locationString + " of type " + pre.memberType(sym2) +
+        ("ambiguous reference to overloaded definition,\n" +
+         "both " + sym1 + sym1.locationString + " of type " + pre.memberType(sym1) +
+         "\nand  " + sym2 + sym2.locationString + " of type " + pre.memberType(sym2) +
          "\nmatch " + rest)
       if (reportAmbiguousErrors) {
         if (!pre.isErroneous && !sym1.isErroneous && !sym2.isErroneous)
@@ -239,31 +255,33 @@ trait Contexts requires Analyzer {
            " " + scope.toList + "\n:: " + outer.toString()
     }
 
-    /** Is `sym' accessible as a member of tree `site' with type `pre' in
-     *  current context?
+    /** Is <code>sym</code> accessible as a member of tree `site' with type
+     *  <code>pre</code> in current context?
      *
-     *  @param sym ...
-     *  @param pre ...
+     *  @param sym         ...
+     *  @param pre         ...
      *  @param superAccess ...
+     *  @return            ...
      */
     def isAccessible(sym: Symbol, pre: Type, superAccess: boolean): boolean = {
 
       /** Are we inside definition of `owner'? */
       def accessWithin(owner: Symbol): boolean = {
-	var c = this
-	while (c != NoContext && c.owner != owner) {
-	  if (c.outer == null) assert(false, "accessWithin(" + owner + ") " + c);//debug
-	  if (c.outer.enclClass == null) assert(false, "accessWithin(" + owner + ") " + c);//debug
-	  c = c.outer.enclClass
-	}
-	c != NoContext
+        var c = this
+        while (c != NoContext && c.owner != owner) {
+          if (c.outer == null) assert(false, "accessWithin(" + owner + ") " + c);//debug
+          if (c.outer.enclClass == null) assert(false, "accessWithin(" + owner + ") " + c);//debug
+          c = c.outer.enclClass
+        }
+        c != NoContext
       }
 
       /** Is `clazz' a subclass of an enclosing class? */
       def isSubClassOfEnclosing(clazz: Symbol): boolean = {
-	var c = this.enclClass
-	while (c != NoContext && !clazz.isNonBottomSubClass(c.owner)) c = c.outer.enclClass
-	c != NoContext
+        var c = this.enclClass
+        while (c != NoContext && !clazz.isNonBottomSubClass(c.owner))
+          c = c.outer.enclClass
+        c != NoContext
       }
 
       (pre == NoPrefix) || {
@@ -275,7 +293,7 @@ trait Contexts requires Analyzer {
          ||
          (sym hasFlag PROTECTED) &&
          (superAccess ||
-	  (pre.widen.symbol.isNonBottomSubClass(sym.owner) &&
+          (pre.widen.symbol.isNonBottomSubClass(sym.owner) &&
            isSubClassOfEnclosing(pre.widen.symbol))))
       }
     }
@@ -302,38 +320,42 @@ trait Contexts requires Analyzer {
     private def collectImplicitImports(imp: ImportInfo): List[ImplicitInfo] = {
       val pre = imp.qual.tpe
       def collect(sels: List[Pair[Name, Name]]): List[ImplicitInfo] = sels match {
-	case List() => List()
-	case List(Pair(nme.WILDCARD, _)) => collectImplicits(pre.implicitMembers, pre)
-	case Pair(from, to) :: sels1 =>
-	  var impls = collect(sels1) filter (info => info.name != from)
-	  if (to != nme.WILDCARD) {
-	    val sym = imp.importedSymbol(to)
-	    if (sym.hasFlag(IMPLICIT)) impls = new ImplicitInfo(to, pre, sym) :: impls
-	  }
-	  impls
+        case List() => List()
+        case List(Pair(nme.WILDCARD, _)) => collectImplicits(pre.implicitMembers, pre)
+        case Pair(from, to) :: sels1 =>
+          var impls = collect(sels1) filter (info => info.name != from)
+          if (to != nme.WILDCARD) {
+            val sym = imp.importedSymbol(to)
+            if (sym.hasFlag(IMPLICIT)) impls = new ImplicitInfo(to, pre, sym) :: impls
+          }
+          impls
       }
-      if (settings.debug.value) log("collect implicit imports " + imp + "=" + collect(imp.tree.selectors));//debug
+      if (settings.debug.value)
+        log("collect implicit imports " + imp + "=" + collect(imp.tree.selectors))//debug
       collect(imp.tree.selectors)
     }
 
     def implicitss: List[List[ImplicitInfo]] = {
       if (implicitsRunId != currentRunId) {
-	implicitsRunId = currentRunId
+        implicitsRunId = currentRunId
         implicitsCache = List()
-	val newImplicits: List[ImplicitInfo] =
-	  if (owner != outer.owner && owner.isClass && !owner.isPackageClass) {
+        val newImplicits: List[ImplicitInfo] =
+          if (owner != outer.owner && owner.isClass && !owner.isPackageClass) {
             if (!owner.isInitialized) return outer.implicitss
-	    if (settings.debug.value) log("collect member implicits " + owner + ", implicit members = " + owner.thisType.implicitMembers);//debug
-	    collectImplicits(owner.thisType.implicitMembers, owner.thisType)
-	  } else if (scope != outer.scope && !owner.isPackageClass) {
-	    if (settings.debug.value) log("collect local implicits " + scope.toList);//debug
-	    collectImplicits(scope.toList, NoPrefix)
-	  } else if (imports != outer.imports) {
-	    assert(imports.tail == outer.imports)
-	    collectImplicitImports(imports.head)
-	  } else List()
-	implicitsCache = if (newImplicits.isEmpty) outer.implicitss
-			 else newImplicits :: outer.implicitss
+            if (settings.debug.value)
+              log("collect member implicits " + owner + ", implicit members = " +
+                  owner.thisType.implicitMembers)//debug
+            collectImplicits(owner.thisType.implicitMembers, owner.thisType)
+          } else if (scope != outer.scope && !owner.isPackageClass) {
+            if (settings.debug.value)
+              log("collect local implicits " + scope.toList)//debug
+            collectImplicits(scope.toList, NoPrefix)
+          } else if (imports != outer.imports) {
+            assert(imports.tail == outer.imports)
+            collectImplicitImports(imports.head)
+          } else List()
+        implicitsCache = if (newImplicits.isEmpty) outer.implicitss
+                         else newImplicits :: outer.implicitss
       }
       implicitsCache
     }
@@ -351,7 +373,8 @@ trait Contexts requires Analyzer {
     def isExplicitImport(name: Name): boolean =
       tree.selectors exists (._2.==(name.toTermName))
 
-    /** The symbol with name `name' imported from import clause `tree'.
+    /** The symbol with name <code>name</code> imported from import clause
+     *  <code>tree</code>.
      */
     def importedSymbol(name: Name): Symbol = {
       var result: Symbol = NoSymbol
@@ -359,7 +382,7 @@ trait Contexts requires Analyzer {
       var selectors = tree.selectors
       while (selectors != Nil && result == NoSymbol) {
         if (selectors.head._2 == name.toTermName)
-	  result = qual.tpe.member(
+          result = qual.tpe.member(
             if (name.isTypeName) selectors.head._1.toTypeName else selectors.head._1)
         else if (selectors.head._1 == name.toTermName)
           renamed = true
