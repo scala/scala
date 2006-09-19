@@ -479,7 +479,10 @@ trait Symbols requires SymbolTable {
       throw new Error("typeConstructor inapplicable for " + this)
 
     /** The type parameters of this symbol */
-    def unsafeTypeParams: List[Symbol] = rawInfo.typeParams
+    def unsafeTypeParams: List[Symbol] = {
+      val limit = phaseId(validTo)
+      (if (limit < phase.id) infos.info else rawInfo).typeParams
+    }
 
     def typeParams: List[Symbol] = {
       rawInfo.load(this); rawInfo.typeParams
