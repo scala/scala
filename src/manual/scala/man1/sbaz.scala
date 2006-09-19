@@ -104,6 +104,14 @@ object sbaz extends Command {
           MBold("keyrevoke"),
           "Request that a specified key be revoked."),
         Definition(
+          MBold("pack") & " " & Argument("name") & " " & Argument("directory") &
+          " [ " & Argument("options") & " ]",
+          "Create an sbaz package and, if a link base is specified, "&
+          "an advertisement file. The package file is named " &
+          Mono("name-version.sbp") & ". The advertisement file is named " &
+          Mono("name-version.advert") & ". The URL is the advertisement " &
+          "file is the URL base with the package filename appended."),
+        Definition(
           MBold("remove"),
           "Remove a package."),
         Definition(
