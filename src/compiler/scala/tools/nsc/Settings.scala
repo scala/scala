@@ -109,6 +109,7 @@ class Settings(error: String => unit) {
   val log           = PhasesSetting ("-log", "Log operations in")
   val version       = BooleanSetting("-version", "Print product version and exit")
   val help          = BooleanSetting("-help", "Print a synopsis of standard options")
+  val nouescape     = new BooleanSetting("-nouescape", "disables handling of \\u unicode escapes")
 //  val showPhases    = BooleanSetting("-showphases", "Print a synopsis of compiler phases")
 
   val inline        = BooleanSetting("-Xinline", "Perform inlining when possible")

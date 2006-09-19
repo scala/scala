@@ -57,7 +57,7 @@ trait Scanners requires SyntaxAnalyzer {
 
     /** Character input reader
      */
-    val in = new CharArrayReader(unit.source.getContent(), true, syntaxError)
+    val in = new CharArrayReader(unit.source.getContent(), !settings.nouescape.value, syntaxError)
 
     /** character buffer for literals
      */
