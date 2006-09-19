@@ -44,7 +44,7 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
     result
   }
 
-  private def outerAccessor(clazz: Symbol): Symbol = {
+  def outerAccessor(clazz: Symbol): Symbol = {
     val firstTry = clazz.info.decl(clazz.expandedName(nme.OUTER))
     if (firstTry != NoSymbol && firstTry.outerSource == clazz) firstTry
     else {

@@ -1185,12 +1185,14 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
                   }
                   theRef = handleOuter(theRef)
 
-                val outername = casted.tpe.symbol.expandedName(nme.OUTER)
+                  val outerAcc = outerAccessor(casted.tpe.symbol)
 
-                  if(node.getTpe().decls.lookup(outername) != NoSymbol) { // some guys don't have outers
+                  //val outername = casted.tpe.symbol.expandedName(nme.OUTER)
+
+                  if(outerAcc != NoSymbol) { // some guys don't have outers
                     cond = And(cond,
                                Eq(Apply(Select(
-                                 gen.mkAsInstanceOf(selector.duplicate, node.getTpe(), true), outername),List()), theRef))
+                                 gen.mkAsInstanceOf(selector.duplicate, node.getTpe(), true), outerAcc),List()), theRef))
                   }
                 case _ =>
                   //ignore ;
