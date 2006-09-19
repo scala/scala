@@ -99,7 +99,10 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
           val mixinOuterAcc: Symbol = atPhase(phase.next)(outerAccessor(mc))
           if (mixinOuterAcc != NoSymbol) {
             if (decls1 eq decls) decls1 = newScope(decls.toList)
-            decls1 enter (mixinOuterAcc.cloneSymbol(clazz) resetFlag DEFERRED)
+            decls1 enter (
+              mixinOuterAcc.cloneSymbol(clazz)
+                .setInfo(clazz.thisType.memberType(mixinOuterAcc))
+                .resetFlag(DEFERRED))
           }
         }
       }
