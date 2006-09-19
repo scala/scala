@@ -761,13 +761,15 @@ trait Symbols requires SymbolTable {
       sym
     }
 
-    /** The getter of this value definition in class `base', or NoSymbol if
+    /** The getter of this value or setter definition in class `base', or NoSymbol if
      *  none exists.
      */
-    final def getter(base: Symbol): Symbol =
-      base.info.decl(nme.getterName(name)) filter (.hasFlag(ACCESSOR))
+    final def getter(base: Symbol): Symbol = {
+      val getterName = if (isSetter) nme.setterToGetter(name) else nme.getterName(name)
+      base.info.decl(getterName) filter (.hasFlag(ACCESSOR))
+    }
 
-    /** The setter of this value definition, or NoSymbol if none exists */
+    /** The setter of this value or getter definition, or NoSymbol if none exists */
     final def setter(base: Symbol): Symbol =
       base.info.decl(nme.getterToSetter(nme.getterName(name))) filter (.hasFlag(ACCESSOR))
 
@@ -791,7 +793,7 @@ trait Symbols requires SymbolTable {
     def expandName(base: Symbol): unit =
       if (this.isTerm && this != NoSymbol && !hasFlag(EXPANDEDNAME)) {
         setFlag(EXPANDEDNAME)
-        if (hasFlag(ACCESSOR)) {
+        if (hasFlag(ACCESSOR) && !hasFlag(DEFERRED)) {
           accessed.expandName(base)
         } else if (hasGetter) {
           getter(owner).expandName(base)
@@ -862,8 +864,12 @@ trait Symbols requires SymbolTable {
      *  E.g. $eq => =.
      *  If settings.uniquId adds id.
      */
-    def nameString: String =
-      simpleName.decode + idString
+    def nameString: String = {
+      var s = simpleName.decode.toString
+      if (s endsWith nme.LOCAL_SUFFIX)
+        s = s.substring(0, s.length - nme.LOCAL_SUFFIX.length)
+      s + idString
+    }
 
     /** String representation of symbol's full name with <code>separator</code>
      *  between class names.

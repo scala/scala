@@ -128,14 +128,14 @@ abstract class Mixin extends InfoTransform {
        *  always accessors and deferred. */
       def newGetter(field: Symbol): Symbol =
         clazz.newMethod(field.pos, nme.getterName(field.name))
-          .setFlag(field.flags & ~(PRIVATE | LOCAL) | ACCESSOR | DEFERRED)
+          .setFlag(field.flags & ~(PRIVATE | LOCAL) | ACCESSOR | lateDEFERRED)
           .setInfo(MethodType(List(), field.info))
 
       /** Create a new setter. Setters are never private or local. They are
        *  always accessors and deferred. */
       def newSetter(field: Symbol): Symbol =
         clazz.newMethod(field.pos, nme.getterToSetter(nme.getterName(field.name)))
-          .setFlag(field.flags & ~(PRIVATE | LOCAL) | ACCESSOR | DEFERRED)
+          .setFlag(field.flags & ~(PRIVATE | LOCAL) | ACCESSOR | lateDEFERRED)
           .setInfo(MethodType(List(field.info), UnitClass.tpe))
 
       clazz.info // make sure info is up to date, so that implClass is set.
@@ -214,7 +214,9 @@ abstract class Mixin extends InfoTransform {
           // For all members of a trait's interface do:
           for (val member <- mixinClass.info.decls.toList) {
 
-            if (member hasFlag ACCESSOR) { // mixin field accessors
+            if ((member hasFlag ACCESSOR) &&
+                (!(member hasFlag DEFERRED) || (member hasFlag lateDEFERRED))) {
+              // mixin field accessors
               val member1 = addMember(
                 clazz,
                 member.cloneSymbol(clazz)
@@ -486,7 +488,8 @@ abstract class Mixin extends InfoTransform {
             addDefDef(sym, vparamss => EmptyTree)
           } else if (!clazz.isTrait) {
             // if class is not a trait:
-            if (sym hasFlag ACCESSOR) {
+            if ((sym hasFlag ACCESSOR) &&
+                (!(sym hasFlag DEFERRED) || (sym hasFlag lateDEFERRED))) {
               // add accessor definitions
               addDefDef(sym, vparams => {
                 val accessedRef = sym.tpe match {
@@ -498,9 +501,7 @@ abstract class Mixin extends InfoTransform {
               })
             } else if (sym.isModule && !(sym hasFlag LIFTED | BRIDGE)) {
               // add modules
-              //Console.println("add module "+sym+sym.hasFlag(EXPANDEDNAME))//debug
               val vdef = gen.mkModuleVarDef(sym)
-              //Console.println("add module "+sym+sym.hasFlag(EXPANDEDNAME)+":"+vdef.symbol.tpe)//debug
               addDef(position(sym), vdef)
               addDef(position(sym), gen.mkModuleAccessDef(sym, vdef.symbol))
             } else if (!sym.isMethod) {

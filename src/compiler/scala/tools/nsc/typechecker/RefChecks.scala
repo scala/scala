@@ -80,15 +80,16 @@ abstract class RefChecks extends InfoTransform {
 
       val self = clazz.thisType
 
-      def infoString(sym: Symbol) = (
-	sym.toString() +
-	(if (sym.owner == clazz) ""
-	 else (sym.locationString +
-	       (if (sym.isAliasType) ", which equals " + self.memberInfo(sym)
-		else if (sym.isAbstractType) " with bounds " +  self.memberInfo(sym)
-		else if (sym.isTerm) " of type " + self.memberInfo(sym)
-		else "")))
-      );
+      def infoString(sym: Symbol) = {
+        val sym1 = analyzer.underlying(sym)
+        sym1.toString() +
+        (if (sym1.owner == clazz) ""
+         else (sym1.locationString +
+               (if (sym1.isAliasType) ", which equals " + self.memberInfo(sym1)
+                else if (sym1.isAbstractType) " with bounds " +  self.memberInfo(sym1)
+                else if (sym1.isTerm) " of type " + self.memberInfo(sym1)
+                else "")))
+      }
 
       def overridesType(tp1: Type, tp2: Type): boolean = Pair(tp1, tp2) match {
         case Pair(MethodType(List(), rtp1), PolyType(List(), rtp2)) =>
@@ -112,7 +113,7 @@ abstract class RefChecks extends InfoTransform {
 
 	def overrideTypeError(): unit = {
 	  if (other.tpe != ErrorType && member.tpe != ErrorType) {
-	    overrideError("has incompatible type "+member.tpe);
+	    overrideError("has incompatible type "+analyzer.underlying(member).tpe);
 	    explainTypes(member.tpe, other.tpe);
 	  }
 	}
@@ -163,7 +164,8 @@ abstract class RefChecks extends InfoTransform {
 	  overrideError("needs `override' modifier");
 	} else if ((other hasFlag ABSOVERRIDE) && other.isIncompleteIn(clazz) && !(member hasFlag ABSOVERRIDE)) {
 	  overrideError("needs `abstract override' modifiers")
-        } else if ((member hasFlag (OVERRIDE | ABSOVERRIDE)) && (other hasFlag ACCESSOR) && other.accessed.isVariable) {
+        } else if ((member hasFlag (OVERRIDE | ABSOVERRIDE)) &&
+                   (other hasFlag ACCESSOR) && other.accessed.isVariable) {
           overrideError("cannot override a mutable variable")
 	} else if (other.isStable && !member.isStable) { // (1.4)
 	  overrideError("needs to be an immutable value")
@@ -198,29 +200,6 @@ abstract class RefChecks extends InfoTransform {
 
 	opc.next
       }
-/*
-      // 1. Check all members for overriding conditions.
-      for (val bc <- clazz.info.baseClasses.tail; val other <- bc.info.decls.toList)
-	if (!other.isClass && !(other hasFlag PRIVATE) && !other.isConstructor) {
-	  val member = clazz.tpe.member(other.name) filter
-	    (sym => sym.owner != other.owner &&
-             (sym.isType || (self.memberType(sym) matches self.memberType(other))));
-	  if (member hasFlag OVERLOADED) {
-	    val alt1 = member.alternatives.head;
-	    val alt2 = member.alternatives.tail.head;
-	    val pos = if (alt1.owner == clazz) alt1.pos
-		      else if (alt2.owner == clazz) alt2.pos
-		      else clazz.pos;
-	    unit.error(pos,
-	      "ambiguous override: both " + infoString(alt1) +
-	      "\n and " + infoString(alt2) +
-	      "\n override " + infoString(other));
-	  } else if (member != NoSymbol && !(member hasFlag LOCAL)) {
-	    System.out.println("OVERRIDES " + member + member.locationString + " " + other + other.locationString);//debug
-	    checkOverride(clazz, member, other);
-	  }
-	}
-*/
       // 2. Check that only abstract classes have deferred members
       if (clazz.isClass && !clazz.isTrait) {
 	def abstractClassError(mustBeMixin: boolean, msg: String): unit = {
@@ -232,10 +211,8 @@ abstract class RefChecks extends InfoTransform {
 	}
 	for (val member <- clazz.tpe.members)
 	  if ((member hasFlag DEFERRED) && !(clazz hasFlag ABSTRACT)) {
-	    abstractClassError(false,
-	      infoString(member) + " is not defined" +
-	      (if (member.isVariable || member.hasFlag(ACCESSOR))
-		"\n(Note that variables need to be initialized to be defined)" else ""))
+	    abstractClassError(
+              false, infoString(member) + " is not defined" + analyzer.varNotice(member))
 	  } else if ((member hasFlag ABSOVERRIDE) && member.isIncompleteIn(clazz)) {
 	    val other = member.superSymbol(clazz);
 	    abstractClassError(true,

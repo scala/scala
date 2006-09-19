@@ -242,9 +242,8 @@ trait Namers requires Analyzer {
 	    finish
 	  case ValDef(mods, name, tp, rhs) =>
             if (context.owner.isClass & (mods.flags & LOCAL) == 0) {
-	      val accflags =
-                ((if ((mods.flags & MUTABLE) != 0) mods.flags & ~MUTABLE else mods.flags | STABLE) |
-                 (if ((mods.flags & DEFERRED) == 0) ACCESSOR else 0));
+	      val accflags = ACCESSOR |
+                (if ((mods.flags & MUTABLE) != 0) mods.flags & ~MUTABLE else mods.flags | STABLE)
 	      val getter = owner.newMethod(tree.pos, name)
 	        .setFlag(accflags)
                 .setInfo(innerNamer.getterTypeCompleter(tree));
@@ -394,7 +393,6 @@ trait Namers requires Analyzer {
       val parents = typer.parentTypes(templ) map checkParent
       val decls = newScope;
       new Namer(context.make(templ, clazz, decls)).enterSyms(templ.body);
-
       ClassInfoType(parents, decls, clazz)
     }
 
@@ -597,9 +595,7 @@ trait Namers requires Analyzer {
 	if (!sym.isValueParameter && !sym.isTypeParameterOrSkolem &&
 	    (!sym.owner.isClass || sym.owner.isModuleClass || sym.owner.isAnonymousClass)) {
 	  context.error(sym.pos,
-	    "only classes can have declared but undefined members" +
-	    (if (!sym.isVariable) ""
-	     else "\n(Note that variables need to be initialized to be defined)"));
+	    "only classes can have declared but undefined members" + varNotice(sym))
 	  sym.resetFlag(DEFERRED)
 	}
       }
@@ -654,5 +650,28 @@ trait Namers requires Analyzer {
   }
 
   abstract class TypeCompleter(val tree: Tree) extends LazyType
+
+  /** The symbol that which this accessor represents (possibly in part).
+   *  This is used for error messages, where we want to speak in terms
+   *  of the actual declaration or definition, not in terms of the generated setters
+   *  and getters */
+  def underlying(member: Symbol) =
+    if (member hasFlag ACCESSOR) {
+      if (member hasFlag DEFERRED) {
+        val getter = if (member.isSetter) member.getter(member.owner) else member
+        val result = getter.owner.newValue(getter.pos, getter.name)
+          .setInfo(getter.tpe.resultType)
+          .setFlag(DEFERRED)
+        if (getter.setter(member.owner) != NoSymbol) result.setFlag(MUTABLE)
+        result
+      } else member.accessed
+    } else member
+
+  /** An explanatory note to be added to error messages
+   *  when there's a problem with abstract var defs */
+  def varNotice(sym: Symbol) =
+    if (underlying(sym).isVariable)
+      "\n(Note that variables need to be initialized to be defined)"
+    else ""
 }
 

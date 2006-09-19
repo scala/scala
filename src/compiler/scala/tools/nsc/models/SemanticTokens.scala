@@ -10,6 +10,7 @@ import scala.collection.mutable.{HashMap,HashSet}
 import scala.tools.nsc.Global
 import scala.tools.nsc.symtab.{Flags,Names}
 import scala.tools.nsc.util.{NameTransformer,Position,SourceFile}
+import scala.tools.nsc.symtab.Flags.DEFERRED
 
 class SemanticTokens(val compiler: Global) {
   import compiler._
@@ -211,7 +212,11 @@ class SemanticTokens(val compiler: Global) {
         build(tree.impl.parents)
         build(tree.impl.body)
       case tree: ValOrDefDef =>
-        if (!tree.symbol.hasFlag(Flags.ACCESSOR)) {
+        if (!tree.symbol.hasFlag(Flags.ACCESSOR) || tree.symbol.hasFlag(DEFERRED)) {
+          // MO: I added !tree.symbol.hasFlag(DEFERRED) in a refactoring where
+          // getters now can be abstract whereas before they could not.
+          // Adding the condition thus keeps the old behavior.
+          // todo: review whether this is correct, or whether abstract getters should be included.
           {
             val pos : Int = if (tree.name.toString().equals("<init>")) NoPos else
               eatKeywords(unit.source, tree.pos);

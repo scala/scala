@@ -8,7 +8,7 @@
 package scala.tools.nsc.backend.icode.analysis
 
 import scala.collection.mutable.{Map, HashMap}
-
+import scala.tools.nsc.symtab.Flags.DEFERRED
 /**
  * A modified copy-propagation like analysis. It
  *  is augmented with a record-like value which is used
@@ -446,7 +446,11 @@ abstract class CopyPropagation {
 
     /** Is `m' a pure method? */
     final def isPureMethod(m: Symbol): Boolean =
-      m.isGetter;
+      // MO: I added !m.hasFlag(DEFERRED) in a refactoring where
+      // getters now can be abstract whereas before they could not.
+      // Adding the condition thus keeps the old behavior.
+      // todo: review whether this is correct, or whether abstract getters should be included.
+      m.isGetter && !m.hasFlag(DEFERRED);
 
     final override def toString(): String = {
       var res = "";

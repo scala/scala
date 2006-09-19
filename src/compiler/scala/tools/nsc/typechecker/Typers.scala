@@ -674,17 +674,8 @@ trait Typers requires Analyzer {
           result
         }
         def setterDef: DefDef = {
-          var setter = value.owner.info.decl(nme.getterToSetter(getter.name)).filter(
-            .tpe.=:=(MethodType(List(value.tpe.resultType), UnitClass.tpe)));
-          // note can't use .suchThat(.isSetter) above,
-          // because generated setters of abstract variables are not setters in this sense.
-          if (setter hasFlag OVERLOADED) setter = setter.alternatives.head;
-          // we will get a double definition error later anyway!
-
-          assert(setter != NoSymbol, getter);//debug
-
           val result = atPos(vdef.pos)(
-            DefDef(setter, vparamss =>
+            DefDef(getter.setter(value.owner), vparamss =>
               if (mods hasFlag DEFERRED) EmptyTree
               else typed(Assign(Select(This(value.owner), value),
                                 Ident(vparamss.head.head)))))
@@ -777,7 +768,8 @@ trait Typers requires Analyzer {
                     alias = NoSymbol
                   if (alias != NoSymbol) {
                     var ownAcc = clazz.info.decl(name).suchThat(.hasFlag(PARAMACCESSOR))
-                    if (ownAcc hasFlag ACCESSOR) ownAcc = ownAcc.accessed
+                    if ((ownAcc hasFlag ACCESSOR) && !(ownAcc hasFlag DEFERRED))
+                      ownAcc = ownAcc.accessed
                     if (settings.debug.value)
                       log("" + ownAcc + " has alias "+alias + alias.locationString);//debug
                     ownAcc.asInstanceOf[TermSymbol].setAlias(alias)
@@ -1555,14 +1547,14 @@ trait Typers requires Analyzer {
           newTyper(context.makeNewScope(tree, tree.symbol)).typedFunction(fun, mode, pt)
 
         case Assign(lhs, rhs) =>
-          def isGetter(sym: Symbol) = sym.info match {
+          def mayBeVarGetter(sym: Symbol) = sym.info match {
             case PolyType(List(), _) => sym.owner.isClass && !sym.isStable
             case _: ImplicitMethodType => sym.owner.isClass && !sym.isStable
             case _ => false
           }
           val lhs1 = typed(lhs, EXPRmode | LHSmode, WildcardType)
           val varsym = lhs1.symbol
-          if (varsym != null && isGetter(varsym)) {
+          if (varsym != null && mayBeVarGetter(varsym)) {
             lhs1 match {
               case Select(qual, name) =>
                 typed(
