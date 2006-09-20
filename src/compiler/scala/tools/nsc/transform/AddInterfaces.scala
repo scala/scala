@@ -258,7 +258,6 @@ abstract class AddInterfaces extends InfoTransform {
       (mc.isImplClass || mc.needsImplClass) && mc.toInterface != ScalaObjectClass
     }
     val mixinConstructorCalls: List[Tree] = {
-      Console.println("mixin constr "+clazz.info.baseClasses + "/" + clazz.mixinClasses)
       for (val mc <- clazz.mixinClasses.reverse; hasMixinConstructor(mc))
       yield mixinConstructorCall(toImplClass(mc))
     }
