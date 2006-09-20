@@ -818,7 +818,7 @@ trait Types requires SymbolTable {
    *  Cannot be created directly; one should always use `typeRef' for creation.
    */
   abstract case class TypeRef(pre: Type, sym: Symbol, args: List[Type]) extends Type {
-    assert(!sym.isAbstractType || pre.isStable || pre.isError)
+    assert(!checkMalformedSwitch || !sym.isAbstractType || pre.isStable || pre.isError)
     assert(!pre.isInstanceOf[ClassInfoType], this)
     assert(!sym.isTypeParameterOrSkolem || pre == NoPrefix, this)
 
@@ -1108,8 +1108,6 @@ trait Types requires SymbolTable {
     var sym1 = if (sym.isAbstractType) rebind(pre, sym) else sym;
     if (checkMalformedSwitch && sym1.isAbstractType && !pre.isStable && !pre.isError)
       throw new MalformedType(pre, sym.nameString);
-//    if (sym1.hasFlag(LOCKED))
-//      throw new TypeError("illegal cyclic reference involving " + sym1);
     if (sym1.isAliasType && sym1.info.typeParams.length == args.length) {
       // note: we require that object is initialized,
       // that's why we use info.typeParams instead of typeParams.
@@ -1121,8 +1119,12 @@ trait Types requires SymbolTable {
       result
     } else {
       val pre1 = removeSuper(pre, sym1)
-      if ((pre1 ne pre) && sym1.isAbstractType) sym1 = rebind(pre1, sym1)
-      rawTypeRef(pre1, sym1, args)
+      if (pre1 ne pre) {
+        if (sym1.isAbstractType) sym1 = rebind(pre1, sym1)
+        typeRef(pre1, sym1, args)
+      } else {
+        rawTypeRef(pre, sym1, args)
+      }
     }
   }
 
