@@ -9,8 +9,7 @@
 // $Id$
 
 
-package scala.util.logging;
-
+package scala.util.logging
 
 /**
  *  Mixing in the class Logged indicates that a class provides support
@@ -26,8 +25,11 @@ package scala.util.logging;
    * and the logging will be sent to the Console.
    */
 trait Logged {
+
   /** this method should log the message given as argument somewhere
-   * as a side-effect
+   *  as a side-effect.
+   *
+   *  @param msg ...
    */
-  def log(msg:String): Unit = {};
+  def log(msg: String): Unit = {}
 }

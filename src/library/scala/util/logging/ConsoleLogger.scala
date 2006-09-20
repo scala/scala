@@ -9,15 +9,20 @@
 // $Id$
 
 
-package scala.util.logging;
-
+package scala.util.logging
 
 /**
- *  A ConsoleLogger is mixed into a concrete class who has class Logged
- *  among its base classes.
+ *  The trait <code>ConsoleLogger</code> is mixed into a concrete class who
+ *  has class <code>Logged</code> among its base classes.
+ *
+ *  @author  Burak Emir
+ *  @version 1.0
  */
 trait ConsoleLogger {
-  /** logs argument to Console using Console.println
+
+  /** logs argument to Console using <code>Console.println</code>
+   *
+   *  @param msg ...
    */
-  def log(msg:String): Unit = Console.println(msg);
+  def log(msg: String): Unit = Console.println(msg)
 }

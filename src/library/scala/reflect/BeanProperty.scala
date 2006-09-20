@@ -9,7 +9,6 @@
 // $Id$
 
 
-package scala.reflect;
+package scala.reflect
 
-
-class BeanProperty extends Attribute {}
+class BeanProperty extends Attribute

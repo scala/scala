@@ -9,10 +9,9 @@
 // $Id$
 
 
-package scala.reflect;
+package scala.reflect
 
-
-abstract class Tree;
+abstract class Tree
 
 case class Ident(sym: Symbol) extends Tree
 case class Select(qual: Tree, sym: Symbol) extends Tree

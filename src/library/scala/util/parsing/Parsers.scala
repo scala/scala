@@ -9,18 +9,22 @@
 // $Id$
 
 
-package scala.util.parsing;
+package scala.util.parsing
 
-
+/** This class ...
+ *
+ *  @author  Burak Emir
+ *  @version 1.0
+ */
 abstract class Parsers {
 
-  type inputType;
+  type inputType
 
   abstract class Parser[a] {
 
-    type Result = Option[Pair[a, inputType]];
+    type Result = Option[Pair[a, inputType]]
 
-    def apply(in: inputType): Result;
+    def apply(in: inputType): Result
 
     def filter(pred: a => boolean) = new Parser[a] {
       def apply(in: inputType): Result = Parser.this.apply(in) match {
@@ -45,13 +49,13 @@ abstract class Parsers {
 
     def ||| (p: => Parser[a]) = new Parser[a] {
       def apply(in: inputType): Result = Parser.this.apply(in) match {
-	case None => p(in)
-	case s => s
+        case None => p(in)
+        case s => s
       }
     }
 
     def &&& [b](p: => Parser[b]): Parser[b] =
-      for (val _ <- this; val x <- p) yield x;
+      for (val _ <- this; val x <- p) yield x
   }
 
   def not[a](p: Parser[a]) = new Parser[unit] {
@@ -66,15 +70,14 @@ abstract class Parsers {
   }
 
   def rep[a](p: Parser[a]): Parser[List[a]] =
-    rep1(p) ||| succeed(List());
+    rep1(p) ||| succeed(List())
 
   def rep1[a](p: Parser[a]): Parser[List[a]] =
-    for (val x <- p; val xs <- rep(p)) yield x :: xs;
+    for (val x <- p; val xs <- rep(p)) yield x :: xs
 
   def repWith[a, b](p: Parser[a], sep: Parser[b]): Parser[List[a]] =
-    for (val x <- p; val xs <- rep(sep &&& p)) yield x :: xs;
+    for (val x <- p; val xs <- rep(sep &&& p)) yield x :: xs
 
   def opt[a](p: Parser[a]): Parser[List[a]] =
-    (for (val x <- p) yield List(x)) ||| succeed(List());
+    (for (val x <- p) yield List(x)) ||| succeed(List())
 }
-

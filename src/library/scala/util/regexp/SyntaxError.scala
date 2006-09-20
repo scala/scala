@@ -9,10 +9,12 @@
 // $Id$
 
 
-package scala.util.regexp ;
+package scala.util.regexp
 
-
-/** this runtime exception is thrown if an attempt to instantiate a
-  * syntactically incorrect expression is detected */
-class SyntaxError(e: String)
-  extends java.lang.RuntimeException(e);
+/** This runtime exception is thrown if an attempt to instantiate a
+ *  syntactically incorrect expression is detected.
+ *
+ *  @author  Burak Emir
+ *  @version 1.0
+ */
+class SyntaxError(e: String) extends java.lang.RuntimeException(e)

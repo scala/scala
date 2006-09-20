@@ -9,12 +9,12 @@
 // $Id$
 
 
-package scala.mobile;
+package scala.mobile
 
 
-import java.net._;
+import java.net._
 
-import scala.collection.mutable._;
+import scala.collection.mutable._
 
 
 /** The class <code>Location</code> provides a <code>create</code>
@@ -37,7 +37,7 @@ class Location(url: URL) {
 
   /** A cache containing all class loaders of this location.
    */
-  private var lcache: Map[URL, ClassLoader] = new HashMap;
+  private var lcache: Map[URL, ClassLoader] = new HashMap
 
   /** The class loader associated with this location.
    */
@@ -48,20 +48,21 @@ class Location(url: URL) {
     case Some(cl) =>
       cl
     case _ =>
-      val cl = new URLClassLoader(Array(url));
-      lcache(url) = cl;
+      val cl = new URLClassLoader(Array(url))
+      lcache(url) = cl
       cl
-  };
+  }
 
   /** A cache containing all classes of this location.
    */
-  private var ccache: Map[String, java.lang.Class] = new HashMap;
+  private var ccache: Map[String, java.lang.Class] = new HashMap
 
   /** Return the code description for the string <code>className</code>
    *  at this location.
    *
-   * @param the name of the class
-   * @return the code description corresponding to <code>className</code>
+   * @param classname the name of the class
+   * @return          the code description corresponding to
+   *                  <code>className</code>.
    */
   def create(className: String) = new Code(
     ccache.get(className) match {
@@ -71,17 +72,17 @@ class Location(url: URL) {
         val clazz = if (loader.loadClass(className).isInterface()) {
           // Scala source: class A { ... };
           // Java bytecode: interface A.class + class A$class.class
-          loader.loadClass(className + "$class");
+          loader.loadClass(className + "$class")
         }
         else {
           // Scala source: object A { ... };
           // Java bytecode: interface A.class + class A$.class
-          loader.loadClass(className + "$");
+          loader.loadClass(className + "$")
         }
-        ccache(className) = clazz;
+        ccache(className) = clazz
         clazz
     }
-  );
+  )
 
 }
 
@@ -96,4 +97,4 @@ class Location(url: URL) {
  *  @author  Stephane Micheloud
  *  @version 1.0, 04/05/2004
  */
-object Location extends Location(null);
+object Location extends Location(null)

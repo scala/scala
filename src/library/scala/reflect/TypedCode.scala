@@ -9,7 +9,7 @@
 // $Id$
 
 
-package scala.reflect;
+package scala.reflect
 
 // This file is OBSOLETE, delete when build bootstraps without it
-class TypedCode[T](val code: Any) {}
+class TypedCode[T](val code: Any)

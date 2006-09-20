@@ -9,11 +9,12 @@
 // $Id$
 
 
-package scala.reflect;
+package scala.reflect
 
 
-class Code[Type](val tree: Tree) {}
+class Code[Type](val tree: Tree)
 
 object Code {
-	def lift[A](tree: A): Code[A] = throw new Error("Code was not lifted by compiler")
+  def lift[A](tree: A): Code[A] =
+    throw new Error("Code was not lifted by compiler")
 }

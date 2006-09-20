@@ -9,32 +9,36 @@
 // $Id$
 
 
-package scala.util.parsing;
+package scala.util.parsing
 
+import java.io._
 
-import java.io._;
-
+/** This class ...
+ *
+ *  @author  Burak Emir
+ *  @version 1.0
+ */
 class CharInputStreamIterator(in: InputStream) extends Iterator[char] {
 
-  private var ch: int = _;
-  private var chSet = false;
-  private var error: IOException = null;
+  private var ch: int = _
+  private var chSet = false
+  private var error: IOException = null
 
   private def lookahead: unit = try {
-    ch = in.read(); chSet = ch >= 0;
+    ch = in.read(); chSet = ch >= 0
   } catch {
-    case (ex: EOFException) => ch = -1
-    case (ex: IOException) => ch = 1; error = ex
+    case ex: EOFException => ch = -1
+    case ex: IOException => ch = 1; error = ex
   }
 
   def hasNext: boolean = {
-    if (!chSet) lookahead;
+    if (!chSet) lookahead
     chSet
   }
 
   def next: char = {
-    if (!chSet) lookahead;
-    chSet = false;
+    if (!chSet) lookahead
+    chSet = false
     ch.asInstanceOf[char]
   }
 }

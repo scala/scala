@@ -9,12 +9,12 @@
 // $Id$
 
 
-package scala.util.regexp ;
+package scala.util.regexp
 
-
-/** regular word expressions. users have to instantiate type member _regexpT &lt;: RegExp (from Base) and a type member _labelT &lt;: Label
+/** regular word expressions. users have to instantiate type member
+ *  _regexpT &lt;: RegExp (from Base) and a type member _labelT &lt;: Label
  *  Here is a little example:
-<pre>
+ *  <pre>
   import scala.util.regexp._
   import scala.util.automata._
   object MyLang extends WordExp {
@@ -30,23 +30,23 @@ package scala.util.regexp ;
     override val lang = MyLang
   }
   val nfa = MyBerriSethi.automatonFrom(Sequ(rex),1)
-</pre>
+ *  </pre>
  */
 abstract class WordExp extends Base {
 
-  abstract class Label;
+  abstract class Label
 
-  type _regexpT <: RegExp ;
-  type _labelT <: Label;
+  type _regexpT <: RegExp
+  type _labelT <: Label
 
   case class Letter(a: _labelT) extends RegExp {
-    final val isNullable = false;
-    var pos = -1;
+    final val isNullable = false
+    var pos = -1
   }
 
   case class Wildcard() extends RegExp {
-    final val isNullable = false;
-    var pos = -1;
+    final val isNullable = false
+    var pos = -1
   }
 }
 
