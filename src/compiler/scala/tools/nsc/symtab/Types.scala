@@ -651,7 +651,8 @@ trait Types requires SymbolTable {
             val index = new Array[int](nparents)
             var i = 0
             for (val p <- parents) {
-              pclosure(i) = p.closure
+              pclosure(i) = if (p.closure == null) AnyClass.info.closure // cyclic reference
+                            else p.closure
               index(i) = 0
               i = i + 1
             }

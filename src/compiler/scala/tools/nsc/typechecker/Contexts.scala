@@ -39,7 +39,7 @@ trait Contexts requires Analyzer {
       val qual = gen.mkAttributedStableRef(pkg)
       sc = sc.makeNewImport(
         Import(qual, List(Pair(nme.WILDCARD, null)))
-        .setSymbol(NoSymbol.newImport(NoPos).setInfo(ImportType(qual)))
+        .setSymbol(NoSymbol.newImport(NoPos).setFlag(SYNTHETIC).setInfo(ImportType(qual)))
         .setType(NoType))
       sc.depth = sc.depth + 1
     }

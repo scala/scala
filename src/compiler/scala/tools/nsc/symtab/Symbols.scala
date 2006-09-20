@@ -118,7 +118,7 @@ trait Symbols requires SymbolTable {
       new ThisSkolem(owner, pos, name, this)
         .setFlag(SYNTHETIC | FINAL)
     final def newImport(pos: PositionType) =
-      newValue(pos, nme.IMPORT).setFlag(SYNTHETIC)
+      newValue(pos, nme.IMPORT)
     final def newOverloaded(pre: Type, alternatives: List[Symbol]): Symbol =
       newValue(alternatives.head.pos, alternatives.head.name)
       .setFlag(OVERLOADED)
@@ -848,9 +848,10 @@ trait Symbols requires SymbolTable {
     final def kindString: String =
       if (isPackageClass)
         if (settings.debug.value) "package class" else "package"
+      else if (isModuleClass)
+        if (settings.debug.value) "singleton class" else "object"
       else if (isAnonymousClass) "template"
       else if (isRefinementClass) ""
-      else if (isModuleClass) "singleton class"
       else if (isTrait) "trait"
       else if (isClass) "class"
       else if (isType) "type"
@@ -904,8 +905,7 @@ trait Symbols requires SymbolTable {
     final def locationString: String =
       if (owner.isClass &&
           (!owner.isAnonymousClass && !owner.isRefinementClass || settings.debug.value))
-  " in " + (if (owner.isModuleClass) "object " + owner.nameString  else owner)
-      else ""
+        " in " + owner else ""
 
     /** String representation of symbol's definition following its name */
     final def infoString(tp: Type): String = {
