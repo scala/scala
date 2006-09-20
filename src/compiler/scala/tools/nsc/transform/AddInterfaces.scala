@@ -42,10 +42,11 @@ abstract class AddInterfaces extends InfoTransform {
   /** Is given trait member symbol a member of the trait's interface
    *  after this transform is performed? */
   private def isInterfaceMember(sym: Symbol): boolean = {
-    sym.info; // to set lateMETHOD flag if necessary
-    (sym.isType ||
-     sym.isMethod && !(sym hasFlag (PRIVATE | BRIDGE | LABEL)) &&
-     !sym.isConstructor && !sym.isImplOnly)
+    sym.isType ||
+    { sym.info; // to set lateMETHOD flag if necessary
+      sym.isMethod && !(sym hasFlag (PRIVATE | BRIDGE | LABEL)) &&
+      !sym.isConstructor && !sym.isImplOnly
+    }
   }
 
   /** Does symbol need an implementation method? */
