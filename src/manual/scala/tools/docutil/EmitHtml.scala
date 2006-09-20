@@ -36,6 +36,9 @@ object EmitHtml {
         case Text(text) =>
           out.print(escape(text))
 
+        case BSlash =>
+          out.print("\\")
+
         case MDash =>
           out.print("&#8212;")
 

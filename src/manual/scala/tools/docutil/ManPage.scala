@@ -15,6 +15,7 @@ object ManPage {
   case class SeqText(components: AbstractText*) extends AbstractText
   case class SeqPara(components: AbstractText*) extends AbstractText
   case class Text(text: String) extends AbstractText
+  case object BSlash extends AbstractText
   case object MDash extends AbstractText
   case object NDash extends AbstractText
   case class Bold(contents: AbstractText) extends AbstractText

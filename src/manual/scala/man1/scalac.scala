@@ -131,7 +131,10 @@ object scalac extends Command {
           "Print product version and exit."),
         Definition(
           CmdOption("?") & "| " & CmdOption("help"),
-          "Print a synopsis of standard options."))),
+          "Print a synopsis of standard options."),
+        Definition(
+          CmdOption("nouescape"),
+          "Disables handling of " & BSlash & "u unicode escapes"))),
 
     Section("Non-Standard Options",
       DefinitionList(
@@ -327,7 +330,7 @@ object scalac extends Command {
     title = command
     date = lastModified // e.g. "June 8, 2006"
     author = "Stephane Micheloud"
-    version = "0.2"
+    version = "0.3"
     sections = List(
       name,
       synopsis,

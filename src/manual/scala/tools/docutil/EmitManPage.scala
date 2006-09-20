@@ -35,6 +35,9 @@ object EmitManPage {
         case Text(text) =>
           out.print(escape(text))
 
+        case BSlash =>
+          out.print("\\e")
+
         case NDash | MDash =>
           out.print("\\-")
 
