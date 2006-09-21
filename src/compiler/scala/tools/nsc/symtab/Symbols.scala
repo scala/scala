@@ -126,7 +126,7 @@ trait Symbols requires SymbolTable {
 
     final def newOuterAccessor(pos: PositionType) = {
       val sym = newMethod(pos, nme.OUTER)
-      sym setFlag STABLE
+      sym setFlag (STABLE | SYNTHETIC)
       if (isTrait) sym setFlag DEFERRED
       sym.expandName(this)
       sym.referenced = this

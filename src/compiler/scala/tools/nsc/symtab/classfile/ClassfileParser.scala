@@ -185,7 +185,7 @@ abstract class ClassfileParser {
 	val Pair(name, tpe) = getNameAndType(in.getChar(start + 3), cls)
         val owner = if (static) cls.linkedClassOfClass else cls
         f = owner.info.decl(name).suchThat(.tpe.=:=(tpe))
-        assert(f != NoSymbol, "Could not find symbol for " + name + ": " + tpe + " in " + owner)
+        assert(f != NoSymbol)
         values(index) = f
       }
       f

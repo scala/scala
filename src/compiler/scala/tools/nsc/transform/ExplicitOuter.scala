@@ -84,17 +84,15 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
         val outerAcc = clazz.newMethod(clazz.pos, nme.OUTER) // 3
         outerAcc.expandName(clazz)
         val restpe = if (clazz.isTrait) clazz.outerClass.tpe else clazz.outerClass.thisType
-        decls1 enter (
-          clazz.newOuterAccessor(clazz.pos)
-          setInfo MethodType(List(), restpe))
+        decls1 enter clazz.newOuterAccessor(clazz.pos).setInfo(MethodType(List(), restpe))
         if (!clazz.isTrait) // 2
           //todo: avoid outer field if superclass has same outer value?
           decls1 enter (
             clazz.newValue(clazz.pos, nme.getterToLocal(nme.OUTER))
-            setFlag (PROTECTED | PARAMACCESSOR)
+            setFlag (SYNTHETIC | PROTECTED | PARAMACCESSOR)
             setInfo clazz.outerClass.thisType)
       }
-      if (!parents.isEmpty) {
+      if (!clazz.isTrait && !parents.isEmpty) {
         for (val mc <- clazz.mixinClasses) {
           val mixinOuterAcc: Symbol = atPhase(phase.next)(outerAccessor(mc))
           if (mixinOuterAcc != NoSymbol) {

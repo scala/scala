@@ -107,7 +107,7 @@ abstract class AbstractFile extends Object with Iterable[AbstractFile] {
     var start = 0;
     while (true) {
       val index = path.indexOf(separator, start);
-      assert(index < 0 || start < index, path+" - "+start+" - "+index);
+      assert(index < 0 || start < index);
       val name = path.substring(start, if (index < 0) length else index);
       file = file.lookupName(name, if (index < 0) directory else true);
       if (file == null || index < 0) return file;

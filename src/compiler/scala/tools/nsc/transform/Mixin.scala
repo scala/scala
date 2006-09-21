@@ -107,7 +107,7 @@ abstract class Mixin extends InfoTransform {
   /** Add given member to given class, and mark member as mixed-in.
    */
   def addMember(clazz: Symbol, member: Symbol): Symbol = {
-    if (settings.debug.value) log("new member of " + clazz + ":" + member.defString)//
+    if (settings.debug.value) log("new member of " + clazz + ":" + member.defString)
     clazz.info.decls enter member
     member setFlag MIXEDIN
   }
@@ -150,7 +150,6 @@ abstract class Mixin extends InfoTransform {
           }
           val getter = member.getter(clazz)
           if (getter == NoSymbol) addMember(clazz, newGetter(member))
-          /*else getter setFlag (member getFlag MUTABLE) // todo: needed? !!! */
           if (!member.tpe.isInstanceOf[ConstantType]) {
             val setter = member.setter(clazz)
             if (setter == NoSymbol) addMember(clazz, newSetter(member))
