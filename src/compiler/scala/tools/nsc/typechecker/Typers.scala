@@ -1110,8 +1110,7 @@ trait Typers requires Analyzer {
         // preadapt symbol to number of arguments given
         val argtypes = args map (arg => AllClass.tpe)
         val pre = fun.symbol.tpe.prefix
-        val sym = fun.symbol filter (alt =>
-          isApplicable(context.undetparams, pre.memberType(alt), argtypes, pt))
+        val sym = fun.symbol filter (alt => isApplicable(context.undetparams, pre, alt, argtypes, pt))
         if (sym != NoSymbol)
           fun = adapt(fun setSymbol sym setType pre.memberType(sym), funMode(mode), WildcardType)
       }
@@ -1737,8 +1736,6 @@ trait Typers requires Analyzer {
             if (stableApplication) fun1 = stabilizeFun(fun1, mode, pt)
             // if function is overloaded, filter all alternatives that match
             // number of arguments and expected result type.
-            if (settings.debug.value)
-              log("trans app "+fun1+":"+fun1.symbol+":"+fun1.tpe+" "+args)//DEBUG
             if (util.Statistics.enabled) appcnt = appcnt + 1
             if (phase.id <= currentRun.typerPhase.id &&
                 fun1.isInstanceOf[Select] &&

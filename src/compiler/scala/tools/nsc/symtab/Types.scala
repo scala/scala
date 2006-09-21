@@ -2291,4 +2291,12 @@ trait Types requires SymbolTable {
       found <:< required
       explainSwitch = s
     }
+
+  def withoutMalformedChecks[T](op: => T): T = {
+    val savedCheckMalformedSwitch = checkMalformedSwitch
+    checkMalformedSwitch = false
+    val result = op
+    checkMalformedSwitch = savedCheckMalformedSwitch
+    result
+  }
 }

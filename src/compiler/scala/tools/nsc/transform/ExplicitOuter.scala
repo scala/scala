@@ -146,7 +146,7 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
      */
     protected def outerPath(base: Tree, from: Symbol, to: Symbol): Tree = {
       //Console.println("outerPath from "+from+" to "+to+" at "+base+":"+base.tpe)
-      assert(base.tpe.baseType(from.toInterface) != NoType, base.tpe)
+      //assert(base.tpe.widen.baseType(from.toInterface) != NoType, ""+base.tpe.widen+" "+from.toInterface)//DEBUG
       if (from == to || from.isImplClass && from.toInterface == to) base
       else outerPath(outerSelect(base), from.outerClass, to)
     }
