@@ -25,6 +25,10 @@ abstract class UnPickler {
   import global._
   import RequiresIntsAsPositions._;
 
+  /**
+   *  @param bytes    bytearray from which we unpickle
+   *  @param filename filename associated with bytearray, only used for error messages
+   */
   def unpickle(bytes: Array[byte], offset: int, classRoot: Symbol, moduleRoot: Symbol, filename: String): unit = try {
     new UnPickle(bytes, offset, classRoot, moduleRoot)
   } catch {

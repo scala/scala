@@ -40,12 +40,6 @@ class VirtualFile(val name: String, _path: String) extends AbstractFile {
   /** Returns the time that this abstract file was last modified. */
   def lastModified: Long = Long.MIN_VALUE;
 
-  /** Reads the content of this abstract file into a byte array. */
-  def read: Array[Byte] = {
-    assert(!isDirectory, "cannot read directory '" + this + "'");
-    new Array[Byte](0);
-  }
-
   /** Returns all abstract subfiles of this abstract directory. */
   def elements: Iterator[AbstractFile] = {
     assert(isDirectory, "not a directory '" + this + "'");

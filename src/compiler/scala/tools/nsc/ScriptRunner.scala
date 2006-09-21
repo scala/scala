@@ -123,7 +123,7 @@ object ScriptRunner {
   /** Wrap a script file into a runnable object named
     * scala.scripting.Main .
     */
-  def wrappedScript(filename: String): SourceFile = {
+  def wrappedScript(filename: String, getSourceFile: PlainFile => SourceFile): SourceFile = {
     val preamble =
       new SourceFile("<script preamble>",
           ("package $scalascript\n" +
@@ -134,7 +134,7 @@ object ScriptRunner {
     val middle = {
       val f = new File(filename)
       new SourceFileFragment(
-          new SourceFile(new PlainFile(f)),
+          getSourceFile(new PlainFile(f)),
           headerLength(filename),
           f.length.asInstanceOf[Int])
     }
@@ -222,7 +222,7 @@ object ScriptRunner {
         val reporter = new ConsoleReporter
         val compiler = new Global(settings, reporter)
         val cr = new compiler.Run
-        cr.compileSources(List(wrappedScript(scriptFile)))
+        cr.compileSources(List(wrappedScript(scriptFile, &compiler.getSourceFile)))
         Pair(compiledPath, reporter.errors == 0)
       } else {
         val compok = compileWithDaemon(settings, scriptFile)

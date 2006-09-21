@@ -30,14 +30,13 @@ object Position {
   }
 }
 
-
 class Position( val source : SourceFile, val offset: Int) {
   import Position._;
 
   private val tabInc = 8;
 
-  def this(sourceName : String) = this(new SourceFile(sourceName, new Array[Char](0)), Position.NOPOS);
-  def this(sourceName : String, _offset : Int) = this(new SourceFile(sourceName, new Array[Char](0)), _offset);
+  //def this(sourceName : String) = this(new SourceFile(sourceName, new Array[Char](0)), Position.NOPOS);
+  //def this(sourceName : String, _offset : Int) = this(new SourceFile(sourceName, new Array[Char](0)), _offset);
 
   private def hasOffset = offset > NOPOS;
   private def isLine    = offset < NOPOS;
@@ -103,4 +102,10 @@ class Position( val source : SourceFile, val offset: Int) {
     } else sb.append("::" + offset);
     sb.toString();
   }
+}
+
+/** this class merely serves to communicate a string to ConsoleReporter
+ */
+case class FakePos(msg: String) extends Position(null,Position.NOPOS) {
+  override def inUltimateSource = this
 }

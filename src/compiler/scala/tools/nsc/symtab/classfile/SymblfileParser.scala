@@ -6,7 +6,7 @@
 
 package scala.tools.nsc.symtab.classfile
 
-import scala.tools.nsc.io.{AbstractFile, AbstractFileReader}
+import scala.tools.nsc.io.AbstractFile
 
 /** This abstract class implements ..
  *
@@ -27,11 +27,11 @@ abstract class SymblfileParser {
   def parse(file: AbstractFile, root: Symbol): unit = {
     assert(current == null, current)
     current = file
-    val in = new AbstractFileReader(file)
+    val bytes  = new AbstractFileReader(file).buf
     if (root.isModule)
-      unpickler.unpickle(in.buf, 0, root.linkedClassOfModule, root, file.toString())
+      unpickler.unpickle(bytes, 0, root.linkedClassOfModule, root, file.toString())
     else
-      unpickler.unpickle(in.buf, 0, root, root.linkedModuleOfClass, file.toString())
+      unpickler.unpickle(bytes, 0, root, root.linkedModuleOfClass, file.toString())
     current = null
   }
 }

@@ -15,7 +15,7 @@ import java.io.{File, FileInputStream, IOException};
 object PlainFile {
 
   /** Returns "fromFile(new File(path))". */
-  def fromPath(path: String): AbstractFile = fromFile(new File(path));
+  //def fromPath(path: String): AbstractFile = fromFile(new File(path));
 
   /**
    * If the specified File exists, returns an abstract file backed
@@ -26,7 +26,8 @@ object PlainFile {
 
 }
 
-/** This class implements an abstract file backed by a File. */
+/** This class implements an abstract file backed by a File.
+ */
 class PlainFile(val file: File) extends AbstractFile {
 
   assert(file != null);
@@ -62,8 +63,8 @@ class PlainFile(val file: File) extends AbstractFile {
   /** Returns the time that this abstract file was last modified. */
   def lastModified: Long = file.lastModified();
 
-  /** Reads the content of this abstract file into a byte array. */
-  def read: Array[Byte] = {
+  /** Reads the content of this abstract file into a byte array.
+  override def getBytes: Array[Byte] = {
     assert(!isDirectory, "cannot read directory '" + this + "'");
     val in = new FileInputStream(file);
     var rest: Int = file.length().toInt;
@@ -77,6 +78,7 @@ class PlainFile(val file: File) extends AbstractFile {
     in.close();
     return buf;
   }
+  */
 
   /** Returns all abstract subfiles of this abstract directory. */
   def elements: Iterator[AbstractFile] = {

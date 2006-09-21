@@ -5,7 +5,7 @@
 // $Id$
 package scala.tools.nsc
 
-import scala.tools.nsc.util.{Position}
+import scala.tools.nsc.util.FakePos //{Position}
 import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
 import scala.tools.nsc.doc.DocGenerator
 
@@ -27,7 +27,7 @@ object Main extends Object with EvalLoop {
   var reporter: ConsoleReporter = _
 
   def error(msg: String): unit =
-    reporter.error(new Position(PRODUCT),
+    reporter.error(/*new Position */FakePos(PRODUCT),
                    msg + "\n  " + PRODUCT + " -help  gives more information")
 
   def errors() = reporter.errors

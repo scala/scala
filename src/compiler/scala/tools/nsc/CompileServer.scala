@@ -7,7 +7,7 @@
 package scala.tools.nsc
 
 import scala.tools.util.SocketServer
-import scala.tools.nsc.util.Position
+import scala.tools.nsc.util.FakePos //Position
 import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
 import scala.tools.nsc.doc.DocGenerator
 import scala.concurrent.Process.spawn
@@ -95,7 +95,7 @@ object CompileServer extends SocketServer {
           override def displayPrompt = {}
         }
         def error(msg: String): unit =
-          reporter.error(new Position(PRODUCT),
+          reporter.error(/*new Position*/ FakePos(PRODUCT),
                          msg + "\n  " + PRODUCT + " -help  gives more information")
         val command = new CompilerCommand(args, error, false) {
           override val cmdName = "fsc"

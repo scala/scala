@@ -17,7 +17,7 @@
 package scala.tools.nsc.symtab.classfile
 
 import scala.tools.nsc.util.Position
-import scala.tools.nsc.io.{AbstractFile, AbstractFileReader}
+import scala.tools.nsc.io.AbstractFile
 import scala.collection.mutable.{ListBuffer, ArrayBuffer}
 import scala.collection.immutable.{Map, ListMap}
 

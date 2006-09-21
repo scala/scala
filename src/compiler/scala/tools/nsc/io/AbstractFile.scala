@@ -46,11 +46,11 @@ object AbstractFile {
 }
 
 /**
- * This class implements an abstract representation of files and
- * directories. These files and directories may have some real counter
- * part within the file system but that is not necessarily true. For
- * example, there exist abstract files that represent files within a
- * zip archive or files that exist only in memory.
+ * This class and its children serve to unify handling of files and
+ * directories. These files and directories may or may not have some
+ * real counter part within the file system. For example, some file
+ * handles reference files within a zip archive or virtual ones
+ * that exist only in memory.
  *
  * Every abstract file has a path (i.e. a full name) and a name
  * (i.e. a short name) and may be backed by some real File. There are
@@ -58,6 +58,14 @@ object AbstractFile {
  * directories. Regular files may be read and have a last modification
  * time. Directories may list their content and look for subfiles with
  * a specified name or path and of a specified kind.
+ *
+ * bq: The interface allows to access the content as bytes and as chars.
+ * In fact, only the ClassFileParser should access bytes, because
+ * only there we know that the charset of the file is UTF-8. For
+ * all other cases, the global.settings.encoding.value must be
+ * respected. @todo it would be better if reading chars from sources
+ * was exclusively done in SourceFile and reading bytes for classfiles
+ * was done in symtab.classfile.AbstractFileReader
  */
 abstract class AbstractFile extends Object with Iterable[AbstractFile] {
 
@@ -80,7 +88,10 @@ abstract class AbstractFile extends Object with Iterable[AbstractFile] {
   def lastModified: Long;
 
   /** Reads the content of this abstract file into a byte array. */
-  def read: Array[Byte];
+  //def getBytes: Array[Byte] = error("getBytes not supported by "+this.getClass())
+
+  /** Reads the content of this abstract file into a char array. */
+  //def getChars: Array[Char] = error("getChars not supported by "+this.getClass())
 
   /** Returns all abstract subfiles of this abstract directory. */
   def elements: Iterator[AbstractFile];

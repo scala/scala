@@ -188,7 +188,8 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
       reporter.error(null, "no such file: " + filename)
     } else {
       val cr = new compiler.Run
-      cr.compileSources(List(new SourceFile(PlainFile.fromFile(jfile))))
+      val sf = compiler.getSourceFile(new PlainFile(jfile))
+      cr.compileSources(List(sf))
     }
   }
 

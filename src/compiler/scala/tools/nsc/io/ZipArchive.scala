@@ -39,7 +39,8 @@ object ZipArchive {
 
 /**
  * This class implements an abstract directory backed by a zip
- * archive.
+ * archive. We let the encoding be null, because we behave like
+ * a directory
  */
 final class ZipArchive(file: File, val archive: ZipFile) extends PlainFile(file) {
 
@@ -133,7 +134,7 @@ final class ZipArchive(file: File, val archive: ZipFile) extends PlainFile(file)
   {
 
     final override def path = ZipArchive.this.toString() + "(" + super.path + ")";
-
+    final def getArchive = ZipArchive.this.archive
   }
 
   //########################################################################
@@ -172,7 +173,8 @@ final class ZipArchive(file: File, val archive: ZipFile) extends PlainFile(file)
 
     override def lastModified: Long = entry.getTime();
 
-    override def read: Array[Byte] = {
+    /** in zip archives, we assume class files conform to Java spec by using UTF-8 * /
+    def getBytes: Array[Byte] = {
       val in: InputStream = archive.getInputStream(entry);
       var rest: Int = entry.getSize().toInt;
       val buf = new Array[Byte](rest);
@@ -185,6 +187,7 @@ final class ZipArchive(file: File, val archive: ZipFile) extends PlainFile(file)
       in.close();
       buf
     }
+    */
   }
 
 }

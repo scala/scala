@@ -29,6 +29,11 @@ class SourceReader(decoder: CharsetDecoder) {
   /** The output character buffer */
   private var chars: CharBuffer = CharBuffer.allocate(0x4000);
 
+  private def reportEncodingError(filename:String) = {
+    Console println "IO error while decoding "+filename+" with "+decoder.charset();
+    Console println "Please try specifying another one using the -encoding option"
+  }
+
   //########################################################################
   // Public Methods
 
@@ -40,6 +45,10 @@ class SourceReader(decoder: CharsetDecoder) {
     val channel: FileChannel = new FileInputStream(file).getChannel();
     try {
       read(channel);
+    } catch {
+      case e:Exception =>
+        reportEncodingError(file.toString())
+        new Array[Char](0)
     } finally {
       channel.close();
     }
@@ -47,14 +56,26 @@ class SourceReader(decoder: CharsetDecoder) {
 
   /** Reads the specified file. */
   def read(file: AbstractFile): Array[Char] = {
+    file match {
+      case p:PlainFile => read(p.file)
+      case _ => throw new IOException(file.toString()+" is not a plain file")
+    }
+    /*
     val decoder: CharsetDecoder = this.decoder.reset();
     val bytes: ByteBuffer = ByteBuffer.wrap(file.read);
     val chars: CharBuffer = this.chars; chars.clear();
-    terminate(flush(decoder, decode(decoder, bytes, chars, true)));
+    try {
+      terminate(flush(decoder, decode(decoder, bytes, chars, true)));
+    } catch {
+      case e:Exception =>
+        reportEncodingError(file.toString())
+        new Array[Char](0)
+    }
+    */
   }
 
   /** Reads the specified byte channel. */
-  def read(input: ReadableByteChannel): Array[Char] = {
+  protected def read(input: ReadableByteChannel): Array[Char] = {
     val decoder: CharsetDecoder = this.decoder.reset();
     val bytes: ByteBuffer = this.bytes; bytes.clear();
     var chars: CharBuffer = this.chars; chars.clear();
