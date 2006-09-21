@@ -161,10 +161,9 @@ abstract class AddInterfaces extends InfoTransform {
       val parents1 =
         if (parents.isEmpty) List()
         else {
-          assert(!parents.head.symbol.isTrait || clazz == RepeatedParamClass, clazz);
-          if (clazz hasFlag INTERFACE) erasedTypeRef(ObjectClass) :: parents.tail
-          else if (clazz.isImplClass || clazz == ArrayClass) parents
-          else parents map mixinToImplClass
+          assert(!parents.head.symbol.isTrait, clazz)
+          if (clazz.isTrait) erasedTypeRef(ObjectClass) :: parents.tail
+          else parents
         }
       val decls1 = decls filter (sym =>
         if (clazz hasFlag INTERFACE) isInterfaceMember(sym)
@@ -249,25 +248,17 @@ abstract class AddInterfaces extends InfoTransform {
    *  to `tree'. `tree' which is assumed to be the body of a constructor of class `clazz'.
    */
   private def addMixinConstructorCalls(tree: Tree, clazz: Symbol): Tree = {
-    def mixinConstructorCall(mixinClass: Symbol): Tree = atPos(tree.pos) {
-      Apply(Select(This(clazz), mixinClass.primaryConstructor), List())
+    def mixinConstructorCall(impl: Symbol): Tree = atPos(tree.pos) {
+      Apply(Select(This(clazz), impl.primaryConstructor), List())
     }
-    def toImplClass(sym: Symbol) =
-      if (sym.needsImplClass) implClass(sym) else sym
     val mixinConstructorCalls: List[Tree] = {
-      for (val mc <- clazz.mixinClasses.reverse.map(toImplClass).removeDuplicates;
-           mc.isImplClass && mc.toInterface != ScalaObjectClass)
-      yield mixinConstructorCall(mc)
+      for (val mc <- clazz.mixinClasses.reverse;
+           mc.hasFlag(lateINTERFACE) && mc != ScalaObjectClass)
+      yield mixinConstructorCall(implClass(mc))
     }
-    tree match { //todo: remove checking code
+    tree match {
       case Block(supercall :: stats, expr) =>
-        assert(supercall match {
-          case Apply(Select(Super(_, _), _), _) => true
-          case _ => false
-        })
         copy.Block(tree, supercall :: mixinConstructorCalls ::: stats, expr)
-      case Block(_, _) =>
-        assert(false, tree);  tree
     }
   }
 
@@ -296,8 +287,9 @@ abstract class AddInterfaces extends InfoTransform {
             if (owner == impl) This(impl) setPos tree.pos
             else tree
           } else tree
+/* !!!
         case Super(qual, mix) =>
-          val mix1 =
+          val mix1 = mix
             if (mix == nme.EMPTY.toTypeName) mix
             else {
               val ps = atPhase(currentRun.erasurePhase) {
@@ -309,6 +301,7 @@ abstract class AddInterfaces extends InfoTransform {
             }
           if (sym.needsImplClass) Super(implClass(sym), mix1) setPos tree.pos
           else copy.Super(tree, qual, mix1)
+*/
         case _ =>
           tree
       }

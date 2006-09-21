@@ -176,80 +176,75 @@ abstract class Mixin extends InfoTransform {
 
       assert(!clazz.isTrait, clazz)
       assert(!clazz.info.parents.isEmpty, clazz)
-      assert(phase == currentRun.mixinPhase)
 
       // first complete the superclass with mixed in members
       addMixedinMembers(clazz.superClass)
 
       //System.out.println("adding members of " + clazz.info.baseClasses.tail.takeWhile(superclazz !=) + " to " + clazz);//DEBUG
 
-      // Mix in all traits that are not inherited by the superclass
-      val mixins = clazz.mixinClasses
-
-      /** Mix in members of class mixinClass into class clazz */
-      def mixinMembers(mixinClass: Symbol): unit = {
-        //Console.println("mixin members of "+mixinClass+":"+mixinClass.info.decls+" into "+clazz)//DEBUG
-        if (mixinClass.isImplClass) {
-          val iface = mixinClass.toInterface
-          addLateInterfaceMembers(iface)
-          for (val member <- mixinClass.info.decls.toList) {
-            if (isForwarded(member)) {
-              val imember = member.overriddenSymbol(iface)
-              //Console.println("mixin member "+member+":"+member.tpe+member.locationString+" "+imember+" "+imember.overridingSymbol(clazz)+" to "+clazz+" with scope "+clazz.info.decls)//DEBUG
-              if (imember.overridingSymbol(clazz) == NoSymbol &&
-                  clazz.info.findMember(member.name, 0, lateDEFERRED, false).alternatives.contains(imember)) {
-                    val member1 = addMember(
-                      clazz,
-                      member.cloneSymbol(clazz) setPos clazz.pos resetFlag (DEFERRED | lateDEFERRED))
-                    member1.asInstanceOf[TermSymbol] setAlias member;
-                  }
-            }
-          }
-        } else if (mixinClass.hasFlag(lateINTERFACE)) {
-          addLateInterfaceMembers(mixinClass)
-          val impl = implClass(mixinClass)
-          //System.out.println("late impl " + mixinClass + " " + impl);//DEBUG
-          if (!(mixins contains impl)) mixinMembers(impl)
-          // For all members of a trait's interface do:
-          for (val member <- mixinClass.info.decls.toList) {
-
-            if ((member hasFlag ACCESSOR) &&
-                (!(member hasFlag DEFERRED) || (member hasFlag lateDEFERRED))) {
-              // mixin field accessors
-              val member1 = addMember(
-                clazz,
-                member.cloneSymbol(clazz)
-                  setPos clazz.pos
-                  setFlag FINAL resetFlag (DEFERRED | lateDEFERRED))
-              if (!member.isSetter)
-                member.tpe match {
-                  case MethodType(List(), ConstantType(_)) =>
-                    // member is a constant; only getter is needed
-                    ;
-                  case _ =>
-                    // otherwise mixin a field as well
-                    addMember(clazz,
-                              clazz.newValue(member.pos, nme.getterToLocal(member.name))
-                              setFlag (LOCAL | PRIVATE | member.getFlag(MUTABLE))
-                              setInfo member.tpe.resultType)
+      /** Mix in members of implementation class mixinClass into class clazz */
+      def mixinImplClassMembers(impl: Symbol, iface: Symbol): unit = {
+        assert (impl.isImplClass)
+        for (val member <- impl.info.decls.toList) {
+          if (isForwarded(member)) {
+            val imember = member.overriddenSymbol(iface)
+            //Console.println("mixin member "+member+":"+member.tpe+member.locationString+" "+imember+" "+imember.overridingSymbol(clazz)+" to "+clazz+" with scope "+clazz.info.decls)//DEBUG
+            if (imember.overridingSymbol(clazz) == NoSymbol &&
+                clazz.info.findMember(member.name, 0, lateDEFERRED, false).alternatives.contains(imember)) {
+                  val member1 = addMember(
+                    clazz,
+                    member.cloneSymbol(clazz) setPos clazz.pos resetFlag (DEFERRED | lateDEFERRED))
+                  member1.asInstanceOf[TermSymbol] setAlias member;
                 }
-            } else if (member hasFlag SUPERACCESSOR) { // mixin super accessors
-              val member1 = addMember(clazz, member.cloneSymbol(clazz)) setPos clazz.pos
-              assert(member1.alias != NoSymbol, member1)
-              val alias1 = rebindSuper(clazz, member.alias, mixinClass)
-              member1.asInstanceOf[TermSymbol] setAlias alias1
-
-            } else if (member.isMethod && member.isModule && !(member hasFlag (LIFTED | BRIDGE))) {
-              // mixin objects: todo what happens with abstract objects?
-              addMember(clazz, member.cloneSymbol(clazz))
-                .setPos(clazz.pos)
-                .resetFlag(DEFERRED | lateDEFERRED)
-            }
           }
         }
       }
-      for (val mixinClass <- mixins) mixinMembers(mixinClass)
-      if (settings.debug.value) log("new defs of " + clazz + " = " + clazz.info.decls)
+
+      /** Mix in members of trait mixinClass into class clazz */
+      def mixinTraitMembers(mixinClass: Symbol): unit = {
+        // For all members of a trait's interface do:
+        for (val member <- mixinClass.info.decls.toList) {
+          if ((member hasFlag ACCESSOR) &&
+              (!(member hasFlag DEFERRED) || (member hasFlag lateDEFERRED))) {
+            // mixin field accessors
+            val member1 = addMember(
+              clazz,
+              member.cloneSymbol(clazz)
+                setPos clazz.pos
+                setFlag FINAL resetFlag (DEFERRED | lateDEFERRED))
+            if (!member.isSetter)
+              member.tpe match {
+                case MethodType(List(), ConstantType(_)) =>
+                  // member is a constant; only getter is needed
+                  ;
+                case _ =>
+                  // otherwise mixin a field as well
+                  addMember(clazz,
+                            clazz.newValue(member.pos, nme.getterToLocal(member.name))
+                            setFlag (LOCAL | PRIVATE | member.getFlag(MUTABLE))
+                            setInfo member.tpe.resultType)
+              }
+          } else if (member hasFlag SUPERACCESSOR) { // mixin super accessors
+            val member1 = addMember(clazz, member.cloneSymbol(clazz)) setPos clazz.pos
+            assert(member1.alias != NoSymbol, member1)
+            val alias1 = rebindSuper(clazz, member.alias, mixinClass)
+            member1.asInstanceOf[TermSymbol] setAlias alias1
+
+          } else if (member.isMethod && member.isModule && !(member hasFlag (LIFTED | BRIDGE))) {
+            // mixin objects: todo what happens with abstract objects?
+            addMember(clazz, member.cloneSymbol(clazz))
+              .setPos(clazz.pos)
+              .resetFlag(DEFERRED | lateDEFERRED)
+          }
+        }
+      }
+
+      for (val mc <- clazz.mixinClasses)
+        if (mc hasFlag lateINTERFACE) {
+          addLateInterfaceMembers(mc)
+          mixinTraitMembers(mc)
+          mixinImplClassMembers(implClass(mc), mc)
+        }
     }
   }
 

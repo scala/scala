@@ -287,7 +287,6 @@ with PatternMatchers */ {
       // @todo: remove unused variables
 
       if (containsReg) {
-        System.out.println("" + sel + " match " + ocases)
         cunit.error(sel.pos, "regular expressions not yet implemented")
         //sel
         EmptyTree
