@@ -115,9 +115,7 @@ abstract class GenJVM extends SubComponent {
       }
       if (!(jclass.getName().endsWith("$") && sym.isModuleClass))
         addScalaAttr(if (isTopLevelModule(sym)) sym.sourceModule else sym);
-
-      if (settings.XinnerClasses.value)
-        addInnerClasses;
+      addInnerClasses;
 
       val outfile = getFile(jclass, ".class")
       jclass.writeTo(outfile)
