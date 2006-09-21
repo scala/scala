@@ -124,8 +124,6 @@ class Settings(error: String => unit) {
   val Xscript       = BooleanSetting("-Xscript", "compile script file")
   val XinnerClasses = BooleanSetting("-XinnerClasses", "generate InnerClasses attribute for Java interoperability")
 
-  val Xnofancymatch = BooleanSetting("-Xnofancymatch", "don't match outer instances")
-
   /** A list of all settings */
   def allSettings: List[Setting] = allsettings.reverse
 
