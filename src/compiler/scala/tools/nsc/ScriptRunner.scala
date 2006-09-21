@@ -126,7 +126,7 @@ object ScriptRunner {
   def wrappedScript(filename: String): SourceFile = {
     val preamble =
       new SourceFile("<script preamble>",
-          ("package scala.scripting\n" +
+          ("package scalascript\n" +
           "object Main {\n" +
           "  def main(argv: Array[String]): Unit = {\n" +
           "  val args = argv;\n").toCharArray)
@@ -296,7 +296,7 @@ object ScriptRunner {
       try {
         ObjectRunner.run(
           classpath,
-          "scala.scripting.Main",
+          "scalascript.Main",
           scriptArgs.toArray)
       } catch {
         case e:InvocationTargetException =>
