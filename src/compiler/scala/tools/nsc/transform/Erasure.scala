@@ -233,41 +233,57 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
      *    Object -> Seq, Iterable (might be an array, which needs to be boxed)
      */
     private def cast(tree: Tree, pt: Type): Tree =
-      if (pt.symbol == ArrayClass && tree.tpe.symbol == ObjectClass)
-        typed {
-          atPos(tree.pos) {
-            evalOnce(tree, x =>
-              gen.mkAttributedCast(
-                If(
-                  Apply(
-                    TypeApply(
-                      Select(x(), Object_isInstanceOf),
-                      List(TypeTree(BoxedArrayClass.tpe))),
-                    List()),
-                  unbox(gen.mkAttributedCast(x(), BoxedArrayClass.tpe), pt),
-                  x()),
-                pt))
+      if (tree.tpe.symbol == ObjectClass) {
+        if (pt.symbol == ArrayClass)
+          typed {
+            atPos(tree.pos) {
+              evalOnce(tree, x =>
+                gen.mkAttributedCast(
+                  If(
+                    Apply(
+                      TypeApply(
+                        Select(x(), Object_isInstanceOf),
+                        List(TypeTree(BoxedArrayClass.tpe))),
+                      List()),
+                    unbox(gen.mkAttributedCast(x(), BoxedArrayClass.tpe), pt),
+                    x()),
+                  pt))
+            }
           }
-        }
-      else if ((pt.symbol.isNonBottomSubClass(BoxedArrayClass) ||
-                pt.symbol != ObjectClass && SeqClass.isNonBottomSubClass(pt.symbol)) &&
-               tree.tpe.symbol == ObjectClass)
-        typed {
-          atPos(tree.pos) {
-            evalOnce(tree, x =>
-              gen.mkAttributedCast(
-                If(
-                  Apply(
-                    TypeApply(
-                      Select(x(), Object_isInstanceOf),
-                      List(TypeTree(BoxedArrayClass.tpe))),
-                    List()),
-                  x(),
-                  boxArray(x())),
-                pt))
+        else if (pt.symbol isNonBottomSubClass BoxedArrayClass)
+          typed {
+            atPos(tree.pos) {
+              evalOnce(tree, x =>
+                gen.mkAttributedCast(
+                  If(
+                    Apply(
+                      TypeApply(
+                        Select(x(), Object_isInstanceOf),
+                        List(TypeTree(BoxedArrayClass.tpe))),
+                      List()),
+                    x(),
+                    boxArray(x())),
+                  pt))
+            }
           }
-        }
-      else gen.mkAttributedCast(tree, pt);
+        else if ((SeqClass isNonBottomSubClass pt.symbol) && pt.symbol != ObjectClass)
+          typed {
+            atPos(tree.pos) {
+              evalOnce(tree, x =>
+                gen.mkAttributedCast(
+                  If(
+                    Apply(
+                      TypeApply(
+                        Select(x(), Object_isInstanceOf),
+                        List(TypeTree(pt))),
+                      List()),
+                    x(),
+                    boxArray(x())),
+                  pt))
+            }
+          }
+        else gen.mkAttributedCast(tree, pt)
+      } else gen.mkAttributedCast(tree, pt)
 
     /** Is symbol a member of unboxed arrays (which will be expanded directly later)? */
     private def isUnboxedArrayMember(sym: Symbol) =
