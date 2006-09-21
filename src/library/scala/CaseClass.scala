@@ -19,10 +19,11 @@ package scala
  */
 trait CaseClass extends AnyRef {
 
-  /** for a case class A(x_0,...,x_(k-1)), returns x_i for 0 &lt;= i &lt; k,
-   *  <code>null</code> otherwise.
+  /** for a case class <code>A(x_0,...,x_(k-1))</code>, returns <code>x_i</code>
+   *  for <code>0 &lt;= i &lt; k</code>, <code>null</code> otherwise.
    *
    *  @param n ...
+   *  @return  ...
    */
   def caseElement(n: Int): Any
 
@@ -30,7 +31,7 @@ trait CaseClass extends AnyRef {
   def setCaseElement(n: Int, v: Any): unit
   */
 
-  /** for a case class A(x_0,...,x_(k-1)), returns k
+  /** for a case class <code>A(x_0,...,x_(k-1))</code>, returns <code>k</code>
    */
   def caseArity: Int
 

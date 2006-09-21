@@ -73,7 +73,7 @@ abstract class BitSet extends AnyRef with Function1[Int,Boolean] with Set[Int] {
         var len = memsize(min(this.capacity, other.capacity))
         var i = 0
         var res = true
-        while((i < len) && res) {
+        while ((i < len) && res) {
           res = arr(i) == other.arr(i)
           i = i + 1
         }
@@ -96,8 +96,8 @@ abstract class BitSet extends AnyRef with Function1[Int,Boolean] with Set[Int] {
       var i = 0
       var res = true
       while((i < len) && res) {
-        res = other.arr(i) == (other.arr(i) | arr(i));
-        i = i + 1;
+        res = other.arr(i) == (other.arr(i) | arr(i))
+        i = i + 1
       }
       res && (this.capacity <= other.capacity || {
         // if this set is bigger check that the rest is empty

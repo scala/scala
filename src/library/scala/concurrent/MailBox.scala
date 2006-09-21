@@ -9,42 +9,46 @@
 // $Id$
 
 
-package scala.concurrent;
+package scala.concurrent
 
-
+/** This class ...
+ *
+ *  @author  Martin Odersky
+ *  @version 1.0, 12/03/2003
+ */
 //class MailBox with Monitor with LinkedListQueueCreator {
 class MailBox extends AnyRef with ListQueueCreator {
 
-  type Message = AnyRef;
+  type Message = AnyRef
 
   private abstract class PreReceiver {
-    var msg: Message = null;
-    def isDefinedAt(msg: Message): boolean;
+    var msg: Message = null
+    def isDefinedAt(msg: Message): boolean
   }
 
   private class Receiver[a](receiver: PartialFunction[Message, a]) extends PreReceiver {
 
-    def isDefinedAt(msg: Message) = receiver.isDefinedAt(msg);
+    def isDefinedAt(msg: Message) = receiver.isDefinedAt(msg)
 
     def receive(): a = synchronized {
-      while (msg == null) wait();
+      while (msg == null) wait()
       receiver(msg)
     }
 
     def receiveWithin(msec: long): a = synchronized {
-      if (msg == null) wait(msec);
+      if (msg == null) wait(msec)
       receiver(if (msg != null) msg else TIMEOUT)
     }
   }
 
-  private val messageQueue = queueCreate[Message];
-  private val receiverQueue = queueCreate[PreReceiver];
+  private val messageQueue = queueCreate[Message]
+  private val receiverQueue = queueCreate[PreReceiver]
 
   /** Unconsumed messages. */
-  private var sent = messageQueue.make;
+  private var sent = messageQueue.make
 
   /** Pending receivers. */
-  private var receivers = receiverQueue.make;
+  private var receivers = receiverQueue.make
 
   /**
   * Check whether the receiver can be applied to an unconsumed message.
@@ -55,8 +59,8 @@ class MailBox extends AnyRef with ListQueueCreator {
     messageQueue.extractFirst(sent, msg => receiver.isDefinedAt(msg)) match {
       case None => receivers = receiverQueue.append(receivers, receiver)
       case Some(Pair(msg, withoutMsg)) => {
-	sent = withoutMsg;
-	receiver.msg = msg
+        sent = withoutMsg
+        receiver.msg = msg
       }
     }
   }
@@ -70,9 +74,9 @@ class MailBox extends AnyRef with ListQueueCreator {
     receiverQueue.extractFirst(receivers, r => r.isDefinedAt(msg)) match {
       case None => sent = messageQueue.append(sent, msg)
       case Some(Pair(receiver, withoutReceiver)) => {
-	receivers = withoutReceiver;
-	receiver.msg = msg;
-	receiver synchronized { receiver.notify() };
+        receivers = withoutReceiver
+        receiver.msg = msg
+        receiver synchronized { receiver.notify() }
       }
     }
   }
@@ -82,8 +86,8 @@ class MailBox extends AnyRef with ListQueueCreator {
   * <code>f</code> is defined.
   */
   def receive[a](f: PartialFunction[Message, a]): a = {
-    val r = new Receiver(f);
-    scanSentMsgs(r);
+    val r = new Receiver(f)
+    scanSentMsgs(r)
     r.receive()
   }
 
@@ -92,8 +96,8 @@ class MailBox extends AnyRef with ListQueueCreator {
   * <code>f</code> is defined or the timeout is over.
   */
   def receiveWithin[a](msec: long)(f: PartialFunction[Message, a]): a = {
-    val r = new Receiver(f);
-    scanSentMsgs(r);
+    val r = new Receiver(f)
+    scanSentMsgs(r)
     r.receiveWithin(msec)
   }
 
@@ -106,66 +110,66 @@ class MailBox extends AnyRef with ListQueueCreator {
 */
 trait QueueModule[a] {
   /** Type of queues. */
-  type t;
+  type t
   /** Create an empty queue. */
-  def make: t;
+  def make: t
   /** Append an element to a queue. */
-  def append(l: t, x: a): t;
+  def append(l: t, x: a): t
   /** Extract an element satisfying a predicate from a queue. */
-  def extractFirst(l: t, p: a => boolean): Option[Pair[a, t]];
+  def extractFirst(l: t, p: a => boolean): Option[Pair[a, t]]
 }
 
 /** Inefficient but simple queue module creator. */
 trait ListQueueCreator {
   def queueCreate[a]: QueueModule[a] = new QueueModule[a] {
-    type t = List[a];
-    def make: t = Nil;
-    def append(l: t, x: a): t = l ::: x :: Nil;
+    type t = List[a]
+    def make: t = Nil
+    def append(l: t, x: a): t = l ::: x :: Nil
     def extractFirst(l: t, p: a => boolean): Option[Pair[a, t]] =
       l match {
-	case Nil => None
-	case head :: tail =>
-	  if (p(head))
-	    Some(Pair(head, tail))
-	  else
-	    extractFirst(tail, p) match {
-	      case None => None
-	      case Some(Pair(x, without_x)) => Some(Pair(x, head :: without_x))
-	    }
+        case Nil => None
+        case head :: tail =>
+          if (p(head))
+            Some(Pair(head, tail))
+          else
+            extractFirst(tail, p) match {
+              case None => None
+              case Some(Pair(x, without_x)) => Some(Pair(x, head :: without_x))
+            }
       }
   }
 }
 
 /** Efficient queue module creator based on linked lists. */
 trait LinkedListQueueCreator {
-  import scala.collection.mutable.LinkedList;
+  import scala.collection.mutable.LinkedList
   def queueCreate[a >: Null <: AnyRef]: QueueModule[a] = new QueueModule[a] {
-    type t = Pair[LinkedList[a], LinkedList[a]]; // fst = the list, snd = last elem
+    type t = Pair[LinkedList[a], LinkedList[a]] // fst = the list, snd = last elem
     def make: t = {
-      val l = new LinkedList[a](null, null);
+      val l = new LinkedList[a](null, null)
       Pair(l, l)
     }
     def append(l: t, x: a): t = {
-      val atTail = new LinkedList(x, null);
+      val atTail = new LinkedList(x, null)
       l._2 append atTail;
       Pair(l._1, atTail)
     }
     def extractFirst(l: t, p: a => boolean): Option[Pair[a, t]] = {
-      var xs = l._1;
-      var xs1 = xs.next;
+      var xs = l._1
+      var xs1 = xs.next
       while (xs1 != null && !p(xs1.elem)) {
-	xs = xs1;
-	xs1 = xs1.next;
+        xs = xs1
+        xs1 = xs1.next
       }
       if (xs1 != null) {
-	xs.next = xs1.next;
-	if (xs.next == null)
-	  Some(Pair(xs1.elem, Pair(l._1, xs)))
-	else
-	  Some(Pair(xs1.elem, l))
+        xs.next = xs1.next
+        if (xs.next == null)
+          Some(Pair(xs1.elem, Pair(l._1, xs)))
+        else
+          Some(Pair(xs1.elem, l))
       }
       else
-	None
+        None
     }
   }
 }

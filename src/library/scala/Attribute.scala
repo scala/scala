@@ -9,9 +9,11 @@
 // $Id$
 
 
-package scala;
-
+package scala
 
 /** A base class for attributes
-*/
-class Attribute {}
+ *
+ *  @author  Martin Odersky
+ *  @version 1.0, 15/07/2004
+ */
+class Attribute

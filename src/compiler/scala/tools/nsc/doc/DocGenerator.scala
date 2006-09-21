@@ -580,9 +580,9 @@ abstract class DocGenerator extends Models {
   def organize0(mmbr: HasTree, map0: ListMap[Kind, TreeSet[HasTree]]) = {
     var map = map0
     if (!map.contains(mmbr.kind))
-      map = map.update(mmbr.kind, new TreeSet[HasTree]);
-    val sz = map(mmbr.kind).size;
-    map = map.update(mmbr.kind, map(mmbr.kind) + mmbr);
+      map = map.update(mmbr.kind, new TreeSet[HasTree])
+    val sz = map(mmbr.kind).size
+    map = map.update(mmbr.kind, map(mmbr.kind) + mmbr)
     /*if (map(mmbr.kind).size == sz)
       System.err.println(""+mmbr + " not added");*/
     map
@@ -606,7 +606,21 @@ abstract class DocGenerator extends Models {
     if (parsedxml1 == null) Text("BAD_COMMENT???");
     else parsedxml1;
     */
-  };
+  }
+
+  //http://java.sun.com/j2se/1.5.0/docs/tooldocs/windows/javadoc.html#javadoctags
+  private def tag(name: String): NodeSeq =
+    <b> {
+      Text((name match {
+        case "param"   => "Parameters"
+        case "return"  => "Returns"
+        case "see"     => "See"
+        case "since"   => "Since"
+        case "throws"  => "Throws"
+        case "version" => "Version"
+        case _ => name
+      }) + ":")
+    } </b>
 
   def comment(comment: String, isShort: Boolean): NodeSeq = {
     var ret: List[Node] = Nil
@@ -639,10 +653,12 @@ abstract class DocGenerator extends Models {
     else <span><dl><dd>{parse(body)}</dd></dl><dl>
     { {
       for (val attr <- attributes) yield
-        <dt style="margin-top:10px;"><b>{Text(attr._1 + ":")}</b></dt>
+        <dt style="margin:10px 0 0 10px;">
+          tag(attr._1) //<b>{Text(attr._1 + ":")}</b>
+        </dt>
         <dd>{(parse(attr._2))}</dd>;
     } } </dl></span>;
-  };
+  }
 
   val index =
     <frameset cols="25%, 75%">

@@ -9,17 +9,23 @@
 // $Id$
 
 
-package scala.concurrent;
+package scala.concurrent
 
-
+/** This class ...
+ *
+ *  @author  Martin Odersky
+ *  @version 1.0, 10/03/2003
+ */
 class Lock {
-  var available = true;
+  var available = true
+
   def acquire = synchronized {
-    if (!available) wait();
+    if (!available) wait()
     available = false
   }
+
   def release = synchronized {
-    available = true;
+    available = true
     notify()
   }
 }

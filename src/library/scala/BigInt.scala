@@ -1,4 +1,14 @@
-package scala;
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2006-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+// $Id$
+
+package scala
 
 import java.math.BigInteger
 import java.util.Random
@@ -9,11 +19,15 @@ import java.util.Random
  */
 object BigInt {
 
-  private val minCached = -1024;
-  private val maxCached = 1024;
+  private val minCached = -1024
+  private val maxCached = 1024
   private val cache = new Array[BigInt](maxCached - minCached + 1)
 
-  /** Constructs a BigInt whose value is equal to that of the specified integer value.
+  /** Constructs a <code>BigInt</code> whose value is equal to that of the
+   *  specified integer value.
+   *
+   *  @param i the specified integer value
+   *  @return  the constructed <code>BigInt</code>
    */
   def apply(i: Int): BigInt =
     if (minCached <= i && i <= maxCached) {
@@ -22,7 +36,11 @@ object BigInt {
       n
     } else new BigInt(BigInteger.valueOf(i))
 
-  /** Constructs a BigInt whose value is equal to that of the specified long value.
+  /** Constructs a <code>BigInt</code> whose value is equal to that of the
+   *  specified long value.
+   *
+   *  @param l the specified long value
+   *  @return  the constructed <code>BigInt</code>
    */
   def apply(l: Long): BigInt =
     if (minCached <= l && l <= maxCached) apply(l.toInt)
@@ -45,8 +63,12 @@ object BigInt {
   def apply(bitlength: Int, certaInty: Int, rnd: Random): BigInt =
     new BigInt(new BigInteger(bitlength, certaInty, rnd))
 
-  /** Constructs a randomly generated BigInt, uniformly distributed over the range
-   *  0 to (2 ^ numBits - 1), inclusive.
+  /** Constructs a randomly generated BigInt, uniformly distributed over the
+   *  range 0 to (2 ^ numBits - 1), inclusive.
+   *
+   *  @param numbits ...
+   *  @param rnd     ...
+   *  @return        ...
    */
   def apply(numbits: Int, rnd: Random): BigInt =
     new BigInt(new BigInteger(numbits, rnd))
@@ -56,8 +78,12 @@ object BigInt {
   def apply(x: String): BigInt =
     new BigInt(new BigInteger(x))
 
-  /** Translates the String representation of a BigInt in the
-   *  specified radix into a BigInt.
+  /** Translates the string representation of a BigInt in the
+   *  specified <code>radix</code> into a BigInt.
+   *
+   *  @param x     ...
+   *  @param radix ...
+   *  @return      ...
    */
   def apply(x: String, radix: Int): BigInt =
     new BigInt(new BigInteger(x, radix))
@@ -67,7 +93,7 @@ object BigInt {
   def probablePrime(bitLength: Int, rnd: Random): BigInt =
     new BigInt(BigInteger.probablePrime(bitLength, rnd))
 
-  /** Implicit conversion from int to BigInt
+  /** Implicit conversion from <code>int</code> to <code>BigInt</code>.
    */
   implicit def int2bigInt(i: Int): BigInt = apply(i)
 
@@ -75,7 +101,7 @@ object BigInt {
    */
   implicit def long2bigInt(l: Long): BigInt = apply(l)
 
-  /** Implicit conversion from BigInt to Ordered
+  /** Implicit conversion from BigInt to <code>Ordered</code>.
    */
   implicit def bigInt2ordered(x: BigInt): Ordered[BigInt] = new Ordered[BigInt] with Proxy {
     def self: Any = x;
@@ -319,10 +345,11 @@ class BigInt(val bigInteger: BigInteger) extends runtime.BoxedNumber {
    */
   def toString(radix: Int): String = this.bigInteger.toString(radix)
 
-  /** Returns a byte array containing the two's-complement representation of this BigInt.
-   *  The byte array will be in big-endian byte-order: the most significant byte is in the
-   *  zeroth element. The array will contain the minimum number of bytes required to represent
-   *  this BigInt, including at least one sign bit.
+  /** Returns a byte array containing the two's-complement representation of
+   *  this BigInt. The byte array will be in big-endian byte-order: the most
+   *  significant byte is in the zeroth element. The array will contain the
+   *  minimum number of bytes required to represent this BigInt, including at
+   *  least one sign bit.
    */
   def toByteArray: Array[Byte] = this.bigInteger.toByteArray()
 }

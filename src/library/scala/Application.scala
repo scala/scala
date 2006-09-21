@@ -33,7 +33,7 @@ package scala
  *  </pre>
  *
  *  @author  Matthias Zenger
- *  @version 1.0, 10/09/03
+ *  @version 1.0, 10/09/2003
  */
 
 trait Application {

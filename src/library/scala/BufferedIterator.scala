@@ -11,8 +11,7 @@
 
 package scala
 
-
-/** Buffered iterators are iterators which llow to inspect the next
+/** Buffered iterators are iterators which allow to inspect the next
  *  element without discarding it.
  *
  *  @author  Martin Odersky

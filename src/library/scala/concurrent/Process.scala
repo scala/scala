@@ -9,43 +9,47 @@
 // $Id$
 
 
-package scala.concurrent;
+package scala.concurrent
 
-
+/** This object ...
+ *
+ *  @author  Erik Stenman
+ *  @version 1.0, 01/10/2003
+ */
 object Process {
 
   def spawn(body: => Unit): Process = {
-    val p = new Process(body);
-    p.start();
+    val p = new Process(body)
+    p.start()
     p
   }
 
   def spawn_link(body: => Unit): Process =
-    self.spawn_link(body);
+    self.spawn_link(body)
 
   def send(p: Process, msg: MailBox#Message) =
-    p.send(msg);
+    p.send(msg)
 
   def receive[a](f: PartialFunction[MailBox#Message, a]): a =
-    self.receive(f);
+    self.receive(f)
 
   def receiveWithin[a](msec: long)(f: PartialFunction[MailBox#Message, a]): a =
-    self.receiveWithin(msec)(f);
+    self.receiveWithin(msec)(f)
 
   def self: Process =
     if (Thread.currentThread().isInstanceOf[Process])
       Thread.currentThread().asInstanceOf[Process]
     else
-      error("Self called outside a process");
+      error("Self called outside a process")
 
   def exit(p: Process, reason: AnyRef) =
-    p.exit(reason);
+    p.exit(reason)
 
 }
 
 class Process(body: => Unit) extends Actor() {
-  private var exitReason: AnyRef = null;
-  private var links: List[Process] = Nil;
+  private var exitReason: AnyRef = null
+  private var links: List[Process] = Nil
 
   override def run() =
     try {
@@ -56,28 +60,28 @@ class Process(body: => Unit) extends Actor() {
         signal(exitReason)
       case (exitSignal) =>
         signal(exitSignal)
-    };
+    }
 
   private def signal(s: MailBox#Message) =
     links.foreach { p: Process => p.send(Triple('EXIT, this, s)) }
 
   def !(msg: MailBox#Message) =
-    send(msg);
+    send(msg)
 
   def link(p: Process) =
-    links = p::links;
+    links = p::links
 
   def spawn_link(body: => Unit) = {
-    val p = new Process(body);
-    p.link(this);
-    p.start();
+    val p = new Process(body)
+    p.link(this)
+    p.start()
     p
   }
 
-  //def self = this;
+  //def self = this
 
   def exit(reason: AnyRef): Unit = {
-    exitReason = reason;
+    exitReason = reason
     interrupt()
   }
 

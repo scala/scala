@@ -9,11 +9,13 @@
 // $Id$
 
 
-package scala.concurrent;
-
+package scala.concurrent
 
 /**
  * The message sent to a message box when the period specified in
- * <code>receiveWithin</code? expires.
+ * <code>receiveWithin</code> expires.
+ *
+ * @author  Martin Odersky
+ * @version 1.0, 10/03/2003
  */
-case object TIMEOUT;
+case object TIMEOUT

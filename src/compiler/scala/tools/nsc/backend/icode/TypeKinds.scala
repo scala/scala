@@ -1,11 +1,11 @@
-/* NSC -- new scala compiler
- * Copyright 2005 LAMP/EPFL
+/* NSC -- new Scala compiler
+ * Copyright 2005-2006 LAMP/EPFL
  * @author  Martin Odersky
  */
 
 // $Id$
 
-package scala.tools.nsc.backend.icode;
+package scala.tools.nsc.backend.icode
 
 /* A type case
 
@@ -23,10 +23,10 @@ package scala.tools.nsc.backend.icode;
 
 */
 
-import scala.collection.mutable.{Map, HashMap};
+import scala.collection.mutable.{Map, HashMap}
 
 trait TypeKinds requires ICodes {
-  import global._;
+  import global._
 
   /** This class represents a type kind. Type kinds
    * represent the types that the VM know (or the ICode
@@ -36,61 +36,61 @@ trait TypeKinds requires ICodes {
 
     /** Returns a string representation of this type kind. */
     override def toString(): String = this match {
-      case UNIT    => "UNIT";
-      case BOOL    => "BOOL";
+      case UNIT    => "UNIT"
+      case BOOL    => "BOOL"
       case BYTE    => "BYTE"
-      case SHORT   => "SHORT";
-      case CHAR    => "CHAR";
-      case INT     => "INT";
-      case LONG    => "LONG";
-      case FLOAT   => "FLOAT";
-      case DOUBLE  => "DOUBLE";
-      case REFERENCE(cls) => "REFERENCE(" + cls.fullNameString + ")" ;
-      case ARRAY(elem) => "ARRAY[" + elem + "]";
-      case _       => abort("Unkown type kind.");
+      case SHORT   => "SHORT"
+      case CHAR    => "CHAR"
+      case INT     => "INT"
+      case LONG    => "LONG"
+      case FLOAT   => "FLOAT"
+      case DOUBLE  => "DOUBLE"
+      case REFERENCE(cls) => "REFERENCE(" + cls.fullNameString + ")"
+      case ARRAY(elem) => "ARRAY[" + elem + "]"
+      case _       => abort("Unkown type kind.")
     }
 
     def toType: Type = this match {
-      case UNIT            => definitions.UnitClass.info;
-      case BOOL            => definitions.BooleanClass.info;
-      case BYTE            => definitions.ByteClass.info;
-      case SHORT           => definitions.ShortClass.info;
-      case CHAR            => definitions.CharClass.info;
-      case INT             => definitions.IntClass.info;
-      case LONG            => definitions.LongClass.info;
-      case FLOAT           => definitions.FloatClass.info;
-      case DOUBLE          => definitions.DoubleClass.info;
-      case REFERENCE(cls)  => typeRef(cls.typeConstructor.prefix, cls, Nil);
+      case UNIT            => definitions.UnitClass.info
+      case BOOL            => definitions.BooleanClass.info
+      case BYTE            => definitions.ByteClass.info
+      case SHORT           => definitions.ShortClass.info
+      case CHAR            => definitions.CharClass.info
+      case INT             => definitions.IntClass.info
+      case LONG            => definitions.LongClass.info
+      case FLOAT           => definitions.FloatClass.info
+      case DOUBLE          => definitions.DoubleClass.info
+      case REFERENCE(cls)  => typeRef(cls.typeConstructor.prefix, cls, Nil)
       case ARRAY(elem)     => typeRef(definitions.ArrayClass.typeConstructor.prefix,
                                       definitions.ArrayClass,
-                                      elem.toType :: Nil);
-      case _ => abort("Unknown type kind.");
+                                      elem.toType :: Nil)
+      case _ => abort("Unknown type kind.")
     }
 
-    def isReferenceType: Boolean = false;
-    def isArrayType: Boolean = false;
-    def isValueType: Boolean = !isReferenceType && !isArrayType;
+    def isReferenceType: Boolean = false
+    def isArrayType: Boolean = false
+    def isValueType: Boolean = !isReferenceType && !isArrayType
 
 
     def isIntType: Boolean = this match {
-      case BYTE | SHORT | INT | LONG | CHAR => true;
-      case _ => false;
+      case BYTE | SHORT | INT | LONG | CHAR => true
+      case _ => false
     }
 
     def isRealType: Boolean = this match {
-      case FLOAT | DOUBLE => true;
-      case _ => false;
+      case FLOAT | DOUBLE => true
+      case _ => false
     }
 
-    def isNumericType: Boolean = isIntType | isRealType;
+    def isNumericType: Boolean = isIntType | isRealType
 
-    def maxType(other: TypeKind): TypeKind;
+    def maxType(other: TypeKind): TypeKind
 
     /** Simple subtyping check */
-    def <:<(other: TypeKind): Boolean = (this == other);
+    def <:<(other: TypeKind): Boolean = (this == other)
 
     override def equals(other: Any): Boolean =
-      this eq other.asInstanceOf[AnyRef];
+      this eq other.asInstanceOf[AnyRef]
   }
 
   /**
@@ -101,10 +101,10 @@ trait TypeKinds requires ICodes {
    */
   def lub(a: TypeKind, b: TypeKind): TypeKind = {
     def lub0(t1: Type, t2: Type): Type = {
-      val lubTpe = global.lub(t1 :: t2 :: Nil);
+      val lubTpe = global.lub(t1 :: t2 :: Nil)
       assert(lubTpe.symbol.isClass,
-             "Least upper bound of " + t1 + " and " + t2 + " is not a class: " + lubTpe);
-      lubTpe;
+             "Least upper bound of " + t1 + " and " + t2 + " is not a class: " + lubTpe)
+      lubTpe
     }
 
     if ((a.isReferenceType || a.isArrayType) &&
@@ -113,22 +113,22 @@ trait TypeKinds requires ICodes {
     else if (a == b) a
     else if (a == REFERENCE(definitions.AllClass)) b
     else if (b == REFERENCE(definitions.AllClass)) a
-    else throw new CheckerError("Incompatible types: " + a + " with " + b);
+    else throw new CheckerError("Incompatible types: " + a + " with " + b)
   }
 
   /** The unit value */
   case object UNIT extends TypeKind {
     def maxType(other: TypeKind): TypeKind = other match {
-      case UNIT => UNIT;
-      case _ => abort("Uncomparbale type kinds: UNIT with " + other);
+      case UNIT => UNIT
+      case _ => abort("Uncomparbale type kinds: UNIT with " + other)
     }
   }
 
   /** A boolean value */
   case object BOOL extends TypeKind {
     override def maxType(other: TypeKind): TypeKind = other match {
-      case BOOL => BOOL;
-      case _ => abort("Uncomparbale type kinds: BOOL with " + other);
+      case BOOL => BOOL
+      case _ => abort("Uncomparbale type kinds: BOOL with " + other)
     }
   }
 
@@ -136,8 +136,8 @@ trait TypeKinds requires ICodes {
   case object BYTE extends TypeKind {
     override def maxType(other: TypeKind): TypeKind =
       other match {
-        case BYTE | SHORT | CHAR | INT | LONG | FLOAT | DOUBLE => other;
-        case _ => abort("Uncomparbale type kinds: BYTE with " + other);
+        case BYTE | SHORT | CHAR | INT | LONG | FLOAT | DOUBLE => other
+        case _ => abort("Uncomparbale type kinds: BYTE with " + other)
       }
   }
 
@@ -155,9 +155,9 @@ trait TypeKinds requires ICodes {
   case object CHAR extends TypeKind {
     override def maxType(other: TypeKind): TypeKind =
       other match {
-        case BYTE | SHORT | CHAR => CHAR;
-        case INT | LONG | FLOAT | DOUBLE => other;
-        case _ => abort("Uncomparbale type kinds: CHAR with " + other);
+        case BYTE | SHORT | CHAR => CHAR
+        case INT | LONG | FLOAT | DOUBLE => other
+        case _ => abort("Uncomparbale type kinds: CHAR with " + other)
       }
   }
 
@@ -166,9 +166,9 @@ trait TypeKinds requires ICodes {
   case object INT extends TypeKind {
     override def maxType(other: TypeKind): TypeKind =
       other match {
-        case BYTE | SHORT | CHAR | INT => INT;
-        case LONG | FLOAT | DOUBLE => other;
-        case _ => abort("Uncomparbale type kinds: INT with " + other);
+        case BYTE | SHORT | CHAR | INT => INT
+        case LONG | FLOAT | DOUBLE => other
+        case _ => abort("Uncomparbale type kinds: INT with " + other)
       }
   }
 
@@ -176,18 +176,18 @@ trait TypeKinds requires ICodes {
   case object LONG extends TypeKind {
     override def maxType(other: TypeKind): TypeKind =
       other match {
-        case BYTE | SHORT | CHAR | INT | LONG => LONG;
-        case FLOAT | DOUBLE => DOUBLE;
-        case _ => abort("Uncomparbale type kinds: LONG with " + other);
+        case BYTE | SHORT | CHAR | INT | LONG => LONG
+        case FLOAT | DOUBLE => DOUBLE
+        case _ => abort("Uncomparbale type kinds: LONG with " + other)
       }
   }
 
   /** A 4-byte floating point number */
   case object FLOAT extends TypeKind {
     override def maxType(other: TypeKind): TypeKind = other match {
-      case BYTE | SHORT | CHAR | INT | LONG | FLOAT => FLOAT;
-      case DOUBLE => DOUBLE;
-      case _ => abort("Uncomparbale type kinds: FLOAT with " + other);
+      case BYTE | SHORT | CHAR | INT | LONG | FLOAT => FLOAT
+      case DOUBLE => DOUBLE
+      case _ => abort("Uncomparbale type kinds: FLOAT with " + other)
     }
   }
 
@@ -195,9 +195,9 @@ trait TypeKinds requires ICodes {
   case object DOUBLE extends TypeKind {
     override def maxType(other: TypeKind): TypeKind =
       if (other.isNumericType)
-        DOUBLE;
+        DOUBLE
       else
-        abort("Uncomparbale type kinds: DOUBLE with " + other);
+        abort("Uncomparbale type kinds: DOUBLE with " + other)
   }
 
   /** A string reference */
@@ -212,14 +212,14 @@ trait TypeKinds requires ICodes {
   /** A class type. */
   case class REFERENCE(cls: Symbol) extends TypeKind {
     assert(cls != null,
-           "REFERENCE to null class symbol.");
+           "REFERENCE to null class symbol.")
     assert(cls != definitions.ArrayClass,
-           "REFERENCE to Array is not allowed, should be ARRAY[..] instead");
+           "REFERENCE to Array is not allowed, should be ARRAY[..] instead")
     assert(cls != NoSymbol,
-           "REFERENCE to NoSymbol not allowed!");
+           "REFERENCE to NoSymbol not allowed!")
 
     override def toString(): String =
-      "REFERENCE(" + cls.fullNameString + ")";
+      "REFERENCE(" + cls.fullNameString + ")"
 
     /**
      * Approximate `lub'. The common type of two references is
@@ -228,9 +228,10 @@ trait TypeKinds requires ICodes {
      */
     override def maxType(other: TypeKind): TypeKind =
       other match {
-        case REFERENCE(_) => REFERENCE(definitions.AnyRefClass);
+        case REFERENCE(_) =>
+          REFERENCE(definitions.AnyRefClass)
         case _ =>
-          abort("Uncomparbale type kinds: REFERENCE with " + other);
+          abort("Uncomparbale type kinds: REFERENCE with " + other)
       }
 
     /** Checks subtyping relationship. */
@@ -239,26 +240,26 @@ trait TypeKinds requires ICodes {
         true
       else other match {
         case REFERENCE(cls2) =>
-          cls.tpe <:< cls2.tpe;
+          cls.tpe <:< cls2.tpe
         case ARRAY(_) =>
-          cls == definitions.AllRefClass;
-        case _ => false;
+          cls == definitions.AllRefClass
+        case _ => false
       }
 
     override def isReferenceType: Boolean = true;
 
     override def equals(other: Any): Boolean = other match {
-      case REFERENCE(cls2) => cls == cls2;
-      case _               => false;
+      case REFERENCE(cls2) => cls == cls2
+      case _               => false
     }
   }
 
 
   case class ARRAY(val elem: TypeKind) extends TypeKind {
     override def toString(): String =
-      "ARRAY[" + elem + "]";
+      "ARRAY[" + elem + "]"
 
-    override def isArrayType = true;
+    override def isArrayType = true
 
     /**
      * Approximate `lub'. The common type of two references is
@@ -267,27 +268,29 @@ trait TypeKinds requires ICodes {
      */
     override def maxType(other: TypeKind): TypeKind =
       other match {
-        case REFERENCE(_) => REFERENCE(definitions.AnyRefClass);
-        case ARRAY(elem2) => ARRAY(elem maxType elem2);
+        case REFERENCE(_) =>
+          REFERENCE(definitions.AnyRefClass)
+        case ARRAY(elem2) =>
+          ARRAY(elem maxType elem2)
         case _ =>
-          abort("Uncomparbale type kinds: ARRAY with " + other);
+          abort("Uncomparbale type kinds: ARRAY with " + other)
       }
 
     /** Checks subtyping relationship. */
     override def <:<(other: TypeKind): Boolean =
       other match {
         case ARRAY(elem2) =>
-          elem <:< elem2;
+          elem <:< elem2
         case REFERENCE(sym) =>
           (sym == definitions.AnyRefClass ||
            sym == definitions.ObjectClass) // TODO: platform dependent!
 
-        case _ => false;
+        case _ => false
       }
 
     override def equals(other: Any): Boolean = other match {
-      case ARRAY(elem2) => elem == elem2;
-      case _               => false;
+      case ARRAY(elem2) => elem == elem2
+      case _               => false
     }
 
   }
@@ -297,7 +300,7 @@ trait TypeKinds requires ICodes {
   * way. For JVM it would have been a REFERENCE to 'StringBuffer'.
   */
   case object ConcatClass extends TypeKind {
-    override def toString() = "ConcatClass";
+    override def toString() = "ConcatClass"
 
     /**
      * Approximate `lub'. The common type of two references is
@@ -306,15 +309,16 @@ trait TypeKinds requires ICodes {
      */
     override def maxType(other: TypeKind): TypeKind =
       other match {
-        case REFERENCE(_) => REFERENCE(definitions.AnyRefClass);
-          case _ =>
-            abort("Uncomparbale type kinds: ConcatClass with " + other);
+        case REFERENCE(_) =>
+          REFERENCE(definitions.AnyRefClass)
+        case _ =>
+          abort("Uncomparbale type kinds: ConcatClass with " + other)
       }
 
     /** Checks subtyping relationship. */
-    override def <:<(other: TypeKind): Boolean = (this eq other);
+    override def <:<(other: TypeKind): Boolean = (this eq other)
 
-    override def isReferenceType: Boolean = false;
+    override def isReferenceType: Boolean = false
   }
 
   ////////////////// Conversions //////////////////////////////
@@ -322,59 +326,60 @@ trait TypeKinds requires ICodes {
 
   /** Return the TypeKind of the given type */
   def toTypeKind(t: Type): TypeKind = t match {
-    case ThisType(sym) => REFERENCE(sym);
+    case ThisType(sym) => REFERENCE(sym)
 
     case SingleType(pre, sym) =>
       primitiveTypeMap get sym match {
-        case Some(k) => k;
-        case None    => REFERENCE(sym);
+        case Some(k) => k
+        case None    => REFERENCE(sym)
       }
 
     case ConstantType(value) =>
-      toTypeKind(value.tpe);
+      toTypeKind(value.tpe)
 
     case TypeRef(_, sym, args) =>
       primitiveTypeMap get sym match {
-        case Some(k) => k;
+        case Some(k) => k
         case None    =>
           if (sym == definitions.ArrayClass)
             ARRAY(toTypeKind(args.head))
           else
-            REFERENCE(sym);
+            REFERENCE(sym)
       }
 
     case ClassInfoType(_, _, sym) =>
       primitiveTypeMap get sym match {
-        case Some(k) => k;
+        case Some(k) => k
         case None    =>
           if (sym == definitions.ArrayClass)
-            abort("ClassInfoType to ArrayClass!");
+            abort("ClassInfoType to ArrayClass!")
           else
-            REFERENCE(sym);
+            REFERENCE(sym)
       }
 
-    case _ => abort("Unknown type: " + t);
+    case _ =>
+      abort("Unknown type: " + t)
   }
 
   /** A map from scala primitive Types to ICode TypeKinds */
-  private var primitiveTypeMap: Map[Symbol, TypeKind] = null;
+  private var primitiveTypeMap: Map[Symbol, TypeKind] = null
 
   /** Initialize the map from scala primitive types to ICode types */
   def initPrimitiveTypeMap = {
-    log("Initializing primitive map");
-    primitiveTypeMap = new HashMap();
-    primitiveTypeMap += definitions.UnitClass -> UNIT;
-    primitiveTypeMap += definitions.BooleanClass -> BOOL;
-    primitiveTypeMap += definitions.ByteClass -> BYTE;
-    primitiveTypeMap += definitions.ShortClass -> SHORT;
-    primitiveTypeMap += definitions.CharClass -> CHAR;
-    primitiveTypeMap += definitions.IntClass -> INT;
-    primitiveTypeMap += definitions.LongClass -> LONG;
+    log("Initializing primitive map")
+    primitiveTypeMap = new HashMap()
+    primitiveTypeMap += definitions.UnitClass -> UNIT
+    primitiveTypeMap += definitions.BooleanClass -> BOOL
+    primitiveTypeMap += definitions.ByteClass -> BYTE
+    primitiveTypeMap += definitions.ShortClass -> SHORT
+    primitiveTypeMap += definitions.CharClass -> CHAR
+    primitiveTypeMap += definitions.IntClass -> INT
+    primitiveTypeMap += definitions.LongClass -> LONG
     if (!forCLDC) {
-      primitiveTypeMap += definitions.FloatClass -> FLOAT;
-      primitiveTypeMap += definitions.DoubleClass -> DOUBLE;
+      primitiveTypeMap += definitions.FloatClass -> FLOAT
+      primitiveTypeMap += definitions.DoubleClass -> DOUBLE
     }
-//    primitiveTypeMap += definitions.StringClass -> STRING;
+//    primitiveTypeMap += definitions.StringClass -> STRING
   }
 
 }

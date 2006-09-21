@@ -9,31 +9,38 @@
 // $Id$
 
 
-package scala.concurrent;
+package scala.concurrent
 
-
+/** This class ...
+ *
+ *  @author  Martin Odersky
+ *  @version 1.0, 10/03/2003
+ */
 class Channel[a] {
   class LinkedList[a] {
-    var elem: a = _;
-    var next: LinkedList[a] = null;
+    var elem: a = _
+    var next: LinkedList[a] = null
   }
-  private var written = new LinkedList[a]; // FIFO buffer, realized through
-  private var lastWritten = written;       // aliasing of a linked list
-  private var nreaders = 0;
+  private var written = new LinkedList[a] // FIFO buffer, realized through
+  private var lastWritten = written       // aliasing of a linked list
+  private var nreaders = 0
 
+  /**
+   *  @param x ...
+   */
   def write(x: a) = synchronized {
-    lastWritten.elem = x;
-    lastWritten.next = new LinkedList[a];
-    lastWritten = lastWritten.next;
-    if (nreaders > 0) notify();
+    lastWritten.elem = x
+    lastWritten.next = new LinkedList[a]
+    lastWritten = lastWritten.next
+    if (nreaders > 0) notify()
   }
 
   def read: a = synchronized {
     if (written.next == null) {
-      nreaders = nreaders + 1; wait(); nreaders = nreaders - 1;
+      nreaders = nreaders + 1; wait(); nreaders = nreaders - 1
     }
-    val x = written.elem;
-    written = written.next;
+    val x = written.elem
+    written = written.next
     x
   }
 }
