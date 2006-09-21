@@ -277,6 +277,10 @@ abstract class TreePrinters {
           if (!qual.isEmpty) print(symName(tree, qual) + ".")
           print("this")
 
+        case Select(qual @ New(tpe), name) =>
+          assert(tree.symbol == null || tree.symbol.isConstructor)
+          print(qual)
+
         case Select(qualifier, name) =>
           print(qualifier); print("."); print(symName(tree, name))
 

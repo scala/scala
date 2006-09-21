@@ -226,6 +226,12 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
         }
       }
 
+    /** Generate a cast operation from `tree.tpe' to `pt'.
+     *  The following cases need to be treated specially:
+     *    Object -> Array   (might be a boxedarray)
+     *    Object -> Boxed*Array (might be an array, which nees to be boxed)
+     *    Object -> Seq, Iterable (might be an array, which needs to be boxed)
+     */
     private def cast(tree: Tree, pt: Type): Tree =
       if (pt.symbol == ArrayClass && tree.tpe.symbol == ObjectClass)
         typed {
@@ -243,7 +249,9 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
                 pt))
           }
         }
-      else if (pt.symbol.isNonBottomSubClass(BoxedArrayClass) && tree.tpe.symbol == ObjectClass)
+      else if ((pt.symbol.isNonBottomSubClass(BoxedArrayClass) ||
+                pt.symbol != ObjectClass && SeqClass.isNonBottomSubClass(pt.symbol)) &&
+               tree.tpe.symbol == ObjectClass)
         typed {
           atPos(tree.pos) {
             evalOnce(tree, x =>
