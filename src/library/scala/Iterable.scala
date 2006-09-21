@@ -99,7 +99,7 @@ trait Iterable[+A] {
    *  true for all elements.
    *
    *  @param   p     the predicate
-   *  @returns true, iff the predicate yields true for all elements.
+   *  @return true, iff the predicate yields true for all elements.
    */
   def forall(p: A => Boolean): Boolean = elements.forall(p)
 
@@ -108,7 +108,7 @@ trait Iterable[+A] {
    *  element for which <code>p</code> yields true.
    *
    *  @param   p     the predicate
-   *  @returns true, iff the predicate yields true for at least one element.
+   *  @return true, iff the predicate yields true for at least one element.
    */
   def exists(p: A => Boolean): Boolean = elements.exists(p)
 

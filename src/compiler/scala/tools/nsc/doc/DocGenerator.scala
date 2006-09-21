@@ -612,6 +612,7 @@ abstract class DocGenerator extends Models {
   private def tag(name: String): NodeSeq =
     <b> {
       Text((name match {
+        case "author"  => "Author"
         case "param"   => "Parameters"
         case "return"  => "Returns"
         case "see"     => "See"
@@ -654,7 +655,7 @@ abstract class DocGenerator extends Models {
     { {
       for (val attr <- attributes) yield
         <dt style="margin:10px 0 0 10px;">
-          tag(attr._1) //<b>{Text(attr._1 + ":")}</b>
+          {tag(attr._1)}
         </dt>
         <dd>{(parse(attr._2))}</dd>;
     } } </dl></span>;

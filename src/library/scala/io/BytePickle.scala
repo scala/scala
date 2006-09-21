@@ -1,53 +1,65 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+// $Id$
+
+
 package scala.io
 
 import scala.collection.mutable.{HashMap,ArrayBuffer}
 
 /**
-  Pickler combinators.
-  Based on a Haskell library by Andrew Kennedy, see http://research.microsoft.com/~akenn/fun/index.html.
-
-  Author: Philipp Haller <philipp.haller@epfl.ch>
-  */
-
+ * Pickler combinators.
+ * Based on a Haskell library by Andrew Kennedy,
+ * see http://research.microsoft.com/~akenn/fun/index.html.
+ *
+ * @author  Philipp Haller &lt;philipp.haller@epfl.ch&gt;
+ * @version 1.0
+ */
 object BytePickle {
   abstract class SPU[t] {
-    def appP(a: t, state: PicklerState): PicklerState;
-    def appU(state: UnPicklerState): Pair[t, UnPicklerState];
+    def appP(a: t, state: PicklerState): PicklerState
+    def appU(state: UnPicklerState): Pair[t, UnPicklerState]
   }
 
   def pickle[t](p: SPU[t], a: t): Array[byte] =
-    p.appP(a, new PicklerState(new Array[byte](0), new PicklerEnv)).stream;
+    p.appP(a, new PicklerState(new Array[byte](0), new PicklerEnv)).stream
 
   def unpickle[t](p: SPU[t], stream: Array[byte]): t =
-    p.appU(new UnPicklerState(stream, new UnPicklerEnv))._1;
+    p.appU(new UnPicklerState(stream, new UnPicklerEnv))._1
 
   abstract class PU[t] {
-    def appP(a: t, state: Array[byte]): Array[byte];
-    def appU(state: Array[byte]): Pair[t, Array[byte]];
+    def appP(a: t, state: Array[byte]): Array[byte]
+    def appU(state: Array[byte]): Pair[t, Array[byte]]
   }
 
   def upickle[t](p: PU[t], a: t): Array[byte] =
-    p.appP(a, new Array[byte](0));
+    p.appP(a, new Array[byte](0))
 
   def uunpickle[t](p: PU[t], stream: Array[byte]): t =
-    p.appU(stream)._1;
+    p.appU(stream)._1
 
   class PicklerEnv extends HashMap[Any, int] {
-    private var cnt: int = 64;
-    def nextLoc() = { cnt = cnt + 1; cnt };
+    private var cnt: int = 64
+    def nextLoc() = { cnt = cnt + 1; cnt }
   }
 
   class UnPicklerEnv extends HashMap[int, Any] {
-    private var cnt: int = 64;
-    def nextLoc() = { cnt = cnt + 1; cnt };
+    private var cnt: int = 64
+    def nextLoc() = { cnt = cnt + 1; cnt }
   }
 
-  class PicklerState(val stream: Array[byte], val dict: PicklerEnv) {}
-  class UnPicklerState(val stream: Array[byte], val dict: UnPicklerEnv) {}
+  class PicklerState(val stream: Array[byte], val dict: PicklerEnv)
+  class UnPicklerState(val stream: Array[byte], val dict: UnPicklerEnv)
 
-  abstract class RefDef;
-  case class Ref() extends RefDef;
-  case class Def() extends RefDef;
+  abstract class RefDef
+  case class Ref() extends RefDef
+  case class Def() extends RefDef
 
   def refDef: PU[RefDef] = new PU[RefDef] {
     def appP(b: RefDef, s: Array[byte]): Array[byte] =
@@ -97,7 +109,7 @@ object BytePickle {
       pe.get(v) match {
         case None =>
           //Console.println("" + v + " is new")
-	  //Console.println("writing DEF...")
+          //Console.println("writing DEF...")
           val sPrime = refDef.appP(Def(), state.stream)
           val l = pe.nextLoc()
 
@@ -195,21 +207,21 @@ object BytePickle {
   }
 
   def upair[a,b](pa: PU[a], pb: PU[b]): PU[Pair[a,b]] = {
-    def fst(p: Pair[a,b]): a = p._1;
-    def snd(p: Pair[a,b]): b = p._2;
+    def fst(p: Pair[a,b]): a = p._1
+    def snd(p: Pair[a,b]): b = p._2
     usequ(fst, pa, (x: a) => usequ(snd, pb, (y: b) => ulift(Pair(x, y))))
   }
 
   def pair[a,b](pa: SPU[a], pb: SPU[b]): SPU[Pair[a,b]] = {
-    def fst(p: Pair[a,b]): a = p._1;
-    def snd(p: Pair[a,b]): b = p._2;
+    def fst(p: Pair[a,b]): a = p._1
+    def snd(p: Pair[a,b]): b = p._2
     sequ(fst, pa, (x: a) => sequ(snd, pb, (y: b) => lift(Pair(x, y))))
   }
 
   def triple[a,b,c](pa: SPU[a], pb: SPU[b], pc: SPU[c]): SPU[Triple[a,b,c]] = {
-    def fst(p: Triple[a,b,c]): a = p._1;
-    def snd(p: Triple[a,b,c]): b = p._2;
-    def trd(p: Triple[a,b,c]): c = p._3;
+    def fst(p: Triple[a,b,c]): a = p._1
+    def snd(p: Triple[a,b,c]): b = p._2
+    def trd(p: Triple[a,b,c]): c = p._3
 
     sequ(fst, pa,
          (x: a) => sequ(snd, pb,
@@ -218,14 +230,13 @@ object BytePickle {
   }
 
   def uwrap[a,b](i: a => b, j: b => a, pa: PU[a]): PU[b] =
-    usequ(j, pa, (x: a) => ulift(i(x)));
+    usequ(j, pa, (x: a) => ulift(i(x)))
 
   def wrap[a,b](i: a => b, j: b => a, pa: SPU[a]): SPU[b] =
-    sequ(j, pa, (x: a) => lift(i(x)));
+    sequ(j, pa, (x: a) => lift(i(x)))
 
-  def appendByte(a: Array[byte], b: int): Array[byte] = {
+  def appendByte(a: Array[byte], b: int): Array[byte] =
     Array.concat(a, (List[byte](b.asInstanceOf[byte])).toArray)
-  }
 
   def nat2Bytes(x: int): Array[byte] = {
     val buf = new ArrayBuffer[byte]
@@ -247,8 +258,8 @@ object BytePickle {
     def appU(s: UnPicklerState): Pair[int,UnPicklerState] = {
       var num = 0
       def readNat: int = {
-        var b = 0;
-        var x = 0;
+        var b = 0
+        var x = 0
         do {
           b = s.stream(num)
           num = num + 1
@@ -275,8 +286,8 @@ object BytePickle {
   }
 
   def bool: SPU[boolean] = {
-    def toEnum(b: boolean) = if (b) 1 else 0;
-    def fromEnum(n: int) = if (n == 0) false else true;
+    def toEnum(b: boolean) = if (b) 1 else 0
+    def fromEnum(n: int) = if (n == 0) false else true
     wrap(fromEnum, toEnum, nat)
   }
 

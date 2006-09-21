@@ -9,9 +9,9 @@
 // $Id$
 
 
-package scala.io;
+package scala.io
 
-import scala.runtime.compat.StringBuilder;
+import scala.runtime.compat.StringBuilder
 
 /** convenience methods to encode line and column number in one
  *  single integer. The encode line (column)
@@ -34,41 +34,41 @@ import scala.runtime.compat.StringBuilder;
 object Position {
 
   /** Number of bits used to encode the line number */
-  final val LINE_BITS   = 20;
+  final val LINE_BITS   = 20
   /** Number of bits used to encode the column number */
-  final val COLUMN_BITS = 31 - LINE_BITS; // no negatives => 31
+  final val COLUMN_BITS = 31 - LINE_BITS // no negatives => 31
 
   /** Mask to decode the line number */
-  final val LINE_MASK   = (1 << LINE_BITS) - 1;
+  final val LINE_MASK   = (1 << LINE_BITS) - 1
   /** Mask to decode the column number */
-  final val COLUMN_MASK = (1 << COLUMN_BITS) - 1;
+  final val COLUMN_MASK = (1 << COLUMN_BITS) - 1
 
   /** The undefined position */
-  final val NOPOS       = 0;
+  final val NOPOS       = 0
 
   /** The first position in a source file */
-  final val FIRSTPOS    = encode(1, 1);
+  final val FIRSTPOS    = encode(1, 1)
 
     //########################################################################
     // Public Functions
 
   /** Encodes a position into a single integer. */
   final def encode(line: Int, column: Int): Int = {
-    var line1, column1 = 0;
-    if( line < 0 )
-      error(line+" < 0");
-    if(( line == 0 )&&(column != 0))
-      error(line+","+column+" not allowed");
-    if( column < 0 )
-      error(line+","+column+" not allowed");
+    var line1, column1 = 0
+    if (line < 0)
+      error(line + " < 0")
+    if ((line == 0) && (column != 0))
+      error(line + "," + column + " not allowed")
+    if (column < 0)
+      error(line + "," + column + " not allowed")
 
     {if (line >= LINE_MASK) {
-      line1 = LINE_MASK;
-      column1 = 0;
+      line1 = LINE_MASK
+      column1 = 0
     } else {
-      line1 = line;
+      line1 = line
       if (column > COLUMN_MASK)
-        column1 = COLUMN_MASK;
+        column1 = COLUMN_MASK
       else
         column1 = column
     }}
@@ -76,21 +76,19 @@ object Position {
   }
 
   /** Returns the line number of the encoded position. */
-  final def line(pos: Int): Int = {
-    (pos >> COLUMN_BITS) & LINE_MASK;
-  }
+  final def line(pos: Int): Int =
+    (pos >> COLUMN_BITS) & LINE_MASK
 
   /** Returns the column number of the encoded position. */
-  final def column(pos: Int): Int = {
-    pos & COLUMN_MASK;
-  }
+  final def column(pos: Int): Int =
+    pos & COLUMN_MASK
 
   /** Returns a string representation of the encoded position. */
   def toString(pos: Int): String = {
-    val sb = new StringBuilder();
-    sb.append(line(pos));
-    sb.append(':');
-    sb.append(column(pos));
-    sb.toString();
+    val sb = new StringBuilder()
+    sb.append(line(pos))
+    sb.append(':')
+    sb.append(column(pos))
+    sb.toString()
   }
 }
