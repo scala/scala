@@ -34,6 +34,12 @@ object CompileSocket {
   /** The class name of the scala compile server */
   private val serverClass = "scala.tools.nsc.CompileServer"
 
+  /** A regular expression for checking compiler output for errors */
+  val errorRegex = ".*errors? found.*"
+
+  /** A Pattern object for checking compiler output for errors */
+  val errorPattern = java.util.regex.Pattern.compile(errorRegex)
+
   private def fatal(msg: String) = {
     System.err.println(msg)
     exit(1)

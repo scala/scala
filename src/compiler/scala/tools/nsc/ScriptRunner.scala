@@ -126,7 +126,7 @@ object ScriptRunner {
   def wrappedScript(filename: String): SourceFile = {
     val preamble =
       new SourceFile("<script preamble>",
-          ("package scalascript\n" +
+          ("package $scalascript\n" +
           "object Main {\n" +
           "  def main(argv: Array[String]): Unit = {\n" +
           "  val args = argv;\n").toCharArray)
@@ -185,7 +185,7 @@ object ScriptRunner {
     var fromServer = in.readLine()
     while (fromServer != null) {
       System.out.println(fromServer)
-      if (fromServer.matches(".*errors? found.*"))
+      if (CompileSocket.errorPattern.matcher(fromServer).matches)
         compok = false
 
       fromServer = in.readLine()
@@ -296,7 +296,7 @@ object ScriptRunner {
       try {
         ObjectRunner.run(
           classpath,
-          "scalascript.Main",
+          "$scalascript.Main",
           scriptArgs.toArray)
       } catch {
         case e:InvocationTargetException =>

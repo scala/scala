@@ -95,13 +95,18 @@ object CompileClient {
     val in = new BufferedReader(new InputStreamReader(socket.getInputStream()))
     out.println(CompileSocket.getPassword(socket.getPort()))
     out.println(args.mkString("", "\0", ""))
+    var sawerror = false
     var fromServer = in.readLine()
     while (fromServer != null) {
+      if(CompileSocket.errorPattern.matcher(fromServer).matches)
+        sawerror = true
       System.out.println(fromServer)
       fromServer = in.readLine()
     }
     in.close()
     out.close()
     socket.close()
+
+    System.exit(if (sawerror) 1 else 0)
   }
 }
