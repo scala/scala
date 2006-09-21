@@ -225,7 +225,7 @@ test_run_jvm() {
     mkdir -p "$dstbase".obj &&
     $SCALAC -d "$os_dstbase".obj "$@" "$os_srcbase".scala &&
     classpath=`get_os_pathlist "$os_dstbase".obj:$CLASSPATH` &&
-    $SCALA -classpath $classpath Test "jvm" &&
+    $SCALA -Dscalatest.output=$dstbase.obj -Dscalatest.lib=$SCALA_LIB -classpath $classpath Test "jvm" &&
     rm -rf "$dstbase".obj;
 }
 
@@ -508,18 +508,25 @@ FILES_MSIL="";
 FILES_SCRIPT="";
 FILES_DIS="";
 
-QUICK="$PREFIX/build/quick/bin"
+QUICK="$PREFIX/bin/quick/bin"
+QUICK_LIB="$PREFIX/bin/quick/lib/library"
+
 if [ -d "$PREFIX/dists" ]; then
     LATEST="$PREFIX/dists/latest/bin";
+    LATEST_LIB="$PREFIX/dists/latest/lib/scala-library.jar";
 elif [ -d "$PREFIX/build" ]; then
     LATEST="$QUICK";
+    LATEST_LIB=$QUICK_LIB
 elif [ -d "$PREFIX/bin" ]; then
     LATEST="$PREFIX/bin";
+    LATEST_LIB="$PREFIX/lib/scala-library.jar"
 else
     abort "Scala binaries could not be found";
 fi;
 BIN_DIR="$LATEST/"  # BIN_DIR should have a trailing / when needed, so that
                     # it can also be set to the empty string
+
+SCALA_LIB="$LATEST_LIB"
 
 case `${JAVACMD:=java} \-version 2>&1 | head -1` in
     *1.5*) JAVA5="true";;
@@ -544,7 +551,7 @@ while [ $# -gt 0 ]; do
         --neg        ) TEST_TYPE="neg"; shift 1;;
         --msil       ) TEST_TYPE="msil"; shift 1;;
         --script     ) TEST_TYPE="script"; shift 1;;
-        --quick      ) BIN_DIR="$QUICK/"; shift 1;;
+        --quick      ) BIN_DIR="$QUICK/"; SCALA_LIB=$QUICK_LIB; shift 1;;
         --installed  ) BIN_DIR=""; shift 1;;
         --no-run     ) NORUN="true"; shift 1;;
         --show-log   ) SHOWLOG="true"; shift 1;;
