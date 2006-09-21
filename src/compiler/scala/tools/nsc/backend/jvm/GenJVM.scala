@@ -422,7 +422,7 @@ abstract class GenJVM extends SubComponent {
           val outerField = clasz.symbol.info.decl(nme.getterToLocal(nme.OUTER));
           if (outerField != NoSymbol) {
             log("Adding fake local to represent outer 'this' for closure " + clasz);
-            val _this = new Local(method.symbol.newVariable(positionConfiguration.NoPos, "this$"), toTypeKind(outerField.tpe), false);
+            val _this = new Local(method.symbol.newVariable(NoPos, "this$"), toTypeKind(outerField.tpe), false);
             m.locals = m.locals ::: List(_this);
             computeLocalVarsIndex(m) // since we added a new local, we need to recompute indexes
 
