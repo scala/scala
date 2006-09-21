@@ -415,13 +415,31 @@ abstract class GenJVM extends SubComponent {
         }
 
       if (!jmethod.isAbstract()) {
+        jcode = jmethod.getCode().asInstanceOf[JExtendedCode]
+
+        // add a fake local for debugging purpuses
+        if (emitVars && isClosureApply(method.symbol)) {
+          val outerField = clasz.symbol.info.decl(nme.getterToLocal(nme.OUTER));
+          if (outerField != NoSymbol) {
+            log("Adding fake local to represent outer 'this' for closure " + clasz);
+            val _this = new Local(method.symbol.newVariable(positionConfiguration.NoPos, "this$"), toTypeKind(outerField.tpe), false);
+            m.locals = m.locals ::: List(_this);
+            computeLocalVarsIndex(m) // since we added a new local, we need to recompute indexes
+
+            jcode.emitALOAD_0;
+            jcode.emitGETFIELD(javaName(clasz.symbol),
+                               javaName(outerField),
+                               javaType(outerField));
+            jcode.emitSTORE(indexOf(_this), javaType(_this.kind));
+          }
+        }
+
         for (val local <- m.locals; (! m.params.contains(local))) {
           if (settings.debug.value)
             log("add local var: " + local);
           jmethod.addNewLocalVariable(javaType(local.kind), javaName(local.sym));
         }
 
-        jcode = jmethod.getCode().asInstanceOf[JExtendedCode]
         genCode(m)
         if (emitVars)
           genLocalVariableTable(m);
@@ -430,6 +448,15 @@ abstract class GenJVM extends SubComponent {
       addExceptionsAttribute(m.symbol)
       addAnnotations(jmethod, m.symbol.attributes)
       addParamAnnotations(m.params.map(.sym.attributes))
+    }
+
+    def isClosureApply(sym: Symbol): Boolean = {
+      (sym.name == nme.apply) &&
+      sym.owner.hasFlag(Flags.SYNTHETIC) &&
+      sym.owner.tpe.parents.exists { t =>
+        val TypeRef(_, sym, _) = t;
+        definitions.FunctionClass exists sym.==
+      }
     }
 
     def addModuleInstanceField: Unit = {
@@ -782,6 +809,7 @@ abstract class GenJVM extends SubComponent {
             val tagArray = new Array[Array[Int]](tags.length)
             var caze = tags
             var i = 0
+
             while (i < tagArray.length) {
               tagArray(i) = new Array[Int](caze.head.length)
               caze.head.copyToArray(tagArray(i), 0)
