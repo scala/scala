@@ -9,9 +9,9 @@
 // $Id$
 
 
-package scala.xml;
+package scala.xml
 
-import scala.runtime.compat.StringBuilder;
+import scala.runtime.compat.StringBuilder
 
 /** an XML node for comments.
  *
@@ -21,27 +21,26 @@ import scala.runtime.compat.StringBuilder;
 
 case class Comment(commentText: String) extends SpecialNode {
 
-  final override def typeTag$:Int = -3;
+  final override def typeTag$:Int = -3
 
-  if( commentText.indexOf("--" ) != -1 )
-    throw new IllegalArgumentException("text containts \"--\"");
+  if (commentText.indexOf("--") != -1)
+    throw new IllegalArgumentException("text containts \"--\"")
 
   /** structural equality */
   override def equals(x: Any): Boolean = x match {
-    case Comment(x) => x.equals(commentText);
-      case _ => false
+    case Comment(x) => x.equals(commentText)
+    case _ => false
   }
 
   /** the constant &quot;#REM&quot; */
-  def label    = "#REM";
+  def label = "#REM"
 
   /** hashcode for this Comment */
-  override def hashCode() = commentText.hashCode();
+  override def hashCode() = commentText.hashCode()
 
-  override def text = "";
+  override def text = ""
 
   /** appends &quot;<!-- text -->&quot; to this stringbuffer */
-  def toString(sb: StringBuilder) = {
+  def toString(sb: StringBuilder) =
     sb.append("<!--").append(commentText).append("-->")
-  }
 }

@@ -9,8 +9,7 @@
 // $Id$
 
 
-package scala.xml;
-
+package scala.xml
 
 /**
  * This class acts as a Buffer for nodes. If it is used as a sequence
@@ -20,6 +19,9 @@ package scala.xml;
  *
  * Despite this being a sequence, don't use it as key in a hashtable.
  * Calling the hashcode function will result in a runtime error.
+ *
+ * @author  Burak Emir
+ * @version 1.0
  */
 class NodeBuffer extends scala.collection.mutable.ArrayBuffer[Node] {
 
@@ -33,20 +35,23 @@ class NodeBuffer extends scala.collection.mutable.ArrayBuffer[Node] {
    * Append given string as a <code>scala.xml.Text</code> node to this
    * buffer, returns reference on this NodeBuffer for convenience.
    *
-   * @param n
+   * @param o ...
+   * @return  ...
    */
   def &+(o: Any): NodeBuffer = {
     o match {
-      case n:Node     => super.+(n);
+      case n:Node =>
+        super.+(n)
       case ns:Iterable[AnyRef] =>
-        val it = ns.elements;
-        while(it.hasNext) {
-          this &+ it.next;
+        val it = ns.elements
+        while (it.hasNext) {
+          this &+ it.next
           //if (it.hasNext)
           //  this &+ " ";
         }
       //case s:String   => super.+(Text(o.toString()));
-      case d          => super.+(new Atom(d));
+      case d =>
+        super.+(new Atom(d))
     }
     this
   }

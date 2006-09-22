@@ -11,23 +11,27 @@
 
 package scala.io
 
-import scala.runtime.compat.StringBuilder;
-import java.io.{ File, FileInputStream, PrintStream };
+import java.io.{File, FileInputStream, PrintStream}
 
-/** convenience methods to create an iterable representation of a source
- *  file.
+import scala.runtime.compat.StringBuilder
+
+/** This object provides convenience methods to create an iterable
+ *  representation of a source file.
  *
  *  @author  Burak Emir
  *  @version 1.0, 19/08/2004
  */
 object Source {
 
-  /** creates Source from array of bytes, with empty description
+  /** Creates Source from array of bytes, with empty description.
+   *
+   *  @param bytes ...
+   *  @return      ...
    */
   def fromBytes(bytes: Array[Byte]): Source =
     fromString(new String(bytes))
 
-  /** creates Source from array of bytes with given encoding, with
+  /** Creates Source from array of bytes with given encoding, with
    *  empty description.
    *
    *  @param bytes ...
@@ -37,7 +41,11 @@ object Source {
   def fromBytes(bytes: Array[Byte], enc: String): Source =
     fromString(new String(bytes, enc))
 
-  /** creates Source from a single char */
+  /** Creates Source from a single character.
+   *
+   *  @param c ...
+   *  @return  ...
+   */
   def fromChar(c: Char): Source = {
     val it = Iterator.single(c)
     new Source {
@@ -45,7 +53,11 @@ object Source {
       val iter = it
     }
   }
-  /** creates Source from array of characters, with empty description
+
+  /** creates Source from array of characters, with empty description.
+   *
+   *  @param chars ...
+   *  @return      ...
    */
   def fromChars(chars: Array[Char]): Source = {
     val it = Iterator.fromArray(chars)
@@ -54,7 +66,11 @@ object Source {
       val iter = it
     }
   }
-  /** creates Source from string, with empty description
+
+  /** creates Source from string, with empty description.
+   *
+   *  @param s ...
+   *  @return  ...
    */
   def fromString(s: String): Source = {
     val it = Iterator.fromString(s)
@@ -92,8 +108,12 @@ object Source {
     return setFileDescriptor(file, s)
   }
 
-  /** creates Source from file, using given character encoding, setting its
+  /** Creates Source from file, using given character encoding, setting its
    *  description to filename.
+   *
+   *  @param file ...
+   *  @param enc  ...
+   *  @return     ...
    */
   def fromFile(file: java.io.File, enc: String): Source = {
     val arr: Array[Byte] = new Array[Byte](file.length().asInstanceOf[Int])
@@ -104,8 +124,13 @@ object Source {
     return setFileDescriptor(file, s)
   }
 
+  /**
+   *  @param file ...
+   *  @param s    ...
+   *  @return     ...
+   */
   def setFileDescriptor(file: File, s: Source): Source = {
-    s.descr = new StringBuilder().append( "file:" ).append( file.getAbsolutePath() ).toString();
+    s.descr = new StringBuilder().append( "file:" ).append(file.getAbsolutePath()).toString();
     s
   }
 
@@ -134,10 +159,10 @@ object Source {
 /** an iterable representation of source files.
  *  calling method reset returns an identical, resetted source
  *
- *  @author buraq
+ *  @author  Burak Emir
+ *  @version 1.0
  */
 abstract class Source extends Iterator[Char] {
-
 
   // ------ protected values
 
@@ -189,7 +214,7 @@ abstract class Source extends Iterator[Char] {
       );
 
     var ch = it.next
-    while(it.hasNext && '\n' != ch) {
+    while (it.hasNext && '\n' != ch) {
       buf.append(ch)
       ch = it.next
     }
@@ -219,32 +244,57 @@ abstract class Source extends Iterator[Char] {
     ch
   }
 
-  /** reports an error message to console */
+  /** reports an error message to console.
+   *
+   *  @param pos ...
+   *  @param msg the error message to report
+   */
   def reportError(pos: Int, msg: String): Unit =
     report(pos, msg, java.lang.System.out)
 
+  /**
+   *  @param pos ...
+   *  @param msg the error message to report
+   *  @param out ...
+   */
   def reportError(pos: Int, msg: String, out: PrintStream): Unit = {
     nerrors = nerrors + 1
     report(pos, msg, java.lang.System.out)
   }
 
+  /**
+   *  @param pos ...
+   *  @param msg the error message to report
+   *  @param out ...
+   */
   def report(pos: Int, msg: String, out: PrintStream): Unit = {
+    val buf = new StringBuffer
     val line = Position.line(pos)
     val col = Position.column(pos)
-    Console.println(descr+":"+line+":"+col+": "+msg)
-    Console.println(getLine(line))
+    buf.append(descr + ":"+line+":"+col+": "+msg)
+    buf.append(getLine(line))
     var i = 1
     while (i < col) {
-      Console.print(' ')
+      buf.append(' ')
       i = i + 1
     }
-    Console.println('^')
+    buf.append('^')
+    out.println(buf.toString)
   }
 
-  /** reports a warning message to java.lang.System.out */
+  /** Reports a warning message to <code>java.lang.System.out</code>.
+   *
+   *  @param pos ...
+   *  @param msg the warning message to report
+   */
   def reportWarning(pos: Int, msg: String): Unit =
     reportWarning(pos, msg, java.lang.System.out)
 
+  /**
+   *  @param pos ...
+   *  @param msg the warning message to report
+   *  @param out ...
+   */
   def reportWarning(pos: Int, msg: String, out: PrintStream): Unit = {
     nwarnings = nwarnings + 1
     report(pos, "warning! "+msg, out)

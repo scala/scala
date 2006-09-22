@@ -9,7 +9,7 @@
 // $Id$
 
 
-package scala.xml;
+package scala.xml
 
 
-case class MalformedAttributeException(msg:String) extends java.lang.RuntimeException(msg);
+case class MalformedAttributeException(msg: String) extends java.lang.RuntimeException(msg)
