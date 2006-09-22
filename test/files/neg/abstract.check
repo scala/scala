@@ -1,7 +1,9 @@
-abstract.scala:5 error: malformed type: A.this.T#T
+abstract.scala:5 error: method bar cannot be accessed in A.this.T
+ because its instance type ()A.this.T#T contains a malformed type: A.this.T#T
   def foo1 = bar().bar();
                   ^
-abstract.scala:7 error: malformed type: A#T
+abstract.scala:7 error: method bar cannot be accessed in A
+ because its instance type ()A#T contains a malformed type: A#T
   def foo3 = baz().bar();
                   ^
 two errors found

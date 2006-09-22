@@ -949,10 +949,12 @@ trait Symbols requires SymbolTable {
       else ""
 
     /** String representation of symbol's definition */
-    final def defString: String =
-      compose(List(flagsToString(if (settings.debug.value) flags else flags & ExplicitFlags),
-       keyString,
-       varianceString + nameString + infoString(rawInfo)))
+    final def defString: String = {
+      val f = if (settings.debug.value) flags
+              else if (owner.isRefinementClass) flags & ExplicitFlags & ~OVERRIDE
+              else flags & ExplicitFlags
+      compose(List(flagsToString(f), keyString, varianceString + nameString + infoString(rawInfo)))
+    }
 
     /** Concatenate strings separated by spaces */
     private def compose(ss: List[String]): String =
