@@ -254,9 +254,10 @@ trait Parsers requires SyntaxAnalyzer {
           syntaxError(tree.pos, "cannot convert to closure", false)
           errorTermTree
       }
+
       Function(
         List(ValDef(Modifiers(Flags.PARAM), pname, TypeTree(), EmptyTree)),
-        insertParam(tree))
+        wrapLiftedGenerators(insertParam(tree)))
     }
 
 /////// OPERAND/OPERATOR STACK /////////////////////////////////////////////////
@@ -313,6 +314,7 @@ trait Parsers requires SyntaxAnalyzer {
     final val BANG : Name = "!"
     final val TILDE: Name = "~"
     final val AMP  : Name = "&"
+    final val SLASH: Name = "/"
     final val STAR : Name = "*"
     final val BAR  : Name = "|"
     final val OPT  : Name = "?"
@@ -605,6 +607,35 @@ trait Parsers requires SyntaxAnalyzer {
 
 //////// EXPRESSIONS ////////////////////////////////////////////////////////
 
+    var liftedGenerators = new collection.mutable.ListBuffer[Enumerator]
+
+    def wrapLiftedGenerators(t: Tree): Tree =
+      if (liftedGenerators.isEmpty) t
+      else {
+        val t1 = makeForYield(liftedGenerators.toList, t)
+        liftedGenerators.clear
+        t1
+      }
+
+    def noLifting(op: => Tree): Tree = {
+      val savedLiftedGenerators = liftedGenerators;
+      if (!savedLiftedGenerators.isEmpty) // optimization to avoid buffer allocation
+        liftedGenerators = new collection.mutable.ListBuffer
+      val t = op
+      if (!liftedGenerators.isEmpty) syntaxError(t.pos, "no lifted expression allowed here", false)
+      liftedGenerators = savedLiftedGenerators
+      t
+    }
+
+    def liftingScope(op: => Tree): Tree = {
+      val savedLiftedGenerators = liftedGenerators;
+      if (!savedLiftedGenerators.isEmpty) // optimization to avoid buffer allocation
+        liftedGenerators = new collection.mutable.ListBuffer
+      val t = wrapLiftedGenerators(op)
+      liftedGenerators = savedLiftedGenerators
+      t
+    }
+
     /** EqualsExpr ::= `=' Expr
      */
     def equalsExpr(): Tree = {
@@ -614,10 +645,10 @@ trait Parsers requires SyntaxAnalyzer {
 
     /** Exprs ::= Expr {`,' Expr} [ `:' `_' `*' ]
      */
-    def exprs(): List[Tree] = {
-      val ts = new ListBuffer[Tree] + expr(true, false);
+    def argExprs(): List[Tree] = {
+      val ts = new ListBuffer[Tree] + argExpr();
       while (in.token == COMMA) {
-        in.nextToken(); ts += expr(true, false)
+        in.nextToken(); ts += argExpr()
       }
       ts.toList
     }
@@ -643,13 +674,25 @@ trait Parsers requires SyntaxAnalyzer {
      *  Binding    ::= Id [`:' Type]
      */
     def expr(): Tree =
-      expr(false, false);
+      liftingScope(exprImpl(false, false))
 
-    def expr(isArgument: boolean, isInBlock: boolean): Tree = in.token match {
+    def blockStatExpr(): Tree = {
+      liftingScope(exprImpl(false, true))
+    }
+
+    def argExpr(): Tree = {
+      exprImpl(true, false)
+    }
+
+    def localExpr(): Tree = {
+      exprImpl(false, false)
+    }
+
+    private def exprImpl(isArgument: boolean, isInBlock: boolean): Tree = in.token match {
       case IF =>
         val pos = in.skipToken()
         accept(LPAREN)
-        val cond = expr()
+        val cond = localExpr()
         accept(RPAREN)
         newLineOpt()
         val thenp = expr()
@@ -679,7 +722,7 @@ trait Parsers requires SyntaxAnalyzer {
         val lname: Name = unit.fresh.newName("while$")
         val pos = in.skipToken()
         accept(LPAREN)
-        val cond = expr()
+        val cond = noLifting(localExpr())
         accept(RPAREN)
         newLineOpt()
         val body = expr()
@@ -691,7 +734,7 @@ trait Parsers requires SyntaxAnalyzer {
         if (in.token == SEMI || in.token == NEWLINE) in.nextToken()
         accept(WHILE)
         accept(LPAREN)
-        val cond = expr()
+        val cond = noLifting(localExpr())
         accept(RPAREN)
         atPos(pos) { makeDoWhile(lname, body, cond) }
       case FOR =>
@@ -715,8 +758,13 @@ trait Parsers requires SyntaxAnalyzer {
         }
       case DOT =>
         atPos(in.skipToken()) {
-          if (isIdent) makeClosure(simpleExpr())
-          else { syntaxError("identifier expected", true); errorTermTree }
+          if (isIdent) {
+            liftingScope(makeClosure(simpleExpr()))
+            // Note: makeClosure does some special treatment of liftedGenerators
+          } else {
+            syntaxError("identifier expected", true);
+            errorTermTree
+          }
         }
       case _ =>
         var t = postfixExpr();
@@ -795,7 +843,7 @@ trait Parsers requires SyntaxAnalyzer {
       reduceStack(true, base, top, 0, true)
     }
 
-    /** PrefixExpr   ::= [`-' | `+' | `~' | `!' | `&'] SimpleExpr
+    /** PrefixExpr   ::= [`-' | `+' | `~' | `!' | `&' | `/'] SimpleExpr
     */
     def prefixExpr(): Tree =
       if (isIdent && in.name == MINUS) {
@@ -812,6 +860,11 @@ trait Parsers requires SyntaxAnalyzer {
         val pos = in.currentPos;
         val name = ident();
         atPos(pos) { Typed(simpleExpr(), Function(List(), EmptyTree)) }
+      } else if (isIdent && in.name == SLASH) {
+        val pos = in.skipToken()
+        val name = freshName()
+        liftedGenerators += makeGenerator(pos, Ident(name), false, simpleExpr())
+        Ident(name) setPos pos
       } else {
         simpleExpr()
       }
@@ -846,10 +899,10 @@ trait Parsers requires SyntaxAnalyzer {
             in.nextToken()
             t = Literal(()).setPos(pos);
           } else {
-            t = expr()
+            t = localExpr()
             if (in.token == COMMA) {
               val commapos = in.skipToken()
-              val ts = new ListBuffer[Tree] + t ++ exprs()
+              val ts = new ListBuffer[Tree] + t ++ argExprs()
               accept(RPAREN);
               if (in.token == ARROW) {
                 t = atPos(pos) {
@@ -918,7 +971,7 @@ trait Parsers requires SyntaxAnalyzer {
         List(blockExpr())
       } else {
         accept(LPAREN)
-        val ts = if (in.token == RPAREN) List() else exprs()
+        val ts = if (in.token == RPAREN) List() else argExprs()
         accept(RPAREN)
         ts
       }
@@ -954,7 +1007,7 @@ trait Parsers requires SyntaxAnalyzer {
       atPos(accept(CASE)) {
         val pat = pattern();
         val guard =
-          if (in.token == IF) { in.nextToken(); postfixExpr() }
+          if (in.token == IF) { in.nextToken(); noLifting(postfixExpr()) }
           else EmptyTree;
         makeCaseDef(pat, guard, atPos(accept(ARROW))(block()))
       }
@@ -1528,8 +1581,9 @@ trait Parsers requires SyntaxAnalyzer {
         if (!tp.isEmpty && in.token == USCORE) {
           in.nextToken();
           EmptyTree
-        } else
-          expr();
+        } else {
+          expr()
+        }
       } else {
         newmods = newmods | Flags.DEFERRED;
         EmptyTree
@@ -1835,7 +1889,7 @@ trait Parsers requires SyntaxAnalyzer {
         var pos = in.currentPos
         val aname = atPos(pos) { Ident(ident()) }
         accept(EQUALS)
-        atPos(pos) { Assign(aname, prefixExpr()) }
+        atPos(pos) { Assign(aname, liftingScope(prefixExpr())) }
       }
       val pos = in.currentPos;
       var t: Tree = convertToTypeId(stableId());
@@ -1919,7 +1973,7 @@ trait Parsers requires SyntaxAnalyzer {
           stats ++= importClause();
           acceptStatSep();
         } else if (isExprIntro) {
-          stats += expr(false, true);
+          stats += blockStatExpr();
           if (in.token != RBRACE && in.token != CASE) acceptStatSep();
         } else if (isDefIntro) {
           localDef(NoMods)
