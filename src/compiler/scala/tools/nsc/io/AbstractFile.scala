@@ -1,32 +1,30 @@
-/*     ____ ____  ____ ____  ______                                     *\
-**    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
-**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002-2006, LAMP/EPFL         **
-** /_____/\____/\___/\____/____/                                        **
-\*                                                                      */
-
+/* NSC -- new Scala compiler
+ * Copyright 2005-2006 LAMP/EPFL
+ * @author  Martin Odersky
+ */
 // $Id$
 
 
-package scala.tools.nsc.io;
+package scala.tools.nsc.io
 
 
-import java.io.File;
+import java.io.File
 
 object AbstractFile {
 
   /** Returns "getFile(new File(path))". */
-  def getFile(path: String): AbstractFile = getFile(new File(path));
+  def getFile(path: String): AbstractFile = getFile(new File(path))
 
   /**
    * If the specified File exists and is a regular file, returns an
    * abstract regular file backed by it. Otherwise, returns null.
    */
   def getFile(file: File): AbstractFile =
-    if (file.isFile() && file.exists()) new PlainFile(file) else  null;
+    if (file.isFile() && file.exists()) new PlainFile(file) else null
 
 
   /** Returns "getDirectory(new File(path))". */
-  def getDirectory(path: String): AbstractFile = getDirectory(new File(path));
+  def getDirectory(path: String): AbstractFile = getDirectory(new File(path))
 
   /**
    * if the specified File exists and is either a directory or a
@@ -73,19 +71,19 @@ abstract class AbstractFile extends Object with Iterable[AbstractFile] {
   // Public Methods
 
   /** Returns the name of this abstract file. */
-  def name: String;
+  def name: String
 
   /** Returns the path of this abstract file. */
-  def path: String;
+  def path: String
 
   /** Returns the underlying File if any and null otherwise. */
-  def file:  File;
+  def file: File
 
   /** Is this abstract file a directory? */
-  def isDirectory: Boolean;
+  def isDirectory: Boolean
 
   /** Returns the time that this abstract file was last modified. */
-  def lastModified: Long;
+  def lastModified: Long
 
   /** Reads the content of this abstract file into a byte array. */
   //def getBytes: Array[Byte] = error("getBytes not supported by "+this.getClass())
@@ -94,7 +92,7 @@ abstract class AbstractFile extends Object with Iterable[AbstractFile] {
   //def getChars: Array[Char] = error("getChars not supported by "+this.getClass())
 
   /** Returns all abstract subfiles of this abstract directory. */
-  def elements: Iterator[AbstractFile];
+  def elements: Iterator[AbstractFile]
 
   /**
    * Returns the abstract file in this abstract directory with the
@@ -102,7 +100,7 @@ abstract class AbstractFile extends Object with Iterable[AbstractFile] {
    * argument "directory" tells whether to look for a directory or
    * or a regular file.
    */
-  def lookupName(name: String, directory: Boolean): AbstractFile;
+  def lookupName(name: String, directory: Boolean): AbstractFile
 
   /**
    * Returns the abstract file in this abstract directory with the
@@ -111,24 +109,24 @@ abstract class AbstractFile extends Object with Iterable[AbstractFile] {
    * for a directory or a regular file.
    */
   def lookupPath(path: String, directory: Boolean): AbstractFile = {
-    val length = path.length();
-    val separator = File.separatorChar;
-    assert(0 < length && path.lastIndexOf(separator) < length - 1, path);
-    var file = this;
-    var start = 0;
+    val length = path.length()
+    val separator = File.separatorChar
+    assert(0 < length && path.lastIndexOf(separator) < length - 1, path)
+    var file = this
+    var start = 0
     while (true) {
-      val index = path.indexOf(separator, start);
-      assert(index < 0 || start < index);
-      val name = path.substring(start, if (index < 0) length else index);
-      file = file.lookupName(name, if (index < 0) directory else true);
-      if (file == null || index < 0) return file;
-      start = index + 1;
+      val index = path.indexOf(separator, start)
+      assert(index < 0 || start < index)
+      val name = path.substring(start, if (index < 0) length else index)
+      file = file.lookupName(name, if (index < 0) directory else true)
+      if (file == null || index < 0) return file
+      start = index + 1
     }
     file
   }
 
   /** Returns the path of this abstract file. */
-  override def toString() = path;
+  override def toString() = path
 
   //########################################################################
 }

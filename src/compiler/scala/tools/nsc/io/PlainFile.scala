@@ -1,16 +1,13 @@
-/*     ____ ____  ____ ____  ______                                     *\
-**    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
-**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002-2006, LAMP/EPFL         **
-** /_____/\____/\___/\____/____/                                        **
-\*                                                                      */
-
+/* NSC -- new Scala compiler
+ * Copyright 2005-2006 LAMP/EPFL
+ * @author  Martin Odersky
+ */
 // $Id$
 
 
-package scala.tools.nsc.io;
+package scala.tools.nsc.io
 
-
-import java.io.{File, FileInputStream, IOException};
+import java.io.{File, FileInputStream, IOException}
 
 object PlainFile {
 
@@ -22,7 +19,7 @@ object PlainFile {
    * by it. Otherwise, returns null.
    */
   def fromFile(file: File): AbstractFile =
-    if (file.exists()) new PlainFile(file) else null;
+    if (file.exists()) new PlainFile(file) else null
 
 }
 
@@ -30,17 +27,17 @@ object PlainFile {
  */
 class PlainFile(val file: File) extends AbstractFile {
 
-  assert(file != null);
-  assert(file.exists(), "non-existent file: " + file);
+  assert(file != null)
+  assert(file.exists(), "non-existent file: " + file)
 
   //########################################################################
   // Public Methods
 
   /** Returns the name of this abstract file. */
-  def name = file.getName();
+  def name = file.getName()
 
   /** Returns the path of this abstract file. */
-  def path = file.getPath();
+  def path = file.getPath()
 
 
   override def hashCode(): Int =
@@ -58,33 +55,33 @@ class PlainFile(val file: File) extends AbstractFile {
     }
 
   /** Is this abstract file a directory? */
-  def isDirectory: Boolean = file.isDirectory();
+  def isDirectory: Boolean = file.isDirectory()
 
   /** Returns the time that this abstract file was last modified. */
-  def lastModified: Long = file.lastModified();
+  def lastModified: Long = file.lastModified()
 
   /** Reads the content of this abstract file into a byte array.
   override def getBytes: Array[Byte] = {
     assert(!isDirectory, "cannot read directory '" + this + "'");
-    val in = new FileInputStream(file);
-    var rest: Int = file.length().toInt;
-    val buf: Array[Byte] = new Array[Byte](rest);
+    val in = new FileInputStream(file)
+    var rest: Int = file.length().toInt
+    val buf: Array[Byte] = new Array[Byte](rest)
     while (rest > 0) {
       val res = in.read(buf, buf.length - rest, rest);
       if (res == -1)
         throw new IOException("read error");
-      rest = rest - res;
+      rest = rest - res
     }
-    in.close();
-    return buf;
+    in.close()
+    buf
   }
   */
 
   /** Returns all abstract subfiles of this abstract directory. */
   def elements: Iterator[AbstractFile] = {
-    assert(isDirectory, "not a directory '" + this + "'");
-    val names: Array[String] = file.list();
-    if (names == null || names.length == 0) Iterator.empty;
+    assert(isDirectory, "not a directory '" + this + "'")
+    val names: Array[String] = file.list()
+    if (names == null || names.length == 0) Iterator.empty
     else Iterator.fromArray(names).map { name: String => new File(file, name) }
       .filter(.exists()).map(file => new PlainFile(file))
   }
@@ -94,13 +91,17 @@ class PlainFile(val file: File) extends AbstractFile {
    * specified name. If there is no such file, returns null. The
    * argument "directory" tells whether to look for a directory or
    * or a regular file.
+   *
+   * @param name      ...
+   * @param directory ...
+   * @return          ...
    */
   def lookupName(name: String, directory: Boolean): AbstractFile = {
-    //assert(isDirectory, "not a directory '" + this + "'");
-    val child = new File(file, name);
+    //assert(isDirectory, "not a directory '" + this + "'")
+    val child = new File(file, name)
     if (!child.exists() || (directory != child.isDirectory) ||
-        directory == child.isFile()) null;
-    else new PlainFile(child);
+        directory == child.isFile()) null
+    else new PlainFile(child)
   }
 
   //########################################################################
