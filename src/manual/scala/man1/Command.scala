@@ -51,7 +51,7 @@ trait Command {
   //private val df = new java.text.SimpleDateFormat("MMM d, yyyy")
   //private val rightNow = new java.util.Date()
 
-  def lastModified: String = "June 8, 2006" // df.format(rightNow)
+  def lastModified: String = "September 20, 2006" // df.format(rightNow)
 
   def manpage: Document
 }
