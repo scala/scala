@@ -67,9 +67,9 @@ class Settings(error: String => unit) {
   }
 
   private val encodingDefault =
-    java.nio.charset.Charset.defaultCharset.name()
-    //new java.io.OutputStreamWriter(
-    //  new java.io.ByteArrayOutputStream()).getEncoding
+    //java.nio.charset.Charset.defaultCharset.name() // bq: this exists only in Java1.5 :-(
+    new java.io.OutputStreamWriter(
+      new java.io.ByteArrayOutputStream()).getEncoding
 
   private val windowtitleDefault = "Scala Library Documentation"
   private val documenttitleDefault = "Scala 2"
