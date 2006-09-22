@@ -19,6 +19,7 @@ trait Contexts requires Analyzer {
 
   val NoContext = new Context {
     override def implicitss: List[List[ImplicitInfo]] = List()
+    outer = this;
   }
   NoContext.enclClass = NoContext
   NoContext.enclMethod = NoContext
@@ -68,7 +69,6 @@ trait Contexts requires Analyzer {
       sc = sc.outer
     }
   }
-
   class Context {
     var unit: CompilationUnit = _
     var tree: Tree = _                      // Tree associated with this context

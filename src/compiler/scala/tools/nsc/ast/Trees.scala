@@ -17,19 +17,26 @@ trait Trees requires Global {
   var nodeCount = 0
 
   case class Modifiers(flags: int, privateWithin: Name) {
-    def isPrivate   = (flags & PRIVATE  ) != 0
-    def isProtected = (flags & PROTECTED) != 0
-    def isVariable  = (flags & MUTABLE  ) != 0
-    def isArgument  = (flags & PARAM    ) != 0
-    def isAccessor  = (flags & ACCESSOR ) != 0
-    def isOverride  = (flags & OVERRIDE ) != 0
-    def isAbstract  = (flags & ABSTRACT ) != 0
-    def isCase      = (flags & CASE     ) != 0
-    def isSealed    = (flags & SEALED   ) != 0
-    def isFinal     = (flags & FINAL    ) != 0
-    def isTrait     = (flags & TRAIT    ) != 0
+    def isPrivate   = hasFlag(PRIVATE  )
+    def isProtected = hasFlag(PROTECTED)
+    def isVariable  = hasFlag(MUTABLE  )
+    def isArgument  = hasFlag(PARAM    )
+    def isAccessor  = hasFlag(ACCESSOR )
+    def isOverride  = hasFlag(OVERRIDE )
+    def isAbstract  = hasFlag(ABSTRACT )
+    def isDeferred  = hasFlag(DEFERRED )
+    def isCase      = hasFlag(CASE     )
+    def isSealed    = hasFlag(SEALED   )
+    def isFinal     = hasFlag(FINAL    )
+    def isTrait     = hasFlag(TRAIT    )
     def isPublic    = !isPrivate && !isProtected
-    def hasFlag(flag: int) = (flags & flag) != 0
+    def hasFlag(flag: int) = (flag & flags) != 0
+    def & (flag: Int): Modifiers = {
+      val flags1 = flags & flag
+      if (flags1 == flags) this
+      else Modifiers(flags1, privateWithin) setAttr attributes
+    }
+
     def | (flag: int): Modifiers = {
       val flags1 = flags | flag
       if (flags1 == flags) this

@@ -154,6 +154,7 @@ class SemanticTokens(val compiler: Global) {
     abstract class Semantic(val symbol: Symbol) extends Actual {
       val name = NameTransformer.decode(symbol.name.toString()).toString().trim();
       assert(symbol != NoSymbol);
+      def myOuter = Process.this
 
       def tpe: Type = symbol.tpe;
 
@@ -490,7 +491,7 @@ class SemanticTokens(val compiler: Global) {
 
   def buildSym(term: Symbol, pos: Int, isDef: Boolean, tpe: Type): Unit =
     if (term.hasFlag(Flags.ACCESSOR))
-      buildSym(term.accessed, pos, isDef, tpe)
+      buildSym(analyzer.underlying(term), pos, isDef, tpe)
     else if (pos == NoPos) {
       //System.err.println("NOPOS: " + term)
       //Thread.dumpStack()

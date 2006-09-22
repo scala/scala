@@ -142,8 +142,11 @@ abstract class UnPickler {
         case NONEsym =>
           sym = NoSymbol
         case _ =>
-          val unusedPos : PositionType = if (tag > PosOffset) readNat() else Position.NOPOS
-          val pos = if (true) FirstPos else unusedPos;
+          val unusedPos = {
+            if (tag > PosOffset) readNat();
+            else Position.NOPOS
+          }
+          val pos : PositionType = if (true) FirstPos else unusedPos;
           val name = readNameRef()
           val owner = readSymbolRef()
           val flags = readNat()

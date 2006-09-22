@@ -1379,10 +1379,10 @@ trait Typers requires Analyzer {
         if (!sym.exists) {
           if (settings.debug.value) System.err.println("qual = "+qual+":"+qual.tpe+"\nSymbol="+qual.tpe.symbol+"\nsymbol-info = "+qual.tpe.symbol.info+"\nscope-id = "+qual.tpe.symbol.info.decls.hashCode()+"\nmembers = "+qual.tpe.members+"\nname = "+name+"\nfound = "+sym+"\nowner = "+context.enclClass.owner)
           if (!qual.tpe.widen.isErroneous) {
-            if (context.unit == null) assert(false, "("+qual+":"+qual.tpe+")."+name)
+            if (false && context.unit == null) assert(false, "("+qual+":"+qual.tpe+")."+name)
             error(tree.pos,
               decode(name)+" is not a member of "+qual.tpe.widen +
-              (if (Position.line(context.unit.source, qual.pos) <
+              (if (context.unit != null && Position.line(context.unit.source, qual.pos) <
                    Position.line(context.unit.source, tree.pos))
                 "\npossible cause: maybe a semicolon is missing before `"+name+"'?"
                else ""))

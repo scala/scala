@@ -63,13 +63,16 @@ abstract class DocGenerator extends Models {
      *  @param target ...
      *  @return       ...
      */
-    def urlFor(sym: Symbol, target: String): NodeSeq = try {
-      if (sym.sourceFile == null) Text(sym.fullNameString('.'))
+    def urlFor(tree: Tree, target: String): NodeSeq = try {
+      val sym = tree.symbol;
+      if (sym == NoSymbol)
+        Text(tree.asInstanceOf[ValOrDefDef].name.toString());
+      else if (sym.sourceFile == null) Text(sym.fullNameString('.'))
       else aref(urlFor(sym), target, sym.nameString)
     } catch {
       case e: Error =>
         //System.err.println("SYM=" + sym)
-        Text(sym.toString())
+        Text(tree.symbol.toString())
     }
 
     def urlFor(tpe: Type, target: String): NodeSeq = try {
@@ -195,7 +198,7 @@ abstract class DocGenerator extends Models {
           <tr><td style="white-space;nowrap;">
             { {
               for (val mmbr <- classes(kind).toList) yield
-                br(urlFor(mmbr.tree.symbol, contentFrame));
+                br(urlFor(mmbr.tree, contentFrame));
             } }
           </td></tr>
         </table>
@@ -221,6 +224,11 @@ abstract class DocGenerator extends Models {
         NodeSeq.Empty
     }
 
+    private def nameFor(tree : Tree) = {
+      if (tree.symbol == NoSymbol) tree.asInstanceOf[ValOrDefDef].name.toString();
+      else tree.symbol.nameString;
+    }
+
     def fullHeader(mmbr: HasTree): NodeSeq = <span>{ {
         if (!mmbr.isInstanceOf[ImplMod]) {
             <a name = {Utility.escape(mmbr.tree.symbol.nameString)}></a>;
@@ -228,7 +236,7 @@ abstract class DocGenerator extends Models {
       } }<dl><dt>
       { { for (val str <- stringsFor(mmbr.mods)) yield (Text(str + " ")) } }
       <code>{ Text(codeFor(mmbr.kind)) }</code>
-      <em>{ Text(mmbr.tree.symbol.nameString) }</em>
+      <em>{ Text(nameFor(mmbr.tree)) }</em>
       { typesFor(mmbr) }{ argsFor(mmbr)}{resultFor(mmbr) }
       </dt> { extendsFor(mmbr) }
       </dl> { fullComment(mmbr) } <hr/>
@@ -252,7 +260,8 @@ abstract class DocGenerator extends Models {
             val x = <table cellpadding="3" class="member" summary="">
             <tr><td colspan="2" class="title">{Text(labelFor(kind))} Summary</td></tr>
              { {
-              for (val mmbr <- map(kind).toList) yield shortHeader(mmbr);
+              for (val mmbr <- map(kind).toList) yield
+                shortHeader(mmbr);
              } }
             </table>;
             br(x);
@@ -297,7 +306,7 @@ abstract class DocGenerator extends Models {
         </td>
         <td class="signature">
           <code>{Text(codeFor(mmbr.kind))}</code>
-          <em>{urlFor(mmbr.tree.symbol, contentFrame)}</em>
+          <em>{urlFor(mmbr.tree, contentFrame)}</em>
           { typesFor(mmbr) }
           {  argsFor(mmbr) }
           {resultFor(mmbr) }
@@ -579,6 +588,7 @@ abstract class DocGenerator extends Models {
 
   def organize0(mmbr: HasTree, map0: ListMap[Kind, TreeSet[HasTree]]) = {
     var map = map0
+    assert(mmbr.kind != null);
     if (!map.contains(mmbr.kind))
       map = map.update(mmbr.kind, new TreeSet[HasTree])
     val sz = map(mmbr.kind).size

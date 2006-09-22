@@ -50,10 +50,11 @@ abstract class Models {
     if (mods.isProtected) modString = "protected" :: modString
     if (mods.isOverride ) modString = "override"  :: modString
     if (mods.isAbstract ) modString = "abstract"  :: modString
+    if (mods.isDeferred ) modString = "abstract"  :: modString
     if (mods.isCase     ) modString = "case"      :: modString
     if (mods.isSealed   ) modString = "sealed"    :: modString
     if (mods.isFinal    ) modString = "final"     :: modString
-    if (mods.isTrait    ) modString = "mixin"     :: modString
+    //if (mods.isTrait    ) modString = "trait"     :: modString
     modString
   }
 
@@ -67,21 +68,31 @@ abstract class Models {
     case _ => labelFor(kind) + "s"
   }
 
-  def kindOf(term0: Symbol) = {
-    if (term0.isVariable) VAR
-    else if (term0.isValueParameter) ARG
-    else if (term0.isMethod) {
-      if (term0.nameString.equals("this")) CONSTRUCTOR
-      else DEF
-    }
-    else if (term0.isClass) CLASS
-    else if (term0.isModule) OBJECT
-    else if (term0.isValue) VAL
-    else if (term0.isTypeParameter) TPARAM
-    else if (term0.isType) TPARAM
-    else {
-      // System.err.println("UNRECOGNIZED SYMBOL: " + term0 + " " + name);
-      null
+  def kindOf(tree: Tree) = {
+    val term0 = tree.symbol;
+    if (term0 != NoSymbol) {
+      if (term0.isVariable) VAR
+      else if (term0.isValueParameter) ARG
+      else if (term0.isMethod) {
+        if (term0.nameString.equals("this")) CONSTRUCTOR
+        else DEF
+      }
+      else if (term0.isClass) {
+        if (tree.asInstanceOf[MemberDef].mods.isTrait) TRAIT;
+        else CLASS
+      }
+      else if (term0.isModule) OBJECT
+      else if (term0.isValue) VAL
+      else if (term0.isTypeParameter) TPARAM
+      else if (term0.isType) TPARAM
+      else {
+        // System.err.println("UNRECOGNIZED SYMBOL: " + term0 + " " + name);
+        null
+      }
+    } else {
+      val ddef = tree.asInstanceOf[ValOrDefDef];
+      if (ddef.mods.hasFlag(symtab.Flags.MUTABLE)) VAR;
+      else VAL;
     }
   }
 
@@ -156,7 +167,7 @@ abstract class Models {
       else -1
     }
 
-    def kind = kindOf(tree.symbol)
+    def kind = kindOf(tree)
 
     //override def    add(from: Composite, model: HasTree): Unit = { parent.add(from, model) }
     //override def remove(from: Composite, model: HasTree): Unit = { parent.remove(from, model) }
@@ -212,6 +223,8 @@ abstract class Models {
             updated = true
             val add = modelFor(mmbr2, this)
             add.update(mmbr2)
+            add.mods0 = mods1(mmbr1) &
+              ~symtab.Flags.ACCESSOR & ~symtab.Flags.SYNTHETIC
             val sz = members.size
             members += (add)
             assert(members.size == sz + 1)
@@ -299,21 +312,34 @@ abstract class Models {
     override def member(tree: Tree, members: List[Tree]): Tree = {
       val tree0 = if (tree.isInstanceOf[DefDef]) {
         val ddef = tree.asInstanceOf[DefDef]
+        ddef.mods
         if (ddef.mods.isAccessor && ddef.symbol != null) {
-          val sym = ddef.symbol.accessed
-          val ret = for (val member <- members; member.symbol == sym) yield {
-            member;
-          }
+          val sym0 = ddef.symbol;
+          if (sym0.isSetter) return null;
+          assert(sym0.isGetter);
+          val sym = sym0.accessed
+          val ret = if (sym == NoSymbol) {
+	    val sym = analyzer.underlying(sym0);
+	    //val name = nme.getterToSetter(sym0.name)
+            //val setter = sym0.owner.info.decl(name);
+            val isVar = sym.isVariable;
+            val mods = (ddef.mods |
+              (if (isVar) symtab.Flags.MUTABLE else 0) | symtab.Flags.DEFERRED) &
+                ~symtab.Flags.ACCESSOR & ~symtab.Flags.SYNTHETIC
+            val tree =
+              ValDef(mods, ddef.name, ddef.tpt, ddef.rhs).setPos(ddef.pos).setSymbol(sym);
+            tree :: Nil;
+          } else for (val member <- members; member.symbol == sym) yield member
           if (ret.isEmpty) null
           else ret.head
         } else tree
       } else super.member(tree, members)
 
       def sym = tree0.symbol
-      if (tree0 == null || sym.pos == NoPos) null
+      if (tree0 == null || tree0.pos == NoPos) null
       else if (!acceptPrivate &&
                tree0.isInstanceOf[ValOrDefDef] &&
-               tree0.asInstanceOf[ValOrDefDef].mods.isPrivate) null
+               tree.asInstanceOf[ValOrDefDef].mods.isPrivate) null
       else tree0
     }
 

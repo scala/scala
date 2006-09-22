@@ -232,7 +232,9 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
   }
 
   object analyzer extends Analyzer {
-    val global: Global.this.type = Global.this
+    val global: Global.this.type = {
+      Global.this
+    }
   }
 
   object superAccessors extends SuperAccessors {
@@ -615,19 +617,16 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
   def forCLDC: Boolean = settings.target.value == "cldc"
   def onlyPresentation = settings.doc.value
   // position stuff
-  val positionConfiguration: PositionConfiguration = new PositionConfiguration {
-    type PositionType = Int
-    def coercePosToInt(pos: PositionType): Int = pos
-    def coerceIntToPos(pos: Int): PositionType = pos
-    val NoPos: PositionType = Position.NOPOS
-    val FirstPos: PositionType = Position.FIRSTPOS
+  protected val positionConfiguration : PositionConfiguration = new PositionConfiguration {
+    type PositionType = Int;
+    def coercePosToInt(pos : PositionType) : Int = pos;
+    def coerceIntToPos(pos : Int) : PositionType = pos;
+    val NoPos : PositionType = Position.NOPOS;
+    val FirstPos : PositionType = Position.FIRSTPOS;
   }
-  final type PositionType = positionConfiguration.PositionType
-  final val FirstPos = positionConfiguration.FirstPos
-  final val NoPos = positionConfiguration.NoPos
-  final def coerceIntToPos(pos: Int): PositionType =
-    positionConfiguration.coerceIntToPos(pos)
-  implicit final def coercePosToInt(pos: PositionType): Int =
-    positionConfiguration.coercePosToInt(pos)
-
+  final type PositionType = positionConfiguration.PositionType;
+  final def FirstPos = positionConfiguration.FirstPos;
+  final def NoPos = positionConfiguration.NoPos;
+  final def coerceIntToPos(pos : Int) : PositionType = positionConfiguration.coerceIntToPos(pos);
+  implicit final def coercePosToInt(pos : PositionType) : Int = positionConfiguration.coercePosToInt(pos);
 }

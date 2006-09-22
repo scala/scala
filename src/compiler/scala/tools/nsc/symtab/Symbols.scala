@@ -23,11 +23,11 @@ trait Symbols requires SymbolTable {
   type AttrInfo = Triple[Type, List[Constant], List[Pair[Name,Constant]]]
 
   val emptySymbolArray = new Array[Symbol](0)
-  type PositionType
-  val NoPos: PositionType
-  val FirstPos: PositionType
-  implicit def coercePosToInt(pos: PositionType): Int
-  def coerceIntToPos(pos: Int): PositionType
+  type PositionType;
+  def NoPos : PositionType;
+  def FirstPos : PositionType;
+  implicit def coercePosToInt(pos : PositionType) : Int;
+  def coerceIntToPos(pos : Int) : PositionType;
   object RequiresIntsAsPositions {
     implicit def coerceIntToPos0(pos: Int) =
       coerceIntToPos(pos)
