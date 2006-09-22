@@ -36,20 +36,20 @@ class Document extends NodeSeq with pull.XMLEvent {
   var docElem: Node = _
 
   /** The dtd that comes with the document, if any */
-  var docDTD: dtd.DTD = _
+  var dtd: scala.xml.dtd.DTD = _
 
   /** An unordered set of notation information items, one for each notation
    *  declared in the DTD. If any notation is multiply declared, this property
    *  has no value.
    */
-  def notations: Seq[dtd.NotationDecl] =
-    docDTD.notations
+  def notations: Seq[scala.xml.dtd.NotationDecl] =
+    dtd.notations
 
   /** An unordered set of unparsed entity information items, one for each
    *  unparsed entity declared in the DTD.
    */
-  def unparsedEntities: Seq[dtd.EntityDecl] =
-    docDTD.unparsedEntities
+  def unparsedEntities: Seq[scala.xml.dtd.EntityDecl] =
+    dtd.unparsedEntities
 
   /** The base URI of the document entity. */
   var baseURI: String = _
