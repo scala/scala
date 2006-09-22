@@ -15,6 +15,10 @@ import scala.tools.nsc.models._
 import scala.tools.nsc.symtab.Flags
 import scala.xml._
 
+/**
+ *  @author  Sean McDirmid, Stephane Micheloud
+ *  @version 1.0
+ */
 abstract class DocGenerator extends Models {
   import global._
   import DocUtil._
@@ -33,27 +37,27 @@ abstract class DocGenerator extends Models {
     def relative: String = {
       assert(path != null)
       var idx = 0
-      var ct = ""
+      var ct = new StringBuffer
       while (idx != -1) {
         idx = path.indexOf('/', idx)
-        //System.err.println(path + " idx=" + idx);
-        ct = ct + (if (idx != -1) "../" else "")
+        //System.err.println(path + " idx=" + idx)
+        ct.append(if (idx != -1) "../" else "")
         idx = idx + (if (idx == -1) 0 else 1)
       }
-      ct
+      ct.toString
     }
 
     def body: NodeSeq
     def title: String
 
     def save(nodes: NodeSeq) = {
-      val path0 = outdir + "/" + path + FILE_EXTENSION_HTML
-      //System.err.println("Writing to " + path0)
+      val path0 = outdir + File.separator + path + FILE_EXTENSION_HTML
+      if (settings.debug.value) inform("Writing XML nodes to " + path0)
       val file = new File(path0)
       val parent = file.getParentFile()
       if (!parent.exists()) parent.mkdirs()
       val writer = new FileWriter(file)
-      val str = dtype + "\n" + nodes.toString()
+      val str = dtype + LINE_SEPARATOR + nodes.toString()
       writer.write(str, 0, str.length())
       writer.close()
     }
@@ -64,7 +68,7 @@ abstract class DocGenerator extends Models {
      *  @return       ...
      */
     def urlFor(tree: Tree, target: String): NodeSeq = try {
-      val sym = tree.symbol;
+      val sym = tree.symbol
       if (sym == NoSymbol)
         Text(tree.asInstanceOf[ValOrDefDef].name.toString());
       else if (sym.sourceFile == null) Text(sym.fullNameString('.'))
@@ -224,18 +228,47 @@ abstract class DocGenerator extends Models {
         NodeSeq.Empty
     }
 
-    private def nameFor(tree : Tree) = {
-      if (tree.symbol == NoSymbol) tree.asInstanceOf[ValOrDefDef].name.toString();
-      else tree.symbol.nameString;
-    }
+    private def nameFor(tree: Tree) =
+      if (tree.symbol == NoSymbol) tree.asInstanceOf[ValOrDefDef].name.toString()
+      else tree.symbol.nameString
+
+    private def attrsFor(tree: Tree): NodeSeq =
+      if (tree.symbol.attributes.isEmpty || tree.symbol.hasFlag(Flags.CASE))
+        NodeSeq.Empty
+      else {
+        def attrFor(attr: AttrInfo): Node = {
+          val buf = new StringBuffer
+          val Triple(tpe, args, nvPairs) = attr
+          val name = aref(urlFor(tpe.symbol), contentFrame, tpe.toString)
+          if (!args.isEmpty)
+            buf.append(args.mkString("(", ",", ")"))
+          if (!nvPairs.isEmpty)
+            for (val Pair(Pair(name, value), index) <- nvPairs.zipWithIndex) {
+              if (index > 0)
+                buf.append(", ")
+              buf.append(name).append(" = ").append(value)
+            }
+          Group(name concat Text(buf.toString))
+        }
+        var res: NodeSeq = Text("[")
+        val attrs = tree.symbol.attributes
+        for (val i <- attrs.indices) {
+          if (i > 0) res = res.concat(Text(","))
+          res = res.concat(attrFor(attrs(i)))
+        }
+        br(res.concat(Text("]")))
+      }
 
     def fullHeader(mmbr: HasTree): NodeSeq = <span>{ {
         if (!mmbr.isInstanceOf[ImplMod]) {
             <a name = {Utility.escape(mmbr.tree.symbol.nameString)}></a>;
         } else NodeSeq.Empty;
       } }<dl><dt>
-      { { for (val str <- stringsFor(mmbr.mods)) yield (Text(str + " ")) } }
-      <code>{ Text(codeFor(mmbr.kind)) }</code>
+      { attrsFor(mmbr.tree) }
+      <code>
+        { { for (val str <- stringsFor(mmbr.mods)) yield Text(str + " ") } }
+        { Text(codeFor(mmbr.kind)) }
+      </code>
       <em>{ Text(nameFor(mmbr.tree)) }</em>
       { typesFor(mmbr) }{ argsFor(mmbr)}{resultFor(mmbr) }
       </dt> { extendsFor(mmbr) }
@@ -316,13 +349,13 @@ abstract class DocGenerator extends Models {
     }
 
     def fullComment(mmbr: HasTree): NodeSeq =
-      if (comments.contains(mmbr.tree.symbol))
+      if (comments contains mmbr.tree.symbol)
         comment(comments(mmbr.tree.symbol), false)
       else
         NodeSeq.Empty
 
     def shortComment(mmbr: HasTree): NodeSeq =
-      if (comments.contains(mmbr.tree.symbol))
+      if (comments contains mmbr.tree.symbol)
         comment(comments(mmbr.tree.symbol), true)
       else
         NodeSeq.Empty
@@ -337,7 +370,7 @@ abstract class DocGenerator extends Models {
         if (before) nodes.concat(forTree(tree))
         else {
           val ret = forTree(tree).concat(nodes)
-          //System.err.println("RET: " + ret);
+          //System.err.println("RET: " + ret)
           ret
         }
       } else NodeSeq.Empty
@@ -403,7 +436,7 @@ abstract class DocGenerator extends Models {
     def resultFor(ht: HasTree): NodeSeq = ht.tree match {
       case vdef: ValOrDefDef =>
         if (!vdef.symbol.nameString.equals("this"))
-          Text(" : ").concat(forTree(vdef.tpt));
+          Text(" : ").concat(forTree(vdef.tpt))
         else
           NodeSeq.Empty
       case _ =>
@@ -426,12 +459,12 @@ abstract class DocGenerator extends Models {
         This document is the API specification for Scala 2.
         <p/>
         { {
-          for (val kind <- KINDS; classes.contains(kind)) yield {
+          for (val kind <- KINDS; classes contains kind) yield {
             <span><hr/><table cellpadding="3" class="member" summary="">
             <tr><td colspan="2" class="title">
                 {labelFor(kind)} Summary
              </td></tr>{ {
-              for (val mmbr <- classes(kind).toList) yield shortHeader(mmbr);
+              for (val mmbr <- classes(kind).toList) yield shortHeader(mmbr)
               } }
             </table></span>
           }
@@ -486,7 +519,7 @@ abstract class DocGenerator extends Models {
           assert(cdef.symbol.owner != NoSymbol)
           val sym = cdef.symbol.owner.asInstanceOf[ModuleClassSymbol]
           if (!sym.isEmptyPackageClass) {
-            if (!topLevel.contains(sym)) topLevel = topLevel.update(sym, emptyMap);
+            if (!topLevel.contains(sym)) topLevel = topLevel.update(sym, emptyMap)
             topLevel = topLevel.update(sym, organize0(mmbr, topLevel(sym)))
           }
         case _ =>
@@ -497,7 +530,7 @@ abstract class DocGenerator extends Models {
     val modules0 = {
       var modules0 = new TreeMap[String, ModuleClassSymbol]
       for (val top <- topLevel.elements)
-        modules0 = modules0.insert(top._1.fullNameString, top._1);
+        modules0 = modules0.insert(top._1.fullNameString, top._1)
       modules0
     }
 
@@ -512,7 +545,7 @@ abstract class DocGenerator extends Models {
       def classes = {
         var allClasses = emptyMap
         for (val top <- topLevel.elements)
-          allClasses = merge(allClasses, top._2);
+          allClasses = merge(allClasses, top._2)
         allClasses
       }
       def title = "List of all classes and objects"
@@ -558,10 +591,11 @@ abstract class DocGenerator extends Models {
       def path = "index"
       override def hasBody = false
     }
+    val rsrcdir = "scala/tools/nsc/doc/".replace('/', File.separatorChar)
     for (val base <- "style.css" :: "script.js" :: Nil) {
-      val input = loader.getResourceAsStream("scala/tools/nsc/doc/" + base)
+      val input = loader.getResourceAsStream(rsrcdir + base)
       if (input != null) {
-        val file  = new File(outdir + "/" + base)
+        val file  = new File(outdir + File.separator + base)
         val output = new FileOutputStream(file)
         var break = false
         val bytes = new Array[byte](1024)
@@ -588,7 +622,7 @@ abstract class DocGenerator extends Models {
 
   def organize0(mmbr: HasTree, map0: ListMap[Kind, TreeSet[HasTree]]) = {
     var map = map0
-    assert(mmbr.kind != null);
+    assert(mmbr.kind != null)
     if (!map.contains(mmbr.kind))
       map = map.update(mmbr.kind, new TreeSet[HasTree])
     val sz = map(mmbr.kind).size
@@ -664,7 +698,7 @@ abstract class DocGenerator extends Models {
     else <span><dl><dd>{parse(body)}</dd></dl><dl>
     { {
       for (val attr <- attributes) yield
-        <dt style="margin:10px 0 0 10px;">
+        <dt style="margin:10px 0 0 20px;">
           {tag(attr._1)}
         </dt>
         <dd>{(parse(attr._2))}</dd>;
@@ -681,6 +715,8 @@ abstract class DocGenerator extends Models {
   </frameset>;
 
   val root = <b></b>
+
+  private val LINE_SEPARATOR = System.getProperty("line.separator", "\n")
 
   private val NAME_SUFFIX_OBJECT  = "$object"
   private val NAME_SUFFIX_PACKAGE = "$package"

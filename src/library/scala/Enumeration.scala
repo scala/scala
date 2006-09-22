@@ -19,16 +19,16 @@ import scala.collection.mutable._
  * <code>enum</code> construct found in C-like languages like C++ or Java.
  * Here is an example:</p>
  * <pre>
- * <b>object</b> Main <b>with</b> Application {
+ * <b>object</b> Main <b>extends</b> Application {
  *
  *   <b>object</b> WeekDays <b>extends</b> Enumeration  {
  *     <b>val</b> Mon, Tue, Wed, Thu, Fri, Sat, Sun = Value
  *   }
  *
  *   <b>def</b> isWorkingDay(d: WeekDays.Value) =
- *     ! (d == WeekDays.Sat || d == WeekDays.Sun);
+ *     ! (d == WeekDays.Sat || d == WeekDays.Sun)
  *
- *   WeekDays filter (isWorkingDay) foreach { d =&gt; System.out.println(d) }
+ *   WeekDays filter (isWorkingDay) foreach { d =&gt; Console.println(d) }
  * }
  * </pre>
  *

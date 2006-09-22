@@ -9,12 +9,12 @@
 // $Id: All$.java 5880 2006-03-02 23:05:17Z mihaylov $
 
 
-package scala;
+package scala
 
 
 /**
  * Dummy class which exist only to satisfy the JVM. It corresponds
- * to scala.All. If such type appears in method
+ * to <code>scala.All</code>. If such type appears in method
  * signatures, it is erased to this one.
  */
 

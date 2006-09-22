@@ -15,8 +15,8 @@ package scala
 /** The <code>Application</code> class can be used to quickly turn objects
  *  into executable programs. Here is an example:
  *  <pre>
- *  object Main with Application {
- *    Console.println("Hello World!");
+ *  <b>object</b> Main <b>extends</b> Application {
+ *    Console.println("Hello World!")
  *  }
  *  </pre>
  *  Here, object <code>Main</code> inherits the <code>main</code> method
@@ -43,6 +43,8 @@ trait Application {
   val executionStart: Long = java.lang.System.currentTimeMillis()
 
   /** The default main method.
+   *
+   *  @param args the arguments passed to the main method
    */
   def main(args: Array[String]) = {
     if (java.lang.System.getProperty("scala.time") != null) {

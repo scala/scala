@@ -9,7 +9,7 @@
 // $Id$
 
 
-package scala;
+package scala
 
 
-class volatile extends Attribute {}
+class volatile extends Attribute

@@ -12,7 +12,8 @@
 package scala
 
 
-/** defines an access function for instances of case classes
+/** The trait <code>CaseClass</code> defines access functions for instances
+ *  of case classes.
  *
  *  @author  Burak Emir
  *  @version 1.0
@@ -22,7 +23,7 @@ trait CaseClass extends AnyRef {
   /** for a case class <code>A(x_0,...,x_(k-1))</code>, returns <code>x_i</code>
    *  for <code>0 &lt;= i &lt; k</code>, <code>null</code> otherwise.
    *
-   *  @param n ...
+   *  @param n the position of the n-th element
    *  @return  ...
    */
   def caseElement(n: Int): Any

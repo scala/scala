@@ -9,11 +9,11 @@
 // $Id$
 
 
-package scala;
+package scala
 
 
 /**
  * Attribute for specifying the static SerialVersionUID field
  * of a serializable class
  */
-class SerialVersionUID(uid: Long) extends Attribute {}
+class SerialVersionUID(uid: Long) extends Attribute
