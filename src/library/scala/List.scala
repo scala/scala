@@ -875,10 +875,10 @@ sealed abstract class List[+a] extends Seq[a] with CaseClass {
   }
 
   /** Combines the elements of this list together using the binary
-   *  operator <code>op</code>, from left to right, and starting with
+   *  function <code>f</code>, from left to right, and starting with
    *  the value <code>z</code>.
    *
-   *  @return <code>op(... (op(op(z,a0),a1) ...), an)</code> if the list
+   *  @return <code>f(... (f(f(z, a0), a1) ...), an)</code> if the list
    *  is <code>[a0, a1, ..., an]</code>.
    */
   override def foldLeft[b](z: b)(f: (b, a) => b): b = {
@@ -892,10 +892,10 @@ sealed abstract class List[+a] extends Seq[a] with CaseClass {
   }
 
   /** Combines the elements of this list together using the binary
-   *  operator <code>op</code>, from rigth to left, and starting with
+   *  function <code>f</code>, from rigth to left, and starting with
    *  the value <code>z</code>.
    *
-   *  @return <code>a0 op (... op (an op z)...)</code> if the list
+   *  @return <code>f(a0, f(a1, f(..., f(an, z)...)))</code> if the list
    *  is <code>[a0, a1, ..., an]</code>.
    */
   override def foldRight[b](z: b)(f: (a, b) => b): b = this match {
