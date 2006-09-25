@@ -1,21 +1,9 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2005-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
 
-// $Id$
-
-package scala.actors.distributed
+package nactors.distributed
 
 import java.io.IOException
 import java.net.{InetAddress,ServerSocket,Socket,UnknownHostException}
 
-/**
- * @author Philipp Haller
- */
 object TcpService {
   val random = new java.util.Random(System.currentTimeMillis())
 
@@ -38,25 +26,11 @@ object TcpService {
   }
 }
 
-object TestPorts {
-  def main(args: Array[String]): Unit = {
-    val random = new java.util.Random(System.currentTimeMillis())
-    val socket = new ServerSocket(8000 + random.nextInt(500))
-    Console.println(TcpService.generatePort)
-  }
-}
-
-/**
- * @author Philipp Haller
- */
 class TcpService(port: Int) extends Thread with Service {
   val serializer: JavaSerializer = new JavaSerializer(this)
 
-  private val internalNode = new TcpNode(InetAddress.getLocalHost().getHostAddress(), port);
+  private val internalNode = new TcpNode(InetAddress.getLocalHost().getHostAddress(), port)
   def node: TcpNode = internalNode
-
-  def createPid(actor: RemoteActor): RemotePid =
-    new TcpPid(internalNode, makeUid, kernel, actor)
 
   def send(node: Node, data: String): unit = synchronized {
     // retrieve worker thread (if any) that already has connection
@@ -66,7 +40,7 @@ class TcpService(port: Int) extends Thread with Service {
           case None =>
             // we are not connected, yet
             Console.println("We are not connected, yet.");
-            val newWorker = connect(tnode); //bad in a sync BLOCK!!!
+            val newWorker = connect(tnode); // bad in a sync block
             newWorker transmit data
           case Some(worker) => worker transmit data
         }
@@ -120,7 +94,7 @@ class TcpService(port: Int) extends Thread with Service {
   // connection management
 
   private val connections =
-    new scala.collection.mutable.HashMap[TcpNode,TcpServiceWorker]
+    new scala.collection.mutable.HashMap[TcpNode, TcpServiceWorker]
 
   def nodes: List[Node] =
     throw new Exception ("nodes need to be implemented in TcpService!")
@@ -155,7 +129,7 @@ class TcpService(port: Int) extends Thread with Service {
     Console.println("Connected.")
     // spawn new worker thread
     val worker = new TcpServiceWorker(this, sock)
-    worker.sendNode;
+    worker.sendNode(n);
     // start worker thread
     worker.start()
     // register locally (we want to reuse connections which correspond to connected sockets)
@@ -200,7 +174,7 @@ class TcpService(port: Int) extends Thread with Service {
   def getRoundTripTimeMillis(node: Node): Long = 0
 
   def nodeDown(mnode: TcpNode): Unit = synchronized {
-    kernel nodeDown mnode
+    //kernel nodeDown mnode
     connections -= mnode
   }
 

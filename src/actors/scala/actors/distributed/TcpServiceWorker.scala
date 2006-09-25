@@ -1,21 +1,9 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2005-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
 
-// $Id$
-
-package scala.actors.distributed
+package nactors.distributed
 
 import java.io._
 import java.net.Socket
 
-/**
- * @author Philipp Haller
- */
 class TcpServiceWorker(parent: TcpService, so: Socket) extends Thread {
   val in = so.getInputStream()
   val out = so.getOutputStream()
@@ -29,10 +17,12 @@ class TcpServiceWorker(parent: TcpService, so: Socket) extends Thread {
   val log = new Debug("TcpServiceWorker")
   log.level = 2
 
+/*
   def transmit(msg: Send): Unit = synchronized {
     val data = parent.serializer.serialize(msg)
     transmit(data)
   }
+*/
 
   def transmit(data: String): Unit = synchronized {
     log.info("Transmitting " + data)
@@ -47,7 +37,8 @@ class TcpServiceWorker(parent: TcpService, so: Socket) extends Thread {
     dataout.flush()
   }
 
-  def sendNode = {
+  def sendNode(n: TcpNode) = {
+    connectedNode = n
     scala.Console.println("Sending our name " + parent.node)
     parent.serializer.writeObject(dataout, parent.node)
   }
@@ -69,6 +60,7 @@ class TcpServiceWorker(parent: TcpService, so: Socket) extends Thread {
   }
 
   var running = true
+
   def halt = synchronized {
     so.close() // close socket
     running = false // stop
@@ -81,8 +73,8 @@ class TcpServiceWorker(parent: TcpService, so: Socket) extends Thread {
           log.info("deserializing...");
           //val msg = parent.serializer.deserialize(reader);
           val msg = parent.serializer.readObject(datain);
-          log.info("Received object: " + msg);
-          parent.kernel.processMsg(msg)
+          log.info("Received object: " + msg + " from " + connectedNode);
+          parent.kernel.processMsg(connectedNode, msg)
         }
       }
     }

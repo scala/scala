@@ -1,22 +1,10 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2005-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
 
-// $Id$
-
-package scala.actors.distributed
+package nactors.distributed
 
 import java.io.{DataInputStream,DataOutputStream,EOFException}
 import scala.io.BytePickle.SPU
 
-/**
- * @author Philipp Haller
- */
-abstract class Serializer(s: Service) {
+abstract class Serializer(val service: Service) {
   def serialize(o: AnyRef/*, w: Writer*/): Array[byte]
   def deserialize(a: Array[byte]/*r: Reader*/): AnyRef
 
@@ -54,8 +42,4 @@ abstract class Serializer(s: Service) {
     val bytes = serialize(obj)
     writeBytes(outputStream, bytes)
   }
-
-  def pid: SPU[RemotePid]
-  def service = s
-  def addRep(name: String, repCons: Serializer => AnyRef): unit
 }
