@@ -61,7 +61,7 @@ object Scalatest {
     val tmpfile = new FileWriter(tmpfilename)
     tmpfile.write(src)
     tmpfile.close
-    exec("javac -d " + outputdir + " -cp " + classpath + " " + tmpfilename)
+    exec("javac -d " + outputdir + " -classpath " + classpath + " " + tmpfilename)
   }
 
   /** Execute cmd, wait for the process to end and pipe it's output to stdout */
