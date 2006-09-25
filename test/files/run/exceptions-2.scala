@@ -151,6 +151,32 @@ object Test {
       } catch { case _ => () }
     };
 
+  def returnInBody: Unit = try {
+    try {
+      Console.println("Normal execution...");
+      return
+      Console.println("non reachable code");
+    } finally {
+      Console.println("inner finally");
+    }
+  } finally {
+    Console.println("Outer finally");
+  }
+
+  def returnInBodySynch: Unit = try {
+    synchronized {
+      try {
+        Console.println("Synchronized normal execution...");
+        return
+        Console.println("non reachable code");
+      } finally {
+        Console.println("inner finally");
+      }
+    }
+  } finally {
+    Console.println("Outer finally");
+  }
+
 
   def execute(f: => Unit) = try {
     f;
@@ -196,5 +222,11 @@ object Test {
 
     Console.println("NoExcep.method4:");
     execute(NoExcep.method4);
+
+    Console.println("Return inside body:");
+    execute(returnInBody);
+
+    Console.println("Return inside synchronized body:");
+    execute(returnInBodySynch);
   }
 }

@@ -454,11 +454,15 @@ abstract class GenICode extends SubComponent  {
 
         case Return(expr) =>
           val returnedKind = toTypeKind(expr.tpe)
-          val ctx1 = genLoad(expr, ctx, returnedKind)
-          for (val m <- ctx1.monitors) {
-            ctx1.bb.emit(LOAD_LOCAL(m))
-            ctx1.bb.emit(MONITOR_EXIT())
+          var ctx1 = genLoad(expr, ctx, returnedKind)
+          for (val op <- ctx1.cleanups) op match {
+            case MonitorRelease(m) =>
+              ctx1.bb.emit(LOAD_LOCAL(m))
+              ctx1.bb.emit(MONITOR_EXIT())
+            case Finalizer(f) =>
+              ctx1 = genLoad(f, ctx1, UNIT)
           }
+
           ctx1.bb.emit(RETURN(returnedKind), tree.pos)
           ctx1.bb.enterIgnoreMode
           generatedType = expectedType
@@ -525,7 +529,8 @@ abstract class GenICode extends SubComponent  {
               } else
                 genLoad(finalizer, ctx1, UNIT)
             },
-            handlers)
+            handlers,
+            finalizer)
 
         case Throw(expr) =>
           val ctx1 = genLoad(expr, ctx, THROWABLE)
@@ -717,7 +722,7 @@ abstract class GenICode extends SubComponent  {
                   exhCtx.bb.emit(THROW())
                   exhCtx.bb.enterIgnoreMode
                   exhCtx
-                })));
+                })), EmptyTree);
               if (settings.debug.value)
                 log("synchronized block end with block " + ctx1.bb +
                     " closed=" + ctx1.bb.isClosed);
@@ -1497,6 +1502,14 @@ abstract class GenICode extends SubComponent  {
 
     /////////////////////// Context ////////////////////////////////
 
+    abstract class Cleanup;
+    case class MonitorRelease(m: Local) extends Cleanup {
+      override def equals(other: Any) = m == other;
+    }
+    case class Finalizer(f: Tree) extends Cleanup {
+      override def equals(other: Any) = f == other;
+    }
+
 
     /**
      * The Context class keeps information relative to the current state
@@ -1525,8 +1538,8 @@ abstract class GenICode extends SubComponent  {
       /** current exception handlers */
       var handlers: List[ExceptionHandler] = Nil
 
-      /** The current monitors, if inside synchronized blocks. */
-      var monitors: List[Local] = Nil
+      /** The current monitors or finalizers, to be cleaned up upon `return'. */
+      var cleanups: List[Cleanup] = Nil
 
       /** The current exception handler, when we generate code for one. */
       var currentExceptionHandler: Option[ExceptionHandler] = None
@@ -1541,7 +1554,7 @@ abstract class GenICode extends SubComponent  {
         buf.append("\tbb: ").append(bb).append('\n')
         buf.append("\tlabels: ").append(labels).append('\n')
         buf.append("\texception handlers: ").append(handlers).append('\n')
-        buf.append("\tmonitors: ").append(monitors).append('\n')
+        buf.append("\tcleanups: ").append(cleanups).append('\n')
         buf.toString()
       }
 
@@ -1555,7 +1568,7 @@ abstract class GenICode extends SubComponent  {
         this.defdef = other.defdef
         this.handlers = other.handlers
         this.handlerCount = other.handlerCount
-        this.monitors = other.monitors
+        this.cleanups = other.cleanups
         this.currentExceptionHandler = other.currentExceptionHandler
       }
 
@@ -1580,14 +1593,26 @@ abstract class GenICode extends SubComponent  {
       }
 
       def enterSynchronized(monitor: Local): this.type = {
-        monitors = monitor :: monitors
+        cleanups = MonitorRelease(monitor) :: cleanups
         this
       }
 
       def exitSynchronized(monitor: Local): this.type = {
-        assert(monitors.head == monitor,
-               "Bad nesting of monitors: " + monitors + " trying to exit from: " + monitor)
-        monitors = monitors.tail
+        assert(cleanups.head == monitor,
+               "Bad nesting of cleanup operations: " + cleanups + " trying to exit from monitor: " + monitor)
+        cleanups = cleanups.tail
+        this
+      }
+
+      def addFinalizer(f: Tree): this.type = {
+        cleanups = Finalizer(f) :: cleanups;
+        this
+      }
+
+      def removeFinalizer(f: Tree): this.type = {
+        assert(cleanups.head == f,
+               "Illegal nesting of cleanup operations: " + cleanups + " while exiting finalizer" + f);
+        cleanups = cleanups.tail
         this
       }
 
@@ -1670,7 +1695,8 @@ abstract class GenICode extends SubComponent  {
        *   } ))</code>
        */
       def Try(body: Context => Context,
-              handlers: List[Pair[Symbol, (Context => Context)]]) = {
+              handlers: List[Pair[Symbol, (Context => Context)]],
+              finalizer: Tree) = {
         val outerCtx = this.dup
         val afterCtx = outerCtx.newBlock
 
@@ -1682,6 +1708,8 @@ abstract class GenICode extends SubComponent  {
             exh
           }
         val bodyCtx = this.newBlock
+        if (finalizer != EmptyTree)
+          bodyCtx.addFinalizer(finalizer)
 
         val finalCtx = body(bodyCtx)
 
@@ -1689,6 +1717,8 @@ abstract class GenICode extends SubComponent  {
         outerCtx.bb.close
 
         exhs.reverse foreach finalCtx.removeHandler
+        if (finalizer != EmptyTree)
+          finalCtx.removeFinalizer(finalizer)
 
         finalCtx.bb.emit(JUMP(afterCtx.bb))
         finalCtx.bb.close

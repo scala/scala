@@ -28,3 +28,11 @@ NoExcep.method3:
 method3
 NoExcep.method4:
 ..
+Return inside body:
+Normal execution...
+inner finally
+Outer finally
+Return inside synchronized body:
+Synchronized normal execution...
+inner finally
+Outer finally
