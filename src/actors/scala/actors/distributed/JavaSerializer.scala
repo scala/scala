@@ -1,16 +1,24 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2005-2006, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
 
-package nactors.distributed
+// $Id$
+
+package scala.actors.distributed
 
 import java.io._
-
 import scala.io.BytePickle.SPU
 
 [serializable]
 class JavaSerializer(serv: Service) extends Serializer(serv) {
   val debug = true
 
-  def log(s: String) =
-    if (debug) Console.println("JavaSerializer: " + s)
+  def log (s: String) =
+    if (debug) scala.Console.println("JAVASerializer: " + s)
 
   def serialize(o: AnyRef): Array[Byte] = {
     val bos = new ByteArrayOutputStream()
@@ -26,5 +34,6 @@ class JavaSerializer(serv: Service) extends Serializer(serv) {
     in.readObject()
   }
 
+  def pid: SPU[RemotePid] = null
   def addRep(name: String, repCons: Serializer => AnyRef): Unit = {}
 }
