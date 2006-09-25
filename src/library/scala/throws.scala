@@ -9,9 +9,22 @@
 // $Id$
 
 
-package scala;
+package scala
 
 /**
  * Attribute for specifying the exceptions thrown by a method.
+ * <p>
+ *  Example:
+ * </p>
+ * <pre>
+ * <b>class</b> Reader(fname: String) {
+ *   <b>private val</b> in =
+ *     <b>new</b> BufferedReader(<b>new</b> FileReader(fname))
+ *   [throws(classOf[IOException])]
+ *   <b>def</b> read() = in.read()
+ * }</pre>
+ *
+ * @author  Nikolay Mihaylov
+ * @version 1.0, 19/05/2006
  */
-class throws(clazz: java.lang.Class) extends Attribute;
+class throws(clazz: java.lang.Class) extends Attribute

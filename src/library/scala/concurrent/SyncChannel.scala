@@ -9,32 +9,36 @@
 // $Id$
 
 
-package scala.concurrent;
+package scala.concurrent
 
-
+/** The class <code>SyncChannel</code> ...
+ *
+ *  @author  Martin Odersky
+ *  @version 1.0, 10/03/2003
+ */
 class SyncChannel[a] {
-  private var data: a = _;
-  private var reading = false;
-  private var writing = false;
+  private var data: a = _
+  private var reading = false
+  private var writing = false
 
-  def await(cond: => Boolean) = while (!cond) { wait() }
+  def await(cond: => Boolean) = while (!cond) wait()
 
   def write(x: a) = synchronized {
-    await(!writing);
-    data = x;
-    writing = true;
-    if (reading) notifyAll();
+    await(!writing)
+    data = x
+    writing = true
+    if (reading) notifyAll()
     else await(reading)
   }
 
   def read: a = synchronized {
-    await(!reading);
-    reading = true;
-    await(writing);
-    val x = data;
-    writing = false;
-    reading = false;
-    notifyAll();
+    await(!reading)
+    reading = true
+    await(writing)
+    val x = data
+    writing = false
+    reading = false
+    notifyAll()
     x
   }
 }

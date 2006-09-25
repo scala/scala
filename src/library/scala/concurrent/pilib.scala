@@ -13,28 +13,30 @@ package scala.concurrent
 
 
 /**
-* Library for using Pi-calculus concurrent primitives in Scala. As an example,
-the definition of a two-place buffer using the <b>pilib</b> library looks like:
-*<pre>
-*def Buffer[a](put: Chan[a], get: Chan[a]): unit = {
-*  def B0: unit = choice ( put * { x => B1(x) } );
-*  def B1(x: a): unit = choice ( get(x) * B0, put * { y => B2(x, y) } );
-*  def B2(x: a, y: a): unit = choice ( get(x) * B1(y) );
-*  B0
-*}
-*</pre>
-*
-* @see <a href="http://scala.epfl.ch/docu/related.html">PiLib: A Hosted Language for Pi-Calculus Style Concurrency</a>
-* @author Vincent Cremet, Martin Odersky
-*/
+ * Library for using Pi-calculus concurrent primitives in Scala. As an
+ * example, the definition of a two-place buffer using the <code>pilib</code>
+ * library looks like:
+ * <pre>
+ * <b>def</b> Buffer[a](put: Chan[a], get: Chan[a]): unit = {
+ *   <b>def</b> B0: unit = choice ( put * { x => B1(x) } );
+ *   <b>def</b> B1(x: a): unit = choice ( get(x) * B0, put * { y => B2(x, y) } )
+ *   <b>def</b> B2(x: a, y: a): unit = choice ( get(x) * B1(y) )
+ *   B0
+ * }
+ * </pre>
+ *
+ * @see <a href="http://scala.epfl.ch/docu/related.html">PiLib: A Hosted Language for Pi-Calculus Style Concurrency</a>
+ * @author  Vincent Cremet, Martin Odersky
+ * @version 1.0
+ */
 object pilib {
 
   /////////////////////////// SPAWN //////////////////////////////
 
   /**
-  * Run several processes in parallel using the following syntax:
-  * spawn &lt; p_1 | ... | p_n &gt;
-  */
+   * Run several processes in parallel using the following syntax:
+   * <code>spawn &lt; p_1 | ... | p_n &gt;</code>
+   */
   abstract class Spawn {
     def <(p: => unit): Spawn
     def |(p: => unit): Spawn
@@ -56,12 +58,13 @@ object pilib {
   }
 
   /** An untyped guarded process.
-  * @param n         channel name
-  * @param polarity  input (true) or output (false)
-  * @param v         transmitted value
-  * @param c         continuation
-  */
-  case class UGP(n: UChan, polarity: boolean, v: Any, c: Any => Any);
+   *
+   *  @param n         channel name
+   *  @param polarity  input (true) or output (false)
+   *  @param v         transmitted value
+   *  @param c         continuation
+   */
+  case class UGP(n: UChan, polarity: boolean, v: Any, c: Any => Any)
 
   /** Typed guarded process. */
   class GP[a](n: UChan, polarity: boolean, v: Any, c: Any => a) {
@@ -106,8 +109,8 @@ object pilib {
       new Product(this, v)
 
     /** Attach a function to be evaluated at each communication event
-    * on this channel. Replace previous attached function.
-    */
+     *  on this channel. Replace previous attached function.
+     */
     def attach(f: a => unit) =
       log = x => f(x.asInstanceOf[a])
   }
@@ -125,16 +128,18 @@ object pilib {
 
     var initialized = false
 
-    /**
-    * Block if not initialized otherwise continue with the
-    * continuation.
-    */
+    /** Block if not initialized otherwise continue with the
+     *  continuation.
+     */
     def continue = synchronized {
-      if (!initialized) wait();
+      if (!initialized) wait()
       cont()
     }
 
-    /** Set the values of parameters and awake the sleeping sum. */
+    /** Set the values of parameters and awake the sleeping sum.
+     *
+     *  @param f ...
+     */
     def set(f: () => Any) = synchronized {
       cont = f
       initialized = true
@@ -146,7 +151,12 @@ object pilib {
 
   private var sums: List[Sum] = Nil
 
-  /** Test if two lists of guarded processes can communicate. */
+  /** Test if two lists of guarded processes can communicate.
+   *
+   *  @param gs1 ...
+   *  @param gs2 ...
+   *  @return    ...
+   */
   private def matches(gs1: List[UGP], gs2: List[UGP]): Option[Triple[() => unit, () => Any, () => Any]] =
     Pair(gs1, gs2) match {
       case Pair(Nil, _) => None
@@ -160,10 +170,13 @@ object pilib {
         }
     }
 
-  /**
-   * Test if the given sum can react with one of the pending sums.
-   * If yes then do the reaction otherwise append the sum at the end
-   * of the pending sums.
+  /** Test if the given sum can react with one of the pending sums.
+   *  If yes then do the reaction otherwise append the sum at the end
+   *  of the pending sums.
+   *
+   *  @param s1 ...
+   *  @param ss ...
+   *  @return   ...
    */
   private def compare(s1: Sum, ss: List[Sum]): List[Sum] =
     ss match {
@@ -179,10 +192,14 @@ object pilib {
       }
     }
 
-  /** Pi-calculus non-deterministic choice. */
+  /** Pi-calculus non-deterministic choice.
+   *
+   *  @param s ...
+   *  @return  ...
+   */
   def choice[a](s: GP[a]*): a = {
-    val sum = Sum(s.toList map { x => x.untyped });
-    synchronized { sums = compare(sum, sums) };
+    val sum = Sum(s.toList map { x => x.untyped })
+    synchronized { sums = compare(sum, sums) }
     (sum.continue).asInstanceOf[a]
   }
 

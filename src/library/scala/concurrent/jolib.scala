@@ -9,38 +9,41 @@
 // $Id$
 
 
-package scala.concurrent;
+package scala.concurrent
 
 
 /**
-* Library for using join-calculus concurrent primitives in Scala.
-*/
+ * Library for using join-calculus concurrent primitives in Scala.
+ *
+ * @author  Vincent Cremet
+ * @version 1.0, 17/10/2003
+ */
 object jolib {
 
-  type Pattern = List[Signal];
+  type Pattern = List[Signal]
 
-  type Rule = PartialFunction[List[Any], unit];
+  type Rule = PartialFunction[List[Any], unit]
 
   /////////////////// JOIN DEFINITION /////////////////////////
 
   class Join {
 
-    private var ruls: List[Pair[Pattern, Rule]] = null;
+    private var ruls: List[Pair[Pattern, Rule]] = null
 
     def canMatch(p: Pattern) =
-      p forall { s => !s.queue.isEmpty };
+      p forall { s => !s.queue.isEmpty }
 
     def values(p: Pattern): List[Any] =
-      p map { s => s.queue.dequeue: Any };
+      p map { s => s.queue.dequeue: Any }
 
     def rules(rs: Pair[Pattern, Rule]*) =
-      ruls = rs.asInstanceOf[List[Pair[Pattern, Rule]]];
+      ruls = rs.asInstanceOf[List[Pair[Pattern, Rule]]]
 
     def tryMatch =
       (ruls find { case Pair(p, _) => canMatch(p) }) match {
-        case None => () => ();
+        case None => () => ()
         case Some(Pair(p, r)) => {
-          val args = values(p);
+          val args = values(p)
           () => concurrent.ops.spawn(r(args))
         }
       }
@@ -50,25 +53,25 @@ object jolib {
   /////////////////// SIGNALS /////////////////////////
 
   abstract class Signal(join: Join) {
-    type C;
-    val queue = new collection.mutable.Queue[C];
+    type C
+    val queue = new collection.mutable.Queue[C]
     def tryReduction(x: C): unit = {
       val continuation = join synchronized {
-        queue.enqueue(x);
+        queue.enqueue(x)
         join.tryMatch
-      };
+      }
       continuation()
     }
   }
 
   abstract class Asynchr(join: Join) extends Signal(join) {
-    def apply(x: C): unit = tryReduction(x);
+    def apply(x: C): unit = tryReduction(x)
   }
 
   abstract class Synchr[a](join: Join) extends Signal(join) {
-    type C <: SyncVar[a];
+    type C <: SyncVar[a]
     def apply(x: C): a = {
-      tryReduction(x);
+      tryReduction(x)
       x.get
     }
   }

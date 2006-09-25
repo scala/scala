@@ -9,27 +9,31 @@
 // $Id$
 
 
-package scala.concurrent;
+package scala.concurrent
 
 
+/** The class <code>SyncVar</code> ...
+ *
+ *  @author  Martin Odersky
+ *  @version 1.0, 10/03/2003
+ */
 class SyncVar[a] {
-
-  private var isDefined: Boolean = false;
-  private var value: a = _;
+  private var isDefined: Boolean = false
+  private var value: a = _
 
   def get = synchronized {
-    if (!isDefined) wait();
+    if (!isDefined) wait()
     value
   }
 
   def set(x: a) = synchronized {
-    value = x;
-    isDefined = true;
+    value = x
+    isDefined = true
     notifyAll()
   }
 
   def isSet: Boolean = synchronized {
-    isDefined;
+    isDefined
   }
 
   def unset = synchronized {

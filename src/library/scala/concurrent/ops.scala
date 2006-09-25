@@ -9,35 +9,57 @@
 // $Id$
 
 
-package scala.concurrent;
+package scala.concurrent
 
 
+/** The object <code>ops</code> ...
+ *
+ *  @author  Martin Odersky
+ *  @version 1.0, 12/03/2003
+ */
 object ops {
 
+  /**
+   *  @param p ...
+   */
   def spawn(p: => Unit) = {
-    val t = new Thread() { override def run() = p; }
+    val t = new Thread() { override def run() = p }
     t.start()
   }
 
+  /**
+   *  @param p ...
+   *  @return  ...
+   */
   def future[a](p: => a): () => a = {
-    val result = new SyncVar[a];
+    val result = new SyncVar[a]
     spawn { result set p }
     () => result.get
   }
 
+  /**
+   *  @param xp ...
+   *  @param yp ...
+   *  @return   ...
+   */
   def par[a, b](xp: => a, yp: => b): Pair[a, b] = {
-    val y = new SyncVar[b];
+    val y = new SyncVar[b]
     spawn { y set yp }
     Pair(xp, y.get)
   }
 
+  /**
+   *  @param start ...
+   *  @param end   ...
+   *  @param p     ...
+   */
   def replicate(start: Int, end: Int)(p: Int => Unit): Unit = {
     if (start == end)
       ()
     else if (start + 1 == end)
       p(start)
     else {
-      val mid = (start + end) / 2;
+      val mid = (start + end) / 2
       spawn { replicate(start, mid)(p) }
       replicate(mid, end)(p)
     }
