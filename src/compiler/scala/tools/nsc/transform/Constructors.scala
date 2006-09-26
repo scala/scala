@@ -10,6 +10,11 @@ import scala.collection.mutable.ListBuffer
 import symtab.Flags._
 import util.TreeSet
 
+/** The abstract class <code>Constructors</code> ...
+ *
+ *  @author  Martin Odersky
+ *  @version 1.0
+ */
 abstract class Constructors extends Transform {
   import global._
   import definitions._
@@ -97,7 +102,7 @@ abstract class Constructors extends Transform {
           localTyper.typed {
             Assign(Select(This(clazz), to), from)
           }
-      }
+        }
 
       def copyParam(to: Symbol, from: Symbol): Tree = {
         var result = mkAssign(to, Ident(from))
@@ -133,7 +138,7 @@ abstract class Constructors extends Transform {
             assert(stat.symbol.getter(stat.symbol.owner) != NoSymbol, stat)
           else {
             if (rhs != EmptyTree) {
-              val rhs1 = intoConstructor(stat.symbol, rhs);
+              val rhs1 = intoConstructor(stat.symbol, rhs)
               (if (canBeMoved(stat)) constrPrefixBuf else constrStatBuf) += mkAssign(
                 stat.symbol, rhs1)
             }
@@ -147,12 +152,11 @@ abstract class Constructors extends Transform {
 
       val accessed = new TreeSet[Symbol]((x, y) => x isLess y)
 
-      def isAccessed(sym: Symbol) = (
+      def isAccessed(sym: Symbol) =
         sym.owner != clazz ||
         !(sym hasFlag PARAMACCESSOR) ||
         !(sym hasFlag LOCAL) ||
         (accessed contains sym)
-      );
 
       val accessTraverser = new Traverser {
         override def traverse(tree: Tree) = {
@@ -165,7 +169,7 @@ abstract class Constructors extends Transform {
         }
       }
 
-      for (val stat <- defBuf.elements) accessTraverser.traverse(stat);
+      for (val stat <- defBuf.elements) accessTraverser.traverse(stat)
 
       val paramInits = for (val acc <- paramAccessors; isAccessed(acc))
                        yield copyParam(acc, parameter(acc))
@@ -177,12 +181,14 @@ abstract class Constructors extends Transform {
           paramInits ::: constrPrefixBuf.toList ::: constrStatBuf.toList,
           constrBody.expr));
 
-      copy.Template(impl, impl.parents, defBuf.toList filter (stat => isAccessed(stat.symbol)))
+      copy.Template(impl, impl.parents,
+        defBuf.toList filter (stat => isAccessed(stat.symbol)))
     }
 
     override def transform(tree: Tree): Tree = {
       tree match {
-        case ClassDef(mods, name, tparams, tpt, impl) if !tree.symbol.hasFlag(INTERFACE) =>
+        case ClassDef(mods, name, tparams, tpt, impl)
+        if !tree.symbol.hasFlag(INTERFACE) =>
           copy.ClassDef(tree, mods, name, tparams, tpt, transformClassTemplate(impl))
         case _ =>
           super.transform(tree)
