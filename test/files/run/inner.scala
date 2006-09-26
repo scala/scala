@@ -1,46 +1,46 @@
 //############################################################################
 // Test Java interaction with scala inner classes
 //############################################################################
-// $Id: $
+// $Id$
 
-import java.io._;
+import java.io.{BufferedReader, File, FileWriter, InputStreamReader}
 
 class A {
-  val abc = "A.abc";
+  val abc = "A.abc"
 
   protected class B(x: Int, y: String) {
-    Console.println(abc); Console.println(x);
-    Console.println(y);
+    Console.println(abc); Console.println(x)
+    Console.println(y)
   }
 
   trait Itf {
-    def method1(x: Int): Int;
+    def method1(x: Int): Int
 
     trait Itf2 extends Itf {
-      def method2: Unit;
+      def method2: Unit
     }
   }
 
   trait PlainTrait {
-    def method1(x: Int): Int;
+    def method1(x: Int): Int
   }
 
   class Impl(a: Int) extends Itf {
     def method1(x: Int) = {
-      Console.println(x);
-      Console.println(a);
+      Console.println(x)
+      Console.println(a)
       x + a
     }
   }
 
   class Impl2 extends Impl(1) with Itf#Itf2 {
     def method2 = {
-      Console.println(abc);
+      Console.println(abc)
     }
   }
 
-  def newImpl: Itf = new Impl(1);
-  def newImpl2: Itf#Itf2 = new Impl2;
+  def newImpl: Itf = new Impl(1)
+  def newImpl2: Itf#Itf2 = new Impl2
 
   class Outer1(arg1: Int) {
     class Outer2(arg2: Int) {
@@ -57,7 +57,7 @@ object Scalatest {
   val classpath = outputdir + File.pathSeparator + scalalib
 
   def javac(src: String) = {
-    val tmpfilename = "tmpJavaInterraction.java";
+    val tmpfilename = outputdir + File.separator + "tmpJavaInterraction.java"
     val tmpfile = new FileWriter(tmpfilename)
     tmpfile.write(src)
     tmpfile.close
@@ -98,7 +98,7 @@ public class tmpJavaInterraction {
 """
   def main(args: Array[String]): Unit = {
     Scalatest.javac(program)
-    Scalatest.exec("java -cp " + Scalatest.classpath + " tmpJavaInterraction");
+    Scalatest.exec("java -cp " + Scalatest.classpath + " tmpJavaInterraction")
   }
 }
 
