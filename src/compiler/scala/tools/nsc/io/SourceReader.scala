@@ -7,13 +7,13 @@
 // $Id$
 
 
-package scala.tools.nsc.io;
+package scala.tools.nsc.io
 
 
-import java.io.{File, FileInputStream, IOException};
-import java.nio.{ByteBuffer, CharBuffer};
-import java.nio.channels.{FileChannel, ReadableByteChannel};
-import java.nio.charset.{CharsetDecoder, CoderResult};
+import java.io.{File, FileInputStream, IOException}
+import java.nio.{ByteBuffer, CharBuffer}
+import java.nio.channels.{FileChannel, ReadableByteChannel}
+import java.nio.charset.{CharsetDecoder, CoderResult}
 
 /** This class implements methods to read and decode source files. */
 class SourceReader(decoder: CharsetDecoder) {
@@ -24,10 +24,10 @@ class SourceReader(decoder: CharsetDecoder) {
   // Private Fields
 
   /** The input byte buffer (small enough to fit in cache) */
-  private val bytes: ByteBuffer = ByteBuffer.allocate(0x4000);
+  private val bytes: ByteBuffer = ByteBuffer.allocate(0x4000)
 
   /** The output character buffer */
-  private var chars: CharBuffer = CharBuffer.allocate(0x4000);
+  private var chars: CharBuffer = CharBuffer.allocate(0x4000)
 
   private def reportEncodingError(filename:String) = {
     Console println "IO error while decoding "+filename+" with "+decoder.charset();
@@ -38,23 +38,27 @@ class SourceReader(decoder: CharsetDecoder) {
   // Public Methods
 
   /** Reads the file with the specified name. */
-  def read(filename: String): Array[Char]= read(new File(filename));
+  def read(filename: String): Array[Char]= read(new File(filename))
 
   /** Reads the specified file. */
   def read(file: File): Array[Char] = {
-    val channel: FileChannel = new FileInputStream(file).getChannel();
+    val channel: FileChannel = new FileInputStream(file).getChannel()
     try {
-      read(channel);
+      read(channel)
     } catch {
       case e:Exception =>
         reportEncodingError(file.toString())
         new Array[Char](0)
     } finally {
-      channel.close();
+      channel.close()
     }
   }
 
-  /** Reads the specified file. */
+  /** Reads the specified file.
+   *
+   *  @param file ...
+   *  @return     ...
+   */
   def read(file: AbstractFile): Array[Char] = {
     file match {
       case p:PlainFile => read(p.file)
@@ -76,16 +80,16 @@ class SourceReader(decoder: CharsetDecoder) {
 
   /** Reads the specified byte channel. */
   protected def read(input: ReadableByteChannel): Array[Char] = {
-    val decoder: CharsetDecoder = this.decoder.reset();
-    val bytes: ByteBuffer = this.bytes; bytes.clear();
-    var chars: CharBuffer = this.chars; chars.clear();
+    val decoder: CharsetDecoder = this.decoder.reset()
+    val bytes: ByteBuffer = this.bytes; bytes.clear()
+    var chars: CharBuffer = this.chars; chars.clear()
     var endOfInput: Boolean = false
     while (!endOfInput ) {
-      endOfInput = input.read(bytes) < 0;
-      bytes.flip();
-      chars = decode(decoder, bytes, chars, endOfInput);
+      endOfInput = input.read(bytes) < 0
+      bytes.flip()
+      chars = decode(decoder, bytes, chars, endOfInput)
     }
-    terminate(flush(decoder, chars));
+    terminate(flush(decoder, chars))
   }
 
   //########################################################################
@@ -96,10 +100,10 @@ class SourceReader(decoder: CharsetDecoder) {
    * reads and returns its content.
    */
   private def terminate(chars: CharBuffer): Array[Char] = {
-    val result = new Array[Char](chars.length());
-    chars.get(result);
-    this.chars = chars;
-    result;
+    val result = new Array[Char](chars.length())
+    chars.get(result)
+    this.chars = chars
+    result
   }
 
 }
@@ -117,14 +121,14 @@ object SourceReader {
   def decode(decoder: CharsetDecoder, bytes: ByteBuffer, chars: CharBuffer,
              endOfInput: boolean): CharBuffer =
   {
-    val result: CoderResult = decoder.decode(bytes, chars, endOfInput);
+    val result: CoderResult = decoder.decode(bytes, chars, endOfInput)
     if (result.isUnderflow()) {
-      bytes.compact();
-      chars;
+      bytes.compact()
+      chars
     } else {
-      if (result.isError()) throw new IOException(result.toString());
-      assert(result.isOverflow());
-      decode(decoder, bytes, increaseCapacity(chars), endOfInput);
+      if (result.isError()) throw new IOException(result.toString())
+      assert(result.isOverflow())
+      decode(decoder, bytes, increaseCapacity(chars), endOfInput)
     }
   }
 
@@ -134,14 +138,14 @@ object SourceReader {
    * the last allocated char buffer.
    */
   def flush(decoder: CharsetDecoder, chars: CharBuffer): CharBuffer = {
-    val result: CoderResult = decoder.flush(chars);
+    val result: CoderResult = decoder.flush(chars)
     if (result.isUnderflow()) {
-      chars.flip();
-      chars;
+      chars.flip()
+      chars
     } else {
-      if (result.isError()) throw new IOException(result.toString());
-      assert(result.isOverflow());
-      flush(decoder, increaseCapacity(chars));
+      if (result.isError()) throw new IOException(result.toString())
+      assert(result.isOverflow())
+      flush(decoder, increaseCapacity(chars))
     }
   }
 
@@ -150,9 +154,9 @@ object SourceReader {
    * content but with an increased capacity.
    */
   private def increaseCapacity(buffer: CharBuffer): CharBuffer = {
-    buffer.flip();
-    val capacity = 2 * buffer.capacity();
-    CharBuffer.allocate(capacity).put(buffer);
+    buffer.flip()
+    val capacity = 2 * buffer.capacity()
+    CharBuffer.allocate(capacity).put(buffer)
   }
 
 }

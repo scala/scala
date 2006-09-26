@@ -10,13 +10,13 @@
 
 package scala.tools.util
 
-import java.net._
 import java.io._
+import java.net.ServerSocket
 
-/** This abstract class implements the server communication for
- *  the fast Scala compiler.
+/** The abstract class <code>SocketServer</code> implements the server
+ *  communication for the fast Scala compiler.
  *
- *  @author Martin Odersky
+ *  @author  Martin Odersky
  *  @version 1.0
  */
 abstract class SocketServer {
@@ -42,7 +42,7 @@ abstract class SocketServer {
       fatal("Could not listen on any port; exiting.")
   }
 
-  def run(): unit = {
+  def run(): unit =
     while (!shutDown) {
       val serverSocket = try {
         new ServerSocket(port)
@@ -61,7 +61,7 @@ abstract class SocketServer {
       in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()))
       val bufout = new BufferedOutputStream(clientSocket.getOutputStream, 10240)
 
-      Console.withOut(bufout) {
+      scala.Console.withOut(bufout) {
         session()
       }
 
@@ -71,6 +71,6 @@ abstract class SocketServer {
       clientSocket.close()
       serverSocket.close()
     }
-  }
+
 }
 

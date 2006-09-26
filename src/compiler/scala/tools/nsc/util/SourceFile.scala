@@ -11,11 +11,12 @@
 package scala.tools.nsc.util
 
 
-import scala.tools.nsc.io.{AbstractFile,VirtualFile}
+import scala.tools.nsc.io.{AbstractFile, VirtualFile}
 
 /** Uses positions that are offsets rather than line/column pairs.
  *
- *  @author Sean McDirmid
+ *  @author  Sean McDirmid
+ *  @version 1.0
  */
 object SourceFile {
   val LF: Char = 0x0A
@@ -58,7 +59,7 @@ class SourceFile(val file: AbstractFile, _content: Array[Char]) {
   // constants
 
   // NOTE: all indexes are based on zero!!!!
-  override def toString(): String = file.name /* + ":" + content.length */ ;
+  override def toString(): String = file.name /* + ":" + content.length */
 
   def dbg(offset: Int) = (new Position(this, offset)).dbgString
 
@@ -73,9 +74,10 @@ class SourceFile(val file: AbstractFile, _content: Array[Char]) {
       if ( isIndex) assert(toFind > Position.NOLINE - Position.FIRSTLINE)
 
       if (!isIndex && (toFind >= content.length))
-        throw new Error(toFind + " not valid offset in " + file.name + ":" + content.length);
+        throw new Error(toFind + " not valid offset in " +
+                        file.name + ":" + content.length)
 
-      def get(isIndex : Boolean) = if (isIndex) index else offset;
+      def get(isIndex : Boolean) = if (isIndex) index else offset
 
       val isBackward = toFind <= get(isIndex)
       val increment = if (isBackward) -1 else + 1
@@ -84,20 +86,21 @@ class SourceFile(val file: AbstractFile, _content: Array[Char]) {
       // System.err.println("FIND-0: " + toFind + " " + isIndex);
 
       while (true) {
-	// System.err.println("FIND-1: " + offset + " " + index);
+        // System.err.println("FIND-1: " + offset + " " + index);
 
-	if (!isIndex && offset == toFind) return index;
-	if ( isBackward && offset <= 0) throw new Error(offset + " " + index + " " + toFind + " " + isIndex);
-	offset = offset + increment;
-	if (!isBackward) assert(offset < content.length);
+        if (!isIndex && offset == toFind) return index;
+        if (isBackward && offset <= 0)
+          throw new Error(offset + " " + index + " " + toFind + " " + isIndex);
+        offset = offset + increment
+        if (!isBackward) assert(offset < content.length);
 
-	if (isLineBreak(offset + (if (isBackward) 0 else -1))) {
-	  index = index + increment;
-	  if (isIndex && index + oneIfBackward == toFind)
-	    return      offset + oneIfBackward;
-	}
+        if (isLineBreak(offset + (if (isBackward) 0 else -1))) {
+          index = index + increment
+          if (isIndex && index + oneIfBackward == toFind)
+            return offset + oneIfBackward;
+        }
       }
-      throw new Error();
+      throw new Error()
     }
   }
   def offsetToLine(offset: Int): Int = line.find(offset, false)
@@ -115,7 +118,8 @@ class SourceFile(val file: AbstractFile, _content: Array[Char]) {
   def path = getFile().path
 
   def skipWhitespace(offset: Int): Int =
-    if (Character.isWhitespace(content(offset))) skipWhitespace(offset + 1) else offset;
+    if (Character.isWhitespace(content(offset))) skipWhitespace(offset + 1)
+    else offset
 
   def lineToString(index: Int): String = {
     var offset = lineToOffset(index)
@@ -157,7 +161,8 @@ extends SourceFile(name, contents)
   }
 
   /** Create an instance with the specified components and a generic name. */
-  def this(components: SourceFile*) = this("(virtual file)", components.toList:_*)
+  def this(components: SourceFile*) =
+    this("(virtual file)", components.toList:_*)
 
   override def positionInUltimateSource(position: Position) = {
     var off = position.offset
@@ -200,6 +205,6 @@ extends SourceFile(name, contents)
 
   override def positionInUltimateSource(position: Position) = {
     underlyingFile.positionInUltimateSource(
-        new Position(underlyingFile, position.offset + start))
+      new Position(underlyingFile, position.offset + start))
   }
 }
