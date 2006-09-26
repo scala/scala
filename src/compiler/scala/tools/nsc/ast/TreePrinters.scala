@@ -6,7 +6,7 @@
 
 package scala.tools.nsc.ast
 
-import java.io.{OutputStream,Writer,PrintWriter}
+import java.io.{OutputStream, PrintWriter, Writer}
 import symtab.Flags._
 
 abstract class TreePrinters {
@@ -18,6 +18,8 @@ abstract class TreePrinters {
     protected var indentMargin = 0
     protected val indentStep = 2
     protected var indentString = "                                        " // 40
+
+    val LINE_SEPARATOR = System.getProperty("line.separator", "\n")
 
     def flush = out.flush()
 
@@ -119,7 +121,7 @@ abstract class TreePrinters {
             str.toString
         }
       }
-      val attrs = tree.symbol.attributes;
+      val attrs = tree.symbol.attributes
       if (!attrs.isEmpty) {
         print(attrs.map(attrInfoToString).mkString("[", ",", "]"))
       }
@@ -325,7 +327,7 @@ abstract class TreePrinters {
     }
 
     def print(tree: Tree): unit = {
-      if (settings.Xprintpos.value) print("["+tree.pos+"]")
+      if (settings.Xprintpos.value) print("[" + tree.pos + "]")
       printRaw(
         if (tree.isDef && tree.symbol != NoSymbol) {
           tree match {
@@ -341,7 +343,7 @@ abstract class TreePrinters {
     }
 
     def print(unit: CompilationUnit): unit = {
-      print("// Scala source: " + unit.source + "\n")
+      print("// Scala source: " + unit.source + LINE_SEPARATOR)
       if (unit.body != null) {
         print(unit.body); println
       } else {
