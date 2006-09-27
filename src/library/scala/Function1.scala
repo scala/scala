@@ -13,7 +13,21 @@ package scala
 
 
 /**
- * Function with 1 parameter
+ * Function with 1 parameter. In the following example the definition of
+ * <code>succ</code> is a shorthand for the anonymous class definition
+ * <code>anonfun1</code>:
+ * <pre>
+ * <b>object</b> Main <b>extends</b> Application {
+ *
+ *   <b>val</b> succ = (x: Int) => x + 1
+ *
+ *   <b>val</b> anonfun1 = <b>new</b> Function1[Int, Int] {
+ *     <b>def</b> apply(x: Int): Int = x + 1
+ *   }
+ *
+ *   Console.println(succ(0))
+ *   Console.println(anonfun1(0))
+ * }</pre>
  */
 trait Function1[-T0, +R] extends AnyRef {
   def apply(v0: T0): R
