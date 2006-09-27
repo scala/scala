@@ -13,6 +13,20 @@ package scala.reflect
 
 import Predef.Pair
 
+/**
+ *  <dl>
+ *    <dt><b>Direct Known Subclasses:</b></dt>
+ *    <dd>
+ *      <a href="AppliedType.html" target="contentFrame">AppliedType</a>,
+ *      <a href="MethodType.html" target="contentFrame">MethodType</a>,
+ *      <a href="NamedType.html" target="contentFrame">NamedType</a>,
+ *      <a href="PolyType.html" target="contentFrame">PolyType</a>,
+ *      <a href="PrefixedType.html" target="contentFrame">PrefixedType</a>,
+ *      <a href="SingleType.html" target="contentFrame">SingleType</a>,
+ *      <a href="ThisType.html" target="contentFrame">ThisType</a>
+ *   </dd>
+ *  </dl>
+ */
 abstract class Type
 
 case object NoPrefix extends Type
@@ -31,13 +45,13 @@ case class SingleType(pre: Type, sym: Symbol) extends Type
 case class ThisType(clazz: Symbol) extends Type
 
 /** clazz.super[superClazz] */
-/** tpe[args1, ..., argsn] */
+/** <code>tpe[args1, ..., argsn]</code> */
 case class AppliedType(tpe: Type, args: List[Type]) extends Type
 
 /** [a &lt;: lo &gt;: hi] */
 case class TypeBounds(lo: Type, hi: Type) extends Type
 
-/** (formals1 ... formalsn) restpe */
+/** <code>(formals1 ... formalsn) restpe</code> */
 case class MethodType(formals: List[Type], restpe: Type) extends Type
 
 /**  */

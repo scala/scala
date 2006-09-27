@@ -76,18 +76,18 @@ abstract class Tree[A <% Ordered[A], B]() extends AnyRef {
   */
 
   /** The type returned when creating a new tree.
-  *   This type should be defined by concrete implementations
-  *   e.g. <pre>
-  *   class C[T](...) extends Tree[A,B](...) {
-  *     type This = C[T];
-  *   </pre>
-  */
+   *  This type should be defined by concrete implementations
+   *  e.g. <pre>
+   *  class C[T](...) extends Tree[A,B](...) {
+   *    type This = C[T];
+   *  </pre>
+   */
   protected type This <: Tree[A,B]
   protected def getThis: This
 
   /**
-  *  The type of nodes that the tree is build from.
-  */
+   *  The type of nodes that the tree is build from.
+   */
   protected type aNode = GBTree[A,B]
 
   /** The nodes in the tree.
@@ -123,11 +123,10 @@ abstract class Tree[A <% Ordered[A], B]() extends AnyRef {
     New(newSize, tree.insert(key, entry, newSize * newSize).node)
   }
 
-  /**
-  *   A new tree with the entry added is returned,
-  *   if key is <em>not</em> in the tree, otherwise
-  *   the key is updated with the new entry.
-  */
+  /** A new tree with the entry added is returned,
+   *  if key is <em>not</em> in the tree, otherwise
+   *  the key is updated with the new entry.
+   */
   protected def updateOrAdd(key: A, entry: B): This =
     if (tree.isDefinedAt(key))
       New(size,tree.update(key,entry))
@@ -139,45 +138,42 @@ abstract class Tree[A <% Ordered[A], B]() extends AnyRef {
     if (tree.isDefinedAt(key))
       delete(key)
     else
-      getThis;
+      getThis
 
   /** Removes the key from the tree, assumimg that key is present. */
   private def delete(key: A): This =
     New(size - 1, tree.delete(key))
 
   /** Check if this map maps <code>key</code> to a value and return the
-  *  value if it exists.
-  *
-  *  @param  key     the key of the mapping of interest
-  *  @return the value of the mapping, if it exists
-  */
+   *  value if it exists.
+   *
+   *  @param  key     the key of the mapping of interest
+   *  @return the value of the mapping, if it exists
+   */
   protected def findValue(key: A): Option[B] =
     tree.get(key)
 
-  /**
-  *  Gives you an iterator over all elements in the tree.
-  *  The iterator structure corresponds to
-  *  the call stack of an in-order traversal.
-  *
-  * Note: The iterator itself has a state, i.e., it is not functional.
-  */
+  /** Gives you an iterator over all elements in the tree.
+   *  The iterator structure corresponds to
+   *  the call stack of an in-order traversal.
+   *
+   *  Note: The iterator itself has a state, i.e., it is not functional.
+   */
   protected def entries: Iterator[B] =
     new Iterator[B] {
       var iter = tree.mk_iter(scala.Nil)
       def hasNext = !iter.isEmpty
       def next = iter match {
-        case (GBNode(_,v,_,t)::iter_tail) => {
-          iter= t.mk_iter(iter_tail)
+        case GBNode(_,v,_,t)::iter_tail =>
+          iter = t.mk_iter(iter_tail)
           v
-        }
         case scala.Nil =>
           error("next on empty iterator")
       }
     }
 
-  /**
-   * Create a new balanced tree from the tree. Might be useful to call
-   * after many deletions, since deletion does not rebalance the tree.
+  /** Create a new balanced tree from the tree. Might be useful to call
+   *  after many deletions, since deletion does not rebalance the tree.
    */
   def balance: This =
     New(size, tree.balance(size))
@@ -218,8 +214,12 @@ private case class INode[A <% Ordered[A],B](t1: GBTree[A,B],
 }
 
 /**
-*  GBTree is an internal class used by Tree.
-*/
+ *  <code>GBTree</code> is an internal class used by
+ *  <a href="Tree.html" target="contentFrame"><code>Tree</code></a>.
+ *
+ *  @author  Erik Stenman
+ *  @version 1.0, 2005-01-20
+ */
 [serializable]
 protected abstract class GBTree[A <% Ordered[A],B] extends AnyRef {
   type aNode = GBTree[A,B]
@@ -233,7 +233,7 @@ protected abstract class GBTree[A <% Ordered[A],B] extends AnyRef {
   def get(key: A): Option[B]
   def apply(key: A): B
   def update(key: A, value: B): aNode
-  def insert(key: A, value: B, size: int): anInsertTree
+  def insert(key: A, value: B, size: Int): anInsertTree
   def toList(acc: List[Pair[A,B]]): List[Pair[A,B]]
   def mk_iter(iter_tail: List[aNode]): List[aNode]
   def delete(key: A): aNode
@@ -244,11 +244,11 @@ protected abstract class GBTree[A <% Ordered[A],B] extends AnyRef {
 
 private case class GBLeaf[A <% Ordered[A],B]() extends GBTree[A,B] {
   def count = Pair(1, 0)
-  def isDefinedAt(key:A) = false
+  def isDefinedAt(key: A) = false
   def get(_key: A) = None
   def apply(key: A) = error("key " + key + " not found")
   def update(key: A, value: B) = error("key " + key + " not found")
-  def insert(key: A, value: B, s:int): anInsertTree = {
+  def insert(key: A, value: B, s: Int): anInsertTree = {
     if (s == 0)
       INode(GBNode(key, value, this, this), 1, 1)
     else
@@ -345,9 +345,9 @@ private case class GBNode[A <% Ordered[A],B](key: A,
   def balance(s:int): GBTree[A,B] =
     balance_list(toList(scala.Nil), s)
 
-  protected def balance_list(list: List[Pair[A,B]], s:int): GBTree[A,B] = {
+  protected def balance_list(list: List[Pair[A,B]], s: int): GBTree[A,B] = {
     val empty = GBLeaf[A,B]();
-    def bal(list: List[Pair[A,B]], s:int): Pair[aNode,List[Pair[A,B]]] = {
+    def bal(list: List[Pair[A,B]], s: Int): Pair[aNode, List[Pair[A,B]]] = {
       if (s > 1) {
         val sm = s - 1
         val s2 = sm / 2

@@ -11,7 +11,18 @@
 
 package scala
 
-/** A base class for attributes
+/** <p>A base class for attributes</p>
+ *  <dl>
+ *    <dt><b>Direct Known Subclasses:</b></dt>
+ *    <dd>
+ *      <a href="cloneable.html" target="contentFrame">cloneable</a>,
+ *      <a href="remote.html" target="contentFrame">remote</a>,
+ *      <a href="serializable.html" target="contentFrame">serializable</a>,
+ *      <a href="throws.html" target="contentFrame">throws</a>,
+ *      <a href="transient.html" target="contentFrame">transient</a>,
+ *      <a href="volatile.html" target="contentFrame">volatile</a>
+ *   </dd>
+ *  </dl>
  *
  *  @author  Martin Odersky
  *  @version 1.0, 15/07/2004

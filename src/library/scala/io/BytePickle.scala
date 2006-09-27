@@ -16,9 +16,10 @@ import scala.collection.mutable.{HashMap,ArrayBuffer}
 /**
  * Pickler combinators.
  * Based on a Haskell library by Andrew Kennedy,
- * see http://research.microsoft.com/~akenn/fun/index.html.
+ * see <a href="http://research.microsoft.com/~akenn/fun/"
+ * target="_top">http://research.microsoft.com/~akenn/fun/</a>.
  *
- * @author  Philipp Haller &lt;philipp.haller@epfl.ch&gt;
+ * @author  Philipp Haller (philipp.haller&lt;at&gt;epfl.ch)
  * @version 1.0
  */
 object BytePickle {

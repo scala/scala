@@ -11,6 +11,25 @@
 
 package scala.reflect
 
+/**
+ *  <dl>
+ *    <dt><b>Direct Known Subclasses:</b></dt>
+ *    <dd>
+ *      <a href="Apply.html" target="contentFrame">Apply</a>,
+ *      <a href="Assign.html" target="contentFrame">Assign</a>,
+ *      <a href="Block.html" target="contentFrame">Block</a>,
+ *      <a href="ClassDef.html" target="contentFrame">ClassDef</a>,
+ *      <a href="DefDef.html" target="contentFrame">DefDef</a>,
+ *      <a href="Function.html" target="contentFrame">Function</a>,
+ *      <a href="Goto.html" target="contentFrame">Goto</a>,
+ *      <a href="Ident.html" target="contentFrame">Ident</a>,
+ *      <a href="If.html" target="contentFrame">If</a>,
+ *      <a href="Literal.html" target="contentFrame">Literal</a>,
+ *      <a href="Super.html" target="contentFrame">Super</a>,
+ *      <a href="ValDef.html" target="contentFrame">ValDef</a>
+ *   </dd>
+ *  </dl>
+ */
 abstract class Tree
 
 case class Ident(sym: Symbol) extends Tree

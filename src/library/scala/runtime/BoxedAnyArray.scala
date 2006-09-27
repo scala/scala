@@ -9,19 +9,20 @@
 // $Id$
 
 
-package scala.runtime;
+package scala.runtime
 
 
 /**
- * Arrays created by    new Array[T](length)    where T is a type variable
+ * Arrays created by <code>new Array[T](length)</code> where <code>T</code>
+ * is a type variable.
  */
 [serializable]
 final class BoxedAnyArray(val length: Int) extends BoxedArray {
 
-  private var boxed = new Array[Object](length);
-  private val hash = boxed.hashCode();
-  private var unboxed: Object = null;
-  private var elemClass: Class = null;
+  private var boxed = new Array[Object](length)
+  private val hash = boxed.hashCode()
+  private var unboxed: Object = null
+  private var elemClass: Class = null
 
   def apply(index: Int): Object = synchronized {
     if (unboxed == null)
@@ -48,7 +49,7 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
 
   def update(index: Int, elem: Object): Unit = synchronized {
     if (unboxed == null)
-      boxed(index) = elem;
+      boxed(index) = elem
     else if (elemClass eq ScalaRunTime.IntTYPE)
       unboxed.asInstanceOf[Array[Int]](index) = elem.asInstanceOf[BoxedNumber].intValue()
     else if (elemClass eq ScalaRunTime.DoubleTYPE)
@@ -84,17 +85,17 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
     if (unboxed == null) {
       this.elemClass = elemClass;
       if (elemClass eq ScalaRunTime.IntTYPE) {
-	val newvalue = new Array[Int](length);
-	var i = 0;
+	val newvalue = new Array[Int](length)
+	var i = 0
 	while (i < length) {
-          val x = boxed(i).asInstanceOf[BoxedNumber];
+          val x = boxed(i).asInstanceOf[BoxedNumber]
 	  if (x ne null) newvalue(i) = x.intValue();
 	  i = i + 1
 	}
-	unboxed = newvalue;
+	unboxed = newvalue
       } else if (elemClass eq ScalaRunTime.DoubleTYPE) {
-	val newvalue = new Array[Double](length);
-	var i = 0;
+	val newvalue = new Array[Double](length)
+	var i = 0
 	while (i < length) {
           val x = boxed(i).asInstanceOf[BoxedNumber];
 	  if (x ne null) newvalue(i) = x.doubleValue();
@@ -102,8 +103,8 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
 	}
 	unboxed = newvalue;
       } else if (elemClass eq ScalaRunTime.FloatTYPE) {
-	val newvalue = new Array[Float](length);
-	var i = 0;
+	val newvalue = new Array[Float](length)
+	var i = 0
 	while (i < length) {
           val x = boxed(i).asInstanceOf[BoxedNumber];
 	  if (x ne null) newvalue(i) = x.floatValue();
@@ -111,44 +112,44 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
 	}
 	unboxed = newvalue;
       } else if (elemClass eq ScalaRunTime.LongTYPE) {
-	val newvalue = new Array[Long](length);
-	var i = 0;
+	val newvalue = new Array[Long](length)
+	var i = 0
 	while (i < length) {
-          val x = boxed(i).asInstanceOf[BoxedNumber];
+          val x = boxed(i).asInstanceOf[BoxedNumber]
 	  if (x ne null) newvalue(i) = x.longValue();
 	  i = i + 1
 	}
 	unboxed = newvalue;
       } else if (elemClass eq ScalaRunTime.CharTYPE) {
-	val newvalue = new Array[Char](length);
-	var i = 0;
+	val newvalue = new Array[Char](length)
+	var i = 0
 	while (i < length) {
-          val x = boxed(i).asInstanceOf[BoxedNumber];
+          val x = boxed(i).asInstanceOf[BoxedNumber]
 	  if (x ne null) newvalue(i) = x.charValue();
 	  i = i + 1
 	}
-	unboxed = newvalue;
+	unboxed = newvalue
       } else if (elemClass eq ScalaRunTime.ByteTYPE) {
-	val newvalue = new Array[Byte](length);
-	var i = 0;
+	val newvalue = new Array[Byte](length)
+	var i = 0
 	while (i < length) {
-          val x = boxed(i).asInstanceOf[BoxedNumber];
+          val x = boxed(i).asInstanceOf[BoxedNumber]
 	  if (x ne null) newvalue(i) = x.byteValue();
 	  i = i + 1
 	}
 	unboxed = newvalue;
       } else if (elemClass eq ScalaRunTime.ShortTYPE) {
-	val newvalue = new Array[Short](length);
-	var i = 0;
+	val newvalue = new Array[Short](length)
+	var i = 0
 	while (i < length) {
-          val x = boxed(i).asInstanceOf[BoxedNumber];
+          val x = boxed(i).asInstanceOf[BoxedNumber]
 	  if (x ne null) newvalue(i) = x.shortValue();
 	  i = i + 1
 	}
 	unboxed = newvalue;
       } else if (elemClass eq ScalaRunTime.BooleanTYPE) {
-	val newvalue = new Array[Boolean](length);
-	var i = 0;
+	val newvalue = new Array[Boolean](length)
+	var i = 0
 	while (i < length) {
           val x = boxed(i).asInstanceOf[BoxedBoolean];
 	  if (x ne null) newvalue(i) = x.value;
@@ -157,7 +158,7 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
 	unboxed = newvalue;
       } else if (elemClass == boxed.getClass().getComponentType()) {
         // todo: replace with ScalaRunTime.Object.class
-	unboxed = boxed;
+	unboxed = boxed
       } else {
 	unboxed = java.lang.reflect.Array.newInstance(elemClass, length);
 	System.arraycopy(boxed, 0, unboxed, 0, length);
@@ -239,16 +240,16 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
   }
 
   override def filter(p: Any => Boolean): Object = {
-    val include = new Array[Boolean](length);
-    var len = 0;
-    var i = 0;
+    val include = new Array[Boolean](length)
+    var len = 0
+    var i = 0
     while (i < length) {
       if (p(this(i))) { include(i) = true; len = len + 1 }
       i = i + 1
     }
-    val result = new BoxedAnyArray(len);
-    len = 0;
-    i = 0;
+    val result = new BoxedAnyArray(len)
+    len = 0
+    i = 0
     while (len < result.length) {
       if (include(i)) { result(len) = this(i); len = len + 1 }
       i = i + 1
