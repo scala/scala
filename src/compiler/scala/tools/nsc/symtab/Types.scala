@@ -199,7 +199,7 @@ trait Types requires SymbolTable {
     def asSeenFrom(pre: Type, clazz: Symbol): Type =
       if (!isTrivial && (!phase.erasedTypes || pre.symbol == ArrayClass)) {
         new AsSeenFromMap(pre, clazz) apply this
-      } else this;
+      } else this
 
     /** The info of <code>sym</code>, seen as a member of this type.
      */
@@ -236,11 +236,15 @@ trait Types requires SymbolTable {
     def subst(from: List[Symbol], to: List[Type]): Type =
       new SubstTypeMap(from, to) apply this
 
-    /** Substitute symbols `to' for occurrences of symbols `from' in this type. */
+    /** Substitute symbols <code>to</code> for occurrences of symbols
+     *  <code>from</code> in this type.
+     */
     def substSym(from: List[Symbol], to: List[Symbol]): Type =
       new SubstSymMap(from, to) apply this
 
-    /** Substitute all occurrences of ThisType(from) in this type by `to' */
+    /** Substitute all occurrences of <code>ThisType(from)</code> in this type
+     *  by <code>to</code>.
+     */
     def substThis(from: Symbol, to: Type): Type =
       new SubstThisMap(from, to) apply this
 
@@ -350,7 +354,7 @@ trait Types requires SymbolTable {
     /** The string representation of this type, with singletypes explained */
     def toLongString = {
       val str = toString()
-      if (str.endsWith(".type")) str + " (with underlying type " + widen + ")"
+      if (str endsWith ".type") str + " (with underlying type " + widen + ")"
       else str
     }
 
@@ -385,7 +389,7 @@ trait Types requires SymbolTable {
         if (!e.sym.hasFlag(excludedFlags)) {
           if (sym == NoSymbol) sym = e.sym
           else {
-            if (alts.isEmpty) alts = List(sym);
+            if (alts.isEmpty) alts = List(sym)
             alts = e.sym :: alts
           }
         }
@@ -395,12 +399,19 @@ trait Types requires SymbolTable {
       else baseClasses.head.newOverloaded(this, alts)
     }
 
-    //todo: use narrow only for modules? (correct? efficiency gain?)
+    /**
+     *  @param name          ...
+     *  @param excludedFlags ...
+     *  @param requiredFlags ...
+     *  @param stableOnly    ...
+     *  @return              ...
+     */
+    //TODO: use narrow only for modules? (correct? efficiency gain?)
     def findMember(name: Name, excludedFlags: int, requiredFlags: long, stableOnly: boolean): Symbol = {
       if (util.Statistics.enabled) findMemberCount = findMemberCount + 1
       val startTime = if (util.Statistics.enabled) System.currentTimeMillis() else 0l
 
-      //System.out.println("find member " + name.decode + " in " + this + ":" + this.baseClasses);//DEBUG
+      //System.out.println("find member " + name.decode + " in " + this + ":" + this.baseClasses)//DEBUG
       var members: Scope = null
       var member: Symbol = NoSymbol
       var excluded = excludedFlags | DEFERRED
@@ -1466,6 +1477,20 @@ trait Types requires SymbolTable {
     protected def toType(fromtp: Type, sym: Symbol) = fromtp match {
       case TypeRef(pre, _, args) => typeRef(pre, sym, args)
       case SingleType(pre, _) => singleType(pre, sym)
+    }
+    override def apply(tp: Type): Type = {
+      def subst(sym: Symbol, from: List[Symbol], to: List[Symbol]): Symbol =
+        if (from.isEmpty) sym
+        else if (matches(from.head, sym)) to.head
+        else subst(sym, from.tail, to.tail)
+      tp match {
+        case TypeRef(pre, sym, args) if !(pre eq NoPrefix) =>
+          mapOver(typeRef(pre, subst(sym, from, to), args))
+        case SingleType(pre, sym) if !(pre eq NoPrefix) =>
+          mapOver(singleType(pre, subst(sym, from, to)))
+        case _ =>
+          super.apply(tp)
+      }
     }
   }
 
