@@ -36,7 +36,6 @@ trait Trees requires Global {
       if (flags1 == flags) this
       else Modifiers(flags1, privateWithin) setAttr attributes
     }
-
     def | (flag: int): Modifiers = {
       val flags1 = flags | flag
       if (flags1 == flags) this
@@ -53,7 +52,7 @@ trait Trees requires Global {
 
   abstract class Tree {
     {
-      import util.Statistics;
+      import util.Statistics
       if (Statistics.enabled) nodeCount = nodeCount + 1
     }
 
@@ -68,7 +67,7 @@ trait Trees requires Global {
 
     def symbol: Symbol = null
     def symbol_=(sym: Symbol): unit =
-      throw new Error("symbol_= inapplicable for " + this);
+      throw new Error("symbol_= inapplicable for " + this)
     def setSymbol(sym: Symbol): this.type = { symbol = sym; this }
 
     def hasSymbol = false
@@ -93,7 +92,8 @@ trait Trees requires Global {
       case _ => false
     }
 
-    def duplicate: this.type = (duplicator transform this).asInstanceOf[this.type]
+    def duplicate: this.type =
+      (duplicator transform this).asInstanceOf[this.type]
 
     def copyAttrs(tree: Tree): this.type = {
       rawpos = tree.rawpos
@@ -360,7 +360,7 @@ trait Trees requires Global {
    */
   case class Template(parents: List[Tree], body: List[Tree])
        extends SymTree {
-    // System.err.println("TEMPLATE: " + parents);
+    // System.err.println("TEMPLATE: " + parents)
   }
 
   def Template(parents: List[Tree], vparamss: List[List[ValDef]], argss: List[List[Tree]], body: List[Tree]): Template = {
@@ -550,7 +550,7 @@ trait Trees requires Global {
   }
 
   def TypeTree(tp: Type): TypeTree = TypeTree() setType tp
-  // def TypeTree(tp: Type, tree : Tree): TypeTree = TypeTree(tree) setType tp;
+  // def TypeTree(tp: Type, tree : Tree): TypeTree = TypeTree(tree) setType tp
 
 
   /** Singleton type, eliminated by RefCheck */
@@ -751,57 +751,58 @@ trait Trees requires Global {
     }
     def PackageDef(tree: Tree, name: Name, stats: List[Tree]) = tree match {
       case t @ PackageDef(name0, stats0)
-      if ((name0 == name) && (stats0 == stats)) => t
+      if (name0 == name) && (stats0 == stats) => t
       case _ => copy.PackageDef(tree, name, stats)
     }
     def ModuleDef(tree: Tree, mods: Modifiers, name: Name, impl: Template) = tree match {
       case t @ ModuleDef(mods0, name0, impl0)
-      if (mods0 == mods && (name0 == name) && (impl0 == impl)) => t
+      if (mods0 == mods) && (name0 == name) && (impl0 == impl) => t
       case _ => copy.ModuleDef(tree, mods, name, impl)
     }
     def ValDef(tree: Tree, mods: Modifiers, name: Name, tpt: Tree, rhs: Tree) = tree match {
       case t @ ValDef(mods0, name0, tpt0, rhs0)
-      if (mods0 == mods && (name0 == name) && (tpt0 == tpt) && (rhs0 == rhs)) => t
+      if (mods0 == mods) && (name0 == name) && (tpt0 == tpt) && (rhs0 == rhs) => t
       case _ => copy.ValDef(tree, mods, name, tpt, rhs)
     }
     def DefDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[AbsTypeDef], vparamss: List[List[ValDef]], tpt: Tree, rhs: Tree) = tree match {
       case t @ DefDef(mods0, name0, tparams0, vparamss0, tpt0, rhs0)
-      if (mods0 == mods && (name0 == name) && (tparams0 == tparams) && (vparamss0 == vparamss) && (tpt0 == tpt) && (rhs == rhs0)) => t
+      if (mods0 == mods) && (name0 == name) && (tparams0 == tparams) &&
+         (vparamss0 == vparamss) && (tpt0 == tpt) && (rhs == rhs0) => t
       case _ => copy.DefDef(tree, mods, name, tparams, vparamss, tpt, rhs)
     }
     def AbsTypeDef(tree: Tree, mods: Modifiers, name: Name, lo: Tree, hi: Tree) = tree match {
       case t @ AbsTypeDef(mods0, name0, lo0, hi0)
-      if (mods0 == mods && (name0 == name) && (lo0 == lo) && (hi0 == hi)) => t
+      if (mods0 == mods) && (name0 == name) && (lo0 == lo) && (hi0 == hi) => t
       case _ => copy.AbsTypeDef(tree, mods, name, lo, hi)
     }
     def AliasTypeDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[AbsTypeDef], rhs: Tree) = tree match {
       case t @ AliasTypeDef(mods0, name0, tparams0, rhs0)
-      if (mods0 == mods && (name0 == name) && (tparams0 == tparams) && (rhs0 == rhs)) => t
+      if (mods0 == mods) && (name0 == name) && (tparams0 == tparams) && (rhs0 == rhs) => t
       case _ => copy.AliasTypeDef(tree, mods, name, tparams, rhs)
     }
     def LabelDef(tree: Tree, name: Name, params: List[Ident], rhs: Tree) = tree match {
       case t @ LabelDef(name0, params0, rhs0)
-      if ((name0 == name) && (params0 == params) && (rhs0 == rhs)) => t
+      if (name0 == name) && (params0 == params) && (rhs0 == rhs) => t
       case _ => copy.LabelDef(tree, name, params, rhs)
     }
     def Import(tree: Tree, expr: Tree, selectors: List[Pair[Name, Name]]) = tree match {
       case t @ Import(expr0, selectors0)
-      if ((expr0 == expr) && (selectors0 == selectors)) => t
+      if (expr0 == expr) && (selectors0 == selectors) => t
       case _ => copy.Import(tree, expr, selectors)
     }
     def Attribute(tree: Tree, constr: Tree, elements: List[Tree]) = tree match {
       case t @ Attribute(constr0, elements0)
-      if ((constr0 == constr) && (elements0 == elements)) => t
+      if (constr0 == constr) && (elements0 == elements) => t
       case _ => copy.Attribute(tree, constr, elements)
     }
     def DocDef(tree: Tree, comment: String, definition: Tree) = tree match {
       case t @ DocDef(comment0, definition0)
-      if ((comment0 == comment) && (definition0 == definition)) => t
+      if (comment0 == comment) && (definition0 == definition) => t
       case _ => copy.DocDef(tree, comment, definition)
     }
     def Template(tree: Tree, parents: List[Tree], body: List[Tree]) = tree match {
       case t @ Template(parents0, body0)
-      if ((parents0 == parents) && (body0 == body)) => t
+      if (parents0 == parents) && (body0 == body) => t
       case _ => copy.Template(tree, parents, body)
     }
     def Block(tree: Tree, stats: List[Tree], expr: Tree) = tree match {
@@ -811,112 +812,112 @@ trait Trees requires Global {
     }
     def CaseDef(tree: Tree, pat: Tree, guard: Tree, body: Tree) = tree match {
       case t @ CaseDef(pat0, guard0, body0)
-      if ((pat0 == pat) && (guard0 == guard) && (body0 == body)) => t
+      if (pat0 == pat) && (guard0 == guard) && (body0 == body) => t
       case _ => copy.CaseDef(tree, pat, guard, body)
     }
     def Sequence(tree: Tree, trees: List[Tree]) = tree match {
       case t @ Sequence(trees0)
-      if (trees0 == trees) => t
+      if trees0 == trees => t
       case _ => copy.Sequence(tree, trees)
     }
     def Alternative(tree: Tree, trees: List[Tree]) = tree match {
       case t @ Alternative(trees0)
-      if (trees0 == trees) => t
+      if trees0 == trees => t
       case _ => copy.Alternative(tree, trees)
     }
     def Star(tree: Tree, elem: Tree) = tree match {
       case t @ Star(elem0)
-      if (elem0 == elem) => t
+      if elem0 == elem => t
       case _ => copy.Star(tree, elem)
     }
     def Bind(tree: Tree, name: Name, body: Tree) = tree match {
       case t @ Bind(name0, body0)
-      if ((name0 == name) && (body0 == body)) => t
+      if (name0 == name) && (body0 == body) => t
       case _ => copy.Bind(tree, name, body)
     }
     def ArrayValue(tree: Tree, elemtpt: Tree, trees: List[Tree]) = tree match {
       case t @ ArrayValue(elemtpt0, trees0)
-      if ((elemtpt0 == elemtpt) && (trees0 == trees)) => t
+      if (elemtpt0 == elemtpt) && (trees0 == trees) => t
       case _ => copy.ArrayValue(tree, elemtpt, trees)
     }
     def Function(tree: Tree, vparams: List[ValDef], body: Tree) = tree match {
       case t @ Function(vparams0, body0)
-      if ((vparams0 == vparams) && (body0 == body)) => t
+      if (vparams0 == vparams) && (body0 == body) => t
       case _ => copy.Function(tree, vparams, body)
     }
     def Assign(tree: Tree, lhs: Tree, rhs: Tree) = tree match {
       case t @ Assign(lhs0, rhs0)
-      if ((lhs0 == lhs) && (rhs0 == rhs)) => t
+      if (lhs0 == lhs) && (rhs0 == rhs) => t
       case _ => copy.Assign(tree, lhs, rhs)
     }
     def If(tree: Tree, cond: Tree, thenp: Tree, elsep: Tree) = tree match {
       case t @ If(cond0, thenp0, elsep0)
-      if ((cond0 == cond) && (thenp0 == thenp) && (elsep0 == elsep)) => t
+      if (cond0 == cond) && (thenp0 == thenp) && (elsep0 == elsep) => t
       case _ => copy.If(tree, cond, thenp, elsep)
     }
     def Match(tree: Tree, selector: Tree, cases: List[CaseDef]) =  tree match {
       case t @ Match(selector0, cases0)
-      if ((selector0 == selector) && (cases0 == cases)) => t
+      if (selector0 == selector) && (cases0 == cases) => t
       case _ => copy.Match(tree, selector, cases)
     }
     def Return(tree: Tree, expr: Tree) = tree match {
       case t @ Return(expr0)
-      if (expr0 == expr) => t
+      if expr0 == expr => t
       case _ => copy.Return(tree, expr)
     }
     def Try(tree: Tree, block: Tree, catches: List[CaseDef], finalizer: Tree) = tree match {
       case t @ Try(block0, catches0, finalizer0)
-      if ((block0 == block) && (catches0 == catches) && (finalizer0 == finalizer)) => t
+      if (block0 == block) && (catches0 == catches) && (finalizer0 == finalizer) => t
       case _ => copy.Try(tree, block, catches, finalizer)
     }
     def Throw(tree: Tree, expr: Tree) = tree match {
       case t @ Throw(expr0)
-      if (expr0 == expr) => t
+      if expr0 == expr => t
       case _ => copy.Throw(tree, expr)
     }
     def New(tree: Tree, tpt: Tree) = tree match {
       case t @ New(tpt0)
-      if (tpt0 == tpt) => t
+      if tpt0 == tpt => t
       case _ => copy.New(tree, tpt)
     }
     def Typed(tree: Tree, expr: Tree, tpt: Tree) = tree match {
       case t @ Typed(expr0, tpt0)
-      if ((expr0 == expr) && (tpt0 == tpt)) => t
+      if (expr0 == expr) && (tpt0 == tpt) => t
       case _ => copy.Typed(tree, expr, tpt)
     }
     def TypeApply(tree: Tree, fun: Tree, args: List[Tree]) = tree match {
       case t @ TypeApply(fun0, args0)
-      if ((fun0 == fun) && (args0 == args)) => t
+      if (fun0 == fun) && (args0 == args) => t
       case _ => copy.TypeApply(tree, fun, args)
     }
     def Apply(tree: Tree, fun: Tree, args: List[Tree]) = tree match {
       case t @ Apply(fun0, args0)
-      if ((fun0 == fun) && (args0 == args)) => t
+      if (fun0 == fun) && (args0 == args) => t
       case _ => copy.Apply(tree, fun, args)
     }
     def Super(tree: Tree, qual: Name, mix: Name) = tree match {
       case t @ Super(qual0, mix0)
-      if ((qual0 == qual) && (mix0 == mix)) => t
+      if (qual0 == qual) && (mix0 == mix) => t
       case _ => copy.Super(tree, qual, mix)
     }
     def This(tree: Tree, qual: Name) = tree match {
       case t @ This(qual0)
-      if (qual0 == qual) => t
+      if qual0 == qual => t
       case _ => copy.This(tree, qual)
     }
     def Select(tree: Tree, qualifier: Tree, selector: Name) = tree match {
       case t @ Select(qualifier0, selector0)
-      if ((qualifier0 == qualifier) && (selector0 == selector)) => t
+      if (qualifier0 == qualifier) && (selector0 == selector) => t
       case _ => copy.Select(tree, qualifier, selector)
     }
     def Ident(tree: Tree, name: Name) = tree match {
       case t @ Ident(name0)
-      if (name0 == name) => t
+      if name0 == name => t
       case _ => copy.Ident(tree, name)
     }
     def Literal(tree: Tree, value: Constant) = tree match {
       case t @ Literal(value0)
-      if (value0 == value) => t
+      if value0 == value => t
       case _ => copy.Literal(tree, value)
     }
     def TypeTree(tree: Tree) = tree match {
@@ -925,22 +926,22 @@ trait Trees requires Global {
     }
     def SingletonTypeTree(tree: Tree, ref: Tree) = tree match {
       case t @ SingletonTypeTree(ref0)
-      if (ref0 == ref) => t
+      if ref0 == ref => t
       case _ => copy.SingletonTypeTree(tree, ref)
     }
     def SelectFromTypeTree(tree: Tree, qualifier: Tree, selector: Name) = tree match {
       case t @ SelectFromTypeTree(qualifier0, selector0)
-      if ((qualifier0 == qualifier) && (selector0 == selector)) => t
+      if (qualifier0 == qualifier) && (selector0 == selector) => t
       case _ => copy.SelectFromTypeTree(tree, qualifier, selector)
     }
     def CompoundTypeTree(tree: Tree, templ: Template) = tree match {
       case t @ CompoundTypeTree(templ0)
-      if (templ0 == templ) => t
+      if templ0 == templ => t
       case _ => copy.CompoundTypeTree(tree, templ)
     }
     def AppliedTypeTree(tree: Tree, tpt: Tree, args: List[Tree]) = tree match {
       case t @ AppliedTypeTree(tpt0, args0)
-      if ((tpt0 == tpt) && (args0 == args)) => t
+      if (tpt0 == tpt) && (args0 == args) => t
       case _ => copy.AppliedTypeTree(tree, tpt, args)
     }
   }
@@ -1243,7 +1244,8 @@ trait Trees requires Global {
 
   class ChangeOwnerTraverser(val oldowner: Symbol, val newowner: Symbol) extends Traverser {
     override def traverse(tree: Tree): unit = {
-      if ((tree.isDef || tree.isInstanceOf[Function]) && tree.symbol != NoSymbol && tree.symbol.owner == oldowner)
+      if ((tree.isDef || tree.isInstanceOf[Function]) &&
+          tree.symbol != NoSymbol && tree.symbol.owner == oldowner)
         tree.symbol.owner = newowner;
       super.traverse(tree)
     }
@@ -1278,9 +1280,9 @@ trait Trees requires Global {
   }
 
   /** A traverser which resets symbol and tpe fields of all nodes in a given tree
-   *  except for (1) TypeTree nodes, whose .tpe field is kept and
-   *  (2) is a .symbol field refers to a symbol which is defined outside the
-   *  tree, it is also kept.
+   *  except for (1) TypeTree nodes, whose <code>.tpe</code> field is kept and
+   *  (2) is a <code>.symbol</code> field refers to a symbol which is defined
+   *  outside the tree, it is also kept.
    */
   object resetAttrs extends Traverser {
     private val erasedSyms = new HashSet[Symbol](8)
