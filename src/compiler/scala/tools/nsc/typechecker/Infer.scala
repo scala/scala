@@ -29,8 +29,8 @@ trait Infer requires Analyzer {
   def assertNonCyclic(tvar: TypeVar) =
     assert(tvar.constr.inst != tvar, tvar.origin)
 
-  /** The formal parameter types corresponding to `formals'.
-   *  If `formals' has a repeated last parameter, a list of
+  /** The formal parameter types corresponding to <code>formals</code>.
+   *  If <code>formals</code> has a repeated last parameter, a list of
    *  (nargs - params.length + 1) copies of its type is returned.
    *
    *  @param formals ...
@@ -47,7 +47,11 @@ trait Infer requires Analyzer {
     } else formals1
   }
 
-  /** A fresh type varable with given type parameter as origin. */
+  /** A fresh type varable with given type parameter as origin.
+   *
+   *  @param tparam ...
+   *  @return       ...
+   */
   def freshVar(tparam: Symbol): TypeVar =
     new TypeVar(tparam.tpe, new TypeConstraint)
 
@@ -67,7 +71,9 @@ trait Infer requires Analyzer {
   /** map every TypeVar to its constraint.inst field.
    *  throw a NoInstance exception if a NoType or WildcardType is encountered.
    *
-   *  @throws   NoInstance
+   *  @param  tp ...
+   *  @return    ...
+   *  @throws    NoInstance
    */
   def instantiate(tp: Type): Type = tp match {
     case WildcardType | NoType =>
@@ -80,30 +86,36 @@ trait Infer requires Analyzer {
       instantiateMap.mapOver(tp)
   }
 
-  /** Is type fully defined, i.e. no embedded anytypes or wildcards in it? */
+  /** Is type fully defined, i.e. no embedded anytypes or wildcards in it?
+   *
+   *  @param tp ...
+   *  @return   ...
+   */
   def isFullyDefined(tp: Type): boolean = try {
     instantiate(tp); true
   } catch {
     case ex: NoInstance => false
   }
 
-  /** Do type arguments `targs' conform to formal parameters `tparams'?
+  /** Do type arguments <code>targs</code> conform to formal parameters
+   *  <code>tparams</code>?
    *
    *  @param tparams ...
-   *  @param targs ...
+   *  @param targs   ...
+   *  @return        ...
    */
   private def isWithinBounds(tparams: List[Symbol], targs: List[Type]): boolean = {
     val bounds = tparams map (.info.subst(tparams, targs).bounds)
     List.map2(bounds, targs)((bound, targ) => bound containsType targ) forall (x => x)
   }
 
-  /** Solve constraint collected in types `tvars'
+  /** Solve constraint collected in types <code>tvars</code>.
    *
    *  @param tvars      All type variables to be instantiated.
-   *  @param tparams    The type parameters corresponding to `tvars'
+   *  @param tparams    The type parameters corresponding to <code>tvars</code>
    *  @param variances  The variances of type parameters; need to reverse
    *                    solution direction for all contravariant variables.
-   *  @param upper      When `true' search for max solution else min.
+   *  @param upper      When <code>true</code> search for max solution else min.
    *  @throws NoInstance
    */
   private def solve(tvars: List[TypeVar], tparams: List[Symbol],
@@ -167,6 +179,7 @@ trait Infer requires Analyzer {
    *  Implicit parameters are skipped.
    *
    *  @param tp ...
+   *  @return   ...
    */
   def normalize(tp: Type): Type = skipImplicit(tp) match {
     case MethodType(formals, restpe) =>
@@ -249,13 +262,14 @@ trait Infer requires Analyzer {
 
     /* -- Tests & Checks---------------------------------------------------- */
 
-    /** Check that `sym' is defined and accessible as a member of
-     *  tree `site' with type `pre' in current context.
+    /** Check that <code>sym</code> is defined and accessible as a member of
+     *  tree <code>site</code> with type <code>pre</code> in current context.
      *
      *  @param tree ...
-     *  @param sym ...
-     *  @param pre ...
+     *  @param sym  ...
+     *  @param pre  ...
      *  @param site ...
+     *  @return     ...
      */
     def checkAccessible(tree: Tree, sym: Symbol, pre: Type, site: Tree): Tree =
       if (sym.isError) {
@@ -322,13 +336,14 @@ trait Infer requires Analyzer {
     /* -- Type instantiation------------------------------------------------ */
 
     /** Return inferred type arguments of polymorphic expression, given
-     *  its type parameters and result type and a prototype `pt'.
+     *  its type parameters and result type and a prototype <code>pt</code>.
      *  If no minimal type variables exist that make the
-     *  instantiated type a subtype of `pt', return null.
+     *  instantiated type a subtype of <code>pt</code>, return null.
      *
      *  @param tparams ...
-     *  @param restpe ...
-     *  @param pt ...
+     *  @param restpe  ...
+     *  @param pt      ...
+     *  @return        ...
      */
     private def exprTypeArgs(tparams: List[Symbol], restpe: Type, pt: Type): List[Type] = {
       val tvars = tparams map freshVar
@@ -343,7 +358,7 @@ trait Infer requires Analyzer {
 
     /** Return inferred proto-type arguments of function, given
     *  its type and value parameters and result type, and a
-    *  prototype `pt' for the function result.
+    *  prototype <code>pt</code> for the function result.
     *  Type arguments need to be either determined precisely by
     *  the prototype, or they are maximized, if they occur only covariantly
     *  in the value parameter list.
@@ -353,7 +368,8 @@ trait Infer requires Analyzer {
     *  @param tparams ...
     *  @param formals ...
     *  @param restype ...
-    *  @param pt ...
+    *  @param pt      ...
+    *  @return        ...
     */
     def protoTypeArgs(tparams: List[Symbol], formals: List[Type], restpe: Type,
                       pt: Type): List[Type] = {
@@ -392,7 +408,7 @@ trait Infer requires Analyzer {
 
     /** Return inferred type arguments, given type parameters, formal parameters,
     *  argument types, result type and expected result type.
-    *  If this is not possible, throw a `NoInstance' exception.
+    *  If this is not possible, throw a <code>NoInstance</code> exception.
     *  Undetermined type arguments are represented by `definitions.AllClass.tpe'.
     *  No check that inferred parameters conform to their bounds is made here.
     *
@@ -403,9 +419,11 @@ trait Infer requires Analyzer {
     *  @param   pt              the expected return type of the application
     *  @param   uninstantiated  a listbuffer receiving all uninstantiated type parameters
     *                           (type parameters mapped by the constraint solver to `scala.All'
-    *                            and not covariant in `restpe' are taken to be uninstantiated.
-    *                            Maps all those type arguments to their corresponding type
-    *                            parameters).
+    *                           and not covariant in <code>restpe</code> are taken to be
+    *                           uninstantiated. Maps all those type arguments to their
+    *                           corresponding type parameters).
+    *  @return                  ...
+    *  @throws                  NoInstance
     */
     private def methTypeArgs(tparams: List[Symbol], formals: List[Type], restpe: Type,
                              argtpes: List[Type], pt: Type,
@@ -444,14 +462,15 @@ trait Infer requires Analyzer {
     }
 
 
-    /** Is there an instantiation of free type variables `undetparams' such
-     *  that function type `ftpe' is applicable to `argtpes' and its result
-     *  conform to `pt'?
+    /** Is there an instantiation of free type variables <code>undetparams</code>
+     *  such that function type <code>ftpe</code> is applicable to
+     *  <code>argtpes</code> and its result conform to <code>pt</code>?
      *
      *  @param undetparams ...
-     *  @param ftpe ...
-     *  @param argtpes ...
-     *  @param pt ...
+     *  @param ftpe        ...
+     *  @param argtpes     ...
+     *  @param pt          ...
+     *  @return            ...
      */
     def isApplicable(undetparams: List[Symbol], ftpe: Type,
                      argtpes: List[Type], pt: Type): boolean =
@@ -484,14 +503,15 @@ trait Infer requires Analyzer {
           false
       }
 
-    /** Is there an instantiation of free type variables `undetparams' such
-     *  that function type `ftpe' is applicable to `argtpes' and its result
-     *  conform to `pt'?
+    /** Is there an instantiation of free type variables <code>undetparams</code>
+     *  such that function type <code>ftpe</code> is applicable to
+     *  <code>argtpes</code> and its result conform to <code>pt</code>?
      *
      *  @param undetparams ...
-     *  @param ftpe ...
-     *  @param argtpes ...
-     *  @param pt ...
+     *  @param ftpe        ...
+     *  @param argtpes     ...
+     *  @param pt          ...
+     *  @return            ...
      */
     def isApplicable(undetparams: List[Symbol], pre: Type, sym: Symbol, argtpes: List[Type], pt: Type): boolean = try {
       isApplicable(undetparams, pre.memberType(sym), argtpes, pt)
@@ -499,11 +519,12 @@ trait Infer requires Analyzer {
       case ex: MalformedType => false
     }
 
-    /** Does type `ftpe1' specialize type `ftpe2'
+    /** Does type <code>ftpe1</code> specialize type <code>ftpe2</code>
      *  when both are alternatives in an overloaded function?
      *
      *  @param ftpe1 ...
      *  @param ftpe2 ...
+     *  @return      ...
      */
     def specializes(ftpe1: Type, ftpe2: Type): boolean = ftpe1 match {
       case MethodType(formals, _) =>
@@ -516,7 +537,12 @@ trait Infer requires Analyzer {
         false
     }
 
-    /** Is type `tpe1' a strictly better alternative than type `ftpe2'? */
+    /** Is type `tpe1' a strictly better alternative than type `ftpe2'?
+     *
+     *  @param tpe1 ...
+     *  @param tpe2 ...
+     *  @return     ...
+     */
     def isStrictlyBetter(tpe1: Type, tpe2: Type) = {
       def isNullary(tpe: Type) = tpe.paramSectionCount == 0 || tpe.paramTypes.isEmpty
       isNullary(tpe1) && !isNullary(tpe2) ||
@@ -556,7 +582,7 @@ trait Infer requires Analyzer {
     }
 
     /** Substitite free type variables `undetparams; of polymorphic expression
-     * `tree', given prototype `pt'.
+     *  <code>tree</code>, given prototype <code>pt</code>.
      *
      *  @param tree ...
      *  @param undetparams ...
@@ -566,7 +592,7 @@ trait Infer requires Analyzer {
       substExpr(tree, undetparams, exprTypeArgs(undetparams, tree.tpe, pt), pt)
 
     /** Substitite free type variables `undetparams' of polymorphic argument
-     *  expression `tree' to `targs', Error if `targs' is null
+     *  expression <code>tree</code> to `targs', Error if `targs' is null
      *
      *  @param tree ...
      *  @param undetparams ...
@@ -584,14 +610,14 @@ trait Infer requires Analyzer {
         new TreeTypeSubstituter(undetparams, targs).traverse(tree)
       }
 
-    /** Substitite free type variables `undetparams' of application `fn(args)',
-     *  given prototype `pt'.
+    /** Substitite free type variables <code>undetparams</code> of application
+     *  <code>fn(args)</code>, given prototype <code>pt</code>.
      *
-     *  @param fn ...
+     *  @param fn          ...
      *  @param undetparams ...
-     *  @param args ...
-     *  @param pt ...
-     *  @return Return the list of type parameters that remain uninstantiated.
+     *  @param args        ...
+     *  @param pt          ...
+     *  @return            Return the list of type parameters that remain uninstantiated.
      */
     def inferMethodInstance(fn: Tree, undetparams: List[Symbol],
                             args: List[Tree], pt: Type): List[Symbol] = fn.tpe match {
@@ -650,12 +676,12 @@ trait Infer requires Analyzer {
         }
       }
 
-    /** Substitite free type variables `undetparams' of type constructor
-     *  `tree' in pattern, given prototype `pt'.
+    /** Substitite free type variables <code>undetparams</code> of type constructor
+     *  <code>tree</code> in pattern, given prototype <code>pt</code>.
      *
-     *  @param tree ...
+     *  @param tree        ...
      *  @param undetparams ...
-     *  @param pt ...
+     *  @param pt          ...
      */
     def inferConstructorInstance(tree: Tree, undetparams: List[Symbol], pt: Type): unit = {
       var restpe = tree.tpe.finalResultType
@@ -672,7 +698,7 @@ trait Infer requires Analyzer {
           case ex: NoInstance =>
             errorTree(tree, "constructor of type " + restpe +
                       " can be instantiated in more than one way to expected type " + pt +
-                      "\n --- because ---\n" + ex.getMessage());
+                      "\n --- because ---\n" + ex.getMessage())
         }
       def instError = {
         if (settings.debug.value) System.out.println("ici " + tree + " " + undetparams + " " + pt)
@@ -737,7 +763,11 @@ trait Infer requires Analyzer {
         mapOver(tp)
         this
       }
-      /** Collect all abstract type symbols referred to by type `tp' */
+      /** Collect all abstract type symbols referred to by type <code>tp</code>.
+       *
+       *  @param tp ...
+       *  @return   ...
+       */
       def collect(tp: Type): List[Symbol] = {
         result = List()
         traverse(tp)
@@ -747,8 +777,8 @@ trait Infer requires Analyzer {
 
     /* -- Overload Resolution ---------------------------------------------- */
 
-    /** Assign `tree' the symbol and type of the alternative which matches
-     *  prototype `pt', if it exists.
+    /** Assign <code>tree</code> the symbol and type of the alternative which
+     *  matches prototype <code>pt</code>, if it exists.
      *  If several alternatives match `pt', take parameterless one.
      *  If no alternative matches `pt', take the parameterless one anyway.
      */
@@ -790,8 +820,8 @@ trait Infer requires Analyzer {
       }
     }
 
-    /** Assign `tree' the type of an alternative which is applicable to `argtpes',
-     *  and whose result type is compatible with `pt'.
+    /** Assign <code>tree</code> the type of an alternative which is applicable
+     *  to <code>argtpes</code>, and whose result type is compatible with `pt'.
      *  If several applicable alternatives exist, take the
      *  most specialized one.
      *  If no applicable alternative exists, and pt != WildcardType, try again
@@ -852,8 +882,8 @@ trait Infer requires Analyzer {
       } else infer
     }
 
-    /** Assign `tree' the type of unique polymorphic alternative with `nparams'
-     *  as the number of type parameters, if it exists.
+    /** Assign <code>tree</code> the type of unique polymorphic alternative
+     *  with <code>nparams</code> as the number of type parameters, if it exists.
      *  If several or none such polymorphic alternatives exist, error.
      *
      *  @param tree ...
