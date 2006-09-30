@@ -1,5 +1,7 @@
 package scala.actors
 
+import scala.collection.mutable.HashSet
+
 object Actor {
 
   private[actors] val selfs = new java.util.WeakHashMap(16, 0.5f)
@@ -20,10 +22,7 @@ object Actor {
 
   def actor(body: => Unit): ActorThread = synchronized {
     val actor = new ActorThread {
-      override def run(): Unit = {
-        body
-        this.kill()
-      }
+      def act() = body
     }
     actor.start()
     actor
@@ -31,7 +30,7 @@ object Actor {
 
   def reactor(body: => Unit): Reactor = synchronized {
     val reactor = new Reactor {
-      override def run(): Unit = body
+      def act() = body
     }
     reactor.start()
     reactor
@@ -120,6 +119,11 @@ object Actor {
     s.kill = () => { b2 }
     b1
   }
+
+  def link(to: Actor): Actor = self.link(to)
+  def link(body: => Unit): Actor = self.link(body)
+  def unlink(from: Actor): Unit = self.unlink(from)
+  def exit(reason: String): Unit = self.exit(reason)
 }
 
 trait Actor {
@@ -141,6 +145,11 @@ trait Actor {
     rc.receiver = this
   }
 
+  /*
+   Specification of behavior
+   */
+  def act(): Unit
+
   def !(msg: Any): Unit = in ! msg
   def !?(msg: Any): Any = in !? msg
 
@@ -148,10 +157,10 @@ trait Actor {
   private[actors] def pushSender(sender: Actor): unit
   private[actors] def popSender(): unit
 
-  private[actors] var kill: () => Unit = _
   private[actors] var suspendActor: () => unit = _
   private[actors] var suspendActorFor: long => unit = _
   private[actors] var detachActor: PartialFunction[Any, unit] => unit = _
+  private[actors] var kill: () => Unit = _
 
   private[actors] def scheduleActor(f: PartialFunction[Any, Unit], msg: Any)
 
@@ -159,11 +168,113 @@ trait Actor {
   private[actors] def resetActor(): unit
 
   resetActor()
+
+  private val links = new HashSet[Actor]
+
+  def link(to: Actor): Actor = {
+    links += to
+    to.linkTo(this)
+    to
+  }
+
+  def link(body: => Unit): Actor = {
+    val actor = new ActorThread {
+      def act() = body
+    }
+    link(actor)
+    actor.start()
+    actor
+  }
+
+  private[actors] def linkTo(to: Actor): Unit =
+    links += to
+
+  def unlink(from: Actor): Unit = {
+    links -= from
+    from.unlinkFrom(this)
+  }
+
+  private[actors] def unlinkFrom(from: Actor): Unit =
+    links -= from
+
+  var trapExit = false
+
+  private[actors] var exitReason: String = ""
+
+  def exit(reason: String): Unit
+
+  private[actors] def exit(from: Actor, reason: String): Unit = {
+    if (from == this) {
+      exit(reason)
+    }
+    else {
+      if (trapExit)
+        this ! Exit(from, reason)
+      else if (!reason.equals("normal"))
+        exit(reason)
+    }
+  }
+
+  private[actors] def exitLinked(): Unit =
+    exitLinked(exitReason, new HashSet[Actor])
+
+  private[actors] def exitLinked(reason: String): Unit =
+    exitLinked(reason, new HashSet[Actor])
+
+  private[actors] def exitLinked(reason: String,
+                                 exitMarks: HashSet[Actor]): Unit = {
+    if (exitMarks contains this) {
+      // we are marked, do nothing
+    }
+    else {
+      exitMarks += this // mark this as exiting
+      // exit linked processes
+      val iter = links.elements
+      while (iter.hasNext) {
+        val linked = iter.next
+        unlink(linked)
+        linked.exit(this, reason)
+      }
+      exitMarks -= this
+    }
+  }
 }
 
-class ActorThread extends Thread with ThreadedActor
+case class Exit(from: Actor, reason: String)
 
-class ActorProxy(t: Thread) extends ThreadedActor
+
+abstract class ActorThread extends Thread with ThreadedActor {
+  override def run(): Unit = {
+    try {
+      act()
+      if (isInterrupted())
+        throw new InterruptedException
+      kill()
+      if (isInterrupted())
+        throw new InterruptedException
+      exit("normal")
+    }
+    catch {
+      case ie: InterruptedException =>
+        exitLinked()
+      case t: Throwable =>
+        exitLinked(t.toString())
+    }
+  }
+
+  def exit(reason: String): Unit = {
+    exitReason = reason
+    interrupt()
+  }
+}
+
+class ActorProxy(t: Thread) extends ThreadedActor {
+  def act(): Unit = {}
+  def exit(reason: String): Unit = {
+    exitReason = reason
+    Thread.currentThread().interrupt()
+  }
+}
 
 
 object RemoteActor {
@@ -193,6 +304,7 @@ object RemoteActor {
 
   def select(node: Node, name: Symbol): Actor =
     new Reactor {
+      def act(): Unit = {}
       override def !(msg: Any): Unit = msg match {
         case a: AnyRef => {
           // establish remotely accessible

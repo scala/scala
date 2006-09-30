@@ -37,7 +37,7 @@ class NetKernel(service: Service) {
           case Some(a) => {
             val msg = service.serializer.deserialize(data)
             val senderProxy = new Reactor {
-              override def run() = { a ! msg }
+              def act() = { a ! msg }
               override def !(msg: Any): Unit = {
                 msg match {
                   case refmsg: AnyRef => {

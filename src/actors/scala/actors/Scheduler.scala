@@ -199,13 +199,10 @@ class SpareWorkerScheduler extends IScheduler {
   init()
 
   def execute(task: Reaction): Unit = synchronized {
-    //Console.println("received new task " + task)
-
     if (!terminating) {
       if (idle.length == 0) {
         tasks += task
         // create new worker
-        //Console.println("create new worker thread")
         maxWorkers = maxWorkers + 1
         val newWorker = new WorkerThread(this)
         workers += newWorker

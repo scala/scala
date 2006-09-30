@@ -11,9 +11,6 @@ trait Reactor extends Actor {
   private[actors] var continuation: PartialFunction[Any, Unit] = null
   private[actors] var timeoutPending = false
 
-  //def resumeActor = () => Unit = () => {
-  //}
-
   def scheduleActor(f: PartialFunction[Any, Unit], msg: Any) = {
     if (f == null && continuation == null) {
       // do nothing (timeout is handled instead)
@@ -41,10 +38,13 @@ trait Reactor extends Actor {
 
   resetActor()
 
-  def run(): Unit = {}
-
   def start(): Unit = {
     Scheduler.execute(new StartTask(this))
+  }
+
+  def exit(reason: String): Unit = {
+    exitReason = reason
+    Thread.currentThread().interrupt()
   }
 }
 
@@ -60,12 +60,22 @@ class StartTask(a: Reactor) extends Reaction {
     val saved = Actor.selfs.get(t).asInstanceOf[Actor]
     Actor.selfs.put(t, a)
     try {
-      a.run()
+      a.act()
+      if (Thread.currentThread().isInterrupted())
+        throw new InterruptedException
       a.kill()
+      if (Thread.currentThread().isInterrupted())
+        throw new InterruptedException
+      a.exit("normal")
     }
     catch {
-      case d: SuspendActorException =>
+      case _: InterruptedException => a.exitLinked()
+      case d: SuspendActorException => {
         // do nothing (continuation is already saved)
+      }
+      case t: Throwable => {
+        a.exit(t.toString())
+      }
     }
     finally {
       Actor.selfs.put(t, saved)
@@ -84,11 +94,21 @@ class ActorTask(a: Reactor,
     Actor.selfs.put(t, a)
     try {
       f(msg)
+      if (Thread.currentThread().isInterrupted())
+        throw new InterruptedException
       a.kill()
+      if (Thread.currentThread().isInterrupted())
+        throw new InterruptedException
+      a.exit("normal")
     }
     catch {
-      case d: SuspendActorException =>
+      case _: InterruptedException => a.exitLinked()
+      case d: SuspendActorException => {
         // do nothing (continuation is already saved)
+      }
+      case t: Throwable => {
+        a.exit(t.toString())
+      }
     }
     finally {
       Actor.selfs.put(t, saved)

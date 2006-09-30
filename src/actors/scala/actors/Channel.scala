@@ -5,6 +5,10 @@ import Actor._
 case object TIMEOUT
 
 class SuspendActorException extends Throwable {
+  /*
+   For efficiency reasons we do not fill in
+   the execution stack trace.
+   */
   override def fillInStackTrace(): Throwable = {
     this
   }
