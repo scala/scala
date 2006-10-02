@@ -11,29 +11,29 @@ abstract class Producer[T] extends Iterator[T] {
   def next: T = {
     setCurrent()
     val res = current.get
-    current = (coordinator !? Next()).asInstanceOf[Option[T]]
+    current = (coordinator !? Next).asInstanceOf[Option[T]]
     res
   }
 
   private var current: Option[T] = null
-  private def setCurrent() = if (current == null) current = (coordinator !? Next()).asInstanceOf[Option[T]]
+  private def setCurrent() = if (current == null) current = (coordinator !? Next).asInstanceOf[Option[T]]
 
-  private case class HasValue(value: T)
-  private case class Next
-  private case class Done
-  private case class Continue
+  private case class  HasValue(value: T)
+  private case object Next
+  private case object Done
+  private case object Continue
 
   /** A thread-based coordinator */
   private val coordinator = actor {
     while (true) {
       receive {
-        case Next() =>
+        case Next =>
           reply {
             receive {
               case HasValue(v) =>
                 reply()
                 Some(v)
-              case Done() =>
+              case Done =>
                 None
             }
           }
@@ -43,7 +43,8 @@ abstract class Producer[T] extends Iterator[T] {
 
   actor {
     produceValues
-    coordinator !? Done()
+    coordinator !? Done
+    ()
   }
 }
 
