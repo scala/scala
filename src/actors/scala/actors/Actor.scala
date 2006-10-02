@@ -28,6 +28,15 @@ object Actor {
     actor
   }
 
+  def actor[a](ch: Channel[a])(body: => Unit): ActorThread = synchronized {
+    val actor = new ActorThread {
+      def act() = body
+    }
+    ch.receiver = actor
+    actor.start()
+    actor
+  }
+
   def reactor(body: => Unit): Reactor = synchronized {
     val reactor = new Reactor {
       def act() = body
@@ -272,7 +281,7 @@ class ActorProxy(t: Thread) extends ThreadedActor {
   def act(): Unit = {}
   def exit(reason: String): Unit = {
     exitReason = reason
-    Thread.currentThread().interrupt()
+    t.interrupt()
   }
 }
 
