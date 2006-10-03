@@ -28,7 +28,7 @@ import scala.collection.mutable._
  *    <b>val</b> url = <b>new</b> URL("http://scala.epfl.ch/classes/examples.jar");
  *    <b>val</b> obj = <b>new</b> Location(url) create "examples.sort";</pre>
  *
- *  @see <a href="Code-class.html">Code</a>
+ *  @see <a href="Code.html">Code</a>
  *
  *  @author  Stephane Micheloud
  *  @version 1.0, 04/05/2004

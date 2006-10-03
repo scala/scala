@@ -26,7 +26,7 @@ import java.lang.reflect.{Constructor, Method, Modifier}
  *    obj[Array[Int], Unit]("sort")(ar);
  *    obj[Array[Int], Unit]("println")(ar);</pre>
  *
- *  @see <a href="Location-class.html">Location</a>
+ *  @see <a href="Location.html">Location</a>
  *
  *  @author  Stephane Micheloud
  *  @version 1.0, 04/05/2004

@@ -44,26 +44,31 @@ object AbstractFile {
 }
 
 /**
- * This class and its children serve to unify handling of files and
- * directories. These files and directories may or may not have some
- * real counter part within the file system. For example, some file
- * handles reference files within a zip archive or virtual ones
- * that exist only in memory.
- *
- * Every abstract file has a path (i.e. a full name) and a name
- * (i.e. a short name) and may be backed by some real File. There are
- * two different kinds of abstract files: regular files and
- * directories. Regular files may be read and have a last modification
- * time. Directories may list their content and look for subfiles with
- * a specified name or path and of a specified kind.
- *
- * bq: The interface allows to access the content as bytes and as chars.
- * In fact, only the ClassFileParser should access bytes, because
- * only there we know that the charset of the file is UTF-8. For
- * all other cases, the global.settings.encoding.value must be
- * respected. @todo it would be better if reading chars from sources
- * was exclusively done in SourceFile and reading bytes for classfiles
- * was done in symtab.classfile.AbstractFileReader
+ * <p>
+ *   This class and its children serve to unify handling of files and
+ *   directories. These files and directories may or may not have some
+ *   real counter part within the file system. For example, some file
+ *   handles reference files within a zip archive or virtual ones
+ *   that exist only in memory.
+ * </p>
+ * <p>
+ *   Every abstract file has a path (i.e. a full name) and a name
+ *   (i.e. a short name) and may be backed by some real File. There are
+ *   two different kinds of abstract files: regular files and
+ *   directories. Regular files may be read and have a last modification
+ *   time. Directories may list their content and look for subfiles with
+ *   a specified name or path and of a specified kind.
+ * </p>
+ * <p>
+ *   bq: The interface allows to access the content as bytes and as chars.
+ *   In fact, only the ClassFileParser should access bytes, because
+ *   only there we know that the charset of the file is UTF-8. For
+ *   all other cases, the <code>global.settings.encoding.value</code> must
+ *   be respected.
+ * </p>
+ * @todo it would be better if reading chars from sources was exclusively
+ *       done in <code>SourceFile</code> and reading bytes for classfiles
+ *       was done in <code>symtab.classfile.AbstractFileReader</code>.
  */
 abstract class AbstractFile extends Object with Iterable[AbstractFile] {
 
@@ -94,19 +99,25 @@ abstract class AbstractFile extends Object with Iterable[AbstractFile] {
   /** Returns all abstract subfiles of this abstract directory. */
   def elements: Iterator[AbstractFile]
 
-  /**
-   * Returns the abstract file in this abstract directory with the
-   * specified name. If there is no such file, returns null. The
-   * argument "directory" tells whether to look for a directory or
-   * or a regular file.
+  /** Returns the abstract file in this abstract directory with the specified
+   *  name. If there is no such file, returns null. The argument
+   *  <code>directory</code> tells whether to look for a directory or
+   *  a regular file.
+   *
+   *  @param name      ...
+   *  @param directory ...
+   *  @return          ...
    */
   def lookupName(name: String, directory: Boolean): AbstractFile
 
-  /**
-   * Returns the abstract file in this abstract directory with the
-   * specified path relative to it, If there is no such file,
-   * returns null. The argument "directory" tells whether to look
-   * for a directory or a regular file.
+  /** Returns the abstract file in this abstract directory with the specified
+   *  path relative to it, If there is no such file, returns null. The argument
+   *  <code>directory</code> tells whether to look for a directory or a regular
+   *  file.
+   *
+   *  @param path      ...
+   *  @param directory ...
+   *  @return          ...
    */
   def lookupPath(path: String, directory: Boolean): AbstractFile = {
     val length = path.length()

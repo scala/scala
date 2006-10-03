@@ -11,6 +11,7 @@ import java.util.StringTokenizer
 import java.util.regex.Pattern
 
 import scala.collection.immutable._
+import scala.collection.mutable.ListBuffer
 import scala.tools.nsc._
 import scala.tools.nsc.models._
 import scala.tools.nsc.symtab.Flags
@@ -350,16 +351,16 @@ abstract class DocGenerator extends Models {
     }
 
     def fullComment(mmbr: HasTree): NodeSeq =
-      if (comments contains mmbr.tree.symbol)
-        comment(comments(mmbr.tree.symbol), false)
-      else
-        NodeSeq.Empty
+      comments.get(mmbr.tree.symbol) match {
+        case Some(text) => comment(text, false)
+        case None => NodeSeq.Empty
+      }
 
     def shortComment(mmbr: HasTree): NodeSeq =
-      if (comments contains mmbr.tree.symbol)
-        comment(comments(mmbr.tree.symbol), true)
-      else
-        NodeSeq.Empty
+      comments.get(mmbr.tree.symbol) match {
+        case Some(text) => comment(text, true)
+        case None => NodeSeq.Empty
+      }
 
     def ifT(cond: Boolean, nodes: NodeSeq) =
       if (cond) nodes else NodeSeq.Empty
@@ -524,7 +525,7 @@ abstract class DocGenerator extends Models {
             topLevel = topLevel.update(sym, organize0(mmbr, topLevel(sym)))
           }
         case _ =>
-          throw new Error("unknown: " + mmbr.tree + " " + mmbr.tree.getClass())
+          error("unknown: " + mmbr.tree + " " + mmbr.tree.getClass())
       }
     }
 
@@ -593,7 +594,7 @@ abstract class DocGenerator extends Models {
       override def hasBody = false
     }
     val rsrcdir = "scala/tools/nsc/doc/".replace('/', File.separatorChar)
-    for (val base <- "style.css" :: "script.js" :: Nil) {
+    for (val base <- List("style.css", "script.js")) {
       val input = loader.getResourceAsStream(rsrcdir + base)
       if (input != null) {
         val file  = new File(outdir + File.separator + base)
@@ -602,15 +603,13 @@ abstract class DocGenerator extends Models {
         val bytes = new Array[byte](1024)
         while (!break) {
           val read = input.read(bytes)
-          if (read == -1) {
-            break = true
-          } else {
-            output.write(bytes, 0, read)
-          }
+          if (read == -1) break = true
+          else output.write(bytes, 0, read)
         }
         input.close()
         output.close()
-      }
+      } else
+        error("Resource file '" + base + "' not found")
     }
   }
 
@@ -660,7 +659,7 @@ abstract class DocGenerator extends Models {
         case "author"  => "Author"
         case "param"   => "Parameters"
         case "return"  => "Returns"
-        case "see"     => "See"
+        case "see"     => "See Also"
         case "since"   => "Since"
         case "throws"  => "Throws"
         case "todo"    => "Todo"
@@ -679,37 +678,42 @@ abstract class DocGenerator extends Models {
     assert(comment0 endsWith JDOC_END)
     comment0 = comment0.substring(0, comment0.length() - JDOC_END.length())
     val buf = new StringBuffer
-    var attributes: List[Triple[String, String, String]] = Nil
-    val tok = new StringTokenizer(comment0, LINE_SEPARATOR)
+    type AttrDescr = Triple[String, String, StringBuffer]
+    val attributes = new ListBuffer[AttrDescr]
+    var attr: AttrDescr = null
     val pat1 = Pattern.compile("[ \t]*@(author|return|see|since|throws|todo|version)[ \t]+(.*)")
     val pat2 = Pattern.compile("[ \t]*@(param)[ \t]+(\\p{Alnum}*)[ \t]+(.*)")
+    val tok = new StringTokenizer(comment0, LINE_SEPARATOR)
     while (tok.hasMoreTokens) {
       val s = tok.nextToken.replaceFirst("\\p{Space}?\\*", "")
       val mat1 = pat1.matcher(s)
-      attributes = if (mat1.matches)
-        attributes ::: List(Triple(mat1.group(1), null, mat1.group(2)))
-      else {
-         val mat2 = pat2.matcher(s)
-         if (mat2.matches)
-           attributes ::: List(Triple(mat2.group(1), mat2.group(2), mat2.group(3)))
-         else {
-           buf.append(s + LINE_SEPARATOR)
-           attributes
-         }
+      if (mat1.matches) {
+        attr = Triple(mat1.group(1), null, new StringBuffer(mat1.group(2)))
+        attributes += attr
+      } else {
+        val mat2 = pat2.matcher(s)
+        if (mat2.matches) {
+          attr = Triple(mat2.group(1), mat2.group(2), new StringBuffer(mat2.group(3)))
+          if (isShort)
+            attributes += attr
+        } else if (attr != null)
+          attr._3.append(s + LINE_SEPARATOR)
+        else
+          buf.append(s + LINE_SEPARATOR)
       }
     }
     val body = buf.toString
     if (isShort) <span>{parse(body)}</span>;
     else <span><dl><dd>{parse(body)}</dd></dl><dl>
     { {
-      for (val attr <- attributes) yield
+      for (val attr <- attributes.toList) yield
         <dt style="margin:10px 0 0 20px;">
           {tag(attr._1)}
         </dt>
         <dd> {
           if (attr._2 == null) NodeSeq.Empty
           else <code>{attr._2 + " - "}</code>
-        } {(parse(attr._3))}
+        } {(parse(attr._3.toString))}
         </dd>;
     } } </dl></span>;
   }
