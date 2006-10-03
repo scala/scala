@@ -127,15 +127,15 @@ object Stream {
  * <p>The class <code>Stream</code> implements lazy lists where elements
  * are only evaluated when they are needed. Here is an example:</p>
  * <pre>
- * <b>object</b> Main <b>with</b> Application {
+ * <b>object</b> Main <b>extends</b> Application {
  *
  *   <b>def</b> from(n: Int): Stream[Int] =
- *     Stream.cons(n, from(n + 1));
+ *     Stream.cons(n, from(n + 1))
  *
  *   <b>def</b> sieve(s: Stream[Int]): Stream[Int] =
- *     Stream.cons(s.head, sieve(s.tail filter { x => x % s.head != 0 }));
+ *     Stream.cons(s.head, sieve(s.tail filter { x => x % s.head != 0 }))
  *
- *   <b>def</b> primes = sieve(from(2));
+ *   <b>def</b> primes = sieve(from(2))
  *
  *   primes take 10 print
  * }

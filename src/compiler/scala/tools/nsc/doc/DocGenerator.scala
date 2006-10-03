@@ -8,6 +8,7 @@ package scala.tools.nsc.doc
 
 import java.io.{File,FileOutputStream,FileWriter}
 import java.util.StringTokenizer
+import java.util.regex.Pattern
 
 import scala.collection.immutable._
 import scala.tools.nsc._
@@ -662,6 +663,7 @@ abstract class DocGenerator extends Models {
         case "see"     => "See"
         case "since"   => "Since"
         case "throws"  => "Throws"
+        case "todo"    => "Todo"
         case "version" => "Version"
         case _ => name
       }) + ":")
@@ -676,24 +678,27 @@ abstract class DocGenerator extends Models {
     comment0 = comment0.substring(JDOC_START.length())
     assert(comment0 endsWith JDOC_END)
     comment0 = comment0.substring(0, comment0.length() - JDOC_END.length())
-    var idx = 0
-    while (idx != -1) {
-      idx = comment0.indexOf('*', idx)
-      if (idx != -1)
-        comment0 = comment0.substring(0, idx) +
-          comment0.substring(idx + 1, comment0.length());
+    val buf = new StringBuffer
+    var attributes: List[Triple[String, String, String]] = Nil
+    val tok = new StringTokenizer(comment0, LINE_SEPARATOR)
+    val pat1 = Pattern.compile("[ \t]*@(author|return|see|since|throws|todo|version)[ \t]+(.*)")
+    val pat2 = Pattern.compile("[ \t]*@(param)[ \t]+(\\p{Alnum}*)[ \t]+(.*)")
+    while (tok.hasMoreTokens) {
+      val s = tok.nextToken.replaceFirst("\\p{Space}?\\*", "")
+      val mat1 = pat1.matcher(s)
+      attributes = if (mat1.matches)
+        attributes ::: List(Triple(mat1.group(1), null, mat1.group(2)))
+      else {
+         val mat2 = pat2.matcher(s)
+         if (mat2.matches)
+           attributes ::: List(Triple(mat2.group(1), mat2.group(2), mat2.group(3)))
+         else {
+           buf.append(s + LINE_SEPARATOR)
+           attributes
+         }
+      }
     }
-    val tokenizer = new StringTokenizer(comment0, "@")
-    val body = tokenizer.nextToken()
-    var attributes: List[Tuple2[String,String]] = Nil
-    if (!isShort) while (tokenizer.hasMoreElements()) {
-      val attr = tokenizer.nextToken()
-      val div = attr.indexOf(' ')
-      val tuple =
-        if (div == -1) new Tuple2(attr,"")
-        else new Tuple2(attr.substring(0, div), attr.substring(div + 1, attr.length()))
-      attributes = attributes ::: (tuple :: Nil)
-    }
+    val body = buf.toString
     if (isShort) <span>{parse(body)}</span>;
     else <span><dl><dd>{parse(body)}</dd></dl><dl>
     { {
@@ -701,7 +706,11 @@ abstract class DocGenerator extends Models {
         <dt style="margin:10px 0 0 20px;">
           {tag(attr._1)}
         </dt>
-        <dd>{(parse(attr._2))}</dd>;
+        <dd> {
+          if (attr._2 == null) NodeSeq.Empty
+          else <code>{attr._2 + " - "}</code>
+        } {(parse(attr._3))}
+        </dd>;
     } } </dl></span>;
   }
 

@@ -9,51 +9,56 @@
 // $Id$
 
 
-package scala.xml.factory;
+package scala.xml.factory
 
 
-/** This class logs what the nodefactory is actually doing.
-If you want to see what happens during loading, use it like this:
-object testLogged with Application {
-
-  val x = new scala.xml.nobinding.NoBindingFactoryAdapter
-            with scala.xml.LoggedNodeFactory[scala.xml.Elem]()
-            with scala.util.logging.ConsoleLogger;
-
-  Console.println("Start");
-
-  val doc = x.loadXML(new org.xml.sax.InputSource("http://lamp.epfl.ch/~buraq"));
-
-  Console.println("End");
-
-  Console.println(doc);
-}
-
-*/
+/** <p>
+ *    This class logs what the nodefactory is actually doing.
+ *    If you want to see what happens during loading, use it like this:
+ *  </p><pre>
+ *  <b>object</b> testLogged <b>extends</b> Application {
+ *
+ *    <b>val</b> x = <b>new</b> scala.xml.nobinding.NoBindingFactoryAdapter
+ *          <b>with</b> scala.xml.LoggedNodeFactory[scala.xml.Elem]()
+ *          <b>with</b> scala.util.logging.ConsoleLogger;
+ *
+ *    Console.println("Start");
+ *
+ *    <b>val</b> doc = x.loadXML(new org.xml.sax.InputSource("http://lamp.epfl.ch/~buraq"));
+ *
+ *    Console.println("End");
+ *
+ *    Console.println(doc);
+ *  }</pre>
+ *
+ *  @author  Burak Emir
+ *  @version 1.0
+ */
 abstract class LoggedNodeFactory[A <: Node]
 extends NodeFactory[A]
 with scala.util.logging.Logged {
 
   // configuration values;
-  val logNode      = true;
-  val logText      = false;
-  val logComment   = false;
-  val logProcInstr = false;
+  val logNode      = true
+  val logText      = false
+  val logComment   = false
+  val logProcInstr = false
 
-  final val NONE  = 0;
-  final val CACHE = 1;
-  final val FULL  = 2;
+  final val NONE  = 0
+  final val CACHE = 1
+  final val FULL  = 2
   /** 0 = no loggging, 1 = cache hits, 2 = detail */
-  val logCompressLevel  = 1;
+  val logCompressLevel  = 1
 
   // methods of NodeFactory
 
   /** logged version of makeNode method */
-  override def makeNode(pre:String, label:String, attrSeq:MetaData, scope: NamespaceBinding, children:Seq[Node]): A = {
-    if(logNode)
+  override def makeNode(pre: String, label: String, attrSeq: MetaData,
+                        scope: NamespaceBinding, children: Seq[Node]): A = {
+    if (logNode)
       log("[makeNode for "+label+"]");
 
-    val hash = Utility.hashCode(pre, label, attrSeq.hashCode(), scope.hashCode(), children) ;
+    val hash = Utility.hashCode(pre, label, attrSeq.hashCode(), scope.hashCode(), children)
 
     /*
     if(logCompressLevel >= FULL) {
@@ -63,28 +68,28 @@ with scala.util.logging.Logged {
       log(" children :"+children+" hash "+children.hashCode());
     }
     */
-    if(!cache.get( hash ).isEmpty && (logCompressLevel >= CACHE))
+    if (!cache.get( hash ).isEmpty && (logCompressLevel >= CACHE))
       log("[cache hit !]");
 
-    super.makeNode(pre, label, attrSeq, scope, children);
+    super.makeNode(pre, label, attrSeq, scope, children)
   }
 
   override def makeText(s: String) = {
-    if(logText)
+    if (logText)
       log("[makeText:\""+s+"\"]");
-    super.makeText( s );
+    super.makeText(s)
   }
 
   override def makeComment(s: String): Seq[Comment] = {
-    if(logComment)
+    if (logComment)
       log("[makeComment:\""+s+"\"]");
-    super.makeComment( s );
+    super.makeComment(s)
   }
 
   override def makeProcInstr(t: String, s: String): Seq[ProcInstr] = {
-    if(logProcInstr)
+    if (logProcInstr)
       log("[makeProcInstr:\""+t+" "+ s+"\"]");
-    super.makeProcInstr(t,s);
+    super.makeProcInstr(t, s)
   }
 
 }

@@ -41,23 +41,26 @@ package scala.collection.immutable
 
 /** General Balanced Trees - highly efficient functional dictionaries.
  *
- *  An efficient implementation of Prof. Arne Andersson's General
+ *  <p>An efficient implementation of Prof. Arne Andersson's General
  *  Balanced Trees. These have no storage overhead compared to plain
  *  unbalanced binary trees, and their performance is in general better
- *  than AVL trees.
- *  <p/>
- *  This implementation does not balance the trees after deletions.
+ *  than AVL trees.</p>
+ *  <p>This implementation does not balance the trees after deletions.
  *  Since deletions don't increase the height of a tree, this should
  *  be OK in most applications. A balance method is provided for those
- *  cases where rebalancing is needed.
- *  <p/>
- *  The tree consists of entries conatining a key with an order.
- *  <p/>
- *  When instanciating the tree an order for the keys has to be
- *  supplied.
+ *  cases where rebalancing is needed.</p>
+ *  <p>The tree consists of entries conatining a key with an order.</p>
+ *  <p>When instanciating the tree an order for the keys has to be
+ *  supplied.</p>
+ *  <dl>
+ *    <dt><b>Direct Known Subclasses:</b></dt>
+ *    <dd>
+ *      <a href="TreeMap.html" target="contentFrame">TreeMap</a>,
+ *      <a href="TreeSet.html" target="contentFrame">TreeSet</a>
+ *   </dd>
+ *  </dl>
  *
- *  @author  Erik Stenman
- *  @author  Michel Schinz
+ *  @author  Erik Stenman, Michel Schinz
  *  @version 1.1, 2005-01-20
  */
 
@@ -91,33 +94,37 @@ abstract class Tree[A <% Ordered[A], B]() extends AnyRef {
   protected type aNode = GBTree[A,B]
 
   /** The nodes in the tree.
-  */
+   */
   protected def tree: aNode = GBLeaf[A,B]()
 
   /** This abstract method should be defined by a concrete implementation
-  **   C[T] as something like:
-  **    <pre>
-  **     override def New(sz:Int,t:aNode):This {
-  **       new C[T](order) {
-  **        override def size=sz;
-  **        override protected def tree:aNode=t;
-  **     }
-  **    </pre>
-  **   The concrete implementation should also override the def of This
-  **   <code>override type This = C[T];</code>
-  **
-  */
+   *   C[T] as something like:
+   *    <pre>
+   *     override def New(sz:Int,t:aNode):This {
+   *       new C[T](order) {
+   *        override def size=sz;
+   *        override protected def tree:aNode=t;
+   *     }
+   *    </pre>
+   *   The concrete implementation should also override the def of This
+   *   <code>override type This = C[T];</code>
+   *
+   */
   protected def New(sz: Int, t: aNode): This
 
   /** The size of the tree, returns 0 (zero) if the tree is empty.
-  **  @Returns The number of nodes in the tree as an integer.
-  **/
+   *
+   *  @return The number of nodes in the tree as an integer.
+   */
   def size: Int = 0
 
-  /**
-  *   A new tree with the entry added is returned,
-  *   assuming that key is <em>not</em> in the tree.
-  */
+  /** A new tree with the entry added is returned,
+   *  assuming that key is <em>not</em> in the tree.
+   *
+   *  @param key   ...
+   *  @param entry ...
+   *  @return      ...
+   */
   protected def add(key: A, entry: B): This = {
     val newSize = size + 1
     New(newSize, tree.insert(key, entry, newSize * newSize).node)
@@ -133,14 +140,22 @@ abstract class Tree[A <% Ordered[A], B]() extends AnyRef {
     else
       add(key,entry)
 
-  /** Removes the key from the tree. */
+  /** Removes the key from the tree.
+   *
+   *  @param key ...
+   *  @return    ...
+   */
   protected def deleteAny(key: A): This =
     if (tree.isDefinedAt(key))
       delete(key)
     else
       getThis
 
-  /** Removes the key from the tree, assumimg that key is present. */
+  /** Removes the key from the tree, assumimg that key is present.
+   *
+   *  @param key ...
+   *  @return    ...
+   */
   private def delete(key: A): This =
     New(size - 1, tree.delete(key))
 
@@ -185,6 +200,10 @@ protected abstract class InsertTree[A <% Ordered[A],B]() extends AnyRef {
   def node: GBTree[A,B]
 }
 
+/**
+ *  <code>ITree</code> is an internal class used by
+ *  <a href="Tree.html" target="contentFrame"><code>Tree</code></a>.
+ */
 private case class ITree[A <% Ordered[A],B](t: GBTree[A,B])
              extends InsertTree[A,B] {
   def insertLeft(key: A, value: B, bigger: GBTree[A,B]) =
@@ -194,6 +213,10 @@ private case class ITree[A <% Ordered[A],B](t: GBTree[A,B])
   def node = t
 }
 
+/**
+ *  <code>INode</code> is an internal class used by
+ *  <a href="Tree.html" target="contentFrame"><code>Tree</code></a>.
+ */
 private case class INode[A <% Ordered[A],B](t1: GBTree[A,B],
                                             height: int,
                                             size: int)

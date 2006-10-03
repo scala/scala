@@ -36,13 +36,19 @@ class Queue[+A](elem: A*) extends Seq[A] {
   /** Returns the <code>n</code>-th element of this queue.
    *  The first element is at position 0.
    *
-   *  @param n index of the element to return
-   *  @return the element at position <code>n</code> in this list.
-   *  @throws java.lang.RuntimeException if the list is too short.
+   *  @param  n index of the element to return
+   *  @return   the element at position <code>n</code> in this queue.
+   *  @throws   <code>java.lang.Error</code> if the queue is too short.
    */
-  def apply(n: Int): A =
-    if (n < out.length) out.apply(n)
-    else in.reverse.apply(n - out.length)
+  def apply(n: Int): A = {
+    val len = out.length
+    if (n < len) out.apply(n)
+    else {
+      val m = n - len
+      if (m < in.length) in.reverse.apply(m)
+      else error("index out of range")
+    }
+  }
 
   /** Returns the elements in the list as an iterator
    */

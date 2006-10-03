@@ -13,33 +13,40 @@ import Tokens._
 
 //todo verify when stableId's should be just plain qualified type ids
 
-/** Performs the following context-free rewritings:
- *  (1) Places all pattern variables in Bind nodes. In a pattern, for identifiers `x':
+/** <p>Performs the following context-free rewritings:</p>
+ *  <ol>
+ *    <li>
+ *      Places all pattern variables in Bind nodes. In a pattern, for
+ *      identifiers <code>x</code>:<pre>
  *                 x  => x @ _
- *               x:T  => x @ (_ : T)
+ *               x:T  => x @ (_ : T)</pre>
+ *    </li>
+ *    <li>Removes pattern definitions (PatDef's) as follows:
+ *      If pattern is a simple (typed) identifier:<pre>
+ *        <b>val</b> x = e     ==>  <b>val</b> x = e
+ *        <b>val</b> x: T = e  ==>  <b>val</b> x: T = e</pre>
  *
- *  (2) Removes pattern definitions (PatDef's) as follows:
- *      If pattern is a simple (typed) identifier:
- *        val x = e     ==>  val x = e
- *        val x: T = e  ==>  val x: T = e
+ *      if there are no variables in pattern<pre>
+ *        <b>val</b> p = e  ==>  e match (case p => ())</pre>
  *
- *      if there are no variables in pattern
- *        val p = e  ==>  e.match (case p => ())
+ *      if there is exactly one variable in pattern<pre>
+ *        <b>val</b> x_1 = e <b>match</b> (case p => (x_1))</pre>
  *
- *      if there is exactly one variable in pattern
- *        val x_1 = e.match (case p => (x_1))
- *
- *      if there is more than one variable in pattern
- *        val p = e  ==>  private synthetic val t$ = e.match (case p => (x_1, ..., x_N))
- *                        val x_1 = t$._1
+ *      if there is more than one variable in pattern<pre>
+ *        <b>val</b> p = e  ==>  <b>private synthetic val</b> t$ = e <b>match</b> (case p => (x_1, ..., x_N))
+ *                        <b>val</b> x_1 = t$._1
  *                        ...
- *                        val x_N = t$._N
- *
- *  (3) Removes function types as follows:
- *        (argtpes) => restpe   ==>   scala.Function_n[argtpes, restpe]
- *
- *  (4) Wraps naked case definitions in a match as follows:
- *        { cases }   ==>   (x => x.match {cases}), except when already argument to match
+ *                        <b>val</b> x_N = t$._N</pre>
+ *    </li>
+ *    <li>
+ *       Removes function types as follows:<pre>
+ *        (argtpes) => restpe   ==>   scala.Function_n[argtpes, restpe]</pre>
+ *    </li>
+ *    <li>
+ *      Wraps naked case definitions in a match as follows:<pre>
+ *        { cases }   ==>   (x => x.match {cases})<span style="font-family:normal;">, except when already argument to match</span></pre>
+ *    </li>
+ *  </ol>
  */
 trait Parsers requires SyntaxAnalyzer {
 

@@ -6,25 +6,27 @@
 
 package scala.tools.nsc
 
-import java.io._
-import java.util.jar._
+import java.io.{BufferedReader, File, FileInputStream, FileOutputStream,
+                FileReader, InputStreamReader, PrintWriter}
+import java.util.jar.{JarEntry, JarOutputStream}
 import java.lang.reflect.InvocationTargetException
-import scala.tools.nsc.util._
-import scala.tools.nsc.io._
+
+import scala.tools.nsc.io.PlainFile
 import scala.tools.nsc.reporters.ConsoleReporter
+import scala.tools.nsc.util.{CompoundSourceFile, SourceFile, SourceFileFragment}
 
 /** An object that runs Scala code in script files.
  *
- *  For example, here is a complete Scala script on Unix:
- *
+ *  <p>For example, here is a complete Scala script on Unix:</pre>
+ *  <pre>
  *    #!/bin/sh
  *    exec scala "$0" "$@"
  *    !#
  *    Console.println("Hello, world!")
  *    argv.toList foreach Console.println
- *
- * And here is a batch file example on Windows XP:
- *
+ *  </pre>
+ *  <p>And here is a batch file example on Windows XP:</p>
+ *  <pre>
  *    ::#!
  *    @echo off
  *    call scala %0 %*
@@ -32,14 +34,18 @@ import scala.tools.nsc.reporters.ConsoleReporter
  *    ::!#
  *    Console.println("Hello, world!")
  *    argv.toList foreach Console.println
+ *  </pre>
  *
- * TODO: It would be better if error output went to stderr instead
- * of stdout....
+ *  @author  Lex Spoon
+ *  @version 1.0, 15/05/2006
+ *  @todo    It would be better if error output went to stderr instead
+ *           of stdout...
  */
 object ScriptRunner {
+
   /** Choose a jar filename to hold the compiled version
-    * of a script
-    */
+   * of a script
+   */
   private def jarFileFor(scriptFile: String): File = {
     val filename =
       if (scriptFile.matches(".*\\.[^.\\\\/]*"))
@@ -50,9 +56,9 @@ object ScriptRunner {
     new File(filename)
   }
 
-  /** Try to create a jar out of all the contents
-    * of a directory.
-    */
+  /** Try to create a jar file out of all the contents
+   *  of the directory <code>sourcePath</code>.
+   */
   private def tryMakeJar(jarFile: File, sourcePath: File) = {
     try {
       val jarFileStream = new FileOutputStream(jarFile)
@@ -121,8 +127,12 @@ object ScriptRunner {
   }
 
   /** Wrap a script file into a runnable object named
-    * scala.scripting.Main .
-    */
+   *  <code>scala.scripting.Main</code>.
+   *
+   *  @param filename      ...
+   *  @param getSourceFile ...
+   *  @return              ...
+   */
   def wrappedScript(filename: String, getSourceFile: PlainFile => SourceFile): SourceFile = {
     val preamble =
       new SourceFile("<script preamble>",
@@ -143,7 +153,12 @@ object ScriptRunner {
     new CompoundSourceFile(preamble, middle, end)
   }
 
-  /** Compile a script using the fsc compilation deamon */
+  /** Compile a script using the fsc compilation deamon.
+   *
+   *  @param settings     ...
+   *  @param scriptFileIn ...
+   *  @return             ...
+   */
   private def compileWithDaemon(
       settings: GenericRunnerSettings,
       scriptFileIn: String): Boolean =
@@ -272,8 +287,12 @@ object ScriptRunner {
   }
 
   /** Run a script file with the specified arguments and compilation
-    * settings.
-    */
+   *  settings.
+   *
+   *  @param settings   ...
+   *  @param scriptFile ...
+   *  @param scriptArgs ...
+   */
   def runScript(
       settings: GenericRunnerSettings,
       scriptFile: String,
