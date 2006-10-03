@@ -1,17 +1,27 @@
 package scala.actors
 
+/**
+
+ This class provides (together with <code>Channel</code>) an
+ implementation of event-based actors (aka reactors).
+
+ The main ideas of our approach are explained in the paper<br>
+ <b>Event-Based Programming without Inversion of Control</b>, Philipp Haller, Martin Odersky <i>Proc. JMLC 2006</i>
+
+ @author Philipp Haller
+ */
 trait Reactor extends Actor {
   private var lastSender: Actor = null
-  def sender: Actor = lastSender
-  def pushSender(sender: Actor): Unit = lastSender = sender
-  def popSender(): Unit = lastSender = null
+  private[actors] def sender: Actor = lastSender
+  private[actors] def pushSender(sender: Actor): Unit = lastSender = sender
+  private[actors] def popSender(): Unit = lastSender = null
 
-  def isThreaded = false
+  private[actors] def isThreaded = false
 
   private[actors] var continuation: PartialFunction[Any, Unit] = null
   private[actors] var timeoutPending = false
 
-  def scheduleActor(f: PartialFunction[Any, Unit], msg: Any) = {
+  private[actors] def scheduleActor(f: PartialFunction[Any, Unit], msg: Any) = {
     if (f == null && continuation == null) {
       // do nothing (timeout is handled instead)
     }
@@ -23,13 +33,13 @@ trait Reactor extends Actor {
     }
   }
 
-  def defaultDetachActor: PartialFunction[Any, Unit] => Unit =
+  private[actors] def defaultDetachActor: PartialFunction[Any, Unit] => Unit =
     (f: PartialFunction[Any, Unit]) => {
       continuation = f
       throw new SuspendActorException
     }
 
-  def resetActor(): Unit = {
+  private[actors] def resetActor(): Unit = {
     detachActor = defaultDetachActor
     suspendActor = () => error("suspendActor called on reactor.")
     suspendActorFor = (msec: long) => error("suspendActorFor called on reactor.")
@@ -38,21 +48,43 @@ trait Reactor extends Actor {
 
   resetActor()
 
+  /**
+   Starts this reactor.
+   */
   def start(): Unit = {
     Scheduler.execute(new StartTask(this))
   }
 
+  /**
+   Terminates this reactor, thereby influencing linked actors
+   (see Actor.exit).
+   */
   def exit(reason: String): Unit = {
     exitReason = reason
     Thread.currentThread().interrupt()
   }
 }
 
-abstract class Reaction extends Runnable {
+/**
+ The abstract class <code>Reaction</code> associates an instance
+ of a <code>Reactor</code> with a
+ <code>java.lang.Runnable</code>. It is also the super class of
+ the different kinds of tasks used for the execution of
+ <code>Reactor</code>s.
+
+ @author Philipp Haller
+ */
+private[actors] abstract class Reaction extends Runnable {
   def actor: Reactor
 }
 
-class StartTask(a: Reactor) extends Reaction {
+/**
+ This class represents task items used to start the execution
+ of <code>Reactor</code>s.
+
+ @author Philipp Haller
+ */
+private[actors] class StartTask(a: Reactor) extends Reaction {
   def actor = a
 
   def run(): Unit = {
@@ -83,9 +115,16 @@ class StartTask(a: Reactor) extends Reaction {
   }
 }
 
-class ActorTask(a: Reactor,
-                f: PartialFunction[Any, Unit],
-                msg: Any) extends Reaction {
+/**
+ This class represents task items used to execute actions
+ specified in arguments of <code>react</code> and
+ <code>reactWithin</code>.
+
+ @author Philipp Haller
+ */
+private[actors] class ActorTask(a: Reactor,
+                                f: PartialFunction[Any, Unit],
+                                msg: Any) extends Reaction {
   def actor = a
 
   def run(): Unit = {

@@ -1,5 +1,11 @@
 package scala.actors
 
+/**
+ This trait is part of the thread-based implementation of
+ actors.
+
+ @author Philipp Haller
+ */
 trait ThreadedActor extends Actor {
   private val lastSenders = new scala.collection.mutable.Stack[Actor]
   def sender: Actor = {
