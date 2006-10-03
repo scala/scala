@@ -653,17 +653,19 @@ abstract class DocGenerator extends Models {
   }
 
   //http://java.sun.com/j2se/1.5.0/docs/tooldocs/windows/javadoc.html#javadoctags
+  //http://java.sun.com/j2se/javadoc/writingdoccomments/
   private def tag(name: String): NodeSeq =
     <b> {
       Text((name match {
-        case "author"  => "Author"
-        case "param"   => "Parameters"
-        case "return"  => "Returns"
-        case "see"     => "See Also"
-        case "since"   => "Since"
-        case "throws"  => "Throws"
-        case "todo"    => "Todo"
-        case "version" => "Version"
+        case "author"    => "Author"
+        case "exception" => "Throws"
+        case "param"     => "Parameters"
+        case "return"    => "Returns"
+        case "see"       => "See Also"
+        case "since"     => "Since"
+        case "throws"    => "Throws"
+        case "todo"      => "Todo"
+        case "version"   => "Version"
         case _ => name
       }) + ":")
     } </b>
@@ -681,8 +683,8 @@ abstract class DocGenerator extends Models {
     type AttrDescr = Triple[String, String, StringBuffer]
     val attributes = new ListBuffer[AttrDescr]
     var attr: AttrDescr = null
-    val pat1 = Pattern.compile("[ \t]*@(author|return|see|since|throws|todo|version)[ \t]+(.*)")
-    val pat2 = Pattern.compile("[ \t]*@(param)[ \t]+(\\p{Alnum}*)[ \t]+(.*)")
+    val pat1 = Pattern.compile("[ \t]*@(author|return|see|since|todo|version)[ \t]+(.*)")
+    val pat2 = Pattern.compile("[ \t]*@(exception|param|throws)[ \t]+(\\p{Alnum}*)[ \t]+(.*)")
     val tok = new StringTokenizer(comment0, LINE_SEPARATOR)
     while (tok.hasMoreTokens) {
       val s = tok.nextToken.replaceFirst("\\p{Space}?\\*", "")
