@@ -1,7 +1,6 @@
 package scala.actors
 
 /**
-
  This class provides (together with <code>Channel</code>) an
  implementation of event-based actors (aka reactors).
 
@@ -101,7 +100,9 @@ private[actors] class StartTask(a: Reactor) extends Reaction {
       a.exit("normal")
     }
     catch {
-      case _: InterruptedException => a.exitLinked()
+      case _: InterruptedException => {
+        a.exitLinked()
+      }
       case d: SuspendActorException => {
         // do nothing (continuation is already saved)
       }

@@ -29,28 +29,24 @@ object TcpService {
 class TcpService(port: Int) extends Thread with Service {
   val serializer: JavaSerializer = new JavaSerializer(this)
 
-  private val internalNode = new TcpNode(InetAddress.getLocalHost().getHostAddress(), port)
-  def node: TcpNode = internalNode
+  private val internalNode = new Node(InetAddress.getLocalHost().getHostAddress(), port)
+  def node: Node = internalNode
 
   def send(node: Node, data: Array[byte]): unit = synchronized {
     // retrieve worker thread (if any) that already has connection
-    node match {
-      case tnode: TcpNode =>
-        getConnection(tnode) match {
-          case None =>
-            // we are not connected, yet
-            val newWorker = connect(tnode)
-            newWorker transmit data
-          case Some(worker) => worker transmit data
-        }
-      case any => error("no TcpNode!")
+    getConnection(node) match {
+      case None => {
+        // we are not connected, yet
+        val newWorker = connect(node)
+        newWorker transmit data
+      }
+      case Some(worker) => worker transmit data
     }
   }
 
   override def run(): Unit =
     try {
       val socket = new ServerSocket(port)
-
       while (true) {
         val nextClient = socket.accept()
         val worker = new TcpServiceWorker(this, nextClient)
@@ -65,31 +61,21 @@ class TcpService(port: Int) extends Thread with Service {
   // connection management
 
   private val connections =
-    new scala.collection.mutable.HashMap[TcpNode, TcpServiceWorker]
+    new scala.collection.mutable.HashMap[Node, TcpServiceWorker]
 
-  private[actors] def addConnection(node: TcpNode, worker: TcpServiceWorker) = synchronized {
+  private[actors] def addConnection(node: Node, worker: TcpServiceWorker) = synchronized {
     connections += node -> worker
   }
 
-  def getConnection(n: TcpNode) = synchronized {
+  def getConnection(n: Node) = synchronized {
     connections.get(n)
   }
 
   def isConnected(n: Node): Boolean = synchronized {
-    n match {
-      case tnode: TcpNode => !connections.get(tnode).isEmpty
-      case _ => false
-    }
+    !connections.get(n).isEmpty
   }
 
-  def connect(n: Node): Unit = synchronized {
-    n match {
-      case tnode: TcpNode =>
-      	connect(tnode)
-    }
-  }
-
-  def connect(n: TcpNode): TcpServiceWorker = synchronized {
+  def connect(n: Node): TcpServiceWorker = synchronized {
     val sock = new Socket(n.address, n.port)
     val worker = new TcpServiceWorker(this, sock)
     worker.sendNode(n)
@@ -99,16 +85,14 @@ class TcpService(port: Int) extends Thread with Service {
   }
 
   def disconnectNode(n: Node) = synchronized {
-    n match {
-      case node: TcpNode =>
-        connections.get(node) match {
-          case None => // do nothing
-          case Some(worker) => {
-            connections -= node
-            worker.halt
-          }
-        }
-      case any => error("no TcpNode.")
+    connections.get(n) match {
+      case None => {
+        // do nothing
+      }
+      case Some(worker) => {
+        connections -= n
+        worker.halt
+      }
     }
   }
 
@@ -123,7 +107,7 @@ class TcpService(port: Int) extends Thread with Service {
       case se: SecurityException => false
     }
 
-  def nodeDown(mnode: TcpNode): Unit = synchronized {
+  def nodeDown(mnode: Node): Unit = synchronized {
     connections -= mnode
   }
 }
@@ -139,9 +123,9 @@ class TcpServiceWorker(parent: TcpService, so: Socket) extends Thread {
   val reader = new BufferedReader(new InputStreamReader(in))
   val writer = new PrintWriter(new OutputStreamWriter(out))
 
-  var connectedNode: TcpNode = _
+  var connectedNode: Node = _
 
-  def sendNode(n: TcpNode) = {
+  def sendNode(n: Node) = {
     connectedNode = n
     parent.serializer.writeObject(dataout, parent.node)
   }
@@ -150,7 +134,7 @@ class TcpServiceWorker(parent: TcpService, so: Socket) extends Thread {
     //val node = parent.serializer.deserialize(reader)
     val node = parent.serializer.readObject(datain)
     node match {
-      case n: TcpNode => {
+      case n: Node => {
         connectedNode = n
         parent.addConnection(n, this)
       }

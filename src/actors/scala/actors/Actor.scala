@@ -573,9 +573,13 @@ object RemoteActor {
     }
 }
 
-abstract class Node
-case class TcpNode(address: String, port: Int) extends Node
-case class JxtaNode(group: String) extends Node
+
+/**
+ This class represents a machine node on a TCP network.
+
+ @author Philipp Haller
+ */
+case class Node(address: String, port: Int)
 
 
 /**
