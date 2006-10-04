@@ -155,7 +155,7 @@ object Predef {
 
   implicit def boolean2ordered(x: boolean): Ordered[boolean] = new Ordered[boolean] with Proxy {
     def self: Any = x
-    def compare (y: boolean) = if (x == y) 0 else if (x) 1 else 0
+    def compare (y: boolean) = if (x == y) 0 else if (x) 1 else -1
   }
 
   implicit def iterable2ordered[a <% Ordered[a]](xs: Iterable[a]): Ordered[Iterable[a]] =
