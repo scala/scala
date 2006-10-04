@@ -289,6 +289,7 @@ trait StdNames requires SymbolTable {
     val tag = newTermName("$tag")
     val wait_ = newTermName("wait")
     val xml = newTermName("xml")
+    val zip = newTermName("zip")
 
     val ZNOT = encode("!")
     val ZAND = encode("&&")

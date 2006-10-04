@@ -407,24 +407,71 @@ trait Namers requires Analyzer {
     private def methodSig(tparams: List[AbsTypeDef], vparamss: List[List[ValDef]],
                           tpt: Tree, rhs: Tree): Type = {
       val meth = context.owner
+
       val tparamSyms = typer.reenterTypeParams(tparams)
       val vparamSymss = enterValueParams(meth, vparamss)
-      val restype =
-	if (tpt.isEmpty) {
-	  tpt.tpe = if (meth.name == nme.CONSTRUCTOR) context.enclClass.owner.tpe
-		    else deconstIfNotFinal(meth, typer.computeType(rhs));
-	  tpt.tpe
-	} else typer.typedType(tpt).tpe;
-      def mkMethodType(vparams: List[Symbol], restpe: Type) = {
-	val formals = vparams map (.tpe);
-	if (!vparams.isEmpty && vparams.head.hasFlag(IMPLICIT)) ImplicitMethodType(formals, restpe)
-	else MethodType(formals, restpe);
+      if (tpt.isEmpty && meth.name == nme.CONSTRUCTOR) tpt.tpe = context.enclClass.owner.tpe
+
+      def makeMethodType(vparams: List[Symbol], restpe: Type) = {
+        val formals = vparams map (.tpe);
+        if (!vparams.isEmpty && vparams.head.hasFlag(IMPLICIT)) ImplicitMethodType(formals, restpe)
+        else MethodType(formals, restpe);
       }
-      makePolyType(
-	tparamSyms,
-	if (vparamSymss.isEmpty) PolyType(List(), restype)
-	else (vparamSymss :\ restype)(mkMethodType))
-    }
+
+      def thisMethodType(restype: Type) =
+        makePolyType(
+          tparamSyms,
+          if (vparamSymss.isEmpty) PolyType(List(), restype)
+          else (vparamSymss :\ restype)(makeMethodType))
+
+      if (meth.owner.isClass && (tpt.isEmpty || vparamss.exists(.exists(.tpt.isEmpty)))) {
+        // try to complete from matching definition in base type
+        for (val vparams <- vparamss; val vparam <- vparams)
+          if (vparam.tpt.isEmpty) vparam.symbol setInfo WildcardType
+        val schema = thisMethodType(if (tpt.isEmpty) WildcardType else typer.typedType(tpt).tpe)
+        val site = meth.owner.thisType
+        val overridden = intersectionType(meth.owner.info.parents).member(meth.name).filter(sym =>
+          sym != NoSymbol && (site.memberType(sym) matches schema))
+        if (overridden != NoSymbol && !(overridden hasFlag OVERLOADED)) {
+          var pt = site.memberType(overridden) match {
+            case PolyType(tparams, rt) => rt.substSym(tparamSyms, tparams)
+            case mt => mt
+          }
+          for (val vparams <- vparamss) {
+            var pfs = pt.paramTypes
+            for (val vparam <- vparams) {
+              if (vparam.tpt.isEmpty) {
+                vparam.tpt.tpe = pfs.head
+                vparam.symbol setInfo pfs.head
+              }
+              pfs = pfs.tail
+            }
+            pt = pt.resultType
+          }
+          if (tpt.isEmpty) {
+            // provisionally assign `meth' a method type with inherited result type
+            // that way, we can leave out the result type even if method is recursive.
+            meth setInfo thisMethodType(
+              pt match {
+                case PolyType(List(), rtpe) => rtpe
+                case MethodType(List(), rtpe) => rtpe
+                case _ => pt
+              })
+          }
+        }
+      }
+
+      for (val vparams <- vparamss; val vparam <- vparams; vparam.tpt.isEmpty) {
+        context.error(vparam.pos, "missing parameter type")
+        vparam.tpt.tpe = ErrorType
+      }
+
+      thisMethodType(
+        if (tpt.isEmpty) {
+          tpt.tpe = deconstIfNotFinal(meth, typer.computeType(rhs));
+          tpt.tpe
+        } else typer.typedType(tpt).tpe)
+     }
 
     /** If `sym' is an implicit value, check that its type signature `tp' is contractive.
      *  This means: The type of every implicit parameter is properly contained

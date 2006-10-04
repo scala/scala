@@ -301,6 +301,18 @@ abstract class TreeBuilder {
   def makeForYield(enums: List[Enumerator], body: Tree): Tree =
     makeFor(nme.map, nme.flatMap, enums, body)
 
+  /** Create tree for a lifted expression XX-LIFTING
+   */
+  def makeLifted(gs: List[ValFrom], body: Tree): Tree = {
+    def combine(gs: List[ValFrom]): ValFrom = gs match {
+      case g :: Nil => g
+      case ValFrom(pos1, pat1, rhs1) :: gs2 =>
+        val ValFrom(pos2, pat2, rhs2) = combine(gs2)
+        ValFrom(pos1, makeTuple(List(pat1, pat2), true), Apply(Select(rhs1, nme.zip), List(rhs2)))
+    }
+    makeForYield(List(combine(gs)), body)
+  }
+
   /** Create tree for a pattern alternative */
   def makeAlternative(ts: List[Tree]): Tree = {
     def alternatives(t: Tree): List[Tree] = t match {
