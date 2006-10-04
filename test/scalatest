@@ -508,8 +508,8 @@ FILES_MSIL="";
 FILES_SCRIPT="";
 FILES_DIS="";
 
-QUICK="$PREFIX/bin/quick/bin"
-QUICK_LIB="$PREFIX/bin/quick/lib/library"
+QUICK="$PREFIX/build/quick/bin"
+QUICK_LIB="$PREFIX/build/quick/lib/library"
 
 if [ -d "$PREFIX/dists" ]; then
     LATEST="$PREFIX/dists/latest/bin";

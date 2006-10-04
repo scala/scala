@@ -55,6 +55,16 @@ class ArrayBuffer[A] extends Buffer[A] with ResizableArray[A] {
     this
   }
 
+  /** returns the i-th element of this ArrayBuffer. Throws IndexOutOfBoundException if
+   *  i is out of bounds.
+   */
+  override def apply(i: Int) = {
+    if ((i < 0) || (i >= size))
+      throw new IndexOutOfBoundsException(i.toString())
+    else
+      array(i)
+  }
+
   /** Prepends a number of elements provided by an iterable object
    *  via its <code>elements</code> method. The identity of the
    *  buffer is returned.
@@ -72,13 +82,13 @@ class ArrayBuffer[A] extends Buffer[A] with ResizableArray[A] {
    */
   def insertAll(n: Int, iter: Iterable[A]): Unit = {
     if ((n < 0) || (n > size))
-      error("cannot insert element " + n + " in ListBuffer")
-    val xs = iter.elements.toList
-    val len = xs.length
-    ensureSize(size + len)
-    copy(n, n + len, size - n)
-    xs.copyToArray(array, n)
-    size = size + len
+      throw new IndexOutOfBoundsException("cannot insert element at " + n);
+    val xs = iter.elements.toList;
+    val len = xs.length;
+    ensureSize(size+len);
+    copy(n, n + len, size - n);
+    xs.copyToArray(array, n);
+    size = size + len;
   }
 
   /** Replace element at index <code>n</code> with the new element
@@ -87,14 +97,15 @@ class ArrayBuffer[A] extends Buffer[A] with ResizableArray[A] {
    *  @param n       the index of the element to replace.
    *  @param newelem the new element.
    */
-  def update(n: Int, newelem: A): Unit =
+  def update(n: Int, newelem: A): Unit = {
     if ((n < 0) || (n >= size))
-      error("cannot update element " + n + " in ArrayBuffer")
+      throw new IndexOutOfBoundsException("cannot update element at " + n);
     else {
       val res = array(n)
       array(n) = newelem
       res
     }
+  }
 
   /** Removes the element on a given index position.
    *
@@ -102,24 +113,26 @@ class ArrayBuffer[A] extends Buffer[A] with ResizableArray[A] {
    */
   def remove(n: Int): A = {
     if ((n < 0) || (n >= size))
-      error("cannot remove element " + n + " in Buffer")
-    val res = array(n)
-    copy(n + 1, n, size - n - 1)
-    size = size - 1
+      throw new IndexOutOfBoundsException("cannot remove element at " + n);
+    val res = array(n);
+    copy(n + 1, n, size - n - 1);
+    size = size - 1;
     res
   }
 
   /** Clears the buffer contents.
    */
-  def clear: Unit = { size = 0 }
+  def clear: Unit = {
+    size = 0;
+  }
 
   /** Return a clone of this buffer.
    *
    *  @return an <code>ArrayBuffer</code> with the same elements.
    */
   override def clone(): Buffer[A] = {
-    val res = new ArrayBuffer[A]
-    res ++= this
+    val res = new ArrayBuffer[A];
+    res ++= this;
     res
   }
 
@@ -130,9 +143,9 @@ class ArrayBuffer[A] extends Buffer[A] with ResizableArray[A] {
   override def equals(obj: Any): Boolean = obj match {
     case that: ArrayBuffer[A] =>
       this.length == that.length &&
-      elements.zip(that.elements).forall {
-        case Pair(thiselem, thatelem) => thiselem == thatelem
-      }
+    elements.zip(that.elements).forall {
+      case Pair(thiselem, thatelem) => thiselem == thatelem
+    }
     case _ =>
       false
   }

@@ -66,10 +66,13 @@ final class ListBuffer[A] extends Buffer[A] {
     else if (start.head == x) start = start.tail
     else {
       var cursor = start
-      while (!cursor.tail.isEmpty && cursor.tail.head != x)
-        cursor = cursor.tail
-      if (!cursor.tail.isEmpty)
-        cursor.asInstanceOf[scala.::[A]].tl = cursor.tail.tail
+      while (!cursor.tail.isEmpty && cursor.tail.head != x) { cursor = cursor.tail }
+      if (!cursor.tail.isEmpty) {
+        val z = cursor.asInstanceOf[scala.::[A]]
+        if(z.tl == last)
+          last = z
+	z.tl = cursor.tail.tail
+      }
     }
   }
 
@@ -110,21 +113,18 @@ final class ListBuffer[A] extends Buffer[A] {
    */
   def length: int = start.length
 
-  private def noElem(n: int): All =
-    error("element " + n + " does not exist in buffer")
-
   /** Returns the <code>n</code>th element of this list. This method
    *  yields an error if the element does not exist.
    */
   def apply(n: Int): A = try {
     start(n)
   } catch {
-    case ex: Error => noElem(n)
+    case ex: Error => throw new IndexOutOfBoundsException(n.toString())
   }
 
   /** Replace element at index <code>n</code> with the new element
-   *  <code>newelem</code>.
-   *
+   *  <code>newelem</code>. Throws IndexOutOfBoundsException if
+   *  n is out of bounds.
    *  @param n       the index of the element to replace.
    *  @param x       the new element.
    */
@@ -146,13 +146,13 @@ final class ListBuffer[A] extends Buffer[A] {
       cursor.asInstanceOf[scala.::[A]].tl = newElem
     }
   } catch {
-    case ex: Error => noElem(n)
+    case ex: Error => throw new IndexOutOfBoundsException(n.toString())
   }
 
   /** Inserts new elements at the index <code>n</code>. Opposed to method
    *  <code>update</code>, this method will not replace an element with a new
    *  one. Instead, it will insert a new element at index <code>n</code>.
-   *
+   *  Throws IndexOutOfBoundsException if n is out of bounds.
    *  @param n     the index where a new element will be inserted.
    *  @param iter  the iterable object providing all elements to insert.
    */
@@ -181,8 +181,9 @@ final class ListBuffer[A] extends Buffer[A] {
       }
     }
   } catch {
-    case ex: Error => noElem(n)
+    case ex: Error => throw new IndexOutOfBoundsException(n.toString())
   }
+
 
   /** Removes the element on a given index position.
    *
@@ -208,7 +209,7 @@ final class ListBuffer[A] extends Buffer[A] {
     }
     old
   } catch {
-    case ex: Error => noElem(n)
+    case ex: Error => throw new IndexOutOfBoundsException(n.toString())
   }
 
   /** Returns an iterator over all elements of this list.
