@@ -11,10 +11,12 @@ object scaladoc extends Command {
 
   protected def cn = new Error().getStackTrace()(0).getClassName()
 
+  val scalaLink = Link("Scala 2", "http://scala.epfl.ch/")
+
   val name = Section("NAME",
 
     MBold(command) & " " & NDash & " Documentation generator for the " &
-    Link("Scala 2", "http://scala.epfl.ch/") & " language")
+    scalaLink & " language")
 
   val synopsis = Section("SYNOPSIS",
 
@@ -35,12 +37,26 @@ object scaladoc extends Command {
   val description = Section("DESCRIPTION",
 
     "The " & MBold(command) & " tool reads class and object definitions, " &
-    "written in the Scala programming language, and generates their API as " &
-    "HTML files.",
+    "written in the " & scalaLink & " programming language, and generates " &
+    "their API as HTML files.",
 
     "By default, the generator puts each HTML file in the same directory as " &
     "its source file. You can specify a separate destination directory with " &
-    CmdOption("d") & "(see " & Link(Bold("OPTIONS"), "#options") & ", below).")
+    CmdOption("d") & "(see " & Link(Bold("OPTIONS"), "#options") & ", below).",
+
+    // tags are defined in class "scala.tools.nsc.doc.DocGenerator"
+    "Supported tag comments are:",
+
+    BulletList(
+      Mono("@author"), Mono("@deprecated"),
+      Mono("@exception") & " (two arguments)",
+      Mono("@param") & " (two arguments)",
+      Mono("@return"), Mono("@see"), Mono("@since"),
+      Mono("@throws") & " (two arguments)",
+      Mono("@todo"), Mono("@version")),
+
+    "See also online document \"" & Link("How to Write Doc Comments for the Javadoc Tool",
+    "http://java.sun.com/j2se/javadoc/writingdoccomments/") & "\" from Sun.")
 
   val options = Section("OPTIONS",
 
@@ -90,9 +106,9 @@ object scaladoc extends Command {
 
   def manpage = new Document {
     title = command
-    date = "June 8, 2006"
+    date = "October 4, 2006"
     author = "Stephane Micheloud"
-    version = "0.2"
+    version = "0.3"
     sections = List(
       name,
       synopsis,

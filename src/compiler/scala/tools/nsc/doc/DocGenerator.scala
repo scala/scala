@@ -126,7 +126,7 @@ abstract class DocGenerator extends Models {
     save(page(title, body, hasBody))
   }
 
-  val doctitle: NodeSeq =
+  private val doctitle: NodeSeq =
     <div class="doctitle-larger">
       {load(documentTitle)}
     </div>;
@@ -654,21 +654,29 @@ abstract class DocGenerator extends Models {
 
   //http://java.sun.com/j2se/1.5.0/docs/tooldocs/windows/javadoc.html#javadoctags
   //http://java.sun.com/j2se/javadoc/writingdoccomments/
+  //REMINDER: update file "src/manual/scala/man1/scaladoc.scala" accordingly!
   private def tag(name: String): NodeSeq =
     <b> {
       Text((name match {
-        case "author"    => "Author"
-        case "exception" => "Throws"
-        case "param"     => "Parameters"
-        case "return"    => "Returns"
-        case "see"       => "See Also"
-        case "since"     => "Since"
-        case "throws"    => "Throws"
-        case "todo"      => "Todo"
-        case "version"   => "Version"
+        case "author"     => "Author"
+        case "deprecated" => "Deprecated"
+        case "exception"  => "Throws"
+        case "param"      => "Parameters"
+        case "return"     => "Returns"
+        case "see"        => "See Also"
+        case "since"      => "Since"
+        case "throws"     => "Throws"
+        case "todo"       => "Todo"
+        case "version"    => "Version"
         case _ => name
       }) + ":")
     } </b>
+
+  // patterns for standard tags with 1 and 2 arguments
+  private val pat1 = Pattern.compile(
+    "[ \t]*@(author|deprecated|return|see|since|todo|version)[ \t]+(.*)")
+  private val pat2 = Pattern.compile(
+    "[ \t]*@(exception|param|throws)[ \t]+(\\p{Alnum}*)[ \t]+(.*)")
 
   def comment(comment: String, isShort: Boolean): NodeSeq = {
     var ret: List[Node] = Nil
@@ -683,8 +691,6 @@ abstract class DocGenerator extends Models {
     type AttrDescr = Triple[String, String, StringBuffer]
     val attributes = new ListBuffer[AttrDescr]
     var attr: AttrDescr = null
-    val pat1 = Pattern.compile("[ \t]*@(author|return|see|since|todo|version)[ \t]+(.*)")
-    val pat2 = Pattern.compile("[ \t]*@(exception|param|throws)[ \t]+(\\p{Alnum}*)[ \t]+(.*)")
     val tok = new StringTokenizer(comment0, LINE_SEPARATOR)
     while (tok.hasMoreTokens) {
       val s = tok.nextToken.replaceFirst("\\p{Space}?\\*", "")

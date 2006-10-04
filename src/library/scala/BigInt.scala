@@ -109,6 +109,10 @@ object BigInt {
   }
 }
 
+/**
+ *  @author  Martin Odersky
+ *  @version 1.0, 15/07/2003
+ */
 [serializable]
 class BigInt(val bigInteger: BigInteger) extends runtime.BoxedNumber {
 
@@ -312,28 +316,32 @@ class BigInt(val bigInteger: BigInteger) extends runtime.BoxedNumber {
   def charValue   = intValue.toChar
 
   /** Converts this BigInt to an <tt>int</tt>.
-   *  If the BigInt is too big to fit in a char, only the low-order 32 bits are returned.
-   *  Note that this conversion can lose information about the overall magnitude of the
-   *  BigInt value as well as return a result with the opposite sign.
+   *  If the BigInt is too big to fit in a char, only the low-order 32 bits
+   *  are returned. Note that this conversion can lose information about the
+   *  overall magnitude of the BigInt value as well as return a result with
+   *  the opposite sign.
    */
   def intValue    = this.bigInteger.intValue
 
   /** Converts this BigInt to a <tt>long</tt>.
-   *  If the BigInt is too big to fit in a char, only the low-order 64 bits are returned.
-   *  Note that this conversion can lose information about the overall magnitude of the
-   *  BigInt value as well as return a result with the opposite sign.
+   *  If the BigInt is too big to fit in a char, only the low-order 64 bits
+   *  are returned. Note that this conversion can lose information about the
+   *  overall magnitude of the BigInt value as well as return a result with
+   *  the opposite sign.
    */
   def longValue   = this.bigInteger.longValue
 
   /** Converts this BigInt to a <tt>float</tt>.
    *  if this BigInt has too great a magnitude to represent as a float,
-   *  it will be converted to Float.NEGATIVE_INFINITY or Float.POSITIVE_INFINITY as appropriate.
+   *  it will be converted to <code>Float.NEGATIVE_INFINITY</code> or
+   *  <code>Float.POSITIVE_INFINITY</code> as appropriate.
    */
   def floatValue  = this.bigInteger.floatValue
 
   /** Converts this BigInt to a <tt>double</tt>.
    *  if this BigInt has too great a magnitude to represent as a float,
-   *  it will be converted to Float.NEGATIVE_INFINITY or Float.POSITIVE_INFINITY as appropriate.
+   *  it will be converted to <code>Float.NEGATIVE_INFINITY</code> or
+   *  <code>Float.POSITIVE_INFINITY</code> as appropriate.
    */
   def doubleValue = this.bigInteger.doubleValue
 

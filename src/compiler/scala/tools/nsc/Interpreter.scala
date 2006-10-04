@@ -18,33 +18,40 @@ import reporters.{ConsoleReporter, Reporter}
 import symtab.Flags
 import util.SourceFile
 
-/** An interpreter for Scala code.
-
-    The main public entry points are compile() and interpret().  The compile()
-    method loads a complete Scala file.  The interpret() method executes one
-    line of Scala code at the request of the user.
-
-    The overall approach is based on compiling the requested code and then
-    using a Java classloader and Java reflection to run the code
-    and access its results.
-
-    In more detail, a single compiler instance is used
-    to accumulate all successfully compiled or interpreted Scala code.  To
-    "interpret" a line of code, the compiler generates a fresh object that
-    includes the line of code and which has public member(s) to export
-    all variables defined by that code.  To extract the result of an
-    interpreted line to show the user, a second "result object" is created
-    which imports the variables exported by the above object and then
-    exports a single member named "result".  To accomodate user expressions
-    that read from variables or methods defined in previous statements, "import"
-    statements are used.
-
-    This interpreter shares the strengths and weaknesses of using the
-    full compiler-to-Java.  The main strength is that interpreted code
-    behaves exactly as does compiled code, including running at full speed.
-    The main weakness is that redefining classes and methods is not handled
-    properly, because rebinding at the Java level is technically difficult.
-*/
+/** <p>
+ *    An interpreter for Scala code.
+ *  </p>
+ *  <p>
+ *    The main public entry points are <code>compile()</code> and
+ *    <code>interpret()</code>. The <code>compile()</code> method loads a
+ *    complete Scala file.  The <code>interpret()</code> method executes one
+ *    line of Scala code at the request of the user.
+ *  </p>
+ *  <p>
+ *    The overall approach is based on compiling the requested code and then
+ *    using a Java classloader and Java reflection to run the code
+ *    and access its results.
+ *  </p>
+ *  <p>
+ *    In more detail, a single compiler instance is used
+ *    to accumulate all successfully compiled or interpreted Scala code.  To
+ *    "interpret" a line of code, the compiler generates a fresh object that
+ *    includes the line of code and which has public member(s) to export
+ *    all variables defined by that code.  To extract the result of an
+ *    interpreted line to show the user, a second "result object" is created
+ *    which imports the variables exported by the above object and then
+ *    exports a single member named "result".  To accomodate user expressions
+ *    that read from variables or methods defined in previous statements, "import"
+ *    statements are used.
+ *  </p>
+ *  <p>
+ *    This interpreter shares the strengths and weaknesses of using the
+ *    full compiler-to-Java.  The main strength is that interpreted code
+ *    behaves exactly as does compiled code, including running at full speed.
+ *    The main weakness is that redefining classes and methods is not handled
+ *    properly, because rebinding at the Java level is technically difficult.
+ *  </p>
+ */
 class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) {
   import symtab.Names
   import compiler.Traverser
@@ -246,12 +253,16 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
       }
     }
 
-  /** Interpret one line of input.  All feedback, including parse errors
-   *  and evaluation results, are printed via the supplied compiler's
-   *  reporter.  Values defined are available for future interpreted
-   *  strings.
-   *  The return value is whether the line was interpreter successfully,
-   *  e.g. that there were no parse errors.
+  /** <p>
+   *    Interpret one line of input.  All feedback, including parse errors
+   *    and evaluation results, are printed via the supplied compiler's
+   *    reporter.  Values defined are available for future interpreted
+   *    strings.
+   *  </p>
+   *  <p>
+   *    The return value is whether the line was interpreter successfully,
+   *    e.g. that there were no parse errors.
+   *  </p>
    *
    *  @param line ...
    *  @return     ...
@@ -348,13 +359,16 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
   }
 
 
-  /** This instance is no longer needed, so release any resources
-      it is using.
-
-      Specifically, this deletes the temporary directory used for holding
-      class files for this instance.  This cannot safely be done after
-      each command is executed because of Java's demand loading.
-  */
+  /** <p>
+   *    This instance is no longer needed, so release any resources
+   *    it is using.
+   *  </p>
+   *  <p>
+   *    Specifically, this deletes the temporary directory used for holding
+   *    class files for this instance.  This cannot safely be done after
+   *    each command is executed because of Java's demand loading.
+   *  </p>
+   */
   def close: Unit =
     Interpreter.deleteRecursively(classfilePath)
 
@@ -648,8 +662,14 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
   }
 }
 
+/** The object <code>Interpreter</code> ...
+ */
 object Interpreter {
-  /** Delete a directory tree recursively.  Use with care! */
+
+  /** Delete a directory tree recursively.  Use with care!
+   *
+   *  @param path ...
+   */
   def deleteRecursively(path: File): Unit = {
     path match  {
       case _ if (!path.exists) => ()
@@ -660,4 +680,5 @@ object Interpreter {
       case _ => path.delete
     }
   }
+
 }
