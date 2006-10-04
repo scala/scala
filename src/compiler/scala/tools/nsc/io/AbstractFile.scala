@@ -60,15 +60,12 @@ object AbstractFile {
  *   a specified name or path and of a specified kind.
  * </p>
  * <p>
- *   bq: The interface allows to access the content as bytes and as chars.
- *   In fact, only the ClassFileParser should access bytes, because
- *   only there we know that the charset of the file is UTF-8. For
- *   all other cases, the <code>global.settings.encoding.value</code> must
- *   be respected.
+ *   The interface does <b>not</b> allow to access the content.
+ *   The class <code>symtab.classfile.AbstractFileReader</code> accesses
+ *   bytes, knowing that the character set of classfiles is UTF-8. For
+ *   all other cases, the class <code>SourceFile</code> is used, which honors
+ *   <code>global.settings.encoding.value</code>/
  * </p>
- * @todo it would be better if reading chars from sources was exclusively
- *       done in <code>SourceFile</code> and reading bytes for classfiles
- *       was done in <code>symtab.classfile.AbstractFileReader</code>.
  */
 abstract class AbstractFile extends Object with Iterable[AbstractFile] {
 
