@@ -155,7 +155,7 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
     node
   }
 
-  def pConstantPat(pos: PositionType, tpe: Type, value: Any /*AConstant*/) = {
+  def pConstantPat(pos: PositionType, tpe: Type, value: Any) = {
     //assert (tpe != null)
     val node = new ConstantPat(value)
     node.pos = pos
@@ -222,12 +222,8 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
    *  @return     ...
    */
   def newVar(pos: PositionType, name: Name, tpe: Type): Symbol = {
-    /** hack: pos has special meaning*/
-    val sym = owner.newVariable(pos, name)
-    //Console.println("patnodcre::newVar sym = "+sym+ "tpe = "+tpe)
+    val sym = owner.newVariable(pos, name) // careful: pos has special meaning
     sym.setInfo(tpe)
-    //System.out.println("PatternNodeCreator::newVar creates symbol "+sym)
-    //System.out.println("owner: "+sym.owner())
     sym
   }
 
@@ -245,7 +241,6 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
       var nref = 0
       var nsafeRef = 0
       override def traverse(tree: Tree) = tree match {
-	//case t:This  => incrThis
 	case t:Ident if t.symbol == sym =>
 	  nref = nref + 1
 	  if(sym.owner == currentOwner)  { // oldOwner should match currentOwner
@@ -261,7 +256,6 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
     class Subst(sym:Symbol,rhs:Tree) extends Transformer {
       var stop = false
       override def transform(tree: Tree) = tree match {
-	//case t:This  => incrThis
 	case t:Ident if t.symbol == sym =>
 	  stop = true
 	  rhs
@@ -367,23 +361,6 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
       //Console.println("patternArgs returns "+res.toString())
       res
     }
-
-   /* currently no need for extendedSeqApply, ArrayValue in Elem(... _*) style patterns
-    * handled in the ArrayValue case
-  protected def isExtendedSeqApply( tree: Apply  ): Boolean =  { // NEW
-   // Console.print("isSeqApply? "+tree.toString());
-   // val res =
-        tree match {
-          case Apply(_, list) if list.last.isInstanceOf[ArrayValue] =>
-            (tree.tpe.symbol.flags & Flags.CASE) == 0
-          case _ => false;
-        }
-        //Console.println(res);
-        //res;
-  }
-  */
-
-   //protected var lastSequencePat: PatternNode = null; // hack to optimize sequence matching
 
   protected def patternNode(tree:Tree , header:Header , env: CaseEnv ): PatternNode  = {
     //if(tree!=null) Console.println("patternNode("+tree+","+header+")");
@@ -562,35 +539,23 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
     //Console.println("  casted.tpe"+casted.tpe);
     //Console.println("  casted.pos "+casted.pos+"  equals firstpos?"+(casted.pos == Position.FIRSTPOS));
     val ident = typed(Ident(casted))
-    if (casted.pos == Position.FIRSTPOS) {
+    if (casted.pos == Position.FIRSTPOS) { // load the result of casted(i)
       //Console.println("FIRSTPOS");
 
       //Console.println("DEBUG")
       //Console.println()
 
       val t = typed(
-        Apply(Select(ident, ident.tpe.member(nme.apply)/* scalac: defs.functionApply( 1 )*/),
-              List(Literal(Constant(index)))));
+        Apply(Select(ident, ident.tpe.member(nme.apply)),
+              List(Literal(Constant(index)))))
       val seqType = t.tpe
       pHeader( pos, seqType, t )
     } else {
-      //Console.println("NOT FIRSTPOS");
-     // Console.println("newHeader :: casted="+casted);
-     // Console.println("newHeader :: casted.tpe="+casted.tpe);
-      //Console.println("newHeader :: ");
       val caseAccs = casted.tpe.symbol.caseFieldAccessors;
       if (caseAccs.length <= index) System.out.println("selecting " + index + " in case fields of " + casted.tpe.symbol + "=" + casted.tpe.symbol.caseFieldAccessors);//debug
       val ts = caseAccs(index);
-      //Console.println("newHeader :: ts="+ts);
-      //val accType = casted.tpe.memberType(ts); // old scalac
-      //val accTree = global.typer.typed(Select(ident, ts)); // !
-
-      val accTree = typed(Apply(Select(ident, ts), List())) // nsc !
+      val accTree = typed(Apply(Select(ident, ts), List()))
       val accType = accTree.tpe
-      //Console.println("newHeader :: accType="+accType);
-      //Console.println("newHeader :: accType.resultType ="+accType.resultType);
-      //Console.println("accTree.tpe =="+accTree.tpe);
-
       accType match {
         // scala case accessor
         case MethodType(_, _) =>
@@ -1289,7 +1254,7 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
                       toTree(node.and),
                       toTree(node.or, selector.duplicate));
           case _ =>
-            scala.Predef.error("can't plant this tree");
+            scala.Predef.error("cannot handle pattern:"+node);
         }
     }
   }
