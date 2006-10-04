@@ -2,7 +2,7 @@ package examples.actors
 
 import scala.actors.Actor._
 import scala.actors.RemoteActor._
-import scala.actors.{Actor,TcpNode}
+import scala.actors.{Actor,Node}
 
 case object Incr
 case object Value
@@ -25,15 +25,9 @@ object RemoteCounter extends Application {
   }
 
   actor {
-    val c = select(TcpNode("127.0.0.1", 9010), 'counter)
-
+    val c = select(Node("127.0.0.1", 9010), 'counter)
     c ! Incr
     c ! Incr
-
-    try { Thread.sleep(1000) } catch {
-      case ie: InterruptedException =>
-    }
-
     c ! Value
     receive {
       case Result(v) => {
