@@ -22,7 +22,7 @@ import scala.collection.mutable.MutableList
  *
  * @author  Martin Odersky
  * @version 1.0
- * @see     scala.tools.nsc.backend.icode.Linearizers
+ * @see     <a href="icode/Linearizers.html" target="contentFrame">scala.tools.nsc.backend.icode.Linearizers</a>
  */
 trait WorklistAlgorithm {
   type Elem
@@ -34,6 +34,8 @@ trait WorklistAlgorithm {
    * Run the iterative algorithm until the worklist
    * remains empty. The initializer is run once before
    * the loop starts and should initialize the worklist.
+   *
+   * @param initWorklist ...
    */
   def run(initWorklist: => Unit) = {
     initWorklist

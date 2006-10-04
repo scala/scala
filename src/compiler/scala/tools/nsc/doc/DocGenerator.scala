@@ -696,8 +696,7 @@ abstract class DocGenerator extends Models {
         val mat2 = pat2.matcher(s)
         if (mat2.matches) {
           attr = Triple(mat2.group(1), mat2.group(2), new StringBuffer(mat2.group(3)))
-          if (isShort)
-            attributes += attr
+          attributes += attr
         } else if (attr != null)
           attr._3.append(s + LINE_SEPARATOR)
         else

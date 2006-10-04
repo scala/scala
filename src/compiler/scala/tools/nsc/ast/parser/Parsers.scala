@@ -6,8 +6,7 @@
 
 package scala.tools.nsc.ast.parser
 
-import scala.tools.nsc.util.Position
-import util.ListBuffer
+import scala.tools.nsc.util.{ListBuffer, Position}
 import symtab.Flags
 import Tokens._
 
@@ -51,9 +50,9 @@ import Tokens._
 trait Parsers requires SyntaxAnalyzer {
 
   import global._
-  import RequiresIntsAsPositions._;
+  import RequiresIntsAsPositions._
   private val glob: global.type = global
-  import global.posAssigner.atPos;
+  import global.posAssigner.atPos
 
   class Parser(unit: global.CompilationUnit) {
 
@@ -84,7 +83,7 @@ trait Parsers requires SyntaxAnalyzer {
 /////// ERROR HANDLING //////////////////////////////////////////////////////
 
     private def skip(): unit = {
-      //System.out.println("<skipping> " + in.token2string(in.token));//DEBUG
+      //System.out.println("<skipping> " + in.token2string(in.token))//DEBUG
       var nparens = 0
       var nbraces = 0
       while (true) {
@@ -149,7 +148,8 @@ trait Parsers requires SyntaxAnalyzer {
     /** StatementSeparator = NewLine | `;'
      *  NewLine  = `\n' // where allowed
      */
-    def acceptStatSep(): unit = if (in.token == NEWLINE) in.nextToken() else accept(SEMI)
+    def acceptStatSep(): unit =
+      if (in.token == NEWLINE) in.nextToken() else accept(SEMI)
 
     def errorTypeTree = TypeTree().setType(ErrorType).setPos(in.currentPos)
     def errorTermTree = Literal(Constant(null)).setPos(in.currentPos)
@@ -1063,15 +1063,15 @@ trait Parsers requires SyntaxAnalyzer {
       val pos = in.currentPos
       val t = pattern1(seqOK)
       if (isIdent && in.name == BAR) {
-        val ts = new ListBuffer[Tree] + t;
+        val ts = new ListBuffer[Tree] + t
         while (isIdent && in.name == BAR) {
-          in.nextToken(); ts += pattern1(seqOK);
+          in.nextToken(); ts += pattern1(seqOK)
         }
         atPos(pos) { makeAlternative(ts.toList) }
       } else t
     }
 
-    def pattern(): Tree = pattern(false);
+    def pattern(): Tree = pattern(false)
 
     /**   Pattern1    ::= varid `:' Type1
      *                 |  `_' `:' Type1
@@ -1135,9 +1135,9 @@ trait Parsers requires SyntaxAnalyzer {
       }
       while (isIdent && in.name != BAR) {
         top = reduceStack(
-          false, base, top, precedence(in.name), treeInfo.isLeftAssoc(in.name));
-        opstack = OpInfo(top, in.name, in.currentPos) :: opstack;
-        ident();
+          false, base, top, precedence(in.name), treeInfo.isLeftAssoc(in.name))
+        opstack = OpInfo(top, in.name, in.currentPos) :: opstack
+        ident()
         top = simplePattern(seqOK)
       }
       reduceStack(false, base, top, 0, true)
@@ -1189,14 +1189,14 @@ trait Parsers requires SyntaxAnalyzer {
         accept(RPAREN)
         p
       case XMLSTART =>
-        val r = xmlp.xLiteralPattern;
+        val r = xmlp.xLiteralPattern
         //Console.println("successfully parsed xml pattern "+r); DEBUG
         r
       case _ =>
         if (settings.migrate.value &&
             in.token == MATCH || in.token == REQUIRES || in.token == IMPLICIT)
           syntaxErrorMigrate(""+in+" is now a reserved word; cannot be used as identifier");
-        syntaxError("illegal start of simple pattern", true);
+        syntaxError("illegal start of simple pattern", true)
         errorPatternTree
     }
 
@@ -1286,23 +1286,23 @@ trait Parsers requires SyntaxAnalyzer {
       var caseParam = ofCaseClass
       def param(): ValDef = {
         atPos(in.currentPos) {
-          val attrs = attributeClauses();
-          var mods = Modifiers(Flags.PARAM);
+          val attrs = attributeClauses()
+          var mods = Modifiers(Flags.PARAM)
           if (owner.isTypeName) {
-            mods = modifiers() | Flags.PARAMACCESSOR;
+            mods = modifiers() | Flags.PARAMACCESSOR
             if (in.token == VAL) {
               in.nextToken()
             } else if (in.token == VAR) {
-              mods = mods | Flags.MUTABLE;
+              mods = mods | Flags.MUTABLE
               in.nextToken()
             } else {
               if (mods.flags != Flags.PARAMACCESSOR) accept(VAL);
-              if (!(caseParam)) mods = mods | Flags.PRIVATE | Flags.LOCAL;
+              if (!(caseParam)) mods = mods | Flags.PRIVATE | Flags.LOCAL
             }
-            if (caseParam) mods = mods | Flags.CASEACCESSOR;
+            if (caseParam) mods = mods | Flags.CASEACCESSOR
           }
-          val name = ident();
-          accept(COLON);
+          val name = ident()
+          accept(COLON)
           val bynamemod =
             if (in.token == ARROW) {
               if (owner.isTypeName && !mods.hasFlag(Flags.LOCAL))
@@ -1316,12 +1316,12 @@ trait Parsers requires SyntaxAnalyzer {
         }
       }
       def paramClause(): List[ValDef] = {
-        val params = new ListBuffer[ValDef];
+        val params = new ListBuffer[ValDef]
         if (in.token != RPAREN) {
           if (in.token == IMPLICIT) {
             if (!implicitViews.isEmpty)
               syntaxError("cannot have both view bounds `<%' and implicit parameters", false);
-            in.nextToken();
+            in.nextToken()
             implicitmod = Flags.IMPLICIT
           }
           params += param();
@@ -1331,17 +1331,17 @@ trait Parsers requires SyntaxAnalyzer {
         }
         params.toList
       }
-      val vds = new ListBuffer[List[ValDef]];
-      val pos = in.currentPos;
-      newLineOptWhenFollowedBy(LPAREN);
+      val vds = new ListBuffer[List[ValDef]]
+      val pos = in.currentPos
+      newLineOptWhenFollowedBy(LPAREN)
       while (implicitmod == 0 && in.token == LPAREN) {
-        in.nextToken();
-        vds += paramClause();
-        accept(RPAREN);
-        caseParam = false;
-        newLineOptWhenFollowedBy(LPAREN);
+        in.nextToken()
+        vds += paramClause()
+        accept(RPAREN)
+        caseParam = false
+        newLineOptWhenFollowedBy(LPAREN)
       }
-      val result = vds.toList;
+      val result = vds.toList
       if (owner == nme.CONSTRUCTOR &&
           (result.isEmpty ||
            (!result.head.isEmpty && result.head.head.mods.hasFlag(Flags.IMPLICIT))))
@@ -1378,17 +1378,17 @@ trait Parsers requires SyntaxAnalyzer {
      */
     def typeParamClauseOpt(owner: Name, implicitViews: ListBuffer[Tree]): List[AbsTypeDef] = {
       def typeParam(): AbsTypeDef = {
-        var mods = Modifiers(Flags.PARAM);
+        var mods = Modifiers(Flags.PARAM)
         if (owner.isTypeName && isIdent) {
           if (in.name == PLUS) {
-            in.nextToken();
-            mods = mods | Flags.COVARIANT;
+            in.nextToken()
+            mods = mods | Flags.COVARIANT
           } else if (in.name == MINUS) {
-            in.nextToken();
-            mods = mods | Flags.CONTRAVARIANT;
+            in.nextToken()
+            mods = mods | Flags.CONTRAVARIANT
           }
         }
-        val pname = ident();
+        val pname = ident()
         val param = atPos(in.currentPos) { typeBounds(mods, pname) }
         if (in.token == VIEWBOUND && (implicitViews != null))
           implicitViews += atPos(in.skipToken()) {
@@ -1427,10 +1427,10 @@ trait Parsers requires SyntaxAnalyzer {
     /** Import  ::= import ImportExpr {`,' ImportExpr}
      */
     def importClause(): List[Tree] = {
-      accept(IMPORT);
-      val ts = new ListBuffer[Tree] + importExpr();
+      accept(IMPORT)
+      val ts = new ListBuffer[Tree] + importExpr()
       while (in.token == COMMA) {
-        in.nextToken(); ts += importExpr();
+        in.nextToken(); ts += importExpr()
       }
       ts.toList
     }
@@ -1439,8 +1439,8 @@ trait Parsers requires SyntaxAnalyzer {
      */
     def importExpr(): Tree =
       atPos(in.currentPos) {
-        var t: Tree = null;
-        var pos = 0;
+        var t: Tree = null
+        var pos = 0
         if (in.token == THIS) {
           t = atPos(in.currentPos) { This(nme.EMPTY.toTypeName) }
           t = atPos(accept(DOT)) { selector(t) }
@@ -1454,12 +1454,12 @@ trait Parsers requires SyntaxAnalyzer {
             t = atPos(accept(DOT)) { selector(t) }
             pos = accept(DOT);
           } else {
-            t = i;
+            t = i
           }
         }
         def loop: Tree =
           if (in.token == USCORE) {
-            in.nextToken();
+            in.nextToken()
             Import(t, List(Pair(nme.WILDCARD, null)))
           } else if (in.token == LBRACE) {
             Import(t, importSelectors())
@@ -1467,10 +1467,10 @@ trait Parsers requires SyntaxAnalyzer {
             val name = ident();
             if (in.token == DOT) {
               t = atPos(pos) { Select(t, name) }
-              pos = accept(DOT);
+              pos = accept(DOT)
               loop
             } else {
-              Import(t, List(Pair(name, name)));
+              Import(t, List(Pair(name, name)))
             }
           }
         loop
@@ -1479,14 +1479,14 @@ trait Parsers requires SyntaxAnalyzer {
     /** ImportSelectors ::= `{' {ImportSelector `,'} (ImportSelector | `_') `}'
      */
     def importSelectors(): List[Pair[Name, Name]] = {
-      val names = new ListBuffer[Pair[Name, Name]];
-      accept(LBRACE);
-      var isLast = importSelector(names);
+      val names = new ListBuffer[Pair[Name, Name]]
+      accept(LBRACE)
+      var isLast = importSelector(names)
       while (!isLast && in.token == COMMA) {
-        in.nextToken();
-        isLast = importSelector(names);
+        in.nextToken()
+        isLast = importSelector(names)
       }
-      accept(RBRACE);
+      accept(RBRACE)
       names.toList
     }
 
@@ -1496,7 +1496,7 @@ trait Parsers requires SyntaxAnalyzer {
       if (in.token == USCORE) {
         in.nextToken(); names += Pair(nme.WILDCARD, null); true
       } else {
-        val name = ident();
+        val name = ident()
         names += Pair(
           name,
           if (in.token == ARROW) {
@@ -1518,7 +1518,7 @@ trait Parsers requires SyntaxAnalyzer {
      *           | def FunDcl
      *           | type [NewLine] TypeDcl
      */
-    def defOrDcl(mods: Modifiers): List[Tree] = {
+    def defOrDcl(mods: Modifiers): List[Tree] =
       in.token match {
         case VAL =>
           patDefOrDcl(mods)
@@ -1533,7 +1533,6 @@ trait Parsers requires SyntaxAnalyzer {
         case _ =>
           List(tmplDef(mods))
       }
-    }
 
     /** PatDef ::= Pattern2 {`,' Pattern2} [`:' Type] `=' Expr
      *  ValDcl ::= Id {`,' Id} `:' Type
@@ -1582,17 +1581,17 @@ trait Parsers requires SyntaxAnalyzer {
       do {
         lhs += Pair(in.skipToken(), ident())
       } while (in.token == COMMA);
-      val tp = typedOpt();
+      val tp = typedOpt()
       val rhs = if (tp.isEmpty || in.token == EQUALS) {
         accept(EQUALS);
         if (!tp.isEmpty && in.token == USCORE) {
-          in.nextToken();
+          in.nextToken()
           EmptyTree
         } else {
           expr()
         }
       } else {
-        newmods = newmods | Flags.DEFERRED;
+        newmods = newmods | Flags.DEFERRED
         EmptyTree
       }
       for (val Pair(pos, name) <- lhs.toList) yield
@@ -1608,22 +1607,22 @@ trait Parsers requires SyntaxAnalyzer {
     def funDefOrDcl(mods: Modifiers): Tree =
       atPos(in.skipToken()) {
         if (in.token == THIS) {
-          in.nextToken();
-          val vparamss = paramClauses(nme.CONSTRUCTOR, List(), false);
+          in.nextToken()
+          val vparamss = paramClauses(nme.CONSTRUCTOR, List(), false)
           val rhs = if (in.token == LBRACE) constrBlock()
                     else { accept(EQUALS); constrExpr() }
           DefDef(mods, nme.CONSTRUCTOR, List(), vparamss, TypeTree(), rhs)
         } else {
-          var newmods = mods;
-          val name = ident();
-          val implicitViews = new ListBuffer[Tree];
-          val tparams = typeParamClauseOpt(name, implicitViews);
-          val vparamss = paramClauses(name, implicitViews.toList, false);
-          var restype = typedOpt();
+          var newmods = mods
+          val name = ident()
+          val implicitViews = new ListBuffer[Tree]
+          val tparams = typeParamClauseOpt(name, implicitViews)
+          val vparamss = paramClauses(name, implicitViews.toList, false)
+          var restype = typedOpt()
           val rhs =
             if (in.token == SEMI || in.token == NEWLINE || in.token == RBRACE) {
               if (restype.isEmpty) restype = scalaUnitConstr
-              newmods = newmods | Flags.DEFERRED;
+              newmods = newmods | Flags.DEFERRED
               EmptyTree
             } else if (restype.isEmpty && in.token == LBRACE) {
               restype = scalaUnitConstr
@@ -1750,14 +1749,14 @@ trait Parsers requires SyntaxAnalyzer {
         val argss = new ListBuffer[List[Tree]];
         if (in.token == EXTENDS) {
           in.nextToken();
-          val parent = simpleType();
+          val parent = simpleType()
           // System.err.println("classTempl: " + parent);
-          parents += parent;
+          parents += parent
           if (in.token == LPAREN)
             do { argss += argumentExprs() } while (in.token == LPAREN)
           else argss += List();
           while (in.token == WITH) {
-            in.nextToken();
+            in.nextToken()
             parents += simpleType()
           }
         } else {
@@ -1833,13 +1832,13 @@ trait Parsers requires SyntaxAnalyzer {
                    in.token == CASEOBJECT ||
                    in.token == LBRACKET ||
                    isModifier) {
-          val attrs = attributeClauses();
+          val attrs = attributeClauses()
           (stats ++
-             joinAttributes(attrs, joinComment(List(tmplDef(modifiers() | mixinAttribute(attrs))))))
+             joinAttributes(attrs, joinComment(List(tmplDef(modifiers()/*| mixinAttribute(attrs)*/)))))
         } else if (in.token != SEMI && in.token != NEWLINE) {
           syntaxError("illegal start of class or object definition", true)
         }
-        if (in.token != RBRACE && in.token != EOF) acceptStatSep();
+        if (in.token != RBRACE && in.token != EOF) acceptStatSep()
       }
       stats.toList
     }
@@ -1852,20 +1851,20 @@ trait Parsers requires SyntaxAnalyzer {
      *                     |
      */
     def templateStatSeq(): List[Tree] = {
-      val stats = new ListBuffer[Tree];
+      val stats = new ListBuffer[Tree]
       while (in.token != RBRACE && in.token != EOF) {
         if (in.token == IMPORT) {
           stats ++= importClause()
         } else if (isExprIntro) {
           stats += expr()
         } else if (isDefIntro || isModifier || in.token == LBRACKET) {
-          val attrs = attributeClauses();
+          val attrs = attributeClauses()
           (stats ++
-             joinAttributes(attrs, joinComment(defOrDcl(modifiers() | mixinAttribute(attrs)))))
+             joinAttributes(attrs, joinComment(defOrDcl(modifiers()/*| mixinAttribute(attrs)*/))))
         } else if (in.token != SEMI && in.token != NEWLINE) {
-          syntaxError("illegal start of definition", true);
+          syntaxError("illegal start of definition", true)
         }
-        if (in.token != RBRACE && in.token != EOF) acceptStatSep();
+        if (in.token != RBRACE && in.token != EOF) acceptStatSep()
       }
       stats.toList
     }
@@ -1898,8 +1897,8 @@ trait Parsers requires SyntaxAnalyzer {
         accept(EQUALS)
         atPos(pos) { Assign(aname, liftingScope(prefixExpr())) }
       }
-      val pos = in.currentPos;
-      var t: Tree = convertToTypeId(stableId());
+      val pos = in.currentPos
+      var t: Tree = convertToTypeId(stableId())
       if (in.token == LBRACKET)
         t = atPos(in.currentPos)(AppliedTypeTree(t, typeArgs()));
       val args = if (in.token == LPAREN) argumentExprs() else List();
@@ -1907,7 +1906,7 @@ trait Parsers requires SyntaxAnalyzer {
         in.nextToken()
         val nvps = new ListBuffer[Tree] + nameValuePair()
         while (in.token == COMMA) {
-          in.nextToken();
+          in.nextToken()
           nvps += nameValuePair()
         }
         accept(RBRACE);
@@ -1916,7 +1915,7 @@ trait Parsers requires SyntaxAnalyzer {
       val constr = atPos(pos) { New(t, List(args)) }
       glob.Attribute(constr, nameValuePairs) setPos pos
     }
-
+/*  //DEPRECATED
     def mixinAttribute(attrs: List[Tree]) = {
       def isMixinAttribute(attr: Tree) = attr match {
         case Apply(Select(New(Ident(name)), constr), List())
@@ -1927,7 +1926,7 @@ trait Parsers requires SyntaxAnalyzer {
       }
       if (attrs exists isMixinAttribute) Flags.TRAIT else 0
     }
-
+*/
     def joinAttributes(attrs: List[Attribute], defs: List[Tree]): List[Tree] = {
       def setAttr(defn: Tree): Unit = defn match {
         case DocDef(_, def0) => setAttr(def0)
@@ -1977,20 +1976,19 @@ trait Parsers requires SyntaxAnalyzer {
       }
       while ((in.token != RBRACE) && (in.token != EOF) && (in.token != CASE)) {
         if (in.token == IMPORT) {
-          stats ++= importClause();
-          acceptStatSep();
+          stats ++= importClause()
+          acceptStatSep()
         } else if (isExprIntro) {
-          stats += blockStatExpr();
-          if (in.token != RBRACE && in.token != CASE) acceptStatSep();
+          stats += blockStatExpr()
+          if (in.token != RBRACE && in.token != CASE) acceptStatSep()
         } else if (isDefIntro) {
           localDef(NoMods)
         } else if (isLocalModifier) {
           localDef(localModifiers())
         } else if (in.token == SEMI || in.token == NEWLINE) {
-          in.nextToken();
-        } else {
-          syntaxError("illegal start of statement", true);
-        }
+          in.nextToken()
+        } else
+          syntaxError("illegal start of statement", true)
       }
       stats.toList
     }
