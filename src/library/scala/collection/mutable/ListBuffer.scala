@@ -60,14 +60,15 @@ final class ListBuffer[A] extends Buffer[A] {
    *
    *  @param x  the element to remove.
    */
-  def -= (x: A): unit = {
+  override def -= (x: A): unit = {
     if (exported) copy()
     if (start.isEmpty) {}
     else if (start.head == x) start = start.tail
     else {
       var cursor = start
       while (!cursor.tail.isEmpty && cursor.tail.head != x) { cursor = cursor.tail }
-      if (!cursor.tail.isEmpty) cursor.asInstanceOf[scala.::[A]].tl = cursor.tail.tail
+      if (!cursor.tail.isEmpty)
+	cursor.asInstanceOf[scala.::[A]].tl = cursor.tail.tail
     }
   }
 

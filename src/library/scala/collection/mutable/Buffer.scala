@@ -97,6 +97,16 @@ trait Buffer[A] extends AnyRef
      */
     def +:(elem: A): Buffer[A];
 
+    /** Removes a single element from this buffer, at its first occurrence.
+     *  If the list does not contain that element, it is unchanged
+     *
+     *  @param x  the element to remove.
+     */
+    def -= (x: A): unit = {
+      val i = indexOf(x)
+      if(i != -1) remove(i)
+    }
+
     /** Prepends a number of elements provided by an iterable object
      *  via its <code>elements</code> method. The identity of the
      *  buffer is returned.
