@@ -123,6 +123,7 @@ class Settings(error: String => unit) {
   val Xgenerics     = BooleanSetting("-Xgenerics", "Use generic Java types")
   val Xprintpos     = BooleanSetting("-Xprintpos", "Print tree positions (as offsets)")
   val Xscript       = BooleanSetting("-Xscript", "compile script file")
+  val Xexperimental = BooleanSetting("-Xexpermental", "enable experimental extensions")
 
   /** A list of all settings */
   def allSettings: List[Setting] = allsettings.reverse
