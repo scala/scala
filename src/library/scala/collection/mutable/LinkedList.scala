@@ -9,7 +9,7 @@
 // $Id$
 
 
-package scala.collection.mutable;
+package scala.collection.mutable
 
 /** This class implements single linked lists where both the head (<code>elem</code>)
  *  and the tail (<code>next</code>) are mutable.
@@ -22,12 +22,11 @@ class LinkedList[A](var elem: A, var next: LinkedList[A])
   extends SingleLinkedList[A, LinkedList[A]]
 {
 
-  override def equals(obj: Any): Boolean = (
-    obj.isInstanceOf[LinkedList[A]]
-      && toList.equals((obj.asInstanceOf[LinkedList[A]]).toList)
-  );
+  override def equals(obj: Any): Boolean =
+    obj.isInstanceOf[LinkedList[A]] &&
+    toList.equals((obj.asInstanceOf[LinkedList[A]]).toList)
 
-  override protected def stringPrefix: String = "LinkedList";
+  override protected def stringPrefix: String = "LinkedList"
 }
 
 

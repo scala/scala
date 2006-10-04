@@ -9,7 +9,7 @@
 // $Id$
 
 
-package scala.collection.mutable;
+package scala.collection.mutable
 
 
 /** A revertable history is a <code>History</code> object which supports
@@ -23,11 +23,11 @@ package scala.collection.mutable;
 [serializable]
 class RevertableHistory[A <: Undoable, B] extends History[A, B] with Undoable {
 
-    /** Rollback the full history.
-     */
-    def undo: Unit = {
-        val old = log.toList.reverse;
-        clear;
-        old.foreach { case Pair(sub, event) => event.undo; }
-    }
+  /** Rollback the full history.
+   */
+  def undo: Unit = {
+    val old = log.toList.reverse
+    clear
+    old.foreach { case Pair(sub, event) => event.undo }
+  }
 }

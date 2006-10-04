@@ -9,7 +9,7 @@
 // $Id$
 
 
-package scala.collection.mutable;
+package scala.collection.mutable
 
 
 /** This is a simple wrapper class for <code>scala.collection.mutable.Set</code>.
@@ -21,33 +21,35 @@ package scala.collection.mutable;
  */
 trait SetProxy[A] extends Set[A] with collection.SetProxy[A] {
 
-    def self: Set[A];
+  def self: Set[A]
 
-    override def update(elem: A, included: Boolean): Unit = self(elem) = included;
+  override def update(elem: A, included: Boolean): Unit = self(elem) = included
 
-    def +=(elem: A): Unit = self += elem;
+  def +=(elem: A): Unit = self += elem
 
-    override def ++=(that: Iterable[A]): Unit = self ++= that;
+  override def ++=(that: Iterable[A]): Unit = self ++= that
 
-    override def ++=(it: Iterator[A]): Unit = self ++= it;
+  override def ++=(it: Iterator[A]): Unit = self ++= it
 
-    override def incl(elems: A*): Unit = self ++= elems;
+  override def incl(elems: A*): Unit = self ++= elems
 
-    def -=(elem: A): Unit = self -= elem;
+  def -=(elem: A): Unit = self -= elem
 
-    override def --=(that: Iterable[A]): Unit = self --= that;
+  override def --=(that: Iterable[A]): Unit = self --= that
 
-    override def --=(it: Iterator[A]): Unit = self --= it;
+  override def --=(it: Iterator[A]): Unit = self --= it
 
-    override def excl(elems: A*): Unit = self --= elems;
+  override def excl(elems: A*): Unit = self --= elems
 
-    override def intersect(that: Set[A]): Unit = self.intersect(that);
+  override def intersect(that: Set[A]): Unit = self.intersect(that)
 
-    def clear: Unit = self.clear;
+  def clear: Unit = self.clear
 
-    override def filter(p: A => Boolean): Unit =  self.filter(p);
+  override def filter(p: A => Boolean): Unit =  self.filter(p)
 
-    override def <<(cmd: Message[A]): Unit = self << cmd;
+  override def <<(cmd: Message[A]): Unit = self << cmd
 
-    override def clone(): Set[A] = new SetProxy[A] { def self = SetProxy.this.self.clone() }
+  override def clone(): Set[A] = new SetProxy[A] {
+    def self = SetProxy.this.self.clone()
+  }
 }

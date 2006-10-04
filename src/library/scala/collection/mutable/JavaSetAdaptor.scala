@@ -9,7 +9,7 @@
 // $Id$
 
 
-package scala.collection.mutable;
+package scala.collection.mutable
 
 
 /** This class can be used as an adaptor to create mutable sets from
@@ -20,27 +20,27 @@ package scala.collection.mutable;
  */
 class JavaSetAdaptor[A](jset: java.util.Set) extends Set[A] {
 
-    def size: Int = jset.size();
+  def size: Int = jset.size()
 
-    override def isEmpty: Boolean = jset.isEmpty();
+  override def isEmpty: Boolean = jset.isEmpty()
 
-    def contains(elem: A): Boolean = jset.contains(elem);
+  def contains(elem: A): Boolean = jset.contains(elem)
 
-    def elements: Iterator[A] = new Iterator[A] {
-        val iter = jset.iterator();
-        def hasNext = iter.hasNext();
-        def next = iter.next().asInstanceOf[A];
-    }
+  def elements: Iterator[A] = new Iterator[A] {
+    val iter = jset.iterator()
+    def hasNext = iter.hasNext()
+    def next = iter.next().asInstanceOf[A]
+  }
 
-    def +=(elem: A): Unit = { val x = jset.add(elem); }
+  def +=(elem: A): Unit = { val x = jset.add(elem); }
 
-    def -=(elem: A): Unit = { val x = jset.remove(elem); }
+  def -=(elem: A): Unit = { val x = jset.remove(elem); }
 
-    def clear: Unit = jset.clear();
+  def clear: Unit = jset.clear()
 
-    override def clone(): Set[A] = {
-        val res = new HashSet[A];
-        res ++= this;
-        res;
-    }
+  override def clone(): Set[A] = {
+    val res = new HashSet[A]
+    res ++= this
+    res
+  }
 }

@@ -9,7 +9,7 @@
 // $Id$
 
 
-package scala.collection.mutable;
+package scala.collection.mutable
 
 
 /** This class can be used as an adaptor to create mutable sets from
@@ -24,26 +24,26 @@ package scala.collection.mutable;
 [serializable]
 class ImmutableSetAdaptor[A](protected var set: immutable.Set[A]) extends Set[A] {
 
-    def size: Int = set.size;
+  def size: Int = set.size
 
-    override def isEmpty: Boolean = set.isEmpty;
+  override def isEmpty: Boolean = set.isEmpty
 
-    def contains(elem: A): Boolean = set.contains(elem);
+  def contains(elem: A): Boolean = set.contains(elem)
 
-    override def foreach(f: A => Unit): Unit = set.foreach(f);
+  override def foreach(f: A => Unit): Unit = set.foreach(f)
 
-    override def exists(p: A => Boolean): Boolean = set.exists(p);
+  override def exists(p: A => Boolean): Boolean = set.exists(p)
 
-    override def toList: List[A] = set.toList;
+  override def toList: List[A] = set.toList
 
-    override def toString() = set.toString();
+  override def toString() = set.toString()
 
-    def elements: Iterator[A] = set.elements;
+  def elements: Iterator[A] = set.elements
 
-    def +=(elem: A): Unit = { set = set + elem; }
+  def +=(elem: A): Unit = { set = set + elem }
 
-    def -=(elem: A): Unit = { set = set - elem; }
+  def -=(elem: A): Unit = { set = set - elem }
 
-    def clear: Unit = { set = set.empty; }
+  def clear: Unit = { set = set.empty }
 
 }

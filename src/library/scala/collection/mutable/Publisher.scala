@@ -9,7 +9,7 @@
 // $Id$
 
 
-package scala.collection.mutable;
+package scala.collection.mutable
 
 
 /** <code>Publisher[A,This]</code> objects publish events of type <code>A</code>
@@ -23,25 +23,26 @@ package scala.collection.mutable;
  *  @version 1.0, 08/07/2003
  */
 trait Publisher[A, This <: Publisher[A, This]] requires This {
-    private val filters = new HashMap[Subscriber[A, This],
-                                      scala.collection.mutable.Set[A => Boolean]]
-                            with MultiMap[Subscriber[A, This], A => Boolean];
-    private val suspended = new HashSet[Subscriber[A, This]];
+  private val filters = new HashMap[Subscriber[A, This],
+                                    scala.collection.mutable.Set[A => Boolean]]
+                            with MultiMap[Subscriber[A, This], A => Boolean]
+  private val suspended = new HashSet[Subscriber[A, This]]
 
-    def subscribe(sub: Subscriber[A, This]): Unit = subscribe(sub, (event => true));
+  def subscribe(sub: Subscriber[A, This]): Unit =
+    subscribe(sub, event => true)
 
-    def subscribe(sub: Subscriber[A, This], filter: A => Boolean): Unit =
-        filters.add(sub, filter);
+  def subscribe(sub: Subscriber[A, This], filter: A => Boolean): Unit =
+    filters.add(sub, filter)
 
-    def suspendSubscription(sub: Subscriber[A, This]): Unit = suspended += sub;
+  def suspendSubscription(sub: Subscriber[A, This]): Unit = suspended += sub
 
-    def activateSubscription(sub: Subscriber[A, This]): Unit = suspended -= sub;
+  def activateSubscription(sub: Subscriber[A, This]): Unit = suspended -= sub
 
-    def removeSubscription(sub: Subscriber[A, This]): Unit = filters -= sub;
+  def removeSubscription(sub: Subscriber[A, This]): Unit = filters -= sub
 
-    def removeSubscriptions: Unit = filters.clear;
+  def removeSubscriptions: Unit = filters.clear
 
-    protected def publish(event: A): Unit =
-        filters.keys.foreach(sub =>
-            if (filters.entryExists(sub, (p => p(event)))) sub.notify(this, event));
+  protected def publish(event: A): Unit =
+    filters.keys.foreach(sub =>
+      if (filters.entryExists(sub, p => p(event))) sub.notify(this, event))
 }

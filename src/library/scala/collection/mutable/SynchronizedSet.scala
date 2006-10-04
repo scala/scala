@@ -9,7 +9,7 @@
 // $Id$
 
 
-package scala.collection.mutable;
+package scala.collection.mutable
 
 
 /** This class should be used as a mixin. It synchronizes the <code>Set</code>
@@ -20,87 +20,87 @@ package scala.collection.mutable;
  */
 trait SynchronizedSet[A] extends Set[A] {
 
-    abstract override def size: Int = synchronized {
-        super.size
-    }
+  abstract override def size: Int = synchronized {
+    super.size
+  }
 
-    override def isEmpty: Boolean = synchronized {
-        super.isEmpty
-    }
+  override def isEmpty: Boolean = synchronized {
+    super.isEmpty
+  }
 
-    abstract override def contains(elem: A) = synchronized {
-        super.contains(elem);
-    }
+  abstract override def contains(elem: A) = synchronized {
+    super.contains(elem)
+  }
 
-    abstract override def update(elem: A, included: Boolean): Unit = synchronized {
-        super.update(elem, included);
-    }
+  abstract override def update(elem: A, included: Boolean): Unit = synchronized {
+    super.update(elem, included)
+  }
 
-    abstract override def +=(elem: A): Unit = synchronized {
-        super.+=(elem);
-    }
+  abstract override def +=(elem: A): Unit = synchronized {
+    super.+=(elem)
+  }
 
-    override def ++=(that: Iterable[A]) = synchronized {
-        super.++=(that);
-    }
+  override def ++=(that: Iterable[A]) = synchronized {
+    super.++=(that)
+  }
 
-    override def ++=(it: Iterator[A]) = synchronized {
-        super.++=(it);
-    }
+  override def ++=(it: Iterator[A]) = synchronized {
+    super.++=(it)
+  }
 
-    override def incl(elems: A*): Unit = synchronized {
-        super.++=(elems);
-    }
+  override def incl(elems: A*): Unit = synchronized {
+    super.++=(elems)
+  }
 
-    abstract override def -=(elem: A): Unit = synchronized {
-        super.-=(elem);
-    }
+  abstract override def -=(elem: A): Unit = synchronized {
+    super.-=(elem)
+  }
 
-    override def --=(that: Iterable[A]) = synchronized {
-        super.--=(that);
-    }
+  override def --=(that: Iterable[A]) = synchronized {
+    super.--=(that)
+  }
 
-    override def --=(it: Iterator[A]) = synchronized {
-        super.--=(it);
-    }
+  override def --=(it: Iterator[A]) = synchronized {
+    super.--=(it)
+  }
 
-    override def excl(elems: A*): Unit = synchronized {
-        super.--=(elems);
-    }
+  override def excl(elems: A*): Unit = synchronized {
+    super.--=(elems)
+  }
 
-    override def intersect(that: Set[A]) = synchronized {
-        super.intersect(that);
-    }
+  override def intersect(that: Set[A]) = synchronized {
+    super.intersect(that)
+  }
 
-    abstract override def clear: Unit = synchronized {
-        super.clear;
-    }
+  abstract override def clear: Unit = synchronized {
+    super.clear
+  }
 
-    override def subsetOf(that: scala.collection.Set[A]) = synchronized {
-        super.subsetOf(that);
-    }
+  override def subsetOf(that: scala.collection.Set[A]) = synchronized {
+    super.subsetOf(that)
+  }
 
-    override def foreach(f: A => Unit) = synchronized {
-        super.foreach(f);
-    }
+  override def foreach(f: A => Unit) = synchronized {
+    super.foreach(f)
+  }
 
-    override def filter(p: A => Boolean) = synchronized {
-        super.filter(p);
-    }
+  override def filter(p: A => Boolean) = synchronized {
+    super.filter(p)
+  }
 
-    override def toList: List[A] = synchronized {
-        super.toList;
-    }
+  override def toList: List[A] = synchronized {
+    super.toList
+  }
 
-    override def toString() = synchronized {
-        super.toString();
-    }
+  override def toString() = synchronized {
+    super.toString()
+  }
 
-    override def <<(cmd: Message[A]): Unit = synchronized {
-        super.<<(cmd);
-    }
+  override def <<(cmd: Message[A]): Unit = synchronized {
+    super.<<(cmd)
+  }
 
-    override def clone(): Set[A] = synchronized {
-        super.clone();
-    }
+  override def clone(): Set[A] = synchronized {
+    super.clone()
+  }
 }

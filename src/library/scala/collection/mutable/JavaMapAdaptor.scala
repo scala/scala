@@ -9,7 +9,7 @@
 // $Id$
 
 
-package scala.collection.mutable;
+package scala.collection.mutable
 
 
 /** This class can be used as an adaptor to create mutable maps from
@@ -20,49 +20,49 @@ package scala.collection.mutable;
  */
 class JavaMapAdaptor[A, B](jmap: java.util.Map) extends Map[A, B] {
 
-    def size: Int = jmap.size();
+  def size: Int = jmap.size()
 
-    def get(key: A): Option[B] =
-        if (jmap.containsKey(key)) Some(jmap.get(key).asInstanceOf[B]) else None;
+  def get(key: A): Option[B] =
+    if (jmap.containsKey(key)) Some(jmap.get(key).asInstanceOf[B]) else None
 
-    override def isEmpty: Boolean = jmap.isEmpty();
+  override def isEmpty: Boolean = jmap.isEmpty()
 
-    override def apply(key: A): B = jmap.get(key).asInstanceOf[B];
+  override def apply(key: A): B = jmap.get(key).asInstanceOf[B]
 
-    override def contains(key: A): Boolean = jmap.containsKey(key);
+  override def contains(key: A): Boolean = jmap.containsKey(key)
 
-    override def isDefinedAt(key: A) = jmap.containsKey(key);
+  override def isDefinedAt(key: A) = jmap.containsKey(key)
 
-    override def keys: Iterator[A] = new Iterator[A] {
-        val iter = jmap.keySet().iterator();
-        def hasNext = iter.hasNext();
-        def next = iter.next().asInstanceOf[A];
+  override def keys: Iterator[A] = new Iterator[A] {
+    val iter = jmap.keySet().iterator()
+    def hasNext = iter.hasNext()
+    def next = iter.next().asInstanceOf[A]
+  }
+
+  override def values: Iterator[B] = new Iterator[B] {
+    val iter = jmap.values().iterator()
+    def hasNext = iter.hasNext()
+    def next = iter.next().asInstanceOf[B]
+  }
+
+  def elements: Iterator[Pair[A, B]] = new Iterator[Pair[A, B]] {
+    val iter = jmap.keySet().iterator()
+    def hasNext = iter.hasNext()
+    def next = {
+      val key = iter.next().asInstanceOf[A]
+      Pair(key, apply(key))
     }
+  }
 
-    override def values: Iterator[B] = new Iterator[B] {
-        val iter = jmap.values().iterator();
-        def hasNext = iter.hasNext();
-        def next = iter.next().asInstanceOf[B];
-    }
+  def update(key: A, value: B): Unit = { val x = jmap.put(key, value); }
 
-    def elements: Iterator[Pair[A, B]] = new Iterator[Pair[A, B]] {
-        val iter = jmap.keySet().iterator();
-        def hasNext = iter.hasNext();
-        def next = {
-            val key = iter.next().asInstanceOf[A];
-            Pair(key, apply(key))
-        }
-    }
+  def -=(key: A): Unit = { val x = jmap.remove(key); }
 
-    def update(key: A, value: B): Unit = { val x = jmap.put(key, value); }
+  override def clear: Unit = jmap.clear()
 
-    def -=(key: A): Unit = { val x = jmap.remove(key); }
-
-    override def clear: Unit = jmap.clear();
-
-    override def clone(): Map[A, B] = {
-        val res = new HashMap[A, B];
-        res ++= this;
-        res
-    }
+  override def clone(): Map[A, B] = {
+    val res = new HashMap[A, B]
+    res ++= this
+    res
+  }
 }

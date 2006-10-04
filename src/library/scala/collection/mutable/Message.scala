@@ -9,7 +9,7 @@
 // $Id$
 
 
-package scala.collection.mutable;
+package scala.collection.mutable
 
 
 /** Class <code>Message</code> represents messages that are issued by observable
@@ -21,7 +21,7 @@ package scala.collection.mutable;
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
-trait Message[+A];
+trait Message[+A]
 
 /** This observable update refers to inclusion operations that add new elements
  *  to collection classes.
@@ -29,7 +29,7 @@ trait Message[+A];
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
-case class Include[+I](elem: I) extends Message[I];
+case class Include[+I](elem: I) extends Message[I]
 
 /** This observable update refers to destructive modification operations
  *  of elements from collection classes.
@@ -37,7 +37,7 @@ case class Include[+I](elem: I) extends Message[I];
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
-case class Update[+A](elem: A) extends Message[A];
+case class Update[+A](elem: A) extends Message[A]
 
 /** This observable update refers to removal operations of elements
  *  from collection classes.
@@ -45,14 +45,14 @@ case class Update[+A](elem: A) extends Message[A];
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
-case class Remove[+A](elem: A) extends Message[A];
+case class Remove[+A](elem: A) extends Message[A]
 
 /** This command refers to reset operations.
  *
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
-case class Reset[+A]() extends Message[A];
+case class Reset[+A]() extends Message[A]
 
 /** Objects of this class represent compound messages consisting
  *  of a sequence of other messages.
@@ -62,19 +62,19 @@ case class Reset[+A]() extends Message[A];
  */
 class Script[A] extends ArrayBuffer[Message[A]] with Message[A] {
 
-    override def toString(): String = {
-        var res = "Script(";
-        var it = elements;
-        var i = 1;
-        while (it.hasNext) {
-            if (i > 1)
-                res = res + ", ";
-            res = res + "[" + i + "] " + it.next;
-            i = i + 1;
-        }
-        res + ")";
+  override def toString(): String = {
+    var res = "Script("
+    var it = elements
+    var i = 1
+    while (it.hasNext) {
+      if (i > 1)
+        res = res + ", "
+      res = res + "[" + i + "] " + it.next
+      i = i + 1
     }
+    res + ")"
+  }
 
   override def hashCode(): Int =
-    Predef.error("scripts are not suitable as hash keys");
+    Predef.error("scripts are not suitable as hash keys")
 }

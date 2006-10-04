@@ -9,7 +9,7 @@
 // $Id$
 
 
-package scala.collection.mutable;
+package scala.collection.mutable
 
 
 /** This class is typically used as a mixin. It adds a subscription
@@ -26,18 +26,18 @@ trait ObservableSet[A, This <: ObservableSet[A, This]] requires This
       with Undoable, This]
 {
 
-    abstract override def +=(elem: A): Unit = if (!contains(elem)) {
-        super.+=(elem);
-        publish(new Include(elem) with Undoable { def undo = -=(elem); });
-    }
+  abstract override def +=(elem: A): Unit = if (!contains(elem)) {
+    super.+=(elem)
+    publish(new Include(elem) with Undoable { def undo = -=(elem) })
+  }
 
-    abstract override def -=(elem: A): Unit = if (contains(elem)) {
-        super.-=(elem);
-        publish(new Remove(elem) with Undoable { def undo = +=(elem); });
-    }
+  abstract override def -=(elem: A): Unit = if (contains(elem)) {
+    super.-=(elem)
+    publish(new Remove(elem) with Undoable { def undo = +=(elem) })
+  }
 
-    abstract override def clear: Unit = {
-        super.clear;
-        publish(new Reset with Undoable { def undo: Unit = error("cannot undo"); });
-    }
+  abstract override def clear: Unit = {
+    super.clear
+    publish(new Reset with Undoable { def undo: Unit = error("cannot undo") })
+  }
 }

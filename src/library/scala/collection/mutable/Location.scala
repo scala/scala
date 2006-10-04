@@ -9,7 +9,7 @@
 // $Id$
 
 
-package scala.collection.mutable;
+package scala.collection.mutable
 
 
 /** Class <code>Location</code> describes locations in messages implemented
@@ -18,12 +18,12 @@ package scala.collection.mutable;
  *  @author  Matthias Zenger
  *  @version 1.0, 10/05/2004
  */
-abstract class Location;
+abstract class Location
 
-case object NA extends Location;
+case object NA extends Location
 
-case object Start extends Location;
+case object Start extends Location
 
-case object End extends Location;
+case object End extends Location
 
-case class Index(n: Int) extends Location;
+case class Index(n: Int) extends Location

@@ -9,7 +9,7 @@
 // $Id$
 
 
-package scala.collection.mutable;
+package scala.collection.mutable
 
 
 /** This extensible class may be used as a basis for implementing double
@@ -25,29 +25,29 @@ abstract class DoubleLinkedList[A, This >: Null <: DoubleLinkedList[A, This]]
          extends SingleLinkedList[A, This]
 {
 
-    var prev: This;
+  var prev: This
 
-    override def append(that: This): Unit =
-        if (that == null)
-            ()
-        else if (next == null) {
-            next = that;
-            that.prev = this;
-        } else
-            next.append(that);
+  override def append(that: This): Unit =
+    if (that == null)
+      ()
+    else if (next == null) {
+      next = that
+      that.prev = this
+    } else
+      next.append(that)
 
-    override def insert(that: This): Unit = if (that != null) {
-        that.append(next);
-        next = that;
-        that.prev = this;
-    }
+  override def insert(that: This): Unit = if (that != null) {
+    that.append(next)
+    next = that
+    that.prev = this
+  }
 
-    def remove: Unit = {
-        if (next != null)
-            next.prev = prev;
-        if (prev != null)
-            prev.next = next;
-        prev = null;
-        next = null;
-    }
+  def remove: Unit = {
+    if (next != null)
+      next.prev = prev
+    if (prev != null)
+      prev.next = next
+    prev = null
+    next = null
+  }
 }

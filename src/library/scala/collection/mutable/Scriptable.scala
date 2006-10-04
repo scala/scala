@@ -9,7 +9,7 @@
 // $Id$
 
 
-package scala.collection.mutable;
+package scala.collection.mutable
 
 
 /** Classes that mix in the <code>Scriptable</code> class allow
@@ -22,5 +22,5 @@ trait Scriptable[A] {
 
     /** Send a message to this scriptable object.
      */
-    def <<(cmd: A): Unit;
+    def <<(cmd: A): Unit
 }

@@ -9,17 +9,17 @@
 // $Id$
 
 
-package scala.collection.mutable;
+package scala.collection.mutable
 
 
-import Predef._;
+import Predef._
 
 /**
  */
 final class ListBuffer[A] extends Buffer[A] {
-  private var start: List[A] = Nil;
-  private var last: ::[A] = _;
-  private var exported: boolean = false;
+  private var start: List[A] = Nil
+  private var last: ::[A] = _
+  private var exported: boolean = false
 
   /** Prepend a single element to this buffer.
    *
@@ -66,9 +66,10 @@ final class ListBuffer[A] extends Buffer[A] {
     else if (start.head == x) start = start.tail
     else {
       var cursor = start
-      while (!cursor.tail.isEmpty && cursor.tail.head != x) { cursor = cursor.tail }
+      while (!cursor.tail.isEmpty && cursor.tail.head != x)
+        cursor = cursor.tail
       if (!cursor.tail.isEmpty)
-	cursor.asInstanceOf[scala.::[A]].tl = cursor.tail.tail
+        cursor.asInstanceOf[scala.::[A]].tl = cursor.tail.tail
     }
   }
 
@@ -109,7 +110,8 @@ final class ListBuffer[A] extends Buffer[A] {
    */
   def length: int = start.length
 
-  private def noElem(n: int): All = error("element " + n + " does not exist in buffer");
+  private def noElem(n: int): All =
+    error("element " + n + " does not exist in buffer")
 
   /** Returns the <code>n</code>th element of this list. This method
    *  yields an error if the element does not exist.
@@ -156,7 +158,7 @@ final class ListBuffer[A] extends Buffer[A] {
    */
   def insertAll(n: Int, iter: Iterable[A]): unit = try {
     if (exported) copy()
-    var elems = iter.elements.toList.reverse;
+    var elems = iter.elements.toList.reverse
     if (n == 0) {
       while (!elems.isEmpty) {
         val newElem = new scala.:: (elems.head, start);
@@ -194,8 +196,8 @@ final class ListBuffer[A] extends Buffer[A] {
     if (n == 0) {
       start = start.tail
     } else {
-      var cursor = start;
-      var i = 1;
+      var cursor = start
+      var i = 1
       while (i < n) {
         cursor = cursor.tail
         i = i + 1
@@ -215,13 +217,13 @@ final class ListBuffer[A] extends Buffer[A] {
    *  buffer snapshot, use  toList.elements
    */
   override def elements = new Iterator[A] {
-    var cursor: List[A] = null;
-    def hasNext: Boolean = !start.isEmpty && cursor != last;
+    var cursor: List[A] = null
+    def hasNext: Boolean = !start.isEmpty && cursor != last
     def next: A =
       if (!hasNext) {
         error("next on empty Iterator")
       } else {
-        if (cursor == null) cursor = start else cursor = cursor.tail;
+        if (cursor == null) cursor = start else cursor = cursor.tail
         cursor.head
       }
   }
@@ -240,13 +242,13 @@ final class ListBuffer[A] extends Buffer[A] {
     case that: ListBuffer[A] =>
       (this.length == that.length &&
        elements.zip(that.elements).forall {
-         case Pair(thiselem, thatelem) => thiselem == thatelem;
+         case Pair(thiselem, thatelem) => thiselem == thatelem
        })
     case _ => false
   }
 
   /** Defines the prefix of the string representation.
    */
-  override protected def stringPrefix: String = "ListBuffer";
+  override protected def stringPrefix: String = "ListBuffer"
 }
 

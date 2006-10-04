@@ -9,7 +9,7 @@
 // $Id$
 
 
-package scala.collection.mutable;
+package scala.collection.mutable
 
 
 /** Classes that mix in the <code>Undoable</code> class provide an operation
@@ -22,5 +22,5 @@ trait Undoable {
 
     /** Undo the last operation.
      */
-    def undo: Unit;
+    def undo: Unit
 }

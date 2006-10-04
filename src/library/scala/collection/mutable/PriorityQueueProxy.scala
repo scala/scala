@@ -9,7 +9,7 @@
 // $Id$
 
 
-package scala.collection.mutable;
+package scala.collection.mutable
 
 
 /** This class implements priority queues using a heap. The
@@ -23,76 +23,78 @@ abstract class PriorityQueueProxy[A <% Ordered[A]] extends PriorityQueue[A]
          with IterableProxy[A]
 {
 
-  def self: PriorityQueue[A];
+  def self: PriorityQueue[A]
 
   /** Creates a new iterator over all elements contained in this
    *  object.
    *
    *  @return the new iterator
    */
-  override def elements: Iterator[A] = self.elements;
+  override def elements: Iterator[A] = self.elements
 
   /** Returns the length of this priority queue.
    */
-  override def length: Int = self.length;
+  override def length: Int = self.length
 
   /** Checks if the queue is empty.
    *
    *  @return true, iff there is no element in the queue.
    */
-  override def isEmpty: Boolean = self.isEmpty;
+  override def isEmpty: Boolean = self.isEmpty
 
   /** Inserts a single element into the priority queue.
    *
    *  @param  elem        the element to insert
    */
-  override def +=(elem: A): Unit = self += elem;
+  override def +=(elem: A): Unit = self += elem
 
   /** Adds all elements provided by an <code>Iterable</code> object
    *  into the priority queue.
    *
    *  @param  iter        an iterable object
    */
-  override def ++=(iter: Iterable[A]): Unit = self ++= iter;
+  override def ++=(iter: Iterable[A]): Unit = self ++= iter
 
   /** Adds all elements provided by an iterator into the priority queue.
    *
    *  @param  it        an iterator
    */
-  override def ++=(it: Iterator[A]): Unit = self ++= it;
+  override def ++=(it: Iterator[A]): Unit = self ++= it
 
   /** Adds all elements to the queue.
    *
    *  @param  elems       the elements to add.
    */
-  override def enqueue(elems: A*): Unit = self ++= elems;
+  override def enqueue(elems: A*): Unit = self ++= elems
 
   /** Returns the element with the highest priority in the queue,
    *  and removes this element from the queue.
    *
    *  @return   the element with the highest priority.
    */
-  override def dequeue: A = self.dequeue;
+  override def dequeue: A = self.dequeue
 
   /** Returns the element with the highest priority in the queue,
    *  or throws an error if there is no element contained in the queue.
    *
    *  @return   the element with the highest priority.
    */
-  override def max: A = self.max;
+  override def max: A = self.max
 
   /** Removes all elements from the queue. After this operation is completed,
    *  the queue will be empty.
    */
-  override def clear: Unit = self.clear;
+  override def clear: Unit = self.clear
 
   /** Returns a regular queue containing the same elements.
    */
-  override def toQueue: Queue[A] = self.toQueue;
+  override def toQueue: Queue[A] = self.toQueue
 
   /** This method clones the priority queue.
    *
    *  @return  a priority queue with the same elements.
    */
-  override def clone(): PriorityQueue[A] = new PriorityQueueProxy[A] { def self = PriorityQueueProxy.this.self.clone() }
+  override def clone(): PriorityQueue[A] = new PriorityQueueProxy[A] {
+    def self = PriorityQueueProxy.this.self.clone()
+  }
 }

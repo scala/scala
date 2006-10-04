@@ -9,7 +9,7 @@
 // $Id$
 
 
-package scala.collection.mutable;
+package scala.collection.mutable
 
 
 /** <code>History[A, B]</code> objects may subscribe to events of
@@ -23,22 +23,22 @@ package scala.collection.mutable;
 [serializable]
 class History[A, B] extends AnyRef with Subscriber[A, B] with Iterable[Pair[B, A]] {
 
-    protected val log: Queue[Pair[B, A]] = new Queue[Pair[B, A]];
+  protected val log: Queue[Pair[B, A]] = new Queue[Pair[B, A]]
 
-    val maxHistory: Int = 1000;
+  val maxHistory: Int = 1000
 
-    def notify(pub: B, event: A): Unit = {
-        if (log.length >= maxHistory) {
-            val old = log.dequeue;
-        }
-        log.enqueue(Pair(pub, event));
+  def notify(pub: B, event: A): Unit = {
+    if (log.length >= maxHistory) {
+      val old = log.dequeue;
     }
+    log.enqueue(Pair(pub, event))
+  }
 
-    def elements: Iterator[Pair[B, A]] = log.elements;
+  def elements: Iterator[Pair[B, A]] = log.elements
 
-    def events: Iterator[A] = log.elements.map { case Pair(_, e) => e }
+  def events: Iterator[A] = log.elements.map { case Pair(_, e) => e }
 
-    def size: Int = log.length;
+  def size: Int = log.length
 
-    def clear: Unit = log.clear;
+  def clear: Unit = log.clear
 }

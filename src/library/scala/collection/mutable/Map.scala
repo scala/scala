@@ -9,7 +9,7 @@
 // $Id$
 
 
-package scala.collection.mutable;
+package scala.collection.mutable
 
 /** This class represents mutable maps. Concrete map implementations
  *  just have to provide functionality for the abstract methods in
@@ -32,7 +32,7 @@ trait Map[A, B] extends AnyRef
    * @param key
    * @param value
    */
-  def update(key: A, value: B): Unit;
+  def update(key: A, value: B): Unit
 
   /** This method defines syntactic sugar for adding or modifying
    *  mappings. It is typically used in the following way:
@@ -40,14 +40,14 @@ trait Map[A, B] extends AnyRef
    *  map += key -> value;
    *  </pre>
    */
-  def +=(key: A): MapTo = new MapTo(key);
+  def +=(key: A): MapTo = new MapTo(key)
 
   /** This method adds all the mappings provided by an iterator of
    *  parameter <code>map</code> to the map.
    *
    * @param map
    */
-  def ++=(map: Iterable[Pair[A, B]]): Unit = ++=(map.elements);
+  def ++=(map: Iterable[Pair[A, B]]): Unit = ++=(map.elements)
 
   /** This method adds all the mappings provided by an iterator of
    *  parameter <code>map</code> to the map.
@@ -55,7 +55,7 @@ trait Map[A, B] extends AnyRef
    * @param it
    */
   def ++=(it: Iterator[Pair[A, B]]): Unit = it foreach {
-    case Pair(key, value) => update(key, value);
+    case Pair(key, value) => update(key, value)
   }
 
   /** <code>incl</code> can be used to add many mappings at the same time
@@ -65,39 +65,41 @@ trait Map[A, B] extends AnyRef
    *
    * @param mappings
    */
-  def incl(mappings: Pair[A, B]*): Unit = ++=(mappings.elements);
+  def incl(mappings: Pair[A, B]*): Unit = ++=(mappings.elements)
 
   /** This method removes a mapping from the given <code>key</code>.
    *  If the map does not contain a mapping for the given key, the
    *  method does nothing.
+   *
+   *  @param key
    */
-  def -=(key: A): Unit;
+  def -=(key: A): Unit
 
   /** This method removes all the mappings for keys provided by an
    *  iterator over the elements of the <code>keys</code> object.
    *
    * @param keys
    */
-  def --=(keys: Iterable[A]): Unit = --=(keys.elements);
+  def --=(keys: Iterable[A]): Unit = --=(keys.elements)
 
   /** This method removes all the mappings for keys provided by an
    *  iterator over the elements of the <code>keys</code> object.
    *
    * @param it
    */
-  def --=(it: Iterator[A]): Unit = it foreach -=;
+  def --=(it: Iterator[A]): Unit = it foreach -=
 
   /** This method will remove all the mappings for the given sequence
    *  of keys from the map.
    *
    * @param keys
    */
-  def excl(keys: A*): Unit = --=(keys.elements);
+  def excl(keys: A*): Unit = --=(keys.elements)
 
   /** Removes all mappings from the map. After this operation is
    *  completed, the map is empty.
    */
-  def clear: Unit = keys foreach -=;
+  def clear: Unit = keys foreach -=
 
   /** This function transforms all the values of mappings contained
    *  in this map with function <code>f</code>.
@@ -105,7 +107,7 @@ trait Map[A, B] extends AnyRef
    * @param f
    */
   def map(f: Pair[A, B] => B): Unit = elements foreach {
-    case kv @ Pair(key, _) => update(key, f(kv));
+    case kv @ Pair(key, _) => update(key, f(kv))
   }
 
   /** This method removes all the mappings for which the predicate
@@ -114,7 +116,7 @@ trait Map[A, B] extends AnyRef
    * @param p
    */
   def filter(p: Pair[A, B] => Boolean): Unit = toList foreach {
-    case kv @ Pair(key, _) => if (!p(kv)) -=(key);
+    case kv @ Pair(key, _) => if (!p(kv)) -=(key)
   }
 
   /** Send a message to this scriptable object.
@@ -122,26 +124,26 @@ trait Map[A, B] extends AnyRef
    *  @param cmd  the message to send.
    */
   def <<(cmd: Message[Pair[A, B]]): Unit = cmd match {
-    case Include(Pair(k, v)) => update(k, v);
-    case Update(Pair(k, v)) => update(k, v);
-    case Remove(Pair(k, _)) => this -= k;
-    case Reset() => clear;
-    case s: Script[Pair[A, B]] => s.elements foreach <<;
-    case _ => error("message " + cmd + " not understood");
+    case Include(Pair(k, v)) => update(k, v)
+    case Update(Pair(k, v)) => update(k, v)
+    case Remove(Pair(k, _)) => this -= k
+    case Reset() => clear
+    case s: Script[Pair[A, B]] => s.elements foreach <<
+    case _ => error("message " + cmd + " not understood")
   }
 
   /** Return a clone of this map.
    *
-   *  @return an map with the same elements.
+   *  @return a map with the same elements.
    */
-  override def clone(): Map[A, B] = super.clone().asInstanceOf[Map[A, B]];
+  override def clone(): Map[A, B] = super.clone().asInstanceOf[Map[A, B]]
 
   /** The hashCode method always yields an error, since it is not
    *  safe to use mutable maps as keys in hash tables.
    *
    *  @return never.
    */
-  override def hashCode(): Int = error("unsuitable as hash key");
+  override def hashCode(): Int = error("unsuitable as hash key")
 
   /** Returns a string representation of this map which shows
    *  all the mappings.
@@ -151,23 +153,23 @@ trait Map[A, B] extends AnyRef
       "{}"
     else
       "{" + {
-        val iter = elements;
-        var res = mappingToString(iter.next);
+        val iter = elements
+        var res = mappingToString(iter.next)
         while (iter.hasNext) {
-          res = res + ", " + mappingToString(iter.next);
+          res = res + ", " + mappingToString(iter.next)
         }
-        res;
-      } + "}";
+        res
+      } + "}"
 
   /** This method controls how a mapping is represented in the string
    *  representation provided by method <code>toString</code>.
    *
    * @param p
    */
-  def mappingToString(p: Pair[A, B]) = p._1.toString() + " -> " + p._2;
+  def mappingToString(p: Pair[A, B]) = p._1.toString() + " -> " + p._2
 
   class MapTo(key: A) {
-    def ->(value: B): Unit = update(key, value);
+    def ->(value: B): Unit = update(key, value)
   }
 
 }
