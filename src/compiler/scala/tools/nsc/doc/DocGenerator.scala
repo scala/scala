@@ -674,9 +674,9 @@ abstract class DocGenerator extends Models {
 
   // patterns for standard tags with 1 and 2 arguments
   private val pat1 = Pattern.compile(
-    "[ \t]*@(author|deprecated|return|see|since|todo|version)[ \t]+(.*)")
+    "[ \t]*@(author|deprecated|return|see|since|todo|version)[ \t]*(.*)")
   private val pat2 = Pattern.compile(
-    "[ \t]*@(exception|param|throws)[ \t]+(\\p{Alnum}*)[ \t]+(.*)")
+    "[ \t]*@(exception|param|throws)[ \t]+(\\p{Alnum}*)[ \t]*(.*)")
 
   def comment(comment: String, isShort: Boolean): NodeSeq = {
     var ret: List[Node] = Nil

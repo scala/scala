@@ -63,7 +63,8 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
    *      in a inner non-trait class;
    *    </li>
    *    <li>
-   *      Add a protected $outer field to an inner class which is not a trait.
+   *      Add a protected <code>$outer</code> field to an inner class which is
+   *      not a trait.
    *    </li>
    *    <li>
    *      <p>
@@ -77,7 +78,7 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
    *        mixin classes with outer accessor defs (unless the superclass
    *        already inherits the same mixin).
    *      </p>
-   *    <li>
+   *    </li>
    *    <li>
    *      Add a mixin constructor <code>$init$</code> to all mixins except interfaces
    *      Leave all other types unchanged. todo: move to later
@@ -198,30 +199,68 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
     }
   }
 
-  /** The phase performs the following transformations on terms:
-   *   1. An class which is not an interface and is not static gets an outer accessor
-   *      (@see outerDefs)
-   *   1a. A class which is not a trait gets an outer field.
-   *   2. A mixin which is not also an interface gets a mixin constructor
+  /** <p>
+   *    The phase performs the following transformations on terms:
+   *  </p>
+   *  <ol>
+   *    <li> <!-- 1 -->
+   *      <p>
+   *        An class which is not an interface and is not static gets an outer
+   *        accessor (@see outerDefs).
+   *      </p>
+   *      <p>
+   *        1a. A class which is not a trait gets an outer field.
+   *      </p>
+   *    </li>
+   *    <li> <!-- 2 -->
+   *      A mixin which is not also an interface gets a mixin constructor
    *      (@see mixinConstructorDef)
-   *   3. Constructor bodies are augmented by calls to supermixin constructors
+   *    </li>
+   *    <li> <!-- 3 -->
+   *      Constructor bodies are augmented by calls to supermixin constructors
    *      (@see addMixinConstructorCalls)
-   *   4. A constructor of a non-trait inner class gets an outer parameter.
-   *   5. A reference C.this where C refers to an outer class is replaced by a selection
-   *        this.$outer$$C1 ... .$outer$$Cn (@see outerPath)
-   *   7. A call to a constructor Q.<init>(args) or Q.$init$(args) where Q != this and
+   *    </li>
+   *    <li> <!-- 4 -->
+   *      A constructor of a non-trait inner class gets an outer parameter.
+   *    </li>
+   *    <li> <!-- 5 -->
+   *      A reference <code>C.this</code> where <code>C</code> refers to an
+   *      outer class is replaced by a selection
+   *      <code>this.$outer$$C1</code> ... <code>.$outer$$Cn</code> (@see outerPath)
+   *    </li>
+   *    <li>
+   *    </li>
+   *    <li> <!-- 7 -->
+   *      A call to a constructor Q.<init>(args) or Q.$init$(args) where Q != this and
    *      the constructor belongs to a non-static class is augmented by an outer argument.
-   *      E.g. Q.<init>(OUTER, args) where OUTER is the qualifier corresponding to the
-   *      singleton type Q.
-   *   8. A call to a constructor this.<init>(args) in a secondary constructor
-   *      is augmented to this.<init>(OUTER, args) where OUTER is the last parameter
-   *      of the secondary constructor.
-   *   9. Remove  `private' modifier from class members M that are accessed from an inner class.
-   *   10.Remove `protected' modifier from class members M that are accessed
-   *      without a super qualifier accessed from an inner class or trait.
-   *   11. Remove `private' and `protected' modifiers from type symbols
-   *   12. Remove `private' modifiers from members of traits
-   *   Note: The whole transform is run in phase explicitOuter.next
+   *      E.g. <code>Q.&lt;init&gt;(OUTER, args)</code> where <code>OUTER</code>
+   *      is the qualifier corresponding to the singleton type <code>Q</code>.
+   *    </li>
+   *    <li>
+   *      A call to a constructor <code>this.&lt;init&gt;(args)</code> in a
+   *      secondary constructor is augmented to <code>this.&lt;init&gt;(OUTER, args)</code>
+   *      where <code>OUTER</code> is the last parameter of the secondary constructor.
+   *    </li>
+   *    <li> <!-- 9 -->
+   *      Remove <code>private</code> modifier from class members <code>M</code>
+   *      that are accessed from an inner class.
+   *    </li>
+   *    <li> <!-- 10 -->
+   *      Remove <code>protected</code> modifier from class members <code>M</code>
+   *      that are accessed without a super qualifier accessed from an inner
+   *      class or trait.
+   *    </li>
+   *    <li> <!-- 11 -->
+   *      Remove <code>private</code> and <code>protected</code> modifiers
+   *      from type symbols
+   *    </li>
+   *    <li> <!-- 12 -->
+   *      Remove <code>private</code> modifiers from members of traits
+   *    </li>
+   *  </ol>
+   *  <p>
+   *    Note: The whole transform is run in phase <code>explicitOuter.next</code>.
+   *  </p>
    */
   class ExplicitOuterTransformer(unit: CompilationUnit) extends OuterPathTransformer(unit) {
 
@@ -245,9 +284,11 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
       }
     }
 
-    /** The definition tree of the outer accessor for class `mixinClass'
-     *  @param mixinClass The mixin class which defines the abstract outer accessor which is
-     *                    implemented by the generated one.
+    /** The definition tree of the outer accessor for class
+     * <code>mixinClass</code>.
+     *
+     *  @param mixinClass The mixin class which defines the abstract outer
+     *                    accessor which is implemented by the generated one.
      *  @pre mixinClass is an inner class
      */
     def mixinOuterAccessorDef(mixinClass: Symbol): Tree = {
