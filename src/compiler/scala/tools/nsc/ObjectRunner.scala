@@ -11,9 +11,19 @@ import java.io.File
 import java.lang.reflect.{Method,Modifier}
 import java.net.URLClassLoader
 
-/** An object that runs another object specified by name. */
+/** An object that runs another object specified by name.
+ *
+ *  @author  Lex Spoon
+ *  @version 1.0, 15/06/2006
+ */
 object ObjectRunner {
-  /** Look up a class with a given class path */
+
+  /** Look up a class with a given class path.
+   *
+   *  @param classpath  ...
+   *  @param objectName ...
+   *  @return           ...
+   */
   def findClass(classpath: List[String], objectName: String)
   : Option[Class] =
   {
@@ -27,17 +37,26 @@ object ObjectRunner {
   }
 
   /** Check whether a class with the specified name
-    * exists on the specified class path.
-    */
+   *  exists on the specified class path.
+   *
+   *  @param classpath  ...
+   *  @param objectName ...
+   *  @return           ...
+   */
   def classExists(classpath: List[String], objectName: String) =
     !(findClass(classpath, objectName).isEmpty)
 
   /** Run a given object, specified by name, using a
-    * specified classpath and argument list.
-    *
-    * Throws: ClassNotFoundException, NoSuchMethodError,
-    *         InvocationTargetException
-    */
+   *  specified classpath and argument list.
+   *
+   *  @param classpath  ...
+   *  @param objectName ...
+   *  @param arguments  ...
+   *
+   *  @throws ClassNotFoundException    ...
+   *  @throws NoSuchMethodError         ...
+   *  @throws InvocationTargetException ...
+   */
   def run(
       classpath: List[String],
       objectName: String,
@@ -49,7 +68,7 @@ object ObjectRunner {
       }
 
       val method = clsToRun.getMethod("main", List(classOf[Array[String]]).toArray)
-      if((method.getModifiers & Modifier.STATIC) == 0)
+      if ((method.getModifiers & Modifier.STATIC) == 0)
         throw new NoSuchMethodException(objectName + ".main is not static")
 
       method.invoke(null, List(arguments.toArray).toArray)

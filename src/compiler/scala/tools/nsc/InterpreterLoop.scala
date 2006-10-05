@@ -11,9 +11,13 @@ import java.io._
 import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
 import scala.tools.nsc.util.{Position}
 
-/** The main loop of the command-line interface to the Scala interpreter.
-  * After instantiation, clients should call the main() method
-  */
+/** The main loop of the command-line interface to the
+ *  <a href="http://scala.epfl.ch/" target="_top">Scala</a> interpreter.
+ *  After instantiation, clients should call the <code>main()</code> method.
+ *
+ *  @author  Lex Spoon
+ *  @version 1.0
+ */
 class InterpreterLoop(in: BufferedReader, out: PrintWriter) {
   def this() = this(new BufferedReader(new InputStreamReader(System.in)),
                     new PrintWriter(System.out))
@@ -68,8 +72,9 @@ class InterpreterLoop(in: BufferedReader, out: PrintWriter) {
   }
 
   /** The main read-eval-print loop for the interpereter.  It calls
-      command() for each line of input, and stops when command()
-      returns false */
+   *  <code>command()</code> for each line of input, and stops when
+   *  <code>command()</code> returns false.
+   */
   def repl(): Unit =
     while(true) {
       out.print("\nscala> ")
@@ -82,7 +87,7 @@ class InterpreterLoop(in: BufferedReader, out: PrintWriter) {
 
       if (!keepGoing)
         return ()
-      if(shouldReplay)
+      if (shouldReplay)
         addReplay(line)
     }
 
@@ -111,7 +116,7 @@ class InterpreterLoop(in: BufferedReader, out: PrintWriter) {
   def replay = {
     closeInterpreter
     createInterpreter
-    for(val cmd <- replayCommands) {
+    for (val cmd <- replayCommands) {
       out.println("Replaying: " + cmd)
       command(cmd)
       out.println
@@ -165,7 +170,7 @@ class InterpreterLoop(in: BufferedReader, out: PrintWriter) {
     else if (line.startsWith(":"))
       out.println("Unknown command.  Type :help for help.")
     else {
-      if(interpreter.interpret(line))
+      if (interpreter.interpret(line))
         shouldReplay = true
     }
     Pair(true, shouldReplay)
