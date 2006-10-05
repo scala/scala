@@ -255,6 +255,24 @@ trait Contexts requires Analyzer {
            " " + scope.toList + "\n:: " + outer.toString()
     }
 
+    /** Return closest enclosing context that defines a superclass of `clazz', or NoContext
+     *  if none exists */
+    def enclosingSuperClassContext(clazz: Symbol): Context = {
+      var c = this.enclClass
+      while (c != NoContext && !clazz.isNonBottomSubClass(c.owner))
+        c = c.outer.enclClass
+      c
+    }
+
+    /** Return closest enclosing context that defines a subclass of `clazz', or NoContext
+     *  if none exists */
+    def enclosingSubClassContext(clazz: Symbol): Context = {
+      var c = this.enclClass
+      while (c != NoContext && !c.owner.isNonBottomSubClass(clazz))
+        c = c.outer.enclClass
+      c
+    }
+
     /** Is <code>sym</code> accessible as a member of tree `site' with type
      *  <code>pre</code> in current context?
      *
@@ -277,12 +295,8 @@ trait Contexts requires Analyzer {
       }
 
       /** Is `clazz' a subclass of an enclosing class? */
-      def isSubClassOfEnclosing(clazz: Symbol): boolean = {
-        var c = this.enclClass
-        while (c != NoContext && !clazz.isNonBottomSubClass(c.owner))
-          c = c.outer.enclClass
-        c != NoContext
-      }
+      def isSubClassOfEnclosing(clazz: Symbol): boolean =
+        enclosingSuperClassContext(clazz) != NoContext
 
       (pre == NoPrefix) || {
         val ab = sym.accessBoundary(sym.owner)

@@ -338,11 +338,12 @@ trait Typers requires Analyzer {
         checkStable(tree)
       } else if ((mode & (EXPRmode | QUALmode)) == EXPRmode && !sym.isValue) { // (2)
         errorTree(tree, ""+sym+" is not a value")
-      } else if (sym.isStable && pre.isStable && tree.tpe.symbol != ByNameParamClass &&
-                 (pt.isStable || (mode & QUALmode) != 0 && !sym.isConstant ||
-                  sym.isModule && !sym.isMethod)) {
-        tree.setType(singleType(pre, sym))
-      } else tree
+      } else {
+        if (sym.isStable && pre.isStable && tree.tpe.symbol != ByNameParamClass &&
+            (pt.isStable || (mode & QUALmode) != 0 && !sym.isConstant ||
+             sym.isModule && !sym.isMethod)) tree.setType(singleType(pre, sym))
+        else tree
+      }
     }
 
     /**
@@ -495,7 +496,19 @@ trait Typers requires Analyzer {
                    ((mode & TAPPmode) == 0 || tree.tpe.typeParams.isEmpty) &&
                    adaptToName(tree, nme.apply).tpe.nonLocalMember(nme.apply)
                      .filter(m => m.tpe.paramSectionCount > 0) != NoSymbol) { // (8)
-          typed(atPos(tree.pos)(Select(adaptToName(tree, nme.apply), nme.apply)), mode, pt)
+          val qual = adaptToName(tree, nme.apply) match {
+            case id @ Ident(_) =>
+              val pre = if (id.symbol.owner.isPackageClass) id.symbol.owner.thisType
+                        else if (id.symbol.owner.isClass)
+                          context.enclosingSubClassContext(id.symbol.owner).prefix
+                        else NoPrefix
+              stabilize(id, pre, EXPRmode | QUALmode, WildcardType)
+            case sel @ Select(qualqual, _) =>
+              stabilize(sel, qualqual.tpe, EXPRmode | QUALmode, WildcardType)
+            case other =>
+              other
+          }
+          typed(atPos(tree.pos)(Select(qual, nme.apply)), mode, pt)
         } else if (!context.undetparams.isEmpty && (mode & POLYmode) == 0) { // (9)
           instantiate(tree, mode, pt)
         } else if (tree.tpe <:< pt) {
