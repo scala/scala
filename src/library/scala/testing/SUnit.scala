@@ -9,82 +9,88 @@
 // $Id$
 
 
-package scala.testing;
+package scala.testing
 
+import scala.collection.mutable.ArrayBuffer
 import scala.runtime.compat.StringBuilder
 
 /**
- * Unit testing methods in the spirit of JUnit framework.
- * use these classes like this:
-<code>
- import scala.testing.SUnit;
-  import SUnit._;
-
-
-  class MyTest(n:String) extends TestCase(n) {
-
-    override def runTest() = n match {
-      case "myTest1" =>   assertTrue( true );
-      case "myTest2" =>   assertTrue( "hello", false );
-    }
-  }
-
-  val r = new TestResult();
-  suite.run(r);
-  for(val tf &lt;- r.failures()) {
-    Console.println(tf.toString())
-  }
-}
-</code>
+ * <p>
+ *   Unit testing methods in the spirit of
+ *   <a href="http://www.junit.org/" target="_top">JUnit</a> framework.
+ * </p>
+ * <p>
+ *   Use these classes like this:
+ * </p>
+ * <pre>
+ * import scala.testing.SUnit
+ * import SUnit._
+ *
+ * <b>class</b> MyTest(n: String) <b>extends</b> TestCase(n) {
+ *
+ *   <b>override def</b> runTest() = n <b>match</b> {
+ *     <b>case</b> "myTest1" => assertTrue(<b>true</b>)
+ *     <b>case</b> "myTest2" => assertTrue("hello", <b>false</b>)
+ *   }
+ * }
+ *
+ * <b>val</b> r = <b>new</b> TestResult()
+ * suite.run(r)
+ * for (<b>val</b> tf &lt;- r.failures()) {
+ *   Console.println(tf.toString())
+ * }
+ * </pre>
  */
 object SUnit {
 
   /** a Test can be run with its result being collected */
   trait Test {
-    def run(r: TestResult):Unit;
+    def run(r: TestResult): Unit
   }
 
-  /** a TestCase defines the fixture to run multiple tests */
+  /** The class <code>TestCase</code> defines the fixture to run multiple
+   *  tests.
+   *
+   *  @param name ...
+   */
   class TestCase(val name: String) extends Test with Assert {
-    protected def createResult() =
-      new TestResult();
 
-    protected def runTest(): Unit =
-      {}
+    protected def createResult() = new TestResult()
+
+    protected def runTest(): Unit = {}
 
     def run(r: TestResult): Unit =
       try {
-        runTest();
+        runTest()
       } catch {
-        case t:Throwable => r.addFailure(this, t);
+        case t:Throwable => r.addFailure(this, t)
       }
 
-    def run(): Unit =
-      run(createResult());
+    def run(): Unit = run(createResult())
 
-    def setUp() =
-      {}
+    def setUp() = {}
 
-    def tearDown() =
-      {}
+    def tearDown() = {}
 
-    override def toString() =
-      name;
+    override def toString() = name
   }
 
-  /** a TestFailure collects a failed test together with the thrown exception */
-  class TestFailure(val failedTest:Test, val thrownException:Throwable) {
+  /** The class <code>TestFailure</code> collects a failed test together
+   *  with the thrown exception.
+   */
+  class TestFailure(val failedTest: Test, val thrownException: Throwable) {
+    private val eol = System.getProperty("line.separator", "\n")
 
-    def this(p:Pair[Test,Throwable]) = this(p._1, p._2);
+    def this(p: Pair[Test, Throwable]) = this(p._1, p._2)
 
     override def toString() =
-      failedTest.toString()+" failed due to "+thrownException.toString();
+      failedTest.toString() + " failed due to " + thrownException.toString()
 
     def trace(): String = {
-      val s = new StringBuilder();
-      for(val trElem <- thrownException.getStackTrace()) {
-        s.append(trElem.toString());
-        s.append('\n');
+      val s = new StringBuilder()
+      for (val trElem <- thrownException.getStackTrace()) {
+        s.append(trElem.toString())
+        s.append(eol)
       }
       s.toString()
     }
@@ -92,102 +98,105 @@ object SUnit {
 
   /** a TestResult collects the result of executing a test case */
   class TestResult {
-    val buf =
-      new scala.collection.mutable.ArrayBuffer[Pair[Test,Throwable]]();
+    val buf = new ArrayBuffer[Pair[Test, Throwable]]()
 
     def addFailure(test:Test, t:Throwable) =
-      buf += Pair(test,t);
+      buf += Pair(test, t)
 
     def failureCount() =
-      buf.length;
+      buf.length
 
     def failures() =
-      buf.elements map { x => new TestFailure(x) };
+      buf.elements map { x => new TestFailure(x) }
   }
 
-  /** a TestSuite runs a composite of test cases */
+  /** The class <code>TestSuite</code> runs a composite of test cases.
+   */
   class TestSuite(tests:Test*) extends Test {
 
-    def this(names:Seq[String], constr:String=>Test) =
-      this((names.toList map constr):_*);
+    def this(names: Seq[String], constr: String => Test) =
+      this((names.toList map constr):_*)
 
-    val buf =
-      new scala.collection.mutable.ArrayBuffer[Test]();
+    val buf = new ArrayBuffer[Test]()
 
-    buf ++= tests;
+    buf ++= tests
 
     def addTest(t: Test) =
-      buf += t;
+      buf += t
 
-    def run(r: TestResult):Unit = {
+    def run(r: TestResult): Unit =
       for(val t <- buf) {
-        t.run(r);
+        t.run(r)
       }
-    }
+
   }
 
   /** an AssertFailed is thrown for a failed assertion */
-  case class AssertFailed(msg:String) extends java.lang.RuntimeException {
-    override def toString() =
-      "failed assertion:"+msg;
+  case class AssertFailed(msg: String) extends java.lang.RuntimeException {
+    override def toString() = "failed assertion:" + msg
   }
 
   /** this class defined useful assert methods */
   trait Assert {
     /** equality */
-    def assertEquals[A](msg:String, expected:A, actual: => A): Unit =
-      if( expected != actual ) fail(msg);
+    def assertEquals[A](msg: String, expected: A, actual: => A): Unit =
+      if (expected != actual) fail(msg)
 
     /** equality */
-    def assertEquals[A](expected:A, actual: => A): Unit  =
-      assertEquals("(no message)", expected, actual);
+    def assertEquals[A](expected: A, actual: => A): Unit  =
+      assertEquals("(no message)", expected, actual)
 
     /** falseness */
-    def assertFalse(msg:String, actual: => Boolean): Unit =
-      assertEquals(msg, false, actual);
+    def assertFalse(msg: String, actual: => Boolean): Unit =
+      assertEquals(msg, false, actual)
+
     /** falseness */
     def assertFalse(actual: => Boolean): Unit =
-      assertFalse("(no message)", actual);
+      assertFalse("(no message)", actual)
 
     /** not null */
     def assertNotNull(msg:String, actual: => AnyRef): Unit =
-      if( null == actual ) fail(msg);
+      if (null == actual) fail(msg)
 
     /** not null */
     def assertNotNull(actual: => AnyRef): Unit  =
-      assertNotNull("(no message)", actual);
+      assertNotNull("(no message)", actual)
 
     /** reference inequality */
-    def assertNotSame(msg:String, expected: => AnyRef, actual: => AnyRef): Unit =
-      if(expected.eq(actual)) fail(msg);
+    def assertNotSame(msg: String, expected: => AnyRef, actual: => AnyRef): Unit =
+      if (expected.eq(actual)) fail(msg)
+
     /** reference inequality */
     def assertNotSame(expected: => AnyRef, actual: => AnyRef): Unit  =
-      assertNotSame("(no message)", expected, actual);
+      assertNotSame("(no message)", expected, actual)
 
     /** null */
-    def assertNull(msg:String, actual: => AnyRef): Unit =
-        if( null != actual ) fail(msg);
+    def assertNull(msg: String, actual: => AnyRef): Unit =
+      if (null != actual) fail(msg)
+
     /** null */
     def assertNull(actual: => AnyRef): Unit =
-      assertNull("(no message)", actual);
-
+      assertNull("(no message)", actual)
 
     /** reference equality */
-    def assertSame(msg:String, expected: => AnyRef, actual: => AnyRef): Unit =
-        if(!expected.eq(actual)) fail(msg);
+    def assertSame(msg: String, expected: => AnyRef, actual: => AnyRef): Unit =
+        if(!expected.eq(actual)) fail(msg)
+
     /** reference equality */
     def assertSame(expected: => AnyRef, actual: => AnyRef): Unit  =
-      assertSame("(no message)", expected, actual);
+      assertSame("(no message)", expected, actual)
 
     /** trueness */
-    def assertTrue(msg:String, actual: => Boolean): Unit =
-      assertEquals(msg, true, actual);
+    def assertTrue(msg: String, actual: => Boolean): Unit =
+      assertEquals(msg, true, actual)
+
     /** trueness */
     def assertTrue(actual: => Boolean): Unit  =
-      assertTrue("(no message)", actual);
+      assertTrue("(no message)", actual)
 
-    /** throws AssertFailed with given message */
-    def fail(msg:String): Unit =
-      throw new AssertFailed(msg);
+    /** throws <code>AssertFailed</code> with given message <code>msg</code>.
+     */
+    def fail(msg: String): Unit =
+      throw new AssertFailed(msg)
   }
 }

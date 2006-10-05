@@ -9,64 +9,70 @@
 // $Id$
 
 
-package scala.testing;
+package scala.testing
 
 
 /** <code>Benchmark</code> can be used to quickly turn an existing
  *  class into a benchmark. Here is a short example:
  *
  *  <pre>
- *  object sort1 extends Sorter with Benchmark {
- *     def run = sort(List.range(1, 1000));
+ *  <b>object</b> sort1 <b>extends</b> Sorter <b>with</b> Benchmark {
+ *    <b>def</b> run = sort(List.range(1, 1000))
  *  }
  *  </pre>
- *
- * The run method has to be defined by the user, who will perform
- * the timed operation there.
- * Run the benchmark as follows:
- * <pre>
- *   scala sort1 5 times.log
- * </pre>
- * This will run the benchmark 5 times and log the execution times in
- * a file called times.log
+ *  <p>
+ *    The run method has to be defined by the user, who will perform
+ *    the timed operation there.
+ *    Run the benchmark as follows:
+ *  </p>
+ *  <pre>
+ *  &gt; scala sort1 5 times.log
+ *  </pre>
+ *  <p>
+ *    This will run the benchmark 5 times and log the execution times in
+ *    a file called <code>times.log</code>
+ *  </p>
  */
 trait Benchmark {
 
   /** this method should be implemented by the concrete benchmark */
-  def run: Unit;
+  def run: Unit
 
   /** Run the benchmark the specified number of times
    *  and return a list with the execution times in milliseconds
-   *  in reverse order of the execution */
+   *  in reverse order of the execution
+   *
+   *  @param noTimes ...
+   *  @return        ...
+   */
   def runBenchmark(noTimes: Int): List[Long] =
-
     for (val i <- List.range(1, noTimes + 1)) yield {
-      val startTime = System.currentTimeMillis();
-      run;
-      val stopTime = System.currentTimeMillis();
-      System.gc();
+      val startTime = System.currentTimeMillis()
+      run
+      val stopTime = System.currentTimeMillis()
+      System.gc()
 
       stopTime - startTime
     }
 
   /**
-  * The entry point. It takes two arguments: the number of
-  * consecutive runs, and the name of a log file where to
-  * append the times.
-  *
-  */
+   * The entry point. It takes two arguments: the number of
+   * consecutive runs, and the name of a log file where to
+   * append the times.
+   */
   def main(args: Array[String]): Unit = {
     if (args.length > 1) {
-      val logFile = new java.io.FileWriter(args(1), true); // append, not overwrite
+      val logFile = new java.io.FileWriter(args(1), true) // append, not overwrite
+      val eol = System.getProperty("line.separator", "\n")
 
-      logFile.write(getClass().getName());
+      logFile.write(getClass().getName())
       for (val t <- runBenchmark(Integer.parseInt(args(0))))
-	logFile.write("\t\t" + t);
+        logFile.write("\t\t" + t)
 
-      logFile.write("\n");
-      logFile.flush();
+      logFile.write(eol)
+      logFile.flush()
     } else
-      Console.println("Usage: scala benchmarks.program <runs> <logfile>");
+      Console.println("Usage: scala benchmarks.program <runs> <logfile>")
   }
 }
 
