@@ -354,7 +354,9 @@ abstract class TreePrinters {
 
     def printAll(): unit = {
       print("[[syntax trees at end of " + phase + "]]")
-      for (val unit <- global.currentRun.units) print(unit)
+      atPhase(phase.next) {
+        for (val unit <- global.currentRun.units) print(unit)
+      }
     }
   }
 
