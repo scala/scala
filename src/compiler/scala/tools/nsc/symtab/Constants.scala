@@ -1,32 +1,32 @@
-/* NSC -- new scala compiler
- * Copyright 2005 LAMP/EPFL
+/* NSC -- new Scala compiler
+ * Copyright 2005-2006 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
 
-package scala.tools.nsc.symtab;
+package scala.tools.nsc.symtab
 
-import classfile.PickleFormat._;
+import classfile.PickleFormat._
 
 trait Constants requires SymbolTable {
 
-  import definitions._;
+  import definitions._
 
   final val NoTag      = LITERAL - LITERAL
-  final val UnitTag    = LITERALunit - LITERAL;
-  final val BooleanTag = LITERALboolean - LITERAL;
-  final val ByteTag    = LITERALbyte - LITERAL;
-  final val ShortTag   = LITERALshort - LITERAL;
-  final val CharTag    = LITERALchar - LITERAL;
-  final val IntTag     = LITERALint - LITERAL;
-  final val LongTag    = LITERALlong - LITERAL;
-  final val FloatTag   = LITERALfloat - LITERAL;
-  final val DoubleTag  = LITERALdouble - LITERAL;
-  final val StringTag  = LITERALstring - LITERAL;
-  final val NullTag    = LITERALnull - LITERAL;
-  final val ClassTag   = LITERALclass - LITERAL;
-  final val EnumTag    = ClassTag + 1;
-  final val ArrayTag   = EnumTag + 1;
+  final val UnitTag    = LITERALunit - LITERAL
+  final val BooleanTag = LITERALboolean - LITERAL
+  final val ByteTag    = LITERALbyte - LITERAL
+  final val ShortTag   = LITERALshort - LITERAL
+  final val CharTag    = LITERALchar - LITERAL
+  final val IntTag     = LITERALint - LITERAL
+  final val LongTag    = LITERALlong - LITERAL
+  final val FloatTag   = LITERALfloat - LITERAL
+  final val DoubleTag  = LITERALdouble - LITERAL
+  final val StringTag  = LITERALstring - LITERAL
+  final val NullTag    = LITERALnull - LITERAL
+  final val ClassTag   = LITERALclass - LITERAL
+  final val EnumTag    = ClassTag + 1
+  final val ArrayTag   = EnumTag + 1
 
   def isNumeric(tag: int) = ByteTag <= tag && tag <= DoubleTag
 
@@ -47,7 +47,7 @@ trait Constants requires SymbolTable {
       else if (value.isInstanceOf[Symbol]) EnumTag
       else if (value.isInstanceOf[Array[Constant]]) ArrayTag
       else if (value == null) NullTag
-      else throw new Error("bad constant value: " + value);
+      else throw new Error("bad constant value: " + value)
 
     def tpe: Type = tag match {
       case UnitTag    => UnitClass.tpe
@@ -65,7 +65,11 @@ trait Constants requires SymbolTable {
       case EnumTag    => symbolValue.owner.linkedClassOfClass.tpe
     }
 
-    /** We need the equals method to take account of tags as well as values */
+    /** We need the equals method to take account of tags as well as values.
+     *
+     *  @param other ...
+     *  @return      ...
+     */
     override def equals(other: Any): boolean = other match {
       case that: Constant => this.value == that.value && this.tag == that.tag
       case _ => false
@@ -152,9 +156,13 @@ trait Constants requires SymbolTable {
       case _         => throw new Error("value " + value + " is not a double")
     }
 
-    /** Convert constant value to conform to given type */
+    /** Convert constant value to conform to given type.
+     *
+     *  @param pt ...
+     *  @return   ...
+     */
     def convertTo(pt: Type): Constant = {
-      val target = pt.symbol;
+      val target = pt.symbol
       if (target == tpe.symbol)
 	this
       else if (target == ByteClass && ByteTag <= tag && tag <= IntTag &&
@@ -182,17 +190,17 @@ trait Constants requires SymbolTable {
     def stringValue: String =
       if (value == null) "null"
       else if (tag == ClassTag) signature(typeValue)
-      else value.toString();
+      else value.toString()
 
     def typeValue: Type = value.asInstanceOf[Type]
 
     def symbolValue: Symbol = value.asInstanceOf[Symbol]
 
     def arrayValue: Array[Constant] =
-      throw new Error("value " + value + " is not an array");
+      throw new Error("value " + value + " is not an array")
 
     override def hashCode(): int =
-      if (value == null) 0 else value.hashCode() * 41 + 17;
+      if (value == null) 0 else value.hashCode() * 41 + 17
   }
 
   class ArrayConstant(override val arrayValue: Array[Constant],

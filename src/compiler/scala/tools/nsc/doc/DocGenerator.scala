@@ -81,6 +81,11 @@ abstract class DocGenerator extends Models {
         Text(tree.symbol.toString())
     }
 
+    /**
+     *  @param tpe    ...
+     *  @param target ...
+     *  @return       ...
+     */
     def urlFor(tpe: Type, target: String): NodeSeq = try {
       if (tpe.symbol hasFlag Flags.JAVA)
         <a class={tpe.toString().replace('.', '_')} href=""
@@ -96,22 +101,22 @@ abstract class DocGenerator extends Models {
     }
 
     def urlFor0(sym: Symbol, orig: Symbol): String = {
-      (if (sym == NoSymbol) {
-         "XXX";
-       } else if (sym.owner.isPackageClass) sym.fullNameString('/');
-       else urlFor0(sym.owner, orig) + "." + Utility.escape(sym.nameString)) + (sym match {
-      case msym: ModuleSymbol =>
-        if (msym hasFlag Flags.PACKAGE) NAME_SUFFIX_PACKAGE
-        else NAME_SUFFIX_OBJECT
-      case csym: ClassSymbol =>
-        if (csym.isModuleClass) {
-          if (csym hasFlag Flags.PACKAGE) NAME_SUFFIX_PACKAGE
+      (if (sym == NoSymbol) "XXX"
+       else if (sym.owner.isPackageClass) sym.fullNameString('/')
+       else urlFor0(sym.owner, orig) + "." + Utility.escape(sym.nameString)) +
+      (sym match {
+        case msym: ModuleSymbol =>
+          if (msym hasFlag Flags.PACKAGE) NAME_SUFFIX_PACKAGE
           else NAME_SUFFIX_OBJECT
-        }
-        else ""
-      case _ =>
-        //System.err.println("XXX: class or object " + orig + " not found in " + sym)
-        "XXXXX"
+        case csym: ClassSymbol =>
+          if (csym.isModuleClass) {
+            if (csym hasFlag Flags.PACKAGE) NAME_SUFFIX_PACKAGE
+            else NAME_SUFFIX_OBJECT
+          }
+          else ""
+        case _ =>
+          //System.err.println("XXX: class or object " + orig + " not found in " + sym)
+          "XXXXX"
       })
     }
 
@@ -261,6 +266,10 @@ abstract class DocGenerator extends Models {
         br(res.concat(Text("]")))
       }
 
+    /**
+     *  @param mmbr ...
+     *  @return     ...
+     */
     def fullHeader(mmbr: HasTree): NodeSeq = <span>{ {
         if (!mmbr.isInstanceOf[ImplMod]) {
             <a name = {Utility.escape(mmbr.tree.symbol.nameString)}></a>;
@@ -296,7 +305,7 @@ abstract class DocGenerator extends Models {
             <tr><td colspan="2" class="title">{Text(labelFor(kind))} Summary</td></tr>
              { {
               for (val mmbr <- map(kind).toList) yield
-                shortHeader(mmbr);
+                shortHeader(mmbr)
              } }
             </table>;
             br(x);
@@ -334,6 +343,10 @@ abstract class DocGenerator extends Models {
       } else
         NodeSeq.Empty
 
+    /**
+     *  @param mmbr ...
+     *  @return     ...
+     */
     def shortHeader(mmbr: HasTree): NodeSeq = {
       <tr>
         <td valign="top" class="modifiers">
@@ -367,7 +380,7 @@ abstract class DocGenerator extends Models {
 
     def ifT(tree: Tree, nodes: NodeSeq, before: Boolean) =
       if (tree != EmptyTree &&
-        tree.tpe.symbol != definitions.AnyClass &&
+          tree.tpe.symbol != definitions.AnyClass &&
           tree.tpe.symbol != definitions.AllClass) {
         if (before) nodes.concat(forTree(tree))
         else {
@@ -382,12 +395,12 @@ abstract class DocGenerator extends Models {
 
     def forTree(tree: Tree): NodeSeq = tree match {
       case vdef: ValDef =>
-        Text(vdef.symbol.name.toString()).concat(Text(" : ")).concat(forTree(vdef.tpt));
+        Text(vdef.symbol.name.toString()).concat(Text(": ")).concat(forTree(vdef.tpt))
       case sel: Select =>
         forTree(sel.qualifier).concat(Text(sel.symbol.nameString))
       case tree: AbsTypeDef =>
         ifT(tree.lo, Text(" <: "), false).
-          concat(Text(tree.symbol.nameString)).concat(ifT(tree.hi, Text(" <: "), true));
+          concat(Text(tree.symbol.nameString)).concat(ifT(tree.hi, Text(" <: "), true))
       case tpt: TypeTree =>
         urlFor(tpt.tpe, contentFrame)
       case id: Ident =>
@@ -398,6 +411,10 @@ abstract class DocGenerator extends Models {
         Text("XX=" + tree.getClass() + " " + tree.toString())
     }
 
+    /**
+     *  @param trees ...
+     *  @return      ...
+     */
     def forTrees(trees: List[Tree]): NodeSeq =
       if (trees.isEmpty) NodeSeq.Empty
       else {
@@ -406,14 +423,14 @@ abstract class DocGenerator extends Models {
                     else Text(", ")).concat(forTrees(trees.tail))
       }
 
-    def surround(open: String, close: String, node: NodeSeq): NodeSeq =
+    private def surround(open: String, close: String, node: NodeSeq): NodeSeq =
       Text(open).concat(node).concat(Text(close))
 
     /**
      *  @param ht ...
      *  @return   ...
      */
-    def typesFor(ht: HasTree): NodeSeq = {
+    private def typesFor(ht: HasTree): NodeSeq = {
       val tparams = ht.tree match {
         case cdef: ClassDef     => cdef.tparams
         case ddef: DefDef       => ddef.tparams
@@ -424,21 +441,29 @@ abstract class DocGenerator extends Models {
       else surround("[", "]", forTrees(tparams))
     }
 
-    def argsFor(ht: HasTree): NodeSeq = ht.tree match {
+    /**
+     *  @param ht ...
+     *  @return   ...
+     */
+    private def argsFor(ht: HasTree): NodeSeq = ht.tree match {
       case ddef: DefDef =>
         if (!ddef.vparamss.isEmpty &&
             (!ddef.vparamss.tail.isEmpty || !ddef.vparamss.head.isEmpty)) {
           val nodes = for (val vparams <- ddef.vparamss)
             yield surround("(", ")", forTrees(vparams));
-          nodes.flatMap(x => x.toList);
+          nodes.flatMap(x => x.toList)
         } else NodeSeq.Empty
       case _ => NodeSeq.Empty
     }
 
-    def resultFor(ht: HasTree): NodeSeq = ht.tree match {
+    /**
+     *  @param ht ...
+     *  @return   ...
+     */
+    private def resultFor(ht: HasTree): NodeSeq = ht.tree match {
       case vdef: ValOrDefDef =>
         if (!vdef.symbol.nameString.equals("this"))
-          Text(" : ").concat(forTree(vdef.tpt))
+          Text(": ").concat(forTree(vdef.tpt))
         else
           NodeSeq.Empty
       case _ =>
