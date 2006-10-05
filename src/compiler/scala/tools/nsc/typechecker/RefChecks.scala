@@ -10,24 +10,31 @@ import symtab.Flags._
 import collection.mutable.HashMap
 import transform.InfoTransform
 
-/** Post-attribution checking and transformation.
- *  //todo: check whether we always check type parameter bounds.
+/** <p>
+ *    Post-attribution checking and transformation.
+ *  </p>
+ *  <p>
+ *    This phase performs the following checks.
+ *  </p>
+ *  <ul>
+ *    <li>All overrides conform to rules.</li>
+ *    <li>All type arguments conform to bounds.</li>
+ *    <li>All type variable uses conform to variance annotations.</li>
+ *    <li>No forward reference to a term symbol extends beyond a value definition.</li>
+ *  </ul>
+ *  <p>
+ *    It performs the following transformations.
+ *  </p>
+ *  <ul>
+ *   <li>Local modules are replaced by variables and classes</li>
+ *   <li>Calls to case factory methods are replaced by new's.</li>
+ *   <li>Eliminate branches in a conditional if the condition is a constant</li>
+ *  </ul>
  *
- *  This phase performs the following checks.
- *
- *   - All overrides conform to rules.
- *   - All type arguments conform to bounds.
- *   - All type variable uses conform to variance annotations.
- *   - No forward reference to a term symbol extends beyond a value definition.
- *
- *  It performs the following transformations.
- *
- *   - Local modules are replaced by variables and classes
- *   - Calls to case factory methods are replaced by new's.
- *   - eliminate branches in a conditional if the condition is a constant
- *
- *  @author Martin Odersky
+ *  @author  Martin Odersky
  *  @version 1.0
+ *
+ *  @todo    Check whether we always check type parameter bounds.
  */
 abstract class RefChecks extends InfoTransform {
 
@@ -102,7 +109,9 @@ abstract class RefChecks extends InfoTransform {
           tp1 <:< tp2
       }
 
-      /* Check that all conditions for overriding `other' by `member' are met. */
+      /** Check that all conditions for overriding <code>other</code> by
+       *  <code>member</code> are met.
+       */
       def checkOverride(clazz: Symbol, member: Symbol, other: Symbol): unit = {
 	val pos = if (member.owner == clazz) member.pos else clazz.pos
 
@@ -237,10 +246,18 @@ abstract class RefChecks extends InfoTransform {
 
   // Basetype Checking --------------------------------------------------------
 
-    /** 1. Check that later type instances in the base-type sequence
-     *     are subtypes of earlier type instances of the same mixin.
-     *  2. Check that case classes do not inherit from case classes.
-     *  3. Check that at most one base type is a case-class.
+    /** <ol>
+     *    <li> <!-- 1 -->
+     *      Check that later type instances in the base-type sequence
+     *      are subtypes of earlier type instances of the same mixin.
+     *    </li>
+     *    <li> <!-- 2 -->
+     *      Check that case classes do not inherit from case classes.
+     *    </li>
+     *    <li> <!-- 3 -->
+     *      Check that at most one base type is a case-class.
+     *    </li>
+     *  </ol>
      */
     private def validateBaseTypes(clazz: Symbol): unit = {
       val seenTypes = new Array[Type](clazz.info.closure.length)
@@ -286,7 +303,11 @@ abstract class RefChecks extends InfoTransform {
     private val CoVariance = 1
     private val AnyVariance = 2
 
-    /** Check variance of type variables in this type
+    /** Check variance of type variables in this type.
+     *
+     *  @param base     ...
+     *  @param all      ...
+     *  @param variance ...
      */
     private def validateVariance(base: Symbol, all: Type, variance: int): unit = {
 

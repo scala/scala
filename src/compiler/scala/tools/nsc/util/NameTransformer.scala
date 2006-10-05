@@ -40,7 +40,11 @@ object NameTransformer {
   enterOp('?', "$qmark")
   enterOp('@', "$at")
 
-  /** Replace operator symbols by corresponding "$op_name" */
+  /** Replace operator symbols by corresponding "<code>$op_name</code>".
+   *
+   *  @param name ...
+   *  @return     ...
+   */
   def encode(name: String): String = {
     var buf: StringBuffer = null
     val len = name.length()
@@ -61,37 +65,41 @@ object NameTransformer {
     if (buf == null) name else buf.toString()
   }
 
-  /** Replace $op_name by corresponding operator symbol */
+  /** Replace <code>$op_name</code> by corresponding operator symbol.
+   *
+   *  @param name0 ...
+   *  @return      ...
+   */
   def decode(name0: String): String = {
     //System.out.println("decode: " + name);//DEBUG
-    val name = if (name0.endsWith("<init>")) name0.substring(0, name0.length() - ("<init>").length()) + "this";
+    val name = if (name0.endsWith("<init>")) name0.substring(0, name0.length() - ("<init>").length()) + "this"
                else name0;
-    var buf: StringBuffer = null;
-    val len = name.length();
-    var i = 0;
+    var buf: StringBuffer = null
+    val len = name.length()
+    var i = 0
     while (i < len) {
-      var ops: OpCodes = null;
-      val c = name charAt i;
+      var ops: OpCodes = null
+      val c = name charAt i
       if (c == '$' && i + 2 < len) {
-        val ch1 = name.charAt(i+1);
+        val ch1 = name.charAt(i+1)
         if ('a' <= ch1 && ch1 <= 'z') {
-          val ch2 = name.charAt(i+2);
+          val ch2 = name.charAt(i+2)
           if ('a' <= ch2 && ch2 <= 'z') {
-            ops = code2op((ch1 - 'a') * 26 + ch2 - 'a');
+            ops = code2op((ch1 - 'a') * 26 + ch2 - 'a')
             while (ops != null && !name.startsWith(ops.code, i)) ops = ops.next;
             if (ops != null) {
               if (buf == null) {
-                buf = new StringBuffer();
-                buf.append(name.substring(0, i));
+                buf = new StringBuffer()
+                buf.append(name.substring(0, i))
               }
-              buf.append(ops.op);
+              buf.append(ops.op)
               i = i + ops.code.length()
             }
           }
         }
       }
       if (ops == null) {
-        if (buf != null) buf.append(c);
+        if (buf != null) buf.append(c)
         i = i + 1
       }
     }

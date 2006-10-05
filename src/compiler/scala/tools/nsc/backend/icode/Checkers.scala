@@ -14,30 +14,42 @@ abstract class Checkers {
   val global: Global
   import global._
 
-  /**
-   * This class performs a set of checks similar to what the bytecode
-   * verifier does. For each basic block, it checks that:
+  /** <p>
+   *    This class performs a set of checks similar to what the bytecode
+   *    verifier does. For each basic block, it checks that:
+   *  </p>
+   *  <ul>
+   *    <li>
+   *      for primitive operations: the type and numer of operands match
+   *      the type of the operation
+   *    </li>
+   *    <li>
+   *      for method calls: the method exists in the type of the receiver
+   *      and the number and type of arguments match the declared type of
+   *      the method.
+   *    </li>
+   *    <li>
+   *      for object creation: the constructor can be called.
+   *    </li>
+   *    <li>
+   *      for load/stores: the field/local/param exists and the type
+   *      of the value matches that of the target.
+   *    </li>
+   *  </ul>
+   *  <p>
+   *    For a control flow graph it checks that type stacks at entry to
+   *    each basic block 'agree':
+   *  </p>
+   *  <ul>
+   *    <li>they have the same length</li>
+   *    <li>there exists a lub for all types at the same position in stacks.</li>
+   *  </ul>
    *
-   * - for primitive operations: the type and numer of operands match
-   *   the type of the operation
+   *  @author  Iulian Dragos
+   *  @version 1.0, 06/09/2005
    *
-   * - for method calls: the method exists in the type of the receiver
-   *   and the number and type of arguments match the declared type of
-   *   the method.
-   *
-   * - for object creation: the constructor can be called.
-   *
-   * - for load/stores: the field/local/param exists and the type
-   *   of the value matches that of the target.
-   *
-   * For a control flow graph it checks that type stacks at entry to
-   * each basic block 'agree':
-   *
-   * - they have the same length
-   * - there exists a lub for all types at the same position in stacks.
-   *
-   * TODO: Better checks for MONITOR_ENTER/EXIT
-   *       Better checks for local var initializations
+   *  @todo Better checks for <code>MONITOR_ENTER/EXIT</code>
+   *        Better checks for local var initializations
    */
   class ICodeChecker {
     import icodes._
@@ -210,7 +222,10 @@ abstract class Checkers {
         }
 
         /** Checks that the object passed as receiver has a method
-         *  'method' and that it is callable from the current method.
+         *  <code>method</code> and that it is callable from the current method.
+         *
+         *  @param receiver ...
+         *  @param method   ...
          */
         def checkMethod(receiver: TypeKind, method: Symbol) =
           receiver match {
@@ -436,9 +451,9 @@ abstract class Checkers {
             }
 
           case CREATE_ARRAY(elem) =>
-            checkStack(1);
-            checkType(stack.pop, INT);
-            stack.push(ARRAY(elem));
+            checkStack(1)
+            checkType(stack.pop, INT)
+            stack.push(ARRAY(elem))
 
           case IS_INSTANCE(tpe) =>
             val ref = stack.pop
@@ -557,7 +572,9 @@ abstract class Checkers {
 
     //////////////////// Checking /////////////////////////////
 
-    /** Return true if k1 is a subtype of any of the following types. */
+    /** Return true if <code>k1</code> is a subtype of any of the following
+     *  types.
+     */
     def isOneOf(k1: TypeKind, kinds: TypeKind*) =
       kinds.exists( k => k1 <:< k)
 

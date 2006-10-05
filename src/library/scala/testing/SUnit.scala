@@ -23,8 +23,8 @@ import scala.runtime.compat.StringBuilder
  *   Use these classes like this:
  * </p>
  * <pre>
- * import scala.testing.SUnit
- * import SUnit._
+ * <b>import</b> scala.testing.SUnit
+ * <b>import</b> SUnit._
  *
  * <b>class</b> MyTest(n: String) <b>extends</b> TestCase(n) {
  *
@@ -36,7 +36,7 @@ import scala.runtime.compat.StringBuilder
  *
  * <b>val</b> r = <b>new</b> TestResult()
  * suite.run(r)
- * for (<b>val</b> tf &lt;- r.failures()) {
+ * <b>for</b> (<b>val</b> tf &lt;- r.failures()) {
  *   Console.println(tf.toString())
  * }
  * </pre>

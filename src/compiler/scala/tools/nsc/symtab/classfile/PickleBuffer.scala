@@ -8,9 +8,9 @@ package scala.tools.nsc.symtab.classfile
 
 /** Variable length byte arrays, with methods for basic pickling and unpickling.
  *
- *  @param data: The initial buffer
- *  @param from: The first index where defined data are found
- *  @param to  : The first index where new data can be written
+ *  @param data The initial buffer
+ *  @param from The first index where defined data are found
+ *  @param to   The first index where new data can be written
  */
 class PickleBuffer(data: Array[byte], from: int, to: int) {
 
@@ -51,8 +51,11 @@ class PickleBuffer(data: Array[byte], from: int, to: int) {
     writeByte(x & 0x7f)
   }
 
-  /** Write a natural number at `pos'
+  /** Write a natural number <code>x</code> at position <code>pos</code>.
    *  If number is more than one byte, shift rest of array to make space.
+   *
+   *  @param pos ...
+   *  @param x   ...
    */
   def patchNat(pos: int, x: int): unit = {
     def patchNatPrefix(x: int): unit = {
@@ -67,7 +70,10 @@ class PickleBuffer(data: Array[byte], from: int, to: int) {
     if (y != 0) patchNatPrefix(y)
   }
 
-  /** Write a long number in signed big endian format, base 256. */
+  /** Write a long number <code>x</code> in signed big endian format, base 256.
+   *
+   *  @param x The long number to be written.
+   */
   def writeLong(x: long): unit = {
     val y = x >> 8
     val z = x & 0xff
@@ -106,13 +112,21 @@ class PickleBuffer(data: Array[byte], from: int, to: int) {
     x << leading >> leading
   }
 
-  /** Perform operation `op' until readIndex == end.
+  /** Perform operation <code>op</code> until the condition
+   *  <code>readIndex == end</code> is satisfied.
    *  Concatenate results into a list.
+   *
+   *  @param end ...
+   *  @param op  ...
+   *  @return    ...
    */
   def until[T](end: int, op: () => T): List[T] =
     if (readIndex == end) List() else op() :: until(end, op);
 
-  /** Create an index */
+  /** Create an index.
+   *
+   *  @return ...
+   */
   def createIndex: Array[int] = {
     val index = new Array[int](readNat())
     for (val i <- Iterator.range(0, index.length)) {

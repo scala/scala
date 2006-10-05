@@ -33,7 +33,7 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
   protected def newTransformer(unit: CompilationUnit): Transformer =
     new ExplicitOuterTransformer(unit)
 
-  /** Is given `clazz' an inner class? */
+  /** Is given <code>clazz</code> an inner class? */
   private def isInner(clazz: Symbol) =
     !clazz.isPackageClass && !clazz.outerClass.isStaticOwner
 
@@ -54,19 +54,42 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
     }
   }
 
-  /** The type transformation method:
-   *  1. Add an outer parameter to the formal parameters of a constructor
-   *     in a inner non-trait class;
-   *  2. Add a protected $outer field to an inner class which is not a trait.
-   *  3. Add an outer accessor $outer$$C to every inner class with fully qualified name C
-   *     that is not an interface. The outer accesssor is abstract for traits, concrete
-   *     for other classes.
-   *  3a. Also add overriding accessor defs to every class that inherits mixin classes
-   *     with outer accessor defs (unless the superclass already inherits the same mixin).
-   *  4. Add a mixin constructor $init$ to all mixins except interfaces
-   *     Leave all other types unchanged. todo: move to later
-   *  5. Make all super accessors and modules in traits non-private, mangling their names.
-   *  6. Remove protected flag from all members of traits.
+  /** <p>
+   *    The type transformation method:
+   *  </p>
+   *  <ol>
+   *    <li>
+   *      Add an outer parameter to the formal parameters of a constructor
+   *      in a inner non-trait class;
+   *    </li>
+   *    <li>
+   *      Add a protected $outer field to an inner class which is not a trait.
+   *    </li>
+   *    <li>
+   *      <p>
+   *        Add an outer accessor <code>$outer$$C</code> to every inner class
+   *        with fully qualified name <code>C</code> that is not an interface.
+   *        The outer accesssor is abstract for traits, concrete for other
+   *        classes.
+   *      </p>
+   *      <p>
+   *        3a. Also add overriding accessor defs to every class that inherits
+   *        mixin classes with outer accessor defs (unless the superclass
+   *        already inherits the same mixin).
+   *      </p>
+   *    <li>
+   *    <li>
+   *      Add a mixin constructor <code>$init$</code> to all mixins except interfaces
+   *      Leave all other types unchanged. todo: move to later
+   *    </li>
+   *    <li>
+   *      Make all super accessors and modules in traits non-private, mangling
+   *      their names.
+   *    </li>
+   *    <li>
+   *      Remove protected flag from all members of traits.
+   *    </li>
+   *  </ol>
    */
   def transformInfo(sym: Symbol, tp: Type): Type = tp match {
     case MethodType(formals, restpe) =>
@@ -112,8 +135,8 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
       tp
   }
 
-  /** A base class for transformers that maintain `outerParam' values for
-   *  outer parameters of constructors.
+  /** A base class for transformers that maintain <code>outerParam</code>
+   *  values for outer parameters of constructors.
    *  The class provides methods for referencing via outer.
    */
   abstract class OuterPathTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
@@ -135,7 +158,7 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
       localTyper.typed(Apply(Select(base, outerAccessor(base.tpe.symbol)), List()))
 
     /** The path
-     *     `base'.$outer$$C1 ... .$outer$$Cn
+     *  <blockquote><pre>`base'.$outer$$C1 ... .$outer$$Cn</pre></blockquote>
      *  which refers to the outer instance of class <code>to</code> of
      *  value <code>base</code>. The result is typed but not positioned.
      *

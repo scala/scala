@@ -15,16 +15,25 @@ abstract class AddInterfaces extends InfoTransform {
   import definitions._             // standard classes and methods
   import posAssigner.atPos         // for filling in tree positions
 
-  /** The phase sets lateINTERFACE for non-interface traits that now become interfaces
-   *  It sets lateDEFERRED for formerly concrete methods in such traits
+  /** <p>
+   *    The phase sets <code>lateINTERFACE</code> for non-interface traits
+   *    that now become interfaces.
+   *  </p>
+   *  <p>
+   *    It sets <code>lateDEFERRED</code> for formerly concrete methods in
+   *    such traits.
+   *  </p>
    */
   override def phaseNewFlags: long = lateDEFERRED | lateINTERFACE
 
-  /** Type reference after erasure; to be defined in subclass Erasure */
+  /** Type reference after erasure; to be defined in subclass
+   *  <code>Erasure</code>.
+   */
   def erasedTypeRef(sym: Symbol): Type
 
   /** A lazily constructed map that associates every non-interface trait with
-   *  its implementation class */
+   *  its implementation class.
+   */
   private val implClassMap = new HashMap[Symbol, Symbol]
 
   /** A lazily constructed map that associates every concrete method in a non-interface
@@ -87,20 +96,39 @@ abstract class AddInterfaces extends InfoTransform {
       }
   }
 
-  /** A lazy type to set the info of an implementation class
-   *  The parents of an implementation class for trait `iface' are:
-   *    - superclass: Object
-   *    - mixin classes: mixin classes of `iface' where every non-interface trait
-   *                     is mapped to its implementation class, followed by
-   *                     `iface' itself.
-   *  The declarations of a mixin class are
-   *    - for every interface member of `iface' its implemention method, if one is needed.
-   *    - every former member of `iface' that is implementation only
+  /** <p>
+   *    A lazy type to set the info of an implementation class
+   *    The parents of an implementation class for trait <code>iface</code> are:
+   *  </p>
+   *  <ul>
+   *    <li>superclass: <code>Object</code></li>
+   *    <li>
+   *      mixin classes: mixin classes of <code>iface</code> where every
+   *      non-interface trait is mapped to its implementation class, followed
+   *      by <code>iface</code> itself.
+   *    </li>
+   *  </ul>
+   *  <p>
+   *    The declarations of a mixin class are:
+   *  </p>
+   *  <ul>
+   *    <li>
+   *      for every interface member of <code>iface</code> its implemention
+   *      method, if one is needed.
+   *    </li>
+   *    <li>
+   *      every former member of <code>iface</code> that is implementation only
+   *    </li>
+   *  </ul>
    */
   private class LazyImplClassType(iface: Symbol) extends LazyType {
 
-    /** Compute the decls of implementation class `implClass',
-     *  given the decls `ifaceDecls' of its interface
+    /** Compute the decls of implementation class <code>implClass</code>,
+     *  given the decls <code>ifaceDecls</code> of its interface.
+     *
+     *  @param implClass  ...
+     *  @param ifaceDecls ...
+     *  @return           ...
      */
     private def implDecls(implClass: Symbol, ifaceDecls: Scope): Scope = {
       val decls = newScope
@@ -142,8 +170,12 @@ abstract class AddInterfaces extends InfoTransform {
     override def load(clazz: Symbol): unit = complete(clazz)
   }
 
-  /** If `tp' refers to a non-interface trait, return a reference to its implementation class.
-   *  Otherwise return `tp' itself.
+  /** If type <code>tp</code> refers to a non-interface trait, return a
+   *  reference to its implementation class. Otherwise return <code>tp</code>
+   *  itself.
+   *
+   *  @param tp ...
+   *  @return   ...
    */
   private def mixinToImplClass(tp: Type): Type = tp match {
     case TypeRef(pre, sym, args) if (sym.needsImplClass) =>
@@ -244,8 +276,9 @@ abstract class AddInterfaces extends InfoTransform {
   }
 
   /** Add calls to supermixin constructors
-   *     super[mix].$init$()
-   *  to `tree'. `tree' which is assumed to be the body of a constructor of class `clazz'.
+   *  <blockquote><pre>super[mix].$init$()</pre></blockquote>
+   *  to <code>tree</code>. <code>tree</code> which is assumed to be the body
+   *  of a constructor of class <code>clazz</code>.
    */
   private def addMixinConstructorCalls(tree: Tree, clazz: Symbol): Tree = {
     def mixinConstructorCall(impl: Symbol): Tree = atPos(tree.pos) {

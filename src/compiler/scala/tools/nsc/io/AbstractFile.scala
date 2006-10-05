@@ -17,7 +17,7 @@ object AbstractFile {
 
   /**
    * If the specified File exists and is a regular file, returns an
-   * abstract regular file backed by it. Otherwise, returns null.
+   * abstract regular file backed by it. Otherwise, returns <code>null</code>.
    */
   def getFile(file: File): AbstractFile =
     if (file.isFile() && file.exists()) new PlainFile(file) else null
@@ -30,6 +30,9 @@ object AbstractFile {
    * if the specified File exists and is either a directory or a
    * readable zip or jar archive, returns an abstract directory
    * backed by it. Otherwise, returns null.
+   *
+   * @param file ...
+   * @return     ...
    */
   def getDirectory(file: File): AbstractFile = {
     if (file.isDirectory() && file.exists()) return new PlainFile(file);
@@ -64,7 +67,7 @@ object AbstractFile {
  *   The class <code>symtab.classfile.AbstractFileReader</code> accesses
  *   bytes, knowing that the character set of classfiles is UTF-8. For
  *   all other cases, the class <code>SourceFile</code> is used, which honors
- *   <code>global.settings.encoding.value</code>/
+ *   <code>global.settings.encoding.value</code>.
  * </p>
  */
 abstract class AbstractFile extends Object with Iterable[AbstractFile] {
