@@ -46,8 +46,8 @@ object Test1_scala {
   val x4 = { x: Int => 2 * x }
 
   try {
-    val y1: List[All]          = Serialize.read(Serialize.write(x1));
-    val y2: Option[All]        = Serialize.read(Serialize.write(x2));
+    val y1: List[Nothing]          = Serialize.read(Serialize.write(x1));
+    val y2: Option[Nothing]        = Serialize.read(Serialize.write(x2));
     val y3: Array[Int]         = Serialize.read(Serialize.write(x3));
     val y4: Function[Int, Int] = Serialize.read(Serialize.write(x4));
 

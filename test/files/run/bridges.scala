@@ -39,21 +39,21 @@ import Help.bar;
 import Help.mix;
 import Help.sub;
 
-abstract class Foo___    { type  I>:AllRef<:AnyRef; def f: I              ; f; }
-abstract class Foo__f    { type  I>:AllRef<:AnyRef; def f: I = {foo; null}; f; }
+abstract class Foo___    { type  I>:Null<:AnyRef; def f: I              ; f; }
+abstract class Foo__f    { type  I>:Null<:AnyRef; def f: I = {foo; null}; f; }
 abstract class Foo_I_    { class I        ; def f: I              ; f; }
 abstract class Foo_If    { class I        ; def f: I = {foo; null}; f; }
-abstract class FooX__[X] { type  I>:AllRef<:AnyRef; def f: I              ; f; }
-abstract class FooX_f[X] { type  I>:AllRef<:AnyRef; def f: I = {foo; null}; f; }
+abstract class FooX__[X] { type  I>:Null<:AnyRef; def f: I              ; f; }
+abstract class FooX_f[X] { type  I>:Null<:AnyRef; def f: I = {foo; null}; f; }
 abstract class FooXI_[X] { class I        ; def f: I              ; f; }
 abstract class FooXIf[X] { class I        ; def f: I = {foo; null}; f; }
 
-trait Bar___    { type  I>:AllRef<:AnyRef; def f: I              ; f; }
-trait Bar__f    { type  I>:AllRef<:AnyRef; def f: I = {bar; null}; f; }
+trait Bar___    { type  I>:Null<:AnyRef; def f: I              ; f; }
+trait Bar__f    { type  I>:Null<:AnyRef; def f: I = {bar; null}; f; }
 trait Bar_I_    { class I        ; def f: I              ; f; }
 trait Bar_If    { class I        ; def f: I = {bar; null}; f; }
-trait BarY__[Y] { type  I>:AllRef<:AnyRef; def f: I              ; f; }
-trait BarY_f[Y] { type  I>:AllRef<:AnyRef; def f: I = {bar; null}; f; }
+trait BarY__[Y] { type  I>:Null<:AnyRef; def f: I              ; f; }
+trait BarY_f[Y] { type  I>:Null<:AnyRef; def f: I = {bar; null}; f; }
 trait BarYI_[Y] { class I        ; def f: I              ; f; }
 trait BarYIf[Y] { class I        ; def f: I = {bar; null}; f; }
 

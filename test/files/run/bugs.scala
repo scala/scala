@@ -214,8 +214,8 @@ trait Bug213Foo {
 }
 
 class Bug213Bar extends Bug213Foo {
-  def testAll = (().asInstanceOf[All] : All);
-  def testAllRef = ("".asInstanceOf[AllRef] : AllRef);
+  def testAll = (().asInstanceOf[Nothing] : Nothing);
+  def testAllRef = ("".asInstanceOf[Null] : Null);
 }
 
 object Bug213Test {
@@ -225,13 +225,13 @@ object Bug213Test {
       foo.testAll;
     } catch {
       case e: java.lang.ClassCastException =>
-        Console.println("Cannot cast unit to All");
+        Console.println("Cannot cast unit to Nothing");
     }
     try {
       foo.testAllRef;
     } catch {
       case e: java.lang.ClassCastException =>
-        Console.println("Cannot cast empty string to AllRef");
+        Console.println("Cannot cast empty string to Null");
     }
     ()
   }
@@ -335,7 +335,7 @@ object Bug257Test {
 // version - A
 
 abstract class Bug266AFoo {
-  type T >: AllRef <: AnyRef;
+  type T >: Null <: AnyRef;
   abstract class I0 { def f(x: T): Unit; f(null); }
 }
 

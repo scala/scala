@@ -44,8 +44,8 @@ ok
 >>> bug 199
 
 <<< bug 213
-Cannot cast unit to All
-Cannot cast empty string to AllRef
+Cannot cast unit to Nothing
+Cannot cast empty string to Null
 >>> bug 213
 
 <<< bug 217

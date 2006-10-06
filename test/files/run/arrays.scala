@@ -201,7 +201,7 @@ object Test {
   val a0: Unit    = ();
   val a1: Boolean = false;
   val a2: Int     = 0;
-  val a3: AllRef  = null;
+  val a3: Null  = null;
   val a4: String  = "a-z";
   val a5: Symbol  = 'token;
   val a6: HashMap = new HashMap();
@@ -215,25 +215,25 @@ object Test {
   val v4: Float   = f2;
   val v5: Double  = d2;
 
-  val r0: AllRef  = a3;
+  val r0: Null  = a3;
   val r1: String  = a4;
   val r2: Symbol  = a5;
   val r3: HashMap = a6;
   val r4: TreeMap = a7;
   val r5: Strings = a8;
 
-  val o0: AllRef  = r0;
+  val o0: Null  = r0;
   val o1: String  = r1;
   val o2: Symbol  = r2;
   val o3: HashMap = r3;
   val o4: TreeMap = r4;
   val o5: Strings = r5;
 
-  val m0: AllRef  = r0;
+  val m0: Null  = r0;
   val m1: HashMap = r3;
   val m2: TreeMap = r4;
 
-  val n0: AllRef  = r0;
+  val n0: Null  = r0;
   val n1: Strings = r5;
   val n2: Nil.type= Nil;
 

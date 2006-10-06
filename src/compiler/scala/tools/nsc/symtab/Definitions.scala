@@ -475,13 +475,13 @@ trait Definitions requires SymbolTable {
 
       val anyrefparam = List(AnyRefClass.typeConstructor)
 
-      AllRefClass = newClass(ScalaPackageClass, nme.AllRef, anyrefparam)
+      AllRefClass = newClass(ScalaPackageClass, nme.Null, anyrefparam)
         .setFlag(ABSTRACT | TRAIT | FINAL)
-//      val oldAllRefClass = newAlias(ScalaPackageClass, nme.AllRef, AllRefClass.typeConstructor)
+      val oldAllRefClass = newAlias(ScalaPackageClass, nme.AllRef, AllRefClass.typeConstructor)
 
-      AllClass = newClass(ScalaPackageClass, nme.All, anyparam)
+      AllClass = newClass(ScalaPackageClass, nme.Nothing, anyparam)
         .setFlag(ABSTRACT | TRAIT | FINAL)
-//      val oldAllClass = newAlias(ScalaPackageClass, nme.All, AllClass.typeConstructor)
+      val oldAllClass = newAlias(ScalaPackageClass, nme.All, AllClass.typeConstructor)
 
       ClassClass = getClass("java.lang.Class")
       StringClass = getClass("java.lang.String")
