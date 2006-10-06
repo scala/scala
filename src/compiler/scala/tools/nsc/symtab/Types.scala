@@ -576,7 +576,7 @@ trait Types requires SymbolTable {
     override def singleDeref: Type = sym.typeOfThis
     override def prefixString =
       if (settings.debug.value) sym.nameString + ".this."
-      else if (sym.isRoot || sym.isEmptyPackageClass) ""
+      else if (sym.isRoot || sym.isEmptyPackageClass || sym.isInterpreterWrapper) ""
       else if (sym.isAnonymousClass || sym.isRefinementClass) "this."
       else if (sym.isPackageClass) sym.fullNameString + "."
       else sym.nameString + ".this."
@@ -623,7 +623,7 @@ trait Types requires SymbolTable {
     override def symbol = sym
     override def prefix: Type = pre
     override def prefixString: String =
-      if (sym.isEmptyPackage && !settings.debug.value) ""
+      if ((sym.isEmptyPackage || sym.isInterpreterWrapper) && !settings.debug.value) ""
       else pre.prefixString + sym.nameString + "."
   }
 
@@ -976,7 +976,7 @@ trait Types requires SymbolTable {
 
     override def prefixString =
       if (settings.debug.value) super.prefixString
-      else if (sym.isRoot || sym.isEmptyPackageClass ||
+      else if (sym.isRoot || sym.isEmptyPackageClass || sym.isInterpreterWrapper ||
                sym.isAnonymousClass || sym.isRefinementClass) ""
       else if (sym.isPackageClass) sym.fullNameString + "."
       else super.prefixString;

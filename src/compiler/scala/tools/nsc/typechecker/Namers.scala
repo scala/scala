@@ -563,7 +563,9 @@ trait Namers requires Analyzer {
 	      val base = expr1.tpe
 	      typer.checkStable(expr1)
               def checkNotRedundant(pos: PositionType, from: Name, to: Name): boolean = {
-                if (!tree.symbol.hasFlag(SYNTHETIC) && base.member(from) != NoSymbol) {
+                if (!tree.symbol.hasFlag(SYNTHETIC) &&
+                    !(expr1.symbol != null && expr1.symbol.isInterpreterWrapper) &&
+                    base.member(from) != NoSymbol) {
                   val e = context.scope.lookupEntry(to)
                   def warnRedundant(sym: Symbol) =
                     context.unit.warning(pos, "imported `"+to+

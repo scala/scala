@@ -211,6 +211,13 @@ trait Symbols requires SymbolTable {
     final def isEmptyPackage = isPackage && name == nme.EMPTY_PACKAGE_NAME
     final def isEmptyPackageClass = isPackageClass && name == nme.EMPTY_PACKAGE_NAME.toTypeName
 
+    /** Does this symbol denote a wrapper object of the interpreter or its class? */
+    final def isInterpreterWrapper =
+      (isModule || isModuleClass) &&
+      owner.isEmptyPackageClass &&
+      name.toString.startsWith(nme.INTERPRETER_LINE_PREFIX) &&
+      name.toString.endsWith(nme.INTERPRETER_WRAPPER_SUFFIX)
+
     /** Does this symbol denote a stable value? */
     final def isStable =
       isTerm && !hasFlag(MUTABLE) && (!hasFlag(METHOD | BYNAMEPARAM) || hasFlag(STABLE))
@@ -883,7 +890,9 @@ trait Symbols requires SymbolTable {
     final def fullNameString(separator: char): String = {
       assert(owner != NoSymbol, this)
       var str =
-        if (owner.isRoot || owner.isEmptyPackageClass) simpleName.toString
+        if (owner.isRoot ||
+            owner.isEmptyPackageClass ||
+            owner.isInterpreterWrapper) simpleName.toString
         else owner.enclClass.fullNameString(separator) + separator + simpleName
       if (str.charAt(str.length - 1) == ' ') str = str.substring(0, str.length - 1)
       str
@@ -904,7 +913,11 @@ trait Symbols requires SymbolTable {
     /** String representation of location. */
     final def locationString: String =
       if (owner.isClass &&
-          (!owner.isAnonymousClass && !owner.isRefinementClass || settings.debug.value))
+          ((!owner.isAnonymousClass &&
+            !owner.isRefinementClass &&
+            !owner.isInterpreterWrapper &&
+            !owner.isRoot &&
+            !owner.isEmptyPackageClass) || settings.debug.value))
         " in " + owner else ""
 
     /** String representation of symbol's definition following its name */

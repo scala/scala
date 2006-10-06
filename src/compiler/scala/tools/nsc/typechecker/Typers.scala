@@ -146,8 +146,7 @@ trait Typers requires Analyzer {
       val pos = if (ex.pos == NoPos) pos0 else ex.pos
       ex match {
         case CyclicReference(sym, info: TypeCompleter) =>
-          context.unit.error(
-            pos,
+          val msg =
             info.tree match {
               case ValDef(_, _, tpt, _) if (tpt.tpe == null) =>
                 "recursive "+sym+" needs type"
@@ -156,7 +155,9 @@ trait Typers requires Analyzer {
                  else "recursive ")+sym+" needs result type"
               case _ =>
                 ex.getMessage()
-            })
+            }
+          if (context.retyping) context.error(pos, msg)
+          else context.unit.error(pos, msg)
         case _ =>
           context.error(pos, ex)
       }

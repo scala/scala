@@ -131,7 +131,7 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
   private def newLineName = {
     val num = nextLineNo
     nextLineNo = nextLineNo + 1
-    "line" + num
+    compiler.nme.INTERPRETER_LINE_PREFIX + num
   }
 
   /** import statements that should be used for submitted code */
@@ -389,7 +389,7 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
     val trees = parse(line)
 
     /** name to use for the object that will compute "line" */
-    def objectName = lineName + "$object"  // make it unlikely to clash with user variables
+    def objectName = lineName + compiler.nme.INTERPRETER_WRAPPER_SUFFIX  // make it unlikely to clash with user variables
 
     /** name of the object that retrieves the result from the above object */
     def resultObjectName = "RequestResult$" + objectName
@@ -513,6 +513,7 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
 
       // compile the main object
       val objRun = new compiler.Run()
+      //Console.println("source: "+objectSourceCode) //DEBUG
       objRun.compileSources(
         List(new SourceFile("<console>", objectSourceCode.toCharArray))
       )
