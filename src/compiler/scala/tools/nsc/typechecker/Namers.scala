@@ -92,14 +92,14 @@ trait Namers requires Analyzer {
     def enterInScope(sym: Symbol): Symbol = {
       // allow for overloaded methods
       if (!(sym.isSourceMethod && sym.owner.isClass && !sym.owner.isPackageClass)) {
-      	val prev = context.scope.lookupEntry(sym.name);
-      	if (prev != null && prev.owner == context.scope &&
+        val prev = context.scope.lookupEntry(sym.name);
+      if (prev != null && prev.owner == context.scope &&
             (!prev.sym.isSourceMethod ||
              nme.isSetterName(sym.name) ||
              sym.owner.isPackageClass)) {
-     	   doubleDefError(sym.pos, prev.sym)
+           doubleDefError(sym.pos, prev.sym)
            sym setInfo ErrorType
-      	} else context.scope enter sym
+        } else context.scope enter sym
       } else context.scope enter sym
       sym
     }
@@ -131,16 +131,16 @@ trait Namers requires Analyzer {
         c = enterInScope(context.owner.newClass(pos, name)).setFlag(flags | inConstructorFlag);
       }
       if (c.owner.isPackageClass) {
-      	val file = context.unit.source.getFile()
-      	val clazz = c.asInstanceOf[ClassSymbol]
-      	if (settings.debug.value && clazz.sourceFile != null && !clazz.sourceFile.equals(file)) {
+        val file = context.unit.source.getFile()
+        val clazz = c.asInstanceOf[ClassSymbol]
+        if (settings.debug.value && clazz.sourceFile != null && !clazz.sourceFile.equals(file)) {
           System.err.println("SOURCE MISMATCH: " + clazz.sourceFile + " vs. " + file + " SYM=" + c);
         }
         clazz.sourceFile = file
-      	if (clazz.sourceFile != null) {
-      	  assert(!currentRun.compiles(clazz) || clazz.sourceFile == currentRun.symSource(c));
-      	  currentRun.symSource(c) = clazz.sourceFile
-      	}
+        if (clazz.sourceFile != null) {
+          assert(!currentRun.compiles(clazz) || clazz.sourceFile == currentRun.symSource(c));
+          currentRun.symSource(c) = clazz.sourceFile
+        }
       }
       c
     }
@@ -156,7 +156,7 @@ trait Namers requires Analyzer {
         m = context.owner.newModule(pos, name)
         m.setFlag(flags)
         m.moduleClass.setFlag(flags | inConstructorFlag)
-	enterInScope(m)
+        enterInScope(m)
       }
       if (m.owner.isPackageClass) {
         m.moduleClass.sourceFile = context.unit.source.getFile()
@@ -165,12 +165,12 @@ trait Namers requires Analyzer {
       m
     }
 
-    private def enterCaseFactorySymbol(pos: PositionType, flags: int, name: Name): Symbol = {
-      var m: Symbol = context.scope.lookup(name)
+    private def enterCaseFactorySymbol(pos: PositionType, flags: int): Symbol = {
+      var m: Symbol = context.scope.lookup(context.owner.name.toTermName)
       if (m.isTerm && !m.isPackage && !currentRun.compiles(m) && context.scope == m.owner.info.decls) {
         updatePosFlags(m, pos, flags)
       } else {
-        m = enterInScope(context.owner.newMethod(pos, name)).setFlag(flags)
+        m = enterInScope(context.owner.newCaseFactory(pos)).setFlag(flags)
       }
       if (m.owner.isPackageClass)
         currentRun.symSource(m) = context.unit.source.getFile()
@@ -205,95 +205,94 @@ trait Namers requires Analyzer {
 
       def finishWith(tparams: List[AbsTypeDef]): unit = {
         if (settings.debug.value) log("entered " + tree.symbol + " in " + context.owner + ", scope-id = " + context.scope.hashCode());
-	var ltype: LazyType = innerNamer.typeCompleter(tree)
+        var ltype: LazyType = innerNamer.typeCompleter(tree)
         if (!tparams.isEmpty) {
-	  new Namer(context.makeNewScope(tree, tree.symbol)).enterSyms(tparams);
-	  ltype = new LazyPolyType(tparams map (.symbol), ltype)
+          new Namer(context.makeNewScope(tree, tree.symbol)).enterSyms(tparams);
+          ltype = new LazyPolyType(tparams map (.symbol), ltype)
           if (tree.symbol.isTerm) skolemize(tparams);
-	}
-	tree.symbol.setInfo(ltype)
+        }
+        tree.symbol.setInfo(ltype)
       }
       def finish = finishWith(List())
 
 
       if (tree.symbol == NoSymbol) {
-	val owner = context.owner
-	tree match {
-	  case PackageDef(name, stats) =>
-	    tree.symbol = enterPackageSymbol(tree.pos, name);
-	    val namer = new Namer(
-	      context.make(tree, tree.symbol.moduleClass, tree.symbol.info.decls));
-	    namer.enterSyms(stats);
-	  case ClassDef(mods, name, tparams, _, impl) =>
-	    if ((mods.flags & (CASE | ABSTRACT)) == CASE) { // enter case factory method.
-	      tree.symbol = enterCaseFactorySymbol(
-        		tree.pos, mods.flags & AccessFlags | METHOD | CASE, name.toTermName)
-        	          .setInfo(innerNamer.caseFactoryCompleter(tree));
-                      setPrivateWithin(tree, tree.symbol, mods);
+        val owner = context.owner
+        tree match {
+          case PackageDef(name, stats) =>
+            tree.symbol = enterPackageSymbol(tree.pos, name);
+            val namer = new Namer(
+              context.make(tree, tree.symbol.moduleClass, tree.symbol.info.decls));
+            namer.enterSyms(stats);
+          case ClassDef(mods, name, tparams, _, impl) =>
+            if ((mods.flags & (CASE | ABSTRACT)) == CASE) { // enter case factory method.
+              tree.symbol = enterCaseFactorySymbol(tree.pos, mods.flags & AccessFlags)
+                .setInfo(innerNamer.caseFactoryCompleter(tree));
+              setPrivateWithin(tree, tree.symbol, mods);
             }
-	    tree.symbol = enterClassSymbol(tree.pos, mods.flags, name)
+            tree.symbol = enterClassSymbol(tree.pos, mods.flags, name)
             setPrivateWithin(tree, tree.symbol, mods)
-	    finishWith(tparams)
-	  case ModuleDef(mods, name, _) =>
-	    tree.symbol = enterModuleSymbol(tree.pos, mods.flags | MODULE | FINAL, name);
+            finishWith(tparams)
+          case ModuleDef(mods, name, _) =>
+            tree.symbol = enterModuleSymbol(tree.pos, mods.flags | MODULE | FINAL, name);
             setPrivateWithin(tree, tree.symbol, mods)
             setPrivateWithin(tree, tree.symbol.moduleClass, mods)
-	    tree.symbol.moduleClass.setInfo(innerNamer.moduleClassTypeCompleter(tree))
-	    finish
-	  case ValDef(mods, name, tp, rhs) =>
+            tree.symbol.moduleClass.setInfo(innerNamer.moduleClassTypeCompleter(tree))
+            finish
+          case ValDef(mods, name, tp, rhs) =>
             if (context.owner.isClass & (mods.flags & LOCAL) == 0) {
-	      val accflags = ACCESSOR |
+              val accflags = ACCESSOR |
                 (if ((mods.flags & MUTABLE) != 0) mods.flags & ~MUTABLE else mods.flags | STABLE)
-	      val getter = owner.newMethod(tree.pos, name)
-	        .setFlag(accflags)
+              val getter = owner.newMethod(tree.pos, name)
+                .setFlag(accflags)
                 .setInfo(innerNamer.getterTypeCompleter(tree));
               setPrivateWithin(tree, getter, mods);
-	      enterInScope(getter);
-	      if ((mods.flags & MUTABLE) != 0) {
-	        val setter = owner.newMethod(tree.pos, nme.getterToSetter(name))
-		  .setFlag(accflags & ~STABLE & ~CASEACCESSOR)
+              enterInScope(getter);
+              if ((mods.flags & MUTABLE) != 0) {
+                val setter = owner.newMethod(tree.pos, nme.getterToSetter(name))
+        	  .setFlag(accflags & ~STABLE & ~CASEACCESSOR)
                   .setInfo(innerNamer.setterTypeCompleter(tree));
                 setPrivateWithin(tree, setter, mods);
-	        enterInScope(setter)
-	      }
-	      tree.symbol =
-		if ((mods.flags & DEFERRED) == 0)
-		  enterInScope(owner.newValue(tree.pos, nme.getterToLocal(name)))
+                enterInScope(setter)
+              }
+              tree.symbol =
+        	if ((mods.flags & DEFERRED) == 0)
+        	  enterInScope(owner.newValue(tree.pos, nme.getterToLocal(name)))
  	            .setFlag(mods.flags & FieldFlags | PRIVATE | LOCAL)
-	            .setInfo(innerNamer.typeCompleter(tree))
-		else getter;
+                    .setInfo(innerNamer.typeCompleter(tree))
+        	else getter;
             } else {
               tree.symbol = enterInScope(owner.newValue(tree.pos, name))
                 .setFlag(mods.flags);
-	      finish
+              finish
             }
-	  case DefDef(mods, nme.CONSTRUCTOR, tparams, _, _, _) =>
-	    tree.symbol = enterInScope(owner.newConstructor(tree.pos))
-	      .setFlag(mods.flags | owner.getFlag(ConstrFlags))
+          case DefDef(mods, nme.CONSTRUCTOR, tparams, _, _, _) =>
+            tree.symbol = enterInScope(owner.newConstructor(tree.pos))
+              .setFlag(mods.flags | owner.getFlag(ConstrFlags))
             setPrivateWithin(tree, tree.symbol, mods)
-	    finishWith(tparams)
-	  case DefDef(mods, name, tparams, _, _, _) =>
-	    tree.symbol = enterInScope(owner.newMethod(tree.pos, name))
+            finishWith(tparams)
+          case DefDef(mods, name, tparams, _, _, _) =>
+            tree.symbol = enterInScope(owner.newMethod(tree.pos, name))
               .setFlag(mods.flags)
             setPrivateWithin(tree, tree.symbol, mods)
-	    finishWith(tparams)
-	  case AbsTypeDef(mods, name, _, _) =>
-	    tree.symbol = enterInScope(owner.newAbstractType(tree.pos, name))
+            finishWith(tparams)
+          case AbsTypeDef(mods, name, _, _) =>
+            tree.symbol = enterInScope(owner.newAbstractType(tree.pos, name))
               .setFlag(mods.flags)
             setPrivateWithin(tree, tree.symbol, mods)
-	    finish
-	  case AliasTypeDef(mods, name, tparams, _) =>
-	    tree.symbol = enterInScope(owner.newAliasType(tree.pos, name))
+            finish
+          case AliasTypeDef(mods, name, tparams, _) =>
+            tree.symbol = enterInScope(owner.newAliasType(tree.pos, name))
               .setFlag(mods.flags)
             setPrivateWithin(tree, tree.symbol, mods)
-	    finishWith(tparams)
-	  case DocDef(_, defn) =>
-	    enterSym(defn)
-	  case imp @ Import(_, _) =>
-	    tree.symbol = NoSymbol.newImport(tree.pos).setInfo(innerNamer.typeCompleter(tree));
-	    return new Namer(context.makeNewImport(imp));
-	  case _ =>
-	}
+            finishWith(tparams)
+          case DocDef(_, defn) =>
+            enterSym(defn)
+          case imp @ Import(_, _) =>
+            tree.symbol = NoSymbol.newImport(tree.pos).setInfo(innerNamer.typeCompleter(tree));
+            return new Namer(context.makeNewImport(imp));
+          case _ =>
+        }
       }
       this
     }
@@ -342,24 +341,24 @@ trait Namers requires Analyzer {
 
     def caseFactoryCompleter(tree: Tree) = new TypeCompleter(tree) {
       override def complete(sym: Symbol): unit = {
-	val clazz = tree.symbol
-	var tpe = clazz.primaryConstructor.tpe
-	val tparams = clazz.typeParams
-	if (!tparams.isEmpty) tpe = PolyType(tparams, tpe).cloneInfo(sym);
-	sym.setInfo(tpe)
+        val clazz = tree.symbol
+        var tpe = clazz.primaryConstructor.tpe
+        val tparams = clazz.typeParams
+        if (!tparams.isEmpty) tpe = PolyType(tparams, tpe).cloneInfo(sym);
+        sym.setInfo(tpe)
       }
     }
 
     private def deconstIfNotFinal(sym: Symbol, tpe: Type): Type =
       if (sym.isVariable ||
-	  !(sym hasFlag FINAL) ||
-	  sym.isMethod && !(sym hasFlag ACCESSOR)) tpe.deconst
+          !(sym hasFlag FINAL) ||
+          sym.isMethod && !(sym hasFlag ACCESSOR)) tpe.deconst
       else tpe;
 
     def enterValueParams(owner: Symbol, vparamss: List[List[ValDef]]): List[List[Symbol]] = {
       def enterValueParam(param: ValDef): Symbol = {
-	param.symbol = owner.newValueParameter(param.pos, param.name)
-	  .setInfo(typeCompleter(param))
+        param.symbol = owner.newValueParameter(param.pos, param.name)
+          .setInfo(typeCompleter(param))
           .setFlag(param.mods.flags & (BYNAMEPARAM | IMPLICIT));
         setPrivateWithin(param, param.symbol, param.mods);
         context.scope enter param.symbol;
@@ -372,10 +371,10 @@ trait Namers requires Analyzer {
     private def makePolyType(tparams: List[Symbol], tpe: Type): Type =
       if (tparams.isEmpty) tpe
       else
-	PolyType(tparams, tpe match {
-	  case PolyType(List(), tpe1) => tpe1
-	  case _ => tpe
-	});
+        PolyType(tparams, tpe match {
+          case PolyType(List(), tpe1) => tpe1
+          case _ => tpe
+        });
 
     private def templateSig(templ: Template): Type = {
       val clazz = context.owner
@@ -482,29 +481,29 @@ trait Namers requires Analyzer {
     private def checkContractive(sym: Symbol, tp: Type): Type = {
       /* The type signature without implicit parameters converted to function type */
       def provided(tp: Type): Type = tp match {
-	case PolyType(_, restpe) => provided(restpe)
-	case mt: ImplicitMethodType => mt.resultType
-	case MethodType(formals, restpe) => functionType(formals, provided(restpe))
-	case _ => tp
+        case PolyType(_, restpe) => provided(restpe)
+        case mt: ImplicitMethodType => mt.resultType
+        case MethodType(formals, restpe) => functionType(formals, provided(restpe))
+        case _ => tp
       }
       /* The types of all implicit parameters */
       def required(tp: Type): List[Type] = tp match {
-	case PolyType(_, restpe) => required(restpe)
-	case mt: ImplicitMethodType => mt.paramTypes
-	case MethodType(formals, restpe) => required(restpe)
-	case _ => List()
+        case PolyType(_, restpe) => required(restpe)
+        case mt: ImplicitMethodType => mt.paramTypes
+        case MethodType(formals, restpe) => required(restpe)
+        case _ => List()
       }
       var result = tp;
       if (sym hasFlag IMPLICIT) {
-	val p = provided(tp);
-	for (val r <- required(tp)) {
-	  if (!isContainedIn(r, p) || (r =:= p)) {
-	    context.error(sym.pos, "implicit " + sym + " is not contractive," +
-			  "\n because the implicit parameter type " + r +
-			  "\n is not strictly contained in the signature " + p);
-	    result = ErrorType;
-	  }
-	}
+        val p = provided(tp);
+        for (val r <- required(tp)) {
+          if (!isContainedIn(r, p) || (r =:= p)) {
+            context.error(sym.pos, "implicit " + sym + " is not contractive," +
+        		  "\n because the implicit parameter type " + r +
+        		  "\n is not strictly contained in the signature " + p);
+            result = ErrorType;
+          }
+        }
       }
       result
     }
@@ -515,32 +514,32 @@ trait Namers requires Analyzer {
     private def typeSig(tree: Tree): Type = {
       val result =
         try {
-	  val sym: Symbol = tree.symbol
-	  tree match {
-	    case ClassDef(_, _, tparams, tpt, impl) =>
-	      new Namer(context.makeNewScope(tree, sym)).classSig(tparams, tpt, impl)
+          val sym: Symbol = tree.symbol
+          tree match {
+            case ClassDef(_, _, tparams, tpt, impl) =>
+              new Namer(context.makeNewScope(tree, sym)).classSig(tparams, tpt, impl)
 
-	    case ModuleDef(_, _, impl) =>
-	      val clazz = sym.moduleClass
-	      clazz.setInfo(new Namer(context.make(tree, clazz)).templateSig(impl));
-	      //clazz.typeOfThis = singleType(sym.owner.thisType, sym);
-	      clazz.tpe;
+            case ModuleDef(_, _, impl) =>
+              val clazz = sym.moduleClass
+              clazz.setInfo(new Namer(context.make(tree, clazz)).templateSig(impl));
+              //clazz.typeOfThis = singleType(sym.owner.thisType, sym);
+              clazz.tpe;
 
-	    case DefDef(_, _, tparams, vparamss, tpt, rhs) =>
-	      val result =
-	        new Namer(context.makeNewScope(tree, sym)).methodSig(tparams, vparamss, tpt, rhs);
-	      checkContractive(sym, result)
+            case DefDef(_, _, tparams, vparamss, tpt, rhs) =>
+              val result =
+                new Namer(context.makeNewScope(tree, sym)).methodSig(tparams, vparamss, tpt, rhs);
+              checkContractive(sym, result)
 
-	    case ValDef(_, _, tpt, rhs) =>
-	      if (tpt.isEmpty) {
-	        if (rhs.isEmpty) {
-		  context.error(tpt.pos, "missing parameter type");
-		  ErrorType
-	        } else {
-		  tpt.tpe = deconstIfNotFinal(sym, newTyper(context.make(tree, sym)).computeType(rhs));
-		  tpt.tpe
-	        }
-	      } else {
+            case ValDef(_, _, tpt, rhs) =>
+              if (tpt.isEmpty) {
+                if (rhs.isEmpty) {
+        	  context.error(tpt.pos, "missing parameter type");
+        	  ErrorType
+                } else {
+        	  tpt.tpe = deconstIfNotFinal(sym, newTyper(context.make(tree, sym)).computeType(rhs));
+        	  tpt.tpe
+                }
+              } else {
                 val typer1 =
                   if (sym.hasFlag(PARAM) && sym.owner.isConstructor && !phase.erasedTypes)
                     newTyper(context.makeConstructorContext)
@@ -548,20 +547,20 @@ trait Namers requires Analyzer {
                 typer1.typedType(tpt).tpe
               }
 
-	    case AliasTypeDef(_, _, tparams, rhs) =>
-	      new Namer(context.makeNewScope(tree, sym)).aliasTypeSig(sym, tparams, rhs)
+            case AliasTypeDef(_, _, tparams, rhs) =>
+              new Namer(context.makeNewScope(tree, sym)).aliasTypeSig(sym, tparams, rhs)
 
-	    case AbsTypeDef(_, _, lo, hi) =>
+            case AbsTypeDef(_, _, lo, hi) =>
               var lt = typer.typedType(lo).tpe
               if (lt.isError) lt = AllClass.tpe
               var ht = typer.typedType(hi).tpe
               if (ht.isError) ht = AnyClass.tpe
-	      TypeBounds(lt, ht)
+              TypeBounds(lt, ht)
 
-	    case Import(expr, selectors) =>
-	      val expr1 = typer.typedQualifier(expr)
-	      val base = expr1.tpe
-	      typer.checkStable(expr1)
+            case Import(expr, selectors) =>
+              val expr1 = typer.typedQualifier(expr)
+              val base = expr1.tpe
+              typer.checkStable(expr1)
               def checkNotRedundant(pos: PositionType, from: Name, to: Name): boolean = {
                 if (!tree.symbol.hasFlag(SYNTHETIC) &&
                     !(expr1.symbol != null && expr1.symbol.isInterpreterWrapper) &&
@@ -581,29 +580,29 @@ trait Namers requires Analyzer {
                 }
                 true
               }
-	      def checkSelectors(selectors: List[Pair[Name, Name]]): unit = selectors match {
-	        case Pair(from, to) :: rest =>
-		  if (from != nme.WILDCARD && base != ErrorType) {
-		    if (base.member(from) == NoSymbol && base.member(from.toTypeName) == NoSymbol)
-		      context.error(tree.pos, from.decode + " is not a member of " + expr);
+              def checkSelectors(selectors: List[Pair[Name, Name]]): unit = selectors match {
+                case Pair(from, to) :: rest =>
+        	  if (from != nme.WILDCARD && base != ErrorType) {
+        	    if (base.member(from) == NoSymbol && base.member(from.toTypeName) == NoSymbol)
+        	      context.error(tree.pos, from.decode + " is not a member of " + expr);
                     if (checkNotRedundant(tree.pos, from, to))
                       checkNotRedundant(tree.pos, from.toTypeName, to.toTypeName)
                   }
-		  if (from != nme.WILDCARD && (rest.exists (sel => sel._1 == from)))
-		    context.error(tree.pos, from.decode + " is renamed twice");
-		  if (to != null && to != nme.WILDCARD && (rest exists (sel => sel._2 == to)))
-		    context.error(tree.pos, to.decode + " appears twice as a target of a renaming");
-		  checkSelectors(rest)
-	        case Nil =>
-	      }
-	      checkSelectors(selectors)
-	      ImportType(expr1)
-	  }
+        	  if (from != nme.WILDCARD && (rest.exists (sel => sel._1 == from)))
+        	    context.error(tree.pos, from.decode + " is renamed twice");
+        	  if (to != null && to != nme.WILDCARD && (rest exists (sel => sel._2 == to)))
+        	    context.error(tree.pos, to.decode + " appears twice as a target of a renaming");
+        	  checkSelectors(rest)
+                case Nil =>
+              }
+              checkSelectors(selectors)
+              ImportType(expr1)
+          }
         } catch {
           case ex: TypeError =>
             //System.out.println("caught " + ex + " in typeSig")//DEBUG
-	    typer.reportTypeError(tree.pos, ex)
-	    ErrorType
+            typer.reportTypeError(tree.pos, ex)
+            ErrorType
         }
       deSkolemize(result)
     }
@@ -617,36 +616,36 @@ trait Namers requires Analyzer {
      */
     def validate(sym: Symbol): unit = {
       def checkNoConflict(flag1: int, flag2: int): unit =
-	if (sym.hasFlag(flag1) && sym.hasFlag(flag2))
-	  context.error(sym.pos,
-	    if (flag1 == DEFERRED)
-	      "abstract member may not have " + Flags.flagsToString(flag2) + " modifier";
-	    else
-	      "illegal combination of modifiers: " +
-	      Flags.flagsToString(flag1) + " and " + Flags.flagsToString(flag2));
+        if (sym.hasFlag(flag1) && sym.hasFlag(flag2))
+          context.error(sym.pos,
+            if (flag1 == DEFERRED)
+              "abstract member may not have " + Flags.flagsToString(flag2) + " modifier";
+            else
+              "illegal combination of modifiers: " +
+              Flags.flagsToString(flag1) + " and " + Flags.flagsToString(flag2));
       if (sym.hasFlag(IMPLICIT) && !sym.isTerm)
-	context.error(sym.pos, "`implicit' modifier can be used only for values, variables and methods")
+        context.error(sym.pos, "`implicit' modifier can be used only for values, variables and methods")
       if (sym.hasFlag(IMPLICIT) && sym.owner.isPackageClass)
-	context.error(sym.pos, "`implicit' modifier cannot be used for top-level objects")
+        context.error(sym.pos, "`implicit' modifier cannot be used for top-level objects")
       if (sym.hasFlag(ABSTRACT) && !sym.isClass)
-	context.error(sym.pos, "`abstract' modifier can be used only for classes; " +
-	  "\nit should be omitted for abstract members")
+        context.error(sym.pos, "`abstract' modifier can be used only for classes; " +
+          "\nit should be omitted for abstract members")
       if (sym.hasFlag(OVERRIDE | ABSOVERRIDE) && sym.isClass)
-	context.error(sym.pos, "`override' modifier not allowed for classes")
+        context.error(sym.pos, "`override' modifier not allowed for classes")
       if (sym.hasFlag(OVERRIDE | ABSOVERRIDE) && sym.isConstructor)
-	context.error(sym.pos, "`override' modifier not allowed for constructors")
+        context.error(sym.pos, "`override' modifier not allowed for constructors")
       if (sym.hasFlag(ABSOVERRIDE) && !sym.owner.isTrait)
-	context.error(sym.pos, "`abstract override' modifier only allowed for members of traits")
+        context.error(sym.pos, "`abstract override' modifier only allowed for members of traits")
       if (sym.info.symbol == FunctionClass(0) &&
-	  sym.isValueParameter && sym.owner.isClass && sym.owner.hasFlag(CASE))
-	context.error(sym.pos, "pass-by-name arguments not allowed for case class parameters");
+          sym.isValueParameter && sym.owner.isClass && sym.owner.hasFlag(CASE))
+        context.error(sym.pos, "pass-by-name arguments not allowed for case class parameters");
       if ((sym.flags & DEFERRED) != 0) {
-	if (!sym.isValueParameter && !sym.isTypeParameterOrSkolem &&
-	    (!sym.owner.isClass || sym.owner.isModuleClass || sym.owner.isAnonymousClass)) {
-	  context.error(sym.pos,
-	    "only classes can have declared but undefined members" + varNotice(sym))
-	  sym.resetFlag(DEFERRED)
-	}
+        if (!sym.isValueParameter && !sym.isTypeParameterOrSkolem &&
+            (!sym.owner.isClass || sym.owner.isModuleClass || sym.owner.isAnonymousClass)) {
+          context.error(sym.pos,
+            "only classes can have declared but undefined members" + varNotice(sym))
+          sym.resetFlag(DEFERRED)
+        }
       }
       checkNoConflict(DEFERRED, PRIVATE)
       checkNoConflict(FINAL, SEALED)

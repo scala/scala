@@ -719,7 +719,8 @@ trait Typers requires Analyzer {
     }
 
     def addGetterSetter(stat: Tree): List[Tree] = stat match {
-      case ValDef(mods, name, tpt, rhs) if !(mods hasFlag LOCAL) && !stat.symbol.isModuleVar =>
+      case ValDef(mods, name, tpt, rhs)
+        if !(mods hasFlag LOCAL) && !stat.symbol.isModuleVar =>
         val vdef = copy.ValDef(stat, mods | PRIVATE | LOCAL, nme.getterToLocal(name), tpt, rhs)
         val value = vdef.symbol
         val getter = if (mods hasFlag DEFERRED) value else value.getter(value.owner)
@@ -769,8 +770,10 @@ trait Typers requires Analyzer {
       // the following is necessary for templates generated later
       new Namer(context.outer.make(templ, clazz, clazz.info.decls)).enterSyms(templ.body)
       validateParentClasses(parents1, selfType)
-      val body = if (phase.id <= currentRun.typerPhase.id) templ.body flatMap addGetterSetter
-                 else templ.body
+      val body =
+        if (phase.id <= currentRun.typerPhase.id && reporter.errors == 0)
+          templ.body flatMap addGetterSetter
+        else templ.body
       val body1 = typedStats(body, templ.symbol)
       copy.Template(templ, parents1, body1) setType clazz.tpe
     }

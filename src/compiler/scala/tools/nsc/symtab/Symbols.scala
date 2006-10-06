@@ -111,9 +111,10 @@ trait Symbols requires SymbolTable {
       m.moduleClass.setFlag(JAVA | PACKAGE)
       m
     }
-    final def newThisSym(pos: PositionType) = {
+    final def newCaseFactory(pos: PositionType) =
+      newMethod(pos, name.toTermName).setFlag(CASE)
+    final def newThisSym(pos: PositionType) =
       newValue(pos, nme.this_).setFlag(SYNTHETIC)
-    }
     final def newThisSkolem: Symbol =
       new ThisSkolem(owner, pos, name, this)
         .setFlag(SYNTHETIC | FINAL)
@@ -225,6 +226,10 @@ trait Symbols requires SymbolTable {
     /** Does this symbol denote the primary constructor of its enclosing class? */
     final def isPrimaryConstructor =
       isConstructor && owner.primaryConstructor == this
+
+    /** Is this symbol a case class factory method? */
+    final def isCaseFactory =
+      isMethod && hasFlag(CASE)
 
     /** Is this symbol an implementation class for a mixin? */
     final def isImplClass: boolean = isClass && hasFlag(IMPLCLASS)
