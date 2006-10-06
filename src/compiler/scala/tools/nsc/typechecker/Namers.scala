@@ -92,14 +92,14 @@ trait Namers requires Analyzer {
     def enterInScope(sym: Symbol): Symbol = {
       // allow for overloaded methods
       if (!(sym.isSourceMethod && sym.owner.isClass && !sym.owner.isPackageClass)) {
-        val prev = context.scope.lookupEntry(sym.name);
-      if (prev != null && prev.owner == context.scope &&
+      	val prev = context.scope.lookupEntry(sym.name);
+      	if (prev != null && prev.owner == context.scope &&
             (!prev.sym.isSourceMethod ||
              nme.isSetterName(sym.name) ||
              sym.owner.isPackageClass)) {
-           doubleDefError(sym.pos, prev.sym)
+     	   doubleDefError(sym.pos, prev.sym)
            sym setInfo ErrorType
-        } else context.scope enter sym
+      	} else context.scope enter sym
       } else context.scope enter sym
       sym
     }
@@ -131,9 +131,9 @@ trait Namers requires Analyzer {
         c = enterInScope(context.owner.newClass(pos, name)).setFlag(flags | inConstructorFlag);
       }
       if (c.owner.isPackageClass) {
-        val file = context.unit.source.getFile()
-        val clazz = c.asInstanceOf[ClassSymbol]
-        if (settings.debug.value && clazz.sourceFile != null && !clazz.sourceFile.equals(file)) {
+      	val file = context.unit.source.getFile()
+      	val clazz = c.asInstanceOf[ClassSymbol]
+      	if (settings.debug.value && clazz.sourceFile != null && !clazz.sourceFile.equals(file)) {
           System.err.println("SOURCE MISMATCH: " + clazz.sourceFile + " vs. " + file + " SYM=" + c);
         }
         clazz.sourceFile = file
@@ -165,12 +165,12 @@ trait Namers requires Analyzer {
       m
     }
 
-    private def enterCaseFactorySymbol(pos: PositionType, flags: int): Symbol = {
-      var m: Symbol = context.scope.lookup(context.owner.name.toTermName)
+    private def enterCaseFactorySymbol(pos: PositionType, flags: int, name: Name): Symbol = {
+      var m: Symbol = context.scope.lookup(name)
       if (m.isTerm && !m.isPackage && !currentRun.compiles(m) && context.scope == m.owner.info.decls) {
         updatePosFlags(m, pos, flags)
       } else {
-        m = enterInScope(context.owner.newCaseFactory(pos)).setFlag(flags)
+        m = enterInScope(context.owner.newMethod(pos, name)).setFlag(flags)
       }
       if (m.owner.isPackageClass)
         currentRun.symSource(m) = context.unit.source.getFile()
@@ -217,18 +217,19 @@ trait Namers requires Analyzer {
 
 
       if (tree.symbol == NoSymbol) {
-        val owner = context.owner
-        tree match {
-          case PackageDef(name, stats) =>
-            tree.symbol = enterPackageSymbol(tree.pos, name);
-            val namer = new Namer(
-              context.make(tree, tree.symbol.moduleClass, tree.symbol.info.decls));
-            namer.enterSyms(stats);
-          case ClassDef(mods, name, tparams, _, impl) =>
-            if ((mods.flags & (CASE | ABSTRACT)) == CASE) { // enter case factory method.
-              tree.symbol = enterCaseFactorySymbol(tree.pos, mods.flags & AccessFlags)
-                .setInfo(innerNamer.caseFactoryCompleter(tree));
-              setPrivateWithin(tree, tree.symbol, mods);
+	val owner = context.owner
+	tree match {
+	  case PackageDef(name, stats) =>
+	    tree.symbol = enterPackageSymbol(tree.pos, name);
+	    val namer = new Namer(
+	      context.make(tree, tree.symbol.moduleClass, tree.symbol.info.decls));
+	    namer.enterSyms(stats);
+	  case ClassDef(mods, name, tparams, _, impl) =>
+	    if ((mods.flags & (CASE | ABSTRACT)) == CASE) { // enter case factory method.
+	      tree.symbol = enterCaseFactorySymbol(
+        		tree.pos, mods.flags & AccessFlags | METHOD | CASE, name.toTermName)
+        	          .setInfo(innerNamer.caseFactoryCompleter(tree));
+                      setPrivateWithin(tree, tree.symbol, mods);
             }
             tree.symbol = enterClassSymbol(tree.pos, mods.flags, name)
             setPrivateWithin(tree, tree.symbol, mods)

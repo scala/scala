@@ -173,6 +173,8 @@ trait StdNames requires SymbolTable {
     val COLONCOLON = encode("::")
     val PERCENT = encode("%")
 
+    val Nothing = newTermName("Nothing")
+    val Null = newTermName("Null")
     val All = newTermName("All")
     val AllRef = newTermName("AllRef")
     val Any = newTermName("Any")

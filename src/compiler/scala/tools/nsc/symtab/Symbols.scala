@@ -111,8 +111,6 @@ trait Symbols requires SymbolTable {
       m.moduleClass.setFlag(JAVA | PACKAGE)
       m
     }
-    final def newCaseFactory(pos: PositionType) =
-      newMethod(pos, name.toTermName).setFlag(CASE)
     final def newThisSym(pos: PositionType) =
       newValue(pos, nme.this_).setFlag(SYNTHETIC)
     final def newThisSkolem: Symbol =
