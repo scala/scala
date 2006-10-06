@@ -838,17 +838,22 @@ trait Types requires SymbolTable {
     override def symbol: Symbol = value.tpe.symbol
     override def singleDeref: Type = value.tpe
     override def deconst: Type = value.tpe
-    private def escape(text: String): String = {
-      val buf = new StringBuffer
-      for (val c <- Iterator.fromString(text))
-        if (Character.isISOControl(c))
-          buf.append("\\0" + Integer.toOctalString(c.asInstanceOf[Int]))
-        else
-          buf.append(c)
-      buf.toString
+    override def toString(): String = {
+      def escape(text: String): String = {
+        val buf = new StringBuffer
+        for (val c <- Iterator.fromString(text))
+          if (Character.isISOControl(c))
+            buf.append("\\0" + Integer.toOctalString(c.asInstanceOf[Int]))
+          else
+            buf.append(c)
+        buf.toString
+      }
+      val svalue =
+        if (value.tag == CharTag) "'" + escape(value.stringValue) + "'"
+        else if (value.tag == StringTag) "\"" + escape(value.stringValue) + "\""
+        else value.stringValue
+      value.tpe.toString() + "(" + svalue + ")"
     }
-    override def toString(): String =
-      value.tpe.toString() + "(\"" + escape(value.stringValue) + "\")"
     // override def isNullable: boolean = value.value == null
     // override def isNonNull: boolean = value.value != null
   }
