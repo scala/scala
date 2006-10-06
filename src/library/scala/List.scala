@@ -710,6 +710,9 @@ sealed abstract class List[+a] extends Seq[a] with CaseClass {
         b += these1.head
         these1 = these1.tail
       }
+
+      these = these.tail // prevent the second evaluation of the predicate
+                         // on the element on which it first failed
       while (!these.isEmpty) {
         if (p(these.head)) b += these.head
         these = these.tail
