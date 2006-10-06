@@ -164,24 +164,24 @@ trait Constants requires SymbolTable {
     def convertTo(pt: Type): Constant = {
       val target = pt.symbol
       if (target == tpe.symbol)
-	this
+        this
       else if (target == ByteClass && ByteTag <= tag && tag <= IntTag &&
-	  -128 <= intValue && intValue <= 127)
-	Constant(byteValue)
+          -128 <= intValue && intValue <= 127)
+        Constant(byteValue)
       else if (target == ShortClass && ByteTag <= tag && tag <= IntTag &&
-	       -32768 <= intValue && intValue <= 32767)
-	Constant(shortValue)
+               -32768 <= intValue && intValue <= 32767)
+        Constant(shortValue)
       else if (target == CharClass && ByteTag <= tag && tag <= IntTag  &&
-	       0 <= intValue && intValue <= 65635)
-	Constant(charValue)
+               0 <= intValue && intValue <= 65635)
+        Constant(charValue)
       else if (target == IntClass && ByteTag <= tag && tag <= IntTag)
-	Constant(intValue)
+        Constant(intValue)
       else if (target == LongClass && ByteTag <= tag && tag <= LongTag)
-	Constant(longValue)
+        Constant(longValue)
       else if (target == FloatClass && ByteTag <= tag && tag <= FloatTag)
-	Constant(floatValue)
+        Constant(floatValue)
       else if (target == DoubleClass && ByteTag <= tag && tag <= DoubleTag)
-	Constant(doubleValue)
+        Constant(doubleValue)
       else {
         null
       }
@@ -191,6 +191,26 @@ trait Constants requires SymbolTable {
       if (value == null) "null"
       else if (tag == ClassTag) signature(typeValue)
       else value.toString()
+
+    def escapedStringValue: String = {
+      def escape(text: String): String = {
+        val buf = new StringBuffer
+        for (val c <- Iterator.fromString(text))
+          if (Character.isISOControl(c))
+            buf.append("\\0" + Integer.toOctalString(c.asInstanceOf[Int]))
+          else
+            buf.append(c)
+        buf.toString
+      }
+      tag match {
+        case NullTag   => "null"
+        case StringTag => "\"" + escape(stringValue) + "\""
+        case ClassTag  => signature(typeValue) + ".class"
+        case CharTag   => escape("\'" + charValue + "\'")
+        case LongTag   => longValue.toString() + "L"
+        case _         => value.toString()
+      }
+    }
 
     def typeValue: Type = value.asInstanceOf[Type]
 
