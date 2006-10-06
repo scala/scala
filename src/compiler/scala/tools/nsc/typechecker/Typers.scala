@@ -1868,6 +1868,13 @@ trait Typers requires Analyzer {
             if (settings.debug.value) System.out.println(""+tpt1+":"+tpt1.symbol+":"+tpt1.symbol.info);//debug
             errorTree(tree, "wrong number of type arguments for "+tpt1.tpe+", should be "+tparams.length)
           }
+
+        case TypeTree() =>
+          // we should get here only when something before failed
+          // and we try again (@see tryTypedApply). In that case we can assign
+          // whatever type to tree; we just have to survive until a real error message is issued.
+          tree setType AnyClass.tpe
+
         case _ =>
           throw new Error("unexpected tree: "+tree);//debug
       }
