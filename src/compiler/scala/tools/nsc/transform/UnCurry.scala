@@ -415,7 +415,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
         if (tree.symbol.isMethod && (!tree.tpe.isInstanceOf[PolyType] || tree.tpe.typeParams.isEmpty)) {
           if (!tree.tpe.isInstanceOf[MethodType]) tree.tpe = MethodType(List(), tree.tpe);
           atPos(tree.pos)(Apply(tree, List()) setType tree.tpe.resultType)
-        } else if (tree.isType && !tree.isInstanceOf[TypeTree]) {
+        } else if (tree.isType) {
           TypeTree(tree.tpe) setPos tree.pos
         } else {
           tree
@@ -471,8 +471,10 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
         case Return(expr) if (tree.symbol != currentOwner.enclMethod) =>
           if (settings.debug.value) log("non local return in "+tree.symbol+" from "+currentOwner.enclMethod)
           atPos(tree.pos)(nonLocalReturnThrow(expr, tree.symbol))
-        case _ =>
+        case TypeTree() =>
           tree
+        case _ =>
+          if (tree.isType) TypeTree(tree.tpe) setPos tree.pos else tree
       }
     }
   }

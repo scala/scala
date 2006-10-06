@@ -610,10 +610,10 @@ trait Trees requires Global {
   case Ident(name) =>
   case Literal(value) =>
   case TypeTree() =>
-  case SingletonTypeTree(ref) =>                                  (eliminated by typecheck)
-  case SelectFromTypeTree(qualifier, selector) =>                 (eliminated by typecheck)
-  case CompoundTypeTree(templ: Template) =>                       (eliminated by typecheck)
-  case AppliedTypeTree(tpt, args) =>                              (eliminated by typecheck)
+  case SingletonTypeTree(ref) =>                                  (eliminated by uncurry)
+  case SelectFromTypeTree(qualifier, selector) =>                 (eliminated by uncurry)
+  case CompoundTypeTree(templ: Template) =>                       (eliminated by uncurry)
+  case AppliedTypeTree(tpt, args) =>                              (eliminated by uncurry)
 */
 
   abstract class TreeCopier {
