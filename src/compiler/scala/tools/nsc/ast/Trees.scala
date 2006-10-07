@@ -570,7 +570,8 @@ trait Trees requires Global {
        extends TypTree {
     override def symbol: Symbol = tpt.symbol
     override def symbol_=(sym: Symbol): unit = { tpt.symbol = sym }
- }
+
+}
 
 /* A standard pattern match
   case EmptyTree =>

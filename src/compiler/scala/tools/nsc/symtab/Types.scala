@@ -647,7 +647,8 @@ trait Types requires SymbolTable {
     override def bounds: TypeBounds = this
     def containsType(that: Type) = that <:< this || lo <:< that && that <:< hi;
     // override def isNullable: boolean = AllRefClass.tpe <:< lo;
-    override def toString() = ">: " + lo + " <: " + hi
+    override def toString = "_ "+boundsString
+    def boundsString = ">: "+lo+" <: "+ hi
   }
 
   /** A common base class for intersection types and class types
@@ -1335,7 +1336,13 @@ trait Types requires SymbolTable {
         else SuperType(thistp1, supertp1)
       case TypeRef(pre, sym, args) =>
         val pre1 = this(pre)
-        val args1 = List.mapConserve(args)(this)
+        //val args1 = List.mapConserve(args)(this)
+        val args1 = if (args.isEmpty) args
+                    else {
+                      val tparams = sym.typeParams
+                      if (tparams.isEmpty) args
+                      else mapOverArgs(args, tparams)
+                    }
         if ((pre1 eq pre) && (args1 eq args)) tp
         else typeRef(pre1, sym, args1, variance)
       case TypeBounds(lo, hi) =>
@@ -1395,7 +1402,7 @@ trait Types requires SymbolTable {
     }
 
     def mapOverArgs(args: List[Type], tparams: List[Symbol]): List[Type] = args match {
-      case List() => List()
+      case List() => args
       case arg :: args0 =>
         val v = variance
         if (tparams.head.isContravariant) variance = -variance
@@ -2326,20 +2333,12 @@ trait Types requires SymbolTable {
              if (tparam.variance == variance) lub(as)
              else if (tparam.variance == -variance) glb(as)
              else NoType));
-      try {
-        if (args contains NoType) None
-        else Some(typeRef(pre, sym, args, variance))
-      } catch {
-        case ex: MalformedType => None
-      }
+      if (args contains NoType) None
+      else Some(typeRef(pre, sym, args, variance))
     case SingleType(_, sym) :: rest =>
       val pres = tps map (.prefix)
       val pre = if (variance == 1) lub(pres) else glb(pres)
-      try {
-        Some(singleType(pre, sym, variance))
-      } catch {
-        case ex: MalformedType => None
-      }
+      Some(singleType(pre, sym, variance))
   }
 
   /** Make symbol <code>sym</code> a member of scope <code>tp.decls</code>

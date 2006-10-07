@@ -321,12 +321,6 @@ trait Infer requires Analyzer {
       (tp1 <:< pt) || isCoercible(tp, pt)
     }
 
-    def isCompatible(pre: Type, sym: Symbol, pt: Type): boolean = try {
-      isCompatible(pre.memberType(sym), pt)
-    } catch {
-      case ex: MalformedType => false
-    }
-
     def isWeaklyCompatible(tp: Type, pt: Type): boolean =
       pt.symbol == UnitClass || isCompatible(tp, pt)
 
@@ -504,22 +498,6 @@ trait Infer requires Analyzer {
         case _ =>
           false
       }
-
-    /** Is there an instantiation of free type variables <code>undetparams</code>
-     *  such that function type <code>ftpe</code> is applicable to
-     *  <code>argtpes</code> and its result conform to <code>pt</code>?
-     *
-     *  @param undetparams ...
-     *  @param ftpe        ...
-     *  @param argtpes     ...
-     *  @param pt          ...
-     *  @return            ...
-     */
-    def isApplicable(undetparams: List[Symbol], pre: Type, sym: Symbol, argtpes: List[Type], pt: Type): boolean = try {
-      isApplicable(undetparams, pre.memberType(sym), argtpes, pt)
-    } catch {
-      case ex: MalformedType => false
-    }
 
     /** Does type <code>ftpe1</code> specialize type <code>ftpe2</code>
      *  when both are alternatives in an overloaded function?
@@ -786,7 +764,7 @@ trait Infer requires Analyzer {
      */
     def inferExprAlternative(tree: Tree, pt: Type): unit = tree.tpe match {
       case OverloadedType(pre, alts) => tryTwice {
-        var alts1 = alts filter (alt => isCompatible(pre, alt, pt))
+        var alts1 = alts filter (alt => isCompatible(pre.memberType(alt), pt))
         if (alts1.isEmpty) alts1 = alts
         def improves(sym1: Symbol, sym2: Symbol): boolean =
           sym2 == NoSymbol ||
@@ -833,7 +811,7 @@ trait Infer requires Analyzer {
     def inferMethodAlternative(tree: Tree, undetparams: List[Symbol], argtpes: List[Type], pt: Type): unit = tree.tpe match {
       case OverloadedType(pre, alts) => tryTwice {
         if (settings.debug.value) log("infer method alt " + tree.symbol + " with alternatives " + (alts map pre.memberType) + ", argtpes = " + argtpes + ", pt = " + pt)
-        val applicable = alts filter (alt => isApplicable(undetparams, pre, alt, argtpes, pt))
+        val applicable = alts filter (alt => isApplicable(undetparams, pre.memberType(alt), argtpes, pt))
         def improves(sym1: Symbol, sym2: Symbol) = (
           sym2 == NoSymbol || sym2.isError ||
           ((sym1.owner isSubClass sym2.owner) &&
