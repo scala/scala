@@ -224,8 +224,9 @@ test_run_jvm() {
     rm -rf "$dstbase".obj &&
     mkdir -p "$dstbase".obj &&
     $SCALAC -d "$os_dstbase".obj "$@" "$os_srcbase".scala &&
+    scala_lib=`get_os_filename "$SCALA_LIB"` &&
     classpath=`get_os_pathlist "$os_dstbase".obj:$CLASSPATH` &&
-    $SCALA -Dscalatest.output=$dstbase.obj -Dscalatest.lib=$SCALA_LIB -classpath $classpath Test "jvm" &&
+    $SCALA -Dscalatest.output=$os_dstbase.obj -Dscalatest.lib=$scala_lib -classpath $classpath Test "jvm" &&
     rm -rf "$dstbase".obj;
 }
 
