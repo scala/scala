@@ -92,9 +92,9 @@ abstract class RefChecks extends InfoTransform {
         sym1.toString() +
         (if (sym1.owner == clazz) ""
          else (sym1.locationString +
-               (if (sym1.isAliasType) ", which equals " + self.memberInfo(sym1)
-                else if (sym1.isAbstractType) " with bounds " +  self.memberInfo(sym1)
-                else if (sym1.isTerm) " of type " + self.memberInfo(sym1)
+               (if (sym1.isAliasType) ", which equals "+self.memberInfo(sym1)
+                else if (sym1.isAbstractType) " with bounds "+self.memberInfo(sym1).bounds.boundsString
+                else if (sym1.isTerm) " of type "+self.memberInfo(sym1)
                 else "")))
       }
 

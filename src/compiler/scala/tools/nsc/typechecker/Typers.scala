@@ -5,6 +5,7 @@
 // $Id$
 
 //todo: rewrite or disllow new T where T is a mixin (currently: <init> not a member of T)
+//todo: use inherited type info also for vars and values
 package scala.tools.nsc.typechecker
 
 import scala.collection.mutable.{HashMap, ListBuffer}

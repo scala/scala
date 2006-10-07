@@ -278,6 +278,11 @@ trait Types requires SymbolTable {
        else isSameType(this, that))
     );
 
+    /** Does this type contain that type? This is true if the two types are the same wrt <:<,
+     *  or this type is a TypeBounds which contains that type
+     */
+    def containsType(that: Type) = this <:< that && that <:< this
+
     /** Does this type implement symbol <code>sym</code> with same or stronger type?
      */
     def specializes(sym: Symbol): boolean =
@@ -546,7 +551,7 @@ trait Types requires SymbolTable {
   }
 
   case class BoundedWildcardType(override val bounds: TypeBounds) extends Type {
-    override def toString(): String = "_" + bounds
+    override def toString(): String = "? " + bounds.boundsString
   }
 
   /** An object representing a non-existing type */
@@ -645,7 +650,7 @@ trait Types requires SymbolTable {
     override val isTrivial: boolean = lo.isTrivial && hi.isTrivial
     def supertype: Type = hi
     override def bounds: TypeBounds = this
-    def containsType(that: Type) = that <:< this || lo <:< that && that <:< hi;
+    override def containsType(that: Type) = that <:< this || lo <:< that && that <:< hi
     // override def isNullable: boolean = AllRefClass.tpe <:< lo;
     override def toString = "_ "+boundsString
     def boundsString = ">: "+lo+" <: "+ hi
@@ -1102,7 +1107,7 @@ trait Types requires SymbolTable {
   /** A creator of type approximations, depending on variance
    */
   def typeApproximation(variance: int, lo: Type, hi: Type, pre: Type, sym: Symbol) = variance match {
-    case 0 => BoundedWildcardType(TypeBounds(lo, hi))
+    case 0 => TypeBounds(lo, hi)
     case 1 => hi
     case -1 => lo
     case NOAPPROX => throw new MalformedType(pre, sym.name.toString)
@@ -1843,14 +1848,14 @@ trait Types requires SymbolTable {
       case Pair(TypeRef(pre1, sym1, args1), TypeRef(pre2, sym2, args2)) =>
         //System.out.println("isSubType " + tp1 + " " + tp2);//DEBUG
         def isSubArgs(tps1: List[Type], tps2: List[Type],
-                      tparams: List[Symbol]): boolean = (
-          tps1.isEmpty && tps2.isEmpty
-          ||
+                      tparams: List[Symbol]): boolean =
+          tps1.isEmpty && tps2.isEmpty ||
           !tps1.isEmpty && !tps2.isEmpty &&
-          (tparams.head.isCovariant || (tps2.head <:< tps1.head)) &&
-          (tparams.head.isContravariant || (tps1.head <:< tps2.head)) &&
+          (if (tparams.head.isCovariant) tps1.head <:< tps2.head
+           else if (tparams.head.isContravariant) tps2.head <:< tps1.head
+           else tps2.head containsType tps1.head) &&
           isSubArgs(tps1.tail, tps2.tail, tparams.tail)
-        );
+
         (sym1 == sym2 &&
          (phase.erasedTypes || pre1 <:< pre2) &&
          isSubArgs(args1, args2, sym1.typeParams)
@@ -1880,6 +1885,10 @@ trait Types requires SymbolTable {
          res1 <:< res2.substSym(tparams2, tparams1))
       case Pair(TypeBounds(lo1, hi1), TypeBounds(lo2, hi2)) =>
         lo2 <:< lo1 && hi1 <:< hi2
+      case Pair(TypeBounds(lo1, hi1), _) =>
+        lo1 <:< tp2 && hi1 <:< tp2
+      case Pair(_, TypeBounds(lo2, hi2)) =>
+        lo2.symbol == AllClass && tp1 <:< hi2
       case Pair(BoundedWildcardType(bounds), _) =>
         bounds.lo <:< tp2
       case Pair(_, BoundedWildcardType(bounds)) =>
