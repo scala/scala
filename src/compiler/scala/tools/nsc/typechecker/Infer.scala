@@ -297,8 +297,9 @@ trait Infer requires Analyzer {
           accessError("")
         } else {
           //System.out.println("check acc " + sym1 + ":" + sym1.tpe + " from " + pre);//DEBUG
-          var owntype = try {
+          var owntype = /* try{ */
             pre.memberType(sym1)
+/*
           } catch {
             case ex: MalformedType =>
               val sym2 = underlying(sym1)
@@ -308,6 +309,7 @@ trait Infer requires Analyzer {
                            else " contains a "+ex.msg))
               ErrorType
           }
+*/
           if (pre.isInstanceOf[SuperType])
             owntype = owntype.substSuper(pre, site.symbol.thisType)
           tree setSymbol sym1 setType owntype
