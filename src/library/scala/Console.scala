@@ -209,13 +209,11 @@ object Console {
 
   /** Read a float value from the terminal.
    */
-  def readFloat: Float =
-    scala.runtime.compat.Platform.parseFloat(in.readLine())
+  def readFloat: Float = compat.Platform.parseFloat(in.readLine())
 
   /** Read a double value from the terminal.
    */
-  def readDouble: Double =
-    scala.runtime.compat.Platform.parseDouble(in.readLine())
+  def readDouble: Double = compat.Platform.parseDouble(in.readLine())
 
   /** Read in some structured input, specified by a format specifier.
    *  See class <code>java.text.MessageFormat</code> for details of

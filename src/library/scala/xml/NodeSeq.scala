@@ -11,7 +11,6 @@
 
 package scala.xml
 
-import scala.runtime.compat.StringBuilder
 
 /** This object ...
  *
@@ -166,7 +165,7 @@ abstract class NodeSeq extends Seq[Node] {
   }
 
   def text: String = {
-    val sb = new StringBuilder()
+    val sb = new compat.StringBuilder()
     val it = elements
     while (it.hasNext) {
       sb.append(it.next.text)

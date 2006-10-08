@@ -11,7 +11,7 @@
 
 package scala
 
-import scala.runtime.compat.StringBuilder
+import compat.StringBuilder
 
 /**
  * The object <code>Stream</code> provides helper functions

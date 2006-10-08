@@ -11,7 +11,7 @@
 
 package scala.util.parsing
 
-import scala.runtime.compat.StringBuilder
+import compat.StringBuilder
 
 /** This class ...
  *

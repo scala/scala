@@ -24,6 +24,9 @@ import scala.xml._
 abstract class DocGenerator extends Models {
   import global._
   import DocUtil._
+  import compat.StringBuilder
+
+
   def outdir: String
   def windowTitle: String
   def documentTitle: String
@@ -39,7 +42,7 @@ abstract class DocGenerator extends Models {
     def relative: String = {
       assert(path != null)
       var idx = 0
-      var ct = new StringBuffer
+      var ct = new StringBuilder
       while (idx != -1) {
         idx = path.indexOf('/', idx)
         //System.err.println(path + " idx=" + idx)
@@ -244,7 +247,7 @@ abstract class DocGenerator extends Models {
         NodeSeq.Empty
       else {
         def attrFor(attr: AttrInfo): Node = {
-          val buf = new StringBuffer
+          val buf = new StringBuilder
           val Triple(tpe, args, nvPairs) = attr
           val name = aref(urlFor(tpe.symbol), contentFrame, tpe.toString)
           if (!args.isEmpty)
@@ -658,7 +661,6 @@ abstract class DocGenerator extends Models {
   }
 
   def parse(str: String): NodeSeq = {
-    import scala.runtime.compat.StringBuilder
     new SpecialNode {
       def label = "#PCDATA"
       def toString(sb: StringBuilder): StringBuilder = {
@@ -712,8 +714,8 @@ abstract class DocGenerator extends Models {
     comment0 = comment0.substring(JDOC_START.length())
     assert(comment0 endsWith JDOC_END)
     comment0 = comment0.substring(0, comment0.length() - JDOC_END.length())
-    val buf = new StringBuffer
-    type AttrDescr = Triple[String, String, StringBuffer]
+    val buf = new StringBuilder
+    type AttrDescr = Triple[String, String, StringBuilder]
     val attributes = new ListBuffer[AttrDescr]
     var attr: AttrDescr = null
     val tok = new StringTokenizer(comment0, LINE_SEPARATOR)
@@ -721,12 +723,12 @@ abstract class DocGenerator extends Models {
       val s = tok.nextToken.replaceFirst("\\p{Space}?\\*", "")
       val mat1 = pat1.matcher(s)
       if (mat1.matches) {
-        attr = Triple(mat1.group(1), null, new StringBuffer(mat1.group(2)))
+        attr = Triple(mat1.group(1), null, new StringBuilder(mat1.group(2)))
         attributes += attr
       } else {
         val mat2 = pat2.matcher(s)
         if (mat2.matches) {
-          attr = Triple(mat2.group(1), mat2.group(2), new StringBuffer(mat2.group(3)))
+          attr = Triple(mat2.group(1), mat2.group(2), new StringBuilder(mat2.group(3)))
           attributes += attr
         } else if (attr != null)
           attr._3.append(s + LINE_SEPARATOR)

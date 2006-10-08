@@ -11,7 +11,7 @@
 
 package scala.xml
 
-import scala.runtime.compat.StringBuilder
+import compat.StringBuilder
 
 /** an XML node for unparsed content. It will be output verbatim, all bets
  *   are off regarding wellformedness etc.

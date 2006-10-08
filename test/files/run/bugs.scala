@@ -454,7 +454,7 @@ object Test  {
       test;
     } catch {
       case exception => {
-        val curr: String = scala.runtime.compat.Platform.currentThread.toString();
+        val curr: String = compat.Platform.currentThread.toString();
         Console.print("Exception in thread \"" + curr + "\" " + exception);
         Console.println;
         errors = errors + 1;

@@ -240,7 +240,7 @@ object LispCaseClasses extends Lisp {
       if (token == "(") parseList
       else if (token == ")") error("unbalanced parentheses")
       else if ('0' <= token.charAt(0) && token.charAt(0) <= '9')
-        NUM(scala.runtime.compat.Platform.parseInt(token))
+        NUM(compat.Platform.parseInt(token))
       else if (token.charAt(0) == '\"' && token.charAt(token.length()-1)=='\"')
         STR(token.substring(1,token.length() - 1))
       else SYM(token)
@@ -432,8 +432,8 @@ object LispAny extends Lisp {
       if (token == "(") parseList
       else if (token == ")") error("unbalanced parentheses")
       //else if (Character.isDigit(token.charAt(0)))
-      else if (scala.runtime.compat.Platform.isDigit(token.charAt(0)))
-        scala.runtime.compat.Platform.parseInt(token)
+      else if (compat.Platform.isDigit(token.charAt(0)))
+        compat.Platform.parseInt(token)
       else if (token.charAt(0) == '\"' && token.charAt(token.length()-1)=='\"')
         token.substring(1,token.length() - 1)
       else Symbol(token)

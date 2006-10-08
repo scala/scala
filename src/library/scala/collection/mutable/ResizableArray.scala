@@ -19,7 +19,6 @@ package scala.collection.mutable
  *  @version 1.0, 03/05/2004
  */
 trait ResizableArray[A] extends Seq[A] {
-  import scala.runtime.compat.Platform.arraycopy
 
   protected val initialSize: Int = 16
   protected var array: Array[A] = new Array[A](initialSize)
@@ -36,7 +35,7 @@ trait ResizableArray[A] extends Seq[A] {
 
   override def toArray[B >: A]: Array[B] = {
     val narr = new Array[B](size)
-    arraycopy(array, 0, narr, 0, size)
+    Array.copy(array, 0, narr, 0, size)
     narr
   }
 
@@ -57,7 +56,7 @@ trait ResizableArray[A] extends Seq[A] {
       while (n > newsize)
         newsize = newsize * 2
       val newar: Array[A] = new Array(newsize)
-      arraycopy(array, 0, newar, 0, size)
+      Array.copy(array, 0, newar, 0, size)
       array = newar
     }
 
@@ -72,6 +71,6 @@ trait ResizableArray[A] extends Seq[A] {
   /** Move parts of the array.
    */
   protected def copy(m: Int, n: Int, len: Int) =
-    arraycopy(array, m, array, n, len)
+    Array.copy(array, m, array, n, len)
 
 }

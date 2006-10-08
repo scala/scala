@@ -56,7 +56,7 @@ abstract class DetWordAutom[T <: AnyRef] {
   }
 
   override def toString() = {
-    val sb = new scala.runtime.compat.StringBuilder()
+    val sb = new compat.StringBuilder()
     sb.append("[DetWordAutom  nstates=")
     sb.append(nstates)
     sb.append(" finals=")

@@ -29,7 +29,7 @@ package scala.collection.immutable
 class BitSet(val size: Int, val capacity: Int, ba: Array[Int], copy: Boolean)
   extends collection.BitSet
 {
-  import scala.runtime.compat.Platform.arraycopy
+  import compat.Platform.arraycopy
 
   protected val arr: Array[Int]  =
     if (copy) {

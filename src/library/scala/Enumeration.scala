@@ -12,7 +12,7 @@
 package scala
 
 
-import scala.collection.mutable._
+import scala.collection.mutable.{Map, HashMap}
 
 /**
  * <p>The class <code>Enumeration</code> provides the same functionality as the
@@ -45,7 +45,7 @@ abstract class Enumeration(initial: Int, names: String*) {
   def this(names: String*) = this(0, names: _*)
 
   def name = {
-    val cname = scala.runtime.compat.Platform.getClassName(this)
+    val cname = compat.Platform.getClassName(this)
     if (cname.endsWith("$"))
       cname.substring(0, cname.length() - 1)
     else if (cname.endsWith("$class"))

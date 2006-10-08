@@ -11,7 +11,7 @@
 
 package scala.xml.parsing
 
-import scala.runtime.compat.StringBuilder
+import compat.StringBuilder
 import scala.io.Source
 import scala.xml.dtd._
 

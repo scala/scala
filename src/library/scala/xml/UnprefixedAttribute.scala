@@ -11,7 +11,7 @@
 
 package scala.xml
 
-import scala.runtime.compat.StringBuilder
+import compat.StringBuilder
 
 /** unprefixed attributes have the null namespace
  */

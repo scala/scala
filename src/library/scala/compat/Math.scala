@@ -9,7 +9,7 @@
 // $Id$
 
 
-package scala.runtime.compat;
+package scala.compat;
 
 
 object Math {

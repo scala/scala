@@ -11,7 +11,7 @@
 
 package scala.io
 
-import scala.runtime.compat.StringBuilder
+import compat.StringBuilder
 
 /** convenience methods to encode line and column number in one
  *  single integer. The encode line (column)

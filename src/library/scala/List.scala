@@ -11,7 +11,6 @@
 
 package scala
 
-import scala.runtime.compat.StringBuilder
 import scala.collection.mutable.ListBuffer
 import Predef._
 
@@ -215,7 +214,7 @@ object List {
    *  @return the list in form of a string.
    */
   def toString(xs: List[Char]): String = {
-    val sb = new StringBuilder()
+    val sb = new compat.StringBuilder()
     var xc = xs
     while (!xc.isEmpty) {
       sb.append(xc.head)

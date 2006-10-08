@@ -24,7 +24,7 @@ package scala.collection.mutable
 [serializable]
 class BitSet(initSize: Int) extends collection.BitSet with Set[Int] {
 
-  import scala.runtime.compat.Platform.arraycopy
+  import compat.Platform.arraycopy
 
   /** default constructor, initial size of 512 bits */
   def this() = this(0);

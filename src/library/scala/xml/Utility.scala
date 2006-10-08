@@ -11,8 +11,8 @@
 
 package scala.xml
 
-import scala.runtime.compat.StringBuilder
-import scala.collection.mutable
+import compat.StringBuilder
+import collection.mutable.{Set, HashSet}
 
 /**
  * Utility functions for processing instances of bound and
@@ -45,8 +45,8 @@ object Utility extends AnyRef with parsing.TokenTests {
    * @param nodes
    */
 
-  def collectNamespaces(nodes: Seq[Node]): mutable.Set[String] = {
-    var m = new mutable.HashSet[String]()
+  def collectNamespaces(nodes: Seq[Node]): Set[String] = {
+    var m = new HashSet[String]()
     val it = nodes.elements
     while (it.hasNext)
       collectNamespaces(it.next, m);
@@ -54,7 +54,7 @@ object Utility extends AnyRef with parsing.TokenTests {
   }
 
   /** adds all namespaces in node to set */
-  def collectNamespaces(n: Node, set: mutable.Set[String]): Unit = {
+  def collectNamespaces(n: Node, set: Set[String]): Unit = {
     if( n.typeTag$ >= 0 ) {
       set += n.namespace;
       for (val a <- n.attributes) a match {

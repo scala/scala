@@ -11,7 +11,7 @@
 
 package scala.xml
 
-import scala.runtime.compat.StringBuilder
+import compat.StringBuilder
 
 /** The class <code>NamespaceBinding</code> represents namespace bindings
  *  and scopes. The binding for the default namespace is treated as a null

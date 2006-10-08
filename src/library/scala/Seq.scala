@@ -11,7 +11,6 @@
 
 package scala
 
-import scala.runtime.compat.StringBuilder
 
 object Seq {
 
@@ -194,7 +193,7 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Iterable[A] {
    *  @return a string representation of this sequence.
    */
   def mkString(start: String, sep: String, end: String): String = {
-    val buf = new StringBuilder()
+    val buf = new compat.StringBuilder()
     buf.append(start)
     val elems = elements
     if (elems.hasNext) buf.append(elems.next)

@@ -11,7 +11,7 @@
 
 package scala.xml.dtd;
 
-import scala.runtime.compat.StringBuilder;
+import compat.StringBuilder;
 import scala.util.regexp.WordExp;
 import scala.util.automata._;
 

@@ -11,7 +11,7 @@
 
 package scala.xml
 
-import scala.runtime.compat.StringBuilder
+import compat.StringBuilder
 
 /** Attribute information item, and linked list of attribute information items.
  *  These are triples consisting of prefix,key,value. To obtain the namespace,

@@ -162,7 +162,7 @@ object Test {
   //##########################################################################
   // Values
 
-  import scala.runtime.compat.Math._;
+  import compat.Math._;
 
   val u0: Unit    = ();
   val u1: Unit    = ();

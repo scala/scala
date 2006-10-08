@@ -11,7 +11,6 @@
 
 package scala.xml;
 
-import scala.runtime.compat.StringBuilder
 
 /** The case class <code>Elem</code> extends the Node class,
  *  providing an immutable data object representing an XML element.
@@ -64,7 +63,7 @@ case class Elem(override val prefix: String,
 
    /* returns concatenation of text(n) for each child n */
    override def text = {
-     val sb = new StringBuilder();
+     val sb = new compat.StringBuilder();
      val it = child.elements;
      while(it.hasNext) {
        sb.append(it.next.text);

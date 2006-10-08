@@ -7,8 +7,10 @@
 \*                                                                      */
 
 // $Id$
+
+
 package scala.runtime
-import scala.runtime.compat.StringBuilder
+
 
 final class RichString(s: String) {
 
@@ -72,7 +74,7 @@ final class RichString(s: String) {
    *     `marginChar' from the line.
    */
   def stripMargin(marginChar: Char): String = {
-    val buf = new StringBuilder()
+    val buf = new scala.compat.StringBuilder()
     for (val line <- linesWithSeparators) {
       val len = line.length
       var index = 0;

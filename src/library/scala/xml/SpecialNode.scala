@@ -11,7 +11,7 @@
 
 package scala.xml
 
-import scala.runtime.compat.StringBuilder
+import compat.StringBuilder
 
 /** &lt;code&gt;SpecialNode&lt;/code&gt; is a special XML node which
  *  represents either text (PCDATA), a comment, a PI, or an entity ref.

@@ -13,7 +13,7 @@ package scala.io
 
 import java.io.{File, FileInputStream, PrintStream}
 
-import scala.runtime.compat.StringBuilder
+import compat.StringBuilder
 
 /** This object provides convenience methods to create an iterable
  *  representation of a source file.

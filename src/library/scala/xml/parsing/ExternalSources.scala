@@ -11,14 +11,14 @@
 
 package scala.xml.parsing;
 
-import scala.runtime.compat.StringBuilder
+import compat.StringBuilder
 import scala.io.Source;
-import java.net._;
-import java.io._;
+import java.net.URL;
 
 trait ExternalSources requires (ExternalSources with MarkupParser with MarkupHandler)  {
 
   private def externalSourceFromURL(url:URL): Source = {
+    import java.io.{BufferedReader, InputStreamReader};
     val in =
       new BufferedReader(
         new InputStreamReader(

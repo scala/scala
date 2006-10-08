@@ -11,7 +11,7 @@ class Vector (_x: Double, _y: Double) {
   def *(scalar: Double): Vector = new Vector(x * scalar, y * scalar);
   def -(that: Vector): Vector = new Vector(x - that.x, y - that.y);
   def /(scalar: Double): Vector = new Vector(x / scalar, y / scalar);
-  def norm: Double = scala.runtime.compat.Math.sqrt(x * x + y * y);
+  def norm: Double = compat.Math.sqrt(x * x + y * y);
 }
 
 //############################################################################
@@ -88,7 +88,7 @@ class PostScript (filename: String, _width: Double, _height: Double)
   def mm2ps(x: Double) : Double = round(x * 72.0 / 25.4);
 
    def round(x: Double): Double =
-     scala.runtime.compat.Math.floor(x * 100.0 + 0.5) / 100.0;
+     compat.Math.floor(x * 100.0 + 0.5) / 100.0;
 
   def scaleAndCenter(frm: Frame, ratio:Double): Frame = {
     val currentRatio = frm.edgeX.norm / frm.edgeY.norm;

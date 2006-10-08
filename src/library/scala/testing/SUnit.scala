@@ -12,7 +12,7 @@
 package scala.testing
 
 import scala.collection.mutable.ArrayBuffer
-import scala.runtime.compat.StringBuilder
+import compat.StringBuilder
 
 /**
  * <p>

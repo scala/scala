@@ -11,7 +11,6 @@
 
 package scala.xml.dtd;
 
-import scala.runtime.compat.StringBuilder
 import scala.collection.mutable.{ HashMap, Map }
 
 /** a document type declaration */
@@ -36,7 +35,7 @@ abstract class DTD {
   //def getAttribDecl(elem: String, attr: String): AttrDecl;
 
   override def toString() = {
-    val sb = new StringBuilder();
+    val sb = new compat.StringBuilder();
     sb.append("DTD [\n");
     if(null != externalID)
       sb.append(externalID.toString()).append('\n');

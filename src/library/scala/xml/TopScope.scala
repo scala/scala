@@ -9,7 +9,7 @@
 // $Id$
 package scala.xml;
 
-import scala.runtime.compat.StringBuilder
+import compat.StringBuilder
 
 /** top level namespace scope. only contains the predefined binding
  *  for the &quot;xml&quot; prefix which is bound to

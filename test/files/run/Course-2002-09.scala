@@ -50,7 +50,7 @@ class Squarer(square: Quantity, root: Quantity) extends Constraint {
   def newValue: Unit = Pair(square.getValue, root.getValue) match {
     case Pair(Some(x), _      )if (x < 0) => error("Square of negative number")
     case Pair(Some(x), _      )           =>
-      root.setValue(scala.runtime.compat.Math.sqrt(x), this)
+      root.setValue(compat.Math.sqrt(x), this)
     case Pair(_      , Some(x))           => square.setValue(x*x, this)
     case _                                =>
   }

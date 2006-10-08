@@ -11,7 +11,6 @@
 
 package scala.xml.dtd;
 
-import scala.runtime.compat.StringBuilder
 
 /** Scanner for regexps (content models in DTD element declarations)
  *  todo: cleanup
@@ -91,7 +90,7 @@ class Scanner extends Tokens with parsing.TokenTests {
     }
 
   final def name = {
-    val sb = new StringBuilder();
+    val sb = new compat.StringBuilder();
     do { sb.append( c ); next } while ( isNameChar( c ) ) ;
     value = sb.toString();
     NAME

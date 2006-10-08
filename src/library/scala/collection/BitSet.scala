@@ -23,8 +23,8 @@ package scala.collection
 
 abstract class BitSet extends AnyRef with Function1[Int,Boolean] with Set[Int] {
 
-  import scala.runtime.compat.Platform.arraycopy
-  import scala.runtime.compat.Math.min
+  import compat.Platform.arraycopy
+  import compat.Math.min
 
   /** number of bits in this bitset */
   def size: Int
