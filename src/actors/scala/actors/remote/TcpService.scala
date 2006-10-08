@@ -1,8 +1,19 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2005-2006, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+// $Id: $
+
 package scala.actors.remote
 
-import java.io.{DataInputStream,DataOutputStream,BufferedReader,PrintWriter,
-                IOException,InputStreamReader,OutputStreamWriter}
-import java.net.{InetAddress,ServerSocket,Socket,UnknownHostException}
+import java.io.{BufferedReader, DataInputStream, DataOutputStream,
+                IOException, InputStreamReader, OutputStreamWriter,
+                PrintWriter}
+import java.net.{InetAddress, ServerSocket, Socket, UnknownHostException}
 
 object TcpService {
   val random = new java.util.Random(System.currentTimeMillis())

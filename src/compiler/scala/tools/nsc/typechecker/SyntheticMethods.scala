@@ -1,6 +1,6 @@
 /* NSC -- new Scala compiler
  * Copyright 2005-2006 LAMP/EPFL
- * @author
+ * @author Martin Odersky
  */
 // $Id$
 
@@ -10,20 +10,34 @@ import symtab.Flags._
 import util.FreshNameCreator
 import scala.collection.mutable.ListBuffer
 
-/**
- *   - caseArity, caseElement implementations added to case classes
- *   - equals, and hashCode and toString methods are added to case classes,
- *       unless they are defined in the class or a baseclass
- *       different from java.lang.Object
- *   - toString method is added to case objects,
- *       unless they are defined in the class or a baseclass
- *       different from java.lang.Object
-*/
+/** <ul>
+ *    <li>
+ *      <code>caseArity</code>, <code>caseElement</code> implementations added
+ *      to case classes
+ *    </li>
+ *    <li>
+ *      <code>equals</code>, <code>hashCode</code> and </code>toString</code>
+ *      methods are added to case classes, unless they are defined in the
+ *      class or a baseclass different from <code>java.lang.Object</code>
+ *    </li>
+ *    <li>
+ *      <code>toString</code> method is added to case objects, unless they
+ *      are defined in the class or a baseclass different from
+ *      <code>java.lang.Object</code>
+ *    </li>
+ *  </ul>
+ */
 trait SyntheticMethods requires Analyzer {
   import global._                  // the global environment
   import definitions._             // standard classes and methods
   import typer.{typed}             // methods to type trees
 
+  /**
+   *  @param templ ...
+   *  @param clazz ...
+   *  @param unit  ...
+   *  @return      ...
+   */
   def addSyntheticMethods(templ: Template, clazz: Symbol, unit: CompilationUnit): Template = {
 
     def hasImplementation(name: Name): Boolean = {

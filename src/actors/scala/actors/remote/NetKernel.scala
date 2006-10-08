@@ -1,8 +1,16 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2005-2006, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+// $Id: $
+
 package scala.actors.remote
 
-import java.io.{IOException,StringReader,StringWriter}
-import java.net.UnknownHostException
-import scala.collection.mutable.{HashMap,HashSet}
+import scala.collection.mutable.{HashMap, HashSet}
 
 case class NamedSend(senderName: Symbol, receiver: Symbol, data: Array[Byte])
 
@@ -25,7 +33,8 @@ class NetKernel(service: Service) {
         register(freshName, Actor.self)
         freshName
       }
-      case Some(name) => name
+      case Some(name) =>
+        name
     }
     namedSend(node, senderName, name, msg)
   }
@@ -40,9 +49,8 @@ class NetKernel(service: Service) {
               def act() = { a ! msg }
               override def !(msg: Any): Unit = {
                 msg match {
-                  case refmsg: AnyRef => {
+                  case refmsg: AnyRef =>
                     namedSend(senderNode, receiver, senderName, refmsg)
-                  }
                 }
               }
               override def !?(msg: Any): Any =
@@ -50,7 +58,8 @@ class NetKernel(service: Service) {
             }
             senderProxy.start()
           }
-          case None => // message is lost
+          case None =>
+            // message is lost
         }
     }
   }

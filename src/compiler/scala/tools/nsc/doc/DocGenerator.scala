@@ -251,7 +251,7 @@ abstract class DocGenerator extends Models {
           val Triple(tpe, args, nvPairs) = attr
           val name = aref(urlFor(tpe.symbol), contentFrame, tpe.toString)
           if (!args.isEmpty)
-            buf.append(args.mkString("(", ",", ")"))
+            buf.append(args.map(.escapedStringValue).mkString("(", ",", ")"))
           if (!nvPairs.isEmpty)
             for (val Pair(Pair(name, value), index) <- nvPairs.zipWithIndex) {
               if (index > 0)
@@ -263,7 +263,7 @@ abstract class DocGenerator extends Models {
         var res: NodeSeq = Text("[")
         val attrs = tree.symbol.attributes
         for (val i <- attrs.indices) {
-          if (i > 0) res = res.concat(Text(","))
+          if (i > 0) res = res.concat(Text("," + LINE_SEPARATOR))
           res = res.concat(attrFor(attrs(i)))
         }
         br(res.concat(Text("]")))

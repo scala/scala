@@ -1,13 +1,23 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2005-2006, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+// $Id: $
+
 package scala.actors
 
 /**
- This class provides (together with <code>Channel</code>) an
- implementation of event-based actors (aka reactors).
-
- The main ideas of our approach are explained in the paper<br>
- <b>Event-Based Programming without Inversion of Control</b>, Philipp Haller, Martin Odersky <i>Proc. JMLC 2006</i>
-
- @author Philipp Haller
+ * This class provides (together with <code>Channel</code>) an
+ * implementation of event-based actors (aka reactors).
+ *
+ * The main ideas of our approach are explained in the paper<br>
+ * <b>Event-Based Programming without Inversion of Control</b>, Philipp Haller, Martin Odersky <i>Proc. JMLC 2006</i>
+ *
+ * @author Philipp Haller
  */
 trait Reactor extends Actor {
   private var lastSender: Actor = null
@@ -20,7 +30,7 @@ trait Reactor extends Actor {
   private[actors] var continuation: PartialFunction[Any, Unit] = null
   private[actors] var timeoutPending = false
 
-  private[actors] def scheduleActor(f: PartialFunction[Any, Unit], msg: Any) = {
+  private[actors] def scheduleActor(f: PartialFunction[Any, Unit], msg: Any) =
     if (f == null && continuation == null) {
       // do nothing (timeout is handled instead)
     }
@@ -30,7 +40,6 @@ trait Reactor extends Actor {
                                msg)
       Scheduler.execute(task)
     }
-  }
 
   private[actors] def defaultDetachActor: PartialFunction[Any, Unit] => Unit =
     (f: PartialFunction[Any, Unit]) => {
@@ -48,15 +57,14 @@ trait Reactor extends Actor {
   resetActor()
 
   /**
-   Starts this reactor.
+   * Starts this reactor.
    */
-  def start(): Unit = {
+  def start(): Unit =
     Scheduler.execute(new StartTask(this))
-  }
 
   /**
-   Terminates this reactor, thereby influencing linked actors
-   (see Actor.exit).
+   * Terminates this reactor, thereby influencing linked actors
+   * (see Actor.exit).
    */
   def exit(reason: String): Unit = {
     exitReason = reason
@@ -65,23 +73,23 @@ trait Reactor extends Actor {
 }
 
 /**
- The abstract class <code>Reaction</code> associates an instance
- of a <code>Reactor</code> with a
- <code>java.lang.Runnable</code>. It is also the super class of
- the different kinds of tasks used for the execution of
- <code>Reactor</code>s.
-
- @author Philipp Haller
+ * The abstract class <code>Reaction</code> associates an instance
+ * of a <code>Reactor</code> with a
+ * <code>java.lang.Runnable</code>. It is also the super class of
+ * the different kinds of tasks used for the execution of
+ * <code>Reactor</code>s.
+ *
+ * @author Philipp Haller
  */
 private[actors] abstract class Reaction extends Runnable {
   def actor: Reactor
 }
 
 /**
- This class represents task items used to start the execution
- of <code>Reactor</code>s.
-
- @author Philipp Haller
+ * This class represents task items used to start the execution
+ * of <code>Reactor</code>s.
+ *
+ * @author Philipp Haller
  */
 private[actors] class StartTask(a: Reactor) extends Reaction {
   def actor = a
@@ -100,15 +108,12 @@ private[actors] class StartTask(a: Reactor) extends Reaction {
       a.exit("normal")
     }
     catch {
-      case _: InterruptedException => {
+      case _: InterruptedException =>
         a.exitLinked()
-      }
-      case d: SuspendActorException => {
+      case d: SuspendActorException =>
         // do nothing (continuation is already saved)
-      }
-      case t: Throwable => {
+      case t: Throwable =>
         a.exit(t.toString())
-      }
     }
     finally {
       Actor.selfs.put(t, saved)
@@ -117,11 +122,11 @@ private[actors] class StartTask(a: Reactor) extends Reaction {
 }
 
 /**
- This class represents task items used to execute actions
- specified in arguments of <code>react</code> and
- <code>reactWithin</code>.
-
- @author Philipp Haller
+ * This class represents task items used to execute actions
+ * specified in arguments of <code>react</code> and
+ * <code>reactWithin</code>.
+ *
+ * @author Philipp Haller
  */
 private[actors] class ActorTask(a: Reactor,
                                 f: PartialFunction[Any, Unit],
@@ -142,13 +147,12 @@ private[actors] class ActorTask(a: Reactor,
       a.exit("normal")
     }
     catch {
-      case _: InterruptedException => a.exitLinked()
-      case d: SuspendActorException => {
+      case _: InterruptedException =>
+        a.exitLinked()
+      case d: SuspendActorException =>
         // do nothing (continuation is already saved)
-      }
-      case t: Throwable => {
+      case t: Throwable =>
         a.exit(t.toString())
-      }
     }
     finally {
       Actor.selfs.put(t, saved)

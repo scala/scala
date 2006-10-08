@@ -14,7 +14,7 @@ object Loop extends Application {
     }
   }
 
-  for (val i <- List.range(0, 10)) {
+  for (val i <- 0 until 10) {
     a ! A
   }
 }

@@ -205,7 +205,7 @@ trait Constants requires SymbolTable {
       tag match {
         case NullTag   => "null"
         case StringTag => "\"" + escape(stringValue) + "\""
-        case ClassTag  => signature(typeValue) + ".class"
+        case ClassTag  => "classOf[" + signature(typeValue) + "]"
         case CharTag   => escape("\'" + charValue + "\'")
         case LongTag   => longValue.toString() + "L"
         case _         => value.toString()

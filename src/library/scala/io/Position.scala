@@ -13,23 +13,36 @@ package scala.io
 
 import compat.StringBuilder
 
-/** convenience methods to encode line and column number in one
- *  single integer. The encode line (column)
- * numbers range from 0 to LINE_MASK (COLUMN_MASK), where 0 indicates
- * that the line (column) is the undefined and 1 represents the first
- * line (column). Line (Column) numbers greater than LINE_MASK
- * (COLUMN_MASK) are replaced by LINE_MASK (COLUMN_MASK). Furthermore,
- * if the encoded line number is LINE_MASK, the column number is
- * always set to 0.
-
- * The following properties hold:
- * - the undefined position is 0: encode(0,0) == 0
- * - encodings are non-negative : encode(line,column) >= 0
- * - position order is preserved:
- *   (line1 &lt; line2) || (line1 == line2 &amp;&amp; column1 &lt; column2)
- * implies
- *   encode(line1,column1) &lt;= encode(line2,column2)
- *  @author Burak Emir (translated from work by Matthias Zengers and others)
+/** <p>
+ *    The object <code>Position</code> provides convenience methods to encode
+ *    line and column number in one single integer. The encode line (column)
+ *    numbers range from 0 to <code>LINE_MASK</code>
+ *    (<code>COLUMN_MASK</code>), where 0 indicates that the line (column) is
+ *    the undefined and 1 represents the first line (column). Line (Column)
+ *    numbers greater than <code>LINE_MASK</code>
+ *    (<code>COLUMN_MASK</code>) are replaced by <code>LINE_MASK</code>
+ *    (<code>COLUMN_MASK</code>). Furthermore, if the encoded line number is
+ *    <code>LINE_MASK</code>, the column number is always set to 0.
+ *  </p>
+ *  <p>
+ *    The following properties hold:
+ *  </p>
+ *  <ul>
+ *    <li>
+ *      the undefined position is 0: <code>encode(0,0) == 0</code>
+ *    </li>
+ *    <li>
+ *      encodings are non-negative : <code>encode(line,column) >= 0</code>
+ *    </li>
+ *    <li>
+ *      position order is preserved:
+ *      <code>(line1 &lt; line2) || (line1 == line2 &amp;&amp; column1 &lt; column2)</code>
+ *      <div>implies</div>
+ *      <code>encode(line1,column1) &lt;= encode(line2,column2)</code>
+ *    </li>
+ *  </ul>
+ *
+ *  @author Burak Emir (translated from work by Matthias Zenger and others)
  */
 object Position {
 

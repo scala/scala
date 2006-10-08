@@ -1,6 +1,16 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2005-2006, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+// $Id: $
+
 package scala.actors.remote
 
-import java.io.{DataInputStream,DataOutputStream,EOFException,IOException}
+import java.io.{DataInputStream, DataOutputStream, EOFException, IOException}
 
 abstract class Serializer(val service: Service) {
   def serialize(o: AnyRef): Array[byte]

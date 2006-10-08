@@ -111,7 +111,7 @@ abstract class TreePrinters {
           case Triple(tp, args, nvPairs) =>
             str.append(tp.toString())
             if (!args.isEmpty)
-              str.append(args.mkString("(", ",", ")"))
+              str.append(args.map(.escapedStringValue).mkString("(", ",", ")"))
             if (!nvPairs.isEmpty)
               for (val Pair(Pair(name, value), index) <- nvPairs.zipWithIndex) {
                 if (index > 0)

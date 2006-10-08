@@ -1,23 +1,33 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2005-2006, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+// $Id: $
+
 package scala.actors
 
 import scala.collection.mutable.HashSet
 
 /**
- This object provides functions for the definition of actors and
- reactors, as well as all actor operations, such as
- <code>receive</code>, <code>react</code>, <code>reply</code>,
- etc.
-
- @author Philipp Haller
+ * This object provides functions for the definition of actors and
+ * reactors, as well as all actor operations, such as
+ * <code>receive</code>, <code>react</code>, <code>reply</code>,
+ * etc.
+ *
+ * @author Philipp Haller
  */
 object Actor {
 
   private[actors] val selfs = new java.util.WeakHashMap(16, 0.5f)
 
   /**
-   Returns the currently executing actor. Should be used instead
-   of <code>this</code> in all blocks of code executed by
-   actors.
+   * Returns the currently executing actor. Should be used instead
+   * of <code>this</code> in all blocks of code executed by
+   * actors.
    */
   def self: Actor = synchronized {
     val t = Thread.currentThread()
@@ -34,8 +44,8 @@ object Actor {
   }
 
   /**
-   Creates an instance of a thread-based actor executing <code>body</code>,
-   and starts it.
+   * Creates an instance of a thread-based actor executing <code>body</code>,
+   * and starts it.
    */
   def actor(body: => Unit): ActorThread = synchronized {
     val actor = new ActorThread {
@@ -46,9 +56,9 @@ object Actor {
   }
 
   /**
-   Creates an instance of a thread-based actor specifying a
-   channel which can be used for typed communication with other
-   actors.
+   * Creates an instance of a thread-based actor specifying a
+   * channel which can be used for typed communication with other
+   * actors.
    */
   def actor[a](ch: Channel[a])(body: => Unit): ActorThread = synchronized {
     val actor = new ActorThread {
@@ -60,8 +70,8 @@ object Actor {
   }
 
   /**
-   Creates an instance of an event-based reactor executing
-   <code>body</code>, and starts it.
+   * Creates an instance of an event-based reactor executing
+   * <code>body</code>, and starts it.
    */
   def reactor(body: => Unit): Reactor = synchronized {
     val reactor = new Reactor {
@@ -72,12 +82,12 @@ object Actor {
   }
 
   /**
-   Receives a message from the mailbox of
-   <code>self</code>. Blocks if no message matching any of the
-   cases of <code>f</code> can be received.
-
-   Only (thread-based) actors may call this method. It fails at
-   runtime if executed by a reactor.
+   * Receives a message from the mailbox of
+   * <code>self</code>. Blocks if no message matching any of the
+   * cases of <code>f</code> can be received.
+   *
+   * Only (thread-based) actors may call this method. It fails at
+   * runtime if executed by a reactor.
    */
   def receive[a](f: PartialFunction[Any, a]): a =
     self.in.receive(f)
@@ -244,10 +254,10 @@ object Actor {
 }
 
 /**
- This trait defines commonalities between thread-based and
- event-based actors.
-
- @author Philipp Haller
+ * This trait defines commonalities between thread-based and
+ * event-based actors.
+ *
+ * @author Philipp Haller
  */
 trait Actor {
 
@@ -269,21 +279,21 @@ trait Actor {
   }
 
   /**
-   The behavior of an actor is specified by implementing this
-   abstract method. Note that the preferred way to create actors
-   is through the <code>actor</code> and <code>reactor</code>
-   methods defined in object <code>Actor</code>.
+   * The behavior of an actor is specified by implementing this
+   * abstract method. Note that the preferred way to create actors
+   * is through the <code>actor</code> and <code>reactor</code>
+   * methods defined in object <code>Actor</code>.
    */
   def act(): Unit
 
   /**
-   Sends <code>msg</code> to this actor (asynchronous).
+   * Sends <code>msg</code> to this actor (asynchronous).
    */
   def !(msg: Any): Unit = in ! msg
 
   /**
-   Sends <code>msg</code> to this actor and awaits reply
-   (synchronous).
+   * Sends <code>msg</code> to this actor and awaits reply
+   * (synchronous).
    */
   def !?(msg: Any): Any = in !? msg
 
@@ -397,25 +407,25 @@ trait Actor {
 }
 
 /**
- Messages of this type are sent to each actor <code>a</code>
- that is linked to an actor <code>b</code> whenever
- <code>b</code> terminates and <code>a</code> has
- <code>trapExit</code> set to <code>true</code>.
-
- @author Philipp Haller
+ * Messages of this type are sent to each actor <code>a</code>
+ * that is linked to an actor <code>b</code> whenever
+ * <code>b</code> terminates and <code>a</code> has
+ * <code>trapExit</code> set to <code>true</code>.
+ *
+ * @author Philipp Haller
  */
 case class Exit(from: Actor, reason: String)
 
 
 /**
- This class provides an implementation for actors based on
- threads. To be able to create instances of this class, the
- inherited abstract method <code>act()</code> has to be
- implemented. Note that the preferred way of creating
- thread-based actors is through the <code>actor</code> method
- defined in object <code>Actor</code>.
-
- @author Philipp Haller
+ * This class provides an implementation for actors based on
+ * threads. To be able to create instances of this class, the
+ * inherited abstract method <code>act()</code> has to be
+ * implemented. Note that the preferred way of creating
+ * thread-based actors is through the <code>actor</code> method
+ * defined in object <code>Actor</code>.
+ *
+ * @author Philipp Haller
  */
 abstract class ActorThread extends Thread with ThreadedActor {
   override def run(): Unit = {
@@ -456,10 +466,10 @@ abstract class ActorThread extends Thread with ThreadedActor {
 }
 
 /**
- This class provides a dynamic actor proxy for normal Java
- threads.
-
- @author Philipp Haller
+ * This class provides a dynamic actor proxy for normal Java
+ * threads.
+ *
+ * @author Philipp Haller
  */
 private[actors] class ActorProxy(t: Thread) extends ThreadedActor {
   def act(): Unit = {}
@@ -502,7 +512,7 @@ private[actors] class ActorProxy(t: Thread) extends ThreadedActor {
  <pre>
  actor {
    // ...
-   val c = select(TcpNode("127.0.0.1", 9010), 'myName)
+   <b>val</b> c = select(TcpNode("127.0.0.1", 9010), 'myName)
    c ! msg
    // ...
  }
@@ -517,8 +527,8 @@ object RemoteActor {
   private val kernels = new scala.collection.mutable.HashMap[Actor, NetKernel]
 
   /**
-   Makes <code>self</code> remotely accessible on TCP port
-   <code>port</code>.
+   * Makes <code>self</code> remotely accessible on TCP port
+   * <code>port</code>.
    */
   def alive(port: int): Unit = {
     val serv = new TcpService(port)
@@ -527,8 +537,8 @@ object RemoteActor {
   }
 
   /**
-   Registers <code>a</code> under <code>name</code> on this
-   node.
+   * Registers <code>a</code> under <code>name</code> on this
+   * node.
    */
   def register(name: Symbol, a: Actor): Unit = {
     val kernel = kernels.get(Actor.self) match {
@@ -544,8 +554,8 @@ object RemoteActor {
   }
 
   /**
-   Returns (a proxy for) the actor registered under
-   <code>name</code> on <code>node</code>.
+   * Returns (a proxy for) the actor registered under
+   * <code>name</code> on <code>node</code>.
    */
   def select(node: Node, name: Symbol): Actor =
     new Reactor {
@@ -575,16 +585,24 @@ object RemoteActor {
 
 
 /**
- This class represents a machine node on a TCP network.
-
- @author Philipp Haller
+ * This class represents a machine node on a TCP network.
+ *
+ * @author Philipp Haller
  */
 case class Node(address: String, port: Int)
 
 
 /**
- This class is used by our efficient message queue
- implementation.
+ * <p>
+ *   This class is used by our efficient message queue
+ *   implementation.
+ * </p>
+ * <dl class="subclasses">
+ *   <dt><b>Direct Known Subclasses:</b></dt>
+ *   <dd>
+ *     <a href="MessageQueue.html" target="contentFrame">MessageQueue</a>
+ *   </dd>
+ * </dl>
  */
 private[actors] abstract class MessageQueueResult[Msg] {
   def msg: Msg
@@ -592,12 +610,12 @@ private[actors] abstract class MessageQueueResult[Msg] {
 }
 
 /**
- The class <code>MessageQueue</code> provides an efficient
- implementation of a message queue specialized for this actor
- library. Classes in this package are supposed to be the only
- clients of this class.
-
- @author Martin Odersky, Philipp Haller
+ * The class <code>MessageQueue</code> provides an efficient
+ * implementation of a message queue specialized for this actor
+ * library. Classes in this package are supposed to be the only
+ * clients of this class.
+ *
+ * @author Martin Odersky, Philipp Haller
  */
 private[actors] class MessageQueue[Msg] extends MessageQueueResult[Msg] {
   var msg: Msg = _

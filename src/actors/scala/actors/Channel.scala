@@ -1,3 +1,13 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2005-2006, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+// $Id: $
+
 package scala.actors
 
 import Actor._
@@ -6,8 +16,8 @@ case object TIMEOUT
 
 class SuspendActorException extends Throwable {
   /*
-   For efficiency reasons we do not fill in
-   the execution stack trace.
+   * For efficiency reasons we do not fill in
+   * the execution stack trace.
    */
   override def fillInStackTrace(): Throwable = {
     this
@@ -15,11 +25,11 @@ class SuspendActorException extends Throwable {
 }
 
 /**
- This class provides a means for typed communication among
- actors. Only the actor creating an instance of a
- <code>Channel</code> may receive from it.
-
- @author Philipp Haller
+ * This class provides a means for typed communication among
+ * actors. Only the actor creating an instance of a
+ * <code>Channel</code> may receive from it.
+ *
+ * @author Philipp Haller
  */
 class Channel[Msg] {
 
@@ -65,13 +75,13 @@ class Channel[Msg] {
   }
 
   /**
-   Sends <code>msg</code> to this <code>Channel</code>.
+   * Sends <code>msg</code> to this <code>Channel</code>.
    */
   def !(msg: Msg): unit = send(msg, self)
 
   /**
-   Sends <code>msg</code> to this <code>Channel</code> and
-   awaits reply.
+   * Sends <code>msg</code> to this <code>Channel</code> and
+   * awaits reply.
    */
   def !?(msg: Msg): Any = {
     self.freshReply()
@@ -82,13 +92,13 @@ class Channel[Msg] {
   }
 
   /**
-   Forwards <code>msg</code> to <code>this</code> keeping the
-   last sender as sender instead of <code>self</code>.
+   * Forwards <code>msg</code> to <code>this</code> keeping the
+   * last sender as sender instead of <code>self</code>.
    */
   def forward(msg: Msg): unit = send(msg, receiver.sender)
 
   /**
-   Receives a message from this <code>Channel</code>.
+   * Receives a message from this <code>Channel</code>.
    */
   def receive[R](f: PartialFunction[Msg, R]): R = {
     assert(self == receiver, "receive from channel belonging to other actor")
@@ -137,10 +147,10 @@ class Channel[Msg] {
   }
 
   /**
-   Receives a message from this <code>Channel</code>. If no
-   message could be received before <code>msec</code>
-   milliseconds elapsed, the <code>TIMEOUT</code> action is
-   executed if specified.
+   * Receives a message from this <code>Channel</code>. If no
+   * message could be received before <code>msec</code>
+   * milliseconds elapsed, the <code>TIMEOUT</code> action is
+   * executed if specified.
    */
   def receiveWithin[R](msec: long)(f: PartialFunction[Any, R]): R = {
     assert(self == receiver, "receive from channel belonging to other actor")
@@ -172,7 +182,7 @@ class Channel[Msg] {
   }
 
   /**
-   <code>receive</code> for reactors.
+   * <code>receive</code> for reactors.
    */
   def react(f: PartialFunction[Any, Unit]): Nothing = {
     assert(self == receiver, "react on channel belonging to other actor")
@@ -193,7 +203,7 @@ class Channel[Msg] {
   }
 
   /**
-   <code>receiveWithin</code> for reactors.
+   * <code>receiveWithin</code> for reactors.
    */
   def reactWithin(msec: long)(f: PartialFunction[Any, Unit]): Nothing = {
     assert(self == receiver, "react on channel belonging to other actor")

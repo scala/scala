@@ -40,6 +40,14 @@ div.page-title {
 	text-align: center;
 }
 
+dl.subclasses {
+	margin:0 0 0 -20px;
+}
+
+dl.subclasses dd {
+	margin:0 0 0 20px;
+}
+
 span.entity {
 	color: #ff6666;
 }

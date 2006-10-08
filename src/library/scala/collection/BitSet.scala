@@ -12,10 +12,17 @@
 package scala.collection
 
 
-/**
- * The class <code>BitSet</code> provides the interface for a space-efficient
- * implementation of dense integer sets represented as bits in array of
- * integers. Bit indices are between 0..(capacity-1) inclusive.
+/** <p>
+ *    The class <code>BitSet</code> provides the interface for a space-efficient
+ *    implementation of dense integer sets represented as bits in array of
+ *    integers. Bit indices are between 0..(capacity-1) inclusive.
+ *  </p>
+ *  <dl class="subclasses">
+ *    <dt><b>Direct Known Subclasses:</b></dt>
+ *    <dd>
+ *      <a href="immutable/BitSet.html" target="contentFrame">BitSet</a>
+ *   </dd>
+ *  </dl>
  *
  *  @author  Burak Emir, Stephane Micheloud, Nikolay Mihaylov
  *  @version 1.1

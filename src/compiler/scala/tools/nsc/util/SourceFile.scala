@@ -13,11 +13,6 @@ package scala.tools.nsc.util
 
 import scala.tools.nsc.io.{AbstractFile, VirtualFile}
 
-/** Uses positions that are offsets rather than line/column pairs.
- *
- *  @author  Sean McDirmid
- *  @version 1.0
- */
 object SourceFile {
   val LF: Char = 0x0A
   val FF: Char = 0x0C
@@ -26,7 +21,20 @@ object SourceFile {
   def isLineBreak(c: Char) = c == LF || c == FF || c == CR || c == SU
 }
 
-
+/** <p>
+ *    Uses positions that are offsets rather than line/column pairs.
+ *  </p>
+ *  <dl class="subclasses">
+ *    <dt><b>Direct Known Subclasses:</b></dt>
+ *    <dd>
+ *      <a href="CompoundSourceFile.html" target="contentFrame">CompoundSourceFile</a>,
+ *      <a href="SourceFileFragment.html" target="contentFrame">SourceFileFragment</a>
+ *   </dd>
+ *  </dl>
+ *
+ *  @author  Sean McDirmid
+ *  @version 1.0
+ */
 class SourceFile(val file: AbstractFile, _content: Array[Char]) {
   import SourceFile._
 
@@ -53,7 +61,8 @@ class SourceFile(val file: AbstractFile, _content: Array[Char]) {
     new Position(this, lineToOffset(line) + column)
 
   /** Map a position to a position in the underlying source file.
-    * For regular source files, simply return the argument. */
+   *  For regular source files, simply return the argument.
+   */
   def positionInUltimateSource(position: Position) = position
 
   // constants
@@ -141,7 +150,11 @@ class SourceFile(val file: AbstractFile, _content: Array[Char]) {
     }
 }
 
-/** A source file composed of multiple other source files.  */
+/** A source file composed of multiple other source files.
+ *
+ *  @author  Sean McDirmid
+ *  @version 1.0
+ */
 class CompoundSourceFile(
     name: String,
     components: List[SourceFile],
@@ -149,7 +162,11 @@ class CompoundSourceFile(
 extends SourceFile(name, contents)
 {
   /** The usual constructor.  Specify a name for the compound file and
-    * a list of component sources */
+   *  a list of component sources.
+   *
+   *  @param name       ...
+   *  @param components ...
+   */
   def this(name: String, components: SourceFile*) = {
     /* Note that the contents leaves off the final SU character
      * of all components */

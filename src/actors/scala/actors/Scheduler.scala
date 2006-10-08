@@ -1,13 +1,23 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2005-2006, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+// $Id: $
+
 package scala.actors
 
-import scala.collection.mutable.{Queue,Buffer,ArrayBuffer}
+import scala.collection.mutable.{ArrayBuffer, Buffer, Queue}
 
 /**
- The <code>Scheduler</code> object is used by
- <code>Reactor</code> to execute tasks of an execution of a
- reactor.
-
- @author Philipp Haller
+ * The <code>Scheduler</code> object is used by
+ * <code>Reactor</code> to execute tasks of an execution of a
+ * reactor.
+ *
+ * @author Philipp Haller
  */
 object Scheduler {
   private var sched: IScheduler =
@@ -22,18 +32,16 @@ object Scheduler {
     sched.execute(task)
   }
 
-  def tick(a: Reactor) = {
-    sched.tick(a)
-  }
+  def tick(a: Reactor) = sched.tick(a)
 
   def shutdown(): Unit = sched.shutdown()
 }
 
 /**
- This abstract class provides a common interface for all
- schedulers used to execute reactors.
-
- @author Philipp Haller
+ * This abstract class provides a common interface for all
+ * schedulers used to execute reactors.
+ *
+ * @author Philipp Haller
  */
 abstract class IScheduler {
   def execute(task: Reaction): Unit
@@ -50,10 +58,10 @@ abstract class IScheduler {
 }
 
 /**
- This scheduler executes the tasks of a reactor on a single
- thread (the current thread).
-
- @author Philipp Haller
+ * This scheduler executes the tasks of a reactor on a single
+ * thread (the current thread).
+ *
+ * @author Philipp Haller
  */
 class SingleThreadedScheduler extends IScheduler {
   def execute(task: Reaction): Unit = {
@@ -69,10 +77,10 @@ class SingleThreadedScheduler extends IScheduler {
 }
 
 /**
- This scheduler creates additional threads whenever there is no
- idle thread available.
-
- @author Philipp Haller
+ * This scheduler creates additional threads whenever there is no
+ * idle thread available.
+ *
+ * @author Philipp Haller
  */
 class SpareWorkerScheduler extends IScheduler {
   private val tasks = new Queue[Reaction]
@@ -82,7 +90,7 @@ class SpareWorkerScheduler extends IScheduler {
   private var maxWorkers = 2
 
   def init() = {
-    for (val i <- List.range(0, 2)) {
+    for (val i <- 0 until 2) {
       val worker = new WorkerThread(this)
       workers += worker
       worker.start()
@@ -121,7 +129,7 @@ class SpareWorkerScheduler extends IScheduler {
   def shutdown(): Unit = synchronized {
     terminating = true
     val numNonIdle = workers.length - idle.length
-    for (val i <- List.range(0, numNonIdle))
+    for (val i <- 0 until numNonIdle)
       tasks += QUIT_TASK
     val idleThreads = idle.elements
     while (idleThreads.hasNext) {
@@ -133,10 +141,10 @@ class SpareWorkerScheduler extends IScheduler {
 }
 
 /**
- This class is used by schedulers to execute reactor tasks on
- multiple threads.
-
- @author Philipp Haller
+ * This class is used by schedulers to execute reactor tasks on
+ * multiple threads.
+ *
+ * @author Philipp Haller
  */
 class WorkerThread(sched: IScheduler) extends Thread {
   private var task: Runnable = null
@@ -150,9 +158,7 @@ class WorkerThread(sched: IScheduler) extends Thread {
   override def run(): Unit = synchronized {
     try {
       while (running) {
-        if (task != null) {
-          task.run()
-        }
+        if (task != null) task.run()
         task = sched.getTask(this)
         if (task == sched.QUIT_TASK) {
           running = false

@@ -1,9 +1,19 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2005-2006, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+// $Id: $
+
 package scala.actors
 
 /**
  * This class allows the (local) sending of a message to an actor after
- * a timeout.  Used by the library to build receiveWithin(time: long).
- * Note that the library deletes non-received TIMEOUT message if a
+ * a timeout.  Used by the library to build <code>receiveWithin(time: long)</code>.
+ * Note that the library deletes non-received <code>TIMEOUT</code> message if a
  * message is received before the time-out occurs.
  *
  * @author Sebastien Noir

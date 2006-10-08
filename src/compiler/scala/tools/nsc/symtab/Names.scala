@@ -9,6 +9,16 @@ package scala.tools.nsc.symtab
 import scala.tools.nsc.util.NameTransformer
 import scala.tools.util.UTF8Codec
 
+/** <p>
+ *    The class <code>Names</code> ...
+ *  </p>
+ *  <dl class="subclasses">
+ *    <dt><b>Direct Known Subclasses:</b></dt>
+ *    <dd>
+ *      <a href="SymbolTable.html" target="contentFrame">SymbolTable</a>
+ *   </dd>
+ *  </dl>
+ */
 class Names {
 
 // Operations -------------------------------------------------------------
@@ -119,7 +129,7 @@ class Names {
 
 // Classes ----------------------------------------------------------------------
 
-  /** The name class */
+  /** The name class. */
   abstract class Name(index: int, len: int) extends Function1[int, char] {
 
     /** Index into name table */

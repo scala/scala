@@ -6,7 +6,15 @@
 
 package scala.tools.nsc.util
 
-/** A common class for lightweight sets.
+/** <p>
+ *    A common class for lightweight sets.
+ *  </p>
+ *  <dl class="subclasses">
+ *    <dt><b>Direct Known Subclasses:</b></dt>
+ *    <dd>
+ *      <a href="HashSet.html" target="contentFrame">HashSet</a>
+ *   </dd>
+ *  </dl>
  */
 abstract class Set[T <: AnyRef] {
 
