@@ -603,14 +603,28 @@ trait Parsers requires SyntaxAnalyzer {
       null; //dummy
     }
 
-    /** TypeArgs ::= `[' Types `]'
+    /** TypeArgs ::= `[' TypeArg {`,' TypeArg} `]'
      */
     def typeArgs(): List[Tree] = {
       accept(LBRACKET)
-      val ts = types()
+      val ts = new ListBuffer[Tree] + typeArg()
+      while (in.token == COMMA) {
+        in.nextToken()
+        ts += typeArg()
+      }
       accept(RBRACKET)
-      ts
+      ts.toList
     }
+
+    /** TypeArg ::= Type
+     *           |  `_' TypeBounds
+     */
+    def typeArg(): Tree =
+      if (in.token == USCORE)
+        atPos(in.skipToken()) {
+          WildcardTypeTree(bound(SUPERTYPE, nme.Nothing), bound(SUBTYPE, nme.Any))
+        }
+      else typ()
 
 //////// EXPRESSIONS ////////////////////////////////////////////////////////
 
@@ -1425,14 +1439,14 @@ trait Parsers requires SyntaxAnalyzer {
 
     /** TypeBounds ::= [`>:' Type] [`<:' Type]
      */
-    def typeBounds(mods: Modifiers, name: Name): AbsTypeDef = {
-      def bound(tok: int, default: Name): Tree =
-        if (in.token == tok) { in.nextToken(); typ() }
-        else scalaDot(default.toTypeName)
+    def typeBounds(mods: Modifiers, name: Name): AbsTypeDef =
       AbsTypeDef(mods, name.toTypeName,
-                 bound(SUPERTYPE, nme.All),
+                 bound(SUPERTYPE, nme.Nothing),
                  bound(SUBTYPE, nme.Any))
-    }
+
+    def bound(tok: int, default: Name): Tree =
+      if (in.token == tok) { in.nextToken(); typ() }
+      else scalaDot(default.toTypeName)
 
 //////// DEFS ////////////////////////////////////////////////////////////////
 

@@ -570,8 +570,10 @@ trait Trees requires Global {
        extends TypTree {
     override def symbol: Symbol = tpt.symbol
     override def symbol_=(sym: Symbol): unit = { tpt.symbol = sym }
+  }
 
-}
+  case class WildcardTypeTree(lo: Tree, hi: Tree)
+       extends TypTree
 
 /* A standard pattern match
   case EmptyTree =>
@@ -615,6 +617,7 @@ trait Trees requires Global {
   case SelectFromTypeTree(qualifier, selector) =>                 (eliminated by uncurry)
   case CompoundTypeTree(templ: Template) =>                       (eliminated by uncurry)
   case AppliedTypeTree(tpt, args) =>                              (eliminated by uncurry)
+  case WildcardTypeTree(lo, hi) =>                                (eliminated by uncurry)
 */
 
   abstract class TreeCopier {
@@ -658,6 +661,7 @@ trait Trees requires Global {
     def SelectFromTypeTree(tree: Tree, qualifier: Tree, selector: Name): SelectFromTypeTree
     def CompoundTypeTree(tree: Tree, templ: Template): CompoundTypeTree
     def AppliedTypeTree(tree: Tree, tpt: Tree, args: List[Tree]): AppliedTypeTree
+    def WildcardTypeTree(tree: Tree, lo: Tree, hi: Tree): WildcardTypeTree
   }
 
   class StrictTreeCopier extends TreeCopier {
@@ -741,6 +745,8 @@ trait Trees requires Global {
       new CompoundTypeTree(templ).copyAttrs(tree)
     def AppliedTypeTree(tree: Tree, tpt: Tree, args: List[Tree]) =
       new AppliedTypeTree(tpt, args).copyAttrs(tree)
+    def WildcardTypeTree(tree: Tree, lo: Tree, hi: Tree) =
+      new WildcardTypeTree(lo, hi).copyAttrs(tree)
   }
 
   class LazyTreeCopier(copy: TreeCopier) extends TreeCopier {
@@ -945,6 +951,11 @@ trait Trees requires Global {
       if (tpt0 == tpt) && (args0 == args) => t
       case _ => copy.AppliedTypeTree(tree, tpt, args)
     }
+    def WildcardTypeTree(tree: Tree, lo: Tree, hi: Tree) = tree match {
+      case t @ WildcardTypeTree(lo0, hi0)
+      if (lo0 == lo) && (hi0 == hi) => t
+      case _ => copy.WildcardTypeTree(tree, lo, hi)
+    }
   }
 
   abstract class Transformer {
@@ -1054,6 +1065,8 @@ trait Trees requires Global {
         copy.CompoundTypeTree(tree, transformTemplate(templ))
       case AppliedTypeTree(tpt, args) =>
         copy.AppliedTypeTree(tree, transform(tpt), transformTrees(args))
+      case WildcardTypeTree(lo, hi) =>
+        copy.WildcardTypeTree(tree, transform(lo), transform(hi))
     }
 
     def transformTrees(trees: List[Tree]): List[Tree] =
@@ -1186,6 +1199,8 @@ trait Trees requires Global {
         traverse(templ)
       case AppliedTypeTree(tpt, args) =>
         traverse(tpt); traverseTrees(args)
+      case WildcardTypeTree(lo, hi) =>
+        traverse(lo); traverse(hi)
     }
 
     def traverseTrees(trees: List[Tree]): unit =

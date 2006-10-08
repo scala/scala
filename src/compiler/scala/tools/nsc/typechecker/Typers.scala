@@ -1873,6 +1873,9 @@ trait Typers requires Analyzer {
             errorTree(tree, "wrong number of type arguments for "+tpt1.tpe+", should be "+tparams.length)
           }
 
+        case WildcardTypeTree(lo, hi) =>
+          tree setType TypeBounds(typedType(lo).tpe, typedType(hi).tpe)
+
         case TypeTree() =>
           // we should get here only when something before failed
           // and we try again (@see tryTypedApply). In that case we can assign

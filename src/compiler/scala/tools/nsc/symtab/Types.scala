@@ -1548,11 +1548,11 @@ trait Types requires SymbolTable {
   }
 
   object lowerBoundMap extends TypeMap {
-    def apply(tp: Type): Type = tp.lowerBound
+    def apply(tp: Type): Type = if (variance == -1) tp.upperBound else tp.lowerBound
   }
 
   object upperBoundMap extends TypeMap {
-    def apply(tp: Type): Type = tp.upperBound
+    def apply(tp: Type): Type = if (variance == -1) tp.lowerBound else tp.upperBound
   }
 
   /** A base class to compute all substitutions */
