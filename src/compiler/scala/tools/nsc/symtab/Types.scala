@@ -89,8 +89,18 @@ trait Types requires SymbolTable {
     /** For a TypeBounds type, itself;
      *  for a reference denoting an abstract type, its bounds,
      *  for all other types, a TypeBounds type all of whose bounds are this type.
-     *  error for all other types */
+     */
     def bounds: TypeBounds = TypeBounds(this, this)
+
+    /** For a TypeBounds type, its lower bound;
+     *  for all other types, the type itself
+     */
+    def lowerBound: Type = this
+
+    /** For a TypeBounds type, its upper bound;
+     *  for all other types, the type itself
+     */
+    def upperBound: Type = this
 
     /** For a class or intersection type, its parents.
      *  For a TypeBounds type, the parents of its hi bound.
@@ -650,6 +660,8 @@ trait Types requires SymbolTable {
     override val isTrivial: boolean = lo.isTrivial && hi.isTrivial
     def supertype: Type = hi
     override def bounds: TypeBounds = this
+    override def lowerBound: Type = lo
+    override def upperBound: Type = hi
     override def containsType(that: Type) = that <:< this || lo <:< that && that <:< hi
     // override def isNullable: boolean = AllRefClass.tpe <:< lo;
     override def toString = "_ "+boundsString
@@ -1406,18 +1418,15 @@ trait Types requires SymbolTable {
         // throw new Error("mapOver inapplicable for " + tp);
     }
 
-    def mapOverArgs(args: List[Type], tparams: List[Symbol]): List[Type] = args match {
-      case List() => args
-      case arg :: args0 =>
+    def mapOverArgs(args: List[Type], tparams: List[Symbol]): List[Type] =
+      map2Conserve(args, tparams) { (arg, tparam) =>
         val v = variance
-        if (tparams.head.isContravariant) variance = -variance
-        else if (!tparams.head.isCovariant) variance = 0
+        if (tparam.isContravariant) variance = -variance
+        else if (!tparam.isCovariant) variance = 0
         val arg1 = this(arg)
         variance = v
-        val args1 = mapOverArgs(args0, tparams.tail)
-        if ((arg1 eq arg) && (args1 eq args0)) args
-        else arg1 :: args1
-    }
+        arg1
+      }
 
     /** Map this function over given scope */
     private def mapOver(scope: Scope): Scope = {
@@ -1429,13 +1438,21 @@ trait Types requires SymbolTable {
 
     /** Map this function over given list of symbols */
     private def mapOver(syms: List[Symbol]): List[Symbol] = {
-      val infos = syms map (.info)
-      val infos1 = List.mapConserve(infos)(this)
-      if (infos1 eq infos) syms
+      def newInfo(sym: Symbol) = {
+        val v = variance
+        if (sym.isAliasType) variance = 0
+        val result = this(sym.info)
+        variance = v
+        result
+      }
+      val infos1 = syms map newInfo
+      if (List.forall2(infos1, syms)((info1, sym) => info1 eq sym.info)) syms
       else {
         val syms1 = syms map (.cloneSymbol)
-        (List.map2(syms1, infos1)
-          ((sym1, info1) => sym1.setInfo(info1.substSym(syms, syms1))))
+        List.map2(syms1, infos1) { (sym1, info1) =>
+          if (isTypeBounds(info1)) sym1 setFlag DEFERRED
+          sym1 setInfo info1.substSym(syms, syms1)
+        }
       }
     }
   }
@@ -1451,7 +1468,7 @@ trait Types requires SymbolTable {
       if ((pre eq NoType) || (pre eq NoPrefix) || !clazz.isClass) tp
       else tp match {
         case ThisType(sym) =>
-          def toPrefix(pre: Type, clazz: Symbol): Type =
+          def toPrefix(pre: Type, clazz: Symbol): Type = {
             if ((pre eq NoType) || (pre eq NoPrefix) || !clazz.isClass) tp
             else if ((sym isNonBottomSubClass clazz) &&
                      (pre.widen.symbol isNonBottomSubClass sym))
@@ -1459,7 +1476,8 @@ trait Types requires SymbolTable {
                 case SuperType(thistp, _) => thistp
                 case _ => pre
               }
-            else toPrefix(pre.baseType(clazz).prefix, clazz.owner);
+            else toPrefix(pre.baseType(clazz).prefix, clazz.owner)
+          }
           toPrefix(pre, clazz)
         case TypeRef(prefix, sym, args) if (sym.isTypeParameter) =>
           def toInstance(pre: Type, clazz: Symbol): Type =
@@ -1491,8 +1509,50 @@ trait Types requires SymbolTable {
             }
           toInstance(pre, clazz)
         case _ =>
-          mapOver(tp)
+          propagate(mapOver(tp))
       }
+
+    /** Propagate nested type bounds to top-level, or replace by lower/upper bounds
+     */
+    def propagate(tp: Type): Type =
+      if (needsPropagation(tp))
+        tp match {
+          case TypeBounds(lo, hi) =>
+            TypeBounds(lo.lowerBound, hi.upperBound)
+          case _ =>
+            if (variance == 1) upperBoundMap mapOver tp
+            else if (variance == -1) lowerBoundMap mapOver tp
+            else TypeBounds(lowerBoundMap mapOver tp, upperBoundMap mapOver tp)
+        }
+      else tp
+
+    /** Does type `tp' contain embedded TypeBounds that need propagating? */
+    def needsPropagation(tp: Type): boolean = tp match {
+      case SingleType(pre, sym) =>
+        isTypeBounds(pre)
+      case SuperType(thistp, supertp) =>
+        isTypeBounds(thistp) || isTypeBounds(supertp)
+      case TypeRef(pre, sym, args) =>
+        isTypeBounds(pre)
+      case TypeBounds(lo, hi) =>
+        isTypeBounds(lo) || isTypeBounds(hi)
+      case RefinedType(parents, decls) =>
+        (parents exists isTypeBounds) || (decls.toList exists (sym => isTypeBounds(sym.tpe)))
+      case MethodType(formals, restpe) =>
+        (formals exists isTypeBounds) || isTypeBounds(restpe)
+      case PolyType(tparams, result) =>
+        isTypeBounds(result)
+      case _ =>
+        false
+    }
+  }
+
+  object lowerBoundMap extends TypeMap {
+    def apply(tp: Type): Type = tp.lowerBound
+  }
+
+  object upperBoundMap extends TypeMap {
+    def apply(tp: Type): Type = tp.upperBound
   }
 
   /** A base class to compute all substitutions */
@@ -1851,9 +1911,8 @@ trait Types requires SymbolTable {
                       tparams: List[Symbol]): boolean =
           tps1.isEmpty && tps2.isEmpty ||
           !tps1.isEmpty && !tps2.isEmpty &&
-          (if (tparams.head.isCovariant) tps1.head <:< tps2.head
-           else if (tparams.head.isContravariant) tps2.head <:< tps1.head
-           else tps2.head containsType tps1.head) &&
+          (tparams.head.isCovariant || (tps2.head.lowerBound <:< tps1.head.lowerBound)) &&
+          (tparams.head.isContravariant || (tps1.head.upperBound <:< tps2.head.upperBound)) &&
           isSubArgs(tps1.tail, tps2.tail, tparams.tail)
 
         (sym1 == sym2 &&
@@ -1885,10 +1944,8 @@ trait Types requires SymbolTable {
          res1 <:< res2.substSym(tparams2, tparams1))
       case Pair(TypeBounds(lo1, hi1), TypeBounds(lo2, hi2)) =>
         lo2 <:< lo1 && hi1 <:< hi2
-      case Pair(TypeBounds(lo1, hi1), _) =>
-        lo1 <:< tp2 && hi1 <:< tp2
       case Pair(_, TypeBounds(lo2, hi2)) =>
-        lo2.symbol == AllClass && tp1 <:< hi2
+        lo2 <:< tp1 && tp1 <:< hi2
       case Pair(BoundedWildcardType(bounds), _) =>
         bounds.lo <:< tp2
       case Pair(_, BoundedWildcardType(bounds)) =>
@@ -1995,6 +2052,24 @@ trait Types requires SymbolTable {
     cl1(0) = tp
     System.arraycopy(cl, 0, cl1, 1, cl.length)
     cl1
+  }
+
+  /** like map2, but returns list `xs' itself - instead of a copy - if function
+   *  <code>f</code> maps all elements to themselves.
+   */
+  def map2Conserve[A <: AnyRef, B](xs: List[A], ys: List[B])(f: (A, B) => A): List[A] =
+    if (xs.isEmpty) xs
+    else {
+      val x1 = f(xs.head, ys.head)
+      val xs1 = map2Conserve(xs.tail, ys.tail)(f)
+      if ((x1 eq xs.head) && (xs1 eq xs.tail)) xs
+      else x1 :: xs1
+    }
+
+  /** Is `tp' a TypeBound type? */
+  private def isTypeBounds(tp: Type) = tp match {
+    case TypeBounds(_, _) => true
+    case _ => false
   }
 
 // Lubs and Glbs ---------------------------------------------------------
@@ -2253,22 +2328,18 @@ trait Types requires SymbolTable {
               proto.cloneSymbol(glbType.symbol).setInfo(
                 if (proto.isTerm) glb(symtypes)
                 else {
-                  def isTypeBound(tp: Type) = tp match {
-                    case TypeBounds(_, _) => true
-                    case _ => false
-                  }
                   def glbBounds(bnds: List[Type]): TypeBounds = {
                     val lo = lub(bnds map (.bounds.lo))
                     val hi = glb(bnds map (.bounds.hi))
                     if (lo <:< hi) TypeBounds(lo, hi)
                     else throw new MalformedClosure(bnds)
                   }
-                  val symbounds = symtypes filter isTypeBound
+                  val symbounds = symtypes filter isTypeBounds
                   var result: Type =
                     if (symbounds.isEmpty)
                       TypeBounds(AllClass.tpe, AnyClass.tpe)
                     else glbBounds(symbounds)
-                  for (val t <- symtypes; !isTypeBound(t))
+                  for (val t <- symtypes; !isTypeBounds(t))
                     if (result.bounds containsType t) result = t
                     else throw new MalformedClosure(symtypes);
                   result
