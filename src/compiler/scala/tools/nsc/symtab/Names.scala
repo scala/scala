@@ -18,6 +18,9 @@ import scala.tools.util.UTF8Codec
  *      <a href="SymbolTable.html" target="contentFrame">SymbolTable</a>
  *   </dd>
  *  </dl>
+ *
+ *  @author  Martin Odersky
+ *  @version 1.0, 05/02/2005
  */
 class Names {
 
@@ -52,8 +55,14 @@ class Names {
        cs(offset + (len >> 1)))
     else 0;
 
-  /** is (the ascii representation of) name at given index equal to
-   *  cs[offset..offset+len-1]?
+  /** Is (the ASCII representation of) name at given index equal to
+   *  <code>cs[offset..offset+len-1]</code>?
+   *
+   *  @param index  ...
+   *  @param cs     ...
+   *  @param offset ...
+   *  @param len    ...
+   *  @return       ...
    */
   private def equals(index: int, cs: Array[char], offset: int, len: int): boolean = {
     var i = 0
@@ -79,17 +88,21 @@ class Names {
     else nc = nc + len
   }
 
-  /** create a term name from the characters in cs[offset..offset+len-1].
+  /** Create a term name from the characters in <code>cs[offset..offset+len-1]</code>.
+   *
+   *  @param cs     ...
+   *  @param offset ...
+   *  @param len    ...
+   *  @return       the created term name
    */
   def newTermName(cs: Array[char], offset: int, len: int): Name = {
     val h = hashValue(cs, offset, len) & HASH_MASK;
     var n = termHashtable(h);
-    while ((n != null) && (n.length != len || !equals(n.start, cs, offset, len))) {
+    while ((n != null) && (n.length != len || !equals(n.start, cs, offset, len)))
       n = n.next;
-    }
     if (n == null) {
-      n = new TermName(nc, len, h);
-      enterChars(cs, offset, len);
+      n = new TermName(nc, len, h)
+      enterChars(cs, offset, len)
     }
     n
   }
@@ -99,7 +112,12 @@ class Names {
   def newTermName(s: String): Name =
     newTermName(s.toCharArray(), 0, s.length())
 
-  /** create a term name from the UTF8 encoded bytes in bs[offset..offset+len-1].
+  /** Create a term name from the UTF8 encoded bytes in <code>bs[offset..offset+len-1]</code>.
+   *
+   *  @param bs     ...
+   *  @param offset ...
+   *  @param len    ...
+   *  @return       the created term name
    */
   def newTermName(bs: Array[byte], offset: int, len: int): Name = {
     val cs = new Array[char](bs.length)
@@ -107,7 +125,12 @@ class Names {
     newTermName(cs, 0, nchrs)
   }
 
-  /** create a type name from the characters in cs[offset..offset+len-1].
+  /** Create a type name from the characters in <code>cs[offset..offset+len-1]</code>.
+   *
+   *  @param cs     ...
+   *  @param offset ...
+   *  @param len    ...
+   *  @return       the created type name
    */
   def newTypeName(cs: Array[char], offset: int, len: int): Name =
     newTermName(cs, offset, len).toTypeName
@@ -117,7 +140,12 @@ class Names {
   def newTypeName(s: String): Name =
     newTermName(s).toTypeName
 
-  /** create a type name from the UTF8 encoded bytes in bs[offset..offset+len-1].
+  /** Create a type name from the UTF8 encoded bytes in <code>bs[offset..offset+len-1]</code>.
+   *
+   *  @param bs     ...
+   *  @param offset ...
+   *  @param len    ...
+   *  @return       the create type name
    */
   def newTypeName(bs: Array[byte], offset: int, len: int): Name =
     newTermName(bs, offset, len).toTypeName
@@ -151,7 +179,11 @@ class Names {
     def toTypeName: Name
 
 
-    /** copy bytes of this name to buffer cs, starting at offset
+    /** Copy bytes of this name to buffer <code>cs</code>, starting at position
+     *  <code>offset</code>.
+     *
+     *  @param cs     ...
+     *  @param offset ...
      */
     final def copyChars(cs: Array[char], offset: int) =
       System.arraycopy(chrs, index, cs, offset, len)
@@ -190,16 +222,26 @@ class Names {
     /** return the index of first occurrence of char c in this name, length if not found */
     final def pos(s: String): int = pos(s, 0)
 
-    /** return the index of first occurrence of char c in this name from `start',
-     *  length if not found */
+    /** return the index of the first occurrence of character <code>c</code> in
+     *  this name from <code>start</code>, length if not found.
+     *
+     *  @param c     the character
+     *  @param start ...
+     *  @return      the index of the first occurrence of <code>c</code>
+     */
     final def pos(c: char, start: int): int = {
       var i = start
-      while (i < len && chrs(index + i) != c) i = i + 1;
+      while (i < len && chrs(index + i) != c) i = i + 1
       i
     }
 
-    /** return the index of first occurrence of nonempty string s in this name from `start',
-     *  length if not found */
+    /** return the index of the first occurrence of nonempty string <code>s</code>
+     *  in this name from <code>start</code>, length if not found.
+     *
+     *  @param s     the string
+     *  @param start ...
+     *  @return      the index of the first occurrence of <code>s</code>
+     */
     final def pos(s: String, start: int): int = {
       var i = pos(s.charAt(0), start)
       while (i + s.length() <= len) {
@@ -213,26 +255,38 @@ class Names {
       len
     }
 
-    /** return the index of last occurrence of char c in this name, -1 if not found.
+    /** return the index of last occurrence of char <code>c</code> in this
+     *  name, <code>-1</code> if not found.
+     *
+     *  @param c the character
+     *  @return  the index of the last occurrence of <code>c</code>
      */
     final def lastPos(c: char): int = lastPos(c, len - 1)
 
     final def lastPos(s: String): int = lastPos(s, len - s.length())
 
-    /** return the index of last occurrence of char c in this name from `start',
-     *  -1 if not found
+    /** return the index of the last occurrence of char <code>c</code> in this
+     *  name from <code>start</code>, <code>-1</code> if not found.
+     *
+     *  @param c     the character
+     *  @param start ...
+     *  @return      the index of the last occurrence of <code>c</code>
      */
     final def lastPos(c: char, start: int): int = {
       var i = start
-      while (i >= 0 && chrs(index + i) != c) i = i - 1;
+      while (i >= 0 && chrs(index + i) != c) i = i - 1
       i
     }
 
-    /** return the index of last occurrence of string s in this name from `start',
-     *  -1 if not found
+    /** return the index of the last occurrence of string <code>s</code> in this
+     *  name from <code>start</code>, <code>-1</code> if not found.
+     *
+     *  @param s     the string
+     *  @param start ...
+     *  @return      the index of the last occurrence of <code>s</code>
      */
     final def lastPos(s: String, start: int): int = {
-      var i = lastPos(s.charAt(0), start);
+      var i = lastPos(s.charAt(0), start)
       while (i >= 0) {
         var j = 1;
         while (s.charAt(j) == chrs(index + i + j)) {
@@ -265,41 +319,51 @@ class Names {
     /** does this name end with suffix just before given end index?
      */
     final def endsWith(suffix: Name, end: int): boolean = {
-      var i = 1;
+      var i = 1
       while (i <= suffix.length && i <= end &&
              chrs(index + end - i) == chrs(suffix.start + suffix.length - i))
         i = i + 1;
       i > suffix.length
     }
 
-    /** the subname with characters from start to end-1
+    /** Return the subname with characters from start to end-1.
+     *
+     *  @param from ...
+     *  @param to   ...
+     *  @return     ...
      */
     def subName(from: int, to: int): Name
 
-    /** replace all occurrences of `from' by `to' in name.
-     *  result is always a term name.
+    /** Replace all occurrences of <code>from</code> by </code>to</code> in
+     *  name; result is always a term name.
+     *
+     *  @param from ...
+     *  @param to   ...
+     *  @return     ...
      */
     def replace(from: char, to: char): Name = {
       val cs = new Array[char](len)
       var i = 0
       while (i < len) {
         val ch = this(i)
-        cs(i) = if (ch == from) to else ch;
+        cs(i) = if (ch == from) to else ch
         i = i + 1
       }
       newTermName(cs, 0, len)
     }
 
-    /** Replace operator symbols by corresponding "$op_name" */
+    /** Replace operator symbols by corresponding <code>$op_name</code>.
+     */
     def encode: Name = {
-      val str = toString();
+      val str = toString()
       val res = NameTransformer.encode(str)
       if (res == str) this
       else if (isTypeName) newTypeName(res)
       else newTermName(res)
     }
 
-    /** Replace $op_name by corresponding operator symbol */
+    /** Replace <code>$op_name</code> by corresponding operator symbol.
+     */
     def decode: String = (
       NameTransformer.decode(toString()) +
       (if (nameDebug && isTypeName) "!" else ""))//debug
