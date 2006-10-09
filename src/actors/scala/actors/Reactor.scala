@@ -41,6 +41,9 @@ trait Reactor extends Actor {
       Scheduler.execute(task)
     }
 
+  private[actors] def tick(): Unit =
+    Scheduler.tick(this)
+
   private[actors] def defaultDetachActor: PartialFunction[Any, Unit] => Unit =
     (f: PartialFunction[Any, Unit]) => {
       continuation = f

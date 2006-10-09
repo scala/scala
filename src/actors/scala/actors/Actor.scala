@@ -259,7 +259,7 @@ object Actor {
  *
  * @author Philipp Haller
  */
-trait Actor {
+trait Actor extends OutputChannel[Any] {
 
   private[actors] val in = new Channel[Any]
   in.receiver = this
@@ -291,6 +291,8 @@ trait Actor {
    */
   def !(msg: Any): Unit = in ! msg
 
+  def forward(msg: Any): Unit = in forward msg
+
   /**
    * Sends <code>msg</code> to this actor and awaits reply
    * (synchronous).
@@ -307,7 +309,7 @@ trait Actor {
   private[actors] var kill: () => Unit = _
 
   private[actors] def scheduleActor(f: PartialFunction[Any, Unit], msg: Any)
-
+  private[actors] def tick(): Unit
   private[actors] def isThreaded: boolean
   private[actors] def resetActor(): unit
 

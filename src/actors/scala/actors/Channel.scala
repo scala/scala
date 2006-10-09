@@ -10,8 +10,6 @@
 
 package scala.actors
 
-import Actor._
-
 case object TIMEOUT
 
 class SuspendActorException extends Throwable {
@@ -31,7 +29,7 @@ class SuspendActorException extends Throwable {
  *
  * @author Philipp Haller
  */
-class Channel[Msg] {
+class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
 
   private[actors] var receiver: Actor = synchronized {
     // basically Actor.self, but can be null
@@ -39,7 +37,7 @@ class Channel[Msg] {
     if (t.isInstanceOf[ActorThread])
       t.asInstanceOf[ActorThread]
     else {
-      val a = selfs.get(t).asInstanceOf[Actor]
+      val a = Actor.selfs.get(t).asInstanceOf[Actor]
       a
     }
   }
@@ -53,6 +51,7 @@ class Channel[Msg] {
   private val messageQueue = new MessageQueue[Msg]
 
   private def send(msg: Msg, sender: Actor) = receiver.synchronized {
+    receiver.tick()
     if (waitingFor(msg) && ((waitingForSender == null) ||
         (waitingForSender == sender))) {
       received = msg
@@ -77,16 +76,16 @@ class Channel[Msg] {
   /**
    * Sends <code>msg</code> to this <code>Channel</code>.
    */
-  def !(msg: Msg): unit = send(msg, self)
+  def !(msg: Msg): unit = send(msg, Actor.self)
 
   /**
    * Sends <code>msg</code> to this <code>Channel</code> and
    * awaits reply.
    */
   def !?(msg: Msg): Any = {
-    self.freshReply()
+    Actor.self.freshReply()
     this ! msg
-    self.reply.receiveFrom(receiver) {
+    Actor.self.reply.receiveFrom(receiver) {
       case x => x
     }
   }
@@ -101,15 +100,17 @@ class Channel[Msg] {
    * Receives a message from this <code>Channel</code>.
    */
   def receive[R](f: PartialFunction[Msg, R]): R = {
-    assert(self == receiver, "receive from channel belonging to other actor")
+    assert(Actor.self == receiver, "receive from channel belonging to other actor")
     assert(receiver.isThreaded, "receive invoked from reactor")
     receiver.synchronized {
+      receiver.tick()
       waitingFor = f.isDefinedAt
       val q = messageQueue.extractFirst(waitingFor)
       if (q != null) {
         received = q.msg
         receiver.pushSender(q.sender)
       }
+      // acquire lock because we might call wait()
       else synchronized {
         receiver.suspendActor()
       }
@@ -122,9 +123,10 @@ class Channel[Msg] {
   }
 
   private[actors] def receiveFrom[R](r: Actor)(f: PartialFunction[Msg, R]): R = {
-    assert(self == receiver, "receive from channel belonging to other actor")
+    assert(Actor.self == receiver, "receive from channel belonging to other actor")
     assert(receiver.isThreaded, "receive invoked from reactor")
     receiver.synchronized {
+      receiver.tick()
       waitingFor = f.isDefinedAt
       waitingForSender = r
       var q = messageQueue.dequeueFirst((item: MessageQueueResult[Msg]) => {
@@ -153,9 +155,10 @@ class Channel[Msg] {
    * executed if specified.
    */
   def receiveWithin[R](msec: long)(f: PartialFunction[Any, R]): R = {
-    assert(self == receiver, "receive from channel belonging to other actor")
+    assert(Actor.self == receiver, "receive from channel belonging to other actor")
     assert(receiver.isThreaded, "receive invoked from reactor")
     receiver.synchronized {
+      receiver.tick()
       waitingFor = f.isDefinedAt
       val q = messageQueue.extractFirst(waitingFor)
       if (q != null) {
@@ -185,8 +188,9 @@ class Channel[Msg] {
    * <code>receive</code> for reactors.
    */
   def react(f: PartialFunction[Any, Unit]): Nothing = {
-    assert(self == receiver, "react on channel belonging to other actor")
+    assert(Actor.self == receiver, "react on channel belonging to other actor")
     receiver.synchronized {
+      receiver.tick()
       waitingFor = f.isDefinedAt
       val q = messageQueue.extractFirst(waitingFor)
       if (q != null) {
@@ -206,8 +210,9 @@ class Channel[Msg] {
    * <code>receiveWithin</code> for reactors.
    */
   def reactWithin(msec: long)(f: PartialFunction[Any, Unit]): Nothing = {
-    assert(self == receiver, "react on channel belonging to other actor")
+    assert(Actor.self == receiver, "react on channel belonging to other actor")
     receiver.synchronized {
+      receiver.tick()
       waitingFor = f.isDefinedAt
       val q = messageQueue.extractFirst(waitingFor)
       if (q != null) {

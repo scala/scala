@@ -21,7 +21,8 @@ import scala.collection.mutable.{ArrayBuffer, Buffer, Queue}
  */
 object Scheduler {
   private var sched: IScheduler =
-    new SpareWorkerScheduler
+    //new SpareWorkerScheduler
+    new TickedScheduler
 
   def impl = sched
   def impl_= (scheduler: IScheduler) = {
@@ -87,7 +88,7 @@ class SpareWorkerScheduler extends IScheduler {
   private val idle = new Queue[WorkerThread]
   private var workers: Buffer[WorkerThread] = new ArrayBuffer[WorkerThread]
 
-  private var maxWorkers = 2
+  private var terminating = false
 
   def init() = {
     for (val i <- 0 until 2) {
@@ -102,43 +103,164 @@ class SpareWorkerScheduler extends IScheduler {
     if (!terminating) {
       if (idle.length == 0) {
         tasks += task
-        // create new worker
-        maxWorkers = maxWorkers + 1
         val newWorker = new WorkerThread(this)
         workers += newWorker
         newWorker.start()
       }
       else {
-        idle.dequeue.execute(task)
+        val worker = idle.dequeue
+        worker.execute(task)
       }
     }
   }
 
   def getTask(worker: WorkerThread) = synchronized {
-    if (tasks.length > 0) tasks.dequeue
+    if (terminating)
+      QUIT_TASK
+    else {
+      if (tasks.length > 0) tasks.dequeue
+      else {
+        idle += worker
+        null
+      }
+    }
+  }
+
+  def tick(a: Reactor): Unit = {}
+
+  def shutdown(): Unit = synchronized {
+    terminating = true
+
+    val idleThreads = idle.elements
+    while (idleThreads.hasNext) {
+      val worker = idleThreads.next
+      worker.running = false
+      worker.interrupt()
+      // caused deadlock (tries to acquire lock of worker)
+      //worker.join()
+    }
+  }
+}
+
+
+class TickedScheduler extends IScheduler {
+  private val tasks = new Queue[Reaction]
+  private var workers: Buffer[WorkerThread] = new ArrayBuffer[WorkerThread]
+
+  private val idle = new Queue[WorkerThread]
+  private val ticks = new scala.collection.mutable.HashMap[WorkerThread, long]
+  private val executing = new scala.collection.mutable.HashMap[Reactor, WorkerThread]
+
+  private var terminating = false
+
+  var TICKFREQ = 50
+
+  def init() = {
+    for (val i <- List.range(0, 2)) {
+      val worker = new WorkerThread(this)
+      workers += worker
+      worker.start()
+    }
+  }
+  init()
+
+  def execute(item: Reaction): unit = synchronized {
+    if (!terminating)
+      if (idle.length > 0) {
+        val wt = idle.dequeue
+        executing.update(item.actor, wt)
+        wt.execute(item)
+      }
+      else {
+        /*
+         only create new worker thread when all are blocked
+         according to heuristic
+
+         we check time stamps of latest send/receive ops of ALL
+         workers
+
+         we stop if there is one which is not blocked
+        */
+
+        val iter = workers.elements
+        var foundBusy = false
+        while (iter.hasNext && !foundBusy) {
+          val wt = iter.next
+          ticks.get(wt) match {
+            case None => foundBusy = true // assume not blocked
+            case Some(ts) => {
+              val currTime = System.currentTimeMillis
+              if (currTime - ts < TICKFREQ)
+                foundBusy = true
+            }
+          }
+        }
+
+        if (!foundBusy) {
+          val newWorker = new WorkerThread(this)
+          workers += newWorker
+          executing.update(item.actor, newWorker)
+          newWorker.execute(item)
+          newWorker.start()
+        }
+        else {
+          // wait assuming busy thread will be finished soon
+          // and ask for more work
+          tasks += item
+        }
+      }
+  }
+
+  def getTask(worker: WorkerThread) = synchronized {
+    if (terminating)
+      QUIT_TASK
+    if (tasks.length > 0) {
+      val item = tasks.dequeue
+      executing.update(item.actor, worker)
+      item
+    }
     else {
       idle += worker
       null
     }
   }
 
-  def tick(a: Reactor): Unit = {}
+  var ticksCnt = 0
 
-  private var terminating = false
+  def tick(a: Reactor): unit = synchronized {
+    ticksCnt = ticksCnt + 1
+    executing.get(a) match {
+      case None => // thread outside of scheduler; error("No worker thread associated with actor " + a)
+      case Some(wt) =>
+        ticks.update(wt, System.currentTimeMillis)
+    }
+  }
 
   def shutdown(): Unit = synchronized {
     terminating = true
-    val numNonIdle = workers.length - idle.length
-    for (val i <- 0 until numNonIdle)
-      tasks += QUIT_TASK
+
     val idleThreads = idle.elements
     while (idleThreads.hasNext) {
       val worker = idleThreads.next
+      worker.running = false
       worker.interrupt()
-      worker.join()
+      // caused deadlock (tries to acquire lock of worker)
+      //worker.join()
     }
   }
 }
+
+
+class QuitException extends Throwable {
+  /*
+   For efficiency reasons we do not fill in
+   the execution stack trace.
+   */
+  override def fillInStackTrace(): Throwable = {
+    this
+  }
+}
+
 
 /**
  * This class is used by schedulers to execute reactor tasks on
@@ -148,24 +270,45 @@ class SpareWorkerScheduler extends IScheduler {
  */
 class WorkerThread(sched: IScheduler) extends Thread {
   private var task: Runnable = null
-  private var running = true
+  private[actors] var running = true
 
   def execute(r: Runnable) = synchronized {
     task = r
     notify()
   }
 
-  override def run(): Unit = synchronized {
+  override def run(): Unit = {
     try {
       while (running) {
-        if (task != null) task.run()
-        task = sched.getTask(this)
-        if (task == sched.QUIT_TASK) {
-          running = false
-        } else if (task == null) wait()
+        if (task != null) {
+          try {
+            task.run()
+          } catch {
+            case consumed: InterruptedException => {
+              if (!running) throw new QuitException
+            }
+          }
+        }
+        this.synchronized {
+          task = sched.getTask(this)
+
+          while (task == null) {
+            try {
+              wait()
+            } catch {
+              case consumed: InterruptedException => {
+                if (!running) throw new QuitException
+              }
+            }
+          }
+
+          if (task == sched.QUIT_TASK) {
+            running = false
+          }
+        }
       }
     } catch {
-      case consumed: InterruptedException =>
+      case consumed: QuitException =>
         // allow thread to quit
     }
   }
