@@ -344,7 +344,10 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
       val ts = content
       xEndTag(qname)
       debugLastStartElement.pop
-      handle.element(pos1, qname, attrMap, ts)
+      if(qname=="xml:group")
+        handle.group(pos1, ts)
+      else
+        handle.element(pos1, qname, attrMap, ts)
     }
   }
 

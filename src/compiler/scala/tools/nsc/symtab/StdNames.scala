@@ -344,36 +344,6 @@ trait StdNames requires SymbolTable {
     val RuntimeAnnotationATTR = newTermName("RuntimeVisibleAnnotations")
     val ClassfileAnnotationATTR = newTermName("RuntimeInvisibleAnnotations")
     val RuntimeParamAnnotationATTR = newTermName("RuntimeVisibleParameterAnnotations")
-
-    // '_' is temporary
-    val _Attribute           = newTypeName("Attribute")
-    val _MetaData            = newTypeName("MetaData")
-    val _NamespaceBinding    = newTypeName("NamespaceBinding")
-    val _NodeBuffer          = newTypeName("NodeBuffer")
-    val _Null                = newTermName("Null")
-
-    val _PrefixedAttribute   = newTypeName("PrefixedAttribute")
-    val _UnprefixedAttribute = newTypeName("UnprefixedAttribute")
-    val _Elem                = newTypeName("Elem")
-    val _Seq                 = newTypeName("Seq")
-    val _immutable           = newTermName("immutable")
-    val _mutable             = newTermName("mutable")
-    val _append              = newTermName("append")
-    val _plus                = newTermName("$amp$plus")
-    val _collection          = newTermName("collection")
-    val _toList              = newTermName("toList")
-    val _xml                 = newTermName("xml")
-    val _Comment             = newTypeName("Comment")
-    val _Node                = newTypeName("Node")
-    val _None                = newTermName("None")
-    val _Some                = newTypeName("Some")
-    val _ProcInstr           = newTypeName("ProcInstr")
-    val _Text                = newTypeName("Text")
-    val _EntityRef           = newTypeName("EntityRef")
-    final val _md = newTermName("$md")
-    final val _scope = newTermName("$scope")
-    final val _tmpscope = newTermName("$tmpscope")
-
   }
 
   def encode(str: String): Name = newTermName(NameTransformer.encode(str))

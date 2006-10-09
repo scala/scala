@@ -27,33 +27,34 @@ abstract class SymbolicXMLBuilder(make: TreeBuilder, p: Parsers # Parser, preser
 
   var isPattern:Boolean = _
 
-  import nme.{
-   _Attribute           ,
-   _MetaData            ,
-   _NamespaceBinding    ,
-   _NodeBuffer          ,
+  def _Attribute           = global.newTypeName("Attribute")
+  def _MetaData            = global.newTypeName("MetaData")
+  def _NamespaceBinding    = global.newTypeName("NamespaceBinding")
+  def _NodeBuffer          = global.newTypeName("NodeBuffer")
+  def _Null                = global.newTermName("Null")
 
-   _Null                ,
-
-   _PrefixedAttribute   ,
-   _UnprefixedAttribute ,
-   _Elem                ,
-   _Seq                 ,
-   _immutable           ,
-   _mutable             ,
-   _append              ,
-   _plus                ,
-   _collection          ,
-   _toList              ,
-   _xml                 ,
-   _Comment             ,
-   _Node                ,
-   _ProcInstr           ,
-   _Text                ,
-   _EntityRef           ,
-  _md,
-  _scope,
-  _tmpscope}
+  def _PrefixedAttribute   = global.newTypeName("PrefixedAttribute")
+  def _UnprefixedAttribute = global.newTypeName("UnprefixedAttribute")
+  def _Elem                = global.newTypeName("Elem")
+  def _Group               = global.newTypeName("Group")
+  def _Seq                 = global.newTypeName("Seq")
+  def _immutable           = global.newTermName("immutable")
+  def _mutable             = global.newTermName("mutable")
+  def _append              = global.newTermName("append")
+  def _plus                = global.newTermName("$amp$plus")
+  def _collection          = global.newTermName("collection")
+  def _toList              = global.newTermName("toList")
+  def _xml                 = global.newTermName("xml")
+  def _Comment             = global.newTypeName("Comment")
+  def _Node                = global.newTypeName("Node")
+  def _None                = global.newTermName("None")
+  def _Some                = global.newTypeName("Some")
+  def _ProcInstr           = global.newTypeName("ProcInstr")
+  def _Text                = global.newTypeName("Text")
+  def _EntityRef           = global.newTypeName("EntityRef")
+  final def _md = global.newTermName("$md")
+  final def _scope = global.newTermName("$scope")
+  final def _tmpscope = global.newTermName("$tmpscope")
 
   // convenience methods
   private def LL[A](x:A*):List[List[A]] = List(List(x:_*))
@@ -61,7 +62,7 @@ abstract class SymbolicXMLBuilder(make: TreeBuilder, p: Parsers # Parser, preser
   private def _scala(name: Name) =
     Select(Select(Ident(nme.ROOTPKG), nme.scala_), name)
 
-  private def _scala_Seq  = _scala(_Seq)
+  private def _scala_Seq   = _scala(_Seq)
   private def _scala_xml(name: Name) = Select(_scala(_xml), name)
 
   private def _scala_xml_MetaData           = _scala_xml(_MetaData)
@@ -77,13 +78,16 @@ abstract class SymbolicXMLBuilder(make: TreeBuilder, p: Parsers # Parser, preser
   private def _scala_xml_Text               = _scala_xml(_Text)
   private def _scala_xml_Elem               = _scala_xml(_Elem)
   private def _scala_xml_Attribute          = _scala_xml(_Attribute)
+  private def _scala_xml_Group              = _scala_xml(_Group)
 
+  /*
   private def bufferToArray(buf: mutable.Buffer[Tree]): Array[Tree] = {
     val arr = new Array[Tree](buf.length)
     var i = 0
     for (val x <- buf.elements) { arr(i) = x; i = i + 1; }
     arr
   }
+  */
 
   // create scala xml tree
 
@@ -201,6 +205,10 @@ abstract class SymbolicXMLBuilder(make: TreeBuilder, p: Parsers # Parser, preser
   def getPrefix(name: String): Option[String] = {
     val i = name.indexOf(':')
     if (i != -1) Some(name.substring(0, i)) else None
+  }
+
+  def group(pos: int, args: mutable.Buffer[Tree]): Tree = {
+    atPos(pos) { New( _scala_xml_Group, LL( makeXMLseq(pos, args))) }
   }
 
   /** makes an element */
