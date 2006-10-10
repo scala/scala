@@ -31,24 +31,16 @@ object Actor {
    */
   def self: Actor = synchronized {
     val t = Thread.currentThread()
-    if (t.isInstanceOf[ActorThread])
-      t.asInstanceOf[ActorThread]
-    else {
-      var a = selfs.get(t).asInstanceOf[Actor]
-      if (a == null) {
-        a = new ActorProxy(t)
-        selfs.put(t, a)
-      }
-      a
+    var a = selfs.get(t).asInstanceOf[Actor]
+    if (a == null) {
+      a = new ActorProxy(t)
+      selfs.put(t, a)
     }
+    a
   }
 
-  /**
-   * Creates an instance of a thread-based actor executing <code>body</code>,
-   * and starts it.
-   */
-  def actor(body: => Unit): ActorThread = synchronized {
-    val actor = new ActorThread {
+  def actor(body: => Unit): Actor = synchronized {
+    val actor = new Reactor {
       def act() = body
     }
     actor.start()
@@ -60,8 +52,8 @@ object Actor {
    * channel which can be used for typed communication with other
    * actors.
    */
-  def actor[a](ch: Channel[a])(body: => Unit): ActorThread = synchronized {
-    val actor = new ActorThread {
+  def actor[a](ch: Channel[a])(body: => Unit): Actor = synchronized {
+    val actor = new Reactor {
       def act() = body
     }
     ch.receiver = actor
@@ -70,24 +62,9 @@ object Actor {
   }
 
   /**
-   * Creates an instance of an event-based reactor executing
-   * <code>body</code>, and starts it.
-   */
-  def reactor(body: => Unit): Reactor = synchronized {
-    val reactor = new Reactor {
-      def act() = body
-    }
-    reactor.start()
-    reactor
-  }
-
-  /**
    * Receives a message from the mailbox of
    * <code>self</code>. Blocks if no message matching any of the
    * cases of <code>f</code> can be received.
-   *
-   * Only (thread-based) actors may call this method. It fails at
-   * runtime if executed by a reactor.
    */
   def receive[a](f: PartialFunction[Any, a]): a =
     self.in.receive(f)
@@ -99,9 +76,6 @@ object Actor {
    <code>f</code> can be received. If no message could be
    received the <code>TIMEOUT</code> action is executed if
    specified.
-
-   Only (thread-based) actors may call this method. It fails at
-   runtime if executed by a reactor.
    */
   def receiveWithin[R](msec: long)(f: PartialFunction[Any, R]): R =
     self.in.receiveWithin(msec)(f)
@@ -303,14 +277,14 @@ trait Actor extends OutputChannel[Any] {
   private[actors] def pushSender(sender: Actor): unit
   private[actors] def popSender(): unit
 
-  private[actors] var suspendActor: () => unit = _
-  private[actors] var suspendActorFor: long => unit = _
-  private[actors] var detachActor: PartialFunction[Any, unit] => unit = _
+  private[actors] var suspendActor: () => Unit = _
+  private[actors] var suspendActorFor: long => Unit = _
+  private[actors] var resumeActor: () => Unit = _
+  private[actors] var detachActor: PartialFunction[Any, Unit] => Unit = _
   private[actors] var kill: () => Unit = _
 
   private[actors] def scheduleActor(f: PartialFunction[Any, Unit], msg: Any)
   private[actors] def tick(): Unit
-  private[actors] def isThreaded: boolean
   private[actors] def resetActor(): unit
 
   resetActor()
@@ -330,7 +304,7 @@ trait Actor extends OutputChannel[Any] {
    Links <code>self</code> to actor defined by <code>body</code>.
    */
   def link(body: => Unit): Actor = {
-    val actor = new ActorThread {
+    val actor = new Reactor {
       def act() = body
     }
     link(actor)
@@ -420,60 +394,12 @@ case class Exit(from: Actor, reason: String)
 
 
 /**
- * This class provides an implementation for actors based on
- * threads. To be able to create instances of this class, the
- * inherited abstract method <code>act()</code> has to be
- * implemented. Note that the preferred way of creating
- * thread-based actors is through the <code>actor</code> method
- * defined in object <code>Actor</code>.
- *
- * @author Philipp Haller
- */
-abstract class ActorThread extends Thread with ThreadedActor {
-  override def run(): Unit = {
-    try {
-      act()
-      if (isInterrupted())
-        throw new InterruptedException
-      kill()
-      if (isInterrupted())
-        throw new InterruptedException
-      exit("normal")
-    }
-    catch {
-      case ie: InterruptedException =>
-        exitLinked()
-      case t: Throwable =>
-        exitLinked(t.toString())
-    }
-  }
-
-  /**
-   Terminates execution of <code>self</code> with the following
-   effect on linked actors:
-
-   For each linked actor <code>a</code> with
-   <code>trapExit</code> set to <code>true</code>, send message
-   <code>Exit(self, reason)</code> to <code>a</code>.
-
-   For each linked actor <code>a</code> with
-   <code>trapExit</code> set to <code>false</code> (default),
-   call <code>a.exit(reason)</code> if
-   <code>!reason.equals("normal")</code>.
-   */
-  def exit(reason: String): Unit = {
-    exitReason = reason
-    interrupt()
-  }
-}
-
-/**
  * This class provides a dynamic actor proxy for normal Java
  * threads.
  *
  * @author Philipp Haller
  */
-private[actors] class ActorProxy(t: Thread) extends ThreadedActor {
+private[actors] class ActorProxy(t: Thread) extends Reactor {
   def act(): Unit = {}
   /**
    Terminates execution of <code>self</code> with the following
@@ -488,110 +414,11 @@ private[actors] class ActorProxy(t: Thread) extends ThreadedActor {
    call <code>a.exit(reason)</code> if
    <code>!reason.equals("normal")</code>.
    */
-  def exit(reason: String): Unit = {
+  override def exit(reason: String): Unit = {
     exitReason = reason
     t.interrupt()
   }
 }
-
-
-/**
- This object provides methods for creating, registering, and
- selecting remotely accessible actors.
-
- A remote actor is typically created like this:
- <pre>
- actor {
-   alive(9010)
-   register('myName, self)
-
-   // behavior
- }
- </pre>
-
- It can be accessed by an actor running on a (possibly)
- different node by selecting it in the following way:
- <pre>
- actor {
-   // ...
-   <b>val</b> c = select(TcpNode("127.0.0.1", 9010), 'myName)
-   c ! msg
-   // ...
- }
- </pre>
-
- @author Philipp Haller
- */
-object RemoteActor {
-  import remote.NetKernel
-  import remote.TcpService
-
-  private val kernels = new scala.collection.mutable.HashMap[Actor, NetKernel]
-
-  /**
-   * Makes <code>self</code> remotely accessible on TCP port
-   * <code>port</code>.
-   */
-  def alive(port: int): Unit = {
-    val serv = new TcpService(port)
-    serv.start()
-    kernels += Actor.self -> serv.kernel
-  }
-
-  /**
-   * Registers <code>a</code> under <code>name</code> on this
-   * node.
-   */
-  def register(name: Symbol, a: Actor): Unit = {
-    val kernel = kernels.get(Actor.self) match {
-      case None => {
-        val serv = new TcpService(TcpService.generatePort)
-        serv.start()
-        kernels += Actor.self -> serv.kernel
-        serv.kernel
-      }
-      case Some(k) => k
-    }
-    kernel.register(name, a)
-  }
-
-  /**
-   * Returns (a proxy for) the actor registered under
-   * <code>name</code> on <code>node</code>.
-   */
-  def select(node: Node, name: Symbol): Actor =
-    new Reactor {
-      def act(): Unit = {}
-      override def !(msg: Any): Unit = msg match {
-        case a: AnyRef => {
-          // establish remotely accessible
-          // return path (sender)
-          val kernel = kernels.get(Actor.self) match {
-            case None => {
-              val serv = new TcpService(TcpService.generatePort)
-              serv.start()
-              kernels += Actor.self -> serv.kernel
-              serv.kernel
-            }
-            case Some(k) => k
-          }
-          kernel.send(node, name, a)
-        }
-        case other =>
-          error("Cannot send non-AnyRef value remotely.")
-      }
-      override def !?(msg: Any): Any =
-        error("!? not implemented for remote actors.")
-    }
-}
-
-
-/**
- * This class represents a machine node on a TCP network.
- *
- * @author Philipp Haller
- */
-case class Node(address: String, port: Int)
 
 
 /**

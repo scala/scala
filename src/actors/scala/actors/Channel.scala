@@ -34,12 +34,8 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
   private[actors] var receiver: Actor = synchronized {
     // basically Actor.self, but can be null
     val t = Thread.currentThread()
-    if (t.isInstanceOf[ActorThread])
-      t.asInstanceOf[ActorThread]
-    else {
-      val a = Actor.selfs.get(t).asInstanceOf[Actor]
-      a
-    }
+    val a = Actor.selfs.get(t).asInstanceOf[Actor]
+    a
   }
 
   private var received: Msg = _
@@ -48,7 +44,8 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
   private var waitingFor: Msg => boolean = waitingForNone
   private var waitingForSender: Actor = null
 
-  private val messageQueue = new MessageQueue[Msg]
+  //private val messageQueue = new MessageQueue[Msg]
+  private val mailbox = new scala.collection.mutable.Queue[Pair[Msg, Actor]]
 
   private def send(msg: Msg, sender: Actor) = receiver.synchronized {
     receiver.tick()
@@ -67,9 +64,13 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
         }
       }
 
-      receiver.scheduleActor(null, msg)
+      if (isSuspended)
+        receiver.resumeActor()
+      else
+        receiver.scheduleActor(null, msg)
     } else {
-      messageQueue.append(msg, sender)
+      //messageQueue.append(msg, sender)
+      mailbox += Pair(msg, sender)
     }
   }
 
@@ -96,15 +97,18 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
    */
   def forward(msg: Msg): unit = send(msg, receiver.sender)
 
+  private var isSuspended = false
+
   /**
    * Receives a message from this <code>Channel</code>.
    */
   def receive[R](f: PartialFunction[Msg, R]): R = {
     assert(Actor.self == receiver, "receive from channel belonging to other actor")
-    assert(receiver.isThreaded, "receive invoked from reactor")
+    //assert(receiver.isThreaded, "receive invoked from reactor")
     receiver.synchronized {
       receiver.tick()
       waitingFor = f.isDefinedAt
+/*
       val q = messageQueue.extractFirst(waitingFor)
       if (q != null) {
         received = q.msg
@@ -112,8 +116,28 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
       }
       // acquire lock because we might call wait()
       else synchronized {
+        isSuspended = true
         receiver.suspendActor()
       }
+*/
+
+      mailbox.dequeueFirst((p: Pair[Msg, Actor]) => {
+        waitingFor(p._1)
+      }) match {
+        case Some(Pair(msg, sender)) => {
+          received = msg
+          receiver.pushSender(sender)
+        }
+        case None => {
+          // acquire lock because we might call wait()
+          this.synchronized {
+            isSuspended = true
+            receiver.suspendActor()
+          }
+        }
+      }
+
+      isSuspended = false
       waitingFor = waitingForNone
     }
     receiver.resetActor()
@@ -124,11 +148,12 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
 
   private[actors] def receiveFrom[R](r: Actor)(f: PartialFunction[Msg, R]): R = {
     assert(Actor.self == receiver, "receive from channel belonging to other actor")
-    assert(receiver.isThreaded, "receive invoked from reactor")
+    //assert(receiver.isThreaded, "receive invoked from reactor")
     receiver.synchronized {
       receiver.tick()
       waitingFor = f.isDefinedAt
       waitingForSender = r
+/*
       var q = messageQueue.dequeueFirst((item: MessageQueueResult[Msg]) => {
         waitingFor(item.msg) && item.sender == r
       })
@@ -137,8 +162,28 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
         receiver.pushSender(q.sender)
       }
       else synchronized {
+        isSuspended = true
         receiver.suspendActor()
       }
+*/
+
+      mailbox.dequeueFirst((p: Pair[Msg, Actor]) => {
+        waitingFor(p._1) && p._2 == r
+      }) match {
+        case Some(Pair(msg, sender)) => {
+          received = msg
+          receiver.pushSender(sender)
+        }
+        case None => {
+          // acquire lock because we might call wait()
+          this.synchronized {
+            isSuspended = true
+            receiver.suspendActor()
+          }
+        }
+      }
+
+      isSuspended = false
       waitingFor = waitingForNone
       waitingForSender = null
     }
@@ -156,19 +201,22 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
    */
   def receiveWithin[R](msec: long)(f: PartialFunction[Any, R]): R = {
     assert(Actor.self == receiver, "receive from channel belonging to other actor")
-    assert(receiver.isThreaded, "receive invoked from reactor")
+    //assert(receiver.isThreaded, "receive invoked from reactor")
     receiver.synchronized {
       receiver.tick()
       waitingFor = f.isDefinedAt
+/*
       val q = messageQueue.extractFirst(waitingFor)
       if (q != null) {
         received = q.msg
         receiver.pushSender(q.sender)
       }
       else synchronized {
+        isSuspended = true
         receiver.suspendActorFor(msec)
         if (received == null)
           if (f.isDefinedAt(TIMEOUT)) {
+            isSuspended = false
             receiver.resetActor()
             val result = f(TIMEOUT)
             return result
@@ -176,6 +224,34 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
           else
             error("unhandled timeout")
       }
+*/
+
+      mailbox.dequeueFirst((p: Pair[Msg, Actor]) => {
+        waitingFor(p._1)
+      }) match {
+        case Some(Pair(msg, sender)) => {
+          received = msg
+          receiver.pushSender(sender)
+        }
+        case None => {
+          // acquire lock because we might call wait()
+          this.synchronized {
+            isSuspended = true
+            receiver.suspendActorFor(msec)
+            if (received == null)
+              if (f.isDefinedAt(TIMEOUT)) {
+                isSuspended = false
+                receiver.resetActor()
+                val result = f(TIMEOUT)
+                return result
+              }
+              else
+                error("unhandled timeout")
+          }
+        }
+      }
+
+      isSuspended = false
       waitingFor = waitingForNone
     }
     receiver.resetActor()
@@ -192,6 +268,7 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
     receiver.synchronized {
       receiver.tick()
       waitingFor = f.isDefinedAt
+/*
       val q = messageQueue.extractFirst(waitingFor)
       if (q != null) {
         received = q.msg
@@ -202,6 +279,24 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
       else synchronized {
         receiver.detachActor(f)
       }
+*/
+
+      mailbox.dequeueFirst((p: Pair[Msg, Actor]) => {
+        waitingFor(p._1)
+      }) match {
+        case Some(Pair(msg, sender)) => {
+          received = msg
+          receiver.pushSender(sender)
+          waitingFor = waitingForNone
+          receiver.scheduleActor(f, received)
+        }
+        case None => {
+          this.synchronized {
+            receiver.detachActor(f)
+          }
+        }
+      }
+
       throw new SuspendActorException
     }
   }
@@ -214,6 +309,7 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
     receiver.synchronized {
       receiver.tick()
       waitingFor = f.isDefinedAt
+/*
       val q = messageQueue.extractFirst(waitingFor)
       if (q != null) {
         received = q.msg
@@ -226,6 +322,26 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
         receiver.asInstanceOf[Reactor].timeoutPending = true
         receiver.detachActor(f)
       }
+*/
+
+      mailbox.dequeueFirst((p: Pair[Msg, Actor]) => {
+        waitingFor(p._1)
+      }) match {
+        case Some(Pair(msg, sender)) => {
+          received = msg
+          receiver.pushSender(sender)
+          waitingFor = waitingForNone
+          receiver.scheduleActor(f, received)
+        }
+        case None => {
+          this.synchronized {
+            TimerThread.requestTimeout(receiver.asInstanceOf[Reactor], f, msec)
+            receiver.asInstanceOf[Reactor].timeoutPending = true
+            receiver.detachActor(f)
+          }
+        }
+      }
+
       throw new SuspendActorException
     }
   }

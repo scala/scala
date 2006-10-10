@@ -20,12 +20,16 @@ package scala.actors
  * @author Philipp Haller
  */
 trait Reactor extends Actor {
-  private var lastSender: Actor = null
-  private[actors] def sender: Actor = lastSender
-  private[actors] def pushSender(sender: Actor): Unit = lastSender = sender
-  private[actors] def popSender(): Unit = lastSender = null
 
-  private[actors] def isThreaded = false
+  private val lastSenders = new scala.collection.mutable.Stack[Actor]
+
+  private[actors] def sender: Actor = {
+    if (lastSenders.isEmpty) null
+    else lastSenders.top
+  }
+
+  private[actors] def pushSender(s: Actor) = { lastSenders.push(s) }
+  private[actors] def popSender(): Unit = { lastSenders.pop }
 
   private[actors] var continuation: PartialFunction[Any, Unit] = null
   private[actors] var timeoutPending = false
@@ -51,9 +55,10 @@ trait Reactor extends Actor {
     }
 
   private[actors] def resetActor(): Unit = {
+    suspendActor = () => wait()
+    suspendActorFor = (msec: long) => wait(msec)
+    resumeActor = () => notify()
     detachActor = defaultDetachActor
-    suspendActor = () => error("suspendActor called on reactor.")
-    suspendActorFor = (msec: long) => error("suspendActorFor called on reactor.")
     kill = () => {}
   }
 

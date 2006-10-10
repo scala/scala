@@ -36,6 +36,7 @@ trait ThreadedActor extends Actor {
   private[actors] def resetActor() = {
     suspendActor = () => wait()
     suspendActorFor = (msec: long) => wait(msec)
+    resumeActor = () => notify()
     detachActor = (f: PartialFunction[Any, Unit]) => wait()
     kill = () => {}
   }
