@@ -31,25 +31,35 @@ case class Group(val nodes: Seq[Node]) extends Node {
     case _           => false;
   }
 
-  /** always null */
+  /**
+   * @throws UnsupportedOperationException (always)
+   */
   final def label =
-    error("class Group does not support method 'label'")
+    throw new UnsupportedOperationException("class Group does not support method 'label'")
 
-  /** always empty */
+  /**
+   * @throws UnsupportedOperationException (always)
+   */
   final override def attributes =
-    error("class Group does not support method 'attributes'")
+    throw new UnsupportedOperationException("class Group does not support method 'attributes'")
 
-  /** always null */
+  /**
+   * @throws UnsupportedOperationException (always)
+   */
   final override def namespace =
-    error("class Group does not support method 'namespace'")
+    throw new UnsupportedOperationException("class Group does not support method 'namespace'")
 
-  /** always empty */
+  /**
+   * @throws UnsupportedOperationException (always)
+   */
   final override def child =
-    error("class Group does not support method 'child'")
+    throw new UnsupportedOperationException("class Group does not support method 'child'")
 
-  /** returns text, with some characters escaped according to XML spec */
+  /**
+   * @throws UnsupportedOperationException (always)
+   */
   def toString(sb: StringBuilder) =
-    error("class Group does not support method toString(StringBuilder)")
+    throw new UnsupportedOperationException("class Group does not support method toString(StringBuilder)")
 
   override def text = { // same impl as NodeSeq
     val sb = new StringBuilder()

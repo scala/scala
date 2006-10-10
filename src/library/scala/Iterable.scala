@@ -39,7 +39,7 @@ object Iterable {
   /** The minimum element of a non-empty sequence of ordered elements */
   def min[A <% Ordered[A]](seq: Iterable[A]): A = {
     val xs = seq.elements
-    if (!xs.hasNext) Predef.error("min(<empty>)")
+    if (!xs.hasNext) throw new IllegalArgumentException("min(<empty>)")
     var min = xs.next
     while (xs.hasNext) {
       val x = xs.next
@@ -51,7 +51,7 @@ object Iterable {
   /** The maximum element of a non-empty sequence of ordered elements */
   def max[A <% Ordered[A]](seq: Iterable[A]): A = {
     val xs = seq.elements
-    if (!xs.hasNext) Predef.error("max(<empty>)")
+    if (!xs.hasNext) throw new IllegalArgumentException("max(<empty>)")
     var max = xs.next
     while (xs.hasNext) {
       val x = xs.next

@@ -56,7 +56,7 @@ final class RichString(s: String) {
     var index = 0
     def hasNext: Boolean = index <= len
     def next: String = {
-      if (index >= len) Predef.error("next on empty iterator")
+      if (index >= len) throw new java.util.NoSuchElementException("next on empty iterator")
       val start = index
       while (index < len && !isLineBreak(apply(index))) index = index + 1
       index = index + 1

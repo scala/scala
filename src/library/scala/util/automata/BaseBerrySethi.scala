@@ -64,7 +64,7 @@ abstract class BaseBerrySethi {
       tmp
     case Star(t) => compFirst(t)
     case _ =>
-      error("unexpected pattern " + Platform.getClass(r))
+      throw new IllegalArgumentException("unexpected pattern " + Platform.getClass(r))
   }
 
   /** computes last( r ) for the regexp r */
@@ -89,7 +89,7 @@ abstract class BaseBerrySethi {
       tmp
     case Star(t)  => compLast(t)
     case _        =>
-      error("unexpected pattern " + Platform.getClass(r))
+      throw new IllegalArgumentException("unexpected pattern " + Platform.getClass(r))
   }
 
   /** Starts from the right-to-left
@@ -170,7 +170,7 @@ abstract class BaseBerrySethi {
         first
 
       case _ =>
-        error("unexpected pattern: " + Platform.getClass(r))
+        throw new IllegalArgumentException("unexpected pattern: " + Platform.getClass(r))
     }
   }
 
@@ -193,7 +193,7 @@ abstract class BaseBerrySethi {
     case Star(t) =>
       traverse(t)
     case _ =>
-      error("unexp pattern " + Platform.getClass(r))
+      throw new IllegalArgumentException("unexp pattern " + Platform.getClass(r))
   }
 
 }

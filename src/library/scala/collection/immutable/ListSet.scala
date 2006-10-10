@@ -30,6 +30,8 @@ object ListSet {
 [serializable]
 class ListSet[A] extends AnyRef with Set[A] {
 
+  import java.util.NoSuchElementException
+
   /** Returns the number of elements in this set.
    *
    *  @return number of set elements.
@@ -58,13 +60,14 @@ class ListSet[A] extends AnyRef with Set[A] {
 
   /** Creates a new iterator over all elements contained in this set.
    *
+   *  @throws java.util.NoSuchElementException
    *  @return the new iterator
    */
   def elements: Iterator[A] = new Iterator[A] {
     var that: ListSet[A] = ListSet.this;
     def hasNext = !that.isEmpty;
     def next: A =
-      if (!hasNext) error("next on empty iterator")
+      if (!hasNext) throw new NoSuchElementException("next on empty iterator")
       else { val res = that.elem; that = that.next; res }
   }
 
@@ -78,8 +81,15 @@ class ListSet[A] extends AnyRef with Set[A] {
     } else
       false
 
-  protected def elem: A = error("Set has no elelemnts");
-  protected def next: ListSet[A] = error("Next of an empty set");
+  /**
+   *  @throws java.util.NoSuchElementException
+   */
+  protected def elem: A = throw new NoSuchElementException("Set has no elelemnts");
+
+  /**
+   *  @throws java.util.NoSuchElementException
+   */
+  protected def next: ListSet[A] = throw new NoSuchElementException("Next of an empty set");
 
   [serializable]
   protected class Node(override protected val elem: A) extends ListSet[A] {

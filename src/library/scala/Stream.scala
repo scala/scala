@@ -24,8 +24,8 @@ object Stream {
 
   val empty: Stream[Nothing] = new Stream[Nothing] {
     override def isEmpty = true
-    def head: Nothing = error("head of empty stream")
-    def tail: Stream[Nothing] = error("tail of empty stream")
+    def head: Nothing = throw new java.util.NoSuchElementException("head of empty stream")
+    def tail: Stream[Nothing] = throw new java.util.NoSuchElementException("tail of empty stream")
     def printElems(buf: StringBuilder, prefix: String): StringBuilder = buf
   }
 
@@ -163,12 +163,12 @@ trait Stream[+a] extends Seq[a] {
   }
 
   def init: Stream[a] =
-    if (isEmpty) error("Stream.empty.init")
+    if (isEmpty) throw new java.util.NoSuchElementException("Stream.empty.init")
     else if (tail.isEmpty) Stream.empty
     else Stream.cons(head, tail.init)
 
   def last: a =
-    if (isEmpty) error("Stream.empty.last")
+    if (isEmpty) throw new java.util.NoSuchElementException("Stream.empty.last")
     else {
       def loop(s: Stream[a]): a = {
         if (s.tail.isEmpty) s.head
@@ -251,11 +251,11 @@ trait Stream[+a] extends Seq[a] {
     else f(head, tail.foldRight(z)(f))
 
   def reduceLeft[b >: a](f: (b, b) => b): b =
-    if (isEmpty) error("Stream.empty.reduceLeft")
+    if (isEmpty) throw new java.util.NoSuchElementException("Stream.empty.reduceLeft")
     else ((tail: Stream[b]) foldLeft (head: b))(f)
 
   def reduceRight[b >: a](f: (b, b) => b): b =
-    if (isEmpty) error("Stream.empty.reduceRight")
+    if (isEmpty) throw new java.util.NoSuchElementException("Stream.empty.reduceRight")
     else if (tail.isEmpty) head: b
     else f(head, tail.reduceRight(f))
 

@@ -104,7 +104,7 @@ abstract class BasicTransformer extends Function1[Node,Node] {
   def apply(n: Node): Node = {
     val seq = transform(n)
     if (!single(seq))
-      error("transform must return single node for root");
+      throw new UnsupportedOperationException("transform must return single node for root");
     else seq.elements.next
   }
 }

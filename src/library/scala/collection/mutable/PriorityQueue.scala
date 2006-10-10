@@ -24,6 +24,8 @@ package scala.collection.mutable
 class PriorityQueue[A <% Ordered[A]] extends ResizableArray[A] {
   size = size + 1 // we do not use array(0)
 
+  import java.util.NoSuchElementException
+
   protected def fixUp(as: Array[A], m: Int): Unit = {
     var k: Int = m
     while ((k > 1) && (as(k / 2) < as(k))) {
@@ -89,6 +91,7 @@ class PriorityQueue[A <% Ordered[A]] extends ResizableArray[A] {
   /** Returns the element with the highest priority in the queue,
    *  and removes this element from the queue.
    *
+   *  @throws java.util.NoSuchElementException
    *  @return   the element with the highest priority.
    */
   def dequeue: A =
@@ -98,14 +101,14 @@ class PriorityQueue[A <% Ordered[A]] extends ResizableArray[A] {
       fixDown(array, 1, size - 1)
       array(size)
     } else
-      error("no element to remove from heap")
+      throw new NoSuchElementException("no element to remove from heap")
 
   /** Returns the element with the highest priority in the queue,
    *  or throws an error if there is no element contained in the queue.
    *
    *  @return   the element with the highest priority.
    */
-  def max: A = if (size > 1) array(1) else error("queue is empty")
+  def max: A = if (size > 1) array(1) else throw new NoSuchElementException("queue is empty")
 
   /** Removes all elements from the queue. After this operation is completed,
    *  the queue will be empty.
@@ -147,7 +150,7 @@ class PriorityQueue[A <% Ordered[A]] extends ResizableArray[A] {
    *
    *  @return never.
    */
-  override def hashCode(): Int = error("unsuitable as hash key")
+  override def hashCode(): Int = throw new UnsupportedOperationException("unsuitable as hash key")
 
   /** Returns a regular queue containing the same elements.
    */

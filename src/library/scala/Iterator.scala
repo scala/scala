@@ -25,7 +25,7 @@ object Iterator {
 
   def empty[a] = new Iterator[a] {
     def hasNext: Boolean = false
-    def next: a = Predef.error("next on empty iterator")
+    def next: a =  throw new java.util.NoSuchElementException("next on empty iterator")
   }
 
   def single[a](x: a) = new Iterator[a] {
@@ -33,7 +33,7 @@ object Iterator {
     def hasNext: Boolean = hasnext
     def next: a =
       if (hasnext) { hasnext = false; x }
-      else Predef.error("next on empty iterator")
+      else throw new java.util.NoSuchElementException("next on empty iterator")
   }
 
   def fromValues[a](xs: a*) = xs.elements
@@ -53,9 +53,9 @@ object Iterator {
       val end = if ((start + length) < xs.length) start else xs.length
       def hasNext: Boolean = i < end
       def next: a = if (hasNext) { val x = xs(i) ; i = i + 1 ; x }
-                    else Predef.error("next on empty iterator")
+                    else throw new java.util.NoSuchElementException("next on empty iterator")
       def head: a = if (hasNext) xs(i);
-                    else Predef.error("head on empty iterator")
+                    else throw new java.util.NoSuchElementException("head on empty iterator")
   }
 
   def fromString(str: String): Iterator[Char] =
@@ -103,10 +103,10 @@ object Iterator {
       def hasNext: Boolean = if (step > 0) i < end else i > end
       def next: Int =
         if (hasNext) { val j = i; i = i + step; j }
-        else Predef.error("next on empty iterator")
+        else throw new java.util.NoSuchElementException("next on empty iterator")
       def head: Int =
         if (hasNext) i
-        else Predef.error("head on empty iterator")
+        else throw new java.util.NoSuchElementException("head on empty iterator")
     }
   }
 
@@ -126,10 +126,10 @@ object Iterator {
       def hasNext: Boolean =  i < end
       def next: Int =
         if (i < end) { val j = i; i = step(i); j }
-        else Predef.error("next on empty iterator")
+        else throw new java.util.NoSuchElementException("next on empty iterator")
       def head: Int =
         if (i < end) i
-        else Predef.error("head on empty iterator")
+        else throw new java.util.NoSuchElementException("head on empty iterator")
     }
 
   /** Create an iterator with elements
@@ -203,7 +203,7 @@ trait Iterator[+A] {
     def hasNext = remaining > 0 && Iterator.this.hasNext
     def next: A =
       if (hasNext) { remaining = remaining - 1; Iterator.this.next }
-      else error("next on empty iterator")
+      else throw new java.util.NoSuchElementException("next on empty iterator")
   }
 
   /** Removes the first <code>n</code> elements from this iterator.
@@ -247,7 +247,7 @@ trait Iterator[+A] {
       else if (Iterator.this.hasNext) {
         cur = f(Iterator.this.next)
         next
-      } else Predef.error("next on empty iterator")
+      } else throw new java.util.NoSuchElementException("next on empty iterator")
   }
 
   /** Returns an iterator over all the elements of this iterator that
@@ -270,7 +270,7 @@ trait Iterator[+A] {
     def hasNext: Boolean = { skip; ahead || hasMore }
     def next: A =
       if (hasNext) { ahead = false; hd }
-      else Predef.error("next on empty iterator");
+      else throw new java.util.NoSuchElementException("next on empty iterator");
     def head: A = { skip; hd }
  }
 

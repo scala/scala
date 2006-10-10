@@ -27,6 +27,8 @@ object ListMap {
 [serializable]
 class ListMap[A, B] extends AnyRef with Map[A, B] {
 
+  import java.util.NoSuchElementException
+
   /** This method returns a new ListMap instance mapping keys of the
    *  same type to values of type <code>C</code>.
    */
@@ -66,7 +68,7 @@ class ListMap[A, B] extends AnyRef with Map[A, B] {
     var that: ListMap[A,B] = ListMap.this;
     def hasNext = !that.isEmpty;
     def next: Pair[A,B] =
-      if (!hasNext) error("next on empty iterator")
+      if (!hasNext) throw new NoSuchElementException("next on empty iterator")
       else { val res = Pair(that.key, that.value); that = that.next; res }
   }
 
@@ -88,9 +90,9 @@ class ListMap[A, B] extends AnyRef with Map[A, B] {
 
   override def hashCode(): Int = 0
 
-  protected def key: A = error("empty map");
-  protected def value: B = error("empty map");
-  protected def next: ListMap[A, B] = error("empty map");
+  protected def key: A = throw new NoSuchElementException("empty map");
+  protected def value: B = throw new NoSuchElementException("empty map");
+  protected def next: ListMap[A, B] = throw new NoSuchElementException("empty map");
 
   [serializable]
   protected class Node(override protected val key: A, override protected val value: B)

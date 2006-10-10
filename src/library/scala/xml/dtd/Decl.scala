@@ -120,7 +120,7 @@ case class IntDef(value:String) extends EntityDef {
     while( ix != -1) {
       val iz = tmp.indexOf(';', ix);
       if(iz == -1 && iz == ix + 1)
-        error("no % allowed in entity value, except for parameter-entity-references");
+        throw new IllegalArgumentException("no % allowed in entity value, except for parameter-entity-references");
       else {
         val n = tmp.substring(ix, iz);
 

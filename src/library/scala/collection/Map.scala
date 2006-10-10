@@ -139,6 +139,6 @@ trait Map[A, +B] extends AnyRef
      *  @param key ...
      */
     def default(key: A): B =
-      error("key not found: " + key)
+      throw new java.util.NoSuchElementException("key not found: " + key)
 }
 

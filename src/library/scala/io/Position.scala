@@ -69,11 +69,11 @@ object Position {
   final def encode(line: Int, column: Int): Int = {
     var line1, column1 = 0
     if (line < 0)
-      error(line + " < 0")
+      throw new IllegalArgumentException(line + " < 0")
     if ((line == 0) && (column != 0))
-      error(line + "," + column + " not allowed")
+      throw new IllegalArgumentException(line + "," + column + " not allowed")
     if (column < 0)
-      error(line + "," + column + " not allowed")
+      throw new IllegalArgumentException(line + "," + column + " not allowed")
 
     {if (line >= LINE_MASK) {
       line1 = LINE_MASK

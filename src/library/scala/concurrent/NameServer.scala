@@ -24,13 +24,13 @@ object NameServer {
    *  @param proc ...
    */
   def register(name: Symbol, proc: Process) = {
-    if (names contains name) error("Name:" + name + " already registred")
+    if (names contains name) throw new IllegalArgumentException("Name:" + name + " already registred")
     names += name -> proc
   }
 
   def unregister(name: Symbol) =
     if (names contains name) names -= name
-    else error("Name:" + name + " not registred")
+    else throw new IllegalArgumentException("Name:" + name + " not registred")
 
   /**
    *  @param name ...

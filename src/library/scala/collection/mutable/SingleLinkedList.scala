@@ -40,7 +40,7 @@ abstract class SingleLinkedList[A, This >: Null <: SingleLinkedList[A, This]]
 
   def apply(n: Int): A =
     if (n == 0) elem
-    else if (next == null) error("unknown element")
+    else if (next == null) throw new IndexOutOfBoundsException("unknown element")
     else next.apply(n - 1)
 
   def get(n: Int): Option[A] =

@@ -119,7 +119,7 @@ final class ListBuffer[A] extends Buffer[A] {
   def apply(n: Int): A = try {
     start(n)
   } catch {
-    case ex: Error => throw new IndexOutOfBoundsException(n.toString())
+    case ex: Exception => throw new IndexOutOfBoundsException(n.toString())
   }
 
   /** Replace element at index <code>n</code> with the new element
@@ -146,7 +146,7 @@ final class ListBuffer[A] extends Buffer[A] {
       cursor.asInstanceOf[scala.::[A]].tl = newElem
     }
   } catch {
-    case ex: Error => throw new IndexOutOfBoundsException(n.toString())
+    case ex: Exception => throw new IndexOutOfBoundsException(n.toString())
   }
 
   /** Inserts new elements at the index <code>n</code>. Opposed to method
@@ -181,7 +181,7 @@ final class ListBuffer[A] extends Buffer[A] {
       }
     }
   } catch {
-    case ex: Error => throw new IndexOutOfBoundsException(n.toString())
+    case ex: Exception => throw new IndexOutOfBoundsException(n.toString())
   }
 
 
@@ -209,7 +209,7 @@ final class ListBuffer[A] extends Buffer[A] {
     }
     old
   } catch {
-    case ex: Error => throw new IndexOutOfBoundsException(n.toString())
+    case ex: Exception => throw new IndexOutOfBoundsException(n.toString())
   }
 
   /** Returns an iterator over all elements of this list.
@@ -222,7 +222,7 @@ final class ListBuffer[A] extends Buffer[A] {
     def hasNext: Boolean = !start.isEmpty && cursor != last
     def next: A =
       if (!hasNext) {
-        error("next on empty Iterator")
+        throw new java.util.NoSuchElementException("next on empty Iterator")
       } else {
         if (cursor == null) cursor = start else cursor = cursor.tail
         cursor.head

@@ -29,7 +29,7 @@ class NamespaceBinding(val prefix: String,
   private val serialVersionUID = 0 - 2518644165573446725L
 
   if (null != prefix && 0 == prefix.length())
-    Predef.error("zero length prefix not allowed")
+    throw new IllegalArgumentException("zero length prefix not allowed")
 
   def getURI(_prefix: String): String =
     if (prefix == _prefix) uri else parent.getURI(_prefix)

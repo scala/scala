@@ -1098,8 +1098,10 @@ trait MarkupParser requires (MarkupParser with MarkupHandler) extends AnyRef wit
       else
         null;
       new PublicID(pubID, sysID);
-    } else
-      error("PUBLIC or SYSTEM expected");
+    } else {
+      reportSyntaxError("PUBLIC or SYSTEM expected");
+      error("died parsing notationdecl")
+    }
     xSpaceOpt
     xToken('>')
     handle.notationDecl(notat, extID)

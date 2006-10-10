@@ -156,7 +156,7 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Iterable[A] {
         }
       }
     } else
-      Predef.error("cannot create subsequence");
+      throw new IllegalArgumentException("cannot create subsequence for "+from+","+len);
 
   /** Converts this sequence to a fresh Array */
   def toArray[B >: A]: Array[B] =

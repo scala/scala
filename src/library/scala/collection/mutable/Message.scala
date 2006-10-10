@@ -76,5 +76,5 @@ class Script[A] extends ArrayBuffer[Message[A]] with Message[A] {
   }
 
   override def hashCode(): Int =
-    Predef.error("scripts are not suitable as hash keys")
+    throw new UnsupportedOperationException("scripts are not suitable as hash keys")
 }

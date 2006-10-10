@@ -32,7 +32,7 @@ trait MutableList[A] extends Seq[A] with PartialFunction[Int, A] {
    *  yields an error if the element does not exist.
    */
   def apply(n: Int): A = get(n) match {
-    case None => error("element not found")
+    case None => throw new java.util.NoSuchElementException("element not found")
     case Some(value) => value
   }
 

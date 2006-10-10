@@ -25,11 +25,11 @@ abstract class Actor extends Thread {
 
   def receive[a](f: PartialFunction[in.Message, a]): a =
     if (Thread.currentThread() == this) in.receive(f)
-    else error("receive called not on own process")
+    else throw new IllegalArgumentException("receive called not on own process")
 
   def receiveWithin[a](msec: long)(f: PartialFunction[in.Message, a]): a =
     if (Thread.currentThread() == this) in.receiveWithin(msec)(f)
-    else error("receiveWithin called not on own process")
+    else throw new IllegalArgumentException("receiveWithin called not on own process")
 
   private var pid: Pid = null
 

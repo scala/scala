@@ -28,8 +28,11 @@ sealed abstract class Option[+A] extends Iterable[A] with CaseClass {
     case _ => false
   }
 
+  /**
+   *  @throws java.util.NoSuchElementException
+   */
   def get: A = this match {
-    case None => Predef.error("None.get")
+    case None => throw new java.util.NoSuchElementException("None.get")
     case Some(x) => x
   }
 

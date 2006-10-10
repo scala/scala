@@ -50,6 +50,8 @@ trait ObservableMap[A, B, This <: ObservableMap[A, B, This]] requires This
 
   abstract override def clear: Unit = {
     super.clear
-    publish(new Reset with Undoable { def undo: Unit = error("cannot undo") })
+    publish(new Reset with Undoable {
+      def undo: Unit = throw new UnsupportedOperationException("cannot undo")
+    })
   }
 }

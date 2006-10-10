@@ -27,6 +27,8 @@ object Stack {
 [serializable]
 class Stack[+A] extends Seq[A] {
 
+  import java.util.NoSuchElementException
+
   /** Checks if this stack is empty.
    *
    *  @return true, iff there is no element on the stack.
@@ -69,13 +71,13 @@ class Stack[+A] extends Seq[A] {
    *
    *  @return the top element.
    */
-  def top: A = error("no element on stack")
+  def top: A = throw new NoSuchElementException("no element on stack")
 
   /** Removes the top element from the stack.
    *
    *  @return the new stack without the former top element.
    */
-  def pop: Stack[A] = error("no element on stack")
+  def pop: Stack[A] = throw new NoSuchElementException("no element on stack")
 
   /** Returns the n-th element of this stack. The top element has index
    *  0, elements below are indexed with increasing numbers.
@@ -83,7 +85,7 @@ class Stack[+A] extends Seq[A] {
    *  @param   n      the index number.
    *  @return the n-th element on the stack.
    */
-  def apply(n: Int): A = error("no element on stack")
+  def apply(n: Int): A = throw new NoSuchElementException("no element on stack")
 
   /** Returns an iterator over all elements on the stack. The iterator
    *  issues elements in the reversed order they were inserted into the
@@ -95,7 +97,7 @@ class Stack[+A] extends Seq[A] {
     var that: Stack[A] = Stack.this;
     def hasNext = !that.isEmpty;
     def next =
-      if (!hasNext) error("next on empty iterator")
+      if (!hasNext) throw new NoSuchElementException("next on empty iterator")
       else { val res = that.top; that = that.pop; res }
   }
 

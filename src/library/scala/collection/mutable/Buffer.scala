@@ -199,23 +199,23 @@ trait Buffer[A] extends AnyRef
       case Start => prepend(elem)
       case End => append(elem)
       case Index(n) => insert(n, elem)
-      case _ => error("message " + cmd + " not understood")
+      case _ => throw new UnsupportedOperationException("message " + cmd + " not understood")
     }
     case Update(Pair(l, elem)) => l match {
       case Start => update(0, elem)
       case End => update(length - 1, elem)
       case Index(n) => update(n, elem)
-      case _ => error("message " + cmd + " not understood")
+      case _ => throw new UnsupportedOperationException("message " + cmd + " not understood")
     }
     case Remove(Pair(l, _)) => l match {
       case Start => remove(0)
       case End => remove(length - 1)
       case Index(n) => remove(n)
-      case _ => error("message " + cmd + " not understood")
+      case _ => throw new UnsupportedOperationException("message " + cmd + " not understood")
     }
     case Reset() => clear
     case s: Script[Pair[Location, A]] => s.elements foreach <<
-    case _ => error("message " + cmd + " not understood")
+    case _ => throw new UnsupportedOperationException("message " + cmd + " not understood")
   }
 
   /** Return a clone of this buffer.
@@ -229,7 +229,7 @@ trait Buffer[A] extends AnyRef
    *
    *  @return never.
    */
-  override def hashCode(): Int = error("unsuitable as hash key")
+  override def hashCode(): Int = throw new UnsupportedOperationException("unsuitable as hash key")
 
   /** Defines the prefix of the string representation.
    */

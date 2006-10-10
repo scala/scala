@@ -58,11 +58,12 @@ class Queue[A] extends MutableList[A] {
   /** Returns the first element in the queue, and removes this element
    *  from the queue.
    *
+   *  @throws java.util.NoSuchElementException
    *  @return the first element of the queue.
    */
   def dequeue: A =
     if (first == null)
-      error("queue empty")
+      throw new java.util.NoSuchElementException("queue empty")
     else {
       val res = first.elem
       first = first.next
@@ -170,9 +171,10 @@ class Queue[A] extends MutableList[A] {
   /** The hashCode method always yields an error, since it is not
    *  safe to use mutable queues as keys in hash tables.
    *
+   *  @throws UnsupportedOperationException
    *  @return never.
    */
-  override def hashCode(): Int = error("unsuitable as hash key")
+  override def hashCode(): Int = throw new UnsupportedOperationException("unsuitable as hash key")
 
   /** Returns a textual representation of a queue as a string.
    *

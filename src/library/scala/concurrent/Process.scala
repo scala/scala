@@ -36,11 +36,14 @@ object Process {
   def receiveWithin[a](msec: long)(f: PartialFunction[MailBox#Message, a]): a =
     self.receiveWithin(msec)(f)
 
+  /**
+   *  @throws UnsupportedOperationException
+   */
   def self: Process =
     if (Thread.currentThread().isInstanceOf[Process])
       Thread.currentThread().asInstanceOf[Process]
     else
-      error("Self called outside a process")
+      throw new UnsupportedOperationException("Self called outside a process")
 
   def exit(p: Process, reason: AnyRef) =
     p.exit(reason)

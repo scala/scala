@@ -20,6 +20,8 @@ package scala.collection.mutable
 [serializable, cloneable]
 class Stack[A] extends MutableList[A] {
 
+  import java.util.NoSuchElementException
+
   /** Checks if the stack is empty.
    *
    *  @return true, iff there is no element on the stack
@@ -59,11 +61,15 @@ class Stack[A] extends MutableList[A] {
    *  the element from the stack. An error is signaled if there is no
    *  element on the stack.
    *
+   *  @throws java.util.NoSuchElementException
    *  @return the top element
    */
-  def top: A = if (first == null) error("stack empty") else first.elem
+  def top: A = if (first == null) throw new NoSuchElementException("stack empty") else first.elem
 
   /** Removes the top element from the stack.
+   *
+   *  @throws java.util.NoSuchElementException
+   *  @return the top element
    */
   def pop: A =
     if (first != null) {
@@ -72,7 +78,7 @@ class Stack[A] extends MutableList[A] {
       len = len - 1;
       res
     } else
-      error("stack empty")
+      throw new NoSuchElementException("stack empty")
 
   /**
    * Removes all elements from the stack. After this operation completed,
@@ -112,7 +118,7 @@ class Stack[A] extends MutableList[A] {
    *
    *  @return never.
    */
-  override def hashCode(): Int = error("unsuitable as hash key")
+  override def hashCode(): Int = throw new UnsupportedOperationException("unsuitable as hash key")
 
   /** This method clones the stack.
    *

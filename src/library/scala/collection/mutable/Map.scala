@@ -129,7 +129,7 @@ trait Map[A, B] extends AnyRef
     case Remove(Pair(k, _)) => this -= k
     case Reset() => clear
     case s: Script[Pair[A, B]] => s.elements foreach <<
-    case _ => error("message " + cmd + " not understood")
+    case _ => throw new UnsupportedOperationException("message " + cmd + " not understood")
   }
 
   /** Return a clone of this map.
@@ -143,7 +143,7 @@ trait Map[A, B] extends AnyRef
    *
    *  @return never.
    */
-  override def hashCode(): Int = error("unsuitable as hash key")
+  override def hashCode(): Int = throw new UnsupportedOperationException("unsuitable as hash key")
 
   /** Returns a string representation of this map which shows
    *  all the mappings.

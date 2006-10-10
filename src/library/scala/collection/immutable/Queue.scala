@@ -24,6 +24,9 @@ object Queue {
  */
 [serializable]
 class Queue[+A](elem: A*) extends Seq[A] {
+
+  import java.util.NoSuchElementException
+
   protected val in: List[A] = Nil
   protected val out: List[A] = elem.elements.toList
 
@@ -38,7 +41,7 @@ class Queue[+A](elem: A*) extends Seq[A] {
    *
    *  @param  n index of the element to return
    *  @return   the element at position <code>n</code> in this queue.
-   *  @throws   <code>java.lang.Error</code> if the queue is too short.
+   *  @throws   <code>java.util.NoSuchElementException</code> if the queue is too short.
    */
   def apply(n: Int): A = {
     val len = out.length
@@ -46,7 +49,7 @@ class Queue[+A](elem: A*) extends Seq[A] {
     else {
       val m = n - len
       if (m < in.length) in.reverse.apply(m)
-      else error("index out of range")
+      else throw new NoSuchElementException("index out of range")
     }
   }
 
@@ -94,24 +97,26 @@ class Queue[+A](elem: A*) extends Seq[A] {
   /** Returns a tuple with the first element in the queue,
    *  and a new queue with this element removed.
    *
+   *  @throws NoSuchElementException
    *  @return the first element of the queue.
    */
   def dequeue: Pair[A, Queue[A]] = {
     val Pair(newOut, newIn) =
       if (out.isEmpty) Pair(in.reverse, Nil)
       else Pair(out, in);
-    if (newOut.isEmpty) error("queue empty")
+    if (newOut.isEmpty) throw new NoSuchElementException("queue empty")
     else Pair(newOut.head, mkQueue(newIn, newOut.tail))
   }
 
   /** Returns the first element in the queue, or throws an error if there
    *  is no element contained in the queue.
    *
+   *  @throws NoSuchElementException
    *  @return the first element.
    */
   def front: A =
     if (out.isEmpty) {
-      if (in.isEmpty) error("queue empty") else in.last
+      if (in.isEmpty) throw new NoSuchElementException("queue empty") else in.last
     } else
       out.head
 

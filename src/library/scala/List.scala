@@ -472,7 +472,7 @@ sealed abstract class List[+a] extends Seq[a] with CaseClass {
     def hasNext: Boolean = !these.isEmpty
     def next: a =
       if (!hasNext)
-        error("next on empty Iterator")
+        throw new java.util.NoSuchElementException("next on empty Iterator")
       else {
         val result = these.head; these = these.tail; result
       }
@@ -491,7 +491,7 @@ sealed abstract class List[+a] extends Seq[a] with CaseClass {
    *  @throws <code>java.lang.RuntimeException</code> if the list is empty.
    */
   def init: List[a] =
-    if (isEmpty) error("Nil.init")
+    if (isEmpty) throw new UnsupportedOperationException("Nil.init")
     else {
       val b = new ListBuffer[a]
       var elem = head
@@ -510,7 +510,7 @@ sealed abstract class List[+a] extends Seq[a] with CaseClass {
    *  @throws <code>java.lang.RuntimeException</code> if the list is empty.
    */
   def last: a =
-    if (isEmpty) error("Nil.last")
+    if (isEmpty) throw new UnsupportedOperationException("Nil.last")
     else if (tail.isEmpty) head
     else tail.last
 
@@ -906,12 +906,12 @@ sealed abstract class List[+a] extends Seq[a] with CaseClass {
   }
 
   def reduceLeft[b >: a](f: (b, b) => b): b = this match {
-    case Nil => error("Nil.reduceLeft")
+    case Nil => throw new UnsupportedOperationException("Nil.reduceLeft")
     case x :: xs => ((xs: List[b]) foldLeft (x: b))(f)
   }
 
   def reduceRight[b >: a](f: (b, b) => b): b = this match {
-    case Nil => error("Nil.reduceRight")
+    case Nil => throw new UnsupportedOperationException("Nil.reduceRight")
     case x :: Nil => x: b
     case x :: xs => f(x, xs reduceRight f)
   }
@@ -1090,8 +1090,14 @@ sealed abstract class List[+a] extends Seq[a] with CaseClass {
 [SerialVersionUID(0 - 8256821097970055419L)]
 case object Nil extends List[Nothing] {
   override def isEmpty = true
-  def head: All = error("head of empty list")
-  def tail: List[Nothing] = error("tail of empty list")
+  /**
+   *  @throws java.util.NoSuchElementException
+   */
+  def head: All = throw new java.util.NoSuchElementException("head of empty list")
+  /**
+   *  @throws java.util.NoSuchElementException
+   */
+  def tail: List[Nothing] = throw new java.util.NoSuchElementException("tail of empty list")
 }
 
 /** A non empty list characterized by a head and a tail.

@@ -29,20 +29,14 @@ case class Elem(override val prefix: String,
                 val child: Node*) extends Node {
 
   if (prefix != null && 0 == prefix.length())
-    scala.Predef.error("prefix of zero length, use null instead");
+    throw new IllegalArgumentException("prefix of zero length, use null instead");
 
   if (null == scope)
-    scala.Predef.error("scope is null");
+    throw new IllegalArgumentException("scope is null, try xml.TopScope for empty scope");
 
   //@todo: copy the children,
   //  setting namespace scope if necessary
   //  cleaning adjacent text nodes if necessary
-
-  //final val namespaceIntern     = namespace$$.intern();
-  //final def namespace  = namespaceIntern;
-
-  //final val labelIntern = label$$.intern();
-  //final def label       = labelIntern;
 
   final override def typeTag$: Int = 0;
 

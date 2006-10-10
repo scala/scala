@@ -109,7 +109,7 @@ trait Set[A] extends AnyRef with collection.Set[A]
     case Remove(elem) => this -= elem
     case Reset() => clear
     case s: Script[A] => s.elements foreach <<
-    case _ => error("message " + cmd + " not understood")
+    case _ => throw new UnsupportedOperationException("message " + cmd + " not understood")
   }
 
   /** Return a clone of this set.
@@ -123,5 +123,5 @@ trait Set[A] extends AnyRef with collection.Set[A]
    *
    *  @return never.
    */
-  override def hashCode(): Int = error("unsuitable as hash key")
+  override def hashCode(): Int = throw new UnsupportedOperationException("unsuitable as hash key")
 }

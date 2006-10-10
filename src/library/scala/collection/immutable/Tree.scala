@@ -39,6 +39,8 @@
 
 package scala.collection.immutable
 
+import java.util.NoSuchElementException
+
 /** General Balanced Trees - highly efficient functional dictionaries.
  *
  *  <p>An efficient implementation of Prof. Arne Andersson's General
@@ -183,7 +185,7 @@ abstract class Tree[A <% Ordered[A], B]() extends AnyRef {
           iter = t.mk_iter(iter_tail)
           v
         case scala.Nil =>
-          error("next on empty iterator")
+          throw new NoSuchElementException("next on empty iterator")
       }
     }
 
@@ -269,8 +271,8 @@ private case class GBLeaf[A <% Ordered[A],B]() extends GBTree[A,B] {
   def count = Pair(1, 0)
   def isDefinedAt(key: A) = false
   def get(_key: A) = None
-  def apply(key: A) = error("key " + key + " not found")
-  def update(key: A, value: B) = error("key " + key + " not found")
+  def apply(key: A) = throw new NoSuchElementException("key " + key + " not found")
+  def update(key: A, value: B) = throw new NoSuchElementException("key " + key + " not found")
   def insert(key: A, value: B, s: Int): anInsertTree = {
     if (s == 0)
       INode(GBNode(key, value, this, this), 1, 1)
@@ -281,8 +283,8 @@ private case class GBLeaf[A <% Ordered[A],B]() extends GBTree[A,B] {
   def mk_iter(iter_tail: List[GBTree[A,B]]) = iter_tail
   def merge(larger: GBTree[A,B]) = larger
   def takeSmallest: Triple[A,B, GBTree[A,B]] =
-    error("Take Smallest on empty tree")
-  def delete(_key: A) = error("Delete on empty tree.")
+    throw new NoSuchElementException("takeSmallest on empty tree")
+  def delete(_key: A) = throw new NoSuchElementException("Delete on empty tree.")
   def balance(s: int) = this
   override def hashCode() = 0
 }
@@ -331,7 +333,7 @@ private case class GBNode[A <% Ordered[A],B](key: A,
     else if (newKey > key)
       bigger.insert(newKey, newValue, s / 2).insertRight(key, value, smaller)
     else
-      error("Key exists: " + newKey)
+      throw new NoSuchElementException("Key exists: " + newKey)
   }
 
   def toList(acc: List[Pair[A,B]]): List[Pair[A,B]] =
