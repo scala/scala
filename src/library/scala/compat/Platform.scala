@@ -13,12 +13,29 @@ package scala.compat;
 
 
 object Platform {
+
+  type Class = java.lang.Class;
+
+  type StackOverflowError = java.lang.StackOverflowError;
+  type ClassCastException = java.lang.ClassCastException;
+  type RuntimeException = java.lang.RuntimeException;
+  type IndexOutOfBoundsException = java.lang.IndexOutOfBoundsException;
+
   def arraycopy(src: AnyRef, srcPos: Int, dest: AnyRef, destPos: Int, length: Int): Unit =
     Array.copy(src, srcPos, dest, destPos, length)
+
+  /** create array of the same type as arrayInstance with the given length */
+  def createArray(elemClass: Class, length: Int): Object =
+    java.lang.reflect.Array.newInstance(elemClass, length);
+
   def getClass(obj: AnyRef) = obj.getClass();
   def getClassName(obj: AnyRef) = obj.getClass().getName();
+  def getName(cls: Class) = cls.getName();
+  def getElementClass(obj: AnyRef) = obj.getClass().getComponentType();
+
   def printStackTrace(exc: java.lang.Throwable) = exc.printStackTrace();
   def getMessage(exc: java.lang.Throwable) = exc.getMessage();
+
   def split(str: String, separator: Char): Array[String] = {
     str.split(separator.toString());
   }

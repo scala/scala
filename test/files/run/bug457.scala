@@ -15,7 +15,7 @@ object Test {
   }
 
   def method2(): scala.Boolean = {
-    val x: java.lang.String = "Hello, world";
+    val x: String = "Hello, world";
     val y: scala.Int = 100;
     {
       var temp1: scala.Int = y;

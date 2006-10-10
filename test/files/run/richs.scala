@@ -8,7 +8,7 @@ trait RichTest {
   val s5 = """abc
               #xyz"""
   def getObjectName: String = {
-    val cn = this.getClass().getName()
+    val cn = compat.Platform.getClassName(this)
     cn.substring(0, cn.length-1)
   }
   def length[A](it: Iterator[A]) = it.toList length

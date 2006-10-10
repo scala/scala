@@ -3,8 +3,6 @@
 //############################################################################
 // $Id$
 
-import java.lang.System; // to avoid name clash with .NET's library
-
 object M0 {
 
   trait Expr {
@@ -53,15 +51,15 @@ object M0 {
   }
 
   def test = {
-    System.out.println("        0 = " + eval(new Number(0)));
-    System.out.println("        1 = " + eval(new Number(1)));
-    System.out.println("    0 + 1 = " +
+    Console.println("        0 = " + eval(new Number(0)));
+    Console.println("        1 = " + eval(new Number(1)));
+    Console.println("    0 + 1 = " +
       eval(new Sum(new Number(0),new Number(1))));
-    System.out.println("    1 + 2 = " +
+    Console.println("    1 + 2 = " +
       eval(new Sum(new Number(1),new Number(2))));
-    System.out.println("2 + 3 + 4 = " +
+    Console.println("2 + 3 + 4 = " +
       eval(new Sum(new Sum(new Number(2),new Number(3)),new Number(4))));
-    System.out.println();
+    Console.println;
   }
 
 }
@@ -81,15 +79,15 @@ object M1 {
   }
 
   def test = {
-    System.out.println("        0 = " + new Number(0).eval);
-    System.out.println("        1 = " + new Number(1).eval);
-    System.out.println("    0 + 1 = " +
+    Console.println("        0 = " + new Number(0).eval);
+    Console.println("        1 = " + new Number(1).eval);
+    Console.println("    0 + 1 = " +
       new Sum(new Number(0),new Number(1)).eval);
-    System.out.println("    1 + 2 = " +
+    Console.println("    1 + 2 = " +
       new Sum(new Number(1),new Number(2)).eval);
-    System.out.println("2 + 3 + 4 = " +
+    Console.println("2 + 3 + 4 = " +
       new Sum(new Sum(new Number(2),new Number(3)),new Number(4)).eval);
-    System.out.println();
+    Console.println;
   }
 }
 
@@ -107,13 +105,13 @@ object M2 {
   }
 
   def test = {
-    System.out.println("        0 = " + eval(Number(0)));
-    System.out.println("        1 = " + eval(Number(1)));
-    System.out.println("    0 + 1 = " + eval(Sum(Number(0),Number(1))));
-    System.out.println("    1 + 2 = " + eval(Sum(Number(1),Number(2))));
-    System.out.println("2 + 3 + 4 = " + eval(Sum(Sum(Number(2),Number(3)),
+    Console.println("        0 = " + eval(Number(0)));
+    Console.println("        1 = " + eval(Number(1)));
+    Console.println("    0 + 1 = " + eval(Sum(Number(0),Number(1))));
+    Console.println("    1 + 2 = " + eval(Sum(Number(1),Number(2))));
+    Console.println("2 + 3 + 4 = " + eval(Sum(Sum(Number(2),Number(3)),
                                              Number(4))));
-    System.out.println();
+    Console.println;
   }
 }
 
@@ -131,13 +129,13 @@ object M3 {
   case class Sum(e1: Expr, e2: Expr) extends Expr;
 
   def test = {
-    System.out.println("        0 = " + Number(0).eval);
-    System.out.println("        1 = " + Number(1).eval);
-    System.out.println("    0 + 1 = " + Sum(Number(0),Number(1)).eval);
-    System.out.println("    1 + 2 = " + Sum(Number(1),Number(2)).eval);
-    System.out.println("2 + 3 + 4 = " + Sum(Sum(Number(2),Number(3)),
+    Console.println("        0 = " + Number(0).eval);
+    Console.println("        1 = " + Number(1).eval);
+    Console.println("    0 + 1 = " + Sum(Number(0),Number(1)).eval);
+    Console.println("    1 + 2 = " + Sum(Number(1),Number(2)).eval);
+    Console.println("2 + 3 + 4 = " + Sum(Sum(Number(2),Number(3)),
                                              Number(4)).eval);
-    System.out.println();
+    Console.println;
   }
 
 }
@@ -152,7 +150,7 @@ object M4 {
   }
 
   def test_concat[a](xss: List[List[a]]) = {
-    System.out.println(concat(xss).toString() + " = concat(" + xss + ")"); // !!! .toString()
+    Console.println(concat(xss).toString() + " = concat(" + xss + ")"); // !!! .toString()
   }
 
   def test = {
@@ -175,7 +173,7 @@ object M4 {
     test_concat(List(List[int](),List(1),List(2,3,4,5,6))); // !!! [int]
     test_concat(List(List[int](),List[int](),List(1,2,3,4,5,6))); // !!! [int]
     test_concat(List(List(1,2),List(3,4),List(5,6)));
-    System.out.println();
+    Console.println;
   }
 
 }
@@ -191,7 +189,7 @@ object M5 {
   }
 
   def test_zipFun[a,b](xs: List[a], ys: List[b]) = {
-    System.out.println(zipFun(xs,ys).toString() + " = zipFun(" + xs + "," + ys + ")"); // !!! .toString()
+    Console.println(zipFun(xs,ys).toString() + " = zipFun(" + xs + "," + ys + ")"); // !!! .toString()
   }
 
   def test = {
@@ -209,7 +207,7 @@ object M5 {
 
     test_zipFun(List(1,2,3),List('a','b','c'));
 
-    System.out.println();
+    Console.println;
   }
 
 }
@@ -225,7 +223,7 @@ object M6 {
   }
 
   def test_zipFun[a,b](xs: List[a], ys: List[b]) = {
-    System.out.println(zipFun(xs,ys).toString() + " = zipFun(" + xs + "," + ys + ")"); // !!! .toString()
+    Console.println(zipFun(xs,ys).toString() + " = zipFun(" + xs + "," + ys + ")"); // !!! .toString()
   }
 
   def test = {
@@ -243,7 +241,7 @@ object M6 {
 
     test_zipFun(List(1,2,3),List('a','b','c'));
 
-    System.out.println();
+    Console.println;
   }
 
 }
@@ -258,7 +256,7 @@ object M7 {
   }
 
   def test_heads[a](xss: List[List[a]]) = {
-    System.out.println(heads(xss).toString() + " = heads(" + xss + ")"); // !!! .toString()
+    Console.println(heads(xss).toString() + " = heads(" + xss + ")"); // !!! .toString()
   }
 
 
@@ -287,7 +285,7 @@ object M7 {
 
     test_heads(List(List(1,2),List(3,4),List(5,6)));
 
-    System.out.println();
+    Console.println;
   }
 
 }
@@ -304,7 +302,7 @@ object M8 {
   }
 
   def test_heads[a](xss: List[List[a]]) = {
-    System.out.println(heads(xss).toString() + " = heads(" + xss + ")"); // !!! .toString()
+    Console.println(heads(xss).toString() + " = heads(" + xss + ")"); // !!! .toString()
   }
 
 
@@ -333,7 +331,7 @@ object M8 {
 
     test_heads(List(List(1,2),List(3,4),List(5,6)));
 
-    System.out.println();
+    Console.println;
   }
 
 }
@@ -367,9 +365,9 @@ object M9 {
     val x = Var("x");
     val f0 = Prod(x, x);
     val f1 = f0 derive x;
-    System.out.println("f (x) = " + f0);
-    System.out.println("f'(x) = " + f1);
-    System.out.println();
+    Console.println("f (x) = " + f0);
+    Console.println("f'(x) = " + f1);
+    Console.println;
   }
 
 }
@@ -434,17 +432,17 @@ object MA {
 
     val f0 = x * x;
     val f1 = f0 derive x;
-    System.out.println("f (x) = " + f0);
-    System.out.println("f'(x) = " + f1);
+    Console.println("f (x) = " + f0);
+    Console.println("f'(x) = " + f1);
 
     val g0 = Number(2) * x * x + Number(3) * x;
     val g1 = g0 derive x;
-    System.out.println("g (x) = " + g0);
-    System.out.println("g'(x) = " + g1);
-    System.out.println("g (3) = " + evalvars(List(Pair("x",3)))(g0));
-    System.out.println("g'(3) = " + evalvars(List(Pair("x",3)))(g1));
+    Console.println("g (x) = " + g0);
+    Console.println("g'(x) = " + g1);
+    Console.println("g (3) = " + evalvars(List(Pair("x",3)))(g0));
+    Console.println("g'(3) = " + evalvars(List(Pair("x",3)))(g1));
 
-    System.out.println();
+    Console.println;
   }
 
 }
@@ -647,15 +645,15 @@ object MB {
     val tg = x + x + (x * _2) + x + x;
     val th = x * x * (x ^  2) * x * x;
 
-    System.out.println("ta(x) = " + ta);
-    System.out.println("tb(x) = " + tb);
-    System.out.println("tc(x) = " + tc);
-    System.out.println("td(x) = " + td);
-    System.out.println("te(x) = " + te);
-    System.out.println("tf(x) = " + tf);
-    System.out.println("tg(x) = " + tg);
-    System.out.println("th(x) = " + th);
-    System.out.println();
+    Console.println("ta(x) = " + ta);
+    Console.println("tb(x) = " + tb);
+    Console.println("tc(x) = " + tc);
+    Console.println("td(x) = " + td);
+    Console.println("te(x) = " + te);
+    Console.println("tf(x) = " + tf);
+    Console.println("tg(x) = " + tg);
+    Console.println("th(x) = " + th);
+    Console.println;
 
     val f4 = (x+ _3)*(_2+x)*x*(x+ _1) + (x+ _5)*(x*(x+ _2)+x+ _1) + (x^2) + x;
     val f3 = f4.derive(x);
@@ -663,17 +661,17 @@ object MB {
     val f1 = f2.derive(x);
     val f0 = f1.derive(x);
 
-    System.out.println("f4(x) = " + f4);
-    System.out.println("f3(x) = " + f3);
-    System.out.println("f2(x) = " + f2);
-    System.out.println("f1(x) = " + f1);
-    System.out.println("f0(x) = " + f0);
-    System.out.println();
+    Console.println("f4(x) = " + f4);
+    Console.println("f3(x) = " + f3);
+    Console.println("f2(x) = " + f2);
+    Console.println("f1(x) = " + f1);
+    Console.println("f0(x) = " + f0);
+    Console.println;
 
     def check(n: String, f: Expr, x: int, e: int) = {
       val a: int = f.evaluate(List(Pair("x",x)));
       val s: String = if (a == e) "ok" else "KO(" + e + ")";
-      System.out.println(n + "(" + x + ") = " + a + " " + s);
+      Console.println(n + "(" + x + ") = " + a + " " + s);
     }
 
     check("f4", f4, 0, 5);
@@ -681,25 +679,25 @@ object MB {
     check("f4", f4, 2, 203);
     check("f4", f4, 3, 524);
     check("f4", f4, 4, 1121);
-    System.out.println();
+    Console.println;
 
     check("f3", f3, 0, 23);
     check("f3", f3, 1, 88);
     check("f3", f3, 2, 219);
     check("f3", f3, 3, 440);
-    System.out.println();
+    Console.println;
 
     check("f2", f2, 0, 40);
     check("f2", f2, 1, 94);
     check("f2", f2, 2, 172);
-    System.out.println();
+    Console.println;
 
     check("f1", f1, 0, 42);
     check("f1", f1, 1, 66);
-    System.out.println();
+    Console.println;
 
     check("f0", f0, 0, 24);
-    System.out.println();
+    Console.println;
   }
 }
 

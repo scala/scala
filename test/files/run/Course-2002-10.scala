@@ -3,8 +3,6 @@
 //############################################################################
 // $Id$
 
-import java.lang.System; // to avoid name clash with .NET's library
-
 object M0 {
 
   def addStream (s1: Stream[int], s2: Stream[int]): Stream[int] =
@@ -15,8 +13,8 @@ object M0 {
 
   def test = {
     var i = 0;
-    fib.take(20).foreach(n => {System.out.println("fib("+i+") = "+n); i=i+1});
-    System.out.println();
+    fib.take(20).foreach(n => {Console.println("fib("+i+") = "+n); i=i+1});
+    Console.println;
   }
 }
 
@@ -67,30 +65,30 @@ object M1 {
   def test = {
     var i = 0;
     while (i < 10) {
-      System.out.print("pi("+i+") = ");
-      System.out.print(str(pi0.at(i)) + ", ");
-      System.out.print(str(pi1.at(i)) + ", ");
-      System.out.print(str(pi2.at(i)) + "\n");
+      Console.print("pi("+i+") = ");
+      Console.print(str(pi0.at(i)) + ", ");
+      Console.print(str(pi1.at(i)) + ", ");
+      Console.print(str(pi2.at(i)) + "\n");
       i = i + 1;
     }
-    System.out.print("pi    = ");
-    System.out.print(str(Math.PI) + ", ");
-    System.out.print(str(Math.PI) + ", ");
-    System.out.print(str(Math.PI) + "\n");
-    System.out.println();
+    Console.print("pi    = ");
+    Console.print(str(Math.PI) + ", ");
+    Console.print(str(Math.PI) + ", ");
+    Console.print(str(Math.PI) + "\n");
+    Console.println;
     i = 0;
     while (i < 10) {
-      System.out.print("ln("+i+") = ");
-      System.out.print(str(ln0.at(i)) + ", ");
-      System.out.print(str(ln1.at(i)) + ", ");
-      System.out.print(str(ln2.at(i)) + "\n");
+      Console.print("ln("+i+") = ");
+      Console.print(str(ln0.at(i)) + ", ");
+      Console.print(str(ln1.at(i)) + ", ");
+      Console.print(str(ln2.at(i)) + "\n");
       i = i + 1;
     }
-    System.out.print("ln    = ");
-    System.out.print(str(Math.log(2)) + ", ");
-    System.out.print(str(Math.log(2)) + ", ");
-    System.out.print(str(Math.log(2)) + "\n");
-    System.out.println();
+    Console.print("ln    = ");
+    Console.print(str(Math.log(2)) + ", ");
+    Console.print(str(Math.log(2)) + ", ");
+    Console.print(str(Math.log(2)) + "\n");
+    Console.println;
   }
 }
 
@@ -116,9 +114,9 @@ object M2 {
 
   def test = {
     val i = (new PrimeIterator()).take(30);
-    System.out.print("prime numbers:");
-    while (i.hasNext) { System.out.print(" " + i.next); }
-    System.out.println();
+    Console.print("prime numbers:");
+    while (i.hasNext) { Console.print(" " + i.next); }
+    Console.println;
   }
 }
 

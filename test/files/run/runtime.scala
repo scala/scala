@@ -4,15 +4,6 @@
 // $Id$
 
 //############################################################################
-// serves as an entry point with the MSIL backend
-
-object TestMain {
-  def main(args: Array[String]): Unit = {
-    Test.main(args);
-  }
-}
-
-//############################################################################
 // Test 0 - Array creation
 
 object Test0Test {
@@ -28,7 +19,7 @@ object Test0Test {
     Console.println;
   }
 
-  def main(args: Array[String]): Unit = {
+  def test(args: Array[String]): Unit = {
     val zs: Array[Boolean] = Array(false, true);
     val bs: Array[Byte   ] = Array(0, 1, 2);
     val ss: Array[Short  ] = Array(3, 4, 5);
@@ -69,7 +60,7 @@ package test1.bar {
 
 object Test1Test {
 
-  def main(args: Array[String]): Unit = {
+  def test(args: Array[String]): Unit = {
     {Console.print(10)}; Console.println;
     // {System.out.print(11); java}.lang.System.out.println();
     // {System.out.print(12); java.lang}.System.out.println();
@@ -99,7 +90,7 @@ package test2 {
   }
 
   trait M0 extends A {
-    override def run = { super.run; System.out.println("M0"); }
+    override def run = { super.run; Console.println("M0"); }
   }
 
   class M1 extends M0 {
@@ -107,7 +98,7 @@ package test2 {
   }
 
   trait N0 extends A {
-    override def run = { super.run; System.out.println("N0"); }
+    override def run = { super.run; Console.println("N0"); }
   }
 
   class N1 extends N0 {
@@ -122,7 +113,7 @@ package test2 {
 }
 
 object Test2Test {
-  def main(args: Array[String]): Unit = {
+  def test(args: Array[String]): Unit = {
     test2.M0N0.run; Console.println;
     test2.N0M0.run; Console.println;
     test2.M1N0.run; Console.println;
@@ -143,7 +134,7 @@ object Test3Test {
         + "expected: " + expected + " - " + (!expected) + ", "
         + "found: " + actual1 + " - " + actual1);
 
-  def main(args: Array[String]): Unit = {
+  def test(args: Array[String]): Unit = {
     val foo1: AnyRef = null;
     val foo2: AnyRef = new Foo();
     val foo3: AnyRef = new Foo();
@@ -194,10 +185,10 @@ object Test  {
 
   def main(args: Array[String]): Unit = {
 
-    test("Test0"  , Test0Test.main(args));
-    test("Test1"  , Test1Test.main(args));
-    test("Test2"  , Test2Test.main(args));
-    test("Test3"  , Test3Test.main(args));
+    test("Test0"  , Test0Test.test(args));
+    test("Test1"  , Test1Test.test(args));
+    test("Test2"  , Test2Test.test(args));
+    test("Test3"  , Test3Test.test(args));
 
     if (errors > 0) {
       Console.println;

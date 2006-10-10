@@ -4,20 +4,11 @@
 // $Id$
 
 //############################################################################
-// serves as an entry point with the MSIL backend
-
-object TestMain {
-  def main(args: Array[String]): Unit = {
-    Test.main(args);
-  }
-}
-
-//############################################################################
 // Bug 98
 
 object Bug98Test {
   object MyCase { def name = "mycase" };
-  def main(args: Array[String]) = {
+  def test(args: Array[String]) = {
     Console.println(MyCase.name);
   }
 }
@@ -30,18 +21,18 @@ class Bug120A(x: Int) {
 }
 
 trait Bug120B {
-  System.out.println("B");
+  Console.println("B");
 }
 class Bug120C(x: Int)
     extends Bug120A(Bug120Test.print("one", 1))
     with Bug120B {
-  System.out.println("C");
+  Console.println("C");
 }
 object Bug120Test {
   def print[A](str: String, res: A): A = {
     Console.println(str); res
   }
-  def main(args: Array[String]) = {
+  def test(args: Array[String]) = {
     val c = new Bug120C(1);
   }
 }
@@ -53,7 +44,7 @@ object Bug135Test {
 
   import scala.collection.immutable.TreeMap;
 
-  def main(args: Array[String]): Unit = {
+  def test(args: Array[String]): Unit = {
     val myMap:TreeMap[int,String] = new TreeMap;
     val map1 = myMap + 42 -> "The answer";
     Console.println(map1.get(42));
@@ -69,22 +60,22 @@ abstract class Bug142Foo2 { class Inner; def foo: Inner = {Console.println("ok")
 abstract class Bug142Foo3 { type  Inner; def foo: Inner; foo; }
 abstract class Bug142Foo4 { type  Inner; def foo: Inner = {Console.println("ok"); null.asInstanceOf[Inner]}; }
 
-trait Bug142Bar1 { type  Inner; def foo: Inner = {System.out.println("ok"); null.asInstanceOf[Inner]}; }
+trait Bug142Bar1 { type  Inner; def foo: Inner = {Console.println("ok"); null.asInstanceOf[Inner]}; }
 trait Bug142Bar2 { type  Inner; def foo: Inner; foo; }
-trait Bug142Bar3 { class Inner; def foo: Inner = {System.out.println("ok"); null}; }
+trait Bug142Bar3 { class Inner; def foo: Inner = {Console.println("ok"); null}; }
 trait Bug142Bar4 { class Inner; def foo: Inner; foo; }
 
-object Bug142Test1 extends Bug142Foo1 with Bug142Bar1 {def main(args:Array[String]):Unit=();}
-object Bug142Test2 extends Bug142Foo2 with Bug142Bar2 {def main(args:Array[String]):Unit=();}
-object Bug142Test3 extends Bug142Foo3 with Bug142Bar3 {def main(args:Array[String]):Unit=();}
-object Bug142Test4 extends Bug142Foo4 with Bug142Bar4 {def main(args:Array[String]):Unit=();}
-object Bug142Test5 extends    Bug142Foo1 with Bug142Bar1 {def main(args:Array[String]):Unit=();}
-object Bug142Test6 extends    Bug142Foo2 with Bug142Bar2 {def main(args:Array[String]):Unit=();}
-object Bug142Test7 extends    Bug142Foo3 with Bug142Bar3 {def main(args:Array[String]):Unit=();}
-object Bug142Test8 extends    Bug142Foo4 with Bug142Bar4 {def main(args:Array[String]):Unit=();}
+object Bug142Test1 extends Bug142Foo1 with Bug142Bar1 {def test(args:Array[String]):Unit=();}
+object Bug142Test2 extends Bug142Foo2 with Bug142Bar2 {def test(args:Array[String]):Unit=();}
+object Bug142Test3 extends Bug142Foo3 with Bug142Bar3 {def test(args:Array[String]):Unit=();}
+object Bug142Test4 extends Bug142Foo4 with Bug142Bar4 {def test(args:Array[String]):Unit=();}
+object Bug142Test5 extends    Bug142Foo1 with Bug142Bar1 {def test(args:Array[String]):Unit=();}
+object Bug142Test6 extends    Bug142Foo2 with Bug142Bar2 {def test(args:Array[String]):Unit=();}
+object Bug142Test7 extends    Bug142Foo3 with Bug142Bar3 {def test(args:Array[String]):Unit=();}
+object Bug142Test8 extends    Bug142Foo4 with Bug142Bar4 {def test(args:Array[String]):Unit=();}
 
 object Bug142Test {
-  def main(args:Array[String]): Unit = {
+  def test(args:Array[String]): Unit = {
     Bug142Test1;
     Bug142Test2;
     Bug142Test3;
@@ -102,7 +93,7 @@ object Bug142Test {
 
 object Bug166Test {
   import scala.collection.mutable.HashMap ;
-  def main(args:Array[String]) = {
+  def test(args:Array[String]) = {
     val m:HashMap[String,String] = new HashMap[String,String];
     m.update("foo","bar");
   }
@@ -119,7 +110,7 @@ class Bug167Node(bar:Int) {
 }
 
 object Bug167Test {
-  def main(args: Array[String]): Unit = {
+  def test(args: Array[String]): Unit = {
     if (new Bug167Node(0).foo != 1) Console.println("bug 167");
   }
 }
@@ -133,7 +124,7 @@ class Bug168Foo {
 }
 
 object Bug168Test {
-  def main(args: Array[String]): Unit = {
+  def test(args: Array[String]): Unit = {
     (new Bug168Foo).foo;
     ()
   }
@@ -161,7 +152,7 @@ class Bug174Foo[X] {
 }
 
 object Bug174Test {
-  def main(args: Array[String]): Unit = {
+  def test(args: Array[String]): Unit = {
     (new Bug174Foo[Int]).inner.test;
     ()
   }
@@ -189,7 +180,7 @@ class Bug176C extends Bug176A with Bug176B {
   def bar = new S;
 }
 object Bug176Test {
-  def main(args: Array[String]): Unit = {
+  def test(args: Array[String]): Unit = {
     val x: Bug176A = new Bug176C;
     Console.println(x.test);
   }
@@ -200,7 +191,7 @@ object Bug176Test {
 
 class Bug199C { object o; }
 object Bug199Test {
-  def main(args: Array[String]) = {
+  def test(args: Array[String]) = {
     (new Bug199C).o; ()
   }
 }
@@ -219,18 +210,18 @@ class Bug213Bar extends Bug213Foo {
 }
 
 object Bug213Test {
-  def main(args: Array[String]): Unit = {
+  def test(args: Array[String]): Unit = {
     val foo: Bug213Foo = new Bug213Bar;
     try {
       foo.testAll;
     } catch {
-      case e: java.lang.ClassCastException =>
+      case e: compat.Platform.ClassCastException =>
         Console.println("Cannot cast unit to Nothing");
     }
     try {
       foo.testAllRef;
     } catch {
-      case e: java.lang.ClassCastException =>
+      case e: compat.Platform.ClassCastException =>
         Console.println("Cannot cast empty string to Null");
     }
     ()
@@ -246,14 +237,14 @@ object Bug217Test {
     foo(() => 0);
     ()
   }
-  def main(args: Array[String]): Unit = bar(32);
+  def test(args: Array[String]): Unit = bar(32);
 }
 
 //############################################################################
 // Bug 222
 
 object Bug222Test {
-  def main(args:Array[String]): Unit = {
+  def test(args:Array[String]): Unit = {
     val array: Array[String] = new Array(16);
     ()
   }
@@ -266,7 +257,7 @@ case class Bug225C();
 
 object Bug225Test {
 
-  def main(args: Array[String]): Unit = {
+  def test(args: Array[String]): Unit = {
     val a = new Array[Array[Bug225C]](2);
     a(0) = new Array[Bug225C](2);
     a(0)(0) = new Bug225C();
@@ -280,7 +271,7 @@ object Bug226Test {
 
   def id[a](xs: Array[a]): Array[a] = xs;
 
-  def main(args: Array[String]): Unit = {
+  def test(args: Array[String]): Unit = {
     var xs = new Array[Int](1);
     class X { xs };
     xs = id(xs);
@@ -295,7 +286,7 @@ object Bug226Test {
 
 object Bug233Test {
   val b: Array[String] = null;
-  def main(args: Array[String]): Unit =
+  def test(args: Array[String]): Unit =
     Console.println(b == null);
 }
 
@@ -303,7 +294,7 @@ object Bug233Test {
 // Bug 250
 
 object Bug250Test {
-  def main(args: Array[String]): Unit = {
+  def test(args: Array[String]): Unit = {
     if (true) null;
     ()
   }
@@ -324,7 +315,7 @@ object Bug257Test {
     f2(x);
   }
 
-  def main(args: Array[String]): Unit = {
+  def test(args: Array[String]): Unit = {
     f(sayhello())(sayhi())
   }
 }
@@ -342,7 +333,7 @@ abstract class Bug266AFoo {
 object Bug266ATest extends Bug266AFoo {
   type T = String;
   class I1 extends I0 { def f(x: String): Unit = { Console.println("hello"); ();} }
-  def main(args: Array[String]): Unit = { new I1; () }
+  def test(args: Array[String]): Unit = { new I1; () }
 }
 
 // version - B
@@ -376,9 +367,9 @@ object Bug266BTest extends Application {
 // main
 
 object Bug266Test {
-  def main(args: Array[String]): Unit = {
-    Bug266ATest.main(args);
-    Bug266BTest.main(args);
+  def test(args: Array[String]): Unit = {
+    Bug266ATest.test(args);
+    Bug266BTest;
   }
 }
 
@@ -391,7 +382,7 @@ class Bug316MyIterator extends Iterator[Int] {
 }
 
 object Bug316Test {
-  def main(args: Array[String]): Unit =
+  def test(args: Array[String]): Unit =
     (new Bug316MyIterator) filter { x: Int => x == 1 };
 }
 
@@ -399,8 +390,8 @@ object Bug316Test {
 // Bug 328
 
 object Bug328Test {
-  def test(f: Function1[Int,String]): Unit = ();
-  def main(args: Array[String]): Unit = test(args);
+  def test0(f: Function1[Int,String]): Unit = ();
+  def test(args: Array[String]): Unit = test0(args);
 }
 
 //############################################################################
@@ -418,7 +409,7 @@ trait Bug396B extends Bug396A {
 }
 trait Bug396C extends Bug396A {
   trait I extends super.I {
-    override def run = { super.run; System.out.println("C"); }
+    override def run = { super.run; Console.println("C"); }
   }
 }
 object Bug396Test extends Application with Bug396B with Bug396C {
@@ -438,7 +429,7 @@ object Bug399Test {
     (new G).f
   }
 
-  def main(args: Array[String]): Unit = {
+  def test(args: Array[String]): Unit = {
     Console.println(f("a"));
   }
 }
@@ -466,29 +457,29 @@ object Test  {
 
   def main(args: Array[String]): Unit = {
 
-    test( 98, Bug98Test.main(args));
-    test(120, Bug120Test.main(args));
-    test(135, Bug135Test.main(args));
-    test(142, Bug142Test.main(args));
-    test(166, Bug166Test.main(args));
-    test(167, Bug167Test.main(args));
-    test(168, Bug168Test.main(args));
-    test(174, Bug174Test.main(args));
-    test(176, Bug176Test.main(args));
-    test(199, Bug199Test.main(args));
-    test(213, Bug213Test.main(args));
-    test(217, Bug217Test.main(args));
-    test(222, Bug222Test.main(args));
-    test(225, Bug225Test.main(args));
-    test(226, Bug226Test.main(args));
-    test(233, Bug233Test.main(args));
-    test(250, Bug250Test.main(args));
-    test(257, Bug257Test.main(args));
-    test(266, Bug266Test.main(args));
-    test(316, Bug316Test.main(args));
-    test(328, Bug328Test.main(args));
-    test(396, Bug396Test.main(args));
-    test(399, Bug399Test.main(args));
+    test( 98, Bug98Test.test(args));
+    test(120, Bug120Test.test(args));
+    test(135, Bug135Test.test(args));
+    test(142, Bug142Test.test(args));
+    test(166, Bug166Test.test(args));
+    test(167, Bug167Test.test(args));
+    test(168, Bug168Test.test(args));
+    test(174, Bug174Test.test(args));
+    test(176, Bug176Test.test(args));
+    test(199, Bug199Test.test(args));
+    test(213, Bug213Test.test(args));
+    test(217, Bug217Test.test(args));
+    test(222, Bug222Test.test(args));
+    test(225, Bug225Test.test(args));
+    test(226, Bug226Test.test(args));
+    test(233, Bug233Test.test(args));
+    test(250, Bug250Test.test(args));
+    test(257, Bug257Test.test(args));
+    test(266, Bug266Test.test(args));
+    test(316, Bug316Test.test(args));
+    test(328, Bug328Test.test(args));
+    test(396, Bug396Test);
+    test(399, Bug399Test.test(args));
 
     if (errors > 0) {
       Console.println;
