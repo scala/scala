@@ -6,7 +6,7 @@ object Seq extends Application {
 
   case object A
 
-  val a = reactor {
+  val a = actor {
     {
       react {
         case A => scala.Console.println("got A")

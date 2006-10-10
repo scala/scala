@@ -23,7 +23,6 @@ abstract class Producer[T] extends Iterator[T] {
   private case object Done
   private case object Continue
 
-  /** A thread-based coordinator */
   private val coordinator = actor {
     while (true) {
       receive {
