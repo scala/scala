@@ -63,7 +63,7 @@ object RemoteActor {
    * <code>name</code> on <code>node</code>.
    */
   def select(node: Node, name: Symbol): Actor =
-    new Reactor {
+    new Actor {
       def act(): Unit = {}
       override def !(msg: Any): Unit = msg match {
         case a: AnyRef => {

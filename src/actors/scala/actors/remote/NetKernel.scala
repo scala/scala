@@ -45,7 +45,7 @@ class NetKernel(service: Service) {
         actors.get(receiver) match {
           case Some(a) => {
             val msg = service.serializer.deserialize(data)
-            val senderProxy = new Reactor {
+            val senderProxy = new Actor {
               def act() = { a ! msg }
               override def !(msg: Any): Unit = {
                 msg match {

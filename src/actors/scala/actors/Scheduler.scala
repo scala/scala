@@ -157,7 +157,7 @@ class TickedScheduler extends IScheduler {
 
   private val idle = new Queue[WorkerThread]
   private val ticks = new HashMap[WorkerThread, long]
-  private val executing = new HashMap[Reactor, WorkerThread]
+  private val executing = new HashMap[Actor, WorkerThread]
 
   private var terminating = false
 
