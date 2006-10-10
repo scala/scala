@@ -10,7 +10,7 @@
 
 package scala.actors
 
-import scala.collection.mutable.{ArrayBuffer, Buffer, Queue}
+import scala.collection.mutable.{ArrayBuffer, Buffer, HashMap, Queue}
 
 /**
  * The <code>Scheduler</code> object is used by
@@ -142,14 +142,18 @@ class SpareWorkerScheduler extends IScheduler {
   }
 }
 
-
+/**
+ * The class <code>TickedScheduler</code> ...
+ *
+ * @author Philipp Haller
+ */
 class TickedScheduler extends IScheduler {
   private val tasks = new Queue[Reaction]
   private var workers: Buffer[WorkerThread] = new ArrayBuffer[WorkerThread]
 
   private val idle = new Queue[WorkerThread]
-  private val ticks = new scala.collection.mutable.HashMap[WorkerThread, long]
-  private val executing = new scala.collection.mutable.HashMap[Reactor, WorkerThread]
+  private val ticks = new HashMap[WorkerThread, long]
+  private val executing = new HashMap[Reactor, WorkerThread]
 
   private var terminating = false
 
@@ -263,8 +267,8 @@ class QuitException extends Throwable {
 
 
 /**
- * This class is used by schedulers to execute reactor tasks on
- * multiple threads.
+ * The class <code>WorkerThread</code> is used by schedulers to execute
+ * reactor tasks on multiple threads.
  *
  * @author Philipp Haller
  */

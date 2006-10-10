@@ -19,18 +19,20 @@ trait EtaExpansion requires Analyzer {
   import global._
   import posAssigner.atPos
 
-  /** Expand partial function applications of type `type'.
-   *
+  /** <p>
+   *    Expand partial function applications of type <code>type</code>.
+   *  </p><pre>
    *  p.f(es_1)...(es_n)
    *     ==>  {
-   *            private synthetic val eta$f    = p.f   // if p is not stable
+   *            <b>private synthetic val</b> eta$f   = p.f   // if p is not stable
    *            ...
-   *            private synthetic val eta$e_i = e_i    // if e_i is not stable
-   *             ...
-   *
+   *            <b>private synthetic val</b> eta$e_i = e_i    // if e_i is not stable
+   *            ...
    *            (ps_1 => ... => ps_m => eta$f([es_1])...([es_m])(ps_1)...(ps_m))
-   *          }
-   *  tree is already attributed
+   *          }</pre>
+   *  <p>
+   *    tree is already attributed
+   *  </p>
    */
   def etaExpand(tree: Tree): Tree = {
     val tpe = tree.tpe
@@ -38,8 +40,8 @@ trait EtaExpansion requires Analyzer {
     def freshName() = { cnt = cnt + 1; newTermName("eta$" + cnt) }
     val defs = new ListBuffer[Tree]
 
-    /** Append to `defs' value definitions for all non-stable subexpressions
-     *  of the function application <code>tree</code>
+    /** Append to <code>defs</code> value definitions for all non-stable
+     *  subexpressions of the function application <code>tree</code>.
      *
      *  @param tree ...
      *  @return     ...
