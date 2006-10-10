@@ -1,6 +1,6 @@
 package examples.actors
 
-import scala.actors.Reactor
+import scala.actors.Actor
 import scala.actors.Actor._
 
 abstract class PingMessage
@@ -25,7 +25,7 @@ object PingPong {
 }
 
 
-class Ping extends Reactor {
+class Ping extends Actor {
   def act(): unit = {
     loop(0, null)
   }
@@ -60,7 +60,7 @@ class Ping extends Reactor {
   }
 }
 
-class Pong extends Reactor {
+class Pong extends Actor {
   def act(): unit = {
     loop(0)
   }

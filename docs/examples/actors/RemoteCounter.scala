@@ -1,8 +1,9 @@
 package examples.actors
 
 import scala.actors.Actor._
-import scala.actors.RemoteActor._
-import scala.actors.{Actor,Node}
+import scala.actors.Actor
+import scala.actors.remote.Node
+import scala.actors.remote.RemoteActor._
 
 case object Incr
 case object Value
