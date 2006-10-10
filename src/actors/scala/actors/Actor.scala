@@ -13,8 +13,8 @@ package scala.actors
 import scala.collection.mutable.HashSet
 
 /**
- * This object provides functions for the definition of actors and
- * reactors, as well as all actor operations, such as
+ * This object provides functions for the definition of actors,
+ * as well as all actor operations, such as
  * <code>receive</code>, <code>react</code>, <code>reply</code>,
  * etc.
  *
