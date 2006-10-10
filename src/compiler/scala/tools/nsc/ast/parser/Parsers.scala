@@ -620,7 +620,7 @@ trait Parsers requires SyntaxAnalyzer {
      *           |  `_' TypeBounds
      */
     def typeArg(): Tree =
-      if (in.token == USCORE)
+      if (in.token == USCORE && settings.Xexperimental.value)
         atPos(in.skipToken()) {
           WildcardTypeTree(bound(SUPERTYPE, nme.Nothing), bound(SUBTYPE, nme.Any))
         }
