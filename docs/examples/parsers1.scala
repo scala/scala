@@ -1,4 +1,4 @@
-package examples;
+package examples
 
 object parsers1 {
 
@@ -46,10 +46,10 @@ object parsers1 {
 
   trait ListParsers extends Parsers {
     def chr(p: char => boolean): Parser
-    def chr(c: char): Parser = chr(d: char => d == c)
+    def chr(c: char): Parser = chr((d: char) => d == c)
 
-    def letter    : Parser = chr(c: char => Character.isLetter(c))
-    def digit     : Parser = chr(c: char => Character.isDigit(c))
+    def letter    : Parser = chr((c: char) => Character.isLetter(c))
+    def digit     : Parser = chr((c: char) => Character.isDigit(c))
 
     def ident     : Parser = letter &&& rep(letter ||| digit)
     def number    : Parser = digit &&& rep(digit)
@@ -60,9 +60,9 @@ object parsers1 {
 
   trait ExprParsers extends Parsers {
     def chr(p: char => boolean): Parser
-    def chr(c: char): Parser = chr(d: char => d == c)
+    def chr(c: char): Parser = chr((d: char) => d == c)
 
-    def digit     : Parser = chr(c: char => Character.isDigit(c))
+    def digit     : Parser = chr((c: char) => Character.isDigit(c))
     def number    : Parser = digit &&& rep(digit)
     def summand   : Parser = number ||| chr('(') &&& expr &&& chr(')')
     def expr      : Parser = summand &&& rep(chr('+') &&& summand)

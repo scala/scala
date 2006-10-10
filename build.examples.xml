@@ -38,7 +38,7 @@ PROPERTIES
   <property name="build.examples.dir" value="${build.dir}/examples"/>
   <!-- tbd -->
   <property name="excludes.compile"
-            value="**/*current.*,**/fors.*,**/parsers2.*,**/typeinf.*"/>
+            value="**/*current.*,**/parsers2.*,**/typeinf.*"/>
   <property name="excludes.run"
             value="**/Parsers.*"/>
 

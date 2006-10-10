@@ -90,18 +90,18 @@ object maps {
       def extend(key: kt, value: vt): map =
         if (key < k) new Node(k, v, l.extend(key, value), r)
         else if (key > k) new Node(k, v, l, r.extend(key, value))
-        else new Node(k, value, l, r);
+        else new Node(k, value, l, r)
       def remove(key: kt): map =
         if (key < k) new Node(k, v, l.remove(key), r)
         else if (key > k) new Node(k, v, l, r.remove(key))
         else if (l == empty) r
         else if (r == empty) l
         else {
-          val midKey = r.domain.head;
+          val midKey = r.domain.head
           new Node(midKey, r(midKey), l, r.remove(midKey))
         }
-      def domain: Stream[kt] = l.domain append Stream.cons(k, r.domain);
-      def range: Stream[vt] = l.range append Stream.cons(v, r.range);
+      def domain: Stream[kt] = l.domain append Stream.cons(k, r.domain)
+      def range: Stream[vt] = l.range append Stream.cons(v, r.range)
     }
   }
 
@@ -129,24 +129,24 @@ object maps {
 
       def remove(key: kt): map =
         if (this == empty) this
-        else if (key < k) { l = l.remove(key) ; this }
-        else if (key > k) { r = r.remove(key) ; this }
+        else if (key < k) { l = l.remove(key); this }
+        else if (key > k) { r = r.remove(key); this }
         else if (l == empty) r
         else if (r == empty) l
         else {
           var mid = r
           while (!(mid.l == empty)) { mid = mid.l }
-          mid.r = r.remove(mid.k);
-          mid.l = l;
+          mid.r = r.remove(mid.k)
+          mid.l = l
           mid
         }
 
       def domain: Stream[kt] =
-        if (this == empty) Stream.empty;
+        if (this == empty) Stream.empty
         else l.domain append Stream.cons(k, r.domain)
 
       def range: Stream[vt] =
-        if (this == empty) Stream.empty;
+        if (this == empty) Stream.empty
         else l.range append Stream.cons(v, r.range)
     }
     val empty = new MutMap(null, null)
@@ -157,21 +157,17 @@ object maps {
     def month = m
     def day = d
 
-    override def compare [b >: Date <% Ordered[b]](that: b): Int = that match {
-      case other: Date =>
-        if ((year == other.year) &&
-            (month == other.month) &&
-            (day == other.day))
-           0
-        else if ((year < other.year) ||
-                 (year == other.year && month < other.month) ||
-                 (month == other.month && day < other.day))
-          -1
-        else
-          1
-      case _ =>
-        -(that compareTo this)
-    }
+    def compare(other: Date): Int =
+      if (year == other.year &&
+          month == other.month &&
+          day == other.day)
+        0
+      else if (year < other.year ||
+               year == other.year && month < other.month ||
+               month == other.month && day < other.day)
+        -1
+      else
+        1
 
     override def equals(that: Any): Boolean =
       that.isInstanceOf[Date] && {
