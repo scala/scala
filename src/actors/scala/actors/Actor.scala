@@ -10,11 +10,11 @@
 
 package scala.actors
 
-import scala.collection.mutable.HashSet
+import scala.collection.mutable.{HashSet, Stack}
 
 /**
- * This object provides functions for the definition of actors,
- * as well as all actor operations, such as
+ * The <code>Actor</code> object provides functions for the definition of
+ * actors, as well as all actor operations, such as
  * <code>receive</code>, <code>react</code>, <code>reply</code>,
  * etc.
  *
@@ -29,6 +29,8 @@ object Actor {
    * Returns the currently executing actor. Should be used instead
    * of <code>this</code> in all blocks of code executed by
    * actors.
+   *
+   * @return returns the currently executing actor.
    */
   def self: Actor = synchronized {
     val t = Thread.currentThread()
@@ -68,39 +70,52 @@ object Actor {
    * Receives a message from the mailbox of
    * <code>self</code>. Blocks if no message matching any of the
    * cases of <code>f</code> can be received.
+   *
+   * @param f ...
+   * @return  ...
    */
   def receive[a](f: PartialFunction[Any, a]): a =
     self.in.receive(f)
 
   /**
-   Receives a message from the mailbox of
-   <code>self</code>. Blocks at most <code>msec</code>
-   milliseconds if no message matching any of the cases of
-   <code>f</code> can be received. If no message could be
-   received the <code>TIMEOUT</code> action is executed if
-   specified.
+   * Receives a message from the mailbox of
+   * <code>self</code>. Blocks at most <code>msec</code>
+   * milliseconds if no message matching any of the cases of
+   * <code>f</code> can be received. If no message could be
+   * received the <code>TIMEOUT</code> action is executed if
+   * specified.
+   *
+   * @param msec ...
+   * @param f    ...
+   * @return     ...
    */
   def receiveWithin[R](msec: long)(f: PartialFunction[Any, R]): R =
     self.in.receiveWithin(msec)(f)
 
   /**
-   <code>receive</code> for event-based reactors.
-
-   Actions in <code>f</code> have to contain the rest of the
-   computation of <code>self</code>, as this method will never
-   return.
+   * <code>receive</code> for event-based reactors.
+   *
+   * Actions in <code>f</code> have to contain the rest of the
+   * computation of <code>self</code>, as this method will never
+   * return.
+   *
+   * @param f ...
+   * @return  ...
    */
   def react(f: PartialFunction[Any, Unit]): Nothing =
     self.in.react(f)
 
   /**
-   <code>receiveWithin</code> for event-based reactors.
-
-   Actions in <code>f</code> have to contain the rest of the
-   computation of <code>self</code>, as this method will never
-   return.
+   * <code>receiveWithin</code> for event-based reactors.
+   *
+   * Actions in <code>f</code> have to contain the rest of the
+   * computation of <code>self</code>, as this method will never
+   * return.
+   *
+   * @param msec ...
+   * @param f    ...
+   * @return     ...
    */
-
   def reactWithin(msec: long)(f: PartialFunction[Any, Unit]): Nothing =
     self.in.reactWithin(msec)(f)
 
@@ -120,8 +135,11 @@ object Actor {
   */
 
   /**
-   Used for receiving a message from a specific actor.
-   Example: <code>from (a) receive { //... }</code>
+   * <p>Used for receiving a message from a specific actor.</p>
+   * <p>Example:</p> <code>from (a) receive { //... }</code>
+   *
+   * @param r ...
+   * @return  ...
    */
   def from(r: Actor): FromReceive =
     new FromReceive(r)
@@ -132,19 +150,19 @@ object Actor {
   }
 
   /**
-   Returns the actor which sent the last received message.
+   * Returns the actor which sent the last received message.
    */
   def sender: Actor = self.sender
 
   /**
-   Send <code>msg</code> to the actor waiting in a call to
-   <code>!?</code>.
+   * Send <code>msg</code> to the actor waiting in a call to
+   * <code>!?</code>.
    */
   def reply(msg: Any): Unit = sender.reply ! msg
 
   /**
-   Send <code>()</code> to the actor waiting in a call to
-   <code>!?</code>.
+   * Send <code>()</code> to the actor waiting in a call to
+   * <code>!?</code>.
    */
   def reply(): Unit = reply(())
 
@@ -170,18 +188,20 @@ object Actor {
     s.suspendActor = () => { throw new SuspendActorException }
     s.detachActor = f => { throw new SuspendActorException }
 
-    try { alt1 } catch {
-      case d: SuspendActorException => {
+    try { alt1 }
+    catch {
+      case d: SuspendActorException =>
         s.suspendActor = suspendNext
         s.detachActor = detachNext
         alt2
-      }
     }
   }
 
   /**
-   Causes <code>self</code> to repeatedly execute
-   <code>body</code>.
+   * Causes <code>self</code> to repeatedly execute
+   * <code>body</code>.
+   *
+   * @param body ...
    */
   def loop(body: => Unit): Unit = {
     val s = self
@@ -190,8 +210,11 @@ object Actor {
   }
 
   /**
-   Causes <code>self</code> to execute <code>first</code>
-   followed by <code>next</code>.
+   * Causes <code>self</code> to execute <code>first</code>
+   * followed by <code>next</code>.
+   *
+   * @param first ...
+   * @param next  ...
    */
   def seq(first: => Unit, next: => Unit): Unit = {
     val s = self
@@ -200,42 +223,58 @@ object Actor {
   }
 
   /**
-   Links <code>self</code> to actor <code>to</code>.
+   * Links <code>self</code> to actor <code>to</code>.
+   *
+   * @param to ...
+   * @return   ...
    */
   def link(to: Actor): Actor = self.link(to)
 
   /**
-   Links <code>self</code> to actor defined by <code>body</code>.
+   * Links <code>self</code> to actor defined by <code>body</code>.
+   *
+   * @param body ...
+   * @return     ...
    */
   def link(body: => Unit): Actor = self.link(body)
 
   /**
-   Unlinks <code>self</code> from actor <code>from</code>.
+   * Unlinks <code>self</code> from actor <code>from</code>.
+   *
+   * @param from ...
    */
   def unlink(from: Actor): Unit = self.unlink(from)
 
   /**
-   Terminates execution of <code>self</code> with the following
-   effect on linked actors:
-
-   For each linked actor <code>a</code> with
-   <code>trapExit</code> set to <code>true</code>, send message
-   <code>Exit(self, reason)</code> to <code>a</code>.
-
-   For each linked actor <code>a</code> with
-   <code>trapExit</code> set to <code>false</code> (default),
-   call <code>a.exit(reason)</code> if
-   <code>!reason.equals("normal")</code>.
+   * <p>
+   *   Terminates execution of <code>self</code> with the following
+   *   effect on linked actors:
+   * </p>
+   * <p>
+   *   For each linked actor <code>a</code> with
+   *   <code>trapExit</code> set to <code>true</code>, send message
+   *   <code>Exit(self, reason)</code> to <code>a</code>.
+   * </p>
+   * <p>
+   *   For each linked actor <code>a</code> with
+   *   <code>trapExit</code> set to <code>false</code> (default),
+   *   call <code>a.exit(reason)</code> if
+   *   <code>!reason.equals("normal")</code>.
+   * </p>
    */
   def exit(reason: String): Unit = self.exit(reason)
 }
 
 /**
- * This class provides (together with <code>Channel</code>) an
- * implementation of event-based actors.
- *
- * The main ideas of our approach are explained in the paper<br>
- * <b>Event-Based Programming without Inversion of Control</b>, Philipp Haller, Martin Odersky <i>Proc. JMLC 2006</i>
+ * <p>
+ *   This class provides (together with <code>Channel</code>) an
+ *   implementation of event-based actors.
+ * </p>
+ * <p>
+ *   The main ideas of our approach are explained in the paper<br>
+ *   <b>Event-Based Programming without Inversion of Control</b>,
+ *   Philipp Haller, Martin Odersky <i>Proc. JMLC 2006</i>
+ * </p>
  *
  * @version Beta2
  * @author Philipp Haller
@@ -280,7 +319,7 @@ trait Actor extends OutputChannel[Any] {
    */
   def !?(msg: Any): Any = in !? msg
 
-  private val lastSenders = new scala.collection.mutable.Stack[Actor]
+  private val lastSenders = new Stack[Actor]
 
   private[actors] def sender: Actor = {
     if (lastSenders.isEmpty) null
@@ -338,7 +377,10 @@ trait Actor extends OutputChannel[Any] {
   private val links = new HashSet[Actor]
 
   /**
-   Links <code>self</code> to actor <code>to</code>.
+   * Links <code>self</code> to actor <code>to</code>.
+   *
+   * @param to ...
+   * @return   ...
    */
   def link(to: Actor): Actor = {
     links += to
@@ -347,7 +389,7 @@ trait Actor extends OutputChannel[Any] {
   }
 
   /**
-   Links <code>self</code> to actor defined by <code>body</code>.
+   * Links <code>self</code> to actor defined by <code>body</code>.
    */
   def link(body: => Unit): Actor = {
     val actor = new Actor {
@@ -377,17 +419,21 @@ trait Actor extends OutputChannel[Any] {
   private[actors] var exitReason: String = ""
 
   /**
-   Terminates execution of <code>self</code> with the following
-   effect on linked actors:
-
-   For each linked actor <code>a</code> with
-   <code>trapExit</code> set to <code>true</code>, send message
-   <code>Exit(self, reason)</code> to <code>a</code>.
-
-   For each linked actor <code>a</code> with
-   <code>trapExit</code> set to <code>false</code> (default),
-   call <code>a.exit(reason)</code> if
-   <code>!reason.equals("normal")</code>.
+   * <p>
+   *   Terminates execution of <code>self</code> with the following
+   *   effect on linked actors:
+   * </p>
+   * <p>
+   *   For each linked actor <code>a</code> with
+   *   <code>trapExit</code> set to <code>true</code>, send message
+   *   <code>Exit(self, reason)</code> to <code>a</code>.
+   * </p>
+   * <p>
+   *   For each linked actor <code>a</code> with
+   *   <code>trapExit</code> set to <code>false</code> (default),
+   *   call <code>a.exit(reason)</code> if
+   *   <code>!reason.equals("normal")</code>.
+   * </p>
    */
   def exit(reason: String): Unit = {
     exitReason = reason
