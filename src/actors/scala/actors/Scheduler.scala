@@ -14,9 +14,10 @@ import scala.collection.mutable.{ArrayBuffer, Buffer, HashMap, Queue}
 
 /**
  * The <code>Scheduler</code> object is used by
- * <code>Reactor</code> to execute tasks of an execution of a
+ * <code>Actor</code> to execute tasks of an execution of a
  * reactor.
  *
+ * @version Beta2
  * @author Philipp Haller
  */
 object Scheduler {
@@ -33,7 +34,7 @@ object Scheduler {
     sched.execute(task)
   }
 
-  def tick(a: Reactor) = sched.tick(a)
+  def tick(a: Actor) = sched.tick(a)
 
   def shutdown(): Unit = sched.shutdown()
 }
@@ -42,17 +43,18 @@ object Scheduler {
  * This abstract class provides a common interface for all
  * schedulers used to execute reactors.
  *
+ * @version Beta2
  * @author Philipp Haller
  */
 abstract class IScheduler {
   def execute(task: Reaction): Unit
   def getTask(worker: WorkerThread): Runnable
-  def tick(a: Reactor): Unit
+  def tick(a: Actor): Unit
 
   def shutdown(): Unit
 
   val QUIT_TASK = new Reaction() {
-    def actor: Reactor = null
+    def actor: Actor = null
     def run(): Unit = {}
     override def toString() = "QUIT_TASK"
   }
@@ -62,6 +64,7 @@ abstract class IScheduler {
  * This scheduler executes the tasks of a reactor on a single
  * thread (the current thread).
  *
+ * @version Beta2
  * @author Philipp Haller
  */
 class SingleThreadedScheduler extends IScheduler {
@@ -72,7 +75,7 @@ class SingleThreadedScheduler extends IScheduler {
 
   def getTask(worker: WorkerThread): Runnable = { null }
 
-  def tick(a: Reactor): Unit = {}
+  def tick(a: Actor): Unit = {}
 
   def shutdown(): Unit = {}
 }
@@ -81,6 +84,7 @@ class SingleThreadedScheduler extends IScheduler {
  * This scheduler creates additional threads whenever there is no
  * idle thread available.
  *
+ * @version Beta2
  * @author Philipp Haller
  */
 class SpareWorkerScheduler extends IScheduler {
@@ -126,7 +130,7 @@ class SpareWorkerScheduler extends IScheduler {
     }
   }
 
-  def tick(a: Reactor): Unit = {}
+  def tick(a: Actor): Unit = {}
 
   def shutdown(): Unit = synchronized {
     terminating = true
@@ -231,7 +235,7 @@ class TickedScheduler extends IScheduler {
 
   var ticksCnt = 0
 
-  def tick(a: Reactor): unit = synchronized {
+  def tick(a: Actor): unit = synchronized {
     ticksCnt = ticksCnt + 1
     executing.get(a) match {
       case None => // thread outside of scheduler; error("No worker thread associated with actor " + a)
@@ -270,6 +274,9 @@ class QuitException extends Throwable {
  * The class <code>WorkerThread</code> is used by schedulers to execute
  * reactor tasks on multiple threads.
  *
+ * TODO: put proof of deadlock-freedom here!
+ *
+ * @version Beta2
  * @author Philipp Haller
  */
 class WorkerThread(sched: IScheduler) extends Thread {

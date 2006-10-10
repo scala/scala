@@ -16,13 +16,14 @@ package scala.actors
  * Note that the library deletes non-received <code>TIMEOUT</code> message if a
  * message is received before the time-out occurs.
  *
+ * @version Beta2
  * @author Sebastien Noir
  * @author Philipp Haller
  */
 
 object TimerThread extends AnyRef with Runnable {
 
-  case class WakedActor(actor: Reactor, f: PartialFunction[Any, Unit], time: long)
+  case class WakedActor(actor: Actor, f: PartialFunction[Any, Unit], time: long)
        extends Ordered[WakedActor] {
     var valid = true
     def compare(that: WakedActor): int = -(this.time compare that.time)
@@ -33,7 +34,7 @@ object TimerThread extends AnyRef with Runnable {
 
   var lateList: List[WakedActor] = Nil
 
-  def trashRequest(a: Reactor) = synchronized {
+  def trashRequest(a: Actor) = synchronized {
     // keep in mind: killing dead people is a bad idea!
     queue.elements.find((wa: WakedActor) => wa.actor == a && wa.valid) match {
       case Some(b) =>
@@ -74,7 +75,7 @@ object TimerThread extends AnyRef with Runnable {
     }
   }
 
-  def requestTimeout(a: Reactor, f: PartialFunction[Any, Unit], waitMillis: long): unit = synchronized {
+  def requestTimeout(a: Actor, f: PartialFunction[Any, Unit], waitMillis: long): unit = synchronized {
     val wakeTime = now + waitMillis
     if (waitMillis <= 0) {
       a.continuation = null

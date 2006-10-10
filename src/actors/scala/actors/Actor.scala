@@ -18,6 +18,7 @@ import scala.collection.mutable.HashSet
  * <code>receive</code>, <code>react</code>, <code>reply</code>,
  * etc.
  *
+ * @version Beta2
  * @author Philipp Haller
  */
 object Actor {
@@ -40,7 +41,7 @@ object Actor {
   }
 
   def actor(body: => Unit): Actor = synchronized {
-    val actor = new Reactor {
+    val actor = new Actor {
       def act() = body
     }
     actor.start()
@@ -52,14 +53,16 @@ object Actor {
    * channel which can be used for typed communication with other
    * actors.
    */
+/*
   def actor[a](ch: Channel[a])(body: => Unit): Actor = synchronized {
-    val actor = new Reactor {
+    val actor = new Actor {
       def act() = body
     }
     ch.receiver = actor
     actor.start()
     actor
   }
+*/
 
   /**
    * Receives a message from the mailbox of
@@ -228,17 +231,21 @@ object Actor {
 }
 
 /**
- * This trait defines commonalities between thread-based and
- * event-based actors.
+ * This class provides (together with <code>Channel</code>) an
+ * implementation of event-based actors.
  *
+ * The main ideas of our approach are explained in the paper<br>
+ * <b>Event-Based Programming without Inversion of Control</b>, Philipp Haller, Martin Odersky <i>Proc. JMLC 2006</i>
+ *
+ * @version Beta2
  * @author Philipp Haller
  */
 trait Actor extends OutputChannel[Any] {
-
   private[actors] val in = new Channel[Any]
   in.receiver = this
 
   private var rc: Channel[Any] = null
+
   private[actors] def reply: Channel[Any] = {
     if (rc == null) {
       rc = new Channel[Any]
@@ -273,9 +280,38 @@ trait Actor extends OutputChannel[Any] {
    */
   def !?(msg: Any): Any = in !? msg
 
-  private[actors] def sender: Actor
-  private[actors] def pushSender(sender: Actor): unit
-  private[actors] def popSender(): unit
+  private val lastSenders = new scala.collection.mutable.Stack[Actor]
+
+  private[actors] def sender: Actor = {
+    if (lastSenders.isEmpty) null
+    else lastSenders.top
+  }
+
+  private[actors] def pushSender(s: Actor) = { lastSenders.push(s) }
+  private[actors] def popSender(): Unit = { lastSenders.pop }
+
+  private[actors] var continuation: PartialFunction[Any, Unit] = null
+  private[actors] var timeoutPending = false
+
+  private[actors] def scheduleActor(f: PartialFunction[Any, Unit], msg: Any) =
+    if (f == null && continuation == null) {
+      // do nothing (timeout is handled instead)
+    }
+    else {
+      val task = new ActorTask(this,
+                               if (f == null) continuation else f,
+                               msg)
+      Scheduler.execute(task)
+    }
+
+  private[actors] def tick(): Unit =
+    Scheduler.tick(this)
+
+  private[actors] def defaultDetachActor: PartialFunction[Any, Unit] => Unit =
+    (f: PartialFunction[Any, Unit]) => {
+      continuation = f
+      throw new SuspendActorException
+    }
 
   private[actors] var suspendActor: () => Unit = _
   private[actors] var suspendActorFor: long => Unit = _
@@ -283,11 +319,21 @@ trait Actor extends OutputChannel[Any] {
   private[actors] var detachActor: PartialFunction[Any, Unit] => Unit = _
   private[actors] var kill: () => Unit = _
 
-  private[actors] def scheduleActor(f: PartialFunction[Any, Unit], msg: Any)
-  private[actors] def tick(): Unit
-  private[actors] def resetActor(): unit
+  private[actors] def resetActor(): Unit = {
+    suspendActor = () => wait()
+    suspendActorFor = (msec: long) => wait(msec)
+    resumeActor = () => notify()
+    detachActor = defaultDetachActor
+    kill = () => {}
+  }
 
   resetActor()
+
+  /**
+   * Starts this reactor.
+   */
+  def start(): Unit =
+    Scheduler.execute(new StartTask(this))
 
   private val links = new HashSet[Actor]
 
@@ -304,7 +350,7 @@ trait Actor extends OutputChannel[Any] {
    Links <code>self</code> to actor defined by <code>body</code>.
    */
   def link(body: => Unit): Actor = {
-    val actor = new Reactor {
+    val actor = new Actor {
       def act() = body
     }
     link(actor)
@@ -343,7 +389,10 @@ trait Actor extends OutputChannel[Any] {
    call <code>a.exit(reason)</code> if
    <code>!reason.equals("normal")</code>.
    */
-  def exit(reason: String): Unit
+  def exit(reason: String): Unit = {
+    exitReason = reason
+    Thread.currentThread().interrupt()
+  }
 
   private[actors] def exit(from: Actor, reason: String): Unit = {
     if (from == this) {
@@ -382,43 +431,17 @@ trait Actor extends OutputChannel[Any] {
   }
 }
 
+
 /**
  * Messages of this type are sent to each actor <code>a</code>
  * that is linked to an actor <code>b</code> whenever
  * <code>b</code> terminates and <code>a</code> has
  * <code>trapExit</code> set to <code>true</code>.
  *
+ * @version Beta2
  * @author Philipp Haller
  */
 case class Exit(from: Actor, reason: String)
-
-
-/**
- * This class provides a dynamic actor proxy for normal Java
- * threads.
- *
- * @author Philipp Haller
- */
-private[actors] class ActorProxy(t: Thread) extends Reactor {
-  def act(): Unit = {}
-  /**
-   Terminates execution of <code>self</code> with the following
-   effect on linked actors:
-
-   For each linked actor <code>a</code> with
-   <code>trapExit</code> set to <code>true</code>, send message
-   <code>Exit(self, reason)</code> to <code>a</code>.
-
-   For each linked actor <code>a</code> with
-   <code>trapExit</code> set to <code>false</code> (default),
-   call <code>a.exit(reason)</code> if
-   <code>!reason.equals("normal")</code>.
-   */
-  override def exit(reason: String): Unit = {
-    exitReason = reason
-    t.interrupt()
-  }
-}
 
 
 /**

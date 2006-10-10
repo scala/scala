@@ -27,6 +27,7 @@ class SuspendActorException extends Throwable {
  * actors. Only the actor creating an instance of a
  * <code>Channel</code> may receive from it.
  *
+ * @version Beta2
  * @author Philipp Haller
  */
 class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
@@ -56,12 +57,9 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
       waitingFor = waitingForNone
       waitingForSender = null
 
-      if (receiver.isInstanceOf[Reactor]) {
-        val myReactor = receiver.asInstanceOf[Reactor]
-        if (myReactor.timeoutPending) {
-          myReactor.timeoutPending = false
-          TimerThread.trashRequest(myReactor)
-        }
+      if (receiver.timeoutPending) {
+        receiver.timeoutPending = false
+        TimerThread.trashRequest(receiver)
       }
 
       if (isSuspended)
@@ -335,8 +333,8 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
         }
         case None => {
           this.synchronized {
-            TimerThread.requestTimeout(receiver.asInstanceOf[Reactor], f, msec)
-            receiver.asInstanceOf[Reactor].timeoutPending = true
+            TimerThread.requestTimeout(receiver, f, msec)
+            receiver.timeoutPending = true
             receiver.detachActor(f)
           }
         }
