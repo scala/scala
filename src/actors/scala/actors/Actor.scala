@@ -491,16 +491,8 @@ case class Exit(from: Actor, reason: String)
 
 
 /**
- * <p>
- *   This class is used by our efficient message queue
- *   implementation.
- * </p>
- * <dl class="subclasses">
- *   <dt><b>Direct Known Subclasses:</b></dt>
- *   <dd>
- *     <a href="MessageQueue.html" target="contentFrame">MessageQueue</a>
- *   </dd>
- * </dl>
+ * This class is used by our efficient message queue
+ * implementation.
  */
 private[actors] abstract class MessageQueueResult[Msg] {
   def msg: Msg

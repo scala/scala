@@ -29,7 +29,7 @@ PROPERTIES
   <property file="${properties.file}"/>
   <!-- Defines the product being built -->
   <property name="vendor.name" value="LAMP/EPFL"/>
-  <property name="copyright.string" value="copyright 2002-2006 ${vendor.name}"/>
+  <property name="copyright.string" value="Copyright 2002-2006 ${vendor.name}"/>
   <property name="number.file" value="${basedir}/build.number"/>
   <!-- Configuring how the compiler is run -->
   <property name="nsc.log-files" value="no"/>
