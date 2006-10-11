@@ -11,22 +11,27 @@
 
 package scala.util.logging
 
-/**
- *  Mixing in the class Logged indicates that a class provides support
- *  for logging. For instance, a developer of a library writes
- *  <code>
-   class MyClass with Logged { ... do stuff, call log }
-   </code>
-   *
-   * The user of the library instantiates:
-   <code>
-   val x = new MyClass() with ConsoleLogger;
-   </code>
-   * and the logging will be sent to the Console.
-   */
+/** <p>
+ *    Mixing in the class <code>Logged</code> indicates that a class provides
+ *    support for logging. For instance, the developer of a library writes
+ *  </p>
+ *  <pre>
+ *    <b>class</b> MyClass <b>with</b> Logged { /* do stuff, call log */ }
+ *  </pre>
+ *  <p>
+ *    The user of the library instantiates:
+ *  </p>
+ *  <pre>
+ *    <b>val</b> x = <b>new</b> MyClass() <b>with</b> ConsoleLogger
+ *  </pre>
+ *  <p>
+ *    and the logging will be sent to the <a href="../../Console$object.html"
+ *    target="contentFrame"><code>Console</code></a> object.
+ *  </p>
+ */
 trait Logged {
 
-  /** this method should log the message given as argument somewhere
+  /** This method should log the message given as argument somewhere
    *  as a side-effect.
    *
    *  @param msg ...

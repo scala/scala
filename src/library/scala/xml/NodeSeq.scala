@@ -25,8 +25,8 @@ object NodeSeq {
   implicit def view(s: Seq[Node]): NodeSeq = fromSeq(s)
 }
 
-/** This class implements a wrapper around Seq[Node] that adds XPath and
- *  comprehension methods.
+/** This class implements a wrapper around <code>Seq[Node]</code> that
+ *  adds XPath and comprehension methods.
  *
  *  @author  Burak Emir
  *  @version 1.0
@@ -43,14 +43,15 @@ abstract class NodeSeq extends Seq[Node] {
   /** structural equality */
   override def equals(x: Any) = x match {
     case z:Node      => (length == 1) && z == apply(0)
-    case z:Seq[Node] => sameElements( z )
+    case z:Seq[Node] => sameElements(z)
     case z:String    => text == z
     case _           => false;
   }
 
-  /** projection function. Similar to XPath, use this \ "foo" to get a list
-   *  of all elements of this sequence that are labelled with "foo".
-   *  Use \ "_" as a wildcard. The document order is preserved.
+  /** Projection function. Similar to XPath, use <code>this \ "foo"</code>
+   *  to get a list of all elements of this sequence that are labelled with
+   *  <code>"foo"</code>. Use <code>\ "_"</code> as a wildcard.
+   *  The document order is preserved.
    *
    *  @param that ...
    *  @return     ...
@@ -93,9 +94,10 @@ abstract class NodeSeq extends Seq[Node] {
       NodeSeq.fromSeq(zs.reverse)
   }
 
-  /** projection function. Similar to XPath, use this \\ 'foo to get a list
-   *  of all elements of this sequence that are labelled with "foo".
-   *  Use \\ "_" as a wildcard. The document order is preserved.
+  /** projection function. Similar to XPath, use <code>this \\ 'foo</code>
+   *  to get a list of all elements of this sequence that are labelled with
+   *  <code>"foo"</code>. Use <code>\\ "_"</code> as a wildcard.
+   *  The document order is preserved.
    *
    *  @param that ...
    *  @return     ...

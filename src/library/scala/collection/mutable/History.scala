@@ -27,6 +27,10 @@ class History[A, B] extends AnyRef with Subscriber[A, B] with Iterable[Pair[B, A
 
   val maxHistory: Int = 1000
 
+  /**
+   *  @param pub   ...
+   *  @param event ...
+   */
   def notify(pub: B, event: A): Unit = {
     if (log.length >= maxHistory) {
       val old = log.dequeue;

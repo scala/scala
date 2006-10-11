@@ -14,7 +14,7 @@ package scala.collection.mutable
 
 import Predef._
 
-/** An implementation of the Buffer class using an array to
+/** An implementation of the <code>Buffer</code> class using an array to
  *  represent the assembled sequence internally.
  *
  *  @author  Matthias Zenger
@@ -23,7 +23,7 @@ import Predef._
 [serializable]
 class ArrayBuffer[A] extends Buffer[A] with ResizableArray[A] {
 
-  /** Append a single element to this buffer and return
+  /** Appends a single element to this buffer and returns
    *  the identity of the buffer.
    *
    *  @param elem  the element to append.
@@ -39,13 +39,17 @@ class ArrayBuffer[A] extends Buffer[A] with ResizableArray[A] {
    *  buffer is returned.
    *
    *  @param iter  the iterable object.
+   *  @return      the updated buffer.
    */
-  override def ++(iter: Iterable[A]): Buffer[A] = { insertAll(size, iter); this }
+  override def ++(iter: Iterable[A]): Buffer[A] = {
+    insertAll(size, iter); this
+  }
 
-  /** Prepend a single element to this buffer and return
+  /** Prepends a single element to this buffer and return
    *  the identity of the buffer.
    *
    *  @param elem  the element to append.
+   *  @return      the updated buffer.
    */
   def +:(elem: A): Buffer[A] = {
     ensureSize(size+1)
@@ -55,8 +59,11 @@ class ArrayBuffer[A] extends Buffer[A] with ResizableArray[A] {
     this
   }
 
-  /** returns the i-th element of this ArrayBuffer. Throws IndexOutOfBoundException if
-   *  i is out of bounds.
+  /** Returns the i-th element of this ArrayBuffer.
+   *
+   *  @param i  the specified index.
+   *  @return   the i-th element.
+   *  @throws IndexOutOfBoundException if <code>i</code> is out of bounds.
    */
   override def apply(i: Int) = {
     if ((i < 0) || (i >= size))
@@ -70,6 +77,7 @@ class ArrayBuffer[A] extends Buffer[A] with ResizableArray[A] {
    *  buffer is returned.
    *
    *  @param iter  the iterable object.
+   *  @return      the updated buffer.
    */
   override def ++:(iter: Iterable[A]): Buffer[A] = { insertAll(0, iter); this }
 
@@ -79,16 +87,17 @@ class ArrayBuffer[A] extends Buffer[A] with ResizableArray[A] {
    *
    *  @param n     the index where a new element will be inserted.
    *  @param iter  the iterable object providing all elements to insert.
+   *  @throws IndexOutOfBoundsException if <code>n</code> is out of bounds.
    */
   def insertAll(n: Int, iter: Iterable[A]): Unit = {
     if ((n < 0) || (n > size))
       throw new IndexOutOfBoundsException("cannot insert element at " + n);
-    val xs = iter.elements.toList;
-    val len = xs.length;
-    ensureSize(size+len);
-    copy(n, n + len, size - n);
-    xs.copyToArray(array, n);
-    size = size + len;
+    val xs = iter.elements.toList
+    val len = xs.length
+    ensureSize(size+len)
+    copy(n, n + len, size - n)
+    xs.copyToArray(array, n)
+    size = size + len
   }
 
   /** Replace element at index <code>n</code> with the new element
@@ -96,6 +105,7 @@ class ArrayBuffer[A] extends Buffer[A] with ResizableArray[A] {
    *
    *  @param n       the index of the element to replace.
    *  @param newelem the new element.
+   *  @throws IndexOutOfBoundsException if <code>n</code> is out of bounds.
    */
   def update(n: Int, newelem: A): Unit = {
     if ((n < 0) || (n >= size))
@@ -110,6 +120,8 @@ class ArrayBuffer[A] extends Buffer[A] with ResizableArray[A] {
   /** Removes the element on a given index position.
    *
    *  @param n  the index which refers to the element to delete.
+   *  @return   the updated array buffer.
+   *  @throws IndexOutOfBoundsException if <code>n</code> is out of bounds.
    */
   def remove(n: Int): A = {
     if ((n < 0) || (n >= size))
@@ -123,7 +135,7 @@ class ArrayBuffer[A] extends Buffer[A] with ResizableArray[A] {
   /** Clears the buffer contents.
    */
   def clear: Unit = {
-    size = 0;
+    size = 0
   }
 
   /** Return a clone of this buffer.
@@ -131,8 +143,8 @@ class ArrayBuffer[A] extends Buffer[A] with ResizableArray[A] {
    *  @return an <code>ArrayBuffer</code> with the same elements.
    */
   override def clone(): Buffer[A] = {
-    val res = new ArrayBuffer[A];
-    res ++= this;
+    val res = new ArrayBuffer[A]
+    res ++= this
     res
   }
 

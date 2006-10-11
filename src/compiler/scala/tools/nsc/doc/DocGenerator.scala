@@ -296,21 +296,23 @@ abstract class DocGenerator extends Models {
      *  @param mmbr ...
      *  @return     ...
      */
-    def listSubclasses(mmbr: HasTree): NodeSeq =
-      if (!subclasses(mmbr.tree.symbol).isEmpty)
+    def listSubclasses(mmbr: HasTree): NodeSeq = {
+      val subcs = subclasses(mmbr.tree.symbol)
+      if (subcs.isEmpty)
+        NodeSeq.Empty
+      else
         <dl>
           <dt style="margin:10px 0 0 20px;">
             <b>Direct known subclasses:</b>
           </dt>
           <dd>{ {
             val links =
-              for (val subc <- subclasses(mmbr.tree.symbol)) yield
+              for (val subc <- subcs) yield
                 aref(urlFor(subc), contentFrame, subc.nameString)
             links.reduceRight { (link: Seq[Node], seq: Seq[Node]) => link.concat(Text(", ")).concat(seq) }
           } }</dd>
         </dl>;
-      else
-        NodeSeq.Empty
+    }
 
     def lists(mmbr: HasTree) = mmbr match {
       case cmod: ImplMod => <span>{ listMembersShort(mmbr) }
@@ -578,18 +580,19 @@ abstract class DocGenerator extends Models {
     for (val unit <- units) {
       val sourceMod = new SourceMod(unit)
       for (val mmbr <- sourceMod.members) mmbr.tree match {
-        case cdef:  ImplDef =>
+        case cdef: ImplDef =>
           assert(cdef.symbol.owner != NoSymbol)
           val sym = cdef.symbol.owner.asInstanceOf[ModuleClassSymbol]
           if (!sym.isEmptyPackageClass) {
-            if (!topLevel.contains(sym)) topLevel = topLevel.update(sym, emptyMap)
+            if (!topLevel.contains(sym))
+              topLevel = topLevel.update(sym, emptyMap)
             topLevel = topLevel.update(sym, organize0(mmbr, topLevel(sym)))
           }
           for (val p <- cdef.symbol.info.parents) {
             subclasses(p.symbol) = cdef.symbol :: subclasses(p.symbol)
           }
-          import Flags._;
-          val mmbrs = cdef.symbol.info.findMember(nme.ANYNAME, MUTABLE | METHOD | BRIDGE | ACCESSOR, 0, false).alternatives;
+          import Flags._
+          val mmbrs = cdef.symbol.info.findMember(nme.ANYNAME, MUTABLE | METHOD | BRIDGE | ACCESSOR, 0, false).alternatives
           for (val c <- mmbrs; c.isClass)
             for (val p <- c.info.parents) {
               subclasses(p.symbol) = c :: subclasses(p.symbol)

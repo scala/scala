@@ -23,10 +23,11 @@ import compat.StringBuilder
  */
 object Source {
 
-  /** Creates Source from array of bytes, with empty description.
+  /** Creates a <code>Source</code> instance from the given array of bytes,
+   *  with empty description.
    *
    *  @param bytes ...
-   *  @return      ...
+   *  @return      the created <code>Source</code> instance.
    */
   def fromBytes(bytes: Array[Byte]): Source =
     fromString(new String(bytes))
@@ -41,10 +42,10 @@ object Source {
   def fromBytes(bytes: Array[Byte], enc: String): Source =
     fromString(new String(bytes, enc))
 
-  /** Creates Source from a single character.
+  /** Creates a <code>Source</code> instance from a single character.
    *
    *  @param c ...
-   *  @return  ...
+   *  @return  the create <code>Source</code> instance.
    */
   def fromChar(c: Char): Source = {
     val it = Iterator.single(c)
@@ -134,9 +135,17 @@ object Source {
     s
   }
 
-  def fromURL(s:String): Source =
+  /**
+   *  @param s    ...
+   *  @return     ...
+   */
+  def fromURL(s: String): Source =
     fromURL(new java.net.URL(s))
 
+  /**
+   *  @param url  ...
+   *  @return     ...
+   */
   def fromURL(url: java.net.URL): Source = {
     val it = new Iterator[Char] {
       var data: Int = _
@@ -156,8 +165,9 @@ object Source {
 
 }
 
-/** an iterable representation of source files.
- *  calling method reset returns an identical, resetted source
+/** The class <code>Source</code> implements an iterable representation
+ *  of source files. Calling method <code>reset</code> returns an identical,
+ *  resetted source.
  *
  *  @author  Burak Emir
  *  @version 1.0
@@ -197,18 +207,22 @@ abstract class Source extends Iterator[Char] {
   //
 
   /** convenience method, returns given line (not including newline)
-   *  from Source
+   *  from Source.
+   *
+   *  @param line the line index.
+   *  @return     the character string of the specified line.
+   *  @throws IllegalArgumentException
    */
   def getLine(line: Int): String = {
     val buf = new StringBuffer()
     val it = reset
     var i = 0
 
-    while( it.hasNext && i < (line-1))
-      if('\n' == it.next)
+    while (it.hasNext && i < (line-1))
+      if ('\n' == it.next)
         i = i + 1;
 
-    if(!it.hasNext) // this should not happen
+    if (!it.hasNext) // this should not happen
       throw new java.lang.IllegalArgumentException(
         "line "+line+" does not exist?!"
       );
@@ -222,7 +236,7 @@ abstract class Source extends Iterator[Char] {
     buf.setLength(0)
     res
   }
-  /** returns true if this source has more characters
+  /** Returns <code>true</code> if this source has more characters.
    */
   def hasNext = iter.hasNext
 
@@ -271,7 +285,7 @@ abstract class Source extends Iterator[Char] {
     val buf = new StringBuffer
     val line = Position.line(pos)
     val col = Position.column(pos)
-    buf.append(descr + ":"+line+":"+col+": "+msg)
+    buf.append(descr + ":" + line + ":" + col + ": " + msg)
     buf.append(getLine(line))
     var i = 1
     while (i < col) {

@@ -13,7 +13,8 @@ package scala.collection.mutable
 
 /** This class represents mutable sets. Concrete set implementations
  *  just have to provide functionality for the abstract methods in
- *  <code>scala.collection.Set</code> as well as for <code>add</code>,
+ *  <a href="../Set.html" target="contentFrame">
+ *  <code>scala.collection.Set</code></a> as well as for <code>add</code>,
  *  <code>remove</code>, and <code>clear</code>.
  *
  *  @author  Matthias Zenger
@@ -46,7 +47,7 @@ trait Set[A] extends AnyRef with collection.Set[A]
    *
    *  @param that ...
    */
-  def ++=(that: Iterable[A]): Unit = ++=(that.elements);
+  def ++=(that: Iterable[A]): Unit = ++=(that.elements)
 
   /** This method will add all the elements provided by an iterator
    *  of the iterable object <code>that</code> to the set.
@@ -103,6 +104,7 @@ trait Set[A] extends AnyRef with collection.Set[A]
   /** Send a message to this scriptable object.
    *
    *  @param cmd  the message to send.
+   *  @throws UnsupportedOperationException if the message was not understood.
    */
   def <<(cmd: Message[A]): Unit = cmd match {
     case Include(elem) => this += elem
@@ -118,10 +120,11 @@ trait Set[A] extends AnyRef with collection.Set[A]
    */
   override def clone(): Set[A] = super.clone().asInstanceOf[Set[A]]
 
-  /** The hashCode method always yields an error, since it is not
-   *  safe to use mutable stacks as keys in hash tables.
+  /** The <code>hashCode</code> method always yields an error, since it is
+   *  not safe to use mutable stacks as keys in hash tables.
    *
    *  @return never.
    */
-  override def hashCode(): Int = throw new UnsupportedOperationException("unsuitable as hash key")
+  override def hashCode(): Int =
+    throw new UnsupportedOperationException("unsuitable as hash key")
 }

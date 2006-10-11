@@ -21,16 +21,25 @@ final class RichString(s: String) {
 
   private def isLineBreak(c: Char) = c == LF || c == FF
 
-  /** Treat string as a function that maps indices to characters
+  /** Treat string as a function that maps indices to characters.
+   *
+   *  @param index ...
+   *  @return      the character at position <code>index</code>.
    */
   def apply(index: Int): Char = s charAt index
 
-  /** Strip trailing line end character from this string if it has one.
-   *  A line end character is one of
-   *   LF - line feed   (0x0A hex)
-   *   FF - form feed   (0x0C hex)
-   *  If a line feed character LF is preceded by a carriage return CR (0x0D hex),
-   *  the CR character is also stripped (Windows convention)
+  /** <p>
+   *    Strip trailing line end character from this string if it has one.
+   *    A line end character is one of
+   *  </p>
+   *  <ul style="list-style-type: none;">
+   *    <li>LF - line feed   (0x0A hex)</li>
+   *    <li>FF - form feed   (0x0C hex)</li>
+   *  </ul>
+   *  <p>
+   *    If a line feed character LF is preceded by a carriage return CR
+   *    (0x0D hex), the CR character is also stripped (Windows convention).
+   *  </p>
    */
   def stripLineEnd: String = {
     val len = s.length
@@ -44,12 +53,19 @@ final class RichString(s: String) {
     }
   }
 
-  /** Return all lines in this string in an iterator, including trailing line end characters
-   *  The number of strings returned is one greater than the number of line end characters
-   *  in this string. For an empty string, a single empty line is returned.
-   *  A line end character is one of
-   *   LF - line feed   (0x0A hex)
-   *   FF - form feed   (0x0C hex)
+  /** <p>
+   *    Return all lines in this string in an iterator, including trailing
+   *    line end characters.
+   *  </p>
+   *  <p>
+   *    The number of strings returned is one greater than the number of line
+   *    end characters in this string. For an empty string, a single empty
+   *    line is returned. A line end character is one of
+   *  </p>
+   *  <ul style="list-style-type: none;">
+   *    <li>LF - line feed   (0x0A hex)</li>
+   *    <li>FF - form feed   (0x0C hex)</li>
+   *  </ul>
    */
   def linesWithSeparators = new Iterator[String] {
     val len = s.length
@@ -64,14 +80,19 @@ final class RichString(s: String) {
     }
   }
 
-  /** Return all lines in this string in an iterator, excluding trailing line end characters
-   *  I.e. apply `.stripLineEnd' to all lines returned by `linesWithSeparators'
+  /** Return all lines in this string in an iterator, excluding trailing line
+   *  end characters, i.e. apply <code>.stripLineEnd</code> to all lines
+   *  returned by <code>linesWithSeparators</code>.
    */
   def lines = linesWithSeparators map (line => new RichString(line).stripLineEnd)
 
-  /** For every line in this string:
-   *     Strip a leading prefix consisting of blanks or control characters followed by
-   *     `marginChar' from the line.
+  /** <p>
+   *    For every line in this string:
+   *  </p>
+   *  <blockquote>
+   *     Strip a leading prefix consisting of blanks or control characters
+   *     followed by <code>marginChar</code> from the line.
+   *  </blockquote>
    */
   def stripMargin(marginChar: Char): String = {
     val buf = new scala.compat.StringBuilder()
@@ -85,9 +106,13 @@ final class RichString(s: String) {
     buf.toString
   }
 
-  /** For every line in this string:
-   *     Strip a leading prefix consisting of blanks or control characters followed by
-   *     `|' from the line.
+  /** <p>
+   *    For every line in this string:
+   *  </p>
+   *  <blockquote>
+   *     Strip a leading prefix consisting of blanks or control characters
+   *     followed by <code>|</code> from the line.
+   *  </blockquote>
    */
   def stripMargin: String = stripMargin('|')
 }

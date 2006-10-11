@@ -12,13 +12,21 @@
 package scala.collection.immutable
 
 
-/** This class extends the Map interface of collections that unambiguously map
- *  keys to values (i.e. a key is mapped to at least one value).
- *  This class defines the interface for functional map implementations
- *  relying on immutable data structures.
- *  Concrete map implementations have to provide functionality for the
- *  abstract methods in scala.collection.Map as well as for
- *  <code>factory</code>, <code>update</code>, and -.
+/** <p>
+ *    This class extends the <code>Map</code> interface of collections
+ *    that unambiguously map keys to values (i.e. a key is mapped to at
+ *    least one value).
+ *  </p>
+ *  <p>
+ *    This class defines the interface for functional map implementations
+ *    relying on immutable data structures.
+ *  </p>
+ *  <p>
+ *    Concrete map implementations have to provide functionality for
+ *    the abstract methods in <a href="../Map.html" target="contentFrame">
+ *    <code>scala.collection.Map</code></a> as well as for
+ *    <code>factory</code>, <code>update</code>, and <code>-</code>.
+ *  </p>
  *
  *  @author  Matthias Zenger
  *  @author  Erik Stenman
@@ -36,6 +44,10 @@ trait Map[A, B] extends AnyRef with collection.Map[A, B] {
    *  to <code>value</code>. If the map contains already a
    *  mapping for <code>key</code>, it will be overridden by this
    *  function.
+   *
+   *  @param key   ...
+   *  @param value ...
+   *  @return      the created map
    */
   def update(key: A, value: B): Map[A, B]
 
@@ -45,10 +57,12 @@ trait Map[A, B] extends AnyRef with collection.Map[A, B] {
    */
   def -(key: A): Map[A, B]
 
-  /** This method defines syntactic sugar for adding a
-   *  mapping. It is typically used in the following way:
+  /** <p>
+   *    This method defines syntactic sugar for adding a
+   *    mapping. It is typically used in the following way:
+   *  </p>
    *  <pre>
-   *  map + key -> value;
+   *    map + key -> value
    *  </pre>
    */
   def +(key: A): MapTo = new MapTo(key)
@@ -57,6 +71,9 @@ trait Map[A, B] extends AnyRef with collection.Map[A, B] {
    *  to the map. The method assumes that a mapping is represented
    *  by a <code>Pair</code> object who's first component denotes the
    *  key, and who's second component refers to the value.
+   *
+   *  @param mappings ...
+   *  @return         ...
    */
   def incl(mappings: Pair[A, B]*): Map[A, B] = incl(mappings)
 
@@ -81,6 +98,7 @@ trait Map[A, B] extends AnyRef with collection.Map[A, B] {
    *  for the given sequence of keys are removed from the map.
    *
    *  @param keys ...
+   *  @return     the updated map
    */
   def excl(keys: A*): Map[A, B] = excl(keys)
 
@@ -88,6 +106,7 @@ trait Map[A, B] extends AnyRef with collection.Map[A, B] {
    *  iterator over the elements of the <code>keys</code> object.
    *
    *  @param keys ...
+   *  @return     the updated map
    */
   def excl(keys: Iterable[A]): Map[A, B] = {
     val iter = keys.elements
@@ -102,6 +121,7 @@ trait Map[A, B] extends AnyRef with collection.Map[A, B] {
    *  in this map with function <code>f</code>.
    *
    *  @param f A function over key-value pairs
+   *  @return  the updated map
    */
   def map[C](f: Pair[A, B] => C): Map[A, C] = {
     var res = empty[C]
@@ -114,6 +134,7 @@ trait Map[A, B] extends AnyRef with collection.Map[A, B] {
    *  <code>p</code> returns <code>false</code>.
    *
    *  @param p A prediacte over key-value pairs
+   *  @return  the updated map
    */
   def filter(p: Pair[A, B] => Boolean): Map[A, B] = {
     var res = this
@@ -144,6 +165,9 @@ trait Map[A, B] extends AnyRef with collection.Map[A, B] {
 
   /** This method controls how a mapping is represented in the string
    *  representation provided by method <code>toString</code>.
+   *
+   *  @param p ...
+   *  @return  the string representation of a map entry
    */
   def mappingToString(p: Pair[A, B]) = p._1.toString() + " -> " + p._2
 

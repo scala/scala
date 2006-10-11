@@ -15,7 +15,7 @@ package scala.collection
 /** <p>
  *    The class <code>BitSet</code> provides the interface for a space-efficient
  *    implementation of dense integer sets represented as bits in array of
- *    integers. Bit indices are between 0..(capacity-1) inclusive.
+ *    integers. Bit indices are between <code>0..(capacity-1)</code> inclusive.
  *  </p>
  *
  *  @author  Burak Emir, Stephane Micheloud, Nikolay Mihaylov

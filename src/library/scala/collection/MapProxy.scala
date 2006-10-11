@@ -12,7 +12,8 @@
 package scala.collection
 
 
-/** This is a simple wrapper class for <code>scala.collection.Map</code>.
+/** This is a simple wrapper class for <a href="Map.html"
+ *  target="contentFrame"><code>scala.collection.Map</code></a>.
  *  It is most useful for assembling customized map abstractions
  *  dynamically using object composition and forwarding.
  *

@@ -12,7 +12,8 @@
 package scala.collection.mutable
 
 
-/** This is a simple proxy class for <code>scala.collection.mutable.Buffer</code>.
+/** This is a simple proxy class for <a href="Buffer.html"
+ *  target="contentFrame"><code>scala.collection.mutable.Buffer</code></a>.
  *  It is most useful for assembling customized set abstractions
  *  dynamically using object composition and forwarding.
  *

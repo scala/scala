@@ -12,7 +12,8 @@
 package scala.collection
 
 
-/** This is a simple wrapper class for <code>scala.collection.Set</code>.
+/** This is a simple wrapper class for <a href="Set.html"
+ *  target="contentFrame"><code>scala.collection.Set</code></a>.
  *  It is most useful for assembling customized set abstractions
  *  dynamically using object composition and forwarding.
  *

@@ -12,9 +12,14 @@
 package scala.collection.mutable
 
 
-/** This is a simple wrapper class for <code>scala.collection.mutable.Map</code>.
- *  It is most useful for assembling customized map abstractions
- *  dynamically using object composition and forwarding.
+/** <p>
+ *    This is a simple wrapper class for <a href="Map.html"
+ *    target="contentFrame"><code>scala.collection.mutable.Map</code></a>.
+ *  </p>
+ *  <p>
+ *    It is most useful for assembling customized map abstractions
+ *    dynamically using object composition and forwarding.
+ *  </p>
  *
  *  @author  Matthias Zenger
  *  @version 1.0, 21/07/2003

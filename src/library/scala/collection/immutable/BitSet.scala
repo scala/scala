@@ -12,9 +12,9 @@
 package scala.collection.immutable
 
 
-/** The class <code>BitSet</code>provides an immutable bitset view on an
+/** The class <code>BitSet</code> provides an immutable bitset view on an
  *  int array. Instances can conveniently be created from instances of
- *  Bit indices are between 0..(capacity-1) inclusive
+ *  Bit indices are between <code>0..(capacity-1)</code> inclusive.
  *
  *  @param size     <code>size</code> represents the number of relevant bits
  *  @param capacity ...
@@ -33,7 +33,7 @@ class BitSet(val size: Int, val capacity: Int, ba: Array[Int], copy: Boolean)
 {
   import compat.Platform.arraycopy
 
-  protected val arr: Array[Int]  =
+  protected val arr: Array[Int] =
     if (copy) {
       val arr = new Array[Int](ba.length)
       arraycopy(ba, 0, arr, 0, ba.length)

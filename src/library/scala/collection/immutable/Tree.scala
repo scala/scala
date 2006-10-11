@@ -41,19 +41,29 @@ package scala.collection.immutable
 
 import java.util.NoSuchElementException
 
-/** General Balanced Trees - highly efficient functional dictionaries.
- *
- *  <p>An efficient implementation of Prof. Arne Andersson's General
- *  Balanced Trees. These have no storage overhead compared to plain
- *  unbalanced binary trees, and their performance is in general better
- *  than AVL trees.</p>
- *  <p>This implementation does not balance the trees after deletions.
- *  Since deletions don't increase the height of a tree, this should
- *  be OK in most applications. A balance method is provided for those
- *  cases where rebalancing is needed.</p>
- *  <p>The tree consists of entries conatining a key with an order.</p>
- *  <p>When instanciating the tree an order for the keys has to be
- *  supplied.</p>
+/** <p>
+ *    General Balanced Trees - highly efficient functional dictionaries.
+ *  </p>
+ *  <p>
+ *    An efficient implementation of Prof. Arne Andersson's
+ *    <a href="http://citeseer.ist.psu.edu/andersson99general.html"
+ *    target="_top">General Balanced Trees</a>. These have no storage overhead
+ *    compared to plain unbalanced binary trees, and their performance is in
+ *    general better than AVL trees.
+ *  </p>
+ *  <p>
+ *    This implementation does not balance the trees after deletions.
+ *    Since deletions don't increase the height of a tree, this should
+ *    be OK in most applications. A balance method is provided for those
+ *    cases where rebalancing is needed.
+ *  </p>
+ *  <p>
+ *    The tree consists of entries conatining a key with an order.
+ *  </p>
+ *  <p>
+ *    When instanciating the tree an order for the keys has to be
+ *    supplied.
+ *  </p>
  *
  *  @author  Erik Stenman, Michel Schinz
  *  @version 1.1, 2005-01-20
@@ -92,18 +102,21 @@ abstract class Tree[A <% Ordered[A], B]() extends AnyRef {
    */
   protected def tree: aNode = GBLeaf[A,B]()
 
-  /** This abstract method should be defined by a concrete implementation
-   *   C[T] as something like:
-   *    <pre>
-   *     override def New(sz:Int,t:aNode):This {
-   *       new C[T](order) {
-   *        override def size=sz;
-   *        override protected def tree:aNode=t;
-   *     }
-   *    </pre>
-   *   The concrete implementation should also override the def of This
-   *   <code>override type This = C[T];</code>
-   *
+  /** <p>
+   *    This abstract method should be defined by a concrete implementation
+   *    <code>C[T]</code> as something like:
+   *  </p>
+   *  <pre>
+   *    <b>override def</b> New(sz: Int, t: aNode): This {
+   *      <b>new</b> C[T](order) {
+   *        <b>override def</b> size = sz
+   *        <b>override protected def</b> tree: aNode = t
+   *    }
+   *  </pre>
+   *  <p>
+   *     The concrete implementation should also override the def of This
+   *     <code>override type This = C[T];</code>
+   *  </p>
    */
   protected def New(sz: Int, t: aNode): This
 
@@ -157,8 +170,8 @@ abstract class Tree[A <% Ordered[A], B]() extends AnyRef {
   /** Check if this map maps <code>key</code> to a value and return the
    *  value if it exists.
    *
-   *  @param  key     the key of the mapping of interest
-   *  @return the value of the mapping, if it exists
+   *  @param  key the key of the mapping of interest
+   *  @return     the value of the mapping, if it exists
    */
   protected def findValue(key: A): Option[B] =
     tree.get(key)
@@ -360,7 +373,11 @@ private case class GBNode[A <% Ordered[A],B](key: A,
       Triple(key1, value1, GBNode(key, value, smaller1, bigger))
   }
 
-  def balance(s:int): GBTree[A,B] =
+  /**
+   *  @param s ...
+   *  @return  ...
+   */
+  def balance(s: int): GBTree[A,B] =
     balance_list(toList(scala.Nil), s)
 
   protected def balance_list(list: List[Pair[A,B]], s: int): GBTree[A,B] = {
@@ -374,12 +391,11 @@ private case class GBNode[A <% Ordered[A],B](key: A,
         val Pair(t2, l2) = bal(l1, s2)
         val t = GBNode(k, v, t1, t2)
         Pair(t, l2)
+      } else if (s == 1) {
+        val Pair(k,v) :: rest = list
+        Pair(GBNode(k, v, empty, empty), rest)
       } else
-        if (s == 1) {
-          val Pair(k,v) :: rest = list
-          Pair(GBNode(k, v, empty, empty), rest)
-        } else
-          Pair(empty, list)
+        Pair(empty, list)
     }
     bal(list, s)._1
   }
