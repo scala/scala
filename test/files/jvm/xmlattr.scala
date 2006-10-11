@@ -1,5 +1,5 @@
 import scala.xml._
-object foo extends Application {
+object Test extends Application {
   {
   var z:NodeSeq = null
 
