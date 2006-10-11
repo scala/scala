@@ -54,12 +54,6 @@ abstract class MetaData extends Iterable[MetaData] {
 
   def isPrefixed: Boolean
 
-  //def containedIn(m:MetaData): Boolean
-
-  //def deepCopy: MetaData
-
-  //def deepCopy(tail:MetaData): MetaData
-
   /** deep equals method */
   override def equals(that: Any) = {
     that match {
@@ -145,5 +139,12 @@ abstract class MetaData extends Iterable[MetaData] {
   }
 
   def wellformed(scope: NamespaceBinding): Boolean
+
+  def remove(key:String): MetaData
+
+  def remove(namespace: String, scope: NamespaceBinding, key: String): MetaData
+
+  final def remove(namespace: String, owner: Node, key: String): MetaData =
+    remove(namespace, owner.scope, key)
 
 }

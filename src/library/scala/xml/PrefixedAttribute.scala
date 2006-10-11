@@ -13,43 +13,33 @@ package scala.xml
 
 import compat.StringBuilder
 
-/** prefixed attributes always have a non-null namespace
+/** prefixed attributes always have a non-null namespace.
+ *  @param value the attribute value, which may not be null
  */
 class PrefixedAttribute(val pre: String,
                         val key: String,
                         val value: Seq[Node],
                         val next: MetaData) extends MetaData {
 
+  if(value == null)
+    throw new UnsupportedOperationException("value is null")
+
   /** same as this(key, Utility.parseAttributeValue(value), next) */
   def this(pre: String, key: String, value: String, next: MetaData) =
     this(pre, key, Utility.parseAttributeValue(value), next)
 
-  /* verify that value is a proper attribute value (references, no &lt)
-  Utility.checkAttributeValue(value) match {
-    case null =>
-    case msg  => throw new MalformedAttributeException(msg)
-  }
-  */
+  /*
+   // the problem here is the fact that we cannot remove the proper attribute from
+   // next, and thus cannot guarantee that hashcodes are computed properly
+  def this(pre: String, key: String, value: scala.AllRef, next: MetaData) =
+    throw new UnsupportedOperationException("can't construct prefixed nil attributes")
+ */
 
   /** Returns a copy of this unprefixed attribute with the given
    *  next field.
    */
   def copy(next: MetaData) =
     new PrefixedAttribute(pre, key, value, next)
-
-  //** duplicates the MetaData (deep copy), not preserving order */
-  //def deepCopy: MetaData = deepCopy(null)
-
-  //** duplicates the MetaData (deep copy), prepending it to tail */
-  /*
-  def deepCopy(tail: MetaData): MetaData = {
-    val md = copy(tail)
-    if (null == next)
-      md
-    else
-      next.deepCopy(md)
-  }
-  */
 
   def equals1(m: MetaData) =
      (m.isPrefixed &&
@@ -74,11 +64,14 @@ class PrefixedAttribute(val pre: String,
   /** returns true */
   final def isPrefixed = true
 
+  /** returns the hashcode.
+   */
   override def hashCode() =
-    pre.hashCode() * 41 + key.hashCode() * 7 + value.hashCode() * 3 + next.hashCode()
+    pre.hashCode() * 41 + key.hashCode() * 7 + next.hashCode()
 
 
-  def toString1(sb:StringBuilder): Unit = {
+  /** appends string representation of only this attribute to stringbuffer */
+  def toString1(sb:StringBuilder): Unit = if(value!=null) {
     sb.append(pre)
     sb.append(':')
     sb.append(key)
@@ -94,6 +87,15 @@ class PrefixedAttribute(val pre: String,
     (null == next(scope.getURI(pre), scope, key) &&
      next.wellformed(scope))
   }
+
+  def remove(key: String) =
+    copy(next.remove(key))
+
+  def remove(namespace: String, scope: NamespaceBinding, key: String): MetaData =
+    if (key == this.key && scope.getURI(pre) == namespace)
+      next
+    else
+      next.remove(namespace, scope, key)
 
 }
 

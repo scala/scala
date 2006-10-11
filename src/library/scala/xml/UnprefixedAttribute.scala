@@ -13,20 +13,16 @@ package scala.xml
 
 import compat.StringBuilder
 
-/** unprefixed attributes have the null namespace
+/** unprefixed attributes have the null namespace, and no prefix field
+ *
  */
-class UnprefixedAttribute(val key: String, val value: Seq[Node], val next: MetaData) extends MetaData {
+class UnprefixedAttribute(val key: String, val value: Seq[Node], next1: MetaData) extends MetaData {
+
+  val next = if(value != null) next1 else next1.remove(key)
 
   /** same as this(key, Utility.parseAttributeValue(value), next) */
   def this(key: String, value: String, next: MetaData) =
-    this(key, Utility.parseAttributeValue(value), next)
-
-  /* verify that value is a proper attribute value (references, no &lt)
-  Utility.checkAttributeValue(value) match {
-    case null =>
-    case msg  => throw new MalformedAttributeException(msg)
-  }
-*/
+    this(key, if(value!=null) Utility.parseAttributeValue(value) else {val z:NodeSeq=null;z}, next)
 
   /** returns a copy of this unprefixed attribute with the given next field*/
   def copy(next: MetaData) =
@@ -59,13 +55,16 @@ class UnprefixedAttribute(val key: String, val value: Seq[Node], val next: MetaD
   def apply(namespace: String, scope: NamespaceBinding, key: String): Seq[Node] =
     next(namespace, scope, key)
 
+  /** returns the hashcode.
+   */
   override def hashCode() =
-    key.hashCode() * 7 + value.hashCode() * 53 + next.hashCode()
+    key.hashCode() * 7 + { if(value!=null) value.hashCode() * 53 else 0 } + next.hashCode()
 
   /** returns false */
   final def isPrefixed = false
 
-  def toString1(sb:StringBuilder): Unit = {
+  /** appends string representation of only this attribute to stringbuffer */
+  def toString1(sb:StringBuilder): Unit = if(value!=null) {
     sb.append(key)
     sb.append('=')
     val sb2 = new StringBuilder()
@@ -77,6 +76,12 @@ class UnprefixedAttribute(val key: String, val value: Seq[Node], val next: MetaD
 
   def wellformed(scope: NamespaceBinding): Boolean =
     (null == next(null, scope, key)) && next.wellformed(scope)
+
+  def remove(key: String) =
+    if(this.key == key) next else copy(next.remove(key))
+
+  def remove(namespace: String, scope: NamespaceBinding, key: String): MetaData =
+    next.remove(namespace, scope, key)
 
 }
 

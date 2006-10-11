@@ -73,4 +73,7 @@ case object Null extends MetaData {
 
   override def wellformed(scope: NamespaceBinding) = true
 
+  def remove(key: String) = this
+
+  def remove(namespace: String, scope: NamespaceBinding, key: String) = this
 }
