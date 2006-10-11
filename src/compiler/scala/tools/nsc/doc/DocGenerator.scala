@@ -6,7 +6,7 @@
 
 package scala.tools.nsc.doc
 
-import java.io.{File,FileOutputStream,FileWriter}
+import java.io.{File, FileOutputStream, FileWriter}
 import java.util.StringTokenizer
 import java.util.regex.Pattern
 
@@ -274,9 +274,9 @@ abstract class DocGenerator extends Models {
      *  @return     ...
      */
     def fullHeader(mmbr: HasTree): NodeSeq = <span>{ {
-        if (!mmbr.isInstanceOf[ImplMod]) {
-            <a name = {Utility.escape(mmbr.tree.symbol.nameString)}></a>;
-        } else NodeSeq.Empty;
+        if (!mmbr.isInstanceOf[ImplMod])
+          <a name = {Utility.escape(mmbr.tree.symbol.nameString)}></a>;
+        else NodeSeq.Empty
       } }<dl><dt>
       { attrsFor(mmbr.tree) }
       <code>
@@ -289,21 +289,28 @@ abstract class DocGenerator extends Models {
       </dl>
       { fullComment(mmbr) }
       { listSubclasses(mmbr) } <hr/>
-      { lists(mmbr) }  </span>;
+      { lists(mmbr) } </span>;
 
-    /** Return a NodeSeq with the known subclasses for 'mmbr', if any. */
-    def listSubclasses(mmbr: HasTree): NodeSeq = {
+    /** Return a NodeSeq with the known subclasses for <code>mmbr</code>, if any.
+     *
+     *  @param mmbr ...
+     *  @return     ...
+     */
+    def listSubclasses(mmbr: HasTree): NodeSeq =
       if (!subclasses(mmbr.tree.symbol).isEmpty)
-        <dl><dt><b>Direct known subclasses:</b></dt>
-        <dd>
-        { val links =
-            for (val subc <- subclasses(mmbr.tree.symbol))
-              yield  aref(urlFor(subc), contentFrame, subc.nameString)
-          links.reduceRight { (link: Seq[Node], seq: Seq[Node]) => link.concat(Text(", ")).concat(seq) }
-        } </dd> </dl>
+        <dl>
+          <dt style="margin:10px 0 0 20px;">
+            <b>Direct known subclasses:</b>
+          </dt>
+          <dd>{ {
+            val links =
+              for (val subc <- subclasses(mmbr.tree.symbol)) yield
+                aref(urlFor(subc), contentFrame, subc.nameString)
+            links.reduceRight { (link: Seq[Node], seq: Seq[Node]) => link.concat(Text(", ")).concat(seq) }
+          } }</dd>
+        </dl>;
       else
         NodeSeq.Empty
-    }
 
     def lists(mmbr: HasTree) = mmbr match {
       case cmod: ImplMod => <span>{ listMembersShort(mmbr) }

@@ -6,15 +6,7 @@
 
 package scala.tools.nsc
 
-/** <p>
- *    An nsc sub-component.
- *  </p>
- *  <dl class="subclasses">
- *    <dt><b>Direct Known Subclasses:</b></dt>
- *    <dd>
- *      <a href="transform/Transform.html" target="contentFrame">Transform</a>
- *   </dd>
- *  </dl>
+/** An nsc sub-component.
  *
  *  @author Martin Odersky
  */

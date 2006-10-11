@@ -9,15 +9,7 @@ package scala.tools.nsc.symtab
 import scala.tools.nsc.util.NameTransformer
 import scala.tools.util.UTF8Codec
 
-/** <p>
- *    The class <code>Names</code> ...
- *  </p>
- *  <dl class="subclasses">
- *    <dt><b>Direct Known Subclasses:</b></dt>
- *    <dd>
- *      <a href="SymbolTable.html" target="contentFrame">SymbolTable</a>
- *   </dd>
- *  </dl>
+/** The class <code>Names</code> ...
  *
  *  @author  Martin Odersky
  *  @version 1.0, 05/02/2005

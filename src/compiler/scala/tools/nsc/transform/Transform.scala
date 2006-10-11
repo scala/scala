@@ -4,23 +4,14 @@
  */
 // $Id$
 
-package scala.tools.nsc.transform;
+package scala.tools.nsc.transform
 
 /** <p>
  *    A base class for transforms.
+ *  </p>
+ *  <p>
  *    A transform contains a compiler phase which applies a tree transformer.
  *  </p>
- *  <dl class="subclasses">
- *    <dt><b>Direct Known Subclasses:</b></dt>
- *    <dd>
- *      <a href="InfoTransform.html" target="contentFrame">CleanUp</a>,
- *      <a href="CleanUp.html" target="contentFrame">Constructors</a>,
- *      <a href="InfoTransform.html" target="contentFrame">InfoTransform</a>,
- *      <a href="LiftCode.html" target="contentFrame">LiftCode</a>,
- *      <a href="SampleTransform.html" target="contentFrame">SampleTransform</a>,
- *      <a href="TailCalls.html" target="contentFrame">TailCalls</a>
- *   </dd>
- *  </dl>
  *
  *  @author Martin Odersky
  *  @version 1.0

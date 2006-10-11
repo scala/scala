@@ -21,16 +21,7 @@ object SourceFile {
   def isLineBreak(c: Char) = c == LF || c == FF || c == CR || c == SU
 }
 
-/** <p>
- *    Uses positions that are offsets rather than line/column pairs.
- *  </p>
- *  <dl class="subclasses">
- *    <dt><b>Direct Known Subclasses:</b></dt>
- *    <dd>
- *      <a href="CompoundSourceFile.html" target="contentFrame">CompoundSourceFile</a>,
- *      <a href="SourceFileFragment.html" target="contentFrame">SourceFileFragment</a>
- *   </dd>
- *  </dl>
+/** Uses positions that are offsets rather than line/column pairs.
  *
  *  @author  Sean McDirmid
  *  @version 1.0
