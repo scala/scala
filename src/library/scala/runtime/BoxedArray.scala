@@ -13,20 +13,6 @@ package scala.runtime
 
 /**
  *  <p>A class representing <code>Array[T]</code></p>
- *  <dl>
- *    <dt><b>Direct Known Subclasses:</b></dt>
- *    <dd>
- *      <a href="BoxedAnyArray.html" target="contentFrame">BoxedAnyArray</a>,
- *      <a href="BoxedBooleanArray.html" target="contentFrame">BoxedBooleanArray</a>,
- *      <a href="BoxedByteArray.html" target="contentFrame">BoxedByteArray</a>,
- *      <a href="BoxedDoubleArray.html" target="contentFrame">BoxedDoubleArray</a>,
- *      <a href="BoxedFloatArray.html" target="contentFrame">BoxedFloatArray</a>,
- *      <a href="BoxedIntArray.html" target="contentFrame">BoxedIntArray</a>,
- *      <a href="BoxedLongArray.html" target="contentFrame">BoxedLongArray</a>,
- *      <a href="BoxedObjectArray.html" target="contentFrame">BoxedObjectArray</a>,
- *      <a href="BoxedShortArray.html" target="contentFrame">BoxedShortArray</a>
- *   </dd>
- *  </dl>
  */
 abstract class BoxedArray extends PartialFunction[Int, Object] with Seq[Object] {
   /** The length of the array */

@@ -13,20 +13,6 @@ package scala.reflect
 
 import Predef.Pair
 
-/**
- *  <dl>
- *    <dt><b>Direct Known Subclasses:</b></dt>
- *    <dd>
- *      <a href="AppliedType.html" target="contentFrame">AppliedType</a>,
- *      <a href="MethodType.html" target="contentFrame">MethodType</a>,
- *      <a href="NamedType.html" target="contentFrame">NamedType</a>,
- *      <a href="PolyType.html" target="contentFrame">PolyType</a>,
- *      <a href="PrefixedType.html" target="contentFrame">PrefixedType</a>,
- *      <a href="SingleType.html" target="contentFrame">SingleType</a>,
- *      <a href="ThisType.html" target="contentFrame">ThisType</a>
- *   </dd>
- *  </dl>
- */
 abstract class Type
 
 case object NoPrefix extends Type

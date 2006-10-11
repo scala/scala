@@ -54,13 +54,6 @@ import java.util.NoSuchElementException
  *  <p>The tree consists of entries conatining a key with an order.</p>
  *  <p>When instanciating the tree an order for the keys has to be
  *  supplied.</p>
- *  <dl class="subclasses">
- *    <dt><b>Direct Known Subclasses:</b></dt>
- *    <dd>
- *      <a href="TreeMap.html" target="contentFrame">TreeMap</a>,
- *      <a href="TreeSet.html" target="contentFrame">TreeSet</a>
- *   </dd>
- *  </dl>
  *
  *  @author  Erik Stenman, Michel Schinz
  *  @version 1.1, 2005-01-20

@@ -286,8 +286,24 @@ abstract class DocGenerator extends Models {
       <em>{ Text(nameFor(mmbr.tree)) }</em>
       { typesFor(mmbr) }{ argsFor(mmbr)}{resultFor(mmbr) }
       </dt> { extendsFor(mmbr) }
-      </dl> { fullComment(mmbr) } <hr/>
-            { lists(mmbr) }  </span>;
+      </dl>
+      { fullComment(mmbr) }
+      { listSubclasses(mmbr) } <hr/>
+      { lists(mmbr) }  </span>;
+
+    /** Return a NodeSeq with the known subclasses for 'mmbr', if any. */
+    def listSubclasses(mmbr: HasTree): NodeSeq = {
+      if (!subclasses(mmbr.tree.symbol).isEmpty)
+        <dl><dt><b>Direct known subclasses:</b></dt>
+        <dd>
+        { val links =
+            for (val subc <- subclasses(mmbr.tree.symbol))
+              yield  aref(urlFor(subc), contentFrame, subc.nameString)
+          links.reduceRight { (link: Seq[Node], seq: Seq[Node]) => link.concat(Text(", ")).concat(seq) }
+        } </dd> </dl>
+      else
+        NodeSeq.Empty
+    }
 
     def lists(mmbr: HasTree) = mmbr match {
       case cmod: ImplMod => <span>{ listMembersShort(mmbr) }
@@ -538,6 +554,16 @@ abstract class DocGenerator extends Models {
 
   private val loader = getClass().getClassLoader()
 
+  import scala.collection.mutable.{Map, HashMap}
+
+  /** Map a class to it's known subclasses */
+  private val subclasses = new HashMap[Symbol, List[Symbol]] {
+    override def default(key: Symbol): List[Symbol] = {
+      this += key -> (Nil: List[Symbol])
+      Nil: List[Symbol]
+    }
+  }
+
   def process(units: Iterator[CompilationUnit]): Unit = {
     var members = emptyMap
 
@@ -551,6 +577,9 @@ abstract class DocGenerator extends Models {
           if (!sym.isEmptyPackageClass) {
             if (!topLevel.contains(sym)) topLevel = topLevel.update(sym, emptyMap)
             topLevel = topLevel.update(sym, organize0(mmbr, topLevel(sym)))
+          }
+          for (val p <- cdef.symbol.info.parents) {
+            subclasses(p.symbol) = cdef.symbol :: subclasses(p.symbol)
           }
         case _ =>
           error("unknown: " + mmbr.tree + " " + mmbr.tree.getClass())
