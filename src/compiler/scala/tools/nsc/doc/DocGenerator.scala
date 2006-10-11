@@ -588,6 +588,13 @@ abstract class DocGenerator extends Models {
           for (val p <- cdef.symbol.info.parents) {
             subclasses(p.symbol) = cdef.symbol :: subclasses(p.symbol)
           }
+          import Flags._;
+          val mmbrs = cdef.symbol.info.findMember(nme.ANYNAME, MUTABLE | METHOD | BRIDGE | ACCESSOR, 0, false).alternatives;
+          for (val c <- mmbrs; c.isClass)
+            for (val p <- c.info.parents) {
+              subclasses(p.symbol) = c :: subclasses(p.symbol)
+            }
+
         case _ =>
           error("unknown: " + mmbr.tree + " " + mmbr.tree.getClass())
       }
