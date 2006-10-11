@@ -13,34 +13,59 @@ package scala.xml
 
 import compat.StringBuilder
 
-/** Attribute information item, and linked list of attribute information items.
- *  These are triples consisting of prefix,key,value. To obtain the namespace,
- *  getNamespace must be called with the parent. If next is null, this is
- *  the last attribute in the MetaData list.
- *
- * either an UnprefixedAttribute or a PrefixedAttribute
+/** <p>
+ *    Attribute information item, and linked list of attribute information items.
+ *    These are triples consisting of <code>prefix,key,value</code>. To obtain
+ *    the namespace, <code>getNamespace</code> must be called with the parent.
+ *    If next is null, this is the last attribute in the MetaData list.
+ * </p>
+ * <p>
+ *   Either an UnprefixedAttribute or a PrefixedAttribute
+ * </p>
  *
  * @todo _vlue should be a normalized attribute value
  */
 [serializable]
 abstract class MetaData extends Iterable[MetaData] {
 
-  /** appends given MetaData items to this MetaData list */
+  /** appends given MetaData items to this MetaData list.
+   *
+   *  @param m ...
+   *  @return  ...
+   */
   def append(m: MetaData): MetaData =
     next.append(copy(m))
 
-  def apply(s:String): Seq[Node]
+  /**
+   *  @param s ...
+   *  @return  ...
+   */
+  def apply(s: String): Seq[Node]
 
-  /** convenience method, same as apply(namespace, owner.scope, key) */
+  /** convenience method, same as <code>apply(namespace, owner.scope, key)</code>.
+   *
+   *  @param namespace ...
+   *  @param owner     ...
+   *  @param key       ...
+   *  @return          ...
+   */
   final def apply(namespace: String, owner: Node, key: String): Seq[Node] =
     apply(namespace, owner.scope, key)
 
   def apply(uri:String, scp:NamespaceBinding, k:String): Seq[Node]
 
-   def containedIn1(m: MetaData): Boolean =
-     m.equals1(this) || containedIn1(m.next)
+  /**
+   *  @param m ...
+   *  @return  <code>true</code> iff ...
+   */
+  def containedIn1(m: MetaData): Boolean =
+    m.equals1(this) || containedIn1(m.next)
 
-  /** returns a copy of this MetaData item with next field set to argument */
+  /** returns a copy of this MetaData item with next field set to argument.
+   *
+   *  @param next ...
+   *  @return     ...
+   */
   def copy(next: MetaData): MetaData
 
   /** if owner is the element of this metadata item, returns namespace */
@@ -55,17 +80,16 @@ abstract class MetaData extends Iterable[MetaData] {
   def isPrefixed: Boolean
 
   /** deep equals method */
-  override def equals(that: Any) = {
+  override def equals(that: Any) =
     that match {
       case m: MetaData =>
         var res = (this.length == m.length) && (this.hashCode() == m.hashCode())
         val it = this.elements
         while (res && it.hasNext) { res = it.next.containedIn1(m) }
-      res
-
-      case _          => false
+        res
+      case _ =>
+        false
     }
-  }
 
   /** returns an iterator on attributes */
   def elements = new Iterator[MetaData] {
@@ -108,7 +132,13 @@ abstract class MetaData extends Iterable[MetaData] {
   final def get(namespace: String, owner: Node, key: String): Option[Seq[Node]] =
     get(namespace, owner.scope, key)
 
-  /** gets value of qualified (prefixed) attribute with given key */
+  /** gets value of qualified (prefixed) attribute with given key.
+   *
+   *  @param namespace ...
+   *  @param scope     ...
+   *  @param key       ...
+   *  @return          <code>Some(x)</code> iff ...
+   */
   final def get(namespace: String, scope: NamespaceBinding, key: String): Option[Seq[Node]] =
     apply(namespace, scope, key) match {
       case null => None
@@ -138,12 +168,32 @@ abstract class MetaData extends Iterable[MetaData] {
     next.toString(sb)
   }
 
+  /**
+   *  @param scope ...
+   *  @return      <code>true</code> iff ...
+   */
   def wellformed(scope: NamespaceBinding): Boolean
 
+  /**
+   *  @param key ...
+   *  @return    ...
+   */
   def remove(key:String): MetaData
 
+  /**
+   *  @param namespace ...
+   *  @param scope     ...
+   *  @param key       ...
+   *  @return          ...
+   */
   def remove(namespace: String, scope: NamespaceBinding, key: String): MetaData
 
+  /**
+   *  @param namespace ...
+   *  @param owner     ...
+   *  @param key       ...
+   *  @return          ...
+   */
   final def remove(namespace: String, owner: Node, key: String): MetaData =
     remove(namespace, owner.scope, key)
 
