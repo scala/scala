@@ -198,9 +198,6 @@ abstract class SymbolicXMLBuilder(make: TreeBuilder, p: Parsers # Parser, preser
     atPos(pos) { Select(_buffer, _toList) }
   }
 
-  def makeXMLseqPat(pos: int, args: List[Tree]) =
-    atPos(pos) {Apply(_scala_Seq, args)}
-
   /** returns Some(prefix) if pre:name, None otherwise */
   def getPrefix(name: String): Option[String] = {
     val i = name.indexOf(':')

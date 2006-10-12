@@ -918,7 +918,6 @@ trait Parsers requires SyntaxAnalyzer {
           t = literal(false, false)
         case XMLSTART =>
           t = xmlp.xLiteral
-          //Console.println("successfully parsed XML at "+t); // DEBUG
         case IDENTIFIER | BACKQUOTED_IDENT | THIS | SUPER =>
           t = path(true, false)
         case LPAREN =>
@@ -1210,9 +1209,7 @@ trait Parsers requires SyntaxAnalyzer {
         accept(RPAREN)
         p
       case XMLSTART =>
-        val r = xmlp.xLiteralPattern
-        //Console.println("successfully parsed xml pattern "+r); DEBUG
-        r
+        xmlp.xLiteralPattern
       case _ =>
         if (settings.migrate.value &&
             in.token == MATCH || in.token == REQUIRES || in.token == IMPLICIT)

@@ -267,7 +267,6 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
    *  @postcond: xEmbeddedBlock == false!
    */
   def content_BRACE(p: Int, ts:mutable.ArrayBuffer[Tree]): Unit = {
-    //Console.println("content_BRACE, p = "+s.currentPos)
     if (xCheckEmbeddedBlock)
       ts.append(xEmbeddedExpr)
     else {
@@ -510,31 +509,12 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
     init;
     val oldMode = handle.isPattern;
     handle.isPattern = true;
-    val pos = s.currentPos;
     var tree = xPattern; xSpaceOpt;
-    //if (ch == '<') {
-      var ts: List[Tree] = List();
-      ts = tree :: ts;
-
-      s.next.token = EMPTY; s.nextToken(); /*  ?????????? */
-      while( token == Tokens.XMLSTART ) {// ???????????????????????????
-      //while (ch == '<' /* && lookahead != '-'*/) {
-        nextch;
-        //Console.println("DEBUG 2: I am getting char '"+ch+"'"); // DEBUG
-        ts = xPattern :: ts;
-        //xSpaceOpt;  // ????
-        s.next.token = EMPTY; s.nextToken(); /*  ?????????? */
-        //Console.println("DEBUG 3: resync'ed, token = '"+s+"'"); // DEBUG
-      }
-      //Console.println("current token == "+s);
-      tree = handle.makeXMLseqPat( pos, ts.reverse );
-    //}
     handle.isPattern = oldMode;
-    //Console.println("out of xLiteralPattern, parsed:"+tree.toString());
-    // s.next.token = EMPTY; // ??
-    // s.nextToken(); /* s.fetchToken(); */ // ??
+    s.next.token = Tokens.EMPTY;
+    s.nextToken()
     tree
-  }catch {
+  } catch {
     case _:ArrayIndexOutOfBoundsException =>
       s.syntaxError(debugLastStartElement.top._1,
                     "missing end tag in XML literal for <"
@@ -549,7 +529,6 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
       reportSyntaxError(" expected end of Scala block");
     }
     init;
-    //Console.println("[out of xScalaExpr s.ch = "+s.ch+" ch="+ch+"]");
     return b
   }
 
@@ -579,7 +558,7 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
   }
 
   def reportSyntaxError(str: String) = {
-    s.syntaxError("in XML literal: " + str)
+    s.syntaxError(pos-1, "in XML literal: " + str)
     nextch
   }
 
