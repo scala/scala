@@ -224,7 +224,7 @@ abstract class Source extends Iterator[Char] {
 
     if (!it.hasNext) // this should not happen
       throw new java.lang.IllegalArgumentException(
-        "line "+line+" does not exist?!"
+        "line " + line + " does not exist?!"
       );
 
     var ch = it.next
@@ -258,22 +258,23 @@ abstract class Source extends Iterator[Char] {
     ch
   }
 
-  /** reports an error message to console.
+  /** Reports an error message to console.
    *
    *  @param pos ...
    *  @param msg the error message to report
    */
   def reportError(pos: Int, msg: String): Unit =
-    report(pos, msg, java.lang.System.out)
+    reportError(pos, msg, java.lang.System.out)
 
-  /**
+  /** Reports an error message to the output stream <code>out</code>.
+   *
    *  @param pos ...
    *  @param msg the error message to report
    *  @param out ...
    */
   def reportError(pos: Int, msg: String, out: PrintStream): Unit = {
     nerrors = nerrors + 1
-    report(pos, msg, java.lang.System.out)
+    report(pos, msg, out)
   }
 
   /**
@@ -311,7 +312,7 @@ abstract class Source extends Iterator[Char] {
    */
   def reportWarning(pos: Int, msg: String, out: PrintStream): Unit = {
     nwarnings = nwarnings + 1
-    report(pos, "warning! "+msg, out)
+    report(pos, "warning! " + msg, out)
   }
 
   /** the actual reset method */
