@@ -119,7 +119,7 @@ trait Definitions requires SymbolTable {
       def functionApply(n: Int) = getMember(FunctionClass(n), nme.apply)
       def functionType(formals: List[Type], restpe: Type) =
         if (formals.length <= MaxFunctionArity) {
-          val sym = FunctionClass(formals.length);
+          val sym = FunctionClass(formals.length)
           typeRef(sym.typeConstructor.prefix, sym, formals ::: List(restpe))
         } else NoType;
       def isFunctionType(tp: Type): boolean = tp match {
@@ -218,11 +218,11 @@ trait Definitions requires SymbolTable {
         j = fullname.pos('.', i)
       }
       val result =
-        if (module) sym.info.member(fullname.subName(i, j)).suchThat(.hasFlag(MODULE));
-        else sym.info.member(fullname.subName(i, j).toTypeName);
+        if (module) sym.info.member(fullname.subName(i, j)).suchThat(.hasFlag(MODULE))
+        else sym.info.member(fullname.subName(i, j).toTypeName)
       if (result == NoSymbol) {
-        if (settings.debug.value) { System.out.println(sym.info); System.out.println(sym.info.members); }//debug
-        throw new FatalError((if (module) "object " else "class ") + fullname + " not found.");
+        if (settings.debug.value) { System.out.println(sym.info); System.out.println(sym.info.members) }//debug
+        throw new FatalError((if (module) "object " else "class ") + fullname + " not found.")
       }
       result
     }
@@ -531,9 +531,9 @@ trait Definitions requires SymbolTable {
       ScalaRunTimeModule = getModule("scala.runtime.ScalaRunTime")
       RepeatedParamClass = newCovariantPolyClass(
         ScalaPackageClass, nme.REPEATED_PARAM_CLASS_NAME,
-        tparam => typeRef(SeqClass.typeConstructor.prefix, SeqClass, List(tparam.typeConstructor)));
+        tparam => typeRef(SeqClass.typeConstructor.prefix, SeqClass, List(tparam.typeConstructor)))
       ByNameParamClass = newCovariantPolyClass(
-        ScalaPackageClass, nme.BYNAME_PARAM_CLASS_NAME, tparam => AnyClass.typeConstructor);
+        ScalaPackageClass, nme.BYNAME_PARAM_CLASS_NAME, tparam => AnyClass.typeConstructor)
       for (val i <- 1 to MaxTupleArity)
         TupleClass(i) = getClass("scala.Tuple" + i)
       for (val i <- 0 to MaxFunctionArity) {
@@ -545,41 +545,42 @@ trait Definitions requires SymbolTable {
       val booltype = BooleanClass.typeConstructor
 
       // members of class scala.Any
-      Any_== = newMethod(AnyClass, nme.EQ, anyparam, booltype) setFlag FINAL;
-      Any_!= = newMethod(AnyClass, nme.NE, anyparam, booltype) setFlag FINAL;
-      Any_equals = newMethod(AnyClass, nme.equals_, anyparam, booltype);
+      Any_== = newMethod(AnyClass, nme.EQ, anyparam, booltype) setFlag FINAL
+      Any_!= = newMethod(AnyClass, nme.NE, anyparam, booltype) setFlag FINAL
+      Any_equals = newMethod(AnyClass, nme.equals_, anyparam, booltype)
       Any_hashCode = newMethod(
-        AnyClass, nme.hashCode_, List(), IntClass.typeConstructor);
+        AnyClass, nme.hashCode_, List(), IntClass.typeConstructor)
       Any_toString = newMethod(
-        AnyClass, nme.toString_, List(), StringClass.typeConstructor);
+        AnyClass, nme.toString_, List(), StringClass.typeConstructor)
 
       Any_isInstanceOf = newPolyMethod(
-        AnyClass, nme.isInstanceOf, tparam => booltype) setFlag FINAL;
+        AnyClass, nme.isInstanceOf, tparam => booltype) setFlag FINAL
       Any_asInstanceOf = newPolyMethod(
-        AnyClass, nme.asInstanceOf, tparam => tparam.typeConstructor) setFlag FINAL;
+        AnyClass, nme.asInstanceOf, tparam => tparam.typeConstructor) setFlag FINAL
       Any_isInstanceOfErased = newPolyMethod(
-        AnyClass, nme.isInstanceOfErased, tparam => booltype) setFlag FINAL;
+        AnyClass, nme.isInstanceOfErased, tparam => booltype) setFlag FINAL
       //todo: do we need this?
       Any_asInstanceOfErased = newPolyMethod(
-        AnyClass, nme.asInstanceOfErased, tparam => tparam.typeConstructor) setFlag FINAL;
+        AnyClass, nme.asInstanceOfErased, tparam => tparam.typeConstructor) setFlag FINAL
 
       // members of class java.lang.{Object, String}
-      Object_== = newMethod(ObjectClass, nme.EQ, anyrefparam, booltype) setFlag FINAL;
-      Object_!= = newMethod(ObjectClass, nme.NE, anyrefparam, booltype) setFlag FINAL;
-      Object_eq = newMethod(ObjectClass, nme.eq, anyrefparam, booltype) setFlag FINAL;
-      Object_ne = newMethod(ObjectClass, "ne", anyrefparam, booltype) setFlag FINAL;
+      Object_== = newMethod(ObjectClass, nme.EQ, anyrefparam, booltype) setFlag FINAL
+      Object_!= = newMethod(ObjectClass, nme.NE, anyrefparam, booltype) setFlag FINAL
+      Object_eq = newMethod(ObjectClass, nme.eq, anyrefparam, booltype) setFlag FINAL
+      Object_ne = newMethod(ObjectClass, "ne", anyrefparam, booltype) setFlag FINAL
       Object_synchronized = newPolyMethod(
-        ObjectClass, nme.synchronized_, tparam => MethodType(List(tparam.typeConstructor), tparam.typeConstructor)) setFlag FINAL;
+        ObjectClass, nme.synchronized_,
+        tparam => MethodType(List(tparam.typeConstructor), tparam.typeConstructor)) setFlag FINAL
       Object_isInstanceOf = newPolyMethod(
         ObjectClass, "$isInstanceOf",
-        tparam => MethodType(List(), booltype)) setFlag FINAL;
+        tparam => MethodType(List(), booltype)) setFlag FINAL
       Object_asInstanceOf = newPolyMethod(
         ObjectClass, "$asInstanceOf",
-        tparam => MethodType(List(), tparam.typeConstructor)) setFlag FINAL;
+        tparam => MethodType(List(), tparam.typeConstructor)) setFlag FINAL
       String_+ = newMethod(
-        StringClass, "+", anyparam, StringClass.typeConstructor) setFlag FINAL;
+        StringClass, "+", anyparam, StringClass.typeConstructor) setFlag FINAL
 
-      PatternWildcard = NoSymbol.newValue(NoPos, "_").setInfo(AllClass.typeConstructor);
+      PatternWildcard = NoSymbol.newValue(NoPos, "_").setInfo(AllClass.typeConstructor)
 
       BoxedArrayClass = getClass("scala.runtime.BoxedArray")
       BoxedAnyArrayClass = getClass("scala.runtime.BoxedAnyArray")
@@ -591,7 +592,7 @@ trait Definitions requires SymbolTable {
 
       AnnotationDefaultAttr = newClass(RootClass,
                                        nme.AnnotationDefaultATTR,
-                                       List(AttributeClass.typeConstructor));
+                                       List(AttributeClass.typeConstructor))
       SerializableAttr = getClass("scala.serializable")
       BeanPropertyAttr = if (forCLDC) null else getClass("scala.reflect.BeanProperty")
     }
