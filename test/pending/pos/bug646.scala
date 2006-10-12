@@ -9,8 +9,13 @@ object xfor {
       <title>Baaaaaaalabla</title>
     </bks>;
 
-  new NodeSeq { val theSeq = books.child } match {
+  new NodeSeq { val theSeq = books.child }  match {
     case t @ <title>Blabla</title> => t
   }
+
+  //val n: NodeSeq = new NodeSeq { val theSeq = books.child }
+  //n match {
+  //  case t @ <title>Blabla</title> => t
+  //}
 
 }
