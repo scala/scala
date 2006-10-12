@@ -92,6 +92,28 @@ trait CodeFactory requires transform.ExplicitOuter  {
       Apply(Select(tree, definitions.Boolean_not), List());
   }
 
+  /** for tree of sequence type, returns tree that drops first i elements */
+  def seqDrop(sel:Tree, i: Int) = if(i == 0) sel else
+    Apply(Select(Select(sel, "toList"), "drop"),
+          List(Literal(Constant(i))))
+
+  /** for tree of sequence type, returns boolean tree that has length i */
+  def seqHasLength(sel: Tree, ntpe: Type, i: Int) =
+    typed(
+      Equals(
+        Apply(Select(sel, ntpe.member(nme.length)), List()),
+        Literal(Constant(i))
+      )
+    )/*defs.Seq_length ?*/
+
+  /** for tree of sequence type sel, returns boolean tree testing that length >= i
+   */
+  def seqLongerThan(sel:Tree, tpe:Type, i:Int) =
+    GreaterThanOrEquals(
+      typed(Apply(Select(sel, tpe.member(nme.length)), List())),
+      typed(Literal(Constant(i))))
+      //defs.Seq_length instead of tpe.member ?
+
   /*protected*/ def And(left: Tree, right: Tree): Tree = left match {
     case Literal(Constant(value: Boolean)) =>
       if (value) right else left

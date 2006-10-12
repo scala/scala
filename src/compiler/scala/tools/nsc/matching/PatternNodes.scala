@@ -41,8 +41,6 @@ trait PatternNodes requires transform.ExplicitOuter {
           ConstrPat(casted)
         case SequencePat(casted, len) =>
           SequencePat(casted, len)
-        case SeqContainerPat(casted, seqpat) =>
-          SeqContainerPat(casted, seqpat)
         case ConstantPat(value) =>
           ConstantPat(value)
         case VariablePat(tree) =>
@@ -64,7 +62,7 @@ trait PatternNodes requires transform.ExplicitOuter {
         casted
       case SequencePat(casted, _) =>
         casted
-      case SeqContainerPat(casted, _) =>
+      case RightIgnoringSequencePat(casted, _, _) =>
         casted
       case _ =>
         NoSymbol //.NONE
@@ -161,8 +159,6 @@ trait PatternNodes requires transform.ExplicitOuter {
         "SequencePat(" + casted + ", " + len + "...)"
       case RightIgnoringSequencePat(casted, castedRest, minlen) =>
         "RightIgnoringSequencePat(" + casted + ", " + castedRest + ", "+ minlen + "...)"
-      case SeqContainerPat(casted, seqpat) =>
-        "SeqContainerPat(" + casted + ", " + seqpat + ")"
       case ConstantPat(value) =>
         "ConstantPat(" + value + ")"
       case VariablePat(tree) =>
@@ -277,7 +273,6 @@ trait PatternNodes requires transform.ExplicitOuter {
   case class SequencePat(casted: Symbol, len: int) extends PatternNode // only used in PatternMatcher
 
   case class RightIgnoringSequencePat(casted: Symbol, castedRest: Symbol, minlen: int) extends PatternNode //PM
-  case class SeqContainerPat(casted: Symbol, seqpat: Tree) extends PatternNode //   in AlgebraicMatcher
 
   /** the environment for a body of a case
    * @param owner the owner of the variables created here
