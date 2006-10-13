@@ -10,7 +10,7 @@ object O {
   }
 }
 
-object Empty extends Tree[All]
+object Empty extends Tree[Nothing]
 case class Node[c <% Ordered[c]](elem: c, l: Tree[c], r: Tree[c]) extends Tree[c]
 
 trait Tree[+a <% Ordered[a]] {

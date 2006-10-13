@@ -175,8 +175,6 @@ trait StdNames requires SymbolTable {
 
     val Nothing = newTermName("Nothing")
     val Null = newTermName("Null")
-    val All = newTermName("All")
-    val AllRef = newTermName("AllRef")
     val Any = newTermName("Any")
     val AnyVal = newTermName("AnyVal")
     val AnyRef = newTermName("AnyRef")

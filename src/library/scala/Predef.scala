@@ -25,12 +25,6 @@ object Predef {
 
   // aliases -------------------------------------------------------
 
-  /** to be removed after new starr */
-  type Nothing = All
-
-  /** to be removed after new starr */
-  type Null = AllRef
-
   type byte = scala.Byte
   type short = scala.Short
   type char = scala.Char

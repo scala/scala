@@ -61,9 +61,9 @@ trait Tree[+a <% Ordered[a]] {
   def elements: List[a]
 }
 
-object Empty extends Tree[All] {
-  def insert[b >: All <% Ordered[b]](x: b): Tree[b] = new Node(x, Empty, Empty)
-  def elements: List[All] = List()
+object Empty extends Tree[Nothing] {
+  def insert[b >: Nothing <% Ordered[b]](x: b): Tree[b] = new Node(x, Empty, Empty)
+  def elements: List[Nothing] = List()
 }
 
 class Node[a <% Ordered[a]](elem: a, l: Tree[a], r: Tree[a]) extends Tree[a] {

@@ -194,6 +194,11 @@ class ClassPath(onlyPresentation: Boolean) {
       addFilesInPath(classpath)
     }
 
+    /**
+     *  @param path  ...
+     *  @param isDir ...
+     *  @return      ...
+     */
     def lookupPath(path: String, isDir: Boolean) = {
       val ctx = root.find(path, isDir)
       if (ctx == null) null

@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: All$.java 5880 2006-03-02 23:05:17Z mihaylov $
+// $Id: $
 
 
 package scala
@@ -14,9 +14,8 @@ package scala
 
 /**
  * Dummy class which exist only to satisfy the JVM. It corresponds
- * to <code>scala.All</code>. If such type appears in method
+ * to <code>scala.Nothing</code>. If such type appears in method
  * signatures, it is erased to this one.
  */
 
-/** to be removed after new starr */
-sealed abstract class All$
+sealed abstract class Nothing$

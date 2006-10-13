@@ -18,4 +18,5 @@ package scala
  * signatures, it is erased to this one.
  */
 
+/** to be removed after new starr */
 sealed abstract class AllRef$

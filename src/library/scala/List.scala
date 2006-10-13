@@ -1093,11 +1093,13 @@ case object Nil extends List[Nothing] {
   /**
    *  @throws java.util.NoSuchElementException
    */
-  def head: All = throw new java.util.NoSuchElementException("head of empty list")
+  def head: Nothing =
+    throw new java.util.NoSuchElementException("head of empty list")
   /**
    *  @throws java.util.NoSuchElementException
    */
-  def tail: List[Nothing] = throw new java.util.NoSuchElementException("tail of empty list")
+  def tail: List[Nothing] =
+    throw new java.util.NoSuchElementException("tail of empty list")
 }
 
 /** A non empty list characterized by a head and a tail.

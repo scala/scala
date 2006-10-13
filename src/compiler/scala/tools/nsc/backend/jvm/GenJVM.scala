@@ -97,6 +97,10 @@ abstract class GenJVM extends SubComponent {
     val emitLines  = settings.debuginfo.level >= 2
     val emitVars   = settings.debuginfo.level >= 3
 
+    /**
+     * @param jclass ...
+     * @param sym    ...
+     */
     def emitClass(jclass: JClass, sym: Symbol): Unit = {
       def addScalaAttr(sym: Symbol): Unit = currentRun.symData.get(sym) match {
         case Some(pickle) =>
@@ -115,14 +119,14 @@ abstract class GenJVM extends SubComponent {
       }
       if (!(jclass.getName().endsWith("$") && sym.isModuleClass))
         addScalaAttr(if (isTopLevelModule(sym)) sym.sourceModule else sym);
-      addInnerClasses;
+      addInnerClasses
 
       val outfile = getFile(jclass, ".class")
       jclass.writeTo(outfile)
       val file = scala.tools.nsc.io.AbstractFile.getFile(outfile)
       informProgress("wrote " + outfile + " " +
                      (if (file != null) "" + file.file + " " + file.file.exists()
-                      else "no file"));
+                      else "no file"))
     }
 
     var serialVUID: Option[Long] = None
@@ -155,14 +159,14 @@ abstract class GenJVM extends SubComponent {
           case Triple(RemoteAttr, _, _) =>
             parents = parents ::: List(RemoteInterface.tpe)
             remoteClass = true
-          case _ => ();
+          case _ => ()
         }
 
       parents = parents.removeDuplicates
 
       if (parents.length > 1) {
         ifaces = new Array[String](parents.length - 1)
-        parents.drop(1).map((s) => javaName(s.symbol)).copyToArray(ifaces, 0);
+        parents.drop(1).map((s) => javaName(s.symbol)).copyToArray(ifaces, 0)
         ()
       }
 
@@ -175,17 +179,19 @@ abstract class GenJVM extends SubComponent {
       if (isStaticModule(c.symbol) || serialVUID != None) {
         if (isStaticModule(c.symbol))
             addModuleInstanceField;
-        addStaticInit(jclass);
+        addStaticInit(jclass)
 
         if (isTopLevelModule(c.symbol)) {
           if (c.symbol.linkedClassOfModule == NoSymbol)
             dumpMirrorClass;
           else if (c.symbol.linkedClassOfModule != NoSymbol &&
               !currentRun.compiles(c.symbol.linkedClassOfModule)) {
-            log("Dumping mirror class for " + c.symbol + " even though linked class exists, but is not compiled in this run");
-            dumpMirrorClass;
+            log("Dumping mirror class for " + c.symbol + " even though " +
+                "linked class exists, but is not compiled in this run")
+            dumpMirrorClass
           } else
-            log("No mirror class for module with linked class: " + c.symbol.fullNameString);
+            log("No mirror class for module with linked class: " +
+                c.symbol.fullNameString)
         }
       }
 
@@ -201,7 +207,7 @@ abstract class GenJVM extends SubComponent {
       val Pair(excs, others) = sym.attributes.partition((a => a match {
         case Triple(ThrowsAttr, _, _) => true
         case _ => false
-      }));
+      }))
       if (excs isEmpty) return;
       sym.attributes = others
 
@@ -223,7 +229,7 @@ abstract class GenJVM extends SubComponent {
     }
 
     private def emitAttributes(buf: ByteBuffer, attributes: List[AttrInfo]): Int = {
-      val cpool = jclass.getConstantPool();
+      val cpool = jclass.getConstantPool()
 
       def emitElement(const: Constant): Unit = const.tag match {
         case BooleanTag =>
@@ -295,9 +301,9 @@ abstract class GenJVM extends SubComponent {
     }
 
     def addAnnotations(jmember: JMember, attributes: List[AttrInfo]): Unit = {
-      if (attributes.isEmpty) return;
+      if (attributes.isEmpty) return
 
-      val buf: ByteBuffer = ByteBuffer.allocate(2048);
+      val buf: ByteBuffer = ByteBuffer.allocate(2048)
 
       emitAttributes(buf, attributes)
 
@@ -310,7 +316,7 @@ abstract class GenJVM extends SubComponent {
              tpe.symbol hasFlag Flags.JAVA) yield attr;
       if (attributes.forall(.isEmpty)) return;
 
-      val buf: ByteBuffer = ByteBuffer.allocate(2048);
+      val buf: ByteBuffer = ByteBuffer.allocate(2048)
 
       // number of parameters
       buf.put(attributes.length.toByte)
@@ -381,7 +387,8 @@ abstract class GenJVM extends SubComponent {
 
     def genMethod(m: IMethod): Unit = {
       if (settings.debug.value)
-        log("Generating method " + m.symbol + " flags: " + Flags.flagsToString(m.symbol.flags) +
+        log("Generating method " + m.symbol +
+            " flags: " + Flags.flagsToString(m.symbol.flags) +
             " owner: " + m.symbol.owner);
       method = m
       endPC.clear
@@ -403,7 +410,7 @@ abstract class GenJVM extends SubComponent {
 
       if (m.symbol.hasFlag(Flags.BRIDGE))
         jmethod.addAttribute(fjbgContext.JOtherAttribute(jclass, jmethod, "Bridge",
-                                                         new Array[Byte](0)));
+                                                         new Array[Byte](0)))
       if ((remoteClass ||
           (m.symbol.attributes contains Triple(RemoteAttr, Nil, Nil))) &&
           jmethod.isPublic() && !forCLDC)
@@ -417,25 +424,26 @@ abstract class GenJVM extends SubComponent {
 
         // add a fake local for debugging purpuses
         if (emitVars && isClosureApply(method.symbol)) {
-          val outerField = clasz.symbol.info.decl(nme.getterToLocal(nme.OUTER));
+          val outerField = clasz.symbol.info.decl(nme.getterToLocal(nme.OUTER))
           if (outerField != NoSymbol) {
-            log("Adding fake local to represent outer 'this' for closure " + clasz);
-            val _this = new Local(method.symbol.newVariable(NoPos, "this$"), toTypeKind(outerField.tpe), false);
-            m.locals = m.locals ::: List(_this);
+            log("Adding fake local to represent outer 'this' for closure " + clasz)
+            val _this = new Local(
+              method.symbol.newVariable(NoPos, "this$"), toTypeKind(outerField.tpe), false)
+            m.locals = m.locals ::: List(_this)
             computeLocalVarsIndex(m) // since we added a new local, we need to recompute indexes
 
-            jcode.emitALOAD_0;
+            jcode.emitALOAD_0
             jcode.emitGETFIELD(javaName(clasz.symbol),
                                javaName(outerField),
-                               javaType(outerField));
-            jcode.emitSTORE(indexOf(_this), javaType(_this.kind));
+                               javaType(outerField))
+            jcode.emitSTORE(indexOf(_this), javaType(_this.kind))
           }
         }
 
         for (val local <- m.locals; (! m.params.contains(local))) {
           if (settings.debug.value)
             log("add local var: " + local);
-          jmethod.addNewLocalVariable(javaType(local.kind), javaName(local.sym));
+          jmethod.addNewLocalVariable(javaType(local.kind), javaName(local.sym))
         }
 
         genCode(m)
@@ -488,7 +496,7 @@ abstract class GenJVM extends SubComponent {
                              JType.LONG)
           clinit.emitPUSH(value)
           clinit.emitPUTSTATIC(jclass.getName(), fieldName, JType.LONG)
-        case None => ();
+        case None => ()
       }
 
       clinit.emitRETURN()
@@ -524,19 +532,19 @@ abstract class GenJVM extends SubComponent {
         mirrorCode.emitGETSTATIC(moduleName,
                                  MODULE_INSTANCE_NAME,
                                  new JObjectType(moduleName));
-        var i = 0;
-        var index = 0;
-        var argTypes = mirrorMethod.getArgumentTypes();
+        var i = 0
+        var index = 0
+        var argTypes = mirrorMethod.getArgumentTypes()
         while (i < argTypes.length) {
           mirrorCode.emitLOAD(index, argTypes(i))
           index = index + argTypes(i).getSize()
           i = i + 1
         }
 
-        mirrorCode.emitINVOKEVIRTUAL(moduleName, mirrorMethod.getName(), mirrorMethod.getType().asInstanceOf[JMethodType]);
-        mirrorCode.emitRETURN(mirrorMethod.getReturnType());
+        mirrorCode.emitINVOKEVIRTUAL(moduleName, mirrorMethod.getName(), mirrorMethod.getType().asInstanceOf[JMethodType])
+        mirrorCode.emitRETURN(mirrorMethod.getReturnType())
       }
-      emitClass(mirrorClass, clasz.symbol);
+      emitClass(mirrorClass, clasz.symbol)
     }
 
     var linearization: List[BasicBlock] = Nil
@@ -562,7 +570,7 @@ abstract class GenJVM extends SubComponent {
     var nextBlock: BasicBlock = _
 
     def genBlocks(l: List[BasicBlock]): Unit = l match {
-      case Nil => ();
+      case Nil => ()
       case x :: Nil => nextBlock = null; genBlock(x)
       case x :: y :: ys => nextBlock = y; genBlock(x); genBlocks(y :: ys)
     }
@@ -656,7 +664,7 @@ abstract class GenJVM extends SubComponent {
 
         instr match {
           case THIS(clasz) =>
-            jcode.emitALOAD_0();
+            jcode.emitALOAD_0()
 
           case CONSTANT(const) =>
             const.tag match {
@@ -695,18 +703,19 @@ abstract class GenJVM extends SubComponent {
             var owner = javaName(field.owner);
 //            if (field.owner.hasFlag(Flags.MODULE)) owner = owner + "$";
             if (settings.debug.value)
-              log("LOAD_FIELD with owner: " + owner + " flags: " + Flags.flagsToString(field.owner.flags));
+              log("LOAD_FIELD with owner: " + owner +
+                  " flags: " + Flags.flagsToString(field.owner.flags))
             if (isStatic)
               jcode.emitGETSTATIC(owner,
                                   javaName(field),
-                                  javaType(field));
+                                  javaType(field))
             else
               jcode.emitGETFIELD(owner,
                                   javaName(field),
-                                  javaType(field));
+                                  javaType(field))
 
           case LOAD_MODULE(module) =>
-            assert(module.isModule || module.isModuleClass, "Expected module: " + module);
+            assert(module.isModule || module.isModuleClass, "Expected module: " + module)
             if (settings.debug.value)
               log("genearting LOAD_MODULE for: " + module + " flags: " +
                   Flags.flagsToString(module.flags));
@@ -715,29 +724,31 @@ abstract class GenJVM extends SubComponent {
                                 javaType(module));
 
           case STORE_ARRAY_ITEM(kind) =>
-            jcode.emitASTORE(javaType(kind));
+            jcode.emitASTORE(javaType(kind))
 
           case STORE_LOCAL(local) =>
-            jcode.emitSTORE(indexOf(local), javaType(local.kind));
+            jcode.emitSTORE(indexOf(local), javaType(local.kind))
 
           case STORE_FIELD(field, isStatic) =>
-            val owner = javaName(field.owner); // + (if (field.owner.hasFlag(Flags.MODULE)) "$" else "");
+            val owner = javaName(field.owner) // + (if (field.owner.hasFlag(Flags.MODULE)) "$" else "");
             if (isStatic)
               jcode.emitPUTSTATIC(owner,
                                   javaName(field),
-                                  javaType(field));
+                                  javaType(field))
             else
               jcode.emitPUTFIELD(owner,
                                   javaName(field),
-                                  javaType(field));
+                                  javaType(field))
 
           case CALL_PRIMITIVE(primitive) =>
-            genPrimitive(primitive, instr.pos);
+            genPrimitive(primitive, instr.pos)
 
           case call @ CALL_METHOD(method, style) =>
             val owner: String = javaName(method.owner);
             //reference the type of the receiver instead of the method owner (if not an interface!)
-            val dynamicOwner  = if (needsInterfaceCall(call.hostClass)) owner else javaName(call.hostClass);
+            val dynamicOwner =
+              if (needsInterfaceCall(call.hostClass)) owner
+              else javaName(call.hostClass)
 
             style match {
               case Dynamic =>
@@ -1193,7 +1204,7 @@ abstract class GenJVM extends SubComponent {
 
       for (val l <- m.locals) {
         if (settings.debug.value)
-          log("Index value for " + l + "{" + l.hashCode + "}: " + idx);
+          log("Index value for " + l + "{" + l.hashCode + "}: " + idx)
         l.index = idx
         idx = idx + sizeOf(l.kind)
       }
@@ -1201,16 +1212,22 @@ abstract class GenJVM extends SubComponent {
 
     ////////////////////// Utilities ////////////////////////
 
-    /** Return the a name of this symbol that can be used on the Java
-     * platform. It removes spaces from names.
-     *
-     * Special handling: scala.All and scala.AllRef are 'erased' to
-     * scala.All$ and scala.AllRef$. This is needed because they are
-     * not real classes, and they mean 'abrupt termination upon evaluation
-     * of that expression' or 'null' respectively. This handling is
-     * done already in GenICode, but here we need to remove references
-     * from method signatures to these types, because such classes can
-     * not exist in the classpath: the type checker will be very confused.
+    /**
+     * <p>
+     *   Return the a name of this symbol that can be used on the Java
+     *   platform. It removes spaces from names.
+     * </p>
+     * <p>
+     *   Special handling: scala.Nothing and <code>scala.Null</code> are
+     *   <em>erased</em> to <code>scala.Nothing$</code> and
+     *   </code>scala.Null$</code>. This is needed because they are
+     *   not real classes, and they mean 'abrupt termination upon evaluation
+     *   of that expression' or <code>null</code> respectively. This handling is
+     *   done already in <a href="../icode/GenIcode.html" target="contentFrame">
+     *   <code>GenICode</code></a>, but here we need to remove references
+     *   from method signatures to these types, because such classes can
+     *   not exist in the classpath: the type checker will be very confused.
+     * </p>
      */
     def javaName(sym: Symbol): String = {
       val suffix = if (sym.hasFlag(Flags.MODULE) && !sym.isMethod &&
@@ -1218,9 +1235,9 @@ abstract class GenJVM extends SubComponent {
                         !sym.hasFlag(Flags.JAVA)) "$" else "";
 
       if (sym == definitions.AllClass)
-        return "scala.All$"
+        return "scala.Nothing$"
       else if (sym == definitions.AllRefClass)
-        return "scala.AllRef$";
+        return "scala.Null$"
 
       if (sym.isClass && !sym.rawowner.isPackageClass)
         innerClasses = innerClasses + sym;
@@ -1261,7 +1278,7 @@ abstract class GenJVM extends SubComponent {
       val f = sym.flags
       jf = jf | (if (sym hasFlag Flags.SYNTHETIC) ACC_SYNTHETIC else 0)
 /*      jf = jf | (if (sym hasFlag Flags.PRIVATE) ACC_PRIVATE else
-                  if (sym hasFlag Flags.PROTECTED) ACC_PROTECTED else ACC_PUBLIC);
+                  if (sym hasFlag Flags.PROTECTED) ACC_PROTECTED else ACC_PUBLIC)
 */
       jf = jf | (if (sym hasFlag Flags.PRIVATE) ACC_PRIVATE else  ACC_PUBLIC)
       jf = jf | (if ((sym hasFlag Flags.ABSTRACT) ||
@@ -1304,7 +1321,7 @@ abstract class GenJVM extends SubComponent {
           if (s.isClassConstructor) JType.VOID else javaType(s.tpe.resultType),
           s.tpe.paramTypes.map(javaType).toArray)
       else
-        javaType(s.tpe);
+        javaType(s.tpe)
 
     def javaTypes(ts: List[TypeKind]): Array[JType] = {
       val res = new Array[JType](ts.length)
@@ -1329,9 +1346,9 @@ abstract class GenJVM extends SubComponent {
         val pool = jclass.getConstantPool()
         val pc = jcode.getPC()
         var anonCounter = 0
-        val locals = if (jmethod.isStatic()) vars.length else 1 + vars.length;
+        val locals = if (jmethod.isStatic()) vars.length else 1 + vars.length
 
-        val lvTab = ByteBuffer.allocate(2 + 10 * locals);
+        val lvTab = ByteBuffer.allocate(2 + 10 * locals)
         def emitEntry(name: String, signature: String, idx: Short): Unit = {
           lvTab.putShort(0.asInstanceOf[Short])
           lvTab.putShort(pc.asInstanceOf[Short])
@@ -1348,7 +1365,7 @@ abstract class GenJVM extends SubComponent {
 
         for (val lv <- vars) {
             val name = if (javaName(lv.sym) eq null) {
-              anonCounter = anonCounter + 1;
+              anonCounter = anonCounter + 1
               "<anon" + anonCounter + ">"
             } else javaName(lv.sym)
 

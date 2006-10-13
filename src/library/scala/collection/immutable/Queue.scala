@@ -13,7 +13,7 @@ package scala.collection.immutable
 
 
 object Queue {
-  val Empty: Queue[All] = new Queue()
+  val Empty: Queue[Nothing] = new Queue()
 }
 
 /** <code>Queue</code> objects implement data structures that allow to
@@ -41,7 +41,7 @@ class Queue[+A](elem: A*) extends Seq[A] {
    *
    *  @param  n index of the element to return
    *  @return   the element at position <code>n</code> in this queue.
-   *  @throws   <code>java.util.NoSuchElementException</code> if the queue is too short.
+   *  @throws   java.util.NoSuchElementException if the queue is too short.
    */
   def apply(n: Int): A = {
     val len = out.length

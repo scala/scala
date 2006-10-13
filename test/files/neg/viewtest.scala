@@ -1,4 +1,4 @@
-package test;
+package test
 
 /** A trait for totally ordered data.
  */
@@ -10,15 +10,15 @@ trait Ordered[+a] {
    *  x == 0   iff    this == that
    *  x > 0    iff    this > that
    */
-  def compareTo [b >: a <% Ordered[b]](that: b): int;
+  def compareTo [b >: a <% Ordered[b]](that: b): int
 
-  def <  [b >: a <% Ordered[b]](that: b): boolean = (this compareTo that) <  0;
+  def <  [b >: a <% Ordered[b]](that: b): boolean = (this compareTo that) <  0
 
-  def >  [b >: a <% Ordered[b]](that: b): boolean = (this compareTo that) >  0;
+  def >  [b >: a <% Ordered[b]](that: b): boolean = (this compareTo that) >  0
 
-  def <= [b >: a <% Ordered[b]](that: b): boolean = (this compareTo that) <= 0;
+  def <= [b >: a <% Ordered[b]](that: b): boolean = (this compareTo that) <= 0
 
-  def >= [b >: a <% Ordered[b]](that: b): boolean = (this compareTo that) >= 0;
+  def >= [b >: a <% Ordered[b]](that: b): boolean = (this compareTo that) >= 0
 }
 
 
@@ -26,13 +26,13 @@ object O {
 
   implicit def view1(x: String): Ordered[String] = new Ordered[String] {
     def compareTo [b >: String <% Ordered[b]](y: b): int = y match {
-      case y1: String => x compareTo y1;
+      case y1: String => x compareTo y1
       case _ => -(y compareTo x)
     }
   }
   implicit def view2(x: char): Ordered[char] = new Ordered[char] {
     def compareTo [b >: char <% Ordered[b]](y: b): int = y match {
-      case y1: char => x - y1;
+      case y1: char => x - y1
       case _ => -(y compareTo x)
     }
   }
@@ -40,38 +40,38 @@ object O {
   implicit def view3[a <% Ordered[a]](x: List[a]): Ordered[List[a]] =
     new Ordered[List[a]] {
       def compareTo [b >: List[a] <% Ordered[b]](y: b): int = y match {
-	case y1: List[a] => compareLists(x, y1);
-	case _ => -(y compareTo x)
+        case y1: List[a] => compareLists(x, y1)
+        case _ => -(y compareTo x)
       }
       private def compareLists(xs: List[a], ys: List[a]): int = {
-	if (xs.isEmpty && ys.isEmpty) 0
-	else if (xs.isEmpty) -1
-	else if (ys.isEmpty) 1
-	else {
-	  val s = xs.head compareTo ys.head;
-	  if (s != 0) s
-	  else compareLists(xs.tail, ys.tail)
-	}
+        if (xs.isEmpty && ys.isEmpty) 0
+        else if (xs.isEmpty) -1
+        else if (ys.isEmpty) 1
+        else {
+          val s = xs.head compareTo ys.head
+          if (s != 0) s
+          else compareLists(xs.tail, ys.tail)
+        }
       }
     }
-  implicit def view4[a](x: a): a = x;
+  implicit def view4[a](x: a): a = x
 }
 
 trait Tree[+a <% Ordered[a]] {
-  def insert[b >: a <% Ordered[b]](x: b): Tree[b];
+  def insert[b >: a <% Ordered[b]](x: b): Tree[b]
   def elements: List[a]
 }
 
-object Empty extends Tree[All] {
-  def insert[b >: All <% Ordered[b]](x: b): Tree[b] = new Node(x, Empty, Empty);
-  def elements: List[All] = List();
+object Empty extends Tree[Nothing] {
+  def insert[b >: Nothing <% Ordered[b]](x: b): Tree[b] = new Node(x, Empty, Empty)
+  def elements: List[Nothing] = List()
 }
 
 class Node[a <% Ordered[a]](elem: a, l: Tree[a], r: Tree[a]) extends Tree[a] {
   def insert[b >: a <% Ordered[b]](x: b): Tree[b] =
     if (x == elem) this
     else if (x < elem) new Node(elem, l insert x, r)
-    else new Node(elem, l, r insert x);
+    else new Node(elem, l, r insert x)
   def elements: List[a] =
     l.elements ::: List(elem) ::: r.elements
 }
@@ -84,31 +84,31 @@ case class Str(elem: String) extends Ordered[Str] {
 }
 
 object Test {
-  import O._;
+  import O._
 
   private def toCharList(s: String): List[Char] =
     if (s.length() == 0) List()
-    else s.charAt(0) :: toCharList(s.substring(1));
+    else s.charAt(0) :: toCharList(s.substring(1))
 
   def main(args: Array[String]) = {
     {
-      var t: Tree[String] = Empty;
+      var t: Tree[String] = Empty
       for (val s <- args) {
-	t = t insert s
+        t = t insert s
       }
       System.out.println(t.elements)
     }
     {
-      var t: Tree[Str] = Empty;
+      var t: Tree[Str] = Empty
       for (val s <- args) {
-	t = t insert Str(s)
+        t = t insert Str(s)
       }
       System.out.println(t.elements)
     }
     {
-      var t: Tree[List[char]] = Empty;
+      var t: Tree[List[char]] = Empty
       for (val s <- args) {
-	t = t insert toCharList(s)
+        t = t insert toCharList(s)
       }
       System.out.println(t.elements)
     }
