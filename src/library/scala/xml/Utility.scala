@@ -33,10 +33,24 @@ object Utility extends AnyRef with parsing.TokenTests {
       case '>' => s.append("&gt;")
       case '&' => s.append("&amp;")
       case '"' => s.append("&quot;")
+      case '\'' => s.append("&apos;")
       case _   => s.append(c)
     }
     s
   }
+
+  /* appends unescaped string to s, amp becomes &amp; lt becomes &lt;
+   * @returns null if ref was not a predefined entity
+   */
+  final def unescape(ref: String, s: StringBuilder): StringBuilder =
+    ref match {
+      case "lt"   => s.append('<')
+      case "gt"   => s.append('>')
+      case "amp"  => s.append('&')
+      case "quot" => s.append('"')
+      case "apos" => s.append(''')
+      case _   => null
+    }
 
   /**
    * Returns a set of all namespaces used in a sequence of nodes
@@ -265,17 +279,14 @@ object Utility extends AnyRef with parsing.TokenTests {
    */
   def parseAttributeValue(value:String):Seq[Node] = {
     val zs:Seq[Char] = value
-    val sb = new StringBuilder()
+    val sb  = new StringBuilder
+    var rfb: StringBuilder = null
     val nb = new NodeBuffer()
     val it = zs.elements
     while(it.hasNext) {
       var c = it.next
       c match {
-        case '&' =>
-          if(sb.length() > 0) {
-            nb += Text(sb.toString())
-            sb.setLength(0)
-          }
+        case '&' => // entity! flush buffer into text node
           it.next match {
             case '#' =>
               c = it.next
@@ -283,20 +294,30 @@ object Utility extends AnyRef with parsing.TokenTests {
               sb.append(theChar)
 
             case x =>
-              sb.append(x)
+              if(rfb==null) rfb = new StringBuilder()
+              rfb.append(x)
               c = it.next
               while(c != ';') {
-                sb.append(c)
+                rfb.append(c)
                 c = it.next
               }
-              nb += EntityRef(sb.toString())
-              sb.setLength(0)
+              val ref = rfb.toString()
+              rfb.setLength(0)
+              unescape(ref,sb) match {
+                case null =>
+                  if(sb.length() > 0) {          // flush buffer
+                    nb += Text(sb.toString())
+                    sb.setLength(0)
+                  }
+                  nb += EntityRef(sb.toString()) // add entityref
+                case _ =>
+              }
           }
         case x   =>
           sb.append(x)
       }
     }
-    if(sb.length() > 0) {
+    if(sb.length() > 0) { // flush buffer
       val x = Text(sb.toString())
       if(nb.length == 0)
         return x

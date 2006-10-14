@@ -91,7 +91,14 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
           nextch
           val tmp = xAttributeValue(delim)
           nextch
-          Literal(Constant(tmp))
+          try {
+            handle.parseAttribute(pos1, tmp)
+          } catch {
+            case e =>
+              reportSyntaxError("error parsing attribute value")
+              p.errorTermTree
+          }
+
         case '{'  =>
           nextch
           xEmbeddedExpr
@@ -175,6 +182,34 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
         sb.setLength(sb.length() - 2)
         nextch
         return handle.charData(pos1, sb.toString())
+      } else sb.append(ch)
+      nextch
+    }
+    Predef.error("this cannot happen")
+  }
+
+  def xUnparsed: Tree = {
+    val pos1 = pos
+    val sb: StringBuffer = new StringBuffer()
+    while (true) {
+      if (ch=='<' &&
+         { sb.append(ch); nextch; ch == '/' } &&
+         { sb.append(ch); nextch; ch == 'x' } &&
+         { sb.append(ch); nextch; ch == 'm' } &&
+         { sb.append(ch); nextch; ch == 'l' } &&
+         { sb.append(ch); nextch; ch == ':' } &&
+         { sb.append(ch); nextch; ch == 'u' } &&
+         { sb.append(ch); nextch; ch == 'n' } &&
+         { sb.append(ch); nextch; ch == 'p' } &&
+         { sb.append(ch); nextch; ch == 'a' } &&
+         { sb.append(ch); nextch; ch == 'r' } &&
+         { sb.append(ch); nextch; ch == 's' } &&
+         { sb.append(ch); nextch; ch == 'e' } &&
+         { sb.append(ch); nextch; ch == 'd' } &&
+         { sb.append(ch); nextch; ch == '>' }) {
+        sb.setLength(sb.length - "</xml:unparsed".length)
+        nextch
+        return handle.unparsed(pos1, sb.toString())
       } else sb.append(ch)
       nextch
     }
@@ -339,14 +374,17 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
     }
     else { // handle content
       xToken('>')
+      if(qname == "xml:unparsed")
+        return xUnparsed
+
       debugLastStartElement.push(Pair(pos1, qname))
       val ts = content
       xEndTag(qname)
       debugLastStartElement.pop
-      if(qname=="xml:group")
-        handle.group(pos1, ts)
-      else
-        handle.element(pos1, qname, attrMap, ts)
+      qname match {
+        case "xml:group"   => handle.group(pos1, ts)
+        case _ => handle.element(pos1, qname, attrMap, ts)
+      }
     }
   }
 

@@ -22,6 +22,9 @@ passed ok
 -- group nodes
 <f><a></a><b></b><c></c></f>
 <a></a><f><a></a><b></b><c></c></f><a></a><b></b><c></c>
+passed ok
+passed ok
+passed ok
 attribute value normalization
 passed ok
 passed ok

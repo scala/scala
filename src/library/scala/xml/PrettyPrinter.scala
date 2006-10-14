@@ -196,6 +196,7 @@ class PrettyPrinter( width:Int, step:Int ) {
             makeBreak()
             traverse(node.child.elements, node.scope, ind + step)
             makeBox(cur, etg)
+            makeBreak()
           } else { // give up
             makeBox(ind, test)
             makeBreak()

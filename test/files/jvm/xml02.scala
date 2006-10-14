@@ -21,7 +21,8 @@ def main(args:Array[String]) = {
   Console.println("three");
   assertEquals(bx \ "@foo", "bar&x")
   Console.println("four");
-  assertSameElements(bx \ "@foo", List(xml.Text("bar"),xml.EntityRef("amp"),xml.Text("x")))
+  assertSameElements(bx \ "@foo", List(xml.Text("bar&x")))
+  //assertSameElements(bx \ "@foo", List(xml.Text("bar"),xml.EntityRef("amp"),xml.Text("x")))
 
   Console.println("five");
   assertEquals(bx.toString, "<hello foo=\"bar&amp;x\"></hello>")

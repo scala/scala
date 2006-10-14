@@ -20,4 +20,10 @@ object Test extends Application {
   Console.println(x.get("foo")) // None
   Console.println(x("foo")) // null
   }
+
+  val x1 = <b x="&amp;"/>
+  val x2 = <b x={"&"}/>
+  Console.println(x1)
+  Console.println(x2)
+
 }

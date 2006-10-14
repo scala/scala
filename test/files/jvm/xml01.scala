@@ -189,6 +189,15 @@ object Test {
     val zx2: Node = Group { List(<a/>,zy1,zx1) }
     Console println zx2.toString()
 
+    val zz1 = <xml:group><a/><b/><c/></xml:group>
+
+    assertTrue(zx1 == zz1)
+    assertTrue(zz1.length == 3)
+
+    // unparsed
+
+    val uup = <xml:unparsed>&<<>""^%@$!#</xml:unparsed>
+    assertTrue(uup == "&<<>\"\"^%@$!#")
     // test unicode escapes backslash u
 
   Console println ("attribute value normalization");

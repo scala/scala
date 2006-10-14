@@ -280,7 +280,7 @@ abstract class TreePrinters {
           print("this")
 
         case Select(qual @ New(tpe), name) =>
-          assert(tree.symbol == null || tree.symbol.isConstructor)
+          assert(tree.symbol == null || tree.symbol.isConstructor || phase.prev.name == "parser")
           print(qual)
 
         case Select(qualifier, name) =>
