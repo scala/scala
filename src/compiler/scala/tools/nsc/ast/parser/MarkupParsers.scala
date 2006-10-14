@@ -430,7 +430,7 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
           if(ch == '}')
             nextch
           else
-            s.syntaxError("in XML content, please use '}}' to express '}'")
+            reportSyntaxError("in XML content, please use '}}' to express '}'")
         }
         exit = xCheckEmbeddedBlock ||( ch == '<' ) || ( ch == '&' );
       }
