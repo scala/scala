@@ -70,6 +70,45 @@ printf_outline() {
 }
 
 ##############################################################################
+# File name and path list conversion functions
+
+# Prints the OS-specific form of the specified Unix form file name.
+get_os_filename() {
+    [ $# = 1 ] || abort "internal error";
+    case "$UNAME" in
+        CYGWIN* ) cygpath --windows "$1";;
+        *       ) echo "$@";;
+    esac;
+}
+
+# Prints the Unix form of the specified OS-specific form file name.
+get_unix_filename() {
+    [ $# = 1 ] || abort "internal error";
+    case "$UNAME" in
+        CYGWIN* ) cygpath --unix "$1";;
+        *       ) echo "$@";;
+    esac;
+}
+
+# Prints the OS-specific form of the specified Unix form path list.
+get_os_pathlist() {
+    [ $# = 1 ] || abort "internal error";
+    case "$UNAME" in
+        CYGWIN* ) cygpath --window --path "$1";;
+        *       ) echo "$@";;
+    esac;
+}
+
+# Prints the Unix form of the specified OS-specific form path list.
+get_unix_pathlist() {
+    [ $# = 1 ] || abort "internal error";
+    case "$UNAME" in
+        CYGWIN* ) cygpath --unix --path "$1";;
+        *       ) echo "$@";;
+    esac;
+}
+
+##############################################################################
 # Implementation of clitest
 
 # Prints the clitest usage.
@@ -166,6 +205,7 @@ test_compile() {
     fi
     printf "\\n";
 
+    #=`get_unix_filename "$source"`;
     printf "Compile $file ($info) with unknown option '-dd'\\n"
     test_run "env CLASSPATH= $COMPILER_COMMAND \
         -dd $OUTPUT_DIR $source 2>> $LOG_FILE 1>> $LOG_FILE";

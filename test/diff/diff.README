@@ -13,4 +13,4 @@ The minimal set of files required to run diff is the following:
   bin\libintl3.dll (92672 bytes)
 
 
-$Id: $
+$Id: diff.README 7771 2006-06-12 13:22:39Z dubochet $

@@ -1,12 +1,16 @@
 @echo off
 
 rem ##########################################################################
-rem # Copyright (c) 2002-06 LAMP/EPFL
+rem # Copyright 2002-2006 LAMP/EPFL
 rem #
 rem # This is free software; see the distribution for copying conditions.
 rem # There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A
 rem # PARTICULAR PURPOSE.
 rem ##########################################################################
+
+rem We adopt the following conventions:
+rem - System/user environment variables start with a letter
+rem - Local batch variables start with an underscore ('_')
 
 if "%OS%"=="Windows_NT" (
   @setlocal
@@ -16,9 +20,11 @@ if "%OS%"=="Windows_NT" (
   if "%_SCALA_HOME%"=="" goto err_home
 )
 
+rem We use the value of the JAVACMD environment variable if defined
 set _JAVACMD=%JAVACMD%
 if "%_JAVACMD%"=="" set _JAVACMD=java
 
+set _BIN=dists\latest\bin
 set _NORUN=
 set _TYPE=auto
 set _SHOWLOG=
@@ -35,6 +41,7 @@ if (%1)==(--jvm)       set _TYPE=jvm & goto next
 if (%1)==(--pos)       set _TYPE=pos & goto next
 if (%1)==(--neg)       set _TYPE=neg & goto next
 if (%1)==(--msil)      set _TYPE=msil & goto next
+if (%1)==(--quick)     set _BIN=build\quick\bin & goto next
 if (%1)==(--no-run)    set _NORUN=1 & goto next
 if (%1)==(--show-log)  set _SHOWLOG=1 & goto next
 if (%1)==(--show-diff) set _SHOWDIFF=1 & goto next
@@ -52,12 +59,21 @@ shift
 goto loop
 
 :exec
-set _SCALA=%_BINDIR%scala
-set _SCALAC=%_BINDIR%scalac -encoding iso-8859-1
-set _SCALAP=%_BINDIR%scalap
-set _DIFF=%_BINDIR%diff.exe --text --strip-trailing-cr
+if exist "%_SCALA_HOME%\misc\NUL" (
+  set _BINDIR=%_SCALA_HOME%\bin
+  set _SRCDIR=%_SCALA_HOME%\misc\scala-test\files
+  set _DIFFDIR=%_SCALA_HOME%\bin\diff
+) else (
+  set _BINDIR=%_SCALA_HOME%\%_BIN%
+  set _SRCDIR=%_SCALA_HOME%\test\files
+  set _DIFFDIR=%_SCALA_HOME%\test\diff
+)
 
-set _SRCDIR=%_SCALA_HOME%\misc\scala-test\files
+set _SCALA=%_BINDIR%\scala
+set _SCALAC=%_BINDIR%\scalac -encoding iso-8859-1
+set _SCALAP=%_BINDIR%\scalap
+set _DIFF=%_DIFFDIR%\diff.exe --text --strip-trailing-cr
+
 set _OBJDIR=
 set _TMPDIR=%TEMP%
 
@@ -71,6 +87,7 @@ if not "%_TMPDIR%"=="" (
 call :prt_dir "Source directory is  :" "%_SRCDIR%"
 call :prt_dir "Scala binaries are in:" "%_BINDIR%"
 call :set_version
+call :prt_dir "Scala version is     :" "%_NSC_VERSION%"
 call :prt_dir "Java runtime is      :" "%_JVM_VERSION%"
 
 set _FILES_POS=
@@ -123,7 +140,8 @@ rem # NB. goto/call commands use only the first 8 characters of a label
   echo --jvm           next files test the JVM backend
   echo --pos           next files test a compilation success
   echo --neg           next files test a compilation failure
-  echo --msil          next files test the .NET backend
+  echo --msil          next files test the .NET 
+  echo --quick         use the 'quick' build instead of the distribution
   echo --no-run        run no test, use results of last run
   echo --show-log      show output of failed tests
   echo --show-diff     show differences between actual and expected output
@@ -133,7 +151,7 @@ rem # NB. goto/call commands use only the first 8 characters of a label
   goto :eof
 
 :prt_version
-  echo Scala test suite 0.9.1 -- (c) 2002-2006 LAMP/EPFL
+  echo Scala test suite 0.9.2 -- (c) 2002-2006 LAMP/EPFL
   goto :eof
 
 :prt_status
@@ -159,6 +177,9 @@ rem set _SCALA_HOME=%~dps0..
 
 :set_version
   set _TMPFILE=%_TMPDIR%\.version
+  call %_SCALAC% -version 2> %_TMPFILE%
+  for /f "tokens=*" %%f in (%_TMPFILE%) do @set _VERSION=%%f
+  set _NSC_VERSION=%_VERSION%
   %_JAVACMD% -version 2> %_TMPFILE%
   for /f "skip=2 tokens=*" %%f in (%_TMPFILE%) do @set _VERSION=%%f
   set _JVM_VERSION=%_VERSION%
@@ -218,19 +239,20 @@ rem Tests the JVM backend.
   ) else (
     set _DSTDIR=%_OBJDIR%
   )
-  set _TESTNAME=%~n1
-  set _DSTBASE=%_DSTDIR%\%_TESTNAME%-%_KIND%
+  set _DSTBASE=%_DSTDIR%\%~n1-%_KIND%
   set _LOGFILE=%_DSTBASE%.log
+  set _CHKFILE=%~dpn1.check
 
   if not '%_HEADER%'=='' call :prt_header %_HEADER% & set _HEADER=
 
-  if %_KIND%=="jvm" call :test_jvm %1 & goto status
-  if %_KIND%=="pos" call :test_pos %1 & goto status
-  if %_KIND%=="neg" call :test_neg %1 & goto status
+  if "%_KIND%"=="jvm" call :test_jvm %1 & goto status
+  if "%_KIND%"=="pos" call :test_pos %1 & goto status
+  if "%_KIND%"=="neg" call :test_neg %1 & goto status
   goto :eof
   :status
+  if exist %_LOGFILE% %_DIFF% %_LOGFILE% %_CHKFILE%
   call :prt_status %_KIND% %~nx1
-  del /s/q %_LOGFILE% 1>NUL
+  del /s/q %_LOGFILE% 2>NUL 1>NUL
   goto :eof
 
 :chk_file
@@ -260,10 +282,10 @@ rem Tests the JVM backend.
 
 rem Checks everything.
 :chk_all
-  call :chk_kind "Testing JVM backend" "jvm" %_FILES_RUN% %_FILES_JVM%
-  call :chk_kind "Testing compiler (on files whose compilation should succeed)" "pos" %_FILES_POS%
-  call :chk_kind "Testing compiler (on files whose compilation should fail)" "neg" %_FILES_NEG%
-  call :chk_kind "Testing .NET backend" "msil" %_FILES_MSIL%
+  call :chk_kind "Testing JVM backend" jvm %_FILES_RUN% %_FILES_JVM%
+  call :chk_kind "Testing compiler (on files whose compilation should succeed)" pos %_FILES_POS%
+  call :chk_kind "Testing compiler (on files whose compilation should fail)" neg %_FILES_NEG%
+  call :chk_kind "Testing .NET backend" msil %_FILES_MSIL%
   goto :eof
 
 rem ##########################################################################
