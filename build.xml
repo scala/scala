@@ -993,7 +993,7 @@ GENERATES A DISTRIBUTION
       desc="The Scala test package contains everything needed to test Scala."
       link="${sbaz.universe}/scala-test-${version.number}.sbp">
       <binset dir="${basedir}/test"
-        includes="clitest,diff.exe,lib*.dll,scalatest,scalatest.bat"/>
+        includes="clitest,diff/diff.*,diff/lib*.dll,scalatest,scalatest.bat"/>
       <miscset
         dir="${basedir}/test"
         includes="files/**/*.args,files/**/*.check,files/**/*.java,files/**/*.scala,files/cli/**/*.check.*"/>
