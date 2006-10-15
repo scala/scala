@@ -15,18 +15,31 @@ import compat.StringBuilder
 import collection.mutable.{Set, HashSet}
 
 /**
- * Utility functions for processing instances of bound and
- * not bound XML classes, as well as escaping text nodes.
+ * The <code>Utility</code> object provides utility functions for processing
+ * instances of bound and not bound XML classes, as well as escaping text nodes.
+ *
+ * @author Burak Emir
  */
 object Utility extends AnyRef with parsing.TokenTests {
 
   def view(s: String): Text = Text(s)
 
-  /* escapes the characters &lt; &gt; &amp; and &quot; from string */
+  /**
+   * Escapes the characters &lt; &gt; &amp; and &quot; from string.
+   *
+   * @param text ...
+   * @return     ...
+   */
   final def escape(text: String): String =
     escape(text, new StringBuilder()).toString()
 
-  /* appends escaped string to s */
+  /**
+   * Appends escaped string to <code>s</code>.
+   *
+   * @param text ...
+   * @param s    ...
+   * @return     ...
+   */
   final def escape(text: String, s: StringBuilder): StringBuilder = {
     for (val c <- Iterator.fromString(text)) c match {
       case '<' => s.append("&lt;")
@@ -39,8 +52,14 @@ object Utility extends AnyRef with parsing.TokenTests {
     s
   }
 
-  /* appends unescaped string to s, amp becomes &amp; lt becomes &lt;
-   * @returns null if ref was not a predefined entity
+  /**
+   * Appends unescaped string to <code>s</code>, amp becomes &amp;
+   * lt becomes &lt; etc..
+   *
+   * @param ref ...
+   * @param s   ...
+   * @return    <code>null</code> if <code>ref</code> was not a predefined
+   *            entity.
    */
   final def unescape(ref: String, s: StringBuilder): StringBuilder =
     ref match {
@@ -56,9 +75,9 @@ object Utility extends AnyRef with parsing.TokenTests {
    * Returns a set of all namespaces used in a sequence of nodes
    * and all their descendants, including the empty namespaces.
    *
-   * @param nodes
+   * @param nodes ...
+   * @return      ...
    */
-
   def collectNamespaces(nodes: Seq[Node]): Set[String] = {
     var m = new HashSet[String]()
     val it = nodes.elements
@@ -67,31 +86,43 @@ object Utility extends AnyRef with parsing.TokenTests {
     m
   }
 
-  /** adds all namespaces in node to set */
+  /**
+   * Adds all namespaces in node to set.
+   *
+   * @param n   ...
+   * @param set ...
+   */
   def collectNamespaces(n: Node, set: Set[String]): Unit = {
-    if( n.typeTag$ >= 0 ) {
-      set += n.namespace;
+    if (n.typeTag$ >= 0) {
+      set += n.namespace
       for (val a <- n.attributes) a match {
-          case _:PrefixedAttribute =>
-            set += a.getNamespace(n)
-          case _ =>
-        }
+        case _:PrefixedAttribute =>
+          set += a.getNamespace(n)
+        case _ =>
+      }
       for (val i <- n.child)
         collectNamespaces(i, set);
     }
   }
 
-  /** string representation of an XML node, with comments stripped the comments
+  /**
+   * Returs the string representation of an XML node, with comments stripped
+   * the comments.
+   *
+   * @param n the XML node
+   * @return  the string representation of node <code>n</code>.
+   *
    * @see "toXML(Node, Boolean)"
    */
-  def toXML(n: Node): String = toXML(n, true);
+  def toXML(n: Node): String = toXML(n, true)
 
   /**
-   * String representation of a Node. uses namespace mapping from
-   * <code>defaultPrefixes(n)</code>.
+   * Return the string representation of a Node. uses namespace mapping from
+   *  <code>defaultPrefixes(n)</code>.
    *
-   * @param n
-   * @param stripComment
+   * @param n            the XML node
+   * @param stripComment ...
+   * @return             ...
    *
    * @todo define a way to escape literal characters to &amp;xx; references
    */
@@ -102,12 +133,13 @@ object Utility extends AnyRef with parsing.TokenTests {
   }
 
 
-  /** appends a tree to the given stringbuffer within given namespace scope.
+  /**
+   * Appends a tree to the given stringbuffer within given namespace scope.
    *
-   *   @param n            the node
-   *   @param pscope       the parent scope
-   *   @param sb           stringbuffer to append to
-   *   @param stripComment if true, strip comments
+   * @param n            the node
+   * @param pscope       the parent scope
+   * @param sb           stringbuffer to append to
+   * @param stripComment if true, strip comments
    */
   def toXML(x: Node, pscope: NamespaceBinding, sb: StringBuilder, stripComment: Boolean): Unit = {
     x match {
@@ -139,14 +171,21 @@ object Utility extends AnyRef with parsing.TokenTests {
     }
   }
 
-  def sequenceToXML(children: Seq[Node], pscope: NamespaceBinding, sb: StringBuilder, stripComment: Boolean): Unit = {
-    if(children.isEmpty)
+  /**
+   * @param children     ...
+   * @param pscope       ...
+   * @param sb           ...
+   * @param stripComment ...
+   */
+  def sequenceToXML(children: Seq[Node], pscope: NamespaceBinding,
+                    sb: StringBuilder, stripComment: Boolean): Unit = {
+    if (children.isEmpty)
       return
-    else if(children forall { y => y.isInstanceOf[Atom[Any]] && !y.isInstanceOf[Text] }) { // add space
+    else if (children forall { y => y.isInstanceOf[Atom[Any]] && !y.isInstanceOf[Text] }) { // add space
       val it = children.elements
       val f = it.next
       toXML(f, f.scope, sb, stripComment)
-      while(it.hasNext) {
+      while (it.hasNext) {
         val x = it.next
         sb.append(' ')
         toXML(x, x.scope, sb, stripComment)
@@ -156,8 +195,12 @@ object Utility extends AnyRef with parsing.TokenTests {
     }
   }
 
-
-  /** returns prefix of qualified name if any */
+  /**
+   * Returns prefix of qualified name if any.
+   *
+   * @param name ...
+   * @return     ...
+   */
   final def prefix(name: String): Option[String] = {
     val i = name.indexOf(':'.asInstanceOf[Int])
     if( i != -1 ) Some( name.substring(0, i) ) else None
@@ -191,33 +234,52 @@ object Utility extends AnyRef with parsing.TokenTests {
   }
    */
 
+  /**
+   * @param s ...
+   * @return  ...
+   */
   def systemLiteralToString(s: String): String = {
     val sb = new StringBuilder()
     systemLiteralToString(sb, s)
     sb.toString()
   }
 
+  /**
+   * @param sb ...
+   * @param s  ...
+   * @return   ...
+   */
   def systemLiteralToString(sb: StringBuilder, s: String): StringBuilder = {
     sb.append("SYSTEM ")
     appendQuoted(s, sb)
   }
 
+  /**
+   * @param s ...
+   * @return  ...
+   */
   def publicLiteralToString(s: String): String = {
     val sb = new StringBuilder()
     systemLiteralToString(sb, s)
     sb.toString()
   }
 
+  /**
+   * @param sb ...
+   * @param s  ...
+   * @return   ...
+   */
   def publicLiteralToString(sb: StringBuilder, s: String): StringBuilder = {
     sb.append("PUBLIC \"").append(s).append('"')
   }
 
   /**
-   * Appends &quot;s&quot; if s does not contain &quot;, &apos;s&apos;
-   * otherwise
+   * Appends &quot;s&quot; if string <code>s</code> does not contain &quot;,
+   * &apos;s&apos; otherwise.
    *
-   * @param s
-   * @param sb
+   * @param s  ...
+   * @param sb ...
+   * @return   ...
    */
   def appendQuoted(s: String, sb: StringBuilder) = {
     val ch = if (s.indexOf('"'.asInstanceOf[Int]) == -1) '"' else '\'';
@@ -227,19 +289,25 @@ object Utility extends AnyRef with parsing.TokenTests {
   /**
    * Appends &quot;s&quot; and escapes and &quot; i s with \&quot;
    *
-   * @param s
-   * @param sb
+   * @param s  ...
+   * @param sb ...
+   * @return   ...
    */
   def appendEscapedQuoted(s: String, sb: StringBuilder) = {
     sb.append('"')
     val z:Seq[Char] = Predef.string2seq(s)
-    for( val c <- z ) c match {
+    for (val c <- z) c match {
       case '"' => sb.append('\\'); sb.append('"')
       case _   => sb.append(c)
     }
     sb.append('"')
   }
 
+  /**
+   * @param s     ...
+   * @param index ...
+   * @return      ...
+   */
   def getName(s: String, index: Int): String = {
     var i = index;
     val sb = new StringBuilder();
@@ -247,14 +315,20 @@ object Utility extends AnyRef with parsing.TokenTests {
       var c = s.charAt(i);
       if (isNameStart(s.charAt(i)))
         while (i < s.length() && { c = s.charAt(i); isNameChar(c)}) {
-          sb.append(c);
+          sb.append(c)
           i = i + 1
         }
       sb.toString()
     } else null
   }
 
-  /** returns null if the value is a correct attribute value, error message if it isn't */
+  /**
+   * Returns <code>null</code> if the value is a correct attribute value,
+   * error message if it isn't.
+   *
+   * @param value ...
+   * @return      ...
+   */
   def checkAttributeValue(value: String): String = {
     var i = 0
     while (i < value.length()) {
@@ -263,9 +337,9 @@ object Utility extends AnyRef with parsing.TokenTests {
           return "< not allowed in attribute value";
         case '&' =>
           val n = getName(value, i+1);
-          if (n== null)
+          if (n == null)
             return "malformed entity reference in attribute value ["+value+"]";
-          i = i + n.length() + 1;
+          i = i + n.length() + 1
           if (i >= value.length() || value.charAt(i) != ';')
             return "malformed entity reference in attribute value ["+value+"]";
         case _   =>
@@ -275,15 +349,19 @@ object Utility extends AnyRef with parsing.TokenTests {
     null
   }
 
-  /** new
+  /**
+   * new
+   *
+   * @param value ...
+   * @return      ...
    */
-  def parseAttributeValue(value:String):Seq[Node] = {
-    val zs:Seq[Char] = value
+  def parseAttributeValue(value: String): Seq[Node] = {
+    val zs: Seq[Char] = value
     val sb  = new StringBuilder
     var rfb: StringBuilder = null
     val nb = new NodeBuffer()
     val it = zs.elements
-    while(it.hasNext) {
+    while (it.hasNext) {
       var c = it.next
       c match {
         case '&' => // entity! flush buffer into text node
@@ -294,10 +372,10 @@ object Utility extends AnyRef with parsing.TokenTests {
               sb.append(theChar)
 
             case x =>
-              if(rfb==null) rfb = new StringBuilder()
+              if (rfb==null) rfb = new StringBuilder()
               rfb.append(x)
               c = it.next
-              while(c != ';') {
+              while (c != ';') {
                 rfb.append(c)
                 c = it.next
               }
@@ -305,7 +383,7 @@ object Utility extends AnyRef with parsing.TokenTests {
               rfb.setLength(0)
               unescape(ref,sb) match {
                 case null =>
-                  if(sb.length() > 0) {          // flush buffer
+                  if (sb.length() > 0) {          // flush buffer
                     nb += Text(sb.toString())
                     sb.setLength(0)
                   }
@@ -317,9 +395,9 @@ object Utility extends AnyRef with parsing.TokenTests {
           sb.append(x)
       }
     }
-    if(sb.length() > 0) { // flush buffer
+    if (sb.length() > 0) { // flush buffer
       val x = Text(sb.toString())
-      if(nb.length == 0)
+      if (nb.length == 0)
         return x
       else
         nb += x
@@ -327,30 +405,39 @@ object Utility extends AnyRef with parsing.TokenTests {
     return nb
   }
 
-  /** CharRef ::= "&amp;#" '0'..'9' {'0'..'9'} ";"
-   *            | "&amp;#x" '0'..'9'|'A'..'F'|'a'..'f' { hexdigit } ";"
+  /**
+   * <pre>
+   *   CharRef ::= "&amp;#" '0'..'9' {'0'..'9'} ";"
+   *             | "&amp;#x" '0'..'9'|'A'..'F'|'a'..'f' { hexdigit } ";"
+   * </pre>
+   * <p>
+   *   see [66]
+   * <p>
    *
-   * see [66]
+   * @param ch                ...
+   * @param nextch            ...
+   * @param reportSyntaxError ...
+   * @return                  ...
    */
   def parseCharRef(ch: () => Char, nextch: () => Unit, reportSyntaxError:(String) => Unit): String = {
-    val hex  = (ch() == 'x') && { nextch(); true };
-    val base = if (hex) 16 else 10;
-    var i = 0;
+    val hex  = (ch() == 'x') && { nextch(); true }
+    val base = if (hex) 16 else 10
+    var i = 0
     while (ch() != ';') {
       ch() match {
         case '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' =>
-          i = i * base + Character.digit( ch(), base );
+          i = i * base + Character.digit(ch(), base)
         case 'a' | 'b' | 'c' | 'd' | 'e' | 'f'
            | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' =>
           if (! hex)
-            reportSyntaxError("hex char not allowed in decimal char ref\n"
-                         +"Did you mean to write &#x ?");
+            reportSyntaxError("hex char not allowed in decimal char ref\n" +
+                              "Did you mean to write &#x ?")
           else
-            i = i * base + Character.digit(ch(), base);
+            i = i * base + Character.digit(ch(), base)
         case _ =>
-          reportSyntaxError("character '" + ch() + " not allowed in char ref\n");
+          reportSyntaxError("character '" + ch() + " not allowed in char ref\n")
       }
-      nextch();
+      nextch()
     }
     String.valueOf(i.asInstanceOf[char])
   }
