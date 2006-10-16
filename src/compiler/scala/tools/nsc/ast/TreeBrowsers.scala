@@ -227,8 +227,9 @@ abstract class TreeBrowsers {
           str.append("\nSymbol info: \n")
           TreeInfo.symbolTypeDoc(t).format(getWidth() / getColumnWidth(), buf)
           str.append(buf.toString())
-          str.append("\nSymbol tpe: \n")
+          str.append("\nSymbol tpe: ")
           if (t.symbol != null) {
+            str.append(t.symbol.tpe).append("\n");
             buf = new StringWriter();
             TypePrinter.toDocument(t.symbol.tpe).format(getWidth() / getColumnWidth(), buf)
             str.append(buf.toString())
