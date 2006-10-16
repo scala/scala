@@ -116,6 +116,7 @@ class Settings(error: String => unit) {
   val inline        = BooleanSetting("-Xinline", "Perform inlining when possible")
   val Xcloselim     = BooleanSetting("-Xcloselim", "Perform closure elimination")
   val Xdce          = BooleanSetting("-Xdce", "Perform dead code elimination")
+  val XbytecodeRead = BooleanSetting("-XbytecodeRead", "Enable bytecode reader.")
   val Xdetach       = BooleanSetting("-Xdetach", "Perform detaching of remote closures")
   val Xshowcls      = StringSetting ("-Xshowcls", "class", "Show class info", "")
   val Xshowobj      = StringSetting ("-Xshowobj", "object", "Show object info", "")
