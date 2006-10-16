@@ -263,7 +263,7 @@ object ClassfileConstants {
   final val areturn     = 0xb0
   final val return_     = 0xb1
 
-  final val gestatic    = 0xb2
+  final val getstatic   = 0xb2
   final val putstatic   = 0xb3
   final val getfield    = 0xb4
   final val putfield    = 0xb5

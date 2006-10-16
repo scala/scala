@@ -98,7 +98,8 @@ abstract class SymbolLoaders {
 
       /** Is the given name a valid input file base name? */
       def isValid(name: String): boolean =
-        name.length() > 0 && !name.endsWith("$class") && name.indexOf("$anon") == -1;
+        name.length() > 0 && (settings.XbytecodeRead.value ||
+          (!name.endsWith("$class") && name.indexOf("$anon") == -1));
 
       def enterPackage(str: String, completer: SymbolLoader): unit = {
         val pkg = root.newPackage(NoPos, newTermName(str))

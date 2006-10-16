@@ -88,7 +88,8 @@ trait BasicBlocks requires ICodes {
         instructionList.length;
 
     /** Return the index of the instruction which produced the value
-	   *  consumed by the given instruction. */
+     *  consumed by the given instruction.
+     */
     def findDef(pos: Int): Option[Int] = {
       assert(closed);
       var i = pos;

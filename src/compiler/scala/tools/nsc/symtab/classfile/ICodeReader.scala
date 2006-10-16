@@ -33,7 +33,10 @@ abstract class ICodeReader extends ClassfileParser {
 
   val OBJECT: TypeKind = REFERENCE(definitions.ObjectClass)
 
-  /** Read back bytecode for the given class symbol. */
+  /** Read back bytecode for the given class symbol. It returns
+   *  two IClass objects, one for static members and one
+   *  for non-static members.
+   */
   def readClass(cls: ClassSymbol): Pair[IClass, IClass] = {
     assert(cls.classFile ne null, "No classfile for " + cls)
 
@@ -59,6 +62,8 @@ abstract class ICodeReader extends ClassfileParser {
     for (val i <- 0 until fieldCount) parseField();
     val methodCount = in.nextChar
     for (val i <- 0 until methodCount) parseMethod();
+    instanceCode.methods = instanceCode.methods.reverse
+    staticCode.methods = staticCode.methods.reverse
   }
 
   override def parseField(): Unit = {
@@ -78,8 +83,9 @@ abstract class ICodeReader extends ClassfileParser {
           tpe = MethodType(formals, getOwner(jflags).tpe)
       }
 
-    Console.println(getOwner(jflags).info.decls);
-    val sym = getOwner(jflags).info.decl(name).suchThat(old => old.tpe =:= tpe);
+    val sym = getOwner(jflags).info.member(name).suchThat(old => old.tpe =:= tpe);
+    if (sym == NoSymbol)
+      Console.println("Could not find symbol for " + name + ": " + tpe);
 //    assert(sym != NoSymbol, "Could not find symbol for " + name + ": " + tpe + " in " + getOwner(jflags));
     Pair(jflags, sym)
   }
@@ -87,13 +93,16 @@ abstract class ICodeReader extends ClassfileParser {
   override def parseMethod(): Unit = {
     val Pair(jflags, sym) = parseMember();
     if (sym != NoSymbol) {
+      Console.println("Parsing method " + sym.fullNameString);
       this.method = new IMethod(sym);
-      getCode(jflags).addMethod(method);
+      getCode(jflags).addMethod(this.method);
       val attributeCount = in.nextChar;
       for (val i <- 0 until attributeCount)
         parseAttribute();
-    } else
+    } else {
       if (settings.debug.value) log("Skipping non-existent method.");
+      skipAttributes();
+    }
   }
 
   def parseAttribute(): Unit = {
@@ -112,13 +121,13 @@ abstract class ICodeReader extends ClassfileParser {
   val JVM = ClassfileConstants // shorter, uppercase alias for use in case patterns
 
   def toUnsignedByte(b: Byte): Int = b.toInt & 0xff
+  var pc = 0
 
   /** Parse java bytecode into ICode */
   def parseByteCode(): Unit = {
     maxStack = in.nextChar
     maxLocals = in.nextChar
     val codeLength = in.nextInt
-    var pc = 0
     val code = new LinearCode
 
     def parseInstruction: Unit = {
@@ -129,7 +138,7 @@ abstract class ICodeReader extends ClassfileParser {
       /** Parse 16 bit jump target. */
       def parseJumpTarget = {
         size = size + 2
-        val offset = in.nextChar
+        val offset = in.nextChar.asInstanceOf[Short]
         val target = pc + offset
         assert(target >= 0 && target < codeLength, "Illegal jump target: " + target)
         target
@@ -382,9 +391,12 @@ abstract class ICodeReader extends ClassfileParser {
         case JVM.areturn     => code.emit(RETURN(OBJECT))
         case JVM.return_     => code.emit(RETURN(UNIT))
 
-        case JVM.gestatic    =>
+        case JVM.getstatic    =>
           val field = pool.getMemberSymbol(in.nextChar, true); size = size + 2;
-          code.emit(LOAD_FIELD(field, true))
+          if (field.hasFlag(Flags.MODULE))
+            code.emit(LOAD_MODULE(field))
+          else
+            code.emit(LOAD_FIELD(field, true))
         case JVM.putstatic   =>
           val field = pool.getMemberSymbol(in.nextChar, true); size = size + 2;
           code.emit(STORE_FIELD(field, true))
@@ -407,7 +419,7 @@ abstract class ICodeReader extends ClassfileParser {
                       else SuperCall(m.owner.name);
           code.emit(CALL_METHOD(m, style))
         case JVM.invokestatic    =>
-          val m = pool.getMemberSymbol(in.nextChar, false); size = size + 2;
+          val m = pool.getMemberSymbol(in.nextChar, true); size = size + 2;
           code.emit(CALL_METHOD(m, Static(false)))
 
         case JVM.new_          =>
@@ -428,13 +440,13 @@ abstract class ICodeReader extends ClassfileParser {
           code.emit(CREATE_ARRAY(kind))
 
         case JVM.anewarray     =>
-          val tpe = toTypeKind(pool.getType(in.nextChar)); size = size + 2;
+          val tpe = REFERENCE(pool.getClassSymbol(in.nextChar)); size = size + 2;
           code.emit(CREATE_ARRAY(tpe))
 
         case JVM.arraylength   => code.emit(CALL_PRIMITIVE(ArrayLength(OBJECT))); // the kind does not matter
         case JVM.athrow        => code.emit(THROW());
-        case JVM.checkcast     => code.emit(CHECK_CAST(toTypeKind(pool.getType(in.nextChar)))); size = size + 2;
-        case JVM.instanceof    => code.emit(IS_INSTANCE(toTypeKind(pool.getType(in.nextChar)))); size = size + 2;
+        case JVM.checkcast     => code.emit(CHECK_CAST(toTypeKind(pool.getClassOrArrayType(in.nextChar)))); size = size + 2;
+        case JVM.instanceof    => code.emit(IS_INSTANCE(toTypeKind(pool.getClassOrArrayType(in.nextChar)))); size = size + 2;
         case JVM.monitorenter  => code.emit(MONITOR_ENTER());
         case JVM.monitorexit   => code.emit(MONITOR_EXIT());
         case JVM.wide          =>
@@ -462,7 +474,7 @@ abstract class ICodeReader extends ClassfileParser {
 
         case JVM.multianewarray =>
           size = size + 3
-          val tpe = toTypeKind(pool.getType(in.nextChar))
+          val tpe = toTypeKind(pool.getClassOrArrayType(in.nextChar))
           val dim = in.nextByte
           assert(dim == 1, "Cannot handle multidimensional arrays yet.")
           code.emit(CREATE_ARRAY(tpe))
@@ -477,15 +489,17 @@ abstract class ICodeReader extends ClassfileParser {
       pc = pc + size
     }
 
+    pc = 0
     while (pc < codeLength) {
       parseInstruction
     }
 
-    val exceptionEntries = in.nextChar
+    code.toBasicBlock
+    val exceptionEntries = in.nextChar.toInt
     in.skip(8 * exceptionEntries)
     skipAttributes()
 
-    Console.println(code.toString())
+    //Console.println(code.toString())
   }
 
   /** Return the icode class that should include members with the given flags.
@@ -495,11 +509,78 @@ abstract class ICodeReader extends ClassfileParser {
     if ((flags & JAVA_ACC_STATIC) != 0) staticCode else instanceCode
 
   class LinearCode {
-    var instrs: ListBuffer[Instruction] = new ListBuffer
+    var instrs: ListBuffer[Pair[Int, Instruction]] = new ListBuffer
     var jmpTargets: Set[Int] = new HashSet[Int]
     var locals: Map[Int, Local] = new HashMap()
 
-    def emit(i: Instruction) = instrs += i
+    def emit(i: Instruction) = {
+//      Console.println(i);
+      instrs += Pair(pc, i)
+    }
+
+    /** Break this linear code in basic block representation
+     *  As a side effect, it sets the 'code' field of the current
+     */
+    def toBasicBlock: Code = {
+      import opcodes._
+
+      val code = new Code(method.symbol.name.toString);
+      method.setCode(code)
+      var bb = code.startBlock
+
+      def makeBasicBlocks: Map[Int, BasicBlock] = {
+        val block: Map[Int, BasicBlock] = new HashMap;
+        for (val pc <- jmpTargets) block += pc -> code.newBlock
+        block
+      }
+
+      val blocks = makeBasicBlocks
+      var otherBlock: BasicBlock = null
+      var disableJmpTarget = false
+
+      for (val Pair(pc, instr) <- instrs.elements) {
+//        Console.println("> " + pc + ": " + instr);
+        if (jmpTargets contains pc) {
+          otherBlock = blocks(pc)
+          if (!bb.isClosed) {
+            bb.emit(JUMP(otherBlock))
+            bb.close
+          }
+          bb = otherBlock
+        }
+        instr match {
+          case LJUMP(target) =>
+            otherBlock = blocks(target)
+            bb.emit(JUMP(otherBlock))
+            bb.close
+
+          case LCJUMP(success, failure, cond, kind) =>
+            otherBlock = blocks(success)
+            val failBlock = blocks(failure)
+            bb.emit(CJUMP(otherBlock, failBlock, cond, kind))
+            bb.close
+
+          case LCZJUMP(success, failure, cond, kind) =>
+            otherBlock = blocks(success)
+            val failBlock = blocks(failure)
+            bb.emit(CZJUMP(otherBlock, failBlock, cond, kind))
+            bb.close
+
+          case LSWITCH(tags, targets) =>
+            bb.emit(SWITCH(tags, targets map blocks))
+            bb.close
+
+          case RETURN(_) =>
+            bb.emit(instr)
+            bb.close
+
+          case _ =>
+            bb.emit(instr)
+        }
+      }
+
+      code
+    }
 
     /** Return the local at given index, with the given type. */
     def getLocal(idx: Int, kind: TypeKind): Local = {

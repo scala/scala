@@ -58,7 +58,6 @@ abstract class GenJVM extends SubComponent {
    */
   class BytecodeGenerator {
     val MIN_SWITCH_DENSITY = 0.7
-    val MODULE_INSTANCE_NAME = "MODULE$"
     val JAVA_LANG_STRINGBUFFER = "java.lang.StringBuffer"
 
     val stringBufferType = new JObjectType(JAVA_LANG_STRINGBUFFER)
@@ -468,7 +467,7 @@ abstract class GenJVM extends SubComponent {
     def addModuleInstanceField: Unit = {
       import JAccessFlags._
       jclass.addNewField(ACC_PUBLIC | ACC_FINAL | ACC_STATIC,
-                        MODULE_INSTANCE_NAME,
+                        nme.MODULE_INSTANCE_FIELD.toString,
                         jclass.getType())
     }
 
@@ -530,7 +529,7 @@ abstract class GenJVM extends SubComponent {
                       paramNames);
         val mirrorCode = mirrorMethod.getCode().asInstanceOf[JExtendedCode];
         mirrorCode.emitGETSTATIC(moduleName,
-                                 MODULE_INSTANCE_NAME,
+                                 nme.MODULE_INSTANCE_FIELD.toString,
                                  new JObjectType(moduleName));
         var i = 0
         var index = 0
@@ -720,7 +719,7 @@ abstract class GenJVM extends SubComponent {
               log("genearting LOAD_MODULE for: " + module + " flags: " +
                   Flags.flagsToString(module.flags));
             jcode.emitGETSTATIC(javaName(module) /* + "$" */ ,
-                                MODULE_INSTANCE_NAME,
+                                nme.MODULE_INSTANCE_FIELD.toString,
                                 javaType(module));
 
           case STORE_ARRAY_ITEM(kind) =>
@@ -782,7 +781,7 @@ abstract class GenJVM extends SubComponent {
                         isModuleInitialized = true;
                         jcode.emitALOAD_0();
                         jcode.emitPUTSTATIC(jclass.getName(),
-                                            MODULE_INSTANCE_NAME,
+                                            nme.MODULE_INSTANCE_FIELD.toString,
                                             jclass.getType());
                       }
 

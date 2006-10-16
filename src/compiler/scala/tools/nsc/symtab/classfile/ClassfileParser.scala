@@ -164,7 +164,9 @@ abstract class ClassfileParser {
         val start = starts(index)
         if (in.buf(start) != CONSTANT_CLASS) errorBadTag(start)
         val name = getExternalName(in.getChar(start + 1))
-        if (name.pos('.') == name.length)
+        if (name.endsWith("$"))
+          c = definitions.getModule(name.subName(0, name.length - 1))
+        else if (name.pos('.') == name.length)
           c = definitions.getMember(definitions.EmptyPackageClass, name.toTypeName)
         else
           c = definitions.getClass(name)
@@ -173,6 +175,10 @@ abstract class ClassfileParser {
       c
     }
 
+    /** Return the symbol of the class member at <code>index</code>.
+     *  If the member refers to special MODULE$ static field, return
+     *  the symbol of the corresponding module.
+     */
     def getMemberSymbol(index: Int, static: Boolean): Symbol = {
       if (index <= 0 || len <= index) errorBadIndex(index)
       var f = values(index).asInstanceOf[Symbol]
@@ -182,9 +188,21 @@ abstract class ClassfileParser {
             in.buf(start) != CONSTANT_METHODREF &&
             in.buf(start) != CONSTANT_INTFMETHODREF) errorBadTag(start)
         val cls = getClassSymbol(in.getChar(start + 1))
-	val Pair(name, tpe) = getNameAndType(in.getChar(start + 3), cls)
-        val owner = if (static) cls.linkedClassOfClass else cls
-        f = owner.info.decl(name).suchThat(.tpe.=:=(tpe))
+        val Pair(name, tpe) = getNameAndType(in.getChar(start + 3), cls)
+        if (name == nme.MODULE_INSTANCE_FIELD) {
+          val index = in.getChar(start + 1)
+          val name = getExternalName(in.getChar(starts(index) + 1))
+          assert(name.endsWith("$"), "Not a module class: " + name)
+          f = definitions.getModule(name.subName(0, name.length - 1))
+        } else {
+          val owner = if (static) cls.linkedClassOfClass else cls
+          f = owner.info.decl(name).suchThat(.tpe.=:=(tpe))
+          if (f == NoSymbol) {
+            // if it's an impl class, try to find it's static member inside the class
+            assert(cls.isImplClass, "Not an implementation class: " + cls);
+            f = cls.info.decl(name).suchThat(.tpe.=:=(tpe))
+          }
+        }
         assert(f != NoSymbol)
         values(index) = f
       }
@@ -209,6 +227,29 @@ abstract class ClassfileParser {
         p = Pair(name, tpe)
       }
       p
+    }
+    /** Return the type of a class constant entry. Since
+     *  arrays are considered to be class types, they might
+     *  appear as entries in 'newarray' or 'cast' opcodes.
+     */
+    def getClassOrArrayType(index: Int): Type = {
+      if (index <= 0 || len <= index) errorBadIndex(index)
+      val value = values(index)
+      var c: Type = null
+      if (value == null) {
+        val start = starts(index)
+        if (in.buf(start) != CONSTANT_CLASS) errorBadTag(start)
+        val name = getExternalName(in.getChar(start + 1))
+        if (name(0) == ARRAY_TAG)
+          c = sigToType(name)
+        else
+          c = definitions.getClass(name).tpe
+        values(index) = c
+      } else c = value match {
+          case _: Type => value.asInstanceOf[Type]
+          case _: Symbol => value.asInstanceOf[Symbol].tpe
+      }
+      c
     }
 
     def getType(index: int): Type =

@@ -83,6 +83,8 @@ trait StdNames requires SymbolTable {
     val LOCALDUMMY_PREFIX = newTermName(LOCALDUMMY_PREFIX_STRING)
     val THIS_SUFFIX = newTermName(".this")
 
+    val MODULE_INSTANCE_FIELD = newTermName("MODULE$")
+
     def isLocalName(name: Name) = name.endsWith(LOCAL_SUFFIX)
     def isSetterName(name: Name) = name.endsWith(SETTER_SUFFIX)
     def isLocalDummyName(name: Name) = name.startsWith(LOCALDUMMY_PREFIX)
@@ -134,6 +136,12 @@ trait StdNames requires SymbolTable {
       newTermName(name.toString() + MODULE_SUFFIX)
 
     def superName(name: Name) = newTermName("super$" + name)
+
+    /** The name of an accessor for protected symbols. */
+    def protName(name: Name): Name = newTermName("protected$" + name)
+
+    /** The name of a setter for protected symbols. Used for inherited Java fields. */
+    def protSetterName(name: Name): Name = newTermName("protected$set" + name)
 
     val ERROR = newTermName("<error>")
     val ERRORtype = newTypeName("<error>")
