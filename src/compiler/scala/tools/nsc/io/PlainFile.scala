@@ -39,6 +39,7 @@ class PlainFile(val file: File) extends AbstractFile {
   /** Returns the path of this abstract file. */
   def path = file.getPath()
 
+  override def read = new FileInputStream(file)
 
   override def hashCode(): Int =
     try { file.getCanonicalPath().hashCode() }

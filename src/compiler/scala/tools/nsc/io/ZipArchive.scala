@@ -162,6 +162,7 @@ final class ZipArchive(file: File, val archive: ZipFile) extends PlainFile(file)
     var entry: ZipEntry = _
 
     override def isDirectory = true
+    override def read = throw new Error("cannot read directories");
 
     override def lastModified: Long =
       if (entry != null) entry.getTime() else super.lastModified
@@ -184,6 +185,8 @@ final class ZipArchive(file: File, val archive: ZipFile) extends PlainFile(file)
   {
 
     override def lastModified: Long = entry.getTime()
+
+    override def read = archive.getInputStream(entry);
 
     /** in zip archives, we assume class files conform to Java spec by using UTF-8 * /
     def getBytes: Array[Byte] = {

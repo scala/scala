@@ -74,7 +74,7 @@ class Settings(error: String => unit) {
   private val windowtitleDefault = "Scala Library Documentation"
   private val documenttitleDefault = "Scala 2"
 
-  val doc           = BooleanSetting("-doc", "Generate documentation");
+  val doc           = new BooleanSetting("-doc", "Generate documentation") { override def hiddenToIDE = true }
   val debuginfo     = new DebugSetting("-g", "Generate debugging info", List("none", "source", "line", "vars", "notc"), "vars", "vars")
   val nowarnings    = BooleanSetting("-nowarn", "Generate no warnings")
   val noassertions  = BooleanSetting("-noassert", "Generate no assertions and assumptions")
@@ -85,18 +85,18 @@ class Settings(error: String => unit) {
   val bootclasspath = StringSetting ("-bootclasspath", "path", "Override location of bootstrap class files", bootclasspathDefault)
   val extdirs       = StringSetting ("-extdirs", "dirs", "Override location of installed extensions", extdirsDefault)
   val outdir        = StringSetting ("-d", "directory", "Specify where to place generated class files", ".")
-  val encoding      = StringSetting ("-encoding", "encoding", "Specify character encoding used by source files", encodingDefault)
+  val encoding      = new StringSetting ("-encoding", "encoding", "Specify character encoding used by source files", encodingDefault) { override def hiddenToIDE = false }
   val windowtitle   = StringSetting ("-windowtitle", "windowtitle", "Specify window title of generated HTML documentation", windowtitleDefault)
   val documenttitle = StringSetting ("-documenttitle", "documenttitle", "Specify document title of generated HTML documentation", documenttitleDefault)
   val target        = ChoiceSetting ("-target", "Specify which backend to use", List("jvm-1.5", "jvm-1.4", "msil", "cldc"), "jvm-1.4")
   val migrate       = BooleanSetting("-migrate", "Assist in migrating from Scala version 1.0")
-  val debug         = BooleanSetting("-debug", "Output debugging messages")
-  val statistics    = BooleanSetting("-statistics", "Print compiler statistics")
+  val debug         = new BooleanSetting("-debug", "Output debugging messages") { override def hiddenToIDE = true }
+  val statistics    = new BooleanSetting("-statistics", "Print compiler statistics") { override def hiddenToIDE = true }
   val explaintypes  = BooleanSetting("-explaintypes", "Explain type errors in more detail")
-  val resident      = BooleanSetting("-resident", "Compiler stays resident, files to compile are read from standard input")
+  val resident      = new BooleanSetting("-resident", "Compiler stays resident, files to compile are read from standard input") { override def hiddenToIDE = true }
   val uniqid        = BooleanSetting("-uniqid", "Print identifiers with unique names (debugging option)")
-  val printtypes    = BooleanSetting("-printtypes", "Print tree types (debugging option)")
-  val prompt        = BooleanSetting("-prompt", "Display a prompt after each error (debugging option)")
+  val printtypes    = new BooleanSetting("-printtypes", "Print tree types (debugging option)") { override def hiddenToIDE = true }
+  val prompt        = new BooleanSetting("-prompt", "Display a prompt after each error (debugging option)") { override def hiddenToIDE = true }
   val noimports     = BooleanSetting("-noimports", "Compile without any implicit imports")
   val nopredefs     = BooleanSetting("-nopredefs", "Compile without any implicit predefined values")
   val skip          = PhasesSetting ("-skip", "Skip")
@@ -108,8 +108,8 @@ class Settings(error: String => unit) {
   val browse        = PhasesSetting ("-browse", "Browse the abstract syntax tree after")
   val stop          = PhasesSetting ("-stop", "Stop after phase")
   val log           = PhasesSetting ("-log", "Log operations in")
-  val version       = BooleanSetting("-version", "Print product version and exit")
-  val help          = BooleanSetting("-help", "Print a synopsis of standard options")
+  val version       = new BooleanSetting("-version", "Print product version and exit") { override def hiddenToIDE = true }
+  val help          = new BooleanSetting("-help", "Print a synopsis of standard options") { override def hiddenToIDE = true }
   val nouescape     = new BooleanSetting("-nouescape", "disables handling of \\u unicode escapes")
 //  val showPhases    = BooleanSetting("-showphases", "Print a synopsis of compiler phases")
 
@@ -122,7 +122,7 @@ class Settings(error: String => unit) {
   val Xlinearizer   = ChoiceSetting ("-Xlinearizer", "Linearizer to use", List("normal", "dfs", "rpo", "dump"), "rpo")
   val Xgenerics     = BooleanSetting("-Xgenerics", "Use generic Java types")
   val Xprintpos     = BooleanSetting("-Xprintpos", "Print tree positions (as offsets)")
-  val Xscript       = BooleanSetting("-Xscript", "compile script file")
+  val Xscript       = new BooleanSetting("-Xscript", "compile script file") { override def hiddenToIDE = true }
   val Xexperimental = BooleanSetting("-Xexperimental", "enable experimental extensions")
 
   /** A list of all settings */
@@ -157,6 +157,10 @@ class Settings(error: String => unit) {
       */
     def unparse: List[String]
 
+    /** override if option should be hidden from IDE.
+      */
+    def hiddenToIDE : Boolean = false
+
     // initialization
     allsettings = this :: allsettings
   }
@@ -181,6 +185,7 @@ class Settings(error: String => unit) {
   /** A setting represented by a string, (`default' unless set) */
   case class StringSetting(nme: String, arg: String, descr: String, default: String)
   extends Setting(nme, descr) {
+    override def hiddenToIDE = true;
     var abbreviation: String = null
 
     var value: String = default
@@ -290,6 +295,7 @@ class Settings(error: String => unit) {
    */
   case class PhasesSetting(nme: String, descr: String)
   extends Setting(nme, descr + " <phase>") { // (see -showphases)") {
+    override def hiddenToIDE = true
     var value: List[String] = List()
 
     def tryToSet(args: List[String]): List[String] = args match {

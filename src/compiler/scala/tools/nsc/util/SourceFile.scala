@@ -13,6 +13,9 @@ package scala.tools.nsc.util
 
 import scala.tools.nsc.io.{AbstractFile, VirtualFile}
 
+/** Uses positions that are offsets rather than line/column pairs.
+ *
+ */
 object SourceFile {
   val LF: Char = 0x0A
   val FF: Char = 0x0C
@@ -29,7 +32,7 @@ object SourceFile {
 class SourceFile(val file: AbstractFile, _content: Array[Char]) {
   import SourceFile._
 
-  //def this(_file: AbstractFile) = this(_file, _file.getChars)
+  def this(_file: AbstractFile) = this(_file, _file.toCharArray);
 
   def this(sourceName: String, content: Array[Char]) =
     this(new VirtualFile(sourceName), content)

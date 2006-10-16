@@ -8,7 +8,7 @@
 package scala.tools.nsc.io
 
 
-import java.io.File
+import java.io.{File,InputStream,DataInputStream}
 
 object AbstractFile {
 
@@ -89,6 +89,22 @@ abstract class AbstractFile extends Object with Iterable[AbstractFile] {
 
   /** Returns the time that this abstract file was last modified. */
   def lastModified: Long
+
+  /** returns an input stream so the file can be read */
+  def read : InputStream;
+  final def toCharArray = {
+    val input = read;
+    var str : String = "";
+    val buf = new Array[Byte](100);
+    var eof = false;
+    while (!eof) {
+      val x = input.read(buf);
+      eof = x == -1;
+      if (!eof) str = str + new String(buf, 0, x);
+    }
+    input.close;
+    str.toCharArray;
+  }
 
   /** Reads the content of this abstract file into a byte array. */
   //def getBytes: Array[Byte] = error("getBytes not supported by "+this.getClass())

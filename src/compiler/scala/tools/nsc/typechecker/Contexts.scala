@@ -95,6 +95,20 @@ trait Contexts requires Analyzer {
 
     var savedTypeBounds: List[Pair[Symbol, Type]] = List()
 
+    override def equals(that : Any) = that match {
+      case that if (super.equals(that)) => true
+      case txt : Context =>
+      tree == txt.tree && owner == txt.owner && scope == txt.scope &&
+        outer == txt.outer && enclClass == txt.enclClass && enclMethod == txt.enclMethod &&
+          variance == txt.variance && _undetparams == txt._undetparams &&
+            depth == txt.depth && imports == txt.imports && prefix == txt.prefix &&
+              inConstructorSuffix == txt.inConstructorSuffix && implicitsEnabled == txt.implicitsEnabled &&
+                  checking == txt.checking && retyping == txt.retyping &&
+                    savedTypeBounds == txt.savedTypeBounds
+      case _ => false;
+    }
+
+
     def undetparams = _undetparams
     def undetparams_=(ps: List[Symbol]) = {
       //System.out.println("undetparams = " + ps);//debug

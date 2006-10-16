@@ -49,6 +49,47 @@ trait Typers requires Analyzer {
       super.traverse(tree)
     }
   }
+  def makeNewScope(txt : Context, tree : Tree, sym : Symbol) =
+    txt.makeNewScope(tree, sym)
+  def newDecls(tree : CompoundTypeTree) = newScope
+  def newDecls(tree : Template, clazz : Symbol) = newScope
+  def newTemplateScope(impl : Template, clazz : Symbol) = newScope
+
+  /** Mode constants
+   */
+  val NOmode        = 0x000
+  val EXPRmode      = 0x001    // these 3 modes are mutually exclusive.
+  val PATTERNmode   = 0x002
+  val TYPEmode      = 0x004
+
+  val SCCmode       = 0x008    // orthogonal to above. When set we are
+                               // in the this or super constructor call of a constructor.
+
+  val FUNmode       = 0x10     // orthogonal to above. When set
+                               // we are looking for a method or constructor
+
+  val POLYmode      = 0x020    // orthogonal to above. When set
+                               // expression types can be polymorphic.
+
+  val QUALmode      = 0x040    // orthogonal to above. When set
+                               // expressions may be packages and
+                               // Java statics modules.
+
+  val TAPPmode      = 0x080    // Set for the function/type constructor part
+                               // of a type application. When set we do not
+                               // decompose PolyTypes.
+
+  val SUPERCONSTRmode = 0x100  // Set for the `super' in a superclass constructor call
+                               // super.<init>
+
+  val SNDTRYmode    = 0x200    // indicates that an application is typed for the 2nd
+                               // time. In that case functions may no longer be
+                               // be coerced with implicit views.
+
+  val LHSmode       = 0x400    // Set for the left-hand side of an assignment
+
+  val CONSTmode     = 0x800    // expressions should evaluate to constants
+                               // used for attribute arguments
 
   class Typer(context0: Context) {
     import context0.unit
@@ -96,42 +137,8 @@ trait Typers requires Analyzer {
     }
 
     private var context = context0
+    def context1 = context
 
-    /** Mode constants
-     */
-    val NOmode        = 0x000
-    val EXPRmode      = 0x001    // these 3 modes are mutually exclusive.
-    val PATTERNmode   = 0x002
-    val TYPEmode      = 0x004
-
-    val SCCmode       = 0x008    // orthogonal to above. When set we are
-                                 // in the this or super constructor call of a constructor.
-
-    val FUNmode       = 0x10     // orthogonal to above. When set
-                                 // we are looking for a method or constructor
-
-    val POLYmode      = 0x020    // orthogonal to above. When set
-                                 // expression types can be polymorphic.
-
-    val QUALmode      = 0x040    // orthogonal to above. When set
-                                 // expressions may be packages and
-                                 // Java statics modules.
-
-    val TAPPmode      = 0x080    // Set for the function/type constructor part
-                                 // of a type application. When set we do not
-                                 // decompose PolyTypes.
-
-    val SUPERCONSTRmode = 0x100  // Set for the `super' in a superclass constructor call
-                                 // super.<init>
-
-    val SNDTRYmode    = 0x200    // indicates that an application is typed for the 2nd
-                                 // time. In that case functions may no longer be
-                                 // be coerced with implicit views.
-
-    val LHSmode       = 0x400    // Set for the left-hand side of an assignment
-
-    val CONSTmode     = 0x800    // expressions should evaluate to constants
-                                 // used for attribute arguments
 
     private val stickyModes: int  = EXPRmode | PATTERNmode | TYPEmode | CONSTmode
 
@@ -614,7 +621,7 @@ trait Typers requires Analyzer {
               case DefDef(_, _, _, vparamss, _, Apply(_, superargs)) =>
                 val outercontext = context.outer
                 supertpt = TypeTree(
-                  newTyper(outercontext.makeNewScope(constr, outercontext.owner))
+                  newTyper(makeNewScope(outercontext, constr, outercontext.owner))
                     .completeParentType(
                       supertpt,
                       tparams,
@@ -696,7 +703,7 @@ trait Typers requires Analyzer {
       reenterTypeParams(cdef.tparams)
       val tparams1 = List.mapConserve(cdef.tparams)(typedAbsTypeDef)
       val tpt1 = checkNoEscaping.privates(clazz.thisSym, typedType(cdef.tpt))
-      val impl1 = newTyper(context.make(cdef.impl, clazz, newScope))
+      val impl1 = newTyper(context.make(cdef.impl, clazz, newTemplateScope(cdef.impl, clazz)))
         .typedTemplate(cdef.impl, parentTypes(cdef.impl))
       val impl2 = addSyntheticMethods(impl1, clazz, context.unit)
       val ret = copy.ClassDef(cdef, cdef.mods, cdef.name, tparams1, tpt1, impl2)
@@ -712,7 +719,7 @@ trait Typers requires Analyzer {
       //System.out.println("sourcefile of " + mdef.symbol + "=" + mdef.symbol.sourceFile)
       attributes(mdef)
       val clazz = mdef.symbol.moduleClass
-      val impl1 = newTyper(context.make(mdef.impl, clazz, newScope))
+      val impl1 = newTyper(context.make(mdef.impl, clazz, newTemplateScope(mdef.impl, clazz)))
         .typedTemplate(mdef.impl, parentTypes(mdef.impl))
       val impl2 = addSyntheticMethods(impl1, clazz, context.unit)
 
@@ -1006,7 +1013,7 @@ trait Typers requires Analyzer {
     def typedCases(tree: Tree, cases: List[CaseDef], pattp0: Type, pt: Type): List[CaseDef] = {
       var pattp = pattp0
       List.mapConserve(cases) ( cdef =>
-          newTyper(context.makeNewScope(cdef, context.owner)).typedCase(cdef, pattp, pt))
+          newTyper(makeNewScope(context, cdef, context.owner)).typedCase(cdef, pattp, pt))
 /* not yet!
         cdef.pat match {
           case Literal(Constant(null)) =>
@@ -1259,9 +1266,13 @@ trait Typers requires Analyzer {
       defn.mods setAttr List();
     }
 
+    protected def typedHookForTree(tree : Tree, mode : Int, pt : Type): Tree = null;
 
     protected def typed1(tree: Tree, mode: int, pt: Type): Tree = {
-
+      { // IDE hook
+        val ret = typedHookForTree(tree, mode, pt)
+        if (ret != null) return ret
+      }
       def ptOrLub(tps: List[Type]) = if (isFullyDefined(pt)) pt else lub(tps)
 
       def typedTypeApply(fun: Tree, args: List[Tree]): Tree = fun.tpe match {
@@ -1543,35 +1554,36 @@ trait Typers requires Analyzer {
       val sym: Symbol = tree.symbol
       if (sym != null) sym.initialize
       //if (settings.debug.value && tree.isDef) log("typing definition of "+sym);//DEBUG
+
       tree match {
         case PackageDef(name, stats) =>
           val stats1 = newTyper(context.make(tree, sym.moduleClass, sym.info.decls))
             .typedStats(stats, NoSymbol)
           copy.PackageDef(tree, name, stats1) setType NoType
 
-        case cdef @ ClassDef(_, _, _, _, _) =>
-          newTyper(context.makeNewScope(tree, sym)).typedClassDef(cdef)
+        case tree @ ClassDef(_, _, _, _, _) =>
+          newTyper(makeNewScope(context, tree, sym)).typedClassDef(tree)
 
-        case mdef @ ModuleDef(_, _, _) =>
-          newTyper(context.make(tree, sym.moduleClass)).typedModuleDef(mdef)
+        case tree @ ModuleDef(_, _, _) =>
+          newTyper(context.make(tree, sym.moduleClass)).typedModuleDef(tree)
 
         case vdef @ ValDef(_, _, _, _) =>
           typedValDef(vdef)
 
         case ddef @ DefDef(_, _, _, _, _, _) =>
-          newTyper(context.makeNewScope(tree, sym)).typedDefDef(ddef)
+          newTyper(makeNewScope(context, tree, sym)).typedDefDef(ddef)
 
         case tdef @ AbsTypeDef(_, _, _, _) =>
-          newTyper(context.makeNewScope(tree, sym)).typedAbsTypeDef(tdef)
+          newTyper(makeNewScope(context, tree, sym)).typedAbsTypeDef(tdef)
 
         case tdef @ AliasTypeDef(_, _, _, _) =>
-          newTyper(context.makeNewScope(tree, sym)).typedAliasTypeDef(tdef)
+          newTyper(makeNewScope(context, tree, sym)).typedAliasTypeDef(tdef)
 
         case ldef @ LabelDef(_, _, _) =>
           var lsym = ldef.symbol
           var typer1 = this
           if (lsym == NoSymbol) { // labeldef is part of template
-            typer1 = newTyper(context.makeNewScope(tree, context.owner))
+            typer1 = newTyper(makeNewScope(context, tree, context.owner))
             typer1.enterLabelDef(ldef)
           }
           typer1.typedLabelDef(ldef)
@@ -1581,9 +1593,9 @@ trait Typers requires Analyzer {
           if (comments != null) comments(defn . symbol) = comment;
           ret
         }
-        case block @ Block(_, _) =>
-          newTyper(context.makeNewScope(tree, context.owner))
-            .typedBlock(block, mode, pt)
+        case tree @ Block(_, _) =>
+          newTyper(makeNewScope(context, tree, context.owner))
+            .typedBlock(tree, mode, pt)
 
         case Sequence(elems) =>
           val elems1 = List.mapConserve(elems)(elem => typed(elem, mode, pt))
@@ -1623,11 +1635,11 @@ trait Typers requires Analyzer {
             .setType(if (isFullyDefined(pt) && !phase.erasedTypes) pt
                      else appliedType(ArrayClass.typeConstructor, List(elemtpt1.tpe)))
 
-        case fun @ Function(_, _) =>
+        case tree @ Function(_, _) =>
           if (tree.symbol == NoSymbol)
             tree.symbol = context.owner.newValue(tree.pos, nme.ANON_FUN_NAME)
               .setFlag(SYNTHETIC).setInfo(NoType)
-          newTyper(context.makeNewScope(tree, tree.symbol)).typedFunction(fun, mode, pt)
+          newTyper(makeNewScope(context, tree, tree.symbol)).typedFunction(tree, mode, pt)
 
         case Assign(lhs, rhs) =>
           def mayBeVarGetter(sym: Symbol) = sym.info match {
@@ -1842,12 +1854,13 @@ trait Typers requires Analyzer {
         case SelectFromTypeTree(qual, selector) =>
           tree setType typedSelect(typedType(qual), selector).tpe
 
-        case CompoundTypeTree(templ: Template) =>
+
+        case tree @ CompoundTypeTree(templ: Template) =>
           tree setType {
             val parents1 = List.mapConserve(templ.parents)(typedType)
             if (parents1 exists (.tpe.isError)) ErrorType
             else {
-              val decls = newScope
+              val decls = newDecls(tree)
               val self = refinedType(parents1 map (.tpe), context.enclClass.owner, decls)
               newTyper(context.make(templ, self.symbol, decls)).typedRefinement(templ.body)
               self
@@ -1886,6 +1899,7 @@ trait Typers requires Analyzer {
           throw new Error("unexpected tree: "+tree);//debug
       }
     }
+    protected def typedHookForType(tree : Tree, mode : Int, pt : Type): Tree = null;
 
     def typed(tree: Tree, mode: int, pt: Type): Tree =
       try {
@@ -1896,6 +1910,11 @@ trait Typers requires Analyzer {
           tree.tpe = null
           if (tree.hasSymbol) tree.symbol = NoSymbol
         }
+        { // IDE hook, can reset type if things are different.
+          val ret = typedHookForType(tree, mode, pt);
+          if (ret != null) return ret;
+        }
+
         //System.out.println("typing "+tree+", "+context.undetparams);//DEBUG
         val tree1 = if (tree.tpe != null) tree else typed1(tree, mode, pt)
         //System.out.println("typed "+tree1+":"+tree1.tpe+", "+context.undetparams);//DEBUG
@@ -1918,10 +1937,10 @@ trait Typers requires Analyzer {
       }
 
     def atOwner(owner: Symbol): Typer =
-      new Typer(context.make(context.tree, owner))
+      newTyper(context.make(context.tree, owner))
 
     def atOwner(tree: Tree, owner: Symbol): Typer =
-      new Typer(context.make(tree, owner))
+      newTyper(context.make(tree, owner))
 
     /** Types expression or definition `tree' */
     def typed(tree: Tree): Tree = {
