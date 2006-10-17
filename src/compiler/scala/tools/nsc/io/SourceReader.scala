@@ -10,9 +10,9 @@
 package scala.tools.nsc.io
 
 
-import java.io.{File, FileInputStream, IOException}
+import java.io.{File, FileInputStream, InputStream, IOException}
 import java.nio.{ByteBuffer, CharBuffer}
-import java.nio.channels.{FileChannel, ReadableByteChannel}
+import java.nio.channels.{FileChannel, ReadableByteChannel, Channels}
 import java.nio.charset.{CharsetDecoder, CoderResult}
 
 /** This class implements methods to read and decode source files. */
@@ -42,15 +42,15 @@ class SourceReader(decoder: CharsetDecoder) {
 
   /** Reads the specified file. */
   def read(file: File): Array[Char] = {
-    val channel: FileChannel = new FileInputStream(file).getChannel()
+    val c = new FileInputStream(file).getChannel
     try {
-      read(channel)
+      read(c)
     } catch {
       case e:Exception =>
         reportEncodingError(file.toString())
         new Array[Char](0)
     } finally {
-      channel.close()
+      c.close()
     }
   }
 
@@ -61,8 +61,11 @@ class SourceReader(decoder: CharsetDecoder) {
    */
   def read(file: AbstractFile): Array[Char] = {
     file match {
-      case p:PlainFile => read(p.file)
-      case _ => throw new IOException(file.toString()+" is not a plain file")
+      case p:PlainFile => read(p.file)                                                     // bq: (!!!)
+      case z:ZipArchive#FileEntry =>
+        val c = Channels.newChannel(z.getArchive.getInputStream(z.entry))
+        read(c)
+      case _ => throw new IOException(file.toString()+" is neither plain file nor ZipArchive#FileEntry")
     }
     /*
     val decoder: CharsetDecoder = this.decoder.reset();
