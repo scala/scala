@@ -9,7 +9,6 @@
 
 package scala.tools.ant {
 
-
   import java.io.{File, InputStream, FileWriter}
   import java.net.{URL, URLClassLoader}
   import java.util.{ArrayList, Vector}
@@ -22,45 +21,53 @@ package scala.tools.ant {
                                     SourceFileScanner}
   import org.apache.tools.ant.types.{EnumeratedAttribute, Reference}
 
-  import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
   import scala.tools.nsc.{Global, FatalError, Settings}
   import scala.tools.nsc.doc.DocGenerator
+  import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
 
-  /** An Ant task to document Scala code.
-    * This task can take the following parameters as attributes:<ul>
-    *  <li>srcdir (mandatory),</li>
-    *  <li>srcref,</li>
-    *  <li>destdir,</li>
-    *  <li>classpath,</li>
-    *  <li>classpathref,</li>
-    *  <li>sourcepath,</li>
-    *  <li>sourcepathref,</li>
-    *  <li>bootclasspath,</li>
-    *  <li>bootclasspathref,</li>
-    *  <li>extdirs,</li>
-    *  <li>extdirsref,</li>
-    *  <li>encoding,</li>
-    *  <li>windowtitle,</li>
-    *  <li>documenttitle.</li>
-    * </ul>
-    * It also takes the following parameters as nested elements:<ul>
-    *  <li>src (for srcdir),</li>
-    *  <li>classpath,</li>
-    *  <li>sourcepath,</li>
-    *  <li>bootclasspath,</li>
-    *  <li>extdirs.</li>
-    * </ul>
-    *
-    * @author Gilles Dubochet, Stephane Micheloud
-    */
+  /** <p>
+   *    An Ant task to document Scala code.
+   *  </p>
+   *  <p>
+   *    This task can take the following parameters as attributes:
+   *  </p>
+   *  <ul>
+   *    <li>srcdir (mandatory),</li>
+   *    <li>srcref,</li>
+   *    <li>destdir,</li>
+   *    <li>classpath,</li>
+   *    <li>classpathref,</li>
+   *    <li>sourcepath,</li>
+   *    <li>sourcepathref,</li>
+   *    <li>bootclasspath,</li>
+   *    <li>bootclasspathref,</li>
+   *    <li>extdirs,</li>
+   *    <li>extdirsref,</li>
+   *    <li>encoding,</li>
+   *    <li>windowtitle,</li>
+   *    <li>documenttitle.</li>
+   *  </ul>
+   *  <p>
+   *    It also takes the following parameters as nested elements:
+   *  </p>
+   *  <ul>
+   *    <li>src (for srcdir),</li>
+   *    <li>classpath,</li>
+   *    <li>sourcepath,</li>
+   *    <li>bootclasspath,</li>
+   *    <li>extdirs.</li>
+   *  </ul>
+   *
+   *  @author Gilles Dubochet, Stephane Micheloud
+   */
   class Scaladoc extends MatchingTask {
 
     /** The unique Ant file utilities instance to use in this task. */
     private val fileUtils = FileUtils.newFileUtils()
 
-/******************************************************************************\
+/*============================================================================*\
 **                             Ant user-properties                            **
-\******************************************************************************/
+\*============================================================================*/
 
     /** The directories that contain source files to compile. */
     private var origin: Option[Path] = None
@@ -84,165 +91,221 @@ package scala.tools.ant {
     /** The document title of the generated HTML documentation. */
     private var documenttitle: Option[String] = None
 
-/******************************************************************************\
+/*============================================================================*\
 **                             Properties setters                             **
-\******************************************************************************/
+\*============================================================================*/
 
-    /** Sets the srcdir attribute. Used by Ant.
-      * @param input The value of <code>origin</code>. */
+    /** Sets the <code>srcdir</code> attribute. Used by Ant.
+     *
+     *  @param input The value of <code>origin</code>.
+     */
     def setSrcdir(input: Path) =
       if (origin.isEmpty) origin = Some(input)
       else origin.get.append(input)
 
     /** Sets the <code>origin</code> as a nested src Ant parameter.
-      * @return An origin path to be configured. */
+     *
+     *  @return An origin path to be configured.
+     */
     def createSrc(): Path = {
       if (origin.isEmpty) origin = Some(new Path(getProject()))
       origin.get.createPath()
     }
 
     /** Sets the <code>origin</code> as an external reference Ant parameter.
-      * @param input A reference to an origin path. */
+     *
+     *  @param input A reference to an origin path.
+     */
     def setSrcref(input: Reference) =
       createSrc().setRefid(input)
 
-    /** Sets the destdir attribute. Used by Ant.
-      * @param input The value of <code>destination</code>. */
+    /** Sets the <code>destdir</code> attribute. Used by Ant.
+     *
+     *  @param input The value of <code>destination</code>.
+     */
     def setDestdir(input: File) =
       destination = Some(input)
 
-    /** Sets the classpath attribute. Used by Ant.
-      * @param input The value of <code>classpath</code>. */
+    /** Sets the <code>classpath</code> attribute. Used by Ant.
+     *
+     *  @param input The value of <code>classpath</code>.
+     */
     def setClasspath(input: Path) =
       if (classpath.isEmpty) classpath = Some(input)
       else classpath.get.append(input)
 
     /** Sets the <code>classpath</code> as a nested classpath Ant parameter.
-      * @return A class path to be configured. */
+     *
+     *  @return A class path to be configured.
+     */
     def createClasspath(): Path = {
       if (classpath.isEmpty) classpath = Some(new Path(getProject()))
       classpath.get.createPath()
     }
 
     /** Sets the <code>classpath</code> as an external reference Ant parameter.
-      * @param input A reference to a class path. */
+     *
+     *  @param input A reference to a class path.
+     */
     def setClasspathref(input: Reference) =
       createClasspath().setRefid(input)
 
-    /** Sets the sourcepath attribute. Used by Ant.
-      * @param input The value of <code>sourcepath</code>. */
+    /** Sets the <code>sourcepath</code> attribute. Used by Ant.
+     *
+     *  @param input The value of <code>sourcepath</code>.
+     */
     def setSourcepath(input: Path) =
       if (sourcepath.isEmpty) sourcepath = Some(input)
       else sourcepath.get.append(input)
 
     /** Sets the <code>sourcepath</code> as a nested sourcepath Ant parameter.
-      * @return A source path to be configured. */
+     *
+     *  @return A source path to be configured.
+     */
     def createSourcepath(): Path = {
       if (sourcepath.isEmpty) sourcepath = Some(new Path(getProject()))
       sourcepath.get.createPath()
     }
 
     /** Sets the <code>sourcepath</code> as an external reference Ant parameter.
-      * @param input A reference to a source path. */
+     *
+     *  @param input A reference to a source path.
+     */
     def setSourcepathref(input: Reference) =
       createSourcepath().setRefid(input)
 
-    /** Sets the boot classpath attribute. Used by Ant.
-      * @param input The value of <code>bootclasspath</code>. */
+    /** Sets the <code>bootclasspath</code> attribute. Used by Ant.
+     *
+     *  @param input The value of <code>bootclasspath</code>.
+     */
     def setBootclasspath(input: Path) =
       if (bootclasspath.isEmpty) bootclasspath = Some(input)
       else bootclasspath.get.append(input)
 
     /** Sets the <code>bootclasspath</code> as a nested sourcepath Ant
-      * parameter.
-      * @return A source path to be configured. */
+     *  parameter.
+     *
+     *  @return A source path to be configured.
+     */
     def createBootclasspath(): Path = {
       if (bootclasspath.isEmpty) bootclasspath = Some(new Path(getProject()))
       bootclasspath.get.createPath()
     }
 
     /** Sets the <code>bootclasspath</code> as an external reference Ant
-      * parameter.
-      * @param input A reference to a source path. */
+     *  parameter.
+     *
+     *  @param input A reference to a source path.
+     */
     def setBootclasspathref(input: Reference) =
       createBootclasspath().setRefid(input)
 
     /** Sets the external extensions path attribute. Used by Ant.
-      * @param input The value of <code>extdirs</code>. */
-    def setExtdirs(input: Path) =
+     *
+     *  @param input The value of <code>extdirs</code>.
+     */
+    def setExtdirs(input: Path): Unit =
       if (extdirs.isEmpty) extdirs = Some(input)
       else extdirs.get.append(input)
 
     /** Sets the <code>extdirs</code> as a nested sourcepath Ant parameter.
-      * @return An extensions path to be configured. */
+     *
+     *  @return An extensions path to be configured.
+     */
     def createExtdirs(): Path = {
       if (extdirs.isEmpty) extdirs = Some(new Path(getProject()))
       extdirs.get.createPath()
     }
 
     /** Sets the <code>extdirs</code> as an external reference Ant parameter.
-      * @param input A reference to an extensions path. */
+     *
+     *  @param input A reference to an extensions path.
+     */
     def setExtdirsref(input: Reference) =
       createExtdirs().setRefid(input)
 
     /** Sets the <code>encoding</code> attribute. Used by Ant.
-      * @param input The value of <code>encoding</code>. */
+     *
+     *  @param input The value of <code>encoding</code>.
+     */
     def setEncoding(input: String): Unit =
       encoding = Some(input)
 
     /** Sets the <code>windowtitle</code> attribute.
-      * @param input The value of <code>windowtitle</code>. */
+     *
+     *  @param input The value of <code>windowtitle</code>.
+     */
     def setWindowtitle(input: String): Unit =
       windowtitle = Some(input)
 
     /** Sets the <code>documenttitle</code> attribute.
-      * @param input The value of <code>documenttitle</code>. */
+     *
+     *  @param input The value of <code>documenttitle</code>.
+     */
     def setDocumenttitle(input: String): Unit =
       documenttitle = Some(input)
 
-/******************************************************************************\
+/*============================================================================*\
 **                             Properties getters                             **
-\******************************************************************************/
+\*============================================================================*/
 
-    /** Gets the value of the classpath attribute in a Scala-friendly form.
-      * @returns The class path as a list of files. */
+    /** Gets the value of the <code>classpath</code> attribute in a
+     *  Scala-friendly form.
+     *
+     *  @return The class path as a list of files.
+     */
     private def getClasspath: List[File] =
       if (classpath.isEmpty) error("Member 'classpath' is empty.")
       else List.fromArray(classpath.get.list()).map(nameToFile)
 
-    /** Gets the value of the origin attribute in a Scala-friendly form.
-      * @returns The origin path as a list of files. */
+    /** Gets the value of the <code>origin</code> attribute in a Scala-friendly
+     *  form.
+     *
+     *  @return The origin path as a list of files.
+     */
     private def getOrigin: List[File] =
       if (origin.isEmpty) error("Member 'origin' is empty.")
       else List.fromArray(origin.get.list()).map(nameToFile)
 
-    /** Gets the value of the destination attribute in a Scala-friendly form.
-      * @returns The destination as a file. */
+    /** Gets the value of the <code>destination</code> attribute in a
+     *  Scala-friendly form.
+     *
+     *  @return The destination as a file.
+     */
     private def getDestination: File =
       if (destination.isEmpty) error("Member 'destination' is empty.")
       else existing(getProject().resolveFile(destination.get.toString()))
 
-    /** Gets the value of the sourcepath attribute in a Scala-friendly form.
-      * @returns The source path as a list of files. */
+    /** Gets the value of the <code>sourcepath</code> attribute in a
+     *  Scala-friendly form.
+     *
+     *  @return The source path as a list of files.
+     */
     private def getSourcepath: List[File] =
       if (sourcepath.isEmpty) error("Member 'sourcepath' is empty.")
       else List.fromArray(sourcepath.get.list()).map(nameToFile)
 
-    /** Gets the value of the bootclasspath attribute in a Scala-friendly form.
-      * @returns The boot class path as a list of files. */
+    /** Gets the value of the <code>bootclasspath</code> attribute in a
+     *  Scala-friendly form.
+     *
+     *  @return The boot class path as a list of files.
+     */
     private def getBootclasspath: List[File] =
-    if (bootclasspath.isEmpty) error("Member 'bootclasspath' is empty.")
-    else List.fromArray(bootclasspath.get.list()).map(nameToFile)
+      if (bootclasspath.isEmpty) error("Member 'bootclasspath' is empty.")
+      else List.fromArray(bootclasspath.get.list()).map(nameToFile)
 
-    /** Gets the value of the extdirs attribute in a Scala-friendly form.
-      * @returns The extensions path as a list of files. */
+    /** Gets the value of the <code>extdirs</code> attribute in a
+     Scala-friendly form.
+     *
+     *  @return The extensions path as a list of files.
+     */
     private def getExtdirs: List[File] =
       if (extdirs.isEmpty) error("Member 'extdirs' is empty.")
       else List.fromArray(extdirs.get.list()).map(nameToFile)
 
-/******************************************************************************\
+/*============================================================================*\
 **                       Compilation and support methods                      **
-\******************************************************************************/
+\*============================================================================*/
 
     /** This is forwarding method to circumvent bug #281 in Scala 2. Remove when
       * bug has been corrected. */
@@ -250,25 +313,31 @@ package scala.tools.ant {
       super.getDirectoryScanner(baseDir)
 
     /** Transforms a string name into a file relative to the provided base
-      * directory.
-      * @param base A file pointing to the location relative to which the name
-      *   will be resolved.
-      * @param name A relative or absolute path to the file as a string.
-      * @return A file created from the name and the base file. */
+     *  directory.
+     *
+     *  @param base A file pointing to the location relative to which the name
+     *              will be resolved.
+     *  @param name A relative or absolute path to the file as a string.
+     *  @return     A file created from the name and the base file.
+     */
     private def nameToFile(base: File)(name: String): File =
       existing(fileUtils.resolveFile(base, name))
 
     /** Transforms a string name into a file relative to the build root
-      * directory.
-      * @param name A relative or absolute path to the file as a string.
-      * @return A file created from the name. */
+     *  directory.
+     *
+     *  @param name A relative or absolute path to the file as a string.
+     *  @return     A file created from the name.
+     */
     private def nameToFile(name: String): File =
       existing(getProject().resolveFile(name))
 
     /** Tests if a file exists and prints a warning in case it doesn't. Always
-      * returns the file, even if it doesn't exist.
-      * @param file A file to test for existance.
-      * @return The same file. */
+     *  returns the file, even if it doesn't exist.
+     *
+     *  @param file A file to test for existance.
+     *  @return     The same file.
+     */
     private def existing(file: File): File = {
       if (!file.exists())
         log("Element '" + file.toString() + "' does not exist.",
@@ -277,56 +346,33 @@ package scala.tools.ant {
     }
 
     /** Transforms a path into a Scalac-readable string.
-      * @param path A path to convert.
-      * @return A string-representation of the path like 'a.jar:b.jar'. */
+     *
+     *  @param path A path to convert.
+     *  @return     A string-representation of the path like <code>a.jar:b.jar</code>.
+     */
     private def asString(path: List[File]): String =
       path.map(asString).mkString("", File.pathSeparator, "")
 
     /** Transforms a file into a Scalac-readable string.
-      * @param path A file to convert.
-      * @return A string-representation of the file like '/x/k/a.scala'. */
+     *
+     *  @param path A file to convert.
+     *  @return     A string-representation of the file like <code>/x/k/a.scala</code>.
+     */
     private def asString(file: File): String =
       file.getAbsolutePath()
 
     /** Generates a build error. Error location will be the current task in the
-      * ant file.
-      * @param message A message describing the error.
-      * @throws BuildException A build error exception thrown in every case. */
+     *  ant file.
+     *
+     *  @param message         A message describing the error.
+     *  @throws BuildException A build error exception thrown in every case.
+     */
     private def error(message: String): Nothing =
       throw new BuildException(message, getLocation())
 
-    private def readResource(resource: String): String = {
-      val chars = new Iterator[Char] {
-        private val stream =
-          this.getClass().getClassLoader().getResourceAsStream(resource)
-        private def readStream(): Char = stream.read().asInstanceOf[Char]
-        private var buf: Char = readStream()
-        def hasNext: Boolean = (buf != (-1.).asInstanceOf[Char])
-        def next: Char = {
-          val bufbuf = buf
-          buf = readStream()
-          bufbuf
-        }
-      }
-      val builder = new StringBuffer()
-      while (chars.hasNext) {
-        builder.append(chars.next)
-      }
-      builder.toString()
-    }
-
-    private def writeFile(file: File, content: String) =
-      if (file.exists() && !file.canWrite())
-        error("File " + file + " is not writable")
-      else {
-        val writer = new FileWriter(file, false)
-        writer.write(content)
-        writer.close()
-      }
-
-/******************************************************************************\
+/*============================================================================*\
 **                           The big execute method                           **
-\******************************************************************************/
+\*============================================================================*/
 
     /** Performs the compilation. */
     override def execute() = {
@@ -346,7 +392,7 @@ package scala.tools.ant {
       // older than the .scala file will be used.
       val sourceFiles: List[File] =
         for {
-          val originDir <- getOrigin;
+          val originDir <- getOrigin
           val originFile <- {
             val includedFiles =
               getDirectoryScanner(originDir).getIncludedFiles()
@@ -406,19 +452,17 @@ package scala.tools.ant {
         }
         generator.process(run.units)
         if (reporter.errors > 0)
-          error (
+          error(
             "Document failed with " +
             reporter.errors + " error" +
             (if (reporter.errors > 1) "s" else "") +
-            "; see the documenter error output for details."
-          )
+            "; see the documenter error output for details.")
         else if (reporter.warnings > 0)
-          log (
+          log(
             "Document suceeded with " +
             reporter.warnings + " warning" +
             (if (reporter.warnings > 1) "s" else "") +
-            "; see the documenter output for details."
-          )
+            "; see the documenter output for details.")
         reporter.printSummary()
       } catch {
         case exception: Throwable if (exception.getMessage != null) =>
@@ -430,14 +474,6 @@ package scala.tools.ant {
           error("Document failed because of an internal documenter error " +
             "(no error message provided); see the error output for details.")
       }
-      writeFile(
-        new File(settings.outdir.value, "script.js"),
-        readResource("scala/tools/ant/resources/script.js")
-      )
-      writeFile(
-        new File(settings.outdir.value, "style.css"),
-        readResource("scala/tools/ant/resources/style.css")
-      )
     }
 
   }

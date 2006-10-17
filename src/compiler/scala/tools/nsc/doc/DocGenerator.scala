@@ -224,7 +224,7 @@ abstract class DocGenerator extends Models {
 
   abstract class ContentFrame0 extends Frame {
 
-    def extendsFor(mmbr: HasTree): NodeSeq = mmbr match {
+    private def extendsFor(mmbr: HasTree): NodeSeq = mmbr match {
       case mmbr: ImplMod =>
         if (!mmbr.treey.impl.parents.isEmpty)
           <span><dd><code>{Text(" extends ")}</code>
@@ -538,7 +538,7 @@ abstract class DocGenerator extends Models {
     // <td class="navigation-enabled">{aref("help.html"     , "_self", "Help"    )}</td>
     // <td class="navigation-enabled">{aref("root-page.html", "_self", "Overview")}</td>
     // <td class="navigation-enabled">{aref("index.html"    , null, "Index"   )}</td>
-    def navigation: NodeSeq =
+    private def navigation: NodeSeq =
       <table class="navigation" summary="">
         <tr>
           <td valign="top" class="navigation-links">
@@ -552,7 +552,7 @@ abstract class DocGenerator extends Models {
         <tr><td></td></tr>
       </table>;
 
-    def header0: NodeSeq = <span>
+    private def header0: NodeSeq = <span>
       <hr/> in {aref(urlFor(clazz.tree.symbol.owner), "_self", clazz.tree.symbol.owner.fullNameString('.'))}
       <div class="entity">
         {Text(codeFor(kind))}
@@ -576,7 +576,7 @@ abstract class DocGenerator extends Models {
   def process(units: Iterator[CompilationUnit]): Unit = {
     var members = emptyMap
 
-    var topLevel = ListMap.Empty[ModuleClassSymbol,ListMap[Kind,TreeSet[HasTree]]]
+    var topLevel = ListMap.Empty[ModuleClassSymbol, ListMap[Kind,TreeSet[HasTree]]]
     for (val unit <- units) {
       val sourceMod = new SourceMod(unit)
       for (val mmbr <- sourceMod.members) mmbr.tree match {
@@ -669,21 +669,21 @@ abstract class DocGenerator extends Models {
     }
     val rsrcdir = "scala/tools/nsc/doc/".replace('/', File.separatorChar)
     for (val base <- List("style.css", "script.js")) {
-      val input = loader.getResourceAsStream(rsrcdir + base)
-      if (input != null) {
-        val file  = new File(outdir + File.separator + base)
-        val output = new FileOutputStream(file)
-        var break = false
-        val bytes = new Array[byte](1024)
-        while (!break) {
-          val read = input.read(bytes)
-          if (read == -1) break = true
-          else output.write(bytes, 0, read)
+      try {
+        val in = loader.getResourceAsStream(rsrcdir + base)
+        val out = new FileOutputStream(new File(outdir + File.separator + base))
+        val buf = new Array[byte](1024)
+        var len = 0
+        while (len != -1) {
+          out.write(buf, 0, len)
+          len = in.read(buf)
         }
-        input.close()
-        output.close()
-      } else
-        error("Resource file '" + base + "' not found")
+        in.close()
+        out.close()
+      } catch {
+        case _ =>
+          error("Resource file '" + base + "' not found")
+      }
     }
   }
 
@@ -751,7 +751,7 @@ abstract class DocGenerator extends Models {
   private val pat2 = Pattern.compile(
     "[ \t]*@(exception|param|throws)[ \t]+(\\p{Alnum}*)[ \t]*(.*)")
 
-  def comment(comment: String, isShort: Boolean): NodeSeq = {
+  private def comment(comment: String, isShort: Boolean): NodeSeq = {
     var ret: List[Node] = Nil
     assert(comment != null)
     // strip out any stars.
