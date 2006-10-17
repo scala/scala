@@ -77,6 +77,8 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
    */
   def !(msg: Msg): unit = send(msg, Actor.self)
 
+  def ? : Msg = receive { case any => any }
+
   /**
    * Sends <code>msg</code> to this <code>Channel</code> and
    * awaits reply.

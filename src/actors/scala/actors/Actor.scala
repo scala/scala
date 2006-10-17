@@ -66,6 +66,8 @@ object Actor {
   }
 */
 
+  def ? : Any = self.in.?
+
   /**
    * Receives a message from the mailbox of
    * <code>self</code>. Blocks if no message matching any of the
