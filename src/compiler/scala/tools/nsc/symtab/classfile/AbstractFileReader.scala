@@ -19,35 +19,7 @@ class AbstractFileReader(val file: AbstractFile) {
 
   /** the buffer containing the file
    */
-  val buf: Array[Byte] = file match {
-    case p:PlainFile =>
-      assert(!file.isDirectory, "cannot read directory '" + this + "'");
-      val in = new FileInputStream(p.file);
-      var rest: Int = p.file.length().toInt;
-      val bbuf: Array[Byte] = new Array[Byte](rest);
-      while (rest > 0) {
-        val res = in.read(bbuf, bbuf.length - rest, rest);
-        if (res == -1)
-          throw new IOException("read error");
-        rest = rest - res;
-      }
-      in.close();
-      bbuf
-    case z:ZipArchive#FileEntry => // zipfileentry
-      val in = z.getArchive.getInputStream(z.entry)
-      var rest: Int = z.entry.getSize().toInt;
-      val buf = new Array[Byte](rest);
-      while (rest > 0) {
-        val res = in.read(buf, buf.length - rest, rest);
-        if (res == -1)
-          throw new IOException("read error");
-        rest = rest - res;
-      }
-      in.close();
-      buf
-    case _ =>
-      error("internal error: do not know how to get bytes of "+file)
-  }
+  val buf: Array[Byte] = file.toByteArray
 
   /** the current input pointer
    */

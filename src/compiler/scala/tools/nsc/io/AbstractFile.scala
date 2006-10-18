@@ -92,25 +92,33 @@ abstract class AbstractFile extends Object with Iterable[AbstractFile] {
 
   /** returns an input stream so the file can be read */
   def read : InputStream;
-  final def toCharArray = {
-    val input = read;
-    var str : String = "";
-    val buf = new Array[Byte](100);
-    var eof = false;
-    while (!eof) {
-      val x = input.read(buf);
-      eof = x == -1;
-      if (!eof) str = str + new String(buf, 0, x);
+
+  /** size of this file if it is a concrete file */
+  def size: Option[Int] = None
+
+  /** returns contents of file (if applicable) in a byte array.
+   *  warning: use Global.getSourceFile() to use the proper
+   *  encoding when converting to the char array
+   *  @throws java.io.IOException
+   */
+  final def toCharArray = new String(toByteArray).toCharArray
+
+  /** returns contents of file (if applicable) in a byte array
+   *  @throws java.io.IOException
+   */
+  final def toByteArray = {
+    val in   = read
+    var rest = size.get
+    val arr  = new Array[Byte](rest);
+    while (rest > 0) {
+      val res = in.read(arr, arr.length - rest, rest);
+        if (res == -1)
+          throw new java.io.IOException("read error");
+      rest = rest - res;
     }
-    input.close;
-    str.toCharArray;
+    in.close();
+    arr
   }
-
-  /** Reads the content of this abstract file into a byte array. */
-  //def getBytes: Array[Byte] = error("getBytes not supported by "+this.getClass())
-
-  /** Reads the content of this abstract file into a char array. */
-  //def getChars: Array[Char] = error("getChars not supported by "+this.getClass())
 
   /** Returns all abstract subfiles of this abstract directory. */
   def elements: Iterator[AbstractFile]

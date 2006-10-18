@@ -230,9 +230,9 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
 	  nref = nref + 1
 	  if(sym.owner == currentOwner)  { // oldOwner should match currentOwner
 	    nsafeRef = nsafeRef + 1
-	  } else if(nref == 1) {
-	    //Console.println("sym owner: "+sym.owner+" but currentOwner = "+currentOwner)
-	  }
+	  } /*else if(nref == 1) {
+	    Console.println("sym owner: "+sym.owner+" but currentOwner = "+currentOwner)
+	  }*/
 	case t if nref > 1 => // abort, no story to tell
 
 	case t       => super . traverse (t)
@@ -592,10 +592,10 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
       //Console.println(" -- adding new header")
       //assert index >= 0 : casted;
       if (index < 0) { Predef.error("error entering:" + casted); return null }
-      target.and = {curHeader = newHeader(pat.pos, casted, index); curHeader}; // (*)
+      curHeader  = newHeader(pat.pos, casted, index)
+      target.and = curHeader; // (*)
 
-      if (bodycond != null)
-        target.and = bodycond(target.and) // restores body with the guards
+      if (bodycond != null) target.and = bodycond(target.and) // restores body with the guards
 
       curHeader.or = patternNode(pat, curHeader, env)
       enter(patArgs, curHeader.or, casted, env)

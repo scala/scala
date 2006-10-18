@@ -188,21 +188,7 @@ final class ZipArchive(file: File, val archive: ZipFile) extends PlainFile(file)
 
     override def read = archive.getInputStream(entry);
 
-    /** in zip archives, we assume class files conform to Java spec by using UTF-8 * /
-    def getBytes: Array[Byte] = {
-      val in: InputStream = archive.getInputStream(entry);
-      var rest: Int = entry.getSize().toInt;
-      val buf = new Array[Byte](rest);
-      while (rest > 0) {
-        val res = in.read(buf, buf.length - rest, rest);
-        if (res == -1)
-          throw new IOException("read error");
-        rest = rest - res;
-      }
-      in.close();
-      buf
-    }
-    */
+    override def size = Some(entry.getSize().toInt)
   }
 
 }

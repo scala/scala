@@ -41,6 +41,8 @@ class PlainFile(val file: File) extends AbstractFile {
 
   override def read = new FileInputStream(file)
 
+  override def size = Some(file.length.toInt)
+
   override def hashCode(): Int =
     try { file.getCanonicalPath().hashCode() }
     catch { case _: IOException => 0 }
@@ -60,23 +62,6 @@ class PlainFile(val file: File) extends AbstractFile {
 
   /** Returns the time that this abstract file was last modified. */
   def lastModified: Long = file.lastModified()
-
-  /** Reads the content of this abstract file into a byte array.
-  override def getBytes: Array[Byte] = {
-    assert(!isDirectory, "cannot read directory '" + this + "'");
-    val in = new FileInputStream(file)
-    var rest: Int = file.length().toInt
-    val buf: Array[Byte] = new Array[Byte](rest)
-    while (rest > 0) {
-      val res = in.read(buf, buf.length - rest, rest);
-      if (res == -1)
-        throw new IOException("read error");
-      rest = rest - res
-    }
-    in.close()
-    buf
-  }
-  */
 
   /** Returns all abstract subfiles of this abstract directory. */
   def elements: Iterator[AbstractFile] = {
