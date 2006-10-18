@@ -10,14 +10,18 @@
 
 package scala.tools.nsc.util
 
-import scala.collection.mutable.ArrayBuffer
-import scala.tools.nsc.io.AbstractFile
-
 import java.io.File
 import java.util.StringTokenizer
 
-/** Richer classpath abstraction than files.
- *  Roughly based on Eclipse's classpath abstractions.
+import scala.collection.mutable.ArrayBuffer
+import scala.tools.nsc.io.AbstractFile
+
+/** <p>
+ *    Richer classpath abstraction than files.
+ *  </p>
+ *  <p>
+ *    Roughly based on Eclipse's classpath abstractions.
+ *  </p>
  *
  *  @author Sean McDirmid
  */
@@ -26,14 +30,14 @@ class ClassPath(onlyPresentation: Boolean) {
   def this() = this(false)
 
   class Source(val location: AbstractFile, val compile: Boolean) {
-    // assert(location           != null, "cannot find source location");
-    // assert(location.getFile() != null, "cannot find source location " + " " + location + " " + location.getClass());
+    // assert(location           != null, "cannot find source location")
+    // assert(location.getFile() != null, "cannot find source location " + " " + location + " " + location.getClass())
     override def toString(): String = "" + location + " " + compile
   }
 
   abstract class Entry(val location: AbstractFile) {
-    // assert(location           != null, "cannot find classpath location");
-    // assert(location.getFile() != null, "cannot find classpath location " + " " + location + " " + location.getClass());
+    // assert(location           != null, "cannot find classpath location")
+    // assert(location.getFile() != null, "cannot find classpath location " + " " + location + " " + location.getClass())
     def source: Source
     override def toString() = location.toString()
   }
@@ -41,7 +45,6 @@ class ClassPath(onlyPresentation: Boolean) {
   class Output(location0: AbstractFile, val sourceFile: AbstractFile) extends Entry(location0) {
     def source = if (sourceFile != null) new Source(sourceFile, true) else null
   }
-
 
   class Library(location0: AbstractFile) extends Entry(location0) {
     def doc: AbstractFile = null
@@ -52,7 +55,7 @@ class ClassPath(onlyPresentation: Boolean) {
   class Context(val entries: List[Entry]) {
     def find(name: String, isDir: Boolean) : Context = if (isPackage) {
       def find0(entries: List[Entry]) : Context = {
-        if (entries.isEmpty) new Context(Nil);
+        if (entries.isEmpty) new Context(Nil)
         else {
           val ret = find0(entries.tail)
           val head = entries.head
@@ -60,12 +63,15 @@ class ClassPath(onlyPresentation: Boolean) {
           val clazz = if (head.location == null) null
                       else head.location.lookupPath(name0, isDir)
 
-          val source0 = if (head.source == null) null else if (clazz == null || isDir) {
-            val source1 = head.source.location.lookupPath(
-              name + (if (isDir) "" else ".scala"), isDir)
-            if (source1 == null && !isDir && clazz != null) head.source.location
-            else source1
-          } else head.source.location;
+          val source0 =
+            if (head.source == null) null
+            else if (clazz == null || isDir) {
+              val source1 = head.source.location.lookupPath(
+                name + (if (isDir) "" else ".scala"), isDir)
+              if (source1 == null && !isDir && clazz != null) head.source.location
+              else source1
+            }
+            else head.source.location
 
           if (clazz == null && source0 == null) ret
           else {
@@ -75,11 +81,11 @@ class ClassPath(onlyPresentation: Boolean) {
                 else new Source(source0, head.source.compile)
             }
             try {
-              //System.err.println("this=" + this + "\nclazz=" + clazz + "\nsource0=" + source0 + "\n");
+              //System.err.println("this=" + this + "\nclazz=" + clazz + "\nsource0=" + source0 + "\n")
               new Context(entry :: ret.entries)
             } catch {
-              case e : Error =>
-              throw e;
+              case e: Error =>
+              throw e
             }
           }
         }
@@ -87,7 +93,7 @@ class ClassPath(onlyPresentation: Boolean) {
 
       val ret = find0(entries)
       if (ret.entries.isEmpty) {
-        System.err.println("BAD_FILE: " + name + " in " + this)
+        //System.err.println("BAD_FILE: " + name + " in " + this)
         null
       } else ret
     } else null
@@ -110,9 +116,10 @@ class ClassPath(onlyPresentation: Boolean) {
     override def toString(): String = toString(entries)
 
     def toString(entry: Entry): String =
-      ((if (entry.location == null) "<none>";
+      ((if (entry.location == null) "<none>"
         else entry.location.toString()) +
-       (if (entry.source == null) ""; else " with_source=" + entry.source.location.toString()));
+       (if (entry.source == null) ""
+        else " with_source=" + entry.source.location.toString()))
 
     def toString(entries0: List[Entry]): String =
       if (entries0.isEmpty) ""
@@ -123,8 +130,7 @@ class ClassPath(onlyPresentation: Boolean) {
       def clazz = head.location
       def source = if (head.source == null) null else head.source.location
       def isPredef = source.name.equals("Predef.scala") ||
-                     source.path.startsWith("scala/runtime");
-
+                     source.path.startsWith("scala/runtime")
 
       if (entries.isEmpty || entries.isEmpty || source == null) false
       else if (!onlyPresentation && !head.source.compile) false
@@ -141,11 +147,11 @@ class ClassPath(onlyPresentation: Boolean) {
     def classFile = if (!isSourceFile) entries.head.location else null
 
     {
-      val sourcePath0 = sourcePath;
+      val sourcePath0 = sourcePath
       if (sourcePath0 != null) {
         if (!sourcePath0.isDirectory) {
-          System.err.println(""+sourcePath0 + " cannot be a directory");
-          assert(false);
+          System.err.println(""+sourcePath0 + " cannot be a directory")
+          assert(false)
         }
       }
     }
@@ -207,10 +213,16 @@ class ClassPath(onlyPresentation: Boolean) {
       else ctx.entries.head.location
     }
 
+    /**
+     *  @param classes ...
+     *  @param sources ...
+     */
     def library(classes: String, sources: String) = {
       assert(classes != null)
       val location = AbstractFile.getDirectory(classes)
-      val sourceFile0 = (if (sources != null) AbstractFile.getDirectory(sources) else null)
+      val sourceFile0 =
+        if (sources != null) AbstractFile.getDirectory(sources)
+        else null
       class Library0 extends Library(location) {
         override def sourceFile = sourceFile0
       }
