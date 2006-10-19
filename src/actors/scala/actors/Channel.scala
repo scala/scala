@@ -10,6 +10,8 @@
 
 package scala.actors
 
+import Actor._
+
 case object TIMEOUT
 
 class SuspendActorException extends Throwable {
@@ -41,9 +43,9 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
 
   private var received: Msg = _
 
-  private val waitingForNone = (m: Msg) => false
-  private var waitingFor: Msg => boolean = waitingForNone
-  private var waitingForSender: Actor = null
+  private[actors] val waitingForNone = (m: Msg) => false
+  private[actors] var waitingFor: Msg => boolean = waitingForNone
+  private[actors] var waitingForSender: Actor = null
 
   //private val messageQueue = new MessageQueue[Msg]
   private val mailbox = new scala.collection.mutable.Queue[Pair[Msg, Actor]]
@@ -62,6 +64,8 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
         TimerThread.trashRequest(receiver)
       }
 
+      // TODO: transmit call to protocol
+
       if (isSuspended)
         receiver.resumeActor()
       else
@@ -78,6 +82,12 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
   def !(msg: Msg): unit = send(msg, Actor.self)
 
   def ? : Msg = receive { case any => any }
+
+  def poll = {
+    Some(?)
+  } orElse {
+    None.asInstanceOf[Option[Msg]]
+  }
 
   /**
    * Sends <code>msg</code> to this <code>Channel</code> and
@@ -97,7 +107,7 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
    */
   def forward(msg: Msg): unit = send(msg, receiver.sender)
 
-  private var isSuspended = false
+  private[actors] var isSuspended = false
 
   /**
    * Receives a message from this <code>Channel</code>.
@@ -126,6 +136,7 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
       }) match {
         case Some(Pair(msg, sender)) => {
           received = msg
+	  // TODO: call to delivery protocol action
           receiver.pushSender(sender)
         }
         case None => {
@@ -142,6 +153,7 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
     }
     receiver.resetActor()
     val result = f(received)
+    // TODO: call to complete protocol action
     receiver.popSender()
     result
   }
@@ -288,6 +300,7 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
           received = msg
           receiver.pushSender(sender)
           waitingFor = waitingForNone
+          // TODO: call to delivery protocol action
           receiver.scheduleActor(f, received)
         }
         case None => {

@@ -68,6 +68,8 @@ object Actor {
 
   def ? : Any = self.in.?
 
+  def poll: Option[Any] = self.in.poll
+
   /**
    * Receives a message from the mailbox of
    * <code>self</code>. Blocks if no message matching any of the
@@ -168,17 +170,17 @@ object Actor {
    */
   def reply(): Unit = reply(())
 
-  private[actors] trait Body[T] {
-    def orElse(other: => T): T
-    def andThen(other: => T): T
+  private[actors] trait Body[a] {
+    def orElse[b >: a](other: => b): b
+    def andThen[b >: a](other: => b): b
   }
 
-  implicit def mkBody(body: => Unit) = new Body[Unit] {
-    def orElse(other: => Unit): Unit = choose(body, other)
-    def andThen(other: => Unit): Unit = seq(body, other)
+  implicit def mkBody[a](body: => a) = new Body[a] {
+    def orElse[b >: a](other: => b): b = choose(body, other)
+    def andThen[b >: a](other: => b): b = seq(body, other)
   }
 
-  private[actors] def choose(alt1: => Unit, alt2: => Unit): Unit = {
+  private[actors] def choose[a, b >: a](alt1: => a, alt2: => b): b = {
     val s = self
     // save former custom suspendActor function
     // (e.g. from further orElse)
@@ -187,10 +189,22 @@ object Actor {
 
     // have to get out of the point of suspend in alt1's
     // receive
-    s.suspendActor = () => { throw new SuspendActorException }
-    s.detachActor = f => { throw new SuspendActorException }
+    s.suspendActor = () => {
+      s.in.isSuspended = false
+      s.in.waitingFor = s.in.waitingForNone
+      throw new SuspendActorException
+    }
+    s.detachActor = f => {
+      s.in.waitingFor = s.in.waitingForNone
+      throw new SuspendActorException
+    }
 
-    try { alt1 }
+    try {
+      val res = alt1
+      s.suspendActor = suspendNext
+      s.detachActor = detachNext
+      res
+    }
     catch {
       case d: SuspendActorException =>
         s.suspendActor = suspendNext
@@ -218,7 +232,7 @@ object Actor {
    * @param first ...
    * @param next  ...
    */
-  def seq(first: => Unit, next: => Unit): Unit = {
+  def seq[a, b >: a](first: => a, next: => b): b = {
     val s = self
     s.kill = () => { next }
     first
