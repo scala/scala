@@ -23,13 +23,16 @@ import Predef._
  */
 object MatchError {
 
+  def string(obj: Any) =
+    if(obj != null) obj.toString() else "null"
+
   // todo: change pattern matcher so that dummy type parameter T can be removed.
   def fail[T](source: String, line: Int): Nothing =
     throw new MatchError(source, line)
 
   def report(source: String, line: Int, obj: Any) =
     try {
-      throw new MatchError(source, line, obj.toString())
+      throw new MatchError(source, line, string(obj))
     } catch {
       case e: MatchError => throw e
       case e: Throwable => throw new MatchError(source, line)
@@ -43,6 +46,6 @@ final class MatchError(msg: String) extends Error(msg) {
   def this(source: String, line: Int, obj: String) =
     this("for object " + obj + " in '" + source + "' at line " + line)
 
-  def this(ob: Any) =
-    this(ob.toString())
+  def this(obj: Any) =
+    this(MatchError.string(obj))
 }

@@ -366,7 +366,9 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
     //Console.println("tree.getClass() "+tree.getClass());
     tree match {
       case Bind(name, Typed(Ident( nme.WILDCARD ), tpe)) => // x@_:Type
-        if (isSubType(header.getTpe(),tpe.tpe)) {
+        if (false && isSubType(header.getTpe(),tpe.tpe)) {
+          // this optimization is not correct, because
+          //  null.isInstanceOf will return false
           val node = pDefaultPat(tree.pos, tpe.tpe)
           env.newBoundVar(tree.symbol, tree.tpe, header.selector)
           node
@@ -1002,7 +1004,7 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
             ); // forward jump
           if (guard(i) != EmptyTree)
             res0 = And(guard(i), res0);
-          res = Or(Block(ts.toList, res0), res);
+          res = Or(squeezedBlock(ts.toList, res0), res);
           i = i - 1
         }
       if (_b.or != null)
