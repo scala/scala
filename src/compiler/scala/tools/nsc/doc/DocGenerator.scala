@@ -75,9 +75,11 @@ abstract class DocGenerator extends Models {
     def urlFor(tree: Tree, target: String): NodeSeq = try {
       val sym = tree.symbol
       if (sym == NoSymbol)
-        Text(tree.asInstanceOf[ValOrDefDef].name.toString());
-      else if (sym.sourceFile == null) Text(sym.fullNameString('.'))
-      else aref(urlFor(sym), target, sym.nameString)
+        Text(tree.asInstanceOf[ValOrDefDef].name.toString())
+      else if (sym.sourceFile == null)
+        Text(sym.fullNameString('.'))
+      else
+        aref(urlFor(sym), target, sym.nameString)
     } catch {
       case e: Error =>
         //System.err.println("SYM=" + sym)
@@ -90,13 +92,26 @@ abstract class DocGenerator extends Models {
      *  @return       ...
      */
     def urlFor(tpe: Type, target: String): NodeSeq = try {
-      if (tpe.symbol hasFlag Flags.JAVA)
+      if (tpe.symbol.hasFlag(Flags.JAVA) || tpe.symbol.sourceFile == null)
         <a class={tpe.toString().replace('.', '_')} href=""
-          target="contentFrame">{tpe.toString()}</a>
+          target={target}>{tpe.toString()}</a>
+      /*
       else if (tpe.symbol.sourceFile == null)
         Text(tpe.toString())
-      else
-        aref(urlFor(tpe.symbol), target, tpe.toString())
+      */
+      else {
+        val n = tpe.typeArgs.length
+        if (n > 0)
+          aref(urlFor(tpe.symbol), target, tpe.symbol.fullNameString)
+          .concat(Text("[")
+            .concat(urlFor(tpe.typeArgs.head, target))
+            .concat(
+              for (val t <- tpe.typeArgs.tail)
+              yield Group(Text(", ").concat(urlFor(t, target))))
+            .concat(Text("]")))
+        else
+          aref(urlFor(tpe.symbol), target, tpe.toString())
+      }
     } catch {
       case e: Error =>
         //System.err.println("SYM=" + sym)
@@ -303,7 +318,7 @@ abstract class DocGenerator extends Models {
       else
         <dl>
           <dt style="margin:10px 0 0 20px;">
-            <b>Direct known subclasses:</b>
+            <b>Direct Known Subclasses:</b>
           </dt>
           <dd>{ {
             val links =
@@ -561,6 +576,59 @@ abstract class DocGenerator extends Models {
     </span>;
   }
 
+  private abstract class PrimitiveContentFrame extends ContentFrame0 {
+    def sym: Symbol
+    def path = urlFor0(sym, sym)
+    private def kind = CLASS // todo
+    def title =
+      labelFor(kind) + " " + sym.nameString + " in " +
+      codeFor(kind) + " " + sym.owner.fullNameString('.')
+    def body = NodeSeq.fromSeq(
+      <table class="navigation" summary="">
+        <tr>
+          <td valign="top" class="navigation-links">
+            <table><tr>
+            </tr></table>
+          </td>
+          <td align="right" valign="top" style="white-space:nowrap;" rowspan="2">
+            {doctitle}
+          </td>
+        </tr>
+      </table>
+      <hr/>
+      <div>in {aref(urlFor(sym.owner), "_self", sym.owner.fullNameString('.'))}</div>
+      <div class="entity">
+        {Text(codeFor(kind))}
+        <span class="entity">{Text(sym.nameString)}</span>
+      </div>
+      <hr/>
+      <table cellpadding="3" class="member" summary="">
+        <tr>
+          <td colspan="2" class="title">Def Summary</td>
+        </tr>
+        { {
+          for (val m <- sym.tpe.decls.toList; m hasFlag Flags.METHOD) yield
+            <tr>
+              <td valign="top" class="modifiers">
+              </td>
+              <td class="signature"><code>def</code>
+                { Text(m.nameString + " ").concat(m.tpe match {
+                    case MethodType(params, result) =>
+                      (if (params.length > 0)
+                         Text("(").concat(params.map(p => forType(p))).concat(")")
+                       else
+                         NodeSeq.Empty
+                      ).concat(": ").concat(forType(result))
+                    case _ =>
+                      Text(": ").concat(forType(m.tpe))
+                  })
+                }
+              </td>
+            </tr>
+        } }
+      </table>)
+  }
+
   private val loader = getClass().getClassLoader()
 
   import scala.collection.mutable.{Map, HashMap}
@@ -666,6 +734,51 @@ abstract class DocGenerator extends Models {
       def body = index
       def path = "index"
       override def hasBody = false
+    }
+    new PrimitiveContentFrame {
+      def sym = definitions.AnyClass
+    }
+    new PrimitiveContentFrame {
+      def sym = definitions.AnyRefClass
+    }
+    new PrimitiveContentFrame {
+      def sym = definitions.BooleanClass
+    }
+    new PrimitiveContentFrame {
+      def sym = definitions.ByteClass
+    }
+    new PrimitiveContentFrame {
+      def sym = definitions.CharClass
+    }
+    new PrimitiveContentFrame {
+      def sym = definitions.DoubleClass
+    }
+    new PrimitiveContentFrame {
+      def sym = definitions.FloatClass
+    }
+    new PrimitiveContentFrame {
+      def sym = definitions.IntClass
+    }
+    new PrimitiveContentFrame {
+      def sym = definitions.LongClass
+    }
+    new PrimitiveContentFrame {
+      def sym = definitions.ShortClass
+    }
+    new PrimitiveContentFrame {
+      def sym = definitions.UnitClass
+    }
+    new PrimitiveContentFrame {
+      def sym = definitions.getClass("scala.runtime.BoxedFloat")
+    }
+    new PrimitiveContentFrame {
+      def sym = definitions.getClass("scala.runtime.BoxedInt")
+    }
+    new PrimitiveContentFrame {
+      def sym = definitions.getClass("scala.runtime.BoxedLong")
+    }
+    new PrimitiveContentFrame {
+      def sym = definitions.BoxedNumberClass
     }
     val rsrcdir = "scala/tools/nsc/doc/".replace('/', File.separatorChar)
     for (val base <- List("style.css", "script.js")) {

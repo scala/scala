@@ -6,6 +6,9 @@ function setWindowTitle(title) {
 var java_api_root = 'http://java.sun.com/j2se/1.5.0/docs/api/';
 //var java_api_root = 'http://lamp.epfl.ch/~linuxsoft/java/jdk1.5/docs/api/';
 
+var scala_doc_url = parent.document.URL;
+var scala_api_root = scala_doc_url.substring(0, scala_doc_url.lastIndexOf("/")+1);
+
 var ant_api_root = 'http://lamp.epfl.ch/~linuxsoft/ant/manual/api/';
 //var ant_api_root = 'http://www.net-freaks.org/doc/ant-1.6.5/manual/api/';
 
@@ -56,6 +59,23 @@ function init() {
   table['java_util_Random']           = java_api_root;
   table['java_util_Set']              = java_api_root;
   table['java_util_WeakHashMap']      = java_api_root;
+
+  // initialize Scala primitive classes
+  table['scala_Any']                  = scala_api_root;
+  table['scala_Boolean']              = scala_api_root;
+  table['scala_Byte']                 = scala_api_root;
+  table['scala_Char']                 = scala_api_root;
+  table['scala_Double']               = scala_api_root;
+  table['scala_Float']                = scala_api_root;
+  table['scala_Int']                  = scala_api_root;
+  table['scala_Null']                 = scala_api_root;
+  table['scala_Long']                 = scala_api_root;
+  table['scala_Null']                 = scala_api_root;
+  table['scala_Short']                = scala_api_root;
+  table['scala_Unit']                 = scala_api_root;
+  table['scala_runtime_BoxedInt']     = scala_api_root;
+  table['scala_runtime_BoxeFloat']    = scala_api_root;
+  table['scala_runtime_BoxedNumber']  = scala_api_root;
 
   // initialize Ant classes
   table['org_apache_tools_ant_BuildEvent']                = ant_api_root;
