@@ -45,10 +45,7 @@ trait Types requires SymbolTable {
   var subtypeMillis = 0l
 
   private var explainSwitch = false
-
-  /** A varaince value that expresses that no type approximations are allowed
-   */
-  private final val NOAPPROX = -2
+  private var checkMalformedSwitch = true
 
   val emptyTypeArray = new Array[Type](0)
 
@@ -91,16 +88,6 @@ trait Types requires SymbolTable {
      *  for all other types, a TypeBounds type all of whose bounds are this type.
      */
     def bounds: TypeBounds = TypeBounds(this, this)
-
-    /** For a TypeBounds type, its lower bound;
-     *  for all other types, the type itself
-     */
-    def lowerBound: Type = this
-
-    /** For a TypeBounds type, its upper bound;
-     *  for all other types, the type itself
-     */
-    def upperBound: Type = this
 
     /** For a class or intersection type, its parents.
      *  For a TypeBounds type, the parents of its hi bound.
@@ -238,7 +225,7 @@ trait Types requires SymbolTable {
           }
 */
         case _ =>
-          //System.out.println("" + this + ".memberType(" + sym +":" + sym.tpe +")");//DEBUG
+          //System.out.println("" + this.widen + ".memberType(" + sym +":" + sym.tpe +")");//DEBUG
           sym.tpe.asSeenFrom(this, sym.owner)
       }
     }
@@ -287,11 +274,6 @@ trait Types requires SymbolTable {
       (if (explainSwitch) explain("=", isSameType, this, that)
        else isSameType(this, that))
     );
-
-    /** Does this type contain that type? This is true if the two types are the same wrt <:<,
-     *  or this type is a TypeBounds which contains that type
-     */
-    def containsType(that: Type) = this <:< that && that <:< this
 
     /** Does this type implement symbol <code>sym</code> with same or stronger type?
      */
@@ -435,6 +417,8 @@ trait Types requires SymbolTable {
       var excluded = excludedFlags | DEFERRED
       var self: Type = null
       var continue = true
+      var savedCheckMalformedSwitch = checkMalformedSwitch
+      checkMalformedSwitch = false
       while (continue) {
         continue = false
         var bcs = baseClasses
@@ -449,6 +433,7 @@ trait Types requires SymbolTable {
               val excl = sym.getFlag(excluded)
               if (excl == 0) {
                 if (name.isTypeName || stableOnly) {
+                  checkMalformedSwitch = savedCheckMalformedSwitch
                   if (util.Statistics.enabled)
                     findMemberMillis = findMemberMillis + System.currentTimeMillis() - startTime
                   return sym
@@ -486,6 +471,7 @@ trait Types requires SymbolTable {
         } // while (!bcs.isEmpty)
         excluded = excludedFlags
       } // while (continue)
+      checkMalformedSwitch = savedCheckMalformedSwitch
       if (util.Statistics.enabled)
         findMemberMillis = findMemberMillis + System.currentTimeMillis() - startTime
       if (members == null) {
@@ -561,7 +547,7 @@ trait Types requires SymbolTable {
   }
 
   case class BoundedWildcardType(override val bounds: TypeBounds) extends Type {
-    override def toString(): String = "? " + bounds.boundsString
+    override def toString(): String = "?" + bounds
   }
 
   /** An object representing a non-existing type */
@@ -660,12 +646,9 @@ trait Types requires SymbolTable {
     override val isTrivial: boolean = lo.isTrivial && hi.isTrivial
     def supertype: Type = hi
     override def bounds: TypeBounds = this
-    override def lowerBound: Type = lo
-    override def upperBound: Type = hi
-    override def containsType(that: Type) = that <:< this || lo <:< that && that <:< hi
+    def containsType(that: Type) = that <:< this || lo <:< that && that <:< hi;
     // override def isNullable: boolean = AllRefClass.tpe <:< lo;
-    override def toString = "_ "+boundsString
-    def boundsString = ">: "+lo+" <: "+ hi
+    override def toString() = ">: " + lo + " <: " + hi
   }
 
   /** A common base class for intersection types and class types
@@ -734,7 +717,11 @@ trait Types requires SymbolTable {
               case RefinedType(parents, decls) =>
                 assert(decls.isEmpty)
                 //Console.println("compute closure of "+this+" => glb("+parents+")")
-                closureCache(j) = glbNoRefinement(parents)
+                closureCache(j) = mergePrefixAndArgs(parents, -1) match {
+                  case Some(tp0) => tp0
+                  case None => throw new MalformedClosure(parents)
+                }
+                assert(!closureCache(j).isInstanceOf[RefinedType], closureCache(j))
               case _ =>
             }
             j = j + 1
@@ -871,7 +858,7 @@ trait Types requires SymbolTable {
    *  @param args ...
    */
   abstract case class TypeRef(pre: Type, sym: Symbol, args: List[Type]) extends Type {
-    assert(!sym.isAbstractType || pre.isStable || pre.isError)
+    assert(!checkMalformedSwitch || !sym.isAbstractType || pre.isStable || pre.isError)
     assert(!pre.isInstanceOf[ClassInfoType], this)
     assert(!sym.isTypeParameterOrSkolem || pre == NoPrefix, this)
 
@@ -1116,33 +1103,21 @@ trait Types requires SymbolTable {
   def ThisType(sym: Symbol): Type =
     if (phase.erasedTypes) sym.tpe else unique(new ThisType(sym) with UniqueType)
 
-  /** A creator of type approximations, depending on variance
-   */
-  def typeApproximation(variance: int, lo: Type, hi: Type, pre: Type, sym: Symbol) = variance match {
-    case 0 => TypeBounds(lo, hi)
-    case 1 => hi
-    case -1 => lo
-    case NOAPPROX => throw new MalformedType(pre, sym.name.toString)
-  }
-
   /** The canonical creator for single-types */
-  def singleType(pre: Type, sym: Symbol): Type = singleType(pre, sym, NOAPPROX)
-
-  /** The creator for single-types or their approximations */
-  def singleType(pre: Type, sym: Symbol, variance: int): Type =
+  def singleType(pre: Type, sym: Symbol): Type = {
     if (phase.erasedTypes)
       sym.tpe.resultType
+    else if (checkMalformedSwitch && !pre.isStable && !pre.isError)
+      throw new MalformedType(pre, sym.name.toString())
     else if (sym.isRootPackage)
       ThisType(RootClass)
     else {
       var sym1 = rebind(pre, sym)
       val pre1 = removeSuper(pre, sym1)
       if (pre1 ne pre) sym1 = rebind(pre1, sym1)
-      if (!pre1.isStable && !pre1.isError)
-        typeApproximation(variance, AllClass.tpe, pre.memberType(sym).resultType, pre, sym)
-      else
-        unique(new SingleType(pre1, sym1) with UniqueType)
+      unique(new SingleType(pre1, sym1) with UniqueType)
     }
+  }
 
   /** The canonical creator for super-types */
   def SuperType(thistp: Type, supertp: Type): Type =
@@ -1174,6 +1149,20 @@ trait Types requires SymbolTable {
   def refinedType(parents: List[Type], owner: Symbol): Type =
     refinedType(parents, owner, newScope)
 
+  def copyRefinedType(original: RefinedType, parents: List[Type], decls: Scope) =
+    if ((parents eq original.parents) && (decls eq original.decls)) original
+    else {
+      val result = refinedType(parents, original.symbol.owner)
+      val syms1 = decls.toList
+      for (val sym <- syms1)
+        result.decls.enter(sym.cloneSymbol(result.symbol))
+      val syms2 = result.decls.toList
+      val resultThis = result.symbol.thisType
+      for (val sym <- syms2)
+        sym.setInfo(sym.info.substSym(syms1, syms2).substThis(original.symbol, resultThis))
+      result
+    }
+
   /** the canonical creator for a constant type */
   def ConstantType(value: Constant): ConstantType =
     unique(new ConstantType(value) with UniqueType)
@@ -1185,11 +1174,10 @@ trait Types requires SymbolTable {
    *  @param args ...
    *  @return     ...
    */
-  def typeRef(pre: Type, sym: Symbol, args: List[Type]): Type = typeRef(pre, sym, args, NOAPPROX)
-
-  /** The creator for typerefs or their approximations */
-  def typeRef(pre: Type, sym: Symbol, args: List[Type], variance: int): Type = {
+  def typeRef(pre: Type, sym: Symbol, args: List[Type]): Type = {
     var sym1 = if (sym.isAbstractType) rebind(pre, sym) else sym
+    if (checkMalformedSwitch && sym1.isAbstractType && !pre.isStable && !pre.isError)
+      throw new MalformedType(pre, sym.nameString)
     if (sym1.isAliasType && sym1.info.typeParams.length == args.length) {
       // note: we require that object is initialized,
       // that's why we use info.typeParams instead of typeParams.
@@ -1203,13 +1191,7 @@ trait Types requires SymbolTable {
       val pre1 = removeSuper(pre, sym1)
       if (pre1 ne pre) {
         if (sym1.isAbstractType) sym1 = rebind(pre1, sym1)
-        typeRef(pre1, sym1, args, variance)
-      } else if (sym1.isAbstractType && !pre.isStable && !pre.isError) {
-        val lo = sym.info.bounds.lo
-        var hi = sym.info.bounds.hi
-        if (hi contains sym) hi = AnyClass.tpe // this is crude; we should try to refine this!
-        def transform(tp: Type): Type = tp.asSeenFrom(pre, sym.owner).subst(sym.typeParams, args)
-        typeApproximation(variance, transform(lo), transform(hi), pre, sym1)
+        typeRef(pre1, sym1, args)
       } else {
         rawTypeRef(pre, sym1, args)
       }
@@ -1316,19 +1298,6 @@ trait Types requires SymbolTable {
   abstract class TypeMap extends Function1[Type, Type] {
     // deferred inherited: def apply(tp: Type): Type
 
-    var variance = 1
-
-    private def cloneDecls(result: Type, tp: Type, decls: Scope): Type = {
-      val syms1 = decls.toList
-      for (val sym <- syms1)
-        result.decls.enter(sym.cloneSymbol(result.symbol));
-      val syms2 = result.decls.toList
-      val resultThis = result.symbol.thisType
-      for (val sym <- syms2)
-        sym.setInfo(sym.info.substSym(syms1, syms2).substThis(tp.symbol, resultThis));
-      result
-    }
-
     /** Map this function over given type */
     def mapOver(tp: Type): Type = tp match {
       case ErrorType => tp
@@ -1340,11 +1309,9 @@ trait Types requires SymbolTable {
       case SingleType(pre, sym) =>
         if (sym.isPackageClass) tp // short path
         else {
-          val v = variance; variance = 0
           val pre1 = this(pre)
-          variance = v
           if (pre1 eq pre) tp
-          else singleType(pre1, sym, variance)
+          else singleType(pre1, sym)
         }
       case SuperType(thistp, supertp) =>
         val thistp1 = this(thistp)
@@ -1353,31 +1320,22 @@ trait Types requires SymbolTable {
         else SuperType(thistp1, supertp1)
       case TypeRef(pre, sym, args) =>
         val pre1 = this(pre)
-        //val args1 = List.mapConserve(args)(this)
-        val args1 = if (args.isEmpty) args
-                    else {
-                      val tparams = sym.typeParams
-                      if (tparams.isEmpty) args
-                      else mapOverArgs(args, tparams)
-                    }
+        val args1 = List.mapConserve(args)(this)
         if ((pre1 eq pre) && (args1 eq args)) tp
-        else typeRef(pre1, sym, args1, variance)
+        else typeRef(pre1, sym, args1)
       case TypeBounds(lo, hi) =>
-        variance = -variance
         val lo1 = this(lo)
-        variance = -variance
         val hi1 = this(hi)
         if ((lo1 eq lo) && (hi1 eq hi)) tp
         else TypeBounds(lo1, hi1)
-      case BoundedWildcardType(bounds) => //todo: merge WildcardType and BoundedWildcardType?
+      case BoundedWildcardType(bounds) =>
         val bounds1 = this(bounds)
         if (bounds1 eq bounds) tp
         else BoundedWildcardType(bounds1.asInstanceOf[TypeBounds])
-      case RefinedType(parents, decls) =>
+      case rtp @ RefinedType(parents, decls) =>
         val parents1 = List.mapConserve(parents)(this)
         val decls1 = mapOver(decls)
-        if ((parents1 eq parents) && (decls1 eq decls)) tp
-        else cloneDecls(refinedType(parents1, tp.symbol.owner), tp, decls1)
+        copyRefinedType(rtp, parents1, decls1)
 /*
       case ClassInfoType(parents, decls, clazz) =>
         val parents1 = List.mapConserve(parents)(this);
@@ -1386,18 +1344,14 @@ trait Types requires SymbolTable {
         else cloneDecls(ClassInfoType(parents1, new Scope(), clazz), tp, decls1)
 */
       case MethodType(paramtypes, result) =>
-        variance = -variance
         val paramtypes1 = List.mapConserve(paramtypes)(this)
-        variance = -variance
         val result1 = this(result)
         if ((paramtypes1 eq paramtypes) && (result1 eq result)) tp
         else if (tp.isInstanceOf[ImplicitMethodType]) ImplicitMethodType(paramtypes1, result1)
         else if (tp.isInstanceOf[JavaMethodType]) JavaMethodType(paramtypes1, result1)
         else MethodType(paramtypes1, result1)
       case PolyType(tparams, result) =>
-        variance = -variance
         val tparams1 = mapOver(tparams)
-        variance = -variance
         var result1 = this(result)
         if ((tparams1 eq tparams) && (result1 eq result)) tp
         else PolyType(tparams1, result1.substSym(tparams, tparams1))
@@ -1418,16 +1372,6 @@ trait Types requires SymbolTable {
         // throw new Error("mapOver inapplicable for " + tp);
     }
 
-    def mapOverArgs(args: List[Type], tparams: List[Symbol]): List[Type] =
-      map2Conserve(args, tparams) { (arg, tparam) =>
-        val v = variance
-        if (tparam.isContravariant) variance = -variance
-        else if (!tparam.isCovariant) variance = 0
-        val arg1 = this(arg)
-        variance = v
-        arg1
-      }
-
     /** Map this function over given scope */
     private def mapOver(scope: Scope): Scope = {
       val elems = scope.toList
@@ -1438,20 +1382,13 @@ trait Types requires SymbolTable {
 
     /** Map this function over given list of symbols */
     private def mapOver(syms: List[Symbol]): List[Symbol] = {
-      def newInfo(sym: Symbol) = {
-        val v = variance
-        if (sym.isAliasType) variance = 0
-        val result = this(sym.info)
-        variance = v
-        result
-      }
-      val infos1 = syms map newInfo
-      if (List.forall2(infos1, syms)((info1, sym) => info1 eq sym.info)) syms
+      val infos = syms map (.info)
+      val infos1 = List.mapConserve(infos)(this)
+      if (infos1 eq infos) syms
       else {
         val syms1 = syms map (.cloneSymbol)
-        List.map2(syms1, infos1) { (sym1, info1) =>
-          if (isTypeBounds(info1)) sym1 setFlag DEFERRED
-          sym1 setInfo info1.substSym(syms, syms1)
+        List.map2(syms1, infos1) {
+          ((sym1, info1) => sym1.setInfo(info1.substSym(syms, syms1)))
         }
       }
     }
@@ -1468,7 +1405,7 @@ trait Types requires SymbolTable {
       if ((pre eq NoType) || (pre eq NoPrefix) || !clazz.isClass) tp
       else tp match {
         case ThisType(sym) =>
-          def toPrefix(pre: Type, clazz: Symbol): Type = {
+          def toPrefix(pre: Type, clazz: Symbol): Type =
             if ((pre eq NoType) || (pre eq NoPrefix) || !clazz.isClass) tp
             else if ((sym isNonBottomSubClass clazz) &&
                      (pre.widen.symbol isNonBottomSubClass sym))
@@ -1476,8 +1413,7 @@ trait Types requires SymbolTable {
                 case SuperType(thistp, _) => thistp
                 case _ => pre
               }
-            else toPrefix(pre.baseType(clazz).prefix, clazz.owner)
-          }
+            else toPrefix(pre.baseType(clazz).prefix, clazz.owner);
           toPrefix(pre, clazz)
         case TypeRef(prefix, sym, args) if (sym.isTypeParameter) =>
           def toInstance(pre: Type, clazz: Symbol): Type =
@@ -1509,50 +1445,8 @@ trait Types requires SymbolTable {
             }
           toInstance(pre, clazz)
         case _ =>
-          propagate(mapOver(tp))
+          mapOver(tp)
       }
-
-    /** Propagate nested type bounds to top-level, or replace by lower/upper bounds
-     */
-    def propagate(tp: Type): Type =
-      if (needsPropagation(tp))
-        tp match {
-          case TypeBounds(lo, hi) =>
-            TypeBounds(lo.lowerBound, hi.upperBound)
-          case _ =>
-            if (variance == 1) upperBoundMap mapOver tp
-            else if (variance == -1) lowerBoundMap mapOver tp
-            else TypeBounds(lowerBoundMap mapOver tp, upperBoundMap mapOver tp)
-        }
-      else tp
-
-    /** Does type `tp' contain embedded TypeBounds that need propagating? */
-    def needsPropagation(tp: Type): boolean = tp match {
-      case SingleType(pre, sym) =>
-        isTypeBounds(pre)
-      case SuperType(thistp, supertp) =>
-        isTypeBounds(thistp) || isTypeBounds(supertp)
-      case TypeRef(pre, sym, args) =>
-        isTypeBounds(pre)
-      case TypeBounds(lo, hi) =>
-        isTypeBounds(lo) || isTypeBounds(hi)
-      case RefinedType(parents, decls) =>
-        (parents exists isTypeBounds) || (decls.toList exists (sym => isTypeBounds(sym.tpe)))
-      case MethodType(formals, restpe) =>
-        (formals exists isTypeBounds) || isTypeBounds(restpe)
-      case PolyType(tparams, result) =>
-        isTypeBounds(result)
-      case _ =>
-        false
-    }
-  }
-
-  object lowerBoundMap extends TypeMap {
-    def apply(tp: Type): Type = if (variance == -1) tp.upperBound else tp.lowerBound
-  }
-
-  object upperBoundMap extends TypeMap {
-    def apply(tp: Type): Type = if (variance == -1) tp.lowerBound else tp.upperBound
   }
 
   /** A base class to compute all substitutions */
@@ -1589,8 +1483,8 @@ trait Types requires SymbolTable {
   class SubstSymMap(from: List[Symbol], to: List[Symbol])
   extends SubstMap(from, to) {
     protected def toType(fromtp: Type, sym: Symbol) = fromtp match {
-      case TypeRef(pre, _, args) => typeRef(pre, sym, args, variance)
-      case SingleType(pre, _) => singleType(pre, sym, variance)
+      case TypeRef(pre, _, args) => typeRef(pre, sym, args)
+      case SingleType(pre, _) => singleType(pre, sym)
     }
     override def apply(tp: Type): Type = {
       def subst(sym: Symbol, from: List[Symbol], to: List[Symbol]): Symbol =
@@ -1599,9 +1493,9 @@ trait Types requires SymbolTable {
         else subst(sym, from.tail, to.tail)
       tp match {
         case TypeRef(pre, sym, args) if !(pre eq NoPrefix) =>
-          mapOver(typeRef(pre, subst(sym, from, to), args, variance))
+          mapOver(typeRef(pre, subst(sym, from, to), args))
         case SingleType(pre, sym) if !(pre eq NoPrefix) =>
-          mapOver(singleType(pre, subst(sym, from, to), variance))
+          mapOver(singleType(pre, subst(sym, from, to)))
         case _ =>
           super.apply(tp)
       }
@@ -1730,7 +1624,7 @@ trait Types requires SymbolTable {
           val pre1 = this(pre)
           val sym1 = adaptToNewRun(pre1, sym)
           if ((pre1 eq pre) && (sym1 eq sym)) tp
-          else singleType(pre1, sym1, variance)
+          else singleType(pre1, sym1)
         }
       case TypeRef(pre, sym, args) =>
         if (sym.isPackageClass) tp
@@ -1739,7 +1633,7 @@ trait Types requires SymbolTable {
           val args1 = List.mapConserve(args)(this)
           val sym1 = adaptToNewRun(pre1, sym)
           if ((pre1 eq pre) && (sym1 eq sym) && (args1 eq args)/* && sym.isExternal*/) tp
-          else typeRef(pre1, sym1, args1, variance)
+          else typeRef(pre1, sym1, args1)
         }
       case PolyType(tparams, restp) =>
         val restp1 = this(restp)
@@ -1908,13 +1802,14 @@ trait Types requires SymbolTable {
       case Pair(TypeRef(pre1, sym1, args1), TypeRef(pre2, sym2, args2)) =>
         //System.out.println("isSubType " + tp1 + " " + tp2);//DEBUG
         def isSubArgs(tps1: List[Type], tps2: List[Type],
-                      tparams: List[Symbol]): boolean =
-          tps1.isEmpty && tps2.isEmpty ||
+                      tparams: List[Symbol]): boolean = (
+          tps1.isEmpty && tps2.isEmpty
+          ||
           !tps1.isEmpty && !tps2.isEmpty &&
-          (tparams.head.isCovariant || (tps2.head.lowerBound <:< tps1.head.lowerBound)) &&
-          (tparams.head.isContravariant || (tps1.head.upperBound <:< tps2.head.upperBound)) &&
+          (tparams.head.isCovariant || (tps2.head <:< tps1.head)) &&
+          (tparams.head.isContravariant || (tps1.head <:< tps2.head)) &&
           isSubArgs(tps1.tail, tps2.tail, tparams.tail)
-
+        );
         (sym1 == sym2 &&
          (phase.erasedTypes || pre1 <:< pre2) &&
          isSubArgs(args1, args2, sym1.typeParams)
@@ -1944,8 +1839,6 @@ trait Types requires SymbolTable {
          res1 <:< res2.substSym(tparams2, tparams1))
       case Pair(TypeBounds(lo1, hi1), TypeBounds(lo2, hi2)) =>
         lo2 <:< lo1 && hi1 <:< hi2
-      case Pair(_, TypeBounds(lo2, hi2)) =>
-        lo2 <:< tp1 && tp1 <:< hi2
       case Pair(BoundedWildcardType(bounds), _) =>
         bounds.lo <:< tp2
       case Pair(_, BoundedWildcardType(bounds)) =>
@@ -2052,24 +1945,6 @@ trait Types requires SymbolTable {
     cl1(0) = tp
     System.arraycopy(cl, 0, cl1, 1, cl.length)
     cl1
-  }
-
-  /** like map2, but returns list `xs' itself - instead of a copy - if function
-   *  <code>f</code> maps all elements to themselves.
-   */
-  def map2Conserve[A <: AnyRef, B](xs: List[A], ys: List[B])(f: (A, B) => A): List[A] =
-    if (xs.isEmpty) xs
-    else {
-      val x1 = f(xs.head, ys.head)
-      val xs1 = map2Conserve(xs.tail, ys.tail)(f)
-      if ((x1 eq xs.head) && (xs1 eq xs.tail)) xs
-      else x1 :: xs1
-    }
-
-  /** Is `tp' a TypeBound type? */
-  private def isTypeBounds(tp: Type) = tp match {
-    case TypeBounds(_, _) => true
-    case _ => false
   }
 
 // Lubs and Glbs ---------------------------------------------------------
@@ -2227,6 +2102,7 @@ trait Types requires SymbolTable {
       case ts @ MethodType(pts, _) :: rest =>
         MethodType(pts, lub0(matchingRestypes(ts, pts)))
       case ts @ TypeBounds(_, _) :: rest =>
+        assert(false)
         TypeBounds(glb(ts map (.bounds.lo)), lub(ts map (.bounds.hi)))
       case ts =>
         val closures: List[Array[Type]] = ts map (.closure)
@@ -2328,18 +2204,22 @@ trait Types requires SymbolTable {
               proto.cloneSymbol(glbType.symbol).setInfo(
                 if (proto.isTerm) glb(symtypes)
                 else {
+                  def isTypeBound(tp: Type) = tp match {
+                    case TypeBounds(_, _) => true
+                    case _ => false
+                  }
                   def glbBounds(bnds: List[Type]): TypeBounds = {
                     val lo = lub(bnds map (.bounds.lo))
                     val hi = glb(bnds map (.bounds.hi))
                     if (lo <:< hi) TypeBounds(lo, hi)
                     else throw new MalformedClosure(bnds)
                   }
-                  val symbounds = symtypes filter isTypeBounds
+                  val symbounds = symtypes filter isTypeBound
                   var result: Type =
                     if (symbounds.isEmpty)
                       TypeBounds(AllClass.tpe, AnyClass.tpe)
                     else glbBounds(symbounds)
-                  for (val t <- symtypes; !isTypeBounds(t))
+                  for (val t <- symtypes; !isTypeBound(t))
                     if (result.bounds containsType t) result = t
                     else throw new MalformedClosure(symtypes);
                   result
@@ -2412,13 +2292,22 @@ trait Types requires SymbolTable {
            ((tparam, as) =>
              if (tparam.variance == variance) lub(as)
              else if (tparam.variance == -variance) glb(as)
-             else NoType));
-      if (args contains NoType) None
-      else Some(typeRef(pre, sym, args, variance))
+             else if (lub(as) <:< glb(as)) lub(as)
+             else NoType))
+      try {
+        if (args contains NoType) None
+        else Some(typeRef(pre, sym, args))
+      } catch {
+        case ex: MalformedType => None
+      }
     case SingleType(_, sym) :: rest =>
       val pres = tps map (.prefix)
       val pre = if (variance == 1) lub(pres) else glb(pres)
-      Some(singleType(pre, sym, variance))
+      try {
+        Some(singleType(pre, sym))
+      } catch {
+        case ex: MalformedType => None
+      }
   }
 
   /** Make symbol <code>sym</code> a member of scope <code>tp.decls</code>
@@ -2517,10 +2406,21 @@ trait Types requires SymbolTable {
    *  @param required ...
    */
   def explainTypes(found: Type, required: Type): unit =
-    if (settings.explaintypes.value) {
-      val s = explainSwitch
-      explainSwitch = true
-      found <:< required
-      explainSwitch = s
-    }
+    if (settings.explaintypes.value) withTypesExplained(found <:< required)
+
+  def withTypesExplained[A](op: => A): A = {
+    val s = explainSwitch
+    explainSwitch = true
+    val result = op
+    explainSwitch = s
+    result
+  }
+
+  def withoutMalformedChecks[T](op: => T): T = {
+    val s = checkMalformedSwitch
+    checkMalformedSwitch = false
+    val result = op
+    checkMalformedSwitch = s
+    result
+  }
 }

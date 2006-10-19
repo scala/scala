@@ -288,10 +288,12 @@ trait Typers requires Analyzer {
                    !o.privateWithin.ownerChain.contains(sym.owner))
               o = o.owner
             if (o == sym.owner) badSymbol = sym
-          } else if (sym.owner.isTerm) {
-            val e = scope.lookupEntry(sym.name)
-            if (e != null && e.sym == sym && e.owner == scope && !e.sym.isTypeParameterOrSkolem)
-              badSymbol = e.sym
+          } else if (sym.owner.isTerm && !sym.isTypeParameterOrSkolem) {
+            var e = scope.lookupEntry(sym.name)
+            while (e != null && e.owner == scope && badSymbol == NoSymbol) {
+              if (e.sym == sym) badSymbol = e.sym
+              e = scope.lookupNextEntry(e)
+            }
           }
         }
         if (badSymbol == NoSymbol)
@@ -464,7 +466,7 @@ trait Typers requires Analyzer {
               if (clazz.hasFlag(CASE)) {   // (5.1)
                 val tree1 = TypeTree(clazz.primaryConstructor.tpe.asSeenFrom(tree.tpe.prefix, clazz.owner)) setOriginal tree
                 try {
-                  inferConstructorInstance(tree1, clazz.typeParams, pt)
+                  inferConstructorInstance(tree1, clazz.typeParams, widen(pt))
                 } catch {
                   case npe : NullPointerException =>
                     logError("CONTEXT: " + context.unit.source.dbg(tree.pos), npe)
@@ -520,9 +522,9 @@ trait Typers requires Analyzer {
           typed(atPos(tree.pos)(Select(qual, nme.apply)), mode, pt)
         } else if (!context.undetparams.isEmpty && (mode & POLYmode) == 0) { // (9)
           instantiate(tree, mode, pt)
-        } else if (tree.tpe <:< pt) {
+        } else if ((mode & PATTERNmode) != 0) {
           tree
-        } else if ((mode & PATTERNmode) != 0 && treeInfo.isSequencePattern(tree)) {
+        } else if (tree.tpe <:< pt) {
           tree
         } else {
           val tree1 = constfold(tree, pt) // (10) (11)
@@ -998,15 +1000,17 @@ trait Typers requires Analyzer {
                          else typed(cdef.guard, BooleanClass.tpe)
       var body1: Tree = typed(cdef.body, pt)
       if (!context.savedTypeBounds.isEmpty) {
-        context.restoreTypeBounds
-        // the following is a hack to make the pattern matcher work
-        body1 =
-          typed {
-            atPos(body1.pos) {
-              TypeApply(Select(body1, Any_asInstanceOf), List(TypeTree(pt)))
+        body1.tpe = context.restoreTypeBounds(body1.tpe)
+        if (isFullyDefined(pt))
+        // the following is a hack to make the pattern matcher work !!! (still needed?)
+          body1 =
+            typed {
+              atPos(body1.pos) {
+                TypeApply(Select(body1, Any_asInstanceOf), List(TypeTree(pt)))
+              }
             }
-          }
       }
+      body1 = checkNoEscaping.locals(context.scope, pt, body1)
       copy.CaseDef(cdef, pat1, guard1, body1) setType body1.tpe
     }
 
@@ -1611,8 +1615,22 @@ trait Typers requires Analyzer {
 
         case Bind(name, body) =>
           var vble = tree.symbol
-          if (vble == NoSymbol) vble = context.owner.newValue(tree.pos, name)
-          if (vble.name != nme.WILDCARD) {
+          if (name.isTypeName) {
+            assert(body == EmptyTree)
+            if (vble == NoSymbol)
+              vble =
+                if (isFullyDefined(pt))
+                  context.owner.newAliasType(tree.pos, name) setInfo pt
+                else
+                  context.owner.newAbstractType(tree.pos, name) setInfo
+                    TypeBounds(AllClass.tpe, AnyClass.tpe)
+            if (vble.name == nme.WILDCARD.toTypeName) context.scope.enter(vble)
+            else namer.enterInScope(vble)
+            tree setType vble.tpe
+          } else {
+            if (vble == NoSymbol)
+              vble = context.owner.newValue(tree.pos, name)
+            if (vble.name.toTermName != nme.WILDCARD) {
 /*
             if (namesSomeIdent(vble.name))
               context.unit.warning(tree.pos,
@@ -1620,13 +1638,14 @@ trait Typers requires Analyzer {
                 "use backquotes `"+vble.name+"` if you mean to match against that value;\n" +
                 "or rename the variable or use an explicit bind "+vble.name+"@_ to avoid this warning.")
 */
-            namer.enterInScope(vble)
+              namer.enterInScope(vble)
+            }
+            val body1 = typed(body, mode, pt)
+            vble.setInfo(
+              if (treeInfo.isSequenceValued(body)) seqType(body1.tpe)
+              else body1.tpe)
+            copy.Bind(tree, name, body1) setSymbol vble setType body1.tpe   // buraq, was: pt
           }
-          val body1 = typed(body, mode, pt)
-          vble.setInfo(
-            if (treeInfo.isSequenceValued(body)) seqType(body1.tpe)
-            else body1.tpe)
-          copy.Bind(tree, name, body1) setSymbol vble setType body1.tpe // buraq, was: pt
 
         case ArrayValue(elemtpt, elems) =>
           val elemtpt1 = typedType(elemtpt)
@@ -1742,10 +1761,13 @@ trait Typers requires Analyzer {
             case _ =>
               setError(tree)
           }
+
         case Typed(expr, tpt) =>
           val tpt1 = typedType(tpt)
           val expr1 = typed(expr, mode & stickyModes, tpt1.tpe)
-          copy.Typed(tree, expr1, tpt1) setType tpt1.tpe
+          val owntype = if ((mode & PATTERNmode) != 0) inferTypedPattern(tpt1, widen(pt)) else tpt1.tpe
+          //Console.println(typed pattern: "+tree+":"+", tp = "+tpt1.tpe+", pt = "+pt+" ==> "+owntype)//DEBUG
+          copy.Typed(tree, expr1, tpt1) setType owntype
 
         case TypeApply(fun, args) =>
           val args1 = List.mapConserve(args)(typedType)
@@ -1837,7 +1859,8 @@ trait Typers requires Analyzer {
 
         case Ident(name) =>
           idcnt = idcnt + 1
-          if (name == nme.WILDCARD && (mode & (PATTERNmode | FUNmode)) == PATTERNmode)
+          if ((name == nme.WILDCARD && (mode & (PATTERNmode | FUNmode)) == PATTERNmode) ||
+              (name == nme.WILDCARD.toTypeName && (mode & TYPEmode) != 0))
             tree setType pt
           else
             typedIdent(name)

@@ -7,6 +7,7 @@
 package scala.tools.nsc.ast
 
 import symtab.Flags._
+import util.{Set, HashSet}
 
 /** This class ...
  *
@@ -136,13 +137,24 @@ abstract class TreeInfo {
   def isLeftAssoc(operator: Name): boolean =
     operator.length > 0 && operator(operator.length - 1) != ':';
 
+  private val reserved = new HashSet[Name]
+  reserved addEntry nme.false_
+  reserved addEntry nme.true_
+  reserved addEntry nme.null_
+  reserved addEntry newTypeName("byte")
+  reserved addEntry newTypeName("char")
+  reserved addEntry newTypeName("short")
+  reserved addEntry newTypeName("int")
+  reserved addEntry newTypeName("long")
+  reserved addEntry newTypeName("float")
+  reserved addEntry newTypeName("double")
+  reserved addEntry newTypeName("boolean")
+  reserved addEntry newTypeName("unit")
+
   /** Is name a variable name? */
   def isVariableName(name: Name): boolean = {
-    val first = name(0);
-    ((('a' <= first && first <= 'z') || first == '_')
-     && name != nme.false_
-     && name != nme.true_
-     && name != nme.null_)
+    val first = name(0)
+    (('a' <= first && first <= 'z') || first == '_') && !(reserved contains name)
   }
 
   /** Is tree a this node which belongs to `enclClass'? */

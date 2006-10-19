@@ -34,6 +34,10 @@ trait CompilationUnits requires Global {
 
     def warning(pos: int, msg: String) = reporter.warning(position(pos), msg)
 
+    def deprecationWarning(pos: int, msg: String) =
+      if (settings.deprecation.value) reporter.warning(position(pos), msg)
+      else currentRun.deprecationWarnings = true
+
     override def toString() = source.toString()
 
     def clear() = {

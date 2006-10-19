@@ -273,7 +273,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
               if (args.isEmpty)
                 List(mkArrayValue(args))
               else {
-                val suffix = args.last match {
+                val suffix: Tree = args.last match {
                   case Typed(arg, Ident(name)) if name == nme.WILDCARD_STAR.toTypeName =>
                     arg setType seqType(arg.tpe)
                   case _ =>

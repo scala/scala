@@ -386,6 +386,9 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
                       // that's why it is placed here.
     icodes.init
 
+    /** Deprecation warnings occurred */
+    var deprecationWarnings: boolean = false
+
     private var p: Phase = firstPhase
     private var stopped = false
     for (val pd <- phaseDescriptors) {
@@ -489,6 +492,9 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
 
       if (reporter.errors == 0) {
         assert(stopped || symData.isEmpty, symData.elements.toList)
+        if (deprecationWarnings) {
+          warning("there were deprecation warnings; re-run with -deprecation for details")
+        }
       } else {
         for (val Pair(sym, file) <- symSource.elements) {
           sym.reset(new loaders.SourcefileLoader(file))

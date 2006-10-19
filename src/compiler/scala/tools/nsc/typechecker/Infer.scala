@@ -106,7 +106,7 @@ trait Infer requires Analyzer {
    */
   private def isWithinBounds(tparams: List[Symbol], targs: List[Type]): boolean = {
     val bounds = tparams map (.info.subst(tparams, targs).bounds)
-    List.map2(bounds, targs)((bound, targ) => bound containsType targ) forall (x => x)
+    !(List.map2(bounds, targs)((bound, targ) => bound containsType targ) contains false)
   }
 
   /** Solve constraint collected in types <code>tvars</code>.
@@ -533,11 +533,14 @@ trait Infer requires Analyzer {
     def checkBounds(pos: PositionType, tparams: List[Symbol],
                     targs: List[Type], prefix: String): unit =
       if (!isWithinBounds(tparams, targs)) {
-        if (!(targs exists (.isErroneous)) && !(tparams exists (.isErroneous)))
+        if (!(targs exists (.isErroneous)) && !(tparams exists (.isErroneous))) {
+          //Console.println("tparams = "+tparams+", bounds = "+tparams.map(.info)+", targs="+targs)//DEBUG
+          //withTypesExplained(isWithinBounds(tparams, targs))//DEBUG
           error(pos,
                 prefix + "type arguments " + targs.mkString("[", ",", "]") +
                 " do not conform to " + tparams.head.owner + "'s type parameter bounds " +
                 (tparams map (.defString)).mkString("[", ",", "]"))
+        }
         if (settings.explaintypes.value) {
           val bounds = tparams map (.info.subst(tparams, targs).bounds)
           List.map2(targs, bounds)((targ, bound) => explainTypes(bound.lo, targ))
@@ -625,12 +628,6 @@ trait Infer requires Analyzer {
         }
     }
 
-    /** Is given type populated? */
-    def isPopulated(tp: Type) = tp match {
-      case RefinedType(parents, _) => intersectionIsPopulated(parents)
-      case _ => true
-    }
-
     /** Is intersection of given types populated? That is,
      *  for all types tp1, tp2 in intersection
      *    for all common base classes bc of tp1 and tp2
@@ -639,22 +636,31 @@ trait Infer requires Analyzer {
      *        bt1 and bt2 have the same prefix, and
      *        any correspondiong non-variant type arguments of bt1 and bt2 are the same
      */
-    def intersectionIsPopulated(tps: List[Type]) =
-      tps.isEmpty || {
-        def isConsistent(tp1: Type, tp2: Type): boolean = Pair(tp1, tp2) match {
-          case Pair(TypeRef(pre1, sym1, args1), TypeRef(pre2, sym2, args2)) =>
-            assert(sym1 == sym2)
-            pre1 =:= pre2 &&
-            !(List.map3(args1, args2, sym1.typeParams)
-               ((arg1, arg2, tparam) => tparam.variance != 0 || arg1 =:= arg2) contains false)
-        }
-        tps.head.baseClasses forall { bc =>
-          tps.tail forall { tp =>
-            tp.closurePos(bc) < 0 ||
-            isConsistent(tps.head.baseType(bc), tp.baseType(bc))
-          }
-        }
+    def isPopulated(tp1: Type, tp2: Type): boolean = {
+      def isConsistent(tp1: Type, tp2: Type): boolean = Pair(tp1, tp2) match {
+        case Pair(TypeRef(pre1, sym1, args1), TypeRef(pre2, sym2, args2)) =>
+          assert(sym1 == sym2)
+          pre1 =:= pre2 &&
+          !(List.map3(args1, args2, sym1.typeParams) {
+            (arg1, arg2, tparam) =>
+              //if (tparam.variance == 0 && !(arg1 =:= arg2)) Console.println("inconsistent: "+arg1+"!="+arg2)//DEBUG
+            tparam.variance != 0 || arg1 =:= arg2
+          } contains false)
       }
+      if (tp1.symbol.isClass && tp1.symbol.hasFlag(FINAL)) tp1 <:< tp2
+      else tp1.baseClasses forall (bc =>
+        tp2.closurePos(bc) < 0 || isConsistent(tp1.baseType(bc), tp2.baseType(bc)))
+    }
+
+    /** Type with all top-level occurrences of abstract types replaced by their bounds */
+    def widen(tp: Type): Type = tp match {
+      case TypeRef(pre, sym, _) if sym.isAbstractType =>
+        widen(tp.bounds.hi)
+      case rtp @ RefinedType(parents, decls) =>
+        copyRefinedType(rtp, List.mapConserve(parents)(widen), decls)
+      case _ =>
+        tp
+    }
 
     /** Substitite free type variables <code>undetparams</code> of type constructor
      *  <code>tree</code> in pattern, given prototype <code>pt</code>.
@@ -689,7 +695,6 @@ trait Infer requires Analyzer {
       if (restpe.subst(undetparams, tvars) <:< pt) {
         computeArgs
       } else if (isFullyDefined(pt)) {
-
         if (settings.debug.value) log("infer constr " + tree + ":" + restpe + ", pt = " + pt)
         var ptparams = freeTypeParams.collect(pt)
         if (settings.debug.value) log("free type params = " + ptparams)
@@ -701,27 +706,107 @@ trait Infer requires Analyzer {
           if (settings.debug.value) log("new tree = " + tree + ":" + restpe)
           val ptvars = ptparams map freshVar
           val pt1 = pt.subst(ptparams, ptvars)
-          val isCompatible = if (restpe.symbol.hasFlag(FINAL)) restpe <:< pt1
-                             else intersectionIsPopulated(List(restpe, pt1))
-          if (isCompatible) {
-            for (val tvar <- ptvars) {
-              val tparam = tvar.origin.symbol
-              val Pair(loBounds, hiBounds) =
-                if (tvar.constr.inst != NoType && isFullyDefined(tvar.constr.inst))
-                  Pair(List(tvar.constr.inst), List(tvar.constr.inst))
-                else
-                  Pair(tvar.constr.lobounds, tvar.constr.hibounds)
-              if (!loBounds.isEmpty || !hiBounds.isEmpty) {
-                context.nextEnclosing(.tree.isInstanceOf[CaseDef]).pushTypeBounds(tparam)
-                tparam setInfo TypeBounds(
-                  lub(tparam.info.bounds.lo :: loBounds),
-                  glb(tparam.info.bounds.hi :: hiBounds))
-                if (settings.debug.value) log("new bounds of " + tparam + " = " + tparam.info)
-              }
-            }
+          if (isPopulated(restpe, pt1)) {
+            ptvars foreach instantiateTypeVar(false)
           } else { if (settings.debug.value) System.out.println("no instance: "); instError }
         } else { if (settings.debug.value) System.out.println("not a subtype " + restpe.subst(undetparams, tvars) + " of " + ptWithWildcards); instError }
       } else { if (settings.debug.value) System.out.println("not fuly defined: " + pt); instError }
+    }
+
+    def instantiateTypeVar(aliasOK: boolean)(tvar: TypeVar) = {
+      val tparam = tvar.origin.symbol
+      if (false &&
+          tvar.constr.inst != NoType &&
+          isFullyDefined(tvar.constr.inst) &&
+          (tparam.info.bounds containsType tvar.constr.inst)) {
+        context.nextEnclosing(.tree.isInstanceOf[CaseDef]).pushTypeBounds(tparam)
+        tparam setInfo tvar.constr.inst
+        tparam resetFlag DEFERRED
+        if (settings.debug.value) log("new alias of " + tparam + " = " + tparam.info)
+      } else {
+        val instType = toOrigin(tvar.constr.inst)
+        val Pair(loBounds, hiBounds) =
+          if (instType != NoType && isFullyDefined(instType))
+            Pair(List(instType), List(instType))
+          else
+            Pair(tvar.constr.lobounds, tvar.constr.hibounds)
+        val lo = lub(tparam.info.bounds.lo :: loBounds map toOrigin)
+        val hi = glb(tparam.info.bounds.hi :: hiBounds map toOrigin)
+        if (!(lo <:< hi)) {
+          if (settings.debug.value) log("inconsistent: "+tparam+" "+lo+" "+hi)
+        } else if (!((lo <:< tparam.info.bounds.lo) && (tparam.info.bounds.hi <:< hi))) {
+          context.nextEnclosing(.tree.isInstanceOf[CaseDef]).pushTypeBounds(tparam)
+          tparam setInfo TypeBounds(lo, hi)
+          if (settings.debug.value) log("new bounds of " + tparam + " = " + tparam.info)
+        } else {
+          if (settings.debug.value) log("redundant: "+tparam+" "+tparam.info+"/"+lo+" "+hi)
+        }
+      }
+    }
+
+    def checkCheckable(pos: PositionType, tp: Type): unit = {
+      def patternWarning(tp: Type, prefix: String) =
+        context.unit.deprecationWarning(pos, prefix+tp+" in type pattern is deprecated because it cannot be checked after erasure")
+      def isLocalBinding(sym: Symbol) =
+        sym.isAbstractType &&
+        (sym.name == nme.WILDCARD.toTypeName || {
+          val e = context.scope.lookupEntry(sym.name)
+          e != null && e.sym == sym && e.owner == context.scope
+        })
+      tp match {
+        case SingleType(pre, _) =>
+          checkCheckable(pos, pre)
+        case TypeRef(pre, sym, args) =>
+          if (sym.isAbstractType) patternWarning(tp, "abstract type ")
+          else for (val arg <- args) {
+            if (sym == ArrayClass) checkCheckable(pos, arg)
+            else arg match {
+              case TypeRef(_, sym, _) if isLocalBinding(sym) =>
+                ;
+              case _ =>
+                patternWarning(arg, "non variable type-argument ")
+            }
+          }
+          checkCheckable(pos, pre)
+        case ThisType(_) =>
+          ;
+        case NoPrefix =>
+          ;
+        case _ =>
+          patternWarning(tp, "type pattern ")
+      }
+    }
+
+    def inferTypedPattern(tpt: Tree, pt: Type): Type = {
+      checkCheckable(tpt.pos, tpt.tpe)
+      if (!(tpt.tpe <:< pt)) {
+        val tpparams = freeTypeParams.collect(tpt.tpe)
+        if (settings.debug.value) log("free type params (1) = " + tpparams)
+        var tvars = tpparams map freshVar
+        var tp = tpt.tpe.subst(tpparams, tvars)
+        if (!(tp <:< pt)) {
+          tvars = tpparams map freshVar
+          tp = tpt.tpe.subst(tpparams, tvars)
+          val ptparams = freeTypeParams.collect(pt)
+          if (settings.debug.value) log("free type params (2) = " + ptparams)
+          val ptvars = ptparams map freshVar
+          val pt1 = pt.subst(ptparams, ptvars)
+          if (!isPopulated(tp, pt1)) {
+            error(tpt.pos, "pattern type is incompatibe with expected type"+foundReqMsg(tpt.tpe, pt))
+            return tpt.tpe
+          }
+          ptvars foreach instantiateTypeVar(false)
+        }
+        tvars foreach instantiateTypeVar(true)
+      }
+      intersectionType(List(tpt.tpe, pt))
+    }
+
+    object toOrigin extends TypeMap {
+      def apply(tp: Type): Type = tp match {
+        case TypeVar(origin, _) => origin
+        case _ => mapOver(tp)
+      }
     }
 
     /** A traverser to collect type parameters referred to in a type

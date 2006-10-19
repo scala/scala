@@ -330,12 +330,20 @@ trait Contexts requires Analyzer {
       savedTypeBounds = Pair(sym, sym.info) :: savedTypeBounds
     }
 
-    def restoreTypeBounds: unit = {
+    def restoreTypeBounds(tp: Type): Type = {
+      var current = tp
       for (val Pair(sym, info) <- savedTypeBounds) {
         if (settings.debug.value) log("resetting " + sym + " to " + info);
+        sym.info match {
+          case TypeBounds(lo, hi) if (hi <:< lo && lo <:< hi) =>
+            Console.println("subst "+sym+" to "+lo)
+            current = current.subst(List(sym), List(lo))
+          case _ =>
+        }
         sym.setInfo(info)
       }
       savedTypeBounds = List()
+      current
     }
 
     private var implicitsCache: List[List[ImplicitInfo]] = null

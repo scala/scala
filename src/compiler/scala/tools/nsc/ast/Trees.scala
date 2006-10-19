@@ -411,7 +411,10 @@ trait Trees requires Global {
    *  @param body
    */
   case class Bind(name: Name, body: Tree)
-       extends DefTree
+       extends DefTree {
+    override def isTerm = name.isTermName
+    override def isType = name.isTypeName
+  }
 
   def Bind(sym: Symbol, body: Tree): Bind =
     Bind(sym.name, body) setSymbol sym

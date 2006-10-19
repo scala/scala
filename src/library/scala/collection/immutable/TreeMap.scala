@@ -71,7 +71,7 @@ class TreeMap[A <% Ordered[A], B] extends Tree[A, Pair[A, B]] with Map[A, B] {
    */
   override def get(key: A): Option[B] =
     findValue(key) match {
-      case Some(Pair(_, value: B)) => Some(value)
+      case Some(Pair(_, value)) => Some(value)
       case _ => None
     }
 
