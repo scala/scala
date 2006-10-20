@@ -160,7 +160,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
      *    try {
      *      body
      *    } catch {
-     *      case ex: NonLocalReturnException =>
+     *      case ex: NonLocalReturnException[_] =>
      *        if (ex.key().eq(key)) ex.value()
      *        else throw ex
      *    }
@@ -170,7 +170,11 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
       localTyper.typed {
         val extpe = nonLocalReturnExceptionType(meth)
         val ex = meth.newValue(body.pos, nme.ex) setInfo extpe
-        val pat = Bind(ex, Typed(Ident(nme.WILDCARD), TypeTree(extpe)))
+        val pat = Bind(ex,
+                       Typed(Ident(nme.WILDCARD),
+                             AppliedTypeTree(Ident(NonLocalReturnExceptionClass),
+                                             List(Bind(nme.WILDCARD.toTypeName,
+                                                       EmptyTree)))))
         val rhs =
           If(
             Apply(

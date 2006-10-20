@@ -1,4 +1,0 @@
-bug126.scala:5 error: forward reference extends over definition of value foo2
-    val Tuple1(foo2:(Any => Any)) = Tuple1((x:Any) => foo2(x));
-                                                      ^
-one error found

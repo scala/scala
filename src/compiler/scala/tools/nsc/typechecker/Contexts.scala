@@ -336,7 +336,6 @@ trait Contexts requires Analyzer {
         if (settings.debug.value) log("resetting " + sym + " to " + info);
         sym.info match {
           case TypeBounds(lo, hi) if (hi <:< lo && lo <:< hi) =>
-            Console.println("subst "+sym+" to "+lo)
             current = current.subst(List(sym), List(lo))
           case _ =>
         }

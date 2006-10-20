@@ -287,7 +287,7 @@ object LispAny extends Lisp {
   }
 
   def asList(x: Data): List[Data] = x match {
-    case y: List[Data] => y
+    case y: List[_] => y
     case _ => lispError("malformed list: " + x)
   }
 

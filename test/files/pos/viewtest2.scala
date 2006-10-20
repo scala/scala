@@ -40,7 +40,7 @@ object O {
   implicit def view3[a <% Ordered[a]](x: List[a]): Ordered[List[a]] =
     new Ordered[List[a]] {
       def compareTo [b >: List[a] <% Ordered[b]](y: b): int = y match {
-        case y1: List[a] => compareLists(x, y1)
+        case y1: List[a1] => compareLists(x, y1.asInstanceOf[List[a]])
         case _ => -(y compareTo x)
       }
       private def compareLists(xs: List[a], ys: List[a]): int = {

@@ -234,7 +234,9 @@ trait Infer requires Analyzer {
     )
 
     def foundReqMsg(found: Type, req: Type): String =
-      ";\n found   : " + found.toLongString + "\n required: " + req
+      withDisambiguation(found, req) {
+        ";\n found   : " + found.toLongString + "\n required: " + req
+      }
 
     def error(pos: PositionType, msg: String): unit =
       context.error(pos, msg)
@@ -251,13 +253,48 @@ trait Infer requires Analyzer {
              (if (!(found.resultType eq found) && isWeaklyCompatible(found.resultType, req))
             "\n possible cause: missing arguments for method or constructor"
            else ""))
-        if (settings.explaintypes.value)
-          explainTypes(found, req)
+        if (settings.explaintypes.value) explainTypes(found, req)
       }
 
     def typeErrorTree(tree: Tree, found: Type, req: Type): Tree = {
       typeError(tree.pos, found, req)
       setError(tree)
+    }
+
+    def explainTypes(tp1: Type, tp2: Type) =
+      withDisambiguation(tp1, tp2) { global.explainTypes(tp1, tp2) }
+
+    /** If types `tp1' `tp2' contain different type variables with same name
+     *  differentiate the names by including owner information
+     */
+    private def withDisambiguation[T](tp1: Type, tp2: Type)(op: => T): T = {
+
+      def explainName(sym: Symbol) = { sym.name = newTypeName("<"+sym+" in "+sym.owner+">") }
+
+      val patches = {
+        val tparams1 = freeTypeParams.collect(tp1)
+        val tparams2 = freeTypeParams.collect(tp2)
+        for {
+          val tparam1 <- tparams1
+          val tparam2 <- tparams2
+          tparam1 != tparam2 && tparam1.name == tparam2.name
+        } yield {
+          val name = tparam1.name
+          explainName(tparam1)
+          explainName(tparam2)
+          if (tparam1.owner == tparam2.owner) tparam2.name = newTypeName("some other "+tparam2.name)
+          Triple(tparam1, tparam2, tparam1.name)
+        }
+      }
+
+      val result = op
+
+      for (val Triple(tparam1, tparam2, name) <- patches) {
+        tparam1.name = name
+        tparam2.name = name
+      }
+
+      result
     }
 
     /* -- Tests & Checks---------------------------------------------------- */
@@ -297,9 +334,8 @@ trait Infer requires Analyzer {
           accessError("")
         } else {
           //System.out.println("check acc " + sym1 + ":" + sym1.tpe + " from " + pre);//DEBUG
-          var owntype = /* try{ */
+          var owntype = try{
             pre.memberType(sym1)
-/*
           } catch {
             case ex: MalformedType =>
               val sym2 = underlying(sym1)
@@ -309,7 +345,6 @@ trait Infer requires Analyzer {
                            else " contains a "+ex.msg))
               ErrorType
           }
-*/
           if (pre.isInstanceOf[SuperType])
             owntype = owntype.substSuper(pre, site.symbol.thisType)
           tree setSymbol sym1 setType owntype
@@ -696,7 +731,7 @@ trait Infer requires Analyzer {
         computeArgs
       } else if (isFullyDefined(pt)) {
         if (settings.debug.value) log("infer constr " + tree + ":" + restpe + ", pt = " + pt)
-        var ptparams = freeTypeParams.collect(pt)
+        var ptparams = freeTypeParamsOfTerms.collect(pt)
         if (settings.debug.value) log("free type params = " + ptparams)
         val ptWithWildcards = pt.subst(ptparams, ptparams map (ptparam => WildcardType))
         tvars = undetparams map freshVar
@@ -777,17 +812,35 @@ trait Infer requires Analyzer {
       }
     }
 
+    /** Type intersection of simple type `tp1' with general type `tp2'
+     *  The result eliminates some redundancies
+     */
+    def intersect(tp1: Type, tp2: Type): Type = {
+      if (tp1 <:< tp2) tp1
+      else if (tp2 <:< tp1) tp2
+      else {
+        val reduced2 = tp2 match {
+          case rtp @ RefinedType(parents2, decls2) =>
+            copyRefinedType(rtp, parents2 filter (p2 => !(tp1 <:< p2)), decls2)
+          case _ =>
+            tp2
+        }
+        intersectionType(List(tp1, reduced2))
+      }
+    }
+
     def inferTypedPattern(tpt: Tree, pt: Type): Type = {
+      //Console.println("infer typed pattern: "+tpt)//DEBUG
       checkCheckable(tpt.pos, tpt.tpe)
       if (!(tpt.tpe <:< pt)) {
-        val tpparams = freeTypeParams.collect(tpt.tpe)
+        val tpparams = freeTypeParamsOfTerms.collect(tpt.tpe)
         if (settings.debug.value) log("free type params (1) = " + tpparams)
         var tvars = tpparams map freshVar
         var tp = tpt.tpe.subst(tpparams, tvars)
         if (!(tp <:< pt)) {
           tvars = tpparams map freshVar
           tp = tpt.tpe.subst(tpparams, tvars)
-          val ptparams = freeTypeParams.collect(pt)
+          val ptparams = freeTypeParamsOfTerms.collect(pt)
           if (settings.debug.value) log("free type params (2) = " + ptparams)
           val ptvars = ptparams map freshVar
           val pt1 = pt.subst(ptparams, ptvars)
@@ -799,7 +852,7 @@ trait Infer requires Analyzer {
         }
         tvars foreach instantiateTypeVar(true)
       }
-      intersectionType(List(tpt.tpe, pt))
+      intersect(tpt.tpe, pt)
     }
 
     object toOrigin extends TypeMap {
@@ -809,25 +862,24 @@ trait Infer requires Analyzer {
       }
     }
 
-    /** A traverser to collect type parameters referred to in a type
-     */
-    object freeTypeParams extends TypeTraverser {
+    abstract class FreeSymCollector extends TypeTraverser {
       private var result: List[Symbol] = _
-      private def includeIfTypeParam(sym: Symbol): unit = {
-        if (sym.isAbstractType && sym.owner.isTerm && !result.contains(sym))
-          result = sym :: result
-      }
+      protected def includeCondition(sym: Symbol): boolean
+      private def include(sym: Symbol): unit =
+        if (includeCondition(sym) && !result.contains(sym)) result = sym :: result
+
       override def traverse(tp: Type): TypeTraverser = {
         tp match {
           case TypeRef(NoPrefix, sym, _) =>
-            includeIfTypeParam(sym)
+            include(sym)
           case TypeRef(ThisType(_), sym, _) =>
-            includeIfTypeParam(sym)
+            include(sym)
           case _ =>
         }
         mapOver(tp)
         this
       }
+
       /** Collect all abstract type symbols referred to by type <code>tp</code>.
        *
        *  @param tp ...
@@ -838,6 +890,17 @@ trait Infer requires Analyzer {
         traverse(tp)
         result
       }
+    }
+
+    /** A traverser to collect type parameters referred to in a type
+     */
+    object freeTypeParamsOfTerms extends FreeSymCollector {
+      protected def includeCondition(sym: Symbol): boolean = sym.isAbstractType && sym.owner.isTerm
+    }
+
+    object freeTypeParams extends FreeSymCollector {
+      protected def includeCondition(sym: Symbol): boolean =
+        sym.isAbstractType && (sym.owner.isTerm || (sym hasFlag PARAM))
     }
 
     /* -- Overload Resolution ---------------------------------------------- */

@@ -1,7 +1,12 @@
+viewtest.scala:43 error: type mismatch;
+ found   : scala.List[<type a in method compareTo>]
+ required: scala.List[<type a in method view3>]
+        case y1: List[a] => compareLists(x, y1)
+                                            ^
 viewtest.scala:104 error: ambiguous implicit value:
  both method view4 in object O of type [a](a)a
  and method identity in object Predef of type [a](a)a
  match expected type (test.Str) => test.Ordered[test.Str]
         t = t insert Str(s)
               ^
-one error found
+two errors found
