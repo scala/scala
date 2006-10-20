@@ -629,6 +629,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
             if (fn.symbol == Any_asInstanceOf || fn.symbol == Any_asInstanceOfErased)
               fn match {
                 case TypeApply(Select(qual, _), List(targ)) =>
+                  assert(qual.tpe != null, tree)
                   if (qual.tpe <:< targ.tpe) atPos(tree.pos) { Typed(qual, TypeTree(qual.tpe)) }
                   else tree
               }
