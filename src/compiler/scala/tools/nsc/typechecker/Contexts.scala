@@ -322,7 +322,10 @@ trait Contexts requires Analyzer {
          (sym hasFlag PROTECTED) &&
          (superAccess ||
           (pre.widen.symbol.isNonBottomSubClass(sym.owner) &&
-           isSubClassOfEnclosing(pre.widen.symbol))))
+           (isSubClassOfEnclosing(pre.widen.symbol) || phase.erasedTypes))))
+        // note: phase.erasedTypes disables last test, because fater addinterfaces
+        // implementation classes are not in the superclass chain. If we enable the
+        // test, bug780 fails.
       }
     }
 
