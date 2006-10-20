@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- $Id: $ -->
+
+<project name="test" default="build" basedir=".">
+
+  <!-- Prevents system classpath from being used -->
+  <property name="build.sysclasspath" value="ignore"/>
+
+<!-- ===========================================================================
+PROPERTIES
+============================================================================ -->
+
+  <property name="source.dir" value="${basedir}"/>
+
+  <property file="./build.properties"/>
+
+  <condition property="quick.binary">
+    <equals arg1="${binary}" arg2="quick"/>
+  </condition>
+  <condition property="latest.binary">
+    <equals arg1="${binary}" arg2="latest"/>
+  </condition>
+  <condition property="installed.binary">
+    <equals arg1="${binary}" arg2="installed"/>
+  </condition>
+
+  <fail message="Property 'binary' must be set to either 'quick', 'lastest' or 'installed'.">
+    <condition><not><or>
+      <isset property="quick.binary"/>
+      <isset property="latest.binary"/>
+      <isset property="installed.binary"/>
+    </or></not></condition>
+  </fail>
+  <echo level="verbose" message="binary=${binary}"/>
+
+  <property name="build.dir" value="${java.io.tmpdir}/classes-${user.name}"/>
+
+<!-- ===========================================================================
+INITIALISATION
+============================================================================ -->
+
+  <target name="quick.init" if="quick.binary">
+    <property name="quick.dir" value="../../../build/quick"/>
+    <available file="${quick.dir}" property="quick.present"/>
+    <fail
+       message="Quick build could not be found."
+       unless="quick.present"
+    />
+    <property name="scala.dir" value="${quick.dir}"/>
+    <property name="scala-library.lib" value="${scala.dir}/lib/library/"/>
+    <property name="scala-compiler.lib" value="${scala.dir}/lib/compiler/"/>
+    <property name="fjbg.lib" value="${scala.dir}/lib/fjbg.jar"/>
+  </target>
+
+  <target name="latest.init" if="latest.binary">
+    <property name="latest.dir" value="../../../dists/latest"/>
+    <available file="${latest.dir}" property="latest.present"/>
+    <fail
+      message="Latest build could not be found."
+      unless="latest.present"
+    />
+    <property name="scala.dir" value="${latest.dir}"/>
+    <property name="scala-library.lib" value="${scala.dir}/lib/scala-library.jar"/>
+    <property name="scala-compiler.lib" value="${scala.dir}/lib/scala-compiler.jar"/>
+    <property name="fjbg.lib" value=""/>
+  </target>
+
+  <target name="installed.init" if="installed.binary">
+    <property name="installed.dir" value="/home/linuxsoft/apps/scala/share/scala"/>
+    <available file="${installed.dir}" property="installed.present"/>
+    <fail
+      message="Installed distribution could not be found."
+      unless="installed.present"
+    />
+    <property name="scala.dir" value="${installed.dir}"/>
+    <property name="scala-library.lib" value="${scala.dir}/lib/scala-library.jar"/>
+    <property name="scala-compiler.lib" value="${scala.dir}/lib/scala-compiler.jar"/>
+    <property name="fjbg.lib" value=""/>
+  </target>
+
+  <target name="init" depends="quick.init, latest.init, installed.init">
+    <echo level="verbose" message="scala.dir=${scala.dir}"/>
+    <fail message="Scala library '${scala-library.lib}' is not available">
+      <condition><not><and>
+        <available classname="scala.Predef"
+                   classpath="${scala-library.lib}"/>
+        <available classname="scala.List"
+                   classpath="${scala-library.lib}"/>
+        <available classname="scala.runtime.ObjectRef"
+                   classpath="${scala-library.lib}"/>
+      </and></not></condition>
+    </fail>
+    <fail message="Scala library '${scala-compiler.lib}' is not available">
+      <condition><not><and>
+        <available classname="scala.tools.nsc.Main"
+                   classpath="${scala-compiler.lib}"/>
+        <available classname="scala.tools.util.StringOps"
+                   classpath="${scala-compiler.lib}"/>
+      </and></not></condition>
+    </fail>
+    <path id="scala.classpath">
+      <pathelement location="${scala-library.lib}"/>
+      <pathelement location="${scala-compiler.lib}"/>
+      <pathelement location="${fjbg.lib}"/> <!-- only present for 'quick' -->
+    </path>
+    <taskdef resource="scala/tools/ant/antlib.xml">
+      <classpath>
+        <path refid="scala.classpath"/>
+      </classpath>
+    </taskdef>
+    <path id="build.classpath">
+      <!--<pathelement location="${scala-actors.lib}"/>-->
+      <pathelement location="${scala-library.lib}"/>
+      <pathelement location="${build.dir}"/>
+    </path>
+  </target>
+
+<!-- ===========================================================================
+BUILD
+============================================================================ -->
+
+  <target name="build" depends="init">
+    <echo level="verbose" message="ouput.dir=${build.dir}"/>
+    <mkdir dir="${build.dir}"/>
+    <scalac
+      srcdir="${source.dir}"
+      includes="**/*.scala"
+      destdir="${build.dir}"
+      classpathref="build.classpath"
+    />
+  </target>
+
+<!-- ===========================================================================
+CLEAN
+============================================================================ -->
+
+  <macrodef name="remove">
+    <attribute name="dir"/>
+    <sequential>
+      <delete dir="@{dir}" includeemptydirs="yes" quiet="yes" failonerror="no"/>
+    </sequential>
+  </macrodef>
+
+  <target name="clean">
+    <remove dir="${build.dir}"/>
+  </target>
+
+</project>
+

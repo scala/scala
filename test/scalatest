@@ -151,6 +151,7 @@ test_print_help() {
     echo "--neg           next files test a compilation failure";
     echo "--msil          next files test the .NET backend";
     echo "--script        next files test Scala embedded in scripts";
+    echo "--ant           next files test the Ant tasks";
     echo "--quick         use the 'quick' build instead of distribution";
     echo '--installed     use the installed programs on $PATH'
     echo "--no-run        run no test, use results of last run";
@@ -276,6 +277,18 @@ test_run_script() {
     PATH="$BIN_DIR:$PATH" "$srcbase.scala" `cat $argsfile`
 }
 
+# Tests the Scala Ant task
+test_run_ant() {
+    if [ "$BIN_DIR" = "" ]; then BINARY=installed
+    elif [ "$BIN_DIR" = "$QUICK" ]; then BINARY=quick
+    else BINARY=latest
+    fi;
+    testname=`basename "$srcbase"`;
+    buildfile=`get_os_filename "$srcdir/$testname-build.xml"`;
+    rm -rf "$dstbase".obj &&
+    $ANT -f "$buildfile" -Dbinary "$BINARY" -D=output.dir "$os_dstbase".obj &&
+    rm -rf "$dstbase".obj;
+}
 
 # Checks the specified test.
 test_check_test() {
@@ -393,9 +406,11 @@ test_check_all() {
     test_check_kind "Testing compiler (on files whose compilation should fail)" \
         "neg" $FILES_NEG;
     test_check_kind "Testing .NET backend" \
-	"msil" $FILES_MSIL;
+        "msil" $FILES_MSIL;
     test_check_kind "Testing Scala embedded in script files"  \
         "script" $FILES_SCRIPT;
+    test_check_kind "Testing Scala Ant tasks"  \
+        "ant" $FILES_ANT;
 }
 
 
@@ -422,6 +437,7 @@ test_add_file() {
         neg    ) FILES_NEG="$FILES_NEG $1"; return;;
         msil   ) FILES_MSIL="$FILES_MSIL $1"; return;;
         script ) FILES_SCRIPT="$FILES_SCRIPT $1"; return;;
+        ant    ) FILES_ANT="$FILES_ANT $1"; return;;
         *      ) abort "unknown test type \`$TEST_TYPE'";;
     esac;
     case "$1" in
@@ -508,6 +524,7 @@ FILES_NEG="";
 FILES_MSIL="";
 FILES_SCRIPT="";
 FILES_DIS="";
+FILES_ANT="";
 
 QUICK="$PREFIX/build/quick/bin"
 QUICK_LIB="$PREFIX/build/quick/lib/library"
@@ -552,6 +569,7 @@ while [ $# -gt 0 ]; do
         --neg        ) TEST_TYPE="neg"; shift 1;;
         --msil       ) TEST_TYPE="msil"; shift 1;;
         --script     ) TEST_TYPE="script"; shift 1;;
+        --ant        ) TEST_TYPE="ant"; shift 1;;
         --quick      ) BIN_DIR="$QUICK/"; SCALA_LIB=$QUICK_LIB; shift 1;;
         --installed  ) BIN_DIR=""; shift 1;;
         --no-run     ) NORUN="true"; shift 1;;
@@ -612,11 +630,15 @@ if [ "$TEST_ALL" = "true" ]; then
     case "$TEST_TYPE" in
         auto | script ) FILES_SCRIPT="$FILES_SCRIPT $SRCDIR/script";;
     esac;
+    case "$TEST_TYPE" in
+        ant ) FILES_ANT="$FILES_ANT $SRCDIR/ant";;
+    esac;
 fi;
 
 SCALA="${BIN_DIR}scala";
 SCALAC="${BIN_DIR}scalac -encoding iso-8859-1";
 SCALAP="scalap";
+ANT="ant";
 
 if [ -n "$OBJDIR" ]; then
     if [ -d "$OBJDIR" ] || mkdir -p "$OBJDIR"; then
