@@ -29,7 +29,7 @@ package scala.tools.ant {
    *  <p>
    *    This task can take the following parameters as attributes:
    *  </p>
-   *  <ul>
+   *  <ul style="font-family:Courier;">
    *    <li>srcdir (mandatory),</li>
    *    <li>srcref,</li>
    *    <li>destdir,</li>
@@ -49,6 +49,8 @@ package scala.tools.ant {
    *    <li>usepredefs,</li>
    *    <li>debuginfo,</li>
    *    <li>addparams.</li>
+   *    <li>scalacdebugging,</li>
+   *    <li>deprecation.</li>
    *  </ul>
    *  <p>
    *    It also takes the following parameters as nested elements:
@@ -96,8 +98,14 @@ package scala.tools.ant {
                         "terminal")
     }
 
+    /** Defines valid values for the <code>target</code> property. */
     object Target extends PermissibleValue {
       val values = List("jvm", "msil", "cldc")
+    }
+
+    /** Defines valid values for the <code>deprecation</code> property. */
+    object Deprecation extends PermissibleValue {
+      val values = List("yes", "no", "on", "off")
     }
 
     /** The directories that contain source files to compile. */
@@ -129,11 +137,13 @@ package scala.tools.ant {
     private var logPhase: List[String] = Nil
 
     /** Whether to use implicit predefined values or not. */
-    private var usepredefs: Boolean = true;
+    private var usepredefs: Boolean = true
     /** Instruct the compiler to generate debugging information */
     private var debugInfo: String = "line"
-    /** Instruct the compiler to generate debugging information */
+    /** Instruct the compiler to use additional parameters */
     private var addParams: String = ""
+    /** Instruct the compiler to generate deprecation information. */
+    private var deprecation: Boolean = false
 
     /** Whether the compiler is being debuged. Prints more information in case
       * in case of failure. */
@@ -298,8 +308,10 @@ package scala.tools.ant {
       if (LoggingLevel.isPermissible(input)) logging = Some(input)
       else error("Logging level '" + input + "' does not exist.")
 
-    /** Sets the log attribute. Used by Ant.
-      * @param input The value for <code>logPhase</code>. */
+    /** Sets the <code>logphase</code> attribute. Used by Ant.
+     *
+     *  @param input The value for <code>logPhase</code>.
+     */
     def setLogPhase(input: String) = {
       logPhase = List.fromArray(input.split(",")).flatMap { s: String =>
         val st = s.trim()
@@ -312,20 +324,35 @@ package scala.tools.ant {
       }
     }
 
-    /** Sets the use predefs attribute. Used by Ant.
-      * @param input The value for <code>usepredefs</code>. */
+    /** Sets the <code>usepredefs</code> attribute. Used by Ant.
+     *
+     *  @param input The value for <code>usepredefs</code>.
+     */
     def setUsepredefs(input: Boolean): Unit =
-      usepredefs = input;
+      usepredefs = input
 
-    /** Set the debug info attribute. */
+    /** Set the <code>debug</code> info attribute. */
     def setDebuginfo(input: String): Unit =
       debugInfo = input
 
-    /** Set the debug info attribute. */
+    /** Set the <code>addparams</code> info attribute. */
     def setAddparams(input: String): Unit =
       addParams = input
 
-    /** Set the scalac debugging attribute. */
+    /** Set the <code>deprecation</code> info attribute.
+     *
+     *  @param input One of the flags <code>yes/no</code> or <code>on/off</code>.
+     */
+    def setDeprecation(input: String): Unit =
+      if (Deprecation.isPermissible(input))
+        deprecation = "yes".equals(input) || "on".equals(input)
+      else
+        error("Unknown deprecation flag '" + input + "'")
+
+    /** Set the <code>scalacdebugging</code> info attribute.
+     *
+     *  @param input The specified flag
+     */
     def setScalacdebugging(input: Boolean): Unit =
       scalacDebugging = input
 
@@ -333,7 +360,8 @@ package scala.tools.ant {
 **                             Properties getters                             **
 \*============================================================================*/
 
-    /** Gets the value of the <code>classpath</code> attribute in a Scala-friendly form.
+    /** Gets the value of the <code>classpath</code> attribute in a
+     *  Scala-friendly form.
      *
      *  @return The class path as a list of files.
      */
@@ -341,7 +369,8 @@ package scala.tools.ant {
       if (classpath.isEmpty) error("Member 'classpath' is empty.")
       else List.fromArray(classpath.get.list()).map(nameToFile)
 
-    /** Gets the value of the <code>origin</code> attribute in a Scala-friendly form.
+    /** Gets the value of the <code>origin</code> attribute in a
+     * Scala-friendly form.
      *
      *  @return The origin path as a list of files.
      */
@@ -376,7 +405,8 @@ package scala.tools.ant {
     if (bootclasspath.isEmpty) error("Member 'bootclasspath' is empty.")
     else List.fromArray(bootclasspath.get.list()).map(nameToFile)
 
-    /** Gets the value of the extdirs attribute in a Scala-friendly form.
+    /** Gets the value of the <code>extdirs</code> attribute in a
+     *  Scala-friendly form.
      *
      *  @return The extensions path as a list of files.
      */
@@ -475,7 +505,7 @@ package scala.tools.ant {
       // older than the .scala file will be used.
       val sourceFiles: List[File] =
         for {
-          val originDir <- getOrigin;
+          val originDir <- getOrigin
           val originFile <- {
             var includedFiles =
               getDirectoryScanner(originDir).getIncludedFiles()
@@ -534,6 +564,7 @@ package scala.tools.ant {
       if (!logPhase.isEmpty) settings.log.value = logPhase
       settings.nopredefs.value = !usepredefs
       settings.debuginfo.value = debugInfo
+      settings.deprecation.value = deprecation
 
       log("Scalac params = '" + addParams + "'", Project.MSG_DEBUG)
       var args =

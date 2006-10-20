@@ -384,14 +384,14 @@ BUILD QUICK-TEST LAYER
     <locker
       srcdir="${src.dir}/library"
       destdir="${quick.dir}/lib/library"
-      usepredefs="no" addparams="${nsc.params}"
+      usepredefs="no" addparams="${nsc.params}" deprecation="yes"
       scalacdebugging="${nsc.log-files}"
       classpath="${quick.dir}/lib/library"
       includes="scala/Predef.scala"/>
     <locker
       srcdir="${src.dir}/library"
       destdir="${quick.dir}/lib/library"
-      addparams="${nsc.params}"
+      addparams="${nsc.params}" deprecation="yes"
       scalacdebugging="${nsc.log-files}"
       classpath="${quick.dir}/lib/library">
       <include name="**/*.scala"/>
@@ -405,7 +405,7 @@ BUILD QUICK-TEST LAYER
     <locker
       srcdir="${src.dir}/dbc"
       destdir="${quick.dir}/lib/dbc"
-      addparams="${nsc.params}"
+      addparams="${nsc.params}" deprecation="yes"
       scalacdebugging="${nsc.log-files}">
       <classpath>
         <pathelement location="${quick.dir}/lib/library"/>
@@ -419,7 +419,7 @@ BUILD QUICK-TEST LAYER
     <locker
       srcdir="${src.dir}/actors"
       destdir="${quick.dir}/lib/actors"
-      addparams="${nsc.params}"
+      addparams="${nsc.params}" deprecation="yes"
       scalacdebugging="${nsc.log-files}">
       <classpath>
         <pathelement location="${quick.dir}/lib/library"/>
