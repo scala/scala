@@ -1152,14 +1152,14 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
                   if(outerAcc != NoSymbol) { // some guys don't have outers
                     cond = And(cond,
                                Eq(Apply(Select(
-                                 gen.mkAsInstanceOf(selector.duplicate, ntpe, true), outerAcc),List()), theRef))
+                                 typed(gen.mkAsInstanceOf(selector.duplicate, ntpe, true)), outerAcc),List()), theRef))
                   }
                 case _ =>
                   //ignore ;
               }
             }
           val succ = squeezedBlock(List(ValDef(casted,
-                                               gen.mkAsInstanceOf(selector.duplicate, ntpe, true))),
+                                               typed(gen.mkAsInstanceOf(selector.duplicate, ntpe, true)))),
                                    toTree(node.and))
             val fail = toTree(node.or, selector.duplicate)
 
@@ -1177,7 +1177,7 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
 
             val treeAsSeq =
               if(!isSubType(selector.tpe, ntpe))
-                gen.mkAsInstanceOf(selector.duplicate, ntpe, true)
+                typed(gen.mkAsInstanceOf(selector.duplicate, ntpe, true))
               else
                 selector.duplicate
 
@@ -1203,7 +1203,7 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
 
             val treeAsSeq =
               if(!isSubType(selector.tpe,ntpe))
-                gen.mkAsInstanceOf(selector.duplicate, ntpe, true)
+                typed(gen.mkAsInstanceOf(selector.duplicate, ntpe, true))
               else
                 selector.duplicate
 
