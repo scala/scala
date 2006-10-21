@@ -34,6 +34,7 @@ PROPERTIES
   <echo level="verbose" message="binary=${binary}"/>
 
   <property name="build.dir" value="${java.io.tmpdir}/classes-${user.name}"/>
+  <echo level="verbose" message="build.dir=${build.dir}"/>
 
 <!-- ===========================================================================
 INITIALISATION
@@ -120,13 +121,19 @@ BUILD
 ============================================================================ -->
 
   <target name="build" depends="init">
-    <echo level="verbose" message="ouput.dir=${build.dir}"/>
+    <echo level="verbose" message="build.dir=${build.dir}"/>
     <mkdir dir="${build.dir}"/>
     <scalac
       srcdir="${source.dir}"
       includes="**/*.scala"
       destdir="${build.dir}"
       classpathref="build.classpath"
+    />
+    <dirname property="log.dir" file="${build.dir}"/>
+    <replace
+      file="${log.dir}/test-ant.log"
+      token="${user.name}" 
+      value="USERNAME"
     />
   </target>
 

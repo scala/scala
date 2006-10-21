@@ -286,7 +286,7 @@ test_run_ant() {
     testname=`basename "$srcbase"`;
     buildfile=`get_os_filename "$srcdir/$testname-build.xml"`;
     rm -rf "$dstbase".obj &&
-    $ANT -f "$buildfile" -Dbinary "$BINARY" -D=output.dir "$os_dstbase".obj &&
+    $ANT -f "$buildfile" -Dbinary="$BINARY" -Dbuild.dir="$os_dstbase".obj &&
     rm -rf "$dstbase".obj;
 }
 

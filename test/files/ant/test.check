@@ -1,4 +1,4 @@
-Buildfile: /home/michelou/projects/scala-installer/dependencies/scala/test/files/ant/test-build.xml
+Buildfile: /home/USERNAME/projects/scala-installer/dependencies/scala/test/files/ant/test-build.xml
 
 quick.init:
 
@@ -9,7 +9,5 @@ installed.init:
 init:
 
 build:
-   [scalac] Compiling 1 source file to /tmp/classes-michelou
-
-BUILD SUCCESSFUL
-Total time: 3 seconds
+    [mkdir] Created dir: /home/USERNAME/projects/scala-installer/dependencies/scala/test/files/ant/test-ant.obj
+   [scalac] Compiling 1 source file to /home/USERNAME/projects/scala-installer/dependencies/scala/test/files/ant/test-ant.obj
