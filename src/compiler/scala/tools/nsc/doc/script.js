@@ -3,18 +3,18 @@ function setWindowTitle(title) {
   parent.document.title = title;
 }
 
-const java_api_root = 'http://java.sun.com/j2se/1.5.0/docs/api/';
-//const java_api_root = 'http://lamp.epfl.ch/~linuxsoft/java/jdk1.5/docs/api/';
+var java_api_root = 'http://java.sun.com/j2se/1.5.0/docs/api/';
+//var java_api_root = 'http://lamp.epfl.ch/~linuxsoft/java/jdk1.5/docs/api/';
 
-const scala_doc_url = parent.document.URL;
-const scala_api_root = scala_doc_url.substring(0, scala_doc_url.lastIndexOf("/")+1);
+var scala_doc_url = parent.document.URL;
+var scala_api_root = scala_doc_url.substring(0, scala_doc_url.lastIndexOf("/")+1);
 
-const ant_api_root = 'http://lamp.epfl.ch/~linuxsoft/ant/manual/api/';
-//const ant_api_root = 'http://www.net-freaks.org/doc/ant-1.6.5/manual/api/';
+var ant_api_root = 'http://lamp.epfl.ch/~linuxsoft/ant/manual/api/';
+//var ant_api_root = 'http://www.net-freaks.org/doc/ant-1.6.5/manual/api/';
 
-const eclipse_api_root = 'http://help.eclipse.org/help32/topic/org.eclipse.platform.doc.isv/reference/api/';
+var eclipse_api_root = 'http://help.eclipse.org/help32/topic/org.eclipse.platform.doc.isv/reference/api/';
 
-const fjbg_api_root = 'http://lamp.epfl.ch/~linuxsoft/fjbg/api/';
+var fjbg_api_root = 'http://lamp.epfl.ch/~linuxsoft/fjbg/api/';
 
 // hashtable_classes
 var table = new Array()
