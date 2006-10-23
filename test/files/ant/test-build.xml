@@ -93,6 +93,8 @@ INITIALISATION
     </fail>
     <fail message="Scala library '${scala-compiler.lib}' is not available">
       <condition><not><and>
+        <available classname="scala.tools.ant.Scalac"
+                   classpath="${scala-compiler.lib}"/>
         <available classname="scala.tools.nsc.Main"
                    classpath="${scala-compiler.lib}"/>
         <available classname="scala.tools.util.StringOps"
@@ -131,9 +133,9 @@ BUILD
     />
     <dirname property="log.dir" file="${build.dir}"/>
     <replace
-      file="${log.dir}/test-ant.log"
-      token="${user.name}" 
-      value="USERNAME"
+      file="${log.dir}/${ant.project.name}-ant.log"
+      token="${log.dir}"
+      value="[...]/files/ant"
     />
   </target>
 

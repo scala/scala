@@ -576,6 +576,11 @@ abstract class DocGenerator extends Models {
     </span>;
   }
 
+  private val kinds =
+    new TreeMap[String, Symbol => Boolean] +
+      "Constructor" -> ((s: Symbol) => s.isConstructor) +
+      "Def" -> ((s: Symbol) => s.isMethod)
+
   private abstract class PrimitiveContentFrame extends ContentFrame0 {
     def sym: Symbol
     def path = urlFor0(sym, sym)
@@ -601,32 +606,43 @@ abstract class DocGenerator extends Models {
         {Text(codeFor(kind))}
         <span class="entity">{Text(sym.nameString)}</span>
       </div>
-      <hr/>
-      <table cellpadding="3" class="member" summary="">
-        <tr>
-          <td colspan="2" class="title">Def Summary</td>
-        </tr>
-        { {
-          for (val m <- sym.tpe.decls.toList; m hasFlag Flags.METHOD) yield
+      <hr/>.concat({
+        val decls = sym.tpe.decls.toList
+        //compute table members once for each relevant kind
+        val tables = for (val k <- kinds.keys.toList)
+                     yield Pair(k, decls filter kinds(k))
+        for (val Pair(k, members) <- tables; !members.isEmpty) yield
+          <table cellpadding="3" class="member" summary="" style="margin:0 0 1.2em 0;">
             <tr>
-              <td valign="top" class="modifiers">
-              </td>
-              <td class="signature"><code>def</code>
-                { Text(m.nameString + " ").concat(m.tpe match {
-                    case MethodType(params, result) =>
-                      (if (params.length > 0)
-                         Text("(").concat(params.map(p => forType(p))).concat(")")
-                       else
-                         NodeSeq.Empty
-                      ).concat(": ").concat(forType(result))
-                    case _ =>
-                      Text(": ").concat(forType(m.tpe))
-                  })
-                }
-              </td>
+              <td colspan="2" class="title">{k} Summary</td>
             </tr>
-        } }
-      </table>)
+            { {
+              for (val m <- members) yield
+                <tr>
+                  <td valign="top" class="modifiers">
+                  </td>
+                  <td class="signature"><code>def</code>
+                    { Text(m.nameString + " ").concat(m.tpe match {
+                        case MethodType(typeParams, resultType) =>
+                          (if (typeParams.isEmpty)
+                             NodeSeq.Empty
+                           else
+                             Text("(").concat(typeParams.map(p => forType(p))).concat(")")
+                          ).concat(": ").concat(forType(resultType))
+                        case PolyType(typeParams, resultType) =>
+                          val tp =
+                            if (typeParams.isEmpty) ""
+                            else (typeParams map (.defString)).mkString("[", ",", "]")
+                          Text(tp + ": ").concat(forType(resultType))
+                        case _ =>
+                          Text(": ").concat(forType(m.tpe))
+                      })
+                    }
+                  </td>
+                </tr>
+            } }
+          </table>
+      }))
   }
 
   private val loader = getClass().getClassLoader()
