@@ -1257,6 +1257,9 @@ trait Typers requires Analyzer {
                   attrError = true;
                 }
               }
+              if (tpt.tpe.symbol.hasFlag(JAVA) && settings.target.value == "jvm-1.4") {
+                context.unit.warning (t.pos, "Java annotation will not be emitted in classfile unless you use the '-target:jvm-1.5' option")
+              }
               Triple(tpt.tpe, constrArgs, nvPairs)
           }
         }
@@ -1634,7 +1637,7 @@ trait Typers requires Analyzer {
 /*
             if (namesSomeIdent(vble.name))
               context.unit.warning(tree.pos,
-                "pattern variable "+vble.name+" shadows a value visible in the environment;\n"+
+                "pattern variable"+vble.name+" shadows a value visible in the environment;\n"+
                 "use backquotes `"+vble.name+"` if you mean to match against that value;\n" +
                 "or rename the variable or use an explicit bind "+vble.name+"@_ to avoid this warning.")
 */
