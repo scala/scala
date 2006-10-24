@@ -20,7 +20,7 @@ abstract class ExactNumeric[Type](
 ) extends datatype.Numeric[Type](nativeTypeId) {
 
   def isEquivalent(datatype: DataType) = datatype match {
-    case dt: ExactNumeric[Type] =>
+    case dt: ExactNumeric[_] =>
       (nativeTypeId == dt.nativeTypeId &&
        precisionRadix == dt.precisionRadix &&
        precision == dt.precision &&
@@ -31,7 +31,7 @@ abstract class ExactNumeric[Type](
   }
 
   def isSubtypeOf(datatype: DataType) = datatype match {
-    case dt: ExactNumeric[Type] =>
+    case dt: ExactNumeric[_] =>
       (nativeTypeId == dt.nativeTypeId &&
        precisionRadix == dt.precisionRadix &&
        precision <= dt.precision &&
