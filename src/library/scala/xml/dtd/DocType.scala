@@ -12,6 +12,8 @@
 package scala.xml.dtd;
 
 
+import compat.Platform.IllegalArgumentException
+
 /** an XML node for document type declaration
  *
  * @author Burak Emir

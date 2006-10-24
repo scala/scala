@@ -12,6 +12,8 @@
 package scala
 
 
+import compat.Platform.IllegalArgumentException
+
 object Seq {
 
   /** builds a singleton sequence

@@ -11,6 +11,9 @@
 
 package scala.concurrent
 
+
+import compat.Platform.UnsupportedOperationException
+
 /** This object ...
  *
  *  @author  Erik Stenman
@@ -37,7 +40,7 @@ object Process {
     self.receiveWithin(msec)(f)
 
   /**
-   *  @throws UnsupportedOperationException
+   *  @throws scala.compat.Platform.UnsupportedOperationException
    */
   def self: Process =
     if (Thread.currentThread().isInstanceOf[Process])

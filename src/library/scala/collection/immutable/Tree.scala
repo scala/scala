@@ -39,7 +39,8 @@
 
 package scala.collection.immutable
 
-import java.util.NoSuchElementException
+
+import compat.Platform.NoSuchElementException
 
 /** <p>
  *    General Balanced Trees - highly efficient functional dictionaries.

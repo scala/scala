@@ -17,6 +17,8 @@ import scala.util.regexp.Base
 import scala.collection.mutable
 import scala.collection.immutable
 import compat.Platform
+import Platform.IllegalArgumentException
+
 
 /** this turns a regexp over A into a NondetWorkAutom over A using the
  *  celebrated position automata construction (also called Berry-Sethi or

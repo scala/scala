@@ -11,6 +11,9 @@
 
 package scala.collection.mutable
 
+import compat.Platform.NoSuchElementException
+
+
 /** This class is used internally to represent mutable lists. It is the
  *  basis for the implementation of the classes <code>Buffer</code>,
  *  <code>Stack</code>, and <code>Queue</code>.
@@ -32,7 +35,7 @@ trait MutableList[A] extends Seq[A] with PartialFunction[Int, A] {
    *  yields an error if the element does not exist.
    */
   def apply(n: Int): A = get(n) match {
-    case None => throw new java.util.NoSuchElementException("element not found")
+    case None => throw new NoSuchElementException("element not found")
     case Some(value) => value
   }
 

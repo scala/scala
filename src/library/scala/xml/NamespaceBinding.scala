@@ -11,7 +11,9 @@
 
 package scala.xml
 
+
 import compat.StringBuilder
+import compat.Platform.IllegalArgumentException
 
 /** The class <code>NamespaceBinding</code> represents namespace bindings
  *  and scopes. The binding for the default namespace is treated as a null

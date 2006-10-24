@@ -11,6 +11,9 @@
 
 package scala.collection
 
+
+import compat.Platform.NoSuchElementException
+
 /** This class defines the interface of collections that unambiguously map
  *  keys to values (i.e. a key is mapped to at least one value).
  *  Class <code>Map</code> may only be used for
@@ -139,6 +142,5 @@ trait Map[A, +B] extends AnyRef
      *  @param key ...
      */
     def default(key: A): B =
-      throw new java.util.NoSuchElementException("key not found: " + key)
+      throw new NoSuchElementException("key not found: " + key)
 }
-

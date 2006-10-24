@@ -11,7 +11,9 @@
 
 package scala.xml
 
+
 import compat.StringBuilder
+import compat.Platform.UnsupportedOperationException
 
 /** A hack to group XML nodes in one node for output.
  *
@@ -33,31 +35,31 @@ case class Group(val nodes: Seq[Node]) extends Node {
   }
 
   /**
-   * @throws UnsupportedOperationException (always)
+   * @throws scala.compat.Platform.UnsupportedOperationException (always)
    */
   final def label =
     throw new UnsupportedOperationException("class Group does not support method 'label'")
 
   /**
-   * @throws UnsupportedOperationException (always)
+   * @throws scala.compat.Platform.UnsupportedOperationException (always)
    */
   final override def attributes =
     throw new UnsupportedOperationException("class Group does not support method 'attributes'")
 
   /**
-   * @throws UnsupportedOperationException (always)
+   * @throws scala.compat.Platform.UnsupportedOperationException (always)
    */
   final override def namespace =
     throw new UnsupportedOperationException("class Group does not support method 'namespace'")
 
   /**
-   * @throws UnsupportedOperationException (always)
+   * @throws scala.compat.Platform.UnsupportedOperationException (always)
    */
   final override def child =
     throw new UnsupportedOperationException("class Group does not support method 'child'")
 
   /**
-   * @throws UnsupportedOperationException (always)
+   * @throws scala.compat.Platform.UnsupportedOperationException (always)
    */
   def toString(sb: StringBuilder) =
     throw new UnsupportedOperationException("class Group does not support method toString(StringBuilder)")

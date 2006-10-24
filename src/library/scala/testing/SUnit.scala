@@ -79,21 +79,14 @@ object SUnit {
    *  with the thrown exception.
    */
   class TestFailure(val failedTest: Test, val thrownException: Throwable) {
-    private val eol = System.getProperty("line.separator", "\n")
 
     def this(p: Pair[Test, Throwable]) = this(p._1, p._2)
 
     override def toString() =
       failedTest.toString() + " failed due to " + thrownException.toString()
 
-    def trace(): String = {
-      val s = new StringBuilder()
-      for (val trElem <- thrownException.getStackTrace()) {
-        s.append(trElem.toString())
-        s.append(eol)
-      }
-      s.toString()
-    }
+    def trace(): String = compat.Platform.getStackTrace(thrownException)
+
   }
 
   /** a TestResult collects the result of executing a test case */

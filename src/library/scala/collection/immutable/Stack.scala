@@ -12,6 +12,8 @@
 package scala.collection.immutable
 
 
+import compat.Platform.NoSuchElementException
+
 object Stack {
   val Empty = new Stack[Nothing]
 }
@@ -26,8 +28,6 @@ object Stack {
  */
 [serializable]
 class Stack[+A] extends Seq[A] {
-
-  import java.util.NoSuchElementException
 
   /** Checks if this stack is empty.
    *

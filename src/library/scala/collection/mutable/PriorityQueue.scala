@@ -12,6 +12,8 @@
 package scala.collection.mutable
 
 
+import compat.Platform.{NoSuchElementException, UnsupportedOperationException}
+
 /** This class implements priority queues using a heap. The
  *  elements of the queue have to be ordered in terms of the
  *  <code>Ordered[T]</code> class.
@@ -23,8 +25,6 @@ package scala.collection.mutable
 [serializable, cloneable]
 class PriorityQueue[A <% Ordered[A]] extends ResizableArray[A] {
   size = size + 1 // we do not use array(0)
-
-  import java.util.NoSuchElementException
 
   protected def fixUp(as: Array[A], m: Int): Unit = {
     var k: Int = m
@@ -91,7 +91,7 @@ class PriorityQueue[A <% Ordered[A]] extends ResizableArray[A] {
   /** Returns the element with the highest priority in the queue,
    *  and removes this element from the queue.
    *
-   *  @throws java.util.NoSuchElementException
+   *  @throws scala.compat.Platform.NoSuchElementException
    *  @return   the element with the highest priority.
    */
   def dequeue: A =

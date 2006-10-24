@@ -11,6 +11,8 @@
 
 package scala.collection.mutable
 
+import compat.Platform.NoSuchElementException
+
 /** A stack implements a data structure which allows to store and retrieve
  *  objects in a last-in-first-out (LIFO) fashion.
  *
@@ -19,8 +21,6 @@ package scala.collection.mutable
  */
 [serializable, cloneable]
 class Stack[A] extends MutableList[A] {
-
-  import java.util.NoSuchElementException
 
   /** Checks if the stack is empty.
    *
@@ -61,14 +61,14 @@ class Stack[A] extends MutableList[A] {
    *  the element from the stack. An error is signaled if there is no
    *  element on the stack.
    *
-   *  @throws java.util.NoSuchElementException
+   *  @throws scala.compat.Platform.NoSuchElementException
    *  @return the top element
    */
   def top: A = if (first == null) throw new NoSuchElementException("stack empty") else first.elem
 
   /** Removes the top element from the stack.
    *
-   *  @throws java.util.NoSuchElementException
+   *  @throws scala.compat.Platform.NoSuchElementException
    *  @return the top element
    */
   def pop: A =

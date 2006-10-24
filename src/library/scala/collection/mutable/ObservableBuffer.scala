@@ -12,6 +12,8 @@
 package scala.collection.mutable
 
 
+import compat.Platform.UnsupportedOperationException
+
 /** This class is typically used as a mixin. It adds a subscription
  *  mechanism to the <code>Buffer</code> class into which this abstract
  *  class is mixed in. Class <code>ObservableBuffer</code> publishes

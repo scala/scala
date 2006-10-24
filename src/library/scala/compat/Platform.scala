@@ -20,6 +20,9 @@ object Platform {
   type ClassCastException = java.lang.ClassCastException;
   type RuntimeException = java.lang.RuntimeException;
   type IndexOutOfBoundsException = java.lang.IndexOutOfBoundsException;
+  type UnsupportedOperationException = java.lang.UnsupportedOperationException
+  type IllegalArgumentException = java.lang.IllegalArgumentException
+  type NoSuchElementException = java.util.NoSuchElementException
 
   def arraycopy(src: AnyRef, srcPos: Int, dest: AnyRef, destPos: Int, length: Int): Unit =
     Array.copy(src, srcPos, dest, destPos, length)
@@ -35,6 +38,16 @@ object Platform {
 
   def printStackTrace(exc: java.lang.Throwable) = exc.printStackTrace();
   def getMessage(exc: java.lang.Throwable) = exc.getMessage();
+
+  private val eol = System.getProperty("line.separator", "\n")
+  def getStackTrace(exc: java.lang.Throwable): String = {
+    val s = new StringBuilder()
+    for (val trElem <- exc.getStackTrace()) {
+      s.append(trElem.toString())
+      s.append(eol)
+    }
+    s.toString()
+  }
 
   def split(str: String, separator: Char): Array[String] = {
     str.split(separator.toString());

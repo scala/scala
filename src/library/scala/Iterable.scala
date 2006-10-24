@@ -11,6 +11,9 @@
 
 package scala
 
+
+import compat.Platform.IllegalArgumentException
+
 /** This object ...
  *
  *  @author  Matthias Zenger

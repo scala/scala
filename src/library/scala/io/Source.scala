@@ -14,6 +14,8 @@ package scala.io
 import java.io.{File, FileInputStream, PrintStream}
 
 import compat.StringBuilder
+import compat.Platform.IllegalArgumentException
+
 
 /** This object provides convenience methods to create an iterable
  *  representation of a source file.
@@ -211,7 +213,7 @@ abstract class Source extends Iterator[Char] {
    *
    *  @param line the line index.
    *  @return     the character string of the specified line.
-   *  @throws IllegalArgumentException
+   *  @throws scala.compat.Platform.IllegalArgumentException
    */
   def getLine(line: Int): String = {
     val buf = new StringBuffer()
@@ -223,7 +225,7 @@ abstract class Source extends Iterator[Char] {
         i = i + 1;
 
     if (!it.hasNext) // this should not happen
-      throw new java.lang.IllegalArgumentException(
+      throw new IllegalArgumentException(
         "line " + line + " does not exist?!"
       );
 

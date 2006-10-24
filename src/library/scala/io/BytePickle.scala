@@ -11,7 +11,9 @@
 
 package scala.io
 
+
 import scala.collection.mutable.{HashMap,ArrayBuffer}
+import compat.Platform.IllegalArgumentException
 
 /**
  * Pickler combinators.

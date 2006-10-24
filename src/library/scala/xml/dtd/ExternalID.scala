@@ -11,7 +11,9 @@
 
 package scala.xml.dtd;
 
+
 import compat.StringBuilder
+import compat.Platform.IllegalArgumentException
 
 /** an ExternalIDs - either PublicID or SystemID
  *

@@ -11,6 +11,8 @@
 
 package scala.collection.mutable
 
+import compat.Platform.UnsupportedOperationException
+
 /** This class represents mutable maps. Concrete map implementations
  *  just have to provide functionality for the abstract methods in
  *  <code>scala.collection.Map</code> as well as for <code>update</code>,

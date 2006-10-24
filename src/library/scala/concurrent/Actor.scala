@@ -11,6 +11,9 @@
 
 package scala.concurrent
 
+
+import compat.Platform.IllegalArgumentException
+
 /**
  * The class <code>Actor</code> ...
  *

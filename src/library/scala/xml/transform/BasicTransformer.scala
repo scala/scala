@@ -8,7 +8,11 @@
 
 // $Id$
 
+
 package scala.xml.transform
+
+
+import compat.Platform.UnsupportedOperationException
 
 /** A class for XML transformations.
  *

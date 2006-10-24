@@ -13,6 +13,7 @@ package scala.collection.mutable
 
 
 import Predef._
+import compat.Platform.{IndexOutOfBoundsException, NoSuchElementException}
 
 /** The class <code>ListBuffer</code> ..
  *
@@ -125,7 +126,7 @@ final class ListBuffer[A] extends Buffer[A] {
    *
    *  @param n  the position of the element to be returned.
    *  @return   the n-th element of this buffer.
-   *  @throws IndexOutOfBoundsException
+   *  @throws scala.compat.Platform.IndexOutOfBoundsException
    */
   def apply(n: Int): A = try {
     start(n)
@@ -135,11 +136,11 @@ final class ListBuffer[A] extends Buffer[A] {
   }
 
   /** Replaces element at index <code>n</code> with the new element
-   *  <code>newelem</code>. Throws IndexOutOfBoundsException if
-   *  n is out of bounds.
+   *  <code>newelem</code>.
    *
    *  @param n  the index of the element to replace.
    *  @param x  the new element.
+   *  @throws scala.compat.Platform.IndexOutOfBoundsException if <code>n</code> is out of bounds.
    */
   def update(n: Int, x: A): unit = try {
     if (exported) copy()
@@ -168,7 +169,7 @@ final class ListBuffer[A] extends Buffer[A] {
    *
    *  @param  n     the index where a new element will be inserted.
    *  @param  iter  the iterable object providing all elements to insert.
-   *  @throws IndexOutOfBoundsException if <code>n</code> is out of bounds.
+   *  @throws scala.compat.Platform.IndexOutOfBoundsException if <code>n</code> is out of bounds.
    */
   def insertAll(n: Int, iter: Iterable[A]): unit = try {
     if (exported) copy()
@@ -205,7 +206,7 @@ final class ListBuffer[A] extends Buffer[A] {
    *  @param  n  the index which refers to the element to delete.
    *  @return n  the element that was formerly at position <code>n</code>.
    *  @pre       an element exists at position <code>n</code>
-   *  @throws IndexOutOfBoundsException if <code>n</code> is out of bounds.
+   *  @throws scala.compat.Platform.IndexOutOfBoundsException if <code>n</code> is out of bounds.
    */
   def remove(n: Int): A = try {
     if (exported) copy()
@@ -239,14 +240,14 @@ final class ListBuffer[A] extends Buffer[A] {
    *    <code>toList.elements</code>.
    *  </blockquote>
    *
-   *  @throws NoSuchElementException if buffer is empty
+   *  @throws scala.compat.Platform.NoSuchElementException if buffer is empty
    */
   override def elements = new Iterator[A] {
     var cursor: List[A] = null
     def hasNext: Boolean = !start.isEmpty && cursor != last
     def next: A =
       if (!hasNext) {
-        throw new java.util.NoSuchElementException("next on empty Iterator")
+        throw new NoSuchElementException("next on empty Iterator")
       } else {
         if (cursor == null) cursor = start else cursor = cursor.tail
         cursor.head

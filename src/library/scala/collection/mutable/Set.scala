@@ -11,6 +11,9 @@
 
 package scala.collection.mutable
 
+
+import compat.Platform.UnsupportedOperationException
+
 /** This class represents mutable sets. Concrete set implementations
  *  just have to provide functionality for the abstract methods in
  *  <a href="../Set.html" target="contentFrame">
@@ -104,7 +107,8 @@ trait Set[A] extends AnyRef with collection.Set[A]
   /** Send a message to this scriptable object.
    *
    *  @param cmd  the message to send.
-   *  @throws UnsupportedOperationException if the message was not understood.
+   *  @throws <code>scala.compat.Platform.UnsupportedOperationException</code>
+   *  if the message was not understood.
    */
   def <<(cmd: Message[A]): Unit = cmd match {
     case Include(elem) => this += elem

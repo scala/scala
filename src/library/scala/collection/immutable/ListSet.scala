@@ -12,6 +12,8 @@
 package scala.collection.immutable
 
 
+import compat.Platform.NoSuchElementException
+
 object ListSet {
   /** constructs an empty ListSet
    */
@@ -29,8 +31,6 @@ object ListSet {
  */
 [serializable]
 class ListSet[A] extends AnyRef with Set[A] {
-
-  import java.util.NoSuchElementException
 
   /** Returns the number of elements in this set.
    *
@@ -60,7 +60,7 @@ class ListSet[A] extends AnyRef with Set[A] {
 
   /** Creates a new iterator over all elements contained in this set.
    *
-   *  @throws java.util.NoSuchElementException
+   *  @throws scala.compat.Platform.NoSuchElementException
    *  @return the new iterator
    */
   def elements: Iterator[A] = new Iterator[A] {
@@ -82,12 +82,12 @@ class ListSet[A] extends AnyRef with Set[A] {
       false
 
   /**
-   *  @throws java.util.NoSuchElementException
+   *  @throws scala.compat.Platform.NoSuchElementException
    */
   protected def elem: A = throw new NoSuchElementException("Set has no elelemnts");
 
   /**
-   *  @throws java.util.NoSuchElementException
+   *  @throws scala.compat.Platform.NoSuchElementException
    */
   protected def next: ListSet[A] = throw new NoSuchElementException("Next of an empty set");
 

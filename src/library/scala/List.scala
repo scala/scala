@@ -13,6 +13,7 @@ package scala
 
 import scala.collection.mutable.ListBuffer
 import Predef._
+import compat.Platform.{NoSuchElementException, UnsupportedOperationException}
 
 /** This object provides methods for creating specialized lists, and for
  *  transforming special kinds of lists (e.g. lists of lists).
@@ -380,13 +381,13 @@ sealed abstract class List[+a] extends Seq[a] with CaseClass {
 
   /** Returns this first element of the list.
    *  @return the first element of this list.
-   *  @throws <code>java.lang.RuntimeException</code> if the list is empty.
+   *  @throws <code>scala.compat.Platform.NoSuchElementException</code> if the list is empty.
    */
   def head: a
 
   /** Returns this list without its first element.
    *  @return this list without its first element.
-   *  @throws <code>java.lang.RuntimeException</code> if the list is empty.
+   *  @throws <code>scala.compat.Platform.NoSuchElementException</code> if the list is empty.
    */
   def tail: List[a]
 
@@ -472,7 +473,7 @@ sealed abstract class List[+a] extends Seq[a] with CaseClass {
     def hasNext: Boolean = !these.isEmpty
     def next: a =
       if (!hasNext)
-        throw new java.util.NoSuchElementException("next on empty Iterator")
+        throw new NoSuchElementException("next on empty Iterator")
       else {
         val result = these.head; these = these.tail; result
       }
@@ -488,7 +489,8 @@ sealed abstract class List[+a] extends Seq[a] with CaseClass {
   /** Returns the list without its last element.
    *
    *  @return the list without its last element.
-   *  @throws <code>java.lang.RuntimeException</code> if the list is empty.
+   *  @throws <code>scala.compat.Platform.UnsupportedOperationException</code>
+   *  if the list is empty.
    */
   def init: List[a] =
     if (isEmpty) throw new UnsupportedOperationException("Nil.init")
@@ -507,7 +509,8 @@ sealed abstract class List[+a] extends Seq[a] with CaseClass {
   /** Returns the last element of this list.
    *
    *  @return the last element of the list.
-   *  @throws <code>java.lang.RuntimeException</code> if the list is empty.
+   *  @throws <code>scala.compat.Platform.UnsupportedOperationException</code>
+   *  if the list is empty.
    */
   def last: a =
     if (isEmpty) throw new UnsupportedOperationException("Nil.last")
@@ -1090,16 +1093,10 @@ sealed abstract class List[+a] extends Seq[a] with CaseClass {
 [SerialVersionUID(0 - 8256821097970055419L)]
 case object Nil extends List[Nothing] {
   override def isEmpty = true
-  /**
-   *  @throws java.util.NoSuchElementException
-   */
   def head: Nothing =
-    throw new java.util.NoSuchElementException("head of empty list")
-  /**
-   *  @throws java.util.NoSuchElementException
-   */
+    throw new NoSuchElementException("head of empty list")
   def tail: List[Nothing] =
-    throw new java.util.NoSuchElementException("tail of empty list")
+    throw new NoSuchElementException("tail of empty list")
 }
 
 /** A non empty list characterized by a head and a tail.

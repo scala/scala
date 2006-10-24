@@ -11,7 +11,9 @@
 
 package scala.io
 
+
 import compat.StringBuilder
+import compat.Platform.IllegalArgumentException
 
 /** <p>
  *    The object <code>Position</code> provides convenience methods to encode

@@ -11,6 +11,9 @@
 
 package scala.concurrent
 
+
+import compat.Platform.IllegalArgumentException
+
 /**
  *  @author  Erik Stenman
  *  @version 1.0, 01/10/2003

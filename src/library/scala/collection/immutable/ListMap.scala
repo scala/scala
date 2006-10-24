@@ -12,6 +12,8 @@
 package scala.collection.immutable
 
 
+import compat.Platform.NoSuchElementException
+
 object ListMap {
   def Empty[A, B] = new ListMap[A, B]
 }
@@ -26,8 +28,6 @@ object ListMap {
  */
 [serializable]
 class ListMap[A, B] extends AnyRef with Map[A, B] {
-
-  import java.util.NoSuchElementException
 
   /** This method returns a new ListMap instance mapping keys of the
    *  same type to values of type <code>C</code>.

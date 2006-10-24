@@ -12,6 +12,8 @@
 package scala.collection.mutable
 
 
+import compat.Platform.{NoSuchElementException, UnsupportedOperationException}
+
 /** <code>Queue</code> objects implement data structures that allow to
  *  insert and retrieve elements in a first-in-first-out (FIFO) manner.
  *
@@ -58,12 +60,12 @@ class Queue[A] extends MutableList[A] {
   /** Returns the first element in the queue, and removes this element
    *  from the queue.
    *
-   *  @throws java.util.NoSuchElementException
+   *  @throws scala.compat.Platform.NoSuchElementException
    *  @return the first element of the queue.
    */
   def dequeue: A =
     if (first == null)
-      throw new java.util.NoSuchElementException("queue empty")
+      throw new NoSuchElementException("queue empty")
     else {
       val res = first.elem
       first = first.next
@@ -171,7 +173,7 @@ class Queue[A] extends MutableList[A] {
   /** The hashCode method always yields an error, since it is not
    *  safe to use mutable queues as keys in hash tables.
    *
-   *  @throws UnsupportedOperationException
+   *  @throws scala.compat.Platform.UnsupportedOperationException
    *  @return never.
    */
   override def hashCode(): Int = throw new UnsupportedOperationException("unsuitable as hash key")
