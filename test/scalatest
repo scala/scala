@@ -157,6 +157,7 @@ test_print_help() {
     echo "--no-run        run no test, use results of last run";
     echo "--show-log      show output of failed tests";
     echo "--show-diff     show differences between actual and expected output";
+    echo "--use-fsc       use the Fast Scala compiler";
     echo "--failed        test only files that failed last time";
     echo "--errors=<int>  specify the number of expected errors";
     echo "--flags=<flags> specify flags to pass on to the executable";
@@ -501,6 +502,7 @@ PREFIX=`cd "$PREFIX"; pwd`;
 NORUN="false";
 SHOWLOG="false";
 SHOWDIFF="false";
+USEFSC="false";
 FAILED="false";
 ERRORS=0;
 SUCCESS_COUNT=0;
@@ -575,6 +577,7 @@ while [ $# -gt 0 ]; do
         --no-run     ) NORUN="true"; shift 1;;
         --show-log   ) SHOWLOG="true"; shift 1;;
         --show-diff  ) SHOWDIFF="true"; shift 1;;
+        --use-fsc    ) USEFSC="true"; shift 1;;
         --failed     ) FAILED="true"; shift 1;;
         --pending    ) SRCDIR="$TESTROOT/pending"; shift 1;;
         --errors=    ) abort "illegal empty argument for option --errors";;
@@ -636,7 +639,11 @@ if [ "$TEST_ALL" = "true" ]; then
 fi;
 
 SCALA="${BIN_DIR}scala";
-SCALAC="${BIN_DIR}scalac -encoding iso-8859-1";
+if [ "$USEFSC" = "true" ]; then
+    SCALAC="${BIN_DIR}fsc -encoding iso-8859-1";
+else
+    SCALAC="${BIN_DIR}scalac -encoding iso-8859-1";
+fi;
 SCALAP="scalap";
 ANT="ant";
 
@@ -655,7 +662,7 @@ if [ -z "$bin_dir" ]; then
     bin_dir=`test_get_location $scalac`;
 fi;
 printf_outline "Scala binaries in   : $bin_dir\\n";
-scala_version=`${BIN_DIR}scalac -version 2>&1`
+scala_version=`${SCALAC} -version 2>&1`
 printf_outline "Scala version is    : $scala_version\\n";
 jvm_version=`${JAVACMD:=java} -version 2>&1 | head -3 | tail -1`
 printf_outline "Java runtime is     : $jvm_version\\n\\n";
