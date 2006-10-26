@@ -130,7 +130,7 @@ class Queue[+A](elem: A*) extends Seq[A] {
    *  @return true, iff the two queues are structurally equal.
    */
   override def equals(o: Any): Boolean = o match {
-    case q: Queue[Any] =>
+    case q: Queue[_] =>
       /* A function that compares the element at
          position index in q with the element at
          the same position in this (queue).

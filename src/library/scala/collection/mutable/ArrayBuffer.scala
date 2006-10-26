@@ -153,7 +153,7 @@ class ArrayBuffer[A] extends Buffer[A] with ResizableArray[A] {
    *  @return true, iff both buffers contain the same sequence of elements.
    */
   override def equals(obj: Any): Boolean = obj match {
-    case that: ArrayBuffer[A] =>
+    case that: ArrayBuffer[_] =>
       this.length == that.length &&
     elements.zip(that.elements).forall {
       case Pair(thiselem, thatelem) => thiselem == thatelem

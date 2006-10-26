@@ -130,7 +130,7 @@ trait Map[A, B] extends AnyRef
     case Update(Pair(k, v)) => update(k, v)
     case Remove(Pair(k, _)) => this -= k
     case Reset() => clear
-    case s: Script[Pair[A, B]] => s.elements foreach <<
+    case s: Script[_] => s.elements foreach <<
     case _ => throw new UnsupportedOperationException("message " + cmd + " not understood")
   }
 

@@ -266,7 +266,7 @@ final class ListBuffer[A] extends Buffer[A] {
    *          of elements.
    */
   override def equals(obj: Any): Boolean = obj match {
-    case that: ListBuffer[A] =>
+    case that: ListBuffer[_] =>
       (this.length == that.length &&
        elements.zip(that.elements).forall {
          case Pair(thiselem, thatelem) => thiselem == thatelem

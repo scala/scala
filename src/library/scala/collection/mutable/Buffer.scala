@@ -215,7 +215,7 @@ trait Buffer[A] extends AnyRef
       case _ => throw new UnsupportedOperationException("message " + cmd + " not understood")
     }
     case Reset() => clear
-    case s: Script[Pair[Location, A]] => s.elements foreach <<
+    case s: Script[_] => s.elements foreach <<
     case _ => throw new UnsupportedOperationException("message " + cmd + " not understood")
   }
 

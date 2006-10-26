@@ -108,9 +108,9 @@ trait Map[A, +B] extends AnyRef
      *  @return    true, iff both maps contain exactly the same mappings.
      */
     override def equals(that: Any): Boolean = that match {
-      case other: Map[A, B] =>
+      case other: Map[a, b] =>
         this.size == other.size && this.elements.forall {
-          case Pair(key, value) => other.get(key) match {
+          case Pair(key, value) => other.get(key.asInstanceOf[a]) match {
             case None => false
             case Some(otherval) => value == otherval
           }

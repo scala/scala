@@ -114,7 +114,7 @@ trait Set[A] extends AnyRef with collection.Set[A]
     case Include(elem) => this += elem
     case Remove(elem) => this -= elem
     case Reset() => clear
-    case s: Script[A] => s.elements foreach <<
+    case s: Script[_] => s.elements foreach <<
     case _ => throw new UnsupportedOperationException("message " + cmd + " not understood")
   }
 

@@ -852,7 +852,7 @@ trait Infer requires Analyzer {
         }
         tvars foreach instantiateTypeVar(true)
       }
-      intersect(tpt.tpe, pt)
+      intersect(pt, tpt.tpe)
     }
 
     object toOrigin extends TypeMap {

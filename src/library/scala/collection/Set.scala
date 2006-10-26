@@ -70,8 +70,9 @@ trait Set[A] extends AnyRef with Function1[A, Boolean] with Iterable[A] {
      *          elements.
      */
     override def equals(that: Any): Boolean = that match {
-      case other: Set[A] =>
-        this.size == other.size && this.elements.forall(other.contains)
+      case other: Set[a] =>
+        this.size == other.size && this.elements.forall(
+          x => other contains x.asInstanceOf[a])
       case _ =>
         false
     }
