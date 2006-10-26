@@ -58,6 +58,8 @@ trait PatternNodes requires transform.ExplicitOuter {
     }
 
     def symbol: Symbol = this match {
+      case UnapplyPat(casted, fn) =>
+	casted
       case ConstrPat(casted) =>
         casted
       case SequencePat(casted, _) =>
@@ -163,6 +165,8 @@ trait PatternNodes requires transform.ExplicitOuter {
         "ConstantPat(" + value + ")"
       case VariablePat(tree) =>
         "VariablePat"
+      case UnapplyPat(casted,fn) =>
+	"UnapplyPat(" + casted + ")"
       case _ =>
         "<unknown pat>"
     }
@@ -267,6 +271,7 @@ trait PatternNodes requires transform.ExplicitOuter {
 
   case class DefaultPat()extends PatternNode
   case class ConstrPat(casted:Symbol) extends PatternNode
+  case class UnapplyPat(tple:Symbol, fn:Tree) extends PatternNode
   case class ConstantPat(value: Any /*AConstant*/) extends PatternNode
   case class VariablePat(tree: Tree) extends PatternNode
   case class AltPat(subheader: Header) extends PatternNode

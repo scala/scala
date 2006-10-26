@@ -93,11 +93,9 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
   def pSequencePat(pos: PositionType, tpe: Type, len: int) = {
     //assert (tpe != null)
     val sym = newVar(FirstPos, tpe)
-    //Console.println("pncrea::sequencePat sym.pos = "+sym.pos)
     val node = new SequencePat(sym, len)
     node.pos = pos
     node.tpe = tpe
-    //Console.println("pncrea::sequencePat sym.pos = "+sym.pos)
     node
   }
 
@@ -136,6 +134,22 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
     val node = new ConstrPat(newVar(pos, tpe))
     node.pos = pos
     node.setType(tpe)
+    node
+  }
+
+  def pUnapplyPat(pos: PositionType, fn: Tree) = {
+    // the type of the "child" of unapply is AnyRef, because want to check
+    //  against null and in this way, this is done using the isInstanceOf
+    //  magic. @todo, replace this with null check
+    val tpe = definitions.AnyRefClass.tpe
+    /* val tpe = fn.tpe match {
+     case MethodType(_,TypeRef(_,_,args)) =>  // pedantic? add if sym==defs.TupleClass(args.length).
+     if(args.isEmpty) definitions.UnitClass.tpe else definitions.tupleType(args)
+     } */
+    val node = new UnapplyPat(newVar(pos, tpe), fn)
+    //Console.println("!pUnapply sym = "+node.symbol+" tpe "+tpe)
+    node.pos = pos
+    node.setType(definitions.AnyRefClass.tpe)
     node
   }
 
@@ -328,6 +342,14 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
         tree.body = nb
       }
 
+    protected def isUnapply(tree:Tree): Boolean = tree match {
+      case Apply(fn, args) if (settings.Xunapply.value && fn.symbol != null && fn.symbol.name == nme.unapply) =>
+	//Console.println("isUnapply:"+tree)
+	true
+      case _ =>
+	false
+    }
+
     /** returns the child patterns of a pattern
      */
     protected def patternArgs(tree: Tree): List[Tree] = {
@@ -360,15 +382,13 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
     }
 
   protected def patternNode(tree:Tree , header:Header , env: CaseEnv ): PatternNode  = {
-    //if(tree!=null) Console.println("patternNode("+tree+","+header+")");
+    //Console.println("patternNode("+tree+","+header+")");
         //else scala.Predef.error("got null tree in patternNode");
     //Console.println("tree.tpe "+tree.tpe);
     //Console.println("tree.getClass() "+tree.getClass());
-    tree match {
+    val t = tree match {
       case Bind(name, Typed(Ident( nme.WILDCARD ), tpe)) => // x@_:Type
-        if (false && isSubType(header.getTpe(),tpe.tpe)) {
-          // this optimization is not correct, because
-          //  null.isInstanceOf will return false
+        if (isSubType(header.getTpe(),tpe.tpe)) {
           val node = pDefaultPat(tree.pos, tpe.tpe)
           env.newBoundVar(tree.symbol, tree.tpe, header.selector)
           node
@@ -396,6 +416,10 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
           env.newBoundVar(tree.symbol, tree.tpe, theValue)
         }
        node
+
+      case t @ Apply(fn, args) if isUnapply(t)  =>
+	//t.setType(definitions.AnyRefClass.tpe) // hack to avoid stupid effects
+	pUnapplyPat(tree.pos, fn)
 
       case t @ Apply(fn, args) =>             // pattern with args
         //Console.println("Apply node: "+t);
@@ -518,6 +542,8 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
         Predef.error("unit = " + cunit + "; tree = " +
           (if (tree == null) "null" else tree))
     }
+    //Console.print(t);
+    t
   }
 
   protected def enter(pat: Tree, index: Int, target: PatternNode,
@@ -547,7 +573,23 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
               List(Literal(Constant(index)))))
       val seqType = t.tpe
       pHeader( pos, seqType, t )
+    } else if (defs.isProductType(casted.tpe)) {
+      val acc = defs.productProj(casted.tpe.typeArgs.length, index+1)
+      val accTree = typed(Apply(Select(ident, acc), List())) // nsc !
+      pHeader(pos, accTree.tpe, accTree)
     } else {
+      //Console.println("NOT FIRSTPOS");
+      //Console.println("newHeader :: ");
+      /*
+      if(!casted.tpe.symbol.hasFlag(Flags.CASE)) {
+	Console.println("  newHeader :: casted="+casted);
+	Console.println("  newHeader :: casted.pos="+casted.pos);
+	Console.println("  newHeader :: casted.pos==Position.FIRSTPOS"+(casted.pos == Position.FIRSTPOS));
+	Console.println("  newHeader :: casted.tpe="+casted.tpe);
+      	Console.println("  newHeader :: casted.tpe.symbol="+casted.tpe.symbol);
+	throw new Error("internal problem, trying casefield access for no case class") //DBG
+      }
+      */
       val caseAccs = casted.tpe.symbol.caseFieldAccessors;
       if (caseAccs.length <= index) System.out.println("selecting " + index + " in case fields of " + casted.tpe.symbol + "=" + casted.tpe.symbol.caseFieldAccessors);//debug
       val ts = caseAccs(index);
@@ -594,6 +636,11 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
       //Console.println(" -- adding new header")
       //assert index >= 0 : casted;
       if (index < 0) { Predef.error("error entering:" + casted); return null }
+
+      if(!target.isInstanceOf[UnapplyPat] && !isUnapply(pat)) { // most common case
+	    //Console.println("Hello 3, target "+target)
+        //access the index'th child of a case class
+
       curHeader  = newHeader(pat.pos, casted, index)
       target.and = curHeader; // (*)
 
@@ -601,9 +648,37 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
 
       curHeader.or = patternNode(pat, curHeader, env)
       enter(patArgs, curHeader.or, casted, env)
+
+      } else if(target.isInstanceOf[UnapplyPat]) target match { // parent is unapply
+	  case UnapplyPat(ncasted, fn) =>
+	    // do a pHeader for "Some", but skip one for Product
+	    //Console.println("Hello 2")
+	    // @todo this erases existing unapply pat children -- if optimizing unapply, need to revisit
+	    val curHeader = pHeader(pat.pos, ncasted.tpe, Ident(ncasted) setType ncasted.tpe)
+	    target.and = curHeader
+	    val pn = patternNode(pat, curHeader, env)
+	    //Console.println("ncasted.tpe "+ncasted.tpe)
+	    //Console.println("pn ="+pn)
+	    curHeader.or = pn
+	    //Console.println("patArgs = "+patArgs)
+	    //Console.println("curHeader = "+curHeader)
+	    //Console.println("curHeader.or = "+curHeader.or)
+	//Console.println("pn.sym = "+pn.symbol)
+	    enter(patArgs, curHeader.or, pn.symbol, env)
+      } else pat match {                                        // isUnapply(pat) holds;
+	case Apply(fn,args) =>                                  // load the result of fn(casted)
+	  Console.println("Hello 1")
+	  val ident = Ident(casted)
+	  curHeader = pHeader( pat.pos, definitions.AnyRefClass.tpe, Apply(fn,List(ident)))
+	  target.and = curHeader
+	  //test
+	  curHeader.or = patternNode(pat, curHeader, env)
+	  //Console.println("have to add a header and casted is "+casted+" casted.tpe is "+casted.tpe) // DBG ;
+	  enter(patArgs, curHeader.or, casted, env)
     }
-    else {
-      //Console.println(" -- reusing old header")
+
+    } else {
+      //Console.println("   enter: using old header for casted = "+casted) // DBG
       // find most recent header
       while (curHeader.next != null)
         curHeader = curHeader.next
@@ -659,6 +734,8 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
       var target = target1
       var casted = casted1
       target match {
+	case UnapplyPat(newCasted, fn) =>
+	  casted = newCasted
         case ConstrPat(newCasted) =>
           casted = newCasted
         case SequencePat(newCasted, len) =>
@@ -711,8 +788,8 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
         //print()
         generalSwitchToTree()
       }
-      if(settings.statistics.value)
-	Console.println("could remove "+(nremoved+nsubstituted)+" ValDefs, "+nremoved+" by deleting and "+nsubstituted+" by substitution")
+      //if(settings.statistics.value)
+	//Console.println("could remove "+(nremoved+nsubstituted)+" ValDefs, "+nremoved+" by deleting and "+nsubstituted+" by substitution")
       return t
     }
     case class Break(res:Boolean) extends java.lang.Throwable
@@ -727,9 +804,9 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
         while (({node = node.or; node}) != null) {
           node match {
                 case VariablePat(tree) =>
-                  //Console.println(((tree.symbol.flags & Flags.CASE) != 0));
+                  //Konsole.println(((tree.symbol.flags & Flags.CASE) != 0));
                 case ConstrPat(_) =>
-                  //Console.println(node.getTpe().toString() + " / " + ((node.getTpe().symbol.flags & Flags.CASE) != 0));
+                  //Konsole.println(node.getTpe().toString() + " / " + ((node.getTpe().symbol.flags & Flags.CASE) != 0));
                     var inner = node.and;
                     def funct(inner: PatternNode): Boolean = {
                       //outer: while (true) {
@@ -749,7 +826,6 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
 
                           throw Break2() // break outer
                         case _ =>
-                          //Console.println(inner)
                           throw Break(false)
                       }
                     }
@@ -964,7 +1040,6 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
     var node = node1;
 
     var res: Tree = typed(Literal(Constant(false))); //.setInfo(defs.BooleanClass);
-    //Console.println("pm.toTree  res.tpe "+res.tpe);
     while (node != null)
     node match {
 
@@ -972,7 +1047,6 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
         val selector = _h.selector;
         val next = _h.next;
         //res = And(mkNegate(res), toTree(node.or, selector));
-        //Console.println("HEADER TYPE = " + _h.selector.tpe);
         if (optimize1(node.getTpe(), node.or))
           res = Or(res, toOptTree(node.or, selector));
         else
@@ -1116,8 +1190,7 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
       Or(And(cond, thenp), elsep)
 
     protected def toTree(node: PatternNode, selector:Tree): Tree = {
-      //Console.println("pm.toTree("+node+","+selector+")")
-      //Console.println("pm.toTree selector.tpe = "+selector.tpe+")")
+      //Konsole.println("pm.toTree("+node+","+selector+") selector.tpe = "+selector.tpe+")")
       if (selector.tpe == null)
         scala.Predef.error("cannot go on")
       if (node == null)
@@ -1127,6 +1200,9 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
           case DefaultPat() =>
             return toTree(node.and);
 
+	  case UnapplyPat(casted,fn) =>
+	    return Or(Block(List(ValDef(casted, Apply(fn,List(selector)))), toTree(node.and)),
+		       toTree(node.or, selector.duplicate))
           case ConstrPat(casted) =>
             def outerAlwaysEqual(left: Type, right: Type) = Pair(left,right) match {
               case Pair(TypeRef(lprefix, _,_), TypeRef(rprefix,_,_)) if lprefix =:= rprefix =>
@@ -1166,7 +1242,6 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
             return myIf(cond, succ, fail)
 
           case SequencePat(casted, len) =>
-            //Console.println("(8945)"+node)
             val ntpe = node.getTpe
 
             val tpetest =
@@ -1181,7 +1256,6 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
               else
                 selector.duplicate
 
-            //Console.println("SequencePat! casted="+casted+" selector "+selector)
             val succ: Tree = squeezedBlock(
               List(ValDef(casted, treeAsSeq)),
               toTree(node.and))

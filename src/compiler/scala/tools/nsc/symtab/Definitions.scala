@@ -145,8 +145,8 @@ trait Definitions requires SymbolTable {
     }
     def someType(tp: Type) =
       typeRef(SomeClass.typeConstructor.prefix, SomeClass, List(tp))
-    /* </unapply> */
 
+    /* </unapply> */
     val MaxFunctionArity = 9
     val FunctionClass: Array[Symbol] = new Array(MaxFunctionArity + 1)
       def functionApply(n: Int) = getMember(FunctionClass(n), nme.apply)

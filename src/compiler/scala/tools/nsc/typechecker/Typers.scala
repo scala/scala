@@ -397,6 +397,9 @@ trait Typers requires Analyzer {
      *        instance of its primary constructor that is a subtype of the expected type.
      *  (5.2) Otherwise, if this type is a subtype of scala.Seq[A], set trees' type
      *        to a method type from a repeated parameter sequence type A* to the expected type.
+     *  (5.3beta) unapply-pattern matching: fix reference to object containing
+     *            unapply or unapplySeq method.
+     *
      *  (6) Convert all other types to TypeTree nodes.
      *  (7) When in TYPEmode nut not FUNmode, check that types are fully parameterized
      *  (8) When in both EXPRmode and FUNmode, add apply method calls to values of object type.
@@ -491,6 +494,19 @@ trait Typers requires Analyzer {
                   case ErrorType =>
                     setError(tree)
                 }
+              } else if (settings.Xunapply.value) { /*unapply (5.3beta) */
+		// fix symbol -- we are using the module not the class
+                val consp = if(clazz.isModule) clazz else {
+                  val obj = clazz.linkedModuleOfClass
+                  tree.setSymbol(obj)
+                  obj
+                }
+                var unapp = { // find unapply[Seq] mehod
+                  val x = consp.tpe.decl(nme.unapply)
+                  if (x != NoSymbol) x else consp.tpe.decl(nme.unapplySeq)
+                }
+                if(unapp != NoSymbol) tree
+                else errorTree(tree, "" + clazz + " does not have unapply/unapplySeq method")
               } else {
                 errorTree(tree, "" + clazz + " is neither a case class nor a sequence class")
               }
@@ -706,8 +722,14 @@ trait Typers requires Analyzer {
       reenterTypeParams(cdef.tparams)
       val tparams1 = List.mapConserve(cdef.tparams)(typedAbsTypeDef)
       val tpt1 = checkNoEscaping.privates(clazz.thisSym, typedType(cdef.tpt))
-      val impl1 = newTyper(context.make(cdef.impl, clazz, newTemplateScope(cdef.impl, clazz)))
-        .typedTemplate(cdef.impl, parentTypes(cdef.impl))
+      //<unapply>  // add ProductN before typing
+      var impl0 = if(settings.Xunapply.value && (clazz hasFlag CASE) && !phase.erasedTypes) {
+        addProductParts(clazz, cdef.impl)
+      } else
+        cdef.impl
+      //</unapply>
+      val impl1 = newTyper(context.make(impl0, clazz, newScope))
+        .typedTemplate(impl0, parentTypes(impl0))
       val impl2 = addSyntheticMethods(impl1, clazz, context.unit)
       val ret = copy.ClassDef(cdef, cdef.mods, cdef.name, tparams1, tpt1, impl2)
         .setType(NoType)
@@ -719,7 +741,7 @@ trait Typers requires Analyzer {
      *  @return     ...
      */
     def typedModuleDef(mdef: ModuleDef): Tree = {
-      //System.out.println("sourcefile of " + mdef.symbol + "=" + mdef.symbol.sourceFile)
+      System.out.println("sourcefile of " + mdef.symbol + "=" + mdef.symbol.sourceFile)
       attributes(mdef)
       val clazz = mdef.symbol.moduleClass
       val impl1 = newTyper(context.make(mdef.impl, clazz, newTemplateScope(mdef.impl, clazz)))
@@ -1149,6 +1171,64 @@ trait Typers requires Analyzer {
           val args1 = typedArgs(args, mode)
           inferMethodAlternative(fun, context.undetparams, args1 map (.tpe.deconst), pt)
           typedApply(tree, adapt(fun, funMode(mode), WildcardType), args1, mode, pt)
+/* --- begin unapply  --- */
+	case otpe @ SingleType(_,sym) if settings.Xunapply.value => // normally, an object 'Foo' cannot be applied -> unapply pattern
+
+	  val unapp = otpe.decl(nme.unapply)
+	  if(unapp.exists) unapp.tpe match { // try unapply first
+	    case MethodType(formals0,restpe) => // must take (x:Any)
+
+              if(formals0.length != 1)
+		return errorTree(tree,"unapply should take exactly one argument but takes "+formals0)
+
+              val argt = formals0(0) // @todo: check this against pt, e.g. cons[int](_hd:int_, tl:List[int])
+
+	      var prodtpe: Type = null
+	      var nargs: Int    = -1 // signals error
+
+	      val sometpe = restpe match {
+		case TypeRef(_,sym, List(stpe)) if sym == definitions.getClass("scala.Option") => stpe
+		case _ => return errorTree(tree,"unapply should return option[.], not  "+restpe); null
+	      }
+
+	      val rsym = sometpe.symbol
+
+	      sometpe.baseClasses.find { x => isProductType(x.tpe) } match {
+		case Some(x) =>
+		  prodtpe = sometpe.baseType(x)
+		  nargs   = x.tpe.asInstanceOf[TypeRef].args.length
+		case _       =>
+		  if(sometpe =:= definitions.UnitClass.tpe)
+		    nargs = 0
+		  else
+		    return errorTree(tree, "result type '"+sometpe+"' of unapply is neither option[product] nor option[unit]")
+	      }
+
+	      if(nargs != args.length)
+		return errorTree(tree, "wrong number of arguments for unapply, expects "+formals0)
+
+	      // check arg types
+	      val child = for(val Pair(arg,atpe) <- args.zip(sometpe.typeArgs)) yield typed(arg, mode, atpe)
+
+	      // Product_N(...)
+	      val child1 = Apply(Ident(prodtpe.symbol.name) setType prodtpe  setSymbol prodtpe.symbol, child) setSymbol prodtpe.symbol setType prodtpe
+
+	      // Some(Product_N(...)) DBKK
+	      val some = typed(Apply(Ident(nme.Some), List(child1)), mode, definitions.optionType(prodtpe) /*AnyClass.tpe*/)
+
+	      // Foo.unapply(Some(Product_N(...)))
+              return Apply(gen.mkAttributedSelect(fun0,unapp), List(some)) setType pt
+
+          case PolyType(params,restpe)  =>
+	    errorTree(tree, "polym unapply not implemented")
+	  case tpe =>
+	    errorTree(tree, " can't handle unapply of type "+tpe)
+	} // no unapply
+
+	val unappSeq =  otpe.decl(nme.unapplySeq)
+	errorTree(tree, " can't handle unapplySeq")
+
+/* --- end unapply  --- */
         case MethodType(formals0, restpe) =>
           val formals = formalTypes(formals0, args.length)
           if (formals.length != args.length) {
@@ -1277,6 +1357,7 @@ trait Typers requires Analyzer {
     protected def typedHookForTree(tree : Tree, mode : Int, pt : Type): Tree = null;
 
     protected def typed1(tree: Tree, mode: int, pt: Type): Tree = {
+      //Console.println("typed1("+tree.getClass()+","+Integer.toHexString(mode)+","+pt+")")
       { // IDE hook
         val ret = typedHookForTree(tree, mode, pt)
         if (ret != null) return ret
@@ -1484,6 +1565,17 @@ trait Typers requires Analyzer {
               if (defSym == NoSymbol) cx = cx.outer
             }
           }
+          /*<unapply>*/
+	  if(settings.Xunapply.value)
+            // unapply: in patterns, look for an object if can't find type
+            if(name.isTypeName && defSym == NoSymbol && (mode & PATTERNmode) != 0) {
+              typedIdent(name.toTermName) match {
+		case t if t.symbol.isModule =>
+                  return t
+		case _ => // found methsym (case class handling...), ignore
+	      }
+            }
+          /*</unapply>*/
           val symDepth = if (defEntry == null) cx.depth
                          else cx.depth - (cx.scope.nestingLevel - defEntry.owner.nestingLevel)
           var impSym: Symbol = NoSymbol;      // the imported symbol
@@ -1942,7 +2034,6 @@ trait Typers requires Analyzer {
           val ret = typedHookForType(tree, mode, pt);
           if (ret != null) return ret;
         }
-
         //System.out.println("typing "+tree+", "+context.undetparams);//DEBUG
         val tree1 = if (tree.tpe != null) tree else typed1(tree, mode, pt)
         //System.out.println("typed "+tree1+":"+tree1.tpe+", "+context.undetparams);//DEBUG

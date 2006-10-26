@@ -400,7 +400,34 @@ trait Namers requires Analyzer {
           case _ => tpe
         });
 
-    private def templateSig(templ: Template): Type = {
+    //<unapply>bq: this should probably be in SyntheticMethods, but needs the typer
+    private def getCaseFields(templ_stats:List[Tree]):List[Pair[Type,Name]] =
+      for(val z <- templ_stats; // why does `z: ValDef <- ' not work? because translation of `for' is buggy?
+	  z.isInstanceOf[ ValDef ];
+	  val x = z.asInstanceOf[ ValDef ];
+	  x.mods.hasFlag( CASEACCESSOR ))
+      yield Pair(typer.typedType(x.tpt).tpe, x.name)
+    //</unapply>
+
+    private def templateSig(templ0: Template): Type = {
+      var templ = templ0
+      //<unapply>
+      if(settings.Xunapply.value && (context.owner hasFlag CASE)) {
+	val caseFields = getCaseFields(templ.body)
+	if(caseFields.length > 0) {
+	  //if(settings.debug.value) Console.println("[ templateSig("+templ+") of case class")
+	  val addparent = TypeTree(productType(caseFields map (._1)))
+	  var i = 0;
+	  // CAREFUL for Tuple1, name `_1' will be added later by synthetic methods :/
+	  val addimpl = caseFields map { x =>
+	    val ident = Ident(x._2)
+	    i = i + 1
+	    DefDef(Modifiers(OVERRIDE | FINAL), "__"+i.toString(), List(), List(List()), TypeTree(x._1), ident) // pick __1 for now
+          }
+	  templ = copy.Template(templ, templ.parents:::List(addparent),templ.body:::addimpl)
+	}
+      }
+      //</unapply>
       val clazz = context.owner
       def checkParent(tpt: Tree): Type = {
         val tp = tpt.tpe
