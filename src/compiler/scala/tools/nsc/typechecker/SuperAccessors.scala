@@ -21,7 +21,7 @@ import nsc.symtab.Flags._
  *  @author  Martin Odersky
  *  @version 1.0
  */
-abstract class SuperAccessors extends transform.Transform {
+abstract class SuperAccessors extends transform.Transform with transform.TypingTransformers {
   // inherits abstract value `global' and class `Phase' from Transform
 
   import global._
@@ -34,7 +34,7 @@ abstract class SuperAccessors extends transform.Transform {
   protected def newTransformer(unit: CompilationUnit): Transformer =
     new SuperAccTransformer(unit)
 
-  class SuperAccTransformer(unit: CompilationUnit) extends Transformer {
+  class SuperAccTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
     private var validCurrentOwner = true
     private var accDefs: List[Pair[Symbol, ListBuffer[Tree]]] = List()
 
@@ -62,11 +62,13 @@ abstract class SuperAccessors extends transform.Transform {
         }
         super.transform(tree)
       case Template(parents, body) =>
-        val ownAccDefs = new ListBuffer[Tree]
-        accDefs = Pair(currentOwner, ownAccDefs) :: accDefs;
-        val body1 = transformTrees(body)
-        accDefs = accDefs.tail
-        copy.Template(tree, parents, ownAccDefs.toList ::: body1)
+	val ownAccDefs = new ListBuffer[Tree];
+	accDefs = Pair(currentOwner, ownAccDefs) :: accDefs;
+//	val body1 = transformTrees(body);
+        val Template(_, body1) = super.transform(tree);
+	accDefs = accDefs.tail;
+	copy.Template(tree, parents, ownAccDefs.toList ::: body1);
+
       case Select(qual @ This(_), name) =>
         val sym = tree.symbol
          if ((sym hasFlag PARAMACCESSOR) && (sym.alias != NoSymbol)) {
@@ -78,7 +80,13 @@ abstract class SuperAccessors extends transform.Transform {
           if (settings.debug.value)
             System.out.println("alias replacement: " + tree + " ==> " + result);//debug
           transform(result)
-        } else tree
+        } else {
+          if (needsProtectedAccessor(sym, tree.pos)) {
+            if (settings.debug.value) log("Adding protected accessor for " + tree);
+            transform(makeAccessor(tree.asInstanceOf[Select]))
+          } else
+            tree
+        }
       case Select(sup @ Super(_, mix), name) =>
         val sym = tree.symbol
         val clazz = sup.symbol
@@ -107,6 +115,27 @@ abstract class SuperAccessors extends transform.Transform {
             Select(gen.mkAttributedThis(clazz), superAcc) setType tree.tpe;
           }
         } else tree
+
+      case Select(qual, name) =>
+        val sym = tree.symbol
+        if (needsProtectedAccessor(sym, tree.pos)) {
+          if (settings.debug.value) log("Adding protected accessor for tree: " + tree);
+          transform(makeAccessor(tree.asInstanceOf[Select]))
+        } else
+          super.transform(tree)
+
+      case Assign(lhs @ Select(qual, name), rhs) =>
+        if (lhs.symbol.isVariable &&
+            lhs.symbol.hasFlag(JAVA) &&
+            needsProtectedAccessor(lhs.symbol, tree.pos)) {
+          if (settings.debug.value) log("Adding protected setter for " + tree)
+          val setter = makeSetter(lhs);
+          if (settings.debug.value)
+            log("Replaced " + tree + " with " + setter);
+          transform(typed(Apply(setter, List(qual, rhs))))
+        } else
+          super.transform(tree)
+
       case Apply(fn, args) =>
         copy.Apply(tree, transform(fn), transformArgs(args, fn.tpe.paramTypes))
       case Function(vparams, body) =>
@@ -118,7 +147,7 @@ abstract class SuperAccessors extends transform.Transform {
     }
 
     override def atOwner[A](owner: Symbol)(trans: => A): A = {
-      if (owner.isClass) validCurrentOwner = true;
+      if (owner.isClass) validCurrentOwner = true
       super.atOwner(owner)(trans)
     }
 
@@ -128,6 +157,119 @@ abstract class SuperAccessors extends transform.Transform {
       val result = trans
       validCurrentOwner = prevValidCurrentOwner
       result
+    }
+
+    /** Add a protected accessor, if needed, and return a tree that calls
+     *  the accessor and returns the the same member. The result is already
+     *  typed.
+     */
+    private def makeAccessor(tree: Select): Tree = {
+      val Select(qual, name) = tree
+      val sym = tree.symbol
+      val clazz = hostForAccessorOf(sym, currentOwner.enclClass)
+      assert(clazz != NoSymbol, sym)
+      if (settings.debug.value)
+        log("Decided for host class: " + clazz)
+      val accName = nme.protName(sym.originalName)
+      var protAcc = clazz.info.decl(accName)
+      if (protAcc == NoSymbol) {
+        val hasArgs = sym.tpe.paramTypes != Nil
+
+        protAcc = clazz.newMethod(tree.pos, nme.protName(sym.originalName))
+                           .setInfo(MethodType(List(clazz.typeOfThis),
+                               if (hasArgs)
+                                 MethodType(sym.tpe.paramTypes, sym.tpe.resultType)
+                               else
+                                 sym.tpe.resultType))
+        clazz.info.decls.enter(protAcc);
+        val code = DefDef(protAcc, vparamss =>
+          vparamss.tail.foldRight(Select(gen.mkAttributedRef(vparamss.head.head), sym): Tree) (
+              (vparams, fun) => Apply(fun, (vparams map { v => Ident(v) } ))))
+        if (settings.debug.value)
+          log(code)
+        accDefBuf(clazz) += typers(clazz).typed(code)
+      }
+      var res: Tree = atPos(tree.pos) { Apply(Select(This(clazz), protAcc), List(qual)) }
+      if (settings.debug.value)
+        log("Replaced " + tree + " with " + res)
+      typer.typedOperator(res)
+    }
+
+    /** Add an accessor for field, if needed, and return a selection tree for it .
+     *  The result is not typed.
+     */
+    private def makeSetter(tree: Select): Tree = {
+      val field = tree.symbol
+      val clazz = hostForAccessorOf(field, currentOwner.enclClass)
+      assert(clazz != NoSymbol, field)
+      if (settings.debug.value)
+        log("Decided for host class: " + clazz)
+      val accName = nme.protSetterName(field.originalName)
+      var protAcc = clazz.info.decl(accName)
+      if (protAcc == NoSymbol) {
+        protAcc = clazz.newMethod(field.pos, nme.protSetterName(field.originalName))
+                           .setInfo(MethodType(List(clazz.typeOfThis, field.tpe), definitions.UnitClass.tpe));
+        clazz.info.decls.enter(protAcc)
+        val code = DefDef(protAcc, vparamss => {
+          val obj :: value :: Nil = vparamss.head;
+          atPos(tree.pos) {
+            Assign(
+              Select(Ident(obj), field.name),
+              Ident(value))
+          }
+        })
+        if (settings.debug.value)
+          log(code);
+        accDefBuf(clazz) += typers(clazz).typed(code)
+      }
+      var res: Tree = atPos(tree.pos) { Select(This(clazz), protAcc) }
+      res
+    }
+
+    /** Does `sym' need an accessor when accessed from `currentOwner'?
+     *  A special case arises for classes with explicit self-types. If the
+     *  self type is a Java class, and a protected accessor is needed, we issue
+     *  an error. If the self type is a Scala class, we don't add an accessor.
+     *
+     * If the access happens inside a 'trait', access is more problematic since
+     * the implementation code is moved to an '$class' class which does not
+     * inherit anything. Since we can't (yet) add accessors for 'required'
+     * classes, this has to be signaled as error.
+     */
+    private def needsProtectedAccessor(sym: Symbol, pos: PositionType): Boolean = {
+      val res = /* settings.debug.value && */
+      ((sym hasFlag PROTECTED)
+       && (!(currentOwner.enclClass.thisSym isSubClass sym.owner))
+       && (enclPackage(sym.owner) != enclPackage(currentOwner)))
+
+      if (res) {
+        val host = hostForAccessorOf(sym, currentOwner.enclClass)
+        if (host.thisSym != host) {
+          if (host.thisSym.tpe.symbol.hasFlag(JAVA) || currentOwner.enclClass.isTrait)
+            unit.error(pos, "Implementation restriction: " + currentOwner.enclClass + " accesses protected "
+                            + sym + " from 'required' " + host.thisSym.tpe)
+          false
+        } else res
+      } else res
+    }
+
+    /** Return the enclosing package of the given symbol. */
+    private def enclPackage(sym: Symbol): Symbol =
+      if ((sym == NoSymbol) || sym.isPackageClass) sym else enclPackage(sym.owner)
+
+    /** Return the innermost enclosing class C of referencingClass for which either
+     *  of the following holds:
+     *     - C is a subclass of sym.owner or
+     *     - C is declared in the same package as sym's owner
+     */
+    private def hostForAccessorOf(sym: Symbol, referencingClass: Symbol): Symbol = {
+      if (referencingClass.isSubClass(sym.owner.enclClass)
+          || referencingClass.thisSym.isSubClass(sym.owner.enclClass)
+          || enclPackage(referencingClass) == enclPackage(sym.owner)) {
+        assert(referencingClass.isClass)
+        referencingClass
+      } else
+        hostForAccessorOf(sym, referencingClass.owner.enclClass)
     }
   }
 }

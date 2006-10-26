@@ -6,6 +6,8 @@
 
 package scala.tools.nsc.transform
 
+import scala.collection.mutable.{Map, HashMap}
+
 /** A base class for transforms.
  *  A transform contains a compiler phase which applies a tree transformer.
  */
@@ -19,13 +21,17 @@ trait TypingTransformers {
       analyzer.rootContext(unit, EmptyTree, true))
     private var curTree: Tree = _
 
+    var typers: Map[Symbol, analyzer.Typer] = new HashMap
+
     override def atOwner[A](owner: Symbol)(trans: => A): A = atOwner(curTree, owner)(trans)
 
     def atOwner[A](tree: Tree, owner: Symbol)(trans: => A): A = {
       val savedLocalTyper = localTyper
       localTyper = localTyper.atOwner(tree, owner)
+      typers += owner -> localTyper;
       val result = super.atOwner(owner)(trans)
       localTyper = savedLocalTyper
+      typers.excl(owner);
       result
     }
 

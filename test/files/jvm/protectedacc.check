@@ -1,0 +1,10 @@
+10
+meth1(1) = 2
+meth2(1)(1) = 2
+10++ = 11
+count before: 3
+count after: 4
+10
+meth1(1) = 2
+meth2(1)(1) = 2
+10++ = 11
