@@ -32,6 +32,42 @@ trait SyntheticMethods requires Analyzer {
   import definitions._             // standard classes and methods
   import typer.{typed}             // methods to type trees
 
+  /** adds ProductN parent class and methods */
+  def addProductParts(clazz: Symbol, templ:Template): Template = {
+    def newSyntheticMethod(name: Name, flags: Int, tpe: Type) = {
+      val method = clazz.newMethod(clazz.pos, name) setFlag (flags) setInfo tpe
+      clazz.info.decls.enter(method)
+      method
+    }
+
+    def addParent:List[Tree] = {
+      val caseFields    = clazz.caseFieldAccessors
+      val caseTypes     = caseFields map { x => TypeTree(x.tpe.resultType) }
+      val prodTree:Tree = TypeTree(productType(caseFields map { x => x.tpe.resultType }))
+      templ.parents ::: List(prodTree)
+    }
+
+    def addImpl: List[Tree] = { // test
+      var i = 1;
+      val defs = clazz.caseFieldAccessors map {
+        x =>
+          val ident = gen.mkAttributedRef(x)
+          val method = clazz.info.decl("__"+i.toString())
+          i = i + 1
+          DefDef(method, {vparamss => ident})
+      }
+      templ.body ::: defs
+    }
+
+    if(clazz.caseFieldAccessors.length == 0)
+      templ
+    else {
+      //Console.println("#[addProductParts("+clazz+","+templ)
+      //Console.println("(]#")
+      copy.Template(templ, addParent, addImpl)
+    }
+  }
+
   /**
    *  @param templ ...
    *  @param clazz ...

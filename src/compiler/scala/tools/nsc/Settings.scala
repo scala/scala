@@ -126,6 +126,7 @@ class Settings(error: String => unit) {
   val Xprintpos     = BooleanSetting("-Xprintpos", "Print tree positions (as offsets)")
   val Xscript       = new BooleanSetting("-Xscript", "compile script file") { override def hiddenToIDE = true }
   val Xexperimental = BooleanSetting("-Xexperimental", "enable experimental extensions")
+  val Xunapply      = BooleanSetting("-Xunapply", "enable unapply pattern matching")
 
   /** A list of all settings */
   def allSettings: List[Setting] = allsettings.reverse

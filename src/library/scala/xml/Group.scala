@@ -29,7 +29,7 @@ case class Group(val nodes: Seq[Node]) extends Node {
   override def equals(x: Any) = x match {
     case z:Group     => (length == z.length) && sameElements(z)
     case z:Node      => (length == 1) && z == apply(0)
-    case z:Seq[Node] => sameElements(z)
+    case z:Seq[_]    => sameElements(z)
     case z:String    => text == z
     case _           => false;
   }

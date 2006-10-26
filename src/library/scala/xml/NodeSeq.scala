@@ -43,7 +43,7 @@ abstract class NodeSeq extends Seq[Node] {
   /** structural equality */
   override def equals(x: Any) = x match {
     case z:Node      => (length == 1) && z == apply(0)
-    case z:Seq[Node] => sameElements(z)
+    case z:Seq[_]    => sameElements(z)
     case z:String    => text == z
     case _           => false;
   }

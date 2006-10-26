@@ -28,8 +28,8 @@ class Atom[+A]( val data: A ) extends SpecialNode {
   def label = "#PCDATA";
 
  override def equals(x:Any) = x match {
-    case s:Atom[A] => data == s.data ;
-    case _ => false;
+    case s:Atom[_] => data == s.data
+    case _         => false;
   }
 
   /** hashcode for this Text */

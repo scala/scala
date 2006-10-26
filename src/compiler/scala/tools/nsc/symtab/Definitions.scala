@@ -114,6 +114,39 @@ trait Definitions requires SymbolTable {
           typeRef(sym.typeConstructor.prefix, sym, elems)
         } else NoType;
 
+    /* <unapply> */
+    val ProductClass: Array[Symbol] = new Array(MaxTupleArity + 1)
+      def productProj(n: Int, j: Int) = getMember(ProductClass(n), "__" + j)
+      def isProductType(tp: Type): Boolean = tp match {
+        case TypeRef(_, sym, elems) =>
+          elems.length <= MaxTupleArity && sym == ProductClass(elems.length);
+        case _ =>
+          false
+      }
+      def productType(elems: List[Type]) =
+        if (elems.length <= MaxTupleArity) {
+          val sym = ProductClass(elems.length)
+          typeRef(sym.typeConstructor.prefix, sym, elems)
+        } else NoType
+
+    var OptionClass: Symbol = _
+    def SomeClass: Symbol = getClass("scala.Some")
+
+    def isOptionType(tp: Type) = tp match {
+      case TypeRef(_, sym, List(_)) if sym == OptionClass => true
+      case _ => false
+    }
+    def optionType(tp: Type) =
+      typeRef(OptionClass.typeConstructor.prefix, OptionClass, List(tp))
+
+    def isSomeType(tp: Type) = tp match {
+      case TypeRef(_, sym, List(_)) if sym == SomeClass => true
+      case _ => false
+    }
+    def someType(tp: Type) =
+      typeRef(SomeClass.typeConstructor.prefix, SomeClass, List(tp))
+    /* </unapply> */
+
     val MaxFunctionArity = 9
     val FunctionClass: Array[Symbol] = new Array(MaxFunctionArity + 1)
       def functionApply(n: Int) = getMember(FunctionClass(n), nme.apply)
@@ -532,8 +565,14 @@ trait Definitions requires SymbolTable {
         tparam => typeRef(SeqClass.typeConstructor.prefix, SeqClass, List(tparam.typeConstructor)))
       ByNameParamClass = newCovariantPolyClass(
         ScalaPackageClass, nme.BYNAME_PARAM_CLASS_NAME, tparam => AnyClass.typeConstructor)
-      for (val i <- 1 to MaxTupleArity)
-        TupleClass(i) = getClass("scala.Tuple" + i)
+      /* <unapply> */
+      OptionClass = getClass("scala.Option")
+
+      for (val i <- 1 to MaxTupleArity) {
+        TupleClass(i)   = getClass(  "scala.Tuple" + i)
+        ProductClass(i) = getClass("scala.Product" + i)
+      }
+      /* </unapply> */
       for (val i <- 0 to MaxFunctionArity) {
         FunctionClass(i) = getClass("scala.Function" + i)
         //RemoteFunctionClass(i) = getClass("scala.distributed.RemoteFunction" + i)

@@ -44,11 +44,12 @@ class ElementValidator() extends Function1[Node,Boolean] {
     this.adecls = adecls;
 
   def getIterator(nodes: Seq[Node], skipPCDATA: Boolean): Iterator[ElemName] =
-    nodes . toList
-	  . filter { x => x match {
-            case y:SpecialNode => y match {
+    nodes.toList
+	 .filter { x => x match {
+           case y:SpecialNode => y match {
 
-              case a:Atom[String] if (a.data.asInstanceOf[String].trim().length() == 0 ) =>
+             case a:Atom[_] if (a.data.isInstanceOf[String] &&
+                                a.data.asInstanceOf[String].trim.length == 0 ) =>
                 false; // always skip all-whitespace nodes
 
               case _ =>

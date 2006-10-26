@@ -209,6 +209,7 @@ trait StdNames requires SymbolTable {
     val ScalaRunTime = newTermName("ScalaRunTime")
     val Seq = newTermName("Seq")
     val Short = newTermName("Short")
+    val Some = newTypeName("Some")
     val SourceFile = newTermName("SourceFile")
     val String = newTermName("String")
     val Symbol = newTermName("Symbol")
@@ -294,6 +295,9 @@ trait StdNames requires SymbolTable {
     val throw_ = newTermName("throw")
     val true_ = newTermName("true")
     val update = newTermName("update")
+    val unapply = newTermName("unapply")
+    val unapplySeq = newTermName("unapplySeq")
+
     val value = newTermName("value")
     val view_ = newTermName("view")
     val tag = newTermName("$tag")
