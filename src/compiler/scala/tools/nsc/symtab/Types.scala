@@ -225,7 +225,7 @@ trait Types requires SymbolTable {
           }
 */
         case _ =>
-          //System.out.println("" + this.widen + ".memberType(" + sym +":" + sym.tpe +")");//DEBUG
+          //System.out.println("" + this.widen + ".memberType(" + sym +":" + sym.tpe +")" + sym.ownerChain);//debug
           sym.tpe.asSeenFrom(this, sym.owner)
       }
     }
@@ -441,22 +441,27 @@ trait Types requires SymbolTable {
                   member = sym
                 } else if (members == null) {
                   if (member.name != sym.name ||
-                      member != sym &&
-                      (member.owner == sym.owner || {
-                         if (self == null) self = this.narrow;
-                         !self.memberType(member).matches(self.memberType(sym))}))
-                    members = newScope(List(member, sym));
+                      !(member == sym ||
+                        member.owner != sym.owner &&
+                        !member.hasFlag(PRIVATE) &&
+                        !sym.hasFlag(PRIVATE) && {
+                          if (self == null) self = this.narrow;
+                          (self.memberType(member) matches self.memberType(sym))
+                        })) {
+                    members = newScope(List(member, sym))
+                  }
                 } else {
                   var prevEntry = members lookupEntry sym.name
                   while (prevEntry != null &&
-                         !(prevEntry.sym == sym
-                           ||
+                         !(prevEntry.sym == sym ||
                            prevEntry.sym.owner != sym.owner &&
                            !prevEntry.sym.hasFlag(PRIVATE) &&
                            !sym.hasFlag(PRIVATE) && {
                              if (self == null) self = this.narrow;
-                             (self.memberType(prevEntry.sym) matches self.memberType(sym))}))
-                    prevEntry = members lookupNextEntry prevEntry;
+                             (self.memberType(prevEntry.sym) matches self.memberType(sym))
+                           })) {
+                    prevEntry = members lookupNextEntry prevEntry
+                  }
                   if (prevEntry == null) {
                     members enter sym
                   }

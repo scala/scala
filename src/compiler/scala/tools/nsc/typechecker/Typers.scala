@@ -1705,16 +1705,17 @@ trait Typers requires Analyzer {
 
         case Return(expr) =>
           val enclMethod = context.enclMethod
-          if (enclMethod == NoContext || enclMethod.owner.isConstructor)
+          if (enclMethod == NoContext || enclMethod.owner.isConstructor) {
             errorTree(tree, "return outside method definition")
-          else if (!enclMethod.owner.isInitialized)
-            errorTree(tree, "method " + enclMethod.owner +
-                            " has return statement; needs result type")
-          else {
+          } else {
             val DefDef(_, _, _, _, restpt, _) = enclMethod.tree
-            assert(restpt.tpe != null, restpt)
-            val expr1: Tree = typed(expr, restpt.tpe)
-            copy.Return(tree, expr1) setSymbol enclMethod.owner setType AllClass.tpe
+            if (restpt.tpe == null) {
+              errorTree(tree, "method " + enclMethod.owner +
+                        " has return statement; needs result type")
+            } else {
+              val expr1: Tree = typed(expr, restpt.tpe)
+              copy.Return(tree, expr1) setSymbol enclMethod.owner setType AllClass.tpe
+            }
           }
 
         case Try(block, catches, finalizer) =>
