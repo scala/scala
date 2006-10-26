@@ -336,7 +336,7 @@ trait Typers requires Analyzer {
     }
 
     /** Post-process an identifier or selection node, performing the following:
-     *  (1) Check that non-function pattern expressions are stable
+     *  (1) Check that non-function pattern expressions and case-factories are stable
      *  (2) Check that packages and static modules are not used as values
      *  (3) Turn tree type into stable type if possible and required by context.
      */
@@ -345,7 +345,8 @@ trait Typers requires Analyzer {
         inferExprAlternative(tree, pt)
       val sym = tree.symbol
       if (tree.tpe.isError) tree
-      else if ((mode & (PATTERNmode | FUNmode)) == PATTERNmode && tree.isTerm) { // (1)
+      else if (sym.isCaseFactory ||
+               (mode & (PATTERNmode | FUNmode)) == PATTERNmode && tree.isTerm) { // (1)
         checkStable(tree)
       } else if ((mode & (EXPRmode | QUALmode)) == EXPRmode && !sym.isValue) { // (2)
         errorTree(tree, ""+sym+" is not a value")
