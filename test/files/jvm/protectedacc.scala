@@ -45,7 +45,9 @@ package p {
         def m = {
           Console.println(x);
           Console.println("meth1(1) = " + meth1(1));
-          Console.println("meth2(1)(1) = " + meth2(1)(1));
+          // test accesses from closures
+          for (val x <- 1 until 3)
+            Console.println("meth2(1)(1) = " + meth2(1)(1));
 
           Console.println("meth3 = " + meth3.getClass);
 

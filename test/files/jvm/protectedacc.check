@@ -1,6 +1,7 @@
 10
 meth1(1) = 2
 meth2(1)(1) = 2
+meth2(1)(1) = 2
 meth3 = class [I
 10++ = 11
 count before: 3
