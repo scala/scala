@@ -443,7 +443,6 @@ trait Types requires SymbolTable {
                   if (member.name != sym.name ||
                       !(member == sym ||
                         member.owner != sym.owner &&
-                        !member.hasFlag(PRIVATE) &&
                         !sym.hasFlag(PRIVATE) && {
                           if (self == null) self = this.narrow;
                           (self.memberType(member) matches self.memberType(sym))
@@ -455,7 +454,6 @@ trait Types requires SymbolTable {
                   while (prevEntry != null &&
                          !(prevEntry.sym == sym ||
                            prevEntry.sym.owner != sym.owner &&
-                           !prevEntry.sym.hasFlag(PRIVATE) &&
                            !sym.hasFlag(PRIVATE) && {
                              if (self == null) self = this.narrow;
                              (self.memberType(prevEntry.sym) matches self.memberType(sym))
