@@ -1,6 +1,0 @@
-bug85.scala:7 error: type mismatch;
- found   : A.this.b.C
- required: A.this.C
-  val c: C = b.c;
-              ^
-one error found
