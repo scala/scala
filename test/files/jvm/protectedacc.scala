@@ -30,6 +30,7 @@ package p {
 
       protected def meth1(x: Int) = x + 1;
       protected def meth2(x: Int)(y: Int) = x + y;
+      protected def meth3 = Array(1, 2)
 
       def getA: this.type = this;
     }
@@ -45,6 +46,8 @@ package p {
           Console.println(x);
           Console.println("meth1(1) = " + meth1(1));
           Console.println("meth2(1)(1) = " + meth2(1)(1));
+
+          Console.println("meth3 = " + meth3.getClass);
 
           val inc = &meth2(1);
           Console.println("10++ = " + inc(10));

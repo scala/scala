@@ -172,9 +172,8 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
         log("Decided for host class: " + clazz)
       val accName = nme.protName(sym.originalName)
       var protAcc = clazz.info.decl(accName)
+      val hasArgs = sym.tpe.paramTypes != Nil
       if (protAcc == NoSymbol) {
-        val hasArgs = sym.tpe.paramTypes != Nil
-
         protAcc = clazz.newMethod(tree.pos, nme.protName(sym.originalName))
                            .setInfo(MethodType(List(clazz.typeOfThis),
                                if (hasArgs)
@@ -192,7 +191,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
       var res: Tree = atPos(tree.pos) { Apply(Select(This(clazz), protAcc), List(qual)) }
       if (settings.debug.value)
         log("Replaced " + tree + " with " + res)
-      typer.typedOperator(res)
+      if (hasArgs) typer.typedOperator(res) else typer.typed(res)
     }
 
     /** Add an accessor for field, if needed, and return a selection tree for it .
@@ -239,7 +238,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
     private def needsProtectedAccessor(sym: Symbol, pos: PositionType): Boolean = {
       val res = /* settings.debug.value && */
       ((sym hasFlag PROTECTED)
-       && (!(currentOwner.enclClass.thisSym isSubClass sym.owner))
+       && (!validCurrentOwner || !(currentOwner.enclClass.thisSym isSubClass sym.owner))
        && (enclPackage(sym.owner) != enclPackage(currentOwner)))
 
       if (res) {
