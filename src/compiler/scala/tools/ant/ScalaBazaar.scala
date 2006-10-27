@@ -25,6 +25,18 @@ package scala.tools.ant {
                                     SourceFileScanner}
   import org.apache.tools.ant.types.{EnumeratedAttribute, Reference, FileSet}
 
+  /** A set of files that can be installed at any relative location */
+    class LooseFileSet {
+      var destination: Option[String] = None
+      def setDestination(dest: String) = {
+        destination = Some(dest)
+      }
+
+      var fileset: Option[FileSet] = None
+      def addConfiguredFileSet(fs: FileSet) = {
+        fileset = Some(fs)
+      }
+    }
   /** An Ant task that generates a Scala Bazaars package (sbp file) along
     * with an advertisement of that package.
     *
@@ -76,6 +88,13 @@ package scala.tools.ant {
       def fileSets = elements.toList
       def elements = content.elements
     }
+
+
+
+/******************************************************************************\
+**                             Internal properties                            **
+\******************************************************************************/
+
 
 /******************************************************************************\
 **                             Properties setters                             **
@@ -137,6 +156,19 @@ package scala.tools.ant {
 
     def addConfiguredMiscset(input: FileSet) =
       fileSetsMap.update("misc/" + getName, input)
+
+    def addConfiguredLooseset(set: LooseFileSet) = {
+      Pair(set.destination, set.fileset) match {
+        case Pair(None, _) =>
+          error("destination not specified for a loose file set")
+
+        case Pair(_, None) =>
+          error("no files specified for a loose file set")
+
+        case Pair(Some(dest), Some(fileset)) =>
+          fileSetsMap.update(dest, fileset)
+      }
+    }
 
 /******************************************************************************\
 **                             Properties getters                             **
