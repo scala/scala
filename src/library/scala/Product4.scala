@@ -7,15 +7,15 @@
 **                          |/                                          **
 \*                                                                      */
 
-// generated on Tue Oct 03 14:50:06 CEST 2006
+// generated on Fri Oct 27 18:56:23 CEST 2006
 package scala
 
 import Predef._
 
 trait Product4 [+T1, +T2, +T3, +T4] {
-  def __1:T1
-  def __2:T2
-  def __3:T3
-  def __4:T4
+  def _1:T1
+  def _2:T2
+  def _3:T3
+  def _4:T4
 
 }

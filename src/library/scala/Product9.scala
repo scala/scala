@@ -7,20 +7,20 @@
 **                          |/                                          **
 \*                                                                      */
 
-// generated on Tue Oct 03 14:50:06 CEST 2006
+// generated on Fri Oct 27 18:56:23 CEST 2006
 package scala
 
 import Predef._
 
 trait Product9 [+T1, +T2, +T3, +T4, +T5, +T6, +T7, +T8, +T9] {
-  def __1:T1
-  def __2:T2
-  def __3:T3
-  def __4:T4
-  def __5:T5
-  def __6:T6
-  def __7:T7
-  def __8:T8
-  def __9:T9
+  def _1:T1
+  def _2:T2
+  def _3:T3
+  def _4:T4
+  def _5:T5
+  def _6:T6
+  def _7:T7
+  def _8:T8
+  def _9:T9
 
 }
