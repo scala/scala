@@ -1511,7 +1511,7 @@ trait Typers requires Analyzer {
             case SelectFromTypeTree(_, _) => copy.SelectFromTypeTree(tree, qual, name)
           }
           val result = stabilize(checkAccessible(tree1, sym, qual.tpe, qual), qual.tpe, mode, pt)
-          if (sym.isCaseFactory) checkStable(qual)
+          if (sym.isCaseFactory && !phase.erasedTypes) checkStable(qual)
           result
         }
       }
