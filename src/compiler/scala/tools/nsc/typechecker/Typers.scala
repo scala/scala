@@ -55,41 +55,61 @@ trait Typers requires Analyzer {
   def newDecls(tree : Template, clazz : Symbol) = newScope
   def newTemplateScope(impl : Template, clazz : Symbol) = newScope
 
-  /** Mode constants
+  // Mode constants
+
+  /** The three mode <code>NOmode</code>, <code>EXPRmode</code>
+   *  and <code>PATTERNmode</code> are mutually exclusive.
    */
   val NOmode        = 0x000
-  val EXPRmode      = 0x001    // these 3 modes are mutually exclusive.
+  val EXPRmode      = 0x001
   val PATTERNmode   = 0x002
   val TYPEmode      = 0x004
 
-  val SCCmode       = 0x008    // orthogonal to above. When set we are
-                               // in the this or super constructor call of a constructor.
+  /** The mode <code>SCCmode</code> is orthogonal to above. When set we are
+   *  in the this or super constructor call of a constructor.
+   */
+  val SCCmode       = 0x008
 
-  val FUNmode       = 0x10     // orthogonal to above. When set
-                               // we are looking for a method or constructor
+  /** The mode <code>FUNmode</code> is orthogonal to above.
+   *  When set we are looking for a method or constructor.
+   */
+  val FUNmode       = 0x010
 
-  val POLYmode      = 0x020    // orthogonal to above. When set
-                               // expression types can be polymorphic.
+  /** The mode <code>POLYmode</code> is orthogonal to above.
+   *  When set expression types can be polymorphic.
+   */
+  val POLYmode      = 0x020
 
-  val QUALmode      = 0x040    // orthogonal to above. When set
-                               // expressions may be packages and
-                               // Java statics modules.
+  /** The mode <code>QUALmode</code> is orthogonal to above. When set
+   *  expressions may be packages and Java statics modules.
+   */
+  val QUALmode      = 0x040
 
-  val TAPPmode      = 0x080    // Set for the function/type constructor part
-                               // of a type application. When set we do not
-                               // decompose PolyTypes.
+  /** The mode <code>TAPPmode</code> is set for the function/type constructor
+   *  part of a type application. When set we do not decompose PolyTypes.
+   */
+  val TAPPmode      = 0x080
 
-  val SUPERCONSTRmode = 0x100  // Set for the `super' in a superclass constructor call
-                               // super.<init>
+  /** The mode <code>SUPERCONSTRmode</code> is set for the <code>super</code>
+   *  in a superclass constructor call <code>super.&lt;init&gt;</code>.
+   */
+  val SUPERCONSTRmode = 0x100
 
-  val SNDTRYmode    = 0x200    // indicates that an application is typed for the 2nd
-                               // time. In that case functions may no longer be
-                               // be coerced with implicit views.
+  /** The mode <code>SNDTRYmode</code> indicates that an application is typed
+   *  for the 2nd time. In that case functions may no longer be coerced with
+   *  implicit views.
+   */
+  val SNDTRYmode    = 0x200
 
-  val LHSmode       = 0x400    // Set for the left-hand side of an assignment
+  /** The mode <code>LHSmode</code> is set for the left-hand side of an
+   *  assignment.
+   */
+  val LHSmode       = 0x400
 
-  val CONSTmode     = 0x800    // expressions should evaluate to constants
-                               // used for attribute arguments
+  /** The mode <code>CONSTmode</code> is set when expressions should evaluate
+   *  to constant sused for attribute arguments.
+   */
+  val CONSTmode     = 0x800
 
   class Typer(context0: Context) {
     import context0.unit
@@ -740,7 +760,7 @@ trait Typers requires Analyzer {
      *  @return     ...
      */
     def typedModuleDef(mdef: ModuleDef): Tree = {
-      System.out.println("sourcefile of " + mdef.symbol + "=" + mdef.symbol.sourceFile)
+      //System.out.println("sourcefile of " + mdef.symbol + "=" + mdef.symbol.sourceFile)
       attributes(mdef)
       val clazz = mdef.symbol.moduleClass
       val impl1 = newTyper(context.make(mdef.impl, clazz, newTemplateScope(mdef.impl, clazz)))
@@ -810,6 +830,10 @@ trait Typers requires Analyzer {
       copy.Template(templ, parents1, body1) setType clazz.tpe
     }
 
+    /**
+     *  @param vdef ...
+     *  @return     ...
+     */
     def typedValDef(vdef: ValDef): ValDef = {
       attributes(vdef)
       val sym = vdef.symbol
@@ -1975,7 +1999,6 @@ trait Typers requires Analyzer {
         case SelectFromTypeTree(qual, selector) =>
           tree setType typedSelect(typedType(qual), selector).tpe
 
-
         case tree @ CompoundTypeTree(templ: Template) =>
           tree setType {
             val parents1 = List.mapConserve(templ.parents)(typedType)
@@ -2062,17 +2085,31 @@ trait Typers requires Analyzer {
     def atOwner(tree: Tree, owner: Symbol): Typer =
       newTyper(context.make(tree, owner))
 
-    /** Types expression or definition `tree' */
+    /** Types expression or definition <code>tree</code>.
+     *
+     *  @param tree ...
+     *  @return     ...
+     */
     def typed(tree: Tree): Tree = {
       val ret = typed(tree, EXPRmode, WildcardType)
       ret
     }
 
-    /** Types expression `tree' with given prototype `pt' */
+    /** Types expression <code>tree</code> with given prototype <code>pt</code>.
+     *
+     *  @param tree ...
+     *  @param pt   ...
+     *  @return     ...
+     */
     def typed(tree: Tree, pt: Type): Tree =
       typed(tree, EXPRmode, pt)
 
-    /** Types qualifier `tree' of a select node. E.g. is tree occurs in acontext like `tree.m'. */
+    /** Types qualifier <code>tree</code> of a select node.
+     *  E.g. is tree occurs in a context like <code>tree.m</code>.
+     *
+     *  @param tree ...
+     *  @return     ...
+     */
     def typedQualifier(tree: Tree): Tree =
       typed(tree, EXPRmode | QUALmode | POLYmode, WildcardType)
 
@@ -2136,9 +2173,9 @@ trait Typers requires Analyzer {
      *  @param info    The given implicit info describing the implicit definition
      *  @param pt      The expected type
      *  @param isLocal Is implicit definition visible without prefix?
-     *  @return A typed tree if the implicit info can be made to conform
-     *          to `pt', EmptyTree otherwise.
-     *  @pre info.tpe does not contain an error
+     *  @return        A typed tree if the implicit info can be made to conform
+     *                 to <code>pt</code>, EmptyTree otherwise.
+     *  @pre           <code>info.tpe</code> does not contain an error
      */
     private def typedImplicit(pos: PositionType, info: ImplicitInfo, pt: Type, isLocal: boolean): Tree = {
       def isStable(tp: Type): boolean = tp match {
@@ -2172,11 +2209,14 @@ trait Typers requires Analyzer {
 
     /** Infer implicit argument or view.
      *
-     *  @param  pos     position for error reporting
-     *  @param  pt      the expected type of the implicit
-     *  @param  isView  are we searching for a view? (this affects the error message)
-     *  @param  reportAmbiguous  should ambiguous errors be reported? False iff we search for a view
-     *              to find out whether one type is coercible to another (@see isCoercible)
+     *  @param  pos             position for error reporting
+     *  @param  pt              the expected type of the implicit
+     *  @param  isView          are we searching for a view? (this affects the error message)
+     *  @param  reportAmbiguous should ambiguous errors be reported?
+     *                          False iff we search for a view to find out
+     *                          whether one type is coercible to another
+     *  @return                 ...
+     *  @see                    <code>isCoercible</code>
      */
     private def inferImplicit(pos: PositionType, pt: Type, isView: boolean, reportAmbiguous: boolean): Tree = {
 
@@ -2194,13 +2234,16 @@ trait Typers requires Analyzer {
           (if (isView) "\n are possible conversion functions from "+ pt.typeArgs(0)+" to "+pt.typeArgs(1)
            else "\n match expected type "+pt))
 
-      /** Search list of implicit info lists for one matching prototype `pt'
-       *  If found return a tree from found implicit info which is typed with expected type `pt'.
+      /** Search list of implicit info lists for one matching prototype
+       *  <code>pt</code>. If found return a tree from found implicit info
+       *  which is typed with expected type <code>pt</code>.
        *  Otherwise return EmptyTree
-       *  @param implicitInfoss    The given list of lists of implicit infos
-       *  @isLocal                 Is implicit definition visible without prefix?
-       *                           If this is the case then symbols in preceding lists shadow
-       *                           symbols of the same name in succeeding lists.
+       *
+       *  @param implicitInfoss The given list of lists of implicit infos
+       *  @param isLocal        Is implicit definition visible without prefix?
+       *                        If this is the case then symbols in preceding lists shadow
+       *                        symbols of the same name in succeeding lists.
+       *  @return               ...
        */
       def searchImplicit(implicitInfoss: List[List[ImplicitInfo]], isLocal: boolean): Tree = {
         def isSubClassOrObject(sym1: Symbol, sym2: Symbol) = {
