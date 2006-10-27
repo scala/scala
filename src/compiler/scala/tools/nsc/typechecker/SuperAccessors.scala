@@ -174,12 +174,13 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
       var protAcc = clazz.info.decl(accName)
       val hasArgs = sym.tpe.paramTypes != Nil
       if (protAcc == NoSymbol) {
+        val resTpe = tree.tpe
         protAcc = clazz.newMethod(tree.pos, nme.protName(sym.originalName))
                            .setInfo(MethodType(List(clazz.typeOfThis),
                                if (hasArgs)
-                                 MethodType(sym.tpe.paramTypes, sym.tpe.resultType)
+                                 MethodType(sym.tpe.paramTypes, resTpe.resultType /*sym.tpe.resultType*/)
                                else
-                                 sym.tpe.resultType))
+                                 resTpe.resultType /*sym.tpe.resultType*/))
         clazz.info.decls.enter(protAcc);
         val code = DefDef(protAcc, vparamss =>
           vparamss.tail.foldRight(Select(gen.mkAttributedRef(vparamss.head.head), sym): Tree) (
