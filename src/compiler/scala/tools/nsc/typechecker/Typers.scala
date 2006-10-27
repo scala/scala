@@ -396,6 +396,12 @@ trait Typers requires Analyzer {
       } else tree
     }
 
+    def unapplyMember(tp: Type): Symbol = {
+      var unapp = tp.member(nme.unapply)
+      if (unapp == NoSymbol) unapp = tp.member(nme.unapplySeq)
+      unapp
+    }
+
     /** Perform the following adaptations of expression, pattern or type `tree' wrt to
      *  given mode `mode' and given prototype `pt':
      *  (0) Convert expressions with constant types to literals
@@ -517,15 +523,11 @@ trait Typers requires Analyzer {
 		// fix symbol -- we are using the module not the class
                 val consp = if(clazz.isModule) clazz else {
                   val obj = clazz.linkedModuleOfClass
-                  tree.setSymbol(obj)
+                  if (obj != NoSymbol) tree.setSymbol(obj)
                   obj
                 }
-                var unapp = { // find unapply[Seq] mehod
-                  val x = consp.tpe.decl(nme.unapply)
-                  if (x != NoSymbol) x else consp.tpe.decl(nme.unapplySeq)
-                }
-                if(unapp != NoSymbol) tree
-                else errorTree(tree, "" + clazz + " does not have unapply/unapplySeq method")
+                if (unapplyMember(consp.tpe).exists) tree
+                else errorTree(tree, "" + clazz + " is not a case class, nor does it have unapply/unapplySeq method")
               } else {
                 errorTree(tree, "" + clazz + " is neither a case class nor a sequence class")
               }
@@ -741,14 +743,8 @@ trait Typers requires Analyzer {
       reenterTypeParams(cdef.tparams)
       val tparams1 = List.mapConserve(cdef.tparams)(typedAbsTypeDef)
       val tpt1 = checkNoEscaping.privates(clazz.thisSym, typedType(cdef.tpt))
-      //<unapply>  // add ProductN before typing
-      var impl0 = if(settings.Xunapply.value && (clazz hasFlag CASE) && !phase.erasedTypes) {
-        addProductParts(clazz, cdef.impl)
-      } else
-        cdef.impl
-      //</unapply>
-      val impl1 = newTyper(context.make(impl0, clazz, newScope))
-        .typedTemplate(impl0, parentTypes(impl0))
+      val impl1 = newTyper(context.make(cdef.impl, clazz, newScope))
+        .typedTemplate(cdef.impl, parentTypes(cdef.impl))
       val impl2 = addSyntheticMethods(impl1, clazz, context.unit)
       val ret = copy.ClassDef(cdef, cdef.mods, cdef.name, tparams1, tpt1, impl2)
         .setType(NoType)
@@ -1196,61 +1192,32 @@ trait Typers requires Analyzer {
           typedApply(tree, adapt(fun, funMode(mode), WildcardType), args1, mode, pt)
 /* --- begin unapply  --- */
 	case otpe @ SingleType(_,sym) if settings.Xunapply.value => // normally, an object 'Foo' cannot be applied -> unapply pattern
+          // !!! this is fragile, maybe needs to be revised when unapply patterns become terms
+          val unapp = unapplyMember(otpe)
+          assert(unapp.exists, tree)
+          assert(isFullyDefined(pt))
+          val argDummy =  context.owner.newValue(fun.pos, nme.SELECTOR_DUMMY)
+            .setFlag(SYNTHETIC)
+            .setInfo(pt)
+          if (args.length > MaxTupleArity)
+            error(fun.pos, "too many arguments for unapply pattern, maximum = "+MaxTupleArity)
+          val arg = Ident(argDummy) setType pt
+          val prod =
+            if (args.length == 0) UnitClass.tpe
+            else productType(args map (arg => WildcardType))
+          val tupleSym =
+            if (args.length == 0) UnitClass
+            else TupleClass(args.length)
 
-	  val unapp = otpe.decl(nme.unapply)
-	  if(unapp.exists) unapp.tpe match { // try unapply first
-	    case MethodType(formals0,restpe) => // must take (x:Any)
-
-              if(formals0.length != 1)
-		return errorTree(tree,"unapply should take exactly one argument but takes "+formals0)
-
-              val argt = formals0(0) // @todo: check this against pt, e.g. cons[int](_hd:int_, tl:List[int])
-
-	      var prodtpe: Type = null
-	      var nargs: Int    = -1 // signals error
-
-	      val sometpe = restpe match {
-		case TypeRef(_,sym, List(stpe)) if sym == definitions.getClass("scala.Option") => stpe
-		case _ => return errorTree(tree,"unapply should return option[.], not  "+restpe); null
-	      }
-
-	      val rsym = sometpe.symbol
-
-	      sometpe.baseClasses.find { x => isProductType(x.tpe) } match {
-		case Some(x) =>
-		  prodtpe = sometpe.baseType(x)
-		  nargs   = x.tpe.asInstanceOf[TypeRef].args.length
-		case _       =>
-		  if(sometpe =:= definitions.UnitClass.tpe)
-		    nargs = 0
-		  else
-		    return errorTree(tree, "result type '"+sometpe+"' of unapply is neither option[product] nor option[unit]")
-	      }
-
-	      if(nargs != args.length)
-		return errorTree(tree, "wrong number of arguments for unapply, expects "+formals0)
-
-	      // check arg types
-	      val child = for(val Pair(arg,atpe) <- args.zip(sometpe.typeArgs)) yield typed(arg, mode, atpe)
-
-	      // Product_N(...)
-	      val child1 = Apply(Ident(prodtpe.symbol.name) setType prodtpe  setSymbol prodtpe.symbol, child) setSymbol prodtpe.symbol setType prodtpe
-
-	      // Some(Product_N(...)) DBKK
-	      val some = typed(Apply(Ident(nme.Some), List(child1)), mode, definitions.optionType(prodtpe) /*AnyClass.tpe*/)
-
-	      // Foo.unapply(Some(Product_N(...)))
-              return Apply(gen.mkAttributedSelect(fun0,unapp), List(some)) setType pt
-
-          case PolyType(params,restpe)  =>
-	    errorTree(tree, "polym unapply not implemented")
-	  case tpe =>
-	    errorTree(tree, " can't handle unapply of type "+tpe)
-	} // no unapply
-
-	val unappSeq =  otpe.decl(nme.unapplySeq)
-	errorTree(tree, " can't handle unapplySeq")
-
+          val funPt = appliedType(OptionClass.typeConstructor, List(prod))
+          val fun0 = Ident(sym) setPos fun.pos setType otpe // no longer needed when patterns are terms!!!
+          val fun1 = typed(atPos(fun.pos) { Apply(Select(fun0, unapp), List(arg)) }, EXPRmode, funPt)
+          if (fun1.tpe.isErroneous) setError(tree)
+          else {
+            val argPts = optionOfProductElems(fun1.tpe)
+            val args1 = List.map2(args, argPts)((arg, formal) => typedArg(arg, mode, formal))
+            UnApply(fun1, args1) setPos tree.pos setType pt
+          }
 /* --- end unapply  --- */
         case MethodType(formals0, restpe) =>
           val formals = formalTypes(formals0, args.length)

@@ -30,6 +30,10 @@ abstract class TreeBuilder {
   def caseClassConstr: Tree =
     scalaDot(nme.CaseClass.toTypeName)
 
+  def productConstr(typeArgs: List[Tree]) =
+    AppliedTypeTree(scalaDot(newTypeName("Product"+typeArgs.length)), typeArgs)
+
+
   /** Convert all occurrences of (lower-case) variables in a pattern as follows:
    *    x                  becomes      x @ _
    *    x: T               becomes      x @ (_: T)

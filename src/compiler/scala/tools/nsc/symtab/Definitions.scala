@@ -116,7 +116,7 @@ trait Definitions requires SymbolTable {
 
     /* <unapply> */
     val ProductClass: Array[Symbol] = new Array(MaxTupleArity + 1)
-      def productProj(n: Int, j: Int) = getMember(ProductClass(n), "__" + j)
+      def productProj(n: Int, j: Int) = getMember(ProductClass(n), "_" + j)
       def isProductType(tp: Type): Boolean = tp match {
         case TypeRef(_, sym, elems) =>
           elems.length <= MaxTupleArity && sym == ProductClass(elems.length);
@@ -145,6 +145,15 @@ trait Definitions requires SymbolTable {
     }
     def someType(tp: Type) =
       typeRef(SomeClass.typeConstructor.prefix, SomeClass, List(tp))
+
+    def optionOfProductElems(tp: Type): List[Type] = {
+      assert(tp.symbol == OptionClass)
+      val prod = tp.typeArgs.head
+      if (prod.symbol == UnitClass) List()
+      else prod.baseClasses.find { x => isProductType(x.tpe) } match {
+	case Some(p) => prod.baseType(p).typeArgs
+      }
+    }
 
     /* </unapply> */
     val MaxFunctionArity = 9

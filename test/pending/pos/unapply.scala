@@ -1,4 +1,4 @@
-case class MyTuple2[A,B](val _1:A, val _2:B)
+case class MyTuple2[A,B](val _1:A, val snd:B)
 
 object Foo {
   def unapply(x:Any): Option[Product2[Int,String]] = {

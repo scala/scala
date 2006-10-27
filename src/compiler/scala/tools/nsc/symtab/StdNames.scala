@@ -82,6 +82,7 @@ trait StdNames requires SymbolTable {
     val MODULE_SUFFIX = newTermName("$module")
     val LOCALDUMMY_PREFIX = newTermName(LOCALDUMMY_PREFIX_STRING)
     val THIS_SUFFIX = newTermName(".this")
+    val SELECTOR_DUMMY = newTermName("<unapply-selector>")
 
     val MODULE_INSTANCE_FIELD = newTermName("MODULE$")
 
@@ -209,7 +210,7 @@ trait StdNames requires SymbolTable {
     val ScalaRunTime = newTermName("ScalaRunTime")
     val Seq = newTermName("Seq")
     val Short = newTermName("Short")
-    val Some = newTypeName("Some")
+    val Some = newTermName("Some")
     val SourceFile = newTermName("SourceFile")
     val String = newTermName("String")
     val Symbol = newTermName("Symbol")

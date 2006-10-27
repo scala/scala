@@ -32,42 +32,6 @@ trait SyntheticMethods requires Analyzer {
   import definitions._             // standard classes and methods
   import typer.{typed}             // methods to type trees
 
-  /** adds ProductN parent class and methods */
-  def addProductParts(clazz: Symbol, templ:Template): Template = {
-    def newSyntheticMethod(name: Name, flags: Int, tpe: Type) = {
-      val method = clazz.newMethod(clazz.pos, name) setFlag (flags) setInfo tpe
-      clazz.info.decls.enter(method)
-      method
-    }
-
-    def addParent:List[Tree] = {
-      val caseFields    = clazz.caseFieldAccessors
-      val caseTypes     = caseFields map { x => TypeTree(x.tpe.resultType) }
-      val prodTree:Tree = TypeTree(productType(caseFields map { x => x.tpe.resultType }))
-      templ.parents ::: List(prodTree)
-    }
-
-    def addImpl: List[Tree] = { // test
-      var i = 1;
-      val defs = clazz.caseFieldAccessors map {
-        x =>
-          val ident = gen.mkAttributedRef(x)
-          val method = clazz.info.decl("__"+i.toString())
-          i = i + 1
-          DefDef(method, {vparamss => ident})
-      }
-      templ.body ::: defs
-    }
-
-    if(clazz.caseFieldAccessors.length == 0)
-      templ
-    else {
-      //Console.println("#[addProductParts("+clazz+","+templ)
-      //Console.println("(]#")
-      copy.Template(templ, addParent, addImpl)
-    }
-  }
-
   /**
    *  @param templ ...
    *  @param clazz ...
@@ -90,6 +54,11 @@ trait SyntheticMethods requires Analyzer {
       val method = clazz.newMethod(clazz.pos, name) setFlag (flags) setInfo tpe
       clazz.info.decls.enter(method)
       method
+    }
+
+    def productSelectorMethod(n: int, accessor: Symbol): Tree = {
+      val method = syntheticMethod(newTermName("_"+n), FINAL, accessor.tpe)
+      typed(DefDef(method, vparamss => gen.mkAttributedRef(accessor)))
     }
 
     def caseElementMethod: Tree = {
@@ -224,6 +193,9 @@ trait SyntheticMethods requires Analyzer {
             else Apply(gen.mkAttributedRef(sym), List(Ident(vparamss.head.head)))))
     }
 
+    def isPublic(sym: Symbol) =
+      !sym.hasFlag(PRIVATE | PROTECTED) && sym.privateWithin == NoSymbol
+
     if (!phase.erasedTypes) {
 
       if (clazz hasFlag CASE) {
@@ -231,11 +203,10 @@ trait SyntheticMethods requires Analyzer {
         clazz.attributes = Triple(SerializableAttr.tpe, List(), List()) :: clazz.attributes
 
         for (val stat <- templ.body) {
-          if (stat.isDef && stat.symbol.isMethod && stat.symbol.hasFlag(CASEACCESSOR) &&
-              (stat.symbol.hasFlag(PRIVATE | PROTECTED) || stat.symbol.privateWithin != NoSymbol)) {
-                ts += newAccessorMethod(stat)
-                stat.symbol.resetFlag(CASEACCESSOR)
-              }
+          if (stat.isDef && stat.symbol.isMethod && stat.symbol.hasFlag(CASEACCESSOR) && !isPublic(stat.symbol)) {
+            ts += newAccessorMethod(stat)
+            stat.symbol.resetFlag(CASEACCESSOR)
+          }
         }
 
         if (clazz.info.nonPrivateDecl(nme.tag) == NoSymbol) ts += tagMethod
@@ -249,7 +220,12 @@ trait SyntheticMethods requires Analyzer {
         if (!hasImplementation(nme.caseElement)) ts += caseElementMethod
         if (!hasImplementation(nme.caseArity)) ts += caseArityMethod
         if (!hasImplementation(nme.caseName)) ts += caseNameMethod
+        for (val i <- 0 until clazz.caseFieldAccessors.length) {
+          val acc = clazz.caseFieldAccessors(i)
+          if (acc.name.toString != "_"+(i+1)) ts += productSelectorMethod(i+1, acc)
+        }
       }
+
       if (clazz.isModuleClass && isSerializable(clazz)) {
         // If you serialize a singleton and then deserialize it twice,
         // you will have two instances of your singleton, unless you implement

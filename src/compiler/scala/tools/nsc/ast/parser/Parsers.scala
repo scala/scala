@@ -1812,7 +1812,15 @@ trait Parsers requires SyntaxAnalyzer {
         }
         if (name != nme.ScalaObject.toTypeName)
           parents += scalaScalaObjectConstr
-        if (mods.hasFlag(Flags.CASE)) parents += caseClassConstr
+        if (mods.hasFlag(Flags.CASE)) {
+          parents += caseClassConstr
+          if (!vparamss.isEmpty) {
+            val argtypes: List[Tree] = vparamss.head map (.tpt.duplicate) //remove type annotation and you will get an interesting error message!!!
+            val nargs = argtypes.length
+            if (0 < nargs && nargs <= definitions.MaxTupleArity)
+              parents += productConstr(argtypes)
+          }
+        }
         val ps = parents.toList
         newLineOptWhenFollowedBy(LBRACE)
         var body =

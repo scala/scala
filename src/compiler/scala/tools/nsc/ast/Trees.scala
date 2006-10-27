@@ -419,6 +419,9 @@ trait Trees requires Global {
   def Bind(sym: Symbol, body: Tree): Bind =
     Bind(sym.name, body) setSymbol sym
 
+  case class UnApply(fun: Tree, args: List[Tree])
+       extends TermTree
+
   /** Array of expressions, needs to be translated in backend,
    */
   case class ArrayValue(elemtpt: Tree, elems: List[Tree])
@@ -598,6 +601,7 @@ trait Trees requires Global {
   case Alternative(trees) =>                                      (eliminated by transmatch)
   case Star(elem) =>                                              (eliminated by transmatch)
   case Bind(name, body) =>                                        (eliminated by transmatch)
+  case UnApply(fun: Tree, args)                                   (introduced by typer, eliminated by transmatch)
   case ArrayValue(elemtpt, trees) =>                              (introduced by uncurry)
   case Function(vparams, body) =>                                 (eliminated by lambdaLift)
   case Assign(lhs, rhs) =>
@@ -642,6 +646,7 @@ trait Trees requires Global {
     def Alternative(tree: Tree, trees: List[Tree]): Alternative
     def Star(tree: Tree, elem: Tree): Star
     def Bind(tree: Tree, name: Name, body: Tree): Bind
+    def UnApply(tree: Tree, fun: Tree, args: List[Tree]): UnApply
     def ArrayValue(tree: Tree, elemtpt: Tree, trees: List[Tree]): ArrayValue
     def Function(tree: Tree, vparams: List[ValDef], body: Tree): Function
     def Assign(tree: Tree, lhs: Tree, rhs: Tree): Assign
@@ -704,6 +709,8 @@ trait Trees requires Global {
       new Star(elem).copyAttrs(tree)
     def Bind(tree: Tree, name: Name, body: Tree) =
       new Bind(name, body).copyAttrs(tree)
+    def UnApply(tree: Tree, fun: Tree, args: List[Tree]) =
+      new UnApply(fun, args).copyAttrs(tree)
     def ArrayValue(tree: Tree, elemtpt: Tree, trees: List[Tree]) =
       new ArrayValue(elemtpt, trees).copyAttrs(tree)
     def Function(tree: Tree, vparams: List[ValDef], body: Tree) =
@@ -844,6 +851,11 @@ trait Trees requires Global {
       case t @ Bind(name0, body0)
       if (name0 == name) && (body0 == body) => t
       case _ => copy.Bind(tree, name, body)
+    }
+    def UnApply(tree: Tree, fun: Tree, args: List[Tree]) = tree match {
+      case t @ UnApply(fun0, args0)
+      if (fun0 == fun) && (args0 == args) => t
+      case _ => copy.UnApply(tree, fun, args)
     }
     def ArrayValue(tree: Tree, elemtpt: Tree, trees: List[Tree]) = tree match {
       case t @ ArrayValue(elemtpt0, trees0)
@@ -1022,6 +1034,8 @@ trait Trees requires Global {
         copy.Star(tree, transform(elem))
       case Bind(name, body) =>
         copy.Bind(tree, name, transform(body))
+      case UnApply(fun, args) =>
+        copy.UnApply(tree, fun, args)
       case ArrayValue(elemtpt, trees) =>
         copy.ArrayValue(tree, transform(elemtpt), transformTrees(trees))
       case Function(vparams, body) =>
@@ -1156,6 +1170,8 @@ trait Trees requires Global {
         traverse(elem)
       case Bind(name, body) =>
         traverse(body)
+      case UnApply(fun, args) =>
+        traverse(fun); traverseTrees(args)
       case ArrayValue(elemtpt, trees) =>
         traverse(elemtpt); traverseTrees(trees)
       case Function(vparams, body) =>
