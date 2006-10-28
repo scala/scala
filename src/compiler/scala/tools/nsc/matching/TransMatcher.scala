@@ -188,7 +188,7 @@ with PatternMatchers */ {
           isReg = true // cause there are ArrayValues now
           copy.Sequence(pat, trees map { isRegular1 })
 
-        //case ArrayValue( tt, List(b @ Bind(id, Star(wc @ Ident(nme.WILDCARD))))) =>
+        case UnApply(fn, args) => copy.UnApply(pat, fn, args map { isRegular1 })
 
         // a pattern of the form List(foo@_*)
         case app @ Apply(fn, List(pat2@ ArrayValue( tt, List(b @ Bind(id, Star(wc @ Ident(nme.WILDCARD))))))) if isSeqApply(app) =>

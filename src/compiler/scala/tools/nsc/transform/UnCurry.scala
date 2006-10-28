@@ -362,9 +362,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
             mainTransform(new TreeSubstituter(vparams map (.symbol), args).transform(body))
           }
 
-        case Apply(fn0, List(t @ Apply(fn1, List(u @ Apply(fn2, args))))) if inPattern && settings.Xunapply.value && definitions.isProductType(u.tpe)  =>
-          // leave unapply trees in patterns alone
-          copy.Apply(tree, fn0, List(copy.Apply(t, fn1, List(copy.Apply(u, fn2, transformTrees(args))))))
+        case UnApply(fn, args) => copy.UnApply(tree, fn, transformTrees(args))
 
         case Apply(fn, args) =>
           if (settings.noassertions.value &&

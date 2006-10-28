@@ -114,6 +114,11 @@ trait CodeFactory requires transform.ExplicitOuter  {
       typed(Literal(Constant(i))))
       //defs.Seq_length instead of tpe.member ?
 
+  def Not(arg:Tree) = arg match {
+    case Literal(Constant(true))  => Literal(Constant(false))
+    case Literal(Constant(false)) => Literal(Constant(true))
+    case t                        => Select(arg, definitions.Boolean_not)
+  }
   /*protected*/ def And(left: Tree, right: Tree): Tree = left match {
     case Literal(Constant(value: Boolean)) =>
       if (value) right else left

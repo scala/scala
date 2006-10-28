@@ -193,7 +193,8 @@ trait PatternNodes requires transform.ExplicitOuter {
         sb.append(indent).append("NULL")
       else
         patNode match {
-
+        case UnapplyPat(_,fn) =>
+          sb.append(indent + "UNAPPLY(" + fn + ")").append('\n')
         case _h: Header =>
           val selector = _h.selector
           val next = _h.next
