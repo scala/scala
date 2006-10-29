@@ -157,7 +157,7 @@ trait PatternNodes requires transform.ExplicitOuter {
         "DefaultPat"
       case ConstrPat(casted) =>
         "ConstrPat(" + casted + ")"
-      case SequencePat(casted,  len) =>
+      case SequencePat(casted, len) =>
         "SequencePat(" + casted + ", " + len + "...)"
       case RightIgnoringSequencePat(casted, castedRest, minlen) =>
         "RightIgnoringSequencePat(" + casted + ", " + castedRest + ", "+ minlen + "...)"
@@ -165,7 +165,7 @@ trait PatternNodes requires transform.ExplicitOuter {
         "ConstantPat(" + value + ")"
       case VariablePat(tree) =>
         "VariablePat"
-      case UnapplyPat(casted,fn) =>
+      case UnapplyPat(casted, fn) =>
 	"UnapplyPat(" + casted + ")"
       case _ =>
         "<unknown pat>"
@@ -272,7 +272,7 @@ trait PatternNodes requires transform.ExplicitOuter {
 
   case class DefaultPat()extends PatternNode
   case class ConstrPat(casted:Symbol) extends PatternNode
-  case class UnapplyPat(tple:Symbol, fn:Tree) extends PatternNode
+  case class UnapplyPat(prod:Symbol, fn:Tree) extends PatternNode
   case class ConstantPat(value: Any /*AConstant*/) extends PatternNode
   case class VariablePat(tree: Tree) extends PatternNode
   case class AltPat(subheader: Header) extends PatternNode

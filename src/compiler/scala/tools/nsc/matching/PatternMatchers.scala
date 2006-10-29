@@ -404,8 +404,7 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
         }
        node
 
-      case t @ UnApply(fn, args)  =>
-        pUnapplyPat(tree.pos, fn)
+      case t @ UnApply(fn, args)  => pUnapplyPat(tree.pos, fn)
 
       case t @ Apply(fn, args) =>             // pattern with args
         //Console.println("Apply node: "+t);
@@ -1157,7 +1156,7 @@ print()
           case DefaultPat() =>
             return toTree(node.and);
 
-	  case UnapplyPat(casted,fn @ Apply(fn1, _)) =>
+	  case UnapplyPat(casted, fn @ Apply(fn1, _)) =>
 	    val v = newVar(fn.pos, fn.tpe)
 	    Or(squeezedBlock(
 	      List(ValDef(v,Apply(fn1,List(selector)))),

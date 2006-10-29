@@ -155,6 +155,14 @@ trait Definitions requires SymbolTable {
       }
     }
 
+    def unapplySeqResultToMethodSig(tp: Type) = {
+      val xs = optionOfProductElems(tp).reverse
+      (xs.head.baseType(SeqClass) match {
+        case TypeRef(pre, seqClass, args) =>
+          typeRef(pre, RepeatedParamClass, args) :: xs.tail
+      }).reverse
+    }
+
     /* </unapply> */
     val MaxFunctionArity = 9
     val FunctionClass: Array[Symbol] = new Array(MaxFunctionArity + 1)

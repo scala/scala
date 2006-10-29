@@ -526,7 +526,7 @@ trait Typers requires Analyzer {
                   if (obj != NoSymbol) tree.setSymbol(obj)
                   obj
                 }
-                if (unapplyMember(consp.tpe).exists) tree
+                if (unapplyMember(consp.tpe).exists) Ident(consp).setType(consp.tpe)
                 else errorTree(tree, "" + clazz + " is not a case class, nor does it have unapply/unapplySeq method")
               } else {
                 errorTree(tree, "" + clazz + " is neither a case class nor a sequence class")
@@ -1190,35 +1190,6 @@ trait Typers requires Analyzer {
           val args1 = typedArgs(args, mode)
           inferMethodAlternative(fun, context.undetparams, args1 map (.tpe.deconst), pt)
           typedApply(tree, adapt(fun, funMode(mode), WildcardType), args1, mode, pt)
-/* --- begin unapply  --- */
-	case otpe @ SingleType(_,sym) if settings.Xunapply.value => // normally, an object 'Foo' cannot be applied -> unapply pattern
-          // !!! this is fragile, maybe needs to be revised when unapply patterns become terms
-          val unapp = unapplyMember(otpe)
-          assert(unapp.exists, tree)
-          assert(isFullyDefined(pt))
-          val argDummy =  context.owner.newValue(fun.pos, nme.SELECTOR_DUMMY)
-            .setFlag(SYNTHETIC)
-            .setInfo(pt)
-          if (args.length > MaxTupleArity)
-            error(fun.pos, "too many arguments for unapply pattern, maximum = "+MaxTupleArity)
-          val arg = Ident(argDummy) setType pt
-          val prod =
-            if (args.length == 0) UnitClass.tpe
-            else productType(args map (arg => WildcardType))
-          val tupleSym =
-            if (args.length == 0) UnitClass
-            else TupleClass(args.length)
-
-          val funPt = appliedType(OptionClass.typeConstructor, List(prod))
-          val fun0 = Ident(sym) setPos fun.pos setType otpe // no longer needed when patterns are terms!!!
-          val fun1 = typed(atPos(fun.pos) { Apply(Select(fun0, unapp), List(arg)) }, EXPRmode, funPt)
-          if (fun1.tpe.isErroneous) setError(tree)
-          else {
-            val argPts = optionOfProductElems(fun1.tpe)
-            val args1 = List.map2(args, argPts)((arg, formal) => typedArg(arg, mode, formal))
-            UnApply(fun1, args1) setPos tree.pos setType pt
-          }
-/* --- end unapply  --- */
         case MethodType(formals0, restpe) =>
           val formals = formalTypes(formals0, args.length)
           if (formals.length != args.length) {
@@ -1279,6 +1250,55 @@ trait Typers requires Analyzer {
           }
         case ErrorType =>
           setError(copy.Apply(tree, fun, args))
+	/* --- begin unapply  --- */
+	case otpe if unapplyMember(otpe).exists && settings.Xunapply.value =>
+          // !!! this is fragile, maybe needs to be revised when unapply patterns become terms
+          val unapp = unapplyMember(otpe)
+          assert(unapp.exists, tree)
+          assert(isFullyDefined(pt))
+          val argDummy =  context.owner.newValue(fun.pos, nme.SELECTOR_DUMMY)
+            .setFlag(SYNTHETIC)
+            .setInfo(pt)
+          if (args.length > MaxTupleArity)
+            error(fun.pos, "too many arguments for unapply pattern, maximum = "+MaxTupleArity)
+          val arg = Ident(argDummy) setType pt
+          var prod: Type = null
+
+
+          if(nme.unapplySeq == unapp.name) {
+	    def failSeq = {
+	      error(fun.pos, " unapplySeq should return Option[T] for T<:Product?[...Seq[?]]");
+	      setError(tree)
+	    }
+	    unapp.tpe.resultType match { // last should be seq...
+              case TypeRef(_, opt, List(tpe)) if opt == definitions.OptionClass =>
+                // the following is almost definitions.optionOfProductElems, but error handling?
+                tpe.baseClasses.find { x => isProductType(x.tpe) } match {
+                  case Some(p) =>
+                    val xs = tpe.baseType(p).typeArgs
+                    if(xs.isEmpty)
+		      return failSeq
+                    prod = productType((xs.tail map {x => WildcardType}) ::: List(seqType(WildcardType)))
+		  case None => return failSeq
+                }
+              case _ => return failSeq
+	    }
+	  } else if (args.length == 0) prod = UnitClass.tpe
+          else prod = productType(args map (arg => WildcardType))
+
+          val funPt = appliedType(OptionClass.typeConstructor, List(prod))
+          val fun0 = Ident(fun.symbol) setPos fun.pos setType otpe // would this change when patterns are terms???
+          val fun1 = typed(atPos(fun.pos) { Apply(Select(Ident(fun.symbol), unapp), List(arg)) }, EXPRmode, funPt)
+          if (fun1.tpe.isErroneous) setError(tree)
+          else {
+            var argPts = if(unapp.name == nme.unapply) optionOfProductElems(fun1.tpe)
+                         else                   unapplySeqResultToMethodSig(fun1.tpe)
+            argPts = formalTypes(argPts, args.length)
+
+            val args1 = List.map2(args, argPts)((arg, formal) => typedArg(arg, mode, formal))
+            UnApply(fun1, args1) setPos tree.pos setType pt
+          }
+/* --- end unapply  --- */
         case _ =>
           errorTree(tree, ""+fun+" does not take parameters")
       }
@@ -1558,14 +1578,15 @@ trait Typers requires Analyzer {
             }
           }
           /*<unapply>*/
-	  if(settings.Xunapply.value)
+          if(settings.Xunapply.value)
             // unapply: in patterns, look for an object if can't find type
             if(name.isTypeName && defSym == NoSymbol && (mode & PATTERNmode) != 0) {
               typedIdent(name.toTermName) match {
-		case t if t.symbol.isModule =>
+                case t if t.symbol.isTerm /*isModule*/ =>
                   return t
-		case _ => // found methsym (case class handling...), ignore
-	      }
+                case _ =>
+                  // when can this happen?
+              }
             }
           /*</unapply>*/
           val symDepth = if (defEntry == null) cx.depth
