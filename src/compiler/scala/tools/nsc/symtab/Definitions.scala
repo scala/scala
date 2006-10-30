@@ -156,11 +156,11 @@ trait Definitions requires SymbolTable {
     }
 
     def unapplySeqResultToMethodSig(tp: Type) = {
-      val xs = optionOfProductElems(tp).reverse
-      (xs.head.baseType(SeqClass) match {
-        case TypeRef(pre, seqClass, args) =>
-          typeRef(pre, RepeatedParamClass, args) :: xs.tail
-      }).reverse
+      val ts = optionOfProductElems(tp)
+      val last1 = ts.last.baseType(SeqClass) match {
+        case TypeRef(pre, seqClass, args) => typeRef(pre, RepeatedParamClass, args)
+      }
+      ts.init ::: List(last1)
     }
 
     /* </unapply> */

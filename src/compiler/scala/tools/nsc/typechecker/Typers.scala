@@ -111,6 +111,11 @@ trait Typers requires Analyzer {
    */
   val CONSTmode     = 0x800
 
+  /** The mode <code>REGPATmode</code> is set when regular expression patterns
+   *  are allowed.
+   */
+  val REGPATmode    = 0x1000
+
   class Typer(context0: Context) {
     import context0.unit
 
@@ -253,6 +258,12 @@ trait Typers requires Analyzer {
         checkParamsConvertible(pos, restpe)
       case _ =>
     }
+
+    def checkRegPatOK(pos: PositionType, mode: int): unit =
+      if ((mode & REGPATmode) == 0) {
+        error(pos, "no regular expression pattern allowed here\n"+
+              "(regular expression patterns are only allowed in arguments to *-parameters)")
+      }
 
     /** Check that type of given tree does not contain local or private
      *  components.
@@ -1191,14 +1202,28 @@ trait Typers requires Analyzer {
       checkNoDoubleDefs(List.mapConserve(stats)(typedStat))
     }
 
-    def typedArg(arg: Tree, mode: int, pt: Type): Tree = {
+    def typedArg(arg: Tree, mode: int, newmode: int, pt: Type): Tree = {
       val argTyper = if ((mode & SCCmode) != 0) newTyper(context.makeConstructorContext)
                      else this
-      argTyper.typed(arg, mode & (stickyModes | POLYmode), pt)
+      argTyper.typed(arg, mode & stickyModes | newmode, pt)
     }
 
     def typedArgs(args: List[Tree], mode: int) =
-      List.mapConserve(args)(arg => typedArg(arg, mode, WildcardType))
+      List.mapConserve(args)(arg => typedArg(arg, mode, 0, WildcardType))
+
+    def typedArgs(args: List[Tree], mode: int, originalFormals: List[Type], adaptedFormals: List[Type]) =
+      if ((mode & PATTERNmode) != 0 && isVarArgs(originalFormals)) {
+        val nonVarCount = originalFormals.length - 1
+        val prefix =
+          List.map2(args take nonVarCount, adaptedFormals take nonVarCount) ((arg, formal) =>
+            typedArg(arg, mode, 0, formal))
+        val suffix =
+          List.map2(args drop nonVarCount, adaptedFormals drop nonVarCount) ((arg, formal) =>
+            typedArg(arg, mode, REGPATmode, formal))
+        prefix ::: suffix
+      } else {
+        List.map2(args, adaptedFormals)((arg, formal) => typedArg(arg, mode, 0, formal))
+      }
 
     def typedApply(tree: Tree, fun0: Tree, args: List[Tree], mode: int, pt: Type): Tree = {
       var fun = fun0;
@@ -1224,8 +1249,7 @@ trait Typers requires Analyzer {
             val tparams = context.undetparams
             context.undetparams = List()
             if (tparams.isEmpty) {
-              val args1 = List.map2(args, formals)((arg, formal) =>
-                typedArg(arg, mode, formal))
+              val args1 = typedArgs(args, mode, formals0, formals)
               def ifPatternSkipFormals(tp: Type) = tp match {
                 case MethodType(_, rtp) if ((mode & PATTERNmode) != 0) => rtp
                 case _ => tp
@@ -1253,7 +1277,7 @@ trait Typers requires Analyzer {
                 if (targ == WildcardType) tparam.tpe else targ)
               def typedArgToPoly(arg: Tree, formal: Type): Tree = {
                 val lenientPt = formal.subst(tparams, lenientTargs)
-                val arg1 = typedArg(arg, mode | POLYmode, lenientPt)
+                val arg1 = typedArg(arg, mode, POLYmode, lenientPt)
                 val argtparams = context.undetparams
                 context.undetparams = List()
                 if (!argtparams.isEmpty) {
@@ -1316,11 +1340,10 @@ trait Typers requires Analyzer {
           val fun1 = typed(atPos(fun.pos) { Apply(Select(Ident(fun.symbol), unapp), List(arg)) }, EXPRmode, funPt)
           if (fun1.tpe.isErroneous) setError(tree)
           else {
-            var argPts = if(unapp.name == nme.unapply) optionOfProductElems(fun1.tpe)
-                         else                   unapplySeqResultToMethodSig(fun1.tpe)
-            argPts = formalTypes(argPts, args.length)
-
-            val args1 = List.map2(args, argPts)((arg, formal) => typedArg(arg, mode, formal))
+            var formals0 = if(unapp.name == nme.unapply) optionOfProductElems(fun1.tpe)
+                           else unapplySeqResultToMethodSig(fun1.tpe)
+            val formals1 = formalTypes(formals0, args.length)
+            val args1 = typedArgs(args, mode, formals0, formals1)
             UnApply(fun1, args1) setPos tree.pos setType pt
           }
 /* --- end unapply  --- */
@@ -1736,6 +1759,7 @@ trait Typers requires Analyzer {
             .typedBlock(tree, mode, pt)
 
         case Sequence(elems) =>
+          checkRegPatOK(tree.pos, mode)
           val elems1 = List.mapConserve(elems)(elem => typed(elem, mode, pt))
           copy.Sequence(tree, elems1) setType pt
 
@@ -1744,6 +1768,7 @@ trait Typers requires Analyzer {
           copy.Alternative(tree, alts1) setType pt
 
         case Star(elem) =>
+          checkRegPatOK(tree.pos, mode)
           val elem1 = typed(elem, mode, pt)
           copy.Star(tree, elem1) setType pt
 

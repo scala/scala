@@ -1,4 +1,5 @@
-bug421.scala:4 error: regular expressions not yet implemented
-  Bar("foo","meets","bar") match {
-     ^
+bug421.scala:5 error: no regular expression pattern allowed here
+(regular expression patterns are only allowed in arguments to *-parameters)
+    case Bar("foo",_*) => error("huh?");
+                    ^
 one error found

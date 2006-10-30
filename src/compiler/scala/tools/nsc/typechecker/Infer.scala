@@ -29,6 +29,9 @@ trait Infer requires Analyzer {
   def assertNonCyclic(tvar: TypeVar) =
     assert(tvar.constr.inst != tvar, tvar.origin)
 
+  def isVarArgs(formals: List[Type]) =
+    !formals.isEmpty && (formals.last.symbol == RepeatedParamClass)
+
   /** The formal parameter types corresponding to <code>formals</code>.
    *  If <code>formals</code> has a repeated last parameter, a list of
    *  (nargs - params.length + 1) copies of its type is returned.
@@ -41,7 +44,7 @@ trait Infer requires Analyzer {
       case TypeRef(_, sym, List(arg)) if (sym == ByNameParamClass) => arg
       case formal => formal
     }
-    if (!formals1.isEmpty && (formals1.last.symbol == RepeatedParamClass)) {
+    if (isVarArgs(formals1)) {
       val ft = formals1.last.typeArgs.head
       formals1.init ::: (for (val i <- List.range(formals1.length - 1, nargs)) yield ft)
     } else formals1
