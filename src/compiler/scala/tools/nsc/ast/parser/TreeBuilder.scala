@@ -30,9 +30,15 @@ abstract class TreeBuilder {
   def caseClassConstr: Tree =
     scalaDot(nme.CaseClass.toTypeName)
 
-  def productConstr(typeArgs: List[Tree]) =
-    AppliedTypeTree(scalaDot(newTypeName("Product"+typeArgs.length)), typeArgs)
-
+  def productConstr(typeArgs: List[Tree]) = {
+    def repeatedToSeq(tpt: Tree) = tpt match {
+      case AppliedTypeTree(Select(qual, name), args) if (name == nme.REPEATED_PARAM_CLASS_NAME.toTypeName) =>
+        AppliedTypeTree(Select(qual, nme.Seq.toTypeName), args)
+      case _ =>
+        tpt
+    }
+    AppliedTypeTree(scalaDot(newTypeName("Product"+typeArgs.length)), typeArgs map repeatedToSeq)
+  }
 
   /** Convert all occurrences of (lower-case) variables in a pattern as follows:
    *    x                  becomes      x @ _

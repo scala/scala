@@ -225,7 +225,7 @@ trait Types requires SymbolTable {
           }
 */
         case _ =>
-          //System.out.println("" + this.widen + ".memberType(" + sym +":" + sym.tpe +")" + sym.ownerChain);//debug
+          //System.out.println("" + this.widen + ".memberType(" + sym +":" + sym.tpe +")" + sym.ownerChain);//DEBUG
           sym.tpe.asSeenFrom(this, sym.owner)
       }
     }
@@ -1131,13 +1131,16 @@ trait Types requires SymbolTable {
   def TypeBounds(lo: Type, hi: Type): TypeBounds =
     unique(new TypeBounds(lo, hi) with UniqueType)
 
+  def refinementOfClass(clazz: Symbol, parents: List[Type], decls: Scope) =
+    new RefinedType(parents, decls) { override def symbol: Symbol = clazz }
+
   /** the canonical creator for a refined type with a given scope */
   def refinedType(parents: List[Type], owner: Symbol, decls: Scope): Type = {
     if (phase.erasedTypes)
       if (parents.isEmpty) ObjectClass.tpe else parents.head
     else {
       val clazz = owner.newRefinementClass(NoPos)
-      val result = new RefinedType(parents, decls) { override def symbol: Symbol = clazz }
+      val result = refinementOfClass(clazz, parents, decls)
       clazz.setInfo(result)
       result
     }
@@ -1301,6 +1304,8 @@ trait Types requires SymbolTable {
   abstract class TypeMap extends Function1[Type, Type] {
     // deferred inherited: def apply(tp: Type): Type
 
+    var variance = 1
+
     /** Map this function over given type */
     def mapOver(tp: Type): Type = tp match {
       case ErrorType => tp
@@ -1312,7 +1317,9 @@ trait Types requires SymbolTable {
       case SingleType(pre, sym) =>
         if (sym.isPackageClass) tp // short path
         else {
+          val v = variance; variance = 0
           val pre1 = this(pre)
+          variance = v
           if (pre1 eq pre) tp
           else singleType(pre1, sym)
         }
@@ -1323,11 +1330,19 @@ trait Types requires SymbolTable {
         else SuperType(thistp1, supertp1)
       case TypeRef(pre, sym, args) =>
         val pre1 = this(pre)
-        val args1 = List.mapConserve(args)(this)
+        //val args1 = List.mapConserve(args)(this)
+        val args1 = if (args.isEmpty) args
+                    else {
+                      val tparams = sym.typeParams
+                      if (tparams.isEmpty) args
+                      else mapOverArgs(args, tparams)
+                    }
         if ((pre1 eq pre) && (args1 eq args)) tp
         else typeRef(pre1, sym, args1)
       case TypeBounds(lo, hi) =>
+        variance = -variance
         val lo1 = this(lo)
+        variance = -variance
         val hi1 = this(hi)
         if ((lo1 eq lo) && (hi1 eq hi)) tp
         else TypeBounds(lo1, hi1)
@@ -1338,6 +1353,8 @@ trait Types requires SymbolTable {
       case rtp @ RefinedType(parents, decls) =>
         val parents1 = List.mapConserve(parents)(this)
         val decls1 = mapOver(decls)
+        //if ((parents1 eq parents) && (decls1 eq decls)) tp
+        //else refinementOfClass(tp.symbol, parents1, decls1)
         copyRefinedType(rtp, parents1, decls1)
 /*
       case ClassInfoType(parents, decls, clazz) =>
@@ -1347,14 +1364,18 @@ trait Types requires SymbolTable {
         else cloneDecls(ClassInfoType(parents1, new Scope(), clazz), tp, decls1)
 */
       case MethodType(paramtypes, result) =>
+        variance = -variance
         val paramtypes1 = List.mapConserve(paramtypes)(this)
+        variance = -variance
         val result1 = this(result)
         if ((paramtypes1 eq paramtypes) && (result1 eq result)) tp
         else if (tp.isInstanceOf[ImplicitMethodType]) ImplicitMethodType(paramtypes1, result1)
         else if (tp.isInstanceOf[JavaMethodType]) JavaMethodType(paramtypes1, result1)
         else MethodType(paramtypes1, result1)
       case PolyType(tparams, result) =>
+        variance = -variance
         val tparams1 = mapOver(tparams)
+        variance = -variance
         var result1 = this(result)
         if ((tparams1 eq tparams) && (result1 eq result)) tp
         else PolyType(tparams1, result1.substSym(tparams, tparams1))
@@ -1374,6 +1395,16 @@ trait Types requires SymbolTable {
         tp
         // throw new Error("mapOver inapplicable for " + tp);
     }
+
+    def mapOverArgs(args: List[Type], tparams: List[Symbol]): List[Type] =
+      map2Conserve(args, tparams) { (arg, tparam) =>
+        val v = variance
+        if (tparam.isContravariant) variance = -variance
+        else if (!tparam.isCovariant) variance = 0
+        val arg1 = this(arg)
+        variance = v
+        arg1
+      }
 
     /** Map this function over given scope */
     private def mapOver(scope: Scope): Scope = {
@@ -1404,6 +1435,11 @@ trait Types requires SymbolTable {
 
   /** A map to compute the asSeenFrom method  */
   class AsSeenFromMap(pre: Type, clazz: Symbol) extends TypeMap {
+    def base(pre: Type, clazz: Symbol) = {
+      val b = pre.baseType(clazz)
+      if (b == NoType && clazz.isRefinementClass) pre
+      else b
+    }
     def apply(tp: Type): Type =
       if ((pre eq NoType) || (pre eq NoPrefix) || !clazz.isClass) tp
       else tp match {
@@ -1416,7 +1452,7 @@ trait Types requires SymbolTable {
                 case SuperType(thistp, _) => thistp
                 case _ => pre
               }
-            else toPrefix(pre.baseType(clazz).prefix, clazz.owner);
+            else toPrefix(base(pre, clazz).prefix, clazz.owner);
           toPrefix(pre, clazz)
         case TypeRef(prefix, sym, args) if (sym.isTypeParameter) =>
           def toInstance(pre: Type, clazz: Symbol): Type =
@@ -1444,7 +1480,7 @@ trait Types requires SymbolTable {
                   case _ =>
                     throwError
                 }
-              else toInstance(pre.baseType(clazz).prefix, clazz.owner)
+              else toInstance(base(pre, clazz).prefix, clazz.owner)
             }
           toInstance(pre, clazz)
         case _ =>
@@ -1949,6 +1985,18 @@ trait Types requires SymbolTable {
     System.arraycopy(cl, 0, cl1, 1, cl.length)
     cl1
   }
+
+  /** like map2, but returns list `xs' itself - instead of a copy - if function
+   *  <code>f</code> maps all elements to themselves.
+   */
+  def map2Conserve[A <: AnyRef, B](xs: List[A], ys: List[B])(f: (A, B) => A): List[A] =
+    if (xs.isEmpty) xs
+    else {
+      val x1 = f(xs.head, ys.head)
+      val xs1 = map2Conserve(xs.tail, ys.tail)(f)
+      if ((x1 eq xs.head) && (xs1 eq xs.tail)) xs
+      else x1 :: xs1
+    }
 
 // Lubs and Glbs ---------------------------------------------------------
 

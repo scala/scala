@@ -67,7 +67,7 @@ trait Variances {
     case ErrorType | WildcardType | NoType | NoPrefix | ThisType(_) | ConstantType(_) =>
       VARIANCES
     case SingleType(pre, sym) =>
-      cut(varianceInType(pre)(tparam))
+      varianceInType(pre)(tparam)
     case TypeRef(pre, sym, args) =>
       if (sym == tparam) COVARIANT
       else varianceInType(pre)(tparam) & varianceInArgs(args, sym.typeParams)(tparam)

@@ -1,0 +1,4 @@
+bug783.scala:12 error: stable identifier required, but Contexts.this.globalInit0 found.
+      globalInit0.Template(10, 20);
+      ^
+one error found

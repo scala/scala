@@ -289,12 +289,28 @@ trait Typers requires Analyzer {
         assert(tree.tpe != null, tree)//debug
         apply(tree.tpe)
         if (badSymbol == NoSymbol) tree
+        else if (badSymbol.isErroneous) setError(tree)
         else {
-          if (!badSymbol.isErroneous)
+          val tp1 = heal(tree.tpe)
+          if (tp1 eq tree.tpe) {
             error(tree.pos,
-                  (if (badSymbol.hasFlag(PRIVATE)) "private " else "") + badSymbol +
-                  " escapes its defining scope as part of type "+tree.tpe)
-          setError(tree)
+              (if (badSymbol hasFlag PRIVATE) "private " else "") + badSymbol +
+              " escapes its defining scope as part of type "+tree.tpe)
+            setError(tree)
+          } else
+            check(owner, scope, tree setType tp1)
+        }
+      }
+
+      object heal extends TypeMap {
+        def apply(tp: Type): Type = tp match {
+          case SingleType(pre, sym) =>
+            if ((variance == 1) && (pre contains badSymbol)) {
+              val tp1 = tp.widen
+              if (tp1 contains badSymbol) tp else tp1
+            } else tp
+          case _ =>
+            mapOver(tp)
         }
       }
 
