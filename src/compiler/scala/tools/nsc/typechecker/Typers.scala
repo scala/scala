@@ -186,6 +186,8 @@ trait Typers requires Analyzer {
             }
           if (context.retyping) context.error(pos, msg)
           else context.unit.error(pos, msg)
+          if (sym == ObjectClass)
+            throw new FatalError("cannot redefine root "+sym)
         case _ =>
           context.error(pos, ex)
       }
@@ -291,7 +293,14 @@ trait Typers requires Analyzer {
         if (badSymbol == NoSymbol) tree
         else if (badSymbol.isErroneous) setError(tree)
         else {
-          val tp1 = heal(tree.tpe)
+          val tp1 = try {
+            heal(tree.tpe)
+          } catch {
+            case ex: MalformedType =>
+              tree.tpe
+              // revert to `tree.tpe', because the healing widening operation would introduce
+              // a malformed type
+          }
           if (tp1 eq tree.tpe) {
             error(tree.pos,
               (if (badSymbol hasFlag PRIVATE) "private " else "") + badSymbol +

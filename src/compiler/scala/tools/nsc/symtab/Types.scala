@@ -1107,18 +1107,26 @@ trait Types requires SymbolTable {
     if (phase.erasedTypes) sym.tpe else unique(new ThisType(sym) with UniqueType)
 
   /** The canonical creator for single-types */
-  def singleType(pre: Type, sym: Symbol): Type = {
+  def singleType(pre: Type, sym: Symbol): Type = singleType(pre, sym, 0)
+
+  /** The canonical creator for single-types,
+   *  with possibility of approximating in case of malformed types */
+  def singleType(pre: Type, sym: Symbol, variance: int): Type = {
     if (phase.erasedTypes)
       sym.tpe.resultType
-    else if (checkMalformedSwitch && !pre.isStable && !pre.isError)
-      throw new MalformedType(pre, sym.name.toString())
     else if (sym.isRootPackage)
       ThisType(RootClass)
     else {
       var sym1 = rebind(pre, sym)
       val pre1 = removeSuper(pre, sym1)
       if (pre1 ne pre) sym1 = rebind(pre1, sym1)
-      unique(new SingleType(pre1, sym1) with UniqueType)
+      if (checkMalformedSwitch && !pre1.isStable && !pre1.isError) {
+        if (variance == 1) pre.memberType(sym).resultType
+        else if (variance == -1) AllClass.tpe
+        else throw new MalformedType(pre, sym.nameString)
+      } else {
+        unique(new SingleType(pre1, sym1) with UniqueType)
+      }
     }
   }
 
@@ -1173,17 +1181,14 @@ trait Types requires SymbolTable {
   def ConstantType(value: Constant): ConstantType =
     unique(new ConstantType(value) with UniqueType)
 
-  /** The canonical creator for typerefs.
-   *
-   *  @param pre  ...
-   *  @param sym  ...
-   *  @param args ...
-   *  @return     ...
-   */
-  def typeRef(pre: Type, sym: Symbol, args: List[Type]): Type = {
+
+  /** The canonical creator for typerefs. */
+  def typeRef(pre: Type, sym: Symbol, args: List[Type]): Type = typeRef(pre, sym, args, 0)
+
+  /** The canonical creator for typerefs,
+   *  with possibility of approximating in case of malformed types */
+  def typeRef(pre: Type, sym: Symbol, args: List[Type], variance: int): Type = {
     var sym1 = if (sym.isAbstractType) rebind(pre, sym) else sym
-    if (checkMalformedSwitch && sym1.isAbstractType && !pre.isStable && !pre.isError)
-      throw new MalformedType(pre, sym.nameString)
     if (sym1.isAliasType && sym1.info.typeParams.length == args.length) {
       // note: we require that object is initialized,
       // that's why we use info.typeParams instead of typeParams.
@@ -1197,7 +1202,13 @@ trait Types requires SymbolTable {
       val pre1 = removeSuper(pre, sym1)
       if (pre1 ne pre) {
         if (sym1.isAbstractType) sym1 = rebind(pre1, sym1)
-        typeRef(pre1, sym1, args)
+        typeRef(pre1, sym1, args, variance)
+      } else if (checkMalformedSwitch && sym1.isAbstractType && !pre.isStable && !pre.isError) {
+        def transform(tp: Type): Type =
+          tp.asSeenFrom(pre, sym1.owner).subst(sym1.typeParams, args)
+        if (variance == 1 && !(sym1.info.bounds.hi contains sym1)) transform(sym1.info.bounds.hi)
+        else if (variance == -1 && !(sym1.info.bounds.lo contains sym1)) transform(sym1.info.bounds.lo)
+        else throw new MalformedType(pre, sym1.nameString)
       } else {
         rawTypeRef(pre, sym1, args)
       }
@@ -1321,7 +1332,7 @@ trait Types requires SymbolTable {
           val pre1 = this(pre)
           variance = v
           if (pre1 eq pre) tp
-          else singleType(pre1, sym)
+          else singleType(pre1, sym, variance)
         }
       case SuperType(thistp, supertp) =>
         val thistp1 = this(thistp)
@@ -1338,7 +1349,7 @@ trait Types requires SymbolTable {
                       else mapOverArgs(args, tparams)
                     }
         if ((pre1 eq pre) && (args1 eq args)) tp
-        else typeRef(pre1, sym, args1)
+        else typeRef(pre1, sym, args1, variance)
       case TypeBounds(lo, hi) =>
         variance = -variance
         val lo1 = this(lo)
@@ -1435,6 +1446,12 @@ trait Types requires SymbolTable {
 
   /** A map to compute the asSeenFrom method  */
   class AsSeenFromMap(pre: Type, clazz: Symbol) extends TypeMap {
+    /** Return pre.baseType(clazz), or if that's NoType and clazz is a refinement, pre itself.
+     *  See bug397.scala for an example where the second alternative is needed.
+     *  The problem is that when forming the closure of an abstract type,
+     *  any refinements in the base type list might be regenerated, and thus acquire
+     *  new class symbols. However, since refinements always have non-interesting prefixes
+     *  it looks OK to me to just take the prefix directly. */
     def base(pre: Type, clazz: Symbol) = {
       val b = pre.baseType(clazz)
       if (b == NoType && clazz.isRefinementClass) pre
@@ -1522,8 +1539,8 @@ trait Types requires SymbolTable {
   class SubstSymMap(from: List[Symbol], to: List[Symbol])
   extends SubstMap(from, to) {
     protected def toType(fromtp: Type, sym: Symbol) = fromtp match {
-      case TypeRef(pre, _, args) => typeRef(pre, sym, args)
-      case SingleType(pre, _) => singleType(pre, sym)
+      case TypeRef(pre, _, args) => typeRef(pre, sym, args, variance)
+      case SingleType(pre, _) => singleType(pre, sym, variance)
     }
     override def apply(tp: Type): Type = {
       def subst(sym: Symbol, from: List[Symbol], to: List[Symbol]): Symbol =
@@ -1532,9 +1549,9 @@ trait Types requires SymbolTable {
         else subst(sym, from.tail, to.tail)
       tp match {
         case TypeRef(pre, sym, args) if !(pre eq NoPrefix) =>
-          mapOver(typeRef(pre, subst(sym, from, to), args))
+          mapOver(typeRef(pre, subst(sym, from, to), args, variance))
         case SingleType(pre, sym) if !(pre eq NoPrefix) =>
-          mapOver(singleType(pre, subst(sym, from, to)))
+          mapOver(singleType(pre, subst(sym, from, to), variance))
         case _ =>
           super.apply(tp)
       }
@@ -1648,7 +1665,7 @@ trait Types requires SymbolTable {
         val rebind = rebind0.suchThat(sym => sym.isType || sym.isStable)
         if (rebind == NoSymbol) {
           if (settings.debug.value) Console.println("" + phase + " " + phase.flatClasses+sym.owner+sym.name)
-          throw new MalformedType(pre, sym.name.toString())
+          throw new MalformedType(pre, sym.nameString)
         }
         rebind
       }
@@ -1663,7 +1680,7 @@ trait Types requires SymbolTable {
           val pre1 = this(pre)
           val sym1 = adaptToNewRun(pre1, sym)
           if ((pre1 eq pre) && (sym1 eq sym)) tp
-          else singleType(pre1, sym1)
+          else singleType(pre1, sym1, variance)
         }
       case TypeRef(pre, sym, args) =>
         if (sym.isPackageClass) tp
@@ -1672,7 +1689,7 @@ trait Types requires SymbolTable {
           val args1 = List.mapConserve(args)(this)
           val sym1 = adaptToNewRun(pre1, sym)
           if ((pre1 eq pre) && (sym1 eq sym) && (args1 eq args)/* && sym.isExternal*/) tp
-          else typeRef(pre1, sym1, args1)
+          else typeRef(pre1, sym1, args1, variance)
         }
       case PolyType(tparams, restp) =>
         val restp1 = this(restp)
@@ -2347,7 +2364,7 @@ trait Types requires SymbolTable {
              else NoType))
       try {
         if (args contains NoType) None
-        else Some(typeRef(pre, sym, args))
+        else Some(typeRef(pre, sym, args, variance))
       } catch {
         case ex: MalformedType => None
       }
@@ -2355,7 +2372,7 @@ trait Types requires SymbolTable {
       val pres = tps map (.prefix)
       val pre = if (variance == 1) lub(pres) else glb(pres)
       try {
-        Some(singleType(pre, sym))
+        Some(singleType(pre, sym, variance))
       } catch {
         case ex: MalformedType => None
       }
