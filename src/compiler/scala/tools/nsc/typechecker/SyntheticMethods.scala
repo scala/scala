@@ -220,8 +220,10 @@ trait SyntheticMethods requires Analyzer {
         if (!hasImplementation(nme.caseElement)) ts += caseElementMethod
         if (!hasImplementation(nme.caseArity)) ts += caseArityMethod
         if (!hasImplementation(nme.caseName)) ts += caseNameMethod
-        for (val i <- 0 until clazz.caseFieldAccessors.length) {
-          val acc = clazz.caseFieldAccessors(i)
+
+	val accessors = if(clazz hasFlag CASE) clazz.caseFieldAccessors else clazz.constrParamAccessors
+        for (val i <- 0 until accessors.length) {
+          val acc = accessors(i)
           if (acc.name.toString != "_"+(i+1)) ts += productSelectorMethod(i+1, acc)
         }
       }
