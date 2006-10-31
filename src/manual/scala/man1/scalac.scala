@@ -101,6 +101,14 @@ object scalac extends Command {
           CmdOption("d", Argument("directory")),
           "Specify where to place generated class files."),
         Definition(
+          CmdOption("deprecation"),
+          SeqPara(
+            "Indicates whether source should be compiled with deprecation " &
+            "information; defaults to " & Mono("off") & " (" &
+            "accepted values are: " & Mono("on") & ", " & Mono("off") &
+            ", " & Mono("yes") & " and " & Mono("no") & ")",
+            "Available since Scala version 2.2.1")),
+        Definition(
           CmdOption("encoding", Argument("encoding")),
           SeqPara(
             "Specify character encoding used by source files.",
@@ -108,7 +116,7 @@ object scalac extends Command {
             ", Windows: " & Mono("\"Cp1252\"") & "). Executing the following " &
             "code in the Scala interpreter will return the default value " &
             "on your system:",
-            MBold("    scala>") &
+            MBold("    scala> ") &
             Mono("new java.io.InputStreamReader(System.in).getEncoding"))),
         Definition(
           CmdOption("target:", Argument("target")),
