@@ -225,7 +225,7 @@ trait Types requires SymbolTable {
           }
 */
         case _ =>
-          //System.out.println("" + this.widen + ".memberType(" + sym +":" + sym.tpe +")" + sym.ownerChain);//DEBUG
+          //System.out.println("" + this + ".memberType(" + sym +":" + sym.tpe +")" + sym.ownerChain);//DEBUG
           sym.tpe.asSeenFrom(this, sym.owner)
       }
     }
@@ -876,6 +876,8 @@ trait Types requires SymbolTable {
     def transform(tp: Type): Type =
       tp.asSeenFrom(pre, sym.owner).subst(sym.typeParams, args)
 
+    def thisInfo = if (sym.isAbstractType) transform(sym.info) else sym.info
+
     def transform(cl: Array[Type]): Array[Type] = {
       val cl1 = new Array[Type](cl.length)
       var i = 0
@@ -886,7 +888,7 @@ trait Types requires SymbolTable {
     override def symbol = sym
 
     override def bounds: TypeBounds =
-      if (sym.isAbstractType) transform(sym.info.bounds).asInstanceOf[TypeBounds]
+      if (sym.isAbstractType) transform(thisInfo.bounds).asInstanceOf[TypeBounds]
       else super.bounds
 
     override def parents: List[Type] = {
@@ -894,7 +896,7 @@ trait Types requires SymbolTable {
       if (period != currentPeriod) {
         parentsPeriod = currentPeriod
         if (!isValidForBaseClasses(period)) {
-          parentsCache = sym.info.parents map transform
+          parentsCache = thisInfo.parents map transform
         }
       }
       parentsCache
@@ -918,7 +920,7 @@ trait Types requires SymbolTable {
           assert(sym1 != symbol, this)
         case _ =>
       }
-      sym.info.decls
+      thisInfo.decls
     }
 
     override def baseType(clazz: Symbol): Type =
@@ -941,7 +943,7 @@ trait Types requires SymbolTable {
       closureCache
     }
 
-    override def baseClasses: List[Symbol] = sym.info.baseClasses
+    override def baseClasses: List[Symbol] = thisInfo.baseClasses
 
     // override def isNullable: boolean = sym.info.isNullable
 
@@ -961,9 +963,9 @@ trait Types requires SymbolTable {
       else if (sym.isModuleClass)
         objectPrefix + str
       else if (sym.isAnonymousClass && sym.isInitialized && !settings.debug.value)
-        sym.info.parents.mkString("", " with ", "{ ... }")
+        thisInfo.parents.mkString("", " with ", "{ ... }")
       else if (sym.isRefinementClass && sym.isInitialized)
-        sym.info.toString()
+        thisInfo.toString()
       else str
     }
 

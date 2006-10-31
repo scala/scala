@@ -2053,21 +2053,26 @@ trait Parsers requires SyntaxAnalyzer {
      */
     def compilationUnit(): Tree =
       atPos(in.currentPos) {
+        val ts = new ListBuffer[Tree]
         if (in.token == PACKAGE) {
           in.nextToken()
           val pkg = qualId()
-          if (in.token == SEMI || in.token == NEWLINE) {
+          if (in.token == SEMI || in.token == NEWLINE || in.token == EOF) {
             in.nextToken()
-            makePackaging(pkg, topStatSeq())
+            ts += makePackaging(pkg, topStatSeq())
           } else {
             accept(LBRACE)
-            val t =  makePackaging(pkg, topStatSeq())
+            ts += makePackaging(pkg, topStatSeq())
             accept(RBRACE)
-            if (in.token == SEMI || in.token == NEWLINE) in.nextToken()
-            t
+            ts ++= topStatSeq()
           }
         } else {
-          makePackaging(Ident(nme.EMPTY_PACKAGE_NAME), topStatSeq())
+          ts ++= topStatSeq()
+        }
+        val stats = ts.toList
+        stats match {
+          case List(stat @ PackageDef(_, _)) => stat
+          case _ => makePackaging(Ident(nme.EMPTY_PACKAGE_NAME), stats)
         }
       }
   }
