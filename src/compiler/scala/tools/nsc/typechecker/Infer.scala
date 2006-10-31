@@ -272,29 +272,29 @@ trait Infer requires Analyzer {
      */
     private def withDisambiguation[T](tp1: Type, tp2: Type)(op: => T): T = {
 
-      def explainName(sym: Symbol) = { sym.name = newTypeName("<"+sym+" in "+sym.owner+">") }
+      def explainName(sym: Symbol) = { sym.name = newTypeName(sym.name.toString+"(in "+sym.owner+")") }
 
       val patches = {
-        val tparams1 = freeTypeParams.collect(tp1)
-        val tparams2 = freeTypeParams.collect(tp2)
+        val syms1 = typeRefs.collect(tp1)
+        val syms2 = typeRefs.collect(tp2)
         for {
-          val tparam1 <- tparams1
-          val tparam2 <- tparams2
-          tparam1 != tparam2 && tparam1.name == tparam2.name
+          val sym1 <- syms1
+          val sym2 <- syms2
+          sym1 != sym2 && sym1.name == sym2.name
         } yield {
-          val name = tparam1.name
-          explainName(tparam1)
-          explainName(tparam2)
-          if (tparam1.owner == tparam2.owner) tparam2.name = newTypeName("some other "+tparam2.name)
-          Triple(tparam1, tparam2, tparam1.name)
+          val name = sym1.name
+          explainName(sym1)
+          explainName(sym2)
+          if (sym1.owner == sym2.owner) sym2.name = newTypeName("(some other)"+sym2.name)
+          Triple(sym1, sym2, sym1.name)
         }
       }
 
       val result = op
 
-      for (val Triple(tparam1, tparam2, name) <- patches) {
-        tparam1.name = name
-        tparam2.name = name
+      for (val Triple(sym1, sym2, name) <- patches) {
+        sym1.name = name
+        sym2.name = name
       }
 
       result
@@ -877,18 +877,14 @@ trait Infer requires Analyzer {
       }
     }
 
-    abstract class FreeSymCollector extends TypeTraverser {
+    abstract class SymCollector extends TypeTraverser {
       private var result: List[Symbol] = _
       protected def includeCondition(sym: Symbol): boolean
-      private def include(sym: Symbol): unit =
-        if (includeCondition(sym) && !result.contains(sym)) result = sym :: result
 
       override def traverse(tp: Type): TypeTraverser = {
         tp match {
-          case TypeRef(NoPrefix, sym, _) =>
-            include(sym)
-          case TypeRef(ThisType(_), sym, _) =>
-            include(sym)
+          case TypeRef(_, sym, _) =>
+            if (includeCondition(sym) && !result.contains(sym)) result = sym :: result
           case _ =>
         }
         mapOver(tp)
@@ -909,13 +905,12 @@ trait Infer requires Analyzer {
 
     /** A traverser to collect type parameters referred to in a type
      */
-    object freeTypeParamsOfTerms extends FreeSymCollector {
+    object freeTypeParamsOfTerms extends SymCollector {
       protected def includeCondition(sym: Symbol): boolean = sym.isAbstractType && sym.owner.isTerm
     }
 
-    object freeTypeParams extends FreeSymCollector {
-      protected def includeCondition(sym: Symbol): boolean =
-        sym.isAbstractType && (sym.owner.isTerm || (sym hasFlag PARAM))
+    object typeRefs extends SymCollector {
+      protected def includeCondition(sym: Symbol): boolean = true
     }
 
     /* -- Overload Resolution ---------------------------------------------- */
