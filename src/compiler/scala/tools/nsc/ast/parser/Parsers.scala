@@ -535,6 +535,7 @@ trait Parsers requires SyntaxAnalyzer {
             accept(RPAREN)
             atPos(accept(ARROW)) { makeByNameFunctionTypeTree(t0, typ()) }
           } else {
+            val pos = in.currentPos
             val t0 = typ()
             if (in.token == COMMA) {
               in.nextToken()
@@ -542,7 +543,8 @@ trait Parsers requires SyntaxAnalyzer {
               accept(RPAREN)
               atPos (accept(ARROW)) { makeFunctionTypeTree(ts.toList, typ()) }
             } else {
-              accept(RPAREN); t0
+              accept(RPAREN)
+              type1rest(pos, t0, false)
             }
           }
         } else {
@@ -556,9 +558,11 @@ trait Parsers requires SyntaxAnalyzer {
     /** Type1 ::= SimpleType {with SimpleType} [Refinement]
      *  TypePattern1 ::= SimpleTypePattern [TypePatternArgs]
      */
-    def type1(isPattern: boolean): Tree = {
-      val pos = in.currentPos
-      var ts = new ListBuffer[Tree] + simpleType(isPattern)
+    def type1(isPattern: boolean): Tree =
+      type1rest(in.currentPos, simpleType(isPattern), isPattern)
+
+    def type1rest(pos: int, t: Tree, isPattern: boolean): Tree = {
+      var ts = new ListBuffer[Tree] + t
       while (in.token == WITH && !isPattern) {
         in.nextToken(); ts += simpleType(isPattern)
       }
