@@ -64,8 +64,6 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
         TimerThread.trashRequest(receiver)
       }
 
-      // TODO: transmit call to protocol
-
       if (isSuspended)
         receiver.resumeActor()
       else
@@ -114,7 +112,6 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
    */
   def receive[R](f: PartialFunction[Msg, R]): R = {
     assert(Actor.self == receiver, "receive from channel belonging to other actor")
-    //assert(receiver.isThreaded, "receive invoked from reactor")
     receiver.synchronized {
       receiver.tick()
       waitingFor = f.isDefinedAt
@@ -136,7 +133,6 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
       }) match {
         case Some(Pair(msg, sender)) => {
           received = msg
-	  // TODO: call to delivery protocol action
           receiver.pushSender(sender)
         }
         case None => {
@@ -153,14 +149,12 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
     }
     receiver.resetActor()
     val result = f(received)
-    // TODO: call to complete protocol action
     receiver.popSender()
     result
   }
 
   private[actors] def receiveFrom[R](r: Actor)(f: PartialFunction[Msg, R]): R = {
     assert(Actor.self == receiver, "receive from channel belonging to other actor")
-    //assert(receiver.isThreaded, "receive invoked from reactor")
     receiver.synchronized {
       receiver.tick()
       waitingFor = f.isDefinedAt
@@ -213,7 +207,6 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
    */
   def receiveWithin[R](msec: long)(f: PartialFunction[Any, R]): R = {
     assert(Actor.self == receiver, "receive from channel belonging to other actor")
-    //assert(receiver.isThreaded, "receive invoked from reactor")
     receiver.synchronized {
       receiver.tick()
       waitingFor = f.isDefinedAt
@@ -300,7 +293,6 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
           received = msg
           receiver.pushSender(sender)
           waitingFor = waitingForNone
-          // TODO: call to delivery protocol action
           receiver.scheduleActor(f, received)
         }
         case None => {
