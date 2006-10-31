@@ -53,6 +53,7 @@ object Predef {
   type Triple[+a, +b, +c] = Tuple3[a, b, c]
   def Triple[a, b, c](x: a, y: b, z: c) = Tuple3(x, y, z)
 
+  def Tuple[a1](x1: a1) = Tuple1(x1)
   def Tuple[a1, a2](x1: a1, x2: a2) = Tuple2(x1, x2)
   def Tuple[a1, a2, a3](x1: a1, x2: a2, x3: a3) = Tuple3(x1, x2, x3)
   def Tuple[a1, a2, a3, a4](x1: a1, x2: a2, x3: a3, x4: a4) = Tuple4(x1, x2, x3, x4)
