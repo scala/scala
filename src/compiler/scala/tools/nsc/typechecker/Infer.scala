@@ -272,7 +272,11 @@ trait Infer requires Analyzer {
      */
     private def withDisambiguation[T](tp1: Type, tp2: Type)(op: => T): T = {
 
-      def explainName(sym: Symbol) = { sym.name = newTypeName(sym.name.toString+"(in "+sym.owner+")") }
+      def explainName(sym: Symbol) = {
+        if (!sym.name.toString.endsWith(")")) {
+          sym.name = newTypeName(sym.name.toString+"(in "+sym.owner+")")
+        }
+      }
 
       val patches = {
         val syms1 = typeRefs.collect(tp1)
@@ -286,7 +290,7 @@ trait Infer requires Analyzer {
           explainName(sym1)
           explainName(sym2)
           if (sym1.owner == sym2.owner) sym2.name = newTypeName("(some other)"+sym2.name)
-          Triple(sym1, sym2, sym1.name)
+          Triple(sym1, sym2, name)
         }
       }
 

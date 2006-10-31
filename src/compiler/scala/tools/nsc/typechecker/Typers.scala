@@ -501,8 +501,9 @@ trait Typers requires Analyzer {
       case mt: MethodType
       if (((mode & (EXPRmode | FUNmode | LHSmode)) == EXPRmode) &&
           (context.undetparams.isEmpty || (mode & POLYmode) != 0)) =>
-        if (!tree.symbol.isConstructor && pt != WildcardType &&
-            isCompatible(tparamsToWildcards(mt, context.undetparams), pt) &&
+        if (!tree.symbol.isConstructor &&
+            //isCompatible(tparamsToWildcards(mt, context.undetparams), pt) &&
+            pt != WildcardType &&
             (pt <:< functionType(mt.paramTypes map (t => WildcardType), WildcardType))) { // (4.2)
           if (settings.debug.value) log("eta-expanding "+tree+":"+tree.tpe+" to "+pt)
           checkParamsConvertible(tree.pos, tree.tpe)
@@ -599,7 +600,7 @@ trait Typers requires Analyzer {
         } else if (tree.tpe <:< pt) {
           tree
         } else if ((mode & PATTERNmode) != 0) {
-          if (tree.symbol.isModule) inferModulePattern(tree, pt)
+          if (tree.symbol != null && tree.symbol.isModule) inferModulePattern(tree, pt)
           tree
         } else {
           val tree1 = constfold(tree, pt) // (10) (11)
@@ -1911,7 +1912,7 @@ trait Typers requires Analyzer {
             case ErrorType =>
               expr1
             case _ =>
-              errorTree(expr1, "`&' must be applied to method type; cannot be applied to " + expr1.tpe)
+              errorTree(expr1, "`&' must be applied to method; cannot be applied to " + expr1.tpe)
           }
 
         case Typed(expr, tpt @ Ident(name)) if (name == nme.WILDCARD_STAR.toTypeName) =>

@@ -1,0 +1,6 @@
+bug752.scala:6 error: type mismatch;
+ found   : (java.lang.String) => scala.Unit
+ required: (scala.Int) => scala.Unit
+                f(&g)
+                   ^
+one error found
