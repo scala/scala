@@ -745,13 +745,13 @@ trait Infer requires Analyzer {
           val ptvars = ptparams map freshVar
           val pt1 = pt.subst(ptparams, ptvars)
           if (isPopulated(restpe, pt1)) {
-            ptvars foreach instantiateTypeVar(false)
+            ptvars foreach instantiateTypeVar
           } else { if (settings.debug.value) System.out.println("no instance: "); instError }
         } else { if (settings.debug.value) System.out.println("not a subtype " + restpe.subst(undetparams, tvars) + " of " + ptWithWildcards); instError }
       } else { if (settings.debug.value) System.out.println("not fuly defined: " + pt); instError }
     }
 
-    def instantiateTypeVar(aliasOK: boolean)(tvar: TypeVar) = {
+    def instantiateTypeVar(tvar: TypeVar) = {
       val tparam = tvar.origin.symbol
       if (false &&
           tvar.constr.inst != NoType &&
@@ -851,12 +851,24 @@ trait Infer requires Analyzer {
             error(tpt.pos, "pattern type is incompatibe with expected type"+foundReqMsg(tpt.tpe, pt))
             return tpt.tpe
           }
-          ptvars foreach instantiateTypeVar(false)
+          ptvars foreach instantiateTypeVar
         }
-        tvars foreach instantiateTypeVar(true)
+        tvars foreach instantiateTypeVar
       }
       intersect(pt, tpt.tpe)
     }
+
+    def inferModulePattern(pat: Tree, pt: Type) =
+      if (!(pat.tpe <:< pt)) {
+        val ptparams = freeTypeParamsOfTerms.collect(pt)
+        if (settings.debug.value) log("free type params (2) = " + ptparams)
+        val ptvars = ptparams map freshVar
+        val pt1 = pt.subst(ptparams, ptvars)
+        if (pat.tpe <:< pt1)
+          ptvars foreach instantiateTypeVar
+        else
+          error(pat.pos, "pattern type is incompatibe with expected type"+foundReqMsg(pat.tpe, pt))
+      }
 
     object toOrigin extends TypeMap {
       def apply(tp: Type): Type = tp match {

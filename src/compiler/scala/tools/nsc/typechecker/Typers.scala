@@ -596,9 +596,10 @@ trait Typers requires Analyzer {
           typed(atPos(tree.pos)(Select(qual, nme.apply)), mode, pt)
         } else if (!context.undetparams.isEmpty && (mode & POLYmode) == 0) { // (9)
           instantiate(tree, mode, pt)
-        } else if ((mode & PATTERNmode) != 0) {
-          tree
         } else if (tree.tpe <:< pt) {
+          tree
+        } else if ((mode & PATTERNmode) != 0) {
+          if (tree.symbol.isModule) inferModulePattern(tree, pt)
           tree
         } else {
           val tree1 = constfold(tree, pt) // (10) (11)
