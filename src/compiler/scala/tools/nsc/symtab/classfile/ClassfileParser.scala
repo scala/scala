@@ -68,7 +68,9 @@ abstract class ClassfileParser {
     busy = true
     root match {
       case cs : ClassSymbol => cs.classFile = file;
+      case ms : ModuleSymbol => ms.moduleClass.asInstanceOf[ClassSymbol].classFile = file;
       case _ =>
+        Console.println("Skipping class: " + root + ": " + root.getClass);
     }
 
     this.in = new AbstractFileReader(file)
@@ -200,7 +202,7 @@ abstract class ClassfileParser {
           f = owner.info.decl(name).suchThat(.tpe.=:=(tpe))
           if (f == NoSymbol) {
             // if it's an impl class, try to find it's static member inside the class
-            assert(cls.isImplClass, "Not an implementation class: " + cls);
+            assert(cls.isImplClass, "Not an implementation class: " + owner + " couldn't find " + name + ": " + tpe);
             f = cls.info.decl(name).suchThat(.tpe.=:=(tpe))
           }
         }
@@ -292,7 +294,7 @@ abstract class ClassfileParser {
       throw new RuntimeException("bad constant pool tag " + in.buf(start) + " at byte " + start)
   }
 
-  private def sigToType(name: Name): Type = {
+  def sigToType(name: Name): Type = {
     var index = 0
     val end = name.length
     def objToAny(tp: Type): Type =
@@ -329,6 +331,8 @@ abstract class ClassfileParser {
     sig2type
   }
 
+  var sawPrivateConstructor = false
+
   def parseClass(): unit = {
     val jflags = in.nextChar
     val isAttribute = (jflags & JAVA_ACC_ANNOTATION) != 0
@@ -336,7 +340,7 @@ abstract class ClassfileParser {
     if ((sflags & DEFERRED) != 0) sflags = sflags & ~DEFERRED | ABSTRACT
     val c = pool.getClassSymbol(in.nextChar)
     if (c != clazz)
-      throw new IOException("class file '" + in.file + "' contains wrong " + clazz)
+      throw new IOException("class file '" + in.file + "' contains wrong " + c)
     val superType = if (isAttribute) { in.nextChar; definitions.AttributeClass.tpe }
                     else pool.getSuperClass(in.nextChar).tpe
     val ifaceCount = in.nextChar
@@ -365,9 +369,11 @@ abstract class ClassfileParser {
       in.bp = curbp
       val fieldCount = in.nextChar
       for (val i <- 0 until fieldCount) parseField()
+      sawPrivateConstructor = false
       val methodCount = in.nextChar
       for (val i <- 0 until methodCount) parseMethod()
-      if ((instanceDefs.lookup(nme.CONSTRUCTOR) == NoSymbol &&
+      if (!sawPrivateConstructor &&
+          (instanceDefs.lookup(nme.CONSTRUCTOR) == NoSymbol &&
            (sflags & INTERFACE) == 0))
         {
           //Console.println("adding constructor to " + clazz);//DEBUG
@@ -412,23 +418,30 @@ abstract class ClassfileParser {
   def parseMethod(): unit = {
     val jflags = in.nextChar
     var sflags = transFlags(jflags)
-    if ((jflags & JAVA_ACC_BRIDGE) != 0) sflags = sflags | PRIVATE
-    if ((sflags & PRIVATE) != 0) {
-      in.skip(4); skipAttributes()
-    } else {
+    if ((jflags & JAVA_ACC_PRIVATE) != 0) {
       val name = pool.getName(in.nextChar)
-      var info = pool.getType(in.nextChar)
       if (name == nme.CONSTRUCTOR)
-        info match {
-          case MethodType(formals, restpe) =>
-            assert(restpe.symbol == definitions.UnitClass)
-            info = MethodType(formals, clazz.tpe)
-        }
-      val sym = getOwner(jflags)
-        .newMethod(NoPos, name).setFlag(sflags).setInfo(info)
-      setPrivateWithin(sym, jflags)
-      parseAttributes(sym, info)
-      getScope(jflags).enter(sym)
+        sawPrivateConstructor = true
+      in.skip(2); skipAttributes()
+    } else {
+      if ((jflags & JAVA_ACC_BRIDGE) != 0) sflags = sflags | PRIVATE
+      if ((sflags & PRIVATE) != 0) {
+        in.skip(4); skipAttributes()
+      } else {
+        val name = pool.getName(in.nextChar)
+        var info = pool.getType(in.nextChar)
+        if (name == nme.CONSTRUCTOR)
+          info match {
+            case MethodType(formals, restpe) =>
+              assert(restpe.symbol == definitions.UnitClass)
+              info = MethodType(formals, clazz.tpe)
+          }
+        val sym = getOwner(jflags)
+          .newMethod(NoPos, name).setFlag(sflags).setInfo(info)
+        setPrivateWithin(sym, jflags)
+        parseAttributes(sym, info)
+        getScope(jflags).enter(sym)
+      }
     }
   }
 
