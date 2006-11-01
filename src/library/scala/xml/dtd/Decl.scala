@@ -13,7 +13,6 @@ package scala.xml.dtd;
 
 
 import compat.StringBuilder
-import compat.Platform.IllegalArgumentException
 
 abstract class Decl;
 

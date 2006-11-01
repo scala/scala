@@ -5,7 +5,7 @@ abstract class Bug360A requires Bug360C {
 }
 trait Bug360B requires Bug360C {
   object d {
-    System.out.println(f);
+    Console.println(f);
   }
 }
 abstract class Bug360C extends Bug360A with Bug360B;

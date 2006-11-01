@@ -7,6 +7,8 @@
 
 package scala.tools.nsc
 
+import java.lang.System.getProperty
+import java.lang.{ClassNotFoundException, NoSuchMethodException}
 import java.io.File
 import java.lang.reflect.InvocationTargetException
 
@@ -20,7 +22,7 @@ object MainGenericRunner {
     * input classpath is empty; otherwise do not.
     */
   def addClasspathExtras(classpath: String): String = {
-    val scalaHome = System.getProperty("scala.home")
+    val scalaHome = getProperty("scala.home")
     if (scalaHome == null)
       return classpath
 
@@ -62,8 +64,7 @@ object MainGenericRunner {
     }
 
     if (settings.version.value) {
-      val version =
-        System.getProperty("scala.tool.version", "unknown version")
+      val version = getProperty("scala.tool.version", "unknown version")
       Console.println(
           "Scala code runner version " + version + " -- " +
            "(c) 2002-2006 LAMP/EPFL")

@@ -25,9 +25,9 @@ def id[X](x: X): X = x;
 
 def apply[X](f: X => X, x: X): X = f(x);
 
-def id_obj(x: Object): Object = x;
+def id_obj(x: AnyRef): AnyRef = x;
 
-def apply_obj(f: Object => Object, x: Object): Object = f(x);
+def apply_obj(f: AnyRef => AnyRef, x: AnyRef): AnyRef = f(x);
 
 def id_any(x: scala.Any): scala.Any = x;
 

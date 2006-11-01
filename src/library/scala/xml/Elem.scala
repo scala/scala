@@ -12,8 +12,6 @@
 package scala.xml;
 
 
-import compat.Platform.IllegalArgumentException
-
 /** The case class <code>Elem</code> extends the Node class,
  *  providing an immutable data object representing an XML element.
  *

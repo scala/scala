@@ -7,7 +7,7 @@ object main {
     object b {
 
       trait c {}
-      def foo(x: c): c = { System.out.println("foo(" + x + ")"); x }
+      def foo(x: c): c = { Console.println("foo(" + x + ")"); x }
 
     }
 
@@ -17,6 +17,6 @@ object main {
   def main(args: Array[String]) = {
     val aa = new a;
     val xx: aa.b.c = null;
-    System.out.println(aa.bar(xx));
+    Console.println(aa.bar(xx));
   }
 }

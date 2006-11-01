@@ -12,7 +12,7 @@ class HashSet[T >: Null <: AnyRef](initialCapacity: int) extends Set[T] {
 
   private var capacity = initialCapacity
   private var used = 0
-  private var table = new Array[Object](capacity)
+  private var table = new Array[AnyRef](capacity)
 
   def size: int = used
 
@@ -53,7 +53,7 @@ class HashSet[T >: Null <: AnyRef](initialCapacity: int) extends Set[T] {
   private def growTable: unit = {
     val oldtable = table
     capacity = capacity * 2
-    table = new Array[Object](capacity)
+    table = new Array[AnyRef](capacity)
     var i = 0
     while (i < oldtable.length) {
       val entry = oldtable(i)

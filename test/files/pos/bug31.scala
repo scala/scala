@@ -23,7 +23,7 @@ object Main {
 
     def main(args: Array[String]) = {
     	val s = List(1, 2);
-        System.out.println(arb(s))
+        Console.println(arb(s))
     }
 
 }

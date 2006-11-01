@@ -5,6 +5,6 @@ trait X {
 object test {
 
   def g(x: X) = x.elem;
-  def f(x: Object) = x.toString();
+  def f(x: AnyRef) = x.toString();
 
 }

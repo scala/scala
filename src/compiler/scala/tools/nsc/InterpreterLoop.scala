@@ -6,6 +6,8 @@
 
 package scala.tools.nsc
 
+import java.lang.System
+import java.lang.ClassLoader
 import java.io._
 
 import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}

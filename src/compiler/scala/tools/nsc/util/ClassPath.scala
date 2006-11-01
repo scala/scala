@@ -81,7 +81,7 @@ class ClassPath(onlyPresentation: Boolean) {
                 else new Source(source0, head.source.compile)
             }
             try {
-              //System.err.println("this=" + this + "\nclazz=" + clazz + "\nsource0=" + source0 + "\n")
+              //Console.err.println("this=" + this + "\nclazz=" + clazz + "\nsource0=" + source0 + "\n")
               new Context(entry :: ret.entries)
             } catch {
               case e: Error =>
@@ -93,7 +93,7 @@ class ClassPath(onlyPresentation: Boolean) {
 
       val ret = find0(entries)
       if (ret.entries.isEmpty) {
-        //System.err.println("BAD_FILE: " + name + " in " + this)
+        //Console.err.println("BAD_FILE: " + name + " in " + this)
         null
       } else ret
     } else null
@@ -150,7 +150,7 @@ class ClassPath(onlyPresentation: Boolean) {
       val sourcePath0 = sourcePath
       if (sourcePath0 != null) {
         if (!sourcePath0.isDirectory) {
-          System.err.println(""+sourcePath0 + " cannot be a directory")
+          Console.err.println(""+sourcePath0 + " cannot be a directory")
           assert(false)
         }
       }
@@ -184,7 +184,7 @@ class ClassPath(onlyPresentation: Boolean) {
       addArchivesInExtDirPath(extdirs)
       val clazzes = AbstractFile.getDirectory(output)
       if (clazzes == null) {
-        System.err.println("Output location \"" + output + "\" not found")
+        Console.err.println("Output location \"" + output + "\" not found")
         exit(1)
       }
       val strtok = new StringTokenizer(source, File.pathSeparator)

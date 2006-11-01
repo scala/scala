@@ -8,6 +8,7 @@
 //todo: use inherited type info also for vars and values
 package scala.tools.nsc.typechecker
 
+import compat.Platform.currentTime
 import scala.collection.mutable.{HashMap, ListBuffer}
 import scala.tools.nsc.util.{HashSet, Position, Set}
 import symtab.Flags._
@@ -633,7 +634,7 @@ trait Typers requires Analyzer {
           }
         }
     }
-//      System.out.println("adapt "+tree+":"+tree.tpe+", mode = "+mode+", pt = "+pt)
+//      Console.println("adapt "+tree+":"+tree.tpe+", mode = "+mode+", pt = "+pt)
 //      adapt(tree, mode, pt)
 //    }
 
@@ -709,7 +710,7 @@ trait Typers requires Analyzer {
             }
           }
         }
-        //System.out.println("parents("+context.owner+") = "+supertpt :: mixins);//DEBUG
+        //Console.println("parents("+context.owner+") = "+supertpt :: mixins);//DEBUG
         List.mapConserve(supertpt :: mixins)(tpt => checkNoEscaping.privates(context.owner, tpt))
       }
     } catch {
@@ -754,9 +755,9 @@ trait Typers requires Analyzer {
                    context.unit.source.file != psym.sourceFile)
             error(parent.pos, "illegal inheritance from sealed "+psym)
           if (!(selfType <:< parent.tpe.typeOfThis) && !phase.erasedTypes) {
-            //System.out.println(context.owner);//DEBUG
-            //System.out.println(context.owner.unsafeTypeParams);//DEBUG
-            //System.out.println(List.fromArray(context.owner.info.closure));//DEBUG
+            //Console.println(context.owner);//DEBUG
+            //Console.println(context.owner.unsafeTypeParams);//DEBUG
+            //Console.println(List.fromArray(context.owner.info.closure));//DEBUG
             error(parent.pos, "illegal inheritance;\n self-type "+
                   selfType+" does not conform to "+parent +
                   "'s selftype "+parent.tpe.typeOfThis)
@@ -794,7 +795,7 @@ trait Typers requires Analyzer {
      *  @return     ...
      */
     def typedModuleDef(mdef: ModuleDef): Tree = {
-      //System.out.println("sourcefile of " + mdef.symbol + "=" + mdef.symbol.sourceFile)
+      //Console.println("sourcefile of " + mdef.symbol + "=" + mdef.symbol.sourceFile)
       attributes(mdef)
       val clazz = mdef.symbol.moduleClass
       val impl1 = newTyper(context.make(mdef.impl, clazz, newTemplateScope(mdef.impl, clazz)))
@@ -916,7 +917,7 @@ trait Typers requires Analyzer {
         if (!superClazz.hasFlag(JAVA)) {
           val superParamAccessors = superClazz.constrParamAccessors
           if (superParamAccessors.length != superArgs.length) {
-            System.out.println("" + superClazz + ":" +
+            Console.println("" + superClazz + ":" +
               superClazz.info.decls.toList.filter(.hasFlag(PARAMACCESSOR)))
             assert(false, "mismatch: " + superParamAccessors +
                           ";" + rhs + ";" + superClazz.info.decls)//debug
@@ -1245,7 +1246,7 @@ trait Typers requires Analyzer {
         case MethodType(formals0, restpe) =>
           val formals = formalTypes(formals0, args.length)
           if (formals.length != args.length) {
-            //System.out.println(""+formals.length+" "+args.length);//DEBUG
+            //Console.println(""+formals.length+" "+args.length);//DEBUG
             errorTree(tree, "wrong number of arguments for "+treeSymTypeMsg(fun))
           } else {
             val tparams = context.undetparams
@@ -1555,7 +1556,7 @@ trait Typers requires Analyzer {
           if (qual1 ne qual) return typed(copy.Select(tree, qual1, name), mode, pt)
         }
         if (!sym.exists) {
-          if (settings.debug.value) System.err.println("qual = "+qual+":"+qual.tpe+"\nSymbol="+qual.tpe.symbol+"\nsymbol-info = "+qual.tpe.symbol.info+"\nscope-id = "+qual.tpe.symbol.info.decls.hashCode()+"\nmembers = "+qual.tpe.members+"\nname = "+name+"\nfound = "+sym+"\nowner = "+context.enclClass.owner)
+          if (settings.debug.value) Console.err.println("qual = "+qual+":"+qual.tpe+"\nSymbol="+qual.tpe.symbol+"\nsymbol-info = "+qual.tpe.symbol.info+"\nscope-id = "+qual.tpe.symbol.info.decls.hashCode()+"\nmembers = "+qual.tpe.members+"\nname = "+name+"\nfound = "+sym+"\nowner = "+context.enclClass.owner)
           if (!qual.tpe.widen.isErroneous) {
             if (false && context.unit == null) assert(false, "("+qual+":"+qual.tpe+")."+name)
             error(tree.pos,
@@ -1978,7 +1979,7 @@ trait Typers requires Analyzer {
               else {
                 val ps = clazz.info.parents filter (p => p.symbol.name == mix)
                 if (ps.isEmpty) {
-                if (settings.debug.value) System.out.println(clazz.info.parents map (.symbol.name));//debug
+                if (settings.debug.value) Console.println(clazz.info.parents map (.symbol.name));//debug
                   error(tree.pos, ""+mix+" does not name a parent class of "+clazz)
                   ErrorType
                 } else if (ps.tail.isEmpty) {
@@ -2065,8 +2066,8 @@ trait Typers requires Analyzer {
           } else if (tparams.length == 0) {
             errorTree(tree, ""+tpt1.tpe+" does not take type parameters")
           } else {
-            //System.out.println("\{tpt1}:\{tpt1.symbol}:\{tpt1.symbol.info}")
-            if (settings.debug.value) System.out.println(""+tpt1+":"+tpt1.symbol+":"+tpt1.symbol.info);//debug
+            //Console.println("\{tpt1}:\{tpt1.symbol}:\{tpt1.symbol.info}")
+            if (settings.debug.value) Console.println(""+tpt1+":"+tpt1.symbol+":"+tpt1.symbol.info);//debug
             errorTree(tree, "wrong number of type arguments for "+tpt1.tpe+", should be "+tparams.length)
           }
 
@@ -2098,21 +2099,21 @@ trait Typers requires Analyzer {
           val ret = typedHookForType(tree, mode, pt);
           if (ret != null) return ret;
         }
-        //System.out.println("typing "+tree+", "+context.undetparams);//DEBUG
+        //Console.println("typing "+tree+", "+context.undetparams);//DEBUG
         val tree1 = if (tree.tpe != null) tree else typed1(tree, mode, pt)
-        //System.out.println("typed "+tree1+":"+tree1.tpe+", "+context.undetparams);//DEBUG
+        //Console.println("typed "+tree1+":"+tree1.tpe+", "+context.undetparams);//DEBUG
         val result = if (tree1.isEmpty) tree1 else adapt(tree1, mode, pt)
-        //System.out.println("adapted "+tree1+":"+tree1.tpe+" to "+pt+", "+context.undetparams);//DEBUG
+        //Console.println("adapted "+tree1+":"+tree1.tpe+" to "+pt+", "+context.undetparams);//DEBUG
         result
       } catch {
         case ex: TypeError =>
           tree.tpe = null
-          //System.out.println("caught "+ex+" in typed");//DEBUG
+          //Console.println("caught "+ex+" in typed");//DEBUG
           reportTypeError(tree.pos, ex)
           setError(tree)
         case ex: Throwable =>
           if (settings.debug.value)
-            System.out.println("exception when typing "+tree+", pt = "+pt)
+            Console.println("exception when typing "+tree+", pt = "+pt)
           if (context != null && context.unit != null &&
               context.unit.source != null && tree != null)
             logError("AT: " + context.unit.source.dbg(tree.pos), ex);
@@ -2261,7 +2262,7 @@ trait Typers requires Analyzer {
     private def inferImplicit(pos: PositionType, pt: Type, isView: boolean, reportAmbiguous: boolean): Tree = {
 
       if (util.Statistics.enabled) implcnt = implcnt + 1
-      val startTime = if (util.Statistics.enabled) System.currentTimeMillis() else 0l
+      val startTime = if (util.Statistics.enabled) currentTime else 0l
 
       val tc = newTyper(context.makeImplicit(reportAmbiguous))
 
@@ -2349,7 +2350,7 @@ trait Typers requires Analyzer {
       var tree = searchImplicit(context.implicitss, true)
       if (tree == EmptyTree) tree = searchImplicit(implicitsOfType(pt), false)
       if (util.Statistics.enabled)
-        impltime = impltime + System.currentTimeMillis() - startTime
+        impltime = impltime + currentTime - startTime
       tree
     }
 

@@ -21,7 +21,7 @@ exec scala -nocompdaemon "$SOURCE" "$@"
 !#
 
 
-val x = Integer.parseInt(argv(0))
+val x = argv(0).toInt
 
 def fact(x: Int):Int =
   if(x==0) 1

@@ -6,6 +6,9 @@
 
 package scala.tools.nsc.typechecker
 
+
+import java.lang.ArithmeticException
+
 /** This class ...
  *
  *  @author Martin Odersky

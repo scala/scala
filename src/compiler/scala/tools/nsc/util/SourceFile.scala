@@ -11,6 +11,7 @@
 package scala.tools.nsc.util
 
 
+import compat.StringBuilder
 import scala.tools.nsc.io.{AbstractFile, VirtualFile}
 
 /** Uses positions that are offsets rather than line/column pairs.
@@ -121,12 +122,12 @@ class SourceFile(val file: AbstractFile, _content: Array[Char]) {
   def path = getFile().path
 
   def skipWhitespace(offset: Int): Int =
-    if (Character.isWhitespace(content(offset))) skipWhitespace(offset + 1)
+    if (content(offset).isWhitespace) skipWhitespace(offset + 1)
     else offset
 
   def lineToString(index: Int): String = {
     var offset = lineToOffset(index)
-    val buf = new StringBuffer()
+    val buf = new StringBuilder()
     while (!isLineBreak(offset) && offset < content.length) {
       buf.append(content(offset))
       offset = offset + 1
@@ -138,7 +139,7 @@ class SourceFile(val file: AbstractFile, _content: Array[Char]) {
     if (input.length > 0 && input(input.length - 1) == SU) input
     else {
       val content = new Array[char](input.length + 1)
-      System.arraycopy(input, 0, content, 0, input.length)
+      Array.copy(input, 0, content, 0, input.length)
       content(input.length) = SU
       content
     }

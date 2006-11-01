@@ -12,4 +12,4 @@
 package scala.runtime
 
 
-class NonLocalReturnException[T](val key: Object, val value: T) extends RuntimeException
+class NonLocalReturnException[T](val key: AnyRef, val value: T) extends RuntimeException

@@ -6,6 +6,8 @@
 // $Id$
 
 package scala.tools.nsc
+
+import java.lang.System.getProperties
 import scala.collection.mutable.Queue
 
 class GenericRunnerSettings(error: String => Unit)
@@ -60,7 +62,7 @@ extends Settings(error) {
 
     /** Apply the specified properties to the current JVM */
     def applyToCurrentJVM = {
-      val systemProps = System.getProperties
+      val systemProps = getProperties
       for(val Pair(key, value) <- props.toList)
         systemProps.setProperty(key, value)
     }

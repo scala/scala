@@ -8,7 +8,11 @@
 
 // $Id$
 
+
 package scala.actors.remote
+
+
+import java.lang.ClassNotFoundException
 
 import java.io.{DataInputStream, DataOutputStream, EOFException, IOException}
 

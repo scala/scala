@@ -6,9 +6,13 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: $
+// $Id$
+
 
 package scala.util
+
+
+import java.lang.InheritableThreadLocal
 
 /** Fluids provide a binding mechanism where the current
   * value is found through <em>dynamic scope</em>, but where
@@ -43,7 +47,7 @@ package scala.util
   */
 class Fluid[T](init: T) {
   private val tl = new InheritableThreadLocal {
-   override def initialValue = init.asInstanceOf[Object]
+   override def initialValue = init.asInstanceOf[AnyRef]
   }
 
   /** Retrieve the current value */

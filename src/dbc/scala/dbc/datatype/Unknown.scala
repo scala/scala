@@ -24,7 +24,7 @@ class Unknown extends DataType {
 
   def isSubtypeOf(datatype: DataType) = true;
 
-  type NativeType = Object;
+  type NativeType = AnyRef;
   val nativeTypeId = DataType.OBJECT;
 
   /** A SQL-99 compliant string representation of the type. */

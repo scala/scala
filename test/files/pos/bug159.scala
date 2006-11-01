@@ -1,8 +1,10 @@
+import compat.StringBuilder
+
 object foo {
 
   // the problem seems to appear only
   // if "val _" is in the body of a case
-  def cooked( ckd:StringBuffer ):Unit =
+  def cooked( ckd:StringBuilder ):Unit =
     'a' match {
       case '-' =>
         val _ = ckd.append( '_' );

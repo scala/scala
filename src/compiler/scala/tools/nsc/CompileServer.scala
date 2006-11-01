@@ -11,7 +11,11 @@ import scala.tools.nsc.util.FakePos //Position
 import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
 import scala.tools.nsc.doc.DocGenerator
 import scala.concurrent.Process.spawn
-import java.io._
+import java.lang.System
+import java.lang.Thread
+import java.lang.Runtime
+import java.io.File
+import java.io.{PrintStream, BufferedOutputStream, FileOutputStream}
 
 /** The main class for NSC, a compiler for the programming
  *  language Scala.

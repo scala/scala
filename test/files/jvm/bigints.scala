@@ -4,11 +4,10 @@ object Test extends Application {
   val x: BigInt = 1
   val y = x + 1
   val z = 1 + y
-  System.out.println(z)
-  System.out.println(z <= 3)
-  System.out.println(3 < z)
-  System.out.println(z == 3)
-  System.out.println(3 == z)
+  Console.println(z)
+  Console.println(z <= 3)
+  Console.println(3 < z)
+  Console.println(z == 3)
+  Console.println(3 == z)
 
 }
-

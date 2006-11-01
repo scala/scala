@@ -8,7 +8,10 @@
 
 // $Id$
 
+
 package scala
+
+import compat.Platform.arraycopy
 
 /** This object ...
  *
@@ -36,7 +39,7 @@ object Array {
         case xs: runtime.BoxedArray =>
           xs.copyFrom(src, srcPos, destPos, length)
         case _ =>
-          System.arraycopy(src, srcPos, dest, destPos, length)
+          arraycopy(src, srcPos, dest, destPos, length)
       }
   }
 
@@ -162,6 +165,7 @@ object Array {
  *  @version 1.0
  */
 final class Array[A](_length: Int) extends Seq[A] {
+  import Predef.Error
   def length: Int = throw new Error()
   def apply(i: Int): A = throw new Error()
   def update(i: Int, x: A): Unit = throw new Error()

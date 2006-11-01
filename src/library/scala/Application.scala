@@ -12,6 +12,9 @@
 package scala
 
 
+import compat.Platform.currentTime
+import java.lang.System.getProperty
+
 /** The <code>Application</code> class can be used to quickly turn objects
  *  into executable programs. Here is an example:
  *  <pre>
@@ -40,16 +43,16 @@ trait Application {
 
   /** The time when execution of this program started.
    */
-  val executionStart: Long = java.lang.System.currentTimeMillis()
+  val executionStart: Long = currentTime
 
   /** The default main method.
    *
    *  @param args the arguments passed to the main method
    */
   def main(args: Array[String]) = {
-    if (java.lang.System.getProperty("scala.time") != null) {
-      val total = java.lang.System.currentTimeMillis() - executionStart
-      java.lang.System.out.println("[total " + total + "ms]")
+    if (getProperty("scala.time") != null) {
+      val total = currentTime - executionStart
+      Console.println("[total " + total + "ms]")
     }
   }
 }

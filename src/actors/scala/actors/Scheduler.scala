@@ -8,8 +8,13 @@
 
 // $Id$
 
+
 package scala.actors
 
+import java.lang.{Runnable, Thread}
+import java.lang.InterruptedException
+
+import compat.Platform
 import scala.collection.mutable.{ArrayBuffer, Buffer, HashMap, Queue}
 
 /**
@@ -198,7 +203,7 @@ class TickedScheduler extends IScheduler {
             case None =>
               foundBusy = true // assume not blocked
             case Some(ts) =>
-              val currTime = System.currentTimeMillis
+              val currTime = Platform.currentTime
               if (currTime - ts < TICKFREQ)
                 foundBusy = true
           }
@@ -242,7 +247,7 @@ class TickedScheduler extends IScheduler {
         // thread outside of scheduler;
         // error("No worker thread associated with actor " + a)
       case Some(wt) =>
-        ticks.update(wt, System.currentTimeMillis)
+        ticks.update(wt, Platform.currentTime)
     }
   }
 

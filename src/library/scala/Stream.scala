@@ -13,7 +13,7 @@ package scala
 
 
 import compat.StringBuilder
-import compat.Platform.NoSuchElementException
+import Predef.NoSuchElementException
 
 /**
  * The object <code>Stream</code> provides helper functions

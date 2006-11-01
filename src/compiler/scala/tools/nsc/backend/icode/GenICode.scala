@@ -7,6 +7,7 @@
 
 package scala.tools.nsc.backend.icode
 
+import compat.StringBuilder
 import scala.collection.mutable.{Map, HashMap}
 import scala.tools.nsc.symtab._
 
@@ -1547,7 +1548,7 @@ abstract class GenICode extends SubComponent  {
       var handlerCount = 0
 
       override def toString(): String = {
-        val buf = new StringBuffer()
+        val buf = new StringBuilder()
         buf.append("\tpackage: ").append(packg).append('\n')
         buf.append("\tclazz: ").append(clazz).append('\n')
         buf.append("\tmethod: ").append(method).append('\n')

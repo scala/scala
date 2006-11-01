@@ -7,6 +7,8 @@
 package scala.tools.nsc
 
 
+import compat.StringBuilder
+
 /** A class representing command line info for scalac */
 class CompilerCommand(arguments: List[String], error: String => unit, interactive: boolean) {
   private var fs: List[String] = List()
@@ -28,7 +30,7 @@ class CompilerCommand(arguments: List[String], error: String => unit, interactiv
     val helpSyntaxColumnWidth: int =
       Iterable.max(settings.allSettings map (. helpSyntax.length()))
     def format(s: String): String = {
-      val buf = new StringBuffer(s)
+      val buf = new StringBuilder(s)
       var i = s.length()
       while (i < helpSyntaxColumnWidth) { buf.append(' '); i = i + 1 }
       buf.toString()

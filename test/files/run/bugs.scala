@@ -169,7 +169,7 @@ trait Bug176A {
   def test = foo(bar);
 }
 trait Bug176B {
-  type S <: Object;
+  type S <: AnyRef;
   type T = S;
   def foo(x: S): Int;
   def bar: S;
@@ -215,13 +215,13 @@ object Bug213Test {
     try {
       foo.testAll;
     } catch {
-      case e: compat.Platform.ClassCastException =>
+      case e: ClassCastException =>
         Console.println("Cannot cast unit to Nothing");
     }
     try {
       foo.testAllRef;
     } catch {
-      case e: compat.Platform.ClassCastException =>
+      case e: ClassCastException =>
         Console.println("Cannot cast empty string to Null");
     }
     ()
@@ -445,7 +445,7 @@ object Test  {
       test;
     } catch {
       case exception => {
-        val curr: String = compat.Platform.currentThread.toString();
+        val curr: String = currentThread.toString();
         Console.print("Exception in thread \"" + curr + "\" " + exception);
         Console.println;
         errors = errors + 1;

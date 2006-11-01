@@ -3,7 +3,6 @@ case class Foo(x: int)(y: int);
 case class Bar;
 
 object Test extends Application {
-  import compat.Platform.IndexOutOfBoundsException
 
   def fn[a,b](x: a => b) = x;
   val f = fn(Foo(1))

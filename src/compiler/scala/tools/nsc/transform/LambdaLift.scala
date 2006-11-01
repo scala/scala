@@ -219,7 +219,7 @@ abstract class LambdaLift extends InfoTransform {
         super.traverse(tree)
        } catch {//debug
          case ex: Throwable =>
-           System.out.println("exception when traversing " + tree)
+           Console.println("exception when traversing " + tree)
            throw ex
        }
       }

@@ -3,6 +3,6 @@ object Test {
     import java.lang.annotation.Retention;
     val c = classOf[Retention]
     val r: Retention = c.getAnnotation(c).asInstanceOf[Retention];
-    System.out.println(r.value)
+    Console.println(r.value)
   }
 }

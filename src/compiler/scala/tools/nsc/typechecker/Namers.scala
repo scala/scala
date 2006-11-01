@@ -153,7 +153,7 @@ trait Namers requires Analyzer {
       	val file = context.unit.source.getFile()
       	val clazz = c.asInstanceOf[ClassSymbol]
       	if (settings.debug.value && clazz.sourceFile != null && !clazz.sourceFile.equals(file)) {
-          System.err.println("SOURCE MISMATCH: " + clazz.sourceFile + " vs. " + file + " SYM=" + c);
+          Console.err.println("SOURCE MISMATCH: " + clazz.sourceFile + " vs. " + file + " SYM=" + c);
         }
         clazz.sourceFile = file
         if (clazz.sourceFile != null) {
@@ -625,7 +625,7 @@ trait Namers requires Analyzer {
           }
         } catch {
           case ex: TypeError =>
-            //System.out.println("caught " + ex + " in typeSig")//DEBUG
+            //Console.println("caught " + ex + " in typeSig")//DEBUG
             typer.reportTypeError(tree.pos, ex)
             ErrorType
         }
@@ -682,7 +682,7 @@ trait Namers requires Analyzer {
 
   /* Is type `tp1' properly contained in type `tp2'? */
   def isContainedIn(tp1: Type, tp2: Type) = {
-    //System.out.println("is " + tp1 + " contained in " + tp2 + "?");//DEBUG
+    //Console.println("is " + tp1 + " contained in " + tp2 + "?");//DEBUG
     new ContainsTraverser(tp1).traverse(tp2).result
   }
 

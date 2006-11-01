@@ -13,7 +13,6 @@ package scala.xml;
 
 
 import compat.StringBuilder
-import compat.Platform.IllegalArgumentException
 
 /** an XML node for processing instructions (PI)
  *

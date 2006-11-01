@@ -61,6 +61,8 @@ object Console {
   def out = outFluid.value
   def in = inFluid.value
 
+  val err = java.lang.System.err
+
   /** Set the default output stream.
    *
    *  @param out the new output stream.
@@ -193,27 +195,27 @@ object Console {
 
   /** Read a byte value from the terminal.
    */
-  def readByte: Byte = java.lang.Byte.decode(in.readLine()).byteValue()
+  def readByte: Byte = readLine.toByte
 
   /** Read a short value from the terminal.
    */
-  def readShort: Short = java.lang.Short.decode(in.readLine()).shortValue()
+  def readShort: Short = readLine.toByte
 
   /** Read a char value from the terminal.
    */
-  def readChar: Char = in.readLine().charAt(0)
+  def readChar: Char = readLine charAt 0
 
   /** Read an int value from the terminal.
    */
-  def readInt: Int = java.lang.Integer.decode(in.readLine()).intValue()
+  def readInt: Int = readLine.toInt
 
   /** Read a float value from the terminal.
    */
-  def readFloat: Float = compat.Platform.parseFloat(in.readLine())
+  def readFloat: Float = readLine.toFloat
 
   /** Read a double value from the terminal.
    */
-  def readDouble: Double = compat.Platform.parseDouble(in.readLine())
+  def readDouble: Double = readLine.toDouble
 
   /** Read in some structured input, specified by a format specifier.
    *  See class <code>java.text.MessageFormat</code> for details of

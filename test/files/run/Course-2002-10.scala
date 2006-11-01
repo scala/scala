@@ -3,6 +3,8 @@
 //############################################################################
 // $Id$
 
+import compat.Math.{PI, log}
+
 object M0 {
 
   def addStream (s1: Stream[int], s2: Stream[int]): Stream[int] =
@@ -72,9 +74,9 @@ object M1 {
       i = i + 1;
     }
     Console.print("pi    = ");
-    Console.print(str(Math.PI) + ", ");
-    Console.print(str(Math.PI) + ", ");
-    Console.print(str(Math.PI) + "\n");
+    Console.print(str(PI) + ", ");
+    Console.print(str(PI) + ", ");
+    Console.print(str(PI) + "\n");
     Console.println;
     i = 0;
     while (i < 10) {
@@ -85,9 +87,9 @@ object M1 {
       i = i + 1;
     }
     Console.print("ln    = ");
-    Console.print(str(Math.log(2)) + ", ");
-    Console.print(str(Math.log(2)) + ", ");
-    Console.print(str(Math.log(2)) + "\n");
+    Console.print(str(log(2)) + ", ");
+    Console.print(str(log(2)) + ", ");
+    Console.print(str(log(2)) + "\n");
     Console.println;
   }
 }

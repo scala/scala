@@ -6,7 +6,8 @@
 
 package scala.tools.nsc.ast
 
-import scala.concurrent._
+import compat.StringBuilder
+import scala.concurrent.Lock
 import symtab.Flags._
 
 import java.lang.Math
@@ -215,7 +216,7 @@ abstract class TreeBrowsers {
 
     def update(v: AnyRef): Unit = {
       val t: Tree = v.asInstanceOf[Tree]
-      val str = new StringBuffer()
+      val str = new StringBuilder()
       var buf = new StringWriter()
 
       t match {

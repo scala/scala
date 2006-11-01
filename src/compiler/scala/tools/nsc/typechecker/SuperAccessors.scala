@@ -78,7 +78,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
               sym.alias) setPos tree.pos
           }
           if (settings.debug.value)
-            System.out.println("alias replacement: " + tree + " ==> " + result);//debug
+            Console.println("alias replacement: " + tree + " ==> " + result);//debug
           transform(result)
         } else {
           if (needsProtectedAccessor(sym, tree.pos)) {

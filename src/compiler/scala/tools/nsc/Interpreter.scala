@@ -6,6 +6,7 @@
 
 package scala.tools.nsc
 
+import java.lang.{Class, ClassLoader}
 import java.io.{File, PrintWriter, StringWriter}
 import java.net.URLClassLoader
 
@@ -353,7 +354,7 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
           .get)
     var argsHolder: Array[Any] = null // XXX this roundabout approach is to try and make sure the value is boxed
     argsHolder = List(value).toArray
-    setterMethod.invoke(null, argsHolder.asInstanceOf[Array[Object]])
+    setterMethod.invoke(null, argsHolder.asInstanceOf[Array[AnyRef]])
 
     interpret("val " + name + " = " + binderName + ".value")
   }

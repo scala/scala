@@ -86,7 +86,7 @@ abstract class Models {
       else if (term0.isTypeParameter) TPARAM
       else if (term0.isType) TPARAM
       else {
-        // System.err.println("UNRECOGNIZED SYMBOL: " + term0 + " " + name);
+        // Console.err.println("UNRECOGNIZED SYMBOL: " + term0 + " " + name);
         null
       }
     } else {
@@ -200,20 +200,20 @@ abstract class Models {
     def member(tree: Tree, members: List[Tree]): Tree = tree
 
     def update0(members1: List[Tree]): Boolean = {
-      // System.err.println("update0 " + this + " " + members1)
+      // Console.err.println("update0 " + this + " " + members1)
       if (members1.length == 1 && members1.head.isInstanceOf[PackageDef])
         return update0(members1.head.asInstanceOf[PackageDef].stats)
 
       val marked = new HashSet[HasTree]
       var updated = false
       for (val mmbr1 <- members1) if (mmbr1.isInstanceOf[PackageDef]) {
-        System.err.println("PACKAGE: " + mmbr1.symbol + " " + members1.length)
+        Console.err.println("PACKAGE: " + mmbr1.symbol + " " + members1.length)
       } else if (isMember(mmbr1)) {
         val mmbr2 = member(mmbr1, members1)
         if (mmbr2 != null) {
           var found = false
           for (val mmbr <- members) if (!found && mmbr.replacedBy(mmbr2)) {
-            //System.err.println("REPLACE: " + mmbr + " with " + mmbr2)
+            //Console.err.println("REPLACE: " + mmbr + " with " + mmbr2)
             mmbr.mods0 = mods1(mmbr1)
             found = true
             updated = mmbr.update(mmbr2) || updated
@@ -231,7 +231,7 @@ abstract class Models {
             marked += add
           }
         }
-        // System.err.println("update1 " + this + " " + members + " " + marked)
+        // Console.err.println("update1 " + this + " " + members + " " + marked)
       }
       val sz = members.size
       members.intersect(marked)

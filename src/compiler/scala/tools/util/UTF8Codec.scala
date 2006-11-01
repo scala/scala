@@ -77,7 +77,7 @@ object UTF8Codec {
 
   def decode(src: Array[Byte], from: Int, len: Int): String = {
     val cs = new Array[Char](len)
-    String.copyValueOf(cs, 0, decode(src, 0, cs, 0, len))
+    new String(cs, 0, decode(src, 0, cs, 0, len))
   }
 
 }

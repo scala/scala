@@ -546,7 +546,7 @@ abstract class Checkers {
     //////////////// Error reporting /////////////////////////
 
     def error(msg: String): Unit = {
-      System.out.println(method.toString() + " in block: " + basicBlock.label)
+      Console.println(method.toString() + " in block: " + basicBlock.label)
       printLastIntructions
 
       Checkers.this.global.error("ICode checker: " + method + ": " + msg)
@@ -562,7 +562,7 @@ abstract class Checkers {
           buf = i :: buf
           printed = printed + 1
         });
-      buf foreach System.out.println
+      buf foreach Console.println
       Console.println("at: " + clasz.cunit.position(buf.head.pos))
     }
 

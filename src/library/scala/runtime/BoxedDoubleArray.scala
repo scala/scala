@@ -12,19 +12,21 @@
 package scala.runtime
 
 
+import Predef.Class
+
 [serializable]
 final class BoxedDoubleArray(val value: Array[Double]) extends BoxedArray {
 
   def length: Int = value.length
 
-  def apply(index: Int): Object = BoxedDouble.box(value(index))
+  def apply(index: Int): AnyRef = BoxedDouble.box(value(index))
 
-  def update(index: Int, elem: Object): Unit = {
+  def update(index: Int, elem: AnyRef): Unit = {
     value(index) = elem.asInstanceOf[BoxedNumber].doubleValue()
   }
 
-  def unbox(elemTag: String): Object = value
-  def unbox(elemClass: Class): Object = value
+  def unbox(elemTag: String): AnyRef = value
+  def unbox(elemClass: Class): AnyRef = value
 
   override def equals(other: Any) =
     value == other ||

@@ -10,7 +10,11 @@
 
 package scala.tools.util
 
-import java.io._
+import java.lang.System
+import java.io.PrintWriter
+import java.io.BufferedOutputStream
+import java.io.{BufferedReader, InputStreamReader}
+import java.io.IOException
 import java.net.ServerSocket
 
 /** The abstract class <code>SocketServer</code> implements the server

@@ -12,10 +12,10 @@
 package scala.mobile
 
 
+import java.lang.ClassLoader
 import java.net._
 
 import scala.collection.mutable._
-
 
 /** The class <code>Location</code> provides a <code>create</code>
  *  method to instantiate objects from a network location by

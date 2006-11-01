@@ -9,7 +9,7 @@ abstract class Constraint(q: Quantity) {
 }
 
 class Adder(q: Quantity) extends Constraint(q) {
-    def newValue = System.out.println(q.getValue);
+    def newValue = Console.println(q.getValue);
 }
 
 object Main {

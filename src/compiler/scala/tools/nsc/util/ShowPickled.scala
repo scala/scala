@@ -6,7 +6,10 @@
 
 package scala.tools.nsc.util
 
-import java.io._
+import java.lang.Integer.toHexString
+import java.lang.Float.intBitsToFloat
+import java.lang.Double.longBitsToDouble
+import java.io.{File, FileInputStream, PrintStream, IOException}
 
 import symtab.{Flags, Names}
 import symtab.classfile.{PickleBuffer, PickleFormat}
@@ -75,7 +78,7 @@ object ShowPickled extends Names {
       printNameRef()
       printSymbolRef()
       val flags = buf.readNat()
-      out.print(" " + Integer.toHexString(flags) +
+      out.print(" " + toHexString(flags) +
                 "[" + Flags.flagsToString(flags) + "] ")
       printTypeRef()
     }
@@ -134,9 +137,9 @@ object ShowPickled extends Names {
         case LITERALlong    =>
           out.print(" " + buf.readLong(len))
         case LITERALfloat   =>
-          out.print(" " + Float.intBitsToFloat(buf.readLong(len).asInstanceOf[int]))
+          out.print(" " + intBitsToFloat(buf.readLong(len).asInstanceOf[int]))
         case LITERALdouble  =>
-          out.print(" " + Double.longBitsToDouble(buf.readLong(len)))
+          out.print(" " + longBitsToDouble(buf.readLong(len)))
         case LITERALstring  =>
           printNameRef()
         case LITERALnull    =>
@@ -160,10 +163,10 @@ object ShowPickled extends Names {
       val data = new Array[byte](stream.available())
       stream.read(data)
       val pickle = new PickleBuffer(data, 0, data.length)
-      printFile(pickle, System.out)
+      printFile(pickle, Console.out)
     } catch {
       case ex: IOException =>
-        System.out.println("cannot read " + file + ": " + ex.getMessage())
+        Console.println("cannot read " + file + ": " + ex.getMessage())
     }
   }
 }

@@ -180,7 +180,7 @@ abstract class Mixin extends InfoTransform {
       // first complete the superclass with mixed in members
       addMixedinMembers(clazz.superClass)
 
-      //System.out.println("adding members of " + clazz.info.baseClasses.tail.takeWhile(superclazz !=) + " to " + clazz);//DEBUG
+      //Console.println("adding members of " + clazz.info.baseClasses.tail.takeWhile(superclazz !=) + " to " + clazz);//DEBUG
 
       /** Mix in members of implementation class mixinClass into class clazz */
       def mixinImplClassMembers(impl: Symbol, iface: Symbol): unit = {
@@ -648,7 +648,7 @@ abstract class Mixin extends InfoTransform {
         atPhase(phase.next)(postTransform(tree1))
       } catch {
         case ex: Throwable =>
-          System.out.println("exception when traversing " + tree)
+          Console.println("exception when traversing " + tree)
         throw ex
       }
     }

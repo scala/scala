@@ -14,10 +14,10 @@ class ColoredPoint(x: Int, y: Int, c_ : Color) extends Point(x, y) {
 object Test {
   def main(args: Array[String]): Unit = {
     val p = new ColoredPoint(5, 7, Color.RED);
-    System.out.println("p.x = " + p.x);
-    System.out.println("p.c = " + p.c);
-    System.out.println("p.getX() = " + p.getX());
-    System.out.println("p.getC() = " + p.getC());
+    Console.println("p.x = " + p.x);
+    Console.println("p.c = " + p.c);
+    Console.println("p.getX() = " + p.getX());
+    Console.println("p.getC() = " + p.getC());
   }
 }
 

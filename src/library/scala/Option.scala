@@ -13,7 +13,6 @@ package scala;
 
 
 import Predef._
-import compat.Platform.NoSuchElementException
 
 /** This class represents optional values. Instances of <code>Option</code>
  *  are either instances of case class <code>Some</code> or it is case
@@ -31,7 +30,7 @@ sealed abstract class Option[+A] extends Iterable[A] with CaseClass {
   }
 
   /**
-   *  @throws scala.compat.Platform.NoSuchElementException
+   *  @throws Predef.NoSuchElementException
    */
   def get: A = this match {
     case None => throw new NoSuchElementException("None.get")

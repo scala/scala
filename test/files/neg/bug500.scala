@@ -14,7 +14,7 @@ object Test {
   def main(args: Array[String]): Unit = {
     try {
       val i: Int = Magic.magic("42");
-      System.out.println(i);
+      Console.println(i);
     } catch {
       case ex: Throwable => ex.printStackTrace()
     }

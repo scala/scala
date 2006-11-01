@@ -13,7 +13,6 @@ package scala
 
 import scala.collection.mutable.ListBuffer
 import Predef._
-import compat.Platform.{NoSuchElementException, UnsupportedOperationException}
 
 /** This object provides methods for creating specialized lists, and for
  *  transforming special kinds of lists (e.g. lists of lists).
@@ -547,7 +546,6 @@ sealed abstract class List[+a] extends Seq[a] with CaseClass {
    *
    *  @param n the number of elements to take
    *  @return the suffix of length <code>n</code> of the list
-   *  @throws <code>java.lang.RuntimeException</code> if the list is too short.
    */
   def takeRight(n: Int): List[a] = {
     def loop(lead: List[a], lag: List[a]): List[a] = lead match {
@@ -561,7 +559,6 @@ sealed abstract class List[+a] extends Seq[a] with CaseClass {
    *
    *  @param n the number of elements to take
    *  @return the suffix of length <code>n</code> of the list
-   *  @throws <code>java.lang.RuntimeException</code> if the list is too short.
    */
   def dropRight(n: Int): List[a] = {
     def loop(lead: List[a], lag: List[a]): List[a] = lead match {

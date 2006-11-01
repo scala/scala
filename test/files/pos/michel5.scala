@@ -1,5 +1,5 @@
 trait A[Ta] { }
 
-class B() extends Object with A[Int] {
+class B() extends AnyRef with A[Int] {
   val x : Int = 2
 }

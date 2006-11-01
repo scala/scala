@@ -6,6 +6,8 @@
 
 package scala.tools.nsc.ast
 
+import compat.Platform.{EOL => LINE_SEPARATOR}
+import compat.StringBuilder
 import java.io.{OutputStream, PrintWriter, Writer}
 import symtab.Flags._
 
@@ -18,8 +20,6 @@ abstract class TreePrinters {
     protected var indentMargin = 0
     protected val indentStep = 2
     protected var indentString = "                                        " // 40
-
-    val LINE_SEPARATOR = System.getProperty("line.separator", "\n")
 
     def flush = out.flush()
 
@@ -106,7 +106,7 @@ abstract class TreePrinters {
 
     def printAttributes(tree: Tree): unit = {
       def attrInfoToString(attr: AttrInfo): String = {
-        val str = new StringBuffer()
+        val str = new StringBuilder()
         attr match {
           case Triple(tp, args, nvPairs) =>
             str.append(tp.toString())

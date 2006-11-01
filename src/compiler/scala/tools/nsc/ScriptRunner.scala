@@ -11,6 +11,7 @@ import java.io.{BufferedReader, File, FileInputStream, FileOutputStream,
 import java.util.jar.{JarEntry, JarOutputStream}
 import java.lang.reflect.InvocationTargetException
 
+import compat.StringBuilder
 import scala.tools.nsc.io.PlainFile
 import scala.tools.nsc.reporters.ConsoleReporter
 import scala.tools.nsc.util.{CompoundSourceFile, SourceFile, SourceFileFragment}
@@ -93,7 +94,7 @@ object ScriptRunner {
 
   /** Read the entire contents of a file as a String. */
   private def contentsOfFile(filename: String): String = {
-    val strbuf = new StringBuffer
+    val strbuf = new StringBuilder
     val reader = new FileReader(filename)
     val cbuf = new Array[Char](1024)
     while(true) {
@@ -199,7 +200,7 @@ object ScriptRunner {
 
     var fromServer = in.readLine()
     while (fromServer != null) {
-      System.out.println(fromServer)
+      Console.println(fromServer)
       if (CompileSocket.errorPattern.matcher(fromServer).matches)
         compok = false
 

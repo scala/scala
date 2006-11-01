@@ -8,7 +8,12 @@
 
 // $Id$
 
+
 package scala.actors
+
+
+import java.lang.{Runnable, Thread}
+import java.lang.InterruptedException
 
 /**
  * This class allows the (local) sending of a message to an actor after

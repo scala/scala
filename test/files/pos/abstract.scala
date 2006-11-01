@@ -5,5 +5,5 @@ abstract class C() {
 
 class D() extends C() {
   type t = Int;
-  System.out.println(copy(1));
+  Console.println(copy(1));
 }

@@ -6,6 +6,7 @@
 
 package scala.tools.nsc.symtab
 
+import compat.Platform.currentTime
 import java.io.{File, IOException}
 
 import scala.collection.mutable.HashMap
@@ -50,7 +51,7 @@ abstract class SymbolLoaders {
 
     override def complete(root: Symbol): unit = {
       try {
-        val start = System.currentTimeMillis()
+        val start = currentTime
         val currentphase = phase
         doComplete(root)
         phase = currentphase

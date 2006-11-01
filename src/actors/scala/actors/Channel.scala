@@ -36,9 +36,7 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
 
   private[actors] var receiver: Actor = synchronized {
     // basically Actor.self, but can be null
-    val t = Thread.currentThread()
-    val a = Actor.selfs.get(t).asInstanceOf[Actor]
-    a
+    Actor.selfs.get(currentThread).asInstanceOf[Actor]
   }
 
   private var received: Msg = _

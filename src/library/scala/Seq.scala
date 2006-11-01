@@ -12,7 +12,7 @@
 package scala
 
 
-import compat.Platform.IllegalArgumentException
+import Predef.IllegalArgumentException
 
 object Seq {
 

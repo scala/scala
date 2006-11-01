@@ -58,7 +58,7 @@ trait Symbols requires SymbolTable {
         else if (isClass)  ret = ret + ("class").length()
         else if (isModule) ret = ret + ("object").length()
         else ret = ret + ("var").length()
-        while (Character.isWhitespace(buf(ret))) ret = ret + 1
+        while (buf(ret).isWhitespace) ret = ret + 1
         ret
       }
       else if (isValue) {
@@ -68,7 +68,7 @@ trait Symbols requires SymbolTable {
               (buf(pos + 2) == 'l') &&
               (buf(pos + 3) == ' ')) {
             var pos0 = pos + 4
-            while (pos0 < buf.length && Character.isWhitespace(buf(pos0)))
+            while (pos0 < buf.length && buf(pos0).isWhitespace)
               pos0 = pos0 + 1
             pos0
 

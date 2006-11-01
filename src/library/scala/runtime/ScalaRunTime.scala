@@ -12,6 +12,9 @@
 package scala.runtime;
 
 
+import Predef.{Class, Throwable}
+import java.lang.Runnable
+
 object ScalaRunTime {
 
   /** Names for primitive types, used by array unboxing */
@@ -114,12 +117,12 @@ object ScalaRunTime {
   def longValue   (x: BoxedNumber ): Long    = if (x eq null) 0L    else x.longValue();
   def floatValue  (x: BoxedNumber ): Float   = if (x eq null) 0.0F  else x.floatValue();
   def doubleValue (x: BoxedNumber ): Double  = if (x eq null) 0.0D  else x.doubleValue();
-  def arrayValue  (x: BoxedArray, elemTag: String): Object =
+  def arrayValue  (x: BoxedArray, elemTag: String): AnyRef =
     if (x eq null) null else x.unbox(elemTag);
-  def arrayValue  (x: BoxedArray, elemClass: Class): Object =
+  def arrayValue  (x: BoxedArray, elemClass: Class): AnyRef =
     if (x eq null) null else x.unbox(elemClass);
 
-  def boxArray(value: Object): BoxedArray = value match {
+  def boxArray(value: AnyRef): BoxedArray = value match {
     case x: Array[Byte] => new BoxedByteArray(x)
     case x: Array[Short] => new BoxedShortArray(x)
     case x: Array[Char] => new BoxedCharArray(x)
@@ -128,7 +131,7 @@ object ScalaRunTime {
     case x: Array[Float] => new BoxedFloatArray(x)
     case x: Array[Double] => new BoxedDoubleArray(x)
     case x: Array[Boolean] => new BoxedBooleanArray(x)
-    case x: Array[Object] => new BoxedObjectArray(x)
+    case x: Array[AnyRef] => new BoxedObjectArray(x)
     case x: BoxedArray => x
   }
 }

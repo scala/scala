@@ -6,6 +6,7 @@
 
 package scala.tools.nsc
 
+import java.lang.System
 import java.io.File
 
 class Settings(error: String => unit) {

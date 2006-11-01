@@ -7,6 +7,7 @@
 
 package scala.tools.nsc.backend.icode;
 
+import compat.StringBuilder;
 import scala.tools.nsc.ast._;
 import scala.collection.mutable.Map;
 import scala.tools.nsc.util.Position;
@@ -163,14 +164,14 @@ trait BasicBlocks requires ICodes {
       if (i < instrs.length) {
         val newInstrs = new Array[Instruction](instrs.length + is.length - 1);
         changed = true;
-        System.arraycopy(instrs, 0, newInstrs, 0, i);
+        Array.copy(instrs, 0, newInstrs, 0, i);
         var j = i;
         for (val x <- is) {
           newInstrs(j) = x;
           j = j + 1;
         }
         if (i + 1 < instrs.length)
-          System.arraycopy(instrs, i + 1, newInstrs, j, instrs.length - i - 1)
+          Array.copy(instrs, i + 1, newInstrs, j, instrs.length - i - 1)
         instrs = newInstrs;
       }
 
@@ -335,7 +336,7 @@ trait BasicBlocks requires ICodes {
     );
 
     // Instead of it, rather use a printer
-    def print() : unit = print(System.out);
+    def print() : unit = print(java.lang.System.out);
 
     def print(out: java.io.PrintStream) : unit = {
       out.println("block #"+label+" :");
@@ -347,7 +348,7 @@ trait BasicBlocks requires ICodes {
     }
 
     def fullString: String = {
-      val buf = new StringBuffer();
+      val buf = new StringBuilder();
       buf.append("Block ").append(label.toString());
       buf.append("\nSuccessors: ").append(successors);
       buf.append("\nPredecessors: ").append(predecessors);

@@ -6,6 +6,10 @@
 
 package scala.tools.nsc.symtab
 
+
+import java.lang.Integer.toOctalString
+import compat.StringBuilder
+
 import classfile.PickleFormat._
 
 trait Constants requires SymbolTable {
@@ -194,10 +198,10 @@ trait Constants requires SymbolTable {
 
     def escapedStringValue: String = {
       def escape(text: String): String = {
-        val buf = new StringBuffer
+        val buf = new StringBuilder
         for (val c <- Iterator.fromString(text))
-          if (Character.isISOControl(c))
-            buf.append("\\0" + Integer.toOctalString(c.asInstanceOf[Int]))
+          if (c.isControl)
+            buf.append("\\0" + toOctalString(c.asInstanceOf[Int]))
           else
             buf.append(c)
         buf.toString

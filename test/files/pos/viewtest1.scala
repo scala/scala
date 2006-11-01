@@ -37,6 +37,6 @@ object Test {
     for (val s <- args) {
       t = t insert s
     }
-    System.out.println(t.elements)
+    Console.println(t.elements)
   }
 }

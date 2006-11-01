@@ -6,9 +6,9 @@ class PromptStream(s: OutputStream) extends PrintStream(s) {
 
 object Main {
 
-    val out = new PromptStream(System.out);
+    val out = new PromptStream(java.lang.System.out);
 
-    System.setOut(out);
+    java.lang.System.setOut(out);
 
     def main(args: Array[String]) =
         //out.println("hello world");

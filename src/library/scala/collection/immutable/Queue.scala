@@ -12,7 +12,7 @@
 package scala.collection.immutable
 
 
-import compat.Platform.NoSuchElementException
+//import Predef.NoSuchElementException
 
 object Queue {
   val Empty: Queue[Nothing] = new Queue()

@@ -11,6 +11,9 @@
 
 package scala.tools.nsc.util
 
+
+import compat.StringBuilder
+
 /** This position uses offset in character buffer rather than line/column
  *  relationship.
  *
@@ -98,7 +101,7 @@ class Position( val source : SourceFile, val offset: Int) {
     if(inUltimateSource != this)
       return inUltimateSource.toString
 
-    val sb = new StringBuffer()
+    val sb = new StringBuilder()
     if (source != null) {
       sb.append(source.file.path)
       if (hasOffset) {

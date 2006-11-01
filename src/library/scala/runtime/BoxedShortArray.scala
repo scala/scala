@@ -12,19 +12,21 @@
 package scala.runtime;
 
 
+import Predef.Class
+
 [serializable]
 final class BoxedShortArray(val value: Array[Short]) extends BoxedArray {
 
   def length: Int = value.length
 
-  def apply(index: Int): Object = BoxedShort.box(value(index))
+  def apply(index: Int): AnyRef = BoxedShort.box(value(index))
 
-  def update(index: Int, elem: Object): Unit = {
+  def update(index: Int, elem: AnyRef): Unit = {
     value(index) = elem.asInstanceOf[BoxedNumber].shortValue()
   }
 
-  def unbox(elemTag: String): Object = value
-  def unbox(elemClass: Class): Object = value
+  def unbox(elemTag: String): AnyRef = value
+  def unbox(elemClass: Class): AnyRef = value
 
   override def equals(other: Any) =
     value == other ||

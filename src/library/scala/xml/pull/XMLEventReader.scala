@@ -11,6 +11,9 @@
 
 package scala.xml.pull
 
+
+import java.lang.{Runnable, Thread}
+
 import scala.io.Source
 import scala.xml.parsing.{MarkupParser, MarkupHandler,ExternalSources}
 

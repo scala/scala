@@ -18,7 +18,7 @@ object Test {
   }
   {
     def f: int = g;
-    System.out.println("foo");
+    Console.println("foo");
     def g: int = f;
   }
 }

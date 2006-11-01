@@ -8,15 +8,22 @@
 
 // $Id$
 
+
 package scala.actors.remote
+
+
+import java.lang.Thread
+import java.lang.SecurityException
 
 import java.io.{BufferedReader, DataInputStream, DataOutputStream,
                 IOException, InputStreamReader, OutputStreamWriter,
                 PrintWriter}
 import java.net.{InetAddress, ServerSocket, Socket, UnknownHostException}
 
+import compat.Platform
+
 object TcpService {
-  val random = new java.util.Random(System.currentTimeMillis())
+  val random = new java.util.Random(Platform.currentTime)
 
   def generatePort: int = {
     var portnum = 0

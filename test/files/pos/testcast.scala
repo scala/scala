@@ -22,5 +22,5 @@ object Test {
 
   val b: B = null;
 
-  System.out.println(b.bar);
+  Console.println(b.bar);
 }

@@ -21,9 +21,9 @@ trait Screen {
 
 object DummyScreen extends Screen {
   def drawRect(r: Geom.Rectangle, c: Color): unit =
-    System.out.println("draw " + r + " with " + c);
+    Console.println("draw " + r + " with " + c);
   def fillRect(r: Geom.Rectangle, c: Color): unit =
-    System.out.println("fill " + r + " with " + c);
+    Console.println("fill " + r + " with " + c);
 }
 
 object GUI {
@@ -35,7 +35,7 @@ object GUI {
   trait Glyph {
     def getRect: Geom.Rectangle;
     def setLoc(p: Geom.Point): unit;
-    def draw() = System.out.println("draw " + this);
+    def draw() = Console.println("draw " + this);
   }
 
   class Label(scr: Screen, p: Geom.Point, name: String) extends Glyph {
@@ -71,7 +71,7 @@ object GUI {
     def enable(b: boolean): this.type = { enabled = b; draw(); this }
     def getGlyph = label;
     final def mouseDown(p: Geom.Point): unit =
-      if (enabled) doit() else System.out.println("button is disabled");
+      if (enabled) doit() else Console.println("button is disabled");
 
     /* deferred method to be specified by client */
     def doit(): unit;
@@ -81,7 +81,7 @@ object GUI {
 object GUIClient {
 
   class Application {
-    def quit() = System.out.println("application exited");
+    def quit() = Console.println("application exited");
   }
 
   class QuitButton (scr: Screen, p: Geom.Point, name: String, a: Application)

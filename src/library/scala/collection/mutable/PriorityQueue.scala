@@ -12,7 +12,7 @@
 package scala.collection.mutable
 
 
-import compat.Platform.{NoSuchElementException, UnsupportedOperationException}
+//import Predef.{NoSuchElementException, UnsupportedOperationException}
 
 /** This class implements priority queues using a heap. The
  *  elements of the queue have to be ordered in terms of the

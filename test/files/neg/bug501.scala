@@ -13,6 +13,6 @@ object Magic {
 object Test {
   def main(args: Array[String]): Unit = {
     val i: Int = Magic.magic("42");
-    System.out.println(i);
+    Console.println(i);
   }
 }

@@ -6,19 +6,20 @@
 
 package scala.tools.nsc
 
+import java.lang.System.getProperty
+import java.io.File
+import java.io.PrintWriter
+import java.io.{BufferedReader, InputStreamReader}
 import scala.tools.util.StringOps
-import java.io._
+import compat.StringBuilder
 
 /** The main class for NSC, a compiler for the programming
  *  language Scala.
  */
 object CompileClient {
-  val PRODUCT: String =
-    System.getProperty("scala.tool.name", "scalac")
-  val VERSION: String =
-    System.getProperty("scala.tool.version", "unknown version")
-  val COPYRIGHT: String =
-    System.getProperty("scala.copyright", "(c) 2002-2006 LAMP/EPFL")
+  val PRODUCT: String = getProperty("scala.tool.name", "scalac")
+  val VERSION: String = getProperty("scala.tool.version", "unknown version")
+  val COPYRIGHT: String = getProperty("scala.copyright", "(c) 2002-2006 LAMP/EPFL")
 
   val versionMsg = PRODUCT + " " + VERSION + " -- " + COPYRIGHT
 
@@ -39,7 +40,7 @@ object CompileClient {
 
   def normalize(args: Array[String]): Pair[String, String] = {
     var i = 0
-    val vmArgs = new StringBuffer
+    val vmArgs = new StringBuilder
     var serverAdr = ""
     while (i < args.length) {
       val arg = args(i)
@@ -82,12 +83,12 @@ object CompileClient {
 
     val Pair(vmArgs, serverAdr) = normalize(args)
     if(version) {
-      System.out.println(versionMsg)
+      Console.println(versionMsg)
       return
     }
     if (verbose) {
-      System.out.println("[Server arguments: " + args.mkString("", " ", "]"))
-      System.out.println("[VM arguments: " + vmArgs + "]")
+      Console.println("[Server arguments: " + args.mkString("", " ", "]"))
+      Console.println("[VM arguments: " + vmArgs + "]")
     }
     val socket = if (serverAdr == "") CompileSocket.getOrCreateSocket(vmArgs)
                  else CompileSocket.getSocket(serverAdr)
@@ -100,13 +101,13 @@ object CompileClient {
     while (fromServer != null) {
       if(CompileSocket.errorPattern.matcher(fromServer).matches)
         sawerror = true
-      System.out.println(fromServer)
+      Console.println(fromServer)
       fromServer = in.readLine()
     }
     in.close()
     out.close()
     socket.close()
 
-    System.exit(if (sawerror) 1 else 0)
+    exit(if (sawerror) 1 else 0)
   }
 }

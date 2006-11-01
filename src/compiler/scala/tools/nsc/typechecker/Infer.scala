@@ -334,13 +334,13 @@ trait Infer requires Analyzer {
         val sym1 = sym filter (alt => context.isAccessible(alt, pre, site.isInstanceOf[Super]))
         if (sym1 == NoSymbol) {
           if (settings.debug.value) {
-            System.out.println(context)
-            System.out.println(tree)
-            System.out.println("" + pre + " " + sym.owner + " " + context.owner + " " + context.outer.enclClass.owner + " " + sym.owner.thisType + (pre =:= sym.owner.thisType))
+            Console.println(context)
+            Console.println(tree)
+            Console.println("" + pre + " " + sym.owner + " " + context.owner + " " + context.outer.enclClass.owner + " " + sym.owner.thisType + (pre =:= sym.owner.thisType))
           }
           accessError("")
         } else {
-          //System.out.println("check acc " + sym1 + ":" + sym1.tpe + " from " + pre);//DEBUG
+          //Console.println("check acc " + sym1 + ":" + sym1.tpe + " from " + pre);//DEBUG
           var owntype = try{
             pre.memberType(sym1)
           } catch {
@@ -414,7 +414,7 @@ trait Infer requires Analyzer {
       /** Map type variable to its instance, or, if `variance' is covariant/contravariant,
        *  to its upper/lower bound */
       def instantiateToBound(tvar: TypeVar, variance: int): Type = try {
-        //System.out.println("instantiate "+tvar+tvar.constr+" variance = "+variance);//DEBUG
+        //Console.println("instantiate "+tvar+tvar.constr+" variance = "+variance);//DEBUG
         if (tvar.constr.inst != NoType) {
           instantiate(tvar.constr.inst)
         } else if ((variance & COVARIANT) != 0 && !tvar.constr.hibounds.isEmpty) {
@@ -729,7 +729,7 @@ trait Infer requires Analyzer {
                       "\n --- because ---\n" + ex.getMessage())
         }
       def instError = {
-        if (settings.debug.value) System.out.println("ici " + tree + " " + undetparams + " " + pt)
+        if (settings.debug.value) Console.println("ici " + tree + " " + undetparams + " " + pt)
         if (settings.explaintypes.value) explainTypes(restpe.subst(undetparams, tvars), pt)
         errorTree(tree, "constructor cannot be instantiated to expected type" +
                   foundReqMsg(restpe, pt))
@@ -750,9 +750,9 @@ trait Infer requires Analyzer {
           val pt1 = pt.subst(ptparams, ptvars)
           if (isPopulated(restpe, pt1)) {
             ptvars foreach instantiateTypeVar
-          } else { if (settings.debug.value) System.out.println("no instance: "); instError }
-        } else { if (settings.debug.value) System.out.println("not a subtype " + restpe.subst(undetparams, tvars) + " of " + ptWithWildcards); instError }
-      } else { if (settings.debug.value) System.out.println("not fuly defined: " + pt); instError }
+          } else { if (settings.debug.value) Console.println("no instance: "); instError }
+        } else { if (settings.debug.value) Console.println("not a subtype " + restpe.subst(undetparams, tvars) + " of " + ptWithWildcards); instError }
+      } else { if (settings.debug.value) Console.println("not fuly defined: " + pt); instError }
     }
 
     def instantiateTypeVar(tvar: TypeVar) = {
@@ -946,7 +946,7 @@ trait Infer requires Analyzer {
           if (settings.debug.value) {
             tree match {
               case Select(qual, _) =>
-                System.out.println("qual: " + qual + ":" + qual.tpe +
+                Console.println("qual: " + qual + ":" + qual.tpe +
                                    " with decls " + qual.tpe.decls +
                                    " with members " + qual.tpe.members +
                                    " with members " + qual.tpe.member(newTermName("$minus")))

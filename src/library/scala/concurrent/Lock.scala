@@ -20,7 +20,7 @@ class Lock {
   var available = true
 
   def acquire = synchronized {
-    if (!available) wait()
+    while (!available) wait()
     available = false
   }
 

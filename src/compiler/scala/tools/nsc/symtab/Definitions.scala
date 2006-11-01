@@ -271,7 +271,8 @@ trait Definitions requires SymbolTable {
         if (module) sym.info.member(fullname.subName(i, j)).suchThat(.hasFlag(MODULE))
         else sym.info.member(fullname.subName(i, j).toTypeName)
       if (result == NoSymbol) {
-        if (settings.debug.value) { System.out.println(sym.info); System.out.println(sym.info.members) }//debug
+        if (settings.debug.value)
+          { Console.println(sym.info); Console.println(sym.info.members) }//debug
         throw new FatalError((if (module) "object " else "class ") + fullname + " not found.")
       }
       result
@@ -476,7 +477,7 @@ trait Definitions requires SymbolTable {
         else flatNameString(sym.owner, separator) + "$" + sym.simpleName;
       def signature1(etp: Type): String = {
         if (etp.symbol == ArrayClass) "[" + signature1(erasure(etp.typeArgs.head))
-        else if (isValueClass(etp.symbol)) String.valueOf(abbrvTag(etp.symbol))
+        else if (isValueClass(etp.symbol)) abbrvTag(etp.symbol).toString()
         else "L" + flatNameString(etp.symbol, '/') + ";"
       }
       val etp = erasure(tp)
@@ -531,8 +532,9 @@ trait Definitions requires SymbolTable {
       AllClass = newClass(ScalaPackageClass, nme.Nothing, anyparam)
         .setFlag(ABSTRACT | TRAIT | FINAL)
 
-      ClassClass = getClass("java.lang.Class")
       StringClass = getClass("java.lang.String")
+
+      ClassClass = getClass("java.lang.Class")
       ThrowableClass = getClass("java.lang.Throwable")
       NullPointerExceptionClass = getClass("java.lang.NullPointerException")
       NonLocalReturnExceptionClass = getClass("scala.runtime.NonLocalReturnException")

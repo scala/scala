@@ -6,6 +6,8 @@
 
 package scala.tools.nsc.util
 
+import compat.StringBuilder
+
 object NameTransformer {
   private val nops = 128
   private val ncodes = 26 * 26
@@ -46,14 +48,14 @@ object NameTransformer {
    *  @return     ...
    */
   def encode(name: String): String = {
-    var buf: StringBuffer = null
+    var buf: StringBuilder = null
     val len = name.length()
     var i = 0
     while (i < len) {
       val c = name charAt i
       if (c < nops && op2code(c) != null) {
         if (buf == null) {
-          buf = new StringBuffer()
+          buf = new StringBuilder()
           buf.append(name.substring(0, i))
         }
         buf.append(op2code(c))
@@ -74,7 +76,7 @@ object NameTransformer {
     //System.out.println("decode: " + name);//DEBUG
     val name = if (name0.endsWith("<init>")) name0.substring(0, name0.length() - ("<init>").length()) + "this"
                else name0;
-    var buf: StringBuffer = null
+    var buf: StringBuilder = null
     val len = name.length()
     var i = 0
     while (i < len) {
@@ -89,7 +91,7 @@ object NameTransformer {
             while (ops != null && !name.startsWith(ops.code, i)) ops = ops.next;
             if (ops != null) {
               if (buf == null) {
-                buf = new StringBuffer()
+                buf = new StringBuilder()
                 buf.append(name.substring(0, i))
               }
               buf.append(ops.op)

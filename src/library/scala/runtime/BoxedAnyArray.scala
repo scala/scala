@@ -12,6 +12,9 @@
 package scala.runtime
 
 
+import Predef.Class
+import compat.Platform
+
 /**
  * Arrays created by <code>new Array[T](length)</code> where <code>T</code>
  * is a type variable.
@@ -19,12 +22,12 @@ package scala.runtime
 [serializable]
 final class BoxedAnyArray(val length: Int) extends BoxedArray {
 
-  private var boxed = new Array[Object](length)
+  private var boxed = new Array[AnyRef](length)
   private val hash = boxed.hashCode()
-  private var unboxed: Object = null
+  private var unboxed: AnyRef = null
   private var elemClass: Class = null
 
-  def apply(index: Int): Object = synchronized {
+  def apply(index: Int): AnyRef = synchronized {
     if (unboxed == null)
       boxed(index);
     else if (elemClass eq ScalaRunTime.IntTYPE)
@@ -44,10 +47,10 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
     else if (elemClass eq ScalaRunTime.BooleanTYPE)
       BoxedBoolean.box(unboxed.asInstanceOf[Array[Boolean]](index))
     else
-      unboxed.asInstanceOf[Array[Object]](index)
+      unboxed.asInstanceOf[Array[AnyRef]](index)
   }
 
-  def update(index: Int, elem: Object): Unit = synchronized {
+  def update(index: Int, elem: AnyRef): Unit = synchronized {
     if (unboxed == null)
       boxed(index) = elem
     else if (elemClass eq ScalaRunTime.IntTYPE)
@@ -67,10 +70,10 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
     else if (elemClass eq ScalaRunTime.BooleanTYPE)
       unboxed.asInstanceOf[Array[Boolean]](index) = elem.asInstanceOf[BoxedBoolean].value
     else
-      unboxed.asInstanceOf[Array[Object]](index) = elem
+      unboxed.asInstanceOf[Array[AnyRef]](index) = elem
   }
 
-  def unbox(elemTag: String): Object =
+  def unbox(elemTag: String): AnyRef =
     if (elemTag eq ScalaRunTime.IntTag) unbox(ScalaRunTime.IntTYPE)
     else if (elemTag eq ScalaRunTime.DoubleTag) unbox(ScalaRunTime.DoubleTYPE)
     else if (elemTag eq ScalaRunTime.FloatTag) unbox(ScalaRunTime.FloatTYPE)
@@ -79,9 +82,9 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
     else if (elemTag eq ScalaRunTime.ByteTag) unbox(ScalaRunTime.ByteTYPE)
     else if (elemTag eq ScalaRunTime.ShortTag) unbox(ScalaRunTime.ShortTYPE)
     else if (elemTag eq ScalaRunTime.BooleanTag) unbox(ScalaRunTime.BooleanTYPE)
-    else unbox(Class.forName(elemTag))
+    else unbox(Platform.getClassForName(elemTag))
 
-  def unbox(elemClass: Class): Object = synchronized {
+  def unbox(elemClass: Class): AnyRef = synchronized {
     if (unboxed == null) {
       this.elemClass = elemClass;
       if (elemClass eq ScalaRunTime.IntTYPE) {
@@ -157,11 +160,11 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
 	}
 	unboxed = newvalue;
       } else if (elemClass == boxed.getClass().getComponentType()) {
-        // todo: replace with ScalaRunTime.Object.class
+        // todo: replace with ScalaRunTime.AnyRef.class
 	unboxed = boxed
       } else {
-	unboxed = java.lang.reflect.Array.newInstance(elemClass, length);
-	System.arraycopy(boxed, 0, unboxed, 0, length);
+	unboxed = Platform.createArray(elemClass, length);
+	Platform.arraycopy(boxed, 0, unboxed, 0, length);
       }
       boxed = null
     }
@@ -175,12 +178,12 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
 
   override def hashCode(): Int = hash
 
-  def value: Object = {
+  def value: AnyRef = {
     if (unboxed == null) throw new NotDefinedError("BoxedAnyArray.value")
     unboxed
   }
 
-  private def adapt(other: Object): Object =
+  private def adapt(other: AnyRef): AnyRef =
     if (this.unboxed == null)
       other match {
         case that: BoxedAnyArray =>
@@ -223,23 +226,23 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
           other
       }
 
-  override def copyFrom(src: Object, from: Int, to: Int, len: Int): Unit = {
+  override def copyFrom(src: AnyRef, from: Int, to: Int, len: Int): Unit = {
     val src1 = adapt(src)
     Array.copy(src1, from, if (unboxed != null) unboxed else boxed, to, len)
   }
 
-  override def copyTo(from: Int, dest: Object, to: Int, len: Int): Unit = {
+  override def copyTo(from: Int, dest: AnyRef, to: Int, len: Int): Unit = {
     var dest1 = adapt(dest)
     Array.copy(if (unboxed != null) unboxed else boxed, from, dest1, to, len)
   }
 
-  override def subArray(start: Int, end: Int): Object = {
+  override def subArray(start: Int, end: Int): AnyRef = {
     val result = new BoxedAnyArray(end - start);
     Array.copy(this, start, result, 0, end - start)
     result
   }
 
-  override def filter(p: Any => Boolean): Object = {
+  override def filter(p: Any => Boolean): AnyRef = {
     val include = new Array[Boolean](length)
     var len = 0
     var i = 0

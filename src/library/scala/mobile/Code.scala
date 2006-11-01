@@ -11,8 +11,9 @@
 
 package scala.mobile
 
-import java.lang.reflect.{Constructor, Method, Modifier}
 
+import java.lang.reflect.{Constructor, Method, Modifier}
+import java.lang.NoSuchMethodException
 
 /** The class <code>Code</code> provides <code>apply</code> methods
  *  with different arities (actually up to 9 parameters) to invoke

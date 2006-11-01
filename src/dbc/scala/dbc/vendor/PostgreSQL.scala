@@ -12,6 +12,8 @@
 package scala.dbc.vendor;
 
 
+import compat.Platform
+
 abstract class PostgreSQL extends Vendor {
 
   def uri:java.net.URI;
@@ -20,7 +22,7 @@ abstract class PostgreSQL extends Vendor {
 
   val retainedConnections = 5;
 
-  val nativeDriverClass = Class.forName("org.postgresql.Driver");
+  val nativeDriverClass = Platform.getClassForName("org.postgresql.Driver");
 
   val urlProtocolString = "jdbc:postgresql:"
 

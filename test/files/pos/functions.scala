@@ -6,7 +6,7 @@ object Test {
     val x = 1;
     Process.receive {
       case "abc" if x == 2 =>
-        System.out.println("hi!")
+        Console.println("hi!")
     }
   }
 }

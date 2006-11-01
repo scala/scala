@@ -12,6 +12,8 @@
 package scala.reflect
 
 
+import Predef.Error
+
 class Code[Type](val tree: Tree)
 
 object Code {

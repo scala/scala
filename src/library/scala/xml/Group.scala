@@ -13,7 +13,6 @@ package scala.xml
 
 
 import compat.StringBuilder
-import compat.Platform.UnsupportedOperationException
 
 /** A hack to group XML nodes in one node for output.
  *

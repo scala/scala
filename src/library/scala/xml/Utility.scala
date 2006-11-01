@@ -67,7 +67,7 @@ object Utility extends AnyRef with parsing.TokenTests {
       case "gt"   => s.append('>')
       case "amp"  => s.append('&')
       case "quot" => s.append('"')
-      case "apos" => s.append(''')
+      case "apos" => s.append('\'')
       case _   => null
     }
 
@@ -426,20 +426,20 @@ object Utility extends AnyRef with parsing.TokenTests {
     while (ch() != ';') {
       ch() match {
         case '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' =>
-          i = i * base + Character.digit(ch(), base)
+          i = i * base + ch().asDigit
         case 'a' | 'b' | 'c' | 'd' | 'e' | 'f'
            | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' =>
           if (! hex)
             reportSyntaxError("hex char not allowed in decimal char ref\n" +
                               "Did you mean to write &#x ?")
           else
-            i = i * base + Character.digit(ch(), base)
+            i = i * base + ch().asDigit
         case _ =>
           reportSyntaxError("character '" + ch() + " not allowed in char ref\n")
       }
       nextch()
     }
-    String.valueOf(i.asInstanceOf[char])
+    i.asInstanceOf[char].toString()
   }
 
 }

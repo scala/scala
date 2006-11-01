@@ -11,7 +11,9 @@ package scala.tools.nsc.symtab.classfile
 
 import scala.tools.nsc.io.{AbstractFile, PlainFile, ZipArchive}
 
-import java.io.{File, FileInputStream, IOException};
+import java.lang.Float.intBitsToFloat
+import java.lang.Double.longBitsToDouble
+import java.io.{File, FileInputStream, IOException}
 
 /** this class reads files byte per byte. Only used by ClassFileParser
  */
@@ -75,11 +77,11 @@ class AbstractFileReader(val file: AbstractFile) {
 
   /** extract a float at position bp from buf
    */
-  def getFloat(mybp: Int): Float = Float.intBitsToFloat(getInt(mybp))
+  def getFloat(mybp: Int): Float = intBitsToFloat(getInt(mybp))
 
   /** extract a double at position bp from buf
    */
-  def getDouble(mybp: Int): Double = Double.longBitsToDouble(getLong(mybp))
+  def getDouble(mybp: Int): Double = longBitsToDouble(getLong(mybp))
 
   /** skip next 'n' bytes
    */

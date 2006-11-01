@@ -1,5 +1,5 @@
 class S[A](f: A => A, x: A) {
-  System.out.println(f(x));
+  Console.println(f(x));
 }
 class T[B](f: B => B, y: B) extends S((x: B) => f(x), y) {
 }

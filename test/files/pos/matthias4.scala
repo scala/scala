@@ -20,7 +20,7 @@ object C requires B {
 }
 */
 
-trait _a extends Object with _b {
+trait _a extends AnyRef with _b {
     val a: _a;
     val A: A;
     type A <: a.AObject;
@@ -29,7 +29,7 @@ trait _a extends Object with _b {
         def setX(x: B.X): Unit;
     }
 }
-trait a123 extends Object with _a with _b {
+trait a123 extends AnyRef with _a with _b {
     val a: this.type = this;
     val A: A = new A();
     class A() extends AObject {
@@ -48,7 +48,7 @@ trait _b {
         def setX(x: X): Unit;
     }
 }
-abstract class b() extends Object with _b {
+abstract class b() extends AnyRef with _b {
     val b: this.type = this;
     val B: B = new B();
     class B() extends BObject {
@@ -64,7 +64,7 @@ trait _m {
     type M <: m.MObject;
     trait MObject {}
 }
-abstract class m() extends Object with _m with _b {
+abstract class m() extends AnyRef with _m with _b {
     val m: this.type = this;
     val M: M = new M();
     class M() extends MObject with a123 with Linker {

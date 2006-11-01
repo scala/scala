@@ -12,6 +12,8 @@
 package scala.concurrent
 
 
+import java.lang.Thread
+
 /** The object <code>ops</code> ...
  *
  *  @author  Martin Odersky

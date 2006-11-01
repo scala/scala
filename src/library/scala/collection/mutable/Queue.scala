@@ -12,7 +12,7 @@
 package scala.collection.mutable
 
 
-import compat.Platform.{NoSuchElementException, UnsupportedOperationException}
+//import Predef.{NoSuchElementException, UnsupportedOperationException}
 
 /** <code>Queue</code> objects implement data structures that allow to
  *  insert and retrieve elements in a first-in-first-out (FIFO) manner.

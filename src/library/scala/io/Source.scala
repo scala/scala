@@ -11,11 +11,10 @@
 
 package scala.io
 
+
 import java.io.{File, FileInputStream, PrintStream}
 
 import compat.StringBuilder
-import compat.Platform.IllegalArgumentException
-
 
 /** This object provides convenience methods to create an iterable
  *  representation of a source file.
@@ -216,7 +215,7 @@ abstract class Source extends Iterator[Char] {
    *  @throws scala.compat.Platform.IllegalArgumentException
    */
   def getLine(line: Int): String = {
-    val buf = new StringBuffer()
+    val buf = new StringBuilder()
     val it = reset
     var i = 0
 
@@ -285,7 +284,7 @@ abstract class Source extends Iterator[Char] {
    *  @param out ...
    */
   def report(pos: Int, msg: String, out: PrintStream): Unit = {
-    val buf = new StringBuffer
+    val buf = new StringBuilder
     val line = Position.line(pos)
     val col = Position.column(pos)
     buf.append(descr + ":" + line + ":" + col + ": " + msg)

@@ -12,7 +12,6 @@
 package scala.xml
 
 import compat.StringBuilder
-import compat.Platform.UnsupportedOperationException
 
 /** prefixed attributes always have a non-null namespace.
  *  @param value the attribute value, which may not be null

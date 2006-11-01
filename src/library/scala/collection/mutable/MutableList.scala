@@ -11,8 +11,8 @@
 
 package scala.collection.mutable
 
-import compat.Platform.NoSuchElementException
 
+//import Predef.NoSuchElementException
 
 /** This class is used internally to represent mutable lists. It is the
  *  basis for the implementation of the classes <code>Buffer</code>,

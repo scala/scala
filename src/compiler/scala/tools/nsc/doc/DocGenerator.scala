@@ -10,6 +10,7 @@ import java.io.{File, FileOutputStream, FileWriter}
 import java.util.StringTokenizer
 import java.util.regex.Pattern
 
+import compat.Platform.{EOL => LINE_SEPARATOR}
 import scala.collection.immutable._
 import scala.collection.mutable.ListBuffer
 import scala.tools.nsc._
@@ -937,8 +938,6 @@ abstract class DocGenerator extends Models {
   </frameset>;
 
   val root = <b></b>
-
-  private val LINE_SEPARATOR = System.getProperty("line.separator", "\n")
 
   private val NAME_SUFFIX_OBJECT  = "$object"
   private val NAME_SUFFIX_PACKAGE = "$package"

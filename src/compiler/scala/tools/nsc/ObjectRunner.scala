@@ -7,6 +7,8 @@
 
 package scala.tools.nsc
 
+import java.lang.Class
+import java.lang.{ClassNotFoundException, NoSuchMethodException}
 import java.io.File
 import java.lang.reflect.{Method,Modifier}
 import java.net.URLClassLoader

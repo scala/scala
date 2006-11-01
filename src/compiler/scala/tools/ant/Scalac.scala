@@ -8,6 +8,8 @@
 
 package scala.tools.ant {
 
+  import java.lang.System.getProperty
+
   import java.io.File
   import java.net.{URL, URLClassLoader}
   import java.util.{ArrayList, Vector}
@@ -67,10 +69,8 @@ package scala.tools.ant {
    */
   class Scalac extends MatchingTask {
 
-    private val SCALA_PRODUCT: String =
-      System.getProperty("scala.product", "scalac")
-    private val SCALA_VERSION: String =
-      System.getProperty("scala.version", "Unknown version")
+    private val SCALA_PRODUCT: String = getProperty("scala.product", "scalac")
+    private val SCALA_VERSION: String = getProperty("scala.version", "Unknown version")
 
     /** The unique Ant file utilities instance to use in this task. */
     private val fileUtils = FileUtils.newFileUtils()

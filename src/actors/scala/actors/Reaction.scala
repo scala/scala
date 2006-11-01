@@ -6,9 +6,14 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: $
+// $Id$
+
 
 package scala.actors
+
+
+import java.lang.Runnable
+import java.lang.InterruptedException
 
 /**
  * The abstract class <code>Reaction</code> associates an instance
@@ -35,15 +40,15 @@ private[actors] class StartTask(a: Actor) extends Reaction {
   def actor = a
 
   def run(): Unit = {
-    val t = Thread.currentThread()
+    val t = currentThread
     val saved = Actor.selfs.get(t).asInstanceOf[Actor]
     Actor.selfs.put(t, a)
     try {
       a.act()
-      if (Thread.currentThread().isInterrupted())
+      if (currentThread.isInterrupted())
         throw new InterruptedException
       a.kill()
-      if (Thread.currentThread().isInterrupted())
+      if (currentThread.isInterrupted())
         throw new InterruptedException
       a.exit("normal")
     }
@@ -75,15 +80,15 @@ private[actors] class ActorTask(a: Actor,
   def actor = a
 
   def run(): Unit = {
-    val t = Thread.currentThread()
+    val t = currentThread
     val saved = Actor.selfs.get(t).asInstanceOf[Actor]
     Actor.selfs.put(t, a)
     try {
       f(msg)
-      if (Thread.currentThread().isInterrupted())
+      if (currentThread.isInterrupted())
         throw new InterruptedException
       a.kill()
-      if (Thread.currentThread().isInterrupted())
+      if (currentThread.isInterrupted())
         throw new InterruptedException
       a.exit("normal")
     }

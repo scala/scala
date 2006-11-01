@@ -13,7 +13,6 @@ package scala
 
 
 import Predef._
-import compat.Platform.NoSuchElementException
 
 /** The <code>Iterator</code> object provides various functions for
  *  creating specialized iterators.

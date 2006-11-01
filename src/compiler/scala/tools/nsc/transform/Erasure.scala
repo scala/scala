@@ -189,8 +189,8 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
     def unboxOp(tp: Type): Name = {
       val clazzName = tp.symbol.name.toString()
       newTermName(
-        String.valueOf((clazzName.charAt(0) + ('a' - 'A')).asInstanceOf[char]) +
-        clazzName.substring(1) + "Value")
+        //String.valueOf((clazzName.charAt(0) + ('a' - 'A')).asInstanceOf[char]) +
+        clazzName.charAt(0).toLowerCase + clazzName.substring(1) + "Value")
     }
 
     /** Unbox `tree' of boxed type to expected type `pt' */
@@ -214,7 +214,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
                 else
                   Literal(signature(pt.typeArgs.head));
 */
-              //System.out.println("unboxing " + tree + ":" + tree.tpe + " to " + pt);//DEBUG
+              //Console.println("unboxing " + tree + ":" + tree.tpe + " to " + pt);//DEBUG
               //gen.mkRuntimeCall(nme.arrayValue, List(tree1, elemTag))
               gen.mkRuntimeCall(nme.arrayValue, List(tree1, Literal(pt.typeArgs.head)))
             } else {
@@ -395,7 +395,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
       } catch {
         case ex: Throwable =>
           //if (settings.debug.value)
-            System.out.println("exception when typing " + tree);
+            Console.println("exception when typing " + tree);
           throw ex
       }
       def adaptCase(cdef: CaseDef): CaseDef = {
@@ -653,7 +653,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
 
           case Template(parents, body) =>
             assert(!currentOwner.isImplClass)
-            //System.out.println("checking no dble defs " + tree)//DEBUG
+            //Console.println("checking no dble defs " + tree)//DEBUG
             checkNoDoubleDefs(tree.symbol.owner)
             copy.Template(tree, parents, addBridges(body, currentOwner))
           case _ =>

@@ -9,7 +9,9 @@
 // $Id$
 
 
-package scala;
+package scala
 
 
-final class NotDefinedError(msg: String) extends Error("not defined: " + msg);
+import Predef.Error
+
+final class NotDefinedError(msg: String) extends Error("not defined: " + msg)

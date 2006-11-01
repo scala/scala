@@ -10,6 +10,8 @@ import symtab.Flags._
 import collection.mutable.HashMap
 import transform.InfoTransform
 
+import compat.Math.MIN_INT
+
 /** <p>
  *    Post-attribution checking and transformation.
  *  </p>
@@ -135,24 +137,24 @@ abstract class RefChecks extends InfoTransform {
                         (if (otherAccess == "") "public" else "at least "+otherAccess))
         }
 
-	//System.out.println(infoString(member) + " overrides " + infoString(other) + " in " + clazz);//DEBUG
+	//Console.println(infoString(member) + " overrides " + infoString(other) + " in " + clazz);//DEBUG
 
 	// return if we already checked this combination elsewhere
 	if (member.owner != clazz) {
 	  if ((member.owner isSubClass other.owner) &&
 	      ((member hasFlag DEFERRED) || !(other hasFlag DEFERRED))) {
-		//System.out.println(infoString(member) + " shadows1 " + infoString(other) " in " + clazz);//DEBUG
+		//Console.println(infoString(member) + " shadows1 " + infoString(other) " in " + clazz);//DEBUG
 		return;
 	      }
 	  if (clazz.info.parents exists (parent =>
 	    (parent.symbol isSubClass other.owner) && (parent.symbol isSubClass member.owner) &&
 	    ((member hasFlag DEFERRED) || !(other hasFlag DEFERRED)))) {
-	      //System.out.println(infoString(member) + " shadows2 " + infoString(other) + " in " + clazz);//DEBUG
+	      //Console.println(infoString(member) + " shadows2 " + infoString(other) + " in " + clazz);//DEBUG
 		return;
 	    }
 	  if (clazz.info.parents forall (parent =>
 	    (parent.symbol isSubClass other.owner) == (parent.symbol isSubClass member.owner))) {
-	      //System.out.println(infoString(member) + " shadows " + infoString(other) + " in " + clazz);//DEBUG
+	      //Console.println(infoString(member) + " shadows " + infoString(other) + " in " + clazz);//DEBUG
 	      return;
 	    }
 	}
@@ -205,7 +207,7 @@ abstract class RefChecks extends InfoTransform {
 
       val opc = new overridingPairs.Cursor(clazz)
       while (opc.hasNext) {
-	//System.out.println("overrides " + opc.overriding/* + ":" + opc.overriding.tpe*/ + opc.overriding.locationString + " " + opc.overridden/* + ":" + opc.overridden.tpe*/ + opc.overridden.locationString + opc.overridden.hasFlag(DEFERRED));//DEBUG
+	//Console.println("overrides " + opc.overriding/* + ":" + opc.overriding.tpe*/ + opc.overriding.locationString + " " + opc.overridden/* + ":" + opc.overridden.tpe*/ + opc.overridden.locationString + opc.overridden.hasFlag(DEFERRED));//DEBUG
 	if (!opc.overridden.isClass) checkOverride(clazz, opc.overriding, opc.overridden);
 
 	opc.next
@@ -239,7 +241,7 @@ abstract class RefChecks extends InfoTransform {
 	    (clazz.info.baseClasses.tail forall {
                bc => member.matchingSymbol(bc, clazz.thisType) == NoSymbol
             })) {
-          // for (val bc <- clazz.info.baseClasses.tail) System.out.println("" + bc + " has " + bc.info.decl(member.name) + ":" + bc.info.decl(member.name).tpe);//DEBUG
+          // for (val bc <- clazz.info.baseClasses.tail) Console.println("" + bc + " has " + bc.info.decl(member.name) + ":" + bc.info.decl(member.name).tpe);//DEBUG
 	  unit.error(member.pos, member.toString() + " overrides nothing");
 	  member resetFlag OVERRIDE
 	}
@@ -322,7 +324,7 @@ abstract class RefChecks extends InfoTransform {
 	var sym = base
 	var state = CoVariance
 	while (sym != clazz && state != AnyVariance) {
-	  //System.out.println("flip: " + sym + " " + sym.isParameter());//DEBUG
+	  //Console.println("flip: " + sym + " " + sym.isParameter());//DEBUG
 	  if ((sym hasFlag PARAM) && !sym.owner.isConstructor) state = -state;
 	  else if (!sym.owner.isClass) state = AnyVariance;
 	  else if (sym.isAliasType) state = NoVariance;
@@ -344,7 +346,7 @@ abstract class RefChecks extends InfoTransform {
 	  if (sym.variance != NoVariance) {
 	    val v = relativeVariance(sym);
 	    if (v != AnyVariance && sym.variance != v * variance) {
-	      //System.out.println("relativeVariance(" + base + "," + sym + ") = " + v);//DEBUG
+	      //Console.println("relativeVariance(" + base + "," + sym + ") = " + v);//DEBUG
 	      unit.error(base.pos,
 			 varianceString(sym.variance) + " " + sym +
 			 " occurs in " + varianceString(v * variance) +
@@ -381,7 +383,7 @@ abstract class RefChecks extends InfoTransform {
 
     class LevelInfo(val outer: LevelInfo) {
       val scope: Scope = if (outer == null) newScope else newScope(outer.scope)
-      var maxindex: int = Integer.MIN_VALUE
+      var maxindex: int = MIN_INT
       var refpos: int = _
       var refsym: Symbol = _
     }
@@ -468,7 +470,7 @@ abstract class RefChecks extends InfoTransform {
       case ValDef(_, _, _, _) =>
 	val tree1 = transform(tree); // important to do before forward reference check
 	if (tree.symbol.isLocal && index <= currentLevel.maxindex) {
-	  if (settings.debug.value) System.out.println(currentLevel.refsym);
+	  if (settings.debug.value) Console.println(currentLevel.refsym);
 	  unit.error(currentLevel.refpos, "forward reference extends over definition of " + tree.symbol);
 	}
 	List(tree1)
@@ -515,7 +517,7 @@ abstract class RefChecks extends InfoTransform {
           case _ =>
             false
         }
-        //System.out.println("is irefutable? " + pat + ":" + pat.tpe + " against " + seltpe + ": " + result);//DEBUG
+        //Console.println("is irefutable? " + pat + ":" + pat.tpe + " against " + seltpe + ": " + result);//DEBUG
         result
       }
 
@@ -590,7 +592,7 @@ abstract class RefChecks extends InfoTransform {
 	  else qual match {
 	    case Super(qualifier, mix) =>
               val base = qual.symbol;
-              //System.out.println("super: " + tree + " in " + base);//DEBUG
+              //Console.println("super: " + tree + " in " + base);//DEBUG
               assert(!(base.isTrait && sym.isTerm && mix == nme.EMPTY.toTypeName)) // term should have been eliminated by super accessors
             case _ =>
           }

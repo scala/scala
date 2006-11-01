@@ -6,6 +6,7 @@
 
 package scala.tools.nsc.ast.parser
 
+import compat.StringBuilder
 import Tokens._
 import scala.tools.nsc.util.{Position, SourceFile}
 import SourceFile.{LF, FF, CR, SU}
@@ -61,7 +62,7 @@ trait Scanners requires SyntaxAnalyzer {
 
     /** character buffer for literals
      */
-    val cbuf = new StringBuffer()
+    val cbuf = new StringBuilder()
 
     /** append Unicode character to "lit" buffer
     */
@@ -75,7 +76,7 @@ trait Scanners requires SyntaxAnalyzer {
 
     /** buffer for the documentation comment
      */
-    var docBuffer: StringBuffer = null
+    var docBuffer: StringBuilder = null
 
     /** add the given character to the documentation buffer
      */
@@ -416,7 +417,7 @@ trait Scanners requires SyntaxAnalyzer {
         var openComments = 1
         in.next
         if (in.ch == '*' && onlyPresentation)
-          docBuffer = new StringBuffer("/**")
+          docBuffer = new StringBuilder("/**")
         while (openComments > 0) {
           do {
             do {
@@ -819,7 +820,7 @@ trait Scanners requires SyntaxAnalyzer {
       def enterKeyword(n: Name, tokenId: int): unit = {
         while (tokenId >= tokenName.length) {
           val newTokName = new Array[Name](tokenName.length * 2)
-          System.arraycopy(tokenName, 0, newTokName, 0, newTokName.length)
+          Array.copy(tokenName, 0, newTokName, 0, newTokName.length)
           tokenName = newTokName
         }
         tokenName(tokenId) = n

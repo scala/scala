@@ -1,3 +1,5 @@
+import java.lang.Deprecated
+
 object Test1 {
   class Foo {
     [remote]

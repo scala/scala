@@ -12,7 +12,7 @@
 package scala.collection.mutable
 
 
-import compat.Platform.UnsupportedOperationException
+//import Predef.UnsupportedOperationException
 
 /** This class is typically used as a mixin. It adds a subscription
  *  mechanism to the <code>Buffer</code> class into which this abstract

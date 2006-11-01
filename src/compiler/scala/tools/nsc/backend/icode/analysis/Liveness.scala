@@ -1,5 +1,6 @@
 package scala.tools.nsc.backend.icode.analysis;
 
+import compat.StringBuilder
 import scala.collection.mutable.{HashMap, Map}
 import scala.collection.immutable.{Set, ListSet}
 
@@ -99,7 +100,7 @@ abstract class Liveness {
     } /* def interpret */
 
     override def toString(): String = {
-      val buf = new StringBuffer();
+      val buf = new StringBuilder();
       for (val b <- method.code.blocks.toList) {
         buf.append("\nlive-in(" + b + ")=" + in(b) + "\nlive-out(" + b + ")=" + out(b));
       }

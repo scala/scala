@@ -8,6 +8,7 @@ package scala.tools.nsc
 
 import java.io._
 import java.nio.charset._
+import compat.Platform.currentTime
 import scala.tools.nsc.io.{SourceReader, AbstractFile}
 import scala.tools.nsc.util.ClassPath
 import scala.tools.nsc.util.{Position, SourceFile}
@@ -98,7 +99,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
 
   def error(msg: String) = reporter.error(null, msg)
   def warning(msg: String) = reporter.warning(null, msg)
-  def inform(msg: String) = System.err.println(msg)
+  def inform(msg: String) = Console.err.println(msg)
   def inform[T](msg: String, value: T): T = { inform(msg+value); value }
 
   //reporter.info(null, msg, true)
@@ -107,9 +108,9 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     if (settings.verbose.value) inform("[" + msg + "]")
 
   def informTime(msg: String, start: Long) =
-    informProgress(msg + " in " + (System.currentTimeMillis() - start) + "ms")
+    informProgress(msg + " in " + (currentTime - start) + "ms")
 
-  def log(msg: Object): unit =
+  def log(msg: AnyRef): unit =
     if (settings.log contains phase.name) inform("[log " + phase + "] " + msg)
 
   class ErrorWithPosition(val pos: Int, val error: Throwable) extends Error
@@ -460,14 +461,14 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
       else false
 
     def compileSources(sources: List[SourceFile]): unit = {
-      val startTime = System.currentTimeMillis()
+      val startTime = currentTime
       reporter.reset
       for (val source <- sources)
         addUnit(new CompilationUnit(source))
 
       globalPhase = firstPhase
       while (globalPhase != terminalPhase && reporter.errors == 0) {
-        val startTime = System.currentTimeMillis()
+        val startTime = currentTime
         phase = globalPhase
         globalPhase.run
         if (settings.print contains globalPhase.name)

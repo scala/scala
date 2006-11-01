@@ -9,6 +9,8 @@
 
 package scala.tools.ant {
 
+  import compat.StringBuilder
+
   import scala.collection.immutable.{Map, ListMap}
 
   import java.io.{File, InputStream, FileWriter}
@@ -267,12 +269,12 @@ package scala.tools.ant {
           bufbuf
         }
       }
-      val builder = new StringBuffer()
+      val builder = new StringBuilder()
       while (chars.hasNext) {
         val char = chars.next
         if (char == '@') {
           var char = chars.next
-          val token = new StringBuffer()
+          val token = new StringBuilder()
           while (chars.hasNext && char != '@') {
             token.append(char)
             char = chars.next

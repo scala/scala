@@ -95,7 +95,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
       postTransform(mainTransform(tree))
     } catch {
       case ex: Throwable =>
-        System.out.println("exception when traversing " + tree)
+        Console.println("exception when traversing " + tree)
         throw ex
     }
 

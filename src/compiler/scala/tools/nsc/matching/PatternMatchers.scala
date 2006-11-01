@@ -6,6 +6,7 @@
 
 package scala.tools.nsc.matching
 
+import compat.StringBuilder
 import scala.tools.nsc.util.Position
 
 /** This trait ...
@@ -292,7 +293,7 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
     /** pretty printer
      */
     def print(): Unit =
-      Console.println(root.and.print("", new StringBuffer()).toString())
+      Console.println(root.and.print("", new StringBuilder()).toString())
 
     /** enters a sequence of cases into the pattern matcher
      */
@@ -323,9 +324,9 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
         val bd = new Array[Array[ValDef]](tree.bound.length + 1)
         val ng = new Array[Tree](tree.guard.length + 1)
         val nb = new Array[Tree](tree.body.length + 1)
-        System.arraycopy(tree.bound, 0, bd, 0, tree.bound.length)
-        System.arraycopy(tree.guard, 0, ng, 0, tree.guard.length)
-        System.arraycopy(tree.body, 0, nb, 0, tree.body.length)
+        Array.copy(tree.bound, 0, bd, 0, tree.bound.length)
+        Array.copy(tree.guard, 0, ng, 0, tree.guard.length)
+        Array.copy(tree.body, 0, nb, 0, tree.body.length)
         bd(bd.length - 1) = bound
         ng(ng.length - 1) = guard
         nb(nb.length - 1) = body
@@ -577,7 +578,7 @@ print()
       }
 
       val caseAccs = casted.tpe.symbol.caseFieldAccessors;
-      if (caseAccs.length <= index) System.out.println("selecting " + index + " in case fields of " + casted.tpe.symbol + "=" + casted.tpe.symbol.caseFieldAccessors);//debug
+      if (caseAccs.length <= index) Console.println("selecting " + index + " in case fields of " + casted.tpe.symbol + "=" + casted.tpe.symbol.caseFieldAccessors);//debug
       val ts = caseAccs(index);
       val accTree = typed(Apply(Select(ident, ts), List()))
       val accType = accTree.tpe

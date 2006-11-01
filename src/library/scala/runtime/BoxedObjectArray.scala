@@ -12,17 +12,19 @@
 package scala.runtime
 
 
+import Predef.Class
+
 [serializable]
-final class BoxedObjectArray(val value: Array[Object]) extends BoxedArray {
+final class BoxedObjectArray(val value: Array[AnyRef]) extends BoxedArray {
 
   def length: Int = value.length
 
-  def apply(index: Int): Object = value(index)
+  def apply(index: Int): AnyRef = value(index)
 
-  def update(index: Int, elem: Object): Unit = { value(index) = elem }
+  def update(index: Int, elem: AnyRef): Unit = { value(index) = elem }
 
-  def unbox(elemTag: String): Object = value
-  def unbox(elemClass: Class): Object = value
+  def unbox(elemTag: String): AnyRef = value
+  def unbox(elemClass: Class): AnyRef = value
 
   override def equals(other: Any): Boolean =
     value == other ||
@@ -30,18 +32,18 @@ final class BoxedObjectArray(val value: Array[Object]) extends BoxedArray {
 
   override def hashCode(): Int = value.hashCode()
 
-  private def create(length: Int): Array[Object] = {
+  private def create(length: Int): Array[AnyRef] = {
     val elemClass = value.getClass().getComponentType()
-    java.lang.reflect.Array.newInstance(elemClass, length).asInstanceOf[Array[Object]]
+    java.lang.reflect.Array.newInstance(elemClass, length).asInstanceOf[Array[AnyRef]]
   }
 
-  override def subArray(start: Int, end: Int): Array[Object] = {
+  override def subArray(start: Int, end: Int): Array[AnyRef] = {
     val result = create(end - start)
     Array.copy(value, start, result, 0, end - start)
     result
   }
 
-  override def filter(p: Any => Boolean): Array[Object] = {
+  override def filter(p: Any => Boolean): Array[AnyRef] = {
     val include = new Array[Boolean](value.length)
     var len = 0
     var i = 0

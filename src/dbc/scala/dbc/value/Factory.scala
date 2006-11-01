@@ -22,7 +22,7 @@ object Factory {
       case DataType.OBJECT =>
         new value.Unknown {
           val dataType = expectedDataType.asInstanceOf[datatype.Unknown];
-          val nativeValue: Object = result.getObject(index);
+          val nativeValue: AnyRef = result.getObject(index);
         }
       case DataType.STRING => {
         expectedDataType match {

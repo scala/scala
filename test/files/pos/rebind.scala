@@ -9,5 +9,5 @@ trait Bar {
   def foo: Inner = foo;
 }
 class Test extends Foo with Bar {
-  System.out.println(foo.inner);
+  Console.println(foo.inner);
 }

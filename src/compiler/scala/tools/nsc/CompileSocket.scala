@@ -6,7 +6,10 @@
 
 package scala.tools.nsc
 
-import java.io._
+import java.lang.{Thread, System, Runtime}
+import java.lang.NumberFormatException
+import java.io.{File, IOException, PrintWriter, FileOutputStream}
+import java.io.{BufferedReader, FileReader}
 import java.net._
 
 object CompileSocket {
@@ -131,7 +134,7 @@ object CompileSocket {
     else
       try {
         for (val i <- 1 until hits.length) hits(i).delete()
-        Integer.parseInt(hits(0).getName)
+        hits(0).getName.toInt
       } catch {
         case ex: NumberFormatException =>
           fatal(ex.toString() +
@@ -209,7 +212,7 @@ object CompileSocket {
     else {
       val hostName = serverAdr.substring(0, cpos)
       val port = try {
-        Integer.parseInt(serverAdr.substring(cpos+1))
+        serverAdr.substring(cpos+1).toInt
       } catch {
         case ex: Throwable =>
           fatal("Malformed server address: " + serverAdr + "; exiting")

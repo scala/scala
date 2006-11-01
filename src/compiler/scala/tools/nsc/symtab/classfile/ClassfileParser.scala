@@ -21,6 +21,7 @@ import scala.tools.nsc.io.AbstractFile
 import scala.collection.mutable.{ListBuffer, ArrayBuffer}
 import scala.collection.immutable.{Map, ListMap}
 
+import java.lang.Integer.toHexString
 import java.io.IOException
 
 /** This abstract class implements a class file parser.
@@ -97,8 +98,8 @@ abstract class ClassfileParser {
     val magic = in.nextInt
     if (magic != JAVA_MAGIC)
       throw new IOException("class file '" + in.file + "' "
-                            + "has wrong magic number 0x" + Integer.toHexString(magic)
-                            + ", should be 0x" + Integer.toHexString(JAVA_MAGIC))
+                            + "has wrong magic number 0x" + toHexString(magic)
+                            + ", should be 0x" + toHexString(JAVA_MAGIC))
     val minorVersion = in.nextChar
     val majorVersion = in.nextChar
     if ((majorVersion < JAVA_MAJOR_VERSION) ||
@@ -114,7 +115,7 @@ abstract class ClassfileParser {
   class ConstantPool {
     private val len = in.nextChar
     private val starts = new Array[int](len)
-    private val values = new Array[Object](len)
+    private val values = new Array[AnyRef](len)
     private val internalized = new Array[Name](len)
     { var i = 1
       while (i < starts.length) {
@@ -369,7 +370,7 @@ abstract class ClassfileParser {
       if ((instanceDefs.lookup(nme.CONSTRUCTOR) == NoSymbol &&
            (sflags & INTERFACE) == 0))
         {
-          //System.out.println("adding constructor to " + clazz);//DEBUG
+          //Console.println("adding constructor to " + clazz);//DEBUG
           instanceDefs.enter(
             clazz.newConstructor(NoPos)
             .setFlag(clazz.flags & ConstrFlags)
@@ -436,7 +437,9 @@ abstract class ClassfileParser {
   private def polySigToType(sym: Symbol, sig: Name): Type =
     try { polySigToType0(sym, sig) }
     catch {
-      case e: Throwable => System.err.println("" + sym + " - " + sig); throw e
+      case e: Throwable =>
+        Console.err.println("" + sym + " - " + sig);
+        throw e
     }
   private def polySigToType0(sym: Symbol, sig: Name): Type = {
     var index = 0
@@ -591,7 +594,7 @@ abstract class ClassfileParser {
           val c = pool.getConstant(in.nextChar)
           val c1 = convertTo(c, symtype)
           if (c1 != null) sym.setInfo(ConstantType(c1))
-          else System.out.println("failure to convert "+c+" to "+symtype);//debug
+          else Console.println("failure to convert " + c + " to " + symtype); //debug
         case nme.InnerClassesATTR =>
           if (!isScala) parseInnerClasses() else in.skip(attrLen)
         case nme.ScalaSignatureATTR =>

@@ -13,7 +13,6 @@ package scala.collection.mutable
 
 
 import Predef._
-import compat.Platform.{IndexOutOfBoundsException, NoSuchElementException}
 
 /** The class <code>ListBuffer</code> ..
  *

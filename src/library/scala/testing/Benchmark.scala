@@ -12,6 +12,8 @@
 package scala.testing
 
 
+import compat.Platform
+
 /** <code>Benchmark</code> can be used to quickly turn an existing
  *  class into a benchmark. Here is a short example:
  *
@@ -47,10 +49,10 @@ trait Benchmark {
    */
   def runBenchmark(noTimes: Int): List[Long] =
     for (val i <- List.range(1, noTimes + 1)) yield {
-      val startTime = System.currentTimeMillis()
+      val startTime = Platform.currentTime
       run
-      val stopTime = System.currentTimeMillis()
-      System.gc()
+      val stopTime = Platform.currentTime
+      Platform.collectGarbage
 
       stopTime - startTime
     }
@@ -63,13 +65,12 @@ trait Benchmark {
   def main(args: Array[String]): Unit = {
     if (args.length > 1) {
       val logFile = new java.io.FileWriter(args(1), true) // append, not overwrite
-      val eol = System.getProperty("line.separator", "\n")
 
       logFile.write(getClass().getName())
-      for (val t <- runBenchmark(Integer.parseInt(args(0))))
+      for (val t <- runBenchmark(args(0).toInt))
         logFile.write("\t\t" + t)
 
-      logFile.write(eol)
+      logFile.write(Platform.EOL)
       logFile.flush()
     } else
       Console.println("Usage: scala benchmarks.program <runs> <logfile>")

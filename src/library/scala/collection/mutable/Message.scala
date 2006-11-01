@@ -12,7 +12,7 @@
 package scala.collection.mutable
 
 
-import compat.Platform.UnsupportedOperationException
+import Predef.UnsupportedOperationException
 
 /** Class <code>Message</code> represents messages that are issued by observable
  *  collection classes whenever a data structure is changed. Class <code>Message</code>

@@ -11,7 +11,7 @@
 
 package scala.collection.mutable
 
-import compat.Platform.UnsupportedOperationException
+//import Predef.UnsupportedOperationException
 
 /** This class represents mutable maps. Concrete map implementations
  *  just have to provide functionality for the abstract methods in

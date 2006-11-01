@@ -8,7 +8,11 @@
 
 // $Id$
 
+
 package scala.actors
+
+
+import java.lang.Thread
 
 /**
  * This class provides a dynamic actor proxy for normal Java

@@ -33,7 +33,7 @@ object Actor {
    * @return returns the currently executing actor.
    */
   def self: Actor = synchronized {
-    val t = Thread.currentThread()
+    val t = currentThread
     var a = selfs.get(t).asInstanceOf[Actor]
     if (a == null) {
       a = new ActorProxy(t)
@@ -453,7 +453,7 @@ trait Actor extends OutputChannel[Any] {
    */
   def exit(reason: String): Unit = {
     exitReason = reason
-    Thread.currentThread().interrupt()
+    currentThread.interrupt()
   }
 
   private[actors] def exit(from: Actor, reason: String): Unit = {

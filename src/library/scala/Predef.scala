@@ -21,7 +21,7 @@ object Predef {
   // classOf dummy -------------------------------------------------
 
   /** Return the runtime representation of a class type. */
-  def classOf[T]: java.lang.Class = null
+  def classOf[T]: Class = null
 
   // aliases -------------------------------------------------------
 
@@ -36,8 +36,20 @@ object Predef {
   type unit = scala.Unit
 
   type String = java.lang.String
-  type NullPointerException = java.lang.NullPointerException
+  type Class = java.lang.Class;
+
   type Throwable = java.lang.Throwable
+  type Exception = java.lang.Exception
+  type Error = java.lang.Error
+  type RuntimeException = java.lang.RuntimeException;
+  type NullPointerException = java.lang.NullPointerException
+  type ClassCastException = java.lang.ClassCastException;
+  type IndexOutOfBoundsException = java.lang.IndexOutOfBoundsException;
+  type ArrayIndexOutOfBoundsException = java.lang.ArrayIndexOutOfBoundsException
+  type UnsupportedOperationException = java.lang.UnsupportedOperationException
+  type IllegalArgumentException = java.lang.IllegalArgumentException
+  type NoSuchElementException = java.util.NoSuchElementException
+  type NumberFormatException = java.lang.NumberFormatException
 
 /*
   type ~[a, b] = Tuple2[a, b]
@@ -63,11 +75,6 @@ object Predef {
   def Tuple[a1, a2, a3, a4, a5, a6, a7, a8](x1: a1, x2: a2, x3: a3, x4: a4, x5: a5, x6: a6, x7: a7, x8: a8) = Tuple8(x1, x2, x3, x4, x5, x6, x7, x8)
   def Tuple[a1, a2, a3, a4, a5, a6, a7, a8, a9](x1: a1, x2: a2, x3: a3, x4: a4, x5: a5, x6: a6, x7: a7, x8: a8, x9: a9) = Tuple9(x1, x2, x3, x4, x5, x6, x7, x8, x9)
 
-/*
-  def id[a](x: a): a = x
-  def fst[a](x: a, y: Any): a = x
-  def scd[a](x: Any, y: a): a = y
-*/
   val $scope = scala.xml.TopScope
 
   type Function[-a,+b] = Function1[a,b]
@@ -85,12 +92,12 @@ object Predef {
 
   def assert(assertion: Boolean): Unit = {
     if (!assertion)
-      throw new AssertionError("assertion failed")
+      throw new java.lang.AssertionError("assertion failed")
   }
 
   def assert(assertion: Boolean, message: Any): Unit = {
     if (!assertion)
-      throw new AssertionError("assertion failed: " + message)
+      throw new java.lang.AssertionError("assertion failed: " + message)
   }
 
   def assume(assumption: Boolean): Unit = {
@@ -107,14 +114,18 @@ object Predef {
 
   implicit def identity[a](x: a): a = x
 
+
+  implicit def intWrapper(x: int) = new runtime.RichInt(x)
+
+  implicit def charWrapper(c: char) = new runtime.RichChar(c)
+
+  implicit def stringWrapper(x: String) = new runtime.RichString(x)
+
+
   implicit def int2ordered(x: int): Ordered[int] = new Ordered[int] with Proxy {
     def self: Any = x
     def compare (y: int): int = if (x < y) -1 else if (x > y) 1 else 0
   }
-
-  implicit def intWrapper(x: int) = new runtime.RichInt(x)
-
-  implicit def stringWrapper(x: String) = new runtime.RichString(x)
 
   implicit def char2ordered(x: char): Ordered[char] = new Ordered[char] with Proxy {
     def self: Any = x
@@ -298,4 +309,9 @@ object Predef {
   implicit def float2Float(x: float) = new java.lang.Float(x)
   implicit def double2Double(x: double) = new java.lang.Double(x)
   implicit def boolean2Boolean(x: boolean) = new java.lang.Boolean(x)
+
+  //
+  def currentThread = java.lang.Thread.currentThread();
+
+
 }

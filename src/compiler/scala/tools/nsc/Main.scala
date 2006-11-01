@@ -5,6 +5,7 @@
 // $Id$
 package scala.tools.nsc
 
+import java.lang.System.getProperty
 import scala.tools.nsc.util.FakePos //{Position}
 import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
 import scala.tools.nsc.doc.DocGenerator
@@ -13,14 +14,11 @@ import scala.tools.nsc.doc.DocGenerator
 /** The main class for NSC, a compiler for the programming
  *  language Scala.
  */
-object Main extends Object with EvalLoop {
+object Main extends AnyRef with EvalLoop {
 
-  val PRODUCT: String =
-    System.getProperty("scala.tool.name", "scalac")
-  val VERSION: String =
-    System.getProperty("scala.tool.version", "unknown version")
-  val COPYRIGHT: String =
-    System.getProperty("scala.copyright", "(c) 2002-2006 LAMP/EPFL")
+  val PRODUCT: String = getProperty("scala.tool.name", "scalac")
+  val VERSION: String = getProperty("scala.tool.version", "unknown version")
+  val COPYRIGHT: String = getProperty("scala.copyright", "(c) 2002-2006 LAMP/EPFL")
   val versionMsg = PRODUCT + " " + VERSION + " -- " + COPYRIGHT
   val prompt = "\nnsc> "
 
@@ -96,7 +94,7 @@ object Main extends Object with EvalLoop {
 
   def main(args: Array[String]): unit = {
     process(args)
-    System.exit(if (reporter.errors > 0) 1 else 0)
+    exit(if (reporter.errors > 0) 1 else 0)
   }
 
 }

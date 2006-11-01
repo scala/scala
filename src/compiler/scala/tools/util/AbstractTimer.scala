@@ -10,6 +10,7 @@
 
 package scala.tools.util
 
+import compat.Platform.currentTime
 import scala.collection.mutable.Stack
 
 /**
@@ -35,12 +36,12 @@ abstract class AbstractTimer {
 
   /** Starts a new timer. */
   def start() = {
-    starts += System.currentTimeMillis()
+    starts += currentTime
   }
 
   /** Ends the current timer. */
   def stop(message: String): Unit = {
-    val stop = System.currentTimeMillis()
+    val stop = currentTime
     issue(message, stop - starts.pop)
   }
 

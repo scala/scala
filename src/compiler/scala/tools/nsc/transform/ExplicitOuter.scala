@@ -191,7 +191,7 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
         super.transform(tree)
       } catch {//debug
         case ex: Throwable =>
-          System.out.println("exception when transforming " + tree)
+          Console.println("exception when transforming " + tree)
           throw ex
       } finally {
         outerParam = savedOuterParam

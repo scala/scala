@@ -11,8 +11,8 @@
 
 package scala.runtime
 
-
-import compat.Platform.NoSuchElementException
+import Predef._
+import compat.Math
 
 final class RichString(s: String) {
 
@@ -117,5 +117,12 @@ final class RichString(s: String) {
    *  </blockquote>
    */
   def stripMargin: String = stripMargin('|')
-}
 
+  def toByte: Byte = java.lang.Byte.parseByte(s)
+  def toShort: Short = java.lang.Short.parseShort(s)
+  def toInt: Int = java.lang.Integer.parseInt(s)
+  def toLong: Long = java.lang.Long.parseLong(s)
+  def toFloat: Float = java.lang.Float.parseFloat(s)
+  def toDouble: Double = java.lang.Double.parseDouble(s)
+
+}

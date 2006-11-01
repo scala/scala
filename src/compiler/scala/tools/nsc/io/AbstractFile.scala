@@ -70,7 +70,7 @@ object AbstractFile {
  *   <code>global.settings.encoding.value</code>.
  * </p>
  */
-abstract class AbstractFile extends Object with Iterable[AbstractFile] {
+abstract class AbstractFile extends AnyRef with Iterable[AbstractFile] {
 
   //########################################################################
   // Public Methods

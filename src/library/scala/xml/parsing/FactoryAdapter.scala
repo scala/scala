@@ -13,6 +13,7 @@ package scala.xml.parsing
 
 import java.io._
 import scala.collection.mutable.{HashMap,Stack}
+import compat.StringBuilder
 
 import org.xml.sax.Attributes
 import org.xml.sax.ContentHandler
@@ -38,7 +39,7 @@ import javax.xml.parsers.SAXParser
  */
 abstract class FactoryAdapter extends DefaultHandler() {
 
-  val buffer      = new StringBuffer()
+  val buffer      = new StringBuilder()
   val attribStack = new Stack[MetaData]
   val hStack      = new Stack[Node]   // [ element ] contains siblings
   val tagStack    = new Stack[String]
@@ -87,7 +88,7 @@ abstract class FactoryAdapter extends DefaultHandler() {
 	var i: Int = offset
         var ws = false
         while (i < offset + length) {
-          if (Character.isWhitespace(ch(i))) {
+          if (ch(i).isWhitespace) {
             if (!ws) {
               buffer.append(' ')
               ws = true
@@ -235,27 +236,28 @@ abstract class FactoryAdapter extends DefaultHandler() {
   //
 
   /** Prints the error message */
-  protected def printError(errtype: String, ex: SAXParseException): Unit = {
-    System.err.print("[")
-    System.err.print(errtype)
-    System.err.print("] ")
+  protected def printError(errtype: String, ex: SAXParseException): Unit =
+    Console.withOut(Console.err) {
+    Console.print("[")
+    Console.print(errtype)
+    Console.print("] ")
 
     var systemId = ex.getSystemId()
     if (systemId != null) {
       val index = systemId.lastIndexOf('/'.asInstanceOf[Int])
       if (index != -1)
         systemId = systemId.substring(index + 1)
-      //System.err.print(systemId)
+      //Console.print(systemId)
     }
 
-    System.err.print(':')
-    System.err.print(ex.getLineNumber())
-    System.err.print(':')
-    System.err.print(ex.getColumnNumber())
-    System.err.print(": ")
-    System.err.print(ex.getMessage())
-    System.err.println()
-    System.err.flush()
+    Console.print(':')
+    Console.print(ex.getLineNumber())
+    Console.print(':')
+    Console.print(ex.getColumnNumber())
+    Console.print(": ")
+    Console.print(ex.getMessage())
+    Console.println
+    Console.flush
   }
 
   var rootElem: Node = null:Node
@@ -276,13 +278,13 @@ abstract class FactoryAdapter extends DefaultHandler() {
       f.newSAXParser()
     } catch {
       case e: Exception =>
-        System.err.println("error: Unable to instantiate parser")
+        Console.err.println("error: Unable to instantiate parser")
         exit(1)
     }
 
     // parse file
     //try {
-      //System.err.println("[parsing \"" + source + "\"]");
+      //Console.err.println("[parsing \"" + source + "\"]");
       scopeStack.push(TopScope)
       parser.parse(source, this)
       scopeStack.pop
@@ -292,7 +294,7 @@ abstract class FactoryAdapter extends DefaultHandler() {
         // ignore
       }
       case ( e:Exception ) => {
-        System.err.println("error: Parse error occurred - " + e.getMessage());
+        Console.err.println("error: Parse error occurred - " + e.getMessage());
         if (e.isInstanceOf[ SAXException ]) {
           (e.asInstanceOf[ SAXException ])
 	  .getException()
@@ -303,7 +305,7 @@ abstract class FactoryAdapter extends DefaultHandler() {
       }
     } // catch
 */
-    //System.err.println("[FactoryAdapter: total #elements = "+elemCount+"]");
+    //Console.err.println("[FactoryAdapter: total #elements = "+elemCount+"]");
     rootElem
   } // loadXML
 

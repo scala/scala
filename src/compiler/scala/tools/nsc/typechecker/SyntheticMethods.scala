@@ -152,7 +152,7 @@ trait SyntheticMethods requires Analyzer {
     }
 
     def beanSetterOrGetter(sym: Symbol): Symbol =
-      if (!Character.isLetter(sym.name(0))) {
+      if (!sym.name(0).isLetter) {
         unit.error(sym.pos, "attribute `BeanProperty' can be applied only to fields that start with a letter")
         NoSymbol
       } else {
@@ -161,7 +161,7 @@ trait SyntheticMethods requires Analyzer {
         val prefix = if (sym.isSetter) "set" else
           if (sym.tpe.resultType == BooleanClass.tpe) "is" else "get"
         val arity = if (sym.isSetter) 1 else 0
-        val name1 = prefix + Character.toUpperCase(name0(0)) + name0.subName(1, name0.length)
+        val name1 = prefix + name0(0).toUpperCase + name0.subName(1, name0.length)
         val sym1 = clazz.info.decl(name1)
         if (sym1 != NoSymbol && sym1.tpe.paramTypes.length == arity) {
           unit.error(sym.pos, "a definition of `"+name1+"' already exists in " + clazz)

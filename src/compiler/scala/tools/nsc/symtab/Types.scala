@@ -6,6 +6,7 @@
 
 package scala.tools.nsc.symtab
 
+import compat.Platform.currentTime
 import scala.collection.mutable.ListBuffer
 import scala.tools.nsc.util.{HashSet, Position}
 import Flags._
@@ -225,7 +226,7 @@ trait Types requires SymbolTable {
           }
 */
         case _ =>
-          //System.out.println("" + this + ".memberType(" + sym +":" + sym.tpe +")" + sym.ownerChain);//DEBUG
+          //Console.println("" + this + ".memberType(" + sym +":" + sym.tpe +")" + sym.ownerChain);//DEBUG
           sym.tpe.asSeenFrom(this, sym.owner)
       }
     }
@@ -258,13 +259,13 @@ trait Types requires SymbolTable {
     /** Is this type a subtype of that type? */
     def <:<(that: Type): boolean = {
       if (util.Statistics.enabled) subtypeCount = subtypeCount + 1
-      val startTime = if (util.Statistics.enabled) System.currentTimeMillis() else 0l
+      val startTime = if (util.Statistics.enabled) currentTime else 0l
       val result =
         ((this eq that) ||
          (if (explainSwitch) explain("<", isSubType, this, that)
           else isSubType(this, that)));
       if (util.Statistics.enabled)
-        subtypeMillis = subtypeMillis + System.currentTimeMillis() - startTime
+        subtypeMillis = subtypeMillis + currentTime - startTime
       result
     }
 
@@ -370,7 +371,7 @@ trait Types requires SymbolTable {
         val this1 = adaptToNewRunMap(this)
         if (this1 eq this) sym.validTo = period(currentRunId, phaseId(sym.validTo))
         else {
-          //System.out.println("new type of " + sym + "=" + this1 + ", used to be " + this);//DEBUG
+          //Console.println("new type of " + sym + "=" + this1 + ", used to be " + this);//DEBUG
           sym.setInfo(this1)
         }
       }
@@ -409,9 +410,9 @@ trait Types requires SymbolTable {
     //TODO: use narrow only for modules? (correct? efficiency gain?)
     def findMember(name: Name, excludedFlags: int, requiredFlags: long, stableOnly: boolean): Symbol = {
       if (util.Statistics.enabled) findMemberCount = findMemberCount + 1
-      val startTime = if (util.Statistics.enabled) System.currentTimeMillis() else 0l
+      val startTime = if (util.Statistics.enabled) currentTime else 0l
 
-      //System.out.println("find member " + name.decode + " in " + this + ":" + this.baseClasses)//DEBUG
+      //Console.println("find member " + name.decode + " in " + this + ":" + this.baseClasses)//DEBUG
       var members: Scope = null
       var member: Symbol = NoSymbol
       var excluded = excludedFlags | DEFERRED
@@ -435,7 +436,7 @@ trait Types requires SymbolTable {
                 if (name.isTypeName || stableOnly) {
                   checkMalformedSwitch = savedCheckMalformedSwitch
                   if (util.Statistics.enabled)
-                    findMemberMillis = findMemberMillis + System.currentTimeMillis() - startTime
+                    findMemberMillis = findMemberMillis + currentTime - startTime
                   return sym
                 } else if (member == NoSymbol) {
                   member = sym
@@ -476,7 +477,7 @@ trait Types requires SymbolTable {
       } // while (continue)
       checkMalformedSwitch = savedCheckMalformedSwitch
       if (util.Statistics.enabled)
-        findMemberMillis = findMemberMillis + System.currentTimeMillis() - startTime
+        findMemberMillis = findMemberMillis + currentTime - startTime
       if (members == null) {
         if (util.Statistics.enabled) if (member == NoSymbol) noMemberCount = noMemberCount + 1;
         member
@@ -668,7 +669,7 @@ trait Types requires SymbolTable {
         try {
           if (util.Statistics.enabled)
             compoundClosureCount = compoundClosureCount + 1
-          //System.out.println("computing closure of " + symbol.tpe + " " + parents)//DEBUG
+          //Console.println("computing closure of " + symbol.tpe + " " + parents)//DEBUG
           val buf = new ListBuffer[Type]
           buf += symbol.tpe
           var clSize = 1
@@ -713,7 +714,7 @@ trait Types requires SymbolTable {
           }
           closureCache = new Array[Type](clSize)
           buf.copyToArray(closureCache, 0)
-          //System.out.println("closureCache of " + symbol.tpe + " = " + List.fromArray(closureCache))//DEBUG
+          //Console.println("closureCache of " + symbol.tpe + " = " + List.fromArray(closureCache))//DEBUG
           var j = 0
           while (j < clSize) {
             closureCache(j) match {
@@ -729,7 +730,7 @@ trait Types requires SymbolTable {
             }
             j = j + 1
           }
-          //System.out.println("closure of " + symbol.tpe + " = " + List.fromArray(closureCache))//DEBUG
+          //Console.println("closure of " + symbol.tpe + " = " + List.fromArray(closureCache))//DEBUG
           closureCache
         } catch {
           case ex: MalformedClosure =>
@@ -744,7 +745,7 @@ trait Types requires SymbolTable {
           closureCache = null
           closureCache = computeClosure
         }
-        //System.out.println("closure(" + symbol + ") = " + List.fromArray(closureCache));//DEBUG
+        //Console.println("closure(" + symbol + ") = " + List.fromArray(closureCache));//DEBUG
       }
       if (closureCache == null)
         throw new TypeError("illegal cyclic reference involving " + symbol)
@@ -755,7 +756,7 @@ trait Types requires SymbolTable {
       def computeBaseClasses: List[Symbol] =
         if (parents.isEmpty) List(symbol)
         else {
-          //System.out.println("computing base classes of " + symbol + " at phase " + phase);//DEBUG
+          //Console.println("computing base classes of " + symbol + " at phase " + phase);//DEBUG
           // optimized, since this seems to be performance critical
           val superclazz = parents.head
           var mixins = parents.tail
@@ -1267,8 +1268,8 @@ trait Types requires SymbolTable {
     case PolyType(tparams, restpe) => restpe.subst(tparams, args)
     case ErrorType => tycon
     case _ =>
-      System.out.println(tycon.getClass())
-      System.out.println(tycon.$tag())
+      Console.println(tycon.getClass())
+      Console.println(tycon.$tag())
       throw new Error()
   }
 
@@ -1488,7 +1489,7 @@ trait Types requires SymbolTable {
               if (symclazz == clazz && (pre.widen.symbol isNonBottomSubClass symclazz))
                 pre.baseType(symclazz) match {
                   case TypeRef(_, basesym, baseargs) =>
-//                    System.out.println("instantiating " + sym + " from " + basesym + " with " + basesym.typeParams + " and " + baseargs);//DEBUG
+//                    Console.println("instantiating " + sym + " from " + basesym + " with " + basesym.typeParams + " and " + baseargs);//DEBUG
                     if (basesym.typeParams.length != baseargs.length)
                       throw new TypeError(
                         "something is wrong (wrong class file?): "+basesym+
@@ -1782,7 +1783,7 @@ trait Types requires SymbolTable {
             sym1 != NoSymbol &&
             sym1.info =:= sym2.info.substThis(sym2.owner, sym1.owner.thisType)
         }
-        //System.out.println("is same? " + tp1 + " " + tp2 + " " + tp1.symbol.owner + " " + tp2.symbol.owner)//DEBUG
+        //Console.println("is same? " + tp1 + " " + tp2 + " " + tp1.symbol.owner + " " + tp2.symbol.owner)//DEBUG
         isSameTypes(parents1, parents2) && isSubScope(ref1, ref2) && isSubScope(ref2, ref1)
       case Pair(MethodType(pts1, res1), MethodType(pts2, res2)) =>
         (pts1.length == pts2.length &&
@@ -1858,7 +1859,7 @@ trait Types requires SymbolTable {
       case Pair(ConstantType(_), ConstantType(_))   => tp1 =:= tp2
 
       case Pair(TypeRef(pre1, sym1, args1), TypeRef(pre2, sym2, args2)) =>
-        //System.out.println("isSubType " + tp1 + " " + tp2);//DEBUG
+        //Console.println("isSubType " + tp1 + " " + tp2);//DEBUG
         def isSubArgs(tps1: List[Type], tps2: List[Type],
                       tparams: List[Symbol]): boolean = (
           tps1.isEmpty && tps2.isEmpty
@@ -1883,7 +1884,7 @@ trait Types requires SymbolTable {
          ||
          sym1 == AllClass
          ||
-         // System.out.println("last chance " + sym1 + " " + sym2 + " " + sym2.isClass + " " (sym2 isSubClass ObjectClass))
+         // Console.println("last chance " + sym1 + " " + sym2 + " " + sym2.isClass + " " (sym2 isSubClass ObjectClass))
          sym1 == AllRefClass && sym2.isClass && (sym2 isSubClass ObjectClass))
       case Pair(MethodType(pts1, res1), MethodType(pts2, res2)) =>
         (pts1.length == pts2.length &&
@@ -2004,7 +2005,7 @@ trait Types requires SymbolTable {
   private def addClosure(tp: Type, cl: Array[Type]): Array[Type] = {
     val cl1 = new Array[Type](cl.length + 1)
     cl1(0) = tp
-    System.arraycopy(cl, 0, cl1, 1, cl.length)
+    Array.copy(cl, 0, cl1, 1, cl.length)
     cl1
   }
 
@@ -2464,11 +2465,11 @@ trait Types requires SymbolTable {
    *  <code>arg2</code> and print trace of computation.
    */
   private def explain[T](op: String, p: (Type, T) => boolean, tp1: Type, arg2: T): boolean = {
-    System.out.println(indent + tp1 + " " + op + " " + arg2 + "?")
+    Console.println(indent + tp1 + " " + op + " " + arg2 + "?")
     indent = indent + "  "
     val result = p(tp1, arg2)
     indent = indent.substring(0, indent.length() - 2)
-    System.out.println(indent + result)
+    Console.println(indent + result)
     result
   }
 

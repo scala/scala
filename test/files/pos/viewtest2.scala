@@ -95,21 +95,21 @@ object Test {
       for (val s <- args) {
         t = t insert s
       }
-      System.out.println(t.elements)
+      Console.println(t.elements)
     }
     {
       var t: Tree[Str] = Empty
       for (val s <- args) {
         t = t insert Str(s)
       }
-      System.out.println(t.elements)
+      Console.println(t.elements)
     }
     {
       var t: Tree[List[char]] = Empty
       for (val s <- args) {
         t = t insert toCharList(s)
       }
-      System.out.println(t.elements)
+      Console.println(t.elements)
     }
   }
 }

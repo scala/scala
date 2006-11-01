@@ -46,14 +46,14 @@ abstract class ICodes extends AnyRef
 
   /** Print all classes and basic blocks. Used for debugging. */
   def dump: Unit = {
-    val printer = new global.icodePrinter.TextPrinter(new PrintWriter(System.out, true),
+    val printer = new global.icodePrinter.TextPrinter(new PrintWriter(Console.out, true),
                                                       new global.icodes.DumpLinearizer());
 
     global.icodes.classes.values foreach { c => printer.printClass(c); }
   }
 
   def dump(m: global.icodes.IMethod) = {
-    val printer = new global.icodePrinter.TextPrinter(new PrintWriter(System.out, true),
+    val printer = new global.icodePrinter.TextPrinter(new PrintWriter(Console.out, true),
                                                       new global.icodes.DumpLinearizer());
     printer.printMethod(m);
   }

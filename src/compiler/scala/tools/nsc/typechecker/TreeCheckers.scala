@@ -17,7 +17,7 @@ abstract class TreeCheckers extends Analyzer {
   val tpeOfTree = new scala.collection.mutable.HashMap[Tree, Type]
 
   def checkTrees: unit = {
-    System.out.println("[consistency check at start of phase " + phase + "]")
+    Console.println("[consistency check at start of phase " + phase + "]")
     for (val unit <- currentRun.units) check(unit)
   }
 
@@ -112,7 +112,7 @@ abstract class TreeCheckers extends Analyzer {
         } catch {
           case ex: Throwable =>
             if (settings.debug.value)
-              System.out.println("exception when traversing " + tree);
+              Console.println("exception when traversing " + tree);
             throw(ex)
         }
     }
@@ -137,7 +137,7 @@ abstract class TreeCheckers extends Analyzer {
         } catch {
           case ex: Throwable =>
             if (settings.debug.value)
-              System.out.println("exception when traversing " + tree);
+              Console.println("exception when traversing " + tree);
             throw(ex)
         }
     }

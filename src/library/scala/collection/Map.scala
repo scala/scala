@@ -12,7 +12,7 @@
 package scala.collection
 
 
-import compat.Platform.NoSuchElementException
+//import Predef.NoSuchElementException
 
 /** This class defines the interface of collections that unambiguously map
  *  keys to values (i.e. a key is mapped to at least one value).

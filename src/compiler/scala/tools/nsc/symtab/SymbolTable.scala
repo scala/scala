@@ -18,7 +18,7 @@ abstract class SymbolTable extends Names
 {
   def settings: Settings
   def rootLoader: LazyType
-  def log(msg: Object): unit
+  def log(msg: AnyRef): unit
 
   /** Are we compiling for the J2ME CLDC platform? */
   def forCLDC: Boolean

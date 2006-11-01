@@ -20,7 +20,7 @@ trait Base {
 object testBase extends Application with Base {
   type exp = Exp;
   val term = new Num(2);
-  System.out.println(term.eval);
+  Console.println(term.eval);
 }
 
 /** Data extension: An extension of `Base' with `Plus' expressions

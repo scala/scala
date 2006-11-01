@@ -7,6 +7,8 @@
 // $Id$
 
 package scala.tools.nsc.reporters
+
+import compat.StringBuilder
 import scala.tools.nsc.util.{FakePos, Position}
 
 import java.io.BufferedReader
@@ -39,9 +41,7 @@ class ConsoleReporter(reader : BufferedReader, writer : PrintWriter) extends Abs
 
   //########################################################################
   // Public Constructors
-  def this() = this(
-    new BufferedReader(new InputStreamReader(System.in)),
-    new PrintWriter(System.err, true))
+  def this() = this(Console.in, new PrintWriter(Console.err, true))
 
   //########################################################################
   // Public Methods - Count
@@ -71,7 +71,7 @@ class ConsoleReporter(reader : BufferedReader, writer : PrintWriter) extends Abs
   def printMessage(posIn : Position, msg : String) : Unit = {
     if (posIn != null) {
       val pos = posIn.inUltimateSource
-      val buf = new StringBuffer(msg)
+      val buf = new StringBuilder(msg)
       buf.insert(0, " ")
       if (pos.line != Position.NOLINE)
 	buf.insert(0, ":" + pos.line)
@@ -95,7 +95,7 @@ class ConsoleReporter(reader : BufferedReader, writer : PrintWriter) extends Abs
   }
   /** Prints the column marker of the given position. */
   def printColumnMarker(pos : Position) = if (pos != null) {
-    val buffer = new StringBuffer(pos.column)
+    val buffer = new StringBuilder(pos.column)
     var i = 1
     while (i < pos.column) {
       buffer.append(' ')

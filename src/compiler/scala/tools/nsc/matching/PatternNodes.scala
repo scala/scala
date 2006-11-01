@@ -6,6 +6,7 @@
 
 package scala.tools.nsc.matching
 
+import compat.StringBuilder
 import scala.tools.nsc.util.Position
 
 trait PatternNodes requires transform.ExplicitOuter {
@@ -171,14 +172,14 @@ trait PatternNodes requires transform.ExplicitOuter {
         "<unknown pat>"
     }
 
-    def print(indent: String, sb: StringBuffer): StringBuffer = {
+    def print(indent: String, sb: StringBuilder): StringBuilder = {
       val patNode = this
 
       def cont = if (patNode.or != null) patNode.or.print(indent, sb) else sb
 
       def newIndent(s: String) = {
         val removeBar: Boolean = (null == patNode.or)
-        val sb = new StringBuffer()
+        val sb = new StringBuilder()
         sb.append(indent)
         if (removeBar)
           sb.setCharAt(indent.length() - 1, ' ')
@@ -316,7 +317,7 @@ trait PatternNodes requires transform.ExplicitOuter {
       //@maybe is corrected now? bq
       if (numVars == boundVars.length) {
         val newVars = new Array[ValDef](numVars * 2)
-        System.arraycopy(boundVars, 0, newVars, 0, numVars)
+        Array.copy(boundVars, 0, newVars, 0, numVars)
         this.boundVars = newVars
       }
       sym.setInfo(tpe)
@@ -326,7 +327,7 @@ trait PatternNodes requires transform.ExplicitOuter {
 
     def getBoundVars(): Array[ValDef] = {
       val newVars = new Array[ValDef](numVars)
-      System.arraycopy(boundVars, 0, newVars, 0, numVars)
+      Array.copy(boundVars, 0, newVars, 0, numVars)
       newVars
     }
 

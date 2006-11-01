@@ -6,6 +6,7 @@
 
 package scala.tools.nsc.ast.parser
 
+import compat.StringBuilder
 import scala.collection.immutable.ListMap
 import scala.collection.mutable
 import scala.tools.nsc.util.Position
@@ -44,7 +45,7 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
   /*[Duplicate]*/ var ch: Char = _
 
   /** character buffer, for names */
-  /*[Duplicate]*/ protected val cbuf = new StringBuffer()
+  /*[Duplicate]*/ protected val cbuf = new StringBuilder()
 
   /** append Unicode character to name buffer*/
   /*[Duplicate]*/ protected def putChar(c: char) = cbuf.append(c)
@@ -174,7 +175,7 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
     xToken('A')
     xToken('[')
     val pos1 = pos
-    val sb: StringBuffer = new StringBuffer()
+    val sb: StringBuilder = new StringBuilder()
     while (true) {
       if (ch==']' &&
          { sb.append(ch); nextch; ch == ']' } &&
@@ -190,7 +191,7 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
 
   def xUnparsed: Tree = {
     val pos1 = pos
-    val sb: StringBuffer = new StringBuffer()
+    val sb: StringBuilder = new StringBuilder()
     while (true) {
       if (ch=='<' &&
          { sb.append(ch); nextch; ch == '/' } &&
@@ -228,14 +229,14 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
     while (ch != ';') {
       ch match {
         case '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' =>
-          i = i * base + Character.digit(ch, base)
+          i = i * base + ch.asDigit
         case 'a' | 'b' | 'c' | 'd' | 'e' | 'f'
            | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' =>
           if (!hex)
             reportSyntaxError("hex char not allowed in decimal char ref\n"
                          +"Did you mean to write &#x ?");
           else
-            i = i * base + Character.digit(ch, base)
+            i = i * base + ch.asDigit
         case _ =>
           reportSyntaxError("character '"+ch+" not allowed in char ref\n")
       }
@@ -249,7 +250,7 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
    * see [15]
    */
   /*[Duplicate]*/ def xComment: Tree = {
-    val sb: StringBuffer = new StringBuffer()
+    val sb: StringBuilder = new StringBuilder()
     xToken('-')
     xToken('-')
     while (true) {
@@ -306,7 +307,7 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
       ts.append(xEmbeddedExpr)
     else {
       appendText(p, ts, xText)/*
-      val str = new StringBuffer("{")
+      val str = new StringBuilder("{")
       str.append(xText)
       nextch
       appendText(p, ts, str.toString())*/
@@ -430,7 +431,7 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
    * see [15]
    */
   /*[Duplicate]*/   def xProcInstr: Tree = {
-    val sb:StringBuffer = new StringBuffer();
+    val sb:StringBuilder = new StringBuilder();
     val n = xName;
     if( xml.Parsing.isSpace( ch ) ) {
       xSpace;
@@ -478,7 +479,7 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
     //}
   }
 
-  //val cbuf = new StringBuffer();
+  //val cbuf = new StringBuilder();
 
   /** append Unicode character to name buffer*/
   //private def putChar(c: char) = cbuf.append( c );

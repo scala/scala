@@ -57,7 +57,7 @@ class SimpleTokenizer(in: Iterator[char], delimiters: String) extends Iterator[S
           ch = nextChar
         }
       }
-      if (tracing) System.out.println("<" + buf.toString() + ">")
+      if (tracing) Console.println("<" + buf.toString() + ">")
       buf.toString()
     }
   }
