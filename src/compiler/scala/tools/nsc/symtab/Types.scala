@@ -1897,9 +1897,6 @@ trait Types requires SymbolTable {
          res1 <:< res2.substSym(tparams2, tparams1))
       case Pair(TypeBounds(lo1, hi1), TypeBounds(lo2, hi2)) =>
         lo2 <:< lo1 && hi1 <:< hi2
-      case Pair(_, TypeRef(pre2, sym2, args2))
-      if sym2.isAbstractType && !(tp2 =:= tp2.bounds.lo) && (tp1 <:< tp2.bounds.lo) =>
-        true
       case Pair(BoundedWildcardType(bounds), _) =>
         bounds.lo <:< tp2
       case Pair(_, BoundedWildcardType(bounds)) =>
@@ -1910,6 +1907,9 @@ trait Types requires SymbolTable {
       case Pair(TypeVar(_, constr1), _) =>
         if (constr1.inst != NoType) constr1.inst <:< tp2
         else { constr1.hibounds = tp2 :: constr1.hibounds; true }
+      case Pair(_, TypeRef(pre2, sym2, args2))
+      if sym2.isAbstractType && !(tp2 =:= tp2.bounds.lo) && (tp1 <:< tp2.bounds.lo) =>
+        true
       case Pair(_, RefinedType(parents2, ref2)) =>
         (parents2 forall tp1.<:<) && (ref2.toList forall tp1.specializes) &&
         (!parents2.exists(.symbol.isAbstractType) || tp1.symbol != AllRefClass)
