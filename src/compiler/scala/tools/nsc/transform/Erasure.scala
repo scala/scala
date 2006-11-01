@@ -141,21 +141,22 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
    }
   }
 
+  private def evalOnce(expr: Tree, owner: Symbol, unit: CompilationUnit)
+                      (within: (() => Tree) => Tree): Tree =
+    if (treeInfo.isPureExpr(expr)) {
+      within(() => expr);
+    } else {
+      val temp = owner.newValue(expr.pos, unit.fresh.newName())
+      .setFlag(SYNTHETIC).setInfo(expr.tpe);
+      Block(List(ValDef(temp, expr)), within(() => Ident(temp) setType expr.tpe))
+    }
+
 // -------- boxing/unboxing --------------------------------------------------------
 
   override def newTyper(context: Context) = new Eraser(context)
 
   /** The modifier typer which retypes with erased types. */
   class Eraser(context: Context) extends Typer(context) {
-
-    private def evalOnce(expr: Tree, within: (() => Tree) => Tree): Tree =
-      if (treeInfo.isPureExpr(expr)) {
-        within(() => expr);
-      } else {
-        val temp = context.owner.newValue(expr.pos, context.unit.fresh.newName())
-          .setFlag(SYNTHETIC).setInfo(expr.tpe);
-        Block(List(ValDef(temp, expr)), within(() => Ident(temp) setType expr.tpe))
-      }
 
     /** Box `tree' of unboxed type */
     private def box(tree: Tree): Tree =
@@ -237,7 +238,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
         if (pt.symbol == ArrayClass)
           typed {
             atPos(tree.pos) {
-              evalOnce(tree, x =>
+              evalOnce(tree, context.owner, context.unit) { x =>
                 gen.mkAttributedCast(
                   If(
                     Apply(
@@ -247,13 +248,14 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
                       List()),
                     unbox(gen.mkAttributedCast(x(), BoxedArrayClass.tpe), pt),
                     x()),
-                  pt))
+                  pt)
+              }
             }
           }
         else if (pt.symbol isNonBottomSubClass BoxedArrayClass)
           typed {
             atPos(tree.pos) {
-              evalOnce(tree, x =>
+              evalOnce(tree, context.owner, context.unit) { x =>
                 gen.mkAttributedCast(
                   If(
                     Apply(
@@ -263,13 +265,14 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
                       List()),
                     x(),
                     boxArray(x())),
-                  pt))
+                  pt)
+              }
             }
           }
         else if ((SeqClass isNonBottomSubClass pt.symbol) && pt.symbol != ObjectClass)
           typed {
             atPos(tree.pos) {
-              evalOnce(tree, x =>
+              evalOnce(tree, context.owner, context.unit) { x =>
                 gen.mkAttributedCast(
                   If(
                     Apply(
@@ -279,7 +282,8 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
                       List()),
                     x(),
                     boxArray(x())),
-                  pt))
+                  pt)
+              }
             }
           }
         else gen.mkAttributedCast(tree, pt)
@@ -637,12 +641,27 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
               // todo: also handle the case where the singleton type is buried in a compound
 	    else if (fn.symbol == Any_isInstanceOf || fn.symbol == Any_isInstanceOfErased)
               fn match {
-                case TypeApply(Select(qual, _), List(targ)) =>
+                case TypeApply(sel @ Select(qual, name), List(targ)) =>
                   targ.tpe match {
                     case SingleType(pre, sym) =>
                       val cmpOp = if (targ.tpe <:< AnyValClass.tpe) Any_equals else Object_eq
                       atPos(tree.pos) {
                         Apply(Select(qual, cmpOp), List(gen.mkAttributedQualifier(targ.tpe)))
+                      }
+                    case RefinedType(parents, decls) if (parents.length >= 2) =>
+                      evalOnce(qual, currentOwner, unit) {
+                        q =>
+                        def mkIsInstanceOf(tp: Type) =
+                          copy.Apply(tree,
+                            copy.TypeApply(fn,
+                              copy.Select(sel, q(), name),
+                              List(TypeTree(tp))),
+                            List())
+                        def mkAnd(tree1: Tree, tree2: Tree) =
+                          atPos(tree1.pos) {
+                            Apply(Select(tree1, Boolean_and), List(tree2))
+                          }
+                        parents map mkIsInstanceOf reduceRight mkAnd
                       }
                     case _ =>
                       tree
