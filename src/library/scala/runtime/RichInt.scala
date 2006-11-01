@@ -7,12 +7,10 @@
 \*                                                                      */
 
 // $Id$
+
 package scala.runtime
 
 final class RichInt(x: Int) {
   def until(y: Int): Iterator[Int] = Iterator.range(x, y)
   def to(y: Int): Iterator[Int] = Iterator.range(x, y + 1)
 }
-
-
-
