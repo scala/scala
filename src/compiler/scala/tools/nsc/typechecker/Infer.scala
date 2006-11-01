@@ -810,6 +810,9 @@ trait Infer requires Analyzer {
             }
           }
           checkCheckable(pos, pre)
+        case RefinedType(parents, decls) =>
+          if (decls.isEmpty) for (val p <- parents) checkCheckable(pos, p)
+          else patternWarning(tp, "refinement ")
         case ThisType(_) =>
           ;
         case NoPrefix =>

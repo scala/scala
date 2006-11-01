@@ -556,14 +556,14 @@ trait Parsers requires SyntaxAnalyzer {
     }
 
     /** Type1 ::= SimpleType {with SimpleType} [Refinement]
-     *  TypePattern1 ::= SimpleTypePattern [TypePatternArgs]
+     *  TypePattern1 ::= SimpleTypePattern {with SimpleTypePattern}
      */
     def type1(isPattern: boolean): Tree =
       type1rest(in.currentPos, simpleType(isPattern), isPattern)
 
     def type1rest(pos: int, t: Tree, isPattern: boolean): Tree = {
       var ts = new ListBuffer[Tree] + t
-      while (in.token == WITH && !isPattern) {
+      while (in.token == WITH) {
         in.nextToken(); ts += simpleType(isPattern)
       }
       atPos(pos) {
@@ -572,14 +572,15 @@ trait Parsers requires SyntaxAnalyzer {
       }
     }
 
-    /** SimpleType       ::=  SimpleType TypeArgs
-     *                     |  SimpleType `#' Id
-     *                     |  StableId
-     *                     |  Path `.' type
-     *                     |  `(' Type `)'
-     * SimpleTypePattern ::=  SimpleTypePattern "#" Id
-     *                     |  StableId
-     *                     |  Path `.' type)
+    /** SimpleType        ::=  SimpleType TypeArgs
+     *                     |   SimpleType `#' Id
+     *                     |   StableId
+     *                     |   Path `.' type
+     *                     |   `(' Type `)'
+     * SimpleTypePattern  ::=  SimpleTypePattern TypePatternArgs
+     *                     |   SimpleTypePattern1 "#" Id
+     *                     |   StableId
+     *                     |   Path `.' type
      */
     def simpleType(isPattern: boolean): Tree = {
       val pos = in.currentPos
