@@ -1957,11 +1957,11 @@ trait Types requires SymbolTable {
    *  than member <code>sym2</code> of <code>tp2</code>?
    */
   private def specializesSym(tp1: Type, sym1: Symbol, tp2: Type, sym2: Symbol): boolean = {
-    //System.out.println("specializes "+tp1+"."+sym1+" "+tp2+"."+sym2)//DEBUG
     val info1 = tp1.memberInfo(sym1)
     val info2 = tp2.memberInfo(sym2).substThis(tp2.symbol, tp1)
+    //System.out.println("specializes "+tp1+"."+sym1+":"+info1+sym1.locationString+" AND "+tp2+"."+sym2+":"+info2)//DEBUG
     sym2.isTerm && (info1 <:< info2) ||
-    sym2.isAbstractType && info2.bounds.containsType(info1) ||
+    sym2.isAbstractType && info2.bounds.containsType(tp1.memberType(sym1)) ||
     sym2.isAliasType && tp2.memberType(sym2).substThis(tp2.symbol, tp1) =:= tp1.memberType(sym1)
   }
 
