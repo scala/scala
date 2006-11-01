@@ -53,5 +53,4 @@ object Platform {
   def currentTime: Long = System.currentTimeMillis()
   def collectGarbage: Unit = System.gc()
 
-  //def isDigit(c: Char): Boolean = java.lang.Character.isDigit(c);
 }
