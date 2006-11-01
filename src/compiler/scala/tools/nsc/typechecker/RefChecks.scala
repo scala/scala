@@ -192,8 +192,9 @@ abstract class RefChecks extends InfoTransform {
 	  } else if (other.isAbstractType) {
 	    if (!member.typeParams.isEmpty) // (1.7)
 	      overrideError("may not be parameterized");
-	    if (!(self.memberInfo(other).bounds containsType self.memberType(member))) // (1.7)
-	      overrideTypeError();
+	    if (!(self.memberInfo(other).bounds containsType self.memberType(member))) { // (1.7) {
+	      overrideTypeError(); // todo: do an explaintypes with bounds here
+            }
 	  } else if (other.isTerm) {
 	    if (!overridesType(self.memberInfo(member), self.memberInfo(other))) { // 8
 	      overrideTypeError();
