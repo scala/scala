@@ -118,6 +118,8 @@ final class RichString(s: String) {
    */
   def stripMargin: String = stripMargin('|')
 
+  def split(separator: Char): Array[String] = s.split(separator.toString())
+
   def toByte: Byte = java.lang.Byte.parseByte(s)
   def toShort: Short = java.lang.Short.parseShort(s)
   def toInt: Int = java.lang.Integer.parseInt(s)

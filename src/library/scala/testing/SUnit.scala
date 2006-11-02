@@ -85,7 +85,7 @@ object SUnit {
     override def toString() =
       failedTest.toString() + " failed due to " + thrownException.toString()
 
-    def trace(): String = compat.Platform.getStackTrace(thrownException)
+    def trace(): String = thrownException.getStackTraceString
 
   }
 

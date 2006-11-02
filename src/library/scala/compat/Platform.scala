@@ -32,23 +32,7 @@ object Platform {
   def getElementClass(obj: AnyRef) = obj.getClass().getComponentType();
   def getClassForName(name: String): Class = java.lang.Class.forName(name);
 
-  def printStackTrace(exc: java.lang.Throwable) = exc.printStackTrace();
-  def getMessage(exc: java.lang.Throwable) = exc.getMessage();
-
   val EOL = System.getProperty("line.separator", "\n")
-
-  def getStackTrace(exc: java.lang.Throwable): String = {
-    val s = new StringBuilder()
-    for (val trElem <- exc.getStackTrace()) {
-      s.append(trElem.toString())
-      s.append(EOL)
-    }
-    s.toString()
-  }
-
-  def split(str: String, separator: Char): Array[String] = {
-    str.split(separator.toString());
-  }
 
   def currentTime: Long = System.currentTimeMillis()
   def collectGarbage: Unit = System.gc()

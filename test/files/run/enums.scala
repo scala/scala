@@ -64,7 +64,7 @@ object Test {
     } catch {
       case exception: Throwable => {
         Console.print(" raised exception " + exception);
-        compat.Platform.printStackTrace(exception);
+        exception.printStackTrace();
       }
     }
     Console.println;
