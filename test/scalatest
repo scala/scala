@@ -129,6 +129,22 @@ get_unix_pathlist() {
     esac;
 }
 
+# Collects all jar files in the given path
+get_ext_classpath() {
+    [ $# = 1 ] || abort "internal error";
+    # Constructing the extension classpath
+    cp=""
+    for ext in `ls $1/*.jar` ; do
+        if [ -z "$cp" ] ; then
+            cp="$ext"
+        else
+            cp="$cp:$ext"
+        fi
+    done
+
+    echo $cp
+}
+
 ##############################################################################
 # Implementation of scalatest
 
@@ -225,10 +241,10 @@ test_run_neg() {
 test_run_jvm() {
     rm -rf "$dstbase".obj &&
     mkdir -p "$dstbase".obj &&
-    $SCALAC -d "$os_dstbase".obj "$@" "$os_srcbase".scala &&
+    $SCALAC -d "$os_dstbase".obj -cp "$JVM_EXT_CLASSPATH" "$@" "$os_srcbase".scala &&
     scala_lib=`get_os_filename "$SCALA_LIB"` &&
     classpath=`get_os_pathlist "$os_dstbase".obj:$CLASSPATH` &&
-    $SCALA -Dscalatest.output=$os_dstbase.obj -Dscalatest.lib=$scala_lib -classpath $classpath Test "jvm" &&
+    $SCALA -Dscalatest.output=$os_dstbase.obj -Dscalatest.lib=$scala_lib -classpath $classpath:$JVM_EXT_CLASSPATH Test "jvm" &&
     rm -rf "$dstbase".obj;
 }
 
@@ -530,6 +546,8 @@ FILES_ANT="";
 
 QUICK="$PREFIX/build/quick/bin"
 QUICK_LIB="$PREFIX/build/quick/lib/library"
+
+JVM_EXT_CLASSPATH=`get_ext_classpath $TESTROOT/files/jvm/lib`
 
 if [ -d "$PREFIX/dists" ]; then
     LATEST="$PREFIX/dists/latest/bin";
