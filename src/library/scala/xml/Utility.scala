@@ -435,7 +435,7 @@ object Utility extends AnyRef with parsing.TokenTests {
           else
             i = i * base + ch().asDigit
         case _ =>
-          reportSyntaxError("character '" + ch() + " not allowed in char ref\n")
+          reportSyntaxError("character '" + ch() + "' not allowed in char ref\n")
       }
       nextch()
     }
