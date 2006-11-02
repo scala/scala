@@ -698,6 +698,12 @@ abstract class ClassfileParser {
             .newAliasType(NoPos, pool.getName(nameIndex).toTypeName)
             .setInfo(pool.getClassSymbol(innerIndex).tpe)
           getScope(jflags).enter(innerAlias)
+
+          if ((jflags & JAVA_ACC_STATIC) != 0) {
+            val innerVal = staticModule.newValue(NoPos, pool.getName(nameIndex).toTermName)
+              .setInfo(pool.getClassSymbol(innerIndex).linkedModuleOfClass.moduleClass.thisType)
+            staticDefs.enter(innerVal)
+          }
         }
       }
     }
