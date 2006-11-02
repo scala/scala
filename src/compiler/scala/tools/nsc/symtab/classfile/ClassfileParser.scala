@@ -320,7 +320,11 @@ abstract class ClassfileParser {
           while (name(index) != ';') { index = index + 1 }
           val end = index
           index = index + 1
-          definitions.getClass(name.subName(start, end)).tpe
+          val clsName = name.subName(start, end)
+          if (clsName.pos('.') == clsName.length)
+            definitions.getMember(definitions.EmptyPackageClass, clsName.toTypeName).tpe
+          else
+            definitions.getClass(clsName).tpe
         case ARRAY_TAG =>
           while ('0' <= name(index) && name(index) <= '9') index = index + 1
           appliedType(definitions.ArrayClass.tpe, List(sig2type))
