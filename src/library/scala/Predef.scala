@@ -121,7 +121,7 @@ object Predef {
 
   implicit def stringWrapper(x: String) = new runtime.RichString(x)
 
-  implicit def exceptionWareppr(exc: Throwable) = new runtime.RichException(exc)
+  implicit def exceptionWrapper(exc: Throwable) = new runtime.RichException(exc)
 
 
   implicit def int2ordered(x: int): Ordered[int] = new Ordered[int] with Proxy {
