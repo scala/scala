@@ -36,15 +36,15 @@ object Predef {
   type unit = scala.Unit
 
   type String = java.lang.String
-  type Class = java.lang.Class;
+  type Class = java.lang.Class
 
   type Throwable = java.lang.Throwable
   type Exception = java.lang.Exception
   type Error = java.lang.Error
-  type RuntimeException = java.lang.RuntimeException;
+  type RuntimeException = java.lang.RuntimeException
   type NullPointerException = java.lang.NullPointerException
-  type ClassCastException = java.lang.ClassCastException;
-  type IndexOutOfBoundsException = java.lang.IndexOutOfBoundsException;
+  type ClassCastException = java.lang.ClassCastException
+  type IndexOutOfBoundsException = java.lang.IndexOutOfBoundsException
   type ArrayIndexOutOfBoundsException = java.lang.ArrayIndexOutOfBoundsException
   type UnsupportedOperationException = java.lang.UnsupportedOperationException
   type IllegalArgumentException = java.lang.IllegalArgumentException
@@ -312,8 +312,6 @@ object Predef {
   implicit def double2Double(x: double) = new java.lang.Double(x)
   implicit def boolean2Boolean(x: boolean) = new java.lang.Boolean(x)
 
-  //
-  def currentThread = java.lang.Thread.currentThread();
-
+  def currentThread = java.lang.Thread.currentThread()
 
 }
