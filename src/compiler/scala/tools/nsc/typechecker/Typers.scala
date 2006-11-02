@@ -117,6 +117,10 @@ trait Typers requires Analyzer {
    */
   val REGPATmode    = 0x1000
 
+  private val stickyModes: int  = EXPRmode | PATTERNmode | TYPEmode | CONSTmode
+
+  private def funMode(mode: int) = mode & stickyModes | FUNmode | POLYmode
+
   class Typer(context0: Context) {
     import context0.unit
 
@@ -164,11 +168,6 @@ trait Typers requires Analyzer {
 
     private var context = context0
     def context1 = context
-
-
-    private val stickyModes: int  = EXPRmode | PATTERNmode | TYPEmode | CONSTmode
-
-    private def funMode(mode: int) = mode & stickyModes | FUNmode | POLYmode
 
     /** Report a type error.
      *
@@ -841,6 +840,14 @@ trait Typers requires Analyzer {
         List(stat)
     }
 
+    protected def enterSyms(txt : Context, trees : List[Tree]) = {
+      var txt0 = txt;
+      for (val tree <- trees) txt0 = enterSym(txt0, tree)
+    }
+    protected def enterSym(txt : Context, tree : Tree) : Context =
+      if (txt eq context) namer.enterSym(tree)
+      else new Namer(txt).enterSym(tree)
+
     /**
      *  @param templ    ...
      *  @param parents1 ...
@@ -855,7 +862,7 @@ trait Typers requires Analyzer {
           intersectionType(clazz.info.parents, clazz.owner)
         else clazz.typeOfThis
       // the following is necessary for templates generated later
-      new Namer(context.outer.make(templ, clazz, clazz.info.decls)).enterSyms(templ.body)
+      enterSyms(context.outer.make(templ, clazz, clazz.info.decls), templ.body)
       validateParentClasses(parents1, selfType)
       val body =
         if (phase.id <= currentRun.typerPhase.id && reporter.errors == 0)
@@ -1061,7 +1068,8 @@ trait Typers requires Analyzer {
           if (stat.isDef) context.scope.enter(stat.symbol)
         }
       }
-      namer.enterSyms(block.stats)
+      if (!inIDE)
+        namer.enterSyms(block.stats)
       block.stats foreach enterLabelDef
       val stats1 = typedStats(block.stats, context.owner)
       val expr1 = typed(block.expr, mode & ~(FUNmode | QUALmode), pt)
@@ -1134,10 +1142,11 @@ trait Typers requires Analyzer {
                 error(vparam.pos, "missing parameter type"); ErrorType
               }
               else argpt
-          namer.enterSym(vparam)
+          enterSym(context, vparam)
           if (context.retyping) context.scope enter vparam.symbol
           vparam.symbol
         }
+        // XXX: here to for IDE hooks.
         val vparams = List.mapConserve(fun.vparams)(typedValDef)
         for (val vparam <- vparams) {
           checkNoEscaping.locals(context.scope, WildcardType, vparam.tpt); ()
@@ -1156,7 +1165,8 @@ trait Typers requires Analyzer {
     }
 
     def typedRefinement(stats: List[Tree]): List[Tree] = {
-      namer.enterSyms(stats)
+      if (!inIDE)
+        namer.enterSyms(stats)
       val stats1 = typedStats(stats, NoSymbol)
       for (val stat <- stats1; stat.isDef) {
         val member = stat.symbol
@@ -1168,6 +1178,7 @@ trait Typers requires Analyzer {
       stats1
     }
 
+    def typedImport(imp : Import) : Import = imp;
     def typedStats(stats: List[Tree], exprOwner: Symbol): List[Tree] = {
       val inBlock = exprOwner == context.owner
       def typedStat(stat: Tree): Tree = {
@@ -1175,8 +1186,11 @@ trait Typers requires Analyzer {
           errorTree(stat, "only declarations allowed here")
         stat match {
           case imp @ Import(_, _) =>
-            context = context.makeNewImport(imp)
-            stat.symbol.initialize
+            val imp0 = typedImport(imp)
+            if (imp0 != null) {
+              context = context.makeNewImport(imp0)
+              imp0.symbol.initialize
+            }
             EmptyTree
           case _ =>
             val localTyper = if (inBlock || (stat.isDef && !stat.isInstanceOf[LabelDef])) this
@@ -1415,14 +1429,9 @@ trait Typers requires Analyzer {
       defn.mods setAttr List();
     }
 
-    protected def typedHookForTree(tree : Tree, mode : Int, pt : Type): Tree = null;
 
     protected def typed1(tree: Tree, mode: int, pt: Type): Tree = {
       //Console.println("typed1("+tree.getClass()+","+Integer.toHexString(mode)+","+pt+")")
-      { // IDE hook
-        val ret = typedHookForTree(tree, mode, pt)
-        if (ret != null) return ret
-      }
       def ptOrLub(tps: List[Type]) = if (isFullyDefined(pt)) pt else lub(tps)
 
       def typedTypeApply(fun: Tree, args: List[Tree]): Tree = fun.tpe match {
@@ -2084,7 +2093,6 @@ trait Typers requires Analyzer {
           throw new Error("unexpected tree: "+tree);//debug
       }
     }
-    protected def typedHookForType(tree : Tree, mode : Int, pt : Type): Tree = null;
 
     def typed(tree: Tree, mode: int, pt: Type): Tree =
       try {
@@ -2094,10 +2102,6 @@ trait Typers requires Analyzer {
             tree.tpe != null && (tree.tpe.isErroneous || !(tree.tpe <:< pt))) {
           tree.tpe = null
           if (tree.hasSymbol) tree.symbol = NoSymbol
-        }
-        { // IDE hook, can reset type if things are different.
-          val ret = typedHookForType(tree, mode, pt);
-          if (ret != null) return ret;
         }
         //Console.println("typing "+tree+", "+context.undetparams);//DEBUG
         val tree1 = if (tree.tpe != null) tree else typed1(tree, mode, pt)
