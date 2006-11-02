@@ -42,7 +42,9 @@ trait Namers requires Analyzer {
         mapOver(tp)
     }
   }
-  protected def doEnterValueParams = true;
+  /** overridden by IDE to not manually enter value parameters */
+  protected final def doEnterValueParams = !inIDE;
+  protected def inIDE = false;
 
   class Namer(val context: Context) {
 
@@ -196,8 +198,14 @@ trait Namers requires Analyzer {
       m
     }
 
-    def enterSyms(trees: List[Tree]): Namer =
-      (this /: trees) ((namer, tree) => namer.enterSym(tree))
+    def enterSyms(trees: List[Tree]): Namer = {
+      var namer : Namer = this
+      for (val tree <- trees) {
+        val txt = namer.enterSym(tree)
+        if (!(txt eq namer.context)) namer = new Namer(txt)
+      }
+      namer
+    }
 
     def newTypeSkolems(tparams: List[Symbol]): List[Symbol] = {
       val tskolems = tparams map (.newTypeSkolem)
@@ -220,7 +228,7 @@ trait Namers requires Analyzer {
 
     def deSkolemize: TypeMap = new DeSkolemizeMap(applicableTypeParams(context.owner))
 
-    def enterSym(tree: Tree): Namer = {
+    def enterSym(tree: Tree): Context = {
 
       def finishWith(tparams: List[AbsTypeDef]): unit = {
         val sym = tree.symbol
@@ -313,11 +321,11 @@ trait Namers requires Analyzer {
           case imp @ Import(_, _) =>
             tree.symbol = NoSymbol.newImport(tree.pos)
             tree.symbol.setInfo(namerOf(tree.symbol).typeCompleter(tree))
-            return new Namer(context.makeNewImport(imp))
+            return (context.makeNewImport(imp))
           case _ =>
         }
       }
-      this
+      this.context
     }
 
 // --- Lazy Type Assignment --------------------------------------------------

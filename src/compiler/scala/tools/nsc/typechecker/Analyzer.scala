@@ -17,8 +17,8 @@ trait Analyzer extends AnyRef
             with EtaExpansion
             with SyntheticMethods {
 
-  val global: Global
-  import global._
+  val global : Global;
+  import global._;
 
   object namerFactory extends SubComponent {
     val global: Analyzer.this.global.type = Analyzer.this.global

@@ -24,10 +24,12 @@ trait Contexts requires Analyzer {
   NoContext.enclClass = NoContext
   NoContext.enclMethod = NoContext
 
-  private val startContext = NoContext.make(
-    Template(List(), List()) setSymbol NoSymbol setType NoType,
-    definitions.RootClass,
-    definitions.RootClass.info.decls)
+  private val startContext = {
+    NoContext.make(
+    global.Template(List(), List()) setSymbol global.NoSymbol setType global.NoType,
+    global.definitions.RootClass,
+    global.definitions.RootClass.info.decls)
+  }
 
   def rootContext(unit: CompilationUnit): Context =
     rootContext(unit, EmptyTree, false)
@@ -72,7 +74,7 @@ trait Contexts requires Analyzer {
   class Context {
     var unit: CompilationUnit = _
     var tree: Tree = _                      // Tree associated with this context
-    var owner: Symbol = NoSymbol            // The current owner
+    var owner: Symbol = NoSymbol// The current owner
     var scope: Scope = _                    // The current scope
     var outer: Context = _                  // The next outer context
     var enclClass: Context = _              // The next outer context whose tree is a
@@ -97,14 +99,36 @@ trait Contexts requires Analyzer {
 
     override def equals(that : Any) = that match {
       case that if (super.equals(that)) => true
-      case txt : Context =>
-      tree == txt.tree && owner == txt.owner && scope == txt.scope &&
-        outer == txt.outer && enclClass == txt.enclClass && enclMethod == txt.enclMethod &&
-          variance == txt.variance && _undetparams == txt._undetparams &&
-            depth == txt.depth && imports == txt.imports && prefix == txt.prefix &&
-              inConstructorSuffix == txt.inConstructorSuffix && implicitsEnabled == txt.implicitsEnabled &&
-                  checking == txt.checking && retyping == txt.retyping &&
-                    savedTypeBounds == txt.savedTypeBounds
+      case that : Context =>
+        val a0 = if (tree == null) tree == that.tree else tree equalsStructure that.tree;
+        val a1 = owner == that.owner;
+        val a2 = scope == that.scope;
+        val a3 = outer == that.outer;
+        val a4 = {
+          if (enclClass eq this) {
+            that.enclClass eq that;
+          } else enclClass == that.enclClass;
+        }
+        val a5 = {
+          if (enclMethod eq this)
+            that.enclMethod eq that;
+          else enclMethod == that.enclMethod;
+        }
+        val a6 = variance == that.variance;
+        val a7 = _undetparams == that._undetparams;
+        val a8 = depth == that.depth;
+        val a9 = if (imports.length != that.imports.length) false else
+          (for (val x <- imports.zip(that.imports)) yield
+              (x._1.tree equalsStructure x._2.tree) && x._1.depth == x._2.depth).
+            foldLeft(true)((x,y) => x && y);
+
+        val a10 = prefix == that.prefix;
+        val a11 = inConstructorSuffix == that.inConstructorSuffix;
+        val a12 = implicitsEnabled == that.implicitsEnabled;
+        val a13 = checking == that.checking;
+        val a14 = retyping == that.retyping;
+        val a15 = savedTypeBounds == that.savedTypeBounds;
+        a0 && a1 && a2 && a3 && a4 && a5 && a6 && a7 && a8 && a9 && a10 && a11 && a12 && a13 && a14 && a15
       case _ => false;
     }
 

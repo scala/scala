@@ -91,6 +91,32 @@ trait Trees requires Global {
       case t: Tree => this eq t
       case _ => false
     }
+    def equalsStructure(that : Tree) : Boolean = if (this == that) true else (this:Any) match {
+    case thiz : CaseClass if (that != null && thiz.getClass == that.getClass) =>
+      val that0 = that.asInstanceOf[CaseClass]
+      val result : Iterator[Boolean] = for (val i <- 0.until(thiz.caseArity)) yield thiz.caseElement(i) match {
+        case tree : Tree =>
+          val b = tree.equalsStructure(that0.caseElement(i).asInstanceOf[Tree])
+          b
+        case list : List[Any] if (that0.caseElement(i).isInstanceOf[List[Any]]) =>
+          val listThat = that0.caseElement(i).asInstanceOf[List[Any]];
+          if (list.length == listThat.length) (for (val x <- list.zip(listThat)) yield {
+            if (x._1 != null && x._1.isInstanceOf[Tree] && x._2.isInstanceOf[Tree]) {
+              val b = x._1.asInstanceOf[Tree] equalsStructure x._2.asInstanceOf[Tree]
+              b
+            } else x._1 == x._2
+          }).foldLeft(true)((x,y) => x && y) else false;
+        case elem =>
+          val b = elem == that0.caseElement(i)
+          b
+      }
+      val b = result.foldLeft(true)((x,y) => x && y)
+      if (b) {
+        tpe == that.tpe
+      } else false;
+    case _ => false;
+    }
+
 
     def duplicate: this.type =
       (duplicator transform this).asInstanceOf[this.type]
@@ -1087,7 +1113,7 @@ trait Trees requires Global {
     }
 
     def transformTrees(trees: List[Tree]): List[Tree] =
-      List.mapConserve(trees)(transform)
+        List.mapConserve(trees)(transform)
     def transformTemplate(tree: Template): Template =
       transform(tree: Tree).asInstanceOf[Template]
     def transformAbsTypeDefs(trees: List[AbsTypeDef]): List[AbsTypeDef] =

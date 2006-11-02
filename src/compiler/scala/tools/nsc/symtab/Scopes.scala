@@ -9,6 +9,9 @@ package scala.tools.nsc.symtab
 trait Scopes requires SymbolTable {
 
   class ScopeEntry(val sym: Symbol, val owner: Scope) {
+    /** hook to notify IDE that new symbol has been added to this scope */
+    owner.enter00(sym);
+
 
     /** the next entry in the hash bucket
      */
@@ -54,6 +57,11 @@ trait Scopes requires SymbolTable {
   abstract class Scope(initElems: ScopeEntry)  {
 
     var elems: ScopeEntry = initElems
+
+    /** hook for IDE
+     */
+    protected def enter0(sym : Symbol) : Unit = {}
+    private[Scopes] def enter00(sym : Symbol) = enter0(sym);
 
     /** The number of times this scope is neted in another
      */

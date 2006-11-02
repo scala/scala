@@ -622,15 +622,21 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
   def forCLDC: Boolean = settings.target.value == "cldc"
   def onlyPresentation = settings.doc.value
   // position stuff
-  protected val positionConfiguration: PositionConfiguration = new PositionConfiguration {
+  final val positionConfiguration: PositionConfiguration = initConfig;
+  protected def initConfig : PositionConfiguration = posConfig;
+
+  private object posConfig extends PositionConfiguration {
     type PositionType = Int
-    def coercePosToInt(pos: PositionType): Int = pos
-    def coerceIntToPos(pos: Int): PositionType = pos
-    val NoPos: PositionType = Position.NOPOS
-    val FirstPos: PositionType = Position.FIRSTPOS
+    def coercePosToInt(pos: Int): Int = pos
+    def coerceIntToPos(pos: Int): Int = pos
+    val NoPos: Int = Position.NOPOS
+    val FirstPos: Int = Position.FIRSTPOS
   }
   final type PositionType = positionConfiguration.PositionType
-  final val FirstPos = positionConfiguration.FirstPos
+  final val FirstPos = {
+    val posConfig : PositionConfiguration = positionConfiguration;
+    posConfig.FirstPos.asInstanceOf[PositionType];
+  }
   final val NoPos = positionConfiguration.NoPos
   final def coerceIntToPos(pos: Int): PositionType =
     positionConfiguration.coerceIntToPos(pos)
