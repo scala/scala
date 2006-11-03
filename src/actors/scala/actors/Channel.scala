@@ -145,7 +145,6 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
       isSuspended = false
       waitingFor = waitingForNone
     }
-    receiver.resetActor()
     val result = f(received)
     receiver.popSender()
     result
@@ -191,7 +190,6 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
       waitingFor = waitingForNone
       waitingForSender = null
     }
-    receiver.resetActor()
     val result = f(received)
     receiver.popSender()
     result
@@ -220,7 +218,6 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
         if (received == null)
           if (f.isDefinedAt(TIMEOUT)) {
             isSuspended = false
-            receiver.resetActor()
             val result = f(TIMEOUT)
             return result
           }
@@ -244,7 +241,6 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
             if (received == null)
               if (f.isDefinedAt(TIMEOUT)) {
                 isSuspended = false
-                receiver.resetActor()
                 val result = f(TIMEOUT)
                 return result
               }
@@ -257,7 +253,6 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
       isSuspended = false
       waitingFor = waitingForNone
     }
-    receiver.resetActor()
     val result = f(received)
     receiver.popSender()
     result

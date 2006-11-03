@@ -233,7 +233,7 @@ object Actor {
    */
   def seq[a, b >: a](first: => a, next: => b): b = {
     val s = self
-    s.kill = () => { next }
+    s.kill = () => { next; s.kill() }
     first
   }
 
