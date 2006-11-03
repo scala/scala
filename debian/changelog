@@ -1,3 +1,15 @@
+scala (2.2.0-1) unstable; urgency=low
+
+  * New upstream release
+
+ -- Lex Spoon <lex@debian.org>  Mon, 30 Oct 2006 21:35:10 -0500
+
+scala (2.1.5-2) unstable; urgency=low
+
+  * Rearranged to have three packages instead of four.
+
+ -- Lex Spoon <lex@debian.org>  Wed, 28 Jun 2006 17:16:02 +0200
+
 scala (2.1.5-1) unstable; urgency=low
 
   * upstream update.
