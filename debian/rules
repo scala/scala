@@ -21,14 +21,15 @@ install: build
 	dh_clean -k
 	dh_installdirs -A
 
-	install simpbuild/lib/scala-library.jar $(CURDIR)/debian/scala-library/usr/share/java/
-	install simpbuild/lib/scala-dbc.jar $(CURDIR)/debian/scala-library/usr/share/java/
+	install -m644 simpbuild/lib/scala-library.jar $(CURDIR)/debian/scala-library/usr/share/java/
+	install -m644 simpbuild/lib/scala-dbc.jar $(CURDIR)/debian/scala-library/usr/share/java/
+	install -m644 simpbuild/lib/scala-actors.jar $(CURDIR)/debian/scala-library/usr/share/java/
 
-	install simpbuild/lib/scala-compiler.jar $(CURDIR)/debian/scala-dev/usr/share/java/
-	install debian/command-scripts/* $(CURDIR)/debian/scala-dev/usr/bin/
+	install -m644 simpbuild/lib/scala-compiler.jar $(CURDIR)/debian/scala/usr/share/java/
+	install -m755 debian/command-scripts/* $(CURDIR)/debian/scala/usr/bin/
 
 	dh_installdocs -A
-	dh_installman -pscala-dev docs/man/*/*.1
+	dh_installman -pscala simpbuild/manual/man1/*.1
 	dh_installchangelogs  -A
 	dh_compress -A
 	dh_fixperms -A
