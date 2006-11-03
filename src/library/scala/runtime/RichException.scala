@@ -11,6 +11,7 @@
 
 package scala.runtime
 
+import compat.Platform.StringBuilder
 import compat.Platform.EOL
 
 final class RichException(exc: Throwable) {
