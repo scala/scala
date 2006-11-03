@@ -11,6 +11,7 @@
 package scala.actors
 
 import scala.collection.mutable.{HashSet, Stack}
+import compat.Platform
 
 /**
  * The <code>Actor</code> object provides functions for the definition of
@@ -123,7 +124,6 @@ object Actor {
   def reactWithin(msec: long)(f: PartialFunction[Any, Unit]): Nothing =
     self.in.reactWithin(msec)(f)
 
-  /*
   def eventloop(f: PartialFunction[Any, Unit]): Nothing =
     self.in.react(new RecursiveProxyHandler(self, f))
 
@@ -136,7 +136,6 @@ object Actor {
       self.in.react(this)
     }
   }
-  */
 
   /**
    * <p>Used for receiving a message from a specific actor.</p>
@@ -374,11 +373,44 @@ trait Actor extends OutputChannel[Any] {
   private[actors] var detachActor: PartialFunction[Any, Unit] => Unit = _
   private[actors] var kill: () => Unit = _
 
+  private var continue = false
+
   private[actors] def resetActor(): Unit = {
-    suspendActor = () => wait()
-    suspendActorFor = (msec: long) => wait(msec)
-    resumeActor = () => notify()
+    suspendActor = () => {
+      continue = false
+      while(!continue) {
+        try {
+          wait()
+        } catch {
+          case t: InterruptedException =>
+        }
+      }
+    }
+
+    suspendActorFor = (msec: long) => {
+      val ts = Platform.currentTime
+      var waittime = msec
+      continue = false
+      while(!continue) {
+        try {
+          wait(waittime)
+        } catch {
+          case t: InterruptedException => {
+            val now = Platform.currentTime
+            val waited = now-ts
+            waittime = msec-waited
+          }
+        }
+      }
+    }
+
+    resumeActor = () => {
+      continue = true
+      notify()
+    }
+
     detachActor = defaultDetachActor
+
     kill = () => {}
   }
 

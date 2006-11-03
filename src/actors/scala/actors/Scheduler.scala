@@ -28,7 +28,11 @@ import scala.collection.mutable.{ArrayBuffer, Buffer, HashMap, Queue}
 object Scheduler {
   private var sched: IScheduler =
     //new SpareWorkerScheduler
-    new TickedScheduler
+    {
+      val s = new TickedScheduler
+      s.start()
+      s
+    }
 
   def impl = sched
   def impl_= (scheduler: IScheduler) = {
@@ -51,7 +55,7 @@ object Scheduler {
  * @version Beta2
  * @author Philipp Haller
  */
-abstract class IScheduler {
+trait IScheduler {
   def execute(task: Reaction): Unit
   def getTask(worker: WorkerThread): Runnable
   def tick(a: Actor): Unit
@@ -156,7 +160,7 @@ class SpareWorkerScheduler extends IScheduler {
  *
  * @author Philipp Haller
  */
-class TickedScheduler extends IScheduler {
+class TickedScheduler extends Thread with IScheduler {
   private val tasks = new Queue[Reaction]
   private var workers: Buffer[WorkerThread] = new ArrayBuffer[WorkerThread]
 
@@ -166,7 +170,8 @@ class TickedScheduler extends IScheduler {
 
   private var terminating = false
 
-  var TICKFREQ = 50
+  var TICKFREQ = 5
+  var CHECKFREQ = 50
 
   def init() = {
     for (val i <- List.range(0, 2)) {
@@ -177,6 +182,54 @@ class TickedScheduler extends IScheduler {
   }
   init()
 
+  override def run(): unit = {
+    try {
+      while (!terminating) {
+        this.synchronized {
+          try {
+            wait(CHECKFREQ)
+          } catch {
+            case _: InterruptedException =>
+              if (terminating) throw new QuitException
+          }
+
+          if (tasks.length > 0) {
+            // check if we need more threads
+            val iter = workers.elements
+            var foundBusy = false
+            while (iter.hasNext && !foundBusy) {
+              val wt = iter.next
+              ticks.get(wt) match {
+                case None =>
+                  foundBusy = false
+                case Some(ts) =>
+                  val currTime = Platform.currentTime
+                  if (currTime - ts < TICKFREQ)
+                    foundBusy = true
+              }
+            }
+
+            if (!foundBusy) {
+              val newWorker = new WorkerThread(this)
+              workers += newWorker
+
+              // dequeue item to be processed
+              val item = tasks.dequeue
+
+              executing.update(item.actor, newWorker)
+              newWorker.execute(item)
+              newWorker.start()
+            }
+          } // tasks.length > 0
+        } // sync
+
+      } // while (!terminating)
+    } catch {
+      case _: QuitException =>
+        // allow thread to exit
+    }
+  }
+
   def execute(item: Reaction): unit = synchronized {
     if (!terminating)
       if (idle.length > 0) {
@@ -184,44 +237,8 @@ class TickedScheduler extends IScheduler {
         executing.update(item.actor, wt)
         wt.execute(item)
       }
-      else {
-        /*
-         only create new worker thread when all are blocked
-         according to heuristic
-
-         we check time stamps of latest send/receive ops of ALL
-         workers
-
-         we stop if there is one which is not blocked
-        */
-
-        val iter = workers.elements
-        var foundBusy = false
-        while (iter.hasNext && !foundBusy) {
-          val wt = iter.next
-          ticks.get(wt) match {
-            case None =>
-              foundBusy = true // assume not blocked
-            case Some(ts) =>
-              val currTime = Platform.currentTime
-              if (currTime - ts < TICKFREQ)
-                foundBusy = true
-          }
-        }
-
-        if (!foundBusy) {
-          val newWorker = new WorkerThread(this)
-          workers += newWorker
-          executing.update(item.actor, newWorker)
-          newWorker.execute(item)
-          newWorker.start()
-        }
-        else {
-          // wait assuming busy thread will be finished soon
-          // and ask for more work
-          tasks += item
-        }
-      }
+      else
+        tasks += item
   }
 
   def getTask(worker: WorkerThread) = synchronized {

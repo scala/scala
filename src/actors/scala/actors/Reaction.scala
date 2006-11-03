@@ -53,12 +53,17 @@ private[actors] class StartTask(a: Actor) extends Reaction {
       a.exit("normal")
     }
     catch {
-      case _: InterruptedException =>
+      case ie: InterruptedException => {
+        ie.printStackTrace()
         a.exitLinked()
-      case d: SuspendActorException =>
+      }
+      case d: SuspendActorException => {
         // do nothing (continuation is already saved)
-      case t: Throwable =>
+      }
+      case t: Throwable => {
+        t.printStackTrace()
         a.exit(t.toString())
+      }
     }
     finally {
       Actor.selfs.put(t, saved)
