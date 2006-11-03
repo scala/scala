@@ -99,6 +99,7 @@ trait Contexts requires Analyzer {
 
     override def equals(that : Any) = that match {
       case that if (super.equals(that)) => true
+      case NoContext => false
       case that : Context =>
         val a0 = if (tree == null) tree == that.tree else tree equalsStructure that.tree;
         val a1 = owner == that.owner;
