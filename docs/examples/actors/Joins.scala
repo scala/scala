@@ -3,11 +3,11 @@ package examples.actors
 import scala.actors.Actor._
 
 abstract class Producer[T] extends Iterator[T] {
-
-  protected def produce(x: T): unit = coordinator !? HasValue(x)
+  protected def produce(x: T): unit = coordinator ! HasValue(x)
   protected def produceValues: unit
 
-  def hasNext: boolean = { setCurrent(); !current.isEmpty }
+  def hasNext = { setCurrent(); !current.isEmpty }
+
   def next: T = {
     setCurrent()
     val res = current.get
@@ -16,7 +16,8 @@ abstract class Producer[T] extends Iterator[T] {
   }
 
   private var current: Option[T] = null
-  private def setCurrent() = if (current == null) current = (coordinator !? Next).asInstanceOf[Option[T]]
+  private def setCurrent() =
+    if (current == null) current = (coordinator !? Next).asInstanceOf[Option[T]]
 
   private case class  HasValue(value: T)
   private case object Next
@@ -24,26 +25,23 @@ abstract class Producer[T] extends Iterator[T] {
   private case object Continue
 
   private val coordinator = actor {
-    while (true) {
+    while (true)
       receive {
         case Next =>
           reply {
             receive {
               case HasValue(v) =>
-                reply()
                 Some(v)
               case Done =>
                 None
             }
           }
       }
-    }
   }
 
   actor {
     produceValues
-    coordinator !? Done
-    ()
+    coordinator ! Done
   }
 }
 
