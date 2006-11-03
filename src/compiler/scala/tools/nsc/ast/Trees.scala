@@ -91,32 +91,35 @@ trait Trees requires Global {
       case t: Tree => this eq t
       case _ => false
     }
-    def equalsStructure(that : Tree) : Boolean = if (this == that) true else (this:Any) match {
-    case thiz : CaseClass if (that != null && thiz.getClass == that.getClass) =>
-      val that0 = that.asInstanceOf[CaseClass]
-      val result : Iterator[Boolean] = for (val i <- 0.until(thiz.caseArity)) yield thiz.caseElement(i) match {
-        case tree : Tree =>
-          val b = tree.equalsStructure(that0.caseElement(i).asInstanceOf[Tree])
-          b
-        case list : List[Any] if (that0.caseElement(i).isInstanceOf[List[Any]]) =>
-          val listThat = that0.caseElement(i).asInstanceOf[List[Any]];
-          if (list.length == listThat.length) (for (val x <- list.zip(listThat)) yield {
-            if (x._1 != null && x._1.isInstanceOf[Tree] && x._2.isInstanceOf[Tree]) {
-              val b = x._1.asInstanceOf[Tree] equalsStructure x._2.asInstanceOf[Tree]
-              b
-            } else x._1 == x._2
-          }).foldLeft(true)((x,y) => x && y) else false;
-        case elem =>
-          val b = elem == that0.caseElement(i)
-          b
-      }
-      val b = result.foldLeft(true)((x,y) => x && y)
-      if (b) {
-        tpe == that.tpe
-      } else false;
-    case _ => false;
-    }
 
+    def equalsStructure(that: Tree): Boolean = if (this == that) true else (this:Any) match {
+      case thiz : CaseClass if (that != null && thiz.getClass == that.getClass) =>
+        val that0 = that.asInstanceOf[CaseClass]
+        val result: Iterator[Boolean] =
+          for (val i <- 0.until(thiz.caseArity)) yield thiz.caseElement(i) match {
+            case tree: Tree =>
+              val b = tree.equalsStructure(that0.caseElement(i).asInstanceOf[Tree])
+              b
+            case list: List[_] if (that0.caseElement(i).isInstanceOf[List[Any]]) =>
+              val listThat = that0.caseElement(i).asInstanceOf[List[Any]]
+              if (list.length == listThat.length) (for (val x <- list.zip(listThat)) yield {
+                if (x._1 != null && x._1.isInstanceOf[Tree] && x._2.isInstanceOf[Tree]) {
+                  val b = x._1.asInstanceOf[Tree] equalsStructure x._2.asInstanceOf[Tree]
+                  b
+                } else x._1 == x._2
+              }).foldLeft(true)((x,y) => x && y)
+              else false
+            case elem =>
+              val b = elem == that0.caseElement(i)
+              b
+          }
+          val b = result.foldLeft(true)((x,y) => x && y)
+          if (b) {
+            tpe == that.tpe
+          } else false
+      case _ =>
+        false
+    }
 
     def duplicate: this.type =
       (duplicator transform this).asInstanceOf[this.type]
@@ -210,6 +213,11 @@ trait Trees requires Global {
   case class ClassDef(mods: Modifiers, name: Name, tparams: List[AbsTypeDef], tpt: Tree, impl: Template)
        extends ImplDef
 
+  /**
+   *  @param sym       the class symbol
+   *  @param impl      ...
+   *  @return          ...
+   */
   def ClassDef(sym: Symbol, impl: Template): ClassDef =
     posAssigner.atPos(sym.pos) {
       ClassDef(Modifiers(sym.flags),
@@ -228,6 +236,7 @@ trait Trees requires Global {
    *  @param argss     the supercall arguments
    *  @param body      the template statements without primary constructor
    *                   and value parameter fields.
+   *  @return          ...
    */
   def ClassDef(sym: Symbol, vparamss: List[List[ValDef]], argss: List[List[Tree]], body: List[Tree]): ClassDef =
     ClassDef(sym, Template(sym.info.parents map TypeTree, vparamss, argss, body))
@@ -241,11 +250,15 @@ trait Trees requires Global {
   case class ModuleDef(mods: Modifiers, name: Name, impl: Template)
        extends ImplDef
 
+  /**
+   *  @param sym       the class symbol
+   *  @param impl      ...
+   *  @return          ...
+   */
   def ModuleDef(sym: Symbol, impl: Template): ModuleDef =
     posAssigner.atPos(sym.pos) {
       ModuleDef(Modifiers(sym.flags), sym.name, impl)
     }
-
 
   abstract class ValOrDefDef extends MemberDef {
     def tpt: Tree
@@ -338,23 +351,34 @@ trait Trees requires Global {
       AliasTypeDef(Modifiers(sym.flags), sym.name, sym.typeParams map AbsTypeDef, rhs)
     }
 
-  /** Labelled expression - the symbols in the array (must be Idents!)
-   *  are those the label takes as argument
-   *
-   *  The symbol that is given to the labeldef should have a MethodType
-   *  (as if it were a nested function)
-   *
-   *  jumps are apply nodes attributed with label symbol, the arguments
-   *  will get assigned to the idents.
-   *
+  /** <p>
+   *    Labelled expression - the symbols in the array (must be Idents!)
+   *    are those the label takes as argument
+   *  </p>
+   *  <p>
+   *    The symbol that is given to the labeldef should have a MethodType
+   *    (as if it were a nested function)
+   *  </p>
+   *  <p>
+   *    Jumps are apply nodes attributed with label symbol, the arguments
+   *    will get assigned to the idents.
+   *  </p>
+   *  <p>
    *  Note: on 2005-06-09 Martin, Iuli, Burak agreed to have forward
    *        jumps within a Block.
+   *  </p>
    */
   case class LabelDef(name: Name, params: List[Ident], rhs: Tree)
        extends DefTree with TermTree {
     assert(rhs.isTerm)
   }
 
+  /**
+   *  @param sym    the class symbol
+   *  @param params ...
+   *  @param rhs    ...
+   *  @return       ...
+   */
   def LabelDef(sym: Symbol, params: List[Symbol], rhs: Tree): LabelDef =
     posAssigner.atPos(sym.pos) {
       LabelDef(sym.name, params map Ident, rhs) setSymbol sym
@@ -389,6 +413,13 @@ trait Trees requires Global {
     // System.err.println("TEMPLATE: " + parents)
   }
 
+  /**
+   *  @param parents     ...
+   *  @param vparamss    ...
+   *  @param argss       ...
+   *  @param body        ...
+   *  @return            ...
+   */
   def Template(parents: List[Tree], vparamss: List[List[ValDef]], argss: List[List[Tree]], body: List[Tree]): Template = {
     /** Add constructor to template */
     var vparamss1 =
@@ -417,7 +448,9 @@ trait Trees requires Global {
   /** casedef shorthand */
   def CaseDef(pat: Tree, body: Tree): CaseDef = CaseDef(pat, EmptyTree, body)
 
-  /** Sequence of patterns (comma separated expressions), eliminated by TransMatch */
+  /** Sequence of patterns (comma separated expressions), eliminated by the
+   *  <code>TransMatch</code> phase.
+   */
   case class Sequence(trees: List[Tree])
        extends TermTree
 
@@ -465,13 +498,21 @@ trait Trees requires Global {
   case class If(cond: Tree, thenp: Tree, elsep: Tree)
        extends TermTree
 
-  /** Pattern matching expression  (before TransMatch)
-   *  Switch statements            (after TransMatch)
-   *
-   *  after TM, cases will satisfy the following constraints:
-   *  - all guards are EmptyTree,
-   *  - all patterns will be either Literal(Constant(x:Int)) or Alternative(lit|...|lit)
-   *  - except for an "otherwise" branch, which has pattern Ident(nme.WILDCARD)
+  /** <p>
+   *    Pattern matching expression  (before <code>TransMatch</code>)
+   *    Switch statements            (after TransMatch)
+   *  </p>
+   *  <p>
+   *    After <code>TransMatch</code>, cases will satisfy the following
+   *    constraints:
+   *  </p>
+   *  <ul>
+   *    <li>all guards are EmptyTree,</li>
+   *    <li>all patterns will be either <code>Literal(Constant(x:Int))</code>
+   *      or <code>Alternative(lit|...|lit)</code></li>
+   *    <li>except for an "otherwise" branch, which has pattern
+   *      <code>Ident(nme.WILDCARD)</code></li>
+   *  </ul>
    */
   case class Match(selector: Tree, cases: List[CaseDef])
        extends TermTree
@@ -497,7 +538,12 @@ trait Trees requires Global {
     assert(tpt.isType)
   }
 
-  /** Factory method for object creation &lt;new tpt(args_1)...(args_n)&gt; */
+  /** Factory method for object creation <code>&lt;new tpt(args_1)...(args_n)&gt;</code>.
+   *
+   *  @param tpt   ...
+   *  @param argss ...
+   *  @return      ...
+   */
   def New(tpt: Tree, argss: List[List[Tree]]): Tree = {
     assert(!argss.isEmpty)
     val superRef: Tree = Select(New(tpt), nme.CONSTRUCTOR)
@@ -570,7 +616,7 @@ trait Trees requires Global {
   def Literal(value: Any): Literal =
     Literal(Constant(value))
 
-  /** General type term, introduced by RefCheck. */
+  /** General type term, introduced by the phase <code>RefCheck</code>. */
   case class TypeTree() extends TypTree {
     var original: Tree = _
 
