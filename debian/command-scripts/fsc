@@ -1,0 +1,7 @@
+#!/bin/sh
+JAVA_DIR=/usr/share/java
+SCALAC_CLASSPATH=$JAVA_DIR/scala-library.jar:$JAVA_DIR/scala-compiler.jar
+
+exec ${JAVACMD:=java} -Xmx256M -Xms16M \
+  -classpath $SCALAC_CLASSPATH -Dscala.boot.class.path=$SCALAC_CLASSPATH \
+ scala.tools.nsc.CompileClient "$@"
