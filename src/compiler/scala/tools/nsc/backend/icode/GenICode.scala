@@ -635,6 +635,22 @@ abstract class GenICode extends SubComponent  {
           }
           ctx1
 
+        case Apply(fun @ _, List(expr)) if (definitions.isBox(fun.symbol)) =>
+          if (settings.debug.value)
+            log("BOX : " + fun.symbol.fullNameString);
+          val ctx1 = genLoad(expr, ctx, toTypeKind(expr.tpe))
+          val boxType = fun.symbol.owner.linkedClassOfClass.tpe
+          ctx1.bb.emit(BOX(boxType), expr.pos)
+          ctx1
+
+        case Apply(fun @ _, List(expr)) if (definitions.isUnbox(fun.symbol)) =>
+          if (settings.debug.value)
+            log("UNBOX : " + fun.symbol.fullNameString)
+          val ctx1 = genLoad(expr, ctx, toTypeKind(expr.tpe))
+          val boxType = fun.symbol.owner.linkedClassOfClass.tpe
+          ctx1.bb.emit(UNBOX(boxType), expr.pos)
+          ctx1
+
         case Apply(fun, args) =>
           val sym = fun.symbol
 

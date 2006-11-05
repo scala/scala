@@ -6,7 +6,7 @@
 
 package scala.tools.nsc.symtab
 
-import scala.collection.mutable.HashMap
+import scala.collection.mutable.{HashMap, HashSet}
 import scala.tools.nsc.util.Position
 import Flags._
 
@@ -22,7 +22,6 @@ trait Definitions requires SymbolTable {
     var EmptyPackageClass: Symbol = _
     var emptypackagescope: Scope = null //debug
 
-    var JavaPackage: Symbol = _
     var JavaLangPackage: Symbol = _
     var ScalaPackage: Symbol = _
     var ScalaPackageClass: Symbol = _
@@ -236,7 +235,6 @@ trait Definitions requires SymbolTable {
     var BoxedArrayClass: Symbol = _
     var BoxedAnyArrayClass: Symbol = _
     var BoxedObjectArrayClass: Symbol = _
-    var BoxedNumberClass: Symbol = _
     var BoxedUnitClass: Symbol = _
     var BoxedUnitModule: Symbol = _
       def BoxedUnit_UNIT = getMember(BoxedUnitModule, "UNIT")
@@ -324,17 +322,39 @@ trait Definitions requires SymbolTable {
         .setInfo(TypeBounds(AllClass.typeConstructor, AnyClass.typeConstructor))
 
     val boxedClass = new HashMap[Symbol, Symbol]
+    val unboxMethod = new HashMap[Symbol, Symbol] // Type -> Method
+    val isUnbox = new HashSet[Symbol]
+    val boxMethod = new HashMap[Symbol, Symbol] // Type -> Method
+    val isBox = new HashSet[Symbol]
     val boxedArrayClass = new HashMap[Symbol, Symbol]
+
     val refClass = new HashMap[Symbol, Symbol]
     private val abbrvTag = new HashMap[Symbol, char]
 
     private def newValueClass(name: Name, tag: char): Symbol = {
+      def boxedName: String =
+        "scala.runtime.Boxed" + name
       val clazz =
         newClass(ScalaPackageClass, name, List(AnyValClass.typeConstructor))
-      boxedClass(clazz) = getClass("scala.runtime.Boxed" + name)
+      boxedClass(clazz) = getClass(boxedName)
       boxedArrayClass(clazz) = getClass("scala.runtime.Boxed" + name + "Array")
       refClass(clazz) = getClass("scala.runtime." + name + "Ref")
       abbrvTag(clazz) = tag
+
+      val module = ScalaPackageClass.newModule(NoPos, name);
+      ScalaPackageClass.info.decls.enter(module);
+      val mclass = module.moduleClass;
+      mclass.setInfo(ClassInfoType(List(), newScope, mclass))
+      module.setInfo(mclass.tpe)
+      val box = newMethod(mclass, nme.box, List(clazz.typeConstructor),
+                          ObjectClass.typeConstructor)
+      boxMethod(clazz) = box
+      isBox += box
+      val unbox = newMethod(mclass, nme.unbox, List(ObjectClass.typeConstructor),
+                            clazz.typeConstructor)
+      unboxMethod(clazz) = unbox
+      isUnbox += unbox
+
       clazz
     }
 
@@ -506,7 +526,6 @@ trait Definitions requires SymbolTable {
       RootClass.info.decls.enter(EmptyPackage)
       RootClass.info.decls.enter(RootPackage)
 
-      JavaPackage = getModule("java")
       JavaLangPackage = getModule("java.lang")
       ScalaPackage = getModule("scala")
       assert(ScalaPackage != null, "Scala package is null")
@@ -641,7 +660,6 @@ trait Definitions requires SymbolTable {
       BoxedArrayClass = getClass("scala.runtime.BoxedArray")
       BoxedAnyArrayClass = getClass("scala.runtime.BoxedAnyArray")
       BoxedObjectArrayClass = getClass("scala.runtime.BoxedObjectArray")
-      BoxedNumberClass = getClass("scala.runtime.BoxedNumber")
       BoxedUnitClass = getClass("scala.runtime.BoxedUnit")
       BoxedUnitModule = getModule("scala.runtime.BoxedUnit")
       ObjectRefClass = getClass("scala.runtime.ObjectRef")

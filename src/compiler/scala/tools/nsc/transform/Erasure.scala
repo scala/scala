@@ -172,8 +172,8 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
                              else BoxedObjectArrayClass;
             Apply(Select(New(TypeTree(boxedClass.tpe)), nme.CONSTRUCTOR), List(tree))
           } else {
-            val boxedModule = boxedClass(tree.tpe.symbol).linkedModuleOfClass;
-            Apply(Select(gen.mkAttributedRef(boxedModule), nme.box), List(tree))
+            Apply(gen.mkAttributedRef(boxMethod(tree.tpe.symbol)), List(tree)).
+              setPos(tree.pos) setType ObjectClass.tpe
           }
         }
       }
@@ -186,14 +186,6 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
         }
       }
 
-    /** The method-name xxxValue, where Xxx is a numeric value class name */
-    def unboxOp(tp: Type): Name = {
-      val clazzName = tp.symbol.name.toString()
-      newTermName(
-        //String.valueOf((clazzName.charAt(0) + ('a' - 'A')).asInstanceOf[char]) +
-        clazzName.charAt(0).toLowerCase + clazzName.substring(1) + "Value")
-    }
-
     /** Unbox `tree' of boxed type to expected type `pt' */
     private def unbox(tree: Tree, pt: Type): Tree =
       typed {
@@ -201,28 +193,14 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
           if (pt.symbol == UnitClass) {
             if (treeInfo.isPureExpr(tree)) Literal(())
             else Block(List(tree), Literal(()))
-          } else {
-            if (pt.symbol == BooleanClass) {
-              val tree1 = adaptToType(tree, boxedClass(BooleanClass).tpe)
-              gen.mkRuntimeCall(nme.booleanValue, List(tree1))
-            } else if (pt.symbol == ArrayClass) {
-              val tree1 = adaptToType(tree, BoxedArrayClass.tpe)
-/*
-              val elemClass = pt.typeArgs.head.symbol;
-              val elemTag =
-                if (isValueClass(elemClass))
-                  gen.mkRuntimeCall(newTermName(elemClass.name.toString() + "Tag"), List())
-                else
-                  Literal(signature(pt.typeArgs.head));
-*/
-              //Console.println("unboxing " + tree + ":" + tree.tpe + " to " + pt);//DEBUG
-              //gen.mkRuntimeCall(nme.arrayValue, List(tree1, elemTag))
-              gen.mkRuntimeCall(nme.arrayValue, List(tree1, Literal(pt.typeArgs.head)))
-            } else {
-              assert(isNumericValueClass(pt.symbol));
-              val tree1 = adaptToType(tree, BoxedNumberClass.tpe);
-              gen.mkRuntimeCall(unboxOp(pt), List(tree1))
-            }
+          }
+          else if (pt.symbol == ArrayClass) {
+            val tree1 = adaptToType(tree, BoxedArrayClass.tpe)
+            gen.mkRuntimeCall(nme.arrayValue, List(tree1, Literal(pt.typeArgs.head)))
+          }
+          else {
+            Apply(gen.mkAttributedRef(unboxMethod(pt.symbol)), List(tree)).
+              setPos(tree.pos) setType pt
           }
         }
       }

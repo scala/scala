@@ -795,7 +795,7 @@ abstract class DocGenerator extends Models {
       def sym = definitions.getClass("scala.runtime.BoxedLong")
     }
     new PrimitiveContentFrame {
-      def sym = definitions.BoxedNumberClass
+      def sym = definitions.getClass("scala.runtime.BoxedNumber")
     }
     val rsrcdir = "scala/tools/nsc/doc/".replace('/', File.separatorChar)
     for (val base <- List("style.css", "script.js")) {

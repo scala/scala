@@ -296,10 +296,10 @@ trait StdNames requires SymbolTable {
     val this_ = newTermName("this")
     val throw_ = newTermName("throw")
     val true_ = newTermName("true")
-    val update = newTermName("update")
     val unapply = newTermName("unapply")
     val unapplySeq = newTermName("unapplySeq")
-
+    val unbox = newTermName("unbox")
+    val update = newTermName("update")
     val value = newTermName("value")
     val view_ = newTermName("view")
     val tag = newTermName("$tag")

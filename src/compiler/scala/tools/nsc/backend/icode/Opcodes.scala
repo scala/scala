@@ -306,6 +306,18 @@ trait Opcodes requires ICodes {
         else 1
     }
 
+    case class BOX(boxType: Type) extends Instruction {
+      override def toString(): String = "BOX " + boxType
+      override def consumed = 1
+      override def produced = 1
+    }
+
+    case class UNBOX(boxType: Type) extends Instruction {
+      override def toString(): String = "UNBOX " + boxType
+      override def consumed = 1
+      override def produced = 1
+    }
+
     /** Create a new instance of a class through the specified constructor
      * Stack: ...:arg1:arg2:...:argn
      *    ->: ...:ref

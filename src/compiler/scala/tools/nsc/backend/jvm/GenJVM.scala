@@ -59,6 +59,7 @@ abstract class GenJVM extends SubComponent {
   class BytecodeGenerator {
     val MIN_SWITCH_DENSITY = 0.7
     val JAVA_LANG_STRINGBUFFER = "java.lang.StringBuffer"
+    val BOXED_NUMBER = "scala.runtime.BoxedNumber"
 
     val stringBufferType = new JObjectType(JAVA_LANG_STRINGBUFFER)
     val toStringType = new JMethodType(JObjectType.JAVA_LANG_STRING, JType.EMPTY_ARRAY)
@@ -787,6 +788,53 @@ abstract class GenJVM extends SubComponent {
 
 
             }
+
+          case BOX(boxType) =>
+            val boxedClass = definitions.boxedClass(boxType.symbol)
+            val mtype = new JMethodType(javaType(boxedClass), Array(javaType(boxType)))
+            jcode.emitINVOKESTATIC(javaName(boxedClass), "box", mtype)
+
+          case UNBOX(boxType) if (boxType.symbol == definitions.BooleanClass) =>
+            // if null emit false
+            val nonNull = jcode.newLabel()
+            jcode.emitDUP()
+            jcode.emitIFNONNULL(nonNull)
+            jcode.emitPOP()
+            jcode.emitPUSH(false)
+            val lexit = jcode.newLabel()
+            jcode.emitGOTO(lexit)
+            nonNull.anchorToNext()
+            // else unbox the reference at the top of the stack
+            val boxedBoolean = javaName(definitions.boxedClass(definitions.BooleanClass))
+            jcode.emitCHECKCAST(new JObjectType(boxedBoolean))
+            jcode.emitGETFIELD(boxedBoolean, "value", JType.BOOLEAN)
+            lexit.anchorToNext()
+
+          case UNBOX(boxType) =>
+            // if null emit a zero of the appropriate kind
+            val nonNull = jcode.newLabel()
+            jcode.emitDUP()
+            jcode.emitIFNONNULL(nonNull)
+            jcode.emitPOP()
+            toTypeKind(boxType) match {
+              case BYTE            => jcode.emitPUSH(0: Byte)
+              case SHORT           => jcode.emitPUSH(0: Short)
+              case CHAR            => jcode.emitPUSH(0: Char)
+              case INT             => jcode.emitPUSH(0: Int)
+              case LONG            => jcode.emitPUSH(0: Long)
+              case FLOAT           => jcode.emitPUSH(0.0f)
+              case DOUBLE          => jcode.emitPUSH(0.0d)
+            }
+            val lexit = jcode.newLabel()
+            jcode.emitGOTO(lexit)
+            nonNull.anchorToNext()
+            // else unbox the reference at the top of the stack
+            jcode.emitCHECKCAST(new JObjectType(BOXED_NUMBER))
+            val clazzName = boxType.symbol.name.toString()
+            val unboxMethod = clazzName.toLowerCase() + "Value"
+            val mtype = new JMethodType(javaType(boxType), new Array[JType](0))
+            jcode.emitINVOKEVIRTUAL(BOXED_NUMBER, unboxMethod, mtype)
+            lexit.anchorToNext()
 
           case NEW(REFERENCE(cls)) =>
             val className = javaName(cls)
