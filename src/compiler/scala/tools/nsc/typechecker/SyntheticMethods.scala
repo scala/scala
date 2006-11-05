@@ -47,6 +47,11 @@ trait SyntheticMethods requires Analyzer {
         !(ObjectClass isNonBottomSubClass sym.owner) && !(sym hasFlag DEFERRED)))
     }
 
+    def hasDirectImplementation(name: Name): Boolean = {
+      val sym = clazz.info.nonPrivateMember(name)
+      (sym.isTerm && sym.owner == clazz)
+    }
+
     def syntheticMethod(name: Name, flags: Int, tpe: Type) =
       newSyntheticMethod(name, flags | OVERRIDE, tpe)
 
@@ -87,6 +92,10 @@ trait SyntheticMethods requires Analyzer {
 
     def caseNameMethod: Tree = {
       val method = syntheticMethod(nme.caseName, FINAL, PolyType(List(), StringClass.tpe))
+      typed(DefDef(method, vparamss => Literal(Constant(clazz.name.decode))))
+    }
+    def productPrefixMethod: Tree = {
+      val method = syntheticMethod(nme.productPrefix, FINAL, PolyType(List(), StringClass.tpe))
       typed(DefDef(method, vparamss => Literal(Constant(clazz.name.decode))))
     }
 
@@ -217,10 +226,13 @@ trait SyntheticMethods requires Analyzer {
           if (!hasImplementation(nme.toString_)) ts += forwardingMethod(nme.toString_)
           if (!hasImplementation(nme.equals_)) ts += equalsMethod //forwardingMethod(nme.equals_)
         }
-        if (!hasImplementation(nme.caseElement)) ts += caseElementMethod
-        if (!hasImplementation(nme.caseArity)) ts += caseArityMethod
-        if (!hasImplementation(nme.caseName)) ts += caseNameMethod
-
+        // remove, after updating starr
+        if(templ.parents.contains { x:Tree => x.tpe == definitions.getClass("scala.CaseClass") }) {
+          if (!hasImplementation(nme.caseElement)) ts += caseElementMethod
+          if (!hasImplementation(nme.caseArity)) ts += caseArityMethod
+          if (!hasImplementation(nme.caseName)) ts += caseNameMethod
+        }
+        if (!hasDirectImplementation(nme.productPrefix)) ts += productPrefixMethod
 	val accessors = if(clazz hasFlag CASE) clazz.caseFieldAccessors else clazz.constrParamAccessors
         for (val i <- 0 until accessors.length) {
           val acc = accessors(i)

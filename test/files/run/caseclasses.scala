@@ -12,14 +12,14 @@ object Test extends Application {
   }
 
   try {
-    Bar() caseElement 2
+    Bar() element 3
     throw new NullPointerException("duh")
   } catch {
     case x:IndexOutOfBoundsException =>
   }
 
   try {
-    f(2) caseElement 2
+    f(2) element 3
     throw new NullPointerException("duh")
   } catch {
     case x:IndexOutOfBoundsException =>

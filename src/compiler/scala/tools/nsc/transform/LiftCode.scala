@@ -224,14 +224,16 @@ abstract class LiftCode extends Transform {
   class Injector(env: InjectEnvironment, fresh: FreshNameCreator) {
 
     // todo replace className by caseName in CaseClass once we have switched to nsc.
-    def className(value: CaseClass): String = value match {
+    def className(value: AnyRef): String = value match {
       case _ :: _ => "scala.$colon$colon"
       case reflect.MethodType(_, _) =>
         if (value.isInstanceOf[reflect.ImplicitMethodType])
           "scala.reflect.ImplicitMethodType"
         else
           "scala.reflect.MethodType"
-      case x =>
+      case x:Product =>
+        "scala.reflect."+x.productPrefix //caseName
+      case x:CaseClass =>
         "scala.reflect."+x.caseName
       //case _ => // bq:unreachable code
       //  ""
@@ -246,7 +248,20 @@ abstract class LiftCode extends Transform {
       case _ => ""
     }
 
-    def inject(value: Any): Tree = value match {
+    def inject(value: Any): Tree = {
+	  def treatProduct(c:Product) = {
+        val name = objectName(c);
+        if (name.length() != 0) gen.mkAttributedRef(definitions.getModule(name))
+        else {
+          val name = className(c);
+          if (name.length() == 0) throw new Error("don't know how to inject " + value);
+          val injectedArgs = new ListBuffer[Tree];
+          for (val i <- 1 until c.arity+1 /*caseArity*/)
+            injectedArgs += inject(c.element(i));
+          New(Ident(definitions.getClass(name)), List(injectedArgs.toList))
+        }
+	  }
+	  value match {
       case FreeValue(tree) =>
         New(Ident(definitions.getClass("scala.reflect.Literal")), List(List(tree)))
       case ()           => Literal(Constant(()))
@@ -259,23 +274,17 @@ abstract class LiftCode extends Transform {
       case x: Long      => Literal(Constant(x))
       case x: Float     => Literal(Constant(x))
       case x: Double    => Literal(Constant(x))
-      case c: CaseClass =>
-        val name = objectName(c);
-        if (name.length() != 0) gen.mkAttributedRef(definitions.getModule(name))
-        else {
-          val name = className(c);
-          if (name.length() == 0) throw new Error("don't know how to inject " + value);
-          val injectedArgs = new ListBuffer[Tree];
-          for (val i <- 0 until c.caseArity)
-            injectedArgs += inject(c.caseElement(i));
-          New(Ident(definitions.getClass(name)), List(injectedArgs.toList))
-        }
+      case c: Product   => treatProduct(c)
+      case c: CaseClass => treatProduct(new Product {
+	    override def productPrefix = c.caseName;
+		def element(i:Int) = c.caseElement(i)
+		def arity = c.caseArity })
       case null =>
         gen.mkAttributedRef(definitions.getModule("scala.reflect.NoType"))
       case _ =>
         throw new Error("don't know how to inject " + value)
     }
-
+   }
   }
 
   def reify(tree: Tree): reflect.Tree =

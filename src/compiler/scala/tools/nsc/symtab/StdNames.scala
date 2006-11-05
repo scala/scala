@@ -281,6 +281,7 @@ trait StdNames requires SymbolTable {
     val null_ = newTermName("null")
     val predef = newTermName("predef")
     val print = newTermName("print")
+    val productPrefix = newTermName("productPrefix")
     val readResolve = newTermName("readResolve")
     val receive = newTermName("receive")
     val report = newTermName("report")

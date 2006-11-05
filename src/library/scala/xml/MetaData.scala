@@ -162,7 +162,7 @@ abstract class MetaData extends Iterable[MetaData] {
     sb.toString()
   }
 
-  def toString(sb: StringBuilder): Unit = {
+  def toString(sb: StringBuilder): StringBuilder = {
     sb.append(' ')
     toString1(sb)
     next.toString(sb)

@@ -54,7 +54,7 @@ case class ProcInstr(target:String, proctext:String) extends SpecialNode {
   /** appends &quot;&lt;?&quot; target (&quot; &quot;+text)?+&quot;?&gt;&quot;
    *  to this stringbuffer.
    */
-  def toString(sb: StringBuilder) = {
+  override def toString(sb: StringBuilder) = {
     sb
     .append("<?")
     .append(target);

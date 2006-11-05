@@ -69,7 +69,7 @@ case object Null extends MetaData {
 
   override def toString(): String = ""
 
-  override def toString(sb: StringBuilder): Unit = {}
+  override def toString(sb: StringBuilder): StringBuilder = sb
 
   override def wellformed(scope: NamespaceBinding) = true
 

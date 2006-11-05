@@ -222,12 +222,12 @@ Console.println;
 
   Console.println(
     true // Foo(3,'a',Bar()).caseElement( -1 ) == null // throws Exception now
-    && Foo(3,'a',Bar()).caseElement( 0 ) == 3
-    && Foo(3,'a',Bar()).caseElement( 1 ) == 'a'
-    && Foo(3,'a',Bar()).caseElement( 2 ) == Bar()
+    && Foo(3,'a',Bar()).element( 1 ) == 3
+    && Foo(3,'a',Bar()).element( 2 ) == 'a'
+    && Foo(3,'a',Bar()).element( 3 ) == Bar()
     && true // Foo(3,'a',Bar()).caseElement( 3 ) == null // throws Exception now
-    && Bar().caseArity == 0
-    && Foo(3,'a',Bar()).caseArity == 3);
+    && Bar().arity == 0
+    && Foo(3,'a',Bar()).arity == 3);
 
 //############################################################################
 

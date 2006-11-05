@@ -29,9 +29,7 @@ abstract class SpecialNode extends Node with pull.XMLEvent {
   /** always empty */
   final def child = Nil
 
-  final override def toString(): String =
-    toString(new StringBuilder()).toString()
-
+  /** append string representation to the given stringbuffer */
   def toString(sb: StringBuilder): StringBuilder
 
 }

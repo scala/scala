@@ -134,13 +134,13 @@ sealed abstract class ContentModel {
 }
 
 case object PCDATA extends ContentModel {
-  def toString(sb:StringBuilder): StringBuilder = sb.append("(#PCDATA)");
+  override def toString(sb:StringBuilder): StringBuilder = sb.append("(#PCDATA)");
 }
 case object EMPTY extends ContentModel {
-  def toString(sb:StringBuilder): StringBuilder = sb.append("EMPTY");
+  override def toString(sb:StringBuilder): StringBuilder = sb.append("EMPTY");
 }
 case object ANY extends ContentModel {
-  def toString(sb:StringBuilder): StringBuilder = sb.append("ANY");
+  override def toString(sb:StringBuilder): StringBuilder = sb.append("ANY");
 }
 abstract class DFAContentModel extends ContentModel {
   import ContentModel.{ ElemName };
@@ -178,7 +178,7 @@ Console.println("ns = "+ns);
     }
   }
   */
-  def toString(sb:StringBuilder): StringBuilder =  {
+  override def toString(sb:StringBuilder): StringBuilder =  {
     sb.append("(#PCDATA|");
     //r match {
     //  case Alt(Eps, rs@_*) => ContentModel.toString(Alt(rs:_*):RegExp, sb);
@@ -207,6 +207,6 @@ case class  ELEMENTS(r:ContentModel.RegExp) extends DFAContentModel {
     }
   }
   */
-  def toString(sb:StringBuilder): StringBuilder =
+  override def toString(sb:StringBuilder): StringBuilder =
     ContentModel.toString(r, sb);
 }

@@ -22,7 +22,7 @@ import Predef._
  *  @author  Matthias Zenger
  *  @version 1.0, 16/07/2003
  */
-sealed abstract class Option[+A] extends Iterable[A] with CaseClass {
+sealed abstract class Option[+A] extends Iterable[A] {
 
   def isEmpty: Boolean = this match {
     case None => true
@@ -80,8 +80,7 @@ sealed abstract class Option[+A] extends Iterable[A] with CaseClass {
  *  @author  Martin Odersky
  *  @version 1.0, 16/07/2003
  */
-final case class Some[+A](x: A) extends Option[A];
-
+final case class Some[+A](x: A) extends Option[A]
 /** This case object represents non-existent values.
  *
  *  @author  Martin Odersky

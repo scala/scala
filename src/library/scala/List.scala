@@ -371,7 +371,7 @@ object List {
  *  @author  Martin Odersky and others
  *  @version 1.0, 16/07/2003
  */
-sealed abstract class List[+a] extends Seq[a] with CaseClass {
+sealed abstract class List[+a] extends Seq[a] {
 
   /** Returns true if the list does not contain any elements.
    *  @return true, iff the list is empty.
@@ -1079,7 +1079,8 @@ sealed abstract class List[+a] extends Seq[a] with CaseClass {
     b.toList
   }
 
-  override protected def stringPrefix: String = "List"
+  protected override def stringPrefix: String = "List"
+
 }
 
 /** The empty list.

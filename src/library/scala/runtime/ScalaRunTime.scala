@@ -75,23 +75,50 @@ object ScalaRunTime {
       else x.caseElement(from) :: fields(from + 1);
     fields(0)
   }
-
-  def _toString(x: CaseClass): String = {
+  def caseFields(x: Product): List[Any] = {
+    val arity = x.arity;
+    def fields(from: Int): List[Any] =
+      if (from > arity) List()
+      else x.element(from) :: fields(from + 1);
+    fields(1)
+  }
+  def _toStringCaseClass(x: CaseClass): String = {
     caseFields(x).mkString(x.caseName + "(", ",", ")")
   }
-
-  def _hashCode(x: CaseClass): Int = {
+  def _toStringProduct(x: Product): String = {
+    caseFields(x).mkString(x.productPrefix + "(", ",", ")")
+  }
+ /** only for bootstrapping 2.2.1 remove afterwards, keeping only _equalsProduct  */
+  def _toString(x: AnyRef): String = x match {
+    case xc: CaseClass => _toStringCaseClass(xc)
+    case xp: Product   => _toStringProduct(xp)
+  }
+  def _hashCodeCaseClass(x: CaseClass): Int = {
     var code = x.getClass().hashCode();
-    val arity = x.caseArity;
+    val arr =  x.caseArity
     var i = 0;
-    while (i < arity) {
+    while (i < arr) {
       code = code * 41 + x.caseElement(i).hashCode();
       i = i + 1
     }
     code
   }
-
-  def _equals(x: CaseClass, y: Any): Boolean = y match {
+  def _hashCodeProduct(x: Product): Int = {
+    var code = x.getClass().hashCode();
+    val arr =  x.arity
+    var i = 1;
+    while (i <= arr) {
+      code = code * 41 + x.element(i).hashCode();
+      i = i + 1
+    }
+    code
+  }
+ /** only for bootstrapping 2.2.1 remove afterwards, keeping only _equalsProduct  */
+  def _hashCode(x: AnyRef): Int = x match {
+    case xc: CaseClass => _hashCodeCaseClass(xc)
+    case xp: Product   => _hashCodeProduct(xp)
+  }
+  def _equalsCaseClass(x: CaseClass, y: Any): Boolean = y match {
     case y1: CaseClass =>
       /*(x.getClass() eq y1.getClass() &&*/ {
 	val arity = x.caseArity;
@@ -103,7 +130,23 @@ object ScalaRunTime {
     case _ =>
       false
   }
-
+  def _equalsProduct(x: Product, y: Any): Boolean = y match {
+    case y1: Product if x.arity == y1.arity =>
+      /*(x.getClass() eq y1.getClass() &&*/ {
+	val arity = x.arity;
+	var i = 1;
+	while (i <= arity && x.element(i) == y1.element(i))
+	  i = i + 1;
+	i == arity + 1
+      }
+    case _ =>
+      false
+  }
+ /** only for bootstrapping 2.2.1 remove afterwards, keeping only _equalsProduct  */
+  def _equals(x: AnyRef, y: Any): Boolean = x match {
+    case xc: CaseClass => _equalsCaseClass(xc, y)
+    case xp: Product   => _equalsProduct(xp, y)
+  }
   //def checkDefined[T >: Null](x: T): T =
   //  if (x == null) throw new UndefinedException else x
 
