@@ -66,34 +66,6 @@ trait SyntheticMethods requires Analyzer {
       typed(DefDef(method, vparamss => gen.mkAttributedRef(accessor)))
     }
 
-    def caseElementMethod: Tree = {
-      val method = syntheticMethod(
-        nme.caseElement, FINAL, MethodType(List(IntClass.tpe), AnyClass.tpe))
-      val caseFields = clazz.caseFieldAccessors map gen.mkAttributedRef
-      typed(
-        DefDef(method, {vparamss =>
-            val doThrow:Tree = Throw(New(TypeTree(definitions.IndexOutOfBoundsExceptionClass.tpe),
-                                         List(List(Select(Ident(vparamss.head.head), nme.toString_)))))
-            if (caseFields.isEmpty) doThrow
-            else {
-              var i = caseFields.length
-              var cases = List(CaseDef(Ident(nme.WILDCARD), EmptyTree, doThrow))
-              for (val field <- caseFields.reverse) {
-                i = i - 1; cases = CaseDef(Literal(Constant(i)), EmptyTree, field) :: cases
-              }
-              Match(Ident(vparamss.head.head), cases)
-            }
-        }))
-    }
-    def caseArityMethod: Tree = {
-      val method = syntheticMethod(nme.caseArity, FINAL, PolyType(List(), IntClass.tpe))
-      typed(DefDef(method, vparamss => Literal(Constant(clazz.caseFieldAccessors.length))))
-    }
-
-    def caseNameMethod: Tree = {
-      val method = syntheticMethod(nme.caseName, FINAL, PolyType(List(), StringClass.tpe))
-      typed(DefDef(method, vparamss => Literal(Constant(clazz.name.decode))))
-    }
     def productPrefixMethod: Tree = {
       val method = syntheticMethod(nme.productPrefix, FINAL, PolyType(List(), StringClass.tpe))
       typed(DefDef(method, vparamss => Literal(Constant(clazz.name.decode))))
@@ -226,12 +198,7 @@ trait SyntheticMethods requires Analyzer {
           if (!hasImplementation(nme.toString_)) ts += forwardingMethod(nme.toString_)
           if (!hasImplementation(nme.equals_)) ts += equalsMethod //forwardingMethod(nme.equals_)
         }
-        // remove, after updating starr
-        if(templ.parents.contains { x:Tree => x.tpe == definitions.getClass("scala.CaseClass") }) {
-          if (!hasImplementation(nme.caseElement)) ts += caseElementMethod
-          if (!hasImplementation(nme.caseArity)) ts += caseArityMethod
-          if (!hasImplementation(nme.caseName)) ts += caseNameMethod
-        }
+
         if (!hasDirectImplementation(nme.productPrefix)) ts += productPrefixMethod
 	val accessors = if(clazz hasFlag CASE) clazz.caseFieldAccessors else clazz.constrParamAccessors
         for (val i <- 0 until accessors.length) {

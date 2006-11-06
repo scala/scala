@@ -873,8 +873,10 @@ trait Infer requires Analyzer {
         val pt1 = pt.subst(ptparams, ptvars)
         if (pat.tpe <:< pt1)
           ptvars foreach instantiateTypeVar
-        else
-          error(pat.pos, "pattern type is incompatibe with expected type"+foundReqMsg(pat.tpe, pt))
+        else {
+          if(!(definitions.unapplyMember(pat.tpe).exists && settings.Xunapply.value))
+            error(pat.pos, "pattern type is incompatibe with expected type"+foundReqMsg(pat.tpe, pt))
+        }
       }
 
     object toOrigin extends TypeMap {

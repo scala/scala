@@ -162,6 +162,12 @@ trait Definitions requires SymbolTable {
       ts.init ::: List(last1)
     }
 
+    /** returns unapply or unapplySeq if available */
+    def unapplyMember(tp: Type): Symbol = {
+      var unapp = tp.member(nme.unapply)
+      if (unapp == NoSymbol) unapp = tp.member(nme.unapplySeq)
+      unapp
+    }
     /* </unapply> */
     val MaxFunctionArity = 9
     val FunctionClass: Array[Symbol] = new Array(MaxFunctionArity + 1)

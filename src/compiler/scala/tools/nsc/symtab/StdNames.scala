@@ -189,7 +189,6 @@ trait StdNames requires SymbolTable {
     val AnyRef = newTermName("AnyRef")
     val Array = newTermName("Array")
     val Byte = newTermName("Byte")
-    val CaseClass = newTermName("CaseClass")
     val Catch = newTermName("Catch")
     val Char = newTermName("Char")
     val Boolean = newTermName("Boolean")

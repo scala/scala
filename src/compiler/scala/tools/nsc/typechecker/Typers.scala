@@ -432,12 +432,6 @@ trait Typers requires Analyzer {
       } else tree
     }
 
-    def unapplyMember(tp: Type): Symbol = {
-      var unapp = tp.member(nme.unapply)
-      if (unapp == NoSymbol) unapp = tp.member(nme.unapplySeq)
-      unapp
-    }
-
     /** Perform the following adaptations of expression, pattern or type `tree' wrt to
      *  given mode `mode' and given prototype `pt':
      *  (0) Convert expressions with constant types to literals
@@ -563,7 +557,7 @@ trait Typers requires Analyzer {
                   if (obj != NoSymbol) tree.setSymbol(obj)
                   obj
                 }
-                if (unapplyMember(consp.tpe).exists) Ident(consp).setType(consp.tpe)
+                if (definitions.unapplyMember(consp.tpe).exists) Ident(consp).setType(consp.tpe)
                 else errorTree(tree, "" + clazz + " is not a case class, nor does it have unapply/unapplySeq method")
               } else {
                 errorTree(tree, "" + clazz + " is neither a case class nor a sequence class")
@@ -1317,9 +1311,9 @@ trait Typers requires Analyzer {
         case ErrorType =>
           setError(copy.Apply(tree, fun, args))
 	/* --- begin unapply  --- */
-	case otpe if unapplyMember(otpe).exists && settings.Xunapply.value =>
+	case otpe if definitions.unapplyMember(otpe).exists && settings.Xunapply.value =>
           // !!! this is fragile, maybe needs to be revised when unapply patterns become terms
-          val unapp = unapplyMember(otpe)
+          val unapp = definitions.unapplyMember(otpe)
           assert(unapp.exists, tree)
           assert(isFullyDefined(pt))
           val argDummy =  context.owner.newValue(fun.pos, nme.SELECTOR_DUMMY)
@@ -1727,7 +1721,6 @@ trait Typers requires Analyzer {
       val sym: Symbol = tree.symbol
       if (sym != null) sym.initialize
       //if (settings.debug.value && tree.isDef) log("typing definition of "+sym);//DEBUG
-
       tree match {
         case PackageDef(name, stats) =>
           val stats1 = newTyper(context.make(tree, sym.moduleClass, sym.info.decls))

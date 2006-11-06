@@ -1162,7 +1162,7 @@ print()
 	    Or(squeezedBlock(
 	      List(ValDef(v,Apply(fn1,List(selector)))),
 	      And(Not(Select(Ident(v), nme.isEmpty)),
-		  squeezedBlock(List(ValDef(casted, Select(Ident(v),"get"))),toTree(node.and)))),
+		  squeezedBlock(List(ValDef(casted, typed(Select(Ident(v),"get")))),toTree(node.and)))),
 	       toTree(node.or, selector.duplicate))
           case ConstrPat(casted) =>
             def outerAlwaysEqual(left: Type, right: Type) = Pair(left,right) match {

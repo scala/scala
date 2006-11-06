@@ -27,8 +27,6 @@ abstract class TreeBuilder {
     scalaDot(nme.Unit.toTypeName)
   def scalaScalaObjectConstr: Tree =
     scalaDot(nme.ScalaObject.toTypeName)
-  def caseClassConstr: Tree =
-    scalaDot(nme.CaseClass.toTypeName)
 
   def productConstr(typeArgs: List[Tree]) = {
     def repeatedToSeq(tpt: Tree) = tpt match {
