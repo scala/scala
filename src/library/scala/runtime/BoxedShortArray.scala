@@ -19,10 +19,10 @@ final class BoxedShortArray(val value: Array[Short]) extends BoxedArray {
 
   def length: Int = value.length
 
-  def apply(index: Int): AnyRef = BoxedShort.box(value(index))
+  def apply(index: Int): AnyRef = Short.box(value(index))
 
   def update(index: Int, elem: AnyRef): Unit = {
-    value(index) = elem.asInstanceOf[BoxedNumber].shortValue()
+    value(index) = Short.unbox(elem)
   }
 
   def unbox(elemTag: String): AnyRef = value
@@ -58,4 +58,3 @@ final class BoxedShortArray(val value: Array[Short]) extends BoxedArray {
     result
   }
 }
-

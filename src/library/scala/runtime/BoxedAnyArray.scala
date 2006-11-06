@@ -31,21 +31,21 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
     if (unboxed == null)
       boxed(index);
     else if (elemClass eq ScalaRunTime.IntTYPE)
-      BoxedInt.box(unboxed.asInstanceOf[Array[Int]](index))
+      Int.box(unboxed.asInstanceOf[Array[Int]](index))
     else if (elemClass eq ScalaRunTime.DoubleTYPE)
-      BoxedDouble.box(unboxed.asInstanceOf[Array[Double]](index))
+      Double.box(unboxed.asInstanceOf[Array[Double]](index))
     else if (elemClass eq ScalaRunTime.FloatTYPE)
-      BoxedFloat.box(unboxed.asInstanceOf[Array[Float]](index))
+      Float.box(unboxed.asInstanceOf[Array[Float]](index))
     else if (elemClass eq ScalaRunTime.LongTYPE)
-      BoxedLong.box(unboxed.asInstanceOf[Array[Long]](index))
+      Long.box(unboxed.asInstanceOf[Array[Long]](index))
     else if (elemClass eq ScalaRunTime.CharTYPE)
-      BoxedChar.box(unboxed.asInstanceOf[Array[Char]](index))
+      Char.box(unboxed.asInstanceOf[Array[Char]](index))
     else if (elemClass eq ScalaRunTime.ByteTYPE)
-      BoxedByte.box(unboxed.asInstanceOf[Array[Byte]](index))
+      Byte.box(unboxed.asInstanceOf[Array[Byte]](index))
     else if (elemClass eq ScalaRunTime.ShortTYPE)
-      BoxedShort.box(unboxed.asInstanceOf[Array[Short]](index))
+      Short.box(unboxed.asInstanceOf[Array[Short]](index))
     else if (elemClass eq ScalaRunTime.BooleanTYPE)
-      BoxedBoolean.box(unboxed.asInstanceOf[Array[Boolean]](index))
+      Boolean.box(unboxed.asInstanceOf[Array[Boolean]](index))
     else
       unboxed.asInstanceOf[Array[AnyRef]](index)
   }
@@ -54,21 +54,21 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
     if (unboxed == null)
       boxed(index) = elem
     else if (elemClass eq ScalaRunTime.IntTYPE)
-      unboxed.asInstanceOf[Array[Int]](index) = elem.asInstanceOf[BoxedNumber].intValue()
+      unboxed.asInstanceOf[Array[Int]](index) = Int.unbox(elem)
     else if (elemClass eq ScalaRunTime.DoubleTYPE)
-      unboxed.asInstanceOf[Array[Double]](index) = elem.asInstanceOf[BoxedNumber].doubleValue()
+      unboxed.asInstanceOf[Array[Double]](index) = Double.unbox(elem)
     else if (elemClass eq ScalaRunTime.FloatTYPE)
-      unboxed.asInstanceOf[Array[Float]](index) = elem.asInstanceOf[BoxedNumber].floatValue()
+      unboxed.asInstanceOf[Array[Float]](index) = Float.unbox(elem)
     else if (elemClass eq ScalaRunTime.LongTYPE)
-      unboxed.asInstanceOf[Array[Long]](index) = elem.asInstanceOf[BoxedNumber].longValue()
+      unboxed.asInstanceOf[Array[Long]](index) = Long.unbox(elem)
     else if (elemClass eq ScalaRunTime.CharTYPE)
-      unboxed.asInstanceOf[Array[Char]](index) = elem.asInstanceOf[BoxedNumber].charValue()
+      unboxed.asInstanceOf[Array[Char]](index) = Char.unbox(elem)
     else if (elemClass eq ScalaRunTime.ByteTYPE)
-      unboxed.asInstanceOf[Array[Byte]](index) = elem.asInstanceOf[BoxedNumber].byteValue()
+      unboxed.asInstanceOf[Array[Byte]](index) = Byte.unbox(elem)
     else if (elemClass eq ScalaRunTime.ShortTYPE)
-      unboxed.asInstanceOf[Array[Short]](index) = elem.asInstanceOf[BoxedNumber].shortValue()
+      unboxed.asInstanceOf[Array[Short]](index) = Short.unbox(elem)
     else if (elemClass eq ScalaRunTime.BooleanTYPE)
-      unboxed.asInstanceOf[Array[Boolean]](index) = elem.asInstanceOf[BoxedBoolean].value
+      unboxed.asInstanceOf[Array[Boolean]](index) = Boolean.unbox(elem)
     else
       unboxed.asInstanceOf[Array[AnyRef]](index) = elem
   }
@@ -91,8 +91,7 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
 	val newvalue = new Array[Int](length)
 	var i = 0
 	while (i < length) {
-          val x = boxed(i).asInstanceOf[BoxedNumber]
-	  if (x ne null) newvalue(i) = x.intValue();
+	  newvalue(i) = Int.unbox(boxed(i))
 	  i = i + 1
 	}
 	unboxed = newvalue
@@ -100,8 +99,7 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
 	val newvalue = new Array[Double](length)
 	var i = 0
 	while (i < length) {
-          val x = boxed(i).asInstanceOf[BoxedNumber];
-	  if (x ne null) newvalue(i) = x.doubleValue();
+	  newvalue(i) = Double.unbox(boxed(i))
 	  i = i + 1
 	}
 	unboxed = newvalue;
@@ -109,8 +107,7 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
 	val newvalue = new Array[Float](length)
 	var i = 0
 	while (i < length) {
-          val x = boxed(i).asInstanceOf[BoxedNumber];
-	  if (x ne null) newvalue(i) = x.floatValue();
+	  newvalue(i) = Float.unbox(boxed(i))
 	  i = i + 1
 	}
 	unboxed = newvalue;
@@ -118,8 +115,7 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
 	val newvalue = new Array[Long](length)
 	var i = 0
 	while (i < length) {
-          val x = boxed(i).asInstanceOf[BoxedNumber]
-	  if (x ne null) newvalue(i) = x.longValue();
+	  newvalue(i) = Long.unbox(boxed(i))
 	  i = i + 1
 	}
 	unboxed = newvalue;
@@ -127,8 +123,7 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
 	val newvalue = new Array[Char](length)
 	var i = 0
 	while (i < length) {
-          val x = boxed(i).asInstanceOf[BoxedNumber]
-	  if (x ne null) newvalue(i) = x.charValue();
+	  newvalue(i) = Char.unbox(boxed(i))
 	  i = i + 1
 	}
 	unboxed = newvalue
@@ -136,8 +131,7 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
 	val newvalue = new Array[Byte](length)
 	var i = 0
 	while (i < length) {
-          val x = boxed(i).asInstanceOf[BoxedNumber]
-	  if (x ne null) newvalue(i) = x.byteValue();
+	  newvalue(i) = Byte.unbox(boxed(i))
 	  i = i + 1
 	}
 	unboxed = newvalue;
@@ -145,8 +139,7 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
 	val newvalue = new Array[Short](length)
 	var i = 0
 	while (i < length) {
-          val x = boxed(i).asInstanceOf[BoxedNumber]
-	  if (x ne null) newvalue(i) = x.shortValue();
+	  newvalue(i) = Short.unbox(boxed(i))
 	  i = i + 1
 	}
 	unboxed = newvalue;
@@ -154,8 +147,7 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
 	val newvalue = new Array[Boolean](length)
 	var i = 0
 	while (i < length) {
-          val x = boxed(i).asInstanceOf[BoxedBoolean];
-	  if (x ne null) newvalue(i) = x.value;
+	  newvalue(i) = Boolean.unbox(boxed(i))
 	  i = i + 1
 	}
 	unboxed = newvalue;

@@ -152,14 +152,6 @@ object ScalaRunTime {
 
   def Seq[a](xs: a*): Seq[a] = null; // interpreted specially by new backend.
 
-  def booleanValue(x: BoxedBoolean): Boolean = if (x eq null) false else x.booleanValue();
-  def byteValue   (x: BoxedNumber ): Byte    = if (x eq null) 0     else x.byteValue();
-  def shortValue  (x: BoxedNumber ): Short   = if (x eq null) 0     else x.shortValue();
-  def charValue   (x: BoxedNumber ): Char    = if (x eq null) 0     else x.charValue();
-  def intValue    (x: BoxedNumber ): Int     = if (x eq null) 0     else x.intValue();
-  def longValue   (x: BoxedNumber ): Long    = if (x eq null) 0L    else x.longValue();
-  def floatValue  (x: BoxedNumber ): Float   = if (x eq null) 0.0F  else x.floatValue();
-  def doubleValue (x: BoxedNumber ): Double  = if (x eq null) 0.0D  else x.doubleValue();
   def arrayValue  (x: BoxedArray, elemTag: String): AnyRef =
     if (x eq null) null else x.unbox(elemTag);
   def arrayValue  (x: BoxedArray, elemClass: Class): AnyRef =

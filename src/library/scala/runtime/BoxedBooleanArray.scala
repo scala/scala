@@ -19,10 +19,10 @@ final class BoxedBooleanArray(val value: Array[Boolean]) extends BoxedArray {
 
   def length: Int = value.length
 
-  def apply(index: Int): AnyRef = BoxedBoolean.box(value(index))
+  def apply(index: Int): AnyRef = Boolean.box(value(index))
 
   def update(index: Int, elem: AnyRef): Unit = {
-    value(index) = elem.asInstanceOf[BoxedBoolean].value
+    value(index) = Boolean.unbox(elem)
   }
 
   def unbox(elemTag: String): AnyRef = value
@@ -58,4 +58,3 @@ final class BoxedBooleanArray(val value: Array[Boolean]) extends BoxedArray {
     result
   }
 }
-

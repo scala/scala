@@ -19,10 +19,10 @@ final class BoxedCharArray(val value: Array[Char]) extends BoxedArray {
 
   def length: Int = value.length;
 
-  def apply(index: Int): AnyRef = BoxedChar.box(value(index));
+  def apply(index: Int): AnyRef = Char.box(value(index));
 
   def update(index: Int, elem: AnyRef): Unit = {
-    value(index) = elem.asInstanceOf[BoxedNumber].charValue()
+    value(index) = Char.unbox(elem)
   }
 
   def unbox(elemTag: String): AnyRef = value;
@@ -59,4 +59,3 @@ final class BoxedCharArray(val value: Array[Char]) extends BoxedArray {
     result
   }
 }
-
