@@ -6,13 +6,13 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: CaseClass.scala 8756 2006-09-22 16:00:23Z michelou $
+// $Id$
 
 
 package scala
 
-/** The trait <code>CaseClass</code> defines access functions for instances
- *  of case classes.
+/** The trait <code>Product</code> defines access functions for instances
+ *  of products, in particular case classes.
  *
  *  @author  Burak Emir
  *  @version 1.0

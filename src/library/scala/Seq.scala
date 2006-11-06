@@ -16,6 +16,9 @@ import Predef.IllegalArgumentException
 
 object Seq {
 
+  def unapplySeq[A](x:Any): Option[Tuple1[Seq[A]]] =
+    if(x.isInstanceOf[Seq[A]]) Some(Tuple1(x.asInstanceOf[Seq[A]])) else None
+
   /** builds a singleton sequence
    *  @author buraq
    */

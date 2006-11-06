@@ -68,13 +68,6 @@ object ScalaRunTime {
         throw exception;
   }
 
-  def caseFields(x: CaseClass): List[Any] = {
-    val arity = x.caseArity;
-    def fields(from: Int): List[Any] =
-      if (from >= arity) List()
-      else x.caseElement(from) :: fields(from + 1);
-    fields(0)
-  }
   def caseFields(x: Product): List[Any] = {
     val arity = x.arity;
     def fields(from: Int): List[Any] =
@@ -82,28 +75,12 @@ object ScalaRunTime {
       else x.element(from) :: fields(from + 1);
     fields(1)
   }
-  def _toStringCaseClass(x: CaseClass): String = {
-    caseFields(x).mkString(x.caseName + "(", ",", ")")
-  }
-  def _toStringProduct(x: Product): String = {
+
+  def _toString(x: Product): String = {
     caseFields(x).mkString(x.productPrefix + "(", ",", ")")
   }
- /** only for bootstrapping 2.2.1 remove afterwards, keeping only _equalsProduct  */
-  def _toString(x: AnyRef): String = x match {
-    case xc: CaseClass => _toStringCaseClass(xc)
-    case xp: Product   => _toStringProduct(xp)
-  }
-  def _hashCodeCaseClass(x: CaseClass): Int = {
-    var code = x.getClass().hashCode();
-    val arr =  x.caseArity
-    var i = 0;
-    while (i < arr) {
-      code = code * 41 + x.caseElement(i).hashCode();
-      i = i + 1
-    }
-    code
-  }
-  def _hashCodeProduct(x: Product): Int = {
+
+  def _hashCode(x: Product): Int = {
     var code = x.getClass().hashCode();
     val arr =  x.arity
     var i = 1;
@@ -113,24 +90,8 @@ object ScalaRunTime {
     }
     code
   }
- /** only for bootstrapping 2.2.1 remove afterwards, keeping only _equalsProduct  */
-  def _hashCode(x: AnyRef): Int = x match {
-    case xc: CaseClass => _hashCodeCaseClass(xc)
-    case xp: Product   => _hashCodeProduct(xp)
-  }
-  def _equalsCaseClass(x: CaseClass, y: Any): Boolean = y match {
-    case y1: CaseClass =>
-      /*(x.getClass() eq y1.getClass() &&*/ {
-	val arity = x.caseArity;
-	var i = 0;
-	while (i < arity && x.caseElement(i) == y1.caseElement(i))
-	  i = i + 1;
-	i == arity
-      }
-    case _ =>
-      false
-  }
-  def _equalsProduct(x: Product, y: Any): Boolean = y match {
+
+  def _equals(x: Product, y: Any): Boolean = y match {
     case y1: Product if x.arity == y1.arity =>
       /*(x.getClass() eq y1.getClass() &&*/ {
 	val arity = x.arity;
@@ -141,11 +102,6 @@ object ScalaRunTime {
       }
     case _ =>
       false
-  }
- /** only for bootstrapping 2.2.1 remove afterwards, keeping only _equalsProduct  */
-  def _equals(x: AnyRef, y: Any): Boolean = x match {
-    case xc: CaseClass => _equalsCaseClass(xc, y)
-    case xp: Product   => _equalsProduct(xp, y)
   }
   //def checkDefined[T >: Null](x: T): T =
   //  if (x == null) throw new UndefinedException else x

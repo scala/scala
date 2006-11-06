@@ -67,12 +67,15 @@ object Iterator {
       def head = str charAt i
     }
 
-  def fromCaseClass(n:CaseClass): Iterator[Any] = new Iterator[Any] {
+  def fromProduct(n:Product): Iterator[Any] = new Iterator[Any] {
     private var c: Int = 0
-    private val cmax = n.caseArity
+    private val cmax = n.arity
     def hasNext = c < cmax
-    def next = { val a = n caseElement c; c = c + 1; a }
+    def next = { val a = n element c; c = c + 1; a }
   }
+
+  /** deprecated */
+  def fromCaseClass(n:Product) = fromProduct(n)
 
   /** Create an iterator with elements
    *  <code>e<sub>n+1</sub> = e<sub>n</sub> + 1</code>

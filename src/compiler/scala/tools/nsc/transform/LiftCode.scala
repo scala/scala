@@ -233,8 +233,6 @@ abstract class LiftCode extends Transform {
           "scala.reflect.MethodType"
       case x:Product =>
         "scala.reflect."+x.productPrefix //caseName
-      case x:CaseClass =>
-        "scala.reflect."+x.caseName
       //case _ => // bq:unreachable code
       //  ""
     }
@@ -275,10 +273,6 @@ abstract class LiftCode extends Transform {
       case x: Float     => Literal(Constant(x))
       case x: Double    => Literal(Constant(x))
       case c: Product   => treatProduct(c)
-      case c: CaseClass => treatProduct(new Product {
-	    override def productPrefix = c.caseName;
-		def element(i:Int) = c.caseElement(i)
-		def arity = c.caseArity })
       case null =>
         gen.mkAttributedRef(definitions.getModule("scala.reflect.NoType"))
       case _ =>

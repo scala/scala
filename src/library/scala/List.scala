@@ -29,6 +29,11 @@ object List {
    */
   def apply[A](xs: A*): List[A] = xs.toList
 
+  /** for unapply matching
+   */
+  def unapplySeq[A](x:Any):Option[Tuple1[List[A]]] =
+    if(x.isInstanceOf[List[A]]) Some(Tuple1(x.asInstanceOf[List[A]])) else None
+
   /** Create a sorted list of all integers in a range.
    *
    *  @param from the start value of the list

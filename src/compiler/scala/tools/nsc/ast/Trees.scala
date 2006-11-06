@@ -93,15 +93,15 @@ trait Trees requires Global {
     }
 
     def equalsStructure(that: Tree): Boolean = if (this == that) true else (this:Any) match {
-      case thiz : CaseClass if (that != null && thiz.getClass == that.getClass) =>
-        val that0 = that.asInstanceOf[CaseClass]
+      case thiz : Product if (that != null && thiz.getClass == that.getClass) =>
+        val that0 = that.asInstanceOf[Product]
         val result: Iterator[Boolean] =
-          for (val i <- 0.until(thiz.caseArity)) yield thiz.caseElement(i) match {
+          for (val i <- 0.until(thiz.arity)) yield thiz.element(i) match {
             case tree: Tree =>
-              val b = tree.equalsStructure(that0.caseElement(i).asInstanceOf[Tree])
+              val b = tree.equalsStructure(that0.element(i).asInstanceOf[Tree])
               b
-            case list: List[_] if (that0.caseElement(i).isInstanceOf[List[Any]]) =>
-              val listThat = that0.caseElement(i).asInstanceOf[List[Any]]
+            case list: List[_] if (that0.element(i).isInstanceOf[List[Any]]) =>
+              val listThat = that0.element(i).asInstanceOf[List[Any]]
               if (list.length == listThat.length) (for (val x <- list.zip(listThat)) yield {
                 if (x._1 != null && x._1.isInstanceOf[Tree] && x._2.isInstanceOf[Tree]) {
                   val b = x._1.asInstanceOf[Tree] equalsStructure x._2.asInstanceOf[Tree]
@@ -110,7 +110,7 @@ trait Trees requires Global {
               }).foldLeft(true)((x,y) => x && y)
               else false
             case elem =>
-              val b = elem == that0.caseElement(i)
+              val b = elem == that0.element(i)
               b
           }
           val b = result.foldLeft(true)((x,y) => x && y)
