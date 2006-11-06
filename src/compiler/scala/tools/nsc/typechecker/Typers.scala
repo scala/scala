@@ -1631,18 +1631,7 @@ trait Typers requires Analyzer {
               if (defSym == NoSymbol) cx = cx.outer
             }
           }
-          /*<unapply>*/
-          if(settings.Xunapply.value)
-            // unapply: in patterns, look for an object if can't find type
-            if(name.isTypeName && defSym == NoSymbol && (mode & PATTERNmode) != 0) {
-              typedIdent(name.toTermName) match {
-                case t if t.symbol.isTerm /*isModule*/ =>
-                  return t
-                case _ =>
-                  // when can this happen?
-              }
-            }
-          /*</unapply>*/
+
           val symDepth = if (defEntry == null) cx.depth
                          else cx.depth - (cx.scope.nestingLevel - defEntry.owner.nestingLevel)
           var impSym: Symbol = NoSymbol;      // the imported symbol
@@ -1664,6 +1653,29 @@ trait Typers requires Analyzer {
               (!currentRun.compiles(defSym) ||
                context.unit != null && defSym.sourceFile != context.unit.source.file))
             defSym = NoSymbol
+
+          /*<unapply>*/
+          if(settings.Xunapply.value)
+            // unapply: in patterns, look for an object if can't find type
+            if(!defSym.exists && !impSym.exists && name.isTypeName && (mode & PATTERNmode) != 0) {
+              typedIdent(name.toTermName) match {
+                case t if t.symbol.isTerm /*isModule*/ =>
+		  //Console.println("special treatment for "+name+" yields "+t)
+		  t.tpe match {
+		    case PolyType(_,MethodType(_,_)) =>
+		      //Console.println("ugh!")
+		      // for instance Predef.Pair
+		      //Console.println("no special treatment for "+name)
+                    case _ =>
+                      //return t
+                      defSym = t.symbol
+		  }
+		        case _ =>
+		  Console.println("no special treatment for "+name)
+                  // when can this happen?
+              }
+            }
+          /*</unapply>*/
 
           if (defSym.exists) {
             if (impSym.exists)
