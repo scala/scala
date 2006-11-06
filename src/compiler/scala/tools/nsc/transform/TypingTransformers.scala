@@ -21,6 +21,7 @@ trait TypingTransformers {
       analyzer.rootContext(unit, EmptyTree, true))
     private var curTree: Tree = _
 
+    /** a typer for each enclosing class */
     var typers: Map[Symbol, analyzer.Typer] = new HashMap
 
     override def atOwner[A](owner: Symbol)(trans: => A): A = atOwner(curTree, owner)(trans)
