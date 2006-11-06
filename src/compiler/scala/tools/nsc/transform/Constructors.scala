@@ -65,22 +65,36 @@ abstract class Constructors extends Transform {
       val intoConstructorTransformer = new Transformer {
         override def transform(tree: Tree): Tree = tree match {
           case Apply(Select(This(_), _), List()) =>
-            if ((tree.symbol hasFlag PARAMACCESSOR) && tree.symbol.owner == clazz)
+            if ((tree.symbol hasFlag PARAMACCESSOR) && tree.symbol.owner == clazz) {
+              thisRefSeen = false
               gen.mkAttributedIdent(parameter(tree.symbol.accessed)) setPos tree.pos
-            else if (tree.symbol.outerSource == clazz && !clazz.isImplClass)
+            }
+            else if (tree.symbol.outerSource == clazz && !clazz.isImplClass) {
+              thisRefSeen = false
               gen.mkAttributedIdent(parameterNamed(nme.OUTER))
+            }
             else
               super.transform(tree)
           case Select(This(_), _)
           if ((tree.symbol hasFlag PARAMACCESSOR) && tree.symbol.owner == clazz) =>
+            thisRefSeen = false
             gen.mkAttributedIdent(parameter(tree.symbol)) setPos tree.pos
-          case Select(_, _) =>
+          case Apply(fun, args) =>
+            var tmpRefSeen = thisRefSeen
+            val fun1 = transform(fun)
+            thisRefSeen = tmpRefSeen || thisRefSeen
+            val args1 = List.mapConserve(args){ tree =>
+              tmpRefSeen = thisRefSeen
+              val res = transform(tree)
+              thisRefSeen = tmpRefSeen || thisRefSeen
+              res
+            }
+            copy.Apply(tree, fun1, args1)
+          case Block(_, _) =>
+            val res = super.transform(tree)
             thisRefSeen = true
-            super.transform(tree)
-          case This(_) =>
-            thisRefSeen = true
-            super.transform(tree)
-          case Super(_, _) =>
+            res
+          case This(_) | Super(_, _) | Select(_, _) =>
             thisRefSeen = true
             super.transform(tree)
           case _ =>
