@@ -1247,6 +1247,24 @@ abstract class GenICode extends SubComponent  {
                         elseCtx: Context): Unit =
     {
       def genComparisonOp(l: Tree, r: Tree, code: Int): Unit = {
+        // special-case reference (in)equality test for null
+        if (code == scalaPrimitives.ID || code == scalaPrimitives.NI) {
+          val expr: Tree = Pair(l, r) match {
+            case Pair(Literal(Constant(null)), expr) => expr
+            case Pair(expr, Literal(Constant(null))) => expr
+            case _ => null
+          }
+          if (expr != null) {
+            val ctx1 = genLoad(expr, ctx, ANY_REF_CLASS)
+            if (code == scalaPrimitives.ID)
+              ctx1.bb.emit(CZJUMP(thenCtx.bb, elseCtx.bb, EQ, ANY_REF_CLASS))
+            else
+              ctx1.bb.emit(CZJUMP(elseCtx.bb, thenCtx.bb, EQ, ANY_REF_CLASS))
+            ctx1.bb.close
+            return
+          }
+        }
+
         val op: TestOp = code match {
           case scalaPrimitives.LT => LT
           case scalaPrimitives.LE => LE
@@ -1260,7 +1278,7 @@ abstract class GenICode extends SubComponent  {
 
         val kind = getMaxType(l.tpe :: r.tpe :: Nil)
         var ctx1 = genLoad(l, ctx, kind);
-            ctx1 = genLoad(r, ctx1, kind);
+        ctx1 = genLoad(r, ctx1, kind);
         ctx1.bb.emit(CJUMP(thenCtx.bb, elseCtx.bb, op, kind), r.pos)
         ctx1.bb.close
       }
@@ -1335,7 +1353,21 @@ abstract class GenICode extends SubComponent  {
      * @param elseCtx ...
      */
     def genEqEqPrimitive(l: Tree, r: Tree, ctx: Context,
-                         thenCtx: Context, elseCtx: Context): Unit = {
+                         thenCtx: Context, elseCtx: Context): Unit =
+    {
+      // special-case reference (in)equality test for null
+      val expr: Tree = Pair(l, r) match {
+        case Pair(Literal(Constant(null)), expr) => expr
+        case Pair(expr, Literal(Constant(null))) => expr
+        case _ => null
+      }
+      if (expr != null) {
+        val ctx1 = genLoad(expr, ctx, ANY_REF_CLASS)
+        ctx1.bb.emit(CZJUMP(thenCtx.bb, elseCtx.bb, EQ, ANY_REF_CLASS))
+        ctx1.bb.close
+        return
+      }
+
       var eqEqTempVar: Symbol = null
       var eqEqTempLocal: Local = null
 
