@@ -19,7 +19,7 @@ trait TypingTransformers {
   abstract class TypingTransformer(unit: CompilationUnit) extends Transformer {
     var localTyper: analyzer.Typer = analyzer.newTyper(
       analyzer.rootContext(unit, EmptyTree, true))
-    private var curTree: Tree = _
+    protected var curTree: Tree = _
 
     /** a typer for each enclosing class */
     var typers: Map[Symbol, analyzer.Typer] = new HashMap

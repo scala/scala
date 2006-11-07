@@ -64,8 +64,13 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
       case Template(parents, body) =>
 	val ownAccDefs = new ListBuffer[Tree];
 	accDefs = Pair(currentOwner, ownAccDefs) :: accDefs;
-//	val body1 = transformTrees(body);
-        val Template(_, body1) = super.transform(tree);
+
+        // ugly hack... normally, the following line should not be
+        // necessary, the 'super' method taking care of that. but because
+        // that one is iterating through parents (and we dont want that here)
+        // we need to inline it.
+        curTree = tree
+        val body1 = atOwner(currentOwner) { transformTrees(body) }
 	accDefs = accDefs.tail;
 	copy.Template(tree, parents, ownAccDefs.toList ::: body1);
 
@@ -175,16 +180,28 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
       val hasArgs = sym.tpe.paramTypes != Nil
       if (protAcc == NoSymbol) {
         val resTpe = tree.tpe
+        val argTypes =
+          if (hasArgs)
+            MethodType(
+              sym.tpe.paramTypes map {t =>
+//                Console.print("Transforming " + t + "(sym=" + t.symbol +") to ")
+//                Console.println("" + clazz.typeOfThis + ".memberType = " + clazz.typeOfThis.memberType(t.symbol))
+
+                if (!t.symbol.isAbstractType || t.symbol.isTypeParameter)
+                  clazz.typeOfThis.memberType(t.symbol)
+                else
+                  t
+              },
+              resTpe.resultType /*sym.tpe.resultType*/)
+          else
+              resTpe.resultType /*sym.tpe.resultType*/
+
         protAcc = clazz.newMethod(tree.pos, nme.protName(sym.originalName))
-                           .setInfo(MethodType(List(clazz.typeOfThis),
-                               if (hasArgs)
-                                 MethodType(sym.tpe.paramTypes, resTpe.resultType /*sym.tpe.resultType*/)
-                               else
-                                 resTpe.resultType /*sym.tpe.resultType*/))
+                           .setInfo(MethodType(List(clazz.typeOfThis),argTypes))
         clazz.info.decls.enter(protAcc);
         val code = DefDef(protAcc, vparamss =>
           vparamss.tail.foldRight(Select(gen.mkAttributedRef(vparamss.head.head), sym): Tree) (
-              (vparams, fun) => Apply(fun, (vparams map { v => Ident(v) } ))))
+              (vparams, fun) => Apply(fun, (vparams map { v => makeArg(v, vparamss.head.head) } ))))
         if (settings.debug.value)
           log(code)
         accDefBuf(clazz) += typers(clazz).typed(code)
@@ -193,6 +210,21 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
       if (settings.debug.value)
         log("Replaced " + tree + " with " + res)
       if (hasArgs) typer.typedOperator(res) else typer.typed(res)
+    }
+
+    private def makeArg(v: Symbol, obj: Symbol): Tree = {
+//      Console.println("" + v + ".tpe = " + v.tpe + " .symbol = "
+//        + v.tpe.symbol + " isAbstractType = " + v.tpe.symbol.isAbstractType);
+      val res = Ident(v)
+
+      if (v.tpe.symbol.isAbstractType && !v.tpe.symbol.isTypeParameter) {
+        val preciseTpe = typeRef(singleType(NoPrefix, obj), v.tpe.symbol, List())
+        Console.println("precise tpe: " + preciseTpe)
+            TypeApply(Select(res, definitions.Any_asInstanceOf),
+                      List(TypeTree(preciseTpe)))
+      }
+      else
+        res
     }
 
     /** Add an accessor for field, if needed, and return a selection tree for it .
