@@ -195,6 +195,7 @@ object Actor {
     }
     s.detachActor = f => {
       s.in.waitingFor = s.in.waitingForNone
+      Scheduler.unPendReaction
       throw new SuspendActorException
     }
 
@@ -233,7 +234,8 @@ object Actor {
    */
   def seq[a, b >: a](first: => a, next: => b): b = {
     val s = self
-    s.kill = () => { next; s.kill() }
+    val killNext = s.kill
+    s.kill = () => { s.kill = killNext; next; s.kill() }
     first
   }
 

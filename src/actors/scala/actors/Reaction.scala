@@ -43,6 +43,7 @@ private[actors] class StartTask(a: Actor) extends Reaction {
     val t = currentThread
     val saved = Actor.selfs.get(t).asInstanceOf[Actor]
     Actor.selfs.put(t, a)
+    Scheduler.unPendReaction
     try {
       a.act()
       if (currentThread.isInterrupted())
@@ -89,6 +90,7 @@ private[actors] class ActorTask(a: Actor,
     val t = currentThread
     val saved = Actor.selfs.get(t).asInstanceOf[Actor]
     Actor.selfs.put(t, a)
+    Scheduler.unPendReaction
     try {
       f(msg)
       if (currentThread.isInterrupted())

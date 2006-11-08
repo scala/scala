@@ -263,6 +263,7 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
    */
   def react(f: PartialFunction[Any, Unit]): Nothing = {
     assert(Actor.self == receiver, "react on channel belonging to other actor")
+    Scheduler.pendReaction
     receiver.synchronized {
       receiver.tick()
       waitingFor = f.isDefinedAt
@@ -304,6 +305,7 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
    */
   def reactWithin(msec: long)(f: PartialFunction[Any, Unit]): Nothing = {
     assert(Actor.self == receiver, "react on channel belonging to other actor")
+    Scheduler.pendReaction
     receiver.synchronized {
       receiver.tick()
       waitingFor = f.isDefinedAt

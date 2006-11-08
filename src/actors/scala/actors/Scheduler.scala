@@ -15,7 +15,7 @@ import java.lang.{Runnable, Thread}
 import java.lang.InterruptedException
 
 import compat.Platform
-import scala.collection.mutable.{ArrayBuffer, Buffer, HashMap, Queue}
+import scala.collection.mutable.{ArrayBuffer, Buffer, HashMap, Queue, Stack}
 
 /**
  * The <code>Scheduler</code> object is used by
@@ -46,6 +46,9 @@ object Scheduler {
   def tick(a: Actor) = sched.tick(a)
 
   def shutdown(): Unit = sched.shutdown()
+
+  def pendReaction: unit = sched.pendReaction
+  def unPendReaction: unit = sched.unPendReaction
 }
 
 /**
@@ -67,6 +70,9 @@ trait IScheduler {
     def run(): Unit = {}
     override def toString() = "QUIT_TASK"
   }
+
+  def pendReaction: unit
+  def unPendReaction: unit
 }
 
 /**
@@ -76,7 +82,7 @@ trait IScheduler {
  * @version Beta2
  * @author Philipp Haller
  */
-class SingleThreadedScheduler extends IScheduler {
+abstract class SingleThreadedScheduler extends IScheduler {
   def execute(task: Reaction): Unit = {
     // execute task immediately on same thread
     task.run()
@@ -96,7 +102,7 @@ class SingleThreadedScheduler extends IScheduler {
  * @version Beta2
  * @author Philipp Haller
  */
-class SpareWorkerScheduler extends IScheduler {
+abstract class SpareWorkerScheduler extends IScheduler {
   private val tasks = new Queue[Reaction]
   private val idle = new Queue[WorkerThread]
   private var workers: Buffer[WorkerThread] = new ArrayBuffer[WorkerThread]
@@ -170,6 +176,17 @@ class TickedScheduler extends Thread with IScheduler {
 
   private var terminating = false
 
+  private var pendingReactions = new Stack[unit]
+  def pendReaction: unit = {
+    Debug.info("pend reaction")
+    pendingReactions push ()
+  }
+  def unPendReaction: unit = {
+    Debug.info("unpend reaction")
+    if (!pendingReactions.isEmpty)
+      pendingReactions.pop
+  }
+
   var TICKFREQ = 5
   var CHECKFREQ = 50
 
@@ -222,17 +239,20 @@ class TickedScheduler extends Thread with IScheduler {
             }
           } // tasks.length > 0
           else {
-            Debug.info("task queue empty, checking...")
-            // if all worker threads idle terminate
-            if (workers.length == idle.length) {
-              Debug.info("all threads idle, terminating")
-              val idleThreads = idle.elements
-              while (idleThreads.hasNext) {
-                val worker = idleThreads.next
-                worker.running = false
-                worker.interrupt()
+            Debug.info("task queue empty")
+            if (pendingReactions.isEmpty) {
+              Debug.info("no pending reactions")
+              // if all worker threads idle terminate
+              if (workers.length == idle.length) {
+                Debug.info("all threads idle, terminating")
+                val idleThreads = idle.elements
+                while (idleThreads.hasNext) {
+                  val worker = idleThreads.next
+                  worker.running = false
+                  worker.interrupt()
+                }
+                throw new QuitException
               }
-              throw new QuitException
             }
           }
         } // sync
