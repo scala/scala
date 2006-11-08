@@ -54,6 +54,7 @@ private[actors] class StartTask(a: Actor) extends Reaction {
     }
     catch {
       case ie: InterruptedException => {
+        // TODO: use Debug
         ie.printStackTrace()
         a.exitLinked()
       }

@@ -221,6 +221,20 @@ class TickedScheduler extends Thread with IScheduler {
               newWorker.start()
             }
           } // tasks.length > 0
+          else {
+            Debug.info("task queue empty, checking...")
+            // if all worker threads idle terminate
+            if (workers.length == idle.length) {
+              Debug.info("all threads idle, terminating")
+              val idleThreads = idle.elements
+              while (idleThreads.hasNext) {
+                val worker = idleThreads.next
+                worker.running = false
+                worker.interrupt()
+              }
+              throw new QuitException
+            }
+          }
         } // sync
 
       } // while (!terminating)
