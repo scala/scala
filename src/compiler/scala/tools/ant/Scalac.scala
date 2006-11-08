@@ -2,9 +2,10 @@
 **   /  |/ / ____/ ____/                                                      **
 **  / | | /___  / /___                                                        **
 ** /_/|__/_____/_____/ Copyright 2005-2006 LAMP/EPFL                          **
-**
-** $Id$
+**                                                                            **
 \*                                                                            */
+
+// $Id$
 
 package scala.tools.ant {
 
@@ -570,7 +571,7 @@ package scala.tools.ant {
         else List.fromArray(addParams.trim().split(" ")).map(.trim())
       while(!args.isEmpty) {
         val argsBuf = args
-        if (args.head.startsWith("-")) {
+        if (args.head startsWith "-") {
           for (val setting <- settings.allSettings)
             args = setting.tryToSet(args);
         } else error("Parameter '" + args.head + "' does not start with '-'.")
@@ -588,7 +589,7 @@ package scala.tools.ant {
       // Compiles the actual code
       val compiler = new Global(settings, reporter)
       try {
-        (new compiler.Run).compile(sourceFiles.map { f:File=>f.toString() })
+        (new compiler.Run).compile(sourceFiles.map (.toString()))
        } catch {
         case exception: Throwable if (exception.getMessage != null) =>
           exception.printStackTrace()
