@@ -24,7 +24,7 @@ abstract class Producer[T] {
 
     def hasNext: boolean = lookAhead match {
       case Some(x) => true
-      case None => false
+      case None => { coordinator ! Stop; false }
     }
 
     def next: T = lookAhead match {
@@ -32,8 +32,12 @@ abstract class Producer[T] {
     }
   }
 
+  case object Stop
+  class StopException extends Throwable
+
   /** A thread-based coordinator */
   private val coordinator: Actor = actor {
+    try {
     while (true) {
       receive {
         case Next =>
@@ -41,8 +45,10 @@ abstract class Producer[T] {
           reply {
             receive { case x: Option[_] => x }
           }
+        case Stop => throw new StopException
       }
     }
+    } catch { case _: StopException => }
   }
 
   private val producer: Actor = actor {
@@ -65,7 +71,6 @@ object Test extends Application {
   while (it.hasNext) {
     Console.println(it.next)
   }
-  System.exit(0)
 }
 
 object Test2 extends Application {
@@ -109,6 +114,8 @@ object Test2 extends Application {
     }
   }
 
+  Debug.level = 3
+
   // note that it works from the main thread
   Console.print("PreOrder:")
   for (val x <- new PreOrder(tree).iterator) Console.print(" "+x)
@@ -117,5 +124,4 @@ object Test2 extends Application {
   Console.print("\nInOrder:")
   for (val x <- new InOrder(tree).iterator) Console.print(" "+x)
   Console.print("\n")
-  System.exit(0)
 }
