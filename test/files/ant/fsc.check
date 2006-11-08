@@ -1,0 +1,13 @@
+Buildfile: [...]/files/ant/fsc-build.xml
+
+quick.init:
+
+latest.init:
+
+installed.init:
+
+init:
+
+build:
+    [mkdir] Created dir: [...]/files/ant/fsc-ant.obj
+      [fsc] Compiling 1 source file to [...]/files/ant/fsc-ant.obj

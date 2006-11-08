@@ -486,9 +486,8 @@ package scala.tools.ant {
 **                           The big execute method                           **
 \*============================================================================*/
 
-    /** Performs the compilation. */
-    override def execute() = {
-
+    /** Initializes settings and source files */
+    protected def initialize: Pair[Settings, List[File]] = {
       // Tests if all mandatory attributes are set and valid.
       if (origin.isEmpty) error("Attribute 'srcdir' is not set.")
       if (getOrigin.isEmpty) error("Attribute 'srcdir' is not set.")
@@ -541,7 +540,6 @@ package scala.tools.ant {
 
       // Builds-up the compilation settings for Scalac with the existing Ant
       // parameters.
-      val reporter = new ConsoleReporter()
       val settings = new Settings(error)
       settings.outdir.value = asString(destination.get)
       if (!classpath.isEmpty)
@@ -579,6 +577,13 @@ package scala.tools.ant {
         if (argsBuf eq args)
           error("Parameter '" + args.head + "' is not recognised by Scalac.")
       }
+      Pair(settings, sourceFiles)
+    }
+
+    /** Performs the compilation. */
+    override def execute() = {
+      val reporter = new ConsoleReporter()
+      val Pair(settings, sourceFiles) = initialize
 
       // Compiles the actual code
       val compiler = new Global(settings, reporter)

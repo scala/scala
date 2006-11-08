@@ -7,11 +7,10 @@
 package scala.tools.nsc
 
 import java.lang.System.getProperty
-import java.io.File
-import java.io.PrintWriter
-import java.io.{BufferedReader, InputStreamReader}
+import java.io.{BufferedReader, File, InputStreamReader, PrintWriter}
+
+import scala.compat.StringBuilder
 import scala.tools.util.StringOps
-import compat.StringBuilder
 
 /** The main class for NSC, a compiler for the programming
  *  language Scala.
@@ -29,7 +28,7 @@ object CompileClient {
   /** Convert a filename to an absolute path */
   def absFileName(path: String) = new File(path).getAbsolutePath()
 
-  /** Convert a sequence of filenames, separated by File.pathSeparator,
+  /** Convert a sequence of filenames, separated by <code>File.pathSeparator</code>,
     * into absolute filenames.
     */
   def absFileNames(paths: String) = {
@@ -38,7 +37,7 @@ object CompileClient {
     pathsList.map(absFileName).mkString("", sep, "")
   }
 
-  def normalize(args: Array[String]): Pair[String, String] = {
+  private def normalize(args: Array[String]): Pair[String, String] = {
     var i = 0
     val vmArgs = new StringBuilder
     var serverAdr = ""
@@ -74,17 +73,18 @@ object CompileClient {
     Pair(vmArgs.toString, serverAdr)
   }
 
-  def main(args0: Array[String]): unit = {
+  // used by class ant.FastScalac to skip exit statement in Ant.
+  def main0(args0: Array[String]): Int = {
     val args =
-      if(args0.exists(arg => arg=="-d"))
+      if (args0.exists(arg => arg == "-d"))
         args0
       else
         ("-d" :: "." :: args0.toList).toArray
 
     val Pair(vmArgs, serverAdr) = normalize(args)
-    if(version) {
+    if (version) {
       Console.println(versionMsg)
-      return
+      return 0
     }
     if (verbose) {
       Console.println("[Server arguments: " + args.mkString("", " ", "]"))
@@ -99,7 +99,7 @@ object CompileClient {
     var sawerror = false
     var fromServer = in.readLine()
     while (fromServer != null) {
-      if(CompileSocket.errorPattern.matcher(fromServer).matches)
+      if (CompileSocket.errorPattern.matcher(fromServer).matches)
         sawerror = true
       Console.println(fromServer)
       fromServer = in.readLine()
@@ -108,6 +108,11 @@ object CompileClient {
     out.close()
     socket.close()
 
-    exit(if (sawerror) 1 else 0)
+    if (sawerror) 1 else 0
+  }
+
+  def main(args: Array[String]) {
+    val status = main0(args)
+    exit(status)
   }
 }

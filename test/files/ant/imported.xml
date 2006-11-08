@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- $Id$ -->
+<!-- $Id: $ -->
 
-<project name="test" default="build" basedir=".">
+<project name="imported" default="run" basedir=".">
 
   <!-- Prevents system classpath from being used -->
   <property name="build.sysclasspath" value="ignore"/>
@@ -119,25 +119,10 @@ INITIALISATION
   </target>
 
 <!-- ===========================================================================
-BUILD
+RUN
 ============================================================================ -->
 
-  <target name="build" depends="init">
-    <echo level="verbose" message="build.dir=${build.dir}"/>
-    <mkdir dir="${build.dir}"/>
-    <scalac
-      srcdir="${source.dir}"
-      includes="**/*.scala"
-      destdir="${build.dir}"
-      classpathref="build.classpath"
-    />
-    <dirname property="log.dir" file="${build.dir}"/>
-    <replace
-      file="${log.dir}/${ant.project.name}-ant.log"
-      token="${log.dir}"
-      value="[...]/files/ant"
-    />
-  </target>
+  <target name="run" depends="build, clean"/>
 
 <!-- ===========================================================================
 CLEAN

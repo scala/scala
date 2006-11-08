@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- $Id: $ -->
+
+<project name="fsc" default="run" basedir=".">
+
+  <import file="${basedir}/imported.xml"/>
+
+<!-- ===========================================================================
+BUILD
+============================================================================ -->
+
+  <target name="build" depends="init">
+    <echo level="verbose" message="build.dir=${build.dir}"/>
+    <mkdir dir="${build.dir}"/>
+    <fsc
+      srcdir="${source.dir}"
+      includes="**/${ant.project.name}*.scala"
+      destdir="${build.dir}"
+      classpathref="build.classpath"
+    />
+    <dirname property="log.dir" file="${build.dir}"/>
+    <echo level="verbose" message="log.dir=${log.dir}"/>
+    <replace
+      file="${log.dir}/${ant.project.name}-ant.log"
+      token="${log.dir}"
+      value="[...]/files/ant"
+    />
+  </target>
+
+</project>
+
