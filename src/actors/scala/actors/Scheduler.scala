@@ -178,11 +178,11 @@ class TickedScheduler extends Thread with IScheduler {
 
   private var pendingReactions = new Stack[unit]
   def pendReaction: unit = {
-    Debug.info("pend reaction")
+    //Debug.info("pend reaction")
     pendingReactions push ()
   }
   def unPendReaction: unit = {
-    Debug.info("unpend reaction")
+    //Debug.info("unpend reaction")
     if (!pendingReactions.isEmpty)
       pendingReactions.pop
   }
@@ -239,9 +239,9 @@ class TickedScheduler extends Thread with IScheduler {
             }
           } // tasks.length > 0
           else {
-            Debug.info("task queue empty")
+            //Debug.info("task queue empty")
             if (pendingReactions.isEmpty) {
-              Debug.info("no pending reactions")
+              //Debug.info("no pending reactions")
               // if all worker threads idle terminate
               if (workers.length == idle.length) {
                 Debug.info("all threads idle, terminating")
@@ -251,6 +251,8 @@ class TickedScheduler extends Thread with IScheduler {
                   worker.running = false
                   worker.interrupt()
                 }
+                // terminate timer thread
+                TimerThread.t.interrupt()
                 throw new QuitException
               }
             }

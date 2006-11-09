@@ -237,15 +237,20 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
           // acquire lock because we might call wait()
           this.synchronized {
             isSuspended = true
+            received = null
             receiver.suspendActorFor(msec)
-            if (received == null)
+            Debug.info("received: "+received)
+            if (received == null) {
+              Debug.info("no message received after "+msec+" millis")
               if (f.isDefinedAt(TIMEOUT)) {
+                Debug.info("executing TIMEOUT action")
                 isSuspended = false
                 val result = f(TIMEOUT)
                 return result
               }
               else
                 error("unhandled timeout")
+            }
           }
         }
       }

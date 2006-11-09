@@ -377,6 +377,8 @@ trait Actor extends OutputChannel[Any] {
 
   private var continue = false
 
+  private class ExitSuspendLoop extends Throwable
+
   private[actors] def resetActor(): Unit = {
     suspendActor = () => {
       continue = false
@@ -393,17 +395,26 @@ trait Actor extends OutputChannel[Any] {
       val ts = Platform.currentTime
       var waittime = msec
       continue = false
-      while(!continue) {
-        try {
-          wait(waittime)
-        } catch {
-          case t: InterruptedException => {
-            val now = Platform.currentTime
-            val waited = now-ts
-            waittime = msec-waited
+      var fromExc = false
+
+      try {
+        while(!continue) {
+          try {
+            fromExc = false
+            wait(waittime)
+          } catch {
+            case t: InterruptedException => {
+              fromExc = true
+              val now = Platform.currentTime
+              val waited = now-ts
+              waittime = msec-waited
+              if (waittime < 0) { continue = true }
+            }
           }
+          if (!fromExc) throw new ExitSuspendLoop
         }
-      }
+      } catch { case _: ExitSuspendLoop => }
+      Debug.info("leaving suspendActorFor("+msec+")")
     }
 
     resumeActor = () => {
