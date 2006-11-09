@@ -443,8 +443,10 @@ abstract class DocGenerator extends Models {
       case sel: Select =>
         forTree(sel.qualifier).concat(Text(sel.symbol.nameString))
       case tree: AbsTypeDef =>
-        ifT(tree.lo, Text(" <: "), false).
-          concat(Text(tree.symbol.nameString)).concat(ifT(tree.hi, Text(" <: "), true))
+        (Text(tree.symbol.nameString)
+            .concat(ifT(tree.hi, Text(" <: "), true))
+            .concat(ifT(tree.lo, Text(" >: "), true)))
+
       case tpt: TypeTree =>
         urlFor(tpt.tpe, contentFrame)
       case id: Ident =>
