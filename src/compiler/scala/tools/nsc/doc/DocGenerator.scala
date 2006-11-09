@@ -102,15 +102,27 @@ abstract class DocGenerator extends Models {
       */
       else {
         val n = tpe.typeArgs.length
-        if (n > 0)
-          aref(urlFor(tpe.symbol), target, tpe.symbol.fullNameString)
-          .concat(Text("[")
-            .concat(urlFor(tpe.typeArgs.head, target))
-            .concat(
-              for (val t <- tpe.typeArgs.tail)
-              yield Group(Text(", ").concat(urlFor(t, target))))
-            .concat(Text("]")))
-        else
+        if (n > 0) {
+          if (definitions.isFunctionType(tpe)) {
+            val Pair(ts, List(r)) = tpe.typeArgs.splitAt(n-1)
+            Text("(")
+              .concat(
+                if (ts.isEmpty) NodeSeq.Empty
+                else
+                  urlFor(ts.head, target).concat(
+                    for (val t <- ts.tail)
+                    yield Group(Text(", ").concat(urlFor(t, target)))))
+              .concat(Text(") => "))
+              .concat(urlFor(r, target))
+          } else
+            aref(urlFor(tpe.symbol), target, tpe.symbol.fullNameString)
+              .concat(Text("[")
+              .concat(urlFor(tpe.typeArgs.head, target))
+              .concat(
+                for (val t <- tpe.typeArgs.tail)
+                yield Group(Text(", ").concat(urlFor(t, target))))
+              .concat(Text("]")))
+        } else
           aref(urlFor(tpe.symbol), target, tpe.toString())
       }
     } catch {
@@ -586,6 +598,7 @@ abstract class DocGenerator extends Models {
 
   private abstract class PrimitiveContentFrame extends ContentFrame0 {
     def sym: Symbol
+    def descr: String
     def path = urlFor0(sym, sym)
     private def kind = CLASS // todo
     def title =
@@ -609,6 +622,13 @@ abstract class DocGenerator extends Models {
         {Text(codeFor(kind))}
         <span class="entity">{Text(sym.nameString)}</span>
       </div>
+      <hr/>
+      <dl>
+        <dt><code>{
+          Text("class " + sym.nameString)
+        }</code></dt>
+        <dd>{comment(descr, true)}</dd>
+      </dl>
       <hr/>.concat({
         val decls = sym.tpe.decls.toList
         //compute table members once for each relevant kind
@@ -756,48 +776,85 @@ abstract class DocGenerator extends Models {
     }
     new PrimitiveContentFrame {
       def sym = definitions.AnyClass
+      def descr = "/** */"
     }
     new PrimitiveContentFrame {
       def sym = definitions.AnyRefClass
+      def descr = "/** */"
     }
     new PrimitiveContentFrame {
       def sym = definitions.BooleanClass
+      def descr = """
+        /** Class <code>Boolean</code> has only two values: <code>true</code>
+         *  and <code>false</code>.
+         */"""
     }
+    def numValuesDescr(sym: Symbol) = """
+      /** <p>
+       *    Class <code>""" + sym.name + """ </code> belongs to the value classes whose
+       *    instances are not represented as objects by the underlying host system. All
+       *    value classes inherit from class <code>AnyVal</code>.
+       *  </p>
+       *  <p>
+       *    Classes <code>Double</code>, <code>Float</code>, <code>Long</code>,
+       *    <code>Int</code>, <code>Char</code>, <code>Short</code>, and
+       *    <code>Byte</code> are together called <em>numeric value types</em>.
+       *    Classes <code>Byte</code>, <code>Short</code>, or <code>Char</code>
+       *    are called <em>subrange types</em>. Subrange types, as well as
+       *    <code>Int</code> and <code>Long</code> are called <em>integer types</em>,
+       *    whereas <code>Float</code> and <code>Double</code> are called
+       *    <em>floating point types</em>.
+       *  </p>
+       */"""
     new PrimitiveContentFrame {
       def sym = definitions.ByteClass
+      def descr = numValuesDescr(sym)
     }
     new PrimitiveContentFrame {
       def sym = definitions.CharClass
+      def descr = numValuesDescr(sym)
     }
     new PrimitiveContentFrame {
       def sym = definitions.DoubleClass
+      def descr = numValuesDescr(sym)
     }
     new PrimitiveContentFrame {
       def sym = definitions.FloatClass
+      def descr = numValuesDescr(sym)
     }
     new PrimitiveContentFrame {
       def sym = definitions.IntClass
+      def descr = numValuesDescr(sym)
     }
     new PrimitiveContentFrame {
       def sym = definitions.LongClass
+      def descr = numValuesDescr(sym)
     }
     new PrimitiveContentFrame {
       def sym = definitions.ShortClass
+      def descr = numValuesDescr(sym)
     }
     new PrimitiveContentFrame {
       def sym = definitions.UnitClass
+      def descr = """
+        /** Class Unit has only one value: <code>()</code>.
+         */"""
     }
     new PrimitiveContentFrame {
       def sym = definitions.getClass("scala.runtime.BoxedFloat")
+      def descr = "/** */"
     }
     new PrimitiveContentFrame {
       def sym = definitions.getClass("scala.runtime.BoxedInt")
+      def descr = "/** */"
     }
     new PrimitiveContentFrame {
       def sym = definitions.getClass("scala.runtime.BoxedLong")
+      def descr = "/** */"
     }
     new PrimitiveContentFrame {
       def sym = definitions.getClass("scala.runtime.BoxedNumber")
+      def descr = "/** */"
     }
     val rsrcdir = "scala/tools/nsc/doc/".replace('/', File.separatorChar)
     for (val base <- List("style.css", "script.js")) {
