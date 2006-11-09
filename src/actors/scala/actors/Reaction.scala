@@ -11,9 +11,11 @@
 
 package scala.actors
 
-
 import java.lang.Runnable
 import java.lang.InterruptedException
+
+import java.util.logging.Logger
+import java.util.logging.Level
 
 /**
  * The abstract class <code>Reaction</code> associates an instance
@@ -27,6 +29,19 @@ import java.lang.InterruptedException
  */
 private[actors] abstract class Reaction extends Runnable {
   def actor: Actor
+
+  def log(t: Throwable): unit = {
+    Debug.info("logging "+t)
+    val logger = Logger.getLogger("Scheduler")
+    val buf = new StringBuffer
+    buf.append("Exception caught by task:\n")
+    buf.append(t.toString()+"\n")
+    val trace = t.getStackTrace()
+    for (val elem <- trace) {
+      buf.append(elem.toString() + "\n")
+    }
+    logger.log(Level.FINE, buf.toString())
+  }
 }
 
 /**
@@ -55,15 +70,14 @@ private[actors] class StartTask(a: Actor) extends Reaction {
     }
     catch {
       case ie: InterruptedException => {
-        // TODO: use Debug
-        ie.printStackTrace()
+        log(ie)
         a.exitLinked()
       }
       case d: SuspendActorException => {
         // do nothing (continuation is already saved)
       }
       case t: Throwable => {
-        t.printStackTrace()
+        log(t)
         a.exit(t.toString())
       }
     }
@@ -102,14 +116,14 @@ private[actors] class ActorTask(a: Actor,
     }
     catch {
       case ie: InterruptedException => {
-        ie.printStackTrace()
+        log(ie)
         a.exitLinked()
       }
       case d: SuspendActorException => {
         // do nothing (continuation is already saved)
       }
       case t: Throwable => {
-        t.printStackTrace()
+        log(t)
         a.exit(t.toString())
       }
     }

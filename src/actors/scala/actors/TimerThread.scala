@@ -15,6 +15,9 @@ package scala.actors
 import java.lang.{Runnable, Thread}
 import java.lang.InterruptedException
 
+import java.util.logging.Logger
+import java.util.logging.Level
+
 /**
  * This class allows the (local) sending of a message to an actor after
  * a timeout.  Used by the library to build <code>receiveWithin(time: long)</code>.
@@ -53,6 +56,19 @@ object TimerThread extends AnyRef with Runnable {
     }
   }
 
+  def log(t: Throwable): unit = {
+    Debug.info("logging "+t)
+    val logger = Logger.getLogger("Scheduler")
+    val buf = new StringBuffer
+    buf.append("Exception caught by task:\n")
+    buf.append(t.toString()+"\n")
+    val trace = t.getStackTrace()
+    for (val elem <- trace) {
+      buf.append(elem.toString() + "\n")
+    }
+    logger.log(Level.FINE, buf.toString())
+  }
+
   override def run = {
     try {
       while(true) {
@@ -61,7 +77,7 @@ object TimerThread extends AnyRef with Runnable {
 	    val sleepTime = dequeueLateAndGetSleepTime
 	    if (lateList.isEmpty) wait(sleepTime)
           } catch {
-	    case t: Throwable => { t.printStackTrace(); throw t }
+	    case t: Throwable => { log(t); throw t }
           }
         }
 

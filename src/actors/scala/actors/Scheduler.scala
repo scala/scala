@@ -14,6 +14,10 @@ package scala.actors
 import java.lang.{Runnable, Thread}
 import java.lang.InterruptedException
 
+import java.util.logging.Logger
+import java.util.logging.FileHandler
+import java.util.logging.Level
+
 import compat.Platform
 import scala.collection.mutable.{ArrayBuffer, Buffer, HashMap, Queue, Stack}
 
@@ -29,6 +33,9 @@ object Scheduler {
   private var sched: IScheduler =
     //new SpareWorkerScheduler
     {
+      val logger = Logger.getLogger("Scheduler")
+      logger.addHandler(new FileHandler("sched.log"))
+      logger.setLevel(Level.FINE)
       val s = new TickedScheduler
       s.start()
       s
