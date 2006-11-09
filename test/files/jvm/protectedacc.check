@@ -1,12 +1,12 @@
 10
 meth1(1) = 2
-meth2(1)(1) = 2
-meth2(1)(1) = 2
+meth2(1)(1) = prefix: 0
+meth2(1)(1) = prefix: 0
 meth3 = class [I
-10++ = 11
+100 = 100
 count before: 3
 count after: 4
 10
 meth1(1) = 2
-meth2(1)(1) = 2
-10++ = 11
+meth2(1)(1) = 10
+100 = 100

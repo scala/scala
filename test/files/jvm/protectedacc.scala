@@ -29,10 +29,29 @@ package p {
       protected val x = 10;
 
       protected def meth1(x: Int) = x + 1;
-      protected def meth2(x: Int)(y: Int) = x + y;
+      protected def meth2(x: Int)(y: String) = y + (x - 1);
       protected def meth3 = Array(1, 2)
 
       def getA: this.type = this;
+    }
+
+    /** Test type members */
+    trait HighlighterXXX {
+      type Node;
+      protected def highlight(node : Node) : Unit;
+    }
+
+    /** Test type parameters */
+    abstract class PolyA[a] {
+      protected def m(x: a): Unit;
+
+      class B {
+
+        trait Node {
+          def s: String = "";
+        }
+        protected def tie(x: Node): Unit = { x.s; () }
+      }
     }
   }
 
@@ -47,12 +66,12 @@ package p {
           Console.println("meth1(1) = " + meth1(1));
           // test accesses from closures
           for (val x <- 1 until 3)
-            Console.println("meth2(1)(1) = " + meth2(1)(1));
+            Console.println("meth2(1)(1) = " + meth2(1)("prefix: "));
 
           Console.println("meth3 = " + meth3.getClass);
 
           val inc = &meth2(1);
-          Console.println("10++ = " + inc(10));
+          Console.println("100 = " + inc("10"));
 
           getA.x;
         }
@@ -76,12 +95,34 @@ package p {
         def m = {
           Console.println(x);
           Console.println("meth1(1) = " + meth1(1));
-          Console.println("meth2(1)(1) = " + meth2(1)(1));
+          Console.println("meth2(1)(1) = " + meth2(1)("1"));
 
           val inc = &meth2(1);
-          Console.println("10++ = " + inc(10));
+          Console.println("100 = " + inc("10"));
 
           getA.x;
+        }
+      }
+    }
+
+    trait ScalaAutoEditXXX extends HighlighterXXX {
+      trait NodeImpl {
+        def self : Node;
+        highlight(self);
+      }
+    }
+
+    abstract class X[T] extends PolyA[T] {
+
+      trait Inner extends B {
+        def self: T;
+        def self2: Node;
+        def getB: Inner;
+
+        m(self)
+
+        trait InnerInner {
+          getB.tie(self2)
         }
       }
     }

@@ -172,6 +172,13 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
       val Select(qual, name) = tree
       val sym = tree.symbol
       val clazz = hostForAccessorOf(sym, currentOwner.enclClass)
+
+      /** Return a list of list of types of all value parameter sections. */
+      def allParamTypes(tpe: Type): List[List[Type]] = tpe match {
+        case MethodType(pts, res) => pts :: allParamTypes(res)
+        case _ => Nil
+      }
+
       assert(clazz != NoSymbol, sym)
       if (settings.debug.value)
         log("Decided for host class: " + clazz)
@@ -179,29 +186,19 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
       var protAcc = clazz.info.decl(accName)
       val hasArgs = sym.tpe.paramTypes != Nil
       if (protAcc == NoSymbol) {
-        val resTpe = tree.tpe
-        val argTypes =
-          if (hasArgs)
-            MethodType(
-              sym.tpe.paramTypes map {t =>
-//                Console.print("Transforming " + t + "(sym=" + t.symbol +") to ")
-//                Console.println("" + clazz.typeOfThis + ".memberType = " + clazz.typeOfThis.memberType(t.symbol))
-
-                if (!t.symbol.isAbstractType || t.symbol.isTypeParameter)
-                  clazz.typeOfThis.memberType(t.symbol)
-                else
-                  t
-              },
-              resTpe.resultType /*sym.tpe.resultType*/)
-          else
-              resTpe.resultType /*sym.tpe.resultType*/
+        val argTypes = tree.tpe // transform(sym.tpe)
 
         protAcc = clazz.newMethod(tree.pos, nme.protName(sym.originalName))
                            .setInfo(MethodType(List(clazz.typeOfThis),argTypes))
         clazz.info.decls.enter(protAcc);
-        val code = DefDef(protAcc, vparamss =>
-          vparamss.tail.foldRight(Select(gen.mkAttributedRef(vparamss.head.head), sym): Tree) (
-              (vparams, fun) => Apply(fun, (vparams map { v => makeArg(v, vparamss.head.head) } ))))
+        val code = DefDef(protAcc, vparamss => {
+          val obj = vparamss.head.head
+          vparamss.tail.zip(allParamTypes(sym.tpe)).foldLeft(Select(Ident(obj), sym): Tree) (
+              (fun, pvparams) => {
+                Apply(fun, (List.map2(pvparams._1, pvparams._2) { (v, origTpe) => makeArg(v, obj, origTpe) } ))
+              })
+        })
+
         if (settings.debug.value)
           log(code)
         accDefBuf(clazz) += typers(clazz).typed(code)
@@ -212,16 +209,27 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
       if (hasArgs) typer.typedOperator(res) else typer.typed(res)
     }
 
-    private def makeArg(v: Symbol, obj: Symbol): Tree = {
-//      Console.println("" + v + ".tpe = " + v.tpe + " .symbol = "
-//        + v.tpe.symbol + " isAbstractType = " + v.tpe.symbol.isAbstractType);
+    /** Adapt the given argument in call to protected member.
+     *  Adaptation means adding a cast to a path-dependent type, for instance
+     *
+     *  def prot$m(obj: Outer)(x: Inner) = obj.m(x.asInstanceOf[obj.Inner]).
+     *
+     *  such a cast might be necessary when m expects an Outer.this.Inner (the
+     *  outer of 'obj' and 'x' have to be the same). This restriction can't be
+     *  expressed in the type system (but is implicit when defining method m).
+     */
+    private def makeArg(v: Symbol, obj: Symbol, expectedTpe: Type): Tree = {
       val res = Ident(v)
+      val sym = v.tpe.symbol
 
-      if (v.tpe.symbol.isAbstractType && !v.tpe.symbol.isTypeParameter) {
+      val isDependentType = expectedTpe match {
+        case TypeRef(ThisType(outerSym), _, _) if (obj.isSubClass(outerSym)) => true
+        case _ => false
+      }
+      if (isDependentType) {
         val preciseTpe = typeRef(singleType(NoPrefix, obj), v.tpe.symbol, List())
-        Console.println("precise tpe: " + preciseTpe)
-            TypeApply(Select(res, definitions.Any_asInstanceOf),
-                      List(TypeTree(preciseTpe)))
+        TypeApply(Select(res, definitions.Any_asInstanceOf),
+                  List(TypeTree(preciseTpe)))
       }
       else
         res
