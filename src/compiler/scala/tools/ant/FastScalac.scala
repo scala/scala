@@ -5,7 +5,7 @@
 **                                                                            **
 \*                                                                            */
 
-// $Id:  $
+// $Id$
 
 package scala.tools.ant {
 
@@ -66,38 +66,34 @@ package scala.tools.ant {
 **                             The execute method                             **
 \*============================================================================*/
 
-    private def trim(xs: List[String]) = xs filter (x => x.length > 0)
-
     /** Performs the compilation. */
     override def execute() = {
       val Pair(settings, sourceFiles) = initialize
 
-      val reset = settings.BooleanSetting("-reset", "Reset compile server caches")
-      //val server = settings.StringSetting("-server", "serverAddr", "Specify compile server socket", "")
-      val shutdown = settings.BooleanSetting("-shutdown", "Shutdown compile server")
-
-      reset.value = resetCaches
-      shutdown.value = shutdownServer
-      val cmdOptions =
-        // StringSetting
-        List.flatten(
-          List(settings.outdir, settings.classpath, settings.bootclasspath,
-               settings.extdirs, settings.encoding) map (s => List(s.nme, s.value))) :::
-        // '-server' option
-        (if (serverAddr.isEmpty) Nil else List("-server", serverAddr.get)) :::
-        // ChoiceSetting
-        (List(settings.debuginfo, settings.target) map (s => s.nme + ":" + s.value)) :::
-        // BooleanSetting
-        trim(
-          List(settings.debug, settings.deprecation, settings.nopredefs,
-               settings.verbose, reset, shutdown) map (s => if (s.value) s.nme else "")) :::
-        // PhaseSetting
-        trim(
-          List(settings.log) map (s => if (s.value.isEmpty) "" else s.nme + ":" + s.value))
-      //Console.println("options="+cmdOptions)//debug
-      //Console.println("files="+sourceFiles)//debug
-
       if (!sourceFiles.isEmpty) {
+        def trim(xs: List[String]) = xs filter (x => x.length > 0)
+        val reset = settings.BooleanSetting("-reset", "Reset compile server caches")
+        val shutdown = settings.BooleanSetting("-shutdown", "Shutdown compile server")
+
+        reset.value = resetCaches
+        shutdown.value = shutdownServer
+        val cmdOptions =
+          // StringSetting
+          List.flatten(
+            List(settings.outdir, settings.classpath, settings.bootclasspath,
+                 settings.extdirs, settings.encoding) map (s => List(s.nme, s.value))) :::
+          // '-server' option
+          (if (serverAddr.isEmpty) Nil else List("-server", serverAddr.get)) :::
+          // ChoiceSetting
+          (List(settings.debuginfo, settings.target) map (s => s.nme + ":" + s.value)) :::
+          // BooleanSetting
+          trim(
+            List(settings.debug, settings.deprecation, settings.nopredefs,
+                 settings.verbose, reset, shutdown) map (s => if (s.value) s.nme else "")) :::
+          // PhaseSetting
+          trim(
+            List(settings.log) map (s => if (s.value.isEmpty) "" else s.nme + ":" + s.value))
+
         val args = (cmdOptions ::: (sourceFiles map (.toString()))).toArray
         try {
           nsc.CompileClient.main0(args)
