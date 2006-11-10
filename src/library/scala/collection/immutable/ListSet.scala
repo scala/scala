@@ -60,7 +60,7 @@ class ListSet[A] extends AnyRef with Set[A] {
 
   /** Creates a new iterator over all elements contained in this set.
    *
-   *  @throws scala.compat.Platform.NoSuchElementException
+   *  @throws Predef.NoSuchElementException
    *  @return the new iterator
    */
   def elements: Iterator[A] = new Iterator[A] {
@@ -82,12 +82,12 @@ class ListSet[A] extends AnyRef with Set[A] {
       false
 
   /**
-   *  @throws scala.compat.Platform.NoSuchElementException
+   *  @throws Predef.NoSuchElementException
    */
   protected def elem: A = throw new NoSuchElementException("Set has no elelemnts");
 
   /**
-   *  @throws scala.compat.Platform.NoSuchElementException
+   *  @throws Predef.NoSuchElementException
    */
   protected def next: ListSet[A] = throw new NoSuchElementException("Next of an empty set");
 

@@ -125,7 +125,7 @@ final class ListBuffer[A] extends Buffer[A] {
    *
    *  @param n  the position of the element to be returned.
    *  @return   the n-th element of this buffer.
-   *  @throws scala.compat.Platform.IndexOutOfBoundsException
+   *  @throws Predef.IndexOutOfBoundsException
    */
   def apply(n: Int): A = try {
     start(n)
@@ -139,7 +139,7 @@ final class ListBuffer[A] extends Buffer[A] {
    *
    *  @param n  the index of the element to replace.
    *  @param x  the new element.
-   *  @throws scala.compat.Platform.IndexOutOfBoundsException if <code>n</code> is out of bounds.
+   *  @throws Predef.IndexOutOfBoundsException if <code>n</code> is out of bounds.
    */
   def update(n: Int, x: A): unit = try {
     if (exported) copy()
@@ -168,7 +168,7 @@ final class ListBuffer[A] extends Buffer[A] {
    *
    *  @param  n     the index where a new element will be inserted.
    *  @param  iter  the iterable object providing all elements to insert.
-   *  @throws scala.compat.Platform.IndexOutOfBoundsException if <code>n</code> is out of bounds.
+   *  @throws Predef.IndexOutOfBoundsException if <code>n</code> is out of bounds.
    */
   def insertAll(n: Int, iter: Iterable[A]): unit = try {
     if (exported) copy()
@@ -205,7 +205,7 @@ final class ListBuffer[A] extends Buffer[A] {
    *  @param  n  the index which refers to the element to delete.
    *  @return n  the element that was formerly at position <code>n</code>.
    *  @pre       an element exists at position <code>n</code>
-   *  @throws scala.compat.Platform.IndexOutOfBoundsException if <code>n</code> is out of bounds.
+   *  @throws Predef.IndexOutOfBoundsException if <code>n</code> is out of bounds.
    */
   def remove(n: Int): A = try {
     if (exported) copy()
@@ -239,7 +239,7 @@ final class ListBuffer[A] extends Buffer[A] {
    *    <code>toList.elements</code>.
    *  </blockquote>
    *
-   *  @throws scala.compat.Platform.NoSuchElementException if buffer is empty
+   *  @throws Predef.NoSuchElementException if buffer is empty
    */
   override def elements = new Iterator[A] {
     var cursor: List[A] = null

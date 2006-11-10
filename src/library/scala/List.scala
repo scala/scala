@@ -385,13 +385,13 @@ sealed abstract class List[+a] extends Seq[a] {
 
   /** Returns this first element of the list.
    *  @return the first element of this list.
-   *  @throws <code>scala.compat.Platform.NoSuchElementException</code> if the list is empty.
+   *  @throws <code>Predef.NoSuchElementException</code> if the list is empty.
    */
   def head: a
 
   /** Returns this list without its first element.
    *  @return this list without its first element.
-   *  @throws <code>scala.compat.Platform.NoSuchElementException</code> if the list is empty.
+   *  @throws <code>Predef.NoSuchElementException</code> if the list is empty.
    */
   def tail: List[a]
 
@@ -493,7 +493,7 @@ sealed abstract class List[+a] extends Seq[a] {
   /** Returns the list without its last element.
    *
    *  @return the list without its last element.
-   *  @throws <code>scala.compat.Platform.UnsupportedOperationException</code>
+   *  @throws <code>Predef.UnsupportedOperationException</code>
    *  if the list is empty.
    */
   def init: List[a] =
@@ -513,7 +513,7 @@ sealed abstract class List[+a] extends Seq[a] {
   /** Returns the last element of this list.
    *
    *  @return the last element of the list.
-   *  @throws <code>scala.compat.Platform.UnsupportedOperationException</code>
+   *  @throws <code>Predef.UnsupportedOperationException</code>
    *  if the list is empty.
    */
   def last: a =
@@ -646,7 +646,7 @@ sealed abstract class List[+a] extends Seq[a] {
    *
    *  @param n index of the element to return
    *  @return the element at position <code>n</code> in this list.
-   *  @throws <code>java.lang.RuntimeException</code> if the list is too short.
+   *  @throws <code>Predef.NoSuchElementException</code> if the list is too short.
    */
   def apply(n: Int): a = drop(n).head
 

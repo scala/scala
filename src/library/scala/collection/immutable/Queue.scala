@@ -41,7 +41,7 @@ class Queue[+A](elem: A*) extends Seq[A] {
    *
    *  @param  n index of the element to return
    *  @return   the element at position <code>n</code> in this queue.
-   *  @throws   scala.compat.Platform.NoSuchElementException if the queue is too short.
+   *  @throws Predef.NoSuchElementException if the queue is too short.
    */
   def apply(n: Int): A = {
     val len = out.length
@@ -97,7 +97,7 @@ class Queue[+A](elem: A*) extends Seq[A] {
   /** Returns a tuple with the first element in the queue,
    *  and a new queue with this element removed.
    *
-   *  @throws scala.compat.Platform.NoSuchElementException
+   *  @throws Predef.NoSuchElementException
    *  @return the first element of the queue.
    */
   def dequeue: Pair[A, Queue[A]] = {
@@ -111,7 +111,7 @@ class Queue[+A](elem: A*) extends Seq[A] {
   /** Returns the first element in the queue, or throws an error if there
    *  is no element contained in the queue.
    *
-   *  @throws scala.compat.Platform.NoSuchElementException
+   *  @throws Predef.NoSuchElementException
    *  @return the first element.
    */
   def front: A =

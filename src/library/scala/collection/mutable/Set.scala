@@ -105,7 +105,7 @@ trait Set[A] extends AnyRef with collection.Set[A]
   /** Send a message to this scriptable object.
    *
    *  @param cmd  the message to send.
-   *  @throws <code>scala.compat.Platform.UnsupportedOperationException</code>
+   *  @throws <code>Predef.UnsupportedOperationException</code>
    *  if the message was not understood.
    */
   def <<(cmd: Message[A]): Unit = cmd match {

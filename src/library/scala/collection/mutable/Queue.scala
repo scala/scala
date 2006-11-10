@@ -60,7 +60,7 @@ class Queue[A] extends MutableList[A] {
   /** Returns the first element in the queue, and removes this element
    *  from the queue.
    *
-   *  @throws scala.compat.Platform.NoSuchElementException
+   *  @throws Predef.NoSuchElementException
    *  @return the first element of the queue.
    */
   def dequeue: A =
@@ -173,7 +173,7 @@ class Queue[A] extends MutableList[A] {
   /** The hashCode method always yields an error, since it is not
    *  safe to use mutable queues as keys in hash tables.
    *
-   *  @throws scala.compat.Platform.UnsupportedOperationException
+   *  @throws Predef.UnsupportedOperationException
    *  @return never.
    */
   override def hashCode(): Int = throw new UnsupportedOperationException("unsuitable as hash key")

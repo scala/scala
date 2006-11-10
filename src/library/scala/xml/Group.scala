@@ -34,31 +34,31 @@ case class Group(val nodes: Seq[Node]) extends Node {
   }
 
   /**
-   * @throws scala.compat.Platform.UnsupportedOperationException (always)
+   * @throws Predef.UnsupportedOperationException (always)
    */
   final def label =
     throw new UnsupportedOperationException("class Group does not support method 'label'")
 
   /**
-   * @throws scala.compat.Platform.UnsupportedOperationException (always)
+   * @throws Predef.UnsupportedOperationException (always)
    */
   final override def attributes =
     throw new UnsupportedOperationException("class Group does not support method 'attributes'")
 
   /**
-   * @throws scala.compat.Platform.UnsupportedOperationException (always)
+   * @throws Predef.UnsupportedOperationException (always)
    */
   final override def namespace =
     throw new UnsupportedOperationException("class Group does not support method 'namespace'")
 
   /**
-   * @throws scala.compat.Platform.UnsupportedOperationException (always)
+   * @throws Predef.UnsupportedOperationException (always)
    */
   final override def child =
     throw new UnsupportedOperationException("class Group does not support method 'child'")
 
   /**
-   * @throws scala.compat.Platform.UnsupportedOperationException (always)
+   * @throws Predef.UnsupportedOperationException (always)
    */
   def toString(sb: StringBuilder) =
     throw new UnsupportedOperationException("class Group does not support method toString(StringBuilder)")

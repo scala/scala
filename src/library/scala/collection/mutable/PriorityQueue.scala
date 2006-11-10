@@ -91,7 +91,7 @@ class PriorityQueue[A <% Ordered[A]] extends ResizableArray[A] {
   /** Returns the element with the highest priority in the queue,
    *  and removes this element from the queue.
    *
-   *  @throws scala.compat.Platform.NoSuchElementException
+   *  @throws Predef.NoSuchElementException
    *  @return   the element with the highest priority.
    */
   def dequeue: A =

@@ -60,14 +60,14 @@ class Stack[A] extends MutableList[A] {
    *  the element from the stack. An error is signaled if there is no
    *  element on the stack.
    *
-   *  @throws scala.compat.Platform.NoSuchElementException
+   *  @throws Predef.NoSuchElementException
    *  @return the top element
    */
   def top: A = if (first == null) throw new NoSuchElementException("stack empty") else first.elem
 
   /** Removes the top element from the stack.
    *
-   *  @throws scala.compat.Platform.NoSuchElementException
+   *  @throws Predef.NoSuchElementException
    *  @return the top element
    */
   def pop: A =

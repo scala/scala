@@ -63,7 +63,7 @@ class ArrayBuffer[A] extends Buffer[A] with ResizableArray[A] {
    *
    *  @param i  the specified index.
    *  @return   the i-th element.
-   *  @throws IndexOutOfBoundException if <code>i</code> is out of bounds.
+   *  @throws Predef.IndexOutOfBoundException if <code>i</code> is out of bounds.
    */
   override def apply(i: Int) = {
     if ((i < 0) || (i >= size))
@@ -87,7 +87,7 @@ class ArrayBuffer[A] extends Buffer[A] with ResizableArray[A] {
    *
    *  @param n     the index where a new element will be inserted.
    *  @param iter  the iterable object providing all elements to insert.
-   *  @throws IndexOutOfBoundsException if <code>n</code> is out of bounds.
+   *  @throws Predef.IndexOutOfBoundsException if <code>n</code> is out of bounds.
    */
   def insertAll(n: Int, iter: Iterable[A]): Unit = {
     if ((n < 0) || (n > size))
@@ -105,7 +105,7 @@ class ArrayBuffer[A] extends Buffer[A] with ResizableArray[A] {
    *
    *  @param n       the index of the element to replace.
    *  @param newelem the new element.
-   *  @throws IndexOutOfBoundsException if <code>n</code> is out of bounds.
+   *  @throws Predef.IndexOutOfBoundsException if <code>n</code> is out of bounds.
    */
   def update(n: Int, newelem: A): Unit = {
     if ((n < 0) || (n >= size))
@@ -121,7 +121,7 @@ class ArrayBuffer[A] extends Buffer[A] with ResizableArray[A] {
    *
    *  @param n  the index which refers to the element to delete.
    *  @return   the updated array buffer.
-   *  @throws IndexOutOfBoundsException if <code>n</code> is out of bounds.
+   *  @throws Predef.IndexOutOfBoundsException if <code>n</code> is out of bounds.
    */
   def remove(n: Int): A = {
     if ((n < 0) || (n >= size))
