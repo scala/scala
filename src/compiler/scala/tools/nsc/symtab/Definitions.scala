@@ -150,7 +150,7 @@ trait Definitions requires SymbolTable {
       val prod = tp.typeArgs.head
       if (prod.symbol == UnitClass) List()
       else prod.baseClasses.find { x => isProductType(x.tpe) } match {
-	case Some(p) => prod.baseType(p).typeArgs
+        case Some(p) => prod.baseType(p).typeArgs
       }
     }
 
@@ -342,14 +342,15 @@ trait Definitions requires SymbolTable {
         "scala.runtime.Boxed" + name
       val clazz =
         newClass(ScalaPackageClass, name, List(AnyValClass.typeConstructor))
+        .setFlag(ABSTRACT | SEALED)
       boxedClass(clazz) = getClass(boxedName)
       boxedArrayClass(clazz) = getClass("scala.runtime.Boxed" + name + "Array")
       refClass(clazz) = getClass("scala.runtime." + name + "Ref")
       abbrvTag(clazz) = tag
 
-      val module = ScalaPackageClass.newModule(NoPos, name);
-      ScalaPackageClass.info.decls.enter(module);
-      val mclass = module.moduleClass;
+      val module = ScalaPackageClass.newModule(NoPos, name)
+      ScalaPackageClass.info.decls.enter(module)
+      val mclass = module.moduleClass
       mclass.setInfo(ClassInfoType(List(), newScope, mclass))
       module.setInfo(mclass.tpe)
       val box = newMethod(mclass, nme.box, List(clazz.typeConstructor),
@@ -537,12 +538,12 @@ trait Definitions requires SymbolTable {
       assert(ScalaPackage != null, "Scala package is null")
       ScalaPackageClass = ScalaPackage.tpe.symbol
 
-      AnyClass = newClass(ScalaPackageClass, nme.Any, List())
+      AnyClass = newClass(ScalaPackageClass, nme.Any, List()).setFlag(ABSTRACT)
 
       val anyparam = List(AnyClass.typeConstructor)
 
       AnyValClass = newClass(ScalaPackageClass, nme.AnyVal, anyparam)
-        .setFlag(SEALED)
+        .setFlag(FINAL | SEALED)
 
       ObjectClass = getClass("java.lang.Object")
 

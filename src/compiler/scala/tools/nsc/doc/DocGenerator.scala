@@ -13,8 +13,7 @@ import java.util.regex.Pattern
 import compat.Platform.{EOL => LINE_SEPARATOR}
 import scala.collection.immutable._
 import scala.collection.mutable.ListBuffer
-import scala.tools.nsc._
-import scala.tools.nsc.models._
+import scala.tools.nsc.models.Models
 import scala.tools.nsc.symtab.Flags
 import scala.xml._
 
@@ -147,7 +146,7 @@ abstract class DocGenerator extends Models {
           else ""
         case _ =>
           //System.err.println("XXX: class or object " + orig + " not found in " + sym)
-          "XXXXX"
+          "" //"XXXXX"
       })
     }
 
@@ -619,14 +618,23 @@ abstract class DocGenerator extends Models {
       <hr/>
       <div>in {aref(urlFor(sym.owner), "_self", sym.owner.fullNameString('.'))}</div>
       <div class="entity">
-        {Text(codeFor(kind))}
+        { Text(codeFor(kind)) }
         <span class="entity">{Text(sym.nameString)}</span>
       </div>
       <hr/>
       <dl>
-        <dt><code>{
-          Text("class " + sym.nameString)
-        }</code></dt>
+        <dt>
+          <code>{Text(Flags.flagsToString(sym.flags) + " class ")}</code>
+          <em>{Text(sym.nameString)}</em>
+        </dt>
+        <dd>{
+          if (sym.info.parents.isEmpty) NodeSeq.Empty
+          else {
+            val parent = sym.info.parents.head
+            <code>{Text(" extends ")}</code>.concat(
+            aref(urlFor(parent.symbol), contentFrame, parent.toString()))
+          }
+        }</dd>
         <dd>{comment(descr, true)}</dd>
       </dl>
       <hr/>.concat({
@@ -776,85 +784,138 @@ abstract class DocGenerator extends Models {
     }
     new PrimitiveContentFrame {
       def sym = definitions.AnyClass
-      def descr = "/** */"
+      def descr = """
+        /** <p>
+         *    Class <code>Any</code> is the root of the <a href="http://scala.epfl.ch/">
+         *    Scala</a> class hierarchy. Every class in a <a href="http://scala.epfl.ch/">
+         *    Scala</a> execution environment inherits directly or
+         *    indirectly from this class. Class <code>Any</code> has two direct
+         *    subclasses: <a href="AnyRef.html"><code>AnyRef</code></a>
+         *    and <a href="AnyVal.html"><code>AnyVal</code></a>.
+         *  </p>
+         */"""
     }
     new PrimitiveContentFrame {
       def sym = definitions.AnyRefClass
-      def descr = "/** */"
+      def descr = """
+        /** <p>
+         *    Class <code>AnyRef</code> is the root class of all reference
+         *    types.
+         *  </p>
+         */"""
+    }
+    new PrimitiveContentFrame {
+      def sym = definitions.AnyValClass
+      def descr = """
+        /** <p>
+         *    Class <code>AnyVal</code> is the root class of all value types.
+         *  </p>
+         *  <p>
+         *    <code>AnyVal</code> has a fixed number subclasses, which
+         *    describe values which are not implemented as objects in the
+         *    underlying host system.
+         *  </p>
+         *  <p>
+         *    Classes <a href="Double.html"><code>Double</code></a>,
+         *    <a href="Float.html"><code>Float</code></a>,
+         *    <a href="Long.html"><code>Long</code></a>,
+         *    <a href="Int.html"><code>Int</code></a>,
+         *    <a href="Char.html"><code>Char</code></a>,
+         *    <a href="Short.html"><code>Short</code></a>, and
+         *    <a href="Byte.html"><code>Byte</code></a> are together called
+         *    <em>numeric value types</em>.
+         *    Classes <a href="Byte.html"><code>Byte</code></a>,
+         *    <a href="Short.html"><code>Short</code></a>, or
+         *    <a href="Char.html"><code>Char</code></a>
+         *    are called <em>subrange types</em>. Subrange types, as well as
+         *    <a href="Int.html"><code>Int</code></a> and
+         *    <a href="Long.html"><code>Long</code></a> are called
+         *    <em>integer types</em>, whereas
+         *    <a href="Float.html"><code>Float</code></a> and
+         *    <a href="Double.html"><code>Double</code></a> are called
+         *    <em>floating point types</em>.
+         *  </p>
+         */"""
     }
     new PrimitiveContentFrame {
       def sym = definitions.BooleanClass
       def descr = """
-        /** Class <code>Boolean</code> has only two values: <code>true</code>
-         *  and <code>false</code>.
+        /** <p>
+         *    Class <code>Boolean</code> has only two values: <code>true</code>
+         *    and <code>false</code>.
+         *  </p>
          */"""
     }
-    def numValuesDescr(sym: Symbol) = """
+    def numericValDescr(sym: Symbol) = """
       /** <p>
-       *    Class <code>""" + sym.name + """ </code> belongs to the value classes whose
-       *    instances are not represented as objects by the underlying host system. All
-       *    value classes inherit from class <code>AnyVal</code>.
-       *  </p>
-       *  <p>
-       *    Classes <code>Double</code>, <code>Float</code>, <code>Long</code>,
-       *    <code>Int</code>, <code>Char</code>, <code>Short</code>, and
-       *    <code>Byte</code> are together called <em>numeric value types</em>.
-       *    Classes <code>Byte</code>, <code>Short</code>, or <code>Char</code>
-       *    are called <em>subrange types</em>. Subrange types, as well as
-       *    <code>Int</code> and <code>Long</code> are called <em>integer types</em>,
-       *    whereas <code>Float</code> and <code>Double</code> are called
-       *    <em>floating point types</em>.
+       *    Class <code>""" + sym.name + """ </code> belongs to the value
+       *    classes whose instances are not represented as objects by the
+       *    underlying host system. All value classes inherit from class
+       *    <a href="AnyVal.html"><code>AnyVal</code></a>.
        *  </p>
        */"""
     new PrimitiveContentFrame {
       def sym = definitions.ByteClass
-      def descr = numValuesDescr(sym)
+      def descr = numericValDescr(sym)
     }
     new PrimitiveContentFrame {
       def sym = definitions.CharClass
-      def descr = numValuesDescr(sym)
+      def descr = numericValDescr(sym)
     }
     new PrimitiveContentFrame {
       def sym = definitions.DoubleClass
-      def descr = numValuesDescr(sym)
+      def descr = numericValDescr(sym)
     }
     new PrimitiveContentFrame {
       def sym = definitions.FloatClass
-      def descr = numValuesDescr(sym)
+      def descr = numericValDescr(sym)
     }
     new PrimitiveContentFrame {
       def sym = definitions.IntClass
-      def descr = numValuesDescr(sym)
+      def descr = numericValDescr(sym)
     }
     new PrimitiveContentFrame {
       def sym = definitions.LongClass
-      def descr = numValuesDescr(sym)
+      def descr = numericValDescr(sym)
     }
     new PrimitiveContentFrame {
       def sym = definitions.ShortClass
-      def descr = numValuesDescr(sym)
+      def descr = numericValDescr(sym)
     }
     new PrimitiveContentFrame {
       def sym = definitions.UnitClass
       def descr = """
-        /** Class Unit has only one value: <code>()</code>.
+        /** <p>
+         *    Class <code>Unit</code> has only one value: <code>()</code>.
+         *  </p>
          */"""
     }
+    def boxedValDescr(sym: Symbol) = """
+      /** <p>
+       *    Class <code>""" + sym.name + """</code> implements the
+       *    boxing/unboxing from/to value types.
+       *  </p>
+       *  <p>
+       *    Boxing and unboxing enable value types to be treated as objects;
+       *    they provide a unified view of the type system wherein a value
+       *    of any type can ultimately be treated as an object.
+       *  </p>
+       */"""
     new PrimitiveContentFrame {
       def sym = definitions.getClass("scala.runtime.BoxedFloat")
-      def descr = "/** */"
+      def descr = boxedValDescr(sym)
     }
     new PrimitiveContentFrame {
       def sym = definitions.getClass("scala.runtime.BoxedInt")
-      def descr = "/** */"
+      def descr = boxedValDescr(sym)
     }
     new PrimitiveContentFrame {
       def sym = definitions.getClass("scala.runtime.BoxedLong")
-      def descr = "/** */"
+      def descr = boxedValDescr(sym)
     }
     new PrimitiveContentFrame {
       def sym = definitions.getClass("scala.runtime.BoxedNumber")
-      def descr = "/** */"
+      def descr = boxedValDescr(sym)
     }
     val rsrcdir = "scala/tools/nsc/doc/".replace('/', File.separatorChar)
     for (val base <- List("style.css", "script.js")) {
