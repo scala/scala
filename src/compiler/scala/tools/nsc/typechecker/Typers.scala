@@ -1004,7 +1004,7 @@ trait Typers requires Analyzer {
         case Apply(fun, _) =>
           if (fun.symbol.isConstructor &&
               fun.symbol.owner == meth.owner && fun.symbol.pos >= meth.pos)
-            error(fun.pos, "called constructor must precede calling constructor")
+            error(fun.pos, "called constructor's definition must precede calling constructor's definition")
         case _ =>
       }
       def typedSuperCall(tree: Tree, pt: Type): Tree = {

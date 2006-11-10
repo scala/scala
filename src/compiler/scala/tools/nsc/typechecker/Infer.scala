@@ -922,6 +922,16 @@ trait Infer requires Analyzer {
 
     /* -- Overload Resolution ---------------------------------------------- */
 
+    def checkNotShadowed(pos: PositionType, pre: Type, best: Symbol, eligible: List[Symbol]) =
+      for (val alt <- eligible) {
+        if (alt.owner != best.owner && alt.owner.isSubClass(best.owner))
+          error(pos,
+            "erroneous reference to overloaded definition,\n"+
+            "most specific definition is: "+best+best.locationString+" of type "+pre.memberType(best)+
+            ",\nyet alternative definition   "+alt+alt.locationString+" of type "+pre.memberType(alt)+
+            "\nis defined in a subclass")
+      }
+
     /** Assign <code>tree</code> the symbol and type of the alternative which
      *  matches prototype <code>pt</code>, if it exists.
      *  If several alternatives match `pt', take parameterless one.
@@ -933,7 +943,6 @@ trait Infer requires Analyzer {
         if (alts1.isEmpty) alts1 = alts
         def improves(sym1: Symbol, sym2: Symbol): boolean =
           sym2 == NoSymbol ||
-          (sym1.owner isSubClass sym2.owner) &&
           { val tp1 = pre.memberType(sym1)
             val tp2 = pre.memberType(sym2)
             (tp2 == ErrorType ||
@@ -959,7 +968,9 @@ trait Infer requires Analyzer {
             context.ambiguousError(tree.pos, pre, best, competing.head, "expected type " + pt)
           setError(tree)
           ()
+
         } else {
+          //checkNotShadowed(tree.pos, pre, best, alts1)
           tree.setSymbol(best).setType(pre.memberType(best))
         }
       }
@@ -979,8 +990,7 @@ trait Infer requires Analyzer {
         val applicable = alts filter (alt => isApplicable(undetparams, pre.memberType(alt), argtpes, pt))
         def improves(sym1: Symbol, sym2: Symbol) = (
           sym2 == NoSymbol || sym2.isError ||
-          ((sym1.owner isSubClass sym2.owner) &&
-           specializes(pre.memberType(sym1), pre.memberType(sym2)))
+          specializes(pre.memberType(sym1), pre.memberType(sym2))
         )
         val best = ((NoSymbol: Symbol) /: applicable) ((best, alt) =>
           if (improves(alt, best)) alt else best)
@@ -999,6 +1009,7 @@ trait Infer requires Analyzer {
           setError(tree)
           ()
         } else {
+          //checkNotShadowed(tree.pos, pre, best, applicable)
           tree.setSymbol(best).setType(pre.memberType(best))
         }
       }

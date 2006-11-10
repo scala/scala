@@ -390,6 +390,14 @@ abstract class Mixin extends InfoTransform {
     private def selfRef(pos: PositionType) =
       gen.mkAttributedIdent(self) setPos pos
 
+    /** Replace a super reference by this or the self parameter, depending
+     *  on whether we are in an implementation class or not.
+     *  Leave all other trees unchanged */
+    private def transformSuper(qual: Tree) =
+      if (!qual.isInstanceOf[Super]) qual
+      else if (currentOwner.enclClass.isImplClass) selfRef(qual.pos)
+      else gen.mkAttributedThis(currentOwner.enclClass)
+
     /** Create a static reference to given symbol <code>sym</code> of the
      *  form <code>M.sym</code> where M is the symbol's implementation module.
      */
@@ -586,11 +594,7 @@ abstract class Mixin extends InfoTransform {
               assert(false, "" + sym + ":" + sym.tpe + " " + sym.owner + " " + implClass(sym.owner) + " " + implClass(sym.owner).info.member(sym.name) + " " + atPhase(phase.prev)(implClass(sym.owner).info.member(sym.name).tpe) + " " + phase);//debug
             localTyper.typed {
               atPos(tree.pos) {
-                val qual1 =
-                  if (!qual.isInstanceOf[Super]) qual
-                  else if (currentOwner.enclClass.isImplClass) selfRef(qual.pos)
-                  else gen.mkAttributedThis(currentOwner.enclClass);
-                Apply(staticRef(target), qual1 :: args)
+                Apply(staticRef(target), transformSuper(qual) :: args)
               }
             }
           }
@@ -607,9 +611,19 @@ abstract class Mixin extends InfoTransform {
               //  - otherwise return tree unchanged
               if (mix == nme.EMPTY.toTypeName && currentOwner.enclClass.isImplClass)
                 assert(false, "illegal super in trait: " + currentOwner.enclClass + " " + tree);
-              if (sym.owner hasFlag lateINTERFACE)
-                staticCall(atPhase(phase.prev)(sym.overridingSymbol(implClass(sym.owner))))
-              else {
+              if (sym.owner hasFlag lateINTERFACE) {
+                if (sym.hasFlag(ACCESSOR)) {
+                  assert(args.isEmpty)
+                  val sym1 = sym.overridingSymbol(currentOwner.enclClass)
+                  localTyper.typed {
+                    atPos(tree.pos) {
+                      Apply(Select(transformSuper(qual), sym1), List())
+                    }
+                  }
+                } else {
+                  staticCall(atPhase(phase.prev)(sym.overridingSymbol(implClass(sym.owner))))
+                }
+              } else {
                 assert(!currentOwner.enclClass.isImplClass)
                 tree
               }
