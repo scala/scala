@@ -8,7 +8,8 @@ package scala.tools.nsc
 
 import java.lang.System
 import java.lang.ClassLoader
-import java.io._
+import java.io.{BufferedReader, InputStreamReader, File, FileReader, PrintWriter}
+import java.io.IOException
 
 import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
 import scala.tools.nsc.util.{Position}

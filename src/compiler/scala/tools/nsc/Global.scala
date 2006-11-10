@@ -6,7 +6,8 @@
 
 package scala.tools.nsc
 
-import java.io._
+import java.io.{File, FileOutputStream, PrintWriter}
+import java.io.{IOException, FileNotFoundException}
 import java.nio.charset._
 import compat.Platform.currentTime
 import scala.tools.nsc.io.{SourceReader, AbstractFile}

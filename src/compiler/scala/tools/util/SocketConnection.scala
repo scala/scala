@@ -10,8 +10,10 @@
 
 package scala.tools.util
 
-import java.io._
-import java.net._
+import java.io.{PrintWriter, InputStreamReader, BufferedReader}
+import java.io.IOException
+import java.net.{Socket, InetAddress}
+import java.net.UnknownHostException
 
 /** This class implements the connection to the server.
  *

@@ -11,9 +11,12 @@
 
 package scala.xml
 
+
 import Predef._
 import scala.xml.parsing.NoBindingFactoryAdapter
 import org.xml.sax.InputSource
+import java.io.{File, FileDescriptor, FileInputStream, FileOutputStream}
+import java.io.{InputStream, Reader, StringReader, Writer}
 
 /** The object <code>XML</code> provides constants, and functions to load
  *  and save XML elements. Use this when data binding is not desired, i.e.
@@ -30,8 +33,6 @@ object XML  {
   val preserve  = "preserve"
   val space     = "space"
   val lang      = "lang"
-
-  import java.io._
 
   // functions for generic xml loading, saving
 

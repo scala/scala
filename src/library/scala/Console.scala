@@ -11,6 +11,10 @@
 
 package scala
 
+import java.io.{InputStream, Reader, InputStreamReader, BufferedReader}
+import java.io.{OutputStream, PrintStream}
+import java.text.MessageFormat
+
 import scala.util.Fluid
 
 
@@ -23,8 +27,6 @@ import scala.util.Fluid
  *  @version 1.0, 03/09/2003
  */
 object Console {
-  import java.io._
-  import java.text._
 
   // ANSI colors foreground
   final val BLACK      = "\033[30m"

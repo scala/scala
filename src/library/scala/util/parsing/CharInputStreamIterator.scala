@@ -11,7 +11,9 @@
 
 package scala.util.parsing
 
-import java.io._
+
+import java.io.InputStream
+import java.io.{IOException, EOFException}
 
 /** This class ...
  *

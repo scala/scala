@@ -11,7 +11,7 @@
 
 package scala.xml.parsing
 
-import java.io._
+import java.io.{InputStream, Reader, File, FileDescriptor, FileInputStream}
 import scala.collection.mutable.{HashMap,Stack}
 import compat.StringBuilder
 
