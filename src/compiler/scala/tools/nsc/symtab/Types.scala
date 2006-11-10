@@ -1650,7 +1650,8 @@ trait Types requires SymbolTable {
     private def adaptToNewRun(pre: Type, sym: Symbol): Symbol = {
       if (sym.isModuleClass && !phase.flatClasses)
         adaptToNewRun(pre, sym.sourceModule).moduleClass
-      else if ((pre eq NoPrefix) || (pre eq NoType) || sym.owner.isPackageClass) sym
+      else if ((pre eq NoPrefix) || (pre eq NoType)) sym
+      else if (sym.owner.isPackageClass) sym.owner.info.decl(sym.name)
       else {
         var rebind0 = pre.findMember(sym.name, BRIDGE, 0, true)
         /** The two symbols have the same fully qualified name */
