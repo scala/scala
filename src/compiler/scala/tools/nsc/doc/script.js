@@ -118,6 +118,8 @@ function init() {
 
   // initialize Scala primitive classes
   table['scala_Any']                             = scala_api_root;
+  table['scala_AnyRef']                          = scala_api_root;
+  table['scala_AnyVal']                          = scala_api_root;
   table['scala_Boolean']                         = scala_api_root;
   table['scala_Byte']                            = scala_api_root;
   table['scala_Char']                            = scala_api_root;
@@ -126,6 +128,7 @@ function init() {
   table['scala_Int']                             = scala_api_root;
   table['scala_Null']                            = scala_api_root;
   table['scala_Long']                            = scala_api_root;
+  table['scala_Nothing']                         = scala_api_root;
   table['scala_Null']                            = scala_api_root;
   table['scala_Short']                           = scala_api_root;
   table['scala_Unit']                            = scala_api_root;

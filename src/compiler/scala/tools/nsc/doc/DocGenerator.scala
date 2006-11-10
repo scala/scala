@@ -624,7 +624,7 @@ abstract class DocGenerator extends Models {
       <hr/>
       <dl>
         <dt>
-          <code>{Text(Flags.flagsToString(sym.flags) + " class ")}</code>
+          <code>{Text(Flags.flagsToString(sym.flags & ~Flags.TRAIT) + " class ")}</code>
           <em>{Text(sym.nameString)}</em>
         </dt>
         <dd>{
@@ -783,15 +783,64 @@ abstract class DocGenerator extends Models {
       override def hasBody = false
     }
     new PrimitiveContentFrame {
+      def sym = definitions.AllClass // Nothing
+      def descr = """
+        /** <p>
+         *    Class <code>Nothing</code> (previously named <code>All</code> in
+         *    <a href="http://scala.epfl.ch" target="_top">Scala</a> 2.2.0 and
+         *    older versions) is - together with class <a href="Null.html">
+         *    <code>Null</code></a> - at the bottom of the
+         *    <a href="http://scala.epfl.ch" target="_top">Scala</a> type
+         *    hierarchy.
+         *  </p>
+         *  <p>
+         *    Type <code>Nothing</code> is a subtype of every other type
+         *    (including <a href="Null.html"><code>Null</code></a>); there
+         *    exist <em>no instances</em> of this type. Even though type
+         *    <code>Nothing</code> is empty, it is nevertheless useful as a
+         *    type parameter. For instance, the <a href="http://scala.epfl.ch"
+         *    target="_top">Scala</a> library defines a value
+         *    <a href="Nil$object.html"><code>Nil</code></a> of type
+         *    <code><a href="List.html">List</a>[Nothing]</code>. Because lists
+         *    are covariant in <a href="http://scala.epfl.ch" target="_top">Scala</a>,
+         *    this makes <a href="Nil$object.html"><code>Nil</code></a> an
+         *    instance of <code><a href="List.html">List</a>[T]</code>, for
+         *    any element type <code>T</code>.
+         *  </p>
+         */"""
+    }
+    new PrimitiveContentFrame {
+      def sym = definitions.AllRefClass // Null
+      def descr = """
+        /** <p>
+         *    Class <code>Null</code> (previously named <code>AllRef</code> in
+         *    <a href="http://scala.epfl.ch" target="_top">Scala</a> 2.2.0 and
+         *    older versions) is - together with class <a href="Nothing.html">
+         *    <code>Nothing</code> - at the bottom of the
+         *    <a href="http://scala.epfl.ch" target="_top">Scala</a> type
+         *    hierarchy.
+         *  </p>
+         *  <p>
+         *    Type <code>Null</code> is a subtype of all reference types; its
+         *    only instance is the <code>null</code> reference.
+         *    Since <code>Null</code> is not a subtype of value types,
+         *    <code>null</code> is not a member of any such type. For instance,
+         *    it is not possible to assign <code>null</code> to a variable of
+         *    type <a href="Int.html"><code>Int</code></a>.
+         * </p>
+         */"""
+    }
+    new PrimitiveContentFrame {
       def sym = definitions.AnyClass
       def descr = """
         /** <p>
-         *    Class <code>Any</code> is the root of the <a href="http://scala.epfl.ch/">
-         *    Scala</a> class hierarchy. Every class in a <a href="http://scala.epfl.ch/">
-         *    Scala</a> execution environment inherits directly or
-         *    indirectly from this class. Class <code>Any</code> has two direct
-         *    subclasses: <a href="AnyRef.html"><code>AnyRef</code></a>
-         *    and <a href="AnyVal.html"><code>AnyVal</code></a>.
+         *    Class <code>Any</code> is the root of the <a href="http://scala.epfl.ch/"
+         *    target="_top">Scala</a> class hierarchy. Every class in a
+         *    <a href="http://scala.epfl.ch/" target="_top">Scala</a> execution
+         *    environment inherits directly or indirectly from this class.
+         *    Class <code>Any</code> has two direct subclasses:
+         *    <a href="AnyRef.html"><code>AnyRef</code></a> and
+         *    <a href="AnyVal.html"><code>AnyVal</code></a>.
          *  </p>
          */"""
     }
@@ -799,8 +848,8 @@ abstract class DocGenerator extends Models {
       def sym = definitions.AnyRefClass
       def descr = """
         /** <p>
-         *    Class <code>AnyRef</code> is the root class of all reference
-         *    types.
+         *    Class <code>AnyRef</code> is the root class of all
+         *    <em>reference types</em>.
          *  </p>
          */"""
     }
@@ -808,7 +857,8 @@ abstract class DocGenerator extends Models {
       def sym = definitions.AnyValClass
       def descr = """
         /** <p>
-         *    Class <code>AnyVal</code> is the root class of all value types.
+         *    Class <code>AnyVal</code> is the root class of all
+         *    <em>value types</em>.
          *  </p>
          *  <p>
          *    <code>AnyVal</code> has a fixed number subclasses, which
