@@ -236,9 +236,11 @@ function init() {
   for (i = 0; i < elems.length; i++) {
     try {
       key = elems[i].getAttribute('class');
+      href = elems[i].getAttribute('href');
       api_root = table[key];
       if (api_root != null) {
-        value = api_root + key.replace(/_/g, "/") + ".html";
+        href1 = href.substring(href.lastIndexOf("#"))
+        value = api_root + key.replace(/_/g, "/") + ".html" + href1;
         elems[i].setAttribute('href', value);
       }
     }

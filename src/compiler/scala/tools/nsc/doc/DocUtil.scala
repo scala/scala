@@ -31,10 +31,8 @@ object DocUtil {
    // def label = "#PCDATA"
   //}
 
-  def br(nodes: NodeSeq): NodeSeq = {
-    val x = <br/>;
-    nodes.concat(x)
-  }
+  def br(nodes: NodeSeq): NodeSeq = nodes.concat(<br/>)
+  def hr(nodes: NodeSeq): NodeSeq = nodes.concat(<hr/>)
 
   trait UrlContext {
     def relative: String

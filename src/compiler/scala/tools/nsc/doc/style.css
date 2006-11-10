@@ -46,23 +46,47 @@ span.entity {
 
 table.member {
 	border-collapse: collapse;
-        border: 2px solid #888888;
-	background-color: #ffffff;
-        width: 100%;
+	border: 2px inset #888888;
+	width: 100%;
+}
+
+table.member td.title {
+	border: 2px inset #888888;
+	background-color: #ccccff;
+	font-size: x-large;
+	font-weight: bold;
+}
+
+table.inherited {
+	border-collapse: collapse;
+	border: 2px inset #888888;
+	width: 100%;
+}
+
+table.inherited td.title {
+	background-color: #eeeeff;
+	font-weight: bold;
 }
 
 table.member-detail {
 	margin: 10px 0px 0px 0px;
 	border-collapse: collapse;
-        border: 2px solid #888888;
+	border: 2px inset #888888;
 	background-color: #ffffff;
-        width: 100%;
+	width: 100%;
+}
+
+table.member-detail td.title {
+	border: 2px inset #888888;
+	background-color: #ccccff;
+	font-size: x-large;
+	font-weight: bold;
 }
 
 table.navigation {
 	border-collapse: collapse;
 	width: 100%;
-	font-family: Arial,Helvetica,Sans-serif;
+	font-family: Arial,Helvetica,Sans-Serif;
 }
 
 table.list {
@@ -72,7 +96,7 @@ table.list {
 }
 
 td.inherited-members {
-	border-top: 2px solid #888888;
+	border-top: 2px inset #888888;
 	border-right: 0px;
 }
 
@@ -81,16 +105,9 @@ td.inherited-owner {
 	font-weight: bold;
 }
 
-td.member-title {
-	border: 2px solid #888888;
-	background-color: #ccccff;
-	font-size: x-large;
-	font-weight: bold;
-}
-
 td.modifiers {
-	border-top: 2px solid #888888;
-        border-right: 2px solid #888888;
+	border-top: 2px inset #888888;
+        border-right: 2px inset #888888;
 	width: 50px;
 	text-align: right;
 }
@@ -113,12 +130,7 @@ td.navigation-selected {
 }
 
 td.signature {
-	border-top: 2px solid #888888;
+	border-top: 2px inset #888888;
 	width: 90%;
 }
 
-td.title {
-	background-color: #ccccff;
-	font-size: x-large;
-	font-weight: bold;
-}
