@@ -1,4 +1,4 @@
-import java.io._;
+import java.io.IOException;
 
 object Test {
 

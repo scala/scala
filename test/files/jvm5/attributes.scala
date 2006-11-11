@@ -12,7 +12,7 @@ object Test1 {
 }
 
 object Test2 {
-  import java.io._
+  import java.io.{BufferedReader,FileReader, IOException}
   class Reader(fname: String) {
     private val in = new BufferedReader(new FileReader(fname))
     [throws(classOf[IOException])]
