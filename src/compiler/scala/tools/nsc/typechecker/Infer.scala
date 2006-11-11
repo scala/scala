@@ -923,14 +923,15 @@ trait Infer requires Analyzer {
     /* -- Overload Resolution ---------------------------------------------- */
 
     def checkNotShadowed(pos: PositionType, pre: Type, best: Symbol, eligible: List[Symbol]) =
-      for (val alt <- eligible) {
-        if (alt.owner != best.owner && alt.owner.isSubClass(best.owner))
-          error(pos,
-            "erroneous reference to overloaded definition,\n"+
-            "most specific definition is: "+best+best.locationString+" of type "+pre.memberType(best)+
-            ",\nyet alternative definition   "+alt+alt.locationString+" of type "+pre.memberType(alt)+
-            "\nis defined in a subclass")
-      }
+      if (!phase.erasedTypes)
+        for (val alt <- eligible) {
+          if (alt.owner != best.owner && alt.owner.isSubClass(best.owner))
+            error(pos,
+                  "erroneous reference to overloaded definition,\n"+
+                  "most specific definition is: "+best+best.locationString+" of type "+pre.memberType(best)+
+                  ",\nyet alternative definition   "+alt+alt.locationString+" of type "+pre.memberType(alt)+
+                  "\nis defined in a subclass")
+        }
 
     /** Assign <code>tree</code> the symbol and type of the alternative which
      *  matches prototype <code>pt</code>, if it exists.
@@ -970,7 +971,9 @@ trait Infer requires Analyzer {
           ()
 
         } else {
-          //checkNotShadowed(tree.pos, pre, best, alts1)
+          val applicable = alts1 filter (alt =>
+            global.typer.infer.isCompatible(pre.memberType(alt), pt))
+          checkNotShadowed(tree.pos, pre, best, applicable)
           tree.setSymbol(best).setType(pre.memberType(best))
         }
       }
@@ -1009,7 +1012,7 @@ trait Infer requires Analyzer {
           setError(tree)
           ()
         } else {
-          //checkNotShadowed(tree.pos, pre, best, applicable)
+          checkNotShadowed(tree.pos, pre, best, applicable)
           tree.setSymbol(best).setType(pre.memberType(best))
         }
       }

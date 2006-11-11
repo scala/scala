@@ -1648,11 +1648,14 @@ trait Types requires SymbolTable {
 
   object adaptToNewRunMap extends TypeMap {
     private def adaptToNewRun(pre: Type, sym: Symbol): Symbol = {
-      if (sym.isModuleClass && !phase.flatClasses)
+      if (sym.isModuleClass && !phase.flatClasses) {
         adaptToNewRun(pre, sym.sourceModule).moduleClass
-      else if ((pre eq NoPrefix) || (pre eq NoType)) sym
-      else if (sym.owner.isPackageClass) sym.owner.info.decl(sym.name)
-      else {
+      } else if ((pre eq NoPrefix) || (pre eq NoType)) {
+        sym
+      } else if (sym.owner.isPackageClass) {
+        val sym1 = sym.owner.info.decl(sym.name)
+        if (sym1 != NoSymbol && sym1.validTo > sym.validTo) sym1 else sym
+      } else {
         var rebind0 = pre.findMember(sym.name, BRIDGE, 0, true)
         /** The two symbols have the same fully qualified name */
         def corresponds(sym1: Symbol, sym2: Symbol): boolean =
@@ -2038,7 +2041,7 @@ trait Types requires SymbolTable {
    */
   private def limitRecursion(tps: List[Type], boundkind: String,
                              op: List[Type] => Type): Type =
-    if (recCount == recLimit) {
+    if (recCount >= recLimit) {
       giveUp = true
       AnyClass.tpe
     } else {
@@ -2191,7 +2194,8 @@ trait Types requires SymbolTable {
           val lubType = refinedType(lubParents, lubOwner)
           val lubThisType = lubType.symbol.thisType
           val narrowts = ts map (.narrow)
-          def lubsym(proto: Symbol): Symbol = {
+          def lubsym(proto: Symbol): Symbol = try {
+            recCount = recCount + 1 // short circuit nesting levels for refinements
             val prototp = lubThisType.memberInfo(proto)
             val syms = narrowts map (t =>
               t.nonPrivateMember(proto.name).suchThat(sym =>
@@ -2212,6 +2216,8 @@ trait Types requires SymbolTable {
                   .setInfo(lubBounds(symtypes map (.bounds)))
               }
             }
+          } finally {
+            recCount = recCount - 1
           }
           def refines(tp: Type, sym: Symbol): boolean = {
             val syms = tp.nonPrivateMember(sym.name).alternatives;
@@ -2268,7 +2274,8 @@ trait Types requires SymbolTable {
           if (computeRefinement) {
             val glbType = refinedType(ts, glbOwner)
             val glbThisType = glbType.symbol.thisType
-            def glbsym(proto: Symbol): Symbol = {
+            def glbsym(proto: Symbol): Symbol = try {
+              recCount = recCount + 1 // short circuit nesting levels for refinements
               val prototp = glbThisType.memberInfo(proto)
               val syms = for (
                 val t <- ts;
@@ -2299,6 +2306,8 @@ trait Types requires SymbolTable {
                     else throw new MalformedClosure(symtypes);
                   result
                 })
+            } finally {
+              recCount = recCount - 1
             }
             for (val t <- ts; val sym <- t.nonPrivateMembers)
               if (!sym.isClass && !sym.isConstructor && !(glbThisType specializes sym))
