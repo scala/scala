@@ -24,12 +24,18 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
 
 // -------- erasure on types --------------------------------------------------------
 
-  /** The erasure |T| of a type T. This is:
-   *   - For a constant type, itself.
-   *   - For a type-bounds structure, the erasure of its upper bound.
-   *   - For every other singleton type, the erasure of its supertype.
-   *   - For a typeref scala.Array[T] where T is an abstract type,
-   *     scala.runtime.BoxedArray.
+  /** <p>
+   *    The erasure <code>|T|</code> of a type <code>T</code>. This is:
+   *  </p>
+   *  <ul>
+   *    <li>For a constant type, itself.</li>
+   *    <li>For a type-bounds structure, the erasure of its upper bound.</li>
+   *    <li>For every other singleton type, the erasure of its supertype.</li>
+   *    <li>
+   *      For a typeref <code>scala.Array[T]</code> where <code>T</code> is
+   *      an abstract type, <code>scala.runtime.BoxedArray</code>.
+   *    </li>
+   *    <li>
    *   - For a typeref scala.Array[T] where T is not an abstract type, scala.Array[|T|].
    *   - For a typeref scala.Any or scala.AnyVal, java.lang.Object.
    *   - For a typeref scala.Unit, scala.runtime.BoxedUnit.
@@ -48,6 +54,8 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
    *   - For any other class info type with parents Ps, the same type with
    *     parents |Ps|, but with duplicate references of Object removed.
    *   - for all other types, the type itself (with any sub-components erased)
+   *    </li>
+   *  </ul>
    */
   private val erasure = new TypeMap {
     def apply(tp: Type): Type = tp match {
@@ -100,14 +108,29 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
       else tp :: removeDoubleObject(tps1)
   }
 
-  /** The symbol's erased info. This is the type's erasure, except for the
-   *  following symbols
-   *   - For $asInstanceOf    : [T]T
-   *   - For $isInstanceOf    : [T]scala#Boolean
-   *   - For class Array      : [T]C where C is the erased classinfo of the Array class
-   *   - For Array[T].<init>  : {scala#Int)Array[T]
-   *   - For a type parameter : A type bounds type consisting of the erasures
-   *     of its bounds.
+  /** <p>
+   *    The symbol's erased info. This is the type's erasure, except for the
+   *    following symbols:
+   *  </p>
+   *  <ul>
+   *    <li>
+   *      For <code>$asInstanceOf</code> : <code>[T]T</code>
+   *    </li>
+   *    <li>
+   *      For <code>$isInstanceOf</code> : <code>[T]scala#Boolean</code>
+   *    </li>
+   *    <li>
+   *      For class <code>Array</code> : <code>[T]C</code> where
+   *      <code>C</code> is the erased classinfo of the <code>Array</code> class
+   *    </li>
+   *    <li>
+   *      For <code>Array[T].&lt;init&gt;</code> : <code>{scala#Int)Array[T]</code>
+   *    </li>
+   *    <li>
+   *      For a type parameter : A type bounds type consisting of the erasures
+   *      of its bounds.
+   *    </li>
+   *  </ul>
    */
   def transformInfo(sym: Symbol, tp: Type): Type =
     if (sym == Object_asInstanceOf)
@@ -186,7 +209,12 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
         }
       }
 
-    /** Unbox `tree' of boxed type to expected type `pt' */
+    /** Unbox <code>tree</code> of boxed type to expected type <code>pt</code>.
+     *
+     *  @param tree the given tree
+     *  @param pt   the expected type.
+     *  @return     the unboxed tree
+     */
     private def unbox(tree: Tree, pt: Type): Tree =
       typed {
         atPos(tree.pos) {
@@ -205,11 +233,24 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
         }
       }
 
-    /** Generate a cast operation from `tree.tpe' to `pt'.
-     *  The following cases need to be treated specially:
-     *    Object -> Array   (might be a boxedarray)
-     *    Object -> Boxed*Array (might be an array, which nees to be boxed)
-     *    Object -> Seq, Iterable (might be an array, which needs to be boxed)
+    /** <p>
+     *    Generate a cast operation from <code>tree.tpe</code> to <code>pt</code>.
+     *    The following cases need to be treated specially:
+     *  </p>
+     *  <table>
+     *    <tr>
+     *      <td><code>Object -> Array</code></td>
+     *      <td>(might be a boxedarray)</td>
+     *    </tr>
+     *    <tr>
+     *      <td><code>Object -> Boxed*Array</code></td>
+     *      <td>(might be an array, which nees to be boxed)</td>
+     *    </tr>
+     *    <tr>
+     *      <td><code>Object -> Seq, Iterable</code></td>
+     *      <td>(might be an array, which needs to be boxed)</td>
+     *    </tr>
+     *  </table>
      */
     private def cast(tree: Tree, pt: Type): Tree =
       if (tree.tpe.symbol == ObjectClass) {
@@ -267,7 +308,12 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
         else gen.mkAttributedCast(tree, pt)
       } else gen.mkAttributedCast(tree, pt)
 
-    /** Is symbol a member of unboxed arrays (which will be expanded directly later)? */
+    /** Is symbol a member of unboxed arrays (which will be expanded directly
+     *  later)?
+     *
+     *  @param sym ..
+     *  @return    <code>true</code> if ..
+     */
     private def isUnboxedArrayMember(sym: Symbol) =
       sym.name == nme.apply || sym.name == nme.length || sym.name == nme.update ||
       sym.owner == ObjectClass
@@ -275,7 +321,12 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
     private def isUnboxedValueMember(sym: Symbol) =
       sym != NoSymbol && isValueClass(sym.owner)
 
-    /** Adapt `tree' to expected type `pt' */
+    /** Adapt <code>tree</code> to expected type <code>pt</code>.
+     *
+     *  @param tree the given tree
+     *  @param pt   the expected type.
+     *  @return     the adapted tree
+     */
     private def adaptToType(tree: Tree, pt: Type): Tree = {
       if (settings.debug.value && pt != WildcardType)
         log("adapting " + tree + ":" + tree.tpe + " to " + pt)//debug
@@ -294,22 +345,61 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
         cast(tree, pt)
     }
 
-    /** Replace member references as follows:
-     *  - `x == y'  for `==' in class Any becomes `x equals y' with `equals' in class Object
-     *  - `x != y'  for `!=' in class Any becomes `!(x equals y)' with `equals' in class Object
-     *  - `new BoxedArray.<init>(len)' becomes `new BoxedAnyArray.<init>(len): BoxedArray'
-     *    (the widening typing is necessary so that subsequent member symbols stay the same)
-     *  - `x.asInstanceOf[T]' and `x.asInstanceOf$erased[T]' become `x.$asInstanceOf[T]'
-     *  - `x.isInstanceOf[T]' and `x.isInstanceOf$erased[T]' become `x.$isInstanceOf[T]'
-     *  - `x.m' where `m' is some other member of Any becomes `x.m' where m is a member of class Object
-     *  - `x.m' where `x' has unboxed value type `T' and `m' is not a directly
-     *    translated member of `T' becomes T.box(x).m
-     *  - `x.m' where `x' has type `Array[T]' and `m' is not a directly
-     *    translated member of `Array' becomes new BoxedTArray.<init>(x).m
-     *  - `x.m' where `x' is a reference type and `m' is a directly translated member of value type
-     *    T becomes x.TValue().m
-     *  - All forms of `x.m' where `x' is a boxed type and `m' is a member of an unboxed class
-     *    become `x.m' where `m' is the corresponding member of the boxed class.
+    /** <p>
+     *    Replace member references as follows:
+     *  </p>
+     *  <ul>
+     *    <li>
+     *      <code>x == y</code> for <code>==</code> in class <code>Any</code>
+     *      becomes <code>x equals y</code> with <code>equals</code> in class
+     *      <code>Object</code>.
+     *    </li>
+     *    <li>
+     *      <code>x != y</code> for <code>!=</code> in class <code>Any</code>
+     *      becomes <code>!(x equals y)</code> with <code>equals</code> in
+     *      class <code>Object</code>.
+     *    </li>
+     *    <li>
+     *      <code>new BoxedArray.&lt;init&gt;(len)</code> becomes
+     *      <code>new BoxedAnyArray.&lt;init&gt;(len): BoxedArray</code>
+     *      (the widening typing is necessary so that subsequent member
+     *      symbols stay the same)
+     *    </li>
+     *    <li>
+     *      <code>x.asInstanceOf[T]</code> and <code>x.asInstanceOf$erased[T]</code>
+     *      become <code>x.$asInstanceOf[T]</code>
+     *    </li>
+     *    <li>
+     *      <code>x.isInstanceOf[T]</code> and <code>x.isInstanceOf$erased[T]</code>
+     *      become <code>x.$isInstanceOf[T]</code>
+     *    </li>
+     *    <li>
+     *      <code>x.m</code> where <code>m</code> is some other member of
+     *      <code>Any</code> becomes <code>x.m</code> where m is a member
+     *      of class <code>Object</code>
+     *    </li>
+     *    <li>
+     *      <code>x.m</code> where <code>x</code> has unboxed value type
+     *      <code>T</code> and <code>m</code> is not a directly translated
+     *      member of <code>T</code> becomes <code>T.box(x).m</code>
+     *    </li>
+     *    <li>
+     *      <code>x.m</code> where <code>x</code> has type <code>Array[T]</code>
+     *      and <code>m</code> is not a directly translated member of
+     *      <code>Array</code> becomes <code>new BoxedTArray.<init>(x).m</code>
+     *    </li>
+     *    <li>
+     *      <code>x.m</code> where <code>x</code> is a reference type and
+     *      <code>m</code> is a directly translated member of value type
+     *      <code>T</code> becomes <code>x.TValue().m</code>
+     *    </li>
+     *    <li>
+     *      All forms of <code>x.m</code> where <code>x</code> is a boxed type
+     *      and <code>m</code> is a member of an unboxed class become
+     *      <code>x.m</code> where <code>m</code> is the corresponding member
+     *      of the boxed class.
+     *    </li>
+     *  </ul>
      */
     private def adaptMember(tree: Tree): Tree = {
       tree match {
@@ -366,7 +456,13 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
       }
     }
 
-    /** A replacement for the standard typer's `adapt' method */
+    /** A replacement for the standard typer's <code>adapt</code> method.
+     *
+     *  @param tree ...
+     *  @param mode ...
+     *  @param pt   ...
+     *  @return     the adapted tree
+     */
     override protected def adapt(tree: Tree, mode: int, pt: Type): Tree =
       adaptToType(tree, pt)
 
@@ -402,13 +498,23 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
   /** The erasure transformer */
   class ErasureTransformer(unit: CompilationUnit) extends Transformer {
 
-    /** Emit an error if there is a double definition. This can happen in the following
-     *  circumstances:
-     *   - A template defines two members with the same name and erased type.
-     *   - A template defines and inherits two members `m' with different types,
-     *     but their erased types are the same.
-     *   - A template inherits two members `m' with different types,
-     *     but their erased types are the same.
+    /** <p>
+     *    Emit an error if there is a double definition. This can happen in
+     *    the following circumstances:
+     *  </p>
+     *  <ul>
+     *    <li>
+     *      A template defines two members with the same name and erased type.
+     *    </li>
+     *    <li>
+     *      A template defines and inherits two members <code>m</code> with
+     *      different types, but their erased types are the same.
+     *    </li>
+     *    <li>
+     *      A template inherits two members <code>m</code> with different
+     *      types, but their erased types are the same.
+     *    </li>
+     *  </ul>
      */
     private def checkNoDoubleDefs(root: Symbol): unit = {
       def doubleDefError(sym1: Symbol, sym2: Symbol): unit = {
@@ -479,14 +585,22 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
       }
 */
 
-    /** Add bridge definitions to a template. This means:
-     *  If there is a concrete member `m' which overrides a member in a base class of the template,
-     *  and the erased types of the two members differ,
-     *  and the two members are not inherited or defined by some parent class of the template,
-     *  then a bridge from the overridden member `m1' to the member `m0' is added.
-     *  The bridge has the erased type of `m1' and forwards to `m0'.
-     *  No bridge is added if there is already a bridge to `m0' with the erased type of `m1'
-     *  in the template.
+    /** <p>
+     *    Add bridge definitions to a template. This means:
+     *  </p>
+     *  <p>
+     *    If there is a concrete member <code>m</code> which overrides a
+     *    member in a base class of the template, and the erased types of
+     *    the two members differ, and the two members are not inherited or
+     *    defined by some parent class of the template, then a bridge from
+     *    the overridden member <code>m1</code> to the member <code>m0</code>
+     *    is added. The bridge has the erased type of <code>m1</code> and
+     *    forwards to <code>m0</code>.
+     *  </p>
+     *  <p>
+     *    No bridge is added if there is already a bridge to <code>m0</code>
+     *    with the erased type of <code>m1</code> in the template.
+     *  </p>
      */
     private def bridgeDefs(owner: Symbol): List[Tree] = {
       //Console.println("computing bridges for " + owner)//DEBUG
@@ -569,16 +683,33 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
         if (bridges.isEmpty) stats else stats ::: bridges
       }
 
-    /** Transform tree at phase `erasure' before retyping it. This entails the following:
-     *    - Remove all type parameters in class and method definitions.
-     *    - Remove all abstract and alias type definitions.
-     *    - Remove all type applications other than those involving a type test or cast.
-     *    - Remove all empty trees in statements and definitions in a PackageDef.
-     *    - Check that there are no double definitions in a template.
-     *    - Add bridge definitions to a template.
-     *    - Replace all types in type nodes and the EmptyTree object by their erasure.
-     *      Type nodes of type Unit representing result types of methods are left alone.
-     *    - Reset all other type attributes to `null, thus enforcing a retyping.
+    /** <p>
+     *    Transform tree at phase <code>erasure</code> before retyping it.
+     *    This entails the following:
+     *  </p>
+     *  <ul>
+     *    <li>Remove all type parameters in class and method definitions.</li>
+     *    <li>Remove all abstract and alias type definitions.</li>
+     *    <li>
+     *      Remove all type applications other than those involving a type
+     *      test or cast.
+     *    </li>
+     *    <li>
+     *      Remove all empty trees in statements and definitions in a
+     *      <code>PackageDef</code>.
+     *    </li>
+     *    <li>Check that there are no double definitions in a template.</li>
+     *    <li>Add bridge definitions to a template.</li>
+     *    <li>
+     *      Replace all types in type nodes and the <code>EmptyTree</code>
+     *      object by their erasure. Type nodes of type <code>Unit</code>
+     *      representing result types of methods are left alone.
+     *    </li>
+     *    <li>
+     *      Reset all other type attributes to <code>null</code>, thus
+     *      enforcing a retyping.
+     *    </li>
+     *  </ul>
      */
     private val preTransformer = new Transformer {
       override def transform(tree: Tree): Tree = {
