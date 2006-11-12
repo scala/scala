@@ -1167,7 +1167,7 @@ abstract class DocGenerator extends Models {
               case Some(p) =>
                 val Pair(sym, s) = p
                 val path = "../" //todo: fix path
-                val href = path + sym.fullNameString('/')
+                val href = path + sym.fullNameString('/') +
                   (if (sym.isModule || sym.isModuleClass) NAME_SUFFIX_OBJECT else "") +
                   "#" + s
                 <a href={href}>{attr._2}</a>
