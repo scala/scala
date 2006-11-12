@@ -1151,7 +1151,9 @@ abstract class DocGenerator extends Models {
       "Predef.NoSuchElementException" ->
         Pair(definitions.PredefModule, "NoSuchElementException") +
       "Predef.NullPointerException" ->
-        Pair(definitions.PredefModule, "NullPointerException")
+        Pair(definitions.PredefModule, "NullPointerException") +
+      "Predef.UnsupportedOperationException" ->
+        Pair(definitions.PredefModule, "UnsupportedOperationException")
     val body = buf.toString
     if (isShort) <span>{parse(body)}</span>;
     else <span><dl><dd>{parse(body)}</dd></dl><dl>

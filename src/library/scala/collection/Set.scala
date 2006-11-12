@@ -15,8 +15,11 @@ package scala.collection
 /** This class defines the interface of collections that do not contain
  *  duplicate elements. Class <code>Set</code> may only be used for
  *  accessing elements from set implementations. Two different extensions
- *  of class <code>Set</code> in the package <code>scala.collections.mutable</code>
- *  and  <code>scala.collections.immutable</code> provide functionality for
+ *  of class <code>Set</code> in the package
+ *  <code><a href="mutable$content.html" target="contentFrame">
+ *  scala.collection.mutable</a></code> and
+ *  <code><a href="immutable$content.html" target="contentFrame">
+ *  scala.collection.immutable</a></code> provide functionality for
  *  adding new elements to a set. The class in the first package is implemented
  *  by sets the are modified destructively, whereas the class in the second
  *  package is used by functional set implementations that rely on immutable
@@ -35,29 +38,32 @@ trait Set[A] extends AnyRef with Function1[A, Boolean] with Iterable[A] {
 
     /** Checks if this set contains element <code>elem</code>.
      *
-     *  @param  elem    the element to check for membership.
-     *  @return true, iff <code>elem</code> is contained in this set.
+     *  @param elem the element to check for membership.
+     *  @return     <code>true</code> iff <code>elem</code> is contained ini
+     *              this set.
      */
     def contains(elem: A): Boolean
 
     /** This method allows sets to be interpreted as predicates.
      *  It returns true, iff this set contains element <code>elem</code>.
      *
-     *  @param  elem    the element to check for membership.
-     *  @return true, iff <code>elem</code> is contained in this set.
+     *  @param elem the element to check for membership.
+     *  @return     <code>true</code> iff <code>elem</code> is contained in
+     *              this set.
      */
     def apply(elem: A): Boolean = contains(elem)
 
     /** Checks if this set is empty.
      *
-     *  @return true, iff there is no element in the set.
+     *  @return <code>true</code> iff there is no element in the set.
      */
     def isEmpty: Boolean = (size == 0)
 
     /** Checks if this set is a subset of set <code>that</code>.
      *
-     *  @param  that another set.
-     *  @return true, iff the other set is a superset of this set.
+     *  @param that another set.
+     *  @return     <code>true</code> iff the other set is a superset of
+     *              this set.
      */
     def subsetOf(that: Set[A]): Boolean = forall(that.contains)
 
@@ -65,9 +71,9 @@ trait Set[A] extends AnyRef with Function1[A, Boolean] with Iterable[A] {
      *  other object is also a set which contains the same elements as
      *  this set.
      *
-     *  @param  that  the other object
-     *  @return true, iff this set and the other set contain the same
-     *          elements.
+     *  @param that the other object
+     *  @return     <code>true</code> iff this set and the other set
+     *              contain the same elements.
      */
     override def equals(that: Any): Boolean = that match {
       case other: Set[a] =>

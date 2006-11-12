@@ -96,10 +96,11 @@ object List {
   /** Create a list by applying a function to successive integers.
    *
    *  @param n     the length of the resulting list
-   *  @param maker the procedure which, given an integer n, returns the
-   *               nth element of the resulting list, where n is in [0;n).
-   *  @return the list obtained by applying the maker function to successive
-   *          integers from 0 to n (exclusive).
+   *  @param maker the procedure which, given an integer <code>n</code>,
+   *               returns the nth element of the resulting list, where
+   *               <code>n</code> is in interval <code>[0;n)</code>.
+   *  @return      the list obtained by applying the maker function to
+   *               successive integers from 0 to n (exclusive).
    */
   def tabulate[a](n: Int, maker: Int => a): List[a] = {
     val b = new ListBuffer[a]
@@ -208,7 +209,7 @@ object List {
   /** Returns the given string as a list of characters.
    *
    *  @param str the string to convert.
-   *  @return the string as a list of characters.
+   *  @return    the string as a list of characters.
    */
   def fromString(str: String): List[Char] =
     Iterator.fromString(str).toList
@@ -216,7 +217,7 @@ object List {
   /** Returns the given list of characters as a string.
    *
    *  @param xs the list to convert.
-   *  @return the list in form of a string.
+   *  @return   the list in form of a string.
    */
   def toString(xs: List[Char]): String = {
     val sb = new compat.StringBuilder()
@@ -306,8 +307,10 @@ object List {
    *  for all corresponding elements of the argument lists.
    *
    *  @param p function to apply to each pair of elements.
-   *  @return <code>n == 0 || (p(a0,b0) &amp;&amp; ... &amp;&amp; p(an,bn))]</code>
-   *          if the lists are <code>[a0, ..., ak]</code>, <code>[b0, ..., bl]</code>
+   *  @return  <code>n == 0 || (p(a<sub>0</sub>,b<sub>0</sub>) &amp;&amp;
+   *           ... &amp;&amp; p(a<sub>n</sub>,b<sub>n</sub>))]</code>
+   *           if the lists are <code>[a<sub>0</sub>, ..., a<sub>k</sub>]</code>;
+   *           <code>[b<sub>0</sub>, ..., b<sub>l</sub>]</code>
    *          and <code>m = min(k,l)</code>
    */
   def forall2[a,b](xs: List[a], ys: List[b])(f: (a, b) => boolean): boolean = {
@@ -759,15 +762,22 @@ sealed abstract class List[+a] extends Seq[a] {
     Pair(btrue.toList, bfalse.toList)
   }
 
-  /** Sort the list according to the comparison function
-   *  <code>&lt;(e1: a, e2: a) =&gt; Boolean</code>,
-   *  which should be true iff e1 is smaller than e2.
-   *  Note: The current implementation is inefficent for
-   *  already sorted lists.
+  /** <p>
+   *    Sort the list according to the comparison function
+   *    <code>&lt;(e1: a, e2: a) =&gt; Boolean</code>,
+   *    which should be true iff <code>e1</code> is smaller than
+   *    <code>e2</code>. Example:
+   *  </p>
+   *  <pre>List("Tom", "John", "Bob").sort(
+   *    (e1, e2) => (e1 compareTo e2) &lt; 0)</pre>
+   *  <p>
+   *    Note: The current implementation is inefficent for
+   *    already sorted lists.
+   *  </p>
    *
    *  @param lt the comparison function
-   *  @return a list sorted according to the comparison function
-   *          <code>&lt;(e1: a, e2: a) =&gt; Boolean</code>.
+   *  @return   a list sorted according to the comparison function
+   *            <code>&lt;(e1: a, e2: a) =&gt; Boolean</code>.
    */
   def sort(lt : (a,a) => Boolean): List[a] = {
     def sort_1(smaller: List[a], acc: List[a]): List[a] =
@@ -835,7 +845,8 @@ sealed abstract class List[+a] extends Seq[a] {
    *  in this list.
    *
    *  @param p the test predicate.
-   *  @return True iff all elements of this list satisfy the predicate <code>p</code>.
+   *  @return  <code>true</code> iff all elements of this list satisfy the
+   *           predicate <code>p</code>.
    */
   override def forall(p: a => Boolean): Boolean = {
     var these = this
@@ -850,8 +861,8 @@ sealed abstract class List[+a] extends Seq[a] {
    * <code>p</code>.
    *
    *  @param p the test predicate.
-   *  @return true iff there exists an element in this list that satisfies
-   *  the predicate <code>p</code>.
+   *  @return  <code>true</code> iff there exists an element in this list that
+   *           satisfies the predicate <code>p</code>.
    */
   override def exists(p: a => Boolean): Boolean = {
     var these = this
@@ -891,8 +902,9 @@ sealed abstract class List[+a] extends Seq[a] {
    *  function <code>f</code>, from left to right, and starting with
    *  the value <code>z</code>.
    *
-   *  @return <code>f(... (f(f(z, a0), a1) ...), an)</code> if the list
-   *  is <code>[a0, a1, ..., an]</code>.
+   *  @return <code>f(... (f(f(z, a<sub>0</sub>), a<sub>1</sub>) ...),
+   *          a<sub>n</sub>)</code> if the list is
+   *          <code>[a<sub>0</sub>, a<sub>1</sub>, ..., a<sub>n</sub>]</code>.
    */
   override def foldLeft[b](z: b)(f: (b, a) => b): b = {
     var acc = z
@@ -908,19 +920,27 @@ sealed abstract class List[+a] extends Seq[a] {
    *  function <code>f</code>, from rigth to left, and starting with
    *  the value <code>z</code>.
    *
-   *  @return <code>f(a0, f(a1, f(..., f(an, z)...)))</code> if the list
-   *  is <code>[a0, a1, ..., an]</code>.
+   *  @return <code>f(a<sub>0</sub>, f(a<sub>1</sub>, f(..., f(a<sub>n</sub>, z)...)))</code>
+   *          if the list is <code>[a<sub>0</sub>, a1, ..., an]</code>.
    */
   override def foldRight[b](z: b)(f: (a, b) => b): b = this match {
     case Nil => z
     case x :: xs => f(x, xs.foldRight(z)(f))
   }
 
+  /**
+   *  @return ...
+   *  @throws Predef.UnsupportedOperationException ...
+   */
   def reduceLeft[b >: a](f: (b, b) => b): b = this match {
     case Nil => throw new UnsupportedOperationException("Nil.reduceLeft")
     case x :: xs => ((xs: List[b]) foldLeft (x: b))(f)
   }
 
+  /**
+   *  @return ...
+   *  @throws Predef.UnsupportedOperationException ...
+   */
   def reduceRight[b >: a](f: (b, b) => b): b = this match {
     case Nil => throw new UnsupportedOperationException("Nil.reduceRight")
     case x :: Nil => x: b
@@ -949,12 +969,9 @@ sealed abstract class List[+a] extends Seq[a] {
   }
 
   /** <p>
-   *    Reverses the elements of this list.
+   *    Reverses the elements of this list. Example:
    *  </p>
-   *  <p>
-   *    Example:
-   *  </p>
-   *  <code>[1, 2, 3] reverse = [3, 2, 1]</code>.
+   *  <pre>List(1, 2, 3) reverse = List(3, 2, 1)</pre>
    *
    *  @return the elements of this list in reverse order.
    */
@@ -965,9 +982,12 @@ sealed abstract class List[+a] extends Seq[a] {
    *  <code>that</code> by associating each element of the former with
    *  the element at the same position in the latter.
    *
-   *  @param that <code>that</code> must have the same length as the self list.
-   *  @return     <code>[(a0,b0), ..., (an,bn)]</code> when
-   *              <code>[a0, ..., an] zip [b0, ..., bn]</code> is invoked.
+   *  @param that list <code>that</code> must have the same length as the
+   *              self list.
+   *  @return     <code>[(a<sub>0</sub>,b<sub>0</sub>), ...,
+   *              (a<sub>n</sub>,b<sub>n</sub>)]</code> when
+   *              <code>[a<sub>0</sub>, ..., a<sub>n</sub>]
+   *              zip [b<sub>0</sub>, ..., b<sub>n</sub>]</code> is invoked.
    */
   def zip[b](that: List[b]): List[Pair[a,b]] = {
     val b = new ListBuffer[Pair[a, b]]
@@ -985,8 +1005,10 @@ sealed abstract class List[+a] extends Seq[a] {
     *  with its index, counting from 0.
     *
     *  @param start the index of the first element
-    *  @return      an iterator yielding <code>(a0,0), (a0,1)...</code>
-    *               where <code>ai</code> are the elements from this iterator.
+    *  @return      an iterator yielding <code>(a<sub>0</sub>,0),
+    *               (a<sub>0</sub>,1)...</code>
+    *               where <code>a<sub>i</sub></code> are the elements from
+    *               this iterator.
     */
   def zipWithIndex = {
     val b = new ListBuffer[Pair[a,int]]
@@ -1014,7 +1036,9 @@ sealed abstract class List[+a] extends Seq[a] {
    *  @param thatElem element <code>thatElem</code> is used to fill up the
    *                  resulting list if <code>that</code> is shorter than
    *                  the self list
-   *  @return         <code>[(a0,b0), ..., (an,bn), (elem,bn+1), ..., (elem,bm)]</code>
+   *  @return         <code>[(a<sub>0</sub>,b<sub>0</sub>), ...,
+   *                  (a<sub>n</sub>,b<sub>n</sub>), (elem,b<sub>n+1</sub>),
+   *                  ..., (elem,b<sub>m</sub>)]</code>
    *                  when <code>[a0, ..., an] zip [b0, ..., bm]</code> is
    *                  invoked where <code>m &gt; n</code>.
    */

@@ -16,10 +16,12 @@ package scala.collection
 
 /** This class defines the interface of collections that unambiguously map
  *  keys to values (i.e. a key is mapped to at least one value).
- *  Class <code>Map</code> may only be used for
- *  accessing elements from map implementations. Two different extensions
- *  of class <code>Map</code> in the package <code>scala.collections.mutable</code>
- *  and  <code>scala.collections.immutable</code> provide functionality for
+ *  Class <code>Map</code> may only be used for accessing elements from map
+ *  implementations. Two different extensions of class <code>Map</code> in
+ *  the package <code><a href="mutable$content.html" target="contentFrame">
+ *  scala.collection.mutable</a></code>
+ *  and  <code><a href="immutable$content.html" target="contentFrame">
+ *  scala.collection.immutable</a></code> provide functionality for
  *  adding new key/value mappings to a map. The class in the first package is
  *  implemented by maps that are modified destructively, whereas the class in
  *  the second package is used by functional map implementations that rely on
@@ -41,14 +43,14 @@ trait Map[A, +B] extends AnyRef
     /** Check if this map maps <code>key</code> to a value and return the
      *  value if it exists.
      *
-     *  @param  key     the key of the mapping of interest
-     *  @return the value of the mapping, if it exists
+     *  @param  key the key of the mapping of interest
+     *  @return     the value of the mapping, if it exists
      */
     def get(key: A): Option[B]
 
     /** Is this an empty map?
      *
-     *  @return true, iff the map is empty.
+     *  @return <code>true</code> iff the map is empty.
      */
     def isEmpty: Boolean = (size == 0)
 
@@ -56,8 +58,8 @@ trait Map[A, +B] extends AnyRef
      *  method throws an exception if there is no mapping from the given
      *  key to a value.
      *
-     *  @param  key     the key
-     *  @return the value associated with the given key.
+     *  @param  key the key
+     *  @return     the value associated with the given key.
      */
     def apply(key: A): B = get(key) match {
       case None => default(key)
@@ -66,8 +68,8 @@ trait Map[A, +B] extends AnyRef
 
     /** Is the given key mapped to a value by this map?
      *
-     *  @param   key        the key
-     *  @return true, iff there is a mapping for key in this map
+     *  @param key the key
+     *  @return    <code>true</code> iff there is a mapping for key in this map
      */
     def contains(key: A): Boolean = get(key) match {
       case None => false
@@ -76,8 +78,8 @@ trait Map[A, +B] extends AnyRef
 
     /** Does this map contain a mapping from the given key to a value?
      *
-     *  @param   key        the key
-     *  @return true, iff there is a mapping for key in this map
+     *  @param key the key
+     *  @return    <code>true</code> iff there is a mapping for key in this map
      */
     def isDefinedAt(key: A) = contains(key)
 
@@ -105,7 +107,9 @@ trait Map[A, +B] extends AnyRef
      *  contained in this map are also contained in the other map,
      *  and vice versa.
      *
-     *  @return    true, iff both maps contain exactly the same mappings.
+     *  @param that the other map
+     *  @return     <code>true</code> iff both maps contain exactly the
+     *              same mappings.
      */
     override def equals(that: Any): Boolean = that match {
       case other: Map[a, b] =>
@@ -140,6 +144,7 @@ trait Map[A, +B] extends AnyRef
      *  but it might be overridden in subclasses.
      *
      *  @param key ...
+     *  @throws Predef.NoSuchElementException ...
      */
     def default(key: A): B =
       throw new NoSuchElementException("key not found: " + key)
