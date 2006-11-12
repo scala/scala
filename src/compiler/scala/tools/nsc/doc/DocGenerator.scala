@@ -399,15 +399,14 @@ abstract class DocGenerator extends Models {
             </tr>
             <tr>
             { {
-              if (p.decls.isEmpty) NodeSeq.Empty // scope empty
+              val decls = p.decls.toList filter(d =>
+                d.isMethod && !d.isConstructor)
+              if (decls.isEmpty) NodeSeq.Empty // scope empty
               else {
                 def aref1(sym: Symbol): NodeSeq = {
-                  val ns = sym.nameString
                   val isJava = sym hasFlag Flags.JAVA
                   if (isJava || sym.sourceFile == null) {
-                    val name =
-                      if (isJava && ns.equals("this")) sym.owner.nameString
-                      else ns
+                    val name = sym.nameString
                     val args =
                       if (isJava) "()" // todo: arguments
                       else ""
@@ -418,7 +417,7 @@ abstract class DocGenerator extends Models {
                   else
                     aref(urlFor(sym), contentFrame, sym.nameString)
                 }
-                val members = p.decls.toList.sort(
+                val members = decls.sort(
                   (x, y) => (x.nameString compareTo y.nameString) < 0)
                 <td colspan="2" class="signature">
                   {aref1(members.head)}
@@ -1113,7 +1112,7 @@ abstract class DocGenerator extends Models {
   private val pat1 = Pattern.compile(
     "[ \t]*@(author|deprecated|return|see|since|todo|version)[ \t]*(.*)")
   private val pat2 = Pattern.compile(
-    "[ \t]*@(exception|param|throws)[ \t]+(\\p{Alnum}*)[ \t]*(.*)")
+    "[ \t]*@(exception|param|throws)[ \t]+(\\p{Graph}*)[ \t]*(.*)")
 
   private def comment(comment: String, isShort: Boolean): NodeSeq = {
     var ret: List[Node] = Nil
@@ -1146,6 +1145,13 @@ abstract class DocGenerator extends Models {
           buf.append(s + LINE_SEPARATOR)
       }
     }
+    val exceptions = new TreeMap[String, Pair[Symbol, String]] +
+      "Predef.IndexOutOfBoundsException" ->
+        Pair(definitions.PredefModule, "IndexOutOfBoundsException") +
+      "Predef.NoSuchElementException" ->
+        Pair(definitions.PredefModule, "NoSuchElementException") +
+      "Predef.NullPointerException" ->
+        Pair(definitions.PredefModule, "NullPointerException")
     val body = buf.toString
     if (isShort) <span>{parse(body)}</span>;
     else <span><dl><dd>{parse(body)}</dd></dl><dl>
@@ -1156,7 +1162,19 @@ abstract class DocGenerator extends Models {
         </dt>
         <dd> {
           if (attr._2 == null) NodeSeq.Empty
-          else <code>{attr._2 + " - "}</code>
+          else if (attr._1.equals("throws"))
+            <code>{ exceptions.get(attr._2) match {
+              case Some(p) =>
+                val Pair(sym, s) = p
+                val path = "../" //todo: fix path
+                val href = path + sym.fullNameString('/')
+                  (if (sym.isModule || sym.isModuleClass) NAME_SUFFIX_OBJECT else "") +
+                  "#" + s
+                <a href={href}>{attr._2}</a>
+              case None => Text(attr._2)
+            }}{Text(" - ")}</code>
+          else
+            <code>{attr._2 + " - "}</code>
         } {(parse(attr._3.toString))}
         </dd>;
     } } </dl></span>;

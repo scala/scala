@@ -379,28 +379,34 @@ object List {
 sealed abstract class List[+a] extends Seq[a] {
 
   /** Returns true if the list does not contain any elements.
-   *  @return true, iff the list is empty.
+   *  @return <code>true</code>, iff the list is empty.
    */
   override def isEmpty: Boolean
 
   /** Returns this first element of the list.
+   *
    *  @return the first element of this list.
-   *  @throws <code>Predef.NoSuchElementException</code> if the list is empty.
+   *  @throws Predef.NoSuchElementException if the list is empty.
    */
   def head: a
 
   /** Returns this list without its first element.
+   *
    *  @return this list without its first element.
-   *  @throws <code>Predef.NoSuchElementException</code> if the list is empty.
+   *  @throws Predef.NoSuchElementException if the list is empty.
    */
   def tail: List[a]
 
-  /** Add an element <code>x</code> at the beginning of this list.
-   *  <p/>
-   *  Ex:<br/>
+  /** <p>
+   *    Add an element <code>x</code> at the beginning of this list.
+   *  </p>
+   *  <p>
+   *    Example:
+   *  </p>
    *  <code>1 :: [2, 3] = [2, 3].::(1) = [1, 2, 3]</code>.
+   *
    *  @param x the element to append.
-   *  @return the list with <code>x</code> appended at the beginning.
+   *  @return  the list with <code>x</code> appended at the beginning.
    */
   def ::[b >: a] (x: b): List[b] =
     new scala.::(x, this)
@@ -493,7 +499,7 @@ sealed abstract class List[+a] extends Seq[a] {
   /** Returns the list without its last element.
    *
    *  @return the list without its last element.
-   *  @throws <code>Predef.UnsupportedOperationException</code>
+   *  @throws Predef.UnsupportedOperationException
    *  if the list is empty.
    */
   def init: List[a] =
@@ -513,7 +519,7 @@ sealed abstract class List[+a] extends Seq[a] {
   /** Returns the last element of this list.
    *
    *  @return the last element of the list.
-   *  @throws <code>Predef.UnsupportedOperationException</code>
+   *  @throws Predef.UnsupportedOperationException
    *  if the list is empty.
    */
   def last: a =
@@ -596,8 +602,8 @@ sealed abstract class List[+a] extends Seq[a] {
    *  the predicate <code>p</code>.
    *
    *  @param p the test predicate.
-   *  @return the longest prefix of this list whose elements satisfy
-   *  the predicate <code>p</code>.
+   *  @return  the longest prefix of this list whose elements satisfy
+   *           the predicate <code>p</code>.
    */
   def takeWhile(p: a => Boolean): List[a] = {
     val b = new ListBuffer[a]
@@ -613,8 +619,8 @@ sealed abstract class List[+a] extends Seq[a] {
    *  does not satisfy the predicate <code>p</code>.
    *
    *  @param p the test predicate.
-   *  @return the longest suffix of the list whose first element
-   *          does not satisfy the predicate <code>p</code>.
+   *  @return  the longest suffix of the list whose first element
+   *           does not satisfy the predicate <code>p</code>.
    */
   def dropWhile(p: a => Boolean): List[a] =
     if (isEmpty || !p(head)) this
@@ -624,8 +630,8 @@ sealed abstract class List[+a] extends Seq[a] {
    *  the given predicate, and the rest of the list.
    *
    *  @param p the test predicate
-   *  @return a pair consisting of the longest prefix of the list whose
-   *  elements all satisfy <code>p</code>, and the rest of the list.
+   *  @return  a pair consisting of the longest prefix of the list whose
+   *           elements all satisfy <code>p</code>, and the rest of the list.
    */
   def span(p: a => Boolean): Pair[List[a], List[a]] = {
     val b = new ListBuffer[a]
@@ -645,8 +651,8 @@ sealed abstract class List[+a] extends Seq[a] {
    *  (head of the list) is at position 0.
    *
    *  @param n index of the element to return
-   *  @return the element at position <code>n</code> in this list.
-   *  @throws <code>Predef.NoSuchElementException</code> if the list is too short.
+   *  @return  the element at position <code>n</code> in this list.
+   *  @throws Predef.NoSuchElementException if the list is too short.
    */
   def apply(n: Int): a = drop(n).head
 
@@ -860,8 +866,8 @@ sealed abstract class List[+a] extends Seq[a] {
    *  iterable object.
    *
    *  @param elem element whose membership has to be tested.
-   *  @return True iff there is an element of this list which is
-   *  equal (w.r.t. <code>==</code>) to <code>elem</code>.
+   *  @return     <code>true</code> iff there is an element of this list
+   *              which is equal (w.r.t. <code>==</code>) to <code>elem</code>.
    */
   def contains(elem: Any): boolean = exists (.==(elem))
 
@@ -942,9 +948,12 @@ sealed abstract class List[+a] extends Seq[a] {
     b.toList
   }
 
-  /** Reverses the elements of this list.
-   *  <p/>
-   *  Ex: <br/>
+  /** <p>
+   *    Reverses the elements of this list.
+   *  </p>
+   *  <p>
+   *    Example:
+   *  </p>
    *  <code>[1, 2, 3] reverse = [3, 2, 1]</code>.
    *
    *  @return the elements of this list in reverse order.
@@ -956,9 +965,9 @@ sealed abstract class List[+a] extends Seq[a] {
    *  <code>that</code> by associating each element of the former with
    *  the element at the same position in the latter.
    *
-   *  @param <code>that</code> must have the same length as the self list.
-   *  @return <code>[(a0,b0), ..., (an,bn)]</code> when
-   *  <code>[a0, ..., an] zip [b0, ..., bn]</code> is invoked.
+   *  @param that <code>that</code> must have the same length as the self list.
+   *  @return     <code>[(a0,b0), ..., (an,bn)]</code> when
+   *              <code>[a0, ..., an] zip [b0, ..., bn]</code> is invoked.
    */
   def zip[b](that: List[b]): List[Pair[a,b]] = {
     val b = new ListBuffer[Pair[a, b]]
@@ -975,10 +984,9 @@ sealed abstract class List[+a] extends Seq[a] {
    /** Return an list that pairs each element of this list
     *  with its index, counting from 0.
     *
-    *  @param   <code>start</code> the index of the first element
-    *
-    *  @return  an iterator yielding <code>(a0,0), (a0,1)...</code>
-    *           where <code>ai</code> are the elements from this iterator.
+    *  @param start the index of the first element
+    *  @return      an iterator yielding <code>(a0,0), (a0,1)...</code>
+    *               where <code>ai</code> are the elements from this iterator.
     */
   def zipWithIndex = {
     val b = new ListBuffer[Pair[a,int]]
@@ -998,14 +1006,17 @@ sealed abstract class List[+a] extends Seq[a] {
    *  <code>that</code> by associating each element of the former with
    *  the element at the same position in the latter.
    *
-   *  @param <code>that</code> may have a different length as the self list.
-   *  @param <code>thisElem</code> is used to fill up the resulting list if
-   *  the self list is shorter than <code>that</code>
-   *  @param <code>thatElem</code> is used to fill up the resulting list if
-   *  <code>that</code> is shorter than the self list
-   *  @return <code>[(a0,b0), ..., (an,bn), (elem,bn+1), ..., (elem,bm)]</code>
-   *  when <code>[a0, ..., an] zip [b0, ..., bm]</code> is invoked where
-   *  <code>m &gt; n</code>.
+   *  @param that     list <code>that</code> may have a different length
+   *                  as the self list.
+   *  @param thisElem element <code>thisElem</code> is used to fill up the
+   *                  resulting list if the self list is shorter than
+   *                  <code>that</code>
+   *  @param thatElem element <code>thatElem</code> is used to fill up the
+   *                  resulting list if <code>that</code> is shorter than
+   *                  the self list
+   *  @return         <code>[(a0,b0), ..., (an,bn), (elem,bn+1), ..., (elem,bm)]</code>
+   *                  when <code>[a0, ..., an] zip [b0, ..., bm]</code> is
+   *                  invoked where <code>m &gt; n</code>.
    */
   def zipAll[b, c >: a, d >: b](that: List[b], thisElem: c, thatElem: d): List[Pair[c,d]] = {
     val b = new ListBuffer[Pair[c, d]]
@@ -1031,8 +1042,8 @@ sealed abstract class List[+a] extends Seq[a] {
    *  <code>that</code>.
    *
    *  @param that the list of elements to add to the list.
-   *  @return a list without doubles containing the elements of this
-   *  list and those of the given list <code>that</code>.
+   *  @return     a list without doubles containing the elements of this
+   *              list and those of the given list <code>that</code>.
    */
   def union[b >: a](that: List[b]): List[b] = {
     val b = new ListBuffer[b]

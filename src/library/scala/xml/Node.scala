@@ -44,7 +44,8 @@ abstract class Node extends NodeSeq {
   /** label of this node. I.e. "foo" for &lt;foo/&gt;) */
   def label: String
 
-  /** used internally. Atom/Molecule = -1 PI = -2 Comment = -3 EntityRef = -5  */
+  /** used internally. Atom/Molecule = -1 PI = -2 Comment = -3 EntityRef = -5
+   */
   def typeTag$: Int = 0
 
   /**
@@ -54,7 +55,7 @@ abstract class Node extends NodeSeq {
   def scope: NamespaceBinding = TopScope
 
   /**
-   *  convenience, same as getNamespace(this.prefix)
+   *  convenience, same as <code>getNamespace(this.prefix)</code>
    */
   def namespace = getNamespace(this.prefix)
 
@@ -62,14 +63,15 @@ abstract class Node extends NodeSeq {
    * Convenience method, same as <code>scope.getURI(pre)</code> but additionally
    * checks if scope is <code>null</code>.
    *
-   * @param   pre the prefix whose namespace name we would like to obtain
-   * @return  the namespace if scope != null and prefix was found, else null
+   * @param pre the prefix whose namespace name we would like to obtain
+   * @return    the namespace if <code>scope != null</code> and prefix was
+   *            found, else <code>null</code>
    */
   def getNamespace(pre: String) = if (scope == null) null else scope.getURI(pre)
 
   /**
    * Convenience method, looks up an unprefixed attribute in attributes of this node.
-   * Same as attributes.getValue(key);
+   * Same as <code>attributes.getValue(key)</code>
    *
    * @param  key of queried attribute.
    * @return value of <code>UnprefixedAttribute</code> with given key
@@ -79,7 +81,7 @@ abstract class Node extends NodeSeq {
 
   /**
    * Convenience method, looks up a prefixed attribute in attributes of this node.
-   * Same as attributes.getValue(uri, this, key);
+   * Same as <code>attributes.getValue(uri, this, key)</code>
    *
    * @param  uri namespace of queried attribute (may not be null).
    * @param  key of queried attribute.
@@ -121,7 +123,7 @@ abstract class Node extends NodeSeq {
    * label, attributes and children.
    *
    * @param x ...
-   * @return  ...
+   * @return  <code>true</code> if ..
    */
   override def equals(x: Any): Boolean = x match {
     case g:Group => false
@@ -144,7 +146,7 @@ abstract class Node extends NodeSeq {
   /**
    *  returns a sequence consisting of only this node
    */
-  def theSeq:Seq[Node] = this :: Nil
+  def theSeq: Seq[Node] = this :: Nil
 
   /**
    * String representation of this node
@@ -158,7 +160,7 @@ abstract class Node extends NodeSeq {
   /**
    * Same as <code>toString(false)</code>.
    *
-   * @see "toString(Boolean)"
+   * @see <code><a href="#toString">toString(Boolean)</a></code>
    */
   override def toString(): String = toString(false)
 
