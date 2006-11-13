@@ -11,6 +11,9 @@ abstract class Producer[T] {
   /** A label for an undefined state of the iterators. */
   private val Undefined = new Object
 
+  /** A signal to stop the coordinator. */
+  private val Stop = new Object
+
   protected def produce(x: T): unit = {
     coordinator ! Some(x)
     receive { case Next => }
@@ -33,8 +36,6 @@ abstract class Producer[T] {
       case Some(x) => current = Undefined; x.asInstanceOf[T]
     }
   }
-
-  case object Stop
 
   private val coordinator: Actor = actor {
     var continue = true
