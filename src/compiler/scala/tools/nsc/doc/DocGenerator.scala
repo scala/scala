@@ -1098,6 +1098,7 @@ abstract class DocGenerator extends Models {
         case "deprecated" => "Deprecated"
         case "exception"  => "Throws"
         case "param"      => "Parameters"
+        case "pre"        => "Precondition"
         case "return"     => "Returns"
         case "see"        => "See Also"
         case "since"      => "Since"
@@ -1110,7 +1111,7 @@ abstract class DocGenerator extends Models {
 
   // patterns for standard tags with 1 and 2 arguments
   private val pat1 = Pattern.compile(
-    "[ \t]*@(author|deprecated|return|see|since|todo|version)[ \t]*(.*)")
+    "[ \t]*@(author|deprecated|pre|return|see|since|todo|version)[ \t]*(.*)")
   private val pat2 = Pattern.compile(
     "[ \t]*@(exception|param|throws)[ \t]+(\\p{Graph}*)[ \t]*(.*)")
 

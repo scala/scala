@@ -50,7 +50,7 @@ object scaladoc extends Command {
     BulletList(
       Mono("@author"), Mono("@deprecated"),
       Mono("@exception") & " (two arguments)",
-      Mono("@param") & " (two arguments)",
+      Mono("@param") & " (two arguments)", Mono("@pre"),
       Mono("@return"), Mono("@see"), Mono("@since"),
       Mono("@throws") & " (two arguments)",
       Mono("@todo"), Mono("@version")),
