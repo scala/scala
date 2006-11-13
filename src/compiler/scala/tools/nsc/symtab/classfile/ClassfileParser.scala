@@ -143,7 +143,7 @@ abstract class ClassfileParser {
     def getName(index: int): Name = {
       if (index <= 0 || len <= index) errorBadIndex(index)
       var name = values(index).asInstanceOf[Name]
-      if (name == null) {
+      if (name eq null) {
         val start = starts(index)
         if (in.buf(start) != CONSTANT_UTF8) errorBadTag(start)
         name = newTermName(in.buf, start + 3, in.getChar(start + 1))
@@ -154,7 +154,7 @@ abstract class ClassfileParser {
 
     def getExternalName(index: int): Name = {
       if (index <= 0 || len <= index) errorBadIndex(index)
-      if (internalized(index) == null) {
+      if (internalized(index) eq null) {
         internalized(index) = getName(index).replace('/', '.')
       }
       internalized(index)
@@ -163,7 +163,7 @@ abstract class ClassfileParser {
     def getClassSymbol(index: int): Symbol = {
       if (index <= 0 || len <= index) errorBadIndex(index)
       var c = values(index).asInstanceOf[Symbol]
-      if (c == null) {
+      if (c eq null) {
         val start = starts(index)
         if (in.buf(start) != CONSTANT_CLASS) errorBadTag(start)
         val name = getExternalName(in.getChar(start + 1))
@@ -185,7 +185,7 @@ abstract class ClassfileParser {
     def getMemberSymbol(index: Int, static: Boolean): Symbol = {
       if (index <= 0 || len <= index) errorBadIndex(index)
       var f = values(index).asInstanceOf[Symbol]
-      if (f == null) {
+      if (f eq null) {
         val start = starts(index)
         if (in.buf(start) != CONSTANT_FIELDREF &&
             in.buf(start) != CONSTANT_METHODREF &&
@@ -215,7 +215,7 @@ abstract class ClassfileParser {
     def getNameAndType(index: Int, ownerClass: Symbol): Pair[Name, Type] = {
       if (index <= 0 || len <= index) errorBadIndex(index)
       var p = values(index).asInstanceOf[Pair[Name, Type]]
-      if (p == null) {
+      if (p eq null) {
         val start = starts(index)
         if (in.buf(start) != CONSTANT_NAMEANDTYPE) errorBadTag(start)
         val name = getName(in.getChar(start + 1))
@@ -239,7 +239,7 @@ abstract class ClassfileParser {
       if (index <= 0 || len <= index) errorBadIndex(index)
       val value = values(index)
       var c: Type = null
-      if (value == null) {
+      if (value eq null) {
         val start = starts(index)
         if (in.buf(start) != CONSTANT_CLASS) errorBadTag(start)
         val name = getExternalName(in.getChar(start + 1))
@@ -264,7 +264,7 @@ abstract class ClassfileParser {
     def getConstant(index: int): Constant = {
       if (index <= 0 || len <= index) errorBadIndex(index)
       var value = values(index)
-      if (value == null) {
+      if (value eq null) {
         val start = starts(index)
         value = in.buf(start) match {
           case CONSTANT_STRING =>
@@ -610,7 +610,7 @@ abstract class ClassfileParser {
         case nme.ConstantValueATTR =>
           val c = pool.getConstant(in.nextChar)
           val c1 = convertTo(c, symtype)
-          if (c1 != null) sym.setInfo(ConstantType(c1))
+          if (c1 ne null) sym.setInfo(ConstantType(c1))
           else Console.println("failure to convert " + c + " to " + symtype); //debug
         case nme.InnerClassesATTR =>
           if (!isScala) parseInnerClasses() else in.skip(attrLen)
@@ -625,9 +625,9 @@ abstract class ClassfileParser {
         case nme.SourceFileATTR =>
           assert(attrLen == 2)
           val source = pool.getName(in.nextChar)
-          if (sourcePath != null) {
+          if (sourcePath ne null) {
             val sourceFile0 = sourcePath.lookupPath(source.toString(), false)
-            if (sourceFile0 != null && clazz.sourceFile == null) {
+            if ((sourceFile0 ne null) && (clazz.sourceFile eq null)) {
               clazz.sourceFile = sourceFile0
             }
             staticModule.moduleClass.sourceFile = clazz.sourceFile

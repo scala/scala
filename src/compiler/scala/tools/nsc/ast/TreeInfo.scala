@@ -206,7 +206,7 @@ abstract class TreeInfo {
    */
   def isSequencePattern(tree: Tree): boolean = tree match {
     case Apply(fn, _) =>
-      fn.symbol != null &&
+      (fn.symbol ne null) &&
       !fn.symbol.hasFlag(CASE) &&
       fn.symbol.isNonBottomSubClass(definitions.SeqClass)
     case Bind(name, body) =>

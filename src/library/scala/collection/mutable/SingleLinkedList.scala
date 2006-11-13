@@ -28,29 +28,29 @@ abstract class SingleLinkedList[A, This >: Null <: SingleLinkedList[A, This]]
 
   var next: This
 
-  def length: Int = 1 + (if (next == null) 0 else next.length)
+  def length: Int = 1 + (if (next eq null) 0 else next.length)
 
   def append(that: This): Unit =
-    if (next == null) next = that else next.append(that)
+    if (next eq null) next = that else next.append(that)
 
-  def insert(that: This): Unit = if (that != null) {
+  def insert(that: This): Unit = if (that ne null) {
     that.append(next)
     next = that
   }
 
   def apply(n: Int): A =
     if (n == 0) elem
-    else if (next == null) throw new IndexOutOfBoundsException("unknown element")
+    else if (next eq null) throw new IndexOutOfBoundsException("unknown element")
     else next.apply(n - 1)
 
   def get(n: Int): Option[A] =
     if (n == 0) Some(elem)
-    else if (next == null) None
+    else if (next eq null) None
     else next.get(n - 1)
 
   def elements: Iterator[A] = new Iterator[A] {
     var elems = SingleLinkedList.this
-    def hasNext = (elems != null)
+    def hasNext = (elems ne null)
     def next = {
       val res = elems.elem
       elems = elems.next

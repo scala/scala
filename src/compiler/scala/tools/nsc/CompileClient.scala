@@ -98,7 +98,7 @@ object CompileClient {
     out.println(args.mkString("", "\0", ""))
     var sawerror = false
     var fromServer = in.readLine()
-    while (fromServer != null) {
+    while (fromServer ne null) {
       if (CompileSocket.errorPattern.matcher(fromServer).matches)
         sawerror = true
       Console.println(fromServer)

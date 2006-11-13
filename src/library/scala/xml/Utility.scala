@@ -159,7 +159,7 @@ object Utility extends AnyRef with parsing.TokenTests {
         // print tag with namespace declarations
         sb.append('<')
         x.nameToString(sb)
-        if (x.attributes != null) {
+        if (x.attributes ne null) {
           x.attributes.toString(sb)
         }
         x.scope.toString(sb, pscope)
@@ -215,7 +215,7 @@ object Utility extends AnyRef with parsing.TokenTests {
    * @param children
    */
   def hashCode(pre: String, label: String, attribHashCode: Int, scpeHash: Int, children: Seq[Node]) = {
-    ( if(pre!=null) {41 * pre.hashCode() % 7} else {0})
+    ( if(pre ne null) {41 * pre.hashCode() % 7} else {0})
     + label.hashCode() * 53
     + attribHashCode * 7
     + scpeHash * 31
@@ -337,7 +337,7 @@ object Utility extends AnyRef with parsing.TokenTests {
           return "< not allowed in attribute value";
         case '&' =>
           val n = getName(value, i+1);
-          if (n == null)
+          if (n eq null)
             return "malformed entity reference in attribute value ["+value+"]";
           i = i + n.length() + 1
           if (i >= value.length() || value.charAt(i) != ';')
@@ -372,7 +372,7 @@ object Utility extends AnyRef with parsing.TokenTests {
               sb.append(theChar)
 
             case x =>
-              if (rfb==null) rfb = new StringBuilder()
+              if (rfb eq null) rfb = new StringBuilder()
               rfb.append(x)
               c = it.next
               while (c != ';') {

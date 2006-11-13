@@ -59,7 +59,7 @@ class NamespaceBinding(val prefix: String,
   def toString(sb: StringBuilder, stop: NamespaceBinding): Unit = {
     if (this ne stop) { // contains?
       sb.append(" xmlns")
-      if (prefix != null) {
+      if (prefix ne null) {
         sb.append(':').append(prefix)
       }
       sb.append('=')

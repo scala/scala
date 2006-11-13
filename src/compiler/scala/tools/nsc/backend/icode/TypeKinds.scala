@@ -211,7 +211,7 @@ trait TypeKinds requires ICodes {
 
   /** A class type. */
   case class REFERENCE(cls: Symbol) extends TypeKind {
-    assert(cls != null,
+    assert(cls ne null,
            "REFERENCE to null class symbol.")
     assert(cls != definitions.ArrayClass,
            "REFERENCE to Array is not allowed, should be ARRAY[..] instead")

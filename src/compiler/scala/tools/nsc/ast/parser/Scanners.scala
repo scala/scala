@@ -81,7 +81,7 @@ trait Scanners requires SyntaxAnalyzer {
     /** add the given character to the documentation buffer
      */
     protected def putDocChar(c: char): unit =
-      if (docBuffer != null) docBuffer.append(c)
+      if (docBuffer ne null) docBuffer.append(c)
 
     /** we need one token lookahead
      */
@@ -883,7 +883,7 @@ trait Scanners requires SyntaxAnalyzer {
       for (val i <- 0 to maxKey)
         key(i) = IDENTIFIER
       for (val j <- 0 until tokenCount)
-        if (tokenName(j) != null)
+        if (tokenName(j) ne null)
           key(tokenName(j).start) = j.asInstanceOf[byte]
 
     }

@@ -50,7 +50,7 @@ trait Application {
    *  @param args the arguments passed to the main method
    */
   def main(args: Array[String]) = {
-    if (getProperty("scala.time") != null) {
+    if (getProperty("scala.time") ne null) {
       val total = currentTime - executionStart
       Console.println("[total " + total + "ms]")
     }

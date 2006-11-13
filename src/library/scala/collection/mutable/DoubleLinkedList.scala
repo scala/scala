@@ -28,24 +28,24 @@ abstract class DoubleLinkedList[A, This >: Null <: DoubleLinkedList[A, This]]
   var prev: This
 
   override def append(that: This): Unit =
-    if (that == null)
+    if (that eq null)
       ()
-    else if (next == null) {
+    else if (next eq null) {
       next = that
       that.prev = this
     } else
       next.append(that)
 
-  override def insert(that: This): Unit = if (that != null) {
+  override def insert(that: This): Unit = if (that ne null) {
     that.append(next)
     next = that
     that.prev = this
   }
 
   def remove: Unit = {
-    if (next != null)
+    if (next ne null)
       next.prev = prev
-    if (prev != null)
+    if (prev ne null)
       prev.next = next
     prev = null
     next = null

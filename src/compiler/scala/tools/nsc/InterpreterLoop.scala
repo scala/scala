@@ -42,7 +42,7 @@ class InterpreterLoop(in: BufferedReader, out: PrintWriter) {
   /** Close the interpreter, if there is one, and set
     * interpreter to null. */
   def closeInterpreter =
-    if (interpreter != null) {
+    if (interpreter ne null) {
       interpreter.close
       interpreter = null
     }
@@ -83,7 +83,7 @@ class InterpreterLoop(in: BufferedReader, out: PrintWriter) {
       out.print("\nscala> ")
       out.flush
       var line = in.readLine()
-      if (line == null)
+      if (line eq null)
         return ()  // assumes null means EOF
 
       val Pair(keepGoing, shouldReplay) = command(line)
@@ -103,11 +103,11 @@ class InterpreterLoop(in: BufferedReader, out: PrintWriter) {
         out.println("Error opening file: " + filename)
         null
     }
-    if (fileIn == null) return ()
+    if (fileIn eq null) return ()
     val in = new BufferedReader(fileIn)
     while (true) {
       val line = in.readLine
-      if (line == null) {
+      if (line eq null) {
         fileIn.close
         return ()
       }

@@ -44,7 +44,7 @@ abstract class AbstractReporter extends Reporter {
 
   /** Logs a position and returns true if it was already logged. */
   private def testAndLog(pos : Position) : Boolean = {
-    if (pos == null) return false;
+    if (pos eq null) return false;
     if (pos.column == 0) return false;
     if (positions.contains(pos)) return true;
     positions += (pos);

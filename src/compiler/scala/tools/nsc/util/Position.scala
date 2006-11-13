@@ -80,7 +80,7 @@ class Position( val source : SourceFile, val offset: Int) {
   def inUltimateSource = source.positionInUltimateSource(this)
 
   def dbgString = {
-    "source: " + (if (source == null) source else source . path) + " " +
+    "source: " + (if (source eq null) source else source . path) + " " +
     (if (isLine) "line-" + line
     else if (!hasOffset) "NOP"
     else if (offset >= source.content.length) "out-of-bounds-" + offset else {
@@ -102,7 +102,7 @@ class Position( val source : SourceFile, val offset: Int) {
       return inUltimateSource.toString
 
     val sb = new StringBuilder()
-    if (source != null) {
+    if (source ne null) {
       sb.append(source.file.path)
       if (hasOffset) {
         sb.append(line)

@@ -370,7 +370,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
         }
         case Apply(fn, args) =>
           if (settings.noassertions.value &&
-              fn.symbol != null &&
+              (fn.symbol ne null) &&
               (fn.symbol.name == nme.assert_ || fn.symbol.name == nme.assume_) &&
               fn.symbol.owner == PredefModule.moduleClass) {
             Literal(()).setPos(tree.pos).setType(UnitClass.tpe)

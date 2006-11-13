@@ -372,7 +372,7 @@ class QuitException extends Throwable {
  * <p>
  *   A worker thread enters the idle queue of the scheduler when
  *   <code>getTask</code> returns <code>null</code>. Then it will also stay
- *   in the while-loop W (<code>while (task == null)</code>) until
+ *   in the while-loop W (<code>while (task eq null)</code>) until
  *   <code>task</code> becomes non-null. The only way this can happen is
  *   through a call of <code>execute</code> by the scheduler. Before every
  *   call of <code>execute</code> the worker thread is removed from the idle
@@ -401,7 +401,7 @@ class WorkerThread(sched: IScheduler) extends Thread {
   override def run(): Unit =
     try {
       while (running) {
-        if (task != null) {
+        if (task ne null) {
           try {
             task.run()
           } catch {
@@ -412,7 +412,7 @@ class WorkerThread(sched: IScheduler) extends Thread {
         this.synchronized {
           task = sched.getTask(this)
 
-          while (task == null) {
+          while (task eq null) {
             try {
               wait()
             } catch {

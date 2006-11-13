@@ -185,7 +185,7 @@ class Code(clazz: java.lang.Class) {
       val method = clazz.getMethod(methName, argTypes)
       var obj: JObject = null
       if (! Modifier.isStatic(method.getModifiers())) {
-        if (instance == null) {
+        if (instance eq null) {
           instance = try {
             clazz.newInstance()
           } catch { case _ =>
@@ -202,7 +202,7 @@ class Code(clazz: java.lang.Class) {
         obj = instance
       }
       val result = method.invoke(obj, args)
-      if (result == null) ().asInstanceOf[JObject] else result
+      if (result eq null) ().asInstanceOf[JObject] else result
     }
     catch {
       case me: NoSuchMethodException =>

@@ -47,7 +47,7 @@ abstract class Constructors extends Transform {
           case _ =>
         }
       }
-      assert(constr != null && constrBody != null, impl)
+      assert((constr ne null) && (constrBody ne null), impl)
 
       val paramAccessors = clazz.constrParamAccessors
 

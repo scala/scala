@@ -39,10 +39,10 @@ object DocUtil {
 
     def aref(href0: String, target: String, text: String): NodeSeq = {
       val href = Utility.escape(href0)
-      if (target != null && target.indexOf('<') != -1) throw new Error(target)
+      if ((target ne null) && target.indexOf('<') != -1) throw new Error(target)
 
       val t0 = Text(text)
-      if (target != null)
+      if ((target ne null))
         <a href={(relative + href)} target={(target)}>{t0}</a>;
       else
         <a href={(relative + href)}>{t0}</a>;

@@ -27,7 +27,7 @@ class Queue[A] extends MutableList[A] {
    *
    *  @return true, iff there is no element in the queue.
    */
-  override def isEmpty: Boolean = (first == null)
+  override def isEmpty: Boolean = (first eq null)
 
   /** Inserts a single element at the end of the queue.
    *
@@ -64,12 +64,12 @@ class Queue[A] extends MutableList[A] {
    *  @return the first element of the queue.
    */
   def dequeue: A =
-    if (first == null)
+    if (first eq null)
       throw new NoSuchElementException("queue empty")
     else {
       val res = first.elem
       first = first.next
-      if (first == null) last = null
+      if (first eq null) last = null
       len = len - 1
       res
     }
@@ -81,15 +81,15 @@ class Queue[A] extends MutableList[A] {
    *  @return the first element of the queue for which p yields true
    */
   def dequeueFirst(p: A => Boolean): Option[A] =
-    if (first == null)
+    if (first eq null)
       None
     else if (p(first.elem)) {
       val res: Option[A] = Some(first.elem)
       first = first.next
       len = len - 1
-      if (first == null) {
+      if (first eq null) {
         last = null
-      } else if (first.next == null) {
+      } else if (first.next eq null) {
         last = first
       }
       res
@@ -108,16 +108,16 @@ class Queue[A] extends MutableList[A] {
    */
   def dequeueAll(p: A => Boolean): Seq[A] = {
     val res = new ArrayBuffer[A]
-    if (first == null)
+    if (first eq null)
       res
     else {
       while (p(first.elem)) {
         res += first.elem
         first = first.next
         len = len - 1
-        if (first == null) {
+        if (first eq null) {
           last = null
-        } else if (first.next == null) {
+        } else if (first.next eq null) {
           last = first
         }
       }
@@ -132,15 +132,15 @@ class Queue[A] extends MutableList[A] {
 
   private def extractFirst(start: LinkedList[A], p: A => Boolean): Option[LinkedList[A]] = {
     var cell = start
-    while ((cell.next != null) && !p(cell.next.elem)) {
+    while ((cell.next ne null) && !p(cell.next.elem)) {
       cell = cell.next
     }
-    if (cell.next == null)
+    if (cell.next eq null)
       None
     else {
       val res: Option[LinkedList[A]] = Some(cell.next)
       cell.next = cell.next.next
-      if (cell.next == null)
+      if (cell.next eq null)
         last = cell
       len = len - 1
       res

@@ -378,8 +378,8 @@ trait Symbols requires SymbolTable {
       while (runId(validTo) != currentRunId) {
         //if (settings.debug.value) System.out.println("completing " + this);//DEBUG
         var ifs = infos
-        assert(ifs != null, this.name)
-        while (ifs.prev != null) {
+        assert(ifs ne null, this.name)
+        while (ifs.prev ne null) {
           ifs = ifs.prev
         }
         val tp = ifs.info
@@ -408,7 +408,7 @@ trait Symbols requires SymbolTable {
 
     /** Set initial info. */
     def setInfo(info: Type): this.type = {
-      assert(info != null)
+      assert(info ne null)
       var period = currentPeriod
       if (phaseId(period) == 0) {
         // can happen when we initialize NoSymbol before running the compiler
@@ -458,11 +458,11 @@ trait Symbols requires SymbolTable {
             phase = current
             validTo = currentPeriod
           }
-          assert(infos != null, name)
+          assert(infos ne null, name)
           infos.info
       } else {
         var infos = this.infos
-        while (phase.id < infos.start && infos.prev != null) infos = infos.prev
+        while (phase.id < infos.start && (infos.prev ne null)) infos = infos.prev
         infos.info
       }
     }
@@ -476,8 +476,8 @@ trait Symbols requires SymbolTable {
     /** Was symbol's type updated during given phase? */
     final def isUpdatedAt(pid: Phase#Id): boolean = {
       var infos = this.infos
-      while (infos != null && infos.start != pid + 1) infos = infos.prev
-      infos != null
+      while ((infos ne null) && infos.start != pid + 1) infos = infos.prev
+      (infos ne null)
     }
 
     /** The type constructor of a symbol is:
@@ -1082,16 +1082,16 @@ trait Symbols requires SymbolTable {
           tpeCache = typeRef(if (isTypeParameterOrSkolem) NoPrefix else owner.thisType, this, targs)
         }
       }
-      assert(tpeCache != null/*, "" + this + " " + phase*/)//debug
+      assert(tpeCache ne null/*, "" + this + " " + phase*/)//debug
       tpeCache
     }
 
     override def typeConstructor: Type = {
-      if (tyconCache == null || tyconRunId != currentRunId) {
+      if ((tyconCache eq null) || tyconRunId != currentRunId) {
         tyconCache = typeRef(if (isTypeParameter) NoPrefix else owner.thisType, this, List())
         tyconRunId = currentRunId
       }
-      assert(tyconCache != null)
+      assert(tyconCache ne null)
       tyconCache
     }
 
@@ -1148,7 +1148,7 @@ trait Symbols requires SymbolTable {
       source = f
     }
     override def isFromClassFile = {
-      if (classFile != null) true
+      if (classFile ne null) true
       else if (owner.isPackageClass) false
       else super.isFromClassFile
     }
@@ -1264,7 +1264,7 @@ trait Symbols requires SymbolTable {
 
   /** A class for type histories */
   private case class TypeHistory(start: Phase#Id, info: Type, prev: TypeHistory) {
-    assert(prev == null || start > prev.start, this)
+    assert((prev eq null) || start > prev.start, this)
     assert(start != 0)
     override def toString() =
       "TypeHistory(" + phaseWithId(start) + "," + info + "," + prev + ")"

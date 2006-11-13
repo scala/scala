@@ -31,13 +31,13 @@ class MailBox extends AnyRef with ListQueueCreator {
     def isDefinedAt(msg: Message) = receiver.isDefinedAt(msg)
 
     def receive(): a = synchronized {
-      while (msg == null) wait()
+      while (msg eq null) wait()
       receiver(msg)
     }
 
     def receiveWithin(msec: long): a = synchronized {
-      if (msg == null) wait(msec)
-      receiver(if (msg != null) msg else TIMEOUT)
+      if (msg eq null) wait(msec)
+      receiver(if (msg ne null) msg else TIMEOUT)
     }
   }
 
@@ -157,13 +157,13 @@ trait LinkedListQueueCreator {
     def extractFirst(l: t, p: a => boolean): Option[Pair[a, t]] = {
       var xs = l._1
       var xs1 = xs.next
-      while (xs1 != null && !p(xs1.elem)) {
+      while ((xs1 ne null) && !p(xs1.elem)) {
         xs = xs1
         xs1 = xs1.next
       }
-      if (xs1 != null) {
+      if (xs1 ne null) {
         xs.next = xs1.next
-        if (xs.next == null)
+        if (xs.next eq null)
           Some(Pair(xs1.elem, Pair(l._1, xs)))
         else
           Some(Pair(xs1.elem, l))

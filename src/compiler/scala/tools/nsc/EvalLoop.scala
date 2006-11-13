@@ -13,7 +13,7 @@ trait EvalLoop {
   def loop(action: (String) => Unit): Unit = {
     Console.print(prompt)
     val line = Console.readLine
-    if (line != null && line.length() > 0) {
+    if ((line ne null) && line.length() > 0) {
       action(line)
       loop(action)
     }

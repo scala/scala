@@ -561,7 +561,7 @@ abstract class Mixin extends InfoTransform {
       // change every node type that refers to an implementation class to its
       // corresponding interface, unless the node's symbol is an implementation class.
       if (tree.tpe.symbol.isImplClass &&
-          (tree.symbol == null || !tree.symbol.isImplClass))
+          ((tree.symbol eq null) || !tree.symbol.isImplClass))
         tree.tpe = toInterface(tree.tpe);
 
       tree match {

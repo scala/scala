@@ -278,7 +278,7 @@ abstract class RefChecks extends InfoTransform {
 	if (baseClass.isClass) {
 	  val index = clazz.info.closurePos(baseClass)
 	  if (index >= 0) {
-	    if (seenTypes(index) != null && !(seenTypes(index) <:< tp))
+	    if ((seenTypes(index) ne null) && !(seenTypes(index) <:< tp))
 	      unit.error(clazz.pos, "illegal inheritance;\n " + clazz +
 			 " inherits different type instances of " + baseClass +
 			 ":\n" + tp + " and " + seenTypes(index));
@@ -382,7 +382,7 @@ abstract class RefChecks extends InfoTransform {
 // Forward reference checking ---------------------------------------------------
 
     class LevelInfo(val outer: LevelInfo) {
-      val scope: Scope = if (outer == null) newScope else newScope(outer.scope)
+      val scope: Scope = if (outer eq null) newScope else newScope(outer.scope)
       var maxindex: int = MIN_INT
       var refpos: int = _
       var refsym: Symbol = _
@@ -416,7 +416,7 @@ abstract class RefChecks extends InfoTransform {
     private def enterReference(pos: int, sym: Symbol): unit =
       if (sym.isLocal) {
 	val e = currentLevel.scope.lookupEntry(sym.name)
-	if (e != null && sym == e.sym) {
+	if ((e ne null) && sym == e.sym) {
           var l = currentLevel
           while (l.scope != e.owner) l = l.outer;
 	  val symindex = symIndex(sym)

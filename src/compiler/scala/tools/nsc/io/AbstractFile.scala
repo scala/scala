@@ -154,7 +154,7 @@ abstract class AbstractFile extends AnyRef with Iterable[AbstractFile] {
       assert(index < 0 || start < index)
       val name = path.substring(start, if (index < 0) length else index)
       file = file.lookupName(name, if (index < 0) directory else true)
-      if (file == null || index < 0) return file
+      if ((file eq null) || index < 0) return file
       start = index + 1
     }
     file

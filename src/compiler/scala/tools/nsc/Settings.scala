@@ -19,7 +19,7 @@ class Settings(error: String => unit) {
     else null
 
   private val classpathDefault =
-    if (System.getProperty("env.classpath") != null)
+    if (System.getProperty("env.classpath") ne null)
       alternatePath(
         getProperty("env.classpath"),
         ".")
@@ -40,16 +40,16 @@ class Settings(error: String => unit) {
       "")
 
   private def alternatePath(p1: String, p2: => String) =
-    if (p1 != null) p1 else p2
+    if (p1 ne null) p1 else p2
 
   private def concatPath(p1: String, p2: String) =
-     if (p1 != null && p2 != null) p1 + File.pathSeparator + p2
-     else if (p1 != null) p1
+     if ((p1 ne null) && (p2 ne null)) p1 + File.pathSeparator + p2
+     else if (p1 ne null) p1
      else p2
 
   private def guessedScalaBootClassPath = {
     val scalaHome = System.getProperty("scala.home")
-    if (scalaHome != null) {
+    if (scalaHome ne null) {
       val guessJar = new File(new File(new File(scalaHome), "lib"), "scala-library.jar")
       if (guessJar.exists()) guessJar.getPath()
       else {
@@ -61,7 +61,7 @@ class Settings(error: String => unit) {
 
   private def guessedScalaExtDirs = {
     val scalaHome = System.getProperty("scala.home")
-    if (scalaHome != null) {
+    if (scalaHome ne null) {
       val guess = new File(new File(scalaHome), "lib")
       if (guess.exists()) guess.getPath else null
     } else null

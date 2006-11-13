@@ -92,7 +92,7 @@ trait Scopes requires SymbolTable {
     def this(base: Scope) = {
       this(base.elems)
 /*
-      if (base.hashtable != null) {
+      if (base.hashtable ne null) {
         this.hashtable = new Array[ScopeEntry](HASHSIZE)
         System.arraycopy(base.hashtable, 0, this.hashtable, 0, HASHSIZE)
       }
@@ -113,13 +113,13 @@ trait Scopes requires SymbolTable {
     }
 
     /** is the scope empty? */
-    def isEmpty: boolean = elems == null
+    def isEmpty: boolean = elems eq null
 
     /** the number of entries in this scope */
     def size: int = {
       var s = 0
       var e = elems
-      while (e != null) {
+      while (e ne null) {
         s = s + 1
         e = e.next
       }
@@ -132,7 +132,7 @@ trait Scopes requires SymbolTable {
      */
     def enter(e: ScopeEntry): unit = {
       elemsCache = null
-      if (hashtable != null) {
+      if (hashtable ne null) {
         val i = e.sym.name.start & HASHMASK
         elems.tail = hashtable(i)
         hashtable(i) = elems
@@ -162,7 +162,7 @@ trait Scopes requires SymbolTable {
     }
 
     private def enterInHash(e: ScopeEntry): unit =
-      if (e != null) {
+      if (e ne null) {
         enterInHash(e.next)
         val i = e.sym.name.start & HASHMASK
         e.tail = hashtable(i)
@@ -181,7 +181,7 @@ trait Scopes requires SymbolTable {
         while (e1.next != e) e1 = e1.next;
         e1.next = e.next
       }
-      if (hashtable != null) {
+      if (hashtable ne null) {
         var e1 = hashtable(e.sym.name.start & HASHMASK)
         if (e1 == e) {
           hashtable(e.sym.name.start & HASHMASK) = e.tail
@@ -196,7 +196,7 @@ trait Scopes requires SymbolTable {
     /** remove symbol */
     def unlink(sym: Symbol): unit = {
       var e = lookupEntry(sym.name)
-      while (e != null) {
+      while (e ne null) {
         if (e.sym == sym) unlink(e);
         e = lookupNextEntry(e)
       }
@@ -209,7 +209,7 @@ trait Scopes requires SymbolTable {
      */
     def lookup(name: Name): Symbol = {
       val e = lookupEntry(name)
-      if (e == null) NoSymbol else e.sym
+      if (e eq null) NoSymbol else e.sym
     }
 
     /** lookup a symbol entry matching given name.
@@ -219,12 +219,12 @@ trait Scopes requires SymbolTable {
      */
     def lookupEntry(name: Name): ScopeEntry = {
       var e: ScopeEntry = null
-      if (false & hashtable != null) {
+      if (false & (hashtable ne null)) {
         e = hashtable(name.start & HASHMASK)
-        while (e != null && e.sym.name != name) e = e.tail;
+        while ((e ne null) && e.sym.name != name) e = e.tail;
       } else {
         e = elems
-        while (e != null && e.sym.name != name) {
+        while ((e ne null) && e.sym.name != name) {
           e = e.next;
         }
       }
@@ -234,20 +234,20 @@ trait Scopes requires SymbolTable {
     /** lookup next entry with same name as this one */
     def lookupNextEntry(entry: ScopeEntry): ScopeEntry = {
       var e = entry
-      if (hashtable != null) //debug
-      do { e = e.tail } while (e != null && e.sym.name != entry.sym.name)
+      if (hashtable ne null) //debug
+      do { e = e.tail } while ((e ne null) && e.sym.name != entry.sym.name)
       else
-        do { e = e.next } while (e != null && e.sym.name != entry.sym.name);
+        do { e = e.next } while ((e ne null) && e.sym.name != entry.sym.name);
       e
     }
 
     /** Return all symbols as a list in the order they were entered in this scope.
      */
     def toList: List[Symbol] = {
-      if (elemsCache == null) {
+      if (elemsCache eq null) {
         elemsCache = Nil
         var e = elems
-        while (e != null && e.owner == this) {
+        while ((e ne null) && e.owner == this) {
           elemsCache = e.sym :: elemsCache
           e = e.next
         }

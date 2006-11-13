@@ -138,7 +138,7 @@ trait PatternNodes requires transform.ExplicitOuter {
       case VariablePat(tree) =>
         q match {
           case VariablePat(other) =>
-            (tree.symbol != null) &&
+            (tree.symbol ne null) &&
             (tree.symbol != NoSymbol) &&
             (!tree.symbol.isError) &&
             (tree.symbol == other.symbol)
@@ -175,7 +175,7 @@ trait PatternNodes requires transform.ExplicitOuter {
     def print(indent: String, sb: StringBuilder): StringBuilder = {
       val patNode = this
 
-      def cont = if (patNode.or != null) patNode.or.print(indent, sb) else sb
+      def cont = if (patNode.or ne null) patNode.or.print(indent, sb) else sb
 
       def newIndent(s: String) = {
         val removeBar: Boolean = (null == patNode.or)
@@ -190,7 +190,7 @@ trait PatternNodes requires transform.ExplicitOuter {
         sb.toString()
       }
 
-      if (patNode == null)
+      if (patNode eq null)
         sb.append(indent).append("NULL")
       else
         patNode match {
@@ -202,7 +202,7 @@ trait PatternNodes requires transform.ExplicitOuter {
           sb.append(indent + "HEADER(" + patNode.getTpe() +
                           ", " + selector + ")").append('\n')
           patNode.or.print(indent + "|", sb)
-          if (next != null)
+          if (next ne null)
             next.print(indent, sb)
           else
             sb

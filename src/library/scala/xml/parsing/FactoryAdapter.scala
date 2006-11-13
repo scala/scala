@@ -188,7 +188,7 @@ abstract class FactoryAdapter extends DefaultHandler() {
     // reverse order to get it right
     var v: List[Node] = Nil
     var child: Node = hStack.pop
-    while (child != null) {
+    while (child ne null) {
       v = child::v
       child = hStack.pop
     }
@@ -209,7 +209,7 @@ abstract class FactoryAdapter extends DefaultHandler() {
     curTag = tagStack.pop
 
     capture =
-      if (curTag != null) nodeContainsText(curTag) // root level
+      if (curTag ne null) nodeContainsText(curTag) // root level
       else false
   } // endElement(String,String,String)
 
@@ -243,7 +243,7 @@ abstract class FactoryAdapter extends DefaultHandler() {
     Console.print("] ")
 
     var systemId = ex.getSystemId()
-    if (systemId != null) {
+    if (systemId ne null) {
       val index = systemId.lastIndexOf('/'.asInstanceOf[Int])
       if (index != -1)
         systemId = systemId.substring(index + 1)

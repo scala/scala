@@ -386,7 +386,7 @@ trait Types requires SymbolTable {
       var alts: List[Symbol] = List()
       var sym: Symbol = NoSymbol
       var e: ScopeEntry = decls.lookupEntry(name)
-      while (e != null) {
+      while (e ne null) {
         if (!e.sym.hasFlag(excludedFlags)) {
           if (sym == NoSymbol) sym = e.sym
           else {
@@ -428,7 +428,7 @@ trait Types requires SymbolTable {
           bcs = if (name == nme.CONSTRUCTOR) Nil else bcs.tail
           var entry =
             if (name == nme.ANYNAME) decls.elems else decls lookupEntry name
-          while (entry != null) {
+          while (entry ne null) {
             val sym = entry.sym
             if (sym.getFlag(requiredFlags) == requiredFlags) {
               val excl = sym.getFlag(excluded)
@@ -440,28 +440,28 @@ trait Types requires SymbolTable {
                   return sym
                 } else if (member == NoSymbol) {
                   member = sym
-                } else if (members == null) {
+                } else if (members eq null) {
                   if (member.name != sym.name ||
                       !(member == sym ||
                         member.owner != sym.owner &&
                         !sym.hasFlag(PRIVATE) && {
-                          if (self == null) self = this.narrow;
+                          if (self eq null) self = this.narrow;
                           (self.memberType(member) matches self.memberType(sym))
                         })) {
                     members = newScope(List(member, sym))
                   }
                 } else {
                   var prevEntry = members lookupEntry sym.name
-                  while (prevEntry != null &&
+                  while ((prevEntry ne null) &&
                          !(prevEntry.sym == sym ||
                            prevEntry.sym.owner != sym.owner &&
                            !sym.hasFlag(PRIVATE) && {
-                             if (self == null) self = this.narrow;
+                             if (self eq null) self = this.narrow;
                              (self.memberType(prevEntry.sym) matches self.memberType(sym))
                            })) {
                     prevEntry = members lookupNextEntry prevEntry
                   }
-                  if (prevEntry == null) {
+                  if (prevEntry eq null) {
                     members enter sym
                   }
                 }
@@ -470,7 +470,7 @@ trait Types requires SymbolTable {
               }
             }
             entry = if (name == nme.ANYNAME) entry.next else decls lookupNextEntry entry
-          } // while (entry != null)
+          } // while (entry ne null)
           // excluded = excluded | LOCAL
         } // while (!bcs.isEmpty)
         excluded = excludedFlags
@@ -478,7 +478,7 @@ trait Types requires SymbolTable {
       checkMalformedSwitch = savedCheckMalformedSwitch
       if (util.Statistics.enabled)
         findMemberMillis = findMemberMillis + currentTime - startTime
-      if (members == null) {
+      if (members eq null) {
         if (util.Statistics.enabled) if (member == NoSymbol) noMemberCount = noMemberCount + 1;
         member
       } else {
@@ -679,7 +679,7 @@ trait Types requires SymbolTable {
             val index = new Array[int](nparents)
             var i = 0
             for (val p <- parents) {
-              pclosure(i) = if (p.closure == null) AnyClass.info.closure // cyclic reference
+              pclosure(i) = if (p.closure eq null) AnyClass.info.closure // cyclic reference
                             else p.closure
               index(i) = 0
               i = i + 1
@@ -747,7 +747,7 @@ trait Types requires SymbolTable {
         }
         //Console.println("closure(" + symbol + ") = " + List.fromArray(closureCache));//DEBUG
       }
-      if (closureCache == null)
+      if (closureCache eq null)
         throw new TypeError("illegal cyclic reference involving " + symbol)
       closureCache
     }
@@ -787,7 +787,7 @@ trait Types requires SymbolTable {
           baseClassesCache = computeBaseClasses
         }
       }
-      if (baseClassesCache == null)
+      if (baseClassesCache eq null)
         throw new TypeError("illegal cyclic reference involving " + symbol)
       baseClassesCache
     }
@@ -806,7 +806,7 @@ trait Types requires SymbolTable {
 
     override def toString(): String = (
       parents.mkString("", " with ", "") +
-      (if (settings.debug.value || parents.isEmpty || decls.elems != null)
+      (if (settings.debug.value || parents.isEmpty || (decls.elems ne null))
         decls.mkString("{", "; ", "}") else "")
     );
   }
@@ -848,8 +848,8 @@ trait Types requires SymbolTable {
     override def deconst: Type = value.tpe
     override def toString(): String =
       value.tpe.toString() + "(" + value.escapedStringValue + ")"
-    // override def isNullable: boolean = value.value == null
-    // override def isNonNull: boolean = value.value != null
+    // override def isNullable: boolean = value.value eq null
+    // override def isNonNull: boolean = value.value ne null
   }
 
   /** A class for named types of the form
@@ -1060,7 +1060,7 @@ trait Types requires SymbolTable {
   case class TypeVar(origin: Type, constr: TypeConstraint) extends Type {
     override def symbol = origin.symbol
     override def toString(): String =
-      if (constr.inst == null) "<null " + origin + ">"
+      if (constr.inst eq null) "<null " + origin + ">"
       else if (constr.inst eq NoType) "?" + origin
       else constr.inst.toString();
   }
@@ -1286,7 +1286,7 @@ trait Types requires SymbolTable {
       uniqueRunId = currentRunId
     }
     val tp1 = uniques.findEntry(tp)
-    if (tp1 == null) {
+    if (tp1 eq null) {
       uniques.addEntry(tp); tp
     } else {
       tp1.asInstanceOf[T]
@@ -1626,7 +1626,7 @@ trait Types requires SymbolTable {
     var result: Symbol = _
     def init = { result = NoSymbol }
     def apply(tp: Type): Type = {
-      assert(tp != null)
+      assert(tp ne null)
       tp match {
         case ThisType(sym) =>
           register(sym)

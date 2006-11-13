@@ -17,7 +17,7 @@ import java.io.{File,InputStream}
  */
 class VirtualFile(val name: String, _path: String) extends AbstractFile {
 
-  assert(name != null && path != null, name + " - " + path)
+  assert((name ne null) && (path ne null), name + " - " + path)
 
   //########################################################################
   // Public Constructors

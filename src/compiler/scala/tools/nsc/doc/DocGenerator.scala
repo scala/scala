@@ -40,7 +40,7 @@ abstract class DocGenerator extends Models {
   abstract class Frame extends UrlContext {
     def path: String // relative to outdir
     def relative: String = {
-      assert(path != null)
+      assert(path ne null)
       var idx = 0
       var ct = new StringBuilder
       while (idx != -1) {
@@ -76,7 +76,7 @@ abstract class DocGenerator extends Models {
       val sym = tree.symbol
       if (sym == NoSymbol)
         Text(tree.asInstanceOf[ValOrDefDef].name.toString())
-      else if (sym.sourceFile == null)
+      else if (sym.sourceFile eq null)
         Text(sym.fullNameString('.'))
       else
         aref(urlFor(sym), target, sym.nameString)
@@ -92,11 +92,11 @@ abstract class DocGenerator extends Models {
      *  @return       ...
      */
     def urlFor(tpe: Type, target: String): NodeSeq = try {
-      if (tpe.symbol.hasFlag(Flags.JAVA) || tpe.symbol.sourceFile == null)
+      if (tpe.symbol.hasFlag(Flags.JAVA) || (tpe.symbol.sourceFile eq null))
         <a class={tpe.toString().replace('.', '_')} href=""
           target={target}>{tpe.toString()}</a>
       /*
-      else if (tpe.symbol.sourceFile == null)
+      else if (tpe.symbol.sourceFile eq null)
         Text(tpe.toString())
       */
       else {
@@ -405,7 +405,7 @@ abstract class DocGenerator extends Models {
               else {
                 def aref1(sym: Symbol): NodeSeq = {
                   val isJava = sym hasFlag Flags.JAVA
-                  if (isJava || sym.sourceFile == null) {
+                  if (isJava || (sym.sourceFile eq null)) {
                     val name = sym.nameString
                     val args =
                       if (isJava) "()" // todo: arguments
@@ -1059,7 +1059,7 @@ abstract class DocGenerator extends Models {
 
   def organize0(mmbr: HasTree, map0: ListMap[Kind, TreeSet[HasTree]]) = {
     var map = map0
-    assert(mmbr.kind != null)
+    assert(mmbr.kind ne null)
     if (!map.contains(mmbr.kind))
       map = map.update(mmbr.kind, new TreeSet[HasTree])
     val sz = map(mmbr.kind).size
@@ -1083,7 +1083,7 @@ abstract class DocGenerator extends Models {
     import org.xml.sax.InputSource;
     val isrc1       = new InputSource(new StringReader(str));
     val parsedxml1  = XML.load(isrc1);
-    if (parsedxml1 == null) Text("BAD_COMMENT???");
+    if (parsedxml1 eq null) Text("BAD_COMMENT???");
     else parsedxml1;
     */
   }
@@ -1116,7 +1116,7 @@ abstract class DocGenerator extends Models {
 
   private def comment(comment: String, isShort: Boolean): NodeSeq = {
     var ret: List[Node] = Nil
-    assert(comment != null)
+    assert(comment ne null)
     // strip out any stars.
     var comment0 = comment.trim()
     assert(comment0 startsWith JDOC_START)
@@ -1139,7 +1139,7 @@ abstract class DocGenerator extends Models {
         if (mat2.matches) {
           attr = Triple(mat2.group(1), mat2.group(2), new StringBuilder(mat2.group(3)))
           attributes += attr
-        } else if (attr != null)
+        } else if (attr ne null)
           attr._3.append(s + LINE_SEPARATOR)
         else
           buf.append(s + LINE_SEPARATOR)
@@ -1163,7 +1163,7 @@ abstract class DocGenerator extends Models {
           {tag(attr._1)}
         </dt>
         <dd> {
-          if (attr._2 == null) NodeSeq.Empty
+          if (attr._2 eq null) NodeSeq.Empty
           else if (attr._1.equals("throws"))
             <code>{ exceptions.get(attr._2) match {
               case Some(p) =>

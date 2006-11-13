@@ -50,7 +50,7 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
 
   private def send(msg: Msg, sender: Actor) = receiver.synchronized {
     receiver.tick()
-    if (waitingFor(msg) && ((waitingForSender == null) ||
+    if (waitingFor(msg) && ((waitingForSender eq null) ||
         (waitingForSender == sender))) {
       received = msg
       receiver.pushSender(sender)
@@ -215,7 +215,7 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
       else synchronized {
         isSuspended = true
         receiver.suspendActorFor(msec)
-        if (received == null)
+        if (received eq null)
           if (f.isDefinedAt(TIMEOUT)) {
             isSuspended = false
             val result = f(TIMEOUT)
@@ -240,7 +240,7 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
             received = null
             receiver.suspendActorFor(msec)
             Debug.info("received: "+received)
-            if (received == null) {
+            if (received eq null) {
               Debug.info("no message received after "+msec+" millis")
               if (f.isDefinedAt(TIMEOUT)) {
                 Debug.info("executing TIMEOUT action")

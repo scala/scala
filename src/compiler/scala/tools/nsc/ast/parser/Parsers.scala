@@ -196,7 +196,7 @@ trait Parsers requires SyntaxAnalyzer {
     */
     def joinComment(trees: => List[Tree]): List[Tree] = {
       val buf = in.docBuffer
-      if (buf != null) {
+      if (buf ne null) {
         in.docBuffer = null
         trees map (t => DocDef(buf.toString(), t) setPos t.pos)
       } else trees
@@ -1440,7 +1440,7 @@ trait Parsers requires SyntaxAnalyzer {
         }
         val pname = ident()
         val param = atPos(in.currentPos) { typeBounds(mods, pname) }
-        if (in.token == VIEWBOUND && (implicitViews != null))
+        if (in.token == VIEWBOUND && (implicitViews ne null))
           implicitViews += atPos(in.skipToken()) {
             makeFunctionTypeTree(List(Ident(pname.toTypeName)), typ())
           }

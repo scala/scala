@@ -391,13 +391,13 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
 
       case Bind(name, Ident(nme.WILDCARD)) => // x @ _
         val node = pDefaultPat(tree.pos, header.getTpe())
-        if ((env != null) && (tree.symbol != defs.PatternWildcard))
+        if ((env ne null) && (tree.symbol != defs.PatternWildcard))
           env.newBoundVar( tree.symbol, tree.tpe, header.selector);
         node
 
       case Bind(name, pat) =>                // x @ p
         val node = patternNode(pat, header, env)
-        if ((env != null) && (tree.symbol != defs.PatternWildcard)) {
+        if ((env ne null) && (tree.symbol != defs.PatternWildcard)) {
           val theValue = node.symbol match {
             case NoSymbol => header.selector
             case x        => Ident(x) setType x.tpe
@@ -426,7 +426,7 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
                   //Console.println(av.toString()+" IS  N O T  RIGHTIGNORING");
                   pSequencePat(tree.pos, tree.tpe, ts.length);
           }
-        } else if ((fn.symbol != null) &&
+        } else if ((fn.symbol ne null) &&
                    fn.symbol.isStable &&
                    !(fn.symbol.isModule &&
                      ((fn.symbol.flags & Flags.CASE) != 0))) {
@@ -527,7 +527,7 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
 */
       case _ =>
         Predef.error("unit = " + cunit + "; tree = " +
-          (if (tree == null) "null" else tree))
+          (if (tree eq null) "null" else tree))
     }
     //Console.print(t);
     t
@@ -609,7 +609,7 @@ print()
     var curHeader: Header = target.and match {
       case null => null
       case h: Header => h    // advance one step in intermediate representation
-      case b: Body if b.or != null => b.or.asInstanceOf[Header]
+      case b: Body if (b.or ne null) => b.or.asInstanceOf[Header]
       case b: Body =>
         if (b.guard(b.guard.length - 1) == EmptyTree) {
           cunit.error(pat.pos, "unreachable code")
@@ -620,7 +620,7 @@ print()
           null
         }
     }
-    if (curHeader == null) {                  // check if we have to add a new header
+    if (curHeader eq null) {                  // check if we have to add a new header
       //Console.println(" -- adding new header")
       //assert index >= 0 : casted;
       if (index < 0) { Predef.error("error entering:" + casted); return null }
@@ -630,7 +630,7 @@ print()
       curHeader  = newHeader(pat.pos, casted, index)
       target.and = curHeader; // (*)
 
-      if (bodycond != null) target.and = bodycond(target.and) // restores body with the guards
+      if (bodycond ne null) target.and = bodycond(target.and) // restores body with the guards
 
       curHeader.or = patternNode(pat, curHeader, env)
       enter(patArgs, curHeader.or, casted, env)
@@ -638,7 +638,7 @@ print()
     } else {
       //Console.println("   enter: using old header for casted = "+casted) // DBG
       // find most recent header
-      while (curHeader.next != null)
+      while (curHeader.next ne null)
         curHeader = curHeader.next
       // create node
       var patNode = patternNode(pat, curHeader, env)
@@ -655,7 +655,7 @@ print()
           }
           return enter(patArgs, next, casted, env);
         } else if (next.isDefaultPat() ||           // default case reached, or
-                   ((next.or == null) &&            //  no more alternatives and
+                   ((next.or eq null) &&            //  no more alternatives and
                     (patNode.isDefaultPat() || next.subsumes(patNode)))) {
                       // new node is default or subsumed
                       var header = pHeader(patNode.pos,
@@ -668,7 +668,7 @@ print()
                                    casted,
                                    env);
                     }
-          else if (next.or == null) {
+          else if (next.or eq null) {
             //Console.println(" -- add new branch!")
             return enter(patArgs, {next.or = patNode; patNode}, casted, env); // add new branch
           } else
@@ -757,9 +757,9 @@ print()
     protected def isSimpleSwitch(): Boolean  = {
       print();
       var patNode = root.and;
-      while (patNode != null) {
+      while (patNode ne null) {
         var node = patNode;
-        while (({node = node.or; node}) != null) {
+        while (({node = node.or; node}) ne null) {
           node match {
                 case VariablePat(tree) =>
                   //Konsole.println(((tree.symbol.flags & Flags.CASE) != 0));
@@ -770,7 +770,7 @@ print()
                       //outer: while (true) {
                       inner match {
                         case _h:Header =>
-                          if (_h.next != null)
+                          if (_h.next ne null)
                             throw Break(false);
                           funct(inner.or)
 
@@ -810,9 +810,9 @@ print()
   protected def isSimpleIntSwitch(): Boolean =
     if (isSameType(selector.tpe.widen, defs.IntClass.tpe)) {
       var patNode = root.and
-      while (patNode != null) {
+      while (patNode ne null) {
         var node = patNode;
-        while (({node = node.or; node}) != null) {
+        while (({node = node.or; node}) ne null) {
           node match {
             case ConstantPat(_) => ;
             case DefaultPat() => // experimental: enable simple int switch with default
@@ -847,7 +847,7 @@ print()
   protected def numCases(patNode1: PatternNode): Int = {
     var patNode = patNode1
     var n = 0
-    while (({patNode = patNode.or; patNode}) != null)
+    while (({patNode = patNode.or; patNode}) ne null)
     patNode match {
       case DefaultPat() => ;
       case _ => n = n + 1
@@ -857,9 +857,9 @@ print()
 
   protected def defaultBody(patNode1: PatternNode, otherwise: Tree ): Tree = {
     var patNode = patNode1;
-    while (patNode != null) {
+    while (patNode ne null) {
       var node = patNode
-      while (({node = node.or; node}) != null)
+      while (({node = node.or; node}) ne null)
       node match {
         case DefaultPat() =>
           return node.and.bodyToTree();
@@ -875,7 +875,7 @@ print()
    */
   def intSwitchToTree(): Tree = {
     def insert1(tag: Int, body: Tree, current: TagBodyPair): TagBodyPair = {
-      if (current == null)
+      if (current eq null)
         new TagBodyPair(tag, body, null)
       else if (tag > current.tag)
         new TagBodyPair(current.tag, current.body, insert1(tag, body, current.next))
@@ -911,9 +911,9 @@ print()
     var mappings: TagBodyPair = null
     var defaultBody1: Tree = matchError
     var patNode = root.and
-    while (patNode != null) {
+    while (patNode ne null) {
       var node = patNode.or
-      while (node != null) {
+      while (node ne null) {
         node match {
           case DefaultPat() =>
             //experimental: allow default body
@@ -935,7 +935,7 @@ print()
 
     var n = mappings.length()
     var nCases: List[CaseDef] = Nil
-    while (mappings != null) {
+    while (mappings ne null) {
       nCases = CaseDef(Literal(mappings.tag),
                        mappings.body) :: nCases;
       mappings = mappings.next;
@@ -944,7 +944,7 @@ print()
     val tags = new Array[Int](n);
     val bodies = new Array[Tree](n);
     n = 0;
-    while (mappings != null) {
+    while (mappings ne null) {
       tags(n) = mappings.tag;
       bodies(n) = mappings.body;
       n = n + 1;
@@ -977,7 +977,7 @@ print()
       if (!optimize || !isSubType(selType, defs.ScalaObjectClass.tpe))
         return false;
       var cases = 0;
-      while (alts != null) {
+      while (alts ne null) {
         alts match {
           case ConstrPat(_) =>
             if (alts.getTpe().symbol.hasFlag(Flags.CASE))
@@ -998,7 +998,7 @@ print()
     var node = node1;
 
     var res: Tree = typed(Literal(Constant(false))); //.setInfo(defs.BooleanClass);
-    while (node != null)
+    while (node ne null)
     node match {
 
       case _h:Header =>
@@ -1039,7 +1039,7 @@ print()
           res = Or(squeezedBlock(ts.toList, res0), res);
           i = i - 1
         }
-      if (_b.or != null)
+      if (_b.or ne null)
         res = Or(res, toTree(_b.or))
       return res;
         case _ =>
@@ -1059,7 +1059,7 @@ print()
 
     protected def toOptTree(node1: PatternNode, selector: Tree): Tree = {
       def insert2(tag: Int, node: PatternNode, current: TagNodePair): TagNodePair = {
-        if (current == null)
+        if (current eq null)
           return new TagNodePair(tag, node, null);
         else if (tag > current.tag)
           return new TagNodePair(current.tag, current.node, insert2(tag, node, current.next));
@@ -1080,7 +1080,7 @@ print()
       //System.err.println("pm.toOptTree called"+node);
       var cases: TagNodePair  = null
       var defaultCase: PatternNode  = null
-      while (node != null)
+      while (node ne null)
       node match {
         case ConstrPat(casted) =>
           cases = insertNode(node.getTpe().symbol.tag, node, cases)
@@ -1115,18 +1115,18 @@ print()
           List()),
         tags,
         bodies,
-        { if (defaultCase == null) Literal(false) else toTree(defaultCase.and) },
+        { if (defaultCase eq null) Literal(false) else toTree(defaultCase.and) },
                         defs.boolean_TYPE());
                         */
       var nCases: List[CaseDef] = Nil
-      while (cases != null) {
+      while (cases ne null) {
         nCases = CaseDef(Literal(Constant(cases.tag)),
                          toTree(cases.node, selector)) :: nCases;
         cases = cases.next
       }
 
       val defBody =
-        if (defaultCase == null) Literal(Constant(false))
+        if (defaultCase eq null) Literal(Constant(false))
         else toTree(defaultCase.and)
 
       nCases = CaseDef(Ident(nme.WILDCARD), defBody) :: nCases;
@@ -1149,9 +1149,9 @@ print()
 
     protected def toTree(node: PatternNode, selector:Tree): Tree = {
       //Konsole.println("pm.toTree("+node+","+selector+") selector.tpe = "+selector.tpe+")")
-      if (selector.tpe == null)
+      if (selector.tpe eq null)
         scala.Predef.error("cannot go on")
-      if (node == null)
+      if (node eq null)
         return Literal(Constant(false));
       else
         node match {
@@ -1248,7 +1248,7 @@ print()
               else And(tpetest, seqLongerThan(treeAsSeq, ntpe, minlen))
 
             var bindings =
-              if(castedRest != null)
+              if(castedRest ne null)
                 List(ValDef(castedRest, seqDrop(treeAsSeq.duplicate, minlen)))
               else
                 List()

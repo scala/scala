@@ -30,7 +30,7 @@ trait ExternalSources requires (ExternalSources with MarkupParser with MarkupHan
     var inputLine:String = null;
 
     //while (inputLine = in.readLine()) != null) {
-    while ({inputLine = in.readLine(); inputLine} != null) {
+    while ({inputLine = in.readLine(); inputLine} ne null) {
       // Console.println(inputLine); // DEBUG
       str.append(inputLine);
       str.append('\n'); // readable output

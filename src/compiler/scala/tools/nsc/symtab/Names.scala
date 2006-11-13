@@ -90,9 +90,9 @@ class Names {
   def newTermName(cs: Array[char], offset: int, len: int): Name = {
     val h = hashValue(cs, offset, len) & HASH_MASK;
     var n = termHashtable(h);
-    while ((n != null) && (n.length != len || !equals(n.start, cs, offset, len)))
+    while ((n ne null) && (n.length != len || !equals(n.start, cs, offset, len)))
       n = n.next;
-    if (n == null) {
+    if (n eq null) {
       n = new TermName(nc, len, h)
       enterChars(cs, offset, len)
     }
@@ -370,9 +370,9 @@ class Names {
     def toTypeName = {
       val h = hashValue(chrs, index, len) & HASH_MASK
       var n = typeHashtable(h)
-      while (n != null && n.start != index)
+      while ((n ne null) && n.start != index)
         n = n.next;
-      if (n == null)
+      if (n eq null)
         n = new TypeName(index, len, h);
       n
     }
@@ -388,9 +388,9 @@ class Names {
     def toTermName: Name = {
       val h = hashValue(chrs, index, len) & HASH_MASK
       var n = termHashtable(h)
-      while (n != null && n.start != index)
+      while ((n ne null) && n.start != index)
         n = n.next;
-      if (n == null)
+      if (n eq null)
         n = new TermName(index, len, h);
       n
     }

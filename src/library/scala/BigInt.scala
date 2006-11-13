@@ -32,7 +32,7 @@ object BigInt {
   def apply(i: Int): BigInt =
     if (minCached <= i && i <= maxCached) {
       var n = cache(i)
-      if (n == null) { n = new BigInt(BigInteger.valueOf(i)); cache(i) = n }
+      if (n eq null) { n = new BigInt(BigInteger.valueOf(i)); cache(i) = n }
       n
     } else new BigInt(BigInteger.valueOf(i))
 

@@ -69,12 +69,12 @@ trait MutableList[A] extends Seq[A] with PartialFunction[Int, A] {
   /** Returns an iterator over all elements of this list.
    */
   def elements: Iterator[A] =
-    if (first == null) Nil.elements else first.elements
+    if (first eq null) Nil.elements else first.elements
 
   /** Returns an instance of <code>scala.List</code> containing the same
    *  sequence of elements.
    */
-  override def toList: List[A] = if (first == null) Nil else first.toList
+  override def toList: List[A] = if (first eq null) Nil else first.toList
 
   override protected def stringPrefix: String = "MutableList"
 }

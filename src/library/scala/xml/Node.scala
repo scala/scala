@@ -67,7 +67,7 @@ abstract class Node extends NodeSeq {
    * @return    the namespace if <code>scope != null</code> and prefix was
    *            found, else <code>null</code>
    */
-  def getNamespace(pre: String) = if (scope == null) null else scope.getURI(pre)
+  def getNamespace(pre: String) = if (scope eq null) null else scope.getURI(pre)
 
   /**
    * Convenience method, looks up an unprefixed attribute in attributes of this node.

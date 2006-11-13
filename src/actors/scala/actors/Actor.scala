@@ -36,7 +36,7 @@ object Actor {
   def self: Actor = synchronized {
     val t = currentThread
     var a = selfs.get(t).asInstanceOf[Actor]
-    if (a == null) {
+    if (a eq null) {
       a = new ActorProxy(t)
       selfs.put(t, a)
     }
@@ -303,7 +303,7 @@ trait Actor extends OutputChannel[Any] {
   private var rc: Channel[Any] = null
 
   private[actors] def reply: Channel[Any] = {
-    if (rc == null) {
+    if (rc eq null) {
       rc = new Channel[Any]
       rc.receiver = this
     }
@@ -350,12 +350,12 @@ trait Actor extends OutputChannel[Any] {
   private[actors] var timeoutPending = false
 
   private[actors] def scheduleActor(f: PartialFunction[Any, Unit], msg: Any) =
-    if (f == null && continuation == null) {
+    if ((f eq null) && (continuation eq null)) {
       // do nothing (timeout is handled instead)
     }
     else {
       val task = new ActorTask(this,
-                               if (f == null) continuation else f,
+                               if (f eq null) continuation else f,
                                msg)
       Scheduler.execute(task)
     }

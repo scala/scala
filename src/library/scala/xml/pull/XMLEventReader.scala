@@ -59,7 +59,7 @@ class XMLEventReader extends Iterator[XMLEvent] {
     notifyAll
   }
   def getAndClearEvent: XMLEvent = synchronized {
-    while(xmlEvent == null) {
+    while(xmlEvent eq null) {
       wait()
     }
     val r = xmlEvent

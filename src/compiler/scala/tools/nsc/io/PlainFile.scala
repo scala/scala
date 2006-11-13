@@ -27,7 +27,7 @@ object PlainFile {
  */
 class PlainFile(val file: File) extends AbstractFile {
 
-  assert(file != null)
+  assert(file ne null)
   assert(file.exists(), "non-existent file: " + file)
 
   //########################################################################
@@ -67,7 +67,7 @@ class PlainFile(val file: File) extends AbstractFile {
   def elements: Iterator[AbstractFile] = {
     assert(isDirectory, "not a directory '" + this + "'")
     val names: Array[String] = file.list()
-    if (names == null || names.length == 0) Iterator.empty
+    if ((names eq null) || names.length == 0) Iterator.empty
     else Iterator.fromArray(names).map { name: String => new File(file, name) }
       .filter(.exists()).map(file => new PlainFile(file))
   }

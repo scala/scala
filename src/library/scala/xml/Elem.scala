@@ -28,7 +28,7 @@ case class Elem(override val prefix: String,
                 override val scope: NamespaceBinding,
                 val child: Node*) extends Node {
 
-  if (prefix != null && 0 == prefix.length())
+  if ((null != prefix) && 0 == prefix.length())
     throw new IllegalArgumentException("prefix of zero length, use null instead");
 
   if (null == scope)

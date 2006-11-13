@@ -229,7 +229,7 @@ abstract class TreeBrowsers {
           TreeInfo.symbolTypeDoc(t).format(getWidth() / getColumnWidth(), buf)
           str.append(buf.toString())
           str.append("\nSymbol tpe: ")
-          if (t.symbol != null) {
+          if (t.symbol ne null) {
             str.append(t.symbol.tpe).append("\n");
             buf = new StringWriter();
             TypePrinter.toDocument(t.symbol.tpe).format(getWidth() / getColumnWidth(), buf)
@@ -534,7 +534,7 @@ abstract class TreeBrowsers {
     /** Return t's symbol type  */
     def symbolTypeDoc(t: Tree): Document = {
       val s = t.symbol
-      if (s != null)
+      if (s ne null)
         TypePrinter.toDocument(s.info)
       else
         DocNil
@@ -546,7 +546,7 @@ abstract class TreeBrowsers {
       val s = t.symbol
       var att = ""
 
-      if (s != null) {
+      if (s ne null) {
         var str = flagsToString(s.flags)
         if (s.hasFlag(STATIC) || s.hasFlag(STATICMEMBER))
           str = str + " isStatic ";

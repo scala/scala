@@ -324,8 +324,7 @@ trait BasicBlocks requires ICodes {
      *  in different code 'chunks' than the rest of the method.
      */
     def predecessors: List[BasicBlock] = {
-//      if (preds == null)
-        preds = code.blocks.elements.filter (p => (p.successors contains this)).toList;
+      preds = code.blocks.elements.filter (.successors.contains(this)).toList;
       preds
     }
 

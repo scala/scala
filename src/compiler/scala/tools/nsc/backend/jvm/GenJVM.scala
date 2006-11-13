@@ -125,7 +125,7 @@ abstract class GenJVM extends SubComponent {
       jclass.writeTo(outfile)
       val file = scala.tools.nsc.io.AbstractFile.getFile(outfile)
       informProgress("wrote " + outfile + " " +
-                     (if (file != null) "" + file.file + " " + file.file.exists()
+                     (if (file ne null) "" + file.file + " " + file.file.exists()
                       else "no file"))
     }
 

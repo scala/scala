@@ -62,7 +62,7 @@ object CompileSocket {
     def expand(trial: Pair[String, List[String]]): Option[File] = {
       val Pair(topdirProp, extensions) = trial
       val topdir = System.getProperty(topdirProp)
-      if (topdir == null)
+      if (topdir eq null)
         return None
 
       val fulldir =

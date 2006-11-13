@@ -580,7 +580,7 @@ trait MarkupParser requires (MarkupParser with MarkupHandler) extends AnyRef wit
   def parseDTD(): Unit = { // dirty but fast
     //Console.println("(DEBUG) parseDTD");
     var extID: ExternalID = null
-    if (this.dtd != null)
+    if (this.dtd ne null)
       reportSyntaxError("unexpected character (DOCTYPE already defined");
     xToken("DOCTYPE")
     xSpace
@@ -649,7 +649,7 @@ trait MarkupParser requires (MarkupParser with MarkupHandler) extends AnyRef wit
       /*override val */decls      = handle.decls.reverse
     }
     //this.dtd.initializeEntities();
-    if (doc!=null)
+    if (doc ne null)
       doc.dtd = this.dtd
 
     handle.endDTD(n)

@@ -465,7 +465,7 @@ package scala.tools.ant {
             "; see the documenter output for details.")
         reporter.printSummary()
       } catch {
-        case exception: Throwable if (exception.getMessage != null) =>
+        case exception: Throwable if (exception.getMessage ne null) =>
           exception.printStackTrace()
           error("Document failed because of an internal documenter error (" +
             exception.getMessage + "); see the error output for details.")

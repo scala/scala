@@ -41,7 +41,7 @@ class Location(url: URL) {
 
   /** The class loader associated with this location.
    */
-  private val loader = if (url == null)
+  private val loader = if (url eq null)
     ClassLoader.getSystemClassLoader()
   else
     lcache.get(url) match {

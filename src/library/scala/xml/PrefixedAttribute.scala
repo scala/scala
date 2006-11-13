@@ -21,7 +21,7 @@ class PrefixedAttribute(val pre: String,
                         val value: Seq[Node],
                         val next: MetaData) extends MetaData {
 
-  if(value == null)
+  if(value eq null)
     throw new UnsupportedOperationException("value is null")
 
   /** same as this(key, Utility.parseAttributeValue(value), next) */
@@ -71,7 +71,7 @@ class PrefixedAttribute(val pre: String,
 
 
   /** appends string representation of only this attribute to stringbuffer */
-  def toString1(sb:StringBuilder): Unit = if(value!=null) {
+  def toString1(sb:StringBuilder): Unit = if(value ne null) {
     sb.append(pre)
     sb.append(':')
     sb.append(key)

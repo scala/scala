@@ -1254,7 +1254,7 @@ abstract class GenICode extends SubComponent  {
             case Pair(expr, Literal(Constant(null))) => expr
             case _ => null
           }
-          if (expr != null) {
+          if (expr ne null) {
             val ctx1 = genLoad(expr, ctx, ANY_REF_CLASS)
             if (code == scalaPrimitives.ID)
               ctx1.bb.emit(CZJUMP(thenCtx.bb, elseCtx.bb, EQ, ANY_REF_CLASS))
@@ -1344,7 +1344,7 @@ abstract class GenICode extends SubComponent  {
 
     /**
      * Generate the "==" code for object references. It is equivalent of
-     * if (l == null) then r == null else l.equals(r);
+     * if (l eq null) then r eq null else l.equals(r);
      *
      * @param l       ...
      * @param r       ...
@@ -1361,7 +1361,7 @@ abstract class GenICode extends SubComponent  {
         case Pair(expr, Literal(Constant(null))) => expr
         case _ => null
       }
-      if (expr != null) {
+      if (expr ne null) {
         val ctx1 = genLoad(expr, ctx, ANY_REF_CLASS)
         ctx1.bb.emit(CZJUMP(thenCtx.bb, elseCtx.bb, EQ, ANY_REF_CLASS))
         ctx1.bb.close
@@ -1799,7 +1799,7 @@ abstract class GenICode extends SubComponent  {
       }
 
       def setParams(p: List[Symbol]): Label = {
-        assert(params == null, "Cannot set label parameters twice!")
+        assert(params eq null, "Cannot set label parameters twice!")
         params = p
         this
       }

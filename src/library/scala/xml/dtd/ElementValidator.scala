@@ -57,7 +57,7 @@ class ElementValidator() extends Function1[Node,Boolean] {
 
             }
             case _ =>
-              x.namespace == null
+              x.namespace eq null
           }}
           . map { x => ElemName(x.label) }
           . elements;

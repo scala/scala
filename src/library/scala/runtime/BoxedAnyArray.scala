@@ -28,7 +28,7 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
   private var elemClass: Class = null
 
   def apply(index: Int): AnyRef = synchronized {
-    if (unboxed == null)
+    if (unboxed eq null)
       boxed(index);
     else if (elemClass eq ScalaRunTime.IntTYPE)
       Int.box(unboxed.asInstanceOf[Array[Int]](index))
@@ -51,7 +51,7 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
   }
 
   def update(index: Int, elem: AnyRef): Unit = synchronized {
-    if (unboxed == null)
+    if (unboxed eq null)
       boxed(index) = elem
     else if (elemClass eq ScalaRunTime.IntTYPE)
       unboxed.asInstanceOf[Array[Int]](index) = Int.unbox(elem)
@@ -85,7 +85,7 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
     else unbox(Platform.getClassForName(elemTag))
 
   def unbox(elemClass: Class): AnyRef = synchronized {
-    if (unboxed == null) {
+    if (unboxed eq null) {
       this.elemClass = elemClass;
       if (elemClass eq ScalaRunTime.IntTYPE) {
 	val newvalue = new Array[Int](length)
@@ -165,21 +165,21 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
 
   override def equals(other: Any): Boolean = (
     other.isInstanceOf[BoxedAnyArray] && (this eq (other.asInstanceOf[BoxedAnyArray])) ||
-    (if (unboxed == null) boxed == other else unboxed == other)
+    (if (unboxed eq null) boxed == other else unboxed == other)
   )
 
   override def hashCode(): Int = hash
 
   def value: AnyRef = {
-    if (unboxed == null) throw new NotDefinedError("BoxedAnyArray.value")
+    if (unboxed eq null) throw new NotDefinedError("BoxedAnyArray.value")
     unboxed
   }
 
   private def adapt(other: AnyRef): AnyRef =
-    if (this.unboxed == null)
+    if (this.unboxed eq null)
       other match {
         case that: BoxedAnyArray =>
-          if (that.unboxed == null) {
+          if (that.unboxed eq null) {
             that.boxed
           } else {
             if (ScalaRunTime.isValueClass(that.elemClass)) unbox(that.elemClass);
@@ -209,7 +209,7 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
     else
       other match {
         case that: BoxedAnyArray =>
-          if (that.unboxed != null) that.unboxed
+          if (that.unboxed ne null) that.unboxed
           else if (ScalaRunTime.isValueClass(this.elemClass)) that.unbox(this.elemClass)
           else that.boxed
         case that: BoxedArray =>
@@ -220,12 +220,12 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
 
   override def copyFrom(src: AnyRef, from: Int, to: Int, len: Int): Unit = {
     val src1 = adapt(src)
-    Array.copy(src1, from, if (unboxed != null) unboxed else boxed, to, len)
+    Array.copy(src1, from, if (unboxed ne null) unboxed else boxed, to, len)
   }
 
   override def copyTo(from: Int, dest: AnyRef, to: Int, len: Int): Unit = {
     var dest1 = adapt(dest)
-    Array.copy(if (unboxed != null) unboxed else boxed, from, dest1, to, len)
+    Array.copy(if (unboxed ne null) unboxed else boxed, from, dest1, to, len)
   }
 
   override def subArray(start: Int, end: Int): AnyRef = {

@@ -66,7 +66,7 @@ case class PublicID( publicId:String, systemId:String ) extends ExternalID with 
     throw new IllegalArgumentException(
       "publicId must consist of PubidChars"
     )
-  if( systemId != null && !checkSysID( systemId ) )
+  if( (systemId ne null) && !checkSysID( systemId ) )
     throw new IllegalArgumentException(
       "can't use both \" and ' in systemId"
     )
@@ -83,7 +83,7 @@ case class PublicID( publicId:String, systemId:String ) extends ExternalID with 
   /** appends "PUBLIC "+publicId+" SYSTEM "+systemId to argument */
   override def toString(sb: StringBuilder): StringBuilder = {
     Utility.publicLiteralToString( sb, publicId ).append(' ')
-    if(systemId!=null)
+    if(systemId ne null)
       Utility.systemLiteralToString( sb, systemId )
     else
       sb

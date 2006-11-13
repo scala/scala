@@ -12,15 +12,15 @@ abstract class Phase(val prev: Phase) {
 
   type Id = int
 
-  val id: Id = if (prev == null) 0 else prev.id + 1
+  val id: Id = if (prev eq null) 0 else prev.id + 1
 
   def newFlags: long = 0l
   private var fmask: long =
-    if (prev == null) Flags.InitialFlags else prev.flagMask | newFlags
+    if (prev eq null) Flags.InitialFlags else prev.flagMask | newFlags
   def flagMask: long = fmask
 
   private var nx: Phase = this
-  if (prev != null) prev.nx = this
+  if (prev ne null) prev.nx = this
 
   def next: Phase = nx
 

@@ -52,7 +52,7 @@ object ScalaRunTime {
     def run(): Unit = result = block;
 
     def Catch[b >: a](handler: PartialFunction[Throwable, b]): b =
-      if (exception == null)
+      if (exception eq null)
 	result.asInstanceOf[b]
       // !!! else if (exception is LocalReturn)
       // !!!   // ...
@@ -62,7 +62,7 @@ object ScalaRunTime {
 	throw exception;
 
     def Finally(handler: Unit): a =
-      if (exception == null)
+      if (exception eq null)
         result.asInstanceOf[a]
       else
         throw exception;

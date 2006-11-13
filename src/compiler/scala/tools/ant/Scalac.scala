@@ -591,7 +591,7 @@ package scala.tools.ant {
       try {
         (new compiler.Run).compile(sourceFiles.map (.toString()))
        } catch {
-        case exception: Throwable if (exception.getMessage != null) =>
+        case exception: Throwable if (exception.getMessage ne null) =>
           exception.printStackTrace()
           error("Compile failed because of an internal compiler error (" +
             exception.getMessage + "); see the error output for details.")

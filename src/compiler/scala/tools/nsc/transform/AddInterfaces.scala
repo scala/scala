@@ -77,7 +77,7 @@ abstract class AddInterfaces extends InfoTransform {
             atPhase(phase.next) {
               val decls = iface.owner.info.decls
               val e = decls.lookupEntry(impl.name)
-              if (e == null) {
+              if (e eq null) {
                 decls enter impl
               } else {
                 decls.unlink(e)

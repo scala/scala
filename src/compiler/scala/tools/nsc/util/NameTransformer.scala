@@ -53,18 +53,18 @@ object NameTransformer {
     var i = 0
     while (i < len) {
       val c = name charAt i
-      if (c < nops && op2code(c) != null) {
-        if (buf == null) {
+      if (c < nops && (op2code(c) ne null)) {
+        if (buf eq null) {
           buf = new StringBuilder()
           buf.append(name.substring(0, i))
         }
         buf.append(op2code(c))
-      } else if (buf != null) {
+      } else if (buf ne null) {
         buf.append(c)
       }
       i = i + 1
     }
-    if (buf == null) name else buf.toString()
+    if (buf eq null) name else buf.toString()
   }
 
   /** Replace <code>$op_name</code> by corresponding operator symbol.
@@ -88,9 +88,9 @@ object NameTransformer {
           val ch2 = name.charAt(i+2)
           if ('a' <= ch2 && ch2 <= 'z') {
             ops = code2op((ch1 - 'a') * 26 + ch2 - 'a')
-            while (ops != null && !name.startsWith(ops.code, i)) ops = ops.next;
-            if (ops != null) {
-              if (buf == null) {
+            while ((ops ne null) && !name.startsWith(ops.code, i)) ops = ops.next;
+            if (ops ne null) {
+              if (buf eq null) {
                 buf = new StringBuilder()
                 buf.append(name.substring(0, i))
               }
@@ -100,12 +100,12 @@ object NameTransformer {
           }
         }
       }
-      if (ops == null) {
-        if (buf != null) buf.append(c)
+      if (ops eq null) {
+        if (buf ne null) buf.append(c)
         i = i + 1
       }
     }
     //System.out.println("= " + (if (buf == null) name else buf.toString()));//DEBUG
-    if (buf == null) name else buf.toString()
+    if (buf eq null) name else buf.toString()
   }
 }

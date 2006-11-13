@@ -83,7 +83,7 @@ trait Namers requires Analyzer {
     def namerOf(sym: Symbol): Namer = {
 
       def innerNamer: Namer = {
-        if (innerNamerCache == null)
+        if (innerNamerCache eq null)
           innerNamerCache =
             if (!isTemplateContext(context)) this
             else new Namer(context.make(context.tree, context.owner, newScope))
@@ -114,7 +114,7 @@ trait Namers requires Analyzer {
       // allow for overloaded methods
       if (!(sym.isSourceMethod && sym.owner.isClass && !sym.owner.isPackageClass)) {
       	val prev = context.scope.lookupEntry(sym.name);
-      	if (prev != null && prev.owner == context.scope &&
+      	if ((prev ne null) && prev.owner == context.scope &&
             (!prev.sym.isSourceMethod ||
              nme.isSetterName(sym.name) ||
              sym.owner.isPackageClass)) {
@@ -154,11 +154,11 @@ trait Namers requires Analyzer {
       if (c.owner.isPackageClass) {
       	val file = context.unit.source.getFile()
       	val clazz = c.asInstanceOf[ClassSymbol]
-      	if (settings.debug.value && clazz.sourceFile != null && !clazz.sourceFile.equals(file)) {
+      	if (settings.debug.value && (clazz.sourceFile ne null) && !clazz.sourceFile.equals(file)) {
           Console.err.println("SOURCE MISMATCH: " + clazz.sourceFile + " vs. " + file + " SYM=" + c);
         }
         clazz.sourceFile = file
-        if (clazz.sourceFile != null) {
+        if (clazz.sourceFile ne null) {
           assert(!currentRun.compiles(clazz) || clazz.sourceFile == currentRun.symSource(c));
           currentRun.symSource(c) = clazz.sourceFile
         }
@@ -596,14 +596,14 @@ trait Namers requires Analyzer {
               typer.checkStable(expr1)
               def checkNotRedundant(pos: PositionType, from: Name, to: Name): boolean = {
                 if (!tree.symbol.hasFlag(SYNTHETIC) &&
-                    !(expr1.symbol != null && expr1.symbol.isInterpreterWrapper) &&
+                    !((expr1.symbol ne null) && expr1.symbol.isInterpreterWrapper) &&
                     base.member(from) != NoSymbol) {
                   val e = context.scope.lookupEntry(to)
                   def warnRedundant(sym: Symbol) =
                     context.unit.warning(pos, "imported `"+to+
                                          "' is permanently hidden by definition of "+sym+
                                          sym.locationString)
-                  if (e != null && e.owner == context.scope) {
+                  if ((e ne null) && e.owner == context.scope) {
                     warnRedundant(e.sym); return false
                   } else if (context eq context.enclClass) {
                     val defSym = context.prefix.member(to) filter (
@@ -623,7 +623,7 @@ trait Namers requires Analyzer {
                   }
         	  if (from != nme.WILDCARD && (rest.exists (sel => sel._1 == from)))
         	    context.error(tree.pos, from.decode + " is renamed twice");
-        	  if (to != null && to != nme.WILDCARD && (rest exists (sel => sel._2 == to)))
+        	  if ((to ne null) && to != nme.WILDCARD && (rest exists (sel => sel._2 == to)))
         	    context.error(tree.pos, to.decode + " appears twice as a target of a renaming");
         	  checkSelectors(rest)
                 case Nil =>

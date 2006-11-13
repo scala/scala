@@ -175,7 +175,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
 
   def getSourceFile(name: String): SourceFile = {
     val f = AbstractFile.getFile(name)
-    if (f == null) throw new FileNotFoundException(
+    if (f eq null) throw new FileNotFoundException(
       "source file '" + name + "' could not be found")
     getSourceFile(f)
   }
@@ -509,7 +509,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     }
 
     def compileLate(file: AbstractFile): unit =
-      if (fileset == null) {
+      if (fileset eq null) {
         val msg = "No class file for " + file +
                   " was found\n(This file cannot be loaded as a source file)"
         inform(msg)

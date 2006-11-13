@@ -38,7 +38,7 @@ trait Contexts requires Analyzer {
     import definitions._
     var sc = startContext
     def addImport(pkg: Symbol): unit = {
-      assert(pkg != null)
+      assert(pkg ne null)
       val qual = gen.mkAttributedStableRef(pkg)
       sc = sc.makeNewImport(
         Import(qual, List(Pair(nme.WILDCARD, null)))
@@ -49,7 +49,7 @@ trait Contexts requires Analyzer {
     if (!settings.noimports.value) {
       assert(isDefinitionsInitialized)
       addImport(JavaLangPackage)
-      assert(ScalaPackage != null, "Scala package is null")
+      assert(ScalaPackage ne null, "Scala package is null")
       addImport(ScalaPackage)
       if (!settings.nopredefs.value/* || unit.source.file.name != "Predef.scala"*/)
         addImport(PredefModule)
@@ -101,7 +101,7 @@ trait Contexts requires Analyzer {
       case that if (super.equals(that)) => true
       case NoContext => false
       case that : Context =>
-        val a0 = if (tree == null) tree == that.tree else tree equalsStructure that.tree;
+        val a0 = if (tree eq null) tree == that.tree else tree equalsStructure that.tree;
         val a1 = owner == that.owner;
         val a2 = scope == that.scope;
         val a3 = outer == that.outer;
@@ -326,8 +326,8 @@ trait Contexts requires Analyzer {
       def accessWithin(owner: Symbol): boolean = {
         var c = this
         while (c != NoContext && c.owner != owner) {
-          if (c.outer == null) assert(false, "accessWithin(" + owner + ") " + c);//debug
-          if (c.outer.enclClass == null) assert(false, "accessWithin(" + owner + ") " + c);//debug
+          if (c.outer eq null) assert(false, "accessWithin(" + owner + ") " + c);//debug
+          if (c.outer.enclClass eq null) assert(false, "accessWithin(" + owner + ") " + c);//debug
           c = c.outer.enclClass
         }
         c != NoContext
@@ -462,7 +462,7 @@ trait Contexts requires Analyzer {
   class ImplicitInfo(val name: Name, val pre: Type, val sym: Symbol) {
     private var tpeCache: Type = null
     def tpe: Type = {
-      if (tpeCache == null) tpeCache = pre.memberType(sym)
+      if (tpeCache eq null) tpeCache = pre.memberType(sym)
       tpeCache
     }
     override def toString = "ImplicitInfo(" + name + "," + pre + "," + sym + ")"

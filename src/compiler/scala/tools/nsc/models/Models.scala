@@ -126,8 +126,8 @@ abstract class Models {
         }
         ret = ret + " : " + textFor(vdef.tpt)
       case atd: AbsTypeDef =>
-        ret = ret + ((if(atd.hi != null) " <: " + textFor(atd.hi) else "") +
-                     (if(atd.lo != null) " >: " + textFor(atd.lo) else ""));
+        ret = ret + ((if(atd.hi ne null) " <: " + textFor(atd.hi) else "") +
+                     (if(atd.lo ne null) " >: " + textFor(atd.lo) else ""));
       case _ =>
         ret = ret + tree.toString()
     }
@@ -210,7 +210,7 @@ abstract class Models {
         Console.err.println("PACKAGE: " + mmbr1.symbol + " " + members1.length)
       } else if (isMember(mmbr1)) {
         val mmbr2 = member(mmbr1, members1)
-        if (mmbr2 != null) {
+        if (mmbr2 ne null) {
           var found = false
           for (val mmbr <- members) if (!found && mmbr.replacedBy(mmbr2)) {
             //Console.err.println("REPLACE: " + mmbr + " with " + mmbr2)
@@ -252,7 +252,7 @@ abstract class Models {
       } else false
 
     override def update(tree0: Tree): Boolean = {
-      val updated = tree == null || (treex.mods != tree0.asInstanceOf[MemberDef].mods)
+      val updated = (tree eq null) || (treex.mods != tree0.asInstanceOf[MemberDef].mods)
       super.update(tree0) || updated;
     }
   }
@@ -271,7 +271,7 @@ abstract class Models {
 
     override def update(tree0: Tree): Boolean = {
       val tree1 = tree0.asInstanceOf[ValOrDefDef]
-      val updated = tree == null || treex.tpe != tree1.tpe
+      val updated = (tree eq null) || treex.tpe != tree1.tpe
       update0(flatten(tree1.rhs, (tree2: Tree) => isMember(tree2)))
       super.update(tree0) || updated
     }
@@ -313,7 +313,7 @@ abstract class Models {
       val tree0 = if (tree.isInstanceOf[DefDef]) {
         val ddef = tree.asInstanceOf[DefDef]
         ddef.mods
-        if (ddef.mods.isAccessor && ddef.symbol != null) {
+        if (ddef.mods.isAccessor && (ddef.symbol ne null)) {
           val sym0 = ddef.symbol;
           if (sym0.isSetter) return null;
           assert(sym0.isGetter);
@@ -336,7 +336,7 @@ abstract class Models {
       } else super.member(tree, members)
 
       def sym = tree0.symbol
-      if (tree0 == null || tree0.pos == NoPos) null
+      if ((tree0 eq null) || tree0.pos == NoPos) null
       else if (!acceptPrivate &&
                tree0.isInstanceOf[ValOrDefDef] &&
                tree.asInstanceOf[ValOrDefDef].mods.isPrivate) null

@@ -24,7 +24,7 @@ import Predef._
 object MatchError {
 
   def string(obj: Any) =
-    if(obj != null) obj.toString() else "null"
+    if (null != obj) obj.toString() else "null"
 
   // todo: change pattern matcher so that dummy type parameter T can be removed.
   def fail[T](source: String, line: Int): Nothing =

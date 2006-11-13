@@ -23,7 +23,7 @@ object MainGenericRunner {
     */
   def addClasspathExtras(classpath: String): String = {
     val scalaHome = getProperty("scala.home")
-    if (scalaHome == null)
+    if (scalaHome eq null)
       return classpath
 
     val libdir = new File(new File(scalaHome), "lib")

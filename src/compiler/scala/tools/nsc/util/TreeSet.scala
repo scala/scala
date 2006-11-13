@@ -22,7 +22,7 @@ class TreeSet[T >: Null <: AnyRef](less: (T, T) => boolean) extends Set[T] {
 
   def findEntry(x: T): T = {
     def find(t: Tree): T = {
-      if (t == null) null
+      if (t eq null) null
       else if (less(x, t.elem)) find(t.l)
       else if (less(t.elem, x)) find(t.r)
       else t.elem
@@ -32,7 +32,7 @@ class TreeSet[T >: Null <: AnyRef](less: (T, T) => boolean) extends Set[T] {
 
   def addEntry(x: T): unit = {
     def add(t: Tree): Tree = {
-      if (t == null) new Tree(x)
+      if (t eq null) new Tree(x)
       else if (less(x, t.elem)) { t.l = add(t.l); t }
       else if (less(t.elem, x)) { t.r = add(t.r); t }
       else t
@@ -43,14 +43,14 @@ class TreeSet[T >: Null <: AnyRef](less: (T, T) => boolean) extends Set[T] {
   def elements = {
     def elems(t: Tree): Iterator[T] = {
       var it = Iterator.single(t.elem)
-      if (t.l != null) it = elems(t.l) append it
-      if (t.r != null) it = it append elems(t.r)
+      if (t.l ne null) it = elems(t.l) append it
+      if (t.r ne null) it = it append elems(t.r)
       it
     }
-    if (tree == null) Iterator.empty else elems(tree)
+    if (tree eq null) Iterator.empty else elems(tree)
   }
 
   override def toString(): String = {
-    if (tree == null) "<empty>" else "(..." + tree.elem + "...)"
+    if (tree eq null) "<empty>" else "(..." + tree.elem + "...)"
   }
 }

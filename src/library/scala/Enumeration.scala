@@ -66,7 +66,7 @@ abstract class Enumeration(initial: Int, names: String*) {
   private var vcache: List[Value] = null
 
   private def updateCache: List[Value] =
-    if (vcache == null) {
+    if (vcache eq null) {
       vcache = values.values.toList.sort((p1, p2) => p1.id < p2.id);
       vcache
     } else
@@ -132,7 +132,7 @@ abstract class Enumeration(initial: Int, names: String*) {
       topId = nextId
     def id = i
     override def toString() =
-      if (name == null) Enumeration.this.name + "(" + i + ")"
+      if (name eq null) Enumeration.this.name + "(" + i + ")"
       else name
   }
 }

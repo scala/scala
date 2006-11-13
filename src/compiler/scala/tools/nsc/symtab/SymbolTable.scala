@@ -41,7 +41,7 @@ abstract class SymbolTable extends Names
 
   def phase_=(p: Phase): unit = {
     //System.out.println("setting phase to " + p)
-    assert(p != null && p != NoPhase)
+    assert((p ne null) && p != NoPhase)
     ph = p
     per = (currentRunId << 8) + p.id
   }

@@ -17,7 +17,7 @@ abstract class Set[T <: AnyRef] {
   def elements: Iterator[T]
 
   def contains(x: T): boolean =
-    findEntry(x) != null
+    findEntry(x) ne null
 
   def toList = elements.toList
 

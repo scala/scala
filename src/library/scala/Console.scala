@@ -142,7 +142,7 @@ object Console {
    *  @param obj the object to print.
    */
   def print(obj: Any): Unit =
-    out.print(if (obj == null) "null" else obj.toString())
+    out.print(if (null == obj) "null" else obj.toString())
 
   /** Flush the output stream. This function is required when partial
    *  output (i.e. output not terminated by a new line character) has
@@ -173,7 +173,7 @@ object Console {
   // todo: Uncurry
   def printf(text: String)(args: Any*): Unit =
     out.print(
-      if (text == null) "null"
+      if (text eq null) "null"
       else MessageFormat.format(text, textParams(args))
     )
 

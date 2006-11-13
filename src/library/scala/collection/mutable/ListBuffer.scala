@@ -248,7 +248,7 @@ final class ListBuffer[A] extends Buffer[A] {
       if (!hasNext) {
         throw new NoSuchElementException("next on empty Iterator")
       } else {
-        if (cursor == null) cursor = start else cursor = cursor.tail
+        if (cursor eq null) cursor = start else cursor = cursor.tail
         cursor.head
       }
   }

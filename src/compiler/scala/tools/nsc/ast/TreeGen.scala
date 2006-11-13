@@ -73,8 +73,8 @@ abstract class TreeGen {
       if (tree.symbol.isStable) tree.setType(singleType(tree.symbol.owner.thisType, tree.symbol))
       else tree
     case Select(qual, _) =>
-      assert(tree.symbol != null)
-      assert(qual.tpe != null)
+      assert(tree.symbol ne null)
+      assert(qual.tpe ne null)
       if (tree.symbol.isStable && qual.tpe.isStable)
         tree.setType(singleType(qual.tpe, tree.symbol))
       else tree
@@ -109,14 +109,14 @@ abstract class TreeGen {
   }
 
   def mkAttributedSelect(qual: Tree, sym: Symbol): Tree =
-    if (qual.symbol != null &&
+    if ((qual.symbol ne null) &&
         (qual.symbol.name.toTermName == nme.ROOT ||
          qual.symbol.name.toTermName == nme.EMPTY_PACKAGE_NAME)) {
       mkAttributedIdent(sym)
     } else {
       assert(sym.isTerm)
       val result = Select(qual, sym.name) setSymbol sym
-      if (qual.tpe != null) result setType qual.tpe.memberType(sym)
+      if (qual.tpe ne null) result setType qual.tpe.memberType(sym)
       result
     }
 
@@ -190,7 +190,7 @@ abstract class TreeGen {
     ValDef(mvar, if (mvar.owner.isClass) EmptyTree else Literal(Constant(null)))
   }
 
-  // def m: T = { if (m$ == null) m$ = new m$class; m$ }
+  // def m: T = { if (m$ eq null) m$ = new m$class; m$ }
   def mkModuleAccessDef(accessor: Symbol, mvar: Symbol) =
     DefDef(accessor, vparamss =>
       mkCached(mvar,

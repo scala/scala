@@ -137,7 +137,7 @@ trait Infer requires Analyzer {
               ((bound contains tparam2) ||
                up && (tparam2.info.bounds.lo =:= tparam.tpe) ||
                !up && (tparam2.info.bounds.hi =:= tparam.tpe))) {
-            if (tvar2.constr.inst == null) cyclic = true
+            if (tvar2.constr.inst eq null) cyclic = true
             solveOne(tvar2, tparam2, variance2)
           }
         }
@@ -221,7 +221,7 @@ trait Infer requires Analyzer {
       (if (name.isTypeName) "type " else "value ") + name.decode
 
     def treeSymTypeMsg(tree: Tree): String =
-      if (tree.symbol == null)
+      if (tree.symbol eq null)
         "expression of type " + tree.tpe
       else if (tree.symbol.hasFlag(OVERLOADED))
         "overloaded method " + tree.symbol + " with alternatives " + tree.tpe
@@ -326,7 +326,7 @@ trait Infer requires Analyzer {
         sym.toplevelClass match {
           case clazz : ClassSymbol =>
             // System.err.println("TOP: " + clazz + " " + clazz.sourceFile)
-            if (clazz.sourceFile != null)
+            if (clazz.sourceFile ne null)
               global.currentRun.currentUnit.depends += clazz.sourceFile
 
           case _ =>
@@ -524,7 +524,7 @@ trait Infer requires Analyzer {
               val uninstantiated = new ListBuffer[Symbol]
               val targs = methTypeArgs(undetparams, formals, restpe, argtpes, pt, uninstantiated)
               val result = (
-                exprTypeArgs(uninstantiated.toList, restpe.subst(undetparams, targs), pt) != null &&
+                (exprTypeArgs(uninstantiated.toList, restpe.subst(undetparams, targs), pt) ne null) &&
                 isWithinBounds(undetparams, targs)
               )
               result
@@ -602,7 +602,7 @@ trait Infer requires Analyzer {
     def inferArgumentInstance(tree: Tree, undetparams: List[Symbol],
                               strictPt: Type, lenientPt: Type): unit = {
       var targs = exprTypeArgs(undetparams, tree.tpe, strictPt)
-      if (targs == null) targs = exprTypeArgs(undetparams, tree.tpe, lenientPt)
+      if (targs eq null) targs = exprTypeArgs(undetparams, tree.tpe, lenientPt)
       substExpr(tree, undetparams, targs, lenientPt)
     }
 
@@ -626,7 +626,7 @@ trait Infer requires Analyzer {
      */
     private def substExpr(tree: Tree, undetparams: List[Symbol],
                           targs: List[Type], pt: Type): unit =
-      if (targs == null) {
+      if (targs eq null) {
         if (!tree.tpe.isErroneous && !pt.isErroneous)
           error(tree.pos, "polymorphic expression cannot be instantiated to expected type" +
                 foundReqMsg(PolyType(undetparams, skipImplicit(tree.tpe)), pt))
@@ -793,7 +793,7 @@ trait Infer requires Analyzer {
         sym.isAbstractType &&
         (sym.name == nme.WILDCARD.toTypeName || {
           val e = context.scope.lookupEntry(sym.name)
-          e != null && e.sym == sym && e.owner == context.scope
+          (e ne null) && e.sym == sym && e.owner == context.scope
         })
       tp match {
         case SingleType(pre, _) =>

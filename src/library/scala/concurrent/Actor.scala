@@ -37,7 +37,7 @@ abstract class Actor extends Thread {
   private var pid: Pid = null
 
   def self = {
-    if (pid == null) pid = new Pid(this)
+    if (pid eq null) pid = new Pid(this)
     pid
   }
 

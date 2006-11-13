@@ -49,8 +49,8 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
     if (firstTry != NoSymbol && firstTry.outerSource == clazz) firstTry
     else {
       var e = clazz.info.decls.elems
-      while (e != null && e.sym.outerSource != clazz) e = e.next
-      if (e != null) e.sym else NoSymbol
+      while ((e ne null) && e.sym.outerSource != clazz) e = e.next
+      if (e ne null) e.sym else NoSymbol
     }
   }
 
@@ -309,7 +309,7 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
     /** The main transformation method */
     override def transform(tree: Tree): Tree = {
       val sym = tree.symbol
-      if (sym != null && sym.isType) {//(9)
+      if ((sym ne null) && sym.isType) {//(9)
         if (sym hasFlag PRIVATE) sym setFlag notPRIVATE
         if (sym hasFlag PROTECTED) sym setFlag notPROTECTED
       }

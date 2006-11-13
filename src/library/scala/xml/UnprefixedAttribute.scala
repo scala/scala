@@ -18,11 +18,11 @@ import compat.StringBuilder
  */
 class UnprefixedAttribute(val key: String, val value: Seq[Node], next1: MetaData) extends MetaData {
 
-  val next = if(value != null) next1 else next1.remove(key)
+  val next = if(value ne null) next1 else next1.remove(key)
 
   /** same as this(key, Utility.parseAttributeValue(value), next) */
   def this(key: String, value: String, next: MetaData) =
-    this(key, if(value!=null) Text(value) else {val z:NodeSeq=null;z}, next)
+    this(key, if(value ne null) Text(value) else {val z:NodeSeq=null;z}, next)
 
   /** returns a copy of this unprefixed attribute with the given next field*/
   def copy(next: MetaData) =
@@ -58,13 +58,13 @@ class UnprefixedAttribute(val key: String, val value: Seq[Node], next1: MetaData
   /** returns the hashcode.
    */
   override def hashCode() =
-    key.hashCode() * 7 + { if(value!=null) value.hashCode() * 53 else 0 } + next.hashCode()
+    key.hashCode() * 7 + { if(value ne null) value.hashCode() * 53 else 0 } + next.hashCode()
 
   /** returns false */
   final def isPrefixed = false
 
   /** appends string representation of only this attribute to stringbuffer */
-  def toString1(sb:StringBuilder): Unit = if(value!=null) {
+  def toString1(sb:StringBuilder): Unit = if(value ne null) {
     sb.append(key)
     sb.append('=')
     val sb2 = new StringBuilder()

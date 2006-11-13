@@ -79,7 +79,7 @@ object CompileServer extends SocketServer {
     val password = CompileSocket.getPassword(port)
     val guessedPassword = in.readLine()
     val input = in.readLine()
-    if (input != null && password == guessedPassword) {
+    if ((input ne null) && password == guessedPassword) {
       try {
         inSession = true
         progress = true
@@ -121,7 +121,7 @@ object CompileServer extends SocketServer {
           reporter.info(null, command.usageMsg, true)
         else {
           try {
-            if (compiler != null && settingsAreCompatible(command.settings, compiler.settings)) {
+            if ((compiler ne null) && settingsAreCompatible(command.settings, compiler.settings)) {
               compiler.settings = command.settings
               compiler.reporter = reporter
             } else {

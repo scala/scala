@@ -99,11 +99,11 @@ abstract class UnPickler {
      *  readIndex at start of i'th entry. Restore readIndex afterwards. */
     private def at[T <: AnyRef](i: int, op: () => T): T = {
       var r = entries(i)
-      if (r == null) {
+      if (r eq null) {
         val savedIndex = readIndex
         readIndex = index(i)
         r = op()
-        assert(entries(i) == null, entries(i))
+        assert(entries(i) eq null, entries(i))
         entries(i) = r
         readIndex = savedIndex
       }

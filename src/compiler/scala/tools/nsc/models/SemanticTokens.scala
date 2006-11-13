@@ -131,10 +131,10 @@ class SemanticTokens(val compiler: Global) {
     def source = unit.source
 
     def dbg(tree : Tree) = {
-      def treePos : Int = if (tree != null) tree.pos else -1;
+      def treePos : Int = if (tree ne null) tree.pos else -1;
       (
         "TREE=" + tree +
-          (if (tree != null) (" CLASS=" + tree.getClass()) else "") +
+          (if (tree ne null) (" CLASS=" + tree.getClass()) else "") +
             " SYM=" + tree.symbol +
               " POS=" +
                 (new Position(source, treePos)).dbgString
@@ -188,7 +188,7 @@ class SemanticTokens(val compiler: Global) {
     class Use(symbol0: Symbol, tpe0: Type) extends Semantic(symbol0) {
       info.uses += this
 
-      override def tpe : Type = if (tpe0 != null) tpe0 else super.tpe;
+      override def tpe : Type = if (tpe0 ne null) tpe0 else super.tpe;
       override def toString() = "use-" + name + "-" + symbol.getClass();
     }
     val list = new TokenList
@@ -244,7 +244,7 @@ class SemanticTokens(val compiler: Global) {
               }
               try {
           //TPT=scala.Iterator[DocGenerator.this.compiler0.CompilationUnit] 260 class scala.tools.nsc.ast.Trees$TypeTree scala.Iterator[DocGenerator.this.compiler0.CompilationUnit] class scala.tools.nsc.symtab.Types$$anon$5
-          if (tree.tpt == null || tree.tpt.tpe == null) {
+          if ((tree.tpt eq null) || (tree.tpt.tpe eq null)) {
             //Console.err.println("BAD: " + tree.tpt + " in " + tree);
           } else {
             //Console.err.println("TPT=" + tree.tpt + " " + tree.tpt.pos + " " + tree.tpt.getClass() + " " + tree.tpt.tpe + " " + tree.tpt.tpe.getClass() + " " + tree.tpt.tpe.getClass().getSuperclass());
@@ -283,14 +283,14 @@ class SemanticTokens(val compiler: Global) {
         build(tree.body)
       case tree : TypeTree =>
         val treex = tree
-        val tree1 = if (tree.original != null) tree.original else tree
+        val tree1 = if (tree.original ne null) tree.original else tree
         def classes(clazz: java.lang.Class): List[java.lang.Class] =
-          if (clazz == null) Nil
+          if (clazz eq null) Nil
           else clazz :: classes(clazz.getSuperclass())
-        if (tree.original == null) {
+        if (tree.original eq null) {
           if (false) Console.err.println("NO_ORIGINAL: " + tree + " " + tree.tpe + " " + classes(tree.tpe.getClass()));
         }
-        if (tree.tpe != null) buildT(tree1, tree.tpe);
+        if (tree.tpe ne null) buildT(tree1, tree.tpe);
         def buildT( tree : Tree, tpe : Type) : Unit = if (tree.pos != NoPos) tpe match {
           case tpe0 : TypeRef => tree match {
             case apt : AppliedTypeTree =>
@@ -315,10 +315,10 @@ class SemanticTokens(val compiler: Global) {
                           throw e;
               }
             case tpt : TypeTree =>
-          if (tpt.symbol != null) {
+          if (tpt.symbol ne null) {
             Console.err.println("SYM0 " + tpt.symbol + " " + unit.source.dbg(tpt.pos));
             buildUse(tpt.symbol, tpt.pos, tpe0);
-          } else if (tpe0.symbol != null) {
+          } else if (tpe0.symbol ne null) {
             //Console.err.println("TYPE_SYM1 " + tpe0.symbol + " " + unit.source.dbg(tpt.pos));
             buildUse(tpe0.symbol, tpt.pos, tpe0);
           } else {
@@ -334,7 +334,7 @@ class SemanticTokens(val compiler: Global) {
           }
           case tpe0 : MethodType => tree match {
             case tpt: TypeTree =>
-              if (tpt.original != null) buildT(tpt.original, tpe);
+              if (tpt.original ne null) buildT(tpt.original, tpe);
               else {
                         Console.err.println("UNKNOWN TPT3: " + tree + " vs. " + tpe0 + " " + unit.source.content(tree.pos));
               }
@@ -389,7 +389,7 @@ class SemanticTokens(val compiler: Global) {
         } else if (trees.isEmpty != types.isEmpty) {
              if (false && doLog) {
         Console.println("" + treex + " vs. " + treex.original);
-        if (treex.original != null)
+        if (treex.original ne null)
           Console.println("" + treex.tpe + " vs. " + treex.original.tpe);
                logError("Tree vs. Type mismatch: " + trees + " " + types + " " + unit.source.dbg(tree.pos), null);
         doLog = false;
@@ -468,7 +468,7 @@ class SemanticTokens(val compiler: Global) {
       case tree : Alternative => build(tree.trees);
       case tree : This    =>
         //Console.err.println("THIS: " + tree.symbol + " " + tree.qual + " " + unit.source.dbg(tree.pos) + " " + tree.tpe);
-        if (tree.symbol != null) buildUse(tree.symbol, tree.pos, tree.tpe);
+        if (tree.symbol ne null) buildUse(tree.symbol, tree.pos, tree.tpe);
         //Thread.dumpStack();
       case tree : AliasTypeDef =>
         //Console.err.println("ALIAS: " + tree);

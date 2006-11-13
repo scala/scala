@@ -76,7 +76,7 @@ trait Trees requires Global {
     def isType = false
     def isEmpty = false
 
-    def isErroneous = tpe != null && tpe.isErroneous
+    def isErroneous = (tpe ne null) && tpe.isErroneous
 
     override def toString(): String = {
       val buffer = new StringWriter()
@@ -93,7 +93,7 @@ trait Trees requires Global {
     }
 
     def equalsStructure(that: Tree): Boolean = if (this == that) true else (this:Any) match {
-      case thiz : Product if (that != null && thiz.getClass == that.getClass) =>
+      case thiz : Product if ((that ne null) && thiz.getClass == that.getClass) =>
         val that0 = that.asInstanceOf[Product]
         val result: Iterator[Boolean] =
           for (val i <- 0.until(thiz.arity)) yield thiz.element(i) match {
@@ -103,7 +103,7 @@ trait Trees requires Global {
             case list: List[_] if (that0.element(i).isInstanceOf[List[Any]]) =>
               val listThat = that0.element(i).asInstanceOf[List[Any]]
               if (list.length == listThat.length) (for (val x <- list.zip(listThat)) yield {
-                if (x._1 != null && x._1.isInstanceOf[Tree] && x._2.isInstanceOf[Tree]) {
+                if ((null != x._1) && x._1.isInstanceOf[Tree] && x._2.isInstanceOf[Tree]) {
                   val b = x._1.asInstanceOf[Tree] equalsStructure x._2.asInstanceOf[Tree]
                   b
                 } else x._1 == x._2
@@ -610,7 +610,7 @@ trait Trees requires Global {
   /** Literal */
   case class Literal(value: Constant)
         extends TermTree {
-    assert(value != null)
+    assert(value ne null)
   }
 
   def Literal(value: Any): Literal =
@@ -624,7 +624,7 @@ trait Trees requires Global {
       original = tree
       setPos(tree.pos)
     }
-    override def isEmpty = tpe == null || tpe == NoType
+    override def isEmpty = (tpe eq null) || tpe == NoType
   }
 
   def TypeTree(tp: Type): TypeTree = TypeTree() setType tp
@@ -1328,7 +1328,7 @@ trait Trees requires Global {
   class TreeTypeSubstituter(from: List[Symbol], to: List[Type]) extends Traverser {
     val typeSubst = new SubstTypeMap(from, to)
     override def traverse(tree: Tree): unit = {
-      if (tree.tpe != null) tree.tpe = typeSubst(tree.tpe)
+      if (tree.tpe ne null) tree.tpe = typeSubst(tree.tpe)
       super.traverse(tree)
     }
     override def apply[T <: Tree](tree: T): T = super.apply(tree.duplicate)
@@ -1342,7 +1342,7 @@ trait Trees requires Global {
           if (tree.symbol == from.head) tree setSymbol to.head
           else subst(from.tail, to.tail)
       }
-      if (tree.tpe != null) tree.tpe = symSubst(tree.tpe)
+      if (tree.tpe ne null) tree.tpe = symSubst(tree.tpe)
       if (tree.hasSymbol) subst(from, to)
       super.traverse(tree)
     }

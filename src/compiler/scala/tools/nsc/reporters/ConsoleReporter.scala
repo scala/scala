@@ -34,7 +34,7 @@ class ConsoleReporter(reader : BufferedReader, writer : PrintWriter) extends Abs
   }
   def clabel(severity : Severity) = {
     val label0 = label(severity)
-    if (label0 == null) "" else label0 + ": "
+    if (label0 eq null) "" else label0 + ": "
   }
 
 
@@ -69,7 +69,7 @@ class ConsoleReporter(reader : BufferedReader, writer : PrintWriter) extends Abs
 
   /** Prints the message with the given position indication. */
   def printMessage(posIn : Position, msg : String) : Unit = {
-    if (posIn != null) {
+    if (posIn ne null) {
       val pos = posIn.inUltimateSource
       val buf = new StringBuilder(msg)
       buf.insert(0, " ")
@@ -89,12 +89,12 @@ class ConsoleReporter(reader : BufferedReader, writer : PrintWriter) extends Abs
 
   def print(pos : Position, msg : String, severity : Severity) = printMessage(pos, clabel(severity) + msg)
 
-  def printSourceLine(pos : Position) = if (pos != null && pos.offset != Position.NOPOS) {
+  def printSourceLine(pos : Position) = if ((pos ne null) && pos.offset != Position.NOPOS) {
     printMessage(pos.lineContent.stripLineEnd)
     printColumnMarker(pos)
   }
   /** Prints the column marker of the given position. */
-  def printColumnMarker(pos : Position) = if (pos != null) {
+  def printColumnMarker(pos : Position) = if (pos ne null) {
     val buffer = new StringBuilder(pos.column)
     var i = 1
     while (i < pos.column) {
@@ -123,7 +123,7 @@ class ConsoleReporter(reader : BufferedReader, writer : PrintWriter) extends Abs
       writer.print("r)esume, a)bort: ")
       writer.flush()
       var line = reader.readLine()
-      if (line != null) {
+      if (line ne null) {
 	line = line.toLowerCase()
 	if ("abort".startsWith(line))
             throw new Error("user abort")

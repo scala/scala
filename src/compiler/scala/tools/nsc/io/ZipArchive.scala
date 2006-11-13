@@ -58,7 +58,7 @@ object ZipArchive {
  */
 final class ZipArchive(file: File, val archive: ZipFile) extends PlainFile(file) {
 
-  assert(archive != null)
+  assert(archive ne null)
   //########################################################################
   // Private Fields
 
@@ -73,7 +73,7 @@ final class ZipArchive(file: File, val archive: ZipFile) extends PlainFile(file)
 
   /** Returns all abstract subfiles of this abstract directory. */
   override def elements: Iterator[AbstractFile] = {
-    if (root == null) load()
+    if (root eq null) load()
     root.elements
   }
 
@@ -84,7 +84,7 @@ final class ZipArchive(file: File, val archive: ZipFile) extends PlainFile(file)
    * or a regular file.
    */
   override def lookupName(name: String, directory: Boolean): AbstractFile = {
-    if (root == null) load()
+    if (root eq null) load()
     root.lookupName(name, directory)
   }
 
@@ -105,7 +105,7 @@ final class ZipArchive(file: File, val archive: ZipFile) extends PlainFile(file)
              this.toString() + " - " + path);
       if (entry.isDirectory()) {
         val dir: DirEntry = getDir(dirs, path)
-        assert(dir.entry == null, this.toString() + " - " + path)
+        assert(dir.entry eq null, this.toString() + " - " + path)
         dir.entry = entry
       } else {
         val index = path.lastIndexOf('/')
@@ -165,7 +165,7 @@ final class ZipArchive(file: File, val archive: ZipFile) extends PlainFile(file)
     override def read = throw new Error("cannot read directories");
 
     override def lastModified: Long =
-      if (entry != null) entry.getTime() else super.lastModified
+      if (entry ne null) entry.getTime() else super.lastModified
 
     override def elements: Iterator[AbstractFile] = entries.values
 

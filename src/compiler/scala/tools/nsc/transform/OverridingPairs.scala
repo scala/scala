@@ -56,7 +56,7 @@ abstract class OverridingPairs {
         if (!bcs.isEmpty) {
           fillDecls(bcs.tail, deferredflag)
           var e = bcs.head.info.decls.elems;
-          while (e != null) {
+          while (e ne null) {
             if (e.sym.getFlag(DEFERRED) == deferredflag && !exclude(e.sym))
               decls enter e.sym;
             e = e.next
@@ -102,29 +102,29 @@ abstract class OverridingPairs {
     var overriding: Symbol = _
     var overridden: Symbol = _
 
-    def hasNext: boolean = curEntry != null
+    def hasNext: boolean = curEntry ne null
 
     def next: unit =
-      if (curEntry != null) {
+      if (curEntry ne null) {
         overriding = curEntry.sym
-        if (nextEntry != null) {
+        if (nextEntry ne null) {
           do {
             nextEntry = decls.lookupNextEntry(nextEntry);
-          } while (nextEntry != null &&
+          } while ((nextEntry ne null) &&
                    ((nextEntry.sym hasFlag PRIVATE) ||
                     (overriding.owner == nextEntry.sym.owner) ||
                     (!matches(overriding, nextEntry.sym)) ||
                     (hasCommonParent(overriding, nextEntry.sym)) ||
                     (overriding hasFlag LOCAL)))
         }
-        if (nextEntry != null) {
+        if (nextEntry ne null) {
           overridden = nextEntry.sym;
           //Console.println("yield: " + overriding + overriding.locationString + " / " + overridden + overridden.locationString);//DEBUG
           visited addEntry nextEntry
         } else {
           do {
             curEntry = curEntry.next
-          } while (curEntry != null && (visited contains curEntry));
+          } while ((curEntry ne null) && (visited contains curEntry));
           nextEntry = curEntry
           next
         }

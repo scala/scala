@@ -397,7 +397,7 @@ trait Definitions requires SymbolTable {
       newMethod(BooleanClass, nme.XOR,  boolparam, booltype)
 
       def initValueClass(clazz: Symbol, isCardinal: Boolean): Unit = {
-        assert (clazz != null)
+        assert (clazz ne null)
 
         def addBinops(params: List[Type], restype: Type, isCardinal: Boolean) = {
           newMethod(clazz, nme.EQ,  params, booltype)
@@ -535,7 +535,7 @@ trait Definitions requires SymbolTable {
 
       JavaLangPackage = getModule("java.lang")
       ScalaPackage = getModule("scala")
-      assert(ScalaPackage != null, "Scala package is null")
+      assert(ScalaPackage ne null, "Scala package is null")
       ScalaPackageClass = ScalaPackage.tpe.symbol
 
       AnyClass = newClass(ScalaPackageClass, nme.Any, List()).setFlag(ABSTRACT)

@@ -296,9 +296,9 @@ abstract class TreePrinters {
 
         case TypeTree() =>
           print(
-            if (tree.tpe == null)
+            if (tree.tpe eq null)
               "<type ?>"
-            else if (tree.tpe.symbol != null && tree.tpe.symbol.isAnonymousClass)
+            else if ((tree.tpe.symbol ne null) && tree.tpe.symbol.isAnonymousClass)
               tree.tpe.symbol.toString()
             else
               tree.tpe.toString()
@@ -318,10 +318,10 @@ abstract class TreePrinters {
 
         case WildcardTypeTree(lo, hi) =>
           print("_ "); printOpt(" >: ", lo); printOpt(" <: ", hi)
-        case tree if (tree != null) => print(tree.toString())
+        case tree if (tree ne null) => print(tree.toString())
       }
       if (global.settings.printtypes.value && tree.isTerm && !tree.isEmpty) {
-        print("{"); print(if (tree.tpe == null) "<null>" else tree.tpe.toString()); print("}")
+        print("{"); print(if (tree.tpe eq null) "<null>" else tree.tpe.toString()); print("}")
       }
     }
 
@@ -343,7 +343,7 @@ abstract class TreePrinters {
 
     def print(unit: CompilationUnit): unit = {
       print("// Scala source: " + unit.source + LINE_SEPARATOR)
-      if (unit.body != null) {
+      if (unit.body ne null) {
         print(unit.body); println
       } else {
         print("<null>")

@@ -47,7 +47,7 @@ with PatternMatchers */ {
       (treeInfo.isVariableName(name)) && (name != nme.USCOREkw)
 
     def isVariableSymbol(sym: Symbol): Boolean =
-      (sym != null) && (!sym.isPrimaryConstructor)
+      (sym ne null) && (!sym.isPrimaryConstructor)
 
     def traverse(tree: Tree): Unit = {
       tree match {

@@ -128,7 +128,7 @@ abstract class MetaParser{
 
   protected def parseMethod(): unit = {
     val globals = locals
-    locals = if (locals == null) newScope else newScope(locals);
+    locals = if (locals eq null) newScope else newScope(locals);
     def parse(): Type = {
       nextToken();
       if (token == "[") PolyType(parseTypeParams(), parse())

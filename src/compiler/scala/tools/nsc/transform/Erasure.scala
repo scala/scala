@@ -536,10 +536,10 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
 
       val decls = root.info.decls
       var e = decls.elems
-      while (e != null) {
+      while (e ne null) {
         if (e.sym.isTerm && !e.sym.isConstructor) {
           var e1 = decls.lookupNextEntry(e)
-          while (e1 != null) {
+          while (e1 ne null) {
             if (atPhase(phase.next)(e1.sym.info =:= e.sym.info)) doubleDefError(e.sym, e1.sym)
             e1 = decls.lookupNextEntry(e1)
           }
@@ -626,9 +626,9 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
             !(other.tpe =:= member.tpe) &&
             !(deconstMap(other.tpe) =:= deconstMap(member.tpe)) &&
             { var e = bridgesScope.lookupEntry(member.name)
-              while (e != null && !((e.sym.tpe =:= otpe) && (bridgeTarget(e.sym) == member)))
+              while ((e ne null) && !((e.sym.tpe =:= otpe) && (bridgeTarget(e.sym) == member)))
                 e = bridgesScope.lookupNextEntry(e);
-              e == null
+              (e eq null)
             }
           );
           if (bridgeNeeded) {
@@ -742,7 +742,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
             if (fn.symbol == Any_asInstanceOf || fn.symbol == Any_asInstanceOfErased)
               fn match {
                 case TypeApply(Select(qual, _), List(targ)) =>
-                  assert(qual.tpe != null, tree)
+                  assert(qual.tpe ne null, tree)
                   if (qual.tpe <:< targ.tpe) atPos(tree.pos) { Typed(qual, TypeTree(qual.tpe)) }
                   else tree
               }

@@ -25,7 +25,7 @@ abstract class SymblfileParser {
   }
 
   def parse(file: AbstractFile, root: Symbol): unit = {
-    assert(current == null, current)
+    assert(current eq null, current)
     current = file
     val bytes  = new AbstractFileReader(file).buf
     if (root.isModule)

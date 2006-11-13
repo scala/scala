@@ -42,8 +42,8 @@ abstract class SymbolLoaders {
     private var ok = false
 /*
     private def setSource(sym: Symbol, sourceFile0: AbstractFile): unit = sym match {
-      case clazz: ClassSymbol => if (sourceFile0 != null) clazz.sourceFile = sourceFile0;
-      case _ => if (sourceFile0 != null) if (false) System.err.println("YYY: " + sym + " " + sourceFile0);
+      case clazz: ClassSymbol => if (sourceFile0 ne null) clazz.sourceFile = sourceFile0;
+      case _ => if (sourceFile0 ne null) if (false) System.err.println("YYY: " + sym + " " + sourceFile0);
     }
 */
     def sourceFile : AbstractFile = null
@@ -66,7 +66,7 @@ abstract class SymbolLoaders {
           if (settings.debug.value) ex.printStackTrace();
           val msg = ex.getMessage()
           error(
-            if (msg == null) "i/o error while loading " + root.name
+            if (msg eq null) "i/o error while loading " + root.name
             else "error while loading " + root.name + ", " + msg);
       }
       initRoot(root)
@@ -120,7 +120,7 @@ abstract class SymbolLoaders {
         owner.info.decls.enter(clazz)
         owner.info.decls.enter(module)
 /*
-        if (completer.sourceFile != null) {
+        if (completer.sourceFile ne null) {
           clazz.sourceFile = completer.sourceFile;
           module.moduleClass.sourceFile = completer.sourceFile
         }
@@ -131,7 +131,7 @@ abstract class SymbolLoaders {
 
       val classes  = new HashMap[String, global.classPath0.Context]
       val packages = new HashMap[String, global.classPath0.Context]
-      for (val dir <- directory.entries) if (dir.location != null) {
+      for (val dir <- directory.entries) if (dir.location ne null) {
         for (val file <- dir.location) {
           if (file.isDirectory && directory.validPackage(file.name) && !packages.isDefinedAt(file.name))
             packages(file.name) = directory.find(file.name, true);
@@ -139,12 +139,12 @@ abstract class SymbolLoaders {
             val name = file.name.substring(0, file.name.length() - (".class").length());
             if (isValid(name) && !classes.isDefinedAt(name)) {
               val clazz = directory.find(name, false)
-              if (clazz != null) classes(name) = clazz
+              if (clazz ne null) classes(name) = clazz
             }
           }
         }
       }
-      for (val dir <- directory.entries) if (dir.source != null) {
+      for (val dir <- directory.entries) if (dir.source ne null) {
         for (val file <- dir.source.location) {
           if (file.isDirectory && directory.validPackage(file.name) && !packages.isDefinedAt(file.name))
             packages(file.name) = directory.find(file.name, true);
@@ -152,7 +152,7 @@ abstract class SymbolLoaders {
             val name = file.name.substring(0, file.name.length() - (".scala").length());
             if (isValid(name) && !classes.isDefinedAt(name)) {
               val source = directory.find(name, false)
-              if (source != null) classes(name) = source
+              if (source ne null) classes(name) = source
             }
           }
         }
@@ -165,7 +165,7 @@ abstract class SymbolLoaders {
         val loader = if (!file.isSourceFile) {
           new ClassfileLoader(file.classFile, file.sourceFile, file.sourcePath);
         } else {
-          assert(file.sourceFile != null)
+          assert(file.sourceFile ne null)
           new SourcefileLoader(file.sourceFile)
         }
         enterClassAndModule(name, loader)
@@ -189,7 +189,7 @@ abstract class SymbolLoaders {
     }
     protected def doComplete(root: Symbol): unit = {
       classfileParser.parse(classFile, root)
-      if (sourceFile != null) root match {
+      if (sourceFile ne null) root match {
         case clazz : ClassSymbol => clazz.sourceFile = sourceFile
         case _ =>
       }

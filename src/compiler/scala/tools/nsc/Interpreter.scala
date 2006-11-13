@@ -107,7 +107,7 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
          definitions.
   */
   private val classLoader =
-    if (parentClassLoader == null)
+    if (parentClassLoader eq null)
       new URLClassLoader(Array(classfilePath.toURL))
     else
       new URLClassLoader(Array(classfilePath.toURL), parentClassLoader)
@@ -277,7 +277,7 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
 
     // figure out what kind of request
     val req = buildRequest(trees, line, lineName)
-    if (req == null) return false  // a disallowed statement type
+    if (req eq null) return false  // a disallowed statement type
 
     if (!req.compile)
       return false  // an error happened during compilation, e.g. a type error
@@ -571,7 +571,7 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
       } catch {
         case e => {
           def caus(e: Throwable): Throwable =
-            if (e.getCause == null) e else caus(e.getCause)
+            if (e.getCause eq null) e else caus(e.getCause)
             val orig = caus(e)
             Pair(stringFrom(str => orig.printStackTrace(str)),
                  false)
