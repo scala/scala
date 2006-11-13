@@ -53,8 +53,6 @@ class NetKernel(service: Service) {
                     namedSend(senderNode, receiver, senderName, refmsg)
                 }
               }
-              override def !?(msg: Any): Any =
-                error("!? not implemented for remote actors.")
             }
             senderProxy.start()
           }

@@ -29,7 +29,7 @@ class SuspendActorException extends Throwable {
  * actors. Only the actor creating an instance of a
  * <code>Channel</code> may receive from it.
  *
- * @version Beta2
+ * @version 0.9.0
  * @author Philipp Haller
  */
 class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {

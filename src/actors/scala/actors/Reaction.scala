@@ -24,7 +24,7 @@ import java.util.logging.Level
  * the different kinds of tasks used for the execution of
  * event-based <code>Actor</code>s.
  *
- * @version Beta2
+ * @version 0.9.0
  * @author Philipp Haller
  */
 private[actors] abstract class Reaction extends Runnable {
@@ -48,7 +48,7 @@ private[actors] abstract class Reaction extends Runnable {
  * This class represents task items used to start the execution
  * of <code>Actor</code>s.
  *
- * @version Beta2
+ * @version 0.9.0
  * @author Philipp Haller
  */
 private[actors] class StartTask(a: Actor) extends Reaction {
@@ -92,7 +92,7 @@ private[actors] class StartTask(a: Actor) extends Reaction {
  * specified in arguments of <code>react</code> and
  * <code>reactWithin</code>.
  *
- * @version Beta2
+ * @version 0.9.0
  * @author Philipp Haller
  */
 private[actors] class ActorTask(a: Actor,

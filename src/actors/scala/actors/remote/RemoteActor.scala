@@ -95,8 +95,6 @@ object RemoteActor {
         case other =>
           error("Cannot send non-AnyRef value remotely.")
       }
-      override def !?(msg: Any): Any =
-        error("!? not implemented for remote actors.")
     }
 }
 

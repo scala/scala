@@ -11,14 +11,11 @@
 
 package scala.actors
 
-import java.lang.{Runnable, Thread}
-import java.lang.InterruptedException
-
-import java.util.logging.Logger
-import java.util.logging.FileHandler
-import java.util.logging.Level
-
 import compat.Platform
+
+import java.lang.{Runnable, Thread, InterruptedException}
+import java.util.logging.{Logger, FileHandler, Level}
+
 import scala.collection.mutable.{ArrayBuffer, Buffer, HashMap, Queue, Stack}
 
 /**
@@ -26,12 +23,11 @@ import scala.collection.mutable.{ArrayBuffer, Buffer, HashMap, Queue, Stack}
  * <code>Actor</code> to execute tasks of an execution of a
  * reactor.
  *
- * @version Beta2
+ * @version 0.9.0
  * @author Philipp Haller
  */
 object Scheduler {
   private var sched: IScheduler =
-    //new SpareWorkerScheduler
     {
       val logger = Logger.getLogger("Scheduler")
       logger.addHandler(new FileHandler("sched.log"))
@@ -52,7 +48,7 @@ object Scheduler {
 
   def tick(a: Actor) = sched.tick(a)
 
-  def shutdown(): Unit = sched.shutdown()
+  def shutdown(): unit = sched.shutdown()
 
   def pendReaction: unit = sched.pendReaction
   def unPendReaction: unit = sched.unPendReaction
@@ -62,110 +58,24 @@ object Scheduler {
  * This abstract class provides a common interface for all
  * schedulers used to execute reactors.
  *
- * @version Beta2
+ * @version 0.9.0
  * @author Philipp Haller
  */
 trait IScheduler {
-  def execute(task: Reaction): Unit
+  def execute(task: Reaction): unit
   def getTask(worker: WorkerThread): Runnable
-  def tick(a: Actor): Unit
+  def tick(a: Actor): unit
 
-  def shutdown(): Unit
+  def shutdown(): unit
 
   val QUIT_TASK = new Reaction() {
     def actor: Actor = null
-    def run(): Unit = {}
+    def run(): unit = {}
     override def toString() = "QUIT_TASK"
   }
 
   def pendReaction: unit
   def unPendReaction: unit
-}
-
-/**
- * This scheduler executes the tasks of a reactor on a single
- * thread (the current thread).
- *
- * @version Beta2
- * @author Philipp Haller
- */
-abstract class SingleThreadedScheduler extends IScheduler {
-  def execute(task: Reaction): Unit = {
-    // execute task immediately on same thread
-    task.run()
-  }
-
-  def getTask(worker: WorkerThread): Runnable = null
-
-  def tick(a: Actor): Unit = {}
-
-  def shutdown(): Unit = {}
-}
-
-/**
- * This scheduler creates additional threads whenever there is no
- * idle thread available.
- *
- * @version Beta2
- * @author Philipp Haller
- */
-abstract class SpareWorkerScheduler extends IScheduler {
-  private val tasks = new Queue[Reaction]
-  private val idle = new Queue[WorkerThread]
-  private var workers: Buffer[WorkerThread] = new ArrayBuffer[WorkerThread]
-
-  private var terminating = false
-
-  def init() = {
-    for (val i <- 0 until 2) {
-      val worker = new WorkerThread(this)
-      workers += worker
-      worker.start()
-    }
-  }
-  init()
-
-  def execute(task: Reaction): Unit = synchronized {
-    if (!terminating) {
-      if (idle.length == 0) {
-        tasks += task
-        val newWorker = new WorkerThread(this)
-        workers += newWorker
-        newWorker.start()
-      }
-      else {
-        val worker = idle.dequeue
-        worker.execute(task)
-      }
-    }
-  }
-
-  def getTask(worker: WorkerThread) = synchronized {
-    if (terminating)
-      QUIT_TASK
-    else {
-      if (tasks.length > 0) tasks.dequeue
-      else {
-        idle += worker
-        null
-      }
-    }
-  }
-
-  def tick(a: Actor): Unit = {}
-
-  def shutdown(): Unit = synchronized {
-    terminating = true
-
-    val idleThreads = idle.elements
-    while (idleThreads.hasNext) {
-      val worker = idleThreads.next
-      worker.running = false
-      worker.interrupt()
-      // caused deadlock (tries to acquire lock of worker)
-      //worker.join()
-    }
-  }
 }
 
 /**
@@ -311,7 +221,7 @@ class TickedScheduler extends Thread with IScheduler {
     }
   }
 
-  def shutdown(): Unit = synchronized {
+  def shutdown(): unit = synchronized {
     terminating = true
 
     val idleThreads = idle.elements
@@ -334,6 +244,96 @@ class QuitException extends Throwable {
   override def fillInStackTrace(): Throwable = {
     this
   }
+}
+
+
+/**
+ * This scheduler executes the tasks of a reactor on a single
+ * thread (the current thread).
+ *
+ * @version 0.9.0
+ * @author Philipp Haller
+ */
+class SingleThreadedScheduler extends IScheduler {
+  def execute(task: Reaction): unit = {
+    // execute task immediately on same thread
+    task.run()
+  }
+
+  def getTask(worker: WorkerThread): Runnable = null
+  def tick(a: Actor): Unit = {}
+  def shutdown(): Unit = {}
+  def pendReaction: unit = {}
+  def unPendReaction: unit = {}
+}
+
+/**
+ * This scheduler creates additional threads whenever there is no
+ * idle thread available.
+ *
+ * @version 0.9.0
+ * @author Philipp Haller
+ */
+class SpareWorkerScheduler extends IScheduler {
+  private val tasks = new Queue[Reaction]
+  private val idle = new Queue[WorkerThread]
+  private var workers: Buffer[WorkerThread] = new ArrayBuffer[WorkerThread]
+
+  private var terminating = false
+
+  def init() = {
+    for (val i <- 0 until 2) {
+      val worker = new WorkerThread(this)
+      workers += worker
+      worker.start()
+    }
+  }
+  init()
+
+  def execute(task: Reaction): unit = synchronized {
+    if (!terminating) {
+      if (idle.length == 0) {
+        tasks += task
+        val newWorker = new WorkerThread(this)
+        workers += newWorker
+        newWorker.start()
+      }
+      else {
+        val worker = idle.dequeue
+        worker.execute(task)
+      }
+    }
+  }
+
+  def getTask(worker: WorkerThread) = synchronized {
+    if (terminating)
+      QUIT_TASK
+    else {
+      if (tasks.length > 0) tasks.dequeue
+      else {
+        idle += worker
+        null
+      }
+    }
+  }
+
+  def tick(a: Actor): unit = {}
+
+  def shutdown(): unit = synchronized {
+    terminating = true
+
+    val idleThreads = idle.elements
+    while (idleThreads.hasNext) {
+      val worker = idleThreads.next
+      worker.running = false
+      worker.interrupt()
+      // caused deadlock (tries to acquire lock of worker)
+      //worker.join()
+    }
+  }
+
+  def pendReaction: unit = {}
+  def unPendReaction: unit = {}
 }
 
 
@@ -386,7 +386,7 @@ class QuitException extends Throwable {
  *   execution. QED
  * </p>
  *
- * @version Beta2
+ * @version 0.9.0
  * @author Philipp Haller
  */
 class WorkerThread(sched: IScheduler) extends Thread {
@@ -398,7 +398,7 @@ class WorkerThread(sched: IScheduler) extends Thread {
     notify()
   }
 
-  override def run(): Unit =
+  override def run(): unit =
     try {
       while (running) {
         if (task ne null) {

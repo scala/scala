@@ -19,7 +19,7 @@ import compat.Platform
  * <code>receive</code>, <code>react</code>, <code>reply</code>,
  * etc.
  *
- * @version Beta2
+ * @version 0.9.0
  * @author Philipp Haller
  */
 object Actor {
@@ -282,6 +282,13 @@ object Actor {
   def exit(reason: String): Unit = self.exit(reason)
 }
 
+case class Request[a](msg: a) {
+  private[actors] val in = new Channel[a]
+  def reply(resp: a): unit = {
+    in ! resp
+  }
+}
+
 /**
  * <p>
  *   This class provides (together with <code>Channel</code>) an
@@ -293,7 +300,7 @@ object Actor {
  *   Philipp Haller, Martin Odersky <i>Proc. JMLC 2006</i>
  * </p>
  *
- * @version Beta2
+ * @version 0.9.0
  * @author Philipp Haller
  */
 trait Actor extends OutputChannel[Any] {
@@ -318,8 +325,8 @@ trait Actor extends OutputChannel[Any] {
   /**
    * The behavior of an actor is specified by implementing this
    * abstract method. Note that the preferred way to create actors
-   * is through the <code>actor</code> and <code>reactor</code>
-   * methods defined in object <code>Actor</code>.
+   * is through the <code>actor</code> method
+   * defined in object <code>Actor</code>.
    */
   def act(): Unit
 
@@ -335,6 +342,13 @@ trait Actor extends OutputChannel[Any] {
    * (synchronous).
    */
   def !?(msg: Any): Any = in !? msg
+
+  def rpc[a](msg: a): a = {
+    Debug.info("Actor.!? called by "+Actor.self)
+    val req = Request(msg)
+    in ! req
+    req.in.?
+  }
 
   private val lastSenders = new Stack[Actor]
 
@@ -545,7 +559,7 @@ trait Actor extends OutputChannel[Any] {
  * <code>b</code> terminates and <code>a</code> has
  * <code>trapExit</code> set to <code>true</code>.
  *
- * @version Beta2
+ * @version 0.9.0
  * @author Philipp Haller
  */
 case class Exit(from: Actor, reason: String)

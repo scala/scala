@@ -18,7 +18,7 @@ import java.lang.Thread
  * This class provides a dynamic actor proxy for normal Java
  * threads.
  *
- * @version Beta2
+ * @version 0.9.0
  * @author Philipp Haller
  */
 private[actors] class ActorProxy(t: Thread) extends Actor {

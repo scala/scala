@@ -15,8 +15,7 @@ package scala.actors
 import java.lang.{Runnable, Thread}
 import java.lang.InterruptedException
 
-import java.util.logging.Logger
-import java.util.logging.Level
+import java.util.logging.{Logger, Level}
 
 /**
  * This class allows the (local) sending of a message to an actor after
@@ -24,7 +23,7 @@ import java.util.logging.Level
  * Note that the library deletes non-received <code>TIMEOUT</code> message if a
  * message is received before the time-out occurs.
  *
- * @version Beta2
+ * @version 0.9.0
  * @author Sebastien Noir
  * @author Philipp Haller
  */
