@@ -376,17 +376,18 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
     //Console.println("tree.getClass() "+tree.getClass());
     val t = tree match {
       case Bind(name, Typed(Ident( nme.WILDCARD ), tpe)) => // x@_:Type
-        if (isSubType(header.getTpe(),tpe.tpe)) {
-          val node = pDefaultPat(tree.pos, tpe.tpe)
-          env.newBoundVar(tree.symbol, tree.tpe, header.selector)
+	val tpe2test = tree.symbol.tpe // safest! typer does not always use tpe.tpe!
+
+      // @todo: this optimization probably not allowed, because of null -- but can rework it
+      //if (isSubType(header.getTpe(), tpe2test)) {
+        //  val node = pDefaultPat(tree.pos, tpe2test)
+        //  env.newBoundVar(tree.symbol, tree.tpe, header.selector)
+        //  node
+        //} else {
+          val node = pConstrPat(tree.pos, tpe2test)
+          env.newBoundVar( tree.symbol, tpe2test, typed(Ident( node.casted )));
           node
-        } else {
-          val node = pConstrPat(tree.pos, tpe.tpe)
-          env.newBoundVar( tree.symbol,
-                           tpe.tpe, /*scalac: tree.tpe */
-                           typed(Ident( node.casted )));
-          node
-        }
+        //}
 
       case Bind(name, Ident(nme.WILDCARD)) => // x @ _
         val node = pDefaultPat(tree.pos, header.getTpe())
@@ -394,7 +395,7 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
           env.newBoundVar( tree.symbol, tree.tpe, header.selector);
         node
 
-      case Bind(name, pat) =>
+      case Bind(name, pat) =>                // x @ p
         val node = patternNode(pat, header, env)
         if ((env != null) && (tree.symbol != defs.PatternWildcard)) {
           val theValue = node.symbol match {
