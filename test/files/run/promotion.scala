@@ -3,10 +3,12 @@
  *  Was bug 891.
  */
 object Test {
-  def main(args:Array[String]):Unit = {
-    Console println
-    List(Pair(1,2.0)).map[double]({ x  => x match {
-      case Pair(a, x) => Console.println("B"); x * a
-    }});
+
+  def id[A](x: A): A = x;
+  def main(args: Array[String]): Unit = {
+    Console.println(id(1) * 2.0)
+    Console.println(3.0 * id(2))
+    Console.println(id(4.0) * 5)
+    Console.println(6 * id(5.0))
   }
 }

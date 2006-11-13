@@ -647,9 +647,8 @@ abstract class GenICode extends SubComponent  {
           if (settings.debug.value)
             log("UNBOX : " + fun.symbol.fullNameString)
           val ctx1 = genLoad(expr, ctx, toTypeKind(expr.tpe))
-          val boxType = fun.symbol.owner.linkedClassOfClass.tpe
-          ctx1.bb.emit(UNBOX(boxType), expr.pos)
-          generatedType = toTypeKind(boxType)
+          assert(expectedType.isValueType)
+          ctx1.bb.emit(UNBOX(expectedType.toType), expr.pos)
           ctx1
 
         case Apply(fun, args) =>
