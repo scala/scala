@@ -1,7 +1,7 @@
 package examples.actors
 
-import scala.actors.Actor._
 import scala.actors.Actor
+import scala.actors.Actor._
 
 case object Stop
 
@@ -18,7 +18,7 @@ object Links extends Application {
 
   def top(a: Actor, n: int): Actor = actor {
     Console.println("starting actor " + n + " (" + Thread.currentThread() + ")")
-    //self.trapExit = true
+    self.trapExit = true
     link(a)
     while (true) {
       receive {

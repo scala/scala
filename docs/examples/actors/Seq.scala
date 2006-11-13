@@ -16,7 +16,6 @@ object Seq extends Application {
       react {
         case A => scala.Console.println("2nd reactor got A")
       }
-      ()
     }
   }
   a ! A

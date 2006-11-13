@@ -1,4 +1,3 @@
-// Modified by Philipp Haller to use Scala's event-based actors.
 package examples.actors
 
 import scala.actors._
