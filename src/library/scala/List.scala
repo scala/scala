@@ -31,8 +31,8 @@ object List {
 
   /** for unapply matching
    */
-  def unapplySeq[A](x:Any):Option[Tuple1[List[A]]] =
-    if(x.isInstanceOf[List[A]]) Some(Tuple1(x.asInstanceOf[List[A]])) else None
+  def unapplySeq[A](x: Any): Option[Tuple1[List[A]]] =
+    if (x.isInstanceOf[List[A]]) Some(Tuple1(x.asInstanceOf[List[A]])) else None
 
   /** Create a sorted list of all integers in a range.
    *
@@ -402,11 +402,10 @@ sealed abstract class List[+a] extends Seq[a] {
 
   /** <p>
    *    Add an element <code>x</code> at the beginning of this list.
-   *  </p>
-   *  <p>
    *    Example:
    *  </p>
-   *  <code>1 :: [2, 3] = [2, 3].::(1) = [1, 2, 3]</code>.
+   *  <pre>
+   *    1 :: List(2, 3) = List(2, 3).::(1) = List(1, 2, 3)</pre>
    *
    *  @param x the element to append.
    *  @return  the list with <code>x</code> appended at the beginning.
@@ -414,11 +413,13 @@ sealed abstract class List[+a] extends Seq[a] {
   def ::[b >: a] (x: b): List[b] =
     new scala.::(x, this)
 
-  /** Returns a list resulting from the concatenation of the given
-   *  list <code>prefix</code> and this list.
-   *  <p/>
-   *  Ex:<br/>
-   *  <code>[1, 2] ::: [3, 4] = [3, 4].:::([1, 2]) = [1, 2, 3, 4]</code>.
+  /** <p>
+   *    Returns a list resulting from the concatenation of the given
+   *    list <code>prefix</code> and this list. Example:
+   *  </p>
+   *  <pre>
+   *    List(1, 2) ::: List(3, 4) = List(3, 4).:::(List(1, 2)) = List(1, 2, 3, 4)</pre>
+   *
    *  @param prefix the list to concatenate at the beginning of this list.
    *  @return the concatenation of the two lists.
    */
@@ -438,8 +439,9 @@ sealed abstract class List[+a] extends Seq[a] {
    *  This function is equivalent to an application of <code>reverse</code>
    *  on the prefix followed by a call to <code>:::</code>, but more
    *  efficient (and tail recursive).
+   *
    *  @param prefix the prefix to reverse and then prepend
-   *  @return the concatenation of the reversed prefix and the current list.
+   *  @return       the concatenation of the reversed prefix and the current list.
    */
   def reverse_:::[b >: a](prefix: List[b]): List[b] = prefix match {
     case Nil => this
@@ -502,8 +504,7 @@ sealed abstract class List[+a] extends Seq[a] {
   /** Returns the list without its last element.
    *
    *  @return the list without its last element.
-   *  @throws Predef.UnsupportedOperationException
-   *  if the list is empty.
+   *  @throws Predef.UnsupportedOperationException if the list is empty.
    */
   def init: List[a] =
     if (isEmpty) throw new UnsupportedOperationException("Nil.init")
@@ -522,8 +523,7 @@ sealed abstract class List[+a] extends Seq[a] {
   /** Returns the last element of this list.
    *
    *  @return the last element of the list.
-   *  @throws Predef.UnsupportedOperationException
-   *  if the list is empty.
+   *  @throws Predef.UnsupportedOperationException if the list is empty.
    */
   def last: a =
     if (isEmpty) throw new UnsupportedOperationException("Nil.last")
@@ -680,7 +680,7 @@ sealed abstract class List[+a] extends Seq[a] {
    *  followed by a call to <code>reverse</code>, but more efficient.
    *
    *  @param f the function to apply to each elements.
-   *  @return the reversed list of results.
+   *  @return  the reversed list of results.
    */
   def reverseMap[b](f: a => b): List[b] = {
     def loop(l: List[a], res: List[b]): List[b] = l match {
@@ -739,17 +739,17 @@ sealed abstract class List[+a] extends Seq[a] {
    *  predicate inversed.
    *
    *  @param p the predicate to use to test elements
-   *  @return the list without all elements which satisfy <code>p</code>
+   *  @return  the list without all elements which satisfy <code>p</code>
    */
   def remove(p: a => Boolean): List[a] = filter (x => !p(x))
 
   /** Partition the list in two sub-lists according to a predicate.
    *
    *  @param p the predicate on which to partition
-   *  @return a pair of lists: the list of all elements which satisfy
-   *  <code>p</code> and the list of all elements which do not. The
-   *  relative order of the elements in the sub-lists is the same as in
-   *  the original list.
+   *  @return  a pair of lists: the list of all elements which satisfy
+   *           <code>p</code> and the list of all elements which do not.
+   *           The relative order of the elements in the sub-lists is the
+   *           same as in the original list.
    */
   def partition(p: a => Boolean): Pair[List[a], List[a]] = {
     val btrue = new ListBuffer[a]
@@ -768,8 +768,10 @@ sealed abstract class List[+a] extends Seq[a] {
    *    which should be true iff <code>e1</code> is smaller than
    *    <code>e2</code>. Example:
    *  </p>
-   *  <pre>List("Tom", "John", "Bob").sort(
-   *    (e1, e2) => (e1 compareTo e2) &lt; 0)</pre>
+   *  <pre>
+   *    List("Steve", "Tom", "John", "Bob")
+   *      .sort((e1, e2) => (e1 compareTo e2) &lt; 0) =
+   *    List("Bob", "John", "Steve", "Tom")</pre>
    *  <p>
    *    Note: The current implementation is inefficent for
    *    already sorted lists.
@@ -829,7 +831,7 @@ sealed abstract class List[+a] extends Seq[a] {
   /** Count the number of elements in the list which satisfy a predicate.
    *
    *  @param p the predicate for which to count
-   *  @return the number of elements satisfying the predicate <code>p</code>.
+   *  @return  the number of elements satisfying the predicate <code>p</code>.
    */
   def count(p: a => Boolean): Int = {
     var cnt = 0
@@ -857,8 +859,8 @@ sealed abstract class List[+a] extends Seq[a] {
     true
   }
 
-  /** Tests the existence in this list of an element that satisfies the predicate
-   * <code>p</code>.
+  /** Tests the existence in this list of an element that satisfies the
+   *  predicate <code>p</code>.
    *
    *  @param p the test predicate.
    *  @return  <code>true</code> iff there exists an element in this list that
@@ -921,16 +923,23 @@ sealed abstract class List[+a] extends Seq[a] {
    *  the value <code>z</code>.
    *
    *  @return <code>f(a<sub>0</sub>, f(a<sub>1</sub>, f(..., f(a<sub>n</sub>, z)...)))</code>
-   *          if the list is <code>[a<sub>0</sub>, a1, ..., an]</code>.
+   *          if the list is <code>[a<sub>0</sub>, a1, ..., a<sub>n</sub>]</code>.
    */
   override def foldRight[b](z: b)(f: (a, b) => b): b = this match {
     case Nil => z
     case x :: xs => f(x, xs.foldRight(z)(f))
   }
 
-  /**
+  /** <p>
+   *   Example:
+   *  </p>
+   *  <pre>
+   *    val xs = List(1, 2, 3, 4)
+   *    0 :: xs reduceLeft ((x:int, y:int) => x + y) = 10 //sum
+   *    1 :: xs reduceLeft ((x:int, y:int) => x * y) = 24 //prod</pre>
+   *
    *  @return ...
-   *  @throws Predef.UnsupportedOperationException ...
+   *  @throws Predef.UnsupportedOperationException if the list is empty.
    */
   def reduceLeft[b >: a](f: (b, b) => b): b = this match {
     case Nil => throw new UnsupportedOperationException("Nil.reduceLeft")
@@ -939,7 +948,7 @@ sealed abstract class List[+a] extends Seq[a] {
 
   /**
    *  @return ...
-   *  @throws Predef.UnsupportedOperationException ...
+   *  @throws Predef.UnsupportedOperationException if the list is empty.
    */
   def reduceRight[b >: a](f: (b, b) => b): b = this match {
     case Nil => throw new UnsupportedOperationException("Nil.reduceRight")
@@ -951,8 +960,8 @@ sealed abstract class List[+a] extends Seq[a] {
    *  this list, then concatenates the results.
    *
    *  @param f the function to apply on each element.
-   *  @return <code>f(a0) ::: ... ::: f(an)</code> if this list is
-   *  <code>[a0, ..., an]</code>.
+   *  @return  <code>f(a<sub>0</sub>) ::: ... ::: f(a<sub>n</sub>)</code> if
+   *           this list is <code>[a<sub>0</sub>, ..., a<sub>n</sub>]</code>.
    */
   def flatMap[b](f: a => List[b]): List[b] = {
     val b = new ListBuffer[b]
@@ -971,7 +980,8 @@ sealed abstract class List[+a] extends Seq[a] {
   /** <p>
    *    Reverses the elements of this list. Example:
    *  </p>
-   *  <pre>List(1, 2, 3) reverse = List(3, 2, 1)</pre>
+   *  <pre>
+   *    List(1, 2, 3) reverse = List(3, 2, 1)</pre>
    *
    *  @return the elements of this list in reverse order.
    */
@@ -1001,7 +1011,7 @@ sealed abstract class List[+a] extends Seq[a] {
     b.toList
   }
 
-   /** Return an list that pairs each element of this list
+   /** Returns a list that pairs each element of this list
     *  with its index, counting from 0.
     *
     *  @param start the index of the first element
@@ -1039,7 +1049,8 @@ sealed abstract class List[+a] extends Seq[a] {
    *  @return         <code>[(a<sub>0</sub>,b<sub>0</sub>), ...,
    *                  (a<sub>n</sub>,b<sub>n</sub>), (elem,b<sub>n+1</sub>),
    *                  ..., (elem,b<sub>m</sub>)]</code>
-   *                  when <code>[a0, ..., an] zip [b0, ..., bm]</code> is
+   *                  when <code>[a<sub>0</sub>, ..., a<sub>n</sub>] zip
+   *                  [b<sub>0</sub>, ..., b<sub>m</sub>]</code> is
    *                  invoked where <code>m &gt; n</code>.
    */
   def zipAll[b, c >: a, d >: b](that: List[b], thisElem: c, thatElem: d): List[Pair[c,d]] = {
@@ -1083,7 +1094,8 @@ sealed abstract class List[+a] extends Seq[a] {
    *  <code>that</code>.
    *
    *  @param that the list of elements to remove from this list.
-   *  @return this list without the elements of the given list <code>that</code>.
+   *  @return     this list without the elements of the given list
+   *              <code>that</code>.
    */
   def diff[b >: a](that: List[b]): List[b] = {
     val b = new ListBuffer[b]
@@ -1099,8 +1111,8 @@ sealed abstract class List[+a] extends Seq[a] {
    *  <code>that</code>.
    *
    *  @param that the list to intersect.
-   *  @return the list of elements contained both in this list and
-   *          in the given list <code>that</code>.
+   *  @return     the list of elements contained both in this list and
+   *              in the given list <code>that</code>.
    */
   def intersect[b >: a](that: List[b]): List[b] = filter(x => that contains x)
 
