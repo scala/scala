@@ -1,4 +1,6 @@
-import scala.actors._
+package examples.actors
+
+import scala.actors.Actor
 import scala.actors.Actor._
 
 abstract class Producer[T] {
@@ -33,22 +35,19 @@ abstract class Producer[T] {
   }
 
   case object Stop
-  class StopException extends Throwable
 
-  /** A thread-based coordinator */
   private val coordinator: Actor = actor {
-    try {
-    while (true) {
+    var continue = true
+    while (continue) {
       receive {
         case Next =>
           producer ! Next
           reply {
             receive { case x: Option[_] => x }
           }
-        case Stop => throw new StopException
+        case Stop => continue = false
       }
     }
-    } catch { case _: StopException => }
   }
 
   private val producer: Actor = actor {
@@ -60,20 +59,7 @@ abstract class Producer[T] {
   }
 }
 
-object Test extends Application {
-
-  def from(m: int, n: int) = new Producer[int] {
-    def produceValues = for (val i <- m until n) produce(i)
-  }
-
-  // note that it works from the main thread
-  val it = from(1, 10).iterator
-  while (it.hasNext) {
-    Console.println(it.next)
-  }
-}
-
-object Test2 extends Application {
+object Joins extends Application {
 
   class Tree(val left: Tree, val elem: int, val right: Tree)
   def node(left: Tree, elem: int, right: Tree): Tree = new Tree(left, elem, right)
@@ -114,14 +100,13 @@ object Test2 extends Application {
     }
   }
 
-  Debug.level = 3
-
-  // note that it works from the main thread
-  Console.print("PreOrder:")
-  for (val x <- new PreOrder(tree).iterator) Console.print(" "+x)
-  Console.print("\nPostOrder:")
-  for (val x <- new PostOrder(tree).iterator) Console.print(" "+x)
-  Console.print("\nInOrder:")
-  for (val x <- new InOrder(tree).iterator) Console.print(" "+x)
-  Console.print("\n")
+  actor {
+    Console.print("PreOrder:")
+    for (val x <- new PreOrder(tree).iterator) Console.print(" "+x)
+    Console.print("\nPostOrder:")
+    for (val x <- new PostOrder(tree).iterator) Console.print(" "+x)
+    Console.print("\nInOrder:")
+    for (val x <- new InOrder(tree).iterator) Console.print(" "+x)
+    Console.print("\n")
+  }
 }
