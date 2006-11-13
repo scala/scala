@@ -150,10 +150,39 @@ abstract class DocGenerator extends Models {
       })
     }
 
+    private val pat = Pattern.compile(
+      "scala\\.(Byte|Boolean|Char|Double|Float|Int|Long|Short)")
+
+    def docName(sym: Symbol): String = {
+      def javaParams(paramTypes: List[Type]): String = {
+        def javaName(pt: Type): String = {
+          val s = pt.toString
+          val mat = pat.matcher(s)
+          if (mat.matches) mat.group(1).toLowerCase
+          else s.replaceAll("\\$", ".")
+        }
+        paramTypes.map(pt => javaName(pt)).mkString("(", ",", ")")
+      }
+      def scalaParams(paramTypes: List[Type]): String = {
+        def scalaName(pt: Type): String = pt.toString.replaceAll(" ", "")
+        paramTypes.map(pt => scalaName(pt)).mkString("(", ",", ")")
+      }
+      /*Utility.escape*/(sym.nameString +
+        (sym.tpe match {
+          case MethodType(paramTypes, _) =>
+            if (sym hasFlag Flags.JAVA) javaParams(paramTypes)
+            else scalaParams(paramTypes)
+          case PolyType(_, MethodType(paramTypes, _)) =>
+            if (sym hasFlag Flags.JAVA) javaParams(paramTypes)
+            else scalaParams(paramTypes)
+          case _ => ""
+        }))
+    }
+
     def urlFor(sym: Symbol): String = sym match {
       case msym: ModuleSymbol => urlFor0(sym, sym) + FILE_EXTENSION_HTML
       case csym: ClassSymbol =>  urlFor0(sym, sym) + FILE_EXTENSION_HTML
-      case _ => urlFor(sym.owner) + "#" + Utility.escape(sym.nameString)
+      case _ => urlFor(sym.owner) + "#" + docName(sym)
     }
 
     def hasBody = true
@@ -308,7 +337,8 @@ abstract class DocGenerator extends Models {
     def fullHeader(mmbr: HasTree): NodeSeq = Group(
       { {
         if (mmbr.isInstanceOf[ImplMod]) NodeSeq.Empty
-        else <a name = {Utility.escape(mmbr.tree.symbol.nameString)}></a>
+        //else <a name={Utility.escape(mmbr.tree.symbol.nameString)}></a>
+        else <a name={docName(mmbr.tree.symbol)}></a>
       } }.concat(
       <dl>
         <dt>
@@ -406,13 +436,9 @@ abstract class DocGenerator extends Models {
                 def aref1(sym: Symbol): NodeSeq = {
                   val isJava = sym hasFlag Flags.JAVA
                   if (isJava || (sym.sourceFile eq null)) {
-                    val name = sym.nameString
-                    val args =
-                      if (isJava) "()" // todo: arguments
-                      else ""
                     <a class={sym.owner.fullNameString.replace('.', '_')}
-                       href={"#" + name + args}
-                       target={contentFrame}>{name}</a>
+                       href={"#" + docName(sym)}
+                       target={contentFrame}>{sym.nameString}</a>
                   }
                   else
                     aref(urlFor(sym), contentFrame, sym.nameString)
