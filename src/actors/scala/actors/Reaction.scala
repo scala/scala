@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2005-2006, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2005-2007, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -11,11 +11,8 @@
 
 package scala.actors
 
-import java.lang.Runnable
-import java.lang.InterruptedException
-
-import java.util.logging.Logger
-import java.util.logging.Level
+import java.lang.{InterruptedException, Runnable}
+import java.util.logging.{Level, Logger}
 
 /**
  * The abstract class <code>Reaction</code> associates an instance
@@ -30,6 +27,9 @@ import java.util.logging.Level
 private[actors] abstract class Reaction extends Runnable {
   def actor: Actor
 
+  /**
+   * @param t ...
+   */
   def log(t: Throwable): unit = {
     Debug.info("logging "+t)
     val logger = Logger.getLogger("Scheduler")

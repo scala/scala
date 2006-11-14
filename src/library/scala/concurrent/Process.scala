@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -38,7 +38,8 @@ object Process {
     self.receiveWithin(msec)(f)
 
   /**
-   *  @throws scala.compat.Platform.UnsupportedOperationException
+   *  @return the self process
+   *  @throws Predef.UnsupportedOperationException if self called outside a process.
    */
   def self: Process =
     if (currentThread.isInstanceOf[Process])

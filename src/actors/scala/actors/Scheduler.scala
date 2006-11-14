@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2005-2006, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2005-2007, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -183,6 +183,9 @@ class TickedScheduler extends Thread with IScheduler {
     }
   }
 
+  /**
+   *  @param item the task to be executed.
+   */
   def execute(item: Reaction): unit = synchronized {
     if (!terminating)
       if (idle.length > 0) {
@@ -194,6 +197,10 @@ class TickedScheduler extends Thread with IScheduler {
         tasks += item
   }
 
+  /**
+   *  @param worker the worker thread executing tasks
+   *  @return       the executed task
+   */
   def getTask(worker: WorkerThread) = synchronized {
     if (terminating)
       QUIT_TASK
@@ -210,6 +217,9 @@ class TickedScheduler extends Thread with IScheduler {
 
   var ticksCnt = 0
 
+  /**
+   *  @param a the actor
+   */
   def tick(a: Actor): unit = synchronized {
     ticksCnt = ticksCnt + 1
     executing.get(a) match {
@@ -221,6 +231,8 @@ class TickedScheduler extends Thread with IScheduler {
     }
   }
 
+  /** Shuts down all idle worker threads.
+   */
   def shutdown(): unit = synchronized {
     terminating = true
 
@@ -236,6 +248,9 @@ class TickedScheduler extends Thread with IScheduler {
 }
 
 
+/**
+ * The <code>QuickException</code> class ...
+ */
 class QuitException extends Throwable {
   /*
    For efficiency reasons we do not fill in
