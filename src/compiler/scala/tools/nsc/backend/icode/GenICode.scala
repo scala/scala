@@ -1340,32 +1340,29 @@ abstract class GenICode extends SubComponent  {
       }
     }
 
-    val eqEqTemp: Name = "eqEqTemp$"
+    def eqEqTemp: Name = "eqEqTemp$"
 
     /**
      * Generate the "==" code for object references. It is equivalent of
      * if (l eq null) then r eq null else l.equals(r);
      *
-     * @param l       ...
-     * @param r       ...
-     * @param ctx     ...
+     * @param l       left-hand side of the '=='
+     * @param r       right-hand side of the '=='
+     * @param ctx     current context
      * @param thenCtx ...
      * @param elseCtx ...
      */
     def genEqEqPrimitive(l: Tree, r: Tree, ctx: Context,
                          thenCtx: Context, elseCtx: Context): Unit =
     {
-      // special-case reference (in)equality test for null
-      val expr: Tree = Pair(l, r) match {
-        case Pair(Literal(Constant(null)), expr) => expr
-        case Pair(expr, Literal(Constant(null))) => expr
-        case _ => null
-      }
-      if (expr ne null) {
-        val ctx1 = genLoad(expr, ctx, ANY_REF_CLASS)
-        ctx1.bb.emit(CZJUMP(thenCtx.bb, elseCtx.bb, EQ, ANY_REF_CLASS))
-        ctx1.bb.close
-        return
+      // special-case 'null == sth' to 'sth eq null'
+      l match {
+        case Literal(Constant(null)) =>
+          val ctx1 = genLoad(r, ctx, ANY_REF_CLASS)
+          ctx1.bb.emit(CZJUMP(thenCtx.bb, elseCtx.bb, EQ, ANY_REF_CLASS))
+          ctx1.bb.close
+          return
+        case _ => ()
       }
 
       var eqEqTempVar: Symbol = null
