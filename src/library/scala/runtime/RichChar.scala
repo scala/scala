@@ -15,11 +15,9 @@ import java.lang.Character
 final class RichChar(c: Char) {
 
   def asDigit: Int = Character.digit(c, Character.MAX_RADIX)
-  def asDigit(radix: Int): Int = Character.digit(c, radix)
 
   def isControl: Boolean = Character.isISOControl(c)
   def isDigit: Boolean = Character.isDigit(c)
-  def isISOControl: Boolean = Character.isISOControl(c)
   def isLetter: Boolean = Character.isLetter(c)
   def isLetterOrDigit: Boolean = Character.isLetterOrDigit(c)
   def isLowerCase: Boolean = Character.isLowerCase(c)
