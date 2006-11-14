@@ -19,8 +19,8 @@ object RichCharTest1 extends RichTest {
     Console.println("\n" + getObjectName + ":")
     Console.println('\40'.isWhitespace)
     Console.println('\011'.isWhitespace)
-    Console.println('1'.asDigit == java.lang.Character.digit('1', 10))
-    Console.println('A'.asDigit(16) == java.lang.Character.digit('A', 16))
+    Console.println('1'.asDigit == 1)
+    Console.println('A'.asDigit == 10)
   }
 }
 object RichCharTest2 extends RichTest {
