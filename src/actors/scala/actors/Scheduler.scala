@@ -68,9 +68,8 @@ trait IScheduler {
 
   def shutdown(): unit
 
-  val QUIT_TASK = new Reaction() {
-    def actor: Actor = null
-    def run(): unit = {}
+  val QUIT_TASK = new Reaction(null) {
+    override def run(): unit = {}
     override def toString() = "QUIT_TASK"
   }
 

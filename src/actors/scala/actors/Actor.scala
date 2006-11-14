@@ -368,9 +368,9 @@ trait Actor extends OutputChannel[Any] {
       // do nothing (timeout is handled instead)
     }
     else {
-      val task = new ActorTask(this,
-                               if (f eq null) continuation else f,
-                               msg)
+      val task = new Reaction(this,
+                              if (f eq null) continuation else f,
+                              msg)
       Scheduler.execute(task)
     }
 
@@ -447,7 +447,7 @@ trait Actor extends OutputChannel[Any] {
    * Starts this reactor.
    */
   def start(): Unit =
-    Scheduler.execute(new StartTask(this))
+    Scheduler.execute(new Reaction(this))
 
   private val links = new HashSet[Actor]
 
