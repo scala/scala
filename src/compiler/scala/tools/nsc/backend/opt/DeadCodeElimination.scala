@@ -62,7 +62,7 @@ abstract class DeadCodeElimination extends SubComponent {
 
         i match {
           case STORE_LOCAL(l) if (!live(l)) =>
-            removeDefUse(bb, pos);
+            removeDefUse(bb, i);
           case _ => ()
         }
         live = a.interpret(live, i);
@@ -73,24 +73,24 @@ abstract class DeadCodeElimination extends SubComponent {
      *  in the basic block. The `def' is the closest previous instruction which
      *  produced the top value on the stack.
      */
-    def removeDefUse(bb: BasicBlock, use: Int): Unit = {
-      bb.findDef(use) match {
+    def removeDefUse(bb: BasicBlock, use: Instruction): Unit = {
+      val usePos = bb.indexOf(use)
+      bb.findDef(usePos) match {
         case Some(defPos) =>
           val definition = bb(defPos);
           if (isSafeToRemove(definition)) {
-            log("Removing instructions at BB " + bb + " def: " + definition + ", use: " + bb(use));
+            log("Removing instructions at BB " + bb + " def: " + definition + ", use: " + use);
 
             if (definition.consumed == 0) {
-              bb.removeInstructionsAt(defPos, use)
+              bb.removeInstructionsAt(defPos, usePos)
             } else {
               bb.replaceInstruction(definition, definition.consumedTypes map DROP);
-              bb.removeInstructionsAt(use);
+              bb.removeInstructionsAt(usePos);
             }
           }
         case None =>
-        	val i = bb(use);
-          bb.replaceInstruction(i, i.consumedTypes map DROP);
-          log("Replaced dead " + i + " by DROP in bb " + bb);
+          bb.replaceInstruction(use, use.consumedTypes map DROP);
+          log("Replaced dead " + use + " by DROP in bb " + bb);
       }
     }
 

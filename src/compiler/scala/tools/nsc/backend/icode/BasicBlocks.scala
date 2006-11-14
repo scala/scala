@@ -61,6 +61,19 @@ trait BasicBlocks requires ICodes {
 
     // public:
 
+    /** Return the index of inst. Uses reference equality.
+     *  Returns -1 if not found.
+     */
+    def indexOf(inst: Instruction): Int = {
+      assert(closed)
+      var i = 0;
+      while (i < instrs.length) {
+        if (instrs(i) eq inst) return i
+        i = i + 1
+      }
+      -1
+    }
+
     /** Compute an hashCode for the block */
     override def hashCode() = label;
 

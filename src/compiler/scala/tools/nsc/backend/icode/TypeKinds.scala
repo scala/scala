@@ -51,15 +51,15 @@ trait TypeKinds requires ICodes {
     }
 
     def toType: Type = this match {
-      case UNIT            => definitions.UnitClass.info
-      case BOOL            => definitions.BooleanClass.info
-      case BYTE            => definitions.ByteClass.info
-      case SHORT           => definitions.ShortClass.info
-      case CHAR            => definitions.CharClass.info
-      case INT             => definitions.IntClass.info
-      case LONG            => definitions.LongClass.info
-      case FLOAT           => definitions.FloatClass.info
-      case DOUBLE          => definitions.DoubleClass.info
+      case UNIT            => definitions.UnitClass.tpe
+      case BOOL            => definitions.BooleanClass.tpe
+      case BYTE            => definitions.ByteClass.tpe
+      case SHORT           => definitions.ShortClass.tpe
+      case CHAR            => definitions.CharClass.tpe
+      case INT             => definitions.IntClass.tpe
+      case LONG            => definitions.LongClass.tpe
+      case FLOAT           => definitions.FloatClass.tpe
+      case DOUBLE          => definitions.DoubleClass.tpe
       case REFERENCE(cls)  => typeRef(cls.typeConstructor.prefix, cls, Nil)
       case ARRAY(elem)     => typeRef(definitions.ArrayClass.typeConstructor.prefix,
                                       definitions.ArrayClass,
@@ -291,6 +291,44 @@ trait TypeKinds requires ICodes {
     override def equals(other: Any): Boolean = other match {
       case ARRAY(elem2) => elem == elem2
       case _               => false
+    }
+
+  }
+
+  /** A boxed value. */
+  case class BOXED(kind: TypeKind) extends TypeKind {
+    override def toString(): String =
+      "BOXED(" + kind + ")"
+
+    /**
+     * Approximate `lub'. The common type of two references is
+     * always AnyRef. For 'real' least upper bound wrt to subclassing
+     * use method 'lub'.
+     */
+    override def maxType(other: TypeKind): TypeKind =
+      other match {
+        case REFERENCE(_) | ARRAY(_) | BOXED(_) =>
+          REFERENCE(definitions.AnyRefClass)
+        case _ =>
+          abort("Uncomparbale type kinds: ARRAY with " + other)
+      }
+
+    /** Checks subtyping relationship. */
+    override def <:<(other: TypeKind): Boolean =
+      other match {
+        case REFERENCE(sym) =>
+          (sym == definitions.AnyRefClass ||
+           sym == definitions.ObjectClass) // TODO: platform dependent!
+
+        case BOXED(other) =>
+          kind == other
+
+        case _ => false
+      }
+
+    override def equals(other: Any): Boolean = other match {
+      case BOXED(kind2) => kind == kind2
+      case _            => false
     }
 
   }

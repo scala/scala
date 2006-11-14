@@ -291,6 +291,12 @@ abstract class CopyPropagation {
             out = simulateCall(in, method, false);
         }
 
+        case BOX(tpe) =>
+          out.stack = Unknown :: out.stack.drop(1)
+
+        case UNBOX(tpe) =>
+          out.stack = Unknown :: out.stack.drop(1)
+
         case NEW(kind) =>
           val v1 =
             kind match {

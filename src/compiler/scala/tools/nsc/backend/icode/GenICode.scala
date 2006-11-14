@@ -640,7 +640,7 @@ abstract class GenICode extends SubComponent  {
             log("BOX : " + fun.symbol.fullNameString);
           val ctx1 = genLoad(expr, ctx, toTypeKind(expr.tpe))
           val boxType = fun.symbol.owner.linkedClassOfClass.tpe
-          ctx1.bb.emit(BOX(boxType), expr.pos)
+          ctx1.bb.emit(BOX(toTypeKind(boxType)), expr.pos)
           ctx1
 
         case Apply(fun @ _, List(expr)) if (definitions.isUnbox(fun.symbol)) =>
@@ -648,7 +648,7 @@ abstract class GenICode extends SubComponent  {
             log("UNBOX : " + fun.symbol.fullNameString)
           val ctx1 = genLoad(expr, ctx, toTypeKind(expr.tpe))
           assert(expectedType.isValueType)
-          ctx1.bb.emit(UNBOX(expectedType.toType), expr.pos)
+          ctx1.bb.emit(UNBOX(expectedType), expr.pos)
           ctx1
 
         case Apply(fun, args) =>

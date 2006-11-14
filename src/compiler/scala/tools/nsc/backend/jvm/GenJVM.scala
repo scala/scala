@@ -789,12 +789,12 @@ abstract class GenJVM extends SubComponent {
 
             }
 
-          case BOX(boxType) =>
-            val boxedClass = definitions.boxedClass(boxType.symbol)
-            val mtype = new JMethodType(javaType(boxedClass), Array(javaType(boxType)))
+          case BOX(kind) =>
+            val boxedClass = definitions.boxedClass(kind.toType.symbol)
+            val mtype = new JMethodType(javaType(boxedClass), Array(javaType(kind)))
             jcode.emitINVOKESTATIC(javaName(boxedClass), "box", mtype)
 
-          case UNBOX(boxType) if (boxType.symbol == definitions.BooleanClass) =>
+          case UNBOX(BOOL) /* if (boxType.symbol == definitions.BooleanClass) */=>
             // if null emit false
             val nonNull = jcode.newLabel()
             jcode.emitDUP()
@@ -810,13 +810,13 @@ abstract class GenJVM extends SubComponent {
             jcode.emitGETFIELD(boxedBoolean, "value", JType.BOOLEAN)
             lexit.anchorToNext()
 
-          case UNBOX(boxType) =>
+          case UNBOX(boxKind) =>
             // if null emit a zero of the appropriate kind
             val nonNull = jcode.newLabel()
             jcode.emitDUP()
             jcode.emitIFNONNULL(nonNull)
             jcode.emitPOP()
-            toTypeKind(boxType) match {
+            boxKind match {
               case BYTE            => jcode.emitPUSH(0: Byte)
               case SHORT           => jcode.emitPUSH(0: Short)
               case CHAR            => jcode.emitPUSH(0: Char)
@@ -830,9 +830,9 @@ abstract class GenJVM extends SubComponent {
             nonNull.anchorToNext()
             // else unbox the reference at the top of the stack
             jcode.emitCHECKCAST(new JObjectType(BOXED_NUMBER))
-            val clazzName = boxType.symbol.name.toString()
+            val clazzName = boxKind.toType.symbol.name.toString()
             val unboxMethod = clazzName.toLowerCase() + "Value"
-            val mtype = new JMethodType(javaType(boxType), new Array[JType](0))
+            val mtype = new JMethodType(javaType(boxKind), new Array[JType](0))
             jcode.emitINVOKEVIRTUAL(BOXED_NUMBER, unboxMethod, mtype)
             lexit.anchorToNext()
 

@@ -306,13 +306,13 @@ trait Opcodes requires ICodes {
         else 1
     }
 
-    case class BOX(boxType: Type) extends Instruction {
+    case class BOX(boxType: TypeKind) extends Instruction {
       override def toString(): String = "BOX " + boxType
       override def consumed = 1
       override def produced = 1
     }
 
-    case class UNBOX(boxType: Type) extends Instruction {
+    case class UNBOX(boxType: TypeKind) extends Instruction {
       override def toString(): String = "UNBOX " + boxType
       override def consumed = 1
       override def produced = 1

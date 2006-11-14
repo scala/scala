@@ -253,6 +253,14 @@ abstract class TypeFlowAnalysis {
             stack.push(toTypeKind(method.info.resultType));
         }
 
+        case BOX(kind) =>
+          stack.pop
+          stack.push(BOXED(kind))
+
+        case UNBOX(kind) =>
+          stack.pop
+          stack.push(kind)
+
         case NEW(kind) =>
         	stack.push(kind);
 

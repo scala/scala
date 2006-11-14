@@ -67,7 +67,7 @@ abstract class Checkers {
     val STRING        = REFERENCE(definitions.StringClass)
     val SCALA_ALL     = REFERENCE(definitions.AllClass)
     val SCALA_ALL_REF = REFERENCE(definitions.AllRefClass)
-    val CASE_CLASS    = REFERENCE(definitions.getClass("scala.CaseClass"))
+//    val CASE_CLASS    = REFERENCE(definitions.getClass("scala.CaseClass"))
 
     def checkICodes: Unit = {
       Console.println("[[consistency check at beginning of phase " + globalPhase.name + "]]")
@@ -200,7 +200,7 @@ abstract class Checkers {
 
         /** Checks that tpe is a subtype of one of the allowed types */
         def checkType(tpe: TypeKind, allowed: TypeKind*) =
-          if (isOneOf(tpe, allowed: _*) || tpe <:< CASE_CLASS) /* hack */
+          if (isOneOf(tpe, allowed: _*))
             ()
           else
             error(tpe.toString() + " is not one of: " + allowed.toList.mkString("{", ", ", "}"));
@@ -318,7 +318,7 @@ abstract class Checkers {
 
            val actualType = stack.pop;
            if (!(actualType <:< local.kind) &&
-               actualType != CASE_CLASS &&
+               //actualType != CASE_CLASS &&
                local.kind != SCALA_ALL_REF)
              typeError(local.kind, actualType);
 
@@ -327,8 +327,8 @@ abstract class Checkers {
              checkStack(1);
              val fieldType = toTypeKind(field.tpe);
              val actualType = stack.pop;
-             if (!(actualType <:< fieldType) &&
-                   actualType != CASE_CLASS)
+             if (!(actualType <:< fieldType))
+                   // && actualType != CASE_CLASS)
                typeError(fieldType, actualType);
            } else {
              checkStack(2);
@@ -336,8 +336,8 @@ abstract class Checkers {
                case Pair(value, obj) =>
                  checkField(obj, field);
                  val fieldType = toTypeKind(field.tpe);
-                 if (fieldType != SCALA_ALL_REF && !(value <:< fieldType)
-                     && value != CASE_CLASS)
+                 if (fieldType != SCALA_ALL_REF && !(value <:< fieldType))
+                     //&& value != CASE_CLASS)
                  typeError(fieldType, value);
              }
            }
