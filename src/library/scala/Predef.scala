@@ -35,6 +35,9 @@ object Predef {
   type boolean = scala.Boolean
   type unit = scala.Unit
 
+  type All = Nothing
+  type AllRef = Null
+
   type String = java.lang.String
   type Class = java.lang.Class
 
