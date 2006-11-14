@@ -6,19 +6,16 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: $
+// $Id$
 
 
-package scala
-
-
-//!!! TO BE REMOVED AFTER BOOTSTRAPPING !!!
+package scala.runtime
 
 
 /**
  * Dummy class which exist only to satisfy the JVM. It corresponds
- * to <code>scala.Nothing</code>. If such type appears in method
+ * to <code>scala.Null</code>. If such type appears in method
  * signatures, it is erased to this one.
  */
 
-sealed abstract class Nothing$
+sealed abstract class Null$

@@ -12,6 +12,9 @@
 package scala
 
 
+//!!! TO BE REMOVED AFTER BOOTSTRAPPING !!!
+
+
 /**
  * Dummy class which exist only to satisfy the JVM. It corresponds
  * to <code>scala.Null</code>. If such type appears in method

@@ -1266,8 +1266,8 @@ abstract class GenJVM extends SubComponent {
      * </p>
      * <p>
      *   Special handling: scala.Nothing and <code>scala.Null</code> are
-     *   <em>erased</em> to <code>scala.Nothing$</code> and
-     *   </code>scala.Null$</code>. This is needed because they are
+     *   <em>erased</em> to <code>scala.runtime.Nothing$</code> and
+     *   </code>scala.runtime.Null$</code>. This is needed because they are
      *   not real classes, and they mean 'abrupt termination upon evaluation
      *   of that expression' or <code>null</code> respectively. This handling is
      *   done already in <a href="../icode/GenIcode.html" target="contentFrame">
@@ -1282,9 +1282,9 @@ abstract class GenJVM extends SubComponent {
                         !sym.hasFlag(Flags.JAVA)) "$" else "";
 
       if (sym == definitions.AllClass)
-        return "scala.Nothing$"
+        return "scala.runtime.Nothing$"
       else if (sym == definitions.AllRefClass)
-        return "scala.Null$"
+        return "scala.runtime.Null$"
 
       if (sym.isClass && !sym.rawowner.isPackageClass)
         innerClasses = innerClasses + sym;

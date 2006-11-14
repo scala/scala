@@ -6,13 +6,10 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: $
+// $Id$
 
 
-package scala
-
-
-//!!! TO BE REMOVED AFTER BOOTSTRAPPING !!!
+package scala.runtime
 
 
 /**

@@ -13,10 +13,13 @@ package scala
 
 
 /**
+ * @deprecated <i>To be removed at some time in the future. Kept only for
+ * backward compatibility. Newly compiled code will refer to
+ * <code>scala.runtime.Null$</code></i>
+ *
  * Dummy class which exist only to satisfy the JVM. It corresponds
  * to <code>scala.AllRef</code>. If such type appears in method
  * signatures, it is erased to this one.
  */
 
-/** to be removed after new starr */
 sealed abstract class AllRef$
