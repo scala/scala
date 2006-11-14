@@ -240,7 +240,7 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
             received = null
             receiver.suspendActorFor(msec)
             Debug.info("received: "+received)
-            if (received eq null) {
+            if (received == null) {
               Debug.info("no message received after "+msec+" millis")
               if (f.isDefinedAt(TIMEOUT)) {
                 Debug.info("executing TIMEOUT action")

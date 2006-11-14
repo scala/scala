@@ -65,7 +65,7 @@ class NetKernel(service: Service) {
   private val actors = new HashMap[Symbol, Actor]
   private val names = new HashMap[Actor, Symbol]
 
-  private[actors] def register(name: Symbol, a: Actor): Unit = synchronized {
+  /*private[actors]*/ def register(name: Symbol, a: Actor): Unit = synchronized {
     actors += name -> a
     names += a -> name
   }
