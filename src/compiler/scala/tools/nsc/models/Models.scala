@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -20,30 +20,24 @@ abstract class Models {
 
   def acceptPrivate = true
 
-  abstract class Kind {}
-  object CONSTRUCTOR extends Kind
-  object OBJECT extends Kind
-  object CLASS  extends Kind
-  object TRAIT  extends Kind
-  object DEF    extends Kind
-  object VAL    extends Kind
-  object VAR    extends Kind
-  object ARG    extends Kind
-  object TPARAM extends Kind
-
-  def KINDS = CLASS :: TRAIT :: OBJECT :: CONSTRUCTOR :: TPARAM :: VAL :: VAR :: DEF :: Nil
-
-  def labelFor(kind: Kind): String = kind match {
-    case OBJECT => "Object"
-    case CLASS  => "Class"
-    case TRAIT  => "Trait"
-    case DEF    => "Def"
-    case VAL    => "Val"
-    case VAR    => "Var"
-    case ARG    => "Arg"
-    case TPARAM => "Type"
-    case CONSTRUCTOR => "Constructor"
+  object Kinds extends Enumeration  {
+    type Kind = Value
+    val CONSTRUCTOR = Value("Constructor")
+    val OBJECT      = Value("Object")
+    val CLASS       = Value("Class")
+    val TRAIT       = Value("Trait")
+    val DEF         = Value("Def")
+    val VAL         = Value("Val")
+    val VAR         = Value("Var")
+    val ARG         = Value("Arg")
+    val TPARAM      = Value("Type")
   }
+  import Kinds._
+
+  def KINDS = List(CLASS, TRAIT, OBJECT, CONSTRUCTOR, TPARAM, VAL, VAR, DEF)
+
+  def labelFor(kind: Kind): String = kind.toString
+
   def stringsFor(mods: Modifiers) = {
     var modString: List[String] = Nil
     if (mods.isPrivate  ) modString = "private"   :: modString

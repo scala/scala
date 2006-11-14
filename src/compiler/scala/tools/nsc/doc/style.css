@@ -45,6 +45,7 @@ span.entity {
 }
 
 table.member {
+	margin: 0 0 1.2em 0; /* top rigth bottom left */
 	border-collapse: collapse;
 	border: 2px inset #888888;
 	width: 100%;
@@ -58,6 +59,7 @@ table.member td.title {
 }
 
 table.inherited {
+	margin: 0 0 1.2em 0; /* top rigth bottom left */
 	border-collapse: collapse;
 	border: 2px inset #888888;
 	width: 100%;

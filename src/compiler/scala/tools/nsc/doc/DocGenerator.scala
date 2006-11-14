@@ -24,6 +24,7 @@ import scala.xml._
 abstract class DocGenerator extends Models {
   import global._
   import DocUtil._
+  import Kinds._
   import compat.StringBuilder
 
 
@@ -384,7 +385,7 @@ abstract class DocGenerator extends Models {
       case cmod: ImplMod =>
         <span>
           { listMembersShort(mmbr) }
-          { listInheritedMembers(mmbr) }
+          <!--{ listInheritedMembers(mmbr) }-->
           { listMembersFull(mmbr) }
         </span>
       case _ =>
@@ -398,63 +399,71 @@ abstract class DocGenerator extends Models {
     def listMembersShort(mmbr: HasTree): NodeSeq =
       if (mmbr.isInstanceOf[Composite]) {
         val map = organize(mmbr.asInstanceOf[Composite], emptyMap)
-        for (val kind <- KINDS; map contains kind) yield Group(br(
-          <table cellpadding="3" class="member" summary="">
-            <tr>
-              <td colspan="2" class="title">{Text(labelFor(kind))} Summary</td>
-            </tr>
-            { {
-              for (val mmbr <- map(kind).toList) yield
-                shortHeader(mmbr)
-            } }
-          </table>))
+        for (val kind <- KINDS) yield Group(
+          (if (map contains kind)
+             <table cellpadding="3" class="member" summary="">
+               <tr>
+                 <td colspan="2" class="title">{Text(labelFor(kind))} Summary</td>
+               </tr>
+               { {
+                 for (val mmbr <- map(kind).toList) yield
+                   shortHeader(mmbr)
+               } }
+             </table>
+           else
+             NodeSeq.Empty
+          ).concat(
+            listInheritedMembers(mmbr.tree.symbol, kind)))
       } else
         NodeSeq.Empty
 
     /**
-     *  @param mmbr ...
+     *  @param sym  the symbol
+     *  @param kind the selected kind of members
      *  @return     a sequence of HTML tables containing inherited members
      */
-    def listInheritedMembers(mmbr: HasTree): NodeSeq =
-      if (mmbr.isInstanceOf[Composite]) {
-        val sym = mmbr.tree.symbol
-        val ignored = List(definitions.ObjectClass, definitions.ScalaObjectClass)
-        val parents = sym.info.parents
-        for (val p <- parents; !ignored.contains(p.symbol)) yield Group(br(
-          <table cellpadding="3" class="inherited" summary="">
-            <tr>
-              <td colspan="2" class="title">
-                {Text("Methods inherited from ").concat(urlFor(p, contentFrame))}
-              </td>
-            </tr>
-            <tr>
-            { {
-              val decls = p.decls.toList filter(d =>
-                d.isMethod && !d.isConstructor)
-              if (decls.isEmpty) NodeSeq.Empty // scope empty
-              else {
-                def aref1(sym: Symbol): NodeSeq = {
-                  val isJava = sym hasFlag Flags.JAVA
-                  if (isJava || (sym.sourceFile eq null)) {
-                    <a class={sym.owner.fullNameString.replace('.', '_')}
-                       href={"#" + docName(sym)}
-                       target={contentFrame}>{sym.nameString}</a>
-                  }
-                  else
-                    aref(urlFor(sym), contentFrame, sym.nameString)
+    def listInheritedMembers(sym: Symbol, kind: Kind): NodeSeq = {
+      val ignored = List(definitions.ObjectClass, definitions.ScalaObjectClass)
+      def hasKind(sym: Symbol) =
+        (kind == DEF && sym.isMethod && !sym.isConstructor)
+        (kind == VAR && sym.isVariable)
+        (kind == VAL && sym.isValue && !sym.isVariable)
+      val parents = sym.info.parents
+      for (val p <- parents; !ignored.contains(p.symbol);
+           val decls = p.decls.toList filter(member => hasKind(member));
+           !decls.isEmpty) yield Group(
+        <table cellpadding="3" class="inherited" summary="">
+          <tr>
+            <td colspan="2" class="title">
+              {Text(kind.toString + " inherited from ").concat(urlFor(p, contentFrame))}
+            </td>
+          </tr>
+          <tr>
+          { {
+            //val decls = p.decls.toList filter(member => hasKind(member))
+            //if (decls.isEmpty) NodeSeq.Empty // scope empty
+            /*else*/ {
+              def aref1(sym: Symbol): NodeSeq = {
+                val isJava = sym hasFlag Flags.JAVA
+                if (isJava || (sym.sourceFile eq null)) {
+                  <a class={sym.owner.fullNameString.replace('.', '_')}
+                     href={"#" + docName(sym)}
+                     target={contentFrame}>{sym.nameString}</a>
                 }
-                val members = decls.sort(
-                  (x, y) => (x.nameString compareTo y.nameString) < 0)
-                <td colspan="2" class="signature">
-                  {aref1(members.head)}
-                  {for (val m <- members.tail) yield Text(", ").concat(aref1(m))}
-                </td>
+                else
+                  aref(urlFor(sym), contentFrame, sym.nameString)
               }
-            } }
-            </tr>
-          </table>))
-      } else
-        NodeSeq.Empty
+              val members = decls.sort(
+                (x, y) => (x.nameString compareTo y.nameString) < 0)
+              <td colspan="2" class="signature">
+                {aref1(members.head)}
+                {for (val m <- members.tail) yield Text(", ").concat(aref1(m))}
+              </td>
+            }
+          } }
+          </tr>
+        </table>)
+    }
 
     /**
      *  @param mmbr ...
