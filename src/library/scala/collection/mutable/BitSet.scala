@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -13,7 +13,7 @@ package scala.collection.mutable
 
 
 /**
- * This class implements mutable, resizable Bit sets
+ * The class <code>BitSet</code> implements mutable, resizable Bit sets
  *
  * @author  Burak Emir, Nikolay Mihaylov
  * @version 1.1
@@ -26,10 +26,13 @@ class BitSet(initSize: Int) extends collection.BitSet with Set[Int] {
 
   import compat.Platform.arraycopy
 
-  /** default constructor, initial size of 512 bits */
-  def this() = this(0);
+  /** default constructor, initial size of 512 bits. */
+  def this() = this(0)
 
-  /** ensure that this bitset can store at least <pre>n</pre> bits */
+  /** Ensures that this bitset can store at least <code>n</code> bits.
+   *
+   *  @param n ...
+   */
   def ensureCapacity(n: Int): Unit =
     if (capacity < n) {
       if (nbits(arr.length) < n) {
@@ -45,7 +48,7 @@ class BitSet(initSize: Int) extends collection.BitSet with Set[Int] {
     }
 
   /**
-   * Sets <code>i<sup>th</sup></code> bit to true.
+   * Sets <code>i-th</code> bit to true.
    * No restriction on <code>i</code>
    */
   def +=(i: Int): Unit = {
@@ -58,7 +61,10 @@ class BitSet(initSize: Int) extends collection.BitSet with Set[Int] {
     }
   }
 
-  /** Clears <code>i<sup>th</sup></code> bit  */
+  /** Clears the <code>i</code>-th bit.
+   *
+   *  @param i the <code>i</code>-th element of the bit set.
+   */
   def -=(i: Int): Unit = {
     if (i >= capacity) return;
     val oldInt = arr(offset(i))
@@ -69,6 +75,8 @@ class BitSet(initSize: Int) extends collection.BitSet with Set[Int] {
     }
   }
 
+  /** Clears all bits of the set.
+   */
   def clear: Unit = {
     java.util.Arrays.fill(arr, 0)
     size = 0

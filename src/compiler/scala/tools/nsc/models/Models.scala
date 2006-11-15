@@ -52,12 +52,12 @@ abstract class Models {
     modString
   }
 
-  def codeFor(kind: Kind) : String = kind match {
+  def codeFor(kind: Kind): String = kind match {
     case CONSTRUCTOR => codeFor(DEF)
     case _ => labelFor(kind).toLowerCase()
   }
 
-  def pluralFor(kind: Kind) : String = kind match {
+  def pluralFor(kind: Kind): String = kind match {
     case CLASS  => "Classes"
     case _ => labelFor(kind) + "s"
   }
@@ -313,8 +313,8 @@ abstract class Models {
           assert(sym0.isGetter);
           val sym = sym0.accessed
           val ret = if (sym == NoSymbol) {
-	    val sym = analyzer.underlying(sym0);
-	    //val name = nme.getterToSetter(sym0.name)
+            val sym = analyzer.underlying(sym0)
+            //val name = nme.getterToSetter(sym0.name)
             //val setter = sym0.owner.info.decl(name);
             val isVar = sym.isVariable;
             val mods = (ddef.mods |

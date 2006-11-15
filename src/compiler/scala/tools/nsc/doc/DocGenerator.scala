@@ -151,15 +151,15 @@ abstract class DocGenerator extends Models {
       })
     }
 
-    private val pat = Pattern.compile(
+    private val patVal = Pattern.compile(
       "scala\\.(Byte|Boolean|Char|Double|Float|Int|Long|Short)")
 
     def docName(sym: Symbol): String = {
       def javaParams(paramTypes: List[Type]): String = {
         def javaName(pt: Type): String = {
           val s = pt.toString
-          val mat = pat.matcher(s)
-          if (mat.matches) mat.group(1).toLowerCase
+          val matVal = patVal.matcher(s)
+          if (matVal.matches) matVal.group(1).toLowerCase
           else s.replaceAll("\\$", ".")
         }
         paramTypes.map(pt => javaName(pt)).mkString("(", ",", ")")
@@ -385,7 +385,6 @@ abstract class DocGenerator extends Models {
       case cmod: ImplMod =>
         <span>
           { listMembersShort(mmbr) }
-          <!--{ listInheritedMembers(mmbr) }-->
           { listMembersFull(mmbr) }
         </span>
       case _ =>
@@ -424,13 +423,13 @@ abstract class DocGenerator extends Models {
      */
     def listInheritedMembers(sym: Symbol, kind: Kind): NodeSeq = {
       val ignored = List(definitions.ObjectClass, definitions.ScalaObjectClass)
-      def hasKind(sym: Symbol) =
-        (kind == DEF && sym.isMethod && !sym.isConstructor)
-        (kind == VAR && sym.isVariable)
-        (kind == VAL && sym.isValue && !sym.isVariable)
+      def isVisible(sym: Symbol) =
+        (kind == DEF && sym.isMethod && !sym.isConstructor && !sym.hasFlag(Flags.ACCESSOR)) ||
+        (kind == VAR && sym.isVariable) ||
+        (kind == VAL && sym.isValue && !sym.isVariable && sym.hasGetter)
       val parents = sym.info.parents
       for (val p <- parents; !ignored.contains(p.symbol);
-           val decls = p.decls.toList filter(member => hasKind(member));
+           val decls = p.decls.toList filter(member => isVisible(member));
            !decls.isEmpty) yield Group(
         <table cellpadding="3" class="inherited" summary="">
           <tr>
@@ -438,30 +437,24 @@ abstract class DocGenerator extends Models {
               {Text(kind.toString + " inherited from ").concat(urlFor(p, contentFrame))}
             </td>
           </tr>
-          <tr>
-          { {
-            //val decls = p.decls.toList filter(member => hasKind(member))
-            //if (decls.isEmpty) NodeSeq.Empty // scope empty
-            /*else*/ {
-              def aref1(sym: Symbol): NodeSeq = {
-                val isJava = sym hasFlag Flags.JAVA
-                if (isJava || (sym.sourceFile eq null)) {
-                  <a class={sym.owner.fullNameString.replace('.', '_')}
-                     href={"#" + docName(sym)}
-                     target={contentFrame}>{sym.nameString}</a>
-                }
-                else
-                  aref(urlFor(sym), contentFrame, sym.nameString)
+          <tr> {
+            def aref1(sym: Symbol): NodeSeq = {
+              val isJava = sym hasFlag Flags.JAVA
+              if (isJava || (sym.sourceFile eq null)) {
+                <a class={sym.owner.fullNameString.replace('.', '_')}
+                  href={"#" + docName(sym)}
+                  target={contentFrame}>{sym.nameString}</a>
               }
-              val members = decls.sort(
-                (x, y) => (x.nameString compareTo y.nameString) < 0)
-              <td colspan="2" class="signature">
-                {aref1(members.head)}
-                {for (val m <- members.tail) yield Text(", ").concat(aref1(m))}
-              </td>
+              else
+                aref(urlFor(sym), contentFrame, sym.nameString)
             }
-          } }
-          </tr>
+            val members = decls.sort(
+              (x, y) => (x.nameString compareTo y.nameString) < 0)
+            <td colspan="2" class="signature">
+              {aref1(members.head)}
+              {for (val m <- members.tail) yield Text(", ").concat(aref1(m))}
+            </td>
+          } </tr>
         </table>)
     }
 
@@ -502,7 +495,7 @@ abstract class DocGenerator extends Models {
     def shortHeader(mmbr: HasTree): NodeSeq =
       <tr>
         <td valign="top" class="modifiers">
-          { { for (val str <- stringsFor(mmbr.mods)) yield <code>{(Text(str + " "))}</code>; } }
+          { for (val str <- stringsFor(mmbr.mods)) yield <code>{(Text(str + " "))}</code> }
         </td>
         <td class="signature">
           <code>{Text(codeFor(mmbr.kind))}</code>
@@ -743,7 +736,7 @@ abstract class DocGenerator extends Models {
         val tables = for (val k <- kinds.keys.toList)
                      yield Pair(k, decls filter kinds(k))
         for (val Pair(k, members) <- tables; !members.isEmpty) yield
-          <table cellpadding="3" class="member" summary="" style="margin:0 0 1.2em 0;">
+          <table cellpadding="3" class="member" summary="">
             <tr>
               <td colspan="2" class="title">{k} Summary</td>
             </tr>

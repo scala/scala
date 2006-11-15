@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -11,8 +11,6 @@
 
 package scala.collection.immutable
 
-
-//import Predef.NoSuchElementException
 
 object ListMap {
   def Empty[A, B] = new ListMap[A, B]
@@ -29,22 +27,22 @@ object ListMap {
 [serializable]
 class ListMap[A, B] extends AnyRef with Map[A, B] {
 
-  /** This method returns a new ListMap instance mapping keys of the
+  /** Returns a <code>new ListMap</code> instance mapping keys of the
    *  same type to values of type <code>C</code>.
    */
   def empty[C] = ListMap.Empty[A, C]
 
   /** Returns the number of mappings in this map.
    *
-   *  @return number of mappings.
+   *  @return number of mappings in this map.
    */
   def size: Int = 0
 
-  /** Check if this map maps <code>key</code> to a value and return the
+  /** Checks if this map maps <code>key</code> to a value and return the
    *  value if it exists.
    *
-   *  @param  key     the key of the mapping of interest
-   *  @return the value of the mapping, if it exists
+   *  @param  key the key of the mapping of interest
+   *  @return     the value of the mapping, if it exists
    */
   def get(key: A): Option[B] = None
 
@@ -53,16 +51,21 @@ class ListMap[A, B] extends AnyRef with Map[A, B] {
    *  to <code>value</code>. If the map contains already a
    *  mapping for <code>key</code>, it will be overridden by this
    *  function.
+   *
+   *  @param key  the key element of the updated entry.
+   *  @param value the value element of the updated entry.
    */
   def update(key: A, value: B): ListMap[A, B] = new Node(key, value)
 
   /** This creates a new mapping without the given <code>key</code>.
    *  If the map does not contain a mapping for the given key, the
    *  method returns the same map.
+   *
+   *  @param key a map without a mapping for the given key.
    */
   def -(key: A): ListMap[A, B] = this
 
-  /** This returns an iterator over key-value pairs.
+  /** Returns an iterator over key-value pairs.
    */
   def elements: Iterator[Pair[A,B]] = new Iterator[Pair[A,B]] {
     var that: ListMap[A,B] = ListMap.this;
@@ -110,20 +113,20 @@ class ListMap[A, B] extends AnyRef with Map[A, B] {
      */
     override def isEmpty: Boolean = false
 
-    /** Retrieve the value which is associated with the given key. This
+    /** Retrieves the value which is associated with the given key. This
      *  method throws an exception if there is no mapping from the given
      *  key to a value.
      *
-     *  @param  key     the key
-     *  @return the value associated with the given key.
+     *  @param  key the key
+     *  @return     the value associated with the given key.
      */
     override def apply(k: A): B = if (k == key) value else ListMap.this(k)
 
-    /** Check if this map maps <code>key</code> to a value and return the
+    /** Checks if this map maps <code>key</code> to a value and return the
      *  value if it exists.
      *
-     *  @param  key     the key of the mapping of interest
-     *  @return the value of the mapping, if it exists
+     *  @param  key the key of the mapping of interest
+     *  @return     the value of the mapping, if it exists
      */
     override def get(k: A): Option[B] =
       if (k == key) Some(value) else ListMap.this.get(k)
@@ -144,9 +147,12 @@ class ListMap[A, B] extends AnyRef with Map[A, B] {
         val tail = ListMap.this.update(k,v); new tail.Node(key, value)
       }
 
-    /** This creates a new mapping without the given <code>key</code>.
+    /** Creates a new mapping without the given <code>key</code>.
      *  If the map does not contain a mapping for the given key, the
      *  method returns the same map.
+     *
+     *  @param k ...
+     *  @return  ...
      */
     override def -(k: A): ListMap[A, B] =
       if (k == key)
