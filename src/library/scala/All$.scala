@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id$
+// $Id: All$.scala 9262 2006-11-14 17:29:59Z mihaylov $
 
 
 package scala
@@ -22,5 +22,4 @@ package scala
  * <code>scala.runtime.Nothing$</code></i>
  */
 
-/** to be removed after new starr */
 sealed abstract class All$
