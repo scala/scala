@@ -1340,62 +1340,78 @@ abstract class GenICode extends SubComponent  {
       }
     }
 
-    def eqEqTemp: Name = "eqEqTemp$"
-
     /**
      * Generate the "==" code for object references. It is equivalent of
-     * if (l eq null) then r eq null else l.equals(r);
+     * if (l eq null) r eq null else l.equals(r);
      *
      * @param l       left-hand side of the '=='
      * @param r       right-hand side of the '=='
      * @param ctx     current context
-     * @param thenCtx ...
-     * @param elseCtx ...
+     * @param thenCtx target context if the comparison yields true
+     * @param elseCtx target context if the comparison yields false
      */
     def genEqEqPrimitive(l: Tree, r: Tree, ctx: Context,
                          thenCtx: Context, elseCtx: Context): Unit =
     {
-      // special-case 'null == sth' to 'sth eq null'
-      l match {
-        case Literal(Constant(null)) =>
-          val ctx1 = genLoad(r, ctx, ANY_REF_CLASS)
+
+      def eqEqTempName: Name = "eqEqTemp$"
+
+      def getTempLocal: Local = ctx.method.lookupLocal(eqEqTempName) match {
+        case Some(local) => local
+        case None =>
+          val eqEqTempVar =
+            ctx.method.symbol.newVariable(l.pos, eqEqTempName).setFlag(Flags.SYNTHETIC)
+          eqEqTempVar.setInfo(definitions.AnyRefClass.typeConstructor)
+          val local = new Local(eqEqTempVar, REFERENCE(definitions.AnyRefClass), false)
+          ctx.method.addLocal(local)
+          local
+      }
+
+      Pair(l, r) match {
+        // null == expr -> expr eq null
+        case Pair(Literal(Constant(null)), expr) =>
+          val ctx1 = genLoad(expr, ctx, ANY_REF_CLASS)
           ctx1.bb.emit(CZJUMP(thenCtx.bb, elseCtx.bb, EQ, ANY_REF_CLASS))
           ctx1.bb.close
-          return
-        case _ => ()
+
+        // expr == null -> if(expr eq null) true else expr.equals(null)
+        case Pair(expr, Literal(Constant(null))) =>
+          val eqEqTempLocal = getTempLocal
+          var ctx1 = genLoad(expr, ctx, ANY_REF_CLASS)
+          ctx1.bb.emit(DUP(ANY_REF_CLASS))
+          ctx1.bb.emit(STORE_LOCAL(eqEqTempLocal), l.pos)
+          val nonNullCtx = ctx1.newBlock
+          ctx1.bb.emit(CZJUMP(thenCtx.bb, nonNullCtx.bb, EQ, ANY_REF_CLASS))
+          ctx1.bb.close
+
+          nonNullCtx.bb.emit(LOAD_LOCAL(eqEqTempLocal), l.pos)
+          nonNullCtx.bb.emit(CONSTANT(Constant(null)), r.pos)
+          nonNullCtx.bb.emit(CALL_METHOD(definitions.Object_equals, Dynamic))
+          nonNullCtx.bb.emit(CZJUMP(thenCtx.bb, elseCtx.bb, NE, BOOL))
+          nonNullCtx.bb.close
+
+        // l == r -> if (l eq null) r eq null else l.equals(r)
+        case _ =>
+          val eqEqTempLocal = getTempLocal
+          var ctx1 = genLoad(l, ctx, ANY_REF_CLASS)
+          ctx1 = genLoad(r, ctx1, ANY_REF_CLASS)
+          val nullCtx = ctx1.newBlock
+          val nonNullCtx = ctx1.newBlock
+          ctx1.bb.emit(STORE_LOCAL(eqEqTempLocal), l.pos)
+          ctx1.bb.emit(DUP(ANY_REF_CLASS))
+          ctx1.bb.emit(CZJUMP(nullCtx.bb, nonNullCtx.bb, EQ, ANY_REF_CLASS))
+          ctx1.bb.close
+
+          nullCtx.bb.emit(DROP(ANY_REF_CLASS), l.pos) // type of AnyRef
+          nullCtx.bb.emit(LOAD_LOCAL(eqEqTempLocal))
+          nullCtx.bb.emit(CZJUMP(thenCtx.bb, elseCtx.bb, EQ, ANY_REF_CLASS))
+          nullCtx.bb.close
+
+          nonNullCtx.bb.emit(LOAD_LOCAL(eqEqTempLocal), l.pos)
+          nonNullCtx.bb.emit(CALL_METHOD(definitions.Object_equals, Dynamic))
+          nonNullCtx.bb.emit(CZJUMP(thenCtx.bb, elseCtx.bb, NE, BOOL))
+          nonNullCtx.bb.close
       }
-
-      var eqEqTempVar: Symbol = null
-      var eqEqTempLocal: Local = null
-
-      ctx.method.lookupLocal(eqEqTemp) match {
-        case Some(local) =>
-          eqEqTempVar = local.sym; eqEqTempLocal = local
-        case None =>
-          eqEqTempVar = ctx.method.symbol.newVariable(l.pos, eqEqTemp).setFlag(Flags.SYNTHETIC)
-          eqEqTempVar.setInfo(definitions.AnyRefClass.typeConstructor)
-          eqEqTempLocal = new Local(eqEqTempVar, REFERENCE(definitions.AnyRefClass), false)
-          ctx.method.addLocal(eqEqTempLocal)
-      }
-
-      var ctx1 = genLoad(l, ctx, ANY_REF_CLASS)
-      ctx1 = genLoad(r, ctx1, ANY_REF_CLASS)
-      val tmpNullCtx = ctx1.newBlock
-      val tmpNonNullCtx = ctx1.newBlock
-      ctx1.bb.emit(STORE_LOCAL(eqEqTempLocal), l.pos)
-      ctx1.bb.emit(DUP(ANY_REF_CLASS))
-      ctx1.bb.emit(CZJUMP(tmpNullCtx.bb, tmpNonNullCtx.bb, EQ, ANY_REF_CLASS))
-      ctx1.bb.close
-
-      tmpNullCtx.bb.emit(DROP(ANY_REF_CLASS), l.pos) // type of AnyRef
-      tmpNullCtx.bb.emit(LOAD_LOCAL(eqEqTempLocal))
-      tmpNullCtx.bb.emit(CZJUMP(thenCtx.bb, elseCtx.bb, EQ, ANY_REF_CLASS))
-      tmpNullCtx.bb.close
-
-      tmpNonNullCtx.bb.emit(LOAD_LOCAL(eqEqTempLocal), l.pos)
-      tmpNonNullCtx.bb.emit(CALL_METHOD(definitions.Object_equals, Dynamic))
-      tmpNonNullCtx.bb.emit(CZJUMP(thenCtx.bb, elseCtx.bb, NE, BOOL))
-      tmpNonNullCtx.bb.close
     }
 
     /**
