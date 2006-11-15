@@ -295,8 +295,7 @@ object Utility extends AnyRef with parsing.TokenTests {
    */
   def appendEscapedQuoted(s: String, sb: StringBuilder) = {
     sb.append('"')
-    val z:Seq[Char] = Predef.string2seq(s)
-    for (val c <- z) c match {
+    for (val c <- s) c match {
       case '"' => sb.append('\\'); sb.append('"')
       case _   => sb.append(c)
     }

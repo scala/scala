@@ -126,6 +126,8 @@ object Predef {
 
   implicit def exceptionWrapper(exc: Throwable) = new runtime.RichException(exc)
 
+  implicit def any2stringadd(x: String) = new runtime.StringAdd(x)
+
 
   implicit def int2ordered(x: int): Ordered[int] = new Ordered[int] with Proxy {
     def self: Any = x
@@ -264,22 +266,6 @@ object Predef {
         else res
       }
     }
-
-  implicit def string2ordered(x: String): Ordered[String] = new Ordered[String] with Proxy {
-    def self: Any = x
-    def compare (y: String): int = x compareTo y
-  }
-
-  implicit def any2stringadd(x: String) = new runtime.StringAdd(x)
-
-  implicit def string2seq(str: String): Seq[Char] = new Seq[Char] {
-    def length = str.length()
-    def elements = Iterator.fromString(str)
-    def apply(n: Int) = str.charAt(n)
-    override def hashCode(): Int = str.hashCode()
-    override def equals(y: Any): Boolean = (str == y)
-    override protected def stringPrefix: String = "String"
-  }
 
   implicit def byte2short(x: byte): short = x.toShort
   implicit def byte2int(x: byte): int = x.toInt

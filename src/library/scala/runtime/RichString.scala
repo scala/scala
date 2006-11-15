@@ -14,7 +14,24 @@ package scala.runtime
 import Predef._
 import compat.Math
 
-final class RichString(s: String) {
+final class RichString(s: String) extends AnyRef with Seq[Char] with Ordered[String] with Proxy {
+
+  // Proxy
+  def self: Any = s
+
+  // Ordered[String]
+  def compare(other: String) = s compareTo other
+
+  // Seq[Char]
+  def length = s.length()
+  def elements = Iterator.fromString(s)
+
+  /** Retrieve the n-th character of the string
+   *
+   *  @param   index into the string
+   *  @return  the character at position <code>index</code>.
+   */
+  def apply(n: Int) = s charAt n
 
   private final val LF: Char = 0x0A
   private final val FF: Char = 0x0C
@@ -22,13 +39,6 @@ final class RichString(s: String) {
   private final val SU: Char = 0x1A
 
   private def isLineBreak(c: Char) = c == LF || c == FF
-
-  /** Treat string as a function that maps indices to characters.
-   *
-   *  @param index ...
-   *  @return      the character at position <code>index</code>.
-   */
-  def apply(index: Int): Char = s charAt index
 
   /** <p>
    *    Strip trailing line end character from this string if it has one.

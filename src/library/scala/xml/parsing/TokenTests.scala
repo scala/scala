@@ -72,8 +72,7 @@ trait TokenTests {
    */
   def isName(s: String): Boolean = {
     if( s.length() > 0 ) {
-      val z:Seq[Char] = Predef.string2seq(s);
-      val y           = z.elements;
+      val y           = s.elements;
       if (isNameStart(y.next)) {
         while (y.hasNext && isNameChar(y.next)) {};
         !y.hasNext
@@ -132,8 +131,7 @@ trait TokenTests {
   def checkPubID(s: String): Boolean = {
     //Console.println("checkPubID of \""+s+"\"");
     if (s.length() > 0) {
-      val z: Seq[Char] = Predef.string2seq(s);
-      val y = z.elements;
+      val y = s.elements;
       var c = ' ';
       while (y.hasNext && isPubIDChar(c)) {
         //Console.println(c);

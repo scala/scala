@@ -30,7 +30,7 @@ case class ProcInstr(target:String, proctext:String) extends SpecialNode {
 
   final override def typeTag$:Int = -2;
 
-  val z:Seq[Char] = Predef.string2seq(target); z match {
+  (target: Seq[Char]) match {
     case Seq('X'|'x','M'|'m','L'|'l') =>
       throw new IllegalArgumentException(target+" is reserved");
     case _ =>
