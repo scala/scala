@@ -45,6 +45,8 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
   private[actors] var waitingFor: Msg => boolean = waitingForNone
   private[actors] var waitingForSender: Actor = null
 
+  private[actors] var isSuspended = false
+
   //private val messageQueue = new MessageQueue[Msg]
   private val mailbox = new scala.collection.mutable.Queue[Pair[Msg, Actor]]
 
@@ -102,8 +104,6 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
    * last sender as sender instead of <code>self</code>.
    */
   def forward(msg: Msg): unit = send(msg, receiver.sender)
-
-  private[actors] var isSuspended = false
 
   /**
    * Receives a message from this <code>Channel</code>.

@@ -65,6 +65,9 @@ private[actors] class Reaction(a: Actor,
         throw new InterruptedException
 
       a.exit("normal")
+
+      if (currentThread.isInterrupted())
+        throw new InterruptedException
     }
     catch {
       case ie: InterruptedException => {
@@ -76,7 +79,7 @@ private[actors] class Reaction(a: Actor,
       }
       case t: Throwable => {
         log(t)
-        a.exit(t.toString())
+        a.exitLinked()
       }
     }
     finally {

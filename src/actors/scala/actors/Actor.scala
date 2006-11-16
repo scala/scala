@@ -444,7 +444,7 @@ trait Actor extends OutputChannel[Any] {
   resetActor()
 
   /**
-   * Starts this reactor.
+   * Starts this actor.
    */
   def start(): Unit =
     Scheduler.execute(new Reaction(this))
