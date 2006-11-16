@@ -335,7 +335,7 @@ trait Namers requires Analyzer {
         if (settings.debug.value) log("defining " + sym);
         val tp = typeSig(tree)
         sym.setInfo(tp)
-        if (sym.isType) typer.checkNonCyclic(sym)
+        //if (sym.isAliasType || sym.isAbstractType) typer.checkNonCyclic(sym)
         if (settings.debug.value) log("defined " + sym);
         validate(sym)
       }

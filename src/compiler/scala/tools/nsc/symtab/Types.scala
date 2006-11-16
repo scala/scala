@@ -314,6 +314,8 @@ trait Types requires SymbolTable {
      */
     def closure: Array[Type] = Array(this)
 
+    def depth: int = 1
+
     def baseClasses: List[Symbol] = List()
 
     /**
@@ -494,6 +496,7 @@ trait Types requires SymbolTable {
     override def decls: Scope = supertype.decls
     override def baseType(clazz: Symbol): Type = supertype.baseType(clazz)
     override def closure: Array[Type] = supertype.closure
+    override def depth: int = supertype.depth
     override def baseClasses: List[Symbol] = supertype.baseClasses
     // override def isNonNull = supertype.isNonNull
   }
@@ -652,6 +655,7 @@ trait Types requires SymbolTable {
     private var closurePeriod = NoPeriod
     private var baseClassesCache: List[Symbol] = _
     private var baseClassesPeriod = NoPeriod
+    private var depthCache: int = _
 
     override def closure: Array[Type] = {
       def computeClosure: Array[Type] =
@@ -733,6 +737,7 @@ trait Types requires SymbolTable {
         if (!isValidForBaseClasses(period)) {
           closureCache = null
           closureCache = computeClosure
+          depthCache = maxDepth(closureCache)
         }
         //Console.println("closure(" + symbol + ") = " + List.fromArray(closureCache));//DEBUG
       }
@@ -740,6 +745,8 @@ trait Types requires SymbolTable {
         throw new TypeError("illegal cyclic reference involving " + symbol)
       closureCache
     }
+
+    override def depth: int = { closure; depthCache }
 
     override def baseClasses: List[Symbol] = {
       def computeBaseClasses: List[Symbol] =
@@ -859,6 +866,7 @@ trait Types requires SymbolTable {
     private var parentsPeriod = NoPeriod
     private var closureCache: Array[Type] = _
     private var closurePeriod = NoPeriod
+    private var depthCache: int = _
 
     override val isTrivial: boolean =
       pre.isTrivial && !sym.isTypeParameter && args.forall(.isTrivial)
@@ -928,10 +936,13 @@ trait Types requires SymbolTable {
           closureCache =
             if (sym.isAbstractType) addClosure(this, transform(bounds.hi).closure)
             else transform(sym.info.closure)
+          depthCache = maxDepth(closureCache)
         }
       }
       closureCache
     }
+
+    override def depth: int = { closure; depthCache }
 
     override def baseClasses: List[Symbol] = thisInfo.baseClasses
 
@@ -1005,6 +1016,7 @@ trait Types requires SymbolTable {
     override def decls: Scope = resultType.decls
     override def symbol: Symbol = resultType.symbol
     override def closure: Array[Type] = resultType.closure
+    override def depth: int = resultType.depth
     override def baseClasses: List[Symbol] = resultType.baseClasses
     override def baseType(clazz: Symbol): Type = resultType.baseType(clazz)
     override def narrow: Type = resultType.narrow
@@ -1708,6 +1720,35 @@ trait Types requires SymbolTable {
 
 // Helper Methods  -------------------------------------------------------------
 
+  import Math.max
+
+  final def depth(tps: Seq[Type]): int = {
+    var d = 0
+    for (val tp <- tps) d = max(d, tp.depth)
+    d
+  }
+
+  final def maxDepth(tps: Seq[Type]): int = {
+    var d = 0
+    for (val tp <- tps) d = max(d, maxDepth(tp))
+    d
+  }
+
+  final def maxDepth(tp: Type): int = tp match {
+    case TypeRef(pre, sym, args) =>
+      max(maxDepth(pre), maxDepth(args) + 1)
+    case RefinedType(parents, decls) =>
+      max(maxDepth(parents), maxDepth(decls.toList.map(.info)) + 1)
+    case TypeBounds(lo, hi) =>
+      max(maxDepth(lo), maxDepth(hi))
+    case MethodType(paramtypes, result) =>
+      maxDepth(result)
+    case PolyType(tparams, result) =>
+      max(maxDepth(result), maxDepth(tparams map (.info)) + 1)
+    case _ =>
+      1
+  }
+
   final def isValid(period: Period): boolean =
     period != 0 && runId(period) == currentRunId && {
       val pid = phaseId(period)
@@ -2028,7 +2069,8 @@ trait Types requires SymbolTable {
    *  @return          ...
    */
   private def limitRecursion(tps: List[Type], boundkind: String,
-                             op: List[Type] => Type): Type =
+                             op: List[Type] => Type): Type = {
+    val recLimit = depth(tps) + 2
     if (recCount >= recLimit) {
       giveUp = true
       AnyClass.tpe
@@ -2049,6 +2091,7 @@ trait Types requires SymbolTable {
       }
       result
     }
+  }
 
   /** The greatest sorted upwards closed lower bound of a list of lists of
    *  types relative to the following ordering &lt;= between lists of types:
