@@ -335,7 +335,10 @@ trait Namers requires Analyzer {
         if (settings.debug.value) log("defining " + sym);
         val tp = typeSig(tree)
         sym.setInfo(tp)
-        //if (sym.isAliasType || sym.isAbstractType) typer.checkNonCyclic(sym)
+        if ((sym.isAliasType || sym.isAbstractType) && !(sym hasFlag PARAM) &&
+            !typer.checkNonCyclic(tree.pos, tp))
+          sym.setInfo(ErrorType) // this early test is there to avoid infinite baseTypes when
+                                 // adding setters and getters --> bug798
         if (settings.debug.value) log("defined " + sym);
         validate(sym)
       }

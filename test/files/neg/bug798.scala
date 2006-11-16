@@ -1,8 +1,7 @@
 package test;
-trait Test {
+trait Test[Bracks <: Bracks] {
   def f(list : Any) = null;
   class C[T]
-  type Bracks <: Bracks
   val bracks : Bracks;
   val singletons = f(bracks);
 
