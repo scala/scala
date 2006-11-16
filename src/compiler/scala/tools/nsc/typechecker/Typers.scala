@@ -845,6 +845,8 @@ trait Typers requires Analyzer {
         val value = vdef.symbol
         val getter = if (mods hasFlag DEFERRED) value else value.getter(value.owner)
         assert(getter != NoSymbol, stat)
+        if (getter hasFlag OVERLOADED)
+          error(getter.pos, ""+getter+" is defined twice")
         val getterDef: DefDef = {
           val result = DefDef(getter, vparamss =>
               if (mods hasFlag DEFERRED) EmptyTree
@@ -855,11 +857,14 @@ trait Typers requires Analyzer {
           result
         }
         def setterDef: DefDef = {
+          val setr = getter.setter(value.owner)
           val result = atPos(vdef.pos)(
-            DefDef(getter.setter(value.owner), vparamss =>
-              if (mods hasFlag DEFERRED) EmptyTree
-              else typed(Assign(Select(This(value.owner), value),
-                                Ident(vparamss.head.head)))))
+            DefDef(setr, vparamss =>
+              if ((mods hasFlag DEFERRED) || (setr hasFlag OVERLOADED))
+                EmptyTree
+              else
+                typed(Assign(Select(This(value.owner), value),
+                             Ident(vparamss.head.head)))))
           result.mods setAttr vdef.mods.attributes
           result
         }
