@@ -387,8 +387,16 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
             Console.println("transforming patmat with tidmark "+q+" ncases = "+cases.length)
             q
           } else null
-          if ((cases.length > 1) && (treeInfo.isDefaultCase(cases(0))))
-            assert(false,"transforming too much, " + tid)
+
+          cases match {
+            //if ((cases.length > 1) && ...(cases(0)))
+            //can't use treeInfo.isDefaultCase, because that diagnoses a Bind
+            case CaseDef(Ident(nme.WILDCARD), EmptyTree, _)::xs if !xs.isEmpty =>
+              // a hack to detect when explicit outer does not work correctly
+              // still needed?
+              assert(false,"transforming too much, " + tid)
+            case _ =>
+          }
 
           val nselector = transform(selector)
           assert(nselector.tpe =:= selector.tpe)
