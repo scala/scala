@@ -364,18 +364,7 @@ trait Types requires SymbolTable {
     def isComplete: boolean = true
 
     /** If this is a lazy type, assign a new type to <code>sym</code>. */
-    def complete(sym: Symbol): unit = {
-      if (sym == NoSymbol || sym.isPackageClass)
-        sym.validTo = period(currentRunId, phaseId(sym.validTo))
-      else {
-        val this1 = adaptToNewRunMap(this)
-        if (this1 eq this) sym.validTo = period(currentRunId, phaseId(sym.validTo))
-        else {
-          //Console.println("new type of " + sym + "=" + this1 + ", used to be " + this);//DEBUG
-          sym.setInfo(this1)
-        }
-      }
-    }
+    def complete(sym: Symbol) = {}
 
     /** If this is a symbol loader type, load and assign a new type to
      *  <code>sym</code>.
@@ -1645,16 +1634,12 @@ trait Types requires SymbolTable {
     }
   }
 
-
   object adaptToNewRunMap extends TypeMap {
     private def adaptToNewRun(pre: Type, sym: Symbol): Symbol = {
       if (sym.isModuleClass && !phase.flatClasses) {
         adaptToNewRun(pre, sym.sourceModule).moduleClass
-      } else if ((pre eq NoPrefix) || (pre eq NoType)) {
+      } else if ((pre eq NoPrefix) || (pre eq NoType) || sym.owner.isPackageClass) {
         sym
-      } else if (sym.owner.isPackageClass) {
-        val sym1 = sym.owner.info.decl(sym.name)
-        if (sym1 != NoSymbol && sym1.validTo > sym.validTo) sym1 else sym
       } else {
         var rebind0 = pre.findMember(sym.name, BRIDGE, 0, true)
         /** The two symbols have the same fully qualified name */
@@ -1703,9 +1688,12 @@ trait Types requires SymbolTable {
         if (restp1 eq restp) tp
         else PolyType(tparams, restp1)
       case ClassInfoType(parents, decls, clazz) =>
-        val parents1 = List.mapConserve(parents)(this)
-        if (parents1 eq parents) tp
-        else ClassInfoType(parents1, decls, clazz)
+        if (clazz.isPackageClass) tp
+        else {
+          val parents1 = List.mapConserve(parents)(this)
+          if (parents1 eq parents) tp
+          else ClassInfoType(parents1, decls, clazz)
+        }
       case RefinedType(parents, decls) =>
         val parents1 = List.mapConserve(parents)(this)
         if (parents1 eq parents) tp

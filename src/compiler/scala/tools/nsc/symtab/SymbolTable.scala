@@ -37,9 +37,9 @@ abstract class SymbolTable extends Names
   private var ph: Phase = NoPhase
   private var per = NoPeriod
 
-  def phase: Phase = ph
+  final def phase: Phase = ph
 
-  def phase_=(p: Phase): unit = {
+  final def phase_=(p: Phase): unit = {
     //System.out.println("setting phase to " + p)
     assert((p ne null) && p != NoPhase)
     ph = p
@@ -50,22 +50,28 @@ abstract class SymbolTable extends Names
   def currentRunId: RunId
 
   /** The run identifier of the given period */
-  def runId(period: Period): RunId = period >> 8
+  final def runId(period: Period): RunId = period >> 8
 
   /** The phase identifier of the given period */
-  def phaseId(period: Period): Phase#Id = period & 0xFF
+  final def phaseId(period: Period): Phase#Id = period & 0xFF
+
+  /** The period at the start of run that includes `period' */
+  final def startRun(period: Period): Period = period & 0xFFFFFF00
 
   /** The current period */
-  def currentPeriod: Period = {
+  final def currentPeriod: Period = {
     //assert(per == (currentRunId << 8) + phase.id)
     per
   }
+
+  /** The phase associated with given period */
+  final def phaseOf(period: Period): Phase = phaseWithId(phaseId(period))
 
   final def period(rid: RunId, pid: Phase#Id): Period =
     (currentRunId << 8) + pid
 
   /** Perform given operation at given phase */
-  def atPhase[T](ph: Phase)(op: => T): T = {
+  final def atPhase[T](ph: Phase)(op: => T): T = {
     val current = phase
     phase = ph
     val result = op
@@ -82,4 +88,5 @@ abstract class SymbolTable extends Names
 
   /** The phase which has given index as identifier */
   val phaseWithId: Array[Phase]
+
 }

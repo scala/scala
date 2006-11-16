@@ -190,17 +190,6 @@ abstract class Mixin extends InfoTransform {
         assert (impl.isImplClass)
         for (val member <- impl.info.decls.toList) {
           if (isForwarded(member)) {
-            for (val im <- iface.info.member(member.name).alternatives) {
-              // There's a subtle reason why we need to complete the interface symbol:
-              // It might be that the type of the interface symbol refers to
-              // an abstract type in the interface bounded by a nested class outside
-              // the interface. Assume now that the nested class is recompiled in resident mode.
-              // The interface symbol will be valid for the whole run because
-              // the abstract type has not changed. But the erased type *has* changed
-              // and therefore needs to be updated. See bug809 for an example where
-              // this comes up.
-              im.info.complete(im)
-            }
             val imember = member.overriddenSymbol(iface)
             //Console.println("mixin member "+member+":"+member.tpe+member.locationString+" "+imember+" "+imember.overridingSymbol(clazz)+" to "+clazz+" with scope "+clazz.info.decls)//DEBUG
             if (imember.overridingSymbol(clazz) == NoSymbol &&

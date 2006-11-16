@@ -1,0 +1,7 @@
+overload.scala:10 error: erroneous reference to overloaded definition,
+most specific definition is: method f in class C of type (scala.Int)scala.Unit,
+yet alternative definition   method f in class D of type (scala.Any)scala.Unit
+is defined in a subclass
+  (new D).f(1)
+         ^
+one error found

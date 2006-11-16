@@ -280,7 +280,7 @@ abstract class UnPickler {
       override def complete(sym: Symbol): unit = {
         val tp = at(i, readType)
         sym setInfo tp
-        if (currentRunId != definedAtRunId) tp.complete(sym)
+        if (currentRunId != definedAtRunId) sym.setInfo(adaptToNewRunMap(tp))
       }
       override def load(sym: Symbol): unit = complete(sym)
     }

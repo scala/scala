@@ -55,7 +55,10 @@ abstract class Constructors extends Transform {
         parameterNamed(nme.getterName(acc.originalName))
 
       def parameterNamed(name: Name): Symbol = {
-        val ps = constrParams.filter(param => param.name == name || param.originalName == name)
+        def matchesName(param: Symbol) =
+          param.name == name ||
+          param.name.startsWith(name) && param.name(name.length) == '$'
+        val ps = constrParams filter matchesName
         if (ps.isEmpty) assert(false, "" + name + " not in " + constrParams)
         ps.head
       }
