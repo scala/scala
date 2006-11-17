@@ -102,12 +102,20 @@ trait SyntheticMethods requires Analyzer {
       typed(DefDef(method, vparamss =>
         Apply(
           Select(
-            TypeApply(
-              Select(Ident(vparamss.head.head), Any_isInstanceOf),
-              List(TypeTree(clazz.tpe))),
-            Boolean_and),
+            Apply(
+              Select(Ident(vparamss.head.head), Object_eq),
+              List(This(clazz))),
+            Boolean_or),
           List(
-            Apply(gen.mkAttributedRef(target), This(clazz) :: (vparamss.head map Ident))))));
+            Apply(
+              Select(
+                TypeApply(
+                  Select(Ident(vparamss.head.head), Any_isInstanceOf),
+                  List(TypeTree(clazz.tpe))),
+                Boolean_and),
+              List(
+                Apply(gen.mkAttributedRef(target),
+                      This(clazz) :: (vparamss.head map Ident))))))));
     }
 
     def isSerializable(clazz: Symbol): Boolean =
