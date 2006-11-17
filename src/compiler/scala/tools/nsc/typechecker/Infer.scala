@@ -523,7 +523,7 @@ trait Infer requires Analyzer {
             try {
               val uninstantiated = new ListBuffer[Symbol]
               val targs = methTypeArgs(undetparams, formals, restpe, argtpes, pt, uninstantiated)
-              exprTypeArgs(uninstantiated.toList, restpe.subst(undetparams, targs), pt) ne null) &&
+              (exprTypeArgs(uninstantiated.toList, restpe.subst(undetparams, targs), pt) ne null) &&
               isWithinBounds(undetparams, targs)
             } catch {
               case ex: NoInstance => false
