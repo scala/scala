@@ -314,7 +314,8 @@ trait Types requires SymbolTable {
      */
     def closure: Array[Type] = Array(this)
 
-    def depth: int = 1
+    /** The maximum depth (@see maxDepth) of each type in the closure of this type. */
+    def closureDepth: int = 1
 
     def baseClasses: List[Symbol] = List()
 
@@ -496,7 +497,7 @@ trait Types requires SymbolTable {
     override def decls: Scope = supertype.decls
     override def baseType(clazz: Symbol): Type = supertype.baseType(clazz)
     override def closure: Array[Type] = supertype.closure
-    override def depth: int = supertype.depth
+    override def closureDepth: int = supertype.closureDepth
     override def baseClasses: List[Symbol] = supertype.baseClasses
     // override def isNonNull = supertype.isNonNull
   }
@@ -655,7 +656,7 @@ trait Types requires SymbolTable {
     private var closurePeriod = NoPeriod
     private var baseClassesCache: List[Symbol] = _
     private var baseClassesPeriod = NoPeriod
-    private var depthCache: int = _
+    private var closureDepthCache: int = _
 
     override def closure: Array[Type] = {
       def computeClosure: Array[Type] =
@@ -714,7 +715,7 @@ trait Types requires SymbolTable {
               case RefinedType(parents, decls) =>
                 assert(decls.isEmpty)
                 //Console.println("compute closure of "+this+" => glb("+parents+")")
-                closureCache(j) = mergePrefixAndArgs(parents, -1) match {
+                closureCache(j) = mergePrefixAndArgs(parents, -1, maxClosureDepth(parents)) match {
                   case Some(tp0) => tp0
                   case None => throw new MalformedClosure(parents)
                 }
@@ -737,7 +738,7 @@ trait Types requires SymbolTable {
         if (!isValidForBaseClasses(period)) {
           closureCache = null
           closureCache = computeClosure
-          depthCache = maxDepth(closureCache)
+          closureDepthCache = maxDepth(closureCache)
         }
         //Console.println("closure(" + symbol + ") = " + List.fromArray(closureCache));//DEBUG
       }
@@ -746,7 +747,7 @@ trait Types requires SymbolTable {
       closureCache
     }
 
-    override def depth: int = { closure; depthCache }
+    override def closureDepth: int = { closure; closureDepthCache }
 
     override def baseClasses: List[Symbol] = {
       def computeBaseClasses: List[Symbol] =
@@ -866,7 +867,7 @@ trait Types requires SymbolTable {
     private var parentsPeriod = NoPeriod
     private var closureCache: Array[Type] = _
     private var closurePeriod = NoPeriod
-    private var depthCache: int = _
+    private var closureDepthCache: int = _
 
     override val isTrivial: boolean =
       pre.isTrivial && !sym.isTypeParameter && args.forall(.isTrivial)
@@ -936,13 +937,13 @@ trait Types requires SymbolTable {
           closureCache =
             if (sym.isAbstractType) addClosure(this, transform(bounds.hi).closure)
             else transform(sym.info.closure)
-          depthCache = maxDepth(closureCache)
+          closureDepthCache = maxDepth(closureCache)
         }
       }
       closureCache
     }
 
-    override def depth: int = { closure; depthCache }
+    override def closureDepth: int = { closure; closureDepthCache }
 
     override def baseClasses: List[Symbol] = thisInfo.baseClasses
 
@@ -1016,7 +1017,7 @@ trait Types requires SymbolTable {
     override def decls: Scope = resultType.decls
     override def symbol: Symbol = resultType.symbol
     override def closure: Array[Type] = resultType.closure
-    override def depth: int = resultType.depth
+    override def closureDepth: int = resultType.closureDepth
     override def baseClasses: List[Symbol] = resultType.baseClasses
     override def baseType(clazz: Symbol): Type = resultType.baseType(clazz)
     override def narrow: Type = resultType.narrow
@@ -1722,18 +1723,21 @@ trait Types requires SymbolTable {
 
   import Math.max
 
-  final def depth(tps: Seq[Type]): int = {
+  /** The maximum depth of all types in the closures of each of the types `tps' */
+  final def maxClosureDepth(tps: Seq[Type]): int = {
     var d = 0
-    for (val tp <- tps) d = max(d, tp.depth)
+    for (val tp <- tps) d = max(d, tp.closureDepth)
     d
   }
 
+  /** The maximum depth of all types `tps' */
   final def maxDepth(tps: Seq[Type]): int = {
     var d = 0
     for (val tp <- tps) d = max(d, maxDepth(tp))
     d
   }
 
+  /** The maximum depth of type `tp' */
   final def maxDepth(tp: Type): int = tp match {
     case TypeRef(pre, sym, args) =>
       max(maxDepth(pre), maxDepth(args) + 1)
@@ -2056,43 +2060,6 @@ trait Types requires SymbolTable {
 
 // Lubs and Glbs ---------------------------------------------------------
 
-  private val recLimit = 10
-  private var recCount = 0
-  private var giveUp: boolean = _
-
-  /** Return <code>op(tps)</code>, but give up if level of recursion is
-   *  greater than <code>recLimit</code>.
-   *
-   *  @param tps       ...
-   *  @param boundkind ...
-   *  @param op        ...
-   *  @return          ...
-   */
-  private def limitRecursion(tps: List[Type], boundkind: String,
-                             op: List[Type] => Type): Type = {
-    val recLimit = depth(tps) + 2
-    if (recCount >= recLimit) {
-      giveUp = true
-      AnyClass.tpe
-    } else {
-      if (recCount == 0) giveUp = false
-      val result = try {
-        recCount = recCount + 1
-        op(tps)
-      } finally {
-        recCount = recCount - 1
-      }
-      if (recCount == 0 && giveUp) {
-        throw new TypeError("failure to compute " + boundkind +
-                            " bound of types " +
-                            tps.mkString("", " and ", ";\n") +
-                            "an approximation is: " + result + ";\n" +
-                            "additional type annotations are needed")
-      }
-      result
-    }
-  }
-
   /** The greatest sorted upwards closed lower bound of a list of lists of
    *  types relative to the following ordering &lt;= between lists of types:
    *
@@ -2100,7 +2067,7 @@ trait Types requires SymbolTable {
    *
    *  @See closure  for a definition of sorted and upwards closed.
    */
-  private def glbList(tss: List[List[Type]]): List[Type] = {
+  private def glbList(tss: List[List[Type]], depth: int): List[Type] = {
     val tss1 = tss filter (ts => !ts.isEmpty)
     if (tss1.isEmpty) List()
     else if (tss1.tail.isEmpty) tss.head
@@ -2108,9 +2075,9 @@ trait Types requires SymbolTable {
       val ts0 = tss1 map (.head)
       val sym = minSym(ts0)
       val ts1 = elimSuper(ts0 filter (.symbol.==(sym)))
-      mergePrefixAndArgs(ts1, -1) match {
+      mergePrefixAndArgs(ts1, -1, depth) match {
         case Some(tp0) =>
-          tp0 :: glbList(tss1 map (ts => if (ts.head.symbol == sym) ts.tail else ts))
+          tp0 :: glbList(tss1 map (ts => if (ts.head.symbol == sym) ts.tail else ts), depth)
         case None =>
           throw new MalformedClosure(ts1)
       }
@@ -2121,9 +2088,9 @@ trait Types requires SymbolTable {
    *
    *  @See glbList for more explanations.
    */
-  private def glbArray(tss: List[Array[Type]]): Array[Type] = {
+  private def glbArray(tss: List[Array[Type]], depth: int): Array[Type] = {
     val tss1 = tss map { ts: Array[Type] => List.fromArray(ts) }
-    val glbs = glbList(tss1)
+    val glbs = glbList(tss1, depth)
     val result = new Array[Type](glbs.length)
     var i = 0
     for (val x <- glbs.elements) { result(i) = x; i = i + 1; }
@@ -2136,16 +2103,16 @@ trait Types requires SymbolTable {
    *
    *  @See glbList for more explanations.
    */
-  private def lubList(tss: List[List[Type]]): List[Type] =
+  private def lubList(tss: List[List[Type]], depth: int): List[Type] =
     if (tss.tail.isEmpty) tss.head
     else if (tss exists (.isEmpty)) List()
     else {
       val ts0 = tss map (.head)
       val sym = minSym(ts0)
       if (ts0 forall (t => t.symbol == sym))
-        mergePrefixAndArgs(elimSub(ts0), 1).toList ::: lubList(tss map (.tail))
+        mergePrefixAndArgs(elimSub(ts0), 1, depth).toList ::: lubList(tss map (.tail), depth)
       else
-        lubList(tss map (ts => if (ts.head.symbol == sym) ts.tail else ts))
+        lubList(tss map (ts => if (ts.head.symbol == sym) ts.tail else ts), depth)
     }
 
   /** The least sorted upwards closed upper bound of a non-empty list
@@ -2153,8 +2120,8 @@ trait Types requires SymbolTable {
    *
    *  @See lubList for more explanations.
    */
-  private def lubArray(tss: List[Array[Type]]): Array[Type] = {
-    var lubs = lubList(tss map { ts: Array[Type] => List.fromArray(ts) })
+  private def lubArray(tss: List[Array[Type]], depth: int): Array[Type] = {
+    var lubs = lubList(tss map { ts: Array[Type] => List.fromArray(ts) }, depth)
     var arr = new Array[Type](lubs.length)
     var i = 0
     while (i < arr.length) {
@@ -2198,35 +2165,36 @@ trait Types requires SymbolTable {
       if (rest exists (t1 => t <:< t1)) rest else t :: rest
   }
 
+  def lub(ts: List[Type]): Type = lub(ts, maxClosureDepth(ts))
+
   /** The least upper bound wrt &lt;:&lt; of a list of types */
-  def lub(ts: List[Type]): Type = {
+  def lub(ts: List[Type], depth: int): Type = {
     def lub0(ts0: List[Type]): Type = elimSub(ts0 map (.deconst)) match {
       case List() => AllClass.tpe
       case List(t) => t
       case ts @ PolyType(tparams, _) :: _ =>
         PolyType(
           List.map2(tparams, List.transpose(matchingBounds(ts, tparams)))
-            ((tparam, bounds) => tparam.cloneSymbol.setInfo(glb(bounds))),
+            ((tparam, bounds) => tparam.cloneSymbol.setInfo(glb(bounds, depth))),
           lub0(matchingInstTypes(ts, tparams)))
       case ts @ MethodType(pts, _) :: rest =>
         MethodType(pts, lub0(matchingRestypes(ts, pts)))
       case ts @ TypeBounds(_, _) :: rest =>
         assert(false)
-        TypeBounds(glb(ts map (.bounds.lo)), lub(ts map (.bounds.hi)))
+        TypeBounds(glb(ts map (.bounds.lo), depth), lub(ts map (.bounds.hi), depth))
       case ts =>
         val closures: List[Array[Type]] = ts map (.closure)
-        val lubBaseTypes: Array[Type] = lubArray(closures)
+        val lubBaseTypes: Array[Type] = lubArray(closures, depth)
         //log("closures = " + (closures map (cl => List.fromArray(cl))) + ", lubbases = " + List.fromArray(lubBaseTypes));//DEBUG
         val lubParents = spanningTypes(List.fromArray(lubBaseTypes))
         val lubOwner = commonOwner(ts)
         val lubBase = intersectionType(lubParents, lubOwner)
-        if (phase.erasedTypes) lubBase
+        if (phase.erasedTypes || depth == 0) lubBase
         else {
           val lubType = refinedType(lubParents, lubOwner)
           val lubThisType = lubType.symbol.thisType
           val narrowts = ts map (.narrow)
           def lubsym(proto: Symbol): Symbol = try {
-            recCount = recCount + 1 // short circuit nesting levels for refinements
             val prototp = lubThisType.memberInfo(proto)
             val syms = narrowts map (t =>
               t.nonPrivateMember(proto.name).suchThat(sym =>
@@ -2237,18 +2205,16 @@ trait Types requires SymbolTable {
                 (List.map2(narrowts, syms)
                    ((t, sym) => t.memberInfo(sym).substThis(t.symbol, lubThisType)));
               if (proto.isTerm)
-                proto.cloneSymbol(lubType.symbol).setInfo(lub(symtypes))
+                proto.cloneSymbol(lubType.symbol).setInfo(lub(symtypes, depth-1))
               else if (symtypes.tail forall (symtypes.head =:=))
                 proto.cloneSymbol(lubType.symbol).setInfo(symtypes.head)
               else {
                 def lubBounds(bnds: List[TypeBounds]): TypeBounds =
-                  TypeBounds(glb(bnds map (.lo)), lub(bnds map (.hi)))
+                  TypeBounds(glb(bnds map (.lo), depth-1), lub(bnds map (.hi), depth-1))
                 proto.owner.newAbstractType(proto.pos, proto.name)
                   .setInfo(lubBounds(symtypes map (.bounds)))
               }
             }
-          } finally {
-            recCount = recCount - 1
           }
           def refines(tp: Type, sym: Symbol): boolean = {
             val syms = tp.nonPrivateMember(sym.name).alternatives;
@@ -2270,10 +2236,10 @@ trait Types requires SymbolTable {
         }
     }
     if (settings.debug.value) {
-      log(indent + "lub of " + ts)//debug
+      log(indent + "lub of " + ts + " at depth "+depth)//debug
       indent = indent + "  "
     }
-    val res = limitRecursion(ts, "least upper", lub0)
+    val res = lub0(ts)
     if (settings.debug.value) {
       indent = indent.substring(0, indent.length() - 2)
       log(indent + "lub of " + ts + " is " + res)//debug
@@ -2281,32 +2247,31 @@ trait Types requires SymbolTable {
     res
   }
 
-  def glb(ts: List[Type]): Type = glb(ts, !phase.erasedTypes)
-  def glbNoRefinement(ts: List[Type]): Type = glb(ts, false)
+  def glb(ts: List[Type]): Type = glb(ts, maxClosureDepth(ts))
 
   /** The greatest lower bound wrt &lt;:&lt; of a list of types */
-  private def glb(ts: List[Type], computeRefinement: boolean): Type = {
+  private def glb(ts: List[Type], depth: int): Type = {
     def glb0(ts0: List[Type]): Type = elimSuper(ts0 map (.deconst)) match {
       case List() => AnyClass.tpe
       case List(t) => t
       case ts @ PolyType(tparams, _) :: _ =>
         PolyType(
           List.map2(tparams, List.transpose(matchingBounds(ts, tparams)))
-          ((tparam, bounds) => tparam.cloneSymbol.setInfo(lub(bounds))),
+          ((tparam, bounds) => tparam.cloneSymbol.setInfo(lub(bounds, depth))),
           glb0(matchingInstTypes(ts, tparams)))
       case ts @ MethodType(pts, _) :: rest =>
         MethodType(pts, glb0(matchingRestypes(ts, pts)))
       case ts @ TypeBounds(_, _) :: rest =>
-        TypeBounds(lub(ts map (.bounds.lo)), glb(ts map (.bounds.hi)))
+        TypeBounds(lub(ts map (.bounds.lo), depth), glb(ts map (.bounds.hi), depth))
       case ts =>
         try {
           val glbOwner = commonOwner(ts)
           val glbBase = intersectionType(ts, glbOwner)
-          if (computeRefinement) {
+          if (phase.erasedTypes || depth == 0) glbBase
+          else {
             val glbType = refinedType(ts, glbOwner)
             val glbThisType = glbType.symbol.thisType
             def glbsym(proto: Symbol): Symbol = try {
-              recCount = recCount + 1 // short circuit nesting levels for refinements
               val prototp = glbThisType.memberInfo(proto)
               val syms = for (
                 val t <- ts;
@@ -2315,15 +2280,15 @@ trait Types requires SymbolTable {
               val symtypes = syms map glbThisType.memberInfo
               assert(!symtypes.isEmpty)
               proto.cloneSymbol(glbType.symbol).setInfo(
-                if (proto.isTerm) glb(symtypes)
+                if (proto.isTerm) glb(symtypes, depth-1)
                 else {
                   def isTypeBound(tp: Type) = tp match {
                     case TypeBounds(_, _) => true
                     case _ => false
                   }
                   def glbBounds(bnds: List[Type]): TypeBounds = {
-                    val lo = lub(bnds map (.bounds.lo))
-                    val hi = glb(bnds map (.bounds.hi))
+                    val lo = lub(bnds map (.bounds.lo), depth-1)
+                    val hi = glb(bnds map (.bounds.hi), depth-1)
                     if (lo <:< hi) TypeBounds(lo, hi)
                     else throw new MalformedClosure(bnds)
                   }
@@ -2337,8 +2302,6 @@ trait Types requires SymbolTable {
                     else throw new MalformedClosure(symtypes);
                   result
                 })
-            } finally {
-              recCount = recCount - 1
             }
             for (val t <- ts; val sym <- t.nonPrivateMembers)
               if (!sym.isClass && !sym.isConstructor && !(glbThisType specializes sym))
@@ -2348,8 +2311,6 @@ trait Types requires SymbolTable {
                   case ex: NoCommonType =>
                 }
             if (glbType.decls.isEmpty) glbBase else glbType
-          } else {
-            glbBase
           }
         } catch {
           case _: MalformedClosure =>
@@ -2358,10 +2319,10 @@ trait Types requires SymbolTable {
         }
     }
     if (settings.debug.value) {
-      log(indent + "glb of " + ts)//debug
+      log(indent + "glb of " + ts + " at depth "+depth)//debug
       indent = indent + "  "
     }
-    val res = limitRecursion(ts, "greatest lower", glb0)
+    val res = glb0(ts)
     if (settings.debug.value) {
       indent = indent.substring(0, indent.length() - 2)
       log(indent + "glb of " + ts + " is " + res)//debug
@@ -2395,20 +2356,27 @@ trait Types requires SymbolTable {
    *  Return <code>Some(x)</code> if the computation succeeds with result `x'.
    *  Return <code>None</code> if the computuation fails.
    */
-  private def mergePrefixAndArgs(tps: List[Type], variance: int): Option[Type] = tps match {
+  private def mergePrefixAndArgs(tps: List[Type], variance: int, depth: int): Option[Type] = tps match {
     case List(tp) =>
       Some(tp)
     case TypeRef(_, sym, _) :: rest =>
       val pres = tps map (.prefix)
-      val pre = if (variance == 1) lub(pres) else glb(pres)
+      val pre = if (variance == 1) lub(pres, depth) else glb(pres, depth)
       val argss = tps map (.typeArgs)
-      val args =
-        (List.map2(sym.typeParams, List.transpose(argss))
-           ((tparam, as) =>
-             if (tparam.variance == variance) lub(as)
-             else if (tparam.variance == -variance) glb(as)
-             else if (lub(as) <:< glb(as)) lub(as)
-             else NoType))
+      val args = List.map2(sym.typeParams, List.transpose(argss)) {
+        (tparam, as) =>
+          if (depth == 0)
+            if (tparam.variance == variance) AnyClass.tpe
+            else if (tparam.variance == -variance) AllClass.tpe
+            else NoType
+          else
+            if (tparam.variance == variance) lub(as, depth-1)
+            else if (tparam.variance == -variance) glb(as, depth-1)
+            else {
+              val l = lub(as, depth-1)
+              if (l <:< glb(as, depth-1)) l else NoType
+            }
+      }
       try {
         if (args contains NoType) None
         else Some(typeRef(pre, sym, args, variance))
@@ -2417,7 +2385,7 @@ trait Types requires SymbolTable {
       }
     case SingleType(_, sym) :: rest =>
       val pres = tps map (.prefix)
-      val pre = if (variance == 1) lub(pres) else glb(pres)
+      val pre = if (variance == 1) lub(pres, depth) else glb(pres, depth)
       try {
         Some(singleType(pre, sym, variance))
       } catch {

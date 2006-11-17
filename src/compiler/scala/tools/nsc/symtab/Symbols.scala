@@ -373,7 +373,7 @@ trait Symbols requires SymbolTable {
     /** Get type info associated with symbol at current phase, after
      *  ensuring that symbol is initialized (i.e. type is completed).
      */
-    final def info: Type = {
+    def info: Type = {
       var cnt = 0
       while (validTo == NoPeriod) {
         //if (settings.debug.value) System.out.println("completing " + this);//DEBUG
@@ -1274,6 +1274,7 @@ trait Symbols requires SymbolTable {
     override def ownerChain: List[Symbol] = List()
     override def alternatives: List[Symbol] = List()
     override def reset(completer: Type): unit = {}
+    override def info: Type = NoType
     override def rawInfo: Type = NoType
     def cloneSymbolImpl(owner: Symbol): Symbol = throw new Error()
   }
