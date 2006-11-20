@@ -583,7 +583,8 @@ trait Typers requires Analyzer {
                   if (obj != NoSymbol) tree.setSymbol(obj)
                   obj
                 }
-                if (definitions.unapplyMember(consp.tpe).exists) Ident(consp).setType(consp.tpe)
+                if (definitions.unapplyMember(consp.tpe).exists)
+                  atPos(tree.pos) {Ident(consp).setType(consp.tpe)}
                 else errorTree(tree, "" + clazz + " is not a case class, nor does it have unapply/unapplySeq method")
               } else {
                 errorTree(tree, "" + clazz + " is neither a case class nor a sequence class")
@@ -1429,8 +1430,8 @@ trait Typers requires Analyzer {
           val fun1 = typed(atPos(fun.pos) { Apply(Select(Ident(fun.symbol), unapp), List(arg)) }, EXPRmode, funPt)
           if (fun1.tpe.isErroneous) setError(tree)
           else {
-            var formals0 = if(unapp.name == nme.unapply) optionOfProductElems(fun1.tpe)
-                           else unapplySeqResultToMethodSig(fun1.tpe)
+            val formals0 = if(unapp.name == nme.unapply) optionOfProductElems(fun1.tpe)
+                         else unapplySeqResultToMethodSig(fun1.tpe)
             val formals1 = formalTypes(formals0, args.length)
             val args1 = typedArgs(args, mode, formals0, formals1)
             UnApply(fun1, args1) setPos tree.pos setType pt
