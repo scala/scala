@@ -74,7 +74,7 @@ object RemoteActor {
    * Returns (a proxy for) the actor registered under
    * <code>name</code> on <code>node</code>.
    */
-  def select(node: Node, name: Symbol): Actor =
+  def select(node: Node, sym: Symbol): Actor =
     new Actor {
       def act(): Unit = {}
       override def !(msg: Any): Unit = msg match {
@@ -90,7 +90,7 @@ object RemoteActor {
             }
             case Some(k) => k
           }
-          kernel.send(node, name, a)
+          kernel.send(node, sym, a)
         }
         case other =>
           error("Cannot send non-AnyRef value remotely.")
