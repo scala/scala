@@ -130,7 +130,7 @@ trait Iterable[+A] {
    *  @return   the index of the first element satisfying <code>p</code>,
    *            or -1 if such an element does not exist
    */
-  def indexOf(p: A => Boolean): Int = {
+  def findIndexOf(p: A => Boolean): Int = {
     val it = elements
     var i = 0
     while (it.hasNext)
@@ -139,6 +139,28 @@ trait Iterable[+A] {
       else
         i = i + 1
     return -1
+  }
+
+  /** Returns the index of the first occurence of the specified
+   *  object in this iterable object.
+   *
+   *  @param  elem  element to search for.
+   *  @return the index in this sequence of the first occurence of the
+   *          specified element, or -1 if the sequence does not contain
+   *          this element.
+   */
+  def indexOf[B >: A](elem: B): Int = {
+    val it = elements
+    var i = 0
+    var found = false
+    while (!found && it.hasNext) {
+      if (it.next == elem) {
+        found = true
+      } else {
+        i = i + 1
+      }
+    }
+    if (found) i else -1
   }
 
   /** Combines the elements of this list together using the binary

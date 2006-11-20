@@ -89,28 +89,6 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Iterable[A] {
    */
   def isDefinedAt(x: Int): Boolean = (x >= 0) && (x < length)
 
-  /** Returns the index of the first occurence of the specified
-   *  object in this sequence.
-   *
-   *  @param  elem  element to search for.
-   *  @return the index in this sequence of the first occurence of the
-   *          specified element, or -1 if the sequence does not contain
-   *          this element.
-   */
-  def indexOf[B >: A](elem: B): Int = {
-    val it = elements
-    var i = 0
-    var found = false
-    while (!found && it.hasNext) {
-      if (it.next == elem) {
-        found = true
-      } else {
-        i = i + 1
-      }
-    }
-    if (found) i else -1
-  }
-
   /** Returns the index of the last occurence of the specified element
    *  in this sequence, or -1 if the sequence does not contain this element.
    *
