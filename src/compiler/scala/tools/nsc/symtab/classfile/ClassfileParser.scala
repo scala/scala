@@ -169,18 +169,21 @@ abstract class ClassfileParser {
         val name = getExternalName(in.getChar(start + 1))
         if (name.endsWith("$"))
           c = definitions.getModule(name.subName(0, name.length - 1))
-        else if (name.pos('.') == name.length)
-          c = definitions.getMember(definitions.EmptyPackageClass, name.toTypeName)
         else
-          c = definitions.getClass(name)
+          c = classNameToSymbol(name)
         values(index) = c
       }
       c
     }
 
     /** Return the symbol of the class member at <code>index</code>.
-     *  If the member refers to special MODULE$ static field, return
+     *  The following special cases exist:
+     *   - If the member refers to special MODULE$ static field, return
      *  the symbol of the corresponding module.
+     *   - If the member is a field, and is not found with the given name,
+     *     another try is made by appending nme.LOCAL_SUFFIX
+     *   - If no symbol is found in the right tpe, a new try is made in the
+     *     companion class, in case the owner is an implementation class.
      */
     def getMemberSymbol(index: Int, static: Boolean): Symbol = {
       if (index <= 0 || len <= index) errorBadIndex(index)
@@ -200,6 +203,8 @@ abstract class ClassfileParser {
         } else {
           val owner = if (static) cls.linkedClassOfClass else cls
           f = owner.info.decl(name).suchThat(.tpe.=:=(tpe))
+          if (f == NoSymbol)
+            f = owner.info.decl(newTermName(name.toString + nme.LOCAL_SUFFIX)).suchThat(.tpe.=:=(tpe))
           if (f == NoSymbol) {
             // if it's an impl class, try to find it's static member inside the class
             assert(cls.isImplClass, "Not an implementation class: " + owner + " couldn't find " + name + ": " + tpe);
@@ -320,11 +325,7 @@ abstract class ClassfileParser {
           while (name(index) != ';') { index = index + 1 }
           val end = index
           index = index + 1
-          val clsName = name.subName(start, end)
-          if (clsName.pos('.') == clsName.length)
-            definitions.getMember(definitions.EmptyPackageClass, clsName.toTypeName).tpe
-          else
-            definitions.getClass(clsName).tpe
+          classNameToSymbol(name.subName(start, end)).tpe
         case ARRAY_TAG =>
           while ('0' <= name(index) && name(index) <= '9') index = index + 1
           appliedType(definitions.ArrayClass.tpe, List(sig2type))
@@ -334,6 +335,14 @@ abstract class ClassfileParser {
     }
     sig2type
   }
+
+  /** Return the class symbol of the given name. */
+  def classNameToSymbol(name: Name) =
+    if (name.pos('.') == name.length)
+      definitions.getMember(definitions.EmptyPackageClass, name.toTypeName)
+    else
+      definitions.getClass(name)
+
 
   var sawPrivateConstructor = false
 
@@ -405,7 +414,7 @@ abstract class ClassfileParser {
     val jflags = in.nextChar
     var sflags = transFlags(jflags)
     if ((sflags & FINAL) == 0) sflags = sflags | MUTABLE
-    if ((sflags & PRIVATE) != 0) {
+    if ((sflags & PRIVATE) != 0 && !global.settings.XbytecodeRead.value) {
       in.skip(4); skipAttributes()
     } else {
       val name = pool.getName(in.nextChar)
@@ -422,14 +431,14 @@ abstract class ClassfileParser {
   def parseMethod(): unit = {
     val jflags = in.nextChar
     var sflags = transFlags(jflags)
-    if ((jflags & JAVA_ACC_PRIVATE) != 0) {
+    if ((jflags & JAVA_ACC_PRIVATE) != 0 && !global.settings.XbytecodeRead.value) {
       val name = pool.getName(in.nextChar)
       if (name == nme.CONSTRUCTOR)
         sawPrivateConstructor = true
       in.skip(2); skipAttributes()
     } else {
       if ((jflags & JAVA_ACC_BRIDGE) != 0) sflags = sflags | PRIVATE
-      if ((sflags & PRIVATE) != 0) {
+      if ((sflags & PRIVATE) != 0 && !global.settings.XbytecodeRead.value) {
         in.skip(4); skipAttributes()
       } else {
         val name = pool.getName(in.nextChar)

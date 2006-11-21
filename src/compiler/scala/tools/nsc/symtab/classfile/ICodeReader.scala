@@ -32,19 +32,38 @@ abstract class ICodeReader extends ClassfileParser {
   var method: IMethod = _                  // the current IMethod
 
   val OBJECT: TypeKind = REFERENCE(definitions.ObjectClass)
+  val nothingName = newTermName("scala.Nothing$")
+  val nullName    = newTermName("scala.Null$")
+  var isScalaModule = false
 
   /** Read back bytecode for the given class symbol. It returns
    *  two IClass objects, one for static members and one
    *  for non-static members.
    */
-  def readClass(cls: ClassSymbol): Pair[IClass, IClass] = {
-    assert(cls.classFile ne null, "No classfile for " + cls)
+  def readClass(cls: Symbol): Pair[IClass, IClass] = {
+    var classFile: AbstractFile = null;
+    isScalaModule = cls.isModule && !cls.hasFlag(JAVA)
+    if (isScalaModule) {
+      Console.println("Loading module: " + cls);
+      classFile = classPath.root.find(cls.fullNameString(java.io.File.separatorChar) + "$", false).classFile
+    } else
+      classFile = cls.asInstanceOf[ClassSymbol].classFile
+    assert(classFile ne null, "No classfile for " + cls)
 
+    for (val s <- cls.info.members)
+      Console.println("" + s + ": " + s.tpe)
     this.instanceCode = new IClass(cls)
     this.staticCode   = new IClass(cls.linkedClassOfModule)
-    parse(cls.classFile, cls)
+    parse(classFile, cls)
 
     Pair(staticCode, instanceCode)
+  }
+
+  /** If we're parsing a scala module, the owner of members is always
+   *  the module symbol.
+   */
+  override def getOwner(jflags: Int): Symbol = {
+    if (isScalaModule) this.staticModule else super.getOwner(jflags)
   }
 
   override def parseClass(): Unit = {
@@ -53,8 +72,8 @@ abstract class ICodeReader extends ClassfileParser {
     var sflags = transFlags(jflags)
     if ((sflags & DEFERRED) != 0) sflags = sflags & ~DEFERRED | ABSTRACT
     val c = pool.getClassSymbol(in.nextChar)
-    if (c != clazz)
-      throw new IOException("class file '" + in.file + "' contains wrong " + clazz)
+//    if (c != clazz)
+//      throw new IOException("class file '" + in.file + "' contains " + c + "instead of " + clazz)
 
     in.skip(2)               // super class
     in.skip(2 * in.nextChar) // interfaces
@@ -83,11 +102,16 @@ abstract class ICodeReader extends ClassfileParser {
           tpe = MethodType(formals, getOwner(jflags).tpe)
       }
 
-    val sym = getOwner(jflags).info.member(name).suchThat(old => old.tpe =:= tpe);
-    if (sym == NoSymbol)
-      Console.println("Could not find symbol for " + name + ": " + tpe);
-//    assert(sym != NoSymbol, "Could not find symbol for " + name + ": " + tpe + " in " + getOwner(jflags));
-    Pair(jflags, sym)
+    if ("<clinit>" == name.toString)
+      Pair(jflags, NoSymbol)
+    else {
+      var sym = getOwner(jflags).info.member(name).suchThat(old => old.tpe =:= tpe);
+      if (sym == NoSymbol)
+        sym = getOwner(jflags).info.member(newTermName(name.toString + nme.LOCAL_SUFFIX)).suchThat(old => old.tpe =:= tpe);
+      if (sym == NoSymbol)
+        Console.println("Could not find symbol for " + name + ": " + tpe);
+      Pair(jflags, sym)
+    }
   }
 
   override def parseMethod(): Unit = {
@@ -115,6 +139,17 @@ abstract class ICodeReader extends ClassfileParser {
         in.skip(attrLen)
     }
   }
+
+  override def classNameToSymbol(name: Name) =
+    if (name == nothingName)
+      definitions.AllClass
+    else if (name == nullName)
+      definitions.AllRefClass
+    else if (name.endsWith("$"))
+      definitions.getModule(name.subName(0, name.length - 1))
+    else
+      definitions.getClass(name)
+
 
   var maxStack: Int = _
   var maxLocals: Int = _
@@ -489,6 +524,13 @@ abstract class ICodeReader extends ClassfileParser {
       pc = pc + size
     }
 
+    // add parameters
+    var idx = if (method.isStatic) 0 else 1
+    for (val t <- method.symbol.tpe.paramTypes) {
+      this.method.addParam(code.freshLocal(idx, toTypeKind(t), true))
+      idx = idx + 1
+    }
+
     pc = 0
     while (pc < codeLength) {
       parseInstruction
@@ -539,7 +581,7 @@ abstract class ICodeReader extends ClassfileParser {
       var disableJmpTarget = false
 
       for (val Pair(pc, instr) <- instrs.elements) {
-//        Console.println("> " + pc + ": " + instr);
+        Console.println("> " + pc + ": " + instr);
         if (jmpTargets contains pc) {
           otherBlock = blocks(pc)
           if (!bb.isClosed) {
@@ -606,7 +648,7 @@ abstract class ICodeReader extends ClassfileParser {
           l
         case None =>
           checkValidIndex
-          val l = freshLocal(idx, kind)
+          val l = freshLocal(idx, kind, false)
           locals += idx -> l
           l
       }
@@ -615,11 +657,10 @@ abstract class ICodeReader extends ClassfileParser {
     override def toString(): String = instrs.toList.mkString("", "\n", "")
 
     /** Return a fresh Local variable.
-     *  TODO: 'isArgument' is always false, should be modified accordingly.
      */
-    def freshLocal(idx: Int, kind: TypeKind) = {
+    def freshLocal(idx: Int, kind: TypeKind, isArg: Boolean) = {
       val sym = method.symbol.newVariable(NoPos, "loc" + idx).setInfo(kind.toType);
-      new Local(sym, kind, false)
+      new Local(sym, kind, isArg)
     }
 
     /** Base class for branch instructions that take addresses. */
