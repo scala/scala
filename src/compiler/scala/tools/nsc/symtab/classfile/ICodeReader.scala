@@ -581,10 +581,10 @@ abstract class ICodeReader extends ClassfileParser {
       var disableJmpTarget = false
 
       for (val Pair(pc, instr) <- instrs.elements) {
-        Console.println("> " + pc + ": " + instr);
+//        Console.println("> " + pc + ": " + instr);
         if (jmpTargets contains pc) {
           otherBlock = blocks(pc)
-          if (!bb.isClosed) {
+          if (!bb.isClosed && otherBlock != bb) {
             bb.emit(JUMP(otherBlock))
             bb.close
           }
