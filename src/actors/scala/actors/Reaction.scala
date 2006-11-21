@@ -50,6 +50,7 @@ private[actors] class Reaction(a: Actor,
     val saved = Actor.selfs.get(t).asInstanceOf[Actor]
     Actor.selfs.put(t, a)
     Scheduler.unPendReaction
+    a.isDetached = false
     try {
       if (f == null)
         a.act()
@@ -85,5 +86,15 @@ private[actors] class Reaction(a: Actor,
     finally {
       Actor.selfs.put(t, saved)
     }
+  }
+
+  private var runnable = false
+
+  def isRunnable = synchronized {
+    runnable
+  }
+
+  def setRunnable(on: boolean) = synchronized {
+    runnable = on
   }
 }

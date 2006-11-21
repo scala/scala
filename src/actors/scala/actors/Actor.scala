@@ -362,6 +362,8 @@ trait Actor extends OutputChannel[Any] {
 
   private[actors] var continuation: PartialFunction[Any, Unit] = null
   private[actors] var timeoutPending = false
+  private[actors] var isDetached = false
+  private[actors] var isWaiting = false
 
   private[actors] def scheduleActor(f: PartialFunction[Any, Unit], msg: Any) =
     if ((f eq null) && (continuation eq null)) {
@@ -371,15 +373,16 @@ trait Actor extends OutputChannel[Any] {
       val task = new Reaction(this,
                               if (f eq null) continuation else f,
                               msg)
-      Scheduler.execute(task)
+      Scheduler execute task
     }
 
   private[actors] def tick(): Unit =
-    Scheduler.tick(this)
+    Scheduler tick this
 
   private[actors] def defaultDetachActor: PartialFunction[Any, Unit] => Unit =
     (f: PartialFunction[Any, Unit]) => {
       continuation = f
+      isDetached = true
       throw new SuspendActorException
     }
 
@@ -389,14 +392,12 @@ trait Actor extends OutputChannel[Any] {
   private[actors] var detachActor: PartialFunction[Any, Unit] => Unit = _
   private[actors] var kill: () => Unit = _
 
-  private var continue = false
-
   private class ExitSuspendLoop extends Throwable
 
   private[actors] def resetActor(): Unit = {
     suspendActor = () => {
-      continue = false
-      while(!continue) {
+      isWaiting = true
+      while(isWaiting) {
         try {
           wait()
         } catch {
@@ -408,11 +409,11 @@ trait Actor extends OutputChannel[Any] {
     suspendActorFor = (msec: long) => {
       val ts = Platform.currentTime
       var waittime = msec
-      continue = false
       var fromExc = false
+      isWaiting = true
 
       try {
-        while(!continue) {
+        while(isWaiting) {
           try {
             fromExc = false
             wait(waittime)
@@ -422,7 +423,7 @@ trait Actor extends OutputChannel[Any] {
               val now = Platform.currentTime
               val waited = now-ts
               waittime = msec-waited
-              if (waittime < 0) { continue = true }
+              if (waittime < 0) { isWaiting = false }
             }
           }
           if (!fromExc) throw new ExitSuspendLoop
@@ -432,7 +433,7 @@ trait Actor extends OutputChannel[Any] {
     }
 
     resumeActor = () => {
-      continue = true
+      isWaiting = false
       notify()
     }
 
@@ -447,7 +448,24 @@ trait Actor extends OutputChannel[Any] {
    * Starts this actor.
    */
   def start(): Unit =
-    Scheduler.execute(new Reaction(this))
+    Scheduler start new Reaction(this)
+
+
+  /*
+   * Debugging support.
+   */
+  private[actors] var name = ""
+
+  private var childCnt = 0
+
+  private[actors] def nextChildName = {
+    val s = childCnt + name
+    childCnt = childCnt + 1
+    s
+  }
+
+  private[actors] def setName(n: String) =
+    name = n
 
   private val links = new HashSet[Actor]
 
@@ -548,6 +566,9 @@ trait Actor extends OutputChannel[Any] {
         linked.exit(this, reason)
       }
       exitMarks -= this
+
+      // unregister in scheduler
+      Scheduler terminated this
     }
   }
 }

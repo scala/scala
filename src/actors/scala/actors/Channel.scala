@@ -296,6 +296,7 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
         }
         case None => {
           this.synchronized {
+            //Scheduler.detached(receiver)
             receiver.detachActor(f)
           }
         }
@@ -350,4 +351,20 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
       throw new SuspendActorException
     }
   }
+
+  /*
+   * Prints contents of mailbox to standard out.
+   * This is used for printing actor dumps.
+   */
+  private[actors] def printMailbox = {
+    Console.print("[")
+    val msgs = mailbox.elements
+    if (msgs.hasNext)
+      Console.print(msgs.next._1.toString())
+    while (msgs.hasNext) {
+      Console.print(", "+msgs.next._1.toString())
+    }
+    Console.println("]")
+  }
+
 }
