@@ -63,18 +63,20 @@ abstract class AddInterfaces extends InfoTransform {
     sym.isMethod && isInterfaceMember(sym) &&
     (!(sym hasFlag (DEFERRED | SUPERACCESSOR)) || (sym hasFlag lateDEFERRED))
 
+  def implClassPhase = currentRun.erasurePhase.next
+
   /** Return the implementation class of a trait; create a new one of one does not yet exist */
   def implClass(iface: Symbol): Symbol = implClassMap.get(iface) match {
     case Some(c) => c
     case None =>
-      atPhase(currentRun.erasurePhase) {
+      atPhase(implClassPhase) {
         val implName = nme.implClassName(iface.name)
         var impl = if (iface.owner.isClass) iface.owner.info.decl(implName) else NoSymbol
         if (impl == NoSymbol) {
           impl = iface.cloneSymbolImpl(iface.owner)
           impl.name = implName
           if (iface.owner.isClass) {
-            atPhase(phase.next) {
+            atPhase(currentRun.erasurePhase.next) {
               val decls = iface.owner.info.decls
               val e = decls.lookupEntry(impl.name)
               if (e eq null) {
@@ -156,15 +158,16 @@ abstract class AddInterfaces extends InfoTransform {
     override def complete(sym: Symbol): unit = {
       def implType(tp: Type): Type = tp match {
         case ClassInfoType(parents, decls, _) =>
-          //ClassInfoType(mixinToImplClass(parents) ::: List(iface.tpe), implDecls(sym, decls), sym)
+          //Console.println("completing "+sym+" at "+phase+", decls = "+decls)
+          //ClassInfoType(mixinToImplClass(parents) ::: List(iface.tpe), implDecls(sym, 0decls), sym)
           ClassInfoType(
             ObjectClass.tpe :: (parents.tail map mixinToImplClass) ::: List(iface.tpe),
             implDecls(sym, decls),
             sym)
         case PolyType(tparams, restpe) =>
-          PolyType(tparams, implType(restpe))
+          implType(restpe)
       }
-      sym.setInfo(atPhase(currentRun.erasurePhase)(implType(iface.info)))
+      sym.setInfo(atPhase(implClassPhase)(implType(atPhase(currentRun.erasurePhase)(iface.info))))
     }
 
     override def load(clazz: Symbol): unit = complete(clazz)

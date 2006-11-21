@@ -556,7 +556,7 @@ trait Parsers requires SyntaxAnalyzer {
     }
 
     /** Type1 ::= SimpleType {with SimpleType} [Refinement]
-     *  TypePattern1 ::= SimpleTypePattern {with SimpleTypePattern}
+     *  TypePattern ::= SimpleTypePattern {with SimpleTypePattern}
      */
     def type1(isPattern: boolean): Tree =
       type1rest(in.currentPos, simpleType(isPattern), isPattern)
@@ -578,7 +578,7 @@ trait Parsers requires SyntaxAnalyzer {
      *                     |   Path `.' type
      *                     |   `(' Type `)'
      * SimpleTypePattern  ::=  SimpleTypePattern TypePatternArgs
-     *                     |   SimpleTypePattern1 "#" Id
+     * SimpleTypePattern1 ::=  SimpleTypePattern1 "#" Id
      *                     |   StableId
      *                     |   Path `.' type
      */
@@ -1109,11 +1109,11 @@ trait Parsers requires SyntaxAnalyzer {
 
     def pattern(): Tree = pattern(false)
 
-    /**   Pattern1    ::= varid `:' TypePattern1
-     *                 |  `_' `:' TypePattern1
+    /**   Pattern1    ::= varid `:' TypePattern
+     *                 |  `_' `:' TypePattern
      *                 |  Pattern2
-     *    SeqPattern1 ::= varid `:' TypePattern1
-     *                 |  `_' `:' TypePattern1
+     *    SeqPattern1 ::= varid `:' TypePattern
+     *                 |  `_' `:' TypePattern
      *                 |  [SeqPattern2]
      */
     def pattern1(seqOK: boolean): Tree = {

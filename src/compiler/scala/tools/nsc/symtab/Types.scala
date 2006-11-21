@@ -1665,7 +1665,7 @@ trait Types requires SymbolTable {
           val bcs = pre.baseClasses.dropWhile(bc => !corresponds(bc, sym.owner));
           assert(!bcs.isEmpty)
           rebind0 = pre.baseType(bcs.head).member(sym.name)
-          if (settings.debug.value) Console.println("ADAPT2 pre = "+pre+", sym = "+sym+sym.locationString+", rebind = "+rebind0+rebind0.locationString)
+          if (settings.debug.value) Console.println("ADAPT2 pre = "+pre+", bcs.head = "+bcs.head+", sym = "+sym+sym.locationString+", rebind = "+rebind0+(if (rebind0 == NoSymbol) "" else rebind0.locationString))
         }
         val rebind = rebind0.suchThat(sym => sym.isType || sym.isStable)
         if (rebind == NoSymbol) {
