@@ -585,6 +585,8 @@ trait Typers requires Analyzer {
                 }
                 if (definitions.unapplyMember(consp.tpe).exists)
                   atPos(tree.pos) {Ident(consp).setType(consp.tpe)}
+                  //  needs member type, but member of what? ^^^
+                  //  see test/pending/pos/unapplyNeedsMemberType.scala
                 else errorTree(tree, "" + clazz + " is not a case class, nor does it have unapply/unapplySeq method")
               } else {
                 errorTree(tree, "" + clazz + " is neither a case class nor a sequence class")
