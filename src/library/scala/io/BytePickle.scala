@@ -110,23 +110,17 @@ object BytePickle {
       val pe = state.dict
       pe.get(v) match {
         case None =>
-          //Console.println("" + v + " is new")
-          //Console.println("writing DEF...")
           val sPrime = refDef.appP(Def(), state.stream)
           val l = pe.nextLoc()
 
-          //Console.println("applying pickler to state " + sPrime)
           val sPrimePrime = pa.appP(v, new PicklerState(sPrime, pe))
 
-          //Console.println("updating dict (" + l + ") for " + v)
           pe.update(v, l)
 
           return sPrimePrime
         case Some(l) =>
-          //Console.println("writing REF...")
           val sPrime = refDef.appP(Ref(), state.stream)
 
-          //Console.println("writing location to state " + sPrime)
           return new PicklerState(unat.appP(l, sPrime), pe)
       }
     }
@@ -193,10 +187,8 @@ object BytePickle {
   def sequ[t,u](f: u => t, pa: SPU[t], k: t => SPU[u]): SPU[u] = new SPU[u] {
     def appP(b: u, s: PicklerState): PicklerState = {
       val a = f(b)
-      //Console.println("pickling " + a + ", s: " + s.stream)
       val sPrime = pa.appP(a, s)
       val pb = k(a)
-      //Console.println("pickling " + b + ", s: " + s.stream)
       pb.appP(b, sPrime)
     }
     def appU(s: UnPicklerState): Pair[u, UnPicklerState] = {
