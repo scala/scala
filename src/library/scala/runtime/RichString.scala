@@ -11,10 +11,11 @@
 
 package scala.runtime
 
+
 import Predef._
 import compat.Math
 
-final class RichString(s: String) extends AnyRef with Seq[Char] with Ordered[String] with Proxy {
+final class RichString(s: String) extends Proxy with Seq[Char] with Ordered[String] {
 
   // Proxy
   def self: Any = s

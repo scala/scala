@@ -117,62 +117,21 @@ object Predef {
 
   implicit def identity[a](x: a): a = x
 
+  implicit def byteWrapper(x: byte)     = new runtime.RichByte(x)
+  implicit def shortWrapper(x: short)   = new runtime.RichShort(x)
+  implicit def intWrapper(x: int)       = new runtime.RichInt(x)
+  implicit def charWrapper(c: char)     = new runtime.RichChar(c)
+  implicit def longWrapper(x: long)     = new runtime.RichLong(x)
+  implicit def floatWrapper(x: float)   = new runtime.RichFloat(x)
+  implicit def doubleWrapper(x: double) = new runtime.RichDouble(x)
 
-  implicit def intWrapper(x: int) = new runtime.RichInt(x)
-
-  implicit def charWrapper(c: char) = new runtime.RichChar(c)
+  implicit def booleanWrapper(x: boolean)  = new runtime.RichBoolean(x)
 
   implicit def stringWrapper(x: String) = new runtime.RichString(x)
 
-  implicit def exceptionWrapper(exc: Throwable) = new runtime.RichException(exc)
-
   implicit def any2stringadd(x: String) = new runtime.StringAdd(x)
 
-
-  implicit def int2ordered(x: int): Ordered[int] = new Ordered[int] with Proxy {
-    def self: Any = x
-    def compare (y: int): int = if (x < y) -1 else if (x > y) 1 else 0
-  }
-
-  implicit def char2ordered(x: char): Ordered[char] = new Ordered[char] with Proxy {
-    def self: Any = x
-    def compare (y: char): int = if (x < y) -1 else if (x > y) 1 else 0
-  }
-
-  implicit def byte2ordered(x: byte): Ordered[byte] = new Ordered[byte] with Proxy {
-    def self: Any = x
-    def compare (y: byte): int = if (x < y) -1 else if (x > y) 1 else 0
-  }
-
-  implicit def short2ordered(x: short): Ordered[short] = new Ordered[short] with Proxy {
-    def self: Any = x
-    def compare (y: short): int = if (x < y) -1 else if (x > y) 1 else 0
-  }
-
-  implicit def unit2ordered(x: unit): Ordered[unit] = new Ordered[unit] with Proxy {
-    def self: Any = x
-    def compare (y: unit): int = 0
-  }
-
-  implicit def long2ordered(x: long): Ordered[long] = new Ordered[long] with Proxy {
-    def self: Any = x
-    def compare (y: long) = if (x < y) -1 else if (x > y) 1 else 0
-  }
-
-  implicit def float2ordered(x: float): Ordered[float] = new Ordered[float] with Proxy {
-    def self: Any = x
-    def compare (y: float) = if (x < y) -1 else if (x > y) 1 else 0
-  }
-
-  implicit def double2ordered(x: double): Ordered[double] = new Ordered[double] with Proxy {
-    def self: Any = x
-    def compare (y: double) = if (x < y) -1 else if (x > y) 1 else 0
-  }
-
-  implicit def boolean2ordered(x: boolean): Ordered[boolean] = new Ordered[boolean] with Proxy {
-    def self: Any = x
-    def compare (y: boolean) = if (x == y) 0 else if (x) 1 else -1
-  }
+  implicit def exceptionWrapper(exc: Throwable) = new runtime.RichException(exc)
 
   implicit def iterable2ordered[a <% Ordered[a]](xs: Iterable[a]): Ordered[Iterable[a]] =
     new Ordered[Iterable[a]] with Proxy {

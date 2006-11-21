@@ -8,16 +8,16 @@
 
 // $Id$
 
+
 package scala.runtime
 
-final class RichInt(x: Int) extends Proxy with Ordered[Int] {
 
-  // Proxy
+final class RichShort(x: Short) extends Proxy with Ordered[Short] {
+
+  // Proxy.self
   def self: Any = x
 
-  // Ordered[Int]
-  def compare (y: Int): Int = if (x < y) -1 else if (x > y) 1 else 0
+  // Ordered[Short].compare
+  def compare (y: Short): Int = if (x < y) -1 else if (x > y) 1 else 0
 
-  def until(y: Int): Iterator[Int] = Iterator.range(x, y)
-  def to(y: Int): Iterator[Int] = Iterator.range(x, y + 1)
 }
