@@ -228,7 +228,7 @@ abstract class Inliners extends SubComponent {
     def analyzeClass(cls: IClass): Unit = if (settings.inline.value) {
       if (settings.debug.value)
       	log("Analyzing " + cls);
-      cls.methods.foreach { m => analyzeMethod(m)
+      cls.methods.foreach { m => if (!m.symbol.isConstructor) analyzeMethod(m)
      }}
 
 

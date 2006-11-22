@@ -108,14 +108,14 @@ trait BasicBlocks requires ICodes {
       assert(closed);
       var i = pos;
       var d = 0;
-      while (i > 0 && d >= 0) {
+      while (i > 0) {
         i = i - 1;
+        val prod = instrs(i).produced
+        if (prod > 0 && d == 0)
+          return Some(i)
         d = d + (instrs(i).consumed - instrs(i).produced);
       }
-      if (i >= 0)
-        Some(i)
-      else
-        None
+      None
     }
 
     /** Return the n-th instruction. */
@@ -248,6 +248,10 @@ trait BasicBlocks requires ICodes {
     }
 
     def emit(instr: Instruction, pos: Int) = {
+      if (closed) {
+        print();
+        Console.println("trying to emit: " + instr)
+      }
       assert (!closed || ignore, "BasicBlock closed");
 
       if (!ignore) {
@@ -352,8 +356,7 @@ trait BasicBlocks requires ICodes {
 
     def print(out: java.io.PrintStream) : unit = {
       out.println("block #"+label+" :");
-      instructionList.reverse.foreach(
-        (i: Instruction) => out.println("  "+i));
+      toList.foreach(i => out.println("  " + i));
       out.print("Successors: ");
       successors.foreach((x: BasicBlock) => out.print(" "+x.label.toString()));
       out.println();

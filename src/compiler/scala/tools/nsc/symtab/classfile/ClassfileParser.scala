@@ -202,6 +202,7 @@ abstract class ClassfileParser {
           f = definitions.getModule(name.subName(0, name.length - 1))
         } else {
           val owner = if (static) cls.linkedClassOfClass else cls
+//          Console.println("" + owner.info.decl(name).tpe + " =:= " + tpe)
           f = owner.info.decl(name).suchThat(.tpe.=:=(tpe))
           if (f == NoSymbol)
             f = owner.info.decl(newTermName(name.toString + nme.LOCAL_SUFFIX)).suchThat(.tpe.=:=(tpe))
@@ -248,11 +249,13 @@ abstract class ClassfileParser {
         val start = starts(index)
         if (in.buf(start) != CONSTANT_CLASS) errorBadTag(start)
         val name = getExternalName(in.getChar(start + 1))
-        if (name(0) == ARRAY_TAG)
+        if (name(0) == ARRAY_TAG) {
           c = sigToType(name)
-        else
+          values(index) = c
+        } else {
+          values(index) = definitions.getClass(name)
           c = definitions.getClass(name).tpe
-        values(index) = c
+        }
       } else c = value match {
           case _: Type => value.asInstanceOf[Type]
           case _: Symbol => value.asInstanceOf[Symbol].tpe

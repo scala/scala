@@ -156,6 +156,7 @@ trait Members requires ICodes {
    */
   class IMethod(val symbol: Symbol) {
     var code: Code = null;
+    var native = false;
 
     /** The list of exception handlers, ordered from innermost to outermost. */
     var exh: List[ExceptionHandler] = Nil;
@@ -205,7 +206,8 @@ trait Members requires ICodes {
     /** Is this method deferred ('abstract' in Java sense) */
     def isDeferred = (
       symbol.hasFlag(Flags.DEFERRED) ||
-      symbol.owner.hasFlag(Flags.INTERFACE)
+      symbol.owner.hasFlag(Flags.INTERFACE) ||
+      native
     );
 
     def isStatic: Boolean =

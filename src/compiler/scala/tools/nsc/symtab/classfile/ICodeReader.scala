@@ -32,8 +32,8 @@ abstract class ICodeReader extends ClassfileParser {
   var method: IMethod = _                  // the current IMethod
 
   val OBJECT: TypeKind = REFERENCE(definitions.ObjectClass)
-  val nothingName = newTermName("scala.Nothing$")
-  val nullName    = newTermName("scala.Null$")
+  val nothingName = newTermName("scala.runtime.Nothing$")
+  val nullName    = newTermName("scala.runtime.Null$")
   var isScalaModule = false
 
   /** Read back bytecode for the given class symbol. It returns
@@ -50,8 +50,8 @@ abstract class ICodeReader extends ClassfileParser {
       classFile = cls.asInstanceOf[ClassSymbol].classFile
     assert(classFile ne null, "No classfile for " + cls)
 
-    for (val s <- cls.info.members)
-      Console.println("" + s + ": " + s.tpe)
+//    for (val s <- cls.info.members)
+//      Console.println("" + s + ": " + s.tpe)
     this.instanceCode = new IClass(cls)
     this.staticCode   = new IClass(cls.linkedClassOfModule)
     parse(classFile, cls)
@@ -120,6 +120,8 @@ abstract class ICodeReader extends ClassfileParser {
       Console.println("Parsing method " + sym.fullNameString);
       this.method = new IMethod(sym);
       getCode(jflags).addMethod(this.method);
+      if ((jflags & JAVA_ACC_NATIVE) != 0)
+        this.method.native = true
       val attributeCount = in.nextChar;
       for (val i <- 0 until attributeCount)
         parseAttribute();
@@ -446,7 +448,8 @@ abstract class ICodeReader extends ClassfileParser {
           val m = pool.getMemberSymbol(in.nextChar, false); size = size + 2;
           code.emit(CALL_METHOD(m, Dynamic))
         case JVM.invokeinterface  =>
-          val m = pool.getMemberSymbol(in.nextChar, false); size = size + 2;
+          val m = pool.getMemberSymbol(in.nextChar, false); size = size + 4;
+          in.skip(2)
           code.emit(CALL_METHOD(m, Dynamic));
         case JVM.invokespecial   =>
           val m = pool.getMemberSymbol(in.nextChar, false); size = size + 2;
@@ -536,11 +539,20 @@ abstract class ICodeReader extends ClassfileParser {
       parseInstruction
     }
 
-    code.toBasicBlock
     val exceptionEntries = in.nextChar.toInt
-    in.skip(8 * exceptionEntries)
+    var i = 0
+    while (i < exceptionEntries) {
+      // skip start end PC
+      in.skip(4)
+      // read the handler PC
+      code.jmpTargets += in.nextChar
+      // skip the exception type
+      in.skip(2)
+      i = i + 1
+    }
     skipAttributes()
 
+    code.toBasicBlock
     //Console.println(code.toString())
   }
 
@@ -553,7 +565,7 @@ abstract class ICodeReader extends ClassfileParser {
   class LinearCode {
     var instrs: ListBuffer[Pair[Int, Instruction]] = new ListBuffer
     var jmpTargets: Set[Int] = new HashSet[Int]
-    var locals: Map[Int, Local] = new HashMap()
+    var locals: Map[Int, List[Pair[Local, TypeKind]]] = new HashMap()
 
     def emit(i: Instruction) = {
 //      Console.println(i);
@@ -630,8 +642,8 @@ abstract class ICodeReader extends ClassfileParser {
 
       def checkValidIndex: Unit = {
         locals.get(idx - 1) match {
-          case Some(other) if (other.kind == LONG || other.kind == DOUBLE) =>
-            error("Illegal index: " + idx + " points in the middle of " + other)
+          case Some(others) if ((others find { x => x._1 == LONG || x._1 == DOUBLE}) != None) =>
+            error("Illegal index: " + idx + " points in the middle of another local")
           case _ => ()
         }
         kind match {
@@ -642,14 +654,21 @@ abstract class ICodeReader extends ClassfileParser {
       }
 
       locals.get(idx) match {
-        case Some(l) =>
-          assert(l.kind == kind, "Expected kind " +
-                 kind + " for local " + l + " but " + l.kind + " found.")
-          l
+        case Some(ls) =>
+          val l = ls find { loc => loc._2 == kind }
+          l match {
+            case Some(Pair(loc, _)) => loc
+            case None =>
+              val l = freshLocal(maxLocals + idx, kind, false)
+              locals(idx) = Pair(l, kind) :: locals(idx)
+              log("Expected kind " + kind + " for local " + idx +
+                " but only " + ls + " found. Added new local.")
+              l
+          }
         case None =>
           checkValidIndex
           val l = freshLocal(idx, kind, false)
-          locals += idx -> l
+          locals += idx -> List(Pair(l, kind))
           l
       }
     }
@@ -660,7 +679,9 @@ abstract class ICodeReader extends ClassfileParser {
      */
     def freshLocal(idx: Int, kind: TypeKind, isArg: Boolean) = {
       val sym = method.symbol.newVariable(NoPos, "loc" + idx).setInfo(kind.toType);
-      new Local(sym, kind, isArg)
+      val l = new Local(sym, kind, isArg)
+      method.addLocal(l)
+      l
     }
 
     /** Base class for branch instructions that take addresses. */
