@@ -8,7 +8,7 @@ package scala.tools.nsc
 
 import java.lang.{Class, ClassLoader}
 import java.io.{File, PrintWriter, StringWriter}
-import java.net.URLClassLoader
+import java.net.{URL, URLClassLoader}
 
 import scala.collection.mutable.{ListBuffer, HashSet, ArrayBuffer}
 import scala.collection.immutable.{Map, ListMap}
@@ -92,6 +92,11 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
   /** the compiler to compile expressions with */
   val compiler = new Global(settings, reporter)
 
+  /** the compiler's classpath, as URL's */
+  val compilerClasspath: List[URL] =
+    compiler.settings.classpath.value.split(File.pathSeparator).toList.
+      map(s => new File(s).toURL)
+
   /** class loader used to load compiled code */
   /* A single class loader is used for all commands interpreted by this Interpreter.
      It would also be possible to create a new class loader for each command
@@ -108,15 +113,14 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
   */
   private val classLoader =
     if (parentClassLoader eq null)
-      new URLClassLoader(Array(classfilePath.toURL))
+      new URLClassLoader((classfilePath.toURL :: compilerClasspath).toArray)
     else
-      new URLClassLoader(Array(classfilePath.toURL), parentClassLoader)
+      new URLClassLoader((classfilePath.toURL :: compilerClasspath).toArray,
+                          parentClassLoader)
 
-  protected def parentClassLoader: ClassLoader =
-    new URLClassLoader(
-      compiler.settings.classpath.value.split(File.pathSeparator).
-        map(s => new File(s).toURL),
-      ClassLoader.getSystemClassLoader)
+  /** XXX Let's get rid of this.  I believe the Eclipse plugin is
+    * the only user of it.   */
+  protected def parentClassLoader: ClassLoader = null
 
   /** the previous requests this interpreter has processed */
   private val prevRequests = new ArrayBuffer[Request]()
@@ -312,33 +316,9 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
    *  @return          ...
    */
   def bind(name: String, boundType: String, value: Any) = {
-    // XXX check that name is a valid variable name */
     val binderName = "binder" + binderNum
     binderNum = binderNum + 1
-    /*
-    /** Find a narrow Scala type for the specified object */
-    def scalaType(obj: Any): String =
-      obj match {
-        case ary:scala.runtime.BoxedArray => { //XXX what if obj is actually a non-boxed array??
-          val elementType =
-            if(ary.length == 0)
-              "Nothing"  // XXX this might not work; what should be done?
-            else
-              scalaType(ary(0))
-          "Array[" + elementType + "]"
-        }
-        case _:Boolean => "Boolean"
-        case _:Byte => "Byte"
-        case _:Char => "Char"
-        case _:Double => "Double"
-        case _:Float => "Float"
-        case _:Int => "Int"
-        case _:Long => "Long"
-        case _:Short => "Short"
-        case obj:AnyRef => obj.getClass.getName
-      }
-    val boundType = scalaType(value)
-      */
+
     compileString(
         "object " + binderName +
         "{ var value: " + boundType + " = _; " +
@@ -352,7 +332,8 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
           .toList
           .find(meth => meth.getName == "set")
           .get)
-    var argsHolder: Array[Any] = null // XXX this roundabout approach is to try and make sure the value is boxed
+    var argsHolder: Array[Any] = null // this roundabout approach is to try and
+                                      // make sure the value is boxed
     argsHolder = List(value).toArray
     setterMethod.invoke(null, argsHolder.asInstanceOf[Array[AnyRef]])
 
@@ -463,14 +444,18 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
         // add the user-specified imports first
         code.println(codeForImports)
 
-        // write an import for each imported variable
+        // object header
+        code.println("object " + objectName + " {")
+
+        // Write an import for each imported variable.
+        // Note that the imports are inside the object wrapper; otherwise,
+        // the names defined at the package level will override these
+        // imported values.
         for {val imv <- usedNames
              val lastDefiner <- reqBinding(imv).toList } {
           code.println("import " + lastDefiner.objectName + "." + imv)
         }
 
-        // object header
-        code.println("object " + objectName + " {")
 
         // the line of code to compute
         if (needsVarName)
