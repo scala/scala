@@ -75,18 +75,7 @@ abstract class AddInterfaces extends InfoTransform {
         if (impl == NoSymbol) {
           impl = iface.cloneSymbolImpl(iface.owner)
           impl.name = implName
-          if (iface.owner.isClass) {
-            atPhase(currentRun.erasurePhase.next) {
-              val decls = iface.owner.info.decls
-              val e = decls.lookupEntry(impl.name)
-              if (e eq null) {
-                decls enter impl
-              } else {
-                decls.unlink(e)
-                decls enter impl
-              }
-            }
-          }
+          iface.owner.info.decls enter impl
         }
         if (currentRun.compiles(iface)) currentRun.symSource(impl) = iface.sourceFile
         impl setPos iface.pos
@@ -158,8 +147,7 @@ abstract class AddInterfaces extends InfoTransform {
     override def complete(sym: Symbol): unit = {
       def implType(tp: Type): Type = tp match {
         case ClassInfoType(parents, decls, _) =>
-          //Console.println("completing "+sym+" at "+phase+", decls = "+decls)
-          //ClassInfoType(mixinToImplClass(parents) ::: List(iface.tpe), implDecls(sym, 0decls), sym)
+          assert(phase == implClassPhase, sym)
           ClassInfoType(
             ObjectClass.tpe :: (parents.tail map mixinToImplClass) ::: List(iface.tpe),
             implDecls(sym, decls),
@@ -167,7 +155,7 @@ abstract class AddInterfaces extends InfoTransform {
         case PolyType(tparams, restpe) =>
           implType(restpe)
       }
-      sym.setInfo(atPhase(implClassPhase)(implType(atPhase(currentRun.erasurePhase)(iface.info))))
+      sym.setInfo(implType(atPhase(currentRun.erasurePhase)(iface.info)))
     }
 
     override def load(clazz: Symbol): unit = complete(clazz)

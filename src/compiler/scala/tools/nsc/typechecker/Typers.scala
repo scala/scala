@@ -2384,13 +2384,15 @@ trait Typers requires Analyzer {
 
       val tc = newTyper(context.makeImplicit(reportAmbiguous))
 
-      def ambiguousError(info1: ImplicitInfo, info2: ImplicitInfo) =
+      def ambiguousError(info1: ImplicitInfo, info2: ImplicitInfo,
+                         pre1: String, pre2: String, trailer: String) =
         error(
           pos,
-          "ambiguous implicit value:\n" +
-          " both "+info1.sym + info1.sym.locationString+" of type "+info1.tpe+
-          "\n and "+info2.sym + info2.sym.locationString+" of type "+info2.tpe+
-          (if (isView) "\n are possible conversion functions from "+ pt.typeArgs(0)+" to "+pt.typeArgs(1)
+          "ambiguous implicit value:\n "+
+          pre1+" "+info1.sym+info1.sym.locationString+" of type "+info1.tpe+"\n "+
+          pre2+" "+info2.sym+info2.sym.locationString+" of type "+info2.tpe+"\n "+
+          trailer+
+          (if (isView) "are possible conversion functions from "+ pt.typeArgs(0)+" to "+pt.typeArgs(1)
            else "\n match expected type "+pt))
 
       /** Search list of implicit info lists for one matching prototype
@@ -2405,15 +2407,13 @@ trait Typers requires Analyzer {
        *  @return               ...
        */
       def searchImplicit(implicitInfoss: List[List[ImplicitInfo]], isLocal: boolean): Tree = {
-        def isSubClassOrObject(sym1: Symbol, sym2: Symbol) = {
-          (sym1 isSubClass sym2) ||
-          sym1.isModuleClass && sym2.isModuleClass &&
-          (sym1.linkedClassOfClass isSubClass sym2.linkedClassOfClass)
-        }
+        def isSubClassOrObject(sym1: Symbol, sym2: Symbol): boolean =
+          sym1 != NoSymbol && (sym1 isSubClass sym2) ||
+          sym1.isModuleClass && isSubClassOrObject(sym1.linkedClassOfClass, sym2) ||
+          sym2.isModuleClass && isSubClassOrObject(sym1, sym2.linkedClassOfClass)
         def improves(info1: ImplicitInfo, info2: ImplicitInfo) =
           (info2 == NoImplicitInfo) ||
           (info1 != NoImplicitInfo) &&
-          isSubClassOrObject(info1.sym.owner, info2.sym.owner) &&
           isStrictlyBetter(info1.tpe, info2.tpe)
         val shadowed = new HashSet[Name](8)
         def isApplicable(info: ImplicitInfo): boolean =
@@ -2429,10 +2429,17 @@ trait Typers requires Analyzer {
         }
         val applicable = List.flatten(implicitInfoss map applicableInfos)
         val best = (NoImplicitInfo /: applicable) ((best, alt) => if (improves(alt, best)) alt else best)
-        val competing = applicable dropWhile (alt => best == alt || improves(best, alt))
         if (best == NoImplicitInfo) EmptyTree
         else {
-          if (!competing.isEmpty) ambiguousError(best, competing.head)
+          val competing = applicable dropWhile (alt => best == alt || improves(best, alt))
+          if (!competing.isEmpty) ambiguousError(best, competing.head, "both", "and ", "")
+          for (val alt <- applicable)
+            if (alt.sym.owner != best.sym.owner && isSubClassOrObject(alt.sym.owner, best.sym.owner)) {
+              ambiguousError(best, alt,
+                             "most specific definition is:",
+                             "yet alternative definition  ",
+                             "is defined in a subclass.\n Both definitions ")
+            }
           tc.typedImplicit(pos, best, pt, isLocal)
         }
       }

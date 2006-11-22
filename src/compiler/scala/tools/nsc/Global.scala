@@ -390,6 +390,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
 
     /** Deprecation warnings occurred */
     var deprecationWarnings: boolean = false
+    var uncheckedWarnings: boolean = false
 
     private var p: Phase = firstPhase
     private var stopped = false
@@ -496,6 +497,9 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
         assert(stopped || symData.isEmpty, symData.elements.toList)
         if (deprecationWarnings) {
           warning("there were deprecation warnings; re-run with -deprecation for details")
+        }
+        if (uncheckedWarnings) {
+          warning("there were unchecked warnings; re-run with -unchecked for details")
         }
       } else {
         for (val Pair(sym, file) <- symSource.elements) {

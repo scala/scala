@@ -785,7 +785,7 @@ trait Infer requires Analyzer {
 
     def checkCheckable(pos: PositionType, tp: Type): unit = {
       def patternWarning(tp: Type, prefix: String) =
-        context.unit.deprecationWarning(pos, prefix+tp+" in type pattern is deprecated because it cannot be checked after erasure")
+        context.unit.uncheckedWarning(pos, prefix+tp+" in type pattern is unchecked since it is eliminated by erasure")
       def isLocalBinding(sym: Symbol) =
         sym.isAbstractType &&
         (sym.name == nme.WILDCARD.toTypeName || {
@@ -815,7 +815,7 @@ trait Infer requires Analyzer {
         case NoPrefix =>
           ;
         case _ =>
-          patternWarning(tp, "type pattern ")
+          patternWarning(tp, "type ")
       }
     }
 

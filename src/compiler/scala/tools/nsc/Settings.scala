@@ -92,7 +92,8 @@ class Settings(error: String => unit) {
   val target        = ChoiceSetting ("-target", "Specify which backend to use", List("jvm-1.5", "jvm-1.4", "msil", "cldc"), "jvm-1.4")
   val migrate       = BooleanSetting("-migrate", "Assist in migrating from Scala version 1.0")
   val debug         = new BooleanSetting("-debug", "Output debugging messages") { override def hiddenToIDE = true }
-  val deprecation   = BooleanSetting ("-deprecation", "enable detailed deprecatation warnings")
+  val deprecation   = BooleanSetting ("-deprecation", "enable detailed deprecation warnings")
+  val unchecked     = BooleanSetting ("-unchecked", "enable detailed unchecked warnings")
   val statistics    = new BooleanSetting("-statistics", "Print compiler statistics") { override def hiddenToIDE = true }
   val explaintypes  = BooleanSetting("-explaintypes", "Explain type errors in more detail")
   val resident      = new BooleanSetting("-resident", "Compiler stays resident, files to compile are read from standard input") { override def hiddenToIDE = true }
