@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -8,8 +8,8 @@
 //todo: use inherited type info also for vars and values
 package scala.tools.nsc.typechecker
 
-import compat.Platform.currentTime
 import scala.collection.mutable.{HashMap, ListBuffer}
+import scala.compat.Platform.currentTime
 import scala.tools.nsc.util.{HashSet, Position, Set}
 import symtab.Flags._
 import util.HashSet
@@ -2198,7 +2198,7 @@ trait Typers requires Analyzer {
           tree setType AnyClass.tpe
 
         case _ =>
-          throw new Error("unexpected tree: "+tree);//debug
+          throw new Error("unexpected tree: " + tree)//debug
       }
     }
 
@@ -2432,7 +2432,7 @@ trait Typers requires Analyzer {
         if (best == NoImplicitInfo) EmptyTree
         else {
           val competing = applicable dropWhile (alt => best == alt || improves(best, alt))
-          if (!competing.isEmpty) ambiguousError(best, competing.head, "both", "and ", "")
+          if (!competing.isEmpty) ambiguousError(best, competing.head, "both", "and", "")
           for (val alt <- applicable)
             if (alt.sym.owner != best.sym.owner && isSubClassOrObject(alt.sym.owner, best.sym.owner)) {
               ambiguousError(best, alt,
