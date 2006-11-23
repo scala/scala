@@ -75,7 +75,8 @@ abstract class AddInterfaces extends InfoTransform {
         if (impl == NoSymbol) {
           impl = iface.cloneSymbolImpl(iface.owner)
           impl.name = implName
-          iface.owner.info.decls enter impl
+          if (iface.owner.isClass)
+            iface.owner.info.decls enter impl
         }
         if (currentRun.compiles(iface)) currentRun.symSource(impl) = iface.sourceFile
         impl setPos iface.pos
