@@ -133,6 +133,11 @@ object Predef {
 
   implicit def exceptionWrapper(exc: Throwable) = new runtime.RichException(exc)
 
+  implicit def unit2ordered(x: unit): Ordered[unit] = new Ordered[unit] with Proxy {
+    def self: Any = x
+    def compare (y: unit): int = 0
+  }
+
   implicit def iterable2ordered[a <% Ordered[a]](xs: Iterable[a]): Ordered[Iterable[a]] =
     new Ordered[Iterable[a]] with Proxy {
       val self = xs
