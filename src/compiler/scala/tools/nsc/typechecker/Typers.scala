@@ -2393,7 +2393,7 @@ trait Typers requires Analyzer {
           pre2+" "+info2.sym+info2.sym.locationString+" of type "+info2.tpe+"\n "+
           trailer+
           (if (isView) "are possible conversion functions from "+ pt.typeArgs(0)+" to "+pt.typeArgs(1)
-           else "\n match expected type "+pt))
+           else "match expected type "+pt))
 
       /** Search list of implicit info lists for one matching prototype
        *  <code>pt</code>. If found return a tree from found implicit info
