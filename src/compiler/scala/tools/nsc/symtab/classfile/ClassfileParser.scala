@@ -193,23 +193,23 @@ abstract class ClassfileParser {
         if (in.buf(start) != CONSTANT_FIELDREF &&
             in.buf(start) != CONSTANT_METHODREF &&
             in.buf(start) != CONSTANT_INTFMETHODREF) errorBadTag(start)
-        val cls = getClassSymbol(in.getChar(start + 1))
-        val Pair(name, tpe) = getNameAndType(in.getChar(start + 3), cls)
+        val ownerTpe = getClassOrArrayType(in.getChar(start + 1))
+        val Pair(name, tpe) = getNameAndType(in.getChar(start + 3), ownerTpe)
         if (name == nme.MODULE_INSTANCE_FIELD) {
           val index = in.getChar(start + 1)
           val name = getExternalName(in.getChar(starts(index) + 1))
           assert(name.endsWith("$"), "Not a module class: " + name)
           f = definitions.getModule(name.subName(0, name.length - 1))
         } else {
-          val owner = if (static) cls.linkedClassOfClass else cls
+          val owner = if (static) ownerTpe.symbol.linkedClassOfClass else ownerTpe.symbol
 //          Console.println("" + owner.info.decl(name).tpe + " =:= " + tpe)
-          f = owner.info.decl(name).suchThat(.tpe.=:=(tpe))
+          f = owner.info.member(name).suchThat(.tpe.=:=(tpe))
           if (f == NoSymbol)
-            f = owner.info.decl(newTermName(name.toString + nme.LOCAL_SUFFIX)).suchThat(.tpe.=:=(tpe))
+            f = owner.info.member(newTermName(name.toString + nme.LOCAL_SUFFIX)).suchThat(.tpe.=:=(tpe))
           if (f == NoSymbol) {
             // if it's an impl class, try to find it's static member inside the class
-            assert(cls.isImplClass, "Not an implementation class: " + owner + " couldn't find " + name + ": " + tpe);
-            f = cls.info.decl(name).suchThat(.tpe.=:=(tpe))
+            assert(ownerTpe.symbol.isImplClass, "Not an implementation class: " + owner + " couldn't find " + name + ": " + tpe);
+            f = ownerTpe.member(name).suchThat(.tpe.=:=(tpe))
           }
         }
         assert(f != NoSymbol)
@@ -218,7 +218,7 @@ abstract class ClassfileParser {
       f
     }
 
-    def getNameAndType(index: Int, ownerClass: Symbol): Pair[Name, Type] = {
+    def getNameAndType(index: Int, ownerTpe: Type): Pair[Name, Type] = {
       if (index <= 0 || len <= index) errorBadIndex(index)
       var p = values(index).asInstanceOf[Pair[Name, Type]]
       if (p eq null) {
@@ -230,7 +230,7 @@ abstract class ClassfileParser {
           tpe match {
             case MethodType(formals, restpe) =>
               assert(restpe.symbol == definitions.UnitClass)
-              tpe = MethodType(formals, ownerClass.tpe)
+              tpe = MethodType(formals, ownerTpe)
           }
 
         p = Pair(name, tpe)
@@ -257,8 +257,8 @@ abstract class ClassfileParser {
           c = definitions.getClass(name).tpe
         }
       } else c = value match {
-          case _: Type => value.asInstanceOf[Type]
-          case _: Symbol => value.asInstanceOf[Symbol].tpe
+          case tp: Type => tp
+          case cls: Symbol => cls.tpe
       }
       c
     }
@@ -285,12 +285,17 @@ abstract class ClassfileParser {
             Constant(in.getLong(start + 1))
           case CONSTANT_DOUBLE =>
             Constant(in.getDouble(start + 1))
+          case CONSTANT_CLASS =>
+            getClassSymbol(index)
           case _ =>
             errorBadTag(start)
         }
         values(index) = value
       }
-      value.asInstanceOf[Constant]
+      value match {
+        case  ct: Constant => ct
+        case cls: Symbol   => Constant(cls.tpe)
+      }
     }
 
     /** Throws an exception signaling a bad constant index. */

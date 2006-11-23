@@ -186,7 +186,7 @@ abstract class ICodeReader extends ClassfileParser {
         size = size + 4
         val offset = in.nextInt
         val target = pc + offset
-        assert(target >= 0 && target < codeLength, "Illegal jump target: " + target)
+        assert(target >= 0 && target < codeLength, "Illegal jump target: " + target + "pc: " + pc + " offset: " + offset)
         target
       }
 
@@ -297,11 +297,11 @@ abstract class ICodeReader extends ClassfileParser {
         case JVM.pop         => code.emit(DROP(INT)); // any 1-word type would do
         case JVM.pop2        => code.emit(DROP(LONG)); // any 2-word type would do
         case JVM.dup         => code.emit(DUP(OBJECT)); // TODO: Is the kind inside DUP ever needed?
-        case JVM.dup_x1      => Predef.error("Unsupported JVM bytecode: dup_x1")
-        case JVM.dup_x2      => Predef.error("Unsupported JVM bytecode: dup_x2")
+        case JVM.dup_x1      => code.emit(DUP_X1);  // Predef.error("Unsupported JVM bytecode: dup_x1")
+        case JVM.dup_x2      => code.emit(DUP_X2);  // Predef.error("Unsupported JVM bytecode: dup_x2")
         case JVM.dup2        => code.emit(DUP(LONG)); // TODO: Is the kind inside DUP ever needed?
-        case JVM.dup2_x1     => Predef.error("Unsupported JVM bytecode: dup2_x1")
-        case JVM.dup2_x2     => Predef.error("Unsupported JVM bytecode: dup2_x2")
+        case JVM.dup2_x1     => code.emit(DUP2_X1);  // Predef.error("Unsupported JVM bytecode: dup2_x1")
+        case JVM.dup2_x2     => code.emit(DUP2_X2);  // Predef.error("Unsupported JVM bytecode: dup2_x2")
         case JVM.swap        => Predef.error("Unsupported JVM bytecode: swap")
 
         case JVM.iadd        => code.emit(CALL_PRIMITIVE(Arithmetic(ADD, INT)))
@@ -405,10 +405,11 @@ abstract class ICodeReader extends ClassfileParser {
           code.emit(LSWITCH(tags, targets ::: List(default)))
 
         case JVM.lookupswitch =>
-          var byte1 = in.nextByte; size = size + 1;
-          while (byte1 == 0) { byte1 = in.nextByte; size = size + 1; }
-          val default = byte1 << 24 | in.nextByte << 16 | in.nextByte << 8 | in.nextByte;
-          size = size + 3
+          val padding = if ((pc + size) % 4 != 0) 4 - ((pc + size) % 4) else 0
+          size = size + padding;
+          in.bp = in.bp + padding
+          assert((pc + size % 4) != 0)
+          val default = pc + in.nextInt; size = size + 4
           val npairs = in.nextInt; size = size + 4
           var tags: List[List[Int]] = Nil
           var targets: List[Int] = Nil
@@ -553,7 +554,8 @@ abstract class ICodeReader extends ClassfileParser {
     skipAttributes()
 
     code.toBasicBlock
-    //Console.println(code.toString())
+    if (code.containsDUPX)
+      code.resolveDups
   }
 
   /** Return the icode class that should include members with the given flags.
@@ -567,9 +569,13 @@ abstract class ICodeReader extends ClassfileParser {
     var jmpTargets: Set[Int] = new HashSet[Int]
     var locals: Map[Int, List[Pair[Local, TypeKind]]] = new HashMap()
 
+    var containsDUPX = false
+
     def emit(i: Instruction) = {
 //      Console.println(i);
       instrs += Pair(pc, i)
+      if (i.isInstanceOf[DupX])
+        containsDUPX = true
     }
 
     /** Break this linear code in basic block representation
@@ -636,6 +642,181 @@ abstract class ICodeReader extends ClassfileParser {
       code
     }
 
+    def resolveDups: Unit = {
+      import opcodes._
+
+      val tfa = new analysis.MethodTFA() {
+        import analysis._
+        /** Abstract interpretation for one instruction. */
+        override def interpret(in: typeFlowLattice.Elem, i: Instruction): typeFlowLattice.Elem = {
+          var out = Pair(new VarBinding(in._1), new TypeStack(in._2));
+          val bindings = out._1;
+          val stack = out._2;
+          import stack.push
+          i match {
+            case DUP_X1 =>
+              val Pair(one, two) = stack.pop2
+              push(one); push(two); push(one);
+
+            case DUP_X2 =>
+              val Triple(one, two, three) = stack.pop3
+              push(one); push(three); push(two); push(one);
+
+            case DUP2_X1 =>
+              val Pair(one, two) = stack.pop2
+              if (one.isWideType) {
+                push(one); push(two); push(one);
+              } else {
+                val three = stack.pop
+                push(two); push(one); push(three); push(two); push(one);
+              }
+
+            case DUP2_X2 =>
+              val Pair(one, two) = stack.pop2
+              if (one.isWideType && two.isWideType) {
+                push(one); push(two); push(one);
+              } else if (one.isWideType) {
+                val three = stack.pop
+                assert(!three.isWideType, "Impossible")
+                push(one); push(three); push(two); push(one);
+              } else {
+                val three = stack.pop
+                if (three.isWideType) {
+                  push(two); push(one); push(one); push(three); push(two); push(one);
+                } else {
+                  val four = stack.pop
+                  push(two); push(one); push(four); push(one); push(three); push(two); push(one);
+                }
+              }
+
+            case _ =>
+              out = super.interpret(in, i)
+          }
+          out
+        }
+      }
+
+      tfa.init(method)
+      tfa.run
+      for (val bb <- linearizer.linearize(method)) {
+        var info = tfa.in(bb);
+        for (val i <- bb.toList) {
+          i match {
+            case DUP_X1 =>
+              val one = info._2.types(0)
+              val two = info._2.types(1)
+              assert(!one.isWideType, "DUP_X1 expects values of size 1 on top of stack " + info._2);
+              val tmp1 = freshLocal(one);
+              val tmp2 = freshLocal(two);
+              bb.replaceInstruction(i, List(STORE_LOCAL(tmp1),
+                  STORE_LOCAL(tmp2),
+                  LOAD_LOCAL(tmp1),
+                  LOAD_LOCAL(tmp2),
+                  LOAD_LOCAL(tmp1)));
+
+            case DUP_X2 =>
+              val one = info._2.types(0)
+              val two = info._2.types(1)
+              assert (!one.isWideType, "DUP_X2 expects values of size 1 on top of stack " + info._2);
+              val tmp1 = freshLocal(one);
+              val tmp2 = freshLocal(two);
+              if (two.isWideType)
+                bb.replaceInstruction(i, List(STORE_LOCAL(tmp1),
+                  STORE_LOCAL(tmp2),
+                  LOAD_LOCAL(tmp1),
+                  LOAD_LOCAL(tmp2),
+                  LOAD_LOCAL(tmp1)));
+              else {
+                val tmp3 = freshLocal(info._2.types(2));
+                bb.replaceInstruction(i, List(STORE_LOCAL(tmp1),
+                  STORE_LOCAL(tmp2),
+                  STORE_LOCAL(tmp3),
+                  LOAD_LOCAL(tmp1),
+                  LOAD_LOCAL(tmp3),
+                  LOAD_LOCAL(tmp2),
+                  LOAD_LOCAL(tmp1)));
+              }
+
+            case DUP2_X1 =>
+              val one = info._2.types(0)
+              val two = info._2.types(1)
+              val tmp1 = freshLocal(one);
+              val tmp2 = freshLocal(two);
+              if (one.isWideType) {
+                assert(!two.isWideType, "Impossible")
+                bb.replaceInstruction(i, List(STORE_LOCAL(tmp1),
+                  STORE_LOCAL(tmp2),
+                  LOAD_LOCAL(tmp1),
+                  LOAD_LOCAL(tmp2),
+                  LOAD_LOCAL(tmp1)));
+              } else {
+                val tmp3 = freshLocal(info._2.types(2));
+                bb.replaceInstruction(i, List(STORE_LOCAL(tmp1),
+                  STORE_LOCAL(tmp2),
+                  STORE_LOCAL(tmp3),
+                  LOAD_LOCAL(tmp1),
+                  LOAD_LOCAL(tmp3),
+                  LOAD_LOCAL(tmp2),
+                  LOAD_LOCAL(tmp1)));
+              }
+
+            case DUP2_X2 =>
+              val one = info._2.types(0)
+              val two = info._2.types(1)
+              val tmp1 = freshLocal(one);
+              val tmp2 = freshLocal(two);
+              if (one.isWideType && two.isWideType) {
+                bb.replaceInstruction(i, List(STORE_LOCAL(tmp1),
+                  STORE_LOCAL(tmp2),
+                  LOAD_LOCAL(tmp1),
+                  LOAD_LOCAL(tmp2),
+                  LOAD_LOCAL(tmp1)));
+              } else if (one.isWideType) {
+                val three = info._2.types(2)
+                assert(!two.isWideType && !three.isWideType, "Impossible")
+                val tmp3 = freshLocal(three);
+                bb.replaceInstruction(i, List(STORE_LOCAL(tmp1),
+                  STORE_LOCAL(tmp2),
+                  STORE_LOCAL(tmp3),
+                  LOAD_LOCAL(tmp1),
+                  LOAD_LOCAL(tmp3),
+                  LOAD_LOCAL(tmp2),
+                  LOAD_LOCAL(tmp1)));
+              } else {
+                val three = info._2.types(2)
+                val tmp3 = freshLocal(three);
+                if (three.isWideType) {
+                  bb.replaceInstruction(i, List(STORE_LOCAL(tmp1),
+                      STORE_LOCAL(tmp2),
+                      STORE_LOCAL(tmp3),
+                      LOAD_LOCAL(tmp2),
+                      LOAD_LOCAL(tmp1),
+                      LOAD_LOCAL(tmp3),
+                      LOAD_LOCAL(tmp2),
+                      LOAD_LOCAL(tmp1)));
+                } else {
+                  val four = info._2.types(3)
+                  val tmp4 = freshLocal(three);
+                  assert(!four.isWideType, "Impossible")
+                  bb.replaceInstruction(i, List(STORE_LOCAL(tmp1),
+                      STORE_LOCAL(tmp2),
+                      STORE_LOCAL(tmp3),
+                      STORE_LOCAL(tmp4),
+                      LOAD_LOCAL(tmp2),
+                      LOAD_LOCAL(tmp1),
+                      LOAD_LOCAL(tmp4),
+                      LOAD_LOCAL(tmp3),
+                      LOAD_LOCAL(tmp2),
+                      LOAD_LOCAL(tmp1)));
+                }
+              }
+            case _ =>
+          }
+          info = tfa.interpret(info, i)
+        }
+      }
+    }
+
     /** Return the local at given index, with the given type. */
     def getLocal(idx: Int, kind: TypeKind): Local = {
       assert(idx < maxLocals, "Index too large for local variable.");
@@ -659,7 +840,7 @@ abstract class ICodeReader extends ClassfileParser {
           l match {
             case Some(Pair(loc, _)) => loc
             case None =>
-              val l = freshLocal(maxLocals + idx, kind, false)
+              val l = freshLocal(kind)
               locals(idx) = Pair(l, kind) :: locals(idx)
               log("Expected kind " + kind + " for local " + idx +
                 " but only " + ls + " found. Added new local.")
@@ -675,13 +856,22 @@ abstract class ICodeReader extends ClassfileParser {
 
     override def toString(): String = instrs.toList.mkString("", "\n", "")
 
-    /** Return a fresh Local variable.
+    /** Return a fresh Local variable for the given index.
      */
     def freshLocal(idx: Int, kind: TypeKind, isArg: Boolean) = {
       val sym = method.symbol.newVariable(NoPos, "loc" + idx).setInfo(kind.toType);
       val l = new Local(sym, kind, isArg)
       method.addLocal(l)
       l
+    }
+
+    var count = 0;
+
+    /** Invent a new local, with a new index value outside the range of
+     *  the original method. */
+    def freshLocal(kind: TypeKind): Local = {
+      count = count + 1
+      freshLocal(maxLocals + count, kind, false)
     }
 
     /** Base class for branch instructions that take addresses. */
@@ -710,5 +900,14 @@ abstract class ICodeReader extends ClassfileParser {
 
       targets.tail.foreach(t => jmpTargets += t)
     }
+
+    /** Duplicate and exchange pseudo-instruction. Should be later
+     *  replaced by proper ICode */
+    abstract class DupX extends Instruction;
+
+    case object DUP_X1 extends DupX;
+    case object DUP_X2 extends DupX;
+    case object DUP2_X1 extends DupX;
+    case object DUP2_X2 extends DupX;
   }
 }

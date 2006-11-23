@@ -91,6 +91,12 @@ trait TypeKinds requires ICodes {
 
     override def equals(other: Any): Boolean =
       this eq other.asInstanceOf[AnyRef]
+
+    /** Is this type a category 2 type in JVM terms? */
+    def isWideType: Boolean = this match {
+      case DOUBLE | LONG => true
+      case _ => false
+    }
   }
 
   /**
