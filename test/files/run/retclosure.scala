@@ -1,6 +1,6 @@
 /* Test return expressions inside closures.
  *
- * See bug#  */
+ * See bug#834  */
 
 object Test {
   def response: String = {
