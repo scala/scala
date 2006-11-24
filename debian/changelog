@@ -1,3 +1,10 @@
+scala (2.3.0-1) unstable; urgency=low
+
+  * New upstream version
+  * Added a Java compiler as a build-dependency
+
+ -- Lex Spoon <lex@debian.org>  Fri, 24 Nov 2006 16:02:09 +0100
+
 scala (2.2.0-1) unstable; urgency=low
 
   * New upstream release
