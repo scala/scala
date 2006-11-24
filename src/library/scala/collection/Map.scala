@@ -76,6 +76,14 @@ trait Map[A, +B] extends AnyRef
       case Some(_) => true
     }
 
+    /** @return the keys of this map as a set.
+     */
+    def keySet = new Set[A] {
+      def size = Map.this.size;
+      def contains(key : A) = Map.this.contains(key);
+      def elements = Map.this.elements.map(._1);
+    }
+
     /** Does this map contain a mapping from the given key to a value?
      *
      *  @param key the key

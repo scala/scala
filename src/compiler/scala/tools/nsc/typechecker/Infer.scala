@@ -323,11 +323,13 @@ trait Infer requires Analyzer {
           errorTree(tree, underlying(sym).toString() + " cannot be accessed in " +
                     (if (sym.isClassConstructor) context.enclClass.owner else pre.widen) +
                     explanation)
-        sym.toplevelClass match {
+        if (context.unit != null) sym.toplevelClass match {
           case clazz : ClassSymbol =>
             // System.err.println("TOP: " + clazz + " " + clazz.sourceFile)
-            if (clazz.sourceFile ne null)
-              global.currentRun.currentUnit.depends += clazz.sourceFile
+            if (clazz.sourceFile != null) {
+                context.unit.depends += clazz.sourceFile
+              //Console.println("DEPEND " + global.currentRun.currentUnit + " ON " + clazz.sourceFile + " XXX " + context.unit)
+            }
 
           case _ =>
         }

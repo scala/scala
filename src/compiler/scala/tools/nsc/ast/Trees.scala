@@ -36,6 +36,11 @@ trait Trees requires Global {
       if (flags1 == flags) this
       else Modifiers(flags1, privateWithin) setAttr attributes
     }
+    def &~ (flag: Int): Modifiers = {
+      val flags1 = flags & (~flag)
+      if (flags1 == flags) this
+      else Modifiers(flags1, privateWithin) setAttr attributes
+    }
     def | (flag: int): Modifiers = {
       val flags1 = flags | flag
       if (flags1 == flags) this
