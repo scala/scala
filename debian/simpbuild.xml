@@ -501,7 +501,7 @@
       />
       <miscset
         dir="${topdir}/test"
-        includes="files/**/*.check,files/**/*.java,files/**/*.scala,files/**/*.args,files/cli/**/*.check.*"
+        includes="files/**/*.check,files/**/*.java,files/**/*.scala,files/**/*.args,files/cli/**/*.check.*,files/jvm*/**"
       />
     </starrsbaz>
   </target>
