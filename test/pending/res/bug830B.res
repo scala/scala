@@ -1,0 +1,13 @@
+bug830/Good.scala
+bug830/Good.scala
+bug830/Good.scala
+bug830/Bad.scala
+bug830/Bad.scala
+bug830/Bad.scala
+bug830/Good.scala
+bug830/Good.scala
+bug830/Good.scala
+bug830/Bad.scala
+bug830/Bad.scala
+bug830/Bad.scala
+bug830/Good.scala
