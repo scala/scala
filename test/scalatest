@@ -165,6 +165,7 @@ test_print_help() {
     echo "--jvm           next files test the JVM backend";
     echo "--pos           next files test a compilation success";
     echo "--neg           next files test a compilation failure";
+    echo "--res           next files test the resident compiler";
     echo "--msil          next files test the .NET backend";
     echo "--script        next files test Scala embedded in scripts";
     echo "--ant           next files test the Ant tasks";
@@ -227,6 +228,7 @@ test_run_pos() {
     rm -rf "$dstbase".obj;
 }
 
+
 # Tests a compilation failure.
 test_run_neg() {
     rm -rf "$dstbase".obj &&
@@ -236,6 +238,16 @@ test_run_neg() {
     rm -rf "$dstbase".obj;
     return $status;
 }
+
+
+# Tests resident compiler.
+test_run_res() {
+    rm -rf "$dstbase".obj &&
+    mkdir -p "$dstbase".obj &&
+    (cd "$srcdir" && cat "$testname".res | $SCALAC -d "$os_dstbase".obj -resident -sourcepath . "$@"; );
+    rm -rf "$dstbase".obj;
+}
+
 
 # Tests the JVM backend.
 test_run_jvm() {
@@ -312,15 +324,17 @@ test_check_test() {
     [ $# = 1 ] || abort "internal error";
     testfile="$1"; shift 1;
     # compute test name
-    testname=`basename "$testfile" .scala`;
+    testname=`basename "$testfile" ."$TEST_EXT"`;
 
     # compute source and destination directories (absolute paths)
     srcdir=`dirname "$testfile"`;
     srcdir=`cd "$srcdir"; pwd`;
+
     dstdir="$OBJDIR""$srcdir";
 
     # compute source and destination base names
     srcbase="$srcdir"/"$testname";
+
     dstbase="$dstdir"/"$testname"-$kind;
     os_srcbase=`get_os_filename "$srcbase"`;
     os_dstbase=`get_os_filename "$dstbase"`;
@@ -339,6 +353,7 @@ test_check_test() {
     if [ ! -f "$checkfile" ]; then
         checkfile=/dev/null;
     fi;
+
 
     # compute log file
     logfile="$dstbase".log;
@@ -391,7 +406,7 @@ test_check_test() {
 test_check_file() {
     [ $# = 1 ] || abort "internal error";
     file="$1"; shift 1;
-    for testfile in "" `find "$file" -name "*.obj" -prune -o -name "*.scala" -a -type f -print`; do
+    for testfile in "" `find "$file" -name "*.obj" -prune -o -name "*.$TEST_EXT" -a -type f -print`; do
         [ -z "$testfile" ] && continue;
         test_check_test "$testfile";
     done;
@@ -402,6 +417,8 @@ test_check_kind() {
     [ $# -ge 2 ] || abort "internal error";
     header="$1"; shift 1;
     kind="$1"; shift 1;
+    if [ "$kind" = "res" ]; then TEST_EXT="res"; else TEST_EXT="scala"; fi;
+
     for file in "" "$@"; do
         [ -z "$file" ] && continue;
         test_check_file "$file";
@@ -428,6 +445,8 @@ test_check_all() {
         "script" $FILES_SCRIPT;
     test_check_kind "Testing Scala Ant tasks"  \
         "ant" $FILES_ANT;
+    test_check_kind "Testing resident compiler" \
+        "res" $FILES_RES;
 }
 
 
@@ -452,6 +471,7 @@ test_add_file() {
         jvm    ) FILES_JVM="$FILES_JVM $1"; return;;
         pos    ) FILES_POS="$FILES_POS $1"; return;;
         neg    ) FILES_NEG="$FILES_NEG $1"; return;;
+        res    ) FILES_RES="$FILES_RES $1"; return;;
         msil   ) FILES_MSIL="$FILES_MSIL $1"; return;;
         script ) FILES_SCRIPT="$FILES_SCRIPT $1"; return;;
         ant    ) FILES_ANT="$FILES_ANT $1"; return;;
@@ -467,6 +487,7 @@ test_add_file() {
         jvm  | */jvm  | */jvm/*  | jvm/*  ) FILES_JVM="$FILES_JVM $1";;
         pos  | */pos  | */pos/*  | pos/*  ) FILES_POS="$FILES_POS $1";;
         neg  | */neg  | */neg/*  | neg/*  ) FILES_NEG="$FILES_NEG $1";;
+        res  | */res  | */res/*  | res/*  ) FILES_RES="$FILES_RES $1";;
         msil | */msil | */msil/* | msil/* ) FILES_MSIL="$FILES_MSIL $1";;
         script | */script | */script/* | script/* ) FILES_SCRIPT="$FILES_SCRIPT $1";;
         * ) abort "don't known what to do with \`$1'";;
@@ -538,6 +559,7 @@ TEST_TYPE="auto";
 FILES_RUN="";
 FILES_JVM="";
 FILES_POS="";
+FILES_RES="";
 FILES_NEG="";
 FILES_MSIL="";
 FILES_SCRIPT="";
@@ -587,6 +609,7 @@ while [ $# -gt 0 ]; do
         --jvm        ) TEST_TYPE="jvm"; shift 1;;
         --pos        ) TEST_TYPE="pos"; shift 1;;
         --neg        ) TEST_TYPE="neg"; shift 1;;
+        --res        ) TEST_TYPE="res"; shift 1;;
         --msil       ) TEST_TYPE="msil"; shift 1;;
         --script     ) TEST_TYPE="script"; shift 1;;
         --ant        ) TEST_TYPE="ant"; shift 1;;
@@ -644,6 +667,9 @@ if [ "$TEST_ALL" = "true" ]; then
     esac;
     case "$TEST_TYPE" in
         auto | neg ) FILES_NEG="$FILES_NEG $SRCDIR/neg";;
+    esac;
+    case "$TEST_TYPE" in
+        auto | res ) FILES_RES="$FILES_RES $SRCDIR/res";;
     esac;
     case "$TEST_TYPE" in
         msil ) FILES_MSIL="$FILES_MSIL $SRCDIR/run";;
