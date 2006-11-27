@@ -546,6 +546,17 @@ abstract class ScalaPrimitives {
     case _ => false
   }
 
+  /** If code is a coercion primitive, the result type */
+  def generatedKind(code: Int): TypeKind = code match {
+    case B2B | C2B | S2B | I2B | L2B | F2B | D2B => BYTE
+    case B2C | C2C | S2C | I2C | L2C | F2C | D2C => CHAR
+    case B2S | C2S | S2S | I2S | L2S | F2S | D2S => SHORT
+    case B2I | C2I | S2I | I2I | L2I | F2I | D2I => INT
+    case B2L | C2L | S2L | I2L | L2L | F2L | D2L => LONG
+    case B2F | C2F | S2F | I2F | L2F | F2F | D2F => FLOAT
+    case B2D | C2D | S2D | I2D | L2D | F2D | D2D => DOUBLE
+  }
+
   def isPrimitive(sym: Symbol): Boolean = primitives contains sym
 
   /** Return the code for the givem symbol. */

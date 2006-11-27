@@ -747,6 +747,7 @@ abstract class GenICode extends SubComponent  {
             } else if (scalaPrimitives.isCoercion(code)) {
               ctx1 = genLoad(receiver, ctx1, toTypeKind(receiver.tpe))
               genCoercion(tree, ctx1, code)
+              generatedType = scalaPrimitives.generatedKind(code)
             } else
               abort("Primitive operation not handled yet: " +
                     fun.symbol.fullNameString + "(" + fun.symbol.simpleName + ") "
@@ -1094,10 +1095,7 @@ abstract class GenICode extends SubComponent  {
     /** Is the given symbol a primitive operation? */
     def isPrimitive(fun: Symbol): Boolean = scalaPrimitives.isPrimitive(fun)
 
-    /**
-     *  @param tree ...
-     *  @param ctx  ...
-     *  @param code ...
+    /** Generate coercion denoted by "code"
      */
     def genCoercion(tree: Tree, ctx: Context, code: Int) = {
       import scalaPrimitives._
