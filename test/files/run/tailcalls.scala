@@ -158,6 +158,11 @@ class TailCall[S](s: S) {
     if (n == 0) v else f2[T](n - 1, v - 1);
   final def f3[T](n: Int, v: Int, ls: List[T]): Int =
     if (n == 0) v else f3(n - 1, v - 1, ls);
+  final def f4(n: Int, v: Int): Int = try {
+    if (n == 0) v else f4(n - 1, v - 1);
+  } catch {
+    case e: Throwable => throw e
+  }
 
   final def g1(x: Int, y: Int): Int = {
     def aux(n: Int, v: Int): Int =
@@ -184,6 +189,22 @@ class TailCall[S](s: S) {
 
 }
 
+
+class NonTailCall {
+  final def f1(n: Int): Int = try {
+    if (n == 0) 0
+    else f1(n - 1)
+  } finally {
+    Console.print(" " + n)
+  }
+
+  final def f2(n: Int): Int = synchronized {
+    if (n == 0) 0
+    else f2(n - 1)
+  }
+
+}
+
 //############################################################################
 // Test code
 
@@ -198,6 +219,19 @@ object Test {
         Console.print(" failed: expected "+ expected +", found "+ actual);
       }
     } catch {
+      case exception: Throwable => {
+        Console.print(" raised exception " + exception);
+      }
+    }
+    Console.println;
+  }
+
+  def check_overflow(name: String, closure: => Int): Unit = {
+    Console.print("test " + name);
+    try {
+      val actual: Int = closure;
+    } catch {
+      case exception: compat.Platform.StackOverflowError => Console.println(" was successful");
       case exception: Throwable => {
         Console.print(" raised exception " + exception);
       }
@@ -279,11 +313,16 @@ object Test {
     check_success("TailCall.f1", TailCall.f1(max, max     ), 0);
     check_success("TailCall.f2", TailCall.f2(max, max     ), 0);
     check_success("TailCall.f3", TailCall.f3(max, max, Nil), 0);
+    check_success("TailCall.f4", TailCall.f4(max, max     ), 0);
     check_success("TailCall.g1", TailCall.g1(max, max     ), 0);
     check_success("TailCall.g2", TailCall.g2(max, max     ), 0);
     check_success("TailCall.g3", TailCall.g3(max, max, Nil), 0);
     check_success("TailCall.h1", TailCall.h1(max, max     ), 0);
     Console.println;
+
+    val NonTailCall = new NonTailCall;
+    check_success("NonTailCall.f1", NonTailCall.f1(2), 0)
+    check_overflow("NonTailCall.f2", NonTailCall.f2(max))
   }
 }
 

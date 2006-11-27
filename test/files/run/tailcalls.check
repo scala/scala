@@ -39,8 +39,12 @@ test c.c.c.c.f was successful
 test TailCall.f1 was successful
 test TailCall.f2 was successful
 test TailCall.f3 was successful
+test TailCall.f4 was successful
 test TailCall.g1 was successful
 test TailCall.g2 was successful
 test TailCall.g3 was successful
 test TailCall.h1 was successful
+
+test NonTailCall.f1 0 1 2 was successful
+test NonTailCall.f2 was successful
 

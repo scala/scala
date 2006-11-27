@@ -217,7 +217,9 @@ abstract class TailCalls extends Transform
           copy.Match(tree, transform(selector, mkContext(ctx, false)), transformTrees(cases).asInstanceOf[List[CaseDef]]);
 
         case Return(expr) => super.transform(tree)
-        case Try(block, catches, finalizer) => super.transform(tree)
+        case Try(block, catches, finalizer) =>
+          if (finalizer == EmptyTree) super.transform(tree)
+          else tree
 
         case Throw(expr) => super.transform(tree)
         case New(tpt) => super.transform(tree)
