@@ -424,7 +424,8 @@ abstract class DocGenerator extends Models {
     def listInheritedMembers(sym: Symbol, kind: Kind): NodeSeq = {
       val ignored = List(definitions.ObjectClass, definitions.ScalaObjectClass)
       def isVisible(sym: Symbol) =
-        (kind == DEF && sym.isMethod && !sym.isConstructor && !sym.hasFlag(Flags.ACCESSOR)) ||
+        (kind == DEF && sym.isMethod && !sym.isConstructor &&
+         !sym.isCaseFactory && !sym.hasFlag(Flags.ACCESSOR)) ||
         (kind == VAR && sym.isVariable) ||
         (kind == VAL && sym.isValue && !sym.isVariable && sym.hasGetter)
       val parents = sym.info.parents
