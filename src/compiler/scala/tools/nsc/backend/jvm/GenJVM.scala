@@ -34,9 +34,7 @@ abstract class GenJVM extends SubComponent {
 
   /** JVM code generation phase
    */
-  class JvmPhase(prev: Phase) extends GlobalPhase(prev) {
-    def name = phaseName
-    override def newFlags = phaseNewFlags
+  class JvmPhase(prev: Phase) extends StdPhase(prev) {
 
     override def erasedTypes = true
     val codeGenerator = new BytecodeGenerator

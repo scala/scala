@@ -29,7 +29,6 @@ abstract class GenICode extends SubComponent  {
   override def newPhase(prev: Phase) = new ICodePhase(prev)
 
   class ICodePhase(prev: Phase) extends StdPhase(prev) {
-    override def name = "icode"
 
     override def description = "Generate ICode from the AST"
 

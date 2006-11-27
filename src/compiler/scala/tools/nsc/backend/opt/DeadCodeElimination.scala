@@ -3,7 +3,7 @@
  * @author  Iulian Dragos
  */
 
-// $Id: $
+// $Id$
 
 package scala.tools.nsc.backend.opt;
 
@@ -25,12 +25,10 @@ abstract class DeadCodeElimination extends SubComponent {
 
   /** Dead code elimination phase.
    */
-  class DeadCodeEliminationPhase(prev: Phase) extends GlobalPhase(prev) {
-    def name = phaseName;
-    override def newFlags = phaseNewFlags;
+  class DeadCodeEliminationPhase(prev: Phase) extends StdPhase(prev) {
 
     override def erasedTypes = true;
-		val dce = new DeadCode();
+    val dce = new DeadCode();
 
     override def run: Unit = {
       if (settings.debug.value) inform("[running phase " + name + " on icode]");

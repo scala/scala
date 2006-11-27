@@ -3,7 +3,7 @@
  * @author  Iulian Dragos
  */
 
-// $Id: $
+// $Id$
 
 package scala.tools.nsc.backend.opt;
 
@@ -25,9 +25,7 @@ abstract class ClosureElimination extends SubComponent {
 
   /** The Inlining phase.
    */
-  class ClosureEliminationPhase(prev: Phase) extends GlobalPhase(prev) {
-    def name = phaseName;
-    override def newFlags = phaseNewFlags;
+  class ClosureEliminationPhase(prev: Phase) extends StdPhase(prev) {
 
     override def erasedTypes = true;
     val closser = new ClosureElim;
