@@ -1178,12 +1178,14 @@ print()
             }
 
             val ntpe = node.getTpe
-            var cond = typed { gen.mkIsInstanceOf(selector.duplicate, ntpe) }
+            var cond: Tree = null
 
           // if type 2 test is same as static type, then just null test
-          if(selector.tpe =:= ntpe) {
-            cond = typed { Apply(Select(selector.duplicate, nme.ne), List(Literal(Constant(null)))) }
+          if(isSubType(selector.tpe,ntpe) && isSubType(ntpe, definitions.AnyRefClass.tpe)) {
+            cond = NotNull(selector.duplicate)
             nstatic = nstatic + 1
+          } else {
+            cond = typed { gen.mkIsInstanceOf(selector.duplicate, ntpe) }
           }
             // compare outer instance for patterns like foo1.Bar foo2.Bar if not statically known to match
 
@@ -1220,7 +1222,7 @@ print()
               if(!isSubType(selector.tpe, ntpe))
                 gen.mkIsInstanceOf(selector.duplicate, ntpe);
               else
-                Literal(Constant(true))
+                NotNull(selector.duplicate)
 
             val treeAsSeq =
               if(!isSubType(selector.tpe, ntpe))

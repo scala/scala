@@ -219,5 +219,9 @@ trait CodeFactory requires transform.ExplicitOuter  {
           ))))
     }
 
+  def NotNull(tree:Tree) =
+    typed {
+      Apply(Select(tree, nme.ne), List(Literal(Constant(null))))
+    }
 }
 
