@@ -182,8 +182,14 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
                 Apply(Select(Ident(ex), "key"), List()),
                 Object_eq),
               List(Ident(key))),
-            Apply(Select(Ident(ex), "value"), List()),
-            Throw(Ident(ex)));
+            Apply(
+              TypeApply(
+                Select(
+                  Apply(Select(Ident(ex), "value"), List()),
+                  Any_asInstanceOf),
+                List(TypeTree(meth.tpe.finalResultType))),
+              List()),
+            Throw(Ident(ex)))
         val keyDef = ValDef(key, New(TypeTree(ObjectClass.tpe), List(List())))
         val tryCatch = Try(body, List(CaseDef(pat, EmptyTree, rhs)), EmptyTree)
         Block(List(keyDef), tryCatch)

@@ -129,7 +129,7 @@ object Predef {
 
   implicit def stringWrapper(x: String) = new runtime.RichString(x)
 
-  implicit def any2stringadd(x: String) = new runtime.StringAdd(x)
+  implicit def any2stringadd(x: Any) = new runtime.StringAdd(x)
 
   implicit def exceptionWrapper(exc: Throwable) = new runtime.RichException(exc)
 
