@@ -577,12 +577,16 @@ trait Parsers requires SyntaxAnalyzer {
      *                     |   StableId
      *                     |   Path `.' type
      *                     |   `(' Type `)'
+     *                     |   AttributeClauses SimpleType  // if Xplugtypes enabled
      * SimpleTypePattern  ::=  SimpleTypePattern TypePatternArgs
      * SimpleTypePattern1 ::=  SimpleTypePattern1 "#" Id
      *                     |   StableId
      *                     |   Path `.' type
      */
     def simpleType(isPattern: boolean): Tree = {
+      if(settings.Xplugtypes.value)
+         attributeClauses
+
       val pos = in.currentPos
       var t: Tree =
         if (in.token == LPAREN && !isPattern) {
