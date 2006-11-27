@@ -121,6 +121,7 @@ trait Typers requires Analyzer {
 
   private def funMode(mode: int) = mode & stickyModes | FUNmode | POLYmode
 
+  private var xxx = 10;
   class Typer(context0: Context) {
     import context0.unit
 
@@ -554,12 +555,7 @@ trait Typers requires Analyzer {
                 try {
                   inferConstructorInstance(tree1, clazz.typeParams, widen(pt))
                 } catch {
-                  case npe : NullPointerException =>
-                    logError("CONTEXT: " + context.unit.source.dbg(tree.pos), npe)
-                    throw npe
-                  case fe : FatalError =>
-                    logError("CONTEXT: " + context.unit.source.dbg(tree.pos), fe)
-                    throw fe
+                  case tpe : TypeError => throw tpe
                   case t : Throwable =>
                     logError("CONTEXT: " + context.unit.source.dbg(tree.pos), t)
                     throw t
@@ -1544,14 +1540,16 @@ trait Typers requires Analyzer {
        *  @param args ...
        *  @return     ...
        */
-      def tryTypedArgs(args: List[Tree]) = {
+      def tryTypedArgs(args: List[Tree], other : TypeError) : List[Tree] = {
+        val c = context.makeSilent(false)
+        c.retyping = true
         try {
-          val c = context.makeSilent(false)
-          c.retyping = true
           newTyper(c).typedArgs(args, mode)
         } catch {
-          case ex: TypeError =>
-            null
+        case ex: TypeError =>
+          null
+        case t : Throwable =>
+          throw t
         }
       }
 
@@ -1567,7 +1565,8 @@ trait Typers requires Analyzer {
           val context1 = context.makeSilent(context.reportAmbiguousErrors)
           context1.undetparams = context.undetparams
           val typer1 = newTyper(context1)
-          val result = typer1.typedApply(tree, fun, args, mode, pt)
+          val result =
+            typer1.typedApply(tree, fun, args, mode, pt)
           context.undetparams = context1.undetparams
           result
         } else {
@@ -1578,7 +1577,7 @@ trait Typers requires Analyzer {
           throw ex
         case ex: TypeError =>
           val Select(qual, name) = fun
-          val args1 = tryTypedArgs(args)
+          val args1 = tryTypedArgs(args, ex)
           val qual1 =
             if ((args1 ne null) && !pt.isError) {
               def templateArgType(arg: Tree) =
@@ -1592,6 +1591,7 @@ trait Typers requires Analyzer {
             reportTypeError(tree.pos, ex)
             setError(tree)
           }
+        case t => throw t;
       }
 /*
       /** Try to apply function to arguments; if it does not work try to insert an implicit
@@ -2068,7 +2068,7 @@ trait Typers requires Analyzer {
             // if function is overloaded, filter all alternatives that match
             // number of arguments and expected result type.
             if (util.Statistics.enabled) appcnt = appcnt + 1
-            if (phase.id <= currentRun.typerPhase.id &&
+            val ret = if (phase.id <= currentRun.typerPhase.id &&
                 fun1.isInstanceOf[Select] &&
                 !fun1.tpe.isInstanceOf[ImplicitMethodType] &&
                 ((fun1.symbol eq null) || !fun1.symbol.isConstructor) &&
@@ -2076,6 +2076,7 @@ trait Typers requires Analyzer {
             else {
               typedApply(tree, fun1, args, mode, pt)
             }
+            ret
           }
 
         case Super(qual, mix) =>
