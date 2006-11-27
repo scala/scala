@@ -1862,14 +1862,15 @@ trait Types requires SymbolTable {
     tps1.length == tps2.length &&
     List.forall2(tps1, tps2)((tp1, tp2) => tp1 =:= tp2)
 
-  var subtypecount = 0
-  def isSubType(tp1: Type, tp2: Type): boolean = {
-    subtypecount = subtypecount + 1
-    if (subtypecount == 20) throw new Error("recursive <:<")
-    val result = isSubType0(tp1, tp2)
-    subtypecount = subtypecount - 1
-    result
-  }
+  private var stc = 0
+  def isSubType(tp1: Type, tp2: Type): boolean =
+    try {
+      stc = stc + 1
+      if (stc == 20) throw new Error("recursive <:<")
+      isSubType0(tp1, tp2)
+    } finally {
+      stc = stc - 1
+    }
 
   /** Does type <code>tp1</code> conform to <code>tp2</code>?
    *

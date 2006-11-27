@@ -183,10 +183,8 @@ class ClassPath(onlyPresentation: Boolean) {
       addFilesInPath(boot)
       addArchivesInExtDirPath(extdirs)
       val clazzes = AbstractFile.getDirectory(output)
-      if (clazzes eq null) {
-        Console.err.println("Output location \"" + output + "\" not found")
-        exit(1)
-      }
+      if (clazzes eq null)
+        throw new FatalError("Output location \"" + output + "\" not found")
       val strtok = new StringTokenizer(source, File.pathSeparator)
       if (!strtok.hasMoreTokens()) {
         val output0 = (new Output(clazzes, null))
