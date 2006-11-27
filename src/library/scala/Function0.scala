@@ -1,3 +1,4 @@
+
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2002-2006, LAMP/EPFL             **
@@ -6,14 +7,14 @@
 **                          |/                                          **
 \*                                                                      */
 
+// generated on Mon Nov 27 15:01:28 CET 2006 (with fancy comment)
 // $Id$
-
 
 package scala
 
 
 /**
- * Function with no parameters. In the following example the definition of
+ * Function with 0 parameters. In the following example the definition of
  * <code>currentSeconds</code> is a shorthand for the anonymous class
  * definition <code>anonfun0</code>:
  * <pre>
@@ -29,7 +30,8 @@ package scala
  *   Console.println(anonfun0())
  * }</pre>
  */
-trait Function0[+R] extends AnyRef {
+trait Function0 [+R] extends AnyRef {
   def apply(): R
   override def toString() = "<function>"
+
 }

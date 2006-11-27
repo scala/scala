@@ -7,7 +7,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// generated on Sun Nov 05 03:50:36 CET 2006
+// generated on Mon Nov 27 15:01:28 CET 2006
 package scala
 
 import Predef._

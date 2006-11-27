@@ -37,7 +37,7 @@ trait PartialFunction[-A, +B] extends AnyRef with (A => B) {
       else that.apply(x)
   }
 
-  def andThen[C](k: B => C) = new PartialFunction[A, C] {
+  override def andThen[C](k: B => C) = new PartialFunction[A, C] {
     def isDefinedAt(x: A): Boolean = PartialFunction.this.isDefinedAt(x)
     def apply(x: A): C = k(PartialFunction.this.apply(x))
   }

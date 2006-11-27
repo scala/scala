@@ -62,6 +62,7 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
     // statistics
     var nremoved = 0
     var nsubstituted = 0
+    var nstatic = 0
 
     /** the symbol of the result variable
      */
@@ -746,8 +747,11 @@ print()
         //print()
         generalSwitchToTree()
       }
-      //if(settings.statistics.value)
-	//Console.println("could remove "+(nremoved+nsubstituted)+" ValDefs, "+nremoved+" by deleting and "+nsubstituted+" by substitution")
+      //if(settings.Xpatternstatistics.value) {
+      //  Console.print("deleted "+nremoved+" temps,")
+      //  Console.print("substituted "+nsubstituted+" temps")
+      //  Console.println("and optimized "+(nstatic)+" instance-tests to ne-null")
+      //}
       return t
     }
     case class Break(res:Boolean) extends java.lang.Throwable
@@ -1174,7 +1178,13 @@ print()
             }
 
             val ntpe = node.getTpe
-            var cond = gen.mkIsInstanceOf(selector.duplicate, ntpe)
+            var cond = typed { gen.mkIsInstanceOf(selector.duplicate, ntpe) }
+
+          // if type 2 test is same as static type, then just null test
+          if(selector.tpe =:= ntpe) {
+            cond = typed { Apply(Select(selector.duplicate, nme.ne), List(Literal(Constant(null)))) }
+            nstatic = nstatic + 1
+          }
             // compare outer instance for patterns like foo1.Bar foo2.Bar if not statically known to match
 
             if(!outerAlwaysEqual(casted.tpe, selector.tpe)) {

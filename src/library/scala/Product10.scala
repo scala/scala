@@ -12,15 +12,15 @@ package scala
 
 import Predef._
 
-/** Product3 is a cartesian product of 3 components
+/** Product10 is a cartesian product of 10 components
  */
-trait Product3 [+T1, +T2, +T3] extends Product {
+trait Product10 [+T1, +T2, +T3, +T4, +T5, +T6, +T7, +T8, +T9, +T10] extends Product {
 
   /**
    *  The arity of this product.
-   *  @return 3
+   *  @return 10
    */
-  override def arity = 3
+  override def arity = 10
 
   /**
    *  Returns the n-th projection of this product if 0<n<=arity, otherwise null
@@ -31,6 +31,13 @@ trait Product3 [+T1, +T2, +T3] extends Product {
     case 1 => _1
     case 2 => _2
     case 3 => _3
+    case 4 => _4
+    case 5 => _5
+    case 6 => _6
+    case 7 => _7
+    case 8 => _8
+    case 9 => _9
+    case 10 => _10
     case _ => throw new IndexOutOfBoundsException(n.toString())
   }
 
@@ -42,6 +49,27 @@ trait Product3 [+T1, +T2, +T3] extends Product {
 
   /** projection of this product */
   def _3:T3
+
+  /** projection of this product */
+  def _4:T4
+
+  /** projection of this product */
+  def _5:T5
+
+  /** projection of this product */
+  def _6:T6
+
+  /** projection of this product */
+  def _7:T7
+
+  /** projection of this product */
+  def _8:T8
+
+  /** projection of this product */
+  def _9:T9
+
+  /** projection of this product */
+  def _10:T10
 
 
 }

@@ -1821,10 +1821,13 @@ trait Parsers requires SyntaxAnalyzer {
           if (!vparamss.isEmpty) {
             val argtypes: List[Tree] = vparamss.head map (.tpt.duplicate) //remove type annotation and you will get an interesting error message!!!
             val nargs = argtypes.length
-            if (nargs <= definitions.MaxTupleArity)
+            if (nargs <= definitions.MaxProductArity)
               parents += productConstr(argtypes)
-          } else
-              parents += productConstr(Nil)
+            else
+              unit.warning(in.currentPos, "can't have more than "+definitions.MaxProductArity+" case fields ")
+          } else {
+            parents += productConstr(Nil)
+          }
         }
         val ps = parents.toList
         newLineOptWhenFollowedBy(LBRACE)

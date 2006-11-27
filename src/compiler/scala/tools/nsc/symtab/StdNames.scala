@@ -272,6 +272,7 @@ trait StdNames requires SymbolTable {
     val lift_ = newTermName("lift")
     val map = newTermName("map")
     val n = newTermName("n")
+    val ne = newTermName("ne")
     val nobinding = newTermName("nobinding")
     val next = newTermName("next")
     val newArray = newTermName("newArray")

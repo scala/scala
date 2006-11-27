@@ -113,17 +113,18 @@ trait Definitions requires SymbolTable {
           typeRef(sym.typeConstructor.prefix, sym, elems)
         } else NoType;
 
+    val MaxProductArity = 22
     /* <unapply> */
-    val ProductClass: Array[Symbol] = new Array(MaxTupleArity + 1)
+    val ProductClass: Array[Symbol] = new Array(MaxProductArity + 1)
       def productProj(n: Int, j: Int) = getMember(ProductClass(n), "_" + j)
       def isProductType(tp: Type): Boolean = tp match {
         case TypeRef(_, sym, elems) =>
-          elems.length <= MaxTupleArity && sym == ProductClass(elems.length);
+          elems.length <= MaxProductArity && sym == ProductClass(elems.length);
         case _ =>
           false
       }
       def productType(elems: List[Type]) =
-        if (elems.length <= MaxTupleArity) {
+        if (elems.length <= MaxProductArity) {
           val sym = ProductClass(elems.length)
           typeRef(sym.typeConstructor.prefix, sym, elems)
         } else NoType
@@ -618,6 +619,8 @@ trait Definitions requires SymbolTable {
 
       for (val i <- 1 to MaxTupleArity) {
         TupleClass(i)   = getClass(  "scala.Tuple" + i)
+      }
+      for (val i <- 1 to MaxProductArity) {
         ProductClass(i) = getClass("scala.Product" + i)
       }
       /* </unapply> */
