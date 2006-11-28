@@ -71,9 +71,9 @@ object ScalaRunTime {
   def caseFields(x: Product): List[Any] = {
     val arity = x.arity;
     def fields(from: Int): List[Any] =
-      if (from > arity) List()
+      if (from == arity) List()
       else x.element(from) :: fields(from + 1);
-    fields(1)
+    fields(0)
   }
 
   def _toString(x: Product): String = {
@@ -83,8 +83,8 @@ object ScalaRunTime {
   def _hashCode(x: Product): Int = {
     var code = x.getClass().hashCode();
     val arr =  x.arity
-    var i = 1;
-    while (i <= arr) {
+    var i = 0;
+    while (i < arr) {
       code = code * 41 + x.element(i).hashCode();
       i = i + 1
     }
@@ -95,10 +95,10 @@ object ScalaRunTime {
     case y1: Product if x.arity == y1.arity =>
       /*(x.getClass() eq y1.getClass() &&*/ {
 	val arity = x.arity;
-	var i = 1;
-	while (i <= arity && x.element(i) == y1.element(i))
+	var i = 0;
+	while (i < arity && x.element(i) == y1.element(i))
 	  i = i + 1;
-	i == arity + 1
+	i == arity
       }
     case _ =>
       false
