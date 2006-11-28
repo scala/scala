@@ -7,10 +7,15 @@
 **                          |/                                          **
 \*                                                                      */
 
-// generated on Tue Nov 28 14:03:53 CET 2006
+// generated on Tue Nov 28 17:25:56 CET 2006
 package scala
 
 import Predef._
+
+object Product0 {
+  def unapply(x:Any): Option[Product0] =
+    if(x.isInstanceOf[Product0]) Some(x.asInstanceOf[Product0]) else None
+}
 
 /** Product0 is a cartesian product of 0 components
  */

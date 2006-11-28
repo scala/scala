@@ -7,10 +7,15 @@
 **                          |/                                          **
 \*                                                                      */
 
-// generated on Tue Nov 28 14:03:53 CET 2006
+// generated on Tue Nov 28 17:25:56 CET 2006
 package scala
 
 import Predef._
+
+object Product5 {
+  def unapply[T1, T2, T3, T4, T5](x:Any): Option[Product5[T1, T2, T3, T4, T5]] =
+    if(x.isInstanceOf[Product5[T1, T2, T3, T4, T5]]) Some(x.asInstanceOf[Product5[T1, T2, T3, T4, T5]]) else None
+}
 
 /** Product5 is a cartesian product of 5 components
  */

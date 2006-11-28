@@ -7,7 +7,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// generated on Tue Nov 28 14:03:53 CET 2006 (with fancy comment)
+// generated on Tue Nov 28 17:25:56 CET 2006 (with fancy comment)
 // $Id$
 
 package scala

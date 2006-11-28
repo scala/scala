@@ -254,7 +254,7 @@ abstract class LiftCode extends Transform {
           val name = className(c);
           if (name.length() == 0) throw new Error("don't know how to inject " + value);
           val injectedArgs = new ListBuffer[Tree];
-          for (val i <- 1 until c.arity+1 /*caseArity*/)
+          for (val i <- 0 until c.arity /*caseArity*/)
             injectedArgs += inject(c.element(i));
           New(Ident(definitions.getClass(name)), List(injectedArgs.toList))
         }

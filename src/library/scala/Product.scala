@@ -19,8 +19,8 @@ package scala
  */
 trait Product extends AnyRef {
 
-  /** for a case class <code>A(x_1,...,x_k))</code>, returns <code>x_i</code>
-   *  for <code>1 &lt;= i &lt; k</code>
+  /** for a case class <code>A(x_1,...,x_k))</code>, returns <code>x_(i+1)</code>
+   *  for <code>0 &lt;= i &lt; k</code>
    *
    *  @param  n the position of the n-th element
    *  @throws IndexOutOfBoundsException

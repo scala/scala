@@ -225,6 +225,7 @@ object ProductFile {
   import genprod._
   def make(i:Int) = {
     val __typeArgs__ = if(i==0) Nil else covariantArgs(i).mkString("[",", ","]")
+    val __refArgs__ = if(i==0) Nil else targs(i).mkString("[",", ","]")
 <file name={productFilename(i)}>
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
@@ -239,6 +240,11 @@ package scala
 
 import Predef._
 
+object {productClassname(i)} {{
+  def unapply{__refArgs__}(x:Any): Option[{productClassname(i)}{__refArgs__}] =
+    if(x.isInstanceOf[{productClassname(i)}{__refArgs__}]) Some(x.asInstanceOf[{productClassname(i)}{__refArgs__}]) else None
+}}
+
 /** {productClassname(i)} is a cartesian product of {i} components
  */
 trait {productClassname(i)} {__typeArgs__} extends Product {{
@@ -250,12 +256,13 @@ trait {productClassname(i)} {__typeArgs__} extends Product {{
   override def arity = {i}
 
   /**
-   *  Returns the n-th projection of this product if 0&lt;n&lt;=arity, otherwise null
+   *  Returns the n-th projection of this product if 0&lt;=n&lt;arity, otherwise null
    *  @param n number of the projection to be returned
+   *  @return same as _(n+1)
    *  @throws IndexOutOfBoundsException
    */
   override def element(n: Int) = n match {{
-    {for(val Tuple2(m,j) <- mdefs(i).zip(List.range(1,i+1)))
+    {for(val Tuple2(m,j) <- mdefs(i).zip(List.range(0,i)))
      yield "case "+j+" => "+m+"\n    "}case _ => throw new IndexOutOfBoundsException(n.toString())
   }}
 
