@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author  Sean McDirmid
  */
 // $Id$
@@ -48,9 +48,10 @@ object DocUtil {
         <a href={(relative + href)}>{t0}</a>;
     }
 
+    val encoding = "iso-8859-1"
     val header =
-      <meta http-equiv="content-type" content="text/html; charset=iso-8859-1"/>
-      <meta name="generator" content="scaladoc (2.1.9)"/>
+      <meta http-equiv="content-type" content={"text/html; " + encoding}/>
+      <meta name="generator" content="scaladoc (2.3.0)"/>
       <link rel="stylesheet" type="text/css" href={ relative + "style.css" }/>
       <script type="text/javascript" src={relative + "script.js"}></script>;
 

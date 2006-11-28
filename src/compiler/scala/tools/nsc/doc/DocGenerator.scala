@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author  Sean McDirmid
  */
 // $Id$
@@ -7,6 +7,7 @@
 package scala.tools.nsc.doc
 
 import java.io.{File, FileOutputStream, FileWriter}
+import java.net.URLEncoder
 import java.util.StringTokenizer
 import java.util.regex.Pattern
 
@@ -168,7 +169,7 @@ abstract class DocGenerator extends Models {
         def scalaName(pt: Type): String = pt.toString.replaceAll(" ", "")
         paramTypes.map(pt => scalaName(pt)).mkString("(", ",", ")")
       }
-      /*Utility.escape*/(sym.nameString +
+      URLEncoder.encode(sym.nameString +
         (sym.tpe match {
           case MethodType(paramTypes, _) =>
             if (sym hasFlag Flags.JAVA) javaParams(paramTypes)
@@ -177,7 +178,7 @@ abstract class DocGenerator extends Models {
             if (sym hasFlag Flags.JAVA) javaParams(paramTypes)
             else scalaParams(paramTypes)
           case _ => ""
-        }))
+        }), encoding)
     }
 
     def urlFor(sym: Symbol): String = sym match {
