@@ -7,7 +7,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// generated on Mon Nov 27 15:01:28 CET 2006
+// generated on Tue Nov 28 14:03:53 CET 2006
 package scala
 
 import Predef._
@@ -23,14 +23,15 @@ trait Product3 [+T1, +T2, +T3] extends Product {
   override def arity = 3
 
   /**
-   *  Returns the n-th projection of this product if 0<n<=arity, otherwise null
+   *  Returns the n-th projection of this product if 0<=n<arity, otherwise null
    *  @param n number of the projection to be returned
+   *  @return same as _(n+1)
    *  @throws IndexOutOfBoundsException
    */
   override def element(n: Int) = n match {
-    case 1 => _1
-    case 2 => _2
-    case 3 => _3
+    case 0 => _1
+    case 1 => _2
+    case 2 => _3
     case _ => throw new IndexOutOfBoundsException(n.toString())
   }
 
