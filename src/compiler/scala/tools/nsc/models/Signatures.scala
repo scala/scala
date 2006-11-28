@@ -53,7 +53,8 @@ class Signatures(val compiler: Compiler) {
 
       val children: List[Signature] = tree match {
           case impl: ImplDef
-            if (!impl.name.toString.contains("$anonfun$")) =>
+            //if (!impl.name.toString.contains("$anonfun$")) =>
+            if (impl.name.pos("$anonfun$") == name.length) =>
           val supers = new Signature("$$supers", signature(impl.impl.parents))
           val body   = new Signature("$$body",   signature(impl.impl.body))
           val ret = supers :: body :: Nil
