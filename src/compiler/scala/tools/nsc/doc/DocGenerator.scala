@@ -996,6 +996,10 @@ abstract class DocGenerator extends Models {
        *    underlying host system. All value classes inherit from class
        *    <a href="AnyVal.html"><code>AnyVal</code></a>.
        *  </p>
+       *  <p>
+       *    Value <code>MAX_""" + sym.name.toString().toUpperCase() + """</code>
+       *    in defined in object <a href="compat/Math$object.html">scala.compat.Math</a>.
+       *  </p>
        */"""
     new PrimitiveContentFrame {
       def sym = definitions.ByteClass
