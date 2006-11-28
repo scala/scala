@@ -48,7 +48,7 @@ abstract class Models {
     if (mods.isCase     ) modString = "case"      :: modString
     if (mods.isSealed   ) modString = "sealed"    :: modString
     if (mods.isFinal    ) modString = "final"     :: modString
-    //if (mods.isTrait    ) modString = "trait"     :: modString
+    if (mods.isImplicit ) modString = "implicit"  :: modString
     modString
   }
 
@@ -72,7 +72,7 @@ abstract class Models {
         else DEF
       }
       else if (term0.isClass) {
-        if (tree.asInstanceOf[MemberDef].mods.isTrait) TRAIT;
+        if (tree.asInstanceOf[MemberDef].mods.isTrait) TRAIT
         else CLASS
       }
       else if (term0.isModule) OBJECT

@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -7,9 +7,10 @@
 package scala.tools.nsc.ast
 
 import java.io.{PrintWriter, StringWriter}
+
 import scala.tools.nsc.symtab.Flags
-import scala.tools.nsc.util.{HashSet,Position, SourceFile}
-import symtab.Flags._
+import scala.tools.nsc.symtab.Flags._
+import scala.tools.nsc.util.{HashSet, Position, SourceFile}
 
 
 trait Trees requires Global {
@@ -29,6 +30,7 @@ trait Trees requires Global {
     def isSealed    = hasFlag(SEALED   )
     def isFinal     = hasFlag(FINAL    )
     def isTrait     = hasFlag(TRAIT    )
+    def isImplicit  = hasFlag(IMPLICIT )
     def isPublic    = !isPrivate && !isProtected
     def hasFlag(flag: int) = (flag & flags) != 0
     def & (flag: Int): Modifiers = {
