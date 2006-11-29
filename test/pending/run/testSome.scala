@@ -1,4 +1,6 @@
-object testSome {
+import testing.SUnit._
+
+object testSome extends Assert {
 
   val x: Option[String] = Some("foo")
 
@@ -8,15 +10,34 @@ object testSome {
 
   val y1: Option[Int] = None
 
+  def main(args:Array[String]) = {
+    assertFalse("some[string].isEmpty ", x.isEmpty) // x eq null
 
-  Console.println(x.isEmpty) // x ne null
+    assertFalse("some[int].isEmpty ", x1.isEmpty)
 
-  Console.println(x1.isEmpty)
+    assertTrue("none<:opt[string].isEmpty ", y.isEmpty)
 
-  Console.println(x.get) // x
+    assertTrue("non<:opt[int].isEmpty ", y1.isEmpty)
 
-  Console.println(x1.get)
+    Console.println(x.get) // x
 
-  def f(x:String) = Some(x)
-  x.flatMap(&f)
+    Console.println(x1.get)
+
+    val f = {x:String => Some(x.length)}
+
+    val len:Option[Int] = x.flatMap(f)
+    Console.println("len: (3) "+len)
+
+    val g = {x:String => x.charAt(0) == 'f'}
+
+    Console.println("filter: (foo) "+x.filter(g))
+
+    // to do:
+
+    //assertEquals("equals", len == Some(3))
+
+    // matching
+
+    // unapply
+  }
 }
