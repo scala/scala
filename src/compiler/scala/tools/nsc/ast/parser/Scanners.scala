@@ -289,7 +289,10 @@ trait Scanners requires SyntaxAnalyzer {
                   in.next
                   if (in.ch == '\"') {
                     in.next
+                    val saved = in.lineStartPos
                     getMultiLineStringLit
+                    if (in.lineStartPos != saved) // ignore linestarts within a mulit-line string
+                      in.lastLineStartPos = saved
                   } else {
                     token = STRINGLIT
                     name = nme.EMPTY
