@@ -57,7 +57,7 @@ trait Trees requires Global {
 
   val NoMods = Modifiers(0)
 
-  abstract class Tree {
+  sealed abstract class Tree {
     {
       import util.Statistics
       if (Statistics.enabled) nodeCount = nodeCount + 1
@@ -137,6 +137,17 @@ trait Trees requires Global {
       if (hasSymbol) symbol = tree.symbol
       this
     }
+  }
+
+  // bq: I moved this classes here from TreeBrowsers, otherwise cannot used *sealed* optimization
+  /** Pseudo tree class, so that all JTree nodes are treated uniformly */
+  case class ProgramTree(units: List[UnitTree]) extends Tree {
+    override def toString(): String = "Program"
+  }
+
+  /** Pseudo tree class, so that all JTree nodes are treated uniformly */
+  case class UnitTree(unit: CompilationUnit) extends Tree {
+    override def toString(): String = unit.toString()
   }
 
   trait SymTree extends Tree {

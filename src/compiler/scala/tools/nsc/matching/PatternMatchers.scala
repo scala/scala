@@ -1061,6 +1061,14 @@ print()
         if (null == next) 1 else (next.length() + 1)
     }
 
+    final private def inheritsFromSealed(tpe:Type): Boolean = {
+      val it = tpe.baseClasses.elements
+      while(it.hasNext) {
+	if(it.next.isSealed) return true
+      }
+      return false
+    }
+
     protected def toOptTree(node1: PatternNode, selector: Tree): Tree = {
       def insert2(tag: Int, node: PatternNode, current: TagNodePair): TagNodePair = {
         if (current eq null)
@@ -1124,6 +1132,12 @@ print()
                         */
       var nCases: List[CaseDef] = Nil
       while (cases ne null) {
+	if(inheritsFromSealed(cases.node.tpe)) {
+	  val t = toTree_refined(cases.node, selector, true)
+	  //Console.println("optimize this"+t+" from this "+cases.node)
+          nCases = CaseDef(Literal(Constant(cases.tag)),
+                           t) :: nCases;
+	} else
         nCases = CaseDef(Literal(Constant(cases.tag)),
                          toTree(cases.node, selector)) :: nCases;
         cases = cases.next
@@ -1152,6 +1166,10 @@ print()
       Or(And(cond, thenp), elsep)
 
     protected def toTree(node: PatternNode, selector:Tree): Tree = {
+      toTree_refined(node, selector, false)
+    }
+
+    protected def toTree_refined(node: PatternNode, selector:Tree, ignoreSelectorType: Boolean): Tree = {
       //Konsole.println("pm.toTree("+node+","+selector+") selector.tpe = "+selector.tpe+")")
       if (selector.tpe eq null)
         scala.Predef.error("cannot go on")
@@ -1184,7 +1202,9 @@ print()
           if(isSubType(selector.tpe,ntpe) && isSubType(ntpe, definitions.AnyRefClass.tpe)) {
             cond = NotNull(selector.duplicate)
             nstatic = nstatic + 1
-          } else {
+          } else if(ignoreSelectorType) {
+	    cond = Literal(Constant(true))
+	  } else {
             cond = typed { gen.mkIsInstanceOf(selector.duplicate, ntpe) }
           }
             // compare outer instance for patterns like foo1.Bar foo2.Bar if not statically known to match
