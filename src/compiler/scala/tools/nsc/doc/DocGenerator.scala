@@ -989,7 +989,10 @@ abstract class DocGenerator extends Models {
          *  </p>
          */"""
     }
-    def numericValDescr(sym: Symbol) = """
+    def numericValDescr(sym: Symbol) = {
+      val maxValue = "MAX_" + sym.name.toString().toUpperCase()
+      val minValue = "MIN_" + sym.name.toString().toUpperCase();
+      """
       /** <p>
        *    Class <code>""" + sym.name + """ </code> belongs to the value
        *    classes whose instances are not represented as objects by the
@@ -997,10 +1000,11 @@ abstract class DocGenerator extends Models {
        *    <a href="AnyVal.html"><code>AnyVal</code></a>.
        *  </p>
        *  <p>
-       *    Value <code>MAX_""" + sym.name.toString().toUpperCase() + """</code>
-       *    in defined in object <a href="compat/Math$object.html">scala.compat.Math</a>.
+       *    Values <code>""" + maxValue + """</code> and <code>""" + minValue + """</code>
+       *    are in defined in object <a href="compat/Math$object.html">scala.compat.Math</a>.
        *  </p>
        */"""
+    }
     new PrimitiveContentFrame {
       def sym = definitions.ByteClass
       def descr = numericValDescr(sym)
