@@ -1,45 +1,57 @@
-// author: buraq
-
-
-// This program generates the Product$i classes, where 0 <= i <+ MAXWIDTH
-
-// usage: scala -classpath ... genprod PATH
-//   where PATH is the desired output directory
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
 
 // $Id$
+
+/** <p>
+ *   This program generates the <code>Product$i</code> classes, where
+ *   <code>0 &lt;= i &lt;+ MAXWIDTH</code>.
+ *  </p>
+ *  <p>
+ *    usage: <code>scala -classpath ... genprod PATH</code>
+ *    where <code>PATH</code> is the desired output directory
+ *
+ *  @author  Burak Emir
+ *  @version 1.0
+ */
 object genprod {
 
   /** The biggest ?? has Sup?? - 1 components/arguments */
-  val SUP_PRODUCT_ARITY   = 23
-  val SUP_TUPLE_ARITY     = 9
-  val SUP_FUNCTION_ARITY  = 9
+  val SUP_PRODUCT_ARITY  = 23
+  val SUP_TUPLE_ARITY    =  9
+  val SUP_FUNCTION_ARITY =  9
 
-  def productClassname(i:Int) = "Product"+i
+  def productClassname(i: Int) = "Product"+i
 
-  def productFilename(i:Int) = productClassname(i)+".scala"
+  def productFilename(i: Int) = productClassname(i)+".scala"
 
-  def tupleClassname(i:Int) = "Tuple"+i
+  def tupleClassname(i: Int) = "Tuple"+i
 
-  def tupleFilename(i:Int) = tupleClassname(i)+".scala"
+  def tupleFilename(i: Int) = tupleClassname(i)+".scala"
 
-  def functionClassname(i:Int) = "Function"+i
+  def functionClassname(i: Int) = "Function"+i
 
-  def functionFilename(i:Int) = functionClassname(i)+".scala"
+  def functionFilename(i: Int) = functionClassname(i)+".scala"
 
-  def targs(i:Int) =
-    for (val j <- List.range(1,i+1)) yield  "T" + j
+  def targs(i: Int) =
+    for (val j <- List.range(1, i+1)) yield "T" + j
 
-  def covariantArgs(i:Int) =
-             for (val t <- targs(i)) yield  "+" + t
+  def covariantArgs(i: Int) =
+    for (val t <- targs(i)) yield "+" + t
 
-  def contraCoArgs(i:Int) =
-            (for (val t <- targs(i)) yield  "-" + t):::List("+R")
+  def contraCoArgs(i: Int) =
+    (for (val t <- targs(i)) yield  "-" + t) ::: List("+R")
 
   def vdefs(i: Int) =
-    for (val j <- List.range(1,i+1)) yield "v" + j
+    for (val j <- List.range(1, i+1)) yield "v" + j
 
   def mdefs(i: Int) =
-    for (val j <- List.range(1,i+1)) yield "_" + j
+    for (val j <- List.range(1, i+1)) yield "_" + j
 
 
   def zippedAndCommaSeparated (left: List[String], right: List[String]): String = {
@@ -49,21 +61,22 @@ object genprod {
       val p = it.next
       sb.append(p._1).append(':').append(p._2)
     }
-    if(it.hasNext) {
+    if (it.hasNext) {
       append1
       while(it.hasNext) { sb.append(", "); append1 }
     }
     sb.toString
   }
-  def fields (i:Int) = zippedAndCommaSeparated( mdefs(i), targs(i) )
 
-  def funArgs(i:Int) = zippedAndCommaSeparated( vdefs(i),  targs(i) )
+  def fields(i: Int) = zippedAndCommaSeparated(mdefs(i), targs(i))
+
+  def funArgs(i: Int) = zippedAndCommaSeparated(vdefs(i), targs(i))
 
   def productFiles =
-    for(val i <- List.range(0, SUP_PRODUCT_ARITY)) yield ProductFile.make(i) ;
+    for(val i <- List.range(0, SUP_PRODUCT_ARITY)) yield ProductFile.make(i)
 
   def tupleFiles =
-    for(val i <- List.range(1, SUP_TUPLE_ARITY)) yield TupleFile.make(i);
+    for(val i <- List.range(1, SUP_TUPLE_ARITY)) yield TupleFile.make(i)
 
   def functionFiles =
     for(val i <- List.range(0, SUP_FUNCTION_ARITY)) yield FunctionFile.make(i)
@@ -72,12 +85,12 @@ object genprod {
     productFiles ::: tupleFiles ::: functionFiles
 
   def main(args:Array[String]) = {
-    if(args.length != 1) {
+    if (args.length != 1) {
       Console.println("please give path of output directory")
       System.exit(-1)
     }
-    import java.io.{ File, FileOutputStream }
-  import java.nio.channels.Channels
+    import java.io.{File, FileOutputStream}
+    import java.nio.channels.Channels
     val out = args(0)
     for(val node <- allfiles) {
       val f = new File(out + File.separator + node.attributes("name"))
@@ -103,7 +116,7 @@ object FunctionFile {
 <file name={functionFilename(i)}>
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2006, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2007, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -118,7 +131,7 @@ package scala
 /**
  * Function with {i} parameters. {DescriptiveComment.forFunction(i)}
  */
-trait {functionClassname(i)} {__typeArgs__} extends AnyRef {{
+trait {functionClassname(i)}{__typeArgs__} extends AnyRef {{
   def apply({__funArgs__}): R
   override def toString() = "&lt;function>"
   {moreMethods(i)}
@@ -129,11 +142,11 @@ trait {functionClassname(i)} {__typeArgs__} extends AnyRef {{
   def moreMethods(i:Int) = i match {
     case 1 => """
   def compose[A](g: A => T1): A => R = { x => apply(g(x)) }
-  def andThen[A](g: R => A): T1 => A = g compose this
+  def andThen[A](g: R => A): T1 => A = { x => g(apply(x)) }
 """
     case _ => ""
   }
-  def descriptiveComment(i:Int) = i match {
+  def descriptiveComment(i: Int) = i match {
     case 0 => """In the following example the definition of
  * <code>currentSeconds</code> is a shorthand for the anonymous class
  * definition <code>anonfun0</code>:
@@ -190,12 +203,12 @@ zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz */
 object TupleFile {
   import genprod._
   def make(i: Int) = {
-      val __typeArgs__ = covariantArgs(i).mkString("[",", ","]")
-      val __fields__ = fields(i)
+    val __typeArgs__ = covariantArgs(i).mkString("[",", ","]")
+    val __fields__ = fields(i)
 <file name={tupleFilename(i)}>
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2006, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2007, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -207,7 +220,7 @@ object TupleFile {
 package scala;
 
 /** {tupleClassname(i)} is the canonical representation of a @see {productClassname(i)} */
-case class {tupleClassname(i)} {__typeArgs__} ({ __fields__ }) {{
+case class {tupleClassname(i)}{__typeArgs__}({ __fields__ }) {{
 
   override def productPrefix = ""
 
@@ -229,13 +242,14 @@ object ProductFile {
 <file name={productFilename(i)}>
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2006, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2007, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
 
 // generated on {new java.util.Date().toString()}
+
 package scala
 
 import Predef._
@@ -247,7 +261,7 @@ object {productClassname(i)} {{
 
 /** {productClassname(i)} is a cartesian product of {i} components
  */
-trait {productClassname(i)} {__typeArgs__} extends Product {{
+trait {productClassname(i)}{__typeArgs__} extends Product {{
 
   /**
    *  The arity of this product.
@@ -256,13 +270,15 @@ trait {productClassname(i)} {__typeArgs__} extends Product {{
   override def arity = {i}
 
   /**
-   *  Returns the n-th projection of this product if 0&lt;=n&lt;arity, otherwise null
+   *  Returns the n-th projection of this product if 0&lt;=n&lt;arity, otherwise
+   *  <code>null</code>.
+   *
    *  @param n number of the projection to be returned
    *  @return same as _(n+1)
    *  @throws IndexOutOfBoundsException
    */
   override def element(n: Int) = n match {{
-    {for(val Tuple2(m,j) <- mdefs(i).zip(List.range(0,i)))
+    {for(val Tuple2(m,j) <- mdefs(i).zip(List.range(0, i)))
      yield "case "+j+" => "+m+"\n    "}case _ => throw new IndexOutOfBoundsException(n.toString())
   }}
 
