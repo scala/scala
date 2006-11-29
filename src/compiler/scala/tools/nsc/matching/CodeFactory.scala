@@ -223,5 +223,11 @@ trait CodeFactory requires transform.ExplicitOuter  {
     typed {
       Apply(Select(tree, nme.ne), List(Literal(Constant(null))))
     }
+
+  def IsNull(tree:Tree) =
+    typed {
+      Apply(Select(tree, nme.eq), List(Literal(Constant(null))))
+    }
+
 }
 

@@ -22,7 +22,7 @@ import Predef._
  *  @author  Matthias Zenger
  *  @version 1.0, 16/07/2003
  */
-sealed abstract class Option[+A] extends Iterable[A] {
+sealed abstract class Option[+A] extends Iterable[A] with Product {
 
   def isEmpty: Boolean = this match {
     case None => true

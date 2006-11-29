@@ -353,30 +353,28 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
         if settings.Xkilloption.value && wasNone(nne.tpe) =>
           atPos(tree.pos) { typer.typed { Literal(Constant(null)) }}
 
-        case Apply(Select(t, nme.isEmpty),List())       // t.isEmpty -> t ne null
+        case Apply(Select(t, nme.isEmpty),List())       // t.isEmpty -> t eq null
         if settings.Xkilloption.value && wasOption(t.tpe)  =>
-          NotNull(t)
+          IsNull(t)
 
         case Apply(Select(t, nme.get),List())           // t.get -> t if T <: Option[AnyRef]
         if settings.Xkilloption.value && wasOptionRef(t.tpe) =>
           t
 
-        case Select(t, n)
-        if settings.Xkilloption.value && {Console.println(t.tpe); wasOption(t.tpe)} && n != nme.get =>
+        case Select(t, n)           // methods ...
+        if settings.Xkilloption.value && wasOption(t.tpe) && n != nme.get =>
           def ntpe = if(t.tpe.isInstanceOf[SingleType]) t.tpe.widen else t.tpe
           val otpe = atPhase(phase.prev){ntpe}
           val nt = atPos(tree.pos) { typer.typed {
-            Select(If(NotNull(t),
-                      Apply(Select(New(TypeTree( definitions.someType(otpe.typeArgs(0)))), nme.CONSTRUCTOR), List(t)),
-                      gen.mkAttributedRef(definitions.NoneClass)),
-                   n)
+            If(NotNull(t),
+               Apply(Select(New(TypeTree( definitions.someType(otpe.typeArgs(0)))), nme.CONSTRUCTOR), List(t)),
+               gen.mkAttributedRef(definitions.NoneClass))
           }}
-          Console.println("nt == "+nt)
-          nt
-        case _                                   // e.g. this.blabla().x -> t
+	  copy.Select(tree,nt,n)
+
+        case _                                   // e.g. map.get("bar") -> fix type
         if settings.Xkilloption.value
         && wasOptionRef(tree.tpe) =>
-          Console.println("cuckoo" + tree)
           super.transform(tree.setType(atPhase(phase.prev){tree.tpe}.typeArgs(0)))
 
         // </removeOption>
