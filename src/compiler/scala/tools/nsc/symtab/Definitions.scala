@@ -133,6 +133,7 @@ trait Definitions requires SymbolTable {
 
     var OptionClass: Symbol = _
     def SomeClass: Symbol = getClass("scala.Some")
+    def NoneClass: Symbol = getModule("scala.None")
 
     def isOptionType(tp: Type) = tp match {
       case TypeRef(_, sym, List(_)) if sym == OptionClass => true
@@ -147,6 +148,11 @@ trait Definitions requires SymbolTable {
     }
     def someType(tp: Type) =
       typeRef(SomeClass.typeConstructor.prefix, SomeClass, List(tp))
+
+    def isNoneType(tp: Type) = tp match {
+      case TypeRef(_, sym, List(_)) if sym == NoneClass => true
+      case _ => false
+    }
 
     def optionOfProductElems(tp: Type): List[Type] = {
       assert(tp.symbol == OptionClass)

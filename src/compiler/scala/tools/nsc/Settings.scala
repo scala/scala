@@ -130,6 +130,7 @@ class Settings(error: String => unit) {
   val Xexperimental = BooleanSetting("-Xexperimental", "enable experimental extensions")
   val Xunapply      = BooleanSetting("-Xunapply", "enable unapply pattern matching")
   val Xplugtypes    = BooleanSetting("-Xplugtypes", "parse but ignore annotations in more locations")
+  val Xkilloption   = BooleanSetting("-Xkilloption", "optimizes option types")
 
   /** A list of all settings */
   def allSettings: List[Setting] = allsettings.reverse

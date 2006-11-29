@@ -93,13 +93,16 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
    *  </ol>
    */
   def transformInfo(sym: Symbol, tp: Type): Type = tp match {
-    case MethodType(formals, restpe) =>
+    case MethodType(formals, restpe1) =>
+      val restpe = transformInfo(sym, restpe1) // removeOption
       if (sym.owner.isTrait && ((sym hasFlag SUPERACCESSOR) || sym.isModule)) { // 5
         sym.makeNotPrivate(sym.owner)
       }
       if (sym.owner.isTrait && (sym hasFlag PROTECTED)) sym setFlag notPROTECTED // 6
       if (sym.isClassConstructor && isInner(sym.owner)) // 1
         MethodType(sym.owner.outerClass.thisType :: formals, restpe)
+      else if (restpe ne restpe1)
+        MethodType(formals, restpe) // removeOption
       else tp
     case ClassInfoType(parents, decls, clazz) =>
       var decls1 = decls
@@ -132,6 +135,15 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
     case PolyType(tparams, restp) =>
       val restp1 = transformInfo(sym, restp)
       if (restp eq restp1) tp else PolyType(tparams, restp1)
+
+    // <removeOption>
+    case TypeRef(_, sym, List(tpe))
+    if  settings.Xkilloption.value
+    && (sym == definitions.OptionClass || sym == definitions.SomeClass)
+    && isSubType(tpe, definitions.AnyRefClass.tpe) =>
+      tpe
+    // </removeOption>
+
     case _ =>
       tp
   }
@@ -308,12 +320,67 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
 
     /** The main transformation method */
     override def transform(tree: Tree): Tree = {
+
+      def wasNone(tpe:Type) = atPhase(phase.prev){tpe}.symbol == definitions.NoneClass
+      def wasOption(tpe:Type) = {
+        def ntpe = if(tpe.isInstanceOf[SingleType]) tpe.widen else tpe
+        definitions.isOptionType(atPhase(phase.prev){ntpe})
+      }
+      def wasOptionRef(tpe:Type) = {
+        def ntpe = if(tpe.isInstanceOf[SingleType]) tpe.widen else tpe
+        val otpe = atPhase(phase.prev){ntpe}
+        definitions.isOptionType(otpe) && isSubType(otpe.typeArgs(0), definitions.AnyRefClass.tpe)
+      }
+
       val sym = tree.symbol
       if ((sym ne null) && sym.isType) {//(9)
         if (sym hasFlag PRIVATE) sym setFlag notPRIVATE
         if (sym hasFlag PROTECTED) sym setFlag notPROTECTED
       }
       tree match {
+
+        // <removeOption>
+
+        case sm @ Apply(fn, List(vlue)) // scala.Some(x:T) -> x  if T <: AnyRef
+        if settings.Xkilloption.value
+        && definitions.isSomeType(sm.tpe)
+        && fn.symbol.isClassConstructor
+        && isSubType(sm.tpe.typeArgs(0), definitions.AnyRefClass.tpe) =>
+          vlue
+
+
+        case nne: Select                                // scala.None -> null
+        if settings.Xkilloption.value && wasNone(nne.tpe) =>
+          atPos(tree.pos) { typer.typed { Literal(Constant(null)) }}
+
+        case Apply(Select(t, nme.isEmpty),List())       // t.isEmpty -> t ne null
+        if settings.Xkilloption.value && wasOption(t.tpe)  =>
+          NotNull(t)
+
+        case Apply(Select(t, nme.get),List())           // t.get -> t if T <: Option[AnyRef]
+        if settings.Xkilloption.value && wasOptionRef(t.tpe) =>
+          t
+
+        case Select(t, n)
+        if settings.Xkilloption.value && {Console.println(t.tpe); wasOption(t.tpe)} && n != nme.get =>
+          def ntpe = if(t.tpe.isInstanceOf[SingleType]) t.tpe.widen else t.tpe
+          val otpe = atPhase(phase.prev){ntpe}
+          val nt = atPos(tree.pos) { typer.typed {
+            Select(If(NotNull(t),
+                      Apply(Select(New(TypeTree( definitions.someType(otpe.typeArgs(0)))), nme.CONSTRUCTOR), List(t)),
+                      gen.mkAttributedRef(definitions.NoneClass)),
+                   n)
+          }}
+          Console.println("nt == "+nt)
+          nt
+        case _                                   // e.g. this.blabla().x -> t
+        if settings.Xkilloption.value
+        && wasOptionRef(tree.tpe) =>
+          Console.println("cuckoo" + tree)
+          super.transform(tree.setType(atPhase(phase.prev){tree.tpe}.typeArgs(0)))
+
+        // </removeOption>
+
         case Template(parents, decls) =>
           val newDefs = new ListBuffer[Tree]
           atOwner(tree, currentOwner) {
@@ -351,6 +418,12 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
           } else { //todo: see whether we can move this to transformInfo
             if (sym.owner.isTrait && (sym hasFlag (ACCESSOR | SUPERACCESSOR)))
               sym.makeNotPrivate(sym.owner); //(2)
+            if(settings.Xkilloption.value
+               && definitions.isOptionType(tpt.tpe)
+               && isSubType(tpt.tpe.typeArgs(0), definitions.AnyRefClass.tpe)) {
+
+                 return super.transform(copy.DefDef(tree,mods,name,tparams,vparamss, TypeTree(tpt.tpe.typeArgs(0)), rhs))
+               }
             super.transform(tree)
           }
 
