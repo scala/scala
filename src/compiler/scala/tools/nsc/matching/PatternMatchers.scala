@@ -77,7 +77,6 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
       this.selector = selector
       this.handleOuter = handleOuter
       this.root = pConstrPat(selector.pos, selector.tpe.widen);
-
       this.root.and = pHeader(selector.pos,
                               selector.tpe.widen,
                               Ident(root.symbol).setType(root.tpe));
@@ -1229,7 +1228,7 @@ print()
               }
             }
           val succ = squeezedBlock(List(ValDef(casted,
-                                               typed(gen.mkAsInstanceOf(selector.duplicate, ntpe, true)))),
+                                               if(isSubType(selector.tpe,ntpe)) selector.duplicate else typed(gen.mkAsInstanceOf(selector.duplicate, ntpe, true)))),
                                    toTree(node.and))
             val fail = toTree(node.or, selector.duplicate)
 

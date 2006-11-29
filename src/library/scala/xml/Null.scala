@@ -11,6 +11,7 @@
 
 package scala.xml
 
+import Predef.IllegalArgumentException
 import compat.StringBuilder
 
 case object Null extends MetaData {
@@ -55,7 +56,11 @@ case object Null extends MetaData {
   def next = null
 
   /** null */
-  def apply(key: String) = null
+  def apply(key: String) = {
+    if(!Parsing.isNameStart (key charAt 0))
+      throw new IllegalArgumentException("not a valid attribute name '"+key+"', so can never match !")
+    null
+  }
 
   /** gets value of qualified (prefixed) attribute with given key */
   def apply(namespace: String, scope: NamespaceBinding, key: String) = null
