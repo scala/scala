@@ -129,7 +129,7 @@ package scala
 
 
 /**
- * Function with {i} parameters. {DescriptiveComment.forFunction(i)}
+ * Function with {i} parameters. {descriptiveComment(i)}
  */
 trait {functionClassname(i)}{__typeArgs__} extends AnyRef {{
   def apply({__funArgs__}): R
