@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -9,55 +9,55 @@
 // $Id:Field.scala 6853 2006-03-20 16:58:47 +0100 (Mon, 20 Mar 2006) dubochet $
 
 
-package scala.dbc.result;
+package scala.dbc.result
 
 
-import scala.dbc.datatype._;
-import scala.dbc.value._;
+import scala.dbc.datatype._
+import scala.dbc.value._
 
 /** An ISO-9075:2003 (SQL) table field. */
 abstract class Field {
 
   /** The content (value) of the field. The type of this value is undefined,
-   * transformation into a useful type will be done by an automatic view
-   * function defined in the field object. */
-  def content: Value;
+   *  transformation into a useful type will be done by an automatic view
+   *  function defined in the field object.
+   */
+  def content: Value
 
   final def value[Type <: Value]: Type =
-    content.asInstanceOf[Type];
+    content.asInstanceOf[Type]
 
   final def exactNumericValue[NativeType] =
-    content.asInstanceOf[dbc.value.ExactNumeric[NativeType]];
+    content.asInstanceOf[dbc.value.ExactNumeric[NativeType]]
 
   final def approximateNumericValue[NativeType] =
-    content.asInstanceOf[dbc.value.ApproximateNumeric[NativeType]];
+    content.asInstanceOf[dbc.value.ApproximateNumeric[NativeType]]
 
   final def booleanValue =
-    content.asInstanceOf[dbc.value.Boolean];
+    content.asInstanceOf[dbc.value.Boolean]
 
   final def characterValue =
-    content.asInstanceOf[dbc.value.Character];
+    content.asInstanceOf[dbc.value.Character]
 
   final def characterLargeObjectValue =
-    content.asInstanceOf[dbc.value.CharacterLargeObject];
+    content.asInstanceOf[dbc.value.CharacterLargeObject]
 
   final def characterVaryingValue =
-    content.asInstanceOf[dbc.value.CharacterVarying];
+    content.asInstanceOf[dbc.value.CharacterVarying]
 
   final def unknownValue =
-    content.asInstanceOf[dbc.value.Unknown];
+    content.asInstanceOf[dbc.value.Unknown]
 
   /** The tuple that contains this field. */
-  def originatingTuple: Tuple;
+  def originatingTuple: Tuple
 
   /** The field metadata attached to this field. */
-  def metadata: FieldMetadata;
+  def metadata: FieldMetadata
 
 }
 
 object Field {
 
-  implicit def fieldToValue (field:Field): Value = field.content;
-
+  implicit def fieldToValue (field: Field): Value = field.content
 
 }
