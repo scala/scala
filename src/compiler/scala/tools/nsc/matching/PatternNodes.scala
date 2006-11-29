@@ -15,7 +15,7 @@ trait PatternNodes requires transform.ExplicitOuter {
 
   /** Intermediate data structure for algebraic + pattern matcher
    */
-  class PatternNode {
+  sealed class PatternNode {
     var pos = FirstPos
     var tpe: Type  = _
     var or: PatternNode = _

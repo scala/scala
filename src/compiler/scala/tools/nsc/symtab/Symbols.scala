@@ -1296,7 +1296,7 @@ trait Symbols requires SymbolTable {
   extends TypeError("illegal cyclic reference involving " + sym)
 
   /** A class for type histories */
-  private case class TypeHistory(var validFrom: Period, info: Type, prev: TypeHistory) {
+  private sealed case class TypeHistory(var validFrom: Period, info: Type, prev: TypeHistory) {
     assert((prev eq null) || phaseId(validFrom) > phaseId(prev.validFrom), this)
     assert(validFrom != NoPeriod)
     override def toString() =
