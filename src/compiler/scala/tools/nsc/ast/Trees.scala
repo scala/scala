@@ -57,7 +57,7 @@ trait Trees requires Global {
 
   val NoMods = Modifiers(0)
 
-  sealed abstract class Tree {
+  abstract class Tree {
     {
       import util.Statistics
       if (Statistics.enabled) nodeCount = nodeCount + 1
