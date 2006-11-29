@@ -1,9 +1,9 @@
-#!/bin/sh
+#/bin/sh
 
 JAVA_DIR=/usr/share/java
 LIB_CLASSPATH=$JAVA_DIR/scala-library.jar:$JAVA_DIR/scala-compiler.jar
 
 exec ${JAVACMD:=java} -Xmx256M -Xms16M \
-  -classpath $LIB_CLASSPATH -Dscala.boot.class.path=$SCALAC_CLASSPATH \
+  -Xbootclasspath/a:$LIB_CLASSPATH \
   scala.tools.nsc.MainGenericRunner \
   "$@"
