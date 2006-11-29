@@ -139,17 +139,6 @@ trait Trees requires Global {
     }
   }
 
-
-  /** Pseudo tree class needed in TreeBrowsers, so that all JTree nodes are treated uniformly */
-  case class ProgramTree(units: List[UnitTree]) extends Tree {
-    override def toString(): String = "Program"
-  }
-
-  /** Pseudo tree class needed in TreeBrowsers, so that all JTree nodes are treated uniformly */
-  case class UnitTree(unit: CompilationUnit) extends Tree {
-    override def toString(): String = unit.toString()
-  }
-
   trait SymTree extends Tree {
     override def hasSymbol = true
     override var symbol: Symbol = NoSymbol

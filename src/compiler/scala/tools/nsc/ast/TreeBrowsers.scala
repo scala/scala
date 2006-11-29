@@ -39,6 +39,16 @@ abstract class TreeBrowsers {
 
   def create(): SwingBrowser = new SwingBrowser();
 
+  /** Pseudo tree class, so that all JTree nodes are treated uniformly */
+  case class ProgramTree(units: List[UnitTree]) extends Tree {
+    override def toString(): String = "Program"
+  }
+
+  /** Pseudo tree class, so that all JTree nodes are treated uniformly */
+  case class UnitTree(unit: CompilationUnit) extends Tree {
+    override def toString(): String = unit.toString()
+  }
+
   /**
    * Java Swing pretty printer for Scala abstract syntax trees.
    */
