@@ -23,24 +23,27 @@ object MainGenericRunner {
     */
   def addClasspathExtras(classpath: String): String = {
     val scalaHome = getProperty("scala.home")
-    if (scalaHome eq null)
-      return classpath
 
-    val libdir = new File(new File(scalaHome), "lib")
-    if(!libdir.exists || libdir.isFile)
-      return classpath
+    val extraClassPath =
+      if (scalaHome eq null)
+        ""
+      else {
+        val libdir = new File(new File(scalaHome), "lib")
+        if(!libdir.exists || libdir.isFile)
+          return classpath
 
-    val filesInLib = libdir.listFiles
-    val jarsInLib =
-      filesInLib.filter(f =>
-        f.isFile && f.getName.endsWith(".jar"))
-    val sep = File.pathSeparator
-    val extraClassPath = jarsInLib.mkString("", sep, "")
+        val filesInLib = libdir.listFiles
+        val jarsInLib =
+          filesInLib.filter(f =>
+            f.isFile && f.getName.endsWith(".jar"))
+
+        jarsInLib.mkString("", File.pathSeparator, "")
+      }
 
     if(classpath == "")
-      extraClassPath + sep + "."
+      extraClassPath + File.pathSeparator + "."
     else
-      classpath + sep + extraClassPath
+      classpath + File.pathSeparator + extraClassPath
   }
 
   def main(args: Array[String]): Unit = {
