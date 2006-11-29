@@ -124,7 +124,9 @@ trait Definitions requires SymbolTable {
           false
       }
       def productType(elems: List[Type]) =
-        if (elems.length <= MaxProductArity) {
+        if (elems.isEmpty)
+          UnitClass.tpe
+        else if (elems.length <= MaxProductArity) {
           val sym = ProductClass(elems.length)
           typeRef(sym.typeConstructor.prefix, sym, elems)
         } else NoType

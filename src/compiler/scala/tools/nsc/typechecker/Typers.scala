@@ -580,7 +580,9 @@ trait Typers requires Analyzer {
                   obj
                 }
                 if (definitions.unapplyMember(consp.tpe).exists)
-                  atPos(tree.pos) {Ident(consp).setType(consp.tpe)}
+                  atPos(tree.pos) {
+                    gen.mkAttributedRef(consp.tpe.prefix,consp)
+                  }
                   //  needs member type, but member of what? ^^^
                   //  see test/pending/pos/unapplyNeedsMemberType.scala
                 else errorTree(tree, "" + clazz + " is not a case class, nor does it have unapply/unapplySeq method")
@@ -1425,7 +1427,8 @@ trait Typers requires Analyzer {
 
           val funPt = appliedType(OptionClass.typeConstructor, List(prod))
           val fun0 = Ident(fun.symbol) setPos fun.pos setType otpe // would this change when patterns are terms???
-          val fun1 = typed(atPos(fun.pos) { Apply(Select(Ident(fun.symbol), unapp), List(arg)) }, EXPRmode, funPt)
+          val fun1 = typed(atPos(fun.pos) { Apply(Select(
+		    gen.mkAttributedRef(fun.tpe.prefix,fun.symbol), unapp), List(arg)) }, EXPRmode, funPt)
           if (fun1.tpe.isErroneous) setError(tree)
           else {
             val formals0 = if(unapp.name == nme.unapply) optionOfProductElems(fun1.tpe)
