@@ -139,13 +139,13 @@ trait Trees requires Global {
     }
   }
 
-  // bq: I moved this classes here from TreeBrowsers, otherwise cannot used *sealed* optimization
-  /** Pseudo tree class, so that all JTree nodes are treated uniformly */
+
+  /** Pseudo tree class needed in TreeBrowsers, so that all JTree nodes are treated uniformly */
   case class ProgramTree(units: List[UnitTree]) extends Tree {
     override def toString(): String = "Program"
   }
 
-  /** Pseudo tree class, so that all JTree nodes are treated uniformly */
+  /** Pseudo tree class needed in TreeBrowsers, so that all JTree nodes are treated uniformly */
   case class UnitTree(unit: CompilationUnit) extends Tree {
     override def toString(): String = unit.toString()
   }
