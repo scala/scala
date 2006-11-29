@@ -779,6 +779,20 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
               }
             else tree
 
+          case Select(qual, _) =>
+            if (tree.symbol.owner.isRefinementClass) {
+              var sym: Symbol = NoSymbol
+              var bcs = tree.symbol.owner.info.baseClasses.tail
+              //Console.println("resetting "+tree.symbol+tree.symbol.locationString+bcs)//DEBUG
+              while (!bcs.isEmpty && sym == NoSymbol) {
+                sym = tree.symbol.overriddenSymbol(bcs.head)
+                bcs = bcs.tail
+              }
+              assert(sym != NoSymbol, tree.symbol)
+              tree.symbol = sym
+            }
+            tree
+
           case Template(parents, body) =>
             assert(!currentOwner.isImplClass)
             //Console.println("checking no dble defs " + tree)//DEBUG

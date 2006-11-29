@@ -1666,7 +1666,7 @@ trait Typers requires Analyzer {
               decode(name)+" is not a member of "+qual.tpe.widen +
               (if ((context.unit ne null) && Position.line(context.unit.source, qual.pos) <
                    Position.line(context.unit.source, tree.pos))
-                "\npossible cause: maybe a semicolon is missing before `"+name+"'?"
+                "\npossible cause: maybe a semicolon is missing before `"+decode(name)+"'?"
                else ""))
           }
           setError(tree)
