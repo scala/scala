@@ -699,6 +699,11 @@ trait Parsers requires SyntaxAnalyzer {
       ts.toList
     }
 
+    /** expression modifiles */
+
+    final val IsArgument     = 1
+    final val IsInBlock      = 2
+
     /** Expr       ::= (Bindings | Id)  `=>' Expr
      *               | Expr1
      *  ResultExpr ::= (Bindings | Id `:' Type1) `=>' Block
@@ -720,21 +725,21 @@ trait Parsers requires SyntaxAnalyzer {
      *  Binding    ::= Id [`:' Type]
      */
     def expr(): Tree =
-      liftingScope(exprImpl(false, false))
+      liftingScope(exprImpl(0))
 
     def blockStatExpr(): Tree = {
-      liftingScope(exprImpl(false, true))
+      liftingScope(exprImpl(IsInBlock))
     }
 
     def argExpr(): Tree = {
-      exprImpl(true, false)
+      exprImpl(IsArgument)
     }
 
     def localExpr(): Tree = {
-      exprImpl(false, false)
+      exprImpl(0)
     }
 
-    private def exprImpl(isArgument: boolean, isInBlock: boolean): Tree = in.token match {
+    private def exprImpl(mode: int): Tree = in.token match {
       case IF =>
         val pos = in.skipToken()
         accept(LPAREN)
@@ -822,19 +827,21 @@ trait Parsers requires SyntaxAnalyzer {
           }
         } else if (in.token == COLON) {
           val pos = in.skipToken()
-          if (isArgument && in.token == USCORE) {
+          if ((mode & IsArgument) != 0 && in.token == USCORE) {
             val pos1 = in.skipToken()
             if (isIdent && in.name == nme.STAR) {
               in.nextToken()
               t = atPos(pos) {
                 Typed(t, atPos(pos1) { Ident(nme.WILDCARD_STAR.toTypeName) })
               }
+              if (in.token != RPAREN)
+                syntaxError(in.currentPos, "`)' expected", false)
             } else {
               syntaxError(in.currentPos, "`*' expected", true)
             }
           } else {
-            t = atPos(pos) { Typed(t, if (isInBlock) type1(false) else typ()) }
-            if (isInBlock && in.token == COMMA) {
+            t = atPos(pos) { Typed(t, if ((mode & IsInBlock) != 0) type1(false) else typ()) }
+            if ((mode & IsInBlock) != 0 && in.token == COMMA) {
               val vdefs = new ListBuffer[ValDef]
               while (in.token == COMMA) {
                 in.nextToken()
@@ -857,7 +864,7 @@ trait Parsers requires SyntaxAnalyzer {
         }
         if (in.token == ARROW) {
           t = atPos(in.skipToken()) {
-            Function(convertToParams(t), if (isInBlock) block() else expr())
+            Function(convertToParams(t), if ((mode & IsInBlock) != 0) block() else expr())
           }
         }
         t

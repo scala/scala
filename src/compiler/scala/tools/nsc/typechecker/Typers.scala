@@ -2286,11 +2286,11 @@ trait Typers requires Analyzer {
 
     /** Types a (fully parameterized) type tree */
     def typedType(tree: Tree): Tree =
-      typed(tree, TYPEmode, WildcardType)
+      withNoGlobalVariance{ typed(tree, TYPEmode, WildcardType) }
 
     /** Types a type constructor tree used in a new or supertype */
     def typedTypeConstructor(tree: Tree): Tree = {
-      val result = typed(tree, TYPEmode | FUNmode, WildcardType)
+      val result = withNoGlobalVariance{ typed(tree, TYPEmode | FUNmode, WildcardType) }
       if (!phase.erasedTypes && result.tpe.isInstanceOf[TypeRef] && !result.tpe.prefix.isStable)
         error(tree.pos, ""+result.tpe.prefix+" is not a legal prefix for a constructor")
       result

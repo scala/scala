@@ -47,6 +47,7 @@ trait Types requires SymbolTable {
 
   private var explainSwitch = false
   private var checkMalformedSwitch = true
+  private var globalVariance = 1
 
   val emptyTypeArray = new Array[Type](0)
 
@@ -1320,7 +1321,7 @@ trait Types requires SymbolTable {
   abstract class TypeMap extends Function1[Type, Type] {
     // deferred inherited: def apply(tp: Type): Type
 
-    var variance = 1
+    var variance = globalVariance
 
     /** Map this function over given type */
     def mapOver(tp: Type): Type = tp match {
@@ -2494,17 +2495,16 @@ trait Types requires SymbolTable {
 
   def withTypesExplained[A](op: => A): A = {
     val s = explainSwitch
-    explainSwitch = true
-    val result = op
-    explainSwitch = s
-    result
+    try { explainSwitch = true; op } finally { explainSwitch = s }
   }
 
   def withoutMalformedChecks[T](op: => T): T = {
     val s = checkMalformedSwitch
-    checkMalformedSwitch = false
-    val result = op
-    checkMalformedSwitch = s
-    result
+    try { checkMalformedSwitch = false; op } finally { checkMalformedSwitch = s }
+  }
+
+  def withNoGlobalVariance[T](op: => T): T = {
+    val s = globalVariance
+    try { globalVariance = 0; op } finally { globalVariance = s }
   }
 }
