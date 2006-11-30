@@ -905,7 +905,7 @@ trait Typers requires Analyzer {
       enterSyms(context.outer.make(templ, clazz, clazz.info.decls), templ.body)
       validateParentClasses(parents1, selfType)
       val body =
-        if (phase.id <= currentRun.typerPhase.id && reporter.errors == 0)
+        if (phase.id <= currentRun.typerPhase.id && !reporter.hasErrors)
           templ.body flatMap addGetterSetter
         else templ.body
       val body1 = typedStats(body, templ.symbol)
@@ -1053,7 +1053,7 @@ trait Typers requires Analyzer {
             case _ =>
               typedSuperCall(ddef.rhs, UnitClass.tpe)
           }
-          if (meth.isPrimaryConstructor && phase.id <= currentRun.typerPhase.id && reporter.errors == 0)
+          if (meth.isPrimaryConstructor && phase.id <= currentRun.typerPhase.id && !reporter.hasErrors)
             computeParamAliases(meth.owner, vparamss1, result)
           result
         } else transformedOrTyped(ddef.rhs, tpt1.tpe)

@@ -206,7 +206,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
 
   abstract class GlobalPhase(prev: Phase) extends Phase(prev) {
     phaseWithId(id) = this
-    def run: unit = currentRun.units foreach applyPhase
+    def run { currentRun.units foreach applyPhase }
 
     def apply(unit: CompilationUnit): unit
     private val isErased = prev.name == "erasure" || prev.erasedTypes
@@ -217,7 +217,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
       if (settings.debug.value) inform("[running phase " + name + " on " + unit + "]")
       val unit0 = currentRun.currentUnit
       currentRun.currentUnit = unit
-      apply(unit)
+      if (!reporter.cancelled) apply(unit)
       currentRun.advanceUnit
       assert(currentRun.currentUnit == unit)
       currentRun.currentUnit = unit0
@@ -393,13 +393,12 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     var uncheckedWarnings: boolean = false
 
     private var p: Phase = firstPhase
-    private var stopped = false
-    for (val pd <- phaseDescriptors) {
-      if (!stopped) {
-        if (!(settings.skip contains pd.phaseName)) p = pd.newPhase(p)
-        stopped = settings.stop contains pd.phaseName
-      }
-    }
+
+    for (val pd <- phaseDescriptors.takeWhile(pd => !(settings.stop contains pd.phaseName)))
+      if (!(settings.skip contains pd.phaseName)) p = pd.newPhase(p)
+
+    def cancel { reporter.cancelled = true }
+
     // progress tracking
     def progress(current: Int, total: Int): Unit = {}
 
@@ -469,7 +468,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
         addUnit(new CompilationUnit(source))
 
       globalPhase = firstPhase
-      while (globalPhase != terminalPhase && reporter.errors == 0) {
+      while (globalPhase != terminalPhase && !reporter.hasErrors) {
         val startTime = currentTime
         phase = globalPhase
         globalPhase.run
@@ -493,18 +492,18 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
       if (settings.Xshowobj.value != "")
         showDef(newTermName(settings.Xshowobj.value), true)
 
-      if (reporter.errors == 0) {
-        assert(stopped || symData.isEmpty, symData.elements.toList)
+      if (reporter.hasErrors) {
+        for (val Pair(sym, file) <- symSource.elements) {
+          sym.reset(new loaders.SourcefileLoader(file))
+          if (sym.isTerm) sym.moduleClass.reset(loaders.moduleClassLoader)
+        }
+      } else {
+        assert(symData.isEmpty || !settings.stop.value.isEmpty || !settings.skip.value.isEmpty)
         if (deprecationWarnings) {
           warning("there were deprecation warnings; re-run with -deprecation for details")
         }
         if (uncheckedWarnings) {
           warning("there were unchecked warnings; re-run with -unchecked for details")
-        }
-      } else {
-        for (val Pair(sym, file) <- symSource.elements) {
-          sym.reset(new loaders.SourcefileLoader(file))
-          if (sym.isTerm) sym.moduleClass.reset(loaders.moduleClassLoader)
         }
       }
       for (val Pair(sym, file) <- symSource.elements) resetPackageClass(sym.owner)
@@ -523,8 +522,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
         val unit = new CompilationUnit(getSourceFile(file))
         addUnit(unit)
         var localPhase = firstPhase.asInstanceOf[GlobalPhase]
-        while ((localPhase.id < globalPhase.id || localPhase.id <= namerPhase.id) &&
-            reporter.errors == 0) {
+        while ((localPhase.id < globalPhase.id || localPhase.id <= namerPhase.id) && !reporter.hasErrors) {
           atPhase(localPhase)(localPhase.applyPhase(unit))
           localPhase = localPhase.next.asInstanceOf[GlobalPhase]
         }

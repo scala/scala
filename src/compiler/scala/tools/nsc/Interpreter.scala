@@ -179,7 +179,7 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
     // parse the main code along with the imports
     reporter.reset
     val trees = simpleParse(codeForImports + line)
-    if (reporter.errors > 0)
+    if (reporter.hasErrors)
       Nil // the result did not parse, so stop
     else {
       // parse the imports alone
@@ -215,7 +215,7 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
     val cr = new compiler.Run
     reporter.reset
     cr.compileSources(sources)
-    reporter.errors == 0
+    !reporter.hasErrors
   }
 
   /** Compile a string.  Returns true if there are no
@@ -503,7 +503,7 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
       objRun.compileSources(
         List(new SourceFile("<console>", objectSourceCode.toCharArray))
       )
-      if (reporter.errors > 0) return false
+      if (reporter.hasErrors) return false
 
       // extract and remember types
       typeOf = findTypes(objRun)
@@ -514,7 +514,7 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
       )
 
       // success
-      reporter.errors == 0
+      !reporter.hasErrors
     }
 
     /** Dig the types of all bound variables out of the compiler run.

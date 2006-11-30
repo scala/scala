@@ -239,7 +239,7 @@ object ScriptRunner {
         val compiler = new Global(settings, reporter)
         val cr = new compiler.Run
         cr.compileSources(List(wrappedScript(scriptFile, &compiler.getSourceFile)))
-        Pair(compiledPath, reporter.errors == 0)
+        Pair(compiledPath, !reporter.hasErrors)
       } else {
         val compok = compileWithDaemon(settings, scriptFile)
         Pair(compiledPath, compok)

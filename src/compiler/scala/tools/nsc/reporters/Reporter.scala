@@ -23,20 +23,24 @@ abstract class Reporter {
   def reset : Unit = {
     errors   = 0;
     warnings = 0;
-
+    cancelled = false
   }
   def count(severity : Severity): Int = severity match {
     case ERROR   => errors;
     case WARNING => warnings;
     case INFO    => 0;
-  };
+  }
   def incr(severity : Severity): Unit = severity match {
     case ERROR   => errors   = errors   + 1;
     case WARNING => warnings = warnings + 1;;
     case INFO    => {}
-  };
+  }
+
   var errors   : Int = 0;
   var warnings : Int = 0;
+  var cancelled: boolean = false
+
+  def hasErrors: boolean = errors != 0 || cancelled
 
   protected def info0(pos : Position, msg : String, severity : Severity, force : Boolean) : Unit;
 

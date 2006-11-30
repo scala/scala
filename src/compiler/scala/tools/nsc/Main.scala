@@ -28,6 +28,7 @@ object Main extends AnyRef with EvalLoop {
     reporter.error(/*new Position */FakePos(PRODUCT),
                    msg + "\n  " + PRODUCT + " -help  gives more information")
 
+  /* needed ?? */
   def errors() = reporter.errors
 
   def resident(compiler: Global): unit =
@@ -36,19 +37,6 @@ object Main extends AnyRef with EvalLoop {
       val command = new CompilerCommand(args, error, true)
       (new compiler.Run) compile command.files
     }
-
-/*
-  def forever(compiler: Global): unit = {
-    var cnt = 0
-    while (true) {
-      Console.println("Iteration: "+cnt)
-      cnt = cnt + 1
-      val args = List("Global.scala")
-      val command = new CompilerCommand(args, error, true)
-      (new compiler.Run) compile command.files
-    }
-  }
-*/
 
   def process(args: Array[String]): unit = {
     reporter = new ConsoleReporter();
@@ -61,10 +49,6 @@ object Main extends AnyRef with EvalLoop {
     else {
       try {
         object compiler extends Global(command.settings, reporter);
-/*
-        if (command.settings.Xgenerics.value)
-          forever(compiler)
-*/
         if (command.settings.resident.value)
           resident(compiler)
         else if (command.files.isEmpty)
@@ -94,7 +78,7 @@ object Main extends AnyRef with EvalLoop {
 
   def main(args: Array[String]): unit = {
     process(args)
-    exit(if (reporter.errors > 0) 1 else 0)
+    exit(if (reporter.hasErrors) 1 else 0)
   }
 
 }
