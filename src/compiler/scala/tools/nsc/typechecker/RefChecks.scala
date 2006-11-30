@@ -221,7 +221,7 @@ abstract class RefChecks extends InfoTransform {
 	     else clazz.toString() + " needs to be abstract") + ", since " + msg);
 	  clazz.setFlag(ABSTRACT)
 	}
-	for (val member <- clazz.tpe.members)
+	for (val member <- clazz.tpe.nonPrivateMembers)
 	  if ((member hasFlag DEFERRED) && !(clazz hasFlag ABSTRACT)) {
 	    abstractClassError(
               false, infoString(member) + " is not defined" + analyzer.varNotice(member))
