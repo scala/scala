@@ -19,7 +19,9 @@ if "%OS%"=="Windows_NT" (
   call :set_home
 ) else (
   set _SCALA_HOME=%SCALA_HOME%
-  if "%_SCALA_HOME%"=="" goto error1
+  rem The following line tests SCALA_HOME instead of _SCALA_HOME, because
+  rem the above change to _SCALA_HOME is not visible within this block.
+  if "%SCALA_HOME%"=="" goto error1
 )
 
 rem We use the value of the JAVACMD environment variable if defined
