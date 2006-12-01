@@ -685,9 +685,9 @@ trait Types requires SymbolTable {
               val pci = pclosure(i)
               if (j < pci.length) pci(j) else AnyClass.tpe
             }
-            val limit = pclosure(0).length
-            while (index(0) != limit) {
-              var minSym: Symbol = nextBaseType(0).symbol
+            var minSym: Symbol = NoSymbol
+            while (minSym != AnyClass) {
+              minSym = nextBaseType(0).symbol
               i = 1
               while (i < nparents) {
                 if (nextBaseType(i).symbol isLess minSym)

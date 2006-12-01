@@ -162,8 +162,8 @@ trait Infer requires Analyzer {
                   tparam2.tpe.subst(tparams, tvars) :: tvar.constr.lobounds
           }
         }
-        //Console.println("solveOne2 "+tvar+" "+config+" "+tvar.constr.hibounds);//DEBUG
         tvar.constr.inst = NoType // necessary because hibounds/lobounds may contain tvar
+        //Console.println("solving "+tvar+" "+up+" "+(if (up) (tvar.constr.hibounds) else tvar.constr.lobounds))//DEBUG
         tvar.constr.inst = if (up) glb(tvar.constr.hibounds) else lub(tvar.constr.lobounds)
         assertNonCyclic(tvar)//debug
       }
