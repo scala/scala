@@ -50,7 +50,7 @@ object DocUtil {
 
     val encoding = "iso-8859-1"
     val header =
-      <meta http-equiv="content-type" content={"text/html; " + encoding}/>
+      <meta http-equiv="content-type" content={"text/html; charset=" + encoding}/>
       <meta name="generator" content="scaladoc (2.3.0)"/>
       <link rel="stylesheet" type="text/css" href={ relative + "style.css" }/>
       <script type="text/javascript" src={relative + "script.js"}></script>;
