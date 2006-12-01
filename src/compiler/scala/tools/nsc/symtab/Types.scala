@@ -48,6 +48,7 @@ trait Types requires SymbolTable {
   private var explainSwitch = false
   private var checkMalformedSwitch = true
   private var globalVariance = 1
+  private final val healTypes = false
 
   val emptyTypeArray = new Array[Type](0)
 
@@ -1127,7 +1128,7 @@ trait Types requires SymbolTable {
       val pre1 = removeSuper(pre, sym1)
       if (pre1 ne pre) sym1 = rebind(pre1, sym1)
       if (checkMalformedSwitch && !pre1.isStable && !pre1.isError) {
-        if (variance == 1) pre.memberType(sym).resultType
+        if (healTypes && variance == 1) pre.memberType(sym).resultType
 //      else if (variance == -1) AllClass.tpe
         else throw new MalformedType(pre, sym.nameString)
       } else {
@@ -1212,7 +1213,7 @@ trait Types requires SymbolTable {
       } else if (checkMalformedSwitch && sym1.isAbstractType && !pre.isStable && !pre.isError) {
         def transform(tp: Type): Type =
           tp.asSeenFrom(pre, sym1.owner).subst(sym1.typeParams, args)
-        if (variance == 1 && !(sym1.info.bounds.hi contains sym1)) transform(sym1.info.bounds.hi)
+        if (healTypes && variance == 1 && !(sym1.info.bounds.hi contains sym1)) transform(sym1.info.bounds.hi)
         //else if (variance == -1 && !(sym1.info.bounds.lo contains sym1)) transform(sym1.info.bounds.lo)
         else throw new MalformedType(pre, sym1.nameString)
       } else {
