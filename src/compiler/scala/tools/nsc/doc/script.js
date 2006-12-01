@@ -269,4 +269,20 @@ function init() {
     }
   }
 }
+
+function goto() {
+  kinds = parent.frames["navigationFrame"].document.getElementById("kinds")
+  oldLocation = parent.frames["classesFrame"].window.location.href
+  //alert("oldLocation="+oldLocation);
+  pos = oldLocation.lastIndexOf("#")
+  classesURL = (pos > 0) ? oldLocation.substring(0, pos) : oldLocation;
+  newLocation = classesURL + kinds.options[kinds.selectedIndex].value;
+  //alert("newLocation="+newLocation);
+  parent.frames["classesFrame"].window.location = newLocation;
+}
+
+function resetKinds() {
+  kinds = parent.frames["navigationFrame"].document.getElementById("kinds")
+  kinds.selectedIndex = 0;
+}
 -->

@@ -203,13 +203,13 @@ abstract class DocGenerator extends Models {
     def modules: TreeMap[String, ModuleClassSymbol]
     def body: NodeSeq = {
       val x = doctitle concat
-        aref("all-classes.html", classesFrame, "All objects and classes")
+        <a href="all-classes.html" target={classesFrame} onclick="resetKinds();">{"All objects and classes"}</a>
       val y = <p/><b>Packages</b>
         <table class="list" summary="">
           <tr><td style="white-space:nowrap;">
           { {
             for (val top <- modules.elements.toList) yield
-              {br(aref(urlFor(top._2), classesFrame, top._2.fullNameString('.')))};
+              br(<a href={urlFor(top._2)} target={classesFrame} onclick="resetKinds();">{top._2.fullNameString('.')}</a>)
           } }
           </td></tr>
         </table>;
@@ -264,11 +264,11 @@ abstract class DocGenerator extends Models {
         </table>;
 
       val body = <div>{ { for (val kind <- KINDS; classes contains kind) yield {
-        <p>
-          <b>{Text(pluralFor(kind))}</b>
-        </p>
+        <div id={pluralFor(kind)} class="kinds">
+          {Text(pluralFor(kind))}
+        </div>
         <table class="list" summary="">
-          <tr><td style="white-space;nowrap;">
+          <tr><td style="white-space:nowrap;">
             { {
               for (val mmbr <- classes(kind).toList) yield
                 br(urlFor(mmbr.tree, contentFrame));
@@ -825,6 +825,19 @@ abstract class DocGenerator extends Models {
       def modules = modules0
     }
 
+    new Frame {
+      def title="navigation"
+      def path="nav-classes"
+      override def body0(hasBody: Boolean, nodes: NodeSeq): NodeSeq =
+        if (!hasBody) nodes else <body onload="init()" style="margin:1px;">{nodes}</body>;
+      def body =
+        <select id="kinds" onchange="goto()">
+          <option value="#Classes" selected="selected">Classes</option>
+          <option value="#Objects">Objects</option>
+          <option value="#Traits">Traits</option>
+        </select>
+    }
+
     new ListClassFrame {
       def classes = {
         var allClasses = emptyMap
@@ -1223,8 +1236,9 @@ abstract class DocGenerator extends Models {
 
   val index =
     <frameset cols="25%, 75%">
-    <frameset rows="50%, 50%">
+    <frameset rows="50%, 26, 50%">
       <frame src="modules.html" name={modulesFrame}></frame>
+      <frame src="nav-classes.html" name="navigationFrame"></frame>
       <frame src="all-classes.html" name={classesFrame}></frame>
     </frameset>
     <frame src="root-content.html" name={contentFrame}></frame>

@@ -33,6 +33,11 @@ div.doctitle-larger {
 	font-weight: bold;
 }
 
+div.kinds {
+	margin: 0.6em 0 0 0; /* top right bottom left */
+	font-weight: bold;
+}
+
 div.page-title {
 	margin: 15px 0px 15px 0px;
 	font-size: x-large;
