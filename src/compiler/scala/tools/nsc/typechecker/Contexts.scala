@@ -294,11 +294,14 @@ trait Contexts requires Analyzer {
            " " + scope.toList + "\n:: " + outer.toString()
     }
 
-    /** Return closest enclosing context that defines a superclass of `clazz', or NoContext
-     *  if none exists */
+    private def moduleToLinkedClass(sym: Symbol) =
+      if (sym.isModuleClass) sym.linkedClassOfModule else sym
+
+    /** Return closest enclosing context that defines a superclass of `clazz', or a
+     *  companion module of a superclass of `clazz', or NoContext if none exists */
     def enclosingSuperClassContext(clazz: Symbol): Context = {
       var c = this.enclClass
-      while (c != NoContext && !clazz.isNonBottomSubClass(c.owner))
+      while (c != NoContext && !clazz.isNonBottomSubClass(moduleToLinkedClass(c.owner)))
         c = c.outer.enclClass
       c
     }

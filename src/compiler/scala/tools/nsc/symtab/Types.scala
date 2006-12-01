@@ -1128,7 +1128,7 @@ trait Types requires SymbolTable {
       if (pre1 ne pre) sym1 = rebind(pre1, sym1)
       if (checkMalformedSwitch && !pre1.isStable && !pre1.isError) {
         if (variance == 1) pre.memberType(sym).resultType
-        else if (variance == -1) AllClass.tpe
+//      else if (variance == -1) AllClass.tpe
         else throw new MalformedType(pre, sym.nameString)
       } else {
         unique(new SingleType(pre1, sym1) with UniqueType)
@@ -1213,7 +1213,7 @@ trait Types requires SymbolTable {
         def transform(tp: Type): Type =
           tp.asSeenFrom(pre, sym1.owner).subst(sym1.typeParams, args)
         if (variance == 1 && !(sym1.info.bounds.hi contains sym1)) transform(sym1.info.bounds.hi)
-        else if (variance == -1 && !(sym1.info.bounds.lo contains sym1)) transform(sym1.info.bounds.lo)
+        //else if (variance == -1 && !(sym1.info.bounds.lo contains sym1)) transform(sym1.info.bounds.lo)
         else throw new MalformedType(pre, sym1.nameString)
       } else {
         rawTypeRef(pre, sym1, args)
@@ -1492,13 +1492,13 @@ trait Types requires SymbolTable {
               if (symclazz == clazz && (pre.widen.symbol isNonBottomSubClass symclazz))
                 pre.baseType(symclazz) match {
                   case TypeRef(_, basesym, baseargs) =>
-//                    Console.println("instantiating " + sym + " from " + basesym + " with " + basesym.typeParams + " and " + baseargs);//DEBUG
+                    //Console.println("instantiating " + sym + " from " + basesym + " with " + basesym.typeParams + " and " + baseargs+", pre = "+pre+", symclazz = "+symclazz);//DEBUG
                     if (basesym.typeParams.length != baseargs.length)
                       throw new TypeError(
                         "something is wrong (wrong class file?): "+basesym+
                         " with type parameters "+
                         basesym.typeParams.map(.name).mkString("[",",","]")+
-                        " gets applied to arguments "+baseargs.mkString("(",",",")"))
+                        " gets applied to arguments "+baseargs.mkString("(",",",")")+", phase = "+phase)
                     instParam(basesym.typeParams, baseargs);
                   case _ =>
                     throwError
@@ -1867,7 +1867,7 @@ trait Types requires SymbolTable {
   def isSubType(tp1: Type, tp2: Type): boolean =
     try {
       stc = stc + 1
-      if (stc == 20) throw new Error("recursive <:<")
+      if (stc == 100) throw new Error("recursive <:<")
       isSubType0(tp1, tp2)
     } finally {
       stc = stc - 1

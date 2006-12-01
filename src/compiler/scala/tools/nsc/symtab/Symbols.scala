@@ -517,10 +517,11 @@ trait Symbols requires SymbolTable {
       throw new Error("typeConstructor inapplicable for " + this)
 
     /** The type parameters of this symbol */
-    def unsafeTypeParams: List[Symbol] = {
+    def unsafeTypeParams: List[Symbol] = rawInfo.typeParams
+    /*
       val limit = phaseId(validTo)
       (if (limit < phase.id) infos.info else rawInfo).typeParams
-    }
+    */
 
     def typeParams: List[Symbol] = {
       rawInfo.load(this); rawInfo.typeParams
@@ -993,7 +994,7 @@ trait Symbols requires SymbolTable {
       else ""
 
     /** String representation of symbol's definition */
-    final def defString: String = {
+    def defString: String = {
       val f = if (settings.debug.value) flags
               else if (owner.isRefinementClass) flags & ExplicitFlags & ~OVERRIDE
               else flags & ExplicitFlags
@@ -1266,6 +1267,7 @@ trait Symbols requires SymbolTable {
       validTo = currentPeriod
       this
     }
+    override def defString: String = toString
     override def enclClass: Symbol = this
     override def toplevelClass: Symbol = this
     override def enclMethod: Symbol = this
