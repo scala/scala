@@ -1,9 +1,5 @@
-bug415.scala:10 error: method x cannot be accessed in A
+bug415.scala:8 error: method x cannot be accessed in A
  because its instance type => A#T contains a malformed type: A#T
-  val y  = a.x;
-            ^
-bug415.scala:20 error: method x cannot be accessed in A2
- because its instance type => scala.Array[A2#T] contains a malformed type: A2#T
-  val y: Array[String]  = a.x;
-                           ^
-two errors found
+  val y: String  = a.x;
+                    ^
+one error found
