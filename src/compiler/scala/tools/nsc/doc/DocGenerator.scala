@@ -829,13 +829,13 @@ abstract class DocGenerator extends Models {
       override def body0(hasBody: Boolean, nodes: NodeSeq): NodeSeq =
         if (!hasBody) nodes else <body onload="init()" style="margin:1px;">{nodes}</body>;
       def body =
-        <div>
+        <form>
           <select id="kinds" onchange="goto()">
             <option value="#Classes" selected="selected">Classes</option>
             <option value="#Objects">Objects</option>
             <option value="#Traits">Traits</option>
           </select>
-        </div>
+        </form>
     }
 
     new ListClassFrame {
