@@ -201,20 +201,20 @@ abstract class DocGenerator extends Models {
     val path  = "modules"
     val title = "List of all packages"
     def modules: TreeMap[String, ModuleClassSymbol]
-    def body: NodeSeq = {
-      val x = doctitle concat
+    def body: NodeSeq =
+      <div>
+        {doctitle}
         <a href="all-classes.html" target={classesFrame} onclick="resetKinds();">{"All objects and classes"}</a>
-      val y = <p/><b>Packages</b>
-        <table class="list" summary="">
-          <tr><td style="white-space:nowrap;">
-          { {
-            for (val top <- modules.elements.toList) yield
-              br(<a href={urlFor(top._2)} target={classesFrame} onclick="resetKinds();">{top._2.fullNameString('.')}</a>)
-          } }
-          </td></tr>
-        </table>;
-      x.concat(y)
-    }
+      </div>
+      <div class="kinds">
+        Packages
+      </div>
+      <ul class="list">
+        { {
+          for (val top <- modules.elements.toList) yield
+            <li><a href={urlFor(top._2)} target={classesFrame} onclick="resetKinds();">{top._2.fullNameString('.')}</a></li>
+        } }
+      </ul>;
   }
 
   abstract class ListModuleContentFrame extends Frame {
@@ -267,14 +267,12 @@ abstract class DocGenerator extends Models {
         <div id={pluralFor(kind)} class="kinds">
           {Text(pluralFor(kind))}
         </div>
-        <table class="list" summary="">
-          <tr><td style="white-space:nowrap;">
-            { {
-              for (val mmbr <- classes(kind).toList) yield
-                br(urlFor(mmbr.tree, contentFrame));
-            } }
-          </td></tr>
-        </table>
+        <ul class="list">
+          { {
+            for (val mmbr <- classes(kind).toList) yield
+              <li>{urlFor(mmbr.tree, contentFrame)}</li>
+          } }
+        </ul>
       } } }</div>;
 
       nav.concat(body)
