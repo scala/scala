@@ -7,6 +7,7 @@
 package scala.tools.nsc.doc
 
 import java.io.StringReader
+import java.net.URLEncoder
 import org.xml.sax.InputSource
 
 import scala.collection.immutable._
@@ -38,14 +39,15 @@ object DocUtil {
     def relative: String
 
     def aref(href0: String, target: String, text: String): NodeSeq = {
-      val href = Utility.escape(href0)
+      //val href = Utility.escape(href0)
+      val href = relative + URLEncoder.encode(href0, encoding)
       if ((target ne null) && target.indexOf('<') != -1) throw new Error(target)
 
       val t0 = Text(text)
-      if ((target ne null))
-        <a href={(relative + href)} target={(target)}>{t0}</a>;
+      if (target ne null)
+        <a href={href} target={target}>{t0}</a>;
       else
-        <a href={(relative + href)}>{t0}</a>;
+        <a href={href}>{t0}</a>;
     }
 
     val encoding = "iso-8859-1"

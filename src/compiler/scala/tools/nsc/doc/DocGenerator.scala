@@ -13,7 +13,7 @@ import java.util.regex.Pattern
 
 import compat.Platform.{EOL => LINE_SEPARATOR}
 import scala.collection.immutable.{ListMap, TreeMap, TreeSet}
-import scala.collection.mutable.{HashMap, ListBuffer, Map}
+import scala.collection.mutable.{HashMap, HashSet, ListBuffer, Map}
 import scala.tools.nsc.models.Models
 import scala.tools.nsc.symtab.Flags
 import scala.xml._
@@ -204,7 +204,7 @@ abstract class DocGenerator extends Models {
     def body: NodeSeq =
       <div>
         {doctitle}
-        <a href="all-classes.html" target={classesFrame} onclick="resetKinds();">{"All objects and classes"}</a>
+        <a href="all-classes.html" target={classesFrame} onclick="resetKind();">{"All objects and classes"}</a>
       </div>
       <div class="kinds">
         Packages
@@ -212,7 +212,7 @@ abstract class DocGenerator extends Models {
       <ul class="list">
         { {
           for (val top <- modules.elements.toList) yield
-            <li><a href={urlFor(top._2)} target={classesFrame} onclick="resetKinds();">{top._2.fullNameString('.')}</a></li>
+            <li><a href={urlFor(top._2)} target={classesFrame} onclick="resetKind();">{top._2.fullNameString('.')}</a></li>
         } }
       </ul>;
   }
@@ -255,7 +255,7 @@ abstract class DocGenerator extends Models {
       else p
     }
 
-     def body: NodeSeq = {
+    def body: NodeSeq = {
       val nav =
         <table class="navigation" summary="">
           <tr><td valign="top" class="navigation-links">
@@ -263,6 +263,13 @@ abstract class DocGenerator extends Models {
           </td></tr>
         </table>;
 
+      val ids = new HashSet[String]
+      def idFor(kind: Kind, t: Tree): String = {
+        val ch = t.symbol.nameString.charAt(0)
+        val id = pluralFor(kind) + "_" + ch
+        if (ids contains id) null
+        else { ids += id; id }
+      }
       val body = <div>{ { for (val kind <- KINDS; classes contains kind) yield {
         <div id={pluralFor(kind)} class="kinds">
           {Text(pluralFor(kind))}
@@ -270,7 +277,7 @@ abstract class DocGenerator extends Models {
         <ul class="list">
           { {
             for (val mmbr <- classes(kind).toList) yield
-              <li>{urlFor(mmbr.tree, contentFrame)}</li>
+              <li id={idFor(kind, mmbr.tree)}>{urlFor(mmbr.tree, contentFrame)}</li>
           } }
         </ul>
       } } }</div>;
@@ -827,14 +834,31 @@ abstract class DocGenerator extends Models {
       def title="navigation"
       def path="nav-classes"
       override def body0(hasBody: Boolean, nodes: NodeSeq): NodeSeq =
-        if (!hasBody) nodes else <body onload="init()" style="margin:1px;">{nodes}</body>;
+        if (!hasBody) nodes
+        else <body onload="init()" style="margin:1px 0 0 1px; padding:1px 0 0 1px;">{nodes}</body>;
       def body =
         <form>
-          <select id="kinds" onchange="goto()">
+          <select id="kinds" onchange="gotoKind()">
             <option value="#Classes" selected="selected">Classes</option>
             <option value="#Objects">Objects</option>
             <option value="#Traits">Traits</option>
           </select>
+          <span style="word-spacing:-3px;">
+          <a href={Unparsed("javascript:gotoName('A')")}>A</a>
+          <a href={Unparsed("javascript:gotoName('B')")}>B</a>
+          <a href={Unparsed("javascript:gotoName('C')")}>C</a>
+          <a href={Unparsed("javascript:gotoName('D')")}>D</a>
+          <a href={Unparsed("javascript:gotoName('E')")}>E</a>
+          <a href={Unparsed("javascript:gotoName('G')")}>G</a>
+          <a href={Unparsed("javascript:gotoName('I')")}>I</a>
+          <a href={Unparsed("javascript:gotoName('K')")}>K</a>
+          <a href={Unparsed("javascript:gotoName('M')")}>M</a>
+          <a href={Unparsed("javascript:gotoName('P')")}>P</a>
+          <a href={Unparsed("javascript:gotoName('R')")}>R</a>
+          <a href={Unparsed("javascript:gotoName('T')")}>T</a>
+          <a href={Unparsed("javascript:gotoName('V')")}>V</a>
+          <a href={Unparsed("javascript:gotoName('X')")}>X</a>
+          </span>
         </form>
     }
 
@@ -1236,7 +1260,7 @@ abstract class DocGenerator extends Models {
 
   val index =
     <frameset cols="25%, 75%">
-    <frameset rows="50%, 26, 50%">
+    <frameset rows="50%, 28, 50%">
       <frame src="modules.html" name={modulesFrame}></frame>
       <frame src="nav-classes.html" name="navigationFrame"></frame>
       <frame src="all-classes.html" name={classesFrame}></frame>

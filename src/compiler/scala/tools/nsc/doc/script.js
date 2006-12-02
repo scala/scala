@@ -270,19 +270,28 @@ function init() {
   }
 }
 
-function goto() {
-  kinds = parent.navigationFrame.document.getElementById("kinds")
-  oldLocation = parent.classesFrame.window.location.href
+function getLocation() {
+  kinds = parent.navigationFrame.document.getElementById("kinds");
+  oldLocation = parent.classesFrame.window.location.href;
   //alert("oldLocation="+oldLocation);
-  pos = oldLocation.lastIndexOf("#")
+  pos = oldLocation.lastIndexOf("#");
   classesURL = (pos > 0) ? oldLocation.substring(0, pos) : oldLocation;
   newLocation = classesURL + kinds.options[kinds.selectedIndex].value;
   //alert("newLocation="+newLocation);
-  parent.classesFrame.window.location = newLocation;
+  return newLocation;
 }
 
-function resetKinds() {
-  kinds = parent.navigationFrame.document.getElementById("kinds")
+function gotoKind() {
+  parent.classesFrame.window.location = getLocation();
+}
+
+function resetKind() {
+  kinds = parent.navigationFrame.document.getElementById("kinds");
   kinds.selectedIndex = 0;
 }
+
+function gotoName(letter) {
+  parent.classesFrame.window.location = getLocation() + "_" + letter;
+}
 -->
+
