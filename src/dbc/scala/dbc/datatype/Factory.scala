@@ -26,7 +26,7 @@ object Factory {
     metadata.isNullable(index) match {
       case java.sql.ResultSetMetaData.columnNoNulls => Some(false);
       case java.sql.ResultSetMetaData.columnNullable => Some(true);
-      //case java.sql.ResultSetMetaData.columnNoNulls => None; // bq:unreachable code
+      case java.sql.ResultSetMetaData.columnNullableUnknown => None;
     }
 
   /** Returns the binary precision for an integer field. This should only be
