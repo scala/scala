@@ -52,7 +52,7 @@ abstract class LiftCode extends Transform {
         case None =>
           targets.update(name, None)
           None
-        case Some(None) => None
+        //case Some(None) => None //bq:redundant
         case Some(tgt) => tgt
       }
     def hasAllTargets: Boolean =

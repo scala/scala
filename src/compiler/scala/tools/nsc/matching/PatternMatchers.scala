@@ -446,36 +446,23 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
         else pConstrPat(tree.pos, tpe.tpe)
 
       case t @ Typed(ident, tpe) =>       // variable pattern
-        //Console.println("Z");
-        val doTest = isSubType(header.getTpe(),tpe.tpe);
+        // can't optimize using isSubType(header.getTpe(),tpe.tpe);
+        //  leave that (null check!) for later
         val node =
-          if(doTest) pDefaultPat(tree.pos, tpe.tpe)
-          else pConstrPat(tree.pos, tpe.tpe)
-        if ((null != env) /* && (ident.symbol != defs.PatternWildcard) */)
-          node match {
+          pConstrPat(tree.pos, tpe.tpe)
+        if (null != env) node match {
             case ConstrPat(casted) =>
               env.newBoundVar(t.expr.symbol,
                               tpe.tpe,
                               Ident( casted ).setType(casted.tpe));
-            case _ =>
-              env.newBoundVar(t.expr.symbol,
-                              tpe.tpe,
-                              {if(doTest)
-                                header.selector
-                               else
-                                 typed(Ident(node
-                                             .asInstanceOf[ConstrPat]
-                                             .casted))});
           }
-      node
+        node
 
       case Ident(nme.WILDCARD) => pDefaultPat(tree.pos, header.getTpe())
 
       case Ident(name) => // pattern without args or named constant
-        if (tree.symbol.isPrimaryConstructor)
-          scala.Predef.error("error may not happen: ident is primary constructor"+tree.symbol); // Burak
-        else
-          pVariablePat(tree.pos, tree); // named constant (capitalized variable Foo)
+        assert(!tree.symbol.isPrimaryConstructor) // may not happen
+        pVariablePat(tree.pos, tree); // named constant (capitalized variable Foo)
 
       case Select(_, name) => // named constant
         if (tree.symbol.isPrimaryConstructor)
@@ -1179,14 +1166,27 @@ print()
           case DefaultPat() =>
             return toTree(node.and);
 
-	  case UnapplyPat(casted, fn @ Apply(fn1, _)) =>
-	    val v = newVar(fn.pos, fn.tpe)
+	  case UnapplyPat(casted, fn @ Apply(fn2, _)) =>
+	    val fntpe = if(settings.Xkilloption.value) fn.tpe.typeArgs(0) else fn.tpe
+	    //Console.println("unapply "+fntpe)
+	    val v = newVar(fn.pos, fntpe)
+	    var __opt_get__ = if(settings.Xkilloption.value) Ident(v) else typed(Select(Ident(v),nme.get))
+	    var __opt_nonemp__ = if(settings.Xkilloption.value) NotNull(Ident(v)) else Not(Select(Ident(v), nme.isEmpty))
+
+	    var fn1 = fn2.duplicate; if(settings.Xkilloption.value) {
+	      fn1.setType(transformInfo(owner, fn1.tpe))
+	    }
 	    Or(squeezedBlock(
 	      List(ValDef(v,Apply(fn1,List(selector)))),
-	      And(Not(Select(Ident(v), nme.isEmpty)),
-		  squeezedBlock(List(ValDef(casted, typed(Select(Ident(v),nme.get)))),toTree(node.and)))),
+	      And(__opt_nonemp__,
+		  squeezedBlock(List(ValDef(casted, __opt_get__)),toTree(node.and)))),
 	       toTree(node.or, selector.duplicate))
+
           case ConstrPat(casted) =>
+            if(!isSubType(casted.tpe,selector.tpe) && settings.Xkilloption.value && definitions.isOptionType(selector.tpe)) {
+              // option of options
+              warning("in pattern match:problem matching "+casted.tpe+" against "+selector.tpe+"\n please avoid options of options!")
+            }
             def outerAlwaysEqual(left: Type, right: Type) = Pair(left,right) match {
               case Pair(TypeRef(lprefix, _,_), TypeRef(rprefix,_,_)) if lprefix =:= rprefix =>
                 true
@@ -1302,7 +1302,10 @@ print()
           case VariablePat(tree) =>
             val cmp = if(tree.tpe.symbol.isModuleClass && // objects are compared by eq, not == (avoids unnecessary null-magic)
                          selector.tpe <:< definitions.AnyRefClass.tpe) {
-                        Eq(selector.duplicate, tree)
+			   if(settings.Xkilloption.value && tree.symbol == definitions.NoneClass)
+			     IsNull(selector)
+			   else
+                             Eq(selector.duplicate, tree)
                       } else  {
                         Equals(selector.duplicate, tree)
                       }

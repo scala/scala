@@ -20,7 +20,7 @@ object Test {
     val tr = new TestResult
     new TestSuite(
 
-      new Test01
+      new Test717
 
     ).run(tr)
 
@@ -31,7 +31,7 @@ object Test {
   class Foo(j:Int) {
     case class Bar(i:Int)
   }
-  class Test01 extends TestCase("bir (#717 test path of case classes)") {
+  class Test717 extends TestCase("#717 test path of case classes") {
     val foo1 = new Foo(1)
     val foo2 = new Foo(2)
 
@@ -41,6 +41,28 @@ object Test {
        case foo1.Bar(2) => true
       }
       assertTrue("ok", res);
+    }
+  }
+
+  class Test806_818 { // #806, #811 compile only -- type of bind
+    // bug811
+    trait Core {
+      trait NodeImpl;
+      trait OtherImpl extends NodeImpl;
+      trait DoubleQuoteImpl extends NodeImpl;
+      def asDQ(node : OtherImpl) = node match {
+	case dq : DoubleQuoteImpl => dq;
+      }
+    }
+
+    trait IfElseMatcher {
+      type Node <: NodeImpl;
+      trait NodeImpl;
+      trait IfImpl;
+      private def coerceIf(node : Node) = node match {
+	case node : IfImpl => node; // var node is of type Node with IfImpl!
+	case _ => null;
+      }
     }
   }
 }

@@ -650,9 +650,9 @@ trait Definitions requires SymbolTable {
         AnyClass, nme.toString_, List(), StringClass.typeConstructor)
 
       Any_isInstanceOf = newPolyMethod(
-        AnyClass, nme.isInstanceOf, tparam => booltype) setFlag FINAL
+        AnyClass, nme.isInstanceOf_, tparam => booltype) setFlag FINAL
       Any_asInstanceOf = newPolyMethod(
-        AnyClass, nme.asInstanceOf, tparam => tparam.typeConstructor) setFlag FINAL
+        AnyClass, nme.asInstanceOf_, tparam => tparam.typeConstructor) setFlag FINAL
       Any_isInstanceOfErased = newPolyMethod(
         AnyClass, nme.isInstanceOfErased, tparam => booltype) setFlag FINAL
       //todo: do we need this?

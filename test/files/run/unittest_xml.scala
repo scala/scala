@@ -2,9 +2,14 @@
 object Test {
 
   import scala.testing.SUnit._
-  import scala.xml.{MetaData, Null, PrefixedAttribute, UnprefixedAttribute }
+  import scala.xml.{MetaData, Null, Parsing, PrefixedAttribute, UnprefixedAttribute }
 
-  class MetaDataTest extends TestCase("collection.mutable.ArrayBuffer") with Assert {
+  class ParsingTest extends TestCase("scala.xml.Parsing") with Assert {
+    override def runTest = {
+      assertTrue(Parsing.isNameStart('b'))
+    }
+  }
+  class MetaDataTest extends TestCase("scala.xml.MetaData") with Assert {
 
     import scala.xml.{TopScope, NamespaceBinding, Atom, Text }
 
@@ -44,6 +49,7 @@ object Test {
 
   def main(args:Array[String]) = {
     val ts = new TestSuite(
+      new ParsingTest,
       new MetaDataTest //,
     )
     val tr = new TestResult()

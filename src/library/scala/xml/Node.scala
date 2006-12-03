@@ -67,7 +67,7 @@ abstract class Node extends NodeSeq {
    * @return    the namespace if <code>scope != null</code> and prefix was
    *            found, else <code>null</code>
    */
-  def getNamespace(pre: String) = if (scope eq null) null else scope.getURI(pre)
+  def getNamespace(pre: String): String = if (scope eq null) null else scope.getURI(pre)
 
   /**
    * Convenience method, looks up an unprefixed attribute in attributes of this node.
@@ -77,7 +77,7 @@ abstract class Node extends NodeSeq {
    * @return value of <code>UnprefixedAttribute</code> with given key
    *         in attributes, if it exists, otherwise <code>null</code>.
    */
-  final def attribute(key: String) = attributes.get(key)
+  final def attribute(key: String): Option[Seq[Node]] = attributes.get(key)
 
   /**
    * Convenience method, looks up a prefixed attribute in attributes of this node.
@@ -88,7 +88,7 @@ abstract class Node extends NodeSeq {
    * @return value of <code>PrefixedAttribute</code> with given namespace
    *         and given key, otherwise <code>null</code>.
    */
-  final def attribute(uri: String, key: String) = attributes.get(uri, this, key)
+  final def attribute(uri: String, key: String): Option[Seq[Node]] = attributes.get(uri, this, key)
 
   /**
    * Returns attribute meaning all attributes of this node, prefixed and unprefixed,
