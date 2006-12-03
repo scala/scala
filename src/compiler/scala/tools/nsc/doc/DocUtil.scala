@@ -7,7 +7,6 @@
 package scala.tools.nsc.doc
 
 import java.io.StringReader
-import java.net.URLEncoder
 import org.xml.sax.InputSource
 
 import scala.collection.immutable._
@@ -39,8 +38,7 @@ object DocUtil {
     def relative: String
 
     def aref(href0: String, target: String, text: String): NodeSeq = {
-      //val href = Utility.escape(href0)
-      val href = relative + URLEncoder.encode(href0, encoding)
+      val href = relative + Utility.escape(href0)
       if ((target ne null) && target.indexOf('<') != -1) throw new Error(target)
 
       val t0 = Text(text)
