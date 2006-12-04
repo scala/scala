@@ -64,7 +64,7 @@ abstract class TypeFlowAnalysis {
    */
   object typeFlowLattice extends CompleteLattice {
     import icodes._;
-    type Elem = Pair[VarBinding, icodes.TypeStack];
+    type Elem = Pair[VarBinding, icodes.TypeStack]
 
     override val top    = new Pair(new VarBinding, typeStackLattice.top) {
       override def equals(that: Any) = (this eq that.asInstanceOf[AnyRef]);
@@ -206,7 +206,7 @@ abstract class TypeFlowAnalysis {
               stack push kind;
 
           case Logical(op, kind) =>
-						stack.pop2;
+            stack.pop2;
             stack push kind;
 
           case Shift(op, kind) =>

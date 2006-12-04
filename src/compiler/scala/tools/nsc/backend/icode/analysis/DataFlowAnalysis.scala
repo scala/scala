@@ -32,7 +32,7 @@ trait DataFlowAnalysis[L <: CompleteLattice] {
       val point = worklist.elements.next; worklist -= point; visited += point;
       val output = f(point, in(point));
 
-      if (out(point) == (lattice.bottom) || output != out(point)) {
+      if ((lattice.bottom == out(point)) || output != out(point)) {
         out(point) = output;
         val succs = point.successors;
         succs foreach { p =>
@@ -51,7 +51,7 @@ trait DataFlowAnalysis[L <: CompleteLattice] {
       out(point) = lattice.lub(point.successors map in.apply);
       val input = f(point, out(point));
 
-      if (in(point) == (lattice.bottom) || input != in(point)) {
+      if ((lattice.bottom == in(point)) || input != in(point)) {
         in(point) = input;
         point.predecessors foreach { p =>
           if (!worklist.contains(p))

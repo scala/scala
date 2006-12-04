@@ -42,19 +42,19 @@ abstract class ICodeReader extends ClassfileParser {
    */
   def readClass(cls: Symbol): Pair[IClass, IClass] = {
     var classFile: AbstractFile = null;
+    var sym = cls
     isScalaModule = cls.isModule && !cls.hasFlag(JAVA)
-    if (isScalaModule) {
-      Console.println("Loading module: " + cls);
-      classFile = classPath.root.find(cls.fullNameString(java.io.File.separatorChar) + "$", false).classFile
-    } else
-      classFile = cls.asInstanceOf[ClassSymbol].classFile
+    val name = cls.fullNameString(java.io.File.separatorChar) + (if (isScalaModule) "$" else "")
+    classFile = classPath.root.find(name, false).classFile
+    if (cls.isModule && !cls.hasFlag(JAVA))
+      sym = cls.linkedClassOfModule
     assert(classFile ne null, "No classfile for " + cls)
 
 //    for (val s <- cls.info.members)
 //      Console.println("" + s + ": " + s.tpe)
-    this.instanceCode = new IClass(cls)
-    this.staticCode   = new IClass(cls.linkedClassOfModule)
-    parse(classFile, cls)
+    this.instanceCode = new IClass(sym)
+    this.staticCode   = new IClass(sym.linkedClassOfClass)
+    parse(classFile, sym)
 
     Pair(staticCode, instanceCode)
   }
@@ -554,8 +554,11 @@ abstract class ICodeReader extends ClassfileParser {
     skipAttributes()
 
     code.toBasicBlock
-    if (code.containsDUPX)
+    assert(method.code ne null)
+    if (code.containsDUPX) {
+
       code.resolveDups
+    }
   }
 
   /** Return the icode class that should include members with the given flags.
@@ -696,6 +699,7 @@ abstract class ICodeReader extends ClassfileParser {
         }
       }
 
+      icodes.dump(method)
       tfa.init(method)
       tfa.run
       for (val bb <- linearizer.linearize(method)) {
