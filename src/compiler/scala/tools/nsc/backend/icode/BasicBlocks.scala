@@ -1,20 +1,20 @@
-/* NSC -- new scala compiler
- * Copyright 2005 LAMP/EPFL
+/* NSC -- new Scala compiler
+ * Copyright 2005-2007 LAMP/EPFL
  * @author  Martin Odersky
  */
 
 // $Id$
 
-package scala.tools.nsc.backend.icode;
+package scala.tools.nsc.backend.icode
 
-import compat.StringBuilder;
-import scala.tools.nsc.ast._;
-import scala.collection.mutable.Map;
-import scala.tools.nsc.util.Position;
-import scala.tools.nsc.backend.icode.analysis.ProgramPoint;
+import compat.StringBuilder
+import scala.tools.nsc.ast._
+import scala.collection.mutable.Map
+import scala.tools.nsc.util.Position
+import scala.tools.nsc.backend.icode.analysis.ProgramPoint
 
 trait BasicBlocks requires ICodes {
-  import opcodes._;
+  import opcodes._
 
   /** This class represents a basic block. Each
    *  basic block contains a list of instructions that are
@@ -26,37 +26,37 @@ trait BasicBlocks requires ICodes {
         with ProgramPoint[BasicBlock] {
 
     /** The label of the block */
-    val label = theLabel;
+    val label = theLabel
 
-    /** When set, the 'emit' methods will be ignored. */
-    var ignore: Boolean = false;
+    /** When set, the <code>emit</code> methods will be ignored. */
+    var ignore: Boolean = false
 
-    var preds: List[BasicBlock] = null;
+    var preds: List[BasicBlock] = null
 
     /** Is this block the head of a while? */
-    var loopHeader = false;
+    var loopHeader = false
 
     /** ICode instructions, used as temporary storage while emitting code.
      * Once closed is called, only the `instrs' array should be used.
      */
-    private var instructionList: List[Instruction] = Nil;
+    private var instructionList: List[Instruction] = Nil
 
-    private var _lastInstruction: Instruction = null;
+    private var _lastInstruction: Instruction = null
 
-    private var closed: boolean = false;
+    private var closed: boolean = false
 
-    private var instrs: Array[Instruction] = _;
-    private var touched = false;
+    private var instrs: Array[Instruction] = _
+    private var touched = false
 
     def toList: List[Instruction] = {
       if (closed && touched)
-        instructionList = List.fromArray(instrs);
+        instructionList = List.fromArray(instrs)
       instructionList
     }
 
     def fromList(is: List[Instruction]): Unit = {
-      instrs = toInstructionArray(is);
-      closed = true;
+      instrs = toInstructionArray(is)
+      closed = true
     }
 
     // public:
@@ -66,7 +66,7 @@ trait BasicBlocks requires ICodes {
      */
     def indexOf(inst: Instruction): Int = {
       assert(closed)
-      var i = 0;
+      var i = 0
       while (i < instrs.length) {
         if (instrs(i) eq inst) return i
         i = i + 1
@@ -80,14 +80,14 @@ trait BasicBlocks requires ICodes {
     /** Apply a function to all the instructions of the block. */
     def traverse(f: Instruction => unit) = {
       if (!closed) {
-        dump;
-        global.abort("Traversing an open block!: " + label);
+        dump
+        global.abort("Traversing an open block!: " + label)
       }
-      instrs foreach f;
+      instrs foreach f
     }
 
     def traverseBackwards(f: Instruction => Unit) = {
-      var i = instrs.length - 1;
+      var i = instrs.length - 1
       while (i >= 0) {
         f(instrs(i));
         i = i - 1
@@ -97,19 +97,19 @@ trait BasicBlocks requires ICodes {
     /** The number of instructions in this basic block so far. */
     def size: Int =
       if (isClosed)
-        instrs.length;
+        instrs.length
       else
-        instructionList.length;
+        instructionList.length
 
     /** Return the index of the instruction which produced the value
      *  consumed by the given instruction.
      */
     def findDef(pos: Int): Option[Int] = {
-      assert(closed);
-      var i = pos;
-      var d = 0;
+      assert(closed)
+      var i = pos
+      var d = 0
       while (i > 0) {
-        i = i - 1;
+        i = i - 1
         val prod = instrs(i).produced
         if (prod > 0 && d == 0)
           return Some(i)
@@ -119,12 +119,11 @@ trait BasicBlocks requires ICodes {
     }
 
     /** Return the n-th instruction. */
-    def apply(n: Int): Instruction = {
+    def apply(n: Int): Instruction =
       if (closed)
         instrs(n)
       else
         instructionList.reverse(n)
-    }
 
     ///////////////////// Substitutions ///////////////////////
 
@@ -133,10 +132,10 @@ trait BasicBlocks requires ICodes {
      * they are anchored. It retains the position of the previous instruction.
      */
     def replaceInstruction(pos: Int, instr: Instruction): Boolean = {
-      assert(closed, "Instructions can be replaced only after the basic block is closed");
+      assert(closed, "Instructions can be replaced only after the basic block is closed")
 
-      instr.pos = instrs(pos).pos;
-      instrs(pos) = instr;
+      instr.pos = instrs(pos).pos
+      instrs(pos) = instr
       true
     }
 
@@ -146,42 +145,46 @@ trait BasicBlocks requires ICodes {
      * It retains the position of the previous instruction.
      */
     def replaceInstruction(oldInstr: Instruction, newInstr: Instruction): Boolean = {
-      assert(closed, "Instructions can be replaced only after the basic block is closed");
+      assert(closed, "Instructions can be replaced only after the basic block is closed")
 
-      var i = 0;
-      var changed = false;
+      var i = 0
+      var changed = false
       while (i < instrs.length && !changed) {
         if (instrs(i) == oldInstr) {
-          newInstr.pos = oldInstr.pos;
-          instrs(i) = newInstr;
-          changed = true;
+          newInstr.pos = oldInstr.pos
+          instrs(i) = newInstr
+          changed = true
         }
-        i = i + 1;
+        i = i + 1
       }
       changed
     }
 
-    /** Replaces iold with 'is'. It does not update the position field in the newly
-     *  inserted instrucitons, so it behaves differently than the one-instruction
-     *  versions of this function.
+    /** Replaces <code>iold</code> with <code>is</code>. It does not update
+     *  the position field in the newly inserted instrucitons, so it behaves
+     *  differently than the one-instruction versions of this function.
+     *
+     *  @param iold ..
+     *  @param is   ..
+     *  @return     ..
      */
     def replaceInstruction(iold: Instruction, is: List[Instruction]): Boolean = {
-      assert(closed, "Instructions can be replaced only after the basic block is closed");
+      assert(closed, "Instructions can be replaced only after the basic block is closed")
 
-      var i = 0;
-      var changed = false;
+      var i = 0
+      var changed = false
 
       while (i < instrs.length && (instrs(i) ne iold))
         i = i + 1;
 
       if (i < instrs.length) {
         val newInstrs = new Array[Instruction](instrs.length + is.length - 1);
-        changed = true;
-        Array.copy(instrs, 0, newInstrs, 0, i);
-        var j = i;
+        changed = true
+        Array.copy(instrs, 0, newInstrs, 0, i)
+        var j = i
         for (val x <- is) {
-          newInstrs(j) = x;
-          j = j + 1;
+          newInstrs(j) = x
+          j = j + 1
         }
         if (i + 1 < instrs.length)
           Array.copy(instrs, i + 1, newInstrs, j, instrs.length - i - 1)
@@ -191,33 +194,39 @@ trait BasicBlocks requires ICodes {
       changed
     }
 
-    /** Remove instructions found at the given positions. */
+    /** Removes instructions found at the given positions.
+     *
+     *  @param positions ...
+     */
     def removeInstructionsAt(positions: Int*): Unit = {
-      assert(closed);
-      val removed = positions.toList;
-      val newInstrs = new Array[Instruction](instrs.length - positions.length);
-      var i = 0;
-      var j = 0;
+      assert(closed)
+      val removed = positions.toList
+      val newInstrs = new Array[Instruction](instrs.length - positions.length)
+      var i = 0
+      var j = 0
       while (i < instrs.length) {
         if (!removed.contains(i)) {
-          newInstrs(j) = instrs(i);
-          j = j + 1;
+          newInstrs(j) = instrs(i)
+          j = j + 1
         }
-        i = i + 1;
+        i = i + 1
       }
-      instrs = newInstrs;
+      instrs = newInstrs
     }
 
-    /** Replace all instructions found in the map. */
-    def subst(map: Map[Instruction, Instruction]) =
+    /** Replaces all instructions found in the map.
+     *
+     *  @param map ...
+     */
+    def subst(map: Map[Instruction, Instruction]): Unit =
       if (!closed) substOnList(map) else {
-        var i = 0;
+        var i = 0
         while (i < instrs.length) {
           map get instrs(i) match {
-            case Some(instr) => touched = replaceInstruction(i, instr);
-            case None => ();
+            case Some(instr) => touched = replaceInstruction(i, instr)
+            case None => ()
           }
-          i = i + 1;
+          i = i + 1
         }
       }
 
@@ -226,12 +235,12 @@ trait BasicBlocks requires ICodes {
         case Nil => Nil
         case x :: xs =>
           map.get(x) match {
-            case Some(newInstr) => newInstr :: subst(xs);
-            case None => x :: subst(xs);
+            case Some(newInstr) => newInstr :: subst(xs)
+            case None => x :: subst(xs)
           }
       }
 
-      instructionList = subst(instructionList);
+      instructionList = subst(instructionList)
     }
 
     ////////////////////// Emit //////////////////////
@@ -240,59 +249,58 @@ trait BasicBlocks requires ICodes {
     /** Add a new instruction at the end of the block,
      *  using the same source position as the last emitted instruction
      */
-    def emit(instr: Instruction): Unit = {
+    def emit(instr: Instruction): Unit =
       if (!instructionList.isEmpty)
-        emit(instr, instructionList.head.pos);
+        emit(instr, instructionList.head.pos)
       else
-        emit(instr, Position.NOPOS);
-    }
+        emit(instr, Position.NOPOS)
 
     def emit(instr: Instruction, pos: Int) = {
       if (closed) {
-        print();
+        print()
         Console.println("trying to emit: " + instr)
       }
-      assert (!closed || ignore, "BasicBlock closed");
+      assert (!closed || ignore, "BasicBlock closed")
 
       if (!ignore) {
-        touched = true;
-        instr.pos = pos;
-        instructionList = instr :: instructionList;
-        _lastInstruction = instr;
+        touched = true
+        instr.pos = pos
+        instructionList = instr :: instructionList
+        _lastInstruction = instr
       }
     }
 
     /** Close the block */
     def close = {
        assert(instructionList.length > 0,
-              "Empty block.");
-      closed = true;
-      instructionList = instructionList.reverse;
-      instrs = toInstructionArray(instructionList);
+              "Empty block.")
+      closed = true
+      instructionList = instructionList.reverse
+      instrs = toInstructionArray(instructionList)
     }
 
     def open = {
-      closed = false;
-      ignore = false;
+      closed = false
+      ignore = false
     }
 
     def clear: Unit = {
-      instructionList = Nil;
-      instrs = null;
-      preds  = null;
+      instructionList = Nil
+      instrs = null
+      preds  = null
     }
 
-    def isEmpty: Boolean = instructionList.isEmpty;
+    def isEmpty: Boolean = instructionList.isEmpty
 
     /** Enter ignore mode: new 'emit'ted instructions will not be
-     * added to this basic block. It makes the generation of THROW
-     * and RETURNs easier.
+     *  added to this basic block. It makes the generation of THROW
+     *  and RETURNs easier.
      */
-    def enterIgnoreMode = ignore = true;
+    def enterIgnoreMode = ignore = true
 
     def exitIgnoreMode = {
-      assert(ignore, "Exit ignore mode when not in ignore mode.");
-      ignore = false;
+      assert(ignore, "Exit ignore mode when not in ignore mode.")
+      ignore = false
     }
 
     /** Return the last instruction of this basic block. */
@@ -300,40 +308,40 @@ trait BasicBlocks requires ICodes {
       if (closed)
         instrs(instrs.length - 1)
       else
-        instructionList.head;
+        instructionList.head
 
     def firstInstruction =
       if (closed)
         instrs(0)
       else
-        instructionList.last;
+        instructionList.last
 
     /** Convert the list to an array */
     def toInstructionArray(l: List[Instruction]): Array[Instruction] = {
-      var array = new Array[Instruction](l.length);
-      var i: Int = 0;
+      var array = new Array[Instruction](l.length)
+      var i: Int = 0
 
-      l foreach (x => { array(i) = x; i = i + 1 });
+      l foreach (x => { array(i) = x; i = i + 1 })
       array
     }
 
-    def isClosed = closed;
+    def isClosed = closed
 
     // TODO: Take care of exception handlers!
     def successors : List[BasicBlock] = if (isEmpty) Nil else
       lastInstruction match {
-        case JUMP (where) => List(where);
-        case CJUMP(success, failure, _, _) => success :: failure :: Nil;
-        case CZJUMP(success, failure, _, _) => success :: failure :: Nil;
-        case SWITCH(_,labels) => labels;
-        case RETURN(_) => Nil;
-        case THROW() => Nil;
+        case JUMP (where) => List(where)
+        case CJUMP(success, failure, _, _) => success :: failure :: Nil
+        case CZJUMP(success, failure, _, _) => success :: failure :: Nil
+        case SWITCH(_,labels) => labels
+        case RETURN(_) => Nil
+        case THROW() => Nil
         case _ =>
           if (isClosed) {
-            dump;
-	    global.abort("The last instruction is not a control flow instruction: " + lastInstruction);
+            dump
+            global.abort("The last instruction is not a control flow instruction: " + lastInstruction)
           }
-          else Nil;
+          else Nil
       }
 
     /** Returns the precessors of this block, in the current 'code' chunk.
@@ -341,36 +349,35 @@ trait BasicBlocks requires ICodes {
      *  in different code 'chunks' than the rest of the method.
      */
     def predecessors: List[BasicBlock] = {
-      preds = code.blocks.elements.filter (.successors.contains(this)).toList;
+      preds = code.blocks.elements.filter (.successors.contains(this)).toList
       preds
     }
 
-    override def equals(other: Any): Boolean = (
+    override def equals(other: Any): Boolean =
       other.isInstanceOf[BasicBlock] &&
       other.asInstanceOf[BasicBlock].label == label &&
       other.asInstanceOf[BasicBlock].code  == code
-    );
 
     // Instead of it, rather use a printer
-    def print() : unit = print(java.lang.System.out);
+    def print() : unit = print(java.lang.System.out)
 
     def print(out: java.io.PrintStream) : unit = {
-      out.println("block #"+label+" :");
-      toList.foreach(i => out.println("  " + i));
-      out.print("Successors: ");
-      successors.foreach((x: BasicBlock) => out.print(" "+x.label.toString()));
-      out.println();
+      out.println("block #"+label+" :")
+      toList.foreach(i => out.println("  " + i))
+      out.print("Successors: ")
+      successors.foreach((x: BasicBlock) => out.print(" "+x.label.toString()))
+      out.println()
     }
 
     def fullString: String = {
-      val buf = new StringBuilder();
-      buf.append("Block ").append(label.toString());
-      buf.append("\nSuccessors: ").append(successors);
-      buf.append("\nPredecessors: ").append(predecessors);
+      val buf = new StringBuilder()
+      buf.append("Block ").append(label.toString())
+      buf.append("\nSuccessors: ").append(successors)
+      buf.append("\nPredecessors: ").append(predecessors)
       buf.toString()
     }
 
-    override def toString(): String = "" + label;
+    override def toString(): String = "" + label
   }
 
 }

@@ -843,7 +843,7 @@ abstract class DocGenerator extends Models {
             <option value="#Objects">Objects</option>
             <option value="#Traits">Traits</option>
           </select>
-          <span style="word-spacing:-3px;">
+          <span style="font-family:Courier;word-spacing:-8px;">
           <a href={Unparsed("javascript:gotoName('A')")}>A</a>
           <a href={Unparsed("javascript:gotoName('B')")}>B</a>
           <a href={Unparsed("javascript:gotoName('C')")}>C</a>
