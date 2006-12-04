@@ -37,6 +37,17 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
   private def isInner(clazz: Symbol) =
     !clazz.isPackageClass && !clazz.outerClass.isStaticOwner
 
+  /** Does given <code>clazz</code> define an outer field? */
+  def hasOuterField(clazz: Symbol) = {
+    def hasSameOuter(parent: Type) =
+      parent.symbol.isClass &&
+      clazz.owner.isClass &&
+      clazz.owner == parent.symbol.owner &&
+      parent.prefix =:= clazz.owner.thisType
+    isInner(clazz) && !clazz.isTrait &&
+    (clazz.info.parents.isEmpty || !hasSameOuter(clazz.info.parents.head))
+  }
+
   private def outerField(clazz: Symbol): Symbol = {
     val result = clazz.info.member(nme.getterToLocal(nme.OUTER))
     if (result == NoSymbol)
@@ -184,12 +195,12 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
         outerAcc.expandName(clazz)
         val restpe = if (clazz.isTrait) clazz.outerClass.tpe else clazz.outerClass.thisType
         decls1 enter clazz.newOuterAccessor(clazz.pos).setInfo(MethodType(List(), restpe))
-        if (!clazz.isTrait) // 2
-          //todo: avoid outer field if superclass has same outer value?
+        if (hasOuterField(clazz)) { //2
           decls1 enter (
             clazz.newValue(clazz.pos, nme.getterToLocal(nme.OUTER))
             setFlag (SYNTHETIC | PROTECTED | PARAMACCESSOR)
             setInfo clazz.outerClass.thisType)
+        }
       }
       if (!clazz.isTrait && !parents.isEmpty) {
         for (val mc <- clazz.mixinClasses) {
@@ -513,7 +524,8 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
           atOwner(tree, currentOwner) {
             if (!(currentClass hasFlag INTERFACE) || (currentClass hasFlag lateINTERFACE)) {
               if (isInner(currentClass)) {
-                if (!currentClass.isTrait) newDefs += outerFieldDef // (1a)
+                if (hasOuterField(currentClass))
+                  newDefs += outerFieldDef // (1a)
                 newDefs += outerAccessorDef // (1)
               }
               if (!currentClass.isTrait)

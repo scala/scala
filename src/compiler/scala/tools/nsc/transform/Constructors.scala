@@ -74,7 +74,7 @@ abstract class Constructors extends Transform {
             }
             else if (tree.symbol.outerSource == clazz && !clazz.isImplClass) {
               thisRefSeen = false
-              gen.mkAttributedIdent(parameterNamed(nme.OUTER))
+              gen.mkAttributedIdent(parameterNamed(nme.OUTER)) setPos tree.pos
             }
             else
               super.transform(tree)

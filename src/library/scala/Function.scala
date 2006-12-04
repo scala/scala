@@ -16,7 +16,7 @@ package scala
  *  @author  Martin Odersky
  *  @version 1.0, 29/11/2006
  */
-object Function extends Application {
+object Function {
 
   /** Given a sequence of functions <code>f<sub>1</sub></code>, ...,
    *  <code>f<sub>n</sub></code>, return the function <code>f<sub>1</sub>

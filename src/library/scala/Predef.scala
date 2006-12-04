@@ -54,29 +54,7 @@ object Predef {
   type NoSuchElementException = java.util.NoSuchElementException
   type NumberFormatException = java.lang.NumberFormatException
 
-/*
-  type ~[a, b] = Tuple2[a, b]
-  class FirstOfPair[a](x: a) {
-    def ~[b](y: b): Tuple2[a, b] = Tuple2(x, y)
-  }
-  implicit def any2firstOfPair[a](x: a): FirstOfPair[a] = new FirstOfPair(x)
-*/
-
-  type Pair[+a, +b] = Tuple2[a, b]
-  def Pair[a, b](x: a, y: b) = Tuple2(x, y)
-
-  type Triple[+a, +b, +c] = Tuple3[a, b, c]
-  def Triple[a, b, c](x: a, y: b, z: c) = Tuple3(x, y, z)
-
-  def Tuple[a1](x1: a1) = Tuple1(x1)
-  def Tuple[a1, a2](x1: a1, x2: a2) = Tuple2(x1, x2)
-  def Tuple[a1, a2, a3](x1: a1, x2: a2, x3: a3) = Tuple3(x1, x2, x3)
-  def Tuple[a1, a2, a3, a4](x1: a1, x2: a2, x3: a3, x4: a4) = Tuple4(x1, x2, x3, x4)
-  def Tuple[a1, a2, a3, a4, a5](x1: a1, x2: a2, x3: a3, x4: a4, x5: a5) = Tuple5(x1, x2, x3, x4, x5)
-  def Tuple[a1, a2, a3, a4, a5, a6](x1: a1, x2: a2, x3: a3, x4: a4, x5: a5, x6: a6) = Tuple6(x1, x2, x3, x4, x5, x6)
-  def Tuple[a1, a2, a3, a4, a5, a6, a7](x1: a1, x2: a2, x3: a3, x4: a4, x5: a5, x6: a6, x7: a7) = Tuple7(x1, x2, x3, x4, x5, x6, x7)
-  def Tuple[a1, a2, a3, a4, a5, a6, a7, a8](x1: a1, x2: a2, x3: a3, x4: a4, x5: a5, x6: a6, x7: a7, x8: a8) = Tuple8(x1, x2, x3, x4, x5, x6, x7, x8)
-  def Tuple[a1, a2, a3, a4, a5, a6, a7, a8, a9](x1: a1, x2: a2, x3: a3, x4: a4, x5: a5, x6: a6, x7: a7, x8: a8, x9: a9) = Tuple9(x1, x2, x3, x4, x5, x6, x7, x8, x9)
+  // --- Miscelleaneous -----------------------------------------------
 
   val $scope = scala.xml.TopScope
 
@@ -112,6 +90,30 @@ object Predef {
     if (!assumption)
       throw new Error("assumption failed: " + message)
   }
+
+  // --- Tupling ----------------------------------------------
+
+  type Pair[+a, +b] = Tuple2[a, b]
+  def Pair[a, b](x: a, y: b) = Tuple2(x, y)
+
+  type Triple[+a, +b, +c] = Tuple3[a, b, c]
+  def Triple[a, b, c](x: a, y: b, z: c) = Tuple3(x, y, z)
+
+  type &: [+a, +b] = Tuple2[a, b]
+  class SndOfPair[+b](y: b) {
+    def &: [a](x: a): Tuple2[a, b] = Tuple2(x, y)
+  }
+  implicit def any2sndOfPair[b](x: b): SndOfPair[b] = new SndOfPair(x)
+
+  def Tuple[a1](x1: a1) = Tuple1(x1)
+  def Tuple[a1, a2](x1: a1, x2: a2) = Tuple2(x1, x2)
+  def Tuple[a1, a2, a3](x1: a1, x2: a2, x3: a3) = Tuple3(x1, x2, x3)
+  def Tuple[a1, a2, a3, a4](x1: a1, x2: a2, x3: a3, x4: a4) = Tuple4(x1, x2, x3, x4)
+  def Tuple[a1, a2, a3, a4, a5](x1: a1, x2: a2, x3: a3, x4: a4, x5: a5) = Tuple5(x1, x2, x3, x4, x5)
+  def Tuple[a1, a2, a3, a4, a5, a6](x1: a1, x2: a2, x3: a3, x4: a4, x5: a5, x6: a6) = Tuple6(x1, x2, x3, x4, x5, x6)
+  def Tuple[a1, a2, a3, a4, a5, a6, a7](x1: a1, x2: a2, x3: a3, x4: a4, x5: a5, x6: a6, x7: a7) = Tuple7(x1, x2, x3, x4, x5, x6, x7)
+  def Tuple[a1, a2, a3, a4, a5, a6, a7, a8](x1: a1, x2: a2, x3: a3, x4: a4, x5: a5, x6: a6, x7: a7, x8: a8) = Tuple8(x1, x2, x3, x4, x5, x6, x7, x8)
+  def Tuple[a1, a2, a3, a4, a5, a6, a7, a8, a9](x1: a1, x2: a2, x3: a3, x4: a4, x5: a5, x6: a6, x7: a7, x8: a8, x9: a9) = Tuple9(x1, x2, x3, x4, x5, x6, x7, x8, x9)
 
   // views -------------------------------------------------------------
 

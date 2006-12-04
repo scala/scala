@@ -48,14 +48,20 @@ abstract class TreeCheckers extends Analyzer {
         case EmptyTree | TypeTree() =>
           ;
         case _ =>
-          if (!tpeOfTree.contains(tree)) {
-            tpeOfTree.update(tree, tree.tpe)
-            tree.tpe = null
+          try {
+            if (!tpeOfTree.contains(tree)) {
+              tpeOfTree.update(tree, tree.tpe)
+              tree.tpe = null
+            }
+            val newtree = super.typed(tree, mode, pt);
+            if ((newtree ne tree) && !newtree.isInstanceOf[Literal])
+              error(tree.pos, "trees differ\n old: " + tree + " [" + tree.getClass() +
+                    "]\n new: " + newtree + " [" + newtree.getClass() + "]")
+          } catch {
+            case ex: Throwable =>
+              Console.println("exception while typing "+tree)
+              throw ex
           }
-          val newtree = super.typed(tree, mode, pt);
-          if ((newtree ne tree) && !newtree.isInstanceOf[Literal])
-            error(tree.pos, "trees differ\n old: " + tree + " [" + tree.getClass() +
-                  "]\n new: " + newtree + " [" + newtree.getClass() + "]")
       }
       tree
     }

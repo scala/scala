@@ -1,4 +1,4 @@
-/* NSC -- new Scala compiler
+  /* NSC -- new Scala compiler
  * Copyright 2005-2006 LAMP/EPFL
  * @author  Martin Odersky
  */
@@ -49,6 +49,7 @@ trait Types requires SymbolTable {
   private var checkMalformedSwitch = true
   private var globalVariance = 1
   private final val healTypes = false
+  private final val LubGlbMargin = 0
 
   val emptyTypeArray = new Array[Type](0)
 
@@ -717,7 +718,7 @@ trait Types requires SymbolTable {
               case RefinedType(parents, decls) =>
                 assert(decls.isEmpty)
                 //Console.println("compute closure of "+this+" => glb("+parents+")")
-                closureCache(j) = mergePrefixAndArgs(parents, -1, maxClosureDepth(parents)) match {
+                closureCache(j) = mergePrefixAndArgs(parents, -1, maxClosureDepth(parents) + LubGlbMargin) match {
                   case Some(tp0) => tp0
                   case None => throw new MalformedClosure(parents)
                 }
@@ -2168,7 +2169,7 @@ trait Types requires SymbolTable {
       if (rest exists (t1 => t <:< t1)) rest else t :: rest
   }
 
-  def lub(ts: List[Type]): Type = lub(ts, maxClosureDepth(ts))
+  def lub(ts: List[Type]): Type = lub(ts, maxClosureDepth(ts) + LubGlbMargin)
 
   /** The least upper bound wrt &lt;:&lt; of a list of types */
   def lub(ts: List[Type], depth: int): Type = {
@@ -2250,7 +2251,7 @@ trait Types requires SymbolTable {
     res
   }
 
-  def glb(ts: List[Type]): Type = glb(ts, maxClosureDepth(ts))
+  def glb(ts: List[Type]): Type = glb(ts, maxClosureDepth(ts) + LubGlbMargin)
 
   /** The greatest lower bound wrt &lt;:&lt; of a list of types */
   private def glb(ts: List[Type], depth: int): Type = {

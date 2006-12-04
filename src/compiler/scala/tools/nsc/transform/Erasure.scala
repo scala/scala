@@ -227,8 +227,9 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
             gen.mkRuntimeCall(nme.arrayValue, List(tree1, Literal(pt.typeArgs.head)))
           }
           else {
-            Apply(gen.mkAttributedRef(unboxMethod(pt.symbol)), List(tree)).
-              setPos(tree.pos) setType pt
+            atPos(tree.pos) {
+              Apply(gen.mkAttributedRef(unboxMethod(pt.symbol)), List(tree)) setType pt
+            }
           }
         }
       }
