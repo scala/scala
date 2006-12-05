@@ -39,7 +39,7 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
     Actor.selfs.get(currentThread).asInstanceOf[Actor]
   }
 
-  private var received: Msg = _
+  private var received: Option[Msg] = None
 
   private[actors] val waitingForNone = (m: Msg) => false
   private[actors] var waitingFor: Msg => boolean = waitingForNone
@@ -54,7 +54,7 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
     receiver.tick()
     if (waitingFor(msg) && ((waitingForSender eq null) ||
         (waitingForSender == sender))) {
-      received = msg
+      received = Some(msg)
       receiver.pushSender(sender)
       waitingFor = waitingForNone
       waitingForSender = null
@@ -130,7 +130,7 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
         waitingFor(p._1)
       }) match {
         case Some(Pair(msg, sender)) => {
-          received = msg
+          received = Some(msg)
           receiver.pushSender(sender)
         }
         case None => {
@@ -145,7 +145,7 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
       isSuspended = false
       waitingFor = waitingForNone
     }
-    val result = f(received)
+    val result = f(received.get)
     receiver.popSender()
     result
   }
@@ -174,7 +174,7 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
         waitingFor(p._1) && p._2 == r
       }) match {
         case Some(Pair(msg, sender)) => {
-          received = msg
+          received = Some(msg)
           receiver.pushSender(sender)
         }
         case None => {
@@ -190,7 +190,7 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
       waitingFor = waitingForNone
       waitingForSender = null
     }
-    val result = f(received)
+    val result = f(received.get)
     receiver.popSender()
     result
   }
@@ -230,17 +230,17 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
         waitingFor(p._1)
       }) match {
         case Some(Pair(msg, sender)) => {
-          received = msg
+          received = Some(msg)
           receiver.pushSender(sender)
         }
         case None => {
           // acquire lock because we might call wait()
           this.synchronized {
             isSuspended = true
-//          received = null   Note: I had to disable this, as it is not type-correct!
+            received = None
             receiver.suspendActorFor(msec)
             Debug.info("received: "+received)
-            if (received == null) {
+            if (received.isEmpty) {
               Debug.info("no message received after "+msec+" millis")
               if (f.isDefinedAt(TIMEOUT)) {
                 Debug.info("executing TIMEOUT action")
@@ -258,7 +258,7 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
       isSuspended = false
       waitingFor = waitingForNone
     }
-    val result = f(received)
+    val result = f(received.get)
     receiver.popSender()
     result
   }
@@ -289,10 +289,10 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
         waitingFor(p._1)
       }) match {
         case Some(Pair(msg, sender)) => {
-          received = msg
+          received = Some(msg)
           receiver.pushSender(sender)
           waitingFor = waitingForNone
-          receiver.scheduleActor(f, received)
+          receiver.scheduleActor(f, received.get)
         }
         case None => {
           this.synchronized {
@@ -334,10 +334,10 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
         waitingFor(p._1)
       }) match {
         case Some(Pair(msg, sender)) => {
-          received = msg
+          received = Some(msg)
           receiver.pushSender(sender)
           waitingFor = waitingForNone
-          receiver.scheduleActor(f, received)
+          receiver.scheduleActor(f, received.get)
         }
         case None => {
           this.synchronized {
