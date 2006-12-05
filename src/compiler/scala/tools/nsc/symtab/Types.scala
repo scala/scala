@@ -1926,7 +1926,7 @@ trait Types requires SymbolTable {
          sym1 == AllClass
          ||
          // Console.println("last chance " + sym1 + " " + sym2 + " " + sym2.isClass + " " (sym2 isSubClass ObjectClass))
-         sym1 == AllRefClass && sym2.isClass && (sym2 isSubClass ObjectClass))
+         sym1 == AllRefClass && sym2.isClass && sym2 != AllClass && (sym2 isSubClass ObjectClass))
       case Pair(MethodType(pts1, res1), MethodType(pts2, res2)) =>
         (pts1.length == pts2.length &&
          matchingParams(pts1, pts2, tp2.isInstanceOf[JavaMethodType]) &&

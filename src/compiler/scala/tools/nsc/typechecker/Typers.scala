@@ -1427,8 +1427,11 @@ trait Typers requires Analyzer {
 
           val funPt = appliedType(OptionClass.typeConstructor, List(prod))
           val fun0 = Ident(fun.symbol) setPos fun.pos setType otpe // would this change when patterns are terms???
-          val fun1 = typed(atPos(fun.pos) { Apply(Select(
-		    gen.mkAttributedRef(fun.tpe.prefix,fun.symbol), unapp), List(arg)) }, EXPRmode, funPt)
+          val fun1untyped = atPos(fun.pos) {
+              Apply(Select(gen.mkAttributedRef(fun.tpe.prefix,fun.symbol), unapp), List(arg))
+            }
+          Console.println("UNAPP "+fun1untyped)
+          val fun1 = typed(fun1untyped, EXPRmode, funPt)
           if (fun1.tpe.isErroneous) setError(tree)
           else {
             val formals0 = if(unapp.name == nme.unapply) optionOfProductElems(fun1.tpe)
@@ -2224,6 +2227,7 @@ trait Typers requires Analyzer {
         //Console.println("typing "+tree+", "+context.undetparams);//DEBUG
         val tree1 = if (tree.tpe ne null) tree else typed1(tree, mode, pt)
         //Console.println("typed "+tree1+":"+tree1.tpe+", "+context.undetparams);//DEBUG
+
         val result = if (tree1.isEmpty) tree1 else adapt(tree1, mode, pt)
         //Console.println("adapted "+tree1+":"+tree1.tpe+" to "+pt+", "+context.undetparams);//DEBUG
         result
