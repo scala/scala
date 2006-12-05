@@ -237,7 +237,7 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
           // acquire lock because we might call wait()
           this.synchronized {
             isSuspended = true
-            received = null
+//          received = null   Note: I had to disable this, as it is not type-correct!
             receiver.suspendActorFor(msec)
             Debug.info("received: "+received)
             if (received == null) {
