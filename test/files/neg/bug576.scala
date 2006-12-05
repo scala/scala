@@ -9,7 +9,7 @@ trait PriorityTreeXXX extends BaseListXXX {
 	type Node <: BasicTreeNode;
 
   trait BasicTreeNode extends BaseNode {
-    def sibling: Node = null;
+    def sibling: Node;
     def insert(dir : Int, node : Node) = {
       if (true) sibling.insert(node);
       //else insert(node);

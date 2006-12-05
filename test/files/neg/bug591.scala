@@ -32,8 +32,8 @@ trait BaseFlow extends BaseList {
   }
 
   trait BFNode extends BaseNode {
-    private var  input : Input  = null;
-    private var output : Output = null;
+    private var  input : Input  = _;
+    private var output : Output = _;
 
     def input_=(in : Input) = {}
 

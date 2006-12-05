@@ -14,7 +14,6 @@ trait Test {
   def asExpression(e : ExpressionImpl) : Named = {
     e match {
     case f : NamedImpl => f.self;
-    case _ => null;
     }
   }
 }
