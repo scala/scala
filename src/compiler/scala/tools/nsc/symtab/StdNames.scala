@@ -248,6 +248,7 @@ trait StdNames requires SymbolTable {
     val eq = newTermName("eq")
     val equals_ = newTermName("equals")
     val _equals = newTermName("_equals")
+    val _equalsWithVarArgs = newTermName("_equalsWithVarArgs")
     val ex = newTermName("ex")
     val fail = newTermName("fail")
     val false_ = newTermName("false")

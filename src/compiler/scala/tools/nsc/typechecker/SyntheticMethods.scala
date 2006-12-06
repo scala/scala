@@ -93,7 +93,9 @@ trait SyntheticMethods requires Analyzer {
     }
 
     def equalsMethod: Tree = {
-      val target = getMember(ScalaRunTimeModule, nme._equals)
+      val constrParamTypes = clazz.primaryConstructor.tpe.paramTypes
+      val hasVarArgs = !constrParamTypes.isEmpty && constrParamTypes.last.symbol == RepeatedParamClass
+      val target = getMember(ScalaRunTimeModule, if (hasVarArgs) nme._equalsWithVarArgs else nme._equals)
       val paramtypes =
         if (target.tpe.paramTypes.isEmpty) List()
         else target.tpe.paramTypes.tail
@@ -204,7 +206,7 @@ trait SyntheticMethods requires Analyzer {
         } else {
           if (!hasImplementation(nme.hashCode_)) ts += forwardingMethod(nme.hashCode_)
           if (!hasImplementation(nme.toString_)) ts += forwardingMethod(nme.toString_)
-          if (!hasImplementation(nme.equals_)) ts += equalsMethod //forwardingMethod(nme.equals_)
+          if (!hasImplementation(nme.equals_)) ts += equalsMethod
         }
 
         if (!hasDirectImplementation(nme.productPrefix)) ts += productPrefixMethod

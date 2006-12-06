@@ -574,14 +574,14 @@ trait Typers requires Analyzer {
                 }
               } else if (settings.Xunapply.value) { /*unapply (5.3beta) */
                 // fix symbol -- we are using the module not the class
-                val consp = if(clazz.isModule) clazz else {
+                val consp = if (clazz.isModule) clazz else {
                   val obj = clazz.linkedModuleOfClass
                   if (obj != NoSymbol) tree.setSymbol(obj)
                   obj
                 }
                 if (definitions.unapplyMember(consp.tpe).exists)
                   atPos(tree.pos) {
-                    gen.mkAttributedRef(consp.tpe.prefix,consp)
+                    gen.mkAttributedRef(tree.tpe.prefix,consp)
                   }
                   //  needs member type, but member of what? ^^^
                   //  see test/pending/pos/unapplyNeedsMemberType.scala
@@ -1430,7 +1430,7 @@ trait Typers requires Analyzer {
           val fun1untyped = atPos(fun.pos) {
               Apply(Select(gen.mkAttributedRef(fun.tpe.prefix,fun.symbol), unapp), List(arg))
             }
-          Console.println("UNAPP "+fun1untyped)
+          //Console.println("UNAPP "+fun+"/"+fun.tpe+" "+fun1untyped)
           val fun1 = typed(fun1untyped, EXPRmode, funPt)
           if (fun1.tpe.isErroneous) setError(tree)
           else {
@@ -1765,23 +1765,9 @@ trait Typers requires Analyzer {
           /*<unapply>*/
           if(settings.Xunapply.value)
             // unapply: in patterns, look for an object if can't find type
-            if(!defSym.exists && !impSym.exists && name.isTypeName && (mode & PATTERNmode) != 0) {
-              typedIdent(name.toTermName) match {
-                case t if t.symbol.isTerm /*isModule*/ =>
-                  //Console.println("special treatment for "+name+" yields "+t)
-                  t.tpe match {
-                    case PolyType(_,MethodType(_,_)) =>
-                      //Console.println("ugh!")
-                      // for instance Predef.Pair
-                      //Console.println("no special treatment for "+name)
-                    case _ =>
-                      //return t
-                      defSym = t.symbol
-                  }
-                case _ =>
-                  Console.println("no special treatment for "+name)
-                  // when can this happen?
-              }
+            if (!defSym.exists && !impSym.exists && name.isTypeName && (mode & PATTERNmode) != 0) {
+              val mod = typedIdent(name.toTermName)
+              return tree setSymbol mod.symbol setType mod.tpe
             }
           /*</unapply>*/
 

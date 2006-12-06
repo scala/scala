@@ -93,16 +93,33 @@ object ScalaRunTime {
 
   def _equals(x: Product, y: Any): Boolean = y match {
     case y1: Product if x.arity == y1.arity =>
-      /*(x.getClass() eq y1.getClass() &&*/ {
-	val arity = x.arity;
-	var i = 0;
-	while (i < arity && x.element(i) == y1.element(i))
-	  i = i + 1;
-	i == arity
+      val arity = x.arity;
+      var i = 0;
+      while (i < arity && x.element(i) == y1.element(i))
+        i = i + 1;
+      i == arity
+    case _ =>
+      false
+  }
+
+  def _equalsWithVarArgs(x: Product, y: Any): Boolean = y match {
+    case y1: Product if x.arity == y1.arity =>
+      val arity = x.arity;
+      var i = 0;
+      while (i < arity - 1 && x.element(i) == y1.element(i))
+        i = i + 1;
+      i == arity - 1 && {
+        x.element(i) match {
+          case xs: Seq[_] =>
+            y1.element(i) match {
+              case ys: Seq[_] => xs sameElements ys
+            }
+        }
       }
     case _ =>
       false
   }
+
   //def checkDefined[T >: Null](x: T): T =
   //  if (x == null) throw new UndefinedException else x
 
