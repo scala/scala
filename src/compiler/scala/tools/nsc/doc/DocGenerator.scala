@@ -835,7 +835,7 @@ abstract class DocGenerator extends Models {
       def path="nav-classes"
       override def body0(hasBody: Boolean, nodes: NodeSeq): NodeSeq =
         if (!hasBody) nodes
-        else <body onload="init()" style="margin:1px 0 0 1px; padding:1px 0 0 1px;">{nodes}</body>;
+        else <body style="margin:1px 0 0 1px; padding:1px 0 0 1px;">{nodes}</body>;
       def body =
         <form>
           <select id="kinds" onchange="gotoKind()">
@@ -843,7 +843,7 @@ abstract class DocGenerator extends Models {
             <option value="#Objects">Objects</option>
             <option value="#Traits">Traits</option>
           </select>
-          <span style="font-family:Courier;word-spacing:-8px;">
+          <span id="alphabet" style="font-family:Courier;word-spacing:-8px;">
           <a href={Unparsed("javascript:gotoName('A')")}>A</a>
           <a href={Unparsed("javascript:gotoName('B')")}>B</a>
           <a href={Unparsed("javascript:gotoName('C')")}>C</a>
