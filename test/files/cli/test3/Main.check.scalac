@@ -1,9 +1,9 @@
-Scala compiler error: unknown option: '-dd'
+Scala compiler error: bad option: '-dd'
   Scala compiler -help  gives more information
 Usage: scalac <options | source files>
 where possible options include: 
   -doc                            Generate documentation
-  -g                              Generate debugging info
+  -g:<g>                          Generate debugging info (none,source,line,vars,notc)
   -nowarn                         Generate no warnings
   -noassert                       Generate no assertions and assumptions
   -verbose                        Output messages about what the compiler is doing
@@ -18,6 +18,8 @@ where possible options include:
   -target:<target>                Specify which backend to use (jvm-1.5,jvm-1.4,msil,cldc)
   -migrate                        Assist in migrating from Scala version 1.0
   -debug                          Output debugging messages
+  -deprecation                    enable detailed deprecation warnings
+  -unchecked                      enable detailed unchecked warnings
   -statistics                     Print compiler statistics
   -explaintypes                   Explain type errors in more detail
   -resident                       Compiler stays resident, files to compile are read from standard input
@@ -37,14 +39,21 @@ where possible options include:
   -log:<phase>                    Log operations in <phase>
   -version                        Print product version and exit
   -help                           Print a synopsis of standard options
+  -nouescape                      disables handling of \u unicode escapes
   -Xinline                        Perform inlining when possible
   -Xcloselim                      Perform closure elimination
   -Xdce                           Perform dead code elimination
+  -XbytecodeRead                  Enable bytecode reader.
+  -Xdetach                        Perform detaching of remote closures
   -Xshowcls <class>               Show class info
   -Xshowobj <object>              Show object info
-  -Xshowicode                     Print the generated ICode
-  -Xgadt                          enable gadt for classes
   -Xlinearizer:<Xlinearizer>      Linearizer to use (normal,dfs,rpo,dump)
   -Xgenerics                      Use generic Java types
+  -Xprintpos                      Print tree positions (as offsets)
+  -Xscript                        compile script file
+  -Xexperimental                  enable experimental extensions
+  -Xunapply                       enable unapply pattern matching
+  -Xplugtypes                     parse but ignore annotations in more locations
+  -Xkilloption                    optimizes option types
 
 one error found

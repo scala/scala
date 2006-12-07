@@ -1,7 +1,28 @@
 |-- all-classes.html
 |-- index.html
 |-- modules.html
+|-- nav-classes.html
 |-- root-content.html
+|-- scala
+|   |-- Any.html
+|   |-- AnyRef.html
+|   |-- AnyVal.html
+|   |-- Boolean.html
+|   |-- Byte.html
+|   |-- Char.html
+|   |-- Double.html
+|   |-- Float.html
+|   |-- Int.html
+|   |-- Long.html
+|   |-- Nothing.html
+|   |-- Null.html
+|   |-- Short.html
+|   |-- Unit.html
+|   `-- runtime
+|       |-- BoxedFloat.html
+|       |-- BoxedInt.html
+|       |-- BoxedLong.html
+|       `-- BoxedNumber.html
 |-- script.js
 |-- style.css
 |-- test1
@@ -13,5 +34,4 @@
 |-- test2$content.html
 `-- test2$package.html
 
-
-2 directories, 12 files
+4 directories, 31 files
