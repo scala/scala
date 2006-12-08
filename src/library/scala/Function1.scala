@@ -31,9 +31,16 @@ package scala
  * }</pre>
  */
 trait Function1 [-T1, +R] extends AnyRef {
+
   def apply(v1:T1): R
+
   override def toString() = "<function>"
 
+  /** (f compose g)(x)  =   f(g(x))
+   */
   def compose[A](g: A => T1): A => R = { x => apply(g(x)) }
+
+  /** (f andThen g)(x)  =   g(f(x))
+   */
   def andThen[A](g: R => A): T1 => A = { x => g(apply(x)) }
 }

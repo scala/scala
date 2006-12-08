@@ -3,6 +3,8 @@
  * @author  Martin Odersky
  */
 // $Id$
+//todo: allow infix type patterns
+
 
 package scala.tools.nsc.ast.parser
 
@@ -190,6 +192,11 @@ trait Parsers requires SyntaxAnalyzer {
 
     def isExprIntro: boolean = isExprIntroToken(in.token)
 
+    def isTypeIntroToken(token: int): boolean = token match {
+      case IDENTIFIER | BACKQUOTED_IDENT | THIS | SUPER | USCORE | LPAREN => true
+      case _ => false
+    }
+
 /////// COMMENT AND ATTRIBUTE COLLECTION //////////////////////////////////////
 
     /** Join the comment associated with a definition
@@ -293,16 +300,15 @@ trait Parsers requires SyntaxAnalyzer {
           }
       }
 
+    def checkAssoc(pos: int, op: Name, leftAssoc: boolean) =
+      if (treeInfo.isLeftAssoc(op) != leftAssoc)
+        syntaxError(
+          pos, "left- and right-associative operators with same precedence may not be mixed", false)
+
     def reduceStack(isExpr: boolean, base: List[OpInfo], top0: Tree, prec: int, leftAssoc: boolean): Tree = {
       var top = top0
-      if (opstack != base &&
-          precedence(opstack.head.operator) == prec &&
-          treeInfo.isLeftAssoc(opstack.head.operator) != leftAssoc) {
-        syntaxError(
-          opstack.head.pos,
-          "left- and right-associative operators with same precedence may not be mixed",
-          false)
-      }
+      if (opstack != base && precedence(opstack.head.operator) == prec)
+        checkAssoc(opstack.head.pos, opstack.head.operator, leftAssoc)
       while (opstack != base &&
              (prec < precedence(opstack.head.operator) ||
               (leftAssoc && prec == precedence(opstack.head.operator)))) {
@@ -517,10 +523,14 @@ trait Parsers requires SyntaxAnalyzer {
       ts.toList
     }
 
-    /** Type ::= Type1 `=>' Type
-     *         | `(' `=>' Type `)' `=>' Type
-     *         | `(' [Types] `)' `=>' Type
-     *         | Type1
+    /** modes for infix types */
+    final val FirstOp = 0   // first operand
+    final val LeftOp = 1    // left associative
+    final val RightOp = 2   // right associative
+
+    /** Type ::= InfixType `=>' Type
+     *         | `(' [Types | `=>' Type] `)' `=>' Type
+     *         | InfixType
      */
     def typ(): Tree = {
       val t =
@@ -544,24 +554,47 @@ trait Parsers requires SyntaxAnalyzer {
               atPos (accept(ARROW)) { makeFunctionTypeTree(ts.toList, typ()) }
             } else {
               accept(RPAREN)
-              type1rest(pos, t0, false)
+              infixTypeRest(pos, t0, false, FirstOp)
             }
           }
         } else {
-          type1(false)
+          infixType(false, FirstOp)
         }
       if (in.token == ARROW) atPos(in.skipToken()) {
         makeFunctionTypeTree(List(t), typ()) }
       else t
     }
 
-    /** Type1 ::= SimpleType {with SimpleType} [Refinement]
-     *  TypePattern ::= SimpleTypePattern {with SimpleTypePattern}
+    /** InfixType ::= CompoundType {id [NewLine] CompoundType}
+     *  TypePattern ::= CompoundTypePattern {id [NewLine] CompoundTypePattern
      */
-    def type1(isPattern: boolean): Tree =
-      type1rest(in.currentPos, simpleType(isPattern), isPattern)
+    def infixType(isPattern: boolean, mode: int): Tree =
+      infixTypeRest(in.currentPos, simpleType(isPattern), isPattern, mode)
 
-    def type1rest(pos: int, t: Tree, isPattern: boolean): Tree = {
+    def infixTypeRest(pos: int, t0: Tree, isPattern: boolean, mode: int): Tree = {
+      val t = compoundTypeRest(pos, t0, isPattern)
+      if (isIdent && in.name != nme.STAR) {
+        val opPos = in.pos
+        val leftAssoc = treeInfo.isLeftAssoc(in.name)
+        if (mode == LeftOp) checkAssoc(opPos, in.name, true)
+        else if (mode == RightOp) checkAssoc(opPos, in.name, false)
+        val op = ident()
+        newLineOptWhenFollowing(isTypeIntroToken)
+        def mkOp(t1: Tree) = atPos(opPos) { AppliedTypeTree(Ident(op.toTypeName), List(t, t1)) }
+        if (leftAssoc)
+          infixTypeRest(in.pos, mkOp(compoundType(isPattern)), isPattern, LeftOp)
+        else
+          mkOp(infixType(isPattern, RightOp))
+      } else t
+    }
+
+    /** CompoundType ::= SimpleType {with SimpleType} [Refinement]
+     *  CompoundTypePattern ::= SimpleTypePattern {with SimpleTypePattern}
+     */
+    def compoundType(isPattern: boolean): Tree =
+      compoundTypeRest(in.currentPos, simpleType(isPattern), isPattern)
+
+    def compoundTypeRest(pos: int, t: Tree, isPattern: boolean): Tree = {
       var ts = new ListBuffer[Tree] + t
       while (in.token == WITH) {
         in.nextToken(); ts += simpleType(isPattern)
@@ -706,7 +739,7 @@ trait Parsers requires SyntaxAnalyzer {
 
     /** Expr       ::= (Bindings | Id)  `=>' Expr
      *               | Expr1
-     *  ResultExpr ::= (Bindings | Id `:' Type1) `=>' Block
+     *  ResultExpr ::= (Bindings | Id `:' CompoundType) `=>' Block
      *               | Expr1
      *  Expr1      ::= if (' Expr `)' [NewLine] Expr [[`;'] else Expr]
      *               | try `{' block `}' [catch `{' caseClauses `}'] [finally Expr]
@@ -718,7 +751,7 @@ trait Parsers requires SyntaxAnalyzer {
      *               | [SimpleExpr `.'] Id `=' Expr
      *               | SimpleExpr ArgumentExprs `=' Expr
      *               | `.' SimpleExpr
-     *               | PostfixExpr [`:' Type1]
+     *               | PostfixExpr [`:' CompoundType]
      *               | PostfixExpr match `{' CaseClauses `}'
      *               | MethodClosure
      *  Bindings   ::= `(' [Binding {`,' Binding}] `)'
@@ -840,7 +873,7 @@ trait Parsers requires SyntaxAnalyzer {
               syntaxError(in.currentPos, "`*' expected", true)
             }
           } else {
-            t = atPos(pos) { Typed(t, if ((mode & IsInBlock) != 0) type1(false) else typ()) }
+            t = atPos(pos) { Typed(t, if ((mode & IsInBlock) != 0) compoundType(false) else typ()) }
             if ((mode & IsInBlock) != 0 && in.token == COMMA) {
               val vdefs = new ListBuffer[ValDef]
               while (in.token == COMMA) {
@@ -1134,7 +1167,7 @@ trait Parsers requires SyntaxAnalyzer {
         val p = pattern2(seqOK)
         p match {
           case Ident(name) if (treeInfo.isVarPattern(p) && in.token == COLON) =>
-            atPos(in.skipToken()) { Typed(p, type1(true)) }
+            atPos(in.skipToken()) { Typed(p, compoundType(true)) }
           case _ =>
             p
         }
