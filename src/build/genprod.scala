@@ -129,8 +129,10 @@ object FunctionFile {
 package scala
 
 
-/**
- * Function with {i} parameters. {descriptiveComment(i)}
+/** &lt;p&gt;
+ *    Function with {i} parameters.
+ *  &lt;/p&gt;
+ *  {descriptiveComment(i)}
  */
 trait {functionClassname(i)}{__typeArgs__} extends AnyRef {{
   def apply({__funArgs__}): R
@@ -142,57 +144,68 @@ trait {functionClassname(i)}{__typeArgs__} extends AnyRef {{
 
   def moreMethods(i:Int) = i match {
     case 1 => """
+  /** (f compose g)(x)  =   f(g(x))
+   */
   def compose[A](g: A => T1): A => R = { x => apply(g(x)) }
+
+  /** (f andThen g)(x)  =   g(f(x))
+   */
   def andThen[A](g: R => A): T1 => A = { x => g(apply(x)) }
 """
     case _ => ""
   }
   def descriptiveComment(i: Int) = i match {
-    case 0 => """In the following example the definition of
- * <code>currentSeconds</code> is a shorthand for the anonymous class
- * definition <code>anonfun0</code>:
- * <pre>
- * <b>object</b> Main <b>extends</b> Application {
+    case 0 => """<p>
+      In the following example the definition of
+ *    <code>currentSeconds</code> is a shorthand for the anonymous class
+ *    definition <code>anonfun0</code>:
+ *  </p>
+ *  <pre>
+ *  <b>object</b> Main <b>extends</b> Application {
  *
- *   <b>val</b> currentSeconds = () => System.currentTimeMillis() / 1000L
+ *    <b>val</b> currentSeconds = () => System.currentTimeMillis() / 1000L
  *
- *   <b>val</b> anonfun0 = <b>new</b> Function0[Long] {
- *     <b>def</b> apply(): Long = System.currentTimeMillis() / 1000L
- *   }
+ *    <b>val</b> anonfun0 = <b>new</b> Function0[Long] {
+ *      <b>def</b> apply(): Long = System.currentTimeMillis() / 1000L
+ *    }
  *
- *   Console.println(currentSeconds())
- *   Console.println(anonfun0())
- * }</pre>"""
-    case 1 => """In the following example the definition of
- * <code>succ</code> is a shorthand for the anonymous class definition
- * <code>anonfun1</code>:
- * <pre>
- * <b>object</b> Main <b>extends</b> Application {
+ *    Console.println(currentSeconds())
+ *    Console.println(anonfun0())
+ *  }</pre>"""
+    case 1 => """<p>
+      In the following example the definition of
+ *    <code>succ</code> is a shorthand for the anonymous class definition
+ *    <code>anonfun1</code>:
+ *  </p>
+ *  <pre>
+ *  <b>object</b> Main <b>extends</b> Application {
  *
- *   <b>val</b> succ = (x: Int) => x + 1
+ *    <b>val</b> succ = (x: Int) => x + 1
  *
- *   <b>val</b> anonfun1 = <b>new</b> Function1[Int, Int] {
- *     <b>def</b> apply(x: Int): Int = x + 1
- *   }
+ *    <b>val</b> anonfun1 = <b>new</b> Function1[Int, Int] {
+ *      <b>def</b> apply(x: Int): Int = x + 1
+ *    }
  *
- *   Console.println(succ(0))
- *   Console.println(anonfun1(0))
- * }</pre>"""
-    case 2 => """In the following example the definition of
- * <code>max</code> is a shorthand for the anonymous class definition
- * <code>anonfun2</code>:
- * <pre>
- * <b>object</b> Main <b>extends</b> Application {
+ *    Console.println(succ(0))
+ *    Console.println(anonfun1(0))
+ *  }</pre>"""
+    case 2 => """<p>
+      In the following example the definition of
+ *    <code>max</code> is a shorthand for the anonymous class definition
+ *    <code>anonfun2</code>:
+ *  </p>
+ *  <pre>
+ *  <b>object</b> Main <b>extends</b> Application {
  *
- *   <b>val</b> max = (x: Int, y: Int) => <b>if</b> (x < y) y <b>else</b> x
+ *    <b>val</b> max = (x: Int, y: Int) => <b>if</b> (x < y) y <b>else</b> x
  *
- *   <b>val</b> anonfun2 = <b>new</b> Function2[Int, Int, Int] {
- *     <b>def</b> apply(x: Int, y: Int): Int = <b>if</b> (x < y) y <b>else</b> x
- *   }
+ *    <b>val</b> anonfun2 = <b>new</b> Function2[Int, Int, Int] {
+ *      <b>def</b> apply(x: Int, y: Int): Int = <b>if</b> (x < y) y <b>else</b> x
+ *    }
  *
- *   Console.println(max(0, 1))
- *   Console.println(anonfun2(0, 1))
- * }</pre>"""
+ *    Console.println(max(0, 1))
+ *    Console.println(anonfun2(0, 1))
+ *  }</pre>"""
     case _ => ""
   }
 
