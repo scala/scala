@@ -40,6 +40,8 @@ trait Benchmark {
   /** this method should be implemented by the concrete benchmark */
   def run: Unit
 
+  var multiplier = 1
+
   /** Run the benchmark the specified number of times
    *  and return a list with the execution times in milliseconds
    *  in reverse order of the execution
@@ -50,7 +52,10 @@ trait Benchmark {
   def runBenchmark(noTimes: Int): List[Long] =
     for (val i <- List.range(1, noTimes + 1)) yield {
       val startTime = Platform.currentTime
-      run
+      var i = 0; while(i < multiplier) {
+        run
+        i = i + 1
+      }
       val stopTime = Platform.currentTime
       Platform.collectGarbage
 
@@ -65,15 +70,18 @@ trait Benchmark {
   def main(args: Array[String]): Unit = {
     if (args.length > 1) {
       val logFile = new java.io.FileWriter(args(1), true) // append, not overwrite
-
+      if(args.length >= 2)
+         multiplier = args(2).toInt
       logFile.write(getClass().getName())
       for (val t <- runBenchmark(args(0).toInt))
         logFile.write("\t\t" + t)
 
       logFile.write(Platform.EOL)
       logFile.flush()
-    } else
+    } else {
       Console.println("Usage: scala benchmarks.program <runs> <logfile>")
+      Console.println("   or: scala benchmarks.program <runs> <logfile> <multiplier>")
+    }
   }
 }
 
