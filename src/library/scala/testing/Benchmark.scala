@@ -70,7 +70,7 @@ trait Benchmark {
   def main(args: Array[String]): Unit = {
     if (args.length > 1) {
       val logFile = new java.io.FileWriter(args(1), true) // append, not overwrite
-      if(args.length >= 2)
+      if(args.length >= 3)
          multiplier = args(2).toInt
       logFile.write(getClass().getName())
       for (val t <- runBenchmark(args(0).toInt))
