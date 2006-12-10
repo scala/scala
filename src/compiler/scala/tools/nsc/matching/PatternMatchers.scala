@@ -918,6 +918,20 @@ print()
               node.and.bodyToTree(),
               mappings);
           node = node.or;
+
+          case ConstantPat( value: Char )=>
+            mappings = insert1(value.toInt,node.and.bodyToTree(),mappings);
+          node = node.or;
+
+/*
+          case ConstantPat( value: Byte )=>
+            mappings = insert1(value.toInt,node.and.bodyToTree(),mappings);
+          node = node.or;
+
+          case ConstantPat( value: Short )=>
+            mappings = insert1(value.toInt,node.and.bodyToTree(),mappings);
+          node = node.or;
+*/ // these correct?
         }
       }
       patNode = patNode.nextH()
