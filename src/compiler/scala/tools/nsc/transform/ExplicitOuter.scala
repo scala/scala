@@ -391,7 +391,7 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
                 else Select(This(currentClass), outerField(currentClass))
       localTyper.typed {
         atPos(currentClass.pos) {
-          DefDef(outerAcc, vparamss => rhs)
+          DefDef(outerAcc, {vparamss => rhs})
         }
       }
     }
@@ -413,7 +413,7 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
       val rhs = ExplicitOuterTransformer.this.transform(path)
       localTyper.typed {
         atPos(currentClass.pos) {
-          DefDef(outerAcc, vparamss => rhs)
+          DefDef(outerAcc, {vparamss=>rhs})
         }
       }
     }
@@ -560,7 +560,7 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
 
             if(settings.Xkilloption.value) {
 	      //Console.println("vparamss"+vparamss)
-	      val nvparamss = vparamss.map { x => super.transformValDefs(x) /*x.map { y => transform(y) if(wasOptionRef(y.tpe)) y.setType(getOptionArg(y.tpe)) */}
+	      val nvparamss = vparamss.map { x => super.transformValDefs(x) }
 	      //Console.println("nvparamss"+nvparamss)
               val ntpt = if(wasOptionRef(tpt.tpe)) TypeTree(getOptionArg(tpt.tpe)) else tpt
 

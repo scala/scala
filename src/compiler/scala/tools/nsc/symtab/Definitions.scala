@@ -98,7 +98,7 @@ trait Definitions requires SymbolTable {
     var RepeatedParamClass: Symbol = _
     var ByNameParamClass: Symbol = _
 
-    val MaxTupleArity = 9
+    val MaxTupleArity = 9 //todo: lift to 22
     val TupleClass: Array[Symbol] = new Array(MaxTupleArity + 1)
       def tupleField(n: Int, j: Int) = getMember(TupleClass(n), "_" + j)
       def isTupleType(tp: Type): Boolean = tp match {

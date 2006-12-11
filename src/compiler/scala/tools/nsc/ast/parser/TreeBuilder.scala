@@ -94,10 +94,16 @@ abstract class TreeBuilder {
     Apply(scalaDot(if (isType) newTypeName(tupString) else newTermName(tupString)), trees)
   }
 
-  private def makeTupleTerm(trees: List[Tree]): Tree = trees match {
+  def makeTupleTerm(trees: List[Tree]): Tree = trees match {
     case List() => Literal(())
     case List(tree) => tree
     case _ => makeTuple(trees, false)
+  }
+
+  def makeTupleType(trees: List[Tree]): Tree = trees match {
+    case List() => scalaUnitConstr
+    case List(tree) => tree
+    case _ => AppliedTypeTree(scalaDot(newTypeName("Tuple" + trees.length)), trees)
   }
 
   /** If tree is a variable pattern, return Some("its name and type").

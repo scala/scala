@@ -1,4 +1,4 @@
-  /* NSC -- new Scala compiler
+/* NSC -- new Scala compiler
  * Copyright 2005-2006 LAMP/EPFL
  * @author  Martin Odersky
  */
@@ -960,6 +960,8 @@ trait Types requires SymbolTable {
           return "=> " + args(0).toString()
         if (isFunctionType(this))
           return args.init.mkString("(", ", ", ")") + " => " + args.last
+        if (isTupleType(this))
+          return args.mkString("{", ", ", "}")
       }
       val str = (pre.prefixString + sym.nameString +
                  (if (args.isEmpty) "" else args.mkString("[", ",", "]")))

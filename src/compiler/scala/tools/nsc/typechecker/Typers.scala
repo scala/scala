@@ -1664,13 +1664,15 @@ trait Typers requires Analyzer {
         if (!sym.exists) {
           if (settings.debug.value) Console.err.println("qual = "+qual+":"+qual.tpe+"\nSymbol="+qual.tpe.symbol+"\nsymbol-info = "+qual.tpe.symbol.info+"\nscope-id = "+qual.tpe.symbol.info.decls.hashCode()+"\nmembers = "+qual.tpe.members+"\nname = "+name+"\nfound = "+sym+"\nowner = "+context.enclClass.owner)
           if (!qual.tpe.widen.isErroneous) {
-            if (false && (context.unit eq null)) assert(false, "("+qual+":"+qual.tpe+")."+name)
             error(tree.pos,
-              decode(name)+" is not a member of "+qual.tpe.widen +
-              (if ((context.unit ne null) && Position.line(context.unit.source, qual.pos) <
-                   Position.line(context.unit.source, tree.pos))
-                "\npossible cause: maybe a semicolon is missing before `"+decode(name)+"'?"
-               else ""))
+              if (name == nme.CONSTRUCTOR)
+                qual.tpe.widen+" does not have a constructor"
+              else
+                decode(name)+" is not a member of "+qual.tpe.widen +
+                (if ((context.unit ne null) && Position.line(context.unit.source, qual.pos) <
+                     Position.line(context.unit.source, tree.pos))
+                  "\npossible cause: maybe a semicolon is missing before `"+decode(name)+"'?"
+                 else ""))
           }
           setError(tree)
         } else {

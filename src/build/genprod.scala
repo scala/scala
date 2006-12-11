@@ -238,7 +238,7 @@ package scala
 case class {tupleClassname(i)}{__typeArgs__}({ __fields__ }) {{
 
   override def productPrefix = ""
-
+  override def toString() = scala.runtime.ScalaRunTime.caseFields.mkString("{", ", ", "}")
 }}
 </file>
     }

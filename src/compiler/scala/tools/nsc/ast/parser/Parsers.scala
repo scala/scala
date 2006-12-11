@@ -300,6 +300,10 @@ trait Parsers requires SyntaxAnalyzer {
           }
       }
 
+    def checkSize(kind: String, size: int, max: int) {
+      if (size > max) syntaxError("too many "+kind+", maximum = "+max, false)
+    }
+
     def checkAssoc(pos: int, op: Name, leftAssoc: boolean) =
       if (treeInfo.isLeftAssoc(op) != leftAssoc)
         syntaxError(
@@ -549,9 +553,10 @@ trait Parsers requires SyntaxAnalyzer {
             val t0 = typ()
             if (in.token == COMMA) {
               in.nextToken()
-              val ts = new ListBuffer[Tree] + t0 ++ types()
+              val ts = t0 :: types()
               accept(RPAREN)
-              atPos (accept(ARROW)) { makeFunctionTypeTree(ts.toList, typ()) }
+              checkSize("function arguments", ts.length, definitions.MaxFunctionArity)
+              atPos (accept(ARROW)) { makeFunctionTypeTree(ts, typ()) }
             } else {
               accept(RPAREN)
               infixTypeRest(pos, t0, false, FirstOp)
@@ -574,7 +579,7 @@ trait Parsers requires SyntaxAnalyzer {
     def infixTypeRest(pos: int, t0: Tree, isPattern: boolean, mode: int): Tree = {
       val t = compoundTypeRest(pos, t0, isPattern)
       if (isIdent && in.name != nme.STAR) {
-        val opPos = in.pos
+        val opPos = in.currentPos
         val leftAssoc = treeInfo.isLeftAssoc(in.name)
         if (mode == LeftOp) checkAssoc(opPos, in.name, true)
         else if (mode == RightOp) checkAssoc(opPos, in.name, false)
@@ -582,7 +587,7 @@ trait Parsers requires SyntaxAnalyzer {
         newLineOptWhenFollowing(isTypeIntroToken)
         def mkOp(t1: Tree) = atPos(opPos) { AppliedTypeTree(Ident(op.toTypeName), List(t, t1)) }
         if (leftAssoc)
-          infixTypeRest(in.pos, mkOp(compoundType(isPattern)), isPattern, LeftOp)
+          infixTypeRest(in.currentPos, mkOp(compoundType(isPattern)), isPattern, LeftOp)
         else
           mkOp(infixType(isPattern, RightOp))
       } else t
@@ -610,11 +615,13 @@ trait Parsers requires SyntaxAnalyzer {
      *                     |   StableId
      *                     |   Path `.' type
      *                     |   `(' Type `)'
+     *                     |   `{' [Type `,' Types] `}'
      *                     |   AttributeClauses SimpleType  // if Xplugtypes enabled
-     * SimpleTypePattern  ::=  SimpleTypePattern TypePatternArgs
+     * SimpleTypePattern  ::=  SimpleTypePattern1 [TypePatternArgs]
      * SimpleTypePattern1 ::=  SimpleTypePattern1 "#" Id
      *                     |   StableId
      *                     |   Path `.' type
+     *                     |   `{' [ArgTypePattern `,' ArgTypePatterns] `}'
      */
     def simpleType(isPattern: boolean): Tree = {
       if(settings.Xplugtypes.value)
@@ -627,6 +634,17 @@ trait Parsers requires SyntaxAnalyzer {
           val t = typ()
           accept(RPAREN)
           t
+        } else if (in.token == LBRACE) {
+          in.nextToken()
+          val ts = if (in.token == RBRACE) List()
+                   else {
+                     val t1 = argType(isPattern)
+                     accept(COMMA)
+                     t1 :: argTypes(isPattern)
+                   }
+          checkSize("tuple elements", ts.length, definitions.MaxTupleArity)
+          accept(RBRACE)
+          makeTupleType(ts)
         } else {
           val r = path(false, true)
           val x = r match {
@@ -637,38 +655,47 @@ trait Parsers requires SyntaxAnalyzer {
           x
         }
       while (true) {
-        if (in.token == HASH)
+        if (in.token == HASH) {
           t = atPos(in.skipToken()) {
             SelectFromTypeTree(t, ident().toTypeName)
           }
-        else if (in.token == LBRACKET)
+        } else if (in.token == LBRACKET) {
           t = atPos(pos) { AppliedTypeTree(t, typeArgs(isPattern)) }
-        else
+          if (isPattern) return t
+        } else
           return t
       }
       null; //dummy
     }
 
-    /** TypeArgs        ::= `[' TypeArg {`,' TypeArg} `]'
-     *  TypePatternArgs ::= '[' TypePatternArg {`,' TypePatternArg} `]'
+    /** TypeArgs        ::= `[' ArgTypes `]'
+     *  TypePatternArgs ::= '[' ArgTypePatterns `]'
      */
     def typeArgs(isPattern: boolean): List[Tree] = {
       accept(LBRACKET)
-      val ts = new ListBuffer[Tree] + typeArg(isPattern)
+      val ts = argTypes(isPattern)
+      accept(RBRACKET)
+      ts
+    }
+
+    /** ArgTypes        ::= ArgType {`,' ArgType}
+     *  ArgTypePatterns ::= ArgTypePattern {`,' ArgTypePattern}
+     */
+    def argTypes(isPattern: boolean): List[Tree] = {
+      val ts = new ListBuffer[Tree] + argType(isPattern)
       while (in.token == COMMA) {
         in.nextToken()
-        ts += typeArg(isPattern)
+        ts += argType(isPattern)
       }
-      accept(RBRACKET)
       ts.toList
     }
 
-    /** TypeArg       ::= Type
-     *  TypePatternArg ::=  varid
+    /** ArgType       ::= Type
+     *  ArgTypePattern ::=  varid
      *                 |  `_'
      *                 |  Type            // for array elements only!
      */
-    def typeArg(isPattern: boolean): Tree =
+    def argType(isPattern: boolean): Tree =
       if (isPattern) {
         if (in.token == USCORE)
           atPos(in.skipToken()) { Bind(nme.WILDCARD.toTypeName, EmptyTree) }
@@ -736,6 +763,7 @@ trait Parsers requires SyntaxAnalyzer {
 
     final val IsArgument     = 1
     final val IsInBlock      = 2
+    final val ClosureOK      = 4
 
     /** Expr       ::= (Bindings | Id)  `=>' Expr
      *               | Expr1
@@ -758,19 +786,21 @@ trait Parsers requires SyntaxAnalyzer {
      *  Binding    ::= Id [`:' Type]
      */
     def expr(): Tree =
-      liftingScope(exprImpl(0))
+      liftingScope(exprImpl(ClosureOK))
 
     def blockStatExpr(): Tree = {
-      liftingScope(exprImpl(IsInBlock))
+      liftingScope(exprImpl(IsInBlock | ClosureOK))
     }
 
     def argExpr(): Tree = {
-      exprImpl(IsArgument)
+      exprImpl(IsArgument | ClosureOK)
     }
 
     def localExpr(): Tree = {
-      exprImpl(0)
+      exprImpl(ClosureOK)
     }
+
+    def expr1(): Tree = exprImpl(0)
 
     private def exprImpl(mode: int): Tree = in.token match {
       case IF =>
@@ -846,7 +876,7 @@ trait Parsers requires SyntaxAnalyzer {
             liftingScope(makeClosure(simpleExpr()))
             // Note: makeClosure does some special treatment of liftedGenerators
           } else {
-            syntaxError("identifier expected", true);
+            syntaxError("identifier expected", true)
             errorTermTree
           }
         }
@@ -873,18 +903,10 @@ trait Parsers requires SyntaxAnalyzer {
               syntaxError(in.currentPos, "`*' expected", true)
             }
           } else {
-            t = atPos(pos) { Typed(t, if ((mode & IsInBlock) != 0) compoundType(false) else typ()) }
-            if ((mode & IsInBlock) != 0 && in.token == COMMA) {
-              val vdefs = new ListBuffer[ValDef]
-              while (in.token == COMMA) {
-                in.nextToken()
-                vdefs += ValDef(Modifiers(Flags.PARAM), ident(), typedOpt(), EmptyTree)
-              }
-              if (in.token == ARROW) {
-                t = atPos(in.skipToken()) {
-                  Function(convertToParams(t) ::: vdefs.toList, block())
-                }
-              } else syntaxError(in.currentPos, "`=>' expected", true)
+            t = atPos(pos) {
+              Typed(t, if ((mode & IsInBlock) != 0) compoundType(false) else typ())
+              // this does not correspond to syntax, but is necessary to
+              // accept closures. We should restrict closures to be between {...} only!
             }
           }
         } else if (in.token == MATCH) {
@@ -895,7 +917,7 @@ trait Parsers requires SyntaxAnalyzer {
             Match(t, cases): Tree
           }
         }
-        if (in.token == ARROW) {
+        if ((mode & ClosureOK) != 0 && in.token == ARROW) {
           t = atPos(in.skipToken()) {
             Function(convertToParams(t), if ((mode & IsInBlock) != 0) block() else expr())
           }
@@ -1064,20 +1086,23 @@ trait Parsers requires SyntaxAnalyzer {
       }
     }
 
-    /** BlockExpr ::= `{' CaseClauses | Block `}'
+    /** BlockExpr ::= `{' CaseClauses | Block | Tuple `}'
      */
     def blockExpr(): Tree = {
       val res = atPos(accept(LBRACE)) {
         if (in.token == CASE) makeVisitor(caseClauses())
-        else block()
+        else blockOrTuple(true)
       }
       accept(RBRACE)
       res
     }
 
     /** Block ::= BlockStatSeq
-    */
-    def block(): Tree = makeBlock(blockStatSeq(new ListBuffer[Tree]))
+     *  Tuple ::= [Expr1 {`,' Expr1}]
+     */
+    def block(): Tree = blockOrTuple(false)
+    def blockOrTuple(tupleOK: boolean): Tree =
+      makeBlock(blockStatSeqOrTuple(tupleOK, new ListBuffer[Tree]))
 
    /** CaseClauses ::= CaseClause {CaseClause}
     */
@@ -1126,12 +1151,13 @@ trait Parsers requires SyntaxAnalyzer {
 
 //////// PATTERNS ////////////////////////////////////////////////////////////
 
-    /**   Patterns ::= SeqPattern { , SeqPattern }  */
-    def patterns(): List[Tree] = {
+    /**   Patterns ::= Pattern { `,' Pattern }  */
+    /**   SeqPatterns ::= SeqPattern { `,' SeqPattern }  */
+    def patterns(seqOK: boolean): List[Tree] = {
       val ts = new ListBuffer[Tree]
-      ts += pattern(true)
+      ts += pattern(seqOK)
       while (in.token == COMMA) {
-        in.nextToken(); ts += pattern(true)
+        in.nextToken(); ts += pattern(seqOK)
       }
       ts.toList
     }
@@ -1227,14 +1253,16 @@ trait Parsers requires SyntaxAnalyzer {
      *                    |  `_'
      *                    |  literal
      *                    |  XmlPattern
-     *                    |  StableId [ `(' Patterns `)' ]
+     *                    |  StableId [ `(' SeqPatterns `)' ]
      *                    |  `(' [Pattern] `)'
+     *                    |  `{' [Pattern `,' Patterns] `}'
      *  SimpleSeqPattern ::= varid
      *                    |  `_'
      *                    |  literal
      *                    |  `<' xLiteralPattern
-     *                    |  StableId [TypePatternArgs] `(' Patterns `)' ]
-     *                    |  `(' Patterns `)'
+     *                    |  StableId [TypePatternArgs] `(' SeqPatterns `)' ]
+     *                    |  `{' [Pattern `,' Patterns] `}'
+     *                    |  `(' SeqPatterns `)'
      */
     def simplePattern(seqOK: boolean): Tree = in.token match {
       case IDENTIFIER | BACKQUOTED_IDENT | THIS =>
@@ -1253,17 +1281,28 @@ trait Parsers requires SyntaxAnalyzer {
           atPos(in.currentPos) {
             val ts = typeArgs(true)
             accept(LPAREN)
-            val ps = if (in.token == RPAREN) List() else patterns()
+            val ps = if (in.token == RPAREN) List() else patterns(true)
             accept(RPAREN)
             Apply(TypeApply(convertToTypeId(t), ts), ps)
           }
         else */
         if (in.token == LPAREN) {
           atPos(in.skipToken()) {
-            val ps = if (in.token == RPAREN) List() else patterns()
+            val ps = if (in.token == RPAREN) List() else patterns(true)
             accept(RPAREN)
             Apply(convertToTypeId(t), ps)
           }
+        } else if (in.token == LBRACE) {
+          in.nextToken()
+          val ts = if (in.token == RBRACE) List()
+                   else {
+                     val p1 = pattern()
+                     accept(COMMA)
+                     p1 :: patterns(false)
+                   }
+          checkSize("tuple elements", ts.length, definitions.MaxTupleArity)
+          accept(RBRACE)
+          makeTupleTerm(ts)
         } else t
       case USCORE =>
         atPos(in.skipToken()) { Ident(nme.WILDCARD) }
@@ -1272,7 +1311,7 @@ trait Parsers requires SyntaxAnalyzer {
       case LPAREN =>
         val pos = in.skipToken()
         val p =
-          //if (false /*disabled, no regexp matching*/ && seqOK) atPos(pos) { makeSequence(patterns()) }
+          //if (false /*disabled, no regexp matching*/ && seqOK) atPos(pos) { makeSequence(patterns(true)) }
           //else
           if (in.token != RPAREN) pattern(false)
           else Literal(()).setPos(pos)
@@ -1864,11 +1903,8 @@ trait Parsers requires SyntaxAnalyzer {
         if (mods.hasFlag(Flags.CASE)) {
           if (!vparamss.isEmpty) {
             val argtypes: List[Tree] = vparamss.head map (.tpt.duplicate) //remove type annotation and you will get an interesting error message!!!
-            val nargs = argtypes.length
-            if (nargs <= definitions.MaxProductArity)
-              parents += productConstr(argtypes)
-            else
-              unit.warning(in.currentPos, "can't have more than "+definitions.MaxProductArity+" case fields ")
+            checkSize("case class parameters", argtypes.length, definitions.MaxProductArity)
+            if (argtypes.length <= definitions.MaxProductArity) parents += productConstr(argtypes)
           } else {
             parents += productConstr(Nil)
           }
@@ -2067,8 +2103,11 @@ trait Parsers requires SyntaxAnalyzer {
      *                 | LocalModifiers TmplDef
      *                 | Expr1
      *                 |
+     *  TupleExprs   ::= ResultExpr "," ResultExprs
      */
-    def blockStatSeq(stats: ListBuffer[Tree]): List[Tree] = {
+    def blockStatSeq(stats: ListBuffer[Tree]): List[Tree] =
+      blockStatSeqOrTuple(false, stats)
+    def blockStatSeqOrTuple(tupleOK: boolean, stats: ListBuffer[Tree]): List[Tree] = {
       def localDef(mods: Modifiers) = {
         if (!(mods hasFlag ~Flags.IMPLICIT)) stats ++= defOrDcl(mods)
         else stats += tmplDef(mods)
@@ -2079,12 +2118,27 @@ trait Parsers requires SyntaxAnalyzer {
         if (in.token == RBRACE || in.token == CASE)
           stats += Literal(()).setPos(in.currentPos)
       }
-      while ((in.token != RBRACE) && (in.token != EOF) && (in.token != CASE)) {
+      var last = false
+      while ((in.token != RBRACE) && (in.token != EOF) && (in.token != CASE) && !last) {
         if (in.token == IMPORT) {
           stats ++= importClause()
           acceptStatSep()
         } else if (isExprIntro) {
-          stats += blockStatExpr()
+          val expr = blockStatExpr()
+          if (in.token == COMMA) {
+            val exprs = new ListBuffer[Tree] + expr
+            while (in.token == COMMA) {
+              in.nextToken()
+              exprs += expr1()
+            }
+            if (in.token == ARROW) {
+              val vdefs = exprs.toList flatMap convertToParams
+              checkSize("function arguments", vdefs.length, definitions.MaxFunctionArity)
+              stats += atPos(in.skipToken()) { Function(vdefs, block()) }
+            } else {
+              stats += makeTupleTerm(exprs.toList)
+            }
+          } else stats += expr
           if (in.token != RBRACE && in.token != CASE) acceptStatSep()
         } else if (isDefIntro) {
           localDef(NoMods)
