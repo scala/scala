@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2006, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2007, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -9,23 +9,25 @@
 // $Id$
 
 
-package scala.runtime;
+package scala.runtime
 
 
 import Predef.{Class, Throwable}
 import java.lang.Runnable
 
+/* The object <code>ScalaRunTime</code> provides ...
+ */
 object ScalaRunTime {
 
   /** Names for primitive types, used by array unboxing */
-  val ByteTag = ".Byte";
-  val ShortTag = ".Short";
-  val CharTag = ".Char";
-  val IntTag = ".Int";
-  val LongTag = ".Long";
-  val FloatTag = ".Float";
-  val DoubleTag = ".Double";
-  val BooleanTag = ".Boolean";
+  val ByteTag = ".Byte"
+  val ShortTag = ".Short"
+  val CharTag = ".Char"
+  val IntTag = ".Int"
+  val LongTag = ".Long"
+  val FloatTag = ".Float"
+  val DoubleTag = ".Double"
+  val BooleanTag = ".Boolean"
 
   val ByteTYPE = java.lang.Byte.TYPE
   val ShortTYPE = java.lang.Short.TYPE
@@ -41,51 +43,50 @@ object ScalaRunTime {
   def isValueClass(clazz: Class) = clazz.isPrimitive()
 
   abstract class Try[a] {
-    def Catch[b >: a](handler: PartialFunction[Throwable, b]): b;
-    def Finally(handler: Unit): a;
+    def Catch[b >: a](handler: PartialFunction[Throwable, b]): b
+    def Finally(handler: Unit): a
   }
 
   def Try[a](block: => a): Try[a] = new Try[a] with Runnable {
-    var result: a = _;
-    var exception: Throwable = ExceptionHandling.tryCatch(this);
+    var result: a = _
+    var exception: Throwable = ExceptionHandling.tryCatch(this)
 
-    def run(): Unit = result = block;
+    def run(): Unit = result = block
 
     def Catch[b >: a](handler: PartialFunction[Throwable, b]): b =
       if (exception eq null)
-	result.asInstanceOf[b]
+        result.asInstanceOf[b]
       // !!! else if (exception is LocalReturn)
       // !!!   // ...
       else if (handler isDefinedAt exception)
-	handler(exception)
+        handler(exception)
       else
-	throw exception;
+        throw exception
 
     def Finally(handler: Unit): a =
       if (exception eq null)
         result.asInstanceOf[a]
       else
-        throw exception;
+        throw exception
   }
 
   def caseFields(x: Product): List[Any] = {
-    val arity = x.arity;
+    val arity = x.arity
     def fields(from: Int): List[Any] =
       if (from == arity) List()
-      else x.element(from) :: fields(from + 1);
+      else x.element(from) :: fields(from + 1)
     fields(0)
   }
 
-  def _toString(x: Product): String = {
+  def _toString(x: Product): String =
     caseFields(x).mkString(x.productPrefix + "(", ",", ")")
-  }
 
   def _hashCode(x: Product): Int = {
-    var code = x.getClass().hashCode();
+    var code = x.getClass().hashCode()
     val arr =  x.arity
-    var i = 0;
+    var i = 0
     while (i < arr) {
-      code = code * 41 + x.element(i).hashCode();
+      code = code * 41 + x.element(i).hashCode()
       i = i + 1
     }
     code
@@ -93,10 +94,10 @@ object ScalaRunTime {
 
   def _equals(x: Product, y: Any): Boolean = y match {
     case y1: Product if x.arity == y1.arity =>
-      val arity = x.arity;
-      var i = 0;
+      val arity = x.arity
+      var i = 0
       while (i < arity && x.element(i) == y1.element(i))
-        i = i + 1;
+        i = i + 1
       i == arity
     case _ =>
       false
@@ -104,8 +105,8 @@ object ScalaRunTime {
 
   def _equalsWithVarArgs(x: Product, y: Any): Boolean = y match {
     case y1: Product if x.arity == y1.arity =>
-      val arity = x.arity;
-      var i = 0;
+      val arity = x.arity
+      var i = 0
       while (i < arity - 1 && x.element(i) == y1.element(i))
         i = i + 1;
       i == arity - 1 && {
@@ -123,12 +124,13 @@ object ScalaRunTime {
   //def checkDefined[T >: Null](x: T): T =
   //  if (x == null) throw new UndefinedException else x
 
-  def Seq[a](xs: a*): Seq[a] = null; // interpreted specially by new backend.
+  def Seq[a](xs: a*): Seq[a] = null // interpreted specially by new backend.
 
-  def arrayValue  (x: BoxedArray, elemTag: String): AnyRef =
-    if (x eq null) null else x.unbox(elemTag);
-  def arrayValue  (x: BoxedArray, elemClass: Class): AnyRef =
-    if (x eq null) null else x.unbox(elemClass);
+  def arrayValue(x: BoxedArray, elemTag: String): AnyRef =
+    if (x eq null) null else x.unbox(elemTag)
+
+  def arrayValue(x: BoxedArray, elemClass: Class): AnyRef =
+    if (x eq null) null else x.unbox(elemClass)
 
   def boxArray(value: AnyRef): BoxedArray = value match {
     case x: Array[Byte] => new BoxedByteArray(x)
