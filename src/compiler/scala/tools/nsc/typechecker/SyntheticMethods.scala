@@ -210,7 +210,7 @@ trait SyntheticMethods requires Analyzer {
         }
 
         if (!hasDirectImplementation(nme.productPrefix)) ts += productPrefixMethod
-	val accessors = if(clazz hasFlag CASE) clazz.caseFieldAccessors else clazz.constrParamAccessors
+	val accessors = clazz.caseFieldAccessors
         for (val i <- 0 until accessors.length) {
           val acc = accessors(i)
           if (acc.name.toString != "_"+(i+1)) ts += productSelectorMethod(i+1, acc)

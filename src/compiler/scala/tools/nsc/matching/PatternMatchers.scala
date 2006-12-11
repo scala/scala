@@ -967,11 +967,13 @@ print()
   def generalSwitchToTree(): Tree = {
     this.exit = owner.newLabel(root.pos, "exit").setInfo(new MethodType(List(resultType), resultType));
     val result = exit.newValueParameter(root.pos, "result").setInfo( resultType );
-    return squeezedBlock(
+
+
+    squeezedBlock(
       List(
         ValDef(root.symbol, selector),
-        toTree(root.and),
-        ThrowMatchError(selector.pos,  Ident(root.symbol))),
+        typed { toTree(root.and) },
+        ThrowMatchError(selector.pos,  Ident(root.symbol))) ,
       LabelDef(exit, List(result), Ident(result)))
   }
 
@@ -1001,7 +1003,7 @@ print()
 
     var node = node1;
 
-    var res: Tree = typed(Literal(Constant(false))); //.setInfo(defs.BooleanClass);
+    var res: Tree = Literal(Constant(false)); //.setInfo(defs.BooleanClass);
     while (node ne null)
     node match {
 
@@ -1025,32 +1027,32 @@ print()
               return Literal(Constant(true));
             }
         var i = guard.length - 1; while(i >= 0) {
-        val ts:Seq[Tree] = bound(i).asInstanceOf[Array[Tree]];
-        val temp = owner.newValue(body(i).pos, cunit.fresh.newName("r$"))
-          .setFlag(Flags.SYNTHETIC).setInfo(resultType);
+          val ts:Seq[Tree] = bound(i).asInstanceOf[Array[Tree]];
+          val temp = owner.newValue(body(i).pos, cunit.fresh.newName("r$"))
+          .setFlag(Flags.SYNTHETIC) .setInfo(body(i).tpe);  // used to be resultType
+
           var res0: Tree =
-            //Block(
-            //  List(Assign(Ident(resultVar), body(i))),
-            //  Literal(Constant(true)));
 	    squeezedBlock(
               List(
                 ValDef(temp, body(i)),
-                Apply(Ident(exit), List(Ident(temp)))),
+                Apply(Ident(exit), List(Ident(temp)) )
+              ),
               Literal(Constant(true))
             ); // forward jump
+
           if (guard(i) != EmptyTree)
             res0 = And(guard(i), res0);
-          res = Or(squeezedBlock(ts.toList, res0), res);
+          res = Or(squeezedBlock(ts.toList, res0), res)
           i = i - 1
         }
       if (_b.or ne null)
         res = Or(res, toTree(_b.or))
-      return res;
+      return res
         case _ =>
           scala.Predef.error("error in toTree");
-      }
-      return res;
     }
+    return res
+  }
 
     class TagNodePair(tag1: int, node1: PatternNode, next1: TagNodePair) {
       var tag: int = tag1
