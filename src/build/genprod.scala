@@ -15,6 +15,7 @@
  *  <p>
  *    usage: <code>scala -classpath ... genprod PATH</code>
  *    where <code>PATH</code> is the desired output directory
+ *  </p>
  *
  *  @author  Burak Emir
  *  @version 1.0
@@ -92,14 +93,20 @@ object genprod {
     import java.io.{File, FileOutputStream}
     import java.nio.channels.Channels
     val out = args(0)
-    for(val node <- allfiles) {
+    for (val node <- allfiles) {
       val f = new File(out + File.separator + node.attributes("name"))
-      f.createNewFile
-      val fos = new FileOutputStream(f)
-      val c = fos.getChannel
-      val w = Channels.newWriter(c, "utf-8")
-      w.write(node.text)
-      w.close
+      try {
+        f.createNewFile
+        val fos = new FileOutputStream(f)
+        val c = fos.getChannel
+        val w = Channels.newWriter(c, "utf-8")
+        w.write(node.text)
+        w.close
+      } catch {
+        case e: java.io.IOException =>
+          Console.println(e.getMessage() + ": " + out)
+          System.exit(-1)
+      }
     }
   }
 }
@@ -239,8 +246,14 @@ case class {tupleClassname(i)}{__typeArgs__}({ __fields__ }) {{
 
    override def toString() = {{
      val sb = new compat.StringBuilder
-	 sb.append('{{'){for(val j <- List.range(1,i)) yield <xml:group>.append(_{j}).append(',')</xml:group>}.append(_{i}).append('}}')
-	 sb.toString
+     { if ({i} == 1)
+         "sb.append('{').append(_" + {i} + ").append(\",}\")"
+       else {
+         val xs = List.range(1, i+1).map(i => ".append(_" + i + ")")
+         xs.mkString("sb.append('{')", ".append(',')",".append('}')")
+       }
+     }
+     sb.toString
    }}
 }}
 </file>
@@ -252,11 +265,12 @@ case class {tupleClassname(i)}{__typeArgs__}({ __fields__ }) {{
 /* zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
                                   P R O D U C T
 zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz */
+
 object ProductFile {
   import genprod._
   def make(i:Int) = {
-    val __typeArgs__ = if(i==0) Nil else covariantArgs(i).mkString("[",", ","]")
-    val __refArgs__ = if(i==0) Nil else targs(i).mkString("[",", ","]")
+    val __typeArgs__ = if (i==0) Nil else covariantArgs(i).mkString("[",", ","]")
+    val __refArgs__ = if (i==0) Nil else targs(i).mkString("[",", ","]")
 <file name={productFilename(i)}>
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
@@ -275,8 +289,11 @@ package scala
 import Predef._
 
 object {productClassname(i)} {{
-  def unapply{__refArgs__}(x:Any): Option[{productClassname(i)}{__refArgs__}] =
-    if(x.isInstanceOf[{productClassname(i)}{__refArgs__}]) Some(x.asInstanceOf[{productClassname(i)}{__refArgs__}]) else None
+  def unapply{__refArgs__}(x: Any): Option[{productClassname(i)}{__refArgs__}] =
+    if (x.isInstanceOf[{productClassname(i)}{__refArgs__}])
+      Some(x.asInstanceOf[{productClassname(i)}{__refArgs__}])
+    else
+      None
 }}
 
 /** {productClassname(i)} is a cartesian product of {i} components
@@ -303,7 +320,7 @@ trait {productClassname(i)}{__typeArgs__} extends Product {{
   }}
 
   {for(val Tuple2(m, t) <- mdefs(i) zip targs(i)) yield
-    "/** projection of this product */\n  def "+m+":"+t+"\n\n  " }
+    "/** projection of this product */\n  def " + m + ": " + t + "\n\n" }
 }}
 </file>
   }
