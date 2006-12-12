@@ -53,6 +53,20 @@ package p {
         protected def tie(x: Node): Unit = { x.s; () }
       }
     }
+
+    /** bug 853, longer path members */
+    class Global {
+      abstract class Tree;
+    }
+
+    trait HasNSC {
+      trait GlobalExt extends Global;
+      val global : GlobalExt;
+      import global._;
+      protected def doTyped(tree : Tree): Tree = tree;
+      def mkTree : Tree;
+      doTyped(mkTree);
+    }
   }
 
   package b {
@@ -124,6 +138,14 @@ package p {
         trait InnerInner {
           getB.tie(self2)
         }
+      }
+    }
+
+    trait ScalaTyperXXX extends HasNSC {
+      val global : GlobalExt;
+      import global._;
+      trait XXX {
+        def foo(tree : Tree) = doTyped(tree);
       }
     }
   }

@@ -187,9 +187,12 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
       val hasArgs = sym.tpe.paramTypes != Nil
       if (protAcc == NoSymbol) {
         val argTypes = tree.tpe // transform(sym.tpe)
+        // if the result type depends on the this type of an enclosing class, the accessor
+        // has to take an object of exactly this type, otherwise it's more general
+	val objType = if (isThisType(argTypes.finalResultType)) clazz.thisType else clazz.typeOfThis
 
         protAcc = clazz.newMethod(tree.pos, nme.protName(sym.originalName))
-                           .setInfo(MethodType(List(clazz.typeOfThis),argTypes))
+                           .setInfo(MethodType(List(objType),argTypes))
         clazz.info.decls.enter(protAcc);
         val code = DefDef(protAcc, vparamss => {
           val obj = vparamss.head.head
@@ -220,19 +223,29 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
      */
     private def makeArg(v: Symbol, obj: Symbol, expectedTpe: Type): Tree = {
       val res = Ident(v)
-      val sym = v.tpe.symbol
+      val sym = obj.tpe.symbol
+      var ownerClass: Symbol = NoSymbol
 
       val isDependentType = expectedTpe match {
-        case TypeRef(ThisType(outerSym), _, _) if (obj.isSubClass(outerSym)) => true
+        case TypeRef(path, _, _) =>
+          ownerClass = thisTypeOfPath(path)
+          if (sym.isSubClass(ownerClass)) true else false
         case _ => false
       }
       if (isDependentType) {
-        val preciseTpe = typeRef(singleType(NoPrefix, obj), v.tpe.symbol, List())
+        val preciseTpe = expectedTpe.asSeenFrom(singleType(NoPrefix, obj), ownerClass) //typeRef(singleType(NoPrefix, obj), v.tpe.symbol, List())
         TypeApply(Select(res, definitions.Any_asInstanceOf),
                   List(TypeTree(preciseTpe)))
       }
       else
         res
+    }
+
+    /** For a path-dependent type, return the this type. */
+    private def thisTypeOfPath(path: Type): Symbol = path match {
+      case ThisType(outerSym)  => outerSym
+      case SingleType(rest, _) => thisTypeOfPath(rest)
+      case _ => NoSymbol
     }
 
     /** Add an accessor for field, if needed, and return a selection tree for it .
@@ -310,6 +323,14 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
         referencingClass
       } else
         hostForAccessorOf(sym, referencingClass.owner.enclClass)
+    }
+
+    /** Is 'tpe' the type of a member of an enclosing class? */
+    private def isThisType(tpe: Type): Boolean = tpe match {
+      case ThisType(sym) => (sym.isClass && !sym.isPackageClass)
+      case TypeRef(pref, _, _) => isThisType(pref)
+      case SingleType(pref, _) => isThisType(pref)
+      case _ => false
     }
   }
 }
