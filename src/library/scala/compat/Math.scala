@@ -23,11 +23,22 @@ object Math {
   val MAX_INT    = java.lang.Integer.MAX_VALUE
   val MIN_LONG   = java.lang.Long.MIN_VALUE
   val MAX_LONG   = java.lang.Long.MAX_VALUE
-  val MIN_FLOAT  = java.lang.Float.MIN_VALUE
-  val MAX_FLOAT  = java.lang.Float.MIN_VALUE
-  val MIN_DOUBLE = java.lang.Double.MIN_VALUE
-  val MAX_DOUBLE = java.lang.Double.MAX_VALUE
 
+  val MIN_FLOAT  = -java.lang.Float.MAX_VALUE
+  val EPS_FLOAT  = java.lang.Float.MIN_VALUE
+  val MAX_FLOAT  = java.lang.Float.MAX_VALUE
+  val NaN_FLOAT  = java.lang.Float.NaN
+  val NEG_INF_FLOAT = java.lang.Float.NEGATIVE_INFINITY
+  val POS_INF_FLOAT = java.lang.Float.POSITIVE_INFINITY
+
+  val MIN_DOUBLE = -java.lang.Double.MAX_VALUE
+  val EPS_DOUBLE = java.lang.Double.MIN_VALUE
+  val MAX_DOUBLE = java.lang.Double.MAX_VALUE
+  val NaN_DOUBLE = java.lang.Double.NaN
+  val NEG_INF_DOUBLE = java.lang.Double.NEGATIVE_INFINITY
+  val POS_INF_DOUBLE = java.lang.Double.POSITIVE_INFINITY
+
+  val E = java.lang.Math.E
   val PI = java.lang.Math.PI
 
   def min(x: Int, y: Int): Int = java.lang.Math.min(x, y)
