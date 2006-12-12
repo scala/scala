@@ -1,0 +1,19 @@
+scopes.scala:1 error: x is already defined as value x
+case class test0(x: int, x: float)
+                         ^
+scopes.scala:5 error: x is already defined as value x
+  val x: float = .0f
+      ^
+scopes.scala:8 error: y is already defined as value y
+     val y: float = .0f
+         ^
+scopes.scala:11 error: x is already defined in local scope
+  def params(x: int, x: float) = x
+                     ^
+scopes.scala:11 error: x is already defined in local scope
+  def curried(x: int)(y: int, y: float) = x + y
+                              ^
+scopes.scala:13 error: x is already defined as value x
+  (x: int, x: float) => x
+           ^
+6 errors found
