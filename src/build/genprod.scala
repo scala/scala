@@ -23,7 +23,7 @@ object genprod {
 
   /** The biggest ?? has Sup?? - 1 components/arguments */
   val SUP_PRODUCT_ARITY  = 23
-  val SUP_TUPLE_ARITY    =  9
+  val SUP_TUPLE_ARITY    = 23
   val SUP_FUNCTION_ARITY =  9
 
   def productClassname(i: Int) = "Product"+i
@@ -237,8 +237,11 @@ package scala
 /** {tupleClassname(i)} is the canonical representation of a @see {productClassname(i)} */
 case class {tupleClassname(i)}{__typeArgs__}({ __fields__ }) {{
 
-  override def productPrefix = ""
-  override def toString() = scala.runtime.ScalaRunTime.caseFields.mkString("{", ", ", "}")
+   override def toString() = {{
+     val sb = new compat.StringBuilder
+	 sb.append('{{'){for(val j <- List.range(1,i)) yield <xml:group>.append(_{j}).append(',')</xml:group>}.append(_{i}).append('}}')
+	 sb.toString
+   }}
 }}
 </file>
     }
