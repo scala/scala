@@ -31,6 +31,11 @@ abstract class AddInterfaces extends InfoTransform {
    */
   def erasedTypeRef(sym: Symbol): Type
 
+  /** Erasure type-map; to be defined in subclass
+   *  <code>Erasure</code>.
+   */
+  def erasure: TypeMap
+
   /** A lazily constructed map that associates every non-interface trait with
    *  its implementation class.
    */
@@ -169,12 +174,14 @@ abstract class AddInterfaces extends InfoTransform {
    *  @param tp ...
    *  @return   ...
    */
-  private def mixinToImplClass(tp: Type): Type = tp match {
-    case TypeRef(pre, sym, args) if (sym.needsImplClass) =>
-      typeRef(pre, implClass(sym), args)
-    case _ =>
-      tp
-  }
+  private def mixinToImplClass(tp: Type): Type =
+    erasure(
+      tp match {
+        case TypeRef(pre, sym, args) if (sym.needsImplClass) =>
+          typeRef(pre, implClass(sym), args)
+        case _ =>
+          tp
+      })
 
   def transformMixinInfo(tp: Type): Type = tp match {
     case ClassInfoType(parents, decls, clazz) =>

@@ -615,13 +615,13 @@ trait Parsers requires SyntaxAnalyzer {
      *                     |   StableId
      *                     |   Path `.' type
      *                     |   `(' Type `)'
-     *                     |   `{' [Type `,' Types] `}'
+     *                     |   `{' [Type `,' [Types [`,']]] `}'
      *                     |   AttributeClauses SimpleType  // if Xplugtypes enabled
      * SimpleTypePattern  ::=  SimpleTypePattern1 [TypePatternArgs]
      * SimpleTypePattern1 ::=  SimpleTypePattern1 "#" Id
      *                     |   StableId
      *                     |   Path `.' type
-     *                     |   `{' [ArgTypePattern `,' ArgTypePatterns] `}'
+     *                     |   `{' [ArgTypePattern `,' [ArgTypePatterns [`,']]] `}'
      */
     def simpleType(isPattern: boolean): Tree = {
       if(settings.Xplugtypes.value)
@@ -640,11 +640,11 @@ trait Parsers requires SyntaxAnalyzer {
                    else {
                      val t1 = argType(isPattern)
                      accept(COMMA)
-                     t1 :: argTypes(isPattern)
+                     t1 :: (if (in.token == RBRACE) List() else argTypes(isPattern, true))
                    }
           checkSize("tuple elements", ts.length, definitions.MaxTupleArity)
           accept(RBRACE)
-          makeTupleType(ts)
+          makeTupleType(ts, false)
         } else {
           val r = path(false, true)
           val x = r match {
@@ -673,7 +673,7 @@ trait Parsers requires SyntaxAnalyzer {
      */
     def typeArgs(isPattern: boolean): List[Tree] = {
       accept(LBRACKET)
-      val ts = argTypes(isPattern)
+      val ts = argTypes(isPattern, false)
       accept(RBRACKET)
       ts
     }
@@ -681,11 +681,12 @@ trait Parsers requires SyntaxAnalyzer {
     /** ArgTypes        ::= ArgType {`,' ArgType}
      *  ArgTypePatterns ::= ArgTypePattern {`,' ArgTypePattern}
      */
-    def argTypes(isPattern: boolean): List[Tree] = {
+    def argTypes(isPattern: boolean, trailingComma: boolean): List[Tree] = {
       val ts = new ListBuffer[Tree] + argType(isPattern)
       while (in.token == COMMA) {
         in.nextToken()
-        ts += argType(isPattern)
+        if (!trailingComma || in.token != RBRACE)
+          ts += argType(isPattern)
       }
       ts.toList
     }
@@ -1098,7 +1099,7 @@ trait Parsers requires SyntaxAnalyzer {
     }
 
     /** Block ::= BlockStatSeq
-     *  Tuple ::= [Expr1 {`,' Expr1}]
+     *  Tuple ::= [Expr1 `,' {Expr1 `,'} [Expr1]]
      */
     def block(): Tree = blockOrTuple(false)
     def blockOrTuple(tupleOK: boolean): Tree =
@@ -1153,11 +1154,12 @@ trait Parsers requires SyntaxAnalyzer {
 
     /**   Patterns ::= Pattern { `,' Pattern }  */
     /**   SeqPatterns ::= SeqPattern { `,' SeqPattern }  */
-    def patterns(seqOK: boolean): List[Tree] = {
+    def patterns(seqOK: boolean, trailingComma: boolean): List[Tree] = {
       val ts = new ListBuffer[Tree]
       ts += pattern(seqOK)
       while (in.token == COMMA) {
-        in.nextToken(); ts += pattern(seqOK)
+        in.nextToken();
+        if (!trailingComma || in.token != RBRACE) ts += pattern(seqOK)
       }
       ts.toList
     }
@@ -1255,13 +1257,13 @@ trait Parsers requires SyntaxAnalyzer {
      *                    |  XmlPattern
      *                    |  StableId [ `(' SeqPatterns `)' ]
      *                    |  `(' [Pattern] `)'
-     *                    |  `{' [Pattern `,' Patterns] `}'
+     *                    |  `{' [Pattern `,' [Patterns [`,']]] `}'
      *  SimpleSeqPattern ::= varid
      *                    |  `_'
      *                    |  literal
      *                    |  `<' xLiteralPattern
      *                    |  StableId [TypePatternArgs] `(' SeqPatterns `)' ]
-     *                    |  `{' [Pattern `,' Patterns] `}'
+     *                    |  `{' [Pattern `,' [Patterns [`,']]] `}'
      *                    |  `(' SeqPatterns `)'
      */
     def simplePattern(seqOK: boolean): Tree = in.token match {
@@ -1281,14 +1283,14 @@ trait Parsers requires SyntaxAnalyzer {
           atPos(in.currentPos) {
             val ts = typeArgs(true)
             accept(LPAREN)
-            val ps = if (in.token == RPAREN) List() else patterns(true)
+            val ps = if (in.token == RPAREN) List() else patterns(true, false)
             accept(RPAREN)
             Apply(TypeApply(convertToTypeId(t), ts), ps)
           }
         else */
         if (in.token == LPAREN) {
           atPos(in.skipToken()) {
-            val ps = if (in.token == RPAREN) List() else patterns(true)
+            val ps = if (in.token == RPAREN) List() else patterns(true, false)
             accept(RPAREN)
             Apply(convertToTypeId(t), ps)
           }
@@ -1298,11 +1300,11 @@ trait Parsers requires SyntaxAnalyzer {
                    else {
                      val p1 = pattern()
                      accept(COMMA)
-                     p1 :: patterns(false)
+                     p1 :: (if (in.token == RBRACE) List() else patterns(false, true))
                    }
           checkSize("tuple elements", ts.length, definitions.MaxTupleArity)
           accept(RBRACE)
-          makeTupleTerm(ts)
+          makeTupleTerm(ts, false)
         } else t
       case USCORE =>
         atPos(in.skipToken()) { Ident(nme.WILDCARD) }
@@ -1311,7 +1313,7 @@ trait Parsers requires SyntaxAnalyzer {
       case LPAREN =>
         val pos = in.skipToken()
         val p =
-          //if (false /*disabled, no regexp matching*/ && seqOK) atPos(pos) { makeSequence(patterns(true)) }
+          //if (false /*disabled, no regexp matching*/ && seqOK) atPos(pos) { makeSequence(patterns(true, false)) }
           //else
           if (in.token != RPAREN) pattern(false)
           else Literal(()).setPos(pos)
@@ -2103,7 +2105,7 @@ trait Parsers requires SyntaxAnalyzer {
      *                 | LocalModifiers TmplDef
      *                 | Expr1
      *                 |
-     *  TupleExprs   ::= ResultExpr "," ResultExprs
+     *  Tuple        ::= [Expr1 `,' {Expr1 `,'} [Expr1]]
      */
     def blockStatSeq(stats: ListBuffer[Tree]): List[Tree] =
       blockStatSeqOrTuple(false, stats)
@@ -2129,14 +2131,14 @@ trait Parsers requires SyntaxAnalyzer {
             val exprs = new ListBuffer[Tree] + expr
             while (in.token == COMMA) {
               in.nextToken()
-              exprs += expr1()
+              if (in.token != RBRACE) exprs += expr1()
             }
             if (in.token == ARROW) {
               val vdefs = exprs.toList flatMap convertToParams
               checkSize("function arguments", vdefs.length, definitions.MaxFunctionArity)
               stats += atPos(in.skipToken()) { Function(vdefs, block()) }
             } else {
-              stats += makeTupleTerm(exprs.toList)
+              stats += makeTupleTerm(exprs.toList, false)
             }
           } else stats += expr
           if (in.token != RBRACE && in.token != CASE) acceptStatSep()

@@ -94,15 +94,15 @@ abstract class TreeBuilder {
     Apply(scalaDot(if (isType) newTypeName(tupString) else newTermName(tupString)), trees)
   }
 
-  def makeTupleTerm(trees: List[Tree]): Tree = trees match {
+  def makeTupleTerm(trees: List[Tree], flattenUnary: boolean): Tree = trees match {
     case List() => Literal(())
-    case List(tree) => tree
+    case List(tree) if flattenUnary => tree
     case _ => makeTuple(trees, false)
   }
 
-  def makeTupleType(trees: List[Tree]): Tree = trees match {
+  def makeTupleType(trees: List[Tree], flattenUnary: boolean): Tree = trees match {
     case List() => scalaUnitConstr
-    case List(tree) => tree
+    case List(tree) if flattenUnary => tree
     case _ => AppliedTypeTree(scalaDot(newTypeName("Tuple" + trees.length)), trees)
   }
 
@@ -300,7 +300,7 @@ abstract class TreeBuilder {
         val ids = (patX1 :: defpats) map makeValue
         val rhs1 = makeForYield(
           List(ValFrom(pos, patX1, rhs)),
-          Block(pdefs, makeTupleTerm(ids)))
+          Block(pdefs, makeTupleTerm(ids, true)))
         makeFor(mapName, flatMapName, ValFrom(pos, makeTuple(pat :: pats, true), rhs1) :: rest1, body)
       case _ =>
         EmptyTree //may happen for erroneous input
@@ -391,7 +391,7 @@ abstract class TreeBuilder {
       val pat1 = patvarTransformer.transform(pat)
       val vars = getVariables(pat1)
       val matchExpr = atPos(pat1.pos){
-        Match(rhs, List(CaseDef(pat1, EmptyTree, makeTupleTerm(vars map (._1) map Ident))))
+        Match(rhs, List(CaseDef(pat1, EmptyTree, makeTupleTerm(vars map (._1) map Ident, true))))
       }
       vars match {
         case List() =>

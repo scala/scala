@@ -57,7 +57,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
    *    </li>
    *  </ul>
    */
-  private val erasure = new TypeMap {
+  val erasure = new TypeMap {
     def apply(tp: Type): Type = tp match {
       case ConstantType(_) =>
         tp
