@@ -20,4 +20,8 @@ final class RichLong(x: Long) extends Proxy with Ordered[Long] {
   // Ordered[Long].compare
   def compare (y: Long): Int = if (x < y) -1 else if (x > y) 1 else 0
 
+  def min(y: Long): Long = if (x < y) x else y
+  def max(y: Long): Long = if (x > y) x else y
+  def abs: Long = if (x < 0) -x else x
+
 }

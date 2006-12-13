@@ -13,7 +13,6 @@ package scala.runtime
 
 
 import Predef._
-import compat.Math
 
 final class RichString(s: String) extends Proxy with Seq[Char] with Ordered[String] {
 
@@ -89,7 +88,7 @@ final class RichString(s: String) extends Proxy with Seq[Char] with Ordered[Stri
       val start = index
       while (index < len && !isLineBreak(apply(index))) index = index + 1
       index = index + 1
-      s.substring(start, Math.min(index, len))
+      s.substring(start, index min len)
     }
   }
 

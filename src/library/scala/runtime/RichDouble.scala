@@ -20,6 +20,10 @@ final class RichDouble(x: Double) extends Proxy with Ordered[Double] {
   // Ordered[Double].compare
   def compare (y: Double): Int = if (x < y) -1 else if (x > y) 1 else 0
 
+  def min(y: Double): Double = Math.min(x, y)
+  def max(y: Double): Double = Math.max(x, y)
+  def abs: Double = Math.abs(x)
+
   // isNaN is provided by the implicit conversion to java.lang.Double
   // def isNaN: Boolean = java.lang.Double.isNaN(x)
   def isInfinity: Boolean = java.lang.Double.isInfinite(x)

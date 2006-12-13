@@ -20,4 +20,9 @@ final class RichInt(x: Int) extends Proxy with Ordered[Int] {
 
   def until(y: Int): Iterator[Int] = Iterator.range(x, y)
   def to(y: Int): Iterator[Int] = Iterator.range(x, y + 1)
+
+  def min(y: Int): Int = if (x < y) x else y
+  def max(y: Int): Int = if (x > y) x else y
+  def abs: Int = if (x < 0) -x else x
+
 }

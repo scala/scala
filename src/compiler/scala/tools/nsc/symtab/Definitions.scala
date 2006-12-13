@@ -491,6 +491,34 @@ trait Definitions requires SymbolTable {
         initValueClass(FloatClass,  false)
         initValueClass(DoubleClass, false)
       }
+      def addModuleMethod(clazz: Symbol, name: Name, value: Any): Unit = {
+        val owner = clazz.linkedClassOfClass
+        newParameterlessMethod(owner, name, ConstantType(Constant(value)))
+      }
+      addModuleMethod(ByteClass,  "MinValue",  java.lang.Byte.MIN_VALUE)
+      addModuleMethod(ByteClass,  "MaxValue",  java.lang.Byte.MAX_VALUE)
+      addModuleMethod(ShortClass, "MinValue",  java.lang.Short.MIN_VALUE)
+      addModuleMethod(ShortClass, "MaxValue",  java.lang.Short.MAX_VALUE)
+      addModuleMethod(CharClass,  "MinValue",  java.lang.Character.MIN_VALUE)
+      addModuleMethod(CharClass,  "MaxValue",  java.lang.Character.MAX_VALUE)
+      addModuleMethod(IntClass,   "MinValue",  java.lang.Integer.MIN_VALUE)
+      addModuleMethod(IntClass,   "MaxValue",  java.lang.Integer.MAX_VALUE)
+      addModuleMethod(LongClass,  "MinValue",  java.lang.Long.MIN_VALUE)
+      addModuleMethod(LongClass,  "MaxValue",  java.lang.Long.MAX_VALUE)
+
+      addModuleMethod(FloatClass, "MinValue", -java.lang.Float.MAX_VALUE)
+      addModuleMethod(FloatClass, "MaxValue",  java.lang.Float.MAX_VALUE)
+      addModuleMethod(FloatClass, "Epsilon",   java.lang.Float.MIN_VALUE)
+      addModuleMethod(FloatClass, "NaN",       java.lang.Float.NaN)
+      addModuleMethod(FloatClass, "PositiveInfinity", java.lang.Float.POSITIVE_INFINITY)
+      addModuleMethod(FloatClass, "NegativeInfinity", java.lang.Float.NEGATIVE_INFINITY)
+
+      addModuleMethod(DoubleClass, "MinValue", -java.lang.Double.MAX_VALUE)
+      addModuleMethod(DoubleClass, "MaxValue",  java.lang.Double.MAX_VALUE)
+      addModuleMethod(DoubleClass, "Epsilon",   java.lang.Double.MIN_VALUE)
+      addModuleMethod(DoubleClass, "NaN",       java.lang.Double.NaN)
+      addModuleMethod(DoubleClass, "PositiveInfinity", java.lang.Double.POSITIVE_INFINITY)
+      addModuleMethod(DoubleClass, "NegativeInfinity", java.lang.Double.NEGATIVE_INFINITY)
     }
 
     /** Is symbol a value class? */

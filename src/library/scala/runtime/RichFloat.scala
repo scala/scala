@@ -20,6 +20,10 @@ final class RichFloat(x: Float) extends Proxy with Ordered[Float] {
   // Ordered[Float].compare
   def compare (y: Float): Int = if (x < y) -1 else if (x > y) 1 else 0
 
+  def min(y: Float) = Math.min(x, y)
+  def max(y: Float) = Math.max(x, y)
+  def abs: Float = Math.abs(x)
+
   // isNaN is provided by the implicit conversion to java.lang.Float
   // def isNaN: Boolean = java.lang.Float.isNaN(x)
   def isInfinity: Boolean = java.lang.Float.isInfinite(x)
