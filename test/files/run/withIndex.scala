@@ -14,9 +14,11 @@ object Test {
     val emptyArray = new Array[String](0)
     val emptyList: List[String] = Nil
     val emptyIterator = emptyList.elements
+    val emptyStream = Stream.empty
 
     Console.println(emptyArray.zipWithIndex.toList)
     Console.println(emptyList.zipWithIndex.toList)
     Console.println(emptyIterator.zipWithIndex.toList)
+    Console.println(emptyStream.zipWithIndex.toList)
   }
 }
