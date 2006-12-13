@@ -53,18 +53,18 @@ object Math {
   def min(x: Double, y: Double): Double = java.lang.Math.min(x, y)
 
   // from Java 1.5
-  def log10(x: Double): Double = java.lang.Math.log10(x)
-  def cbrt(x: Double): Double = java.lang.Math.cbrt(x)
+//   def log10(x: Double): Double = java.lang.Math.log10(x)
+//   def cbrt(x: Double): Double = java.lang.Math.cbrt(x)
 
-  def ulp(x: Double): Double = java.lang.Math.ulp(x)
-  def ulp(x: Float): Float = java.lang.Math.ulp(x)
-  def signum(x: Double): Double = java.lang.Math.signum(x)
-  def signum(x: Float): Float = java.lang.Math.signum(x)
-  def sinh(x: Double): Double = java.lang.Math.sinh(x)
-  def cosh(x: Double): Double = java.lang.Math.cosh(x)
-  def tanh(x: Double):Double = java.lang.Math.tanh(x)
-  def hypot(x: Double, y: Double): Double = java.lang.Math.hypot(x, y)
-  def expm1(x: Double): Double = java.lang.Math.expm1(x)
-  def log1p(x: Double): Double = java.lang.Math.log1p(x)
+//   def ulp(x: Double): Double = java.lang.Math.ulp(x)
+//   def ulp(x: Float): Float = java.lang.Math.ulp(x)
+//   def signum(x: Double): Double = java.lang.Math.signum(x)
+//   def signum(x: Float): Float = java.lang.Math.signum(x)
+//   def sinh(x: Double): Double = java.lang.Math.sinh(x)
+//   def cosh(x: Double): Double = java.lang.Math.cosh(x)
+//   def tanh(x: Double):Double = java.lang.Math.tanh(x)
+//   def hypot(x: Double, y: Double): Double = java.lang.Math.hypot(x, y)
+//   def expm1(x: Double): Double = java.lang.Math.expm1(x)
+//   def log1p(x: Double): Double = java.lang.Math.log1p(x)
 
 }
