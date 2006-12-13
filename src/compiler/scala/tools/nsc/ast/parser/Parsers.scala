@@ -2128,17 +2128,19 @@ trait Parsers requires SyntaxAnalyzer {
         } else if (isExprIntro) {
           val expr = blockStatExpr()
           if (in.token == COMMA) {
-            val exprs = new ListBuffer[Tree] + expr
+            val exprbuf = new ListBuffer[Tree] + expr
             while (in.token == COMMA) {
               in.nextToken()
-              if (in.token != RBRACE) exprs += expr1()
+              if (in.token != RBRACE) exprbuf += expr1()
             }
+            val exprs = exprbuf.toList
             if (in.token == ARROW) {
-              val vdefs = exprs.toList flatMap convertToParams
+              val vdefs = exprs flatMap convertToParams
               checkSize("function arguments", vdefs.length, definitions.MaxFunctionArity)
               stats += atPos(in.skipToken()) { Function(vdefs, block()) }
             } else {
-              stats += makeTupleTerm(exprs.toList, false)
+              checkSize("tuple elements:", exprs.length, definitions.MaxTupleArity)
+              stats += makeTupleTerm(exprs, false)
             }
           } else stats += expr
           if (in.token != RBRACE && in.token != CASE) acceptStatSep()

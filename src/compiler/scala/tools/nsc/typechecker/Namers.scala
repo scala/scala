@@ -397,7 +397,7 @@ trait Namers requires Analyzer {
           .setInfo(typeCompleter(param))
           .setFlag(param.mods.flags & (BYNAMEPARAM | IMPLICIT))
         setPrivateWithin(param, param.symbol, param.mods)
-        context.scope enter param.symbol
+        enterInScope(param.symbol)
         param.symbol
       } else param.symbol
       vparamss.map(.map(enterValueParam))
