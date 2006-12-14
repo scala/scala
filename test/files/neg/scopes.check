@@ -8,15 +8,18 @@ scopes.scala:5 error: x is already defined as value x
   val x: float = .0f
       ^
 scopes.scala:8 error: y is already defined as value y
-     val y: float = .0f
-         ^
+    val y: float = .0f
+        ^
 scopes.scala:11 error: x is already defined as value x
-  def params(x: int, x: float) = x
-                     ^
+  def f1(x: int, x: float) = x
+                 ^
 scopes.scala:12 error: y is already defined as value y
-  def curried(x: int)(y: int, y: float) = x + y
-                              ^
+  def f2(x: int)(y: int, y: float) = x + y
+                         ^
 scopes.scala:13 error: x is already defined as value x
   (x: int, x: float) => x
             ^
-7 errors found
+scopes.scala:15 error: x is already defined as value x
+    case x::x => x
+            ^
+8 errors found
