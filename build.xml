@@ -82,6 +82,16 @@ INITIALISATION
   <!-- Setting-up Ant contrib tasks -->
     <taskdef resource="net/sf/antcontrib/antlib.xml"
              classpath="${ant-contrib.jar}"/>
+    <echo level="verbose" message="ANT_HOME=${env.ANT_HOME}"/>
+    <fail
+      message="External library ${ant-contrib.jar} requires variable ANT_HOME to be set"
+      unless="env.ANT_HOME"
+    />
+    <fail message="External library ${ant-contrib.jar} requires the optional Ant tasks to be installed">
+      <condition><not><and>
+        <available file="${env.ANT_HOME}/lib/ant-nodeps.jar"/>
+      </and></not></condition>
+    </fail>
   <!-- Making sure enough memory is available -->
     <propertyregex
       property="memory.set" input="${env.ANT_OPTS}" select="\1"
