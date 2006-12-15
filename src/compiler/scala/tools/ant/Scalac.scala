@@ -1,7 +1,7 @@
 /*    __  ______________                                                      *\
 **   /  |/ / ____/ ____/                                                      **
 **  / | | /___  / /___                                                        **
-** /_/|__/_____/_____/ Copyright 2005-2006 LAMP/EPFL                          **
+** /_/|__/_____/_____/ Copyright 2005-2007 LAMP/EPFL                          **
 **                                                                            **
 \*                                                                            */
 
@@ -51,9 +51,10 @@ package scala.tools.ant {
    *    <li>logphase,</li>
    *    <li>usepredefs,</li>
    *    <li>debuginfo,</li>
-   *    <li>addparams.</li>
+   *    <li>addparams,</li>
    *    <li>scalacdebugging,</li>
-   *    <li>deprecation.</li>
+   *    <li>deprecation,</li>
+   *    <li>unchecked.</li>
    *  </ul>
    *  <p>
    *    It also takes the following parameters as nested elements:
@@ -104,8 +105,10 @@ package scala.tools.ant {
       val values = List("jvm", "msil", "cldc")
     }
 
-    /** Defines valid values for the <code>deprecation</code> property. */
-    object Deprecation extends PermissibleValue {
+    /** Defines valid values for the <code>deprecation</code> and
+     *  <code>unchecked</code> properties.
+     */
+    object Flag extends PermissibleValue {
       val values = List("yes", "no", "on", "off")
     }
 
@@ -145,6 +148,8 @@ package scala.tools.ant {
     private var addParams: String = ""
     /** Instruct the compiler to generate deprecation information. */
     private var deprecation: Boolean = false
+    /** Instruct the compiler to generate unchecked information. */
+    private var unchecked: Boolean = false
 
     /** Whether the compiler is being debuged. Prints more information in case
       * in case of failure. */
@@ -345,10 +350,20 @@ package scala.tools.ant {
      *  @param input One of the flags <code>yes/no</code> or <code>on/off</code>.
      */
     def setDeprecation(input: String): Unit =
-      if (Deprecation.isPermissible(input))
+      if (Flag.isPermissible(input))
         deprecation = "yes".equals(input) || "on".equals(input)
       else
         error("Unknown deprecation flag '" + input + "'")
+
+    /** Set the <code>unchecked</code> info attribute.
+     *
+     *  @param input One of the flags <code>yes/no</code> or <code>on/off</code>.
+     */
+    def setUnchecked(input: String): Unit =
+      if (Flag.isPermissible(input))
+        unchecked = "yes".equals(input) || "on".equals(input)
+      else
+        error("Unknown unchecked flag '" + input + "'")
 
     /** Set the <code>scalacdebugging</code> info attribute.
      *
@@ -564,6 +579,7 @@ package scala.tools.ant {
       settings.nopredefs.value = !usepredefs
       settings.debuginfo.value = debugInfo
       settings.deprecation.value = deprecation
+      settings.unchecked.value = unchecked
 
       log("Scalac params = '" + addParams + "'", Project.MSG_DEBUG)
       var args =

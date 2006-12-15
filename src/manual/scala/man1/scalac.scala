@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author Stephane Micheloud
  */
 //$Id$
@@ -54,15 +54,9 @@ object scalac extends Command {
     Section("Standard Options",
       DefinitionList(
         Definition(
-          CmdOption("g"),
-          "Generate debugging info"),
-        Definition(
-          CmdOption("g:none"),
-          "Generate no debugging info"),
-        Definition(
-          CmdOption("g:{source,lines,vars,notc}"),
+          CmdOption("g:{none,source,lines,vars,notc}"),
           SeqPara(
-            "Generate only some debugging info.",
+            Mono("\"none\"") & " generates no debugging info,",
             Mono("\"source\"") & " generates only the source file attribute,",
             Mono("\"lines\"") & " generates source and line number information,",
             Mono("\"vars\"") & " generates source, line number and local " &
@@ -72,6 +66,9 @@ object scalac extends Command {
         Definition(
           CmdOption("nowarn"),
           "Generate no warnings"),
+        Definition(
+          CmdOption("noassert"),
+          "Generate no assertions and assumptions"),
         Definition(
           CmdOption("verbose"),
           "Output messages about what the compiler is doing"),
@@ -101,14 +98,6 @@ object scalac extends Command {
           CmdOption("d", Argument("directory")),
           "Specify where to place generated class files."),
         Definition(
-          CmdOption("deprecation"),
-          SeqPara(
-            "Indicates whether source should be compiled with deprecation " &
-            "information; defaults to " & Mono("off") & " (" &
-            "accepted values are: " & Mono("on") & ", " & Mono("off") &
-            ", " & Mono("yes") & " and " & Mono("no") & ")",
-            "Available since Scala version 2.2.1")),
-        Definition(
           CmdOption("encoding", Argument("encoding")),
           SeqPara(
             "Specify character encoding used by source files.",
@@ -128,8 +117,19 @@ object scalac extends Command {
           CmdOption("migrate"),
           "Assist in migrating from Scala version 1.0."),
         Definition(
-          CmdOption("statistics"),
-          "Print compiler statistics."),
+          CmdOption("deprecation"),
+          SeqPara(
+            "Indicate whether source should be compiled with deprecation " &
+            "information; defaults to " & Mono("off") & " (" &
+            "accepted values are: " & Mono("on") & ", " & Mono("off") &
+            ", " & Mono("yes") & " and " & Mono("no") & ")",
+            "Available since Scala version 2.2.1")),
+        Definition(
+          CmdOption("unchecked"),
+          SeqPara(
+            "Enable detailed unchecked warnings",
+            "Non variable type-arguments in type patterns are unchecked " &
+            "since they are eliminated by erasure")),
         Definition(
           CmdOption("resident"),
           "Compiler stays resident, files to compile are read from standard " &
@@ -142,7 +142,7 @@ object scalac extends Command {
           "Print a synopsis of standard options."),
         Definition(
           CmdOption("nouescape"),
-          "Disables handling of " & BSlash & "u unicode escapes"))),
+          "Disable handling of " & BSlash & "u unicode escapes"))),
 
     Section("Non-Standard Options",
       DefinitionList(
@@ -175,6 +175,9 @@ object scalac extends Command {
         Definition(
           CmdOption("debug"),
           "Output debugging messages."),
+        Definition(
+          CmdOption("statistics"),
+          "Print compiler statistics."),
         Definition(
           CmdOption("explaintypes"),
           "Explain type errors in more detail."),
@@ -338,7 +341,7 @@ object scalac extends Command {
     title = command
     date = lastModified // e.g. "June 8, 2006"
     author = "Stephane Micheloud"
-    version = "0.3"
+    version = "0.4"
     sections = List(
       name,
       synopsis,

@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author Stephane Micheloud
  */
 //$Id$
@@ -51,7 +51,7 @@ trait Command {
   //private val df = new java.text.SimpleDateFormat("MMM d, yyyy")
   //private val rightNow = new java.util.Date()
 
-  def lastModified: String = "September 20, 2006" // df.format(rightNow)
+  def lastModified: String = "December 15, 2006" // df.format(rightNow)
 
   def manpage: Document
 }
