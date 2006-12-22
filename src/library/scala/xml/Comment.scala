@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -14,15 +14,14 @@ package scala.xml
 
 import compat.StringBuilder
 
-/** an XML node for comments.
+/** The class <code>Comment</code> implements an XML node for comments.
  *
  * @author Burak Emir
- * @param text text contained in this node, may not contain "--"
+ * @param text the text contained in this node, may not contain "--"
  */
-
 case class Comment(commentText: String) extends SpecialNode {
 
-  final override def typeTag$:Int = -3
+  final override def typeTag$: Int = -3
 
   if (commentText.indexOf("--") != -1)
     throw new IllegalArgumentException("text containts \"--\"")
@@ -41,7 +40,8 @@ case class Comment(commentText: String) extends SpecialNode {
 
   override def text = ""
 
-  /** appends &quot;<!-- text -->&quot; to this stringbuffer */
+  /** Appends &quot;<!-- text -->&quot; to this string buffer.
+   */
   override def toString(sb: StringBuilder) =
     sb.append("<!--").append(commentText).append("-->")
 }

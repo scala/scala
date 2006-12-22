@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -13,10 +13,12 @@ package scala.xml
 
 import compat.StringBuilder
 
-/** an XML node for text (PCDATA). Used in both non-bound and bound XML
- *  representations
- * @author Burak Emir
- * @param text the text contained in this node, may not be null.
+/** The class <code>Text</code> implements an XML node for text (PCDATA).
+ *  It is used in both non-bound and bound XML representations.
+ *
+ *  @author Burak Emir
+ *
+ *  @param text the text contained in this node, may not be null.
  */
 case class Text(_data: String) extends Atom[String](_data) {
 
@@ -29,7 +31,12 @@ case class Text(_data: String) extends Atom[String](_data) {
     case _ => false
   }
 
-  /** returns text, with some characters escaped according to XML spec */
+  /** Returns text, with some characters escaped according to the XML
+   *  specification.
+   *
+   *  @param  sb ...
+   *  @return ...
+   */
   override def toString(sb: StringBuilder) =
     Utility.escape(data.toString(), sb)
 

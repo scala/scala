@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -30,7 +30,7 @@ case class Group(val nodes: Seq[Node]) extends Node {
     case z:Node      => (length == 1) && z == apply(0)
     case z:Seq[_]    => sameElements(z)
     case z:String    => text == z
-    case _           => false;
+    case _           => false
   }
 
   /**
@@ -61,7 +61,8 @@ case class Group(val nodes: Seq[Node]) extends Node {
    * @throws Predef.UnsupportedOperationException (always)
    */
   def toString(sb: StringBuilder) =
-    throw new UnsupportedOperationException("class Group does not support method toString(StringBuilder)")
+    throw new UnsupportedOperationException(
+      "class Group does not support method toString(StringBuilder)")
 
   override def text = { // same impl as NodeSeq
     val sb = new StringBuilder()
