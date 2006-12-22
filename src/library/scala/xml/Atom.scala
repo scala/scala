@@ -21,6 +21,10 @@ import compat.StringBuilder;
 [serializable]
 class Atom[+A]( val data: A ) extends SpecialNode {
 
+  data match {
+    case null => new IllegalArgumentException("cannot construct Atom(null)")
+    case _ =>
+  }
   final override def typeTag$:Int = -1;
 
   /** the constant "#PCDATA"

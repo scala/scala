@@ -61,6 +61,19 @@ object UnitTest {
   def assertTrue(actual: Boolean): Unit = assertEquals(actual, true)
   def assertFalse(actual: Boolean): Unit = assertEquals(actual, false)
 
+  def assertNull(actual: AnyRef): Unit =
+   if (actual eq null)
+     report.ok
+    else
+      report.fail(actual.toString, "null")
+
+  def assertNonNull(actual: AnyRef): Unit =
+   if (actual ne null)
+     report.ok
+    else
+      report.fail(actual.toString, "null")
+
+
   def assertNotEquals[a]( actual: a, expected: a): Unit =
     if (actual != expected)
       report.ok
