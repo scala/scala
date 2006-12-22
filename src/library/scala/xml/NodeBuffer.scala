@@ -26,20 +26,25 @@ package scala.xml
 class NodeBuffer extends scala.collection.mutable.ArrayBuffer[Node] {
 
   /**
-   * Append a single node to this buffer, returns reference on this
-   * NodeBuffer for convenience.
+   * Append given object to this buffer, returns reference on this NodeBuffer
+   * for convenience. Some rules apply: If o is null, it is ignored. If it is
+   * an Iterator or Iterable, its elements will be added. If o is a node, it is
+   * added as it is. If it is anything else, it gets wrapped in an Atom.
    *
-   * Append an iterable object to this buffer, returns reference on
-   * this NodeBuffer for convenience.
    *
-   * Append given string as a <code>scala.xml.Text</code> node to this
-   * buffer, returns reference on this NodeBuffer for convenience.
-   *
-   * @param o ...
-   * @return  ...
+   * @param o converts to an xml node and adds to this node buffer
+   * @return  this nodebuffer
    */
   def &+(o: Any): NodeBuffer = {
     o match {
+      case null => // ignore null
+
+      case _:Unit =>
+	// ignore
+	  case it:Iterator[_] =>
+        while(it.hasNext) {
+          this &+ it.next
+        }
       case n:Node =>
         super.+(n)
       case ns:Iterable[_] =>
@@ -55,10 +60,5 @@ class NodeBuffer extends scala.collection.mutable.ArrayBuffer[Node] {
     }
     this
   }
-  /*
-  def +(o: AnyVal): NodeBuffer = {
-    super.+(Text(o.toString()));
-    this
-  }
-  */
+
 }

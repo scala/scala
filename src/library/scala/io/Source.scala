@@ -12,7 +12,7 @@
 package scala.io
 
 
-import java.io.{File, FileInputStream, PrintStream}
+import java.io.{File, FileInputStream, InputStream, PrintStream}
 
 import compat.StringBuilder
 
@@ -163,6 +163,36 @@ object Source {
     s.descr = url.toString()
     s
   }
+
+  /** reads data from inputstream into a byte array, and calls fromBytes with given encoding.
+   *  If maxlen is given, reads not more bytes than maxlen. if maxlen was not given, or was <= 0, then
+   *  whole inputstream is read and closed afterwards.
+   *
+   *  @param istream the input stream from which to read
+   *  @param enc the encoding to apply to the bytes
+   *  @param maxlen optionally, a positive int specifying maximum number of bytes to read
+   */
+  def fromInputStream(istream: InputStream, enc: String, maxlen: Option[Int]): Source = {
+    val BUFSIZE = 1024
+    val limit = maxlen match { case Some(i) => i; case None => 0 }
+    val bi = new java.io.BufferedInputStream(istream, BUFSIZE)
+    val bytes = new collection.mutable.ArrayBuffer[Byte]()
+    var b = 0
+    var i = 0
+    while( {b = bi.read; i = i + 1; b} != -1 && (limit <= 0 || i < limit)) {
+      bytes += b.toByte;
+    }
+    if(limit <= 0) bi.close
+    fromBytes(bytes.toArray, enc)
+  }
+
+  /** same as fromInputStream(is, enc, None) */
+  def fromInputStream(is: InputStream, enc: String): Source =
+    fromInputStream(is, enc, None)
+
+  /** same as fromInputStream(is, "utf-8", None) */
+  def fromInputStream(is: InputStream): Source =
+    fromInputStream(is, "utf-8", None)
 
 }
 

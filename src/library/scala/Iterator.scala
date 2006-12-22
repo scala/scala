@@ -536,4 +536,10 @@ trait Iterator[+A] {
     res.toList
   }
 
+  /** Transforms the elements of this iterator into a string, thereby destroying it.
+   *  Has the same effect as toList.mkString(start,sep,end)
+   */
+  def mkString(start: String, sep: String, end: String): String =
+    toList.mkString(start, sep, end)
+
 }
