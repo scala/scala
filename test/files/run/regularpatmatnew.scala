@@ -10,7 +10,8 @@ object Test {
       new Test03,
       new Test04,
       new Test05,
-      new Test06
+      new Test06,
+      new Test07
 
     ).run(tr)
 
@@ -130,5 +131,22 @@ object Test {
       assertEquals(doMatch(A(A(1)),2), 2)
     }
 
+  }
+
+  class Test07 extends TestCase("sette List of chars") {
+    def doMatch1(xs:List[char]) = xs match {
+      case List(x, y, _*) => x::y::Nil
+    }
+    def doMatch2(xs:List[char]) = xs match {
+      case List(x, y, z, w) => List(z,w)
+    }
+    //def doMatch3(xs:List[char]) = xs match {
+    //  case List(_*, z, w) => w::Nil
+    //}
+    override def runTest() {
+      assertEquals(doMatch1(List('a','b','c','d')), List('a','b'))
+      assertEquals(doMatch2(List('a','b','c','d')), List('c','d'))
+      //assertEquals(doMatch3(List('a','b','c','d')), List('d'))
+    }
   }
 }

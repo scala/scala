@@ -139,7 +139,10 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
   }
 
   def pUnapplyPat(pos: PositionType, fn: Tree) = {
-    val tpe = definitions.productType(definitions.optionOfProductElems(fn.tpe)) // is subtype of producttype
+    var tpe = definitions.unapplyUnwrap(fn.tpe)
+    if(definitions.isOptionOrSomeType(tpe)) {
+      tpe = tpe.typeArgs.head
+    }
     val node = new UnapplyPat(newVar(pos, tpe), fn)
     node.pos = pos
     node.setType(tpe)
@@ -612,16 +615,23 @@ print()
       //assert index >= 0 : casted;
       if (index < 0) { Predef.error("error entering:" + casted); return null }
 
-      //access the index'th child of a case class
+      target match {
+        case u @ UnapplyPat(_,_) if u.returnsOne =>
+          assert(index==0)
+          curHeader = pHeader(pat.pos, casted.tpe, Ident(casted) setType casted.tpe)
+          target.and = curHeader
+          curHeader.or = patternNode(pat, curHeader, env)
+          enter(patArgs, curHeader.or, casted, env)
+        case _ =>
+          //access the index'th child of a case class
+          curHeader  = newHeader(pat.pos, casted, index)
+          target.and = curHeader; // (*)
 
-      curHeader  = newHeader(pat.pos, casted, index)
-      target.and = curHeader; // (*)
+          if (bodycond ne null) target.and = bodycond(target.and) // restores body with the guards
 
-      if (bodycond ne null) target.and = bodycond(target.and) // restores body with the guards
-
-      curHeader.or = patternNode(pat, curHeader, env)
-      enter(patArgs, curHeader.or, casted, env)
-
+          curHeader.or = patternNode(pat, curHeader, env)
+          enter(patArgs, curHeader.or, casted, env)
+      }
     } else {
       //Console.println("   enter: using old header for casted = "+casted) // DBG
       // find most recent header
@@ -967,8 +977,6 @@ print()
   def generalSwitchToTree(): Tree = {
     this.exit = owner.newLabel(root.pos, "exit").setInfo(new MethodType(List(resultType), resultType));
     val result = exit.newValueParameter(root.pos, "result").setInfo( resultType );
-
-
     squeezedBlock(
       List(
         ValDef(root.symbol, selector),
@@ -1182,21 +1190,46 @@ print()
           case DefaultPat() =>
             return toTree(node.and);
 
-	  case UnapplyPat(casted, fn @ Apply(fn2, _)) =>
-	    val fntpe = if(settings.Xkilloption.value) fn.tpe.typeArgs(0) else fn.tpe
-	    //Console.println("unapply "+fntpe)
-	    val v = newVar(fn.pos, fntpe)
-	    var __opt_get__ = if(settings.Xkilloption.value) Ident(v) else typed(Select(Ident(v),nme.get))
-	    var __opt_nonemp__ = if(settings.Xkilloption.value) NotNull(Ident(v)) else Not(Select(Ident(v), nme.isEmpty))
+          case UnapplyPat(casted, Apply(fn1, _)) if casted.tpe.symbol == definitions.BooleanClass => // special case
+            var useSelector = selector
+            val checkType = fn1.tpe match {
+              case MethodType(List(argtpe),_) =>
+                if(isSubType(selector.tpe, argtpe))
+                  Literal(Constant(true))
+                else {
+                  useSelector = gen.mkAsInstanceOf(selector, argtpe)
+                  gen.mkIsInstanceOf(selector.duplicate, argtpe)
+                 }
+            }
+            Or(And(checkType,
+             And(Apply(fn1,List(useSelector)),
+                 toTree(node.and))
+             ),
+             toTree(node.or, selector.duplicate))
 
-	    var fn1 = fn2.duplicate; if(settings.Xkilloption.value) {
-	      fn1.setType(transformInfo(owner, fn1.tpe))
-	    }
-	    Or(squeezedBlock(
-	      List(ValDef(v,Apply(fn1,List(selector)))),
-	      And(__opt_nonemp__,
-		  squeezedBlock(List(ValDef(casted, __opt_get__)),toTree(node.and)))),
-	       toTree(node.or, selector.duplicate))
+	      case UnapplyPat(casted, fn @ Apply(fn1, _)) =>
+             var useSelector = selector
+             val checkType = fn1.tpe match {
+               case MethodType(List(argtpe),_) =>
+                 if(isSubType(selector.tpe, argtpe))
+                   Literal(Constant(true))
+                 else {
+                   useSelector = gen.mkAsInstanceOf(selector, argtpe)
+                   gen.mkIsInstanceOf(selector.duplicate, argtpe)
+                 }
+             }
+             val fntpe = fn.tpe
+             val v = newVar(fn.pos, fntpe)
+             var __opt_get__    = typed(Select(Ident(v),nme.get))
+             var __opt_nonemp__ = Not(Select(Ident(v), nme.isEmpty))
+
+             Or(And(checkType,
+		       squeezedBlock(
+	      	     List(ValDef(v,Apply(fn1,List(useSelector)))),
+		         And(__opt_nonemp__,
+		           squeezedBlock(List(ValDef(casted, __opt_get__)),toTree(node.and))))
+                ),
+              toTree(node.or, selector.duplicate))
 
           case ConstrPat(casted) =>
             if(!isSubType(casted.tpe,selector.tpe) && settings.Xkilloption.value && definitions.isOptionType(selector.tpe)) {

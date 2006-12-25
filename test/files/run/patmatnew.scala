@@ -20,8 +20,8 @@ object Test {
     val tr = new TestResult
     new TestSuite(
 
-      new Test717
-
+      new Test717,
+      new TestGuards
     ).run(tr)
 
     for(val f <- tr.failures())
@@ -41,6 +41,22 @@ object Test {
        case foo1.Bar(2) => true
       }
       assertTrue("ok", res);
+    }
+  }
+
+  class TestGuards extends TestCase("multiple guards for same pattern") with Shmeez {
+    val tree:Tree = Beez(2)
+    override def runTest = {
+      val res = tree match {
+        case Beez(x) if x == 3 => false
+        case Beez(x) if x == 2 => true
+      }
+      assertTrue("ok", res);
+      val ret = (Beez(3):Tree) match {
+        case Beez(x) if x == 3 => true
+        case Beez(x) if x == 2 => false
+      }
+      assertTrue("ok", ret);
     }
   }
 

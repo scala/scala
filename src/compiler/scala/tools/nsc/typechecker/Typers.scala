@@ -561,7 +561,7 @@ trait Typers requires Analyzer {
                     throw t
                 }
                 tree1
-              } else if (clazz.isNonBottomSubClass(SeqClass)) { // (5.2)
+              } else if (!settings.Xunapply.value && clazz.isNonBottomSubClass(SeqClass)) { // (5.2)
                 val restpe = pt.baseType(clazz)
                 restpe.baseType(SeqClass) match {
                   case TypeRef(pre, seqClass, args) =>
@@ -1396,46 +1396,46 @@ trait Typers requires Analyzer {
           val unapp = definitions.unapplyMember(otpe)
           assert(unapp.exists, tree)
           assert(isFullyDefined(pt))
+
+          val unappArg:Type = unapp.tpe match {
+            case PolyType(_,MethodType(List(res), _)) => res
+            case MethodType(List(res), _)             => res
+            case _ => error(fun.pos, "unapply takes too many arguments to be used as pattern"); NoType
+          }
+
           val argDummy =  context.owner.newValue(fun.pos, nme.SELECTOR_DUMMY)
             .setFlag(SYNTHETIC)
-            .setInfo(pt)
+            .setInfo(unappArg) // was: pt
           if (args.length > MaxTupleArity)
             error(fun.pos, "too many arguments for unapply pattern, maximum = "+MaxTupleArity)
-          val arg = Ident(argDummy) setType pt
-          var prod: Type = null
-
-          if (nme.unapplySeq == unapp.name) {
-            def failSeq = {
-              error(fun.pos, " unapplySeq should return Option[T] for T<:Product?[...Seq[?]]")
-              setError(tree)
+          val arg = Ident(argDummy) setType unappArg // was pt
+          var funPt: Type = null
+          try {
+            funPt = unapp.name match {
+              case nme.unapply    => unapplyReturnTypeExpected(args.length)
+              case nme.unapplySeq => unapplyTypeListFromReturnTypeSeq(unapp.tpe) match {
+                case List() => null //fail
+                case List(TypeRef(pre,repeatedParam, tpe)) => optionType(seqType(WildcardType)) //succeed
+                case xs   => optionType(productType((xs.tail map {x => WildcardType}) ::: List(seqType(WildcardType))))// succeed
+              }
             }
-            unapp.tpe.resultType match { // last should be seq...
-              case TypeRef(_, opt, List(tpe)) if opt == definitions.OptionClass =>
-                // the following is almost definitions.optionOfProductElems, but error handling?
-                tpe.baseClasses.find { x => isProductType(x.tpe) } match {
-                  case Some(p) =>
-                    val xs = tpe.baseType(p).typeArgs
-                    if(xs.isEmpty)
-                      return failSeq
-                    prod = productType((xs.tail map {x => WildcardType}) ::: List(seqType(WildcardType)))
-                  case None => return failSeq
-                }
-              case _ => return failSeq
-            }
-          } else if (args.length == 0) prod = UnitClass.tpe
-          else prod = productType(args map (arg => WildcardType))
-
-          val funPt = appliedType(OptionClass.typeConstructor, List(prod))
+          } catch {
+            case ex => //failure
+             //Console.println("DEBUG")
+             //ex.printStackTrace()
+             error(fun.pos, " unapplySeq should return Option[T] for T<:Product?[...Seq[?]]")
+             return setError(tree)
+          }
           val fun0 = Ident(fun.symbol) setPos fun.pos setType otpe // would this change when patterns are terms???
           val fun1untyped = atPos(fun.pos) {
               Apply(Select(gen.mkAttributedRef(fun.tpe.prefix,fun.symbol), unapp), List(arg))
             }
           //Console.println("UNAPP "+fun+"/"+fun.tpe+" "+fun1untyped)
+          //Console.println("funPt: "+funPt)
           val fun1 = typed(fun1untyped, EXPRmode, funPt)
           if (fun1.tpe.isErroneous) setError(tree)
           else {
-            val formals0 = if(unapp.name == nme.unapply) optionOfProductElems(fun1.tpe)
-                         else unapplySeqResultToMethodSig(fun1.tpe)
+            val formals0 = unapplyTypeList(fun1.symbol, fun1.tpe)
             val formals1 = formalTypes(formals0, args.length)
             val args1 = typedArgs(args, mode, formals0, formals1)
             UnApply(fun1, args1) setPos tree.pos setType pt

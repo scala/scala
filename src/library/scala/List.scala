@@ -31,8 +31,7 @@ object List {
 
   /** for unapply matching
    */
-  def unapplySeq[A](x: Any): Option[Tuple1[List[A]]] =
-    if (x.isInstanceOf[List[A]]) Some(Tuple1(x.asInstanceOf[List[A]])) else None
+  def unapplySeq[A](x: List[A]): Option[List[A]] = Some(x)
 
   /** Create a sorted list of all integers in a range.
    *

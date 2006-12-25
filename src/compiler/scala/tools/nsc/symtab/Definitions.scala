@@ -139,6 +139,10 @@ trait Definitions requires SymbolTable {
       case TypeRef(_, sym, List(_)) if sym == OptionClass => true
       case _ => false
     }
+    def isOptionOrSomeType(tp: Type) = tp match {
+      case TypeRef(_, sym, List(_)) => sym == OptionClass || sym == SomeClass
+      case _ => false
+    }
     def optionType(tp: Type) =
       typeRef(OptionClass.typeConstructor.prefix, OptionClass, List(tp))
 
@@ -154,21 +158,80 @@ trait Definitions requires SymbolTable {
       case _ => false
     }
 
-    def optionOfProductElems(tp: Type): List[Type] = {
-      assert(tp.symbol == OptionClass)
-      val prod = tp.typeArgs.head
-      if (prod.symbol == UnitClass) List()
-      else prod.baseClasses.find { x => isProductType(x.tpe) } match {
-        case Some(p) => prod.baseType(p).typeArgs
+
+    def unapplyUnwrap(tpe:Type) = tpe match {
+      case PolyType(_,MethodType(_, res)) => res
+      case MethodType(_, res)             => res
+      case tpe                            => tpe
+    }
+
+    /** returns type list for return type of the extraction */
+    def unapplyTypeList(ufn: Symbol, ufntpe: Type) = {
+      assert(ufn.isMethod)
+      //Console.println("utl "+ufntpe+" "+ufntpe.symbol)
+      ufn.name match {
+	case nme.unapply    => unapplyTypeListFromReturnType(ufntpe)
+	case nme.unapplySeq => unapplyTypeListFromReturnTypeSeq(ufntpe)
+	case _ => throw new IllegalArgumentException("expected function symbol of extraction")
+      }
+    }
+    /** (the inverse of unapplyReturnTypeSeq)
+     *  for type Boolean, returns Nil
+     *  for type Option[T] or Some[T]:
+     *   - returns T0...Tn if n>0 and T <: Product[T0...Tn]]
+     *   - returns T otherwise
+     */
+    def unapplyTypeListFromReturnType(tp1: Type): List[Type] =  { // rename: unapplyTypeListFromReturnType
+      val tp = unapplyUnwrap(tp1)
+      val   B = BooleanClass;
+      val   O = OptionClass; val S = SomeClass; tp.symbol match { // unapplySeqResultToMethodSig
+	case  B                      => Nil
+	case  O                  | S =>
+	  val prod = tp.typeArgs.head
+	  prod.baseClasses.find { x => isProductType(x.tpe) } match {
+            case Some(p) => prod.baseType(p).typeArgs
+	    case _       => prod::Nil // special case n = 0
+	  }
+	case _ => throw new IllegalArgumentException(tp.symbol + " in not in {boolean, option, some}")
       }
     }
 
-    def unapplySeqResultToMethodSig(tp: Type) = {
-      val ts = optionOfProductElems(tp)
-      val last1 = ts.last.baseType(SeqClass) match {
-        case TypeRef(pre, seqClass, args) => typeRef(pre, RepeatedParamClass, args)
+    /** let type be the result type of the (possibly polymorphic) unapply method
+     *  for type Option[T] or Some[T]
+     *  -returns T0...Tn-1,Tn* if n>0 and T <: Product[T0...Tn-1,Seq[Tn]]],
+     *  -returns R* if T = Seq[R]
+     */
+    def unapplyTypeListFromReturnTypeSeq(tp1: Type): List[Type] = {
+      val tp = unapplyUnwrap(tp1)
+      val   O = OptionClass; val S = SomeClass; tp.symbol match {
+      case  O                  | S =>
+	val ts = unapplyTypeListFromReturnType(tp1)
+	val last1 = ts.last.baseType(SeqClass) match {
+          case TypeRef(pre, seqClass, args) => typeRef(pre, RepeatedParamClass, args)
+	  case _ => throw new IllegalArgumentException("last not seq")
+	}
+	ts.init ::: List(last1)
+	case _ => throw new IllegalArgumentException(tp.symbol + " in not in {option, some}")
       }
-      ts.init ::: List(last1)
+    }
+
+    /** returns type of the unapply method returning T_0...T_n
+     *  for n == 0, boolean
+     *  for n == 1, Some[T0]
+     *  else Some[Product[Ti]]
+    def unapplyReturnType(elems: List[Type], useWildCards: Boolean) =
+      if (elems.isEmpty)
+	BooleanClass.tpe
+      else if (elems.length == 1)
+	optionType(if(useWildCards) WildcardType else elems(0))
+      else
+	productType({val es = elems; if(useWildCards) elems map { x => WildcardType} else elems})
+     */
+
+    def unapplyReturnTypeExpected(argsLength: int) = argsLength match {
+      case 0 => BooleanClass.tpe
+      case 1 => optionType(WildcardType)
+      case n => optionType(productType(List.range(0,n).map (arg => WildcardType)))
     }
 
     /** returns unapply or unapplySeq if available */
