@@ -335,9 +335,9 @@ trait Opcodes requires ICodes {
      * Stack: ...:size(int)
      *    ->: ...:arrayref
      */
-    case class CREATE_ARRAY(element: TypeKind) extends Instruction {
+    case class CREATE_ARRAY(elem: TypeKind) extends Instruction {
       /** Returns a string representation of this instruction */
-      override def toString(): String ="CREATE_ARRAY "+element.toString();
+      override def toString(): String ="CREATE_ARRAY "+elem.toString();
 
       override def consumed = 1;
       override def produced = 1;

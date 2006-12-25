@@ -1903,13 +1903,7 @@ trait Parsers requires SyntaxAnalyzer {
         if (name != nme.ScalaObject.toTypeName)
           parents += scalaScalaObjectConstr
         if (mods.hasFlag(Flags.CASE)) {
-          if (!vparamss.isEmpty) {
-            val argtypes: List[Tree] = vparamss.head map (.tpt.duplicate) //remove type annotation and you will get an interesting error message!!!
-            checkSize("case class parameters", argtypes.length, definitions.MaxProductArity)
-            if (argtypes.length <= definitions.MaxProductArity) parents += productConstr(argtypes)
-          } else {
-            parents += productConstr(Nil)
-          }
+          parents += productConstr
         }
         val ps = parents.toList
         newLineOptWhenFollowedBy(LBRACE)

@@ -12,7 +12,7 @@ import scala.collection.mutable.ListBuffer
 
 /** <ul>
  *    <li>
- *      <code>caseArity</code>, <code>caseElement</code> implementations added
+ *      <code>productArity</code>, <code>element</code> implementations added
  *      to case classes
  *    </li>
  *    <li>
@@ -61,14 +61,32 @@ trait SyntheticMethods requires Analyzer {
       method
     }
 
+    /*
     def productSelectorMethod(n: int, accessor: Symbol): Tree = {
       val method = syntheticMethod(newTermName("_"+n), FINAL, accessor.tpe)
       typed(DefDef(method, vparamss => gen.mkAttributedRef(accessor)))
     }
-
+    */
     def productPrefixMethod: Tree = {
       val method = syntheticMethod(nme.productPrefix, FINAL, PolyType(List(), StringClass.tpe))
       typed(DefDef(method, vparamss => Literal(Constant(clazz.name.decode))))
+    }
+
+    def productArityMethod(nargs:Int ): Tree = {
+      val method = syntheticMethod(nme.arity, FINAL, PolyType(List(), IntClass.tpe))
+      typed(DefDef(method, vparamss => Literal(Constant(nargs))))
+    }
+
+    def productElementMethod(accs: List[Symbol]): Tree = {
+      val method = syntheticMethod(nme.element, FINAL, MethodType(List(IntClass.tpe), AnyClass.tpe))
+      typed(DefDef(method, vparamss => Match(Ident(vparamss.head.head), {
+	(for(val Pair(sym,i) <- accs.zipWithIndex) yield {
+	  CaseDef(Literal(Constant(i)),EmptyTree, Ident(sym))
+	}):::List(CaseDef(Ident(nme.WILDCARD), EmptyTree,
+		    Throw(New(TypeTree(IndexOutOfBoundsExceptionClass.tpe), List(List(
+		      Select(Ident(vparamss.head.head), nme.toString_)
+		    ))))))
+      })))
     }
 
     def moduleToStringMethod: Tree = {
@@ -211,10 +229,10 @@ trait SyntheticMethods requires Analyzer {
 
         if (!hasDirectImplementation(nme.productPrefix)) ts += productPrefixMethod
 	val accessors = clazz.caseFieldAccessors
-        for (val i <- 0 until accessors.length) {
-          val acc = accessors(i)
-          if (acc.name.toString != "_"+(i+1)) ts += productSelectorMethod(i+1, acc)
-        }
+	if (!hasImplementation(nme.arity))
+	  ts += productArityMethod(accessors.length)
+	if (!hasImplementation(nme.element))
+	  ts += productElementMethod(accessors)
       }
 
       if (clazz.isModuleClass && isSerializable(clazz)) {
