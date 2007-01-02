@@ -36,10 +36,10 @@ class UnprefixedAttribute(val key: String, val value: Seq[Node], next1: MetaData
     null
 
   /**
-   * Gets value of unqualified (unprefixed) attribute with given key.
+   * Gets value of unqualified (unprefixed) attribute with given key, null if not found
    *
    * @param  key
-   * @return ..
+   * @return value as Seq[Node] if key is found, null otherwise
    */
   def apply(key: String): Seq[Node] =
     if (key == this.key) value else next(key)

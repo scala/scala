@@ -37,10 +37,12 @@ abstract class MetaData extends Iterable[MetaData] {
     next.append(copy(m))
 
   /**
-   *  @param s ...
-   *  @return  ...
+   * Gets value of unqualified (unprefixed) attribute with given key, null if not found
+   *
+   * @param  key
+   * @return value as Seq[Node] if key is found, null otherwise
    */
-  def apply(s: String): Seq[Node]
+  def apply(key: String): Seq[Node]
 
   /** convenience method, same as <code>apply(namespace, owner.scope, key)</code>.
    *
@@ -52,6 +54,14 @@ abstract class MetaData extends Iterable[MetaData] {
   final def apply(namespace: String, owner: Node, key: String): Seq[Node] =
     apply(namespace, owner.scope, key)
 
+  /**
+   * Gets value of prefixed attribute with given key and namespace, null if not found
+   *
+   * @param  uri namespace of key
+   * @param  scp a namespace scp (usually of the element owning this attribute list)
+   * @param  key to be looked fore
+   * @return value as Seq[Node] if key is found, null otherwise
+   */
   def apply(uri:String, scp:NamespaceBinding, k:String): Seq[Node]
 
   /**
@@ -122,25 +132,30 @@ abstract class MetaData extends Iterable[MetaData] {
   /** returns Null or the next MetaData item */
   def next: MetaData
 
-  /** gets value of unqualified (unprefixed) attribute with given key */
+  /**
+   * Gets value of unqualified (unprefixed) attribute with given key, None if not found
+   *
+   * @param  key
+   * @return value in Some(Seq[Node]) if key is found, None otherwise
+   */
   final def get(key: String): Option[Seq[Node]] = apply(key) match {
     case null => None
     case x    => Some(x)
   }
 
-  /** same as get(namespace, owner.scope, key) */
-  final def get(namespace: String, owner: Node, key: String): Option[Seq[Node]] =
-    get(namespace, owner.scope, key)
+  /** same as get(uri, owner.scope, key) */
+  final def get(uri: String, owner: Node, key: String): Option[Seq[Node]] =
+    get(uri, owner.scope, key)
+
 
   /** gets value of qualified (prefixed) attribute with given key.
-   *
-   *  @param namespace ...
-   *  @param scope     ...
-   *  @param key       ...
-   *  @return          <code>Some(x)</code> iff ...
+   * @param  uri namespace of key
+   * @param  scope a namespace scp (usually of the element owning this attribute list)
+   * @param  key to be looked fore
+   * @return value as Some[Seq[Node]] if key is found, None otherwise
    */
-  final def get(namespace: String, scope: NamespaceBinding, key: String): Option[Seq[Node]] =
-    apply(namespace, scope, key) match {
+  final def get(uri: String, scope: NamespaceBinding, key: String): Option[Seq[Node]] =
+    apply(uri, scope, key) match {
       case null => None
       case x    => Some(x)
     }

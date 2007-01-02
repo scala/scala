@@ -131,9 +131,19 @@ trait Definitions requires SymbolTable {
           typeRef(sym.typeConstructor.prefix, sym, elems)
         } else NoType
 
+    /** if tpe <: ProductN[T1,...,TN], returns Some(T1,...,TN) else None */
+    def getProductArgs(tpe: Type): Option[List[Type]] =
+      tpe.baseClasses.find { x => definitions.isProductType(x.tpe) } match {
+        case Some(p) => Some(tpe.baseType(p).typeArgs)
+	case _       => None
+      }
+
     var OptionClass: Symbol = _
-    def SomeClass: Symbol = getClass("scala.Some")
-    def NoneClass: Symbol = getModule("scala.None")
+
+    private var SomeClass_ : Symbol = null
+    def SomeClass: Symbol = { if(SomeClass_ eq null) SomeClass_ = getClass("scala.Some"); SomeClass_ }
+    private var NoneClass_ : Symbol = null
+    def NoneClass: Symbol = { if(NoneClass_ eq null) SomeClass_ = getModule("scala.None"); NoneClass_ }
 
     def isOptionType(tp: Type) = tp match {
       case TypeRef(_, sym, List(_)) if sym == OptionClass => true
@@ -157,7 +167,6 @@ trait Definitions requires SymbolTable {
       case TypeRef(_, sym, List(_)) if sym == NoneClass => true
       case _ => false
     }
-
 
     def unapplyUnwrap(tpe:Type) = tpe match {
       case PolyType(_,MethodType(_, res)) => res
@@ -188,10 +197,10 @@ trait Definitions requires SymbolTable {
 	case  B                      => Nil
 	case  O                  | S =>
 	  val prod = tp.typeArgs.head
-	  prod.baseClasses.find { x => isProductType(x.tpe) } match {
-            case Some(p) => prod.baseType(p).typeArgs
-	    case _       => prod::Nil // special case n = 0
-	  }
+          getProductArgs(prod)  match {
+            case Some(all @ (x1::x2::xs)) => all       // n >= 2
+            case _                        => prod::Nil // special n == 0 ||  n == 1
+          }
 	case _ => throw new IllegalArgumentException(tp.symbol + " in not in {boolean, option, some}")
       }
     }

@@ -1391,6 +1391,9 @@ trait Typers requires Analyzer {
         case ErrorType =>
           setError(copy.Apply(tree, fun, args))
         /* --- begin unapply  --- */
+
+        // bq: this is so wrong -- why use WildcardTypes to check patterns arguments?
+        //                         only because of generics?
         case otpe if definitions.unapplyMember(otpe).exists && settings.Xunapply.value =>
           // !!! this is fragile, maybe needs to be revised when unapply patterns become terms
           val unapp = definitions.unapplyMember(otpe)

@@ -274,7 +274,17 @@ trait PatternNodes requires transform.ExplicitOuter {
   case class DefaultPat()extends PatternNode
   case class ConstrPat(casted:Symbol) extends PatternNode
   case class UnapplyPat(casted:Symbol, fn:Tree) extends PatternNode {
-    def returnsOne = !definitions.isProductType(casted.tpe)
+    def returnsOne =  {
+      /*val res =*/ definitions.getProductArgs(casted.tpe) match {
+        case Some(Nil) => true     // n = 0
+        case Some(x::Nil) => true  // n = 1
+        case Some(_) => false
+        case _ => true
+      }
+      //Console.println("returns one? "+casted.tpe)
+      //Console.println(" I say: "+res)
+      //res
+    }
   }
   case class ConstantPat(value: Any /*AConstant*/) extends PatternNode
   case class VariablePat(tree: Tree) extends PatternNode

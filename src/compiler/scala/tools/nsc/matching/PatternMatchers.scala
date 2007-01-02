@@ -146,6 +146,7 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
     val node = new UnapplyPat(newVar(pos, tpe), fn)
     node.pos = pos
     node.setType(tpe)
+    //Console.println("!build unapply, fn.tpe="+fn.tpe+", casted =" + node.casted+" tpe = "+tpe)
     node
   }
 
@@ -230,6 +231,11 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
     newVar(pos, cunit.fresh.newName("temp"), tpe).setFlag(Flags.SYNTHETIC)
 
 // ---
+/* //debug
+  def squeezedBlock(vds:List[Tree], exp:Tree): Tree = {
+    Block(vds, exp)
+  }
+*/
   def squeezedBlock(vds:List[Tree], exp:Tree): Tree = {
     val tpe = exp.tpe
     class RefTraverser(sym:Symbol) extends Traverser {
@@ -550,23 +556,31 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
               List(Literal(Constant(index)))))
       val seqType = t.tpe
       pHeader( pos, seqType, t )
-    } else if (defs.isProductType(casted.tpe)) {
-      val acc = defs.productProj(casted.tpe.typeArgs.length, index+1)
-      val accTree = typed(Apply(Select(ident, acc), List())) // nsc !
-      pHeader(pos, accTree.tpe, accTree)
     } else {
       //Console.println("NOT FIRSTPOS");
       //Console.println("newHeader :: ");
-
       if(!casted.tpe.symbol.hasFlag(Flags.CASE)) {
-/*	Console.println("  newHeader :: casted="+casted);
+
+        //Console.println("NOT CASE");
+
+        if (defs.isProductType(casted.tpe)) {
+          val acc = defs.productProj(casted.tpe.typeArgs.length, index+1)
+          val accTree = typed(Apply(Select(ident, acc), List())) // nsc !
+          return pHeader(pos, accTree.tpe, accTree)
+        }
+
+        /*
+	Console.println("  newHeader :: casted="+casted);
 	Console.println("  newHeader :: casted.pos="+casted.pos);
 	Console.println("  newHeader :: casted.pos==Position.FIRSTPOS"+(casted.pos == Position.FIRSTPOS));
 	Console.println("  newHeader :: casted.tpe="+casted.tpe);
       	Console.println("  newHeader :: casted.tpe.symbol="+casted.tpe.symbol);
 print()
-*/	throw new Error("internal problem, trying casefield access for no case class") //DBG
+*/
+	throw new Error("internal problem, trying casefield access for no case class") //DBG
       }
+
+      //Console.println("CASE");
 
       val caseAccs = casted.tpe.symbol.caseFieldAccessors;
       if (caseAccs.length <= index) Console.println("selecting " + index + " in case fields of " + casted.tpe.symbol + "=" + casted.tpe.symbol.caseFieldAccessors);//debug
@@ -617,6 +631,7 @@ print()
 
       target match {
         case u @ UnapplyPat(_,_) if u.returnsOne =>
+          //Console.println("u.returnsOne!"+u+ " casted:"+casted+" u.casted"+u.casted)
           assert(index==0)
           curHeader = pHeader(pat.pos, casted.tpe, Ident(casted) setType casted.tpe)
           target.and = curHeader
@@ -626,6 +641,8 @@ print()
           //access the index'th child of a case class
           curHeader  = newHeader(pat.pos, casted, index)
           target.and = curHeader; // (*)
+
+          //Console.println("curHeader : "+curHeader)
 
           if (bodycond ne null) target.and = bodycond(target.and) // restores body with the guards
 
@@ -1176,11 +1193,22 @@ print()
       Or(And(cond, thenp), elsep)
 
     protected def toTree(node: PatternNode, selector:Tree): Tree = {
-      toTree_refined(node, selector, false)
+      val t = toTree_refined(node, selector, false)
+      try {
+        //Console.println("type-checking "+t)
+        typed { t } // DEBUG
+      } catch {
+        case e =>
+
+          Console.println("failed with "+e.getMessage()+" on: "+t)
+          System.exit(-1)
+          //null
+        t
+      }
     }
 
     protected def toTree_refined(node: PatternNode, selector:Tree, ignoreSelectorType: Boolean): Tree = {
-      //Konsole.println("pm.toTree("+node+","+selector+") selector.tpe = "+selector.tpe+")")
+      //Console.println("pm.toTree("+node+","+selector+") selector.tpe = "+selector.tpe+")")
       if (selector.tpe eq null)
         scala.Predef.error("cannot go on")
       if (node eq null)
@@ -1207,7 +1235,7 @@ print()
              ),
              toTree(node.or, selector.duplicate))
 
-	      case UnapplyPat(casted, fn @ Apply(fn1, _)) =>
+          case UnapplyPat(casted, fn @ Apply(fn1, _)) =>
              var useSelector = selector
              val checkType = fn1.tpe match {
                case MethodType(List(argtpe),_) =>
