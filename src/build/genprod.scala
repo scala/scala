@@ -244,7 +244,7 @@ package scala
 
 /** {tupleClassname(i)} is the canonical representation of a @see {productClassname(i)} */
 case class {tupleClassname(i)}{__typeArgs__}({ __fields__ })
-  extends {productClassname(i)}{__typeArgRefs__} {{
+  /*extends {productClassname(i)}{__typeArgRefs__} */ {{
 
    override def toString() = {{
      val sb = new compat.StringBuilder
@@ -291,7 +291,7 @@ package scala
 import Predef._
 
 object {productClassname(i)} {{
-  def unapply{__refArgs__}(x: {productClassname(i)}{__refArgs__}): Some[{productClassname(i)}{__refArgs__}] =
+  def unapply{__refArgs__}(x: {productClassname(i)}{__refArgs__}): Option[{productClassname(i)}{__refArgs__}] =
     Some(x)
 }}
 

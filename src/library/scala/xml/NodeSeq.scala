@@ -154,6 +154,7 @@ abstract class NodeSeq extends Seq[Node] {
     (s: String, x: Node) => s + x.toString()
   }
 
+/*
   def map(f: Node => NodeSeq): NodeSeq = flatMap(f)
 
   def flatMap(f: Node => NodeSeq): NodeSeq = {
@@ -165,7 +166,7 @@ abstract class NodeSeq extends Seq[Node] {
     val x = toList filter f
     x
   }
-
+*/
   def text: String = {
     val sb = new compat.StringBuilder()
     val it = elements
