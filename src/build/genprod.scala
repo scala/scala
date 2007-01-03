@@ -74,7 +74,7 @@ object genprod {
   def funArgs(i: Int) = zippedAndCommaSeparated(vdefs(i), targs(i))
 
   def productFiles =
-    for(val i <- List.range(0, SUP_PRODUCT_ARITY)) yield ProductFile.make(i)
+    for(val i <- List.range(1, SUP_PRODUCT_ARITY)) yield ProductFile.make(i)
 
   def tupleFiles =
     for(val i <- List.range(1, SUP_TUPLE_ARITY)) yield TupleFile.make(i)
@@ -244,7 +244,7 @@ package scala
 
 /** {tupleClassname(i)} is the canonical representation of a @see {productClassname(i)} */
 case class {tupleClassname(i)}{__typeArgs__}({ __fields__ })
-  /*extends {productClassname(i)}{__typeArgRefs__} */ {{
+  extends {productClassname(i)}{__typeArgRefs__}  {{
 
    override def toString() = {{
      val sb = new compat.StringBuilder
