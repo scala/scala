@@ -75,11 +75,15 @@ object MainGenericRunner {
     }
 
     def paths(str: String) = str.split(File.pathSeparator).toList
-
+    def listJars(dirs: String): List[File] =
+      for (
+        dir <- paths(dirs); libdir.exists; !libdir.isFile;
+        jar <- dir.listFiles; jar.isFile; jar.getName.endsWith(".jar")
+      ) yield jar
     val classpath =
       paths(settings.bootclasspath.value) :::
-      paths(settings.classpath.value)
-
+      paths(settings.classpath.value) :::
+      listJars(settings.extdirs.value)
 
     command.thingToRun match {
       case None =>
