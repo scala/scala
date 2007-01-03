@@ -40,8 +40,7 @@ package scala.tools.ant {
    *  <li>extclasspath,</li>
    *  <li>properties,</li>
    *  <li>javaflags,</li>
-   *  <li>toolflags,</li>
-   *  <li>genericfile.</li></ul>
+   *  <li>toolflags.</li></ul>
    *
    * @author  Gilles Dubochet
    * @version 1.0
@@ -69,7 +68,7 @@ package scala.tools.ant {
     /** The path to the exec script file. ".bat" will be appended for the
       * Windows BAT file, if generated. */
     private var file: Option[File] = None
-    /** The main class to run. If this is not set, a generic script will be generated */
+    /** The main class to run. */
     private var mainClass: Option[String] = None
     /** The name of this tool. Can only be set when a main class is defined,
       * default this is equal to the file name. */
@@ -89,10 +88,8 @@ package scala.tools.ant {
       * "lib/" are automatically added. */
     private var extclasspath: List[String] = Nil
     /** Comma-separated Java system properties to pass to the JRE. Properties
-      * are formated as name=value. Properties scala.home, scala.class.path,
-      * scala.boot.class.path and scala.ext.class.path are always set;
-      * scala.tool.name and scala.tool.version are set when this script is
-      * non-generic. */
+      * are formated as name=value. Properties scala.home, scala.tool.name and
+      * scala.tool.version are always set. */
     private var properties: List[Pair[String,String]] = Nil
     /** Additional flags passed to the JRE ("java [javaFlags] class"). */
     private var javaFlags: String = ""
@@ -334,30 +331,18 @@ package scala.tools.ant {
     override def execute() = {
       // Tests if all mandatory attributes are set and valid.
       if (file.isEmpty) error("Attribute 'file' is not set.")
+      if (mainClass.isEmpty) error("Main class must be set.")
       if (platforms.isEmpty) platforms = Platforms.values
-      if (mainClass.isEmpty) {
-        if (toolFlags != "")
-          error("Attribute 'toolflags' cannot be set in a generic file.")
-        if (!name.isEmpty)
-          error("Attribute 'name' cannot be set in a generic file.")
-        val patches = ListMap.Empty.
-          update("version", version).
-          update("copyright", copyright).
-          update("properties", getProperties).
-          update("javaflags", javaFlags)
-        pipeTemplate("generic", patches)
-      } else {
-        if (name.isEmpty) name = Some(file.get.getName)
-        val patches = ListMap.Empty.
-          update("name", name.get).
-          update("class", mainClass.get).
-          update("version", version).
-          update("copyright", copyright).
-          update("properties", getProperties).
-          update("javaflags", javaFlags).
-          update("toolflags", toolFlags)
-        pipeTemplate("tool", patches)
-      }
+      if (name.isEmpty) name = Some(file.get.getName)
+      val patches = ListMap.Empty.
+        update("name", name.get).
+        update("class", mainClass.get).
+        update("version", version).
+        update("copyright", copyright).
+        update("properties", getProperties).
+        update("javaflags", javaFlags).
+        update("toolflags", toolFlags)
+      pipeTemplate("tool", patches)
     }
 
   }
