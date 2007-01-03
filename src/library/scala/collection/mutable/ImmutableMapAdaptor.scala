@@ -19,7 +19,8 @@ package scala.collection.mutable
  *  return the representation of an empty map.
  *
  *  @author  Matthias Zenger
- *  @version 1.0, 21/07/2003
+ *  @author  Martin Odersky
+ *  @version 2.0, 01/01/2007
  */
 [serializable]
 class ImmutableMapAdaptor[A, B](protected var imap: immutable.Map[A, B])
@@ -40,25 +41,37 @@ extends Map[A, B]
 
   override def keys: Iterator[A] = imap.keys
 
+  override def keySet: collection.Set[A] = imap.keySet
+
   override def values: Iterator[B] = imap.values
 
   def elements: Iterator[Pair[A, B]] = imap.elements
 
-  override def foreach(f: Pair[A, B] => Unit) = imap.foreach(f)
-
   override def toList: List[Pair[A, B]] = imap.toList
-
-  override def toString() = imap.toString()
 
   def update(key: A, value: B): Unit = { imap = imap.update(key, value) }
 
-  def -=(key: A): Unit = { imap = imap - key }
+  def -= (key: A): Unit = { imap = imap - key }
 
   override def clear: Unit = { imap = imap.empty }
 
-  override def map(f: Pair[A, B] => B): Unit = { imap = imap.map(f) }
+  override def transform(f: (A, B) => B): Unit = { imap = imap.transform(f) }
 
-  override def filter(p: Pair[A, B] => Boolean): Unit = { imap = imap.filter(p) }
+  [deprecated] override def map[C](f: Pair[A, B] => C): Iterable[C] = {
+    val f1 = f.asInstanceOf[Pair[A, B] => B]
+    imap = imap transform { (x, y) => f1(Pair(x, y)) }
+    null
+  }
 
-  override def mappingToString(p: Pair[A, B]) = imap.mappingToString(p)
+  /** @deprecated   use retain instead */
+  [deprecated] override def filter(p: Pair[A, B] => Boolean): Iterable[Pair[A, B]] = {
+    imap = imap.filter(p)
+    this
+  }
+
+  override def retain(p: (A, B) => Boolean): Unit = {
+    imap = imap.filter(xy => p(xy._1, xy._2))
+  }
+
+  override def toString() = imap.toString()
 }

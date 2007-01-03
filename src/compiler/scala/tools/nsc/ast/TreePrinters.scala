@@ -318,7 +318,9 @@ abstract class TreePrinters {
 
         case WildcardTypeTree(lo, hi) =>
           print("_ "); printOpt(" >: ", lo); printOpt(" <: ", hi)
-        case tree if (tree ne null) => print(tree.toString())
+
+        case tree =>
+          print("<unknown tree of class "+tree.getClass+">")
       }
       if (global.settings.printtypes.value && tree.isTerm && !tree.isEmpty) {
         print("{"); print(if (tree.tpe eq null) "<null>" else tree.tpe.toString()); print("}")

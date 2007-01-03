@@ -6,26 +6,13 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id$
-
-// todo: make balanced once Tree.scala is updated to be covariant.
+// $Id: TreeMap.scala 8997 2006-10-19 20:52:30Z odersky $
 
 package scala.collection.immutable
 
 
 object TreeMap {
-
-  /** The empty map of this type
-   *  @deprecated   use <code>empty</code> instead
-   */
-  [deprecated] def Empty[A <% Ordered[A], B] = empty[A, B]
-
-  /** The empty map of this type */
-  def empty[A <% Ordered[A], B] = new TreeMap[A, B]
-
-  /** The canonical factory for this type
-   */
-//  def apply[A, B](elems: Pair[A, B]*) = empty[A, B] ++ elems
+  def Empty[A <% Ordered[A], B] = new TreeMap[A, B]
 }
 
 /** This class implements immutable maps using a tree.
@@ -34,33 +21,27 @@ object TreeMap {
  *  @author  Matthias Zenger
  *  @version 1.1, 03/05/2004
  */
+
 [serializable]
-class TreeMap[A <% Ordered[A], +B] extends Map[A, B] {
+class TreeMap[A <% Ordered[A], B] extends Tree[A, Pair[A, B]] with Map[A, B] {
 
-  def size: int = 0
-
-  [serializable]
-  class RB extends RedBlack[A] {
-    def isSmaller(x: A, y: A) = x < y
-  }
-
-  val rb: RedBlack[A] = new RB
-
-  protected def tree: rb.Tree[B] = rb.Empty
-
-  [serializable]
-  class NonEmptyTreeMap[B](s: int, t: rb.Tree[B]) extends TreeMap[A, B] {
-    override val size = s
-    override val rb: TreeMap.this.rb.type = TreeMap.this.rb
-    override val tree = t
-  }
-
-
-  private def newMap[B](s: int, t: rb.Tree[B]) = new NonEmptyTreeMap[B](s, t)
+  override protected type This = TreeMap[A, B]
+  override protected def getThis: This = this
 
   /** A factory to create empty maps of the same type of keys.
    */
-  def empty[C] = ListMap.empty[A, C]
+  def empty[C] = new TreeMap[A, C]
+
+  /** Creates a new TreeMap from a GBTree and its size.
+   *
+   *  @param sz ...
+   *  @param t ...
+   *  @return ...
+   */
+  protected def New(sz: Int, t: aNode): This = new TreeMap[A, B] {
+    override def size = sz
+    override protected def tree: aNode = t
+  }
 
   /** A new TreeMap with the entry added is returned,
    *  if key is <em>not</em> in the TreeMap, otherwise
@@ -70,22 +51,16 @@ class TreeMap[A <% Ordered[A], +B] extends Map[A, B] {
    *  @param value ...
    *  @return ...
    */
-  def update [B1 >: B](key: A, value: B1): TreeMap[A, B1] = {
-    val newsize = if (tree.lookup(key).isEmpty) size + 1 else size
-    newMap(newsize, tree.update(key, value))
-  }
+  def update [B1 >: B](key: A, value: B1) = updateOrAdd(key, {key, value})
 
   /** A new TreeMap with the entry added is returned,
    *  assuming that key is <em>not</em> in the TreeMap.
    */
-  def insert [B1 >: B](key: A, value: B1): TreeMap[A, B1] = {
-    assert(tree.lookup(key).isEmpty)
-    newMap(size + 1, tree.update(key, value))
-  }
+  def insert [B1 >: B](key:A, value:B) = add(key, {key, value})
 
-  def - (key:A): TreeMap[A, B] =
-    if (tree.lookup(key).isEmpty) this
-    else newMap(size - 1, tree.delete(key))
+  /** Removes the key from the TreeMap.
+   */
+  def remove(key:A) = deleteAny(key)
 
   /** Check if this map maps <code>key</code> to a value and return the
    *  value if it exists.
@@ -93,10 +68,11 @@ class TreeMap[A <% Ordered[A], +B] extends Map[A, B] {
    *  @param  key     the key of the mapping of interest
    *  @return the value of the mapping, if it exists
    */
-  override def get(key: A): Option[B] = tree.lookup(key) match {
-    case n: rb.NonEmpty[b] => Some(n.value)
-    case _ => None
-  }
+  override def get(key: A): Option[B] =
+    findValue(key) match {
+      case Some(Pair(_, value)) => Some(value)
+      case _ => None
+    }
 
   /** Retrieve the value which is associated with the given key. This
    *  method throws an exception if there is no mapping from the given
@@ -106,19 +82,20 @@ class TreeMap[A <% Ordered[A], +B] extends Map[A, B] {
    *  @return the value associated with the given key.
    *  @throws Error("key not found").
    */
-  override def apply(key: A): B = tree.lookup(key) match {
-    case n: rb.NonEmpty[b] => n.value
-    case _ => super.apply(key)
-  }
+  override def apply(key: A): B = tree.apply(key)._2
+
+  /** Creates a list of all (key, value) mappings.
+   *
+   *  @return    the list of all mappings
+   */
+  override def toList: List[Pair[A, B]] =
+    tree.toList(scala.Nil) map (._2)
 
   /** Creates a new iterator over all elements contained in this
    *  object.
    *
    *  @return the new iterator
    */
-  def elements: Iterator[Pair[A, B]] = tree.elements
+  def elements: Iterator[Pair[A, B]] = entries
 }
-
-
-
 

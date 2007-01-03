@@ -56,7 +56,7 @@ class JavaMapAdaptor[A, B](jmap: java.util.Map) extends Map[A, B] {
 
   def update(key: A, value: B): Unit = { val x = jmap.put(key, value); }
 
-  def -=(key: A): Unit = { val x = jmap.remove(key); }
+  def -= (key: A): Unit = { val x = jmap.remove(key); }
 
   override def clear: Unit = jmap.clear()
 

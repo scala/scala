@@ -30,9 +30,11 @@ package scala.collection.immutable
  *
  *  @author  Matthias Zenger
  *  @author  Erik Stenman
- *  @version 1.1, 22/03/2004
+ *  @author  Martin Odersky
+ *  @version 1.2, 31/06/2006
+ *  todo: make contravariant in A?
  */
-trait Map[A, B] extends AnyRef with collection.Map[A, B] {
+trait Map[A, +B] extends collection.Map[A, B] {
 
   /** This method returns a new map instance of the same class
    *  mapping keys of the same type to values of type <code>C</code>.
@@ -48,14 +50,102 @@ trait Map[A, B] extends AnyRef with collection.Map[A, B] {
    *  @param key   ...
    *  @param value ...
    *  @return      the created map
+   *  @deprecated    use <code>+({A, B})</code> instead
    */
-  def update(key: A, value: B): Map[A, B]
+  def update [B1 >: B] (key: A, value: B1): Map[A, B1]
 
-  /** This creates a new mapping without the given <code>key</code>.
-   *  If the map does not contain a mapping for the given key, the
-   *  method returns the same map.
+  /** Add a key/value pair to this map.
+   *  @param    kv the key/value pair.
+   *  @return   A new map with the new binding added to this map
    */
-  def -(key: A): Map[A, B]
+  def + [B1 >: B] (kv: Pair[A, B1]): Map[A, B1] = update(kv._1, kv._2)
+
+  /** Add two or more key/value pairs to this map.
+   *  @param    kv1 the first key/value pair.
+   *  @param    kv2 the second key/value pair.
+   *  @param    kvs the remaining key/value pairs.
+   *  @return   A new map with the new bindings added
+   */
+  def + [B1 >: B] (kv1: Pair[A, B1], kv2: Pair[A, B1], kvs: Pair[A, B1]*): Map[A, B1] =
+    this + kv1 + kv2 ++ kvs
+
+  /** Add a sequence of key/value pairs to this map.
+   *  @param    kvs the iterable object containing all key/value pairs.
+   *  @return   A new map with the new bindings added
+   */
+  def ++ [B1 >: B] (kvs: Iterable[Pair[A, B1]]): Map[A, B1] = this ++ kvs.elements
+
+  /** Add a sequence of key/value pairs to this map.
+   *  @param    kvs the iterator containing all key/value pairs.
+   *  @return   A new map with the new bindings added
+   */
+  def ++ [B1 >: B] (kvs: Iterator[Pair[A, B1]]): Map[A, B1] =
+    ((this: Map[A, B1]) /: kvs) ((m, kv) => m + kv)
+
+  /** Remove a key from this map
+   *  @param    key the key to be removed
+   *  @return   If the map does not contain a binding for <code>key</code>
+   *            it is returned unchanged. Otherwise, return a new map
+   *            without a binding for <code>key</code>
+   */
+  def - (key: A): Map[A, B]
+
+  /** Remove two or more keys from this map
+   *  @param    key1 the first key to be removed
+   *  @param    key2 the second key to be removed
+   *  @param    keys the remaining keys to be removed
+   *  @return   A map without bindings for <code>keys</code>
+   *            If the map is mutable, the bindings are removed in place
+   *            and the map itself is returned.
+   *            If the map is immutable, a new map with the bindings removed is returned.
+   */
+  def - (key1: A, key2: A, keys: A*): Map[A, B] =
+    this - key1 - key2 -- keys
+
+  /** Remove a sequence of keys from this map
+   *  @param    keys the keys to be removed
+   *  @return   A map without bindings for the given keys.
+   *            If the map is mutable, the bindings are removed in place
+   *            and the map itself is returned.
+   *            If the map is immutable, a new map with the bindings removed is returned.
+   */
+  def -- (keys: Iterable[A]): Map[A, B] = this -- keys.elements
+
+  /** Remove a sequence of keys from this map
+   *  @param    keys the keys to be removed
+   *  @return   A map without bindings for the given keys.
+   *            If the map is mutable, the bindings are removed in place
+   *            and the map itself is returned.
+   *            If the map is immutable, a new map with the bindings removed is returned.
+   */
+  def -- (keys: Iterator[A]): Map[A, B] =
+    (this /: keys) ((m, key) => m - key)
+
+  /** This function transforms all the values of mappings contained
+   *  in this map with function <code>f</code>.
+   *
+   *  @param f A function over keys and values
+   *  @return  the updated map
+   */
+  def transform[C](f: (A, B) => C): Map[A, C] = {
+    var res = empty[C]
+    foreach { case Pair(key, value) => res = res.update(key, f(key, value)) }
+    res
+  }
+
+  /** This method removes all the mappings for which the predicate
+   *  <code>p</code> returns <code>false</code>.
+   *
+   *  @param p A prediacte over key-value pairs
+   *  @return  the updated map
+   */
+  override def filter(p: Pair[A, B] => Boolean): Map[A, B] = {
+    var res = this
+    foreach {
+      case kv @ Pair(key, _) => if (!p(kv)) { res = res - key }
+    }
+    res
+  }
 
   /** <p>
    *    This method defines syntactic sugar for adding a
@@ -64,8 +154,9 @@ trait Map[A, B] extends AnyRef with collection.Map[A, B] {
    *  <pre>
    *    map + key -> value
    *  </pre>
+   *  @deprecated  use <code>+({A, B})</code> instead
    */
-  def +(key: A): MapTo = new MapTo(key)
+  [deprecated] def +(key: A): MapTo = new MapTo(key)
 
   /** <code>incl</code> can be used to add many mappings at the same time
    *  to the map. The method assumes that a mapping is represented
@@ -74,19 +165,20 @@ trait Map[A, B] extends AnyRef with collection.Map[A, B] {
    *
    *  @param mappings ...
    *  @return         ...
+   *  @deprecated   use <code>+</code> instead
    */
-  def incl(mappings: Pair[A, B]*): Map[A, B] = incl(mappings)
+  [deprecated] def incl[B1 >: B](mappings: Pair[A, B1]*): Map[A, B1] = incl(mappings)
 
   /** <code>incl</code> can be used to add many mappings at the same time
    *  to the map. The method assumes that each mapping is represented
    *  by an Iterator over <code>Pair</code> objects who's first component
    *  denotes the key, and who's second component refers to the value.
    *
-   *  @param map ...
+   *  @deprecated    use <code>++</code> instead
    */
-  def incl(map: Iterable[Pair[A, B]]): Map[A, B] = {
+  [deprecated] def incl[B1 >: B](map: Iterable[Pair[A, B1]]): Map[A, B1] = {
     val iter = map.elements
-    var res = this
+    var res: Map[A, B1] = this
     while (iter.hasNext) {
       val Pair(key, value) = iter.next
       res = res.update(key, value);
@@ -99,16 +191,17 @@ trait Map[A, B] extends AnyRef with collection.Map[A, B] {
    *
    *  @param keys ...
    *  @return     the updated map
-   */
-  def excl(keys: A*): Map[A, B] = excl(keys)
+   *  @deprecated    use <code>-</code> instead   */
+  [deprecated] def excl(keys: A*): Map[A, B] = excl(keys)
 
   /** This method removes all the mappings for keys provided by an
    *  iterator over the elements of the <code>keys</code> object.
    *
    *  @param keys ...
    *  @return     the updated map
+   *  @deprecated    use <code>--</code> instead
    */
-  def excl(keys: Iterable[A]): Map[A, B] = {
+  [deprecated] def excl(keys: Iterable[A]): Map[A, B] = {
     val iter = keys.elements
     var res = this
     while (iter.hasNext) {
@@ -117,62 +210,18 @@ trait Map[A, B] extends AnyRef with collection.Map[A, B] {
     res
   }
 
-  /** This function transforms all the values of mappings contained
-   *  in this map with function <code>f</code>.
-   *
-   *  @param f A function over key-value pairs
-   *  @return  the updated map
-   */
-  def map[C](f: Pair[A, B] => C): Map[A, C] = {
-    var res = empty[C]
-    foreach {
-      case kv @ Pair(key, _) => res = res.update(key, f(kv)) }
-    res
-  }
-
-  /** This method removes all the mappings for which the predicate
-   *  <code>p</code> returns <code>false</code>.
-   *
-   *  @param p A prediacte over key-value pairs
-   *  @return  the updated map
-   */
-  def filter(p: Pair[A, B] => Boolean): Map[A, B] = {
-    var res = this
-    foreach {
-      case kv @ Pair(key, _) => if (!p(kv)) { res = res.excl(key) }
-    }
-    res
-  }
-
-  /** Returns a string representation of this map which shows
-   *  all the mappings.
-   */
-  override def toString() =
-    if (size == 0)
-      "{}"
-    else
-      "{" + {
-        val iter = elements
-        var res = mappingToString(iter.next)
-        while (iter.hasNext) {
-          res = res + ", " + mappingToString(iter.next);
-        }
-        res
-      } + "}"
-
-  override def hashCode() =
-    elements.foldLeft(0)((hash: Int, pair: AnyRef) => hash + pair.hashCode())
-
   /** This method controls how a mapping is represented in the string
    *  representation provided by method <code>toString</code>.
    *
    *  @param p ...
    *  @return  the string representation of a map entry
    */
-  def mappingToString(p: Pair[A, B]) = p._1.toString() + " -> " + p._2
+  [deprecated] def mappingToString[B1 >: B](p: Pair[A, B1]) = p._1.toString() + " -> " + p._2
 
-  class MapTo(key: A) {
-    def ->(value: B) = update(key, value)
+  /** @deprecated    use <code>+({A, B})</code> instead
+   */
+  [deprecated] class MapTo(key: A) {
+    def -> [B1 >: B](value: B1) = update(key, value)
   }
 }
 

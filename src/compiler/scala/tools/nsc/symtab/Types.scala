@@ -47,7 +47,7 @@ trait Types requires SymbolTable {
 
   private var explainSwitch = false
   private var checkMalformedSwitch = true
-  private var globalVariance = 1
+  private var globalVariance = 1//only necessary of healTypes = true?
   private final val healTypes = false
   private final val LubGlbMargin = 0
 
@@ -1436,7 +1436,7 @@ trait Types requires SymbolTable {
     }
 
     /** Map this function over given list of symbols */
-    private def mapOver(syms: List[Symbol]): List[Symbol] = {
+    def mapOver(syms: List[Symbol]): List[Symbol] = {
       val infos = syms map (.info)
       val infos1 = List.mapConserve(infos)(this)
       if (infos1 eq infos) syms

@@ -84,8 +84,12 @@ trait SynchronizedSet[A] extends Set[A] {
     super.foreach(f)
   }
 
-  override def filter(p: A => Boolean) = synchronized {
+  [deprecated] override def filter(p: A => Boolean) = synchronized {
     super.filter(p)
+  }
+
+  override def retain(p: A => Boolean) = synchronized {
+    super.retain(p)
   }
 
   override def toList: List[A] = synchronized {

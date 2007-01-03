@@ -13,7 +13,7 @@ package scala
 
 
 import compat.StringBuilder
-import Predef.NoSuchElementException
+import Predef.{NoSuchElementException, UnsupportedOperationException}
 
 /**
  * The object <code>Stream</code> provides helper functions
@@ -24,13 +24,18 @@ import Predef.NoSuchElementException
  */
 object Stream {
 
+  /** The empty stream */
   val empty: Stream[Nothing] = new Stream[Nothing] {
     override def isEmpty = true
     def head: Nothing = throw new NoSuchElementException("head of empty stream")
-    def tail: Stream[Nothing] = throw new NoSuchElementException("tail of empty stream")
-    def printElems(buf: StringBuilder, prefix: String): StringBuilder = buf
+    def tail: Stream[Nothing] = throw new UnsupportedOperationException("tail of empty stream")
+    protected def addDefinedElems(buf: StringBuilder, prefix: String): StringBuilder = buf
   }
 
+  /** A stream consisting of a given first element and remaining elements
+   *  @param hd   The first element of the result stream
+   *  @param tl   The remaining elements of the result stream
+   */
   def cons[a](hd: a, tl: => Stream[a]) = new Stream[a] {
     override def isEmpty = false
     def head = hd
@@ -40,17 +45,29 @@ object Stream {
       if (!tlDefined) { tlVal = tl; tlDefined = true }
       tlVal
     }
-    def printElems(buf: StringBuilder, prefix: String): StringBuilder = {
+    protected def addDefinedElems(buf: StringBuilder, prefix: String): StringBuilder = {
       val buf1 = buf.append(prefix).append(hd)
-      if (tlDefined) tlVal.printElems(buf1, ", ") else buf1 append ", ?"
+      if (tlDefined) tlVal.addDefinedElems(buf1, ", ") else buf1 append ", ?"
     }
   }
 
+  /** A stream containing all elements of a given iterator, in the order they are produced.
+   *  @param it   The iterator producing the stream's elements
+   */
   def fromIterator[a](it: Iterator[a]): Stream[a] =
     if (it.hasNext) cons(it.next, fromIterator(it)) else empty
 
-  def concat[a](xs: Seq[Stream[a]]): Stream[a] = concat(xs.elements)
+  /** The concatenation of a sequence of streams
+   */
+  def concat[a](xs: Iterable[Stream[a]]): Stream[a] = concat(xs.elements)
 
+  /** The concatenation of all given streams
+   */
+  def concat[a](s1: Stream[a], s2: Stream[a], ss: Stream[a]*): Stream[a] =
+    s1 append s2 append concat(ss.elements)
+
+  /** The concatenation of all streams returned by an iterator
+   */
   def concat[a](xs: Iterator[Stream[a]]): Stream[a] =
     if (xs.hasNext) xs.next append concat(xs)
     else empty
@@ -148,27 +165,50 @@ object Stream {
  */
 trait Stream[+a] extends Seq[a] {
 
+  /** is this stream empty? */
   override def isEmpty: Boolean
+
+  /** The first element of this stream
+   *  @throws Predef.NoSuchElementException if the stream is empty.
+   */
   def head: a
+
+  /** A stream consisting of the remaining elements of this stream after the first one.
+   *  @throws Predef.UnsupportedOperationException if the stream is empty.
+   */
   def tail: Stream[a]
 
+  /** The length of this stream */
   def length: Int = if (isEmpty) 0 else tail.length + 1
 
+  /** The stream resulting from the concatenation of thsi stream with the argument stream.
+   *  @param rest   The stream that gets appended to this stream
+   */
   def append[b >: a](rest: => Stream[b]): Stream[b] =
     if (isEmpty) rest
     else Stream.cons(head, tail.append(rest))
 
+  /** An iterator returning the elements of this stream one by one.
+   */
   def elements: Iterator[a] = new Iterator[a] {
     var current = Stream.this
     def hasNext: boolean = !current.isEmpty
     def next: a = { val result = current.head; current = current.tail; result }
   }
 
+  /** The stream without its last element.
+   *  @throws Predef.UnsupportedOperationException if the stream is empty.
+   */
   def init: Stream[a] =
-    if (isEmpty) throw new NoSuchElementException("Stream.empty.init")
+    if (isEmpty) throw new UnsupportedOperationException("Stream.empty.init")
     else if (tail.isEmpty) Stream.empty
     else Stream.cons(head, tail.init)
 
+  /** Returns the last element of this stream.
+   *
+   *  @return the last element of the stream.
+   *  @throws Predef.NoSuchElementException if the stream is empty.
+   */
   def last: a =
     if (isEmpty) throw new NoSuchElementException("Stream.empty.last")
     else {
@@ -179,10 +219,31 @@ trait Stream[+a] extends Seq[a] {
       loop(this)
     }
 
+  /** Returns the <code>n</code>-th element of this stream. The first element
+   *  (head of the stream) is at position 0.
+   *
+   *  @param n index of the element to return
+   *  @return  the element at position <code>n</code> in this stream.
+   *  @throws Predef.NoSuchElementException if the stream is too short.
+   */
+  def apply(n: Int) = drop(n).head
+
+  /** Returns the <code>n</code> first elements of this stream, or else the whole
+   *  stream, if it has less than <code>n</code> elements.
+   *
+   *  @param n the number of elements to take.
+   *  @return the <code>n</code> first elements of this stream.
+   */
   override def take(n: Int): Stream[a] =
     if (n == 0) Stream.empty
     else Stream.cons(head, tail.take(n-1))
 
+  /** Returns the stream without its <code>n</code> first elements.
+   *  If the stream has less than <code>n</code> elements, the empty stream is returned.
+   *
+   *  @param n the number of elements to drop.
+   *  @return the stream without its <code>n</code> first elements.
+   */
   override def drop(n: Int): Stream[a] = {
     def loop(s: Stream[a], n: Int): Stream[a] =
       if (n == 0) s
@@ -190,32 +251,61 @@ trait Stream[+a] extends Seq[a] {
     loop(this, n)
   }
 
-  def apply(n: Int) = drop(n).head
-  def at(n: Int) = drop(n).head
-
-  def takeWhile(p: a => Boolean): Stream[a] =
+  /** Returns the longest prefix of this stream whose elements satisfy
+   *  the predicate <code>p</code>.
+   *
+   *  @param p the test predicate.
+   *  @return  the longest prefix of this stream whose elements satisfy
+   *           the predicate <code>p</code>.
+   */
+  override def takeWhile(p: a => Boolean): Stream[a] =
     if (isEmpty || !p(head)) Stream.empty
     else Stream.cons(head, tail.takeWhile(p))
 
-  def dropWhile(p: a => Boolean): Stream[a] = {
+  /** Returns the longest suffix of this stream whose first element
+   *  does not satisfy the predicate <code>p</code>.
+   *
+   *  @param p the test predicate.
+   *  @return  the longest suffix of the stream whose first element
+   *           does not satisfy the predicate <code>p</code>.
+   */
+  override def dropWhile(p: a => Boolean): Stream[a] = {
     def loop(s: Stream[a]): Stream[a] =
       if (s.isEmpty || !p(s.head)) this
       else loop(s.tail)
     loop(this)
   }
 
-  def map[b](f: a => b): Stream[b] =
+  /** Returns the stream resulting from applying the given function <code>f</code> to each
+   *  element of this stream.
+   *
+   *  @param f function to apply to each element.
+   *  @return <code>[f(a0), ..., f(an)]</code> if this stream is <code>[a0, ..., an]</code>.
+   */
+  override def map[b](f: a => b): Stream[b] =
     if (isEmpty) Stream.empty
     else Stream.cons(f(head), tail.map(f))
 
-  override def foreach(f: a => unit): unit = {
-    def loop(s: Stream[a]): unit =
+  /** Apply the given function <code>f</code> to each element of this stream
+   *  (while respecting the order of the elements).
+   *
+   *  @param f the treatment to apply to each element.
+   */
+  override def foreach(f: a => Unit) {
+    def loop(s: Stream[a]) {
       if (s.isEmpty) {}
       else { f(s.head); loop(s.tail) }
+    }
     loop(this)
   }
 
-  def filter(p: a => Boolean): Stream[a] = {
+  /** Returns all the elements of this stream that satisfy the
+   *  predicate <code>p</code>. The order of the elements is preserved.
+   *
+   *  @param p the predicate used to filter the stream.
+   *  @return the elements of this stream satisfying <code>p</code>.
+   */
+  override def filter(p: a => Boolean): Stream[a] = {
     def loop(s: Stream[a]): Stream[a] =
       if (s.isEmpty) s
       else if (p(s.head)) Stream.cons(s.head, loop(s.tail))
@@ -223,6 +313,13 @@ trait Stream[+a] extends Seq[a] {
     loop(this)
   }
 
+  /** Tests if the predicate <code>p</code> is satisfied by all elements
+   *  in this stream.
+   *
+   *  @param p the test predicate.
+   *  @return  <code>true</code> iff all elements of this stream satisfy the
+   *           predicate <code>p</code>.
+   */
   override def forall(p: a => Boolean): Boolean = {
     def loop(s: Stream[a]): Boolean = {
       if (s.isEmpty) true
@@ -232,6 +329,13 @@ trait Stream[+a] extends Seq[a] {
     loop(this)
   }
 
+  /** Tests the existence in this stream of an element that satisfies the
+   *  predicate <code>p</code>.
+   *
+   *  @param p the test predicate.
+   *  @return  <code>true</code> iff there exists an element in this stream that
+   *           satisfies the predicate <code>p</code>.
+   */
   override def exists(p: a => Boolean): Boolean = {
     def loop(s: Stream[a]): Boolean = {
       if (s.isEmpty) false
@@ -241,6 +345,14 @@ trait Stream[+a] extends Seq[a] {
     loop(this)
   }
 
+  /** Combines the elements of this stream together using the binary
+   *  function <code>f</code>, from left to right, and starting with
+   *  the value <code>z</code>.
+   *
+   *  @return <code>f(... (f(f(z, a<sub>0</sub>), a<sub>1</sub>) ...),
+   *          a<sub>n</sub>)</code> if the stream is
+   *          <code>[a<sub>0</sub>, a<sub>1</sub>, ..., a<sub>n</sub>]</code>.
+   */
   override def foldLeft[b](z: b)(f: (b, a) => b): b = {
     def loop(s: Stream[a], z: b): b =
       if (s.isEmpty) z
@@ -248,58 +360,91 @@ trait Stream[+a] extends Seq[a] {
     loop(this, z)
   }
 
+  /** Combines the elements of this stream together using the binary
+   *  function <code>f</code>, from rigth to left, and starting with
+   *  the value <code>z</code>.
+   *
+   *  @return <code>f(a<sub>0</sub>, f(a<sub>1</sub>, f(..., f(a<sub>n</sub>, z)...)))</code>
+   *          if the stream is <code>[a<sub>0</sub>, a1, ..., a<sub>n</sub>]</code>.
+   */
   override def foldRight[b](z: b)(f: (a, b) => b): b =
     if (isEmpty) z
     else f(head, tail.foldRight(z)(f))
 
-  def reduceLeft[b >: a](f: (b, b) => b): b =
-    if (isEmpty) throw new NoSuchElementException("Stream.empty.reduceLeft")
-    else ((tail: Stream[b]) foldLeft (head: b))(f)
-
-  def reduceRight[b >: a](f: (b, b) => b): b =
-    if (isEmpty) throw new NoSuchElementException("Stream.empty.reduceRight")
-    else if (tail.isEmpty) head: b
-    else f(head, tail.reduceRight(f))
-
-  def flatMap[b](f: a => Stream[b]): Stream[b] =
+  /** Applies the given function <code>f</code> to each element of
+   *  this stream, then concatenates the results.
+   *
+   *  @param f the function to apply on each element.
+   *  @return  <code>f(a<sub>0</sub>) ::: ... ::: f(a<sub>n</sub>)</code> if
+   *           this stream is <code>[a<sub>0</sub>, ..., a<sub>n</sub>]</code>.
+   */
+  override def flatMap[b](f: a => Iterable[b]): Stream[b] =
     if (isEmpty) Stream.empty
-    else f(head).append(tail.flatMap(f))
+    else Stream.fromIterator(f(head).elements).append(tail.flatMap(f))
 
-  def reverse: Stream[a] =
+  /** A stream consisting of all elements of this stream in reverse order.
+   */
+  override def reverse: Stream[a] =
     foldLeft(Stream.empty: Stream[a])((xs, x) => Stream.cons(x, xs))
 
-  // The following method is not compilable without run-time type
-  // information. It should therefore be left commented-out for
-  // now.
-  //       def toArray: Array[a] = {
-  //         val xs = new Array[a](length)
-  //         copyToArray(xs, 0)
-  //         xs
-  //       }
-
-  override def copyToArray[b >: a](xs: Array[b], start: Int): Array[b] = {
-    def loop(s: Stream[a], start: Int): Array[b] =
-      if (s.isEmpty) xs
-      else { xs(start) = s.head; loop(s.tail, start + 1) }
+  /** Fills the given array <code>xs</code> with the elements of
+   *  this stream starting at position <code>start</code>.
+   *
+   *  @param  xs the array to fill.
+   *  @param  start starting index.
+   *  @pre    the array must be large enough to hold all elements.
+   */
+  override def copyToArray[b >: a](xs: Array[b], start: Int) {
+    def loop(s: Stream[a], start: Int) {
+      if (!xs.isEmpty) { xs(start) = s.head; loop(s.tail, start + 1) }
+    }
     loop(this, start)
   }
 
+  /** Returns a stream formed from this stream and the specified stream
+   *  <code>that</code> by associating each element of the former with
+   *  the element at the same position in the latter.
+   *  If one of the two streams is longer than the other, its remaining elements are ignored.
+   *
+   *  @return     <code>Stream({a<sub>0</sub>,b<sub>0</sub>}, ...,
+   *              {a<sub>min(m,n)</sub>,b<sub>min(m,n)</sub>)}</code> when
+   *              <code>Stream(a<sub>0</sub>, ..., a<sub>m</sub>)
+   *              zip Stream(b<sub>0</sub>, ..., b<sub>n</sub>)</code> is invoked.
+   */
   def zip[b](that: Stream[b]): Stream[Tuple2[a, b]] =
     if (this.isEmpty || that.isEmpty) Stream.empty
     else Stream.cons(Tuple2(this.head, that.head), this.tail.zip(that.tail))
 
+
+  /** Returns a stream that pairs each element of this stream
+   *  with its index, counting from 0.
+   *
+   *  @return      the stream <code>Stream({a<sub>0</sub>,0}, {a<sub>0</sub>,1},...)</code>
+   *               where <code>a<sub>i</sub></code> are the elements of this stream.
+   */
   def zipWithIndex: Stream[Tuple2[a, Int]] =
     zip(Stream.from(0))
 
-  def print: unit = {
-    def loop(s: Stream[a]): unit =
-      if (s.isEmpty) Console.println("Stream.empty")
-      else { Console.print(s.head); Console.print(", "); loop(s.tail) }
+  /** Prints elements of this stream one by one, separated by commas */
+  def print { print(Console.out) }
+  def print(out: java.io.PrintStream) { print(out, ", ") }
+
+  /** Prints elements of this stream one by one, separated by <code>sep</code>
+   *  @param sep   The separator string printed between consecutive elements.
+   */
+  def print(sep: String) { print(Console.out, sep) }
+  def print(out: java.io.PrintStream, sep: String) {
+    def loop(s: Stream[a]) {
+      if (s.isEmpty) out.println("Stream.empty")
+      else { out.print(s.head); out.print(sep); loop(s.tail) }
+    }
     loop(this)
   }
 
+  /** Converts stream to string */
   override def toString() =
-    "Stream(" + printElems(new StringBuilder(), "") + ")"
+    "Stream(" + addDefinedElems(new StringBuilder(), "") + ")"
 
-  def printElems(buf: StringBuilder, prefix: String): StringBuilder
+  /** Write all elements of this string into given string builder */
+  protected def addDefinedElems(buf: StringBuilder, prefix: String): StringBuilder
 }

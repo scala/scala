@@ -13,6 +13,8 @@ package scala
 
 
 import Predef.IllegalArgumentException
+import collection.mutable.{Buffer,ArrayBuffer}
+import compat.StringBuilder
 
 /** This object ...
  *
@@ -62,6 +64,11 @@ object Iterable {
     }
     max
   }
+
+  /** The empty iterable object */
+  val empty = new Iterable[Nothing] {
+    def elements = Iterator.empty
+  }
 }
 
 
@@ -81,14 +88,95 @@ trait Iterable[+A] {
    */
   def elements: Iterator[A]
 
-  /** Concatenates two iterable objects
+  /** Appends two iterable objects
    *
    *  @return the new iterable object
-   *  @author buraq
    */
-  def concat[B >: A](that: Iterable[B]): Iterable[B] = new Iterable[B] {
-    def elements: Iterator[B] = Iterable.this.elements.append(that.elements)
+  def concat [B >: A](that: Iterable[B]): Iterable[B] = {
+    val buf = new ArrayBuffer[B]
+    this copyToBuffer buf
+    that copyToBuffer buf
+    buf
   }
+
+  /** Returns the iterable resulting from applying the given function <code>f</code> to each
+   *  element of this iterable.
+   *
+   *  @param f function to apply to each element.
+   *  @return <code>f(a0), ..., f(an)</code> if this iterable is <code>a0, ..., an</code>.
+   */
+  def map[B](f: A => B): Iterable[B] = {
+    val buf = new ArrayBuffer[B]
+    val elems = elements
+    while (elems.hasNext) buf += f(elems.next)
+    buf
+  }
+
+  /** Applies the given function <code>f</code> to each element of
+   *  this iterable, then concatenates the results.
+   *
+   *  @param f the function to apply on each element.
+   *  @return  <code>f(a<sub>0</sub>) ::: ... ::: f(a<sub>n</sub>)</code> if
+   *           this iterable is <code>a<sub>0</sub>, ..., a<sub>n</sub></code>.
+   */
+  def flatMap[B](f: A => Iterable[B]): Iterable[B] = {
+    val buf = new ArrayBuffer[B]
+    val elems = elements
+    while (elems.hasNext) f(elems.next) copyToBuffer buf
+    buf
+  }
+
+  /** Returns all the elements of this iterable that satisfy the
+   *  predicate <code>p</code>. The order of the elements is preserved.
+   *
+   *  @param p the predicate used to filter the list.
+   *  @return the elements of this list satisfying <code>p</code>.
+   */
+  def filter(p: A => Boolean): Iterable[A] = {
+    val buf = new ArrayBuffer[A]
+    val elems = elements
+    while (elems.hasNext) { val x = elems.next; if (p(x)) buf += x }
+    buf
+  }
+
+  /** Returns the longest prefix of this iterable whose elements satisfy
+   *  the predicate <code>p</code>.
+   *
+   *  @param p the test predicate.
+   *  @return  the longest prefix of this iterable whose elements satisfy
+   *           the predicate <code>p</code>.
+   */
+  def takeWhile(p: A => Boolean): Iterable[A] =
+    new ArrayBuffer[A] ++ elements.takeWhile(p)
+
+  /** Returns the longest suffix of this iterable whose first element
+   *  does not satisfy the predicate <code>p</code>.
+   *
+   *  @param p the test predicate.
+   *  @return  the longest suffix of the iterable whose first element
+   *           does not satisfy the predicate <code>p</code>.
+   */
+  def dropWhile(p: A => Boolean): Iterable[A] =
+    new ArrayBuffer[A] ++ elements.dropWhile(p)
+
+  /** Returns an iterable consisting only over the first <code>n</code>
+   *  elements of this iterable, or else the whole iterable, if it has less
+   *  than <code>n</code> elements.
+   *
+   *  @param n the number of elements to take
+   *  @return  the new iterable
+   */
+  def take(n: Int): Iterable[A] =
+    new ArrayBuffer[A] ++ elements.take(n)
+
+  /** Returns this iterable without its <code>n</code> first elements
+   *  If this iterable has less than <code>n</code> elements, the empty iterable is returned.
+   *
+   *  @param n the number of elements to drop
+   *  @return  the new iterable
+   */
+  def drop(n: Int): Iterable[A] =
+    new ArrayBuffer[A] ++ elements.take(n)
 
   /** Apply a function <code>f</code> to all elements of this
    *  iterable object.
@@ -163,19 +251,22 @@ trait Iterable[+A] {
     if (found) i else -1
   }
 
-  /** Combines the elements of this list together using the binary
-   *  operator <code>op</code>, from left to right, and starting with
+  /** Combines the elements of this iterable object together using the binary
+   *  function <code>f</code>, from left to right, and starting with
    *  the value <code>z</code>.
-   *  @return <code>op(... (op(op(z,a0),a1) ...), an)</code> if the list
-   *  is <code>List(a0, a1, ..., an)</code>.
+   *
+   *  @return <code>f(... (f(f(z, a<sub>0</sub>), a<sub>1</sub>) ...),
+   *          a<sub>n</sub>)</code> if the list is
+   *          <code>[a<sub>0</sub>, a<sub>1</sub>, ..., a<sub>n</sub>]</code>.
    */
   def foldLeft[B](z: B)(op: (B, A) => B): B = elements.foldLeft(z)(op)
 
   /** Combines the elements of this list together using the binary
-   *  operator <code>op</code>, from rigth to left, and starting with
+   *  function <code>f</code>, from right to left, and starting with
    *  the value <code>z</code>.
-   *  @return <code>a0 op (... op (an op z)...)</code> if the list
-   *  is <code>[a0, a1, ..., an]</code>.
+   *
+   *  @return <code>f(a<sub>0</sub>, f(a<sub>1</sub>, f(..., f(a<sub>n</sub>, z)...)))</code>
+   *          if the list is <code>[a<sub>0</sub>, a1, ..., a<sub>n</sub>]</code>.
    */
   def foldRight[B](z: B)(op: (A, B) => B): B = elements.foldRight(z)(op)
 
@@ -183,12 +274,39 @@ trait Iterable[+A] {
    *  an operator with the order of list and zero arguments reversed.
    *  That is, <code>z /: xs</code> is the same as <code>xs foldLeft z</code>
    */
-  def /:[B](z: B)(f: (B, A) => B): B = foldLeft(z)(f)
+  def /:[B](z: B)(op: (B, A) => B): B = foldLeft(z)(op)
 
   /** An alias for <code>foldRight</code>.
    *  That is, <code>xs :\ z</code> is the same as <code>xs foldRight z</code>
    */
-  def :\[B](z: B)(f: (A, B) => B): B = foldRight(z)(f)
+  def :\[B](z: B)(op: (A, B) => B): B = foldRight(z)(op)
+
+  /** Combines the elements of this iterable object together using the binary
+   *  operator <code>op</code>, from left to right
+   *  @param op  The operator to apply
+   *  @return <code>op(... op(a<sub>0</sub>,a<sub>1</sub>), ..., a<sub>n</sub>)</code>
+      if the iterable object has elements
+   *          <code>a<sub>0</sub>, a<sub>1</sub>, ..., a<sub>n</sub></code>.
+   *  @throws Predef.UnsupportedOperationException if the iterable object is empty.
+   */
+  def reduceLeft[B >: A](op: (B, B) => B): B = elements.reduceLeft(op)
+
+/** Combines the elements of this iterable object together using the binary
+   *  operator <code>op</code>, from right to left
+   *  @param op  The operator to apply
+   *
+   *  @return <code>a<sub>0</sub> op (... op (a<sub>n-1</sub> op a<sub>n</sub>)...)</code>
+   *          if the iterable object has elements <code>a<sub>0</sub>, a<sub>1</sub>, ...,
+   *          a<sub>n</sub></code>.
+   *
+   *  @throws Predef.UnsupportedOperationException if the iterator is empty.
+   */
+  def reduceRight[B >: A](op: (B, B) => B): B = elements.reduceRight(op)
+
+  /** Copy all elements to a given buffer
+   *  @param  dest   The buffer to which elements are copied
+   */
+  def copyToBuffer[B >: A](dest: Buffer[B]): Unit = elements copyToBuffer dest
 
   /** Checks if the other iterable object contains the same elements.
    *
@@ -209,4 +327,42 @@ trait Iterable[+A] {
    * @return a list with all the elements of this iterable object
    */
   def toList: List[A] = elements.toList
+
+  /** Returns a string representation of this iterable object. The resulting string
+   *  begins with the string <code>start</code> and is finished by the string
+   *  <code>end</code>. Inside, the string representations of elements (w.r.t.
+   *  the method <code>toString()</code>) are separated by the string
+   *  <code>sep</code>.
+   *  <p/>
+   *  Ex: <br/>
+   *  <code>List(1, 2, 3).mkString("(", "; ", ")") = "(1; 2; 3)"</code>
+   *
+   *  @param start starting string.
+   *  @param sep separator string.
+   *  @param end ending string.
+   *  @return a string representation of this iterable object.
+   */
+  def mkString(start: String, sep: String, end: String): String = {
+    val buf = new StringBuilder()
+    buf.append(start)
+    val elems = elements
+    if (elems.hasNext) buf.append(elems.next)
+    while (elems.hasNext) {
+      buf.append(sep); buf.append(elems.next)
+    }
+    buf.append(end)
+    buf.toString
+  }
+
+  /** Write all elements of this string into given string builder */
+  // todo: haromize with print?
+  def addString(buf: StringBuilder, start: String, sep: String, end: String): StringBuilder = {
+    buf.append(start)
+    val elems = elements
+    if (elems.hasNext) buf.append(elems.next)
+    while (elems.hasNext) {
+      buf.append(sep); buf.append(elems.next)
+    }
+    buf.append(end)
+  }
 }

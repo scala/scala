@@ -13,6 +13,7 @@ package scala
 
 
 import Predef._
+import collection.mutable.{Buffer, ArrayBuffer}
 
 /** The <code>Iterator</code> object provides various functions for
  *  creating specialized iterators.
@@ -23,9 +24,9 @@ import Predef._
  */
 object Iterator {
 
-  def empty[a] = new Iterator[a] {
+  val empty = new Iterator[Nothing] {
     def hasNext: Boolean = false
-    def next: a = throw new NoSuchElementException("next on empty iterator")
+    def next: Nothing = throw new NoSuchElementException("next on empty iterator")
   }
 
   /**
@@ -91,9 +92,9 @@ object Iterator {
   }
 
   /**
-   * @deprecated use class <code>Product&lt;n&gt;</code> instead.
+   * @deprecated use <code>fromProduct</code> instead.
    */
-  def fromCaseClass(n: Product) = fromProduct(n)
+  [deprecated] def fromCaseClass(n: Product) = fromProduct(n)
 
   /** Create an iterator with elements
    *  <code>e<sub>n+1</sub> = e<sub>n</sub> + 1</code>
@@ -218,7 +219,7 @@ trait Iterator[+A] {
   /** Returns a new iterator that iterates only over the first <code>n</code>
    *  elements.
    *
-   *  @param n the first <code>n</code> elements of the iterator
+   *  @param n the number of elements to take
    *  @return  the new iterator
    */
   def take(n: Int) = new Iterator[A] {
@@ -230,6 +231,9 @@ trait Iterator[+A] {
   }
 
   /** Removes the first <code>n</code> elements from this iterator.
+   *
+   *  @param n the number of elements to drop
+   *  @return  the new iterator
    */
   def drop(n: Int): Iterator[A] =
     if (n > 0) { next; drop(n - 1) } else this
@@ -274,14 +278,7 @@ trait Iterator[+A] {
       } else throw new NoSuchElementException("next on empty iterator")
   }
 
-  /** Returns an iterator over all the elements of this iterator that
-   *  satisfy the predicate <code>p</code>. The order of the elements
-   *  is preserved.
-   *
-   *  @param p the predicate used to filter the iterator.
-   *  @return  the elements of this iterator satisfying <code>p</code>.
-   */
-  def filter(p: A => Boolean): Iterator[A] = new BufferedIterator[A] {
+  private def predicatedIterator(p: A => boolean, isFilter: boolean) = new BufferedIterator[A] {
     private var hd: A = _
     private var ahead: Boolean = false
     private var hasMore = Iterator.this.hasNext
@@ -291,21 +288,51 @@ trait Iterator[+A] {
         hasMore = Iterator.this.hasNext
         ahead = p(hd)
       }
-    def hasNext: Boolean = { skip; ahead || hasMore }
+    def hasNext: Boolean = { skip; ahead || isFilter && hasMore }
     def next: A =
       if (hasNext) { ahead = false; hd }
       else throw new NoSuchElementException("next on empty iterator")
     def head: A = { skip; hd }
- }
+  }
+
+  /** Returns an iterator over all the elements of this iterator that
+   *  satisfy the predicate <code>p</code>. The order of the elements
+   *  is preserved.
+   *
+   *  @param p the predicate used to filter the iterator.
+   *  @return  the elements of this iterator satisfying <code>p</code>.
+   */
+  def filter(p: A => Boolean): Iterator[A] = predicatedIterator(p, true)
+
+  /** Returns an iterator over the longest prefix of this iterator such that
+   *  all elements of the result satisfy the predicate <code>p</code>.
+   *  The order of the elements is preserved.
+   *
+   *  @param p the predicate used to filter the iterator.
+   *  @return  the longest prefix of this iterator satisfying <code>p</code>.
+   */
+  def takeWhile(p: A => Boolean): Iterator[A] = predicatedIterator(p, false)
+
+  /** Skips longest sequence of elements of this iterator which satisfy given
+   *  predicate <code>p</code>, and returns an iterator of the remaining elements.
+   *
+   *  @param p the predicate used to skip elements.
+   *  @return  an iterator consisting of the remaining elements
+   */
+  def dropWhile(p: A => Boolean): Iterator[A] =
+    if (hasNext) {
+      val x = next
+      if (p(x)) dropWhile(p)
+      else Iterator.single(x) append this
+    } else this
 
   /** Return an iterator formed from this iterator and the specified iterator
    *  <code>that</code> by associating each element of the former with
    *  the element at the same position in the latter.
+   *  If one of the two iterators is longer than the other, its remaining elements are ignored.
    *
-   *  @param that list <code>that</code> must have the same number of
-   *              elements as this iterator.
-   *  @return     an iterator yielding <code>(a<sub>0</sub>,b<sub>0</sub>), ...,
-   *              (a<sub>n</sub>,b<sub>n</sub>)</code> where
+   *  @return     an iterator yielding <code>{a<sub>0</sub>,b<sub>0</sub>},
+   *              {a<sub>1</sub>,b<sub>1</sub>}, ...</code> where
    *              <code>a<sub>i</sub></code> are the elements from this iterator
    *              and <code>b<sub>i</sub></code> are the elements from iterator
    *              <code>that</code>.
@@ -319,8 +346,8 @@ trait Iterator[+A] {
    *  with its index, counting from 0.
    *
    *  @param start the index of the first element.
-   *  @return      an iterator yielding <code>(a<sub>0</sub>,0),
-   *               (a<sub>0</sub>,1)...</code> where <code>a<sub>i</sub></code>
+   *  @return      an iterator yielding <code>{a<sub>0</sub>,0},
+   *               {a<sub>1</sub>,1}...</code> where <code>a<sub>i</sub></code>
    *               are the elements from this iterator.
    */
   def zipWithIndex = new Iterator[Pair[A, int]] {
@@ -368,10 +395,10 @@ trait Iterator[+A] {
     res
   }
 
-  /** Tests if the given value <code>elem</code> is a member of this list.
+  /** Tests if the given value <code>elem</code> is a member of this iterator.
    *
    *  @param elem element whose membership has to be tested.
-   *  @return     <code>true</code> iff there is an element of this list which
+   *  @return     <code>true</code> iff there is an element of this iterator which
    *              is equal (w.r.t. <code>==</code>) to <code>elem</code>.
    */
   def contains(elem: Any): Boolean = exists { x => x == elem }
@@ -392,13 +419,13 @@ trait Iterator[+A] {
     res
   }
 
-  /** Combines the elements of this list together using the binary
+  /** Combines the elements of this iterator together using the binary
    *  operator <code>op</code>, from left to right, and starting with
    *  the value <code>z</code>.
    *
    *  @return <code>op(... (op(op(z,a<sub>0</sub>),a<sub>1</sub>) ...),
-   *          a<sub>n</sub>)</code> if the list is
-   *          <code>List(a<sub>0</sub>, a<sub>1</sub>, ..., a<sub>n</sub>)</code>.
+   *          a<sub>n</sub>)</code> if the iterator yields elements
+   *          <code>a<sub>0</sub>, a<sub>1</sub>, ..., a<sub>n</sub></code>.
    */
   def foldLeft[B](z: B)(op: (B, A) => B): B = {
     var acc = z
@@ -406,13 +433,13 @@ trait Iterator[+A] {
     acc
   }
 
-  /** Combines the elements of this list together using the binary
-   *  operator <code>op</code>, from rigth to left, and starting with
+  /** Combines the elements of this iterator together using the binary
+   *  operator <code>op</code>, from right to left, and starting with
    *  the value <code>z</code>.
    *
    *  @return <code>a<sub>0</sub> op (... op (a<sub>n</sub> op z)...)</code>
-   *          if the list is <code>List(a<sub>0</sub>, a<sub>1</sub>, ...,
-   *          a<sub>n</sub>)</code>.
+   *          if the iterator yields elements <code>a<sub>0</sub>, a<sub>1</sub>, ...,
+   *          a<sub>n</sub></code>.
    */
   def foldRight[B](z: B)(op: (A, B) => B): B = {
     def fold(z: B): B = if (hasNext) op(next, fold(z)) else z
@@ -420,27 +447,57 @@ trait Iterator[+A] {
   }
 
   /** Similar to <code>foldLeft</code> but can be used as
-   *  an operator with the order of list and zero arguments reversed.
+   *  an operator with the order of iterator and zero arguments reversed.
    *  That is, <code>z /: xs</code> is the same as <code>xs foldLeft z</code>.
    *
-   *  @param z the left argument of the first application of <code>f</code>
+   *  @param z the left argument of the first application of <code>op</code>
    *           (evaluation occurs from left to right).
-   *  @param f the applied function.
+   *  @param op the applied operator.
    *  @return  the result value
    *  @see     <code><a href="#foldLeft">foldLeft</a></code>.
    */
-  def /:[B](z: B)(f: (B, A) => B): B = foldLeft(z)(f)
+  def /:[B](z: B)(op: (B, A) => B): B = foldLeft(z)(op)
 
   /** An alias for <code>foldRight</code>.
    *  That is, <code>xs :\ z</code> is the same as <code>xs foldRight z</code>.
    *
-   *  @param z the right argument of the first application of <code>f</code>
+   *  @param z the right argument of the first application of <code>op</code>
    *           (evaluation occurs from right to left).
-   *  @param f the applied function.
+   *  @param op the applied operator.
    *  @return  the result value.
    *  @see     <code><a href="#foldRight">foldRight</a></code>.
    */
-  def :\[B](z: B)(f: (A, B) => B): B = foldRight(z)(f)
+  def :\[B](z: B)(op: (A, B) => B): B = foldRight(z)(op)
+
+  /** Combines the elements of this iterator together using the binary
+   *  operator <code>op</code>, from left to right
+   *  @param op  The operator to apply
+   *  @return <code>op(... op(a<sub>0</sub>,a<sub>1</sub>), ..., a<sub>n</sub>)</code>
+      if the iterator yields elements
+   *          <code>a<sub>0</sub>, a<sub>1</sub>, ..., a<sub>n</sub></code>.
+   *  @throws Predef.UnsupportedOperationException if the iterator is empty.
+   */
+  def reduceLeft[B >: A](op: (B, B) => B): B = {
+    if (hasNext) foldLeft[B](next)(op)
+    else throw new UnsupportedOperationException("empty.reduceLeft")
+  }
+
+  /** Combines the elements of this iterator together using the binary
+   *  operator <code>op</code>, from right to left
+   *  @param op  The operator to apply
+   *
+   *  @return <code>a<sub>0</sub> op (... op (a<sub>n-1</sub> op a<sub>n</sub>)...)</code>
+   *          if the iterator yields elements <code>a<sub>0</sub>, a<sub>1</sub>, ...,
+   *          a<sub>n</sub></code>.
+
+   *  @throws Predef.UnsupportedOperationException if the iterator is empty.
+   */
+  def reduceRight[B >: A](op: (B, B) => B): B = {
+    if (!hasNext) throw new UnsupportedOperationException("empty.reduceRight")
+    val x = next
+    if (hasNext) op(x, reduceRight(op))
+    else x
+  }
 
   /** Returns a buffered iterator from this iterator.
    */
@@ -511,18 +568,22 @@ trait Iterator[+A] {
    *
    *  @param  xs    the array to fill.
    *  @param  start the starting index.
-   *  @return       the given array <code>xs</code> filled with the elements
-   *                of this iterator.
    *  @pre          the array must be large enough to hold all elements.
    */
-  def copyToArray[B >: A](xs: Array[B], start: Int): Array[B] = {
+  def copyToArray[B >: A](xs: Array[B], start: Int): Unit = {
     var i = start
     while (hasNext) {
       xs(i) = next
       i = i + 1
     }
-    xs
   }
+
+  /** Copy all elements to a buffer
+   *  @param   The buffer to which elements are copied
+   *  @return  The buffer to which elements are copied
+   */
+  def copyToBuffer[B >: A](dest: Buffer[B]): Unit =
+    while (hasNext) dest += next
 
   /** Transform this iterator into a list of all elements.
    *
@@ -535,11 +596,4 @@ trait Iterator[+A] {
     }
     res.toList
   }
-
-  /** Transforms the elements of this iterator into a string, thereby destroying it.
-   *  Has the same effect as toList.mkString(start,sep,end)
-   */
-  def mkString(start: String, sep: String, end: String): String =
-    toList.mkString(start, sep, end)
-
 }

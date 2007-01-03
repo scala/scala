@@ -19,10 +19,11 @@ package scala.collection
  *  </p>
  *
  *  @author  Burak Emir, Stephane Micheloud, Nikolay Mihaylov
- *  @version 1.1
+ *  @author  Martin Odersky
+ *  @version 2.0  01/01/2007
  */
 
-abstract class BitSet extends AnyRef with Function1[Int,Boolean] with Set[Int] {
+abstract class BitSet extends Set[Int] {
 
   import compat.Platform.arraycopy
   import compat.Math.min
@@ -67,21 +68,25 @@ abstract class BitSet extends AnyRef with Function1[Int,Boolean] with Set[Int] {
    *
    * @return true, iff both bitsets contain the same elements.
    */
-  override def equals(that: Any): Boolean = (
-    that.isInstanceOf[BitSet] &&
-    { val other = that.asInstanceOf[BitSet];
-      (size == other.size) && ( size == 0 || {
-        var len = memsize(min(this.capacity, other.capacity))
+  override def equals(other: Any): Boolean = other match {
+    case that: BitSet =>
+      (size == that.size) && {
+        var len = memsize(min(this.capacity, that.capacity))
         var i = 0
-        var res = true
-        while ((i < len) && res) {
-          res = arr(i) == other.arr(i)
-          i = i + 1
-        }
-        res
-      })
-   } || super.equals(that)
-  );
+        while (i < len && arr(i) == that.arr(i)) i = i + 1
+        i == len
+      }
+    case _ =>
+      super.equals(other)
+  }
+
+  override def hashCode(): Int = {
+    val len = memsize(this.capacity)
+    var h = 0
+    var i = 0
+    while (i < len) { h = h * 41 + arr(i); i = i + 1 }
+    h
+  }
 
   /**
    * Checks if this set is a subset of set <code>that</code>.
@@ -90,26 +95,18 @@ abstract class BitSet extends AnyRef with Function1[Int,Boolean] with Set[Int] {
    * @param  that another set.
    * @return true, iff the other set is a superset of this set.
    */
-  override def subsetOf(that: Set[Int]): Boolean =
-    (that.isInstanceOf[BitSet] && {
-      val other = that.asInstanceOf[BitSet]
-      val len = memsize(min(this.capacity, other.capacity))
+  override def subsetOf(other: Set[Int]): Boolean = other match {
+    case that: BitSet =>
+      val thisLen = memsize(this.capacity)
+      val thatLen = memsize(that.capacity)
+      val minLen = min(thisLen, thatLen)
       var i = 0
-      var res = true
-      while((i < len) && res) {
-        res = other.arr(i) == (other.arr(i) | arr(i))
-        i = i + 1
-      }
-      res && (this.capacity <= other.capacity || {
-        // if this set is bigger check that the rest is empty
-        while (i < memsize(this.capacity) && res) {
-          res == arr(i) == 0
-          i = i + 1
-        }
-        res
-      })
-    }) || super.subsetOf(that);
-
+      while (i < minLen && that.arr(i) == (that.arr(i) | arr(i))) i = i + 1
+      while (i < thisLen && arr(i) == 0) i = i + 1
+      i == thisLen
+    case _ =>
+      super.subsetOf(other)
+  }
 
   /** @return the number of Int cells needed to store <code>n</code> bits */
   protected final def memsize(n: Int): Int = offset(n + 31)

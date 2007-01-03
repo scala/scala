@@ -18,22 +18,13 @@ package scala.collection
  *  dynamically using object composition and forwarding.
  *
  *  @author  Matthias Zenger
- *  @version 1.0, 21/07/2003
+ *  @author  Martin Odersky
+ *  @version 2.0, 01/01/2007
  */
 trait SetProxy[A] extends Set[A] with IterableProxy[A] {
-
   def self: Set[A]
-
   def size: Int = self.size
-
   override def isEmpty: Boolean = self.isEmpty
-
   def contains(elem: A): Boolean = self.contains(elem)
-
   override def subsetOf(that: Set[A]): Boolean = self.subsetOf(that)
-
-  override def foreach(f: A => Unit): Unit = self.foreach(f)
-
-  override def exists(p: A => Boolean): Boolean = self.exists(p)
-
 }

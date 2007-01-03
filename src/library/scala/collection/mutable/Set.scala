@@ -15,85 +15,162 @@ package scala.collection.mutable
 /** This class represents mutable sets. Concrete set implementations
  *  just have to provide functionality for the abstract methods in
  *  <a href="../Set.html" target="contentFrame">
- *  <code>scala.collection.Set</code></a> as well as for <code>add</code>,
- *  <code>remove</code>, and <code>clear</code>.
+ *  <code>scala.collection.Set</code></a> as well as for <code>+=</code>,
+ *  <code>-= and <code>clear</code>.
  *
  *  @author  Matthias Zenger
  *  @version 1.1, 09/05/2004
  */
 [cloneable]
-trait Set[A] extends AnyRef with collection.Set[A]
-      with Scriptable[Message[A]]
-{
+trait Set[A] extends collection.Set[A] with Scriptable[Message[A]] {
 
   /** This method allows one to add or remove an element <code>elem</code>
    *  from this set depending on the value of parameter <code>included</code>.
    *  Typically, one would use the following syntax:
    *  <pre>set(elem) = true</pre>
    *
-   *  @param elem     ...
-   *  @param included ...
    */
   def update(elem: A, included: Boolean): Unit =
-    if (included) +=(elem) else -=(elem)
+    if (included) this += elem else this -= elem
 
-  /** This method adds a new element to the set.
+  /** Add a new element to the set.
    *
-   *  @param elem ...
+   *  @param elem the element to be added
    */
-  def +=(elem: A): Unit
+  def +=(elem: A)
 
-  /** This method will add all the elements provided by an iterator
+  /** Add two or more elements to this set.
+   *  @param    elem1 the first element.
+   *  @param    kv2 the second element.
+   *  @param    kvs the remaining elements.
+   */
+  def += (elem1: A, elem2: A, elems: A*) { this += elem1; this += elem2; this ++= elems }
+
+  /** Add all the elements provided by an iterator
    *  of the iterable object <code>that</code> to the set.
-   *
-   *  @param that ...
+   *  @param elems  the iterable object containing the elements to be added
    */
-  def ++=(that: Iterable[A]): Unit = ++=(that.elements)
+  def ++=(elems: Iterable[A]): Unit = ++=(elems.elements)
 
-  /** This method will add all the elements provided by an iterator
-   *  of the iterable object <code>that</code> to the set.
-   *
-   *  @param it ...
+  /** Add all the elements provided by an iterator
+   *  <code>elems</code> to the set.
+   *  @param elems  the iterator containing the elements to be added
    */
-  def ++=(it: Iterator[A]): Unit = it foreach +=
+  def ++=(elems: Iterator[A]): Unit = elems foreach +=
+
+  /** Add a new element to the set.
+   *  @return the set itself with the element added.
+   *
+   *  @param elem the element to be added
+   */
+  def + (elem: A): Set[A] = { +=(elem); this }
+
+  /** Add two or more elements to this set.
+   *  @param    elem1 the first element.
+   *  @param    kv2 the second element.
+   *  @param    kvs the remaining elements.
+   *  @return the set itself with the elements added.
+   */
+  def + (elem1: A, elem2: A, elems: A*): Set[A] = { this.+=(elem1, elem2, elems: _*); this }
+
+  /** Add all the elements provided by an iterator
+   *  of the iterable object <code>elems</code> to the set.
+   *
+   *  @param elems  the iterable object containing the elements to be added
+   *  @return the set itself with the elements added.
+   */
+  def ++ (elems: Iterable[A]): Set[A] = { this ++= elems; this }
+
+  /** Add all the elements provided by an iterator
+   *  <code>elems</code> to the set.
+   *  @param elems  the iterator containing the elements to be added
+   */
+  def ++ (elems: Iterator[A]): Set[A] = { this ++= elems; this }
 
   /** <code>incl</code> can be used to add many elements to the set
    *  at the same time.
+   *  @deprecated   use <code>++=</code> instead
+   */
+  [deprecated] def incl(elems: A*): Unit = ++=(elems.elements)
+
+  /** Removes a single element from a set.
+   *  @param elem  The element to be removed.
+   */
+  def -=(elem: A)
+
+  /** Remove two or more elements from this set.
+   *  @param    elem1 the first element.
+   *  @param    elem2 the second element.
+   *  @param    elems the remaining elements.
+   */
+  def -= (elem1: A, elem2: A, elems: A*) { this -= elem1; this -= elem2; this --= elems }
+
+  /** Remove all the elements provided by an iterator
+   *  of the iterable object <code>elems</code> from the set.
+   */
+  def --=(elems: Iterable[A]): Unit = --=(elems.elements)
+
+  /** Remove all the elements provided by an iterator
+   *  <code>elems</code> from the set.
+   */
+  def --=(elems: Iterator[A]): Unit = elems foreach -=
+
+  /** Remove a new element from the set.
+   *  @return the set itself with the element removed.
    *
-   *  @param elems ...
+   *  @param elem the element to be removed
    */
-  def incl(elems: A*): Unit = ++=(elems.elements)
+  def - (elem: A) { -=(elem); this }
 
-  /** <code>-=</code> can be used to remove a single element from
-   *  a set.
+  /** Remove two or more elements from this set.
+   *  @param    elem1 the first element.
+   *  @param    elem2 the second element.
+   *  @param    elems the remaining elements.
+   *  @return the set itself with the elements removed.
    */
-  def -=(elem: A): Unit
+  def - (elem1: A, elem2: A, elems: A*): Set[A] = { this.-=(elem1, elem2, elems: _*); this }
 
-  /** This method removes all the elements provided by the
-   *  the iterable object <code>that</code> from the set.
+  /** Remove all the elements provided by an iterator
+   *  of the iterable object <code>elems</code> from the set.
+   *
+   *  @param elems An iterable object containing the elements to remove from the set.
+   *  @return the set itself with the elements removed.
    */
-  def --=(that: Iterable[A]): Unit = --=(that.elements)
+  def -- (elems: Iterable[A]): Set[A] = { this --= elems; this }
 
-  /** This method removes all the elements provided by an iterator
-   *  <code>it</code> from the set.
+  /** Remove all the elements provided by an iterator
+   *  <code>elems</code> from the set.
+   *  @param elems An iterator containing the elements to remove from the set.
+   *  @return the set itself with the elements removed.
    */
-  def --=(it: Iterator[A]): Unit = it foreach -=
+  def -- (elems: Iterator[A]): Set[A] = { this --= elems; this }
 
   /** <code>excl</code> removes many elements from the set.
    */
-  def excl(elems: A*): Unit = --=(elems.elements)
+  [deprecated] def excl(elems: A*): Unit = --=(elems.elements)
 
   /** This method computes an intersection with set <code>that</code>.
    *  It removes all the elements that are not present in <code>that</code>.
    *
-   *  @param that ...
+   *  @param that the set to intersect with.
    */
-  def intersect(that: Set[A]): Unit = filter(that.contains)
+  def intersect(that: Set[A]): Unit = retain(that.contains)
 
   /** Method <code>filter</code> removes all elements from the set for
    *  which the predicate <code>p</code> yields the value <code>false</code>.
+   * @deprecated   use retain instead
    */
-  def filter(p: A => Boolean): Unit = toList.foreach {
+  [deprecated] override def filter(p: A => Boolean): Set[A] = {
+    toList.foreach {
+      elem => if (!p(elem)) -=(elem)
+    }
+    this
+  }
+
+  /** Method <code>retain removes all elements from the set for
+   *  which the predicate <code>p</code> yields the value <code>false</code>.
+   */
+  def retain(p: A => Boolean): Unit = toList.foreach {
     elem => if (!p(elem)) -=(elem)
   }
 
@@ -121,12 +198,4 @@ trait Set[A] extends AnyRef with collection.Set[A]
    *  @return  a set with the same elements.
    */
   override def clone(): Set[A] = super.clone().asInstanceOf[Set[A]]
-
-  /** The <code>hashCode</code> method always yields an error, since it is
-   *  not safe to use mutable stacks as keys in hash tables.
-   *
-   *  @return never.
-   */
-  override def hashCode(): Int =
-    throw new UnsupportedOperationException("unsuitable as hash key")
 }

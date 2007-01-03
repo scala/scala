@@ -14,23 +14,18 @@ package scala.collection.mutable
 /** This class implements mutable maps using a hashtable.
  *
  *  @author  Matthias Zenger
- *  @version 1.0, 08/07/2003
+ *  @author  Martin Odersky
+ *  @version 2.0, 31/12/2006
  */
 [serializable]
 class HashMap[A, B] extends Map[A,B] with HashTable[A] with DefaultMapModel[A,B] {
 
-  def -=(key: A): Unit = removeEntry(key)
-
-  protected def entryKey(e: Entry) = e.key
+  def -= (key: A) { removeEntry(key) }
 
   override def clear = {
-    initTable(table)
+    initTable()
     tableSize = 0
   }
 
-  override def clone(): Map[A, B] = {
-    val res = new HashMap[A, B]
-    res ++= this
-    res
-  }
+  override def clone(): Map[A, B] = new HashMap[A, B] ++ this
 }

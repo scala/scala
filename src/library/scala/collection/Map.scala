@@ -28,132 +28,126 @@ package scala.collection
  *  immutable data structures.
  *
  *  @author  Matthias Zenger
- *  @version 1.1, 02/05/2004
+ *  @author  Martin Odersky
+ *  @version 1.2, 31/12/2006
  */
-trait Map[A, +B] extends AnyRef
-      with PartialFunction[A, B]
-      with Iterable[Pair[A, B]]
-{
-    /** Compute the number of key-to-value mappings.
-     *
-     *  @return the number of mappings
-     */
-    def size: Int
+trait Map[A, +B] extends PartialFunction[A, B] with Iterable[Pair[A, B]] {
 
-    /** Check if this map maps <code>key</code> to a value and return the
-     *  value if it exists.
-     *
-     *  @param  key the key of the mapping of interest
-     *  @return     the value of the mapping, if it exists
-     */
-    def get(key: A): Option[B]
+  /** Compute the number of key-to-value mappings.
+   *
+   *  @return the number of mappings
+   */
+  def size: Int
 
-    /** Is this an empty map?
-     *
-     *  @return <code>true</code> iff the map is empty.
-     */
-    def isEmpty: Boolean = (size == 0)
+  /** Check if this map maps <code>key</code> to a value and return the
+   *  value if it exists.
+   *
+   *  @param  key the key of the mapping of interest
+   *  @return     the value of the mapping, if it exists
+   */
+  def get(key: A): Option[B]
 
-    /** Retrieve the value which is associated with the given key. This
-     *  method throws an exception if there is no mapping from the given
-     *  key to a value.
-     *
-     *  @param  key the key
-     *  @return     the value associated with the given key.
-     */
-    def apply(key: A): B = get(key) match {
-      case None => default(key)
-      case Some(value) => value
-    }
+  /** Is this an empty map?
+   *
+   *  @return <code>true</code> iff the map is empty.
+   */
+  def isEmpty: Boolean = size == 0
 
-    /** Is the given key mapped to a value by this map?
-     *
-     *  @param key the key
-     *  @return    <code>true</code> iff there is a mapping for key in this map
-     */
-    def contains(key: A): Boolean = get(key) match {
-      case None => false
-      case Some(_) => true
-    }
+  /** Retrieve the value which is associated with the given key. This
+   *  method throws an exception if there is no mapping from the given
+   *  key to a value.
+   *
+   *  @param  key the key
+   *  @return     the value associated with the given key.
+   */
+  def apply(key: A): B = get(key) match {
+    case None => default(key)
+    case Some(value) => value
+  }
 
-    /** @return the keys of this map as a set.
-     */
-    def keySet = new Set[A] {
-      def size = Map.this.size;
-      def contains(key : A) = Map.this.contains(key);
-      def elements = Map.this.elements.map(._1);
-    }
+  /** Is the given key mapped to a value by this map?
+   *
+   *  @param key the key
+   *  @return    <code>true</code> iff there is a mapping for key in this map
+   */
+  def contains(key: A): Boolean = get(key) match {
+    case None => false
+    case Some(_) => true
+  }
 
-    /** Does this map contain a mapping from the given key to a value?
-     *
-     *  @param key the key
-     *  @return    <code>true</code> iff there is a mapping for key in this map
-     */
-    def isDefinedAt(key: A) = contains(key)
+  /** Does this map contain a mapping from the given key to a value?
+   *
+   *  @param key the key
+   *  @return    <code>true</code> iff there is a mapping for key in this map
+   */
+  def isDefinedAt(key: A) = contains(key)
 
-    /** Creates an iterator for all keys.
-     *
-     *  @return an iterator over all keys.
-     */
-    def keys: Iterator[A] = new Iterator[A] {
-      val iter = Map.this.elements
-      def hasNext = iter.hasNext
-      def next = iter.next._1
-    }
+  /** Creates an iterator for all keys.
+   *
+   *  @return an iterator over all keys.
+   */
+  def keys: Iterator[A] = new Iterator[A] {
+    val iter = Map.this.elements
+    def hasNext = iter.hasNext
+    def next = iter.next._1
+  }
 
-    /** Creates an iterator for a contained values.
-     *
-     *  @return an iterator over all values.
-     */
-    def values: Iterator[B] = new Iterator[B] {
-      val iter = Map.this.elements
-      def hasNext = iter.hasNext
-      def next = iter.next._2
-    }
+  /** @return the keys of this map as a set.
+   */
+  def keySet = new Set[A] {
+    def size = Map.this.size;
+    def contains(key : A) = Map.this.contains(key);
+    def elements = Map.this.elements.map(._1);
+  }
 
-    /** Compares two maps structurally; i.e. checks if all mappings
-     *  contained in this map are also contained in the other map,
-     *  and vice versa.
-     *
-     *  @param that the other map
-     *  @return     <code>true</code> iff both maps contain exactly the
-     *              same mappings.
-     */
-    override def equals(that: Any): Boolean = that match {
-      case other: Map[a, b] =>
-        this.size == other.size && this.elements.forall {
-          case Pair(key, value) => other.get(key.asInstanceOf[a]) match {
-            case None => false
-            case Some(otherval) => value == otherval
-          }
+  /** Creates an iterator for a contained values.
+   *
+   *  @return an iterator over all values.
+   */
+  def values: Iterator[B] = new Iterator[B] {
+    val iter = Map.this.elements
+    def hasNext = iter.hasNext
+    def next = iter.next._2
+  }
+
+  /** Compares two maps structurally; i.e. checks if all mappings
+   *  contained in this map are also contained in the other map,
+   *  and vice versa.
+   *
+   *  @param that the other map
+   *  @return     <code>true</code> iff both maps contain exactly the
+   *              same mappings.
+   */
+  override def equals(that: Any): Boolean = that match {
+    case other: Map[a, b] =>
+      this.size == other.size && this.elements.forall {
+        case Pair(key, value) => other.get(key.asInstanceOf[a]) match {
+          case None => false
+          case Some(otherval) => value == otherval
         }
-      case _ => false
-    }
+      }
+    case _ => false
+  }
 
-    /** Creates a string representation for this map.
-     *
-     *  @return    a string showing all mappings
-     */
-    override def toString() =
-      if (size == 0)
-        "{}"
-      else
-        "{" + {
-          val iter = elements
-          var res = iter.next.toString()
-          while (iter.hasNext) {
-            res = res + ", " + iter.next
-          }
-          res
-        } + "}"
+  /** A hash method compatible with <code>equals</code>
+   */
+  override def hashCode() =
+    (0 /: elements) ((hash, kv) => hash + kv.hashCode)
 
-    /** The default value for the map, returned when a key is not found
-     *  The method implemented here yields an error,
-     *  but it might be overridden in subclasses.
-     *
-     *  @param key ...
-     *  @throws Predef.NoSuchElementException ...
-     */
-    def default(key: A): B =
-      throw new NoSuchElementException("key not found: " + key)
+  /** Creates a string representation for this map.
+   *
+   *  @return    a string showing all mappings
+   */
+  override def toString() =
+    elements.toList.map(kv => kv._1 + " -> " + kv._2).mkString("Map(", ", ", ")")
+
+  /** The default value for the map, returned when a key is not found
+   *  The method implemented here yields an error,
+   *  but it might be overridden in subclasses.
+   *
+   *  @param key the given key value
+   *  @throws Predef.NoSuchElementException
+   */
+  def default(key: A): B =
+    throw new NoSuchElementException("key not found: " + key)
 }

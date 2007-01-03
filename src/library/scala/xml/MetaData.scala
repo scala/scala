@@ -116,7 +116,7 @@ abstract class MetaData extends Iterable[MetaData] {
   def equals1(that: MetaData): Boolean
 
   /** filters this sequence of meta data */
-  def filter(f: MetaData => Boolean): MetaData = {
+  override def filter(f: MetaData => Boolean): MetaData = {
     if (f(this)) copy(next filter f) else next filter f
   }
 

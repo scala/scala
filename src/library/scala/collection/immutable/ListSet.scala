@@ -15,9 +15,19 @@ package scala.collection.immutable
 //import Predef.NoSuchElementException
 
 object ListSet {
+
   /** constructs an empty ListSet
+   *  @deprecated   use <code>empty</code> instead
    */
-  def Empty[A] = new ListSet[A]
+  [deprecated] def Empty[A] = new ListSet[A]
+
+  /** The empty set of this type.
+   */
+  def empty[A] = new ListSet[A]
+
+  /** The canonical factory for this type
+   */
+//  def apply[A, B](elems: A*) = empty[A] ++ elems
 }
 
 
@@ -40,7 +50,7 @@ class ListSet[A] extends AnyRef with Set[A] {
 
   override def isEmpty: Boolean = true;
 
-  def empty[B] = new ListSet[B]
+  def empty[B] = ListSet.empty[B]
 
   /** Checks if this set contains element <code>elem</code>.
    *

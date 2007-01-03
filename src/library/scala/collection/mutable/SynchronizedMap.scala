@@ -16,7 +16,8 @@ package scala.collection.mutable
  *  functions of the class into which it is mixed in.
  *
  *  @author  Matthias Zenger
- *  @version 1.0, 08/07/2003
+ *  @author  Martin Odersky
+ *  @version 2.0, 31/12/2006
  */
 trait SynchronizedMap[A, B] extends Map[A, B] {
 
@@ -48,12 +49,16 @@ trait SynchronizedMap[A, B] extends Map[A, B] {
     super.keys
   }
 
+  override def keySet: collection.Set[A] = synchronized {
+    super.keySet
+  }
+
   override def values: Iterator[B] = synchronized {
     super.values
   }
 
-  override def foreach(f: Pair[A, B] => Unit) = synchronized {
-    super.foreach(f)
+  abstract override def elements: Iterator[Pair[A, B]] = synchronized {
+    super.elements
   }
 
   override def toList: List[Pair[A, B]] = synchronized {
@@ -64,6 +69,19 @@ trait SynchronizedMap[A, B] extends Map[A, B] {
     super.update(key, value)
   }
 
+  override def += (kv: Pair[A, B]): Unit = synchronized {
+    super.+=(kv)
+  }
+
+  /** Add two or more key/value pairs to this map.
+   *  @param    kv1 the key/first value pair.
+   *  @param    kv2 the second key/first value pair.
+   *  @param    kvs the remaining key/first value pairs.
+   */
+  override def += (kv1: Pair[A, B], kv2: Pair[A, B], kvs: Pair[A, B]*): Unit = synchronized {
+    super.+=(kv1, kv2, kvs: _*)
+  }
+
   override def ++=(map: Iterable[Pair[A, B]]): Unit = synchronized {
     super.++=(map)
   }
@@ -72,12 +90,16 @@ trait SynchronizedMap[A, B] extends Map[A, B] {
     super.++=(it)
   }
 
-  override def incl(mappings: Pair[A, B]*): Unit = synchronized {
-    super.++=(mappings)
+  [deprecated] override def incl(mappings: Pair[A, B]*): Unit = synchronized {
+    super.incl(mappings: _*)
   }
 
   abstract override def -=(key: A): Unit = synchronized {
     super.-=(key)
+  }
+
+  override def -= (key1: A, key2: A, keys: A*): Unit = synchronized {
+    super.-=(key1, key2, keys: _*)
   }
 
   override def --=(keys: Iterable[A]): Unit = synchronized {
@@ -88,24 +110,41 @@ trait SynchronizedMap[A, B] extends Map[A, B] {
     super.--=(it)
   }
 
-  override def excl(keys: A*): Unit = synchronized {
-    super.--=(keys)
+  [deprecated] override def excl(keys: A*): Unit = synchronized {
+    super.excl(keys: _*)
   }
 
   override def clear: Unit = synchronized {
     super.clear
   }
 
-  override def map(f: Pair[A, B] => B): Unit = synchronized {
+  override def transform(f: (A, B) => B): Unit = synchronized {
+    super.transform(f)
+  }
+
+  [deprecated] override def map[C](f: Pair[A, B] => C) = synchronized {
     super.map(f)
   }
 
-  override def filter(p: Pair[A, B] => Boolean): Unit = synchronized {
+  override def retain(p: (A, B) => Boolean): Unit = synchronized {
+    super.retain(p)
+  }
+
+  /** @deprecated  use retain instead */
+  [deprecated] override def filter(p: Pair[A, B] => Boolean) = synchronized {
     super.filter(p)
   }
 
   override def toString() = synchronized {
     super.toString()
+  }
+
+  override def equals(that: Any): Boolean = synchronized {
+    super.equals(that)
+  }
+
+  override def hashCode(): int = synchronized {
+    super.hashCode()
   }
 
   override def <<(cmd: Message[Pair[A, B]]): Unit = synchronized {

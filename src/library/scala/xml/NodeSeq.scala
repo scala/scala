@@ -161,7 +161,7 @@ abstract class NodeSeq extends Seq[Node] {
     y
   }
 
-  def filter(f: Node => Boolean): NodeSeq = {
+  override def filter(f: Node => Boolean): NodeSeq = {
     val x = toList filter f
     x
   }

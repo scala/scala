@@ -107,8 +107,10 @@ trait Infer requires Analyzer {
    *  @param targs   ...
    *  @return        ...
    */
-  private def isWithinBounds(tparams: List[Symbol], targs: List[Type]): boolean = {
-    val bounds = tparams map (.info.subst(tparams, targs).bounds)
+  private def isWithinBounds(pre: Type, owner: Symbol, tparams: List[Symbol], targs: List[Type]): boolean = {
+    val bounds = tparams map { tparam =>
+      tparam.info.asSeenFrom(pre, owner).subst(tparams, targs).bounds
+    }
     !(List.map2(bounds, targs)((bound, targ) => bound containsType targ) contains false)
   }
 
@@ -284,7 +286,7 @@ trait Infer requires Analyzer {
         for {
           val sym1 <- syms1
           val sym2 <- syms2
-          sym1 != sym2 && sym1.name == sym2.name
+          sym1 != sym2 && sym1.toString == sym2.toString
         } yield {
           val name = sym1.name
           explainName(sym1)
@@ -526,7 +528,7 @@ trait Infer requires Analyzer {
               val uninstantiated = new ListBuffer[Symbol]
               val targs = methTypeArgs(undetparams, formals, restpe, argtpes, pt, uninstantiated)
               (exprTypeArgs(uninstantiated.toList, restpe.subst(undetparams, targs), pt) ne null) &&
-              isWithinBounds(undetparams, targs)
+              isWithinBounds(NoPrefix, NoSymbol, undetparams, targs)
             } catch {
               case ex: NoInstance => false
             }
@@ -573,10 +575,10 @@ trait Infer requires Analyzer {
     /** error if arguments not within bounds. */
     def checkBounds(pos: PositionType, tparams: List[Symbol],
                     targs: List[Type], prefix: String): unit =
-      if (!isWithinBounds(tparams, targs)) {
+      if (!isWithinBounds(NoPrefix, NoSymbol, tparams, targs)) {
         if (!(targs exists (.isErroneous)) && !(tparams exists (.isErroneous))) {
           //Console.println("tparams = "+tparams+", bounds = "+tparams.map(.info)+", targs="+targs)//DEBUG
-          //withTypesExplained(isWithinBounds(tparams, targs))//DEBUG
+          //withTypesExplained(isWithinBounds(NoPrefix, tparams, targs))//DEBUG
           error(pos,
                 prefix + "type arguments " + targs.mkString("[", ",", "]") +
                 " do not conform to " + tparams.head.owner + "'s type parameter bounds " +
@@ -839,7 +841,7 @@ trait Infer requires Analyzer {
     }
 
     def inferTypedPattern(tpt: Tree, pt: Type): Type = {
-      //Console.println("infer typed pattern: "+tpt)//DEBUG
+      //Console.println("infer typed pattern: "+tpt+" wrt "+pt)//debug
       checkCheckable(tpt.pos, tpt.tpe)
       if (!(tpt.tpe <:< pt)) {
         val tpparams = freeTypeParamsOfTerms.collect(tpt.tpe)
@@ -1047,19 +1049,38 @@ trait Infer requires Analyzer {
      *  @param tree ...
      *  @param nparams ...
      */
-    def inferPolyAlternatives(tree: Tree, nparams: int): unit = tree.tpe match {
+    def inferPolyAlternatives(tree: Tree, argtypes: List[Type]): unit = tree.tpe match {
       case OverloadedType(pre, alts) =>
-        val sym = tree.symbol filter (alt => alt.typeParams.length == nparams)
+        val sym0 = tree.symbol filter { alt => alt.typeParams.length == argtypes.length }
+        if (sym0 == NoSymbol) {
+          error(
+            tree.pos,
+            if (alts exists (alt => alt.typeParams.length > 0))
+              "wrong number of type parameters for " + treeSymTypeMsg(tree)
+            else treeSymTypeMsg(tree) + " does not take type parameters")
+          return
+        }
+        val sym = sym0 filter { alt => isWithinBounds(pre, alt.owner, alt.typeParams, argtypes) }
         if (sym == NoSymbol) {
-          errorTree(tree,
-                    if (alts exists (alt => alt.typeParams.length > 0))
-                      "wrong number of type parameters for " + treeSymTypeMsg(tree)
-                    else treeSymTypeMsg(tree) + " does not take type parameters")
-        } else if (sym.hasFlag(OVERLOADED)) {
-          val tparams = sym.alternatives.head.typeParams
+          if (!(argtypes exists (.isErroneous))) {
+            Console.println(":"+sym0.alternatives.map(
+              alt => alt.typeParams.map(
+                p => p.info.asSeenFrom(pre, alt.owner))))
+            error(
+              tree.pos,
+              "type arguments " + argtypes.mkString("[", ",", "]") +
+              " conform to the bounds of none of the overloaded alternatives of\n "+sym0+
+              ": "+sym0.info)
+            return
+          }
+        }
+        if (sym.hasFlag(OVERLOADED)) {
+          val tparams = new AsSeenFromMap(pre, sym.alternatives.head.owner).mapOver(
+            sym.alternatives.head.typeParams)
+          val bounds = tparams map (.tpe)
           val tpe =
             PolyType(tparams,
-                     OverloadedType(AntiPolyType(pre, tparams map (.tpe)), sym.alternatives))
+                     OverloadedType(AntiPolyType(pre, bounds), sym.alternatives))
           sym.setInfo(tpe)
           tree.setSymbol(sym).setType(tpe)
         } else {

@@ -20,7 +20,7 @@ package scala.collection.mutable
  *  @version 1.0, 03/05/2004
  */
 abstract class PriorityQueueProxy[A <% Ordered[A]] extends PriorityQueue[A]
-         with IterableProxy[A]
+         with SeqProxy[A]
 {
 
   def self: PriorityQueue[A]

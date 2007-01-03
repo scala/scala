@@ -18,7 +18,8 @@ package scala.collection.mutable
  *  events of the type <code>Message</code>.
  *
  *  @author  Matthias Zenger
- *  @version 1.0, 08/07/2003
+ *  @author  Martin Odersky
+ *  @version 2.0, 31/12/2006
  */
 trait ObservableMap[A, B, This <: ObservableMap[A, B, This]] requires This
       extends Map[A, B]
@@ -39,7 +40,7 @@ trait ObservableMap[A, B, This <: ObservableMap[A, B, This]] requires This
       })
   }
 
-  abstract override def -=(key: A): Unit = get(key) match {
+  abstract override def -= (key: A): Unit = get(key) match {
     case None =>
     case Some(old) =>
       super.-=(key)

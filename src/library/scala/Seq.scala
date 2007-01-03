@@ -11,10 +11,17 @@
 
 package scala
 
-
-import Predef.IllegalArgumentException
+import Predef.{IllegalArgumentException, NoSuchElementException}
+import collection.mutable.{ArrayBuffer}
 
 object Seq {
+
+  /** The empty sequence */
+  val empty = new Seq[Nothing] {
+    def length = 0
+    def apply(i: Int): Nothing = throw new NoSuchElementException("empty sequence")
+    def elements = Iterator.empty
+  }
 
   def unapplySeq[A](x:Any): Option[Tuple1[Seq[A]]] =
     if(x.isInstanceOf[Seq[A]]) Some(Tuple1(x.asInstanceOf[Seq[A]])) else None
@@ -64,23 +71,19 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Iterable[A] {
    */
   def length: Int
 
-  /** Returns true is length == 0
-   *
-   *  @return the sequence length.
+  /** Returns true if length == 0
    */
   def isEmpty: Boolean = { length == 0 }
 
-  /** Returns the concatenation of two sequences.
+  /** Appends two iterable objects
    *
-   *  @return concatenation of this sequence with argument
-   *  @author buraq
+   *  @return the new iterable object
    */
-  def concat[B >: A](that: Seq[B]): Seq[B] = new Seq[B] {
-    def length = Seq.this.length + that.length
-    def elements: Iterator[B] = Seq.this.elements.append(that.elements)
-    def apply(i: Int) =
-      if (Seq.this.isDefinedAt(i)) Seq.this.apply(i)
-      else that.apply(i - Seq.this.length)
+  override def concat [B >: A](that: Iterable[B]): Seq[B] = {
+    val buf = new ArrayBuffer[B]
+    this copyToBuffer buf
+    that copyToBuffer buf
+    buf
   }
 
   /** Is this partial function defined for the index <code>x</code>?
@@ -109,83 +112,128 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Iterable[A] {
     if (found) i else -1;
   }
 
-  /** Returns the sub-sequence starting from index <code>n</code>.
+  /** Returns the sequence resulting from applying the given function <code>f</code> to each
+   *  element of this sequence.
    *
-   *  @param n ...
+   *  @param f function to apply to each element.
+   *  @return <code>f(a0), ..., f(an)</code> if this sequence is <code>a0, ..., an</code>.
    */
-  def take(n: Int): Seq[A] = subseq(0, n)
+  override def map[B](f: A => B): Seq[B] = {
+    // todo: malformed scala signature suing build when replaced by
+    // super.map(f).asInstanceOf[Seq[B2]]
+    val buf = new ArrayBuffer[B]
+    val elems = elements
+    while (elems.hasNext) buf += f(elems.next)
+    buf
+  }
 
-  /** Returns a new sub-sequence that drops the first <code>n</code>
-   *  elements of this sequence.
+  /** Applies the given function <code>f</code> to each element of
+   *  this sequence, then concatenates the results.
    *
-   *  @param n ...
+   *  @param f the function to apply on each element.
+   *  @return  <code>f(a<sub>0</sub>) ::: ... ::: f(a<sub>n</sub>)</code> if
+   *           this sequence is <code>a<sub>0</sub>, ..., a<sub>n</sub></code>.
    */
-  def drop(n: Int): Seq[A] = subseq(n, length - n)
+  override def flatMap[B](f: A => Iterable[B]): Seq[B] = {
+    val buf = new ArrayBuffer[B]
+    val elems = elements
+    while (elems.hasNext) f(elems.next) copyToBuffer buf
+    buf
+  }
+
+  /** Returns all the elements of this sequence that satisfy the
+   *  predicate <code>p</code>. The order of the elements is preserved.
+   *
+   *  @param p the predicate used to filter the list.
+   *  @return the elements of this list satisfying <code>p</code>.
+   */
+  override def filter(p: A => Boolean): Seq[A] = super.filter(p).asInstanceOf[Seq[A]]
+
+  /** Returns a sequence consisting only over the first <code>n</code>
+   *  elements of this sequence, or else the whole sequence, if it has less
+   *  than <code>n</code> elements.
+   *
+   *  @param n the number of elements to take
+   *  @return  the new sequence
+   */
+  override def take(n: Int): Seq[A] = super.take(n).asInstanceOf[Seq[A]]
+
+  /** Returns this sequence without its <code>n</code> first elements
+   *  If this sequence has less than <code>n</code> elements, the empty sequence is returned.
+   *
+   *  @param n the number of elements to drop
+   *  @return  the new sequence
+   */
+  override def drop(n: Int): Seq[A] = super.drop(n).asInstanceOf[Seq[A]]
+
+  /** Returns the longest prefix of this sequence whose elements satisfy
+   *  the predicate <code>p</code>.
+   *
+   *  @param p the test predicate.
+   *  @return  the longest prefix of this sequence whose elements satisfy
+   *           the predicate <code>p</code>.
+   */
+  override def takeWhile(p: A => Boolean): Seq[A] = super.takeWhile(p).asInstanceOf[Seq[A]]
+
+  /** Returns the longest suffix of this sequence whose first element
+   *  does not satisfy the predicate <code>p</code>.
+   *
+   *  @param p the test predicate.
+   *  @return  the longest suffix of the sequence whose first element
+   *           does not satisfy the predicate <code>p</code>.
+   */
+  override def dropWhile(p: A => Boolean): Seq[A] = super.dropWhile(p).asInstanceOf[Seq[A]]
+
+  /** A sequence consisting of all elements of this sequence in reverse order.
+   */
+  def reverse: Seq[A] = {
+    var result: List[A] = Nil
+    val elems = elements
+    while (elems.hasNext) result = elems.next :: result
+    result
+  }
+
+  /** Tests if the given value <code>elem</code> is a member of this
+   *  sequence.
+   *
+   *  @param elem element whose membership has to be tested.
+   *  @return     <code>true</code> iff there is an element of this sequence
+   *              which is equal (w.r.t. <code>==</code>) to <code>elem</code>.
+   */
+  def contains(elem: Any): Boolean = exists (.==(elem))
 
   /** Returns a subsequence starting from index <code>from</code>
   *  consisting of <code>len</code> elements.
   */
-  def subseq(from: Int, len: Int): Seq[A] =
-    if ((from + len) <= length) new Seq[A] {
-      def apply(n: Int): A = Seq.this.apply(n + from);
-      def length: Int = len;
-      def elements: Iterator[A] = new Iterator[A] {
-        var i = from;
-        def hasNext = (i < (from + len));
-        def next = {
-          val res = Seq.this.apply(i);
-          i = i + 1;
-          res
-        }
-      }
-    } else
-      throw new IllegalArgumentException("cannot create subsequence for "+from+","+len);
+  def slice(from: Int, len: Int): Seq[A] = this.drop(from).take(len)
 
-  /** Converts this sequence to a fresh Array */
-  def toArray[B >: A]: Array[B] =
-    elements.copyToArray(new Array[B](length), 0)
+  /** Returns a subsequence starting from index <code>from</code>
+  *   consisting of <code>len</code> elements.
+  *   @deprecated; use slice instead
+  */
+  [deprecated] def subseq(from: Int, end: Int): Seq[A] = slice(from, end - from)
+
+  /** Converts this sequence to a fresh Array with <code>length</code> elements */
+  def toArray[B >: A]: Array[B] = {
+    val result = new Array[B](length)
+    copyToArray(result, 0)
+    result
+  }
 
   /** Fills the given array <code>xs</code> with the elements of
    *  this sequence starting at position <code>start</code>.
    *
    *  @param  xs the array to fill.
    *  @param  start starting index.
-   *  @return the given array <code>xs</code> filled with this list.
+   *  @pre    the array must be large enough to hold all elements.
    */
-  def copyToArray[B >: A](xs: Array[B], start: Int): Array[B] =
-    elements.copyToArray(xs, start)
+  def copyToArray[B >: A](xs: Array[B], start: Int): Unit = elements.copyToArray(xs, start)
 
   /** Customizes the <code>toString</code> method.
    *
    *  @return a string representation of this sequence.
    */
   override def toString() = mkString(stringPrefix+"(", ",", ")")
-
-  /** Returns a string representation of this sequence. The resulting string
-   *  begins with the string <code>start</code> and is finished by the string
-   *  <code>end</code>. Inside, the string representations of elements (w.r.t.
-   *  the method <code>toString()</code>) are separated by the string
-   *  <code>sep</code>.
-   *  <p/>
-   *  Ex: <br/>
-   *  <code>List(1, 2, 3).mkString("(", "; ", ")") = "(1; 2; 3)"</code>
-   *
-   *  @param start starting string.
-   *  @param sep separator string.
-   *  @param end ending string.
-   *  @return a string representation of this sequence.
-   */
-  def mkString(start: String, sep: String, end: String): String = {
-    val buf = new compat.StringBuilder()
-    buf.append(start)
-    val elems = elements
-    if (elems.hasNext) buf.append(elems.next)
-    while (elems.hasNext) {
-      buf.append(sep); buf.append(elems.next)
-    }
-    buf.append(end)
-    buf.toString
-  }
 
   /** Defines the prefix of the string representation.
    */

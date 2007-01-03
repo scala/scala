@@ -329,6 +329,7 @@ trait Definitions requires SymbolTable {
 
     // special attributes
     var SerializableAttr: Symbol = _
+    var DeprecatedAttr: Symbol = _
     var BeanPropertyAttr: Symbol = _
     var AnnotationDefaultAttr: Symbol = _
 
@@ -789,6 +790,7 @@ trait Definitions requires SymbolTable {
                                        nme.AnnotationDefaultATTR,
                                        List(AttributeClass.typeConstructor))
       SerializableAttr = getClass("scala.serializable")
+      DeprecatedAttr = getClass("scala.deprecated")
       BeanPropertyAttr = if (forCLDC) null else getClass("scala.reflect.BeanProperty")
     }
   }

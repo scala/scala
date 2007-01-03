@@ -69,6 +69,17 @@ class PriorityQueue[A <% Ordered[A]] extends ResizableArray[A] {
     size = size + 1
   }
 
+  def +(elem: A): PriorityQueue[A] = { this += elem; this }
+
+  /** Add two or more elements to this set.
+   *  @param    elem1 the first element.
+   *  @param    kv2 the second element.
+   *  @param    kvs the remaining elements.
+   */
+  def += (elem1: A, elem2: A, elems: A*) { this += elem1; this += elem2; this ++= elems }
+
+  def + (elem1: A, elem2: A, elems: A*) = { this.+=(elem1, elem2, elems: _*); this }
+
   /** Adds all elements provided by an <code>Iterable</code> object
    *  into the priority queue.
    *
@@ -81,6 +92,10 @@ class PriorityQueue[A <% Ordered[A]] extends ResizableArray[A] {
    *  @param  it        an iterator
    */
   def ++=(it: Iterator[A]): Unit = it foreach { e => this += e }
+
+  def ++(iter: Iterable[A]): PriorityQueue[A] = { this ++= iter; this }
+
+  def ++(iter: Iterator[A]): PriorityQueue[A] = { this ++= iter; this }
 
   /** Adds all elements to the queue.
    *

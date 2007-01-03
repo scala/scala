@@ -92,6 +92,11 @@ abstract class TreeBuilder {
     case _ => makeTuple(trees, false)
   }
 
+  def makeTuplePattern(trees: List[Tree]): Tree = trees match {
+    case List() => Literal(())
+    case _ => makeTuple(trees, true)
+  }
+
   def makeTupleType(trees: List[Tree], flattenUnary: boolean): Tree = trees match {
     case List() => scalaUnitConstr
     case List(tree) if flattenUnary => tree
@@ -109,10 +114,14 @@ abstract class TreeBuilder {
   }
 
   /** Create tree representing (unencoded) binary operation expression or pattern. */
-  def makeBinop(isExpr: boolean, left: Tree, op: Name, right: Tree): Tree =
+  def makeBinop(isExpr: boolean, left: Tree, op: Name, right: Tree): Tree = {
+    val arguments = right match {
+      case ArgumentExprs(args) => args
+      case _ => List(right)
+    }
     if (isExpr) {
       if (treeInfo.isLeftAssoc(op)) {
-        Apply(Select(left, op.encode), List(right))
+        Apply(Select(left, op.encode), arguments)
       } else {
         val x = freshName();
         Block(
@@ -120,8 +129,9 @@ abstract class TreeBuilder {
           Apply(Select(right, op.encode), List(Ident(x))))
       }
     } else {
-      Apply(Ident(op.encode.toTypeName), List(left, right))
+      Apply(Ident(op.encode.toTypeName), left :: arguments)
     }
+  }
 
   /** Create tree representing an object creation <new parents { stats }> */
   def makeNew(parents: List[Tree], stats: List[Tree], argss: List[List[Tree]]): Tree =
@@ -425,4 +435,6 @@ abstract class TreeBuilder {
     case Select(qual, name) =>
       makePackaging(qual, List(PackageDef(name, stats)))
   }
+
+  case class ArgumentExprs(args: List[Tree]) extends Tree
 }

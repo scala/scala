@@ -14,34 +14,36 @@ package scala.runtime
 
 import Predef.Class
 import Predef.Error
+import collection.mutable.ArrayBuffer
 
 /**
  *  <p>A class representing <code>Array[T]</code></p>
  */
-abstract class BoxedArray extends PartialFunction[Int, AnyRef] with Seq[AnyRef] {
+abstract class BoxedArray extends Seq[Any] {
   /** The length of the array */
   def length: Int
 
   /** The element at given index */
-  def apply(index: Int): AnyRef
+  def apply(index: Int): Any
 
   /** Update element at given index */
-  def update(index: Int, elem: AnyRef): Unit
+  def update(index: Int, elem: Any): Unit
 
   /** Convert to Java array.
    *  @param elemTag    Either one of the tags ".N" where N is the name of a primitive type
    *                    (@see ScalaRunTime), or a full class name.
    */
+  //todo: remove
   def unbox(elemTag: String): AnyRef
 
   def unbox(elemClass: Class): AnyRef
 
   override def isDefinedAt(x: Int): Boolean   =  0 <= x && x < length
 
-  def elements = new Iterator[AnyRef] {
+  def elements = new Iterator[Any] {
     var index = 0
     def hasNext: Boolean = index < length
-    def next: AnyRef = { val i = index; index = i + 1; apply(i) }
+    def next: Any = { val i = index; index = i + 1; apply(i) }
   }
 
   /** The underlying array value
@@ -55,18 +57,25 @@ abstract class BoxedArray extends PartialFunction[Int, AnyRef] with Seq[AnyRef] 
     Array.copy(value, from, dest, to, len)
   }
 
-  override def toArray[b>:AnyRef]: Array[b] = {
-    val len = length
-    val res = new Array[b](len)
-    copyTo(0, res, 0, len)
-    res
-  }
+  /** Fills the given array <code>xs</code> with the elements of
+   *  this sequence starting at position <code>start</code>.
+   *
+   *  @param  xs the array to fill.
+   *  @param  start starting index.
+   *  @pre    the array must be large enough to hold all elements.
+   */
+  override def copyToArray[B](xs: Array[B], start: Int): Unit =
+    copyTo(0, xs, start, length)
 
+  // todo: add a copyToBuffer
+
+  // todo: eliminate
   def subArray(from: Int, end: Int): AnyRef
 
-  def filter(p: Any => Boolean): AnyRef
+  override def slice(from: Int, len: Int): Seq[Object] =
+    subArray(from, from + len).asInstanceOf[Seq[Object]]
 
-  final def map[b](f: Any => b): Array[b] = {
+  final override def map[b](f: Any => b): Array[b] = {
     val len = length
     val result = new Array[b](len)
     var i = 0
@@ -77,22 +86,22 @@ abstract class BoxedArray extends PartialFunction[Int, AnyRef] with Seq[AnyRef] 
     result
   }
 
-  final def flatMap[b](f: Any => Array[b]): Array[b] = {
+  final override def flatMap[b](f: Any => Iterable[b]): Array[b] = {
+    val buf = new ArrayBuffer[b]
     val len = length
-    val tmp = new Array[Array[b]](len)
     var i = 0
     while (i < len) {
-      tmp(i) = f(apply(i))
+      buf ++= f(apply(i))
       i = i + 1
     }
-    Array.concat(tmp: _*)
+    buf.toArray
   }
 
-  final def zip[b](that: Array[b]): Array[Tuple2[AnyRef,b]] = {
+  final def zip[b](that: Array[b]): Array[Tuple2[Any,b]] = {
     val len = length
     if(len != that.length)
       throw new Error("zipping arrays of different length")
-    val result = new Array[Tuple2[AnyRef,b]](len)
+    val result = new Array[Tuple2[Any,b]](len)
     var i = 0
     while (i < len) {
       result(i) = new Tuple2(this(i), that(i))
@@ -101,9 +110,9 @@ abstract class BoxedArray extends PartialFunction[Int, AnyRef] with Seq[AnyRef] 
     result
   }
 
-  final def zipWithIndex: Array[Tuple2[AnyRef,Int]] = {
+  final def zipWithIndex: Array[Tuple2[Any,Int]] = {
     val len = length
-    val result = new Array[Tuple2[AnyRef,Int]](len)
+    val result = new Array[Tuple2[Any,Int]](len)
     var i = 0
     while (i < len) {
       result(i) = new Tuple2(this(i), i)

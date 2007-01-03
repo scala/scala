@@ -39,6 +39,7 @@ object Predef {
   type AllRef = Null
 
   type String = java.lang.String
+  type StringBuilder = compat.StringBuilder
   type Class = java.lang.Class
 
   type Throwable = java.lang.Throwable
@@ -59,6 +60,7 @@ object Predef {
   val $scope = scala.xml.TopScope
 
   type Function[-a,+b] = Function1[a,b]
+
 
   // errors and asserts -------------------------------------------------
 
@@ -99,11 +101,10 @@ object Predef {
   type Triple[+a, +b, +c] = Tuple3[a, b, c]
   def Triple[a, b, c](x: a, y: b, z: c) = Tuple3(x, y, z)
 
-  type &: [+a, +b] = Tuple2[a, b]
-  class SndOfPair[+b](y: b) {
-    def &: [a](x: a): Tuple2[a, b] = Tuple2(x, y)
+  class ArrowAssoc[a](x: a) {
+    def -> [b](y: b): Tuple2[a, b] = Tuple2(x, y)
   }
-  implicit def any2sndOfPair[b](x: b): SndOfPair[b] = new SndOfPair(x)
+  implicit def any2ArrowAssoc[a](x: a): ArrowAssoc[a] = new ArrowAssoc(x)
 
   def Tuple[a1](x1: a1) = Tuple1(x1)
   def Tuple[a1, a2](x1: a1, x2: a2) = Tuple2(x1, x2)

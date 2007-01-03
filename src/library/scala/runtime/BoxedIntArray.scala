@@ -19,10 +19,10 @@ final class BoxedIntArray(val value: Array[Int]) extends BoxedArray {
 
   def length: Int = value.length
 
-  def apply(index: Int): AnyRef = Int.box(value(index))
+  def apply(index: Int): Any = Int.box(value(index))
 
-  def update(index: Int, elem: AnyRef): Unit = {
-    value(index) = Int.unbox(elem)
+  def update(index: Int, elem: Any): Unit = {
+    value(index) = Int.unbox(elem.asInstanceOf[AnyRef])
   }
 
   def unbox(elemTag: String): AnyRef = value
@@ -40,7 +40,7 @@ final class BoxedIntArray(val value: Array[Int]) extends BoxedArray {
     result
   }
 
-  def filter(p: Any => Boolean): Array[Int] = {
+  final override def filter(p: Any => Boolean): BoxedArray = {
     val include = new Array[Boolean](value.length)
     var len = 0
     var i = 0
@@ -55,6 +55,6 @@ final class BoxedIntArray(val value: Array[Int]) extends BoxedArray {
       if (include(i)) { result(len) = value(i); len = len + 1 }
       i = i + 1
     }
-    result
+    new BoxedIntArray(result)
   }
 }

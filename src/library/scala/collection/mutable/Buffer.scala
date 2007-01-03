@@ -28,69 +28,18 @@ trait Buffer[A] extends AnyRef
       with Scriptable[Message[Pair[Location, A]]]
 {
 
-  /** Append a single element to this buffer and return
-   *  the identity of the buffer.
-   *
-   *  @param elem  the element to append.
-   */
-  def +(elem: A): Buffer[A] = {
-    this += elem
-    this
-  }
-
   /** Append a single element to this buffer.
    *
    *  @param elem  the element to append.
    */
   def +=(elem: A): Unit
 
-  /** Appends a number of elements provided by an iterable object
-   *  via its <code>elements</code> method. The identity of the
-   *  buffer is returned.
+  /** Append a single element to this buffer and return
+   *  the identity of the buffer.
    *
-   *  @param iter  the iterable object.
-   *  @return      the updated buffer.
+   *  @param elem  the element to append.
    */
-  def ++(elems: Iterable[A]): Buffer[A] = this ++ elems.elements
-
-  /** Appends a number of elements provided by an iterable object
-   *  via its <code>elements</code> method. The identity of the
-   *  buffer is returned.
-   *
-   *  @param iter  the iterable object.
-   *  @return      the updated buffer.
-   */
-  def ++(iter: Iterator[A]): Buffer[A] = {
-    iter.foreach(e => this += e)
-    this
-  }
-
-  /** Appends a number of elements provided by an iterable object
-   *  via its <code>elements</code> method.
-   *
-   *  @param iter  the iterable object.
-   */
-  def ++=(elems: Iterable[A]): Unit = this ++ elems.elements
-
-  /** Appends a number of elements provided by an iterable object
-   *  via its <code>elements</code> method.
-   *
-   *  @param iter  the iterable object.
-   */
-  def ++=(it: Iterator[A]): Unit = this ++ it
-
-  /** Appends a sequence of elements to this buffer.
-   *
-   *  @param elems  the elements to append.
-   */
-  def append(elems: A*): Unit = this ++ elems
-
-  /** Appends a number of elements provided by an iterable object
-   *  via its <code>elements</code> method.
-   *
-   *  @param iter  the iterable object.
-   */
-  def appendAll(iter: Iterable[A]): Unit = this ++ iter
+  def +(elem: A): Buffer[A] = { this += elem; this }
 
   /** Prepend a single element to this buffer and return
    *  the identity of the buffer.
@@ -99,15 +48,51 @@ trait Buffer[A] extends AnyRef
    */
   def +:(elem: A): Buffer[A]
 
-  /** Removes a single element from this buffer, at its first occurrence.
-   *  If the list does not contain that element, it is unchanged
+  /** Appends a number of elements provided by an iterator
    *
-   *  @param x  the element to remove.
+   *  @param iter  the iterator.
    */
-  def -= (x: A): unit = {
-    val i = indexOf(x)
-    if(i != -1) remove(i)
+  def ++=(iter: Iterator[A]): Unit = iter foreach +=
+
+  /** Appends a number of elements provided by an iterable object
+   *  via its <code>elements</code> method.
+   *
+   *  @param iter  the iterable object.
+   */
+  def ++=(iter: Iterable[A]): Unit = ++=(iter.elements)
+
+  /** Appends a number of elements in an array
+   *
+   *  @param src    the array
+   *  @param start  the first element to append
+   *  @param len    the number of elements to append
+   */
+  def ++=(src: Array[A], start: int, len: int): Unit = {
+    var i = start
+    val end = i + len
+    while (i < end) {
+      this += src(i)
+      i = i + 1
+    }
   }
+
+  /** Appends a number of elements provided by an iterable object
+   *  via its <code>elements</code> method. The identity of the
+   *  buffer is returned.
+   *
+   *  @param iter     the iterable object.
+   *  @return       the updated buffer.
+   */
+  def ++(iter: Iterable[A]): Buffer[A] = { this ++= iter; this }
+
+  /** Appends a number of elements provided by an iterator
+   *  via its <code>elements</code> method. The identity of the
+   *  buffer is returned.
+   *
+   *  @param iter   the iterator
+   *  @return       the updated buffer.
+   */
+  def ++(iter: Iterator[A]): Buffer[A] = { this ++= iter; this }
 
   /** Prepends a number of elements provided by an iterable object
    *  via its <code>elements</code> method. The identity of the
@@ -119,6 +104,29 @@ trait Buffer[A] extends AnyRef
     iter.elements.toList.reverse.foreach(e => e +: this)
     this
   }
+
+  /** Removes a single element from this buffer, at its first occurrence.
+   *  If the list does not contain that element, it is unchanged
+   *
+   *  @param x  the element to remove.
+   */
+  def -= (x: A): Unit = {
+    val i = indexOf(x)
+    if(i != -1) remove(i)
+  }
+
+  /** Appends a sequence of elements to this buffer.
+   *
+   *  @param elems  the elements to append.
+   */
+  def append(elems: A*): Unit = this ++= elems
+
+  /** Appends a number of elements provided by an iterable object
+   *  via its <code>elements</code> method.
+   *
+   *  @param iter  the iterable object.
+   */
+  def appendAll(iter: Iterable[A]): Unit = this ++= iter
 
   /** Prepend an element to this list.
    *
@@ -132,7 +140,7 @@ trait Buffer[A] extends AnyRef
    *
    *  @param iter  the iterable object.
    */
-  def prependAll(elems: Iterable[A]): Unit = elems ++: this
+  def prependAll(iter: Iterable[A]): Unit = iter ++: this
 
   /** Inserts new elements at the index <code>n</code>. Opposed to method
    *  <code>update</code>, this method will not replace an element with a
@@ -148,7 +156,7 @@ trait Buffer[A] extends AnyRef
    *  one. Instead, it will insert a new element at index <code>n</code>.
    *
    *  @param n     the index where a new element will be inserted.
-   *  @param iter  the iterable object providing all elements to insert.
+   *  @param iter    the iterable object providing all elements to insert.
    */
   def insertAll(n: Int, iter: Iterable[A]): Unit
 

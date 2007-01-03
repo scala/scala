@@ -11,9 +11,9 @@
 
 package scala.collection.mutable
 
-
 /** This class is used internally to implement data structures that
  *  are based on resizable arrays.
+ *  //todo enrich with more efficient operations
  *
  *  @author  Matthias Zenger, Burak Emir
  *  @version 1.0, 03/05/2004
@@ -33,11 +33,20 @@ trait ResizableArray[A] extends Seq[A] {
 
   def apply(i: Int) = array(i)
 
-  override def toArray[B >: A]: Array[B] = {
-    val narr = new Array[B](size)
-    Array.copy(array, 0, narr, 0, size)
-    narr
-  }
+  /** Fills the given array <code>xs</code> with the elements of
+   *  this sequence starting at position <code>start</code>.
+   *
+   *  @param  xs the array to fill.
+   *  @param  start starting index.
+   */
+  override def copyToArray[B >: A](xs: Array[B], start: Int): Unit =
+    Array.copy(array, 0, xs, start, size)
+
+  /** Copy all elements to a buffer
+   *  @param   The buffer to which elements are copied
+   */
+  override def copyToBuffer[B >: A](dest: Buffer[B]): Unit =
+    dest.++=(array.asInstanceOf[Array[B]], 0, size)
 
   /** Returns a new iterator over all elements of this resizable array.
    */

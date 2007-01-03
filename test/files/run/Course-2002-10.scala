@@ -31,9 +31,9 @@ object M1 {
     Stream.cons(s.head, partialSums(s.tail) map (x => x + s.head));
 
   def euler(s: Stream[double]): Stream[double] = {
-    val nm1 = s at 0;
-    val n   = s at 1;
-    val np1 = s at 2;
+    val nm1 = s apply 0;
+    val n   = s apply 1;
+    val np1 = s apply 2;
     Stream.cons(np1 - ((np1 - n)*(np1 - n) / (nm1 - 2*n + np1)),euler(s.tail))
   };
 
@@ -68,9 +68,9 @@ object M1 {
     var i = 0;
     while (i < 10) {
       Console.print("pi("+i+") = ");
-      Console.print(str(pi0.at(i)) + ", ");
-      Console.print(str(pi1.at(i)) + ", ");
-      Console.print(str(pi2.at(i)) + "\n");
+      Console.print(str(pi0.apply(i)) + ", ");
+      Console.print(str(pi1.apply(i)) + ", ");
+      Console.print(str(pi2.apply(i)) + "\n");
       i = i + 1;
     }
     Console.print("pi    = ");
@@ -81,9 +81,9 @@ object M1 {
     i = 0;
     while (i < 10) {
       Console.print("ln("+i+") = ");
-      Console.print(str(ln0.at(i)) + ", ");
-      Console.print(str(ln1.at(i)) + ", ");
-      Console.print(str(ln2.at(i)) + "\n");
+      Console.print(str(ln0.apply(i)) + ", ");
+      Console.print(str(ln1.apply(i)) + ", ");
+      Console.print(str(ln2.apply(i)) + "\n");
       i = i + 1;
     }
     Console.print("ln    = ");

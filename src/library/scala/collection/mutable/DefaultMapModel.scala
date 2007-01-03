@@ -18,37 +18,29 @@ package scala.collection.mutable
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
-trait DefaultMapModel[A, B] extends AnyRef with Map[A, B] {
+trait DefaultMapModel[A, B] extends Map[A, B] {
 
-  protected type Entry = DefaultEntry[A,B]
+  type Entry = DefaultEntry[A, B]
 
-  protected def findEntry(key: A): Option[Entry]
-
-  protected def addEntry(e: Entry): Unit
-
+  protected def findEntry(key: A): Entry
+  protected def addEntry(e: Entry)
   protected def entries: Iterator[Entry]
 
-  def get(key: A) = findEntry(key) match {
-    case None => None
-    case Some(e) => Some(e.value);
+  def get(key: A): Option[B] = {
+    val e = findEntry(key)
+    if (e == null) None
+    else Some(e.value);
   }
 
-  def update(key: A, value: B) = findEntry(key) match {
-    case None => addEntry(new Entry(key, value));
-    case Some(e) => e.value = value;
+  def update(key: A, value: B) {
+    val e = findEntry(key)
+    if (e == null) addEntry(new Entry(key, value))
+    else e.value = value
   }
 
-  def elements = new Iterator[Pair[A, B]] {
-    val iter = entries
-    def hasNext = iter.hasNext
-    def next = iter.next.toPair
-  }
+  def elements = entries map (e => Pair(e.key, e.value))
 }
 
 [serializable]
-protected class DefaultEntry[A,B](k: A, v: B) extends AnyRef {
-  def key = k
-  var value = v
-  def toPair = Pair(k, value)
-  override def toString() = k.toString() + " -> " + value
-}
+final class DefaultEntry[A, B](val key: A, var value: B)
+      extends HashEntry[A, DefaultEntry[A, B]]

@@ -22,41 +22,37 @@ package scala.collection.mutable
  *  </p>
  *
  *  @author  Matthias Zenger
- *  @version 1.0, 21/07/2003
+ *  @author  Martin Odersky
+ *  @version 2.0, 31/12/2006
  */
 trait MapProxy[A, B] extends Map[A, B] with collection.MapProxy[A, B] {
 
   def self: Map[A, B]
 
-  def update(key: A, value: B): Unit = self.update(key, value)
-
-  override def ++=(map: Iterable[Pair[A, B]]): Unit = self ++= map
-
-  override def ++=(it: Iterator[Pair[A, B]]): Unit = self ++= it
-
-  override def incl(mappings: Pair[A, B]*): Unit = self ++= mappings
-
-  def -=(key: A): Unit = self -= key
-
-  override def --=(keys: Iterable[A]): Unit = self --= keys
-
-  override def --=(it: Iterator[A]): Unit = self --= it
-
-  override def excl(keys: A*): Unit = self --= keys
-
+  override def update(key: A, value: B): Unit = self.update(key, value)
+  override def += (kv: Pair[A, B]) = self += kv
+  override def += (kv1: Pair[A, B], kv2: Pair[A, B], kvs: Pair[A, B]*) = self.+=(kv1, kv2, kvs: _*)
+  override def ++= (kvs: Iterable[Pair[A, B]]) = self ++= kvs
+  override def ++= (kvs: Iterator[Pair[A, B]]) = self ++= kvs
+  override def + (kv: Pair[A, B]): Map[A, B] = self + kv
+  override def + (kv1: Pair[A, B], kv2: Pair[A, B], kvs: Pair[A, B]*): Map[A, B] = self.+(kv1, kv2, kvs: _*)
+  override def ++ (kvs: Iterable[Pair[A, B]]): Map[A, B] = self ++ kvs
+  override def ++ (kvs: Iterator[Pair[A, B]]): Map[A, B] = self ++ kvs
+  override def -= (key: A) = self -= key
+  override def -= (key1: A, key2: A, keys: A*) = self.-=(key1, key2, keys: _*)
+  override def --= (keys: Iterable[A]) = self --= keys
+  override def --= (keys: Iterator[A]) = self --= keys
+  override def - (key: A): Map[A, B] = self - key
+  override def - (key1: A, key2: A, keys: A*): Map[A, B] = self.-(key1, key2, keys: _*)
+  override def -- (keys: Iterable[A]): Map[A, B] = self -- keys
+  override def -- (keys: Iterator[A]): Map[A, B] = self -- keys
   override def clear: Unit = self.clear
-
-  override def map(f: Pair[A, B] => B): Unit = self.map(f)
-
-  override def filter(p: Pair[A, B] => Boolean): Unit = self.filter(p)
-
-  override def toString() = self.toString()
-
-  override def mappingToString(p: Pair[A, B]) = self.mappingToString(p)
-
+  override def transform(f: (A, B) => B) = self transform f
+  override def retain(p: (A, B) => Boolean): Unit = self retain p
   override def <<(cmd: Message[Pair[A, B]]): Unit = self << cmd
-
-  override def clone(): Map[A, B] = new MapProxy[A, B] {
-    def self = MapProxy.this.self.clone()
-  }
+  override def clone(): Map[A, B] = self.clone()
+  [deprecated] override def incl(mappings: Pair[A, B]*): Unit = self.incl(mappings: _*)
+  [deprecated] override def excl(keys: A*): Unit = self.excl(keys: _*)
+  [deprecated] override def map[C](f: Pair[A, B] => C): Iterable[C] = self map f
+  [deprecated] override def filter(p: Pair[A, B] => Boolean): Iterable[Pair[A, B]] = self filter p
 }

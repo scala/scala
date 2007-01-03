@@ -42,17 +42,17 @@ sealed abstract class Option[+A] extends Iterable[A] with Product {
     case Some(x) => x
   }
 
-  def map[B](f: A => B): Option[B] = this match {
+  override def map[B](f: A => B): Option[B] = this match {
     case None => None
     case Some(x) => Some(f(x))
   }
 
-  def flatMap[B](f: A => Option[B]): Option[B] = this match {
+  override def flatMap[B](f: A => Iterable[B]): Iterable[B] = this match {
     case None => None
     case Some(x) => f(x)
   }
 
-  def filter(p: A => Boolean): Option[A] = this match {
+  override def filter(p: A => Boolean): Option[A] = this match {
     case None => None
     case Some(x) => if (p(x)) Some(x) else None
   }

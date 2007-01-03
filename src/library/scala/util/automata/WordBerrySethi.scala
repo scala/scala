@@ -149,7 +149,7 @@ abstract class WordBerrySethi extends BaseBerrySethi {
   }
 
   protected def initializeAutom(): Unit = {
-    finals   = immutable.TreeMap.Empty[Int, Int] // final states
+    finals   = immutable.TreeMap.empty[Int, Int] // final states
     deltaq   = new Array[mutable.HashMap[_labelT, List[Int]]](pos) // delta
     defaultq = new Array[List[Int]](pos) // default transitions
 

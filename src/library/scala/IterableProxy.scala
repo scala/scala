@@ -11,96 +11,44 @@
 
 package scala
 
+import collection.mutable.Buffer
+import scala.compat.StringBuilder
+
 
 /** This class implements a proxy for iterable objects. It forwards
  *  all calls to a different iterable object.
  *
  *  @author  Matthias Zenger
- *  @version 1.0, 26/04/2004
+ *  @author  Martin Odersky
+ *  @version 2.0, 31/12/2006
  */
 trait IterableProxy[+A] extends Iterable[A] with Proxy {
 
   def self: Iterable[A]
-
-  /** Creates a new iterator over all elements contained in this
-   *  object.
-   *
-   *  @return the new iterator
-   */
-  def elements: Iterator[A] = self.elements
-
-  /** Apply a function <code>f</code> to all elements of this
-   *  iterable object.
-   *
-   *  @param  f   a function that is applied to every element.
-   */
-  override def foreach(f: A => Unit): Unit = self.foreach(f)
-
-  /** Apply a predicate <code>p</code> to all elements of this
-   *  iterable object and return true, iff the predicate yields
-   *  true for all elements.
-   *
-   *  @param   p     the predicate
-   *  @returns true, iff the predicate yields true for all elements.
-   */
-  override def forall(p: A => Boolean): Boolean = self.forall(p)
-
-  /** Apply a predicate <code>p</code> to all elements of this
-   *  iterable object and return true, iff there is at least one
-   *  element for which <code>p</code> yields true.
-   *
-   *  @param   p     the predicate
-   *  @returns true, iff the predicate yields true for at least one element.
-   */
-  override def exists(p: A => Boolean): Boolean = self.exists(p)
-
-  /** Find and return the first element of the iterable object satisfying a
-   *  predicate, if any.
-   *
-   *  @param p the predicate
-   *  @return the first element in the iterable object satisfying <code>p</code>,
-   *  or <code>None</code> if none exists.
-   */
-  override def find(p: A => Boolean): Option[A] = self.find(p)
-
-  /** Combines the elements of this list together using the binary
-   *  operator <code>op</code>, from left to right, and starting with
-   *  the value <code>z</code>.
-   *  @return <code>op(... (op(op(z,a0),a1) ...), an)</code> if the list
-   *  is <code>List(a0, a1, ..., an)</code>.
-   */
-  override def foldLeft[B](z: B)(op: (B, A) => B): B = self.foldLeft(z)(op)
-
-  /** Combines the elements of this list together using the binary
-   *  operator <code>op</code>, from rigth to left, and starting with
-   *  the value <code>z</code>.
-   *  @return <code>a0 op (... op (an op z)...)</code> if the list
-   *  is <code>[a0, a1, ..., an]</code>.
-   */
-  override def foldRight[B](z: B)(op: (A, B) => B): B = self.foldRight(z)(op)
-
-  /** Similar to <code>foldLeft</code> but can be used as
-   *  an operator with the order of list and zero arguments reversed.
-   *  That is, <code>z /: xs</code> is the same as <code>xs foldLeft z</code>
-   */
-  override def /:[B](z: B)(f: (B, A) => B): B = self./:(z)(f)
-
-  /** An alias for <code>foldRight</code>.
-   *  That is, <code>xs :\ z</code> is the same as <code>xs foldRight z</code>
-   *
-   *  @param z ...
-   *  @param f ...
-   *  @return ...
-   */
-  override def :\[B](z: B)(f: (A, B) => B): B = self.:\(z)(f)
-
-  /** Checks if the other iterable object contains the same elements.
-   *
-   *  @param that  the other iterable object
-   *  @return true, iff both iterable objects contain the same elements.
-   */
-  override def sameElements[B >: A](that: Iterable[B]): Boolean =
-    self.sameElements(that)
-
+  override def elements: Iterator[A] = self.elements
+  override def concat [B >: A](that: Iterable[B]): Iterable[B] = self concat that
+  override def map[B](f: A => B): Iterable[B] = self map f
+  override def flatMap[B](f: A => Iterable[B]): Iterable[B] = self flatMap f
+  override def filter(p: A => Boolean): Iterable[A] = self filter p
+  override def takeWhile(p: A => Boolean): Iterable[A] = self takeWhile p
+  override def dropWhile(p: A => Boolean): Iterable[A] = self dropWhile p
+  override def take(n: Int): Iterable[A] = self take n
+  override def drop(n: Int): Iterable[A] = self drop n
+  override def foreach(f: A => Unit): Unit = self foreach f
+  override def forall(p: A => Boolean): Boolean = self forall p
+  override def exists(p: A => Boolean): Boolean = self exists p
+  override def find(p: A => Boolean): Option[A] = self find p
+  override def findIndexOf(p: A => Boolean): Int = self findIndexOf p
+  override def indexOf[B >: A](elem: B): Int = self indexOf elem
+  override def foldLeft[B](z: B)(op: (B, A) => B): B = (self foldLeft z)(op)
+  override def foldRight[B](z: B)(op: (A, B) => B): B = (self foldRight z)(op)
+  override def /:[B](z: B)(op: (B, A) => B): B = (z /: self)(op)
+  override def :\[B](z: B)(op: (A, B) => B): B = (self :\ z)(op)
+  override def reduceLeft[B >: A](op: (B, B) => B): B = self reduceLeft op
+  override def reduceRight[B >: A](op: (B, B) => B): B = self reduceRight op
+  override def sameElements[B >: A](that: Iterable[B]): Boolean = self sameElements that
+  override def copyToBuffer[B >: A](dest: Buffer[B]): Unit = self copyToBuffer dest
   override def toList: List[A] = self.toList
+  override def mkString(start: String, sep: String, end: String): String = self.mkString(start, sep, end)
+  override def addString(buf: StringBuilder, start: String, sep: String, end: String): StringBuilder = self.addString(buf, start, sep, end)
 }

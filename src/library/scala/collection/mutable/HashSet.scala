@@ -19,32 +19,20 @@ package scala.collection.mutable
 [serializable]
 class HashSet[A] extends Set[A] with HashTable[A] {
 
-  def contains(elem: A): Boolean = findEntry(elem) match {
-    case None => false
-    case Some(_) => true
-  }
+  def contains(elem: A): Boolean = findEntry(elem) != null
 
-  def +=(elem: A): Unit = findEntry(elem) match {
-    case None => addEntry(elem)
-    case Some(_) =>
-  }
+  def +=(elem: A) { if (findEntry(elem) == null) addEntry(new SetEntry(elem)) }
 
-  def -=(elem: A): Unit = removeEntry(elem)
+  def -=(elem: A) { removeEntry(elem) }
 
-  def elements = entries
+  def elements = entries map (.key)
 
-  def clear = {
-    initTable(table)
-    tableSize = 0
-  }
+  def clear {initTable(); tableSize = 0 }
 
-  protected type Entry = A
+  protected type Entry = SetEntry[A]
 
-  protected def entryKey(e: Entry) = e
-
-  override def clone(): Set[A] = {
-    val res = new HashSet[A]
-    res ++= this
-    res
-  }
+  override def clone(): Set[A] = new HashSet[A] ++ this
 }
+
+[serializable]
+final class SetEntry[A](val key: A) extends HashEntry[A, SetEntry[A]]

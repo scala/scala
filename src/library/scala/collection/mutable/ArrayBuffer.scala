@@ -41,8 +41,18 @@ class ArrayBuffer[A] extends Buffer[A] with ResizableArray[A] {
    *  @param iter  the iterable object.
    *  @return      the updated buffer.
    */
-  override def ++(iter: Iterable[A]): Buffer[A] = {
-    insertAll(size, iter); this
+  override def ++=(iter: Iterable[A]): Unit = iter copyToBuffer this
+
+  /** Appends a number of elements in an array
+   *
+   *  @param src    the array
+   *  @param start  the first element to append
+   *  @param len    the number of elements to append
+   */
+  override def ++=(src: Array[A], start: int, len: int): Unit = {
+    ensureSize(size + len)
+    Array.copy(src, start, array, size, len)
+    size = size + len
   }
 
   /** Prepends a single element to this buffer and return

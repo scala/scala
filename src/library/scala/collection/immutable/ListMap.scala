@@ -9,11 +9,22 @@
 // $Id$
 
 
+
 package scala.collection.immutable
 
-
 object ListMap {
-  def Empty[A, B] = new ListMap[A, B]
+
+  /** The empty map of this type
+   *  @deprecated   use <code>empty</code> instead
+   */
+  [deprecated] def Empty[A, B] = new ListMap[A, B]
+
+  /** The empty map of this type */
+  def empty[A, B] = new ListMap[A, B]
+
+  /** The canonical factory for this type
+   */
+  //def apply[A, B](elems: Pair[A, B]*) = empty[A, B] ++ elems
 }
 
 /** This class implements immutable maps using a list-based data
@@ -22,15 +33,16 @@ object ListMap {
  *  directly, or by applying the function <code>ListMap.Empty</code>.
  *
  *  @author  Matthias Zenger
- *  @version 1.0, 09/07/2003
+ *  @author  Martin Oderskty
+ *  @version 2.0, 01/01/2007
  */
 [serializable]
-class ListMap[A, B] extends AnyRef with Map[A, B] {
+class ListMap[A, +B] extends Map[A, B] {
 
   /** Returns a <code>new ListMap</code> instance mapping keys of the
    *  same type to values of type <code>C</code>.
    */
-  def empty[C] = ListMap.Empty[A, C]
+  def empty[C] = ListMap.empty[A, C]
 
   /** Returns the number of mappings in this map.
    *
@@ -55,7 +67,7 @@ class ListMap[A, B] extends AnyRef with Map[A, B] {
    *  @param key  the key element of the updated entry.
    *  @param value the value element of the updated entry.
    */
-  def update(key: A, value: B): ListMap[A, B] = new Node(key, value)
+  def update [B1 >: B](key: A, value: B1): ListMap[A, B1] = new Node(key, value)
 
   /** This creates a new mapping without the given <code>key</code>.
    *  If the map does not contain a mapping for the given key, the
@@ -63,49 +75,30 @@ class ListMap[A, B] extends AnyRef with Map[A, B] {
    *
    *  @param key a map without a mapping for the given key.
    */
-  def -(key: A): ListMap[A, B] = this
+  def - (key: A): ListMap[A, B] = this
 
   /** Returns an iterator over key-value pairs.
    */
   def elements: Iterator[Pair[A,B]] = new Iterator[Pair[A,B]] {
-    var that: ListMap[A,B] = ListMap.this;
-    def hasNext = !that.isEmpty;
+    var self: ListMap[A,B] = ListMap.this
+    def hasNext = !self.isEmpty
     def next: Pair[A,B] =
       if (!hasNext) throw new NoSuchElementException("next on empty iterator")
-      else { val res = Pair(that.key, that.value); that = that.next; res }
+      else { val res = Pair(self.key, self.value); self = self.next; res }
   }
 
-  /** Compares two maps for equality.
-   *   Two maps are equal iff they contain exactly the
-   *   same key-value pairs.
-   */
-  override def equals(obj: Any): Boolean =
-    if (obj.isInstanceOf[scala.collection.Map[A, B]]) {
-      val that = obj.asInstanceOf[scala.collection.Map[A, B]]
-      if (size != that.size) false else toList.forall {
-        case Pair(key, value) => that.get(key) match {
-          case None => false
-          case Some(v) => v == value
-        }
-      }
-    } else
-      false
-
-  override def hashCode(): Int = 0
-
-  protected def key: A = throw new NoSuchElementException("empty map");
-  protected def value: B = throw new NoSuchElementException("empty map");
-  protected def next: ListMap[A, B] = throw new NoSuchElementException("empty map");
+  protected def key: A = throw new NoSuchElementException("empty map")
+  protected def value: B = throw new NoSuchElementException("empty map")
+  protected def next: ListMap[A, B] = throw new NoSuchElementException("empty map")
 
   [serializable]
-  protected class Node(override protected val key: A, override protected val value: B)
-    extends ListMap[A, B]
-  {
+  protected class Node[B1 >: B](override protected val key: A,
+                                override protected val value: B1) extends ListMap[A, B1] {
     /** Returns the number of mappings in this map.
      *
      *  @return number of mappings.
      */
-    override def size: Int = ListMap.this.size + 1
+    override def size: Int = next.size + 1
 
     /** Is this an empty map?
      *
@@ -120,7 +113,7 @@ class ListMap[A, B] extends AnyRef with Map[A, B] {
      *  @param  key the key
      *  @return     the value associated with the given key.
      */
-    override def apply(k: A): B = if (k == key) value else ListMap.this(k)
+    override def apply(k: A): B1 = if (k == key) value else next(k)
 
     /** Checks if this map maps <code>key</code> to a value and return the
      *  value if it exists.
@@ -128,8 +121,8 @@ class ListMap[A, B] extends AnyRef with Map[A, B] {
      *  @param  key the key of the mapping of interest
      *  @return     the value of the mapping, if it exists
      */
-    override def get(k: A): Option[B] =
-      if (k == key) Some(value) else ListMap.this.get(k)
+    override def get(k: A): Option[B1] =
+      if (k == key) Some(value) else next.get(k)
 
     /** This method allows one to create a new map with an
      *  additional mapping from <code>key</code>
@@ -140,12 +133,10 @@ class ListMap[A, B] extends AnyRef with Map[A, B] {
      *  @param k ...
      *  @param v ...
      */
-    override def update(k: A, v: B): ListMap[A, B] =
-      if (k == key) {
-        new ListMap.this.Node(k, v)
-      } else {
-        val tail = ListMap.this.update(k,v); new tail.Node(key, value)
-      }
+    override def update [B2 >: B1](k: A, v: B2): ListMap[A, B2] = {
+      val m = if (contains(k)) this - k else this
+      new m.Node(k, v)
+    }
 
     /** Creates a new mapping without the given <code>key</code>.
      *  If the map does not contain a mapping for the given key, the
@@ -154,16 +145,15 @@ class ListMap[A, B] extends AnyRef with Map[A, B] {
      *  @param k ...
      *  @return  ...
      */
-    override def -(k: A): ListMap[A, B] =
+    override def - (k: A): ListMap[A, B1] =
       if (k == key)
-        ListMap.this
+        next
       else {
-        val tail = ListMap.this - k; new tail.Node(key, value)
+        val tail = next - k
+        if (tail eq next) this
+        else new tail.Node(key, value)
       }
 
-    override def hashCode(): Int =
-      (key.hashCode() ^ value.hashCode()) + ListMap.this.hashCode()
-
-    override protected def next: ListMap[A,B] = ListMap.this;
+    override protected def next: ListMap[A,B1] = ListMap.this
   }
 }

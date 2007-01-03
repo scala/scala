@@ -27,7 +27,7 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
   private var unboxed: AnyRef = null
   private var elemClass: Class = null
 
-  def apply(index: Int): AnyRef = synchronized {
+  def apply(index: Int): Any = synchronized {
     if (unboxed eq null)
       boxed(index);
     else if (elemClass eq ScalaRunTime.IntTYPE)
@@ -50,7 +50,8 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
       unboxed.asInstanceOf[Array[AnyRef]](index)
   }
 
-  def update(index: Int, elem: AnyRef): Unit = synchronized {
+  def update(index: Int, _elem: Any): Unit = synchronized {
+    val elem = _elem.asInstanceOf[AnyRef]
     if (unboxed eq null)
       boxed(index) = elem
     else if (elemClass eq ScalaRunTime.IntTYPE)
@@ -234,7 +235,7 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
     result
   }
 
-  override def filter(p: Any => Boolean): AnyRef = {
+  final override def filter(p: Any => Boolean): BoxedArray = {
     val include = new Array[Boolean](length)
     var len = 0
     var i = 0

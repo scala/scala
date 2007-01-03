@@ -792,7 +792,7 @@ abstract class GenJVM extends SubComponent {
             val mtype = new JMethodType(javaType(boxedClass), Array(javaType(kind)))
             jcode.emitINVOKESTATIC(javaName(boxedClass), "box", mtype)
 
-          case UNBOX(BOOL) /* if (boxType.symbol == definitions.BooleanClass) */=>
+          case UNBOX(BOOL) /* if (boxType.symbol == definitions.BooleanClass) */ =>
             // if null emit false
             val nonNull = jcode.newLabel()
             jcode.emitDUP()
@@ -874,7 +874,8 @@ abstract class GenJVM extends SubComponent {
             if (settings.debug.value)
               log("Emitting SWITHCH:\ntags: " + tags + "\nbranches: " + branches);
             jcode.emitSWITCH(tagArray,
-                             (branches map labels dropRight 1).copyToArray(branchArray, 0),
+                             { (branches map labels dropRight 1).copyToArray(branchArray, 0);
+                              branchArray },
                              labels(branches.last),
                              MIN_SWITCH_DENSITY);
 

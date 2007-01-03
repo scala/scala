@@ -166,14 +166,90 @@ object Array {
  */
 final class Array[A](_length: Int) extends Seq[A] {
   import Predef.Error
+
+  /** The length of the array */
   def length: Int = throw new Error()
+
+  /** The element at given index.
+   *  Indices start a <code>0</code>; <code>xs.apply(0)</code> is the first
+   *  element of array <code>xs</code>.
+   *  Note the indexing syntax <code>xs(i)</code> is a shorthand for <code>xs.apply(i)</code>.
+   *  @param i   the index
+   *  @throws ArrayIndexOutOfBoundsException if <code>i < 0</code> or
+   *          <code>length <= i</code>
+   */
   def apply(i: Int): A = throw new Error()
+
+  /** Update the element at given index.
+   *  Indices start a <code>0</code>; <code>xs.apply(0)</code> is the first
+   *  element of array <code>xs</code>.
+   *  Note the indexing syntax <code>xs(i) = x</code> is a shorthand
+   *  for <code>xs.update(i, x)</code>.
+   *  @param i   the index
+   *  @param x   the value to be written at index <code>i</code>
+   *  @throws ArrayIndexOutOfBoundsException if <code>i < 0</code> or
+   *          <code>length <= i</code>
+   */
   def update(i: Int, x: A): Unit = throw new Error()
+
+  /** An iterator returning the elements of this array, starting from 0.
+   */
   def elements: Iterator[A] = throw new Error()
+
+  /** @deprecated  use slice instead */
   def subArray(from: Int, end: Int): Array[A] = throw new Error()
-  def filter(p: A => Boolean): Array[A] = throw new Error()
-  def map[B](f: A => B): Array[B] = throw new Error()
-  def flatMap[B](f: A => Array[B]): Array[B] = throw new Error()
+
+  /** A sub-array of <code>len</code> elements
+   *  starting at index <code>from</code>
+   *  @param from   The index of the first element of the slice
+   *  @param len    The number of elements in the slice
+   *  @throws IndexOutOfBoundsException if <code>from < 0</code>
+   *          or <code>length < from + len<code>
+   */
+  override def slice(from: Int, len: Int): Array[A] = throw new Error()
+
+  /** Returns an array consisting of all elements of this array that satisfy the
+   *  predicate <code>p</code>. The order of the elements is preserved.
+   *
+   *  @param p the predicate used to filter the array.
+   *  @return the elements of this array satisfying <code>p</code>.
+   */
+  override def filter(p: A => Boolean): Array[A] = throw new Error()
+
+  /** Returns the array resulting from applying the given function <code>f</code> to each
+   *  element of this array.
+   *
+   *  @param f function to apply to each element.
+   *  @return <code>[f(a0), ..., f(an)]</code> if this array is <code>[a0, ..., an]</code>.
+   */
+  override def map[B](f: A => B): Array[B] = throw new Error()
+
+  /** Applies the given function <code>f</code> to each element of
+   *  this array, then concatenates the results.
+   *
+   *  @param f the function to apply on each element.
+   *  @return  <code>f(a<sub>0</sub>) ::: ... ::: f(a<sub>n</sub>)</code> if
+   *           this array is <code>[a<sub>0</sub>, ..., a<sub>n</sub>]</code>.
+   */
+  override def flatMap[B](f: A => Iterable[B]): Array[B] = throw new Error()
+
+  /** Returns an array formed from this array and the specified array
+   *  <code>that</code> by associating each element of the former with
+   *  the element at the same position in the latter.
+   *  If one of the two arrays is longer than the other, its remaining elements are ignored.
+   *
+   *  @return     <code>Array({a<sub>0</sub>,b<sub>0</sub>}, ...,
+   *              {a<sub>min(m,n)</sub>,b<sub>min(m,n)</sub>})</code> when
+   *              <code>Array(a<sub>0</sub>, ..., a<sub>m</sub>)
+   *              zip Array(b<sub>0</sub>, ..., b<sub>n</sub>)</code> is invoked.
+   */
   def zip[B](that: Array[B]): Array[Tuple2[A,B]] = throw new Error()
+
+  /** Returns an array that pairs each element of this array
+   *  with its index, counting from 0.
+   *
+   *  @return      the array <code>Array({a<sub>0</sub>,0}, {a<sub>1</sub>,1},...)</code>
+   *               where <code>a<sub>i</sub></code> are the elements of this stream.
+   */
   def zipWithIndex: Array[Tuple2[A,Int]] = throw new Error()
 }

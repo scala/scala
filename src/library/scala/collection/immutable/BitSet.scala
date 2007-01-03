@@ -28,6 +28,12 @@ package scala.collection.immutable
  */
 
 [serializable]
+/*
+ *                This is a strange class! It claims to be immutable but is not.
+ *                It claims to be a BitSet but it is not a Set.
+ *                Remove it or integrate it into the Set hierarchy.
+ *                [Comments by Martin]
+ */
 class BitSet(val size: Int, val capacity: Int, ba: Array[Int], copy: Boolean)
   extends collection.BitSet
 {

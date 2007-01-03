@@ -525,11 +525,12 @@ sealed abstract class List[+a] extends Seq[a] {
    *  @throws Predef.UnsupportedOperationException if the list is empty.
    */
   def last: a =
-    if (isEmpty) throw new UnsupportedOperationException("Nil.last")
+    if (isEmpty) throw new Predef.NoSuchElementException("Nil.last")
     else if (tail.isEmpty) head
     else tail.last
 
-  /** Returns the <code>n</code> first elements of this list.
+  /** Returns the <code>n</code> first elements of this list, or else the whole
+   *  list, if it has less than <code>n</code> elements.
    *
    *  @param n the number of elements to take.
    *  @return the <code>n</code> first elements of this list.
@@ -547,6 +548,7 @@ sealed abstract class List[+a] extends Seq[a] {
   }
 
   /** Returns the list without its <code>n</code> first elements.
+   *  If this list has less than <code>n</code> elements, the empty list is returned.
    *
    *  @param n the number of elements to drop.
    *  @return the list without its <code>n</code> first elements.
@@ -607,7 +609,7 @@ sealed abstract class List[+a] extends Seq[a] {
    *  @return  the longest prefix of this list whose elements satisfy
    *           the predicate <code>p</code>.
    */
-  def takeWhile(p: a => Boolean): List[a] = {
+  override def takeWhile(p: a => Boolean): List[a] = {
     val b = new ListBuffer[a]
     var these = this
     while (!these.isEmpty && p(these.head)) {
@@ -624,7 +626,7 @@ sealed abstract class List[+a] extends Seq[a] {
    *  @return  the longest suffix of the list whose first element
    *           does not satisfy the predicate <code>p</code>.
    */
-  def dropWhile(p: a => Boolean): List[a] =
+  override def dropWhile(p: a => Boolean): List[a] =
     if (isEmpty || !p(head)) this
     else tail dropWhile p;
 
@@ -664,7 +666,7 @@ sealed abstract class List[+a] extends Seq[a] {
    *  @param f function to apply to each element.
    *  @return <code>[f(a0), ..., f(an)]</code> if this list is <code>[a0, ..., an]</code>.
    */
-  def map[b](f: a => b): List[b] = {
+  override def map[b](f: a => b): List[b] = {
     val b = new ListBuffer[b]
     var these = this
     while (!these.isEmpty) {
@@ -705,10 +707,10 @@ sealed abstract class List[+a] extends Seq[a] {
   /** Returns all the elements of this list that satisfy the
    *  predicate <code>p</code>. The order of the elements is preserved.
    *
-   *  @param p the redicate used to filter the list.
+   *  @param p the predicate used to filter the list.
    *  @return the elements of this list satisfying <code>p</code>.
    */
-  def filter(p: a => Boolean): List[a] = {
+  override def filter(p: a => Boolean): List[a] = {
     // return same list if all elements satisfy p
     var these = this
     while (!these.isEmpty && p(these.head)) {
@@ -874,15 +876,6 @@ sealed abstract class List[+a] extends Seq[a] {
     false
   }
 
-  /** Tests if the given value <code>elem</code> is a member of this
-   *  iterable object.
-   *
-   *  @param elem element whose membership has to be tested.
-   *  @return     <code>true</code> iff there is an element of this list
-   *              which is equal (w.r.t. <code>==</code>) to <code>elem</code>.
-   */
-  def contains(elem: Any): boolean = exists (.==(elem))
-
   /** Find and return the first element of the list satisfying a
    *  predicate, if any.
    *
@@ -918,7 +911,7 @@ sealed abstract class List[+a] extends Seq[a] {
   }
 
   /** Combines the elements of this list together using the binary
-   *  function <code>f</code>, from rigth to left, and starting with
+   *  function <code>f</code>, from right to left, and starting with
    *  the value <code>z</code>.
    *
    *  @return <code>f(a<sub>0</sub>, f(a<sub>1</sub>, f(..., f(a<sub>n</sub>, z)...)))</code>
@@ -929,27 +922,30 @@ sealed abstract class List[+a] extends Seq[a] {
     case x :: xs => f(x, xs.foldRight(z)(f))
   }
 
-  /** <p>
-   *   Example:
-   *  </p>
-   *  <pre>
-   *    val xs = List(1, 2, 3, 4)
-   *    0 :: xs reduceLeft ((x:int, y:int) => x + y) = 10 //sum
-   *    1 :: xs reduceLeft ((x:int, y:int) => x * y) = 24 //prod</pre>
-   *
-   *  @return ...
+  /** Combines the elements of this list together using the binary
+   *  operator <code>op</code>, from left to right
+   *  @param op  The operator to apply
+   *  @return <code>op(... op(a<sub>0</sub>,a<sub>1</sub>), ..., a<sub>n</sub>)</code>
+      if the list has elements
+   *          <code>a<sub>0</sub>, a<sub>1</sub>, ..., a<sub>n</sub></code>.
    *  @throws Predef.UnsupportedOperationException if the list is empty.
    */
-  def reduceLeft[b >: a](f: (b, b) => b): b = this match {
+  override def reduceLeft[b >: a](f: (b, b) => b): b = this match {
     case Nil => throw new UnsupportedOperationException("Nil.reduceLeft")
     case x :: xs => ((xs: List[b]) foldLeft (x: b))(f)
   }
 
-  /**
-   *  @return ...
+  /** Combines the elements of this list together using the binary
+   *  operator <code>op</code>, from right to left
+   *  @param op  The operator to apply
+   *
+   *  @return <code>a<sub>0</sub> op (... op (a<sub>n-1</sub> op a<sub>n</sub>)...)</code>
+   *          if the list has elements <code>a<sub>0</sub>, a<sub>1</sub>, ...,
+   *          a<sub>n</sub></code>.
+   *
    *  @throws Predef.UnsupportedOperationException if the list is empty.
    */
-  def reduceRight[b >: a](f: (b, b) => b): b = this match {
+  override def reduceRight[b >: a](f: (b, b) => b): b = this match {
     case Nil => throw new UnsupportedOperationException("Nil.reduceRight")
     case x :: Nil => x: b
     case x :: xs => f(x, xs reduceRight f)
@@ -962,41 +958,40 @@ sealed abstract class List[+a] extends Seq[a] {
    *  @return  <code>f(a<sub>0</sub>) ::: ... ::: f(a<sub>n</sub>)</code> if
    *           this list is <code>[a<sub>0</sub>, ..., a<sub>n</sub>]</code>.
    */
-  def flatMap[b](f: a => List[b]): List[b] = {
+  override def flatMap[b](f: a => Iterable[b]): List[b] = {
     val b = new ListBuffer[b]
     var these = this
     while (!these.isEmpty) {
-      var those = f(these.head)
-      while (!those.isEmpty) {
-        b += those.head
-        those = those.tail
+      var those = f(these.head).elements
+      while (those.hasNext) {
+        b += those.next
       }
       these = these.tail
     }
     b.toList
   }
 
-  /** <p>
-   *    Reverses the elements of this list. Example:
-   *  </p>
-   *  <pre>
-   *    List(1, 2, 3) reverse = List(3, 2, 1)</pre>
-   *
-   *  @return the elements of this list in reverse order.
+  /** A list consisting of all elements of this list in reverse order.
    */
-  def reverse: List[a] =
-    foldLeft(Nil : List[a])((xs, x) => x :: xs);
+  override def reverse: List[a] = {
+    var result: List[a] = Nil
+    var these = this
+    while (!these.isEmpty) {
+      result = these.head :: result
+      these = these.tail
+    }
+    result
+  }
 
   /** Returns a list formed from this list and the specified list
    *  <code>that</code> by associating each element of the former with
    *  the element at the same position in the latter.
+   *  If one of the two lists is longer than the other, its remaining elements are ignored.
    *
-   *  @param that list <code>that</code> must have the same length as the
-   *              self list.
-   *  @return     <code>[(a<sub>0</sub>,b<sub>0</sub>), ...,
-   *              (a<sub>n</sub>,b<sub>n</sub>)]</code> when
-   *              <code>[a<sub>0</sub>, ..., a<sub>n</sub>]
-   *              zip [b<sub>0</sub>, ..., b<sub>n</sub>]</code> is invoked.
+   *  @return     <code>List({a<sub>0</sub>,b<sub>0</sub>}, ...,
+   *              {a<sub>min(m,n)</sub>,b<sub>min(m,n)</sub>})</code> when
+   *              <code>List(a<sub>0</sub>, ..., a<sub>m</sub>)
+   *              zip List(b<sub>0</sub>, ..., b<sub>n</sub>)</code> is invoked.
    */
   def zip[b](that: List[b]): List[Pair[a,b]] = {
     val b = new ListBuffer[Pair[a, b]]
@@ -1010,15 +1005,12 @@ sealed abstract class List[+a] extends Seq[a] {
     b.toList
   }
 
-   /** Returns a list that pairs each element of this list
-    *  with its index, counting from 0.
-    *
-    *  @param start the index of the first element
-    *  @return      an iterator yielding <code>(a<sub>0</sub>,0),
-    *               (a<sub>0</sub>,1)...</code>
-    *               where <code>a<sub>i</sub></code> are the elements from
-    *               this iterator.
-    */
+  /** Returns a list that pairs each element of this list
+   *  with its index, counting from 0.
+   *
+   *  @return      the list <code>List({a<sub>0</sub>,0}, {a<sub>1</sub>,1}...)</code>
+   *               where <code>a<sub>i</sub></code> are the elements of this list.
+   */
   def zipWithIndex = {
     val b = new ListBuffer[Pair[a,int]]
     var these = this
@@ -1045,9 +1037,9 @@ sealed abstract class List[+a] extends Seq[a] {
    *  @param thatElem element <code>thatElem</code> is used to fill up the
    *                  resulting list if <code>that</code> is shorter than
    *                  the self list
-   *  @return         <code>[(a<sub>0</sub>,b<sub>0</sub>), ...,
-   *                  (a<sub>n</sub>,b<sub>n</sub>), (elem,b<sub>n+1</sub>),
-   *                  ..., (elem,b<sub>m</sub>)]</code>
+   *  @return         <code>List({a<sub>0</sub>,b<sub>0</sub>}, ...,
+   *                  {a<sub>n</sub>,b<sub>n</sub>}, {elem,b<sub>n+1</sub>},
+   *                  ..., {elem,b<sub>m</sub>})</code>
    *                  when <code>[a<sub>0</sub>, ..., a<sub>n</sub>] zip
    *                  [b<sub>0</sub>, ..., b<sub>m</sub>]</code> is
    *                  invoked where <code>m &gt; n</code>.

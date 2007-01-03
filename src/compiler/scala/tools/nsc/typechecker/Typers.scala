@@ -424,9 +424,16 @@ trait Typers requires Analyzer {
      *  </ol>
      */
     private def stabilize(tree: Tree, pre: Type, mode: int, pt: Type): Tree = {
+      def isDeprecated(sym: Symbol) =
+        sym.attributes exists (attr => attr._1.symbol == DeprecatedAttr)
       if (tree.symbol.hasFlag(OVERLOADED) && (mode & FUNmode) == 0)
         inferExprAlternative(tree, pt)
       val sym = tree.symbol
+      if (!phase.erasedTypes &&
+          isDeprecated(sym) && !context.owner.ownerChain.exists(isDeprecated)) {
+        unit.deprecationWarning(tree.pos,
+          sym+sym.locationString+" is deprecated;\n see API documentation for alternatives")
+      }
       if (tree.tpe.isError) tree
       else if ((mode & (PATTERNmode | FUNmode)) == PATTERNmode && tree.isTerm) { // (1)
         checkStable(tree)
@@ -807,7 +814,7 @@ trait Typers requires Analyzer {
      *  @return     ...
      */
     def typedClassDef(cdef: ClassDef): Tree = {
-      attributes(cdef)
+//      attributes(cdef)
       val clazz = cdef.symbol
       reenterTypeParams(cdef.tparams)
       val tparams1 = List.mapConserve(cdef.tparams)(typedAbsTypeDef)
@@ -826,7 +833,7 @@ trait Typers requires Analyzer {
      */
     def typedModuleDef(mdef: ModuleDef): Tree = {
       //Console.println("sourcefile of " + mdef.symbol + "=" + mdef.symbol.sourceFile)
-      attributes(mdef)
+//      attributes(mdef)
       val clazz = mdef.symbol.moduleClass
       val impl1 = newTyper(context.make(mdef.impl, clazz, newTemplateScope(mdef.impl, clazz)))
         .typedTemplate(mdef.impl, parentTypes(mdef.impl))
@@ -917,7 +924,7 @@ trait Typers requires Analyzer {
      *  @return     ...
      */
     def typedValDef(vdef: ValDef): ValDef = {
-      attributes(vdef)
+//      attributes(vdef)
       val sym = vdef.symbol
       val typer1 = if (sym.hasFlag(PARAM) && sym.owner.isConstructor)
                      newTyper(context.makeConstructorContext)
@@ -1001,7 +1008,7 @@ trait Typers requires Analyzer {
      *  @return     ...
      */
     def typedDefDef(ddef: DefDef): DefDef = {
-      attributes(ddef)
+//      attributes(ddef)
 
       val meth = ddef.symbol
 
@@ -1450,69 +1457,6 @@ trait Typers requires Analyzer {
     }
 
     /**
-     *  @param defn ...
-     */
-    protected def attributes(defn: MemberDef): Unit = {
-      var attrError: Boolean = false;
-      def getConstant(tree: Tree): Constant = tree match {
-        case Literal(value) => value
-        case arg =>
-          error(arg.pos, "attribute argument needs to be a constant; found: "+arg)
-          attrError = true;
-          null
-      }
-      val attrInfos =
-        for (val t @ Attribute(constr, elements) <- defn.mods.attributes) yield {
-          typed(constr, EXPRmode | CONSTmode, AttributeClass.tpe) match {
-            case Apply(Select(New(tpt), nme.CONSTRUCTOR), args) =>
-              val constrArgs = args map getConstant
-              val attrScope = tpt.tpe.decls.
-                filter(sym => sym.isMethod && !sym.isConstructor && sym.hasFlag(JAVA));
-              val names = new collection.mutable.HashSet[Symbol]
-              names ++= attrScope.elements.filter(.isMethod)
-              if (args.length == 1) {
-                names.filter(sym => sym.name != nme.value)
-              }
-              val nvPairs = elements map {
-                case Assign(ntree @ Ident(name), rhs) => {
-                  val sym = attrScope.lookup(name);
-                  if (sym == NoSymbol) {
-                    error(ntree.pos, "unknown attribute element name: " + name)
-                    attrError = true
-                    null
-                  } else if (!names.contains(sym)) {
-                    error(ntree.pos, "duplicate value for element " + name)
-                    attrError = true
-                    null
-                  } else {
-                    names -= sym
-                    Pair(sym.name, getConstant(typed(rhs, EXPRmode | CONSTmode, sym.tpe.resultType)))
-                  }
-                }
-              }
-              for (val name <- names) {
-                if (!name.attributes.contains(Triple(AnnotationDefaultAttr.tpe, List(), List()))) {
-                  error(t.pos, "attribute " + tpt.tpe.symbol.fullNameString + " is missing element " + name.name)
-                  attrError = true;
-                }
-              }
-              if (tpt.tpe.symbol.hasFlag(JAVA) && settings.target.value == "jvm-1.4") {
-                context.unit.warning (t.pos, "Java annotation will not be emitted in classfile unless you use the '-target:jvm-1.5' option")
-              }
-              Triple(tpt.tpe, constrArgs, nvPairs)
-          }
-        }
-      if (!attrError) {
-        val attributed =
-          if (defn.symbol.isModule) defn.symbol.moduleClass else defn.symbol
-        if (!attrInfos.isEmpty) {
-          attributed.attributes = attrInfos
-        }
-      }
-      defn.mods setAttr List();
-    }
-
-    /**
      *  @param tree ...
      *  @param mode ...
      *  @param pt   ...
@@ -1524,7 +1468,7 @@ trait Typers requires Analyzer {
 
       def typedTypeApply(fun: Tree, args: List[Tree]): Tree = fun.tpe match {
         case OverloadedType(pre, alts) =>
-          inferPolyAlternatives(fun, args.length)
+          inferPolyAlternatives(fun, args map (.tpe))
           typedTypeApply(fun, args)
         case PolyType(tparams, restpe) if (tparams.length != 0) =>
           if (tparams.length == args.length) {
@@ -2153,7 +2097,8 @@ trait Typers requires Analyzer {
           tree setType ref1.tpe.resultType
 
         case SelectFromTypeTree(qual, selector) =>
-          tree setType typedSelect(typedType(qual), selector).tpe
+          val sel = typedSelect(typedType(qual), selector)
+          tree setSymbol sel.symbol setType typedSelect(typedType(qual), selector).tpe
 
         case tree @ CompoundTypeTree(templ: Template) =>
           tree setType {
