@@ -49,7 +49,8 @@ trait Set[A] extends AnyRef with collection.Set[A] {
    *  @param elems  the iterable object containing the elements to be added
    *  @return a new set with the elements added.
    */
-  def ++ (elems: Iterable[A]): Set[A] = this ++ elems.elements
+  def ++ (elems: Iterable[A]): Set[A] =
+    (this /: elems) ((s, elem) => s + elem)
 
   /** Add all the elements provided by an iterator to the set.
    *  @param elems  the iterator containing the elements to be added

@@ -29,7 +29,7 @@ package scala.collection
  *  @author  Martin Odersky
  *  @version 2.0, 01/01/2007
  */
-trait Set[A] extends AnyRef with (A => Boolean) with Iterable[A] {
+trait Set[A] extends (A => Boolean) with Iterable[A] {
 
   /** Returns the number of elements in this set.
    *

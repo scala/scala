@@ -177,7 +177,7 @@ object Test {
         //Text("John Mitchell"),
         Elem(null,"title",e,sc,Text("Foundations of Programming Languages"))
         //Text("Foundations of Programming Languages")
-      ): Seq[Node]
+      )
   );
 
     // test group node

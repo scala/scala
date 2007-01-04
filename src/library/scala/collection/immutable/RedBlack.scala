@@ -67,6 +67,7 @@ abstract class RedBlack[A] {
     def elements: Iterator[Pair[A, B]] =
       left.elements append Iterator.single(Pair(key, value)) append right.elements
   }
+  [serializable]
   case object Empty extends Tree[Nothing] {
     def isEmpty = true
     def isBlack = true
@@ -76,12 +77,14 @@ abstract class RedBlack[A] {
     def smallest: NonEmpty[Nothing] = throw new NoSuchElementException("empty map")
     def elements: Iterator[Pair[A, Nothing]] = Iterator.empty
   }
+  [serializable]
   case class RedTree[+B](override val key: A,
                          override val value: B,
                          override val left: Tree[B],
                          override val right: Tree[B]) extends NonEmpty[B] {
     def isBlack = false
   }
+  [serializable]
   case class BlackTree[+B](override val key: A,
                            override val value: B,
                            override val left: Tree[B],

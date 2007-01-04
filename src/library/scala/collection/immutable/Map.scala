@@ -73,7 +73,8 @@ trait Map[A, +B] extends collection.Map[A, B] {
    *  @param    kvs the iterable object containing all key/value pairs.
    *  @return   A new map with the new bindings added
    */
-  def ++ [B1 >: B] (kvs: Iterable[Pair[A, B1]]): Map[A, B1] = this ++ kvs.elements
+  def ++ [B1 >: B] (kvs: Iterable[Pair[A, B1]]): Map[A, B1] =
+    ((this: Map[A, B1]) /: kvs) ((m, kv) => m + kv)
 
   /** Add a sequence of key/value pairs to this map.
    *  @param    kvs the iterator containing all key/value pairs.

@@ -129,6 +129,7 @@ object Test2_immutable {
   catch {
     case e: Exception =>
       System.out.println("Error in Test2_immutable: " + e);
+      throw e
   }
 }
 

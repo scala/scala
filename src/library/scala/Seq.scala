@@ -86,6 +86,13 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Iterable[A] {
     buf
   }
 
+  override def ++ [B >: A](that: Iterable[B]): Seq[B] = {
+    val buf = new ArrayBuffer[B]
+    this copyToBuffer buf
+    that copyToBuffer buf
+    buf
+  }
+
   /** Is this partial function defined for the index <code>x</code>?
    *
    *  @return true, iff <code>x</code> is a legal sequence index.

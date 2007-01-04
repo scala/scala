@@ -153,7 +153,6 @@ abstract class NodeSeq extends Seq[Node] {
   override def toString(): String = theSeq.elements.foldLeft ("") {
     (s: String, x: Node) => s + x.toString()
   }
-
 /*
   def map(f: Node => NodeSeq): NodeSeq = flatMap(f)
 
@@ -167,6 +166,7 @@ abstract class NodeSeq extends Seq[Node] {
     x
   }
 */
+
   def text: String = {
     val sb = new compat.StringBuilder()
     val it = elements

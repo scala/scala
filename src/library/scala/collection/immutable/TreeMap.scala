@@ -35,28 +35,16 @@ object TreeMap {
  *  @version 1.1, 03/05/2004
  */
 [serializable]
-class TreeMap[A <% Ordered[A], +B] extends Map[A, B] {
+class TreeMap[A <% Ordered[A], +B](val size: int, t: RedBlack[A]#Tree[B])
+extends RedBlack[A] with Map[A, B] {
 
-  def size: int = 0
+  def isSmaller(x: A, y: A) = x < y
 
-  [serializable]
-  class RB extends RedBlack[A] {
-    def isSmaller(x: A, y: A) = x < y
-  }
+  def this() = this(0, null)
 
-  val rb: RedBlack[A] = new RB
+  protected val tree: RedBlack[A]#Tree[B] = if (size == 0) Empty else t
 
-  protected def tree: rb.Tree[B] = rb.Empty
-
-  [serializable]
-  class NonEmptyTreeMap[B](s: int, t: rb.Tree[B]) extends TreeMap[A, B] {
-    override val size = s
-    override val rb: TreeMap.this.rb.type = TreeMap.this.rb
-    override val tree = t
-  }
-
-
-  private def newMap[B](s: int, t: rb.Tree[B]) = new NonEmptyTreeMap[B](s, t)
+  private def newMap[B](s: int, t: RedBlack[A]#Tree[B]) = new TreeMap[A, B](s, t)
 
   /** A factory to create empty maps of the same type of keys.
    */
@@ -94,7 +82,7 @@ class TreeMap[A <% Ordered[A], +B] extends Map[A, B] {
    *  @return the value of the mapping, if it exists
    */
   override def get(key: A): Option[B] = tree.lookup(key) match {
-    case n: rb.NonEmpty[b] => Some(n.value)
+    case n: NonEmpty[b] => Some(n.value)
     case _ => None
   }
 
@@ -107,7 +95,7 @@ class TreeMap[A <% Ordered[A], +B] extends Map[A, B] {
    *  @throws Error("key not found").
    */
   override def apply(key: A): B = tree.lookup(key) match {
-    case n: rb.NonEmpty[b] => n.value
+    case n: NonEmpty[b] => n.value
     case _ => super.apply(key)
   }
 

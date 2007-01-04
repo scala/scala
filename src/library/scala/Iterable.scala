@@ -99,6 +99,13 @@ trait Iterable[+A] {
     buf
   }
 
+  def ++ [B >: A](that: Iterable[B]): Iterable[B] = {
+    val buf = new ArrayBuffer[B]
+    this copyToBuffer buf
+    that copyToBuffer buf
+    buf
+  }
+
   /** Returns the iterable resulting from applying the given function <code>f</code> to each
    *  element of this iterable.
    *
