@@ -75,12 +75,12 @@ object MainGenericRunner {
     }
 
     def paths(str: String) = str.split(File.pathSeparator).toList
-    def listJars(dirs: String): List[File] =
+    def listJars(dirs: String): List[String] =
       for (
-        dir <- paths(dirs); libdir.exists; !libdir.isFile;
-        jar <- dir.listFiles; jar.isFile; jar.getName.endsWith(".jar")
-      ) yield jar
-    val classpath =
+        val libdir <- (paths(dirs) map { s => new File(s) }); libdir.exists; !libdir.isFile;
+        val jar <- libdir.listFiles; jar.isFile; jar.getName.endsWith(".jar")
+      ) yield jar.toString
+    val classpath: List[String] =
       paths(settings.bootclasspath.value) :::
       paths(settings.classpath.value) :::
       listJars(settings.extdirs.value)
