@@ -21,6 +21,16 @@ package scala.collection.mutable
  *  @author  Matthias Zenger
  *  @version 1.1, 09/05/2004
  */
+object Set {
+
+  /** The empty map of this type; this is implemented as a hashtable */
+  def empty[A] = new HashSet[A]
+
+  /** The canonical factory for this type
+   */
+  def apply[A](elems: A*) = empty[A] ++ elems
+}
+
 [cloneable]
 trait Set[A] extends collection.Set[A] with Scriptable[Message[A]] {
 
@@ -120,7 +130,7 @@ trait Set[A] extends collection.Set[A] with Scriptable[Message[A]] {
    *
    *  @param elem the element to be removed
    */
-  def - (elem: A) { -=(elem); this }
+  def - (elem: A): Set[A] = { -=(elem); this }
 
   /** Remove two or more elements from this set.
    *  @param    elem1 the first element.

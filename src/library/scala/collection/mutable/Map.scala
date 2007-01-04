@@ -11,6 +11,8 @@
 
 package scala.collection.mutable
 
+import Predef._
+
 //import Predef.UnsupportedOperationException
 
 /** This class represents mutable maps. Concrete map implementations
@@ -19,8 +21,20 @@ package scala.collection.mutable
  *  and <code>-=</code>.
  *
  *  @author  Matthias Zenger
- *  @version 1.1, 09/05/2004
+ *  @author  Martin Odersky
+ *  @version 2.0, 31/12/2006
  */
+
+object Map {
+
+  /** The empty map of this type; this is implemented as a hashtable */
+  def empty[A, B] = new HashMap[A, B]
+
+  /** The canonical factory for this type
+   */
+  def apply[A, B](elems: Pair[A, B]*) = empty[A, B] ++ elems
+}
+
 [cloneable]
 trait Map[A, B] extends AnyRef
       with collection.Map[A, B]

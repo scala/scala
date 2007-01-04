@@ -32,8 +32,17 @@ package scala.collection.immutable
  *  @author  Erik Stenman
  *  @author  Martin Odersky
  *  @version 1.2, 31/06/2006
- *  todo: make contravariant in A?
  */
+object Map {
+
+  /** The empty map of this type; this is implemented as a treemap */
+  def empty[A <% Ordered[A], B] = new TreeMap[A, B]
+
+  /** The canonical factory for this type
+   */
+  def apply[A <% Ordered[A], B](elems: Pair[A, B]*) = empty[A, B] ++ elems
+}
+
 trait Map[A, +B] extends collection.Map[A, B] {
 
   /** This method returns a new map instance of the same class

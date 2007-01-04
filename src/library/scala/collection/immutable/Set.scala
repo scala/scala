@@ -24,6 +24,16 @@ package scala.collection.immutable
  *  @author  Matthias Zenger
  *  @version 1.1, 03/05/2004
  */
+object Set {
+  /** The empty set of this type
+   */
+  def empty[A <% Ordered[A]] = new TreeSet[A]
+
+  /** The canonical factory for this type
+   */
+  def apply[A <% Ordered[A]](elems: A*) = empty[A] ++ elems
+}
+
 trait Set[A] extends AnyRef with collection.Set[A] {
 
   /** @return an empty set of arbitrary element type

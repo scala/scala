@@ -14,8 +14,19 @@ package scala.collection.mutable
 /** This class implements mutable sets using a hashtable.
  *
  *  @author  Matthias Zenger
- *  @version 1.0, 08/07/2003
+ *  @author  Martin Odersky
+ *  @version 2.0, 31/12/2006
  */
+object HashSet {
+
+  /** The empty map of this type */
+  def empty[A] = new HashSet[A]
+
+  /** The canonical factory for this type
+   */
+  def apply[A](elems: A*) = empty[A] ++ elems
+}
+
 [serializable]
 class HashSet[A] extends Set[A] with HashTable[A] {
 

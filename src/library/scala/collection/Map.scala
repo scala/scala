@@ -11,6 +11,8 @@
 
 package scala.collection
 
+import Predef._
+
 
 //import Predef.NoSuchElementException
 

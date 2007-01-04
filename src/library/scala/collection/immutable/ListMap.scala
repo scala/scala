@@ -24,7 +24,7 @@ object ListMap {
 
   /** The canonical factory for this type
    */
-  //def apply[A, B](elems: Pair[A, B]*) = empty[A, B] ++ elems
+  def apply[A, B](elems: Pair[A, B]*) = empty[A, B] ++ elems
 }
 
 /** This class implements immutable maps using a list-based data

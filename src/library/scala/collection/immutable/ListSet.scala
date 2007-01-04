@@ -27,7 +27,7 @@ object ListSet {
 
   /** The canonical factory for this type
    */
-//  def apply[A, B](elems: A*) = empty[A] ++ elems
+  def apply[A, B](elems: A*) = empty[A] ++ elems
 }
 
 

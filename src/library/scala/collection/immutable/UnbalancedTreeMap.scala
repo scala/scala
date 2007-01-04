@@ -14,7 +14,13 @@ package scala.collection.immutable
 
 
 object UnbalancedTreeMap {
-  def Empty[A <% Ordered[A], B] = new UnbalancedTreeMap[A, B]
+
+  /** The empty map of this type */
+  def empty[A <% Ordered[A], B] = new UnbalancedTreeMap[A, B]
+
+  /** The canonical factory for this type
+   */
+  def apply[A<% Ordered[A], B](elems: Pair[A, B]*) = empty[A, B] ++ elems
 }
 
 /** This class implements immutable maps using a tree.
@@ -28,7 +34,7 @@ class UnbalancedTreeMap[A <% Ordered[A], +B] extends Map[A, B] {
 
   /** A factory to create empty maps of the same type of keys.
    */
-  def empty[C] = UnbalancedTreeMap.Empty[A, C]
+  def empty[C] = UnbalancedTreeMap.empty[A, C]
 
   def size: Int = 0
 

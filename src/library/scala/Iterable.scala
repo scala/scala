@@ -91,14 +91,19 @@ trait Iterable[+A] {
   /** Appends two iterable objects
    *
    *  @return the new iterable object
+   *  @deprecated  use <code>++</code> instead
    */
-  def concat [B >: A](that: Iterable[B]): Iterable[B] = {
+  [deprecated] def concat [B >: A](that: Iterable[B]): Iterable[B] = {
     val buf = new ArrayBuffer[B]
     this copyToBuffer buf
     that copyToBuffer buf
     buf
   }
 
+  /** Appends two iterable objects
+   *
+   *  @return the new iterable object
+   */
   def ++ [B >: A](that: Iterable[B]): Iterable[B] = {
     val buf = new ArrayBuffer[B]
     this copyToBuffer buf

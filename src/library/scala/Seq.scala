@@ -78,14 +78,19 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Iterable[A] {
   /** Appends two iterable objects
    *
    *  @return the new iterable object
+   *  @deprecated  use <code>++</code> instead
    */
-  override def concat [B >: A](that: Iterable[B]): Seq[B] = {
+  [deprecated] override def concat [B >: A](that: Iterable[B]): Seq[B] = {
     val buf = new ArrayBuffer[B]
     this copyToBuffer buf
     that copyToBuffer buf
     buf
   }
 
+  /** Appends two iterable objects
+   *
+   *  @return the new iterable object
+   */
   override def ++ [B >: A](that: Iterable[B]): Seq[B] = {
     val buf = new ArrayBuffer[B]
     this copyToBuffer buf

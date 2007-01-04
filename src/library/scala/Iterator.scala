@@ -248,8 +248,17 @@ trait Iterator[+A] {
 
   /** Returns a new iterator that first yields the elements of this
    *  iterator followed by the elements provided by iterator <code>that</code>.
+   *  @deprecated  use <code>++</code>
    */
   def append[B >: A](that: Iterator[B]) = new Iterator[B] {
+    def hasNext = Iterator.this.hasNext || that.hasNext
+    def next = if (Iterator.this.hasNext) Iterator.this.next else that.next
+  }
+
+  /** Returns a new iterator that first yields the elements of this
+   *  iterator followed by the elements provided by iterator <code>that</code>.
+   */
+  def ++[B >: A](that: Iterator[B]) = new Iterator[B] {
     def hasNext = Iterator.this.hasNext || that.hasNext
     def next = if (Iterator.this.hasNext) Iterator.this.next else that.next
   }
