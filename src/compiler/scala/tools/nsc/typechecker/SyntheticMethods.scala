@@ -78,8 +78,8 @@ trait SyntheticMethods requires Analyzer {
     }
 
     def productElementMethod(accs: List[Symbol]): Tree = {
-      val retTpe = lub(accs map (.tpe.resultType))
-      val method = syntheticMethod(nme.element, FINAL, MethodType(List(IntClass.tpe), retTpe))
+      //val retTpe = lub(accs map (.tpe.resultType))
+      val method = syntheticMethod(nme.element, FINAL, MethodType(List(IntClass.tpe), AnyClass.tpe/*retTpe*/))
       typed(DefDef(method, vparamss => Match(Ident(vparamss.head.head), {
 	(for(val Pair(sym,i) <- accs.zipWithIndex) yield {
 	  CaseDef(Literal(Constant(i)),EmptyTree, Ident(sym))
