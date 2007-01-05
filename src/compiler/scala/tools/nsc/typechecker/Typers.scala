@@ -1957,7 +1957,9 @@ trait Typers requires Analyzer {
           if (tpt1.tpe.symbol hasFlag ABSTRACT)
             error(tree.pos, tpt1.tpe.symbol +
                             " is abstract; cannot be instantiated")
-          else if (!(tpt1.tpe <:< tpt1.tpe.typeOfThis) && !phase.erasedTypes)
+          else if (tpt1.tpe.symbol.thisSym != tpt1.tpe.symbol &&
+                   !(tpt1.tpe <:< tpt1.tpe.typeOfThis) &&
+                   !phase.erasedTypes)
             error(tree.pos, tpt1.tpe.symbol +
                   " cannot be instantiated because it does not conform to its self-type "+
                   tpt1.tpe.typeOfThis)
