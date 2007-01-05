@@ -1,5 +1,6 @@
 package scala.collection.immutable
 
+[serializable]
 abstract class RedBlack[A] {
 
   def isSmaller(x: A, y: A): boolean
@@ -11,6 +12,7 @@ abstract class RedBlack[A] {
   private def mkTree[B](isBlack: boolean, k: A, v: B, l: Tree[B], r: Tree[B]) =
     if (isBlack) BlackTree(k, v, l, r) else RedTree(k, v, l, r)
 
+  [serializable]
   abstract class Tree[+B] {
     def isEmpty: boolean
     def isBlack: boolean
@@ -22,6 +24,7 @@ abstract class RedBlack[A] {
     def del(k: A): Tree[B]
     def smallest: NonEmpty[B]
   }
+  [serializable]
   abstract class NonEmpty[+B] extends Tree[B] {
     def isEmpty = false
     def key: A

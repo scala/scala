@@ -18,8 +18,8 @@ x = List({buffers,20},{layers,2},{title,3})
 y = List({buffers,20},{layers,2},{title,3})
 x equals y: true - y equals x: true
 
-x = {buffers -> 20, layers -> 2, title -> 3}
-y = {buffers -> 20, layers -> 2, title -> 3}
+x = Map(title -> 3, layers -> 2, buffers -> 20)
+y = Map(title -> 3, layers -> 2, buffers -> 20)
 x equals y: true - y equals x: true
 
 x = {2, 3}
@@ -38,16 +38,16 @@ x = Stack(c,b,a)
 y = Stack(c,b,a)
 x equals y: true - y equals x: true
 
-x = {42 -> FortyTwo}
-y = {42 -> FortyTwo}
+x = Map(42 -> FortyTwo)
+y = Map(42 -> FortyTwo)
 x equals y: true - y equals x: true
 
 x = {0, 2}
 y = {0, 2}
 x equals y: true - y equals x: true
 
-x = {title -> 3, buffers -> 20, layers -> 2}
-y = {title -> 3, buffers -> 20, layers -> 2}
+x = Map(title -> 3, buffers -> 20, layers -> 2)
+y = Map(title -> 3, buffers -> 20, layers -> 2)
 x equals y: true - y equals x: true
 
 x = {0, 8, 9}
