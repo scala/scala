@@ -242,28 +242,28 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
       var nref = 0
       var nsafeRef = 0
       override def traverse(tree: Tree) = tree match {
-	case t:Ident if t.symbol == sym =>
-	  nref = nref + 1
-	  if(sym.owner == currentOwner)  { // oldOwner should match currentOwner
-	    nsafeRef = nsafeRef + 1
-	  } /*else if(nref == 1) {
-	    Console.println("sym owner: "+sym.owner+" but currentOwner = "+currentOwner)
-	  }*/
-	case t if nref > 1 => // abort, no story to tell
+        case t:Ident if t.symbol == sym =>
+          nref = nref + 1
+          if(sym.owner == currentOwner)  { // oldOwner should match currentOwner
+            nsafeRef = nsafeRef + 1
+          } /*else if(nref == 1) {
+            Console.println("sym owner: "+sym.owner+" but currentOwner = "+currentOwner)
+          }*/
+        case t if nref > 1 => // abort, no story to tell
 
-	case t       => super . traverse (t)
+        case t       => super . traverse (t)
       }
     }
     class Subst(sym:Symbol,rhs:Tree) extends Transformer {
       var stop = false
       override def transform(tree: Tree) = tree match {
-	case t:Ident if t.symbol == sym =>
-	  stop = true
-	  rhs
-	case t if stop =>
-	  t
-	case t       =>
-	  super . transform (t)
+        case t:Ident if t.symbol == sym =>
+          stop = true
+          rhs
+        case t if stop =>
+          t
+        case t       =>
+          super . transform (t)
       }
     }
     vds match {
@@ -274,26 +274,26 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
         val exp1 = squeezedBlock(rest, exp)
 
         //Console.println("squeezedBlock for valdef "+vd)
-	val sym  = vd.symbol
-	val rt   = new RefTraverser(sym)
-	rt.atOwner (PatternMatcher.this.owner) (rt.traverse(exp1))
-	rt.nref match {
-	  case 0 =>
-	    nremoved = nremoved + 1
-	    exp1
-	  case 1 if rt.nsafeRef == 1 =>
-	    nsubstituted = nsubstituted + 1
-	    new Subst(sym, vd.rhs).transform( exp1 )
-	  case _ =>
+        val sym  = vd.symbol
+        val rt   = new RefTraverser(sym)
+        rt.atOwner (PatternMatcher.this.owner) (rt.traverse(exp1))
+        rt.nref match {
+          case 0 =>
+            nremoved = nremoved + 1
+            exp1
+          case 1 if rt.nsafeRef == 1 =>
+            nsubstituted = nsubstituted + 1
+            new Subst(sym, vd.rhs).transform( exp1 )
+          case _ =>
             exp1 match {
-	      case Block(vds2, exp2) => Block(vd::vds2, exp2)
-	      case exp2              => Block(vd::Nil,  exp2)
+              case Block(vds2, exp2) => Block(vd::vds2, exp2)
+              case exp2              => Block(vd::Nil,  exp2)
             }
         }
       case x::xs =>
         squeezedBlock(xs, exp) match {
-	  case Block(vds2, exp2) => Block(x::vds2, exp2)
-	  case exp2              => Block(x::Nil,  exp2)
+          case Block(vds2, exp2) => Block(x::vds2, exp2)
+          case exp2              => Block(x::Nil,  exp2)
         }
     }
   }
@@ -385,7 +385,7 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
     //Console.println("tree.getClass() "+tree.getClass());
     val t = tree match {
       case Bind(name, Typed(Ident( nme.WILDCARD ), tpe)) => // x@_:Type
-	val tpe2test = tree.symbol.tpe // safest! typer does not always use tpe.tpe!
+        val tpe2test = tree.symbol.tpe // safest! typer does not always use tpe.tpe!
 
       // @todo: this optimization probably not allowed, because of null -- but can rework it
       //if (isSubType(header.getTpe(), tpe2test)) {
@@ -706,8 +706,8 @@ print()
       var target = target1
       var casted = casted1
       target match {
-	case UnapplyPat(newCasted, fn) =>
-	  casted = newCasted
+        case UnapplyPat(newCasted, fn) =>
+          casted = newCasted
         case ConstrPat(newCasted) =>
           casted = newCasted
         case SequencePat(newCasted, len) =>
@@ -1057,7 +1057,7 @@ print()
           .setFlag(Flags.SYNTHETIC) .setInfo(body(i).tpe);  // used to be resultType
 
           var res0: Tree =
-	    squeezedBlock(
+            squeezedBlock(
               List(
                 ValDef(temp, body(i)),
                 Apply(Ident(exit), List(Ident(temp)) )
@@ -1091,7 +1091,7 @@ print()
     final private def inheritsFromSealed(tpe:Type): Boolean = {
       val it = tpe.baseClasses.elements
       while(it.hasNext) {
-	if(it.next.isSealed) return true
+        if(it.next.isSealed) return true
       }
       return false
     }
@@ -1159,12 +1159,12 @@ print()
                         */
       var nCases: List[CaseDef] = Nil
       while (cases ne null) {
-	if(inheritsFromSealed(cases.node.tpe)) {
-	  val t = toTree_refined(cases.node, selector, true)
-	  //Console.println("optimize this"+t+" from this "+cases.node)
+        if(inheritsFromSealed(cases.node.tpe)) {
+          val t = toTree_refined(cases.node, selector, true)
+          //Console.println("optimize this"+t+" from this "+cases.node)
           nCases = CaseDef(Literal(Constant(cases.tag)),
                            t) :: nCases;
-	} else
+        } else
         nCases = CaseDef(Literal(Constant(cases.tag)),
                          toTree(cases.node, selector)) :: nCases;
         cases = cases.next
@@ -1252,18 +1252,14 @@ print()
              var __opt_nonemp__ = Not(Select(Ident(v), nme.isEmpty))
 
              Or(And(checkType,
-		       squeezedBlock(
-	      	     List(ValDef(v,Apply(fn1,List(useSelector)))),
-		         And(__opt_nonemp__,
-		           squeezedBlock(List(ValDef(casted, __opt_get__)),toTree(node.and))))
+                       squeezedBlock(
+                         List(ValDef(v,Apply(fn1,List(useSelector)))),
+                         And(__opt_nonemp__,
+                           squeezedBlock(List(ValDef(casted, __opt_get__)),toTree(node.and))))
                 ),
               toTree(node.or, selector.duplicate))
 
           case ConstrPat(casted) =>
-            if(!isSubType(casted.tpe,selector.tpe) && settings.Xkilloption.value && definitions.isOptionType(selector.tpe)) {
-              // option of options
-              warning("in pattern match:problem matching "+casted.tpe+" against "+selector.tpe+"\n please avoid options of options!")
-            }
             def outerAlwaysEqual(left: Type, right: Type) = Pair(left,right) match {
               case Pair(TypeRef(lprefix, _,_), TypeRef(rprefix,_,_)) if lprefix =:= rprefix =>
                 true
@@ -1279,8 +1275,8 @@ print()
             cond = NotNull(selector.duplicate)
             nstatic = nstatic + 1
           } else if(ignoreSelectorType) {
-	    cond = Literal(Constant(true))
-	  } else {
+            cond = Literal(Constant(true))
+          } else {
             cond = typed { gen.mkIsInstanceOf(selector.duplicate, ntpe) }
           }
             // compare outer instance for patterns like foo1.Bar foo2.Bar if not statically known to match
@@ -1377,15 +1373,11 @@ print()
                         fail);
 
           case VariablePat(tree) =>
-            val cmp = if(tree.tpe.symbol.isModuleClass && // objects are compared by eq, not == (avoids unnecessary null-magic)
-                         selector.tpe <:< definitions.AnyRefClass.tpe) {
-			   if(settings.Xkilloption.value && tree.symbol == definitions.NoneClass)
-			     IsNull(selector)
-			   else
-                             Eq(selector.duplicate, tree)
-                      } else  {
+            // objects are compared by eq, not ==
+            val cmp = if(tree.tpe.symbol.isModuleClass && selector.tpe <:< definitions.AnyRefClass.tpe)
+                        Eq(selector.duplicate, tree)
+                      else
                         Equals(selector.duplicate, tree)
-                      }
             return myIf( cmp,
                       toTree(node.and),
                       toTree(node.or, selector.duplicate));

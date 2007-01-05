@@ -169,10 +169,7 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
    *  </ol>
    */
   def transformInfo(sym: Symbol, tp: Type): Type = tp match {
-    case MethodType(formals1, restpe1) =>
-      //Console.println("hello methodtype"+tp)
-      val formals = if(settings.Xkilloption.value) {formals1 map {x=>transformInfo(sym, x)}}  // removeOption
-                    else formals1
+    case MethodType(formals, restpe1) =>
       val restpe = transformInfo(sym, restpe1) // removeOption
       if (sym.owner.isTrait && ((sym hasFlag SUPERACCESSOR) || sym.isModule)) { // 5
         sym.makeNotPrivate(sym.owner)
@@ -183,11 +180,7 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
       else if (restpe ne restpe1)
         MethodType(formals, restpe) // removeOption
       else tp
-    case ClassInfoType(parents1, decls, clazz) =>
-      if(settings.Xkilloption.value && (clazz.linkedModuleOfClass eq definitions.NoneClass))
-        return tp
-      val parents = if(settings.Xkilloption.value) parents1 map {x => transformInfo(sym,x)}
-                    else parents1
+    case ClassInfoType(parents, decls, clazz) =>
       var decls1 = decls
       if (isInner(clazz) && !(clazz hasFlag INTERFACE)) {
         decls1 = newScope(decls.toList)
@@ -214,38 +207,13 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
           }
         }
       }
-      if ((decls1 eq decls)&&(parents1 eq parents)) tp else ClassInfoType(parents, decls1, clazz)
+      if (decls1 eq decls) tp else ClassInfoType(parents, decls1, clazz)
     case PolyType(tparams, restp) =>
       val restp1 = transformInfo(sym, restp)
       if (restp eq restp1) tp else PolyType(tparams, restp1)
-    // <removeOption>
-    case TypeRef(pre,sym,args) if(settings.Xkilloption.value) =>
-      if(wasOptionRef(tp)) { // ((sym eq definitions.OptionClass) || (sym eq definitions.SomeClass)) {
-        getOptionArg(tp)
-      } else {
-        val t = typeRef(pre,sym, args.map {t=>transformInfo(sym,t)})
-        //Console.println("turning typeref "+tp+" to "+t)
-        t
-      }
-
-    // </removeOption>
 
     case _ =>
-      if(!settings.Xkilloption.value)
         tp
-      else { // bq: gross hack for removing options in refinements (e.g. dbc). YMMV
-	  if(tp.symbol.isRefinementClass) {
-	    if(settings.debug.value)
-	      Console.println("[k.o.] rewriting refinement ")
-	    for(val d <- tp.decls.elements) {
-	      val otpe = d.tpe
-	      d setInfo transformInfo(tp.symbol, d.tpe)
-	      if(settings.debug.value)
-            Console.println("  "+otpe+"-->"+d.tpe)
-	    }
-	  }
-	  tp
-	}
   }
 
   /** A base class for transformers that maintain <code>outerParam</code>
@@ -430,98 +398,6 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
         if (sym hasFlag PROTECTED) sym setFlag notPROTECTED
       }
       tree match {
-
-        // <removeOption>
-
-        case sm @ Apply(fn1, List(vlue)) // scala.Some(x:T) -> x  if T <: AnyRef
-        if settings.Xkilloption.value
-        && wasOptionRef(sm.tpe)
-        && ((fn1.symbol eq null)             // in patterns, symbol is null
-	    || fn1.symbol.isClassConstructor) =>
-
-	      val fn = transform(fn1)
-	      if(settings.debug.value)
-            Console.println("[k.o. (apply)]"+tree+" ==> "+vlue)
-          if((fn.symbol eq null) && (vlue.symbol ne null/*isInstanceOf[Ident]*/)) {
-	    val argtpe = getOptionArg(sm.tpe)
-	    Typed(vlue, TypeTree().setType(argtpe)).setType(argtpe) // pattern matcher optimizes to null check
-	  } else vlue
-
-	case Ident(_) if settings.Xkilloption.value && (definitions.NoneClass eq tree.symbol)  => // only appears in actors/Channel, possibly bug
-	      if(settings.debug.value)
-		    Console.println("[k.o. (ident)]"+tree+" ==> null")
-          atPos(tree.pos) { typer.typed { Literal(Constant(null)) }}
-
-        case nne: Select                                // scala.None -> null
-        if settings.Xkilloption.value && nne.symbol == definitions.NoneClass => // wasNone(nne.tpe) =>
-
-	      if(settings.debug.value)
-		Console.println("[k.o. (select)]"+tree+" ==> null")
-          atPos(tree.pos) { typer.typed { Literal(Constant(null)) }}
-
-        case Apply(Select(t, nme.isEmpty),List())       // t.isEmpty -> t eq null
-        if settings.Xkilloption.value && wasOption(t.tpe)  =>
-	      if(settings.debug.value)
-		Console.println("[k.o. (isEmpty)]"+tree+" ==> "+t+" eq null")
-          IsNull(t)
-
-        case Apply(Select(t, nme.get),List())           // t.get -> t if T <: Option[AnyRef]
-        if settings.Xkilloption.value && wasOptionRef(t.tpe) =>
-	      if(settings.debug.value)
-		Console.println("[k.o. (get)]"+tree+" ==> "+t)
-          t
-
-        case Apply(TypeApply(Select(t, nme.isInstanceOf_), List(tt)), _) if settings.Xkilloption.value && wasOptionRef(t.tpe) =>
-          NotNull(t)
-
-        case Apply(ta@TypeApply(s@Select(t, nme.asInstanceOf_), List(tt)), List()) if settings.Xkilloption.value && wasOptionRef(t.tpe) => //&& definitions.isSomeType(tt.tpe) =>
-          val tpe = tt.tpe
-          copy.Apply(tree, copy.TypeApply(ta, transform(s), List(TypeTree(tpe))), List())
-        case Select(t, n)           // methods ...
-        if settings.Xkilloption.value && wasOptionRef(t.tpe) && n != nme.get =>
-
-          val s = transform(t)
-          val tmp = currentOwner.newVariable(tree.pos, cunit.fresh.newName("opt")).setInfo(s.tpe) // careful: pos has special meaning
-          val nt = atPos(tree.pos) { typer.typed {
-            Block(List(ValDef(tmp,s)),
-                  If(NotNull(Ident(tmp)),
-                     Apply(Select(New(TypeTree(definitions.someType(s.tpe))), nme.CONSTRUCTOR), List(Ident(tmp))),
-                     gen.mkAttributedRef(definitions.NoneClass) )
-            )
-          }}
-          val ntree = copy.Select(tree,nt,n)
-          if(settings.debug.value)
-            Console.println("[k.o. (select)]"+tree+" ==> "+ntree)
-          ntree
-
-        case Select(t, n)           // methods ...
-        if settings.Xkilloption.value && wasOption(t.tpe) && n != nme.get && t.symbol!=null =>
-
-          def ntpe = if(t.tpe.isInstanceOf[SingleType]) t.tpe.widen else t.tpe
-          val otpe = atPhase(phase.prev){ntpe}
-          val nt = atPos(tree.pos) { typer.typed {
-            If(NotNull(t),
-               t,
-               gen.mkAttributedRef(definitions.NoneClass))
-          }}
-          val ntree = copy.Select(tree,nt,n)
-          if(settings.debug.value)
-            Console.println("[k.o. (select2)]"+tree+" ==> "+ntree)
-          ntree
-
-        case _                                   // e.g. map.get("bar") -> fix type
-        if settings.Xkilloption.value
-        && wasOptionRef(tree.tpe) =>
-          if(settings.debug.value) {
-            Console.println("[k.o.] setting type of "+tree+" which is a "+tree.getClass)
-            Console.println("  ... to "+getOptionArg(tree.tpe))
-          }
-
-          val argtpe = getOptionArg(tree.tpe)
-          transform(tree.setType(argtpe)) // need to transform? super.transform?
-
-        // </removeOption>
-
         case Template(parents, decls) =>
           val newDefs = new ListBuffer[Tree]
           atOwner(tree, currentOwner) {
@@ -560,15 +436,6 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
           } else { //todo: see whether we can move this to transformInfo
             if (sym.owner.isTrait && (sym hasFlag (ACCESSOR | SUPERACCESSOR)))
               sym.makeNotPrivate(sym.owner); //(2)
-
-            if(settings.Xkilloption.value) {
-	      //Console.println("vparamss"+vparamss)
-	      val nvparamss = vparamss.map { x => super.transformValDefs(x) }
-	      //Console.println("nvparamss"+nvparamss)
-              val ntpt = if(wasOptionRef(tpt.tpe)) TypeTree(getOptionArg(tpt.tpe)) else tpt
-
-                 return super.transform(copy.DefDef(tree,mods,name,tparams,nvparamss, ntpt, rhs))
-               }
             super.transform(tree)
           }
 
@@ -617,7 +484,7 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
           }
 
           val nselector = transform(selector)
-          assert(nselector.tpe =:= selector.tpe || settings.Xkilloption.value)
+          assert(nselector.tpe =:= selector.tpe)
           val ncases = transformCaseDefs(cases)
 
           ExplicitOuter.this.resultType = tree.tpe
@@ -646,10 +513,6 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
 	    System.exit(-1)
 	  null
 	}
-    //<removeOption>
-        case TypeTree() if settings.Xkilloption.value =>
-          tree setType transformInfo(currentOwner, tree.tpe)
-          tree
         case _ =>
 	      val x = super.transform(tree)
 

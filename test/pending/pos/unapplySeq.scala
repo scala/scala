@@ -1,10 +1,8 @@
-case class MyTuple2[A,B](val _1:A, val snd:B)
-
 object FooSeq {
   def unapplySeq(x:Any): Option[Product2[Int,Seq[String]]] = {
     if(x.isInstanceOf[Bar]) {
       val y = x.asInstanceOf[Bar]
-      Some(MyTuple2(y.size, y.name))
+      Some({y.size, y.name})
     } else None
   }
 
@@ -23,6 +21,6 @@ object FooSeq {
 
 class Bar {
   var size: Int    = 50
-  var name: List[String] = List("medium","M")
+  var name: Seq[String] = List("medium","M")
 }
 
