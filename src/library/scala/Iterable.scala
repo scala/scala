@@ -356,18 +356,10 @@ trait Iterable[+A] {
    */
   def mkString(start: String, sep: String, end: String): String = {
     val buf = new StringBuilder()
-    buf.append(start)
-    val elems = elements
-    if (elems.hasNext) buf.append(elems.next)
-    while (elems.hasNext) {
-      buf.append(sep); buf.append(elems.next)
-    }
-    buf.append(end)
-    buf.toString
+    addString(buf, start, sep, end).toString
   }
 
   /** Write all elements of this string into given string builder */
-  // todo: haromize with print?
   def addString(buf: StringBuilder, start: String, sep: String, end: String): StringBuilder = {
     buf.append(start)
     val elems = elements
