@@ -2234,7 +2234,8 @@ trait Types requires SymbolTable {
             // which are refined by every type in ts.
             if (!sym.isClass && !sym.isConstructor && (narrowts forall (t => refines(t, sym))))
               try {
-                addMember(lubThisType, lubType, lubsym(sym))
+                val lsym = lubsym(sym)
+                if (lsym != NoSymbol) addMember(lubThisType, lubType, lubsym(sym))
               } catch {
                 case ex: NoCommonType =>
               }
@@ -2403,6 +2404,7 @@ trait Types requires SymbolTable {
    *  where <code>thistp</code> is the narrowed owner type of the scope.
    */
   def addMember(thistp: Type, tp: Type, sym: Symbol): unit = {
+    assert(sym != NoSymbol)
     if (settings.debug.value) log("add member " + sym)//debug
     if (!(thistp specializes sym)) {
       if (sym.isTerm)

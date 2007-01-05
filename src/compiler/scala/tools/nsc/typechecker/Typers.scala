@@ -1955,8 +1955,12 @@ trait Typers requires Analyzer {
               .setType(appliedType(tpt1.tpe, context.undetparams map (.tpe)))
           }
           if (tpt1.tpe.symbol hasFlag ABSTRACT)
-            error(tree.pos, "" + tpt1.tpe.symbol +
+            error(tree.pos, tpt1.tpe.symbol +
                             " is abstract; cannot be instantiated")
+          else if (!(tpt1.tpe <:< tpt1.tpe.typeOfThis) && !phase.erasedTypes)
+            error(tree.pos, tpt1.tpe.symbol +
+                  " cannot be instantiated because it does not conform to its self-type "+
+                  tpt1.tpe.typeOfThis)
           copy.New(tree, tpt1).setType(tpt1.tpe)
 
         case Typed(expr, Function(List(), EmptyTree)) =>
