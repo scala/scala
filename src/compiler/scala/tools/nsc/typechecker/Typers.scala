@@ -516,7 +516,7 @@ trait Typers requires Analyzer {
         val tparams1 = cloneSymbols(tparams)
         val tree1 = if (tree.isType) tree
                     else TypeApply(tree, tparams1 map (tparam =>
-                      TypeTree(tparam.tpe) setOriginal tree /* setPos tree.pos */)) setPos tree.pos
+                      TypeTree(tparam.tpe) setOriginal tree)) setPos tree.pos
         context.undetparams = context.undetparams ::: tparams1
         adapt(tree1 setType restpe.substSym(tparams, tparams1), mode, pt)
       case mt: ImplicitMethodType if ((mode & (EXPRmode | FUNmode | LHSmode)) == EXPRmode) => // (4.1)
@@ -588,9 +588,10 @@ trait Typers requires Analyzer {
                 }
                 if (definitions.unapplyMember(consp.tpe).exists)
                   atPos(tree.pos) {
+                    //Console.println("UNAPPLY1: "+gen.mkAttributedRef(tree.tpe.prefix,consp))
                     gen.mkAttributedRef(tree.tpe.prefix,consp)
                   }
-                  //  needs member type, but member of what? ^^^
+                  //  needs member type, but member of what? ^^^`
                   //  see test/pending/pos/unapplyNeedsMemberType.scala
                 else errorTree(tree, "" + clazz + " is not a case class, nor does it have unapply/unapplySeq method")
               } else {
@@ -1152,6 +1153,7 @@ trait Typers requires Analyzer {
      */
     def typedCase(cdef: CaseDef, pattpe: Type, pt: Type): CaseDef = {
       val pat1: Tree = typedPattern(cdef.pat, pattpe)
+      //Console.println("UNAPPLY3:"+pat1+":"+pat1.tpe)
       val guard1: Tree = if (cdef.guard == EmptyTree) EmptyTree
                          else typed(cdef.guard, BooleanClass.tpe)
       var body1: Tree = typed(cdef.body, pt)
@@ -1399,26 +1401,24 @@ trait Typers requires Analyzer {
           setError(copy.Apply(tree, fun, args))
         /* --- begin unapply  --- */
 
-        // bq: this is so wrong -- why use WildcardTypes to check patterns arguments?
-        //                         only because of generics?
         case otpe if definitions.unapplyMember(otpe).exists && settings.Xunapply.value =>
           // !!! this is fragile, maybe needs to be revised when unapply patterns become terms
           val unapp = definitions.unapplyMember(otpe)
           assert(unapp.exists, tree)
-          assert(isFullyDefined(pt))
 
+        // this is no longer needed!
           val unappArg:Type = unapp.tpe match {
             case PolyType(_,MethodType(List(res), _)) => res
             case MethodType(List(res), _)             => res
             case _ => error(fun.pos, "unapply takes too many arguments to be used as pattern"); NoType
           }
-
+	  val argDummyType = pt // was unappArg
           val argDummy =  context.owner.newValue(fun.pos, nme.SELECTOR_DUMMY)
             .setFlag(SYNTHETIC)
-            .setInfo(unappArg) // was: pt
+            .setInfo(argDummyType)
           if (args.length > MaxTupleArity)
             error(fun.pos, "too many arguments for unapply pattern, maximum = "+MaxTupleArity)
-          val arg = Ident(argDummy) setType unappArg // was pt
+          val arg = Ident(argDummy) setType argDummyType
           var funPt: Type = null
           try {
             funPt = unapp.name match {
@@ -1440,14 +1440,14 @@ trait Typers requires Analyzer {
           val fun1untyped = atPos(fun.pos) {
               Apply(Select(gen.mkAttributedRef(fun.tpe.prefix,fun.symbol), unapp), List(arg))
             }
-          //Console.println("UNAPP "+fun+"/"+fun.tpe+" "+fun1untyped)
-          //Console.println("funPt: "+funPt)
+          //Console.println("UNAPPLY2 "+fun+"/"+fun.tpe+" "+fun1untyped+", funPt = "+funPt)
           val fun1 = typed(fun1untyped, EXPRmode, funPt)
           if (fun1.tpe.isErroneous) setError(tree)
           else {
             val formals0 = unapplyTypeList(fun1.symbol, fun1.tpe)
             val formals1 = formalTypes(formals0, args.length)
             val args1 = typedArgs(args, mode, formals0, formals1)
+            if (!isFullyDefined(pt)) assert(false, tree+" ==> "+UnApply(fun1, args1)+", pt = "+pt)
             UnApply(fun1, args1) setPos tree.pos setType pt
           }
 /* --- end unapply  --- */

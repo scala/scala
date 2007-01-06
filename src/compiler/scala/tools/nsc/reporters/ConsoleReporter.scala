@@ -74,7 +74,7 @@ class ConsoleReporter(reader : BufferedReader, writer : PrintWriter) extends Abs
       val buf = new StringBuilder(msg)
       buf.insert(0, " ")
       if (pos.line != Position.NOLINE)
-	buf.insert(0, ":" + pos.line)
+	buf.insert(0, ":"+pos.line+":")
       pos match {
         case FakePos(msg) =>
           buf.insert(0,msg)

@@ -626,15 +626,15 @@ trait Infer requires Analyzer {
      *  @param pt ...
      */
     private def substExpr(tree: Tree, undetparams: List[Symbol],
-                          targs: List[Type], pt: Type): unit =
+                          targs: List[Type], pt: Type) {
       if (targs eq null) {
         if (!tree.tpe.isErroneous && !pt.isErroneous)
           error(tree.pos, "polymorphic expression cannot be instantiated to expected type" +
                 foundReqMsg(PolyType(undetparams, skipImplicit(tree.tpe)), pt))
       } else {
-        checkBounds(tree.pos, undetparams, targs, "inferred ")
         new TreeTypeSubstituter(undetparams, targs).traverse(tree)
       }
+    }
 
     /** Substitite free type variables <code>undetparams</code> of application
      *  <code>fn(args)</code>, given prototype <code>pt</code>.
@@ -655,9 +655,11 @@ trait Infer requires Analyzer {
             undetparams, formalTypes(formals, argtpes.length),
             restpe, argtpes, pt, uninstantiated)
           checkBounds(fn.pos, undetparams, targs, "inferred ")
+          //Console.println("UNAPPLY subst type "+undetparams+" to "+targs+" in "+fn+" ( "+args+ ")")
           val treeSubst = new TreeTypeSubstituter(undetparams, targs)
           treeSubst.traverse(fn)
           treeSubst.traverseTrees(args)
+          //Console.println("UNAPPLY gives "+fn+" ( "+args+ "), argtpes = "+argtpes+", pt = "+pt)
           uninstantiated.toList
         } catch {
           case ex: NoInstance =>
