@@ -1,4 +1,4 @@
-bug677.scala:2 error: type mismatch;
+bug677.scala:2: error: type mismatch;
  found   : () => scala.Int
  required: scala.Nothing
   val zx: Nothing = {() => 4}

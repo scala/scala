@@ -1,4 +1,4 @@
-bug648.scala:7 error: value newAcc escapes its defining scope as part of type newAcc.type
+bug648.scala:7: error: value newAcc escapes its defining scope as part of type newAcc.type
       List[Symbol]() map { sym =>
                                ^
 one error found

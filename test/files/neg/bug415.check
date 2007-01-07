@@ -1,4 +1,4 @@
-bug415.scala:8 error: method x cannot be accessed in A
+bug415.scala:8: error: method x cannot be accessed in A
  because its instance type => A#T contains a malformed type: A#T
   val y: String  = a.x;
                     ^

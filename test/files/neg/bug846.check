@@ -1,4 +1,4 @@
-bug846.scala:9 error: type mismatch;
+bug846.scala:9: error: type mismatch;
  found   : scala.Null(null)
  required: B
     if (a != null) f(a) else null

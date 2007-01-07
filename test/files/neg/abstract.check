@@ -1,17 +1,17 @@
-abstract.scala:5 error: method bar cannot be accessed in A.this.T
+abstract.scala:5: error: method bar cannot be accessed in A.this.T
  because its instance type ()A.this.T#T contains a malformed type: A.this.T#T
   def foo1: A = bar().bar();
                      ^
-abstract.scala:6 error: type mismatch;
+abstract.scala:6: error: type mismatch;
  found   : A
  required: A.this.T
   def foo2: T = bar().baz();
                          ^
-abstract.scala:8 error: method bar cannot be accessed in A
+abstract.scala:8: error: method bar cannot be accessed in A
  because its instance type ()A#T contains a malformed type: A#T
   def foo4: A = baz().bar();
                      ^
-abstract.scala:9 error: type mismatch;
+abstract.scala:9: error: type mismatch;
  found   : A
  required: A.this.T
   def foo5: T = baz().baz();

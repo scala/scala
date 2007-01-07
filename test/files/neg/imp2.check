@@ -1,4 +1,4 @@
-imp2.scala:18 error: reference to f is ambiguous;
+imp2.scala:18: error: reference to f is ambiguous;
 it is imported twice in the same scope by
 import b.{_}
 and import a.{_}

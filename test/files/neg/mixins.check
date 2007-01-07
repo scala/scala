@@ -1,4 +1,4 @@
-mixins.scala:9 error: illegal inheritance; superclass C
+mixins.scala:9: error: illegal inheritance; superclass C
  is not a subclass of the superclass B
  of the mixin trait M
 class D extends C with M

@@ -1,4 +1,4 @@
-implicits.scala:21 error: ambiguous implicit value:
+implicits.scala:21: error: ambiguous implicit value:
  most specific definition is: method pos2int in object Super of type (Pos)scala.Int
  yet alternative definition   method any2plus in object Sub of type (scala.Any)Sub.Plus
  is defined in a subclass.

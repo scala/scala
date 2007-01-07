@@ -1,10 +1,10 @@
-bug588.scala:3 error: double definition:
+bug588.scala:3: error: double definition:
 method visit:((scala.Int) => java.lang.String)scala.Boolean and
 method visit:((scala.Int) => scala.Unit)scala.Boolean at line 2
 have same type after erasure: (scala.Function1)scala.Boolean
   def visit(f: int => String): boolean
   ^
-bug588.scala:10 error: double definition:
+bug588.scala:10: error: double definition:
 method f:(Test.this.TypeB)scala.Unit and
 method f:(Test.this.TypeA)scala.Unit at line 9
 have same type after erasure: (Test#TraitA)scala.Unit

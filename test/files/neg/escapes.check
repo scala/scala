@@ -1,4 +1,4 @@
-escapes.scala:2 error: type t escapes its defining scope as part of type t
+escapes.scala:2: error: type t escapes its defining scope as part of type t
   def f(x: Any) = x match { case y: Cell[t] => y.elem }
                                                 ^
 one error found

@@ -1,9 +1,9 @@
-bug696.scala:3 error: implicit method WithType is not contractive,
+bug696.scala:3: error: implicit method WithType is not contractive,
  because the implicit parameter type TypeUtil0.this.Type[S]
  is not strictly contained in the signature TypeUtil0.this.Type[S with T]
   implicit def WithType[S,T](implicit tpeS : Type[S], tpeT : Type[T]) : Type[S with T] = null
            ^
-bug696.scala:4 error: no implicit argument matching parameter type TypeUtil0.this.Type[scala.Any] was found.
+bug696.scala:4: error: no implicit argument matching parameter type TypeUtil0.this.Type[scala.Any] was found.
   as[Any](null);
          ^
 two errors found

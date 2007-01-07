@@ -1,4 +1,4 @@
-bug563.scala:6 error: missing parameter type
+bug563.scala:6: error: missing parameter type
             map(n,ptr => new Cell(ptr.elem));
                   ^
 one error found
