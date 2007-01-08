@@ -1,4 +1,4 @@
-bug452.scala:3 error: type mismatch;
+bug452.scala:3: error: type mismatch;
  found   : Test
  required: Test.this.Foo
     def this() = this(this);
