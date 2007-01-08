@@ -1,6 +1,8 @@
 case class test0(x: int, x: float)
 
 object test1 {
+  type t = int
+  type t = float
   val x: int = 0
   val x: float = .0f
   {
