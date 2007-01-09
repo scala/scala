@@ -14,24 +14,21 @@ package scala.runtime
 
 import Predef._
 
-final class RichString(s: String) extends Proxy with Seq[Char] with Ordered[String] {
-
-  // Proxy
-  def self: Any = s
+final class RichString(val self: String) extends Proxy with Seq[Char] with Ordered[String] {
 
   // Ordered[String]
-  def compare(other: String) = s compareTo other
+  def compare(other: String) = self compareTo other
 
   // Seq[Char]
-  def length = s.length()
-  def elements = Iterator.fromString(s)
+  def length = self.length()
+  def elements = Iterator.fromString(self)
 
   /** Retrieve the n-th character of the string
    *
    *  @param   index into the string
    *  @return  the character at position <code>index</code>.
    */
-  def apply(n: Int) = s charAt n
+  def apply(n: Int) = self charAt n
 
   private final val LF: Char = 0x0A
   private final val FF: Char = 0x0C
@@ -54,14 +51,14 @@ final class RichString(s: String) extends Proxy with Seq[Char] with Ordered[Stri
    *  </p>
    */
   def stripLineEnd: String = {
-    val len = s.length
-    if (len == 0) s
+    val len = self.length
+    if (len == 0) self
     else {
       val last = apply(len - 1)
       if (isLineBreak(last))
-        s.substring(0, if (last == LF && len >= 2 && apply(len - 2) == CR) len - 2 else len - 1)
+        self.substring(0, if (last == LF && len >= 2 && apply(len - 2) == CR) len - 2 else len - 1)
       else
-        s
+        self
     }
   }
 
@@ -80,7 +77,7 @@ final class RichString(s: String) extends Proxy with Seq[Char] with Ordered[Stri
    *  </ul>
    */
   def linesWithSeparators = new Iterator[String] {
-    val len = s.length
+    val len = self.length
     var index = 0
     def hasNext: Boolean = index <= len
     def next: String = {
@@ -88,7 +85,7 @@ final class RichString(s: String) extends Proxy with Seq[Char] with Ordered[Stri
       val start = index
       while (index < len && !isLineBreak(apply(index))) index = index + 1
       index = index + 1
-      s.substring(start, index min len)
+      self.substring(start, index min len)
     }
   }
 
@@ -96,7 +93,15 @@ final class RichString(s: String) extends Proxy with Seq[Char] with Ordered[Stri
    *  end characters, i.e. apply <code>.stripLineEnd</code> to all lines
    *  returned by <code>linesWithSeparators</code>.
    */
-  def lines = linesWithSeparators map (line => new RichString(line).stripLineEnd)
+  def lines: Iterator[String] =
+    linesWithSeparators map (line => new RichString(line).stripLineEnd)
+
+  /** Returns this string with first character converted to upper case */
+  def capitalize: String = {
+    val chars = self.toCharArray
+    chars(0) = chars(0).toUpperCase
+    new String(chars)
+  }
 
   /** <p>
    *    For every line in this string:
@@ -128,13 +133,13 @@ final class RichString(s: String) extends Proxy with Seq[Char] with Ordered[Stri
    */
   def stripMargin: String = stripMargin('|')
 
-  def split(separator: Char): Array[String] = s.split(separator.toString())
+  def split(separator: Char): Array[String] = self.split(separator.toString())
 
-  def toByte: Byte = java.lang.Byte.parseByte(s)
-  def toShort: Short = java.lang.Short.parseShort(s)
-  def toInt: Int = java.lang.Integer.parseInt(s)
-  def toLong: Long = java.lang.Long.parseLong(s)
-  def toFloat: Float = java.lang.Float.parseFloat(s)
-  def toDouble: Double = java.lang.Double.parseDouble(s)
+  def toByte: Byte = java.lang.Byte.parseByte(self)
+  def toShort: Short = java.lang.Short.parseShort(self)
+  def toInt: Int = java.lang.Integer.parseInt(self)
+  def toLong: Long = java.lang.Long.parseLong(self)
+  def toFloat: Float = java.lang.Float.parseFloat(self)
+  def toDouble: Double = java.lang.Double.parseDouble(self)
 
 }

@@ -459,11 +459,10 @@ trait Typers requires Analyzer {
         case Select(qual, _) => qual.tpe
         case _ => NoPrefix
       }
-      if (tree.tpe.isInstanceOf[MethodType] && pre.isStable &&
-          (pt.isStable || (mode & QUALmode) != 0 && !sym.isConstant || sym.isModule)) {
-        assert(sym.tpe.paramTypes.isEmpty)
-        tree.setType(MethodType(List(), singleType(pre, sym)))
-      } else tree
+      if (tree.tpe.isInstanceOf[MethodType] && pre.isStable && sym.tpe.paramTypes.isEmpty &&
+          (pt.isStable || (mode & QUALmode) != 0 && !sym.isConstant || sym.isModule))
+          tree.setType(MethodType(List(), singleType(pre, sym)))
+      else tree
     }
 
     /** Perform the following adaptations of expression, pattern or type `tree' wrt to
@@ -1693,9 +1692,9 @@ trait Typers requires Analyzer {
                          else cx.depth - (cx.scope.nestingLevel - defEntry.owner.nestingLevel)
           var impSym: Symbol = NoSymbol;      // the imported symbol
           var imports = context.imports;      // impSym != NoSymbol => it is imported from imports.head
-          while (impSym == NoSymbol && !imports.isEmpty && imports.head.depth > symDepth) {
+          while (!impSym.exists && !imports.isEmpty && imports.head.depth > symDepth) {
             impSym = imports.head.importedSymbol(name)
-            if (impSym == NoSymbol) imports = imports.tail
+            if (!impSym.exists) imports = imports.tail
           }
 
           // detect ambiguous definition/import,

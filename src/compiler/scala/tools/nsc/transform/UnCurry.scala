@@ -277,19 +277,30 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
         val args1 =
           formals.last match {
             case TypeRef(pre, sym, List(elempt)) if (sym == RepeatedParamClass) =>
-              def mkArrayValue(ts: List[Tree]) =
+              def mkArrayValue(ts: List[Tree]): Tree =
                 atPos(pos)(ArrayValue(TypeTree(elempt), ts) setType formals.last);
-
+              def mkConcat(left: Tree, right: Tree): Tree =
+                atPos(pos) {
+                  localTyper.typed {
+                    Apply(
+                      TypeApply(
+                        Select(left, nme.PLUSPLUS),
+                        List(TypeTree(elempt))),
+                      List(right))
+                  } setType formals.last
+                }
               if (args.isEmpty)
                 List(mkArrayValue(args))
               else {
-                val suffix: Tree = args.last match {
+                val {fixedArgs, varArgs} = args.splitAt(formals.length - 1)
+                val suffix = args.last match {
                   case Typed(arg, Ident(name)) if name == nme.WILDCARD_STAR.toTypeName =>
-                    arg setType seqType(arg.tpe)
+                    if (varArgs.length > 1) mkConcat(ArrayValue(TypeTree(elempt), varArgs.init), arg)
+                    else arg setType seqType(arg.tpe)
                   case _ =>
-                    mkArrayValue(args.drop(formals.length - 1))
+                    mkArrayValue(varArgs)
                 }
-                args.take(formals.length - 1) ::: List(suffix)
+                fixedArgs ::: List(suffix)
               }
             case _ => args
           }

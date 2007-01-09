@@ -173,6 +173,7 @@ trait StdNames requires SymbolTable {
 
     val MINUS = encode("-")
     val PLUS = encode("+")
+    val PLUSPLUS = encode("++")
     val TILDE = encode("~")
     val EQEQ = encode("==")
     val BANG = encode("!")

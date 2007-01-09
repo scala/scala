@@ -1925,7 +1925,7 @@ trait Parsers requires SyntaxAnalyzer {
           val parent = simpleType(false)
           // System.err.println("classTempl: " + parent)
           parents += parent
-          if (in.token == LPAREN)
+          if (in.token == LPAREN && !mods.hasFlag(Flags.TRAIT))
             do { argss += argumentExprs() } while (in.token == LPAREN)
           else argss += List()
           while (in.token == WITH) {
