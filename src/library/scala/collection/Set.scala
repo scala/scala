@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -12,18 +12,23 @@
 package scala.collection
 
 
-/** This class defines the interface of collections that do not contain
- *  duplicate elements. Class <code>Set</code> may only be used for
- *  accessing elements from set implementations. Two different extensions
- *  of class <code>Set</code> in the package
- *  <code><a href="mutable$content.html" target="contentFrame">
- *  scala.collection.mutable</a></code> and
- *  <code><a href="immutable$content.html" target="contentFrame">
- *  scala.collection.immutable</a></code> provide functionality for
- *  adding new elements to a set. The class in the first package is implemented
- *  by sets the are modified destructively, whereas the class in the second
- *  package is used by functional set implementations that rely on immutable
- *  data structures.
+/** <p>
+ *    This class defines the interface of collections that do not contain
+ *    duplicate elements.
+ *  </p>
+ *  <p>
+ *    Class <code>Set</code> may only be used for accessing elements
+ *    from set implementations. Two different extensions
+ *    of class <code>Set</code> in the package
+ *    <code><a href="mutable$content.html" target="contentFrame">
+ *    scala.collection.mutable</a></code> and
+ *    <code><a href="immutable$content.html" target="contentFrame">
+ *    scala.collection.immutable</a></code> provide functionality for adding
+ *    new elements to a set. The class in the first package is implemented
+ *    by sets the are modified destructively, whereas the class in the second
+ *    package is used by functional set implementations that rely on immutable
+ *    data structures.
+ *  </p>
  *
  *  @author  Matthias Zenger
  *  @author  Martin Odersky
@@ -40,13 +45,14 @@ trait Set[A] extends (A => Boolean) with Iterable[A] {
   /** Checks if this set contains element <code>elem</code>.
    *
    *  @param elem the element to check for membership.
-   *  @return     <code>true</code> iff <code>elem</code> is contained ini
+   *  @return     <code>true</code> iff <code>elem</code> is contained in
    *              this set.
    */
   def contains(elem: A): Boolean
 
   /** This method allows sets to be interpreted as predicates.
-   *  It returns true, iff this set contains element <code>elem</code>.
+   *  It returns <code>true</code>, iff this set contains element
+   *  <code>elem</code>.
    *
    *  @param elem the element to check for membership.
    *  @return     <code>true</code> iff <code>elem</code> is contained in
@@ -93,4 +99,5 @@ trait Set[A] extends (A => Boolean) with Iterable[A] {
    *  @return a string showing all elements of this set.
    */
   override def toString(): String = mkString("{", ", ", "}")
+
 }

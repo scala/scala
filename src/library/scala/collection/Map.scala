@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -14,20 +14,22 @@ package scala.collection
 import Predef._
 
 
-//import Predef.NoSuchElementException
-
-/** This class defines the interface of collections that unambiguously map
- *  keys to values (i.e. a key is mapped to at least one value).
- *  Class <code>Map</code> may only be used for accessing elements from map
- *  implementations. Two different extensions of class <code>Map</code> in
- *  the package <code><a href="mutable$content.html" target="contentFrame">
- *  scala.collection.mutable</a></code>
- *  and  <code><a href="immutable$content.html" target="contentFrame">
- *  scala.collection.immutable</a></code> provide functionality for
- *  adding new key/value mappings to a map. The class in the first package is
- *  implemented by maps that are modified destructively, whereas the class in
- *  the second package is used by functional map implementations that rely on
- *  immutable data structures.
+/** <p>
+ *    This class defines the interface of collections that unambiguously map
+ *     keys to values (i.e. a key is mapped to at least one value).
+ *  </p>
+ *  <p>
+ *    Class <code>Map</code> may only be used for accessing elements from map
+ *    implementations. Two different extensions of class <code>Map</code> in
+ *    the package <code><a href="mutable$content.html" target="contentFrame">
+ *    scala.collection.mutable</a></code>
+ *    and  <code><a href="immutable$content.html" target="contentFrame">
+ *    scala.collection.immutable</a></code> provide functionality for
+ *    adding new key/value mappings to a map. The class in the first package is
+ *    implemented by maps that are modified destructively, whereas the class in
+ *    the second package is used by functional map implementations that rely on
+ *    immutable data structures.
+ *  </p>
  *
  *  @author  Matthias Zenger
  *  @author  Martin Odersky
@@ -97,9 +99,9 @@ trait Map[A, +B] extends PartialFunction[A, B] with Iterable[Pair[A, B]] {
   /** @return the keys of this map as a set.
    */
   def keySet = new Set[A] {
-    def size = Map.this.size;
-    def contains(key : A) = Map.this.contains(key);
-    def elements = Map.this.elements.map(._1);
+    def size = Map.this.size
+    def contains(key : A) = Map.this.contains(key)
+    def elements = Map.this.elements.map(._1)
   }
 
   /** Creates an iterator for a contained values.
@@ -152,4 +154,5 @@ trait Map[A, +B] extends PartialFunction[A, B] with Iterable[Pair[A, B]] {
    */
   def default(key: A): B =
     throw new NoSuchElementException("key not found: " + key)
+
 }

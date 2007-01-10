@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -31,7 +31,10 @@ abstract class BitSet extends Set[Int] {
   /** number of bits in this bitset */
   def size: Int
 
-  /** @return true if bit i is set */
+  /**
+   *  @param i ...
+   *  @return <code>true</code> if bit <code>i</code> is set.
+   */
   def contains(i: Int): Boolean =
     (i < capacity) && ((arr(offset(i)) & mask(i)) != 0)
 
@@ -62,11 +65,12 @@ abstract class BitSet extends Set[Int] {
     newarr
   }
 
-  /**
-   * Checks if two bitsets are structurally identical.
-   * Uses accelerated (32 x faster) check if the other set is a BitSet
+  /** Checks if two bitsets are structurally identical.
+   *  Uses accelerated (32 x faster) check if the other set is a BitSet
    *
-   * @return true, iff both bitsets contain the same elements.
+   *  @param other ...
+   *  @return      <code>true</code>, iff both bitsets contain the same
+   *               elements.
    */
   override def equals(other: Any): Boolean = other match {
     case that: BitSet =>
@@ -88,12 +92,12 @@ abstract class BitSet extends Set[Int] {
     h
   }
 
-  /**
-   * Checks if this set is a subset of set <code>that</code>.
-   * Uses accelerated (32 x faster) check if the other set is a BitSet
+  /** Checks if this set is a subset of set <code>that</code>.
+   *  Uses accelerated (32 x faster) check if the other set is a BitSet
    *
-   * @param  that another set.
-   * @return true, iff the other set is a superset of this set.
+   *  @param other another set.
+   *  @return      <code>true</code>, iff the other set is a superset of
+   *               this set.
    */
   override def subsetOf(other: Set[Int]): Boolean = other match {
     case that: BitSet =>
@@ -108,16 +112,29 @@ abstract class BitSet extends Set[Int] {
       super.subsetOf(other)
   }
 
-  /** @return the number of Int cells needed to store <code>n</code> bits */
+  /**
+   *  @param n the number of bits to be stored.
+   *  @return  the number of <code>Int</code> cells needed to store
+   *           <code>n</code> bits.
+   */
   protected final def memsize(n: Int): Int = offset(n + 31)
 
-  /** @return the number of bits represented by <code>n</code> words */
+  /**
+   *  @param n ...
+   *  @return  the number of bits represented by <code>n</code> words.
+   */
   protected final def nbits(n: Int): Int = n << 5
 
-  /** @return the position in the array where the bit resides */
+  /**
+   *  @param n ...
+   *  @return the position in the array where the bit resides.
+   */
   protected final def offset(n: Int): Int = n >>> 5
 
-  /** @return a mask with 1 at the position of the bit */
+  /**
+   *  @param n ...
+   *  @return a mask with 1 at the position of the bit.
+   */
   protected final def mask(n: Int): Int = 1 << (n & 0x1F)
 
 }
