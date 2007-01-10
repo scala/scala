@@ -47,54 +47,8 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
 
   private[actors] var isSuspended = false
 
-  type WaitingPart = Tuple4[Msg=>boolean,  // waitingFor
-                            Option[Actor], // sender
-                            Option[PartialFunction[Any, Unit]],
-                            Option[Actor]]
-  var waitingParts: List[WaitingPart] = Nil
-
-  var waitingPart: WaitingPart
-
-  def waitingFor(msg: Msg, sender: Actor): boolean = {
-    waitingPart = waitingParts.find(p => p._1(msg) &&
-                                    (if (!p._2.isEmpty) p._2.get == sender
-                                     else true))
-  }
-
-  def waitForNothing() =
-    waitingParts = Nil
-
-  def resumeWaitingPart(msg: Msg, sender: Actor) = {
-    receiver.pushSender(sender)
-    waitingPart._3 match {
-      case Some(cont) => receiver.scheduleActor(cont, msg)
-      case None => // resume blocked thread
-        received = Some(msg)
-        p._4.get.resumeActor()
-    }
-  }
-
   //private val messageQueue = new MessageQueue[Msg]
   private val mailbox = new scala.collection.mutable.Queue[Pair[Msg, Actor]]
-
-/*
-  private def send(msg: Msg, sender: Actor) = receiver.synchronized {
-    receiver.tick()
-    if (waitingFor(msg, sender)) {
-      waitForNothing()
-
-      if (receiver.timeoutPending) {
-        receiver.timeoutPending = false
-        TimerThread.trashRequest(receiver)
-      }
-
-      resumeWaitingPart(msg, sender)
-    } else {
-      //messageQueue.append(msg, sender)
-      mailbox += Pair(msg, sender)
-    }
-  }
-*/
 
   private def send(msg: Msg, sender: Actor) = receiver.synchronized {
     receiver.tick()
