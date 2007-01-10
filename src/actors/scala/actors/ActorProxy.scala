@@ -46,8 +46,10 @@ private[actors] class ActorProxy(t: Thread) extends Actor {
    *
    * @param reason the exit reason of the interrupted thread.
    */
-  override def exit(reason: String): Unit = {
+  override def exit(reason: String): Nothing = {
+    kill()
     exitReason = reason
-    t.interrupt()
+    exitLinked()
+    throw new InterruptedException
   }
 }

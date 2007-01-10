@@ -171,12 +171,12 @@ object Actor {
 
   private[actors] trait Body[a] {
     def orElse[b >: a](other: => b): b
-    def andThen[b >: a](other: => b): b
+    def andThen[b](other: => b): Nothing
   }
 
   implicit def mkBody[a](body: => a) = new Body[a] {
     def orElse[b >: a](other: => b): b = choose(body, other)
-    def andThen[b >: a](other: => b): b = seq(body, other)
+    def andThen[b](other: => b): Nothing = seq(body, other)
   }
 
   private[actors] def choose[a, b >: a](alt1: => a, alt2: => b): b = {
@@ -223,6 +223,7 @@ object Actor {
     val s = self
     s.kill = () => { body; s.kill() }
     body
+    exit("normal")
   }
 
   /**
@@ -232,11 +233,12 @@ object Actor {
    * @param first ...
    * @param next  ...
    */
-  def seq[a, b >: a](first: => a, next: => b): b = {
+  def seq[a, b](first: => a, next: => b): Nothing = {
     val s = self
     val killNext = s.kill
     s.kill = () => { s.kill = killNext; next; s.kill() }
     first
+    exit("normal")
   }
 
   /**
@@ -279,7 +281,7 @@ object Actor {
    *   <code>!reason.equals("normal")</code>.
    * </p>
    */
-  def exit(reason: String): Unit = self.exit(reason)
+  def exit(reason: String): Nothing = self.exit(reason)
 }
 
 case class Request[a](msg: a) {
@@ -401,7 +403,7 @@ trait Actor extends OutputChannel[Any] {
         try {
           wait()
         } catch {
-          case t: InterruptedException =>
+          case _: InterruptedException =>
         }
       }
     }
@@ -418,7 +420,7 @@ trait Actor extends OutputChannel[Any] {
             fromExc = false
             wait(waittime)
           } catch {
-            case t: InterruptedException => {
+            case _: InterruptedException => {
               fromExc = true
               val now = Platform.currentTime
               val waited = now-ts
@@ -449,23 +451,6 @@ trait Actor extends OutputChannel[Any] {
    */
   def start(): Unit =
     Scheduler start new Reaction(this)
-
-
-  /*
-   * Debugging support.
-   */
-  private[actors] var name = ""
-
-  private var childCnt = 0
-
-  private[actors] def nextChildName = {
-    val s = childCnt + name
-    childCnt = childCnt + 1
-    s
-  }
-
-  private[actors] def setName(n: String) =
-    name = n
 
   private val links = new HashSet[Actor]
 
@@ -528,9 +513,11 @@ trait Actor extends OutputChannel[Any] {
    *   <code>!reason.equals("normal")</code>.
    * </p>
    */
-  def exit(reason: String): Unit = {
+  def exit(reason: String): Nothing = {
+    kill()
     exitReason = reason
-    currentThread.interrupt()
+    //currentThread.interrupt()
+    throw new ExitActorException
   }
 
   private[actors] def exit(from: Actor, reason: String): Unit = {

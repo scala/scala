@@ -14,6 +14,8 @@ package scala.actors
 import java.lang.{InterruptedException, Runnable}
 import java.util.logging.{Level, Logger}
 
+class ExitActorException extends Throwable
+
 /**
  * The abstract class <code>Reaction</code> associates
  * an instance of an <code>Actor</code> with a
@@ -52,23 +54,16 @@ private[actors] class Reaction(a: Actor,
     Scheduler.unPendReaction
     a.isDetached = false
     try {
-      if (f == null)
-        a.act()
-      else
-        f(msg)
-
-      if (currentThread.isInterrupted())
-        throw new InterruptedException
-
-      a.kill()
-
-      if (currentThread.isInterrupted())
-        throw new InterruptedException
-
-      a.exit("normal")
-
-      if (currentThread.isInterrupted())
-        throw new InterruptedException
+      try {
+        if (f == null)
+          a.act()
+        else
+          f(msg)
+        a.exit("normal")
+      } catch {
+        case _: ExitActorException =>
+          throw new InterruptedException
+      }
     }
     catch {
       case ie: InterruptedException => {

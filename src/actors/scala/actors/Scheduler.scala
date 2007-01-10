@@ -121,7 +121,7 @@ class TickedScheduler extends Thread with IScheduler {
   def printActorDump {
     var num = 0
     for (val a <- alive.elements) {
-      Console.println("Actor `"+a.name+"' ("+num+"): "+a)
+      Console.println("Actor ("+num+"): "+a)
       if (a.isDetached)
         Console.println("Detached")
       else {
@@ -143,19 +143,6 @@ class TickedScheduler extends Thread with IScheduler {
   def start(task: Reaction): unit = synchronized {
     Debug.info("Starting " + task.actor)
     alive += task.actor
-
-    // determine name of actor
-    val creator = Actor.self
-    if (creator.isInstanceOf[ActorProxy]) {
-      // created by Java thread
-      // only ok, if it is the main thread
-      val tname = currentThread.toString()
-      if (tname.indexOf("main") == -1) {
-        // print/log warning
-        Console.println("Warning: Some debugging features not available if actors are created by non-main Java threads.")
-      } else task.actor.name = creator.nextChildName
-    } else task.actor.name = creator.nextChildName
-
     execute(task)
   }
 

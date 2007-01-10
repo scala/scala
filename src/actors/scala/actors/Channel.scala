@@ -47,8 +47,54 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
 
   private[actors] var isSuspended = false
 
+  type WaitingPart = Tuple4[Msg=>boolean,  // waitingFor
+                            Option[Actor], // sender
+                            Option[PartialFunction[Any, Unit]],
+                            Option[Actor]]
+  var waitingParts: List[WaitingPart] = Nil
+
+  var waitingPart: WaitingPart
+
+  def waitingFor(msg: Msg, sender: Actor): boolean = {
+    waitingPart = waitingParts.find(p => p._1(msg) &&
+                                    (if (!p._2.isEmpty) p._2.get == sender
+                                     else true))
+  }
+
+  def waitForNothing() =
+    waitingParts = Nil
+
+  def resumeWaitingPart(msg: Msg, sender: Actor) = {
+    receiver.pushSender(sender)
+    waitingPart._3 match {
+      case Some(cont) => receiver.scheduleActor(cont, msg)
+      case None => // resume blocked thread
+        received = Some(msg)
+        p._4.get.resumeActor()
+    }
+  }
+
   //private val messageQueue = new MessageQueue[Msg]
   private val mailbox = new scala.collection.mutable.Queue[Pair[Msg, Actor]]
+
+/*
+  private def send(msg: Msg, sender: Actor) = receiver.synchronized {
+    receiver.tick()
+    if (waitingFor(msg, sender)) {
+      waitForNothing()
+
+      if (receiver.timeoutPending) {
+        receiver.timeoutPending = false
+        TimerThread.trashRequest(receiver)
+      }
+
+      resumeWaitingPart(msg, sender)
+    } else {
+      //messageQueue.append(msg, sender)
+      mailbox += Pair(msg, sender)
+    }
+  }
+*/
 
   private def send(msg: Msg, sender: Actor) = receiver.synchronized {
     receiver.tick()
@@ -99,6 +145,16 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
     }
   }
 
+  def !?(msec: long, msg: Msg): Option[Any] = {
+    Debug.info("rpc with timeout "+msec)
+    Actor.self.freshReply()
+    this ! msg
+    Actor.self.reply.receiveWithinFrom(msec)(receiver) {
+      case TIMEOUT => None
+      case x => Some(x)
+    }
+  }
+
   /**
    * Forwards <code>msg</code> to <code>this</code> keeping the
    * last sender as sender instead of <code>self</code>.
@@ -112,7 +168,7 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
     assert(Actor.self == receiver, "receive from channel belonging to other actor")
     receiver.synchronized {
       receiver.tick()
-      waitingFor = f.isDefinedAt
+
 /*
       val q = messageQueue.extractFirst(waitingFor)
       if (q != null) {
@@ -136,14 +192,17 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
         case None => {
           // acquire lock because we might call wait()
           this.synchronized {
+            waitingFor = f.isDefinedAt
             isSuspended = true
+            //val wp = Tuple4(f.isDefinedAt, None, None, Some(receiver))
+            //waitingParts = wp :: waitingParts
             receiver.suspendActor()
           }
         }
       }
 
-      isSuspended = false
       waitingFor = waitingForNone
+      isSuspended = false
     }
     val result = f(received.get)
     receiver.popSender()
@@ -154,8 +213,7 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
     assert(Actor.self == receiver, "receive from channel belonging to other actor")
     receiver.synchronized {
       receiver.tick()
-      waitingFor = f.isDefinedAt
-      waitingForSender = r
+
 /*
       var q = messageQueue.dequeueFirst((item: MessageQueueResult[Msg]) => {
         waitingFor(item.msg) && item.sender == r
@@ -180,15 +238,17 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
         case None => {
           // acquire lock because we might call wait()
           this.synchronized {
+            waitingFor = f.isDefinedAt
+            waitingForSender = r
             isSuspended = true
             receiver.suspendActor()
           }
         }
       }
 
-      isSuspended = false
       waitingFor = waitingForNone
       waitingForSender = null
+      isSuspended = false
     }
     val result = f(received.get)
     receiver.popSender()
@@ -205,7 +265,7 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
     assert(Actor.self == receiver, "receive from channel belonging to other actor")
     receiver.synchronized {
       receiver.tick()
-      waitingFor = f.isDefinedAt
+
 /*
       val q = messageQueue.extractFirst(waitingFor)
       if (q != null) {
@@ -236,6 +296,7 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
         case None => {
           // acquire lock because we might call wait()
           this.synchronized {
+            waitingFor = f.isDefinedAt
             isSuspended = true
             received = None
             receiver.suspendActorFor(msec)
@@ -255,8 +316,75 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
         }
       }
 
-      isSuspended = false
       waitingFor = waitingForNone
+      isSuspended = false
+    }
+    val result = f(received.get)
+    receiver.popSender()
+    result
+  }
+
+  def receiveWithinFrom[R](msec: long)(r: Actor)(f: PartialFunction[Any, R]): R = {
+    assert(Actor.self == receiver, "receive from channel belonging to other actor")
+    receiver.synchronized {
+      receiver.tick()
+
+/*
+      val q = messageQueue.extractFirst(waitingFor)
+      if (q != null) {
+        received = q.msg
+        receiver.pushSender(q.sender)
+      }
+      else synchronized {
+        waitingFor = f.isDefinedAt
+        waitingForSender = r
+        isSuspended = true
+        receiver.suspendActorFor(msec)
+        if (received eq null)
+          if (f.isDefinedAt(TIMEOUT)) {
+            isSuspended = false
+            val result = f(TIMEOUT)
+            return result
+          }
+          else
+            error("unhandled timeout")
+      }
+*/
+
+      mailbox.dequeueFirst((p: Pair[Msg, Actor]) => {
+        waitingFor(p._1) && p._2 == r
+      }) match {
+        case Some(Pair(msg, sender)) => {
+          received = Some(msg)
+          receiver.pushSender(sender)
+        }
+        case None => {
+          // acquire lock because we might call wait()
+          this.synchronized {
+            waitingFor = f.isDefinedAt
+            waitingForSender = r
+            isSuspended = true
+            received = None
+            receiver.suspendActorFor(msec)
+            Debug.info("received: "+received)
+            if (received.isEmpty) {
+              Debug.info("no message received after "+msec+" millis")
+              if (f.isDefinedAt(TIMEOUT)) {
+                Debug.info("executing TIMEOUT action")
+                isSuspended = false
+                val result = f(TIMEOUT)
+                return result
+              }
+              else
+                error("unhandled timeout")
+            }
+          }
+        }
+      }
+
+      waitingFor = waitingForNone
+      waitingForSender = null
+      isSuspended = false
     }
     val result = f(received.get)
     receiver.popSender()
@@ -271,7 +399,7 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
     Scheduler.pendReaction
     receiver.synchronized {
       receiver.tick()
-      waitingFor = f.isDefinedAt
+
 /*
       val q = messageQueue.extractFirst(waitingFor)
       if (q != null) {
@@ -289,14 +417,15 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
         waitingFor(p._1)
       }) match {
         case Some(Pair(msg, sender)) => {
-          received = Some(msg)
           receiver.pushSender(sender)
-          waitingFor = waitingForNone
-          receiver.scheduleActor(f, received.get)
+          receiver.scheduleActor(f, msg)
         }
         case None => {
           this.synchronized {
             //Scheduler.detached(receiver)
+            waitingFor = f.isDefinedAt
+            //val wp = Tuple4(f.isDefinedAt, None, Some(f), None)
+            //waitingParts = wp :: waitingParts
             receiver.detachActor(f)
           }
         }
@@ -314,7 +443,7 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
     Scheduler.pendReaction
     receiver.synchronized {
       receiver.tick()
-      waitingFor = f.isDefinedAt
+
 /*
       val q = messageQueue.extractFirst(waitingFor)
       if (q != null) {
@@ -324,6 +453,7 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
         receiver.scheduleActor(f, received)
       }
       else synchronized {
+        waitingFor = f.isDefinedAt
         TimerThread.requestTimeout(receiver.asInstanceOf[Reactor], f, msec)
         receiver.asInstanceOf[Reactor].timeoutPending = true
         receiver.detachActor(f)
@@ -341,6 +471,7 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
         }
         case None => {
           this.synchronized {
+            waitingFor = f.isDefinedAt
             TimerThread.requestTimeout(receiver, f, msec)
             receiver.timeoutPending = true
             receiver.detachActor(f)
