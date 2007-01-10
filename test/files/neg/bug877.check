@@ -1,0 +1,4 @@
+bug877.scala:3: error: `{' expected
+trait Foo extends A(22A, Bug!) {}
+                   ^
+one error found

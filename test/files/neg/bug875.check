@@ -1,0 +1,13 @@
+bug875.scala:3: error: _*-argument may not appear after other arguments matching a *-parameter
+  val ys = List(1, 2, 3, xs: _*)
+                           ^
+bug875.scala:6: error: _*-argument does not correspond to *-parameter
+  mkList(xs: _*)
+           ^
+bug875.scala:15: error: _*-argument may not appear after other arguments matching a *-parameter
+  f(true, 1, xs: _*)
+               ^
+bug875.scala:16: error: _*-argument may not appear after other arguments matching a *-parameter
+  g(1, xs:_*)
+         ^
+four errors found

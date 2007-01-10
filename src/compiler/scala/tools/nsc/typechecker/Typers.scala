@@ -990,9 +990,11 @@ trait Typers requires Analyzer {
                     var ownAcc = clazz.info.decl(name).suchThat(.hasFlag(PARAMACCESSOR))
                     if ((ownAcc hasFlag ACCESSOR) && !(ownAcc hasFlag DEFERRED))
                       ownAcc = ownAcc.accessed
-                    if (settings.debug.value)
-                      log("" + ownAcc + " has alias "+alias + alias.locationString);//debug
-                    ownAcc.asInstanceOf[TermSymbol].setAlias(alias)
+                    if (!ownAcc.isVariable && !alias.accessed.isVariable) {
+                      if (settings.debug.value)
+                        log("" + ownAcc + " has alias "+alias + alias.locationString);//debug
+                      ownAcc.asInstanceOf[TermSymbol].setAlias(alias)
+                    }
                   }
                 }
               case _ =>
@@ -1302,8 +1304,18 @@ trait Typers requires Analyzer {
     def typedArgs(args: List[Tree], mode: int) =
       List.mapConserve(args)(arg => typedArg(arg, mode, 0, WildcardType))
 
-    def typedArgs(args: List[Tree], mode: int, originalFormals: List[Type], adaptedFormals: List[Type]) =
-      if ((mode & PATTERNmode) != 0 && isVarArgs(originalFormals)) {
+    def typedArgs(args: List[Tree], mode: int, originalFormals: List[Type], adaptedFormals: List[Type]) = {
+      val varargs = isVarArgs(originalFormals)
+      if (!args.isEmpty)
+        args.last match {
+          case Typed(expr, Ident(name)) if (name == nme.WILDCARD_STAR.toTypeName) =>
+            if (!varargs)
+              error(args.last.pos, "_*-argument does not correspond to *-parameter")
+            else if (originalFormals.length != adaptedFormals.length)
+              error(args.last.pos, "_*-argument may not appear after other arguments matching a *-parameter")
+          case _ =>
+        }
+      if (varargs && (mode & PATTERNmode) != 0) {
         val nonVarCount = originalFormals.length - 1
         val prefix =
           List.map2(args take nonVarCount, adaptedFormals take nonVarCount) ((arg, formal) =>
@@ -1315,6 +1327,7 @@ trait Typers requires Analyzer {
       } else {
         List.map2(args, adaptedFormals)((arg, formal) => typedArg(arg, mode, 0, formal))
       }
+    }
 
     /**
      *  @param tree ...

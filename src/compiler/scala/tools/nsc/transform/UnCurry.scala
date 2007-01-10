@@ -277,30 +277,19 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
         val args1 =
           formals.last match {
             case TypeRef(pre, sym, List(elempt)) if (sym == RepeatedParamClass) =>
-              def mkArrayValue(ts: List[Tree]): Tree =
+              def mkArrayValue(ts: List[Tree]) =
                 atPos(pos)(ArrayValue(TypeTree(elempt), ts) setType formals.last);
-              def mkConcat(left: Tree, right: Tree): Tree =
-                atPos(pos) {
-                  localTyper.typed {
-                    Apply(
-                      TypeApply(
-                        Select(left, nme.PLUSPLUS),
-                        List(TypeTree(elempt))),
-                      List(right))
-                  } setType formals.last
-                }
+
               if (args.isEmpty)
                 List(mkArrayValue(args))
               else {
-                val {fixedArgs, varArgs} = args.splitAt(formals.length - 1)
-                val suffix = args.last match {
+                val suffix: Tree = args.last match {
                   case Typed(arg, Ident(name)) if name == nme.WILDCARD_STAR.toTypeName =>
-                    if (varArgs.length > 1) mkConcat(ArrayValue(TypeTree(elempt), varArgs.init), arg)
-                    else arg setType seqType(arg.tpe)
+                    arg setType seqType(arg.tpe)
                   case _ =>
-                    mkArrayValue(varArgs)
+                    mkArrayValue(args.drop(formals.length - 1))
                 }
-                fixedArgs ::: List(suffix)
+                args.take(formals.length - 1) ::: List(suffix)
               }
             case _ => args
           }
@@ -487,8 +476,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
         case Apply(Apply(fn, args), args1) =>
           copy.Apply(tree, fn, args ::: args1)
         case Ident(name) =>
-          if (name == nme.WILDCARD_STAR.toTypeName)
-            unit.error(tree.pos, " argument does not correspond to `*'-parameter");
+          assert(name != nme.WILDCARD_STAR.toTypeName)
           applyUnary(tree);
         case Select(qual, name) =>
           /* Function1.apply to ByNameFunction.apply if qualifier is a ByNameFunction */
