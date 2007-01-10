@@ -430,6 +430,20 @@ abstract class RefChecks extends InfoTransform {
 
 // Transformation ------------------------------------------------------------
 
+    /* Convert a reference to a case factory of type `tpe' to a new of the class it produces. */
+    def toConstructor(pos: PositionType, tpe: Type): Tree = {
+      var rtpe = tpe.finalResultType
+      assert(rtpe.symbol hasFlag CASE, tpe);
+      localTyper.typedOperator {
+        atPos(pos) {
+          Select(New(TypeTree(rtpe)), rtpe.symbol.primaryConstructor)
+        }
+      }
+    }
+
+    def isConcreteLocalCaseFactory(clazz: Symbol) =
+      (clazz hasFlag CASE) && !(clazz hasFlag ABSTRACT) && !(clazz.owner hasFlag PACKAGE)
+
     override def transformStats(stats: List[Tree], exprOwner: Symbol): List[Tree] = {
       pushLevel()
       enterSyms(stats)
@@ -467,6 +481,28 @@ abstract class RefChecks extends InfoTransform {
           else transformTrees(List(cdef, vdef, ddef))
 	}
 
+      case ClassDef(_, _, _, _, _) if isConcreteLocalCaseFactory(tree.symbol) =>
+        val clazz = tree.symbol
+        val factory = clazz.caseFactory
+        assert(factory != NoSymbol, clazz)
+        def mkArgument(vparam: Symbol) = {
+          val id = Ident(vparam)
+          if (vparam.tpe.symbol == RepeatedParamClass) Typed(id, Ident(nme.WILDCARD_STAR.toTypeName))
+          else id
+        }
+        val caseFactoryDef =
+          localTyper.typed {
+            atPos(tree.pos) {
+              DefDef(
+                factory,
+                vparamss =>
+                  (toConstructor(tree.pos, factory.tpe) /: vparamss) {
+                    (fn, vparams) => Apply(fn, vparams map mkArgument)
+                  })
+            }
+          }
+        List(transform(tree), caseFactoryDef)
+
       case ValDef(_, _, _, _) =>
 	val tree1 = transform(tree); // important to do before forward reference check
 	if (tree.symbol.isLocal && index <= currentLevel.maxindex) {
@@ -483,14 +519,6 @@ abstract class RefChecks extends InfoTransform {
     }
 
     override def transform(tree: Tree): Tree = try {
-
-      /* Convert a reference of a case factory to a new of the class it produces. */
-      def toConstructor: Tree = {
-	var tpe = tree.tpe
-	while (!tpe.symbol.isClass) tpe = tpe.resultType;
-	assert(tpe.symbol hasFlag CASE);
-	typedOperator(atPos(tree.pos)(Select(New(TypeTree(tpe)), tpe.symbol.primaryConstructor)));
-      }
 
       /* Check whether argument types conform to bounds of type parameters */
       def checkBounds(tparams: List[Symbol], argtps: List[Type]): unit = try {
@@ -556,7 +584,7 @@ abstract class RefChecks extends InfoTransform {
 
 	case TypeApply(fn, args) =>
 	  checkBounds(fn.tpe.typeParams, args map (.tpe))
-	  if (sym.isSourceMethod && sym.hasFlag(CASE)) result = toConstructor;
+	  if (sym.isSourceMethod && sym.hasFlag(CASE)) result = toConstructor(tree.pos, tree.tpe)
 
         case Apply(
           Select(qual, nme.filter),
@@ -580,7 +608,7 @@ abstract class RefChecks extends InfoTransform {
 
 	case Ident(name) =>
 	  if (sym.isSourceMethod && sym.hasFlag(CASE))
-	    result = toConstructor
+	    result = toConstructor(tree.pos, tree.tpe)
 	  else if (name != nme.WILDCARD && name != nme.WILDCARD_STAR.toTypeName) {
 	    assert(sym != NoSymbol, tree)//debug
 	    enterReference(tree.pos, sym)
@@ -588,7 +616,7 @@ abstract class RefChecks extends InfoTransform {
 
 	case Select(qual, name) =>
 	  if (sym.isSourceMethod && sym.hasFlag(CASE))
-	    result = toConstructor
+	    result = toConstructor(tree.pos, tree.tpe)
 	  else qual match {
 	    case Super(qualifier, mix) =>
               val base = qual.symbol;

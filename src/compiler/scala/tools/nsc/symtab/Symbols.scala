@@ -815,6 +815,10 @@ trait Symbols requires SymbolTable {
     final def setter(base: Symbol): Symbol =
       base.info.decl(nme.getterToSetter(nme.getterName(name))) filter (.hasFlag(ACCESSOR))
 
+    /** The case factory corresponding to this case class */
+    final def caseFactory: Symbol =
+      owner.info.decl(name.toTermName).suchThat(.isCaseFactory)
+
     /** If this symbol is a skolem, its corresponding type parameter, otherwise this */
     def deSkolemize: Symbol = this
 

@@ -163,20 +163,19 @@ trait Trees requires Global {
     override val copy = new StrictTreeCopier
   }
 
-  private def syntheticParams(owner: Symbol, formals: List[Type]): List[Symbol] = {
+  private def syntheticParams(owner: Symbol, mtp: Type): List[List[Symbol]] = {
     var cnt = 0
     def freshName() = { cnt = cnt + 1; newTermName("x$" + cnt) }
-    for (val formal <- formals) yield
-      owner.newValueParameter(owner.pos, freshName()).setInfo(formal)
-  }
-
-  private def syntheticParams(owner: Symbol, mtp: Type): List[List[Symbol]] = mtp match {
-    case PolyType(_, restp) =>
-      syntheticParams(owner, restp)
-    case MethodType(formals, restp) =>
-      syntheticParams(owner, formals) :: syntheticParams(owner, restp)
-    case _ =>
-      List()
+    def synthetics(mtp: Type): List[List[Symbol]] = mtp match {
+      case PolyType(_, restp) =>
+        synthetics(restp)
+      case MethodType(formals, restp) =>
+        (formals map (f => owner.newValueParameter(owner.pos, freshName()).setInfo(f))) ::
+          synthetics(restp)
+      case _ =>
+        List()
+    }
+    synthetics(mtp)
   }
 
 //  def nextPhase = if (phase.id > globalPhase.id) phase else phase.next;
