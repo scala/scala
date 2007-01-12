@@ -67,11 +67,18 @@ class InterpreterLoop(in: BufferedReader, out: PrintWriter) {
   def printHelp = {
     out.println("This is an interpreter for Scala.")
     out.println("Type in expressions to have them evaluated.")
-    out.println("Type :quit to exit the interpreter.")
     out.println("Type :compile followed by a filename to compile a complete Scala file.")
-    out.println("Type :load followed by a filename to load a sequence of interpreter commands.")
+    out.println("Type :help to repeat this message.")
+    out.println("Type :load followed by a filename to load interpreter commands.")
     out.println("Type :replay to reset execution and replay all previous commands.")
-    out.println("Type :help to repeat this message later.")
+    out.println("Type :quit to exit the interpreter.")
+  }
+
+  /** Print a welcome message */
+  def printWelcome = {
+    out.println("This is an interpreter for Scala.")
+    out.println("Type in expressions to have them evaluated.")
+    out.println("Type :help for more information.")
   }
 
   /** The main read-eval-print loop for the interpereter.  It calls
@@ -191,7 +198,7 @@ class InterpreterLoop(in: BufferedReader, out: PrintWriter) {
     createInterpreter
 
     try {
-      printHelp
+      printWelcome
       repl
     } finally {
       closeInterpreter
