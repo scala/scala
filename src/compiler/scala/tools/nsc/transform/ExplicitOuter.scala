@@ -510,7 +510,6 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
 	    //treeBrowser.browse(Seq.single(unit).elements)
 	    Console.println("[died while typechecking the translated pattern match:]")
 	    Console.println(t_untyped)
-	    System.exit(-1)
 	  null
 	}
         case _ =>

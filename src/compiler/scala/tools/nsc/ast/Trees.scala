@@ -1113,7 +1113,7 @@ trait Trees requires Global {
       case Bind(name, body) =>
         copy.Bind(tree, name, transform(body))
       case UnApply(fun, args) =>
-        copy.UnApply(tree, fun, args)
+        copy.UnApply(tree, fun, transformTrees(args)) // bq: see test/.../unapplyContexts2.scala
       case ArrayValue(elemtpt, trees) =>
         copy.ArrayValue(tree, transform(elemtpt), transformTrees(trees))
       case Function(vparams, body) =>

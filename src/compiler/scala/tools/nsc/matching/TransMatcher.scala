@@ -129,6 +129,8 @@ with PatternMatchers */ {
     case Literal(_)            => false
     case Select(_, _)          => false
     case Typed(_, _)           => false
+    case UnApply(_,trees)      =>
+      trees exists { isRegularPattern }
   }
 
   protected def isDefault(p: Tree): Boolean = p match {

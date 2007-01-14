@@ -23,8 +23,8 @@ object Seq {
     def elements = Iterator.empty
   }
 
-  def unapplySeq[A](x:Any): Option[Tuple1[Seq[A]]] =
-    if(x.isInstanceOf[Seq[A]]) Some(Tuple1(x.asInstanceOf[Seq[A]])) else None
+  def unapplySeq[A](x:Any): Option[Seq[A]] =
+    if(x.isInstanceOf[Seq[A]]) Some(x.asInstanceOf[Seq[A]]) else None
 
   /** builds a singleton sequence
    *  @author buraq

@@ -787,7 +787,7 @@ abstract class GenICode extends SubComponent  {
         case This(qual) =>
           assert(tree.symbol == ctx.clazz.symbol || tree.symbol.isModuleClass,
                  "Trying to access the this of another class: " +
-                 "tree.symbol = " + tree.symbol + ", ctx.clazz.symbol = " + ctx.clazz.symbol)
+                 "tree.symbol = " + tree.symbol + ", ctx.clazz.symbol = " + ctx.clazz.symbol + " compilation unit:"+unit)
           if (tree.symbol.isModuleClass && tree.symbol != ctx.clazz.symbol) {
             if (settings.debug.value)
               log("LOAD_MODULE from 'This': " + tree.symbol);
