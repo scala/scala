@@ -119,7 +119,7 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
                           parentClassLoader)
 
   /** XXX Let's get rid of this.  I believe the Eclipse plugin is
-    * the only user of it.   */
+    * the only user of it, so this should be doable.  */
   protected def parentClassLoader: ClassLoader = null
 
   /** the previous requests this interpreter has processed */
@@ -161,39 +161,41 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
     stringWriter.toString
   }
 
-  /** Parse a line into a sequence of trees.
-   *
-   *  @param line ...
-   *  @return     ...
-   */
+  /** Parse a line into a sequence of trees. */
   private def parse(line: String): List[Tree] = {
-    // simple parse: just parse it, nothing else
-    def simpleParse(code: String): List[Tree] = {
-      val unit =
-        new CompilationUnit(
-          new SourceFile("<console>", code.toCharArray()))
+    var justNeedsMore = false
+    reporter.withIncompleteHandler((pos,msg) => {justNeedsMore = true}) {
+//reporter.incompleteInputError = (pos,msg) => {justNeedsMore = true}
+      // simple parse: just parse it, nothing else
+      def simpleParse(code: String): List[Tree] = {
+        val unit =
+          new CompilationUnit(
+            new SourceFile("<console>", code.toCharArray()))
+        new compiler.syntaxAnalyzer.Parser(unit).templateStatSeq
+      }
 
-      new compiler.syntaxAnalyzer.Parser(unit).templateStatSeq
-    }
+      // parse the main code along with the imports
+      reporter.reset
+      val trees = simpleParse(codeForImports + line)
+      if (justNeedsMore) {
+        reporter.error(
+            null,
+            "Input truncated.  Interpreted expressions must fit on one line.")
+        // XXX should accept more lines of input
+        Nil
+      } else if (reporter.hasErrors)
+        Nil // the result did not parse, so stop
+      else {
+        // parse the imports alone
+        val importTrees = simpleParse(codeForImports)
 
-    // parse the main code along with the imports
-    reporter.reset
-    val trees = simpleParse(codeForImports + line)
-    if (reporter.hasErrors)
-      Nil // the result did not parse, so stop
-    else {
-      // parse the imports alone
-      val importTrees = simpleParse(codeForImports)
-
-      // return just the new trees, not the import trees
-      trees.drop(importTrees.length)
+        // return just the new trees, not the import trees
+        trees.drop(importTrees.length)
+      }
     }
   }
 
-  /** Compile one source file.
-   *
-   *  @param filename
-   */
+  /** Compile one source file. */
   def compileFile(filename: String): Unit = {
     val jfile = new File(filename)
     if (!jfile.exists) {
@@ -207,9 +209,6 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
 
   /** Compile an nsc SourceFile.  Returns true if there are
    *  no compilation errors, or false othrewise.
-   *
-   *  @param sources ...
-   *  @return        ...
    */
   def compileSources(sources: List[SourceFile]): Boolean = {
     val cr = new compiler.Run
@@ -220,20 +219,11 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
 
   /** Compile a string.  Returns true if there are no
    *  compilation errors, or false otherwise.
-   *
-   *  @param code ...
-   *  @return     ...
    */
   def compileString(code: String): Boolean =
     compileSources(List(new SourceFile("<script>", code.toCharArray)))
 
-  /** build a request from the user.  "tree" is "line" after being parsed.
-   *
-   *  @param trees    ...
-   *  @param line     ...
-   *  @param lineName ...
-   *  @return         ...
-   */
+  /** build a request from the user.  "trees" is "line" after being parsed. */
   private def buildRequest(trees: List[Tree], line: String, lineName: String): Request =
     trees match {
       /* This case for assignments is more specialized than desirable: it only
@@ -252,7 +242,6 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
       case List(_:AliasTypeDef) => new TypeAliasReq(line, lineName)
       case List(_:Import) => new ImportReq(line, lineName)
       case _ => {
-        //reporter.error(null, trees.toString)
         reporter.error(null, "That kind of statement combination is not supported by the interpreter.")
         null
       }

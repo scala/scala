@@ -12,6 +12,9 @@ import scala.collection.mutable.HashSet
 
 trait CompilationUnits requires Global {
 
+  /** One unit of compilation that has been submitted to the compiler.
+    * It typically corresponds to a single file of source code.  It includes
+    * error-reporting hooks.  */
   class CompilationUnit(val source: SourceFile) {
 
     /** the fresh name creator */
@@ -41,6 +44,12 @@ trait CompilationUnits requires Global {
     def uncheckedWarning(pos: int, msg: String) =
       if (settings.unchecked.value) reporter.warning(position(pos), msg)
       else currentRun.uncheckedWarnings = true
+
+    def incompleteInputError(pos:int, msg:String) =
+      if (!(errorPositions contains pos)) {
+        errorPositions += pos
+        reporter.incompleteInputError(position(pos), msg)
+      }
 
     override def toString() = source.toString()
 

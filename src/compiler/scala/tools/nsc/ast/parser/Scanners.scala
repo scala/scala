@@ -440,7 +440,7 @@ trait Scanners requires SyntaxAnalyzer {
             }
           } while (in.ch != '/' && in.ch != SU)
           if (in.ch == '/') in.next
-          else syntaxError("unclosed comment")
+          else incompleteInputError("unclosed comment")
           openComments = openComments - 1
         }
         true
@@ -606,7 +606,7 @@ trait Scanners requires SyntaxAnalyzer {
           getMultiLineStringLit
         }
       } else if (in.ch == SU) {
-        syntaxError("unclosed multi-line string literal")
+        incompleteInputError("unclosed multi-line string literal")
       } else {
         putChar(in.ch)
         in.next
@@ -807,6 +807,13 @@ trait Scanners requires SyntaxAnalyzer {
     /** generate an error at the current token position
     */
     def syntaxError(msg: String): unit = syntaxError(pos, msg)
+
+    /** signal an error where the input ended in the middle of a token */
+    def incompleteInputError(msg: String): unit = {
+      unit.incompleteInputError(pos, msg)
+      token = EOF
+      errpos = pos
+    }
 
 // Keywords -----------------------------------------------------------------
 

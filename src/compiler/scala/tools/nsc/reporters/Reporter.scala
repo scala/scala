@@ -47,4 +47,20 @@ abstract class Reporter {
   def    info(pos : Position, msg : String, force : Boolean) : Unit = info0(pos, msg, INFO   , force);
   def warning(pos : Position, msg : String                 ) : Unit = info0(pos, msg, WARNING, false);
   def   error(pos : Position, msg : String                 ) : Unit = info0(pos, msg,   ERROR, false);
+
+  /** An error that could possibly be fixed if the unit were longer.
+     * This is used, for example, when the interpreter tries
+     * to distinguish fatal errors from those that are due to
+     * needing more lines of input from the user. */
+  var incompleteInputError: ((Position,String) => Unit) = error
+
+  def withIncompleteHandler[T](handler: ((Position,String) => Unit))(thunk: =>T) = {
+    val savedHandler = incompleteInputError
+    try {
+      incompleteInputError = handler
+      thunk
+    } finally {
+      incompleteInputError = savedHandler
+    }
+  }
 }

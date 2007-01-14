@@ -137,14 +137,44 @@ trait Parsers requires SyntaxAnalyzer {
         in.errpos = in.currentPos
       }
 
+    def incompleteInputError(pos: int, msg: String): unit = {
+      if (pos != in.errpos) {
+        unit.incompleteInputError(pos, msg)
+        in.errpos = pos
+      }
+    }
+
+    def incompleteInputError(msg: String): unit =
+      incompleteInputError(in.currentPos, msg)  // in.currentPos should be at the EOF
+
+    def syntaxErrorOrIncomplete(msg: String, skipIt: Boolean): unit = {
+      if(in.token == EOF)
+        incompleteInputError(msg)
+      else
+        syntaxError(in.currentPos, msg, skipIt)
+    }
+
+    /** Consume one token of the specified type, or
+      * signal an error if it is not there.
+      */
     def accept(token: int): int = {
       val pos = in.currentPos
-      if (in.token != token)
-        syntaxError(
-          if (Position.line(unit.source, in.currentPos) > Position.line(unit.source, in.lastPos)) in.lastPos
-          else in.currentPos,
+      if (in.token != token) {
+        val posToReport =
+          if (Position.line(unit.source, in.currentPos) >
+              Position.line(unit.source, in.lastPos))
+            in.lastPos
+          else
+            in.currentPos
+        val msg =
           in.token2string(token) + " expected but " +
-            in.token2string(in.token) + " found.", true)
+          in.token2string(in.token) + " found."
+
+        if(in.token == EOF)
+          incompleteInputError(posToReport, msg)
+        else
+          syntaxError(posToReport, msg, true)
+      }
       if (in.token == token) in.nextToken()
       pos
     }
@@ -465,7 +495,7 @@ trait Parsers requires SyntaxAnalyzer {
             case NULL =>
               Constant(null)
             case _ =>
-              syntaxError("illegal literal", true)
+              syntaxErrorOrIncomplete("illegal literal", true)
               null
           })
       }
@@ -879,7 +909,7 @@ trait Parsers requires SyntaxAnalyzer {
             liftingScope(makeClosure(simpleExpr()))
             // Note: makeClosure does some special treatment of liftedGenerators
           } else {
-            syntaxError("identifier expected", true)
+            syntaxErrorOrIncomplete("identifier expected", true)
             errorTermTree
           }
         }
@@ -901,9 +931,9 @@ trait Parsers requires SyntaxAnalyzer {
                 Typed(t, atPos(pos1) { Ident(nme.WILDCARD_STAR.toTypeName) })
               }
               if (in.token != RPAREN)
-                syntaxError(in.currentPos, "`)' expected", false)
+                syntaxErrorOrIncomplete("`)' expected", false)
             } else {
-              syntaxError(in.currentPos, "`*' expected", true)
+              syntaxErrorOrIncomplete("`*' expected", true)
             }
           } else {
             t = atPos(pos) {
@@ -1032,6 +1062,8 @@ trait Parsers requires SyntaxAnalyzer {
                 t = atPos(pos) {
                   Function(ts.toList map convertToParam, TypeTree())
                 }
+              } else if(in.token == EOF) {
+                incompleteInputError("`=>' expected")
               } else {
                 syntaxError(commapos, "`)' expected", false)
               }
@@ -1063,7 +1095,7 @@ trait Parsers requires SyntaxAnalyzer {
             else if (in.token == REQUIRES || in.token == IMPLICIT)
               syntaxErrorMigrate(""+in+" is now a reserved word; cannot be used as identifier")
           }
-          syntaxError("illegal start of simple expression", true)
+          syntaxErrorOrIncomplete("illegal start of simple expression", true)
           t = errorTermTree
       }
       simpleExprRest(t, isNew)
@@ -1338,7 +1370,7 @@ trait Parsers requires SyntaxAnalyzer {
         if (settings.migrate.value &&
             in.token == MATCH || in.token == REQUIRES || in.token == IMPLICIT)
           syntaxErrorMigrate(""+in+" is now a reserved word; cannot be used as identifier")
-        syntaxError("illegal start of simple pattern", true)
+        syntaxErrorOrIncomplete("illegal start of simple pattern", true)
         errorPatternTree
     }
 
@@ -1515,6 +1547,8 @@ trait Parsers requires SyntaxAnalyzer {
            (!result.head.isEmpty && result.head.head.mods.hasFlag(Flags.IMPLICIT))))
         if (in.token == LBRACKET)
           syntaxError(pos, "no type parameters allowed here", false)
+        else if(in.token == EOF)
+          incompleteInputError(pos, "auxiliary constructor needs non-implicit parameter list")
         else
           syntaxError(pos, "auxiliary constructor needs non-implicit parameter list", false)
       addImplicitViews(owner, result, implicitViews)
@@ -1847,7 +1881,7 @@ trait Parsers requires SyntaxAnalyzer {
           case SUPERTYPE | SUBTYPE | SEMI | NEWLINE | COMMA | RBRACE =>
             typeBounds(mods | Flags.DEFERRED, name)
           case _ =>
-            syntaxError("`=', `>:', or `<:' expected", true)
+            syntaxErrorOrIncomplete("`=', `>:', or `<:' expected", true)
             EmptyTree
         }
       }
@@ -1868,7 +1902,7 @@ trait Parsers requires SyntaxAnalyzer {
       case CASEOBJECT =>
         objectDef(mods | Flags.CASE)
       case _ =>
-        syntaxError("illegal start of definition", true)
+        syntaxErrorOrIncomplete("expected start of definition", true)
         EmptyTree
     }
 
@@ -2011,7 +2045,7 @@ trait Parsers requires SyntaxAnalyzer {
           (stats ++
              joinAttributes(attrs, joinComment(List(tmplDef(modifiers()/*| mixinAttribute(attrs)*/)))))
         } else if (in.token != SEMI && in.token != NEWLINE) {
-          syntaxError("illegal start of class or object definition", true)
+          syntaxErrorOrIncomplete("expected class or object definition", true)
         }
         if (in.token != RBRACE && in.token != EOF) acceptStatSep()
       }
@@ -2037,7 +2071,7 @@ trait Parsers requires SyntaxAnalyzer {
           (stats ++
              joinAttributes(attrs, joinComment(defOrDcl(modifiers()/*| mixinAttribute(attrs)*/))))
         } else if (in.token != SEMI && in.token != NEWLINE) {
-          syntaxError("illegal start of definition", true)
+          syntaxErrorOrIncomplete("illegal start of definition", true)
         }
         if (in.token != RBRACE && in.token != EOF) acceptStatSep()
       }
@@ -2124,7 +2158,7 @@ trait Parsers requires SyntaxAnalyzer {
         if (isDclIntro) {
           stats ++= joinComment(defOrDcl(NoMods))
         } else if (in.token != SEMI && in.token != NEWLINE) {
-          syntaxError("illegal start of declaration", true)
+          syntaxErrorOrIncomplete("illegal start of declaration", true)
         }
         if (in.token != RBRACE) acceptStatSep()
       }
@@ -2183,7 +2217,7 @@ trait Parsers requires SyntaxAnalyzer {
         } else if (in.token == SEMI || in.token == NEWLINE) {
           in.nextToken()
         } else {
-          syntaxError("illegal start of statement", true)
+          syntaxErrorOrIncomplete("illegal start of statement", true)
         }
       }
       stats.toList
