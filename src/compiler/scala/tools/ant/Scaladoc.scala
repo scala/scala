@@ -459,7 +459,7 @@ package scala.tools.ant {
             "; see the documenter error output for details.")
         else if (reporter.warnings > 0)
           log(
-            "Document suceeded with " +
+            "Document succeeded with " +
             reporter.warnings + " warning" +
             (if (reporter.warnings > 1) "s" else "") +
             "; see the documenter output for details.")
