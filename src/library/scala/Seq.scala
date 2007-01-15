@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -12,7 +12,7 @@
 package scala
 
 import Predef.{IllegalArgumentException, NoSuchElementException}
-import collection.mutable.{ArrayBuffer}
+import collection.mutable.ArrayBuffer
 
 object Seq {
 
@@ -23,11 +23,18 @@ object Seq {
     def elements = Iterator.empty
   }
 
-  def unapplySeq[A](x:Any): Option[Seq[A]] =
-    if(x.isInstanceOf[Seq[A]]) Some(x.asInstanceOf[Seq[A]]) else None
+  /** ...
+   *
+   *  @param x ...
+   *  @return  ...
+   */
+  def unapplySeq[A](x: Any): Option[Seq[A]] =
+    if (x.isInstanceOf[Seq[A]]) Some(x.asInstanceOf[Seq[A]]) else None
 
-  /** builds a singleton sequence
-   *  @author buraq
+  /** Builds a singleton sequence.
+   *
+   *  @param x ...
+   *  @return  ...
    */
   def single[A](x: A) = new Seq[A] {
     def length = 1
@@ -75,10 +82,10 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Iterable[A] {
    */
   def isEmpty: Boolean = { length == 0 }
 
-  /** Appends two iterable objects
+  /** Appends two iterable objects.
    *
-   *  @return the new iterable object
-   *  @deprecated  use <code>++</code> instead
+   *  @return     the new iterable object
+   *  @deprecated use <code>++</code> instead
    */
   [deprecated] override def concat [B >: A](that: Iterable[B]): Seq[B] = {
     val buf = new ArrayBuffer[B]
@@ -87,9 +94,10 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Iterable[A] {
     buf
   }
 
-  /** Appends two iterable objects
+  /** Appends two iterable objects.
    *
-   *  @return the new iterable object
+   *  @param  that ..
+   *  @return      the new iterable object
    */
   override def ++ [B >: A](that: Iterable[B]): Seq[B] = {
     val buf = new ArrayBuffer[B]
@@ -100,7 +108,8 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Iterable[A] {
 
   /** Is this partial function defined for the index <code>x</code>?
    *
-   *  @return true, iff <code>x</code> is a legal sequence index.
+   *  @param x ..
+   *  @return  <code>true</code>, iff <code>x</code> is a legal sequence index.
    */
   def isDefinedAt(x: Int): Boolean = (x >= 0) && (x < length)
 
@@ -124,11 +133,12 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Iterable[A] {
     if (found) i else -1;
   }
 
-  /** Returns the sequence resulting from applying the given function <code>f</code> to each
-   *  element of this sequence.
+  /** Returns the sequence resulting from applying the given function
+   *  <code>f</code> to each element of this sequence.
    *
    *  @param f function to apply to each element.
-   *  @return <code>f(a0), ..., f(an)</code> if this sequence is <code>a0, ..., an</code>.
+   *  @return  <code>f(a<sub>0</sub>), ..., f(a<sub>n</sub>)</code> if this
+   *           sequence is <code>a<sub>0</sub>, ..., a<sub>n</sub></code>.
    */
   override def map[B](f: A => B): Seq[B] = {
     // todo: malformed scala signature suing build when replaced by
@@ -171,7 +181,8 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Iterable[A] {
   override def take(n: Int): Seq[A] = super.take(n).asInstanceOf[Seq[A]]
 
   /** Returns this sequence without its <code>n</code> first elements
-   *  If this sequence has less than <code>n</code> elements, the empty sequence is returned.
+   *  If this sequence has less than <code>n</code> elements, the empty
+   *  sequence is returned.
    *
    *  @param n the number of elements to drop
    *  @return  the new sequence
@@ -215,17 +226,23 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Iterable[A] {
   def contains(elem: Any): Boolean = exists (.==(elem))
 
   /** Returns a subsequence starting from index <code>from</code>
-  *  consisting of <code>len</code> elements.
-  */
+   *  consisting of <code>len</code> elements.
+   *
+   *  @param from ..
+   *  @param len  ..
+   *  @return     ..
+   */
   def slice(from: Int, len: Int): Seq[A] = this.drop(from).take(len)
 
   /** Returns a subsequence starting from index <code>from</code>
-  *   consisting of <code>len</code> elements.
-  *   @deprecated; use slice instead
-  */
+   *  consisting of <code>len</code> elements.
+   *
+   *  @deprecated use <code>slice</code> instead
+   */
   [deprecated] def subseq(from: Int, end: Int): Seq[A] = slice(from, end - from)
 
-  /** Converts this sequence to a fresh Array with <code>length</code> elements */
+  /** Converts this sequence to a fresh Array with <code>length</code> elements.
+   */
   def toArray[B >: A]: Array[B] = {
     val result = new Array[B](length)
     copyToArray(result, 0)
