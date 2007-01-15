@@ -18,6 +18,7 @@ import io.PlainFile
 import reporters.{ConsoleReporter, Reporter}
 import symtab.Flags
 import util.SourceFile
+import nsc.{InterpreterResults=>IR}
 
 /** <p>
  *    An interpreter for Scala code.
@@ -161,8 +162,9 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
     stringWriter.toString
   }
 
-  /** Parse a line into a sequence of trees. */
-  private def parse(line: String): List[Tree] = {
+  /** Parse a line into a sequence of trees. Returns None if the input
+    * is incomplete. */
+  private def parse(line: String): Option[List[Tree]] = {
     var justNeedsMore = false
     reporter.withIncompleteHandler((pos,msg) => {justNeedsMore = true}) {
 //reporter.incompleteInputError = (pos,msg) => {justNeedsMore = true}
@@ -177,20 +179,16 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
       // parse the main code along with the imports
       reporter.reset
       val trees = simpleParse(codeForImports + line)
-      if (justNeedsMore) {
-        reporter.error(
-            null,
-            "Input truncated.  Interpreted expressions must fit on one line.")
-        // XXX should accept more lines of input
-        Nil
-      } else if (reporter.hasErrors)
-        Nil // the result did not parse, so stop
+      if (justNeedsMore)
+        None
+      else if (reporter.hasErrors)
+        Some(Nil) // the result did not parse, so stop
       else {
         // parse the imports alone
         val importTrees = simpleParse(codeForImports)
 
         // return just the new trees, not the import trees
-        trees.drop(importTrees.length)
+        Some(trees.drop(importTrees.length))
       }
     }
   }
@@ -258,22 +256,23 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
    *    e.g. that there were no parse errors.
    *  </p>
    *
-   *  @param line ...
-   *  @return     ...
    */
-  def interpret(line: String): boolean = {
+  def interpret(line: String): IR.Result = {
     // parse
-    val trees = parse(line)
-    if (trees.isEmpty) return false  // parse error or empty input
+    val trees = parse(line) match {
+      case None => return IR.Incomplete
+      case Some(Nil) => return IR.Error // parse error or empty input
+      case Some(trees) => trees
+    }
 
     val lineName = newLineName
 
     // figure out what kind of request
     val req = buildRequest(trees, line, lineName)
-    if (req eq null) return false  // a disallowed statement type
+    if (req eq null) return IR.Error  // a disallowed statement type
 
     if (!req.compile)
-      return false  // an error happened during compilation, e.g. a type error
+      return IR.Error  // an error happened during compilation, e.g. a type error
 
     val Pair(interpreterResultString, succeeded) = req.loadAndRun
 
@@ -290,7 +289,7 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
     if (succeeded)
       prevRequests += req
 
-    succeeded
+    if(succeeded) IR.Success else IR.Error
   }
 
   /** A counter used for numbering objects created by bind() */
@@ -357,7 +356,7 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
 
   /** One line of code submitted by the user for interpretation */
   private abstract class Request(val line: String, val lineName: String) {
-    val trees = parse(line)
+    val Some(trees) = parse(line)
 
     /** name to use for the object that will compute "line" */
     def objectName = lineName + compiler.nme.INTERPRETER_WRAPPER_SUFFIX  // make it unlikely to clash with user variables

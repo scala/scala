@@ -13,6 +13,7 @@ import java.io.IOException
 
 import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
 import scala.tools.nsc.util.{Position}
+import nsc.{InterpreterResults=>IR}
 
 /** The main loop of the command-line interface to the
  *  <a href="http://scala.epfl.ch/" target="_top">Scala</a> interpreter.
@@ -21,9 +22,17 @@ import scala.tools.nsc.util.{Position}
  *  @author  Lex Spoon
  *  @version 1.0
  */
-class InterpreterLoop(in: BufferedReader, out: PrintWriter) {
+class InterpreterLoop(in0: BufferedReader, out: PrintWriter) {
   def this() = this(new BufferedReader(new InputStreamReader(System.in)),
                     new PrintWriter(System.out))
+
+  /** The input stream from which interpreter commands come */
+  var in = in0
+
+  /** Whether the interpreter is interactive (like normal), or instead
+    * is reading from a file.
+    */
+  var interactive = true
 
   var settings: Settings = _ // set by main()
   var interpreter: Interpreter = null // set by createInterpreter()
@@ -87,18 +96,23 @@ class InterpreterLoop(in: BufferedReader, out: PrintWriter) {
    */
   def repl(): Unit =
     while(true) {
-      out.print("\nscala> ")
-      out.flush
+      if(interactive) {
+        out.print("\nscala> ")
+        out.flush
+      }
       var line = in.readLine()
       if (line eq null)
         return ()  // assumes null means EOF
 
-      val Pair(keepGoing, shouldReplay) = command(line)
+      val Pair(keepGoing, finalLineMaybe) = command(line)
 
       if (!keepGoing)
         return ()
-      if (shouldReplay)
-        addReplay(line)
+
+      finalLineMaybe match {
+        case Some(finalLine) => addReplay(finalLine)
+        case None => ()
+      }
     }
 
   /** interpret all lines from a specified file */
@@ -108,17 +122,20 @@ class InterpreterLoop(in: BufferedReader, out: PrintWriter) {
     } catch {
       case _:IOException =>
         out.println("Error opening file: " + filename)
-        null
-    }
-    if (fileIn eq null) return ()
-    val in = new BufferedReader(fileIn)
-    while (true) {
-      val line = in.readLine
-      if (line eq null) {
-        fileIn.close
         return ()
-      }
-      command(line)
+    }
+    val oldIn = in
+    val oldInteractive = interactive
+    try {
+      in = new BufferedReader(fileIn)
+      interactive = false
+      out.println("Loading " + filename + "...")
+      out.flush
+      repl()
+    } finally {
+      in = oldIn
+      interactive = oldInteractive
+      fileIn.close
     }
   }
 
@@ -133,10 +150,10 @@ class InterpreterLoop(in: BufferedReader, out: PrintWriter) {
     }
   }
 
-  /** Run one command submitted by the user.  Two values are returned:
-    * (1) whether to keep running, and (2) whether to record the
-    * command for replay. */
-  def command(line: String): Pair[Boolean, Boolean] = {
+  /** Run one command submitted by the user.  Three values are returned:
+    * (1) whether to keep running, (2) the line to record for replay,
+    * if any. */
+  def command(line: String): Pair[Boolean, Option[String]] = {
     def withFile(command: String)(action: String => Unit): Unit = {
       val spaceIdx = command.indexOf(' ')
       if (spaceIdx <= 0) {
@@ -157,34 +174,64 @@ class InterpreterLoop(in: BufferedReader, out: PrintWriter) {
     val loadRegexp    = ":l(o(a(d)?)?)?.*"
     val replayRegexp  = ":r(e(p(l(a(y)?)?)?)?)?.*"
 
-    var shouldReplay = false
+    var shouldReplay: Option[String] = None
 
     if (line.matches(helpRegexp))
       printHelp
     else if (line.matches(quitRegexp))
-      return Pair(false, false)
+      return Pair(false, None)
     else if (line.matches(compileRegexp)) {
       withFile(line)(f => {
         interpreter.compileFile(f)
-        shouldReplay = true
+        shouldReplay = Some(line)
       })
     }
     else if (line.matches(loadRegexp)) {
       withFile(line)(f => {
         interpretAllFrom(f)
-        shouldReplay = true
+        shouldReplay = Some(line)
       })
     }
     else if (line.matches(replayRegexp))
       replay
     else if (line.startsWith(":"))
       out.println("Unknown command.  Type :help for help.")
-    else {
-      if (interpreter.interpret(line))
-        shouldReplay = true
-    }
+    else
+      shouldReplay = interpretStartingWith(line)
+
     Pair(true, shouldReplay)
   }
+
+  /** Interpret expressions starting with the first line.
+    * Read lines until a complete compilation unit is available
+    * or until a syntax error has been seen.  If a full unit is
+    * read, go ahead and interpret it.  Return the full string
+    * to be recorded for replay, if any.
+    */
+  def interpretStartingWith(code: String): Option[String] =
+  {
+    interpreter.interpret(code) match {
+      case IR.Success => Some(code)
+      case IR.Error => None
+      case IR.Incomplete => {
+        if(interactive && code.endsWith("\n\n\n")) {
+          out.println("Two blank lines seen.  Aborting this expression.")
+          None
+        } else {
+          if(interactive) {
+            out.print("     | ")
+            out.flush
+          }
+          val nextLine = in.readLine
+          if(nextLine == null)
+            None  // end of file
+          else
+            interpretStartingWith(code + "\n" + nextLine)
+        }
+      }
+    }
+  }
+
 
   def main(settings: Settings) = {
     this.settings = settings
