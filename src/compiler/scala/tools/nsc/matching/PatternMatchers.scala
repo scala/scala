@@ -1301,7 +1301,7 @@ print()
                   cond = And(cond,
                              Eq(Apply(Select(
                                typed(gen.mkAsInstanceOf(selector.duplicate, ntpe, true)), outerAcc),List()), theRef))
-                } else {
+                } else if(settings.XprintOuterMatches.value) {
                   cunit.warning(node.pos, " no outer accessor for "+casted.tpe.symbol+" of type "+casted.tpe)
                 }
             case _ =>
