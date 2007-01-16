@@ -541,9 +541,7 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
     }
 
   private def newHeader(pos: PositionType, casted: Symbol, index: Int): Header = {
-    //Console.println("newHeader(pos,"+casted+","+index+")");
-    //Console.println("  casted.tpe"+casted.tpe);
-    //Console.println("  casted.pos "+casted.pos+"  equals firstpos?"+(casted.pos == Position.FIRSTPOS));
+    //Console.println("newHeader(pos,"+casted+" (has CASE flag? "+casted.tpe.symbol.hasFlag(Flags.CASE)+") of type "+casted.tpe+" with pos "+casted.pos+"(equals FIRSTPOS? "+(casted.pos == Position.FIRSTPOS)+"),"+index+")");
     val ident = typed(Ident(casted))
     if (casted.pos == Position.FIRSTPOS) { // load the result of casted(i)
       //Console.println("FIRSTPOS");
@@ -562,11 +560,13 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
       if(!casted.tpe.symbol.hasFlag(Flags.CASE)) {
 
         //Console.println("NOT CASE");
-
-        if (defs.isProductType(casted.tpe)) {
-          val acc = defs.productProj(casted.tpe.typeArgs.length, index+1)
-          val accTree = typed(Apply(Select(ident, acc), List())) // nsc !
-          return pHeader(pos, accTree.tpe, accTree)
+        //Console.println("getProductArgs? "+defs.getProductArgs(casted.tpe));
+        defs.getProductArgs(casted.tpe) match  {
+          case Some(targs) =>
+            val accSym = defs.productProj(casted.tpe.symbol, index+1)
+            val accTree = typed(Apply(Select(ident, accSym), List())) // nsc !
+            return pHeader(pos, accTree.tpe, accTree)
+          case None =>
         }
 
         /*
@@ -1264,6 +1264,8 @@ print()
               case Pair(TypeRef(lprefix, _,_), TypeRef(rprefix,_,_)) if lprefix =:= rprefix =>
                 true
               case _ =>
+                if(settings.XprintOuterMatches.value)
+                  cunit.warning(node.pos, "can't be sure statically that these outers are equal:"+{left,right}.toString)
                 false
             }
 
@@ -1271,7 +1273,7 @@ print()
             var cond: Tree = null
 
           // if type 2 test is same as static type, then just null test
-          if(isSubType(selector.tpe,ntpe) && isSubType(ntpe, definitions.AnyRefClass.tpe)) {
+          if(isSubType(selector.tpe, ntpe) && isSubType(ntpe, definitions.AnyRefClass.tpe)) {
             cond = NotNull(selector.duplicate)
             nstatic = nstatic + 1
           } else if(ignoreSelectorType) {
@@ -1279,27 +1281,33 @@ print()
           } else {
             cond = typed { gen.mkIsInstanceOf(selector.duplicate, ntpe) }
           }
-            // compare outer instance for patterns like foo1.Bar foo2.Bar if not statically known to match
 
-            if(!outerAlwaysEqual(casted.tpe, selector.tpe)) {
-              casted.tpe match {
-                case TypeRef(prefix,_,_) if (prefix.symbol.isTerm && !prefix.symbol.isPackage) =>
-                  var theRef = gen.mkAttributedRef(prefix.prefix, prefix.symbol)
+          // compare outer instance for patterns like foo1.Bar foo2.Bar if not statically known to match
+          casted.tpe match {
+            case TypeRef(prefix,_,_) if
+              (prefix.symbol.isTerm && !prefix.symbol.isPackage)
+              &&(!outerAlwaysEqual(casted.tpe, selector.tpe)) =>
+                var theRef = gen.mkAttributedRef(prefix.prefix, prefix.symbol)
 
-                  // needs explicitouter treatment
-                  theRef = handleOuter(theRef)
+                // needs explicitouter treatment
+                theRef = handleOuter(theRef)
 
-                  val outerAcc = outerAccessor(casted.tpe.symbol)
+                val outerAcc = outerAccessor(casted.tpe.symbol)
 
-                  if(outerAcc != NoSymbol) { // some guys don't have outers
-                    cond = And(cond,
-                               Eq(Apply(Select(
-                                 typed(gen.mkAsInstanceOf(selector.duplicate, ntpe, true)), outerAcc),List()), theRef))
-                  }
-                case _ =>
-                  //ignore ;
-              }
-            }
+                //if(settings.XprintOuterMatches.value)
+                //  cunit.warning(node.pos, "outer match "+outerAcc)
+
+                if(outerAcc != NoSymbol) { // some guys don't have outers
+                  cond = And(cond,
+                             Eq(Apply(Select(
+                               typed(gen.mkAsInstanceOf(selector.duplicate, ntpe, true)), outerAcc),List()), theRef))
+                } else {
+                  cunit.warning(node.pos, " no outer accessor for "+casted.tpe.symbol+" of type "+casted.tpe)
+                }
+            case _ =>
+              //ignore ;
+          }
+
           val succ = squeezedBlock(List(ValDef(casted,
                                                if(isSubType(selector.tpe,ntpe)) selector.duplicate else typed(gen.mkAsInstanceOf(selector.duplicate, ntpe, true)))),
                                    toTree(node.and))

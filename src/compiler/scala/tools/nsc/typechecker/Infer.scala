@@ -467,7 +467,8 @@ trait Infer requires Analyzer {
     *  @return                  ...
     *  @throws                  NoInstance
     */
-    private def methTypeArgs(tparams: List[Symbol], formals: List[Type], restpe: Type,
+    // bq: was private, but need it for unapply checking
+    def methTypeArgs(tparams: List[Symbol], formals: List[Type], restpe: Type,
                              argtpes: List[Type], pt: Type,
                              uninstantiated: ListBuffer[Symbol]): List[Type] = {
       val tvars = tparams map freshVar

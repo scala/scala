@@ -207,6 +207,7 @@ trait StdNames requires SymbolTable {
     val PartialFunction = newTermName("PartialFunction")
     val Predef = newTermName("Predef")
     val Product = newTermName("Product")
+    def Product_(i:Int) = newTermName("_" + i)
     val ScalaObject = newTermName("ScalaObject")
     val ScalaRunTime = newTermName("ScalaRunTime")
     val Seq = newTermName("Seq")

@@ -1419,12 +1419,8 @@ trait Typers requires Analyzer {
           assert(unapp.exists, tree)
 
         // this is no longer needed!
-          val unappArg:Type = unapp.tpe match {
-            case PolyType(_,MethodType(List(res), _)) => res
-            case MethodType(List(res), _)             => res
-            case _ => error(fun.pos, "unapply takes too many arguments to be used as pattern"); NoType
-          }
-	  val argDummyType = pt // was unappArg
+
+          val argDummyType = pt // was unappArg
           val argDummy =  context.owner.newValue(fun.pos, nme.SELECTOR_DUMMY)
             .setFlag(SYNTHETIC)
             .setInfo(argDummyType)
@@ -1450,8 +1446,27 @@ trait Typers requires Analyzer {
           }
           val fun0 = Ident(fun.symbol) setPos fun.pos setType otpe // would this change when patterns are terms???
           val fun1untyped = atPos(fun.pos) {
-              Apply(Select(gen.mkAttributedRef(fun.tpe.prefix,fun.symbol), unapp), List(arg))
-            }
+            Apply(Select(gen.mkAttributedRef(fun.tpe.prefix,fun.symbol), unapp), List(arg))
+          }
+
+          // bq: find out if argument requires instanceOf check, if yes then lie about the type
+          val oldArgType = arg.tpe
+          unapp.tpe match {
+            case MethodType(formals, restpe)          =>
+              if(!isSubType(arg.tpe, formals(0))) {
+                //Console.println(" -- apply mono hack")
+                arg.tpe = AllClass.tpe     // deceive typechecker, we'll insert an instanceOf check later
+              }
+            case PolyType(tparams,MethodType(fmls, res)) =>
+              try {
+                methTypeArgs(tparams, fmls, res, List(arg.tpe.deconst), WildcardType, new ListBuffer[Symbol]())
+              } catch {
+                case e => //Console.println(e.getMessage())
+                  //Console.println(" -- apply poly hack")
+                  arg.tpe = AllClass.tpe   // deceive typechecker, we'll insert an instanceOf check later
+              }
+          }
+
           //Console.println("UNAPPLY2 "+fun+"/"+fun.tpe+" "+fun1untyped+", funPt = "+funPt)
           val fun1 = typed(fun1untyped, EXPRmode, funPt)
           if (fun1.tpe.isErroneous) setError(tree)
@@ -1460,8 +1475,11 @@ trait Typers requires Analyzer {
             val formals1 = formalTypes(formals0, args.length)
             val args1 = typedArgs(args, mode, formals0, formals1)
             if (!isFullyDefined(pt)) assert(false, tree+" ==> "+UnApply(fun1, args1)+", pt = "+pt)
+            // restore old type (this will never work, but just pass typechecking)
+            arg.tpe = oldArgType
             UnApply(fun1, args1) setPos tree.pos setType pt
           }
+
 /* --- end unapply  --- */
         case _ =>
           errorTree(tree, ""+fun+" does not take parameters")

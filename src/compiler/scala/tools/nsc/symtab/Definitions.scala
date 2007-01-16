@@ -116,8 +116,10 @@ trait Definitions requires SymbolTable {
     val MaxProductArity = 22
     /* <unapply> */
     val ProductClass: Array[Symbol] = new Array(MaxProductArity + 1)
-      def productProj(n: Int, j: Int) = getMember(ProductClass(n), "_" + j)
-      def isProductType(tp: Type): Boolean = tp match {
+      def productProj(z:Symbol, j: Int): Symbol = getMember(z, nme.Product_(j))
+      def productProj(n: Int,   j: Int): Symbol = productProj(ProductClass(n), j)
+    /** returns true if this type is exactly ProductN[T1,...,Tn], not some subclass */
+      def isExactProductType(tp: Type): Boolean = tp match {
         case TypeRef(_, sym, elems) =>
           elems.length <= MaxProductArity && sym == ProductClass(elems.length);
         case _ =>
@@ -133,7 +135,7 @@ trait Definitions requires SymbolTable {
 
     /** if tpe <: ProductN[T1,...,TN], returns Some(T1,...,TN) else None */
     def getProductArgs(tpe: Type): Option[List[Type]] =
-      tpe.baseClasses.find { x => definitions.isProductType(x.tpe) } match {
+      tpe.baseClasses.find { x => definitions.isExactProductType(x.tpe) } match {
         case Some(p) => Some(tpe.baseType(p).typeArgs)
 	case _       => None
       }

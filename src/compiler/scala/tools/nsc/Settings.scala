@@ -131,6 +131,7 @@ class Settings(error: String => unit) {
   val Xunapply      = BooleanSetting("-Xunapply", "enable unapply pattern matching")
   val Xplugtypes    = BooleanSetting("-Xplugtypes", "parse but ignore annotations in more locations")
   val Xkilloption   = BooleanSetting("-Xkilloption", "optimizes option types")
+  val XprintOuterMatches = BooleanSetting("-XprintOuterMatches", "prints outer-checks caused by pattern matching ")
 
   /** A list of all settings */
   def allSettings: List[Setting] = allsettings.reverse
