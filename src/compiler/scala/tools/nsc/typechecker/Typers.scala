@@ -1417,6 +1417,7 @@ trait Typers requires Analyzer {
           // !!! this is fragile, maybe needs to be revised when unapply patterns become terms
           val unapp = definitions.unapplyMember(otpe)
           assert(unapp.exists, tree)
+          val unappType = otpe.memberType(unapp)
 
         // this is no longer needed!
 
@@ -1427,11 +1428,12 @@ trait Typers requires Analyzer {
           if (args.length > MaxTupleArity)
             error(fun.pos, "too many arguments for unapply pattern, maximum = "+MaxTupleArity)
           val arg = Ident(argDummy) setType argDummyType
+/*
           var funPt: Type = null
           try {
             funPt = unapp.name match {
               case nme.unapply    => unapplyReturnTypeExpected(args.length)
-              case nme.unapplySeq => unapplyTypeListFromReturnTypeSeq(unapp.tpe) match {
+              case nme.unapplySeq => unapplyTypeListFromReturnTypeSeq(unappType) match {
                 case List() => null //fail
                 case List(TypeRef(pre,repeatedParam, tpe)) => optionType(seqType(WildcardType)) //succeed
                 case xs   => optionType(productType((xs.tail map {x => WildcardType}) ::: List(seqType(WildcardType))))// succeed
@@ -1444,31 +1446,30 @@ trait Typers requires Analyzer {
              error(fun.pos, " unapplySeq should return Option[T] for T<:Product?[...Seq[?]]")
              return setError(tree)
           }
-          val fun0 = Ident(fun.symbol) setPos fun.pos setType otpe // would this change when patterns are terms???
+*/
+          val oldArgType = arg.tpe
+          if (!isApplicable(List(), unappType, List(arg.tpe), WildcardType)) {
+            //Console.println("UNAPP: need to typetest, arg.tpe = "+arg.tpe+", unappType = "+unappType)
+            def freshArgType(tp: Type): {Type, List[Symbol]} = tp match {
+              case MethodType(formals, restpe) =>
+                {formals(0), List()}
+              case PolyType(tparams, restype) =>
+                val tparams1 = cloneSymbols(tparams)
+                {freshArgType(restype)._1.substSym(tparams, tparams1), tparams1}
+            }
+            val {unappFormal, freeVars} = freshArgType(unappType)
+            val context1 = context.makeNewScope(context.tree, context.owner)
+            freeVars foreach context1.scope.enter
+            val typer1 = new Typer(context1)
+            arg.tpe = typer1.infer.inferTypedPattern(tree.pos, unappFormal, arg.tpe)
+            //todo: replace arg with arg.asInstanceOf[inferTypedPattern(unappFormal, arg.tpe)] instead.
+          }
+
           val fun1untyped = atPos(fun.pos) {
             Apply(Select(gen.mkAttributedRef(fun.tpe.prefix,fun.symbol), unapp), List(arg))
           }
-
-          // bq: find out if argument requires instanceOf check, if yes then lie about the type
-          val oldArgType = arg.tpe
-          unapp.tpe match {
-            case MethodType(formals, restpe)          =>
-              if(!isSubType(arg.tpe, formals(0))) {
-                //Console.println(" -- apply mono hack")
-                arg.tpe = AllClass.tpe     // deceive typechecker, we'll insert an instanceOf check later
-              }
-            case PolyType(tparams,MethodType(fmls, res)) =>
-              try {
-                methTypeArgs(tparams, fmls, res, List(arg.tpe.deconst), WildcardType, new ListBuffer[Symbol]())
-              } catch {
-                case e => //Console.println(e.getMessage())
-                  //Console.println(" -- apply poly hack")
-                  arg.tpe = AllClass.tpe   // deceive typechecker, we'll insert an instanceOf check later
-              }
-          }
-
-          //Console.println("UNAPPLY2 "+fun+"/"+fun.tpe+" "+fun1untyped+", funPt = "+funPt)
-          val fun1 = typed(fun1untyped, EXPRmode, funPt)
+          //Console.println("UNAPPLY2 "+fun+"/"+fun.tpe+" "+fun1untyped)
+          val fun1 = typed(fun1untyped)
           if (fun1.tpe.isErroneous) setError(tree)
           else {
             val formals0 = unapplyTypeList(fun1.symbol, fun1.tpe)
@@ -2021,7 +2022,7 @@ trait Typers requires Analyzer {
         case Typed(expr, tpt) =>
           val tpt1 = typedType(tpt)
           val expr1 = typed(expr, mode & stickyModes, tpt1.tpe)
-          val owntype = if ((mode & PATTERNmode) != 0) inferTypedPattern(tpt1, widen(pt)) else tpt1.tpe
+          val owntype = if ((mode & PATTERNmode) != 0) inferTypedPattern(tpt1.pos, tpt1.tpe, widen(pt)) else tpt1.tpe
           //Console.println(typed pattern: "+tree+":"+", tp = "+tpt1.tpe+", pt = "+pt+" ==> "+owntype)//DEBUG
           copy.Typed(tree, expr1, tpt1) setType owntype
 

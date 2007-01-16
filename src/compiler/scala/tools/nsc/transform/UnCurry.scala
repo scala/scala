@@ -424,9 +424,13 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
         case _ =>
           val tree1 = super.transform(tree)
           if (isByNameRef(tree1))
-            localTyper.typed(atPos(tree1.pos)(
-              Apply(Select(tree1 setType functionType(List(), tree1.tpe), nme.apply), List())))
-          else tree1;
+            return localTyper.typed {
+              atPos(tree1.pos) {
+                Apply(Select(tree1 setType functionType(List(), tree1.tpe), nme.apply),
+                      List())
+              }
+            }
+          tree1
       }
     } setType uncurryTreeType(tree.tpe)
 

@@ -79,7 +79,7 @@ object Mas extends Assert {
 
 object Lis extends Assert {
   def run {
-    assertEquals(List(1,2,3) match { case List(x,y,_*) => {x,y}}, {1,2})
+    assertEquals((List(1,2,3): Any) match { case List(x,y,_*) => {x,y}}, {1,2})
   }
 }
 

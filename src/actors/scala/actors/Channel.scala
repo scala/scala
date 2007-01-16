@@ -81,7 +81,7 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
 
   def ? : Msg = receive { case any => any }
 
-  def poll = {
+  def poll: Option[Msg] = {
     Some(?)
   } orElse {
     None.asInstanceOf[Option[Msg]]

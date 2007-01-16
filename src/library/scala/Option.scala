@@ -14,6 +14,14 @@ package scala;
 
 import Predef._
 
+object Option {
+  implicit def option2Iterable[a](xo: Option[a]): Iterable[a] = xo match {
+    case Some(x) => List(x)
+    case None => Nil
+  }
+}
+
+
 /** This class represents optional values. Instances of <code>Option</code>
  *  are either instances of case class <code>Some</code> or it is case
  *  object <code>None</code>.
@@ -22,7 +30,7 @@ import Predef._
  *  @author  Matthias Zenger
  *  @version 1.0, 16/07/2003
  */
-sealed abstract class Option[+A] extends Iterable[A] with Product {
+sealed abstract class Option[+A] extends Product {
 
   def isEmpty: Boolean = this match {
     case None => true
@@ -42,22 +50,22 @@ sealed abstract class Option[+A] extends Iterable[A] with Product {
     case Some(x) => x
   }
 
-  override def map[B](f: A => B): Option[B] = this match {
+  def map[B](f: A => B): Option[B] = this match {
     case None => None
     case Some(x) => Some(f(x))
   }
 
-  override def flatMap[B](f: A => Iterable[B]): Iterable[B] = this match {
+  def flatMap[B](f: A => Option[B]): Option[B] = this match {
     case None => None
     case Some(x) => f(x)
   }
 
-  override def filter(p: A => Boolean): Option[A] = this match {
+  def filter(p: A => Boolean): Option[A] = this match {
     case None => None
     case Some(x) => if (p(x)) Some(x) else None
   }
 
-  override def foreach(f: A => Unit): Unit = this match {
+  def foreach(f: A => Unit): Unit = this match {
     case None => ()
     case Some(x) => f(x)
   }
@@ -67,7 +75,7 @@ sealed abstract class Option[+A] extends Iterable[A] with Product {
     case Some(x) => Iterator.fromValues(x)
   }
 
-  override def toList: List[A] = this match {
+  def toList: List[A] = this match {
     case None => List()
     case Some(x) => List(x)
   }

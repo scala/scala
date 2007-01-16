@@ -843,30 +843,29 @@ trait Infer requires Analyzer {
       }
     }
 
-    def inferTypedPattern(tpt: Tree, pt: Type): Type = {
-      //Console.println("infer typed pattern: "+tpt+" wrt "+pt)//debug
-      checkCheckable(tpt.pos, tpt.tpe)
-      if (!(tpt.tpe <:< pt)) {
-        val tpparams = freeTypeParamsOfTerms.collect(tpt.tpe)
+    def inferTypedPattern(pos: PositionType, pattp: Type, pt: Type): Type = {
+      checkCheckable(pos, pattp)
+      if (!(pattp <:< pt)) {
+        val tpparams = freeTypeParamsOfTerms.collect(pattp)
         if (settings.debug.value) log("free type params (1) = " + tpparams)
         var tvars = tpparams map freshVar
-        var tp = tpt.tpe.subst(tpparams, tvars)
+        var tp = pattp.subst(tpparams, tvars)
         if (!(tp <:< pt)) {
           tvars = tpparams map freshVar
-          tp = tpt.tpe.subst(tpparams, tvars)
+          tp = pattp.subst(tpparams, tvars)
           val ptparams = freeTypeParamsOfTerms.collect(pt)
           if (settings.debug.value) log("free type params (2) = " + ptparams)
           val ptvars = ptparams map freshVar
           val pt1 = pt.subst(ptparams, ptvars)
           if (!isPopulated(tp, pt1)) {
-            error(tpt.pos, "pattern type is incompatibe with expected type"+foundReqMsg(tpt.tpe, pt))
-            return tpt.tpe
+            error(pos, "pattern type is incompatibe with expected type"+foundReqMsg(pattp, pt))
+            return pattp
           }
           ptvars foreach instantiateTypeVar
         }
         tvars foreach instantiateTypeVar
       }
-      intersect(pt, tpt.tpe)
+      intersect(pt, pattp)
     }
 
     def inferModulePattern(pat: Tree, pt: Type) =

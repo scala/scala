@@ -98,6 +98,6 @@ trait Set[A] extends (A => Boolean) with Iterable[A] {
    *
    *  @return a string showing all elements of this set.
    */
-  override def toString(): String = mkString("{", ", ", "}")
+  override def toString(): String = mkString("Set(", ", ", ")")
 
 }

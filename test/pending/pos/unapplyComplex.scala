@@ -29,7 +29,7 @@ object Test {
 	Console.println("mod"+mod+"arg"+arg)
     }
     val Komplex = ComplexRect
-    new ComplexPolar(Math.sqrt(2),Math.PI / 4.0) match {
+    new ComplexPolar(Math.sqrt(2),Math.Pi / 4.0) match {
       case Komplex(re,im) => // z @ ???
 	Console.println("re"+re+" im"+im)
     }
