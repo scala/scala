@@ -94,11 +94,16 @@ class InterpreterLoop(in0: BufferedReader, out: PrintWriter) {
    *  <code>command()</code> for each line of input, and stops when
    *  <code>command()</code> returns false.
    */
-  def repl(): Unit =
+  def repl(): Unit = {
+    var firstTime = true
     while(true) {
       if(interactive) {
         out.print("\nscala> ")
         out.flush
+        if(firstTime) {
+          interpreter.prime
+          firstTime = false
+        }
       }
       var line = in.readLine()
       if (line eq null)
@@ -114,6 +119,7 @@ class InterpreterLoop(in0: BufferedReader, out: PrintWriter) {
         case None => ()
       }
     }
+  }
 
   /** interpret all lines from a specified file */
   def interpretAllFrom(filename: String): Unit = {
@@ -214,7 +220,7 @@ class InterpreterLoop(in0: BufferedReader, out: PrintWriter) {
       case IR.Success => Some(code)
       case IR.Error => None
       case IR.Incomplete => {
-        if(interactive && code.endsWith("\n\n\n")) {
+        if(interactive && code.endsWith("\n\n")) {
           out.println("Two blank lines seen.  Aborting this expression.")
           None
         } else {

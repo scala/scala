@@ -82,6 +82,17 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
     * submitted command unless an exception is thrown.  */
   def beQuiet = { printResults = false }
 
+  /** Temporarily be quiet */
+  def beQuietDuring[T](operation: => T): T = {
+    val wasPrinting = printResults
+    try {
+      printResults = false
+      operation
+    } finally {
+      printResults = wasPrinting
+    }
+  }
+
   /** directory to save .class files to */
   val classfilePath = File.createTempFile("scalaint", "")
   classfilePath.delete  // the file is created as a file; make it a directory
@@ -167,7 +178,6 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
   private def parse(line: String): Option[List[Tree]] = {
     var justNeedsMore = false
     reporter.withIncompleteHandler((pos,msg) => {justNeedsMore = true}) {
-//reporter.incompleteInputError = (pos,msg) => {justNeedsMore = true}
       // simple parse: just parse it, nothing else
       def simpleParse(code: String): List[Tree] = {
         val unit =
@@ -328,6 +338,19 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
     interpret("val " + name + " = " + binderName + ".value")
   }
 
+
+  /** Make a dry run in order to fill caches.  This is useful
+    * for interactive interpreters so that the interpreter responds
+    * quickly to the first user-supplied query.
+    */
+  def prime: Unit = beQuietDuring {
+    interpret("0")
+
+    // the next two lines are cosmetic; they cause
+    // the line number to go back to what it was
+    nextLineNo = nextLineNo - 1
+    prevRequests.remove(prevRequests.length - 1)
+  }
 
   /** <p>
    *    This instance is no longer needed, so release any resources
