@@ -10,7 +10,16 @@ import scala.collection.mutable.{ArrayBuffer, Buffer, HashMap, Queue, Stack, Has
 
 import java.util.concurrent.{ThreadPoolExecutor,
                              LinkedBlockingQueue,
-                             TimeUnit}
+                             TimeUnit,
+                             RejectedExecutionHandler}
+
+class TaskRejectedHandler(sched: JDK5Scheduler) extends RejectedExecutionHandler {
+  def rejectedExecution(r: Runnable, executor: ThreadPoolExecutor) {
+    sched.pendReaction
+    r.run()
+    sched.unPendReaction
+  }
+}
 
 /**
  *
@@ -19,7 +28,7 @@ import java.util.concurrent.{ThreadPoolExecutor,
  */
 class JDK5Scheduler(initCoreSize: int, maxSize: int) extends Thread with IScheduler {
 
-  //Debug.info("using JDK5Scheduler")
+  Debug.info("using JDK5Scheduler("+initCoreSize+", "+maxSize+")")
 
   /* Note:
    * When using an unbounded queue such as a
@@ -35,7 +44,8 @@ class JDK5Scheduler(initCoreSize: int, maxSize: int) extends Thread with ISchedu
                            initCoreSize,
                            5000,
                            TimeUnit.NANOSECONDS,
-                           new LinkedBlockingQueue)
+                           new LinkedBlockingQueue,
+                           new TaskRejectedHandler(this))
 
   private var coreSize = initCoreSize
 

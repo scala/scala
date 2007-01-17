@@ -30,7 +30,21 @@ import scala.collection.mutable.{ArrayBuffer, Buffer, HashMap, Queue, Stack, Has
 object Scheduler {
   private var sched: IScheduler =
     {
-      val s = new JDK5Scheduler(4, 32)
+      var s: Thread with IScheduler = null
+
+      // Check for JDK version >= 1.5
+      var olderThanJDK5 = false
+      try {
+        java.lang.Class.forName("java.util.concurrent.ThreadPoolExecutor")
+      } catch {
+        case _: ClassNotFoundException =>
+          olderThanJDK5 = true
+      }
+
+      s = if (olderThanJDK5)
+        new TickedScheduler
+      else
+        new JDK5Scheduler(4, 32)
       s.start()
       s
     }

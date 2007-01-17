@@ -74,8 +74,8 @@ class TickedScheduler extends Thread with IScheduler {
               if (terminating) throw new QuitException
           }
 
-          Debug.info("tasks.length: "+tasks.length)
-          Debug.info("pendingReactions: "+pendingReactions)
+          //Debug.info("tasks.length: "+tasks.length)
+          //Debug.info("pendingReactions: "+pendingReactions)
 
           if (tasks.length > 0) {
             // check if we need more threads
@@ -120,7 +120,6 @@ class TickedScheduler extends Thread with IScheduler {
    *  @param item the task to be executed.
    */
   def execute(item: Reaction): unit = synchronized {
-    Debug.info("got new task")
     if (!terminating) {
       if (idle.length > 0) {
         val wt = idle.dequeue

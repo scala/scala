@@ -31,9 +31,10 @@ private[actors] class Reaction(a: Actor,
   def actor = a
 
   def run(): Unit = {
-    val t = currentThread
+    /*val t = currentThread
     val saved = Actor.selfs.get(t).asInstanceOf[Actor]
-    Actor.selfs.put(t, a)
+    Actor.selfs.put(t, a)*/
+    Actor.tl.set(a)
     Scheduler.unPendReaction
     a.isDetached = false
     try {
@@ -59,9 +60,9 @@ private[actors] class Reaction(a: Actor,
         a.exitLinked()
       }
     }
-    finally {
+    /*finally {
       Actor.selfs.put(t, saved)
-    }
+    }*/
   }
 
   private var runnable = false

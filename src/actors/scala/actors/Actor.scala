@@ -26,7 +26,9 @@ import java.util.Stack
  */
 object Actor {
 
-  private[actors] val selfs = new java.util.WeakHashMap(16, 0.5f)
+  //private[actors] val selfs = new java.util.WeakHashMap(16, 0.5f)
+
+  private[actors] val tl = new ThreadLocal
 
   /**
    * Returns the currently executing actor. Should be used instead
@@ -36,13 +38,20 @@ object Actor {
    * @return returns the currently executing actor.
    */
   def self: Actor = synchronized {
-    val t = currentThread
+    var a = tl.get.asInstanceOf[Actor]
+    if (null eq a) {
+      a = new ActorProxy(currentThread)
+      //Debug.info("created "+a+" for "+currentThread)
+      tl.set(a)
+    }
+    a
+    /*val t = currentThread
     var a = selfs.get(t).asInstanceOf[Actor]
     if (a eq null) {
       a = new ActorProxy(t)
       selfs.put(t, a)
     }
-    a
+    a*/
   }
 
   def actor(body: => Unit): Actor = synchronized {
@@ -155,47 +164,11 @@ object Actor {
   def reply(): Unit = self.reply(())
 
   private[actors] trait Body[a] {
-    def orElse[b >: a](other: => b): b
     def andThen[b](other: => b): Nothing
   }
 
   implicit def mkBody[a](body: => a) = new Body[a] {
-    def orElse[b >: a](other: => b): b = choose(body, other)
     def andThen[b](other: => b): Nothing = seq(body, other)
-  }
-
-  private[actors] def choose[a, b >: a](alt1: => a, alt2: => b): b = {
-    val s = self
-    // save former custom suspendActor function
-    // (e.g. from further orElse)
-    val suspendNext = s.suspendActor
-    val detachNext = s.detachActor
-
-    // have to get out of the point of suspend in alt1's
-    // receive
-    s.suspendActor = () => {
-      s.isSuspended = false
-      s.waitingFor = s.waitingForNone
-      throw new SuspendActorException
-    }
-    s.detachActor = f => {
-      s.waitingFor = s.waitingForNone
-      Scheduler.unPendReaction
-      throw new SuspendActorException
-    }
-
-    try {
-      val res = alt1
-      s.suspendActor = suspendNext
-      s.detachActor = detachNext
-      res
-    }
-    catch {
-      case d: SuspendActorException =>
-        s.suspendActor = suspendNext
-        s.detachActor = detachNext
-        alt2
-    }
   }
 
   /**
@@ -498,69 +471,56 @@ trait Actor extends OutputChannel[Any] {
   private[actors] def tick(): Unit =
     Scheduler tick this
 
-  private[actors] def defaultDetachActor: PartialFunction[Any, Unit] => Unit =
-    (f: PartialFunction[Any, Unit]) => {
-      continuation = f
-      isDetached = true
-      throw new SuspendActorException
-    }
+  private[actors] def detachActor(f: PartialFunction[Any, Unit]) {
+    continuation = f
+    isDetached = true
+    throw new SuspendActorException
+  }
 
-  private[actors] var suspendActor: () => Unit = _
-  private[actors] var suspendActorFor: long => Unit = _
-  private[actors] var resumeActor: () => Unit = _
-  private[actors] var detachActor: PartialFunction[Any, Unit] => Unit = _
-  private[actors] var kill: () => Unit = _
+  private[actors] var kill = () => {}
 
   private class ExitSuspendLoop extends Throwable
 
-  private[actors] def resetActor(): Unit = {
-    suspendActor = () => {
-      isWaiting = true
-      while(isWaiting) {
-        try {
-          wait()
-        } catch {
-          case _: InterruptedException =>
-        }
+  def suspendActor() {
+    isWaiting = true
+    while(isWaiting) {
+      try {
+        wait()
+      } catch {
+        case _: InterruptedException =>
       }
     }
-
-    suspendActorFor = (msec: long) => {
-      val ts = Platform.currentTime
-      var waittime = msec
-      var fromExc = false
-      isWaiting = true
-
-      try {
-        while(isWaiting) {
-          try {
-            fromExc = false
-            wait(waittime)
-          } catch {
-            case _: InterruptedException => {
-              fromExc = true
-              val now = Platform.currentTime
-              val waited = now-ts
-              waittime = msec-waited
-              if (waittime < 0) { isWaiting = false }
-            }
-          }
-          if (!fromExc) throw new ExitSuspendLoop
-        }
-      } catch { case _: ExitSuspendLoop => }
-    }
-
-    resumeActor = () => {
-      isWaiting = false
-      notify()
-    }
-
-    detachActor = defaultDetachActor
-
-    kill = () => {}
   }
 
-  resetActor()
+  def suspendActorFor(msec: long) {
+    val ts = Platform.currentTime
+    var waittime = msec
+    var fromExc = false
+    isWaiting = true
+
+    try {
+      while(isWaiting) {
+        try {
+          fromExc = false
+          wait(waittime)
+        } catch {
+          case _: InterruptedException => {
+            fromExc = true
+            val now = Platform.currentTime
+            val waited = now-ts
+            waittime = msec-waited
+            if (waittime < 0) { isWaiting = false }
+          }
+        }
+        if (!fromExc) throw new ExitSuspendLoop
+      }
+    } catch { case _: ExitSuspendLoop => }
+  }
+
+  def resumeActor() {
+    isWaiting = false
+    notify()
+  }
 
   /**
    * Starts this actor.
