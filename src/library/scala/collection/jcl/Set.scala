@@ -1,10 +1,21 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2006-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+// $Id$
+
 package scala.collection.jcl;
 
 /** Analogous to a Java set.
- **
- ** @author Sean McDirmid
- **/
+ *
+ *  @author Sean McDirmid
+ */
 trait Set[A] extends Collection[A] with scala.collection.mutable.Set[A] {
+
   /** Add will return false if "a" already exists in the set. **/
   override def add(a : A) : Boolean;
 
@@ -15,6 +26,7 @@ trait Set[A] extends Collection[A] with scala.collection.mutable.Set[A] {
   override def retain(f : A => Boolean) = super[Collection].retain(f);
   override def isEmpty = super[Collection].isEmpty;
   override final def contains(a : A) = has(a);
+
   override def transform(f : A => A) = {
     var toAdd : List[A] = Nil;
     val i = elements;
@@ -27,6 +39,7 @@ trait Set[A] extends Collection[A] with scala.collection.mutable.Set[A] {
     }
     addAll(toAdd);
   }
+
   override def pfilter(p : A => Boolean) : Set[A] = new Filter(p);
   class Filter(p : A => Boolean) extends super.Filter(p) with Set[A] {
     override def filter(p : A => Boolean) = super[Set].filter(p);

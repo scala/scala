@@ -1,8 +1,19 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2006-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+// $Id$
+
 package scala.collection.jcl;
 
 /** A map whose keys are sorted.
-  *  @author Sean McDirmid
-  */
+ *
+ *  @author Sean McDirmid
+ */
 trait SortedMap[K,E] extends Map[K,E] with Sorted[K,Tuple2[K,E]] {
   final protected type SortedSelf = SortedMap[K,E];
   override def compare(k0 : K, k1 : K) : Int;
@@ -43,6 +54,7 @@ trait SortedMap[K,E] extends Map[K,E] with Sorted[K,Tuple2[K,E]] {
     override def rangeImpl(from : Option[K], until : Option[K]) : SortedMap[K,E] =
       SortedMap.this.Range(from, until).pfilter(p);
   }
+
   protected def Range(from : Option[K], until : Option[K]) : SortedMap[K,E] = new Range(from,until);
   protected class Range(from : Option[K], until : Option[K]) extends SuperFilter(key => {
     ((from == None || (compare(from.get,key) <= 0)) &&

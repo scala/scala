@@ -1,23 +1,39 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2006-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+// $Id$
+
 package scala.collection.jcl;
 
 /** A mutable sequence that supports element insertion and update.
  *
- * @author Sean McDirmid
+ *  @author Sean McDirmid
  */
 trait Buffer[A] extends MutableSeq[A] with Collection[A] with Sorted[Int,A] {
   final protected type SortedSelf = Buffer[A];
+
   override def elements : BufferIterator[Int,A];
+
   /** The first index of a buffer is 0. */
   override def first = 0;
+
   /** The last index of a buffer is its size - 1. */
   override def last = size - 1;
+
   /** Indices are compared through subtraction. */
   final def compare(k0 : Int, k1 : Int) = k0 - k1;
+
   /** Removes the element at index "idx" */
   def remove(idx : Int) = {
     val i = elements;
     val ret = i.seek(idx); i.remove; ret;
   }
+
   /** Replaces the element at index "idx" with "a."
     * @returns the element replaced.
     */
@@ -25,8 +41,10 @@ trait Buffer[A] extends MutableSeq[A] with Collection[A] with Sorted[Int,A] {
     val i = elements;
     val ret = i.seek(idx); i.set(a); ret;
   }
+
   /** Equivalent to set except the replaced element is not returned. */
   def update(idx : Int, a : A) : Unit = set(idx, a);
+
   /** @returns always true. */
   def add(a : A) : Boolean = {
     val i = elements;
@@ -34,19 +52,27 @@ trait Buffer[A] extends MutableSeq[A] with Collection[A] with Sorted[Int,A] {
     i.add(a);
     true;
   }
+
   /** Inserts "a" into this buffer just before the element at index "idx." */
-  def add(idx : Int, a : A) : Unit = {
+  def add(idx: Int, a: A): Unit = {
     val i = elements; i.seek(idx);
     i.add(a);
   }
-  /** Inserts all elements of "that" into this buffer just before the element at index "idx." */
-  def addAll(idx : Int, that : Iterable[A]) : Unit = {
+
+  /** Inserts all elements of <code>that</code> into this buffer just before
+   *  the element at index <code>idx</code>.
+   *
+   *  @param idx  ..
+   *  @param that ..
+   */
+  def addAll(idx: Int, that: Iterable[A]): Unit = {
     val i = elements; i.seek(idx);
     for (val that <- that) {
       i.add(that); i.next;
     }
   }
-  override def transform(f : A => A) : Boolean = {
+
+  override def transform(f: A => A): Boolean = {
     var changed = false;
     val i = elements;
     while (i.hasNext) {

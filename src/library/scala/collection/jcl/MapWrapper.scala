@@ -1,8 +1,19 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2006-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+// $Id$
+
 package scala.collection.jcl;
 
 /** A wrapper around a Java map.
-   * @author Sean McDirmid
-   */
+ *
+ *  @author Sean McDirmid
+ */
 trait MapWrapper[K,E] extends jcl.Map[K,E] {
   protected def underlying : java.util.Map;
   override def size = underlying.size;

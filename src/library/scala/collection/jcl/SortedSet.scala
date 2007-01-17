@@ -1,5 +1,17 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2006-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+// $Id$
+
 package scala.collection.jcl;
+
 /** Analogous to a Java sorted set.
+ *
  *  @author Sean McDirmid
  */
 trait SortedSet[A] extends jcl.Set[A] with Sorted[A,A] {

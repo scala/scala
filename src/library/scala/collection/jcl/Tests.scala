@@ -1,11 +1,23 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2006-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+// $Id$
+
 package scala.collection.jcl;
 
 private[jcl] object Tests {
+
   def main(args : Array[String]) : Unit = {
     hashSet;
     treeSet;
     treeMap;
   }
+
   def treeSet : Unit = {
     val set = new TreeSet[String];
     set + "aaa" + "bbb" + "ccc" + "ddd" + "eee" + "fff";
@@ -24,6 +36,7 @@ private[jcl] object Tests {
     Console.println(rset);
     Console.println(fset);
   }
+
   def treeMap : Unit = {
     val map = new TreeMap[String,Integer];
     map + ("bb" -> 3) + ("cc" -> 4) + ("aa" -> 2) + ("dd" -> 5);
@@ -34,9 +47,7 @@ private[jcl] object Tests {
     //Console.println(map);
     val fmap : SortedMap[String,Integer] = rmap.pfilter(k => k.length == 2);
     Console.println(fmap);
-
   }
-
 
   def hashSet = {
     val set = new HashSet[String];

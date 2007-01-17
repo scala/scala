@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -30,7 +30,7 @@ object CompileServer extends SocketServer {
   val VERSION: String =
     System.getProperty("scala.tool.version", "unknown version")
   val COPYRIGHT: String =
-    System.getProperty("scala.copyright", "(c) 2002-2006 LAMP/EPFL")
+    System.getProperty("scala.copyright", "(c) 2002-2007 LAMP/EPFL")
   val versionMsg = PRODUCT + " " + VERSION + " -- " + COPYRIGHT
 
   val MaxCharge = 0.8

@@ -1,9 +1,24 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2006-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+// $Id$
+
 package scala.collection.jcl;
 
-/** A wrapper around a Java sorted set.
- ** The comparator of the sorted set matches the comparator of this set.
-    @author Sean McDirmid
-  */
+/** <p>
+ *    A wrapper around a Java sorted set.
+ *  </p>
+ *  <p>
+ *    The comparator of the sorted set matches the comparator of this set.
+ *  </p>
+ *
+ *  @author Sean McDirmid
+ */
 trait SortedSetWrapper[A] extends SortedSet[A] with SetWrapper[A] {
   protected def underlying : java.util.SortedSet;
   /** delegates to the comparator of the underlying Java sorted set */

@@ -1,7 +1,18 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2006-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+// $Id$
+
 package scala.collection.jcl;
 
 /** A mutable map that is compatible with Java maps.
- * @author Sean McDirmid
+ *
+ *  @author Sean McDirmid
  */
 trait Map[K,E] extends MutableIterable[Tuple2[K,E]] with scala.collection.mutable.Map[K,E] {
   override def clear = super[MutableIterable].clear;

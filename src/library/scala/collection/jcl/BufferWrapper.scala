@@ -1,8 +1,19 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2006-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+// $Id$
+
 package scala.collection.jcl;
 
 /** Wraps Java lists.
-  * @author Sean McDirmid
-  */
+ *
+ *  @author Sean McDirmid
+ */
 trait BufferWrapper[A] extends Buffer[A] with CollectionWrapper[A] {
   protected def underlying : java.util.List;
   override def elements : BufferIterator[Int,A] = new IteratorWrapper(underlying.listIterator);

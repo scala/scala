@@ -1,9 +1,19 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2006-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+// $Id$
+
 package scala.collection.jcl;
 
 /** Used to wrap Java collections in Scala.
- **
- ** @author Sean McDirmid
- **/
+ *
+ *  @author Sean McDirmid
+ */
 trait CollectionWrapper[A] extends Collection[A] with IterableWrapper[A] {
   /** Override to specify the collection being accessed through this wrapper.
    ** Collection operations are then routed through the wrapped Java collection.
