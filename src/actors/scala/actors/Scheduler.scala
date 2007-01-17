@@ -132,7 +132,7 @@ class TickedScheduler extends Thread with IScheduler {
       if (a.isDetached || a.isWaiting) {
         // dump contents of mailbox
         Console.println("Waiting with mailbox:")
-        a.in.printMailbox
+        //a.printMailbox
       }
 
       Console.println

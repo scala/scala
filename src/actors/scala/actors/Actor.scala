@@ -10,8 +10,10 @@
 
 package scala.actors
 
-import scala.collection.mutable.{HashSet, Stack}
+import scala.collection.mutable.{HashSet, Queue}
 import compat.Platform
+
+import java.util.Stack
 
 /**
  * The <code>Actor</code> object provides functions for the definition of
@@ -19,7 +21,7 @@ import compat.Platform
  * <code>receive</code>, <code>react</code>, <code>reply</code>,
  * etc.
  *
- * @version 0.9.0
+ * @version 0.9.2
  * @author Philipp Haller
  */
 object Actor {
@@ -67,9 +69,7 @@ object Actor {
   }
 */
 
-  def ? : Any = self.in.?
-
-  def poll: Option[Any] = self.in.poll
+  def ? : Any = self.?
 
   /**
    * Receives a message from the mailbox of
@@ -80,7 +80,7 @@ object Actor {
    * @return  ...
    */
   def receive[a](f: PartialFunction[Any, a]): a =
-    self.in.receive(f)
+    self.receive(f)
 
   /**
    * Receives a message from the mailbox of
@@ -95,7 +95,7 @@ object Actor {
    * @return     ...
    */
   def receiveWithin[R](msec: long)(f: PartialFunction[Any, R]): R =
-    self.in.receiveWithin(msec)(f)
+    self.receiveWithin(msec)(f)
 
   /**
    * <code>receive</code> for event-based reactors.
@@ -108,7 +108,7 @@ object Actor {
    * @return  ...
    */
   def react(f: PartialFunction[Any, Unit]): Nothing =
-    self.in.react(f)
+    self.react(f)
 
   /**
    * <code>receiveWithin</code> for event-based reactors.
@@ -122,10 +122,10 @@ object Actor {
    * @return     ...
    */
   def reactWithin(msec: long)(f: PartialFunction[Any, Unit]): Nothing =
-    self.in.reactWithin(msec)(f)
+    self.reactWithin(msec)(f)
 
   def eventloop(f: PartialFunction[Any, Unit]): Nothing =
-    self.in.react(new RecursiveProxyHandler(self, f))
+    self.react(new RecursiveProxyHandler(self, f))
 
   private class RecursiveProxyHandler(a: Actor, f: PartialFunction[Any, Unit])
           extends PartialFunction[Any, Unit] {
@@ -133,23 +133,8 @@ object Actor {
       true // events are immediately removed from the mailbox
     def apply(m: Any): Unit = {
       if (f.isDefinedAt(m)) f(m)
-      self.in.react(this)
+      self.react(this)
     }
-  }
-
-  /**
-   * <p>Used for receiving a message from a specific actor.</p>
-   * <p>Example:</p> <code>from (a) receive { //... }</code>
-   *
-   * @param r ...
-   * @return  ...
-   */
-  def from(r: Actor): FromReceive =
-    new FromReceive(r)
-
-  private[actors] class FromReceive(r: Actor) {
-    def receive[a](f: PartialFunction[Any, a]): a =
-      self.in.receiveFrom(r)(f)
   }
 
   /**
@@ -161,13 +146,13 @@ object Actor {
    * Send <code>msg</code> to the actor waiting in a call to
    * <code>!?</code>.
    */
-  def reply(msg: Any): Unit = sender.reply ! msg
+  def reply(msg: Any): Unit = self.reply(msg)
 
   /**
    * Send <code>()</code> to the actor waiting in a call to
    * <code>!?</code>.
    */
-  def reply(): Unit = reply(())
+  def reply(): Unit = self.reply(())
 
   private[actors] trait Body[a] {
     def orElse[b >: a](other: => b): b
@@ -189,12 +174,12 @@ object Actor {
     // have to get out of the point of suspend in alt1's
     // receive
     s.suspendActor = () => {
-      s.in.isSuspended = false
-      s.in.waitingFor = s.in.waitingForNone
+      s.isSuspended = false
+      s.waitingFor = s.waitingForNone
       throw new SuspendActorException
     }
     s.detachActor = f => {
-      s.in.waitingFor = s.in.waitingForNone
+      s.waitingFor = s.waitingForNone
       Scheduler.unPendReaction
       throw new SuspendActorException
     }
@@ -284,13 +269,6 @@ object Actor {
   def exit(reason: String): Nothing = self.exit(reason)
 }
 
-case class Request[a](msg: a) {
-  private[actors] val in = new Channel[a]
-  def reply(resp: a): unit = {
-    in ! resp
-  }
-}
-
 /**
  * <p>
  *   This class provides (together with <code>Channel</code>) an
@@ -302,26 +280,148 @@ case class Request[a](msg: a) {
  *   Philipp Haller, Martin Odersky <i>Proc. JMLC 2006</i>
  * </p>
  *
- * @version 0.9.0
+ * @version 0.9.2
  * @author Philipp Haller
  */
 trait Actor extends OutputChannel[Any] {
-  private[actors] val in = new Channel[Any]
-  in.receiver = this
 
-  private var rc: Channel[Any] = null
+  private var received: Option[Any] = None
 
-  private[actors] def reply: Channel[Any] = {
-    if (rc eq null) {
-      rc = new Channel[Any]
-      rc.receiver = this
+  private[actors] val waitingForNone = (m: Any) => false
+  private[actors] var waitingFor: Any => boolean = waitingForNone
+  private[actors] var isSuspended = false
+
+  private val sessions = new Stack//[Channel[Any]]
+
+  private val mailbox = new Queue[Pair[Any, Channel[Any]]]
+
+  private def send(msg: Any, session: Channel[Any]) = synchronized {
+    tick()
+    if (waitingFor(msg)) {
+      received = Some(msg)
+      sessions push session
+      waitingFor = waitingForNone
+
+      if (timeoutPending) {
+        timeoutPending = false
+        TimerThread.trashRequest(this)
+      }
+
+      if (isSuspended)
+        resumeActor()
+      else
+        scheduleActor(null, msg)
+    } else {
+      mailbox += Pair(msg, session)
     }
-    rc
   }
 
-  private[actors] def freshReply(): Unit = {
-    rc = new Channel[Any]
-    rc.receiver = this
+  def receive[R](f: PartialFunction[Any, R]): R = {
+    assert(Actor.self == this, "receive from channel belonging to other actor")
+    this.synchronized {
+      tick()
+      mailbox.dequeueFirst((p: Pair[Any, Channel[Any]]) => {
+        f.isDefinedAt(p._1)
+      }) match {
+        case Some(Pair(msg, session)) => {
+          received = Some(msg)
+          sessions push session
+        }
+        case None => {
+          waitingFor = f.isDefinedAt
+          isSuspended = true
+          suspendActor()
+        }
+      }
+      waitingFor = waitingForNone
+      isSuspended = false
+    }
+    val result = f(received.get)
+    sessions.pop
+    result
+  }
+
+  def receiveWithin[R](msec: long)(f: PartialFunction[Any, R]): R = {
+    assert(Actor.self == this, "receive from channel belonging to other actor")
+    this.synchronized {
+      tick()
+      mailbox.dequeueFirst((p: Pair[Any, Channel[Any]]) => {
+        f.isDefinedAt(p._1)
+      }) match {
+        case Some(Pair(msg, session)) => {
+          received = Some(msg)
+          sessions push session
+        }
+        case None => {
+          waitingFor = f.isDefinedAt
+          isSuspended = true
+          received = None
+          suspendActorFor(msec)
+          Debug.info("received: "+received)
+          if (received.isEmpty) {
+            Debug.info("no message received after "+msec+" millis")
+            if (f.isDefinedAt(TIMEOUT)) {
+              Debug.info("executing TIMEOUT action")
+              waitingFor = waitingForNone
+              isSuspended = false
+              val result = f(TIMEOUT)
+              return result
+            }
+            else
+              error("unhandled timeout")
+          }
+        }
+      }
+      waitingFor = waitingForNone
+      isSuspended = false
+    }
+    val result = f(received.get)
+    sessions.pop
+    result
+  }
+
+  def react(f: PartialFunction[Any, Unit]): Nothing = {
+    assert(Actor.self == this, "react on channel belonging to other actor")
+    Scheduler.pendReaction
+    this.synchronized {
+      tick()
+      mailbox.dequeueFirst((p: Pair[Any, Channel[Any]]) => {
+        f.isDefinedAt(p._1)
+      }) match {
+        case Some(Pair(msg, session)) => {
+          sessions push session
+          scheduleActor(f, msg)
+        }
+        case None => {
+          waitingFor = f.isDefinedAt
+          detachActor(f)
+        }
+      }
+      throw new SuspendActorException
+    }
+  }
+
+  def reactWithin(msec: long)(f: PartialFunction[Any, Unit]): Nothing = {
+    assert(Actor.self == this, "react on channel belonging to other actor")
+    Scheduler.pendReaction
+    this.synchronized {
+      tick()
+      mailbox.dequeueFirst((p: Pair[Any, Channel[Any]]) => {
+        f.isDefinedAt(p._1)
+      }) match {
+        case Some(Pair(msg, session)) => {
+          sessions push session
+          scheduleActor(f, msg)
+        }
+        case None => {
+          waitingFor = f.isDefinedAt
+          TimerThread.requestTimeout(this, f, msec)
+          timeoutPending = true
+          detachActor(f)
+        }
+      }
+      throw new SuspendActorException
+    }
   }
 
   /**
@@ -335,32 +435,49 @@ trait Actor extends OutputChannel[Any] {
   /**
    * Sends <code>msg</code> to this actor (asynchronous).
    */
-  def !(msg: Any): Unit = in ! msg
+  def !(msg: Any): Unit = send(msg, Actor.self.reply)
 
-  def forward(msg: Any): Unit = in forward msg
+  def forward(msg: Any): Unit = send(msg, Actor.sender.reply)
 
   /**
    * Sends <code>msg</code> to this actor and awaits reply
    * (synchronous).
    */
-  def !?(msg: Any): Any = in !? msg
-
-  def rpc[a](msg: a): a = {
-    Debug.info("Actor.!? called by "+Actor.self)
-    val req = Request(msg)
-    in ! req
-    req.in.?
+  def !?(msg: Any): Any = {
+    val replyChannel = Actor.self.freshReply()
+    this ! msg
+    replyChannel.receive {
+      case x => x
+    }
   }
 
-  private val lastSenders = new Stack[Actor]
-
-  private[actors] def sender: Actor = {
-    if (lastSenders.isEmpty) null
-    else lastSenders.top
+  def !?(msec: long, msg: Any): Option[Any] = {
+    val replyChannel = Actor.self.freshReply()
+    this ! msg
+    replyChannel.receiveWithin(msec) {
+      case TIMEOUT => None
+      case x => Some(x)
+    }
   }
 
-  private[actors] def pushSender(s: Actor) = { lastSenders.push(s) }
-  private[actors] def popSender(): Unit = { lastSenders.pop }
+  def reply(msg: Any): Unit = session ! msg
+
+  private var rc = new Channel[Any]
+  def reply = rc
+  def freshReply() = { rc = new Channel[Any]; rc }
+
+  def ? : Any = receive {
+    case x => x
+  }
+
+  private[actors] def sender: Actor =
+    if (sessions.empty) null
+    else sessions.peek.asInstanceOf[Channel[Any]].receiver
+
+  private[actors] def session: Channel[Any] =
+    if (sessions.empty) null
+    else sessions.peek.asInstanceOf[Channel[Any]]
+
 
   private[actors] var continuation: PartialFunction[Any, Unit] = null
   private[actors] var timeoutPending = false
