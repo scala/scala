@@ -158,14 +158,13 @@ class TickedScheduler extends Thread with IScheduler {
    */
   def shutdown(): unit = synchronized {
     terminating = true
-
     val idleThreads = idle.elements
     while (idleThreads.hasNext) {
       val worker = idleThreads.next
       worker.running = false
       worker.interrupt()
-      // caused deadlock (tries to acquire lock of worker)
-      //worker.join()
     }
+    // terminate timer thread
+    TimerThread.t.interrupt()
   }
 }

@@ -152,8 +152,11 @@ class JDK5Scheduler(initCoreSize: int, maxSize: int) extends Thread with ISchedu
   /** Shuts down all idle worker threads.
    */
   def shutdown(): unit = synchronized {
+    Debug.info("Shutting down scheduler...")
     terminating = true
-
     executor.shutdown()
+    // terminate timer thread
+    TimerThread.t.interrupt()
+    Console.println("threads used: "+coreSize)
   }
 }
