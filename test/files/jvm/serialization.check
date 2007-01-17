@@ -22,12 +22,12 @@ x = Map(title -> 3, layers -> 2, buffers -> 20)
 y = Map(title -> 3, layers -> 2, buffers -> 20)
 x equals y: true - y equals x: true
 
-x = {2, 3}
-y = {2, 3}
+x = Set(2, 3)
+y = Set(2, 3)
 x equals y: true - y equals x: true
 
-x = {5, 3}
-y = {5, 3}
+x = Set(5, 3)
+y = Set(5, 3)
 x equals y: true - y equals x: true
 
 x = Queue(a,b,c)
@@ -42,20 +42,20 @@ x = Map(42 -> FortyTwo)
 y = Map(42 -> FortyTwo)
 x equals y: true - y equals x: true
 
-x = {0, 2}
-y = {0, 2}
+x = Set(0, 2)
+y = Set(0, 2)
 x equals y: true - y equals x: true
 
 x = Map(title -> 3, buffers -> 20, layers -> 2)
 y = Map(title -> 3, buffers -> 20, layers -> 2)
 x equals y: true - y equals x: true
 
-x = {0, 8, 9}
-y = {0, 8, 9}
+x = Set(0, 8, 9)
+y = Set(0, 8, 9)
 x equals y: true - y equals x: true
 
-x = {title, buffers, layers}
-y = {title, buffers, layers}
+x = Set(title, buffers, layers)
+y = Set(title, buffers, layers)
 x equals y: true - y equals x: true
 
 x = LinkedList(2,3)
