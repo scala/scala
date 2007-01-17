@@ -90,7 +90,7 @@ trait IScheduler {
  *
  * @author Philipp Haller
  */
-class TickedScheduler extends Thread with IScheduler {
+class TickedDebugScheduler extends Thread with IScheduler {
   private val tasks = new Queue[Reaction]
 
   // Worker threads

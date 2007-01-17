@@ -548,7 +548,6 @@ trait Actor extends OutputChannel[Any] {
           if (!fromExc) throw new ExitSuspendLoop
         }
       } catch { case _: ExitSuspendLoop => }
-      Debug.info("leaving suspendActorFor("+msec+")")
     }
 
     resumeActor = () => {
@@ -566,8 +565,10 @@ trait Actor extends OutputChannel[Any] {
   /**
    * Starts this actor.
    */
-  def start(): Unit =
+  def start(): Unit = {
+    Scheduler.pendReaction
     Scheduler start new Reaction(this)
+  }
 
   private val links = new HashSet[Actor]
 
