@@ -13,7 +13,6 @@ package scala.actors
 
 import java.lang.{InterruptedException, Runnable, Thread}
 import java.util.Date
-import java.util.logging.{Logger, Level}
 
 import scala.collection.mutable.PriorityQueue
 
@@ -57,22 +56,6 @@ object TimerThread extends AnyRef with Runnable {
     }
   }
 
-  /**
-   * @param t ...
-   */
-  def log(t: Throwable): unit = {
-    Debug.info("logging "+t)
-    val logger = Logger.getLogger("Scheduler")
-    val buf = new StringBuffer
-    buf.append("Exception caught by task:\n")
-    buf.append(t.toString()+"\n")
-    val trace = t.getStackTrace()
-    for (val elem <- trace) {
-      buf.append(elem.toString() + "\n")
-    }
-    logger.log(Level.FINE, buf.toString())
-  }
-
   override def run = {
     try {
       while(true) {
@@ -81,7 +64,7 @@ object TimerThread extends AnyRef with Runnable {
             val sleepTime = dequeueLateAndGetSleepTime
             if (lateList.isEmpty) wait(sleepTime)
           } catch {
-            case t: Throwable => { log(t); throw t }
+            case t: Throwable => { throw t }
           }
         }
 

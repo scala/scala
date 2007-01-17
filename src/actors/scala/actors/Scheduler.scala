@@ -30,10 +30,7 @@ import scala.collection.mutable.{ArrayBuffer, Buffer, HashMap, Queue, Stack, Has
 object Scheduler {
   private var sched: IScheduler =
     {
-      val logger = Logger.getLogger("Scheduler")
-      logger.addHandler(new FileHandler("sched.log"))
-      logger.setLevel(Level.FINE)
-      val s = new TickedScheduler
+      val s = new JDK5Scheduler(4, 32)
       s.start()
       s
     }

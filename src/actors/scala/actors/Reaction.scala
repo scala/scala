@@ -12,7 +12,6 @@
 package scala.actors
 
 import java.lang.{InterruptedException, Runnable}
-import java.util.logging.{Level, Logger}
 
 class ExitActorException extends Throwable
 
@@ -30,22 +29,6 @@ private[actors] class Reaction(a: Actor,
   def this(a: Actor) = this(a, null, null)
 
   def actor = a
-
-  /**
-   * @param t ...
-   */
-  def log(t: Throwable): unit = {
-    Debug.info("logging "+t)
-    val logger = Logger.getLogger("Scheduler")
-    val buf = new StringBuffer
-    buf.append("Exception caught by task:\n")
-    buf.append(t.toString()+"\n")
-    val trace = t.getStackTrace()
-    for (val elem <- trace) {
-      buf.append(elem.toString() + "\n")
-    }
-    logger.log(Level.FINE, buf.toString())
-  }
 
   def run(): Unit = {
     val t = currentThread
@@ -67,14 +50,12 @@ private[actors] class Reaction(a: Actor,
     }
     catch {
       case ie: InterruptedException => {
-        log(ie)
         a.exitLinked()
       }
       case d: SuspendActorException => {
         // do nothing (continuation is already saved)
       }
       case t: Throwable => {
-        log(t)
         a.exitLinked()
       }
     }
