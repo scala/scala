@@ -148,7 +148,8 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
   private def newLineName = {
     val num = nextLineNo
     nextLineNo = nextLineNo + 1
-    compiler.nme.INTERPRETER_LINE_PREFIX + num
+    (compiler.nme.INTERPRETER_LINE_PREFIX +
+      (if (num>=0) num.toString else "_neg" + (-num).toString))
   }
 
   /** import statements that should be used for submitted code */
@@ -261,6 +262,7 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
    *    reporter.  Values defined are available for future interpreted
    *    strings.
    *  </p>
+   *
    *  <p>
    *    The return value is whether the line was interpreter successfully,
    *    e.g. that there were no parse errors.
@@ -343,14 +345,13 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
     * for interactive interpreters so that the interpreter responds
     * quickly to the first user-supplied query.
     */
-  def prime: Unit = beQuietDuring {
-    interpret("0")
-
-    // the next two lines are cosmetic; they cause
-    // the line number to go back to what it was
-    nextLineNo = nextLineNo - 1
-    prevRequests.remove(prevRequests.length - 1)
-  }
+  def prime: Unit =
+    if(prevRequests.isEmpty)
+      beQuietDuring {
+        nextLineNo = -1  // cosmetic: make the first user-requested line
+                         // be number 0
+        interpret("0")
+      }
 
   /** <p>
    *    This instance is no longer needed, so release any resources
