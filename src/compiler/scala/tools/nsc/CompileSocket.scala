@@ -119,7 +119,7 @@ object CompileSocket {
 //      info("[Exit value: " + exitVal + "]")
     } catch {
       case ex: IOException =>
-        fatal("cannot start server." +
+        fatal("Cannot start compilation daemon." +
               "\ntried command: " + cmd)
     }
   }
@@ -159,7 +159,7 @@ object CompileSocket {
     }
     info("[Port number: " + port + "]")
     if (port < 0)
-      fatal("Could not connect to server.")
+      fatal("Could not connect to compilation daemon.")
     port
   }
 
@@ -172,34 +172,36 @@ object CompileSocket {
     } catch {
       case ex: /*FileNotFound+Security*/Exception =>
         fatal("Cannot create file: " +
-              portFile(port).getAbsolutePath() + "; exiting")
+              portFile(port).getAbsolutePath())
     }
 
   /** Delete the port number to which a scala compile server was connected */
   def deletePort(port: int): unit = portFile(port).delete()
 
   def getOrCreateSocket(vmArgs: String): Socket = {
-    val nAttempts = 9
+    val nAttempts = 49  // try for about 5 seconds
     def getsock(attempts: int): Socket =
       if (attempts == 0)
-        fatal("Unable to establish connection to server; exiting")
+        fatal("Unable to establish connection to compilation daemon")
       else {
         val port = getPort(vmArgs)
         val hostName = InetAddress.getLocalHost().getHostName()
         try {
-          new Socket(hostName, port)
+          val result = new Socket(hostName, port)
+          info("[Connected to compilation daemon at port " + port + "]")
+          result
         } catch {
           case e: /*IO+Security*/Exception =>
-            System.err.println(e)
-            System.err.println("...connection attempt to server at port " +
-                               port + " failed; re-trying...")
-            if (attempts % 2 == 0) portFile(port).delete()
-            Thread.sleep(100)
-            val result = getsock(attempts - 1)
-            if (attempts == nAttempts)
-              System.err.println("...connection established at port " +
-                                 port + "...")
-            result
+            info(e.toString)
+            info("[Connecting to compilation daemon at port "  +
+                 port + " failed; re-trying...]")
+
+            if (attempts % 2 == 0)
+              portFile(port).delete // 50% chance to stop trying on this port
+
+            Thread.sleep(100) // delay before retrying
+
+            getsock(attempts - 1)
         }
       }
     getsock(nAttempts)
