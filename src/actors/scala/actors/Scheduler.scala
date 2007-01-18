@@ -14,7 +14,6 @@ package scala.actors
 import compat.Platform
 
 import java.lang.{Runnable, Thread, InterruptedException}
-import java.util.logging.{Logger, FileHandler, Level}
 
 import scala.collection.Set
 import scala.collection.mutable.{ArrayBuffer, Buffer, HashMap, Queue, Stack, HashSet}
@@ -24,7 +23,7 @@ import scala.collection.mutable.{ArrayBuffer, Buffer, HashMap, Queue, Stack, Has
  * <code>Actor</code> to execute tasks of an execution of a
  * reactor.
  *
- * @version 0.9.0
+ * @version 0.9.2
  * @author Philipp Haller
  */
 object Scheduler {
@@ -43,8 +42,13 @@ object Scheduler {
 
       s = if (olderThanJDK5)
         new TickedScheduler
-      else
-        new JDK5Scheduler(4, 32)
+      else {
+        val corePoolSize =
+          Integer.parseInt(java.lang.System.getProperty("actors.corePoolSize"))
+        val maxPoolSize =
+          Integer.parseInt(java.lang.System.getProperty("actors.maxPoolSize"))
+        new JDK5Scheduler(corePoolSize, maxPoolSize)
+      }
       s.start()
       s
     }
