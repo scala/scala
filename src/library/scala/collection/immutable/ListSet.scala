@@ -94,7 +94,7 @@ class ListSet[A] extends AnyRef with Set[A] {
   /**
    *  @throws Predef.NoSuchElementException
    */
-  protected def elem: A = throw new NoSuchElementException("Set has no elelemnts");
+  protected def elem: A = throw new NoSuchElementException("Set has no elements");
 
   /**
    *  @throws Predef.NoSuchElementException
