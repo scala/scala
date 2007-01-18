@@ -202,11 +202,11 @@ final class Array[A](_length: Int) extends Seq[A] {
   /** A sub-array of <code>len</code> elements
    *  starting at index <code>from</code>
    *  @param from   The index of the first element of the slice
-   *  @param len    The number of elements in the slice
+   *  @param end    The index of the element following the slice
    *  @throws IndexOutOfBoundsException if <code>from < 0</code>
    *          or <code>length < from + len<code>
    */
-  override def slice(from: Int, len: Int): Array[A] = throw new Error()
+  override def slice(from: Int, end: Int): Array[A] = throw new Error()
 
   /** Returns an array consisting of all elements of this array that satisfy the
    *  predicate <code>p</code>. The order of the elements is preserved.
