@@ -10,6 +10,7 @@ object fsc extends Command {
   import _root_.scala.tools.docutil.ManPage._
 
   protected def cn = new Error().getStackTrace()(0).getClassName()
+  override def lastModified = "January 18, 2007"
 
   val name = Section("NAME",
 
@@ -25,28 +26,38 @@ object fsc extends Command {
 
   val description = Section("DESCRIPTION",
 
-    "The " & MBold(command) & " tool reads class and object definitions, " &
-    "written in the Scala programming language, and compiles them into " &
-    "bytecode class files.",
+    "The "&MBold("fsc")&" tool submits Scala compilation jobs to " &
+    "a compilation daemon. "&
+    "The first time it is executed, the daemon is started automatically. "&
+    "On subsequent "&
+    "runs, the same daemon can be reused, thus resulting in a faster compilation. "&
+    "The tool is especially effective when repeatedly compiling with the same "&
+    "class paths, because the compilation daemon can reuse a compiler instance.",
 
-    "By default, the compiler puts each class file in the same directory " &
-    "as its source file. You can specify a separate destination directory " &
-    "with -d (see " & Link(Bold("OPTIONS"), "#options") & ", below).")
+    "The compilation daemon is smart enough to flush its cached compiler "&
+    "when the class path changes.  However, if the contents of the class path "&
+    "change, for example due to upgrading a library, then the daemon "&
+    "should be explicitly shut down with " & MBold("-shutdown") & ".",
+
+    "Note that the "&Link(MBold("scala"),"scala.html")&" script runner "&
+    "will also use "&
+    "the offline compiler by default, with the sae advantages and caveats.")
 
   val options = Section("OPTIONS",
 
-    Section("Standard Options",
-      "The offline compiler has the same set of " & Link(Bold("Standard Options"),
-      "scalac#standard_options") & " as the " & MBold("scalac") & " commands " &
-      "with the following additional options:",
+      "The offline compiler supports " &
+      Link("all options of " & MBold("scalac"), "scalac.html#options") &
+      " plus the following:",
 
       DefinitionList(
         Definition(
           CmdOption("reset"),
-          "Reset compile server caches"),
+          "Reset compile server caches."),
         Definition(
           CmdOption("shutdown"),
-          "Shutdown compile server"),
+          "Shut down the compilation daemon.  The daemon attempts to restart "&
+          "itself as necessary, but sometimes an explicit shutdown is required. "&
+          "A common example is if jars on the class path have changed."),
         Definition(
           CmdOption("server", Argument("hostname:portnumber")),
           "Specify compile server host at port number.  Usually this option " &
@@ -54,13 +65,43 @@ object fsc extends Command {
           "the same filesystem."),
         Definition(
           CmdOption("J", Argument("flag")),
-          "Pass <flag> directly to runtime system (not yet implemented)")
-    )),
-
-    Section("Non-Standard Options",
-      "See the " & Link(Bold("Non-Standard Options"), "scalac.html#non-standard_options") &
-      " of the " & MBold("scalac") & " command."
+          "Pass <flag> directly to the Java VM for the compilation daemon.")
     ))
+
+  val example = Section("EXAMPLE",
+
+      "The following session shows a typical speed up due to using the "&
+      "offline compiler.",
+
+      CodeSample(
+      """> fsc -verbose -d /tmp test.scala
+        |...
+        |[Port number: 32834]
+        |[Starting new Scala compile server instance]
+        |[Classpath = ...]
+        |[loaded directory path ... in 692ms]
+        |...
+        |[parsing test.scala]
+        |...
+        |[total in 943ms]
+        |
+        |> fsc -verbose -d /tmp test.scala
+        |...
+        |[Port number: 32834]
+        |[parsing test.scala]
+        |...
+        |[total in 60ms]
+        |
+        |> fsc -verbose -d /tmp test.scala
+        |...
+        |[Port number: 32834]
+        |[parsing test.scala]
+        |...
+        |[total in 42ms]
+        |
+        |> fsc -verbose -shutdown
+        |[Scala compile server exited]
+        |""".stripMargin))
 
   val environment = Section("ENVIRONMENT",
 
@@ -69,33 +110,13 @@ object fsc extends Command {
         MBold("JAVACMD"),
         "Specify the " & MBold("java") & " command to be used " &
         "for running the Scala code.  Arguments may be specified " &
-        "as part of the environment variable; spaces, quotation marks " &
+        "as part of the environment variable; spaces, quotation marks, " &
         "etc., will be passed directly to the shell for expansion.")))
 
-  val examples = Section("EXAMPLES",
-
-    DefinitionList(
-      Definition(
-        "Compile a Scala program to the current directory",
-        CmdLine("HelloWorld.scala")),
-      Definition(
-        "Compile a Scala program to the destination directory " &
-        MBold("classes"),
-        CmdLine(CmdOption("d", "classes") & "HelloWorld.scala")),
-     Definition(
-        "Compile a Scala program using a user-defined " & MBold("java") & " " &
-        "command",
-        MBold("env JAVACMD") & Mono("=/usr/local/bin/cacao ") &
-        CmdLine(CmdOption("d", "classes") & "HelloWorld.scala")),
-      Definition(
-        "Compile all Scala files found in the source directory " &
-        MBold("src") & " to the destination directory " &
-        MBold("classes"),
-        CmdLine(CmdOption("d", "classes") & "src/*.scala"))))
 
   val exitStatus = Section("EXIT STATUS",
 
-    MBold(command) & " returns a zero exist status if it succeeds to " &
+    MBold(command) & " returns a zero exit status if it succeeds to " &
     "compile the specified input files. Non zero is returned in case " &
     "of failure.")
 
@@ -109,16 +130,17 @@ object fsc extends Command {
 
   def manpage = new Document {
     title = command
-    date = lastModified // e.g. "June 8, 2006"
-    author = "Stephane Micheloud"
-    version = "0.1"
+    date = lastModified
+    author = "Lex Spoon"
+    version = "0.2"
     sections = List(
       name,
       synopsis,
       parameters,
       options,
+      description,
+      example,
       environment,
-      examples,
       exitStatus,
       authors,
       bugs,
