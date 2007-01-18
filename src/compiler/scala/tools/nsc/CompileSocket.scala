@@ -43,8 +43,10 @@ object CompileSocket {
   /** A Pattern object for checking compiler output for errors */
   val errorPattern = java.util.regex.Pattern.compile(errorRegex)
 
+  private def error(msg: String) = System.err.println(msg)
+
   private def fatal(msg: String) = {
-    System.err.println(msg)
+    error(msg)
     exit(1)
   }
 
@@ -145,11 +147,12 @@ object CompileSocket {
   }
 
   /** Get the port number to which a scala compile server is connected;
-   *  If no server is running yet, create one
+   *  If no server is running yet, then create one.
    */
   def getPort(vmArgs: String): int = {
     var attempts = 0
     var port = pollPort()
+
     if (port < 0)
       startNewServer(vmArgs)
     while (port < 0 && attempts < MaxAttempts) {
@@ -178,13 +181,19 @@ object CompileSocket {
   /** Delete the port number to which a scala compile server was connected */
   def deletePort(port: int): unit = portFile(port).delete()
 
-  def getOrCreateSocket(vmArgs: String): Socket = {
+  /** Get a socket connected to a daemon.  If create is true, then
+    * create a new daemon if necessary.  Returns null if the connection
+    * cannot be established.
+    */
+  def getOrCreateSocket(vmArgs: String, create: boolean): Socket = {
     val nAttempts = 49  // try for about 5 seconds
     def getsock(attempts: int): Socket =
-      if (attempts == 0)
-        fatal("Unable to establish connection to compilation daemon")
-      else {
-        val port = getPort(vmArgs)
+      if (attempts == 0) {
+        error("Unable to establish connection to compilation daemon")
+        null
+      } else {
+        val port = if(create) getPort(vmArgs) else pollPort()
+        if(port < 0) return null
         val hostName = InetAddress.getLocalHost().getHostName()
         try {
           val result = new Socket(hostName, port)
@@ -206,6 +215,10 @@ object CompileSocket {
       }
     getsock(nAttempts)
   }
+
+  /** Same as getOrCreateSocket(vmArgs, true). */
+  def getOrCreateSocket(vmArgs: String): Socket =
+    getOrCreateSocket(vmArgs, true)
 
   def getSocket(serverAdr: String): Socket = {
     val cpos = serverAdr indexOf ':'

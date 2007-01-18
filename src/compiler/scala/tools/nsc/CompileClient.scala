@@ -24,6 +24,7 @@ object CompileClient {
 
   var verbose = false
   var version = false
+  var shutdown = false
 
   /** Convert a filename to an absolute path */
   def absFileName(path: String) = new File(path).getAbsolutePath()
@@ -53,6 +54,8 @@ object CompileClient {
         verbose = true
       } else if (arg == "-version") {
         version = true
+      } else if (arg == "-shutdown") {
+        shutdown = true
       }
       i = i + 1
       if (i < args.length) {
@@ -90,8 +93,12 @@ object CompileClient {
       Console.println("[Server arguments: " + args.mkString("", " ", "]"))
       Console.println("[VM arguments: " + vmArgs + "]")
     }
-    val socket = if (serverAdr == "") CompileSocket.getOrCreateSocket(vmArgs)
+    val socket = if (serverAdr == "") CompileSocket.getOrCreateSocket(vmArgs, !shutdown)
                  else CompileSocket.getSocket(serverAdr)
+    if(shutdown && (socket==null)) {
+      Console.println("[No compilation server running.]")
+      return 0
+    }
     val out = new PrintWriter(socket.getOutputStream(), true)
     val in = new BufferedReader(new InputStreamReader(socket.getInputStream()))
     out.println(CompileSocket.getPassword(socket.getPort()))
