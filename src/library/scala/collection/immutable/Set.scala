@@ -25,13 +25,14 @@ package scala.collection.immutable
  *  @version 1.1, 03/05/2004
  */
 object Set {
-  /** The empty set of this type
+  /** An empty immutable set.  This is implemented with a HashTreeSet.
+   * Note that for element types that have an Ordered view, it is more
+   * efficient to use a TreeSet, instead.
    */
-  def empty[A <% Ordered[A]] = new TreeSet[A]
+  def empty[A] = new HashTreeSet[A]
 
-  /** The canonical factory for this type
-   */
-  def apply[A <% Ordered[A]](elems: A*) = empty[A] ++ elems
+  /** Create an immutable map from a specified sequence of elements.  */
+  def apply[A](elems: A*) = empty[A] ++ elems
 }
 
 trait Set[A] extends AnyRef with collection.Set[A] {

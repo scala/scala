@@ -35,20 +35,19 @@ object TreeMap {
  *  @version 1.1, 03/05/2004
  */
 [serializable]
-class TreeMap[A <% Ordered[A], +B](val size: int, t: RedBlack[A]#Tree[B])
+class TreeMap[A <% Ordered[A], +B](tree: RedBlack[A]#Tree[B])
 extends RedBlack[A] with Map[A, B] {
 
   def isSmaller(x: A, y: A) = x < y
 
-  def this() = this(0, null)
+  def this() = this(Empty)
+  def size = tree.size
 
-  protected val tree: RedBlack[A]#Tree[B] = if (size == 0) Empty else t
-
-  private def newMap[B](s: int, t: RedBlack[A]#Tree[B]) = new TreeMap[A, B](s, t)
+  private def newMap[B](t: RedBlack[A]#Tree[B]) = new TreeMap[A, B](t)
 
   /** A factory to create empty maps of the same type of keys.
    */
-  def empty[C] = ListMap.empty[A, C]
+  def empty[C] = new TreeMap[A,C]
 
   /** A new TreeMap with the entry added is returned,
    *  if key is <em>not</em> in the TreeMap, otherwise
@@ -59,8 +58,16 @@ extends RedBlack[A] with Map[A, B] {
    *  @return ...
    */
   def update [B1 >: B](key: A, value: B1): TreeMap[A, B1] = {
-    val newsize = if (tree.lookup(key).isEmpty) size + 1 else size
-    newMap(newsize, tree.update(key, value))
+     val newtree = tree.update(key, value)
+     newMap(newtree)
+  }
+
+  /** Update the item at a single key.  This method
+   * is functionally equivalent to: update(key, f(get(key))) .
+   */
+  def updatef [B1 >: B](key: A, f: Option[B]=>B1) = {
+    val newtree = tree.updatef(key, f)
+    newMap(newtree)
   }
 
   /** A new TreeMap with the entry added is returned,
@@ -68,12 +75,16 @@ extends RedBlack[A] with Map[A, B] {
    */
   def insert [B1 >: B](key: A, value: B1): TreeMap[A, B1] = {
     assert(tree.lookup(key).isEmpty)
-    newMap(size + 1, tree.update(key, value))
+    newMap(tree.update(key, value))
   }
 
-  def - (key:A): TreeMap[A, B] =
-    if (tree.lookup(key).isEmpty) this
-    else newMap(size - 1, tree.delete(key))
+  def - (key:A): TreeMap[A, B] = {
+    val newtree = tree.delete(key)
+    if(newtree eq tree)
+      this
+    else
+      newMap(newtree)
+  }
 
   /** Check if this map maps <code>key</code> to a value and return the
    *  value if it exists.
@@ -106,7 +117,3 @@ extends RedBlack[A] with Map[A, B] {
    */
   def elements: Iterator[Pair[A, B]] = tree.elements
 }
-
-
-
-

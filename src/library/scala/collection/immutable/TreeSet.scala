@@ -34,26 +34,23 @@ object TreeSet {
  */
 
 [serializable]
-class TreeSet[A <% Ordered[A]](val size: int, t: RedBlack[A]#Tree[Unit])
+class TreeSet[A <% Ordered[A]](tree: RedBlack[A]#Tree[Unit])
 extends RedBlack[A] with Set[A] {
-
   def isSmaller(x: A, y: A) = x < y
+  def this() = this(Empty)
 
-  def this() = this(0, null)
+  def size = tree.size
 
-  protected val tree: RedBlack[A]#Tree[Unit] = if (size == 0) Empty else t
+  private def newSet(t: RedBlack[A]#Tree[Unit]) = new TreeSet[A](t)
 
-  private def newSet(s: int, t: RedBlack[A]#Tree[Unit]) = new TreeSet[A](s, t)
-
-  /** A factory to create empty maps of the same type of keys.
+  /** @return an empty set of arbitrary element type
    */
   def empty[B]: Set[B] = ListSet.empty[B]
 
   /** A new TreeSet with the entry added is returned,
    */
   def + (elem: A): TreeSet[A] = {
-    val newsize = if (tree.lookup(elem).isEmpty) size + 1 else size
-    newSet(newsize, tree.update(elem, ()))
+    newSet(tree.update(elem, ()))
   }
 
   /** A new TreeSet with the entry added is returned,
@@ -61,12 +58,16 @@ extends RedBlack[A] with Set[A] {
    */
   def insert (elem: A): TreeSet[A] = {
     assert(tree.lookup(elem).isEmpty)
-    newSet(size + 1, tree.update(elem, ()))
+    newSet(tree.update(elem, ()))
   }
 
-  def - (elem:A): TreeSet[A] =
-    if (tree.lookup(elem).isEmpty) this
-    else newSet(size - 1, tree.delete(elem))
+  def - (elem:A): TreeSet[A] = {
+    val newtree = tree.delete(elem)
+    if(newtree eq tree)
+      this
+    else
+      newSet(newtree)
+  }
 
   /** Checks if this set contains element <code>elem</code>.
    *
