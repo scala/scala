@@ -35,14 +35,12 @@ package scala.collection.immutable
  */
 object Map {
 
-  /** An empty immutable map.  This is implemented with a HashTreeMap.
-   * Note that for key types that have an Ordered view, it is more
-   * efficient to use a TreeMap, instead.
-   */
-  def empty[A, B] = new HashTreeMap[A, B]
+  /** The empty map of this type; this is implemented as a treemap */
+  def empty[A <% Ordered[A], B] = new TreeMap[A, B]
 
-  /** Create an immutable map from a specified sequence of elements.  */
-  def apply[A, B](elems: Pair[A, B]*) = empty[A, B] ++ elems
+  /** The canonical factory for this type
+   */
+  def apply[A <% Ordered[A], B](elems: Pair[A, B]*) = empty[A, B] ++ elems
 }
 
 trait Map[A, +B] extends collection.Map[A, B] {
@@ -64,7 +62,6 @@ trait Map[A, +B] extends collection.Map[A, B] {
    *  @deprecated    use <code>+({A, B})</code> instead
    */
   def update [B1 >: B] (key: A, value: B1): Map[A, B1]
-
 
   /** Add a key/value pair to this map.
    *  @param    kv the key/value pair.
@@ -145,7 +142,6 @@ trait Map[A, +B] extends collection.Map[A, B] {
     foreach { case Pair(key, value) => res = res.update(key, f(key, value)) }
     res
   }
-
 
   /** This method removes all the mappings for which the predicate
    *  <code>p</code> returns <code>false</code>.

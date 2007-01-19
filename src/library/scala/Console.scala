@@ -171,12 +171,12 @@ object Console {
    *  @param args the parameters used to instantiate the format.
    */
   // todo: Uncurry
-  def printf(text: String)(args: Any*): Unit =
+/*  def printf(text: String)(args: Any*): Unit =
     out.print(
       if (text eq null) "null"
       else MessageFormat.format(text, textParams(args))
     )
-
+*/
   /** Read a full line from the terminal.
    *
    *  @return the string read from the terminal.
