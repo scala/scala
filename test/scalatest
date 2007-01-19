@@ -566,8 +566,8 @@ FILES_SCRIPT="";
 FILES_DIS="";
 FILES_ANT="";
 
-QUICK="$PREFIX/build/quick/bin"
-QUICK_LIB="$PREFIX/build/quick/lib/library"
+QUICK="$PREFIX/bin/quick/bin"
+QUICK_LIB="$PREFIX/bin/quick/lib/library"
 
 JVM_EXT_CLASSPATH=`get_ext_classpath $TESTROOT/files/jvm/lib`
 
