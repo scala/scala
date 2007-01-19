@@ -29,6 +29,6 @@ public final class BoxedUnit
     }
 
     public String toString() {
-	return "()";
+	return "{}";
     }
 }
