@@ -21,37 +21,25 @@ Option -Dproperty=value sets a Java system property.
 
 This is an interpreter for Scala.
 Type in expressions to have them evaluated.
-Type :quit to exit the interpreter.
-Type :compile followed by a filename to compile a complete Scala file.
-Type :load followed by a filename to load a sequence of interpreter commands.
-Type :replay to reset execution and replay all previous commands.
-Type :help to repeat this message later.
+Type :help for more information.
 
 scala> 1: test 1 passed (1)
-line0: scala.Unit = ()
+line0: scala.Unit = {}
 
 scala> 
 This is an interpreter for Scala.
 Type in expressions to have them evaluated.
-Type :quit to exit the interpreter.
-Type :compile followed by a filename to compile a complete Scala file.
-Type :load followed by a filename to load a sequence of interpreter commands.
-Type :replay to reset execution and replay all previous commands.
-Type :help to repeat this message later.
+Type :help for more information.
 
 scala> 1: test 2 passed (1)
-line0: scala.Unit = ()
+line0: scala.Unit = {}
 
 scala> 
 This is an interpreter for Scala.
 Type in expressions to have them evaluated.
-Type :quit to exit the interpreter.
-Type :compile followed by a filename to compile a complete Scala file.
-Type :load followed by a filename to load a sequence of interpreter commands.
-Type :replay to reset execution and replay all previous commands.
-Type :help to repeat this message later.
+Type :help for more information.
 
 scala> 1: test 3 passed (1)
-line0: scala.Unit = ()
+line0: scala.Unit = {}
 
 scala> 

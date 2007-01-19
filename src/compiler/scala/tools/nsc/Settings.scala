@@ -1,5 +1,5 @@
-/* NSC -- new scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+/* NSC -- new Scala compiler
+ * Copyright 2005-2007 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -132,7 +132,7 @@ class Settings(error: String => unit) {
   Xunapply.value = true
   val Xplugtypes    = BooleanSetting("-Xplugtypes", "parse but ignore annotations in more locations")
   val Xkilloption   = BooleanSetting("-Xkilloption", "optimizes option types")
-  val XprintOuterMatches = BooleanSetting("-XprintOuterMatches", "prints outer-checks caused by pattern matching ")
+  val XprintOuterMatches = BooleanSetting("-XprintOuterMatches", "prints outer-checks caused by pattern matching")
 
   /** A list of all settings */
   def allSettings: List[Setting] = allsettings.reverse
@@ -220,8 +220,8 @@ class Settings(error: String => unit) {
         List(name, value)
   }
 
-  /** A setting represented by a string in a given set of `choices',
-   *  (`default' unless set)
+  /** A setting represented by a string in a given set of <code>choices</code>,
+   *  (<code>default</code> unless set).
    */
   case class ChoiceSetting(nme: String, descr: String, choices: List[String], default: String)
   extends Setting(nme, descr + choices.mkString(" (", ",", ")")) {

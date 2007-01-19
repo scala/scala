@@ -55,5 +55,6 @@ where possible options include:
   -Xunapply                       enable unapply pattern matching
   -Xplugtypes                     parse but ignore annotations in more locations
   -Xkilloption                    optimizes option types
+  -XprintOuterMatches             prints outer-checks caused by pattern matching
 
 one error found
