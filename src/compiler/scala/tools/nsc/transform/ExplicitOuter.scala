@@ -473,6 +473,7 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
             q
           } else null
 
+		  /*
           cases match {
             //if ((cases.length > 1) && ...(cases(0)))
             //can't use treeInfo.isDefaultCase, because that diagnoses a Bind
@@ -480,8 +481,10 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
               // a hack to detect when explicit outer does not work correctly
               // still needed?
               assert(false,"transforming too much, " + tid)
+			  // no!
             case _ =>
           }
+		  */
 
           val nselector = transform(selector)
           assert(nselector.tpe =:= selector.tpe)
