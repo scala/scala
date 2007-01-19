@@ -46,7 +46,7 @@ object Utility extends AnyRef with parsing.TokenTests {
       case '>' => s.append("&gt;")
       case '&' => s.append("&amp;")
       case '"' => s.append("&quot;")
-      case '\'' => s.append("&apos;")
+      //case '\'' => s.append("&apos;") // is valid xhtml but not html, and IE doesn't know it, says jweb
       case _   => s.append(c)
     }
     s
