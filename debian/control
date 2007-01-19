@@ -19,8 +19,9 @@ Description: The Scala programming language
  .
  This package includes the various tools used to develop
  code written in Scala.  It includes a compiler (scalac),
- a convenient command-runner (scala), an interpreter
- (scalaint), and a source-scanning documentation generator (scaladoc).
+ an interpreter and script runner (scala), the offline
+ compiler (fsc), and source-scanning documentation
+ generator (scaladoc).
 
 
 Package: scala-library
