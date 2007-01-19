@@ -22,6 +22,14 @@ test3: 1013003
 test1: 14005
 test2: 1013003
 test3: 1013003
+***** immutable.HashTreeSet:
+test1: 14005
+test2: 25005003
+test3: 25005003
+***** immutable.HashTreeMap:
+test1: 14005
+test2: 1013003
+test3: 1013003
 ***** mutable.HashMap:
 test1: 14005
 test2: 25005003

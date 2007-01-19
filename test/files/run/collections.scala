@@ -96,5 +96,7 @@ object Test extends Application {
   test("immutable.ListMap", new immutable.ListMap[int, int])
   test("immutable.TreeMap", new immutable.TreeMap[int, int])
   test("immutable.UnBalancedTreeMap", new immutable.UnbalancedTreeMap[int, int])
+  test("immutable.HashTreeSet", new immutable.HashTreeSet[int])
+  test("immutable.HashTreeMap", new immutable.HashTreeMap[int, int])
   test("mutable.HashMap", new mutable.HashMap[int, int])
 }
