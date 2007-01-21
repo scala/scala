@@ -55,18 +55,16 @@ class JDK5Scheduler(initCoreSize: int, maxSize: int) extends Thread with ISchedu
 
   private var pendingReactions = 0
   def pendReaction: unit = synchronized {
-    //Debug.info("pend reaction")
     pendingReactions = pendingReactions + 1
   }
   def unPendReaction: unit = synchronized {
-    //Debug.info("unpend reaction")
     pendingReactions = pendingReactions - 1
   }
 
   def printActorDump {}
 
   def start(task: Reaction): unit = synchronized {
-    //Debug.info("Starting " + task.actor)
+    pendingReactions = pendingReactions + 1
     execute(task)
   }
 

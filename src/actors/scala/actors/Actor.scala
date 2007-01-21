@@ -518,8 +518,7 @@ trait Actor extends OutputChannel[Any] {
   /**
    * Starts this actor.
    */
-  def start(): Unit = {
-    Scheduler.pendReaction
+  def start() {
     Scheduler start new Reaction(this)
   }
 
