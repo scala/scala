@@ -20,7 +20,7 @@ class ExitActorException extends Throwable
  * an instance of an <code>Actor</code> with a
  * <code>java.lang.Runnable</code>.
  *
- * @version 0.9.0
+ * @version 0.9.2
  * @author Philipp Haller
  */
 private[actors] class Reaction(a: Actor,
@@ -39,25 +39,29 @@ private[actors] class Reaction(a: Actor,
     a.isDetached = false
     try {
       try {
-        if (f == null)
-          a.act()
-        else
-          f(msg)
-        a.exit("normal")
+        // links
+        if (a.shouldExit)
+          a.exit()
+        else {
+          if (f == null)
+            a.act()
+          else
+            f(msg)
+          a.exit()
+        }
       } catch {
         case _: ExitActorException =>
-          throw new InterruptedException
       }
     }
     catch {
-      case ie: InterruptedException => {
-        a.exitLinked()
-      }
-      case d: SuspendActorException => {
+      case _: SuspendActorException => {
         // do nothing (continuation is already saved)
       }
-      case t: Throwable => {
-        a.exitLinked()
+      case _: Throwable => {
+        // links
+        if (!a.links.isEmpty) {
+          a.exitLinked()
+        }
       }
     }
     /*finally {
@@ -65,13 +69,4 @@ private[actors] class Reaction(a: Actor,
     }*/
   }
 
-  private var runnable = false
-
-  def isRunnable = synchronized {
-    runnable
-  }
-
-  def setRunnable(on: boolean) = synchronized {
-    runnable = on
-  }
 }

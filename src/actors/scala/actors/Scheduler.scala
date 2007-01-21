@@ -43,10 +43,15 @@ object Scheduler {
       s = if (olderThanJDK5)
         new TickedScheduler
       else {
-        val corePoolSize =
-          Integer.parseInt(java.lang.System.getProperty("actors.corePoolSize"))
-        val maxPoolSize =
-          Integer.parseInt(java.lang.System.getProperty("actors.maxPoolSize"))
+        var corePoolSize = 4
+        var maxPoolSize = 16
+        val prop = java.lang.System.getProperty("actors.corePoolSize")
+        if (null ne prop) {
+          corePoolSize =
+            Integer.parseInt(java.lang.System.getProperty("actors.corePoolSize"))
+          maxPoolSize =
+            Integer.parseInt(java.lang.System.getProperty("actors.maxPoolSize"))
+        }
         new JDK5Scheduler(corePoolSize, maxPoolSize)
       }
       s.start()

@@ -115,7 +115,7 @@ class JDK5Scheduler(initCoreSize: int, maxSize: int) extends Thread with ISchedu
                 executor.shutdown()
                 // terminate timer thread
                 TimerThread.t.interrupt()
-                Console.println("threads used: "+coreSize)
+                //Debug.info("threads used: "+coreSize)
                 throw new QuitException
               }
             }
