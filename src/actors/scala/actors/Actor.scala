@@ -356,7 +356,8 @@ trait Actor extends OutputChannel[Any] {
       val qel = mailbox.extractFirst((m: Any) => f.isDefinedAt(m))
       if (null eq qel) {
         waitingFor = f.isDefinedAt
-        detachActor(f)
+        continuation = f
+        isDetached = true
       } else {
         sessions = qel.session :: sessions
         scheduleActor(f, qel.msg)
@@ -377,7 +378,8 @@ trait Actor extends OutputChannel[Any] {
         waitingFor = f.isDefinedAt
         TimerThread.requestTimeout(this, f, msec)
         timeoutPending = true
-        detachActor(f)
+        continuation = f
+        isDetached = true
       } else {
         sessions = qel.session :: sessions
         scheduleActor(f, qel.msg)
@@ -459,12 +461,6 @@ trait Actor extends OutputChannel[Any] {
 
   private[actors] def tick(): Unit =
     Scheduler tick this
-
-  private[actors] def detachActor(f: PartialFunction[Any, Unit]) {
-    continuation = f
-    isDetached = true
-    throw new SuspendActorException
-  }
 
   private[actors] var kill = () => {}
 
