@@ -17,7 +17,7 @@ package scala.collection.immutable
  *  @version 1.0, 019/01/2007
  */
 [serializable]
-class  EmptyMap[A, +B] extends Map[A, B] {
+class EmptyMap[A, +B] extends Map[A, B] {
 
   def size: Int = 0
 

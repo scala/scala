@@ -100,6 +100,7 @@ trait FlatHashTable[A] {
   private def growTable() {
     val oldtable = table
     table = new Array[AnyRef](table.length * 2)
+    tableSize = 0
     threshold = newThreshold(table.length)
     var i = 0
     while (i < oldtable.length) {
