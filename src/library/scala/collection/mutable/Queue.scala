@@ -157,7 +157,7 @@ class Queue[A] extends MutableList[A] {
   /** Removes all elements from the queue. After this operation is completed,
    *  the queue will be empty.
    */
-  def clear: Unit = reset
+  def clear(): Unit = reset
 
   /** Checks if two queues are structurally identical.
    *

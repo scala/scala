@@ -26,6 +26,7 @@ trait Set[A] extends Collection[A] with scala.collection.mutable.Set[A] {
   override def retain(f : A => Boolean) = super[Collection].retain(f);
   override def isEmpty = super[Collection].isEmpty;
   override final def contains(a : A) = has(a);
+  override def clear() = super.clear()
 
   override def transform(f : A => A) = {
     var toAdd : List[A] = Nil;
@@ -42,6 +43,9 @@ trait Set[A] extends Collection[A] with scala.collection.mutable.Set[A] {
 
   override def pfilter(p : A => Boolean) : Set[A] = new Filter(p);
   class Filter(p : A => Boolean) extends super.Filter(p) with Set[A] {
-    override def filter(p : A => Boolean) = super[Set].filter(p);
+    override def filter(p : A => Boolean): scala.collection.mutable.Set[A] = {
+      super[Set].retain(p)
+      this
+    }
   }
 }

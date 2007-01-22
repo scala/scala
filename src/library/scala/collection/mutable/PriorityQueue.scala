@@ -128,7 +128,7 @@ class PriorityQueue[A <% Ordered[A]] extends ResizableArray[A] {
   /** Removes all elements from the queue. After this operation is completed,
    *  the queue will be empty.
    */
-  def clear: Unit = { size = 1 }
+  def clear(): Unit = { size = 1 }
 
   /** Returns an iterator which yiels all the elements of the priority
    *  queue in descending priority order.

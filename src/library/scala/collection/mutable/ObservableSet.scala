@@ -36,7 +36,7 @@ trait ObservableSet[A, This <: ObservableSet[A, This]] requires This
     publish(new Remove(elem) with Undoable { def undo = +=(elem) })
   }
 
-  abstract override def clear: Unit = {
+  abstract override def clear(): Unit = {
     super.clear
     publish(new Reset with Undoable {
       def undo: Unit = throw new UnsupportedOperationException("cannot undo")

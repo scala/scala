@@ -44,5 +44,5 @@ class History[A, B] extends AnyRef with Subscriber[A, B] with Iterable[Pair[B, A
 
   def size: Int = log.length
 
-  def clear: Unit = log.clear
+  def clear(): Unit = log.clear
 }

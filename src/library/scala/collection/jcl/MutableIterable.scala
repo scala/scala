@@ -58,7 +58,7 @@ trait MutableIterable[A] extends Iterable[A] {
   }
   /** clear all elements from the collection.
    **/
-  def clear : Unit = {
+  def clear(): Unit = {
     val i = elements;
     while (i.hasNext) {
       i.next; i.remove;

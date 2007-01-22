@@ -53,7 +53,7 @@ extends Map[A, B]
 
   def -= (key: A): Unit = { imap = imap - key }
 
-  override def clear: Unit = { imap = imap.empty }
+  override def clear(): Unit = { imap = imap.empty }
 
   override def transform(f: (A, B) => B): Unit = { imap = imap.transform(f) }
 

@@ -46,7 +46,7 @@ trait MapProxy[A, B] extends Map[A, B] with collection.MapProxy[A, B] {
   override def - (key1: A, key2: A, keys: A*): Map[A, B] = self.-(key1, key2, keys: _*)
   override def -- (keys: Iterable[A]): Map[A, B] = self -- keys
   override def -- (keys: Iterator[A]): Map[A, B] = self -- keys
-  override def clear: Unit = self.clear
+  override def clear(): Unit = self.clear
   override def transform(f: (A, B) => B) = self transform f
   override def retain(p: (A, B) => Boolean): Unit = self retain p
   override def <<(cmd: Message[Pair[A, B]]): Unit = self << cmd

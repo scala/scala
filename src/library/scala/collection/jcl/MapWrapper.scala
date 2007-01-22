@@ -18,7 +18,7 @@ trait MapWrapper[K,E] extends jcl.Map[K,E] {
   protected def underlying : java.util.Map;
   override def size = underlying.size;
   override def isEmpty = underlying.isEmpty;
-  override def clear = underlying.clear;
+  override def clear() = underlying.clear;
   override def put(key : K, elem : E) = {
     if (elem == null) throw new IllegalArgumentException;
     val ret = underlying.put(key,elem);

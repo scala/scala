@@ -114,7 +114,7 @@ trait SynchronizedMap[A, B] extends Map[A, B] {
     super.excl(keys: _*)
   }
 
-  override def clear: Unit = synchronized {
+  override def clear(): Unit = synchronized {
     super.clear
   }
 

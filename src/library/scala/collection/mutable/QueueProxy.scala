@@ -83,7 +83,7 @@ trait QueueProxy[A] extends Queue[A] with SeqProxy[A] {
   /** Removes all elements from the queue. After this operation is completed,
    *  the queue will be empty.
    */
-  override def clear: Unit = self.clear
+  override def clear(): Unit = self.clear
 
   /** Returns an iterator over all elements on the queue.
    *

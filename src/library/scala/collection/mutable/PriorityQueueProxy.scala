@@ -84,7 +84,7 @@ abstract class PriorityQueueProxy[A <% Ordered[A]] extends PriorityQueue[A]
   /** Removes all elements from the queue. After this operation is completed,
    *  the queue will be empty.
    */
-  override def clear: Unit = self.clear
+  override def clear(): Unit = self.clear
 
   /** Returns a regular queue containing the same elements.
    */

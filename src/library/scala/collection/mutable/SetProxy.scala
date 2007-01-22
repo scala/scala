@@ -44,7 +44,7 @@ trait SetProxy[A] extends Set[A] with collection.SetProxy[A] {
 
   override def intersect(that: Set[A]): Unit = self.intersect(that)
 
-  override def clear: Unit = self.clear
+  override def clear(): Unit = self.clear
 
   override def retain(p: A => Boolean): Unit =  self.retain(p)
 

@@ -98,7 +98,7 @@ final class ListBuffer[A] extends Buffer[A] {
 
   /** Clears the buffer contents.
    */
-  def clear: unit = {
+  def clear(): unit = {
     start = Nil
     exported = false
   }

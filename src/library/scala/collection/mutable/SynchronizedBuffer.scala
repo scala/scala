@@ -164,7 +164,7 @@ trait SynchronizedBuffer[A] extends Buffer[A] {
 
   /** Clears the buffer contents.
    */
-  abstract override def clear: Unit = synchronized {
+  abstract override def clear(): Unit = synchronized {
     super.clear
   }
 

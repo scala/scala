@@ -27,7 +27,7 @@ trait IterableWrapper[A] extends MutableIterable[A] {
   }
   override def size = underlying.size;
   override def isEmpty = underlying.isEmpty;
-  override def clear = underlying.clear;
+  override def clear() = underlying.clear;
   override def elements : MutableIterator[A] = new IteratorWrapper(underlying.iterator);
   class IteratorWrapper(underlying : java.util.Iterator) extends MutableIterator[A] {
     // val underlying = IterableWrapper.this.underlying.iterator;

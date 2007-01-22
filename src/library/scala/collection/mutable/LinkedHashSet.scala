@@ -37,7 +37,7 @@ class LinkedHashSet[A](private val set0 : java.util.LinkedHashSet) extends Set[A
     def next = i.next().asInstanceOf[A]
   }
 
-  override def clear = set0.clear()
+  override def clear() = set0.clear()
 
   def size = set0.size()
 

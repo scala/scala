@@ -72,7 +72,7 @@ class SynchronizedQueue[A] extends Queue[A] {
   /** Removes all elements from the queue. After this operation is completed,
    *  the queue will be empty.
    */
-  override def clear: Unit = synchronized { super.clear }
+  override def clear(): Unit = synchronized { super.clear }
 
   /** Checks if two queues are structurally identical.
    *

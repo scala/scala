@@ -72,7 +72,7 @@ trait SynchronizedSet[A] extends Set[A] {
     super.intersect(that)
   }
 
-  abstract override def clear: Unit = synchronized {
+  abstract override def clear(): Unit = synchronized {
     super.clear
   }
 

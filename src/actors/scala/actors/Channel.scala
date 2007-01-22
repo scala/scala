@@ -24,7 +24,7 @@ class SuspendActorException extends Throwable {
   }
 }
 
-case class ![a](ch: Channel[a], msg: a)
+case class ! [a](ch: Channel[a], msg: a)
 
 /**
  * This class provides a means for typed communication among
@@ -58,14 +58,16 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
   }
 
   def receive[R](f: PartialFunction[Any, R]): R = {
-    val C = this
+    val C = this.asInstanceOf[Channel[Any]]
+    // Martin: had to do this to get it to compiler after bug909 fix
     receiver.receive {
       case C ! msg if (f.isDefinedAt(msg)) => f(msg)
     }
   }
 
   def receiveWithin[R](msec: long)(f: PartialFunction[Any, R]): R = {
-    val C = this
+    val C = this.asInstanceOf[Channel[Any]]
+    // Martin: had to do this to get it to compiler after bug909 fix
     receiver.receiveWithin(msec) {
       case C ! msg if (f.isDefinedAt(msg)) => f(msg)
       case TIMEOUT => f(TIMEOUT)
@@ -73,14 +75,16 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
   }
 
   def react(f: PartialFunction[Any, Unit]): Nothing = {
-    val C = this
+    val C = this.asInstanceOf[Channel[Any]]
+    // Martin: had to do this to get it to compiler after bug909 fix
     receiver.react {
       case C ! msg if (f.isDefinedAt(msg)) => f(msg)
     }
   }
 
   def reactWithin(msec: long)(f: PartialFunction[Any, Unit]): Nothing = {
-    val C = this
+    val C = this.asInstanceOf[Channel[Any]]
+    // Martin: had to do this to get it to compiler after bug909 fix
     receiver.reactWithin(msec) {
       case C ! msg if (f.isDefinedAt(msg)) => f(msg)
       case TIMEOUT => f(TIMEOUT)

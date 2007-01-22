@@ -83,7 +83,7 @@ class Stack[A] extends MutableList[A] {
    * Removes all elements from the stack. After this operation completed,
    * the stack will be empty.
    */
-  def clear: Unit = reset
+  def clear(): Unit = reset
 
   /** Returns an iterator over all elements on the stack. This iterator
    *  is stable with respect to state changes in the stack object; i.e.

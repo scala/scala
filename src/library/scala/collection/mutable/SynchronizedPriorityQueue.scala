@@ -69,7 +69,7 @@ class SynchronizedPriorityQueue[A <% Ordered[A]] extends PriorityQueue[A] {
   /** Removes all elements from the queue. After this operation is completed,
    *  the queue will be empty.
    */
-  override def clear: Unit = synchronized { super.clear }
+  override def clear(): Unit = synchronized { super.clear }
 
   /** Returns an iterator which yiels all the elements of the priority
    *  queue in descending priority order.

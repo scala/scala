@@ -73,7 +73,7 @@ trait ObservableBuffer[A, This <: ObservableBuffer[A, This]] requires This
     oldelement
   }
 
-  abstract override def clear: Unit = {
+  abstract override def clear(): Unit = {
     super.clear
     publish(new Reset with Undoable {
       def undo: Unit = throw new UnsupportedOperationException("cannot undo")

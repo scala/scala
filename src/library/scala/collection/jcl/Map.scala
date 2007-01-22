@@ -15,7 +15,7 @@ package scala.collection.jcl;
  *  @author Sean McDirmid
  */
 trait Map[K,E] extends MutableIterable[Tuple2[K,E]] with scala.collection.mutable.Map[K,E] {
-  override def clear = super[MutableIterable].clear;
+  override def clear() = super[MutableIterable].clear;
   override def isEmpty = super[MutableIterable].isEmpty;
   override def keySet : Set[K] = new KeySet;
   /** The values of this map as a projection, which means
