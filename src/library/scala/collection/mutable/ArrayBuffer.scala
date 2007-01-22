@@ -144,7 +144,7 @@ class ArrayBuffer[A] extends Buffer[A] with ResizableArray[A] {
 
   /** Clears the buffer contents.
    */
-  def clear: Unit = {
+  def clear(): Unit = {
     size = 0
   }
 

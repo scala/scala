@@ -40,9 +40,6 @@ trait DefaultMapModel[A, B] extends Map[A, B] {
     else e.value = value
   }
 
-  def elements = entries map (e => Pair(e.key, e.value))
+  def elements = entries map {e => {e.key, e.value}}
 }
 
-[serializable]
-final class DefaultEntry[A, B](val key: A, var value: B)
-      extends HashEntry[A, DefaultEntry[A, B]]

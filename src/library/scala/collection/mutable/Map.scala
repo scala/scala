@@ -152,7 +152,7 @@ trait Map[A, B] extends AnyRef
   /** Removes all mappings from the map. After this operation is
    *  completed, the map is empty.
    */
-  def clear: Unit = keys foreach -=
+  def clear(): Unit = keys foreach -=
 
   /** This function transforms all the values of mappings contained
    *  in this map with function <code>f</code>.

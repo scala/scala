@@ -196,7 +196,7 @@ trait Buffer[A] extends AnyRef
 
   /** Clears the buffer contents.
    */
-  def clear: Unit
+  def clear(): Unit
 
   /** Send a message to this scriptable object.
    *

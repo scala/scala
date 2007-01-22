@@ -28,22 +28,16 @@ object HashSet {
 }
 
 [serializable]
-class HashSet[A] extends Set[A] with HashTable[A] {
+class HashSet[A] extends Set[A] with FlatHashTable[A] {
 
-  def contains(elem: A): Boolean = findEntry(elem) != null
+  def contains(elem: A): Boolean = containsEntry(elem)
 
-  def +=(elem: A) { if (findEntry(elem) == null) addEntry(new SetEntry(elem)) }
+  def +=(elem: A) { addEntry(elem) }
 
   def -=(elem: A) { removeEntry(elem) }
 
-  def elements = entries map (.key)
-
-  def clear {initTable(); tableSize = 0 }
-
-  protected type Entry = SetEntry[A]
+  override def clear() = super.clear()
 
   override def clone(): Set[A] = new HashSet[A] ++ this
 }
 
-[serializable]
-final class SetEntry[A](val key: A) extends HashEntry[A, SetEntry[A]]

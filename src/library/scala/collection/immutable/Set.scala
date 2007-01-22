@@ -27,7 +27,7 @@ package scala.collection.immutable
 object Set {
   /** The empty set of this type
    */
-  def empty[A <% Ordered[A]] = new TreeSet[A]
+  def empty[A] = new EmptySet[A]
 
   /** The canonical factory for this type
    */

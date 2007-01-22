@@ -31,9 +31,13 @@ object Option {
  */
 sealed abstract class Option[+A] extends Product {
 
-  /** True if the option is the <code>None</value>, false otherwise.
+  /** True if the option is the <code>None</code> value, false otherwise.
    */
   def isEmpty: Boolean
+
+  /** True if the option is a <code>Some</code>(...) false otherwise.
+   */
+  def isDefined: Boolean = !isEmpty
 
   /** get the value of this option.
    *  @requires that the option is nonEmpty.

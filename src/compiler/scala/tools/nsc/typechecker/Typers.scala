@@ -627,10 +627,12 @@ trait Typers requires Analyzer {
           instantiate(tree, mode, pt)
         } else if (tree.tpe <:< pt) {
           tree
-        } else if ((mode & PATTERNmode) != 0) {
-          if ((tree.symbol ne null) && tree.symbol.isModule) inferModulePattern(tree, pt)
-          tree
         } else {
+          if ((mode & PATTERNmode) != 0) {
+            if ((tree.symbol ne null) && tree.symbol.isModule)
+              inferModulePattern(tree, pt)
+            if (isPopulated(tree.tpe, pt)) return tree
+          }
           val tree1 = constfold(tree, pt) // (10) (11)
           if (tree1.tpe <:< pt) adapt(tree1, mode, pt)
           else {
@@ -2335,9 +2337,9 @@ trait Typers requires Analyzer {
         try {
 //        if (!isLocal) tree setSymbol info.sym
           val tree1 = typed1(tree, EXPRmode, pt)
-          if (settings.debug.value) log("typed implicit "+tree1+":"+tree1.tpe+", pt = "+pt)
+          //if (settings.debug.value) log("typed implicit "+tree1+":"+tree1.tpe+", pt = "+pt)
           val tree2 = adapt(tree1, EXPRmode, pt)
-          if (settings.debug.value) log("adapted implicit "+tree1.symbol+":"+tree2.tpe+" to "+pt)
+          //if (settings.debug.value) log("adapted implicit "+tree1.symbol+":"+tree2.tpe+" to "+pt)
           if (tree2.tpe.isError) EmptyTree
           else if (info.sym == tree1.symbol) tree2
           else fail("syms differ: ", tree1.symbol, info.sym)

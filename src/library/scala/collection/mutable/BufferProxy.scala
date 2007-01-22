@@ -136,7 +136,7 @@ trait BufferProxy[A] extends Buffer[A] with Proxy {
 
   /** Clears the buffer contents.
    */
-  def clear: Unit = self.clear
+  def clear(): Unit = self.clear
 
   /** Send a message to this scriptable object.
    *

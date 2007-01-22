@@ -22,7 +22,7 @@ import compat.StringBuilder
 [serializable]
 class Atom[+A](val data: A) extends SpecialNode {
 
-  data match {
+  data.asInstanceOf[AnyRef] match {
     case null => new IllegalArgumentException("cannot construct Atom(null)")
     case _ =>
   }

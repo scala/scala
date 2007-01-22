@@ -61,11 +61,11 @@ object Predef {
 
   type Function[-a,+b] = Function1[a,b]
 
-  type Map[a, b] = collection.mutable.Map[a, b]
-  type Set[a] = collection.mutable.Set[a]
+  type Map[a, b] = collection.immutable.Map[a, b]
+  type Set[a] = collection.immutable.Set[a]
 
-  val Map = collection.mutable.Map
-  val Set = collection.mutable.Set
+  val Map = collection.immutable.Map
+  val Set = collection.immutable.Set
 
 
   // errors and asserts -------------------------------------------------

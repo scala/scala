@@ -11,6 +11,7 @@
 
 package scala.collection.immutable
 
+import Predef._
 
 /** <p>
  *    This class extends the <code>Map</code> interface of collections
@@ -36,11 +37,11 @@ package scala.collection.immutable
 object Map {
 
   /** The empty map of this type; this is implemented as a treemap */
-  def empty[A <% Ordered[A], B] = new TreeMap[A, B]
+  def empty[A, B] = new EmptyMap[A, B]
 
   /** The canonical factory for this type
    */
-  def apply[A <% Ordered[A], B](elems: Pair[A, B]*) = empty[A, B] ++ elems
+  def apply[A, B](elems: Pair[A, B]*) = empty[A, B] ++ elems
 }
 
 trait Map[A, +B] extends collection.Map[A, B] {

@@ -187,7 +187,7 @@ trait Set[A] extends collection.Set[A] with Scriptable[Message[A]] {
   /** Removes all elements from the set. After this operation is completed,
    *  the set will be empty.
    */
-  def clear: Unit
+  def clear(): Unit = elements foreach -=
 
   /** Send a message to this scriptable object.
    *

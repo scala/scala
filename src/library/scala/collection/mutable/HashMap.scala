@@ -34,10 +34,7 @@ class HashMap[A, B] extends Map[A,B] with HashTable[A] with DefaultMapModel[A,B]
 
   def -= (key: A) { removeEntry(key) }
 
-  override def clear = {
-    initTable()
-    tableSize = 0
-  }
+  override def clear() = super.clear()
 
   override def clone(): Map[A, B] = new HashMap[A, B] ++ this
 }

@@ -34,11 +34,11 @@ trait HashTable[A] extends AnyRef {
 
   /** The load factor for the hash table.
    */
-  protected val loadFactor: Float = 0.75f
+  protected def loadFactor: Float = 0.75f
 
   /** The initial size of the hash table.
    */
-  protected val initialSize: Int = 16
+  protected def initialSize: Int = 16
 
   /** The initial threshold
    */
@@ -46,7 +46,8 @@ trait HashTable[A] extends AnyRef {
 
   /** The actual hash table.
    */
-  protected var table: Array[Entry] = new Array(initialSize)
+  protected var table: Array[Entry] =
+    if (initialSize == 0) null else new Array(initialSize)
 
   /** The number of mappings contained in this hash table.
    */
@@ -56,7 +57,7 @@ trait HashTable[A] extends AnyRef {
    */
   protected var threshold: Int = initialThreshold
 
-  /** Returns the size of this hash map.
+  /** Returns the size of this hash table.
    */
   def size = tableSize
 
@@ -117,9 +118,10 @@ trait HashTable[A] extends AnyRef {
     }
   }
 
-  protected def initTable() {
+  def clear() {
     var i = table.length - 1
     while (i >= 0) { table(i) = null; i = i - 1 }
+    tableSize = 0
   }
 
   private def newThreshold(size: Int) =

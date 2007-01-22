@@ -77,7 +77,7 @@ class BitSet(initSize: Int) extends collection.BitSet with Set[Int] {
 
   /** Clears all bits of the set.
    */
-  def clear: Unit = {
+  override def clear(): Unit = {
     java.util.Arrays.fill(arr, 0)
     size = 0
   }
