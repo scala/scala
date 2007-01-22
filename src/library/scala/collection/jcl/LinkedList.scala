@@ -22,8 +22,8 @@ class LinkedList[A](override val underlying : java.util.LinkedList) extends Conc
   override def add(idx : Int, a : A) =
     if (idx == 0) underlying.addFirst(a);
     else super.add(idx, a);
-  def peek = underlying.peek.asInstanceOf[A];
-  def poll = underlying.poll.asInstanceOf[A];
-  def removeFirst = underlying.removeFirst.asInstanceOf[A];
-  def removeLast  = underlying.removeLast.asInstanceOf[A];
+  //def peek = underlying.peek.asInstanceOf[A];
+  //def poll = underlying.poll.asInstanceOf[A];
+  //def removeFirst = underlying.removeFirst.asInstanceOf[A];
+  //def removeLast  = underlying.removeLast.asInstanceOf[A];
 }
