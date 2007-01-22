@@ -54,8 +54,8 @@ x = Set(0, 8, 9)
 y = Set(0, 8, 9)
 x equals y: true - y equals x: true
 
-x = Set(title, buffers, layers)
-y = Set(title, buffers, layers)
+x = Set(layers, buffers, title)
+y = Set(layers, buffers, title)
 x equals y: true - y equals x: true
 
 x = LinkedList(2,3)
