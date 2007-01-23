@@ -1,8 +1,9 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
+
 package scala.tools.nsc
 
 import java.lang.System.getProperty
@@ -18,7 +19,7 @@ object Main extends AnyRef with EvalLoop {
 
   val PRODUCT: String = getProperty("scala.tool.name", "scalac")
   val VERSION: String = getProperty("scala.tool.version", "unknown version")
-  val COPYRIGHT: String = getProperty("scala.copyright", "(c) 2002-2006 LAMP/EPFL")
+  val COPYRIGHT: String = getProperty("scala.copyright", "(c) 2002-2007 LAMP/EPFL")
   val versionMsg = PRODUCT + " " + VERSION + " -- " + COPYRIGHT
   val prompt = "\nnsc> "
 
