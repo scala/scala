@@ -232,7 +232,14 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
   def compileString(code: String): Boolean =
     compileSources(List(new SourceFile("<script>", code.toCharArray)))
 
-  /** build a request from the user.  "trees" is "line" after being parsed. */
+  /** Build a request from the user. <code>trees</code> is <code>line</code>
+   *  after being parsed.
+   *
+   *  @param trees    ..
+   *  @param line     ..
+   *  @param lineName ..
+   *  @return         ..
+   */
   private def buildRequest(trees: List[Tree], line: String, lineName: String): Request =
     trees match {
       /* This case for assignments is more specialized than desirable: it only
@@ -262,12 +269,13 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
    *    reporter.  Values defined are available for future interpreted
    *    strings.
    *  </p>
-   *
    *  <p>
    *    The return value is whether the line was interpreter successfully,
    *    e.g. that there were no parse errors.
    *  </p>
    *
+   *  @param line ...
+   *  @return     ...
    */
   def interpret(line: String): IR.Result = {
     // parse
@@ -301,7 +309,7 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
     if (succeeded)
       prevRequests += req
 
-    if(succeeded) IR.Success else IR.Error
+    if (succeeded) IR.Success else IR.Error
   }
 
   /** A counter used for numbering objects created by bind() */
@@ -367,8 +375,8 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
     Interpreter.deleteRecursively(classfilePath)
 
   /** A traverser that finds all mentioned identifiers, i.e. things
-      that need to be imported.
-      It might return extra names.  */
+   *  that need to be imported. It might return extra names.
+   */
   private class ImportVarsTraverser(definedVars: List[Name]) extends Traverser {
     val importVars = new HashSet[Name]()
 
@@ -671,8 +679,8 @@ object Interpreter {
    */
   def deleteRecursively(path: File): Unit = {
     path match  {
-      case _ if (!path.exists) => ()
-      case _ if (path.isDirectory) =>
+      case _ if !path.exists => {}
+      case _ if path.isDirectory =>
         for (val p <- path.listFiles)
           deleteRecursively(p)
         path.delete

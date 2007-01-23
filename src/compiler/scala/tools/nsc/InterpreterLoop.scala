@@ -73,7 +73,7 @@ class InterpreterLoop(in0: BufferedReader, out: PrintWriter) {
   }
 
   /** print a friendly help message */
-  def printHelp = {
+  def printHelp {
     out.println("This is an interpreter for Scala.")
     out.println("Type in expressions to have them evaluated.")
     out.println("Type :compile followed by a filename to compile a complete Scala file.")
@@ -84,7 +84,7 @@ class InterpreterLoop(in0: BufferedReader, out: PrintWriter) {
   }
 
   /** Print a welcome message */
-  def printWelcome = {
+  def printWelcome {
     out.println("This is an interpreter for Scala.")
     out.println("Type in expressions to have them evaluated.")
     out.println("Type :help for more information.")
@@ -92,15 +92,15 @@ class InterpreterLoop(in0: BufferedReader, out: PrintWriter) {
 
   /** The main read-eval-print loop for the interpereter.  It calls
    *  <code>command()</code> for each line of input, and stops when
-   *  <code>command()</code> returns false.
+   *  <code>command()</code> returns <code>false</code>.
    */
-  def repl(): Unit = {
+  def repl {
     var firstTime = true
-    while(true) {
-      if(interactive) {
+    while (true) {
+      if (interactive) {
         out.print("\nscala> ")
         out.flush
-        if(firstTime) {
+        if (firstTime) {
           interpreter.prime
           firstTime = false
         }
@@ -112,7 +112,7 @@ class InterpreterLoop(in0: BufferedReader, out: PrintWriter) {
       val Pair(keepGoing, finalLineMaybe) = command(line)
 
       if (!keepGoing)
-        return ()
+        return
 
       finalLineMaybe match {
         case Some(finalLine) => addReplay(finalLine)
@@ -122,13 +122,13 @@ class InterpreterLoop(in0: BufferedReader, out: PrintWriter) {
   }
 
   /** interpret all lines from a specified file */
-  def interpretAllFrom(filename: String): Unit = {
+  def interpretAllFrom(filename: String) {
     val fileIn = try {
       new FileReader(filename)
     } catch {
       case _:IOException =>
         out.println("Error opening file: " + filename)
-        return ()
+        return
     }
     val oldIn = in
     val oldInteractive = interactive
@@ -137,7 +137,7 @@ class InterpreterLoop(in0: BufferedReader, out: PrintWriter) {
       interactive = false
       out.println("Loading " + filename + "...")
       out.flush
-      repl()
+      repl
     } finally {
       in = oldIn
       interactive = oldInteractive
@@ -146,7 +146,7 @@ class InterpreterLoop(in0: BufferedReader, out: PrintWriter) {
   }
 
   /** create a new interpreter and replay all commands so far */
-  def replay = {
+  def replay {
     closeInterpreter
     createInterpreter
     for (val cmd <- replayCommands) {
@@ -219,22 +219,21 @@ class InterpreterLoop(in0: BufferedReader, out: PrintWriter) {
     interpreter.interpret(code) match {
       case IR.Success => Some(code)
       case IR.Error => None
-      case IR.Incomplete => {
-        if(interactive && code.endsWith("\n\n")) {
+      case IR.Incomplete =>
+        if (interactive && code.endsWith("\n\n")) {
           out.println("Two blank lines seen.  Aborting this expression.")
           None
         } else {
-          if(interactive) {
+          if (interactive) {
             out.print("     | ")
             out.flush
           }
           val nextLine = in.readLine
-          if(nextLine == null)
+          if (nextLine == null)
             None  // end of file
           else
             interpretStartingWith(code + "\n" + nextLine)
         }
-      }
     }
   }
 
@@ -259,7 +258,7 @@ class InterpreterLoop(in0: BufferedReader, out: PrintWriter) {
   }
 
   /** process command-line arguments and do as they request */
-  def main(args: Array[String]): unit = {
+  def main(args: Array[String]) {
     def error1(msg: String): Unit = out.println("scala: " + msg)
     val command = new InterpreterCommand(List.fromArray(args), error1)
 
@@ -268,9 +267,8 @@ class InterpreterLoop(in0: BufferedReader, out: PrintWriter) {
       // explicitly requested a help listing
       out.println(command.usageMsg)
       out.flush
-      return ()
     }
-
-    main(command.settings)
+    else
+      main(command.settings)
   }
 }
