@@ -119,7 +119,7 @@ trait Typers requires Analyzer {
 
   private val stickyModes: int  = EXPRmode | PATTERNmode | TYPEmode | CONSTmode
 
-  private def funMode(mode: int) = mode & stickyModes | FUNmode | POLYmode
+  private def funMode(mode: int) = mode & (stickyModes | SCCmode) | FUNmode | POLYmode
 
   private var xxx = 10;
   class Typer(context0: Context) {
