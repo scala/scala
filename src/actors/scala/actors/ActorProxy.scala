@@ -18,14 +18,12 @@ import java.lang.Thread
  * The class <code>ActorProxy</code>provides a dynamic actor proxy for normal
  * Java threads.
  *
- * @version 0.9.0
+ * @version 0.9.2
  * @author Philipp Haller
  */
 private[actors] class ActorProxy(t: Thread) extends Actor {
 
-  /**
-   */
-  def act(): Unit = {}
+  def act() {}
 
   /**
    * <p>
@@ -48,8 +46,11 @@ private[actors] class ActorProxy(t: Thread) extends Actor {
    */
   override def exit(reason: String): Nothing = {
     kill()
-    exitReason = reason
-    exitLinked()
+    // links
+    if (!links.isEmpty) {
+      exitReason = reason
+      exitLinked()
+    }
     throw new InterruptedException
   }
 }

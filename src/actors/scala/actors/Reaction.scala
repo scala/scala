@@ -34,6 +34,7 @@ private[actors] class Reaction(a: Actor,
     /*val t = currentThread
     val saved = Actor.selfs.get(t).asInstanceOf[Actor]
     Actor.selfs.put(t, a)*/
+    val saved = Actor.tl.get.asInstanceOf[Actor]
     Actor.tl.set(a)
     Scheduler.unPendReaction
     a.isDetached = false
@@ -64,9 +65,10 @@ private[actors] class Reaction(a: Actor,
         }
       }
     }
-    /*finally {
-      Actor.selfs.put(t, saved)
-    }*/
+    finally {
+      //Actor.selfs.put(t, saved)
+      Actor.tl.set(saved)
+    }
   }
 
 }

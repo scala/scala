@@ -39,7 +39,6 @@ object Actor {
     var a = tl.get.asInstanceOf[Actor]
     if (null eq a) {
       a = new ActorProxy(currentThread)
-      //Debug.info("created "+a+" for "+currentThread)
       tl.set(a)
     }
     a
@@ -321,11 +320,8 @@ trait Actor extends OutputChannel[Any] {
         isSuspended = true
         received = None
         suspendActorFor(msec)
-        Debug.info("received: "+received)
         if (received.isEmpty) {
-          Debug.info("no message received after "+msec+" millis")
           if (f.isDefinedAt(TIMEOUT)) {
-            Debug.info("executing TIMEOUT action")
             waitingFor = waitingForNone
             isSuspended = false
             val result = f(TIMEOUT)
@@ -638,7 +634,7 @@ trait Actor extends OutputChannel[Any] {
  * <code>b</code> terminates and <code>a</code> has
  * <code>trapExit</code> set to <code>true</code>.
  *
- * @version 0.9.0
+ * @version 0.9.2
  * @author Philipp Haller
  */
 case class Exit(from: Actor, reason: String)

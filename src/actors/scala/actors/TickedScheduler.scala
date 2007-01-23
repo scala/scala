@@ -72,9 +72,6 @@ class TickedScheduler extends Thread with IScheduler {
               if (terminating) throw new QuitException
           }
 
-          //Debug.info("tasks.length: "+tasks.length)
-          //Debug.info("pendingReactions: "+pendingReactions)
-
           if (tasks.length > 0) {
             // check if we need more threads
             if (Platform.currentTime - lastActivity >= TICK_FREQ) {
@@ -92,7 +89,6 @@ class TickedScheduler extends Thread with IScheduler {
             if (pendingReactions == 0) {
               // if all worker threads idle terminate
               if (workers.length == idle.length) {
-                Debug.info("all threads idle, terminating")
                 val idleThreads = idle.elements
                 while (idleThreads.hasNext) {
                   val worker = idleThreads.next

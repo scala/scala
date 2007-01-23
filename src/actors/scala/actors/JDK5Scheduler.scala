@@ -28,8 +28,6 @@ class TaskRejectedHandler(sched: JDK5Scheduler) extends RejectedExecutionHandler
  */
 class JDK5Scheduler(initCoreSize: int, maxSize: int) extends Thread with IScheduler {
 
-  Debug.info("using JDK5Scheduler("+initCoreSize+", "+maxSize+")")
-
   /* Note:
    * When using an unbounded queue such as a
    * LinkedBlockingQueue, the executor never creates
@@ -53,6 +51,8 @@ class JDK5Scheduler(initCoreSize: int, maxSize: int) extends Thread with ISchedu
 
   private var lastActivity = Platform.currentTime
 
+  private var submittedTasks = 0
+
   private var pendingReactions = 0
   def pendReaction: unit = synchronized {
     pendingReactions = pendingReactions + 1
@@ -65,6 +65,7 @@ class JDK5Scheduler(initCoreSize: int, maxSize: int) extends Thread with ISchedu
 
   def start(task: Reaction): unit = synchronized {
     pendingReactions = pendingReactions + 1
+    submittedTasks = submittedTasks + 1
     execute(task)
   }
 
@@ -94,9 +95,6 @@ class JDK5Scheduler(initCoreSize: int, maxSize: int) extends Thread with ISchedu
               if (terminating) throw new QuitException
           }
 
-          //Debug.info("tasks.length: "+executor.getQueue().size())
-          //Debug.info("pendingReactions: "+pendingReactions)
-
           // check if we need more threads
           if (executor.getQueue().size() > 0
               && Platform.currentTime - lastActivity >= TICK_FREQ
@@ -109,11 +107,9 @@ class JDK5Scheduler(initCoreSize: int, maxSize: int) extends Thread with ISchedu
             if (pendingReactions == 0) {
               // if all worker threads idle terminate
               if (executor.getActiveCount() == 0) {
-                //Debug.info("all threads idle, terminating")
                 executor.shutdown()
                 // terminate timer thread
                 TimerThread.t.interrupt()
-                //Debug.info("threads used: "+coreSize)
                 throw new QuitException
               }
             }
@@ -131,6 +127,7 @@ class JDK5Scheduler(initCoreSize: int, maxSize: int) extends Thread with ISchedu
    *  @param item the task to be executed.
    */
   def execute(item: Reaction): unit = synchronized {
+    submittedTasks = submittedTasks + 1
     executor.execute(item)
   }
 
@@ -150,11 +147,9 @@ class JDK5Scheduler(initCoreSize: int, maxSize: int) extends Thread with ISchedu
   /** Shuts down all idle worker threads.
    */
   def shutdown(): unit = synchronized {
-    Debug.info("Shutting down scheduler...")
     terminating = true
     executor.shutdown()
     // terminate timer thread
     TimerThread.t.interrupt()
-    Console.println("threads used: "+coreSize)
   }
 }
