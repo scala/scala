@@ -1,0 +1,38 @@
+***** mutable.HashSet:
+test1: 14005
+test2: 25005003, iters = 5000
+test3: 25005003
+***** immutable.Set:
+test1: 14005
+test2: 25005003, iters = 5000
+test3: 25005003
+***** immutable.ListSet:
+test1: 14005
+test2: 25005003, iters = 5000
+test3: 25005003
+***** immutable.TreeSet:
+test1: 14005
+test2: 25005003, iters = 5000
+test3: 25005003
+***** mutable.HashMap:
+test1: 14005
+test2: 25005003, iters = 5000
+test3: 25005003
+***** immutable.Map:
+test1: 14005
+test2: 25005003, iters = 5000
+test3: 25005003
+test4: 25005003
+***** immutable.TreeMap:
+test1: 14005
+test2: 25005003, iters = 5000
+test3: 25005003
+test4: 25005003
+***** immutable.ListMap:
+test1: 14005
+test2: 9007003, iters = 3000
+test3: 9007003
+***** immutable.UnBalancedTreeMap:
+test1: 14005
+test2: 1013003, iters = 1000
+test3: 1013003
