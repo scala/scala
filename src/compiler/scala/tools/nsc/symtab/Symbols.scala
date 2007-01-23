@@ -209,6 +209,8 @@ trait Symbols requires SymbolTable {
     final def isRootPackage = isPackage && name == nme.ROOTPKG
     final def isEmptyPackage = isPackage && name == nme.EMPTY_PACKAGE_NAME
     final def isEmptyPackageClass = isPackageClass && name == nme.EMPTY_PACKAGE_NAME.toTypeName
+    def isDeprecated =
+      attributes exists (attr => attr._1.symbol == DeprecatedAttr)
 
     /** Does this symbol denote a wrapper object of the interpreter or its class? */
     final def isInterpreterWrapper =
