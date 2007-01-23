@@ -648,7 +648,7 @@ trait Parsers requires SyntaxAnalyzer {
      *                     |   Path `.' type
      *                     |   `(' Type `)'
      *                     |   `{' [Type `,' [Types [`,']]] `}'
-     *                     |   AttributeClauses SimpleType  // if Xplugtypes enabled
+     *                     |   TypeAttributes SimpleType (if -Xplugtypes)
      * SimpleTypePattern  ::=  SimpleTypePattern1 [TypePatternArgs]
      * SimpleTypePattern1 ::=  SimpleTypePattern1 "#" Id
      *                     |   StableId
@@ -656,8 +656,11 @@ trait Parsers requires SyntaxAnalyzer {
      *                     |   `{' [ArgTypePattern `,' [ArgTypePatterns [`,']]] `}'
      */
     def simpleType(isPattern: boolean): Tree = {
-      if(settings.Xplugtypes.value)
-         attributeClauses
+      val attribs =
+        if(settings.Xplugtypes.value)
+          typeAttributes
+        else
+          Nil
 
       val pos = in.currentPos
       var t: Tree =
@@ -686,18 +689,22 @@ trait Parsers requires SyntaxAnalyzer {
           // System.err.println("SIMPLE_TYPE: " + r.pos + " " + r + " => " + x.pos + " " + x)
           x
         }
-      while (true) {
+
+      // scan for # and []
+      var done = false
+      while (!done) {
         if (in.token == HASH) {
           t = atPos(in.skipToken()) {
             SelectFromTypeTree(t, ident().toTypeName)
           }
         } else if (in.token == LBRACKET) {
           t = atPos(pos) { AppliedTypeTree(t, typeArgs(isPattern)) }
-          if (isPattern) return t
+          if (isPattern) done=true
         } else
-          return t
+          done=true
       }
-      null; //dummy
+
+      t.withAttributes(attribs)
     }
 
     /** TypeArgs        ::= `[' ArgTypes `]'
@@ -2146,6 +2153,21 @@ trait Parsers requires SyntaxAnalyzer {
         defs foreach setAttr
       defs
     }
+
+    /** TypeAttributes     ::= (`[' Exprs `]') *
+     *
+     * Type attributes may be arbitrary expressions.
+     */
+    def typeAttributes: List[Tree] = {
+      val exps = new ListBuffer[Tree]
+      while(in.token == LBRACKET) {
+        accept(LBRACKET)
+        exps ++= argExprs
+        accept(RBRACKET)
+      }
+      exps.toList
+    }
+
 
     /** RefineStatSeq    ::= RefineStat {StatementSeparator RefineStat}
      *  RefineStat       ::= Dcl

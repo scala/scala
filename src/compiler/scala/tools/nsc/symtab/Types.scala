@@ -29,6 +29,7 @@ import Flags._
   case OverloadedType(pre, tparams, alts) =>
   case AntiPolyType(pre: Type, targs) =>
   case TypeVar(_, _) =>
+  case AttributedType(attribs, tp) =>
 */
 
 trait Types requires SymbolTable {
@@ -47,7 +48,7 @@ trait Types requires SymbolTable {
 
   private var explainSwitch = false
   private var checkMalformedSwitch = true
-  private var globalVariance = 1//only necessary of healTypes = true?
+  private var globalVariance = 1//only necessary if healTypes = true?
   private final val healTypes = false
   private final val LubGlbMargin = 0
 
@@ -55,6 +56,18 @@ trait Types requires SymbolTable {
 
   /** The base class for all types */
   abstract class Type {
+    /** Add an attribute to this type */
+    def withAttribute(attrib: Any) = withAttributes(List(attrib))
+
+    /** Add a number of attributes to this type */
+    def withAttributes(attribs: List[Any]): Type =
+      attribs match {
+        case Nil => this
+        case _ => AttributedType(attribs, this)
+      }
+
+    /** Remove any attributes from this type */
+    def withoutAttributes = this
 
     /** Types for which asSeenFrom always is the identity, no matter what
      *  prefix or owner.
@@ -1069,7 +1082,79 @@ trait Types requires SymbolTable {
     override def toString(): String =
       if (constr.inst eq null) "<null " + origin + ">"
       else if (constr.inst eq NoType) "?" + origin
-      else constr.inst.toString();
+      else constr.inst.toString;
+  }
+
+  /** A type carrying some attributes.  The attributes have no significance
+    * to the core compiler, but can be observed by type-system plugins.  The
+    * core compiler does take care to propagate attributes and to save them
+    * in the symbol tables of object files. */
+  case class AttributedType(attributes: List[Any], tp: Type) extends Type {
+    override def toString(): String = {
+      val attString =
+        if(attributes.isEmpty)
+          ""
+        else
+          attributes.mkString("[", "] [", "] ")
+
+      attString + tp
+    }
+
+
+    /** Add a number of attributes to this type */
+    override def withAttributes(attribs: List[Any]): Type =
+      AttributedType(attribs:::this.attributes, this)
+
+    /** Remove any attributes from this type */
+    override def withoutAttributes = tp.withoutAttributes
+
+    override def isTrivial: boolean = tp.isTrivial
+
+    /** Return the argument, unless it is eq to tp, in which case return the
+      * receiver. This method is used for methods like singleDeref and widen,
+      * so that the attributes are remembered more frequently. */
+    private def maybeRewrap(newtp: Type) =
+      if(newtp eq tp) this else newtp
+
+    // ----------------  methods forwarded to tp ------------------ \\
+
+    override def symbol: Symbol = tp.symbol
+    override def singleDeref: Type = maybeRewrap(tp.singleDeref)
+    override def widen: Type = maybeRewrap(tp.widen)
+    override def deconst: Type = maybeRewrap(tp.deconst)
+    override def bounds: TypeBounds = {
+       val oftp = tp.bounds
+       oftp match {
+         case TypeBounds(lo, hi) if((lo eq this) && (hi eq this)) => TypeBounds(this,this)
+         case _ => oftp
+       }
+    }
+    override def parents: List[Type] = tp.parents
+    override def prefix: Type = tp.prefix
+    override def typeArgs: List[Type] = tp.typeArgs
+    override def resultType: Type = maybeRewrap(tp.resultType)
+    override def finalResultType: Type = maybeRewrap(tp.finalResultType)
+    override def paramSectionCount: int = tp.paramSectionCount
+    override def paramTypes: List[Type] = tp.paramTypes
+    override def typeParams: List[Symbol] = tp.typeParams
+    override def isStable: boolean = tp.isStable
+    override def nonPrivateDecl(name: Name): Symbol = tp.nonPrivateDecl(name)
+    override def baseType(clazz: Symbol): Type = tp.baseType(clazz)
+    override def closure: Array[Type] = {
+       val oftp = tp.closure
+       if((oftp.length == 1 &&) (oftp(0) eq this))
+         Array(this)
+       else
+         oftp
+     }
+    override def closureDepth: int = tp.closureDepth
+    override def baseClasses: List[Symbol] = tp.baseClasses
+    override def cloneInfo(owner: Symbol) = maybeRewrap(cloneInfo(owner))
+    override def isComplete: boolean = tp.isComplete
+    override def complete(sym: Symbol) = tp.complete(sym)
+    override def load(sym: Symbol): unit = tp.load(sym)
+    override def findMember(name: Name, excludedFlags: int, requiredFlags: long, stableOnly: boolean): Symbol =
+      tp.findMember(name, excludedFlags, requiredFlags, stableOnly)
   }
 
   /** A class representing an as-yet unevaluated type.
@@ -1077,6 +1162,7 @@ trait Types requires SymbolTable {
   abstract class LazyType extends Type {
     override def isComplete: boolean = false
     override def complete(sym: Symbol): unit
+    override def toString = "LazyType"
   }
 
   /** A class representing a lazy type with known type parameters.
@@ -1412,6 +1498,12 @@ trait Types requires SymbolTable {
       case TypeVar(_, constr) =>
         if (constr.inst != NoType) this(constr.inst)
         else tp
+      case AttributedType(attribs, atp) =>
+        val atp1 = this(atp)
+        if(atp1 eq atp)
+          tp
+        else
+          AttributedType(attribs, atp1)
       case _ =>
         tp
         // throw new Error("mapOver inapplicable for " + tp);
@@ -1720,6 +1812,7 @@ trait Types requires SymbolTable {
       case TypeBounds(_, _) => mapOver(tp)
       case MethodType(_, _) => mapOver(tp)
       case TypeVar(_, _) => mapOver(tp)
+      case AttributedType(_,_) => mapOver(tp)
       case _ => tp
     }
   }
@@ -1849,6 +1942,10 @@ trait Types requires SymbolTable {
       case Pair(_, TypeVar(_, constr2)) =>
         if (constr2.inst != NoType) tp1 =:= constr2.inst
         else constr2 instantiate (wildcardToTypeVarMap(tp1))
+      case Pair(AttributedType(_,atp), _) =>
+        isSameType(atp, tp2)
+      case Pair(_, AttributedType(_,atp)) =>
+        isSameType(tp1, atp)
       case _ =>
         if (tp1.isStable && tp2.isStable) {
           var origin1 = tp1
@@ -1951,6 +2048,10 @@ trait Types requires SymbolTable {
       case Pair(TypeVar(_, constr1), _) =>
         if (constr1.inst != NoType) constr1.inst <:< tp2
         else { constr1.hibounds = tp2 :: constr1.hibounds; true }
+      case Pair(AttributedType(_,atp1), _) =>
+        atp1 <:< tp2
+      case Pair(_, AttributedType(_,atp2)) =>
+        tp1 <:< atp2
       case Pair(_, TypeRef(pre2, sym2, args2))
       if sym2.isAbstractType && !(tp2 =:= tp2.bounds.lo) && (tp1 <:< tp2.bounds.lo) =>
         true

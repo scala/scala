@@ -2150,6 +2150,11 @@ trait Typers requires Analyzer {
             if (value.tag == UnitTag) UnitClass.tpe
             else ConstantType(value))
 
+        case AttributedTypeTree(attribs, tpt) =>
+          attribs.foreach(t => typed(t, EXPRmode, WildcardType))
+          val tptTyped = typed1(tpt, mode, pt)
+          tptTyped setType (tptTyped.tpe.withAttributes(attribs))
+
         case SingletonTypeTree(ref) =>
           val ref1 = checkStable(typed(ref, EXPRmode | QUALmode, AnyRefClass.tpe))
           tree setType ref1.tpe.resultType
@@ -2159,7 +2164,7 @@ trait Typers requires Analyzer {
           tree setSymbol sel.symbol setType typedSelect(typedType(qual), selector).tpe
 
         case tree @ CompoundTypeTree(templ: Template) =>
-          tree setType {
+          (tree setType {
             val parents1 = List.mapConserve(templ.parents)(typedType)
             if (parents1 exists (.tpe.isError)) ErrorType
             else {
@@ -2168,7 +2173,7 @@ trait Typers requires Analyzer {
               newTyper(context.make(templ, self.symbol, decls)).typedRefinement(templ.body)
               self
             }
-          }
+          }) : CompoundTypeTree
 
         case AppliedTypeTree(tpt, args) =>
           val tpt1 = typed1(tpt, mode | FUNmode | TAPPmode, WildcardType)

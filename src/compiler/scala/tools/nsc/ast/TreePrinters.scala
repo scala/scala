@@ -304,6 +304,16 @@ abstract class TreePrinters {
               tree.tpe.toString()
           )
 
+        case AttributedTypeTree(attribs, tree) =>
+          for(val attrib <- attribs) {
+            print("[")
+            print(attrib)
+            print("]")
+          }
+          if(!attribs.isEmpty)
+            print(" ")
+          print(tree)
+
         case SingletonTypeTree(ref) =>
           print(ref); print(".type")
 

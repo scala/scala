@@ -35,6 +35,16 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
                                                              with Trees
                                                              with CompilationUnits
 {
+  // alternate constructors ------------------------------------------
+  def this(reporter: Reporter) =
+    this(new Settings(err => reporter.error(null,err)),
+         reporter)
+
+  def this(settings: Settings) =
+    this(settings, new ConsoleReporter)
+
+  def this() = this(new Settings, new ConsoleReporter)
+
   // sub-components --------------------------------------------------
   object treePrinters extends TreePrinters {
     val global: Global.this.type = Global.this

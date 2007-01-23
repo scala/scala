@@ -354,6 +354,7 @@ class SemanticTokens(val compiler: Global) {
           case tpe0 : ThisType => tree match {
             case stt : SingletonTypeTree => stt.ref match {
                 case ths : This => build(ths);
+
           case _ => Console.err.println("UNKNOWN TPE11: " + tpe0 + " " + stt + " " + stt.ref + " " + stt.ref.getClass() + " " + unit.source.dbg(tree.pos));
         }
         case tt : This =>
@@ -476,6 +477,7 @@ class SemanticTokens(val compiler: Global) {
           case tree : DocDef     => build(tree.definition);
       case tree: Import => build(tree.expr)
       case tree: AppliedTypeTree => ;
+      case tree: AttributedTypeTree => ;
       case tree: SingletonTypeTree => ;
       case tree: Super   => ;
       case tree: Literal => ;

@@ -22,7 +22,6 @@ abstract class AbstractReporter extends Reporter {
   var nowarn  : Boolean = false;
   def displayPrompt : Unit;
 
-  // XXX: while is pos ignored?
   protected def info0(pos : Position, msg : String, severity : Severity, force : Boolean) : Unit = severity match {
     case INFO    => if (force || verbose) display(pos, msg, severity);
     case WARNING => {

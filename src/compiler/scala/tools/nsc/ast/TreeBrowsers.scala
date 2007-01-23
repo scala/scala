@@ -353,6 +353,9 @@ abstract class TreeBrowsers {
       case TypeTree() =>
         Pair("TypeTree", EMPTY)
 
+      case AttributedTypeTree(attribs, tpt) =>
+        Pair("AttributedTypeTree", EMPTY)
+
       case SingletonTypeTree(ref) =>
         Pair("SingletonType", EMPTY)
 
@@ -493,6 +496,9 @@ abstract class TreeBrowsers {
 
       case TypeTree() =>
         Nil
+
+      case AttributedTypeTree(attribs, tpt) =>
+        attribs ::: List(tpt)
 
       case SingletonTypeTree(ref) =>
         List(ref)
@@ -643,6 +649,13 @@ abstract class TreeBrowsers {
                                        symsToDocument(tparams) :/:
                                        "), ") :/:
                         toDocument(result) :: ")")
+        )
+
+      case AttributedType(attribs, tp) =>
+        Document.group(
+          Document.nest(4, "AttributedType(" :/:
+                        attribs.mkString("[", ",", "]") :/:
+                        "," :/: toDocument(tp) :: ")")
         )
 
       case _ =>

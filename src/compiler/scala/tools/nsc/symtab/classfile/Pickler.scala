@@ -144,6 +144,9 @@ abstract class Pickler extends SubComponent {
           putType(restpe); putTypes(formals)
         case PolyType(tparams, restpe) =>
           putType(restpe); putSymbols(tparams)
+        case AttributedType(attribs, tp) =>
+          putType(tp) // the attributes should be stored, but it is not yet
+                      // decided how to handle that.
         case _ =>
           throw new FatalError("bad type: " + tp + "(" + tp.getClass() + ")")
       }
@@ -204,7 +207,7 @@ abstract class Pickler extends SubComponent {
 
     /** Write an entry */
     private def writeEntry(entry: AnyRef): unit = {
-      def writeBody: int = entry match {
+      def writeBody(entry: AnyRef): int = entry match {
         case name: Name =>
           writeName(name)
           if (name.isTermName) TERMname else TYPEname
@@ -268,12 +271,14 @@ abstract class Pickler extends SubComponent {
           for (val c <- cs) writeRef(cs);
           ATTRIBUTE
 */
+        case AttributedType(attribs, tp)
+          => writeBody(tp) // obviously, this should be improved
         case _ =>
           throw new FatalError("bad entry: " + entry + " " + entry.getClass())//debug
       }
       val startpos = writeIndex
       writeByte(0); writeByte(0)
-      patchNat(startpos, writeBody)
+      patchNat(startpos, writeBody(entry))
       patchNat(startpos + 1, writeIndex - (startpos + 2))
     }
 

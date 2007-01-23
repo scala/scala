@@ -137,6 +137,9 @@ trait Trees requires Global {
       if (hasSymbol) symbol = tree.symbol
       this
     }
+
+    def withAttributes(attribs: List[Tree]) =
+      AttributedTypeTree(attribs, this)
   }
 
   trait SymTree extends Tree {
@@ -153,6 +156,8 @@ trait Trees requires Global {
     override def isTerm = true
   }
 
+  /** A tree for a type.  Note that not all type trees implement
+    * this trait; in particular, Ident's are an exception. */
   trait TypTree extends Tree {
     override def isType = true
   }
@@ -622,7 +627,11 @@ trait Trees requires Global {
   def Literal(value: Any): Literal =
     Literal(Constant(value))
 
-  /** General type term, introduced by the phase <code>RefCheck</code>. */
+  /** A synthetic term holding an arbitrary type.  Not to be confused with
+    * with TypTree, the trait for trees that are only used for type trees.
+    * TypeTree's are inserted in several places, but most notably in
+    * <code>RefCheck</code>, where the arbitrary type trees are all replaced by
+    * TypeTree's. */
   case class TypeTree() extends TypTree {
     var original: Tree = _
 
@@ -630,12 +639,19 @@ trait Trees requires Global {
       original = tree
       setPos(tree.pos)
     }
+
     override def isEmpty = (tpe eq null) || tpe == NoType
   }
 
   def TypeTree(tp: Type): TypeTree = TypeTree() setType tp
   // def TypeTree(tp: Type, tree : Tree): TypeTree = TypeTree(tree) setType tp
 
+  /** A type tree that has attributes attached to it */
+  case class AttributedTypeTree(attribs: List[Tree], tpt: Tree)
+        extends TypTree {
+    override def withAttributes(attribs: List[Tree]) =
+      AttributedTypeTree(attribs:::this.attribs, this)
+  }
 
   /** Singleton type, eliminated by RefCheck */
   case class SingletonTypeTree(ref: Tree)
@@ -697,7 +713,8 @@ trait Trees requires Global {
   case Select(qualifier, selector) =>
   case Ident(name) =>
   case Literal(value) =>
-  case TypeTree() =>
+  case TypeTree() =>                                              (introduced by refcheck)
+  case AttributedTypeTree(attribs, tpt) =>                        (eliminated by uncurry)
   case SingletonTypeTree(ref) =>                                  (eliminated by uncurry)
   case SelectFromTypeTree(qualifier, selector) =>                 (eliminated by uncurry)
   case CompoundTypeTree(templ: Template) =>                       (eliminated by uncurry)
@@ -743,6 +760,7 @@ trait Trees requires Global {
     def Ident(tree: Tree, name: Name): Ident
     def Literal(tree: Tree, value: Constant): Literal
     def TypeTree(tree: Tree): TypeTree
+    def AttributedTypeTree(tree: Tree, attribs: List[Tree], tpt: Tree): AttributedTypeTree
     def SingletonTypeTree(tree: Tree, ref: Tree): SingletonTypeTree
     def SelectFromTypeTree(tree: Tree, qualifier: Tree, selector: Name): SelectFromTypeTree
     def CompoundTypeTree(tree: Tree, templ: Template): CompoundTypeTree
@@ -825,6 +843,8 @@ trait Trees requires Global {
       new Literal(value).copyAttrs(tree)
     def TypeTree(tree: Tree) =
       new TypeTree().copyAttrs(tree)
+    def AttributedTypeTree(tree: Tree, attribs: List[Tree], tpt: Tree) =
+      new AttributedTypeTree(attribs, tpt)
     def SingletonTypeTree(tree: Tree, ref: Tree) =
       new SingletonTypeTree(ref).copyAttrs(tree)
     def SelectFromTypeTree(tree: Tree, qualifier: Tree, selector: Name) =
@@ -1024,6 +1044,11 @@ trait Trees requires Global {
       case t @ TypeTree() => t
       case _ => copy.TypeTree(tree)
     }
+    def AttributedTypeTree(tree: Tree, attribs: List[Tree], tpt: Tree) = tree match {
+      case t @ AttributedTypeTree(attribs0, tpt0)
+      if (attribs0==attribs) && (tpt0==tpt) => t
+      case _ => copy.AttributedTypeTree(tree, attribs, tpt)
+    }
     def SingletonTypeTree(tree: Tree, ref: Tree) = tree match {
       case t @ SingletonTypeTree(ref0)
       if ref0 == ref => t
@@ -1152,6 +1177,8 @@ trait Trees requires Global {
         copy.Literal(tree, value)
       case TypeTree() =>
         copy.TypeTree(tree)
+      case AttributedTypeTree(attribs, tpt) =>
+        copy.AttributedTypeTree(tree, transformTrees(attribs), transform(tpt))
       case SingletonTypeTree(ref) =>
         copy.SingletonTypeTree(tree, transform(ref))
       case SelectFromTypeTree(qualifier, selector) =>
@@ -1288,6 +1315,8 @@ trait Trees requires Global {
         ;
       case TypeTree() =>
         ;
+      case AttributedTypeTree(attribs, tpt) =>
+        traverseTrees(attribs); traverse(tpt)
       case SingletonTypeTree(ref) =>
         traverse(ref)
       case SelectFromTypeTree(qualifier, selector) =>
