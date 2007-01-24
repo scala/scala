@@ -1,3 +1,9 @@
+scala (2.3.2-1) unstable; urgency=low
+
+  * New upstream version
+
+ -- Lex Spoon <lex@debian.org>  Fri, 19 Jan 2007 14:45:51 +0100
+
 scala (2.3.0-1) unstable; urgency=low
 
   * New upstream version
