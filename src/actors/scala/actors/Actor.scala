@@ -395,9 +395,9 @@ trait Actor extends OutputChannel[Any] {
   /**
    * Sends <code>msg</code> to this actor (asynchronous).
    */
-  def !(msg: Any): Unit = send(msg, Actor.self.reply)
+  def !(msg: Any): Unit = send(msg, Actor.self.getReplyChannel)
 
-  def forward(msg: Any): Unit = send(msg, Actor.sender.reply)
+  def forward(msg: Any): Unit = send(msg, Actor.sender.getReplyChannel)
 
   /**
    * Sends <code>msg</code> to this actor and awaits reply
@@ -423,7 +423,7 @@ trait Actor extends OutputChannel[Any] {
   def reply(msg: Any): Unit = session ! msg
 
   private var rc = new Channel[Any]
-  def reply = rc
+  def getReplyChannel = rc
   def freshReply() = { rc = new Channel[Any]; rc }
 
   def ? : Any = receive {
