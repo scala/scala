@@ -3,7 +3,7 @@ Section: devel
 Priority: optional
 Maintainer: Lex Spoon <lex@debian.org>
 Standards-Version: 3.7.2
-Build-Depends: gcj-4.0,  ant,  debhelper (>= 5)
+Build-Depends: gcj-4.1, java-gcj-compat-dev,  gij | java-virtual-machine, ant,  debhelper (>= 5)
 
 Package: scala
 Architecture: all
