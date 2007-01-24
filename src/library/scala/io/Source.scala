@@ -244,7 +244,7 @@ abstract class Source extends Iterator[Char] {
    *  @return     the character string of the specified line.
    *  @throws scala.compat.Platform.IllegalArgumentException
    */
-  def getLine(line: Int): String = {
+  def getLine(line: Int): String = { // faster than getLines.drop(line).next
     val buf = new StringBuilder()
     val it = reset
     var i = 0
@@ -264,8 +264,27 @@ abstract class Source extends Iterator[Char] {
       ch = it.next
     }
     val res = buf.toString()
-    buf.setLength(0)
+    buf.setLength(0) // hopefully help collector to deallocate StringBuilder
     res
+  }
+
+  /** returns an iterator who returns lines (including newline character).
+   *  a line ends in \n.
+   */
+  def getLines: Iterator[String] = new Iterator[String] {
+    val buf = new StringBuilder
+    def next = {
+      var ch = iter.next
+      while(ch != '\n' && iter.hasNext) {
+        buf.append(ch)
+        ch = iter.next
+      }
+      buf.append(ch)
+      val res = buf.toString()
+      buf.setLength(0) // clean things up for next call of "next"
+      res
+    }
+    def hasNext = iter.hasNext
   }
   /** Returns <code>true</code> if this source has more characters.
    */
