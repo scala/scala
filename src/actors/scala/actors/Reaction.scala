@@ -65,10 +65,11 @@ private[actors] class Reaction(a: Actor,
         }
       }
     }
-    finally {
+    /*finally {
       //Actor.selfs.put(t, saved)
       Actor.tl.set(saved)
-    }
+    }*/
+    Actor.tl.set(saved)
   }
 
 }
