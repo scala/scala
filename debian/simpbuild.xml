@@ -299,21 +299,24 @@
   	
     <!-- Build jars -->
     <mkdir dir="${build.jar.dir}"/>
+    <copy
+      file="${topdir}/build.number"
+      tofile="${build.comp.dir}/scala.compiler.version.properties"/>
     <jar destfile="${build.jar.dir}/${comp.jar.name}">
       <fileset dir="${build.comp.dir}"/>
       <zipfileset src="${fjbg.jar}"/>
       <fileset dir="${src.lib.dir}">
         <include name="**/*.tmpl"/>
-            <include name="**/*.xml"/>
-            <include name="**/*.js"/>
-            <include name="**/*.css"/>
-          </fileset>
-          <fileset dir="${src.comp.dir}">
-            <include name="**/*.tmpl"/>
-            <include name="**/*.xml"/>
-            <include name="**/*.js"/>
-            <include name="**/*.css"/>
-          </fileset>
+        <include name="**/*.xml"/>
+        <include name="**/*.js"/>
+        <include name="**/*.css"/>
+      </fileset>
+      <fileset dir="${src.comp.dir}">
+        <include name="**/*.tmpl"/>
+        <include name="**/*.xml"/>
+        <include name="**/*.js"/>
+        <include name="**/*.css"/>
+      </fileset>
       <manifest>
         <attribute name="Signature-Version" value="${version.number}"/>
       </manifest>
@@ -437,9 +440,7 @@
 
   <target name="docs" depends="docs.lib, docs.manual"/>
 
-  <target name="dist"
-    depends="build, docs"
-  >
+  <target name="dist" depends="build,docs" >
     <!-- Create the SBaz packages -->
     <mkdir dir="${dist.sbaz.dir}"/>
     <!-- Create the Scala library package -->
