@@ -76,9 +76,8 @@ class InterpreterLoop(in0: BufferedReader, out: PrintWriter) {
   def printHelp {
     out.println("This is an interpreter for Scala.")
     out.println("Type in expressions to have them evaluated.")
-    out.println("Type :compile followed by a filename to compile a complete Scala file.")
     out.println("Type :help to repeat this message.")
-    out.println("Type :load followed by a filename to load interpreter commands.")
+    out.println("Type :load followed by a filename to load a Scala file.")
     out.println("Type :replay to reset execution and replay all previous commands.")
     out.println("Type :quit to exit the interpreter.")
   }
@@ -176,7 +175,6 @@ class InterpreterLoop(in0: BufferedReader, out: PrintWriter) {
 
     val helpRegexp    = ":h(e(l(p)?)?)?"
     val quitRegexp    = ":q(u(i(t)?)?)?"
-    val compileRegexp = ":c(o(m(p(i(l(e)?)?)?)?)?)?.*"
     val loadRegexp    = ":l(o(a(d)?)?)?.*"
     val replayRegexp  = ":r(e(p(l(a(y)?)?)?)?)?.*"
 
@@ -186,12 +184,6 @@ class InterpreterLoop(in0: BufferedReader, out: PrintWriter) {
       printHelp
     else if (line.matches(quitRegexp))
       return Pair(false, None)
-    else if (line.matches(compileRegexp)) {
-      withFile(line)(f => {
-        interpreter.compileFile(f)
-        shouldReplay = Some(line)
-      })
-    }
     else if (line.matches(loadRegexp)) {
       withFile(line)(f => {
         interpretAllFrom(f)

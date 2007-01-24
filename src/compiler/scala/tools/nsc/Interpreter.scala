@@ -204,18 +204,6 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
     }
   }
 
-  /** Compile one source file. */
-  def compileFile(filename: String): Unit = {
-    val jfile = new File(filename)
-    if (!jfile.exists) {
-      reporter.error(null, "no such file: " + filename)
-    } else {
-      val cr = new compiler.Run
-      val sf = compiler.getSourceFile(new PlainFile(jfile))
-      cr.compileSources(List(sf))
-    }
-  }
-
   /** Compile an nsc SourceFile.  Returns true if there are
    *  no compilation errors, or false othrewise.
    */
