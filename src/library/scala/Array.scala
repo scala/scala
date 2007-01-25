@@ -157,14 +157,29 @@ object Array {
     array
   }
 
-  /** This method is called in a pattern match { case Array(...) => }.
+  /** Create an array containing several copies of an element.
+   *
+   *  @param n    the length of the resulting array
+   *  @param elem the element composing the resulting array
+   *  @return     an array composed of n elements all equal to elem
+   */
+  def make[a](n: Int, elem: a): List[a] = {
+    val a = new Array[a]
+    var i = 0
+    while (i < n) {
+      a(i) = elem
+      i = i + 1
+    }
+    a
+  }
+
+ /** This method is called in a pattern match { case Array(...) => }.
    *
    *  @param x the selector value
    *  @return  array wrapped in an option, if this is a Seq, otherwise none
    */
   def unapplySeq[A](x: Any): Option[Seq[A]] =
     if (x.isInstanceOf[Array[A]]) Some(x.asInstanceOf[Array[A]]) else None
-
 }
 
 /** This class represents polymorphic arrays. It is never instantiated.
