@@ -164,7 +164,7 @@ object Array {
    *  @return     an array composed of n elements all equal to elem
    */
   def make[a](n: Int, elem: a): List[a] = {
-    val a = new Array[a]
+    val a = new Array[a](n)
     var i = 0
     while (i < n) {
       a(i) = elem
