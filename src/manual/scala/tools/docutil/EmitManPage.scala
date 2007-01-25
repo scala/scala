@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author Stephane Micheloud
  * Adapted from Lex Spoon's sbaz manual
  */
@@ -147,9 +147,9 @@ object EmitManPage {
     out.println(".\\\" ##########################################################################")
     out.println(".\\\" #                      __                                                #")
     out.println(".\\\" #      ________ ___   / /  ___     Scala 2 On-line Manual Pages          #")
-    out.println(".\\\" #     / __/ __// _ | / /  / _ |    (c) 2002-2006, LAMP/EPFL              #")
+    out.println(".\\\" #     / __/ __// _ | / /  / _ |    (c) 2002-2007, LAMP/EPFL              #")
     out.println(".\\\" #   __\\ \\/ /__/ __ |/ /__/ __ |                                          #")
-    out.println(".\\\" #  /____/\\___/_/ |_/____/_/ | |    http://scala.epfl.ch/                 #")
+    out.println(".\\\" #  /____/\\___/_/ |_/____/_/ | |    http://scala-lang.org/                #")
     out.println(".\\\" #                           |/                                           #")
     out.println(".\\\" ##########################################################################")
     out.println(".\\\"")

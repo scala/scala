@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author Stephane Micheloud
  */
 //$Id$
@@ -14,7 +14,7 @@ object scala extends Command {
   val name = Section("NAME",
 
     MBold(command) & " " & NDash & " Run code in the " &
-    Link("Scala 2", "http://scala.epfl.ch/") &
+    Link("Scala 2", "http://scala-lang.org/") &
     " language")
 
   val synopsis = Section("SYNOPSIS",

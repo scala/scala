@@ -1,7 +1,7 @@
 /*    __  ______________                                                      *\
 **   /  |/ / ____/ ____/                                                      **
 **  / | | /___  / /___                                                        **
-** /_/|__/_____/_____/ Copyright 2005-2006 LAMP/EPFL                          **
+** /_/|__/_____/_____/ Copyright 2005-2007 LAMP/EPFL                          **
 **                                                                            **
 \*                                                                            */
 
@@ -27,7 +27,7 @@ package scala.tools.ant {
 
   /** <p>
    *    An Ant task that generates a shell or batch script to execute a
-   *    <a href="http://scala.epfl.ch/" target="_top">Scala</a> program.
+   *    <a href="http://scala-lang.org/" target="_top">Scala</a> program.
    *    This task can take the following parameters as attributes:
    *  </p><ul>
    *  <li>file (mandatory),</li>

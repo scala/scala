@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2006, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2007, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -25,7 +25,7 @@ import scala.collection.mutable._
  *  as the used class names and method signatures are the same.<p/>
  *
  *  Example:<pre>
- *    <b>val</b> url = <b>new</b> URL("http://scala.epfl.ch/classes/examples.jar");
+ *    <b>val</b> url = <b>new</b> URL("http://scala-lang.org/classes/examples.jar");
  *    <b>val</b> obj = <b>new</b> Location(url) create "examples.sort";</pre>
  *
  *  @see <a href="Code.html">Code</a>

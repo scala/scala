@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -12,11 +12,11 @@
 package scala.concurrent
 
 
-/**
- * Library for using Pi-calculus concurrent primitives in Scala. As an
- * example, the definition of a two-place buffer using the <code>pilib</code>
- * library looks like:
- * <pre>
+/** <p>
+ *    Library for using Pi-calculus concurrent primitives in Scala. As an
+ *    example, the definition of a two-place buffer using the <code>pilib</code>
+ *   library looks like:
+ * </p><pre>
  * <b>def</b> Buffer[a](put: Chan[a], get: Chan[a]): unit = {
  *   <b>def</b> B0: unit = choice ( put * { x => B1(x) } );
  *   <b>def</b> B1(x: a): unit = choice ( get(x) * B0, put * { y => B2(x, y) } )
@@ -25,7 +25,7 @@ package scala.concurrent
  * }
  * </pre>
  *
- * @see <a href="http://scala.epfl.ch/docu/related.html">PiLib: A Hosted Language for Pi-Calculus Style Concurrency</a>
+ * @see <a href="http://scala-lang.org/docu/related.html">PiLib: A Hosted Language for Pi-Calculus Style Concurrency</a>
  * @author  Vincent Cremet, Martin Odersky
  * @version 1.0
  */

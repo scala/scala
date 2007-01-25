@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2006, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2007, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -20,7 +20,7 @@ import java.lang.NoSuchMethodException
  *  a function simply by specifying its name and argument types.<p/>
  *
  *  Example:<pre>
- *    <b>val</b> url = <b>new</b> URL("http://scala.epfl.ch/classes/examples.jar");
+ *    <b>val</b> url = <b>new</b> URL("http://scala-lang.org/classes/examples.jar");
  *    <b>val</b> obj = <b>new</b> Location(url) create "examples.sort";
  *    <b>val</b> ar = Array(6, 2, 8, 5, 1);
  *    obj[Array[Int], Unit]("println")(ar);

@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author Stephane Micheloud
  */
 //$Id$
@@ -11,7 +11,7 @@ object scaladoc extends Command {
 
   protected def cn = new Error().getStackTrace()(0).getClassName()
 
-  val scalaLink = Link("Scala 2", "http://scala.epfl.ch/")
+  val scalaLink = Link("Scala 2", "http://scala-lang.org/")
 
   val name = Section("NAME",
 

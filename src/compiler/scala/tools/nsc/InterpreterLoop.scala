@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author Alexander Spoon
  */
 // $Id$
@@ -16,7 +16,7 @@ import scala.tools.nsc.util.{Position}
 import nsc.{InterpreterResults=>IR}
 
 /** The main loop of the command-line interface to the
- *  <a href="http://scala.epfl.ch/" target="_top">Scala</a> interpreter.
+ *  <a href="http://scala-lang.org/" target="_top">Scala</a> interpreter.
  *  After instantiation, clients should call the <code>main()</code> method.
  *
  *  @author  Lex Spoon
