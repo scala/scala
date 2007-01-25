@@ -630,7 +630,8 @@ trait Typers requires Analyzer {
           if ((mode & PATTERNmode) != 0) {
             if ((tree.symbol ne null) && tree.symbol.isModule)
               inferModulePattern(tree, pt)
-            if (isPopulated(tree.tpe, pt)) return tree
+            if (isPopulated(tree.tpe, approximateAbstracts(pt)))
+              return tree
           }
           val tree1 = constfold(tree, pt) // (10) (11)
           if (tree1.tpe <:< pt) adapt(tree1, mode, pt)

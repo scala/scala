@@ -225,4 +225,19 @@ abstract class TreeInfo {
     case AppliedTypeTree(fn, _) => methPart(fn)
     case _ => tree
   }
+
+  /** Top-level definition sequence contains a leading import of Predef or scala.Predef
+   */
+  def containsLeadingPredefImport(defs: List[Tree]): boolean = defs match {
+    case List(PackageDef(_, defs1)) =>
+      containsLeadingPredefImport(defs1)
+    case Import(Ident(nme.Predef), _) :: _ =>
+      true
+    case Import(Select(Ident(nme.scala_), nme.Predef), _) :: _ =>
+      true
+    case Import(_, _) :: defs1 =>
+      containsLeadingPredefImport(defs1)
+    case _ =>
+      false
+  }
 }

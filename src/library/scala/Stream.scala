@@ -192,7 +192,7 @@ trait Stream[+a] extends Seq[a] {
    */
   def elements: Iterator[a] = new Iterator[a] {
     var current = Stream.this
-    def hasNext: boolean = !current.isEmpty
+    def hasNext: Boolean = !current.isEmpty
     def next: a = { val result = current.head; current = current.tail; result }
   }
 

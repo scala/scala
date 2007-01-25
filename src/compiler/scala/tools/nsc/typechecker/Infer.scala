@@ -915,6 +915,13 @@ trait Infer requires Analyzer {
       }
     }
 
+    object approximateAbstracts extends TypeMap {
+      def apply(tp: Type): Type = tp match {
+        case TypeRef(pre, sym, _) if sym.isAbstractType => WildcardType
+        case _ => mapOver(tp)
+      }
+    }
+
     /** A traverser to collect type parameters referred to in a type
      */
     object freeTypeParamsOfTerms extends SymCollector {

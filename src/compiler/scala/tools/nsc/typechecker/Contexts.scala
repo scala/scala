@@ -51,7 +51,7 @@ trait Contexts requires Analyzer {
       addImport(JavaLangPackage)
       assert(ScalaPackage ne null, "Scala package is null")
       addImport(ScalaPackage)
-      if (!settings.nopredefs.value/* || unit.source.file.name != "Predef.scala"*/)
+      if (!(settings.nopredefs.value || treeInfo.containsLeadingPredefImport(List(unit.body))))
         addImport(PredefModule)
     }
     val c = sc.make(unit, tree, sc.owner, sc.scope, sc.imports)

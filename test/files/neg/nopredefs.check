@@ -1,0 +1,4 @@
+nopredefs.scala:5: error: not found: value Set
+  val y = Set(3)
+          ^
+one error found
