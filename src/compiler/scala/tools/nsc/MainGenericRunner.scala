@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2006 LAMP/EPFL
+ * Copyright 2006-2007 LAMP/EPFL
  * @author  Lex Spoon
  */
 
@@ -18,9 +18,12 @@ import java.lang.reflect.InvocationTargetException
   */
 object MainGenericRunner {
   /** Append jars found in ${scala.home}/lib to
-    * a specified classpath.  Also append "." if the
-    * input classpath is empty; otherwise do not.
-    */
+   *  a specified classpath.  Also append "." if the
+   *  input classpath is empty; otherwise do not.
+   *
+   *  @param  classpath
+   *  @return ...
+   */
   def addClasspathExtras(classpath: String): String = {
     val scalaHome = getProperty("scala.home")
 
@@ -70,7 +73,7 @@ object MainGenericRunner {
       val version = getProperty("scala.tool.version", "unknown version")
       Console.println(
           "Scala code runner version " + version + " -- " +
-           "(c) 2002-2006 LAMP/EPFL")
+           "(c) 2002-2007 LAMP/EPFL")
       return
     }
 
