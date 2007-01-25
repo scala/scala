@@ -39,6 +39,7 @@ object ScalaRunTime {
   val BooleanTYPE = java.lang.Boolean.TYPE
   val UnitTYPE = java.lang.Void.TYPE
 
+  def isArray(x:AnyRef): Boolean = x.getClass.isArray
   def isValueTag(tag: String) = tag.charAt(0) == '.'
   def isValueClass(clazz: Class) = clazz.isPrimitive()
 

@@ -157,6 +157,14 @@ object Array {
     array
   }
 
+  /** This method is called in a pattern match { case Array(...) => }.
+   *
+   *  @param x the selector value
+   *  @return  array wrapped in an option, if this is a Seq, otherwise none
+   */
+  def unapplySeq[A](x: Any): Option[Seq[A]] =
+    if (x.isInstanceOf[Array[A]]) Some(x.asInstanceOf[Array[A]]) else None
+
 }
 
 /** This class represents polymorphic arrays. It is never instantiated.

@@ -23,13 +23,16 @@ object Seq {
     def elements = Iterator.empty
   }
 
-  /** ...
+  /** This method is called in a pattern match { case Seq(...) => }.
    *
-   *  @param x ...
-   *  @return  ...
+   *  @param x the selector value
+   *  @return  sequence wrapped in an option, if this is a Seq, otherwise none
    */
-  def unapplySeq[A](x: Any): Option[Seq[A]] =
-    if (x.isInstanceOf[Seq[A]]) Some(x.asInstanceOf[Seq[A]]) else None
+  def unapplySeq[A](x: Any): Option[Seq[A]] = x match {
+    case z: Seq[_] => Some(z.asInstanceOf[Seq[A]])
+    case z: AnyRef if runtime.ScalaRunTime.isArray(z) => Some(runtime.ScalaRunTime.boxArray(z).asInstanceOf[Seq[A]])
+    case _ =>  None
+  }
 
   /** Builds a singleton sequence.
    *
