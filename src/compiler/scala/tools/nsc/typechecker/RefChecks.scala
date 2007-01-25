@@ -486,24 +486,28 @@ abstract class RefChecks extends InfoTransform {
       case ClassDef(_, _, _, _, _) if isConcreteLocalCaseFactory(tree.symbol) =>
         val clazz = tree.symbol
         val factory = clazz.caseFactory
-        assert(factory != NoSymbol, clazz)
-        def mkArgument(vparam: Symbol) = {
-          val id = Ident(vparam)
-          if (vparam.tpe.symbol == RepeatedParamClass) Typed(id, Ident(nme.WILDCARD_STAR.toTypeName))
-          else id
-        }
-        val caseFactoryDef =
-          localTyper.typed {
-            atPos(tree.pos) {
-              DefDef(
-                factory,
-                vparamss =>
-                  (toConstructor(tree.pos, factory.tpe) /: vparamss) {
-                    (fn, vparams) => Apply(fn, vparams map mkArgument)
-                  })
-            }
+        if (factory == NoSymbol) {
+          assert(clazz.owner.isTerm, clazz)
+          List(transform(tree))
+        } else {
+          def mkArgument(vparam: Symbol) = {
+            val id = Ident(vparam)
+            if (vparam.tpe.symbol == RepeatedParamClass) Typed(id, Ident(nme.WILDCARD_STAR.toTypeName))
+            else id
           }
-        List(transform(tree), caseFactoryDef)
+          val caseFactoryDef =
+            localTyper.typed {
+              atPos(tree.pos) {
+                DefDef(
+                  factory,
+                  vparamss =>
+                    (toConstructor(tree.pos, factory.tpe) /: vparamss) {
+                      (fn, vparams) => Apply(fn, vparams map mkArgument)
+                    })
+              }
+            }
+          List(transform(tree), caseFactoryDef)
+        }
 
       case ValDef(_, _, _, _) =>
 	val tree1 = transform(tree); // important to do before forward reference check
@@ -523,8 +527,8 @@ abstract class RefChecks extends InfoTransform {
     override def transform(tree: Tree): Tree = try {
 
       /* Check whether argument types conform to bounds of type parameters */
-      def checkBounds(tparams: List[Symbol], argtps: List[Type]): unit = try {
-	typer.infer.checkBounds(tree.pos, tparams, argtps, "");
+      def checkBounds(pre: Type, owner: Symbol, tparams: List[Symbol], argtps: List[Type]): unit = try {
+	typer.infer.checkBounds(tree.pos, pre, owner, tparams, argtps, "");
       } catch {
 	case ex: TypeError => unit.error(tree.pos, ex.getMessage());
       }
@@ -579,13 +583,13 @@ abstract class RefChecks extends InfoTransform {
 	case TypeTree() =>
 	  new TypeTraverser {
 	    def traverse(tp: Type): TypeTraverser = tp match {
-	      case TypeRef(pre, sym, args) => checkBounds(sym.typeParams, args); this
+	      case TypeRef(pre, sym, args) => checkBounds(pre, sym.owner, sym.typeParams, args); this
 	      case _ => this
 	    }
 	  } traverse tree.tpe
 
 	case TypeApply(fn, args) =>
-	  checkBounds(fn.tpe.typeParams, args map (.tpe))
+	  checkBounds(NoPrefix, NoSymbol, fn.tpe.typeParams, args map (.tpe))
 	  if (sym.isSourceMethod && sym.hasFlag(CASE)) result = toConstructor(tree.pos, tree.tpe)
 
         case Apply(

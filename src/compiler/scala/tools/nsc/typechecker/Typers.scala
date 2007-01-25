@@ -1525,7 +1525,7 @@ trait Typers requires Analyzer {
         case PolyType(tparams, restpe) if (tparams.length != 0) =>
           if (tparams.length == args.length) {
             val targs = args map (.tpe)
-            checkBounds(tree.pos, tparams, targs, "")
+            checkBounds(tree.pos, NoPrefix, NoSymbol, tparams, targs, "")
             if (fun.symbol == Predef_classOf) {
               if (!targs.head.symbol.isClass || targs.head.symbol.isRefinementClass)
                 error(args.head.pos, "class type required");
@@ -1939,15 +1939,19 @@ trait Typers requires Analyzer {
           }
           val lhs1 = typed(lhs, EXPRmode | LHSmode, WildcardType)
           val varsym = lhs1.symbol
-          if ((varsym ne null) && mayBeVarGetter(varsym)) {
+          if ((varsym ne null) && mayBeVarGetter(varsym))
             lhs1 match {
               case Select(qual, name) =>
-                typed(
+                return typed(
                   Apply(
                     Select(qual, nme.getterToSetter(name)) setPos lhs.pos,
-                    List(rhs)) setPos tree.pos, mode, pt)
+                    List(rhs)) setPos tree.pos,
+                  mode, pt)
+
+              case _ =>
+
             }
-          } else if ((varsym ne null) && (varsym.isVariable || varsym.isValue && phase.erasedTypes)) {
+          if ((varsym ne null) && (varsym.isVariable || varsym.isValue && phase.erasedTypes)) {
             val rhs1 = typed(rhs, lhs1.tpe)
             copy.Assign(tree, lhs1, rhs1) setType UnitClass.tpe
           } else {
@@ -2391,16 +2395,23 @@ trait Typers requires Analyzer {
 
       val tc = newTyper(context.makeImplicit(reportAmbiguous))
 
-      def ambiguousError(info1: ImplicitInfo, info2: ImplicitInfo,
-                         pre1: String, pre2: String, trailer: String) =
-        error(
-          pos,
-          "ambiguous implicit value:\n "+
+      def ambiguousImplicitError(info1: ImplicitInfo, info2: ImplicitInfo,
+                                 pre1: String, pre2: String, trailer: String) = {
+        val coreMsg =
           pre1+" "+info1.sym+info1.sym.locationString+" of type "+info1.tpe+"\n "+
           pre2+" "+info2.sym+info2.sym.locationString+" of type "+info2.tpe+"\n "+
-          trailer+
-          (if (isView) "are possible conversion functions from "+ pt.typeArgs(0)+" to "+pt.typeArgs(1)
-           else "match expected type "+pt))
+          trailer
+        error(pos,
+          if (isView) {
+            val found = pt.typeArgs(0)
+            val req = pt.typeArgs(1)
+            typeErrorMsg(found, req)+
+            "\nNote that implicit conversions are not applicable because they are ambiguous:\n "+
+            coreMsg+"are possible conversion functions from "+ found+" to "+req
+          } else {
+            "ambiguous implicit values:\n "+coreMsg + "match expected type "+pt
+          })
+      }
 
       /** Search list of implicit info lists for one matching prototype
        *  <code>pt</code>. If found return a tree from found implicit info
@@ -2439,10 +2450,10 @@ trait Typers requires Analyzer {
         if (best == NoImplicitInfo) EmptyTree
         else {
           val competing = applicable dropWhile (alt => best == alt || improves(best, alt))
-          if (!competing.isEmpty) ambiguousError(best, competing.head, "both", "and", "")
+          if (!competing.isEmpty) ambiguousImplicitError(best, competing.head, "both", "and", "")
           for (val alt <- applicable)
             if (alt.sym.owner != best.sym.owner && isSubClassOrObject(alt.sym.owner, best.sym.owner)) {
-              ambiguousError(best, alt,
+              ambiguousImplicitError(best, alt,
                              "most specific definition is:",
                              "yet alternative definition  ",
                              "is defined in a subclass.\n Both definitions ")

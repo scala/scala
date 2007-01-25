@@ -11,7 +11,9 @@
 
 package scala.util.parsing
 
-/** This class ...
+/** Documentation for this class is currently missing.
+ *  However, the Scala By Examples document contains a
+ *  chapter on combinator parsing that comes close.
  *
  *  @author  Burak Emir
  *  @version 1.0

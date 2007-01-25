@@ -243,6 +243,12 @@ trait Infer requires Analyzer {
         ";\n found   : " + found.toLongString + "\n required: " + req
       }
 
+    def typeErrorMsg(found: Type, req: Type) =
+      "type mismatch" + foundReqMsg(found, req) +
+      (if (!(found.resultType eq found) && isWeaklyCompatible(found.resultType, req))
+        "\n possible cause: missing arguments for method or constructor"
+       else "")
+
     def error(pos: PositionType, msg: String): unit =
       context.error(pos, msg)
 
@@ -251,15 +257,12 @@ trait Infer requires Analyzer {
       setError(tree)
     }
 
-    def typeError(pos: PositionType, found: Type, req: Type): unit =
+    def typeError(pos: PositionType, found: Type, req: Type) {
       if (!found.isErroneous && !req.isErroneous) {
-        error(pos,
-          "type mismatch" + foundReqMsg(found, req) +
-             (if (!(found.resultType eq found) && isWeaklyCompatible(found.resultType, req))
-            "\n possible cause: missing arguments for method or constructor"
-           else ""))
+        error(pos, typeErrorMsg(found, req))
         if (settings.explaintypes.value) explainTypes(found, req)
       }
+    }
 
     def typeErrorTree(tree: Tree, found: Type, req: Type): Tree = {
       typeError(tree.pos, found, req)
@@ -574,12 +577,10 @@ trait Infer requires Analyzer {
     }
 
     /** error if arguments not within bounds. */
-    def checkBounds(pos: PositionType, tparams: List[Symbol],
-                    targs: List[Type], prefix: String): unit =
-      if (!isWithinBounds(NoPrefix, NoSymbol, tparams, targs)) {
+    def checkBounds(pos: PositionType, pre: Type, owner: Symbol,
+                    tparams: List[Symbol], targs: List[Type], prefix: String) {
+      if (!isWithinBounds(pre, owner, tparams, targs)) {
         if (!(targs exists (.isErroneous)) && !(tparams exists (.isErroneous))) {
-          //Console.println("tparams = "+tparams+", bounds = "+tparams.map(.info)+", targs="+targs)//DEBUG
-          //withTypesExplained(isWithinBounds(NoPrefix, tparams, targs))//DEBUG
           error(pos,
                 prefix + "type arguments " + targs.mkString("[", ",", "]") +
                 " do not conform to " + tparams.head.owner + "'s type parameter bounds " +
@@ -592,6 +593,7 @@ trait Infer requires Analyzer {
           ()
         }
       }
+    }
 
     /** Substitite free type variables `undetparams' of polymorphic argument
      *  expression `tree', given two prototypes `strictPt', and `lenientPt'.
@@ -655,7 +657,7 @@ trait Infer requires Analyzer {
           val targs = methTypeArgs(
             undetparams, formalTypes(formals, argtpes.length),
             restpe, argtpes, pt, uninstantiated)
-          checkBounds(fn.pos, undetparams, targs, "inferred ")
+          checkBounds(fn.pos, NoPrefix, NoSymbol, undetparams, targs, "inferred ")
           //Console.println("UNAPPLY subst type "+undetparams+" to "+targs+" in "+fn+" ( "+args+ ")")
           val treeSubst = new TreeTypeSubstituter(undetparams, targs)
           treeSubst.traverse(fn)
@@ -724,7 +726,7 @@ trait Infer requires Analyzer {
       def computeArgs =
         try {
           val targs = solve(tvars, undetparams, undetparams map varianceInType(restpe), true)
-          checkBounds(tree.pos, undetparams, targs, "inferred ")
+          checkBounds(tree.pos, NoPrefix, NoSymbol, undetparams, targs, "inferred ")
           new TreeTypeSubstituter(undetparams, targs).traverse(tree)
         } catch {
           case ex: NoInstance =>
