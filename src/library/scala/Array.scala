@@ -163,7 +163,7 @@ object Array {
    *  @param elem the element composing the resulting array
    *  @return     an array composed of n elements all equal to elem
    */
-  def make[a](n: Int, elem: a): List[a] = {
+  def make[a](n: Int, elem: a): Array[a] = {
     val a = new Array[a](n)
     var i = 0
     while (i < n) {
