@@ -23,6 +23,7 @@ trait SeqProxy[+A] extends Seq[A] with IterableProxy[A] {
 
   def self: Seq[A]
 
+  override def apply(i: Int): A = self(i)
   override def length: Int = self.length
   override def isEmpty: Boolean = self.isEmpty
   override def concat [B >: A](that: Iterable[B]): Seq[B] = self concat that
