@@ -178,6 +178,41 @@ object Test {
   }
 
 
+  def returnInBodyAndInFinally: Unit = try {
+    try {
+      Console.println("Normal execution...");
+      return
+      Console.println("non reachable code");
+    } finally {
+      Console.println("inner finally");
+      return
+    }
+  } finally {
+    Console.println("Outer finally");
+    return
+  }
+
+  def returnInBodyAndInFinally2: Unit = try {
+    try {
+      Console.println("Normal execution...");
+      return
+      Console.println("non reachable code");
+    } finally {
+      try {
+        Console.println("inner finally");
+        return
+      } finally {
+        Console.println("finally inside finally");
+      }
+    }
+  } finally {
+    Console.println("Outer finally");
+    return
+  }
+
+
+
+
   def execute(f: => Unit) = try {
     f;
   } catch {
@@ -228,5 +263,11 @@ object Test {
 
     Console.println("Return inside synchronized body:");
     execute(returnInBodySynch);
+
+    Console.println("Return inside body and return in finally:");
+    execute(returnInBodyAndInFinally);
+
+    Console.println("Return inside body and return in finally inside finally:");
+    execute(returnInBodyAndInFinally2);
   }
 }

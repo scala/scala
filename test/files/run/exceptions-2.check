@@ -36,3 +36,12 @@ Return inside synchronized body:
 Synchronized normal execution...
 inner finally
 Outer finally
+Return inside body and return in finally:
+Normal execution...
+inner finally
+Outer finally
+Return inside body and return in finally inside finally:
+Normal execution...
+inner finally
+finally inside finally
+Outer finally
