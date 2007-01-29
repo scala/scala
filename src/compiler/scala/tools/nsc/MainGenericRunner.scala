@@ -7,9 +7,8 @@
 
 package scala.tools.nsc
 
-import java.lang.System.getProperty
-import java.lang.{ClassNotFoundException, NoSuchMethodException}
 import java.io.File
+import java.lang.{ClassNotFoundException, NoSuchMethodException}
 import java.lang.reflect.InvocationTargetException
 
 /** An object that runs Scala code.  It has three possible
@@ -24,8 +23,8 @@ object MainGenericRunner {
    *  @param  classpath
    *  @return ...
    */
-  def addClasspathExtras(classpath: String): String = {
-    val scalaHome = getProperty("scala.home")
+  private def addClasspathExtras(classpath: String): String = {
+    val scalaHome = Properties.scalaHome
 
     val extraClassPath =
       if (scalaHome eq null)
@@ -70,10 +69,10 @@ object MainGenericRunner {
     }
 
     if (settings.version.value) {
-      val version = getProperty("scala.tool.version", "unknown version")
       Console.println(
-          "Scala code runner version " + version + " -- " +
-           "(c) 2002-2007 LAMP/EPFL")
+        "Scala code runner " +
+        Properties.versionString + " -- " +
+        Properties.copyrightString)
       return
     }
 

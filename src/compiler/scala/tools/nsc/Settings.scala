@@ -49,7 +49,7 @@ class Settings(error: String => unit) {
      else p2
 
   private def guessedScalaBootClassPath = {
-    val scalaHome = System.getProperty("scala.home")
+    val scalaHome = Properties.scalaHome
     if (scalaHome ne null) {
       val guessJar = new File(new File(new File(scalaHome), "lib"), "scala-library.jar")
       if (guessJar.exists()) guessJar.getPath()
@@ -61,7 +61,7 @@ class Settings(error: String => unit) {
   }
 
   private def guessedScalaExtDirs = {
-    val scalaHome = System.getProperty("scala.home")
+    val scalaHome = Properties.scalaHome
     if (scalaHome ne null) {
       val guess = new File(new File(scalaHome), "lib")
       if (guess.exists()) guess.getPath else null

@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -10,6 +10,7 @@ import java.lang.{Thread, System, Runtime}
 import java.lang.NumberFormatException
 import java.io.{File, IOException, PrintWriter, FileOutputStream}
 import java.io.{BufferedReader, FileReader}
+import java.util.regex.Pattern
 import java.net._
 
 object CompileSocket {
@@ -19,19 +20,17 @@ object CompileSocket {
    */
   private val dirName = "scalac-compile-server-port"
 
-  private val isWin = System.getProperty("os.name") startsWith "Windows"
-  private val cmdName = if (isWin) "scala.bat" else "scala"
-
   /** The vm-part of the command to start a new scala compile server */
   private val vmCommand =
-    System.getProperty("scala.home") match {
-      case null => cmdName
+    Properties.scalaHome match {
+      case null =>
+        Properties.cmdName
       case dirname =>
-        val trial = new File(new File(dirname, "bin"), cmdName)
+        val trial = new File(new File(dirname, "bin"), Properties.cmdName)
         if (trial.canRead)
           trial.getPath
         else
-          cmdName
+          Properties.cmdName
     }
 
   /** The class name of the scala compile server */
@@ -41,7 +40,7 @@ object CompileSocket {
   val errorRegex = ".*errors? found.*"
 
   /** A Pattern object for checking compiler output for errors */
-  val errorPattern = java.util.regex.Pattern.compile(errorRegex)
+  val errorPattern = Pattern.compile(errorRegex)
 
   private def error(msg: String) = System.err.println(msg)
 

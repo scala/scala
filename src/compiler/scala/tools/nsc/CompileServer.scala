@@ -6,16 +6,14 @@
 
 package scala.tools.nsc
 
-import scala.tools.util.SocketServer
-import scala.tools.nsc.util.FakePos //Position
-import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
-import scala.tools.nsc.doc.DocGenerator
+import java.io.{BufferedOutputStream, File, FileOutputStream, PrintStream}
+import java.lang.{Runtime, System, Thread}
+
 import scala.concurrent.Process.spawn
-import java.lang.System
-import java.lang.Thread
-import java.lang.Runtime
-import java.io.File
-import java.io.{PrintStream, BufferedOutputStream, FileOutputStream}
+import scala.tools.nsc.doc.DocGenerator
+import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
+import scala.tools.nsc.util.FakePos //Position
+import scala.tools.util.SocketServer
 
 /** The main class for NSC, a compiler for the programming
  *  language Scala.
@@ -25,13 +23,9 @@ import java.io.{PrintStream, BufferedOutputStream, FileOutputStream}
  */
 object CompileServer extends SocketServer {
 
-  val PRODUCT: String =
-    System.getProperty("scala.tool.name", "scalac")
-  val VERSION: String =
-    System.getProperty("scala.tool.version", "unknown version")
-  val COPYRIGHT: String =
-    System.getProperty("scala.copyright", "(c) 2002-2007 LAMP/EPFL")
-  val versionMsg = PRODUCT + " " + VERSION + " -- " + COPYRIGHT
+  val versionMsg = "Fast Scala compiler " +
+    Properties.versionString + " -- " +
+    Properties.copyrightString
 
   val MaxCharge = 0.8
 
@@ -99,8 +93,8 @@ object CompileServer extends SocketServer {
           override def displayPrompt = {}
         }
         def error(msg: String): unit =
-          reporter.error(/*new Position*/ FakePos(PRODUCT),
-                         msg + "\n  " + PRODUCT + " -help  gives more information")
+          reporter.error(/*new Position*/ FakePos("fsc"),
+                         msg + "\n  fsc -help  gives more information")
         val command = new CompilerCommand(args, error, false) {
           override val cmdName = "fsc"
           settings.disable(settings.prompt)

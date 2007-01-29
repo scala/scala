@@ -9,8 +9,6 @@
 
 package scala.tools.ant
 
-import java.lang.System.getProperty
-
 import java.io.File
 import java.net.{URL, URLClassLoader}
 import java.util.{ArrayList, Vector}
@@ -70,9 +68,6 @@ import scala.tools.nsc.{Global, FatalError, Settings}
  * @author Gilles Dubochet, Stephane Micheloud
  */
 class Scalac extends MatchingTask {
-
-  private val SCALA_PRODUCT: String = getProperty("scala.product", "scalac")
-  private val SCALA_VERSION: String = getProperty("scala.version", "Unknown version")
 
   /** The unique Ant file utilities instance to use in this task. */
   private val fileUtils = FileUtils.newFileUtils()

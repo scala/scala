@@ -6,10 +6,9 @@
 
 package scala.tools.nsc
 
-import java.lang.System.getProperty
-import scala.tools.nsc.util.FakePos //{Position}
-import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
 import scala.tools.nsc.doc.DocGenerator
+import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
+import scala.tools.nsc.util.FakePos //{Position}
 
 
 /** The main class for NSC, a compiler for the programming
@@ -17,17 +16,16 @@ import scala.tools.nsc.doc.DocGenerator
  */
 object Main extends AnyRef with EvalLoop {
 
-  val PRODUCT: String = getProperty("scala.tool.name", "scalac")
-  val VERSION: String = getProperty("scala.tool.version", "unknown version")
-  val COPYRIGHT: String = getProperty("scala.copyright", "(c) 2002-2007 LAMP/EPFL")
-  val versionMsg = PRODUCT + " " + VERSION + " -- " + COPYRIGHT
+  val versionMsg = "Scala compiler " +
+    Properties.versionString + " -- " +
+    Properties.copyrightString
   val prompt = "\nnsc> "
 
   var reporter: ConsoleReporter = _
 
   def error(msg: String): unit =
-    reporter.error(/*new Position */FakePos(PRODUCT),
-                   msg + "\n  " + PRODUCT + " -help  gives more information")
+    reporter.error(/*new Position */FakePos("scalac"),
+                   msg + "\n  scalac -help  gives more information")
 
   /* needed ?? */
   def errors() = reporter.errors

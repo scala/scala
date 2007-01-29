@@ -29,7 +29,7 @@ PROPERTIES
   <property file="${properties.file}"/>
   <!-- Defines the product being built -->
   <property name="vendor.name" value="LAMP/EPFL"/>
-  <property name="copyright.string" value="Copyright 2002-2007 ${vendor.name}"/>
+  <property name="copyright.string" value="(c) 2002-2007 ${vendor.name}"/>
   <property name="number.file" value="${basedir}/build.number"/>
   <!-- Configuring how the compiler is run -->
   <property name="nsc.log-files" value="no"/>
@@ -64,6 +64,7 @@ PROPERTIES
   <property name="scalac.exec.name" value="scalac"/>
   <property name="scaladoc.exec.name" value="scaladoc"/>
   <property name="fsc.exec.name" value="fsc"/>
+  <property name="comp.prop.name" value="compiler.properties"/>
 
 <!-- ===========================================================================
 INITIALISATION
@@ -317,6 +318,16 @@ BUILD LOCAL REFERENCE (LOCKER) LAYER
       <include name="**/*.scala"/>
       <excludesfile name="${nsc.excludes.file}" if="excludes.avail"/>
     </starr>
+    <echo
+      file="${locker.dir}/lib/compiler/${comp.prop.name}"
+      message="version.number=${version.number}${line.separator}"
+      append="false"
+    />
+    <echo
+      file="${locker.dir}/lib/compiler/${comp.prop.name}"
+      message="copyright.string=${copyright.string}${line.separator}"
+      append="true"
+    />
   <!-- Timing the build -->
     <stopwatch name="timer.locker" action="total"/>
   <!-- Copy support files to build folder and links external libraries-->
@@ -451,6 +462,16 @@ BUILD QUICK-TEST LAYER
       <include name="**/*.scala"/>
       <excludesfile name="${nsc.excludes.file}" if="excludes.avail"/>
     </locker>
+    <echo
+      file="${quick.dir}/lib/compiler/${comp.prop.name}"
+      message="version.number=${version.number}${line.separator}"
+      append="false"
+    />
+    <echo
+      file="${quick.dir}/lib/compiler/${comp.prop.name}"
+      message="copyright.string=${copyright.string}${line.separator}"
+      append="true"
+    />
   <!-- Timing the build -->
     <stopwatch name="timer.quick" action="total"/>
   <!-- Copy support files to build folder and links external libraries-->
@@ -585,6 +606,17 @@ TEST
       <include name="**/*.scala"/>
       <excludesfile name="${nsc.excludes.file}" if="excludes.avail"/>
     </quick>
+    <echo
+      file="${strap.dir}/lib/compiler/${comp.prop.name}"
+      message="version.number=${version.number}${line.separator}"
+      append="false"
+    />
+    <echo
+      file="${strap.dir}/lib/compiler/${comp.prop.name}"
+      message="copyright.string=${copyright.string}${line.separator}"
+      append="true"
+    />
+
   <!-- Timing the build -->
     <stopwatch name="timer.strap" action="total"/>
   <!-- Copy support files to build folder and links external libraries-->
