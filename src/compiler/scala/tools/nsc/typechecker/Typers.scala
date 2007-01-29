@@ -2450,7 +2450,7 @@ trait Typers requires Analyzer {
         val best = (NoImplicitInfo /: applicable) ((best, alt) => if (improves(alt, best)) alt else best)
         if (best == NoImplicitInfo) EmptyTree
         else {
-          val competing = applicable dropWhile (alt => best == alt || improves(best, alt))
+          val competing = applicable dropWhile (alt => best == alt || improves(best, alt) || alt.sym.owner == PredefModule.moduleClass)
           if (!competing.isEmpty) ambiguousImplicitError(best, competing.head, "both", "and", "")
           for (val alt <- applicable)
             if (alt.sym.owner != best.sym.owner && isSubClassOrObject(alt.sym.owner, best.sym.owner)) {

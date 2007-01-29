@@ -460,7 +460,11 @@ abstract class GenICode extends SubComponent  {
               ctx1.bb.emit(LOAD_LOCAL(m))
               ctx1.bb.emit(MONITOR_EXIT())
             case Finalizer(f) =>
-              ctx1 = genLoad(f, ctx1, UNIT)
+              // we have to run this without the same finalizer in
+              // the list, otherwise infinite recursion happens for
+              // finalizers that contain 'return'
+              ctx1 = genLoad(f, ctx1.removeFinalizer(f), UNIT)
+              ctx1.addFinalizer(f)
           }
 
           ctx1.bb.emit(RETURN(returnedKind), tree.pos)
