@@ -457,17 +457,19 @@ abstract class GenICode extends SubComponent  {
         case Return(expr) =>
           val returnedKind = toTypeKind(expr.tpe)
           var ctx1 = genLoad(expr, ctx, returnedKind)
+          val oldcleanups = ctx1.cleanups
           for (val op <- ctx1.cleanups) op match {
             case MonitorRelease(m) =>
               ctx1.bb.emit(LOAD_LOCAL(m))
               ctx1.bb.emit(MONITOR_EXIT())
             case Finalizer(f) =>
+              if (settings.debug.value) log("removing " + f + " from cleanups: " + ctx1.cleanups)
               // we have to run this without the same finalizer in
               // the list, otherwise infinite recursion happens for
               // finalizers that contain 'return'
               ctx1 = genLoad(f, ctx1.removeFinalizer(f), UNIT)
-              ctx1.addFinalizer(f)
           }
+          ctx1.cleanups = oldcleanups
 
           ctx1.bb.emit(RETURN(returnedKind), tree.pos)
           ctx1.bb.enterIgnoreMode
@@ -1676,7 +1678,7 @@ abstract class GenICode extends SubComponent  {
 
       def removeFinalizer(f: Tree): this.type = {
         assert(cleanups.head == f,
-               "Illegal nesting of cleanup operations: " + cleanups + " while exiting finalizer" + f);
+               "Illegal nesting of cleanup operations: " + cleanups + " while exiting finalizer " + f);
         cleanups = cleanups.tail
         this
       }
