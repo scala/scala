@@ -7,7 +7,7 @@
 
 package scala.tools.nsc.backend.icode.analysis
 
-import scala.collection.mutable.{Map, HashMap, Set, HashSet}
+import scala.collection.mutable.{Map, HashMap, Set, HashSet, LinkedHashSet}
 
 /** A generic framework for data flow analysis.
  */
@@ -16,7 +16,7 @@ trait DataFlowAnalysis[L <: CompleteLattice] {
   type P <: ProgramPoint[P]
   val  lattice: L
 
-  val worklist: Set[P] = new HashSet
+  val worklist: Set[P] = new LinkedHashSet
 
   val in:  Map[P, lattice.Elem] = new HashMap
   val out: Map[P, lattice.Elem] = new HashMap
@@ -34,14 +34,18 @@ trait DataFlowAnalysis[L <: CompleteLattice] {
    *  applied when inputs to a Program point change, to obtain the new
    *  output value.
    *
-   *  @param f ...
+   *  @param f the transfer function.
    */
   def forwardAnalysis(f: (P, lattice.Elem) => lattice.Elem): Unit =
     while (!worklist.isEmpty) {
+//      Console.println("worklist in: " + worklist);
       val point = worklist.elements.next; worklist -= point; visited += point;
       val output = f(point, in(point))
+//      Console.println("taking out point: " + point + " worklist out: " + worklist);
 
       if ((lattice.bottom == out(point)) || output != out(point)) {
+//        Console.println("Output changed at " + point + " added to worklist: ")
+//        Console.println("\t" + worklist)
         out(point) = output
         val succs = point.successors
         succs foreach { p =>
