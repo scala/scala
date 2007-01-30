@@ -32,23 +32,32 @@ object Stream {
     protected def addDefinedElems(buf: StringBuilder, prefix: String): StringBuilder = buf
   }
 
-  /** A stream consisting of a given first element and remaining elements
-   *  @param hd   The first element of the result stream
-   *  @param tl   The remaining elements of the result stream
-   */
-  def cons[a](hd: a, tl: => Stream[a]) = new Stream[a] {
-    override def isEmpty = false
-    def head = hd
-    private var tlVal: Stream[a] = _
-    private var tlDefined = false
-    def tail: Stream[a] = {
-      if (!tlDefined) { tlVal = tl; tlDefined = true }
-      tlVal
+
+  object cons {
+    /** A stream consisting of a given first element and remaining elements
+     *  @param hd   The first element of the result stream
+     *  @param tl   The remaining elements of the result stream
+     */
+    def apply[a](hd: a, tl: => Stream[a]) = new Stream[a] {
+      override def isEmpty = false
+      def head = hd
+      private var tlVal: Stream[a] = _
+      private var tlDefined = false
+      def tail: Stream[a] = {
+        if (!tlDefined) { tlVal = tl; tlDefined = true }
+        tlVal
+      }
+      protected def addDefinedElems(buf: StringBuilder, prefix: String): StringBuilder = {
+        val buf1 = buf.append(prefix).append(hd)
+        if (tlDefined) tlVal.addDefinedElems(buf1, ", ") else buf1 append ", ?"
+      }
     }
-    protected def addDefinedElems(buf: StringBuilder, prefix: String): StringBuilder = {
-      val buf1 = buf.append(prefix).append(hd)
-      if (tlDefined) tlVal.addDefinedElems(buf1, ", ") else buf1 append ", ?"
-    }
+
+    def unapply[a](str: Stream[a]): Option[{a,Stream[a]}] =
+      if(str.isEmpty)
+        None
+      else
+        Some({str.head, str.tail})
   }
 
   /** A stream containing all elements of a given iterator, in the order they are produced.
