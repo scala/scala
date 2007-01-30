@@ -628,13 +628,13 @@ trait Typers requires Analyzer {
         } else {
           if ((mode & PATTERNmode) != 0) {
             if ((tree.symbol ne null) && tree.symbol.isModule) {
-              if (definitions.unapplyMember(tree.symbol.tpe).exists) { // bq:unapply, typedSelect § Stream.cons
-                return tree
-              } else {
+              //if (definitions.unapplyMember(tree.symbol.tpe).exists) { // bq:unapply, typedSelect / Stream.cons
+              //  return tree
+              //} else {
                 inferModulePattern(tree, pt)
                 if (isPopulated(tree.tpe, approximateAbstracts(pt)))
                   return tree
-              }
+              //}
             }
           }
           val tree1 = constfold(tree, pt) // (10) (11)
