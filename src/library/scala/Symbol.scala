@@ -11,6 +11,9 @@
 
 package scala;
 
+import collection.jcl.WeakHashMap
+
+private[scala] object internedSymbols extends WeakHashMap[String, Symbol]
 
 /** Instances of <code>Symbol</code> can be created easily with
  *  Scala's built-in quote mechanism. For instance, the Scala term
@@ -29,4 +32,15 @@ final case class Symbol(name: String) {
     "'" + name
   }
 
+  /** Makes this symbol into a unique reference.
+   *  If two interened symbols are equal (i.e. they have the same name)
+   *  then they must be identical (wrt reference equality)
+   */
+  def intern: Symbol = internedSymbols get name match {
+    case Some(sym) =>
+      sym
+    case None =>
+      internedSymbols(name) = this
+      this
+  }
 }

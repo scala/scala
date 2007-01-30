@@ -105,7 +105,7 @@ object Test extends Application {
   }
 
   test("mutable.HashSet", new mutable.HashSet[int], 5000)
-  test("immutable.Set", new immutable.HashSet[int], 5000)
+  test("immutable.Set", immutable.Set[int](), 5000)
   test("immutable.ListSet", new immutable.ListSet[int], 5000)
   test("immutable.TreeSet", new immutable.TreeSet[int], 5000)
   test("mutable.HashMap", new mutable.HashMap[int, int], 5000)

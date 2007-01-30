@@ -72,9 +72,11 @@ trait FlatHashTable[A] {
     while (null != entry) {
       if (entry == elem) {
         var h1 = (h + 1) % table.length
-        while (null != table(h1) && (index(elemHashCode(table(h1).asInstanceOf[A])) != h1)) {
-          table(h) = table(h1)
-          h = h1
+        while (null != table(h1)) {
+          if (index(elemHashCode(table(h1).asInstanceOf[A])) != h1) {
+            table(h) = table(h1)
+            h = h1
+          }
           h1 = (h + 1) % table.length
         }
         table(h) = null

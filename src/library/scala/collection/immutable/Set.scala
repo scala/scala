@@ -22,6 +22,7 @@ package scala.collection.immutable
  * <code>+</code> method for arbitrary types.
  *
  *  @author  Matthias Zenger
+ *  @author  Martin Odersky
  *  @version 1.1, 03/05/2004
  */
 object Set {
@@ -31,7 +32,7 @@ object Set {
 
   /** The canonical factory for this type
    */
-  def apply[A <% Ordered[A]](elems: A*) = empty[A] ++ elems
+  def apply[A](elems: A*) = empty[A] ++ elems
 }
 
 trait Set[A] extends AnyRef with collection.Set[A] {

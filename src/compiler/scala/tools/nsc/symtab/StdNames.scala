@@ -266,6 +266,7 @@ trait StdNames requires SymbolTable {
     val hasNext = newTermName("hasNext")
     val head = newTermName("head")
     val identity = newTermName("identity")
+    val intern = newTermName("intern")
     val isInstanceOf_ = newTermName("isInstanceOf")
     val isInstanceOfErased = newTermName("isInstanceOf$erased")
     val isDefinedAt = newTermName("isDefinedAt")
