@@ -14,20 +14,16 @@ package scala.collection.jcl;
  *
  *  @author Sean McDirmid
  */
-trait Buffer[A] extends MutableSeq[A] with Collection[A] with Sorted[Int,A] {
+trait Buffer[A] extends MutableSeq[A] with Collection[A] with Ranged[Int,A] {
   final protected type SortedSelf = Buffer[A];
 
   override def elements : BufferIterator[Int,A];
-
   /** The first index of a buffer is 0. */
   override def first = 0;
-
   /** The last index of a buffer is its size - 1. */
   override def last = size - 1;
-
   /** Indices are compared through subtraction. */
   final def compare(k0 : Int, k1 : Int) = k0 - k1;
-
   /** Removes the element at index "idx" */
   def remove(idx : Int) = {
     val i = elements;

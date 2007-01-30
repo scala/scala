@@ -16,6 +16,7 @@ package scala.collection.jcl;
  */
 trait SortedSet[A] extends jcl.Set[A] with Sorted[A,A] {
   final protected type SortedSelf = SortedSet[A];
+  override def keySet = this;
   def compare(a0 : A, a1 : A) : Int;
   def first : A = {
     val i = elements;

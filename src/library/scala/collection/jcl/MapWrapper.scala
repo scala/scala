@@ -24,6 +24,11 @@ trait MapWrapper[K,E] extends jcl.Map[K,E] {
     val ret = underlying.put(key,elem);
     if (ret == null) None else Some(ret.asInstanceOf[E]);
   }
+  override def get(key : K) : Option[E] = {
+    val ret = underlying.get(key);
+    if (ret == null) None else Some(ret.asInstanceOf[E]);
+  }
+
   override def putAll(that : Iterable[Tuple2[K,E]]) : Unit = that match {
   case that : MapWrapper[_,_] => underlying.putAll(that.underlying);
   case _ => super.putAll(that);
@@ -51,5 +56,11 @@ trait MapWrapper[K,E] extends jcl.Map[K,E] {
   class ValueSet extends IterableWrapper[E] {
     val underlying = MapWrapper.this.underlying.values;
     override def has(e : E) = MapWrapper.this.underlying.containsValue(e);
+  }
+  override def toString = underlying.toString;
+  override def hashCode = underlying.hashCode;
+  override def equals(that : Any) = that match {
+    case that: MapWrapper[_,_] => underlying == that.underlying;
+    case _ => super.equals(that);
   }
 }

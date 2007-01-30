@@ -14,6 +14,6 @@ package scala.collection.jcl;
  *
  *  @author Sean McDirmid
  */
-class HashMap[K,E](override val underlying: java.util.HashMap) extends ConcreteMapWrapper[K,E] {
+class HashMap[K,E](override val underlying: java.util.HashMap) extends MapWrapper[K,E] {
   def this() = this(new java.util.HashMap);
 }

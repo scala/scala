@@ -32,4 +32,10 @@ trait CollectionWrapper[A] extends Collection[A] with IterableWrapper[A] {
   case that : CollectionWrapper[_] => underlying.addAll(that.underlying);
   case _ => super.addAll(that);
   }
+  override def toString = underlying.toString;
+  override def hashCode = underlying.hashCode;
+  override def equals(that : Any) = that match {
+    case that: CollectionWrapper[_] => underlying == that.underlying;
+    case _ => super.equals(that);
+  }
 }

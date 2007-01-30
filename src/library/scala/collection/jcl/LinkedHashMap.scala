@@ -15,6 +15,6 @@ package scala.collection.jcl;
  *
  *  @author Sean McDirmid
  */
-class LinkedHashMap[K,E](override val underlying: java.util.LinkedHashMap) extends ConcreteMapWrapper[K,E] {
+class LinkedHashMap[K,E](override val underlying: java.util.LinkedHashMap) extends MapWrapper[K,E] {
   def this() = this(new java.util.LinkedHashMap);
 }

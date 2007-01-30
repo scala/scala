@@ -18,6 +18,7 @@ trait Map[K,E] extends MutableIterable[Tuple2[K,E]] with scala.collection.mutabl
   override def clear() = super[MutableIterable].clear;
   override def isEmpty = super[MutableIterable].isEmpty;
   override def keySet : Set[K] = new KeySet;
+  override final def keys = keySet.elements;
   /** The values of this map as a projection, which means
       removals from the returned collection will remove the element from this map.
       @returns a projection of this map's elements.  */
