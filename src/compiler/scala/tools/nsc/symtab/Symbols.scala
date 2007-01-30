@@ -668,6 +668,7 @@ trait Symbols requires SymbolTable {
       owner.info.decl(nme.getterToLocal(if (isSetter) nme.setterToGetter(name) else name))
     }
 
+    /** The implementation class of a trait */
     final def implClass: Symbol = owner.info.decl(nme.implClassName(name))
 
     /** The class that is logically an outer class of given `clazz'.
@@ -818,7 +819,9 @@ trait Symbols requires SymbolTable {
     final def setter(base: Symbol): Symbol =
       base.info.decl(nme.getterToSetter(nme.getterName(name))) filter (.hasFlag(ACCESSOR))
 
-    /** The case factory corresponding to this case class */
+    /** The case factory corresponding to this case class
+     *  @pre case class is a member of some other class or package
+     */
     final def caseFactory: Symbol =
       owner.info.decl(name.toTermName).suchThat(.isCaseFactory)
 

@@ -404,12 +404,12 @@ trait Typers requires Analyzer {
     def qualifyingClassContext(tree: Tree, qual: Name): Context = {
       if (qual.isEmpty) {
         if (context.enclClass.owner.isPackageClass)
-          error(tree.pos, ""+tree+" can be used only in a class, object, or template")
+          error(tree.pos, tree+" can be used only in a class, object, or template")
         context.enclClass
       } else {
         var c = context.enclClass
         while (c != NoContext && c.owner.name != qual) c = c.outer.enclClass
-        if (c == NoContext) error(tree.pos, ""+qual+" is not an enclosing class")
+        if (c == NoContext) error(tree.pos, qual+" is not an enclosing class")
         c
       }
     }
@@ -437,7 +437,7 @@ trait Typers requires Analyzer {
       else if ((mode & (PATTERNmode | FUNmode)) == PATTERNmode && tree.isTerm) { // (1)
         checkStable(tree)
       } else if ((mode & (EXPRmode | QUALmode)) == EXPRmode && !sym.isValue) { // (2)
-        errorTree(tree, ""+sym+" is not a value")
+        errorTree(tree, sym+" is not a value")
       } else {
         if (sym.isStable && pre.isStable && tree.tpe.symbol != ByNameParamClass &&
             (pt.isStable || (mode & QUALmode) != 0 && !sym.isConstant ||
@@ -479,13 +479,11 @@ trait Typers requires Analyzer {
      *  (4.3) otherwise, if the method is nullary with a result type compatible to `pt'
      *        and it is not a constructor, apply it to ()
      *  otherwise issue an error
-     *  (5) Convert a class type that serves as a constructor in a pattern as follows:
-     *  (5.1) If this type refers to a case class, set tree's type to the unique
+     *  (5) Convert constructors in a pattern as follows:
+     *  (5.1) If constructor refers to a case class, set tree's type to the unique
      *        instance of its primary constructor that is a subtype of the expected type.
-     *  (5.2) Otherwise, if this type is a subtype of scala.Seq[A], set trees' type
-     *        to a method type from a repeated parameter sequence type A* to the expected type.
-     *  (5.3beta) unapply-pattern matching: fix reference to object containing
-     *            unapply or unapplySeq method.
+     *  (5.2) If constructor refers to an exractor, convert to application of
+     *        unapply or unapplySeq method.
      *
      *  (6) Convert all other types to TypeTree nodes.
      *  (7) When in TYPEmode nut not FUNmode, check that types are fully parameterized
@@ -527,22 +525,23 @@ trait Typers requires Analyzer {
       case mt: MethodType
       if (((mode & (EXPRmode | FUNmode | LHSmode)) == EXPRmode) &&
           (context.undetparams.isEmpty || (mode & POLYmode) != 0)) =>
-        if (!tree.symbol.isConstructor &&
+        val meth = tree.symbol
+        if (!meth.isConstructor &&
             //isCompatible(tparamsToWildcards(mt, context.undetparams), pt) &&
             pt != WildcardType &&
             (pt <:< functionType(mt.paramTypes map (t => WildcardType), WildcardType))) { // (4.2)
           if (settings.debug.value) log("eta-expanding "+tree+":"+tree.tpe+" to "+pt)
           checkParamsConvertible(tree.pos, tree.tpe)
           typed(etaExpand(tree), mode, pt)
-        } else if (!tree.symbol.isConstructor && mt.paramTypes.isEmpty) { // (4.3)
+        } else if (!meth.isConstructor && mt.paramTypes.isEmpty) { // (4.3)
           adapt(typed(Apply(tree, List()) setPos tree.pos), mode, pt)
         } else if (context.implicitsEnabled) {
-          if (settings.migrate.value && !tree.symbol.isConstructor &&
+          if (settings.migrate.value && !meth.isConstructor &&
               isCompatible(tparamsToWildcards(mt, context.undetparams), pt))
             errorTree(tree, migrateMsg + " method can be converted to function only if an expected function type is given");
           else
-            errorTree(tree, "missing arguments for "+tree.symbol+tree.symbol.locationString+
-                      (if (tree.symbol.isConstructor) ""
+            errorTree(tree, "missing arguments for "+meth+meth.locationString+
+                      (if (meth.isConstructor) ""
                        else ";\nprefix this method with `&' if you want to treat it as a partially applied function"))
         } else {
           setError(tree)
@@ -786,7 +785,7 @@ trait Typers requires Analyzer {
             } else if (settings.migrate.value) {
               error(parent.pos, migrateMsg+psym+" needs to be a declared as a trait")
             }else {
-              error(parent.pos, ""+psym+" needs to be a trait be mixed in")
+              error(parent.pos, psym+" needs to be a trait be mixed in")
             }
           } else if (psym hasFlag FINAL) {
             error(parent.pos, "illegal inheritance from final class")
@@ -806,7 +805,7 @@ trait Typers requires Analyzer {
             if (settings.explaintypes.value) explainTypes(selfType, parent.tpe.typeOfThis)
           }
           if (parents exists (p => p != parent && p.tpe.symbol == psym && !psym.isError))
-            error(parent.pos, ""+psym+" is inherited twice")
+            error(parent.pos, psym+" is inherited twice")
         }
       }
 
@@ -859,7 +858,7 @@ trait Typers requires Analyzer {
         val getter = if (mods hasFlag DEFERRED) value else value.getter(value.owner)
         assert(getter != NoSymbol, stat)
         if (getter hasFlag OVERLOADED)
-          error(getter.pos, ""+getter+" is defined twice")
+          error(getter.pos, getter+" is defined twice")
         val getterDef: DefDef = {
           val result = DefDef(getter, vparamss =>
               if (mods hasFlag DEFERRED) EmptyTree
@@ -1309,7 +1308,7 @@ trait Typers requires Analyzer {
               if (!e1.sym.hasFlag(LOCAL) &&
                   (e.sym.isType || inBlock || (e.sym.tpe matches e1.sym.tpe)))
                 if (!e.sym.isErroneous && !e1.sym.isErroneous)
-                  error(e.sym.pos, ""+e1.sym+" is defined twice");
+                  error(e.sym.pos, e1.sym+" is defined twice");
               e1 = scope.lookupNextEntry(e1);
             }
           }
@@ -1380,7 +1379,7 @@ trait Typers requires Analyzer {
         case MethodType(formals0, restpe) =>
           val formals = formalTypes(formals0, args.length)
           if (formals.length != args.length) {
-            //Console.println(""+formals.length+" "+args.length);//DEBUG
+            //Console.println(formals.length+" "+args.length);//DEBUG
             errorTree(tree, "wrong number of arguments for "+treeSymTypeMsg(fun))
           } else {
             val tparams = context.undetparams
@@ -1508,7 +1507,7 @@ trait Typers requires Analyzer {
 
 /* --- end unapply  --- */
         case _ =>
-          errorTree(tree, ""+fun+" does not take parameters")
+          errorTree(tree, fun+" does not take parameters")
       }
     }
 
@@ -2105,7 +2104,7 @@ trait Typers requires Analyzer {
                 if (ps.isEmpty) {
                   if (settings.debug.value)
                     Console.println(clazz.info.parents map (.symbol.name))//debug
-                  error(tree.pos, ""+mix+" does not name a parent class of "+clazz)
+                  error(tree.pos, mix+" does not name a parent class of "+clazz)
                   ErrorType
                 } else if (ps.tail.isEmpty) {
                   ps.head
@@ -2195,10 +2194,10 @@ trait Typers requires Analyzer {
                           else tpt1.tpe.subst(tparams, argtypes)
             TypeTree(owntype) setOriginal(tree) // setPos tree.pos
           } else if (tparams.length == 0) {
-            errorTree(tree, ""+tpt1.tpe+" does not take type parameters")
+            errorTree(tree, tpt1.tpe+" does not take type parameters")
           } else {
             //Console.println("\{tpt1}:\{tpt1.symbol}:\{tpt1.symbol.info}")
-            if (settings.debug.value) Console.println(""+tpt1+":"+tpt1.symbol+":"+tpt1.symbol.info);//debug
+            if (settings.debug.value) Console.println(tpt1+":"+tpt1.symbol+":"+tpt1.symbol.info);//debug
             errorTree(tree, "wrong number of type arguments for "+tpt1.tpe+", should be "+tparams.length)
           }
 
@@ -2303,7 +2302,7 @@ trait Typers requires Analyzer {
     def typedTypeConstructor(tree: Tree): Tree = {
       val result = withNoGlobalVariance{ typed(tree, TYPEmode | FUNmode, WildcardType) }
       if (!phase.erasedTypes && result.tpe.isInstanceOf[TypeRef] && !result.tpe.prefix.isStable)
-        error(tree.pos, ""+result.tpe.prefix+" is not a legal prefix for a constructor")
+        error(tree.pos, result.tpe.prefix+" is not a legal prefix for a constructor")
       result
     }
 
@@ -2363,7 +2362,7 @@ trait Typers requires Analyzer {
         }
         def fail(reason: String, sym1: Symbol, sym2: Symbol): Tree = {
           if (settings.debug.value)
-            log(""+tree+" is not a valid implicit value because:\n"+reason + sym1+" "+sym2)
+            log(tree+" is not a valid implicit value because:\n"+reason + sym1+" "+sym2)
           EmptyTree
         }
         try {
