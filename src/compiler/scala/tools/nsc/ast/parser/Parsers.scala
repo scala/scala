@@ -287,18 +287,20 @@ trait Parsers requires SyntaxAnalyzer {
     /** make closure from tree */
     def makeClosure(tree: Tree): Tree = {
       val pname: Name = unit.fresh.newName("x$")
-      def insertParam(tree: Tree): Tree = tree match {
-        case Ident(name) =>
-          Select(Ident(pname), name)
-        case Select(qual, name) =>
-          Select(insertParam(qual), name)
-        case Apply(fn, args) =>
-          Apply(insertParam(fn), args)
-        case TypeApply(fn, args) =>
-          TypeApply(insertParam(fn), args)
-        case _ =>
-          syntaxError(tree.pos, "cannot convert to closure", false)
-          errorTermTree
+      def insertParam(tree: Tree): Tree = atPos(tree.pos) {
+        tree match {
+          case Ident(name) =>
+            Select(Ident(pname), name)
+          case Select(qual, name) =>
+            Select(insertParam(qual), name)
+          case Apply(fn, args) =>
+            Apply(insertParam(fn), args)
+          case TypeApply(fn, args) =>
+            TypeApply(insertParam(fn), args)
+          case _ =>
+            syntaxError(tree.pos, "cannot convert to closure", false)
+            errorTermTree
+        }
       }
 
       Function(
@@ -507,7 +509,8 @@ trait Parsers requires SyntaxAnalyzer {
         atPos(pos) {
           var symid = scalaDot(nme.Symbol)
           if (isPattern) { symid = convertToTypeId(symid) }
-          Apply(symid, List(t))
+          val symobj = Apply(symid, List(t))
+          if (isPattern) symobj else Select(symobj, nme.intern)
         }
       } else {
         t
@@ -1266,7 +1269,8 @@ trait Parsers requires SyntaxAnalyzer {
             if (name == nme.WILDCARD) {
               in.nextToken(); pattern3(seqOK)
             } else if (treeInfo.isVarPattern(p)) {
-              atPos(in.skipToken()) { Bind(name, pattern3(seqOK)) }
+              in.nextToken()
+              atPos(p.pos) { Bind(name, pattern3(seqOK)) }
             } else {
               p
             }
