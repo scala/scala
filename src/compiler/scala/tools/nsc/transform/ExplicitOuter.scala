@@ -380,11 +380,15 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
         Console.println("cc " + currentClass + ":" + currentClass.info.decls +
                         " at " + phase)//debug
       assert(outerAcc != NoSymbol)
-      val path = gen.mkAttributedQualifier(currentClass.thisType.baseType(mixinClass).prefix)
+      val path =
+        if (mixinClass.owner.isTerm) gen.mkAttributedThis(mixinClass.owner.enclClass)
+        else gen.mkAttributedQualifier(currentClass.thisType.baseType(mixinClass).prefix)
       val rhs = ExplicitOuterTransformer.this.transform(path)
       localTyper.typed {
         atPos(currentClass.pos) {
-          DefDef(outerAcc, {vparamss=>rhs})
+          val result = DefDef(outerAcc, {vparamss=>rhs})
+          Console.println("==> "+result)
+          result
         }
       }
     }
