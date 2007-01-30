@@ -774,9 +774,9 @@ trait Typers requires Analyzer {
       def validateParentClass(parent: Tree, superclazz: Symbol): unit = {
         if (!parent.tpe.isError) {
           val psym = parent.tpe.symbol.initialize
-          if (!psym.isClass)
+          if (!psym.isClass) {
             error(parent.pos, "class type expected")
-          else if (psym != superclazz)
+          } else if (psym != superclazz) {
             if (psym.isTrait) {
               val ps = psym.info.parents
               if (!ps.isEmpty && !superclazz.isSubClass(ps.head.symbol))
@@ -788,11 +788,14 @@ trait Typers requires Analyzer {
             }else {
               error(parent.pos, ""+psym+" needs to be a trait be mixed in")
             }
-          else if (psym hasFlag FINAL)
+          } else if (psym hasFlag FINAL) {
             error(parent.pos, "illegal inheritance from final class")
-          else if (!phase.erasedTypes && psym.isSealed &&
-                   context.unit.source.file != psym.sourceFile)
-            error(parent.pos, "illegal inheritance from sealed "+psym)
+          } else if (psym.isSealed && !phase.erasedTypes) {
+            if (context.unit.source.file != psym.sourceFile)
+              error(parent.pos, "illegal inheritance from sealed "+psym)
+            else
+              psym addSubClass context.owner
+          }
           if (!(selfType <:< parent.tpe.typeOfThis) && !phase.erasedTypes) {
             //Console.println(context.owner);//DEBUG
             //Console.println(context.owner.unsafeTypeParams);//DEBUG

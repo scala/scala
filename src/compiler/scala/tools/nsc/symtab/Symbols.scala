@@ -23,6 +23,7 @@ trait Symbols requires SymbolTable {
   type AttrInfo = Triple[Type, List[Constant], List[Pair[Name,Constant]]]
 
   val emptySymbolArray = new Array[Symbol](0)
+  val emptySymbolSet = Set.empty[Symbol]
   type PositionType;
   def NoPos : PositionType;
   def FirstPos : PositionType;
@@ -867,6 +868,14 @@ trait Symbols requires SymbolTable {
     def isFromClassFile: Boolean =
       (if (isModule) moduleClass else toplevelClass).isFromClassFile
 
+    /** If this is a sealed class, its known subclasses. Otherwise Set.empty */
+    def subClasses: Set[Symbol] = emptySymbolSet
+
+    /** Declare given subclass `sym' of this sealed class */
+    def addSubClass(sym: Symbol) {
+      throw new Error("addSubClass_= inapplicable for " + this)
+    }
+
 
 // ToString -------------------------------------------------------------------
 
@@ -1175,6 +1184,7 @@ trait Symbols requires SymbolTable {
 
     /** The classfile from which this class was loaded. Maybe null. */
     var classFile: AbstractFile = null;
+
     private var source: AbstractFile = null
     override def sourceFile =
       if (owner.isPackageClass) source else super.sourceFile
@@ -1243,6 +1253,10 @@ trait Symbols requires SymbolTable {
 
     override def sourceModule =
       if (isModuleClass) linkedModuleOfClass else NoSymbol
+
+    private var subClassSet: Set[Symbol] = emptySymbolSet
+    override def subClasses: Set[Symbol] = subClassSet
+    override def addSubClass(sym: Symbol) { subClassSet = subClassSet + sym }
 
     if (util.Statistics.enabled) classSymbolCount = classSymbolCount + 1
   }
