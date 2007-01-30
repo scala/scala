@@ -436,7 +436,7 @@ trait Trees requires Global {
       vparamss map (.map (vd => {
         val ret = ValDef(Modifiers(vd.mods.flags & IMPLICIT | PARAM) setAttr vd.mods.attributes,
             vd.name, vd.tpt.duplicate, EmptyTree).setPos(vd.pos)
-        if (inIDE && vd.symbol != NoSymbol)
+        if (true /*(bq) was: inIDE*/ && vd.symbol != NoSymbol)
           ret.symbol = vd.symbol
         ret
        }));
