@@ -627,15 +627,10 @@ trait Typers requires Analyzer {
           tree
         } else {
           if ((mode & PATTERNmode) != 0) {
-            if ((tree.symbol ne null) && tree.symbol.isModule) {
-              //if (definitions.unapplyMember(tree.symbol.tpe).exists) { // bq:unapply, typedSelect / Stream.cons
-              //  return tree
-              //} else {
+            if ((tree.symbol ne null) && tree.symbol.isModule)
                 inferModulePattern(tree, pt)
-                if (isPopulated(tree.tpe, approximateAbstracts(pt)))
-                  return tree
-              //}
-            }
+            if (isPopulated(tree.tpe, approximateAbstracts(pt)))
+                return tree
           }
           val tree1 = constfold(tree, pt) // (10) (11)
           if (tree1.tpe <:< pt) adapt(tree1, mode, pt)
@@ -1667,10 +1662,6 @@ trait Typers requires Analyzer {
         if (sym == NoSymbol && name != nme.CONSTRUCTOR && (mode & EXPRmode) != 0) {
           val qual1 = adaptToName(qual, name)
           if (qual1 ne qual) return typed(copy.Select(tree, qual1, name), mode, pt)
-        }
-        if (sym == NoSymbol && name != nme.CONSTRUCTOR && name.isTypeName && (mode & PATTERNmode) != 0) { // look for unapply
-          // bq: this hack is analogous to the hack in unapply
-          return typedSelect(qual, name.toTermName)
         }
         if (!sym.exists) {
           if (settings.debug.value) Console.err.println("qual = "+qual+":"+qual.tpe+"\nSymbol="+qual.tpe.symbol+"\nsymbol-info = "+qual.tpe.symbol.info+"\nscope-id = "+qual.tpe.symbol.info.decls.hashCode()+"\nmembers = "+qual.tpe.members+"\nname = "+name+"\nfound = "+sym+"\nowner = "+context.enclClass.owner)
