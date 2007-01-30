@@ -550,7 +550,10 @@ abstract class DocGenerator extends Models {
       case sel: Select =>
         forTree(sel.qualifier).concat(Text(sel.symbol.nameString))
       case tree: AbsTypeDef =>
-        Text(tree.symbol.nameString)
+        val cflags = if (tree.mods.isCovariant) "+"
+        else if (tree.mods.isContravariant) "-"
+        else ""
+        Text(cflags + tree.symbol.nameString)
           .concat(ifT(tree.hi, Text(" <: "), true))
           .concat(ifT(tree.lo, Text(" >: "), true))
       case tpt: TypeTree =>

@@ -18,6 +18,8 @@ trait Trees requires Global {
   var nodeCount = 0
 
   case class Modifiers(flags: int, privateWithin: Name) {
+    def isCovariant     = hasFlag(COVARIANT    )
+    def isContravariant = hasFlag(CONTRAVARIANT)
     def isPrivate   = hasFlag(PRIVATE  )
     def isProtected = hasFlag(PROTECTED)
     def isVariable  = hasFlag(MUTABLE  )
@@ -98,36 +100,33 @@ trait Trees requires Global {
       case t: Tree => this eq t
       case _ => false
     }
-
-    def equalsStructure(that: Tree): Boolean = if (this == that) true else (this:Any) match {
-      case thiz : Product if ((that ne null) && thiz.getClass == that.getClass) =>
-        val that0 = that.asInstanceOf[Product]
-        val result: Iterator[Boolean] =
-          for (val i <- 0.until(thiz.arity)) yield thiz.element(i) match {
-            case tree: Tree =>
-              val b = tree.equalsStructure(that0.element(i).asInstanceOf[Tree])
-              b
-            case list: List[_] if (that0.element(i).isInstanceOf[List[Any]]) =>
-              val listThat = that0.element(i).asInstanceOf[List[Any]]
-              if (list.length == listThat.length) (for (val x <- list.zip(listThat)) yield {
-                if ((null != x._1) && x._1.isInstanceOf[Tree] && x._2.isInstanceOf[Tree]) {
-                  val b = x._1.asInstanceOf[Tree] equalsStructure x._2.asInstanceOf[Tree]
-                  b
-                } else x._1 == x._2
-              }).foldLeft(true)((x,y) => x && y)
-              else false
-            case elem =>
-              val b = elem == that0.element(i)
-              b
-          }
-          val b = result.foldLeft(true)((x,y) => x && y)
-          if (b) {
-            tpe == that.tpe
-          } else false
-      case _ =>
-        false
+    def equalsStructure(that: Tree): Boolean = {
+      val this0 = this.asInstanceOf[Product];
+      val that0 = that.asInstanceOf[Product];
+      if (this == that) return true;
+      if (this.getClass != that.getClass) return false;
+      assert(this0.arity == that0.arity);
+      def equals0(thiz : Any, that : Any) : Boolean = thiz match {
+      case thiz : Tree =>
+        thiz.equalsStructure(that.asInstanceOf[Tree]);
+      case thiz : List[_] =>
+        val that0 = that.asInstanceOf[List[Any]];
+        if (thiz.length != that0.length) false;
+        else {
+          val results0 = for (val i <- 0.until(thiz.length).toList)
+            yield equals0(thiz(i), that0(i));
+          results0.foldLeft(true)((x,y) => x && y);
+        }
+      case thiz => thiz == that;
+      }
+      val results = for (val i <- 0.until(this0.arity).toList) yield
+        equals0(this0.element(i), that0.element(i));
+      val b = results.foldLeft(true)((x,y) => x && y);
+      if (!b) return false;
+      return if (tpe == null || tpe == NoType) {
+        that.tpe == null || that.tpe == NoType;
+      } else tpe == that.tpe
     }
-
     def duplicate: this.type =
       (duplicator transform this).asInstanceOf[this.type]
 
@@ -434,9 +433,13 @@ trait Trees requires Global {
   def Template(parents: List[Tree], vparamss: List[List[ValDef]], argss: List[List[Tree]], body: List[Tree]): Template = {
     /** Add constructor to template */
     var vparamss1 =
-      vparamss map (.map (vd =>
-        ValDef(Modifiers(vd.mods.flags & IMPLICIT | PARAM) setAttr vd.mods.attributes,
-               vd.name, vd.tpt.duplicate, EmptyTree)));
+      vparamss map (.map (vd => {
+        val ret = ValDef(Modifiers(vd.mods.flags & IMPLICIT | PARAM) setAttr vd.mods.attributes,
+            vd.name, vd.tpt.duplicate, EmptyTree).setPos(vd.pos)
+        if (inIDE && vd.symbol != NoSymbol)
+          ret.symbol = vd.symbol
+        ret
+       }));
     if (vparamss1.isEmpty ||
         !vparamss1.head.isEmpty && (vparamss1.head.head.mods.flags & IMPLICIT) != 0)
       vparamss1 = List() :: vparamss1;
