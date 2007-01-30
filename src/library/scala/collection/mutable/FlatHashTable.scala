@@ -67,19 +67,24 @@ trait FlatHashTable[A] {
   }
 
   def removeEntry(elem: A) {
+    def precedes(i: int, j: int, base: int) =
+      if (base <= i) i <= j || j < base
+      else i <= j && j < base
     var h = index(elemHashCode(elem))
     var entry = table(h)
     while (null != entry) {
       if (entry == elem) {
-        var h1 = (h + 1) % table.length
+        var h0 = h
+        var h1 = (h0 + 1) % table.length
         while (null != table(h1)) {
-          if (index(elemHashCode(table(h1).asInstanceOf[A])) != h1) {
-            table(h) = table(h1)
-            h = h1
+          val h2 = index(elemHashCode(table(h1).asInstanceOf[A]))
+          if (h2 != h1 && precedes(h2, h0, h)) {
+            table(h0) = table(h1)
+            h0 = h1
           }
-          h1 = (h + 1) % table.length
+          h1 = (h1 + 1) % table.length
         }
-        table(h) = null
+        table(h1) = null
         tableSize = tableSize - 1
         return
       }
