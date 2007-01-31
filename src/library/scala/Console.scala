@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -160,18 +160,31 @@ object Console {
    */
   def println(x: Any): Unit = out.println(x)
 
-  /** Format and print out some text (in a fashion similar to printf in C).
-   *  The format of the text to print is specified by the parameter
-   *  <code>text</code>. The arguments that are inserted into specific
-   *  locations in <code>text</code> are provided with parameter
-   *  <code>args</code>. See class <code>java.text.MessageFormat</code>
-   *  for a full specification of the format syntax.
+  /** <p>
+   *    Format and print out some text (in a fashion similar to printf in C or
+   *    <code>printf</code> in Java 6).
+   *  </p>
+   *  <p>
+   *    The format of the text to print is specified by the parameter
+   *    <code>text</code>. The arguments that are inserted into specific
+   *    locations in <code>text</code> are provided with parameter
+   *    <code>args</code>. See class <a href="" target="contentFrame"
+   *    class="java_text_MessageFormat"><code>java.text.MessageFormat</code></a>
+   *    for a full specification of the <a href="#syntax" target="contentFrame"
+   *    class="java_util_Formatter">format syntax</a>.
+   *  </p>
    *
    *  @param text the format of the text to print out.
    *  @param args the parameters used to instantiate the format.
+   *  @throws java.lang.IllegalArgumentException
    */
-  // todo: Uncurry
-  def printf(text: String)(args: Any*): Unit =
+  def printf(text: String, args: Any*): Unit = format(text, args)
+
+  /**
+   *  @see <a href="#printf(java.lang.String,scala.Any*)"
+   *       target="contentFrame">Console.printf</a>.
+   */
+  def format(text: String, args: Any*): Unit =
     out.print(
       if (text eq null) "null"
       else MessageFormat.format(text, textParams(args))
