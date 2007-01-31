@@ -134,14 +134,7 @@ INITIALISATION
       <else><fail>System environment could not be determined</fail></else>
     </if>
   <!-- Finding out SVN revision -->
-    <loadfile
-      property="entries"
-      srcFile="${basedir}/.svn/entries"
-      failonerror="false"/>
-    <propertyregex
-      property="svn.number" input="${entries}" select="\1"
-      regexp="revision=\042([0-9]*)\042\.*"
-      defaultValue="x"/>
+    <exec executable="svnversion" outputproperty="svn.number"/>
     <property name="init.avail" value="yes"/>
   <!-- Printing out some information about what environment I am running in -->
     <echo level="info"
