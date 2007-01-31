@@ -359,6 +359,14 @@ trait Iterable[+A] {
     addString(buf, start, sep, end).toString
   }
 
+  /** Returns a string representation of this iterable object. The string
+   *  representations of elements (w.r.t. the method <code>toString()</code>)
+   *  are separated by the string <code>sep</code>.
+   *
+   *  @param sep separator string.
+   *  @return a string representation of this iterable object. */
+  def mkString(sep: String): String = this.mkString("", sep, "")
+
   /** Write all elements of this string into given string builder */
   def addString(buf: StringBuilder, start: String, sep: String, end: String): StringBuilder = {
     buf.append(start)

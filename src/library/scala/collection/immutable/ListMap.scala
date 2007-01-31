@@ -79,13 +79,14 @@ class ListMap[A, +B] extends Map[A, B] {
 
   /** Returns an iterator over key-value pairs.
    */
-  def elements: Iterator[Pair[A,B]] = new Iterator[Pair[A,B]] {
-    var self: ListMap[A,B] = ListMap.this
-    def hasNext = !self.isEmpty
-    def next: Pair[A,B] =
-      if (!hasNext) throw new NoSuchElementException("next on empty iterator")
-      else { val res = Pair(self.key, self.value); self = self.next; res }
-  }
+  def elements: Iterator[Pair[A,B]] =
+    new Iterator[Pair[A,B]] {
+      var self: ListMap[A,B] = ListMap.this
+      def hasNext = !self.isEmpty
+      def next: Pair[A,B] =
+        if (!hasNext) throw new NoSuchElementException("next on empty iterator")
+        else { val res = Pair(self.key, self.value); self = self.next; res }
+    }.toList.reverse.elements
 
   protected def key: A = throw new NoSuchElementException("empty map")
   protected def value: B = throw new NoSuchElementException("empty map")
