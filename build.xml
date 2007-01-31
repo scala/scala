@@ -133,6 +133,10 @@ INITIALISATION
       </elseif>
       <else><fail>System environment could not be determined</fail></else>
     </if>
+  <!-- Setting flag for Java versions 1.4.x -->
+    <condition property="java14" else="false">
+      <contains string="${java.version}" substring="1.4"/>
+    </condition>
   <!-- Finding out SVN revision -->
     <exec executable="svnversion" outputproperty="svn.number"/>
     <property name="init.avail" value="yes"/>
@@ -437,6 +441,7 @@ BUILD QUICK-TEST LAYER
         <pathelement location="${quick.dir}/lib/actors"/>
       </classpath>
       <include name="scala/actors/**/*.scala"/>
+      <exclude name="scala/actors/**/JDK5Scheduler.scala" if="java14"/>
       <excludesfile name="${nsc.excludes.file}" if="excludes.avail"/>
     </locker>
   <!-- Build compiler -->
