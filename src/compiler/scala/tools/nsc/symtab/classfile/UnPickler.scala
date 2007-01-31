@@ -211,15 +211,15 @@ abstract class UnPickler {
         case NOPREFIXtpe =>
           NoPrefix
         case THIStpe =>
-          ThisType(readSymbolRef())
+          mkThisType(readSymbolRef())
         case SINGLEtpe =>
           singleType(readTypeRef(), readSymbolRef())
         case CONSTANTtpe =>
-          ConstantType(readConstantRef())
+          mkConstantType(readConstantRef())
         case TYPEREFtpe =>
           rawTypeRef(readTypeRef(), readSymbolRef(), until(end, readTypeRef))
         case TYPEBOUNDStpe =>
-          TypeBounds(readTypeRef(), readTypeRef())
+          mkTypeBounds(readTypeRef(), readTypeRef())
         case REFINEDtpe =>
           val clazz = readSymbolRef()
 /*

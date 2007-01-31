@@ -1230,7 +1230,7 @@ trait Symbols requires SymbolTable {
       val period = thisTypePeriod
       if (period != currentPeriod) {
         thisTypePeriod = currentPeriod
-        if (!isValid(period)) thisTypeCache = ThisType(this)
+        if (!isValid(period)) thisTypeCache = mkThisType(this)
       }
       thisTypeCache
     }

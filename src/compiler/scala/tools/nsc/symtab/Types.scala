@@ -104,7 +104,7 @@ trait Types requires SymbolTable {
      *  for a reference denoting an abstract type, its bounds,
      *  for all other types, a TypeBounds type all of whose bounds are this type.
      */
-    def bounds: TypeBounds = TypeBounds(this, this)
+    def bounds: TypeBounds = mkTypeBounds(this, this)
 
     /** For a class or intersection type, its parents.
      *  For a TypeBounds type, the parents of its hi bound.
@@ -581,7 +581,7 @@ trait Types requires SymbolTable {
 
   /** A class for this-types of the form <sym>.this.type
    */
-  abstract case class ThisType(sym: Symbol) extends SingletonType {
+  case class ThisType(sym: Symbol) extends SingletonType {
     //assert(sym.isClass && !sym.isModuleClass || sym.isRoot, sym)
     override def isTrivial: boolean = sym.isPackageClass
     // override def isNonNull = true
@@ -604,7 +604,7 @@ trait Types requires SymbolTable {
    *  Cannot be created directly; one should always use
    *  <code>singleType</code> for creation.
    */
-  abstract case class SingleType(pre: Type, sym: Symbol) extends SingletonType {
+  case class SingleType(pre: Type, sym: Symbol) extends SingletonType {
     override val isTrivial: boolean = pre.isTrivial
     // override def isNullable = supertype.isNullable
     // override def isNonNull = supertype.isNonNull
@@ -640,7 +640,7 @@ trait Types requires SymbolTable {
       else pre.prefixString + sym.nameString + "."
   }
 
-  abstract case class SuperType(thistpe: Type, supertp: Type) extends SingletonType {
+  case class SuperType(thistpe: Type, supertp: Type) extends SingletonType {
     override val isTrivial: boolean = thistpe.isTrivial && supertp.isTrivial
     // override def isNonNull = true;
     override def symbol = thistpe.symbol
@@ -655,7 +655,7 @@ trait Types requires SymbolTable {
 
   /** A class for the bounds of abstract types and type parameters
    */
-  abstract case class TypeBounds(lo: Type, hi: Type) extends SubType {
+  case class TypeBounds(lo: Type, hi: Type) extends SubType {
     override val isTrivial: boolean = lo.isTrivial && hi.isTrivial
     def supertype: Type = hi
     override def bounds: TypeBounds = this
@@ -829,8 +829,8 @@ trait Types requires SymbolTable {
    *  Cannot be created directly;
    *  one should always use <code>refinedType</code> for creation.
    */
-  abstract case class RefinedType(override val parents: List[Type],
-                                  override val decls: Scope) extends CompoundType
+  case class RefinedType(override val parents: List[Type],
+                         override val decls: Scope) extends CompoundType
 
   /** A class representing a class info
    */
@@ -853,7 +853,7 @@ trait Types requires SymbolTable {
    *
    *  @param value ...
    */
-  abstract case class ConstantType(value: Constant) extends SingletonType {
+  case class ConstantType(value: Constant) extends SingletonType {
     assert(value.tpe.symbol != UnitClass)
     override def isTrivial: boolean = true
     override def symbol: Symbol = value.tpe.symbol
@@ -874,7 +874,7 @@ trait Types requires SymbolTable {
    *  @param sym  ...
    *  @param args ...
    */
-  abstract case class TypeRef(pre: Type, sym: Symbol, args: List[Type]) extends Type {
+  case class TypeRef(pre: Type, sym: Symbol, args: List[Type]) extends Type {
     assert(!checkMalformedSwitch || !sym.isAbstractType || pre.isStable || pre.isError)
     assert(!pre.isInstanceOf[ClassInfoType], this)
     assert(!sym.isTypeParameterOrSkolem || pre == NoPrefix, this)
@@ -1125,7 +1125,7 @@ trait Types requires SymbolTable {
     override def bounds: TypeBounds = {
        val oftp = tp.bounds
        oftp match {
-         case TypeBounds(lo, hi) if((lo eq this) && (hi eq this)) => TypeBounds(this,this)
+         case TypeBounds(lo, hi) if((lo eq this) && (hi eq this)) => mkTypeBounds(this,this)
          case _ => oftp
        }
     }
@@ -1199,7 +1199,7 @@ trait Types requires SymbolTable {
   }
 
   /** The canonical creator for this-types */
-  def ThisType(sym: Symbol): Type =
+  def mkThisType(sym: Symbol): Type =
     if (phase.erasedTypes) sym.tpe else unique(new ThisType(sym) with UniqueType)
 
   /** The canonical creator for single-types */
@@ -1211,7 +1211,7 @@ trait Types requires SymbolTable {
     if (phase.erasedTypes)
       sym.tpe.resultType
     else if (sym.isRootPackage)
-      ThisType(RootClass)
+      mkThisType(RootClass)
     else {
       var sym1 = rebind(pre, sym)
       val pre1 = removeSuper(pre, sym1)
@@ -1227,12 +1227,12 @@ trait Types requires SymbolTable {
   }
 
   /** The canonical creator for super-types */
-  def SuperType(thistp: Type, supertp: Type): Type =
+  def mkSuperType(thistp: Type, supertp: Type): Type =
     if (phase.erasedTypes) supertp
     else unique(new SuperType(thistp, supertp) with UniqueType)
 
   /** The canonical creator for type bounds */
-  def TypeBounds(lo: Type, hi: Type): TypeBounds =
+  def mkTypeBounds(lo: Type, hi: Type): TypeBounds =
     unique(new TypeBounds(lo, hi) with UniqueType)
 
   def refinementOfClass(clazz: Symbol, parents: List[Type], decls: Scope) =
@@ -1274,7 +1274,7 @@ trait Types requires SymbolTable {
     }
 
   /** the canonical creator for a constant type */
-  def ConstantType(value: Constant): ConstantType =
+  def mkConstantType(value: Constant): ConstantType =
     unique(new ConstantType(value) with UniqueType)
 
 
@@ -1434,7 +1434,7 @@ trait Types requires SymbolTable {
         val thistp1 = this(thistp)
         val supertp1 = this(supertp)
         if ((thistp1 eq thistp) && (supertp1 eq supertp)) tp
-        else SuperType(thistp1, supertp1)
+        else mkSuperType(thistp1, supertp1)
       case TypeRef(pre, sym, args) =>
         val pre1 = this(pre)
         //val args1 = List.mapConserve(args)(this)
@@ -1452,7 +1452,7 @@ trait Types requires SymbolTable {
         variance = -variance
         val hi1 = this(hi)
         if ((lo1 eq lo) && (hi1 eq hi)) tp
-        else TypeBounds(lo1, hi1)
+        else mkTypeBounds(lo1, hi1)
       case BoundedWildcardType(bounds) =>
         val bounds1 = this(bounds)
         if (bounds1 eq bounds) tp
@@ -1775,7 +1775,7 @@ trait Types requires SymbolTable {
     def apply(tp: Type): Type = tp match {
       case ThisType(sym) if (sym.isModuleClass) =>
         val sym1 = adaptToNewRun(sym.owner.thisType, sym)
-        if (sym1 == sym) tp else ThisType(sym1)
+        if (sym1 == sym) tp else mkThisType(sym1)
       case SingleType(pre, sym) =>
         if (sym.isPackage) tp
         else {
@@ -2288,7 +2288,7 @@ trait Types requires SymbolTable {
         MethodType(pts, lub0(matchingRestypes(ts, pts)))
       case ts @ TypeBounds(_, _) :: rest =>
         assert(false)
-        TypeBounds(glb(ts map (.bounds.lo), depth), lub(ts map (.bounds.hi), depth))
+        mkTypeBounds(glb(ts map (.bounds.lo), depth), lub(ts map (.bounds.hi), depth))
       case ts =>
         val closures: List[Array[Type]] = ts map (.closure)
         val lubBaseTypes: Array[Type] = lubArray(closures, depth)
@@ -2317,7 +2317,7 @@ trait Types requires SymbolTable {
                 proto.cloneSymbol(lubType.symbol).setInfo(symtypes.head)
               else {
                 def lubBounds(bnds: List[TypeBounds]): TypeBounds =
-                  TypeBounds(glb(bnds map (.lo), depth-1), lub(bnds map (.hi), depth-1))
+                  mkTypeBounds(glb(bnds map (.lo), depth-1), lub(bnds map (.hi), depth-1))
                 proto.owner.newAbstractType(proto.pos, proto.name)
                   .setInfo(lubBounds(symtypes map (.bounds)))
               }
@@ -2370,7 +2370,7 @@ trait Types requires SymbolTable {
       case ts @ MethodType(pts, _) :: rest =>
         MethodType(pts, glb0(matchingRestypes(ts, pts)))
       case ts @ TypeBounds(_, _) :: rest =>
-        TypeBounds(lub(ts map (.bounds.lo), depth), glb(ts map (.bounds.hi), depth))
+        mkTypeBounds(lub(ts map (.bounds.lo), depth), glb(ts map (.bounds.hi), depth))
       case ts =>
         try {
           val glbOwner = commonOwner(ts)
@@ -2397,13 +2397,13 @@ trait Types requires SymbolTable {
                   def glbBounds(bnds: List[Type]): TypeBounds = {
                     val lo = lub(bnds map (.bounds.lo), depth-1)
                     val hi = glb(bnds map (.bounds.hi), depth-1)
-                    if (lo <:< hi) TypeBounds(lo, hi)
+                    if (lo <:< hi) mkTypeBounds(lo, hi)
                     else throw new MalformedClosure(bnds)
                   }
                   val symbounds = symtypes filter isTypeBound
                   var result: Type =
                     if (symbounds.isEmpty)
-                      TypeBounds(AllClass.tpe, AnyClass.tpe)
+                      mkTypeBounds(AllClass.tpe, AnyClass.tpe)
                     else glbBounds(symbounds)
                   for (val t <- symtypes; !isTypeBound(t))
                     if (result.bounds containsType t) result = t

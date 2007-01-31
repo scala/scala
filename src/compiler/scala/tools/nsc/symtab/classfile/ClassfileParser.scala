@@ -429,7 +429,7 @@ abstract class ClassfileParser {
       val info = pool.getType(in.nextChar)
       val sym = getOwner(jflags)
         .newValue(NoPos, name).setFlag(sflags)
-      sym.setInfo(if ((jflags & JAVA_ACC_ENUM) == 0) info else ConstantType(Constant(sym)))
+      sym.setInfo(if ((jflags & JAVA_ACC_ENUM) == 0) info else mkConstantType(Constant(sym)))
       setPrivateWithin(sym, jflags)
       parseAttributes(sym, info)
       getScope(jflags).enter(sym)
@@ -496,12 +496,12 @@ abstract class ClassfileParser {
           case variance @ ('+' | '-' | '*') =>
             index = index + 1
             val bounds = variance match {
-              case '+' => TypeBounds(definitions.AllRefClass.typeConstructor,
-                                     sig2type(tparams, covariant))
-              case '-' => TypeBounds(sig2type(tparams, covariant),
-                                     definitions.AnyRefClass.typeConstructor)
-              case '*' => TypeBounds(definitions.AllRefClass.typeConstructor,
-                                     definitions.AnyRefClass.typeConstructor)
+              case '+' => mkTypeBounds(definitions.AllRefClass.typeConstructor,
+                                       sig2type(tparams, covariant))
+              case '-' => mkTypeBounds(sig2type(tparams, covariant),
+                                       definitions.AnyRefClass.typeConstructor)
+              case '*' => mkTypeBounds(definitions.AllRefClass.typeConstructor,
+                                       definitions.AnyRefClass.typeConstructor)
             }
             val name = fresh.newName("T_" + sym.name)
             val newtparam =
@@ -572,8 +572,8 @@ abstract class ClassfileParser {
           if (sig(index) != ':') // guard against empty class bound
             ts += sig2type(tparams, false)
         }
-        s.setInfo(TypeBounds(definitions.AllRefClass.typeConstructor,
-                             intersectionType(ts.toList, sym)))
+        s.setInfo(mkTypeBounds(definitions.AllRefClass.typeConstructor,
+                               intersectionType(ts.toList, sym)))
         newTParams += s
       }
       index = index + 1
@@ -627,7 +627,7 @@ abstract class ClassfileParser {
         case nme.ConstantValueATTR =>
           val c = pool.getConstant(in.nextChar)
           val c1 = convertTo(c, symtype)
-          if (c1 ne null) sym.setInfo(ConstantType(c1))
+          if (c1 ne null) sym.setInfo(mkConstantType(c1))
           else Console.println("failure to convert " + c + " to " + symtype); //debug
         case nme.InnerClassesATTR =>
           if (!isScala) parseInnerClasses() else in.skip(attrLen)

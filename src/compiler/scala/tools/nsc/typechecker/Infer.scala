@@ -784,7 +784,7 @@ trait Infer requires Analyzer {
           if (settings.debug.value) log("inconsistent: "+tparam+" "+lo+" "+hi)
         } else if (!((lo <:< tparam.info.bounds.lo) && (tparam.info.bounds.hi <:< hi))) {
           context.nextEnclosing(.tree.isInstanceOf[CaseDef]).pushTypeBounds(tparam)
-          tparam setInfo TypeBounds(lo, hi)
+          tparam setInfo mkTypeBounds(lo, hi)
           if (settings.debug.value) log("new bounds of " + tparam + " = " + tparam.info)
         } else {
           if (settings.debug.value) log("redundant: "+tparam+" "+tparam.info+"/"+lo+" "+hi)

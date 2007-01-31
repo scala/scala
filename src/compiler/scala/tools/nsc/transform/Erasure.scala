@@ -138,7 +138,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
     else if (sym == Object_isInstanceOf || sym == ArrayClass)
       PolyType(sym.info.typeParams, erasure(sym.info.resultType))
     else if (sym.isAbstractType)
-      TypeBounds(WildcardType, WildcardType)
+      mkTypeBounds(WildcardType, WildcardType)
     else if (sym.isTerm && sym.owner == ArrayClass) {
       if (sym.isClassConstructor)
         tp match {

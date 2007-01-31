@@ -36,6 +36,7 @@ abstract class SymbolicXMLBuilder(make: TreeBuilder, p: Parsers # Parser, preser
   def _PrefixedAttribute   = global.newTypeName("PrefixedAttribute")
   def _UnprefixedAttribute = global.newTypeName("UnprefixedAttribute")
   def _Elem                = global.newTypeName("Elem")
+  def __Elem               = global.newTermName("Elem")
   def _Group               = global.newTypeName("Group")
   def _Unparsed            = global.newTypeName("Unparsed")
   def _Seq                 = global.newTypeName("Seq")
@@ -52,6 +53,7 @@ abstract class SymbolicXMLBuilder(make: TreeBuilder, p: Parsers # Parser, preser
   def _Some                = global.newTypeName("Some")
   def _ProcInstr           = global.newTypeName("ProcInstr")
   def _Text                = global.newTypeName("Text")
+  def __Text               = global.newTermName("Text")
   def _EntityRef           = global.newTypeName("EntityRef")
   final def _md = global.newTermName("$md")
   final def _scope = global.newTermName("$scope")
@@ -77,7 +79,9 @@ abstract class SymbolicXMLBuilder(make: TreeBuilder, p: Parsers # Parser, preser
   private def _scala_xml_Comment            = _scala_xml(_Comment)
   private def _scala_xml_ProcInstr          = _scala_xml(_ProcInstr)
   private def _scala_xml_Text               = _scala_xml(_Text)
+  private def _scala_xml__Text               = _scala_xml(__Text)
   private def _scala_xml_Elem               = _scala_xml(_Elem)
+  private def _scala_xml__Elem               = _scala_xml(__Elem)
   private def _scala_xml_Attribute          = _scala_xml(_Attribute)
   private def _scala_xml_Group              = _scala_xml(_Group)
   private def _scala_xml_Unparsed           = _scala_xml(_Unparsed)
@@ -103,7 +107,7 @@ abstract class SymbolicXMLBuilder(make: TreeBuilder, p: Parsers # Parser, preser
     if (isPattern) {
       convertToTextPat(children)
       atPos (pos) { //@todo maybe matching on attributes, scope?
-        Apply( _scala_xml_Elem, List(
+        Apply( _scala_xml__Elem, List(
           pre, label, Ident( nme.WILDCARD ) /* md */ , Ident( nme.WILDCARD )) /* scope */ ::: children.toList )
       }
     } else {
@@ -131,7 +135,7 @@ abstract class SymbolicXMLBuilder(make: TreeBuilder, p: Parsers # Parser, preser
   }
 
   // create scala.xml.Text here <: scala.xml.Node
-  def makeTextPat(txt: Tree) = Apply(_scala_xml_Text, List(txt))
+  def makeTextPat(txt: Tree) = Apply(_scala_xml__Text, List(txt))
 
   def makeText1(txt: Tree) =
     New(_scala_xml_Text, LL(txt))

@@ -480,7 +480,7 @@ trait Typers requires Analyzer {
      *        and it is not a constructor, apply it to ()
      *  otherwise issue an error
      *  (5) Convert constructors in a pattern as follows:
-     *  (5.1) If constructor refers to a case class, set tree's type to the unique
+     *  (5.1) If constructor refers to a case class factory, set tree's type to the unique
      *        instance of its primary constructor that is a subtype of the expected type.
      *  (5.2) If constructor refers to an exractor, convert to application of
      *        unapply or unapplySeq method.
@@ -508,7 +508,7 @@ trait Typers requires Analyzer {
       case TypeRef(_, sym, List(arg))
       if ((mode & EXPRmode) != 0 && sym == ByNameParamClass) => // (2)
         adapt(tree setType arg, mode, pt)
-      case PolyType(tparams, restpe) if ((mode & TAPPmode) == 0) => // (3)
+      case PolyType(tparams, restpe) if ((mode & (TAPPmode | PATTERNmode)) == 0) => // (3)
         val tparams1 = cloneSymbols(tparams)
         val tree1 = if (tree.isType) tree
                     else TypeApply(tree, tparams1 map (tparam =>
@@ -548,60 +548,38 @@ trait Typers requires Analyzer {
         }
       case _ =>
         if (tree.isType) {
-          val clazz = tree.tpe.symbol
-          if ((mode & PATTERNmode) != 0) { // (5)
-            if (tree.tpe.isInstanceOf[MethodType]) {
-              tree // everything done already
-            } else {
-              clazz.initialize
-              if (clazz.hasFlag(CASE)) {   // (5.1)
-                val tree1 = TypeTree(clazz.primaryConstructor.tpe.asSeenFrom(tree.tpe.prefix, clazz.owner)) setOriginal tree
-                try {
-                  inferConstructorInstance(tree1, clazz.typeParams, widen(pt))
-                } catch {
-                  case tpe : TypeError => throw tpe
-                  case t : Throwable =>
-                    logError("CONTEXT: " + context.unit.source.dbg(tree.pos), t)
-                    throw t
-                }
-                tree1
-              } else if (!settings.Xunapply.value && clazz.isNonBottomSubClass(SeqClass)) { // (5.2)
-                val restpe = pt.baseType(clazz)
-                restpe.baseType(SeqClass) match {
-                  case TypeRef(pre, seqClass, args) =>
-                    tree.setType(MethodType(List(typeRef(pre, RepeatedParamClass, args)), restpe))
-                  case NoType =>
-                    errorTree(tree, "expected pattern type "+pt +
-                              " does not conform to sequence "+clazz)
-                  case ErrorType =>
-                    setError(tree)
-                }
-              } else if (settings.Xunapply.value) { /*unapply (5.3) */
-                // fix symbol -- we are using the module not the class
-                val consp = if (clazz.isModule) clazz else {
-                  val obj = clazz.linkedModuleOfClass
-                  if (obj != NoSymbol) tree.setSymbol(obj)
-                  obj
-                }
-                if (definitions.unapplyMember(consp.tpe).exists)
-                  atPos(tree.pos) {
-                    //Console.println("UNAPPLY1: "+gen.mkAttributedRef(tree.tpe.prefix,consp))
-                    gen.mkAttributedRef(tree.tpe.prefix,consp)
-                  }
-                  //  needs member type, but member of what? ^^^`
-                  //  see test/pending/pos/unapplyNeedsMemberType.scala
-                else errorTree(tree, "" + clazz + " is not a case class, nor does it have unapply/unapplySeq method")
-              } else {
-                errorTree(tree, "" + clazz + " is neither a case class nor a sequence class")
-              }
-            }
-          } else if ((mode & FUNmode) != 0) {
+          if ((mode & FUNmode) != 0) {
             tree
           } else if (tree.hasSymbol && !tree.symbol.typeParams.isEmpty) { // (7)
-            errorTree(tree, ""+clazz+" takes type parameters")
+            errorTree(tree, tree.symbol+" takes type parameters")
           } else tree match { // (6)
             case TypeTree() => tree
             case _ => TypeTree(tree.tpe) setOriginal(tree)
+          }
+        } else if ((mode & (PATTERNmode | FUNmode)) == (PATTERNmode | FUNmode)) { // (5)
+          val constr = tree.symbol.filter(.isCaseFactory)
+          if (constr != NoSymbol) {
+            val clazz = constr.tpe.finalResultType.symbol
+            assert(clazz hasFlag CASE, tree)
+            val prefix = tree.tpe.finalResultType.prefix
+            val tree1 = TypeTree(clazz.primaryConstructor.tpe.asSeenFrom(prefix, clazz.owner)) setOriginal tree
+            try {
+              inferConstructorInstance(tree1, clazz.typeParams, widen(pt))
+            } catch {
+              case tpe : TypeError => throw tpe
+              case t : Throwable =>
+                logError("CONTEXT: " + context.unit.source.dbg(tree.pos), t)
+              throw t
+            }
+            tree1
+          } else {
+            val extractor = tree.symbol.filter(sym => definitions.unapplyMember(sym.tpe).exists)
+            if (extractor != NoSymbol) {
+              tree setSymbol extractor
+            } else {
+              Console.println(tree.symbol+tree.symbol.locationString+":"+tree.symbol.tpe)
+              errorTree(tree, tree.symbol + " is not a case class constructor, nor does it have an unapply/unapplySeq method")
+            }
           }
         } else if ((mode & (EXPRmode | FUNmode)) == (EXPRmode | FUNmode) &&
                    !tree.tpe.isInstanceOf[MethodType] && !tree.tpe.isInstanceOf[OverloadedType] &&
@@ -628,9 +606,9 @@ trait Typers requires Analyzer {
         } else {
           if ((mode & PATTERNmode) != 0) {
             if ((tree.symbol ne null) && tree.symbol.isModule)
-                inferModulePattern(tree, pt)
+              inferModulePattern(tree, pt)
             if (isPopulated(tree.tpe, approximateAbstracts(pt)))
-                return tree
+              return tree
           }
           val tree1 = constfold(tree, pt) // (10) (11)
           if (tree1.tpe <:< pt) adapt(tree1, mode, pt)
@@ -1402,7 +1380,7 @@ trait Typers requires Analyzer {
                   case _ => errorTree(arg, "constant required")
                 }
                 val arrayConst = new ArrayConstant(elems, restpe)
-                Literal(arrayConst) setType ConstantType(arrayConst)
+                Literal(arrayConst) setType mkConstantType(arrayConst)
               }
               else
                 constfold(copy.Apply(tree, fun, args1).setType(ifPatternSkipFormals(restpe)))
@@ -1589,7 +1567,7 @@ trait Typers requires Analyzer {
           val qual1 =
             if ((args1 ne null) && !pt.isError) {
               def templateArgType(arg: Tree) =
-                new BoundedWildcardType(TypeBounds(arg.tpe, AnyClass.tpe))
+                new BoundedWildcardType(mkTypeBounds(arg.tpe, AnyClass.tpe))
               adaptToMember(qual, name, MethodType(args1 map templateArgType, pt))
             } else qual
           if (qual1 ne qual) {
@@ -1726,6 +1704,13 @@ trait Typers requires Analyzer {
         var defSym: Symbol = tree.symbol // the directly found symbol
         var pre: Type = NoPrefix         // the prefix type of defSym, if a class member
         var qual: Tree = EmptyTree       // the qualififier tree if transformed tree is a select
+        // if we are in a constructor of a pattern, ignore all methods
+        // which are not case factories (note if we don't do that
+        // case x :: xs in class List would return the :: method.
+        def qualifies(sym: Symbol): boolean =
+          sym.exists &&
+          ((mode & PATTERNmode | FUNmode) != (PATTERNmode | FUNmode) ||
+           !sym.isSourceMethod || sym.isCaseFactory)
 
         if (defSym == NoSymbol) {
           var defEntry: ScopeEntry = null // the scope entry of defSym, if defined in a local scope
@@ -1734,12 +1719,12 @@ trait Typers requires Analyzer {
           while (defSym == NoSymbol && cx != NoContext) {
             pre = cx.enclClass.prefix
             defEntry = cx.scope.lookupEntry(name)
-            if ((defEntry ne null) && defEntry.sym.exists) {
+            if ((defEntry ne null) && qualifies(defEntry.sym)) {
               defSym = defEntry.sym
             } else {
               cx = cx.enclClass
               defSym = pre.member(name) filter (
-                sym => sym.exists && context.isAccessible(sym, pre, false))
+                sym => qualifies(sym) && context.isAccessible(sym, pre, false))
               if (defSym == NoSymbol) cx = cx.outer
             }
           }
@@ -1766,6 +1751,7 @@ trait Typers requires Analyzer {
                (context.unit ne null) && defSym.sourceFile != context.unit.source.file))
             defSym = NoSymbol
 
+/*
           /*<unapply>*/
           if(settings.Xunapply.value)
             // unapply: in patterns, look for an object if can't find type
@@ -1774,6 +1760,7 @@ trait Typers requires Analyzer {
               return tree setSymbol mod.symbol setType mod.tpe
             }
           /*</unapply>*/
+*/
 
           if (defSym.exists) {
             if (impSym.exists)
@@ -1897,7 +1884,7 @@ trait Typers requires Analyzer {
                   context.owner.newAliasType(tree.pos, name) setInfo pt
                 else
                   context.owner.newAbstractType(tree.pos, name) setInfo
-                    TypeBounds(AllClass.tpe, AnyClass.tpe)
+                    mkTypeBounds(AllClass.tpe, AnyClass.tpe)
             if (vble.name == nme.WILDCARD.toTypeName) context.scope.enter(vble)
             else namer.enterInScope(vble)
             tree setType vble.tpe
@@ -2113,7 +2100,7 @@ trait Typers requires Analyzer {
                   ErrorType
                 }
               }
-            tree setSymbol clazz setType SuperType(selftype, owntype)
+            tree setSymbol clazz setType mkSuperType(selftype, owntype)
           }
 
         case This(qual) =>
@@ -2155,7 +2142,7 @@ trait Typers requires Analyzer {
         case Literal(value) =>
           tree setType (
             if (value.tag == UnitTag) UnitClass.tpe
-            else ConstantType(value))
+            else mkConstantType(value))
 
         case AttributedTypeTree(attribs, tpt) =>
           attribs.foreach(t => typed(t, EXPRmode, WildcardType))
@@ -2202,7 +2189,7 @@ trait Typers requires Analyzer {
           }
 
         case WildcardTypeTree(lo, hi) =>
-          tree setType TypeBounds(typedType(lo).tpe, typedType(hi).tpe)
+          tree setType mkTypeBounds(typedType(lo).tpe, typedType(hi).tpe)
 
         case TypeTree() =>
           // we should get here only when something before failed
@@ -2452,7 +2439,7 @@ trait Typers requires Analyzer {
         val best = (NoImplicitInfo /: applicable) ((best, alt) => if (improves(alt, best)) alt else best)
         if (best == NoImplicitInfo) EmptyTree
         else {
-          val competing = applicable dropWhile (alt => best == alt || improves(best, alt) || alt.sym.owner == PredefModule.moduleClass)
+          val competing = applicable dropWhile (alt => best == alt || improves(best, alt))
           if (!competing.isEmpty) ambiguousImplicitError(best, competing.head, "both", "and", "")
           for (val alt <- applicable)
             if (alt.sym.owner != best.sym.owner && isSubClassOrObject(alt.sym.owner, best.sym.owner)) {

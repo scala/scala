@@ -32,7 +32,7 @@ trait Namers requires Analyzer {
           if (tparam == sym || !(tparams contains tparam)) tp
           else rawTypeRef(NoPrefix, tparam, args))
       case SingleType(pre, sym) if (sym.isThisSkolem) =>
-        ThisType(sym.deSkolemize)
+        mkThisType(sym.deSkolemize)
       case PolyType(tparams1, restpe) =>
         new DeSkolemizeMap(tparams1 ::: tparams).mapOver(tp)
       case ClassInfoType(parents, decls, clazz) =>
@@ -253,7 +253,7 @@ trait Namers requires Analyzer {
 	      context.make(tree, tree.symbol.moduleClass, tree.symbol.info.decls))
 	    namer.enterSyms(stats)
 	  case ClassDef(mods, name, tparams, _, impl) =>
-	    if ((mods.flags & (CASE | ABSTRACT)) == CASE) { // enter case factory method.
+	    if ((mods.flags & CASE) != 0) { // enter case factory method.
 	      tree.symbol = enterCaseFactorySymbol(
         		tree.pos, mods.flags & AccessFlags | METHOD | CASE, name.toTermName)
               tree.symbol.setInfo(namerOf(tree.symbol).caseFactoryCompleter(tree))
@@ -597,7 +597,7 @@ trait Namers requires Analyzer {
               if (lt.isError) lt = AllClass.tpe
               var ht = typer.typedType(hi).tpe
               if (ht.isError) ht = AnyClass.tpe
-              TypeBounds(lt, ht)
+              mkTypeBounds(lt, ht)
 
             case Import(expr, selectors) =>
               val expr1 = typer.typedQualifier(expr)
@@ -754,6 +754,7 @@ trait Namers requires Analyzer {
       checkNoConflict(PRIVATE, PROTECTED)
       checkNoConflict(PRIVATE, OVERRIDE)
       checkNoConflict(DEFERRED, FINAL)
+      checkNoConflict(ABSTRACT, CASE)
     }
   }
 

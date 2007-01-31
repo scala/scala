@@ -1,9 +1,6 @@
 scopes.scala:1: error: x is already defined as value x
 case class test0(x: int, x: float)
                          ^
-scopes.scala:2: error: x is already defined as value x
-
-^
 scopes.scala:5: error: t is already defined as type t
   type t = float
        ^
@@ -25,4 +22,4 @@ scopes.scala:15: error: x is already defined as value x
 scopes.scala:17: error: x is already defined as value x
     case x::x => x
             ^
-9 errors found
+8 errors found

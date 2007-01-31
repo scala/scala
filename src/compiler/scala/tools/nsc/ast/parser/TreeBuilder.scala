@@ -94,7 +94,7 @@ abstract class TreeBuilder {
 
   def makeTuplePattern(trees: List[Tree]): Tree = trees match {
     case List() => Literal(())
-    case _ => makeTuple(trees, true)
+    case _ => makeTuple(trees, false)
   }
 
   def makeTupleType(trees: List[Tree], flattenUnary: boolean): Tree = trees match {
@@ -129,7 +129,7 @@ abstract class TreeBuilder {
           Apply(Select(right, op.encode), List(Ident(x))))
       }
     } else {
-      Apply(Ident(op.encode.toTypeName), left :: arguments)
+      Apply(Ident(op.encode), left :: arguments)
     }
   }
 
@@ -303,7 +303,7 @@ abstract class TreeBuilder {
         val rhs1 = makeForYield(
           List(ValFrom(pos, patX1, rhs)),
           Block(pdefs, makeTupleTerm(ids, true)))
-        makeFor(mapName, flatMapName, ValFrom(pos, makeTuple(pat :: pats, true), rhs1) :: rest1, body)
+        makeFor(mapName, flatMapName, ValFrom(pos, makeTuple(pat :: pats, false), rhs1) :: rest1, body)
       case _ =>
         EmptyTree //may happen for erroneous input
     }
@@ -324,7 +324,7 @@ abstract class TreeBuilder {
       case g :: Nil => g
       case ValFrom(pos1, pat1, rhs1) :: gs2 =>
         val ValFrom(pos2, pat2, rhs2) = combine(gs2)
-        ValFrom(pos1, makeTuple(List(pat1, pat2), true), Apply(Select(rhs1, nme.zip), List(rhs2)))
+        ValFrom(pos1, makeTuple(List(pat1, pat2), false), Apply(Select(rhs1, nme.zip), List(rhs2)))
     }
     makeForYield(List(combine(gs)), body)
   }

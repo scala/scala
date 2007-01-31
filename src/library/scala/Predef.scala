@@ -102,10 +102,16 @@ object Predef {
   // --- Tupling ----------------------------------------------
 
   type Pair[+a, +b] = Tuple2[a, b]
-  def Pair[a, b](x: a, y: b) = Tuple2(x, y)
+  object Pair {
+    def apply[a, b](x: a, y: b) = Tuple2(x, y)
+    def unapply[a, b](x: Tuple2[a, b]): Option[Tuple2[a, b]] = Some(x)
+  }
 
   type Triple[+a, +b, +c] = Tuple3[a, b, c]
-  def Triple[a, b, c](x: a, y: b, z: c) = Tuple3(x, y, z)
+  object Triple {
+    def apply[a, b, c](x: a, y: b, z: c) = Tuple3(x, y, z)
+    def unapply[a, b, c](x: Tuple3[a, b, c]): Option[Tuple3[a, b, c]] = Some(x)
+  }
 
   class ArrowAssoc[a](x: a) {
     def -> [b](y: b): Tuple2[a, b] = Tuple2(x, y)

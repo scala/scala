@@ -386,9 +386,7 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
       val rhs = ExplicitOuterTransformer.this.transform(path)
       localTyper.typed {
         atPos(currentClass.pos) {
-          val result = DefDef(outerAcc, {vparamss=>rhs})
-          //Console.println("==> "+result)
-          result
+          DefDef(outerAcc, {vparamss=>rhs})
         }
       }
     }

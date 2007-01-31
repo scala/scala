@@ -508,7 +508,7 @@ trait Parsers requires SyntaxAnalyzer {
       if (isSymLit) {
         atPos(pos) {
           var symid = scalaDot(nme.Symbol)
-          if (isPattern) { symid = convertToTypeId(symid) }
+          if (isPattern) { symid = /*convertToTypeId*/(symid) }
           val symobj = Apply(symid, List(t))
           if (isPattern) symobj else Select(symobj, nme.intern)
         }
@@ -1356,9 +1356,9 @@ trait Parsers requires SyntaxAnalyzer {
           }
         else */
         if (in.token == LPAREN) {
-          atPos(in.currentPos) { Apply(convertToTypeId(t), argumentPatterns()) }
+          atPos(in.currentPos) { Apply(/*convertToTypeId*/(t), argumentPatterns()) }
         } else if (in.token == LBRACE) {
-          atPos(in.currentPos) { Apply(convertToTypeId(t), List(tuplePattern())) }
+          atPos(in.currentPos) { Apply(/*convertToTypeId*/(t), List(tuplePattern())) }
         } else t
       case USCORE =>
         atPos(in.skipToken()) { Ident(nme.WILDCARD) }

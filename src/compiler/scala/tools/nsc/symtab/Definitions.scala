@@ -412,7 +412,7 @@ trait Definitions requires SymbolTable {
 
     private def newTypeParam(owner: Symbol, index: int): Symbol =
       owner.newTypeParameter(NoPos, "T" + index)
-        .setInfo(TypeBounds(AllClass.typeConstructor, AnyClass.typeConstructor))
+        .setInfo(mkTypeBounds(AllClass.typeConstructor, AnyClass.typeConstructor))
 
     val boxedClass = new HashMap[Symbol, Symbol]
     val unboxMethod = new HashMap[Symbol, Symbol] // Type -> Method
@@ -568,7 +568,7 @@ trait Definitions requires SymbolTable {
       }
       def addModuleMethod(clazz: Symbol, name: Name, value: Any): Unit = {
         val owner = clazz.linkedClassOfClass
-        newParameterlessMethod(owner, name, ConstantType(Constant(value)))
+        newParameterlessMethod(owner, name, mkConstantType(Constant(value)))
       }
       addModuleMethod(ByteClass,  "MinValue",  java.lang.Byte.MIN_VALUE)
       addModuleMethod(ByteClass,  "MaxValue",  java.lang.Byte.MAX_VALUE)
