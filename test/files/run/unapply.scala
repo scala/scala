@@ -4,7 +4,8 @@ object Test {
   def main(args:Array[String]) = {
     Foo.run
     Mas.run
-    Lis.run
+    LisSeqArr.run
+    StreamFoo.run
   }
 }
 
@@ -77,10 +78,26 @@ object Mas extends Assert {
   }
 }
 
-object Lis extends Assert {
+object LisSeqArr extends Assert {
   def run {
-    assertEquals((List(1,2,3): Any) match { case List(x,y,_*) => {x,y}}, {1,2})
+    assertEquals((List(1,2,3): Any) match { case   List(x,y,_*) => {x,y}}, {1,2})
+    assertEquals((List(1,2,3): Any) match { case    Seq(x,y,_*) => {x,y}}, {1,2})
+    assertEquals((Array(1,2,3): Any) match { case   Seq(x,y,_*) => {x,y}}, {1,2})
+    //assertEquals((Array(1,2,3): Any) match { case Array(x,y,_*) => {x,y}}, {1,2})
   }
 }
 
 
+object StreamFoo extends TestCase("unapply for Streams") with Assert {
+  //val x:Stream[Int] = Stream.cons(1,x)
+
+  def sum(stream: Stream[int]): int =
+    stream match {
+      case Stream.empty => 0
+      case Stream.cons(hd, tl) => hd + sum(tl)
+    }
+  override def run {
+    val str: Stream[int] = Stream.fromIterator(List(1,2,3).elements)
+    assertEquals(sum(str), 6)
+  }
+}
