@@ -178,7 +178,7 @@ object Console {
    *  @param args the parameters used to instantiate the format.
    *  @throws java.lang.IllegalArgumentException
    */
-  def printf(text: String, args: Any*): Unit = format(text, args)
+  def printf(text: String, args: Any*): Unit = format(text, args: _*)
 
   /**
    *  @see <a href="#printf(java.lang.String,scala.Any*)"
