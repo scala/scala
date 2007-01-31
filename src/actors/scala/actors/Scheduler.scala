@@ -29,7 +29,7 @@ import scala.collection.mutable.{ArrayBuffer, Buffer, HashMap, Queue, Stack, Has
 object Scheduler {
   private var sched: IScheduler =
     {
-      var s: Thread with IScheduler = null
+      var s: IScheduler = null
 
       // Check for JDK version >= 1.5
       var olderThanJDK5 = false
@@ -42,18 +42,8 @@ object Scheduler {
 
       s = if (olderThanJDK5)
         new TickedScheduler
-      else {
-        var corePoolSize = 4
-        var maxPoolSize = 16
-        val prop = java.lang.System.getProperty("actors.corePoolSize")
-        if (null ne prop) {
-          corePoolSize =
-            Integer.parseInt(java.lang.System.getProperty("actors.corePoolSize"))
-          maxPoolSize =
-            Integer.parseInt(java.lang.System.getProperty("actors.maxPoolSize"))
-        }
-        new JDK5Scheduler(corePoolSize, maxPoolSize)
-      }
+      else
+        Class.forName("scala.actors.ThreadPoolScheduler").newInstance().asInstanceOf[IScheduler]
       s.start()
       s
     }
@@ -86,6 +76,7 @@ object Scheduler {
  * @author Philipp Haller
  */
 trait IScheduler {
+  def start(): unit
   def start(task: Reaction): unit
   def execute(task: Reaction): unit
   def getTask(worker: WorkerThread): Runnable
@@ -115,6 +106,8 @@ trait IScheduler {
  * @author Philipp Haller
  */
 class SingleThreadedScheduler extends IScheduler {
+  def start() {}
+
   def start(task: Reaction) {
     // execute task immediately on same thread
     task.run()

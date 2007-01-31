@@ -43,7 +43,9 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
   }
 
   /**
-   * Sends <code>msg</code> to this <code>Channel</code>.
+   * Sends a message to this <code>Channel</code>.
+   *
+   * @param  msg the message to be sent
    */
   def !(msg: Msg): unit = {
     receiver ! scala.actors.!(this, msg)
@@ -57,34 +59,62 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
     receiver forward scala.actors.!(this, msg)
   }
 
+  /**
+   * Receives a message from this <code>Channel</code>.
+   *
+   * @param  f    a partial function with message patterns and actions
+   * @return      result of processing the received value
+   */
   def receive[R](f: PartialFunction[Any, R]): R = {
     val C = this.asInstanceOf[Channel[Any]]
-    // Martin: had to do this to get it to compiler after bug909 fix
     receiver.receive {
       case C ! msg if (f.isDefinedAt(msg)) => f(msg)
     }
   }
 
+  /**
+   * Receives a message from this <code>Channel</code> within a certain
+   * time span.
+   *
+   * @param  msec the time span before timeout
+   * @param  f    a partial function with message patterns and actions
+   * @return      result of processing the received value
+   */
   def receiveWithin[R](msec: long)(f: PartialFunction[Any, R]): R = {
     val C = this.asInstanceOf[Channel[Any]]
-    // Martin: had to do this to get it to compiler after bug909 fix
     receiver.receiveWithin(msec) {
       case C ! msg if (f.isDefinedAt(msg)) => f(msg)
       case TIMEOUT => f(TIMEOUT)
     }
   }
 
+  /**
+   * Receives a message from this <code>Channel</code>.
+   * <p>
+   * This method never returns. Therefore, the rest of the computation
+   * has to be contained in the actions of the partial function.
+   *
+   * @param  f    a partial function with message patterns and actions
+   */
   def react(f: PartialFunction[Any, Unit]): Nothing = {
     val C = this.asInstanceOf[Channel[Any]]
-    // Martin: had to do this to get it to compiler after bug909 fix
     receiver.react {
       case C ! msg if (f.isDefinedAt(msg)) => f(msg)
     }
   }
 
+  /**
+   * Receives a message from this <code>Channel</code> within a certain
+   * time span.
+   * <p>
+   * This method never returns. Therefore, the rest of the computation
+   * has to be contained in the actions of the partial function.
+   *
+   * @param  msec the time span before timeout
+   * @param  f    a partial function with message patterns and actions
+   */
   def reactWithin(msec: long)(f: PartialFunction[Any, Unit]): Nothing = {
     val C = this.asInstanceOf[Channel[Any]]
-    // Martin: had to do this to get it to compiler after bug909 fix
     receiver.reactWithin(msec) {
       case C ! msg if (f.isDefinedAt(msg)) => f(msg)
       case TIMEOUT => f(TIMEOUT)
@@ -92,8 +122,11 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
   }
 
   /**
-   * Sends <code>msg</code> to this <code>Channel</code> and
+   * Sends a message to this <code>Channel</code> and
    * awaits reply.
+   *
+   * @param  msg the message to be sent
+   * @return     the reply
    */
   def !?(msg: Msg): Any = {
     val replyChannel = Actor.self.freshReply()
@@ -103,6 +136,15 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
     }
   }
 
+  /**
+   * Sends a message to this <code>Channel</code> and
+   * awaits reply within a certain time span.
+   *
+   * @param  msec the time span before timeout
+   * @param  msg  the message to be sent
+   * @return      <code>None</code> in case of timeout, otherwise
+   *              <code>Some(x)</code> where <code>x</code> is the reply
+   */
   def !?(msec: long, msg: Msg): Option[Any] = {
     val replyChannel = Actor.self.freshReply()
     receiver ! scala.actors.!(this, msg)

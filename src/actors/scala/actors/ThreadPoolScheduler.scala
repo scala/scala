@@ -13,7 +13,7 @@ import java.util.concurrent.{ThreadPoolExecutor,
                              TimeUnit,
                              RejectedExecutionHandler}
 
-class TaskRejectedHandler(sched: JDK5Scheduler) extends RejectedExecutionHandler {
+class TaskRejectedHandler(sched: ThreadPoolScheduler) extends RejectedExecutionHandler {
   def rejectedExecution(r: Runnable, executor: ThreadPoolExecutor) {
     sched.pendReaction
     r.run()
@@ -26,7 +26,18 @@ class TaskRejectedHandler(sched: JDK5Scheduler) extends RejectedExecutionHandler
  * @version 0.9.2
  * @author Philipp Haller
  */
-class JDK5Scheduler(initCoreSize: int, maxSize: int) extends Thread with IScheduler {
+class ThreadPoolScheduler extends Thread with IScheduler {
+
+  var initCoreSize = 4
+  var maxSize = 16
+
+  val prop = java.lang.System.getProperty("actors.corePoolSize")
+  if (null ne prop) {
+    initCoreSize =
+      Integer.parseInt(java.lang.System.getProperty("actors.corePoolSize"))
+    maxSize =
+      Integer.parseInt(java.lang.System.getProperty("actors.maxPoolSize"))
+  }
 
   /* Note:
    * When using an unbounded queue such as a
