@@ -196,6 +196,18 @@ object Console {
    */
   def readLine: String = in.readLine()
 
+  /** Print a formatted text and read a full line from the terminal
+   *
+   *  @param text the format of the text to print out.
+   *  @param args the parameters used to instantiate the format.
+   *  @return the string read from the terminal.
+   */
+  def readLine(text: String, args: Any*): String = {
+    format(text, args: _*)
+    in.readLine()
+  }
+
+
   /** Read a boolean value from the terminal.
    *
    *  @return the boolean value read from the terminal.
