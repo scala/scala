@@ -781,7 +781,7 @@ trait Typers requires Analyzer {
             if (context.unit.source.file != psym.sourceFile)
               error(parent.pos, "illegal inheritance from sealed "+psym)
             else
-              psym addSubClass context.owner
+              psym addChild context.owner
           }
           if (!(selfType <:< parent.tpe.typeOfThis) && !phase.erasedTypes) {
             //Console.println(context.owner);//DEBUG

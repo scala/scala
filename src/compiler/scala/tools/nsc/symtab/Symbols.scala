@@ -875,12 +875,12 @@ trait Symbols requires SymbolTable {
     def isFromClassFile: Boolean =
       (if (isModule) moduleClass else toplevelClass).isFromClassFile
 
-    /** If this is a sealed class, its known subclasses. Otherwise Set.empty */
-    def subClasses: Set[Symbol] = emptySymbolSet
+    /** If this is a sealed class, its known direct subclasses. Otherwise Set.empty */
+    def children: Set[Symbol] = emptySymbolSet
 
     /** Declare given subclass `sym' of this sealed class */
-    def addSubClass(sym: Symbol) {
-      throw new Error("addSubClass_= inapplicable for " + this)
+    def addChild(sym: Symbol) {
+      throw new Error("addChild inapplicable for " + this)
     }
 
 
@@ -1261,9 +1261,9 @@ trait Symbols requires SymbolTable {
     override def sourceModule =
       if (isModuleClass) linkedModuleOfClass else NoSymbol
 
-    private var subClassSet: Set[Symbol] = emptySymbolSet
-    override def subClasses: Set[Symbol] = subClassSet
-    override def addSubClass(sym: Symbol) { subClassSet = subClassSet + sym }
+    private var childSet: Set[Symbol] = emptySymbolSet
+    override def children: Set[Symbol] = childSet
+    override def addChild(sym: Symbol) { childSet = childSet + sym }
 
     if (util.Statistics.enabled) classSymbolCount = classSymbolCount + 1
   }
