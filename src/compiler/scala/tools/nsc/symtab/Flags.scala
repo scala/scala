@@ -132,7 +132,15 @@ object Flags {
     var f = flags
     val pw =
       if (privateWithin == "") {
-        ""
+        if ((flags & (PRIVATE | LOCAL)) == (PRIVATE | LOCAL)) {
+          f = f & ~(PRIVATE | LOCAL)
+          "private[this]"
+        } else if ((flags & (PROTECTED | LOCAL)) == (PROTECTED | LOCAL)) {
+          f = f & ~(PROTECTED | LOCAL)
+          "protected[this]"
+        } else {
+          ""
+        }
       } else if ((f & PROTECTED) != 0) {
         f = f & ~PROTECTED
         "protected[" + privateWithin + "]"

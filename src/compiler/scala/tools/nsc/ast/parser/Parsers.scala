@@ -1407,22 +1407,53 @@ trait Parsers requires SyntaxAnalyzer {
 
 ////////// MODIFIERS ////////////////////////////////////////////////////////////
 
+    private def normalize(mods: Modifiers): Modifiers =
+      if ((mods hasFlag Flags.PRIVATE) && mods.privateWithin != nme.EMPTY.toTypeName)
+        mods &~ Flags.PRIVATE
+      else if ((mods hasFlag Flags.ABSTRACT) && (mods hasFlag Flags.OVERRIDE))
+        mods &~ (Flags.ABSTRACT | Flags.OVERRIDE) | Flags.ABSOVERRIDE
+      else
+        mods
+
+    private def addMod(mods: Modifiers, mod: int): Modifiers = {
+      if (mods hasFlag mod) syntaxError(in.currentPos, "repeated modifier", false)
+      in.nextToken()
+      mods | mod
+    }
+
+    /** AccessQualifier ::= "[" Id | this "]"
+     */
+    def accessQualifierOpt(mods: Modifiers) = {
+      var result = mods
+      if (in.token == LBRACKET) {
+        in.nextToken()
+        if (mods.privateWithin != nme.EMPTY.toTypeName)
+          syntaxError("duplicate private/protected qualifier", false)
+        result = if (in.token == THIS) { in.nextToken(); mods | Flags.LOCAL }
+                 else Modifiers(mods.flags, ident().toTypeName)
+        accept(RBRACKET)
+      }
+      result
+    }
+
+    /** AccessModifier ::= (private | protected) [AccessQualifier]
+     */
+    def accessModifierOpt(): Modifiers = normalize {
+      in.token match {
+        case PRIVATE => accessQualifierOpt(Modifiers(Flags.PRIVATE))
+        case PROTECTED => accessQualifierOpt(Modifiers(Flags.PROTECTED))
+        case _ => NoMods
+      }
+    }
+
     /** Modifiers ::= {Modifier}
      *  Modifier  ::= LocalModifier
+     *             |  AccessModifier
      *             |  override
-     *             |  (private | protected) [ "[" Id "]" ]
+     *             |  (private | protected) [ "[" Id | this "]" ]
      */
-    def modifiers(): Modifiers = {
-      var privateWithin: Name = nme.EMPTY.toTypeName
-      def qualifierOpt: unit =
-        if (in.token == LBRACKET) {
-          in.nextToken()
-          if (privateWithin != nme.EMPTY.toTypeName)
-            syntaxError("duplicate private/protected qualifier", false)
-          privateWithin = ident().toTypeName
-          accept(RBRACKET)
-        }
-      def loop(mods: int): int = in.token match {
+    def modifiers(): Modifiers = normalize {
+      def loop(mods: Modifiers): Modifiers = in.token match {
         case ABSTRACT =>
           loop(addMod(mods, Flags.ABSTRACT))
         case FINAL =>
@@ -1430,14 +1461,9 @@ trait Parsers requires SyntaxAnalyzer {
         case SEALED =>
           loop(addMod(mods, Flags.SEALED))
         case PRIVATE =>
-          var mods1 = addMod(mods, Flags.PRIVATE)
-          qualifierOpt
-          if (privateWithin != nme.EMPTY.toTypeName) mods1 = mods
-          loop(mods1)
+          loop(accessQualifierOpt(addMod(mods, Flags.PRIVATE)))
         case PROTECTED =>
-          val mods1 = addMod(mods, Flags.PROTECTED)
-          qualifierOpt
-          loop(mods1)
+          loop(accessQualifierOpt(addMod(mods, Flags.PROTECTED)))
         case OVERRIDE =>
           loop(addMod(mods, Flags.OVERRIDE))
         case IMPLICIT =>
@@ -1445,17 +1471,14 @@ trait Parsers requires SyntaxAnalyzer {
         case _ =>
           mods
       }
-      var mods = loop(0)
-      if ((mods & (Flags.ABSTRACT | Flags.OVERRIDE)) == (Flags.ABSTRACT | Flags.OVERRIDE))
-        mods = mods & ~(Flags.ABSTRACT | Flags.OVERRIDE) | Flags.ABSOVERRIDE
-      Modifiers(mods, privateWithin)
+      loop(NoMods)
     }
 
     /** LocalModifiers ::= {LocalModifier}
      *  LocalModifier  ::= abstract | final | sealed | implicit
      */
     def localModifiers(): Modifiers = {
-      def loop(mods: int): int = in.token match {
+      def loop(mods: Modifiers): Modifiers = in.token match {
         case ABSTRACT =>
           loop(addMod(mods, Flags.ABSTRACT))
         case FINAL =>
@@ -1467,14 +1490,7 @@ trait Parsers requires SyntaxAnalyzer {
         case _ =>
           mods
       }
-      Modifiers(loop(0))
-    }
-
-    private def addMod(mods: int, mod: int): int = {
-      if ((mods & mod) != 0)
-        syntaxError(in.currentPos, "repeated modifier", false)
-      in.nextToken()
-      mods | mod
+      loop(NoMods)
     }
 
 //////// PARAMETERS //////////////////////////////////////////////////////////
@@ -1523,7 +1539,7 @@ trait Parsers requires SyntaxAnalyzer {
               }
               paramType()
             }
-          ValDef((mods | implicitmod | bynamemod) setAttr attrs, name, tpt, EmptyTree)
+          ValDef((mods | implicitmod | bynamemod) withAttributes attrs, name, tpt, EmptyTree)
         }
       }
       def paramClause(): List[ValDef] = {
@@ -1899,7 +1915,7 @@ trait Parsers requires SyntaxAnalyzer {
 
     /**  TmplDef ::= [case] class ClassDef
      *            |  [case] object ObjectDef
-     *            |  trait MixinClassDef
+     *            |  trait TraitDef
      */
     def tmplDef(mods: Modifiers): Tree = in.token match {
       case TRAIT =>
@@ -1917,8 +1933,9 @@ trait Parsers requires SyntaxAnalyzer {
         EmptyTree
     }
 
-    /** ClassDef      ::= Id [TypeParamClause] ClassParamClauses RequiresTypeOpt ClassTemplate
-     *  MixinClassDef ::= Id [TypeParamClause] RequiresTypeOpt MixinClassTemplate
+    /** ClassDef ::= Id [TypeParamClause]
+                     [AccessModifier] ClassParamClauses RequiresTypeOpt ClassTemplate
+     *  TraitDef ::= Id [TypeParamClause] RequiresTypeOpt MixinClassTemplate
      */
     def classDef(mods: Modifiers): ClassDef =
       atPos(in.skipToken()) {
@@ -1928,11 +1945,14 @@ trait Parsers requires SyntaxAnalyzer {
         val tparams = typeParamClauseOpt(name, implicitViewBuf)
         implicitClassViews = implicitViewBuf.toList
         //if (mods.hasFlag(Flags.CASE) && in.token != LPAREN) accept(LPAREN)
-        val vparamss = if (mods.hasFlag(Flags.TRAIT)) List()
-                       else paramClauses(name, implicitClassViews, mods.hasFlag(Flags.CASE))
+        val {constrMods, vparamss} =
+          if (mods.hasFlag(Flags.TRAIT)) {NoMods, List()}
+          else {accessModifierOpt(),
+                paramClauses(name, implicitClassViews, mods.hasFlag(Flags.CASE))}
         val thistpe = requiresTypeOpt()
-        val template = classTemplate(mods, name, vparamss)
-        val mods1 = if (mods.hasFlag(Flags.TRAIT) && (template.body forall treeInfo.isInterfaceMember))
+        val template = classTemplate(mods, name, constrMods, vparamss)
+        val mods1 = if (mods.hasFlag(Flags.TRAIT) &&
+                        (template.body forall treeInfo.isInterfaceMember))
                       mods | Flags.INTERFACE
                     else mods
         val result = ClassDef(mods1, name, tparams, thistpe, template)
@@ -1945,7 +1965,7 @@ trait Parsers requires SyntaxAnalyzer {
     def objectDef(mods: Modifiers): ModuleDef =
       atPos(in.skipToken()) {
         val name = ident()
-        val template = classTemplate(mods, name, List())
+        val template = classTemplate(mods, name, NoMods, List())
         ModuleDef(mods, name, template)
       }
 
@@ -1954,7 +1974,7 @@ trait Parsers requires SyntaxAnalyzer {
      *  MixinClassTemplate ::= [`extends' MixinParents] [[NewLine] TemplateBody]
      *  MixinParents       ::= SimpleType {`with' SimpleType}
      */
-    def classTemplate(mods: Modifiers, name: Name, vparamss: List[List[ValDef]]): Template =
+    def classTemplate(mods: Modifiers, name: Name, constrMods: Modifiers, vparamss: List[List[ValDef]]): Template =
       atPos(in.currentPos) {
         def acceptEmptyTemplateBody(msg: String): unit = {
           if (in.token == LPAREN && settings.migrate.value)
@@ -1993,7 +2013,7 @@ trait Parsers requires SyntaxAnalyzer {
         var body =
           if (in.token == LBRACE) templateBody()
           else { acceptEmptyTemplateBody("`{' expected"); List() }
-        if (!mods.hasFlag(Flags.TRAIT)) Template(ps, vparamss, argss.toList, body)
+        if (!mods.hasFlag(Flags.TRAIT)) Template(ps, constrMods, vparamss, argss.toList, body)
         else Template(ps, body)
       }
 
@@ -2053,8 +2073,7 @@ trait Parsers requires SyntaxAnalyzer {
                    in.token == LBRACKET ||
                    isModifier) {
           val attrs = attributeClauses()
-          (stats ++
-             joinAttributes(attrs, joinComment(List(tmplDef(modifiers()/*| mixinAttribute(attrs)*/)))))
+          stats ++ joinComment(List(tmplDef(modifiers() withAttributes attrs)))
         } else if (in.token != SEMI && in.token != NEWLINE) {
           syntaxErrorOrIncomplete("expected class or object definition", true)
         }
@@ -2079,8 +2098,7 @@ trait Parsers requires SyntaxAnalyzer {
           stats += expr()
         } else if (isDefIntro || isModifier || in.token == LBRACKET) {
           val attrs = attributeClauses()
-          (stats ++
-             joinAttributes(attrs, joinComment(defOrDcl(modifiers()/*| mixinAttribute(attrs)*/))))
+          stats ++ joinComment(defOrDcl(modifiers() withAttributes attrs))
         } else if (in.token != SEMI && in.token != NEWLINE) {
           syntaxErrorOrIncomplete("illegal start of definition", true)
         }
@@ -2134,28 +2152,6 @@ trait Parsers requires SyntaxAnalyzer {
       } else List()
       val constr = atPos(pos) { New(t, List(args)) }
       glob.Attribute(constr, nameValuePairs) setPos pos
-    }
-/*  //DEPRECATED
-    def mixinAttribute(attrs: List[Tree]) = {
-      def isMixinAttribute(attr: Tree) = attr match {
-        case Apply(Select(New(Ident(name)), constr), List())
-        if (name.toString() == "_mixin_" || name.toString() == "_trait_") =>
-          true
-        case _ =>
-          false
-      }
-      if (attrs exists isMixinAttribute) Flags.TRAIT else 0
-    }
-*/
-    def joinAttributes(attrs: List[Attribute], defs: List[Tree]): List[Tree] = {
-      def setAttr(defn: Tree): Unit = defn match {
-        case DocDef(_, def0) => setAttr(def0)
-        case m: MemberDef => m.mods setAttr attrs
-        case _ => ()
-      }
-      if (!attrs.isEmpty)
-        defs foreach setAttr
-      defs
     }
 
     /** TypeAttributes     ::= (`[' Exprs `]') *

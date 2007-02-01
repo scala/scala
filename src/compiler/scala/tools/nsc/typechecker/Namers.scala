@@ -269,7 +269,7 @@ trait Namers requires Analyzer {
             tree.symbol.moduleClass.setInfo(namerOf(tree.symbol).moduleClassTypeCompleter(tree))
             finish
           case ValDef(mods, name, tp, rhs) =>
-            if (context.owner.isClass & (mods.flags & LOCAL) == 0) {
+            if (context.owner.isClass && (mods.flags & (PRIVATE | LOCAL)) != (PRIVATE | LOCAL)) {
               val accflags = ACCESSOR |
                 (if ((mods.flags & MUTABLE) != 0) mods.flags & ~MUTABLE else mods.flags | STABLE)
               val getter = owner.newMethod(tree.pos, name).setFlag(accflags)

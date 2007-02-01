@@ -224,6 +224,10 @@ trait Symbols requires SymbolTable {
     final def isStable =
       isTerm && !hasFlag(MUTABLE) && (!hasFlag(METHOD | BYNAMEPARAM) || hasFlag(STABLE))
 
+    /** Is this symbol a private local */
+    final def isPrivateLocal =
+      hasFlag(PRIVATE) && hasFlag(LOCAL)
+
     /** Does this symbol denote the primary constructor of its enclosing class? */
     final def isPrimaryConstructor =
       isConstructor && owner.primaryConstructor == this

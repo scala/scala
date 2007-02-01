@@ -339,12 +339,19 @@ trait Contexts requires Analyzer {
       def isSubClassOfEnclosing(clazz: Symbol): boolean =
         enclosingSuperClassContext(clazz) != NoContext
 
+      def isSubThisType(pre: Type, clazz: Symbol): boolean = pre match {
+        case ThisType(pclazz) => pclazz isNonBottomSubClass clazz
+        case _ => false
+      }
+
       (pre == NoPrefix) || {
         val ab = sym.accessBoundary(sym.owner)
         ((ab == NoSymbol)
          ||
          (accessWithin(ab) || accessWithin(ab.linkedClassOfClass)) &&
-         (!sym.hasFlag(LOCAL) || pre =:= sym.owner.thisType)
+         (!sym.hasFlag(LOCAL) ||
+          (sym hasFlag PROTECTED) && isSubThisType(pre, sym.owner) ||
+          pre =:= sym.owner.thisType)
          ||
          (sym hasFlag PROTECTED) &&
          (superAccess ||

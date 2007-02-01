@@ -17,7 +17,7 @@ trait Trees requires Global {
   //statistics
   var nodeCount = 0
 
-  case class Modifiers(flags: int, privateWithin: Name) {
+  case class Modifiers(flags: int, privateWithin: Name, attributes: List[Attribute]) {
     def isCovariant     = hasFlag(COVARIANT    )
     def isContravariant = hasFlag(CONTRAVARIANT)
     def isPrivate   = hasFlag(PRIVATE  )
@@ -38,22 +38,24 @@ trait Trees requires Global {
     def & (flag: Int): Modifiers = {
       val flags1 = flags & flag
       if (flags1 == flags) this
-      else Modifiers(flags1, privateWithin) setAttr attributes
+      else Modifiers(flags1, privateWithin, attributes)
     }
     def &~ (flag: Int): Modifiers = {
       val flags1 = flags & (~flag)
       if (flags1 == flags) this
-      else Modifiers(flags1, privateWithin) setAttr attributes
+      else Modifiers(flags1, privateWithin, attributes)
     }
     def | (flag: int): Modifiers = {
       val flags1 = flags | flag
       if (flags1 == flags) this
-      else Modifiers(flags1, privateWithin) setAttr attributes
+      else Modifiers(flags1, privateWithin, attributes)
     }
-    def setAttr(attrs: List[Attribute]): this.type = {attributes = attrs; this }
-    var attributes: List[Attribute] = List()
+    def withAttributes(attrs: List[Attribute]) =
+      if (attrs.isEmpty) this
+      else Modifiers(flags, privateWithin, attributes ::: attrs)
   }
 
+  def Modifiers(flags: int, privateWithin: Name): Modifiers = Modifiers(flags, privateWithin, List())
   def Modifiers(flags: int): Modifiers = Modifiers(flags, nme.EMPTY.toTypeName)
   def Modifiers(flags: long): Modifiers = Modifiers(flags.asInstanceOf[int])
 
@@ -248,8 +250,8 @@ trait Trees requires Global {
    *                   and value parameter fields.
    *  @return          ...
    */
-  def ClassDef(sym: Symbol, vparamss: List[List[ValDef]], argss: List[List[Tree]], body: List[Tree]): ClassDef =
-    ClassDef(sym, Template(sym.info.parents map TypeTree, vparamss, argss, body))
+  def ClassDef(sym: Symbol, constrMods: Modifiers, vparamss: List[List[ValDef]], argss: List[List[Tree]], body: List[Tree]): ClassDef =
+    ClassDef(sym, Template(sym.info.parents map TypeTree, constrMods, vparamss, argss, body))
 
   /** Singleton object definition
    *
@@ -312,7 +314,7 @@ trait Trees requires Global {
     assert(rhs.isTerm)
   }
 
-  def DefDef(sym: Symbol, vparamss: List[List[ValDef]], rhs: Tree): DefDef =
+  def DefDef(sym: Symbol, mods: Modifiers, vparamss: List[List[ValDef]], rhs: Tree): DefDef =
     posAssigner.atPos(sym.pos) {
       assert(sym != NoSymbol)
       DefDef(Modifiers(sym.flags),
@@ -323,10 +325,16 @@ trait Trees requires Global {
              rhs) setSymbol sym
     }
 
-  def DefDef(sym: Symbol, rhs: List[List[Symbol]] => Tree): DefDef = {
+  def DefDef(sym: Symbol, vparamss: List[List[ValDef]], rhs: Tree): DefDef =
+    DefDef(sym, Modifiers(sym.flags), vparamss, rhs)
+
+  def DefDef(sym: Symbol, mods: Modifiers, rhs: List[List[Symbol]] => Tree): DefDef = {
     val vparamss = syntheticParams(sym, sym.tpe)
-    DefDef(sym, vparamss map (.map(ValDef)), rhs(vparamss))
+    DefDef(sym, mods, vparamss map (.map(ValDef)), rhs(vparamss))
   }
+
+  def DefDef(sym: Symbol, rhs: List[List[Symbol]] => Tree): DefDef =
+    DefDef(sym, Modifiers(sym.flags), rhs)
 
   /** Abstract type or type parameter
    *
@@ -430,11 +438,11 @@ trait Trees requires Global {
    *  @param body        ...
    *  @return            ...
    */
-  def Template(parents: List[Tree], vparamss: List[List[ValDef]], argss: List[List[Tree]], body: List[Tree]): Template = {
+  def Template(parents: List[Tree], constrMods: Modifiers, vparamss: List[List[ValDef]], argss: List[List[Tree]], body: List[Tree]): Template = {
     /** Add constructor to template */
     var vparamss1 =
       vparamss map (.map (vd => {
-        val ret = ValDef(Modifiers(vd.mods.flags & IMPLICIT | PARAM) setAttr vd.mods.attributes,
+        val ret = ValDef(Modifiers(vd.mods.flags & IMPLICIT | PARAM) withAttributes vd.mods.attributes,
             vd.name, vd.tpt.duplicate, EmptyTree).setPos(vd.pos)
         if (false/*inIDE*/ && vd.symbol != NoSymbol)
           ret.symbol = vd.symbol
@@ -445,7 +453,8 @@ trait Trees requires Global {
       vparamss1 = List() :: vparamss1;
     val superRef: Tree = Select(Super(nme.EMPTY.toTypeName, nme.EMPTY.toTypeName), nme.CONSTRUCTOR)
     val superCall = posAssigner.atPos(parents.head.pos) { (superRef /: argss) (Apply) }
-    val constr: Tree = DefDef(NoMods, nme.CONSTRUCTOR, List(), vparamss1, TypeTree(), superCall)
+    val constr: Tree =
+      DefDef(constrMods, nme.CONSTRUCTOR, List(), vparamss1, TypeTree(), superCall)
     Template(parents, List.flatten(vparamss) ::: constr :: body)
   }
 

@@ -464,6 +464,15 @@ trait Typers requires Analyzer {
       else tree
     }
 
+    /** The member with givne name of given qualifier tree */
+    def member(qual: Tree, name: Name) = qual.tpe match {
+      case ThisType(clazz) if (context.enclClass.owner.ownerChain contains clazz) =>
+        qual.tpe.member(name)
+      case _  =>
+        if (phase.next.erasedTypes) qual.tpe.member(name)
+        else qual.tpe.nonLocalMember(name)
+    }
+
     /** Perform the following adaptations of expression, pattern or type `tree' wrt to
      *  given mode `mode' and given prototype `pt':
      *  (0) Convert expressions with constant types to literals
@@ -582,9 +591,10 @@ trait Typers requires Analyzer {
             }
           }
         } else if ((mode & (EXPRmode | FUNmode)) == (EXPRmode | FUNmode) &&
-                   !tree.tpe.isInstanceOf[MethodType] && !tree.tpe.isInstanceOf[OverloadedType] &&
+                   !tree.tpe.isInstanceOf[MethodType] &&
+                   !tree.tpe.isInstanceOf[OverloadedType] &&
                    ((mode & TAPPmode) == 0 || tree.tpe.typeParams.isEmpty) &&
-                   adaptToName(tree, nme.apply).tpe.nonLocalMember(nme.apply)
+                   member(adaptToName(tree, nme.apply), nme.apply)
                      .filter(m => m.tpe.paramSectionCount > 0) != NoSymbol) { // (8)
           val qual = adaptToName(tree, nme.apply) match {
             case id @ Ident(_) =>
@@ -676,7 +686,7 @@ trait Typers requires Analyzer {
     }
 
     def adaptToName(qual: Tree, name: Name) =
-      if (qual.tpe.nonLocalMember(name) != NoSymbol) qual
+      if (member(qual, name) != NoSymbol) qual
       else adaptToMember(qual, name, WildcardType)
 
     private def completeParentType(tpt: Tree, tparams: List[Symbol], enclTparams: List[Symbol], vparamss: List[List[ValDef]], superargs: List[Tree]): Type = {
@@ -830,7 +840,7 @@ trait Typers requires Analyzer {
      */
     def addGetterSetter(stat: Tree): List[Tree] = stat match {
       case ValDef(mods, name, tpt, rhs)
-        if !(mods hasFlag LOCAL) && !stat.symbol.isModuleVar =>
+      if (mods.flags & (PRIVATE | LOCAL)) != (PRIVATE | LOCAL) && !stat.symbol.isModuleVar =>
         val vdef = copy.ValDef(stat, mods | PRIVATE | LOCAL, nme.getterToLocal(name), tpt, rhs)
         val value = vdef.symbol
         val getter = if (mods hasFlag DEFERRED) value else value.getter(value.owner)
@@ -843,8 +853,8 @@ trait Typers requires Analyzer {
               else typed(atPos(vdef.pos)(Select(This(value.owner), value)), EXPRmode, value.tpe))
           result.tpt.asInstanceOf[TypeTree] setOriginal tpt /* setPos tpt.pos */
           checkNoEscaping.privates(getter, result.tpt)
-          result.mods setAttr vdef.mods.attributes
-          result
+          copy.DefDef(result, result.mods withAttributes vdef.mods.attributes, result.name,
+                      result.tparams, result.vparamss, result.tpt, result.rhs)
         }
         def setterDef: DefDef = {
           val setr = getter.setter(value.owner)
@@ -855,8 +865,8 @@ trait Typers requires Analyzer {
               else
                 typed(Assign(Select(This(value.owner), value),
                              Ident(vparamss.head.head)))))
-          result.mods setAttr vdef.mods.attributes
-          result
+          copy.DefDef(result, result.mods withAttributes vdef.mods.attributes, result.name,
+                      result.tparams, result.vparamss, result.tpt, result.rhs)
         }
         val gs = if (mods hasFlag MUTABLE) List(getterDef, setterDef)
                  else List(getterDef)
@@ -1257,6 +1267,7 @@ trait Typers requires Analyzer {
     }
 
     def typedImport(imp : Import) : Import = imp;
+
     def typedStats(stats: List[Tree], exprOwner: Symbol): List[Tree] = {
       val inBlock = exprOwner == context.owner
       def typedStat(stat: Tree): Tree = {
@@ -1276,19 +1287,21 @@ trait Typers requires Analyzer {
             localTyper.typed(stat)
         }
       }
+      def accesses(accessor: Symbol, accessed: Symbol) =
+        (accessed hasFlag LOCAL) && (accessed hasFlag PARAMACCESSOR) ||
+        (accessor hasFlag ACCESSOR) &&
+        !(accessed hasFlag ACCESSOR) && accessed.isPrivateLocal
       def checkNoDoubleDefs(stats: List[Tree]) = {
         val scope = if (inBlock) context.scope else context.owner.info.decls;
         var e = scope.elems;
         while ((e ne null) && e.owner == scope) {
-          if (!e.sym.hasFlag(LOCAL)) {
-            var e1 = scope.lookupNextEntry(e);
-            while ((e1 ne null) && e1.owner == scope) {
-              if (!e1.sym.hasFlag(LOCAL) &&
-                  (e.sym.isType || inBlock || (e.sym.tpe matches e1.sym.tpe)))
-                if (!e.sym.isErroneous && !e1.sym.isErroneous)
-                  error(e.sym.pos, e1.sym+" is defined twice");
-              e1 = scope.lookupNextEntry(e1);
-            }
+          var e1 = scope.lookupNextEntry(e);
+          while ((e1 ne null) && e1.owner == scope) {
+            if (!accesses(e.sym, e1.sym) && !accesses(e1.sym, e.sym) &&
+                (e.sym.isType || inBlock || (e.sym.tpe matches e1.sym.tpe)))
+              if (!e.sym.isErroneous && !e1.sym.isErroneous)
+                error(e.sym.pos, e1.sym+" is defined twice");
+            e1 = scope.lookupNextEntry(e1);
           }
           e = e.next
         }
@@ -1630,12 +1643,8 @@ trait Typers requires Analyzer {
                        "\n phase = "+phase)
             }
             tree.symbol
-          } else qual.tpe match {
-            case ThisType(clazz) if (context.enclClass.owner.ownerChain contains clazz) =>
-              qual.tpe.member(name)
-            case _  =>
-              if (phase.next.erasedTypes) qual.tpe.member(name)
-              else qual.tpe.nonLocalMember(name)
+          } else {
+            member(qual, name)
           }
         if (sym == NoSymbol && name != nme.CONSTRUCTOR && (mode & EXPRmode) != 0) {
           val qual1 = adaptToName(qual, name)

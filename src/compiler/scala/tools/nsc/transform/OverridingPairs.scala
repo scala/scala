@@ -24,8 +24,7 @@ abstract class OverridingPairs {
 
     private val self = base.thisType
 
-    protected def exclude(sym: Symbol): boolean =
-      sym.isConstructor || (sym hasFlag LOCAL)
+    protected def exclude(sym: Symbol): boolean = sym.isConstructor || sym.isPrivateLocal
 
     protected def parents: List[Type] = base.info.parents
 
@@ -115,7 +114,7 @@ abstract class OverridingPairs {
                     (overriding.owner == nextEntry.sym.owner) ||
                     (!matches(overriding, nextEntry.sym)) ||
                     (hasCommonParent(overriding, nextEntry.sym)) ||
-                    (overriding hasFlag LOCAL)))
+                    (exclude(overriding))))
         }
         if (nextEntry ne null) {
           overridden = nextEntry.sym;

@@ -142,7 +142,7 @@ abstract class TreeBuilder {
       Block(
         List(ClassDef(
           Modifiers(FINAL | SYNTHETIC), x, List(), TypeTree(),
-          Template(parents, List(List()), argss, stats))),
+          Template(parents, NoMods, List(List()), argss, stats))),
         New(Ident(x), List(List())))
     }
 
