@@ -724,6 +724,7 @@ DOCUMENTATION
       classpath="${quick.dir}/lib/library">
       <include name="dbc/**/*.scala"/>
       <include name="actors/**/*.scala"/>
+      <exclude name="scala/actors/ThreadPoolScheduler.scala" if="java14"/>
       <include name="library/**/*.scala"/>
       <excludesfile name="${nsc.excludes.file}" if="excludes.avail"/>
     </quickdoc>
