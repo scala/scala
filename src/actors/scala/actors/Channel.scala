@@ -10,20 +10,24 @@
 
 package scala.actors
 
-import Actor._
 
-case object TIMEOUT
-
-class SuspendActorException extends Throwable {
-  /*
-   * For efficiency reasons we do not fill in
-   * the execution stack trace.
-   */
-  override def fillInStackTrace(): Throwable = {
-    this
-  }
-}
-
+/** <p>
+ *    This class is used to pattern match on values that were sent
+ *    to some channel <code>Chan<sub>n</sub></code> by the current
+ *    actor <code>self</code>.
+ *  </p>
+ *  <p>
+ *    The following example demonstrates its usage:
+ *  </p><pre>
+ *  receive {
+ *    case Chan1 ! msg1 => ...
+ *    case Chan2 ! msg2 => ...
+ *  }
+ *  </pre>
+ *
+ * @version 0.9.2
+ * @author Philipp Haller
+ */
 case class ! [a](ch: Channel[a], msg: a)
 
 /**

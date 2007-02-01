@@ -20,8 +20,7 @@ import scala.collection.mutable.{ArrayBuffer, Buffer, HashMap, Queue, Stack, Has
 
 /**
  * The <code>Scheduler</code> object is used by
- * <code>Actor</code> to execute tasks of an execution of a
- * reactor.
+ * <code>Actor</code> to execute tasks of an execution of an actor.
  *
  * @version 0.9.2
  * @author Philipp Haller
@@ -70,7 +69,7 @@ object Scheduler {
 
 /**
  * This abstract class provides a common interface for all
- * schedulers used to execute reactors.
+ * schedulers used to execute actor tasks.
  *
  * @version 0.9.2
  * @author Philipp Haller
@@ -99,7 +98,7 @@ trait IScheduler {
 
 
 /**
- * This scheduler executes the tasks of a reactor on a single
+ * This scheduler executes the tasks of an actor on a single
  * thread (the current thread).
  *
  * @version 0.9.2
@@ -133,16 +132,18 @@ class SingleThreadedScheduler extends IScheduler {
 
 
 /**
- * The <code>QuickException</code> class ...
+ * The <code>QuickException</code> class is used to manage control flow
+ * of certain schedulers and worker threads.
+ *
+ * @version 0.9.2
+ * @author Philipp Haller
  */
-class QuitException extends Throwable {
+private[actors] class QuitException extends Throwable {
   /*
    For efficiency reasons we do not fill in
    the execution stack trace.
    */
-  override def fillInStackTrace(): Throwable = {
-    this
-  }
+  override def fillInStackTrace(): Throwable = this
 }
 
 /**

@@ -51,6 +51,19 @@ object Actor {
     a*/
   }
 
+  /**
+   * <p>This function is used for the definition of actors.</p>
+   * <p>The following example demonstrates its usage:</p><pre>
+   * import scala.actors.Actor._
+   * ...
+   * val a = actor {
+   *   ...
+   * }
+   * </pre>
+   *
+   * @param  body  the code block to be executed by the newly created actor
+   * @return       the newly created actor. Note that it is automatically started.
+   */
   def actor(body: => Unit): Actor = synchronized {
     val actor = new Actor {
       def act() = body
@@ -75,6 +88,10 @@ object Actor {
   }
 */
 
+  /**
+   * Receives the next message from the mailbox of the current actor
+   * <code>self</code>.
+   */
   def ? : Any = self.?
 
   /**
@@ -82,8 +99,8 @@ object Actor {
    * <code>self</code>. Blocks if no message matching any of the
    * cases of <code>f</code> can be received.
    *
-   * @param f ...
-   * @return  ...
+   * @param  f a partial function specifying patterns and actions
+   * @return   the result of processing the received message
    */
   def receive[a](f: PartialFunction[Any, a]): a =
     self.receive(f)
@@ -96,36 +113,36 @@ object Actor {
    * received the <code>TIMEOUT</code> action is executed if
    * specified.
    *
-   * @param msec ...
-   * @param f    ...
-   * @return     ...
+   * @param  msec the time span before timeout
+   * @param  f    a partial function specifying patterns and actions
+   * @return      the result of processing the received message
    */
   def receiveWithin[R](msec: long)(f: PartialFunction[Any, R]): R =
     self.receiveWithin(msec)(f)
 
   /**
-   * <code>receive</code> for event-based reactors.
+   * Lightweight variant of <code>receive</code>.
    *
    * Actions in <code>f</code> have to contain the rest of the
    * computation of <code>self</code>, as this method will never
    * return.
    *
-   * @param f ...
-   * @return  ...
+   * @param  f a partial function specifying patterns and actions
+   * @return   this function never returns
    */
   def react(f: PartialFunction[Any, Unit]): Nothing =
     self.react(f)
 
   /**
-   * <code>receiveWithin</code> for event-based reactors.
+   * Lightweight variant of <code>receiveWithin</code>.
    *
    * Actions in <code>f</code> have to contain the rest of the
    * computation of <code>self</code>, as this method will never
    * return.
    *
-   * @param msec ...
-   * @param f    ...
-   * @return     ...
+   * @param  msec the time span before timeout
+   * @param  f    a partial function specifying patterns and actions
+   * @return      this function never returns
    */
   def reactWithin(msec: long)(f: PartialFunction[Any, Unit]): Nothing =
     self.reactWithin(msec)(f)
@@ -172,7 +189,7 @@ object Actor {
    * Causes <code>self</code> to repeatedly execute
    * <code>body</code>.
    *
-   * @param body ...
+   * @param body the code block to be executed
    */
   def loop(body: => Unit): Unit = {
     val s = self
@@ -185,8 +202,8 @@ object Actor {
    * Causes <code>self</code> to execute <code>first</code>
    * followed by <code>next</code>.
    *
-   * @param first ...
-   * @param next  ...
+   * @param first the first code block to be executed
+   * @param next  the second code block to be executed
    */
   def seq[a, b](first: => a, next: => b): Nothing = {
     val s = self
@@ -199,8 +216,8 @@ object Actor {
   /**
    * Links <code>self</code> to actor <code>to</code>.
    *
-   * @param to ...
-   * @return   ...
+   * @param  to the actor to link to
+   * @return
    */
   def link(to: Actor): Actor = self.link(to)
 
@@ -215,7 +232,7 @@ object Actor {
   /**
    * Unlinks <code>self</code> from actor <code>from</code>.
    *
-   * @param from ...
+   * @param from the actor to unlink from
    */
   def unlink(from: Actor): Unit = self.unlink(from)
 
@@ -639,3 +656,35 @@ trait Actor extends OutputChannel[Any] {
  */
 case class Exit(from: Actor, reason: String)
 
+
+/**
+ * <p>This object is used as the timeout pattern in
+ * <code>receiveWithin</code> and <code>reactWithin</code>.
+ * </p>
+ * <p>The following example demonstrates its usage:</p><pre>
+ * receiveWithin(500) {
+ *   case {x, y}  => ...
+ *   case TIMEOUT => ...
+ * }
+ * </pre>
+ *
+ * @version 0.9.2
+ * @author Philipp Haller
+ */
+case object TIMEOUT
+
+
+/**
+ * <p>This class is used to manage control flow of actor
+ * executions.</p>
+ *
+ * @version 0.9.2
+ * @author Philipp Haller
+ */
+private[actors] class SuspendActorException extends Throwable {
+  /*
+   * For efficiency reasons we do not fill in
+   * the execution stack trace.
+   */
+  override def fillInStackTrace(): Throwable = this
+}

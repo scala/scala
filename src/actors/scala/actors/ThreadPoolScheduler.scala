@@ -13,7 +13,18 @@ import java.util.concurrent.{ThreadPoolExecutor,
                              TimeUnit,
                              RejectedExecutionHandler}
 
-class TaskRejectedHandler(sched: ThreadPoolScheduler) extends RejectedExecutionHandler {
+/**
+ * This handler is called whenever the thread pool of its
+ * associated <code>ThreadPoolScheduler</code> is unable
+ * to serve a request to execute some task.
+ *
+ * This handler executes rejected tasks on the thread of
+ * the scheduler.
+ *
+ * @version 0.9.2
+ * @author Philipp Haller
+ */
+private class TaskRejectedHandler(sched: ThreadPoolScheduler) extends RejectedExecutionHandler {
   def rejectedExecution(r: Runnable, executor: ThreadPoolExecutor) {
     sched.pendReaction
     r.run()
@@ -22,6 +33,9 @@ class TaskRejectedHandler(sched: ThreadPoolScheduler) extends RejectedExecutionH
 }
 
 /**
+ * <p>This scheduler uses a thread pool to execute tasks that are generated
+ * by the execution of actors. This scheduler is only available on Java >= 1.5
+ * since it uses <code>java.util.concurrent.ThreadPoolExecutor</code>.</p>
  *
  * @version 0.9.2
  * @author Philipp Haller

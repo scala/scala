@@ -13,7 +13,16 @@ package scala.actors
 
 import java.lang.{InterruptedException, Runnable}
 
-class ExitActorException extends Throwable
+/** <p>
+ *    This exception is thrown whenever an actor exits.
+ *    Its purpose is to let <code>exit</code> have
+ *    return type <code>Nothing</code>.
+ *  </p>
+ *
+ * @version 0.9.2
+ * @author Philipp Haller
+ */
+private[actors] class ExitActorException extends Throwable
 
 /**
  * The abstract class <code>Reaction</code> associates

@@ -9,6 +9,9 @@ import scala.collection.Set
 import scala.collection.mutable.{ArrayBuffer, Buffer, HashMap, Queue, Stack, HashSet}
 
 /**
+ * <p>This scheduler uses a thread pool to execute tasks that are generated
+ * by the execution of actors. Unlike <code>ThreadPoolScheduler</code>, this
+ * scheduler is available on all Java versions >= 1.4.</p>
  *
  * @version 0.9.2
  * @author Philipp Haller
