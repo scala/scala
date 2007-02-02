@@ -1,13 +1,10 @@
 package examples.actors
 
-import scala.actors._
-import scala.actors.Actor._
+import scala.actors._; import scala.actors.Actor._
 
-object Message {
+object message {
   def main(args: Array[String]) = {
-    val n = try {
-      Integer.parseInt(args(0))
-    }
+    val n = try { Integer.parseInt(args(0)) }
     catch {
       case _ =>
         scala.Console.println("Usage: examples.actors.Message <n>")
@@ -21,10 +18,8 @@ object Message {
       react {
         case value: int =>
           val j = value + 1; val nsum = sum + j
-          if (next == null && nsum >= finalSum) {
+          if (next == null && nsum >= finalSum)
             Console.println(nsum)
-            System.exit(0)
-          }
           else {
             if (next != null) next ! j
             beh(next, nsum)

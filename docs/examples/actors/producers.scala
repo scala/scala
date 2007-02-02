@@ -1,6 +1,6 @@
 package examples.actors
 
-//import scala.actors.Actor
+import scala.actors.Actor
 import scala.actors.Actor._
 
 abstract class Producer[T] {
@@ -37,7 +37,7 @@ abstract class Producer[T] {
     }
   }
 
-  private val coordinator /*: Actor*/ = actor {
+  private val coordinator: Actor = actor {
     var continue = true
     while (continue) {
       receive {
@@ -51,7 +51,7 @@ abstract class Producer[T] {
     }
   }
 
-  private val producer = actor {
+  private val producer: Actor = actor {
     receive {
       case Next =>
         produceValues
@@ -101,7 +101,7 @@ object producers extends Application {
     }
   }
 
-  //actor {
+  actor {
     Console.print("PreOrder:")
     for (val x <- new PreOrder(tree).iterator) Console.print(" "+x)
     Console.print("\nPostOrder:")
@@ -109,5 +109,5 @@ object producers extends Application {
     Console.print("\nInOrder:")
     for (val x <- new InOrder(tree).iterator) Console.print(" "+x)
     Console.print("\n")
-  //}
+  }
 }

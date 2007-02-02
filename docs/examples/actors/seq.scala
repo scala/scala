@@ -2,19 +2,19 @@ package examples.actors
 
 import scala.actors.Actor._
 
-object Seq extends Application {
+object seq extends Application {
 
   case object A
 
   val a = actor {
     {
       react {
-        case A => scala.Console.println("got A")
+        case A => Console.println("received A")
       }
       ()
     } andThen {
       react {
-        case A => scala.Console.println("2nd reactor got A")
+        case A => Console.println("received 2nd A")
       }
     }
   }

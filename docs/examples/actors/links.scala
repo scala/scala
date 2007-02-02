@@ -1,11 +1,11 @@
 package examples.actors
 
-import scala.actors.Actor
+import scala.actors.{Actor, Exit}
 import scala.actors.Actor._
 
-case object Stop
+object links extends Application {
 
-object Links extends Application {
+  case object Stop
 
   actor {
     val start = link(p(2))
@@ -20,8 +20,11 @@ object Links extends Application {
     Console.println("starting actor " + n + " (" + Thread.currentThread() + ")")
     self.trapExit = true
     link(a)
-    while (true) {
+    loop {
       receive {
+        case ex @ Exit(from, reason) =>
+          Console.println("Actor " + n + " received " + ex)
+          exit("finished")
         case any => {
           Console.println("Actor " + n + " received " + any)
           a ! any
