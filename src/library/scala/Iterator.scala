@@ -14,6 +14,7 @@ package scala
 
 import Predef._
 import collection.mutable.{Buffer, ArrayBuffer}
+import compat.StringBuilder
 
 /** The <code>Iterator</code> object provides various functions for
  *  creating specialized iterators.
@@ -604,5 +605,43 @@ trait Iterator[+A] {
       res += next
     }
     res.toList
+  }
+
+  /** Returns a string representation of the elements in this iterator. The resulting string
+   *  begins with the string <code>start</code> and is finished by the string
+   *  <code>end</code>. Inside, the string representations of elements (w.r.t.
+   *  the method <code>toString()</code>) are separated by the string
+   *  <code>sep</code>.
+   *  <p/>
+   *  Ex: <br/>
+   *  <code>List(1, 2, 3).mkString("(", "; ", ")") = "(1; 2; 3)"</code>
+   *
+   *  @param start starting string.
+   *  @param sep separator string.
+   *  @param end ending string.
+   *  @return a string representation of this iterable object.
+   */
+  def mkString(start: String, sep: String, end: String): String = {
+    val buf = new StringBuilder()
+    addString(buf, start, sep, end).toString
+  }
+
+  /** Returns a string representation of this iterable object. The string
+   *  representations of elements (w.r.t. the method <code>toString()</code>)
+   *  are separated by the string <code>sep</code>.
+   *
+   *  @param sep separator string.
+   *  @return a string representation of this iterable object. */
+  def mkString(sep: String): String = this.mkString("", sep, "")
+
+  /** Write all elements of this string into given string builder */
+  def addString(buf: StringBuilder, start: String, sep: String, end: String): StringBuilder = {
+    buf.append(start)
+    val elems = this
+    if (elems.hasNext) buf.append(elems.next)
+    while (elems.hasNext) {
+      buf.append(sep); buf.append(elems.next)
+    }
+    buf.append(end)
   }
 }

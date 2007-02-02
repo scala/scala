@@ -429,7 +429,7 @@ trait Definitions requires SymbolTable {
         "scala.runtime.Boxed" + name
       val clazz =
         newClass(ScalaPackageClass, name, List(AnyValClass.typeConstructor))
-        .setFlag(ABSTRACT | SEALED)
+        .setFlag(ABSTRACT /* SEALED */) // bq: SEALED is interesting for case class descendants, only
       boxedClass(clazz) = getClass(boxedName)
       boxedArrayClass(clazz) = getClass("scala.runtime.Boxed" + name + "Array")
       refClass(clazz) = getClass("scala.runtime." + name + "Ref")

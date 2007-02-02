@@ -1002,44 +1002,104 @@ print()
       LabelDef(exit, List(result), Ident(result)))
   }
 
+    type SymSet = collection.immutable.Set[Symbol]
+
   /*protected*/ def toTree(node1: PatternNode): Tree = {
-    def optimize1(selType:Type, alternatives1: PatternNode ): Boolean = {
+
+    def checkEx(tpesym:Symbol) = tpesym.hasFlag(Flags.SEALED)
+    def checkExCoverage(tpesym:Symbol): SymSet = if(!checkEx(tpesym))
+      emptySymbolSet else {
+      //Console.println("/"+tpesym)
+      //Console.println(tpesym.children)
+      tpesym.children.flatMap { x => if(x.hasFlag(Flags.CASE)) (emptySymbolSet+x) else checkExCoverage(x) }
+    }
+    def andIsUnguardedBody(p1:PatternNode) = p1.and match {
+      case p: Body => p.guard.length == 1 && p.guard(0) == EmptyTree
+      case _       => false
+    }
+    def andIsGuarded(p1:PatternNode) = p1.and match {
+      case p: Body => p.guard.length >= 1 && p.guard(0) == EmptyTree
+      case _       => false
+    }
+
+
+    // returns true if this tree is optimizable
+    // throws a warning if is not exhaustive
+    def optimize1(selType:Type, alternatives1: PatternNode ): {Boolean, collection.immutable.Set[Symbol], collection.immutable.Set[Symbol]} = {
+// if selType hasflag SEALED, enumerate selType.symbol.children
+// to be very precise, take into account the case that a non case child is sealed.
       var alts = alternatives1;
       if (!optimize || !isSubType(selType, defs.ScalaObjectClass.tpe))
-        return false;
+        return {false, null, emptySymbolSet};
+      // contains cases that have not been covered
+      var coveredCases: SymSet   = emptySymbolSet // only case _
+      var remainingCases = if(alts ne null) checkExCoverage(selType.symbol) else emptySymbolSet // only case _
       var cases = 0;
       while (alts ne null) {
         alts match {
           case ConstrPat(_) =>
-            if (alts.getTpe().symbol.hasFlag(Flags.CASE))
+            coveredCases   = coveredCases + alts.getTpe.symbol
+            remainingCases = remainingCases - alts.getTpe.symbol
+            if (alts.getTpe.symbol.hasFlag(Flags.CASE))
               cases = cases +1;
             else
-              return false;
+              return {false, coveredCases, remainingCases};
 
           case DefaultPat() =>
-            ;
+            if(andIsUnguardedBody(alts) || alts.and.isInstanceOf[Header]) {
+              coveredCases   = emptySymbolSet
+              remainingCases = emptySymbolSet
+            }
           case _ =>
-            return false;
+            return {false, coveredCases, remainingCases};
         }
         alts = alts.or;
       }
-      return cases > 2;
+      return {cases > 2, coveredCases, remainingCases};
     } // def optimize
 
     var node = node1;
 
     var res: Tree = Literal(Constant(false)); //.setInfo(defs.BooleanClass);
+    var lastSelector: Tree = null
+    var carryCovered: SymSet = emptySymbolSet
     while (node ne null)
     node match {
 
       case _h:Header =>
         val selector = _h.selector;
+        if(selector != lastSelector) {
+          carryCovered = emptySymbolSet;
+        }
+      //Console.println("sel:"+selector+" last"+lastSelector+" - "+(selector == lastSelector))
         val next = _h.next;
         //res = And(mkNegate(res), toTree(node.or, selector));
-        if (optimize1(node.getTpe(), node.or))
+        val {doOptimize, coveredCases, remainingCases} = optimize1(node.getTpe, node.or)
+        if(!remainingCases.isEmpty) {
+          carryCovered = carryCovered ++ coveredCases // ??
+          if(next != null && andIsUnguardedBody(next.or)) {
+            // ignore, default case
+          } else if(next ne null) {
+            // ignore, more headers to come
+            // Console.println(next.print("", new StringBuilder()).toString())
+          } else {
+            val realRemainingCases = remainingCases -- carryCovered
+            //Console.println("remain "+remainingCases+" carry covered "+ carryCovered + "real "+realRemainingCases)
+            if(!realRemainingCases.isEmpty) {
+              val word = if(realRemainingCases.size > 1) "cases " else "case "
+              cunit.warning(node.pos, "does not cover "+word+realRemainingCases.elements.mkString("{",",","}"))
+              //Console.println(_h.print("", new StringBuilder()).toString())
+            }
+          }
+        }
+        if (doOptimize)
           res = Or(res, toOptTree(node.or, selector));
         else
           res = Or(res, toTree(node.or, selector));
+
+      //Console.println("!carry covered "+ carryCovered)
+
+        lastSelector = selector
         node = next;
 
       case _b:Body =>
