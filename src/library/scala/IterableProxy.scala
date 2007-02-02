@@ -26,7 +26,7 @@ trait IterableProxy[+A] extends Iterable[A] with Proxy {
 
   def self: Iterable[A]
   override def elements: Iterator[A] = self.elements
-  override def concat [B >: A](that: Iterable[B]): Iterable[B] = self concat that
+  [deprecated] override def concat [B >: A](that: Iterable[B]): Iterable[B] = self concat that
   override def map[B](f: A => B): Iterable[B] = self map f
   override def flatMap[B](f: A => Iterable[B]): Iterable[B] = self flatMap f
   override def filter(p: A => Boolean): Iterable[A] = self filter p

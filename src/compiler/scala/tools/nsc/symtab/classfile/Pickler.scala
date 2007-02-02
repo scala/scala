@@ -109,7 +109,10 @@ abstract class Pickler extends SubComponent {
           putType(sym.typeOfThis);
         putSymbol(sym.alias)
 
-        //for (val attr <- sym.attributes) putAttribute(sym, attr);
+        for (val attr <- sym.attributes.reverse) {
+          if (attr.atp.symbol isNonBottomSubClass definitions.StaticAttributeClass)
+            putAttribute(sym, attr)
+        }
       } else if (sym != NoSymbol) {
         putEntry(if (sym.isModuleClass) sym.name.toTermName else sym.name)
         if (!sym.owner.isRoot) putSymbol(sym.owner)
@@ -162,12 +165,14 @@ abstract class Pickler extends SubComponent {
         if (c.tag == StringTag) putEntry(newTermName(c.stringValue))
         else if (c.tag == ClassTag) putEntry(c.typeValue)
       }
-/*
-    private def putAttribute(attr: AttrInfo): unit = if (putEntry(attr)) {
-      putType(attr._1);
-      for (val c <- attr._2) putConstant(c);
+
+    private def putAttribute(sym: Symbol, attr: AttrInfo): unit = {
+      assert(putEntry({sym, attr}))
+      putType(attr.atp)
+      for (val c <- attr.args) putConstant(c)
+      for (val {name, c} <- attr.assocs) { putEntry(name); putConstant(c) }
     }
-*/
+
     // Phase 2 methods: Write all entries to byte array ------------------------------
 
     private val buf = new PickleBuffer(new Array[byte](4096), -1, 0)
@@ -265,14 +270,14 @@ abstract class Pickler extends SubComponent {
           else if (c.tag == StringTag) writeRef(newTermName(c.stringValue))
           else if (c.tag == ClassTag) writeRef(c.typeValue)
           LITERAL + c.tag
-/*
-        case Pair(tp, cs) =>
-          writeRef(tp);
-          for (val c <- cs) writeRef(cs);
+        case {target: Symbol, attr @ AttrInfo(atp, args, assocs)} =>
+          writeRef(target)
+          writeRef(atp)
+          for (val c <- args) writeRef(c)
+          for (val {name, c} <- assocs) { writeRef(name); writeRef(c) }
           ATTRIBUTE
-*/
-        case AttributedType(attribs, tp)
-          => writeBody(tp) // obviously, this should be improved
+        case AttributedType(attribs, tp) =>
+          writeBody(tp) // obviously, this should be improved
         case _ =>
           throw new FatalError("bad entry: " + entry + " " + entry.getClass())//debug
       }

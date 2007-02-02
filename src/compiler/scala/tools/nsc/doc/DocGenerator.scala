@@ -316,7 +316,7 @@ abstract class DocGenerator extends Models {
       else {
         def attrFor(attr: AttrInfo): Node = {
           val buf = new StringBuilder
-          val Triple(tpe, args, nvPairs) = attr
+          val AttrInfo(tpe, args, nvPairs) = attr
           val name = aref(urlFor(tpe.symbol), contentFrame, tpe.toString)
           if (!args.isEmpty)
             buf.append(args.map(.escapedStringValue).mkString("(", ",", ")"))

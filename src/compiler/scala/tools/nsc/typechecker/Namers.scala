@@ -696,7 +696,7 @@ trait Namers requires Analyzer {
               if (tpt.tpe.symbol.hasFlag(JAVA) && settings.target.value == "jvm-1.4") {
                 context.unit.warning (t.pos, "Java annotation will not be emitted in classfile unless you use the '-target:jvm-1.5' option")
               }
-              Triple(tpt.tpe, constrArgs, nvPairs)
+              AttrInfo(tpt.tpe, constrArgs, nvPairs)
           }
         }
       if (!attrError) {

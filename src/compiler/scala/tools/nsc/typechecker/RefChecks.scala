@@ -555,6 +555,24 @@ abstract class RefChecks extends InfoTransform {
         result
       }
 
+      /** Check that a deprecated val or def does not override a
+        * concrete, non-deprecated method.  If it does, then
+        * deprecation is meaningless.
+        */
+      def checkDeprecatedOvers() {
+        val symbol = tree.symbol
+        if (symbol.isDeprecated) {
+          val concrOvers =
+            symbol.allOverriddenSymbols.filter(sym =>
+              !sym.isDeprecated && !(sym hasFlag DEFERRED))
+          if(!concrOvers.isEmpty)
+            unit.deprecationWarning(
+              tree.pos,
+              symbol.toString + " overrides concrete, non-deprecated symbol(s):" +
+              concrOvers.map(.fullNameString).mkString("    ", ", ", ""))
+        }
+      }
+
       val savedLocalTyper = localTyper
       val sym = tree.symbol
       var result = tree
@@ -565,9 +583,11 @@ abstract class RefChecks extends InfoTransform {
 
 	case DefDef(_, _, _, _, _, _) =>
 	  validateVariance(sym, sym.tpe, CoVariance)
+          checkDeprecatedOvers()
 
 	case ValDef(_, _, _, _) =>
-	  validateVariance(sym, sym.tpe, if (sym.isVariable) NoVariance else CoVariance);
+	  validateVariance(sym, sym.tpe, if (sym.isVariable) NoVariance else CoVariance)
+          checkDeprecatedOvers()
 
 	case AbsTypeDef(_, _, _, _) =>
 	  validateVariance(sym, sym.info, CoVariance)

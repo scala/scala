@@ -20,8 +20,6 @@ trait Symbols requires SymbolTable {
   var typeSymbolCount = 0
   var classSymbolCount = 0
 
-  type AttrInfo = Triple[Type, List[Constant], List[Pair[Name,Constant]]]
-
   val emptySymbolArray = new Array[Symbol](0)
   val emptySymbolSet = Set.empty[Symbol]
   type PositionType;
@@ -153,7 +151,7 @@ trait Symbols requires SymbolTable {
     final def newAnonymousFunctionClass(pos: PositionType) = {
       val anonfun = newClass(pos, nme.ANON_FUN_NAME.toTypeName)
       anonfun.attributes =
-        Triple(definitions.SerializableAttr.tpe, List(), List()) :: anonfun.attributes
+        AttrInfo(definitions.SerializableAttr.tpe, List(), List()) :: anonfun.attributes
       anonfun
     }
     final def newRefinementClass(pos: PositionType) =
@@ -211,7 +209,7 @@ trait Symbols requires SymbolTable {
     final def isEmptyPackage = isPackage && name == nme.EMPTY_PACKAGE_NAME
     final def isEmptyPackageClass = isPackageClass && name == nme.EMPTY_PACKAGE_NAME.toTypeName
     def isDeprecated =
-      attributes exists (attr => attr._1.symbol == DeprecatedAttr)
+      attributes exists (attr => attr.atp.symbol == DeprecatedAttr)
 
     /** Does this symbol denote a wrapper object of the interpreter or its class? */
     final def isInterpreterWrapper =
@@ -535,7 +533,7 @@ trait Symbols requires SymbolTable {
     }
 
     def getAttributes(clazz: Symbol): List[AttrInfo] =
-      attributes.filter(._1.symbol.isNonBottomSubClass(clazz))
+      attributes.filter(.atp.symbol.isNonBottomSubClass(clazz))
 
     /** Reset symbol to initial state
      */
@@ -1307,6 +1305,8 @@ trait Symbols requires SymbolTable {
     override def rawInfo: Type = NoType
     def cloneSymbolImpl(owner: Symbol): Symbol = throw new Error()
   }
+
+  case class AttrInfo(atp: Type, args: List[Constant], assocs: List[{Name, Constant}])
 
   def cloneSymbols(syms: List[Symbol]): List[Symbol] = {
     val syms1 = syms map (.cloneSymbol)

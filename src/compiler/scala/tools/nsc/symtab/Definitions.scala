@@ -59,6 +59,8 @@ trait Definitions requires SymbolTable {
     var ScalaObjectClass: Symbol = _
       def ScalaObjectClass_tag = getMember(ScalaObjectClass, nme.tag)
     var AttributeClass: Symbol = _
+    var ClassfileAttributeClass: Symbol = _
+    var StaticAttributeClass: Symbol = _
     //var ChannelClass: Symbol = _
     //  def Channel_send = getMember(ChannelClass, nme.send)
     //  def Channel_receive = getMember(ChannelClass, nme.receive)
@@ -698,6 +700,8 @@ trait Definitions requires SymbolTable {
       // the scala reference classes
       ScalaObjectClass = getClass("scala.ScalaObject")
       AttributeClass = getClass("scala.Attribute")
+      ClassfileAttributeClass = getClass("scala.ClassfileAttribute")
+      StaticAttributeClass = getClass("scala.StaticAttribute")
       //ChannelClass = getClass("scala.distributed.Channel")
       //RemoteRefClass = getClass("scala.distributed.RemoteRef")
       if (!forCLDC) {

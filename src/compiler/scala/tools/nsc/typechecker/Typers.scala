@@ -931,7 +931,6 @@ trait Typers requires Analyzer {
         } else {
           newTyper(context.make(vdef, sym)).transformedOrTyped(vdef.rhs, tpt1.tpe)
         }
-      checkDeprecatedOvers(vdef)
       copy.ValDef(vdef, vdef.mods, vdef.name, tpt1, rhs1) setType NoType
     }
 
@@ -998,24 +997,6 @@ trait Typers requires Analyzer {
       }
     }
 
-    /** Check that a deprecated val or def does not override a
-      * concrete, non-deprecated method.  If it does, then
-      * deprecation is meaningless.
-      */
-    def checkDeprecatedOvers(tree: Tree): Unit = {
-      if(!phase.erasedTypes ) return ()
-      val symbol = tree.symbol
-      if(!symbol.isDeprecated) return ()
-      val concrOvers =
-        symbol.allOverriddenSymbols.filter(sym =>
-          !sym.isDeprecated && !(sym hasFlag DEFERRED))
-      if(!concrOvers.isEmpty)
-        unit.deprecationWarning(
-            tree.pos,
-            symbol.toString + " overrides concrete, non-deprecated symbol(s):" +
-            concrOvers.map(.fullNameString).mkString("    ", ", ", ""))
-    }
-
     /**
      *  @param ddef ...
      *  @return     ...
@@ -1077,7 +1058,6 @@ trait Typers requires Analyzer {
             computeParamAliases(meth.owner, vparamss1, result)
           result
         } else transformedOrTyped(ddef.rhs, tpt1.tpe)
-      checkDeprecatedOvers(ddef)
       copy.DefDef(ddef, ddef.mods, ddef.name, tparams1, vparamss1, tpt1, rhs1) setType NoType
     }
 

@@ -108,7 +108,7 @@ abstract class TreePrinters {
       def attrInfoToString(attr: AttrInfo): String = {
         val str = new StringBuilder()
         attr match {
-          case Triple(tp, args, nvPairs) =>
+          case AttrInfo(tp, args, nvPairs) =>
             str.append(tp.toString())
             if (!args.isEmpty)
               str.append(args.map(.escapedStringValue).mkString("(", ",", ")"))

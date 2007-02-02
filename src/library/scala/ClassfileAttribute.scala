@@ -6,18 +6,16 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id$
+// $Id: Attribute.scala 8926 2006-10-11 09:58:51 +0000 (Wed, 11 Oct 2006) dragos $
 
 
 package scala
 
-/** <p>A base class for attributes. Atributes extending this class directly
- *     are not preserved for the Scala type checker and are also not stored as
- *     Java annotations in classfiles. To enable either or both of these, one needs to
- *     inherit from <code>StaticAttribute</code> or/and <code>ClassfileAttribute</code>.
+/** <p>A base class for classfile attributes. These are stored as
+ *     Java annotations in classfiles.
  *  </p>
  *
  *  @author  Martin Odersky
  *  @version 1.1, 2/02/2007
  */
-abstract class Attribute {}
+trait ClassfileAttribute extends Attribute {}

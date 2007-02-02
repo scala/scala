@@ -1421,7 +1421,7 @@ trait Parsers requires SyntaxAnalyzer {
       mods | mod
     }
 
-    /** AccessQualifier ::= "[" Id | this "]"
+    /** AccessQualifier ::= "[" (Id | this) "]"
      */
     def accessQualifierOpt(mods: Modifiers) = {
       var result = mods
@@ -1440,8 +1440,8 @@ trait Parsers requires SyntaxAnalyzer {
      */
     def accessModifierOpt(): Modifiers = normalize {
       in.token match {
-        case PRIVATE => accessQualifierOpt(Modifiers(Flags.PRIVATE))
-        case PROTECTED => accessQualifierOpt(Modifiers(Flags.PROTECTED))
+        case PRIVATE => in.nextToken(); accessQualifierOpt(Modifiers(Flags.PRIVATE))
+        case PROTECTED => in.nextToken(); accessQualifierOpt(Modifiers(Flags.PROTECTED))
         case _ => NoMods
       }
     }
@@ -1450,7 +1450,6 @@ trait Parsers requires SyntaxAnalyzer {
      *  Modifier  ::= LocalModifier
      *             |  AccessModifier
      *             |  override
-     *             |  (private | protected) [ "[" Id | this "]" ]
      */
     def modifiers(): Modifiers = normalize {
       def loop(mods: Modifiers): Modifiers = in.token match {

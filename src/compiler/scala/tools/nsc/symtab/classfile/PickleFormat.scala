@@ -50,7 +50,7 @@ object PickleFormat {
  *                  | 33 LITERALstring len_Nat name_Ref
  *                  | 34 LITERALnull len_Nat
  *                  | 35 LITERALclass len_Nat type_Ref
- *                  | 40 ATTRIBUTE sym_Ref type_Ref {constant_Ref}  <not yet>
+ *                  | 40 ATTRIBUTE len_Nat sym_Ref info_Ref {constant_Ref} {nameRef constantRef}
  *                  | 72 PosTYPEsym len_Nat pos_Nat SymbolInfo
  *                  | 73 PosALIASsym len_Nat pos_Nat SymbolInfo
  *                  | 74 PosCLASSsym len_Nat pos_Nat SymbolInfo [thistype_Ref]

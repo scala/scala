@@ -12,7 +12,7 @@ import java.lang.{Float, Double}
 
 import Flags._
 import PickleFormat._
-import collection.mutable.HashMap
+import collection.mutable.{HashMap, ListBuffer}
 import java.io.IOException
 
 /** This abstract class implements ..
@@ -47,7 +47,8 @@ abstract class UnPickler {
     private val symScopes = new HashMap[Symbol, Scope]
 
     for (val i <- 0 until index.length) {
-      if (isSymbolEntry(i)) { at(i, readSymbol); () }
+      if (isSymbolEntry(i)) { at(i, readSymbol); {} }
+      else if (isAttributeEntry(i)) { at(i, readAttribute); {} }
     }
 
     if (settings.debug.value) global.log("unpickled " + classRoot + ":" + classRoot.rawInfo + ", " + moduleRoot + ":" + moduleRoot.rawInfo);//debug
@@ -80,6 +81,17 @@ abstract class UnPickler {
       val tag = bytes(index(i)) % PosOffset
       (firstSymTag <= tag && tag <= lastExtSymTag)
     }
+
+    /** Does entry represent a name? */
+    private def isNameEntry(i: int): boolean = {
+      val tag = bytes(index(i))
+      tag == TERMname || tag == TYPEname
+    }
+
+    /** Does entry represent a symbol attribute? */
+    private def isAttributeEntry(i: int): boolean =
+      bytes(index(i)) == ATTRIBUTE
+
     /** Does entry represent a refinement symbol?
      *  pre: Entry is a class symbol
      */
@@ -264,6 +276,24 @@ abstract class UnPickler {
         case LITERALclass   => Constant(readTypeRef())
         case _              => errorBadSignature("bad constant tag: " + tag)
       }
+    }
+
+    /** Read an attribute and store in referenced symbol */
+    private def readAttribute(): AttrInfo = {
+      val tag = readByte()
+      val end = readNat() + readIndex
+      val target = readSymbolRef()
+      val attrType = readTypeRef()
+      val args = new ListBuffer[Constant]
+      val assocs = new ListBuffer[{Name, Constant}]
+      while (readIndex != end) {
+        val argref = readNat()
+        if (isNameEntry(argref)) assocs += {at(argref, readName), readConstantRef()}
+        else args += at(argref, readConstant)
+      }
+      val attr = AttrInfo(attrType, args.toList, assocs.toList)
+      target.attributes = attr :: target.attributes
+      attr
     }
 
     /** Read a reference to a name, symbol, type or constant */

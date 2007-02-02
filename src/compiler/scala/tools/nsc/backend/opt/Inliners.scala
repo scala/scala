@@ -266,7 +266,7 @@ abstract class Inliners extends SubComponent {
                     if (   classes.contains(receiver)
                         && (isClosureClass(receiver)
                             || concreteMethod.isFinal
-                            || msym.attributes.exists(a => a._1 == InlineAttr))) {
+                            || msym.attributes.exists(a => a.atp == InlineAttr))) {
                       classes(receiver).lookupMethod(concreteMethod) match {
                         case Some(inc) =>
                           if (inc != m && (inc.code ne null)

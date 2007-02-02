@@ -368,9 +368,9 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     mixer,
     cleanup,
     genicode,
-    inliner,
-    closureElimination,
-    deadCode,
+//    inliner,
+//    closureElimination,
+//    deadCode,
     genJVM,
     sampleTransform)
 

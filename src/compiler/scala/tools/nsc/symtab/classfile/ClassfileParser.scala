@@ -362,7 +362,7 @@ abstract class ClassfileParser {
     val c = pool.getClassSymbol(in.nextChar)
     if (c != clazz)
       throw new IOException("class file '" + in.file + "' contains wrong " + c)
-    val superType = if (isAttribute) { in.nextChar; definitions.AttributeClass.tpe }
+    val superType = if (isAttribute) { in.nextChar; definitions.ClassfileAttributeClass.tpe }
                     else pool.getSuperClass(in.nextChar).tpe
     val ifaceCount = in.nextChar
     val parents = (superType ::
@@ -651,7 +651,7 @@ abstract class ClassfileParser {
           }
         case nme.AnnotationDefaultATTR =>
           sym.attributes =
-            Triple(definitions.AnnotationDefaultAttr.tpe, List(), List()) :: sym.attributes
+            AttrInfo(definitions.AnnotationDefaultAttr.tpe, List(), List()) :: sym.attributes
           in.skip(attrLen)
         case nme.RuntimeAnnotationATTR =>
           parseAnnotations(attrLen)
@@ -702,7 +702,7 @@ abstract class ClassfileParser {
           val name = pool.getName(in.nextChar)
           nvpairs += Pair(name, parseTaggedConstant())
         }
-        sym.attributes = Triple(attrType, List(), nvpairs.toList) :: sym.attributes
+        sym.attributes = AttrInfo(attrType, List(), nvpairs.toList) :: sym.attributes
       }
     }
 

@@ -148,13 +148,13 @@ abstract class GenJVM extends SubComponent {
 
       if (!forCLDC)
         for (val attr <- c.symbol.attributes) attr match {
-          case Triple(SerializableAttr, _, _) =>
+          case AttrInfo(SerializableAttr, _, _) =>
             parents = parents ::: List(definitions.SerializableClass.tpe)
-          case Triple(CloneableAttr, _, _)  =>
+          case AttrInfo(CloneableAttr, _, _)  =>
             parents = parents ::: List(CloneableClass.tpe)
-          case Triple(SerialVersionUID, value :: _, _) =>
+          case AttrInfo(SerialVersionUID, value :: _, _) =>
             serialVUID = Some(value.longValue)
-          case Triple(RemoteAttr, _, _) =>
+          case AttrInfo(RemoteAttr, _, _) =>
             parents = parents ::: List(RemoteInterface.tpe)
             remoteClass = true
           case _ => ()
@@ -203,7 +203,7 @@ abstract class GenJVM extends SubComponent {
 
     def addExceptionsAttribute(sym: Symbol): Unit = {
       val Pair(excs, others) = sym.attributes.partition((a => a match {
-        case Triple(ThrowsAttr, _, _) => true
+        case AttrInfo(ThrowsAttr, _, _) => true
         case _ => false
       }))
       if (excs isEmpty) return;
@@ -216,7 +216,7 @@ abstract class GenJVM extends SubComponent {
       // put some radom value; the actual number is determined at the end
       buf.putShort(0xbaba.toShort)
 
-      for (val Triple(ThrowsAttr, List(exc), _) <- excs.removeDuplicates) {
+      for (val AttrInfo(ThrowsAttr, List(exc), _) <- excs.removeDuplicates) {
         buf.putShort(cpool.addClass(exc.typeValue.toString()).shortValue)
         nattr = nattr + 1
       }
@@ -277,7 +277,8 @@ abstract class GenJVM extends SubComponent {
       // put some radom value; the actual number of annotations is determined at the end
       buf.putShort(0xbaba.toShort)
 
-      for (val Triple(typ, consts, nvPairs) <- attributes; typ.symbol.hasFlag(Flags.JAVA)) {
+      for (val AttrInfo(typ, consts, nvPairs) <- attributes;
+           typ.symbol isNonBottomSubClass definitions.ClassfileAttributeClass) {
         nattr = nattr + 1
         val jtype = javaType(typ)
         buf.putShort(cpool.addUtf8(jtype.getSignature()).toShort)
@@ -310,8 +311,8 @@ abstract class GenJVM extends SubComponent {
 
     def addParamAnnotations(pattrss: List[List[AttrInfo]]): Unit = {
       val attributes = for (val attrs <- pattrss) yield
-        for (val attr @ Triple(tpe, _, _) <- attrs;
-             tpe.symbol hasFlag Flags.JAVA) yield attr;
+        for (val attr @ AttrInfo(tpe, _, _) <- attrs;
+             tpe.symbol isNonBottomSubClass definitions.ClassfileAttributeClass) yield attr;
       if (attributes.forall(.isEmpty)) return;
 
       val buf: ByteBuffer = ByteBuffer.allocate(2048)
@@ -369,9 +370,9 @@ abstract class GenJVM extends SubComponent {
       var attributes = 0
 
       f.symbol.attributes foreach { a => a match {
-        case Triple(TransientAtt, _, _) =>
+        case AttrInfo(TransientAtt, _, _) =>
           attributes = attributes | JAccessFlags.ACC_TRANSIENT
-        case Triple(VolatileAttr, _, _) =>
+        case AttrInfo(VolatileAttr, _, _) =>
           attributes = attributes | JAccessFlags.ACC_VOLATILE
         case _ => ();
       }}
@@ -410,11 +411,11 @@ abstract class GenJVM extends SubComponent {
         jmethod.addAttribute(fjbgContext.JOtherAttribute(jclass, jmethod, "Bridge",
                                                          new Array[Byte](0)))
       if ((remoteClass ||
-          (m.symbol.attributes contains Triple(RemoteAttr, Nil, Nil))) &&
+          (m.symbol.attributes contains AttrInfo(RemoteAttr, Nil, Nil))) &&
           jmethod.isPublic() && !forCLDC)
         {
           m.symbol.attributes =
-            Triple(ThrowsAttr, List(Constant(RemoteException)), List()) :: m.symbol.attributes;
+            AttrInfo(ThrowsAttr, List(Constant(RemoteException)), List()) :: m.symbol.attributes;
         }
 
       if (!jmethod.isAbstract()) {
@@ -1342,7 +1343,7 @@ abstract class GenJVM extends SubComponent {
     def needsInterfaceCall(sym: Symbol): Boolean =
       sym.hasFlag(Flags.INTERFACE) ||
       (sym.hasFlag(Flags.JAVA) &&
-       sym.isNonBottomSubClass(definitions.AttributeClass))
+       sym.isNonBottomSubClass(definitions.ClassfileAttributeClass))
 
 
     def javaType(t: TypeKind): JType = t match {
