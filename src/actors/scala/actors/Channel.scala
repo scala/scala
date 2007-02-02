@@ -46,6 +46,11 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
     Actor.tl.get.asInstanceOf[Actor]
   }
 
+  private[actors] def this(recv: Actor) = {
+    this()
+    receiver = recv
+  }
+
   /**
    * Sends a message to this <code>Channel</code>.
    *

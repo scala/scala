@@ -191,12 +191,7 @@ object Actor {
    *
    * @param body the code block to be executed
    */
-  def loop(body: => Unit): Unit = {
-    val s = self
-    s.kill = () => { body; s.kill() }
-    body
-    exit("normal")
-  }
+  def loop(body: => Unit): Nothing = body andThen loop(body)
 
   /**
    * Causes <code>self</code> to execute <code>first</code>
@@ -208,7 +203,7 @@ object Actor {
   def seq[a, b](first: => a, next: => b): Nothing = {
     val s = self
     val killNext = s.kill
-    s.kill = () => { s.kill = killNext; next; s.kill() }
+    s.kill = () => { s.kill = killNext; next; exit("normal") }
     first
     exit("normal")
   }
@@ -439,7 +434,7 @@ trait Actor extends OutputChannel[Any] {
 
   def reply(msg: Any): Unit = session ! msg
 
-  private var rc = new Channel[Any]
+  private var rc = new Channel[Any](this)
   def getReplyChannel = rc
   def freshReply() = { rc = new Channel[Any]; rc }
 
@@ -596,7 +591,7 @@ trait Actor extends OutputChannel[Any] {
    * </p>
    */
   def exit(reason: String): Nothing = {
-    kill()
+    if (reason.equals("normal")) kill()
     // links
     if (!links.isEmpty) {
       exitReason = reason
@@ -605,14 +600,7 @@ trait Actor extends OutputChannel[Any] {
     throw new ExitActorException
   }
 
-  def exit(): Nothing = {
-    kill()
-    // links
-    if (!links.isEmpty) {
-      exitLinked()
-    }
-    throw new ExitActorException
-  }
+  def exit(): Nothing = exit("normal")
 
   // Assume !links.isEmpty
   private[actors] def exitLinked() {
