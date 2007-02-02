@@ -2124,7 +2124,7 @@ trait Parsers requires SyntaxAnalyzer {
       attrs.toList
     }
 
-    /** Attribute          ::= StableId [TypeArgs] [`(' [Exprs] `)']
+    /** Attribute          ::= StableId [TypeArgs] [`(' [Exprs] `)'] [`{' {NameValuePair} `}']
      */
     def attribute(): Attribute = {
       def nameValuePair(): Tree = {
