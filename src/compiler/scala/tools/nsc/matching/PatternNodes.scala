@@ -24,6 +24,9 @@ trait PatternNodes requires transform.ExplicitOuter {
     def bodyToTree(): Tree = this match {
       case _b:Body =>
         _b.body(0)
+      case _ =>
+        error("bodyToTree called for pattern node "+this)
+        null
     }
 
     def getTpe(): Type = tpe
@@ -168,8 +171,8 @@ trait PatternNodes requires transform.ExplicitOuter {
         "VariablePat"
       case UnapplyPat(casted, fn) =>
 	"UnapplyPat(" + casted + ")"
-      case _ =>
-        "<unknown pat>"
+      case AltPat(alts) =>
+        "Alternative("+alts+")"
     }
 
     def print(indent: String, sb: StringBuilder): StringBuilder = {
@@ -222,6 +225,16 @@ trait PatternNodes requires transform.ExplicitOuter {
           sb.append(indent + s).append('\n')
           patNode.and.print(nindent, sb)
           cont
+
+        case RightIgnoringSequencePat( casted, castedRest, plen ) =>
+          val s = ("-- ri " + patNode.getTpe().symbol.name + "(" +
+                   patNode.getTpe() +
+                   ", " + casted + ", " + plen + ") -> ")
+          val nindent = newIndent(s)
+          sb.append(indent + s).append('\n')
+          patNode.and.print(nindent, sb)
+          cont
+
 
         case DefaultPat() =>
           sb.append(indent + "-- _ -> ").append('\n')

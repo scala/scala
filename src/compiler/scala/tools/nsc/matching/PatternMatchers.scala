@@ -1026,6 +1026,7 @@ print()
     // returns true if this tree is optimizable
     // throws a warning if is not exhaustive
     def optimize1(selType:Type, alternatives1: PatternNode ): {Boolean, collection.immutable.Set[Symbol], collection.immutable.Set[Symbol]} = {
+      var res = true
 // if selType hasflag SEALED, enumerate selType.symbol.children
 // to be very precise, take into account the case that a non case child is sealed.
       var alts = alternatives1;
@@ -1035,27 +1036,56 @@ print()
       var coveredCases: SymSet   = emptySymbolSet // only case _
       var remainingCases = if(alts ne null) checkExCoverage(selType.symbol) else emptySymbolSet // only case _
       var cases = 0;
-      while (alts ne null) {
+
+      def traverse(alts:PatternNode) {
         alts match {
           case ConstrPat(_) =>
+            if (alts.getTpe.symbol.hasFlag(Flags.CASE)) {
+              coveredCases   = coveredCases + alts.getTpe.symbol
+              remainingCases = remainingCases - alts.getTpe.symbol
+              cases = cases + 1
+            }
+            else {
+              val covered = remainingCases.filter(x => isSubType(x.tpe, alts.getTpe))
+              coveredCases   = coveredCases ++ covered
+              remainingCases = remainingCases -- covered
+              res = false
+            }
+
+          // Nil is also a "constructor pattern" somehow
+          case VariablePat(tree) if (alts.getTpe.symbol.hasFlag(Flags.CASE)) => // Nil
             coveredCases   = coveredCases + alts.getTpe.symbol
             remainingCases = remainingCases - alts.getTpe.symbol
-            if (alts.getTpe.symbol.hasFlag(Flags.CASE))
-              cases = cases +1;
-            else
-              return {false, coveredCases, remainingCases};
+            cases = cases + 1
 
           case DefaultPat() =>
             if(andIsUnguardedBody(alts) || alts.and.isInstanceOf[Header]) {
               coveredCases   = emptySymbolSet
               remainingCases = emptySymbolSet
             }
-          case _ =>
-            return {false, coveredCases, remainingCases};
+
+          case UnapplyPat(_,_) | SequencePat(_, _) | RightIgnoringSequencePat(_, _, _) =>
+            res = false
+            remainingCases = emptySymbolSet
+
+          case ConstantPat(_) =>
+            res = false
+
+          case AltPat(branches) =>
+            res = false
+            traverse(branches.or)
+
+          case VariablePat(_) =>
+            res = false
         }
+      }
+
+      while (alts ne null) {
+        traverse(alts)
         alts = alts.or;
       }
-      return {cases > 2, coveredCases, remainingCases};
+
+      return {res && (cases > 2), coveredCases, remainingCases};
     } // def optimize
 
     var node = node1;
@@ -1063,6 +1093,7 @@ print()
     var res: Tree = Literal(Constant(false)); //.setInfo(defs.BooleanClass);
     var lastSelector: Tree = null
     var carryCovered: SymSet = emptySymbolSet
+    var ignoreCovered = false // indicates whether we have given up, due to unapply
     while (node ne null)
     node match {
 
@@ -1070,12 +1101,13 @@ print()
         val selector = _h.selector;
         if(selector != lastSelector) {
           carryCovered = emptySymbolSet;
+          ignoreCovered = false
         }
       //Console.println("sel:"+selector+" last"+lastSelector+" - "+(selector == lastSelector))
         val next = _h.next;
         //res = And(mkNegate(res), toTree(node.or, selector));
         val {doOptimize, coveredCases, remainingCases} = optimize1(node.getTpe, node.or)
-        if(!remainingCases.isEmpty) {
+        if(!remainingCases.isEmpty && !ignoreCovered) {
           carryCovered = carryCovered ++ coveredCases // ??
           if(next != null && andIsUnguardedBody(next.or)) {
             // ignore, default case
@@ -1091,6 +1123,8 @@ print()
               //Console.println(_h.print("", new StringBuilder()).toString())
             }
           }
+        } else {
+          ignoreCovered = true
         }
         if (doOptimize)
           res = Or(res, toOptTree(node.or, selector));
@@ -1187,6 +1221,10 @@ print()
 
         case DefaultPat() =>
           defaultCase = node
+          node = node.or
+
+        case VariablePat(tree) if node.getTpe.symbol.hasFlag(Flags.CASE) =>
+          cases = insertNode(node.getTpe().symbol.tag, node, cases)
           node = node.or
 
         case _ =>
