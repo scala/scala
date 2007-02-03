@@ -787,11 +787,14 @@ sealed abstract class List[+a] extends Seq[a] {
       smaller match {
         case Nil =>
           acc
-        case List(x) =>
+        //case List(x) =>
+        case x :: Nil =>
           x::acc
-        case List(x, y) =>
+        //case List(x, y) =>
+        case x :: y :: Nil =>
           if (lt(x, y)) x::(y::acc) else y::x::acc
-        case List(x, y, z) =>
+        //case List(x, y, z) =>
+        case x :: y :: z :: Nil =>
           if (lt(x, y)) {
             if (lt(y, z)) x::y::z::acc
             else if (lt(x, z)) x::z::y::acc
@@ -808,11 +811,14 @@ sealed abstract class List[+a] extends Seq[a] {
     this match {
       case Nil =>
         this
-      case List(x) =>
+//      case List(x) =>
+      case x :: Nil =>
         this
-      case List(x, y) =>
+//      case List(x, y) =>
+      case x::y::Nil =>
         if (lt(x, y)) this else y::x::Nil
-      case List(x, y, z) =>
+//      case List(x, y, z) =>
+      case x::y::z::Nil =>
         if (lt(x, y)) {
           if (lt(y, z)) this
           else if (lt(x, z)) x::z::y::Nil
