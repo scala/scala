@@ -48,7 +48,7 @@ abstract class UnPickler {
 
     for (val i <- 0 until index.length) {
       if (isSymbolEntry(i)) { at(i, readSymbol); {} }
-      else if (isAttributeEntry(i)) { at(i, readAttribute); {} }
+      else if (isAnnotationEntry(i)) { at(i, readAnnotation); {} }
     }
 
     if (settings.debug.value) global.log("unpickled " + classRoot + ":" + classRoot.rawInfo + ", " + moduleRoot + ":" + moduleRoot.rawInfo);//debug
@@ -89,8 +89,10 @@ abstract class UnPickler {
     }
 
     /** Does entry represent a symbol attribute? */
-    private def isAttributeEntry(i: int): boolean =
-      bytes(index(i)) == ATTRIBUTE
+    private def isAnnotationEntry(i: int): boolean = {
+      val tag = bytes(index(i))
+      tag == ATTRIBUTE || tag == CHILDREN
+    }
 
     /** Does entry represent a refinement symbol?
      *  pre: Entry is a class symbol
@@ -279,21 +281,25 @@ abstract class UnPickler {
     }
 
     /** Read an attribute and store in referenced symbol */
-    private def readAttribute(): AttrInfo = {
+    private def readAnnotation(): AnyRef = {
       val tag = readByte()
       val end = readNat() + readIndex
       val target = readSymbolRef()
-      val attrType = readTypeRef()
-      val args = new ListBuffer[Constant]
-      val assocs = new ListBuffer[{Name, Constant}]
-      while (readIndex != end) {
-        val argref = readNat()
-        if (isNameEntry(argref)) assocs += {at(argref, readName), readConstantRef()}
-        else args += at(argref, readConstant)
+      if (tag == ATTRIBUTE) {
+        val attrType = readTypeRef()
+        val args = new ListBuffer[Constant]
+        val assocs = new ListBuffer[{Name, Constant}]
+        while (readIndex != end) {
+          val argref = readNat()
+          if (isNameEntry(argref)) assocs += {at(argref, readName), readConstantRef()}
+          else args += at(argref, readConstant)
+        }
+        val attr = AttrInfo(attrType, args.toList, assocs.toList)
+        target.attributes = attr :: target.attributes
+      } else if (tag == CHILDREN) {
+        while (readIndex != end) target addChild readSymbolRef()
       }
-      val attr = AttrInfo(attrType, args.toList, assocs.toList)
-      target.attributes = attr :: target.attributes
-      attr
+      null
     }
 
     /** Read a reference to a name, symbol, type or constant */

@@ -823,7 +823,7 @@ trait Parsers requires SyntaxAnalyzer {
      *               | SimpleExpr ArgumentExprs `=' Expr
      *               | `.' SimpleExpr
      *               | PostfixExpr [`:' CompoundType]
-     *               | PostfixExpr match `{' CaseClauses `}'
+     *               | PostfixExpr match [`!'] `{' CaseClauses `}'
      *               | MethodClosure
      *  Bindings   ::= `(' [Binding {`,' Binding}] `)'
      *  Binding    ::= Id [`:' Type]
@@ -954,10 +954,12 @@ trait Parsers requires SyntaxAnalyzer {
           }
         } else if (in.token == MATCH) {
           t = atPos(in.skipToken()) {
+            val nocheck = isIdent && in.name == BANG
+            if (nocheck) in.nextToken()
             accept(LBRACE)
             val cases = caseClauses()
             accept(RBRACE)
-            Match(t, cases): Tree
+            Match(t, cases, !nocheck)
           }
         }
         if ((mode & ClosureOK) != 0 && in.token == ARROW) {
@@ -1145,7 +1147,7 @@ trait Parsers requires SyntaxAnalyzer {
      */
     def blockExpr(): Tree = {
       val res = atPos(accept(LBRACE)) {
-        if (in.token == CASE) makeVisitor(caseClauses())
+        if (in.token == CASE) makeVisitor(caseClauses(), true)
         else blockOrTuple(true)
       }
       accept(RBRACE)
@@ -1688,7 +1690,7 @@ trait Parsers requires SyntaxAnalyzer {
         def loop: Tree =
           if (in.token == USCORE) {
             in.nextToken()
-            Import(t, List(Pair(nme.WILDCARD, null)))
+            Import(t, List({nme.WILDCARD, null}))
           } else if (in.token == LBRACE) {
             Import(t, importSelectors())
           } else {
@@ -1698,7 +1700,7 @@ trait Parsers requires SyntaxAnalyzer {
               pos = accept(DOT)
               loop
             } else {
-              Import(t, List(Pair(name, name)))
+              Import(t, List({name, name}))
             }
           }
         loop
@@ -1706,8 +1708,8 @@ trait Parsers requires SyntaxAnalyzer {
 
     /** ImportSelectors ::= `{' {ImportSelector `,'} (ImportSelector | `_') `}'
      */
-    def importSelectors(): List[Pair[Name, Name]] = {
-      val names = new ListBuffer[Pair[Name, Name]]
+    def importSelectors(): List[{Name, Name}] = {
+      val names = new ListBuffer[{Name, Name}]
       accept(LBRACE)
       var isLast = importSelector(names)
       while (!isLast && in.token == COMMA) {
@@ -1720,19 +1722,19 @@ trait Parsers requires SyntaxAnalyzer {
 
     /** ImportSelector ::= Id [`=>' Id | `=>' `_']
      */
-    def importSelector(names: ListBuffer[Pair[Name, Name]]): boolean =
+    def importSelector(names: ListBuffer[{Name, Name}]): boolean =
       if (in.token == USCORE) {
-        in.nextToken(); names += Pair(nme.WILDCARD, null); true
+        in.nextToken(); names += {nme.WILDCARD, null}; true
       } else {
         val name = ident()
-        names += Pair(
+        names += {
           name,
           if (in.token == ARROW) {
             in.nextToken()
             if (in.token == USCORE) { in.nextToken(); nme.WILDCARD } else ident()
           } else {
             name
-          })
+          }}
         false
       }
 
@@ -1805,9 +1807,9 @@ trait Parsers requires SyntaxAnalyzer {
      */
     def varDefOrDcl(mods: Modifiers): List[Tree] = {
       var newmods = mods | Flags.MUTABLE
-      val lhs = new ListBuffer[Pair[Int, Name]]
+      val lhs = new ListBuffer[{Int, Name}]
       do {
-        lhs += Pair(in.skipToken(), ident())
+        lhs += {in.skipToken(), ident()}
       } while (in.token == COMMA)
       val tp = typedOpt()
       val rhs = if (tp.isEmpty || in.token == EQUALS) {
@@ -1822,7 +1824,7 @@ trait Parsers requires SyntaxAnalyzer {
         newmods = newmods | Flags.DEFERRED
         EmptyTree
       }
-      for (val Pair(pos, name) <- lhs.toList) yield
+      for (val {pos, name} <- lhs.toList) yield
         atPos(pos) { ValDef(newmods, name, tp.duplicate, rhs.duplicate) }
     }
 
@@ -2166,7 +2168,6 @@ trait Parsers requires SyntaxAnalyzer {
       }
       exps.toList
     }
-
 
     /** RefineStatSeq    ::= RefineStat {StatementSeparator RefineStat}
      *  RefineStat       ::= Dcl

@@ -486,8 +486,8 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
       tree1 match {
         case If(cond, thenp, elsep) =>
           copy.If(tree1, cond, adaptBranch(thenp), adaptBranch(elsep))
-        case Match(selector, cases) =>
-          copy.Match(tree1, selector, cases map adaptCase)
+        case Match(selector, cases, check) =>
+          copy.Match(tree1, selector, cases map adaptCase, check)
         case Try(block, catches, finalizer) =>
           copy.Try(tree1, adaptBranch(block), catches map adaptCase, finalizer)
         case _ =>

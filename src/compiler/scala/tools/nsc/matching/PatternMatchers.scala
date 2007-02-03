@@ -1003,7 +1003,7 @@ print()
     return Switch(selector, tags, bodies, defaultBody1, resultType);
     */
     nCases = CaseDef(Ident(nme.WILDCARD), squeezedBlock(List(ValDef(root.symbol, selector)),defaultBody1)) :: nCases;
-    Match(selector, nCases)
+    Match(selector, nCases, false)
   }
 
 
@@ -1310,7 +1310,8 @@ print()
       nCases = CaseDef(Ident(nme.WILDCARD), defBody) :: nCases;
       return Match(Apply(Select(selector.duplicate, defs.ScalaObjectClass_tag),
                          List()),
-                   nCases);
+                   nCases,
+                   false)
     }
 
     /** why not use plain `if's? the reason is that a failing *guard* must still remain

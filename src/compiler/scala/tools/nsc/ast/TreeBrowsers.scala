@@ -305,7 +305,7 @@ abstract class TreeBrowsers {
       case Bind(name, rhs) =>
         Pair("Bind", name)
 
-      case Match(selector, cases) =>
+      case Match(selector, cases, _) =>
         Pair("Visitor", EMPTY)
 
       case Function(vparams, body) =>
@@ -449,7 +449,7 @@ abstract class TreeBrowsers {
       case Bind(name, rhs) =>
         List(rhs)
 
-      case Match(selector, cases) =>
+      case Match(selector, cases, _) =>
         selector :: cases
 
       case Function(vparams, body) =>

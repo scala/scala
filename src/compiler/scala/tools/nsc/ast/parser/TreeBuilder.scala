@@ -195,6 +195,7 @@ abstract class TreeBuilder {
                   List(
                     CaseDef(pat1.duplicate, EmptyTree, Literal(true)),
                     CaseDef(Ident(nme.WILDCARD), EmptyTree, Literal(false))),
+                  false,
                   nme.CHECK_IF_REFUTABLE_STRING
                 )))
           }
@@ -257,7 +258,7 @@ abstract class TreeBuilder {
       case Some(Pair(name, tpt)) =>
         Function(List(ValDef(Modifiers(PARAM), name, tpt, EmptyTree)), body)
       case None =>
-        makeVisitor(List(CaseDef(pat, EmptyTree, body)))
+        makeVisitor(List(CaseDef(pat, EmptyTree, body)), false)
     }
 
     def makeCombination(meth: Name, qual: Tree, pat: Tree, body: Tree): Tree =
@@ -356,13 +357,14 @@ abstract class TreeBuilder {
     makeAlternative(List(p, Sequence(List())))
 
   /** Create visitor <x => x match cases> */
-  def makeVisitor(cases: List[CaseDef]): Tree =
-    makeVisitor(cases, "x$")
+  def makeVisitor(cases: List[CaseDef], checkExhaustive: boolean): Tree =
+    makeVisitor(cases, checkExhaustive, "x$")
 
   /** Create visitor <x => x match cases> */
-  def makeVisitor(cases: List[CaseDef], prefix: String): Tree = {
+  def makeVisitor(cases: List[CaseDef], checkExhaustive: boolean, prefix: String): Tree = {
     val x = freshName(prefix)
-    Function(List(ValDef(Modifiers(PARAM | SYNTHETIC), x, TypeTree(), EmptyTree)), Match(Ident(x), cases))
+    Function(List(ValDef(Modifiers(PARAM | SYNTHETIC), x, TypeTree(), EmptyTree)),
+             Match(Ident(x), cases, checkExhaustive))
   }
 
   /** Create tree for case definition &lt;case pat if guard => rhs&gt; */
@@ -393,7 +395,7 @@ abstract class TreeBuilder {
       val pat1 = patvarTransformer.transform(pat)
       val vars = getVariables(pat1)
       val matchExpr = atPos(pat1.pos){
-        Match(rhs, List(CaseDef(pat1, EmptyTree, makeTupleTerm(vars map (._1) map Ident, true))))
+        Match(rhs, List(CaseDef(pat1, EmptyTree, makeTupleTerm(vars map (._1) map Ident, true))), false)
       }
       vars match {
         case List() =>

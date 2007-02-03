@@ -87,7 +87,7 @@ trait SyntheticMethods requires Analyzer {
 		    Throw(New(TypeTree(IndexOutOfBoundsExceptionClass.tpe), List(List(
 		      Select(Ident(vparamss.head.head), nme.toString_)
 		    ))))))
-      })))
+      }, false)))
     }
 
     def moduleToStringMethod: Tree = {

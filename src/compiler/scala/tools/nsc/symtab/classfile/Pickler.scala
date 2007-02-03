@@ -108,6 +108,8 @@ abstract class Pickler extends SubComponent {
         if (sym.thisSym != sym)
           putType(sym.typeOfThis);
         putSymbol(sym.alias)
+        if (!sym.children.isEmpty)
+          putChildren(sym, sym.children)
 
         for (val attr <- sym.attributes.reverse) {
           if (attr.atp.symbol isNonBottomSubClass definitions.StaticAttributeClass)
@@ -166,8 +168,13 @@ abstract class Pickler extends SubComponent {
         else if (c.tag == ClassTag) putEntry(c.typeValue)
       }
 
+    private def putChildren(sym: Symbol, children: Set[Symbol]): unit = {
+      assert(putEntry{sym, children})
+      children foreach putSymbol
+    }
+
     private def putAttribute(sym: Symbol, attr: AttrInfo): unit = {
-      assert(putEntry({sym, attr}))
+      assert(putEntry{sym, attr})
       putType(attr.atp)
       for (val c <- attr.args) putConstant(c)
       for (val {name, c} <- attr.assocs) { putEntry(name); putConstant(c) }
@@ -270,14 +277,18 @@ abstract class Pickler extends SubComponent {
           else if (c.tag == StringTag) writeRef(newTermName(c.stringValue))
           else if (c.tag == ClassTag) writeRef(c.typeValue)
           LITERAL + c.tag
+        case AttributedType(attribs, tp) =>
+          writeBody(tp) // obviously, this should be improved
         case {target: Symbol, attr @ AttrInfo(atp, args, assocs)} =>
           writeRef(target)
           writeRef(atp)
           for (val c <- args) writeRef(c)
           for (val {name, c} <- assocs) { writeRef(name); writeRef(c) }
           ATTRIBUTE
-        case AttributedType(attribs, tp) =>
-          writeBody(tp) // obviously, this should be improved
+        case {target: Symbol, children: Set[_]} =>
+          writeRef(target)
+          for (val c <- children) writeRef(c.asInstanceOf[Symbol])
+          CHILDREN
         case _ =>
           throw new FatalError("bad entry: " + entry + " " + entry.getClass())//debug
       }

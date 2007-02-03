@@ -892,7 +892,7 @@ abstract class GenICode extends SubComponent  {
           }
           ctx1
 
-        case Match(selector, cases) =>
+        case Match(selector, cases, _) =>
           if (settings.debug.value)
             log("Generating SWITCH statement.");
           var ctx1 = genLoad(selector, ctx, INT)

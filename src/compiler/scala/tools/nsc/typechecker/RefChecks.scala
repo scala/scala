@@ -616,7 +616,7 @@ abstract class RefChecks extends InfoTransform {
           Select(qual, nme.filter),
           List(Function(
             List(ValDef(_, pname, tpt, _)),
-            Match(_, CaseDef(pat1, _, _) :: _))))
+            Match(_, CaseDef(pat1, _, _) :: _, _))))
           if ((pname startsWith nme.CHECK_IF_REFUTABLE_STRING) &&
               isIrrefutable(pat1, tpt.tpe)) =>
             result = qual

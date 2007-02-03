@@ -113,7 +113,7 @@ abstract class TreePrinters {
             if (!args.isEmpty)
               str.append(args.map(.escapedStringValue).mkString("(", ",", ")"))
             if (!nvPairs.isEmpty)
-              for (val Pair(Pair(name, value), index) <- nvPairs.zipWithIndex) {
+              for (val {Pair(name, value), index} <- nvPairs.zipWithIndex) {
                 if (index > 0)
                   str.append(", ")
                 str.append(name).append(" = ").append(value)
@@ -187,7 +187,7 @@ abstract class TreePrinters {
           print(symName(tree, name)); printRow(params, "(", ",", ")"); printBlock(rhs)
 
         case Import(expr, selectors) =>
-          def selectorToString(s: Pair[Name, Name]): String =
+          def selectorToString(s: {Name, Name}): String =
             if (s._1 == nme.WILDCARD || s._1 == s._2) s._1.toString()
             else s._1.toString() + "=>" + s._2.toString()
           print("import "); print(expr)
@@ -211,8 +211,8 @@ abstract class TreePrinters {
         case Block(stats, expr) =>
           printColumn(stats ::: List(expr), "{", ";", "}")
 
-        case Match(selector, cases) =>
-          print(selector); printColumn(cases, " match {", "", "}")
+        case Match(selector, cases, check) =>
+          print(selector); printColumn(cases, if (check) " match {" else "match! {", "", "}")
 
         case CaseDef(pat, guard, body) =>
           print("case "); print(pat); printOpt(" if ", guard)

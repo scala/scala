@@ -51,6 +51,7 @@ object PickleFormat {
  *                  | 34 LITERALnull len_Nat
  *                  | 35 LITERALclass len_Nat type_Ref
  *                  | 40 ATTRIBUTE len_Nat sym_Ref info_Ref {constant_Ref} {nameRef constantRef}
+ *                  | 41 CHILDREN len_Nat sym_Ref {sym_Ref}
  *                  | 72 PosTYPEsym len_Nat pos_Nat SymbolInfo
  *                  | 73 PosALIASsym len_Nat pos_Nat SymbolInfo
  *                  | 74 PosCLASSsym len_Nat pos_Nat SymbolInfo [thistype_Ref]
@@ -102,7 +103,7 @@ object PickleFormat {
   final val LITERALnull = 34
   final val LITERALclass = 35
   final val ATTRIBUTE = 40
-
+  final val CHILDREN = 41
   final val firstSymTag = NONEsym
   final val lastSymTag = VALsym
   final val lastExtSymTag = EXTMODCLASSref

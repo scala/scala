@@ -57,18 +57,6 @@ extends Map[A, B]
 
   override def transform(f: (A, B) => B): Unit = { imap = imap.transform(f) }
 
-  [deprecated] override def map[C](f: Pair[A, B] => C): Iterable[C] = {
-    val f1 = f.asInstanceOf[Pair[A, B] => B]
-    imap = imap transform { (x, y) => f1(Pair(x, y)) }
-    null
-  }
-
-  /** @deprecated   use retain instead */
-  [deprecated] override def filter(p: Pair[A, B] => Boolean): Iterable[Pair[A, B]] = {
-    imap = imap.filter(p)
-    this
-  }
-
   override def retain(p: (A, B) => Boolean): Unit = {
     imap = imap.filter(xy => p(xy._1, xy._2))
   }

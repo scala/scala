@@ -468,7 +468,7 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
             }
             super.transform(copy.Apply(tree, sel, outerVal :: args))
 
-        case Match(selector, cases) => // <----- transmatch hook
+        case Match(selector, cases, checkExhaustive) => // <----- transmatch hook
           val tid = if (settings.debug.value) {
             val q = unit.fresh.newName("tidmark")
             Console.println("transforming patmat with tidmark "+q+" ncases = "+cases.length)

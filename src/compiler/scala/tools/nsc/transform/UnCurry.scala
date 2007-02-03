@@ -244,7 +244,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
           .setFlag(FINAL).setInfo(MethodType(formals, BooleanClass.tpe))
         anonClass.info.decls enter isDefinedAtMethod
         def idbody(idparam: Symbol) = fun.body match {
-          case Match(_, cases) =>
+          case Match(_, cases, check) =>
             val substParam = new TreeSymSubstituter(List(fun.vparams.head.symbol), List(idparam));
             def transformCase(cdef: CaseDef): CaseDef =
               substParam(
@@ -255,7 +255,8 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
               Match(
                 Ident(idparam),
                 (cases map transformCase) :::
-                   List(CaseDef(Ident(nme.WILDCARD), EmptyTree, Literal(false))))
+                   List(CaseDef(Ident(nme.WILDCARD), EmptyTree, Literal(false))),
+                check)
         }
         members = DefDef(isDefinedAtMethod, vparamss => idbody(vparamss.head.head)) :: members;
       }
@@ -470,7 +471,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
                 CaseDef(
                   Bind(exname, Ident(nme.WILDCARD)),
                   EmptyTree,
-                  Match(Ident(exname), cases))
+                  Match(Ident(exname), cases, false))
               }
             if (settings.debug.value) log("rewrote try: " + catches + " ==> " + catchall);
             val catches1 = localTyper.typedCases(

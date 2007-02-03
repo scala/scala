@@ -47,8 +47,7 @@ abstract class ClassfileParser {
   protected var isScala: boolean = _        // does class file describe a scala class?
   protected var hasMeta: boolean = _        // does class file contain jaco meta attribute?s
   protected var busy: boolean = false       // lock to detect recursive reads
-  protected var classTParams: Map[Name,Symbol] =
-    collection.immutable.ListMap.Empty[Name,Symbol]
+  protected var classTParams = Map[Name,Symbol]()
   protected val fresh = new scala.tools.nsc.util.FreshNameCreator
 
   private object metaParser extends MetaParser {
@@ -362,12 +361,13 @@ abstract class ClassfileParser {
     val c = pool.getClassSymbol(in.nextChar)
     if (c != clazz)
       throw new IOException("class file '" + in.file + "' contains wrong " + c)
-    val superType = if (isAttribute) { in.nextChar; definitions.ClassfileAttributeClass.tpe }
+    val superType = if (isAttribute) { in.nextChar; definitions.AttributeClass.tpe }
                     else pool.getSuperClass(in.nextChar).tpe
     val ifaceCount = in.nextChar
-    val parents = (superType ::
-      (for (val i <- List.range(0, ifaceCount))
-       yield pool.getSuperClass(in.nextChar).tpe))
+    var ifaces = for (val i <- List.range(0, ifaceCount)) yield pool.getSuperClass(in.nextChar).tpe
+    if (isAttribute) ifaces = definitions.ClassfileAttributeClass.tpe :: ifaces
+    val parents = superType :: ifaces
+
     instanceDefs = newScope
     staticDefs = newScope
     val classInfo = ClassInfoType(parents, instanceDefs, clazz)

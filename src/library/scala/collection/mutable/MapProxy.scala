@@ -53,6 +53,4 @@ trait MapProxy[A, B] extends Map[A, B] with collection.MapProxy[A, B] {
   override def clone(): Map[A, B] = self.clone()
   [deprecated] override def incl(mappings: Pair[A, B]*): Unit = self.incl(mappings: _*)
   [deprecated] override def excl(keys: A*): Unit = self.excl(keys: _*)
-  [deprecated] override def map[C](f: Pair[A, B] => C): Iterable[C] = self map f
-  [deprecated] override def filter(p: Pair[A, B] => Boolean): Iterable[Pair[A, B]] = self filter p
 }

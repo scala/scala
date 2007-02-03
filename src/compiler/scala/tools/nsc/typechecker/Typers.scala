@@ -1949,10 +1949,10 @@ trait Typers requires Analyzer {
             copy.If(tree, cond1, thenp1, elsep1) setType ptOrLub(List(thenp1.tpe, elsep1.tpe))
           }
 
-        case Match(selector, cases) =>
+        case Match(selector, cases, check) =>
           val selector1 = typed(selector)
           val cases1 = typedCases(tree, cases, selector1.tpe.widen, pt)
-          copy.Match(tree, selector1, cases1) setType ptOrLub(cases1 map (.tpe))
+          copy.Match(tree, selector1, cases1, check) setType ptOrLub(cases1 map (.tpe))
 
         case Return(expr) =>
           val enclMethod = context.enclMethod

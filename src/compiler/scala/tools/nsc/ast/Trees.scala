@@ -407,7 +407,7 @@ trait Trees requires Global {
    *  @param expr
    *  @param selectors
    */
-  case class Import(expr: Tree, selectors: List[Pair[Name, Name]])
+  case class Import(expr: Tree, selectors: List[{Name, Name}])
        extends SymTree
 
   /** Attribute application (constructor arguments + name-value pairs) */
@@ -537,7 +537,7 @@ trait Trees requires Global {
    *      <code>Ident(nme.WILDCARD)</code></li>
    *  </ul>
    */
-  case class Match(selector: Tree, cases: List[CaseDef])
+  case class Match(selector: Tree, cases: List[CaseDef], checkExhaustive: boolean)
        extends TermTree
 
   /** Return expression */
@@ -712,7 +712,7 @@ trait Trees requires Global {
   case Function(vparams, body) =>                                 (eliminated by lambdaLift)
   case Assign(lhs, rhs) =>
   case If(cond, thenp, elsep) =>
-  case Match(selector, cases) =>
+  case Match(selector, cases, check) =>
   case Return(expr) =>
   case Try(block, catches, finalizer) =>
   case Throw(expr) =>
@@ -743,7 +743,7 @@ trait Trees requires Global {
     def AbsTypeDef(tree: Tree, mods: Modifiers, name: Name, lo: Tree, hi: Tree): AbsTypeDef
     def AliasTypeDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[AbsTypeDef], rhs: Tree): AliasTypeDef
     def LabelDef(tree: Tree, name: Name, params: List[Ident], rhs: Tree): LabelDef
-    def Import(tree: Tree, expr: Tree, selectors: List[Pair[Name, Name]]): Import
+    def Import(tree: Tree, expr: Tree, selectors: List[{Name, Name}]): Import
     def Attribute(tree: Tree, constr: Tree, elements: List[Tree]): Attribute
     def DocDef(tree: Tree, comment: String, definition: Tree): DocDef
     def Template(tree: Tree, parents: List[Tree], body: List[Tree]): Template
@@ -758,7 +758,7 @@ trait Trees requires Global {
     def Function(tree: Tree, vparams: List[ValDef], body: Tree): Function
     def Assign(tree: Tree, lhs: Tree, rhs: Tree): Assign
     def If(tree: Tree, cond: Tree, thenp: Tree, elsep: Tree): If
-    def Match(tree: Tree, selector: Tree, cases: List[CaseDef]): Match
+    def Match(tree: Tree, selector: Tree, cases: List[CaseDef], check: boolean): Match
     def Return(tree: Tree, expr: Tree): Return
     def Try(tree: Tree, block: Tree, catches: List[CaseDef], finalizer: Tree): Try
     def Throw(tree: Tree, expr: Tree): Throw
@@ -797,7 +797,7 @@ trait Trees requires Global {
       new AliasTypeDef(mods, name, tparams, rhs).copyAttrs(tree)
     def LabelDef(tree: Tree, name: Name, params: List[Ident], rhs: Tree) =
       new LabelDef(name, params, rhs).copyAttrs(tree)
-    def Import(tree: Tree, expr: Tree, selectors: List[Pair[Name, Name]]) =
+    def Import(tree: Tree, expr: Tree, selectors: List[{Name, Name}]) =
       new Import(expr, selectors).copyAttrs(tree)
     def Attribute(tree: Tree, constr: Tree, elements: List[Tree]) =
       new Attribute(constr, elements)
@@ -827,8 +827,8 @@ trait Trees requires Global {
       new Assign(lhs, rhs).copyAttrs(tree)
     def If(tree: Tree, cond: Tree, thenp: Tree, elsep: Tree) =
       new If(cond, thenp, elsep).copyAttrs(tree)
-    def Match(tree: Tree, selector: Tree, cases: List[CaseDef]) =
-      new Match(selector, cases).copyAttrs(tree)
+    def Match(tree: Tree, selector: Tree, cases: List[CaseDef], check: boolean) =
+      new Match(selector, cases, check).copyAttrs(tree)
     def Return(tree: Tree, expr: Tree) =
       new Return(expr).copyAttrs(tree)
     def Try(tree: Tree, block: Tree, catches: List[CaseDef], finalizer: Tree) =
@@ -912,7 +912,7 @@ trait Trees requires Global {
       if (name0 == name) && (params0 == params) && (rhs0 == rhs) => t
       case _ => copy.LabelDef(tree, name, params, rhs)
     }
-    def Import(tree: Tree, expr: Tree, selectors: List[Pair[Name, Name]]) = tree match {
+    def Import(tree: Tree, expr: Tree, selectors: List[{Name, Name}]) = tree match {
       case t @ Import(expr0, selectors0)
       if (expr0 == expr) && (selectors0 == selectors) => t
       case _ => copy.Import(tree, expr, selectors)
@@ -987,10 +987,10 @@ trait Trees requires Global {
       if (cond0 == cond) && (thenp0 == thenp) && (elsep0 == elsep) => t
       case _ => copy.If(tree, cond, thenp, elsep)
     }
-    def Match(tree: Tree, selector: Tree, cases: List[CaseDef]) =  tree match {
-      case t @ Match(selector0, cases0)
-      if (selector0 == selector) && (cases0 == cases) => t
-      case _ => copy.Match(tree, selector, cases)
+    def Match(tree: Tree, selector: Tree, cases: List[CaseDef], check: boolean) =  tree match {
+      case t @ Match(selector0, cases0, check0)
+      if (selector0 == selector) && (cases0 == cases) && (check0 == check) => t
+      case _ => copy.Match(tree, selector, cases, check)
     }
     def Return(tree: Tree, expr: Tree) = tree match {
       case t @ Return(expr0)
@@ -1161,8 +1161,8 @@ trait Trees requires Global {
         copy.Assign(tree, transform(lhs), transform(rhs))
       case If(cond, thenp, elsep) =>
         copy.If(tree, transform(cond), transform(thenp), transform(elsep))
-      case Match(selector, cases) =>
-        copy.Match(tree, transform(selector), transformCaseDefs(cases))
+      case Match(selector, cases, check) =>
+        copy.Match(tree, transform(selector), transformCaseDefs(cases), check)
       case Return(expr) =>
         copy.Return(tree, transform(expr))
       case Try(block, catches, finalizer) =>
@@ -1299,7 +1299,7 @@ trait Trees requires Global {
         traverse(lhs); traverse(rhs)
       case If(cond, thenp, elsep) =>
         traverse(cond); traverse(thenp); traverse(elsep)
-      case Match(selector, cases) =>
+      case Match(selector, cases, _) =>
         traverse(selector); traverseTrees(cases)
       case Return(expr) =>
         traverse(expr)
