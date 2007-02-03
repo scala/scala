@@ -21,6 +21,13 @@ trait PatternNodes requires transform.ExplicitOuter {
     var or: PatternNode = _
     var and: PatternNode = _
 
+    def forEachAlternative(f: PatternNode => Unit) { // only for header?
+      var z = this;
+      while(z ne null) {
+        f(z)
+        z = z.or
+      }
+    }
     def bodyToTree(): Tree = this match {
       case _b:Body =>
         _b.body(0)
@@ -276,6 +283,16 @@ trait PatternNodes requires transform.ExplicitOuter {
   class Header(sel1: Tree, next1: Header) extends PatternNode {
     var selector: Tree = sel1
     var next: Header = next1
+
+    def findLast: PatternNode = {
+      var h: Header = this;
+      while(h.next != null) { h = h.next }
+      var g: PatternNode = h
+      while(g.or != null)   { g = g.or }
+      g
+    }
+
+    var isSubHeader = false;
   }
 
   class Body(bound1: Array[Array[ValDef]], guard1:Array[Tree], body1:Array[Tree]) extends PatternNode {

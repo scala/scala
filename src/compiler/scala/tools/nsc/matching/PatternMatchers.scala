@@ -321,8 +321,23 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
         target.and = pBody(caseDef.pos, env.getBoundVars(), guard, body)
       else if (target.and.isInstanceOf[Body])
         updateBody(target.and.asInstanceOf[Body], env.getBoundVars(), guard, body)
-      else
-        cunit.error(pat.pos, "duplicate case")
+      else target.and match {
+        case _h: Header =>
+          val h = _h.findLast;
+
+        // target.and is a header
+        //
+        //print()
+        //cunit.error(pat.pos, "duplicate case")
+        h.or = pDefaultPat(caseDef.pos, target.getTpe)
+        h.or.and = pBody(caseDef.pos, env.getBoundVars(), guard, body)
+        //print()
+        //Console.println("tao = "+target.and.or)
+        //Console.println("tao = "+target.and.or.or)
+        case _ =>
+          Predef.error("overlapping match at unit = " + cunit + "; cdef = " + caseDef);
+
+      }
     }
 
     protected def updateBody(tree: Body, bound: Array[ValDef],
@@ -501,7 +516,7 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
         if (ts.length < 2)
           Predef.error("ill-formed Alternative")
         val subroot = pConstrPat(header.pos, header.getTpe())
-        subroot.and = pHeader(header.pos, header.getTpe(), header.selector.duplicate)
+        subroot.and = { val h = pHeader(header.pos, header.getTpe(), header.selector.duplicate); h.isSubHeader = true; h }
         val subenv = new CaseEnv
         var i = 0; while (i < ts.length) {
           val target = enter1(ts(i), -1, subroot, subroot.symbol, subenv)
@@ -623,6 +638,7 @@ print()
           bodycond = {h => b.or = h; b} // depends on the side-effect to curHeader (*)
           null
         }
+      case _ => Predef.error("cannot happen");
     }
     if (curHeader eq null) {                  // check if we have to add a new header
       //Console.println(" -- adding new header")
@@ -930,6 +946,7 @@ print()
     var patNode = root.and
     while (patNode ne null) {
       var node = patNode.or
+      // we have checked beforehand that certain pattern nodes do not appear
       while (node ne null) {
         node match {
           case DefaultPat() =>
@@ -959,6 +976,8 @@ print()
             mappings = insert1(value.toInt,node.and.bodyToTree(),mappings);
           node = node.or;
 */ // these correct?
+          case _ =>
+            Predef.error("cannot happen")
         }
       }
       patNode = patNode.nextH()
@@ -1011,7 +1030,10 @@ print()
       emptySymbolSet else {
       //Console.println("/"+tpesym)
       //Console.println(tpesym.children)
-      tpesym.children.flatMap { x => if(x.hasFlag(Flags.CASE)) (emptySymbolSet+x) else checkExCoverage(x) }
+      tpesym.children.flatMap { x =>
+        //if(x.hasFlag(Flags.CASE)) (emptySymbolSet+x) else checkExCoverage(x)
+        checkExCoverage(x) + x
+      }
     }
     def andIsUnguardedBody(p1:PatternNode) = p1.and match {
       case p: Body => p.guard.length == 1 && p.guard(0) == EmptyTree
@@ -1026,6 +1048,9 @@ print()
     // returns true if this tree is optimizable
     // throws a warning if is not exhaustive
     def optimize1(selType:Type, alternatives1: PatternNode ): {Boolean, collection.immutable.Set[Symbol], collection.immutable.Set[Symbol]} = {
+      if(alternatives1 eq null) return {false, emptySymbolSet, emptySymbolSet}  // only case _
+
+      //Console.println("optimize1("+selType+","+alternatives1+")")
       var res = true
 // if selType hasflag SEALED, enumerate selType.symbol.children
 // to be very precise, take into account the case that a non case child is sealed.
@@ -1034,19 +1059,28 @@ print()
         return {false, null, emptySymbolSet};
       // contains cases that have not been covered
       var coveredCases: SymSet   = emptySymbolSet // only case _
-      var remainingCases = if(alts ne null) checkExCoverage(selType.symbol) else emptySymbolSet // only case _
+      var remainingCases = checkExCoverage(selType.symbol)
       var cases = 0;
 
       def traverse(alts:PatternNode) {
+        //Console.println("traverse, alts="+alts)
         alts match {
           case ConstrPat(_) =>
+            //Console.print("ConstPat! of"+alts.getTpe.symbol)
             if (alts.getTpe.symbol.hasFlag(Flags.CASE)) {
               coveredCases   = coveredCases + alts.getTpe.symbol
               remainingCases = remainingCases - alts.getTpe.symbol
               cases = cases + 1
-            }
-            else {
-              val covered = remainingCases.filter(x => isSubType(x.tpe, alts.getTpe))
+            } else {
+              val covered = remainingCases.filter { x =>
+                val enclClass = owner.enclClass
+                //Console.println("x.tpe is "+x.tpe)
+                val y = alts.getTpe.prefix.memberType(x)
+                //Console.println(y + " is sub of "+alts.getTpe+" ? "+isSubType(y, alts.getTpe));
+                isSubType(y, alts.getTpe)
+              }
+              //Console.println(" covered : "+covered)
+
               coveredCases   = coveredCases ++ covered
               remainingCases = remainingCases -- covered
               res = false
@@ -1071,20 +1105,21 @@ print()
           case ConstantPat(_) =>
             res = false
 
-          case AltPat(branches) =>
+          case AltPat(branchesHeader) =>
             res = false
-            traverse(branches.or)
+          //Console.println("----------bfore: "+coveredCases)
+            branchesHeader.or.forEachAlternative(traverse)
+          //Console.println("----------after: "+coveredCases)
 
           case VariablePat(_) =>
             res = false
+
+          case _:Header | _:Body =>
+            Predef.error("cannot happen")
         }
       }
 
-      while (alts ne null) {
-        traverse(alts)
-        alts = alts.or;
-      }
-
+      alts.forEachAlternative(traverse)
       return {res && (cases > 2), coveredCases, remainingCases};
     } // def optimize
 
@@ -1114,7 +1149,7 @@ print()
           } else if(next ne null) {
             // ignore, more headers to come
             // Console.println(next.print("", new StringBuilder()).toString())
-          } else {
+          } else if(! _h.isSubHeader) { // don't check twice (AlternativePat creates subheaders)
             val realRemainingCases = remainingCases -- carryCovered
             //Console.println("remain "+remainingCases+" carry covered "+ carryCovered + "real "+realRemainingCases)
             if(!realRemainingCases.isEmpty) {
