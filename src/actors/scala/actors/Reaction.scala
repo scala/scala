@@ -67,10 +67,10 @@ private[actors] class Reaction(a: Actor,
       case _: SuspendActorException => {
         // do nothing (continuation is already saved)
       }
-      case _: Throwable => {
+      case t: Throwable => {
         // links
         if (!a.links.isEmpty) {
-          a.exitLinked()
+          a.exitLinked(t)
         }
       }
     }

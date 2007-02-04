@@ -12,8 +12,7 @@
 package scala.actors.remote
 
 
-import java.lang.Thread
-import java.lang.SecurityException
+import java.lang.{Thread, SecurityException}
 
 import java.io.{BufferedReader, DataInputStream, DataOutputStream,
                 IOException, InputStreamReader, OutputStreamWriter,
@@ -34,7 +33,8 @@ object TcpService {
     }
     catch {
       case ioe: IOException =>
-        // this happens when trying to open a socket twice at the same port
+        // this happens when trying to open a socket twice
+        // at the same port
         // try again
         generatePort
       case se: SecurityException =>

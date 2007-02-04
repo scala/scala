@@ -239,16 +239,16 @@ object Actor {
    * <p>
    *   For each linked actor <code>a</code> with
    *   <code>trapExit</code> set to <code>true</code>, send message
-   *   <code>Exit(self, reason)</code> to <code>a</code>.
+   *   <code>{'EXIT, self, reason}</code> to <code>a</code>.
    * </p>
    * <p>
    *   For each linked actor <code>a</code> with
    *   <code>trapExit</code> set to <code>false</code> (default),
    *   call <code>a.exit(reason)</code> if
-   *   <code>!reason.equals("normal")</code>.
+   *   <code>reason != 'normal</code>.
    * </p>
    */
-  def exit(reason: String): Nothing = self.exit(reason)
+  def exit(reason: AnyRef): Nothing = self.exit(reason)
 }
 
 /**
@@ -569,7 +569,7 @@ trait Actor extends OutputChannel[Any] {
   }
 
   var trapExit = false
-  private[actors] var exitReason: String = "normal"
+  private[actors] var exitReason: AnyRef = 'normal
   private[actors] var exiting = false
   private[actors] var shouldExit = false
 
@@ -581,17 +581,17 @@ trait Actor extends OutputChannel[Any] {
    * <p>
    *   For each linked actor <code>a</code> with
    *   <code>trapExit</code> set to <code>true</code>, send message
-   *   <code>Exit(self, reason)</code> to <code>a</code>.
+   *   <code>{'EXIT, self, reason}</code> to <code>a</code>.
    * </p>
    * <p>
    *   For each linked actor <code>a</code> with
    *   <code>trapExit</code> set to <code>false</code> (default),
    *   call <code>a.exit(reason)</code> if
-   *   <code>!reason.equals("normal")</code>.
+   *   <code>reason != 'normal</code>.
    * </p>
    */
-  def exit(reason: String): Nothing = {
-    if (reason.equals("normal")) kill()
+  def exit(reason: AnyRef): Nothing = {
+    if (reason == 'normal) kill()
     // links
     if (!links.isEmpty) {
       exitReason = reason
@@ -600,7 +600,7 @@ trait Actor extends OutputChannel[Any] {
     throw new ExitActorException
   }
 
-  def exit(): Nothing = exit("normal")
+  def exit(): Nothing = exit('normal)
 
   // Assume !links.isEmpty
   private[actors] def exitLinked() {
@@ -615,11 +615,26 @@ trait Actor extends OutputChannel[Any] {
     })
   }
 
+  // Assume !links.isEmpty
+  private[actors] def exitLinked(reason: AnyRef) {
+    exitReason = reason
+    exiting = true
+    // remove this from links
+    links = links.remove(this.==)
+    // exit linked processes
+    links.foreach((linked: Actor) => {
+      unlink(linked)
+      if (!linked.exiting)
+        linked.exit(this, exitReason)
+    })
+  }
+
   // Assume !this.exiting
-  private[actors] def exit(from: Actor, reason: String) {
-    if (trapExit)
-      this ! Exit(from, reason)
-    else if (!reason.equals("normal"))
+  private[actors] def exit(from: Actor, reason: AnyRef) {
+    if (trapExit) {
+      this ! {'EXIT, from, reason}
+    }
+    else if (reason != 'normal)
       this.synchronized {
         shouldExit = true
         exitReason = reason
@@ -631,18 +646,6 @@ trait Actor extends OutputChannel[Any] {
   }
 
 }
-
-
-/**
- * Messages of this type are sent to each actor <code>a</code>
- * that is linked to an actor <code>b</code> whenever
- * <code>b</code> terminates and <code>a</code> has
- * <code>trapExit</code> set to <code>true</code>.
- *
- * @version 0.9.2
- * @author Philipp Haller
- */
-case class Exit(from: Actor, reason: String)
 
 
 /**

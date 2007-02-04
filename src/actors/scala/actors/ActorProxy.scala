@@ -33,18 +33,18 @@ private[actors] class ActorProxy(t: Thread) extends Actor {
    * <p>
    *   For each linked actor <code>a</code> with
    *   <code>trapExit</code> set to <code>true</code>, send message
-   *   <code>Exit(self, reason)</code> to <code>a</code>.
+   *   <code>{'EXIT, self, reason}</code> to <code>a</code>.
    * </p>
    * <p>
    *   For each linked actor <code>a</code> with
    *   <code>trapExit</code> set to <code>false</code> (default),
    *   call <code>a.exit(reason)</code> if
-   *   <code>!reason.equals("normal")</code>.
+   *   <code>reason != 'normal</code>.
    * </p>
    *
    * @param reason the exit reason of the interrupted thread.
    */
-  override def exit(reason: String): Nothing = {
+  override def exit(reason: AnyRef): Nothing = {
     kill()
     // links
     if (!links.isEmpty) {
