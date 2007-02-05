@@ -472,8 +472,6 @@ trait Actor extends OutputChannel[Any] {
 
   private[actors] var kill = () => {}
 
-  private class ExitSuspendLoop extends Throwable
-
   def suspendActor() {
     isWaiting = true
     while(isWaiting) {
@@ -492,24 +490,21 @@ trait Actor extends OutputChannel[Any] {
     var waittime = msec
     var fromExc = false
     isWaiting = true
-
-    try {
-      while(isWaiting) {
-        try {
-          fromExc = false
-          wait(waittime)
-        } catch {
-          case _: InterruptedException => {
-            fromExc = true
-            val now = Platform.currentTime
-            val waited = now-ts
-            waittime = msec-waited
-            if (waittime < 0) { isWaiting = false }
-          }
+    while(isWaiting) {
+      try {
+        fromExc = false
+        wait(waittime)
+      } catch {
+        case _: InterruptedException => {
+          fromExc = true
+          val now = Platform.currentTime
+          val waited = now-ts
+          waittime = msec-waited
+          if (waittime < 0) { isWaiting = false }
         }
-        if (!fromExc) throw new ExitSuspendLoop
       }
-    } catch { case _: ExitSuspendLoop => }
+      if (!fromExc) { isWaiting = false }
+    }
     // links: check if we should exit
     if (shouldExit) exit()
   }
