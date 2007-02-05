@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -88,19 +88,15 @@ trait Iterable[+A] {
    */
   def elements: Iterator[A]
 
-  /** Appends two iterable objects
+  /** Appends two iterable objects.
    *
    *  @return the new iterable object
    *  @deprecated  use <code>++</code> instead
    */
-  [deprecated] def concat [B >: A](that: Iterable[B]): Iterable[B] = {
-    val buf = new ArrayBuffer[B]
-    this copyToBuffer buf
-    that copyToBuffer buf
-    buf
-  }
+  [deprecated] def concat[B >: A](that: Iterable[B]): Iterable[B] =
+    this ++ that
 
-  /** Appends two iterable objects
+  /** Appends two iterable objects.
    *
    *  @return the new iterable object
    */
@@ -111,11 +107,12 @@ trait Iterable[+A] {
     buf
   }
 
-  /** Returns the iterable resulting from applying the given function <code>f</code> to each
-   *  element of this iterable.
+  /** Returns the iterable resulting from applying the given function
+   *  <code>f</code> to each element of this iterable.
    *
    *  @param f function to apply to each element.
-   *  @return <code>f(a0), ..., f(an)</code> if this iterable is <code>a0, ..., an</code>.
+   *  @return <code>f(a<sub>0</sub>), ..., f(a<sub>n</sub>)</code>
+   *          if this iterable is <code>a<sub>0</sub>, ..., an</code>.
    */
   def map[B](f: A => B): Iterable[B] = {
     val buf = new ArrayBuffer[B]
@@ -182,7 +179,8 @@ trait Iterable[+A] {
     new ArrayBuffer[A] ++ elements.take(n)
 
   /** Returns this iterable without its <code>n</code> first elements
-   *  If this iterable has less than <code>n</code> elements, the empty iterable is returned.
+   *  If this iterable has less than <code>n</code> elements, the empty
+   *  iterable is returned.
    *
    *  @param n the number of elements to drop
    *  @return  the new iterable
