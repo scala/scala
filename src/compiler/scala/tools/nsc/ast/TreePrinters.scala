@@ -105,31 +105,11 @@ abstract class TreePrinters {
     }
 
     def printAttributes(tree: Tree): unit = {
-      def attrInfoToString(attr: AttrInfo): String = {
-        val str = new StringBuilder()
-        attr match {
-          case AttrInfo(tp, args, nvPairs) =>
-            str.append(tp.toString())
-            if (!args.isEmpty)
-              str.append(args.map(.escapedStringValue).mkString("(", ",", ")"))
-            if (!nvPairs.isEmpty)
-              for (val {Pair(name, value), index} <- nvPairs.zipWithIndex) {
-                if (index > 0)
-                  str.append(", ")
-                str.append(name).append(" = ").append(value)
-              }
-            str.toString
-        }
-      }
       val attrs = tree.symbol.attributes
-      if (!attrs.isEmpty) {
-        print(attrs.map(attrInfoToString).mkString("[", ",", "]"))
-      }
+      if (!attrs.isEmpty) print(attrs mkString ("[", ", ", "]"))
       else {
         val attrs = tree.asInstanceOf[MemberDef].mods.attributes
-        if (!attrs.isEmpty) {
-          printRow(attrs, "[", ",", "]")
-        }
+        if (!attrs.isEmpty) printRow(attrs, "[", ", ", "]")
       }
     }
 

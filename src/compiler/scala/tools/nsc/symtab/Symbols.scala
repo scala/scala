@@ -1306,7 +1306,12 @@ trait Symbols requires SymbolTable {
     def cloneSymbolImpl(owner: Symbol): Symbol = throw new Error()
   }
 
-  case class AttrInfo(atp: Type, args: List[Constant], assocs: List[{Name, Constant}])
+  case class AttrInfo(atp: Type, args: List[Constant], assocs: List[{Name, Constant}]) {
+    override def toString: String =
+      atp +
+      (if (args.isEmpty) "" else args.mkString("(", ", ", ")")) +
+      (assocs map { case Pair(x, y) => x+" = "+y } mkString ("{", ", ", "}"))
+  }
 
   def cloneSymbols(syms: List[Symbol]): List[Symbol] = {
     val syms1 = syms map (.cloneSymbol)

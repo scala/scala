@@ -20,7 +20,7 @@ object UnbalancedTreeMap {
 
   /** The canonical factory for this type
    */
-  def apply[A<% Ordered[A], B](elems: Pair[A, B]*) = empty[A, B] ++ elems
+  def apply[A<% Ordered[A], B](elems: {A, B}*) = empty[A, B] ++ elems
 }
 
 /** This class implements immutable maps using a tree.
@@ -95,7 +95,7 @@ class UnbalancedTreeMap[A <% Ordered[A], +B] extends Map[A, B] {
    *
    *  @return the new iterator
    */
-  def elements: Iterator[Pair[A, B]] = Iterator.empty
+  def elements: Iterator[{A, B}] = Iterator.empty
 
   protected class Node[+B](override protected val key: A,
                            override protected val value: B,
@@ -133,8 +133,8 @@ class UnbalancedTreeMap[A <% Ordered[A], +B] extends Map[A, B] {
       }
     }
 
-    override def elements: Iterator[Pair[A, B]] =
-      left.elements append Iterator.single(Pair(key, value)) append right.elements
+    override def elements: Iterator[{A, B}] =
+      left.elements append Iterator.single({key, value}) append right.elements
   }
 }
 

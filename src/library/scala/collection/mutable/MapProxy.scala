@@ -30,14 +30,14 @@ trait MapProxy[A, B] extends Map[A, B] with collection.MapProxy[A, B] {
   def self: Map[A, B]
 
   override def update(key: A, value: B): Unit = self.update(key, value)
-  override def += (kv: Pair[A, B]) = self += kv
-  override def += (kv1: Pair[A, B], kv2: Pair[A, B], kvs: Pair[A, B]*) = self.+=(kv1, kv2, kvs: _*)
-  override def ++= (kvs: Iterable[Pair[A, B]]) = self ++= kvs
-  override def ++= (kvs: Iterator[Pair[A, B]]) = self ++= kvs
-  override def + (kv: Pair[A, B]): Map[A, B] = self + kv
-  override def + (kv1: Pair[A, B], kv2: Pair[A, B], kvs: Pair[A, B]*): Map[A, B] = self.+(kv1, kv2, kvs: _*)
-  override def ++ (kvs: Iterable[Pair[A, B]]): Map[A, B] = self ++ kvs
-  override def ++ (kvs: Iterator[Pair[A, B]]): Map[A, B] = self ++ kvs
+  override def += (kv: {A, B}) = self += kv
+  override def += (kv1: {A, B}, kv2: {A, B}, kvs: {A, B}*) = self.+=(kv1, kv2, kvs: _*)
+  override def ++= (kvs: Iterable[{A, B}]) = self ++= kvs
+  override def ++= (kvs: Iterator[{A, B}]) = self ++= kvs
+  override def + (kv: {A, B}): Map[A, B] = self + kv
+  override def + (kv1: {A, B}, kv2: {A, B}, kvs: {A, B}*): Map[A, B] = self.+(kv1, kv2, kvs: _*)
+  override def ++ (kvs: Iterable[{A, B}]): Map[A, B] = self ++ kvs
+  override def ++ (kvs: Iterator[{A, B}]): Map[A, B] = self ++ kvs
   override def -= (key: A) = self -= key
   override def -= (key1: A, key2: A, keys: A*) = self.-=(key1, key2, keys: _*)
   override def --= (keys: Iterable[A]) = self --= keys
@@ -49,8 +49,8 @@ trait MapProxy[A, B] extends Map[A, B] with collection.MapProxy[A, B] {
   override def clear(): Unit = self.clear
   override def transform(f: (A, B) => B) = self transform f
   override def retain(p: (A, B) => Boolean): Unit = self retain p
-  override def <<(cmd: Message[Pair[A, B]]): Unit = self << cmd
+  override def <<(cmd: Message[{A, B}]): Unit = self << cmd
   override def clone(): Map[A, B] = self.clone()
-  [deprecated] override def incl(mappings: Pair[A, B]*): Unit = self.incl(mappings: _*)
+  [deprecated] override def incl(mappings: {A, B}*): Unit = self.incl(mappings: _*)
   [deprecated] override def excl(keys: A*): Unit = self.excl(keys: _*)
 }

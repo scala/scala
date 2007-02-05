@@ -37,7 +37,7 @@ class HashMap[A, B] extends Map[A,B] with mutable.HashTable[A] {
   protected var oldValue: Option[B] = _
   protected var deltaSize: int = _
 
-  def empty[C] = new EmptyMap[A, C]
+  def empty[C]: Map[A, C] = new EmptyMap[A, C]
 
   def get(key: A): Option[B] = {
     var m = this

@@ -81,7 +81,7 @@ trait SyntheticMethods requires Analyzer {
       //val retTpe = lub(accs map (.tpe.resultType))
       val method = syntheticMethod(nme.element, FINAL, MethodType(List(IntClass.tpe), AnyClass.tpe/*retTpe*/))
       typed(DefDef(method, vparamss => Match(Ident(vparamss.head.head), {
-	(for(val Pair(sym,i) <- accs.zipWithIndex) yield {
+	(for(val {sym,i} <- accs.zipWithIndex) yield {
 	  CaseDef(Literal(Constant(i)),EmptyTree, Ident(sym))
 	}):::List(CaseDef(Ident(nme.WILDCARD), EmptyTree,
 		    Throw(New(TypeTree(IndexOutOfBoundsExceptionClass.tpe), List(List(

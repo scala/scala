@@ -219,7 +219,7 @@ trait Namers requires Analyzer {
 
     def skolemize(tparams: List[AbsTypeDef]): unit = {
       val tskolems = newTypeSkolems(tparams map (.symbol))
-      for (val Pair(tparam, tskolem) <- tparams zip tskolems) tparam.symbol = tskolem
+      for (val {tparam, tskolem} <- tparams zip tskolems) tparam.symbol = tskolem
     }
 
     def applicableTypeParams(owner: Symbol): List[Symbol] =
@@ -460,21 +460,23 @@ trait Namers requires Analyzer {
           if (vparamSymss.isEmpty) PolyType(List(), restype)
           else (vparamSymss :\ restype)(makeMethodType))
 
+      var resultPt = if (tpt.isEmpty) WildcardType else typer.typedType(tpt).tpe
+
       if (meth.owner.isClass && (tpt.isEmpty || vparamss.exists(.exists(.tpt.isEmpty)))) {
         // try to complete from matching definition in base type
         for (val vparams <- vparamss; val vparam <- vparams)
           if (vparam.tpt.isEmpty) vparam.symbol setInfo WildcardType
-        val schema = thisMethodType(if (tpt.isEmpty) WildcardType else typer.typedType(tpt).tpe)
+        val schema = thisMethodType(resultPt)
         val site = meth.owner.thisType
         val overridden = intersectionType(meth.owner.info.parents).member(meth.name).filter(sym =>
           sym != NoSymbol && (site.memberType(sym) matches schema))
         if (overridden != NoSymbol && !(overridden hasFlag OVERLOADED)) {
-          var pt = site.memberType(overridden) match {
-            case PolyType(tparams, rt) => rt.substSym(tparamSyms, tparams)
+          resultPt = site.memberType(overridden) match {
+            case PolyType(tparams, rt) => rt.substSym(tparams, tparamSyms)
             case mt => mt
           }
           for (val vparams <- vparamss) {
-            var pfs = pt.paramTypes
+            var pfs = resultPt.paramTypes
             for (val vparam <- vparams) {
               if (vparam.tpt.isEmpty) {
                 vparam.tpt.tpe = pfs.head
@@ -482,17 +484,17 @@ trait Namers requires Analyzer {
               }
               pfs = pfs.tail
             }
-            pt = pt.resultType
+            resultPt = resultPt.resultType
+          }
+          resultPt match {
+            case PolyType(List(), rtpe) => resultPt = rtpe
+            case MethodType(List(), rtpe) => resultPt = rtpe
+            case _ =>
           }
           if (tpt.isEmpty) {
             // provisionally assign `meth' a method type with inherited result type
             // that way, we can leave out the result type even if method is recursive.
-            meth setInfo thisMethodType(
-              pt match {
-                case PolyType(List(), rtpe) => rtpe
-                case MethodType(List(), rtpe) => rtpe
-                case _ => pt
-              })
+            meth setInfo thisMethodType(resultPt)
           }
         }
       }
@@ -504,7 +506,8 @@ trait Namers requires Analyzer {
 
       thisMethodType(
         if (tpt.isEmpty) {
-          tpt.tpe = deconstIfNotFinal(meth, typer.computeType(rhs));
+          val pt = resultPt.substSym(tparamSyms, tparams map (.symbol))
+          tpt.tpe = deconstIfNotFinal(meth, typer.computeType(rhs, WildcardType/*pt*/))
           tpt.tpe
         } else typer.typedType(tpt).tpe)
      }
@@ -578,7 +581,7 @@ trait Namers requires Analyzer {
         	  context.error(tpt.pos, "missing parameter type");
         	  ErrorType
                 } else {
-        	  tpt.tpe = deconstIfNotFinal(sym, newTyper(context.make(tree, sym)).computeType(rhs));
+        	  tpt.tpe = deconstIfNotFinal(sym, newTyper(context.make(tree, sym)).computeType(rhs, WildcardType));
         	  tpt.tpe
                 }
               } else {
@@ -622,8 +625,8 @@ trait Namers requires Analyzer {
                 }
                 true
               }
-              def checkSelectors(selectors: List[Pair[Name, Name]]): unit = selectors match {
-                case Pair(from, to) :: rest =>
+              def checkSelectors(selectors: List[{Name, Name}]): unit = selectors match {
+                case {from, to} :: rest =>
         	  if (from != nme.WILDCARD && base != ErrorType) {
         	    if (base.member(from) == NoSymbol && base.member(from.toTypeName) == NoSymbol)
         	      context.error(tree.pos, from.decode + " is not a member of " + expr);
@@ -684,12 +687,12 @@ trait Namers requires Analyzer {
                     error(ntree.pos, "duplicate value for element " + name)
                   } else {
                     names -= sym
-                    Pair(sym.name, getConstant(typer.typed(rhs, EXPRmode | CONSTmode, sym.tpe.resultType)))
+                    {sym.name, getConstant(typer.typed(rhs, EXPRmode | CONSTmode, sym.tpe.resultType))}
                   }
                 }
               }
               for (val name <- names) {
-                if (!name.attributes.contains(Triple(AnnotationDefaultAttr.tpe, List(), List()))) {
+                if (!name.attributes.contains{AnnotationDefaultAttr.tpe, List(), List()}) {
                   error(t.pos, "attribute " + tpt.tpe.symbol.fullNameString + " is missing element " + name.name)
                 }
               }
@@ -781,8 +784,8 @@ trait Namers requires Analyzer {
         else if (isFunctionType(tp) &&
                  (!isFunctionType(elemtp) || tp.typeArgs.length > elemtp.typeArgs.length))
           result = true
-        else Pair(tp, elemtp) match {
-          case Pair(TypeRef(pre, sym, args), TypeRef(elempre, elemsym, elemargs)) =>
+        else {tp, elemtp} match {
+          case {TypeRef(pre, sym, args), TypeRef(elempre, elemsym, elemargs)} =>
             if ((sym == elemsym) && (pre =:= elempre) && (args.length == elemargs.length))
               result = List.forall2(elemargs, args) (isContainedIn)
           case _ =>

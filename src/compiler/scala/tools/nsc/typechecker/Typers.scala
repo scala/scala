@@ -942,21 +942,21 @@ trait Typers requires Analyzer {
      */
     def computeParamAliases(clazz: Symbol, vparamss: List[List[ValDef]], rhs: Tree): unit = {
       if (settings.debug.value) log("computing param aliases for "+clazz+":"+clazz.primaryConstructor.tpe+":"+rhs);//debug
-      def decompose(call: Tree): Pair[Tree, List[Tree]] = call match {
+      def decompose(call: Tree): {Tree, List[Tree]} = call match {
         case Apply(fn, args) =>
-          val Pair(superConstr, args1) = decompose(fn)
+          val {superConstr, args1} = decompose(fn)
           val formals = fn.tpe.paramTypes
           val args2 = if (formals.isEmpty || formals.last.symbol != RepeatedParamClass) args
                       else args.take(formals.length - 1) ::: List(EmptyTree)
           if (args2.length != formals.length)
             assert(false, "mismatch " + clazz + " " + formals + " " + args2);//debug
-          Pair(superConstr, args1 ::: args2)
+          {superConstr, args1 ::: args2}
         case Block(stats, expr) =>
           decompose(stats.head)
         case _ =>
-          Pair(call, List())
+          {call, List()}
       }
-      val Pair(superConstr, superArgs) = decompose(rhs)
+      val {superConstr, superArgs} = decompose(rhs)
       assert(superConstr.symbol ne null)//debug
       if (superConstr.symbol.isPrimaryConstructor) {
         val superClazz = superConstr.symbol.owner
@@ -1189,16 +1189,16 @@ trait Typers requires Analyzer {
     def typedFunction(fun: Function, mode: int, pt: Type): Tree = {
       val codeExpected = !forCLDC && (pt.symbol isNonBottomSubClass CodeClass)
 
-      def decompose(pt: Type): Triple[Symbol, List[Type], Type] =
+      def decompose(pt: Type): {Symbol, List[Type], Type} =
         if (isFunctionType(pt)
             ||
             pt.symbol == PartialFunctionClass &&
             fun.vparams.length == 1 && fun.body.isInstanceOf[Match])
-          Triple(pt.symbol, pt.typeArgs.init, pt.typeArgs.last)
+          {pt.symbol, pt.typeArgs.init, pt.typeArgs.last}
         else
-          Triple(FunctionClass(fun.vparams.length), fun.vparams map (x => NoType), WildcardType)
+          {FunctionClass(fun.vparams.length), fun.vparams map (x => NoType), WildcardType}
 
-      val Triple(clazz, argpts, respt) = decompose(if (codeExpected) pt.typeArgs.head else pt)
+      val {clazz, argpts, respt} = decompose(if (codeExpected) pt.typeArgs.head else pt)
 
       if (fun.vparams.length != argpts.length)
         errorTree(fun, "wrong number of parameters; expected = " + argpts.length)
@@ -2062,12 +2062,12 @@ trait Typers requires Analyzer {
           }
 
         case Super(qual, mix) =>
-          val Pair(clazz, selftype) =
+          val {clazz, selftype} =
             if (tree.symbol != NoSymbol) {
-              Pair(tree.symbol, tree.symbol.thisType)
+              {tree.symbol, tree.symbol.thisType}
             } else {
               val clazzContext = qualifyingClassContext(tree, qual)
-              Pair(clazzContext.owner, clazzContext.prefix)
+              {clazzContext.owner, clazzContext.prefix}
             }
           if (clazz == NoSymbol) setError(tree)
           else {
@@ -2093,12 +2093,12 @@ trait Typers requires Analyzer {
           }
 
         case This(qual) =>
-          val Pair(clazz, selftype) =
+          val {clazz, selftype} =
             if (tree.symbol != NoSymbol) {
-              Pair(tree.symbol, tree.symbol.thisType)
+              {tree.symbol, tree.symbol.thisType}
             } else {
               val clazzContext = qualifyingClassContext(tree, qual)
-              Pair(clazzContext.owner, clazzContext.prefix)
+              {clazzContext.owner, clazzContext.prefix}
             }
           if (clazz == NoSymbol) setError(tree)
           else {
@@ -2282,8 +2282,8 @@ trait Typers requires Analyzer {
       result
     }
 
-    def computeType(tree: Tree): Type = {
-      val tree1 = typed(tree)
+    def computeType(tree: Tree, pt: Type): Type = {
+      val tree1 = typed(tree, pt)
       transformed(tree) = tree1
       tree1.tpe
     }

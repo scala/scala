@@ -50,20 +50,20 @@ abstract class Document {
         false
       case List() =>
         true
-      case Triple(_, _, DocNil) :: z =>
+      case {_, _, DocNil} :: z =>
         fits(w, z)
-      case Triple(i, b, DocCons(h, t)) :: z =>
-        fits(w, Triple(i,b,h) :: Triple(i,b,t) :: z)
-      case Triple(_, _, DocText(t)) :: z =>
+      case {i, b, DocCons(h, t)} :: z =>
+        fits(w, {i,b,h} :: {i,b,t} :: z)
+      case {_, _, DocText(t)} :: z =>
         fits(w - t.length(), z)
-      case Triple(i, b, DocNest(ii, d)) :: z =>
-        fits(w, Triple(i + ii, b, d) :: z)
-      case Triple(_, false, DocBreak) :: z =>
+      case {i, b, DocNest(ii, d)} :: z =>
+        fits(w, {i + ii, b, d} :: z)
+      case {_, false, DocBreak} :: z =>
         fits(w - 1, z)
-      case Triple(_, true, DocBreak) :: z =>
+      case {_, true, DocBreak} :: z =>
         true
-      case Triple(i, _, DocGroup(d)) :: z =>
-        fits(w, Triple(i, false, d) :: z)
+      case {i, _, DocGroup(d)} :: z =>
+        fits(w, {i, false, d} :: z)
     }
 
     def spaces(n: Int): Unit = {
@@ -77,28 +77,28 @@ abstract class Document {
 
     def fmt(k: Int, state: List[FmtState]): Unit = state match {
       case List() => ()
-      case Triple(_, _, DocNil) :: z =>
+      case {_, _, DocNil} :: z =>
         fmt(k, z)
-      case Triple(i, b, DocCons(h, t)) :: z =>
-        fmt(k, Triple(i, b, h) :: Triple(i, b, t) :: z)
-      case Triple(i, _, DocText(t)) :: z =>
+      case {i, b, DocCons(h, t)} :: z =>
+        fmt(k, {i, b, h} :: {i, b, t} :: z)
+      case {i, _, DocText(t)} :: z =>
         writer write t
         fmt(k + t.length(), z)
-      case Triple(i, b, DocNest(ii, d)) :: z =>
-        fmt(k, Triple(i + ii, b, d) :: z)
-      case Triple(i, true, DocBreak) :: z =>
+      case {i, b, DocNest(ii, d)} :: z =>
+        fmt(k, {i + ii, b, d} :: z)
+      case {i, true, DocBreak} :: z =>
         writer write "\n"
         spaces(i);
         fmt(i, z)
-      case Triple(i, false, DocBreak) :: z =>
+      case {i, false, DocBreak} :: z =>
         writer write " "
         fmt(k + 1, z)
-      case Triple(i, b, DocGroup(d)) :: z =>
-        val fitsFlat = fits(width - k, Triple(i, false, d) :: z)
-        fmt(k, Triple(i, !fitsFlat, d) :: z)
+      case {i, b, DocGroup(d)} :: z =>
+        val fitsFlat = fits(width - k, {i, false, d} :: z)
+        fmt(k, {i, !fitsFlat, d} :: z)
     }
 
-    fmt(0, Triple(0, false, DocGroup(this)) :: Nil)
+    fmt(0, {0, false, DocGroup(this)} :: Nil)
   }
 }
 

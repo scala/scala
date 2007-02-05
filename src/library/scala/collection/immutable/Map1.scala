@@ -26,7 +26,7 @@ class Map1[A, +B](key1: A, value1: B) extends Map[A, B] {
 
   def elements = Iterator.single({key1, value1})
 
-  def empty[B] = new EmptyMap[A, B]
+  def empty[B]: Map[A, B] = new EmptyMap[A, B]
 
   def update [B1 >: B](key: A, value: B1): Map[A, B1] =
     if (key == key1) new Map1(key1, value)

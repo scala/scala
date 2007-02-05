@@ -28,7 +28,7 @@ package scala.collection.immutable
 object Set {
   /** The empty set of this type
    */
-  def empty[A] = new EmptySet[A]
+  def empty[A]: Set[A] = new EmptySet[A]
 
   /** The canonical factory for this type
    */

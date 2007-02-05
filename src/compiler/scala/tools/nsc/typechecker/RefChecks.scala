@@ -100,12 +100,12 @@ abstract class RefChecks extends InfoTransform {
                 else "")))
       }
 
-      def overridesType(tp1: Type, tp2: Type): boolean = Pair(tp1, tp2) match {
-        case Pair(MethodType(List(), rtp1), PolyType(List(), rtp2)) =>
+      def overridesType(tp1: Type, tp2: Type): boolean = {tp1, tp2} match {
+        case {MethodType(List(), rtp1), PolyType(List(), rtp2)} =>
           rtp1 <:< rtp2
-        case Pair(PolyType(List(), rtp1), MethodType(List(), rtp2)) =>
+        case {PolyType(List(), rtp1), MethodType(List(), rtp2)} =>
           rtp1 <:< rtp2
-        case Pair(TypeRef(_, sym, _),  _) if (sym.isModuleClass) =>
+        case {TypeRef(_, sym, _),  _} if (sym.isModuleClass) =>
           overridesType(PolyType(List(), tp1), tp2)
         case _ =>
           tp1 <:< tp2
@@ -326,7 +326,7 @@ abstract class RefChecks extends InfoTransform {
 	while (sym != clazz && state != AnyVariance) {
 	  //Console.println("flip: " + sym + " " + sym.isParameter());//DEBUG
 	  if ((sym hasFlag PARAM) && !sym.owner.isConstructor) state = -state;
-	  else if (!sym.owner.isClass) state = AnyVariance;
+	  else if (!sym.owner.isClass || sym.isPrivateLocal) state = AnyVariance;
 	  else if (sym.isAliasType) state = NoVariance;
 	  sym = sym.owner
 	}
@@ -375,7 +375,7 @@ abstract class RefChecks extends InfoTransform {
 
       def validateVarianceArgs(tps: List[Type], variance: int, tparams: List[Symbol]): unit =
 	(tps zip tparams) foreach {
-	  case Pair(tp, tparam) => validateVariance(tp, variance * tparam.variance)
+	  case {tp, tparam} => validateVariance(tp, variance * tparam.variance)
 	}
 
       validateVariance(all, variance)
@@ -582,11 +582,11 @@ abstract class RefChecks extends InfoTransform {
 	  validateVariance(sym, sym.typeOfThis, CoVariance)
 
 	case DefDef(_, _, _, _, _, _) =>
-	  validateVariance(sym, sym.tpe, CoVariance)
+          validateVariance(sym, sym.tpe, CoVariance)
           checkDeprecatedOvers()
 
 	case ValDef(_, _, _, _) =>
-	  validateVariance(sym, sym.tpe, if (sym.isVariable) NoVariance else CoVariance)
+          validateVariance(sym, sym.tpe, if (sym.isVariable) NoVariance else CoVariance)
           checkDeprecatedOvers()
 
 	case AbsTypeDef(_, _, _, _) =>

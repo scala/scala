@@ -161,7 +161,7 @@ abstract class SymbolLoaders {
       //if (! classes.isEmpty) System.err.println("COMPLETE: " + classes)
       // do classes first
 
-      for (val Pair(name, file) <- classes.elements) {
+      for (val {name, file} <- classes.elements) {
         val loader = if (!file.isSourceFile) {
           new ClassfileLoader(file.classFile, file.sourceFile, file.sourcePath);
         } else {
@@ -170,7 +170,7 @@ abstract class SymbolLoaders {
         }
         enterClassAndModule(name, loader)
       }
-      for (val Pair(name, file) <- packages.elements)
+      for (val {name, file} <- packages.elements)
         enterPackage(name, new PackageLoader(file))
     }
     protected def kindString: String = "directory path"

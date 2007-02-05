@@ -57,7 +57,7 @@ object Stream {
       if(str.isEmpty)
         None
       else
-        Some({str.head, str.tail})
+        Some{str.head, str.tail}
   }
 
   /** A stream containing all elements of a given iterator, in the order they are produced.

@@ -24,7 +24,7 @@ package scala.collection.mutable
 object Set {
 
   /** The empty map of this type; this is implemented as a hashtable */
-  def empty[A] = new HashSet[A]
+  def empty[A]: Set[A] = new HashSet[A]
 
   /** The canonical factory for this type
    */

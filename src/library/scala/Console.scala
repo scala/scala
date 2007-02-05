@@ -272,9 +272,9 @@ object Console {
    *  @param format ...
    *  @return ...
    */
-  def readf2(format: String): Pair[Any, Any] = {
+  def readf2(format: String): {Any, Any} = {
     val res = readf(format)
-    Pair(res.head, res.tail.head)
+    {res.head, res.tail.head}
   }
 
   /** Read in some structured input, specified by a format specifier.
@@ -287,7 +287,7 @@ object Console {
    */
   def readf3(format: String): Triple[Any, Any, Any] = {
     val res = readf(format)
-    Triple(res.head, res.tail.head, res.tail.tail.head)
+    {res.head, res.tail.head, res.tail.tail.head}
   }
 
   private def textComponents(a: Array[AnyRef]): List[Any] = {

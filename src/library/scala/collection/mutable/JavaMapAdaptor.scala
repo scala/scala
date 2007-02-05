@@ -45,12 +45,12 @@ class JavaMapAdaptor[A, B](jmap: java.util.Map) extends Map[A, B] {
     def next = iter.next().asInstanceOf[B]
   }
 
-  def elements: Iterator[Pair[A, B]] = new Iterator[Pair[A, B]] {
+  def elements: Iterator[{A, B}] = new Iterator[{A, B}] {
     val iter = jmap.keySet().iterator()
     def hasNext = iter.hasNext()
     def next = {
       val key = iter.next().asInstanceOf[A]
-      Pair(key, apply(key))
+      {key, apply(key)}
     }
   }
 

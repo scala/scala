@@ -57,16 +57,16 @@ abstract class TreeBuilder {
 
   /** Traverse pattern and collect all variable names with their types in buffer */
   private object getvarTraverser extends Traverser {
-    val buf = new ListBuffer[Pair[Name, Tree]]
+    val buf = new ListBuffer[{Name, Tree}]
     def init: Traverser = { buf.clear; this }
     override def traverse(tree: Tree): unit = tree match {
       case Bind(name, Typed(tree1, tpt)) =>
         if ((name != nme.WILDCARD) && (buf.elements forall (name !=)))
-          buf += Pair(name, tpt)
+          buf += {name, tpt}
         traverse(tree1)
       case Bind(name, tree1) =>
         if ((name != nme.WILDCARD) && (buf.elements forall (name !=)))
-          buf += Pair(name, TypeTree())
+          buf += {name, TypeTree()}
         traverse(tree1)
       case _ =>
         super.traverse(tree)
@@ -76,7 +76,7 @@ abstract class TreeBuilder {
   /** Returns list of all pattern variables, possibly with their types,
    *  without duplicates
    */
-  private def getVariables(tree: Tree): List[Pair[Name, Tree]] = {
+  private def getVariables(tree: Tree): List[{Name, Tree}] = {
     getvarTraverser.init.traverse(tree)
     getvarTraverser.buf.toList
   }
@@ -105,11 +105,11 @@ abstract class TreeBuilder {
 
   /** If tree is a variable pattern, return Some("its name and type").
    *  Otherwise return none */
-  private def matchVarPattern(tree: Tree): Option[Pair[Name, Tree]] = tree match {
-    case Ident(name) => Some(Pair(name, TypeTree()))
-    case Bind(name, Ident(nme.WILDCARD)) => Some(Pair(name, TypeTree()))
-    case Typed(Ident(name), tpt) => Some(Pair(name, tpt))
-    case Bind(name, Typed(Ident(nme.WILDCARD), tpt)) => Some(Pair(name, tpt))
+  private def matchVarPattern(tree: Tree): Option[{Name, Tree}] = tree match {
+    case Ident(name) => Some{name, TypeTree()}
+    case Bind(name, Ident(nme.WILDCARD)) => Some{name, TypeTree()}
+    case Typed(Ident(name), tpt) => Some{name, tpt}
+    case Bind(name, Typed(Ident(nme.WILDCARD), tpt)) => Some{name, tpt}
     case _ => None
   }
 
@@ -255,7 +255,7 @@ abstract class TreeBuilder {
   private def makeFor(mapName: Name, flatMapName: Name, enums: List[Enumerator], body: Tree): Tree = {
 
     def makeClosure(pat: Tree, body: Tree): Tree = matchVarPattern(pat) match {
-      case Some(Pair(name, tpt)) =>
+      case Some{name, tpt} =>
         Function(List(ValDef(Modifiers(PARAM), name, tpt, EmptyTree)), body)
       case None =>
         makeVisitor(List(CaseDef(pat, EmptyTree, body)), false)
@@ -377,7 +377,7 @@ abstract class TreeBuilder {
 
   /** Create tree for pattern definition &lt;mods val pat0 = rhs&gt; */
   def makePatDef(mods: Modifiers, pat: Tree, rhs: Tree): List[Tree] = matchVarPattern(pat) match {
-    case Some(Pair(name, tpt)) =>
+    case Some{name, tpt} =>
       List(ValDef(mods, name, tpt, rhs))
 
     case None =>
@@ -400,13 +400,13 @@ abstract class TreeBuilder {
       vars match {
         case List() =>
           List(matchExpr)
-        case List(Pair(vname, tpt)) =>
+        case List{vname, tpt} =>
           List(ValDef(mods, vname, tpt, matchExpr))
         case _ =>
           val tmp = freshName()
           val firstDef = ValDef(Modifiers(PRIVATE | LOCAL | SYNTHETIC), tmp, TypeTree(), matchExpr)
           var cnt = 0
-          val restDefs = for (val Pair(vname, tpt) <- vars) yield {
+          val restDefs = for (val {vname, tpt} <- vars) yield {
             cnt = cnt + 1
             ValDef(mods, vname, tpt, Select(Ident(tmp), newTermName("_" + cnt)))
           }

@@ -102,7 +102,7 @@ abstract class MetaData extends Iterable[MetaData] {
     }
 
   /** returns an iterator on attributes */
-  def elements = new Iterator[MetaData] {
+  def elements: Iterator[MetaData] = new Iterator[MetaData] {
     var x: MetaData = MetaData.this
     def hasNext = Null != x
     def next = {

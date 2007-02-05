@@ -25,7 +25,7 @@ object TreeMap {
 
   /** The canonical factory for this type
    */
-  def apply[A <% Ordered[A], B](elems: Pair[A, B]*) = empty[A, B] ++ elems
+  def apply[A <% Ordered[A], B](elems: {A, B}*) = empty[A, B] ++ elems
 }
 
 /** This class implements immutable maps using a tree.
@@ -104,7 +104,7 @@ extends RedBlack[A] with Map[A, B] {
    *
    *  @return the new iterator
    */
-  def elements: Iterator[Pair[A, B]] = tree.elements
+  def elements: Iterator[{A, B}] = tree.elements
 }
 
 

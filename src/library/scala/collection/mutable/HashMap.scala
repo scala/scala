@@ -26,7 +26,7 @@ object HashMap {
 
   /** The canonical factory for this type
    */
-  def apply[A, B](elems: Pair[A, B]*) = empty[A, B] ++ elems
+  def apply[A, B](elems: {A, B}*) = empty[A, B] ++ elems
 }
 
 [serializable]
