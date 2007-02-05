@@ -1,4 +1,5 @@
 import collection._
+import scala.compat.Platform.currentTime
 
 object Test extends Application {
 
@@ -7,9 +8,9 @@ object Test extends Application {
   def sum[A](xs: Iterable[int]) = (0 /: xs)((x, y) => x + y)
 
   def time(op: => unit): unit = {
-    val start = System.currentTimeMillis;
+    val start = currentTime
     op
-    if (printTime) Console.println("  time = "+(System.currentTimeMillis - start)+"ms")
+    if (printTime) Console.println("  time = "+(currentTime - start)+"ms")
   }
 
   def test(msg: String, s0: collection.immutable.Set[int], iters: int) = {
