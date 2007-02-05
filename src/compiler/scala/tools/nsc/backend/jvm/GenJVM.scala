@@ -37,7 +37,7 @@ abstract class GenJVM extends SubComponent {
   class JvmPhase(prev: Phase) extends StdPhase(prev) {
 
     override def erasedTypes = true
-    val codeGenerator = new BytecodeGenerator
+    object codeGenerator extends BytecodeGenerator
 
     override def run: Unit = {
       if (settings.debug.value) inform("[running phase " + name + " on icode]")
@@ -85,7 +85,7 @@ abstract class GenJVM extends SubComponent {
     var jmethod: JMethod = _
     var jcode: JExtendedCode = _
 
-    var innerClasses: Set[Symbol] = ListSet.Empty // referenced inner classes
+    var innerClasses: Set[Symbol] = ListSet.empty // referenced inner classes
 
     val fjbgContext =
       if (settings.target.value == "jvm-1.5") new FJBGContext(49, 0)

@@ -245,6 +245,7 @@ abstract class CopyPropagation {
                 case _ =>
                   out.bindings += LocalVar(local) -> v;
               }
+            case Nil => error("Incorrect icode. Expecting something on the stack.")
           }
           out.stack = out.stack drop 1;
 
@@ -363,7 +364,7 @@ abstract class CopyPropagation {
      */
     final def cleanReferencesTo(s: copyLattice.State, target: Location): Unit = {
       def cleanRecord(r: Record): Record = {
-        r.bindings filter { case Pair(loc, value) =>
+        r.bindings retain { case Pair(loc, value) =>
           value match {
             case Deref(loc1) if (loc1 == target) => false
             case _ => true
@@ -378,7 +379,7 @@ abstract class CopyPropagation {
         case _ => v
       }}
 
-      s.bindings filter { case Pair(loc, value) =>
+      s.bindings retain { case Pair(loc, value) =>
         (value match {
           case Deref(loc1) if (loc1 == target) => false
           case Record(_, _) =>
@@ -414,7 +415,7 @@ abstract class CopyPropagation {
         case _ => v
       }}
 
-      s.bindings filter { case Pair(loc, value) =>
+      s.bindings retain { case Pair(loc, value) =>
         value match {
           case Deref(Field(_, _)) => false
           case _ => true

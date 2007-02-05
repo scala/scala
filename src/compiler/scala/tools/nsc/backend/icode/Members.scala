@@ -90,6 +90,8 @@ trait Members requires ICodes {
 	      visited += b -> true;
 	    } else
 	      blockToVisit = xs;
+          case _ =>
+            error("impossible match")
 	}
       }
     }
