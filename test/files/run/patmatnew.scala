@@ -14,6 +14,7 @@ trait Shmeez extends AnyRef with Treez {
 }
 
 object Test {
+/*
   import scala.testing.SUnit._
 
   def main(args:Array[String]): Unit = {
@@ -81,4 +82,40 @@ object Test {
       }
     }
   }
+
+
+  // these are exhaustive matches
+  //   should not generate any warnings
+  def f[A](z:{Option[A],Option[A]}) = z match {
+    case {None,Some(x)} => 1
+    case {Some(x),None } => 2
+    case {Some(x),Some(y)} => 3
+    case _ => 4
+  }
+
+  def g1[A](z:Option[List[A]]) = z match {
+    case Some(Nil) => true
+    case Some(x::Nil) => true
+    case _ => true
+  }
+
+  def g2[A](z:Option[List[A]]) = z match {
+    case Some(x::Nil) => true
+    case Some(_) => false
+    case _ => true
+  }
+
+  def h[A](x:{Option[A],Option[A]}) = x match {
+    case {None,_:Some[_]} => 1
+    case {_:Some[_],None } => 2
+    case {_:Some[_],_:Some[_]} => 3
+    case _ => 4
+  }
+*/
+  def i = List(1,2) match {
+    case List(1) =>
+    case List(1,2,xs @ _*) =>
+    case Nil =>
+  }
 }
+

@@ -10,11 +10,14 @@ patmatexhaust.scala:24: warning: does not cover case {class Kult}
 patmatexhaust.scala:26: warning: does not cover case {class Qult}
       case {Qult(), Kult(_)}    => // Qult missing
                         ^
-patmatexhaust.scala:45: warning: does not cover case {object Gu}
-    def ma4(x:Deep) = x match { // missing cases: Gu
+patmatexhaust.scala:44: warning: does not cover cases {object Gu,class Gp}
+    def ma4(x:Deep) = x match { // missing cases: Gu, Gp
                       ^
-patmatexhaust.scala:57: error: unreachable code
+patmatexhaust.scala:51: warning: does not cover case {class Gp}
+      case Ga =>
+           ^
+patmatexhaust.scala:65: error: unreachable code
       case 1 => 
              ^
-5 warnings found
+6 warnings found
 one error found

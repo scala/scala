@@ -28,6 +28,12 @@ trait PatternNodes requires transform.ExplicitOuter {
         z = z.or
       }
     }
+
+    def isUnguardedBody = this match {
+      case b:Body => b.hasUnguarded
+      case _      => false
+    }
+
     def bodyToTree(): Tree = this match {
       case _b:Body =>
         _b.body(0)
@@ -211,7 +217,7 @@ trait PatternNodes requires transform.ExplicitOuter {
           val next = _h.next
           sb.append(indent + "HEADER(" + patNode.getTpe() +
                           ", " + selector + ")").append('\n')
-          patNode.or.print(indent + "|", sb)
+          if(patNode.or ne null) patNode.or.print(indent + "|", sb)
           if (next ne null)
             next.print(indent, sb)
           else
@@ -293,12 +299,25 @@ trait PatternNodes requires transform.ExplicitOuter {
     }
 
     var isSubHeader = false;
+
+    // returns true if this header node has a catch all case
+
+    def catchesAll: Boolean = {
+      //Console.println(this.print("  catchesAll %%%%", new StringBuilder()).toString)
+      val p = findLast
+      (p.isDefaultPat && p.and.isUnguardedBody)
+    }
   }
 
+  /** contains at least one body, so arrays are always nonempty
+   */
   class Body(bound1: Array[Array[ValDef]], guard1:Array[Tree], body1:Array[Tree]) extends PatternNode {
     var bound = bound1
     var guard = guard1
     var body = body1
+
+    def hasUnguarded = guard.exists { x => x == EmptyTree }
+
   }
 
   case class DefaultPat()extends PatternNode

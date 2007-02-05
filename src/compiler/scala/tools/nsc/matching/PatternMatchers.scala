@@ -47,6 +47,9 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
 
     protected var optimize = true
 
+    /** if this is false, will not check exhaustivity */
+    protected var doCheckExhaustive = true
+
     /** the owner of the pattern matching expression
      */
     var owner:Symbol = _
@@ -72,8 +75,9 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
     var handleOuter: Tree=>Tree = _
     /** init method, also needed in subclass AlgebraicMatcher
      */
-    def initialize(selector: Tree, owner: Symbol, handleOuter:Tree=>Tree): Unit = {
+    def initialize(selector: Tree, doCheckExhaustive: Boolean, owner: Symbol, handleOuter:Tree=>Tree): Unit = {
       this.owner = owner
+      this.doCheckExhaustive = doCheckExhaustive
       this.selector = selector
       this.handleOuter = handleOuter
       this.root = pConstrPat(selector.pos, selector.tpe.widen);
@@ -430,11 +434,12 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
         }
        node
 
-      case t @ UnApply(fn, args)  => pUnapplyPat(tree.pos, fn)
+      case t @ UnApply(fn, args)  =>
+        pUnapplyPat(tree.pos, fn)
 
       case t @ Apply(fn, args) =>             // pattern with args
         //Console.println("Apply node: "+t);
-        //Console.println("isSeqApply "+isSeqApply(t));
+        //Console.println("isSeqApply "+isSeqApply(t)); // todo:do seq applies still exist?
         if (isSeqApply(t)) {
           args(0) match {
             //  case Sequence(ts)=>
@@ -621,6 +626,22 @@ print()
    */
   protected def enter1(pat: Tree, index: Int, target: PatternNode,
                        casted: Symbol, env: CaseEnv): PatternNode = {
+
+                         // special case List ... not yet
+/*
+    pat match {
+      case UnApply(fn, List(ArrayValue(zs, pats))) if isSameType(definitions.ListModule.tpe, fn.symbol.owner.tpe) =>
+        Console.println("special case List"+pats)
+        Console.println("special case zs = "+zs)
+        def makeConsPat(p:Tree) = {
+          val constpe = typeRef(definitions.ConsClass.tpe.prefix, definitions.ConsClass, List(zs.tpe))
+          val patNode = pConstrPat(pat.pos, )
+          patNode.and = newHeader(pat.pos, )
+        }
+      null
+      case _ =>
+    }
+*/
     //Console.println("enter(" + pat + ", " + index + ", " + target + ", " + casted + ")");
     var bodycond: PatternNode => Body = null // in case we run into a body (combination of typed pattern and constructor pattern, see bug#644)
     val patArgs = patternArgs(pat);      // get pattern arguments
@@ -1036,18 +1057,15 @@ print()
       }
     }
     def andIsUnguardedBody(p1:PatternNode) = p1.and match {
-      case p: Body => p.guard.length == 1 && p.guard(0) == EmptyTree
-      case _       => false
-    }
-    def andIsGuarded(p1:PatternNode) = p1.and match {
-      case p: Body => p.guard.length >= 1 && p.guard(0) == EmptyTree
+      case p: Body => p.hasUnguarded
       case _       => false
     }
 
 
-    // returns true if this tree is optimizable
-    // throws a warning if is not exhaustive
-    def optimize1(selType:Type, alternatives1: PatternNode ): {Boolean, collection.immutable.Set[Symbol], collection.immutable.Set[Symbol]} = {
+    /** returns true if this tree is optimizable
+     *  throws a warning if is not exhaustive
+     */
+    def optimize1(selType:Type, alternatives1: PatternNode): { Boolean, SymSet, SymSet } = {
       if(alternatives1 eq null) return {false, emptySymbolSet, emptySymbolSet}  // only case _
 
       //Console.println("optimize1("+selType+","+alternatives1+")")
@@ -1097,7 +1115,6 @@ print()
               coveredCases   = emptySymbolSet
               remainingCases = emptySymbolSet
             }
-
           case UnapplyPat(_,_) | SequencePat(_, _) | RightIgnoringSequencePat(_, _, _) =>
             res = false
             remainingCases = emptySymbolSet
@@ -1128,21 +1145,25 @@ print()
     var res: Tree = Literal(Constant(false)); //.setInfo(defs.BooleanClass);
     var lastSelector: Tree = null
     var carryCovered: SymSet = emptySymbolSet
-    var ignoreCovered = false // indicates whether we have given up, due to unapply
+    val oldDoCheckExhaustive = doCheckExhaustive
     while (node ne null)
     node match {
 
       case _h:Header =>
+        //Console.println(_h.print("!!!! visit ", new StringBuilder()).toString())
+
         val selector = _h.selector;
         if(selector != lastSelector) {
           carryCovered = emptySymbolSet;
-          ignoreCovered = false
         }
+        doCheckExhaustive = doCheckExhaustive && !_h.catchesAll // nice global variable here
+        //Console.print("doCheckExhaustive? "+doCheckExhaustive+ " ")
+        //Console.println(" catches all?"+_h.catchesAll)
       //Console.println("sel:"+selector+" last"+lastSelector+" - "+(selector == lastSelector))
         val next = _h.next;
         //res = And(mkNegate(res), toTree(node.or, selector));
         val {doOptimize, coveredCases, remainingCases} = optimize1(node.getTpe, node.or)
-        if(!remainingCases.isEmpty && !ignoreCovered) {
+        if(!remainingCases.isEmpty && doCheckExhaustive) {
           carryCovered = carryCovered ++ coveredCases // ??
           if(next != null && andIsUnguardedBody(next.or)) {
             // ignore, default case
@@ -1154,12 +1175,12 @@ print()
             //Console.println("remain "+remainingCases+" carry covered "+ carryCovered + "real "+realRemainingCases)
             if(!realRemainingCases.isEmpty) {
               val word = if(realRemainingCases.size > 1) "cases " else "case "
+              //Console.println(_h.print("non-exhaustive ", new StringBuilder()).toString())
               cunit.warning(node.pos, "does not cover "+word+realRemainingCases.elements.mkString("{",",","}"))
+              //Console.println("full"); print()
               //Console.println(_h.print("", new StringBuilder()).toString())
             }
           }
-        } else {
-          ignoreCovered = true
         }
         if (doOptimize)
           res = Or(res, toOptTree(node.or, selector));
@@ -1205,6 +1226,7 @@ print()
         case _ =>
           scala.Predef.error("error in toTree");
     }
+    doCheckExhaustive = oldDoCheckExhaustive
     return res
   }
 
@@ -1364,7 +1386,7 @@ print()
                  }
             }
             Or(And(checkType,
-             And(Apply(fn1,List(useSelector)),
+             And(Apply(handleOuter(fn1),List(useSelector)), // test
                  toTree(node.and))
              ),
              toTree(node.or, selector.duplicate))
@@ -1387,7 +1409,7 @@ print()
 
              Or(And(checkType,
                        squeezedBlock(
-                         List(ValDef(v,Apply(fn1,List(useSelector)))),
+                         List(ValDef(v,Apply(handleOuter(fn1),List(useSelector)))),
                          And(__opt_nonemp__,
                            squeezedBlock(List(ValDef(casted, __opt_get__)),toTree(node.and))))
                 ),

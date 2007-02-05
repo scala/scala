@@ -278,7 +278,7 @@ with PatternMatchers */ {
 
     /** handles all translation of pattern matching
      */
-    def handlePattern(sel: Tree, ocases: List[CaseDef], owner:Symbol, handleOuter:Tree=>Tree): Tree = {
+    def handlePattern(sel: Tree, ocases: List[CaseDef], doCheckExhaustive: Boolean, owner:Symbol, handleOuter:Tree=>Tree): Tree = {
       // TEMPORARY
       //new NewMatcher().toIR(sel, ocases)
       //
@@ -294,7 +294,7 @@ with PatternMatchers */ {
         EmptyTree
       } else {
         val pm = new PatternMatcher()
-        pm.initialize(sel, owner,handleOuter)
+        pm.initialize(sel, doCheckExhaustive, owner,handleOuter)
         pm.construct(cases)
         //if (global.log()) {
         //  global.log("internal pattern matching structure");

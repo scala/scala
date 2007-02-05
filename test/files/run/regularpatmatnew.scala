@@ -107,6 +107,7 @@ object Test {
     override def runTest() = {
       val res = (Bar(Foo()):Con) match {
         case Bar(xs@_*) => xs // this should be optimized away to a pattern Bar(xs)
+        case _ => Nil
       }
       assertEquals("res instance"+res.isInstanceOf[Seq[Con]]+" res(0)="+res(0), true, res.isInstanceOf[Seq[Foo]] && res(0) == Foo() )
     }

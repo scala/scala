@@ -497,7 +497,7 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
           //Console.println("TransMatcher selector.tpe ="+selector.tpe+")")
           //Console.println("TransMatcher resultType ="+resultType+")")
 
-        val t_untyped = handlePattern(nselector, ncases, currentOwner, transform)
+        val t_untyped = handlePattern(nselector, ncases, checkExhaustive, currentOwner, transform)
 	try {
           //Console.println("t_untyped "+t_untyped.toString())
           val t = atPos(tree.pos) { localTyper.typed(t_untyped, resultType) }

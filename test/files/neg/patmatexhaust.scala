@@ -27,7 +27,6 @@ class TestSealedExhaustive { // compile only
       //case {Qult(), Qult()}    =>
     }
 
-
     sealed class Deep
 
     case object Ga extends Deep
@@ -42,11 +41,11 @@ class TestSealedExhaustive { // compile only
       case _ =>
     }
 
-    def ma4(x:Deep) = x match { // missing cases: Gu
+    def ma4(x:Deep) = x match { // missing cases: Gu, Gp
       case Ga =>
     }
 
-    def zma5(x:Deep) = x match { // exhaustive
+    def ma5(x:Deep) = x match { // Gp
       case Gu =>
       case _ if 1 == 0 =>
       case Ga =>
@@ -55,6 +54,11 @@ class TestSealedExhaustive { // compile only
   def ma6  = List(1,2) match { // give up
     case List(1,2) =>
     case x :: xs =>
+  }
+
+  def ma7 = List(1,2) match { //exhaustive
+    case 1::2::Nil =>
+      case _ =>
   }
   def redundant = 1 match { // include this otherwise script won't test this in files/neg
     case 1 =>
