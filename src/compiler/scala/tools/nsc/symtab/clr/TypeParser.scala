@@ -1,8 +1,8 @@
 /* NSC -- new scala compiler
- * Copyright 2004-2006 LAMP/EPFL
+ * Copyright 2004-2007 LAMP/EPFL
  */
 
-// $Id: TypeParser.scala 8734 2006-09-21 14:56:02Z mihaylov $
+// $Id$
 
 package scala.tools.nsc.symtab.clr;
 

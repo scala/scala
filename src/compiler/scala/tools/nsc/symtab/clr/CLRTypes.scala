@@ -1,8 +1,8 @@
 /* NSC -- new scala compiler
- * Copyright 2004-2006 LAMP/EPFL
+ * Copyright 2004-2007 LAMP/EPFL
  */
 
-// $Id: CLRTypes.scala 9524 2006-12-14 17:54:07Z mihaylov $
+// $Id$
 
 package scala.tools.nsc.symtab.clr;
 
