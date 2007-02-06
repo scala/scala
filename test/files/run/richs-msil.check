@@ -1,9 +1,9 @@
 
 RichCharTest1:
-true
-true
-true
-true
+True
+True
+True
+False
 
 RichIntTest:
 10

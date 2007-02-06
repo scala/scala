@@ -257,7 +257,7 @@ trait StdNames requires SymbolTable {
     val filter = newTermName("filter")
     val finalize_ = newTermName("finalize")
     val flatMap = newTermName("flatMap")
-    val forName = newTermName("forName")
+    val forName = newTermName(if (forMSIL) "GetType" else "forName")
     val foreach = newTermName("foreach")
     val get = newTermName("get")
     val getClass_ = newTermName("getClass")

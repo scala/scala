@@ -204,7 +204,7 @@ object Console {
    */
   def readLine(text: String, args: Any*): String = {
     format(text, args: _*)
-    in.readLine()
+    readLine
   }
 
 
@@ -212,7 +212,7 @@ object Console {
    *
    *  @return the boolean value read from the terminal.
    */
-  def readBoolean: Boolean = in.readLine().toLowerCase() match {
+  def readBoolean: Boolean = readLine.toLowerCase() match {
     case "true" => true
     case "t" => true
     case "yes" => true
@@ -252,7 +252,7 @@ object Console {
    *  @return a list of all extracted values.
    */
   def readf(format: String): List[Any] =
-    textComponents(new MessageFormat(format).parse(in.readLine()))
+    textComponents(new MessageFormat(format).parse(readLine))
 
   /** Read in some structured input, specified by a format specifier.
    *  Opposed to <code>readf</code>, this function only returns the

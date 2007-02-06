@@ -687,9 +687,9 @@ fi;
 
 SCALA="${BIN_DIR}scala";
 if [ "$USEFSC" = "true" ]; then
-    SCALAC="${BIN_DIR}fsc -deprecation -encoding iso-8859-1";
+    SCALAC="${BIN_DIR}fsc -nowarn -deprecation -encoding iso-8859-1";
 else
-    SCALAC="${BIN_DIR}scalac -deprecation -encoding iso-8859-1";
+    SCALAC="${BIN_DIR}scalac -nowarn -deprecation -encoding iso-8859-1";
 fi;
 SCALAP="scalap";
 ANT="ant";

@@ -41,6 +41,13 @@ trait Definitions requires SymbolTable {
     var NullPointerExceptionClass: Symbol = _
     var NonLocalReturnExceptionClass: Symbol = _
 
+    var ValueTypeClass: Symbol = _ // System.ValueType
+    var DelegateClass: Symbol = _ // System.MulticastDelegate
+    var Delegate_scalaCallers: List[Symbol] = List()
+    // Symbol -> (Symbol, Type): scalaCaller -> (scalaMethodSym, DelegateType)
+    // var Delegate_scalaCallerInfos: HashMap[Symbol, Pair[Symbol, Type]] = _
+    var Delegate_scalaCallerTargets: HashMap[Symbol, Symbol] = _
+
     // the scala value classes
     var UnitClass: Symbol = _
     var BooleanClass: Symbol = _
@@ -269,6 +276,32 @@ trait Definitions requires SymbolTable {
         case _ =>
           false
       }
+
+    def isCorrespondingDelegate(delegateType: Type, functionType: Type): boolean = {
+      var isCD: Boolean = false;
+      if (DelegateClass != null && delegateType != null &&
+	  isSubType(delegateType, DelegateClass.tpe))
+	{
+	  val meth: Symbol = delegateType.member(nme.apply)
+	  meth.tpe match {
+	    case MethodType(delegateParams, delegateReturn) =>
+	      val delegateParamsO = delegateParams.map(pt => {if (pt == definitions.AnyClass.tpe) definitions.ObjectClass.tpe else pt});
+	      if(isFunctionType(functionType))
+		functionType match {
+		  case TypeRef(_, _, args) =>
+		    if(delegateParamsO == args.dropRight(1) &&
+		       delegateReturn == args.last)
+		      isCD = true;
+
+		  case _ => ();
+		}
+
+	    case _ => ()
+	  }
+	}
+      isCD
+    }
+
 /*    val RemoteFunctionClass: Array[Symbol] = new Array(MaxFunctionArity + 1)
       def remoteFunctionApply(n: Int) = getMember(RemoteFunctionClass(n), nme.apply)
       def remoteFunctionType(formals: List[Type], restpe: Type) =
@@ -428,7 +461,17 @@ trait Definitions requires SymbolTable {
 
     private def newValueClass(name: Name, tag: char): Symbol = {
       def boxedName: String =
-        "scala.runtime.Boxed" + name
+        if (!forMSIL) "scala.runtime.Boxed" + name
+        else "System." + (name match {
+          case nme.Boolean => "Boolean"
+          case nme.Byte => "Byte"
+          case nme.Char => "Char"
+          case nme.Short => "Int16"
+          case nme.Int => "Int32"
+          case nme.Long => "Int64"
+          case nme.Float => "Single"
+          case nme.Double => "Double"
+        })
       val clazz =
         newClass(ScalaPackageClass, name, List(AnyValClass.typeConstructor))
         .setFlag(ABSTRACT /* SEALED */) // bq: SEALED is interesting for case class descendants, only
@@ -606,9 +649,12 @@ trait Definitions requires SymbolTable {
     def isNumericValueClass(sym: Symbol): boolean =
       (sym ne BooleanClass) && (boxedClass contains sym)
 
+    def isValueType(sym: Symbol) =
+      isValueClass(sym) || unboxMethod.contains(sym)
+
     /** Is symbol a value or array class? */
     def isUnboxedClass(sym: Symbol): boolean =
-      isValueClass(sym) || sym == ArrayClass
+      isValueType(sym) || sym == ArrayClass
 
     def signature(tp: Type): String = {
       def erasure(tp: Type): Type = tp match {
@@ -650,7 +696,7 @@ trait Definitions requires SymbolTable {
       RootClass.info.decls.enter(EmptyPackage)
       RootClass.info.decls.enter(RootPackage)
 
-      JavaLangPackage = getModule("java.lang")
+      JavaLangPackage = getModule(if (forMSIL) "System" else "java.lang")
       ScalaPackage = getModule("scala")
       assert(ScalaPackage ne null, "Scala package is null")
       ScalaPackageClass = ScalaPackage.tpe.symbol
@@ -662,7 +708,7 @@ trait Definitions requires SymbolTable {
       AnyValClass = newClass(ScalaPackageClass, nme.AnyVal, anyparam)
         .setFlag(FINAL | SEALED)
 
-      ObjectClass = getClass("java.lang.Object")
+      ObjectClass = getClass(if (forMSIL) "System.Object" else "java.lang.Object")
 
       AnyRefClass =
         newAlias(ScalaPackageClass, nme.AnyRef, ObjectClass.typeConstructor)
@@ -675,12 +721,16 @@ trait Definitions requires SymbolTable {
       AllClass = newClass(ScalaPackageClass, nme.Nothing, anyparam)
         .setFlag(ABSTRACT | TRAIT | FINAL)
 
-      StringClass = getClass("java.lang.String")
+      StringClass = getClass(if (forMSIL) "System.String" else "java.lang.String")
 
-      ClassClass = getClass("java.lang.Class")
-      ThrowableClass = getClass("java.lang.Throwable")
-      NullPointerExceptionClass = getClass("java.lang.NullPointerException")
+      ClassClass = getClass(if (forMSIL) "System.Type" else "java.lang.Class")
+      ThrowableClass = getClass(if (forMSIL) "System.Exception" else "java.lang.Throwable")
+      NullPointerExceptionClass = getClass(if (forMSIL) "System.NullReferenceException"
+                                           else "java.lang.NullPointerException")
       NonLocalReturnExceptionClass = getClass("scala.runtime.NonLocalReturnException")
+
+      ValueTypeClass = if (forMSIL) getClass("System.ValueType") else null
+      DelegateClass = if (forMSIL) getClass("System.MulticastDelegate") else null
 
       UnitClass =
         newClass(ScalaPackageClass, nme.Unit, List(AnyValClass.typeConstructor))
@@ -704,7 +754,7 @@ trait Definitions requires SymbolTable {
       StaticAttributeClass = getClass("scala.StaticAttribute")
       //ChannelClass = getClass("scala.distributed.Channel")
       //RemoteRefClass = getClass("scala.distributed.RemoteRef")
-      if (!forCLDC) {
+      if (!forCLDC && ! forMSIL) {
         CodeClass = getClass("scala.reflect.Code")
         CodeModule = getModule("scala.reflect.Code")
       }
@@ -716,12 +766,14 @@ trait Definitions requires SymbolTable {
       ListClass = getClass("scala.List")
       ListModule = getModule("scala.List")
       ArrayClass = getClass("scala.Array")
-      SerializableClass = if (forCLDC) null else getClass("java.io.Serializable")
+      SerializableClass = if (forMSIL || forCLDC) null else getClass("java.io.Serializable")
       PredefModule = getModule("scala.Predef")
       ConsoleModule = getModule("scala.Console")
       MatchErrorClass = getClass("scala.MatchError")
       MatchErrorModule = getModule("scala.MatchError")
-      IndexOutOfBoundsExceptionClass = getClass("java.lang.IndexOutOfBoundsException")
+      IndexOutOfBoundsExceptionClass =
+        getClass(if (forMSIL) "System.IndexOutOfRangeException"
+                 else "java.lang.IndexOutOfBoundsException")
       //RemoteExecutionModule = getModule("scala.distributed.RemoteExecution")
       ScalaRunTimeModule = getModule("scala.runtime.ScalaRunTime")
       RepeatedParamClass = newCovariantPolyClass(
@@ -792,12 +844,85 @@ trait Definitions requires SymbolTable {
       BoxedUnitModule = getModule("scala.runtime.BoxedUnit")
       ObjectRefClass = getClass("scala.runtime.ObjectRef")
 
+      if (forMSIL) {
+        val intType = IntClass.typeConstructor;
+        val intParam = List(intType);
+        val longType = LongClass.typeConstructor;
+        val charType = CharClass.typeConstructor;
+        val unitType = UnitClass.typeConstructor;
+        val stringType = StringClass.typeConstructor;
+        val stringParam = List(stringType);
+
+        // additional methods of Object
+        newMethod(ObjectClass, "clone", List(), AnyRefClass.typeConstructor);
+        newMethod(ObjectClass, "wait", List(), unitType);
+        newMethod(ObjectClass, "wait", List(longType), unitType);
+        newMethod(ObjectClass, "wait", List(longType, intType), unitType);
+        newMethod(ObjectClass, "notify", List(), unitType);
+        newMethod(ObjectClass, "notifyAll", List(), unitType);
+
+        // additional methods of String
+        newMethod(StringClass, "length", List(), intType);
+        newMethod(StringClass, "compareTo", stringParam, intType);
+        newMethod(StringClass, "charAt", intParam, charType);
+        newMethod(StringClass, "concat", stringParam, stringType);
+        newMethod(StringClass, "indexOf", intParam, intType);
+        newMethod(StringClass, "indexOf", List(intType, intType), intType);
+        newMethod(StringClass, "indexOf", stringParam, intType);
+        newMethod(StringClass, "indexOf", List(stringType, intType), intType);
+        newMethod(StringClass, "lastIndexOf", intParam, intType);
+        newMethod(StringClass, "lastIndexOf", List(intType, intType), intType);
+        newMethod(StringClass, "lastIndexOf", stringParam, intType);
+        newMethod(StringClass, "lastIndexOf", List(stringType, intType), intType);
+        newMethod(StringClass, "toLowerCase", List(), stringType);
+        newMethod(StringClass, "toUpperCase", List(), stringType);
+        newMethod(StringClass, "startsWith", stringParam, booltype);
+        newMethod(StringClass, "endsWith", stringParam, booltype);
+        newMethod(StringClass, "substring", intParam, stringType);
+        newMethod(StringClass, "substring", List(intType, intType), stringType);
+        newMethod(StringClass, "trim", List(), stringType);
+        newMethod(StringClass, "intern", List(), stringType);
+        newMethod(StringClass, "replace", List(charType, charType), stringType);
+        newMethod(StringClass, "toCharArray", List(),
+                  appliedType(ArrayClass.typeConstructor, List(charType)));
+
+	// Delegate_scalaCallerInfos = new HashMap()
+	Delegate_scalaCallerTargets = new HashMap()
+      }
+
       AnnotationDefaultAttr = newClass(RootClass,
                                        nme.AnnotationDefaultATTR,
                                        List(AttributeClass.typeConstructor))
       SerializableAttr = getClass("scala.serializable")
+      BeanPropertyAttr = if (forCLDC || forMSIL) null else getClass("scala.reflect.BeanProperty")
       DeprecatedAttr = getClass("scala.deprecated")
-      BeanPropertyAttr = if (forCLDC) null else getClass("scala.reflect.BeanProperty")
+    }
+
+    var nbScalaCallers: Int = 0
+    def newScalaCaller(delegateType: Type): Symbol = {
+      assert(forMSIL, "scalaCallers can only be created if target is .NET")
+      // object: reference to object on which to call (scala-)metod
+      val paramTypes: List[Type] = List(ObjectClass.tpe)
+      val name: String =  "$scalaCaller$$" + nbScalaCallers
+      // tparam => resultType, which is the resultType of PolyType, i.e. the result type after applying the
+      // type parameter =-> a MethodType in this case
+      // TODO: set type bounds manually (-> MulticastDelegate), see newTypeParam
+      val newCaller = newMethod(DelegateClass, name, paramTypes, delegateType) setFlag (FINAL | STATIC)
+      // val newCaller = newPolyMethod(DelegateClass, name,
+      // tparam => MethodType(paramTypes, tparam.typeConstructor)) setFlag (FINAL | STATIC)
+      Delegate_scalaCallers = Delegate_scalaCallers ::: List(newCaller)
+      nbScalaCallers = nbScalaCallers + 1
+      newCaller
+    }
+
+    // def addScalaCallerInfo(scalaCaller: Symbol, methSym: Symbol, delType: Type) = {
+    // assert(Delegate_scalaCallers contains scalaCaller)
+    // Delegate_scalaCallerInfos += scalaCaller -> Pair(methSym, delType)
+    // }
+
+    def addScalaCallerInfo(scalaCaller: Symbol, methSym: Symbol) = {
+      assert(Delegate_scalaCallers contains scalaCaller)
+      Delegate_scalaCallerTargets += scalaCaller -> methSym
     }
   }
 }

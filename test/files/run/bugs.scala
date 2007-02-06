@@ -359,9 +359,9 @@ trait Bug266BB extends Bug266BA {
   val in = 3;
 }
 
-object Bug266BTest extends Application {
+object Bug266BTest {
   val a: Bug266BA1 = new Bug266BA1 with Bug266BB;
-  a.mkP.f(a.in);
+  def test(args: Array[String]): Unit = a.mkP.f(a.in);
 }
 
 // main
@@ -369,7 +369,7 @@ object Bug266BTest extends Application {
 object Bug266Test {
   def test(args: Array[String]): Unit = {
     Bug266ATest.test(args);
-    Bug266BTest;
+    Bug266BTest.test(args);
   }
 }
 
@@ -412,9 +412,9 @@ trait Bug396C extends Bug396A {
     override def run = { super.run; Console.println("C"); }
   }
 }
-object Bug396Test extends Application with Bug396B with Bug396C {
+object Bug396Test extends Bug396B with Bug396C {
   class I2 extends super[Bug396B].I with super[Bug396C].I;
-  (new I2).run
+  def test(args: Array[String]): Unit = (new I2).run
 }
 
 //############################################################################
@@ -478,7 +478,7 @@ object Test  {
     test(266, Bug266Test.test(args));
     test(316, Bug316Test.test(args));
     test(328, Bug328Test.test(args));
-    test(396, Bug396Test);
+    test(396, Bug396Test.test(args));
     test(399, Bug399Test.test(args));
 
     if (errors > 0) {

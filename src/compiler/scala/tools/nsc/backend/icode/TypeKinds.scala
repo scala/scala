@@ -32,23 +32,7 @@ trait TypeKinds requires ICodes {
    * represent the types that the VM know (or the ICode
    * view of what VMs know).
    */
-  abstract class TypeKind {
-
-    /** Returns a string representation of this type kind. */
-    override def toString(): String = this match {
-      case UNIT    => "UNIT"
-      case BOOL    => "BOOL"
-      case BYTE    => "BYTE"
-      case SHORT   => "SHORT"
-      case CHAR    => "CHAR"
-      case INT     => "INT"
-      case LONG    => "LONG"
-      case FLOAT   => "FLOAT"
-      case DOUBLE  => "DOUBLE"
-      case REFERENCE(cls) => "REFERENCE(" + cls.fullNameString + ")"
-      case ARRAY(elem) => "ARRAY[" + elem + "]"
-      case _       => abort("Unkown type kind.")
-    }
+  sealed abstract class TypeKind {
 
     def toType: Type = this match {
       case UNIT            => definitions.UnitClass.tpe
@@ -61,6 +45,7 @@ trait TypeKinds requires ICodes {
       case FLOAT           => definitions.FloatClass.tpe
       case DOUBLE          => definitions.DoubleClass.tpe
       case REFERENCE(cls)  => typeRef(cls.typeConstructor.prefix, cls, Nil)
+      //case VALUE(cls)      => typeRef(cls.typeConstructor.prefix, cls, Nil);
       case ARRAY(elem)     => typeRef(definitions.ArrayClass.typeConstructor.prefix,
                                       definitions.ArrayClass,
                                       elem.toType :: Nil)
@@ -216,7 +201,7 @@ trait TypeKinds requires ICodes {
   // }
 
   /** A class type. */
-  case class REFERENCE(cls: Symbol) extends TypeKind {
+  final case class REFERENCE(cls: Symbol) extends TypeKind {
     assert(cls ne null,
            "REFERENCE to null class symbol.")
     assert(cls != definitions.ArrayClass,
@@ -260,8 +245,20 @@ trait TypeKinds requires ICodes {
     }
   }
 
+//   final case class VALUE(cls: Symbol) extends TypeKind {
+//     override def equals(other: Any): Boolean = other match {
+//       case VALUE(cls2) => cls == cls2;
+//       case _ => false;
+//     }
 
-  case class ARRAY(val elem: TypeKind) extends TypeKind {
+//     def maxType(other: TypeKind): TypeKind =
+//       abort(toString() + " maxType " + other.toString());
+
+//     override def toString(): String =
+//       "VALUE(" + cls.fullNameString + ")";
+//   }
+
+  final case class ARRAY(val elem: TypeKind) extends TypeKind {
     override def toString(): String =
       "ARRAY[" + elem + "]"
 

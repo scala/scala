@@ -69,7 +69,7 @@ abstract class CleanUp extends Transform {
     }
 
     override def transformUnit(unit: CompilationUnit) =
-      if (settings.target.value != "jvm-1.5") {
+      if (settings.target.value != "jvm-1.5" && !forMSIL) {
         unit.body = transform(unit.body)
       }
 

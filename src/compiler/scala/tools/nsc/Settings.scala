@@ -92,6 +92,8 @@ class Settings(error: String => unit) {
   val documenttitle = StringSetting ("-documenttitle", "documenttitle", "Specify document title of generated HTML documentation", documenttitleDefault)
   val target        = ChoiceSetting ("-target", "Specify which backend to use", List("jvm-1.5", "jvm-1.4", "msil", "cldc"), "jvm-1.4")
   val migrate       = BooleanSetting("-migrate", "Assist in migrating from Scala version 1.0")
+  val assemname     = StringSetting ("-o", "file", "Name of the output assembly (only relevant with -target:msil)", "")
+  val assemrefs     = StringSetting ("-r", "path", "List of assemblies referenced by the program (only relevant with -target:msil)", ".")
   val debug         = new BooleanSetting("-debug", "Output debugging messages") { override def hiddenToIDE = true }
   val deprecation   = BooleanSetting ("-deprecation", "enable detailed deprecation warnings")
   val unchecked     = BooleanSetting ("-unchecked", "enable detailed unchecked warnings")

@@ -16,7 +16,6 @@ import scala.util.regexp.Base
 
 import scala.collection.mutable
 import scala.collection.immutable
-import compat.Platform
 
 /** this turns a regexp over A into a NondetWorkAutom over A using the
  *  celebrated position automata construction (also called Berry-Sethi or
@@ -64,7 +63,7 @@ abstract class BaseBerrySethi {
       tmp
     case Star(t) => compFirst(t)
     case _ =>
-      throw new IllegalArgumentException("unexpected pattern " + Platform.getClass(r))
+      throw new IllegalArgumentException("unexpected pattern " + r.getClass())
   }
 
   /** computes last( r ) for the regexp r */
@@ -89,7 +88,7 @@ abstract class BaseBerrySethi {
       tmp
     case Star(t)  => compLast(t)
     case _        =>
-      throw new IllegalArgumentException("unexpected pattern " + Platform.getClass(r))
+      throw new IllegalArgumentException("unexpected pattern " + r.getClass())
   }
 
   /** Starts from the right-to-left
@@ -170,7 +169,7 @@ abstract class BaseBerrySethi {
         first
 
       case _ =>
-        throw new IllegalArgumentException("unexpected pattern: " + Platform.getClass(r))
+        throw new IllegalArgumentException("unexpected pattern: " + r.getClass())
     }
   }
 
@@ -193,7 +192,7 @@ abstract class BaseBerrySethi {
     case Star(t) =>
       traverse(t)
     case _ =>
-      throw new IllegalArgumentException("unexp pattern " + Platform.getClass(r))
+      throw new IllegalArgumentException("unexp pattern " + r.getClass())
   }
 
 }

@@ -26,15 +26,12 @@ object Platform {
   def createArray(elemClass: Class, length: Int): AnyRef =
     java.lang.reflect.Array.newInstance(elemClass, length)
 
-  def getClass(obj: AnyRef) = obj.getClass()
-  def getClassName(obj: AnyRef) = obj.getClass().getName()
-  def getName(cls: Class) = cls.getName()
-  def getElementClass(obj: AnyRef) = obj.getClass().getComponentType()
   def getClassForName(name: String): Class = java.lang.Class.forName(name)
 
   val EOL = System.getProperty("line.separator", "\n")
 
   def currentTime: Long = System.currentTimeMillis()
+
   def collectGarbage: Unit = System.gc()
 
 }

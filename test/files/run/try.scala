@@ -43,12 +43,12 @@ object Test extends AnyRef with Application {
   def try4 = {
     if (instance == null) {
       instance = try {
-        new String();
+        "" //new String();
       } catch {
         case _ =>
           val cs = "aaa";
           if (cs.length() > 0) {
-            new String();
+            "" //new String();
           } else {
             throw new Error("fatal error");
             null

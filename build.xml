@@ -39,6 +39,7 @@ PROPERTIES
   <property name="lib.starr.jar" value="${lib.dir}/scala-library.jar"/>
   <property name="comp.starr.jar" value="${lib.dir}/scala-compiler.jar"/>
   <property name="fjbg.jar" value="${lib.dir}/fjbg.jar"/>
+  <property name="msil.jar" value="${lib.dir}/msil.jar"/>
   <property name="ant.jar" value="${ant.home}/lib/ant.jar"/>
   <property name="ant-contrib.jar" value="${lib.dir}/ant-contrib.jar"/>
   <!-- Sets location of build folders -->
@@ -77,6 +78,7 @@ INITIALISATION
         <available file="${lib.starr.jar}"/>
         <available file="${comp.starr.jar}"/>
         <available file="${fjbg.jar}"/>
+        <available file="${msil.jar}"/>
         <available file="${ant-contrib.jar}"/>
       </and></not></condition>
     </fail>
@@ -206,6 +208,7 @@ SETUP
       <pathelement location="${locker.dir}/lib/library"/>
       <pathelement location="${locker.dir}/lib/compiler"/>
       <pathelement location="${fjbg.jar}"/>
+      <pathelement location="${msil.jar}"/>
     </path>
     <taskdef
       name="locker"
@@ -218,6 +221,7 @@ SETUP
       <pathelement location="${quick.dir}/lib/library"/>
       <pathelement location="${quick.dir}/lib/compiler"/>
       <pathelement location="${fjbg.jar}"/>
+      <pathelement location="${msil.jar}"/>
     </path>
     <taskdef
       name="quick" classname="scala.tools.ant.Scalac"
@@ -266,6 +270,15 @@ BUILD SUPPORT MACROS
           <symlink
             link="@{build.dir}/lib/fjbg.jar"
             resource="${fjbg.jar}" overwrite="yes" failonerror="no"/>
+        </else></if>
+      </then></if>
+      <if><not><available file="@{build.dir}/lib/msil.jar"/></not><then>
+        <if><isset property="os.win"/><then>
+          <copy file="${msil.jar}" tofile="@{build.dir}/lib/msil.jar"/>
+        </then><else>
+          <symlink
+            link="@{build.dir}/lib/msil.jar"
+            resource="${msil.jar}" overwrite="yes" failonerror="no"/>
         </else></if>
       </then></if>
     </sequential>
@@ -317,6 +330,7 @@ BUILD LOCAL REFERENCE (LOCKER) LAYER
         <pathelement location="${locker.dir}/lib/library"/>
         <pathelement location="${locker.dir}/lib/compiler"/>
         <pathelement location="${fjbg.jar}"/>
+        <pathelement location="${msil.jar}"/>
         <pathelement location="${ant.jar}"/>
       </classpath>
       <include name="**/*.scala"/>
@@ -462,6 +476,7 @@ BUILD QUICK-TEST LAYER
         <pathelement location="${quick.dir}/lib/library"/>
         <pathelement location="${quick.dir}/lib/compiler"/>
         <pathelement location="${fjbg.jar}"/>
+        <pathelement location="${msil.jar}"/>
         <pathelement location="${ant.jar}"/>
       </classpath>
       <include name="**/*.scala"/>
@@ -607,6 +622,7 @@ TEST
         <pathelement location="${strap.dir}/lib/library"/>
         <pathelement location="${strap.dir}/lib/compiler"/>
         <pathelement location="${fjbg.jar}"/>
+        <pathelement location="${msil.jar}"/>
         <pathelement location="${ant.jar}"/>
       </classpath>
       <include name="**/*.scala"/>
@@ -743,6 +759,7 @@ DOCUMENTATION
         <pathelement location="${quick.dir}/lib/library"/>
         <pathelement location="${quick.dir}/lib/compiler"/>
         <pathelement location="${fjbg.jar}"/>
+        <pathelement location="${msil.jar}"/>
         <pathelement location="${ant.jar}"/>
       </classpath>
       <include name="**/*.scala"/>
@@ -851,6 +868,7 @@ GENERATES A DISTRIBUTION
     <jar destfile="${dist.current.dir}/lib/${comp.jar.name}">
       <fileset dir="${strap.dir}/lib/compiler"/>
       <zipfileset src="${fjbg.jar}"/>
+      <zipfileset src="${msil.jar}"/>
       <manifest>
         <attribute name="Signature-Version" value="${version.number}"/>
         <attribute name="Built-By" value="${user.name}"/>

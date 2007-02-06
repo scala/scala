@@ -8,7 +8,7 @@ trait RichTest {
   val s5 = """abc
               #xyz"""
   def getObjectName: String = {
-    val cn = compat.Platform.getClassName(this)
+    val cn = this.getClass().getName()
     cn.substring(0, cn.length-1)
   }
   def length[A](it: Iterator[A]) = it.toList length
@@ -23,24 +23,24 @@ object RichCharTest1 extends RichTest {
     Console.println('A'.asDigit == 10)
   }
 }
-object RichCharTest2 extends RichTest {
-  case class C(s: String) {
-    private val it = s.elements
-    private var c: Char = _
-    def ch(): Char = c
-    def nextch(): Unit = { c = if (it.hasNext) it.next else ';' }
-    def err(msg: String) = Console.println(msg)
-    nextch()
-  }
-  def run {
-    Console.println("\n" + getObjectName + ":")
-    val c1 = C("x4A;")
-    val s1 = xml.Utility.parseCharRef(c1.ch, c1.nextch, c1.err)
-    val c2 = C("74;")
-    val s2 = xml.Utility.parseCharRef(c2.ch, c2.nextch, c2.err)
-    Console.println(s1 == s2)
-  }
-}
+// object RichCharTest2 extends RichTest {
+//   case class C(s: String) {
+//     private val it = s.elements
+//     private var c: Char = _
+//     def ch(): Char = c
+//     def nextch(): Unit = { c = if (it.hasNext) it.next else ';' }
+//     def err(msg: String) = Console.println(msg)
+//     nextch()
+//   }
+//   def run {
+//     Console.println("\n" + getObjectName + ":")
+//     val c1 = C("x4A;")
+//     val s1 = xml.Utility.parseCharRef(c1.ch, c1.nextch, c1.err)
+//     val c2 = C("74;")
+//     val s2 = xml.Utility.parseCharRef(c2.ch, c2.nextch, c2.err)
+//     Console.println(s1 == s2)
+//   }
+// }
 object RichIntTest extends RichTest {
   private val n = 10
   private val m = -2
@@ -107,7 +107,7 @@ object RichStringTest5 extends RichTest {
 object Test {
   def main(args: Array[String]): Unit = {
     RichCharTest1.run
-    RichCharTest2.run
+    //RichCharTest2.run
     RichIntTest.run
     RichStringTest1.run
     RichStringTest2.run

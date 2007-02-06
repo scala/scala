@@ -480,14 +480,14 @@ abstract class GenICode extends SubComponent  {
           val kind = toTypeKind(tree.tpe)
           var handlers = for (val CaseDef(pat, _, body) <- catches.reverse)
             yield pat match {
-              case Typed(Ident(nme.WILDCARD), tpt) => Pair(tpt.tpe.symbol, {
+              case Typed(Ident(nme.WILDCARD), tpt) => Triple(tpt.tpe.symbol, kind, {
                 ctx: Context =>
                   ctx.bb.emit(DROP(REFERENCE(tpt.tpe.symbol)));
                   val ctx1 = genLoad(body, ctx, kind);
                   genLoad(finalizer, ctx1, UNIT);
                 })
 
-              case Ident(nme.WILDCARD) => Pair(definitions.ThrowableClass, {
+              case Ident(nme.WILDCARD) => Triple(definitions.ThrowableClass, kind, {
                 ctx: Context =>
                   ctx.bb.emit(DROP(REFERENCE(definitions.ThrowableClass)))
                   val ctx1 = genLoad(body, ctx, kind)
@@ -498,7 +498,7 @@ abstract class GenICode extends SubComponent  {
                 val exception = new Local(pat.symbol, toTypeKind(pat.symbol.tpe), false)
                 ctx.method.addLocal(exception);
 
-                Pair(pat.symbol.tpe.symbol, {
+                Triple(pat.symbol.tpe.symbol, kind, {
                      ctx: Context =>
                        ctx.bb.emit(STORE_LOCAL(exception), pat.pos);
                        val ctx1 = genLoad(body, ctx, kind);
@@ -507,7 +507,7 @@ abstract class GenICode extends SubComponent  {
             }
 
           if (finalizer != EmptyTree)
-            handlers = Pair(NoSymbol, {
+            handlers = Triple(NoSymbol, kind, {
                             ctx: Context =>
                               val exception = new Local(ctx.method.symbol.newVariable(finalizer.pos, unit.fresh.newName("exc"))
                                     .setFlag(Flags.SYNTHETIC)
@@ -686,10 +686,10 @@ abstract class GenICode extends SubComponent  {
 
             ctx1.bb.close
             ctx1.newBlock
-          } else if (isPrimitive(fun.symbol)) { // primitive method call
+          } else if (isPrimitive(sym)) { // primitive method call
             val Select(receiver, _) = fun
 
-            val code = scalaPrimitives.getPrimitive(fun.symbol, receiver.tpe)
+            val code = scalaPrimitives.getPrimitive(sym, receiver.tpe)
             var ctx1 = ctx
 
             if (scalaPrimitives.isArithmeticOp(code)) {
@@ -733,6 +733,7 @@ abstract class GenICode extends SubComponent  {
 
               if (settings.debug.value)
                 log("synchronized block start");
+
               ctx1 = ctx1.Try(
                 bodyCtx => {
                   val ctx1 = genLoad(args.head, bodyCtx, expectedType /* toTypeKind(tree.tpe.resultType) */)
@@ -740,7 +741,8 @@ abstract class GenICode extends SubComponent  {
                   ctx1.bb.emit(MONITOR_EXIT(), tree.pos)
                   ctx1
                 }, List(
-                Pair(NoSymbol, exhCtx => {
+		  // tree.tpe / fun.tpe is object, which is no longer true after this transformation
+                  Triple(NoSymbol, expectedType, exhCtx => {
                   exhCtx.bb.emit(LOAD_LOCAL(monitor))
                   exhCtx.bb.emit(MONITOR_EXIT(), tree.pos)
                   exhCtx.bb.emit(THROW())
@@ -756,9 +758,8 @@ abstract class GenICode extends SubComponent  {
               genCoercion(tree, ctx1, code)
               generatedType = scalaPrimitives.generatedKind(code)
             } else
-              abort("Primitive operation not handled yet: " +
-                    fun.symbol.fullNameString + "(" + fun.symbol.simpleName + ") "
-                    + " at: " + unit.position(tree.pos));
+              abort("Primitive operation not handled yet: " + sym.fullNameString + "(" +
+                    fun.symbol.simpleName + ") " + " at: " + unit.position(tree.pos));
             ctx1
           } else {  // normal method call
             if (settings.debug.value)
@@ -775,7 +776,7 @@ abstract class GenICode extends SubComponent  {
               if (invokeStyle.hasInstance) genLoadQualifier(fun, ctx)
               else ctx
 
-            ctx1 = genLoadArguments(args, fun.symbol.info.paramTypes, ctx1)
+            ctx1 = genLoadArguments(args, sym.info.paramTypes, ctx1)
 
             val hostClass = fun match {
               case Select(qualifier, _)
@@ -983,6 +984,11 @@ abstract class GenICode extends SubComponent  {
     def isStaticSymbol(s: Symbol): Boolean =
       s.hasFlag(Flags.STATIC) || s.hasFlag(Flags.STATICMEMBER) || s.owner.isImplClass
 
+//     def isUnbox(s: Symbol): Boolean = (
+//       s.name.==(nme.unbox) && s.owner.isModuleClass
+//       && s.owner.linkedClassOfClass.isSubClass(definitions.AnyValClass)
+//     )
+
     /**
      * Generate code that loads args into label parameters.
      */
@@ -1044,7 +1050,7 @@ abstract class GenICode extends SubComponent  {
      *  @param ctx  ...
      *  @param cast ...
      */
-    def genBoxedConversion(from: TypeKind, to: TypeKind, ctx: Context, cast: Boolean) = {
+    def genBoxedConversion(from: TypeKind, to: TypeKind, ctx: Context, cast: Boolean): Unit = {
       assert(to.isValueType || to.isArrayType,
              "Expecting conversion to value type: " + to)
 
@@ -1054,7 +1060,12 @@ abstract class GenICode extends SubComponent  {
         case ARRAY(elem) =>
           definitions.boxedArrayClass(elem.toType.symbol)
         case _ =>
-          definitions.boxedClass(to.toType.symbol)
+          if (cast) {
+            ctx.bb.emit(UNBOX(to))
+            return
+          }
+          else
+            definitions.boxedClass(to.toType.symbol)
       }
 
       if (cast) {
@@ -1709,9 +1720,10 @@ abstract class GenICode extends SubComponent  {
        * 'covered' by this exception handler (in addition to the
        * previously active handlers).
        */
-      def newHandler(cls: Symbol): ExceptionHandler = {
+      def newHandler(cls: Symbol, resultKind: TypeKind): ExceptionHandler = {
         handlerCount = handlerCount + 1
         val exh = new ExceptionHandler(method, "" + handlerCount, cls)
+	exh.resultKind = resultKind
         method.addHandler(exh)
         handlers = exh :: handlers
         if (settings.debug.value)
@@ -1762,14 +1774,14 @@ abstract class GenICode extends SubComponent  {
        *   } ))</code>
        */
       def Try(body: Context => Context,
-              handlers: List[Pair[Symbol, (Context => Context)]],
+              handlers: List[Triple[Symbol, TypeKind, (Context => Context)]],
               finalizer: Tree) = {
         val outerCtx = this.dup
         val afterCtx = outerCtx.newBlock
 
         val exhs = handlers.map { handler =>
-            val exh = this.newHandler(handler._1)
-            val ctx1 = handler._2(outerCtx.enterHandler(exh))
+            val exh = this.newHandler(handler._1, handler._2)
+            val ctx1 = handler._3(outerCtx.enterHandler(exh))
             ctx1.bb.emit(JUMP(afterCtx.bb))
             ctx1.bb.close
             exh

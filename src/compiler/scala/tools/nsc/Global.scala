@@ -28,6 +28,7 @@ import transform._
 import backend.icode.{ICodes, GenICode, Checkers}
 import backend.ScalaPrimitives
 import backend.jvm.GenJVM
+import backend.msil.GenMSIL
 import backend.opt.{Inliners, ClosureElimination, DeadCodeElimination}
 import backend.icode.analysis._
 
@@ -170,11 +171,11 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
   val classPath0 = new ClassPath(false && onlyPresentation)
 
   val classPath = new classPath0.Build(
-    settings.classpath.value,
+    if (forMSIL) "" else settings.classpath.value,
     settings.sourcepath.value,
     settings.outdir.value,
-    settings.bootclasspath.value,
-    settings.extdirs.value)
+    if (forMSIL) "" else settings.bootclasspath.value,
+    if (forMSIL) "" else settings.extdirs.value)
 
   if (settings.verbose.value) {
     inform("[Classpath = " + classPath+"]")
@@ -201,7 +202,8 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     val global: Global.this.type = Global.this
   }
 
-  def rootLoader: LazyType = new loaders.PackageLoader(classPath.root /* getRoot() */)
+  def rootLoader: LazyType = if (forMSIL) new loaders.NamespaceLoader(classPath.root)
+                             else new loaders.PackageLoader(classPath.root /* getRoot() */)
 
   val migrateMsg = "migration problem when moving from Scala version 1.0 to version 2.0:\n"
 
@@ -343,6 +345,10 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     val global: Global.this.type = Global.this
   }
 
+  object genMSIL extends GenMSIL {
+    val global: Global.this.type = Global.this
+  }
+
   object icodeChecker extends checkers.ICodeChecker()
 
   object typer extends analyzer.Typer(
@@ -371,7 +377,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
 //    inliner,
 //    closureElimination,
 //    deadCode,
-    genJVM,
+    if (forMSIL) genMSIL else genJVM,
     sampleTransform)
 
   protected def insertBefore(c: SubComponent, cs: List[SubComponent], before: SubComponent): List[SubComponent] = cs match {
@@ -633,6 +639,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
   }
 
   def forCLDC: Boolean = settings.target.value == "cldc"
+  def forMSIL: Boolean = settings.target.value == "msil"
   def onlyPresentation = settings.doc.value
   // position stuff
   final val positionConfiguration: PositionConfiguration = initConfig;

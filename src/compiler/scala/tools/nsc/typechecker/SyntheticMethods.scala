@@ -243,7 +243,7 @@ trait SyntheticMethods requires Analyzer {
         // jw-04-2003/jw-0425-designpatterns_p.html)
         if (!hasImplementation(nme.readResolve)) ts += readResolveMethod
       }
-      if (!forCLDC)
+      if (!forCLDC && !forMSIL)
         for (val sym <- clazz.info.decls.toList)
           if (!sym.getAttributes(BeanPropertyAttr).isEmpty)
             if (sym.isGetter)

@@ -85,7 +85,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
         else apply(parents.head)
       case ClassInfoType(parents, decls, clazz) =>
         ClassInfoType(
-          if ((clazz == ObjectClass) || (isValueClass(clazz))) List()
+          if ((clazz == ObjectClass) || (isValueType(clazz))) List()
           else if (clazz == ArrayClass) List(erasedTypeRef(ObjectClass))
           else removeDoubleObject(parents map this),
           decls, clazz)
@@ -330,7 +330,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
      */
     private def adaptToType(tree: Tree, pt: Type): Tree = {
       if (settings.debug.value && pt != WildcardType)
-        log("adapting " + tree + ":" + tree.tpe + " to " + pt)//debug
+        log("adapting " + tree + ":" + tree.tpe + " : " +  tree.tpe.parents + " to " + pt)//debug
       if (tree.tpe <:< pt)
         tree
       else if (isUnboxedClass(tree.tpe.symbol) && !isUnboxedClass(pt.symbol))
@@ -403,6 +403,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
      *  </ul>
      */
     private def adaptMember(tree: Tree): Tree = {
+      //Console.println("adaptMember: " + tree);
       tree match {
         case Apply(Select(New(tpt), name), args) if (tpt.tpe.symbol == BoxedArrayClass) =>
           assert(name == nme.CONSTRUCTOR);
@@ -417,7 +418,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
           if (isNumericValueClass(qualClass) && isNumericValueClass(targClass))
             // convert numeric type casts
             atPos(tree.pos)(Apply(Select(qual1, "to" + targClass.name), List()))
-          else if (isValueClass(targClass) ||
+          else if (isValueType(targClass) ||
                    (targClass == ArrayClass && (qualClass isNonBottomSubClass BoxedArrayClass)))
             unbox(qual1, targ.tpe)
           else if (targClass == ArrayClass && qualClass == ObjectClass)
@@ -435,10 +436,10 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
             adaptMember(atPos(tree.pos)(Select(qual, getMember(ObjectClass, name))))
           else {
             var qual1 = typedQualifier(qual);
-            if ((isValueClass(qual1.tpe.symbol) && !isUnboxedValueMember(tree.symbol)) ||
+            if ((isValueType(qual1.tpe.symbol) && !isUnboxedValueMember(tree.symbol)) ||
                 (qual1.tpe.symbol == ArrayClass && !isUnboxedArrayMember(tree.symbol)))
               qual1 = box(qual1);
-            else if (!isValueClass(qual1.tpe.symbol) && isUnboxedValueMember(tree.symbol))
+            else if (!isValueType(qual1.tpe.symbol) && isUnboxedValueMember(tree.symbol))
               qual1 = unbox(qual1, tree.symbol.owner.tpe)
             else if (tree.symbol.owner == ArrayClass && qual1.tpe.symbol == ObjectClass)
               qual1 = cast(qual1, BoxedArrayClass.tpe)

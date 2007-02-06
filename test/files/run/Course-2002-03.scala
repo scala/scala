@@ -3,6 +3,8 @@
 //############################################################################
 // $Id$
 
+import scala.compat.StringBuilder;
+
 object M0 {
   class Rational(x: Int, y: Int) {
     def numer = x;
@@ -230,10 +232,10 @@ object M8 {
     def intersect2(that: IntSet): IntSet = filter(x => that.contains(x));
     def filter(f: Int => Boolean): IntSet = filter0(f, new Empty);
 
-    def printOn(out: java.io.PrintStream) = foreach(out.println);
+    def print() = foreach(Console.println);
 
     override def toString(): String = {
-      val buffer: java.lang.StringBuffer = new java.lang.StringBuffer();
+      val buffer: StringBuilder = new StringBuilder();
       buffer.append('[');
       foreach(i => {
         if (buffer.length() > 1) {buffer.append(','); ()}; // !!! ; ()
@@ -312,7 +314,7 @@ object M8 {
     Console.println;
 
     Console.println("set4 contains the following elements:");
-    set4.printOn(java.lang.System.out);
+    set4.print();
     Console.println;
 
     Console.println("2 <- set2: " + (set2 contains 2));

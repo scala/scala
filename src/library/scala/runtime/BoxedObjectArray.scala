@@ -13,7 +13,7 @@ package scala.runtime
 
 
 import Predef.Class
-import compat.Platform.{createArray, getElementClass}
+import compat.Platform.createArray
 
 [serializable]
 final class BoxedObjectArray(val value: Array[AnyRef]) extends BoxedArray {
@@ -36,7 +36,7 @@ final class BoxedObjectArray(val value: Array[AnyRef]) extends BoxedArray {
   override def hashCode(): Int = value.hashCode()
 
   private def create(length: Int): Array[AnyRef] = {
-    createArray(getElementClass(value), length).asInstanceOf[Array[AnyRef]]
+    createArray(value.getClass().getComponentType(), length).asInstanceOf[Array[AnyRef]]
   }
 
   override def subArray(start: Int, end: Int): Array[AnyRef] = {
