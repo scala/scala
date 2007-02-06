@@ -106,23 +106,20 @@ abstract class DocGenerator extends Models {
         if (n > 0) {
           if (definitions.isFunctionType(tpe)) {
             val Pair(ts, List(r)) = tpe.typeArgs.splitAt(n-1)
-            Text("(")
-              .concat(
+            Text("(") ++ (
                 if (ts.isEmpty) NodeSeq.Empty
                 else
-                  urlFor(ts.head, target).concat(
+                  urlFor(ts.head, target) ++ (
                     for (val t <- ts.tail)
-                    yield Group(Text(", ").concat(urlFor(t, target)))))
-              .concat(Text(") => "))
-              .concat(urlFor(r, target))
+                    yield Group(Text(", ") ++ (urlFor(t, target)))))
+                .++ (Text(") => ")) ++ (urlFor(r, target))
           } else
             aref(urlFor(tpe.symbol), target, tpe.symbol.fullNameString)
-              .concat(Text("[")
-              .concat(urlFor(tpe.typeArgs.head, target))
-              .concat(
+            .++ (Text("[") ++ (urlFor(tpe.typeArgs.head, target))
+             .++ (
                 for (val t <- tpe.typeArgs.tail)
-                yield Group(Text(", ").concat(urlFor(t, target))))
-              .concat(Text("]")))
+                yield Group(Text(", ") ++ (urlFor(t, target))))
+              .++(Text("]")))
         } else
           aref(urlFor(tpe.symbol), target, tpe.toString())
       }
@@ -282,7 +279,7 @@ abstract class DocGenerator extends Models {
         </ul>
       } } }</div>;
 
-      nav.concat(body)
+      nav ++ body
     }
   }
 
@@ -295,7 +292,7 @@ abstract class DocGenerator extends Models {
         else
           <dd>
             <code>{Text(" extends ")}</code>{forType(parents.head.tpe)}
-          </dd>.concat(
+          </dd> ++ (
           { {
             for (val parent <- parents.tail) yield
               <dd>
@@ -326,15 +323,15 @@ abstract class DocGenerator extends Models {
                 buf.append(", ")
               buf.append(name).append(" = ").append(value)
             }
-          Group(name concat Text(buf.toString))
+          Group(name ++ Text(buf.toString))
         }
         var res: NodeSeq = Text("[")
         val attrs = tree.symbol.attributes
         for (val i <- attrs.indices) {
-          if (i > 0) res = res.concat(Text("," + LINE_SEPARATOR))
-          res = res.concat(attrFor(attrs(i)))
+          if (i > 0) res = res ++ Text("," + LINE_SEPARATOR)
+          res = res ++ attrFor(attrs(i))
         }
-        br(res.concat(Text("]")))
+        br(res ++ Text("]"))
       }
 
     /**
@@ -346,7 +343,7 @@ abstract class DocGenerator extends Models {
         if (mmbr.isInstanceOf[ImplMod]) NodeSeq.Empty
         //else <a name={Utility.escape(mmbr.tree.symbol.nameString)}></a>
         else <a name={docName(mmbr.tree.symbol)}></a>
-      } }.concat(
+      } } ++ (
       <dl>
         <dt>
           { attrsFor(mmbr.tree) }
@@ -358,10 +355,7 @@ abstract class DocGenerator extends Models {
           { typesFor(mmbr) }{ argsFor(mmbr)}{resultFor(mmbr) }
         </dt>
         <dd>{ extendsFor(mmbr) }</dd>
-      </dl>)
-        .concat(fullComment(mmbr))
-        .concat(hr(listSubclasses(mmbr)))
-        .concat(lists(mmbr)))
+      </dl>) ++ fullComment(mmbr) ++ hr(listSubclasses(mmbr)) ++ lists(mmbr))
 //      { lists(mmbr) }
 
     /** Return a NodeSeq with the known subclasses for <code>mmbr</code>, if any.
@@ -382,7 +376,7 @@ abstract class DocGenerator extends Models {
             val links =
               for (val subc <- subcs)
               yield aref(urlFor(subc), contentFrame, subc.nameString)
-            links.reduceRight { (link: Seq[Node], seq: Seq[Node]) => link.concat(Text(", ")).concat(seq) }
+            links.reduceRight { (link: Seq[Node], seq: Seq[Node]) => link ++ Text(", ") ++ seq }
           } }</dd>
         </dl>;
     }
@@ -417,8 +411,7 @@ abstract class DocGenerator extends Models {
              </table>
            else
              NodeSeq.Empty
-          ).concat(
-            listInheritedMembers(mmbr.tree.symbol, kind)))
+          ) ++ (listInheritedMembers(mmbr.tree.symbol, kind)))
       } else
         NodeSeq.Empty
 
@@ -441,7 +434,7 @@ abstract class DocGenerator extends Models {
         <table cellpadding="3" class="inherited" summary="">
           <tr>
             <td colspan="2" class="title">
-              {Text(kind.toString + " inherited from ").concat(urlFor(p, contentFrame))}
+              {Text(kind.toString + " inherited from ") ++ urlFor(p, contentFrame)}
             </td>
           </tr>
           <tr> {
@@ -459,7 +452,7 @@ abstract class DocGenerator extends Models {
               (x, y) => (x.nameString compareTo y.nameString) < 0)
             <td colspan="2" class="signature">
               {aref1(members.head)}
-              {for (val m <- members.tail) yield Text(", ").concat(aref1(m))}
+              {for (val m <- members.tail) yield Text(", ") ++ aref1(m)}
             </td>
           } </tr>
         </table>)
@@ -533,9 +526,9 @@ abstract class DocGenerator extends Models {
       if (tree != EmptyTree &&
           tree.tpe.symbol != definitions.AnyClass &&
           tree.tpe.symbol != definitions.AllClass) {
-        if (before) nodes.concat(forTree(tree))
+        if (before) nodes ++ forTree(tree)
         else {
-          val ret = forTree(tree).concat(nodes)
+          val ret = forTree(tree) ++ nodes
           //System.err.println("RET: " + ret)
           ret
         }
@@ -546,16 +539,14 @@ abstract class DocGenerator extends Models {
 
     def forTree(tree: Tree): NodeSeq = tree match {
       case vdef: ValDef =>
-        Text(vdef.symbol.name.toString()).concat(Text(": ")).concat(forTree(vdef.tpt))
+        Text(vdef.symbol.name.toString()) ++ Text(": ") ++ forTree(vdef.tpt)
       case sel: Select =>
-        forTree(sel.qualifier).concat(Text(sel.symbol.nameString))
+        forTree(sel.qualifier) ++ Text(sel.symbol.nameString)
       case tree: AbsTypeDef =>
         val cflags = if (tree.mods.isCovariant) "+"
         else if (tree.mods.isContravariant) "-"
         else ""
-        Text(cflags + tree.symbol.nameString)
-          .concat(ifT(tree.hi, Text(" <: "), true))
-          .concat(ifT(tree.lo, Text(" >: "), true))
+        Text(cflags + tree.symbol.nameString) ++ ifT(tree.hi, Text(" <: "), true) ++ ifT(tree.lo, Text(" >: "), true)
       case tpt: TypeTree =>
         urlFor(tpt.tpe, contentFrame)
       case id: Ident =>
@@ -574,12 +565,12 @@ abstract class DocGenerator extends Models {
       if (trees.isEmpty) NodeSeq.Empty
       else {
         val head = forTree(trees.head)
-        head.concat(if (trees.tail.isEmpty) NodeSeq.Empty
-                    else Text(", ")).concat(forTrees(trees.tail))
+        head ++ (if (trees.tail.isEmpty) NodeSeq.Empty
+                    else Text(", ")) ++ forTrees(trees.tail)
       }
 
     private def surround(open: String, close: String, node: NodeSeq): NodeSeq =
-      Text(open).concat(node).concat(Text(close))
+      Text(open) ++ node ++ Text(close)
 
     /**
      *  @param ht ...
@@ -618,7 +609,7 @@ abstract class DocGenerator extends Models {
     private def resultFor(ht: HasTree): NodeSeq = ht.tree match {
       case vdef: ValOrDefDef =>
         if (!vdef.symbol.nameString.equals("this"))
-          Text(": ").concat(forTree(vdef.tpt))
+          Text(": ") ++ forTree(vdef.tpt)
         else
           NodeSeq.Empty
       case _ =>
@@ -639,8 +630,7 @@ abstract class DocGenerator extends Models {
       </div>
       <p>
         This document is the API specification for Scala 2.
-      </p>.concat(
-        for (val kind <- KINDS; classes contains kind) yield Group(hr(
+      </p> ++ (for (val kind <- KINDS; classes contains kind) yield Group(hr(
           <table cellpadding="3" class="member" summary="">
             <tr>
               <td colspan="2" class="title">
@@ -734,13 +724,13 @@ abstract class DocGenerator extends Models {
           if (sym.info.parents.isEmpty) NodeSeq.Empty
           else {
             val parent = sym.info.parents.head
-            <code>{Text(" extends ")}</code>.concat(
+            <code>{Text(" extends ")}</code> ++ (
             aref(urlFor(parent.symbol), contentFrame, parent.toString()))
           }
         }</dd>
         <dd>{comment(descr, true)}</dd>
       </dl>
-      <hr/>.concat({
+      <hr/> ++ ({
         val decls = sym.tpe.decls.toList
         //compute table members once for each relevant kind
         val tables = for (val k <- kinds.keys.toList)
@@ -756,20 +746,20 @@ abstract class DocGenerator extends Models {
                   <td valign="top" class="modifiers">
                   </td>
                   <td class="signature"><code>def</code>
-                    { Text(m.nameString + " ").concat(m.tpe match {
+                    { Text(m.nameString + " ") ++ (m.tpe match {
                         case MethodType(typeParams, resultType) =>
                           (if (typeParams.isEmpty)
                              NodeSeq.Empty
                            else
-                             Text("(").concat(typeParams.map(p => forType(p))).concat(")")
-                          ).concat(": ").concat(forType(resultType))
+                             Text("(") ++ typeParams.map(forType) ++ (")")
+                          ) ++ (": ") ++ (forType(resultType))
                         case PolyType(typeParams, resultType) =>
                           val tp =
                             if (typeParams.isEmpty) ""
                             else (typeParams map (.defString)).mkString("[", ",", "]")
-                          Text(tp + ": ").concat(forType(resultType))
+                          Text(tp + ": ") ++ forType(resultType)
                         case _ =>
-                          Text(": ").concat(forType(m.tpe))
+                          Text(": ") ++ forType(m.tpe)
                       })
                     }
                   </td>
