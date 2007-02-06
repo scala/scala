@@ -235,7 +235,7 @@ object ScriptRunner {
       settings.outdir.value = compiledPath.getPath
 
       if (settings.nocompdaemon.value) {
-        val reporter = new ConsoleReporter
+        val reporter = new ConsoleReporter(settings)
         val compiler = new Global(settings, reporter)
         val cr = new compiler.Run
         cr.compileSources(List(wrappedScript(scriptFile, &compiler.getSourceFile)))

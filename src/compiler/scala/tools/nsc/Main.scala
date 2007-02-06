@@ -38,10 +38,8 @@ object Main extends AnyRef with EvalLoop {
     }
 
   def process(args: Array[String]): unit = {
-    reporter = new ConsoleReporter();
-    val command = new CompilerCommand(List.fromArray(args), error, false);
-    reporter.prompt = command.settings.prompt.value
-    reporter.nowarn = command.settings.nowarnings.value
+    val command = new CompilerCommand(List.fromArray(args), error, false)
+    reporter = new ConsoleReporter(command.settings)
     if (command.settings.version.value)
       reporter.info(null, versionMsg, true)
     else if (command.settings.help.value)

@@ -415,8 +415,8 @@ package scala.tools.ant {
 
       // Builds-up the compilation settings for Scalac with the existing Ant
       // parameters.
-      val reporter = new ConsoleReporter()
       val settings = new Settings(error)
+      val reporter = new ConsoleReporter(settings)
       settings.doc.value = true
       settings.outdir.value = asString(destination.get)
       if (!classpath.isEmpty)

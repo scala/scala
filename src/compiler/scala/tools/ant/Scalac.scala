@@ -605,8 +605,8 @@ class Scalac extends MatchingTask {
 
   /** Performs the compilation. */
   override def execute() = {
-    val reporter = new ConsoleReporter()
-    val Pair(settings, sourceFiles) = initialize
+    val {settings, sourceFiles} = initialize
+    val reporter = new ConsoleReporter(settings)
 
     // Compiles the actual code
     val compiler = new Global(settings, reporter)

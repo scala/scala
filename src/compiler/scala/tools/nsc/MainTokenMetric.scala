@@ -42,7 +42,7 @@ object MainTokenMetric {
 
   def process(args: Array[String]): unit = {
     val command = new CompilerCommand(List.fromArray(args), error, false)
-    reporter = new ConsoleReporter()
+    reporter = new ConsoleReporter(command.settings)
     try {
       val compiler = new Global(command.settings, reporter)
       tokenMetric(compiler, command.files)

@@ -20,7 +20,7 @@ import java.io.PrintWriter
  * This class implements a Reporter that displays messages on a text
  * console.
  */
-class ConsoleReporter(reader : BufferedReader, writer : PrintWriter) extends AbstractReporter {
+class ConsoleReporter(val settings: Settings, reader : BufferedReader, writer : PrintWriter) extends AbstractReporter {
   //########################################################################
   // Public Fields
 
@@ -41,7 +41,8 @@ class ConsoleReporter(reader : BufferedReader, writer : PrintWriter) extends Abs
 
   //########################################################################
   // Public Constructors
-  def this() = this(Console.in, new PrintWriter(Console.err, true))
+  def this(settings: Settings) =
+    this(settings, Console.in, new PrintWriter(Console.err, true))
 
   //########################################################################
   // Public Methods - Count

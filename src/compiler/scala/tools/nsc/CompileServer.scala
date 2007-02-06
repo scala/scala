@@ -65,6 +65,8 @@ object CompileServer extends SocketServer {
 
   private val runtime = Runtime.getRuntime()
 
+  var reporter: ConsoleReporter = _
+
   def session(): unit = {
     System.out.println("New session" +
                        ", total memory = "+ runtime.totalMemory() +
@@ -88,10 +90,6 @@ object CompileServer extends SocketServer {
           compiler = null
           return
         }
-        val reporter = new ConsoleReporter(in, out) {
-          // disable prompts, so that compile server cannot block
-          override def displayPrompt = {}
-        }
         def error(msg: String): unit =
           reporter.error(/*new Position*/ FakePos("fsc"),
                          msg + "\n  fsc -help  gives more information")
@@ -106,7 +104,11 @@ object CompileServer extends SocketServer {
           new settings.BooleanSetting("-J<flag>", "Pass <flag> directly to runtime system")
         }
 
-        reporter.prompt = command.settings.prompt.value
+        reporter = new ConsoleReporter(command.settings, in, out) {
+          // disable prompts, so that compile server cannot block
+          override def displayPrompt = {}
+        }
+
         if (command.settings.version.value)
           reporter.info(null, versionMsg, true)
         else if (command.settings.help.value)

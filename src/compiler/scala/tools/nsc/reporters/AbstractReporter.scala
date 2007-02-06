@@ -6,9 +6,11 @@
 
 // $Id$
 
-package scala.tools.nsc.reporters;
-import scala.collection.mutable.HashSet;
-import scala.tools.nsc.util.Position;
+package scala.tools.nsc.reporters
+
+import scala.collection.mutable.HashSet
+import nsc.util.Position
+import nsc.Settings
 
 /**
  * This reporter implements filtering.
@@ -16,38 +18,38 @@ import scala.tools.nsc.util.Position;
 abstract class AbstractReporter extends Reporter {
   private val positions = new HashSet[Position]();
 
-  def display(pos : Position, msg : String, severity : Severity) : Unit;
-  var prompt : Boolean = false;
-  var verbose : Boolean = false;
-  var nowarn  : Boolean = false;
-  def displayPrompt : Unit;
+  val settings: Settings
 
-  protected def info0(pos : Position, msg : String, severity : Severity, force : Boolean) : Unit = severity match {
-    case INFO    => if (force || verbose) display(pos, msg, severity);
-    case WARNING => {
-      val hidden = testAndLog(pos);
-      if (!nowarn) {
-	if (!hidden || prompt) display(pos, msg, severity);
-	if (prompt) displayPrompt;
+  def display(pos : Position, msg : String, severity : Severity) : Unit
+  def displayPrompt : Unit
+
+  protected def info0(pos : Position, msg : String, severity : Severity, force : Boolean) : Unit =
+    severity match {
+      case INFO    => if (force || settings.verbose.value) display(pos, msg, severity)
+      case WARNING => {
+        val hidden = testAndLog(pos)
+        if (!settings.nowarnings.value) {
+	  if (!hidden || settings.prompt.value) display(pos, msg, severity)
+	  if (settings.prompt.value) displayPrompt
+        }
+      }
+      case ERROR => {
+        val hidden = testAndLog(pos);
+        if (!hidden || settings.prompt.value) display(pos, msg, severity)
+        if (settings.prompt.value) displayPrompt
       }
     }
-    case ERROR => {
-      val hidden = testAndLog(pos);
-      if (!hidden || prompt) display(pos, msg, severity);
-      if (prompt) displayPrompt;
-    }
-  }
 
   //########################################################################
   // Private Methods
 
   /** Logs a position and returns true if it was already logged. */
   private def testAndLog(pos : Position) : Boolean = {
-    if (pos eq null) return false;
-    if (pos.column == 0) return false;
-    if (positions.contains(pos)) return true;
-    positions += (pos);
-    return false;
+    if (pos eq null) return false
+    if (pos.column == 0) return false
+    if (positions.contains(pos)) return true
+    positions += (pos)
+    return false
   }
 
   //########################################################################

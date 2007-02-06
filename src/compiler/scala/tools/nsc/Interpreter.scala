@@ -68,12 +68,12 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
   /** construct an interpreter that reports to Console */
   def this(settings: Settings) =
     this(settings,
-         new ConsoleReporter,
+         new ConsoleReporter(settings),
          new PrintWriter(new ConsoleWriter, true))
 
   /** construct an interpreter that uses the specified in and out streams */
   def this(settings: Settings, out: PrintWriter) =
-    this(settings, new ConsoleReporter(null, out), out)
+    this(settings, new ConsoleReporter(settings, null, out), out)
 
   /** whether to print out result lines */
   private var printResults: Boolean = true
