@@ -298,13 +298,16 @@ trait PatternNodes requires transform.ExplicitOuter {
     var next: Header = next1
 
     def findLast: PatternNode = {
-      var h: Header = this;
-      while(h.next != null) { h = h.next }
-      var g: PatternNode = h
+      var g: PatternNode = findLastSection
       while(g.or != null)   { g = g.or }
       g
     }
 
+    def findLastSection: Header = {
+      var h: Header = this;
+      while(h.next != null) { h = h.next }
+      h
+    }
     var isSubHeader = false;
 
     // returns true if this header node has a catch all case

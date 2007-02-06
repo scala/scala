@@ -435,6 +435,7 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
        node
 
       case t @ UnApply(fn, args)  =>
+        doCheckExhaustive = false // just seeing unapply pattern disables exhaustiveness check for whole match
         pUnapplyPat(tree.pos, fn)
 
       case t @ Apply(fn, args) =>             // pattern with args
@@ -692,8 +693,7 @@ print()
     } else {
       //Console.println("   enter: using old header for casted = "+casted) // DBG
       // find most recent header
-      while (curHeader.next ne null)
-        curHeader = curHeader.next
+      curHeader = curHeader.findLastSection
       // create node
       var patNode = patternNode(pat, curHeader, env)
       var next: PatternNode = curHeader
@@ -886,17 +886,6 @@ print()
       if (null == next) 1 else (next.length() + 1)
   }
 
-  protected def numCases(patNode1: PatternNode): Int = {
-    var patNode = patNode1
-    var n = 0
-    while (({patNode = patNode.or; patNode}) ne null)
-    patNode match {
-      case DefaultPat() => ;
-      case _ => n = n + 1
-    }
-    n
-  }
-
   protected def defaultBody(patNode1: PatternNode, otherwise: Tree ): Tree = {
     patNode1.asInstanceOf[Header].forEachSection {
       case h:Header => h.forEachBranch {
@@ -921,7 +910,12 @@ print()
     }
 
     //print();
-    val ncases = numCases(root.and)
+    var ncases = 0
+    root.and.asInstanceOf[Header].forEachBranch {
+      case DefaultPat() => ;
+      case _ => ncases = ncases + 1
+    }
+
     val matchError = ThrowMatchError(selector.pos, Ident(root.symbol))
     // without a case, we return a match error if there is no default case
     if (ncases == 0)
