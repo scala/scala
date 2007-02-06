@@ -35,7 +35,7 @@ abstract class DocGenerator extends Models {
   def contentFrame = "contentFrame"
   def classesFrame = "classesFrame"
   def modulesFrame = "modulesFrame"
-  def emptyMap = ListMap.Empty[Kind, TreeSet[HasTree]]
+  def emptyMap = ListMap.empty[Kind, TreeSet[HasTree]]
 
   override def acceptPrivate = false
 
@@ -792,7 +792,7 @@ abstract class DocGenerator extends Models {
   def process(units: Iterator[CompilationUnit]): Unit = {
     var members = emptyMap
 
-    var topLevel = ListMap.Empty[ModuleClassSymbol, ListMap[Kind,TreeSet[HasTree]]]
+    var topLevel = ListMap.empty[ModuleClassSymbol, ListMap[Kind,TreeSet[HasTree]]]
     for (val unit <- units) {
       val sourceMod = new SourceMod(unit)
       for (val mmbr <- sourceMod.members) mmbr.tree match {

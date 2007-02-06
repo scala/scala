@@ -287,7 +287,7 @@ abstract class LiftCode extends Transform {
     new Reifier(new ReifyEnvironment(), reflect.NoSymbol).reify(tree)
 
   def inject(code: reflect.Tree): Tree =
-    new Injector(ListMap.Empty, new FreshNameCreator).inject(code)
+    new Injector(ListMap.empty, new FreshNameCreator).inject(code)
 
   def codify (tree: Tree): Tree =
     New(TypeTree(appliedType(definitions.CodeClass.typeConstructor,

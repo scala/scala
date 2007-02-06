@@ -30,7 +30,7 @@ object ListMap {
 /** This class implements immutable maps using a list-based data
  *  structure. Instances of <code>ListMap</code> represent
  *  empty maps; they can be either created by calling the constructor
- *  directly, or by applying the function <code>ListMap.Empty</code>.
+ *  directly, or by applying the function <code>ListMap.empty</code>.
  *
  *  @author  Matthias Zenger
  *  @author  Martin Oderskty

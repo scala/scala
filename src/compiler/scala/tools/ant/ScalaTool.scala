@@ -334,7 +334,7 @@ package scala.tools.ant {
       if (mainClass.isEmpty) error("Main class must be set.")
       if (platforms.isEmpty) platforms = Platforms.values
       if (name.isEmpty) name = Some(file.get.getName)
-      val patches = ListMap.Empty.
+      val patches = ListMap.empty.
         update("name", name.get).
         update("class", mainClass.get).
         update("version", version).

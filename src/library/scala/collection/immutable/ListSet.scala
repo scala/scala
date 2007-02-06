@@ -34,7 +34,7 @@ object ListSet {
 /** This class implements immutable sets using a list-based data
  *  structure. Instances of <code>ListSet</code> represent
  *  empty sets; they can be either created by calling the constructor
- *  directly, or by applying the function <code>ListSet.Empty</code>.
+ *  directly, or by applying the function <code>ListSet.empty</code>.
  *
  *  @author  Matthias Zenger
  *  @version 1.0, 09/07/2003
