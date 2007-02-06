@@ -14,13 +14,12 @@ trait Shmeez extends AnyRef with Treez {
 }
 
 object Test {
-/*
   import scala.testing.SUnit._
 
   def main(args:Array[String]): Unit = {
     val tr = new TestResult
     new TestSuite(
-
+      new TestSimpleIntSwitch,
       new Test717,
       new TestGuards
     ).run(tr)
@@ -31,6 +30,20 @@ object Test {
 
   class Foo(j:Int) {
     case class Bar(i:Int)
+  }
+  class TestSimpleIntSwitch extends TestCase("SimpleIntSwitch") {
+    override def runTest() = {
+      assertEquals("s1", 1, 1 match {
+        case 3 => 3
+        case 2 => 2
+        case 1 => 1
+        case 0 => 0
+      })
+      assertEquals("s2", 1, 1 match {
+        case 1 => 1
+        case _ => 0
+      })
+  }
   }
   class Test717 extends TestCase("#717 test path of case classes") {
     val foo1 = new Foo(1)
@@ -111,7 +124,7 @@ object Test {
     case {_:Some[_],_:Some[_]} => 3
     case _ => 4
   }
-*/
+
   def i = List(1,2) match {
     case List(1) =>
     case List(1,2,xs @ _*) =>

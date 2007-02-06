@@ -13,6 +13,8 @@ trait PatternNodes requires transform.ExplicitOuter {
 
   import global._
 
+  type SymSet = collection.immutable.Set[Symbol]
+
   /** Intermediate data structure for algebraic + pattern matcher
    */
   sealed class PatternNode {
@@ -31,6 +33,11 @@ trait PatternNodes requires transform.ExplicitOuter {
 
     def isUnguardedBody = this match {
       case b:Body => b.hasUnguarded
+      case _      => false
+    }
+
+    def isSingleUnguardedBody = this match {
+      case b:Body => b.isSingleUnguarded
       case _      => false
     }
 
@@ -307,6 +314,101 @@ trait PatternNodes requires transform.ExplicitOuter {
       val p = findLast
       (p.isDefaultPat && p.and.isUnguardedBody)
     }
+
+    // executes an action for every or branch
+    def forEachBranch(f: PatternNode => Unit) { if(or ne null) or.forEachAlternative(f) }
+
+    // executes an action for every header section
+    def forEachSection(f: Header => Unit) { var h = this; while (h ne null) {f(h); h = h.next}}
+
+    /** returns true if this tree is optimizable
+     *  throws a warning if is not exhaustive
+     */
+    def optimize1(): { Boolean, SymSet, SymSet } = {
+      import symtab.Flags
+
+      val selType = this.getTpe
+
+      if (!isSubType(selType, definitions.ScalaObjectClass.tpe))
+        return {false, null, emptySymbolSet};
+
+      if(this.or eq null)
+        return {false, null, emptySymbolSet}  // only case _
+
+      def checkExCoverage(tpesym:Symbol): SymSet =
+        if(!tpesym.hasFlag(Flags.SEALED)) emptySymbolSet
+                                     else tpesym.children.flatMap { x => checkExCoverage(x) + x }
+
+      def andIsUnguardedBody(p1:PatternNode) = p1.and match {
+        case p: Body => p.hasUnguarded
+        case _       => false
+      }
+
+      //Console.println("optimize1("+selType+","+alternatives1+")")
+      var res = true
+      var coveredCases: SymSet  = emptySymbolSet
+      var remainingCases        = checkExCoverage(selType.symbol)
+      var cases = 0;
+
+      def traverse(alts:PatternNode) {
+        //Console.println("traverse, alts="+alts)
+        alts match {
+          case ConstrPat(_) =>
+            //Console.print("ConstPat! of"+alts.getTpe.symbol)
+            if (alts.getTpe.symbol.hasFlag(Flags.CASE)) {
+              coveredCases   = coveredCases + alts.getTpe.symbol
+              remainingCases = remainingCases - alts.getTpe.symbol
+              cases = cases + 1
+            } else {
+              val covered = remainingCases.filter { x =>
+                //Console.println("x.tpe is "+x.tpe)
+                val y = alts.getTpe.prefix.memberType(x)
+                //Console.println(y + " is sub of "+alts.getTpe+" ? "+isSubType(y, alts.getTpe));
+                isSubType(y, alts.getTpe)
+              }
+              //Console.println(" covered : "+covered)
+
+              coveredCases   = coveredCases ++ covered
+              remainingCases = remainingCases -- covered
+              res = false
+            }
+
+          // Nil is also a "constructor pattern" somehow
+          case VariablePat(tree) if (alts.getTpe.symbol.hasFlag(Flags.CASE)) => // Nil
+            coveredCases   = coveredCases + alts.getTpe.symbol
+            remainingCases = remainingCases - alts.getTpe.symbol
+            cases = cases + 1
+
+          case DefaultPat() =>
+            if(andIsUnguardedBody(alts) || alts.and.isInstanceOf[Header]) {
+              coveredCases   = emptySymbolSet
+              remainingCases = emptySymbolSet
+            }
+          case UnapplyPat(_,_) | SequencePat(_, _) | RightIgnoringSequencePat(_, _, _) =>
+            res = false
+            remainingCases = emptySymbolSet
+
+          case ConstantPat(_) =>
+            res = false
+
+          case AltPat(branchesHeader) =>
+            res = false
+          //Console.println("----------bfore: "+coveredCases)
+            branchesHeader.forEachBranch(traverse) // branchesHeader is header
+          //Console.println("----------after: "+coveredCases)
+
+          case VariablePat(_) =>
+            res = false
+
+          case _:Header | _:Body =>
+            Predef.error("cannot happen")
+        }
+      }
+
+      this.forEachBranch(traverse)
+      return {res && (cases > 2), coveredCases, remainingCases};
+    } // def optimize
+
   }
 
   /** contains at least one body, so arrays are always nonempty
@@ -318,6 +420,7 @@ trait PatternNodes requires transform.ExplicitOuter {
 
     def hasUnguarded = guard.exists { x => x == EmptyTree }
 
+    def isSingleUnguarded = (guard.length == 1) && (guard(0) == EmptyTree) && (bound(0).length == 0)
   }
 
   case class DefaultPat()extends PatternNode
