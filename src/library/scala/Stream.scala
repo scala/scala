@@ -435,17 +435,15 @@ trait Stream[+a] extends Seq[a] {
     zip(Stream.from(0))
 
   /** Prints elements of this stream one by one, separated by commas */
-  def print { print(Console.out) }
-  def print(out: java.io.PrintStream) { print(out, ", ") }
+  def print { print(", ") }
 
   /** Prints elements of this stream one by one, separated by <code>sep</code>
    *  @param sep   The separator string printed between consecutive elements.
    */
-  def print(sep: String) { print(Console.out, sep) }
-  def print(out: java.io.PrintStream, sep: String) {
+  def print(sep: String) {
     def loop(s: Stream[a]) {
-      if (s.isEmpty) out.println("Stream.empty")
-      else { out.print(s.head); out.print(sep); loop(s.tail) }
+      if (s.isEmpty) Console.println("Stream.empty")
+      else { Console.print(s.head); Console.print(sep); loop(s.tail) }
     }
     loop(this)
   }
