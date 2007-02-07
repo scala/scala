@@ -645,8 +645,9 @@ trait Parsers requires SyntaxAnalyzer {
       }
     }
 
-    /** SimpleType        ::=  SimpleType TypeArgs
-     *                     |   SimpleType `#' Id
+    /** SimpleType        ::=  {`@' Attribute} SimpleType1
+     *  SimpleType1       ::=  SimpleType1 TypeArgs
+     *                     |   SimpleType1 `#' Id
      *                     |   StableId
      *                     |   Path `.' type
      *                     |   `(' Type `)'
@@ -659,11 +660,7 @@ trait Parsers requires SyntaxAnalyzer {
      *                     |   `{' [ArgTypePattern `,' [ArgTypePatterns [`,']]] `}'
      */
     def simpleType(isPattern: boolean): Tree = {
-      val attribs =
-        if(settings.Xplugtypes.value)
-          typeAttributes
-        else
-          Nil
+      val attribs = typeAttributes()
 
       val pos = in.currentPos
       var t: Tree =
@@ -707,7 +704,10 @@ trait Parsers requires SyntaxAnalyzer {
           done=true
       }
 
-      t.withAttributes(attribs)
+      if (settings.Xplugtypes.value) t.withAttributes(attribs)
+      else (t /: attribs) ((t, attr) => attr match {
+        case Attribute(constr, elements) => Attributed(constr, elements, t)
+      })
     }
 
     /** TypeArgs        ::= `[' ArgTypes `]'
@@ -954,12 +954,10 @@ trait Parsers requires SyntaxAnalyzer {
           }
         } else if (in.token == MATCH) {
           t = atPos(in.skipToken()) {
-            val nocheck = isIdent && in.name == BANG
-            if (nocheck) in.nextToken()
             accept(LBRACE)
             val cases = caseClauses()
             accept(RBRACE)
-            Match(t, cases, !nocheck)
+            Match(t, cases)
           }
         }
         if ((mode & ClosureOK) != 0 && in.token == ARROW) {
@@ -2159,12 +2157,19 @@ trait Parsers requires SyntaxAnalyzer {
      *
      * Type attributes may be arbitrary expressions.
      */
-    def typeAttributes: List[Tree] = {
+    def typeAttributes(): List[Tree] = {
       val exps = new ListBuffer[Tree]
-      while(in.token == LBRACKET) {
-        accept(LBRACKET)
-        exps ++= argExprs
-        accept(RBRACKET)
+      if (settings.Xplugtypes.value) {
+        while(in.token == LBRACKET) {
+          accept(LBRACKET)
+          exps ++= argExprs
+          accept(RBRACKET)
+        }
+      } else {
+        while (in.token == AT) {
+          val pos = in.skipToken()
+          exps += attribute()
+        }
       }
       exps.toList
     }

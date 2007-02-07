@@ -468,7 +468,7 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
             }
             super.transform(copy.Apply(tree, sel, outerVal :: args))
 
-        case Match(selector, cases, checkExhaustive) => // <----- transmatch hook
+        case Match(selector, cases) => // <----- transmatch hook
           val tid = if (settings.debug.value) {
             val q = unit.fresh.newName("tidmark")
             Console.println("transforming patmat with tidmark "+q+" ncases = "+cases.length)
@@ -488,35 +488,49 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
           }
 		  */
 
-          val nselector = transform(selector)
+          var nselector = transform(selector)
           assert(nselector.tpe =:= selector.tpe)
           val ncases = transformCaseDefs(cases)
+
+          var checkExhaustive = true
+          def isUnsealedAttribute(tpe: Type) = tpe match {
+            case AttributedType(List(AttrInfo(atp, _, _)), _) if atp.symbol == UnsealedClass =>
+              true
+            case _ =>
+              false
+          }
+          nselector match {
+            case Typed(nselector1, tpt) if isUnsealedAttribute(tpt.tpe) =>
+              nselector = nselector1
+              checkExhaustive = false
+            case _ =>
+          }
 
           ExplicitOuter.this.resultType = tree.tpe
           //Console.println("TransMatcher currentOwner ="+currentOwner+")")
           //Console.println("TransMatcher selector.tpe ="+selector.tpe+")")
           //Console.println("TransMatcher resultType ="+resultType+")")
 
-        val t_untyped = handlePattern(nselector, ncases, checkExhaustive, currentOwner, transform)
-	try {
-          //Console.println("t_untyped "+t_untyped.toString())
-          val t = atPos(tree.pos) { localTyper.typed(t_untyped, resultType) }
+          val t_untyped = handlePattern(nselector, ncases, checkExhaustive, currentOwner, transform)
+	  try {
+            //Console.println("t_untyped "+t_untyped.toString())
+            val t = atPos(tree.pos) { localTyper.typed(t_untyped, resultType) }
 
-          //t = transform(t)
-          //val t         = atPos(tree.pos) { typed(t_untyped, resultType) }
-          //val t         = atPos(tree.pos) { typed(t_untyped) }
-          //Console.println("t typed "+t.toString())
-          if (settings.debug.value)
-            Console.println("finished translation of " + tid)
-          t
-	} catch {
-	  case e =>
-	    e.printStackTrace()
-	    //treeBrowser.browse(Seq.single(unit).elements)
-	    Console.println("[died while typechecking the translated pattern match:]")
-	    Console.println(t_untyped)
-	  null
-	}
+            //t = transform(t)
+            //val t         = atPos(tree.pos) { typed(t_untyped, resultType) }
+            //val t         = atPos(tree.pos) { typed(t_untyped) }
+            //Console.println("t typed "+t.toString())
+            if (settings.debug.value)
+              Console.println("finished translation of " + tid)
+            t
+	  } catch {
+	    case e =>
+	      e.printStackTrace()
+	      //treeBrowser.browse(Seq.single(unit).elements)
+	      Console.println("[died while typechecking the translated pattern match:]")
+	      Console.println(t_untyped)
+	    null
+	  }
         case _ =>
 	      val x = super.transform(tree)
 

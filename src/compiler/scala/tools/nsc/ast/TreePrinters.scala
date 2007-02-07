@@ -191,8 +191,8 @@ abstract class TreePrinters {
         case Block(stats, expr) =>
           printColumn(stats ::: List(expr), "{", ";", "}")
 
-        case Match(selector, cases, check) =>
-          print(selector); printColumn(cases, if (check) " match {" else "match! {", "", "}")
+        case Match(selector, cases) =>
+          print(selector); printColumn(cases, " match {", "", "}")
 
         case CaseDef(pat, guard, body) =>
           print("case "); print(pat); printOpt(" if ", guard)
@@ -293,6 +293,15 @@ abstract class TreePrinters {
           if(!attribs.isEmpty)
             print(" ")
           print(tree)
+
+        case Attributed(Apply(Select(New(tpt), nme.CONSTRUCTOR), args), elements, tree) =>
+          print("@"); print(tpt)
+          if (!args.isEmpty)
+            printRow(args, "(", ",", ")")
+          if (!elements.isEmpty)
+            print((for (val Assign(name, value) <- elements) yield "val " + name + " = " + value).
+                  mkString("{", ",", "}"))
+          print(" "); print(tree)
 
         case SingletonTypeTree(ref) =>
           print(ref); print(".type")

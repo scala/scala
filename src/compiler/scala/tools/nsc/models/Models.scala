@@ -404,7 +404,7 @@ abstract class Models {
         flatten(expr0,filter)
       case Try(block, catches, finalizer) =>
         flatten(block, filter) ::: flatten(finalizer, filter) ::: flatten0(catches, filter)
-      case Match(selector, cases, _) =>
+      case Match(selector, cases) =>
         flatten(selector, filter) ::: flatten0(cases, filter)
       case Apply(fun, args) =>
         flatten(fun, filter) ::: flatten0(args, filter)

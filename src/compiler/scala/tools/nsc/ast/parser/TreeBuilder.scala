@@ -360,11 +360,18 @@ abstract class TreeBuilder {
   def makeVisitor(cases: List[CaseDef], checkExhaustive: boolean): Tree =
     makeVisitor(cases, checkExhaustive, "x$")
 
+  private def makeUnsealed(expr: Tree): Tree =
+    Attributed(New(scalaDot(definitions.UnsealedClass.name), List(List())), List(), expr)
+
+  private def checkAttr(expr: Tree, check: boolean) =
+    if (check) expr else makeUnsealed(expr)
+
   /** Create visitor <x => x match cases> */
   def makeVisitor(cases: List[CaseDef], checkExhaustive: boolean, prefix: String): Tree = {
     val x = freshName(prefix)
+    val sel = if (checkExhaustive) Ident(x) else makeUnsealed(Ident(x))
     Function(List(ValDef(Modifiers(PARAM | SYNTHETIC), x, TypeTree(), EmptyTree)),
-             Match(Ident(x), cases, checkExhaustive))
+             Match(sel, cases))
   }
 
   /** Create tree for case definition &lt;case pat if guard => rhs&gt; */
@@ -395,7 +402,9 @@ abstract class TreeBuilder {
       val pat1 = patvarTransformer.transform(pat)
       val vars = getVariables(pat1)
       val matchExpr = atPos(pat1.pos){
-        Match(rhs, List(CaseDef(pat1, EmptyTree, makeTupleTerm(vars map (._1) map Ident, true))), false)
+        Match(
+          makeUnsealed(rhs),
+          List(CaseDef(pat1, EmptyTree, makeTupleTerm(vars map (._1) map Ident, true))))
       }
       vars match {
         case List() =>

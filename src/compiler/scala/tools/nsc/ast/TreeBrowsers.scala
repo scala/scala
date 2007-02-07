@@ -305,7 +305,7 @@ abstract class TreeBrowsers {
       case Bind(name, rhs) =>
         Pair("Bind", name)
 
-      case Match(selector, cases, _) =>
+      case Match(selector, cases) =>
         Pair("Visitor", EMPTY)
 
       case Function(vparams, body) =>
@@ -352,6 +352,9 @@ abstract class TreeBrowsers {
 
       case TypeTree() =>
         Pair("TypeTree", EMPTY)
+
+      case Attributed(constr, elements, arg) =>
+        Pair("AttributedTypeTree", EMPTY)
 
       case AttributedTypeTree(attribs, tpt) =>
         Pair("AttributedTypeTree", EMPTY)
@@ -449,7 +452,7 @@ abstract class TreeBrowsers {
       case Bind(name, rhs) =>
         List(rhs)
 
-      case Match(selector, cases, _) =>
+      case Match(selector, cases) =>
         selector :: cases
 
       case Function(vparams, body) =>
@@ -497,8 +500,8 @@ abstract class TreeBrowsers {
       case TypeTree() =>
         Nil
 
-      case AttributedTypeTree(attribs, tpt) =>
-        attribs ::: List(tpt)
+      case Attributed(constr, elements, arg) =>
+        constr :: elements ::: List(arg)
 
       case SingletonTypeTree(ref) =>
         List(ref)

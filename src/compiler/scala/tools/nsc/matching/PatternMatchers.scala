@@ -1001,7 +1001,7 @@ print()
     return Switch(selector, tags, bodies, defaultBody1, resultType);
     */
     nCases = CaseDef(Ident(nme.WILDCARD), squeezedBlock(List(ValDef(root.symbol, selector)),defaultBody1)) :: nCases;
-    Match(selector, nCases, false)
+    Match(selector, nCases)
   }
 
 
@@ -1057,7 +1057,6 @@ print()
             //Console.println("remain "+remainingCases+" carry covered "+ carryCovered + "real "+realRemainingCases)
             if(!realRemainingCases.isEmpty) {
               val word = if(realRemainingCases.size > 1) "cases " else "case "
-              //Console.println(_h.print("non-exhaustive ", new StringBuilder()).toString())
               cunit.warning(node.pos, "does not cover "+word+realRemainingCases.elements.mkString("{",",","}"))
               //Console.println("full"); print()
               //Console.println(_h.print("", new StringBuilder()).toString())
@@ -1214,8 +1213,7 @@ print()
       nCases = CaseDef(Ident(nme.WILDCARD), defBody) :: nCases;
       return Match(Apply(Select(selector.duplicate, defs.ScalaObjectClass_tag),
                          List()),
-                   nCases,
-                   false)
+                   nCases)
     }
 
     /** why not use plain `if's? the reason is that a failing *guard* must still remain

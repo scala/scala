@@ -56,18 +56,6 @@ trait Types requires SymbolTable {
 
   /** The base class for all types */
   abstract class Type {
-    /** Add an attribute to this type */
-    def withAttribute(attrib: Any) = withAttributes(List(attrib))
-
-    /** Add a number of attributes to this type */
-    def withAttributes(attribs: List[Any]): Type =
-      attribs match {
-        case Nil => this
-        case _ => AttributedType(attribs, this)
-      }
-
-    /** Remove any attributes from this type */
-    def withoutAttributes = this
 
     /** Types for which asSeenFrom always is the identity, no matter what
      *  prefix or owner.
@@ -495,6 +483,19 @@ trait Types requires SymbolTable {
         baseClasses.head.newOverloaded(this, members.toList)
       }
     }
+
+    /** Add an attribute to this type */
+    def withAttribute(attrib: Any) = withAttributes(List(attrib))
+
+    /** Add a number of attributes to this type */
+    def withAttributes(attribs: List[Any]): Type =
+      attribs match {
+        case Nil => this
+        case _ => AttributedType(attribs, this)
+      }
+
+    /** Remove any attributes from this type */
+    def withoutAttributes = this
   }
 
 // Subclasses ------------------------------------------------------------
@@ -1120,7 +1121,7 @@ trait Types requires SymbolTable {
 
     override def symbol: Symbol = tp.symbol
     override def singleDeref: Type = maybeRewrap(tp.singleDeref)
-    override def widen: Type = maybeRewrap(tp.widen)
+    override def widen: Type = tp.widen
     override def deconst: Type = maybeRewrap(tp.deconst)
     override def bounds: TypeBounds = {
        val oftp = tp.bounds

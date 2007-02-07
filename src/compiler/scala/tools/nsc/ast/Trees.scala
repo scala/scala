@@ -537,7 +537,7 @@ trait Trees requires Global {
    *      <code>Ident(nme.WILDCARD)</code></li>
    *  </ul>
    */
-  case class Match(selector: Tree, cases: List[CaseDef], checkExhaustive: boolean)
+  case class Match(selector: Tree, cases: List[CaseDef])
        extends TermTree
 
   /** Return expression */
@@ -658,6 +658,11 @@ trait Trees requires Global {
   def TypeTree(tp: Type): TypeTree = TypeTree() setType tp
   // def TypeTree(tp: Type, tree : Tree): TypeTree = TypeTree(tree) setType tp
 
+  /** A tree that has anP attribute attached to it */
+  case class Attributed(constr: Tree, elements: List[Tree], arg: Tree) extends Tree {
+    override def isType = arg.isType
+  }
+
   /** A type tree that has attributes attached to it */
   case class AttributedTypeTree(attribs: List[Tree], tpt: Tree)
         extends TypTree {
@@ -712,7 +717,7 @@ trait Trees requires Global {
   case Function(vparams, body) =>                                 (eliminated by lambdaLift)
   case Assign(lhs, rhs) =>
   case If(cond, thenp, elsep) =>
-  case Match(selector, cases, check) =>
+  case Match(selector, cases) =>
   case Return(expr) =>
   case Try(block, catches, finalizer) =>
   case Throw(expr) =>
@@ -726,6 +731,7 @@ trait Trees requires Global {
   case Ident(name) =>
   case Literal(value) =>
   case TypeTree() =>                                              (introduced by refcheck)
+  case Attributed(constr, elements, arg) =>                       (eliminated by typer)
   case AttributedTypeTree(attribs, tpt) =>                        (eliminated by uncurry)
   case SingletonTypeTree(ref) =>                                  (eliminated by uncurry)
   case SelectFromTypeTree(qualifier, selector) =>                 (eliminated by uncurry)
@@ -758,7 +764,7 @@ trait Trees requires Global {
     def Function(tree: Tree, vparams: List[ValDef], body: Tree): Function
     def Assign(tree: Tree, lhs: Tree, rhs: Tree): Assign
     def If(tree: Tree, cond: Tree, thenp: Tree, elsep: Tree): If
-    def Match(tree: Tree, selector: Tree, cases: List[CaseDef], check: boolean): Match
+    def Match(tree: Tree, selector: Tree, cases: List[CaseDef]): Match
     def Return(tree: Tree, expr: Tree): Return
     def Try(tree: Tree, block: Tree, catches: List[CaseDef], finalizer: Tree): Try
     def Throw(tree: Tree, expr: Tree): Throw
@@ -772,6 +778,7 @@ trait Trees requires Global {
     def Ident(tree: Tree, name: Name): Ident
     def Literal(tree: Tree, value: Constant): Literal
     def TypeTree(tree: Tree): TypeTree
+    def Attributed(tree: Tree, constr: Tree, elements: List[Tree], arg: Tree): Attributed
     def AttributedTypeTree(tree: Tree, attribs: List[Tree], tpt: Tree): AttributedTypeTree
     def SingletonTypeTree(tree: Tree, ref: Tree): SingletonTypeTree
     def SelectFromTypeTree(tree: Tree, qualifier: Tree, selector: Name): SelectFromTypeTree
@@ -827,8 +834,8 @@ trait Trees requires Global {
       new Assign(lhs, rhs).copyAttrs(tree)
     def If(tree: Tree, cond: Tree, thenp: Tree, elsep: Tree) =
       new If(cond, thenp, elsep).copyAttrs(tree)
-    def Match(tree: Tree, selector: Tree, cases: List[CaseDef], check: boolean) =
-      new Match(selector, cases, check).copyAttrs(tree)
+    def Match(tree: Tree, selector: Tree, cases: List[CaseDef]) =
+      new Match(selector, cases).copyAttrs(tree)
     def Return(tree: Tree, expr: Tree) =
       new Return(expr).copyAttrs(tree)
     def Try(tree: Tree, block: Tree, catches: List[CaseDef], finalizer: Tree) =
@@ -855,6 +862,8 @@ trait Trees requires Global {
       new Literal(value).copyAttrs(tree)
     def TypeTree(tree: Tree) =
       new TypeTree().copyAttrs(tree)
+    def Attributed(tree: Tree, constr: Tree, elements: List[Tree], arg: Tree) =
+      new Attributed(constr, elements, arg)
     def AttributedTypeTree(tree: Tree, attribs: List[Tree], tpt: Tree) =
       new AttributedTypeTree(attribs, tpt)
     def SingletonTypeTree(tree: Tree, ref: Tree) =
@@ -987,10 +996,10 @@ trait Trees requires Global {
       if (cond0 == cond) && (thenp0 == thenp) && (elsep0 == elsep) => t
       case _ => copy.If(tree, cond, thenp, elsep)
     }
-    def Match(tree: Tree, selector: Tree, cases: List[CaseDef], check: boolean) =  tree match {
-      case t @ Match(selector0, cases0, check0)
-      if (selector0 == selector) && (cases0 == cases) && (check0 == check) => t
-      case _ => copy.Match(tree, selector, cases, check)
+    def Match(tree: Tree, selector: Tree, cases: List[CaseDef]) =  tree match {
+      case t @ Match(selector0, cases0)
+      if (selector0 == selector) && (cases0 == cases) => t
+      case _ => copy.Match(tree, selector, cases)
     }
     def Return(tree: Tree, expr: Tree) = tree match {
       case t @ Return(expr0)
@@ -1055,6 +1064,11 @@ trait Trees requires Global {
     def TypeTree(tree: Tree) = tree match {
       case t @ TypeTree() => t
       case _ => copy.TypeTree(tree)
+    }
+    def Attributed(tree: Tree, constr: Tree, elements: List[Tree], arg: Tree) = tree match {
+      case t @ Attributed(constr0, elements0, arg0)
+      if (constr0==constr) && (elements0==elements) && (arg0==arg) => t
+      case _ => copy.Attributed(tree, constr, elements, arg)
     }
     def AttributedTypeTree(tree: Tree, attribs: List[Tree], tpt: Tree) = tree match {
       case t @ AttributedTypeTree(attribs0, tpt0)
@@ -1161,8 +1175,8 @@ trait Trees requires Global {
         copy.Assign(tree, transform(lhs), transform(rhs))
       case If(cond, thenp, elsep) =>
         copy.If(tree, transform(cond), transform(thenp), transform(elsep))
-      case Match(selector, cases, check) =>
-        copy.Match(tree, transform(selector), transformCaseDefs(cases), check)
+      case Match(selector, cases) =>
+        copy.Match(tree, transform(selector), transformCaseDefs(cases))
       case Return(expr) =>
         copy.Return(tree, transform(expr))
       case Try(block, catches, finalizer) =>
@@ -1189,6 +1203,8 @@ trait Trees requires Global {
         copy.Literal(tree, value)
       case TypeTree() =>
         copy.TypeTree(tree)
+      case Attributed(constr, elements, arg) =>
+        copy.Attributed(tree, transform(constr), transformTrees(elements), transform(arg))
       case AttributedTypeTree(attribs, tpt) =>
         copy.AttributedTypeTree(tree, transformTrees(attribs), transform(tpt))
       case SingletonTypeTree(ref) =>
@@ -1271,6 +1287,8 @@ trait Trees requires Global {
         traverse(expr)
       case Attribute(constr, elements) =>
         traverse(constr); traverseTrees(elements)
+      case Attributed(constr: Tree, elements: List[Tree], arg: Tree) =>
+        traverse(constr); traverseTrees(elements); traverse(arg)
       case DocDef(comment, definition) =>
         traverse(definition)
       case Template(parents, body) =>
@@ -1299,7 +1317,7 @@ trait Trees requires Global {
         traverse(lhs); traverse(rhs)
       case If(cond, thenp, elsep) =>
         traverse(cond); traverse(thenp); traverse(elsep)
-      case Match(selector, cases, _) =>
+      case Match(selector, cases) =>
         traverse(selector); traverseTrees(cases)
       case Return(expr) =>
         traverse(expr)

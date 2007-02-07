@@ -363,7 +363,6 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     uncurry,
     tailCalls,
     explicitOuter,
-    //transMatcher,
 //    checkDefined,
     erasure,
     lambdaLift,
@@ -513,7 +512,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
           if (sym.isTerm) sym.moduleClass.reset(loaders.moduleClassLoader)
         }
       } else {
-        assert(symData.isEmpty || !settings.stop.value.isEmpty || !settings.skip.value.isEmpty)
+        assert(symData.isEmpty || !settings.stop.value.isEmpty || !settings.skip.value.isEmpty, symData)
         if (deprecationWarnings) {
           warning("there were deprecation warnings; re-run with -deprecation for details")
         }

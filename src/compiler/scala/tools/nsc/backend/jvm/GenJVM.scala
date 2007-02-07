@@ -122,9 +122,7 @@ abstract class GenJVM extends SubComponent {
       val outfile = getFile(jclass, ".class")
       jclass.writeTo(outfile)
       val file = scala.tools.nsc.io.AbstractFile.getFile(outfile)
-      informProgress("wrote " + outfile + " " +
-                     (if (file ne null) "" + file.file + " " + file.file.exists()
-                      else "no file"))
+      informProgress("wrote " + outfile)
     }
 
     var serialVUID: Option[Long] = None

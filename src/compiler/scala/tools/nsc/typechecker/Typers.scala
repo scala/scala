@@ -883,6 +883,9 @@ trait Typers requires Analyzer {
       case DocDef(comment, defn) =>
         addGetterSetter(defn) map (stat => DocDef(comment, stat))
 
+      case Attributed(constr, elements, defn) =>
+        addGetterSetter(defn) map (stat => Attributed(constr, elements, stat))
+
       case _ =>
         List(stat)
     }
@@ -1512,6 +1515,54 @@ trait Typers requires Analyzer {
       }
     }
 
+    def typedAttribute(constr: Tree, elements: List[Tree]): AttrInfo = {
+      var attrError: Boolean = false;
+      def error(pos: PositionType, msg: String): Null = {
+        context.error(pos, msg)
+        attrError = true
+        null
+      }
+      def getConstant(tree: Tree): Constant = tree match {
+        case Literal(value) => value
+        case arg => error(arg.pos, "attribute argument needs to be a constant; found: "+arg)
+      }
+      val attrInfo =
+        typed(constr, EXPRmode | CONSTmode, AttributeClass.tpe) match {
+          case Apply(Select(New(tpt), nme.CONSTRUCTOR), args) =>
+            val constrArgs = args map getConstant
+            val attrScope = tpt.tpe.decls
+              .filter(sym => sym.isMethod && !sym.isConstructor && sym.hasFlag(JAVA));
+            val names = new collection.mutable.HashSet[Symbol]
+            names ++= attrScope.elements.filter(.isMethod)
+            if (args.length == 1) {
+              names.retain(sym => sym.name != nme.value)
+            }
+            val nvPairs = elements map {
+              case Assign(ntree @ Ident(name), rhs) => {
+                val sym = attrScope.lookup(name);
+                if (sym == NoSymbol) {
+                  error(ntree.pos, "unknown attribute element name: " + name)
+                } else if (!names.contains(sym)) {
+                  error(ntree.pos, "duplicate value for element " + name)
+                } else {
+                  names -= sym
+                  {sym.name, getConstant(typed(rhs, EXPRmode | CONSTmode, sym.tpe.resultType))}
+                }
+              }
+            }
+            for (val name <- names) {
+              if (!name.attributes.contains{AnnotationDefaultAttr.tpe, List(), List()}) {
+                error(constr.pos, "attribute " + tpt.tpe.symbol.fullNameString + " is missing element " + name.name)
+              }
+            }
+            if (tpt.tpe.symbol.hasFlag(JAVA) && settings.target.value == "jvm-1.4") {
+              context.unit.warning (constr.pos, "Java annotation will not be emitted in classfile unless you use the '-target:jvm-1.5' option")
+            }
+            AttrInfo(tpt.tpe, constrArgs, nvPairs)
+          }
+      if (attrError) AttrInfo(ErrorType, List(), List()) else attrInfo
+    }
+
     /**
      *  @param tree ...
      *  @param mode ...
@@ -1870,11 +1921,29 @@ trait Typers requires Analyzer {
           }
           typer1.typedLabelDef(ldef)
 
-        case DocDef(comment, defn) => {
+        case DocDef(comment, defn) =>
           val ret = typed(defn, mode, pt)
-          if (comments ne null) comments(defn . symbol) = comment;
+          if (comments ne null) comments(defn.symbol) = comment
           ret
-        }
+
+        case Attributed(constr, elements, arg) =>
+          val attrInfo = typedAttribute(constr, elements)
+          val arg1 = typed(arg, mode, pt)
+          def attrType =
+            TypeTree(arg1.tpe.withAttribute(attrInfo)) setOriginal tree
+          arg1 match {
+            case _: DefTree =>
+              if (!attrInfo.atp.isError) {
+                val attributed =
+                  if (arg1.symbol.isModule) arg1.symbol.moduleClass else arg1.symbol
+                attributed.attributes = attrInfo :: attributed.attributes
+              }
+              arg1
+            case _ =>
+              if (arg1.isType) attrType
+              else Typed(arg1, attrType) setPos tree.pos setType attrType.tpe
+          }
+
         case tree @ Block(_, _) =>
           newTyper(makeNewScope(context, tree, context.owner))
             .typedBlock(tree, mode, pt)
@@ -1979,10 +2048,10 @@ trait Typers requires Analyzer {
             copy.If(tree, cond1, thenp1, elsep1) setType ptOrLub(List(thenp1.tpe, elsep1.tpe))
           }
 
-        case Match(selector, cases, check) =>
+        case Match(selector, cases) =>
           val selector1 = typed(selector)
           val cases1 = typedCases(tree, cases, selector1.tpe.widen, pt)
-          copy.Match(tree, selector1, cases1, check) setType ptOrLub(cases1 map (.tpe))
+          copy.Match(tree, selector1, cases1) setType ptOrLub(cases1 map (.tpe))
 
         case Return(expr) =>
           val enclMethod = context.enclMethod
