@@ -12,7 +12,7 @@
 package scala.runtime
 
 
-import Predef.Class
+import Predef._
 import compat.Platform
 
 /**

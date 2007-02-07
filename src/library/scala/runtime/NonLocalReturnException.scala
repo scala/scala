@@ -12,4 +12,6 @@
 package scala.runtime
 
 
+import Predef.RuntimeException
+
 class NonLocalReturnException[T](val key: AnyRef, val value: T) extends RuntimeException

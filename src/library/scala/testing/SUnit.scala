@@ -125,7 +125,7 @@ object SUnit {
   }
 
   /** an AssertFailed is thrown for a failed assertion */
-  case class AssertFailed(msg: String) extends java.lang.RuntimeException {
+  case class AssertFailed(msg: String) extends RuntimeException {
     override def toString() = "failed assertion:" + msg
   }
 
