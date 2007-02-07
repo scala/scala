@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -11,9 +11,8 @@ import java.io.{IOException, FileNotFoundException}
 import java.nio.charset._
 import compat.Platform.currentTime
 import scala.tools.nsc.io.{SourceReader, AbstractFile}
-import scala.tools.nsc.util.ClassPath
-import scala.tools.nsc.util.{Position, SourceFile}
 import scala.tools.nsc.reporters._
+import scala.tools.nsc.util.{ClassPath, Position, SourceFile}
 
 import scala.collection.mutable.{HashSet, HashMap, ListBuffer}
 
@@ -151,7 +150,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
 
   private val reader: SourceReader = {
     def stdCharset: Charset = {
-      settings.encoding.value = "ISO-8859-1"; // A mandatory charset
+      settings.encoding.value = Properties.encodingString // A mandatory charset
       Charset.forName(settings.encoding.value)
     }
     val charset =

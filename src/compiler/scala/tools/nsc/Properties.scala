@@ -37,6 +37,11 @@ object Properties {
     props.getProperty("copyright.string", defaultString)
   }
 
+  val encodingString: String = {
+    val defaultString = "ISO-8859-1"
+    props.getProperty("file.encoding", defaultString)
+  }
+
   val scalaHome: String =
     System.getProperty("scala.home")
 

@@ -834,7 +834,7 @@ abstract class DocGenerator extends Models {
           <select id="kinds" onchange="gotoKind()">
             <option value="#Classes" selected="selected">Classes</option>
             <option value="#Objects">Objects</option>
-            <option value="#Traits">Traits</option>
+            <!--<option value="#Traits">Traits</option>-->
           </select>
           <span id="alphabet" style="font-family:Courier;word-spacing:-8px;">
           <a href={Unparsed("javascript:gotoName('A')")}>A</a>
@@ -844,7 +844,7 @@ abstract class DocGenerator extends Models {
           <a href={Unparsed("javascript:gotoName('E')")}>E</a>
           <a href={Unparsed("javascript:gotoName('G')")}>G</a>
           <a href={Unparsed("javascript:gotoName('I')")}>I</a>
-          <a href={Unparsed("javascript:gotoName('K')")}>K</a>
+          <a href={Unparsed("javascript:gotoName('L')")}>L</a>
           <a href={Unparsed("javascript:gotoName('M')")}>M</a>
           <a href={Unparsed("javascript:gotoName('P')")}>P</a>
           <a href={Unparsed("javascript:gotoName('R')")}>R</a>

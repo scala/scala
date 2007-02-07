@@ -48,11 +48,13 @@ object DocUtil {
         <a href={href}>{t0}</a>;
     }
 
-    val encoding = "iso-8859-1"
+    val encoding = Properties.encodingString
     val header =
-      <meta http-equiv="content-type" content={"text/html; charset=" + encoding}/>
-      <meta name="generator" content={ "scaladoc (" + Properties.versionString +")" }/>
-      <link rel="stylesheet" type="text/css" href={ relative + "style.css" }/>
+      <meta http-equiv="content-type"
+            content={"text/html; charset=" + encoding}/>
+      <meta name="generator"
+            content={"scaladoc (" + Properties.versionString +")"}/>
+      <link rel="stylesheet" type="text/css" href={ relative + "style.css"}/>
       <script type="text/javascript" src={relative + "script.js"}></script>;
 
     def body0(hasBody: Boolean, nodes: NodeSeq): NodeSeq =
