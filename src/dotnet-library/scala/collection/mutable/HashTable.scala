@@ -1,0 +1,168 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+// $Id$
+
+
+package scala.collection.mutable
+
+/** This class can be used to construct data structures that are based
+ *  on hashtables. Class <code>HashTable[A]</code> implements a hashtable
+ *  that maps keys of type <code>A</code> to values of the fully abstract
+ *  member type <code>Entry</code>. Classes that make use of <code>HashTable</code>
+ *  have to provide an implementation for <code>Entry</code>
+ *
+ *  There are mainly two parameters that affect the performance of a hashtable:
+ *  the <i>initial size</i> and the <i>load factor</i>. The <i>size</i>
+ *  refers to the number of <i>buckets</i> in the hashtable, and the <i>load
+ *  factor</i> is a measure of how full the hashtable is allowed to get before
+ *  its size is automatically doubled. Both parameters may be changed by
+ *  overriding the corresponding values in class <code>HashTable</code>.
+ *
+ *  @author  Matthias Zenger
+ *  @author  Martin Odersky
+ *  @version 2.0, 31/12/2006
+ */
+trait HashTable[A] extends AnyRef {
+
+  protected type Entry >: Null <: HashEntry[A, Entry]
+
+  /** The load factor for the hash table.
+   */
+  protected def loadFactor: Float = 0.75f
+
+  /** The initial size of the hash table.
+   */
+  protected def initialSize: Int = 16
+
+  /** The initial threshold
+   */
+  protected val initialThreshold: Int = newThreshold(initialSize)
+
+  /** The actual hash table.
+   */
+  protected var table: Array[Entry] =
+    if (initialSize == 0) null else new Array(initialSize)
+
+  /** The number of mappings contained in this hash table.
+   */
+  protected var tableSize: Int = 0
+
+  /** The next size value at which to resize (capacity * load factor).
+   */
+  protected var threshold: Int = initialThreshold
+
+  /** Returns the size of this hash table.
+   */
+  def size = tableSize
+
+  protected def findEntry(key: A): Entry = {
+    val h = index(elemHashCode(key))
+    var e = table(h)
+    while (e != null && !elemEquals(e.key, key)) e = e.next
+    e
+  }
+
+  protected def addEntry(e: Entry) {
+    val h = index(elemHashCode(e.key))
+    e.next = table(h)
+    table(h) = e
+    tableSize = tableSize + 1
+    if (tableSize > threshold)
+      resize(2 * table.length)
+  }
+
+  protected def removeEntry(key: A) {
+    val h = index(elemHashCode(key))
+    var e = table(h)
+    if (e != null) {
+      if (elemEquals(e.key, key)) {
+        table(h) = e.next
+        tableSize = tableSize - 1
+      } else {
+        var e1 = e.next
+        while (e1 != null && !elemEquals(e1.key, key)) {
+          e = e1
+          e1 = e1.next
+        }
+        if (e1 != null) {
+          e.next = e1.next
+          tableSize = tableSize - 1
+        }
+      }
+    }
+  }
+
+  protected def entries: Iterator[Entry] = new Iterator[Entry] {
+    val iterTable = table
+    var idx = table.length - 1
+    var es = iterTable(idx)
+    scan()
+    def hasNext = es != null
+    def next = {
+      val res = es
+      es = es.next
+      scan()
+      res
+    }
+    def scan() {
+      while (es == null && idx > 0) {
+        idx = idx - 1
+        es = iterTable(idx)
+      }
+    }
+  }
+
+  def clear() {
+    var i = table.length - 1
+    while (i >= 0) { table(i) = null; i = i - 1 }
+    tableSize = 0
+  }
+
+  private def newThreshold(size: Int) =
+    (size * loadFactor).asInstanceOf[Int]
+
+  private def resize(newSize: Int) = {
+    val oldTable = table
+    table = new Array(newSize)
+    var i = oldTable.length - 1
+    while (i >= 0) {
+      var e = oldTable(i)
+      while (e != null) {
+        val h = index(elemHashCode(e.key))
+        val e1 = e.next
+        e.next = table(h)
+        table(h) = e
+        e = e1
+      }
+      i = i - 1
+    }
+    threshold = newThreshold(newSize)
+  }
+
+  protected def elemEquals(key1: A, key2: A): Boolean = (key1 == key2)
+
+  protected def elemHashCode(key: A) = key.hashCode()
+
+  protected final def improve(hcode: Int) = {
+    var h: Int = hcode + ~(hcode << 9)
+    h = h ^ (h >>> 14)
+    h = h + (h << 4)
+    h ^ (h >>> 10)
+  }
+
+  protected final def index(hcode: Int) = improve(hcode) & (table.length - 1)
+}
+
+trait HashEntry[A, E] {
+  val key: A
+  var next: E = _
+}
+
+
+
