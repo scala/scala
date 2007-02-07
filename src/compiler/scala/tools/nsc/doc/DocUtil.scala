@@ -31,8 +31,8 @@ object DocUtil {
    // def label = "#PCDATA"
   //}
 
-  def br(nodes: NodeSeq): NodeSeq = nodes.concat(<br/>)
-  def hr(nodes: NodeSeq): NodeSeq = nodes.concat(<hr/>)
+  def br(nodes: NodeSeq): NodeSeq = nodes ++ <br/>
+  def hr(nodes: NodeSeq): NodeSeq = nodes ++ <hr/>
 
   trait UrlContext {
     def relative: String
@@ -51,7 +51,7 @@ object DocUtil {
     val encoding = "iso-8859-1"
     val header =
       <meta http-equiv="content-type" content={"text/html; charset=" + encoding}/>
-      <meta name="generator" content="scaladoc (2.3.0)"/>
+      <meta name="generator" content={ "scaladoc (" + Properties.versionString +")" }/>
       <link rel="stylesheet" type="text/css" href={ relative + "style.css" }/>
       <script type="text/javascript" src={relative + "script.js"}></script>;
 
