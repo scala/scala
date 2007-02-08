@@ -229,6 +229,9 @@ trait Parsers requires SyntaxAnalyzer {
       case _ => false
     }
 
+    def isTypeIntro: boolean = isTypeIntroToken(in.token)
+
+
 /////// COMMENT AND ATTRIBUTE COLLECTION //////////////////////////////////////
 
     /** Join the comment associated with a definition
@@ -661,7 +664,6 @@ trait Parsers requires SyntaxAnalyzer {
      */
     def simpleType(isPattern: boolean): Tree = {
       val attribs = typeAttributes()
-
       val pos = in.currentPos
       var t: Tree =
         if (in.token == LPAREN && !isPattern) {
@@ -703,11 +705,8 @@ trait Parsers requires SyntaxAnalyzer {
         } else
           done=true
       }
-
       if (settings.Xplugtypes.value) t.withAttributes(attribs)
-      else (t /: attribs) ((t, attr) => attr match {
-        case Attribute(constr, elements) => Attributed(constr, elements, t)
-      })
+      else (t /: attribs) (makeAttributed)
     }
 
     /** TypeArgs        ::= `[' ArgTypes `]'
@@ -933,6 +932,7 @@ trait Parsers requires SyntaxAnalyzer {
           }
         } else if (in.token == COLON) {
           val pos = in.skipToken()
+          val attribs = typeAttributes()
           if ((mode & IsArgument) != 0 && in.token == USCORE) {
             val pos1 = in.skipToken()
             if (isIdent && in.name == nme.STAR) {
@@ -945,12 +945,15 @@ trait Parsers requires SyntaxAnalyzer {
             } else {
               syntaxErrorOrIncomplete("`*' expected", true)
             }
-          } else {
+          } else if (attribs.isEmpty || isTypeIntro) {
             t = atPos(pos) {
-              Typed(t, if ((mode & IsInBlock) != 0) compoundType(false) else typ())
+              val tpt = if ((mode & IsInBlock) != 0) compoundType(false) else typ()
               // this does not correspond to syntax, but is necessary to
-              // accept closures. We should restrict closures to be between {...} only!
+              // accept closures. We might restrict closures to be between {...} only!
+              Typed(t, (tpt /: attribs) (makeAttributed))
             }
+          } else {
+            t = (t /: attribs) (makeAttributed)
           }
         } else if (in.token == MATCH) {
           t = atPos(in.skipToken()) {

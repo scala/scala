@@ -103,6 +103,10 @@ abstract class TreeBuilder {
     case _ => AppliedTypeTree(scalaDot(newTypeName("Tuple" + trees.length)), trees)
   }
 
+  def makeAttributed(t: Tree, attr: Tree): Tree = attr match {
+    case Attribute(constr, elements) => Attributed(constr, elements, t) setPos attr.pos
+  }
+
   /** If tree is a variable pattern, return Some("its name and type").
    *  Otherwise return none */
   private def matchVarPattern(tree: Tree): Option[{Name, Tree}] = tree match {

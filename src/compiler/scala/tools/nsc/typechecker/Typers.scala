@@ -2140,7 +2140,7 @@ trait Typers requires Analyzer {
 
         case Typed(expr, tpt) =>
           val tpt1 = typedType(tpt)
-          val expr1 = typed(expr, mode & stickyModes, tpt1.tpe)
+          val expr1 = typed(expr, mode & stickyModes, tpt1.tpe.deconst)
           val owntype = if ((mode & PATTERNmode) != 0) inferTypedPattern(tpt1.pos, tpt1.tpe, widen(pt)) else tpt1.tpe
           //Console.println(typed pattern: "+tree+":"+", tp = "+tpt1.tpe+", pt = "+pt+" ==> "+owntype)//DEBUG
           copy.Typed(tree, expr1, tpt1) setType owntype
