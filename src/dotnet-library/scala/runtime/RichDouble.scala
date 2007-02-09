@@ -24,10 +24,9 @@ final class RichDouble(x: Double) extends Proxy with Ordered[Double] {
   def max(y: Double): Double = Math.max(x, y)
   def abs: Double = Math.abs(x)
 
-  // isNaN is provided by the implicit conversion to java.lang.Double
-  // def isNaN: Boolean = java.lang.Double.isNaN(x)
-  def isInfinity: Boolean = java.lang.Double.isInfinite(x)
-  def isPosInfinity: Boolean = isInfinity && x > 0.0
-  def isNegInfinity: Boolean = isInfinity && x < 0.0
+  def isNaN: Boolean = System.Double.IsNaN(x)
+  def isInfinity: Boolean = System.Double.IsInfinity(x)
+  def isPosInfinity: Boolean = System.Double.IsPositiveInfinity(x)
+  def isNegInfinity: Boolean = System.Double.IsNegativeInfinity(x)
 
 }

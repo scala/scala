@@ -11,12 +11,11 @@
 
 package scala
 
-import java.io.{InputStream, Reader, InputStreamReader, BufferedReader}
-import java.io.{OutputStream, PrintStream}
-import java.text.MessageFormat
 
 import scala.util.Fluid
-
+import System.IO.{TextReader,TextWriter}
+import compat.Platform
+import Predef._
 
 /** The <code>Console</code> object implements functionality for
  *  printing Scala values on the terminal. There are also functions
@@ -56,20 +55,17 @@ object Console {
   final val REVERSED   = "\033[7m"
   final val INVISIBLE  = "\033[8m"
 
-  private val outFluid = new Fluid[PrintStream](java.lang.System.out)
-  private val inFluid = new Fluid[BufferedReader](
-    new BufferedReader(new InputStreamReader(java.lang.System.in)))
+  private val outFluid = new Fluid[TextWriter](System.Console.Out)
+  private val inFluid  = new Fluid[TextReader](System.Console.In)
 
   def out = outFluid.value
-  def in = inFluid.value
-
-  val err = java.lang.System.err
+  def in  = inFluid.value
 
   /** Set the default output stream.
    *
    *  @param out the new output stream.
    */
-  def setOut(out: PrintStream): Unit = outFluid.value = out
+  def setOut(out: TextWriter): Unit = outFluid.value = out
 
   /** Set the default output stream for the duration
    *  of execution of one thunk.
@@ -77,36 +73,16 @@ object Console {
    *  @param out the new output stream.
    *  @param thunk the code to execute with
    *               the new output stream active
-   *  @return ...
    */
-  def withOut[T](out: PrintStream)(thunk: =>T): T =
+  def withOut[T](out: TextWriter)(thunk: =>T): T =
     outFluid.withValue(out)(thunk)
-
-  /** Set the default output stream.
-   *
-   *  @param@ out the new output stream.
-   */
-  def setOut(out: OutputStream): Unit =
-    setOut(new PrintStream(out))
-
-  /** Set the default output stream for the duration
-   *  of execution of one thunk.
-   *
-   *  @param out the new output stream.
-   *  @param thunk the code to execute with
-   *               the new output stream active
-   *  @return ...
-   */
-  def withOut[T](out: OutputStream)(thunk: =>T): T =
-    withOut(new PrintStream(out))(thunk)
-
 
   /** Set the default input stream.
    *
    *  @param reader specifies the new input stream.
    */
-  def setIn(reader: Reader): Unit = {
-    inFluid.value = new BufferedReader(reader)
+  def setIn(reader: TextReader): Unit = {
+    inFluid.value = reader
   }
 
   /** Set the default input stream for the duration
@@ -116,49 +92,33 @@ object Console {
    *  @param thunk the code to execute with
    *               the new input stream active
    */
-    def withIn[T](reader: Reader)(thunk: =>T): T =
-      inFluid.withValue(new BufferedReader(reader))(thunk)
+  def withIn[T](reader: TextReader)(thunk: =>T): T =
+    inFluid.withValue(reader)(thunk)
 
-
-  /** Set the default input stream.
-   *
-   *  @param in the new input stream.
-   */
-  def setIn(in: InputStream): Unit =
-    setIn(new InputStreamReader(in))
-
-  /** Set the default input stream for the duration
-   *  of execution of one thunk.
-   *
-   *  @param in the new input stream.
-   *  @param thunk the code to execute with
-   *               the new input stream active
-   */
-  def withIn[T](in: InputStream)(thunk: =>T): T =
-    withIn(new InputStreamReader(in))(thunk)
 
   /** Print an object on the terminal.
    *
    *  @param obj the object to print.
    */
-  def print(obj: Any): Unit =
-    out.print(if (null == obj) "null" else obj.toString())
+  def print(obj: Any): Unit = {
+    out.Write(if (null == obj) "null" else obj.toString());
+  }
 
   /** Flush the output stream. This function is required when partial
    *  output (i.e. output not terminated by a new line character) has
    *  to be made visible on the terminal.
    */
-  def flush: Unit = out.flush()
+  def flush: Unit = out.Flush()
 
   /** Print a new line character on the terminal.
    */
-  def println: Unit = out.println()
+  def println: Unit = out.WriteLine()
 
   /** Print out an object followed by a new line character.
    *
    *  @param x the object to print.
    */
-  def println(x: Any): Unit = out.println(x)
+  def println(x: Any): Unit = out.WriteLine(x)
 
   /** <p>
    *    Format and print out some text (in a fashion similar to printf in C or
@@ -185,16 +145,14 @@ object Console {
    *       target="contentFrame">Console.printf</a>.
    */
   def format(text: String, args: Any*): Unit =
-    out.print(
-      if (text eq null) "null"
-      else MessageFormat.format(text, textParams(args))
-    )
+    if (text eq null) out.Write("null")
+    else out.Write(text, args.toArray)
 
   /** Read a full line from the terminal.
    *
    *  @return the string read from the terminal.
    */
-  def readLine: String = in.readLine()
+  def readLine: String = in.ReadLine();
 
   /** Print a formatted text and read a full line from the terminal
    *
@@ -226,7 +184,7 @@ object Console {
 
   /** Read a short value from the terminal.
    */
-  def readShort: Short = readLine.toByte
+  def readShort: Short = readLine.toShort
 
   /** Read a char value from the terminal.
    */
@@ -244,91 +202,92 @@ object Console {
    */
   def readDouble: Double = readLine.toDouble
 
-  /** Read in some structured input, specified by a format specifier.
-   *  See class <code>java.text.MessageFormat</code> for details of
-   *  the format specification.
-   *
-   *  @param format the format of the input.
-   *  @return a list of all extracted values.
-   */
-  def readf(format: String): List[Any] =
-    textComponents(new MessageFormat(format).parse(readLine))
+//   /** Read in some structured input, specified by a format specifier.
+//    *  See class <code>java.text.MessageFormat</code> for details of
+//    *  the format specification.
+//    *
+//    *  @param format the format of the input.
+//    *  @return a list of all extracted values.
+//    */
+//   def readf(format: String): List[Any] =
+//     textComponents(new MessageFormat(format).parse(in.readLine()))
 
-  /** Read in some structured input, specified by a format specifier.
-   *  Opposed to <code>readf</code>, this function only returns the
-   *  first value extracted from the input according to the format
-   *  specification.
-   *
-   *  @param format ...
-   *  @return ...
-   */
-  def readf1(format: String): Any = readf(format).head
+//   /** Read in some structured input, specified by a format specifier.
+//    *  Opposed to <code>readf</code>, this function only returns the
+//    *  first value extracted from the input according to the format
+//    *  specification.
+//    *
+//    *  @param format ...
+//    *  @return ...
+//    */
+//   def readf1(format: String): Any = readf(format).head
 
-  /** Read in some structured input, specified by a format specifier.
-   *  Opposed to <code>readf</code>, this function only returns the
-   *  first two values extracted from the input according to the format
-   *  specification.
-   *
-   *  @param format ...
-   *  @return ...
-   */
-  def readf2(format: String): {Any, Any} = {
-    val res = readf(format)
-    {res.head, res.tail.head}
-  }
+//   /** Read in some structured input, specified by a format specifier.
+//    *  Opposed to <code>readf</code>, this function only returns the
+//    *  first two values extracted from the input according to the format
+//    *  specification.
+//    *
+//    *  @param format ...
+//    *  @return ...
+//    */
+//   def readf2(format: String): Pair[Any, Any] = {
+//     val res = readf(format)
+//     Pair(res.head, res.tail.head)
+//   }
 
-  /** Read in some structured input, specified by a format specifier.
-   *  Opposed to <code>readf</code>, this function only returns the
-   *  first three values extracted from the input according to the format
-   *  specification.
-   *
-   *  @param format ...
-   *  @return ...
-   */
-  def readf3(format: String): Triple[Any, Any, Any] = {
-    val res = readf(format)
-    {res.head, res.tail.head, res.tail.tail.head}
-  }
+//   /** Read in some structured input, specified by a format specifier.
+//    *  Opposed to <code>readf</code>, this function only returns the
+//    *  first three values extracted from the input according to the format
+//    *  specification.
+//    *
+//    *  @param format ...
+//    *  @return ...
+//    */
+//   def readf3(format: String): Triple[Any, Any, Any] = {
+//     val res = readf(format)
+//     Triple(res.head, res.tail.head, res.tail.tail.head)
+//   }
 
-  private def textComponents(a: Array[AnyRef]): List[Any] = {
-    var i: Int = a.length - 1
-    var res: List[Any] = Nil
-    while (i >= 0) {
-      res = (a(i) match {
-        case x: java.lang.Boolean => x.booleanValue()
-        case x: java.lang.Byte => x.byteValue()
-        case x: java.lang.Short => x.shortValue()
-        case x: java.lang.Character => x.charValue()
-        case x: java.lang.Integer => x.intValue()
-        case x: java.lang.Long => x.longValue()
-        case x: java.lang.Float => x.floatValue()
-        case x: java.lang.Double => x.doubleValue()
-        case x => x
-      }) :: res;
-      i = i - 1
-    }
-    res
-  }
+//   private def textComponents(a: Array[AnyRef]): List[Any] = {
+//     var i: Int = a.length - 1
+//     var res: List[Any] = Nil
+//     while (i >= 0) {
+//       res = (a(i) match {
+//         case x: java.lang.Boolean => x.booleanValue()
+//         case x: java.lang.Byte => x.byteValue()
+//         case x: java.lang.Short => x.shortValue()
+//         case x: java.lang.Character => x.charValue()
+//         case x: java.lang.Integer => x.intValue()
+//         case x: java.lang.Long => x.longValue()
+//         case x: java.lang.Float => x.floatValue()
+//         case x: java.lang.Double => x.doubleValue()
+//         case x => x
+//       }) :: res;
+//       i = i - 1
+//     }
+//     res
+//   }
 
-  private def textParams(s: Seq[Any]): Array[AnyRef] = {
-    val res = new Array[AnyRef](s.length);
-    var i: Int = 0;
-    val iter = s.elements;
-    while (iter.hasNext) {
-      res(i) = iter.next match {
-        case x: Boolean => new java.lang.Boolean(x)
-        case x: Byte => new java.lang.Byte(x)
-        case x: Short => new java.lang.Short(x)
-        case x: Char => new java.lang.Character(x)
-        case x: Int => new java.lang.Integer(x)
-        case x: Long => new java.lang.Long(x)
-        case x: Float => new java.lang.Float(x)
-        case x: Double => new java.lang.Double(x)
-        case x: Unit => "()"
-        case x: AnyRef => x
-      }
-      i = i + 1
-    }
-    res
-  }
+//   private def textParams(s: Seq[Any]): Array[AnyRef] = {
+//     val res = new Array[AnyRef](s.length);
+//     var i: Int = 0;
+//     val iter = s.elements;
+//     while (iter.hasNext) {
+//       res(i) = iter.next match {
+//         case x: Boolean => new java.lang.Boolean(x)
+//         case x: Byte => new java.lang.Byte(x)
+//         case x: Short => new java.lang.Short(x)
+//         case x: Char => new java.lang.Character(x)
+//         case x: Int => new java.lang.Integer(x)
+//         case x: Long => new java.lang.Long(x)
+//         case x: Float => new java.lang.Float(x)
+//         case x: Double => new java.lang.Double(x)
+//         case x: Unit => "()"
+//         case x: AnyRef => x
+//       }
+//       i = i + 1
+//     }
+//     res
+//   }
+
 }

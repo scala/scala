@@ -133,13 +133,12 @@ final class RichString(val self: String) extends Proxy with Seq[Char] with Order
    */
   def stripMargin: String = stripMargin('|')
 
-  def split(separator: Char): Array[String] = self.split(separator.toString())
+  def split(separator: Char): Array[String] = self.Split(Array(separator))
 
-  def toByte: Byte = java.lang.Byte.parseByte(self)
-  def toShort: Short = java.lang.Short.parseShort(self)
-  def toInt: Int = java.lang.Integer.parseInt(self)
-  def toLong: Long = java.lang.Long.parseLong(self)
-  def toFloat: Float = java.lang.Float.parseFloat(self)
-  def toDouble: Double = java.lang.Double.parseDouble(self)
-
+  def toByte: Byte = System.Byte.Parse(self)
+  def toShort: Short = System.Int16.Parse(self)
+  def toInt: Int = System.Int32.Parse(self)
+  def toLong: Long = System.Int64.Parse(self)
+  def toFloat: Float = System.Single.Parse(self)
+  def toDouble: Double = System.Double.Parse(self)
 }

@@ -38,26 +38,26 @@ object Predef {
   type All = Nothing
   type AllRef = Null
 
-  type String = java.lang.String
+  type String = System.String
   type StringBuilder = compat.StringBuilder
-  type Class = java.lang.Class
+  type Class = System.Type
 
-  type Throwable = java.lang.Throwable
-  type Exception = java.lang.Exception
-  type Error = java.lang.Error
-  type RuntimeException = java.lang.RuntimeException
-  type NullPointerException = java.lang.NullPointerException
-  type ClassCastException = java.lang.ClassCastException
-  type IndexOutOfBoundsException = java.lang.IndexOutOfBoundsException
-  type ArrayIndexOutOfBoundsException = java.lang.ArrayIndexOutOfBoundsException
-  type UnsupportedOperationException = java.lang.UnsupportedOperationException
-  type IllegalArgumentException = java.lang.IllegalArgumentException
-  type NoSuchElementException = java.util.NoSuchElementException
-  type NumberFormatException = java.lang.NumberFormatException
+  type Throwable = System.Exception
+  type Exception = System.Exception
+  type Error = System.Exception
+  type RuntimeException = System.Exception
+  type NullPointerException = System.NullReferenceException
+  type ClassCastException = System.InvalidCastException
+  type IndexOutOfBoundsException = System.IndexOutOfRangeException
+  type ArrayIndexOutOfBoundsException = System.IndexOutOfRangeException
+  type UnsupportedOperationException = System.InvalidOperationException
+  type IllegalArgumentException = System.ArgumentException
+  type NoSuchElementException = System.InvalidOperationException
+  //type NumberFormatException = java.lang.NumberFormatException
 
   // --- Miscelleaneous -----------------------------------------------
 
-  val $scope = scala.xml.TopScope
+  //val $scope = scala.xml.TopScope
 
   type Function[-a,+b] = Function1[a,b]
 
@@ -75,18 +75,18 @@ object Predef {
   def exit: Nothing = exit(0)
 
   def exit(status: Int): Nothing = {
-    java.lang.System.exit(status)
+    System.Environment.Exit(status)
     throw new Throwable()
   }
 
   def assert(assertion: Boolean): Unit = {
     if (!assertion)
-      throw new java.lang.AssertionError("assertion failed")
+      throw new Error("assertion failed")
   }
 
   def assert(assertion: Boolean, message: Any): Unit = {
     if (!assertion)
-      throw new java.lang.AssertionError("assertion failed: " + message)
+      throw new Error("assertion failed: " + message)
   }
 
   def assume(assumption: Boolean): Unit = {
@@ -147,6 +147,12 @@ object Predef {
   implicit def any2stringadd(x: Any) = new runtime.StringAdd(x)
 
   implicit def exceptionWrapper(exc: Throwable) = new runtime.RichException(exc)
+
+  final class GetClassWrapper(obj: AnyRef) {
+    def getClass(): runtime.RichClass = classWrapper(obj.GetType())
+  }
+  implicit def getClassWrapper(obj: AnyRef) = new GetClassWrapper(obj)
+  implicit def classWrapper(clazz: Class): runtime.RichClass = new runtime.RichClass(clazz)
 
   implicit def unit2ordered(x: unit): Ordered[unit] = new Ordered[unit] with Proxy {
     def self: Any = x
@@ -271,15 +277,6 @@ object Predef {
 
   implicit def float2double(x: float): double = x.toDouble
 
-  implicit def byte2Byte(x: byte) = new java.lang.Byte(x)
-  implicit def short2Short(x: short) = new java.lang.Short(x)
-  implicit def char2Character(x: char) = new java.lang.Character(x)
-  implicit def int2Integer(x: int) = new java.lang.Integer(x)
-  implicit def long2Long(x: long) = new java.lang.Long(x)
-  implicit def float2Float(x: float) = new java.lang.Float(x)
-  implicit def double2Double(x: double) = new java.lang.Double(x)
-  implicit def boolean2Boolean(x: boolean) = new java.lang.Boolean(x)
-
-  def currentThread = java.lang.Thread.currentThread()
+  def currentThread = System.Threading.Thread.CurrentThread
 
 }

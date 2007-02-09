@@ -12,7 +12,8 @@
 package scala.util
 
 
-import java.lang.InheritableThreadLocal
+import System.Threading.Thread
+import System.LocalDataStoreSlot
 
 /** Fluids provide a binding mechanism where the current
   * value is found through <em>dynamic scope</em>, but where
@@ -46,13 +47,11 @@ import java.lang.InheritableThreadLocal
   *  @version 1.0, 21/03/2006
   */
 class Fluid[T](init: T) {
-  private val tl = new InheritableThreadLocal {
-   override def initialValue = init.asInstanceOf[AnyRef]
-  }
+  private val slot: LocalDataStoreSlot = Thread.AllocateDataSlot()
+  value = init
 
   /** Retrieve the current value */
-  def value: T = tl.get.asInstanceOf[T]
-
+  def value: T = Thread.GetData(slot).asInstanceOf[T]
 
   /** Set the value of the fluid while executing the specified
     * thunk.
@@ -62,17 +61,17 @@ class Fluid[T](init: T) {
     */
   def withValue[S](newval: T)(thunk: =>S): S = {
     val oldval = value
-    tl.set(newval)
+    value = newval
 
     try { thunk } finally {
-      tl.set(oldval)
+      value = oldval
     }
   }
 
   /** Change the currently bound value, discarding the old value.
     * Usually withValue() gives better semantics.
     */
-  def value_=(newval: T) = { tl.set(newval) }
+  def value_=(newval: T) = { Thread.SetData(slot, newval.asInstanceOf[AnyRef]) }
 
   override def toString: String = "Fluid(" + value  +")"
 }

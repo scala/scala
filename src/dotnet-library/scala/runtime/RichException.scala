@@ -11,18 +11,11 @@
 
 package scala.runtime
 
-import compat.StringBuilder
-import compat.Platform.EOL
 
-final class RichException(exc: Throwable) {
+final class RichException(exc: System.Exception) {
 
-  def getStackTraceString: String = {
-    val s = new StringBuilder()
-    for (val trElem <- exc.getStackTrace()) {
-      s.append(trElem.toString())
-      s.append(EOL)
-    }
-    s.toString()
-  }
+  def printStackTrace() = System.Console.WriteLine(exc.StackTrace);
+  def getMessage() = exc.Message
+  def getStackTraceString: String = exc.StackTrace
 
 }

@@ -12,8 +12,7 @@
 package scala.runtime
 
 
-import Predef.{Class, Throwable}
-import java.lang.Runnable
+import Predef._
 
 /* The object <code>ScalaRunTime</code> provides ...
  */
@@ -29,17 +28,19 @@ object ScalaRunTime {
   val DoubleTag = ".Double"
   val BooleanTag = ".Boolean"
 
-  val ByteTYPE = java.lang.Byte.TYPE
-  val ShortTYPE = java.lang.Short.TYPE
-  val CharTYPE = java.lang.Character.TYPE
-  val IntTYPE = java.lang.Integer.TYPE
-  val LongTYPE = java.lang.Long.TYPE
-  val FloatTYPE = java.lang.Float.TYPE
-  val DoubleTYPE = java.lang.Double.TYPE
-  val BooleanTYPE = java.lang.Boolean.TYPE
-  val UnitTYPE = java.lang.Void.TYPE
+  import Predef.classOf;
 
-  def isArray(x:AnyRef): Boolean = x.getClass.isArray
+  val ByteTYPE = classOf[System.Byte]
+  val ShortTYPE = classOf[System.Int16]
+  val CharTYPE = classOf[System.Char]
+  val IntTYPE = classOf[System.Int32]
+  val LongTYPE = classOf[System.Int64]
+  val FloatTYPE = classOf[System.Single]
+  val DoubleTYPE = classOf[System.Double]
+  val BooleanTYPE = classOf[System.Boolean]
+  val UnitTYPE = classOf[System.Void]
+
+  def isArray(x:AnyRef): Boolean = x.getClass().isArray()
   def isValueTag(tag: String) = tag.charAt(0) == '.'
   def isValueClass(clazz: Class) = clazz.isPrimitive()
 
@@ -54,7 +55,7 @@ object ScalaRunTime {
 
     def run(): Unit = result = block
 
-    def Catch[b >: a](handler: PartialFunction[Throwable, b]): b =
+    def Catch[b >: a](handler: PartialFunction[Exception, b]): b =
       if (exception eq null)
         result.asInstanceOf[b]
       // !!! else if (exception is LocalReturn)

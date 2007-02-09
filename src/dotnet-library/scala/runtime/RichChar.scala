@@ -11,30 +11,26 @@
 
 package scala.runtime
 
-
-import java.lang.Character
 import Predef.NoSuchElementException
 
 final class RichChar(x: Char) extends Proxy with Ordered[Char] {
-
   // Proxy.self
   def self: Any = x
 
   // Ordered[Char].compare
   def compare (y: Char): Int = if (x < y) -1 else if (x > y) 1 else 0
 
-  def asDigit: Int = Character.digit(x, Character.MAX_RADIX)
+  def isControl: Boolean = System.Char.IsControl(x)
+  def isDigit: Boolean = System.Char.IsDigit(x)
+  def isLetter: Boolean = System.Char.IsLetter(x)
+  def isLetterOrDigit: Boolean = System.Char.IsLetterOrDigit(x)
+  def isLowerCase: Boolean = System.Char.IsLower(x)
+  def isUpperCase: Boolean = System.Char.IsUpper(x)
+  def isWhitespace: Boolean = System.Char.IsWhiteSpace(x)
+  def toLowerCase: Char = System.Char.ToLower(x)
+  def toUpperCase: Char = System.Char.ToUpper(x)
 
-  def isControl: Boolean = Character.isISOControl(x)
-  def isDigit: Boolean = Character.isDigit(x)
-  def isLetter: Boolean = Character.isLetter(x)
-  def isLetterOrDigit: Boolean = Character.isLetterOrDigit(x)
-  def isLowerCase: Boolean = Character.isLowerCase(x)
-  def isUpperCase: Boolean = Character.isUpperCase(x)
-  def isWhitespace: Boolean = Character.isWhitespace(x)
-
-  def toLowerCase: Char = Character.toLowerCase(x)
-  def toUpperCase: Char = Character.toUpperCase(x)
+  def asDigit: Int = System.Char.GetNumericValue(x).toInt
 
   def to(y: Char): Iterator[Char] = new BufferedIterator[Char] {
     private var ch = x
