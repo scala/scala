@@ -222,6 +222,15 @@ trait Members requires ICodes {
   class Local(val sym: Symbol, val kind: TypeKind, val arg: Boolean) {
     var index: Int = -1;
 
+    /** Starting PC for this local's visbility range. */
+    var start: Int = _
+
+    /** Ending PC for this local's visbility range. */
+    var end: Int = _
+
+    /** PC-based ranges for this local variable's visibility range */
+    var ranges: List[{Int, Int}] = Nil
+
     override def equals(other: Any): Boolean = (
       other.isInstanceOf[Local] &&
       other.asInstanceOf[Local].sym == this.sym

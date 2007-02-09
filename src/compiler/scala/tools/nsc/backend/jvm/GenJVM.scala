@@ -11,7 +11,7 @@ import java.io.File
 import java.nio.ByteBuffer
 
 import scala.collection.immutable.{Set, ListSet}
-import scala.collection.mutable.{Map, HashMap}
+import scala.collection.mutable.{Map, HashMap, HashSet}
 import scala.tools.nsc.symtab._
 import scala.tools.nsc.util.Position
 
@@ -637,6 +637,9 @@ abstract class GenJVM extends SubComponent {
       });
     }
 
+    /** local variables whose scope appears in this block. */
+    var varsInBlock: collection.mutable.Set[Local] = new HashSet
+
     def genBlock(b: BasicBlock): Unit = {
       labels(b).anchorToNext()
 
@@ -645,6 +648,7 @@ abstract class GenJVM extends SubComponent {
       var lastMappedPC = 0
       var lastLineNr = 0
       var crtPC = 0
+      varsInBlock.clear
 
       b traverse ( instr => {
         class CompilationError(msg: String) extends Error {
@@ -978,6 +982,20 @@ abstract class GenJVM extends SubComponent {
 
           case MONITOR_EXIT() =>
             jcode.emitMONITOREXIT()
+
+          case SCOPE_ENTER(lv) =>
+            varsInBlock += lv
+            lv.start = jcode.getPC()
+
+          case SCOPE_EXIT(lv) =>
+            if (varsInBlock contains lv) {
+              lv.ranges = {lv.start, jcode.getPC()} :: lv.ranges
+              varsInBlock -= lv
+            } else if (b.varsInScope contains lv) {
+              lv.ranges = {labels(b).getAnchor(), jcode.getPC()} :: lv.ranges
+              b.varsInScope -= lv
+            } else
+              assert(false, "Illegal local var nesting: " + method)
         }
 
         crtPC = jcode.getPC()
@@ -1000,7 +1018,15 @@ abstract class GenJVM extends SubComponent {
           lastLineNr   = crtLine
         }
 
-      });
+      }); // b.traverse
+
+      // local vars that survived this basic block
+      for (val lv <- varsInBlock) {
+        lv.ranges = {lv.start, jcode.getPC()} :: lv.ranges
+      }
+      for (val lv <- b.varsInScope) {
+        lv.ranges = {labels(b).getAnchor(), jcode.getPC()} :: lv.ranges
+      }
     }
 
     /**
@@ -1395,9 +1421,11 @@ abstract class GenJVM extends SubComponent {
         val pool = jclass.getConstantPool()
         val pc = jcode.getPC()
         var anonCounter = 0
-        val locals = if (jmethod.isStatic()) vars.length else 1 + vars.length
+        var entries = 0
+        vars.foreach { lv => lv.ranges = mergeEntries(lv.ranges.reverse); entries = entries + lv.ranges.length }
+        if (!jmethod.isStatic()) entries = entries + 1
 
-        val lvTab = ByteBuffer.allocate(2 + 10 * locals)
+        val lvTab = ByteBuffer.allocate(2 + 10 * entries)
         def emitEntry(name: String, signature: String, idx: Short, start: Short, end: Short): Unit = {
           lvTab.putShort(start)
           lvTab.putShort(end)
@@ -1406,7 +1434,7 @@ abstract class GenJVM extends SubComponent {
           lvTab.putShort(idx)
         }
 
-        lvTab.putShort(locals.asInstanceOf[Short])
+        lvTab.putShort(entries.asInstanceOf[Short])
 
         if (!jmethod.isStatic()) {
           emitEntry("this", jclass.getType().getSignature(), 0, 0.asInstanceOf[Short], pc.asInstanceOf[Short])
@@ -1418,17 +1446,11 @@ abstract class GenJVM extends SubComponent {
               "<anon" + anonCounter + ">"
             } else javaName(lv.sym)
 
-            val startPC = 0.asInstanceOf[Short]
-            var endPC   = pc
-            if (startPC > endPC) {
-//              Console.println("startPC: " + startPC + " endPC: " + endPC + " start: " + lv.start + " end: " + lv.end)
-              endPC = pc
+            val index = indexOf(lv).asInstanceOf[Short]
+            val tpe   = javaType(lv.kind).getSignature()
+            for (val {start, end} <- lv.ranges) {
+              emitEntry(name, tpe, index, start.asInstanceOf[Short], (end - start).asInstanceOf[Short])
             }
-//            log(lv + " start: " + lv.start + " end: " + lv.end)
-
-            emitEntry(name, javaType(lv.kind).getSignature(),
-                      indexOf(lv).asInstanceOf[Short],
-                      startPC, (endPC - startPC).asInstanceOf[Short])
         }
         val attr =
             fjbgContext.JOtherAttribute(jclass,
@@ -1437,6 +1459,15 @@ abstract class GenJVM extends SubComponent {
                                         lvTab.array())
         jcode.addAttribute(attr)
     }
+
+
+    /** Merge adjacent ranges. */
+    private def mergeEntries(ranges: List[{Int, Int}]): List[{Int, Int}] =
+      (ranges.foldLeft(Nil: List[{Int, Int}]) { (collapsed: List[{Int, Int}], p: {Int, Int}) => {collapsed, p} match {
+        case { Nil, _ } => List(p)
+        case { {s1, e1} :: rest, {s2, e2} } if (e1 == s2) => {s1, e2} :: rest
+        case _ => p :: collapsed
+      }}).reverse
 
     def assert(cond: Boolean, msg: String) = if (!cond) {
       dump(method)

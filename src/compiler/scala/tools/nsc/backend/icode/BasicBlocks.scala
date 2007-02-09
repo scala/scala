@@ -9,7 +9,7 @@ package scala.tools.nsc.backend.icode
 
 import compat.StringBuilder
 import scala.tools.nsc.ast._
-import scala.collection.mutable.Map
+import scala.collection.mutable.{Map, Set, HashSet}
 import scala.tools.nsc.util.Position
 import scala.tools.nsc.backend.icode.analysis.ProgramPoint
 
@@ -35,6 +35,11 @@ trait BasicBlocks requires ICodes {
 
     /** Is this block the head of a while? */
     var loopHeader = false
+
+    /** Local variables that are in scope at entry of this basic block. Used
+     *  for debugging information.
+     */
+    var varsInScope: Set[Local] = HashSet.empty
 
     /** ICode instructions, used as temporary storage while emitting code.
      * Once closed is called, only the `instrs' array should be used.
@@ -353,10 +358,10 @@ trait BasicBlocks requires ICodes {
       preds
     }
 
-    override def equals(other: Any): Boolean =
-      other.isInstanceOf[BasicBlock] &&
-      other.asInstanceOf[BasicBlock].label == label &&
-      other.asInstanceOf[BasicBlock].code  == code
+    override def equals(other: Any): Boolean = other match {
+      case that: BasicBlock => that.label == label && that.code == code
+      case _ => false
+    }
 
     // Instead of it, rather use a printer
     def print() : unit = print(java.lang.System.out)

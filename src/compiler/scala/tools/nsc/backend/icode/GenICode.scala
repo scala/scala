@@ -8,7 +8,7 @@
 package scala.tools.nsc.backend.icode
 
 import compat.StringBuilder
-import scala.collection.mutable.{Map, HashMap}
+import scala.collection.mutable.{Map, HashMap, ListBuffer, Buffer, Set, HashSet}
 import scala.tools.nsc.symtab._
 
 
@@ -69,6 +69,9 @@ abstract class GenICode extends SubComponent  {
       ctx1
     }
 
+    /** The maximum line number seen so far in the current method. */
+    private var maxLineNr = 0
+
     /////////////////// Code generation ///////////////////////
 
     def gen(tree: Tree, ctx: Context): Context = tree match {
@@ -100,6 +103,7 @@ abstract class GenICode extends SubComponent  {
         m.returnType = if (tree.symbol.isConstructor) UNIT
                        else toTypeKind(tree.symbol.info.resultType)
         ctx.clazz.addMethod(m)
+        maxLineNr = unit.position(tree.pos).line
 
         var ctx1 = ctx.enterMethod(m, tree.asInstanceOf[DefDef])
         addMethodParams(ctx1, vparamss)
@@ -152,32 +156,33 @@ abstract class GenICode extends SubComponent  {
      * @return a new context. This is necessary for control flow instructions
      *         which may change the current basic block.
      */
-    private def genStat(tree: Tree, ctx: Context): Context = tree match {
-      case Assign(lhs @ Select(_, _), rhs) =>
-        if (isStaticSymbol(lhs.symbol)) {
+    private def genStat(tree: Tree, ctx: Context): Context = {
+      maxLineNr = compat.Math.max(unit.position(tree.pos).line, maxLineNr)
+
+      tree match {
+        case Assign(lhs @ Select(_, _), rhs) =>
+          if (isStaticSymbol(lhs.symbol)) {
+            val ctx1 = genLoad(rhs, ctx, toTypeKind(lhs.symbol.info))
+            ctx1.bb.emit(STORE_FIELD(lhs.symbol, true), tree.pos)
+            ctx1
+          } else {
+            var ctx1 = genLoadQualifier(lhs, ctx)
+            ctx1 = genLoad(rhs, ctx1, toTypeKind(lhs.symbol.info))
+            ctx1.bb.emit(STORE_FIELD(lhs.symbol, false), tree.pos)
+            ctx1
+          }
+
+        case Assign(lhs, rhs) =>
           val ctx1 = genLoad(rhs, ctx, toTypeKind(lhs.symbol.info))
-          ctx1.bb.emit(STORE_FIELD(lhs.symbol, true), tree.pos)
+          val Some(l) = ctx.method.lookupLocal(lhs.symbol)
+          ctx1.bb.emit(STORE_LOCAL(l), tree.pos)
           ctx1
-        } else {
-          var ctx1 = genLoadQualifier(lhs, ctx)
-          ctx1 = genLoad(rhs, ctx1, toTypeKind(lhs.symbol.info))
-          ctx1.bb.emit(STORE_FIELD(lhs.symbol, false), tree.pos)
-          ctx1
-        }
 
-      case Assign(lhs, rhs) =>
-//          assert(ctx.method.locals.contains(lhs.symbol) |
-//                 ctx.clazz.fields.contains(lhs.symbol),
-//                 "Assignment to inexistent local or field: " + lhs.symbol)
-        val ctx1 = genLoad(rhs, ctx, toTypeKind(lhs.symbol.info))
-        val Some(l) = ctx.method.lookupLocal(lhs.symbol)
-        ctx1.bb.emit(STORE_LOCAL(l), tree.pos)
-        ctx1
-
-      case _ =>
-        if (settings.debug.value)
-          log("Passing " + tree + " to genLoad")
-        genLoad(tree, ctx, UNIT)
+        case _ =>
+          if (settings.debug.value)
+            log("Passing " + tree + " to genLoad")
+          genLoad(tree, ctx, UNIT)
+      }
     }
 
     /**
@@ -192,6 +197,7 @@ abstract class GenICode extends SubComponent  {
      */
     private def genLoad(tree: Tree, ctx: Context, expectedType: TypeKind): Context = {
       var generatedType = expectedType
+      maxLineNr = compat.Math.max(unit.position(tree.pos).line, maxLineNr)
 
       /**
        * Generate code for primitive arithmetic operations.
@@ -402,6 +408,8 @@ abstract class GenICode extends SubComponent  {
           val sym = tree.symbol
           var local = new Local(sym, toTypeKind(sym.info), false)
           local = ctx.method.addLocal(local)
+          ctx.scope.add(local)
+          ctx.bb.emit(SCOPE_ENTER(local))
 
           if (rhs == EmptyTree) {
             if (settings.debug.value)
@@ -865,9 +873,12 @@ abstract class GenICode extends SubComponent  {
           ctx
 
         case Block(stats, expr) =>
-          assert(!(ctx.method eq null), "Block outside method")
-          val ctx1 = genStat(stats, ctx)
-          genLoad(expr, ctx1, expectedType)
+//          assert(!(ctx.method eq null), "Block outside method")
+          ctx.enterScope
+          var ctx1 = genStat(stats, ctx)
+          ctx1 = genLoad(expr, ctx1, expectedType)
+          ctx1.exitScope
+          ctx1
 
         case Typed(expr, _) =>
           genLoad(expr, ctx, expectedType)
@@ -1381,6 +1392,8 @@ abstract class GenICode extends SubComponent  {
           eqEqTempVar.setInfo(definitions.AnyRefClass.typeConstructor)
           val local = new Local(eqEqTempVar, REFERENCE(definitions.AnyRefClass), false)
           ctx.method.addLocal(local)
+          local.start = unit.position(l.pos).line
+          local.end   = unit.position(r.pos).line
           local
       }
 
@@ -1453,8 +1466,12 @@ abstract class GenICode extends SubComponent  {
         case Nil => ()
 
         case vparams :: Nil =>
-          for (val p <- vparams)
-            ctx.method.addParam(new Local(p.symbol, toTypeKind(p.symbol.info), true));
+          for (val p <- vparams) {
+            val lv = new Local(p.symbol, toTypeKind(p.symbol.info), true)
+            ctx.method.addParam(lv)
+            ctx.scope.add(lv)
+            ctx.bb.varsInScope += lv
+          }
           ctx.method.params = ctx.method.params.reverse
 
         case _ =>
@@ -1623,6 +1640,9 @@ abstract class GenICode extends SubComponent  {
       /** The current exception handler, when we generate code for one. */
       var currentExceptionHandler: Option[ExceptionHandler] = None
 
+      /** The current local variable scope. */
+      var scope: Scope = EmptyScope
+
       var handlerCount = 0
 
       override def toString(): String = {
@@ -1634,6 +1654,7 @@ abstract class GenICode extends SubComponent  {
         buf.append("\tlabels: ").append(labels).append('\n')
         buf.append("\texception handlers: ").append(handlers).append('\n')
         buf.append("\tcleanups: ").append(cleanups).append('\n')
+        buf.append("\tscope: ").append(scope).append('\n')
         buf.toString()
       }
 
@@ -1649,6 +1670,7 @@ abstract class GenICode extends SubComponent  {
         this.handlerCount = other.handlerCount
         this.cleanups = other.cleanups
         this.currentExceptionHandler = other.currentExceptionHandler
+        this.scope = other.scope
       }
 
       def setPackage(p: Name): this.type = {
@@ -1702,6 +1724,9 @@ abstract class GenICode extends SubComponent  {
         ctx1.method.code = new Code(m.symbol.simpleName.toString())
         ctx1.bb = ctx1.method.code.startBlock
         ctx1.defdef = d
+//        assert(ctx1.scope == EmptyScope, ctx1.scope)
+        ctx1.scope = EmptyScope
+        ctx1.enterScope
         ctx1
       }
 
@@ -1713,7 +1738,20 @@ abstract class GenICode extends SubComponent  {
           case Some(e) => e.addBlock(block)
           case None    => ()
         }
+        block.varsInScope = new HashSet()
+        block.varsInScope ++= scope.varsInScope
         new Context(this) setBasicBlock block;
+      }
+
+      def enterScope = {
+        scope = new Scope(scope)
+      }
+
+      def exitScope = {
+        if (bb.size > 0) {
+          scope.locals foreach { lv => bb.emit(SCOPE_EXIT(lv)) }
+        }
+        scope = scope.outer
       }
 
       /** Create a new exception handler and adds it in the list
@@ -1931,4 +1969,25 @@ abstract class GenICode extends SubComponent  {
         failure.addCallingInstruction(this)
     }
 
+  /** Local variable scopes. Keep track of line numbers for debugging info. */
+  class Scope(val outer: Scope) {
+    val locals: ListBuffer[Local] = new ListBuffer
+
+    def add(l: Local) =
+      locals += l
+
+    def remove(l: Local) =
+      locals -= l
+
+    /** Return all locals that are in scope. */
+    def varsInScope: Buffer[Local] = outer.varsInScope ++ locals
+
+    override def toString() =
+      outer.toString() + locals.mkString("[", ", ", "]")
+  }
+
+  object EmptyScope extends Scope(null) {
+    override def toString() = "[]"
+    override def varsInScope: Buffer[Local] = new ListBuffer
+  }
 }

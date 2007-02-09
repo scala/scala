@@ -510,6 +510,26 @@ trait Opcodes requires ICodes {
       override def produced = 0;
     }
 
+    /** A local variable becomes visible at this point in code.
+     *  Used only for generating precise local variable tables as
+     *  debugging information.
+     */
+    case class SCOPE_ENTER(lv: Local) extends Instruction {
+      override def toString(): String = "SCOPE_ENTER " + lv
+      override def consumed = 0
+      override def produced = 0
+    }
+
+    /** A local variable leaves its scope at this point in code.
+     *  Used only for generating precise local variable tables as
+     *  debugging information.
+     */
+    case class SCOPE_EXIT(lv: Local) extends Instruction {
+      override def toString(): String = "SCOPE_EXIT " + lv
+      override def consumed = 0
+      override def produced = 0
+    }
+
     /** This class represents a method invocation style. */
     sealed abstract class InvokeStyle {
 
