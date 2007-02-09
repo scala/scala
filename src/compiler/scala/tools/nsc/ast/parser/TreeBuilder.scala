@@ -103,8 +103,8 @@ abstract class TreeBuilder {
     case _ => AppliedTypeTree(scalaDot(newTypeName("Tuple" + trees.length)), trees)
   }
 
-  def makeAttributed(t: Tree, attr: Tree): Tree = attr match {
-    case Attribute(constr, elements) => Attributed(constr, elements, t) setPos attr.pos
+  def makeAnnotated(t: Tree, attr: Tree): Tree = attr match {
+    case Annotation(constr, elements) => Annotated(constr, elements, t) setPos attr.pos
   }
 
   /** If tree is a variable pattern, return Some("its name and type").
@@ -365,7 +365,7 @@ abstract class TreeBuilder {
     makeVisitor(cases, checkExhaustive, "x$")
 
   private def makeUnsealed(expr: Tree): Tree =
-    Attributed(New(scalaDot(definitions.UnsealedClass.name), List(List())), List(), expr)
+    Annotated(New(scalaDot(definitions.UnsealedClass.name), List(List())), List(), expr)
 
   /** Create visitor <x => x match cases> */
   def makeVisitor(cases: List[CaseDef], checkExhaustive: boolean, prefix: String): Tree = {

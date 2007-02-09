@@ -279,7 +279,7 @@ abstract class GenJVM extends SubComponent {
       buf.putShort(0xbaba.toShort)
 
       for (val AttrInfo(typ, consts, nvPairs) <- attributes;
-           typ.symbol isNonBottomSubClass definitions.ClassfileAttributeClass) {
+           typ.symbol isNonBottomSubClass definitions.ClassfileAnnotationClass) {
         nattr = nattr + 1
         val jtype = javaType(typ)
         buf.putShort(cpool.addUtf8(jtype.getSignature()).toShort)
@@ -313,7 +313,7 @@ abstract class GenJVM extends SubComponent {
     def addParamAnnotations(pattrss: List[List[AttrInfo]]): Unit = {
       val attributes = for (val attrs <- pattrss) yield
         for (val attr @ AttrInfo(tpe, _, _) <- attrs;
-             tpe.symbol isNonBottomSubClass definitions.ClassfileAttributeClass) yield attr;
+             tpe.symbol isNonBottomSubClass definitions.ClassfileAnnotationClass) yield attr;
       if (attributes.forall(.isEmpty)) return;
 
       val buf: ByteBuffer = ByteBuffer.allocate(2048)
@@ -1345,7 +1345,7 @@ abstract class GenJVM extends SubComponent {
     def needsInterfaceCall(sym: Symbol): Boolean =
       sym.hasFlag(Flags.INTERFACE) ||
       (sym.hasFlag(Flags.JAVA) &&
-       sym.isNonBottomSubClass(definitions.ClassfileAttributeClass))
+       sym.isNonBottomSubClass(definitions.ClassfileAnnotationClass))
 
 
     def javaType(t: TypeKind): JType = t match {

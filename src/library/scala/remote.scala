@@ -12,9 +12,9 @@
 package scala
 
 /**
- * An attribute that designates the class to which it is applied as remotable.
+ * An annotation that designates the class to which it is applied as remotable.
  *
  * @see Method <a href="ScalaObject.html#$tag()">$tag</a> in trait
  *      <a href="ScalaObject.html">scala.ScalaObject</a>.
  */
-class remote extends Attribute {}
+class remote extends Annotation {}

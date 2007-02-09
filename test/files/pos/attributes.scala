@@ -53,14 +53,14 @@ object O6 {
 }
 
 object myAttrs {
-  class a1 extends scala.Attribute;
-  class a2(x: Int) extends scala.Attribute;
-  class a3(x: a1) extends scala.Attribute;
+  class a1 extends scala.Annotation;
+  class a2(x: Int) extends scala.Annotation;
+  class a3(x: a1) extends scala.Annotation;
 }
 object O7 {
-  class a1 extends scala.Attribute;
-  class a2(x: Int) extends scala.Attribute;
-  class a3(x: a1) extends scala.Attribute;
+  class a1 extends scala.Annotation;
+  class a2(x: Int) extends scala.Annotation;
+  class a3(x: a1) extends scala.Annotation;
   final val x = new a1;
   [a1] class C1;
   [a1,a2(77)] class C2;

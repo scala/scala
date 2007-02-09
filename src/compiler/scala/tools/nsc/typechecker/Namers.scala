@@ -667,8 +667,8 @@ trait Namers requires Analyzer {
         case arg => error(arg.pos, "attribute argument needs to be a constant; found: "+arg)
       }
       val attrInfos =
-        for (val t @ Attribute(constr, elements) <- defn.mods.attributes) yield {
-          typer.typed(constr, EXPRmode | CONSTmode, AttributeClass.tpe) match {
+        for (val t @ Annotation(constr, elements) <- defn.mods.attributes) yield {
+          typer.typed(constr, EXPRmode | CONSTmode, AnnotationClass.tpe) match {
             case Apply(Select(New(tpt), nme.CONSTRUCTOR), args) =>
               val constrArgs = args map getConstant
               val attrScope = tpt.tpe.decls.

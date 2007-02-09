@@ -355,17 +355,17 @@ abstract class ClassfileParser {
 
   def parseClass(): unit = {
     val jflags = in.nextChar
-    val isAttribute = (jflags & JAVA_ACC_ANNOTATION) != 0
+    val isAnnotation = (jflags & JAVA_ACC_ANNOTATION) != 0
     var sflags = transFlags(jflags)
     if ((sflags & DEFERRED) != 0) sflags = sflags & ~DEFERRED | ABSTRACT
     val c = pool.getClassSymbol(in.nextChar)
     if (c != clazz)
       throw new IOException("class file '" + in.file + "' contains wrong " + c)
-    val superType = if (isAttribute) { in.nextChar; definitions.AttributeClass.tpe }
+    val superType = if (isAnnotation) { in.nextChar; definitions.AnnotationClass.tpe }
                     else pool.getSuperClass(in.nextChar).tpe
     val ifaceCount = in.nextChar
     var ifaces = for (val i <- List.range(0, ifaceCount)) yield pool.getSuperClass(in.nextChar).tpe
-    if (isAttribute) ifaces = definitions.ClassfileAttributeClass.tpe :: ifaces
+    if (isAnnotation) ifaces = definitions.ClassfileAnnotationClass.tpe :: ifaces
     val parents = superType :: ifaces
 
     instanceDefs = newScope
@@ -405,7 +405,7 @@ abstract class ClassfileParser {
 
           // If the annotation has an attribute with name 'value'
           // add a constructor for it
-          if (isAttribute) {
+          if (isAnnotation) {
             val value = instanceDefs.lookup(nme.value)
             if (value != NoSymbol) {
               instanceDefs.enter(

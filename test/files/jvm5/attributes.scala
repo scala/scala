@@ -68,7 +68,7 @@ public class Main {
 object Test4 {
   import java.lang.annotation._
   [Retention(RetentionPolicy.RUNTIME)]
-  class Source(url: String, mail: String) extends Attribute
+  class Source(url: String, mail: String) extends scala.Annotation
   [Source("http://scala.epfl.ch", "scala@lists.epfl.ch")]
   class Foo
   def run: Unit = {

@@ -353,8 +353,8 @@ abstract class TreeBrowsers {
       case TypeTree() =>
         Pair("TypeTree", EMPTY)
 
-      case Attributed(constr, elements, arg) =>
-        Pair("AttributedTypeTree", EMPTY)
+      case Annotated(constr, elements, arg) =>
+        Pair("Annotated", EMPTY)
 
       case AttributedTypeTree(attribs, tpt) =>
         Pair("AttributedTypeTree", EMPTY)
@@ -500,7 +500,7 @@ abstract class TreeBrowsers {
       case TypeTree() =>
         Nil
 
-      case Attributed(constr, elements, arg) =>
+      case Annotated(constr, elements, arg) =>
         constr :: elements ::: List(arg)
 
       case SingletonTypeTree(ref) =>

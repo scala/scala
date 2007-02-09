@@ -112,8 +112,8 @@ abstract class Pickler extends SubComponent {
           putChildren(sym, sym.children)
 
         for (val attr <- sym.attributes.reverse) {
-          if (attr.atp.symbol isNonBottomSubClass definitions.StaticAttributeClass)
-            putAttribute(sym, attr)
+          if (attr.atp.symbol isNonBottomSubClass definitions.StaticAnnotationClass)
+            putAnnotation(sym, attr)
         }
       } else if (sym != NoSymbol) {
         putEntry(if (sym.isModuleClass) sym.name.toTermName else sym.name)
@@ -173,7 +173,7 @@ abstract class Pickler extends SubComponent {
       children foreach putSymbol
     }
 
-    private def putAttribute(sym: Symbol, attr: AttrInfo): unit = {
+    private def putAnnotation(sym: Symbol, attr: AttrInfo): unit = {
       assert(putEntry{sym, attr})
       putType(attr.atp)
       for (val c <- attr.args) putConstant(c)

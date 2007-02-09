@@ -648,14 +648,13 @@ trait Parsers requires SyntaxAnalyzer {
       }
     }
 
-    /** SimpleType        ::=  {`@' Attribute} SimpleType1
+    /** SimpleType        ::=  Annotations SimpleType1
      *  SimpleType1       ::=  SimpleType1 TypeArgs
      *                     |   SimpleType1 `#' Id
      *                     |   StableId
      *                     |   Path `.' type
      *                     |   `(' Type `)'
      *                     |   `{' [Type `,' [Types [`,']]] `}'
-     *                     |   TypeAttributes SimpleType (if -Xplugtypes)
      * SimpleTypePattern  ::=  SimpleTypePattern1 [TypePatternArgs]
      * SimpleTypePattern1 ::=  SimpleTypePattern1 "#" Id
      *                     |   StableId
@@ -663,7 +662,8 @@ trait Parsers requires SyntaxAnalyzer {
      *                     |   `{' [ArgTypePattern `,' [ArgTypePatterns [`,']]] `}'
      */
     def simpleType(isPattern: boolean): Tree = {
-      val attribs = typeAttributes()
+      val annots = if (settings.Xplugtypes.value) typeAttributes()
+                   else annotations()
       val pos = in.currentPos
       var t: Tree =
         if (in.token == LPAREN && !isPattern) {
@@ -705,8 +705,8 @@ trait Parsers requires SyntaxAnalyzer {
         } else
           done=true
       }
-      if (settings.Xplugtypes.value) t.withAttributes(attribs)
-      else (t /: attribs) (makeAttributed)
+      if (settings.Xplugtypes.value) t.withAttributes(annots)
+      else (t /: annots) (makeAnnotated)
     }
 
     /** TypeArgs        ::= `[' ArgTypes `]'
@@ -932,7 +932,7 @@ trait Parsers requires SyntaxAnalyzer {
           }
         } else if (in.token == COLON) {
           val pos = in.skipToken()
-          val attribs = typeAttributes()
+          val annots = annotations()
           if ((mode & IsArgument) != 0 && in.token == USCORE) {
             val pos1 = in.skipToken()
             if (isIdent && in.name == nme.STAR) {
@@ -945,15 +945,15 @@ trait Parsers requires SyntaxAnalyzer {
             } else {
               syntaxErrorOrIncomplete("`*' expected", true)
             }
-          } else if (attribs.isEmpty || isTypeIntro) {
+          } else if (annots.isEmpty || isTypeIntro) {
             t = atPos(pos) {
               val tpt = if ((mode & IsInBlock) != 0) compoundType(false) else typ()
               // this does not correspond to syntax, but is necessary to
               // accept closures. We might restrict closures to be between {...} only!
-              Typed(t, (tpt /: attribs) (makeAttributed))
+              Typed(t, (tpt /: annots) (makeAnnotated))
             }
           } else {
-            t = (t /: attribs) (makeAttributed)
+            t = (t /: annots) (makeAnnotated)
           }
         } else if (in.token == MATCH) {
           t = atPos(in.skipToken()) {
@@ -1499,17 +1499,17 @@ trait Parsers requires SyntaxAnalyzer {
 
     /** ParamClauses ::= {[NewLine] `(' [Param {`,' Param}] ')'}
      *                   [[NewLine] `(' implicit Param {`,' Param} `)']
-     *  Param ::= Id [`:' ParamType]
+     *  Param        ::= Annotations Id [`:' ParamType]
      *  ClassParamClauses ::= {[NewLine] `(' [ClassParam {`' ClassParam}] ')'}
      *                        [[NewLine] `(' implicit ClassParam {`,' ClassParam} `)']
-     *  ClassParam ::= [[modifiers] (val | var)] Param
+     *  ClassParam   ::= Annotations [[modifiers] (val | var)] Param
      */
     def paramClauses(owner: Name, implicitViews: List[Tree], ofCaseClass: boolean): List[List[ValDef]] = {
       var implicitmod = 0
       var caseParam = ofCaseClass
       def param(): ValDef = {
         atPos(in.currentPos) {
-          val attrs = attributeClauses()
+          val annots = annotations()
           var mods = Modifiers(Flags.PARAM)
           if (owner.isTypeName) {
             mods = modifiers() | Flags.PARAMACCESSOR
@@ -1541,7 +1541,7 @@ trait Parsers requires SyntaxAnalyzer {
               }
               paramType()
             }
-          ValDef((mods | implicitmod | bynamemod) withAttributes attrs, name, tpt, EmptyTree)
+          ValDef((mods | implicitmod | bynamemod) withAnnotations annots, name, tpt, EmptyTree)
         }
       }
       def paramClause(): List[ValDef] = {
@@ -1948,12 +1948,13 @@ trait Parsers requires SyntaxAnalyzer {
         val tparams = typeParamClauseOpt(name, implicitViewBuf)
         implicitClassViews = implicitViewBuf.toList
         //if (mods.hasFlag(Flags.CASE) && in.token != LPAREN) accept(LPAREN)
+        val constrAnnots = annotations()
         val {constrMods, vparamss} =
           if (mods.hasFlag(Flags.TRAIT)) {NoMods, List()}
           else {accessModifierOpt(),
                 paramClauses(name, implicitClassViews, mods.hasFlag(Flags.CASE))}
         val thistpe = requiresTypeOpt()
-        val template = classTemplate(mods, name, constrMods, vparamss)
+        val template = classTemplate(mods, name, constrMods withAnnotations constrAnnots, vparamss)
         val mods1 = if (mods.hasFlag(Flags.TRAIT) &&
                         (template.body forall treeInfo.isInterfaceMember))
                       mods | Flags.INTERFACE
@@ -2056,7 +2057,7 @@ trait Parsers requires SyntaxAnalyzer {
     }
 
     /** TopStatSeq ::= [TopStat {StatementSeparator TopStat}]
-     *  TopStat ::= AttributeClauses Modifiers TmplDef
+     *  TopStat ::= Annotations Modifiers TmplDef
      *            | Packaging
      *            | Import
      *            |
@@ -2075,8 +2076,9 @@ trait Parsers requires SyntaxAnalyzer {
                    in.token == CASEOBJECT ||
                    in.token == LBRACKET ||
                    isModifier) {
-          val attrs = attributeClauses()
-          stats ++ joinComment(List(tmplDef(modifiers() withAttributes attrs)))
+          val annots = annotations()
+          newLineOpt()
+          stats ++ joinComment(List(tmplDef(modifiers() withAnnotations annots)))
         } else if (in.token != SEMI && in.token != NEWLINE) {
           syntaxErrorOrIncomplete("expected class or object definition", true)
         }
@@ -2087,8 +2089,8 @@ trait Parsers requires SyntaxAnalyzer {
 
     /** TemplateStatSeq  ::= TemplateStat {StatementSeparator TemplateStat}
      *  TemplateStat     ::= Import
-     *                     | AttributeClauses Modifiers Def
-     *                     | AttributeClauses Modifiers Dcl
+     *                     | Annotations Modifiers Def
+     *                     | Annotations Modifiers Dcl
      *                     | Expr
      *                     |
      */
@@ -2100,8 +2102,9 @@ trait Parsers requires SyntaxAnalyzer {
         } else if (isExprIntro) {
           stats += expr()
         } else if (isDefIntro || isModifier || in.token == LBRACKET) {
-          val attrs = attributeClauses()
-          stats ++ joinComment(defOrDcl(modifiers() withAttributes attrs))
+          val annots = annotations()
+          newLineOpt()
+          stats ++ joinComment(defOrDcl(modifiers() withAnnotations annots))
         } else if (in.token != SEMI && in.token != NEWLINE) {
           syntaxErrorOrIncomplete("illegal start of definition", true)
         }
@@ -2110,27 +2113,52 @@ trait Parsers requires SyntaxAnalyzer {
       stats.toList
     }
 
-    /** AttributeClauses   ::= {AttributeClause}
-     *  AttributeClause    ::= `[' Attribute {`,' Attribute} `]' [NewLine]
+    /** Annotations   ::= {Annotation}
+     *  Annotation    ::= `[' AnnotationExpr {`,' AnnotationExpr} `]' [NewLine]
+     *                  | `@' AnnotationExpr [NewLine]
      */
-    def attributeClauses(): List[Attribute] = {
-      var attrs = new ListBuffer[Attribute]
-      while (in.token == LBRACKET) {
-        in.nextToken()
-        attrs += attribute()
-        while (in.token == COMMA) {
+    def annotations(): List[Annotation] = {
+      var annots = new ListBuffer[Annotation]
+      if (in.token == LBRACKET) {
+        while (in.token == LBRACKET) {
           in.nextToken()
-          attrs += attribute()
+          annots += annotation()
+          while (in.token == COMMA) {
+            in.nextToken()
+            annots += annotation()
+          }
+          accept(RBRACKET)
+          newLineOpt()
         }
-        accept(RBRACKET)
-        newLineOpt()
+      } else {
+        while (in.token == AT) {
+          in.nextToken()
+          annots += annotation()
+          newLineOpt()
+        }
       }
-      attrs.toList
+      annots.toList
     }
 
-    /** Attribute          ::= StableId [TypeArgs] [`(' [Exprs] `)'] [`{' {NameValuePair} `}']
+    /** TypeAttributes     ::= {`[' Exprs `]'}
+     *
+     * Type attributes may be arbitrary expressions.
      */
-    def attribute(): Attribute = {
+    def typeAttributes(): List[Tree] = {
+      val exps = new ListBuffer[Tree]
+      if (settings.Xplugtypes.value) {
+        while(in.token == LBRACKET) {
+          accept(LBRACKET)
+          exps ++= argExprs
+          accept(RBRACKET)
+        }
+      }
+      exps.toList
+    }
+
+    /** Annotation          ::= StableId [TypeArgs] [`(' [Exprs] `)'] [`{' {NameValuePair} `}']
+     */
+    def annotation(): Annotation = {
       def nameValuePair(): Tree = {
         accept(VAL)
         var pos = in.currentPos
@@ -2154,28 +2182,7 @@ trait Parsers requires SyntaxAnalyzer {
         nvps.toList
       } else List()
       val constr = atPos(pos) { New(t, List(args)) }
-      glob.Attribute(constr, nameValuePairs) setPos pos
-    }
-
-    /** TypeAttributes     ::= (`[' Exprs `]') *
-     *
-     * Type attributes may be arbitrary expressions.
-     */
-    def typeAttributes(): List[Tree] = {
-      val exps = new ListBuffer[Tree]
-      if (settings.Xplugtypes.value) {
-        while(in.token == LBRACKET) {
-          accept(LBRACKET)
-          exps ++= argExprs
-          accept(RBRACKET)
-        }
-      } else {
-        while (in.token == AT) {
-          val pos = in.skipToken()
-          exps += attribute()
-        }
-      }
-      exps.toList
+      Annotation(constr, nameValuePairs) setPos pos
     }
 
     /** RefineStatSeq    ::= RefineStat {StatementSeparator RefineStat}

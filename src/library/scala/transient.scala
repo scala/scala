@@ -12,4 +12,4 @@
 package scala;
 
 
-class transient extends Attribute {}
+class transient extends Annotation {}

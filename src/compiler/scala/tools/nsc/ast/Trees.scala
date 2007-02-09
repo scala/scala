@@ -17,7 +17,7 @@ trait Trees requires Global {
   //statistics
   var nodeCount = 0
 
-  case class Modifiers(flags: int, privateWithin: Name, attributes: List[Attribute]) {
+  case class Modifiers(flags: int, privateWithin: Name, attributes: List[Annotation]) {
     def isCovariant     = hasFlag(COVARIANT    )
     def isContravariant = hasFlag(CONTRAVARIANT)
     def isPrivate   = hasFlag(PRIVATE  )
@@ -50,7 +50,7 @@ trait Trees requires Global {
       if (flags1 == flags) this
       else Modifiers(flags1, privateWithin, attributes)
     }
-    def withAttributes(attrs: List[Attribute]) =
+    def withAnnotations(attrs: List[Annotation]) =
       if (attrs.isEmpty) this
       else Modifiers(flags, privateWithin, attributes ::: attrs)
   }
@@ -410,8 +410,8 @@ trait Trees requires Global {
   case class Import(expr: Tree, selectors: List[{Name, Name}])
        extends SymTree
 
-  /** Attribute application (constructor arguments + name-value pairs) */
-  case class Attribute(constr: Tree, elements: List[Tree])
+  /** Annotation application (constructor arguments + name-value pairs) */
+  case class Annotation(constr: Tree, elements: List[Tree])
        extends TermTree
 
   /** Documented definition, eliminated by analyzer */
@@ -442,7 +442,7 @@ trait Trees requires Global {
     /** Add constructor to template */
     var vparamss1 =
       vparamss map (.map (vd => {
-        val ret = ValDef(Modifiers(vd.mods.flags & IMPLICIT | PARAM) withAttributes vd.mods.attributes,
+        val ret = ValDef(Modifiers(vd.mods.flags & IMPLICIT | PARAM) withAnnotations vd.mods.attributes,
             vd.name, vd.tpt.duplicate, EmptyTree).setPos(vd.pos)
         if (false/*inIDE*/ && vd.symbol != NoSymbol)
           ret.symbol = vd.symbol
@@ -659,7 +659,7 @@ trait Trees requires Global {
   // def TypeTree(tp: Type, tree : Tree): TypeTree = TypeTree(tree) setType tp
 
   /** A tree that has anP attribute attached to it */
-  case class Attributed(constr: Tree, elements: List[Tree], arg: Tree) extends Tree {
+  case class Annotated(constr: Tree, elements: List[Tree], arg: Tree) extends Tree {
     override def isType = arg.isType
   }
 
@@ -703,7 +703,7 @@ trait Trees requires Global {
   case AliasTypeDef(mods, name, tparams, rhs) =>                  (eliminated by erasure)
   case LabelDef(name, params, rhs) =>
   case Import(expr, selectors) =>                                 (eliminated by typecheck)
-  case Attribute(constr, elements) =>                             (eliminated by typecheck)
+  case Annotation(constr, elements) =>                             (eliminated by typecheck)
   case DocDef(comment, definition) =>                             (eliminated by typecheck)
   case Template(parents, body) =>
   case Block(stats, expr) =>
@@ -731,7 +731,7 @@ trait Trees requires Global {
   case Ident(name) =>
   case Literal(value) =>
   case TypeTree() =>                                              (introduced by refcheck)
-  case Attributed(constr, elements, arg) =>                       (eliminated by typer)
+  case Annotated(constr, elements, arg) =>                       (eliminated by typer)
   case AttributedTypeTree(attribs, tpt) =>                        (eliminated by uncurry)
   case SingletonTypeTree(ref) =>                                  (eliminated by uncurry)
   case SelectFromTypeTree(qualifier, selector) =>                 (eliminated by uncurry)
@@ -750,7 +750,7 @@ trait Trees requires Global {
     def AliasTypeDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[AbsTypeDef], rhs: Tree): AliasTypeDef
     def LabelDef(tree: Tree, name: Name, params: List[Ident], rhs: Tree): LabelDef
     def Import(tree: Tree, expr: Tree, selectors: List[{Name, Name}]): Import
-    def Attribute(tree: Tree, constr: Tree, elements: List[Tree]): Attribute
+    def Annotation(tree: Tree, constr: Tree, elements: List[Tree]): Annotation
     def DocDef(tree: Tree, comment: String, definition: Tree): DocDef
     def Template(tree: Tree, parents: List[Tree], body: List[Tree]): Template
     def Block(tree: Tree, stats: List[Tree], expr: Tree): Block
@@ -778,7 +778,7 @@ trait Trees requires Global {
     def Ident(tree: Tree, name: Name): Ident
     def Literal(tree: Tree, value: Constant): Literal
     def TypeTree(tree: Tree): TypeTree
-    def Attributed(tree: Tree, constr: Tree, elements: List[Tree], arg: Tree): Attributed
+    def Annotated(tree: Tree, constr: Tree, elements: List[Tree], arg: Tree): Annotated
     def AttributedTypeTree(tree: Tree, attribs: List[Tree], tpt: Tree): AttributedTypeTree
     def SingletonTypeTree(tree: Tree, ref: Tree): SingletonTypeTree
     def SelectFromTypeTree(tree: Tree, qualifier: Tree, selector: Name): SelectFromTypeTree
@@ -806,8 +806,8 @@ trait Trees requires Global {
       new LabelDef(name, params, rhs).copyAttrs(tree)
     def Import(tree: Tree, expr: Tree, selectors: List[{Name, Name}]) =
       new Import(expr, selectors).copyAttrs(tree)
-    def Attribute(tree: Tree, constr: Tree, elements: List[Tree]) =
-      new Attribute(constr, elements)
+    def Annotation(tree: Tree, constr: Tree, elements: List[Tree]) =
+      new Annotation(constr, elements)
     def DocDef(tree: Tree, comment: String, definition: Tree) =
       new DocDef(comment, definition).copyAttrs(tree)
     def Template(tree: Tree, parents: List[Tree], body: List[Tree]) =
@@ -862,8 +862,8 @@ trait Trees requires Global {
       new Literal(value).copyAttrs(tree)
     def TypeTree(tree: Tree) =
       new TypeTree().copyAttrs(tree)
-    def Attributed(tree: Tree, constr: Tree, elements: List[Tree], arg: Tree) =
-      new Attributed(constr, elements, arg)
+    def Annotated(tree: Tree, constr: Tree, elements: List[Tree], arg: Tree) =
+      new Annotated(constr, elements, arg)
     def AttributedTypeTree(tree: Tree, attribs: List[Tree], tpt: Tree) =
       new AttributedTypeTree(attribs, tpt)
     def SingletonTypeTree(tree: Tree, ref: Tree) =
@@ -926,10 +926,10 @@ trait Trees requires Global {
       if (expr0 == expr) && (selectors0 == selectors) => t
       case _ => copy.Import(tree, expr, selectors)
     }
-    def Attribute(tree: Tree, constr: Tree, elements: List[Tree]) = tree match {
-      case t @ Attribute(constr0, elements0)
+    def Annotation(tree: Tree, constr: Tree, elements: List[Tree]) = tree match {
+      case t @ Annotation(constr0, elements0)
       if (constr0 == constr) && (elements0 == elements) => t
-      case _ => copy.Attribute(tree, constr, elements)
+      case _ => copy.Annotation(tree, constr, elements)
     }
     def DocDef(tree: Tree, comment: String, definition: Tree) = tree match {
       case t @ DocDef(comment0, definition0)
@@ -1065,10 +1065,10 @@ trait Trees requires Global {
       case t @ TypeTree() => t
       case _ => copy.TypeTree(tree)
     }
-    def Attributed(tree: Tree, constr: Tree, elements: List[Tree], arg: Tree) = tree match {
-      case t @ Attributed(constr0, elements0, arg0)
+    def Annotated(tree: Tree, constr: Tree, elements: List[Tree], arg: Tree) = tree match {
+      case t @ Annotated(constr0, elements0, arg0)
       if (constr0==constr) && (elements0==elements) && (arg0==arg) => t
-      case _ => copy.Attributed(tree, constr, elements, arg)
+      case _ => copy.Annotated(tree, constr, elements, arg)
     }
     def AttributedTypeTree(tree: Tree, attribs: List[Tree], tpt: Tree) = tree match {
       case t @ AttributedTypeTree(attribs0, tpt0)
@@ -1145,8 +1145,8 @@ trait Trees requires Global {
         copy.LabelDef(tree, name, transformIdents(params), transform(rhs)) //bq: Martin, once, atOwner(...) works, also change `LamdaLifter.proxy'
       case Import(expr, selectors) =>
         copy.Import(tree, transform(expr), selectors)
-      case Attribute(constr, elements) =>
-        copy.Attribute(tree, transform(constr), transformTrees(elements))
+      case Annotation(constr, elements) =>
+        copy.Annotation(tree, transform(constr), transformTrees(elements))
       case DocDef(comment, definition) =>
         copy.DocDef(tree, comment, transform(definition))
       case Template(parents, body) =>
@@ -1203,8 +1203,8 @@ trait Trees requires Global {
         copy.Literal(tree, value)
       case TypeTree() =>
         copy.TypeTree(tree)
-      case Attributed(constr, elements, arg) =>
-        copy.Attributed(tree, transform(constr), transformTrees(elements), transform(arg))
+      case Annotated(constr, elements, arg) =>
+        copy.Annotated(tree, transform(constr), transformTrees(elements), transform(arg))
       case AttributedTypeTree(attribs, tpt) =>
         copy.AttributedTypeTree(tree, transformTrees(attribs), transform(tpt))
       case SingletonTypeTree(ref) =>
@@ -1285,9 +1285,9 @@ trait Trees requires Global {
         traverseTrees(params); traverse(rhs)
       case Import(expr, selectors) =>
         traverse(expr)
-      case Attribute(constr, elements) =>
+      case Annotation(constr, elements) =>
         traverse(constr); traverseTrees(elements)
-      case Attributed(constr: Tree, elements: List[Tree], arg: Tree) =>
+      case Annotated(constr: Tree, elements: List[Tree], arg: Tree) =>
         traverse(constr); traverseTrees(elements); traverse(arg)
       case DocDef(comment, definition) =>
         traverse(definition)

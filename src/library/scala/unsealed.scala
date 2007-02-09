@@ -12,7 +12,7 @@
 package scala
 
 /**
- * An attribute that gets applied to a selector in a match expression.
+ * An annotation that gets applied to a selector in a match expression.
  * If it is present, exhaustiveness warnings for that expression will be suppressed.
  */
-class unsealed extends Attribute {}
+class unsealed extends Annotation {}

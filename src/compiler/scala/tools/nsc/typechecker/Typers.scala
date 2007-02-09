@@ -880,7 +880,7 @@ trait Typers requires Analyzer {
               else typed(atPos(vdef.pos)(Select(This(value.owner), value)), EXPRmode, value.tpe))
           result.tpt.asInstanceOf[TypeTree] setOriginal tpt /* setPos tpt.pos */
           checkNoEscaping.privates(getter, result.tpt)
-          copy.DefDef(result, result.mods withAttributes vdef.mods.attributes, result.name,
+          copy.DefDef(result, result.mods withAnnotations vdef.mods.attributes, result.name,
                       result.tparams, result.vparamss, result.tpt, result.rhs)
         }
         def setterDef: DefDef = {
@@ -892,7 +892,7 @@ trait Typers requires Analyzer {
               else
                 typed(Assign(Select(This(value.owner), value),
                              Ident(vparamss.head.head)))))
-          copy.DefDef(result, result.mods withAttributes vdef.mods.attributes, result.name,
+          copy.DefDef(result, result.mods withAnnotations vdef.mods.attributes, result.name,
                       result.tparams, result.vparamss, result.tpt, result.rhs)
         }
         val gs = if (mods hasFlag MUTABLE) List(getterDef, setterDef)
@@ -902,8 +902,8 @@ trait Typers requires Analyzer {
       case DocDef(comment, defn) =>
         addGetterSetter(defn) map (stat => DocDef(comment, stat))
 
-      case Attributed(constr, elements, defn) =>
-        addGetterSetter(defn) map (stat => Attributed(constr, elements, stat))
+      case Annotated(constr, elements, defn) =>
+        addGetterSetter(defn) map (stat => Annotated(constr, elements, stat))
 
       case _ =>
         List(stat)
@@ -1536,7 +1536,7 @@ trait Typers requires Analyzer {
       }
     }
 
-    def typedAttribute(constr: Tree, elements: List[Tree]): AttrInfo = {
+    def typedAnnotation(constr: Tree, elements: List[Tree]): AttrInfo = {
       var attrError: Boolean = false;
       def error(pos: PositionType, msg: String): Null = {
         context.error(pos, msg)
@@ -1548,7 +1548,7 @@ trait Typers requires Analyzer {
         case arg => error(arg.pos, "attribute argument needs to be a constant; found: "+arg)
       }
       val attrInfo =
-        typed(constr, EXPRmode | CONSTmode, AttributeClass.tpe) match {
+        typed(constr, EXPRmode | CONSTmode, AnnotationClass.tpe) match {
           case Apply(Select(New(tpt), nme.CONSTRUCTOR), args) =>
             val constrArgs = args map getConstant
             val attrScope = tpt.tpe.decls
@@ -1947,8 +1947,8 @@ trait Typers requires Analyzer {
           if (comments ne null) comments(defn.symbol) = comment
           ret
 
-        case Attributed(constr, elements, arg) =>
-          val attrInfo = typedAttribute(constr, elements)
+        case Annotated(constr, elements, arg) =>
+          val attrInfo = typedAnnotation(constr, elements)
           val arg1 = typed(arg, mode, pt)
           def attrType =
             TypeTree(arg1.tpe.withAttribute(attrInfo)) setOriginal tree

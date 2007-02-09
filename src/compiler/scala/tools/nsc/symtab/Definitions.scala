@@ -65,9 +65,9 @@ trait Definitions requires SymbolTable {
     // the scala reference classes
     var ScalaObjectClass: Symbol = _
       def ScalaObjectClass_tag = getMember(ScalaObjectClass, nme.tag)
-    var AttributeClass: Symbol = _
-    var ClassfileAttributeClass: Symbol = _
-    var StaticAttributeClass: Symbol = _
+    var AnnotationClass: Symbol = _
+    var ClassfileAnnotationClass: Symbol = _
+    var StaticAnnotationClass: Symbol = _
     //var ChannelClass: Symbol = _
     //  def Channel_send = getMember(ChannelClass, nme.send)
     //  def Channel_receive = getMember(ChannelClass, nme.receive)
@@ -750,9 +750,9 @@ trait Definitions requires SymbolTable {
 
       // the scala reference classes
       ScalaObjectClass = getClass("scala.ScalaObject")
-      AttributeClass = getClass("scala.Attribute")
-      ClassfileAttributeClass = getClass("scala.ClassfileAttribute")
-      StaticAttributeClass = getClass("scala.StaticAttribute")
+      AnnotationClass = getClass("scala.Annotation")
+      ClassfileAnnotationClass = getClass("scala.ClassfileAnnotation")
+      StaticAnnotationClass = getClass("scala.StaticAnnotation")
       //ChannelClass = getClass("scala.distributed.Channel")
       //RemoteRefClass = getClass("scala.distributed.RemoteRef")
       if (!forCLDC && ! forMSIL) {
@@ -894,7 +894,7 @@ trait Definitions requires SymbolTable {
 
       AnnotationDefaultAttr = newClass(RootClass,
                                        nme.AnnotationDefaultATTR,
-                                       List(AttributeClass.typeConstructor))
+                                       List(AnnotationClass.typeConstructor))
       SerializableAttr = getClass("scala.serializable")
       BeanPropertyAttr = if (forCLDC || forMSIL) null else getClass("scala.reflect.BeanProperty")
       DeprecatedAttr = getClass("scala.deprecated")

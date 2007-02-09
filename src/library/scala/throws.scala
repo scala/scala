@@ -12,7 +12,7 @@
 package scala
 
 /**
- * Attribute for specifying the exceptions thrown by a method.
+ * Annotation for specifying the exceptions thrown by a method.
  * <p>
  *  Example:
  * </p>
@@ -27,4 +27,4 @@ package scala
  * @author  Nikolay Mihaylov
  * @version 1.0, 19/05/2006
  */
-class throws(clazz: java.lang.Class) extends Attribute
+class throws(clazz: java.lang.Class) extends Annotation

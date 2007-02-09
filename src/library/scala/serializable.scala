@@ -13,6 +13,6 @@ package scala
 
 
 /**
- * An attribute that designates the class to which it is applied as serializable
+ * An annotation that designates the class to which it is applied as serializable
  */
-class serializable extends Attribute {}
+class serializable extends Annotation {}

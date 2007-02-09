@@ -65,7 +65,7 @@ abstract class TreePrinters {
 
     def printParam(tree: Tree): unit = tree match {
       case ValDef(mods, name, tp, rhs) =>
-        printAttributes(tree)
+        printAnnotations(tree)
         print(symName(tree, name)); printOpt(": ", tp)
       case AbsTypeDef(mods, name, lo, hi) =>
         print(symName(tree, name))
@@ -104,7 +104,7 @@ abstract class TreePrinters {
       if (s.length() != 0) print(s + " ")
     }
 
-    def printAttributes(tree: Tree): unit = {
+    def printAnnotations(tree: Tree): unit = {
       val attrs = tree.symbol.attributes
       if (!attrs.isEmpty) print(attrs mkString ("[", ", ", "]"))
       else {
@@ -122,23 +122,23 @@ abstract class TreePrinters {
           print("<empty>")
 
         case ClassDef(mods, name, tparams, tp, impl) =>
-          printAttributes(tree)
+          printAnnotations(tree)
           printModifiers(tree, mods)
           print((if (mods hasFlag TRAIT) "trait " else "class ") + symName(tree, name))
           printTypeParams(tparams)
           printOpt(" requires ", tp); print(" extends "); print(impl)
 
         case PackageDef(packaged, stats) =>
-          printAttributes(tree)
+          printAnnotations(tree)
           print("package "); print(packaged); printColumn(stats, " {", ";", "}")
 
         case ModuleDef(mods, name, impl) =>
-          printAttributes(tree)
+          printAnnotations(tree)
           printModifiers(tree, mods); print("object " + symName(tree, name))
           print(" extends "); print(impl)
 
         case ValDef(mods, name, tp, rhs) =>
-          printAttributes(tree)
+          printAnnotations(tree)
           printModifiers(tree, mods)
           print(if (mods.hasFlag(MUTABLE)) "var " else "val ")
           print(symName(tree, name))
@@ -149,7 +149,7 @@ abstract class TreePrinters {
           }
 
         case DefDef(mods, name, tparams, vparamss, tp, rhs) =>
-          printAttributes(tree)
+          printAnnotations(tree)
           printModifiers(tree, mods)
           print("def " + symName(tree, name))
           printTypeParams(tparams); vparamss foreach printValueParams
@@ -159,7 +159,7 @@ abstract class TreePrinters {
           printModifiers(tree, mods); print("type "); printParam(tree)
 
         case AliasTypeDef(mods, name, tparams, rhs) =>
-          printAttributes(tree)
+          printAnnotations(tree)
           printModifiers(tree, mods); print("type " + symName(tree, name))
           printTypeParams(tparams); printOpt(" = ", rhs)
 
@@ -176,7 +176,7 @@ abstract class TreePrinters {
         case DocDef(comment, definition) =>
           print(comment); println; print(definition)
 
-        case Attribute(Apply(Select(New(tpt), nme.CONSTRUCTOR), args), elements) =>
+        case Annotation(Apply(Select(New(tpt), nme.CONSTRUCTOR), args), elements) =>
           print(tpt)
           if (!args.isEmpty)
             printRow(args, "(", ",", ")")
@@ -294,7 +294,7 @@ abstract class TreePrinters {
             print(" ")
           print(tree)
 
-        case Attributed(Apply(Select(New(tpt), nme.CONSTRUCTOR), args), elements, tree) =>
+        case Annotated(Apply(Select(New(tpt), nme.CONSTRUCTOR), args), elements, tree) =>
           def printAttr() {
             print("@"); print(tpt)
             if (!args.isEmpty)

@@ -13,6 +13,6 @@ package scala;
 
 
 /**
- * An attribute that designates the class to which it is applied as cloneable
+ * An annotation that designates the class to which it is applied as cloneable
  */
-class cloneable extends Attribute {}
+class cloneable extends Annotation {}

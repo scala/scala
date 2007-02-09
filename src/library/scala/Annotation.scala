@@ -6,21 +6,20 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id$
+// $Id: Annotation.scala 9916 2007-02-07 13:07:33 +0000 (Wed, 07 Feb 2007) michelou $
 
 
 package scala
 
 /** <p>
- *   A base class for attributes. Atributes extending this class directly
+ *   A base class for annotations. Annotations extending this class directly
  *   are not preserved for the Scala type checker and are also not stored
  *   as Java annotations in classfiles. To enable either or both of these,
- *   one needs to inherit from <code>StaticAttribute</code> or/and
- *   <a href="ClassfileAttribute.html"><code>ClassfileAttribute</code></a>.
+ *   one needs to inherit from <code>StaticAnnotation</code> or/and
+ *   <a href="ClassfileAnnotation.html"><code>ClassfileAnnotation</code></a>.
  *  </p>
  *
- *  @deprecated  use Annotation instead
  *  @author  Martin Odersky
  *  @version 1.1, 2/02/2007
  */
-abstract class Attribute {}
+abstract class Annotation extends Attribute /* for now, to enable bootstrapping */ {}
