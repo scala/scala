@@ -367,9 +367,6 @@ abstract class TreeBuilder {
   private def makeUnsealed(expr: Tree): Tree =
     Attributed(New(scalaDot(definitions.UnsealedClass.name), List(List())), List(), expr)
 
-  private def checkAttr(expr: Tree, check: boolean) =
-    if (check) expr else makeUnsealed(expr)
-
   /** Create visitor <x => x match cases> */
   def makeVisitor(cases: List[CaseDef], checkExhaustive: boolean, prefix: String): Tree = {
     val x = freshName(prefix)

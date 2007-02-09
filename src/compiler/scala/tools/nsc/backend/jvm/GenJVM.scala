@@ -62,14 +62,17 @@ abstract class GenJVM extends SubComponent {
     val stringBufferType = new JObjectType(JAVA_LANG_STRINGBUFFER)
     val toStringType = new JMethodType(JObjectType.JAVA_LANG_STRING, JType.EMPTY_ARRAY)
 
+    def attributeType(name: String) =
+      atPhase(currentRun.typerPhase)(definitions.getClass(name).tpe)
+
     // Scala attributes
-    val SerializableAttr = definitions.SerializableAttr.tpe
-    val SerialVersionUID = definitions.getClass("scala.SerialVersionUID").tpe
-    val CloneableAttr    = definitions.getClass("scala.cloneable").tpe
-    val TransientAtt     = definitions.getClass("scala.transient").tpe
-    val VolatileAttr     = definitions.getClass("scala.volatile").tpe
-    val RemoteAttr       = definitions.getClass("scala.remote").tpe
-    val ThrowsAttr       = definitions.getClass("scala.throws").tpe
+    val SerializableAttr = atPhase(currentRun.typerPhase)(definitions.SerializableAttr.tpe)
+    val SerialVersionUID = attributeType("scala.SerialVersionUID")
+    val CloneableAttr    = attributeType("scala.cloneable")
+    val TransientAtt     = attributeType("scala.transient")
+    val VolatileAttr     = attributeType("scala.volatile")
+    val RemoteAttr       = attributeType("scala.remote")
+    val ThrowsAttr       = attributeType("scala.throws")
 
     val CloneableClass   =
       if (forCLDC) null else definitions.getClass("java.lang.Cloneable")

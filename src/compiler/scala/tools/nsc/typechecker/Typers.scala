@@ -809,6 +809,25 @@ trait Typers requires Analyzer {
         for (val p <- parents) validateParentClass(p, parents.head.tpe.symbol)
     }
 
+    def checkFinitary(classinfo: ClassInfoType) {
+      val clazz = classinfo.symbol
+      for (val tparam <- clazz.typeParams) {
+        if (classinfo.expansiveRefs(tparam) contains tparam) {
+          error(tparam.pos, "class graph is not finitary because type parameter "+tparam.name+" is expansively recursive")
+          val newinfo = ClassInfoType(
+            classinfo.parents map (.subst(List(tparam), List(AnyRefClass.tpe))),
+            classinfo.decls,
+            clazz)
+          clazz.setInfo {
+            clazz.info match {
+              case PolyType(tparams, _) => PolyType(tparams, newinfo)
+              case _ => newinfo
+            }
+          }
+        }
+      }
+    }
+
     /**
      *  @param cdef ...
      *  @return     ...
@@ -914,6 +933,8 @@ trait Typers requires Analyzer {
       // the following is necessary for templates generated later
       enterSyms(context.outer.make(templ, clazz, clazz.info.decls), templ.body)
       validateParentClasses(parents1, selfType)
+      if (!phase.erasedTypes)
+        checkFinitary(clazz.info.resultType.asInstanceOf[ClassInfoType])
       val body =
         if (phase.id <= currentRun.typerPhase.id && !reporter.hasErrors)
           templ.body flatMap addGetterSetter

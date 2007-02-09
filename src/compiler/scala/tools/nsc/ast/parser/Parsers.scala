@@ -225,7 +225,7 @@ trait Parsers requires SyntaxAnalyzer {
     def isExprIntro: boolean = isExprIntroToken(in.token)
 
     def isTypeIntroToken(token: int): boolean = token match {
-      case IDENTIFIER | BACKQUOTED_IDENT | THIS | SUPER | USCORE | LPAREN => true
+      case IDENTIFIER | BACKQUOTED_IDENT | THIS | SUPER | USCORE | LPAREN | AT => true
       case _ => false
     }
 
@@ -1619,8 +1619,9 @@ trait Parsers requires SyntaxAnalyzer {
             mods = mods | Flags.CONTRAVARIANT
           }
         }
+        val pos = in.currentPos
         val pname = ident()
-        val param = atPos(in.currentPos) { typeBounds(mods, pname) }
+        val param = atPos(pos) { typeBounds(mods, pname) }
         if (in.token == VIEWBOUND && (implicitViewBuf ne null))
           implicitViewBuf += atPos(in.skipToken()) {
             makeFunctionTypeTree(List(Ident(pname.toTypeName)), typ())

@@ -51,6 +51,7 @@ trait Types requires SymbolTable {
   private var globalVariance = 1//only necessary if healTypes = true?
   private final val healTypes = false
   private final val LubGlbMargin = 0
+  private final val LogPendingSubTypesThreshold = 50
 
   val emptyTypeArray = new Array[Type](0)
 
@@ -818,11 +819,10 @@ trait Types requires SymbolTable {
     // override def isNullable: boolean =
     // parents forall (p => p.isNullable && !p.symbol.isAbstractType);
 
-    override def toString(): String = (
+    override def toString(): String =
       parents.mkString("", " with ", "") +
       (if (settings.debug.value || parents.isEmpty || (decls.elems ne null))
         decls.mkString("{", "; ", "}") else "")
-    );
   }
 
   /** A class representing intersection types with refinements of the form
@@ -838,7 +838,129 @@ trait Types requires SymbolTable {
   case class ClassInfoType(
     override val parents: List[Type],
     override val decls: Scope,
-    override val symbol: Symbol) extends CompoundType {
+    override val symbol: Symbol) extends CompoundType
+  {
+    /** refs indices */
+    private final val NonExpansive = 0
+    private final val Expansive = 1
+
+    /** initialization states */
+    private final val UnInitialized = 0
+    private final val Initializing = 1
+    private final val Initialized = 2
+
+    private type RefMap = Map[Symbol, collection.immutable.Set[Symbol]]
+
+    /** All type parameters reachable from given type parameter
+     *  by a path which contains at least one expansive reference.
+     *  @See Kennedy, Pierce: On Decidability of Nominal Subtyping with Variance
+     */
+    def expansiveRefs(tparam: Symbol) = {
+      if (state == UnInitialized) {
+        computeRefs()
+        while (state != Initialized) propagate()
+      }
+      getRefs(Expansive, tparam)
+    }
+
+    /* The rest of this class is auxiliary code for <code>expansiveRefs</code>
+     */
+
+    /** The type parameters which are referenced type parameters of this class.
+     *  Two entries: refs(0): Non-expansive references
+     *               refs(1): Expansive references
+     */
+    private var refs: Array[RefMap] = _
+
+    /** The initialization state of the class: UnInialized --> Initializing --> Initialized
+     */
+    private var state = UnInitialized
+
+    /** Get references for given type parameter
+     *  @param  which in {NonExpansive, Expansive}
+     *  @param  from  The type parameter from which references originate.
+     */
+    private def getRefs(which: int, from: Symbol): Set[Symbol] = refs(which) get from match {
+      case Some(set) => set
+      case None => Set()
+    }
+
+    /** Augment existing refs map with reference <pre>from -> to</pre>
+     *  @param  which <- {NonExpansive, Expansive}
+     */
+    private def addRef(which: int, from: Symbol, to: Symbol) {
+      refs(which) = refs(which) + (from -> (getRefs(which, from) + to))
+    }
+
+    /** Augment existing refs map with references <pre>from -> sym</pre>, for
+     *  all elements <pre>sym</pre> of set <code>to</code>.
+     *  @param  which <- {NonExpansive, Expansive}
+     */
+    private def addRefs(which: int, from: Symbol, to: Set[Symbol]) {
+      refs(which) = refs(which) + (from -> (getRefs(which, from) ++ to))
+    }
+
+    /** The ClassInfoType which belongs to the class containing given type parameter
+     */
+    private def classInfo(tparam: Symbol): ClassInfoType =
+      tparam.owner.info.resultType match {
+        case ci: ClassInfoType => ci
+        case _ => classInfo(ObjectClass) // something's wrong; fall back to safe value
+                                         // (this can happen only for erroneous programs).
+      }
+
+    /** Compute initial (one-step) references and set state to <code>Initializing</code>.
+     */
+    private def computeRefs() {
+      refs = Array(Map(), Map())
+      for (val tparam <- symbol.typeParams) {
+        val enterRefs = new TypeMap {
+          def apply(tp: Type): Type = {
+            tp match {
+              case TypeRef(_, sym, args) =>
+                for (val {tparam1, arg} <- sym.info.typeParams zip args)
+                  if (arg contains tparam) {
+                    addRef(NonExpansive, tparam, tparam1)
+                    if (arg.symbol != tparam) addRef(Expansive, tparam, tparam1)
+                  }
+              case _ =>
+            }
+            mapOver(tp)
+          }
+        }
+        for (val p <- parents) enterRefs(p)
+      }
+      state = Initializing
+    }
+
+    /** Propagate to form transitive closure.
+     *  Set state to Initialized if no change resulted from propagation.
+     *  @return   true iff there as a change in last iteration
+     */
+    private def propagate(): boolean = {
+      if (state == UnInitialized) computeRefs()
+      //Console.println("Propagate "+symbol+", initial expansive = "+refs(Expansive)+", nonexpansive = "+refs(NonExpansive))//DEBUG
+      val lastRefs = Array(refs(0), refs(1))
+      state = Initialized
+      var change = false
+      for (val {from, targets} <- refs(NonExpansive).elements)
+        for (val target <- targets) {
+          var thatInfo = classInfo(target)
+          if (thatInfo.state != Initialized)
+            change = change | thatInfo.propagate()
+          addRefs(NonExpansive, from, thatInfo.getRefs(NonExpansive, target))
+          addRefs(Expansive, from, thatInfo.getRefs(Expansive, target))
+        }
+      for (val {from, targets} <- refs(Expansive).elements)
+        for (val target <- targets) {
+          var thatInfo = classInfo(target)
+          addRefs(Expansive, from, thatInfo.getRefs(NonExpansive, target))
+        }
+      change = change || refs(0) != lastRefs(0) || refs(1) != lastRefs(1)
+      if (change) state = Initializing
+      //else Console.println("Propagate "+symbol+", final expansive = "+refs(Expansive)+", nonexpansive = "+refs(NonExpansive))//DEBUG
+      change
+    }
 
     // override def isNullable: boolean =
     // symbol == AnyClass ||
@@ -1818,6 +1940,17 @@ trait Types requires SymbolTable {
     }
   }
 
+  class SubTypePair(val tp1: Type, val tp2: Type) {
+    override def hashCode = tp1.hashCode * 41 + tp2.hashCode
+    override def equals(other: Any) = other match {
+      case stp: SubTypePair =>
+        (tp1 =:= stp.tp1) && (tp2 =:= stp.tp2)
+      case _ =>
+        false
+    }
+    override def toString = tp1+" <:<? "+tp2
+  }
+
 // Helper Methods  -------------------------------------------------------------
 
   import Math.max
@@ -1965,12 +2098,24 @@ trait Types requires SymbolTable {
     tps1.length == tps2.length &&
     List.forall2(tps1, tps2)((tp1, tp2) => tp1 =:= tp2)
 
-  private var stc = 0
+  var stc: int = 0
+  private var pendingSubTypes = new collection.mutable.HashSet[SubTypePair]
+
   def isSubType(tp1: Type, tp2: Type): boolean =
     try {
       stc = stc + 1
-      if (stc == 100) throw new Error("recursive <:<")
-      isSubType0(tp1, tp2)
+      if (stc >= LogPendingSubTypesThreshold) {
+        val p = new SubTypePair(tp1, tp2)
+        if (pendingSubTypes contains p)
+          false
+        else
+          try {
+            pendingSubTypes += p
+            isSubType0(tp1, tp2)
+          } finally {
+            pendingSubTypes -= p
+          }
+      } else isSubType0(tp1, tp2)
     } finally {
       stc = stc - 1
     }

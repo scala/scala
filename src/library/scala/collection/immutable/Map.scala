@@ -192,7 +192,7 @@ trait Map[A, +B] extends collection.Map[A, B] {
     var res: Map[A, B1] = this
     while (iter.hasNext) {
       val {key, value} = iter.next
-      res = res.update(key, value);
+      res = res.update(key, value)
     }
     res
   }
