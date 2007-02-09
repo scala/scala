@@ -51,6 +51,7 @@ PROPERTIES
   <property name="api-comp.dir" value="${build.dir}/api-compiler"/>
   <property name="tooldocs.dir" value="${build.dir}/tooldocs"/>
   <property name="examples.dir" value="${build.dir}/examples"/>
+  <property name="msil.dir" value="${build.dir}/msil"/>
   <!--  Sets location and structure of the distribution -->
   <property name="dist.dir" value="${basedir}/dists"/>
   <property name="lib.jar.name" value="scala-library.jar"/>
@@ -548,6 +549,49 @@ BUILD QUICK-TEST LAYER
   <target name="test.quick" depends="build">
     <echo level="info"
       message="Ant test bench is not available yet."/>
+  </target>
+
+<!-- ===========================================================================
+MSIL
+============================================================================ -->
+
+  <target name="msil.sources">
+    <mkdir dir="${msil.dir}/src"/>
+
+    <copy todir="${msil.dir}/src">
+      <fileset dir="${src.dir}/library" includes="**/*.scala">
+        <not>
+          <present targetdir="${src.dir}/dotnet-library"/>
+        </not>
+      </fileset>
+    </copy>
+
+    <copy todir="${msil.dir}/src">
+      <fileset dir="${src.dir}/dotnet-library">
+        <include name="**/*.scala"/>
+      </fileset>
+    </copy>
+
+  </target>
+
+  <target name="msil.predef" depends="setup.quick, msil.sources">
+    <quick srcdir="${msil.dir}/src" usepredefs="no" target="msil"
+           assemname="predef" assemrefs="${lib.dir}">
+      <include name="scala/Predef.scala" />
+      <include name="scala/Console.scala" />
+      <include name="scala/Application.scala" />
+      <include name="scala/ByNameFunction.scala" />
+      <include name="scala/*Attribute.scala" />
+      <include name="scala/Function*.scala" />
+      <include name="scala/Tuple*.scala" />
+      <include name="scala/Product*.scala" />
+      <include name="scala/deprecated.scala" />
+      <include name="scala/serializable.scala" />
+      <include name="scala/transient.scala" />
+      <include name="scala/cloneable.scala" />
+      <include name="scala/transient.scala" />
+      <include name="scala/runtime/*.scala" />
+    </quick>
   </target>
 
 <!-- ===========================================================================

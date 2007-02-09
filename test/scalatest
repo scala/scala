@@ -282,7 +282,7 @@ test_run_msil() {
     rm -f "$dstbase".$EXE &&
 
     $SCALAC -nowarn -target:msil -o "$os_dstbase" -r $assemblies "$@" \
-        -sourcepath "$PREFIX/src/dotnet-library" "$os_srcbase".scala &&
+        -sourcepath "$PREFIX/build/msil/src" "$os_srcbase".scala &&
     case "$UNAME" in
         CYGWIN* )
             ilasm /qui /nol /out="$os_dstbase".$EXE "$os_dstbase".$MSIL \
