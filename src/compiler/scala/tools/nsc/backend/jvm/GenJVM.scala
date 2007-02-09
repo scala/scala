@@ -218,7 +218,7 @@ abstract class GenJVM extends SubComponent {
       buf.putShort(0xbaba.toShort)
 
       for (val AttrInfo(ThrowsAttr, List(exc), _) <- excs.removeDuplicates) {
-        buf.putShort(cpool.addClass(exc.typeValue.toString()).shortValue)
+        buf.putShort(cpool.addClass(javaName(exc.typeValue.symbol)).shortValue)
         nattr = nattr + 1
       }
 
@@ -1397,9 +1397,9 @@ abstract class GenJVM extends SubComponent {
         val locals = if (jmethod.isStatic()) vars.length else 1 + vars.length
 
         val lvTab = ByteBuffer.allocate(2 + 10 * locals)
-        def emitEntry(name: String, signature: String, idx: Short): Unit = {
-          lvTab.putShort(0.asInstanceOf[Short])
-          lvTab.putShort(pc.asInstanceOf[Short])
+        def emitEntry(name: String, signature: String, idx: Short, start: Short, end: Short): Unit = {
+          lvTab.putShort(start)
+          lvTab.putShort(end)
           lvTab.putShort(pool.addUtf8(name).asInstanceOf[Short])
           lvTab.putShort(pool.addUtf8(signature).asInstanceOf[Short])
           lvTab.putShort(idx)
@@ -1408,7 +1408,7 @@ abstract class GenJVM extends SubComponent {
         lvTab.putShort(locals.asInstanceOf[Short])
 
         if (!jmethod.isStatic()) {
-          emitEntry("this", jclass.getType().getSignature(), 0)
+          emitEntry("this", jclass.getType().getSignature(), 0, 0.asInstanceOf[Short], pc.asInstanceOf[Short])
         }
 
         for (val lv <- vars) {
@@ -1417,8 +1417,17 @@ abstract class GenJVM extends SubComponent {
               "<anon" + anonCounter + ">"
             } else javaName(lv.sym)
 
+            val startPC = 0.asInstanceOf[Short]
+            var endPC   = pc
+            if (startPC > endPC) {
+              Console.println("startPC: " + startPC + " endPC: " + endPC + " start: " + lv.start + " end: " + lv.end)
+              endPC = pc
+            }
+            log(lv + " start: " + lv.start + " end: " + lv.end)
+
             emitEntry(name, javaType(lv.kind).getSignature(),
-                      indexOf(lv).asInstanceOf[Short])
+                      indexOf(lv).asInstanceOf[Short],
+                      startPC, (endPC - startPC).asInstanceOf[Short])
         }
         val attr =
             fjbgContext.JOtherAttribute(jclass,
