@@ -659,9 +659,6 @@ abstract class GenJVM extends SubComponent {
         }
         def assert(cond: Boolean, msg: String) = if (!cond) throw new CompilationError(msg);
 
-        if (b.lastInstruction == instr)
-          endPC(b) = jcode.getPC();
-
         instr match {
           case THIS(clasz) =>
             jcode.emitALOAD_0()
@@ -991,6 +988,9 @@ abstract class GenJVM extends SubComponent {
             log("Warning: wrong position in: " + method)
             lastLineNr
         }
+        if (b.lastInstruction == instr)
+          endPC(b) = jcode.getPC();
+
 	//System.err.println("CRTLINE: " + instr.pos + " " +
 	//	   /* (if (instr.pos < clasz.cunit.source.content.length) clasz.cunit.source.content(instr.pos) else '*') + */ " " + crtLine);
 
@@ -1176,6 +1176,7 @@ abstract class GenJVM extends SubComponent {
       }
     }
 
+    /** For each basic block, the first PC address following it. */
     val endPC: HashMap[BasicBlock, Int] = new HashMap()
     val labels: HashMap[BasicBlock, JCode$Label] = new HashMap()
     val conds: HashMap[TestOp, Int] = new HashMap()
@@ -1420,10 +1421,10 @@ abstract class GenJVM extends SubComponent {
             val startPC = 0.asInstanceOf[Short]
             var endPC   = pc
             if (startPC > endPC) {
-              Console.println("startPC: " + startPC + " endPC: " + endPC + " start: " + lv.start + " end: " + lv.end)
+//              Console.println("startPC: " + startPC + " endPC: " + endPC + " start: " + lv.start + " end: " + lv.end)
               endPC = pc
             }
-            log(lv + " start: " + lv.start + " end: " + lv.end)
+//            log(lv + " start: " + lv.start + " end: " + lv.end)
 
             emitEntry(name, javaType(lv.kind).getSignature(),
                       indexOf(lv).asInstanceOf[Short],
