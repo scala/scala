@@ -1549,6 +1549,8 @@ abstract class GenMSIL extends SubComponent {
 
           case MONITOR_EXIT() =>
 	    mcode.Emit(OpCodes.Call, MMONITOR_EXIT)
+
+          case SCOPE_ENTER(_) | SCOPE_EXIT(_) => ()
         }
 
       }) // end b traverse instr => { .. }
