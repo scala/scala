@@ -29,6 +29,7 @@ object ScalaRunTime {
   val DoubleTag = ".Double"
   val BooleanTag = ".Boolean"
 
+  // TODO: remove after the next (as of Feb 11) starr compiler
   val ByteTYPE = java.lang.Byte.TYPE
   val ShortTYPE = java.lang.Short.TYPE
   val CharTYPE = java.lang.Character.TYPE

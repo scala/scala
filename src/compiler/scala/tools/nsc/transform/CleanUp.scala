@@ -27,6 +27,20 @@ abstract class CleanUp extends Transform {
     private val newDefs = new ListBuffer[Tree]
     private val classConstantMeth = new HashMap[String, Symbol]
 
+    // a map from the symbols of the Scala primitive types to the symbols
+    // of the modules of the Java box classes
+    private val javaBoxClassModule = new HashMap[Symbol, Symbol]
+
+    javaBoxClassModule(UnitClass)    = getModule("java.lang.Void")
+    javaBoxClassModule(BooleanClass) = getModule("java.lang.Boolean")
+    javaBoxClassModule(ByteClass)    = getModule("java.lang.Byte")
+    javaBoxClassModule(ShortClass)   = getModule("java.lang.Short")
+    javaBoxClassModule(IntClass)     = getModule("java.lang.Integer")
+    javaBoxClassModule(CharClass)    = getModule("java.lang.Character")
+    javaBoxClassModule(LongClass)    = getModule("java.lang.Long")
+    javaBoxClassModule(FloatClass)   = getModule("java.lang.Float")
+    javaBoxClassModule(DoubleClass)  = getModule("java.lang.Double")
+
     private var localTyper: analyzer.Typer = null;
 
     private def freshClassConstantMethName() = unit.fresh.newName("class$Method")
@@ -85,7 +99,7 @@ abstract class CleanUp extends Transform {
         atPos(tree.pos) {
           localTyper.typed {
             if (isValueClass(tpe.symbol))
-              gen.mkRuntimeCall(tpe.symbol.name.toString() + "TYPE", List())
+              Select(gen.mkAttributedRef(javaBoxClassModule(tpe.symbol)), "TYPE")
             else
               Apply(
                 gen.mkAttributedRef(classConstantMethod(tree.pos, signature(tpe))),
