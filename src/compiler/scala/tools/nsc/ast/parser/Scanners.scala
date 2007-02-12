@@ -444,7 +444,7 @@ trait Scanners requires SyntaxAnalyzer {
     def inFirstOfStat(token: int) = token match {
       case EOF | CASE | CATCH | ELSE | EXTENDS | FINALLY | MATCH | REQUIRES | WITH | YIELD |
            COMMA | SEMI | NEWLINE | NEWLINES | DOT | USCORE | COLON | EQUALS | ARROW |
-           LARROW | SUBTYPE | VIEWBOUND | SUPERTYPE | HASH | AT |
+           LARROW | SUBTYPE | VIEWBOUND | SUPERTYPE | HASH | // todo: add LBRACKET
            RPAREN | RBRACKET | RBRACE =>
         false
       case _ =>

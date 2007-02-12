@@ -2088,7 +2088,8 @@ trait Parsers requires SyntaxAnalyzer {
                    in.token == TRAIT ||
                    in.token == OBJECT ||
                    in.token == CASEOBJECT ||
-                   in.token == LBRACKET ||
+                   in.token == LBRACKET || //todo: remove
+                   in.token == AT ||
                    isModifier) {
           val annots = annotations()
           stats ++ joinComment(List(tmplDef(modifiers() withAnnotations annots)))
@@ -2114,7 +2115,7 @@ trait Parsers requires SyntaxAnalyzer {
           stats ++= importClause()
         } else if (isExprIntro) {
           stats += expr()
-        } else if (isDefIntro || isModifier || in.token == LBRACKET) {
+        } else if (isDefIntro || isModifier || in.token == LBRACKET /*todo: remove */ || in.token == AT) {
           val annots = annotations()
           stats ++ joinComment(defOrDcl(modifiers() withAnnotations annots))
         } else if (!isStatSep) {
