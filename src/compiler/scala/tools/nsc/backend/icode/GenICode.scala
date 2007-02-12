@@ -54,6 +54,7 @@ abstract class GenICode extends SubComponent  {
 
     override def apply(unit: CompilationUnit): Unit = {
       this.unit = unit
+      unit.icode.clear
       log("Generating icode for " + unit)
       gen(unit.body)
       this.unit = null
@@ -82,6 +83,7 @@ abstract class GenICode extends SubComponent  {
         ctx setClass (new IClass(tree.symbol) setCompilationUnit unit)
         addClassFields(ctx, tree.symbol);
         classes += tree.symbol -> ctx.clazz
+        unit.icode += ctx.clazz
         gen(impl, ctx)
         ctx setClass null
 

@@ -25,17 +25,14 @@ abstract class Inliners extends SubComponent {
 
   /** The Inlining phase.
    */
-  class InliningPhase(prev: Phase) extends StdPhase(prev) {
+  class InliningPhase(prev: Phase) extends ICodePhase(prev) {
 
-    override def erasedTypes = true;
+    def name = phaseName
     val inliner = new Inliner;
 
-    override def run: Unit = {
-      if (settings.debug.value) inform("[running phase " + name + " on icode]");
-      classes.values foreach inliner.analyzeClass;
-    }
-    override def apply(unit: CompilationUnit): Unit =
-      abort("Inlining works on icode classes, not on compilation units!");
+    override def apply(c: IClass): Unit =
+      inliner.analyzeClass(c)
+
   }
 
   /**
@@ -221,7 +218,11 @@ abstract class Inliners extends SubComponent {
        caller.exh = (callee.exh map translateExh) ::: caller.exh;
      }
 
-    val InlineAttr = if (settings.inline.value) global.definitions.getClass("scala.inline").tpe else null;
+    val InlineAttr = if (settings.inline.value) try {
+      global.definitions.getClass("scala.inline").tpe
+    } catch {
+      case e: FatalError => null
+    } else null;
 
     def analyzeClass(cls: IClass): Unit = if (settings.inline.value) {
       if (settings.debug.value)

@@ -25,18 +25,14 @@ abstract class DeadCodeElimination extends SubComponent {
 
   /** Dead code elimination phase.
    */
-  class DeadCodeEliminationPhase(prev: Phase) extends StdPhase(prev) {
+  class DeadCodeEliminationPhase(prev: Phase) extends ICodePhase(prev) {
 
-    override def erasedTypes = true;
+    def name = phaseName
     val dce = new DeadCode();
 
-    override def run: Unit = {
-      if (settings.debug.value) inform("[running phase " + name + " on icode]");
+    override def apply(c: IClass): Unit =
       if (settings.Xdce.value)
-        classes.values foreach dce.analyzeClass;
-    }
-    override def apply(unit: CompilationUnit): Unit =
-      abort("Dead code elimination works on icode classes, not on compilation units!");
+        dce.analyzeClass(c)
   }
 
   /** Remove dead code.

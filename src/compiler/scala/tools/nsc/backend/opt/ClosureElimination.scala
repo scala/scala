@@ -25,17 +25,13 @@ abstract class ClosureElimination extends SubComponent {
 
   /** The Inlining phase.
    */
-  class ClosureEliminationPhase(prev: Phase) extends StdPhase(prev) {
+  class ClosureEliminationPhase(prev: Phase) extends ICodePhase(prev) {
 
-    override def erasedTypes = true;
+    def name = phaseName
     val closser = new ClosureElim;
 
-    override def run: Unit = {
-      if (settings.debug.value) inform("[running phase " + name + " on icode]");
-      classes.values foreach closser.analyzeClass;
-    }
-    override def apply(unit: CompilationUnit): Unit =
-      abort("Inlining works on icode classes, not on compilation units!");
+    override def apply(c: IClass): Unit =
+      closser.analyzeClass(c)
   }
 
   /**

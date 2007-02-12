@@ -27,6 +27,11 @@ trait CompilationUnits requires Global {
 
     def position(pos: int) = new Position(source, pos)
 
+    /** The icode representation of classes in this compilation unit.
+     *  It is empty up to phase 'icode'.
+     */
+    val icode: HashSet[icodes.IClass] = new HashSet
+
     val errorPositions = new HashSet[int]
 
     def error(pos: int, msg: String) =

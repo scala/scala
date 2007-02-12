@@ -82,5 +82,16 @@ abstract class ICodes extends AnyRef
   }
 
   def init = { }
+
+  /** A phase which works on icode. */
+  abstract class ICodePhase(prev: Phase) extends global.GlobalPhase(prev) {
+    override def erasedTypes = true;
+
+    override def apply(unit: global.CompilationUnit): Unit = {
+      unit.icode foreach { c => apply(c) }
+    }
+
+    def apply(cls: global.icodes.IClass): Unit
+  }
 }
 
