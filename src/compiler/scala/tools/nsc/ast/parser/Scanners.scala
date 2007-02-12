@@ -183,15 +183,8 @@ trait Scanners requires SyntaxAnalyzer {
         next.copyFrom(this)
         pos = in.lineStartPos
         if (settings.migrate.value) newNewLine = lastToken != RBRACE && token != EOF;
-        token = NEWLINE
-
-/*
-      } else if (lastToken == RBRACE) {
-        System.out.println("failing to insert NL after RBRACE: " + sepRegions + " " +
-                           lastPos + " " + in.lineStartPos + " " + pos)
-*/
+        token = if (in.lastBlankLinePos > lastPos) NEWLINES else NEWLINE
       }
-//    System.out.println("token: " + toString());//DEBUG
     }
 
     private def afterLineEnd() = (
@@ -450,7 +443,7 @@ trait Scanners requires SyntaxAnalyzer {
 
     def inFirstOfStat(token: int) = token match {
       case EOF | CASE | CATCH | ELSE | EXTENDS | FINALLY | MATCH | REQUIRES | WITH | YIELD |
-           COMMA | SEMI | NEWLINE | DOT | USCORE | COLON | EQUALS | ARROW |
+           COMMA | SEMI | NEWLINE | NEWLINES | DOT | USCORE | COLON | EQUALS | ARROW |
            LARROW | SUBTYPE | VIEWBOUND | SUPERTYPE | HASH | AT |
            RPAREN | RBRACKET | RBRACE =>
         false
@@ -942,6 +935,8 @@ trait Scanners requires SyntaxAnalyzer {
         "';'"
       case NEWLINE =>
         "';'"
+      case NEWLINES =>
+        "';'"
       case COMMA =>
         "','"
       case CASECLASS =>
@@ -980,6 +975,8 @@ trait Scanners requires SyntaxAnalyzer {
         ";"
       case NEWLINE =>
         ";"
+      case NEWLINES =>
+        ";;"
       case COMMA =>
         ","
       case _ =>

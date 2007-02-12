@@ -5,7 +5,7 @@ object Main {
         case List()  => None
         case List(x) => Some(x)
 //      case x :: Nil => Some(x)
-        case y :: ys => min0(less, ys) match {
+        case y :: ys => (min0(less, ys): @unsealed) match {
             case Some(m) => if (less(y, m)) Some(y) else Some(m)
             case None => Some(y)
         }

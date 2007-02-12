@@ -98,6 +98,8 @@ trait Parsers requires SyntaxAnalyzer {
             if (nparens == 0 && nbraces == 0) return
           case NEWLINE =>
             if (nparens == 0 && nbraces == 0) return
+          case NEWLINES =>
+            if (nparens == 0 && nbraces == 0) return
           case RPAREN =>
             nparens = nparens - 1
           case RBRACE =>
@@ -183,7 +185,8 @@ trait Parsers requires SyntaxAnalyzer {
      *  NewLine  = `\n' // where allowed
      */
     def acceptStatSep(): unit =
-      if (in.token == NEWLINE) in.nextToken() else accept(SEMI)
+      if (in.token == NEWLINE || in.token == NEWLINES) in.nextToken()
+      else accept(SEMI)
 
     def errorTypeTree = TypeTree().setType(ErrorType).setPos(in.currentPos)
     def errorTermTree = Literal(Constant(null)).setPos(in.currentPos)
@@ -230,6 +233,11 @@ trait Parsers requires SyntaxAnalyzer {
     }
 
     def isTypeIntro: boolean = isTypeIntroToken(in.token)
+
+    def isStatSep(token: int): boolean =
+      token == NEWLINE || token == NEWLINES || token == SEMI
+
+    def isStatSep: boolean = isStatSep(in.token)
 
 
 /////// COMMENT AND ATTRIBUTE COLLECTION //////////////////////////////////////
@@ -522,6 +530,12 @@ trait Parsers requires SyntaxAnalyzer {
 
     def newLineOpt(): unit =
       if (in.token == NEWLINE) {
+        if (settings.migrate.value) in.newNewLine = false
+        in.nextToken()
+      }
+
+    def newLinesOpt(): unit =
+      if (in.token == NEWLINE || in.token == NEWLINES) {
         if (settings.migrate.value) in.newNewLine = false
         in.nextToken()
       }
@@ -850,7 +864,7 @@ trait Parsers requires SyntaxAnalyzer {
         accept(LPAREN)
         val cond = localExpr()
         accept(RPAREN)
-        newLineOpt()
+        newLinesOpt()
         val thenp = expr()
         val elsep =
           if (in.token == ELSE) { in.nextToken(); expr() }
@@ -880,14 +894,14 @@ trait Parsers requires SyntaxAnalyzer {
         accept(LPAREN)
         val cond = noLifting(localExpr())
         accept(RPAREN)
-        newLineOpt()
+        newLinesOpt()
         val body = expr()
         atPos(pos) { makeWhile(lname, cond, body) }
       case DO =>
         val lname: Name = unit.fresh.newName("doWhile$")
         val pos = in.skipToken()
         val body = expr()
-        if (in.token == SEMI || in.token == NEWLINE) in.nextToken()
+        if (isStatSep) in.nextToken()
         accept(WHILE)
         accept(LPAREN)
         val cond = noLifting(localExpr())
@@ -899,7 +913,7 @@ trait Parsers requires SyntaxAnalyzer {
           accept(if (startToken == LBRACE) LBRACE else LPAREN)
           val enums = enumerators()
           accept(if (startToken == LBRACE) RBRACE else RPAREN)
-          newLineOpt()
+          newLinesOpt()
           if (in.token == YIELD) {
             in.nextToken(); makeForYield(enums, expr())
           } else makeFor(enums, expr())
@@ -1189,7 +1203,7 @@ trait Parsers requires SyntaxAnalyzer {
      */
     def enumerators(): List[Enumerator] = {
       val enums = new ListBuffer[Enumerator] + generator(false)
-      while (in.token == SEMI || in.token == NEWLINE) {
+      while (isStatSep) {
         in.nextToken()
         enums += (if (in.token == VAL) generator(true) else Filter(expr()))
       }
@@ -1629,7 +1643,7 @@ trait Parsers requires SyntaxAnalyzer {
         param
       }
       val params = new ListBuffer[AbsTypeDef]
-      //newLineOptWhenFollowedBy(LBRACKET)
+      newLineOptWhenFollowedBy(LBRACKET)
       if (in.token == LBRACKET) {
         in.nextToken()
         params += typeParam()
@@ -1760,7 +1774,7 @@ trait Parsers requires SyntaxAnalyzer {
           List(funDefOrDcl(mods))
         case TYPE =>
           in.nextToken()
-          newLineOpt()
+          newLinesOpt()
           List(typeDefOrDcl(mods))
         case _ =>
           List(tmplDef(mods))
@@ -1831,7 +1845,7 @@ trait Parsers requires SyntaxAnalyzer {
     }
 
     /** FunDef ::= FunSig `:' Type `=' Expr
-                 | FunSig Block
+     *           | FunSig Block
      *           | this ParamClause ParamClauses (`=' ConstrExpr | ConstrBlock)
      *  FunDcl ::= FunSig [`:' Type]
      *  FunSig ::= id [FunTypeParamClause] ParamClauses
@@ -1852,7 +1866,7 @@ trait Parsers requires SyntaxAnalyzer {
           val vparamss = paramClauses(name, implicitViewBuf.toList, false)
           var restype = typedOpt()
           val rhs =
-            if (in.token == SEMI || in.token == NEWLINE || in.token == RBRACE) {
+            if (isStatSep || in.token == RBRACE) {
               if (restype.isEmpty) restype = scalaUnitConstr
               newmods = newmods | Flags.DEFERRED
               EmptyTree
@@ -1875,7 +1889,9 @@ trait Parsers requires SyntaxAnalyzer {
     def selfInvocation(vparamss: List[List[ValDef]]): Tree =
       atPos(accept(THIS)) {
         var t = Apply(Ident(nme.CONSTRUCTOR), argumentExprs())
-        while (in.token == LPAREN) t = Apply(t, argumentExprs())
+        while (in.token == LPAREN || in.token == LBRACE) {
+          t = Apply(t, argumentExprs())
+        }
         if (!implicitClassViews.isEmpty) t = Apply(t, vparamss.last.map(vd => Ident(vd.name)))
         t
       }
@@ -1886,10 +1902,8 @@ trait Parsers requires SyntaxAnalyzer {
       atPos(in.skipToken()) {
         val statlist = new ListBuffer[Tree]
         statlist += selfInvocation(vparamss)
-        val stats =
-          if (in.token == SEMI || in.token == NEWLINE) {
-            in.nextToken(); blockStatSeq(statlist)
-          } else statlist.toList
+        val stats = if (isStatSep) { in.nextToken(); blockStatSeq(statlist) }
+                    else statlist.toList
         accept(RBRACE)
         makeBlock(stats)
       }
@@ -1908,7 +1922,7 @@ trait Parsers requires SyntaxAnalyzer {
           case EQUALS =>
             in.nextToken()
             AliasTypeDef(mods, name, List(), typ())
-          case SUPERTYPE | SUBTYPE | SEMI | NEWLINE | COMMA | RBRACE =>
+          case SUPERTYPE | SUBTYPE | SEMI | NEWLINE | NEWLINES | COMMA | RBRACE =>
             typeBounds(mods | Flags.DEFERRED, name)
           case _ =>
             syntaxErrorOrIncomplete("`=', `>:', or `<:' expected", true)
@@ -1982,9 +1996,8 @@ trait Parsers requires SyntaxAnalyzer {
       atPos(in.currentPos) {
         def acceptEmptyTemplateBody(msg: String): unit = {
           if (in.token == LPAREN && settings.migrate.value)
-            syntaxErrorMigrate("traites may not have parameters")
-          if (!(in.token == SEMI || in.token == NEWLINE ||
-                in.token == COMMA || in.token == RBRACE || in.token == EOF))
+            syntaxErrorMigrate("traits may not have parameters")
+          if (!(isStatSep || in.token == COMMA || in.token == RBRACE || in.token == EOF))
             syntaxError(msg, true)
         }
         val parents = new ListBuffer[Tree]
@@ -2004,6 +2017,7 @@ trait Parsers requires SyntaxAnalyzer {
         } else {
           if (in.token == WITH && settings.migrate.value)
             syntaxErrorMigrate("`extends' needed before `with'")
+          newLineOptWhenFollowedBy(LBRACE)
           if (in.token != LBRACE) acceptEmptyTemplateBody("`extends' or `{' expected")
           argss += List()
         }
@@ -2077,9 +2091,8 @@ trait Parsers requires SyntaxAnalyzer {
                    in.token == LBRACKET ||
                    isModifier) {
           val annots = annotations()
-          newLineOpt()
           stats ++ joinComment(List(tmplDef(modifiers() withAnnotations annots)))
-        } else if (in.token != SEMI && in.token != NEWLINE) {
+        } else if (!isStatSep) {
           syntaxErrorOrIncomplete("expected class or object definition", true)
         }
         if (in.token != RBRACE && in.token != EOF) acceptStatSep()
@@ -2103,9 +2116,8 @@ trait Parsers requires SyntaxAnalyzer {
           stats += expr()
         } else if (isDefIntro || isModifier || in.token == LBRACKET) {
           val annots = annotations()
-          newLineOpt()
           stats ++ joinComment(defOrDcl(modifiers() withAnnotations annots))
-        } else if (in.token != SEMI && in.token != NEWLINE) {
+        } else if (!isStatSep) {
           syntaxErrorOrIncomplete("illegal start of definition", true)
         }
         if (in.token != RBRACE && in.token != EOF) acceptStatSep()
@@ -2195,7 +2207,7 @@ trait Parsers requires SyntaxAnalyzer {
       while (in.token != RBRACE && in.token != EOF) {
         if (isDclIntro) {
           stats ++= joinComment(defOrDcl(NoMods))
-        } else if (in.token != SEMI && in.token != NEWLINE) {
+        } else if (!isStatSep) {
           syntaxErrorOrIncomplete("illegal start of declaration", true)
         }
         if (in.token != RBRACE) acceptStatSep()
@@ -2252,7 +2264,7 @@ trait Parsers requires SyntaxAnalyzer {
           localDef(NoMods)
         } else if (isLocalModifier) {
           localDef(localModifiers())
-        } else if (in.token == SEMI || in.token == NEWLINE) {
+        } else if (isStatSep) {
           in.nextToken()
         } else {
           syntaxErrorOrIncomplete("illegal start of statement", true)
@@ -2271,7 +2283,9 @@ trait Parsers requires SyntaxAnalyzer {
         if (in.token == PACKAGE) {
           in.nextToken()
           val pkg = qualId()
-          if (in.token == SEMI || in.token == NEWLINE || in.token == EOF) {
+          if (in.token == EOF) {
+            ts += makePackaging(pkg, List())
+          } else if (isStatSep) {
             in.nextToken()
             ts += makePackaging(pkg, topStatSeq())
           } else {

@@ -21,7 +21,7 @@ import compat.StringBuilder
  *
  *  @author  Martin Odersky
  *  @author  Matthias Zenger
- *  @version 1.1, 04/02/2004
+ *  @version 1.2, 10/02/2007
  */
 object Iterator {
 
@@ -291,14 +291,15 @@ trait Iterator[+A] {
   private def predicatedIterator(p: A => boolean, isFilter: boolean) = new BufferedIterator[A] {
     private var hd: A = _
     private var ahead: Boolean = false
-    private var hasMore = Iterator.this.hasNext
     private def skip: Unit =
-      while (!ahead && hasMore) {
+      while (!ahead && Iterator.this.hasNext) {
         hd = Iterator.this.next
-        hasMore = Iterator.this.hasNext
-        ahead = p(hd)
+        ahead = !isFilter || p(hd)
       }
-    def hasNext: Boolean = { skip; ahead || isFilter && hasMore }
+    def hasNext: Boolean = {
+      skip
+      ahead && p(hd)
+    }
     def next: A =
       if (hasNext) { ahead = false; hd }
       else throw new NoSuchElementException("next on empty iterator")

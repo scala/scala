@@ -5,6 +5,7 @@ object partialfun {
 
   applyPartial {
     case Some(xxx) => xxx
+    case None => throw new MatchError(None)
   } (None);
 
 }

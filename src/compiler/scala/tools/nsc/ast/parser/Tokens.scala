@@ -80,11 +80,12 @@ object Tokens {
   final val LARROW = 67
   final val ARROW = 68
   final val NEWLINE = 69
-  final val SUBTYPE = 70
-  final val SUPERTYPE = 71
-  final val HASH = 72
-  final val AT = 73
-  final val VIEWBOUND = 74
+  final val NEWLINES = 70
+  final val SUBTYPE = 71
+  final val SUPERTYPE = 72
+  final val HASH = 73
+  final val AT = 74
+  final val VIEWBOUND = 75
 
   /** parenthesis */
   final val LPAREN = 90

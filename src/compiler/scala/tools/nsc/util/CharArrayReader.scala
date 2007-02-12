@@ -28,8 +28,20 @@ class CharArrayReader(buf: Array[char], start: int, /* startline: int, startcol:
   var isUnicode: boolean = _
   var lastLineStartPos: int = 0
   var lineStartPos: int = 0
+  var lastBlankLinePos: int = 0
+
+  private var onlyBlankChars = false
   //private var nextline = startline
   //private var nextcol = startcol
+
+  private def markNewLine() {
+    lastLineStartPos = lineStartPos
+    if (onlyBlankChars) lastBlankLinePos = lineStartPos
+    lineStartPos = bp
+    onlyBlankChars = true
+    //nextline = nextline + 1;
+    //nextcol = 1;
+  }
 
   def hasNext: boolean = bp < buf.length
 
@@ -45,19 +57,13 @@ class CharArrayReader(buf: Array[char], start: int, /* startline: int, startcol:
       case '\t' =>
         // nextcol = ((nextcol - 1) / tabinc * tabinc) + tabinc + 1;
       case CR =>
-        //nextline = nextline + 1;
-        // nextcol = 1;
         if (buf(bp) == LF) {
           ch = LF
           bp = bp + 1
         }
-        lastLineStartPos = lineStartPos
-        lineStartPos = bp
+        markNewLine()
       case LF | FF =>
-        lastLineStartPos = lineStartPos
-        lineStartPos = bp
-        //nextline = nextline + 1
-        //nextcol = 1
+        markNewLine()
       case '\\' =>
         def evenSlashPrefix: boolean = {
           var p = bp - 2
@@ -80,6 +86,7 @@ class CharArrayReader(buf: Array[char], start: int, /* startline: int, startcol:
           isUnicode = true
         }
       case _ =>
+        if (ch > ' ') onlyBlankChars = false
         // nextcol = nextcol + 1
     }
   }
