@@ -69,9 +69,6 @@ abstract class GenICode extends SubComponent  {
       ctx1
     }
 
-    /** The maximum line number seen so far in the current method. */
-    private var maxLineNr = 0
-
     /////////////////// Code generation ///////////////////////
 
     def gen(tree: Tree, ctx: Context): Context = tree match {
@@ -103,7 +100,6 @@ abstract class GenICode extends SubComponent  {
         m.returnType = if (tree.symbol.isConstructor) UNIT
                        else toTypeKind(tree.symbol.info.resultType)
         ctx.clazz.addMethod(m)
-        maxLineNr = unit.position(tree.pos).line
 
         var ctx1 = ctx.enterMethod(m, tree.asInstanceOf[DefDef])
         addMethodParams(ctx1, vparamss)
@@ -157,7 +153,6 @@ abstract class GenICode extends SubComponent  {
      *         which may change the current basic block.
      */
     private def genStat(tree: Tree, ctx: Context): Context = {
-      maxLineNr = compat.Math.max(unit.position(tree.pos).line, maxLineNr)
 
       tree match {
         case Assign(lhs @ Select(_, _), rhs) =>
@@ -197,7 +192,6 @@ abstract class GenICode extends SubComponent  {
      */
     private def genLoad(tree: Tree, ctx: Context, expectedType: TypeKind): Context = {
       var generatedType = expectedType
-      maxLineNr = compat.Math.max(unit.position(tree.pos).line, maxLineNr)
 
       /**
        * Generate code for primitive arithmetic operations.
@@ -1724,7 +1718,6 @@ abstract class GenICode extends SubComponent  {
         ctx1.method.code = new Code(m.symbol.simpleName.toString())
         ctx1.bb = ctx1.method.code.startBlock
         ctx1.defdef = d
-//        assert(ctx1.scope == EmptyScope, ctx1.scope)
         ctx1.scope = EmptyScope
         ctx1.enterScope
         ctx1
