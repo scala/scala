@@ -574,9 +574,9 @@ MSIL
 
   </target>
 
-  <target name="msil.predef" depends="setup.quick, msil.sources">
+  <target name="msil" depends="setup.quick, msil.sources">
     <quick srcdir="${msil.dir}/src" usepredefs="no" target="msil"
-           assemname="predef" assemrefs="${lib.dir}">
+           assemname="${msil.dir}/predef" assemrefs="${lib.dir}">
       <include name="scala/Predef.scala" />
       <include name="scala/Console.scala" />
       <include name="scala/Application.scala" />
@@ -1150,6 +1150,10 @@ CLEAN
 
   <target name="clean.build" description="Removes all build products">
     <remove dir="${build.dir}"/>
+  </target>
+
+  <target name="clean.msil" description="Removes all MSIL build products">
+    <remove dir="${msil.dir}"/>
   </target>
 
   <target name="clean.all"
