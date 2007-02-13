@@ -31,15 +31,17 @@ abstract class CleanUp extends Transform {
     // of the modules of the Java box classes
     private val javaBoxClassModule = new HashMap[Symbol, Symbol]
 
-    javaBoxClassModule(UnitClass)    = getModule("java.lang.Void")
-    javaBoxClassModule(BooleanClass) = getModule("java.lang.Boolean")
-    javaBoxClassModule(ByteClass)    = getModule("java.lang.Byte")
-    javaBoxClassModule(ShortClass)   = getModule("java.lang.Short")
-    javaBoxClassModule(IntClass)     = getModule("java.lang.Integer")
-    javaBoxClassModule(CharClass)    = getModule("java.lang.Character")
-    javaBoxClassModule(LongClass)    = getModule("java.lang.Long")
-    javaBoxClassModule(FloatClass)   = getModule("java.lang.Float")
-    javaBoxClassModule(DoubleClass)  = getModule("java.lang.Double")
+    if (!forMSIL) {
+      javaBoxClassModule(UnitClass)    = getModule("java.lang.Void")
+      javaBoxClassModule(BooleanClass) = getModule("java.lang.Boolean")
+      javaBoxClassModule(ByteClass)    = getModule("java.lang.Byte")
+      javaBoxClassModule(ShortClass)   = getModule("java.lang.Short")
+      javaBoxClassModule(IntClass)     = getModule("java.lang.Integer")
+      javaBoxClassModule(CharClass)    = getModule("java.lang.Character")
+      javaBoxClassModule(LongClass)    = getModule("java.lang.Long")
+      javaBoxClassModule(FloatClass)   = getModule("java.lang.Float")
+      javaBoxClassModule(DoubleClass)  = getModule("java.lang.Double")
+    }
 
     private var localTyper: analyzer.Typer = null;
 
