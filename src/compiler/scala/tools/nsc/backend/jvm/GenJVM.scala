@@ -203,7 +203,7 @@ abstract class GenJVM extends SubComponent {
     }
 
     def addExceptionsAttribute(sym: Symbol): Unit = {
-      val {excs, others} = sym.attributes.partition((a => a match {
+      val Pair(excs, others) = sym.attributes.partition((a => a match {
         case AttrInfo(ThrowsAttr, _, _) => true
         case _ => false
       }))
@@ -289,7 +289,7 @@ abstract class GenJVM extends SubComponent {
           buf.putShort(cpool.addUtf8("value").toShort)
           emitElement(consts.head)
         }
-        for (val {name, value} <- nvPairs) {
+        for (val Pair(name, value) <- nvPairs) {
           buf.putShort(cpool.addUtf8(name.toString()).toShort)
           emitElement(value)
         }
@@ -593,7 +593,7 @@ abstract class GenJVM extends SubComponent {
           if (! (covered contains b) ) {
             if (start >= 0) { // we're inside a handler range
               end = labels(b).getAnchor()
-              ranges = {start, end} :: ranges
+              ranges = Pair(start, end) :: ranges
               start = -1
             }
           } else {
@@ -612,7 +612,7 @@ abstract class GenJVM extends SubComponent {
          * code!
          */
         if (start >= 0) {
-          ranges = {start, jcode.getPC()} :: ranges;
+          ranges = Pair(start, jcode.getPC()) :: ranges;
         }
 
         if (covered != Nil)
@@ -989,10 +989,10 @@ abstract class GenJVM extends SubComponent {
 
           case SCOPE_EXIT(lv) =>
             if (varsInBlock contains lv) {
-              lv.ranges = {lv.start, jcode.getPC()} :: lv.ranges
+              lv.ranges = Pair(lv.start, jcode.getPC()) :: lv.ranges
               varsInBlock -= lv
             } else if (b.varsInScope contains lv) {
-              lv.ranges = {labels(b).getAnchor(), jcode.getPC()} :: lv.ranges
+              lv.ranges = Pair(labels(b).getAnchor(), jcode.getPC()) :: lv.ranges
               b.varsInScope -= lv
             } else
               assert(false, "Illegal local var nesting: " + method)
@@ -1022,10 +1022,10 @@ abstract class GenJVM extends SubComponent {
 
       // local vars that survived this basic block
       for (val lv <- varsInBlock) {
-        lv.ranges = {lv.start, jcode.getPC()} :: lv.ranges
+        lv.ranges = Pair(lv.start, jcode.getPC()) :: lv.ranges
       }
       for (val lv <- b.varsInScope) {
-        lv.ranges = {labels(b).getAnchor(), jcode.getPC()} :: lv.ranges
+        lv.ranges = Pair(labels(b).getAnchor(), jcode.getPC()) :: lv.ranges
       }
     }
 
@@ -1101,67 +1101,67 @@ abstract class GenJVM extends SubComponent {
               abort("Unknown arithmetic primitive " + primitive)
           }
 
-        case Logical(op, kind) => {op, kind} match {
-          case {AND, LONG} =>
+        case Logical(op, kind) => Pair(op, kind) match {
+          case Pair(AND, LONG) =>
             jcode.emitLAND()
-          case {AND, INT} =>
+          case Pair(AND, INT) =>
             jcode.emitIAND()
-          case {AND, _} =>
+          case Pair(AND, _) =>
             jcode.emitIAND()
             if (kind != BOOL)
               jcode.emitT2T(javaType(INT), javaType(kind));
 
-          case {OR, LONG} =>
+          case Pair(OR, LONG) =>
             jcode.emitLOR()
-          case {OR, INT} =>
+          case Pair(OR, INT) =>
             jcode.emitIOR()
-          case {OR, _} =>
+          case Pair(OR, _) =>
             jcode.emitIOR()
             if (kind != BOOL)
               jcode.emitT2T(javaType(INT), javaType(kind));
 
-          case {XOR, LONG} =>
+          case Pair(XOR, LONG) =>
             jcode.emitLXOR()
-          case {XOR, INT} =>
+          case Pair(XOR, INT) =>
             jcode.emitIXOR()
-          case {XOR, _} =>
+          case Pair(XOR, _) =>
             jcode.emitIXOR()
             if (kind != BOOL)
               jcode.emitT2T(javaType(INT), javaType(kind));
         }
 
-        case Shift(op, kind) => {op, kind} match {
-          case {LSL, LONG} =>
+        case Shift(op, kind) => Pair(op, kind) match {
+          case Pair(LSL, LONG) =>
             jcode.emitLSHL()
-          case {LSL, INT} =>
+          case Pair(LSL, INT) =>
             jcode.emitISHL()
-          case {LSL, _} =>
+          case Pair(LSL, _) =>
             jcode.emitISHL()
             jcode.emitT2T(javaType(INT), javaType(kind))
 
-          case {ASR, LONG} =>
+          case Pair(ASR, LONG) =>
             jcode.emitLSHR()
-          case {ASR, INT} =>
+          case Pair(ASR, INT) =>
             jcode.emitISHR()
-          case {ASR, _} =>
+          case Pair(ASR, _) =>
             jcode.emitISHR()
             jcode.emitT2T(javaType(INT), javaType(kind))
 
-          case {LSR, LONG} =>
+          case Pair(LSR, LONG) =>
             jcode.emitLUSHR()
-          case {LSR, INT} =>
+          case Pair(LSR, INT) =>
             jcode.emitIUSHR()
-          case {LSR, _} =>
+          case Pair(LSR, _) =>
             jcode.emitIUSHR()
             jcode.emitT2T(javaType(INT), javaType(kind))
         }
 
-        case Comparison(op, kind) => {op, kind} match {
-          case {CMP, LONG}    => jcode.emitLCMP()
-          case {CMPL, FLOAT}  => jcode.emitFCMPL()
-          case {CMPG, FLOAT}  => jcode.emitFCMPG()
-          case {CMPL, DOUBLE} => jcode.emitDCMPL()
-          case {CMPG, DOUBLE} => jcode.emitDCMPL()
+        case Comparison(op, kind) => Pair(op, kind) match {
+          case Pair(CMP, LONG)    => jcode.emitLCMP()
+          case Pair(CMPL, FLOAT)  => jcode.emitFCMPL()
+          case Pair(CMPG, FLOAT)  => jcode.emitFCMPG()
+          case Pair(CMPL, DOUBLE) => jcode.emitDCMPL()
+          case Pair(CMPG, DOUBLE) => jcode.emitDCMPL()
         }
 
         case Conversion(src, dst) =>
@@ -1449,7 +1449,7 @@ abstract class GenJVM extends SubComponent {
 
             val index = indexOf(lv).asInstanceOf[Short]
             val tpe   = javaType(lv.kind).getSignature()
-            for (val {start, end} <- lv.ranges) {
+            for (val Pair(start, end) <- lv.ranges) {
               emitEntry(name, tpe, index, start.asInstanceOf[Short], (end - start).asInstanceOf[Short])
             }
         }
@@ -1463,10 +1463,10 @@ abstract class GenJVM extends SubComponent {
 
 
     /** Merge adjacent ranges. */
-    private def mergeEntries(ranges: List[{Int, Int}]): List[{Int, Int}] =
-      (ranges.foldLeft(Nil: List[{Int, Int}]) { (collapsed: List[{Int, Int}], p: {Int, Int}) => {collapsed, p} match {
-        case { Nil, _ } => List(p)
-        case { {s1, e1} :: rest, {s2, e2} } if (e1 == s2) => {s1, e2} :: rest
+    private def mergeEntries(ranges: List[Pair[Int, Int]]): List[Pair[Int, Int]] =
+      (ranges.foldLeft(Nil: List[Pair[Int, Int]]) { (collapsed: List[Pair[Int, Int]], p: Pair[Int, Int]) => Pair(collapsed, p) match {
+        case Pair(Nil, _) => List(p)
+        case Pair(Pair(s1, e1) :: rest, Pair(s2, e2)) if (e1 == s2) => Pair(s1, e2) :: rest
         case _ => p :: collapsed
       }}).reverse
 

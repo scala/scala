@@ -1306,7 +1306,7 @@ trait Symbols requires SymbolTable {
     def cloneSymbolImpl(owner: Symbol): Symbol = throw new Error()
   }
 
-  case class AttrInfo(atp: Type, args: List[Constant], assocs: List[{Name, Constant}]) {
+  case class AttrInfo(atp: Type, args: List[Constant], assocs: List[Pair[Name, Constant]]) {
     override def toString: String =
       atp +
       (if (args.isEmpty) "" else args.mkString("(", ", ", ")")) +

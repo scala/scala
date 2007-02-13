@@ -167,7 +167,7 @@ class Queue[A] extends MutableList[A] {
     that.isInstanceOf[Queue[A]] &&
     { val other = that.asInstanceOf[Queue[A]]
       elements.zip(other.elements).forall {
-        case {thiselem, thatelem} => thiselem == thatelem
+        case Pair(thiselem, thatelem) => thiselem == thatelem
     }}
 
   /** The hashCode method always yields an error, since it is not

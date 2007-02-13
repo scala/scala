@@ -507,7 +507,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
         showDef(newTermName(settings.Xshowobj.value), true)
 
       if (reporter.hasErrors) {
-        for (val {sym, file} <- symSource.elements) {
+        for (val Pair(sym, file) <- symSource.elements) {
           sym.reset(new loaders.SourcefileLoader(file))
           if (sym.isTerm) sym.moduleClass.reset(loaders.moduleClassLoader)
         }
@@ -520,7 +520,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
           warning("there were unchecked warnings; re-run with -unchecked for details")
         }
       }
-      for (val {sym, file} <- symSource.elements) resetPackageClass(sym.owner)
+      for (val Pair(sym, file) <- symSource.elements) resetPackageClass(sym.owner)
       //units foreach (.clear())
       informTime("total", startTime)
     }

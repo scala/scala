@@ -24,7 +24,7 @@ object ListMap {
 
   /** The canonical factory for this type
    */
-  def apply[A, B](elems: {A, B}*) = empty[A, B] ++ elems
+  def apply[A, B](elems: Pair[A, B]*) = empty[A, B] ++ elems
 }
 
 /** This class implements immutable maps using a list-based data
@@ -79,13 +79,13 @@ class ListMap[A, +B] extends Map[A, B] {
 
   /** Returns an iterator over key-value pairs.
    */
-  def elements: Iterator[{A,B}] =
-    new Iterator[{A,B}] {
+  def elements: Iterator[Pair[A,B]] =
+    new Iterator[Pair[A,B]] {
       var self: ListMap[A,B] = ListMap.this
       def hasNext = !self.isEmpty
-      def next: {A,B} =
+      def next: Pair[A,B] =
         if (!hasNext) throw new NoSuchElementException("next on empty iterator")
-        else { val res = {self.key, self.value}; self = self.next; res }
+        else { val res = Pair(self.key, self.value); self = self.next; res }
     }.toList.reverse.elements
 
   protected def key: A = throw new NoSuchElementException("empty map")

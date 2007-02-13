@@ -28,7 +28,7 @@ object jolib {
 
   class Join {
 
-    private var ruls: List[{Pattern, Rule}] = null
+    private var ruls: List[Pair[Pattern, Rule]] = null
 
     def canMatch(p: Pattern) =
       p forall { s => !s.queue.isEmpty }
@@ -36,13 +36,13 @@ object jolib {
     def values(p: Pattern): List[Any] =
       p map { s => s.queue.dequeue: Any }
 
-    def rules(rs: {Pattern, Rule}*) =
-      ruls = rs.asInstanceOf[List[{Pattern, Rule}]]
+    def rules(rs: Pair[Pattern, Rule]*) =
+      ruls = rs.asInstanceOf[List[Pair[Pattern, Rule]]]
 
     def tryMatch =
-      (ruls find { case {p, _} => canMatch(p) }) match {
+      ruls find { case Pair(p, _) => canMatch(p) } match {
         case None => () => ()
-        case Some{p, r} => {
+        case Some(Pair(p, r)) => {
           val args = values(p)
           () => concurrent.ops.spawn(r(args))
         }

@@ -175,9 +175,9 @@ class BigInt(val bigInteger: BigInteger) extends runtime.BoxedNumber {
 
   /** Returns a pair of two BigInts containing (this / that) and (this % that).
    */
-  def /% (that: BigInt): {BigInt, BigInt} = {
+  def /% (that: BigInt): Pair[BigInt, BigInt] = {
     val dr = this.bigInteger.divideAndRemainder(that.bigInteger)
-    {new BigInt(dr(0)), new BigInt(dr(1))}
+    Pair(new BigInt(dr(0)), new BigInt(dr(1)))
   }
 
   /** Leftshift of BigInt

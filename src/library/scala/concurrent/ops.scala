@@ -44,10 +44,10 @@ object ops {
    *  @param yp ...
    *  @return   ...
    */
-  def par[a, b](xp: => a, yp: => b): {a, b} = {
+  def par[a, b](xp: => a, yp: => b): Pair[a, b] = {
     val y = new SyncVar[b]
     spawn { y set yp }
-    {xp, y.get}
+    Pair(xp, y.get)
   }
 
   /**

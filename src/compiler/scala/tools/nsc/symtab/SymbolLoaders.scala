@@ -174,7 +174,7 @@ abstract class SymbolLoaders {
       }
 
       // do classes first
-      for (val {name, file} <- classes.elements) {
+      for (val Pair(name, file) <- classes.elements) {
         val loader = if (!file.isSourceFile) {
           new ClassfileLoader(file.classFile, file.sourceFile, file.sourcePath)
         } else {
@@ -184,7 +184,7 @@ abstract class SymbolLoaders {
         enterClassAndModule(name, loader)
       }
 
-      for (val {name, file} <- packages.elements)
+      for (val Pair(name, file) <- packages.elements)
         enterPackage(name, newPackageLoader(file))
     }
   }

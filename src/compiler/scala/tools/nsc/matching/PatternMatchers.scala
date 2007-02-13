@@ -1044,7 +1044,7 @@ print()
       //Console.println("sel:"+selector+" last"+lastSelector+" - "+(selector == lastSelector))
         val next = _h.next;
         //res = And(mkNegate(res), toTree(node.or, selector));
-        val {doOptimize, coveredCases, remainingCases} = _h.optimize1()
+        val Triple(doOptimize, coveredCases, remainingCases) = _h.optimize1()
         if(!remainingCases.isEmpty && doCheckExhaustive) {
           carryCovered = carryCovered ++ coveredCases // ??
           if(next != null && next.or.and.isUnguardedBody) {
@@ -1301,7 +1301,7 @@ print()
                 true
               case _ =>
                 if(settings.XprintOuterMatches.value)
-                  cunit.warning(node.pos, "can't be sure statically that these outers are equal:"+{left,right}.toString)
+                  cunit.warning(node.pos, "can't be sure statically that these outers are equal:"+Pair(left,right).toString)
                 false
             }
 

@@ -627,7 +627,7 @@ trait Actor extends OutputChannel[Any] {
   // Assume !this.exiting
   private[actors] def exit(from: Actor, reason: AnyRef) {
     if (trapExit) {
-      this ! {'EXIT, from, reason}
+      this ! Triple('EXIT, from, reason)
     }
     else if (reason != 'normal)
       this.synchronized {

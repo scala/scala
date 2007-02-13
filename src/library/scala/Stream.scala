@@ -13,7 +13,7 @@ package scala
 
 
 import compat.StringBuilder
-import Predef.{NoSuchElementException, UnsupportedOperationException}
+import Predef.{NoSuchElementException, UnsupportedOperationException,Pair}
 
 /**
  * The object <code>Stream</code> provides helper functions
@@ -53,11 +53,11 @@ object Stream {
       }
     }
 
-    def unapply[a](str: Stream[a]): Option[{a,Stream[a]}] =
+    def unapply[a](str: Stream[a]): Option[Pair[a,Stream[a]]] =
       if(str.isEmpty)
         None
       else
-        Some{str.head, str.tail}
+        Some(Pair(str.head, str.tail))
   }
 
   /** A stream containing all elements of a given iterator, in the order they are produced.

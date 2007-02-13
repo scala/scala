@@ -24,13 +24,13 @@ package scala.collection.mutable
  */
 trait ObservableBuffer[A, This <: ObservableBuffer[A, This]] requires This
       extends Buffer[A]
-      with Publisher[Message[{Location, A}]
+      with Publisher[Message[Pair[Location, A]]
       with Undoable, This]
 {
 
   abstract override def +(element: A): Buffer[A] = {
     super.+(element)
-    publish(new Include({End, element}) with Undoable {
+    publish(new Include(Pair(End, element)) with Undoable {
       def undo: Unit = trimEnd(1)
     })
     this
@@ -38,7 +38,7 @@ trait ObservableBuffer[A, This <: ObservableBuffer[A, This]] requires This
 
   abstract override def +:(element: A): Buffer[A] = {
     super.+:(element);
-    publish(new Include({Start, element}) with Undoable {
+    publish(new Include(Pair(Start, element)) with Undoable {
       def undo: Unit = trimStart(1)
     })
     this
@@ -49,7 +49,7 @@ trait ObservableBuffer[A, This <: ObservableBuffer[A, This]] requires This
     var i = n
     val it = iter.elements
     while (it.hasNext) {
-      publish(new Include({Index(i), it.next}) with Undoable {
+      publish(new Include(Pair(Index(i), it.next)) with Undoable {
         def undo: Unit = remove(i);
       })
       i = i + 1
@@ -59,7 +59,7 @@ trait ObservableBuffer[A, This <: ObservableBuffer[A, This]] requires This
   abstract override def update(n: Int, newelement: A): Unit = {
     val oldelement = apply(n)
     super.update(n, newelement)
-    publish(new Update({Index(n), newelement}) with Undoable {
+    publish(new Update(Pair(Index(n), newelement)) with Undoable {
       def undo: Unit = update(n, oldelement)
     })
   }
@@ -67,7 +67,7 @@ trait ObservableBuffer[A, This <: ObservableBuffer[A, This]] requires This
   abstract override def remove(n: Int): A = {
     val oldelement = apply(n)
     super.remove(n)
-    publish(new Remove({Index(n), oldelement}) with Undoable {
+    publish(new Remove(Pair(Index(n), oldelement)) with Undoable {
       def undo: Unit = insert(n, oldelement)
     })
     oldelement

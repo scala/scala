@@ -25,7 +25,7 @@ import Predef._
 [cloneable]
 trait Buffer[A] extends AnyRef
       with Seq[A]
-      with Scriptable[Message[{Location, A}]]
+      with Scriptable[Message[Pair[Location, A]]]
 {
 
   /** Append a single element to this buffer.
@@ -202,20 +202,20 @@ trait Buffer[A] extends AnyRef
    *
    *  @param cmd  the message to send.
    */
-  def <<(cmd: Message[{Location, A}]): Unit = cmd match {
-    case Include({l, elem}) => l match {
+  def <<(cmd: Message[Pair[Location, A]]): Unit = cmd match {
+    case Include(Pair(l, elem)) => l match {
       case Start => prepend(elem)
       case End => append(elem)
       case Index(n) => insert(n, elem)
       case _ => throw new UnsupportedOperationException("message " + cmd + " not understood")
     }
-    case Update({l, elem}) => l match {
+    case Update(Pair(l, elem)) => l match {
       case Start => update(0, elem)
       case End => update(length - 1, elem)
       case Index(n) => update(n, elem)
       case _ => throw new UnsupportedOperationException("message " + cmd + " not understood")
     }
-    case Remove({l, _}) => l match {
+    case Remove(Pair(l, _)) => l match {
       case Start => remove(0)
       case End => remove(length - 1)
       case Index(n) => remove(n)

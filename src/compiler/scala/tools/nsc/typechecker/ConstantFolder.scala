@@ -49,21 +49,21 @@ abstract class ConstantFolder {
                                            // compiler itself crashing
     }
 
-  private def foldUnop(op: Name, x: Constant): Constant = {op, x.tag} match {
-    case {nme.ZNOT, BooleanTag} => Constant(!x.booleanValue)
+  private def foldUnop(op: Name, x: Constant): Constant = Pair(op, x.tag) match {
+    case Pair(nme.ZNOT, BooleanTag) => Constant(!x.booleanValue)
 
-    case {nme.NOT , IntTag    } => Constant(~x.intValue)
-    case {nme.NOT , LongTag   } => Constant(~x.longValue)
+    case Pair(nme.NOT , IntTag    ) => Constant(~x.intValue)
+    case Pair(nme.NOT , LongTag   ) => Constant(~x.longValue)
 
-    case {nme.ADD , IntTag    } => Constant(+x.intValue)
-    case {nme.ADD , LongTag   } => Constant(+x.longValue)
-    case {nme.ADD , FloatTag  } => Constant(+x.floatValue)
-    case {nme.ADD , DoubleTag } => Constant(+x.doubleValue)
+    case Pair(nme.ADD , IntTag    ) => Constant(+x.intValue)
+    case Pair(nme.ADD , LongTag   ) => Constant(+x.longValue)
+    case Pair(nme.ADD , FloatTag  ) => Constant(+x.floatValue)
+    case Pair(nme.ADD , DoubleTag ) => Constant(+x.doubleValue)
 
-    case {nme.SUB , IntTag    } => Constant(-x.intValue)
-    case {nme.SUB , LongTag   } => Constant(-x.longValue)
-    case {nme.SUB , FloatTag  } => Constant(-x.floatValue)
-    case {nme.SUB , DoubleTag } => Constant(-x.doubleValue)
+    case Pair(nme.SUB , IntTag    ) => Constant(-x.intValue)
+    case Pair(nme.SUB , LongTag   ) => Constant(-x.longValue)
+    case Pair(nme.SUB , FloatTag  ) => Constant(-x.floatValue)
+    case Pair(nme.SUB , DoubleTag ) => Constant(-x.doubleValue)
 
     case _ => null
   }

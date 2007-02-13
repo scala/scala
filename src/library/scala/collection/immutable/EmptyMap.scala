@@ -12,6 +12,8 @@
 
 package scala.collection.immutable
 
+import Predef.Pair
+
 /** This class implements empty immutable maps
  *  @author  Martin Oderskty
  *  @version 1.0, 019/01/2007
@@ -23,7 +25,7 @@ class EmptyMap[A, +B] extends Map[A, B] {
 
   def get(key: A): Option[B] = None
 
-  def elements: Iterator[{A, B}] = Iterator.empty
+  def elements: Iterator[Pair[A, B]] = Iterator.empty
 
   def empty[C]: Map[A, C] = new EmptyMap[A, C]
 

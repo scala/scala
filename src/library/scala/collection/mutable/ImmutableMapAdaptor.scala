@@ -45,9 +45,9 @@ extends Map[A, B]
 
   override def values: Iterator[B] = imap.values
 
-  def elements: Iterator[{A, B}] = imap.elements
+  def elements: Iterator[Pair[A, B]] = imap.elements
 
-  override def toList: List[{A, B}] = imap.toList
+  override def toList: List[Pair[A, B]] = imap.toList
 
   def update(key: A, value: B): Unit = { imap = imap.update(key, value) }
 

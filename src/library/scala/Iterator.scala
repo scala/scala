@@ -348,9 +348,9 @@ trait Iterator[+A] {
    *              and <code>b<sub>i</sub></code> are the elements from iterator
    *              <code>that</code>.
    */
-  def zip[B](that: Iterator[B]) = new Iterator[{A, B}] {
+  def zip[B](that: Iterator[B]) = new Iterator[Pair[A, B]] {
     def hasNext = Iterator.this.hasNext && that.hasNext
-    def next = {Iterator.this.next, that.next}
+    def next = Pair(Iterator.this.next, that.next)
   }
 
   /** Return an iterator that pairs each element of this iterator
@@ -361,11 +361,11 @@ trait Iterator[+A] {
    *               {a<sub>1</sub>,1}...</code> where <code>a<sub>i</sub></code>
    *               are the elements from this iterator.
    */
-  def zipWithIndex = new Iterator[{A, int}] {
+  def zipWithIndex = new Iterator[Pair[A, int]] {
     var idx = 0
     def hasNext = Iterator.this.hasNext
     def next = {
-      val ret = {Iterator.this.next, idx}
+      val ret = Pair(Iterator.this.next, idx)
       idx = idx + 1
       ret
     }
@@ -541,7 +541,7 @@ trait Iterator[+A] {
    *
    *  @return a pair of iterators
    */
-  def duplicate: {Iterator[A], Iterator[A]} = {
+  def duplicate: Pair[Iterator[A], Iterator[A]] = {
     var xs: List[A] = Nil
     var ahead: Iterator[A] = null
     class Partner extends Iterator[A] {
@@ -571,7 +571,7 @@ trait Iterator[+A] {
       }
     }
     ahead = new Partner
-    {ahead, new Partner}
+    Pair(ahead, new Partner)
   }
 
   /** Fills the given array <code>xs</code> with the elements of

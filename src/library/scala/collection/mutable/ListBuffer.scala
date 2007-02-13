@@ -268,7 +268,7 @@ final class ListBuffer[A] extends Buffer[A] {
     case that: ListBuffer[_] =>
       (this.length == that.length &&
        elements.zip(that.elements).forall {
-         case {thiselem, thatelem} => thiselem == thatelem
+         case Pair(thiselem, thatelem) => thiselem == thatelem
        })
     case _ =>
       false

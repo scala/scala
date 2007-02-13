@@ -575,7 +575,7 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
    */
   def xScalaPatterns: List[Tree] = {
     sync;
-    val b = p.patterns(true, false);
+    val b = p.patterns(true);
     if (/*s.*/token != RBRACE) {
       reportSyntaxError(" expected end of Scala patterns");
     }

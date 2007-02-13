@@ -157,13 +157,13 @@ object pilib {
    *  @param gs2 ...
    *  @return    ...
    */
-  private def matches(gs1: List[UGP], gs2: List[UGP]): Option[{() => unit, () => Any, () => Any}] =
-    {gs1, gs2} match {
-      case {Nil, _} => None
-      case {_, Nil} => None
-      case {UGP(a1, d1, v1, c1) :: rest1, UGP(a2, d2, v2, c2) :: rest2} =>
+  private def matches(gs1: List[UGP], gs2: List[UGP]): Option[Triple[() => unit, () => Any, () => Any]] =
+    Pair(gs1, gs2) match {
+      case Pair(Nil, _) => None
+      case Pair(_, Nil) => None
+      case Pair(UGP(a1, d1, v1, c1) :: rest1, UGP(a2, d2, v2, c2) :: rest2) =>
         if (a1 == a2 && d1 == !d2)
-          Some{(() => if (d1) a1.log(v2) else a1.log(v1)), (() => c1(v2)), (() => c2(v1))}
+          Some(Triple((() => if (d1) a1.log(v2) else a1.log(v1)), (() => c1(v2)), (() => c2(v1))))
         else matches(gs1, rest2) match {
           case None => matches(rest1, gs2)
           case Some(t) => Some(t)
@@ -183,7 +183,7 @@ object pilib {
       case Nil => ss ::: List(s1)
       case s2 :: rest => matches(s1.gs, s2.gs) match {
         case None => s2 :: compare(s1, rest)
-        case Some{log, c1, c2} =>
+        case Some(Triple(log, c1, c2)) =>
           log()
           s1.set(c1)
           s2.set(c2)

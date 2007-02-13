@@ -102,7 +102,7 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
   settings.outdir.value = classfilePath.getPath
 
   /** the compiler to compile expressions with */
-  val compiler = new Global(settings, reporter)
+  val compiler: Global = new Global(settings, reporter)
 
   /** the compiler's classpath, as URL's */
   val compilerClasspath: List[URL] =

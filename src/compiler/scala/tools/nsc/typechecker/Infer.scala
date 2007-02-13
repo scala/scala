@@ -50,6 +50,14 @@ trait Infer requires Analyzer {
     } else formals1
   }
 
+  def actualTypes(actuals: List[Type], nformals: int): List[Type] =
+    if (nformals == 1 && actuals.length != 1)
+      List(if (actuals.length == 0) UnitClass.tpe else tupleType(actuals))
+    else actuals
+
+  def actualArgs(pos: PositionType, actuals: List[Tree], nformals: int): List[Tree] =
+    if (nformals == 1 && actuals.length != 1) List(gen.mkTuple(actuals) setPos pos) else actuals
+
   /** A fresh type varable with given type parameter as origin.
    *
    *  @param tparam ...
@@ -134,7 +142,7 @@ trait Infer requires Analyzer {
         val bound: Type = if (up) tparam.info.bounds.hi else tparam.info.bounds.lo
         //Console.println("solveOne0 "+tvar+" "+config+" "+bound);//DEBUG
         var cyclic = false
-        for (val {tvar2, {tparam2, variance2}} <- config) {
+        for (val Pair(tvar2, Pair(tparam2, variance2)) <- config) {
           if (tparam2 != tparam &&
               ((bound contains tparam2) ||
                up && (tparam2.info.bounds.lo =:= tparam.tpe) ||
@@ -170,7 +178,7 @@ trait Infer requires Analyzer {
         assertNonCyclic(tvar)//debug
       }
     }
-    for (val {tvar, {tparam, variance}} <- config)
+    for (val Pair(tvar, Pair(tparam, variance)) <- config)
       solveOne(tvar, tparam, variance)
     tvars map instantiate
   }
@@ -227,11 +235,11 @@ trait Infer requires Analyzer {
         "expression of type " + tree.tpe
       else if (tree.symbol.hasFlag(OVERLOADED))
         "overloaded method " + tree.symbol + " with alternatives " + tree.tpe
-      else (
+      else
         tree.symbol.toString() +
         (if (tree.tpe.paramSectionCount > 0) ": " else " of type ") +
-        tree.tpe
-      )
+        tree.tpe +
+        (if (tree.symbol.name == nme.apply) tree.symbol.locationString else "")
 
     def applyErrorMsg(tree: Tree, msg: String, argtpes: List[Type], pt: Type) = (
       treeSymTypeMsg(tree) + msg + argtpes.mkString("(", ",", ")") +
@@ -295,13 +303,13 @@ trait Infer requires Analyzer {
           explainName(sym1)
           explainName(sym2)
           if (sym1.owner == sym2.owner) sym2.name = newTypeName("(some other)"+sym2.name)
-          {sym1, sym2, name}
+          Triple(sym1, sym2, name)
         }
       }
 
       val result = op
 
-      for (val {sym1, sym2, name} <- patches) {
+      for (val Triple(sym1, sym2, name) <- patches) {
         sym1.name = name
         sym2.name = name
       }
@@ -519,10 +527,11 @@ trait Infer requires Analyzer {
      *  @return            ...
      */
     def isApplicable(undetparams: List[Symbol], ftpe: Type,
-                     argtpes: List[Type], pt: Type): boolean =
+                     argtpes0: List[Type], pt: Type): boolean =
       ftpe match {
         case MethodType(formals0, restpe) =>
-          val formals = formalTypes(formals0, argtpes.length)
+          val formals = formalTypes(formals0, argtpes0.length)
+          val argtpes = actualTypes(argtpes0, formals.length)
           if (undetparams.isEmpty) {
             (formals.length == argtpes.length &&
              isCompatible(argtpes, formals) &&
@@ -539,7 +548,7 @@ trait Infer requires Analyzer {
           }
         case PolyType(tparams, restpe) =>
           val tparams1 = cloneSymbols(tparams)
-          isApplicable(tparams1 ::: undetparams, restpe.substSym(tparams, tparams1), argtpes, pt)
+          isApplicable(tparams1 ::: undetparams, restpe.substSym(tparams, tparams1), argtpes0, pt)
         case ErrorType =>
           true
         case _ =>
@@ -650,13 +659,12 @@ trait Infer requires Analyzer {
      */
     def inferMethodInstance(fn: Tree, undetparams: List[Symbol],
                             args: List[Tree], pt: Type): List[Symbol] = fn.tpe match {
-      case MethodType(formals, restpe) =>
+      case MethodType(formals0, restpe) =>
         try {
-          val argtpes = args map (.tpe.deconst)
+          val formals = formalTypes(formals0, args.length)
+          val argtpes = actualTypes(args map (.tpe.deconst), formals.length)
           val uninstantiated = new ListBuffer[Symbol]
-          val targs = methTypeArgs(
-            undetparams, formalTypes(formals, argtpes.length),
-            restpe, argtpes, pt, uninstantiated)
+          val targs = methTypeArgs(undetparams, formals, restpe, argtpes, pt, uninstantiated)
           checkBounds(fn.pos, NoPrefix, NoSymbol, undetparams, targs, "inferred ")
           //Console.println("UNAPPLY subst type "+undetparams+" to "+targs+" in "+fn+" ( "+args+ ")")
           val treeSubst = new TreeTypeSubstituter(undetparams, targs)
@@ -685,8 +693,8 @@ trait Infer requires Analyzer {
      *        any correspondiong non-variant type arguments of bt1 and bt2 are the same
      */
     def isPopulated(tp1: Type, tp2: Type): boolean = {
-      def isConsistent(tp1: Type, tp2: Type): boolean = {tp1, tp2} match {
-        case {TypeRef(pre1, sym1, args1), TypeRef(pre2, sym2, args2)} =>
+      def isConsistent(tp1: Type, tp2: Type): boolean = Pair(tp1, tp2) match {
+        case Pair(TypeRef(pre1, sym1, args1), TypeRef(pre2, sym2, args2)) =>
           assert(sym1 == sym2)
           pre1 =:= pre2 &&
           !(List.map3(args1, args2, sym1.typeParams) {
@@ -773,9 +781,9 @@ trait Infer requires Analyzer {
         if (settings.debug.value) log("new alias of " + tparam + " = " + tparam.info)
       } else {
         val instType = toOrigin(tvar.constr.inst)
-        val {loBounds, hiBounds} =
-          if (instType != NoType && isFullyDefined(instType)) {List(instType), List(instType)}
-          else {tvar.constr.lobounds, tvar.constr.hibounds}
+        val Pair(loBounds, hiBounds) =
+          if (instType != NoType && isFullyDefined(instType)) Pair(List(instType), List(instType))
+          else Pair(tvar.constr.lobounds, tvar.constr.hibounds)
         val lo = lub(tparam.info.bounds.lo :: loBounds map toOrigin)
         val hi = glb(tparam.info.bounds.hi :: hiBounds map toOrigin)
         if (!(lo <:< hi)) {

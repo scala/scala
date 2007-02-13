@@ -889,7 +889,7 @@ abstract class GenMSIL extends SubComponent {
 	      def leavingBlocks(blocks: List[BasicBlock]): List[Pair[BasicBlock, List[BasicBlock]]] = {
 		for {val b <- blocks
 		     val t = outsideTargets(b, blocks)
-		     t.length != 0 } yield {b, t}
+		     t.length != 0 } yield Pair(b, t)
 	      }
 
 	      def replaceOutJumps(blocks: List[BasicBlock], leaving: List[Pair[BasicBlock, List[BasicBlock]]], exh: ExceptionHandler):Pair[List[BasicBlock], Option[BasicBlock]] = {
@@ -926,12 +926,12 @@ abstract class GenMSIL extends SubComponent {
 		  val target = p._2(0) // the elemets of p._2 are all the same, checked before
 		  replaceJump(lBlock, target, jumpOutBlock)
 		})
-		{blocks ::: List(jumpOutBlock), Some(jumpOutBlock)}
+		Pair(blocks ::: List(jumpOutBlock), Some(jumpOutBlock))
 	      }
 
 	      val leaving = leavingBlocks(blocks)
 	      if (leaving.length == 0)
-		{blocks, None}
+		Pair(blocks, None)
 	      else if (leaving.length == 1) {
 		val outside = leaving(0)._2
 		assert(outside.forall(b => b == outside(0)), "exception-block leaving to multiple targets")
@@ -940,7 +940,7 @@ abstract class GenMSIL extends SubComponent {
 		else
 		  assert(firstBlockAfter(exh) == outside(0), "try/catch leaving to multiple targets: " + firstBlockAfter(exh) + ", new: " + outside(0))
 		val last = leaving(0)._1
-		{blocks.diff(List(last)) ::: List(last), None}
+		Pair(blocks.diff(List(last)) ::: List(last), None)
 	      } else {
 		val outside = leaving.flatMap(p => p._2)
 		assert(outside.forall(b => b == outside(0)), "exception-block leaving to multiple targets")
@@ -968,7 +968,7 @@ abstract class GenMSIL extends SubComponent {
 	    var singleAffectedHandler: ExceptionHandler = affectedHandlers(0) // List[ExceptionHandler] = Nil
 	    var exceptionBlock: Option[ExceptionBlock] = None
 	    affectedHandlers.foreach(h1 => {
-	      val {adaptedBlocks, newBlock} = adaptBlocks(blocksToPut.intersect(h1.blocks), singleAffectedHandler)
+	      val Pair(adaptedBlocks, newBlock) = adaptBlocks(blocksToPut.intersect(h1.blocks), singleAffectedHandler)
 	      newBlock match {
 		case Some(block) =>
 		  blocksToPut = blocksToPut ::: List(block)
@@ -986,7 +986,7 @@ abstract class GenMSIL extends SubComponent {
 		  val excBlock = currentBlock.addExceptionBlock(singleAffectedHandler)
 		  exceptionBlock = Some(excBlock)
 
-		  val {tryBlocks, newBlock} = adaptBlocks(blocksToPut.intersect(singleAffectedHandler.covered), singleAffectedHandler)
+		  val Pair(tryBlocks, newBlock) = adaptBlocks(blocksToPut.intersect(singleAffectedHandler.covered), singleAffectedHandler)
 
 		  newBlock match {
 		    case Some(block) =>
@@ -998,7 +998,7 @@ abstract class GenMSIL extends SubComponent {
 		  addBlocks(tryBlocks)
 
 		  if (singleAffectedHandler.finalizer != null && singleAffectedHandler.finalizer != NoFinalizer) {
-		    val {blocks0, newBlock} = adaptBlocks(blocksToPut.intersect(singleAffectedHandler.finalizer.blocks), singleAffectedHandler)
+		    val Pair(blocks0, newBlock) = adaptBlocks(blocksToPut.intersect(singleAffectedHandler.finalizer.blocks), singleAffectedHandler)
 		    newBlock match {
 		      case Some(block) =>
 			blocksToPut = blocksToPut ::: List(block)
@@ -1379,13 +1379,13 @@ abstract class GenMSIL extends SubComponent {
               }
 
 	      // method: implicit view(FunctionX[PType0, PType1, ...,PTypeN, ResType]):DelegateType
-	      val {isDelegateView, paramType, resType} = atPhase(currentRun.typerPhase){
+	      val Triple(isDelegateView, paramType, resType) = atPhase(currentRun.typerPhase){
 		msym.tpe match {
 		  case MethodType(parameterTypes, resultType)
 		  if (parameterTypes.length == 1 && msym.name == nme.view_) =>
 		    val isDel = definitions.isCorrespondingDelegate(resultType, parameterTypes(0))
-		    {isDel, parameterTypes(0), resultType}
-		  case _ => {false, null, null}
+		    Triple(isDel, parameterTypes(0), resultType)
+		  case _ => Triple(false, null, null)
 		}
 	      }
 	      if (doEmit && isDelegateView) {
@@ -2206,8 +2206,8 @@ abstract class GenMSIL extends SubComponent {
 
 
       // create the static caller method and the delegate object
-      val {paramTypes, returnType} = delegateType.member(nme.apply).tpe match {
-	case MethodType(delParams, delReturn) => {delParams, delReturn}
+      val Pair(paramTypes, returnType) = delegateType.member(nme.apply).tpe match {
+	case MethodType(delParams, delReturn) => Pair(delParams, delReturn)
 	case _ => abort("not a delegate type: "  + delegateType)
       }
       val caller: MethodBuilder = delegateCallers.DefineMethod(

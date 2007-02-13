@@ -229,7 +229,7 @@ trait Members requires ICodes {
     var end: Int = _
 
     /** PC-based ranges for this local variable's visibility range */
-    var ranges: List[{Int, Int}] = Nil
+    var ranges: List[Pair[Int, Int]] = Nil
 
     override def equals(other: Any): Boolean = (
       other.isInstanceOf[Local] &&

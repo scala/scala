@@ -164,8 +164,9 @@ abstract class TreeGen {
     mkAttributedRef(definitions.NilModule)
 
   /** Builds a pair */
-  def mkNewPair(left: Tree, right: Tree) =
-    New(Apply(mkAttributedRef(definitions.TupleClass(2)), List(left, right)))
+  def mkTuple(elems: List[Tree]): Tree =
+    if (elems.isEmpty) Literal(())
+    else New(TypeTree(definitions.TupleClass(elems.length).tpe), List(elems))
 
   def mkCached(cvar: Symbol, expr: Tree): Tree = {
     val cvarRef = if (cvar.owner.isClass) Select(This(cvar.owner), cvar) else Ident(cvar)

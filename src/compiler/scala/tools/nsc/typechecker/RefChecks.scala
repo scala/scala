@@ -100,12 +100,12 @@ abstract class RefChecks extends InfoTransform {
                 else "")))
       }
 
-      def overridesType(tp1: Type, tp2: Type): boolean = {tp1, tp2} match {
-        case {MethodType(List(), rtp1), PolyType(List(), rtp2)} =>
+      def overridesType(tp1: Type, tp2: Type): boolean = Pair(tp1, tp2) match {
+        case Pair(MethodType(List(), rtp1), PolyType(List(), rtp2)) =>
           rtp1 <:< rtp2
-        case {PolyType(List(), rtp1), MethodType(List(), rtp2)} =>
+        case Pair(PolyType(List(), rtp1), MethodType(List(), rtp2)) =>
           rtp1 <:< rtp2
-        case {TypeRef(_, sym, _),  _} if (sym.isModuleClass) =>
+        case Pair(TypeRef(_, sym, _),  _) if (sym.isModuleClass) =>
           overridesType(PolyType(List(), tp1), tp2)
         case _ =>
           tp1 <:< tp2
@@ -375,7 +375,7 @@ abstract class RefChecks extends InfoTransform {
 
       def validateVarianceArgs(tps: List[Type], variance: int, tparams: List[Symbol]): unit =
 	(tps zip tparams) foreach {
-	  case {tp, tparam} => validateVariance(tp, variance * tparam.variance)
+	  case Pair(tp, tparam) => validateVariance(tp, variance * tparam.variance)
 	}
 
       validateVariance(all, variance)

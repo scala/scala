@@ -288,10 +288,10 @@ abstract class UnPickler {
       if (tag == ATTRIBUTE) {
         val attrType = readTypeRef()
         val args = new ListBuffer[Constant]
-        val assocs = new ListBuffer[{Name, Constant}]
+        val assocs = new ListBuffer[Pair[Name, Constant]]
         while (readIndex != end) {
           val argref = readNat()
-          if (isNameEntry(argref)) assocs += {at(argref, readName), readConstantRef()}
+          if (isNameEntry(argref)) assocs += Pair(at(argref, readName), readConstantRef())
           else args += at(argref, readConstant)
         }
         val attr = AttrInfo(attrType, args.toList, assocs.toList)

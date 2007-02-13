@@ -58,7 +58,7 @@ class MailBox extends AnyRef with ListQueueCreator {
   private def scanSentMsgs[a](receiver: Receiver[a]): unit = synchronized {
     messageQueue.extractFirst(sent, msg => receiver.isDefinedAt(msg)) match {
       case None => receivers = receiverQueue.append(receivers, receiver)
-      case Some{msg, withoutMsg} => {
+      case Some(Pair(msg, withoutMsg)) => {
         sent = withoutMsg
         receiver.msg = msg
       }
@@ -73,7 +73,7 @@ class MailBox extends AnyRef with ListQueueCreator {
   def send(msg: Message): unit = synchronized {
     receiverQueue.extractFirst(receivers, r => r.isDefinedAt(msg)) match {
       case None => sent = messageQueue.append(sent, msg)
-      case Some{receiver, withoutReceiver} => {
+      case Some(Pair(receiver, withoutReceiver)) => {
         receivers = withoutReceiver
         receiver.msg = msg
         receiver synchronized { receiver.notify() }
@@ -116,7 +116,7 @@ trait QueueModule[a] {
   /** Append an element to a queue. */
   def append(l: t, x: a): t
   /** Extract an element satisfying a predicate from a queue. */
-  def extractFirst(l: t, p: a => boolean): Option[{a, t}]
+  def extractFirst(l: t, p: a => boolean): Option[Pair[a, t]]
 }
 
 /** Inefficient but simple queue module creator. */
@@ -125,16 +125,16 @@ trait ListQueueCreator {
     type t = List[a]
     def make: t = Nil
     def append(l: t, x: a): t = l ::: x :: Nil
-    def extractFirst(l: t, p: a => boolean): Option[{a, t}] =
+    def extractFirst(l: t, p: a => boolean): Option[Pair[a, t]] =
       l match {
         case Nil => None
         case head :: tail =>
           if (p(head))
-            Some{head, tail}
+            Some(Pair(head, tail))
           else
             extractFirst(tail, p) match {
               case None => None
-              case Some{x, without_x} => Some{x, head :: without_x}
+              case Some(Pair(x, without_x)) => Some(Pair(x, head :: without_x))
             }
       }
   }
@@ -144,17 +144,17 @@ trait ListQueueCreator {
 trait LinkedListQueueCreator {
   import scala.collection.mutable.LinkedList
   def queueCreate[a >: Null <: AnyRef]: QueueModule[a] = new QueueModule[a] {
-    type t = {LinkedList[a], LinkedList[a]} // fst = the list, snd = last elem
+    type t = Pair[LinkedList[a], LinkedList[a]] // fst = the list, snd = last elem
     def make: t = {
       val l = new LinkedList[a](null, null)
-      {l, l}
+      Pair(l, l)
     }
     def append(l: t, x: a): t = {
       val atTail = new LinkedList(x, null)
       l._2 append atTail;
-      {l._1, atTail}
+      Pair(l._1, atTail)
     }
-    def extractFirst(l: t, p: a => boolean): Option[{a, t}] = {
+    def extractFirst(l: t, p: a => boolean): Option[Pair[a, t]] = {
       var xs = l._1
       var xs1 = xs.next
       while ((xs1 ne null) && !p(xs1.elem)) {
@@ -166,7 +166,7 @@ trait LinkedListQueueCreator {
         if (xs.next eq null)
           Some(Pair(xs1.elem, Pair(l._1, xs)))
         else
-          Some{xs1.elem, l}
+          Some(Pair(xs1.elem, l))
       }
       else
         None

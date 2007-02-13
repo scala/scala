@@ -19,7 +19,7 @@ abstract class RedBlack[A] {
     def lookup(x: A): Tree[B]
     def update[B1 >: B](k: A, v: B1): Tree[B1] = blacken(upd(k, v))
     def delete(k: A): Tree[B] = del(k)
-    def elements: Iterator[{A, B}]
+    def elements: Iterator[Pair[A, B]]
     def upd[B1 >: B](k: A, v: B1): Tree[B1]
     def del(k: A): Tree[B]
     def smallest: NonEmpty[B]
@@ -67,8 +67,8 @@ abstract class RedBlack[A] {
       }
     }
     def smallest: NonEmpty[B] = if (left.isEmpty) this else left.smallest
-    def elements: Iterator[{A, B}] =
-      left.elements append Iterator.single({key, value}) append right.elements
+    def elements: Iterator[Pair[A, B]] =
+      left.elements append Iterator.single(Pair(key, value)) append right.elements
   }
   [serializable]
   case object Empty extends Tree[Nothing] {
@@ -78,7 +78,7 @@ abstract class RedBlack[A] {
     def upd[B](k: A, v: B): Tree[B] = RedTree(k, v, Empty, Empty)
     def del(k: A): Tree[Nothing] = this
     def smallest: NonEmpty[Nothing] = throw new NoSuchElementException("empty map")
-    def elements: Iterator[{A, Nothing}] = Iterator.empty
+    def elements: Iterator[Pair[A, Nothing]] = Iterator.empty
   }
   [serializable]
   case class RedTree[+B](override val key: A,
