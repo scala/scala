@@ -825,7 +825,7 @@ trait Symbols requires SymbolTable {
      *  @pre case class is a member of some other class or package
      */
     final def caseFactory: Symbol =
-      owner.info.decl(name.toTermName).suchThat(.isCaseFactory)
+      initialize.owner.info.decl(name.toTermName).suchThat(.isCaseFactory)
 
     /** If this symbol is a skolem, its corresponding type parameter, otherwise this */
     def deSkolemize: Symbol = this

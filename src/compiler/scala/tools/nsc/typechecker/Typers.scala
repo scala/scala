@@ -545,13 +545,9 @@ trait Typers requires Analyzer {
         } else if (!meth.isConstructor && mt.paramTypes.isEmpty) { // (4.3)
           adapt(typed(Apply(tree, List()) setPos tree.pos), mode, pt)
         } else if (context.implicitsEnabled) {
-          if (settings.migrate.value && !meth.isConstructor &&
-              isCompatible(tparamsToWildcards(mt, context.undetparams), pt))
-            errorTree(tree, migrateMsg + " method can be converted to function only if an expected function type is given");
-          else
-            errorTree(tree, "missing arguments for "+meth+meth.locationString+
-                      (if (meth.isConstructor) ""
-                       else ";\nprefix this method with `&' if you want to treat it as a partially applied function"))
+          errorTree(tree, "missing arguments for "+meth+meth.locationString+
+                    (if (meth.isConstructor) ""
+                     else ";\nprefix this method with `&' if you want to treat it as a partially applied function"))
         } else {
           setError(tree)
         }
@@ -1382,8 +1378,14 @@ trait Typers requires Analyzer {
         case MethodType(formals0, restpe) =>
           val formals = formalTypes(formals0, args.length)
           var args1 = actualArgs(tree.pos, args, formals.length)
-          if (formals.length != args1.length) {
-            Console.println(formals+" "+args1);//DEBUG
+          if (args1.length != args.length) {
+            try {
+              silentTypedApply(tree, fun, args1, mode, pt)
+            } catch {
+              case ex: TypeError =>
+                errorTree(tree, "wrong number of arguments for "+treeSymTypeMsg(fun))
+            }
+          } else if (formals.length != args1.length) {
             errorTree(tree, "wrong number of arguments for "+treeSymTypeMsg(fun))
           } else {
             val tparams = context.undetparams
@@ -1537,6 +1539,18 @@ trait Typers requires Analyzer {
       }
     }
 
+    def silentTypedApply(tree: Tree, fun: Tree, args: List[Tree], mode: int, pt: Type): Tree =
+      if (context.reportGeneralErrors) {
+        val context1 = context.makeSilent(context.reportAmbiguousErrors)
+        context1.undetparams = context.undetparams
+        val typer1 = newTyper(context1)
+        val result = typer1.typedApply(tree, fun, args, mode, pt)
+        context.undetparams = context1.undetparams
+        result
+      } else {
+        typedApply(tree, fun, args, mode, pt)
+      }
+
     def typedAnnotation(constr: Tree, elements: List[Tree]): AttrInfo = {
       var attrError: Boolean = false;
       def error(pos: PositionType, msg: String): Null = {
@@ -1643,17 +1657,7 @@ trait Typers requires Analyzer {
        *  @return     ...
        */
       def tryTypedApply(fun: Tree, args: List[Tree]): Tree = try {
-        if (context.reportGeneralErrors) {
-          val context1 = context.makeSilent(context.reportAmbiguousErrors)
-          context1.undetparams = context.undetparams
-          val typer1 = newTyper(context1)
-          val result =
-            typer1.typedApply(tree, fun, args, mode, pt)
-          context.undetparams = context1.undetparams
-          result
-        } else {
-          typedApply(tree, fun, args, mode, pt)
-        }
+        silentTypedApply(tree, fun, args, mode, pt)
       } catch {
         case ex: CyclicReference =>
           throw ex

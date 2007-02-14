@@ -163,10 +163,10 @@ abstract class TreeGen {
   def mkNil: Tree =
     mkAttributedRef(definitions.NilModule)
 
-  /** Builds a pair */
+  /** Builds a tuple */
   def mkTuple(elems: List[Tree]): Tree =
     if (elems.isEmpty) Literal(())
-    else New(TypeTree(definitions.TupleClass(elems.length).tpe), List(elems))
+    else Apply(mkAttributedRef(definitions.TupleClass(elems.length).caseFactory), elems)
 
   def mkCached(cvar: Symbol, expr: Tree): Tree = {
     val cvarRef = if (cvar.owner.isClass) Select(This(cvar.owner), cvar) else Ident(cvar)

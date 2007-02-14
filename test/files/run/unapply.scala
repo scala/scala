@@ -34,7 +34,7 @@ object Foo extends Assert {
     case _ => None
   }
   def doMatch1(b:Bar) = b match {
-      case Foo(s:Int, n:String) => {s,n}
+      case Foo(s:Int, n:String) => (s,n)
   }
   def doMatch2(b:Bar) = b match {
       case Fii() => null
@@ -50,7 +50,7 @@ object Foo extends Assert {
   }
   def run {
     val b = new Bar
-    assertEquals(doMatch1(b),{50,"medium"})
+    assertEquals(doMatch1(b),(50,"medium"))
     assertEquals(doMatch2(b),null)
     assertEquals(doMatch3(b),"medium")
     assertEquals(doMatch4(b),"medium")
@@ -73,16 +73,16 @@ object Mas extends Assert {
   def run {
     val b = new Baz
     assertEquals(b match {
-      case Gaz(s:Int, n:String) => {s,n}
-    }, {60,"too large"})
+      case Gaz(s:Int, n:String) => (s,n)
+    }, (60,"too large"))
   }
 }
 
 object LisSeqArr extends Assert {
   def run {
-    assertEquals((List(1,2,3): Any) match { case   List(x,y,_*) => {x,y}}, {1,2})
-    assertEquals((List(1,2,3): Any) match { case    Seq(x,y,_*) => {x,y}}, {1,2})
-    assertEquals((Array(1,2,3): Any) match { case   Seq(x,y,_*) => {x,y}}, {1,2})
+    assertEquals((List(1,2,3): Any) match { case   List(x,y,_*) => (x,y)}, (1,2))
+    assertEquals((List(1,2,3): Any) match { case    Seq(x,y,_*) => (x,y)}, (1,2))
+    assertEquals((Array(1,2,3): Any) match { case   Seq(x,y,_*) => (x,y)}, (1,2))
     //assertEquals((Array(1,2,3): Any) match { case Array(x,y,_*) => {x,y}}, {1,2})
   }
 }

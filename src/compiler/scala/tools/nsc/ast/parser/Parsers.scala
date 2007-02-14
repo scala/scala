@@ -801,7 +801,7 @@ trait Parsers requires SyntaxAnalyzer {
      *               | throw Expr
      *               | return [Expr]
      *               | [SimpleExpr `.'] Id `=' Expr
-     *               | SimpleExpr ArgumentExprs `=' Expr
+     *               | SimpleExpr1 ArgumentExprs `=' Expr
      *               | `.' SimpleExpr
      *               | PostfixExpr [`:' (CompoundType | `_' `*')]
      *               | PostfixExpr match [`!'] `{' CaseClauses `}'
@@ -1006,21 +1006,20 @@ trait Parsers requires SyntaxAnalyzer {
       }
 
     /* SimpleExpr    ::= new SimpleType {`(' [Exprs] `)'} {`with' SimpleType} [TemplateBody]
+     *                |  BlockExpr
      *                |  SimpleExpr1
      * SimpleExpr1   ::= literal
      *                | xLiteral
      *                | Path
      *                | StableId `.' class
      *                | `(' [Expr] `)'
-     *                | BlockExpr
-     *                | new Template
      *                | SimpleExpr `.' Id
      *                | SimpleExpr TypeArgs
      *                | SimpleExpr1 ArgumentExprs
      */
     def simpleExpr(): Tree = {
       var t: Tree = null
-      var isNew = false
+      var canApply = true
       in.token match {
         case CHARLIT | INTLIT | LONGLIT | FLOATLIT | DOUBLELIT | STRINGLIT |
              SYMBOLLIT | TRUE | FALSE | NULL =>
@@ -1036,6 +1035,7 @@ trait Parsers requires SyntaxAnalyzer {
           t = Parens(ts)
         case LBRACE =>
           t = blockExpr()
+          canApply = false
         case NEW =>
           t = atPos(in.skipToken()) {
             val parents = new ListBuffer[Tree] + simpleType(false)
@@ -1050,7 +1050,7 @@ trait Parsers requires SyntaxAnalyzer {
             val stats = if (in.token == LBRACE) templateBody() else List()
             makeNew(parents.toList, stats, argss.toList)
           }
-          isNew = true
+          canApply = false
         case _ =>
           if (settings.migrate.value) {
             if (in.token == MATCH)
@@ -1061,21 +1061,21 @@ trait Parsers requires SyntaxAnalyzer {
           syntaxErrorOrIncomplete("illegal start of simple expression", true)
           t = errorTermTree
       }
-      simpleExprRest(t, isNew)
+      simpleExprRest(t, canApply)
     }
 
-    def simpleExprRest(t: Tree, isNew: boolean): Tree = in.token match {
+    def simpleExprRest(t: Tree, canApply: boolean): Tree = in.token match {
       case DOT =>
-        simpleExprRest(atPos(in.skipToken()) { selector(stripParens(t)) }, false)
+        simpleExprRest(atPos(in.skipToken()) { selector(stripParens(t)) }, true)
       case LBRACKET =>
         t match {
           case Ident(_) | Select(_, _) =>
-            simpleExprRest(atPos(in.currentPos) { TypeApply(t, typeArgs(false)) }, false)
+            simpleExprRest(atPos(in.currentPos) { TypeApply(t, typeArgs(false)) }, true)
           case _ =>
             t
         }
-      case LPAREN | LBRACE if (!isNew) =>
-        simpleExprRest(atPos(in.currentPos) { Apply(stripParens(t), argumentExprs()) }, false)
+      case LPAREN | LBRACE if (canApply) =>
+        simpleExprRest(atPos(in.currentPos) { Apply(stripParens(t), argumentExprs()) }, true)
       case _ =>
         t
     }

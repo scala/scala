@@ -99,7 +99,7 @@ object Test {
 
   // these are exhaustive matches
   //   should not generate any warnings
-  def f[A](z:{Option[A],Option[A]}) = z match {
+  def f[A](z:(Option[A],Option[A])) = z match {
     case Pair(None,Some(x)) => 1
     case Pair(Some(x),None ) => 2
     case Pair(Some(x),Some(y)) => 3
@@ -118,7 +118,7 @@ object Test {
     case _ => true
   }
 
-  def h[A](x:{Option[A],Option[A]}) = x match {
+  def h[A](x: (Option[A],Option[A])) = x match {
     case Pair(None,_:Some[_]) => 1
     case Pair(_:Some[_],None ) => 2
     case Pair(_:Some[_],_:Some[_]) => 3

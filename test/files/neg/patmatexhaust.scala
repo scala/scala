@@ -20,10 +20,10 @@ class TestSealedExhaustive { // compile only
     def ma33(x:Kult) = x match { // exhaustive
       case Kult(_) => // exhaustive
     }
-    def ma3(x:Mult) = {x,x} match { // not exhaustive
-      case Pair(Kult(_), Qult())    => // Kult missing
+    def ma3(x:Mult) = (x,x) match { // not exhaustive
+      case (Kult(_), Qult())    => // Kult missing
       //case Pair(Kult(_), Kult(_))    =>
-      case Pair(Qult(), Kult(_))    => // Qult missing
+      case (Qult(), Kult(_))    => // Qult missing
       //case Pair(Qult(), Qult())    =>
     }
 

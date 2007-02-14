@@ -56,7 +56,7 @@ trait Infer requires Analyzer {
     else actuals
 
   def actualArgs(pos: PositionType, actuals: List[Tree], nformals: int): List[Tree] =
-    if (nformals == 1 && actuals.length != 1) List(gen.mkTuple(actuals) setPos pos) else actuals
+    if (nformals == 1 && actuals.length != 1) List(atPos(pos)(gen.mkTuple(actuals))) else actuals
 
   /** A fresh type varable with given type parameter as origin.
    *
