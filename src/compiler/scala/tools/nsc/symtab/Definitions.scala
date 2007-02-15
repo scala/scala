@@ -521,6 +521,7 @@ trait Definitions requires SymbolTable {
 
       // init scala.Boolean
       newParameterlessMethod(BooleanClass, nme.ZNOT, booltype)
+      newParameterlessMethod(BooleanClass, nme.UNARY_!, booltype)
       newMethod(BooleanClass, nme.EQ,   boolparam, booltype)
       newMethod(BooleanClass, nme.NE,   boolparam, booltype)
       newMethod(BooleanClass, nme.ZOR,  boolparam, booltype)
@@ -586,8 +587,13 @@ trait Definitions requires SymbolTable {
         // unary operations
         newParameterlessMethod(clazz, nme.ADD, restype)
         newParameterlessMethod(clazz, nme.SUB, restype)
-        if (isCardinal)
+        newParameterlessMethod(clazz, nme.UNARY_+, restype)
+        newParameterlessMethod(clazz, nme.UNARY_-, restype)
+
+        if (isCardinal) {
           newParameterlessMethod(clazz, nme.NOT, restype)
+          newParameterlessMethod(clazz, nme.UNARY_~, restype)
+        }
 
         // binary operations
         val restype2 = if (isCardinal) longtype else restype

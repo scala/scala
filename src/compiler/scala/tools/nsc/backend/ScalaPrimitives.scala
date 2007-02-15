@@ -243,7 +243,7 @@ abstract class ScalaPrimitives {
     addPrimitives(BooleanClass, nme.OR, OR)
     addPrimitives(BooleanClass, nme.AND, AND)
     addPrimitives(BooleanClass, nme.XOR, XOR)
-    addPrimitives(BooleanClass, nme.ADD, CONCAT)
+//    addPrimitives(BooleanClass, nme.ADD, CONCAT)
     // unary !
     addPrimitives(BooleanClass, nme.UNARY_!, ZNOT)
 
