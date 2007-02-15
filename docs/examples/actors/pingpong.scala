@@ -4,52 +4,44 @@ import scala.actors.Actor
 import scala.actors.Actor._
 
 abstract class PingMessage
-case class MsgPingInit(count: int, pong: Actor) extends PingMessage
-case object MsgStart extends PingMessage
-case object MsgSendPing extends PingMessage
-case object MsgPong extends PingMessage
+case object Start extends PingMessage
+case object SendPing extends PingMessage
+case object Pong extends PingMessage
 
 abstract class PongMessage
-case object MsgPing extends PongMessage
-case object MsgStop extends PongMessage
+case object Ping extends PongMessage
+case object Stop extends PongMessage
 
-object pingpong {
-  def main(args : Array[String]) {
-    val ping = new Ping
-    ping.start
-    val pong = new Pong
-    pong.start
-    ping ! MsgPingInit(100000, pong)
-    ping ! MsgStart
-  }
+object pingpong extends Application {
+  val pong = new Pong
+  val ping = new Ping(100000, pong)
+  ping.start
+  pong.start
+  ping ! Start
 }
 
-class Ping extends Actor {
+class Ping(count: int, pong: Actor) extends Actor {
   def act() {
-    var pingsLeft = 0
-    var pong: Actor = null
+    Console.println("Ping: Initializing with count "+count+": "+pong)
+    var pingsLeft = count
     loop {
       react {
-        case MsgPingInit(count, png) =>
-          Console.println("Ping: Initializing with count "+count+": "+png)
-          pingsLeft = count
-          pong = png
-        case MsgStart =>
+        case Start =>
           Console.println("Ping: starting.")
-          pong ! MsgPing
+          pong ! Ping
           pingsLeft = pingsLeft - 1
-        case MsgSendPing =>
-          pong ! MsgPing
+        case SendPing =>
+          pong ! Ping
           pingsLeft = pingsLeft - 1
-        case MsgPong =>
-          if (pingsLeft % 100 == 0)
+        case Pong =>
+          if (pingsLeft % 1000 == 0)
             Console.println("Ping: pong from: "+sender)
           if (pingsLeft > 0)
-            self ! MsgSendPing
+            self ! SendPing
           else {
             Console.println("Ping: Stop.")
-            pong ! MsgStop
-            exit("stop")
+            pong ! Stop
+            exit('stop)
           }
       }
     }
@@ -61,14 +53,14 @@ class Pong extends Actor {
     var pongCount = 0
     loop {
       react {
-        case MsgPing =>
-          if (pongCount % 100 == 0)
+        case Ping =>
+          if (pongCount % 1000 == 0)
             Console.println("Pong: ping "+pongCount+" from "+sender)
-          sender ! MsgPong
+          sender ! Pong
           pongCount = pongCount + 1
-        case MsgStop =>
+        case Stop =>
           Console.println("Pong: Stop.")
-          exit("stop")
+          exit('stop)
       }
     }
   }
