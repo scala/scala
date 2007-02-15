@@ -2,5 +2,5 @@ package foo123
 
 import a._
 
-[B]
+@B
 class C

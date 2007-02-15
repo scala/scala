@@ -33,7 +33,7 @@ object Serialize {
 //############################################################################
 // Test classes in package "scala"
 
-[serializable]
+@serializable
 object Test1_scala {
   private def arrayToString[A](arr: Array[A]): String =
     List.fromArray(arr).mkString("Array[",",","]");
@@ -77,7 +77,7 @@ object Test1_scala {
 
 //############################################################################
 // Test classes in package "scala.collection.immutable"
-[serializable]
+@serializable
 object Test2_immutable {
   import scala.collection.immutable.{BitSet,ListMap,ListSet,Queue,Stack,
     TreeSet,TreeMap};
@@ -235,7 +235,7 @@ object Test4_xml {
 //############################################################################
 // Test user-defined classes WITHOUT nesting
 
-[serializable]
+@serializable
 class Person(_name: String) {
   private var name = _name;
   override def toString() = name;
@@ -244,12 +244,12 @@ class Person(_name: String) {
     (name == that.asInstanceOf[Person].name);
 }
 
-[serializable]
+@serializable
 class Employee(_name: String) {
   private var name = _name;
   override def toString() = name;
 }
-[serializable]
+@serializable
 object bob extends Employee("Bob");
 
 object Test5 {
@@ -272,13 +272,13 @@ object Test5 {
 //############################################################################
 // Test user-defined classes WITH nesting
 
-[serializable]
+@serializable
 object Test6 {
-  [serializable]
+  @serializable
   object bill extends Employee("Bill") {
     val x = paul;
   }
-  [serializable]
+  @serializable
   object paul extends Person("Paul") {
     val x = 4; //  bill; => StackOverflowException !!!
   }

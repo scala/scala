@@ -5,7 +5,7 @@ scopes.scala:5: error: t is already defined as type t
   type t = float
        ^
 scopes.scala:7: error: x is already defined as value x
-  val x: float = .0f
+  val x: float = .0f;
       ^
 scopes.scala:10: error: y is already defined as value y
     val y: float = .0f

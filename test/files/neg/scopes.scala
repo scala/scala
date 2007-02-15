@@ -4,7 +4,7 @@ object test1 {
   type t = int
   type t = float
   val x: int = 0
-  val x: float = .0f
+  val x: float = .0f;
   {
     val y: int = 0
     val y: float = .0f

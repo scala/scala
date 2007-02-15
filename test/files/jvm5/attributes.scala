@@ -2,7 +2,7 @@ import java.lang.Deprecated
 
 object Test1 {
   class Foo {
-    [remote]
+    @remote
     def foo: Unit = ()
   }
   def run: Unit = {
@@ -15,7 +15,8 @@ object Test2 {
   import java.io.{BufferedReader,FileReader, IOException}
   class Reader(fname: String) {
     private val in = new BufferedReader(new FileReader(fname))
-    [throws(classOf[IOException])]
+
+    @throws(classOf[IOException])
     def read() = in.read()
   }
   def run: Unit = {
@@ -37,7 +38,7 @@ public class Main {
 */
 object Test3 {
   class Foo {
-    [Deprecated]
+    @Deprecated
     def foo: Unit = ()
   }
   def run: Unit = {
@@ -67,9 +68,9 @@ public class Main {
 */
 object Test4 {
   import java.lang.annotation._
-  [Retention(RetentionPolicy.RUNTIME)]
+  @Retention(RetentionPolicy.RUNTIME)
   class Source(url: String, mail: String) extends scala.Annotation
-  [Source("http://scala.epfl.ch", "scala@lists.epfl.ch")]
+  @Source("http://scala.epfl.ch", "scala@lists.epfl.ch")
   class Foo
   def run: Unit = {
     val clazz = classOf[Foo]
