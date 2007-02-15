@@ -244,6 +244,8 @@ abstract class ScalaPrimitives {
     addPrimitives(BooleanClass, nme.AND, AND)
     addPrimitives(BooleanClass, nme.XOR, XOR)
     addPrimitives(BooleanClass, nme.ADD, CONCAT)
+    // unary !
+    addPrimitives(BooleanClass, nme.UNARY_!, ZNOT)
 
     // scala.Byte
     addPrimitives(ByteClass, nme.EQ, EQ)
@@ -270,6 +272,11 @@ abstract class ScalaPrimitives {
     addPrimitives(ByteClass, nme.toChar,   B2C)
     addPrimitives(ByteClass, nme.toInt,    B2I)
     addPrimitives(ByteClass, nme.toLong,   B2L)
+    // unary methods
+    addPrimitives(ByteClass, nme.UNARY_+, POS)
+    addPrimitives(ByteClass, nme.UNARY_-, NEG)
+    addPrimitives(ByteClass, nme.UNARY_~, NOT)
+
     if (!forCLDC) {
       addPrimitives(ByteClass, nme.toFloat,  B2F)
       addPrimitives(ByteClass, nme.toDouble, B2D)
@@ -300,6 +307,11 @@ abstract class ScalaPrimitives {
     addPrimitives(ShortClass, nme.toChar,   S2C)
     addPrimitives(ShortClass, nme.toInt,    S2I)
     addPrimitives(ShortClass, nme.toLong,   S2L)
+    // unary methods
+    addPrimitives(ShortClass, nme.UNARY_+, POS)
+    addPrimitives(ShortClass, nme.UNARY_-, NEG)
+    addPrimitives(ShortClass, nme.UNARY_~, NOT)
+
     if (!forCLDC) {
       addPrimitives(ShortClass, nme.toFloat,  S2F)
       addPrimitives(ShortClass, nme.toDouble, S2D)
@@ -330,6 +342,10 @@ abstract class ScalaPrimitives {
     addPrimitives(CharClass, nme.toChar,   C2C)
     addPrimitives(CharClass, nme.toInt,    C2I)
     addPrimitives(CharClass, nme.toLong,   C2L)
+    // unary methods
+    addPrimitives(CharClass, nme.UNARY_+, POS)
+    addPrimitives(CharClass, nme.UNARY_-, NEG)
+    addPrimitives(CharClass, nme.UNARY_~, NOT)
     if (!forCLDC) {
       addPrimitives(CharClass, nme.toFloat,  C2F)
       addPrimitives(CharClass, nme.toDouble, C2D)
@@ -360,6 +376,10 @@ abstract class ScalaPrimitives {
     addPrimitives(IntClass, nme.toChar,   I2C)
     addPrimitives(IntClass, nme.toInt,    I2I)
     addPrimitives(IntClass, nme.toLong,   I2L)
+    // unary methods
+    addPrimitives(IntClass, nme.UNARY_+, POS)
+    addPrimitives(IntClass, nme.UNARY_-, NEG)
+    addPrimitives(IntClass, nme.UNARY_~, NOT)
     if (!forCLDC) {
       addPrimitives(IntClass, nme.toFloat,  I2F)
       addPrimitives(IntClass, nme.toDouble, I2D)
@@ -390,6 +410,10 @@ abstract class ScalaPrimitives {
     addPrimitives(LongClass, nme.toChar,   L2C)
     addPrimitives(LongClass, nme.toInt,    L2I)
     addPrimitives(LongClass, nme.toLong,   L2L)
+    // unary methods
+    addPrimitives(LongClass, nme.UNARY_+, POS)
+    addPrimitives(LongClass, nme.UNARY_-, NEG)
+    addPrimitives(LongClass, nme.UNARY_~, NOT)
     if (!forCLDC) {
       addPrimitives(LongClass, nme.toFloat,  L2F)
       addPrimitives(LongClass, nme.toDouble, L2D)
@@ -416,6 +440,9 @@ abstract class ScalaPrimitives {
       addPrimitives(FloatClass, nme.toLong,   F2L)
       addPrimitives(FloatClass, nme.toFloat,  F2F)
       addPrimitives(FloatClass, nme.toDouble, F2D)
+      // unary methods
+      addPrimitives(FloatClass, nme.UNARY_+, POS)
+      addPrimitives(FloatClass, nme.UNARY_-, NEG)
 
       // scala.Double
       addPrimitives(DoubleClass, nme.EQ, EQ)
@@ -437,6 +464,9 @@ abstract class ScalaPrimitives {
       addPrimitives(DoubleClass, nme.toLong,   D2L)
       addPrimitives(DoubleClass, nme.toFloat,  D2F)
       addPrimitives(DoubleClass, nme.toDouble, D2D)
+      // unary methods
+      addPrimitives(DoubleClass, nme.UNARY_+, POS)
+      addPrimitives(DoubleClass, nme.UNARY_-, NEG)
     }
     // and the type map!
     initPrimitiveTypeMap
@@ -451,7 +481,7 @@ abstract class ScalaPrimitives {
   def addPrimitives(cls: Symbol, method: Name, code: Int): Unit = {
     val tpe = cls.info
     val sym = tpe.member(method)
-    sym.info match {
+    if (sym != NoSymbol) sym.info match {
       case OverloadedType(pre, alternatives) =>
         log("Adding " + alternatives.length + " overloads for " + sym.fullNameString)
         code match {
@@ -477,7 +507,8 @@ abstract class ScalaPrimitives {
 
       case _ =>
         addPrimitive(sym, code)
-    }
+    } else
+      inform("Unknown primitive method " + cls + "." + method)
   }
 
   def isCoercion(code: Int): Boolean = (code >= B2B) && (code <= D2D);
