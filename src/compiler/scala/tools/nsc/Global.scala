@@ -212,7 +212,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
 
   val MaxPhases = 64
 
-  val phaseWithId = new Array[Phase](MaxPhases)
+  val phaseWithId = new Array[Phase](MaxPhases);
   { for (val i <- List.range(0, MaxPhases)) phaseWithId(i) = NoPhase }
 
   abstract class GlobalPhase(prev: Phase) extends Phase(prev) {
@@ -512,7 +512,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
           if (sym.isTerm) sym.moduleClass.reset(loaders.moduleClassLoader)
         }
       } else {
-        assert(symData.isEmpty || !settings.stop.value.isEmpty || !settings.skip.value.isEmpty, symData)
+        //assert(symData.isEmpty || !settings.stop.value.isEmpty || !settings.skip.value.isEmpty, symData)
         if (deprecationWarnings) {
           warning("there were deprecation warnings; re-run with -deprecation for details")
         }

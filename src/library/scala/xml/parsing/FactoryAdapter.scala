@@ -158,7 +158,7 @@ abstract class FactoryAdapter extends DefaultHandler() {
     }
     scopeStack.push(scpe)
     attribStack.push(m)
-    {}
+    ()
   } // startElement(String,String,String,Attributes)
 
 

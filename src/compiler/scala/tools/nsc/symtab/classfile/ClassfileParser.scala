@@ -117,7 +117,7 @@ abstract class ClassfileParser {
     private val len = in.nextChar
     private val starts = new Array[int](len)
     private val values = new Array[AnyRef](len)
-    private val internalized = new Array[Name](len)
+    private val internalized = new Array[Name](len);
     { var i = 1
       while (i < starts.length) {
         starts(i) = in.bp

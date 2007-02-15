@@ -68,6 +68,7 @@ abstract class OverridingPairs {
     private val size = base.info.baseClasses.length
 
     private val index = new HashMap[Symbol, int]
+
     { var i = 0;
       for (val bc <- base.info.baseClasses) {
         index(bc) = i
@@ -76,6 +77,7 @@ abstract class OverridingPairs {
     }
 
     private val subParents = new Array[BitSet](size)
+
     { for (val i <- List.range(0, size))
         subParents(i) = new BitSet(size);
       for (val p <- parents) {

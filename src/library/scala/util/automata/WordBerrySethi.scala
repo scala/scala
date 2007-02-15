@@ -206,6 +206,7 @@ abstract class WordBerrySethi extends BaseBerrySethi {
           i = i + 1
         }
         val finalsArr = new Array[Int](pos)
+
         {
           var k = 0; while (k < pos) {
             finalsArr(k) = finals.get(k) match {
@@ -218,6 +219,7 @@ abstract class WordBerrySethi extends BaseBerrySethi {
 
         val initialsArr = new Array[Int](initials.size)
         val it = initials.elements
+
         {
           var k = 0; while (k < initials.size) {
             initialsArr(k) = it.next
@@ -226,6 +228,7 @@ abstract class WordBerrySethi extends BaseBerrySethi {
         }
 
         val deltaArr = new Array[Map[_labelT, immutable.BitSet]](pos)
+
         {
           var k = 0; while(k < pos) {
             val labels = delta1(k).keys
@@ -243,6 +246,7 @@ abstract class WordBerrySethi extends BaseBerrySethi {
           }
         }
         val defaultArr = new Array[immutable.BitSet](pos)
+
         {
           var k = 0; while(k < pos) {
             val x = new mutable.BitSet(pos)
