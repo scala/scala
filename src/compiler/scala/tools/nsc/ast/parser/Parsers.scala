@@ -74,7 +74,13 @@ trait Parsers requires SyntaxAnalyzer {
       def freshName(prefix: String): Name = unit.fresh.newName(prefix)
     }
 
+    /** The implicit view parameters of the surrounding class */
     var implicitClassViews: List[Tree] = Nil
+
+    /** The implicit parameters introduced by `_' in the current expression.
+     *  Parameters appear in reverse order
+     */
+    var implicitParams: List[ValDef] = Nil
 
     /** this is the general parse method
      */
@@ -292,9 +298,9 @@ trait Parsers requires SyntaxAnalyzer {
         errorTypeTree
     }
 
-    /** make closure from tree */
-    def makeClosure(tree: Tree): Tree = {
-      val pname: Name = unit.fresh.newName("x$")
+    /** make closure from tree staring with a `.' */
+    def makeDotClosure(tree: Tree): Tree = {
+      val pname = unit.fresh.newName("x$")
       def insertParam(tree: Tree): Tree = atPos(tree.pos) {
         tree match {
           case Ident(name) =>
@@ -310,10 +316,7 @@ trait Parsers requires SyntaxAnalyzer {
             errorTermTree
         }
       }
-
-      Function(
-        List(ValDef(Modifiers(Flags.PARAM), pname, TypeTree(), EmptyTree)),
-        insertParam(tree))
+      Function(List(makeSyntheticParam(pname)), insertParam(tree))
     }
 
 /////// OPERAND/OPERATOR STACK /////////////////////////////////////////////////
@@ -779,25 +782,32 @@ trait Parsers requires SyntaxAnalyzer {
      *  (also eats trailing comma if it finds one)
      */
     def exprs(): List[Tree] = {
-      val ts = new ListBuffer[Tree] + argExpr()
+      val savedImplicitParams = implicitParams
+      implicitParams = List()
+      var first = expr()
+      if (!implicitParams.isEmpty) {
+        first = Function(implicitParams.reverse, first)
+        implicitParams = List()
+      }
+      val ts = new ListBuffer[Tree] + first
       while (in.token == COMMA) {
         in.nextToken();
         if (in.token == RPAREN) return List(makeTupleTerm(ts.toList, false))
-        ts += argExpr()
+        ts += expr()
+        if (!implicitParams.isEmpty) {
+          syntaxError(implicitParams.head.pos, "section outside (...)", false)
+        }
       }
+      implicitParams = savedImplicitParams
       ts.toList
     }
 
-    /** expression modifiles */
-
-    final val IsInBlock      = 2
-    final val ClosureOK      = 4
-
     /** Expr       ::= (Bindings | Id)  `=>' Expr
+     *               | PostfixExpr `:' Type
      *               | Expr1
      *  ResultExpr ::= (Bindings | Id `:' CompoundType) `=>' Block
      *               | Expr1
-     *  Expr1      ::= if (' Expr `)' {nl} Expr [semi] else Expr]
+     *  Expr1      ::= if `(' Expr `)' {nl} Expr [semi] else Expr]
      *               | try `{' block `}' [catch `{' caseClauses `}'] [finally Expr]
      *               | while `(' Expr `)' {nl} Expr
      *               | do Expr [semi] while `(' Expr `)'
@@ -816,26 +826,14 @@ trait Parsers requires SyntaxAnalyzer {
      *               | `:' Annotation {Annotation}
      *               | `:' `_' `*'
      */
-    def expr(): Tree =
-      exprImpl(ClosureOK)
+    def expr(): Tree = exprImpl(false)
+    def blockStatExpr(): Tree = exprImpl(true)
 
-    def blockStatExpr(): Tree = {
-      exprImpl(IsInBlock | ClosureOK)
-    }
-
-    def argExpr(): Tree = {
-      exprImpl(ClosureOK)
-    }
-
-    def localExpr(): Tree = {
-      exprImpl(ClosureOK)
-    }
-
-    private def exprImpl(mode: int): Tree = in.token match {
+    private def exprImpl(isInBlock: boolean): Tree = in.token match {
       case IF =>
         val pos = in.skipToken()
         accept(LPAREN)
-        val cond = localExpr()
+        val cond = expr()
         accept(RPAREN)
         newLinesOpt()
         val thenp = expr()
@@ -865,7 +863,7 @@ trait Parsers requires SyntaxAnalyzer {
         val lname: Name = unit.fresh.newName("while$")
         val pos = in.skipToken()
         accept(LPAREN)
-        val cond = localExpr()
+        val cond = expr()
         accept(RPAREN)
         newLinesOpt()
         val body = expr()
@@ -877,7 +875,7 @@ trait Parsers requires SyntaxAnalyzer {
         if (isStatSep) in.nextToken()
         accept(WHILE)
         accept(LPAREN)
-        val cond = localExpr()
+        val cond = expr()
         accept(RPAREN)
         atPos(pos) { makeDoWhile(lname, body, cond) }
       case FOR =>
@@ -902,8 +900,7 @@ trait Parsers requires SyntaxAnalyzer {
       case DOT =>
         atPos(in.skipToken()) {
           if (isIdent) {
-            makeClosure(stripParens(simpleExpr()))
-            // Note: makeClosure does some special treatment of liftedGenerators
+            makeDotClosure(stripParens(simpleExpr()))
           } else {
             syntaxErrorOrIncomplete("identifier expected", true)
             errorTermTree
@@ -933,7 +930,7 @@ trait Parsers requires SyntaxAnalyzer {
             }
           } else if (annots.isEmpty || isTypeIntro) {
             t = atPos(pos) {
-              val tpt = if ((mode & IsInBlock) != 0) compoundType(false) else typ()
+              val tpt = if (isInBlock) compoundType(false) else typ()
               // this does not correspond to syntax, but is necessary to
               // accept closures. We might restrict closures to be between {...} only!
               Typed(t, (tpt /: annots) (makeAnnotated))
@@ -949,9 +946,9 @@ trait Parsers requires SyntaxAnalyzer {
             Match(stripParens(t), cases)
           }
         }
-        if ((mode & ClosureOK) != 0 && in.token == ARROW) {
+        if (in.token == ARROW) {
           t = atPos(in.skipToken()) {
-            Function(convertToParams(t), if ((mode & IsInBlock) != 0) block() else expr())
+            Function(convertToParams(t), if (isInBlock) block() else expr())
           }
         }
         stripParens(t)
@@ -1036,6 +1033,12 @@ trait Parsers requires SyntaxAnalyzer {
           t = xmlp.xLiteral
         case IDENTIFIER | BACKQUOTED_IDENT | THIS | SUPER =>
           t = path(true, false)
+        case USCORE =>
+          val pname = unit.fresh.newName("x$")
+          val pos = in.skipToken()
+          val param = makeSyntheticParam(pname) setPos pos
+          implicitParams = param :: implicitParams
+          t = atPos(pos) { Ident(pname) }
         case LPAREN =>
           val pos = in.skipToken()
           val ts = if (in.token == RPAREN) List() else exprs()

@@ -109,7 +109,7 @@ abstract class Pickler extends SubComponent {
           putType(sym.typeOfThis);
         putSymbol(sym.alias)
         if (!sym.children.isEmpty)
-          putChildren(sym, sym.children)
+          putChildren(sym, sym.children.toList.sort((x, y) => x isLess y))
 
         for (val attr <- sym.attributes.reverse) {
           if (attr.atp.symbol isNonBottomSubClass definitions.StaticAnnotationClass)
@@ -168,7 +168,7 @@ abstract class Pickler extends SubComponent {
         else if (c.tag == ClassTag) putEntry(c.typeValue)
       }
 
-    private def putChildren(sym: Symbol, children: Set[Symbol]): unit = {
+    private def putChildren(sym: Symbol, children: List[Symbol]): unit = {
       assert(putEntry(Pair(sym, children)))
       children foreach putSymbol
     }
@@ -285,7 +285,7 @@ abstract class Pickler extends SubComponent {
           for (val c <- args) writeRef(c)
           for (val Pair(name, c) <- assocs) { writeRef(name); writeRef(c) }
           ATTRIBUTE
-        case Pair(target: Symbol, children: Set[_]) =>
+        case Pair(target: Symbol, children: List[_]) =>
           writeRef(target)
           for (val c <- children) writeRef(c.asInstanceOf[Symbol])
           CHILDREN
@@ -306,6 +306,10 @@ abstract class Pickler extends SubComponent {
       writeNat(ep)
       if (settings.debug.value) log("" + ep + " entries")//debug
       for (val i <- 0 until ep) writeEntry(entries(i));
+      if (settings.Xshowcls.value == rootName.toString) {
+        readIndex = 0
+        ShowPickled.printFile(this, Console.out)
+      }
     }
 
     override def toString() = "" + rootName + " in " + rootOwner

@@ -207,6 +207,9 @@ abstract class TreeBuilder {
     if (valeq) ValEq(pos, pat1, rhs1) else ValFrom(pos, pat1, rhs1)
   }
 
+  def makeSyntheticParam(pname: Name) =
+    ValDef(Modifiers(PARAM | SYNTHETIC), pname, TypeTree(), EmptyTree)
+
   abstract class Enumerator
   case class ValFrom(pos: int, pat: Tree, rhs: Tree) extends Enumerator
   case class ValEq(pos: int, pat: Tree, rhs: Tree) extends Enumerator
@@ -371,8 +374,7 @@ abstract class TreeBuilder {
   def makeVisitor(cases: List[CaseDef], checkExhaustive: boolean, prefix: String): Tree = {
     val x = freshName(prefix)
     val sel = if (checkExhaustive) Ident(x) else makeUnsealed(Ident(x))
-    Function(List(ValDef(Modifiers(PARAM | SYNTHETIC), x, TypeTree(), EmptyTree)),
-             Match(sel, cases))
+    Function(List(makeSyntheticParam(x)), Match(sel, cases))
   }
 
   /** Create tree for case definition &lt;case pat if guard => rhs&gt; */

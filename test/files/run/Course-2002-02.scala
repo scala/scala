@@ -101,7 +101,7 @@ object M4 {
 
   def sumInts = sum(x => x)
   def sumCubes = sum(x => x * x * x)
-  def sumReciprocals = sum(x => 1.0/x)
+  def sumReciprocals = sum(1.0/_)
   def sumPi = { n: Int => 4 + sum(x => 4.0/(4*x+1) - 4.0/(4*x-1))(1, n) }
 
   Console.println(sumInts(1,4))
@@ -163,7 +163,7 @@ object M7 {
     iter(a, 0)
   }
 
-  def sumInts = &sum(x => x)
+  def sumInts = &sum(_)
   def sumCubes = &sum(x => x * x * x)
   def sumReciprocals = &sum(x => 1.0/x)
   def sumPi = { n: Int => 4 + sum(x => 4.0/(4*x+1) - 4.0/(4*x-1))(1, n) }

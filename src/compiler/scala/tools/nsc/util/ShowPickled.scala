@@ -52,6 +52,13 @@ object ShowPickled extends Names {
     case LITERALstring  => "LITERALstring"
     case LITERALnull    => "LITERALnull"
     case LITERALclass   => "LITERALclass"
+    case ATTRIBUTE      => "ATTRIBUTE"
+    case CHILDREN       => "CHILDREN"
+    case PosTYPEsym     => "PosTYPEsym"
+    case PosALIASsym    => "PosALIASsym"
+    case PosCLASSsym    => "PosCLASSsym"
+    case PosMODULEsym   => "PosMODULEsym"
+    case PosVALsym      => "PosVALsym"
     case _ => "***BAD TAG***(" + tag + ")"
   }
 
@@ -103,6 +110,10 @@ object ShowPickled extends Names {
         case TYPEsym | ALIASsym | CLASSsym | MODULEsym | VALsym =>
           printSymInfo()
           if (tag == CLASSsym && (buf.readIndex < end)) printTypeRef()
+        case PosTYPEsym | PosALIASsym | PosCLASSsym | PosMODULEsym | PosVALsym =>
+          printNat()
+          printSymInfo()
+          if (tag == CLASSsym && (buf.readIndex < end)) printTypeRef()
         case EXTref | EXTMODCLASSref =>
           printNameRef()
           if (buf.readIndex < end) { printSymbolRef() }
@@ -144,6 +155,12 @@ object ShowPickled extends Names {
           printNameRef()
         case LITERALnull    =>
           out.print(" <null>")
+        case LITERALclass   =>
+          printTypeRef()
+        case ATTRIBUTE      =>
+          printSymbolRef(); printTypeRef(); buf.until(end, printConstantRef)
+        case CHILDREN       =>
+          printSymbolRef(); buf.until(end, printSymbolRef)
         case _ =>
       }
       out.println()
