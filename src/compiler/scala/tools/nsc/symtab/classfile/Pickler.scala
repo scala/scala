@@ -8,7 +8,7 @@ package scala.tools.nsc.symtab.classfile
 
 import java.lang.{Float, Double}
 import scala.collection.mutable.HashMap
-import scala.tools.nsc.util.Position
+import scala.tools.nsc.util.{Position, ShowPickled}
 import Flags._
 import PickleFormat._
 
