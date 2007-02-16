@@ -507,15 +507,20 @@ abstract class DocGenerator extends Models {
         </td>
       </tr>
 
-    def fullComment(mmbr: HasTree): NodeSeq =
-      comments.get(mmbr.tree.symbol) match {
-        case Some(text) => comment(text, false)
+    def fullComment(mmbr: HasTree): NodeSeq = {
+      val sym = mmbr.tree.symbol
+      val Pair(sym1, kind1) =
+        if (sym.isPrimaryConstructor) Pair(sym.owner, CONSTRUCTOR)
+        else Pair(sym, kindOf(mmbr.tree))
+      comments.get(sym1) match {
+        case Some(text) => comment(text, false, kind1)
         case None => NodeSeq.Empty
       }
+    }
 
     def shortComment(mmbr: HasTree): NodeSeq =
       comments.get(mmbr.tree.symbol) match {
-        case Some(text) => comment(text, true)
+        case Some(text) => comment(text, true, kindOf(mmbr.tree))
         case None => NodeSeq.Empty
       }
 
@@ -728,7 +733,7 @@ abstract class DocGenerator extends Models {
             aref(urlFor(parent.symbol), contentFrame, parent.toString()))
           }
         }</dd>
-        <dd>{comment(descr, true)}</dd>
+        <dd>{comment(descr, true, kind)}</dd>
       </dl>
       <hr/> ++ ({
         val decls = sym.tpe.decls.toList
@@ -1184,7 +1189,10 @@ abstract class DocGenerator extends Models {
   private val pat2 = Pattern.compile(
     "[ \t]*@(exception|param|throws)[ \t]+(\\p{Graph}*)[ \t]*(.*)")
 
-  private def comment(comment: String, isShort: Boolean): NodeSeq = {
+  // constructors have no description and get only attributes of the form 'pat2';
+  // classes have a description and get only attributes of the form 'pat1';
+  // no restriction applies to other kinds.
+  private def comment(comment: String, isShort: Boolean, kind: Kind): NodeSeq = {
     var ret: List[Node] = Nil
     assert(comment ne null)
     // strip out any stars.
@@ -1203,12 +1211,12 @@ abstract class DocGenerator extends Models {
       val mat1 = pat1.matcher(s)
       if (mat1.matches) {
         attr = Triple(mat1.group(1), null, new StringBuilder(mat1.group(2)))
-        attributes += attr
+        if (kind != CONSTRUCTOR) attributes += attr
       } else {
         val mat2 = pat2.matcher(s)
         if (mat2.matches) {
           attr = Triple(mat2.group(1), mat2.group(2), new StringBuilder(mat2.group(3)))
-          attributes += attr
+          if (kind != CLASS) attributes += attr
         } else if (attr ne null)
           attr._3.append(s + LINE_SEPARATOR)
         else
@@ -1225,8 +1233,10 @@ abstract class DocGenerator extends Models {
       "Predef.UnsupportedOperationException" ->
         Pair(definitions.PredefModule, "UnsupportedOperationException")
     val body = buf.toString
-    if (isShort) <span>{parse(body)}</span>;
-    else <span><dl><dd>{parse(body)}</dd></dl><dl>
+    if (isShort)
+      <span>{parse(body)}</span>;
+    else {
+      val attrs = <dl>
     { {
       for (val attr <- attributes.toList) yield
         <dt style="margin:10px 0 0 20px;">
@@ -1249,7 +1259,10 @@ abstract class DocGenerator extends Models {
             <code>{attr._2 + " - "}</code>
         } {(parse(attr._3.toString))}
         </dd>;
-    } } </dl></span>;
+    } } </dl>;
+      if (kind == CONSTRUCTOR) attrs
+      else <span><dl><dd>{parse(body)}</dd></dl>{attrs}</span>;
+    }
   }
 
   val index =
