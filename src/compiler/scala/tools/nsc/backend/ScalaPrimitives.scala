@@ -245,12 +245,11 @@ abstract class ScalaPrimitives {
     addPrimitives(BooleanClass, nme.XOR, XOR)
 //    addPrimitives(BooleanClass, nme.ADD, CONCAT)
     // unary !
-    addPrimitives(BooleanClass, nme.UNARY_!, ZNOT)
+//  addPrimitives(BooleanClass, nme.UNARY_!, ZNOT)
 
     // scala.Byte
     addPrimitives(ByteClass, nme.EQ, EQ)
     addPrimitives(ByteClass, nme.NE, NE)
-    addPrimitives(ByteClass, nme.NOT, NOT)
     addPrimitives(ByteClass, nme.ADD, ADD)
     addPrimitives(ByteClass, nme.SUB, SUB)
     addPrimitives(ByteClass, nme.MUL, MUL)
@@ -285,7 +284,6 @@ abstract class ScalaPrimitives {
     // scala.Short
     addPrimitives(ShortClass, nme.EQ, EQ)
     addPrimitives(ShortClass, nme.NE, NE)
-    addPrimitives(ShortClass, nme.NOT, NOT)
     addPrimitives(ShortClass, nme.ADD, ADD)
     addPrimitives(ShortClass, nme.SUB, SUB)
     addPrimitives(ShortClass, nme.MUL, MUL)
@@ -320,7 +318,6 @@ abstract class ScalaPrimitives {
     // scala.Char
     addPrimitives(CharClass, nme.EQ, EQ)
     addPrimitives(CharClass, nme.NE, NE)
-    addPrimitives(CharClass, nme.NOT, NOT)
     addPrimitives(CharClass, nme.ADD, ADD)
     addPrimitives(CharClass, nme.SUB, SUB)
     addPrimitives(CharClass, nme.MUL, MUL)
@@ -354,7 +351,6 @@ abstract class ScalaPrimitives {
     // scala.Int
     addPrimitives(IntClass, nme.EQ, EQ)
     addPrimitives(IntClass, nme.NE, NE)
-    addPrimitives(IntClass, nme.NOT, NOT)
     addPrimitives(IntClass, nme.ADD, ADD)
     addPrimitives(IntClass, nme.SUB, SUB)
     addPrimitives(IntClass, nme.MUL, MUL)
@@ -388,7 +384,6 @@ abstract class ScalaPrimitives {
     // scala.Long
     addPrimitives(LongClass, nme.EQ, EQ)
     addPrimitives(LongClass, nme.NE, NE)
-    addPrimitives(LongClass, nme.NOT, NOT)
     addPrimitives(LongClass, nme.ADD, ADD)
     addPrimitives(LongClass, nme.SUB, SUB)
     addPrimitives(LongClass, nme.MUL, MUL)
@@ -481,34 +476,13 @@ abstract class ScalaPrimitives {
   def addPrimitives(cls: Symbol, method: Name, code: Int): Unit = {
     val tpe = cls.info
     val sym = tpe.member(method)
-    if (sym != NoSymbol) sym.info match {
-      case OverloadedType(pre, alternatives) =>
-        log("Adding " + alternatives.length + " overloads for " + sym.fullNameString)
-        code match {
-          case SUB =>
-            alternatives foreach ((s) =>
-              if (s.info.paramTypes.length == 0)
-                addPrimitive(s, NEG) // unary
-              else
-                addPrimitive(s, code))
-
-          case ADD =>
-            alternatives foreach ((s) =>
-              if (s.info.paramTypes.length == 0)
-                addPrimitive(s, POS)    // unary
-              else if (s.info.paramTypes.head == definitions.StringClass.tpe)
-                addPrimitive(s, CONCAT) // string concatenation
-              else
-                addPrimitive(s, code))
-
-          case _ =>
-            alternatives foreach ((s) => addPrimitive(s, code))
-        }
-
-      case _ =>
-        addPrimitive(sym, code)
-    } else
+    if (sym == NoSymbol)
       inform("Unknown primitive method " + cls + "." + method)
+    for (val s <- sym.alternatives)
+      addPrimitive(
+        s,
+        if (code == ADD && s.info.paramTypes.head == definitions.StringClass.tpe) CONCAT
+        else code)
   }
 
   def isCoercion(code: Int): Boolean = (code >= B2B) && (code <= D2D);

@@ -312,10 +312,8 @@ trait StdNames requires SymbolTable {
     val xml = newTermName("xml")
     val zip = newTermName("zip")
 
-    val ZNOT = encode("!")
     val ZAND = encode("&&")
     val ZOR  = encode("||")
-    val NOT  = encode("~")
     val ADD  = encode("+")
     val SUB  = encode("-")
     val MUL  = encode("*")

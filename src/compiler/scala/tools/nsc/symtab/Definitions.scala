@@ -51,7 +51,7 @@ trait Definitions requires SymbolTable {
     // the scala value classes
     var UnitClass: Symbol = _
     var BooleanClass: Symbol = _
-      def Boolean_not = getMember(BooleanClass, nme.ZNOT)
+      def Boolean_not = getMember(BooleanClass, nme.UNARY_!)
       def Boolean_and = getMember(BooleanClass, nme.ZAND)
       def Boolean_or  = getMember(BooleanClass, nme.ZOR)
     var ByteClass: Symbol = _
@@ -520,7 +520,6 @@ trait Definitions requires SymbolTable {
       val stringtype = StringClass.typeConstructor
 
       // init scala.Boolean
-      newParameterlessMethod(BooleanClass, nme.ZNOT, booltype)
       newParameterlessMethod(BooleanClass, nme.UNARY_!, booltype)
       newMethod(BooleanClass, nme.EQ,   boolparam, booltype)
       newMethod(BooleanClass, nme.NE,   boolparam, booltype)
@@ -585,13 +584,10 @@ trait Definitions requires SymbolTable {
         }
 
         // unary operations
-        newParameterlessMethod(clazz, nme.ADD, restype)
-        newParameterlessMethod(clazz, nme.SUB, restype)
         newParameterlessMethod(clazz, nme.UNARY_+, restype)
         newParameterlessMethod(clazz, nme.UNARY_-, restype)
 
         if (isCardinal) {
-          newParameterlessMethod(clazz, nme.NOT, restype)
           newParameterlessMethod(clazz, nme.UNARY_~, restype)
         }
 

@@ -986,16 +986,17 @@ trait Parsers requires SyntaxAnalyzer {
 
     /** PrefixExpr   ::= [`-' | `+' | `~' | `!' | `&'] SimpleExpr
     */
-    def prefixExpr(): Tree =
+    def prefixExpr(): Tree = {
+      def unaryOp(): Name = "unary_" + ident()
       if (isIdent && in.name == MINUS) {
-        val name = ident()
+        val name = unaryOp()
         in.token match {
           case INTLIT | LONGLIT | FLOATLIT | DOUBLELIT => literal(false, true)
           case _ => atPos(in.currentPos) { Select(stripParens(simpleExpr()), name) }
         }
       } else if (isIdent && (in.name == PLUS || in.name == TILDE || in.name == BANG)) {
         val pos = in.currentPos
-        val name = ident()
+        val name = unaryOp()
         atPos(pos) { Select(stripParens(simpleExpr()), name) }
       } else if (isIdent && in.name == AMP) {
         val pos = in.currentPos
@@ -1011,6 +1012,7 @@ trait Parsers requires SyntaxAnalyzer {
       } else {
         simpleExpr()
       }
+    }
 
     /* SimpleExpr    ::= new AnnotType {`(' [Exprs [`,']] `)'} {`with' AnnotType} [TemplateBody]
      *                |  BlockExpr
