@@ -203,9 +203,9 @@ object Actor {
   def seq[a, b](first: => a, next: => b): Nothing = {
     val s = self
     val killNext = s.kill
-    s.kill = () => { s.kill = killNext; next; exit("normal") }
+    s.kill = () => { s.kill = killNext; next; exit('normal) }
     first
-    exit("normal")
+    exit('normal)
   }
 
   /**
