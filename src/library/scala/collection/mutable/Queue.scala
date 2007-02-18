@@ -20,7 +20,7 @@ package scala.collection.mutable
  *  @author  Matthias Zenger
  *  @version 1.1, 03/05/2004
  */
-@serializable @cloneable
+[serializable, cloneable]
 class Queue[A] extends MutableList[A] {
 
   /** Checks if the queue is empty.
