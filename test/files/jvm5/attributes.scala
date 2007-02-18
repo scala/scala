@@ -67,10 +67,11 @@ public class Main {
 }
 */
 object Test4 {
-  import java.lang.annotation._
-  @Retention(RetentionPolicy.RUNTIME)
-  class Source(url: String, mail: String) extends scala.Annotation
-  @Source("http://scala.epfl.ch", "scala@lists.epfl.ch")
+  //import java.lang.annotation._
+  //@Retention(RetentionPolicy.RUNTIME)
+  //class Source(url: String, mail: String) extends scala.Annotation
+  //import Source
+  @Source(){val url = "http://scala.epfl.ch", val mail = "scala@lists.epfl.ch"}
   class Foo
   def run: Unit = {
     val clazz = classOf[Foo]
@@ -82,7 +83,7 @@ object Test {
   def main(args: Array[String]): Unit = {
     Test1.run
     Test2.run
-    //Test3.run     // requires the use of -target:jvm-1.5
-    //Test4.run
+    Test3.run     // requires the use of -target:jvm-1.5
+    Test4.run
   }
 }

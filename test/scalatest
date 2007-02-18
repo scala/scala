@@ -572,7 +572,7 @@ FILES_ANT="";
 QUICK="$PREFIX/build/quick/bin"
 QUICK_LIB="$PREFIX/build/quick/lib/library"
 
-JVM_EXT_CLASSPATH=`get_ext_classpath $TESTROOT/files/jvm/lib`
+JVM_EXT_CLASSPATH=`get_ext_classpath $TESTROOT/files/lib`
 
 if [ -d "$PREFIX/dists" ]; then
     LATEST="$PREFIX/dists/latest/bin";
