@@ -20,7 +20,7 @@ package scala.collection.mutable
  *  @author  Matthias Zenger
  *  @version 1.1, 03/05/2004
  */
-[serializable, cloneable]
+@serializable @cloneable
 class Queue[A] extends MutableList[A] {
 
   /** Checks if the queue is empty.
@@ -107,11 +107,11 @@ class Queue[A] extends MutableList[A] {
    *             p yields true.
    */
   def dequeueAll(p: A => Boolean): Seq[A] = {
-    val res = new ArrayBuffer[A]
     if (first eq null)
-      res
+      Seq.empty
     else {
-      while (p(first.elem)) {
+      val res = new ArrayBuffer[A]
+      while ((first ne null) && p(first.elem)) {
         res += first.elem
         first = first.next
         len = len - 1
@@ -131,19 +131,22 @@ class Queue[A] extends MutableList[A] {
   }
 
   private def extractFirst(start: LinkedList[A], p: A => Boolean): Option[LinkedList[A]] = {
-    var cell = start
-    while ((cell.next ne null) && !p(cell.next.elem)) {
-      cell = cell.next
-    }
-    if (cell.next eq null)
-      None
+    if (isEmpty) None
     else {
-      val res: Option[LinkedList[A]] = Some(cell.next)
-      cell.next = cell.next.next
+      var cell = start
+      while ((cell.next ne null) && !p(cell.next.elem)) {
+        cell = cell.next
+      }
       if (cell.next eq null)
-        last = cell
-      len = len - 1
-      res
+        None
+      else {
+        val res: Option[LinkedList[A]] = Some(cell.next)
+        cell.next = cell.next.next
+        if (cell.next eq null)
+          last = cell
+        len = len - 1
+        res
+      }
     }
   }
 
@@ -176,7 +179,8 @@ class Queue[A] extends MutableList[A] {
    *  @throws Predef.UnsupportedOperationException
    *  @return never.
    */
-  override def hashCode(): Int = throw new UnsupportedOperationException("unsuitable as hash key")
+  override def hashCode(): Int =
+    throw new UnsupportedOperationException("unsuitable as hash key")
 
   /** Returns a textual representation of a queue as a string.
    *
