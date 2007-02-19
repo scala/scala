@@ -793,13 +793,10 @@ DOCUMENTATION
       sourcepath=""
       windowtitle="Scala Library Documentation"
       documenttitle="&lt;div&gt;Scala ${version.number}&lt;/div&gt;"
-      classpath="${quick.dir}/lib/library">
+      classpath="${quick.dir}/lib/library${path.separator}${quick.dir}/lib/actors">
       <include name="dbc/**/*.scala"/>
       <include name="actors/**/*.scala"/>
       <exclude name="actors/scala/actors/ThreadPoolScheduler.scala" if="java14"/>
-      <exclude name="actors/scala/actors/Scheduler.scala"/>
-      <exclude name="actors/scala/actors/FJTaskScheduler.scala"/>
-      <exclude name="actors/scala/actors/FJTaskScheduler2.scala"/>
       <include name="library/**/*.scala"/>
       <excludesfile name="${nsc.excludes.file}" if="excludes.avail"/>
     </quickdoc>
