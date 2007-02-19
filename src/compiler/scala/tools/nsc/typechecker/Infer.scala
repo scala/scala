@@ -1077,31 +1077,32 @@ trait Infer requires Analyzer {
             else treeSymTypeMsg(tree) + " does not take type parameters")
           return
         }
-        val sym = sym0 filter { alt => isWithinBounds(pre, alt.owner, alt.typeParams, argtypes) }
-        if (sym == NoSymbol) {
-          if (!(argtypes exists (.isErroneous))) {
-            Console.println(":"+sym0.alternatives.map(
-              alt => alt.typeParams.map(
-                p => p.info.asSeenFrom(pre, alt.owner))))
-            error(
-              tree.pos,
-              "type arguments " + argtypes.mkString("[", ",", "]") +
-              " conform to the bounds of none of the overloaded alternatives of\n "+sym0+
-              ": "+sym0.info)
-            return
+        if (sym0.hasFlag(OVERLOADED)) {
+          val sym = sym0 filter { alt => isWithinBounds(pre, alt.owner, alt.typeParams, argtypes) }
+          if (sym == NoSymbol) {
+            if (!(argtypes exists (.isErroneous))) {
+              error(
+                tree.pos,
+                "type arguments " + argtypes.mkString("[", ",", "]") +
+                " conform to the bounds of none of the overloaded alternatives of\n "+sym0+
+                ": "+sym0.info)
+              return
+            }
           }
-        }
-        if (sym.hasFlag(OVERLOADED)) {
-          val tparams = new AsSeenFromMap(pre, sym.alternatives.head.owner).mapOver(
-            sym.alternatives.head.typeParams)
-          val bounds = tparams map (.tpe)
-          val tpe =
-            PolyType(tparams,
-                     OverloadedType(AntiPolyType(pre, bounds), sym.alternatives))
-          sym.setInfo(tpe)
-          tree.setSymbol(sym).setType(tpe)
+          if (sym.hasFlag(OVERLOADED)) {
+            val tparams = new AsSeenFromMap(pre, sym.alternatives.head.owner).mapOver(
+              sym.alternatives.head.typeParams)
+            val bounds = tparams map (.tpe)
+            val tpe =
+              PolyType(tparams,
+                       OverloadedType(AntiPolyType(pre, bounds), sym.alternatives))
+            sym.setInfo(tpe)
+            tree.setSymbol(sym).setType(tpe)
+          } else {
+            tree.setSymbol(sym).setType(pre.memberType(sym))
+          }
         } else {
-          tree.setSymbol(sym).setType(pre.memberType(sym))
+          tree.setSymbol(sym0).setType(pre.memberType(sym0))
         }
     }
   }

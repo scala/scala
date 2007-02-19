@@ -1119,8 +1119,10 @@ trait Trees requires Global {
         }
       case ClassDef(mods, name, tparams, self, impl) =>
         atOwner(tree.symbol) {
-          copy.ClassDef(tree, mods, name, transformAbsTypeDefs(tparams),
-                        transformValDef(self), transformTemplate(impl))
+          copy.ClassDef(tree, mods, name,
+                        transformAbsTypeDefs(tparams),
+                        if (self ne emptyValDef) transformValDef(self) else self,
+                        transformTemplate(impl))
         }
       case ModuleDef(mods, name, impl) =>
         atOwner(tree.symbol.moduleClass) {
@@ -1263,7 +1265,9 @@ trait Trees requires Global {
         }
       case ClassDef(mods, name, tparams, self, impl) =>
         atOwner(tree.symbol) {
-          traverseTrees(tparams); traverse(self); traverse(impl)
+          traverseTrees(tparams);
+          if (self ne emptyValDef) traverse(self);
+          traverse(impl)
         }
       case ModuleDef(mods, name, impl) =>
         atOwner(tree.symbol.moduleClass) {

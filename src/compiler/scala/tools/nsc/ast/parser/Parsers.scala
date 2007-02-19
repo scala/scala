@@ -280,7 +280,6 @@ trait Parsers requires SyntaxAnalyzer {
             ValDef(Modifiers(Flags.PARAM), name, tpe, EmptyTree)
           case _ =>
             syntaxError(tree.pos, "not a legal formal parameter", false)
-            throw new Error()
             ValDef(Modifiers(Flags.PARAM), nme.ERROR, errorTypeTree, EmptyTree)
         }
       }
@@ -1044,7 +1043,7 @@ trait Parsers requires SyntaxAnalyzer {
           val pos = in.skipToken()
           val ts = if (in.token == RPAREN) List() else exprs()
           accept(RPAREN)
-          t = Parens(ts)
+          t = Parens(ts) setPos pos
         case LBRACE =>
           t = blockExpr()
           canApply = false
@@ -1325,7 +1324,7 @@ trait Parsers requires SyntaxAnalyzer {
         val pos = in.skipToken()
         val ps = if (in.token == RPAREN) List() else patterns(false)
         accept(RPAREN)
-        Parens(ps)
+        Parens(ps) setPos pos
       case XMLSTART =>
         xmlp.xLiteralPattern
       case _ =>
@@ -2056,9 +2055,9 @@ trait Parsers requires SyntaxAnalyzer {
      */
     def templateBody(): Pair[ValDef, List[Tree]] = {
       accept(LBRACE)
-      val result = templateStatSeq()
+      val result @ Pair(self, stats) = templateStatSeq()
       accept(RBRACE)
-      result
+      if (stats.isEmpty) Pair(self, List(EmptyTree)) else result
     }
 
     /** Refinement ::= [nl] `{' RefineStat {semi RefineStat} `}'
@@ -2150,7 +2149,7 @@ trait Parsers requires SyntaxAnalyzer {
         }
         if (in.token != RBRACE && in.token != EOF) acceptStatSep()
       }
-      Pair(self, if (!stats.hasNext) List(EmptyTree) else stats.toList)
+      Pair(self, stats.toList)
     }
 
     /** RefineStatSeq    ::= RefineStat {semi RefineStat}

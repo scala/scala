@@ -877,6 +877,7 @@ trait Typers requires Analyzer {
         if (getter hasFlag OVERLOADED)
           error(getter.pos, getter+" is defined twice")
         val getterDef: DefDef = {
+          getter.attributes = value.attributes
           val result = DefDef(getter, vparamss =>
               if (mods hasFlag DEFERRED) EmptyTree
               else typed(atPos(vdef.pos)(Select(This(value.owner), value)), EXPRmode, value.tpe))
@@ -884,9 +885,11 @@ trait Typers requires Analyzer {
           checkNoEscaping.privates(getter, result.tpt)
           copy.DefDef(result, result.mods withAnnotations vdef.mods.attributes, result.name,
                       result.tparams, result.vparamss, result.tpt, result.rhs)
+          //todo: withAnnotations is probably unnecessary
         }
         def setterDef: DefDef = {
           val setr = getter.setter(value.owner)
+          setr.attributes = value.attributes
           val result = atPos(vdef.pos)(
             DefDef(setr, vparamss =>
               if ((mods hasFlag DEFERRED) || (setr hasFlag OVERLOADED))

@@ -567,13 +567,19 @@ trait Namers requires Analyzer {
       makePolyType(typer.reenterTypeParams(tparams), typer.typedType(rhs).tpe);
 
     def typeSig(tree: Tree): Type = {
+      val sym: Symbol = tree.symbol
       tree match {
-        case md: MemberDef => attributes(md)
+        case defn: MemberDef =>
+          val annots = for {
+            val Annotation(constr, elements) <- defn.mods.attributes
+            val ainfo = typer.typedAnnotation(constr, elements)
+            !ainfo.atp.isError
+          } yield ainfo
+          if (!annots.isEmpty) sym.attributes = annots
         case _ =>
       }
       val result =
         try {
-          val sym: Symbol = tree.symbol
           tree match {
             case ClassDef(_, _, tparams, self, impl) =>
               new Namer(makeNewScope(context, tree, sym)).classSig(tparams, self, impl)
@@ -664,66 +670,6 @@ trait Namers requires Analyzer {
             ErrorType
         }
       deSkolemize(result)
-    }
-
-    /**
-     *  @param defn ...
-     */
-    protected def attributes(defn: MemberDef): Unit = {
-      var attrError: Boolean = false;
-      def error(pos: PositionType, msg: String): Null = {
-        context.error(pos, msg)
-        attrError = true
-        null
-      }
-      def getConstant(tree: Tree): Constant = tree match {
-        case Literal(value) => value
-        case arg => error(arg.pos, "attribute argument needs to be a constant; found: "+arg)
-      }
-      val attrInfos =
-        for (val t @ Annotation(constr, elements) <- defn.mods.attributes) yield {
-          typer.typed(constr, EXPRmode | CONSTmode, AnnotationClass.tpe) match {
-            case Apply(Select(New(tpt), nme.CONSTRUCTOR), args) =>
-              val constrArgs = args map getConstant
-              val attrScope = tpt.tpe.decls.
-                filter(sym => sym.isMethod && !sym.isConstructor && sym.hasFlag(JAVA));
-              val names = new collection.mutable.HashSet[Symbol]
-              names ++= attrScope.elements.filter(.isMethod)
-              if (args.length == 1) {
-                names.retain(sym => sym.name != nme.value)
-              }
-              val nvPairs = elements map {
-                case Assign(ntree @ Ident(name), rhs) => {
-                  val sym = attrScope.lookup(name);
-                  if (sym == NoSymbol) {
-                    error(ntree.pos, "unknown attribute element name: " + name)
-                  } else if (!names.contains(sym)) {
-                    error(ntree.pos, "duplicate value for element " + name)
-                  } else {
-                    names -= sym
-                    Pair(sym.name, getConstant(typer.typed(rhs, EXPRmode | CONSTmode, sym.tpe.resultType)))
-                  }
-                }
-              }
-              for (val name <- names) {
-                if (!name.attributes.contains(Triple(AnnotationDefaultAttr.tpe, List(), List()))) {
-                  error(t.pos, "attribute " + tpt.tpe.symbol.fullNameString + " is missing element " + name.name)
-                }
-              }
-              if (tpt.tpe.symbol.hasFlag(JAVA) && settings.target.value == "jvm-1.4") {
-                context.unit.warning (t.pos, "Java annotation will not be emitted in classfile unless you use the '-target:jvm-1.5' option")
-              }
-              AttrInfo(tpt.tpe, constrArgs, nvPairs)
-          }
-        }
-      if (!attrError) {
-        val attributed =
-          if (defn.symbol.isModule) defn.symbol.moduleClass else defn.symbol
-        if (!attrInfos.isEmpty) {
-          attributed.attributes = attrInfos
-        }
-      }
-//    defn.mods setAttr List();
     }
 
     /** Check that symbol's definition is well-formed. This means:
