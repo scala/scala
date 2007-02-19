@@ -453,6 +453,12 @@ BUILD QUICK-TEST LAYER
     </locker>
   <!-- Build actors library -->
     <mkdir dir="${quick.dir}/lib/actors"/>
+    <javac
+      srcdir="${src.dir}/actors"
+      destdir="${quick.dir}/lib/actors"
+      source="1.4" target="1.4" deprecation="yes"
+      classpath="${quick.dir}/lib/actors"
+      includes="scala/actors/**/*.java"/>
     <locker
       srcdir="${src.dir}/actors"
       destdir="${quick.dir}/lib/actors"
@@ -644,6 +650,12 @@ TEST
     </quick>
   <!-- Build actors library -->
     <mkdir dir="${strap.dir}/lib/actors"/>
+    <javac
+      srcdir="${src.dir}/actors"
+      destdir="${quick.dir}/lib/actors"
+      source="1.4" target="1.4" deprecation="yes"
+      classpath="${quick.dir}/lib/actors"
+      includes="scala/actors/**/*.java"/>
     <quick
       srcdir="${src.dir}/actors"
       destdir="${strap.dir}/lib/actors"
