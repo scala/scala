@@ -717,10 +717,10 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
       override def transform(tree: Tree): Tree = {
         if (tree.symbol == ArrayClass) return tree
         val tree1 = tree match {
-          case ClassDef(mods, name, tparams, tpt, impl) =>
+          case ClassDef(mods, name, tparams, self, impl) =>
             if (settings.debug.value)
               log("defs of " + tree.symbol + " = " + tree.symbol.info.decls)
-            copy.ClassDef(tree, mods, name, List(), tpt, impl)
+            copy.ClassDef(tree, mods, name, List(), emptyValDef, impl)
           case DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
             copy.DefDef(tree, mods, name, List(), vparamss, tpt, rhs)
           case AbsTypeDef(_, _, _, _) =>

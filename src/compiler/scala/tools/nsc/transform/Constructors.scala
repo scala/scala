@@ -184,8 +184,8 @@ abstract class Constructors extends Transform {
 
     override def transform(tree: Tree): Tree = {
       tree match {
-        case ClassDef(mods, name, tparams, tpt, impl) if !tree.symbol.hasFlag(INTERFACE) =>
-          copy.ClassDef(tree, mods, name, tparams, tpt, transformClassTemplate(impl))
+        case ClassDef(mods, name, tparams, self, impl) if !tree.symbol.hasFlag(INTERFACE) =>
+          copy.ClassDef(tree, mods, name, tparams, self, transformClassTemplate(impl))
         case _ =>
           super.transform(tree)
       }

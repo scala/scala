@@ -833,11 +833,17 @@ trait Typers requires Analyzer {
       val clazz = cdef.symbol
       reenterTypeParams(cdef.tparams)
       val tparams1 = List.mapConserve(cdef.tparams)(typedAbsTypeDef)
-      val tpt1 = checkNoEscaping.privates(clazz.thisSym, typedType(cdef.tpt))
-      val impl1 = newTyper(context.make(cdef.impl, clazz, newScope))
+      val self1 = cdef.self match {
+        case ValDef(mods, name, tpt, EmptyTree) =>
+          val tpt1 = checkNoEscaping.privates(clazz.thisSym, typedType(tpt))
+          copy.ValDef(cdef.self, mods, name, tpt1, EmptyTree) setType NoType
+      }
+      val implScope = newScope
+      if (self1.name != nme.WILDCARD) implScope enter self1.symbol
+      val impl1 = newTyper(context.make(cdef.impl, clazz, implScope))
         .typedTemplate(cdef.impl, parentTypes(cdef.impl))
       val impl2 = addSyntheticMethods(impl1, clazz, context.unit)
-      val ret = copy.ClassDef(cdef, cdef.mods, cdef.name, tparams1, tpt1, impl2)
+      val ret = copy.ClassDef(cdef, cdef.mods, cdef.name, tparams1, self1, impl2)
         .setType(NoType)
       ret
     }
@@ -1847,17 +1853,6 @@ trait Typers requires Analyzer {
                (context.unit ne null) && defSym.sourceFile != context.unit.source.file))
             defSym = NoSymbol
 
-/*
-          /*<unapply>*/
-          if(settings.Xunapply.value)
-            // unapply: in patterns, look for an object if can't find type
-            if (!defSym.exists && !impSym.exists && name.isTypeName && (mode & PATTERNmode) != 0) {
-              val mod = typedIdent(name.toTermName)
-              return tree setSymbol mod.symbol setType mod.tpe
-            }
-          /*</unapply>*/
-*/
-
           if (defSym.exists) {
             if (impSym.exists)
               ambiguousError(
@@ -1904,10 +1899,13 @@ trait Typers requires Analyzer {
           }
         }
         if (defSym.owner.isPackageClass) pre = defSym.owner.thisType
-        val tree1 = if (qual == EmptyTree) tree
-                    else atPos(tree.pos)(Select(qual, name))
-                      // atPos necessary because qualifier might come from startContext
-        stabilize(checkAccessible(tree1, defSym, pre, qual), pre, mode, pt)
+        if (defSym.isThisSym) typed1(This(defSym.owner), mode, pt)
+        else {
+          val tree1 = if (qual == EmptyTree) tree
+                      else atPos(tree.pos)(Select(qual, name))
+                    // atPos necessary because qualifier might come from startContext
+          stabilize(checkAccessible(tree1, defSym, pre, qual), pre, mode, pt)
+        }
       }
 
       // begin typed1

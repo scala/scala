@@ -260,7 +260,7 @@ abstract class TreeBrowsers {
       case DocDef(comment, definition) =>
         Pair("DocDef", EMPTY)
 
-      case ClassDef(mods, name, tparams, tpt, impl) =>
+      case ClassDef(mods, name, tparams, self, impl) =>
         Pair("ClassDef", name)
 
       case PackageDef(packaged, impl) =>
@@ -395,10 +395,10 @@ abstract class TreeBrowsers {
       case DocDef(comment, definition) =>
         List(definition)
 
-      case ClassDef(mods, name, tparams, tpt, impl) => {
+      case ClassDef(mods, name, tparams, self, impl) => {
         var children: List[Tree] = List()
         children = tparams ::: children
-        tpt :: impl :: children
+        self :: impl :: children
       }
 
       case PackageDef(name, stats) =>

@@ -124,12 +124,12 @@ abstract class LiftCode extends Transform {
         val rhs_ = reify(rhs)
         reflect.ValDef(sym, rhs_)
 
-      case cd @ ClassDef(mods, name, tparams, tpt, impl) =>
+      case cd @ ClassDef(mods, name, tparams, self, impl) =>
         if(!tparams.isEmpty)
           throw new TypeError("cannot handle polymorphic ClassDef ("+name+"): " + tparams)
         val rsym = reify(cd.symbol)
         val rimp = reify(impl)
-        val rtpe = reify(tpt.tpe)
+        val rtpe = reify(self.tpe) //todo: update
         reflect.ClassDef(rsym, rtpe, rimp.asInstanceOf[reflect.Template])
 
       case tmpl @ Template(parents, body) =>
@@ -299,7 +299,7 @@ abstract class LiftCode extends Transform {
 // case EmptyTree =>
 // case LiftPoint(tree) =>
 // case PackageDef(name, stats) =>
-// case ClassDef(mods, name, tparams, tpt, impl) =>
+// case ClassDef(mods, name, tparams, self, impl) =>
 // case ValDef(mods, name, tpt, rhs) =>
 // case DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
 // case AbsTypeDef(mods, name, lo, hi) =>

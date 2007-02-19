@@ -319,8 +319,8 @@ abstract class LambdaLift extends InfoTransform {
             sym.updateInfo(
               lifted(MethodType(sym.info.paramTypes ::: (ps map (.tpe)), sym.info.resultType)));
             copy.DefDef(tree, mods, name, tparams, List(vparams ::: freeParams), tpt, rhs)
-          case ClassDef(mods, name, tparams, tpt, impl @ Template(parents, body)) =>
-            copy.ClassDef(tree, mods, name, tparams, tpt,
+          case ClassDef(mods, name, tparams, self, impl @ Template(parents, body)) =>
+            copy.ClassDef(tree, mods, name, tparams, self,
                           copy.Template(impl, parents, body ::: freeParams))
         }
       case None =>
@@ -397,10 +397,10 @@ abstract class LambdaLift extends InfoTransform {
     /** Transform statements and add lifted definitions to them. */
     override def transformStats(stats: List[Tree], exprOwner: Symbol): List[Tree] = {
       def addLifted(stat: Tree): Tree = stat match {
-        case ClassDef(mods, name, tparams, tpt, impl @ Template(parents, body)) =>
+        case ClassDef(mods, name, tparams, self, impl @ Template(parents, body)) =>
           val lifted = liftedDefs(stat.symbol).toList map addLifted
           val result = copy.ClassDef(
-            stat, mods, name, tparams, tpt, copy.Template(impl, parents, body ::: lifted))
+            stat, mods, name, tparams, self, copy.Template(impl, parents, body ::: lifted))
           liftedDefs -= stat.symbol
           result
         case _ =>

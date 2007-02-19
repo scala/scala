@@ -432,11 +432,25 @@ trait Namers requires Analyzer {
       ClassInfoType(parents, decls, clazz)
     }
 
-    private def classSig(tparams: List[AbsTypeDef], tpt: Tree, impl: Template): Type = {
+    private def classSig(tparams: List[AbsTypeDef], self: ValDef, impl: Template): Type = {
+      val clazz = context.owner
       val tparamSyms = typer.reenterTypeParams(tparams)
-      if (!tpt.isEmpty)
-        context.owner.typeOfThis = selfTypeCompleter(tpt)
-      else tpt.tpe = NoType
+      if (!self.tpt.isEmpty) {
+        clazz.typeOfThis = selfTypeCompleter(self.tpt)
+        self.symbol = clazz.thisSym
+      } else {
+        self.tpt.tpe = NoType
+        if (self.name != nme.WILDCARD) {
+          clazz.typeOfThis = clazz.tpe
+          self.symbol = clazz.thisSym
+        } else {
+          self.symbol = clazz.newThisSym(self.pos) setInfo clazz.tpe
+        }
+      }
+      if (self.name != nme.WILDCARD) {
+        context.scope enter self.symbol
+        clazz.thisSym.name = self.name
+      }
       makePolyType(tparamSyms, templateSig(impl))
     }
 
@@ -561,8 +575,8 @@ trait Namers requires Analyzer {
         try {
           val sym: Symbol = tree.symbol
           tree match {
-            case ClassDef(_, _, tparams, tpt, impl) =>
-              new Namer(makeNewScope(context, tree, sym)).classSig(tparams, tpt, impl)
+            case ClassDef(_, _, tparams, self, impl) =>
+              new Namer(makeNewScope(context, tree, sym)).classSig(tparams, self, impl)
 
             case ModuleDef(_, _, impl) =>
               val clazz = sym.moduleClass

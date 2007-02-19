@@ -184,7 +184,7 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
         val unit =
           new CompilationUnit(
             new SourceFile("<console>", code.toCharArray()))
-        new compiler.syntaxAnalyzer.Parser(unit).templateStatSeq
+        new compiler.syntaxAnalyzer.Parser(unit).templateStatSeq._2
       }
 
       // parse the main code along with the imports

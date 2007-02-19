@@ -121,12 +121,22 @@ abstract class TreePrinters {
         case EmptyTree =>
           print("<empty>")
 
-        case ClassDef(mods, name, tparams, tp, impl) =>
+        case ClassDef(mods, name, tparams, self, impl) =>
           printAnnotations(tree)
           printModifiers(tree, mods)
           print((if (mods hasFlag TRAIT) "trait " else "class ") + symName(tree, name))
           printTypeParams(tparams)
-          printOpt(" requires ", tp); print(" extends "); print(impl)
+          print(" extends ");
+          printRow(impl.parents, " with ")
+          if (!impl.body.isEmpty) {
+            print(" {");
+            if (self.name != nme.WILDCARD) {
+              print(" "); print(self.name); printOpt(": ", self.tpt); print(" => ")
+            } else if (!self.tpt.isEmpty) {
+              print(" _ : "); print(self); print(" => ")
+            }
+          }
+          printColumn(impl.body, "", ";", "}")
 
         case PackageDef(packaged, stats) =>
           printAnnotations(tree)

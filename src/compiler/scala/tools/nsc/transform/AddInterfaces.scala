@@ -301,9 +301,9 @@ abstract class AddInterfaces extends InfoTransform {
     override def transform(tree: Tree): Tree = {
       val sym = tree.symbol
       val tree1 = tree match {
-        case ClassDef(mods, name, tparams, tpt, impl) if (sym.needsImplClass) =>
+        case ClassDef(mods, name, tparams, self, impl) if (sym.needsImplClass) =>
           implClass(sym).initialize // to force lateDEFERRED flags
-          copy.ClassDef(tree, mods | INTERFACE, name, tparams, tpt, ifaceTemplate(impl))
+          copy.ClassDef(tree, mods | INTERFACE, name, tparams, self, ifaceTemplate(impl))
         case DefDef(mods, name, tparams, vparamss, tpt, rhs)
         if (sym.isClassConstructor && sym.isPrimaryConstructor && sym.owner != ArrayClass) =>
           copy.DefDef(tree, mods, name, tparams, vparamss, tpt,

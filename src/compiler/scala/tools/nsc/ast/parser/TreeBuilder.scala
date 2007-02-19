@@ -107,6 +107,9 @@ abstract class TreeBuilder {
     case Annotation(constr, elements) => Annotated(constr, elements, t) setPos attr.pos
   }
 
+  def makeSelfDef(name: Name, tpt: Tree): ValDef =
+    ValDef(Modifiers(PRIVATE), name, tpt, EmptyTree)
+
   /** If tree is a variable pattern, return Some("its name and type").
    *  Otherwise return none */
   private def matchVarPattern(tree: Tree): Option[Pair[Name, Tree]] = tree match {
@@ -138,14 +141,14 @@ abstract class TreeBuilder {
   }
 
   /** Create tree representing an object creation <new parents { stats }> */
-  def makeNew(parents: List[Tree], stats: List[Tree], argss: List[List[Tree]]): Tree =
+  def makeNew(parents: List[Tree], self: ValDef, stats: List[Tree], argss: List[List[Tree]]): Tree =
     if (parents.tail.isEmpty && stats.isEmpty)
       New(parents.head, argss)
     else {
       val x = nme.ANON_CLASS_NAME.toTypeName
       Block(
         List(ClassDef(
-          Modifiers(FINAL | SYNTHETIC), x, List(), TypeTree(),
+          Modifiers(FINAL | SYNTHETIC), x, List(), self,
           Template(parents, NoMods, List(List()), argss, stats))),
         New(Ident(x), List(List())))
     }

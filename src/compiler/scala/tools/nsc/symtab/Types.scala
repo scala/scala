@@ -1285,7 +1285,7 @@ trait Types requires SymbolTable {
   abstract class LazyType extends Type {
     override def isComplete: boolean = false
     override def complete(sym: Symbol): unit
-    override def toString = "LazyType"
+    override def toString = "<?>"
   }
 
   /** A class representing a lazy type with known type parameters.

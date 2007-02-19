@@ -222,7 +222,7 @@ trait Trees requires Global {
   }
 
   /** Class definition */
-  case class ClassDef(mods: Modifiers, name: Name, tparams: List[AbsTypeDef], tpt: Tree, impl: Template)
+  case class ClassDef(mods: Modifiers, name: Name, tparams: List[AbsTypeDef], self: ValDef, impl: Template)
        extends ImplDef
 
   /**
@@ -235,7 +235,7 @@ trait Trees requires Global {
       ClassDef(Modifiers(sym.flags),
                sym.name,
                sym.typeParams map AbsTypeDef,
-               if (sym.thisSym == sym) EmptyTree else TypeTree(sym.typeOfThis),
+               if (sym.thisSym == sym || phase.erasedTypes) emptyValDef else ValDef(sym.thisSym),
                impl) setSymbol sym
     }
 
@@ -297,6 +297,8 @@ trait Trees requires Global {
   }
 
   def ValDef(sym: Symbol): ValDef = ValDef(sym, EmptyTree)
+
+  object emptyValDef extends ValDef(Modifiers(PRIVATE), nme.WILDCARD, TypeTree(), EmptyTree)
 
   /** Method definition
    *
@@ -695,7 +697,7 @@ trait Trees requires Global {
 /* A standard pattern match
   case EmptyTree =>
   case PackageDef(name, stats) =>
-  case ClassDef(mods, name, tparams, tpt, impl) =>
+  case ClassDef(mods, name, tparams, self, impl) =>
   case ModuleDef(mods, name, impl) =>                         (eliminated by refcheck)
   case ValDef(mods, name, tpt, rhs) =>
   case DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
@@ -741,7 +743,7 @@ trait Trees requires Global {
 */
 
   abstract class TreeCopier {
-    def ClassDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[AbsTypeDef], tpt: Tree, impl: Template): ClassDef
+    def ClassDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[AbsTypeDef], self: ValDef, impl: Template): ClassDef
     def PackageDef(tree: Tree, name: Name, stats: List[Tree]): PackageDef
     def ModuleDef(tree: Tree, mods: Modifiers, name: Name, impl: Template): ModuleDef
     def ValDef(tree: Tree, mods: Modifiers, name: Name, tpt: Tree, rhs: Tree): ValDef
@@ -788,8 +790,8 @@ trait Trees requires Global {
   }
 
   class StrictTreeCopier extends TreeCopier {
-    def ClassDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[AbsTypeDef], tpt: Tree, impl: Template) =
-      new ClassDef(mods, name, tparams, tpt, impl).copyAttrs(tree);
+    def ClassDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[AbsTypeDef], self: ValDef, impl: Template) =
+      new ClassDef(mods, name, tparams, self, impl).copyAttrs(tree);
     def PackageDef(tree: Tree, name: Name, stats: List[Tree]) =
       new PackageDef(name, stats).copyAttrs(tree)
     def ModuleDef(tree: Tree, mods: Modifiers, name: Name, impl: Template) =
@@ -880,10 +882,10 @@ trait Trees requires Global {
 
   class LazyTreeCopier(copy: TreeCopier) extends TreeCopier {
     def this() = this(new StrictTreeCopier)
-    def ClassDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[AbsTypeDef], tpt: Tree, impl: Template) = tree match {
-      case t @ ClassDef(mods0, name0, tparams0, tpt0, impl0)
-      if (mods0 == mods && (name0 == name) && (tparams0 == tparams) && (tpt0 == tpt) && (impl0 == impl)) => t
-      case _ => copy.ClassDef(tree, mods, name, tparams, tpt, impl)
+    def ClassDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[AbsTypeDef], self: ValDef, impl: Template) = tree match {
+      case t @ ClassDef(mods0, name0, tparams0, self0, impl0)
+      if (mods0 == mods && (name0 == name) && (tparams0 == tparams) && (self0 == self) && (impl0 == impl)) => t
+      case _ => copy.ClassDef(tree, mods, name, tparams, self, impl)
     }
     def PackageDef(tree: Tree, name: Name, stats: List[Tree]) = tree match {
       case t @ PackageDef(name0, stats0)
@@ -1115,22 +1117,22 @@ trait Trees requires Global {
         atOwner(tree.symbol.moduleClass) {
           copy.PackageDef(tree, name, transformStats(stats, currentOwner))
         }
-      case ClassDef(mods, name, tparams, tpt, impl) =>
+      case ClassDef(mods, name, tparams, self, impl) =>
         atOwner(tree.symbol) {
           copy.ClassDef(tree, mods, name, transformAbsTypeDefs(tparams),
-                        transform(tpt), transformTemplate(impl))
+                        transformValDef(self), transformTemplate(impl))
         }
       case ModuleDef(mods, name, impl) =>
-      atOwner(tree.symbol.moduleClass) {
-        copy.ModuleDef(tree, mods, name, transformTemplate(impl))
+        atOwner(tree.symbol.moduleClass) {
+          copy.ModuleDef(tree, mods, name, transformTemplate(impl))
         }
       case ValDef(mods, name, tpt, rhs) =>
-      atOwner(tree.symbol) {
-        copy.ValDef(tree, mods, name, transform(tpt), transform(rhs))
+        atOwner(tree.symbol) {
+          copy.ValDef(tree, mods, name, transform(tpt), transform(rhs))
         }
       case DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
-      atOwner(tree.symbol) {
-        copy.DefDef(
+        atOwner(tree.symbol) {
+          copy.DefDef(
             tree, mods, name, transformAbsTypeDefs(tparams), transformValDefss(vparamss), transform(tpt), transform(rhs))
         }
       case AbsTypeDef(mods, name, lo, hi) =>
@@ -1225,10 +1227,12 @@ trait Trees requires Global {
       transform(tree: Tree).asInstanceOf[Template]
     def transformAbsTypeDefs(trees: List[AbsTypeDef]): List[AbsTypeDef] =
       List.mapConserve(trees)(tree => transform(tree).asInstanceOf[AbsTypeDef])
+    def transformValDef(tree: ValDef): ValDef =
+      transform(tree).asInstanceOf[ValDef]
     def transformValDefs(trees: List[ValDef]): List[ValDef] =
-      List.mapConserve(trees)(tree => transform(tree).asInstanceOf[ValDef])
+      List.mapConserve(trees)(transformValDef)
     def transformValDefss(treess: List[List[ValDef]]): List[List[ValDef]] =
-      List.mapConserve(treess)(tree => transformValDefs(tree))
+      List.mapConserve(treess)(transformValDefs)
     def transformCaseDefs(trees: List[CaseDef]): List[CaseDef] =
       List.mapConserve(trees)(tree => transform(tree).asInstanceOf[CaseDef])
     def transformIdents(trees: List[Ident]): List[Ident] =
@@ -1257,9 +1261,9 @@ trait Trees requires Global {
         atOwner(tree.symbol.moduleClass) {
           traverseTrees(stats)
         }
-      case ClassDef(mods, name, tparams, tpt, impl) =>
+      case ClassDef(mods, name, tparams, self, impl) =>
         atOwner(tree.symbol) {
-          traverseTrees(tparams); traverse(tpt); traverse(impl)
+          traverseTrees(tparams); traverse(self); traverse(impl)
         }
       case ModuleDef(mods, name, impl) =>
         atOwner(tree.symbol.moduleClass) {

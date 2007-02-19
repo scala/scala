@@ -78,7 +78,7 @@ abstract class GenICode extends SubComponent  {
       case PackageDef(name, stats) =>
         gen(stats, ctx setPackage name)
 
-      case ClassDef(mods, name, tparams, tpt, impl) =>
+      case ClassDef(mods, name, _, _, impl) =>
         log("Generating class: " + tree.symbol.fullNameString)
         ctx setClass (new IClass(tree.symbol) setCompilationUnit unit)
         addClassFields(ctx, tree.symbol);

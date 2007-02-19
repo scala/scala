@@ -180,7 +180,7 @@ abstract class TailCalls extends Transform
         case EmptyTree => tree
 
         case PackageDef(name, stats) => super.transform(tree)
-        case ClassDef(mods, name, tparams, tpt, impl) =>
+        case ClassDef(_, name, _, _, _) =>
           log("Entering class " + name)
           val res = super.transform(tree)
           log("Leaving class " + name)

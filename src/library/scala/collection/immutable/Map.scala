@@ -132,6 +132,22 @@ trait Map[A, +B] extends collection.Map[A, B] {
   def -- (keys: Iterator[A]): Map[A, B] =
     (this /: keys) ((m, key) => m - key)
 
+
+  /** The same map with a given default function */
+  def withDefault[B1 >: B](d: A => B1): Map[A, B1] = new Map[A, B1] {
+    def size = Map.this.size
+    def get(key: A) = Map.this.get(key)
+    def elements = Map.this.elements
+    def empty[C] = Map.this.empty
+    def update [B2 >: B1](key: A, value: B2): Map[A, B2] =
+      Map.this.update(key, value) withDefault d
+    def -(key: A): Map[A, B1] = Map.this - key withDefault d
+    override def default(key: A): B1 = d(key)
+  }
+
+  /** The same map with a given default value */
+  def withDefaultValue[B1 >: B](d: B1): Map[A, B1] = withDefault(x => d)
+
   /** This function transforms all the values of mappings contained
    *  in this map with function <code>f</code>.
    *

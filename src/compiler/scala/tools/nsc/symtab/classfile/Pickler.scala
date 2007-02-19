@@ -105,7 +105,7 @@ abstract class Pickler extends SubComponent {
         putSymbol(sym.owner)
         putSymbol(sym.privateWithin)
         putType(sym.info)
-        if (sym.thisSym != sym)
+        if (sym.thisSym.tpe != sym.tpe)
           putType(sym.typeOfThis);
         putSymbol(sym.alias)
         if (!sym.children.isEmpty)
@@ -236,7 +236,7 @@ abstract class Pickler extends SubComponent {
           tag
         case sym: ClassSymbol =>
           val posOffset = writeSymInfo(sym)
-          if (sym.thisSym != sym) writeRef(sym.typeOfThis)
+          if (sym.thisSym.tpe != sym.tpe) writeRef(sym.typeOfThis)
           CLASSsym + posOffset
         case sym: TypeSymbol =>
           val posOffset = writeSymInfo(sym)

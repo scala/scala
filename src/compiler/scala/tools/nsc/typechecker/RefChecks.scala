@@ -458,7 +458,7 @@ abstract class RefChecks extends InfoTransform {
     def transformStat(tree: Tree, index: int): List[Tree] = tree match {
       case ModuleDef(mods, name, impl) =>
 	val sym = tree.symbol
-	val cdef = ClassDef(mods | MODULE, name, List(), EmptyTree, impl)
+	val cdef = ClassDef(mods | MODULE, name, List(), emptyValDef, impl)
 	  .setPos(tree.pos)
           .setSymbol(sym.moduleClass)
           .setType(NoType);
@@ -577,7 +577,7 @@ abstract class RefChecks extends InfoTransform {
       val sym = tree.symbol
       var result = tree
       tree match {
-	case ClassDef(mods, name, tparams, tpe, impl) =>
+	case ClassDef(mods, name, tparams, _, impl) =>
 	  validateVariance(sym, sym.info, CoVariance)
 	  validateVariance(sym, sym.typeOfThis, CoVariance)
 

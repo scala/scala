@@ -189,7 +189,7 @@ trait Symbols requires SymbolTable {
     final def isModule = isTerm && hasFlag(MODULE)
     final def isStaticModule = isModule && isStatic && !isMethod
     final def isPackage = isModule && hasFlag(PACKAGE)
-    final def isThisSym = isTerm && name == nme.this_
+    final def isThisSym = isTerm && owner.thisSym == this
     final def isThisSkolem = isTerm && deSkolemize != this
     final def isError = hasFlag(IS_ERROR)
     final def isErroneous = isError || isInitialized && tpe.isErroneous
@@ -1252,7 +1252,10 @@ trait Symbols requires SymbolTable {
     override def cloneSymbolImpl(owner: Symbol): Symbol = {
       assert(!isModuleClass)
       val clone = new ClassSymbol(owner, pos, name)
-      if (thisSym != this) clone.typeOfThis = typeOfThis
+      if (thisSym != this) {
+        clone.typeOfThis = typeOfThis
+        clone.thisSym.name = thisSym.name
+      }
       clone
     }
 
