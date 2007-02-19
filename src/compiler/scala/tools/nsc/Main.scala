@@ -33,13 +33,14 @@ object Main extends AnyRef with EvalLoop {
   def resident(compiler: Global): unit =
     loop { line =>
       val args = List.fromString(line, ' ')
-      val command = new CompilerCommand(args, error, true)
+      val command = new CompilerCommand(args, new Settings(error), error, true)
       (new compiler.Run) compile command.files
     }
 
   def process(args: Array[String]): unit = {
-    val command = new CompilerCommand(List.fromArray(args), error, false)
-    reporter = new ConsoleReporter(command.settings)
+    val settings = new Settings(error)
+    reporter = new ConsoleReporter(settings)
+    val command = new CompilerCommand(List.fromArray(args), settings, error, false)
     if (command.settings.version.value)
       reporter.info(null, versionMsg, true)
     else if (command.settings.help.value)

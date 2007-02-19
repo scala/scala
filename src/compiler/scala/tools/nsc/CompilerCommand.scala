@@ -10,14 +10,13 @@ package scala.tools.nsc
 import compat.StringBuilder
 
 /** A class representing command line info for scalac */
-class CompilerCommand(arguments: List[String], error: String => unit, interactive: boolean) {
+class CompilerCommand(arguments: List[String], val settings: Settings,
+                      error: String => unit, interactive: boolean) {
+
   private var fs: List[String] = List()
 
   /** All files to compile */
   def files: List[String] = fs.reverse
-
-  /** The applicable settings */
-  val settings: Settings = new Settings(error)
 
   /** The name of the command */
   val cmdName = "scalac"

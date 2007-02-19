@@ -41,8 +41,9 @@ object MainTokenMetric {
   }
 
   def process(args: Array[String]): unit = {
-    val command = new CompilerCommand(List.fromArray(args), error, false)
-    reporter = new ConsoleReporter(command.settings)
+    val settings = new Settings(error)
+    reporter = new ConsoleReporter(settings)
+    val command = new CompilerCommand(List.fromArray(args), settings, error, false)
     try {
       val compiler = new Global(command.settings, reporter)
       tokenMetric(compiler, command.files)

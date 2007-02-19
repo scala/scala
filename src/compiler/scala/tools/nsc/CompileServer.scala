@@ -93,7 +93,7 @@ object CompileServer extends SocketServer {
         def error(msg: String): unit =
           reporter.error(/*new Position*/ FakePos("fsc"),
                          msg + "\n  fsc -help  gives more information")
-        val command = new CompilerCommand(args, error, false) {
+        val command = new CompilerCommand(args, new Settings(error), error, false) {
           override val cmdName = "fsc"
           settings.disable(settings.prompt)
           settings.disable(settings.resident)
