@@ -22,14 +22,15 @@ import scala.collection.mutable.{ArrayBuffer, Buffer, HashMap, Queue, Stack, Has
  * The <code>Scheduler</code> object is used by
  * <code>Actor</code> to execute tasks of an execution of an actor.
  *
- * @version 0.9.2
+ * @version 0.9.4
  * @author Philipp Haller
  */
 object Scheduler {
   private var sched: IScheduler =
     {
-      var s: IScheduler = null
+      var s: IScheduler = new FJTaskScheduler2
 
+/*
       // Check for JDK version >= 1.5
       var olderThanJDK5 = false
       try {
@@ -43,6 +44,7 @@ object Scheduler {
         new TickedScheduler
       else
         Class.forName("scala.actors.ThreadPoolScheduler").newInstance().asInstanceOf[IScheduler]
+*/
       s.start()
       s
     }
@@ -53,7 +55,18 @@ object Scheduler {
   }
 
   def start(task: Reaction) = sched.start(task)
-  def execute(task: Reaction) = sched.execute(task)
+  def execute(task: Reaction) = {
+    val t = currentThread
+    if (t.isInstanceOf[FJTaskRunner]) {
+      val tr = t.asInstanceOf[FJTaskRunner]
+      tr.push(new FJTask {
+        def run() {
+          task.run()
+        }
+      })
+    } else sched.execute(task)
+  }
+
   def tick(a: Actor) = sched.tick(a)
   def terminated(a: Actor) = sched.terminated(a)
   def pendReaction: unit = sched.pendReaction
@@ -71,7 +84,7 @@ object Scheduler {
  * This abstract class provides a common interface for all
  * schedulers used to execute actor tasks.
  *
- * @version 0.9.2
+ * @version 0.9.4
  * @author Philipp Haller
  */
 trait IScheduler {
@@ -101,7 +114,7 @@ trait IScheduler {
  * This scheduler executes the tasks of an actor on a single
  * thread (the current thread).
  *
- * @version 0.9.2
+ * @version 0.9.4
  * @author Philipp Haller
  */
 class SingleThreadedScheduler extends IScheduler {
@@ -135,7 +148,7 @@ class SingleThreadedScheduler extends IScheduler {
  * The <code>QuickException</code> class is used to manage control flow
  * of certain schedulers and worker threads.
  *
- * @version 0.9.2
+ * @version 0.9.4
  * @author Philipp Haller
  */
 private[actors] class QuitException extends Throwable {
@@ -195,7 +208,7 @@ private[actors] class QuitException extends Throwable {
  *   execution. QED
  * </p>
  *
- * @version 0.9.2
+ * @version 0.9.4
  * @author Philipp Haller
  */
 class WorkerThread(sched: IScheduler) extends Thread {

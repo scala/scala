@@ -14,12 +14,12 @@ package scala.actors
  * The <code>InputChannel</code> trait provides a common interface
  * for all channels from which values can be received.
  *
- * @version 0.9.2
+ * @version 0.9.4
  * @author Philipp Haller
  */
-trait InputChannel[Msg] {
-  def receive[R](f: PartialFunction[Any, R]): R
+trait InputChannel[+Msg] {
+  def receive[R](f: PartialFunction[Msg, R]): R
   def receiveWithin[R](msec: long)(f: PartialFunction[Any, R]): R
-  def react(f: PartialFunction[Any, Unit]): Nothing
+  def react(f: PartialFunction[Msg, Unit]): Nothing
   def reactWithin(msec: long)(f: PartialFunction[Any, Unit]): Nothing
 }

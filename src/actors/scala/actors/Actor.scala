@@ -19,7 +19,7 @@ import compat.Platform
  * <code>receive</code>, <code>react</code>, <code>reply</code>,
  * etc.
  *
- * @version 0.9.2
+ * @version 0.9.4
  * @author Philipp Haller
  */
 object Actor {
@@ -257,12 +257,15 @@ object Actor {
  *   implementation of event-based actors.
  * </p>
  * <p>
- *   The main ideas of our approach are explained in the paper<br>
+ *   The main ideas of our approach are explained in the papers<br>
  *   <b>Event-Based Programming without Inversion of Control</b>,
- *   Philipp Haller, Martin Odersky <i>Proc. JMLC 2006</i>
+ *   Philipp Haller and Martin Odersky, <i>Proc. JMLC 2006</i>
+ *   <br><br>
+ *   <b>Actors that Unify Threads and Events</b>,
+ *   Philipp Haller and Martin Odersky, <i>LAMP-REPORT-2007-001, EPFL</i>
  * </p>
  *
- * @version 0.9.2
+ * @version 0.9.4
  * @author Philipp Haller
  */
 trait Actor extends OutputChannel[Any] {
@@ -328,19 +331,27 @@ trait Actor extends OutputChannel[Any] {
       tick()
       val qel = mailbox.extractFirst((m: Any) => f.isDefinedAt(m))
       if (null eq qel) {
-        waitingFor = f.isDefinedAt
-        isSuspended = true
-        received = None
-        suspendActorFor(msec)
-        if (received.isEmpty) {
-          if (f.isDefinedAt(TIMEOUT)) {
-            waitingFor = waitingForNone
-            isSuspended = false
-            val result = f(TIMEOUT)
-            return result
-          }
+        if (msec == 0) {
+          if (f.isDefinedAt(TIMEOUT))
+            return f(TIMEOUT)
           else
             error("unhandled timeout")
+        }
+        else {
+          waitingFor = f.isDefinedAt
+          isSuspended = true
+          received = None
+          suspendActorFor(msec)
+          if (received.isEmpty) {
+            if (f.isDefinedAt(TIMEOUT)) {
+              waitingFor = waitingForNone
+              isSuspended = false
+              val result = f(TIMEOUT)
+              return result
+            }
+            else
+              error("unhandled timeout")
+          }
         }
       } else {
         received = Some(qel.msg)
@@ -432,6 +443,44 @@ trait Actor extends OutputChannel[Any] {
     }
   }
 
+  def !!(msg: Any): Future[Any] = {
+    val ftch = new Channel[Any](Actor.self)
+    send(msg, ftch)
+    new Future[Any](ftch) {
+      def apply() =
+        if (isSet) value.get
+        else ch.receive {
+          case any => value = Some(any); any
+        }
+      def isSet = value match {
+        case None => ch.receiveWithin(0) {
+          case TIMEOUT => false
+          case any => value = Some(any); true
+        }
+        case Some(_) => true
+      }
+    }
+  }
+
+  def !![a](msg: Any, f: PartialFunction[Any, a]): Future[a] = {
+    val ftch = new Channel[Any](Actor.self)
+    send(msg, ftch)
+    new Future[a](ftch) {
+      def apply() =
+        if (isSet) value.get
+        else ch.receive {
+          case any => value = Some(f(any)); value.get
+        }
+      def isSet = value match {
+        case None => ch.receiveWithin(0) {
+          case TIMEOUT => false
+          case any => value = Some(f(any)); true
+        }
+        case Some(_) => true
+      }
+    }
+  }
+
   def reply(msg: Any): Unit = session ! msg
 
   private var rc = new Channel[Any](this)
@@ -449,7 +498,6 @@ trait Actor extends OutputChannel[Any] {
   private[actors] def session: Channel[Any] =
     if (sessions.isEmpty) null
     else sessions.head.asInstanceOf[Channel[Any]]
-
 
   private[actors] var continuation: PartialFunction[Any, Unit] = null
   private[actors] var timeoutPending = false
@@ -654,7 +702,7 @@ trait Actor extends OutputChannel[Any] {
  * }
  * </pre>
  *
- * @version 0.9.2
+ * @version 0.9.4
  * @author Philipp Haller
  */
 case object TIMEOUT
@@ -664,7 +712,7 @@ case object TIMEOUT
  * <p>This class is used to manage control flow of actor
  * executions.</p>
  *
- * @version 0.9.2
+ * @version 0.9.4
  * @author Philipp Haller
  */
 private[actors] class SuspendActorException extends Throwable {
