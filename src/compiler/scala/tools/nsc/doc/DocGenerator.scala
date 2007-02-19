@@ -511,7 +511,7 @@ abstract class DocGenerator extends Models {
       val sym = mmbr.tree.symbol
       val Pair(sym1, kind1) =
         if (sym.isPrimaryConstructor) Pair(sym.owner, CONSTRUCTOR)
-        else Pair(sym, kindOf(mmbr.tree))
+        else Pair(sym, if (sym.isConstructor) DEF else kindOf(mmbr.tree))
       comments.get(sym1) match {
         case Some(text) => comment(text, false, kind1)
         case None => NodeSeq.Empty
