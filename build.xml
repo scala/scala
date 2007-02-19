@@ -652,9 +652,9 @@ TEST
     <mkdir dir="${strap.dir}/lib/actors"/>
     <javac
       srcdir="${src.dir}/actors"
-      destdir="${quick.dir}/lib/actors"
+      destdir="${strap.dir}/lib/actors"
       source="1.4" target="1.4" deprecation="yes"
-      classpath="${quick.dir}/lib/actors"
+      classpath="${strap.dir}/lib/actors"
       includes="scala/actors/**/*.java"/>
     <quick
       srcdir="${src.dir}/actors"
@@ -797,6 +797,9 @@ DOCUMENTATION
       <include name="dbc/**/*.scala"/>
       <include name="actors/**/*.scala"/>
       <exclude name="actors/scala/actors/ThreadPoolScheduler.scala" if="java14"/>
+      <exclude name="actors/scala/actors/Scheduler.scala"/>
+      <exclude name="actors/scala/actors/FJTaskScheduler.scala"/>
+      <exclude name="actors/scala/actors/FJTaskScheduler2.scala"/>
       <include name="library/**/*.scala"/>
       <excludesfile name="${nsc.excludes.file}" if="excludes.avail"/>
     </quickdoc>
