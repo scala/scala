@@ -14,8 +14,8 @@ x4 = <na>
 y4 = <na>
 x4(2): 4 - y4(2): 4
 
-x = List({buffers,20},{layers,2},{title,3})
-y = List({buffers,20},{layers,2},{title,3})
+x = List((buffers,20),(layers,2),(title,3))
+y = List((buffers,20),(layers,2),(title,3))
 x equals y: true - y equals x: true
 
 x = Map(buffers -> 20, layers -> 2, title -> 3)

@@ -249,10 +249,10 @@ case class {tupleClassname(i)}{__typeArgs__}({ __fields__ })
    override def toString() = {{
      val sb = new compat.StringBuilder
      { if ({i} == 1)
-         "sb.append('{').append(_" + {i} + ").append(\",}\")"
+         "sb.append('(').append(_" + {i} + ").append(\",)\")"
        else {
          val xs = List.range(1, i+1).map(i => ".append(_" + i + ")")
-         xs.mkString("sb.append('{')", ".append(',')",".append('}')")
+         xs.mkString("sb.append('(')", ".append(',')",".append(')')")
        }
      }
      sb.toString
