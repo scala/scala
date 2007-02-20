@@ -331,7 +331,7 @@ abstract class TreeBuilder {
   /** Create tree for a lifted expression XX-LIFTING
    */
   def makeLifted(gs: List[ValFrom], body: Tree): Tree = {
-    def combine(gs: List[ValFrom]): ValFrom = gs match {
+    def combine(gs: List[ValFrom]): ValFrom = (gs: @unsealed) match {
       case g :: Nil => g
       case ValFrom(pos1, pat1, rhs1) :: gs2 =>
         val ValFrom(pos2, pat2, rhs2) = combine(gs2)

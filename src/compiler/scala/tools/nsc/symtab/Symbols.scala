@@ -1312,8 +1312,10 @@ trait Symbols requires SymbolTable {
   case class AttrInfo(atp: Type, args: List[Constant], assocs: List[Pair[Name, Constant]]) {
     override def toString: String =
       atp +
-      (if (args.isEmpty) "" else args.mkString("(", ", ", ")")) +
-      (assocs map { case Pair(x, y) => x+" = "+y } mkString ("{", ", ", "}"))
+      (if (args.isEmpty) ""
+       else args.mkString("(", ", ", ")")) +
+      (if (assocs.isEmpty) ""
+       else (assocs map { case Pair(x, y) => x+" = "+y } mkString ("{", ", ", "}")))
   }
 
   def cloneSymbols(syms: List[Symbol]): List[Symbol] = {

@@ -106,10 +106,12 @@ abstract class TreePrinters {
 
     def printAnnotations(tree: Tree): unit = {
       val attrs = tree.symbol.attributes
-      if (!attrs.isEmpty) print(attrs mkString ("[", ", ", "]"))
+      if (!attrs.isEmpty)
+        attrs foreach { attr => print("@"+attr+" ") }
       else {
         val attrs = tree.asInstanceOf[MemberDef].mods.attributes
-        if (!attrs.isEmpty) printRow(attrs, "[", ", ", "]")
+        if (!attrs.isEmpty)
+          attrs foreach { attr => print("@"+attr+" ") }
       }
     }
 
