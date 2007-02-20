@@ -72,9 +72,6 @@ abstract class BoxedArray extends Seq[Any] {
   // todo: eliminate
   def subArray(from: Int, end: Int): AnyRef
 
-  override def slice(from: Int, end: Int): Seq[Object] =
-    subArray(from, end).asInstanceOf[Seq[Object]]
-
   final override def map[b](f: Any => b): Array[b] = {
     val len = length
     val result = new Array[b](len)

@@ -17,8 +17,8 @@ scopes.scala:14: error: y is already defined as value y
   def f2(x: int)(y: int, y: float) = x + y
                          ^
 scopes.scala:15: error: x is already defined as value x
-  (x: int, x: float) => x
-            ^
+  val closure = (x: int, x: float) => x
+                          ^
 scopes.scala:17: error: x is already defined as value x
     case x::x => x
             ^

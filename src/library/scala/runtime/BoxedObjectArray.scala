@@ -62,4 +62,11 @@ final class BoxedObjectArray(val value: Array[AnyRef]) extends BoxedArray {
     }
     new BoxedObjectArray(result)
   }
+
+  final override def slice(start: Int, end: Int): BoxedArray = {
+    val len = end - start
+    val result = create(len)
+    Array.copy(value, start, result, 0, len)
+    new BoxedObjectArray(result)
+  }
 }

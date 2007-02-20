@@ -57,4 +57,11 @@ final class BoxedFloatArray(val value: Array[Float]) extends BoxedArray {
     }
     new BoxedFloatArray(result)
   }
+
+  final override def slice(start: Int, end: Int): BoxedArray = {
+    val len = end - start
+    val result = new Array[Float](len)
+    Array.copy(value, start, result, 0, len)
+    new BoxedFloatArray(result)
+  }
 }

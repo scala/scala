@@ -128,13 +128,11 @@ abstract class TreePrinters {
           printTypeParams(tparams)
           print(" extends ");
           printRow(impl.parents, " with ")
-          if (!impl.body.isEmpty) {
-            print(" {");
-            if (self.name != nme.WILDCARD) {
-              print(" "); print(self.name); printOpt(": ", self.tpt); print(" => ")
-            } else if (!self.tpt.isEmpty) {
-              print(" _ : "); print(self); print(" => ")
-            }
+          print(" {");
+          if (self.name != nme.WILDCARD) {
+            print(" "); print(self.name); printOpt(": ", self.tpt); print(" => ")
+          } else if (!self.tpt.isEmpty) {
+            print(" _ : "); print(self.tpt); print(" => ")
           }
           printColumn(impl.body, "", ";", "}")
 
