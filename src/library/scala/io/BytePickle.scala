@@ -11,8 +11,7 @@
 
 package scala.io
 
-
-import scala.collection.mutable.{HashMap,ArrayBuffer}
+import scala.collection.mutable.{HashMap, ArrayBuffer}
 
 /**
  * Pickler combinators.
@@ -20,8 +19,8 @@ import scala.collection.mutable.{HashMap,ArrayBuffer}
  * see <a href="http://research.microsoft.com/~akenn/fun/"
  * target="_top">http://research.microsoft.com/~akenn/fun/</a>.
  *
- * @author  Philipp Haller (philipp.haller&lt;at&gt;epfl.ch)
- * @version 1.0
+ * @author  Philipp Haller
+ * @version 1.1
  */
 object BytePickle {
   abstract class SPU[t] {
@@ -289,7 +288,7 @@ object BytePickle {
     def pairToList(p: Pair[a,List[a]]): List[a] =
       p._1 :: p._2;
     def listToPair(l: List[a]): Pair[a,List[a]] =
-      l match { case x :: xs => Pair(x, xs) }
+      (l: @unsealed) match { case x :: xs => Pair(x, xs) }
 
     if (n == 0) ulift(Nil)
     else
@@ -300,7 +299,7 @@ object BytePickle {
     def pairToList(p: Pair[a,List[a]]): List[a] =
       p._1 :: p._2;
     def listToPair(l: List[a]): Pair[a,List[a]] =
-      l match { case x :: xs => Pair(x, xs) }
+      (l: @unsealed) match { case x :: xs => Pair(x, xs) }
 
     if (n == 0) lift(Nil)
     else
