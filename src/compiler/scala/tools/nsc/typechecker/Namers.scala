@@ -575,7 +575,10 @@ trait Namers requires Analyzer {
             val ainfo = typer.typedAnnotation(constr, elements)
             !ainfo.atp.isError
           } yield ainfo
-          if (!annots.isEmpty) sym.attributes = annots
+          if (!annots.isEmpty) {
+            val annotated = if (sym.isModule) sym.moduleClass else sym
+            annotated.attributes = annots
+          }
         case _ =>
       }
       val result =

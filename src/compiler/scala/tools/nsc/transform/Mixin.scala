@@ -365,7 +365,7 @@ abstract class Mixin extends InfoTransform {
             tree.tpe = ifacetpe
           }
           tree
-        case ValDef(_, _, _, _) if (currentOwner.isImplClass && tree != emptyValDef) =>
+        case ValDef(_, _, _, _) if currentOwner.isImplClass =>
           EmptyTree
         case _ =>
           tree

@@ -129,7 +129,7 @@ abstract class LiftCode extends Transform {
           throw new TypeError("cannot handle polymorphic ClassDef ("+name+"): " + tparams)
         val rsym = reify(cd.symbol)
         val rimp = reify(impl)
-        val rtpe = reify(self.tpe) //todo: update
+        val rtpe = reify(self.tpt.tpe) //todo: update
         reflect.ClassDef(rsym, rtpe, rimp.asInstanceOf[reflect.Template])
 
       case tmpl @ Template(parents, body) =>
