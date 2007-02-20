@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -25,7 +25,7 @@ import compat.StringBuilder
  *
  * @todo _vlue should be a normalized attribute value
  */
-[serializable]
+@serializable
 abstract class MetaData extends Iterable[MetaData] {
 
   /** appends given MetaData items to this MetaData list.
@@ -149,6 +149,7 @@ abstract class MetaData extends Iterable[MetaData] {
 
 
   /** gets value of qualified (prefixed) attribute with given key.
+   *
    * @param  uri namespace of key
    * @param  scope a namespace scp (usually of the element owning this attribute list)
    * @param  key to be looked fore

@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -15,8 +15,7 @@ package scala.collection.mutable
 /** This class should be used as a mixin. It synchronizes the <code>Map</code>
  *  functions of the class into which it is mixed in.
  *
- *  @author  Matthias Zenger
- *  @author  Martin Odersky
+ *  @author  Matthias Zenger, Martin Odersky
  *  @version 2.0, 31/12/2006
  */
 trait SynchronizedMap[A, B] extends Map[A, B] {
@@ -90,7 +89,8 @@ trait SynchronizedMap[A, B] extends Map[A, B] {
     super.++=(it)
   }
 
-  [deprecated] override def incl(mappings: Pair[A, B]*): Unit = synchronized {
+  @deprecated
+  override def incl(mappings: Pair[A, B]*): Unit = synchronized {
     super.incl(mappings: _*)
   }
 
@@ -110,7 +110,8 @@ trait SynchronizedMap[A, B] extends Map[A, B] {
     super.--=(it)
   }
 
-  [deprecated] override def excl(keys: A*): Unit = synchronized {
+  @deprecated
+  override def excl(keys: A*): Unit = synchronized {
     super.excl(keys: _*)
   }
 
@@ -122,7 +123,8 @@ trait SynchronizedMap[A, B] extends Map[A, B] {
     super.transform(f)
   }
 
-  [deprecated] override def map[C](f: Pair[A, B] => C) = synchronized {
+  @deprecated
+  override def map[C](f: Pair[A, B] => C) = synchronized {
     super.map(f)
   }
 
@@ -131,7 +133,8 @@ trait SynchronizedMap[A, B] extends Map[A, B] {
   }
 
   /** @deprecated  use retain instead */
-  [deprecated] override def filter(p: Pair[A, B] => Boolean) = synchronized {
+  @deprecated
+  override def filter(p: Pair[A, B] => Boolean) = synchronized {
     super.filter(p)
   }
 

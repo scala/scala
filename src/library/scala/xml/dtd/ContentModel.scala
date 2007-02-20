@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -9,15 +9,15 @@
 // $Id$
 
 
-package scala.xml.dtd;
+package scala.xml.dtd
 
-import compat.StringBuilder;
-import scala.util.regexp.WordExp;
-import scala.util.automata._;
+import compat.StringBuilder
+import scala.util.regexp.WordExp
+import scala.util.automata._
 
 object ContentModel extends WordExp  {
-  type _labelT = ElemName;
-  type _regexpT = RegExp;
+  type _labelT = ElemName
+  type _regexpT = RegExp
 
   object Translator extends WordBerrySethi  {
 
@@ -29,16 +29,16 @@ object ContentModel extends WordExp  {
 
 
   case class ElemName(name: String) extends Label {
-    override def toString() = "ElemName(\""+name+"\")";
+    override def toString() = "ElemName(\""+name+"\")"
   }
 
   def isMixed(cm: ContentModel) = cm.isInstanceOf[MIXED];
-  def containsText(cm: ContentModel) = (cm == PCDATA) || isMixed(cm);
+  def containsText(cm: ContentModel) = (cm == PCDATA) || isMixed(cm)
 
-  def parse(s: String): ContentModel = ContentModelParser.parse( s );
+  def parse(s: String): ContentModel = ContentModelParser.parse(s)
 
   def getLabels(r: RegExp): scala.collection.Set[String] = {
-    val s = new scala.collection.mutable.HashSet[String]();
+    val s = new scala.collection.mutable.HashSet[String]()
     def traverse1(xs: Seq[RegExp]): Unit = {
       val it = xs.elements;
       while( it.hasNext )
@@ -47,77 +47,66 @@ object ContentModel extends WordExp  {
     def traverse(r: RegExp): Unit = {
       r match {
         case Letter(ElemName( name )) => s += name;
-        case Star(  x @ _  ) => traverse( x ); // bug if x@_*
-        case Sequ( xs @ _* ) => traverse1(xs);
-        case Alt(  xs @ _* ) => traverse1(xs);
+        case Star(  x @ _  ) => traverse( x ) // bug if x@_*
+        case Sequ( xs @ _* ) => traverse1(xs)
+        case Alt(  xs @ _* ) => traverse1(xs)
       }
     }
-    traverse( r );
+    traverse(r)
     return s
   }
 
-  def toString(r: RegExp):String = {
-    val sb = new StringBuilder();
-    toString(r, sb);
-    sb.toString();
+  def toString(r: RegExp): String = {
+    val sb = new StringBuilder()
+    toString(r, sb)
+    sb.toString()
   }
 
   /* precond: rs.length >= 1 */
   private def toString(rs: Seq[RegExp], sb: StringBuilder, sep: Char): Unit = {
 
-    val it = rs.elements;
-    val fst = it.next;
-    toString(fst, sb);
+    val it = rs.elements
+    val fst = it.next
+    toString(fst, sb)
     for(val z <- it) {
-      sb.append( sep );
-      toString( z, sb );
+      sb.append(sep)
+      toString(z, sb)
     }
     sb
   }
 
   def toString(c: ContentModel, sb: StringBuilder): StringBuilder = c match {
-
-      case ANY    =>
-        sb.append("ANY");
-
-      case EMPTY    =>
-        sb.append("EMPTY");
-
-      case PCDATA =>
-        sb.append("(#PCDATA)");
-
-      case ELEMENTS( _ ) | MIXED( _ ) =>
-        c.toString(sb)
-
+    case ANY =>
+      sb.append("ANY")
+    case EMPTY =>
+      sb.append("EMPTY")
+    case PCDATA =>
+      sb.append("(#PCDATA)")
+    case ELEMENTS( _ ) | MIXED( _ ) =>
+      c.toString(sb)
   }
 
-  def toString(r: RegExp, sb:StringBuilder): StringBuilder = {
-    r match {
-      case Eps     =>
-        sb
-
-      case Sequ(rs @ _*) =>
-        sb.append( '(' ); toString(rs, sb, ','); sb.append( ')' );
-
-      case Alt(rs @ _*) =>
-        sb.append( '(' ); toString(rs, sb, '|');  sb.append( ')' );
-
-      case Star(r: RegExp) =>
-        sb.append( '(' ); toString(r, sb); sb.append( ")*" );
-
-      case Letter(ElemName(name)) =>
-        sb.append(name);
-
-    }
+  def toString(r: RegExp, sb:StringBuilder): StringBuilder = r match {
+    case Eps =>
+      sb
+    case Sequ(rs @ _*) =>
+      sb.append( '(' ); toString(rs, sb, ','); sb.append( ')' )
+    case Alt(rs @ _*) =>
+      sb.append( '(' ); toString(rs, sb, '|');  sb.append( ')' )
+    case Star(r: RegExp) =>
+      sb.append( '(' ); toString(r, sb); sb.append( ")*" )
+    case Letter(ElemName(name)) =>
+      sb.append(name)
   }
 
 }
 
 sealed abstract class ContentModel {
+
   override def toString(): String = {
-    val sb = new StringBuilder();
-    toString(sb);
-    sb.toString();
+    val sb = new StringBuilder()
+    toString(sb)
+    sb.toString()
   }
 
   def toString(sb:StringBuilder): StringBuilder;
@@ -134,18 +123,18 @@ sealed abstract class ContentModel {
 }
 
 case object PCDATA extends ContentModel {
-  override def toString(sb:StringBuilder): StringBuilder = sb.append("(#PCDATA)");
+  override def toString(sb:StringBuilder): StringBuilder = sb.append("(#PCDATA)")
 }
 case object EMPTY extends ContentModel {
-  override def toString(sb:StringBuilder): StringBuilder = sb.append("EMPTY");
+  override def toString(sb:StringBuilder): StringBuilder = sb.append("EMPTY")
 }
 case object ANY extends ContentModel {
-  override def toString(sb:StringBuilder): StringBuilder = sb.append("ANY");
+  override def toString(sb:StringBuilder): StringBuilder = sb.append("ANY")
 }
 abstract class DFAContentModel extends ContentModel {
-  import ContentModel.{ ElemName };
-  def r: ContentModel.RegExp;
-  private var _dfa: DetWordAutom[ContentModel.ElemName] = null;
+  import ContentModel.ElemName
+  def r: ContentModel.RegExp
+  private var _dfa: DetWordAutom[ContentModel.ElemName] = null
 
   def dfa = {
     if(null == _dfa) {
@@ -207,6 +196,6 @@ case class  ELEMENTS(r:ContentModel.RegExp) extends DFAContentModel {
     }
   }
   */
-  override def toString(sb:StringBuilder): StringBuilder =
-    ContentModel.toString(r, sb);
+  override def toString(sb: StringBuilder): StringBuilder =
+    ContentModel.toString(r, sb)
 }

@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -20,7 +20,7 @@ import Predef._
  *  @author  Matthias Zenger
  *  @version 1.0, 15/03/2004
  */
-[serializable]
+@serializable
 class ArrayBuffer[A] extends Buffer[A] with ResizableArray[A] {
 
   /** Appends a single element to this buffer and returns

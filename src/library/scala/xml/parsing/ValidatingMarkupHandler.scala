@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -9,24 +9,24 @@
 // $Id$
 
 
-package scala.xml.parsing;
+package scala.xml.parsing
 
 
-import scala.xml.dtd._ ;
-import scala.util.logging.Logged ;
+import scala.xml.dtd._
+import scala.util.logging.Logged
 
 abstract class ValidatingMarkupHandler extends MarkupHandler with Logged {
 
-  var rootLabel:String = _;
-  var qStack: List[Int] = Nil;
-  var qCurrent: Int = -1;
+  var rootLabel:String = _
+  var qStack: List[Int] = Nil
+  var qCurrent: Int = -1
 
-  var declStack: List[ElemDecl] = Nil;
-  var declCurrent: ElemDecl = null;
+  var declStack: List[ElemDecl] = Nil
+  var declCurrent: ElemDecl = null
 
-  final override val isValidating = true;
+  final override val isValidating = true
 
-  override def log(msg:String) = {};
+  override def log(msg:String) = {}
 
   /*
   override def checkChildren(pos: Int, pre: String, label:String,ns:NodeSeq): Unit = {
@@ -41,14 +41,14 @@ abstract class ValidatingMarkupHandler extends MarkupHandler with Logged {
   */
 
   override def endDTD(n:String) = {
-    rootLabel = n;
+    rootLabel = n
   }
   override def elemStart(pos: int, pre: String, label: String, attrs: MetaData, scope:NamespaceBinding): Unit = {
 
     def advanceDFA(dm:DFAContentModel) = {
-      val trans = dm.dfa.delta(qCurrent);
-      log("advanceDFA(dm): "+dm);
-      log("advanceDFA(trans): "+trans);
+      val trans = dm.dfa.delta(qCurrent)
+      log("advanceDFA(dm): " + dm)
+      log("advanceDFA(trans): " + trans)
       trans.get(ContentModel.ElemName(label)) match {
           case Some(qNew) => qCurrent = qNew
           case _          => reportValidationError(pos, "DTD says, wrong element, expected one of "+trans.keys.toString());
@@ -57,41 +57,41 @@ abstract class ValidatingMarkupHandler extends MarkupHandler with Logged {
     // advance in current automaton
     log("[qCurrent = "+qCurrent+" visiting "+label+"]");
 
-    if(qCurrent == -1) { // root
-      log("  checking root");
-      if(label != rootLabel)
+    if (qCurrent == -1) { // root
+      log("  checking root")
+      if (label != rootLabel)
         reportValidationError(pos, "this element should be "+rootLabel);
     } else {
       log("  checking node");
       declCurrent.contentModel match {
-        case ANY         =>
-
-          case EMPTY       =>
-            reportValidationError(pos, "DTD says, no elems, no text allowed here");
-        case PCDATA      =>
+        case ANY =>
+        case EMPTY =>
+          reportValidationError(pos, "DTD says, no elems, no text allowed here");
+        case PCDATA =>
           reportValidationError(pos, "DTD says, no elements allowed here");
-
-        case m@MIXED(r)    => advanceDFA(m);
-        case e@ELEMENTS(r) => advanceDFA(e);
+        case m @ MIXED(r) =>
+          advanceDFA(m)
+        case e @ ELEMENTS(r) =>
+          advanceDFA(e)
       }
     }
     // push state, decl
-    qStack    =    qCurrent :: qStack;
-    declStack = declCurrent :: declStack;
+    qStack    =    qCurrent :: qStack
+    declStack = declCurrent :: declStack
 
-    declCurrent = lookupElemDecl(label);
-    qCurrent = 0;
-    log("  done  now");
+    declCurrent = lookupElemDecl(label)
+    qCurrent = 0
+    log("  done  now")
   }
 
   override def elemEnd(pos: int, pre: String, label: String): Unit = {
-    log("  elemEnd");
-    qCurrent = qStack.head;
-    qStack   = qStack.tail;
-    declCurrent = declStack.head;
-    declStack   = declStack.tail;
-    log("    qCurrent now"+qCurrent);
-    log("    declCurrent now"+declCurrent);
+    log("  elemEnd")
+    qCurrent = qStack.head
+    qStack   = qStack.tail
+    declCurrent = declStack.head
+    declStack   = declStack.tail
+    log("    qCurrent now" + qCurrent)
+    log("    declCurrent now" + declCurrent)
   }
 
   final override def elemDecl(name: String, cmstr: String): Unit =

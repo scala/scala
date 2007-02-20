@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -19,7 +19,8 @@ object ListSet {
   /** constructs an empty ListSet
    *  @deprecated   use <code>empty</code> instead
    */
-  [deprecated] def Empty[A] = new ListSet[A]
+  @deprecated
+  def Empty[A] = new ListSet[A]
 
   /** The empty set of this type.
    */
@@ -39,7 +40,7 @@ object ListSet {
  *  @author  Matthias Zenger
  *  @version 1.0, 09/07/2003
  */
-[serializable]
+@serializable
 class ListSet[A] extends AnyRef with Set[A] {
 
   /** Returns the number of elements in this set.
@@ -101,7 +102,7 @@ class ListSet[A] extends AnyRef with Set[A] {
    */
   protected def next: ListSet[A] = throw new NoSuchElementException("Next of an empty set");
 
-  [serializable]
+  @serializable
   protected class Node(override protected val elem: A) extends ListSet[A] {
     /** Returns the number of elements in this set.
      *

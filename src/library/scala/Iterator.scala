@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -95,7 +95,8 @@ object Iterator {
   /**
    * @deprecated use <code>fromProduct</code> instead.
    */
-  [deprecated] def fromCaseClass(n: Product) = fromProduct(n)
+  @deprecated
+  def fromCaseClass(n: Product) = fromProduct(n)
 
   /** Create an iterator with elements
    *  <code>e<sub>n+1</sub> = e<sub>n</sub> + 1</code>

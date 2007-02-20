@@ -1,6 +1,16 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2005-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+// $Id: $
+
 package scala.collection.immutable
 
-[serializable]
+@serializable
 abstract class RedBlack[A] {
 
   def isSmaller(x: A, y: A): boolean
@@ -12,7 +22,7 @@ abstract class RedBlack[A] {
   private def mkTree[B](isBlack: boolean, k: A, v: B, l: Tree[B], r: Tree[B]) =
     if (isBlack) BlackTree(k, v, l, r) else RedTree(k, v, l, r)
 
-  [serializable]
+  @serializable
   abstract class Tree[+B] {
     def isEmpty: boolean
     def isBlack: boolean
@@ -24,7 +34,7 @@ abstract class RedBlack[A] {
     def del(k: A): Tree[B]
     def smallest: NonEmpty[B]
   }
-  [serializable]
+  @serializable
   abstract class NonEmpty[+B] extends Tree[B] {
     def isEmpty = false
     def key: A
@@ -70,7 +80,7 @@ abstract class RedBlack[A] {
     def elements: Iterator[Pair[A, B]] =
       left.elements append Iterator.single(Pair(key, value)) append right.elements
   }
-  [serializable]
+  @serializable
   case object Empty extends Tree[Nothing] {
     def isEmpty = true
     def isBlack = true
@@ -80,14 +90,14 @@ abstract class RedBlack[A] {
     def smallest: NonEmpty[Nothing] = throw new NoSuchElementException("empty map")
     def elements: Iterator[Pair[A, Nothing]] = Iterator.empty
   }
-  [serializable]
+  @serializable
   case class RedTree[+B](override val key: A,
                          override val value: B,
                          override val left: Tree[B],
                          override val right: Tree[B]) extends NonEmpty[B] {
     def isBlack = false
   }
-  [serializable]
+  @serializable
   case class BlackTree[+B](override val key: A,
                            override val value: B,
                            override val left: Tree[B],

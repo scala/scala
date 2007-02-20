@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -19,7 +19,7 @@ import compat.StringBuilder
  *  @author Burak Emir
  *  @param text the text contained in this node, may not be <code>null</code>.
  */
-[serializable]
+@serializable
 class Atom[+A](val data: A) extends SpecialNode {
 
   data.asInstanceOf[AnyRef] match {

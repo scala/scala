@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -18,7 +18,8 @@ object TreeMap {
   /** The empty map of this type
    *  @deprecated   use <code>empty</code> instead
    */
-  [deprecated] def Empty[A <% Ordered[A], B] = empty[A, B]
+  @deprecated
+  def Empty[A <% Ordered[A], B] = empty[A, B]
 
   /** The empty map of this type */
   def empty[A <% Ordered[A], B] = new TreeMap[A, B]
@@ -34,7 +35,7 @@ object TreeMap {
  *  @author  Matthias Zenger
  *  @version 1.1, 03/05/2004
  */
-[serializable]
+@serializable
 class TreeMap[A <% Ordered[A], +B](val size: int, t: RedBlack[A]#Tree[B])
 extends RedBlack[A] with Map[A, B] {
 

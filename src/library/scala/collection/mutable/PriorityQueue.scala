@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -22,7 +22,7 @@ package scala.collection.mutable
  *  @version 1.0, 03/05/2004
  */
 
-[serializable, cloneable]
+@serializable @cloneable
 class PriorityQueue[A <% Ordered[A]] extends ResizableArray[A] {
   size = size + 1 // we do not use array(0)
 
@@ -165,7 +165,8 @@ class PriorityQueue[A <% Ordered[A]] extends ResizableArray[A] {
    *
    *  @return never.
    */
-  override def hashCode(): Int = throw new UnsupportedOperationException("unsuitable as hash key")
+  override def hashCode(): Int =
+    throw new UnsupportedOperationException("unsuitable as hash key")
 
   /** Returns a regular queue containing the same elements.
    */

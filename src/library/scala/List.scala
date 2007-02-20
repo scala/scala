@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -1137,7 +1137,7 @@ sealed abstract class List[+a] extends Seq[a] {
  *  @author  Martin Odersky
  *  @version 1.0, 15/07/2003
  */
-[SerialVersionUID(0 - 8256821097970055419L)]
+@SerialVersionUID(0 - 8256821097970055419L)
 case object Nil extends List[Nothing] {
   override def isEmpty = true
   def head: Nothing =
@@ -1151,7 +1151,7 @@ case object Nil extends List[Nothing] {
  *  @author  Martin Odersky
  *  @version 1.0, 15/07/2003
  */
-[SerialVersionUID(0L - 8476791151983527571L)]
+@SerialVersionUID(0L - 8476791151983527571L)
 final case class ::[b](hd: b, private[scala] var tl: List[b]) extends List[b] {
   def head = hd
   def tail = tl

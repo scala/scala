@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -93,7 +93,8 @@ trait Iterable[+A] {
    *  @return the new iterable object
    *  @deprecated  use <code>++</code> instead
    */
-  [deprecated] def concat[B >: A](that: Iterable[B]): Iterable[B] =
+  @deprecated
+  def concat[B >: A](that: Iterable[B]): Iterable[B] =
     this ++ that
 
   /** Appends two iterable objects.

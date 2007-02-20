@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -21,7 +21,7 @@ package scala.collection.mutable
  *  @author  Matthias Zenger
  *  @version 1.0, 21/07/2003
  */
-[serializable]
+@serializable
 class ImmutableSetAdaptor[A](protected var set: immutable.Set[A]) extends Set[A] {
 
   def size: Int = set.size

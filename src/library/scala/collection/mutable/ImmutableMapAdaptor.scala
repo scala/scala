@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -22,7 +22,7 @@ package scala.collection.mutable
  *  @author  Martin Odersky
  *  @version 2.0, 01/01/2007
  */
-[serializable]
+@serializable
 class ImmutableMapAdaptor[A, B](protected var imap: immutable.Map[A, B])
 extends Map[A, B]
 {

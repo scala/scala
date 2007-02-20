@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -22,7 +22,7 @@ import Predef._
  *  @author  Matthias Zenger
  *  @version 1.1, 02/03/2004
  */
-[cloneable]
+@cloneable
 trait Buffer[A] extends AnyRef
       with Seq[A]
       with Scriptable[Message[Pair[Location, A]]]
@@ -237,7 +237,8 @@ trait Buffer[A] extends AnyRef
    *
    *  @return never.
    */
-  override def hashCode(): Int = throw new UnsupportedOperationException("unsuitable as hash key")
+  override def hashCode(): Int =
+    throw new UnsupportedOperationException("unsuitable as hash key")
 
   /** Defines the prefix of the string representation.
    */

@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -16,7 +16,8 @@ object TreeSet {
   /** The empty set of this type
    *  @deprecated   use <code>empty</code> instead
    */
-  [deprecated] def Empty[A <% Ordered[A]] = empty[A]
+  @deprecated
+  def Empty[A <% Ordered[A]] = empty[A]
 
   /** The empty set of this type
    */
@@ -33,7 +34,7 @@ object TreeSet {
  *  @version 2.0, 02/01/2007
  */
 
-[serializable]
+@serializable
 class TreeSet[A <% Ordered[A]](val size: int, t: RedBlack[A]#Tree[Unit])
 extends RedBlack[A] with Set[A] {
 

@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -19,7 +19,7 @@ import compat.StringBuilder
  *  @author  Burak Emir
  *  @version 1.0
  */
-[serializable]
+@serializable
 case class Group(val nodes: Seq[Node]) extends Node {
 
   override def theSeq = nodes

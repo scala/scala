@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2006-2007, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -113,7 +113,7 @@ object BigInt {
  *  @author  Martin Odersky
  *  @version 1.0, 15/07/2003
  */
-[serializable]
+@serializable
 class BigInt(val bigInteger: BigInteger) extends runtime.BoxedNumber {
 
   /** Returns the hash code for this BigInt. */

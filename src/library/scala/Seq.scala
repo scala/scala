@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -90,7 +90,8 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Iterable[A] {
    *  @return     the new iterable object
    *  @deprecated use <code>++</code> instead
    */
-  [deprecated] override def concat [B >: A](that: Iterable[B]): Seq[B] = {
+  @deprecated
+  override def concat [B >: A](that: Iterable[B]): Seq[B] = {
     val buf = new ArrayBuffer[B]
     this copyToBuffer buf
     that copyToBuffer buf
@@ -242,7 +243,8 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Iterable[A] {
    *
    *  @deprecated use <code>slice</code> instead
    */
-  [deprecated] def subseq(from: Int, end: Int): Seq[A] = slice(from, end - from)
+  @deprecated
+  def subseq(from: Int, end: Int): Seq[A] = slice(from, end - from)
 
   /** Converts this sequence to a fresh Array with <code>length</code> elements.
    */

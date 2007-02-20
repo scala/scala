@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -26,7 +26,7 @@ object Stack {
  *  @author  Matthias Zenger
  *  @version 1.0, 10/07/2003
  */
-[serializable]
+@serializable
 class Stack[+A] extends Seq[A] {
 
   /** Checks if this stack is empty.
@@ -121,7 +121,7 @@ class Stack[+A] extends Seq[A] {
   override def stringPrefix: String = "Stack"
 
   // Here comes true magic: covariant lists with implicit tail references
-  [serializable]
+  @serializable
   protected class Node[+B >: A](elem: B) extends Stack[B] {
     override def isEmpty: Boolean = false
     override def length: Int = Stack.this.length + 1

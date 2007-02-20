@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -183,7 +183,7 @@ trait Map[A, +B] extends collection.Map[A, B] {
    *  </pre>
    *  @deprecated  use <code>+({A, B})</code> instead
    */
-  [deprecated] def +(key: A): MapTo = new MapTo(key)
+  @deprecated def +(key: A): MapTo = new MapTo(key)
 
   /** <code>incl</code> can be used to add many mappings at the same time
    *  to the map. The method assumes that a mapping is represented
@@ -194,7 +194,7 @@ trait Map[A, +B] extends collection.Map[A, B] {
    *  @return         ...
    *  @deprecated   use <code>+</code> instead
    */
-  [deprecated] def incl[B1 >: B](mappings: Pair[A, B1]*): Map[A, B1] = incl(mappings)
+  @deprecated def incl[B1 >: B](mappings: Pair[A, B1]*): Map[A, B1] = incl(mappings)
 
   /** <code>incl</code> can be used to add many mappings at the same time
    *  to the map. The method assumes that each mapping is represented
@@ -203,7 +203,7 @@ trait Map[A, +B] extends collection.Map[A, B] {
    *
    *  @deprecated    use <code>++</code> instead
    */
-  [deprecated] def incl[B1 >: B](map: Iterable[Pair[A, B1]]): Map[A, B1] = {
+  @deprecated def incl[B1 >: B](map: Iterable[Pair[A, B1]]): Map[A, B1] = {
     val iter = map.elements
     var res: Map[A, B1] = this
     while (iter.hasNext) {
@@ -218,8 +218,9 @@ trait Map[A, +B] extends collection.Map[A, B] {
    *
    *  @param keys ...
    *  @return     the updated map
-   *  @deprecated    use <code>-</code> instead   */
-  [deprecated] def excl(keys: A*): Map[A, B] = excl(keys)
+   *  @deprecated    use <code>-</code> instead
+   */
+  @deprecated def excl(keys: A*): Map[A, B] = excl(keys)
 
   /** This method removes all the mappings for keys provided by an
    *  iterator over the elements of the <code>keys</code> object.
@@ -228,7 +229,7 @@ trait Map[A, +B] extends collection.Map[A, B] {
    *  @return     the updated map
    *  @deprecated    use <code>--</code> instead
    */
-  [deprecated] def excl(keys: Iterable[A]): Map[A, B] = {
+  @deprecated def excl(keys: Iterable[A]): Map[A, B] = {
     val iter = keys.elements
     var res = this
     while (iter.hasNext) {
@@ -243,11 +244,12 @@ trait Map[A, +B] extends collection.Map[A, B] {
    *  @param p ...
    *  @return  the string representation of a map entry
    */
-  [deprecated] def mappingToString[B1 >: B](p: Pair[A, B1]) = p._1.toString() + " -> " + p._2
+  @deprecated def mappingToString[B1 >: B](p: Pair[A, B1]) =
+    p._1.toString() + " -> " + p._2
 
   /** @deprecated    use <code>+({A, B})</code> instead
    */
-  [deprecated] class MapTo(key: A) {
+  @deprecated class MapTo(key: A) {
     def -> [B1 >: B](value: B1) = update(key, value)
   }
 }

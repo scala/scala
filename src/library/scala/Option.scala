@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -45,14 +45,17 @@ sealed abstract class Option[+A] extends Product {
    */
   def get: A
 
-  /** @deprecated; use getOrElse instead */
-  [deprecated] def get[B >: A](default: B): B = this match {
+  /** @deprecated; use <code>getOrElse</code> instead
+   */
+  @deprecated
+  def get[B >: A](default: B): B = this match {
     case None => default
     case Some(x) => x
   }
 
   /** If the option is nonempty return its value,
    *  otherwise return the result of evaluating a default expression.
+   *
    *  @param default  the default expression.
    */
   def getOrElse[B >: A](default: => B): B =
@@ -60,7 +63,8 @@ sealed abstract class Option[+A] extends Product {
 
   /** If the option is nonempty, return a function applied to its value,
    *  wrapped in a Some i.e. <code>Some(f(this.get))</code>.
-   *  Otherwise return None.
+   *  Otherwise return <code>None</code>.
+   *
    *  @param  f   the function to apply
    */
   def map[B](f: A => B): Option[B] =
@@ -76,6 +80,7 @@ sealed abstract class Option[+A] extends Product {
   /** If the option is nonempty and the given predicate <code>p</code>
    *  yields <code>false</code> on its value, return <code>None</code>.
    *  Otherwise return the option value itself.
+   *
    *  @param  p   the predicate used for testing.
    */
   def filter(p: A => Boolean): Option[A] =
@@ -83,6 +88,7 @@ sealed abstract class Option[+A] extends Product {
 
   /** Apply the given procedure <code>f</code> to the option's value,
    *  if it is nonempty. Do nothing if it is empty.
+   *
    *  @param  f   the procedure to apply.
    */
   def foreach(f: A => Unit) {

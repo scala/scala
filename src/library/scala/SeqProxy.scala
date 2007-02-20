@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -26,7 +26,8 @@ trait SeqProxy[+A] extends Seq[A] with IterableProxy[A] {
   override def apply(i: Int): A = self(i)
   override def length: Int = self.length
   override def isEmpty: Boolean = self.isEmpty
-  [deprecated] override def concat [B >: A](that: Iterable[B]): Seq[B] = self concat that
+  @deprecated
+  override def concat [B >: A](that: Iterable[B]): Seq[B] = self concat that
   override def isDefinedAt(x: Int): Boolean = self isDefinedAt x
   override def lastIndexOf[B >: A](elem: B): Int = self lastIndexOf elem
   override def map[B](f: A => B): Seq[B] = self map f

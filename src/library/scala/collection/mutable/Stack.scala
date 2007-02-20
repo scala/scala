@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -18,7 +18,7 @@ package scala.collection.mutable
  *  @author  Matthias Zenger
  *  @version 1.1, 03/05/2004
  */
-[serializable, cloneable]
+@serializable @cloneable
 class Stack[A] extends MutableList[A] {
 
   /** Checks if the stack is empty.
@@ -63,7 +63,9 @@ class Stack[A] extends MutableList[A] {
    *  @throws Predef.NoSuchElementException
    *  @return the top element
    */
-  def top: A = if (first eq null) throw new NoSuchElementException("stack empty") else first.elem
+  def top: A =
+    if (first eq null) throw new NoSuchElementException("stack empty")
+    else first.elem
 
   /** Removes the top element from the stack.
    *
@@ -117,7 +119,8 @@ class Stack[A] extends MutableList[A] {
    *
    *  @return never.
    */
-  override def hashCode(): Int = throw new UnsupportedOperationException("unsuitable as hash key")
+  override def hashCode(): Int =
+    throw new UnsupportedOperationException("unsuitable as hash key")
 
   /** This method clones the stack.
    *

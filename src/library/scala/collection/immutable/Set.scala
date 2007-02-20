@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -12,17 +12,19 @@
 package scala.collection.immutable
 
 
-/** This class represents immutable sets. Concrete set implementations
- *  just have to provide functionality for the abstract methods in
- *  <code>scala.collection.Set</code> as well as for <code>+</code> and
- *  <code>-</code>.
+/** <p>
+ *    This class represents immutable sets. Concrete set implementations
+ *    just have to provide functionality for the abstract methods in
+ *    <code>scala.collection.Set</code> as well as for <code>+</code> and
+ *    <code>-</code>.
+ *  </p>
+ *  <p>
+ *    Note that abstract immutable.Set's are not covariant in their type
+ *    parameter.  This is because some subclasses cannot support the
+ *    <code>+</code> method for arbitrary types.
+ *  </p>
  *
- * Note that abstract immutable.Set's are not covariant in their type
- * parameter.  This is because some subclasses cannot support the
- * <code>+</code> method for arbitrary types.
- *
- *  @author  Matthias Zenger
- *  @author  Martin Odersky
+ *  @author  Matthias Zenger, Martin Odersky
  *  @version 1.1, 03/05/2004
  */
 object Set {
@@ -73,14 +75,16 @@ trait Set[A] extends AnyRef with collection.Set[A] {
   /** <code>incl</code> can be used to add many elements to the set
    *  at the same time.
    */
-  [deprecated] def incl(elems: A*): Set[A] = incl(elems)
+  @deprecated
+  def incl(elems: A*): Set[A] = incl(elems)
 
   /** This method will add all the elements provided by an iterator
    *  of the iterable object <code>that</code> to the set.
    *
    *  @param that ...
    */
-  [deprecated] def incl(that: Iterable[A]): Set[A] =
+  @deprecated
+  def incl(that: Iterable[A]): Set[A] =
     that.foldLeft(this)((set, elem) => set + elem)
 
   /** Remove a single element from a set.
@@ -116,12 +120,14 @@ trait Set[A] extends AnyRef with collection.Set[A] {
 
   /** <code>excl</code> removes many elements from the set.
    */
-  [deprecated] def excl(elems: A*): Set[A] = excl(elems)
+  @deprecated
+  def excl(elems: A*): Set[A] = excl(elems)
 
   /** This method removes all the elements provided by an iterator
    *  of the iterable object <code>that</code> from the set.
    */
-  [deprecated] def excl(that: Iterable[A]): Set[A] =
+  @deprecated
+  def excl(that: Iterable[A]): Set[A] =
     that.foldLeft(this)((set, elem) => set - elem)
 
   /** This method computes an intersection with set <code>that</code>.

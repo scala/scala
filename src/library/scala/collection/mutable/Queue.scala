@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -20,7 +20,7 @@ package scala.collection.mutable
  *  @author  Matthias Zenger
  *  @version 1.1, 03/05/2004
  */
-[serializable, cloneable]
+@serializable @cloneable
 class Queue[A] extends MutableList[A] {
 
   /** Checks if the queue is empty.

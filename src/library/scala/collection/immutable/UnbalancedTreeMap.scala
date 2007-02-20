@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -29,7 +29,7 @@ object UnbalancedTreeMap {
  *  @version 1.1, 02/01/2007
  */
 
-[serializable]
+@serializable
 class UnbalancedTreeMap[A <% Ordered[A], +B] extends Map[A, B] {
 
   /** A factory to create empty maps of the same type of keys.

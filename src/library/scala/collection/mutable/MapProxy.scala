@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -21,8 +21,7 @@ package scala.collection.mutable
  *    dynamically using object composition and forwarding.
  *  </p>
  *
- *  @author  Matthias Zenger
- *  @author  Martin Odersky
+ *  @author  Matthias Zenger, Martin Odersky
  *  @version 2.0, 31/12/2006
  */
 trait MapProxy[A, B] extends Map[A, B] with collection.MapProxy[A, B] {
@@ -51,6 +50,8 @@ trait MapProxy[A, B] extends Map[A, B] with collection.MapProxy[A, B] {
   override def retain(p: (A, B) => Boolean): Unit = self retain p
   override def <<(cmd: Message[Pair[A, B]]): Unit = self << cmd
   override def clone(): Map[A, B] = self.clone()
-  [deprecated] override def incl(mappings: Pair[A, B]*): Unit = self.incl(mappings: _*)
-  [deprecated] override def excl(keys: A*): Unit = self.excl(keys: _*)
+  @deprecated
+  override def incl(mappings: Pair[A, B]*): Unit = self.incl(mappings: _*)
+  @deprecated
+  override def excl(keys: A*): Unit = self.excl(keys: _*)
 }

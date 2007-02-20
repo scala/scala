@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -70,7 +70,7 @@ package scala.collection.immutable
  *  @version 1.1, 2005-01-20
  */
 
-[serializable]
+@serializable
 abstract class Tree[A <% Ordered[A], B]() extends AnyRef {
   /* Data structure:
   ** - size:Int - the number of elements in the tree.
@@ -252,7 +252,7 @@ private case class INode[A <% Ordered[A],B](t1: GBTree[A,B],
  *  @author  Erik Stenman
  *  @version 1.0, 2005-01-20
  */
-[serializable]
+@serializable
 protected abstract class GBTree[A <% Ordered[A],B] extends AnyRef {
   type aNode = GBTree[A,B]
   type anInsertTree = InsertTree[A,B]

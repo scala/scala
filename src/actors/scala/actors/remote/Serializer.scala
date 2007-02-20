@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2005-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2005-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -20,7 +20,7 @@ abstract class Serializer(val service: Service) {
   def serialize(o: AnyRef): Array[byte]
   def deserialize(a: Array[byte]): AnyRef
 
-  [throws(classOf[IOException])]
+  @throws(classOf[IOException])
   def readBytes(inputStream: DataInputStream): Array[byte] = {
     try {
       val length = inputStream.readInt()
@@ -34,13 +34,13 @@ abstract class Serializer(val service: Service) {
     }
   }
 
-  [throws(classOf[IOException]), throws(classOf[ClassNotFoundException])]
+  @throws(classOf[IOException]) @throws(classOf[ClassNotFoundException])
   def readObject(inputStream: DataInputStream): AnyRef = {
     val bytes = readBytes(inputStream)
     deserialize(bytes)
   }
 
-  [throws(classOf[IOException])]
+  @throws(classOf[IOException])
   def writeBytes(outputStream: DataOutputStream, bytes: Array[byte]): unit = {
     val length = bytes.length;
     // original length
@@ -49,7 +49,7 @@ abstract class Serializer(val service: Service) {
     outputStream.flush()
   }
 
-  [throws(classOf[IOException])]
+  @throws(classOf[IOException])
   def writeObject(outputStream: DataOutputStream, obj: AnyRef) = {
     val bytes = serialize(obj)
     writeBytes(outputStream, bytes)

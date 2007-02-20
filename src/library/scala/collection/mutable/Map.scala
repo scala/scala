@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -35,7 +35,7 @@ object Map {
   def apply[A, B](elems: Pair[A, B]*) = empty[A, B] ++ elems
 }
 
-[cloneable]
+@cloneable
 trait Map[A, B] extends AnyRef
       with collection.Map[A, B]
       with Scriptable[Message[Pair[A, B]]]
@@ -60,7 +60,9 @@ trait Map[A, B] extends AnyRef
    *  @param    kv2 the second key/value pair.
    *  @param    kvs the remaining key/value pairs.
    */
-  def += (kv1: Pair[A, B], kv2: Pair[A, B], kvs: Pair[A, B]*) { this += kv1; this += kv2; this ++= kvs }
+  def += (kv1: Pair[A, B], kv2: Pair[A, B], kvs: Pair[A, B]*) {
+    this += kv1; this += kv2; this ++= kvs
+  }
 
   /** Add a sequence of key/value pairs to this map.
    *  @param    kvs the iterable object containing all key/value pairs.
@@ -200,7 +202,8 @@ trait Map[A, B] extends AnyRef
    *  </pre>
    *  @deprecated   use <code>+={key, value}</code>
    */
-  [deprecated] def +=(key: A): MapTo = new MapTo(key)
+  @deprecated
+  def +=(key: A): MapTo = new MapTo(key)
 
   /** <code>incl</code> can be used to add many mappings at the same time
    *  to the map. The method assumes that a mapping is represented
@@ -210,7 +213,8 @@ trait Map[A, B] extends AnyRef
    * @param mappings
    * @deprecated   use <code>+=</code>
    */
-  [deprecated] def incl(mappings: Pair[A, B]*): Unit = this ++= mappings.elements
+  @deprecated
+  def incl(mappings: Pair[A, B]*): Unit = this ++= mappings.elements
 
   /** This method will remove all the mappings for the given sequence
    *  of keys from the map.
@@ -218,22 +222,25 @@ trait Map[A, B] extends AnyRef
    * @param keys
    * @deprecated    use <code>-=</code>
    */
-  [deprecated] def excl(keys: A*): Unit = this --= keys.elements
+  @deprecated
+  def excl(keys: A*): Unit = this --= keys.elements
 
   /** This method removes all the mappings for which the predicate
    *  <code>p</code> returns <code>false</code>.
    *
-   * @deprecated   use retain instead
+   * @deprecated   use <code>retain</code> instead
    * @param p
    */
-  [deprecated] override def filter(p: Pair[A, B] => Boolean): Iterable[Pair[A, B]] = {
+  @deprecated
+  override def filter(p: Pair[A, B] => Boolean): Iterable[Pair[A, B]] = {
     toList foreach {
       case kv @ Pair(key, _) => if (!p(kv)) -=(key)
     }
     this
   }
 
-  [deprecated] class MapTo(key: A) {
+  @deprecated
+  class MapTo(key: A) {
     def ->(value: B): Unit = update(key, value)
   }
 

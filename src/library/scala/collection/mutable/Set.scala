@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -31,7 +31,7 @@ object Set {
   def apply[A](elems: A*) = empty[A] ++ elems
 }
 
-[cloneable]
+@cloneable
 trait Set[A] extends collection.Set[A] with Scriptable[Message[A]] {
 
   /** This method allows one to add or remove an element <code>elem</code>
@@ -101,7 +101,8 @@ trait Set[A] extends collection.Set[A] with Scriptable[Message[A]] {
    *  at the same time.
    *  @deprecated   use <code>++=</code> instead
    */
-  [deprecated] def incl(elems: A*): Unit = ++=(elems.elements)
+  @deprecated
+  def incl(elems: A*): Unit = ++=(elems.elements)
 
   /** Removes a single element from a set.
    *  @param elem  The element to be removed.
@@ -157,7 +158,8 @@ trait Set[A] extends collection.Set[A] with Scriptable[Message[A]] {
 
   /** <code>excl</code> removes many elements from the set.
    */
-  [deprecated] def excl(elems: A*): Unit = --=(elems.elements)
+  @deprecated
+  def excl(elems: A*): Unit = --=(elems.elements)
 
   /** This method computes an intersection with set <code>that</code>.
    *  It removes all the elements that are not present in <code>that</code>.
@@ -170,7 +172,8 @@ trait Set[A] extends collection.Set[A] with Scriptable[Message[A]] {
    *  which the predicate <code>p</code> yields the value <code>false</code>.
    * @deprecated   use retain instead
    */
-  [deprecated] override def filter(p: A => Boolean): Set[A] = {
+  @deprecated
+  override def filter(p: A => Boolean): Set[A] = {
     toList.foreach {
       elem => if (!p(elem)) -=(elem)
     }

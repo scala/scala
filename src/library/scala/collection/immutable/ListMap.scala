@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -17,7 +17,8 @@ object ListMap {
   /** The empty map of this type
    *  @deprecated   use <code>empty</code> instead
    */
-  [deprecated] def Empty[A, B] = new ListMap[A, B]
+  @deprecated
+  def Empty[A, B] = new ListMap[A, B]
 
   /** The empty map of this type */
   def empty[A, B] = new ListMap[A, B]
@@ -36,7 +37,7 @@ object ListMap {
  *  @author  Martin Oderskty
  *  @version 2.0, 01/01/2007
  */
-[serializable]
+@serializable
 class ListMap[A, +B] extends Map[A, B] {
 
   /** Returns a <code>new ListMap</code> instance mapping keys of the
@@ -92,7 +93,7 @@ class ListMap[A, +B] extends Map[A, B] {
   protected def value: B = throw new NoSuchElementException("empty map")
   protected def next: ListMap[A, B] = throw new NoSuchElementException("empty map")
 
-  [serializable]
+  @serializable
   protected class Node[B1 >: B](override protected val key: A,
                                 override protected val value: B1) extends ListMap[A, B1] {
     /** Returns the number of mappings in this map.
