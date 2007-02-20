@@ -18,7 +18,7 @@ public class BoxedChar extends BoxedNumber
 
     private static final int MinHashed = 0;
     private static final int MaxHashed = 255;
-    private static BoxedChar[] canonical = new BoxedChar[MaxHashed - MinHashed + 1];
+    private static final BoxedChar[] canonical = new BoxedChar[MaxHashed - MinHashed + 1];
 
     static {
         for (int i = MinHashed; i <= MaxHashed; i++)

@@ -18,7 +18,7 @@ public final class BoxedByte extends BoxedNumber
 
     private static final int MinHashed = -128;
     private static final int MaxHashed = 127;
-    private static BoxedByte[] canonical = new BoxedByte[MaxHashed - MinHashed + 1];
+    private static final BoxedByte[] canonical = new BoxedByte[MaxHashed - MinHashed + 1];
 
     static {
 	for (int i = MinHashed; i <= MaxHashed; i++)
