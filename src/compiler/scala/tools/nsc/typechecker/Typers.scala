@@ -2127,29 +2127,39 @@ trait Typers requires Analyzer {
           copy.New(tree, tpt1).setType(tpt1.tpe)
 
         case Typed(expr, Function(List(), EmptyTree)) =>
-          val expr1 = typed1(expr, mode, pt);
-          if (isFunctionType(pt)) expr1
-          else expr1.tpe match {
+          val expr1 = typed1(expr, mode, pt)
+          expr1.tpe match {
+            case TypeRef(_, sym, _) if (sym == ByNameParamClass) =>
+              val expr2 = Function(List(), expr1)
+              new ChangeOwnerTraverser(context.owner, expr2.symbol).traverse(expr2)
+              typed1(expr2, mode, pt)
+            case PolyType(List(), restpe) =>
+              val expr2 = Function(List(), expr1)
+              new ChangeOwnerTraverser(context.owner, expr2.symbol).traverse(expr2)
+              typed1(expr2, mode, pt)
             case PolyType(_, MethodType(formals, _)) =>
-              adapt(expr1, mode, functionType(formals map (t => WildcardType), WildcardType))
+              if (isFunctionType(pt)) expr1
+              else adapt(expr1, mode, functionType(formals map (t => WildcardType), WildcardType))
             case MethodType(formals, _) =>
-              expr1 match {
-                case Select(qual, name) =>
-                  if(forMSIL && pt != WildcardType && pt != ErrorType && isSubType(pt, definitions.DelegateClass.tpe)) {
-                    val scalaCaller = newScalaCaller(pt);
-                    addScalaCallerInfo(scalaCaller, expr1.symbol)
-                    val n: Name = scalaCaller.name
-                    val del = Ident(DelegateClass) setType DelegateClass.tpe
-                    val f = Select(del, n)
-                    //val f1 = TypeApply(f, List(Ident(pt.symbol) setType pt))
-                    val args: List[Tree] = if(expr1.symbol.isStatic) List(Literal(Constant(null)))
-                                           else List(qual) // where the scala-method is located
-                    val rhs = Apply(f, args);
-                    return typed(rhs)
-                  }
-                case _ => ()
+              if (isFunctionType(pt)) expr1
+              else expr1 match {
+                case Select(qual, name) if (forMSIL &&
+                                            pt != WildcardType &&
+                                            pt != ErrorType &&
+                                            isSubType(pt, definitions.DelegateClass.tpe)) =>
+                  val scalaCaller = newScalaCaller(pt);
+                  addScalaCallerInfo(scalaCaller, expr1.symbol)
+                  val n: Name = scalaCaller.name
+                  val del = Ident(DelegateClass) setType DelegateClass.tpe
+                  val f = Select(del, n)
+                  //val f1 = TypeApply(f, List(Ident(pt.symbol) setType pt))
+                  val args: List[Tree] = if(expr1.symbol.isStatic) List(Literal(Constant(null)))
+                                         else List(qual) // where the scala-method is located
+                  val rhs = Apply(f, args);
+                  typed(rhs)
+                case _ =>
+                  adapt(expr1, mode, functionType(formals map (t => WildcardType), WildcardType))
               }
-             adapt(expr1, mode, functionType(formals map (t => WildcardType), WildcardType))
             case ErrorType =>
               expr1
             case _ =>

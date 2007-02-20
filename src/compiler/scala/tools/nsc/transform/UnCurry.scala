@@ -7,8 +7,7 @@
 package scala.tools.nsc.transform
 
 import symtab.Flags._
-import scala.collection.mutable.HashMap
-import scala.tools.nsc.util.HashSet
+import scala.collection.mutable.{HashMap, HashSet}
 
 /*<export>*/
 /** - uncurry all symbol and tree types (@see UnCurryPhase)
@@ -89,7 +88,8 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
     private var needTryLift = false
     private var inPattern = false
     private var inConstructorFlag = 0L
-    private var byNameArgs = new HashSet[Tree](16)
+    private val byNameArgs = new HashSet[Tree]
+    private val noApply = new HashSet[Tree]
 
     override def transform(tree: Tree): Tree = try { //debug
       postTransform(mainTransform(tree))
@@ -198,6 +198,18 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
 
 // ------ Transforming anonymous functions and by-name-arguments ----------------
 
+    /** Undo eta expansion for parameterless and nullaray methods */
+    def deEta(fun: Function): Tree = fun match {
+      case Function(List(), Apply(expr, List())) if treeInfo.isPureExpr(expr) =>
+        expr
+      case Function(List(), expr) if isByNameRef(expr) =>
+        noApply += expr
+        expr
+      case _ =>
+        fun
+    }
+
+
     /*  Transform a function node (x_1,...,x_n) => body of type FunctionN[T_1, .., T_N, R] to
      *
      *    class $anon() extends Object() with FunctionN[T_1, .., T_N, R] with ScalaObject {
@@ -225,47 +237,51 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
      *      def isDefinedAt(x: T): boolean = true
      */
     def transformFunction(fun: Function): Tree = {
-      val anonClass = fun.symbol.owner.newAnonymousFunctionClass(fun.pos)
-        .setFlag(FINAL | SYNTHETIC | inConstructorFlag)
-      val formals = fun.tpe.typeArgs.init
-      val restpe = fun.tpe.typeArgs.last
-      anonClass setInfo ClassInfoType(
-        List(ObjectClass.tpe, fun.tpe, ScalaObjectClass.tpe), newScope, anonClass);
-      val applyMethod = anonClass.newMethod(fun.pos, nme.apply)
-        .setFlag(FINAL).setInfo(MethodType(formals, restpe));
-      anonClass.info.decls enter applyMethod;
-      for (val vparam <- fun.vparams) vparam.symbol.owner = applyMethod;
-      new ChangeOwnerTraverser(fun.symbol, applyMethod).traverse(fun.body);
-      var members = List(
-        DefDef(Modifiers(FINAL), nme.apply, List(), List(fun.vparams), TypeTree(restpe), fun.body)
-          setSymbol applyMethod);
-      if (fun.tpe.symbol == PartialFunctionClass) {
-        val isDefinedAtMethod = anonClass.newMethod(fun.pos, nme.isDefinedAt)
-          .setFlag(FINAL).setInfo(MethodType(formals, BooleanClass.tpe))
-        anonClass.info.decls enter isDefinedAtMethod
-        def idbody(idparam: Symbol) = fun.body match {
-          case Match(_, cases) =>
-            val substParam = new TreeSymSubstituter(List(fun.vparams.head.symbol), List(idparam));
-            def transformCase(cdef: CaseDef): CaseDef =
-              substParam(
-                resetAttrs(
-                  CaseDef(cdef.pat.duplicate, cdef.guard.duplicate, Literal(true))))
-            if (cases exists treeInfo.isDefaultCase) Literal(true)
-            else
-              Match(
-                Ident(idparam),
-                (cases map transformCase) :::
-                   List(CaseDef(Ident(nme.WILDCARD), EmptyTree, Literal(false))))
+      val fun1 = deEta(fun)
+      if (fun1 ne fun) fun1
+      else {
+        val anonClass = fun.symbol.owner.newAnonymousFunctionClass(fun.pos)
+          .setFlag(FINAL | SYNTHETIC | inConstructorFlag)
+        val formals = fun.tpe.typeArgs.init
+        val restpe = fun.tpe.typeArgs.last
+        anonClass setInfo ClassInfoType(
+          List(ObjectClass.tpe, fun.tpe, ScalaObjectClass.tpe), newScope, anonClass);
+        val applyMethod = anonClass.newMethod(fun.pos, nme.apply)
+          .setFlag(FINAL).setInfo(MethodType(formals, restpe));
+        anonClass.info.decls enter applyMethod;
+        for (val vparam <- fun.vparams) vparam.symbol.owner = applyMethod;
+        new ChangeOwnerTraverser(fun.symbol, applyMethod).traverse(fun.body);
+        var members = List(
+          DefDef(Modifiers(FINAL), nme.apply, List(), List(fun.vparams), TypeTree(restpe), fun.body)
+            setSymbol applyMethod);
+        if (fun.tpe.symbol == PartialFunctionClass) {
+          val isDefinedAtMethod = anonClass.newMethod(fun.pos, nme.isDefinedAt)
+            .setFlag(FINAL).setInfo(MethodType(formals, BooleanClass.tpe))
+          anonClass.info.decls enter isDefinedAtMethod
+          def idbody(idparam: Symbol) = fun.body match {
+            case Match(_, cases) =>
+              val substParam = new TreeSymSubstituter(List(fun.vparams.head.symbol), List(idparam));
+              def transformCase(cdef: CaseDef): CaseDef =
+                substParam(
+                  resetAttrs(
+                    CaseDef(cdef.pat.duplicate, cdef.guard.duplicate, Literal(true))))
+              if (cases exists treeInfo.isDefaultCase) Literal(true)
+              else
+                Match(
+                  Ident(idparam),
+                  (cases map transformCase) :::
+                     List(CaseDef(Ident(nme.WILDCARD), EmptyTree, Literal(false))))
+          }
+          members = DefDef(isDefinedAtMethod, vparamss => idbody(vparamss.head.head)) :: members;
         }
-        members = DefDef(isDefinedAtMethod, vparamss => idbody(vparamss.head.head)) :: members;
-      }
-      localTyper.typed {
-        atPos(fun.pos) {
-          Block(
-            List(ClassDef(anonClass, NoMods, List(List()), List(List()), members)),
-            Typed(
-              New(TypeTree(anonClass.tpe), List(List())),
-              TypeTree(fun.tpe)))
+        localTyper.typed {
+          atPos(fun.pos) {
+            Block(
+              List(ClassDef(anonClass, NoMods, List(List()), List(List()), members)),
+              Typed(
+                New(TypeTree(anonClass.tpe), List(List())),
+                TypeTree(fun.tpe)))
+          }
         }
       }
     }
@@ -423,20 +439,23 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
 
         case _ =>
           val tree1 = super.transform(tree)
-          if (isByNameRef(tree1))
-            return localTyper.typed {
-              atPos(tree1.pos) {
-                Apply(Select(tree1 setType functionType(List(), tree1.tpe), nme.apply),
-                      List())
+          if (isByNameRef(tree1)) {
+            val tree2 = tree1 setType functionType(List(), tree1.tpe)
+            return {
+              if (noApply contains tree2) tree2
+              else localTyper.typed {
+                atPos(tree1.pos) { Apply(Select(tree2, nme.apply), List()) }
               }
             }
+          }
           tree1
       }
     } setType uncurryTreeType(tree.tpe)
 
     def postTransform(tree: Tree): Tree = atPhase(phase.next) {
       def applyUnary(tree: Tree): Tree =
-        if (tree.symbol.isMethod && (!tree.tpe.isInstanceOf[PolyType] || tree.tpe.typeParams.isEmpty)) {
+        if (tree.symbol.isMethod &&
+            (!tree.tpe.isInstanceOf[PolyType] || tree.tpe.typeParams.isEmpty)) {
           if (!tree.tpe.isInstanceOf[MethodType]) tree.tpe = MethodType(List(), tree.tpe);
           atPos(tree.pos)(Apply(tree, List()) setType tree.tpe.resultType)
         } else if (tree.isType) {

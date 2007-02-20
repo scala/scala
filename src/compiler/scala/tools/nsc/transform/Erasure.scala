@@ -336,7 +336,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
       else if (isUnboxedClass(tree.tpe.symbol) && !isUnboxedClass(pt.symbol))
         adaptToType(box(tree), pt)
       else if (tree.tpe.isInstanceOf[MethodType] && tree.tpe.paramTypes.isEmpty) {
-        assert(tree.symbol.isStable);
+        if (!tree.symbol.isStable) assert(false, "adapt "+tree+":"+tree.tpe+" to "+pt)
         adaptToType(Apply(tree, List()) setPos tree.pos setType tree.tpe.resultType, pt)
       } else if (pt <:< tree.tpe)
         cast(tree, pt)
