@@ -67,11 +67,8 @@ public class Main {
 }
 */
 object Test4 {
-  //import java.lang.annotation._
-  //@Retention(RetentionPolicy.RUNTIME)
-  //class Source(url: String, mail: String) extends scala.Annotation
-  //import Source
-  @Source(){val url = "http://scala.epfl.ch", val mail = "scala@lists.epfl.ch"}
+  import test.SourceAnnotation // defined in SourceAnnotation.java
+  @SourceAnnotation(){val url = "http://scala.epfl.ch", val mail = "scala@lists.epfl.ch"}
   class Foo
   def run: Unit = {
     val clazz = classOf[Foo]

@@ -1,9 +1,9 @@
-//package attributes;
+package test;
 
 import java.lang.annotation.*;
 
 @Retention(value=RetentionPolicy.RUNTIME)
-@interface Source {
+public @interface SourceAnnotation {
    public String url();
    public String mail();
 }
