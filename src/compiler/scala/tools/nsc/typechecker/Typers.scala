@@ -477,9 +477,11 @@ trait Typers requires Analyzer {
       if (context.reportGeneralErrors) {
         val context1 = context.makeSilent(context.reportAmbiguousErrors)
         context1.undetparams = context.undetparams
+        context1.savedTypeBounds = context.savedTypeBounds
         val typer1 = newTyper(context1)
         val result = op(typer1)
         context.undetparams = context1.undetparams
+        context.savedTypeBounds = context1.savedTypeBounds
         result
       } else {
         op(this)
@@ -2218,8 +2220,9 @@ trait Typers requires Analyzer {
                     fun2.isInstanceOf[Select] &&
                     !fun2.tpe.isInstanceOf[ImplicitMethodType] &&
                     ((fun2.symbol eq null) || !fun2.symbol.isConstructor) &&
-                    (mode & (EXPRmode | SNDTRYmode)) == EXPRmode) tryTypedApply(fun2, args)
-                else {
+                    (mode & (EXPRmode | SNDTRYmode)) == EXPRmode) {
+                  tryTypedApply(fun2, args)
+                } else {
                   typedApply(tree, fun2, args, mode, pt)
                 }
               case ex: TypeError =>
