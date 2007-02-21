@@ -817,7 +817,7 @@ abstract class GenJVM extends SubComponent {
             jcode.emitDUP()
             jcode.emitIFNONNULL(nonNull)
             jcode.emitPOP()
-            boxKind match {
+            (boxKind: @unsealed) match {
               case BYTE            => jcode.emitPUSH(0: Byte)
               case SHORT           => jcode.emitPUSH(0: Short)
               case CHAR            => jcode.emitPUSH(0: Char)
@@ -909,7 +909,7 @@ abstract class GenJVM extends SubComponent {
                 }
 
               case _ =>
-                kind match {
+                (kind: @unsealed) match {
                   case LONG   => jcode.emitLCMP()
                   case FLOAT  => jcode.emitFCMPG()
                   case DOUBLE => jcode.emitDCMPG()
@@ -945,7 +945,7 @@ abstract class GenJVM extends SubComponent {
                 }
 
               case _ =>
-                kind match {
+                (kind: @unsealed) match {
                   case LONG   => jcode.emitLCONST_0(); jcode.emitLCMP()
                   case FLOAT  => jcode.emitFCONST_0(); jcode.emitFCMPL()
                   case DOUBLE => jcode.emitDCONST_0(); jcode.emitDCMPL()
@@ -1050,7 +1050,7 @@ abstract class GenJVM extends SubComponent {
           op match {
             case ADD => jcode.emitADD(javaType(kind))
             case SUB =>
-              kind match {
+              (kind: @unsealed) match {
                 case BOOL | BYTE | CHAR | SHORT | INT =>
                   jcode.emitISUB()
                 case LONG   => jcode.emitLSUB()
@@ -1059,7 +1059,7 @@ abstract class GenJVM extends SubComponent {
               }
 
             case MUL =>
-              kind match {
+              (kind: @unsealed) match {
                 case BOOL | BYTE | CHAR | SHORT | INT =>
                   jcode.emitIMUL()
                 case LONG   => jcode.emitLMUL()
@@ -1068,7 +1068,7 @@ abstract class GenJVM extends SubComponent {
               }
 
             case DIV =>
-              kind match {
+              (kind: @unsealed) match {
                 case BOOL | BYTE | CHAR | SHORT | INT =>
                   jcode.emitIDIV()
                 case LONG   => jcode.emitLDIV()
@@ -1077,7 +1077,7 @@ abstract class GenJVM extends SubComponent {
               }
 
             case REM =>
-              kind match {
+              (kind: @unsealed) match {
                 case BOOL | BYTE | CHAR | SHORT | INT =>
                   jcode.emitIREM()
                 case LONG   => jcode.emitLREM()
@@ -1375,7 +1375,7 @@ abstract class GenJVM extends SubComponent {
        sym.isNonBottomSubClass(definitions.ClassfileAnnotationClass))
 
 
-    def javaType(t: TypeKind): JType = t match {
+    def javaType(t: TypeKind): JType = (t: @unsealed) match {
       case UNIT            => JType.VOID
       case BOOL            => JType.BOOLEAN
       case BYTE            => JType.BYTE

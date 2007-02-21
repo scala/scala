@@ -79,7 +79,7 @@ abstract class Liveness {
       backwardAnalysis(blockTransfer)
       if (settings.debug.value) {
         linearizer.linearize(method).foreach(b => if (b != method.code.startBlock)
-          assert(in(b) != lattice.bottom,
+          assert(lattice.bottom != in(b),
             "Block " + b + " in " + this.method + " has input equal to bottom -- not visited?"));
       }
     }

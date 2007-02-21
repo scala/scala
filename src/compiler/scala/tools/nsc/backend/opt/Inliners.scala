@@ -69,9 +69,6 @@ abstract class Inliners extends SubComponent {
        /* Map 'original' blocks to the ones inlined in the caller. */
        val inlinedBlock: Map[BasicBlock, BasicBlock] = new HashMap;
 
-       /* Map callee's parameters to inlined local variables. */
-       val argsToLocal: Map[Local, Local] = new HashMap;
-
        val instrBefore = block.toList.takeWhile( i => i ne instr);
        val instrAfter  = block.toList.drop(instrBefore.length + 1);
 
@@ -91,6 +88,8 @@ abstract class Inliners extends SubComponent {
        def newBlock = {
          val b = caller.code.newBlock;
          activeHandlers.foreach (.addBlock(b));
+         if (retVal ne null) b.varsInScope += retVal
+         b.varsInScope += inlinedThis
          b
        }
 
@@ -101,24 +100,15 @@ abstract class Inliners extends SubComponent {
          handler
        }
 
+       var inlinedLocals: Map[Local, Local] = new HashMap
+
        /** alfa-rename `l' in caller's context. */
        def dupLocal(l: Local): Local = {
          val sym = caller.symbol.newVariable(l.sym.pos, freshName(l.sym.name.toString()));
-         sym.setInfo(l.sym.tpe);
-         new Local(sym, l.kind, false)
-       }
-
-       /** Adds parameters from another method as locals */
-       def addParamsAsLocals(m: IMethod, ls: List[Local]): Unit = {
-         m.locals = m.locals ::: (ls map { a =>
-           if (a.arg) {
-             //val l = new Local(a.sym, a.kind, false);
-             val l = dupLocal(a);
-             argsToLocal += a -> l;
-             l
-           } else
-             a
-        });
+//         sym.setInfo(l.sym.tpe);
+         val dupped = new Local(sym, l.kind, false)
+         inlinedLocals(l) = dupped
+         dupped
        }
 
        def addLocals(m: IMethod, ls: List[Local]) =
@@ -148,23 +138,37 @@ abstract class Inliners extends SubComponent {
            case RETURN(kind) =>
              JUMP(afterBlock);
 
-           case LOAD_LOCAL(l) if (argsToLocal.isDefinedAt(l)) =>
-             Console.println("Replacing load_local");
-             LOAD_LOCAL(argsToLocal(l))
+           case LOAD_LOCAL(l) if inlinedLocals.isDefinedAt(l) =>
+             LOAD_LOCAL(inlinedLocals(l))
 
-           case STORE_LOCAL(l) if (argsToLocal.isDefinedAt(l)) =>
-             Console.println("Replacing store_local");
-             STORE_LOCAL(argsToLocal(l))
+           case STORE_LOCAL(l) if inlinedLocals.isDefinedAt(l) =>
+             STORE_LOCAL(inlinedLocals(l))
+
+           case LOAD_LOCAL(l) =>
+             assert(caller.locals contains l,
+                 "Could not find local '" + l + "' in locals, nor in inlinedLocals: " + inlinedLocals)
+             i
+           case STORE_LOCAL(l) =>
+             assert(caller.locals contains l,
+                 "Could not find local '" + l + "' in locals, nor in inlinedLocals: " + inlinedLocals)
+             i
+
+           case SCOPE_ENTER(l) if inlinedLocals.isDefinedAt(l) =>
+             SCOPE_ENTER(inlinedLocals(l))
+
+           case SCOPE_EXIT(l) if inlinedLocals.isDefinedAt(l) =>
+             SCOPE_EXIT(inlinedLocals(l))
 
            case _ => i
          }
 
-       addLocals(caller, callee.locals);
+       addLocals(caller, callee.locals map dupLocal);
        addLocal(caller, inlinedThis);
        if (retVal ne null)
          addLocal(caller, retVal);
        callee.code.blocks.foreach { b =>
          inlinedBlock += b -> newBlock;
+         inlinedBlock(b).varsInScope ++= (b.varsInScope map inlinedLocals)
        }
 
        // analyse callee
@@ -177,7 +181,7 @@ abstract class Inliners extends SubComponent {
 
        // store the arguments into special locals
        callee.params.reverse.foreach { param =>
-         block.emit(STORE_LOCAL(param), targetPos);
+         block.emit(STORE_LOCAL(inlinedLocals(param)), targetPos);
        }
        block.emit(STORE_LOCAL(inlinedThis), targetPos);
 

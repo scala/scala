@@ -350,6 +350,9 @@ abstract class CopyPropagation {
         case MONITOR_EXIT() =>
           out.stack = out.stack.drop(1)
 
+        case SCOPE_ENTER(_) | SCOPE_EXIT(_) =>
+          ()
+
         case _ =>
           dump
           abort("Unknown instruction: " + i)

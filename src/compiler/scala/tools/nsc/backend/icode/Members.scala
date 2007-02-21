@@ -216,6 +216,20 @@ trait Members requires ICodes {
       symbol.hasFlag(Flags.STATIC) || symbol.hasFlag(Flags.STATICMEMBER) || symbol.owner.isImplClass;
 
     override def toString() = symbol.fullNameString;
+
+    import opcodes._
+    def checkLocals: Unit = if (code ne null) {
+      Console.println("[checking locals of " + this + "]")
+      for (val bb <- code.blocks; val i <- bb.toList) i match {
+        case LOAD_LOCAL(l) =>
+          if (!this.locals.contains(l))
+            Console.println("Local " + l + " is not declared in " + this)
+        case STORE_LOCAL(l) =>
+          if (!this.locals.contains(l))
+            Console.println("Local " + l + " is not declared in " + this)
+        case _ => ()
+      }
+    }
   }
 
   /** Represent local variables and parameters */
@@ -228,7 +242,7 @@ trait Members requires ICodes {
     /** Ending PC for this local's visbility range. */
     var end: Int = _
 
-    /** PC-based ranges for this local variable's visibility range */
+    /** PC-based ranges for this local variable's visibility */
     var ranges: List[Pair[Int, Int]] = Nil
 
     override def equals(other: Any): Boolean = (

@@ -316,6 +316,9 @@ abstract class TypeFlowAnalysis {
         case MONITOR_EXIT() =>
           stack.pop
 
+        case SCOPE_ENTER(_) | SCOPE_EXIT(_) =>
+          ()
+
         case _ =>
           dump
           abort("Unknown instruction: " + i)

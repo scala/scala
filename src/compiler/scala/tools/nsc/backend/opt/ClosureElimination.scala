@@ -154,7 +154,7 @@ abstract class ClosureElimination extends SubComponent {
     }
 
     /* Partial mapping from values to instructions that load them. */
-    def valueToInstruction(v: Value): Instruction = v match {
+    def valueToInstruction(v: Value): Instruction = (v: @unsealed) match {
       case Deref(LocalVar(v)) =>
         LOAD_LOCAL(v)
 

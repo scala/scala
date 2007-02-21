@@ -322,7 +322,7 @@ trait Opcodes requires ICodes {
      * Stack: ...:arg1:arg2:...:argn
      *    ->: ...:ref
      */
-    case class NEW(kind: TypeKind) extends Instruction {
+    case class NEW(kind: REFERENCE) extends Instruction {
       /** Returns a string representation of this instruction */
       override def toString(): String = "NEW "+ kind;
 

@@ -633,10 +633,10 @@ abstract class GenICode extends SubComponent  {
               ctx1 = genLoadArguments(args, ctor.info.paramTypes, ctx)
               ctx1.bb.emit(CREATE_ARRAY(elem), tree.pos)
 
-            case REFERENCE(cls) =>
+            case rt @ REFERENCE(cls) =>
               assert(ctor.owner == cls,
                      "Symbol " + ctor.owner.fullNameString + " is different than " + tpt)
-              ctx1.bb.emit(NEW(generatedType), tree.pos)
+              ctx1.bb.emit(NEW(rt), tree.pos)
               ctx1.bb.emit(DUP(generatedType))
               ctx1 = genLoadArguments(args, ctor.info.paramTypes, ctx)
 
@@ -1101,6 +1101,8 @@ abstract class GenICode extends SubComponent  {
       case DOUBLE          => Literal(0.0d)
       case REFERENCE(cls)  => Literal(null: Any)
       case ARRAY(elem)     => Literal(null: Any)
+      case BOXED(_)        => Literal(null: Any)
+      case ConcatClass     => abort("no zero of ConcatClass")
     }
 
     def getZeroOf(k: TypeKind): Instruction = k match {
@@ -1115,6 +1117,8 @@ abstract class GenICode extends SubComponent  {
       case DOUBLE          => CONSTANT(Constant(0.0d))
       case REFERENCE(cls)  => CONSTANT(Constant(null: Any))
       case ARRAY(elem)     => CONSTANT(Constant(null: Any))
+      case BOXED(_)        => CONSTANT(Constant(null: Any))
+      case ConcatClass     => abort("no zero of ConcatClass")
     }
 
 
