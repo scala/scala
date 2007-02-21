@@ -67,7 +67,7 @@ class SemanticTokens(val compiler: Global) {
   }
 
   abstract class Actual extends HasNext with HasPrev {
-    def convertToGap: Pair[Int, Actual]  = {
+    def convertToGap: (Int, Actual)  = {
       val nextGap = next.isInstanceOf[Gap]
       val prevGap = prev.isInstanceOf[Gap]
 
@@ -83,21 +83,21 @@ class SemanticTokens(val compiler: Global) {
           gap.next0 = next
           next.prev0 = gap
         }
-        new Pair(ret, gap)
+        (ret, gap)
       }
       else if (nextGap) {
         val gap = next.asInstanceOf[Gap]
         gap.setLength(gap.length + length)
         gap.prev0 = prev
         prev.next0 = gap
-        new Pair(0, gap)
+        (0, gap)
       }
       else {
         prev.next0 = next
         next.prev0 = prev
         val gap = new Gap(prev)
         gap.setLength(length)
-        new Pair(0, gap)
+        (0, gap)
       }
 
     }
@@ -122,7 +122,7 @@ class SemanticTokens(val compiler: Global) {
     def setLength(length1: Int) = length0 = length1
 
     // already gap
-    override def convertToGap: Pair[Int,Actual] = new Pair(0, this)
+    override def convertToGap: (Int,Actual) = (0, this)
   }
 
   def Process(unit: CompilationUnit) = new Process(unit)

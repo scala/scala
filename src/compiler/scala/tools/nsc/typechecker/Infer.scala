@@ -142,7 +142,7 @@ trait Infer requires Analyzer {
         val bound: Type = if (up) tparam.info.bounds.hi else tparam.info.bounds.lo
         //Console.println("solveOne0 "+tvar+" "+config+" "+bound);//DEBUG
         var cyclic = false
-        for (val Pair(tvar2, Pair(tparam2, variance2)) <- config) {
+        for (val (tvar2, (tparam2, variance2)) <- config) {
           if (tparam2 != tparam &&
               ((bound contains tparam2) ||
                up && (tparam2.info.bounds.lo =:= tparam.tpe) ||
@@ -178,7 +178,7 @@ trait Infer requires Analyzer {
         assertNonCyclic(tvar)//debug
       }
     }
-    for (val Pair(tvar, Pair(tparam, variance)) <- config)
+    for (val (tvar, (tparam, variance)) <- config)
       solveOne(tvar, tparam, variance)
     tvars map instantiate
   }
@@ -303,13 +303,13 @@ trait Infer requires Analyzer {
           explainName(sym1)
           explainName(sym2)
           if (sym1.owner == sym2.owner) sym2.name = newTypeName("(some other)"+sym2.name)
-          Triple(sym1, sym2, name)
+          (sym1, sym2, name)
         }
       }
 
       val result = op
 
-      for (val Triple(sym1, sym2, name) <- patches) {
+      for (val (sym1, sym2, name) <- patches) {
         sym1.name = name
         sym2.name = name
       }
@@ -693,8 +693,8 @@ trait Infer requires Analyzer {
      *        any correspondiong non-variant type arguments of bt1 and bt2 are the same
      */
     def isPopulated(tp1: Type, tp2: Type): boolean = {
-      def isConsistent(tp1: Type, tp2: Type): boolean = Pair(tp1, tp2) match {
-        case Pair(TypeRef(pre1, sym1, args1), TypeRef(pre2, sym2, args2)) =>
+      def isConsistent(tp1: Type, tp2: Type): boolean = (tp1, tp2) match {
+        case (TypeRef(pre1, sym1, args1), TypeRef(pre2, sym2, args2)) =>
           assert(sym1 == sym2)
           pre1 =:= pre2 &&
           !(List.map3(args1, args2, sym1.typeParams) {
@@ -781,9 +781,9 @@ trait Infer requires Analyzer {
         if (settings.debug.value) log("new alias of " + tparam + " = " + tparam.info)
       } else {
         val instType = toOrigin(tvar.constr.inst)
-        val Pair(loBounds, hiBounds) =
-          if (instType != NoType && isFullyDefined(instType)) Pair(List(instType), List(instType))
-          else Pair(tvar.constr.lobounds, tvar.constr.hibounds)
+        val (loBounds, hiBounds) =
+          if (instType != NoType && isFullyDefined(instType)) (List(instType), List(instType))
+          else (tvar.constr.lobounds, tvar.constr.hibounds)
         val lo = lub(tparam.info.bounds.lo :: loBounds map toOrigin)
         val hi = glb(tparam.info.bounds.hi :: hiBounds map toOrigin)
         if (!(lo <:< hi)) {

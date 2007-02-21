@@ -62,7 +62,7 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
     else
       reportSyntaxError("'" + that + "' expected instead of '" + ch + "'")
 
-  var debugLastStartElement = new mutable.Stack[Pair[Int, String]]
+  var debugLastStartElement = new mutable.Stack[(Int, String)]
 
   /** checks whether next character starts a Scala block, if yes, skip it.
    * @return true if next character starts a scala block
@@ -143,7 +143,7 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
    *  [40] STag         ::= '<' Name { S Attribute } [S]
    *  [44] EmptyElemTag ::= '<' Name { S Attribute } [S]
    */
-  /*[Duplicate]*/ def xTag: Pair[String, mutable.Map[String, Tree]] = {
+  /*[Duplicate]*/ def xTag: (String, mutable.Map[String, Tree]) = {
     val elemName = xName
     xSpaceOpt
     val aMap =
@@ -378,7 +378,7 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
       if(qname == "xml:unparsed")
         return xUnparsed
 
-      debugLastStartElement.push(Pair(pos1, qname))
+      debugLastStartElement.push((pos1, qname))
       val ts = content
       xEndTag(qname)
       debugLastStartElement.pop
@@ -613,7 +613,7 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
     //Console.println("xPattern")
     val pos1 = pos
     val qname = xName
-    debugLastStartElement.push(Pair(pos1, qname))
+    debugLastStartElement.push((pos1, qname))
     xSpaceOpt
     if (ch == '/') { // empty tag
       nextch

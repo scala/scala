@@ -89,6 +89,8 @@ trait StdNames requires SymbolTable {
     def isLocalName(name: Name) = name.endsWith(LOCAL_SUFFIX)
     def isSetterName(name: Name) = name.endsWith(SETTER_SUFFIX)
     def isLocalDummyName(name: Name) = name.startsWith(LOCALDUMMY_PREFIX)
+    def isOpAssignmentName(name: Name) =
+      name.endsWith(nme.EQL) && name != nme.EQEQ && !name.endsWith(nme.USCOREEQL)
 
     /** If `name' is an expandedName, the original name. Otherwise `name' itself.
      *  @see Symbol.expandedName
@@ -182,6 +184,8 @@ trait StdNames requires SymbolTable {
     val AMPAMP = encode("&&")
     val COLONCOLON = encode("::")
     val PERCENT = encode("%")
+    val EQL = encode("=")
+    val USCOREEQL = encode("_=")
 
     val Nothing = newTermName("Nothing")
     val Null = newTermName("Null")

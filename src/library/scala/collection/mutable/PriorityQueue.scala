@@ -157,7 +157,7 @@ class PriorityQueue[A <% Ordered[A]] extends ResizableArray[A] {
     that.isInstanceOf[PriorityQueue[A]] &&
     { val other = that.asInstanceOf[PriorityQueue[A]]
       elements.zip(other.elements).forall {
-        case Pair(thiselem, thatelem) => thiselem == thatelem
+        case (thiselem, thatelem) => thiselem == thatelem
     }}
 
   /** The hashCode method always yields an error, since it is not

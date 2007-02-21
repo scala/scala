@@ -32,13 +32,13 @@ object Map {
 
   /** The canonical factory for this type
    */
-  def apply[A, B](elems: Pair[A, B]*) = empty[A, B] ++ elems
+  def apply[A, B](elems: (A, B)*) = empty[A, B] ++ elems
 }
 
 @cloneable
 trait Map[A, B] extends AnyRef
       with collection.Map[A, B]
-      with Scriptable[Message[Pair[A, B]]]
+      with Scriptable[Message[(A, B)]]
 {
   /** This method allows one to add a new mapping from <code>key</code>
    *  to <code>value</code> to the map. If the map already contains a
@@ -53,32 +53,32 @@ trait Map[A, B] extends AnyRef
   /** Add a key/value pair to this map.
    *  @param    kv the key/value pair.
    */
-  def += (kv: Pair[A, B]) { update(kv._1, kv._2) }
+  def += (kv: (A, B)) { update(kv._1, kv._2) }
 
   /** Add two or more key/value pairs to this map.
    *  @param    kv1 the first key/value pair.
    *  @param    kv2 the second key/value pair.
    *  @param    kvs the remaining key/value pairs.
    */
-  def += (kv1: Pair[A, B], kv2: Pair[A, B], kvs: Pair[A, B]*) {
+  def += (kv1: (A, B), kv2: (A, B), kvs: (A, B)*) {
     this += kv1; this += kv2; this ++= kvs
   }
 
   /** Add a sequence of key/value pairs to this map.
    *  @param    kvs the iterable object containing all key/value pairs.
    */
-  def ++= (kvs: Iterable[Pair[A, B]]) { this ++= kvs.elements }
+  def ++= (kvs: Iterable[(A, B)]) { this ++= kvs.elements }
 
   /** Add a sequence of key/value pairs to this map.
    *  @param    kvs the iterator containing all key/value pairs.
    */
-  def ++= (kvs: Iterator[Pair[A, B]]) { kvs foreach += }
+  def ++= (kvs: Iterator[(A, B)]) { kvs foreach += }
 
   /** Add a key/value pair to this map.
    *  @param    kv the key/value pair.
    *  @return   The map itself with the new binding added in place.
    */
-  def + (kv: Pair[A, B]): Map[A, B] = { this += kv; this }
+  def + (kv: (A, B)): Map[A, B] = { this += kv; this }
 
   /** Add two or more key/value pairs to this map.
    *  @param    kv1 the first key/value pair.
@@ -86,7 +86,7 @@ trait Map[A, B] extends AnyRef
    *  @param    kvs the remaining key/value pairs.
    *  @return   The map itself with the new bindings added in place.
    */
-  def + (kv1: Pair[A, B], kv2: Pair[A, B], kvs: Pair[A, B]*): Map[A, B] = {
+  def + (kv1: (A, B), kv2: (A, B), kvs: (A, B)*): Map[A, B] = {
     this.+=(kv1, kv2, kvs: _*); this
   }
 
@@ -94,13 +94,13 @@ trait Map[A, B] extends AnyRef
    *  @param    kvs the iterable object containing all key/value pairs.
    *  @return   The itself map with the new bindings added in place.
    */
-  def ++ (kvs: Iterable[Pair[A, B]]): Map[A, B] = { this ++= kvs; this }
+  def ++ (kvs: Iterable[(A, B)]): Map[A, B] = { this ++= kvs; this }
 
   /** Add a sequence of key/value pairs to this map.
    *  @param    kvs the iterator containing all key/value pairs.
    *  @return   The itself map with the new bindings added in place.
    */
-  def ++ (kvs: Iterator[Pair[A, B]]): Map[A, B] = { this ++= kvs; this }
+  def ++ (kvs: Iterator[(A, B)]): Map[A, B] = { this ++= kvs; this }
 
   /** Remove a key from this map, noop if key is not present.
    *  @param    key the key to be removed
@@ -163,7 +163,7 @@ trait Map[A, B] extends AnyRef
    */
   def transform(f: (A, B) => B) {
     elements foreach {
-      case Pair(key, value) => update(key, f(key, value))
+      case (key, value) => update(key, f(key, value))
     }
   }
 
@@ -173,17 +173,17 @@ trait Map[A, B] extends AnyRef
    * @param p  The test predicate
    */
   def retain(p: (A, B) => Boolean): Unit = toList foreach {
-    case Pair(key, value) => if (!p(key, value)) -=(key)
+    case (key, value) => if (!p(key, value)) -=(key)
   }
 
   /** Send a message to this scriptable object.
    *
    *  @param cmd  the message to send.
    */
-  def <<(cmd: Message[Pair[A, B]]): Unit = cmd match {
-    case Include(Pair(k, v)) => update(k, v)
-    case Update(Pair(k, v)) => update(k, v)
-    case Remove(Pair(k, _)) => this -= k
+  def <<(cmd: Message[(A, B)]): Unit = cmd match {
+    case Include((k, v)) => update(k, v)
+    case Update((k, v)) => update(k, v)
+    case Remove((k, _)) => this -= k
     case Reset() => clear
     case s: Script[_] => s.elements foreach <<
     case _ => throw new UnsupportedOperationException("message " + cmd + " not understood")
@@ -214,7 +214,7 @@ trait Map[A, B] extends AnyRef
    * @deprecated   use <code>+=</code>
    */
   @deprecated
-  def incl(mappings: Pair[A, B]*): Unit = this ++= mappings.elements
+  def incl(mappings: (A, B)*): Unit = this ++= mappings.elements
 
   /** This method will remove all the mappings for the given sequence
    *  of keys from the map.
@@ -224,20 +224,6 @@ trait Map[A, B] extends AnyRef
    */
   @deprecated
   def excl(keys: A*): Unit = this --= keys.elements
-
-  /** This method removes all the mappings for which the predicate
-   *  <code>p</code> returns <code>false</code>.
-   *
-   * @deprecated   use <code>retain</code> instead
-   * @param p
-   */
-  @deprecated
-  override def filter(p: Pair[A, B] => Boolean): Iterable[Pair[A, B]] = {
-    toList foreach {
-      case kv @ Pair(key, _) => if (!p(kv)) -=(key)
-    }
-    this
-  }
 
   @deprecated
   class MapTo(key: A) {

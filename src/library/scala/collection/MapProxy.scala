@@ -20,7 +20,7 @@ package scala.collection
  *  @author  Matthias Zenger
  *  @version 1.0, 21/07/2003
  */
-trait MapProxy[A, +B] extends Map[A, B] with IterableProxy[Pair[A, B]] {
+trait MapProxy[A, +B] extends Map[A, B] with IterableProxy[(A, B)] {
 
   def self: Map[A, B]
 

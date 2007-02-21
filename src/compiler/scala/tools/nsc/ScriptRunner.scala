@@ -227,7 +227,7 @@ object ScriptRunner {
       * the directory with the compiled class files,
       * and a flag for whether the compilation succeeded.
       */
-    def compile: Pair[File, Boolean] = {
+    def compile: (File, Boolean) = {
       val compiledPath = File.createTempFile("scalascript", "")
       compiledPath.delete  // the file is created as a file; make it a directory
       compiledPath.mkdirs
@@ -239,10 +239,10 @@ object ScriptRunner {
         val compiler = new Global(settings, reporter)
         val cr = new compiler.Run
         cr.compileSources(List(wrappedScript(scriptFile, &compiler.getSourceFile)))
-        Pair(compiledPath, !reporter.hasErrors)
+        (compiledPath, !reporter.hasErrors)
       } else {
         val compok = compileWithDaemon(settings, scriptFile)
-        Pair(compiledPath, compok)
+        (compiledPath, compok)
       }
     }
 
@@ -258,7 +258,7 @@ object ScriptRunner {
       } else {
         // The pre-compiled jar is old.  Recompile the script.
         jarFile.delete
-        val Pair(compiledPath, compok) = compile
+        val (compiledPath, compok) = compile
         try {
           if (compok) {
             tryMakeJar(jarFile, compiledPath)
@@ -277,7 +277,7 @@ object ScriptRunner {
       }
     } else {
       // don't use the cache; just run from the interpreter's temporary directory
-      val Pair(compiledPath, compok) = compile
+      val (compiledPath, compok) = compile
       try {
         if (compok)
           handler(compiledPath.getPath)

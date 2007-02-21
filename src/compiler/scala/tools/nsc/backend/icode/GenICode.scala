@@ -484,14 +484,14 @@ abstract class GenICode extends SubComponent  {
           val kind = toTypeKind(tree.tpe)
           var handlers = for (val CaseDef(pat, _, body) <- catches.reverse)
             yield pat match {
-              case Typed(Ident(nme.WILDCARD), tpt) => Triple(tpt.tpe.symbol, kind, {
+              case Typed(Ident(nme.WILDCARD), tpt) => (tpt.tpe.symbol, kind, {
                 ctx: Context =>
                   ctx.bb.emit(DROP(REFERENCE(tpt.tpe.symbol)));
                   val ctx1 = genLoad(body, ctx, kind);
                   genLoad(finalizer, ctx1, UNIT);
                 })
 
-              case Ident(nme.WILDCARD) => Triple(definitions.ThrowableClass, kind, {
+              case Ident(nme.WILDCARD) => (definitions.ThrowableClass, kind, {
                 ctx: Context =>
                   ctx.bb.emit(DROP(REFERENCE(definitions.ThrowableClass)))
                   val ctx1 = genLoad(body, ctx, kind)
@@ -502,7 +502,7 @@ abstract class GenICode extends SubComponent  {
                 val exception = new Local(pat.symbol, toTypeKind(pat.symbol.tpe), false)
                 ctx.method.addLocal(exception);
 
-                Triple(pat.symbol.tpe.symbol, kind, {
+                (pat.symbol.tpe.symbol, kind, {
                   ctx: Context =>
                     ctx.bb.emit(STORE_LOCAL(exception), pat.pos);
                   val ctx1 = genLoad(body, ctx, kind);
@@ -511,7 +511,7 @@ abstract class GenICode extends SubComponent  {
             }
 
           if (finalizer != EmptyTree)
-            handlers = Triple(NoSymbol, kind, {
+            handlers = (NoSymbol, kind, {
               ctx: Context =>
                 val exception = new Local(ctx.method.symbol
                                           .newVariable(finalizer.pos, unit.fresh.newName("exc"))
@@ -747,7 +747,7 @@ abstract class GenICode extends SubComponent  {
                   ctx1
                 }, List(
 		  // tree.tpe / fun.tpe is object, which is no longer true after this transformation
-                  Triple(NoSymbol, expectedType, exhCtx => {
+                  (NoSymbol, expectedType, exhCtx => {
                   exhCtx.bb.emit(LOAD_LOCAL(monitor))
                   exhCtx.bb.emit(MONITOR_EXIT(), tree.pos)
                   exhCtx.bb.emit(THROW())
@@ -1277,9 +1277,9 @@ abstract class GenICode extends SubComponent  {
       def genComparisonOp(l: Tree, r: Tree, code: Int): Unit = {
         // special-case reference (in)equality test for null
         if (code == scalaPrimitives.ID || code == scalaPrimitives.NI) {
-          val expr: Tree = Pair(l, r) match {
-            case Pair(Literal(Constant(null)), expr) => expr
-            case Pair(expr, Literal(Constant(null))) => expr
+          val expr: Tree = (l, r) match {
+            case (Literal(Constant(null)), expr) => expr
+            case (expr, Literal(Constant(null))) => expr
             case _ => null
           }
           if (expr ne null) {
@@ -1397,15 +1397,15 @@ abstract class GenICode extends SubComponent  {
           local
       }
 
-      Pair(l, r) match {
+      (l, r) match {
         // null == expr -> expr eq null
-        case Pair(Literal(Constant(null)), expr) =>
+        case (Literal(Constant(null)), expr) =>
           val ctx1 = genLoad(expr, ctx, ANY_REF_CLASS)
           ctx1.bb.emit(CZJUMP(thenCtx.bb, elseCtx.bb, EQ, ANY_REF_CLASS))
           ctx1.bb.close
 
         // expr == null -> if(expr eq null) true else expr.equals(null)
-        case Pair(expr, Literal(Constant(null))) =>
+        case (expr, Literal(Constant(null))) =>
           val eqEqTempLocal = getTempLocal
           var ctx1 = genLoad(expr, ctx, ANY_REF_CLASS)
           ctx1.bb.emit(DUP(ANY_REF_CLASS))
@@ -1804,15 +1804,15 @@ abstract class GenICode extends SubComponent  {
        *
        * <code> ctx.Try( ctx => {
        *   ctx.bb.emit(...) // protected block
-       * }, Pair(definitions.ThrowableClass,
+       * }, (definitions.ThrowableClass,
        *   ctx => {
        *     ctx.bb.emit(...); // exception handler
-       *   }), Pair(AnotherExceptionClass,
+       *   }), (AnotherExceptionClass,
        *   ctx => {...
        *   } ))</code>
        */
       def Try(body: Context => Context,
-              handlers: List[Triple[Symbol, TypeKind, (Context => Context)]],
+              handlers: List[(Symbol, TypeKind, (Context => Context))],
               finalizer: Tree) = {
         val outerCtx = this.dup
         val afterCtx = outerCtx.newBlock

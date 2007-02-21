@@ -81,7 +81,7 @@ trait MarkupParser requires (MarkupParser with MarkupHandler) extends AnyRef wit
   def xmlProcInstr(): MetaData = {
     xToken("xml")
     xSpace
-    val Pair(md,scp) = xAttributes(TopScope)
+    val (md,scp) = xAttributes(TopScope)
     if (scp != TopScope)
       reportSyntaxError("no xmlns definitions here, please.");
     xToken('?')
@@ -278,7 +278,7 @@ trait MarkupParser requires (MarkupParser with MarkupHandler) extends AnyRef wit
   /** parse attribute and create namespace scope, metadata
    *  [41] Attributes    ::= { S Name Eq AttValue }
    */
-  def xAttributes(pscope:NamespaceBinding): Pair[MetaData,NamespaceBinding] = {
+  def xAttributes(pscope:NamespaceBinding): (MetaData,NamespaceBinding) = {
     var scope: NamespaceBinding = pscope
     var aMap: MetaData = Null
     while (isNameStart(ch)) {
@@ -311,7 +311,7 @@ trait MarkupParser requires (MarkupParser with MarkupHandler) extends AnyRef wit
     if(!aMap.wellformed(scope))
         reportSyntaxError( "double attribute");
 
-    Pair(aMap,scope)
+    (aMap,scope)
   }
 
   /** attribute value, terminated by either ' or ". value may not contain &lt;.
@@ -361,13 +361,13 @@ trait MarkupParser requires (MarkupParser with MarkupHandler) extends AnyRef wit
     val qname = xName
 
     xSpaceOpt
-    val Pair(aMap: MetaData, scope: NamespaceBinding) = {
+    val (aMap: MetaData, scope: NamespaceBinding) = {
       if (isNameStart(ch))
         xAttributes(pscope)
       else
-        Pair(Null, pscope)
+        (Null, pscope)
     }
-    Triple(qname, aMap, scope)
+    (qname, aMap, scope)
   }
 
   /** [42]  '&lt;' xmlEndTag ::=  '&lt;' '/' Name S? '&gt;'
@@ -667,8 +667,8 @@ trait MarkupParser requires (MarkupParser with MarkupHandler) extends AnyRef wit
     val pos = this.pos
     val Tuple3(qname, aMap, scope) = xTag(pscope)
     val Tuple2(pre, local) = Utility.prefix(qname) match {
-      case Some(p) => Pair(p,qname.substring(p.length()+1, qname.length()))
-      case _       => Pair(null,qname)
+      case Some(p) => (p,qname.substring(p.length()+1, qname.length()))
+      case _       => (null,qname)
     }
     val ts = {
       if (ch == '/') {  // empty element

@@ -219,7 +219,7 @@ trait Namers requires Analyzer {
 
     def skolemize(tparams: List[AbsTypeDef]): unit = {
       val tskolems = newTypeSkolems(tparams map (.symbol))
-      for (val Pair(tparam, tskolem) <- tparams zip tskolems) tparam.symbol = tskolem
+      for (val (tparam, tskolem) <- tparams zip tskolems) tparam.symbol = tskolem
     }
 
     def applicableTypeParams(owner: Symbol): List[Symbol] =
@@ -648,8 +648,8 @@ trait Namers requires Analyzer {
                 }
                 true
               }
-              def checkSelectors(selectors: List[Pair[Name, Name]]): unit = selectors match {
-                case Pair(from, to) :: rest =>
+              def checkSelectors(selectors: List[(Name, Name)]): unit = selectors match {
+                case (from, to) :: rest =>
         	  if (from != nme.WILDCARD && base != ErrorType) {
         	    if (base.member(from) == NoSymbol && base.member(from.toTypeName) == NoSymbol)
         	      context.error(tree.pos, from.decode + " is not a member of " + expr);
@@ -747,8 +747,8 @@ trait Namers requires Analyzer {
         else if (isFunctionType(tp) &&
                  (!isFunctionType(elemtp) || tp.typeArgs.length > elemtp.typeArgs.length))
           result = true
-        else Pair(tp, elemtp) match {
-          case Pair(TypeRef(pre, sym, args), TypeRef(elempre, elemsym, elemargs)) =>
+        else (tp, elemtp) match {
+          case (TypeRef(pre, sym, args), TypeRef(elempre, elemsym, elemargs)) =>
             if ((sym == elemsym) && (pre =:= elempre) && (args.length == elemargs.length))
               result = List.forall2(elemargs, args) (isContainedIn)
           case _ =>

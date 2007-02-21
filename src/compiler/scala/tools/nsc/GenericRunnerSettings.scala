@@ -36,7 +36,7 @@ extends Settings(error) {
   class DefinesSetting
   extends Setting("-D<prop>", "set a Java property")
   {
-    private val props = new Queue[Pair[String, String]]
+    private val props = new Queue[(String, String)]
 
     def value = props.toList
 
@@ -49,9 +49,9 @@ extends Settings(error) {
           val eqidx = stripD.indexOf('=')
           val addition =
             if(eqidx < 0)
-              Pair(stripD, "")
+              (stripD, "")
             else
-              Pair(stripD.substring(0, eqidx), stripD.substring(eqidx+1))
+              (stripD.substring(0, eqidx), stripD.substring(eqidx+1))
           props += addition
           rest
         }
@@ -63,7 +63,7 @@ extends Settings(error) {
     /** Apply the specified properties to the current JVM */
     def applyToCurrentJVM = {
       val systemProps = getProperties
-      for(val Pair(key, value) <- props.toList)
+      for(val (key, value) <- props.toList)
         systemProps.setProperty(key, value)
     }
 

@@ -8,6 +8,7 @@ package scala.tools.nsc.ast
 
 import scala.tools.nsc.util.Position
 import symtab.Flags._
+import scala.collection.mutable.ListBuffer
 
 abstract class TreeGen {
 
@@ -205,4 +206,34 @@ abstract class TreeGen {
 
   def mkRuntimeCall(meth: Name, args: List[Tree]): Tree =
     Apply(Select(mkAttributedRef(ScalaRunTimeModule), meth), args)
+
+  def evalOnce(expr: Tree, owner: Symbol, unit: CompilationUnit)(within: (() => Tree) => Tree): Tree =
+    if (treeInfo.isPureExpr(expr)) {
+      within(() => expr);
+    } else {
+      val temp = owner.newValue(expr.pos, unit.fresh.newName())
+      .setFlag(SYNTHETIC).setInfo(expr.tpe);
+      atPos(expr.pos) {
+        Block(List(ValDef(temp, expr)), within(() => Ident(temp) setType expr.tpe))
+      }
+    }
+
+  def evalOnceAll(exprs: List[Tree], owner: Symbol, unit: CompilationUnit)(within: (List[() => Tree]) => Tree): Tree = {
+    val vdefs = new ListBuffer[ValDef]
+    val exprs1 = new ListBuffer[() => Tree]
+    for (val expr <- exprs) {
+      if (treeInfo.isPureExpr(expr)) {
+        exprs1 += (() => expr)
+      } else {
+        val temp = owner.newValue(expr.pos, unit.fresh.newName())
+          .setFlag(SYNTHETIC).setInfo(expr.tpe)
+        vdefs += ValDef(temp, expr)
+        exprs1 += (() => Ident(temp) setType expr.tpe)
+      }
+    }
+    val prefix = vdefs.toList
+    val result = within(exprs1.toList)
+    if (prefix.isEmpty) result
+    else Block(prefix, result) setPos prefix.head.pos
+  }
 }

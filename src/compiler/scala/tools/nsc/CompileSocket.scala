@@ -55,13 +55,13 @@ object CompileSocket {
   /** The temporary directory in which the port identification file is stored */
   private val tmpDir = {
     val totry = List(
-        Pair("scala.home", List("var", "scala-devel")),
-        Pair("user.home", List("tmp")),
-        Pair("java.io.tmpdir", Nil))
+        ("scala.home", List("var", "scala-devel")),
+        ("user.home", List("tmp")),
+        ("java.io.tmpdir", Nil))
 
     /** Expand a property-extensions pair into a complete File object */
-    def expand(trial: Pair[String, List[String]]): Option[File] = {
-      val Pair(topdirProp, extensions) = trial
+    def expand(trial: (String, List[String])): Option[File] = {
+      val (topdirProp, extensions) = trial
       val topdir = System.getProperty(topdirProp)
       if (topdir eq null)
         return None

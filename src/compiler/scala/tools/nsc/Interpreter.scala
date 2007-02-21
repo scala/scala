@@ -282,7 +282,7 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
     if (!req.compile)
       return IR.Error  // an error happened during compilation, e.g. a type error
 
-    val Pair(interpreterResultString, succeeded) = req.loadAndRun
+    val (interpreterResultString, succeeded) = req.loadAndRun
 
     if (printResults || !succeeded) {
       // print the result
@@ -553,20 +553,20 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
     }
 
     /** load and run the code using reflection */
-    def loadAndRun: Pair[String, Boolean] = {
+    def loadAndRun: (String, Boolean) = {
       val interpreterResultObject: Class =
         Class.forName(resultObjectName, true, classLoader)
       val resultValMethod: java.lang.reflect.Method =
         interpreterResultObject.getMethod("result", null)
       try {
-        Pair(resultValMethod.invoke(interpreterResultObject, null).toString(),
+        (resultValMethod.invoke(interpreterResultObject, null).toString(),
              true)
       } catch {
         case e => {
           def caus(e: Throwable): Throwable =
             if (e.getCause eq null) e else caus(e.getCause)
             val orig = caus(e)
-            Pair(stringFrom(str => orig.printStackTrace(str)),
+            (stringFrom(str => orig.printStackTrace(str)),
                  false)
         }
       }

@@ -40,7 +40,7 @@ abstract class ICodeReader extends ClassfileParser {
    *  two IClass objects, one for static members and one
    *  for non-static members.
    */
-  def readClass(cls: Symbol): Pair[IClass, IClass] = {
+  def readClass(cls: Symbol): (IClass, IClass) = {
     var classFile: AbstractFile = null;
     var sym = cls
     isScalaModule = cls.isModule && !cls.hasFlag(JAVA)
@@ -56,7 +56,7 @@ abstract class ICodeReader extends ClassfileParser {
     this.staticCode   = new IClass(sym.linkedClassOfClass)
     parse(classFile, sym)
 
-    Pair(staticCode, instanceCode)
+    (staticCode, instanceCode)
   }
 
   /** If we're parsing a scala module, the owner of members is always
@@ -86,12 +86,12 @@ abstract class ICodeReader extends ClassfileParser {
   }
 
   override def parseField(): Unit = {
-    val Pair(jflags, sym) = parseMember()
+    val (jflags, sym) = parseMember()
     getCode(jflags).addField(new IField(sym))
     skipAttributes()
   }
 
-  private def parseMember(): Pair[Int, Symbol] = {
+  private def parseMember(): (Int, Symbol) = {
     val jflags = in.nextChar
     val name = pool.getName(in.nextChar)
     var tpe  = pool.getType(in.nextChar)
@@ -103,19 +103,19 @@ abstract class ICodeReader extends ClassfileParser {
       }
 
     if ("<clinit>" == name.toString)
-      Pair(jflags, NoSymbol)
+      (jflags, NoSymbol)
     else {
       var sym = getOwner(jflags).info.member(name).suchThat(old => old.tpe =:= tpe);
       if (sym == NoSymbol)
         sym = getOwner(jflags).info.member(newTermName(name.toString + nme.LOCAL_SUFFIX)).suchThat(old => old.tpe =:= tpe);
       if (sym == NoSymbol)
         Console.println("Could not find symbol for " + name + ": " + tpe);
-      Pair(jflags, sym)
+      (jflags, sym)
     }
   }
 
   override def parseMethod(): Unit = {
-    val Pair(jflags, sym) = parseMember();
+    val (jflags, sym) = parseMember();
     if (sym != NoSymbol) {
       Console.println("Parsing method " + sym.fullNameString);
       this.method = new IMethod(sym);
@@ -568,15 +568,15 @@ abstract class ICodeReader extends ClassfileParser {
     if ((flags & JAVA_ACC_STATIC) != 0) staticCode else instanceCode
 
   class LinearCode {
-    var instrs: ListBuffer[Pair[Int, Instruction]] = new ListBuffer
+    var instrs: ListBuffer[(Int, Instruction)] = new ListBuffer
     var jmpTargets: Set[Int] = new HashSet[Int]
-    var locals: Map[Int, List[Pair[Local, TypeKind]]] = new HashMap()
+    var locals: Map[Int, List[(Local, TypeKind)]] = new HashMap()
 
     var containsDUPX = false
 
     def emit(i: Instruction) = {
 //      Console.println(i);
-      instrs += Pair(pc, i)
+      instrs += (pc, i)
       if (i.isInstanceOf[DupX])
         containsDUPX = true
     }
@@ -601,7 +601,7 @@ abstract class ICodeReader extends ClassfileParser {
       var otherBlock: BasicBlock = null
       var disableJmpTarget = false
 
-      for (val Pair(pc, instr) <- instrs.elements) {
+      for (val (pc, instr) <- instrs.elements) {
 //        Console.println("> " + pc + ": " + instr);
         if (jmpTargets contains pc) {
           otherBlock = blocks(pc)
@@ -652,21 +652,21 @@ abstract class ICodeReader extends ClassfileParser {
         import analysis._
         /** Abstract interpretation for one instruction. */
         override def interpret(in: typeFlowLattice.Elem, i: Instruction): typeFlowLattice.Elem = {
-          var out = Pair(new VarBinding(in._1), new TypeStack(in._2));
+          var out = (new VarBinding(in._1), new TypeStack(in._2));
           val bindings = out._1;
           val stack = out._2;
           import stack.push
           i match {
             case DUP_X1 =>
-              val Pair(one, two) = stack.pop2
+              val (one, two) = stack.pop2
               push(one); push(two); push(one);
 
             case DUP_X2 =>
-              val Triple(one, two, three) = stack.pop3
+              val (one, two, three) = stack.pop3
               push(one); push(three); push(two); push(one);
 
             case DUP2_X1 =>
-              val Pair(one, two) = stack.pop2
+              val (one, two) = stack.pop2
               if (one.isWideType) {
                 push(one); push(two); push(one);
               } else {
@@ -675,7 +675,7 @@ abstract class ICodeReader extends ClassfileParser {
               }
 
             case DUP2_X2 =>
-              val Pair(one, two) = stack.pop2
+              val (one, two) = stack.pop2
               if (one.isWideType && two.isWideType) {
                 push(one); push(two); push(one);
               } else if (one.isWideType) {
@@ -842,10 +842,10 @@ abstract class ICodeReader extends ClassfileParser {
         case Some(ls) =>
           val l = ls find { loc => loc._2 == kind }
           l match {
-            case Some(Pair(loc, _)) => loc
+            case Some((loc, _)) => loc
             case None =>
               val l = freshLocal(kind)
-              locals(idx) = Pair(l, kind) :: locals(idx)
+              locals(idx) = (l, kind) :: locals(idx)
               log("Expected kind " + kind + " for local " + idx +
                 " but only " + ls + " found. Added new local.")
               l
@@ -853,7 +853,7 @@ abstract class ICodeReader extends ClassfileParser {
         case None =>
           checkValidIndex
           val l = freshLocal(idx, kind, false)
-          locals += idx -> List(Pair(l, kind))
+          locals += idx -> List((l, kind))
           l
       }
     }

@@ -409,7 +409,7 @@ trait Trees requires Global {
    *  @param expr
    *  @param selectors
    */
-  case class Import(expr: Tree, selectors: List[Pair[Name, Name]])
+  case class Import(expr: Tree, selectors: List[(Name, Name)])
        extends SymTree
 
   /** Annotation application (constructor arguments + name-value pairs) */
@@ -751,7 +751,7 @@ trait Trees requires Global {
     def AbsTypeDef(tree: Tree, mods: Modifiers, name: Name, lo: Tree, hi: Tree): AbsTypeDef
     def AliasTypeDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[AbsTypeDef], rhs: Tree): AliasTypeDef
     def LabelDef(tree: Tree, name: Name, params: List[Ident], rhs: Tree): LabelDef
-    def Import(tree: Tree, expr: Tree, selectors: List[Pair[Name, Name]]): Import
+    def Import(tree: Tree, expr: Tree, selectors: List[(Name, Name)]): Import
     def Annotation(tree: Tree, constr: Tree, elements: List[Tree]): Annotation
     def DocDef(tree: Tree, comment: String, definition: Tree): DocDef
     def Template(tree: Tree, parents: List[Tree], body: List[Tree]): Template
@@ -806,7 +806,7 @@ trait Trees requires Global {
       new AliasTypeDef(mods, name, tparams, rhs).copyAttrs(tree)
     def LabelDef(tree: Tree, name: Name, params: List[Ident], rhs: Tree) =
       new LabelDef(name, params, rhs).copyAttrs(tree)
-    def Import(tree: Tree, expr: Tree, selectors: List[Pair[Name, Name]]) =
+    def Import(tree: Tree, expr: Tree, selectors: List[(Name, Name)]) =
       new Import(expr, selectors).copyAttrs(tree)
     def Annotation(tree: Tree, constr: Tree, elements: List[Tree]) =
       new Annotation(constr, elements)
@@ -923,7 +923,7 @@ trait Trees requires Global {
       if (name0 == name) && (params0 == params) && (rhs0 == rhs) => t
       case _ => copy.LabelDef(tree, name, params, rhs)
     }
-    def Import(tree: Tree, expr: Tree, selectors: List[Pair[Name, Name]]) = tree match {
+    def Import(tree: Tree, expr: Tree, selectors: List[(Name, Name)]) = tree match {
       case t @ Import(expr0, selectors0)
       if (expr0 == expr) && (selectors0 == selectors) => t
       case _ => copy.Import(tree, expr, selectors)

@@ -35,7 +35,7 @@ object CompileClient {
     pathsList.map(absFileName).mkString("", sep, "")
   }
 
-  private def normalize(args: Array[String]): Pair[String, String] = {
+  private def normalize(args: Array[String]): (String, String) = {
     var i = 0
     val vmArgs = new StringBuilder
     var serverAdr = ""
@@ -70,7 +70,7 @@ object CompileClient {
         }
       }
     }
-    Pair(vmArgs.toString, serverAdr)
+    (vmArgs.toString, serverAdr)
   }
 
   // used by class ant.FastScalac to skip exit statement in Ant.
@@ -81,7 +81,7 @@ object CompileClient {
       else
         ("-d" :: "." :: args0.toList).toArray
 
-    val Pair(vmArgs, serverAdr) = normalize(args)
+    val (vmArgs, serverAdr) = normalize(args)
     if (version) {
       Console.println(versionMsg)
       return 0

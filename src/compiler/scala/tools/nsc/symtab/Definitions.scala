@@ -45,7 +45,7 @@ trait Definitions requires SymbolTable {
     var DelegateClass: Symbol = _ // System.MulticastDelegate
     var Delegate_scalaCallers: List[Symbol] = List()
     // Symbol -> (Symbol, Type): scalaCaller -> (scalaMethodSym, DelegateType)
-    // var Delegate_scalaCallerInfos: HashMap[Symbol, Pair[Symbol, Type]] = _
+    // var Delegate_scalaCallerInfos: HashMap[Symbol, (Symbol, Type)] = _
     var Delegate_scalaCallerTargets: HashMap[Symbol, Symbol] = _
 
     // the scala value classes
@@ -921,7 +921,7 @@ trait Definitions requires SymbolTable {
 
     // def addScalaCallerInfo(scalaCaller: Symbol, methSym: Symbol, delType: Type) = {
     // assert(Delegate_scalaCallers contains scalaCaller)
-    // Delegate_scalaCallerInfos += scalaCaller -> Pair(methSym, delType)
+    // Delegate_scalaCallerInfos += scalaCaller -> (methSym, delType)
     // }
 
     def addScalaCallerInfo(scalaCaller: Symbol, methSym: Symbol) = {

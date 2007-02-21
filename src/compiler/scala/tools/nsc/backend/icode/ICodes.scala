@@ -73,7 +73,7 @@ abstract class ICodes extends AnyRef
          succ.predecessors.length == 1;
          succ.predecessors.head == b;
          !(m.exh.contains { (e: ExceptionHandler) => e.covers(b) && !e.covers(succ) }))
-        yield Pair(b, succ)
+        yield (b, succ)
     ()
   }
 

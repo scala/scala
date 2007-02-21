@@ -140,7 +140,7 @@ object List {
    *  @param xs the list of pairs to unzip
    *  @return a pair of lists: the first list in the pair contains the list
    */
-  def unzip[a,b](xs: List[Pair[a,b]]): Pair[List[a], List[b]] = {
+  def unzip[a,b](xs: List[(a,b)]): (List[a], List[b]) = {
     val b1 = new ListBuffer[a]
     val b2 = new ListBuffer[b]
     var xc = xs
@@ -149,7 +149,7 @@ object List {
       b2 += xc.head._2
       xc = xc.tail
     }
-    Pair(b1.toList, b2.toList)
+    (b1.toList, b2.toList)
   }
 
   /** Converts an iterator to a list
@@ -590,7 +590,7 @@ sealed abstract class List[+a] extends Seq[a] {
    *  @return a pair of lists composed of the first <code>n</code>
    *          elements, and the other elements.
    */
-  def splitAt(n: Int): Pair[List[a], List[a]] = {
+  def splitAt(n: Int): (List[a], List[a]) = {
     val b = new ListBuffer[a]
     var i = 0
     var these = this
@@ -599,7 +599,7 @@ sealed abstract class List[+a] extends Seq[a] {
       b += these.head
       these = these.tail
     }
-    Pair(b.toList, these)
+    (b.toList, these)
   }
 
   /** Returns the longest prefix of this list whose elements satisfy
@@ -637,19 +637,19 @@ sealed abstract class List[+a] extends Seq[a] {
    *  @return  a pair consisting of the longest prefix of the list whose
    *           elements all satisfy <code>p</code>, and the rest of the list.
    */
-  def span(p: a => Boolean): Pair[List[a], List[a]] = {
+  def span(p: a => Boolean): (List[a], List[a]) = {
     val b = new ListBuffer[a]
     var these = this
     while (!these.isEmpty && p(these.head)) {
       b += these.head
       these = these.tail
     }
-    Pair(b.toList, these)
+    (b.toList, these)
   }
 
   /** Like <code>span</code> but with the predicate inverted.
    */
-  def break(p: a => Boolean): Pair[List[a], List[a]] = span { x => !p(x) }
+  def break(p: a => Boolean): (List[a], List[a]) = span { x => !p(x) }
 
   /** Returns the <code>n</code>-th element of this list. The first element
    *  (head of the list) is at position 0.
@@ -752,7 +752,7 @@ sealed abstract class List[+a] extends Seq[a] {
    *           The relative order of the elements in the sub-lists is the
    *           same as in the original list.
    */
-  def partition(p: a => Boolean): Pair[List[a], List[a]] = {
+  def partition(p: a => Boolean): (List[a], List[a]) = {
     val btrue = new ListBuffer[a]
     val bfalse = new ListBuffer[a]
     var these = this
@@ -760,7 +760,7 @@ sealed abstract class List[+a] extends Seq[a] {
       (if (p(these.head)) btrue else bfalse) += these.head
       these = these.tail
     }
-    Pair(btrue.toList, bfalse.toList)
+    (btrue.toList, bfalse.toList)
   }
 
   /** <p>
@@ -804,7 +804,7 @@ sealed abstract class List[+a] extends Seq[a] {
           else y::z::x::acc
         case hd1::hd2::hd3::tail => {
           val List(x, y, z) = sort_1(hd1::hd2::hd3::Nil, Nil)
-          val Pair(small, large) = tail.partition((e2) => lt(e2, y))
+          val (small, large) = tail.partition((e2) => lt(e2, y))
           sort_1(x::small, y::sort_1(z::large, acc))
         }
       }
@@ -828,7 +828,7 @@ sealed abstract class List[+a] extends Seq[a] {
         else y::z::x::Nil
       case hd1::hd2::hd3::tail => {
         val List(x, y, z) = sort_1(hd1::hd2::hd3::Nil, Nil)
-        val Pair(small,large) =  tail.partition((e2) => lt(e2, y))
+        val (small,large) =  tail.partition((e2) => lt(e2, y))
         sort_1(x::small, y::sort_1(z::large, Nil));
       }
     }
@@ -999,12 +999,12 @@ sealed abstract class List[+a] extends Seq[a] {
    *              <code>List(a<sub>0</sub>, ..., a<sub>m</sub>)
    *              zip List(b<sub>0</sub>, ..., b<sub>n</sub>)</code> is invoked.
    */
-  def zip[b](that: List[b]): List[Pair[a,b]] = {
-    val b = new ListBuffer[Pair[a, b]]
+  def zip[b](that: List[b]): List[(a,b)] = {
+    val b = new ListBuffer[(a, b)]
     var these = this
     var those = that
     while (!these.isEmpty && !those.isEmpty) {
-      b += Pair(these.head, those.head)
+      b += (these.head, those.head)
       these = these.tail
       those = those.tail
     }
@@ -1018,12 +1018,12 @@ sealed abstract class List[+a] extends Seq[a] {
    *               where <code>a<sub>i</sub></code> are the elements of this list.
    */
   def zipWithIndex = {
-    val b = new ListBuffer[Pair[a,int]]
+    val b = new ListBuffer[(a,int)]
     var these = this
     var idx = 0
 
     while(!these.isEmpty) {
-      b += Pair(these.head, idx)
+      b += (these.head, idx)
       these = these.tail
       idx = idx + 1
     }
@@ -1050,21 +1050,21 @@ sealed abstract class List[+a] extends Seq[a] {
    *                  [b<sub>0</sub>, ..., b<sub>m</sub>]</code> is
    *                  invoked where <code>m &gt; n</code>.
    */
-  def zipAll[b, c >: a, d >: b](that: List[b], thisElem: c, thatElem: d): List[Pair[c,d]] = {
-    val b = new ListBuffer[Pair[c, d]]
+  def zipAll[b, c >: a, d >: b](that: List[b], thisElem: c, thatElem: d): List[(c,d)] = {
+    val b = new ListBuffer[(c, d)]
     var these = this
     var those = that
     while (!these.isEmpty && !those.isEmpty) {
-      b += Pair(these.head, those.head)
+      b += (these.head, those.head)
       these = these.tail
       those = those.tail
     }
     while (!these.isEmpty) {
-      b += Pair(these.head, thatElem)
+      b += (these.head, thatElem)
       these = these.tail
     }
     while (!those.isEmpty) {
-      Pair(thisElem, those.head)
+      (thisElem, those.head)
       those = those.tail
     }
     b.toList

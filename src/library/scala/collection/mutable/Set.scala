@@ -168,18 +168,6 @@ trait Set[A] extends collection.Set[A] with Scriptable[Message[A]] {
    */
   def intersect(that: Set[A]): Unit = retain(that.contains)
 
-  /** Method <code>filter</code> removes all elements from the set for
-   *  which the predicate <code>p</code> yields the value <code>false</code>.
-   * @deprecated   use retain instead
-   */
-  @deprecated
-  override def filter(p: A => Boolean): Set[A] = {
-    toList.foreach {
-      elem => if (!p(elem)) -=(elem)
-    }
-    this
-  }
-
   /** Method <code>retain removes all elements from the set for
    *  which the predicate <code>p</code> yields the value <code>false</code>.
    */

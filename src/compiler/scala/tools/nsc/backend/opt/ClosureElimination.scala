@@ -53,20 +53,20 @@ abstract class ClosureElimination extends SubComponent {
 
     /** A simple peephole optimizer. */
     val peephole = new PeepholeOpt( (i1, i2) =>
-    	Pair(i1, i2) match {
-        case Pair(CONSTANT(c), DROP(_)) =>
+    	(i1, i2) match {
+        case (CONSTANT(c), DROP(_)) =>
           if (c.tag == UnitTag)
             Some(List(i2))
           else
             Some(Nil);
 
-        case Pair(LOAD_LOCAL(x), STORE_LOCAL(y)) =>
+        case (LOAD_LOCAL(x), STORE_LOCAL(y)) =>
         	if (x eq y) Some(Nil) else None
 
-        case Pair(LOAD_LOCAL(_), DROP(_)) =>
+        case (LOAD_LOCAL(_), DROP(_)) =>
           Some(Nil)
 
-        case Pair(LOAD_FIELD(sym, isStatic), DROP(_)) =>
+        case (LOAD_FIELD(sym, isStatic), DROP(_)) =>
         	if (isStatic)
             Some(Nil)
           else

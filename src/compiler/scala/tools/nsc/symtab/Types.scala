@@ -918,7 +918,7 @@ trait Types requires SymbolTable {
           def apply(tp: Type): Type = {
             tp match {
               case TypeRef(_, sym, args) =>
-                for (val Pair(tparam1, arg) <- sym.info.typeParams zip args)
+                for (val (tparam1, arg) <- sym.info.typeParams zip args)
                   if (arg contains tparam) {
                     addRef(NonExpansive, tparam, tparam1)
                     if (arg.symbol != tparam) addRef(Expansive, tparam, tparam1)
@@ -943,7 +943,7 @@ trait Types requires SymbolTable {
       val lastRefs = Array(refs(0), refs(1))
       state = Initialized
       var change = false
-      for (val Pair(from, targets) <- refs(NonExpansive).elements)
+      for (val (from, targets) <- refs(NonExpansive).elements)
         for (val target <- targets) {
           var thatInfo = classInfo(target)
           if (thatInfo.state != Initialized)
@@ -951,7 +951,7 @@ trait Types requires SymbolTable {
           addRefs(NonExpansive, from, thatInfo.getRefs(NonExpansive, target))
           addRefs(Expansive, from, thatInfo.getRefs(Expansive, target))
         }
-      for (val Pair(from, targets) <- refs(Expansive).elements)
+      for (val (from, targets) <- refs(Expansive).elements)
         for (val target <- targets) {
           var thatInfo = classInfo(target)
           addRefs(Expansive, from, thatInfo.getRefs(NonExpansive, target))
@@ -2012,40 +2012,40 @@ trait Types requires SymbolTable {
    *             equivalent types.
    */
   def isSameType(tp1: Type, tp2: Type): boolean = {
-    Pair(tp1, tp2) match {
-      case Pair(ErrorType, _) => true
-      case Pair(WildcardType, _) => true
-      case Pair(_, ErrorType) => true
-      case Pair(_, WildcardType) => true
+    (tp1, tp2) match {
+      case (ErrorType, _) => true
+      case (WildcardType, _) => true
+      case (_, ErrorType) => true
+      case (_, WildcardType) => true
 
-      case Pair(NoType, _) => false
-      case Pair(NoPrefix, _) => tp2.symbol.isPackageClass
-      case Pair(_, NoType) => false
-      case Pair(_, NoPrefix) => tp1.symbol.isPackageClass
+      case (NoType, _) => false
+      case (NoPrefix, _) => tp2.symbol.isPackageClass
+      case (_, NoType) => false
+      case (_, NoPrefix) => tp1.symbol.isPackageClass
 
-      case Pair(ThisType(sym1), ThisType(sym2))
+      case (ThisType(sym1), ThisType(sym2))
       if (sym1 == sym2) =>
         true
-      case Pair(SingleType(pre1, sym1), SingleType(pre2, sym2))
+      case (SingleType(pre1, sym1), SingleType(pre2, sym2))
       if ((sym1 == sym2) && (pre1 =:= pre2)) =>
         true
 /*
-      case Pair(SingleType(pre1, sym1), ThisType(sym2))
+      case (SingleType(pre1, sym1), ThisType(sym2))
       if (sym1.isModule &&
           sym1.moduleClass == sym2 &&
           pre1 =:= sym2.owner.thisType) =>
         true
-      case Pair(ThisType(sym1), SingleType(pre2, sym2))
+      case (ThisType(sym1), SingleType(pre2, sym2))
       if (sym2.isModule &&
           sym2.moduleClass == sym1 &&
           pre2 =:= sym1.owner.thisType) =>
         true
 */
-      case Pair(ConstantType(value1), ConstantType(value2)) =>
+      case (ConstantType(value1), ConstantType(value2)) =>
         value1 == value2
-      case Pair(TypeRef(pre1, sym1, args1), TypeRef(pre2, sym2, args2)) =>
+      case (TypeRef(pre1, sym1, args1), TypeRef(pre2, sym2, args2)) =>
         sym1 == sym2 && (phase.erasedTypes || pre1 =:= pre2) && isSameTypes(args1, args2)
-      case Pair(RefinedType(parents1, ref1), RefinedType(parents2, ref2)) =>
+      case (RefinedType(parents1, ref1), RefinedType(parents2, ref2)) =>
         def isSubScope(s1: Scope, s2: Scope): boolean = s2.toList.forall {
           sym2 =>
             val sym1 = s1.lookup(sym2.name)
@@ -2054,31 +2054,31 @@ trait Types requires SymbolTable {
         }
         //Console.println("is same? " + tp1 + " " + tp2 + " " + tp1.symbol.owner + " " + tp2.symbol.owner)//DEBUG
         isSameTypes(parents1, parents2) && isSubScope(ref1, ref2) && isSubScope(ref2, ref1)
-      case Pair(MethodType(pts1, res1), MethodType(pts2, res2)) =>
+      case (MethodType(pts1, res1), MethodType(pts2, res2)) =>
         (pts1.length == pts2.length &&
          isSameTypes(pts1, pts2) &&
          res1 =:= res2 &&
          tp1.isInstanceOf[ImplicitMethodType] == tp2.isInstanceOf[ImplicitMethodType])
-      case Pair(PolyType(tparams1, res1), PolyType(tparams2, res2)) =>
+      case (PolyType(tparams1, res1), PolyType(tparams2, res2)) =>
         (tparams1.length == tparams2.length &&
          List.forall2(tparams1, tparams2)
            ((p1, p2) => p1.info =:= p2.info.substSym(tparams2, tparams1)) &&
          res1 =:= res2.substSym(tparams2, tparams1))
-      case Pair(TypeBounds(lo1, hi1), TypeBounds(lo2, hi2)) =>
+      case (TypeBounds(lo1, hi1), TypeBounds(lo2, hi2)) =>
         lo1 =:= lo2 && hi1 =:= hi2
-      case Pair(BoundedWildcardType(bounds), _) =>
+      case (BoundedWildcardType(bounds), _) =>
         bounds containsType tp2
-      case Pair(_, BoundedWildcardType(bounds)) =>
+      case (_, BoundedWildcardType(bounds)) =>
         bounds containsType tp1
-      case Pair(TypeVar(_, constr1), _) =>
+      case (TypeVar(_, constr1), _) =>
         if (constr1.inst != NoType) constr1.inst =:= tp2
         else constr1 instantiate (wildcardToTypeVarMap(tp2))
-      case Pair(_, TypeVar(_, constr2)) =>
+      case (_, TypeVar(_, constr2)) =>
         if (constr2.inst != NoType) tp1 =:= constr2.inst
         else constr2 instantiate (wildcardToTypeVarMap(tp1))
-      case Pair(AttributedType(_,atp), _) =>
+      case (AttributedType(_,atp), _) =>
         isSameType(atp, tp2)
-      case Pair(_, AttributedType(_,atp)) =>
+      case (_, AttributedType(_,atp)) =>
         isSameType(tp1, atp)
       case _ =>
         if (tp1.isStable && tp2.isStable) {
@@ -2127,24 +2127,24 @@ trait Types requires SymbolTable {
    *  @return    ...
    */
   def isSubType0(tp1: Type, tp2: Type): boolean = {
-    Pair(tp1, tp2) match {
-      case Pair(ErrorType, _)    => true
-      case Pair(WildcardType, _) => true
-      case Pair(_, ErrorType)    => true
-      case Pair(_, WildcardType) => true
+    (tp1, tp2) match {
+      case (ErrorType, _)    => true
+      case (WildcardType, _) => true
+      case (_, ErrorType)    => true
+      case (_, WildcardType) => true
 
-      case Pair(NoType, _)   => false
-      case Pair(NoPrefix, _) => tp2.symbol.isPackageClass
-      case Pair(_, NoType)   => false
-      case Pair(_, NoPrefix) => tp1.symbol.isPackageClass
+      case (NoType, _)   => false
+      case (NoPrefix, _) => tp2.symbol.isPackageClass
+      case (_, NoType)   => false
+      case (_, NoPrefix) => tp1.symbol.isPackageClass
 
-      case Pair(ThisType(_), ThisType(_))           => tp1 =:= tp2
-      case Pair(ThisType(_), SingleType(_, _))      => tp1 =:= tp2
-      case Pair(SingleType(_, _), ThisType(_))      => tp1 =:= tp2
-      case Pair(SingleType(_, _), SingleType(_, _)) => tp1 =:= tp2
-      case Pair(ConstantType(_), ConstantType(_))   => tp1 =:= tp2
+      case (ThisType(_), ThisType(_))           => tp1 =:= tp2
+      case (ThisType(_), SingleType(_, _))      => tp1 =:= tp2
+      case (SingleType(_, _), ThisType(_))      => tp1 =:= tp2
+      case (SingleType(_, _), SingleType(_, _)) => tp1 =:= tp2
+      case (ConstantType(_), ConstantType(_))   => tp1 =:= tp2
 
-      case Pair(TypeRef(pre1, sym1, args1), TypeRef(pre2, sym2, args2)) =>
+      case (TypeRef(pre1, sym1, args1), TypeRef(pre2, sym2, args2)) =>
         //Console.println("isSubType " + tp1 + " " + tp2);//DEBUG
         def isSubArgs(tps1: List[Type], tps2: List[Type],
                       tparams: List[Symbol]): boolean = (
@@ -2172,50 +2172,50 @@ trait Types requires SymbolTable {
          ||
          // Console.println("last chance " + sym1 + " " + sym2 + " " + sym2.isClass + " " (sym2 isSubClass ObjectClass))
          sym1 == AllRefClass && sym2.isClass && sym2 != AllClass && (sym2 isSubClass ObjectClass))
-      case Pair(MethodType(pts1, res1), MethodType(pts2, res2)) =>
+      case (MethodType(pts1, res1), MethodType(pts2, res2)) =>
         (pts1.length == pts2.length &&
          matchingParams(pts1, pts2, tp2.isInstanceOf[JavaMethodType]) &&
          (res1 <:< res2) &&
          tp1.isInstanceOf[ImplicitMethodType] == tp2.isInstanceOf[ImplicitMethodType])
-      case Pair(PolyType(tparams1, res1), PolyType(tparams2, res2)) =>
+      case (PolyType(tparams1, res1), PolyType(tparams2, res2)) =>
         (tparams1.length == tparams2.length &&
          List.forall2(tparams1, tparams2)
            ((p1, p2) => p2.info.substSym(tparams2, tparams1) <:< p1.info) &&
          res1 <:< res2.substSym(tparams2, tparams1))
-      case Pair(TypeBounds(lo1, hi1), TypeBounds(lo2, hi2)) =>
+      case (TypeBounds(lo1, hi1), TypeBounds(lo2, hi2)) =>
         lo2 <:< lo1 && hi1 <:< hi2
-      case Pair(BoundedWildcardType(bounds), _) =>
+      case (BoundedWildcardType(bounds), _) =>
         bounds.lo <:< tp2
-      case Pair(_, BoundedWildcardType(bounds)) =>
+      case (_, BoundedWildcardType(bounds)) =>
         tp1 <:< bounds.hi
-      case Pair(_, TypeVar(_, constr2)) =>
+      case (_, TypeVar(_, constr2)) =>
         if (constr2.inst != NoType) tp1 <:< constr2.inst
         else { constr2.lobounds = tp1 :: constr2.lobounds; true }
-      case Pair(TypeVar(_, constr1), _) =>
+      case (TypeVar(_, constr1), _) =>
         if (constr1.inst != NoType) constr1.inst <:< tp2
         else { constr1.hibounds = tp2 :: constr1.hibounds; true }
-      case Pair(AttributedType(_,atp1), _) =>
+      case (AttributedType(_,atp1), _) =>
         atp1 <:< tp2
-      case Pair(_, AttributedType(_,atp2)) =>
+      case (_, AttributedType(_,atp2)) =>
         tp1 <:< atp2
-      case Pair(_, TypeRef(pre2, sym2, args2))
+      case (_, TypeRef(pre2, sym2, args2))
       if sym2.isAbstractType && !(tp2 =:= tp2.bounds.lo) && (tp1 <:< tp2.bounds.lo) =>
         true
-      case Pair(_, RefinedType(parents2, ref2)) =>
+      case (_, RefinedType(parents2, ref2)) =>
         (parents2 forall tp1.<:<) && (ref2.toList forall tp1.specializes) &&
         (!parents2.exists(.symbol.isAbstractType) || tp1.symbol != AllRefClass)
-      case Pair(RefinedType(parents1, ref1), _) =>
+      case (RefinedType(parents1, ref1), _) =>
         parents1 exists (.<:<(tp2))
       /* todo: replace following with
-      case Pair(ThisType(_), _)
+      case (ThisType(_), _)
          | {SingleType(_, _), _}
          | {ConstantType(_), _} =>
          once patern matching bug is fixed */
-      case Pair(ThisType(_), _) => tp1.singleDeref <:< tp2
-      case Pair(SingleType(_, _), _) => tp1.singleDeref <:< tp2
-      case Pair(ConstantType(_), _) => tp1.singleDeref <:< tp2
+      case (ThisType(_), _) => tp1.singleDeref <:< tp2
+      case (SingleType(_, _), _) => tp1.singleDeref <:< tp2
+      case (ConstantType(_), _) => tp1.singleDeref <:< tp2
 
-      case Pair(TypeRef(pre1, sym1, args1), _) =>
+      case (TypeRef(pre1, sym1, args1), _) =>
         (sym1 == AllClass && tp2 <:< AnyClass.tpe
          ||
          sym1 == AllRefClass && tp2.isInstanceOf[SingletonType] && (tp1 <:< tp2.widen))
@@ -2260,21 +2260,21 @@ trait Types requires SymbolTable {
   }
 
   /** A function implementing <code>tp1</code> matches <code>tp2</code> */
-  private def matchesType(tp1: Type, tp2: Type): boolean = Pair(tp1, tp2) match {
-    case Pair(MethodType(pts1, res1), MethodType(pts2, res2)) =>
+  private def matchesType(tp1: Type, tp2: Type): boolean = (tp1, tp2) match {
+    case (MethodType(pts1, res1), MethodType(pts2, res2)) =>
       (matchingParams(pts1, pts2, tp2.isInstanceOf[JavaMethodType]) && (res1 matches res2) &&
        tp1.isInstanceOf[ImplicitMethodType] == tp2.isInstanceOf[ImplicitMethodType])
-    case Pair(PolyType(tparams1, res1), PolyType(tparams2, res2)) =>
+    case (PolyType(tparams1, res1), PolyType(tparams2, res2)) =>
       (tparams1.length == tparams2.length &&
        (res1 matches res2.substSym(tparams2, tparams1)))
-    case Pair(PolyType(List(), rtp1), MethodType(List(), rtp2)) => matchesType(rtp1, rtp2)
-    case Pair(MethodType(List(), rtp1), PolyType(List(), rtp2)) => matchesType(rtp1, rtp2)
-    case Pair(PolyType(List(), rtp1), _) => matchesType(rtp1, tp2)
-    case Pair(_, PolyType(List(), rtp2)) => matchesType(tp1, rtp2)
-    case Pair(MethodType(_, _), _) => false
-    case Pair(PolyType(_, _), _)   => false
-    case Pair(_, MethodType(_, _)) => false
-    case Pair(_, PolyType(_, _))   => false
+    case (PolyType(List(), rtp1), MethodType(List(), rtp2)) => matchesType(rtp1, rtp2)
+    case (MethodType(List(), rtp1), PolyType(List(), rtp2)) => matchesType(rtp1, rtp2)
+    case (PolyType(List(), rtp1), _) => matchesType(rtp1, tp2)
+    case (_, PolyType(List(), rtp2)) => matchesType(tp1, rtp2)
+    case (MethodType(_, _), _) => false
+    case (PolyType(_, _), _)   => false
+    case (_, MethodType(_, _)) => false
+    case (_, PolyType(_, _))   => false
     case _ =>
       !phase.erasedTypes || tp1 =:= tp2
   }

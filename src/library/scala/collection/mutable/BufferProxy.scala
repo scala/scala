@@ -142,7 +142,7 @@ trait BufferProxy[A] extends Buffer[A] with Proxy {
    *
    *  @param cmd  the message to send.
    */
-  override def <<(cmd: Message[Pair[Location, A]]): Unit = self << cmd
+  override def <<(cmd: Message[(Location, A)]): Unit = self << cmd
 
   /** Return a clone of this buffer.
    *

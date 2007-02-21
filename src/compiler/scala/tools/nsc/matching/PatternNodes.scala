@@ -327,16 +327,16 @@ trait PatternNodes requires transform.ExplicitOuter {
     /** returns true if this tree is optimizable
      *  throws a warning if is not exhaustive
      */
-    def optimize1(): Triple[Boolean, SymSet, SymSet] = {
+    def optimize1(): (Boolean, SymSet, SymSet) = {
       import symtab.Flags
 
       val selType = this.getTpe
 
       if (!isSubType(selType, definitions.ScalaObjectClass.tpe))
-        return Triple(false, null, emptySymbolSet)
+        return (false, null, emptySymbolSet)
 
       if(this.or eq null)
-        return Triple(false, null, emptySymbolSet)  // only case _
+        return (false, null, emptySymbolSet)  // only case _
 
       def checkExCoverage(tpesym:Symbol): SymSet =
         if(!tpesym.hasFlag(Flags.SEALED)) emptySymbolSet
@@ -409,7 +409,7 @@ trait PatternNodes requires transform.ExplicitOuter {
       }
 
       this.forEachBranch(traverse)
-      return Triple(res && (cases > 2), coveredCases, remainingCases)
+      return (res && (cases > 2), coveredCases, remainingCases)
     } // def optimize
 
   }

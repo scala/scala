@@ -21,9 +21,9 @@ package scala.collection.mutable
  *  @version 1.0, 08/07/2003
  */
 @serializable
-class History[A, B] extends AnyRef with Subscriber[A, B] with Iterable[Pair[B, A]] {
+class History[A, B] extends AnyRef with Subscriber[A, B] with Iterable[(B, A)] {
 
-  protected val log: Queue[Pair[B, A]] = new Queue[Pair[B, A]]
+  protected val log: Queue[(B, A)] = new Queue[(B, A)]
 
   val maxHistory: Int = 1000
 
@@ -35,12 +35,12 @@ class History[A, B] extends AnyRef with Subscriber[A, B] with Iterable[Pair[B, A
     if (log.length >= maxHistory) {
       val old = log.dequeue;
     }
-    log.enqueue(Pair(pub, event))
+    log.enqueue((pub, event))
   }
 
-  def elements: Iterator[Pair[B, A]] = log.elements
+  def elements: Iterator[(B, A)] = log.elements
 
-  def events: Iterator[A] = log.elements.map { case Pair(_, e) => e }
+  def events: Iterator[A] = log.elements.map { case (_, e) => e }
 
   def size: Int = log.length
 

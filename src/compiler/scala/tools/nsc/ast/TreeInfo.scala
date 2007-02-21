@@ -96,6 +96,25 @@ abstract class TreeInfo {
       false
   }
 
+  def mayBeVarGetter(sym: Symbol) = sym.info match {
+    case PolyType(List(), _) => sym.owner.isClass && !sym.isStable
+    case _: ImplicitMethodType => sym.owner.isClass && !sym.isStable
+    case _ => false
+  }
+
+  def isVariableOrGetter(tree: Tree) = tree match {
+    case Ident(_) =>
+      tree.symbol.isVariable
+    case Select(qual, _) =>
+      tree.symbol.isVariable ||
+      (mayBeVarGetter(tree.symbol) &&
+       tree.symbol.owner.info.decl(nme.getterToSetter(tree.symbol.name)) != NoSymbol)
+    case Apply(Select(qual, nme.apply), _) =>
+      qual.tpe.decl(nme.update) != NoSymbol
+    case _ =>
+      false
+  }
+
   /** Is tree a self constructor call?
    */
   def isSelfConstrCall(tree: Tree): boolean = tree match {

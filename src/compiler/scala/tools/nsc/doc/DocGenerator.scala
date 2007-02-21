@@ -105,7 +105,7 @@ abstract class DocGenerator extends Models {
         val n = tpe.typeArgs.length
         if (n > 0) {
           if (definitions.isFunctionType(tpe)) {
-            val Pair(ts, List(r)) = tpe.typeArgs.splitAt(n-1)
+            val (ts, List(r)) = tpe.typeArgs.splitAt(n-1)
             Text("(") ++ (
                 if (ts.isEmpty) NodeSeq.Empty
                 else
@@ -318,7 +318,7 @@ abstract class DocGenerator extends Models {
           if (!args.isEmpty)
             buf.append(args.map(.escapedStringValue).mkString("(", ",", ")"))
           if (!nvPairs.isEmpty)
-            for (val Pair(Pair(name, value), index) <- nvPairs.zipWithIndex) {
+            for (val ((name, value), index) <- nvPairs.zipWithIndex) {
               if (index > 0)
                 buf.append(", ")
               buf.append(name).append(" = ").append(value)
@@ -509,9 +509,9 @@ abstract class DocGenerator extends Models {
 
     def fullComment(mmbr: HasTree): NodeSeq = {
       val sym = mmbr.tree.symbol
-      val Pair(sym1, kind1) =
-        if (sym.isPrimaryConstructor) Pair(sym.owner, CONSTRUCTOR)
-        else Pair(sym, if (sym.isConstructor) DEF else kindOf(mmbr.tree))
+      val (sym1, kind1) =
+        if (sym.isPrimaryConstructor) (sym.owner, CONSTRUCTOR)
+        else (sym, if (sym.isConstructor) DEF else kindOf(mmbr.tree))
       comments.get(sym1) match {
         case Some(text) => comment(text, false, kind1)
         case None => NodeSeq.Empty
@@ -739,8 +739,8 @@ abstract class DocGenerator extends Models {
         val decls = sym.tpe.decls.toList
         //compute table members once for each relevant kind
         val tables = for (val k <- kinds.keys.toList)
-                     yield Pair(k, decls filter kinds(k))
-        for (val Pair(k, members) <- tables; !members.isEmpty) yield
+                     yield (k, decls filter kinds(k))
+        for (val (k, members) <- tables; !members.isEmpty) yield
           <table cellpadding="3" class="member" summary="">
             <tr>
               <td colspan="2" class="title">{k} Summary</td>
@@ -1202,7 +1202,7 @@ abstract class DocGenerator extends Models {
     assert(comment0 endsWith JDOC_END)
     comment0 = comment0.substring(0, comment0.length() - JDOC_END.length())
     val buf = new StringBuilder
-    type AttrDescr = Triple[String, String, StringBuilder]
+    type AttrDescr = (String, String, StringBuilder)
     val attributes = new ListBuffer[AttrDescr]
     var attr: AttrDescr = null
     val tok = new StringTokenizer(comment0, LINE_SEPARATOR)
@@ -1210,12 +1210,12 @@ abstract class DocGenerator extends Models {
       val s = tok.nextToken.replaceFirst("\\p{Space}?\\*", "")
       val mat1 = pat1.matcher(s)
       if (mat1.matches) {
-        attr = Triple(mat1.group(1), null, new StringBuilder(mat1.group(2)))
+        attr = (mat1.group(1), null, new StringBuilder(mat1.group(2)))
         if (kind != CONSTRUCTOR) attributes += attr
       } else {
         val mat2 = pat2.matcher(s)
         if (mat2.matches) {
-          attr = Triple(mat2.group(1), mat2.group(2), new StringBuilder(mat2.group(3)))
+          attr = (mat2.group(1), mat2.group(2), new StringBuilder(mat2.group(3)))
           if (kind != CLASS) attributes += attr
         } else if (attr ne null)
           attr._3.append(s + LINE_SEPARATOR)
@@ -1223,15 +1223,15 @@ abstract class DocGenerator extends Models {
           buf.append(s + LINE_SEPARATOR)
       }
     }
-    val exceptions = new TreeMap[String, Pair[Symbol, String]] +
+    val exceptions = new TreeMap[String, (Symbol, String)] +
       "Predef.IndexOutOfBoundsException" ->
-        Pair(definitions.PredefModule, "IndexOutOfBoundsException") +
+        (definitions.PredefModule, "IndexOutOfBoundsException") +
       "Predef.NoSuchElementException" ->
-        Pair(definitions.PredefModule, "NoSuchElementException") +
+        (definitions.PredefModule, "NoSuchElementException") +
       "Predef.NullPointerException" ->
-        Pair(definitions.PredefModule, "NullPointerException") +
+        (definitions.PredefModule, "NullPointerException") +
       "Predef.UnsupportedOperationException" ->
-        Pair(definitions.PredefModule, "UnsupportedOperationException")
+        (definitions.PredefModule, "UnsupportedOperationException")
     val body = buf.toString
     if (isShort)
       <span>{parse(body)}</span>;
@@ -1247,7 +1247,7 @@ abstract class DocGenerator extends Models {
           else if (attr._1.equals("throws"))
             <code>{ exceptions.get(attr._2) match {
               case Some(p) =>
-                val Pair(sym, s) = p
+                val (sym, s) = p
                 val path = "../" //todo: fix path
                 val href = path + sym.fullNameString('/') +
                   (if (sym.isModule || sym.isModuleClass) NAME_SUFFIX_OBJECT else "") +

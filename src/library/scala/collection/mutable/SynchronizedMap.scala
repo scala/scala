@@ -56,11 +56,11 @@ trait SynchronizedMap[A, B] extends Map[A, B] {
     super.values
   }
 
-  abstract override def elements: Iterator[Pair[A, B]] = synchronized {
+  abstract override def elements: Iterator[(A, B)] = synchronized {
     super.elements
   }
 
-  override def toList: List[Pair[A, B]] = synchronized {
+  override def toList: List[(A, B)] = synchronized {
     super.toList
   }
 
@@ -68,7 +68,7 @@ trait SynchronizedMap[A, B] extends Map[A, B] {
     super.update(key, value)
   }
 
-  override def += (kv: Pair[A, B]): Unit = synchronized {
+  override def += (kv: (A, B)): Unit = synchronized {
     super.+=(kv)
   }
 
@@ -77,20 +77,20 @@ trait SynchronizedMap[A, B] extends Map[A, B] {
    *  @param    kv2 the second key/first value pair.
    *  @param    kvs the remaining key/first value pairs.
    */
-  override def += (kv1: Pair[A, B], kv2: Pair[A, B], kvs: Pair[A, B]*): Unit = synchronized {
+  override def += (kv1: (A, B), kv2: (A, B), kvs: (A, B)*): Unit = synchronized {
     super.+=(kv1, kv2, kvs: _*)
   }
 
-  override def ++=(map: Iterable[Pair[A, B]]): Unit = synchronized {
+  override def ++=(map: Iterable[(A, B)]): Unit = synchronized {
     super.++=(map)
   }
 
-  override def ++=(it: Iterator[Pair[A, B]]): Unit = synchronized {
+  override def ++=(it: Iterator[(A, B)]): Unit = synchronized {
     super.++=(it)
   }
 
   @deprecated
-  override def incl(mappings: Pair[A, B]*): Unit = synchronized {
+  override def incl(mappings: (A, B)*): Unit = synchronized {
     super.incl(mappings: _*)
   }
 
@@ -123,19 +123,8 @@ trait SynchronizedMap[A, B] extends Map[A, B] {
     super.transform(f)
   }
 
-  @deprecated
-  override def map[C](f: Pair[A, B] => C) = synchronized {
-    super.map(f)
-  }
-
   override def retain(p: (A, B) => Boolean): Unit = synchronized {
     super.retain(p)
-  }
-
-  /** @deprecated  use retain instead */
-  @deprecated
-  override def filter(p: Pair[A, B] => Boolean) = synchronized {
-    super.filter(p)
   }
 
   override def toString() = synchronized {
@@ -150,7 +139,7 @@ trait SynchronizedMap[A, B] extends Map[A, B] {
     super.hashCode()
   }
 
-  override def <<(cmd: Message[Pair[A, B]]): Unit = synchronized {
+  override def <<(cmd: Message[(A, B)]): Unit = synchronized {
     super.<<(cmd)
   }
 

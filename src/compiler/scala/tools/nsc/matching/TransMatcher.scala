@@ -163,7 +163,7 @@ with PatternMatchers */ {
      *
      *  case    .. () .. => val x = Nil; body
      */
-    def isRegular(pats: List[CaseDef]): Pair[List[CaseDef],Boolean] = {
+    def isRegular(pats: List[CaseDef]): (List[CaseDef],Boolean) = {
       var existsReg = false
       var isReg = false
       var nilVars: List[Symbol] = null
@@ -273,7 +273,7 @@ with PatternMatchers */ {
 
         res = copy.CaseDef(cdef, newt, cdef.guard, nbody) :: res
       }
-      Pair(res.reverse, existsReg)
+      (res.reverse, existsReg)
     }
 
     /** handles all translation of pattern matching
@@ -284,7 +284,7 @@ with PatternMatchers */ {
       //
       // 1. is there a regular pattern?
 
-      val Pair(cases, containsReg) = isRegular(ocases)
+      val (cases, containsReg) = isRegular(ocases)
 
       // @todo: remove unused variables
 

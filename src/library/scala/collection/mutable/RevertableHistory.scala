@@ -28,6 +28,6 @@ class RevertableHistory[A <: Undoable, B] extends History[A, B] with Undoable {
   def undo: Unit = {
     val old = log.toList.reverse
     clear
-    old.foreach { case Pair(sub, event) => event.undo }
+    old.foreach { case (sub, event) => event.undo }
   }
 }

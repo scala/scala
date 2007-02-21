@@ -166,7 +166,7 @@ class ArrayBuffer[A] extends Buffer[A] with ResizableArray[A] {
     case that: ArrayBuffer[_] =>
       this.length == that.length &&
     elements.zip(that.elements).forall {
-      case Pair(thiselem, thatelem) => thiselem == thatelem
+      case (thiselem, thatelem) => thiselem == thatelem
     }
     case _ =>
       false

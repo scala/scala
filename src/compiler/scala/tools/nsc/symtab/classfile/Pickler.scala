@@ -169,15 +169,15 @@ abstract class Pickler extends SubComponent {
       }
 
     private def putChildren(sym: Symbol, children: List[Symbol]): unit = {
-      assert(putEntry(Pair(sym, children)))
+      assert(putEntry((sym, children)))
       children foreach putSymbol
     }
 
     private def putAnnotation(sym: Symbol, attr: AttrInfo): unit = {
-      assert(putEntry(Pair(sym, attr)))
+      assert(putEntry((sym, attr)))
       putType(attr.atp)
       for (val c <- attr.args) putConstant(c)
-      for (val Pair(name, c) <- attr.assocs) { putEntry(name); putConstant(c) }
+      for (val (name, c) <- attr.assocs) { putEntry(name); putConstant(c) }
     }
 
     // Phase 2 methods: Write all entries to byte array ------------------------------
@@ -279,13 +279,13 @@ abstract class Pickler extends SubComponent {
           LITERAL + c.tag
         case AttributedType(attribs, tp) =>
           writeBody(tp) // obviously, this should be improved
-        case Pair(target: Symbol, attr @ AttrInfo(atp, args, assocs)) =>
+        case (target: Symbol, attr @ AttrInfo(atp, args, assocs)) =>
           writeRef(target)
           writeRef(atp)
           for (val c <- args) writeRef(c)
-          for (val Pair(name, c) <- assocs) { writeRef(name); writeRef(c) }
+          for (val (name, c) <- assocs) { writeRef(name); writeRef(c) }
           ATTRIBUTE
-        case Pair(target: Symbol, children: List[_]) =>
+        case (target: Symbol, children: List[_]) =>
           writeRef(target)
           for (val c <- children) writeRef(c.asInstanceOf[Symbol])
           CHILDREN

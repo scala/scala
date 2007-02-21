@@ -25,7 +25,7 @@ object HashMap {
 
   /** The canonical factory for this type
    */
-  def apply[A, B](elems: Pair[A, B]*) = empty[A, B] ++ elems
+  def apply[A, B](elems: (A, B)*) = empty[A, B] ++ elems
 }
 
 @serializable
@@ -92,7 +92,7 @@ class HashMap[A, B] extends Map[A,B] with mutable.HashTable[A] {
 
   def elements = {
     makeCopyIfUpdated()
-    entries map {e => Pair(e.key, getValue(e))}
+    entries map {e => (e.key, getValue(e))}
   }
 
   private def getValue(e: Entry) =

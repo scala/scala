@@ -173,7 +173,7 @@ abstract class TreeBrowsers {
         override def convertValueToText(value: Any, sel: Boolean,
                                         exp: Boolean, leaf: Boolean,
                                         row: Int, hasFocus: Boolean) = {
-            val Pair(cls, name) = TreeInfo.treeName(value.asInstanceOf[Tree])
+            val (cls, name) = TreeInfo.treeName(value.asInstanceOf[Tree])
             if (name != EMPTY)
               cls + "[" + name.toString() + "]"
             else
@@ -250,138 +250,138 @@ abstract class TreeBrowsers {
   object TreeInfo {
 
     /** Return the case class name and the Name, if the node defines one */
-    def treeName(t: Tree): Pair[String, Name] = t match {
+    def treeName(t: Tree): (String, Name) = t match {
       case ProgramTree(units) =>
-        Pair("Program", EMPTY)
+        ("Program", EMPTY)
 
       case UnitTree(unit) =>
-        Pair("CompilationUnit", unit.toString())
+        ("CompilationUnit", unit.toString())
 
       case DocDef(comment, definition) =>
-        Pair("DocDef", EMPTY)
+        ("DocDef", EMPTY)
 
       case ClassDef(mods, name, tparams, self, impl) =>
-        Pair("ClassDef", name)
+        ("ClassDef", name)
 
       case PackageDef(packaged, impl) =>
-        Pair("PackageDef", EMPTY)
+        ("PackageDef", EMPTY)
 
       case ModuleDef(mods, name, impl) =>
-        Pair("ModuleDef", name)
+        ("ModuleDef", name)
 
       case ValDef(mods, name, tpe, rhs) =>
-        Pair("ValDef", name)
+        ("ValDef", name)
 
       case DefDef(mods, name, tparams, vparams, tpe, rhs) =>
-        Pair("DefDef", name)
+        ("DefDef", name)
 
       case AbsTypeDef(mods, name, rhs, lobound) =>
-        Pair("AbsTypeDef", name)
+        ("AbsTypeDef", name)
 
       case AliasTypeDef(mods, name, tparams, rhs) =>
-        Pair("AliasTypeDef", name)
+        ("AliasTypeDef", name)
 
       case Import(expr, selectors) =>
-        Pair("Import", EMPTY)
+        ("Import", EMPTY)
 
       case CaseDef(pat, guard, body) =>
-        Pair("CaseDef", EMPTY)
+        ("CaseDef", EMPTY)
 
       case Template(parents, body) =>
-        Pair("Template", EMPTY)
+        ("Template", EMPTY)
 
       case LabelDef(name, params, rhs) =>
-        Pair("LabelDef", name)
+        ("LabelDef", name)
 
       case Block(stats, expr) =>
-        Pair("Block", EMPTY)
+        ("Block", EMPTY)
 
       case Sequence(trees) =>
-        Pair("Sequence", EMPTY)
+        ("Sequence", EMPTY)
 
       case Alternative(trees) =>
-        Pair("Alternative", EMPTY)
+        ("Alternative", EMPTY)
 
       case Bind(name, rhs) =>
-        Pair("Bind", name)
+        ("Bind", name)
 
       case Match(selector, cases) =>
-        Pair("Visitor", EMPTY)
+        ("Visitor", EMPTY)
 
       case Function(vparams, body) =>
-        Pair("Function", EMPTY)
+        ("Function", EMPTY)
 
       case Assign(lhs, rhs) =>
-        Pair("Assign", EMPTY)
+        ("Assign", EMPTY)
 
       case If(cond, thenp, elsep) =>
-        Pair("If", EMPTY)
+        ("If", EMPTY)
 
       case Return(expr) =>
-        Pair("Return", EMPTY)
+        ("Return", EMPTY)
 
       case Throw(expr) =>
-        Pair("Throw", EMPTY)
+        ("Throw", EMPTY)
 
       case New(init) =>
-        Pair("New", EMPTY)
+        ("New", EMPTY)
 
       case Typed(expr, tpe) =>
-        Pair("Typed", EMPTY)
+        ("Typed", EMPTY)
 
       case TypeApply(fun, args) =>
-        Pair("TypeApply", EMPTY)
+        ("TypeApply", EMPTY)
 
       case Apply(fun, args) =>
-        Pair("Apply", EMPTY)
+        ("Apply", EMPTY)
 
       case Super(qualif, mix) =>
-        Pair("Super", qualif.toString() + ", mix: " + mix.toString())
+        ("Super", qualif.toString() + ", mix: " + mix.toString())
 
       case This(qualifier) =>
-        Pair("This", qualifier)
+        ("This", qualifier)
 
       case Select(qualifier, selector) =>
-        Pair("Select", selector)
+        ("Select", selector)
 
       case Ident(name) =>
-        Pair("Ident", name)
+        ("Ident", name)
 
       case Literal(value) =>
-        Pair("Literal", EMPTY)
+        ("Literal", EMPTY)
 
       case TypeTree() =>
-        Pair("TypeTree", EMPTY)
+        ("TypeTree", EMPTY)
 
       case Annotated(constr, elements, arg) =>
-        Pair("Annotated", EMPTY)
+        ("Annotated", EMPTY)
 
       case AttributedTypeTree(attribs, tpt) =>
-        Pair("AttributedTypeTree", EMPTY)
+        ("AttributedTypeTree", EMPTY)
 
       case SingletonTypeTree(ref) =>
-        Pair("SingletonType", EMPTY)
+        ("SingletonType", EMPTY)
 
       case SelectFromTypeTree(qualifier, selector) =>
-        Pair("SelectFromType", selector)
+        ("SelectFromType", selector)
 
       case CompoundTypeTree(template) =>
-        Pair("CompoundType", EMPTY)
+        ("CompoundType", EMPTY)
 
       case AppliedTypeTree(tpe, args) =>
-        Pair("AppliedType", EMPTY)
+        ("AppliedType", EMPTY)
 
       case Try(block, catcher, finalizer) =>
-        Pair("Try", EMPTY)
+        ("Try", EMPTY)
 
       case EmptyTree =>
-        Pair("Empty", EMPTY)
+        ("Empty", EMPTY)
 
       case ArrayValue(elemtpt, trees) =>
-        Pair("ArrayValue", EMPTY)
+        ("ArrayValue", EMPTY)
 
       case Star(t) =>
-        Pair("Star", EMPTY)
+        ("Star", EMPTY)
     }
 
     /** Return a list of children for the given tree node */

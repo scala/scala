@@ -27,7 +27,7 @@ class Map1[A, +B](key1: A, value1: B) extends Map[A, B] {
   def get(key: A): Option[B] =
     if (key == key1) Some(value1) else None
 
-  def elements = Iterator.single(Pair(key1, value1))
+  def elements = Iterator.single((key1, value1))
 
   def empty[B]: Map[A, B] = new EmptyMap[A, B]
 

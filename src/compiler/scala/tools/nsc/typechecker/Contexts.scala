@@ -41,7 +41,7 @@ trait Contexts requires Analyzer {
       assert(pkg ne null)
       val qual = gen.mkAttributedStableRef(pkg)
       sc = sc.makeNewImport(
-        Import(qual, List(Pair(nme.WILDCARD, null)))
+        Import(qual, List((nme.WILDCARD, null)))
         .setSymbol(NoSymbol.newImport(NoPos).setFlag(SYNTHETIC).setInfo(ImportType(qual)))
         .setType(NoType))
       sc.depth = sc.depth + 1
@@ -95,7 +95,7 @@ trait Contexts requires Analyzer {
     var checking = false
     var retyping = false
 
-    var savedTypeBounds: List[Pair[Symbol, Type]] = List()
+    var savedTypeBounds: List[(Symbol, Type)] = List()
 
     override def equals(that : Any) = that match {
       case that if (super.equals(that)) => true
@@ -364,12 +364,12 @@ trait Contexts requires Analyzer {
     }
 
     def pushTypeBounds(sym: Symbol): unit = {
-      savedTypeBounds = Pair(sym, sym.info) :: savedTypeBounds
+      savedTypeBounds = (sym, sym.info) :: savedTypeBounds
     }
 
     def restoreTypeBounds(tp: Type): Type = {
       var current = tp
-      for (val Pair(sym, info) <- savedTypeBounds) {
+      for (val (sym, info) <- savedTypeBounds) {
         if (settings.debug.value) log("resetting " + sym + " to " + info);
         sym.info match {
           case TypeBounds(lo, hi) if (hi <:< lo && lo <:< hi) =>
@@ -391,10 +391,10 @@ trait Contexts requires Analyzer {
 
     private def collectImplicitImports(imp: ImportInfo): List[ImplicitInfo] = {
       val pre = imp.qual.tpe
-      def collect(sels: List[Pair[Name, Name]]): List[ImplicitInfo] = sels match {
+      def collect(sels: List[(Name, Name)]): List[ImplicitInfo] = sels match {
         case List() => List()
-        case List(Pair(nme.WILDCARD, _)) => collectImplicits(pre.implicitMembers, pre)
-        case Pair(from, to) :: sels1 =>
+        case List((nme.WILDCARD, _)) => collectImplicits(pre.implicitMembers, pre)
+        case (from, to) :: sels1 =>
           var impls = collect(sels1) filter (info => info.name != from)
           if (to != nme.WILDCARD) {
             val sym = imp.importedSymbol(to)

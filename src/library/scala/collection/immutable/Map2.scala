@@ -29,7 +29,7 @@ class Map2[A, +B](key1: A, value1: B, key2: A, value2: B) extends Map[A, B] {
     else None
 
   def elements = Iterator.fromValues(
-    Pair(key1, value1), Pair(key2, value2))
+    (key1, value1), (key2, value2))
 
   def empty[C]: Map[A, C] = new EmptyMap[A, C]
 

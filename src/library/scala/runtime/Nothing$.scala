@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id$
+// $Id: Nothing$.scala 9261 2006-11-14 17:11:16 +0000 (Tue, 14 Nov 2006) mihaylov $
 
 
 package scala.runtime

@@ -1059,8 +1059,8 @@ trait Parsers requires SyntaxAnalyzer {
               parents += annotType(false)
             }
             newLineOptWhenFollowedBy(LBRACE)
-            val Pair(self, stats) = if (in.token == LBRACE) templateBody()
-                                    else Pair(emptyValDef, List())
+            val (self, stats) = if (in.token == LBRACE) templateBody()
+                                    else (emptyValDef, List())
             makeNew(parents.toList, self, stats, argss.toList)
           }
           canApply = false
@@ -1704,7 +1704,7 @@ trait Parsers requires SyntaxAnalyzer {
         def loop: Tree =
           if (in.token == USCORE) {
             in.nextToken()
-            Import(t, List(Pair(nme.WILDCARD, null)))
+            Import(t, List((nme.WILDCARD, null)))
           } else if (in.token == LBRACE) {
             Import(t, importSelectors())
           } else {
@@ -1714,7 +1714,7 @@ trait Parsers requires SyntaxAnalyzer {
               pos = accept(DOT)
               loop
             } else {
-              Import(t, List(Pair(name, name)))
+              Import(t, List((name, name)))
             }
           }
         loop
@@ -1722,8 +1722,8 @@ trait Parsers requires SyntaxAnalyzer {
 
     /** ImportSelectors ::= `{' {ImportSelector `,'} (ImportSelector | `_') `}'
      */
-    def importSelectors(): List[Pair[Name, Name]] = {
-      val names = new ListBuffer[Pair[Name, Name]]
+    def importSelectors(): List[(Name, Name)] = {
+      val names = new ListBuffer[(Name, Name)]
       accept(LBRACE)
       var isLast = importSelector(names)
       while (!isLast && in.token == COMMA) {
@@ -1736,12 +1736,12 @@ trait Parsers requires SyntaxAnalyzer {
 
     /** ImportSelector ::= Id [`=>' Id | `=>' `_']
      */
-    def importSelector(names: ListBuffer[Pair[Name, Name]]): boolean =
+    def importSelector(names: ListBuffer[(Name, Name)]): boolean =
       if (in.token == USCORE) {
-        in.nextToken(); names += Pair(nme.WILDCARD, null); true
+        in.nextToken(); names += (nme.WILDCARD, null); true
       } else {
         val name = ident()
-        names += Pair(
+        names += (
           name,
           if (in.token == ARROW) {
             in.nextToken()
@@ -1821,9 +1821,9 @@ trait Parsers requires SyntaxAnalyzer {
      */
     def varDefOrDcl(mods: Modifiers): List[Tree] = {
       var newmods = mods | Flags.MUTABLE
-      val lhs = new ListBuffer[Pair[Int, Name]]
+      val lhs = new ListBuffer[(Int, Name)]
       do {
-        lhs += Pair(in.skipToken(), ident())
+        lhs += (in.skipToken(), ident())
       } while (in.token == COMMA)
       val tp = typedOpt()
       val rhs = if (tp.isEmpty || in.token == EQUALS) {
@@ -1838,7 +1838,7 @@ trait Parsers requires SyntaxAnalyzer {
         newmods = newmods | Flags.DEFERRED
         EmptyTree
       }
-      for (val Pair(pos, name) <- lhs.toList) yield
+      for (val (pos, name) <- lhs.toList) yield
         atPos(pos) { ValDef(newmods, name, tp.duplicate, rhs.duplicate) }
     }
 
@@ -1965,12 +1965,12 @@ trait Parsers requires SyntaxAnalyzer {
         implicitClassViews = implicitViewBuf.toList
         //if (mods.hasFlag(Flags.CASE) && in.token != LPAREN) accept(LPAREN)
         val constrAnnots = annotations()
-        val Pair(constrMods, vparamss) =
-          if (mods.hasFlag(Flags.TRAIT)) Pair(NoMods, List())
-          else Pair(accessModifierOpt(),
+        val (constrMods, vparamss) =
+          if (mods.hasFlag(Flags.TRAIT)) (NoMods, List())
+          else (accessModifierOpt(),
                     paramClauses(name, implicitClassViews, mods.hasFlag(Flags.CASE)))
         val thistpe = requiresTypeOpt()
-        val Pair(self0, template) =
+        val (self0, template) =
           classTemplate(mods, name, constrMods withAnnotations constrAnnots, vparamss)
         val mods1 = if (mods.hasFlag(Flags.TRAIT) &&
                         (template.body forall treeInfo.isInterfaceMember))
@@ -1987,7 +1987,7 @@ trait Parsers requires SyntaxAnalyzer {
     def objectDef(mods: Modifiers): ModuleDef =
       atPos(in.skipToken()) {
         val name = ident()
-        val Pair(self, template0) = classTemplate(mods, name, NoMods, List())
+        val (self, template0) = classTemplate(mods, name, NoMods, List())
         val template = self match {
           case ValDef(mods, name, tpt, EmptyTree) if (name != nme.WILDCARD) =>
             val vd = ValDef(mods, name, tpt, This(nme.EMPTY.toTypeName)) setPos self.pos
@@ -2003,7 +2003,7 @@ trait Parsers requires SyntaxAnalyzer {
      *  TraitTemplate      ::= [extends MixinParents] [TemplateBody]
      *  MixinParents       ::= AnnotType {with AnnotType}
      */
-    def classTemplate(mods: Modifiers, name: Name, constrMods: Modifiers, vparamss: List[List[ValDef]]): Pair[ValDef, Template] = {
+    def classTemplate(mods: Modifiers, name: Name, constrMods: Modifiers, vparamss: List[List[ValDef]]): (ValDef, Template) = {
       val pos = in.currentPos;
       def acceptEmptyTemplateBody(msg: String): unit = {
         if (in.token == LPAREN && settings.migrate.value)
@@ -2039,10 +2039,10 @@ trait Parsers requires SyntaxAnalyzer {
       }
       val ps = parents.toList
       newLineOptWhenFollowedBy(LBRACE)
-      val Pair(self, body) =
+      val (self, body) =
         if (in.token == LBRACE) templateBody()
-        else { acceptEmptyTemplateBody("`{' expected"); Pair(emptyValDef, List()) }
-      Pair(self,
+        else { acceptEmptyTemplateBody("`{' expected"); (emptyValDef, List()) }
+      (self,
            atPos(pos) {
              if (!mods.hasFlag(Flags.TRAIT)) Template(ps, constrMods, vparamss, argss.toList, body)
              else Template(ps, body)
@@ -2053,11 +2053,11 @@ trait Parsers requires SyntaxAnalyzer {
 
     /** TemplateBody ::= [nl] `{' TemplateStatSeq `}'
      */
-    def templateBody(): Pair[ValDef, List[Tree]] = {
+    def templateBody(): (ValDef, List[Tree]) = {
       accept(LBRACE)
-      val result @ Pair(self, stats) = templateStatSeq()
+      val result @ (self, stats) = templateStatSeq()
       accept(RBRACE)
-      if (stats.isEmpty) Pair(self, List(EmptyTree)) else result
+      if (stats.isEmpty) (self, List(EmptyTree)) else result
     }
 
     /** Refinement ::= [nl] `{' RefineStat {semi RefineStat} `}'
@@ -2122,7 +2122,7 @@ trait Parsers requires SyntaxAnalyzer {
      *                     | Expr1
      *                     |
      */
-    def templateStatSeq(): Pair[ValDef, List[Tree]] = {
+    def templateStatSeq(): (ValDef, List[Tree]) = {
       var self: ValDef = emptyValDef
       val stats = new ListBuffer[Tree]
       if (isExprIntro) {
@@ -2149,7 +2149,7 @@ trait Parsers requires SyntaxAnalyzer {
         }
         if (in.token != RBRACE && in.token != EOF) acceptStatSep()
       }
-      Pair(self, stats.toList)
+      (self, stats.toList)
     }
 
     /** RefineStatSeq    ::= RefineStat {semi RefineStat}

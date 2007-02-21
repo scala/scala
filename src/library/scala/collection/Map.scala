@@ -35,7 +35,7 @@ import Predef._
  *  @author  Martin Odersky
  *  @version 1.2, 31/12/2006
  */
-trait Map[A, +B] extends PartialFunction[A, B] with Iterable[Pair[A, B]] {
+trait Map[A, +B] extends PartialFunction[A, B] with Iterable[(A, B)] {
 
   /** Compute the number of key-to-value mappings.
    *
@@ -125,7 +125,7 @@ trait Map[A, +B] extends PartialFunction[A, B] with Iterable[Pair[A, B]] {
   override def equals(that: Any): Boolean = that match {
     case other: Map[a, b] =>
       this.size == other.size && this.elements.forall {
-        case Pair(key, value) => other.get(key.asInstanceOf[a]) match {
+        case (key, value) => other.get(key.asInstanceOf[a]) match {
           case None => false
           case Some(otherval) => value == otherval
         }

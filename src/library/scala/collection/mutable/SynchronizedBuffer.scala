@@ -168,7 +168,7 @@ trait SynchronizedBuffer[A] extends Buffer[A] {
     super.clear
   }
 
-  override def <<(cmd: Message[Pair[Location, A]]): Unit = synchronized {
+  override def <<(cmd: Message[(Location, A)]): Unit = synchronized {
     super.<<(cmd)
   }
 

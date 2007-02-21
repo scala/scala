@@ -229,7 +229,7 @@ object Utility extends AnyRef with parsing.TokenTests {
    * @param label
    * @param attribs
    * @param children
-  def hashCode(uri: String, label: String, attribs: scala.collection.mutable.HashMap[Pair[String,String],String], scpe: Int, children: Seq[Node]): Int = {
+  def hashCode(uri: String, label: String, attribs: scala.collection.mutable.HashMap[(String,String),String], scpe: Int, children: Seq[Node]): Int = {
     41 * uri.hashCode() % 7 + label.hashCode() + attribs.toList.hashCode() + scpe + children.hashCode()
   }
    */

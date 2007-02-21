@@ -77,7 +77,7 @@ trait Members requires ICodes {
     /* This method applies the given function to each basic block. */
     def traverseFeedBack(f: (BasicBlock, HashMap[BasicBlock, Boolean])  => Unit) = {
       val visited : HashMap[BasicBlock, Boolean] = new HashMap;
-      visited ++= blocks.elements.map(x => Pair(x, false));
+      visited ++= blocks.elements.map(x => (x, false));
 
       var blockToVisit : List[BasicBlock] = startBlock::Nil;
 
@@ -243,7 +243,7 @@ trait Members requires ICodes {
     var end: Int = _
 
     /** PC-based ranges for this local variable's visibility */
-    var ranges: List[Pair[Int, Int]] = Nil
+    var ranges: List[(Int, Int)] = Nil
 
     override def equals(other: Any): Boolean = (
       other.isInstanceOf[Local] &&

@@ -193,7 +193,7 @@ abstract class ClassfileParser {
             in.buf(start) != CONSTANT_METHODREF &&
             in.buf(start) != CONSTANT_INTFMETHODREF) errorBadTag(start)
         val ownerTpe = getClassOrArrayType(in.getChar(start + 1))
-        val Pair(name, tpe) = getNameAndType(in.getChar(start + 3), ownerTpe)
+        val (name, tpe) = getNameAndType(in.getChar(start + 3), ownerTpe)
         if (name == nme.MODULE_INSTANCE_FIELD) {
           val index = in.getChar(start + 1)
           val name = getExternalName(in.getChar(starts(index) + 1))
@@ -217,9 +217,9 @@ abstract class ClassfileParser {
       f
     }
 
-    def getNameAndType(index: Int, ownerTpe: Type): Pair[Name, Type] = {
+    def getNameAndType(index: Int, ownerTpe: Type): (Name, Type) = {
       if (index <= 0 || len <= index) errorBadIndex(index)
-      var p = values(index).asInstanceOf[Pair[Name, Type]]
+      var p = values(index).asInstanceOf[(Name, Type)]
       if (p eq null) {
         val start = starts(index)
         if (in.buf(start) != CONSTANT_NAMEANDTYPE) errorBadTag(start)
@@ -232,7 +232,7 @@ abstract class ClassfileParser {
               tpe = MethodType(formals, ownerTpe)
           }
 
-        p = Pair(name, tpe)
+        p = (name, tpe)
       }
       p
     }
@@ -697,10 +697,10 @@ abstract class ClassfileParser {
         val attrNameIndex = in.nextChar
         val attrType = pool.getType(attrNameIndex)
         val nargs = in.nextChar
-        val nvpairs = new ListBuffer[Pair[Name,Constant]]
+        val nvpairs = new ListBuffer[(Name,Constant)]
         for (val i <- 0 until nargs) {
           val name = pool.getName(in.nextChar)
-          nvpairs += Pair(name, parseTaggedConstant())
+          nvpairs += (name, parseTaggedConstant())
         }
         sym.attributes = AttrInfo(attrType, List(), nvpairs.toList) :: sym.attributes
       }

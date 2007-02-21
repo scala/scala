@@ -177,7 +177,7 @@ abstract class TreePrinters {
           print(symName(tree, name)); printRow(params, "(", ",", ")"); printBlock(rhs)
 
         case Import(expr, selectors) =>
-          def selectorToString(s: Pair[Name, Name]): String =
+          def selectorToString(s: (Name, Name)): String =
             if (s._1 == nme.WILDCARD || s._1 == s._2) s._1.toString()
             else s._1.toString() + "=>" + s._2.toString()
           print("import "); print(expr)

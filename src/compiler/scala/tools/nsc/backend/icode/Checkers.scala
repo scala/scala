@@ -209,7 +209,7 @@ abstract class Checkers {
          *  kind TypeKind.
          */
         def checkBinop(kind: TypeKind) = {
-          val Pair(a, b) = stack.pop2
+          val (a, b) = stack.pop2
           checkType(a, kind)
           checkType(b, kind)
         }
@@ -269,11 +269,11 @@ abstract class Checkers {
           case LOAD_ARRAY_ITEM(kind) =>
             checkStack(2)
             stack.pop2 match {
-              case Pair(INT, ARRAY(elem)) =>
+              case (INT, ARRAY(elem)) =>
                 if (!(elem <:< kind))
                   typeError(kind, elem);
                 stack.push(elem);
-              case Pair(a, b) =>
+              case (a, b) =>
                 error(" expected and INT and a array reference, but " +
                     a + ", " + b + " found");
             }
@@ -302,12 +302,12 @@ abstract class Checkers {
          case STORE_ARRAY_ITEM(kind) =>
            checkStack(3);
            stack.pop3 match {
-             case Triple(k, INT, ARRAY(elem)) =>
+             case (k, INT, ARRAY(elem)) =>
                 if (!(k <:< kind))
                   typeError(kind, k);
                 if (!(k <:< elem))
                   typeError(elem, k);
-             case Triple(a, b, c) =>
+             case (a, b, c) =>
                 error(" expected and array reference, and int and " + kind +
                       " but " + a + ", " + b + ", " + c + " found");
            }
@@ -333,7 +333,7 @@ abstract class Checkers {
            } else {
              checkStack(2);
              stack.pop2 match {
-               case Pair(value, obj) =>
+               case (value, obj) =>
                  checkField(obj, field);
                  val fieldType = toTypeKind(field.tpe);
                  if (fieldType != SCALA_ALL_REF && !(value <:< fieldType))
@@ -378,7 +378,7 @@ abstract class Checkers {
 
              case Shift(op, kind) =>
                checkType(kind, BYTE, CHAR, SHORT, INT, LONG)
-               val Pair(a, b) = stack.pop2
+               val (a, b) = stack.pop2
                checkType(a, INT)
                checkType(b, kind)
                stack push kind

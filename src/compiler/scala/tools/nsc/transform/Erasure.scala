@@ -164,16 +164,6 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
    }
   }
 
-  private def evalOnce(expr: Tree, owner: Symbol, unit: CompilationUnit)
-                      (within: (() => Tree) => Tree): Tree =
-    if (treeInfo.isPureExpr(expr)) {
-      within(() => expr);
-    } else {
-      val temp = owner.newValue(expr.pos, unit.fresh.newName())
-      .setFlag(SYNTHETIC).setInfo(expr.tpe);
-      Block(List(ValDef(temp, expr)), within(() => Ident(temp) setType expr.tpe))
-    }
-
 // -------- boxing/unboxing --------------------------------------------------------
 
   override def newTyper(context: Context) = new Eraser(context)
@@ -258,7 +248,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
         if (pt.symbol == ArrayClass)
           typed {
             atPos(tree.pos) {
-              evalOnce(tree, context.owner, context.unit) { x =>
+              gen.evalOnce(tree, context.owner, context.unit) { x =>
                 gen.mkAttributedCast(
                   If(
                     Apply(
@@ -275,7 +265,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
         else if (pt.symbol isNonBottomSubClass BoxedArrayClass)
           typed {
             atPos(tree.pos) {
-              evalOnce(tree, context.owner, context.unit) { x =>
+              gen.evalOnce(tree, context.owner, context.unit) { x =>
                 gen.mkAttributedCast(
                   If(
                     Apply(
@@ -292,7 +282,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
         else if ((SeqClass isNonBottomSubClass pt.symbol) && pt.symbol != ObjectClass)
           typed {
             atPos(tree.pos) {
-              evalOnce(tree, context.owner, context.unit) { x =>
+              gen.evalOnce(tree, context.owner, context.unit) { x =>
                 gen.mkAttributedCast(
                   If(
                     Apply(
@@ -760,7 +750,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
                         Apply(Select(qual, cmpOp), List(gen.mkAttributedQualifier(targ.tpe)))
                       }
                     case RefinedType(parents, decls) if (parents.length >= 2) =>
-                      evalOnce(qual, currentOwner, unit) {
+                      gen.evalOnce(qual, currentOwner, unit) {
                         q =>
                         def mkIsInstanceOf(tp: Type) =
                           copy.Apply(tree,

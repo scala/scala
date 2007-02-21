@@ -1309,13 +1309,13 @@ trait Symbols requires SymbolTable {
     def cloneSymbolImpl(owner: Symbol): Symbol = throw new Error()
   }
 
-  case class AttrInfo(atp: Type, args: List[Constant], assocs: List[Pair[Name, Constant]]) {
+  case class AttrInfo(atp: Type, args: List[Constant], assocs: List[(Name, Constant)]) {
     override def toString: String =
       atp +
       (if (args.isEmpty) ""
        else args.mkString("(", ", ", ")")) +
       (if (assocs.isEmpty) ""
-       else (assocs map { case Pair(x, y) => x+" = "+y } mkString ("{", ", ", "}")))
+       else (assocs map { case (x, y) => x+" = "+y } mkString ("{", ", ", "}")))
   }
 
   def cloneSymbols(syms: List[Symbol]): List[Symbol] = {

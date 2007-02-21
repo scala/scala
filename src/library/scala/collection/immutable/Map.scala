@@ -41,7 +41,7 @@ object Map {
 
   /** The canonical factory for this type
    */
-  def apply[A, B](elems: Pair[A, B]*) = empty[A, B] ++ elems
+  def apply[A, B](elems: (A, B)*) = empty[A, B] ++ elems
 }
 
 trait Map[A, +B] extends collection.Map[A, B] {
@@ -68,7 +68,7 @@ trait Map[A, +B] extends collection.Map[A, B] {
    *  @param    kv the key/value pair.
    *  @return   A new map with the new binding added to this map
    */
-  def + [B1 >: B] (kv: Pair[A, B1]): Map[A, B1] = update(kv._1, kv._2)
+  def + [B1 >: B] (kv: (A, B1)): Map[A, B1] = update(kv._1, kv._2)
 
   /** Add two or more key/value pairs to this map.
    *  @param    kv1 the first key/value pair.
@@ -76,21 +76,21 @@ trait Map[A, +B] extends collection.Map[A, B] {
    *  @param    kvs the remaining key/value pairs.
    *  @return   A new map with the new bindings added
    */
-  def + [B1 >: B] (kv1: Pair[A, B1], kv2: Pair[A, B1], kvs: Pair[A, B1]*): Map[A, B1] =
+  def + [B1 >: B] (kv1: (A, B1), kv2: (A, B1), kvs: (A, B1)*): Map[A, B1] =
     this + kv1 + kv2 ++ kvs
 
   /** Add a sequence of key/value pairs to this map.
    *  @param    kvs the iterable object containing all key/value pairs.
    *  @return   A new map with the new bindings added
    */
-  def ++ [B1 >: B] (kvs: Iterable[Pair[A, B1]]): Map[A, B1] =
+  def ++ [B1 >: B] (kvs: Iterable[(A, B1)]): Map[A, B1] =
     ((this: Map[A, B1]) /: kvs) ((m, kv) => m + kv)
 
   /** Add a sequence of key/value pairs to this map.
    *  @param    kvs the iterator containing all key/value pairs.
    *  @return   A new map with the new bindings added
    */
-  def ++ [B1 >: B] (kvs: Iterator[Pair[A, B1]]): Map[A, B1] =
+  def ++ [B1 >: B] (kvs: Iterator[(A, B1)]): Map[A, B1] =
     ((this: Map[A, B1]) /: kvs) ((m, kv) => m + kv)
 
   /** Remove a key from this map
@@ -156,7 +156,7 @@ trait Map[A, +B] extends collection.Map[A, B] {
    */
   def transform[C](f: (A, B) => C): Map[A, C] = {
     var res = empty[C]
-    foreach { case Pair(key, value) => res = res.update(key, f(key, value)) }
+    foreach { case (key, value) => res = res.update(key, f(key, value)) }
     res
   }
 
@@ -166,10 +166,10 @@ trait Map[A, +B] extends collection.Map[A, B] {
    *  @param p A prediacte over key-value pairs
    *  @return  the updated map
    */
-  override def filter(p: Pair[A, B] => Boolean): Map[A, B] = {
+  override def filter(p: ((A, B)) => Boolean): Map[A, B] = {
     var res = this
     foreach {
-      case kv @ Pair(key, _) => if (!p(kv)) { res = res - key }
+      case kv @ (key, _) => if (!p(kv)) { res = res - key }
     }
     res
   }
@@ -194,7 +194,7 @@ trait Map[A, +B] extends collection.Map[A, B] {
    *  @return         ...
    *  @deprecated   use <code>+</code> instead
    */
-  @deprecated def incl[B1 >: B](mappings: Pair[A, B1]*): Map[A, B1] = incl(mappings)
+  @deprecated def incl[B1 >: B](mappings: (A, B1)*): Map[A, B1] = incl(mappings)
 
   /** <code>incl</code> can be used to add many mappings at the same time
    *  to the map. The method assumes that each mapping is represented
@@ -203,11 +203,11 @@ trait Map[A, +B] extends collection.Map[A, B] {
    *
    *  @deprecated    use <code>++</code> instead
    */
-  @deprecated def incl[B1 >: B](map: Iterable[Pair[A, B1]]): Map[A, B1] = {
+  @deprecated def incl[B1 >: B](map: Iterable[(A, B1)]): Map[A, B1] = {
     val iter = map.elements
     var res: Map[A, B1] = this
     while (iter.hasNext) {
-      val Pair(key, value) = iter.next
+      val (key, value) = iter.next
       res = res.update(key, value)
     }
     res
@@ -244,7 +244,7 @@ trait Map[A, +B] extends collection.Map[A, B] {
    *  @param p ...
    *  @return  the string representation of a map entry
    */
-  @deprecated def mappingToString[B1 >: B](p: Pair[A, B1]) =
+  @deprecated def mappingToString[B1 >: B](p: (A, B1)) =
     p._1.toString() + " -> " + p._2
 
   /** @deprecated    use <code>+({A, B})</code> instead

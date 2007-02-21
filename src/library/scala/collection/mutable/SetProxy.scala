@@ -48,9 +48,6 @@ trait SetProxy[A] extends Set[A] with collection.SetProxy[A] {
 
   override def retain(p: A => Boolean): Unit =  self.retain(p)
 
-  @deprecated
-  override def filter(p: A => Boolean) = self.filter(p)
-
   override def <<(cmd: Message[A]): Unit = self << cmd
 
   override def clone(): Set[A] = new SetProxy[A] {

@@ -25,7 +25,7 @@ class EmptyMap[A, +B] extends Map[A, B] {
 
   def get(key: A): Option[B] = None
 
-  def elements: Iterator[Pair[A, B]] = Iterator.empty
+  def elements: Iterator[(A, B)] = Iterator.empty
 
   def empty[C]: Map[A, C] = new EmptyMap[A, C]
 

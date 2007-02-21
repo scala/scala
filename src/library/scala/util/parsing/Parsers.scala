@@ -24,28 +24,28 @@ abstract class Parsers {
 
   abstract class Parser[a] {
 
-    type Result = Option[Pair[a, inputType]]
+    type Result = Option[(a, inputType)]
 
     def apply(in: inputType): Result
 
     def filter(pred: a => boolean) = new Parser[a] {
       def apply(in: inputType): Result = Parser.this.apply(in) match {
         case None => None
-        case Some(Pair(x, in1)) => if (pred(x)) Some(Pair(x, in1)) else None
+        case Some((x, in1)) => if (pred(x)) Some((x, in1)) else None
       }
     }
 
     def map[b](f: a => b) = new Parser[b] {
       def apply(in: inputType): Result = Parser.this.apply(in) match {
         case None => None
-        case Some(Pair(x, in1)) => Some(Pair(f(x), in1))
+        case Some((x, in1)) => Some((f(x), in1))
       }
     }
 
     def flatMap[b](f: a => Parser[b]) = new Parser[b] {
       def apply(in: inputType): Result = Parser.this.apply(in) match {
         case None => None
-        case Some(Pair(x, in1)) => f(x).apply(in1)
+        case Some((x, in1)) => f(x).apply(in1)
       }
     }
 
@@ -62,13 +62,13 @@ abstract class Parsers {
 
   def not[a](p: Parser[a]) = new Parser[unit] {
     def apply(in: inputType): Result = p.apply(in) match {
-      case None => Some(Pair((), in))
+      case None => Some(((), in))
       case Some(_) => None
     }
   }
 
   def succeed[a](x: a) = new Parser[a] {
-    def apply(in: inputType): Result = Some(Pair(x, in))
+    def apply(in: inputType): Result = Some((x, in))
   }
 
   def rep[a](p: Parser[a]): Parser[List[a]] =

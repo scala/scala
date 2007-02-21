@@ -235,7 +235,7 @@ private case class INode[A <% Ordered[A],B](t1: GBTree[A,B],
   def insertRight(key: A, value: B, smaller: GBTree[A,B]) =
     balance_p(GBNode(key, value, smaller, t1),smaller);
   protected def balance_p(t:GBTree[A,B],subtree:GBTree[A,B]):InsertTree[A,B] = {
-    val Pair(subHeight, subSize) = subtree.count
+    val (subHeight, subSize) = subtree.count
     val totalHeight = 2 * compat.Math.max(height, subHeight)
     val totalSize = size + subSize + 1
     val BalanceHeight = totalSize * totalSize
@@ -260,22 +260,22 @@ protected abstract class GBTree[A <% Ordered[A],B] extends AnyRef {
   /** Calculates 2^h, and size, where h is the height of the tree
   *   and size is the number of nodes in the tree.
   */
-  def count: Pair[Int,Int]
+  def count: (Int,Int)
   def isDefinedAt(Key: A): Boolean
   def get(key: A): Option[B]
   def apply(key: A): B
   def update(key: A, value: B): aNode
   def insert(key: A, value: B, size: Int): anInsertTree
-  def toList(acc: List[Pair[A,B]]): List[Pair[A,B]]
+  def toList(acc: List[(A,B)]): List[(A,B)]
   def mk_iter(iter_tail: List[aNode]): List[aNode]
   def delete(key: A): aNode
   def merge(t: aNode): aNode
-  def takeSmallest: Triple[A,B,aNode]
+  def takeSmallest: (A,B,aNode)
   def balance(s: int): GBTree[A,B]
 }
 
 private case class GBLeaf[A <% Ordered[A],B]() extends GBTree[A,B] {
-  def count = Pair(1, 0)
+  def count = (1, 0)
   def isDefinedAt(key: A) = false
   def get(_key: A) = None
   def apply(key: A) = throw new NoSuchElementException("key " + key + " not found")
@@ -286,10 +286,10 @@ private case class GBLeaf[A <% Ordered[A],B]() extends GBTree[A,B] {
     else
       ITree(GBNode(key, value, this, this))
   }
-  def toList(acc: List[Pair[A,B]]): List[Pair[A,B]] = acc
+  def toList(acc: List[(A,B)]): List[(A,B)] = acc
   def mk_iter(iter_tail: List[GBTree[A,B]]) = iter_tail
   def merge(larger: GBTree[A,B]) = larger
-  def takeSmallest: Triple[A,B, GBTree[A,B]] =
+  def takeSmallest: (A,B, GBTree[A,B]) =
     throw new NoSuchElementException("takeSmallest on empty tree")
   def delete(_key: A) = throw new NoSuchElementException("Delete on empty tree.")
   def balance(s: int) = this
@@ -301,14 +301,14 @@ private case class GBNode[A <% Ordered[A],B](key: A,
                                              smaller: GBTree[A,B],
                                              bigger: GBTree[A,B])
              extends GBTree[A,B] {
-  def count: Pair[Int,Int] = {
-    val Pair(sHeight, sSize) = smaller.count
-    val Pair(bHeight, bSize) = bigger.count
+  def count: (Int,Int) = {
+    val (sHeight, sSize) = smaller.count
+    val (bHeight, bSize) = bigger.count
     val mySize = sSize + bSize + 1
     if (mySize == 1)
-      Pair(1, mySize)
+      (1, mySize)
     else
-      Pair(2 * compat.Math.max(sHeight, bHeight), mySize)
+      (2 * compat.Math.max(sHeight, bHeight), mySize)
   }
 
   def isDefinedAt(sKey: A): Boolean =
@@ -343,8 +343,8 @@ private case class GBNode[A <% Ordered[A],B](key: A,
       throw new NoSuchElementException("Key exists: " + newKey)
   }
 
-  def toList(acc: List[Pair[A,B]]): List[Pair[A,B]] =
-    smaller.toList(Pair(key, value) :: bigger.toList(acc))
+  def toList(acc: List[(A,B)]): List[(A,B)] =
+    smaller.toList((key, value) :: bigger.toList(acc))
 
   def mk_iter(iter_tail:List[aNode]):List[aNode] =
     smaller.mk_iter(this :: iter_tail)
@@ -362,16 +362,16 @@ private case class GBNode[A <% Ordered[A],B](key: A,
     case GBLeaf() =>
       this
     case _ =>
-      val Triple(key1, value1, larger1) = larger.takeSmallest
+      val (key1, value1, larger1) = larger.takeSmallest
       GBNode(key1, value1, this, larger1)
   }
 
-  def takeSmallest: Triple[A, B, aNode] = smaller match {
+  def takeSmallest: (A, B, aNode) = smaller match {
     case GBLeaf() =>
-      Triple(key, value, bigger)
+      (key, value, bigger)
     case _ =>
-      val Triple(key1, value1, smaller1) = smaller.takeSmallest
-      Triple(key1, value1, GBNode(key, value, smaller1, bigger))
+      val (key1, value1, smaller1) = smaller.takeSmallest
+      (key1, value1, GBNode(key, value, smaller1, bigger))
   }
 
   /**
@@ -381,22 +381,22 @@ private case class GBNode[A <% Ordered[A],B](key: A,
   def balance(s: int): GBTree[A,B] =
     balance_list(toList(scala.Nil), s)
 
-  protected def balance_list(list: List[Pair[A,B]], s: int): GBTree[A,B] = {
+  protected def balance_list(list: List[(A,B)], s: int): GBTree[A,B] = {
     val empty = GBLeaf[A,B]();
-    def bal(list: List[Pair[A,B]], s: Int): Pair[aNode, List[Pair[A,B]]] = {
+    def bal(list: List[(A,B)], s: Int): (aNode, List[(A,B)]) = {
       if (s > 1) {
         val sm = s - 1
         val s2 = sm / 2
         val s1 = sm - s2
-        val Pair(t1, Pair(k, v) :: l1) = bal(list, s1)
-        val Pair(t2, l2) = bal(l1, s2)
+        val (t1, (k, v) :: l1) = bal(list, s1)
+        val (t2, l2) = bal(l1, s2)
         val t = GBNode(k, v, t1, t2)
-        Pair(t, l2)
+        (t, l2)
       } else if (s == 1) {
-        val Pair(k,v) :: rest = list
-        Pair(GBNode(k, v, empty, empty), rest)
+        val (k,v) :: rest = list
+        (GBNode(k, v, empty, empty), rest)
       } else
-        Pair(empty, list)
+        (empty, list)
     }
     bal(list, s)._1
   }

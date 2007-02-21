@@ -52,12 +52,12 @@ trait TypeStacks requires ICodes {
     /** Return the topmost two values on the stack. It assumes the stack
      *  is large enough. Topmost element first.
      */
-    def pop2: Pair[TypeKind, TypeKind] = Pair(pop, pop)
+    def pop2: (TypeKind, TypeKind) = (pop, pop)
 
     /** Return the topmost three values on the stack. It assumes the stack
      *  is large enough. Topmost element first.
      */
-    def pop3: Triple[TypeKind, TypeKind, TypeKind] = Triple(pop, pop, pop)
+    def pop3: (TypeKind, TypeKind, TypeKind) = (pop, pop, pop)
 
     /** Drop the first n elements of the stack. */
     def pop(n: Int): Unit = types = types.drop(n)

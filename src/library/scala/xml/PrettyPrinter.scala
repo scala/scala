@@ -122,14 +122,14 @@ class PrettyPrinter( width:Int, step:Int ) {
     sb.toString()
   }
 
-  protected def startTag(n: Node, pscope: NamespaceBinding): Pair[String, Int] = {
+  protected def startTag(n: Node, pscope: NamespaceBinding): (String, Int) = {
     val sb = new StringBuilder("<")
     n.nameToString(sb) //Utility.appendPrefixedName( n.prefix, n.label, pmap, sb );
     val i = sb.length() + 1
     n.attributes.toString(sb)
     n.scope.toString(sb, pscope)
     sb.append('>')
-    Pair(sb.toString(), i)
+    (sb.toString(), i)
   }
 
   protected def endTag(n: Node) = {
@@ -172,7 +172,7 @@ class PrettyPrinter( width:Int, step:Int ) {
         if (childrenAreLeaves(node) && fits(test)) {
           makeBox(ind, test)
         } else {
-          val Pair(stg, len2) = startTag(node, pscope)
+          val (stg, len2) = startTag(node, pscope)
           val etg = endTag(node)
           if (stg.length() < width - cur) { // start tag fits
             makeBox(ind, stg)

@@ -29,7 +29,7 @@ class Map4[A, +B](key1: A, value1: B, key2: A, value2: B, key3: A, value3: B, ke
     else None
 
   def elements = Iterator.fromValues(
-    Pair(key1, value1), Pair(key2, value2), Pair(key3, value3), Pair(key4, value4))
+    (key1, value1), (key2, value2), (key3, value3), (key4, value4))
 
   def empty[C]: Map[A, C] = new EmptyMap[A, C]
 

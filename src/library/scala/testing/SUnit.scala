@@ -80,7 +80,7 @@ object SUnit {
    */
   class TestFailure(val failedTest: Test, val thrownException: Throwable) {
 
-    def this(p: Pair[Test, Throwable]) = this(p._1, p._2)
+    def this(p: (Test, Throwable)) = this(p._1, p._2)
 
     override def toString() =
       failedTest.toString() + " failed due to " + thrownException.toString()
@@ -91,10 +91,10 @@ object SUnit {
 
   /** a TestResult collects the result of executing a test case */
   class TestResult {
-    val buf = new ArrayBuffer[Pair[Test, Throwable]]()
+    val buf = new ArrayBuffer[(Test, Throwable)]()
 
     def addFailure(test:Test, t:Throwable) =
-      buf += Pair(test, t)
+      buf += (test, t)
 
     def failureCount() =
       buf.length

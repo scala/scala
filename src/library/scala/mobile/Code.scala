@@ -158,17 +158,17 @@ class Code(clazz: java.lang.Class) {
   ////////////////////// private functions ///////////////////////
 
   private def boxValue(value: Any) = value match {
-    case x: Byte    => Pair(new java.lang.Byte(x),      java.lang.Byte.TYPE)
-    case x: Boolean => Pair(new java.lang.Boolean(x),   java.lang.Boolean.TYPE)
-    case x: Char    => Pair(new java.lang.Character(x), java.lang.Character.TYPE)
-    case x: Short   => Pair(new java.lang.Short(x),     java.lang.Short.TYPE)
-    case x: Int     => Pair(new java.lang.Integer(x),   java.lang.Integer.TYPE)
-    case x: Long    => Pair(new java.lang.Long(x),      java.lang.Long.TYPE)
-    case x: Float   => Pair(new java.lang.Float(x),     java.lang.Float.TYPE)
-    case x: Double  => Pair(new java.lang.Double(x),    java.lang.Double.TYPE)
+    case x: Byte    => (new java.lang.Byte(x),      java.lang.Byte.TYPE)
+    case x: Boolean => (new java.lang.Boolean(x),   java.lang.Boolean.TYPE)
+    case x: Char    => (new java.lang.Character(x), java.lang.Character.TYPE)
+    case x: Short   => (new java.lang.Short(x),     java.lang.Short.TYPE)
+    case x: Int     => (new java.lang.Integer(x),   java.lang.Integer.TYPE)
+    case x: Long    => (new java.lang.Long(x),      java.lang.Long.TYPE)
+    case x: Float   => (new java.lang.Float(x),     java.lang.Float.TYPE)
+    case x: Double  => (new java.lang.Double(x),    java.lang.Double.TYPE)
     case _          =>
       val x = value.asInstanceOf[JObject]
-      Pair(x, x.getClass())
+      (x, x.getClass())
   }
 
   private def isConstructorName(methName: String) = {

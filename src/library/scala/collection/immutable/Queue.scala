@@ -100,12 +100,12 @@ class Queue[+A](elem: A*) extends Seq[A] {
    *  @throws Predef.NoSuchElementException
    *  @return the first element of the queue.
    */
-  def dequeue: Pair[A, Queue[A]] = {
-    val Pair(newOut, newIn) =
-      if (out.isEmpty) Pair(in.reverse, Nil)
-      else Pair(out, in)
+  def dequeue: (A, Queue[A]) = {
+    val (newOut, newIn) =
+      if (out.isEmpty) (in.reverse, Nil)
+      else (out, in)
     if (newOut.isEmpty) throw new NoSuchElementException("queue empty")
-    else Pair(newOut.head, mkQueue(newIn, newOut.tail))
+    else (newOut.head, mkQueue(newIn, newOut.tail))
   }
 
   /** Returns the first element in the queue, or throws an error if there
@@ -155,7 +155,7 @@ class Queue[+A](elem: A*) extends Seq[A] {
   override def hashCode(): Int =
     if (isEmpty) 0
     else {
-      val q: Pair[A,Queue[A]] = dequeue;
+      val q: (A,Queue[A]) = dequeue;
       q._1.hashCode() + q._2.hashCode()
     }
 }

@@ -36,7 +36,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
 
   class SuperAccTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
     private var validCurrentOwner = true
-    private var accDefs: List[Pair[Symbol, ListBuffer[Tree]]] = List()
+    private var accDefs: List[(Symbol, ListBuffer[Tree])] = List()
 
     private def accDefBuf(clazz: Symbol) =
       accDefs.dropWhile(._1.!=(clazz)).head._2
@@ -63,7 +63,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
         super.transform(tree)
       case Template(parents, body) =>
 	val ownAccDefs = new ListBuffer[Tree];
-	accDefs = Pair(currentOwner, ownAccDefs) :: accDefs;
+	accDefs = (currentOwner, ownAccDefs) :: accDefs;
 
         // ugly hack... normally, the following line should not be
         // necessary, the 'super' method taking care of that. but because

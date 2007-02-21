@@ -68,7 +68,7 @@ class Process(body: => Unit) extends Actor() {
     }
 
   private def signal(s: MailBox#Message) =
-    links.foreach { p: Process => p.send(Triple('EXIT, this, s)) }
+    links.foreach { p: Process => p.send(('EXIT, this, s)) }
 
   def !(msg: MailBox#Message) =
     send(msg)

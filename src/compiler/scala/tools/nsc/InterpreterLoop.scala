@@ -108,7 +108,7 @@ class InterpreterLoop(in0: BufferedReader, out: PrintWriter) {
       if (line eq null)
         return ()  // assumes null means EOF
 
-      val Pair(keepGoing, finalLineMaybe) = command(line)
+      val (keepGoing, finalLineMaybe) = command(line)
 
       if (!keepGoing)
         return
@@ -158,7 +158,7 @@ class InterpreterLoop(in0: BufferedReader, out: PrintWriter) {
   /** Run one command submitted by the user.  Three values are returned:
     * (1) whether to keep running, (2) the line to record for replay,
     * if any. */
-  def command(line: String): Pair[Boolean, Option[String]] = {
+  def command(line: String): (Boolean, Option[String]) = {
     def withFile(command: String)(action: String => Unit): Unit = {
       val spaceIdx = command.indexOf(' ')
       if (spaceIdx <= 0) {
@@ -183,7 +183,7 @@ class InterpreterLoop(in0: BufferedReader, out: PrintWriter) {
     if (line.matches(helpRegexp))
       printHelp
     else if (line.matches(quitRegexp))
-      return Pair(false, None)
+      return (false, None)
     else if (line.matches(loadRegexp)) {
       withFile(line)(f => {
         interpretAllFrom(f)
@@ -197,7 +197,7 @@ class InterpreterLoop(in0: BufferedReader, out: PrintWriter) {
     else
       shouldReplay = interpretStartingWith(line)
 
-    Pair(true, shouldReplay)
+    (true, shouldReplay)
   }
 
   /** Interpret expressions starting with the first line.

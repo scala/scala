@@ -51,7 +51,7 @@ abstract class DeadCodeElimination extends SubComponent {
       a.run;
 
       for (val bb <- m.code.blocks.toList;
-           val Pair(i, pos) <- bb.toList.zipWithIndex.reverse) {
+           val (i, pos) <- bb.toList.zipWithIndex.reverse) {
         var live = a.out(bb);
 
         i match {

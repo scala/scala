@@ -53,7 +53,7 @@ trait Variances {
    *  `tps' which correspond to formal type parameters `tparams1'. */
   def varianceInArgs(tps: List[Type], tparams1: List[Symbol])(tparam: Symbol): int = {
     var v: int = VARIANCES;
-    for (val Pair(tp, tparam1) <- tps zip tparams1) {
+    for (val (tp, tparam1) <- tps zip tparams1) {
       val v1 = varianceInType(tp)(tparam);
       v = v & (if (tparam1.isCovariant) v1
 	       else if (tparam1.isContravariant) flip(v1)

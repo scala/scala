@@ -23,19 +23,19 @@ package scala.collection.mutable
  */
 trait ObservableMap[A, B, This <: ObservableMap[A, B, This]] requires This
       extends Map[A, B]
-      with Publisher[Message[Pair[A, B]]
+      with Publisher[Message[(A, B)]
       with Undoable, This]
 {
 
   abstract override def update(key: A, value: B): Unit = get(key) match {
     case None =>
       super.update(key, value)
-      publish(new Include(Pair(key, value)) with Undoable {
+      publish(new Include((key, value)) with Undoable {
         def undo = -=(key)
       })
     case Some(old) =>
       super.update(key, value)
-      publish(new Update(Pair(key, value)) with Undoable {
+      publish(new Update((key, value)) with Undoable {
         def undo = update(key, old)
       })
   }
@@ -44,7 +44,7 @@ trait ObservableMap[A, B, This <: ObservableMap[A, B, This]] requires This
     case None =>
     case Some(old) =>
       super.-=(key)
-      publish(new Remove(Pair(key, old)) with Undoable {
+      publish(new Remove((key, old)) with Undoable {
         def undo = update(key, old)
       })
   }

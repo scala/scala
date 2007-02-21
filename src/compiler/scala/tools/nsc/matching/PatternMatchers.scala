@@ -1044,7 +1044,7 @@ print()
       //Console.println("sel:"+selector+" last"+lastSelector+" - "+(selector == lastSelector))
         val next = _h.next;
         //res = And(mkNegate(res), toTree(node.or, selector));
-        val Triple(doOptimize, coveredCases, remainingCases) = _h.optimize1()
+        val (doOptimize, coveredCases, remainingCases) = _h.optimize1()
         if(!remainingCases.isEmpty && doCheckExhaustive) {
           carryCovered = carryCovered ++ coveredCases // ??
           if(next != null && next.or.and.isUnguardedBody) {
@@ -1296,12 +1296,12 @@ print()
               toTree(node.or, selector.duplicate))
 
           case ConstrPat(casted) =>
-            def outerAlwaysEqual(left: Type, right: Type) = Pair(left,right) match {
-              case Pair(TypeRef(lprefix, _,_), TypeRef(rprefix,_,_)) if lprefix =:= rprefix =>
+            def outerAlwaysEqual(left: Type, right: Type) = (left,right) match {
+              case (TypeRef(lprefix, _,_), TypeRef(rprefix,_,_)) if lprefix =:= rprefix =>
                 true
               case _ =>
                 if(settings.XprintOuterMatches.value)
-                  cunit.warning(node.pos, "can't be sure statically that these outers are equal:"+Pair(left,right).toString)
+                  cunit.warning(node.pos, "can't be sure statically that these outers are equal:"+(left,right).toString)
                 false
             }
 

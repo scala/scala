@@ -41,7 +41,7 @@ case class TypeBounds(lo: Type, hi: Type) extends Type
 case class MethodType(formals: List[Type], restpe: Type) extends Type
 
 /**  */
-case class PolyType(typeParams: List[Symbol], typeBounds: List[Pair[Type, Type]], resultType: Type) extends Type
+case class PolyType(typeParams: List[Symbol], typeBounds: List[(Type, Type)], resultType: Type) extends Type
 
 /**  */
 class ImplicitMethodType(formals: List[Type], restpe: Type)
