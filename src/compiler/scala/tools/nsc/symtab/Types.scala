@@ -1097,7 +1097,7 @@ trait Types requires SymbolTable {
         if (isFunctionType(this))
           return args.init.mkString("(", ", ", ")") + " => " + args.last
         if (isTupleType(this))
-          return args.mkString("{", ", ", if (args.length == 1) ",}" else "}")
+          return args.mkString("(", ", ", if (args.length == 1) ",)" else ")")
       }
       val str = (pre.prefixString + sym.nameString +
                  (if (args.isEmpty) "" else args.mkString("[", ",", "]")))
