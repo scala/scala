@@ -335,6 +335,9 @@ abstract class TreeBrowsers {
       case Apply(fun, args) =>
         ("Apply", EMPTY)
 
+      case ApplyDynamic(fun, args) =>
+        ("Apply", EMPTY)
+
       case Super(qualif, mix) =>
         ("Super", qualif.toString() + ", mix: " + mix.toString())
 
@@ -480,6 +483,9 @@ abstract class TreeBrowsers {
         List(fun) ::: args
 
       case Apply(fun, args) =>
+        List(fun) ::: args
+
+      case ApplyDynamic(fun, args) =>
         List(fun) ::: args
 
       case Super(qualif, mix) =>

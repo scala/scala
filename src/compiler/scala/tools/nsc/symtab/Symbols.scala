@@ -222,6 +222,10 @@ trait Symbols requires SymbolTable {
     final def isStable =
       isTerm && !hasFlag(MUTABLE) && (!hasFlag(METHOD | BYNAMEPARAM) || hasFlag(STABLE))
 
+    /** Is this symbol a public */
+    final def isPublic: boolean =
+      !hasFlag(PRIVATE | PROTECTED) && privateWithin == NoSymbol
+
     /** Is this symbol a private local */
     final def isPrivateLocal =
       hasFlag(PRIVATE) && hasFlag(LOCAL)
@@ -788,7 +792,7 @@ trait Symbols requires SymbolTable {
 
     final def allOverriddenSymbols: List[Symbol] =
       if (owner.isClass)
-        for { val bc <- owner.info.baseClasses
+        for { val bc <- owner.info.baseClasses.tail
               val s = overriddenSymbol(bc)
               s != NoSymbol } yield s
       else List()

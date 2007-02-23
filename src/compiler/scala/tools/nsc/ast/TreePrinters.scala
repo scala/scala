@@ -262,6 +262,10 @@ abstract class TreePrinters {
         case Apply(fun, vargs) =>
           print(fun); printRow(vargs, "(", ", ", ")")
 
+        case ApplyDynamic(fun, vargs) =>
+          print("<apply-dynamic>("); print(fun); print("#"); print(tree.symbol.nameString)
+          printRow(vargs, ", (", ", ", "))")
+
         case Super(qual, mix) =>
           if (!qual.isEmpty || tree.symbol != NoSymbol) print(symName(tree, qual) + ".")
           print("super")

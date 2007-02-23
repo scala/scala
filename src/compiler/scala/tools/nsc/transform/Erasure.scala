@@ -461,7 +461,14 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
     /** A replacement for the standard typer's `typed1' method */
     override protected def typed1(tree: Tree, mode: int, pt: Type): Tree = {
       var tree1 = try {
-        super.typed1(adaptMember(tree), mode, pt);
+        tree match {
+          case ApplyDynamic(fun, args) =>
+            val fun1 = typed(fun, AnyRefClass.tpe)
+            val args1 = List.mapConserve(args)(arg => typed(arg, AnyRefClass.tpe))
+            copy.ApplyDynamic(tree, fun1, args1) setType AnyRefClass.tpe
+          case _ =>
+            super.typed1(adaptMember(tree), mode, pt)
+        }
       } catch {
         case ex: Throwable =>
           //if (settings.debug.value)
@@ -769,19 +776,20 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
                   }
                 case _ => tree
               }
-            else tree
+            else fn match {
+              case Select(qual, _) if (settings.Xexperimental.value &&
+                                       fn.symbol.owner.isRefinementClass &&
+                                       fn.symbol.allOverriddenSymbols.isEmpty) =>
+                ApplyDynamic(qual, args) setSymbol fn.symbol setPos tree.pos
+              case _ =>
+                tree
+            }
 
-          case Select(qual, _) =>
+          case Select(_, _) =>
             if (tree.symbol.owner.isRefinementClass) {
-              var sym: Symbol = NoSymbol
-              var bcs = tree.symbol.owner.info.baseClasses.tail
-              //Console.println("resetting "+tree.symbol+tree.symbol.locationString+bcs)//DEBUG
-              while (!bcs.isEmpty && sym == NoSymbol) {
-                sym = tree.symbol.overriddenSymbol(bcs.head)
-                bcs = bcs.tail
-              }
-              assert(sym != NoSymbol, tree.symbol)
-              tree.symbol = sym
+              val overridden = tree.symbol.allOverriddenSymbols
+              assert(!overridden.isEmpty, tree.symbol)
+              tree.symbol = overridden.head
             }
             tree
 
