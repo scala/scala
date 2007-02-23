@@ -2249,6 +2249,11 @@ trait Typers requires Analyzer {
             }
           }
 
+        case ApplyDynamic(qual, args) =>
+          val qual1 = typed(qual, AnyRefClass.tpe)
+          val args1 = List.mapConserve(args)(arg => typed(arg, AnyRefClass.tpe))
+          copy.ApplyDynamic(tree, qual1, args1) setType AnyRefClass.tpe
+
         case Super(qual, mix) =>
           val (clazz, selftype) =
             if (tree.symbol != NoSymbol) {

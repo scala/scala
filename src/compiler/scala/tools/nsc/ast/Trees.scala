@@ -598,8 +598,13 @@ trait Trees requires Global {
     override def symbol_=(sym: Symbol): unit = { fun.symbol = sym }
   }
 
-  /** Dynamic value application */
-  case class ApplyDynamic(fun: Tree, args: List[Tree])
+  /** Dynamic value application.
+   *  In a dynamic application   q.f(as)
+   *   - q is stored in qual
+   *   - as is stored in args
+   *   - f is stored as the node's symbol field.
+   */
+  case class ApplyDynamic(qual: Tree, args: List[Tree])
        extends TermTree with SymTree
 
   /** Super reference */
@@ -731,7 +736,7 @@ trait Trees requires Global {
   case Typed(expr, tpt) =>                                        (eliminated by erasure)
   case TypeApply(fun, args) =>
   case Apply(fun, args) =>
-  case ApplyDynamic(fun, args)                                    (introduced by erasure, eliminated by cleanup)
+  case ApplyDynamic(qual, args)                                   (introduced by erasure, eliminated by cleanup)
   case Super(qual, mix) =>
   case This(qual) =>
   case Select(qualifier, selector) =>
@@ -779,7 +784,7 @@ trait Trees requires Global {
     def Typed(tree: Tree, expr: Tree, tpt: Tree): Typed
     def TypeApply(tree: Tree, fun: Tree, args: List[Tree]): TypeApply
     def Apply(tree: Tree, fun: Tree, args: List[Tree]): Apply
-    def ApplyDynamic(tree: Tree, fun: Tree, args: List[Tree]): ApplyDynamic
+    def ApplyDynamic(tree: Tree, qual: Tree, args: List[Tree]): ApplyDynamic
     def Super(tree: Tree, qual: Name, mix: Name): Super
     def This(tree: Tree, qual: Name): This
     def Select(tree: Tree, qualifier: Tree, selector: Name): Select
@@ -858,8 +863,8 @@ trait Trees requires Global {
       new TypeApply(fun, args).copyAttrs(tree)
     def Apply(tree: Tree, fun: Tree, args: List[Tree]) =
       new Apply(fun, args).copyAttrs(tree)
-    def ApplyDynamic(tree: Tree, fun: Tree, args: List[Tree]) =
-      new ApplyDynamic(fun, args).copyAttrs(tree)
+    def ApplyDynamic(tree: Tree, qual: Tree, args: List[Tree]) =
+      new ApplyDynamic(qual, args).copyAttrs(tree)
     def Super(tree: Tree, qual: Name, mix: Name) =
       new Super(qual, mix).copyAttrs(tree)
     def This(tree: Tree, qual: Name) =
@@ -1046,10 +1051,10 @@ trait Trees requires Global {
       if (fun0 == fun) && (args0 == args) => t
       case _ => copy.Apply(tree, fun, args)
     }
-    def ApplyDynamic(tree: Tree, fun: Tree, args: List[Tree]) = tree match {
-      case t @ ApplyDynamic(fun0, args0)
-      if (fun0 == fun) && (args0 == args) => t
-      case _ => copy.ApplyDynamic(tree, fun, args)
+    def ApplyDynamic(tree: Tree, qual: Tree, args: List[Tree]) = tree match {
+      case t @ ApplyDynamic(qual0, args0)
+      if (qual0 == qual) && (args0 == args) => t
+      case _ => copy.ApplyDynamic(tree, qual, args)
     }
     def Super(tree: Tree, qual: Name, mix: Name) = tree match {
       case t @ Super(qual0, mix0)
@@ -1208,8 +1213,8 @@ trait Trees requires Global {
         copy.TypeApply(tree, transform(fun), transformTrees(args))
       case Apply(fun, args) =>
         copy.Apply(tree, transform(fun), transformTrees(args))
-      case ApplyDynamic(fun, args) =>
-        copy.ApplyDynamic(tree, transform(fun), transformTrees(args))
+      case ApplyDynamic(qual, args) =>
+        copy.ApplyDynamic(tree, transform(qual), transformTrees(args))
       case Super(qual, mix) =>
         copy.Super(tree, qual, mix)
       case This(qual) =>
@@ -1356,8 +1361,8 @@ trait Trees requires Global {
         traverse(fun); traverseTrees(args)
       case Apply(fun, args) =>
         traverse(fun); traverseTrees(args)
-      case ApplyDynamic(fun, args) =>
-        traverse(fun); traverseTrees(args)
+      case ApplyDynamic(qual, args) =>
+        traverse(qual); traverseTrees(args)
       case Super(_, _) =>
         ;
       case This(_) =>

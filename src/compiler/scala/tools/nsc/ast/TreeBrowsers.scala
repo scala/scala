@@ -335,7 +335,7 @@ abstract class TreeBrowsers {
       case Apply(fun, args) =>
         ("Apply", EMPTY)
 
-      case ApplyDynamic(fun, args) =>
+      case ApplyDynamic(qual, args) =>
         ("Apply", EMPTY)
 
       case Super(qualif, mix) =>
@@ -485,8 +485,8 @@ abstract class TreeBrowsers {
       case Apply(fun, args) =>
         List(fun) ::: args
 
-      case ApplyDynamic(fun, args) =>
-        List(fun) ::: args
+      case ApplyDynamic(qual, args) =>
+        List(qual) ::: args
 
       case Super(qualif, mix) =>
         Nil

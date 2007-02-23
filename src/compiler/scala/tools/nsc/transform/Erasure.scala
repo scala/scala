@@ -461,14 +461,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
     /** A replacement for the standard typer's `typed1' method */
     override protected def typed1(tree: Tree, mode: int, pt: Type): Tree = {
       var tree1 = try {
-        tree match {
-          case ApplyDynamic(fun, args) =>
-            val fun1 = typed(fun, AnyRefClass.tpe)
-            val args1 = List.mapConserve(args)(arg => typed(arg, AnyRefClass.tpe))
-            copy.ApplyDynamic(tree, fun1, args1) setType AnyRefClass.tpe
-          case _ =>
-            super.typed1(adaptMember(tree), mode, pt)
-        }
+        super.typed1(adaptMember(tree), mode, pt)
       } catch {
         case ex: Throwable =>
           //if (settings.debug.value)
