@@ -15,7 +15,8 @@ package scala
  *   A base class for annotations. Annotations extending this class directly
  *   are not preserved for the Scala type checker and are also not stored
  *   as Java annotations in classfiles. To enable either or both of these,
- *   one needs to inherit from <code>StaticAnnotation</code> or/and
+ *   one needs to inherit from
+ *   <a href="StaticAnnotation.html"><code>StaticAnnotation</code></a> or/and
  *   <a href="ClassfileAnnotation.html"><code>ClassfileAnnotation</code></a>.
  *  </p>
  *
