@@ -23,6 +23,10 @@ trait PatternNodes requires transform.ExplicitOuter {
     var or: PatternNode = _
     var and: PatternNode = _
 
+    def casted: Symbol = NoSymbol
+
+    def symbol2bind: Symbol = casted
+
     def forEachAlternative(f: PatternNode => Unit) { // only for header?
       var z = this;
       while(z ne null) {
@@ -81,7 +85,7 @@ trait PatternNodes requires transform.ExplicitOuter {
       res
     }
 
-    def symbol: Symbol = this match {
+    def _symbol: Symbol = this match { // @todo
       case UnapplyPat(casted, fn) =>
 	casted
       case ConstrPat(casted) =>
@@ -427,8 +431,11 @@ trait PatternNodes requires transform.ExplicitOuter {
   }
 
   case class DefaultPat()extends PatternNode
-  case class ConstrPat(casted:Symbol) extends PatternNode
-  case class UnapplyPat(casted:Symbol, fn:Tree) extends PatternNode {
+  case class ConstrPat(override val casted:Symbol) extends PatternNode
+  case class UnapplyPat(override val casted:Symbol, fn:Tree) extends PatternNode {
+
+  override def symbol2bind = NoSymbol
+
     def returnsOne =  {
       /*val res =*/ definitions.getProductArgs(casted.tpe) match {
         case Some(Nil) => true     // n = 0
@@ -444,9 +451,9 @@ trait PatternNodes requires transform.ExplicitOuter {
   case class ConstantPat(value: Any /*AConstant*/) extends PatternNode
   case class VariablePat(tree: Tree) extends PatternNode
   case class AltPat(subheader: Header) extends PatternNode
-  case class SequencePat(casted: Symbol, len: int) extends PatternNode // only used in PatternMatcher
+  case class SequencePat(override val casted: Symbol, len: int) extends PatternNode // only used in PatternMatcher
 
-  case class RightIgnoringSequencePat(casted: Symbol, castedRest: Symbol, minlen: int) extends PatternNode //PM
+  case class RightIgnoringSequencePat(override val casted: Symbol, castedRest: Symbol, minlen: int) extends PatternNode //PM
 
   /** the environment for a body of a case
    * @param owner the owner of the variables created here

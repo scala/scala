@@ -83,7 +83,7 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
       this.root = pConstrPat(selector.pos, selector.tpe.widen);
       this.root.and = pHeader(selector.pos,
                               selector.tpe.widen,
-                              Ident(root.symbol).setType(root.tpe));
+                              Ident(root.casted).setType(root.tpe));
       //Konsole.println("resultType =  "+resultType);
       //this.optimize = this.optimize && (settings.target.value == "jvm");
     }
@@ -318,7 +318,7 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
     protected def enter(caseDef: Tree): Unit = caseDef match {
       case CaseDef(pat, guard, body) =>
         val env = new CaseEnv
-        val target = enter1(pat, -1, root, root.symbol, env)
+        val target = enter1(pat, -1, root, root.casted, env)
         // if (target.and != null)
         //   unit.error(pat.pos, "duplicate case");
       if (null == target.and)
@@ -426,7 +426,7 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
       case Bind(name, pat) =>                // x @ p
         val node = patternNode(pat, header, env)
         if ((env ne null) && (tree.symbol != defs.PatternWildcard)) {
-          val theValue = node.symbol match {
+          val theValue = node.symbol2bind match {
             case NoSymbol => header.selector
             case x        => Ident(x) setType x.tpe
           }
@@ -525,7 +525,7 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
         subroot.and = { val h = pHeader(header.pos, header.getTpe(), header.selector.duplicate); h.isSubHeader = true; h }
         val subenv = new CaseEnv
         var i = 0; while (i < ts.length) {
-          val target = enter1(ts(i), -1, subroot, subroot.symbol, subenv)
+          val target = enter1(ts(i), -1, subroot, subroot.casted, subenv)
           target.and = pBody(tree.pos)
           i = i + 1
         }
@@ -702,10 +702,10 @@ print()
         if (next.isSameAs(patNode)) {           // test for patNode already present --> reuse
           //Console.println(" -- found the same!")
           // substitute... !!!
-          patNode.symbol match {
+          patNode.casted match {
             case NoSymbol => ;
             case ocasted =>
-              env.substitute(ocasted, typed(Ident(next.symbol)));
+              env.substitute(ocasted, typed(Ident(next.casted)));
           }
           return enter(patArgs, next, casted, env);
         } else if (next.isDefaultPat() ||           // default case reached, or
@@ -916,7 +916,7 @@ print()
       case _ => ncases = ncases + 1
     }
 
-    val matchError = ThrowMatchError(selector.pos, Ident(root.symbol))
+    val matchError = ThrowMatchError(selector.pos, Ident(root.casted))
     // without a case, we return a match error if there is no default case
     if (ncases == 0)
       return defaultBody(root.and, matchError);
@@ -925,8 +925,8 @@ print()
       root.and.or match {
         case ConstantPat(value) =>
           return squeezedBlock(
-            List(ValDef(root.symbol, selector)),
-            If(Equals(Ident(root.symbol), Literal(value)),
+            List(ValDef(root.casted, selector)),
+            If(Equals(Ident(root.casted), Literal(value)),
                (root.and.or.and).bodyToTree(),
                defaultBody(root.and, matchError))
           )
@@ -1000,7 +1000,7 @@ print()
     }
     return Switch(selector, tags, bodies, defaultBody1, resultType);
     */
-    nCases = CaseDef(Ident(nme.WILDCARD), squeezedBlock(List(ValDef(root.symbol, selector)),defaultBody1)) :: nCases;
+    nCases = CaseDef(Ident(nme.WILDCARD), squeezedBlock(List(ValDef(root.casted, selector)),defaultBody1)) :: nCases;
     Match(selector, nCases)
   }
 
@@ -1013,9 +1013,9 @@ print()
     val result = exit.newValueParameter(root.pos, "result").setInfo( resultType );
     squeezedBlock(
       List(
-        ValDef(root.symbol, selector),
+        ValDef(root.casted, selector),
         typed { toTree(root.and) },
-        ThrowMatchError(selector.pos,  Ident(root.symbol))) ,
+        ThrowMatchError(selector.pos,  Ident(root.casted))) ,
       LabelDef(exit, List(result), Ident(result)))
   }
 

@@ -17,4 +17,13 @@ Ours is the portal of hope, come as you are."
   Console println crz // this guy will escaped, and rightly so
   Console println nazim
   Console println "End Test"
+
+  <x:foo xmlns:x="gaga"/> match {
+    case scala.xml.QNode("gaga","foo",md,child@_*) =>
+  }
+
+  <x:foo xmlns:x="gaga"/> match {
+    case scala.xml.Node("foo",md,child@_*) =>
+  }
+
 }

@@ -27,6 +27,8 @@ object Node {
   /** the empty namespace */
   val EmptyNamespace = ""
 
+  def unapplySeq(n:Node) = Some (Tuple3(n.label, n.attributes, n.child))
+
 }
 
 /**
