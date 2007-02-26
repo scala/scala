@@ -37,7 +37,7 @@ object TreeMap {
  */
 @serializable
 class TreeMap[A <% Ordered[A], +B](val size: int, t: RedBlack[A]#Tree[B])
-extends RedBlack[A] with Map[A, B] {
+extends RedBlack[A] with SortedMap[A, B] {
 
   def isSmaller(x: A, y: A) = x < y
 
@@ -45,11 +45,22 @@ extends RedBlack[A] with Map[A, B] {
 
   protected val tree: RedBlack[A]#Tree[B] = if (size == 0) Empty else t
 
+  override def rangeImpl(from : Option[A], until : Option[A]) : SortedMap[A,B] = {
+    val ntree = tree.range(from,until)
+    new TreeMap[A,B](ntree.count, ntree)
+  }
+  override def first = t.first
+  override def last = t.last
+  override def compare(k0: A, k1: A): Int = k0.compare(k1)
+
+
+
+
   private def newMap[B](s: int, t: RedBlack[A]#Tree[B]) = new TreeMap[A, B](s, t)
 
   /** A factory to create empty maps of the same type of keys.
    */
-  def empty[C] = ListMap.empty[A, C]
+  def empty[C] = TreeMap.empty[A, C]
 
   /** A new TreeMap with the entry added is returned,
    *  if key is <em>not</em> in the TreeMap, otherwise
@@ -105,7 +116,19 @@ extends RedBlack[A] with Map[A, B] {
    *
    *  @return the new iterator
    */
-  def elements: Iterator[(A, B)] = tree.elements
+  def elements: Iterator[Pair[A, B]] = tree.elements.elements
+
+  override def foreach(f : Tuple2[A,B] => Unit) : Unit =
+    tree.visit[Unit](())((unit0,a,b) => Tuple2(true, f(Tuple2(a,b))))
+  override def forall(f : Tuple2[A,B] => Boolean) : Boolean =
+    tree.visit[Boolean](true)((input,a,b) => f(Tuple2(a,b)) match {
+    case ret if input => Tuple2(ret,ret)
+    })._2
+  override def exists(f : Tuple2[A,B] => Boolean) : Boolean =
+    tree.visit[Boolean](false)((input,a,b) => f(Tuple2(a,b)) match {
+    case ret if !input => Tuple2(!ret,ret)
+    })._2
+
 }
 
 

@@ -9,6 +9,7 @@
 // $Id: $
 
 package scala.collection.immutable
+import scala.collection.TreeWalker
 
 @serializable
 abstract class RedBlack[A] {
@@ -29,10 +30,17 @@ abstract class RedBlack[A] {
     def lookup(x: A): Tree[B]
     def update[B1 >: B](k: A, v: B1): Tree[B1] = blacken(upd(k, v))
     def delete(k: A): Tree[B] = del(k)
-    def elements: Iterator[(A, B)]
+
+    def visit[T](input : T)(f : (T,A,B) => Tuple2[Boolean,T]) : Tuple2[Boolean,T];
+    def elements : TreeWalker[Pair[A,B]];
+    def elementsSlow: Iterator[Pair[A, B]];
     def upd[B1 >: B](k: A, v: B1): Tree[B1]
     def del(k: A): Tree[B]
     def smallest: NonEmpty[B]
+    def range(from : Option[A], until : Option[A]) : Tree[B]
+    def first : A
+    def last : A
+    def count : Int
   }
   @serializable
   abstract class NonEmpty[+B] extends Tree[B] {
@@ -77,8 +85,34 @@ abstract class RedBlack[A] {
       }
     }
     def smallest: NonEmpty[B] = if (left.isEmpty) this else left.smallest
-    def elements: Iterator[(A, B)] =
-      left.elements append Iterator.single((key, value)) append right.elements
+    def elements : TreeWalker[Pair[A,B]] =
+      left.elements.append(Pair(key,value), () => right.elements)
+
+    def elementsSlow: Iterator[Pair[A, B]] =
+      left.elementsSlow append Iterator.single(Pair(key, value)) append right.elementsSlow
+
+    def visit[T](input : T)(f : (T,A,B) => Tuple2[Boolean,T]) : Tuple2[Boolean,T] = {
+      val left = this.left.visit(input)(f)
+      if (!left._1) return left
+      val middle = f(left._2, key, value)
+      if (!middle._1) return middle
+      return this.right.visit(middle._2)(f)
+    }
+   override def range(from : Option[A], until : Option[A]) : Tree[B] = {
+      if (from == None && until == None) return this
+      if (from != None && isSmaller(key, from.get)) return right.range(from, until);
+      if (until != None && (isSmaller(until.get,key) || !isSmaller(key,until.get)))
+        return left.range(from, until);
+      val newLeft = left.range(from, None)
+      val newRight = right.range(None, until)
+      if ((newLeft eq left) && (newRight eq right)) this
+      else if (newLeft eq Empty) newRight.upd(key, value);
+      else if (newRight eq Empty) newLeft.upd(key, value);
+      else mkTree(isBlack, key, value, newLeft, newRight)
+    }
+    def first = if (left .isEmpty) key else left.first
+    def last  = if (right.isEmpty) key else right.last
+    def count = 1 + left.count + right.count
   }
   @serializable
   case object Empty extends Tree[Nothing] {
@@ -88,7 +122,15 @@ abstract class RedBlack[A] {
     def upd[B](k: A, v: B): Tree[B] = RedTree(k, v, Empty, Empty)
     def del(k: A): Tree[Nothing] = this
     def smallest: NonEmpty[Nothing] = throw new NoSuchElementException("empty map")
-    def elements: Iterator[(A, Nothing)] = Iterator.empty
+    def elementsSlow: Iterator[Pair[A, Nothing]] = Iterator.empty
+    def elements : TreeWalker[Pair[A,Nothing]] = TreeWalker.Empty
+
+    def visit[T](input : T)(f : (T,A,Nothing) => Tuple2[Boolean,T]) = Tuple2(true,input)
+
+    def range(from : Option[A], until : Option[A]) = this
+    def first = throw new NoSuchElementException("empty map")
+    def last = throw new NoSuchElementException("empty map")
+    def count = 0
   }
   @serializable
   case class RedTree[+B](override val key: A,

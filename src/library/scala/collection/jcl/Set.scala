@@ -26,7 +26,11 @@ trait Set[A] extends Collection[A] with scala.collection.mutable.Set[A] {
   override def retain(f : A => Boolean) = super[Collection].retain(f);
   override def isEmpty = super[Collection].isEmpty;
   override final def contains(a : A) = has(a);
-  override def clear() = super.clear()
+  override def clear() = super.clear();
+  override def subsetOf(set : scala.collection.Set[A]) = set match {
+  case set : Set[A] => set.hasAll(this);
+  case set => super.subsetOf(set);
+  }
 
   override def transform(f : A => A) = {
     var toAdd : List[A] = Nil;

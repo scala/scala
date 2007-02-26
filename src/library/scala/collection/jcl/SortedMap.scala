@@ -14,7 +14,7 @@ package scala.collection.jcl;
  *
  *  @author Sean McDirmid
  */
-trait SortedMap[K,E] extends Map[K,E] with Sorted[K,Tuple2[K,E]] {
+trait SortedMap[K,E] extends scala.collection.SortedMap[K,E] with Map[K,E] with Sorted[K,Tuple2[K,E]] {
   final protected type SortedSelf = SortedMap[K,E];
   override def compare(k0 : K, k1 : K) : Int;
   override def first : K = elements.next._1;

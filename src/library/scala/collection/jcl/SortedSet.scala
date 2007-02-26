@@ -14,16 +14,19 @@ package scala.collection.jcl;
  *
  *  @author Sean McDirmid
  */
-trait SortedSet[A] extends jcl.Set[A] with Sorted[A,A] {
+trait SortedSet[A] extends scala.collection.SortedSet[A] with jcl.Set[A] with Sorted[A,A] {
   final protected type SortedSelf = SortedSet[A];
   override def keySet = this;
   def compare(a0 : A, a1 : A) : Int;
-  def first : A = {
+  override def first : A = {
     val i = elements;
     if (i.hasNext) i.next;
     else throw new NoSuchElementException;
   }
-  def last  : A = {
+  override def subsetOf(that : scala.collection.Set[A]) = super[SortedSet].subsetOf(that);
+  override def hasAll(that : Iterable[A]) = super[Sorted].hasAll(that.elements);
+
+  override def last  : A = {
     var last : A = null.asInstanceOf[A];
     val i = elements;
     while (i.hasNext) last = i.next;

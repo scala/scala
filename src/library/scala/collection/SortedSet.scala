@@ -1,0 +1,41 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2006-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+// $Id: SortedSet.scala 9621 2007-01-17 14:29:25Z michelou $
+
+package scala.collection;
+
+/** Analogous to a Java sorted set.
+ *
+ *  @author Sean McDirmid
+ */
+trait SortedSet[A] extends Set[A] with Sorted[A,A] {
+  override def keySet = this;
+  override def first : A = {
+    val i = elements;
+    if (i.hasNext) i.next;
+    else throw new NoSuchElementException;
+  }
+  override def last  : A = {
+    var last : A = null.asInstanceOf[A];
+    val i = elements;
+    while (i.hasNext) last = i.next;
+    if (last == null) throw new NoSuchElementException;
+    else last;
+  }
+  override def rangeImpl(from : Option[A], until : Option[A]) : SortedSet[A];
+  override def from(from: A) = rangeImpl(Some(from), None);
+  override def until(until: A) = rangeImpl(None, Some(until));
+  override def range(from: A, until: A) = rangeImpl(Some(from),Some(until));
+
+  override def subsetOf(that: Set[A]): Boolean = that match {
+  case that : SortedSet[A] => that.hasAll(elements);
+  case that => super.subsetOf(that);
+  }
+
+}
