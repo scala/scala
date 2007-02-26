@@ -117,6 +117,12 @@ object scalac extends Command {
           CmdOption("migrate"),
           "Assist in migrating from Scala version 1.0."),
         Definition(
+          CmdOption("o", Argument("file")),
+          "Name of the output assembly (only relevant with -target:msil)"),
+        Definition(
+          CmdOption("r", Argument("path")),
+          "List of assemblies referenced by the program (only relevant with -target:msil)"),
+        Definition(
           CmdOption("deprecation"),
           SeqPara(
             "Indicate whether source should be compiled with deprecation " &
@@ -138,7 +144,7 @@ object scalac extends Command {
           CmdOption("version"),
           "Print product version and exit."),
         Definition(
-          CmdOption("?") & "| " & CmdOption("help"),
+          /*CmdOption("?") & "| " &*/ CmdOption("help"),
           "Print a synopsis of standard options."),
         Definition(
           CmdOption("nouescape"),
@@ -153,6 +159,12 @@ object scalac extends Command {
           CmdOption("Xcloselim"),
           "Perform closure elimination."),
         Definition(
+          CmdOption("Xdce"),
+          "Perform dead code elimination"),
+        Definition(
+          CmdOption("XbytecodeRead"),
+          "Enable bytecode reader."),
+        Definition(
           CmdOption("Xshowcls", Argument("class")),
           "Show class info."),
         Definition(
@@ -162,13 +174,38 @@ object scalac extends Command {
           CmdOption("Xshowicode"),
           "Print the generated ICode."),
         Definition(
-          CmdOption("Xlinearizer", Argument("Xlinearizer")),
+          CmdOption("Xlinearizer:", Argument("Xlinearizer")),
           SeqPara(
             "Linearizer to use (" & Mono("dfs,dump,normal,rpo") & ").",
             "The default value is " & Mono("\"rpo\"") & ".")),
         Definition(
           CmdOption("Xgenerics"),
-          "Use generic Java types."))),
+          "Use generic Java types."),
+        Definition(
+          CmdOption("Xprintpos"),
+          "Print tree positions (as offsets)"),
+        Definition(
+          CmdOption("Xscript"),
+          "Compile script file"),
+        Definition(
+          CmdOption("Xexperimental"),
+          "enable experimental extensions"),
+        /*
+        Definition(
+          CmdOption("Xunapply"),
+          "Enable unapply pattern matching"),
+        */
+        Definition(
+          CmdOption("Xplugtypes"),
+          "Parse but ignore annotations in more locations"),
+        Definition(
+          CmdOption("Xkilloption"),
+          "Optimizes option types"),
+        Definition(
+          CmdOption("XprintOuterMatches"),
+          "Prints outer-checks caused by pattern matching")
+      )
+    ),
 
     Section("Debug Options",
       DefinitionList(

@@ -69,10 +69,16 @@ object scaladoc extends Command {
           CmdOption("d", Argument("directory")),
           "Specify where to place generated class files."),
         Definition(
+          CmdOption("windowtitle", Argument("windowtitle")),
+          "Specify window title of generated HTML documentation"),
+        Definition(
+          CmdOption("documenttitle", Argument("documenttitle")),
+          "Specify document title of generated HTML documentation"),
+        Definition(
           CmdOption("version"),
           "Print product version and exit."),
         Definition(
-          CmdOption("?") & "| " & CmdOption("help"),
+          /*CmdOption("?") & "| " &*/ CmdOption("help"),
           "Print a synopsis of standard options."))))
 
   val examples = Section("EXAMPLES",

@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -13,29 +13,31 @@ package scala.concurrent
 
 
 /** <p>
- *    Library for using Pi-calculus concurrent primitives in Scala. As an
+ *    Library for using Pi-calculus concurrent primitives in
+ *    <a href="http://scala-lang.org/" target="_top">Scala</a>. As an
  *    example, the definition of a two-place buffer using the <code>pilib</code>
- *   library looks like:
- * </p><pre>
- * <b>def</b> Buffer[a](put: Chan[a], get: Chan[a]): unit = {
- *   <b>def</b> B0: unit = choice ( put * { x => B1(x) } );
- *   <b>def</b> B1(x: a): unit = choice ( get(x) * B0, put * { y => B2(x, y) } )
- *   <b>def</b> B2(x: a, y: a): unit = choice ( get(x) * B1(y) )
- *   B0
- * }
- * </pre>
+ *    library looks like:
+ *  </p><pre>
+ *  <b>def</b> Buffer[a](put: Chan[a], get: Chan[a]): unit = {
+ *    <b>def</b> B0: unit = choice ( put * { x => B1(x) } );
+ *    <b>def</b> B1(x: a): unit = choice ( get(x) * B0, put * { y => B2(x, y) } )
+ *    <b>def</b> B2(x: a, y: a): unit = choice ( get(x) * B1(y) )
+ *    B0
+ *  }
+ *  </pre>
  *
- * @see <a href="http://scala-lang.org/docu/related.html">PiLib: A Hosted Language for Pi-Calculus Style Concurrency</a>
- * @author  Vincent Cremet, Martin Odersky
- * @version 1.0
+ *  @see     <a href="http://scala-lang.org/docu/papers.html" target="_top">
+ *           PiLib: A Hosted Language for Pi-Calculus Style Concurrency</a>
+ *  @author  Vincent Cremet, Martin Odersky
+ *  @version 1.0
  */
 object pilib {
 
-  /////////////////////////// SPAWN //////////////////////////////
+  //////////////////////////////// SPAWN /////////////////////////////////
 
   /**
    * Run several processes in parallel using the following syntax:
-   * <code>spawn &lt; p_1 | ... | p_n &gt;</code>
+   * <code>spawn &lt; p<sub>1</sub> | ... | p<sub>n</sub> &gt;</code>
    */
   abstract class Spawn {
     def <(p: => unit): Spawn
@@ -49,7 +51,7 @@ object pilib {
     def > : unit = ()
   }
 
-  //////////////////////// GUARDED PROCESSES /////////////////////////
+  /////////////////////////// GUARDED PROCESSES //////////////////////////
 
   /** Untyped channel. */
   class UChan {
@@ -71,7 +73,7 @@ object pilib {
     val untyped = UGP(n, polarity, v, c)
   }
 
-  ////////////////////////// CHANNELS //////////////////////////////
+  //////////////////////////////// CHANNELS //////////////////////////////
 
   /**
    * Name on which one can emit, receive or that can be emitted or received
@@ -119,7 +121,7 @@ object pilib {
     def *[b](f: => b) = c.output(v, () => f)
   }
 
-  //////////////////// SUM OF GUARDED PROCESSES //////////////////////
+  /////////////////////// SUM OF GUARDED PROCESSES ///////////////////////
 
   case class Sum(gs: List[UGP]) {
 
@@ -147,7 +149,7 @@ object pilib {
     }
   }
 
-  /////////////////////////// COMMUNICATION  //////////////////////////
+  ///////////////////////////// COMMUNICATION ////////////////////////////
 
   private var sums: List[Sum] = Nil
 
