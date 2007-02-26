@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: SortedMap.scala 9621 2007-01-17 14:29:25Z michelou $
+// $Id$
 
 package scala.collection;
 
