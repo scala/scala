@@ -22,7 +22,28 @@ import collection.mutable.{Set, HashSet}
  */
 object Utility extends AnyRef with parsing.TokenTests {
 
-  def view(s: String): Text = Text(s)
+
+  /** precondition: node is not a text node (it might be trimmed)
+   */
+
+  def trim(x:Node): Node = x match {
+    case Elem(pre,lab,md,scp,child@_*) =>
+      Elem(pre,lab,md,scp, (child flatMap trimProper):_*)
+  }
+
+  /** attribute values and Atom nodes that are not Text nodes are unaffected */
+  def trimProper(x:Node): Seq[Node] = x match {
+    case Elem(pre,lab,md,scp,child@_*) =>
+      Elem(pre,lab,md,scp, (child flatMap trimProper):_*)
+    case Text(s) =>
+      new TextBuffer().append(s).toText
+    case _ =>
+      x
+  }
+
+  /** @deprecated a string might also be Atom(s) - define your own conversion
+   */
+  @deprecated def view(s: String): Text = Text(s)
 
   /**
    * Escapes the characters &lt; &gt; &amp; and &quot; from string.

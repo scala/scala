@@ -47,10 +47,35 @@ object Test {
     }
   }
 
+  class UtilityTest extends TestCase("scala.xml.Utility") with Assert {
+    val x = <foo>
+               <toomuchws/>
+            </foo>
+
+    val y = xml.Utility.trim(x)
+
+    assertEquals("trim 1 ", 1, y match { case <foo><toomuchws/></foo> => 1 })
+
+    val x2 = <foo>
+               <toomuchws>  a b  b a  </toomuchws>
+            </foo>
+
+    val y2 = xml.Utility.trim(x2)
+
+    assertEquals("trim 2 ", 2, y2 match { case <foo><toomuchws>a b b a</toomuchws></foo> => 2 })
+
+
+    val z = <bar>''</bar>
+    val z1 = z.toString
+
+    assertEquals("apos unescaped", "<bar>''</bar>", z1)
+  }
+
   def main(args:Array[String]) = {
     val ts = new TestSuite(
       new ParsingTest,
-      new MetaDataTest //,
+      new MetaDataTest,
+      new UtilityTest
     )
     val tr = new TestResult()
     ts.run(tr)

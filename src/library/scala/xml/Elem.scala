@@ -11,7 +11,16 @@
 
 package scala.xml
 
+object Elem {
 
+  def apply(prefix: String,label: String, attributes: MetaData, scope: NamespaceBinding, child: Node*) =
+    new Elem(prefix,label,attributes,scope,child:_*)
+
+  def unapplySeq(n:Node) = if(n.isInstanceOf[SpecialNode]) None else
+    Some(Tuple5(n.prefix,n.label,n.attributes,n.scope,n.child))
+
+
+}
 /** The case class <code>Elem</code> extends the <code>Node</code> class,
  *  providing an immutable data object representing an XML element.
  *
@@ -23,7 +32,7 @@ package scala.xml
  *  @param child the children of this node
  */
 // "val" is redundant for non-overriding arguments
-case class Elem(override val prefix: String,
+/*case*/ class Elem(override val prefix: String,
                 val label: String,
                 override val attributes: MetaData,
                 override val scope: NamespaceBinding,
