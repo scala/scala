@@ -1580,12 +1580,16 @@ trait Typers requires Analyzer {
         case Literal(value) => value
         case arg => error(arg.pos, "attribute argument needs to be a constant; found: "+arg)
       }
-      val attrInfo =
-        typed(constr, EXPRmode | CONSTmode, AnnotationClass.tpe) match {
-          case Apply(Select(New(tpt), nme.CONSTRUCTOR), args) =>
+      typed(constr, EXPRmode | CONSTmode, AnnotationClass.tpe) match {
+        case t @ Apply(Select(New(tpt), nme.CONSTRUCTOR), args) =>
+          if (t.isErroneous) {
+            AttrInfo(ErrorType, List(), List())
+          }
+          else {
+            val annType = tpt.tpe
             val constrArgs = args map getConstant
-            val attrScope = tpt.tpe.decls
-              .filter(sym => sym.isMethod && !sym.isConstructor && sym.hasFlag(JAVA));
+            val attrScope = annType.decls
+              .filter(sym => sym.isMethod && !sym.isConstructor && sym.hasFlag(JAVA))
             val names = new collection.mutable.HashSet[Symbol]
             names ++= attrScope.elements.filter(.isMethod)
             if (args.length == 1) {
@@ -1606,15 +1610,16 @@ trait Typers requires Analyzer {
             }
             for (val name <- names) {
               if (!name.attributes.contains((AnnotationDefaultAttr.tpe, List(), List()))) {
-                error(constr.pos, "attribute " + tpt.tpe.symbol.fullNameString + " is missing element " + name.name)
+                error(constr.pos, "attribute " + annType.symbol.fullNameString + " is missing element " + name.name)
               }
             }
-            if (tpt.tpe.symbol.hasFlag(JAVA) && settings.target.value == "jvm-1.4") {
+            if (annType.symbol.hasFlag(JAVA) && settings.target.value == "jvm-1.4") {
               context.unit.warning (constr.pos, "Java annotation will not be emitted in classfile unless you use the '-target:jvm-1.5' option")
             }
-            AttrInfo(tpt.tpe, constrArgs, nvPairs)
+            if (attrError) AttrInfo(ErrorType, List(), List())
+            else AttrInfo(annType, constrArgs, nvPairs)
           }
-      if (attrError) AttrInfo(ErrorType, List(), List()) else attrInfo
+      }
     }
 
     /**
