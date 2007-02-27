@@ -6,8 +6,9 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection.immutable;
 // $Id$
+
+package scala.collection.immutable
 
 /** An object for creating immutable iterators.
   */
@@ -23,16 +24,21 @@ object ImmutableIterator {
   }
 
   /** Creates an empty immutable iterator.
-    */
-  def empty : ImmutableIterator[Nothing] = Empty;
+   */
+  def empty : ImmutableIterator[Nothing] = Empty
+
   /** Creates an immutable iterator with one element.
-    */
-  def apply[A](item : A) : ImmutableIterator[A] = NonEmpty(item, () => Empty);
+   */
+  def apply[A](item : A) : ImmutableIterator[A] = NonEmpty(item, () => Empty)
+
   /** Prepends a lazy immutable iterator (right) with an element (item).
-    */
-  def apply[A](item : A, right : () => ImmutableIterator[A]) : () => ImmutableIterator[A] = () => NonEmpty(item, right);
-  /** Appends an immutable iterator (left) with an element (item) followed by a lazy immutable iterator (right).
-    */
+   */
+  def apply[A](item : A, right : () => ImmutableIterator[A]) : () => ImmutableIterator[A] =
+    () => NonEmpty(item, right)
+
+  /** Appends an immutable iterator (left) with an element (item) followed
+   *  by a lazy immutable iterator (right).
+   */
   def apply[A](left : ImmutableIterator[A], item : A, right : () => ImmutableIterator[A]) : ImmutableIterator[A] = left match {
   case NonEmpty(first, middle) =>
     val rest = NonEmpty(item,right);
@@ -55,12 +61,14 @@ object ImmutableIterator {
  *  @version 1.0
  */
 sealed abstract class ImmutableIterator[+A] {
+
   /** queries if this iterator has an element to return.
-    */
-  def hasNext : Boolean;
+   */
+  def hasNext: Boolean
+
   /** returns the next element and immutable iterator as a pair.
-    */
-  def next : Tuple2[A,ImmutableIterator[A]]
+   */
+  def next: Tuple2[A,ImmutableIterator[A]]
 
   /** Creates a new immutable iterator that appends item to this immutable
    *  iterator.

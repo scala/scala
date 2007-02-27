@@ -107,21 +107,36 @@ abstract class DocGenerator extends Models {
           if (definitions.isFunctionType(tpe)) {
             val (ts, List(r)) = tpe.typeArgs.splitAt(n-1)
             Text("(") ++ (
-                if (ts.isEmpty) NodeSeq.Empty
-                else
-                  urlFor(ts.head, target) ++ (
-                    for (val t <- ts.tail)
-                    yield Group(Text(", ") ++ (urlFor(t, target)))))
-                .++ (Text(") => ")) ++ (urlFor(r, target))
+              if (ts.isEmpty) NodeSeq.Empty
+              else
+                urlFor(ts.head, target) ++ {
+                  val sep = Text(", ")
+                  for (val t <- ts.tail)
+                  yield Group(sep ++ urlFor(t, target))
+                }
+            )
+            .++ (Text(") => ")) ++ (urlFor(r, target))
           } else
             aref(urlFor(tpe.symbol), target, tpe.symbol.fullNameString)
-            .++ (Text("[") ++ (urlFor(tpe.typeArgs.head, target))
-             .++ (
-                for (val t <- tpe.typeArgs.tail)
-                yield Group(Text(", ") ++ (urlFor(t, target))))
-              .++(Text("]")))
-        } else
-          aref(urlFor(tpe.symbol), target, tpe.toString())
+            .++ (Text("[") ++ urlFor(tpe.typeArgs.head, target)
+            .++ {
+              val sep = Text(", ")
+              for (val t <- tpe.typeArgs.tail)
+              yield Group(sep ++ urlFor(t, target))
+            }
+            .++ (Text("]")))
+        } else tpe match {
+          case RefinedType(parents, _) =>
+            assert(parents.length > 1)
+            aref(urlFor(parents(1).symbol), target, parents(1).toString())
+            .++ {
+              val sep = Text(" with ")
+              for (val t <- parents.tail.tail)
+              yield Group(sep ++ urlFor(t, target))
+            }
+          case _ =>
+            aref(urlFor(tpe.symbol), target, tpe.toString())
+        }
       }
     } catch {
       case e: Error =>
