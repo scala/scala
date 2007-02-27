@@ -6,15 +6,13 @@
 **                          |/                                          **
 \*                                                                      */
 
+package scala.collection.immutable;
 // $Id$
-
-package scala.collection.immutable
 
 /** An object for creating immutable iterators.
   */
 object ImmutableIterator {
-
-  object Empty extends ImmutableIterator[Nothing] {
+  case object Empty extends ImmutableIterator[Nothing] {
     def hasNext = false
     def next = throw new NoSuchElementException
   }
@@ -32,22 +30,14 @@ object ImmutableIterator {
   def apply[A](item : A) : ImmutableIterator[A] = NonEmpty(item, () => Empty);
   /** Prepends a lazy immutable iterator (right) with an element (item).
     */
-  def apply[A](item : A, right : () => ImmutableIterator[A]) : () => ImmutableIterator[A] = () => NonEmpty(item, right)
-
-  /** Appends an immutable iterator (left) with an element (item) followed
-   *  by a lazy immutable iterator (right).
-   *
-   *  @param left  ...
-   *  @param item  ...
-   *  @param right ...
-   *  @return      ...
-   */
-  def apply[A](left: ImmutableIterator[A], item: A, right: () => ImmutableIterator[A]) : ImmutableIterator[A] = left match {
-    case Empty =>
-      NonEmpty(item, right)
-    case NonEmpty(first, middle) =>
-      val rest = NonEmpty(item,right)
-      NonEmpty(first, apply(middle, () => rest))
+  def apply[A](item : A, right : () => ImmutableIterator[A]) : () => ImmutableIterator[A] = () => NonEmpty(item, right);
+  /** Appends an immutable iterator (left) with an element (item) followed by a lazy immutable iterator (right).
+    */
+  def apply[A](left : ImmutableIterator[A], item : A, right : () => ImmutableIterator[A]) : ImmutableIterator[A] = left match {
+  case NonEmpty(first, middle) =>
+    val rest = NonEmpty(item,right);
+    NonEmpty(first, apply(middle, () => rest));
+  case Empty => NonEmpty(item, right);
   }
 
   /** Concats a lazy immutable iterator (left) with another lazy immutable
