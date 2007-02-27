@@ -31,4 +31,4 @@ For example
  use the normal Scala access and assignment.
  </p>
  */
-class BeanProperty extends Attribute
+class BeanProperty extends Annotation
