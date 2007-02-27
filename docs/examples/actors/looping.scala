@@ -16,7 +16,7 @@ object looping extends Application {
             scala.Console.println("received A")
           else {
             scala.Console.println("received last A")
-            exit("finished")
+            exit('finished)
           }
       }
     }

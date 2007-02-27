@@ -1,6 +1,6 @@
 package examples.actors
 
-import scala.actors.{Actor, Exit}
+import scala.actors.Actor
 import scala.actors.Actor._
 
 object links extends Application {
@@ -22,9 +22,9 @@ object links extends Application {
     link(a)
     loop {
       receive {
-        case ex @ Exit(from, reason) =>
+        case ex @ ('EXIT, from, reason) =>
           Console.println("Actor " + n + " received " + ex)
-          exit("finished")
+          exit('finished)
         case any => {
           Console.println("Actor " + n + " received " + any)
           a ! any
@@ -38,7 +38,7 @@ object links extends Application {
     receive {
       case Stop =>
         Console.println("Last actor now exiting")
-        exit("abnormal")
+        exit('abnormal)
       case any =>
         Console.println("Last actor received " + any)
         top1()

@@ -38,15 +38,14 @@ abstract class Producer[T] {
   }
 
   private val coordinator: Actor = actor {
-    var continue = true
-    while (continue) {
-      receive {
+    loop {
+      react {
         case Next =>
           producer ! Next
           reply {
             receive { case x: Option[_] => x }
           }
-        case Stop => continue = false
+        case Stop => exit('stop)
       }
     }
   }
