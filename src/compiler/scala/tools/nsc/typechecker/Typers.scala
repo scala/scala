@@ -1519,25 +1519,6 @@ trait Typers requires Analyzer {
           if (args.length > MaxTupleArity)
             error(fun.pos, "too many arguments for unapply pattern, maximum = "+MaxTupleArity)
           val arg = Ident(argDummy) setType argDummyType
-/*
-          var funPt: Type = null
-          try {
-            funPt = unapp.name match {
-              case nme.unapply    => unapplyReturnTypeExpected(args.length)
-              case nme.unapplySeq => unapplyTypeListFromReturnTypeSeq(unappType) match {
-                case List() => null //fail
-                case List(TypeRef(pre,repeatedParam, tpe)) => optionType(seqType(WildcardType)) //succeed
-                case xs   => optionType(productType((xs.tail map {x => WildcardType}) ::: List(seqType(WildcardType))))// succeed
-              }
-            }
-          } catch {
-            case ex => //failure
-             //Console.println("DEBUG")
-             //ex.printStackTrace()
-             error(fun.pos, " unapplySeq should return Option[T] for T<:Product?[...Seq[?]]")
-             return setError(tree)
-          }
-*/
           val oldArgType = arg.tpe
           if (!isApplicable(List(), unappType, List(arg.tpe), WildcardType)) {
             //Console.println("UNAPP: need to typetest, arg.tpe = "+arg.tpe+", unappType = "+unappType)
@@ -1547,6 +1528,9 @@ trait Typers requires Analyzer {
               case PolyType(tparams, restype) =>
                 val tparams1 = cloneSymbols(tparams)
                 (freshArgType(restype)._1.substSym(tparams, tparams1), tparams1)
+              case OverloadedType(_, _) =>
+                error(fun.pos, "cannot resolve overloaded unapply")
+                (ErrorType, List())
             }
             val (unappFormal, freeVars) = freshArgType(unappType)
             val context1 = context.makeNewScope(context.tree, context.owner)
