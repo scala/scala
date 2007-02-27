@@ -7,9 +7,7 @@
 \*                                                                      */
 
 // $Id: $
-
 package scala.collection.immutable
-import scala.collection.TreeWalker
 
 @serializable
 abstract class RedBlack[A] {
@@ -32,7 +30,7 @@ abstract class RedBlack[A] {
     def delete(k: A): Tree[B] = del(k)
 
     def visit[T](input : T)(f : (T,A,B) => Tuple2[Boolean,T]) : Tuple2[Boolean,T];
-    def elements : TreeWalker[Pair[A,B]];
+    def elements : ImmutableIterator[Pair[A,B]];
     def elementsSlow: Iterator[Pair[A, B]];
     def upd[B1 >: B](k: A, v: B1): Tree[B1]
     def del(k: A): Tree[B]
@@ -85,7 +83,7 @@ abstract class RedBlack[A] {
       }
     }
     def smallest: NonEmpty[B] = if (left.isEmpty) this else left.smallest
-    def elements : TreeWalker[Pair[A,B]] =
+    def elements : ImmutableIterator[Pair[A,B]] =
       left.elements.append(Pair(key,value), () => right.elements)
 
     def elementsSlow: Iterator[Pair[A, B]] =
@@ -123,8 +121,7 @@ abstract class RedBlack[A] {
     def del(k: A): Tree[Nothing] = this
     def smallest: NonEmpty[Nothing] = throw new NoSuchElementException("empty map")
     def elementsSlow: Iterator[Pair[A, Nothing]] = Iterator.empty
-    def elements : TreeWalker[Pair[A,Nothing]] = TreeWalker.Empty
-
+    def elements : ImmutableIterator[Pair[A,Nothing]] = ImmutableIterator.empty
     def visit[T](input : T)(f : (T,A,Nothing) => Tuple2[Boolean,T]) = Tuple2(true,input)
 
     def range(from : Option[A], until : Option[A]) = this
