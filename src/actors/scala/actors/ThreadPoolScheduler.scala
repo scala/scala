@@ -21,7 +21,7 @@ import java.util.concurrent.{ThreadPoolExecutor,
  * This handler executes rejected tasks on the thread of
  * the scheduler.
  *
- * @version 0.9.2
+ * @version 0.9.4
  * @author Philipp Haller
  */
 private class TaskRejectedHandler(sched: ThreadPoolScheduler) extends RejectedExecutionHandler {
@@ -37,7 +37,7 @@ private class TaskRejectedHandler(sched: ThreadPoolScheduler) extends RejectedEx
  * by the execution of actors. This scheduler is only available on Java >= 1.5
  * since it uses <code>java.util.concurrent.ThreadPoolExecutor</code>.</p>
  *
- * @version 0.9.2
+ * @version 0.9.4
  * @author Philipp Haller
  */
 class ThreadPoolScheduler extends Thread with IScheduler {

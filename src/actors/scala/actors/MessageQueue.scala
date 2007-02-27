@@ -5,7 +5,7 @@ package scala.actors
  * This class is used by our efficient message queue
  * implementation.
  *
- * @version 0.9.2
+ * @version 0.9.4
  * @author Philipp Haller
  */
 class MessageQueueElement {
@@ -20,7 +20,7 @@ class MessageQueueElement {
  * library. Classes in this package are supposed to be the only
  * clients of this class.
  *
- * @version 0.9.2
+ * @version 0.9.4
  * @author Philipp Haller
  */
 class MessageQueue {

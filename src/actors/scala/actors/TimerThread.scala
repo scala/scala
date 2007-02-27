@@ -11,9 +11,8 @@
 
 package scala.actors
 
+import compat.Platform
 import java.lang.{InterruptedException, Runnable, Thread}
-import java.util.Date
-
 import scala.collection.mutable.PriorityQueue
 
 /**
@@ -22,7 +21,7 @@ import scala.collection.mutable.PriorityQueue
  * Note that the library deletes non-received <code>TIMEOUT</code> message if a
  * message is received before the time-out occurs.
  *
- * @version 0.9.2
+ * @version 0.9.4
  * @author Sebastien Noir, Philipp Haller
  */
 
@@ -128,5 +127,5 @@ object TimerThread extends AnyRef with Runnable {
     return FOREVER
   }
 
-  def now = new Date().getTime()
+  def now = Platform.currentTime
 }
