@@ -343,8 +343,11 @@ trait PatternNodes requires transform.ExplicitOuter {
         return (false, null, emptySymbolSet)  // only case _
 
       def checkExCoverage(tpesym:Symbol): SymSet =
-        if(!tpesym.hasFlag(Flags.SEALED)) emptySymbolSet
-                                     else tpesym.children.flatMap { x => checkExCoverage(x) + x }
+        if(!tpesym.hasFlag(Flags.SEALED)) emptySymbolSet else
+          tpesym.children.flatMap { x =>
+            val z = checkExCoverage(x)
+            if(x.hasFlag(Flags.ABSTRACT)) z else z + x
+          }
 
       def andIsUnguardedBody(p1:PatternNode) = p1.and match {
         case p: Body => p.hasUnguarded
@@ -381,11 +384,11 @@ trait PatternNodes requires transform.ExplicitOuter {
             }
 
           // Nil is also a "constructor pattern" somehow
-          case VariablePat(tree) if (alts.getTpe.symbol.hasFlag(Flags.CASE)) => // Nil
-            coveredCases   = coveredCases + alts.getTpe.symbol
-            remainingCases = remainingCases - alts.getTpe.symbol
+          case VariablePat(tree) if (tree.tpe.symbol.hasFlag(Flags.MODULE)) => // Nil
+            coveredCases   = coveredCases + tree.tpe.symbol
+            remainingCases = remainingCases - tree.tpe.symbol
             cases = cases + 1
-
+            res = res && tree.tpe.symbol.hasFlag(Flags.CASE)
           case DefaultPat() =>
             if(andIsUnguardedBody(alts) || alts.and.isInstanceOf[Header]) {
               coveredCases   = emptySymbolSet

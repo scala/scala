@@ -131,7 +131,7 @@ case object EMPTY extends ContentModel {
 case object ANY extends ContentModel {
   override def toString(sb:StringBuilder): StringBuilder = sb.append("ANY")
 }
-abstract class DFAContentModel extends ContentModel {
+sealed abstract class DFAContentModel extends ContentModel {
   import ContentModel.ElemName
   def r: ContentModel.RegExp
   private var _dfa: DetWordAutom[ContentModel.ElemName] = null
