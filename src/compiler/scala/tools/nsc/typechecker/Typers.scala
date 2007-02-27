@@ -1504,7 +1504,7 @@ trait Typers requires Analyzer {
           setError(copy.Apply(tree, fun, args))
         /* --- begin unapply  --- */
 
-        case otpe if definitions.unapplyMember(otpe).exists && settings.Xunapply.value =>
+        case otpe if (mode & PATTERNmode) != 0 && definitions.unapplyMember(otpe).exists =>
           // !!! this is fragile, maybe needs to be revised when unapply patterns become terms
           val unapp = definitions.unapplyMember(otpe)
           assert(unapp.exists, tree)
