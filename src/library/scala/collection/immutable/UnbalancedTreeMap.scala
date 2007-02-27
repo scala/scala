@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: TreeMap.scala 8997 2006-10-19 20:52:30Z odersky $
+// $Id$
 
 // todo: make balanced once Tree.scala is updated to be covariant.
 

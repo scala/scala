@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: HashMap.scala 9554 2007-01-04 16:30:16 +0000 (Thu, 04 Jan 2007) odersky $
+// $Id$
 
 
 package scala.collection.immutable
