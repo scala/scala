@@ -725,6 +725,7 @@ trait Typers requires Analyzer {
       if (templ.parents.isEmpty) List()
       else {
         var supertpt = typedTypeConstructor(templ.parents.head)
+        val firstParent = supertpt.tpe.symbol
         var mixins = templ.parents.tail map typedType
         // If first parent is a trait, make it first mixin and add its superclass as first parent
         while ((supertpt.tpe.symbol ne null) && supertpt.tpe.symbol.initialize.isTrait) {
@@ -734,10 +735,18 @@ trait Typers requires Analyzer {
             supertpt = TypeTree(supertpt1.tpe.parents.head) setOriginal supertpt /* setPos supertpt.pos */
           }
         }
+        val constr = treeInfo.firstConstructor(templ.body)
+        if (supertpt.tpe.symbol != firstParent) {
+          constr match {
+            case DefDef(_, _, _, _, _, Apply(_, superargs)) =>
+              if (!superargs.isEmpty)
+                error(superargs.head.pos, firstParent+" is a trait; does not take constructor arguments")
+            case _ =>
+          }
+        }
         if (supertpt.hasSymbol) {
           val tparams = supertpt.symbol.typeParams
           if (!tparams.isEmpty) {
-            val constr = treeInfo.firstConstructor(templ.body)
             constr match {
               case EmptyTree =>
                 error(supertpt.pos, "missing type arguments")

@@ -101,8 +101,9 @@ abstract class LambdaLift extends InfoTransform {
       def localToConstr(sym: Symbol) =
         if (sym.isLocalDummy) sym.owner.primaryConstructor else sym;
       var encl = localToConstr(sym)
-      while (!encl.isMethod && !encl.isClass)
+      while (!encl.isMethod && !encl.isClass) {
         encl = localToConstr(outer(encl));
+      }
       encl
     }
 
