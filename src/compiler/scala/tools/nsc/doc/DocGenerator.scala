@@ -340,13 +340,9 @@ abstract class DocGenerator extends Models {
             }
           Group(name ++ Text(buf.toString))
         }
-        var res: NodeSeq = Text("[")
-        val attrs = tree.symbol.attributes
-        for (val i <- attrs.indices) {
-          if (i > 0) res = res ++ Text("," + LINE_SEPARATOR)
-          res = res ++ attrFor(attrs(i))
-        }
-        br(res ++ Text("]"))
+        val sep = Text("@")
+        for (val attr <- tree.symbol.attributes)
+        yield Group(br(sep ++ attrFor(attr)))
       }
 
     /**
