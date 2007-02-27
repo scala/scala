@@ -32,7 +32,7 @@ object Elem {
  *  @param child the children of this node
  */
 // "val" is redundant for non-overriding arguments
-/*case*/ class Elem(override val prefix: String,
+@serializable class Elem(override val prefix: String,
                 val label: String,
                 override val attributes: MetaData,
                 override val scope: NamespaceBinding,

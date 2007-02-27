@@ -40,6 +40,20 @@ object Utility extends AnyRef with parsing.TokenTests {
     case _ =>
       x
   }
+  /** returns a sorted attribute list */
+  def sort(md: MetaData): MetaData = if((md eq Null) || (md.next eq Null)) md else {
+    val key = md.key
+    val smaller = sort(md.filter { m => m.key < key })
+    val greater = sort(md.filter { m => m.key > key })
+    smaller.append( Null ).append(md.copy ( greater ))
+  }
+
+  /** returns the node with its attribute list sorted alphabetically (prefixes are ignored) */
+  def sort(n:Node): Node = n match {
+	  case Elem(pre,lab,md,scp,child@_*) =>
+		  Elem(pre,lab,sort(md),scp, (child map sort):_*)
+	  case _ => n
+  }
 
   /** @deprecated a string might also be Atom(s) - define your own conversion
    */
