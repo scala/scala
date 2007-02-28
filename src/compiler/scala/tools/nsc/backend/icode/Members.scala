@@ -7,6 +7,8 @@
 
 package scala.tools.nsc.backend.icode;
 
+import java.io.PrintWriter;
+
 import scala.collection.mutable.HashMap;
 import scala.collection.mutable.{Set, HashSet};
 import scala.{Symbol => scala_Symbol};
@@ -229,6 +231,49 @@ trait Members requires ICodes {
             Console.println("Local " + l + " is not declared in " + this)
         case _ => ()
       }
+    }
+
+    /** Merge together blocks that have a single successor which has a
+     * single predecessor. Exception handlers are taken into account (they
+     * might force to break a block of straight line code like that).
+     *
+     * This method should be most effective after heavy inlining.
+     */
+    def normalize: Unit = if (this.code ne null) {
+      import scala.collection.mutable.{Map, HashMap}
+      val nextBlock: Map[BasicBlock, BasicBlock] = HashMap.empty
+      for (val b <- code.blocks.toList;
+        b.successors.length == 1;
+        val succ = b.successors.head;
+        succ ne b;
+        succ.predecessors.length == 1;
+        succ.predecessors.head eq b;
+        !(exh.contains { (e: ExceptionHandler) => e.covers(b) && !e.covers(succ) })) {
+          nextBlock(b) = succ
+      }
+
+      var bb = code.startBlock
+      while (!nextBlock.isEmpty) {
+        if (nextBlock.isDefinedAt(bb)) {
+          bb.open
+          var succ = bb
+          do {
+            succ = nextBlock(succ);
+            bb.removeLastInstruction
+            succ.toList foreach { i => bb.emit(i, i.pos) }
+            code.blocks -= succ
+            nextBlock -= bb
+          } while (nextBlock.isDefinedAt(succ))
+          bb.close
+        } else
+          bb = nextBlock.keys.next
+      }
+    }
+
+    def dump = {
+      val printer = new TextPrinter(new PrintWriter(Console.out, true),
+                                    new DumpLinearizer);
+      printer.printMethod(this);
     }
   }
 

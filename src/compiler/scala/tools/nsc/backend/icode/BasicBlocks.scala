@@ -80,7 +80,7 @@ trait BasicBlocks requires ICodes {
     }
 
     /** Compute an hashCode for the block */
-    override def hashCode() = label;
+//    override def hashCode() = label;
 
     /** Apply a function to all the instructions of the block. */
     def traverse(f: Instruction => unit) = {
@@ -121,6 +121,33 @@ trait BasicBlocks requires ICodes {
         d = d + (instrs(i).consumed - instrs(i).produced);
       }
       None
+    }
+
+    def findDefs(idx: Int, m: Int): List[(BasicBlock, Int)] = {
+      assert(closed)
+      var res: List[(BasicBlock, Int)] = Nil
+      var i = idx
+      var n = m
+      // "I look for who produced the 'n' elements below the 'd' topmost slots of the stack"
+      var d = 0
+      while (n > 0) {
+        i = i - 1
+        val prod = instrs(i).produced
+        if (prod > d) {
+          res = (this, i) :: res
+          n   = n - (prod - d)
+        }
+        d = d + (instrs(i).consumed - instrs(i).produced);
+      }
+      res
+    }
+
+    def findDefs(bb: BasicBlock, d: Int, n: Int): List[(BasicBlock, Int)] = {
+      var i = bb.size
+      while (n > 0 && i > 0) {
+
+      }
+      Nil
     }
 
     /** Return the n-th instruction. */
@@ -219,6 +246,18 @@ trait BasicBlocks requires ICodes {
       instrs = newInstrs
     }
 
+    /** Remove the last instruction of this basic block. It is
+     *  fast for an open block, but slower when the block is closed.
+     */
+    def removeLastInstruction: Unit = {
+      if (closed)
+        removeInstructionsAt(size)
+      else {
+        instructionList = instructionList.tail
+        touched = true
+      }
+    }
+
     /** Replaces all instructions found in the map.
      *
      *  @param map ...
@@ -287,6 +326,7 @@ trait BasicBlocks requires ICodes {
     def open = {
       closed = false
       ignore = false
+      instructionList = instructionList.reverse  // prepare for appending to the head
     }
 
     def clear: Unit = {
@@ -358,11 +398,11 @@ trait BasicBlocks requires ICodes {
       preds
     }
 
-    override def equals(other: Any): Boolean = other match {
+/*    override def equals(other: Any): Boolean = other match {
       case that: BasicBlock => that.label == label && that.code == code
       case _ => false
     }
-
+*/
     // Instead of it, rather use a printer
     def print() : unit = print(java.lang.System.out)
 

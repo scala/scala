@@ -7,11 +7,11 @@
 
 package scala.tools.nsc.backend.icode;
 
-import java.io.PrintWriter;
+import java.io.PrintWriter
 
 import scala.tools.nsc.symtab._;
 import scala.collection.mutable.HashMap;
-import analysis.Liveness;
+import analysis.{Liveness, ReachingDefinitions};
 
 /** Glue together ICode parts.
  */
@@ -24,6 +24,7 @@ abstract class ICodes extends AnyRef
                                  with ExceptionHandlers
                                  with Primitives
                                  with Linearizers
+                                 with Printers
 {
   val global: Global;
 
@@ -43,41 +44,19 @@ abstract class ICodes extends AnyRef
     else
       global.abort("Unknown linearizer: " + global.settings.Xlinearizer.value);
 
-
   /** Print all classes and basic blocks. Used for debugging. */
   def dump: Unit = {
-    val printer = new global.icodePrinter.TextPrinter(new PrintWriter(Console.out, true),
-                                                      new global.icodes.DumpLinearizer());
+    val printer = new TextPrinter(new PrintWriter(Console.out, true),
+                                  new DumpLinearizer);
 
-    global.icodes.classes.values foreach { c => printer.printClass(c); }
-  }
-
-  def dump(m: global.icodes.IMethod) = {
-    val printer = new global.icodePrinter.TextPrinter(new PrintWriter(Console.out, true),
-                                                      new global.icodes.DumpLinearizer());
-    printer.printMethod(m);
-  }
-
-  /** Merge together blocks that have a single successor which has a
-   * single predecessor. Exception handlers are taken into account (they
-   * might force to break a block of straight line code like that).
-   *
-   * This method should be most effective after heavy inlining.
-   */
-  def normalize(m: IMethod): Unit = if (m.code ne null) {
-    Console.println("Method " + m);
-    val mergeablePairs =
-      for (val b <- m.code.blocks.toList;
-         b.successors.length == 1;
-         val succ = b.successors.head;
-         succ.predecessors.length == 1;
-         succ.predecessors.head == b;
-         !(m.exh.contains { (e: ExceptionHandler) => e.covers(b) && !e.covers(succ) }))
-        yield (b, succ)
-    ()
+    classes.values foreach { c => printer.printClass(c); }
   }
 
   object liveness extends Liveness {
+    val global: ICodes.this.global.type = ICodes.this.global;
+  }
+
+  object reachingDefinitions extends ReachingDefinitions {
     val global: ICodes.this.global.type = ICodes.this.global;
   }
 

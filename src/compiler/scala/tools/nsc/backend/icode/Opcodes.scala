@@ -73,6 +73,9 @@ trait Opcodes requires ICodes {
 
     /** The corresponding position in the source file */
     var pos: Int = Position.NOPOS;
+
+    /** Used by dead code elimination. */
+    var useful: Boolean = true
   }
 
   object opcodes {
@@ -365,6 +368,8 @@ trait Opcodes requires ICodes {
 
       override def consumed = 1;
       override def produced = 1;
+      override val consumedTypes = List(REFERENCE(global.definitions.ObjectClass))
+      override def producedTypes = List(typ)
     }
 
     /** This class represents a SWITCH instruction

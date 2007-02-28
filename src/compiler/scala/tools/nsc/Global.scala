@@ -319,11 +319,11 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
   object genicode extends GenICode {
     val global: Global.this.type = Global.this
   }
-
+/*
   object icodePrinter extends backend.icode.Printers {
     val global: Global.this.type = Global.this
   }
-
+*/
   object scalaPrimitives extends ScalaPrimitives {
     val global: Global.this.type = Global.this
   }
@@ -617,7 +617,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
   }
 
   private def writeICode(): Unit = {
-    val printer = new icodePrinter.TextPrinter(null, icodes.linearizer)
+    val printer = new icodes.TextPrinter(null, icodes.linearizer)
     icodes.classes.values.foreach((cls) => {
       val suffix = if (cls.symbol.hasFlag(Flags.MODULE)) "$.icode" else ".icode"
       var file = getFile(cls.symbol, suffix)

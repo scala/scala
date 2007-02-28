@@ -699,7 +699,7 @@ abstract class ICodeReader extends ClassfileParser {
         }
       }
 
-      icodes.dump(method)
+      method.dump
       tfa.init(method)
       tfa.run
       for (val bb <- linearizer.linearize(method)) {

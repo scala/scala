@@ -271,12 +271,12 @@ abstract class CopyPropagation {
           case Static(onInstance) =>
             if (onInstance) {
               val obj = out.stack.drop(method.info.paramTypes.length).head
-              if (method.isConstructor) {
+              if (method.isPrimaryConstructor) {
                 obj match {
                   case Record(_, bindings) =>
                     for (val v <- out.stack.take(method.info.paramTypes.length + 1);
                          v ne obj) {
-                       bindings ++= getBindingsForClosure(in, method);
+                       bindings ++= getBindingsForPrimaryCtor(in, method);
                     }
                   case _ => ()
                 }
@@ -301,10 +301,10 @@ abstract class CopyPropagation {
           val v1 =
             kind match {
               case REFERENCE(cls) =>
-                if (isClosureClass(cls))
+/*                if (isClosureClass(cls))
                   Record(cls, new HashMap[Symbol, Value])
-                else Unknown
-
+                else Unknown */
+                Record(cls, new HashMap[Symbol, Value])
               case _ =>
                 Unknown
             }
@@ -434,22 +434,19 @@ abstract class CopyPropagation {
       }
     }
 
-    /** Return bindings from closure's fields to the values on the stack. This
+    /** Return bindings from an object fields to the values on the stack. This
      *  method has to find the correct mapping from fields to the order in which
-     *  they are passed on the stack.
-     *
-     *  @param in   ...
-     *  @param ctor ...
-     *  @return     ...
+     *  they are passed on the stack. It works for primary constructors.
      */
-    private def getBindingsForClosure(in: copyLattice.State, ctor: Symbol): Map[Symbol, Value] = {
+    private def getBindingsForPrimaryCtor(in: copyLattice.State, ctor: Symbol): Map[Symbol, Value] = {
       val paramAccessors = ctor.owner.constrParamAccessors;
       var values = in.stack.take(1 + ctor.info.paramTypes.length).reverse.drop(1);
       val bindings = new HashMap[Symbol, Value];
 
       // this relies on having the same order in paramAccessors and
       // the arguments on the stack. It should be the same!
-      for (val p <- paramAccessors) {
+      for (val (p, i) <- paramAccessors.zipWithIndex) {
+        assert(p.tpe == ctor.tpe.paramTypes(i))
         bindings += p -> values.head;
         values = values.tail;
       }
@@ -475,11 +472,7 @@ abstract class CopyPropagation {
      *  @return  ...
      */
     final def isPureMethod(m: Symbol): Boolean =
-      // MO: I added !m.hasFlag(DEFERRED) in a refactoring where
-      // getters now can be abstract whereas before they could not.
-      // Adding the condition thus keeps the old behavior.
-      // todo: review whether this is correct, or whether abstract getters should be included.
-      m.isGetter && !m.hasFlag(DEFERRED);
+      m.isGetter // abstract getters are still pure, as we 'know'
 
     final override def toString(): String = {
       var res = ""

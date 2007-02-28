@@ -12,8 +12,8 @@ import java.io.PrintWriter;
 import scala.tools.nsc.util.Position;
 import scala.tools.nsc.symtab.Flags;
 
-abstract class Printers {
-  val global: Global;
+trait Printers requires ICodes {
+//  val global: Global;
   import global._;
   import global.icodes.opcodes._;
   import global.icodes._;
@@ -88,6 +88,7 @@ abstract class Printers {
         println(" {");
         println("locals: " + m.locals.mkString("", ", ", ""));
         println("startBlock: " + m.code.startBlock);
+        println("blocks: " + m.code.blocks.mkString("[", ",", "]"));
         println;
         lin.linearize(m) foreach printBlock;
         println("}");

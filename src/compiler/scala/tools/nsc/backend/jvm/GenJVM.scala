@@ -658,7 +658,7 @@ abstract class GenJVM extends SubComponent {
             "\nCurrent block: " + b +
             "\nCurrent instruction: " + instr +
             "\n---------------------" +
-            dump(method)
+            method.dump
           }
         }
         def assert(cond: Boolean, msg: String) = if (!cond) throw new CompilationError(msg);
@@ -1156,7 +1156,7 @@ abstract class GenJVM extends SubComponent {
             jcode.emitT2T(javaType(INT), javaType(kind))
         }
 
-        case Comparison(op, kind) => (op, kind) match {
+        case Comparison(op, kind) => ((op, kind): @unsealed) match {
           case (CMP, LONG)    => jcode.emitLCMP()
           case (CMPL, FLOAT)  => jcode.emitFCMPL()
           case (CMPG, FLOAT)  => jcode.emitFCMPG()
@@ -1471,7 +1471,7 @@ abstract class GenJVM extends SubComponent {
       }}).reverse
 
     def assert(cond: Boolean, msg: String) = if (!cond) {
-      dump(method)
+      method.dump
       throw new Error(msg + "\nMethod: " + method)
     }
 

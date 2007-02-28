@@ -45,6 +45,8 @@ abstract class Liveness {
 
     def init(m: IMethod): Unit = {
       this.method = m
+      gen.clear
+      kill.clear
 
       for (val b <- m.code.blocks.toList;
            val Pair(g, k) = genAndKill(b)) {
@@ -68,8 +70,8 @@ abstract class Liveness {
       var genSet = new ListSet[Local]
       var killSet = new ListSet[Local]
       for (val i <- b.toList) i match {
-        case LOAD_LOCAL(local) if (!killSet(local)) => genSet = genSet + local
-        case STORE_LOCAL(local) =>  killSet = killSet + local
+        case LOAD_LOCAL(local)  if (!killSet(local)) => genSet = genSet + local
+        case STORE_LOCAL(local) if (!genSet(local))  => killSet = killSet + local
         case _ => ()
       }
       Pair(genSet, killSet)
@@ -87,7 +89,10 @@ abstract class Liveness {
     def blockTransfer(b: BasicBlock, out: lattice.Elem): lattice.Elem =
       gen(b) incl (out excl kill(b))
 
-    /** Abstract interpretation for one instruction. */
+    /** Abstract interpretation for one instruction. Very important:
+     *  liveness is a backward DFA, so this method should be used to compute
+     *  liveness *before* the given instruction `i'.
+     */
     def interpret(out: lattice.Elem, i: Instruction): lattice.Elem = {
       var in = out
 

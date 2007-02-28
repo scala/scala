@@ -7,7 +7,7 @@
 
 package scala.tools.nsc.backend.opt;
 
-import scala.collection.mutable.{Map, HashMap};
+import scala.collection.mutable.{Map, HashMap, Set, HashSet};
 import scala.tools.nsc.symtab._;
 
 /**
@@ -41,13 +41,18 @@ abstract class Inliners extends SubComponent {
    */
   class Inliner {
 
+    val fresh = new HashMap[String, Int]
+
     /* fresh name counter */
     var count = 0;
 
-    def freshName(s: String) = {
-      val ret = s + this.count;
-      this.count = this.count + 1;
-      ret
+    def freshName(s: String) = fresh.get(s) match {
+      case Some(count) =>
+        fresh(s) = count + 1
+        s + count
+      case None =>
+        fresh(s) = 1
+        s + "0"
     }
 
     /** Inline the 'callee' method inside the 'caller' in the given
@@ -69,7 +74,14 @@ abstract class Inliners extends SubComponent {
        /* Map 'original' blocks to the ones inlined in the caller. */
        val inlinedBlock: Map[BasicBlock, BasicBlock] = new HashMap;
 
-       val instrBefore = block.toList.takeWhile( i => i ne instr);
+       val varsInScope: Set[Local] = new HashSet[Local] ++ block.varsInScope.elements
+
+       val instrBefore = block.toList.takeWhile {
+         case i @ SCOPE_ENTER(l) => varsInScope += l
+           i ne instr
+         case i =>
+           i ne instr
+       }
        val instrAfter  = block.toList.drop(instrBefore.length + 1);
 
        assert(!instrAfter.isEmpty, "CALL_METHOD cannot be the last instrcution in block!");
@@ -90,6 +102,7 @@ abstract class Inliners extends SubComponent {
          activeHandlers.foreach (.addBlock(b));
          if (retVal ne null) b.varsInScope += retVal
          b.varsInScope += inlinedThis
+         b.varsInScope ++= varsInScope
          b
        }
 
@@ -240,6 +253,7 @@ abstract class Inliners extends SubComponent {
     def analyzeMethod(m: IMethod): Unit = try {
       var retry = false;
       var count = 0;
+      fresh.clear
 
       do {
         retry = false;
@@ -295,14 +309,14 @@ abstract class Inliners extends SubComponent {
                 info = tfa.interpret(info, i);
               }}}}
       } while (retry && count < 15);
-      normalize(m);
+      m.normalize
     } catch {
       case e =>
         Console.println("############# Cought exception: " + e + " #################");
         Console.println("\nMethod: " + m +
                         "\nMethod owner: " + m.symbol.owner);
         e.printStackTrace();
-        dump(m);
+        m.dump
         throw e;
     }
 
