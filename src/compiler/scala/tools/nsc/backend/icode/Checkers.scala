@@ -268,7 +268,7 @@ abstract class Checkers {
 
           case LOAD_ARRAY_ITEM(kind) =>
             checkStack(2)
-            stack.pop2 match {
+            (stack.pop2: @unsealed) match {
               case (INT, ARRAY(elem)) =>
                 if (!(elem <:< kind))
                   typeError(kind, elem);
@@ -301,7 +301,7 @@ abstract class Checkers {
 
          case STORE_ARRAY_ITEM(kind) =>
            checkStack(3);
-           stack.pop3 match {
+           (stack.pop3: @unsealed) match {
              case (k, INT, ARRAY(elem)) =>
                 if (!(k <:< kind))
                   typeError(kind, k);
