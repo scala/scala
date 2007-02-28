@@ -16,7 +16,9 @@ package scala
  *    Java annotations in classfiles.
  *  </p>
  *
+ *  @deprecated  use ClassfileAnnotation instead
  *  @author  Martin Odersky
  *  @version 1.1, 2/02/2007
  */
+@deprecated
 trait ClassfileAttribute extends Attribute {}

@@ -16,7 +16,9 @@ package scala
  *    to the Scala type checker, even across different compilation units.
  *  </p>
  *
+ *  @deprecated  use StaticAnnotation instead
  *  @author  Martin Odersky
  *  @version 1.1, 2/02/2007
  */
+@deprecated
 trait StaticAttribute extends Attribute {}

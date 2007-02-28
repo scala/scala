@@ -12,15 +12,11 @@
 package scala
 
 /** <p>
- *   A base class for attributes. Atributes extending this class directly
- *   are not preserved for the Scala type checker and are also not stored
- *   as Java annotations in classfiles. To enable either or both of these,
- *   one needs to inherit from <code>StaticAttribute</code> or/and
- *   <a href="ClassfileAttribute.html"><code>ClassfileAttribute</code></a>.
  *  </p>
  *
  *  @deprecated  use Annotation instead
  *  @author  Martin Odersky
  *  @version 1.1, 2/02/2007
  */
+@deprecated
 abstract class Attribute {}

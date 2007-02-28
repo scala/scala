@@ -23,4 +23,4 @@ package scala
  *  @author  Martin Odersky
  *  @version 1.1, 2/02/2007
  */
-abstract class Annotation extends Attribute /* for now, to enable bootstrapping */ {}
+abstract class Annotation {}
