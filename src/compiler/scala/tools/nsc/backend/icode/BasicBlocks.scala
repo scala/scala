@@ -398,11 +398,13 @@ trait BasicBlocks requires ICodes {
       preds
     }
 
-/*    override def equals(other: Any): Boolean = other match {
+    override def equals(other: Any): Boolean = other match {
       case that: BasicBlock => that.label == label && that.code == code
       case _ => false
     }
-*/
+
+    override def hashCode = label
+
     // Instead of it, rather use a printer
     def print() : unit = print(java.lang.System.out)
 
