@@ -131,8 +131,6 @@ class Settings(error: String => unit) {
   val Xprintpos     = BooleanSetting("-Xprintpos", "Print tree positions (as offsets)")
   val Xscript       = new BooleanSetting("-Xscript", "compile script file") { override def hiddenToIDE = true }
   val Xexperimental = BooleanSetting("-Xexperimental", "enable experimental extensions")
-  val Xunapply      = BooleanSetting("-Xunapply", "enable unapply pattern matching")
-  Xunapply.value = true
   val Xplugtypes    = BooleanSetting("-Xplugtypes", "parse but ignore annotations in more locations")
   //Xplugtypes.value = true // just while experimenting
   val Xkilloption   = BooleanSetting("-Xkilloption", "optimizes option types")

@@ -190,11 +190,6 @@ object scalac extends Command {
         Definition(
           CmdOption("Xexperimental"),
           "enable experimental extensions"),
-        /*
-        Definition(
-          CmdOption("Xunapply"),
-          "Enable unapply pattern matching"),
-        */
         Definition(
           CmdOption("Xplugtypes"),
           "Parse but ignore annotations in more locations"),

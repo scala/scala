@@ -127,11 +127,15 @@ abstract class DocGenerator extends Models {
             .++ (Text("]")))
         } else tpe match {
           case RefinedType(parents, _) =>
-            assert(parents.length > 1)
-            aref(urlFor(parents(1).symbol), target, parents(1).toString())
+            //Console.println("***** parents= " + parents)//debug
+            val parents1 =
+              if ((parents.length > 1) &&
+                  (parents.head.symbol eq definitions.ObjectClass)) parents.tail
+              else parents
+            aref(urlFor(parents1.head.symbol), target, parents1.head.toString())
             .++ {
               val sep = Text(" with ")
-              for (val t <- parents.tail.tail)
+              for (val t <- parents1.tail)
               yield Group(sep ++ urlFor(t, target))
             }
           case _ =>
