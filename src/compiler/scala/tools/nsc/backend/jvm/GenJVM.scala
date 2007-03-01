@@ -348,12 +348,14 @@ abstract class GenJVM extends SubComponent {
           innerClasses = innerClasses + sym;
       }
 
-      val innerClassesAttr = jclass.getInnerClasses();
-      for (val innerSym <- innerClasses)
-        innerClassesAttr.addEntry(javaName(innerSym),
-            javaName(innerSym.rawowner),
-            innerSym.rawname.toString(),
-            javaFlags(innerSym));
+      if (!innerClasses.isEmpty) {
+        val innerClassesAttr = jclass.getInnerClasses();
+        for (val innerSym <- innerClasses)
+          innerClassesAttr.addEntry(javaName(innerSym),
+              javaName(innerSym.rawowner),
+              innerSym.rawname.toString(),
+              javaFlags(innerSym));
+      }
     }
 
     def isTopLevelModule(sym: Symbol): Boolean =
