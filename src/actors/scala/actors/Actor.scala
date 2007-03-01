@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2005-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2005-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -11,7 +11,7 @@
 package scala.actors
 
 import scala.collection.mutable.{HashSet, Queue}
-import compat.Platform
+import scala.compat.Platform
 
 /**
  * The <code>Actor</code> object provides functions for the definition of
@@ -691,26 +691,31 @@ trait Actor extends OutputChannel[Any] {
 }
 
 
-/**
- * <p>This object is used as the timeout pattern in
- * <code>receiveWithin</code> and <code>reactWithin</code>.
- * </p>
- * <p>The following example demonstrates its usage:</p><pre>
- * receiveWithin(500) {
- *   case {x, y}  => ...
- *   case TIMEOUT => ...
- * }
- * </pre>
+/** <p>
+ *    This object is used as the timeout pattern in
+ *    <a href="Actor.html#receiveWithin(scala.Long)" target="contentFrame">
+ *    <code>receiveWithin</code></a> and
+ *    <a href="Actor.html#reactWithin(scala.Long)" target="contentFrame">
+ *    <code>reactWithin</code></a>.
+ *  </p>
+ *  <p>
+ *    The following example demonstrates its usage:
+ *  </p><pre>
+ *    receiveWithin(500) {
+ *      <b>case</b> (x, y) <b>=&gt;</b> ...
+ *      <b>case</b> TIMEOUT <b>=&gt;</b> ...
+ *    }</pre>
  *
- * @version 0.9.4
- * @author Philipp Haller
+ *  @version 0.9.4
+ *  @author Philipp Haller
  */
 case object TIMEOUT
 
 
-/**
- * <p>This class is used to manage control flow of actor
- * executions.</p>
+/** <p>
+ *    This class is used to manage control flow of actor
+ *    executions.
+ *  </p>
  *
  * @version 0.9.4
  * @author Philipp Haller

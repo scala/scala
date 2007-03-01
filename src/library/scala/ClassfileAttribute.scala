@@ -13,10 +13,12 @@ package scala
 
 /** <p>
  *    A base class for classfile attributes. These are stored as
- *    Java annotations in classfiles.
+ *    <a href="http://java.sun.com/j2se/1.5.0/docs/guide/language/annotations.html"
+ *    target="_top">Java annotations</a> in classfiles.
  *  </p>
  *
- *  @deprecated  use ClassfileAnnotation instead
+ *  @deprecated  use <a href="ClassfileAnnotation.html"
+ *               target="contentFrame">ClassfileAnnotation</a> instead
  *  @author  Martin Odersky
  *  @version 1.1, 2/02/2007
  */
