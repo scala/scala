@@ -44,6 +44,9 @@ abstract class GenICode extends SubComponent  {
     val SCALA_ALLREF = REFERENCE(definitions.AllRefClass)
     val THROWABLE    = REFERENCE(definitions.ThrowableClass)
 
+    /** Tree transformer that makes fresh label defs. */
+    val duplicator = new DuplicateLabels
+
     ///////////////////////////////////////////////////////////
 
     override def run: Unit = {
@@ -176,8 +179,6 @@ abstract class GenICode extends SubComponent  {
           ctx1
 
         case _ =>
-          if (settings.debug.value)
-            log("Passing " + tree + " to genLoad")
           genLoad(tree, ctx, UNIT)
       }
     }
@@ -194,6 +195,8 @@ abstract class GenICode extends SubComponent  {
      */
     private def genLoad(tree: Tree, ctx: Context, expectedType: TypeKind): Context = {
       var generatedType = expectedType
+      if (settings.debug.value)
+        log("at line: " + unit.position(tree.pos).line)
 
       /**
        * Generate code for primitive arithmetic operations.
@@ -527,6 +530,9 @@ abstract class GenICode extends SubComponent  {
               ctx1
             }) :: handlers;
 
+          val duppedFinalizer = duplicator(ctx, finalizer)
+          if (settings.debug.value)
+            log("Duplicated finalizer: " + duppedFinalizer)
           ctx.Try(
             bodyCtx => {
               generatedType = kind; //toTypeKind(block.tpe);
@@ -536,11 +542,11 @@ abstract class GenICode extends SubComponent  {
                     kind, false);
                 ctx1.method.addLocal(tmp)
                 ctx1.bb.emit(STORE_LOCAL(tmp))
-                val ctx2 = genLoad(finalizer, ctx1, UNIT)
+                val ctx2 = genLoad(duppedFinalizer, ctx1, UNIT)
                 ctx2.bb.emit(LOAD_LOCAL(tmp))
                 ctx2
               } else
-                genLoad(finalizer, ctx1, UNIT)
+                genLoad(duppedFinalizer, ctx1, UNIT)
             },
             handlers,
             finalizer)
@@ -710,8 +716,6 @@ abstract class GenICode extends SubComponent  {
               val trueCtx = ctx1.newBlock
               val falseCtx = ctx1.newBlock
               val afterCtx = ctx1.newBlock
-              if (settings.debug.value)
-                log("Passing " + tree + " to genCond");
               genCond(tree, ctx1, trueCtx, falseCtx)
               trueCtx.bb.emit(CONSTANT(Constant(true)), tree.pos)
               trueCtx.bb.emit(JUMP(afterCtx.bb))
@@ -1595,6 +1599,65 @@ abstract class GenICode extends SubComponent  {
     def isLoopHeaderLabel(name: Name): Boolean =
       name.startsWith("while$") || name.startsWith("doWhile$")
 
+    /** Tree transformer that duplicates code and at the same time creates
+     *  fresh symbols for existing labels. Since labels may be used before
+     *  they are defined (forward jumps), all labels found are mapped to fresh
+     *  symbols. References to the same label (use or definition) will remain
+     *  consistent after this transformation (both the use and the definition of
+     *  some label l will be mapped to the same label l').
+     *
+     *  Note: If the tree fragment passed to the duplicator contains unbound
+     *  label names, the bind to the outer labeldef will be lost! That's because
+     *  a use of an unbound label l will be transformed to l', and the corresponding
+     *  label def, being outside the scope of this transformation, will not be updated.
+     *
+     *  All LabelDefs are entered into the context label map, since it makes no sense
+     *  to delay it any more: they will be used at some point.
+     */
+    class DuplicateLabels extends Transformer {
+      val labels: Map[Symbol, Symbol] = new HashMap
+      var method: Symbol = _
+      var ctx: Context = _
+
+      def apply(ctx: Context, t: Tree) = {
+        this.method = ctx.method.symbol
+        this.ctx = ctx
+        transform(t)
+      }
+
+      override def transform(t: Tree): Tree = {
+        t match {
+          case t @ Apply(fun, args) if t.symbol.isLabel =>
+            if (!labels.isDefinedAt(t.symbol)) {
+              val oldLabel = t.symbol
+              val sym = method.newLabel(oldLabel.pos, unit.fresh.newName(oldLabel.name.toString))
+              sym.setInfo(oldLabel.tpe)
+              labels(oldLabel) = sym
+            }
+            val tree = copy.Apply(t, transform(fun), transformTrees(args))
+            tree.symbol = labels(t.symbol)
+            tree
+
+          case t @ LabelDef(name, params, rhs) =>
+            val name1 = unit.fresh.newName(name.toString)
+            if (!labels.isDefinedAt(t.symbol)) {
+              val oldLabel = t.symbol
+              val sym = method.newLabel(oldLabel.pos, name1)
+              sym.setInfo(oldLabel.tpe)
+              labels(oldLabel) = sym
+            }
+            val tree = copy.LabelDef(t, name1, params, transform(rhs))
+            tree.symbol = labels(t.symbol)
+
+            ctx.labels += tree.symbol -> (new Label(tree.symbol) setParams(params map (.symbol)));
+            ctx.method.addLocals(params map (p => new Local(p.symbol, toTypeKind(p.symbol.info), false)));
+
+            tree
+
+          case _ => super.transform(t)
+        }
+      }
+    }
 
     /////////////////////// Context ////////////////////////////////
 
@@ -1989,4 +2052,5 @@ abstract class GenICode extends SubComponent  {
     override def toString() = "[]"
     override def varsInScope: Buffer[Local] = new ListBuffer
   }
+
 }
