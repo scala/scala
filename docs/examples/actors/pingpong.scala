@@ -3,43 +3,26 @@ package examples.actors
 import scala.actors.Actor
 import scala.actors.Actor._
 
-abstract class PingMessage
-case object Start extends PingMessage
-case object SendPing extends PingMessage
-case object Pong extends PingMessage
-
-abstract class PongMessage
-case object Ping extends PongMessage
-case object Stop extends PongMessage
-
-object pingpong extends Application {
-  val pong = new Pong
-  val ping = new Ping(100000, pong)
-  ping.start
-  pong.start
-  ping ! Start
-}
+case object SendPing
+case object Ping
+case object Pong
+case object Stop
 
 class Ping(count: int, pong: Actor) extends Actor {
   def act() {
-    Console.println("Ping: Initializing with count "+count+": "+pong)
     var pingsLeft = count
     loop {
       react {
-        case Start =>
-          Console.println("Ping: starting.")
-          pong ! Ping
-          pingsLeft = pingsLeft - 1
         case SendPing =>
           pong ! Ping
           pingsLeft = pingsLeft - 1
         case Pong =>
           if (pingsLeft % 1000 == 0)
-            Console.println("Ping: pong from: "+sender)
+            Console.println("Ping: pong")
           if (pingsLeft > 0)
             self ! SendPing
           else {
-            Console.println("Ping: Stop.")
+            Console.println("Ping: stop")
             pong ! Stop
             exit('stop)
           }
@@ -55,13 +38,21 @@ class Pong extends Actor {
       react {
         case Ping =>
           if (pongCount % 1000 == 0)
-            Console.println("Pong: ping "+pongCount+" from "+sender)
+            Console.println("Pong: ping "+pongCount)
           sender ! Pong
           pongCount = pongCount + 1
         case Stop =>
-          Console.println("Pong: Stop.")
+          Console.println("Pong: stop")
           exit('stop)
       }
     }
   }
+}
+
+object pingpong extends Application {
+  val pong = new Pong
+  val ping = new Ping(100000, pong)
+  ping.start
+  pong.start
+  ping ! SendPing
 }
