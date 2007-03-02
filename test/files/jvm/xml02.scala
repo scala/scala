@@ -32,6 +32,7 @@ object Test extends TestConsoleMain {
       assertTrue(<hello/> match { case <hello/> => true; case _ => false; })
       assertTrue(<x:ga xmlns:x="z"/> match { case <x:ga/> => true; case _ => false; });
       assertTrue(Utility.trim(cx) match { case n @ <hello>crazy text world</hello> if n \ "@foo" == "bar" => true; })
+      assertTrue(Utility.trim(cx) match { case n @ <z:hello>crazy text world</z:hello> if n \ "@foo" == "bar" => true; })
     }
   }
 
