@@ -12,7 +12,7 @@
 package scala.collection.mutable
 
 
-//import Predef._
+import Predef._
 
 /** The class <code>ListBuffer</code> ..
  *
