@@ -190,7 +190,7 @@ object SUnit {
 	}
 
     /** fail if expected eq actual */
-    def assertNotEq(msg: String, expected: => AnyRef, actual: => AnyRef) {
+    def assertNotEq(expected: => AnyRef, actual: => AnyRef) {
       assertNotEq("(no message)", expected, actual)
     }
 
@@ -219,7 +219,7 @@ object SUnit {
         if(expected ne actual) fail(msg)
 
     /** fails if expected ne actual */
-    def assertEq(msg: String, expected: => AnyRef, actual: => AnyRef): Unit =
+    def assertEq(expected: => AnyRef, actual: => AnyRef): Unit =
       assertEq("(no message)", expected, actual)
 
     /** succeeds if actual == true */
