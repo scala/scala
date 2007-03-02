@@ -1,4 +1,6 @@
 class java.rmi.RemoteException
 class java.io.IOException
 @java.lang.Deprecated()
-@test.SourceAnnotation(url=http://scala.epfl.ch, mail=scala@lists.epfl.ch)
+@test.SourceAnnotation(mail=scala@lists.epfl.ch, value=http://scala.epfl.ch)
+@test.SourceAnnotation(mail=you@bloodsuckers.com, value=http://bloodsuckers.com)
+@test.SourceAnnotation(mail=bill.gates@bloodsuckers.com, value=http://bloodsuckers.com)

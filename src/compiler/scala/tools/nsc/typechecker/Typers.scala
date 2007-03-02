@@ -1602,7 +1602,7 @@ trait Typers requires Analyzer {
               }
             }
             for (val name <- names) {
-              if (!name.attributes.contains((AnnotationDefaultAttr.tpe, List(), List()))) {
+              if (!name.attributes.contains(AttrInfo(AnnotationDefaultAttr.tpe, List(), List()))) {
                 error(constr.pos, "attribute " + annType.symbol.fullNameString + " is missing element " + name.name)
               }
             }

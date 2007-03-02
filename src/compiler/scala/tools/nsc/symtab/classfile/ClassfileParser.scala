@@ -661,7 +661,7 @@ abstract class ClassfileParser {
           in.skip(attrLen)
       }
     }
-    def parseTaggedConstant(): Constant = {
+    def parseTaggedConstant: Constant = {
       val tag = in.nextByte
       val index = in.nextChar
       tag match {
@@ -685,7 +685,7 @@ abstract class ClassfileParser {
         case ARRAY_TAG  =>
           val arr = new ArrayBuffer[Constant]()
           for (val i <- 0 until index) {
-            arr += parseTaggedConstant()
+            arr += parseTaggedConstant
           }
           new ArrayConstant(arr.toArray,
               appliedType(definitions.ArrayClass.typeConstructor, List(arr(0).tpe)))
@@ -700,7 +700,7 @@ abstract class ClassfileParser {
         val nvpairs = new ListBuffer[(Name,Constant)]
         for (val i <- 0 until nargs) {
           val name = pool.getName(in.nextChar)
-          nvpairs += (name, parseTaggedConstant())
+          nvpairs += (name, parseTaggedConstant)
         }
         sym.attributes = AttrInfo(attrType, List(), nvpairs.toList) :: sym.attributes
       }

@@ -4,6 +4,6 @@ import java.lang.annotation.*;
 
 @Retention(value=RetentionPolicy.RUNTIME)
 public @interface SourceAnnotation {
-   public String url();
-   public String mail();
+   public String value();
+   public String mail() default "bill.gates@bloodsuckers.com";
 }

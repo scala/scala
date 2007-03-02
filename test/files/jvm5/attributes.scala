@@ -68,11 +68,16 @@ public class Main {
 */
 object Test4 {
   import test.SourceAnnotation // defined in SourceAnnotation.java
-  @SourceAnnotation(){val url = "http://scala.epfl.ch", val mail = "scala@lists.epfl.ch"}
-  class Foo
+  @SourceAnnotation{val value = "http://scala.epfl.ch", val mail = "scala@lists.epfl.ch"}
+  class Foo1
+  @SourceAnnotation("http://bloodsuckers.com") { val mail = "you@bloodsuckers.com" }
+  class Foo2
+  @SourceAnnotation("http://bloodsuckers.com")
+  class Foo3
   def run: Unit = {
-    val clazz = classOf[Foo]
-    clazz.getAnnotations foreach Console.println
+    classOf[Foo1].getAnnotations foreach Console.println
+    classOf[Foo2].getAnnotations foreach Console.println
+    classOf[Foo3].getAnnotations foreach Console.println
   }
 }
 
