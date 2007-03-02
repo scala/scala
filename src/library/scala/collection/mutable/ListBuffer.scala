@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -12,13 +12,14 @@
 package scala.collection.mutable
 
 
-import Predef._
+//import Predef._
 
 /** The class <code>ListBuffer</code> ..
  *
  *  @author  Matthias Zenger
  *  @version 1.0, 15/03/2004
  */
+@serializable
 final class ListBuffer[A] extends Buffer[A] {
   private var start: List[A] = Nil
   private var last: ::[A] = _
