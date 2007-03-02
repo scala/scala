@@ -185,12 +185,12 @@ object SUnit {
       assertNotEq("(no message)", expected, actual)
 
     /** fail if expected eq actual */
-    def assertNotEq(msg: String, expected => AnyRef, actual: => AnyRef) {
+    def assertNotEq(msg: String, expected: => AnyRef, actual: => AnyRef) {
       if (expected eq actual) fail(msg)
 	}
 
     /** fail if expected eq actual */
-    def assertNotEq(msg: String, expected => AnyRef, actual: => AnyRef) {
+    def assertNotEq(msg: String, expected: => AnyRef, actual: => AnyRef) {
       assertNotEq("(no message)", expected, actual)
     }
 
