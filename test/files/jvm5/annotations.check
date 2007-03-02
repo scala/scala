@@ -4,3 +4,5 @@ class java.io.IOException
 @test.SourceAnnotation(mail=scala@lists.epfl.ch, value=http://scala.epfl.ch)
 @test.SourceAnnotation(mail=you@bloodsuckers.com, value=http://bloodsuckers.com)
 @test.SourceAnnotation(mail=bill.gates@bloodsuckers.com, value=http://bloodsuckers.com)
+0
+99
