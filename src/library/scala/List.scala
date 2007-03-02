@@ -444,7 +444,7 @@ sealed abstract class List[+a] extends Seq[a] {
    */
   def reverse_:::[b >: a](prefix: List[b]): List[b] = prefix match {
     case Nil => this
-    case head :: tail => tail.reverse_:::(head :: this)
+    case head :: tail => (head :: this).reverse_:::(tail)
   }
 
   /** Returns the number of elements in the list.
