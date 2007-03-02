@@ -390,23 +390,30 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
   }
 
 
-  /** Name ::= (Letter | '_' | ':') (NameChar)*
+  /** actually, Name ::= (Letter | '_' | ':') (NameChar)*  but starting with ':' cannot happen
+   ** Name ::= (Letter | '_') (NameChar)*
    *
    *  see  [5] of XML 1.0 specification
+   *
+   *  pre-condition:  ch != ':' // assured by definition of XMLSTART token
+   *  post-condition: name does neither start, nor end in ':'
    */
   /*[Duplicate]*/   def xName: String = {
-    if( xml.Parsing.isNameStart( ch ) ) {
-      do {
-        putChar( ch );
-        nextch;
-      } while( xml.Parsing.isNameChar( ch ) );
-      val n = cbuf.toString().intern();
-      cbuf.setLength( 0 );
-      n
-    } else {
-      reportSyntaxError( "name expected, but char '"+ch+"' cannot start a name" );
-      new String();
+    if( !xml.Parsing.isNameStart( ch ) ) {
+      reportSyntaxError( "name expected, but char '"+ch+"' cannot start a name" )
+      return ""
     }
+    do {
+        putChar( ch )
+        nextch
+    } while( xml.Parsing.isNameChar( ch ) )
+	if(':' == cbuf.charAt(cbuf.length-1)) {
+      reportSyntaxError( "name cannot end in ':'" )
+      cbuf.setLength(cbuf.length-1)
+	}
+    val n = cbuf.toString().intern()
+    cbuf.setLength( 0 )
+    n
   }
 
 

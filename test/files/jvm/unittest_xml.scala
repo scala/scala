@@ -7,12 +7,20 @@ object Test {
   class ParsingTest extends TestCase("scala.xml.Parsing") with Assert {
     override def runTest = {
       assertTrue(Parsing.isNameStart('b'))
+      assertTrue(Parsing.isNameStart(':'))
     }
   }
   class MetaDataTest extends TestCase("scala.xml.MetaData") with Assert {
 
-    import scala.xml.{TopScope, NamespaceBinding, Atom, Text }
+    import scala.xml.{HasKeyValue, TopScope, NamespaceBinding, Node, Atom, Text }
 
+	def domatch(x:Node): Node = {
+      val hasBar = new HasKeyValue("bar")
+	  x match {
+		case Node("foo", hasBar(z), _*) => z
+			case _ => new Atom(3)
+	  }
+	}
     override def runTest = {
 
       var x: MetaData         = Null
@@ -44,6 +52,12 @@ object Test {
       assertEquals("present element (prefixed) 6",  None, x.get(null, s, "bar" ))
       assertEquals("present element (unprefix) 6",  Some(Text("meaning")), x.get("bar"))
 
+	  val z =  <foo bar="gar"/>
+	  val z2 = <foo/>
+
+	 assertEquals("attribute extractor 1", Text("gar"), domatch(z))
+	 assertEquals("attribute extractor 2", new Atom(3), domatch(z2))
+
     }
   }
 
@@ -74,6 +88,7 @@ object Test {
 	assertEquals("sort attrib"+xml.Utility.sort(q.attributes).toString, " a=\"2\" g=\"3\" j=\"2\" oo=\"2\"", xml.Utility.sort(q.attributes).toString)
 	 val pp = new xml.PrettyPrinter(80,5)
 	assertEquals("pretty print sorted attrib:"+pp.format(q), "<a a=\"2\" g=\"3\" j=\"2\" oo=\"2\"></a>", pp.format(q))
+
   }
 
   def main(args:Array[String]) = {

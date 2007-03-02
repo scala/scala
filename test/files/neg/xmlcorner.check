@@ -1,0 +1,7 @@
+xmlcorner.scala:2: error: illegal start of simple expression
+      val wrong = <:bla/>
+                  ^
+xmlcorner.scala:5: error: in XML literal: name cannot end in ':'
+      val wrong = <bla:  />
+                       ^
+two errors found

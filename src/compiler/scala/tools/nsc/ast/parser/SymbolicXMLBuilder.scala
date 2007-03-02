@@ -158,14 +158,22 @@ abstract class SymbolicXMLBuilder(make: TreeBuilder, p: Parsers # Parser, preser
     New(_scala_xml_ProcInstr, LL(target, txt))
 
   /** @todo: attributes */
-  def makeXMLpat(pos: int, n: String, args: mutable.Buffer[Tree]): Tree =
+  def makeXMLpat(pos: int, n: String, args: mutable.Buffer[Tree]): Tree = {
+	val (prepat, labpat) = n.indexOf(':') match {
+		case -1 => (Ident(nme.WILDCARD), Literal(Constant(n)))
+	  //case 0  => // is erroneous, but cannot happen
+		case i  => //if(i+1<n.length) // we ensure i+1<n.length in method xName
+		  (Literal(Constant(n.substring(0,i))), Literal(Constant(n.substring(i+1,n.length))))
+		  //else { p.syntaxError(pos,"nonsensical qualified name in XML"); return Ident(nme.WILDCARD).setPos(pos)}
+	}
     mkXML(pos,
           true,
-          Ident( nme.WILDCARD ),
-          Literal(Constant(n)),
+          prepat, //Ident( nme.WILDCARD ),
+          labpat, //Literal(Constant(n)),
           null, //Array[Tree](),
           null,
           args);
+  }
 
   protected def convertToTextPat(t: Tree): Tree = t match {
     case _:Literal => makeTextPat(t)

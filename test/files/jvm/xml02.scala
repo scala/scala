@@ -1,39 +1,32 @@
-object Test {
-def main(args:Array[String]) = {
+import testing.SUnit._
+
+object Test extends TestConsoleMain {
+
   import scala.xml.NodeSeq
   import NodeSeq.view
-  import testing.UnitTest._
-
 
   val ax = <hello foo="bar">
              <world/>
            </hello>
 
-  Console.println("attributes");
-
-  Console.println("one");
-  assertEquals(ax \ "@foo", "bar")
-  Console.println("two");
-  assertEquals(ax \ "@foo", xml.Text("bar"))
-
   val bx = <hello foo="bar&amp;x"></hello>
 
-  Console.println("three");
-  assertEquals(bx \ "@foo", "bar&x")
-  Console.println("four");
-  assertSameElements(bx \ "@foo", List(xml.Text("bar&x")))
-  //assertSameElements(bx \ "@foo", List(xml.Text("bar"),xml.EntityRef("amp"),xml.Text("x")))
+  class XmlEx extends TestCase("attributes") with Assert {
 
-  Console.println("five");
-  assertEquals(bx.toString, "<hello foo=\"bar&amp;x\"></hello>")
+    override def run = {
+      assertEquals("@one",   "bar",           ax \ "@foo")
+      assertEquals("@two",   xml.Text("bar"), ax \ "@foo")
+      assertEquals("@three", "bar&x",         bx \ "@foo")
+      assertTrue  ("@four", (bx \ "@foo") sameElements List(xml.Text("bar&x")))
+      //assertTrue("@four", (bx \ "@foo") sameElements List(xml.Text("bar"),xml.EntityRef("amp"),xml.Text("x")))
+      assertEquals("@five",  "<hello foo=\"bar&amp;x\"></hello>", bx.toString)
+    }
+  }
 
-
-  /* patterns */
-  Console.println("patterns");
-  assertEquals(<hello/> match { case <hello/> => true; case _ => false; },
-               true);
-
-
+  class XmlPat extends TestCase("patterns") with Assert {
+    override def run = {
+      assertTrue(<hello/> match { case <hello/> => true; case _ => false; })
+      assertTrue(<x:ga xmlns:x="z"/> match { case <x:ga/> => true; case _ => false; });
 
   /*
   assertEquals(ax match { case x @ <hello>
@@ -51,6 +44,10 @@ def main(args:Array[String]) = {
                       case _ => false; },
                true);
   */
-}
-
+  }
+  }
+  def suite = new TestSuite(
+    new XmlEx,
+	new XmlPat
+  )
 }

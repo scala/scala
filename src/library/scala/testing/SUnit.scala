@@ -40,9 +40,26 @@ import compat.StringBuilder
  *   Console.println(tf.toString())
  * }
  * </pre>
+ *
+ * The trait TestConsoleMain contains this code as a main method, for convenience.
  */
 object SUnit {
 
+	/** convenience trait, mix it in a TestMain object and implement "suite" to get this code
+     * <b>val</b> r = <b>new</b> TestResult()
+     * suite.run(r)
+     * <b>for</b> (<b>val</b> tf &lt;- r.failures()) {
+     *   Console.println(tf.toString())
+	 */
+  trait TestConsoleMain {
+	def suite: TestSuite
+    def main(args:Array[String]) {
+      val r = new TestResult()
+      suite.run(r)
+      for (val tf <- r.failures())
+        Console.println(tf.toString())
+    }
+  }
   /** a Test can be run with its result being collected */
   trait Test {
     def run(r: TestResult): Unit
@@ -131,59 +148,85 @@ object SUnit {
 
   /** this class defined useful assert methods */
   trait Assert {
-    /** equality */
+    /** fails if expected != actual */
     def assertEquals[A](msg: String, expected: A, actual: => A): Unit =
       if (expected != actual) fail(msg)
 
-    /** equality */
+    /** fails if expected != actual */
     def assertEquals[A](expected: A, actual: => A): Unit  =
       assertEquals("(no message)", expected, actual)
 
-    /** falseness */
+    /** succeeds if actual is false */
     def assertFalse(msg: String, actual: => Boolean): Unit =
       assertEquals(msg, false, actual)
 
-    /** falseness */
+    /** succeeds if actual is false */
     def assertFalse(actual: => Boolean): Unit =
       assertFalse("(no message)", actual)
 
-    /** not null */
+    /** fails if null eq actual */
     def assertNotNull(msg:String, actual: => AnyRef): Unit =
-      if (null == actual) fail(msg)
+      if (null eq actual) fail(msg)
 
-    /** not null */
+    /** fails if null eq actual */
     def assertNotNull(actual: => AnyRef): Unit  =
       assertNotNull("(no message)", actual)
 
-    /** reference inequality */
-    def assertNotSame(msg: String, expected: => AnyRef, actual: => AnyRef): Unit =
+    /**
+	 *  @deprecated use assertNotEq instead
+	 */
+    @deprecated def assertNotSame(msg: String, expected: => AnyRef, actual: => AnyRef): Unit =
       if (expected.eq(actual)) fail(msg)
 
-    /** reference inequality */
-    def assertNotSame(expected: => AnyRef, actual: => AnyRef): Unit  =
-      assertNotSame("(no message)", expected, actual)
+    /**
+	 *  @deprecated use assertNotEq instead
+     */
+    @deprecated def assertNotSame(expected: => AnyRef, actual: => AnyRef): Unit  =
+      assertNotEq("(no message)", expected, actual)
 
-    /** null */
+    /** fail if expected eq actual */
+    def assertNotEq(msg: String, expected => AnyRef, actual: => AnyRef) {
+      if (expected eq actual) fail(msg)
+	}
+
+    /** fail if expected eq actual */
+    def assertNotEq(msg: String, expected => AnyRef, actual: => AnyRef) {
+      assertNotEq("(no message)", expected, actual)
+    }
+
+    /** fails if actual ne null */
     def assertNull(msg: String, actual: => AnyRef): Unit =
-      if (null != actual) fail(msg)
+      if (null ne actual) fail(msg)
 
-    /** null */
+    /** fails if actual ne null */
     def assertNull(actual: => AnyRef): Unit =
       assertNull("(no message)", actual)
 
-    /** reference equality */
+    /**
+	 *  @deprecated use assertEq instead
+	 */
     def assertSame(msg: String, expected: => AnyRef, actual: => AnyRef): Unit =
         if(!expected.eq(actual)) fail(msg)
 
-    /** reference equality */
+    /**
+	 *  @deprecated use assertEq instead
+	 */
     def assertSame(expected: => AnyRef, actual: => AnyRef): Unit  =
-      assertSame("(no message)", expected, actual)
+      assertEq("(no message)", expected, actual)
 
-    /** trueness */
+    /** fails if expected ne actual */
+    def assertEq(msg: String, expected: => AnyRef, actual: => AnyRef): Unit =
+        if(expected ne actual) fail(msg)
+
+    /** fails if expected ne actual */
+    def assertEq(msg: String, expected: => AnyRef, actual: => AnyRef): Unit =
+      assertEq("(no message)", expected, actual)
+
+    /** succeeds if actual == true */
     def assertTrue(msg: String, actual: => Boolean): Unit =
       assertEquals(msg, true, actual)
 
-    /** trueness */
+    /** succeeds if actual == true */
     def assertTrue(actual: => Boolean): Unit  =
       assertTrue("(no message)", actual)
 
