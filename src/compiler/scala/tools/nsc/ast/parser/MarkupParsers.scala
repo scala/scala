@@ -596,7 +596,10 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
   //def lookahead = { s.xLookahead }
   var scannerState: List[List[Int]] = Nil
 
-  def pushScannerState { scannerState = s.sepRegions::scannerState }
+  def pushScannerState {
+    scannerState = s.sepRegions::scannerState
+    s.sepRegions = Nil
+  }
   def popScannerState  {
     s.sepRegions = scannerState.head;
     scannerState = scannerState.tail
