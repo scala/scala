@@ -31,10 +31,6 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
   import p.{symbXMLBuilder => handle}
   import s.token
 
-  /** the XML tree factory */
-  //final val handle: SymbolicXMLBuilder = p.symbXMLBuilder;
-    //new SymbolicXMLBuilder(unit.global.make, unit.global.treeGen, p, presWS);
-
   /** holds the position in the source file */
   /*[Duplicate]*/ var pos: Int = _
 
@@ -497,7 +493,7 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
   */
   def xLiteral: Tree = try {
     //Console.println("entering xLiteral!!")
-    init
+    init; pushScannerState
     handle.isPattern = false
     val pos = s.currentPos
     var lastend = 0
@@ -536,7 +532,8 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
     //}
     //Console.println("out of xLiteral, parsed:"+tree.toString());
     s.next.token = Tokens.EMPTY;
-    s.nextToken(); /* s.fetchToken(); */
+    s.nextToken()
+    popScannerState
     tree
   }
   catch {
@@ -552,13 +549,14 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
    * precondition: s.xStartsXML == true
   */
   def xLiteralPattern:Tree = try {
-    init;
+    init; pushScannerState
     val oldMode = handle.isPattern;
     handle.isPattern = true;
     var tree = xPattern; xSpaceOpt;
     handle.isPattern = oldMode;
     s.next.token = Tokens.EMPTY;
     s.nextToken()
+    popScannerState
     tree
   } catch {
     case _:ArrayIndexOutOfBoundsException =>
@@ -596,6 +594,13 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
   def nextch: Unit = { s.in.next; /*s.xNext;*/ ch = s.in.ch ; pos = s.in.cpos; }
 
   //def lookahead = { s.xLookahead }
+  var scannerState: List[List[Int]] = Nil
+
+  def pushScannerState { scannerState = s.sepRegions::scannerState }
+  def popScannerState  {
+    s.sepRegions = scannerState.head;
+    scannerState = scannerState.tail
+  }
 
   def init: Unit = {
     ch = s.in.ch;

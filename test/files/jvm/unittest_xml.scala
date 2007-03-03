@@ -7,7 +7,7 @@ object Test {
   class ParsingTest extends TestCase("scala.xml.Parsing") with Assert {
     override def runTest = {
       assertTrue(Parsing.isNameStart('b'))
-      assertTrue(Parsing.isNameStart(':'))
+      assertFalse(Parsing.isNameStart(':'))
     }
   }
   class MetaDataTest extends TestCase("scala.xml.MetaData") with Assert {
@@ -17,7 +17,9 @@ object Test {
 	def domatch(x:Node): Node = {
       val hasBar = new HasKeyValue("bar")
 	  x match {
-		case Node("foo", hasBar(z), _*) => z
+		//case Node("foo", hasBar(z), _*) => z
+            case Node("foo", md, _*) if !hasBar.unapplySeq(md).isEmpty =>
+                 md("bar")(0)
 			case _ => new Atom(3)
 	  }
 	}
