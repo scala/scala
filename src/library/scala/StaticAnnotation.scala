@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: StaticAnnotation.scala 9916 2007-02-07 13:07:33 +0000 (Wed, 07 Feb 2007) michelou $
+// $Id$
 
 
 package scala

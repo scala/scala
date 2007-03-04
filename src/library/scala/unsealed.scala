@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: remote.scala 9400 2006-11-28 17:22:45 +0000 (Tue, 28 Nov 2006) michelou $
+// $Id$
 
 
 package scala

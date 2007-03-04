@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: PartialFunction.scala 7931 2006-06-20 16:34:51 +0000 (Tue, 20 Jun 2006) odersky $
+// $Id$
 
 
 package scala;
