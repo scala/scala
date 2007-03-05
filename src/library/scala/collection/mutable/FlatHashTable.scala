@@ -18,6 +18,8 @@ trait FlatHashTable[A] {
    */
   protected def initialSize: Int = 16
 
+  private final val tableDebug = false
+
   /** The actual hash table.
    */
   protected var table: Array[AnyRef] =
@@ -69,8 +71,9 @@ trait FlatHashTable[A] {
   }
 
   def removeEntry(elem: A) {
+    checkConsistent()
     def precedes(i: int, j: int) = {
-      val d = table.length >> 2
+      val d = table.length >> 1
       if (i <= j) j - i < d
       else i - j > d
     }
@@ -82,7 +85,7 @@ trait FlatHashTable[A] {
         var h1 = (h0 + 1) % table.length
         while (null != table(h1)) {
           val h2 = index(elemHashCode(table(h1).asInstanceOf[A]))
-          //Console.println("shift at "+h1+":"+table(h1)+" with h2 = "+h2+"?")
+          //Console.println("shift at "+h1+":"+table(h1)+" with h2 = "+h2+"? "+(h2 != h1)+precedes(h2, h0)+table.length)
           if (h2 != h1 && precedes(h2, h0)) {
             //Console.println("shift "+h1+" to "+h0+"!")
             table(h0) = table(h1)
@@ -92,6 +95,7 @@ trait FlatHashTable[A] {
         }
         table(h0) = null
         tableSize = tableSize - 1
+        if (tableDebug) checkConsistent()
         return
       }
       h = (h + 1) % table.length
@@ -121,6 +125,13 @@ trait FlatHashTable[A] {
       if (null != entry) addEntry(entry.asInstanceOf[A])
       i = i + 1
     }
+    if (tableDebug) checkConsistent()
+  }
+
+  private def checkConsistent() {
+    for (val i <- 0 until table.length)
+      if (table(i) != null && !containsEntry(table(i).asInstanceOf[A]))
+        assert(false, i+" "+table(i)+" "+table.toString)
   }
 
   protected def elemHashCode(elem: A) = elem.hashCode()
