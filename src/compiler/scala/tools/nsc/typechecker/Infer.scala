@@ -811,16 +811,20 @@ trait Infer requires Analyzer {
         case SingleType(pre, _) =>
           checkCheckable(pos, pre)
         case TypeRef(pre, sym, args) =>
-          if (sym.isAbstractType) patternWarning(tp, "abstract type ")
-          else for (val arg <- args) {
-            if (sym == ArrayClass) checkCheckable(pos, arg)
-            else arg match {
-              case TypeRef(_, sym, _) if isLocalBinding(sym) =>
-                ;
-              case _ =>
-                patternWarning(arg, "non variable type-argument ")
+          if (sym.isAbstractType)
+            patternWarning(tp, "abstract type ")
+          else if (sym == AllClass || sym == AllRefClass)
+            error(pos, "this type cannot be used in a type pattern")
+          else
+            for (val arg <- args) {
+              if (sym == ArrayClass) checkCheckable(pos, arg)
+              else arg match {
+                case TypeRef(_, sym, _) if isLocalBinding(sym) =>
+                  ;
+                case _ =>
+                  patternWarning(arg, "non variable type-argument ")
+              }
             }
-          }
           checkCheckable(pos, pre)
         case RefinedType(parents, decls) =>
           if (decls.isEmpty) for (val p <- parents) checkCheckable(pos, p)

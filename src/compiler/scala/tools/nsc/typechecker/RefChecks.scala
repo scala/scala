@@ -260,6 +260,9 @@ abstract class RefChecks extends InfoTransform {
      *    <li> <!-- 3 -->
      *      Check that at most one base type is a case-class.
      *    </li>
+     *    <li> <!-- 4 -->
+     *      Check that inner classes do not inherit from Annotation
+     *    </li>
      *  </ol>
      */
     private def validateBaseTypes(clazz: Symbol): unit = {
@@ -291,6 +294,10 @@ abstract class RefChecks extends InfoTransform {
                            " cannot be combined in one object");
 	      seenCaseClass = baseClass
 	    }
+	    // check that inner classes do not inherit from Annotation
+            if (baseClass == ClassfileAnnotationClass)
+              if (!clazz.owner.isPackageClass)
+                unit.error(clazz.pos, "inner classes cannot be classfile annotations")
 	  }
 	  validateTypes(tp.parents, includeSuper)
 	}

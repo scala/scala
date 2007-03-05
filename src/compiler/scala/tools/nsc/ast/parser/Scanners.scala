@@ -308,7 +308,9 @@ trait Scanners requires SyntaxAnalyzer {
                        'k' | 'l' | 'm' | 'n' | 'o' |
                        'p' | 'q' | 'r' | 's' | 't' |
                        'u' | 'v' | 'w' | 'x' | 'y' |
-                       'z' =>
+                       'z' |
+                       '0' | '1' | '2' | '3' | '4' |
+                       '5' | '6' | '7' | '8' | '9' =>
                     putChar(in.ch)
                     in.next
                     if (in.ch != '\'') {

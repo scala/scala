@@ -2019,7 +2019,7 @@ trait Typers requires Analyzer {
                     mkTypeBounds(AllClass.tpe, AnyClass.tpe)
             if (vble.name == nme.WILDCARD.toTypeName) context.scope.enter(vble)
             else namer.enterInScope(vble)
-            tree setType vble.tpe
+            tree setSymbol vble setType vble.tpe
           } else {
             if (vble == NoSymbol)
               vble = context.owner.newValue(tree.pos, name)
@@ -2196,7 +2196,9 @@ trait Typers requires Analyzer {
         case Typed(expr, tpt) =>
           val tpt1 = typedType(tpt)
           val expr1 = typed(expr, mode & stickyModes, tpt1.tpe.deconst)
-          val owntype = if ((mode & PATTERNmode) != 0) inferTypedPattern(tpt1.pos, tpt1.tpe, widen(pt)) else tpt1.tpe
+          val owntype =
+            if ((mode & PATTERNmode) != 0) inferTypedPattern(tpt1.pos, tpt1.tpe, widen(pt))
+            else tpt1.tpe
           //Console.println(typed pattern: "+tree+":"+", tp = "+tpt1.tpe+", pt = "+pt+" ==> "+owntype)//DEBUG
           copy.Typed(tree, expr1, tpt1) setType owntype
 
@@ -2359,6 +2361,15 @@ trait Typers requires Analyzer {
             val argtypes = args1 map (.tpe)
             val owntype = if (tpt1.symbol.isClass) appliedType(tpt1.tpe, argtypes)
                           else tpt1.tpe.subst(tparams, argtypes)
+            List.map2(args, tparams) { (arg, tparam) => arg match {
+              // note: can't use args1 in selector, because Bind's got replaced
+              case Bind(_, _) =>
+                if (arg.symbol.isAbstractType)
+                  arg.symbol setInfo
+                    TypeBounds(lub(List(arg.symbol.info.bounds.lo, tparam.info.bounds.lo)),
+                               glb(List(arg.symbol.info.bounds.hi, tparam.info.bounds.hi)))
+              case _ =>
+            }}
             TypeTree(owntype) setOriginal(tree) // setPos tree.pos
           } else if (tparams.length == 0) {
             errorTree(tree, tpt1.tpe+" does not take type parameters")
