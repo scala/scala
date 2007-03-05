@@ -329,6 +329,9 @@ trait Actor extends OutputChannel[Any] {
     if (shouldExit) exit()
     this.synchronized {
       tick()
+      // first, remove spurious TIMEOUT message from mailbox if any
+      val spurious = mailbox.extractFirst((m: Any) => m == TIMEOUT)
+
       val qel = mailbox.extractFirst((m: Any) => f.isDefinedAt(m))
       if (null eq qel) {
         if (msec == 0) {
@@ -392,6 +395,9 @@ trait Actor extends OutputChannel[Any] {
     Scheduler.pendReaction
     this.synchronized {
       tick()
+      // first, remove spurious TIMEOUT message from mailbox if any
+      val spurious = mailbox.extractFirst((m: Any) => m == TIMEOUT)
+
       val qel = mailbox.extractFirst((m: Any) => f.isDefinedAt(m))
       if (null eq qel) {
         waitingFor = f.isDefinedAt
@@ -504,6 +510,7 @@ trait Actor extends OutputChannel[Any] {
   private[actors] var isDetached = false
   private[actors] var isWaiting = false
 
+  // guarded by lock of this
   private[actors] def scheduleActor(f: PartialFunction[Any, Unit], msg: Any) =
     if ((f eq null) && (continuation eq null)) {
       // do nothing (timeout is handled instead)

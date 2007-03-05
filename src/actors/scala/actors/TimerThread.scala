@@ -70,8 +70,7 @@ object TimerThread extends AnyRef with Runnable {
         // process guys waiting for signal and empty list
         for (val wa <- lateList) {
           if (wa.valid) {
-            wa.actor.continuation = null
-            wa.actor.scheduleActor(wa.f, TIMEOUT)
+            wa.actor ! TIMEOUT
           }
         }
         lateList = Nil
@@ -90,8 +89,7 @@ object TimerThread extends AnyRef with Runnable {
   def requestTimeout(a: Actor, f: PartialFunction[Any, Unit], waitMillis: long): unit = synchronized {
     val wakeTime = now + waitMillis
     if (waitMillis <= 0) {
-      a.continuation = null
-      a.scheduleActor(f, TIMEOUT)
+      a ! TIMEOUT
       return
     }
 
