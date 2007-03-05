@@ -22,5 +22,5 @@ trait Undoable {
 
     /** Undo the last operation.
      */
-    def undo: Unit
+    def undo()
 }

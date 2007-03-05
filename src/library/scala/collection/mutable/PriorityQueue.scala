@@ -109,7 +109,7 @@ class PriorityQueue[A <% Ordered[A]] extends ResizableArray[A] {
    *  @throws Predef.NoSuchElementException
    *  @return   the element with the highest priority.
    */
-  def dequeue: A =
+  def dequeue(): A =
     if (size > 1) {
       size = size - 1
       swap(1, size)
@@ -140,7 +140,7 @@ class PriorityQueue[A <% Ordered[A]] extends ResizableArray[A] {
     Array.copy(array, 0, as, 0, size)
     var i = size - 1
     def hasNext: Boolean = i > 0
-    def next: A = {
+    def next(): A = {
       val res = as(1)
       as(1) = as(i)
       i = i - 1

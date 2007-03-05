@@ -234,11 +234,9 @@ abstract class TypeParser {
     if (typ.IsValueType) {
       val box = statics.newMethod(NoPos, nme.box).
         setInfo(MethodType(List(clazz.tpe), definitions.ObjectClass.tpe));
-      definitions.isBox += box;
       definitions.boxMethod(clazz) = box;
       val unbox = statics.newMethod(NoPos, nme.unbox).
         setInfo(MethodType(List(definitions.ObjectClass.tpe), clazz.tpe));
-      definitions.isUnbox += unbox;
       definitions.unboxMethod(clazz) = unbox;
       //Console.println(typ.FullName + " : " + parents);
     }

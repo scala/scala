@@ -204,10 +204,12 @@ trait Definitions requires SymbolTable {
      */
     def unapplyTypeListFromReturnType(tp1: Type): List[Type] =  { // rename: unapplyTypeListFromReturnType
       val tp = unapplyUnwrap(tp1)
-      val   B = BooleanClass;
-      val   O = OptionClass; val S = SomeClass; tp.symbol match { // unapplySeqResultToMethodSig
-	case  B                      => Nil
-	case  O                  | S =>
+      val B = BooleanClass
+      val O = OptionClass
+      val S = SomeClass
+      tp.symbol match { // unapplySeqResultToMethodSig
+	case  B => Nil
+	case  O | S =>
 	  val prod = tp.typeArgs.head
           getProductArgs(prod)  match {
             case Some(all @ (x1::x2::xs)) => all       // n >= 2
@@ -452,10 +454,28 @@ trait Definitions requires SymbolTable {
 
     val boxedClass = new HashMap[Symbol, Symbol]
     val unboxMethod = new HashMap[Symbol, Symbol] // Type -> Method
-    val isUnbox = new HashSet[Symbol]
     val boxMethod = new HashMap[Symbol, Symbol] // Type -> Method
-    val isBox = new HashSet[Symbol]
     val boxedArrayClass = new HashMap[Symbol, Symbol]
+
+    def isUnbox(m: Symbol) = m.name == nme.unbox && {
+      m.tpe match {
+        case MethodType(_, restpe) => (boxMethod get restpe.symbol) match {
+          case Some(`m`) => true
+          case _ => false
+        }
+        case _ => false
+      }
+    }
+
+    def isBox(m: Symbol) = m.name == nme.box && {
+      m.tpe match {
+        case MethodType(List(argtpe), _) => (unboxMethod get argtpe.symbol) match {
+          case Some(`m`) => true
+          case _ => false
+        }
+        case _ => false
+      }
+    }
 
     val refClass = new HashMap[Symbol, Symbol]
     private val abbrvTag = new HashMap[Symbol, char]
@@ -475,7 +495,7 @@ trait Definitions requires SymbolTable {
         })
       val clazz =
         newClass(ScalaPackageClass, name, List(AnyValClass.typeConstructor))
-        .setFlag(ABSTRACT /* SEALED */) // bq: SEALED is interesting for case class descendants, only
+        .setFlag(ABSTRACT | FINAL)
       boxedClass(clazz) = getClass(boxedName)
       boxedArrayClass(clazz) = getClass("scala.runtime.Boxed" + name + "Array")
       refClass(clazz) = getClass("scala.runtime." + name + "Ref")
@@ -489,11 +509,9 @@ trait Definitions requires SymbolTable {
       val box = newMethod(mclass, nme.box, List(clazz.typeConstructor),
                           ObjectClass.typeConstructor)
       boxMethod(clazz) = box
-      isBox += box
       val unbox = newMethod(mclass, nme.unbox, List(ObjectClass.typeConstructor),
                             clazz.typeConstructor)
       unboxMethod(clazz) = unbox
-      isUnbox += unbox
 
       clazz
     }
@@ -709,7 +727,7 @@ trait Definitions requires SymbolTable {
       val anyparam = List(AnyClass.typeConstructor)
 
       AnyValClass = newClass(ScalaPackageClass, nme.AnyVal, anyparam)
-        .setFlag(FINAL | SEALED)
+        .setFlag(SEALED)
 
       ObjectClass = getClass(if (forMSIL) "System.Object" else "java.lang.Object")
 

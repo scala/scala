@@ -51,7 +51,7 @@ object Source {
   def fromChar(c: Char): Source = {
     val it = Iterator.single(c)
     new Source {
-      def reset = fromChar(c)
+      def reset() = fromChar(c)
       val iter = it
     }
   }
@@ -64,7 +64,7 @@ object Source {
   def fromChars(chars: Array[Char]): Source = {
     val it = Iterator.fromArray(chars)
     new Source {
-      def reset = fromChars(chars)
+      def reset() = fromChars(chars)
       val iter = it
     }
   }
@@ -77,7 +77,7 @@ object Source {
   def fromString(s: String): Source = {
     val it = Iterator.fromString(s)
     new Source {
-      def reset = fromString(s)
+      def reset() = fromString(s)
       val iter = it
     }
   }
@@ -157,7 +157,7 @@ object Source {
       data = bufIn.read()
     }
     val s = new Source {
-      def reset = fromURL(url)
+      def reset() = fromURL(url)
       val iter = it
     }
     s.descr = url.toString()
@@ -366,6 +366,6 @@ abstract class Source extends Iterator[Char] {
   }
 
   /** the actual reset method */
-  def reset: Source
+  def reset(): Source
 
 }

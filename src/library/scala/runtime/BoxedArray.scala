@@ -43,7 +43,7 @@ abstract class BoxedArray extends Seq[Any] {
   def elements = new Iterator[Any] {
     var index = 0
     def hasNext: Boolean = index < length
-    def next: Any = { val i = index; index = i + 1; apply(i) }
+    def next(): Any = { val i = index; index = i + 1; apply(i) }
   }
 
   /** The underlying array value

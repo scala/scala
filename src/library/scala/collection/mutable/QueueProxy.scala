@@ -71,7 +71,7 @@ trait QueueProxy[A] extends Queue[A] with SeqProxy[A] {
    *
    *  @return the first element of the queue.
    */
-  override def dequeue: A = self.dequeue
+  override def dequeue(): A = self.dequeue
 
   /** Returns the first element in the queue, or throws an error if there
    *  is no element contained in the queue.

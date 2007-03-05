@@ -21,7 +21,7 @@ package scala.testing
 object UnitTest {
 
   class Report(report_ok: () => Unit, report_fail: (String,String) => Unit) {
-    def ok: Unit = report_ok()
+    def ok(): Unit = report_ok()
     def fail(actual: String, expected: String): Unit =
       report_fail(actual, expected)
   }

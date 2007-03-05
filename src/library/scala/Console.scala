@@ -148,11 +148,11 @@ object Console {
    *  output (i.e. output not terminated by a new line character) has
    *  to be made visible on the terminal.
    */
-  def flush: Unit = out.flush()
+  def flush(): Unit = out.flush()
 
   /** Print a new line character on the terminal.
    */
-  def println: Unit = out.println()
+  def println(): Unit = out.println()
 
   /** Print out an object followed by a new line character.
    *
@@ -194,7 +194,7 @@ object Console {
    *
    *  @return the string read from the terminal.
    */
-  def readLine: String = in.readLine()
+  def readLine(): String = in.readLine()
 
   /** Print a formatted text and read a full line from the terminal
    *
@@ -204,7 +204,7 @@ object Console {
    */
   def readLine(text: String, args: Any*): String = {
     format(text, args: _*)
-    readLine
+    readLine()
   }
 
 
@@ -212,7 +212,7 @@ object Console {
    *
    *  @return the boolean value read from the terminal.
    */
-  def readBoolean: Boolean = readLine.toLowerCase() match {
+  def readBoolean(): Boolean = readLine().toLowerCase() match {
     case "true" => true
     case "t" => true
     case "yes" => true
@@ -222,27 +222,27 @@ object Console {
 
   /** Read a byte value from the terminal.
    */
-  def readByte: Byte = readLine.toByte
+  def readByte(): Byte = readLine().toByte
 
   /** Read a short value from the terminal.
    */
-  def readShort: Short = readLine.toByte
+  def readShort(): Short = readLine().toByte
 
   /** Read a char value from the terminal.
    */
-  def readChar: Char = readLine charAt 0
+  def readChar(): Char = readLine() charAt 0
 
   /** Read an int value from the terminal.
    */
-  def readInt: Int = readLine.toInt
+  def readInt(): Int = readLine().toInt
 
   /** Read a float value from the terminal.
    */
-  def readFloat: Float = readLine.toFloat
+  def readFloat(): Float = readLine().toFloat
 
   /** Read a double value from the terminal.
    */
-  def readDouble: Double = readLine.toDouble
+  def readDouble(): Double = readLine().toDouble
 
   /** Read in some structured input, specified by a format specifier.
    *  See class <code>java.text.MessageFormat</code> for details of
@@ -252,7 +252,7 @@ object Console {
    *  @return a list of all extracted values.
    */
   def readf(format: String): List[Any] =
-    textComponents(new MessageFormat(format).parse(readLine))
+    textComponents(new MessageFormat(format).parse(readLine()))
 
   /** Read in some structured input, specified by a format specifier.
    *  Opposed to <code>readf</code>, this function only returns the

@@ -841,8 +841,10 @@ trait Symbols requires SymbolTable {
       if (this hasFlag PRIVATE) {
         setFlag(notPRIVATE)
         if (!hasFlag(DEFERRED) && isTerm) setFlag(lateFINAL)
-        expandName(base)
-        if (isModule) moduleClass.makeNotPrivate(base)
+        if (!isStaticModule) {
+          expandName(base)
+          if (isModule) moduleClass.makeNotPrivate(base)
+        }
       }
 
     /** change name by appending $$<fully-qualified-name-of-class `base'>

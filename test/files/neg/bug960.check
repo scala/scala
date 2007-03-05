@@ -1,0 +1,7 @@
+bug960.scala:18: error: cannot resolve overloaded unapply
+    case List(x, xs) => 7
+         ^
+bug960.scala:12: error: method unapply is defined twice
+  def unapply[a](xs: List[a]): Option[Null] = xs match {
+  ^
+two errors found

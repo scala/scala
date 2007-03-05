@@ -98,7 +98,7 @@ trait Map[A, +B] extends PartialFunction[A, B] with Iterable[(A, B)] {
 
   /** @return the keys of this map as a set.
    */
-  def keySet = new Set[A] {
+  def keySet: Set[A] = new Set[A] {
     def size = Map.this.size
     def contains(key : A) = Map.this.contains(key)
     def elements = Map.this.elements.map(._1)

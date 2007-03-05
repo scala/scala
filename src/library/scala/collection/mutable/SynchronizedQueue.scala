@@ -60,7 +60,7 @@ class SynchronizedQueue[A] extends Queue[A] {
    *
    *  @return the first element of the queue.
    */
-  override def dequeue: A = synchronized { super.dequeue }
+  override def dequeue(): A = synchronized { super.dequeue }
 
   /** Returns the first element in the queue, or throws an error if there
    *  is no element contained in the queue.

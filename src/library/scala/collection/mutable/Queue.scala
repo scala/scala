@@ -63,7 +63,7 @@ class Queue[A] extends MutableList[A] {
    *  @throws Predef.NoSuchElementException
    *  @return the first element of the queue.
    */
-  def dequeue: A =
+  def dequeue(): A =
     if (first eq null)
       throw new NoSuchElementException("queue empty")
     else {

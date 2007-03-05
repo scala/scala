@@ -105,7 +105,7 @@ trait FlatHashTable[A] {
       while (i < table.length && (null == table(i))) i = i + 1;
       i < table.length
     }
-    def next: A =
+    def next(): A =
       if (hasNext) { i = i + 1; table(i - 1).asInstanceOf[A] }
       else Iterator.empty.next
   }

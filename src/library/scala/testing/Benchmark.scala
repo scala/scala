@@ -38,7 +38,7 @@ import compat.Platform
 trait Benchmark {
 
   /** this method should be implemented by the concrete benchmark */
-  def run: Unit
+  def run()
 
   var multiplier = 1
 
@@ -53,7 +53,7 @@ trait Benchmark {
     for (val i <- List.range(1, noTimes + 1)) yield {
       val startTime = Platform.currentTime
       var i = 0; while(i < multiplier) {
-        run
+        run()
         i = i + 1
       }
       val stopTime = Platform.currentTime

@@ -31,7 +31,7 @@ trait ObservableBuffer[A, This <: ObservableBuffer[A, This]] requires This
   abstract override def +(element: A): Buffer[A] = {
     super.+(element)
     publish(new Include((End, element)) with Undoable {
-      def undo: Unit = trimEnd(1)
+      def undo() { trimEnd(1) }
     })
     this
   }
@@ -39,7 +39,7 @@ trait ObservableBuffer[A, This <: ObservableBuffer[A, This]] requires This
   abstract override def +:(element: A): Buffer[A] = {
     super.+:(element);
     publish(new Include((Start, element)) with Undoable {
-      def undo: Unit = trimStart(1)
+      def undo() { trimStart(1) }
     })
     this
   }
@@ -50,7 +50,7 @@ trait ObservableBuffer[A, This <: ObservableBuffer[A, This]] requires This
     val it = iter.elements
     while (it.hasNext) {
       publish(new Include((Index(i), it.next)) with Undoable {
-        def undo: Unit = remove(i);
+        def undo { remove(i) }
       })
       i = i + 1
     }
@@ -60,7 +60,7 @@ trait ObservableBuffer[A, This <: ObservableBuffer[A, This]] requires This
     val oldelement = apply(n)
     super.update(n, newelement)
     publish(new Update((Index(n), newelement)) with Undoable {
-      def undo: Unit = update(n, oldelement)
+      def undo { update(n, oldelement) }
     })
   }
 
@@ -68,7 +68,7 @@ trait ObservableBuffer[A, This <: ObservableBuffer[A, This]] requires This
     val oldelement = apply(n)
     super.remove(n)
     publish(new Remove((Index(n), oldelement)) with Undoable {
-      def undo: Unit = insert(n, oldelement)
+      def undo { insert(n, oldelement) }
     })
     oldelement
   }
@@ -76,7 +76,7 @@ trait ObservableBuffer[A, This <: ObservableBuffer[A, This]] requires This
   abstract override def clear(): Unit = {
     super.clear
     publish(new Reset with Undoable {
-      def undo: Unit = throw new UnsupportedOperationException("cannot undo")
+      def undo { throw new UnsupportedOperationException("cannot undo") }
     })
   }
 }

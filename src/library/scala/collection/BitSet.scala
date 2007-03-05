@@ -51,7 +51,7 @@ abstract class BitSet extends Set[Int] {
      }
      findNext
      def hasNext: Boolean = i < capacity
-     def next: Int = { val j = i; i = i + 1; findNext; j }
+     def next(): Int = { val j = i; i = i + 1; findNext; j }
    }
 
 

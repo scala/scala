@@ -40,7 +40,7 @@ trait Publisher[A, This <: Publisher[A, This]] requires This {
 
   def removeSubscription(sub: Subscriber[A, This]): Unit = filters -= sub
 
-  def removeSubscriptions: Unit = filters.clear
+  def removeSubscriptions() { filters.clear }
 
   protected def publish(event: A): Unit =
     filters.keys.foreach(sub =>

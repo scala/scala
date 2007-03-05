@@ -55,7 +55,7 @@ final class RichChar(x: Char) extends Proxy with Ordered[Char] {
   def to(y: Char): Iterator[Char] = new BufferedIterator[Char] {
     private var ch = x
     def hasNext: Boolean = ch < y
-    def next: Char =
+    def next(): Char =
       if (hasNext) { val j = ch; ch = (ch + 1).toChar; j }
       else throw new NoSuchElementException("next on empty iterator")
     def head: Char =

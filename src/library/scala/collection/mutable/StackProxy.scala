@@ -77,7 +77,7 @@ trait StackProxy[A] extends Stack[A] with SeqProxy[A] {
 
   /** Removes the top element from the stack.
    */
-  override def pop: A = self.pop
+  override def pop(): A = self.pop
 
   /**
    * Removes all elements from the stack. After this operation completed,

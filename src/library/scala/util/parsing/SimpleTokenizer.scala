@@ -36,7 +36,7 @@ class SimpleTokenizer(in: Iterator[char], delimiters: String) extends Iterator[S
 
   private val EOI = -1
 
-  private def nextChar: int = if (in.hasNext) in.next else EOI
+  private def nextChar(): int = if (in.hasNext) in.next else EOI
 
   private var ch: int = nextChar
 
@@ -44,17 +44,17 @@ class SimpleTokenizer(in: Iterator[char], delimiters: String) extends Iterator[S
 
   def hasNext: boolean = ch != EOI
 
-  def next: String = {
-    while (ch <= ' ' && ch != EOI) ch = nextChar
+  def next(): String = {
+    while (ch <= ' ' && ch != EOI) ch = nextChar()
     if (ch == EOI) ""
     else {
       buf.setLength(0)
       if (isDelimiter(ch)) {
-        buf append ch.asInstanceOf[char]; ch = nextChar
+        buf append ch.asInstanceOf[char]; ch = nextChar()
       } else {
         while (ch > ' ' && ch != EOI && !isDelimiter(ch)) {
           buf append ch.asInstanceOf[char]
-          ch = nextChar
+          ch = nextChar()
         }
       }
       if (tracing) Console.println("<" + buf.toString() + ">")

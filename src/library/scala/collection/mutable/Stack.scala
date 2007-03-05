@@ -72,7 +72,7 @@ class Stack[A] extends MutableList[A] {
    *  @throws Predef.NoSuchElementException
    *  @return the top element
    */
-  def pop: A =
+  def pop(): A =
     if (first ne null) {
       val res = first.elem
       first = first.next

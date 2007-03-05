@@ -26,7 +26,7 @@ class CharInputStreamIterator(in: InputStream) extends Iterator[char] {
   private var chSet = false
   private var error: IOException = null
 
-  private def lookahead: unit = try {
+  private def lookahead(): unit = try {
     ch = in.read(); chSet = ch >= 0
   } catch {
     case ex: EOFException => ch = -1
@@ -38,7 +38,7 @@ class CharInputStreamIterator(in: InputStream) extends Iterator[char] {
     chSet
   }
 
-  def next: char = {
+  def next(): char = {
     if (!chSet) lookahead
     chSet = false
     ch.asInstanceOf[char]

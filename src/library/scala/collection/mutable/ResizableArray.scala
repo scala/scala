@@ -53,7 +53,7 @@ trait ResizableArray[A] extends Seq[A] {
   def elements: Iterator[A] = new Iterator[A] {
     var i = 0
     def hasNext: Boolean = i < size
-    def next: A = { i = i + 1; array(i - 1) }
+    def next(): A = { i = i + 1; array(i - 1) }
   }
 
   //##########################################################################

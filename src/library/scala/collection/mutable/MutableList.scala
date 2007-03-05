@@ -60,7 +60,7 @@ trait MutableList[A] extends Seq[A] with PartialFunction[Int, A] {
       len = len + 1
     }
 
-  protected def reset: Unit = {
+  protected def reset() {
     first = null
     last = null
     len = 0

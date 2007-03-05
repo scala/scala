@@ -27,7 +27,7 @@ object Iterator {
 
   val empty = new Iterator[Nothing] {
     def hasNext: Boolean = false
-    def next: Nothing = throw new NoSuchElementException("next on empty iterator")
+    def next(): Nothing = throw new NoSuchElementException("next on empty iterator")
   }
 
   /**
@@ -37,7 +37,7 @@ object Iterator {
   def single[a](x: a) = new Iterator[a] {
     private var hasnext = true
     def hasNext: Boolean = hasnext
-    def next: a =
+    def next(): a =
       if (hasnext) { hasnext = false; x }
       else throw new NoSuchElementException("next on empty iterator")
   }
@@ -62,8 +62,8 @@ object Iterator {
       private var i = start
       val end = if ((start + length) < xs.length) start else xs.length
       def hasNext: Boolean = i < end
-      def next: a = if (hasNext) { val x = xs(i) ; i = i + 1 ; x }
-                    else throw new NoSuchElementException("next on empty iterator")
+      def next(): a = if (hasNext) { val x = xs(i) ; i = i + 1 ; x }
+                      else throw new NoSuchElementException("next on empty iterator")
       def head: a = if (hasNext) xs(i);
                     else throw new NoSuchElementException("head on empty iterator")
   }
@@ -77,7 +77,7 @@ object Iterator {
       private var i = 0
       private val len = str.length()
       def hasNext = i < len
-      def next = { val c = str charAt i; i = i + 1; c }
+      def next() = { val c = str charAt i; i = i + 1; c }
       def head = str charAt i
     }
 
@@ -89,7 +89,7 @@ object Iterator {
     private var c: Int = 0
     private val cmax = n.arity
     def hasNext = c < cmax
-    def next = { val a = n element c; c = c + 1; a }
+    def next() = { val a = n element c; c = c + 1; a }
   }
 
   /**
@@ -125,7 +125,7 @@ object Iterator {
     new BufferedIterator[Int] {
       private var i = lo
       def hasNext: Boolean = if (step > 0) i < end else i > end
-      def next: Int =
+      def next(): Int =
         if (hasNext) { val j = i; i = i + step; j }
         else throw new NoSuchElementException("next on empty iterator")
       def head: Int =
@@ -148,7 +148,7 @@ object Iterator {
     new BufferedIterator[Int] {
       private var i = lo
       def hasNext: Boolean =  i < end
-      def next: Int =
+      def next(): Int =
         if (i < end) { val j = i; i = step(i); j }
         else throw new NoSuchElementException("next on empty iterator")
       def head: Int =
@@ -178,7 +178,7 @@ object Iterator {
     new BufferedIterator[Int] {
       private var i = lo
       def hasNext: Boolean = true
-      def next: Int = { val j = i; i = i + step; j }
+      def next(): Int = { val j = i; i = i + step; j }
       def head: Int = i
     }
 
@@ -194,7 +194,7 @@ object Iterator {
     new BufferedIterator[Int] {
       private var i = lo
       def hasNext: Boolean = true
-      def next: Int = { val j = i; i = step(i); j }
+      def next(): Int = { val j = i; i = step(i); j }
       def head: Int = i
     }
 
@@ -216,7 +216,7 @@ trait Iterator[+A] {
 
   /** Returns the next element.
    */
-  def next: A
+  def next(): A
 
   /** Returns a new iterator that iterates only over the first <code>n</code>
    *  elements.
@@ -227,7 +227,7 @@ trait Iterator[+A] {
   def take(n: Int) = new Iterator[A] {
     var remaining = n
     def hasNext = remaining > 0 && Iterator.this.hasNext
-    def next: A =
+    def next(): A =
       if (hasNext) { remaining = remaining - 1; Iterator.this.next }
       else throw new NoSuchElementException("next on empty iterator")
   }
@@ -245,7 +245,7 @@ trait Iterator[+A] {
    */
   def map[B](f: A => B): Iterator[B] = new Iterator[B] {
     def hasNext = Iterator.this.hasNext
-    def next = f(Iterator.this.next)
+    def next() = f(Iterator.this.next)
   }
 
   /** Returns a new iterator that first yields the elements of this
@@ -254,7 +254,7 @@ trait Iterator[+A] {
    */
   def append[B >: A](that: Iterator[B]) = new Iterator[B] {
     def hasNext = Iterator.this.hasNext || that.hasNext
-    def next = if (Iterator.this.hasNext) Iterator.this.next else that.next
+    def next() = if (Iterator.this.hasNext) Iterator.this.next else that.next
   }
 
   /** Returns a new iterator that first yields the elements of this
@@ -262,7 +262,7 @@ trait Iterator[+A] {
    */
   def ++[B >: A](that: Iterator[B]) = new Iterator[B] {
     def hasNext = Iterator.this.hasNext || that.hasNext
-    def next = if (Iterator.this.hasNext) Iterator.this.next else that.next
+    def next() = if (Iterator.this.hasNext) Iterator.this.next else that.next
   }
 
   /** Applies the given function <code>f</code> to each element of
@@ -281,7 +281,7 @@ trait Iterator[+A] {
         cur = f(Iterator.this.next)
         hasNext
       } else false
-    def next: B =
+    def next(): B =
       if (cur.hasNext) cur.next
       else if (Iterator.this.hasNext) {
         cur = f(Iterator.this.next)
@@ -301,7 +301,7 @@ trait Iterator[+A] {
       skip
       ahead && p(hd)
     }
-    def next: A =
+    def next(): A =
       if (hasNext) { ahead = false; hd }
       else throw new NoSuchElementException("next on empty iterator")
     def head: A = { skip; hd }

@@ -42,7 +42,7 @@ abstract class DoubleLinkedList[A, This >: Null <: DoubleLinkedList[A, This]]
     that.prev = this
   }
 
-  def remove: Unit = {
+  def remove() {
     if (next ne null)
       next.prev = prev
     if (prev ne null)

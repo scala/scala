@@ -72,7 +72,7 @@ abstract class PriorityQueueProxy[A <% Ordered[A]] extends PriorityQueue[A]
    *
    *  @return   the element with the highest priority.
    */
-  override def dequeue: A = self.dequeue
+  override def dequeue(): A = self.dequeue
 
   /** Returns the element with the highest priority in the queue,
    *  or throws an error if there is no element contained in the queue.

@@ -80,7 +80,7 @@ final class RichString(val self: String) extends Proxy with Seq[Char] with Order
     val len = self.length
     var index = 0
     def hasNext: Boolean = index < len
-    def next: String = {
+    def next(): String = {
       if (index >= len) throw new NoSuchElementException("next on empty iterator")
       val start = index
       while (index < len && !isLineBreak(apply(index))) index = index + 1
