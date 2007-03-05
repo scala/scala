@@ -424,7 +424,9 @@ trait Actor extends OutputChannel[Any] {
   /**
    * Sends <code>msg</code> to this actor (asynchronous).
    */
-  def !(msg: Any): Unit = send(msg, Actor.self.getReplyChannel)
+  def !(msg: Any): Unit = {
+    send(msg, Actor.self.getReplyChannel)
+  }
 
   def forward(msg: Any): Unit = send(msg, Actor.sender.getReplyChannel)
 

@@ -12,8 +12,8 @@ package scala.actors
  * @author Philipp Haller
  */
 abstract class Future[T](val ch: InputChannel[Any]) extends Function0[T] {
+  protected var value: Option[T] = None
   def isSet: boolean
-  var value: Option[T] = None
 }
 
 /**
@@ -24,7 +24,7 @@ abstract class Future[T](val ch: InputChannel[Any]) extends Function0[T] {
  */
 object Futures {
 
-  def spawn[T](body: => T): Future[T] = {
+  def future[T](body: => T): Future[T] = {
     case object Eval
     val a = Actor.actor {
       Actor.react {
@@ -34,7 +34,11 @@ object Futures {
     a !! (Eval, { case any => any.asInstanceOf[T] })
   }
 
-  def alarm(t: long) = spawn { Thread.sleep(t) }
+  def alarm(t: long) = future {
+    Actor.reactWithin(t) {
+      case TIMEOUT => {}
+    }
+  }
 
   def awaitEither[a, b](ft1: Future[a], ft2: Future[b]): Any = {
     val FutCh1 = ft1.ch; val FutCh2 = ft2.ch
