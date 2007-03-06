@@ -1981,7 +1981,7 @@ trait Typers requires Analyzer {
             TypeTree(arg1.tpe.withAttribute(ainfo)) setOriginal tree
           if (arg1.isType) {
             val annotInfo = typedAnnotation(annot, identity[Tree])
-            annotTypeTree(annotInfo)
+            if (settings.Xplugtypes.value) annotTypeTree(annotInfo) else arg1
           } else {
             val annotInfo = typedAnnotation(annot, getConstant)
             arg1 match {
