@@ -1256,10 +1256,14 @@ trait Typers requires Analyzer {
       val codeExpected = !forCLDC && !forMSIL && (pt.symbol isNonBottomSubClass CodeClass)
 
       def decompose(pt: Type): (Symbol, List[Type], Type) =
-        if (isFunctionType(pt)
-            ||
-            pt.symbol == PartialFunctionClass &&
-            fun.vparams.length == 1 && fun.body.isInstanceOf[Match])
+        if ((isFunctionType(pt)
+             ||
+             pt.symbol == PartialFunctionClass &&
+             fun.vparams.length == 1 && fun.body.isInstanceOf[Match])
+            && // see bug901 for a reason why next conditions are neeed
+            (pt.typeArgs.length - 1 == fun.vparams.length
+             ||
+             fun.vparams.exists(.tpt.isEmpty)))
           (pt.symbol, pt.typeArgs.init, pt.typeArgs.last)
         else
           (FunctionClass(fun.vparams.length), fun.vparams map (x => NoType), WildcardType)
