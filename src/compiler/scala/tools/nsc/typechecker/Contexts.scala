@@ -408,26 +408,31 @@ trait Contexts requires Analyzer {
     }
 
     def implicitss: List[List[ImplicitInfo]] = {
+      val nextOuter =
+        if (owner.isConstructor) {
+          if (outer.tree.isInstanceOf[Template]) outer.outer.outer
+          else outer.outer
+        } else outer
       if (implicitsRunId != currentRunId) {
         implicitsRunId = currentRunId
         implicitsCache = List()
         val newImplicits: List[ImplicitInfo] =
-          if (owner != outer.owner && owner.isClass && !owner.isPackageClass) {
-            if (!owner.isInitialized) return outer.implicitss
+          if (owner != nextOuter.owner && owner.isClass && !owner.isPackageClass) {
+            if (!owner.isInitialized) return nextOuter.implicitss
             if (settings.debug.value)
               log("collect member implicits " + owner + ", implicit members = " +
                   owner.thisType.implicitMembers)//debug
             collectImplicits(owner.thisType.implicitMembers, owner.thisType)
-          } else if (scope != outer.scope && !owner.isPackageClass) {
+          } else if (scope != nextOuter.scope && !owner.isPackageClass) {
             if (settings.debug.value)
               log("collect local implicits " + scope.toList)//debug
             collectImplicits(scope.toList, NoPrefix)
-          } else if (imports != outer.imports) {
-            assert(imports.tail == outer.imports)
+          } else if (imports != nextOuter.imports) {
+            assert(imports.tail == nextOuter.imports)
             collectImplicitImports(imports.head)
           } else List()
-        implicitsCache = if (newImplicits.isEmpty) outer.implicitss
-                         else newImplicits :: outer.implicitss
+        implicitsCache = if (newImplicits.isEmpty) nextOuter.implicitss
+                         else newImplicits :: nextOuter.implicitss
       }
       implicitsCache
     }
