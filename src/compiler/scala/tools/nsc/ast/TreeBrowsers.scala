@@ -356,11 +356,8 @@ abstract class TreeBrowsers {
       case TypeTree() =>
         ("TypeTree", EMPTY)
 
-      case Annotated(constr, elements, arg) =>
+      case Annotated(annot, arg) =>
         ("Annotated", EMPTY)
-
-      case AttributedTypeTree(attribs, tpt) =>
-        ("AttributedTypeTree", EMPTY)
 
       case SingletonTypeTree(ref) =>
         ("SingletonType", EMPTY)
@@ -506,8 +503,8 @@ abstract class TreeBrowsers {
       case TypeTree() =>
         Nil
 
-      case Annotated(constr, elements, arg) =>
-        constr :: elements ::: List(arg)
+      case Annotated(annot, arg) =>
+        annot.constr :: annot.elements ::: List(arg)
 
       case SingletonTypeTree(ref) =>
         List(ref)
@@ -660,9 +657,9 @@ abstract class TreeBrowsers {
                         toDocument(result) :: ")")
         )
 
-      case AttributedType(attribs, tp) =>
+      case AnnotatedType(attribs, tp) =>
         Document.group(
-          Document.nest(4, "AttributedType(" :/:
+          Document.nest(4, "AnnotatedType(" :/:
                         attribs.mkString("[", ",", "]") :/:
                         "," :/: toDocument(tp) :: ")")
         )

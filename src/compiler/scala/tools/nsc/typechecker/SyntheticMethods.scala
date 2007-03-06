@@ -210,7 +210,7 @@ trait SyntheticMethods requires Analyzer {
 
       if (clazz hasFlag CASE) {
         // case classes are implicitly declared serializable
-        clazz.attributes = AttrInfo(SerializableAttr.tpe, List(), List()) :: clazz.attributes
+        clazz.attributes = AnnotationInfo(SerializableAttr.tpe, List(), List()) :: clazz.attributes
 
         for (val stat <- templ.body) {
           if (stat.isDef && stat.symbol.isMethod && stat.symbol.hasFlag(CASEACCESSOR) && !isPublic(stat.symbol)) {

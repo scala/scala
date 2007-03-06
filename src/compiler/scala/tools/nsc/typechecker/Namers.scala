@@ -570,14 +570,14 @@ trait Namers requires Analyzer {
       val sym: Symbol = tree.symbol
       tree match {
         case defn: MemberDef =>
-          val annots = for {
-            val Annotation(constr, elements) <- defn.mods.attributes
-            val ainfo = typer.typedAnnotation(constr, elements)
+          val ainfos = for {
+            val annot <- defn.mods.annotations
+            val ainfo = typer.typedAnnotation(annot, typer.getConstant)
             !ainfo.atp.isError
           } yield ainfo
-          if (!annots.isEmpty) {
+          if (!ainfos.isEmpty) {
             val annotated = if (sym.isModule) sym.moduleClass else sym
-            annotated.attributes = annots
+            annotated.attributes = ainfos
           }
         case _ =>
       }

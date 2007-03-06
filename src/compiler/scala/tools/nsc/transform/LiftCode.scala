@@ -213,7 +213,7 @@ abstract class LiftCode extends Transform {
         if (_log_reify_type_) Console.println("cannot handle MethodType "+tp); null
       case PolyType(tparams, result) =>
         if (_log_reify_type_) Console.println("cannot handle PolyType  "+tp); null;
-      case AttributedType(attribs, tp) =>
+      case AnnotatedType(attribs, tp) =>
         reify(tp)
       case _ =>
         null

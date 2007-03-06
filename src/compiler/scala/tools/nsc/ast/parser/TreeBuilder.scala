@@ -103,9 +103,7 @@ abstract class TreeBuilder {
     case _ => t
   }
 
-  def makeAnnotated(t: Tree, attr: Tree): Tree = attr match {
-    case Annotation(constr, elements) => Annotated(constr, elements, t) setPos attr.pos
-  }
+  def makeAnnotated(t: Tree, annot: Annotation): Tree = Annotated(annot, t) setPos annot.pos
 
   def makeSelfDef(name: Name, tpt: Tree): ValDef =
     ValDef(Modifiers(PRIVATE), name, tpt, EmptyTree)
@@ -371,7 +369,7 @@ abstract class TreeBuilder {
     makeVisitor(cases, checkExhaustive, "x$")
 
   private def makeUnsealed(expr: Tree): Tree =
-    Annotated(New(scalaDot(definitions.UnsealedClass.name), List(List())), List(), expr)
+    Annotated(Annotation(New(scalaDot(definitions.UnsealedClass.name), List(List())), List()), expr)
 
   /** Create visitor <x => x match cases> */
   def makeVisitor(cases: List[CaseDef], checkExhaustive: boolean, prefix: String): Tree = {

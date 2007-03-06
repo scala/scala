@@ -104,14 +104,14 @@ abstract class TreePrinters {
       if (s.length() != 0) print(s + " ")
     }
 
-    def printAnnotations(tree: Tree): unit = {
-      val attrs = tree.symbol.attributes
-      if (!attrs.isEmpty)
-        attrs foreach { attr => print("@"+attr+" ") }
+    def printAnnotations(tree: Tree) {
+      val annots = tree.symbol.attributes
+      if (!annots.isEmpty)
+        annots foreach { annot => print("@"+annot+" ") }
       else {
-        val attrs = tree.asInstanceOf[MemberDef].mods.attributes
-        if (!attrs.isEmpty)
-          attrs foreach { attr => print("@"+attr+" ") }
+        val annots = tree.asInstanceOf[MemberDef].mods.annotations
+        if (!annots.isEmpty)
+          annots foreach { annot => print("@"+annot+" ") }
       }
     }
 
@@ -298,18 +298,8 @@ abstract class TreePrinters {
               tree.tpe.toString()
           )
 
-        case AttributedTypeTree(attribs, tree) =>
-          for(val attrib <- attribs) {
-            print("[")
-            print(attrib)
-            print("]")
-          }
-          if(!attribs.isEmpty)
-            print(" ")
-          print(tree)
-
-        case Annotated(Apply(Select(New(tpt), nme.CONSTRUCTOR), args), elements, tree) =>
-          def printAttr() {
+        case Annotated(Annotation(Apply(Select(New(tpt), nme.CONSTRUCTOR), args), elements), tree) =>
+          def printAnnot() {
             print("@"); print(tpt)
             if (!args.isEmpty)
               printRow(args, "(", ",", ")")
@@ -317,8 +307,8 @@ abstract class TreePrinters {
               print((for (val Assign(name, value) <- elements) yield "val " + name + " = " + value).
                     mkString("{", ",", "}"))
           }
-          if (tree.isType) { printAttr(); print(" "); print(tree) }
-          else { print(tree); print(": "); printAttr() }
+          if (tree.isType) { printAnnot(); print(" "); print(tree) }
+          else { print(tree); print(": "); printAnnot() }
 
         case SingletonTypeTree(ref) =>
           print(ref); print(".type")

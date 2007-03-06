@@ -294,7 +294,7 @@ abstract class UnPickler {
           if (isNameEntry(argref)) assocs += (at(argref, readName), readConstantRef())
           else args += at(argref, readConstant)
         }
-        val attr = AttrInfo(attrType, args.toList, assocs.toList)
+        val attr = AnnotationInfo(attrType, args.toList, assocs.toList)
         target.attributes = attr :: target.attributes
       } else if (tag == CHILDREN) {
         while (readIndex != end) target addChild readSymbolRef()

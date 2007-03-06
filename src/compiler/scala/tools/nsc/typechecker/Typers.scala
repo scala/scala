@@ -910,7 +910,7 @@ trait Typers requires Analyzer {
               else typed(atPos(vdef.pos)(Select(This(value.owner), value)), EXPRmode, value.tpe))
           result.tpt.asInstanceOf[TypeTree] setOriginal tpt /* setPos tpt.pos */
           checkNoEscaping.privates(getter, result.tpt)
-          copy.DefDef(result, result.mods withAnnotations mods.attributes, result.name,
+          copy.DefDef(result, result.mods withAnnotations mods.annotations, result.name,
                       result.tparams, result.vparamss, result.tpt, result.rhs)
           //todo: withAnnotations is probably unnecessary
         }
@@ -924,7 +924,7 @@ trait Typers requires Analyzer {
               else
                 typed(Assign(Select(This(value.owner), value),
                              Ident(vparamss.head.head)))))
-          copy.DefDef(result, result.mods withAnnotations mods.attributes, result.name,
+          copy.DefDef(result, result.mods withAnnotations mods.annotations, result.name,
                       result.tparams, result.vparamss, result.tpt, result.rhs)
         }
         val gs = if (mods hasFlag MUTABLE) List(getterDef, setterDef)
@@ -934,8 +934,8 @@ trait Typers requires Analyzer {
       case DocDef(comment, defn) =>
         addGetterSetter(defn) map (stat => DocDef(comment, stat))
 
-      case Annotated(constr, elements, defn) =>
-        addGetterSetter(defn) map (stat => Annotated(constr, elements, stat))
+      case Annotated(annot, defn) =>
+        addGetterSetter(defn) map (stat => Annotated(annot, stat))
 
       case _ =>
         List(stat)
@@ -1566,25 +1566,26 @@ trait Typers requires Analyzer {
       }
     }
 
-    def typedAnnotation(constr: Tree, elements: List[Tree]): AttrInfo = {
+    def getConstant(tree: Tree): Constant = tree match {
+      case Literal(value) => value
+      case arg => error(arg.pos, "attribute argument needs to be a constant; found: "+arg); Constant(null)
+    }
+
+    def typedAnnotation[T](annot: Annotation, reify: Tree => T): AnnotationInfo[T] = {
       var attrError: Boolean = false;
       def error(pos: PositionType, msg: String): Null = {
         context.error(pos, msg)
         attrError = true
         null
       }
-      def getConstant(tree: Tree): Constant = tree match {
-        case Literal(value) => value
-        case arg => error(arg.pos, "attribute argument needs to be a constant; found: "+arg)
-      }
-      typed(constr, EXPRmode | CONSTmode, AnnotationClass.tpe) match {
+      typed(annot.constr, EXPRmode | CONSTmode, AnnotationClass.tpe) match {
         case t @ Apply(Select(New(tpt), nme.CONSTRUCTOR), args) =>
           if (t.isErroneous) {
-            AttrInfo(ErrorType, List(), List())
+            AnnotationInfo[T](ErrorType, List(), List())
           }
           else {
             val annType = tpt.tpe
-            val constrArgs = args map getConstant
+            val constrArgs = args map reify
             val attrScope = annType.decls
               .filter(sym => sym.isMethod && !sym.isConstructor && sym.hasFlag(JAVA))
             val names = new collection.mutable.HashSet[Symbol]
@@ -1592,7 +1593,7 @@ trait Typers requires Analyzer {
             if (args.length == 1) {
               names.retain(sym => sym.name != nme.value)
             }
-            val nvPairs = elements map {
+            val nvPairs = annot.elements map {
               case Assign(ntree @ Ident(name), rhs) => {
                 val sym = attrScope.lookup(name);
                 if (sym == NoSymbol) {
@@ -1601,20 +1602,20 @@ trait Typers requires Analyzer {
                   error(ntree.pos, "duplicate value for element " + name)
                 } else {
                   names -= sym
-                  (sym.name, getConstant(typed(rhs, EXPRmode | CONSTmode, sym.tpe.resultType)))
+                  (sym.name, reify(typed(rhs, EXPRmode | CONSTmode, sym.tpe.resultType)))
                 }
               }
             }
             for (val name <- names) {
-              if (!name.attributes.contains(AttrInfo(AnnotationDefaultAttr.tpe, List(), List()))) {
-                error(constr.pos, "attribute " + annType.symbol.fullNameString + " is missing element " + name.name)
+              if (!name.attributes.contains(AnnotationInfo(AnnotationDefaultAttr.tpe, List(), List()))) {
+                error(annot.constr.pos, "attribute " + annType.symbol.fullNameString + " is missing element " + name.name)
               }
             }
             if (annType.symbol.hasFlag(JAVA) && settings.target.value == "jvm-1.4") {
-              context.unit.warning (constr.pos, "Java annotation will not be emitted in classfile unless you use the '-target:jvm-1.5' option")
+              context.unit.warning (annot.constr.pos, "Java annotation will not be emitted in classfile unless you use the '-target:jvm-1.5' option")
             }
-            if (attrError) AttrInfo(ErrorType, List(), List())
-            else AttrInfo(annType, constrArgs, nvPairs)
+            if (attrError) AnnotationInfo(ErrorType, List(), List())
+            else AnnotationInfo(annType, constrArgs, nvPairs)
           }
       }
     }
@@ -1974,22 +1975,27 @@ trait Typers requires Analyzer {
           if (comments ne null) comments(defn.symbol) = comment
           ret
 
-        case Annotated(constr, elements, arg) =>
-          val attrInfo = typedAnnotation(constr, elements)
+        case Annotated(annot, arg) =>
           val arg1 = typed(arg, mode, pt)
-          def attrType =
-            TypeTree(arg1.tpe.withAttribute(attrInfo)) setOriginal tree
-          arg1 match {
-            case _: DefTree =>
-              if (!attrInfo.atp.isError) {
-                val attributed =
-                  if (arg1.symbol.isModule) arg1.symbol.moduleClass else arg1.symbol
-                attributed.attributes = attrInfo :: attributed.attributes
-              }
-              arg1
-            case _ =>
-              if (arg1.isType) attrType
-              else Typed(arg1, attrType) setPos tree.pos setType attrType.tpe
+          def annotTypeTree(ainfo: AnnotationInfo[Any]): Tree =
+            TypeTree(arg1.tpe.withAttribute(ainfo)) setOriginal tree
+          if (arg1.isType) {
+            val annotInfo = typedAnnotation(annot, identity[Tree])
+            annotTypeTree(annotInfo)
+          } else {
+            val annotInfo = typedAnnotation(annot, getConstant)
+            arg1 match {
+              case _: DefTree =>
+                if (!annotInfo.atp.isError) {
+                  val attributed =
+                    if (arg1.symbol.isModule) arg1.symbol.moduleClass else arg1.symbol
+                  attributed.attributes = annotInfo :: attributed.attributes
+                }
+                arg1
+              case _ =>
+                val atpt =  annotTypeTree(annotInfo)
+                Typed(arg1, atpt) setPos tree.pos setType atpt.tpe
+            }
           }
 
         case tree @ Block(_, _) =>
@@ -2329,11 +2335,6 @@ trait Typers requires Analyzer {
           tree setType (
             if (value.tag == UnitTag) UnitClass.tpe
             else mkConstantType(value))
-
-        case AttributedTypeTree(attribs, tpt) =>
-          attribs.foreach(t => typed(t, EXPRmode, WildcardType))
-          val tptTyped = typed1(tpt, mode, pt)
-          tptTyped setType (tptTyped.tpe.withAttributes(attribs))
 
         case SingletonTypeTree(ref) =>
           val ref1 = checkStable(typed(ref, EXPRmode | QUALmode, AnyRefClass.tpe))

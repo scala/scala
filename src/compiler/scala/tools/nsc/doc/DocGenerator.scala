@@ -330,9 +330,9 @@ abstract class DocGenerator extends Models {
       if (tree.symbol.attributes.isEmpty || tree.symbol.hasFlag(Flags.CASE))
         NodeSeq.Empty
       else {
-        def attrFor(attr: AttrInfo): Node = {
+        def attrFor(attr: AnnotationInfo[Constant]): Node = {
           val buf = new StringBuilder
-          val AttrInfo(tpe, args, nvPairs) = attr
+          val AnnotationInfo(tpe, args, nvPairs) = attr
           val name = aref(urlFor(tpe.symbol), contentFrame, tpe.toString)
           if (!args.isEmpty)
             buf.append(args.map(.escapedStringValue).mkString("(", ",", ")"))

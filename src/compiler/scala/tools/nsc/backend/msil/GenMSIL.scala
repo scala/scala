@@ -293,12 +293,12 @@ abstract class GenMSIL extends SubComponent {
         log("Could not find pickle information for " + sym)
     }
 
-    def addAttributes(member: ICustomAttributeSetter, attributes: List[AttrInfo]): Unit = {
+    def addAttributes(member: ICustomAttributeSetter, attributes: List[AnnotationInfo[Constant]]): Unit = {
       return // FIXME
 
       if (settings.debug.value)
 	log("creating attributes: " + attributes + " for member : " + member)
-      for(val AttrInfo(typ, consts, nvPairs) <- attributes /* !typ.symbol.hasFlag(Flags.JAVA) */ ) {
+      for(val AnnotationInfo(typ, consts, nvPairs) <- attributes /* !typ.symbol.hasFlag(Flags.JAVA) */ ) {
 //	assert(consts.length <= 1,
 //	       "too many constant arguments for attribute; "+consts.toString())
 
@@ -310,7 +310,7 @@ abstract class GenMSIL extends SubComponent {
 //	val attrType: MsilType = getType(typ.symbol)
 
 	// Problem / TODO: i have no idea which constructor is used. This
-	// information should be available in AttrInfo.
+	// information should be available in AnnotationInfo.
 	attrType.CreateType() // else, GetConstructors can't be used
 	val constr: ConstructorInfo = attrType.GetConstructors()(0)
 	// prevent a second call of CreateType, only needed because there's no
@@ -1808,7 +1808,7 @@ abstract class GenMSIL extends SubComponent {
       mf = mf | (if (sym isFinal) TypeAttributes.Sealed else 0)
 
       sym.attributes foreach { a => a match {
-	case AttrInfo(SerializableAttr, _, _) =>
+	case AnnotationInfo(SerializableAttr, _, _) =>
 	  // TODO: add the Serializable TypeAttribute also if the attribute
 	  // System.SerializableAttribute is present (.net attribute, not scala)
 	  //  Best way to do it: compare with
@@ -1859,7 +1859,7 @@ abstract class GenMSIL extends SubComponent {
       // TODO: add this attribute also if the class has the custom attribute
       // System.NotSerializedAttribute
       sym.attributes.foreach( a => a match {
-        case AttrInfo(TransientAtt, _, _) =>
+        case AnnotationInfo(TransientAtt, _, _) =>
 	  mf = mf | FieldAttributes.NotSerialized
         case _ => ()
       })
@@ -2067,7 +2067,7 @@ abstract class GenMSIL extends SubComponent {
 
     private def isCloneable(sym: Symbol): Boolean = {
       !sym.attributes.forall( a => a match {
-	case AttrInfo(CloneableAttr, _, _) => false
+	case AnnotationInfo(CloneableAttr, _, _) => false
 	case _ => true
       })
     }

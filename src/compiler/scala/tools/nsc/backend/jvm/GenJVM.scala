@@ -149,13 +149,13 @@ abstract class GenJVM extends SubComponent {
 
       if (!forCLDC)
         for (val attr <- c.symbol.attributes) attr match {
-          case AttrInfo(SerializableAttr, _, _) =>
+          case AnnotationInfo(SerializableAttr, _, _) =>
             parents = parents ::: List(definitions.SerializableClass.tpe)
-          case AttrInfo(CloneableAttr, _, _)  =>
+          case AnnotationInfo(CloneableAttr, _, _)  =>
             parents = parents ::: List(CloneableClass.tpe)
-          case AttrInfo(SerialVersionUID, value :: _, _) =>
+          case AnnotationInfo(SerialVersionUID, value :: _, _) =>
             serialVUID = Some(value.longValue)
-          case AttrInfo(RemoteAttr, _, _) =>
+          case AnnotationInfo(RemoteAttr, _, _) =>
             parents = parents ::: List(RemoteInterface.tpe)
             remoteClass = true
           case _ => ()
@@ -204,7 +204,7 @@ abstract class GenJVM extends SubComponent {
 
     def addExceptionsAttribute(sym: Symbol): Unit = {
       val (excs, others) = sym.attributes.partition((a => a match {
-        case AttrInfo(ThrowsAttr, _, _) => true
+        case AnnotationInfo(ThrowsAttr, _, _) => true
         case _ => false
       }))
       if (excs isEmpty) return;
@@ -217,7 +217,7 @@ abstract class GenJVM extends SubComponent {
       // put some radom value; the actual number is determined at the end
       buf.putShort(0xbaba.toShort)
 
-      for (val AttrInfo(ThrowsAttr, List(exc), _) <- excs.removeDuplicates) {
+      for (val AnnotationInfo(ThrowsAttr, List(exc), _) <- excs.removeDuplicates) {
         buf.putShort(cpool.addClass(javaName(exc.typeValue.symbol)).shortValue)
         nattr = nattr + 1
       }
@@ -227,7 +227,7 @@ abstract class GenJVM extends SubComponent {
       addAttribute(jmethod, nme.ExceptionsATTR, buf)
     }
 
-    private def emitAttributes(buf: ByteBuffer, attributes: List[AttrInfo]): Int = {
+    private def emitAttributes(buf: ByteBuffer, attributes: List[AnnotationInfo[Constant]]): Int = {
       val cpool = jclass.getConstantPool()
 
       def emitElement(const: Constant): Unit = const.tag match {
@@ -278,7 +278,7 @@ abstract class GenJVM extends SubComponent {
       // put some radom value; the actual number of annotations is determined at the end
       buf.putShort(0xbaba.toShort)
 
-      for (val AttrInfo(typ, consts, nvPairs) <- attributes;
+      for (val AnnotationInfo(typ, consts, nvPairs) <- attributes;
            typ.symbol isNonBottomSubClass definitions.ClassfileAnnotationClass) {
         nattr = nattr + 1
         val jtype = javaType(typ)
@@ -300,7 +300,7 @@ abstract class GenJVM extends SubComponent {
       nattr
     }
 
-    def addAnnotations(jmember: JMember, attributes: List[AttrInfo]): Unit = {
+    def addAnnotations(jmember: JMember, attributes: List[AnnotationInfo[Constant]]): Unit = {
       if (attributes.isEmpty) return
 
       val buf: ByteBuffer = ByteBuffer.allocate(2048)
@@ -310,9 +310,9 @@ abstract class GenJVM extends SubComponent {
       addAttribute(jmember, nme.RuntimeAnnotationATTR, buf)
     }
 
-    def addParamAnnotations(pattrss: List[List[AttrInfo]]): Unit = {
+    def addParamAnnotations(pattrss: List[List[AnnotationInfo[Constant]]]): Unit = {
       val attributes = for (val attrs <- pattrss) yield
-        for (val attr @ AttrInfo(tpe, _, _) <- attrs;
+        for (val attr @ AnnotationInfo(tpe, _, _) <- attrs;
              tpe.symbol isNonBottomSubClass definitions.ClassfileAnnotationClass) yield attr;
       if (attributes.forall(.isEmpty)) return;
 
@@ -373,9 +373,9 @@ abstract class GenJVM extends SubComponent {
       var attributes = 0
 
       f.symbol.attributes foreach { a => a match {
-        case AttrInfo(TransientAtt, _, _) =>
+        case AnnotationInfo(TransientAtt, _, _) =>
           attributes = attributes | JAccessFlags.ACC_TRANSIENT
-        case AttrInfo(VolatileAttr, _, _) =>
+        case AnnotationInfo(VolatileAttr, _, _) =>
           attributes = attributes | JAccessFlags.ACC_VOLATILE
         case _ => ();
       }}
@@ -414,11 +414,11 @@ abstract class GenJVM extends SubComponent {
         jmethod.addAttribute(fjbgContext.JOtherAttribute(jclass, jmethod, "Bridge",
                                                          new Array[Byte](0)))
       if ((remoteClass ||
-          (m.symbol.attributes contains AttrInfo(RemoteAttr, Nil, Nil))) &&
+          (m.symbol.attributes contains AnnotationInfo(RemoteAttr, Nil, Nil))) &&
           jmethod.isPublic() && !forCLDC)
         {
           m.symbol.attributes =
-            AttrInfo(ThrowsAttr, List(Constant(RemoteException)), List()) :: m.symbol.attributes;
+            AnnotationInfo(ThrowsAttr, List(Constant(RemoteException)), List()) :: m.symbol.attributes;
         }
 
       if (!jmethod.isAbstract()) {

@@ -149,7 +149,7 @@ abstract class Pickler extends SubComponent {
           putType(restpe); putTypes(formals)
         case PolyType(tparams, restpe) =>
           putType(restpe); putSymbols(tparams)
-        case AttributedType(attribs, tp) =>
+        case AnnotatedType(attribs, tp) =>
           putType(tp) // the attributes should be stored, but it is not yet
                       // decided how to handle that.
         case _ =>
@@ -173,7 +173,7 @@ abstract class Pickler extends SubComponent {
       children foreach putSymbol
     }
 
-    private def putAnnotation(sym: Symbol, attr: AttrInfo): unit = {
+    private def putAnnotation(sym: Symbol, attr: AnnotationInfo[Constant]): unit = {
       assert(putEntry((sym, attr)))
       putType(attr.atp)
       for (val c <- attr.args) putConstant(c)
@@ -277,13 +277,13 @@ abstract class Pickler extends SubComponent {
           else if (c.tag == StringTag) writeRef(newTermName(c.stringValue))
           else if (c.tag == ClassTag) writeRef(c.typeValue)
           LITERAL + c.tag
-        case AttributedType(attribs, tp) =>
+        case AnnotatedType(attribs, tp) =>
           writeBody(tp) // obviously, this should be improved
-        case (target: Symbol, attr @ AttrInfo(atp, args, assocs)) =>
+        case (target: Symbol, attr @ AnnotationInfo(atp, args, assocs)) =>
           writeRef(target)
           writeRef(atp)
-          for (val c <- args) writeRef(c)
-          for (val (name, c) <- assocs) { writeRef(name); writeRef(c) }
+          for (val c <- args) writeRef(c.asInstanceOf[Constant])
+          for (val (name, c) <- assocs) { writeRef(name); writeRef(c.asInstanceOf[Constant]) }
           ATTRIBUTE
         case (target: Symbol, children: List[_]) =>
           writeRef(target)

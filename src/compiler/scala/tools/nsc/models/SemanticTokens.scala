@@ -478,7 +478,6 @@ class SemanticTokens(val compiler: Global) {
       case tree: Import => build(tree.expr)
       case tree: AppliedTypeTree => ;
       case tree: Annotated => ;
-      case tree: AttributedTypeTree => ;
       case tree: SingletonTypeTree => ;
       case tree: Super   => ;
       case tree: Literal => ;

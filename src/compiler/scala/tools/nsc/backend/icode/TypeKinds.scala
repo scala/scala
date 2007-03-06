@@ -398,7 +398,7 @@ trait TypeKinds requires ICodes {
             REFERENCE(sym)
       }
 
-    case AttributedType(attribs, tp) =>
+    case AnnotatedType(attribs, tp) =>
       toTypeKind(tp)
 
     case _ =>

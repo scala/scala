@@ -493,14 +493,14 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
           val ncases = transformCaseDefs(cases)
 
           var checkExhaustive = true
-          def isUnsealedAttribute(tpe: Type) = tpe match {
-            case AttributedType(List(AttrInfo(atp, _, _)), _) if atp.symbol == UnsealedClass =>
+          def isUnsealedAnnotation(tpe: Type) = tpe match {
+            case AnnotatedType(List(AnnotationInfo(atp, _, _)), _) if atp.symbol == UnsealedClass =>
               true
             case _ =>
               false
           }
           nselector match {
-            case Typed(nselector1, tpt) if isUnsealedAttribute(tpt.tpe) =>
+            case Typed(nselector1, tpt) if isUnsealedAnnotation(tpt.tpe) =>
               nselector = nselector1
               checkExhaustive = false
             case _ =>

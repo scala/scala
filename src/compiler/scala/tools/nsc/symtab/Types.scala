@@ -29,7 +29,7 @@ import Flags._
   case OverloadedType(pre, tparams, alts) =>
   case AntiPolyType(pre: Type, targs) =>
   case TypeVar(_, _) =>
-  case AttributedType(attribs, tp) =>
+  case AnnotatedType(attribs, tp) =>
 */
 
 trait Types requires SymbolTable {
@@ -486,13 +486,13 @@ trait Types requires SymbolTable {
     }
 
     /** Add an attribute to this type */
-    def withAttribute(attrib: Any) = withAttributes(List(attrib))
+    def withAttribute(attrib: AnnotationInfo[Any]) = withAttributes(List(attrib))
 
     /** Add a number of attributes to this type */
-    def withAttributes(attribs: List[Any]): Type =
+    def withAttributes(attribs: List[AnnotationInfo[Any]]): Type =
       attribs match {
         case Nil => this
-        case _ => AttributedType(attribs, this)
+        case _ => AnnotatedType(attribs, this)
       }
 
     /** Remove any attributes from this type */
@@ -1212,7 +1212,7 @@ trait Types requires SymbolTable {
     * to the core compiler, but can be observed by type-system plugins.  The
     * core compiler does take care to propagate attributes and to save them
     * in the symbol tables of object files. */
-  case class AttributedType(attributes: List[Any], tp: Type) extends Type {
+  case class AnnotatedType(attributes: List[AnnotationInfo[Any]], tp: Type) extends Type {
     override def toString(): String = {
       val attString =
         if(attributes.isEmpty)
@@ -1225,8 +1225,8 @@ trait Types requires SymbolTable {
 
 
     /** Add a number of attributes to this type */
-    override def withAttributes(attribs: List[Any]): Type =
-      AttributedType(attribs:::this.attributes, this)
+    override def withAttributes(attribs: List[AnnotationInfo[Any]]): Type =
+      AnnotatedType(attribs:::this.attributes, this)
 
     /** Remove any attributes from this type */
     override def withoutAttributes = tp.withoutAttributes
@@ -1621,12 +1621,12 @@ trait Types requires SymbolTable {
       case TypeVar(_, constr) =>
         if (constr.inst != NoType) this(constr.inst)
         else tp
-      case AttributedType(attribs, atp) =>
+      case AnnotatedType(attribs, atp) =>
         val atp1 = this(atp)
         if(atp1 eq atp)
           tp
         else
-          AttributedType(attribs, atp1)
+          AnnotatedType(attribs, atp1)
       case _ =>
         tp
         // throw new Error("mapOver inapplicable for " + tp);
@@ -1935,7 +1935,7 @@ trait Types requires SymbolTable {
       case TypeBounds(_, _) => mapOver(tp)
       case MethodType(_, _) => mapOver(tp)
       case TypeVar(_, _) => mapOver(tp)
-      case AttributedType(_,_) => mapOver(tp)
+      case AnnotatedType(_,_) => mapOver(tp)
       case _ => tp
     }
   }
@@ -2076,9 +2076,9 @@ trait Types requires SymbolTable {
       case (_, TypeVar(_, constr2)) =>
         if (constr2.inst != NoType) tp1 =:= constr2.inst
         else constr2 instantiate (wildcardToTypeVarMap(tp1))
-      case (AttributedType(_,atp), _) =>
+      case (AnnotatedType(_,atp), _) =>
         isSameType(atp, tp2)
-      case (_, AttributedType(_,atp)) =>
+      case (_, AnnotatedType(_,atp)) =>
         isSameType(tp1, atp)
       case _ =>
         if (tp1.isStable && tp2.isStable) {
@@ -2194,9 +2194,9 @@ trait Types requires SymbolTable {
       case (TypeVar(_, constr1), _) =>
         if (constr1.inst != NoType) constr1.inst <:< tp2
         else { constr1.hibounds = tp2 :: constr1.hibounds; true }
-      case (AttributedType(_,atp1), _) =>
+      case (AnnotatedType(_,atp1), _) =>
         atp1 <:< tp2
-      case (_, AttributedType(_,atp2)) =>
+      case (_, AnnotatedType(_,atp2)) =>
         tp1 <:< atp2
       case (_, TypeRef(pre2, sym2, args2))
       if sym2.isAbstractType && !(tp2 =:= tp2.bounds.lo) && (tp1 <:< tp2.bounds.lo) =>

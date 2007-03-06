@@ -651,7 +651,7 @@ abstract class ClassfileParser {
           }
         case nme.AnnotationDefaultATTR =>
           sym.attributes =
-            AttrInfo(definitions.AnnotationDefaultAttr.tpe, List(), List()) :: sym.attributes
+            AnnotationInfo(definitions.AnnotationDefaultAttr.tpe, List(), List()) :: sym.attributes
           in.skip(attrLen)
         case nme.RuntimeAnnotationATTR =>
           parseAnnotations(attrLen)
@@ -702,7 +702,7 @@ abstract class ClassfileParser {
           val name = pool.getName(in.nextChar)
           nvpairs += (name, parseTaggedConstant)
         }
-        sym.attributes = AttrInfo(attrType, List(), nvpairs.toList) :: sym.attributes
+        sym.attributes = AnnotationInfo(attrType, List(), nvpairs.toList) :: sym.attributes
       }
     }
 

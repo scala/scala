@@ -77,7 +77,7 @@ trait Symbols requires SymbolTable {
       else -1
     }
 
-    var attributes: List[AttrInfo] = List()
+    var attributes: List[AnnotationInfo[Constant]] = List()
 
     var privateWithin: Symbol = _
 
@@ -151,7 +151,7 @@ trait Symbols requires SymbolTable {
     final def newAnonymousFunctionClass(pos: PositionType) = {
       val anonfun = newClass(pos, nme.ANON_FUN_NAME.toTypeName)
       anonfun.attributes =
-        AttrInfo(definitions.SerializableAttr.tpe, List(), List()) :: anonfun.attributes
+        AnnotationInfo(definitions.SerializableAttr.tpe, List(), List()) :: anonfun.attributes
       anonfun
     }
     final def newRefinementClass(pos: PositionType) =
@@ -536,7 +536,7 @@ trait Symbols requires SymbolTable {
       rawInfo.load(this); rawInfo.typeParams
     }
 
-    def getAttributes(clazz: Symbol): List[AttrInfo] =
+    def getAttributes(clazz: Symbol): List[AnnotationInfo[Constant]] =
       attributes.filter(.atp.symbol.isNonBottomSubClass(clazz))
 
     /** Reset symbol to initial state
@@ -1315,7 +1315,7 @@ trait Symbols requires SymbolTable {
     def cloneSymbolImpl(owner: Symbol): Symbol = throw new Error()
   }
 
-  case class AttrInfo(atp: Type, args: List[Constant], assocs: List[(Name, Constant)]) {
+  case class AnnotationInfo[+T](atp: Type, args: List[T], assocs: List[(Name, T)]) {
     override def toString: String =
       atp +
       (if (args.isEmpty) ""

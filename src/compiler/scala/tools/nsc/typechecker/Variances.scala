@@ -79,7 +79,7 @@ trait Variances {
       flip(varianceInTypes(formals)(tparam)) & varianceInType(restpe)(tparam)
     case PolyType(tparams, restpe) =>
       flip(varianceInSyms(tparams)(tparam)) & varianceInType(restpe)(tparam)
-    case AttributedType(attribs, tp) =>
+    case AnnotatedType(attribs, tp) =>
       varianceInType(tp)(tparam)
   }
 }

@@ -373,7 +373,7 @@ abstract class RefChecks extends InfoTransform {
 	  validateVariance(result, variance)
 	case PolyType(tparams, result) =>
 	  validateVariance(result, variance)
-        case AttributedType(attribs, tp) =>
+        case AnnotatedType(attribs, tp) =>
           validateVariance(tp, variance)
       }
 

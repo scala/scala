@@ -669,8 +669,7 @@ trait Parsers requires SyntaxAnalyzer {
      *                     |   `(' ArgTypePats [`,'] `)'
      */
     def annotType(isPattern: boolean): Tree = {
-      val annots = if (settings.Xplugtypes.value) typeAttributes()
-                   else annotations()
+      val annots = annotations()
       val pos = in.currentPos
       var t: Tree =
         if (in.token == LPAREN) {
@@ -701,8 +700,7 @@ trait Parsers requires SyntaxAnalyzer {
         } else
           done=true
       }
-      if (settings.Xplugtypes.value) t.withAttributes(annots)
-      else (t /: annots) (makeAnnotated)
+      (t /: annots) (makeAnnotated)
     }
 
     /** TypeArgs    ::= `[' ArgType {`,' ArgType} `]'
