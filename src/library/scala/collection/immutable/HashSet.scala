@@ -98,8 +98,8 @@ class HashSet[A] extends Set[A] with mutable.FlatHashTable[A] {
     def undo(m: HashSet[A]) {
       if (m ne last) {
         undo(m.later)
-        if (m.deleted) addEntry(changedElem)
-        else removeEntry(changedElem)
+        if (m.deleted) addEntry(m.changedElem)
+        else removeEntry(m.changedElem)
       }
     }
     table = new Array[AnyRef](last.table.length)
