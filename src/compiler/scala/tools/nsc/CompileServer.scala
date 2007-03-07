@@ -152,12 +152,16 @@ object CompileServer extends SocketServer {
     }
   }
 
+  /** A directory holding redirected output */
+  val redirectDir = new File(CompileSocket.tmpDir, "output-redirects")
+  redirectDir.mkdirs
+
   def redirect(setter: PrintStream => unit, filename: String): unit =
     setter(
       new PrintStream(
         new BufferedOutputStream(
           new FileOutputStream(
-            new File(System.getProperty("java.io.tmpdir"), filename)))))
+            new File(redirectDir, filename)))))
 
   def main(args: Array[String]): unit = {
     redirect(System.setOut, "scala-compile-server-out.log")

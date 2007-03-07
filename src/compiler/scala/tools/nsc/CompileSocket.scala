@@ -52,8 +52,8 @@ object CompileSocket {
   private def info(msg: String) =
     if (CompileClient.verbose) System.out.println(msg)
 
-  /** The temporary directory in which the port identification file is stored */
-  private val tmpDir = {
+  /** A temporary directory to use */
+  val tmpDir = {
     val totry = List(
         ("scala.home", List("var", "scala-devel")),
         ("user.home", List("tmp")),
@@ -87,14 +87,18 @@ object CompileSocket {
       yield expanded.get
 
     if (potentials.isEmpty)
-      fatal("Could not find a directory for port files")
+      fatal("Could not find a directory for temporary files")
     else {
-      val d = new File(potentials.head, dirName)
-      info("[Temp directory: " + d + "]")
+      val d = potentials.head
       d.mkdirs
+      info("[Temp directory: " + d + "]")
       d
     }
   }
+
+  /* A directory holding port identification files */
+  val portsDir =  new File(tmpDir, dirName)
+  portsDir.mkdirs
 
   /** Maximum number of polls for an available port */
   private val MaxAttempts = 100
@@ -126,11 +130,11 @@ object CompileSocket {
   }
 
   /** The port identification file */
-  def portFile(port: int) = new File(tmpDir, port.toString())
+  def portFile(port: int) = new File(portsDir, port.toString())
 
   /** Poll for a server port number; return -1 if none exists yet */
   private def pollPort(): int = {
-    val hits = tmpDir.listFiles()
+    val hits = portsDir.listFiles()
     if (hits.length == 0) -1
     else
       try {
