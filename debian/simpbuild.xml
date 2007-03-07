@@ -285,6 +285,13 @@
 
     <!-- Build Actors -->
     <mkdir dir="${build.actors.dir}"/>
+    <javac
+      srcdir="${src.actors.dir}"
+      destdir="${build.actors.dir}"
+      source="${jc.source}" target="${jc.target}" deprecation="${jc.deprecation}">
+      <include name="**/*.java"/>
+    </javac>
+
     <starr
       srcdir="${src.actors.dir}"
       destdir="${build.actors.dir}"
@@ -292,6 +299,7 @@
       <classpath>
         <pathelement location="${build.lib.dir}"/>
         <pathelement location="${build.comp.dir}"/>
+        <pathelement location="${build.actors.dir}"/>
       </classpath>
       <include name="**/*.scala"/>
     </starr>
