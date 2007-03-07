@@ -5,5 +5,6 @@ LIB_CLASSPATH=$JAVA_DIR/scala-library.jar:$JAVA_DIR/scala-compiler.jar
 
 exec ${JAVACMD:=java} -Xmx256M -Xms16M \
   -Xbootclasspath/a:$LIB_CLASSPATH \
+  -classpath $LIB_CLASSPATH \
   scala.tools.nsc.MainGenericRunner \
   "$@"
