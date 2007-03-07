@@ -363,10 +363,15 @@ trait Iterable[+A] {
    *  are separated by the string <code>sep</code>.
    *
    *  @param sep separator string.
-   *  @return a string representation of this iterable object. */
+   *  @return a string representation of this iterable object.
+   */
   def mkString(sep: String): String = this.mkString("", sep, "")
 
-  /** Write all elements of this string into given string builder */
+  /** Write all elements of this string into given string builder.
+   *
+   *  @param buf ...
+   *  @return    ...
+   */
   def addString(buf: StringBuilder, start: String, sep: String, end: String): StringBuilder = {
     buf.append(start)
     val elems = elements

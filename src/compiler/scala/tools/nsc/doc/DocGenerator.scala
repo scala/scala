@@ -780,6 +780,9 @@ abstract class DocGenerator extends Models {
                           Text(tp + ": ") ++ forType(resultType)
                         case _ =>
                           Text(": ") ++ forType(m.tpe)
+                      }) ++ (comments.get(m) match {
+                        case Some(text) => comment(text, false, DEF)
+                        case None => NodeSeq.Empty
                       })
                     }
                   </td>
@@ -988,6 +991,46 @@ abstract class DocGenerator extends Models {
          *  </p>
          */"""
     }
+    comments(definitions.Object_isInstanceOf) = """
+      /** <p>
+       *    The method <code>isInstanceOf</code> is the pendant of the Java
+       *    operator <code>instanceof</code>.
+       *  </p>
+       *  <p>
+       *    See also:
+       *  </p>
+       *  <ul>
+       *    <li>
+       *      Java Language Specification (2<sup>nd</sup> Ed.):
+       *      <a href="http://java.sun.com/docs/books/jls/second_edition/html/expressions.doc.html#80289"
+       *      target="_top">Operator <code>instanceof</code></a>.
+       *    </li>
+       *  </ul>
+       */"""
+    comments(definitions.Object_synchronized) = """
+      /** <p>
+       *    To make your programs thread-safe, you must first identify what
+       *    data will be shared across threads. If you are writing data that
+       *    may be read later by another thread, or reading data that may
+       *    have been written by another thread, then that data is shared,
+       *    and you must synchronize when accessing it.
+       *  </p>
+       *  <p>
+       *    See also:
+       *  <p>
+       *  <ul>
+       *    <li>
+       *      The Java Tutorials:
+       *      <a href="http://java.sun.com/docs/books/tutorial/essential/concurrency/sync.html"
+       *      target="_top">Synchronization</a>.
+       *    </li>
+       *    <li>
+       *      IBM developerWorks:
+       *      <a href="http://www-128.ibm.com/developerworks/java/library/j-threads1.html"
+       *      target="_top">Synchronization is not the enemy</a>.
+       *    </li>
+       *  </ul>
+       */"""
     new PrimitiveContentFrame {
       def sym = definitions.AnyRefClass
       def descr = """

@@ -61,7 +61,7 @@ abstract class BitSet extends Set[Int] {
   def toArray: Array[Int] = {
     val length = memsize(capacity)
     val newarr = new Array[Int](length)
-    arraycopy(newarr, 0, this.arr, 0, length)
+    arraycopy(this.arr, 0, newarr, 0, length)
     newarr
   }
 
