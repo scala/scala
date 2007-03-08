@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -35,8 +35,13 @@ abstract class BitSet extends Set[Int] {
    *  @param i ...
    *  @return <code>true</code> if bit <code>i</code> is set.
    */
-  def contains(i: Int): Boolean =
-    (i < capacity) && ((arr(offset(i)) & mask(i)) != 0)
+  def contains(i: Int): Boolean = {
+    (i < capacity) && {
+      val j = offset(i)
+      (0 <= j) && (j < arr.length) &&
+      ((arr(j) & mask(i)) != 0)
+    }
+  }
 
   def capacity: Int
 
@@ -61,7 +66,8 @@ abstract class BitSet extends Set[Int] {
   def toArray: Array[Int] = {
     val length = memsize(capacity)
     val newarr = new Array[Int](length)
-    arraycopy(this.arr, 0, newarr, 0, length)
+    if (arr.length > 0)
+      arraycopy(this.arr, 0, newarr, 0, length)
     newarr
   }
 

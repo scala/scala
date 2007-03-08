@@ -1,9 +1,30 @@
-s0 = Set()
-s1 = Set(2)
-s2 = Set(2)
-xs0 = List()
+ms0 = Set(2)
+ms1 = Set(2)
+ms2 = Set(2)
+mb0 = false
+mb1 = false
+mb2 = false
+xs0 = List(2)
 xs1 = List(2)
 xs2 = List(2)
-ys0 = List(0)
-ys1 = List(4)
-ys2 = List(4)
+ma0 = List(4)
+ma1 = List(4)
+ma2 = List(4)
+
+is0 = Set()
+is1 = Set()
+is2 = Set(2)
+is3 = Set()
+ib0 = false
+ib1 = false
+ib2 = false
+ib3 = false
+ys0 = List()
+ys1 = List()
+ys2 = List(2)
+ys3 = List()
+ia0 = List(0)
+ia1 = List(0)
+ia2 = List(4)
+ia3 = List()
+

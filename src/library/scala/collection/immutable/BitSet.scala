@@ -40,7 +40,7 @@ class BitSet(val size: Int, val capacity: Int, ba: Array[Int], copy: Boolean)
   import compat.Platform.arraycopy
 
   protected val arr: Array[Int] = {
-    val ba1 = if (ba != null && ba.length > 0) ba else Array(0)
+    val ba1 = if (ba != null) ba else new Array[Int](0)
     if (copy) {
       val arr = new Array[Int](ba1.length)
       arraycopy(ba1, 0, arr, 0, ba1.length)
