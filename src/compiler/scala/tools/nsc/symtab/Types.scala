@@ -1428,6 +1428,12 @@ trait Types requires SymbolTable {
         if (healTypes && variance == 1 && !(sym1.info.bounds.hi contains sym1)) transform(sym1.info.bounds.hi)
         //else if (variance == -1 && !(sym1.info.bounds.lo contains sym1)) transform(sym1.info.bounds.lo)
         else throw new MalformedType(pre, sym1.nameString)
+      } else if (sym1.isClass && pre.isInstanceOf[CompoundType]) {
+        // sharpen prefix so that it is maximal and still contains the class.
+        var p = pre.parents.reverse
+        while (!p.isEmpty && p.head.member(sym1.name) != sym1) p = p.tail
+        if (p.isEmpty) rawTypeRef(pre, sym1, args)
+        else typeRef(p.head, sym1, args, variance)
       } else {
         rawTypeRef(pre, sym1, args)
       }

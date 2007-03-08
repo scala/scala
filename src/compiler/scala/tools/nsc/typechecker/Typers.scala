@@ -600,7 +600,6 @@ trait Typers requires Analyzer {
             if (extractor != NoSymbol) {
               tree setSymbol extractor
             } else {
-              Console.println(tree.symbol+tree.symbol.locationString+":"+tree.symbol.tpe)
               errorTree(tree, tree.symbol + " is not a case class constructor, nor does it have an unapply/unapplySeq method")
             }
           }
@@ -1509,13 +1508,9 @@ trait Typers requires Analyzer {
         /* --- begin unapply  --- */
 
         case otpe if (mode & PATTERNmode) != 0 && definitions.unapplyMember(otpe).exists =>
-          // !!! this is fragile, maybe needs to be revised when unapply patterns become terms
           val unapp = definitions.unapplyMember(otpe)
           assert(unapp.exists, tree)
           val unappType = otpe.memberType(unapp)
-
-        // this is no longer needed!
-
           val argDummyType = pt // was unappArg
           val argDummy =  context.owner.newValue(fun.pos, nme.SELECTOR_DUMMY)
             .setFlag(SYNTHETIC)
@@ -1545,7 +1540,12 @@ trait Typers requires Analyzer {
           }
 
           val fun1untyped = atPos(fun.pos) {
-            Apply(Select(gen.mkAttributedRef(fun.tpe.prefix,fun.symbol), unapp), List(arg))
+            Apply(
+              Select(
+                gen.mkAttributedRef(fun.tpe.prefix, fun.symbol) setType null,
+                // setType null is necessary so that ref will be stabilized; see bug 881
+                unapp),
+              List(arg))
           }
           //Console.println("UNAPPLY2 "+fun+"/"+fun.tpe+" "+fun1untyped)
           val fun1 = typed(fun1untyped)

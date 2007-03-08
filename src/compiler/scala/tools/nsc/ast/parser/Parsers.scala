@@ -1961,6 +1961,10 @@ trait Parsers requires SyntaxAnalyzer {
         val implicitViewBuf = new ListBuffer[Tree]
         val tparams = typeParamClauseOpt(name, implicitViewBuf)
         implicitClassViews = implicitViewBuf.toList
+        if (!implicitClassViews.isEmpty && mods.hasFlag(Flags.TRAIT)) {
+          syntaxError("traits cannot have type parameters with <% bounds", false)
+          implicitClassViews = List()
+        }
         //if (mods.hasFlag(Flags.CASE) && in.token != LPAREN) accept(LPAREN)
         val constrAnnots = annotations()
         val (constrMods, vparamss) =
