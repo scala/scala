@@ -12,7 +12,7 @@
 
 package scala.collection.immutable
 
-/** This class implements empty immutable maps
+/** This class implements empty immutable sets
  *  @author  Martin Oderskty
  *  @version 1.0, 019/01/2007
  */

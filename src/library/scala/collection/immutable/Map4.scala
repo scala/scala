@@ -12,7 +12,7 @@ package scala.collection.immutable
 
 import Predef._
 
-/** This class implements empty immutable maps
+/** This class implements immutable maps with exactly four entries
  *  @author  Martin Oderskty
  *  @version 1.0, 019/01/2007
  */

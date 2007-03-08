@@ -14,7 +14,7 @@ package scala.collection.immutable
 
 import Predef.Pair
 
-/** This class implements empty immutable maps
+/** This class implements immutable maps with exactly one entry
  *
  *  @author  Martin Oderskty
  *  @version 1.0, 019/01/2007
