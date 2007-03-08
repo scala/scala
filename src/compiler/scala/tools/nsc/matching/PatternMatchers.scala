@@ -1237,7 +1237,6 @@ print()
         case e =>
 
           Console.println("failed with "+e.getMessage()+" on: "+t)
-          System.exit(-1)
           //null
         t
       }
