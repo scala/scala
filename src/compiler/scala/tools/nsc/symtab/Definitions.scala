@@ -107,6 +107,7 @@ trait Definitions requires SymbolTable {
     var RepeatedParamClass: Symbol = _
     var ByNameParamClass: Symbol = _
     var UnsealedClass: Symbol = _
+    var UncheckedClass: Symbol = _
 
     val MaxTupleArity = 22
     val TupleClass: Array[Symbol] = new Array(MaxTupleArity + 1)
@@ -803,7 +804,8 @@ trait Definitions requires SymbolTable {
       ByNameParamClass = newCovariantPolyClass(
         ScalaPackageClass, nme.BYNAME_PARAM_CLASS_NAME, tparam => AnyClass.typeConstructor)
       /* <unapply> */
-      UnsealedClass = getClass("scala.unsealed")
+      UnsealedClass = getClass("scala.unsealed") //todo: remove once 2.4 is out.
+      UncheckedClass = getClass("scala.unchecked")
       OptionClass = getClass("scala.Option")
 
       for (val i <- 1 to MaxTupleArity) {

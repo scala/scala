@@ -1213,7 +1213,7 @@ abstract class GenMSIL extends SubComponent {
             }
 
           case LOAD_ARRAY_ITEM(kind) =>
-	    (kind: @unsealed) match {
+	    (kind: @unchecked) match {
 	      case BOOL           => mcode.Emit(OpCodes.Ldelem_I1)
 	      case BYTE           => mcode.Emit(OpCodes.Ldelem_U1)
 	      case SHORT          => mcode.Emit(OpCodes.Ldelem_I2)
@@ -1264,7 +1264,7 @@ abstract class GenMSIL extends SubComponent {
 	    mcode.Emit(OpCodes.Ldsfld, getModuleInstanceField(module))
 
           case STORE_ARRAY_ITEM(kind) =>
-	    (kind: @unsealed) match {
+	    (kind: @unchecked) match {
 	      case BOOL           => mcode.Emit(OpCodes.Stelem_I1)
 	      case BYTE           => mcode.Emit(OpCodes.Stelem_I1)
 	      case SHORT          => mcode.Emit(OpCodes.Stelem_I2)
@@ -1323,7 +1323,7 @@ abstract class GenMSIL extends SubComponent {
           case CALL_METHOD(msym, style) =>
 	    if (msym.isClassConstructor) {
 	      val constructorInfo: ConstructorInfo = getConstructor(msym)
-	      (style: @unsealed) match {
+	      (style: @unchecked) match {
 		// normal constructor calls are Static..
 		case Static(_) =>
                   if (method.symbol.isClassConstructor && method.symbol.owner == msym.owner)
@@ -1514,7 +1514,7 @@ abstract class GenMSIL extends SubComponent {
 	    }
 
           case CZJUMP(success, failure, cond, kind) =>
-	    (kind: @unsealed) match {
+	    (kind: @unchecked) match {
 	      case BOOL | REFERENCE(_) =>
 		if (nextBlock == success || omitJumpBlocks.contains(currentBlock)) {
 		  emitBrBool(cond.negate, labels(failure))
@@ -1913,7 +1913,7 @@ abstract class GenMSIL extends SubComponent {
     // #####################################################################
     // get and create types
 
-    private def msilType(t: TypeKind): MsilType = (t: @unsealed) match {
+    private def msilType(t: TypeKind): MsilType = (t: @unchecked) match {
       case UNIT           => MVOID
       case BOOL           => MBOOL
       case BYTE           => MBYTE
@@ -2238,7 +2238,7 @@ abstract class GenMSIL extends SubComponent {
 
     } //def createDelegateCaller
 
-    def emitBox(code: ILGenerator, boxType: TypeKind) = (boxType: @unsealed) match {
+    def emitBox(code: ILGenerator, boxType: TypeKind) = (boxType: @unchecked) match {
       // doesn't make sense, unit as parameter..
       case UNIT   => code.Emit(OpCodes.Ldsfld, boxedUnit)
       case BOOL | BYTE | SHORT | CHAR | INT | LONG | FLOAT | DOUBLE =>
@@ -2248,7 +2248,7 @@ abstract class GenMSIL extends SubComponent {
       case REFERENCE(_) | ARRAY(_) => ()
     }
 
-    def emitUnbox(code: ILGenerator, boxType: TypeKind) = (boxType: @unsealed) match {
+    def emitUnbox(code: ILGenerator, boxType: TypeKind) = (boxType: @unchecked) match {
       case UNIT   => code.Emit(OpCodes.Pop)
       case BOOL   => code.Emit(OpCodes.Unbox, MBOOL); code.Emit(OpCodes.Ldind_I1)
       case BYTE   => code.Emit(OpCodes.Call, toByte)

@@ -288,7 +288,7 @@ object BytePickle {
     def pairToList(p: (a,List[a])): List[a] =
       p._1 :: p._2;
     def listToPair(l: List[a]): (a,List[a]) =
-      (l: @unsealed) match { case x :: xs => (x, xs) }
+      (l: @unchecked) match { case x :: xs => (x, xs) }
 
     if (n == 0) ulift(Nil)
     else
@@ -299,7 +299,7 @@ object BytePickle {
     def pairToList(p: (a,List[a])): List[a] =
       p._1 :: p._2;
     def listToPair(l: List[a]): (a,List[a]) =
-      (l: @unsealed) match { case x :: xs => (x, xs) }
+      (l: @unchecked) match { case x :: xs => (x, xs) }
 
     if (n == 0) lift(Nil)
     else

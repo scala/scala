@@ -329,7 +329,7 @@ abstract class TreeBuilder {
   /** Create tree for a lifted expression XX-LIFTING
    */
   def makeLifted(gs: List[ValFrom], body: Tree): Tree = {
-    def combine(gs: List[ValFrom]): ValFrom = (gs: @unsealed) match {
+    def combine(gs: List[ValFrom]): ValFrom = (gs: @unchecked) match {
       case g :: Nil => g
       case ValFrom(pos1, pat1, rhs1) :: gs2 =>
         val ValFrom(pos2, pat2, rhs2) = combine(gs2)
@@ -368,13 +368,13 @@ abstract class TreeBuilder {
   def makeVisitor(cases: List[CaseDef], checkExhaustive: boolean): Tree =
     makeVisitor(cases, checkExhaustive, "x$")
 
-  private def makeUnsealed(expr: Tree): Tree =
-    Annotated(Annotation(New(scalaDot(definitions.UnsealedClass.name), List(List())), List()), expr)
+  private def makeUnchecked(expr: Tree): Tree =
+    Annotated(Annotation(New(scalaDot(definitions.UncheckedClass.name), List(List())), List()), expr)
 
   /** Create visitor <x => x match cases> */
   def makeVisitor(cases: List[CaseDef], checkExhaustive: boolean, prefix: String): Tree = {
     val x = freshName(prefix)
-    val sel = if (checkExhaustive) Ident(x) else makeUnsealed(Ident(x))
+    val sel = if (checkExhaustive) Ident(x) else makeUnchecked(Ident(x))
     Function(List(makeSyntheticParam(x)), Match(sel, cases))
   }
 
@@ -407,7 +407,7 @@ abstract class TreeBuilder {
       val vars = getVariables(pat1)
       val matchExpr = atPos(pat1.pos){
         Match(
-          makeUnsealed(rhs),
+          makeUnchecked(rhs),
           List(CaseDef(pat1, EmptyTree, makeTupleTerm(vars map (._1) map Ident, true))))
       }
       vars match {

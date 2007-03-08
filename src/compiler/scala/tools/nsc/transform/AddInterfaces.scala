@@ -288,7 +288,7 @@ abstract class AddInterfaces extends InfoTransform {
            mc.hasFlag(lateINTERFACE) && mc != ScalaObjectClass)
       yield mixinConstructorCall(implClass(mc))
     }
-    (tree: @unsealed) match {
+    (tree: @unchecked) match {
       case Block(supercall :: stats, expr) =>
         copy.Block(tree, supercall :: mixinConstructorCalls ::: stats, expr)
     }
