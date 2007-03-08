@@ -33,6 +33,10 @@ object TestMutable {
   Console.println("ma0 = " + ms0.toArray.toList)
   Console.println("ma1 = " + ms1.toArray.toList)
   Console.println("ma2 = " + ms2.toArray.toList)
+
+  Console.println("mi0 = " + ms0.toImmutable)
+  Console.println("mi1 = " + ms1.toImmutable)
+  Console.println("mi2 = " + ms2.toImmutable)
   Console.println
 }
 
