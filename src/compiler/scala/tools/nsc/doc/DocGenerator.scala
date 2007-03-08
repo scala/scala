@@ -629,7 +629,7 @@ abstract class DocGenerator extends Models {
     private def resultFor(ht: HasTree): NodeSeq = ht.tree match {
       case vdef: ValOrDefDef =>
         if (!vdef.symbol.nameString.equals("this"))
-          Text(": ") ++ forTree(vdef.tpt)
+          Text(": ") ++ forType(vdef.tpt.tpe)
         else
           NodeSeq.Empty
       case _ =>
