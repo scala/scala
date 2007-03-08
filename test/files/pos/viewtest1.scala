@@ -13,7 +13,7 @@ object O {
 object Empty extends Tree[Nothing]
 case class Node[c <% Ordered[c]](elem: c, l: Tree[c], r: Tree[c]) extends Tree[c]
 
-trait Tree[+a <% Ordered[a]] {
+abstract class Tree[+a <% Ordered[a]] {
   def insert[b >: a <% Ordered[b]](x: b): Tree[b] = this match {
     case Empty =>
       new Node(x, Empty, Empty)
