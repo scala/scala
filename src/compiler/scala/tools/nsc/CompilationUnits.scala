@@ -40,14 +40,18 @@ trait CompilationUnits requires Global {
         reporter.error(position(pos), msg)
       }
 
-    def warning(pos: int, msg: String) = reporter.warning(position(pos), msg)
+    def warning(pos: int, msg: String) =
+      if (!(errorPositions contains pos)) {
+        errorPositions += pos
+        reporter.warning(position(pos), msg)
+      }
 
     def deprecationWarning(pos: int, msg: String) =
-      if (settings.deprecation.value) reporter.warning(position(pos), msg)
+      if (settings.deprecation.value) warning(pos, msg)
       else currentRun.deprecationWarnings = true
 
     def uncheckedWarning(pos: int, msg: String) =
-      if (settings.unchecked.value) reporter.warning(position(pos), msg)
+      if (settings.unchecked.value) warning(pos, msg)
       else currentRun.uncheckedWarnings = true
 
     def incompleteInputError(pos:int, msg:String) =

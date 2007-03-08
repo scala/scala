@@ -625,6 +625,9 @@ trait Typers requires Analyzer {
         } else if (!context.undetparams.isEmpty && (mode & POLYmode) == 0) { // (9)
           instantiate(tree, mode, pt)
         } else if (tree.tpe <:< pt) {
+          if (settings.Xwarndeadcode.value &&
+              tree.tpe.symbol == AllClass && pt != WildcardType && pt.symbol != AllClass)
+            context.unit.warning (tree.pos, "dead code")
           tree
         } else {
           if ((mode & PATTERNmode) != 0) {
@@ -652,8 +655,8 @@ trait Typers requires Analyzer {
                 // (13); the condition prevents chains of views
                 if (settings.debug.value) log("inferring view from "+tree.tpe+" to "+pt)
                 val coercion = inferView(tree.pos, tree.tpe, pt, true)
-               // convert forward views of delegate types into closures wrapped around
-               // the delegate's apply method (the "Invoke" method, which was translated into apply)
+                // convert forward views of delegate types into closures wrapped around
+                // the delegate's apply method (the "Invoke" method, which was translated into apply)
                 if (forMSIL && coercion != null && isCorrespondingDelegate(tree.tpe, pt)) {
                   val meth: Symbol = tree.tpe.member(nme.apply)
                   if(settings.debug.value)
@@ -1336,7 +1339,10 @@ trait Typers requires Analyzer {
           case _ =>
             val localTyper = if (inBlock || (stat.isDef && !stat.isInstanceOf[LabelDef])) this
                              else newTyper(context.make(stat, exprOwner))
-            localTyper.typed(stat)
+            val stat1 = localTyper.typed(stat)
+            if (settings.Xwarndeadcode.value && stat1.tpe.symbol == AllClass)
+              context.unit.warning(stat1.pos, "dead code")
+            stat1
         }
       }
       def accesses(accessor: Symbol, accessed: Symbol) =
