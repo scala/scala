@@ -57,7 +57,7 @@ object O {
   implicit def view4[a](x: a): a = x
 }
 
-trait Tree[+a <% Ordered[a]] {
+abstract class Tree[+a <% Ordered[a]] {
   def insert[b >: a <% Ordered[b]](x: b): Tree[b]
   def elements: List[a]
 }
