@@ -42,7 +42,6 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
 
   private[actors] var receiver: Actor = synchronized {
     // basically Actor.self, but can be null
-    //Actor.selfs.get(currentThread).asInstanceOf[Actor]
     Actor.tl.get.asInstanceOf[Actor]
   }
 

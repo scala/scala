@@ -24,8 +24,6 @@ import scala.compat.Platform
  */
 object Actor {
 
-  //private[actors] val selfs = new java.util.WeakHashMap(16, 0.5f)
-
   private[actors] val tl = new ThreadLocal
 
   /**
@@ -42,13 +40,6 @@ object Actor {
       tl.set(a)
     }
     a
-    /*val t = currentThread
-    var a = selfs.get(t).asInstanceOf[Actor]
-    if (a eq null) {
-      a = new ActorProxy(t)
-      selfs.put(t, a)
-    }
-    a*/
   }
 
   /**
@@ -71,22 +62,6 @@ object Actor {
     actor.start()
     actor
   }
-
-  /**
-   * Creates an instance of a thread-based actor specifying a
-   * channel which can be used for typed communication with other
-   * actors.
-   */
-/*
-  def actor[a](ch: Channel[a])(body: => Unit): Actor = synchronized {
-    val actor = new Actor {
-      def act() = body
-    }
-    ch.receiver = actor
-    actor.start()
-    actor
-  }
-*/
 
   /**
    * Receives the next message from the mailbox of the current actor
@@ -302,8 +277,7 @@ trait Actor extends OutputChannel[Any] {
 
   def receive[R](f: PartialFunction[Any, R]): R = {
     assert(Actor.self == this, "receive from channel belonging to other actor")
-    // links
-    if (shouldExit) exit()
+    if (shouldExit) exit() // links
     this.synchronized {
       tick()
       val qel = mailbox.extractFirst((m: Any) => f.isDefinedAt(m))
@@ -325,8 +299,7 @@ trait Actor extends OutputChannel[Any] {
 
   def receiveWithin[R](msec: long)(f: PartialFunction[Any, R]): R = {
     assert(Actor.self == this, "receive from channel belonging to other actor")
-    // links
-    if (shouldExit) exit()
+    if (shouldExit) exit() // links
     this.synchronized {
       tick()
       // first, remove spurious TIMEOUT message from mailbox if any
@@ -370,8 +343,7 @@ trait Actor extends OutputChannel[Any] {
 
   def react(f: PartialFunction[Any, Unit]): Nothing = {
     assert(Actor.self == this, "react on channel belonging to other actor")
-    // links
-    if (shouldExit) exit()
+    if (shouldExit) exit() // links
     Scheduler.pendReaction
     this.synchronized {
       tick()
@@ -390,8 +362,7 @@ trait Actor extends OutputChannel[Any] {
 
   def reactWithin(msec: long)(f: PartialFunction[Any, Unit]): Nothing = {
     assert(Actor.self == this, "react on channel belonging to other actor")
-    // links
-    if (shouldExit) exit()
+    if (shouldExit) exit() // links
     Scheduler.pendReaction
     this.synchronized {
       tick()
@@ -428,6 +399,9 @@ trait Actor extends OutputChannel[Any] {
     send(msg, Actor.self.getReplyChannel)
   }
 
+  /**
+   * Forwards <code>msg</code> to this actor (asynchronous).
+   */
   def forward(msg: Any): Unit = send(msg, Actor.sender.getReplyChannel)
 
   /**
@@ -442,6 +416,13 @@ trait Actor extends OutputChannel[Any] {
     }
   }
 
+  /**
+   * Sends <code>msg</code> to this actor and awaits reply
+   * (synchronous) within <code>msec</code> milliseconds.
+   * When the timeout occurs, <code>None</code> is returned.
+   * Otherwise, returns <code>Some(value)</code> where
+   * <code>value</code> is the reply value.
+   */
   def !?(msec: long, msg: Any): Option[Any] = {
     val replyChannel = Actor.self.freshReply()
     this ! msg
@@ -451,6 +432,10 @@ trait Actor extends OutputChannel[Any] {
     }
   }
 
+  /**
+   * Sends <code>msg</code> to this actor and immediately
+   * returns a future representing the reply value.
+   */
   def !!(msg: Any): Future[Any] = {
     val ftch = new Channel[Any](Actor.self)
     send(msg, ftch)
@@ -470,6 +455,13 @@ trait Actor extends OutputChannel[Any] {
     }
   }
 
+  /**
+   * Sends <code>msg</code> to this actor and immediately
+   * returns a future representing the reply value.
+   * The reply is post-processed using the partial function
+   * <code>f</code>. This also allows to recover a more
+   * precise type for the reply value.
+   */
   def !![a](msg: Any, f: PartialFunction[Any, a]): Future[a] = {
     val ftch = new Channel[Any](Actor.self)
     send(msg, ftch)
@@ -489,12 +481,19 @@ trait Actor extends OutputChannel[Any] {
     }
   }
 
+  /**
+   * Replies with <code>msg</code> to the sender waiting in
+   * a synchronous send.
+   */
   def reply(msg: Any): Unit = session ! msg
 
   private var rc = new Channel[Any](this)
   def getReplyChannel = rc
   def freshReply() = { rc = new Channel[Any]; rc }
 
+  /**
+   * Receives the next message from this actor's mailbox.
+   */
   def ? : Any = receive {
     case x => x
   }
@@ -652,6 +651,9 @@ trait Actor extends OutputChannel[Any] {
     throw new ExitActorException
   }
 
+  /**
+   * Terminates with exit reason <code>'normal</code>.
+   */
   def exit(): Nothing = exit('normal)
 
   // Assume !links.isEmpty
