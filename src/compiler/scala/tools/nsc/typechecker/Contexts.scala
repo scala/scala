@@ -89,6 +89,7 @@ trait Contexts requires Analyzer {
     var prefix: Type = NoPrefix
     var inConstructorSuffix = false         // are we in a secondary constructor
                                             // after the this constructor call?
+    var returnsSeen = false                 // for method context: were returns encountered?
     var reportAmbiguousErrors = false
     var reportGeneralErrors = false
     var implicitsEnabled = false
@@ -237,7 +238,7 @@ trait Contexts requires Analyzer {
       c
     }
 
-    def error(pos: Int, err: Error): Unit = {
+    def error(pos: Int, err: Error) {
       val msg = err.getMessage()
       if (reportGeneralErrors)
         unit.error(pos, if (checking) "**** ERROR DURING INTERNAL CHECKING ****\n" + msg else msg)
@@ -245,11 +246,16 @@ trait Contexts requires Analyzer {
         throw err
     }
 
-    def error(pos: PositionType, msg: String): unit =
+    def error(pos: PositionType, msg: String) {
       if (reportGeneralErrors)
         unit.error(pos, if (checking) "**** ERROR DURING INTERNAL CHECKING ****\n" + msg else msg)
       else
         throw new TypeError(pos, msg)
+    }
+
+    def warning(pos:  PositionType, msg: String) {
+      if (reportGeneralErrors) unit.warning(pos, msg)
+    }
 
     /**
      *  @param pos  ...

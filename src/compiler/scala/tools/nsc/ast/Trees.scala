@@ -124,10 +124,8 @@ trait Trees requires Global {
       val results = for (val i <- 0.until(this0.arity).toList) yield
         equals0(this0.element(i), that0.element(i));
       val b = results.foldLeft(true)((x,y) => x && y);
-      if (!b) return false;
-      return if (tpe == null || tpe == NoType) {
-        that.tpe == null || that.tpe == NoType;
-      } else tpe == that.tpe
+      b && (if (tpe == null || tpe == NoType) that.tpe == null || that.tpe == NoType
+            else tpe == that.tpe)
     }
     def duplicate: this.type =
       (duplicator transform this).asInstanceOf[this.type]

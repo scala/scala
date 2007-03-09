@@ -625,9 +625,6 @@ trait Typers requires Analyzer {
         } else if (!context.undetparams.isEmpty && (mode & POLYmode) == 0) { // (9)
           instantiate(tree, mode, pt)
         } else if (tree.tpe <:< pt) {
-          if (settings.Xwarndeadcode.value &&
-              tree.tpe.symbol == AllClass && pt != WildcardType && pt.symbol != AllClass)
-            context.unit.warning (tree.pos, "dead code")
           tree
         } else {
           if ((mode & PATTERNmode) != 0) {
@@ -997,7 +994,7 @@ trait Typers requires Analyzer {
         } else {
           newTyper(context.make(vdef, sym)).transformedOrTyped(vdef.rhs, tpt1.tpe)
         }
-      copy.ValDef(vdef, vdef.mods, vdef.name, tpt1, rhs1) setType NoType
+      copy.ValDef(vdef, vdef.mods, vdef.name, tpt1, checkDead(rhs1)) setType NoType
     }
 
     /** Enter all aliases of local parameter accessors.
@@ -1100,7 +1097,7 @@ trait Typers requires Analyzer {
               typedType(ddef.tpt)))
       checkNonCyclic(ddef, tpt1)
       ddef.tpt.setType(tpt1.tpe)
-      val rhs1 =
+      var rhs1 =
         if (ddef.name == nme.CONSTRUCTOR) {
           if (!meth.hasFlag(SYNTHETIC) &&
               !(meth.owner.isClass ||
@@ -1124,6 +1121,7 @@ trait Typers requires Analyzer {
             computeParamAliases(meth.owner, vparamss1, result)
           result
         } else transformedOrTyped(ddef.rhs, tpt1.tpe)
+      if (tpt1.tpe.symbol != AllClass && !context.returnsSeen) rhs1 = checkDead(rhs1)
       copy.DefDef(ddef, ddef.mods, ddef.name, tparams1, vparamss1, tpt1, rhs1) setType NoType
     }
 
@@ -1339,10 +1337,7 @@ trait Typers requires Analyzer {
           case _ =>
             val localTyper = if (inBlock || (stat.isDef && !stat.isInstanceOf[LabelDef])) this
                              else newTyper(context.make(stat, exprOwner))
-            val stat1 = localTyper.typed(stat)
-            if (settings.Xwarndeadcode.value && stat1.tpe.symbol == AllClass)
-              context.unit.warning(stat1.pos, "dead code")
-            stat1
+            checkDead(localTyper.typed(stat))
         }
       }
       def accesses(accessor: Symbol, accessed: Symbol) =
@@ -1371,7 +1366,7 @@ trait Typers requires Analyzer {
     def typedArg(arg: Tree, mode: int, newmode: int, pt: Type): Tree = {
       val argTyper = if ((mode & SCCmode) != 0) newTyper(context.makeConstructorContext)
                      else this
-      argTyper.typed(arg, mode & stickyModes | newmode, pt)
+      checkDead(argTyper.typed(arg, mode & stickyModes | newmode, pt))
     }
 
     def typedArgs(args: List[Tree], mode: int) =
@@ -1618,7 +1613,7 @@ trait Typers requires Analyzer {
               }
             }
             if (annType.symbol.hasFlag(JAVA) && settings.target.value == "jvm-1.4") {
-              context.unit.warning (annot.constr.pos, "Java annotation will not be emitted in classfile unless you use the '-target:jvm-1.5' option")
+              context.warning (annot.constr.pos, "Java annotation will not be emitted in classfile unless you use the '-target:jvm-1.5' option")
             }
             if (attrError) AnnotationInfo(ErrorType, List(), List())
             else AnnotationInfo(annType, constrArgs, nvPairs)
@@ -2042,7 +2037,7 @@ trait Typers requires Analyzer {
             if (vble.name.toTermName != nme.WILDCARD) {
 /*
             if (namesSomeIdent(vble.name))
-              context.unit.warning(tree.pos,
+              context.warning(tree.pos,
                 "pattern variable"+vble.name+" shadows a value visible in the environment;\n"+
                 "use backquotes `"+vble.name+"` if you mean to match against that value;\n" +
                 "or rename the variable or use an explicit bind "+vble.name+"@_ to avoid this warning.")
@@ -2091,14 +2086,14 @@ trait Typers requires Analyzer {
             }
           if ((varsym ne null) && (varsym.isVariable || varsym.isValue && phase.erasedTypes)) {
             val rhs1 = typed(rhs, lhs1.tpe)
-            copy.Assign(tree, lhs1, rhs1) setType UnitClass.tpe
+            copy.Assign(tree, lhs1, checkDead(rhs1)) setType UnitClass.tpe
           } else {
             if (!lhs1.tpe.isError) error(tree.pos, "assignment to non-variable ")
             setError(tree)
           }
 
         case If(cond, thenp, elsep) =>
-          val cond1 = typed(cond, BooleanClass.tpe)
+          val cond1 = checkDead(typed(cond, BooleanClass.tpe))
           if (elsep.isEmpty) {
             val thenp1 = typed(thenp, UnitClass.tpe)
             copy.If(tree, cond1, thenp1, elsep) setType UnitClass.tpe
@@ -2109,7 +2104,7 @@ trait Typers requires Analyzer {
           }
 
         case Match(selector, cases) =>
-          val selector1 = typed(selector)
+          val selector1 = checkDead(typed(selector))
           val cases1 = typedCases(tree, cases, selector1.tpe.widen, pt)
           copy.Match(tree, selector1, cases1) setType ptOrLub(cases1 map (.tpe))
 
@@ -2123,8 +2118,9 @@ trait Typers requires Analyzer {
               errorTree(tree, "method " + enclMethod.owner +
                         " has return statement; needs result type")
             } else {
+              context.enclMethod.returnsSeen = true
               val expr1: Tree = typed(expr, restpt.tpe)
-              copy.Return(tree, expr1) setSymbol enclMethod.owner setType AllClass.tpe
+              copy.Return(tree, checkDead(expr1)) setSymbol enclMethod.owner setType AllClass.tpe
             }
           }
 
@@ -2160,7 +2156,7 @@ trait Typers requires Analyzer {
           copy.New(tree, tpt1).setType(tpt1.tpe)
 
         case Typed(expr, Function(List(), EmptyTree)) =>
-          val expr1 = typed1(expr, mode, pt)
+          val expr1 = checkDead(typed1(expr, mode, pt))
           expr1.tpe match {
             case TypeRef(_, sym, _) if (sym == ByNameParamClass) =>
               val expr2 = Function(List(), expr1)
@@ -2323,7 +2319,7 @@ trait Typers requires Analyzer {
 
         case Select(qual, name) =>
           if (util.Statistics.enabled) selcnt = selcnt + 1
-          var qual1 = typedQualifier(qual)
+          var qual1 = checkDead(typedQualifier(qual))
           if (name.isTypeName) qual1 = checkStable(qual1)
           val tree1 = typedSelect(qual1, name)
           if (qual1.symbol == RootPackage) copy.Ident(tree1, name)

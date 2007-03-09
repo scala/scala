@@ -942,6 +942,12 @@ trait Infer requires Analyzer {
       protected def includeCondition(sym: Symbol): boolean = true
     }
 
+    def checkDead(tree: Tree): Tree = {
+      if (settings.Xwarndeadcode.value && tree.tpe.symbol == AllClass)
+        context.warning (tree.pos, "dead code following this construct")
+      tree
+    }
+
     /* -- Overload Resolution ---------------------------------------------- */
 
     def checkNotShadowed(pos: PositionType, pre: Type, best: Symbol, eligible: List[Symbol]) =
