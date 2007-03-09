@@ -659,6 +659,7 @@ abstract class GenICode extends SubComponent  {
           val ctx1 = genLoad(expr, ctx, toTypeKind(expr.tpe))
           val boxType = fun.symbol.owner.linkedClassOfClass.tpe
           ctx1.bb.emit(BOX(toTypeKind(boxType)), expr.pos)
+          generatedType = ANY_REF_CLASS
           ctx1
 
         case Apply(fun @ _, List(expr)) if (definitions.isUnbox(fun.symbol)) =>
