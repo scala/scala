@@ -972,7 +972,7 @@ trait Parsers requires SyntaxAnalyzer {
           val topinfo = opstack.head
           opstack = opstack.tail
           return Select(
-            reduceStack(true, base, topinfo.operand, 0, true),
+            stripParens(reduceStack(true, base, topinfo.operand, 0, true)),
             topinfo.operator.encode).setPos(topinfo.pos)
         }
       }

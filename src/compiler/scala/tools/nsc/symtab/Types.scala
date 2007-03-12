@@ -1083,6 +1083,8 @@ trait Types requires SymbolTable {
           closureDepthCache = maxDepth(closureCache)
         }
       }
+      if (closureCache eq null)
+        throw new TypeError("illegal cyclic reference involving " + sym)
       closureCache
     }
 
