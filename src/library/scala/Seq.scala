@@ -28,11 +28,7 @@ object Seq {
    *  @param x the selector value
    *  @return  sequence wrapped in an option, if this is a Seq, otherwise none
    */
-  def unapplySeq[A](x: Any): Option[Seq[A]] = x match {
-    case z: Seq[_] => Some(z.asInstanceOf[Seq[A]])
-    case z: AnyRef if runtime.ScalaRunTime.isArray(z) => Some(runtime.ScalaRunTime.boxArray(z).asInstanceOf[Seq[A]])
-    case _ =>  None
-  }
+  def unapplySeq[A](x: Seq[A]): Option[Seq[A]] = Some(x)
 
   /** Builds a singleton sequence.
    *

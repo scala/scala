@@ -164,6 +164,9 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
    }
   }
 
+  private def isSeqClass(sym: Symbol) =
+    (SeqClass isNonBottomSubClass sym) && (sym != ObjectClass)
+
 // -------- boxing/unboxing --------------------------------------------------------
 
   override def newTyper(context: Context) = new Eraser(context)
@@ -279,7 +282,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
               }
             }
           }
-        else if ((SeqClass isNonBottomSubClass pt.symbol) && pt.symbol != ObjectClass)
+        else if (isSeqClass(pt.symbol))
           typed {
             atPos(tree.pos) {
               gen.evalOnce(tree, context.owner, context.unit) { x =>
@@ -403,15 +406,15 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
         case Apply(TypeApply(sel @ Select(qual, name), List(targ)), List())
         if ((tree.symbol == Any_asInstanceOf || tree.symbol == Any_asInstanceOfErased)) =>
           val qual1 = typedQualifier(qual)
-          val targClass = targ.tpe.symbol
           val qualClass = qual1.tpe.symbol
+          val targClass = targ.tpe.symbol
           if (isNumericValueClass(qualClass) && isNumericValueClass(targClass))
             // convert numeric type casts
             atPos(tree.pos)(Apply(Select(qual1, "to" + targClass.name), List()))
           else if (isValueType(targClass) ||
                    (targClass == ArrayClass && (qualClass isNonBottomSubClass BoxedArrayClass)))
             unbox(qual1, targ.tpe)
-          else if (targClass == ArrayClass && qualClass == ObjectClass)
+          else if (targClass == ArrayClass && qualClass == ObjectClass || isSeqClass(targClass))
             cast(qual1, targ.tpe)
           else
             tree
@@ -717,7 +720,9 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
             EmptyTree
           case AliasTypeDef(_, _, _, _) =>
             EmptyTree
-          case TypeApply(fun, args) if (fun.symbol.owner != AnyClass) =>
+          case TypeApply(fun, args) if (fun.symbol.owner != AnyClass &&
+                                        fun.symbol != Object_asInstanceOf &&
+                                        fun.symbol != Object_isInstanceOf) =>
             // leave all other type tests/type casts, remove all other type applications
             fun
           case Apply(fn, args) =>
@@ -743,6 +748,12 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
 	    else if (fn.symbol == Any_isInstanceOf || fn.symbol == Any_isInstanceOfErased)
               fn match {
                 case TypeApply(sel @ Select(qual, name), List(targ)) =>
+                  def mkIsInstanceOf(q: () => Tree)(tp: Type): Tree =
+                    Apply(
+                      TypeApply(
+                        Select(q(), Object_isInstanceOf) setPos sel.pos,
+                        List(TypeTree(tp) setPos targ.pos)) setPos fn.pos,
+                      List()) setPos tree.pos
                   targ.tpe match {
                     case SingleType(pre, sym) =>
                       val cmpOp = if (targ.tpe <:< AnyValClass.tpe) Any_equals else Object_eq
@@ -750,22 +761,23 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
                         Apply(Select(qual, cmpOp), List(gen.mkAttributedQualifier(targ.tpe)))
                       }
                     case RefinedType(parents, decls) if (parents.length >= 2) =>
-                      gen.evalOnce(qual, currentOwner, unit) {
-                        q =>
-                        def mkIsInstanceOf(tp: Type) =
-                          copy.Apply(tree,
-                            copy.TypeApply(fn,
-                              copy.Select(sel, q(), name),
-                              List(TypeTree(tp))),
-                            List())
-                        def mkAnd(tree1: Tree, tree2: Tree) =
-                          atPos(tree1.pos) {
-                            Apply(Select(tree1, Boolean_and), List(tree2))
-                          }
-                        parents map mkIsInstanceOf reduceRight mkAnd
+                      gen.evalOnce(qual, currentOwner, unit) { q =>
+                        atPos(tree.pos) {
+                          parents map mkIsInstanceOf(q) reduceRight gen.mkAnd
+                        }
                       }
                     case _ =>
-                      tree
+                      if (isSeqClass(targ.tpe.symbol)) {
+                        atPos(tree.pos) {
+                          gen.evalOnce(qual, currentOwner, unit) { q =>
+                            gen.mkOr(
+                              mkIsInstanceOf(q)(targ.tpe),
+                              atPos(tree.pos) {
+                                Apply(gen.mkAttributedRef(isArrayMethod), List(q()))
+                              })
+                          }
+                        }
+                      } else tree
                   }
                 case _ => tree
               }

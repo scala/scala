@@ -169,6 +169,12 @@ abstract class TreeGen {
     if (elems.isEmpty) Literal(())
     else Apply(mkAttributedRef(definitions.TupleClass(elems.length).caseFactory), elems)
 
+  def mkAnd(tree1: Tree, tree2: Tree) =
+    Apply(Select(tree1, Boolean_and), List(tree2))
+
+  def mkOr(tree1: Tree, tree2: Tree) =
+    Apply(Select(tree1, Boolean_or), List(tree2))
+
   def mkCached(cvar: Symbol, expr: Tree): Tree = {
     val cvarRef = if (cvar.owner.isClass) Select(This(cvar.owner), cvar) else Ident(cvar)
     Block(

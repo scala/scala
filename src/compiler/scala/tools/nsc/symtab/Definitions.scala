@@ -104,6 +104,7 @@ trait Definitions requires SymbolTable {
     var ScalaRunTimeModule: Symbol = _
       def SeqFactory = getMember(ScalaRunTimeModule, nme.Seq);
       def checkDefinedMethod = getMember(ScalaRunTimeModule, "checkDefined")
+      def isArrayMethod = getMember(ScalaRunTimeModule, "isArray")
     var RepeatedParamClass: Symbol = _
     var ByNameParamClass: Symbol = _
     var UnsealedClass: Symbol = _
