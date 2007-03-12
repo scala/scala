@@ -1529,7 +1529,7 @@ trait Types requires SymbolTable {
     def this() = this(List(), List())
     var lobounds: List[Type] = lo
     var hibounds: List[Type] = hi
-    private var inst: Type = NoType
+    var inst: Type = NoType
 /* debug
     private var _inst: Type = NoType
     def inst = _inst
