@@ -261,6 +261,10 @@ trait Types requires SymbolTable {
     def contains(sym: Symbol): boolean =
       new ContainsTraverser(sym).traverse(this).result
 
+    /** Does this type contain a reference to this type */
+    def containsTp(tp: Type): boolean =
+      new ContainsTypeTraverser(tp).traverse(this).result
+
     /** Is this type a subtype of that type? */
     def <:<(that: Type): boolean = {
       if (util.Statistics.enabled) subtypeCount = subtypeCount + 1
@@ -1201,6 +1205,7 @@ trait Types requires SymbolTable {
    *  Not used after phase `typer'.
    */
   case class TypeVar(origin: Type, constr: TypeConstraint) extends Type {
+    //constr.self = this //DEBUG
     override def symbol = origin.symbol
     override def toString(): String =
       if (constr.inst eq null) "<null " + origin + ">"
@@ -1520,10 +1525,19 @@ trait Types requires SymbolTable {
   /** A class expressing upper and lower bounds constraints
    *  for type variables, as well as their instantiations */
   class TypeConstraint(lo: List[Type], hi: List[Type]) {
+    //var self: Type = _ //DEBUG
     def this() = this(List(), List())
     var lobounds: List[Type] = lo
     var hibounds: List[Type] = hi
-    var inst: Type = NoType
+    private var inst: Type = NoType
+/* debug
+    private var _inst: Type = NoType
+    def inst = _inst
+    def inst_=(tp: Type) {
+      assert(tp == null || !(tp containsTp self), tp)
+      _inst = tp
+    }
+*/
 
     def instantiate(tp: Type): boolean =
       if (lobounds.forall(.<:<(tp)) && hibounds.forall(tp.<:<)) {
@@ -1830,6 +1844,18 @@ trait Types requires SymbolTable {
           case SingleType(_, sym1) if (sym == sym1) => result = true
           case _ => mapOver(tp)
         }
+      }
+      this
+    }
+  }
+
+  /** A map to implement the <code>contains</code> method */
+  class ContainsTypeTraverser(t: Type) extends TypeTraverser {
+    var result = false
+    def traverse(tp: Type): ContainsTypeTraverser = {
+      if (!result) {
+        if (tp eq t) result = true
+        else mapOver(tp)
       }
       this
     }

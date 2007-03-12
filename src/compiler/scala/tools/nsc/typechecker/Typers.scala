@@ -1871,14 +1871,16 @@ trait Typers requires Analyzer {
           // update `pre' to be `sym's prefix type in case it is an imported member,
           // and compute value of:
 
-          // imported symbols take precedence over package-owned symbols in different
-          // compilation units
-          if (defSym.exists && impSym.exists &&
-              defSym.owner.isPackageClass &&
-              (!currentRun.compiles(defSym) ||
-               (context.unit ne null) && defSym.sourceFile != context.unit.source.file))
-            defSym = NoSymbol
-
+          if (defSym.exists && impSym.exists) {
+            // imported symbols take precedence over package-owned symbols in different
+            // compilation units. Defined symbols take precedence over errenous imports.
+            if (defSym.owner.isPackageClass &&
+                (!currentRun.compiles(defSym) ||
+                 (context.unit ne null) && defSym.sourceFile != context.unit.source.file))
+              defSym = NoSymbol
+            else if (impSym.isError)
+              impSym = NoSymbol
+          }
           if (defSym.exists) {
             if (impSym.exists)
               ambiguousError(
