@@ -555,7 +555,10 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
         if (settings.Xscript.value && filenames.length != 1)
           error("can only compile one script at a time")
         val sources = filenames map (
-          /* if (settings.Xscript.value) {x => ScriptRunner.wrappedScript(x, &Global.this.getSourceFile)} else */ getSourceFile)
+          if (settings.Xscript.value)
+            (x => ScriptRunner.wrappedScript(x, &getSourceFile))
+          else
+            getSourceFile)
         compileSources(sources)
       } catch {
         case ex: IOException => error(ex.getMessage())
