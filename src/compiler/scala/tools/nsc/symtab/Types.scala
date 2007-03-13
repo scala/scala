@@ -303,7 +303,7 @@ trait Types requires SymbolTable {
      *    - Or phase.erasedTypes is false and both types are neither method nor
      *      poly types.
      */
-    def matches(that: Type): boolean = matchesType(this, that)
+    def matches(that: Type): boolean = matchesType(this, that, !phase.erasedTypes)
 
     /** The shortest sorted upwards closed array of types that contains
      *  this type as first element.
@@ -447,7 +447,7 @@ trait Types requires SymbolTable {
                         member.owner != sym.owner &&
                         !sym.hasFlag(PRIVATE) && {
                           if (self eq null) self = this.narrow;
-                          (self.memberType(member) matches self.memberType(sym))
+                          matchesType(self.memberType(member), self.memberType(sym), true)
                         })) {
                     members = newScope(List(member, sym))
                   }
@@ -458,7 +458,7 @@ trait Types requires SymbolTable {
                            prevEntry.sym.owner != sym.owner &&
                            !sym.hasFlag(PRIVATE) && {
                              if (self eq null) self = this.narrow;
-                             (self.memberType(prevEntry.sym) matches self.memberType(sym))
+                             matchesType(self.memberType(prevEntry.sym), self.memberType(sym), true)
                            })) {
                     prevEntry = members lookupNextEntry prevEntry
                   }
@@ -2294,23 +2294,28 @@ trait Types requires SymbolTable {
   }
 
   /** A function implementing <code>tp1</code> matches <code>tp2</code> */
-  private def matchesType(tp1: Type, tp2: Type): boolean = (tp1, tp2) match {
+  private def matchesType(tp1: Type, tp2: Type, alwaysMatchSimple: boolean): boolean = (tp1, tp2) match {
     case (MethodType(pts1, res1), MethodType(pts2, res2)) =>
-      (matchingParams(pts1, pts2, tp2.isInstanceOf[JavaMethodType]) && (res1 matches res2) &&
-       tp1.isInstanceOf[ImplicitMethodType] == tp2.isInstanceOf[ImplicitMethodType])
+      matchingParams(pts1, pts2, tp2.isInstanceOf[JavaMethodType]) &&
+      matchesType(res1, res2, alwaysMatchSimple) &&
+      tp1.isInstanceOf[ImplicitMethodType] == tp2.isInstanceOf[ImplicitMethodType]
     case (PolyType(tparams1, res1), PolyType(tparams2, res2)) =>
-      (tparams1.length == tparams2.length &&
-       (res1 matches res2.substSym(tparams2, tparams1)))
-    case (PolyType(List(), rtp1), MethodType(List(), rtp2)) => matchesType(rtp1, rtp2)
-    case (MethodType(List(), rtp1), PolyType(List(), rtp2)) => matchesType(rtp1, rtp2)
-    case (PolyType(List(), rtp1), _) => matchesType(rtp1, tp2)
-    case (_, PolyType(List(), rtp2)) => matchesType(tp1, rtp2)
+      tparams1.length == tparams2.length &&
+      matchesType(res1, res2.substSym(tparams2, tparams1), alwaysMatchSimple)
+    case (PolyType(List(), rtp1), MethodType(List(), rtp2)) =>
+      matchesType(rtp1, rtp2, alwaysMatchSimple)
+    case (MethodType(List(), rtp1), PolyType(List(), rtp2)) =>
+      matchesType(rtp1, rtp2, alwaysMatchSimple)
+    case (PolyType(List(), rtp1), _) =>
+      matchesType(rtp1, tp2, alwaysMatchSimple)
+    case (_, PolyType(List(), rtp2)) =>
+      matchesType(tp1, rtp2, alwaysMatchSimple)
     case (MethodType(_, _), _) => false
     case (PolyType(_, _), _)   => false
     case (_, MethodType(_, _)) => false
     case (_, PolyType(_, _))   => false
     case _ =>
-      !phase.erasedTypes || tp1 =:= tp2
+      alwaysMatchSimple || tp1 =:= tp2
   }
 
   /** Are <code>tps1</code> and <code>tps2</code> lists of pairwise equivalent types? */
