@@ -447,7 +447,7 @@ trait Types requires SymbolTable {
                         member.owner != sym.owner &&
                         !sym.hasFlag(PRIVATE) && {
                           if (self eq null) self = this.narrow;
-                          matchesType(self.memberType(member), self.memberType(sym), true)
+                          matchesType(self.memberType(member), self.memberType(sym), !phase.erasedTypes)
                         })) {
                     members = newScope(List(member, sym))
                   }
@@ -458,7 +458,7 @@ trait Types requires SymbolTable {
                            prevEntry.sym.owner != sym.owner &&
                            !sym.hasFlag(PRIVATE) && {
                              if (self eq null) self = this.narrow;
-                             matchesType(self.memberType(prevEntry.sym), self.memberType(sym), true)
+                             matchesType(self.memberType(prevEntry.sym), self.memberType(sym), !phase.erasedTypes)
                            })) {
                     prevEntry = members lookupNextEntry prevEntry
                   }

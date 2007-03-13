@@ -1411,10 +1411,15 @@ trait Typers requires Analyzer {
         // preadapt symbol to number of arguments given
         val argtypes = args map (arg => AllClass.tpe)
         val pre = fun.symbol.tpe.prefix
-        val sym = fun.symbol filter { alt =>
-          isApplicable(context.undetparams, pre.memberType(alt), argtypes, pt) &&
+        var sym = fun.symbol filter { alt =>
+          isApplicable(context.undetparams, pre.memberType(alt), argtypes, pt)
+        }
+        if (sym hasFlag OVERLOADED) {
           // eliminate functions that would result from tupling transforms
-          formalTypes(alt.tpe.paramTypes, argtypes.length).length == argtypes.length
+          val sym1 = sym filter { alt =>
+            formalTypes(alt.tpe.paramTypes, argtypes.length).length == argtypes.length
+          }
+          if (sym1 != NoSymbol) sym = sym1
         }
         if (sym != NoSymbol)
           fun = adapt(fun setSymbol sym setType pre.memberType(sym), funMode(mode), WildcardType)
