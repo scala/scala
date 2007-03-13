@@ -97,7 +97,7 @@ abstract class ReachingDefinitions {
     def updateReachingDefinition(b: BasicBlock, idx: Int, rd: Set[Definition]): Set[Definition] = {
       val STORE_LOCAL(local) = b(idx)
       var tmp = local
-      (rd filter { case (l, _, _) => l != tmp }) + (tmp, b, idx)
+      (rd filter { case (l, _, _) => l != tmp }) + ((tmp, b, idx))
     }
 
     private def blockTransfer(b: BasicBlock, in: Set[Definition]): Set[Definition] =

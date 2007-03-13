@@ -67,8 +67,8 @@ abstract class DeadCodeElimination extends SubComponent {
         for (val Pair(i, idx) <- bb.toList.zipWithIndex) {
           i match {
             case LOAD_LOCAL(l) => defs((bb, idx)) = rd
-            case RETURN(_) => worklist += (bb, idx)
-            case CALL_METHOD(m, _) if isSideEffecting(m) => worklist += (bb, idx)
+            case RETURN(_) => worklist += ((bb, idx))
+            case CALL_METHOD(m, _) if isSideEffecting(m) => worklist += ((bb, idx))
             case _ => ()
           }
           rd = rdef.interpret(bb, idx, rd);
@@ -82,17 +82,17 @@ abstract class DeadCodeElimination extends SubComponent {
     def mark {
       while (!worklist.isEmpty) {
         val (bb, idx) = worklist.elements.next
-        worklist -= (bb, idx)
+        worklist -= ((bb, idx))
 
         val instr = bb(idx)
         assert(!instr.useful)
         instr match {
           case LOAD_LOCAL(l1) =>
             for (val (_, bb1, idx1) <- defs((bb, idx)); !bb1(idx1).useful)
-              worklist += (bb1, idx1)
+              worklist += ((bb1, idx1))
           case _ =>
             for (val (bb1, idx1) <- bb.findDefs(idx, 0); !bb1(idx1).useful)
-              worklist += (bb1, idx1)
+              worklist += ((bb1, idx1))
         }
       }
     }
