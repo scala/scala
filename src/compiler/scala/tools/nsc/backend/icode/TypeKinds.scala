@@ -229,6 +229,8 @@ trait TypeKinds requires ICodes {
       other match {
         case REFERENCE(_) =>
           REFERENCE(definitions.AnyRefClass)
+        case ARRAY(_) =>
+          REFERENCE(definitions.AnyRefClass)
         case _ =>
           abort("Uncomparbale type kinds: REFERENCE with " + other)
       }
