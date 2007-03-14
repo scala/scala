@@ -484,6 +484,18 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
           copy.Match(tree1, selector, cases map adaptCase)
         case Try(block, catches, finalizer) =>
           copy.Try(tree1, adaptBranch(block), catches map adaptCase, finalizer)
+        case Ident(_) | Select(_, _) =>
+          if (tree1.symbol hasFlag OVERLOADED) {
+            val first = tree1.symbol.alternatives.head
+            val sym1 = tree1.symbol.filter {
+              alt => alt == first || !(first.tpe looselyMatches alt.tpe)
+            }
+            if (tree.symbol ne sym1) {
+              tree1.symbol = sym1
+              tree1.tpe = sym1.tpe
+            }
+          }
+          tree1
         case _ =>
           tree1
       }

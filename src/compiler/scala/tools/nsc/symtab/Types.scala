@@ -305,6 +305,10 @@ trait Types requires SymbolTable {
      */
     def matches(that: Type): boolean = matchesType(this, that, !phase.erasedTypes)
 
+    /** Same as matches, except that non-method types are always assumed to match.
+     */
+    def looselyMatches(that: Type): boolean = matchesType(this, that, true)
+
     /** The shortest sorted upwards closed array of types that contains
      *  this type as first element.
      *
@@ -447,7 +451,7 @@ trait Types requires SymbolTable {
                         member.owner != sym.owner &&
                         !sym.hasFlag(PRIVATE) && {
                           if (self eq null) self = this.narrow;
-                          matchesType(self.memberType(member), self.memberType(sym), !phase.erasedTypes)
+                          (self.memberType(member) matches self.memberType(sym))
                         })) {
                     members = newScope(List(member, sym))
                   }
@@ -458,7 +462,7 @@ trait Types requires SymbolTable {
                            prevEntry.sym.owner != sym.owner &&
                            !sym.hasFlag(PRIVATE) && {
                              if (self eq null) self = this.narrow;
-                             matchesType(self.memberType(prevEntry.sym), self.memberType(sym), !phase.erasedTypes)
+                             (self.memberType(prevEntry.sym) matches self.memberType(sym))
                            })) {
                     prevEntry = members lookupNextEntry prevEntry
                   }
