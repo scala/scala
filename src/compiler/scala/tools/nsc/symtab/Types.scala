@@ -7,7 +7,7 @@
 package scala.tools.nsc.symtab
 
 import compat.Platform.currentTime
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.{ListBuffer, HashMap}
 import scala.tools.nsc.util.{HashSet, Position}
 import Flags._
 
@@ -54,6 +54,13 @@ trait Types requires SymbolTable {
   private final val LogPendingSubTypesThreshold = 50
 
   val emptyTypeArray = new Array[Type](0)
+
+  /** A map from lists to compound types that have the given list as parents.
+   *  This is used to avoid duplication in the computation of closure and baseClasses.
+   *  It makes use of the fact that these two operations depend only on the parents,
+   *  not on the refinement.
+   */
+  var intersectionWitness = new HashMap[List[Type], Type]
 
   /** The base class for all types */
   abstract class Type {
@@ -763,7 +770,7 @@ trait Types requires SymbolTable {
         closurePeriod = currentPeriod
         if (!isValidForBaseClasses(period)) {
           closureCache = null
-          closureCache = computeClosure
+          closureCache = memo[Array[Type], Type](computeClosure, modifyClosure(symbol.tpe))
           closureDepthCache = maxDepth(closureCache)
         }
         //Console.println("closure(" + symbol + ") = " + List.fromArray(closureCache));//DEBUG
@@ -807,12 +814,20 @@ trait Types requires SymbolTable {
         baseClassesPeriod = currentPeriod
         if (!isValidForBaseClasses(period)) {
           baseClassesCache = null
-          baseClassesCache = computeBaseClasses
+          baseClassesCache = memo[List[Symbol], Symbol](computeBaseClasses, x => symbol :: x.baseClasses.tail)
         }
       }
       if (baseClassesCache eq null)
         throw new TypeError("illegal cyclic reference involving " + symbol)
       baseClassesCache
+    }
+
+    def memo[A <: Seq[B], B](op1: => A, op2: Type => A) = intersectionWitness get parents match {
+      case Some(w) =>
+        if (w eq this) op1 else op2(w)
+      case None =>
+        intersectionWitness(parents) = this
+        op1
     }
 
     override def baseType(sym: Symbol): Type = {
@@ -2339,6 +2354,14 @@ trait Types requires SymbolTable {
     val cl1 = new Array[Type](cl.length + 1)
     cl1(0) = tp
     Array.copy(cl, 0, cl1, 1, cl.length)
+    cl1
+  }
+
+  private def modifyClosure(tp: Type)(other: Type): Array[Type] = {
+    val cl = other.closure
+    val cl1 = new Array[Type](cl.length)
+    cl1(0) = tp
+    Array.copy(cl, 1, cl1, 1, cl.length-1)
     cl1
   }
 
