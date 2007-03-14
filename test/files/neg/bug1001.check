@@ -1,0 +1,6 @@
+bug1001.scala:104: error: the type intersection Ee with D is malformed
+ --- because ---
+no common type instance of base types B[D] and B[Ee] exists
+    val data = List(N26,N25)
+                   ^
+one error found
