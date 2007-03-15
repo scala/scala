@@ -24,7 +24,7 @@ import Predef._
 object MatchError {
 
   def string(obj: Any) =
-    if (null ne obj) obj.toString() else "null"
+    if (null != obj) obj.toString() else "null"
 
 /* //bq: pattern matcher doesn't use these methods anymore
   // todo: change pattern matcher so that dummy type parameter T can be removed.
