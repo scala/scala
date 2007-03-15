@@ -26,12 +26,12 @@ object Test {
           if (y == 100)
             result1
           else
-            scala.MatchError.fail("crazybox.scala", 11)
+            throw new MatchError("crazybox.scala, line 11")
         } && (y > 90)
       )
         result
       else
-        scala.MatchError.fail("crazybox.scala", 9);
+        throw new MatchError("crazybox.scala, line 9")
     }
   }
 
