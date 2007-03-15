@@ -24,8 +24,9 @@ import Predef._
 object MatchError {
 
   def string(obj: Any) =
-    if (null != obj) obj.toString() else "null"
+    if (null ne obj) obj.toString() else "null"
 
+/* //bq: pattern matcher doesn't use these methods anymore
   // todo: change pattern matcher so that dummy type parameter T can be removed.
   def fail[T](source: String, line: Int): Nothing =
     throw new MatchError(source, line)
@@ -37,14 +38,17 @@ object MatchError {
       case e: MatchError => throw e
       case e: Throwable => throw new MatchError(source, line)
     }
+	*/
 }
 
-final class MatchError(msg: String) extends Error(msg) {
+final class MatchError(msg: String) extends RuntimeException(msg) {
+/* //bq: pattern matcher doesn't use these constructors anymore
   def this(source: String, line: Int) =
     this(" in '" + source + "' at line " + line)
 
   def this(source: String, line: Int, obj: String) =
     this("for object " + obj + " in '" + source + "' at line " + line)
+*/
 
   def this(obj: Any) =
     this(MatchError.string(obj))
