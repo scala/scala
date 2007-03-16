@@ -555,6 +555,19 @@ trait Infer requires Analyzer {
           false
       }
 
+    def isApplicableSafe(undetparams: List[Symbol], ftpe: Type, argtpes0: List[Type], pt: Type): boolean = {
+      val reportAmbiguousErrors = context.reportAmbiguousErrors
+      context.reportAmbiguousErrors = false
+      try {
+        isApplicable(undetparams, ftpe, argtpes0, pt)
+      } catch {
+        case ex: TypeError =>
+          false
+      } finally {
+        context.reportAmbiguousErrors = reportAmbiguousErrors
+      }
+    }
+
     /** Does type <code>ftpe1</code> specialize type <code>ftpe2</code>
      *  when both are alternatives in an overloaded function?
      *

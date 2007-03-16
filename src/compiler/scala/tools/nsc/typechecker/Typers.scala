@@ -1412,7 +1412,7 @@ trait Typers requires Analyzer {
         val argtypes = args map (arg => AllClass.tpe)
         val pre = fun.symbol.tpe.prefix
         var sym = fun.symbol filter { alt =>
-          isApplicable(context.undetparams, pre.memberType(alt), argtypes, pt)
+          isApplicableSafe(context.undetparams, pre.memberType(alt), argtypes, pt)
         }
         if (sym hasFlag OVERLOADED) {
           // eliminate functions that would result from tupling transforms
@@ -1529,7 +1529,7 @@ trait Typers requires Analyzer {
             error(fun.pos, "too many arguments for unapply pattern, maximum = "+MaxTupleArity)
           val arg = Ident(argDummy) setType argDummyType
           val oldArgType = arg.tpe
-          if (!isApplicable(List(), unappType, List(arg.tpe), WildcardType)) {
+          if (!isApplicableSafe(List(), unappType, List(arg.tpe), WildcardType)) {
             //Console.println("UNAPP: need to typetest, arg.tpe = "+arg.tpe+", unappType = "+unappType)
             def freshArgType(tp: Type): (Type, List[Symbol]) = tp match {
               case MethodType(formals, restpe) =>
