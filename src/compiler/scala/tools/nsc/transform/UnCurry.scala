@@ -411,6 +411,8 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
 
         case Assign(Select(_, _), _) =>
           withNeedLift(true) { super.transform(tree) }
+        case Assign(lhs, _) if lhs.symbol.owner != currentMethod =>
+          withNeedLift(true) { super.transform(tree) }
 
         case Try(block, catches, finalizer) =>
           if (needTryLift) {
