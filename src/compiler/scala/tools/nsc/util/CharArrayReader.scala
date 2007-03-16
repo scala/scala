@@ -50,6 +50,7 @@ class CharArrayReader(buf: Array[char], start: int, /* startline: int, startcol:
   def next: unit = {
     //cline = nextline
     //ccol = nextcol
+    if(!hasNext) return SU  // there is an endless stream of SU's at the end
     ch = buf(bp)
     isUnicode = false
     bp = bp + 1
