@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -12,8 +12,7 @@
 package scala.runtime
 
 
-import Predef.Class
-import Predef.Error
+import Predef.{Class, Error}
 import collection.mutable.ArrayBuffer
 
 /**
@@ -38,7 +37,7 @@ abstract class BoxedArray extends Seq[Any] {
 
   def unbox(elemClass: Class): AnyRef
 
-  override def isDefinedAt(x: Int): Boolean   =  0 <= x && x < length
+  override def isDefinedAt(x: Int): Boolean = 0 <= x && x < length
 
   def elements = new Iterator[Any] {
     var index = 0
@@ -78,7 +77,7 @@ abstract class BoxedArray extends Seq[Any] {
     var i = 0
     while (i < len) {
       result(i) = f(apply(i))
-      i = i + 1
+      i += 1
     }
     result
   }
@@ -89,7 +88,7 @@ abstract class BoxedArray extends Seq[Any] {
     var i = 0
     while (i < len) {
       buf ++= f(apply(i))
-      i = i + 1
+      i += 1
     }
     buf.toArray
   }
@@ -102,7 +101,7 @@ abstract class BoxedArray extends Seq[Any] {
     var i = 0
     while (i < len) {
       result(i) = new Tuple2(this(i), that(i))
-      i = i + 1
+      i += 1
     }
     result
   }
@@ -113,9 +112,34 @@ abstract class BoxedArray extends Seq[Any] {
     var i = 0
     while (i < len) {
       result(i) = new Tuple2(this(i), i)
-      i = i + 1
+      i += 1
     }
     result
+  }
+
+  final def deepToString() = deepMkString(stringPrefix + "(", ",", ")")
+
+  final def deepMkString(start: String, sep: String, end: String): String = {
+    val buf = new StringBuilder()
+    deepAddString(buf, start, sep, end).toString
+  }
+
+  final def deepMkString(sep: String): String = this.deepMkString("", sep, "")
+
+  private def deepAddString(buf: StringBuilder, start: String, sep: String, end: String): StringBuilder = {
+    def _deepToString(x: Any) = x match {
+      case a: AnyRef if ScalaRunTime.isArray(a) =>
+        ScalaRunTime.boxArray(a).deepMkString(start, sep, end)
+      case _ =>
+        x.toString
+    }
+    buf.append(start)
+    val elems = elements
+    if (elems.hasNext) buf.append(_deepToString(elems.next))
+    while (elems.hasNext) {
+      buf.append(sep); buf.append(_deepToString(elems.next))
+    }
+    buf.append(end)
   }
 
   override final def stringPrefix: String = "Array"

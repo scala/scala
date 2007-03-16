@@ -95,9 +95,9 @@ trait Definitions requires SymbolTable {
       def Predef_identity = getMember(PredefModule, nme.identity)
     var ConsoleModule: Symbol = _
     var MatchErrorClass: Symbol = _
-    var MatchErrorModule: Symbol = _
-      def MatchError_fail = getMember(MatchErrorModule, nme.fail)
-      def MatchError_report = getMember(MatchErrorModule, nme.report)
+    //var MatchErrorModule: Symbol = _
+    //  def MatchError_fail = getMember(MatchErrorModule, nme.fail)
+    //  def MatchError_report = getMember(MatchErrorModule, nme.report)
     var IndexOutOfBoundsExceptionClass: Symbol = _
     //var RemoteExecutionModule: Symbol = _
     //  def RemoteExecution_detach = getMember(RemoteExecutionModule, "detach")
@@ -793,7 +793,7 @@ trait Definitions requires SymbolTable {
       PredefModule = getModule("scala.Predef")
       ConsoleModule = getModule("scala.Console")
       MatchErrorClass = getClass("scala.MatchError")
-      MatchErrorModule = getModule("scala.MatchError")
+      //MatchErrorModule = getModule("scala.MatchError")
       IndexOutOfBoundsExceptionClass =
         getClass(if (forMSIL) "System.IndexOutOfRangeException"
                  else "java.lang.IndexOutOfBoundsException")

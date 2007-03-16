@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -194,9 +194,15 @@ final class Array[A](_length: Int) extends Seq[A] {
   def length: Int = throw new Error()
 
   /** The element at given index.
-   *  Indices start a <code>0</code>; <code>xs.apply(0)</code> is the first
-   *  element of array <code>xs</code>.
-   *  Note the indexing syntax <code>xs(i)</code> is a shorthand for <code>xs.apply(i)</code>.
+   *  <p>
+   *    Indices start a <code>0</code>; <code>xs.apply(0)</code> is the first
+   *    element of array <code>xs</code>.
+   *  </p>
+   *  <p>
+   *    Note the indexing syntax <code>xs(i)</code> is a shorthand for
+   *    <code>xs.apply(i)</code>.
+   *  </p>
+   *
    *  @param i   the index
    *  @throws ArrayIndexOutOfBoundsException if <code>i < 0</code> or
    *          <code>length <= i</code>
@@ -208,6 +214,7 @@ final class Array[A](_length: Int) extends Seq[A] {
    *  element of array <code>xs</code>.
    *  Note the indexing syntax <code>xs(i) = x</code> is a shorthand
    *  for <code>xs.update(i, x)</code>.
+   *
    *  @param i   the index
    *  @param x   the value to be written at index <code>i</code>
    *  @throws ArrayIndexOutOfBoundsException if <code>i < 0</code> or
@@ -224,10 +231,11 @@ final class Array[A](_length: Int) extends Seq[A] {
 
   /** A sub-array of <code>len</code> elements
    *  starting at index <code>from</code>
+   *
    *  @param from   The index of the first element of the slice
    *  @param end    The index of the element following the slice
-   *  @throws IndexOutOfBoundsException if <code>from < 0</code>
-   *          or <code>length < from + len<code>
+   *  @throws IndexOutOfBoundsException if <code>from &lt; 0</code>
+   *          or <code>length &lt; from + len<code>
    */
   override def slice(from: Int, end: Int): Array[A] = throw new Error()
 
@@ -275,4 +283,36 @@ final class Array[A](_length: Int) extends Seq[A] {
    *               where <code>a<sub>i</sub></code> are the elements of this stream.
    */
   def zipWithIndex: Array[Tuple2[A,Int]] = throw new Error()
+
+  /**
+   *  @return a deep string representation of this sequence.
+   */
+  def deepToString(): String = throw new Error()
+
+  /** Returns a string representation of this array object. The resulting string
+   *  begins with the string <code>start</code> and is finished by the string
+   *  <code>end</code>. Inside, the string representations of elements (w.r.t.
+   *  the method <code>deepToString()</code>) are separated by the string
+   *  <code>sep</code>.
+   *  <p/>
+   *  Ex: <br/>
+   *  <code>Array(Array(1, 2), Array(3)).deepMkString("[", "; ", "]") = "[[1; 2]; 3]"</code>
+   *
+   *  @param start starting string.
+   *  @param sep separator string.
+   *  @param end ending string.
+   *  @return a string representation of this array object.
+   */
+  def deepMkString(start: String, sep: String, end: String): String =
+    throw new Error()
+
+  /** Returns a string representation of this array object. The string
+   *  representations of elements (w.r.t. the method <code>deepToString()</code>)
+   *  are separated by the string <code>sep</code>.
+   *
+   *  @param sep separator string.
+   *  @return a string representation of this array object.
+   */
+  def deepMkString(sep: String): String = throw new Error()
+
 }

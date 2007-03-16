@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -21,35 +21,7 @@ import Predef._
  *  @author  Martin Odersky
  *  @version 1.1, 05/03/2004
  */
-object MatchError {
-
-  def string(obj: Any) =
-    if (null != obj) obj.toString() else "null"
-
-/* //bq: pattern matcher doesn't use these methods anymore
-  // todo: change pattern matcher so that dummy type parameter T can be removed.
-  def fail[T](source: String, line: Int): Nothing =
-    throw new MatchError(source, line)
-
-  def report(source: String, line: Int, obj: Any) =
-    try {
-      throw new MatchError(source, line, string(obj))
-    } catch {
-      case e: MatchError => throw e
-      case e: Throwable => throw new MatchError(source, line)
-    }
-	*/
-}
-
 final class MatchError(msg: String) extends RuntimeException(msg) {
-/* //bq: pattern matcher doesn't use these constructors anymore
-  def this(source: String, line: Int) =
-    this(" in '" + source + "' at line " + line)
-
-  def this(source: String, line: Int, obj: String) =
-    this("for object " + obj + " in '" + source + "' at line " + line)
-*/
-
   def this(obj: Any) =
-    this(MatchError.string(obj))
+    this(if (null != obj) obj.toString() else "null")
 }

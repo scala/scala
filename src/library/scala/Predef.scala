@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -79,22 +79,22 @@ object Predef {
     throw new Throwable()
   }
 
-  def assert(assertion: Boolean): Unit = {
+  def assert(assertion: Boolean) {
     if (!assertion)
       throw new java.lang.AssertionError("assertion failed")
   }
 
-  def assert(assertion: Boolean, message: Any): Unit = {
+  def assert(assertion: Boolean, message: Any) {
     if (!assertion)
       throw new java.lang.AssertionError("assertion failed: " + message)
   }
 
-  def assume(assumption: Boolean): Unit = {
+  def assume(assumption: Boolean) {
     if (!assumption)
       throw new Error("assumption failed")
   }
 
-  def assume(assumption: Boolean, message: Any): Unit = {
+  def assume(assumption: Boolean, message: Any) {
     if (!assumption)
       throw new Error("assumption failed: " + message)
   }
