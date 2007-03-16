@@ -43,11 +43,21 @@ class FJTaskScheduler2 extends Thread with IScheduler {
   private var submittedTasks = 0
 
   private var pendingReactions = 0
+
   def pendReaction: unit = synchronized {
     pendingReactions = pendingReactions + 1
   }
+
   def unPendReaction: unit = synchronized {
     pendingReactions = pendingReactions - 1
+  }
+
+  def getPendingCount = synchronized {
+    pendingReactions
+  }
+
+  def setPendingCount(cnt: int) = synchronized {
+    pendingReactions = cnt
   }
 
   def printActorDump {}
@@ -94,7 +104,7 @@ class FJTaskScheduler2 extends Thread with IScheduler {
                   // and FJTaskRunner threads have daemon status.
 
                   // terminate timer thread
-                  TimerThread.t.interrupt()
+                  TimerThread.shutdown()
                   throw new QuitException
                 }
               }
@@ -146,7 +156,7 @@ class FJTaskScheduler2 extends Thread with IScheduler {
   def shutdown(): unit = synchronized {
     terminating = true
     // terminate timer thread
-    TimerThread.t.interrupt()
+    TimerThread.shutdown()
   }
 
   def snapshot(): LinkedQueue = synchronized {

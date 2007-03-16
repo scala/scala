@@ -99,7 +99,7 @@ class TickedScheduler extends Thread with IScheduler {
                   worker.interrupt()
                 }
                 // terminate timer thread
-                TimerThread.t.interrupt()
+                TimerThread.shutdown()
                 throw new QuitException
               }
             }
@@ -166,6 +166,6 @@ class TickedScheduler extends Thread with IScheduler {
       worker.interrupt()
     }
     // terminate timer thread
-    TimerThread.t.interrupt()
+    TimerThread.shutdown()
   }
 }

@@ -39,18 +39,22 @@ object Scheduler {
   }
 
   var tasks: LinkedQueue = null
+  var pendingCount = 0
 
   def snapshot(): unit = synchronized {
     tasks = sched.snapshot()
+    pendingCount = sched.asInstanceOf[FJTaskScheduler2].getPendingCount
     sched.shutdown()
   }
 
   def restart(): unit = synchronized {
     sched = {
       var s: IScheduler = new FJTaskScheduler2
+      s.asInstanceOf[FJTaskScheduler2].setPendingCount(pendingCount)
       s.start()
       s
     }
+    TimerThread.restart()
     while (!tasks.isEmpty()) {
       sched.execute(tasks.take().asInstanceOf[FJTask])
     }

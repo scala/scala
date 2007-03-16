@@ -21,27 +21,88 @@ import scala.collection.mutable.PriorityQueue
  * Note that the library deletes non-received <code>TIMEOUT</code> message if a
  * message is received before the time-out occurs.
  *
- * @version 0.9.4
+ * @version 0.9.5
  * @author Sebastien Noir, Philipp Haller
  */
 
-object TimerThread extends AnyRef with Runnable {
+object TimerThread {
 
-  case class WakedActor(actor: Actor, f: PartialFunction[Any, Unit], time: long)
-       extends Ordered[WakedActor] {
+  private case class WakedActor(actor: Actor, f: PartialFunction[Any, Unit], time: long)
+               extends Ordered[WakedActor] {
     var valid = true
     def compare(that: WakedActor): int = -(this.time compare that.time)
   }
 
-  var queue = new PriorityQueue[WakedActor]
-  val t = new Thread(this); t.start
+  private var queue = new PriorityQueue[WakedActor]
+  private var lateList: List[WakedActor] = Nil
 
-  var lateList: List[WakedActor] = Nil
+  private val timerTask = new Runnable {
+    override def run = {
+      try {
+        while(true) {
+          timerThread.synchronized {
+            try {
+              val sleepTime = dequeueLateAndGetSleepTime
+              if (lateList.isEmpty) timerThread.wait(sleepTime)
+            } catch {
+              case t: Throwable => { throw t }
+            }
+          }
 
-  /**
-   * @param a ...
-   */
-  def trashRequest(a: Actor) = synchronized {
+          // process guys waiting for signal and empty list
+          for (val wa <- lateList) {
+            if (wa.valid) {
+              wa.actor ! TIMEOUT
+            }
+          }
+          lateList = Nil
+        }
+      } catch {
+        case consumed: InterruptedException =>
+          // allow thread to quit
+      }
+    }
+  }
+
+  private var timerThread: Thread = {
+    val t = new Thread(timerTask)
+    t.start()
+    t
+  }
+
+  def shutdown() {
+    timerThread.interrupt()
+  }
+
+  def restart() {
+    timerThread = {
+      val t = new Thread(timerTask)
+      t.start()
+      t
+    }
+  }
+
+  def requestTimeout(a: Actor, f: PartialFunction[Any, Unit],
+                     waitMillis: long): unit = timerThread.synchronized {
+    val wakeTime = now + waitMillis
+    if (waitMillis <= 0) {
+      a ! TIMEOUT
+      return
+    }
+
+    if (queue.isEmpty) { // add to queue and restart sleeping
+      queue += WakedActor(a, f, wakeTime)
+      timerThread.notify()
+    } else
+      if (queue.max.time > wakeTime) { // add to 1st position and restart sleeping
+        queue += WakedActor (a, f, wakeTime)
+        timerThread.notify()
+      }
+      else // simply add to queue
+        queue += WakedActor (a, f, wakeTime)
+  }
+
+  def trashRequest(a: Actor) = timerThread.synchronized {
     // keep in mind: killing dead people is a bad idea!
     queue.elements.find((wa: WakedActor) => wa.actor == a && wa.valid) match {
       case Some(b) =>
@@ -53,56 +114,6 @@ object TimerThread extends AnyRef with Runnable {
           case None =>
         }
     }
-  }
-
-  override def run = {
-    try {
-      while(true) {
-        this.synchronized {
-          try {
-            val sleepTime = dequeueLateAndGetSleepTime
-            if (lateList.isEmpty) wait(sleepTime)
-          } catch {
-            case t: Throwable => { throw t }
-          }
-        }
-
-        // process guys waiting for signal and empty list
-        for (val wa <- lateList) {
-          if (wa.valid) {
-            wa.actor ! TIMEOUT
-          }
-        }
-        lateList = Nil
-      }
-    } catch {
-      case consumed: InterruptedException =>
-        // allow thread to quit
-    }
-  }
-
-  /**
-   * @param a          ...
-   * @param f          ...
-   * @param waitMillis ...
-   */
-  def requestTimeout(a: Actor, f: PartialFunction[Any, Unit], waitMillis: long): unit = synchronized {
-    val wakeTime = now + waitMillis
-    if (waitMillis <= 0) {
-      a ! TIMEOUT
-      return
-    }
-
-    if (queue.isEmpty) { // add to queue and restart sleeping
-      queue += WakedActor(a, f, wakeTime)
-      notify()
-    } else
-      if (queue.max.time > wakeTime) { // add to 1st position and restart sleeping
-        queue += WakedActor (a, f, wakeTime)
-        notify()
-      }
-      else // simply add to queue
-        queue += WakedActor (a, f, wakeTime)
   }
 
   private def dequeueLateAndGetSleepTime: long = {
@@ -125,5 +136,5 @@ object TimerThread extends AnyRef with Runnable {
     return FOREVER
   }
 
-  def now = Platform.currentTime
+  private def now = Platform.currentTime
 }

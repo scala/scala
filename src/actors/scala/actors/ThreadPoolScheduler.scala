@@ -134,7 +134,7 @@ class ThreadPoolScheduler extends Thread with IScheduler {
               if (executor.getActiveCount() == 0) {
                 executor.shutdown()
                 // terminate timer thread
-                TimerThread.t.interrupt()
+                TimerThread.shutdown()
                 throw new QuitException
               }
             }
@@ -179,6 +179,6 @@ class ThreadPoolScheduler extends Thread with IScheduler {
     terminating = true
     executor.shutdown()
     // terminate timer thread
-    TimerThread.t.interrupt()
+    TimerThread.shutdown()
   }
 }
