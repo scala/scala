@@ -1,0 +1,10 @@
+badtok-2.scala:3: error: unclosed quoted identifier
+`x
+ ^
+badtok-2.scala:3: error: illegal start of definition
+`x
+^
+badtok-2.scala:3: error: '}' expected but eof found.
+`x
+  ^
+three errors found
