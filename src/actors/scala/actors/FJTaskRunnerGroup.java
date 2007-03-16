@@ -125,7 +125,11 @@ public class FJTaskRunnerGroup implements IFJTaskRunnerGroup {
     protected /*final*/ FJTaskRunner[] threads;
 
   /** Group-wide queue for tasks entered via execute() **/
-  protected final LinkedQueue entryQueue = new LinkedQueue();
+    /*protected*/ final LinkedQueue entryQueue = new LinkedQueue();
+
+    public LinkedQueue getEntryQueue() {
+        return entryQueue;
+    }
 
   /** Number of threads that are not waiting for work **/
   protected int activeCount = 0;
@@ -154,6 +158,29 @@ public class FJTaskRunnerGroup implements IFJTaskRunnerGroup {
   int entries = 0;
 
   static final int DEFAULT_SCAN_PRIORITY = Thread.MIN_PRIORITY+1;
+
+    /* -------- Suspending -------- */
+
+    void snapshot() throws InterruptedException {
+        // set flag in all task runners to suspend
+        for (int i = 0; i < threads.length; ++i) {
+            FJTaskRunner t = threads[i];
+            t.setSuspending(true);
+        }
+
+        // interrupt all task runners
+        // assume: current thread not in threads (scheduler)
+        for (int i = 0; i < threads.length; ++i) {
+            Thread t = threads[i];
+            t.interrupt();
+        }
+
+        // wait until all of them have terminated
+        for (int i = 0; i < threads.length; ++i) {
+            Thread t = threads[i];
+            t.join();
+        }
+    }
 
   /**
    * Create a FJTaskRunnerGroup with the indicated number

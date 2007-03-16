@@ -13,7 +13,7 @@ import scala.collection.mutable.{ArrayBuffer, Buffer, HashMap, Queue, Stack, Has
  * by the execution of actors. Unlike <code>ThreadPoolScheduler</code>, this
  * scheduler is available on all Java versions >= 1.4.</p>
  *
- * @version 0.9.4
+ * @version 0.9.5
  * @author Philipp Haller
  */
 class TickedScheduler extends Thread with IScheduler {
@@ -126,6 +126,10 @@ class TickedScheduler extends Thread with IScheduler {
         tasks += item
     }
   }
+
+  def execute(task: FJTask) { }
+
+  def snapshot(): LinkedQueue = null
 
   /**
    *  @param worker the worker thread executing tasks

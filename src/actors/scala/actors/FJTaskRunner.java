@@ -378,6 +378,12 @@ public class FJTaskRunner extends Thread {
 
 
 
+    /* -------- Suspending -------- */
+    protected boolean suspending = false;
+
+    synchronized void setSuspending(boolean susp) {
+        suspending = susp;
+    }
 
   /* ------------ DEQ operations ------------------- */
 
@@ -793,7 +799,6 @@ public class FJTaskRunner extends Thread {
   public void run() {
     try{
       while (!interrupted()) {
-
         FJTask task = pop();
         if (task != null) {
           if (!task.isDone()) {
@@ -805,6 +810,23 @@ public class FJTaskRunner extends Thread {
         }
         else
           scanWhileIdling();
+      }
+      // check for suspending
+      if (suspending) {
+          synchronized(this) {
+              // move all local tasks to group-wide entry queue
+              for (int i = 0; i < deq.length; ++i) {
+                  synchronized(group) {
+                      try {
+                          FJTask task = (FJTask)deq[i].take();
+                          if (task != null)
+                              group.getEntryQueue().put(task);
+                      } catch (InterruptedException ie) {
+                          System.err.println("Suspend: when transferring task to entryQueue: "+ie);
+                      }
+                  }
+              }
+          }
       }
     }
     finally {

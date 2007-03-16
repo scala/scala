@@ -21,7 +21,7 @@ import java.util.concurrent.{ThreadPoolExecutor,
  * This handler executes rejected tasks on the thread of
  * the scheduler.
  *
- * @version 0.9.4
+ * @version 0.9.5
  * @author Philipp Haller
  */
 private class TaskRejectedHandler(sched: ThreadPoolScheduler) extends RejectedExecutionHandler {
@@ -155,6 +155,10 @@ class ThreadPoolScheduler extends Thread with IScheduler {
     submittedTasks = submittedTasks + 1
     executor.execute(item)
   }
+
+  def execute(task: FJTask) { }
+
+  def snapshot(): LinkedQueue = null
 
   /**
    *  @param worker the worker thread executing tasks

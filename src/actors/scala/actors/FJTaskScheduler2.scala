@@ -11,7 +11,7 @@ import scala.collection.mutable.{ArrayBuffer, Buffer, HashMap, Queue, Stack, Has
 /**
  * FJTaskScheduler2
  *
- * @version 0.9.4
+ * @version 0.9.5
  * @author Philipp Haller
  */
 class FJTaskScheduler2 extends Thread with IScheduler {
@@ -36,6 +36,7 @@ class FJTaskScheduler2 extends Thread with IScheduler {
     new FJTaskRunnerGroup(coreSize)
 
   private var terminating = false
+  private var suspending = false
 
   private var lastActivity = Platform.currentTime
 
@@ -76,24 +77,26 @@ class FJTaskScheduler2 extends Thread with IScheduler {
               if (terminating) throw new QuitException
           }
 
-          // check if we need more threads
-          if (Platform.currentTime - lastActivity >= TICK_FREQ
-              && coreSize < maxSize
-              && executor.checkPoolSize()) {
-                // do nothing
-          }
-          else {
-            if (pendingReactions == 0) {
-              // if all worker threads idle terminate
-              if (executor.getActiveCount() == 0) {
-                // Note that we don't have to shutdown
-                // the FJTaskRunnerGroup since there is
-                // no separate thread associated with it,
-                // and FJTaskRunner threads have daemon status.
+          if (!suspending) {
+            // check if we need more threads
+            if (Platform.currentTime - lastActivity >= TICK_FREQ
+                && coreSize < maxSize
+                && executor.checkPoolSize()) {
+                  // do nothing
+                }
+            else {
+              if (pendingReactions <= 0) {
+                // if all worker threads idle terminate
+                if (executor.getActiveCount() == 0) {
+                  // Note that we don't have to shutdown
+                  // the FJTaskRunnerGroup since there is
+                  // no separate thread associated with it,
+                  // and FJTaskRunner threads have daemon status.
 
-                // terminate timer thread
-                TimerThread.t.interrupt()
-                throw new QuitException
+                  // terminate timer thread
+                  TimerThread.t.interrupt()
+                  throw new QuitException
+                }
               }
             }
           }
@@ -111,6 +114,10 @@ class FJTaskScheduler2 extends Thread with IScheduler {
    *  @param item the task to be executed.
    */
   def execute(task: Reaction) {
+    executor.execute(task)
+  }
+
+  def execute(task: FJTask) {
     executor.execute(task)
   }
 
@@ -141,4 +148,13 @@ class FJTaskScheduler2 extends Thread with IScheduler {
     // terminate timer thread
     TimerThread.t.interrupt()
   }
+
+  def snapshot(): LinkedQueue = synchronized {
+    suspending = true
+    executor.snapshot()
+    // grab tasks from executor
+    executor.entryQueue
+  }
+
+
 }

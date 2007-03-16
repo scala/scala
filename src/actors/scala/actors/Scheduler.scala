@@ -22,29 +22,13 @@ import scala.collection.mutable.{ArrayBuffer, Buffer, HashMap, Queue, Stack, Has
  * The <code>Scheduler</code> object is used by
  * <code>Actor</code> to execute tasks of an execution of an actor.
  *
- * @version 0.9.4
+ * @version 0.9.5
  * @author Philipp Haller
  */
 object Scheduler {
   private var sched: IScheduler =
     {
       var s: IScheduler = new FJTaskScheduler2
-
-/*
-      // Check for JDK version >= 1.5
-      var olderThanJDK5 = false
-      try {
-        java.lang.Class.forName("java.util.concurrent.ThreadPoolExecutor")
-      } catch {
-        case _: ClassNotFoundException =>
-          olderThanJDK5 = true
-      }
-
-      s = if (olderThanJDK5)
-        new TickedScheduler
-      else
-        Class.forName("scala.actors.ThreadPoolScheduler").newInstance().asInstanceOf[IScheduler]
-*/
       s.start()
       s
     }
@@ -52,6 +36,25 @@ object Scheduler {
   def impl = sched
   def impl_= (scheduler: IScheduler) = {
     sched = scheduler
+  }
+
+  var tasks: LinkedQueue = null
+
+  def snapshot(): unit = synchronized {
+    tasks = sched.snapshot()
+    sched.shutdown()
+  }
+
+  def restart(): unit = synchronized {
+    sched = {
+      var s: IScheduler = new FJTaskScheduler2
+      s.start()
+      s
+    }
+    while (!tasks.isEmpty()) {
+      sched.execute(tasks.take().asInstanceOf[FJTask])
+    }
+    tasks = null
   }
 
   def start(task: Reaction) = sched.start(task)
@@ -84,19 +87,23 @@ object Scheduler {
  * This abstract class provides a common interface for all
  * schedulers used to execute actor tasks.
  *
- * @version 0.9.4
+ * @version 0.9.5
  * @author Philipp Haller
  */
 trait IScheduler {
   def start(): unit
+
   def start(task: Reaction): unit
   def execute(task: Reaction): unit
+  def execute(task: FJTask): unit
+
   def getTask(worker: WorkerThread): Runnable
   def tick(a: Actor): unit
   def terminated(a: Actor): unit
   def pendReaction: unit
   def unPendReaction: unit
 
+  def snapshot(): LinkedQueue
   def shutdown(): unit
 
   def onLockup(handler: () => unit): unit
@@ -114,7 +121,7 @@ trait IScheduler {
  * This scheduler executes the tasks of an actor on a single
  * thread (the current thread).
  *
- * @version 0.9.4
+ * @version 0.9.5
  * @author Philipp Haller
  */
 class SingleThreadedScheduler extends IScheduler {
@@ -130,6 +137,11 @@ class SingleThreadedScheduler extends IScheduler {
     task.run()
   }
 
+  def execute(task: FJTask) {
+    // execute task immediately on same thread
+    task.run()
+  }
+
   def getTask(worker: WorkerThread): Runnable = null
   def tick(a: Actor): Unit = {}
   def terminated(a: Actor): unit = {}
@@ -137,6 +149,7 @@ class SingleThreadedScheduler extends IScheduler {
   def unPendReaction: unit = {}
 
   def shutdown(): Unit = {}
+  def snapshot(): LinkedQueue = { null }
 
   def onLockup(handler: () => unit): unit = {}
   def onLockup(millis: int)(handler: () => unit): unit = {}
