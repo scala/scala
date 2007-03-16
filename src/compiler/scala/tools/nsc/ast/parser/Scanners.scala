@@ -273,8 +273,7 @@ trait Scanners requires SyntaxAnalyzer {
                 return
               case '`' =>
                 in.next
-                getStringLit('`')
-                token = IDENTIFIER /*BACKQUOTED_IDENT*/
+                getStringLit('`', IDENTIFIER)
                 return
               case '\"' =>
                 in.next
@@ -291,7 +290,7 @@ trait Scanners requires SyntaxAnalyzer {
                     name = nme.EMPTY
                   }
                 } else {
-                  getStringLit('\"')
+                  getStringLit('\"', STRINGLIT)
                 }
                 return
               case '\'' =>
@@ -569,16 +568,18 @@ trait Scanners requires SyntaxAnalyzer {
           }
       }
 
-    private def getStringLit(delimiter: char): unit = {
+    private def getStringLit(delimiter: char, litType: int): unit = {
+      assert((litType==STRINGLIT) || (litType==IDENTIFIER))
       while (in.ch != delimiter && (in.isUnicode || in.ch != CR && in.ch != LF && in.ch != SU)) {
         getlitch()
       }
       if (in.ch == delimiter) {
-        token = STRINGLIT
+        token = litType
         setName
         in.next
       } else {
-        syntaxError("unclosed string literal")
+        val typeDesc = if(litType == STRINGLIT) "string literal" else "quoted identifier"
+        syntaxError("unclosed " + typeDesc)
       }
     }
 
