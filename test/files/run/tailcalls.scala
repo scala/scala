@@ -180,6 +180,9 @@ class TailCall[S](s: S) {
     aux(x, y, Nil);
   }
 
+  final def b1(x: Int): Boolean =
+    (x == 1) || b1(x - 1)
+
   def h1(n: Int, v: Int): Int = hP(n, v);
   private def hP(n: Int, v: Int): Int = if (n == 0) v else hP(n - 1, v - 1);
 
@@ -213,6 +216,23 @@ object Test {
     Console.print("test " + name);
     try {
       val actual: Int = closure;
+      if (actual == expected) {
+        Console.print(" was successful");
+      } else {
+        Console.print(" failed: expected "+ expected +", found "+ actual);
+      }
+    } catch {
+      case exception: Throwable => {
+        Console.print(" raised exception " + exception);
+      }
+    }
+    Console.println;
+  }
+
+  def check_success_b(name: String, closure: => Boolean, expected: Boolean): Unit = {
+    Console.print("test " + name);
+    try {
+      val actual: Boolean = closure;
       if (actual == expected) {
         Console.print(" was successful");
       } else {
@@ -323,6 +343,8 @@ object Test {
     val NonTailCall = new NonTailCall;
     check_success("NonTailCall.f1", NonTailCall.f1(2), 0)
     check_overflow("NonTailCall.f2", NonTailCall.f2(max))
+
+    check_success_b("TailCall.b1", TailCall.b1(max), true);
   }
 }
 

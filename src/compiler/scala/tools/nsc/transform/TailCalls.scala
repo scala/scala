@@ -236,7 +236,9 @@ abstract class TailCalls extends Transform
 
         case TypeApply(fun, args) =>
           super.transform(tree)
-//          throw new RuntimeException("Lonely TypeApply found -- we can only handle them inside Apply(TypeApply()): " + tree + " at: " + unit);
+
+        case Apply(fun, args) if fun.symbol == definitions.Boolean_or =>
+          copy.Apply(tree, fun, transformTrees(args));
 
         case Apply(fun, args) =>
           if (ctx.currentMethod.isFinal &&
