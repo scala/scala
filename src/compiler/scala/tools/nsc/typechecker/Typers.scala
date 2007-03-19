@@ -1426,7 +1426,10 @@ trait Typers requires Analyzer {
       }
       fun.tpe match {
         case OverloadedType(pre, alts) =>
+          val undetparams = context.undetparams
+          context.undetparams = List()
           val args1 = typedArgs(args, mode)
+          context.undetparams = undetparams
           inferMethodAlternative(fun, context.undetparams, args1 map (.tpe.deconst), pt)
           typedApply(tree, adapt(fun, funMode(mode), WildcardType), args1, mode, pt)
         case MethodType(formals0, restpe) =>

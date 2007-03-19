@@ -24,6 +24,8 @@ final class RichFloat(x: Float) extends Proxy with Ordered[Float] {
   def max(y: Float) = Math.max(x, y)
   def abs: Float = Math.abs(x)
 
+  def round: int = Math.round(x)
+
   // isNaN is provided by the implicit conversion to java.lang.Float
   // def isNaN: Boolean = java.lang.Float.isNaN(x)
   def isInfinity: Boolean = java.lang.Float.isInfinite(x)
