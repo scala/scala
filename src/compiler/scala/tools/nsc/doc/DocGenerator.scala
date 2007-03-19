@@ -95,7 +95,7 @@ abstract class DocGenerator extends Models {
      */
     def urlFor(tpe: Type, target: String): NodeSeq = try {
       if (tpe.symbol.hasFlag(Flags.JAVA) || (tpe.symbol.sourceFile eq null))
-        <a class={tpe.toString().replace('.', '_')} href=""
+        <a class={tpe.toString().replace('.', '/')} href=""
           target={target}>{tpe.toString()}</a>
       /*
       else if (tpe.symbol.sourceFile eq null)
@@ -456,7 +456,7 @@ abstract class DocGenerator extends Models {
             def aref1(sym: Symbol): NodeSeq = {
               val isJava = sym hasFlag Flags.JAVA
               if (isJava || (sym.sourceFile eq null)) {
-                <a class={sym.owner.fullNameString.replace('.', '_')}
+                <a class={sym.owner.fullNameString.replace('.', '/')}
                   href={"#" + docName(sym)}
                   target={contentFrame}>{sym.nameString}</a>
               }
@@ -687,13 +687,22 @@ abstract class DocGenerator extends Models {
         <tr><td></td></tr>
       </table>;
 
-    private def header0: NodeSeq = <span>
-      <hr/> in {aref(urlFor(clazz.tree.symbol.owner), "_self", clazz.tree.symbol.owner.fullNameString('.'))}
-      <div class="entity">
-        {Text(codeFor(kind))}
-        <span class="entity">{Text(clazz.tree.symbol.nameString)}</span>
-      </div><hr/>
-    </span>;
+    private def header0: NodeSeq = {
+      val sym = clazz.tree.symbol
+      val name = sym.fullNameString.replace("$object", "")
+      <span>
+        <hr/>
+        in {aref(urlFor(sym.owner), "_self", sym.owner.fullNameString('.'))}
+        <div class="entity">
+          {Text(codeFor(kind))}
+          <span class="entity">{Text(sym.nameString)}</span>
+          <a class={name.replace('.', '/')} href="">
+            <img style="border:none;" src={relative +"/source.png"} alt="source" title={name}/>
+          </a>
+        </div>
+        <hr/>
+      </span>;
+    }
   }
 
   private val kinds =
