@@ -1172,7 +1172,7 @@ abstract class DocGenerator extends Models {
       def descr = boxedValDescr(sym)
     }
     val rsrcdir = "scala/tools/nsc/doc/".replace('/', File.separatorChar)
-    for (val base <- List("style.css", "script.js")) {
+    for (val base <- List("style.css", "script.js", "source.png")) {
       try {
         val in = loader.getResourceAsStream(rsrcdir + base)
         val out = new FileOutputStream(new File(outdir + File.separator + base))

@@ -21,6 +21,7 @@ var svn_root = 'http://scalasvn.epfl.ch/cgi-bin/viewvc.cgi/scala/branches/2.4.0-
 var lib_svn_root = svn_root + '/src/library/';
 var comp_svn_root = svn_root + '/src/compiler/';
 var actors_svn_root = svn_root + '/src/actors/';
+var dbc_svn_root = svn_root + '/src/dbc/';
 
 // hash tables
 var api = new Array()
@@ -437,6 +438,7 @@ function init() {
   src['scala/collection/mutable/SynchronizedSet']       = lib_svn_root;
   src['scala/collection/mutable/SynchronizedStack']     = lib_svn_root;
   src['scala/collection/mutable/Undoable']              = lib_svn_root;
+  src['scala/concurrent/Actor']                         = lib_svn_root;
 
   src['scala/io/BytePickle']                            = lib_svn_root;
   src['scala/io/Position']                              = lib_svn_root;
@@ -483,14 +485,76 @@ function init() {
 
   // scala-actors-src.jar
   src['scala/actors/Actor']                             = actors_svn_root;
+  src['scala/actors/ActorProxy']                        = actors_svn_root;
+  src['scala/actors/Channel']                           = actors_svn_root;
   src['scala/actors/Debug']                             = actors_svn_root;
+  src['scala/actors/FJTask']                            = actors_svn_root;
+  src['scala/actors/FJTaskRunner']                      = actors_svn_root;
+  src['scala/actors/FJTaskRunnerGroup']                 = actors_svn_root;
+  src['scala/actors/FJTaskScheduler2']                  = actors_svn_root;
+  src['scala/actors/Future']                            = actors_svn_root;
+  src['scala/actors/InputChannel']                      = actors_svn_root;
+  src['scala/actors/LinkedNode']                        = actors_svn_root;
+  src['scala/actors/LinkedQueue']                       = actors_svn_root;
+  src['scala/actors/MessageQueue']                      = actors_svn_root;
+  src['scala/actors/OutputChannel']                     = actors_svn_root;
   // declared in 'Scheduler'
   //src['scala/actors/IScheduler']                        = actors_svn_root;
   src['scala/actors/Reaction']                          = actors_svn_root;
   src['scala/actors/Scheduler']                         = actors_svn_root;
+  src['scala/actors/ThreadPoolScheduler']               = actors_svn_root;
+  src['scala/actors/TickedScheduler']                   = actors_svn_root;
+  src['scala/actors/TimerThread']                       = actors_svn_root;
 
+  src['scala/actors/remote/FreshNameCreator']           = actors_svn_root;
   src['scala/actors/remote/JavaSerizalizer']            = actors_svn_root;
+  src['scala/actors/remote/NetKernel']                  = actors_svn_root;
+  src['scala/actors/remote/RemoteActor']                = actors_svn_root;
+  src['scala/actors/remote/Serializer']                 = actors_svn_root;
   src['scala/actors/remote/Service']                    = actors_svn_root;
+  src['scala/actors/remote/TcpService']                 = actors_svn_root;
+
+  // scala-dbc-src.jar
+  src['scala/dbc/DataType']                             = dbc_svn_root;
+  src['scala/dbc/Database']                             = dbc_svn_root;
+  src['scala/dbc/Syntax']                               = dbc_svn_root;
+  src['scala/dbc/Utilities']                            = dbc_svn_root;
+  src['scala/dbc/Value']                                = dbc_svn_root;
+  src['scala/dbc/Vendor']                               = dbc_svn_root;
+  src['scala/dbc/datatype/ApproximateNumeric']          = dbc_svn_root;
+  src['scala/dbc/datatype/Boolean']                     = dbc_svn_root;
+  src['scala/dbc/datatype/Character']                   = dbc_svn_root;
+  src['scala/dbc/datatype/CharacterLargeObject']        = dbc_svn_root;
+  src['scala/dbc/datatype/CharacterVarying']            = dbc_svn_root;
+  src['scala/dbc/datatype/ExactNumeric']                = dbc_svn_root;
+  src['scala/dbc/datatype/Factory']                     = dbc_svn_root;
+  src['scala/dbc/datatype/Numeric']                     = dbc_svn_root;
+  src['scala/dbc/datatype/String']                      = dbc_svn_root;
+  src['scala/dbc/datatype/Unknown']                     = dbc_svn_root;
+  src['scala/dbc/exception/IncompatibleSchema']         = dbc_svn_root;
+  src['scala/dbc/exception/UnsupportedFeature']         = dbc_svn_root;
+  src['scala/dbc/result/Field']                         = dbc_svn_root;
+  src['scala/dbc/result/FieldMetadata']                 = dbc_svn_root;
+  src['scala/dbc/result/Relation']                      = dbc_svn_root;
+  src['scala/dbc/result/Status']                        = dbc_svn_root;
+  src['scala/dbc/result/Tuple']                         = dbc_svn_root;
+  src['scala/dbc/statement/AccessMode']                 = dbc_svn_root;
+  src['scala/dbc/statement/DerivedColumn']              = dbc_svn_root;
+  src['scala/dbc/statement/Expression']                 = dbc_svn_root;
+  src['scala/dbc/statement/Insert']                     = dbc_svn_root;
+  src['scala/dbc/statement/InsertionData']              = dbc_svn_root;
+  src['scala/dbc/statement/IsolationLevel']             = dbc_svn_root;
+  src['scala/dbc/statement/JoinType']                   = dbc_svn_root;
+  src['scala/dbc/statement/Jointure']                   = dbc_svn_root;
+  src['scala/dbc/statement/Relation']                   = dbc_svn_root;
+  src['scala/dbc/statement/Select']                     = dbc_svn_root;
+  src['scala/dbc/statement/SetClause']                  = dbc_svn_root;
+  src['scala/dbc/statement/SetQuantifier']              = dbc_svn_root;
+  src['scala/dbc/statement/Statement']                  = dbc_svn_root;
+  src['scala/dbc/statement/Status']                     = dbc_svn_root;
+  src['scala/dbc/statement/Table']                      = dbc_svn_root;
+  src['scala/dbc/statement/Transaction']                = dbc_svn_root;
+  src['scala/dbc/statement/Update']                     = dbc_svn_root;
 
   // scala-compiler-src.jar
   src['scala/tools/nsc/Global']                         = comp_svn_root;

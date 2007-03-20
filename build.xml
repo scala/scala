@@ -248,7 +248,6 @@ BUILD SUPPORT MACROS
           <include name="**/*.xml"/>
           <include name="**/*.js"/>
           <include name="**/*.css"/>
-          <include name="**/*.png"/>
         </fileset>
       </copy>
       <copy todir="@{build.dir}/lib/compiler">
@@ -257,7 +256,6 @@ BUILD SUPPORT MACROS
           <include name="**/*.xml"/>
           <include name="**/*.js"/>
           <include name="**/*.css"/>
-          <include name="**/*.png"/>
         </fileset>
       </copy>
     </sequential>
