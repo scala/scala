@@ -689,16 +689,19 @@ abstract class DocGenerator extends Models {
 
     private def header0: NodeSeq = {
       val sym = clazz.tree.symbol
-      val name = sym.fullNameString.replace("$object", "")
+      val dir =
+        if (sym.toplevelClass.isPackageClass) sym.toplevelClass
+        else sym.toplevelClass.owner
+      val name = dir.fullNameString('/') + "/" + sym.sourceFile.name.replace(".scala", "")
       <span>
         <hr/>
         in {aref(urlFor(sym.owner), "_self", sym.owner.fullNameString('.'))}
         <div class="entity">
           {Text(codeFor(kind))}
           <span class="entity">{Text(sym.nameString)}</span>
-          <a class={name.replace('.', '/')} href="">
-            <img style="border:none;" src={relative +"/source.png"} alt="source" title={name}/>
-          </a>
+        </div>
+        <div style="font-size:smaller; color:gray;">
+          [source: <a class={name} href=""><code>{name + ".scala"}</code></a>]
         </div>
         <hr/>
       </span>;
@@ -1172,7 +1175,7 @@ abstract class DocGenerator extends Models {
       def descr = boxedValDescr(sym)
     }
     val rsrcdir = "scala/tools/nsc/doc/".replace('/', File.separatorChar)
-    for (val base <- List("style.css", "script.js", "source.png")) {
+    for (val base <- List("style.css", "script.js")) {
       try {
         val in = loader.getResourceAsStream(rsrcdir + base)
         val out = new FileOutputStream(new File(outdir + File.separator + base))

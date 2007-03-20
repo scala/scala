@@ -315,4 +315,24 @@ final class Array[A](_length: Int) extends Seq[A] {
    */
   def deepMkString(sep: String): String = throw new Error()
 
+  /** <p>
+   *    Returns <code>true</code> if the two specified arrays are
+   *    <em>deeply equal</em> to one another.
+   *  </p>
+   *  <p>
+   *    Two array references are considered deeply equal if both are null,
+   *    or if they refer to arrays that contain the same number of elements
+   *    and all corresponding pairs of elements in the two arrays are deeply
+   *    equal.
+   *  </p>
+   *  <p>
+   *    See also method <code>deepEquals</code> in the Java class
+   *    <a href="http://java.sun.com/javase/6/docs/api/java/util/Arrays.html"
+   *    target="_top">java.utils.Arrays</a>
+   *  </p>
+   *
+   *  @param that the second
+   *  @return     <code>true</code> iff both arrays are deeply equal.
+   */
+  def deepEquals(that: Any): Boolean = throw new Error()
 }

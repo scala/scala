@@ -18,6 +18,9 @@ import compat.StringBuilder
 
 /**
  *  <p>A class representing <code>Array[T]</code></p>
+ *
+ *  @author  Martin Odersky, Stephane Micheloud
+ *  @version 1.0
  */
 abstract class BoxedArray extends Seq[Any] {
   /** The length of the array */
@@ -121,19 +124,13 @@ abstract class BoxedArray extends Seq[Any] {
   final def deepToString() = deepMkString(stringPrefix + "(", ",", ")")
 
   final def deepMkString(start: String, sep: String, end: String): String = {
-    val buf = new StringBuilder()
-    deepAddString(buf, start, sep, end).toString
-  }
-
-  final def deepMkString(sep: String): String = this.deepMkString("", sep, "")
-
-  private def deepAddString(buf: StringBuilder, start: String, sep: String, end: String): StringBuilder = {
     def _deepToString(x: Any) = x match {
       case a: AnyRef if ScalaRunTime.isArray(a) =>
         ScalaRunTime.boxArray(a).deepMkString(start, sep, end)
       case _ =>
         x.toString
     }
+    val buf = new StringBuilder()
     buf.append(start)
     val elems = elements
     if (elems.hasNext) buf.append(_deepToString(elems.next))
@@ -141,6 +138,37 @@ abstract class BoxedArray extends Seq[Any] {
       buf.append(sep); buf.append(_deepToString(elems.next))
     }
     buf.append(end)
+    buf.toString
+  }
+
+  final def deepMkString(sep: String): String = this.deepMkString("", sep, "")
+
+  final def deepEquals(that: Any): Boolean = {
+    def _deepEquals(x1: Any, x2: Any) = (x1, x2) match {
+      case (a1: BoxedArray, a2: BoxedArray) =>
+        _sameElements(a1, a2)
+      case (a1: AnyRef, a2: AnyRef)
+           if ScalaRunTime.isArray(a1) && ScalaRunTime.isArray(a2) =>
+        _sameElements(ScalaRunTime.boxArray(a1), ScalaRunTime.boxArray(a2))
+      case _ =>
+        x1.equals(x2)
+    }
+    def _sameElements(a1: BoxedArray, a2: BoxedArray): Boolean = {
+      val it1 = a1.elements
+      val it2 = a2.elements
+      var res = true
+      while (res && it1.hasNext && it2.hasNext)
+        res = _deepEquals(it1.next, it2.next)
+      !it1.hasNext && !it2.hasNext && res
+    }
+    that match {
+      case a: BoxedArray =>
+        _sameElements(this, a)
+      case a: AnyRef if ScalaRunTime.isArray(a) =>
+        _sameElements(this, ScalaRunTime.boxArray(a))
+      case _ =>
+        false
+    }
   }
 
   override final def stringPrefix: String = "Array"
