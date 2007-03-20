@@ -14,6 +14,7 @@ package scala.runtime
 
 import Predef.{Class, Error}
 import collection.mutable.ArrayBuffer
+import compat.StringBuilder
 
 /**
  *  <p>A class representing <code>Array[T]</code></p>
