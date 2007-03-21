@@ -142,45 +142,9 @@ abstract class GenICode extends SubComponent  {
       var currentCtx = ctx
 
       for (val t <- trees)
-        currentCtx = genStat(t, currentCtx)
+        currentCtx = genLoad(t, currentCtx, UNIT)
 
       currentCtx
-    }
-
-    /**
-     * Generate code for the given tree. The trees should contain statements
-     * and not produce any value. Use genLoad for expressions which leave
-     * a value on top of the stack.
-     *
-     * @param tree ...
-     * @param ctx  ...
-     * @return a new context. This is necessary for control flow instructions
-     *         which may change the current basic block.
-     */
-    private def genStat(tree: Tree, ctx: Context): Context = {
-
-      tree match {
-        case Assign(lhs @ Select(_, _), rhs) =>
-          if (isStaticSymbol(lhs.symbol)) {
-            val ctx1 = genLoad(rhs, ctx, toTypeKind(lhs.symbol.info))
-            ctx1.bb.emit(STORE_FIELD(lhs.symbol, true), tree.pos)
-            ctx1
-          } else {
-            var ctx1 = genLoadQualifier(lhs, ctx)
-            ctx1 = genLoad(rhs, ctx1, toTypeKind(lhs.symbol.info))
-            ctx1.bb.emit(STORE_FIELD(lhs.symbol, false), tree.pos)
-            ctx1
-          }
-
-        case Assign(lhs, rhs) =>
-          val ctx1 = genLoad(rhs, ctx, toTypeKind(lhs.symbol.info))
-          val Some(l) = ctx.method.lookupLocal(lhs.symbol)
-          ctx1.bb.emit(STORE_LOCAL(l), tree.pos)
-          ctx1
-
-        case _ =>
-          genLoad(tree, ctx, UNIT)
-      }
     }
 
     /**
@@ -899,10 +863,38 @@ abstract class GenICode extends SubComponent  {
         case Typed(expr, _) =>
           genLoad(expr, ctx, expectedType)
 
+        case Assign(lhs @ Select(_, _), rhs) =>
+          generatedType = UNIT
+          val rhsType = toTypeKind(lhs.symbol.info)
+          val static = isStaticSymbol(lhs.symbol)
+          var ctx1: Context = ctx
+
+          if (!static)
+            ctx1 = genLoadQualifier(lhs, ctx)
+          ctx1 = genLoad(rhs, ctx1, rhsType)
+          if (expectedType == rhsType) {
+            ctx1.bb.emit(DUP(rhsType))
+            generatedType = rhsType
+          }
+          ctx1.bb.emit(STORE_FIELD(lhs.symbol, static), tree.pos)
+          ctx1
+
+        case Assign(lhs, rhs) =>
+          generatedType = UNIT
+          val rhsType = toTypeKind(lhs.symbol.info)
+          val ctx1 = genLoad(rhs, ctx, rhsType)
+          if (expectedType == rhsType) {
+            ctx1.bb.emit(DUP(rhsType))
+            generatedType = rhsType
+          }
+          val Some(l) = ctx.method.lookupLocal(lhs.symbol)
+          ctx1.bb.emit(STORE_LOCAL(l), tree.pos)
+          ctx1
+/*
         case Assign(_, _) =>
           generatedType = UNIT
           genStat(tree, ctx)
-
+*/
         case ArrayValue(tpt @ TypeTree(), elems) =>
           var ctx1 = ctx
           val elmKind = toTypeKind(tpt.tpe)
