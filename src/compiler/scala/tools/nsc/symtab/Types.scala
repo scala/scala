@@ -1042,7 +1042,10 @@ trait Types requires SymbolTable {
     def transform(cl: Array[Type]): Array[Type] = {
       val cl1 = new Array[Type](cl.length)
       var i = 0
-      while (i < cl.length) { cl1(i) = transform(cl(i)); i = i + 1 }
+      while (i < cl.length) {
+        cl1(i) = transform(cl(i))
+        i = i + 1
+      }
       cl1
     }
 
@@ -1789,7 +1792,9 @@ trait Types requires SymbolTable {
         else subst(sym, from.tail, to.tail)
       tp match {
         case TypeRef(NoPrefix, sym, _) =>
-          subst(sym, from, to)
+          val tp1 = subst(sym, from, to)
+          if (tp1 ne tp) tp1
+          else mapOver(tp)
         case SingleType(NoPrefix, sym) =>
           subst(sym, from, to)
         case PolyType(tparams, restp) =>
