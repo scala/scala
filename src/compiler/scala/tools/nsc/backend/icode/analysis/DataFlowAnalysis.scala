@@ -18,8 +18,8 @@ trait DataFlowAnalysis[L <: CompleteLattice] {
 
   val worklist: Set[P] = new LinkedHashSet
 
-  val in:  Map[P, lattice.Elem] = new HashMap
-  val out: Map[P, lattice.Elem] = new HashMap
+  val in:  Map[P, lattice.Elem] = new collection.jcl.HashMap
+  val out: Map[P, lattice.Elem] = new collection.jcl.HashMap
   val visited: HashSet[P] = new HashSet
 
   /* Implement this function to initialize the worklist.  */
@@ -36,7 +36,7 @@ trait DataFlowAnalysis[L <: CompleteLattice] {
    *
    *  @param f the transfer function.
    */
-  def forwardAnalysis(f: (P, lattice.Elem) => lattice.Elem): Unit =
+  def forwardAnalysis(f: (P, lattice.Elem) => lattice.Elem): Unit = try {
     while (!worklist.isEmpty) {
 //      Console.println("worklist in: " + worklist);
       val point = worklist.elements.next; worklist -= point; visited += point;
@@ -44,8 +44,7 @@ trait DataFlowAnalysis[L <: CompleteLattice] {
 //      Console.println("taking out point: " + point + " worklist out: " + worklist);
 
       if ((lattice.bottom == out(point)) || output != out(point)) {
-//        Console.println("Output changed at " + point + " added to worklist: ")
-//        Console.println("\t" + worklist)
+//        Console.println("Output changed at " + point + " from: " + out(point) + " to: " + output + " and they are different: " + (output != out(point)))
         out(point) = output
         val succs = point.successors
         succs foreach { p =>
@@ -55,6 +54,13 @@ trait DataFlowAnalysis[L <: CompleteLattice] {
         }
       }
     }
+  } catch {
+    case e: NoSuchElementException =>
+      Console.println("in: " + in.mkString("", "\n", ""))
+      Console.println("out: " + out.mkString("", "\n", ""))
+      e.printStackTrace
+      Predef.error("Could not find element " + e.getMessage)
+  }
 
   /** ...
    *

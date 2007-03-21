@@ -10,7 +10,7 @@ package scala.tools.nsc.backend.icode;
 import java.io.PrintWriter;
 
 import scala.collection.mutable.HashMap;
-import scala.collection.mutable.{Set, HashSet};
+import scala.collection.mutable.{Set, HashSet, ListBuffer};
 import scala.{Symbol => scala_Symbol};
 
 import scala.tools.nsc.symtab.Flags;
@@ -22,10 +22,10 @@ trait Members requires ICodes {
    * This class represents the intermediate code of a method or
    * other multi-block piece of code, like exception handlers.
    */
-  class Code(label: String) {
+  class Code(label: String, method: IMethod) {
 
     /** The set of all blocks */
-    val blocks: HashSet[BasicBlock] = new HashSet;
+    val blocks: ListBuffer[BasicBlock] = new ListBuffer
 
     /** The start block of the method */
     var startBlock: BasicBlock = null;
@@ -41,7 +41,7 @@ trait Members requires ICodes {
     def removeBlock(b: BasicBlock) = {
       if (settings.debug.value) {
         assert(blocks.forall(p => !(p.successors.contains(b))),
-               "Removing block that is still referenced in method code " + label);
+               "Removing block that is still referenced in method code " + b + "preds: " + b.predecessors);
         if (b == startBlock)
           assert(b.successors.length == 1,
                  "Removing start block with more than one successor.");
@@ -74,7 +74,7 @@ trait Members requires ICodes {
       traverse0(startBlock :: Nil)
     }
 
-    def traverse(f: BasicBlock => Unit) = blocks foreach f;
+    def traverse(f: BasicBlock => Unit) = blocks.toList foreach f;
 
     /* This method applies the given function to each basic block. */
     def traverseFeedBack(f: (BasicBlock, HashMap[BasicBlock, Boolean])  => Unit) = {
@@ -110,7 +110,7 @@ trait Members requires ICodes {
     /* Create a new block and append it to the list
      */
     def newBlock: BasicBlock = {
-      val block = new BasicBlock(nextLabel, this);
+      val block = new BasicBlock(nextLabel, method);
       blocks += block;
       block;
     }
@@ -166,6 +166,8 @@ trait Members requires ICodes {
     var exh: List[ExceptionHandler] = Nil;
     var sourceFile: String = _;
     var returnType: TypeKind = _;
+
+    var recursive: Boolean = false
 
     /** local variables and method parameters */
     var locals: List[Local] = Nil;
@@ -248,7 +250,8 @@ trait Members requires ICodes {
         succ ne b;
         succ.predecessors.length == 1;
         succ.predecessors.head eq b;
-        !(exh.contains { (e: ExceptionHandler) => e.covers(b) && !e.covers(succ) })) {
+        !(exh.exists { (e: ExceptionHandler) =>
+            (e.covers(succ) && !e.covers(b)) || (e.covers(b) && !e.covers(succ)) })) {
           nextBlock(b) = succ
       }
 
@@ -261,8 +264,9 @@ trait Members requires ICodes {
             succ = nextBlock(succ);
             bb.removeLastInstruction
             succ.toList foreach { i => bb.emit(i, i.pos) }
-            code.blocks -= succ
+            code.removeBlock(succ)
             nextBlock -= bb
+            exh foreach { e => e.covered = e.covered.remove { b1 => b1 == succ } }
           } while (nextBlock.isDefinedAt(succ))
           bb.close
         } else

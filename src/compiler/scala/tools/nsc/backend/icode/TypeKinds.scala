@@ -104,7 +104,11 @@ trait TypeKinds requires ICodes {
     else if (a == b) a
     else if (a == REFERENCE(definitions.AllClass)) b
     else if (b == REFERENCE(definitions.AllClass)) a
-    else throw new CheckerError("Incompatible types: " + a + " with " + b)
+    else (a, b) match {
+      case (BOXED(a1), BOXED(b1)) => if (a1 == b1) a else REFERENCE(definitions.AnyRefClass)
+      case (BOXED(_), REFERENCE(_)) | (REFERENCE(_), BOXED(_)) => REFERENCE(definitions.AnyRefClass)
+      case _ => throw new CheckerError("Incompatible types: " + a + " with " + b)
+    }
   }
 
   /** The unit value */

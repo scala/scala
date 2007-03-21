@@ -9,7 +9,7 @@ package scala.tools.nsc.backend.icode
 
 import compat.StringBuilder
 import scala.tools.nsc.ast._
-import scala.collection.mutable.{Map, Set, HashSet}
+import scala.collection.mutable.{Map, Set, LinkedHashSet}
 import scala.tools.nsc.util.Position
 import scala.tools.nsc.backend.icode.analysis.ProgramPoint
 
@@ -21,9 +21,11 @@ trait BasicBlocks requires ICodes {
    *  either executed all, or none. No jumps
    *  to/from the "middle" of the basic block are allowed.
    */
-  class BasicBlock (theLabel: int, val code: Code)
+  class BasicBlock (theLabel: int, val method: IMethod)
         extends AnyRef
         with ProgramPoint[BasicBlock] {
+
+    def code = method.code
 
     /** The label of the block */
     val label = theLabel
@@ -36,10 +38,13 @@ trait BasicBlocks requires ICodes {
     /** Is this block the head of a while? */
     var loopHeader = false
 
+    /** Is this block the start block of an exception handler? */
+    var exceptionHandlerHeader = false
+
     /** Local variables that are in scope at entry of this basic block. Used
      *  for debugging information.
      */
-    var varsInScope: Set[Local] = HashSet.empty
+    var varsInScope: Set[Local] = new LinkedHashSet()
 
     /** ICode instructions, used as temporary storage while emitting code.
      * Once closed is called, only the `instrs' array should be used.
@@ -57,6 +62,12 @@ trait BasicBlocks requires ICodes {
       if (closed && touched)
         instructionList = List.fromArray(instrs)
       instructionList
+    }
+
+    /** return the underlying array of instructions */
+    def getArray: Array[Instruction] = {
+      assert(closed)
+      instrs
     }
 
     def fromList(is: List[Instruction]): Unit = {
@@ -123,32 +134,6 @@ trait BasicBlocks requires ICodes {
       None
     }
 
-    def findDefs(idx: Int, m: Int): List[(BasicBlock, Int)] = {
-      assert(closed)
-      var res: List[(BasicBlock, Int)] = Nil
-      var i = idx
-      var n = m
-      // "I look for who produced the 'n' elements below the 'd' topmost slots of the stack"
-      var d = 0
-      while (n > 0) {
-        i = i - 1
-        val prod = instrs(i).produced
-        if (prod > d) {
-          res = (this, i) :: res
-          n   = n - (prod - d)
-        }
-        d = d + (instrs(i).consumed - instrs(i).produced);
-      }
-      res
-    }
-
-    def findDefs(bb: BasicBlock, d: Int, n: Int): List[(BasicBlock, Int)] = {
-      var i = bb.size
-      while (n > 0 && i > 0) {
-
-      }
-      Nil
-    }
 
     /** Return the n-th instruction. */
     def apply(n: Int): Instruction =
@@ -224,6 +209,25 @@ trait BasicBlocks requires ICodes {
       }
 
       changed
+    }
+
+    /** Insert instructions in 'is' immediately after index 'idx'. */
+    def insertAfter(idx: Int, is: List[Instruction]) {
+      assert(closed, "Instructions can be replaced only after the basic block is closed")
+
+      var i = idx + 1
+      if (i < instrs.length) {
+        val newInstrs = new Array[Instruction](instrs.length + is.length);
+        Array.copy(instrs, 0, newInstrs, 0, i)
+        var j = i
+        for (val x <- is) {
+          newInstrs(j) = x
+          j = j + 1
+        }
+        if (i + 1 < instrs.length)
+          Array.copy(instrs, i + 1, newInstrs, j, instrs.length - i)
+        instrs = newInstrs;
+      }
     }
 
     /** Removes instructions found at the given positions.
@@ -324,6 +328,7 @@ trait BasicBlocks requires ICodes {
     }
 
     def open = {
+      assert(closed)
       closed = false
       ignore = false
       instructionList = instructionList.reverse  // prepare for appending to the head
@@ -373,8 +378,8 @@ trait BasicBlocks requires ICodes {
     def isClosed = closed
 
     // TODO: Take care of exception handlers!
-    def successors : List[BasicBlock] = if (isEmpty) Nil else
-      lastInstruction match {
+    def successors : List[BasicBlock] = if (isEmpty) Nil else {
+      var res = lastInstruction match {
         case JUMP (where) => List(where)
         case CJUMP(success, failure, _, _) => success :: failure :: Nil
         case CZJUMP(success, failure, _, _) => success :: failure :: Nil
@@ -388,6 +393,11 @@ trait BasicBlocks requires ICodes {
           }
           else Nil
       }
+      method.exh.foreach { e: ExceptionHandler =>
+        if (e.covers(this)) res = e.startBlock :: res
+      }
+      res
+    }
 
     /** Returns the precessors of this block, in the current 'code' chunk.
      *  This is signifficant only if there are exception handlers, which live
@@ -399,7 +409,7 @@ trait BasicBlocks requires ICodes {
     }
 
     override def equals(other: Any): Boolean = other match {
-      case that: BasicBlock => that.label == label && that.code == code
+      case that: BasicBlock => (that.label == label) && (that.code == code)
       case _ => false
     }
 

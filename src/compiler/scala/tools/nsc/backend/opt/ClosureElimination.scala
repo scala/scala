@@ -115,7 +115,7 @@ abstract class ClosureElimination extends SubComponent {
 
               }
 
-            case LOAD_FIELD(f, false) =>
+            case LOAD_FIELD(f, false) if accessible(f, m.symbol) =>
               info.stack(0) match {
                 case r @ Record(cls, bindings) if bindings.isDefinedAt(f) =>
                   info.getLocalForField(r, f) match {
@@ -151,6 +151,7 @@ abstract class ClosureElimination extends SubComponent {
       case e: LubError =>
         Console.println("In method: " + m);
         Console.println(e);
+        e.printStackTrace
     }
 
     /* Partial mapping from values to instructions that load them. */
@@ -161,6 +162,13 @@ abstract class ClosureElimination extends SubComponent {
       case This() =>
         THIS(definitions.ObjectClass)
     }
+
+    /** is field 'f' accessible from method 'm'? */
+    def accessible(f: Symbol, m: Symbol): Boolean =
+      f.isPublic || (f.hasFlag(Flags.PROTECTED) && (enclPackage(f) == enclPackage(m)))
+
+    private def enclPackage(sym: Symbol): Symbol =
+      if ((sym == NoSymbol) || sym.isPackageClass) sym else enclPackage(sym.owner)
 
   } /* class ClosureElim */
 
@@ -191,7 +199,6 @@ abstract class ClosureElimination extends SubComponent {
         while (t != Nil) {
           peep(h, t.head) match {
             case Some(newInstrs) =>
-            	Console.println("Replacing " + h + " : " + t.head + " by " + newInstrs);
               newInstructions = seen.reverse ::: newInstrs ::: t.tail;
               redo = true;
             case None =>

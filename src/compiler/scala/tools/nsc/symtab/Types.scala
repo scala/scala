@@ -2560,15 +2560,15 @@ trait Types requires SymbolTable {
           if (lubType.decls.isEmpty) lubBase else lubType
         }
     }
-    if (settings.debug.value) {
-      log(indent + "lub of " + ts + " at depth "+depth)//debug
-      indent = indent + "  "
-    }
+//    if (settings.debug.value) {
+//      log(indent + "lub of " + ts + " at depth "+depth)//debug
+//      indent = indent + "  "
+//    }
     val res = lub0(ts)
-    if (settings.debug.value) {
-      indent = indent.substring(0, indent.length() - 2)
-      log(indent + "lub of " + ts + " is " + res)//debug
-    }
+//    if (settings.debug.value) {
+//      indent = indent.substring(0, indent.length() - 2)
+//      log(indent + "lub of " + ts + " is " + res)//debug
+//    }
     res
   }
 

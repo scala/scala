@@ -666,7 +666,7 @@ sealed abstract class List[+a] extends Seq[a] {
    *  @param f function to apply to each element.
    *  @return <code>[f(a0), ..., f(an)]</code> if this list is <code>[a0, ..., an]</code>.
    */
-  override def map[b](f: a => b): List[b] = {
+  final override def map[b](f: a => b): List[b] = {
     val b = new ListBuffer[b]
     var these = this
     while (!these.isEmpty) {
@@ -696,7 +696,7 @@ sealed abstract class List[+a] extends Seq[a] {
    *
    *  @param f the treatment to apply to each element.
    */
-  override def foreach(f: a => Unit): Unit = {
+  final override def foreach(f: a => Unit): Unit = {
     var these = this
     while (!these.isEmpty) {
       f(these.head)
@@ -710,7 +710,7 @@ sealed abstract class List[+a] extends Seq[a] {
    *  @param p the predicate used to filter the list.
    *  @return the elements of this list satisfying <code>p</code>.
    */
-  override def filter(p: a => Boolean): List[a] = {
+  final override def filter(p: a => Boolean): List[a] = {
     // return same list if all elements satisfy p
     var these = this
     while (!these.isEmpty && p(these.head)) {
@@ -964,7 +964,7 @@ sealed abstract class List[+a] extends Seq[a] {
    *  @return  <code>f(a<sub>0</sub>) ::: ... ::: f(a<sub>n</sub>)</code> if
    *           this list is <code>[a<sub>0</sub>, ..., a<sub>n</sub>]</code>.
    */
-  override def flatMap[b](f: a => Iterable[b]): List[b] = {
+  final override def flatMap[b](f: a => Iterable[b]): List[b] = {
     val b = new ListBuffer[b]
     var these = this
     while (!these.isEmpty) {

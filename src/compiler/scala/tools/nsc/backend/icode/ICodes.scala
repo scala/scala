@@ -60,7 +60,17 @@ abstract class ICodes extends AnyRef
     val global: ICodes.this.global.type = ICodes.this.global;
   }
 
-  def init = { }
+  var AnyRefReference: TypeKind = _
+  def init = {
+    AnyRefReference = REFERENCE(global.definitions.AnyRefClass)
+  }
+
+  import global.settings
+  if (settings.XO.value) {
+    settings.inline.value = true
+    settings.Xcloselim.value = true
+    settings.Xdce.value = true
+  }
 
   /** A phase which works on icode. */
   abstract class ICodePhase(prev: Phase) extends global.GlobalPhase(prev) {

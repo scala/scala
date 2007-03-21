@@ -39,6 +39,9 @@ import scala.tools.nsc.util.Position;
   case DUP(kind) =>
   case MONITOR_ENTER() =>
   case MONITOR_EXIT() =>
+  case SCOPE_ENTER(lv) =>
+  case SCOPE_EXIT(lv) =>
+  case LOAD_EXCEPTION() =>
 */
 
 
@@ -75,7 +78,7 @@ trait Opcodes requires ICodes {
     var pos: Int = Position.NOPOS;
 
     /** Used by dead code elimination. */
-    var useful: Boolean = true
+    var useful: Boolean = false
   }
 
   object opcodes {
@@ -296,28 +299,48 @@ trait Opcodes requires ICodes {
           case Dynamic => 1
           case Static(true) => 1
           case Static(false) => 0
-          case SuperCall(_) => 0
+          case SuperCall(_) => 1
         });
 
         result;
       }
+
+      override def consumedTypes = {
+        val args = method.tpe.paramTypes map toTypeKind
+        style match {
+          case Dynamic | Static(true) => AnyRefReference :: args
+          case _ => args
+        }
+      }
+
       override def produced =
         if(toTypeKind(method.tpe.resultType) == UNIT)
           0
         else if(method.isConstructor)
           0
         else 1
+
+      /** object idenity is equality for CALL_METHODs. Needed for
+       *  being able to store such instructions into maps, when more
+       *  than one CALL_METHOD to the same method might exist.
+       */
+      override def equals(other: Any) = other match {
+        case o: AnyRef => this eq o
+        case _ => false
+      }
     }
 
     case class BOX(boxType: TypeKind) extends Instruction {
       override def toString(): String = "BOX " + boxType
       override def consumed = 1
+      override def consumedTypes = boxType :: Nil
       override def produced = 1
     }
 
     case class UNBOX(boxType: TypeKind) extends Instruction {
       override def toString(): String = "UNBOX " + boxType
       override def consumed = 1
+      override def consumedTypes = AnyRefReference :: Nil
       override def produced = 1
     }
 
@@ -331,6 +354,9 @@ trait Opcodes requires ICodes {
 
       override def consumed = 0;
       override def produced = 1;
+
+      /** The corresponding constructor call. */
+      var init: CALL_METHOD = _
     }
 
 
@@ -343,6 +369,7 @@ trait Opcodes requires ICodes {
       override def toString(): String ="CREATE_ARRAY "+elem.toString();
 
       override def consumed = 1;
+      override def consumedTypes = INT :: Nil
       override def produced = 1;
     }
 
@@ -355,6 +382,7 @@ trait Opcodes requires ICodes {
       override def toString(): String ="IS_INSTANCE "+typ.toString();
 
       override def consumed = 1;
+      override def consumedTypes = AnyRefReference :: Nil
       override def produced = 1;
     }
 
@@ -368,7 +396,7 @@ trait Opcodes requires ICodes {
 
       override def consumed = 1;
       override def produced = 1;
-      override val consumedTypes = List(REFERENCE(global.definitions.ObjectClass))
+      override val consumedTypes = List(AnyRefReference)
       override def producedTypes = List(typ)
     }
 
@@ -533,6 +561,18 @@ trait Opcodes requires ICodes {
       override def toString(): String = "SCOPE_EXIT " + lv
       override def consumed = 0
       override def produced = 0
+    }
+
+    /** Fake instruction. It designates the VM who pushes an exception
+     *  on top of the /empty/ stack at the beginning of each exception handler.
+     *  Note: Unlike other instructions, it consumes all elements on the stack!
+     *        then pushes one exception instance.
+     */
+    case class LOAD_EXCEPTION() extends Instruction {
+      override def toString(): String = "LOAD_EXCEPTION"
+      override def consumed = error("LOAD_EXCEPTION does clean the whole stack, no idea how many things it consumes!")
+      override def produced = 1
+      override def producedTypes = AnyRefReference :: Nil
     }
 
     /** This class represents a method invocation style. */

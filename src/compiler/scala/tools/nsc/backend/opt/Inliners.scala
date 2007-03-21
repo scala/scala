@@ -20,6 +20,9 @@ abstract class Inliners extends SubComponent {
 
   val phaseName = "inliner";
 
+  /** The maximum size in basic blocks of methods considered for inlining. */
+  final val MAX_INLINE_SIZE = 16
+
   /** Create a new phase */
   override def newPhase(p: Phase) = new InliningPhase(p);
 
@@ -63,7 +66,11 @@ abstract class Inliners extends SubComponent {
                instr:  Instruction,
                callee: IMethod): Unit = {
        log("Inlining " + callee + " in " + caller + " at pos: " +
-           classes(caller.symbol.owner).cunit.position(instr.pos));
+           (try {
+             classes(caller.symbol.owner).cunit.position(instr.pos).toString
+           } catch {
+             case _ => "<nopos>"
+           }));
 
        val targetPos = instr.pos;
        val a = new analysis.MethodTFA(callee);
@@ -99,7 +106,7 @@ abstract class Inliners extends SubComponent {
        /** Add a new block in the current context. */
        def newBlock = {
          val b = caller.code.newBlock;
-         activeHandlers.foreach (.addBlock(b));
+         activeHandlers.foreach (.addCoveredBlock(b));
          if (retVal ne null) b.varsInScope += retVal
          b.varsInScope += inlinedThis
          b.varsInScope ++= varsInScope
@@ -131,8 +138,12 @@ abstract class Inliners extends SubComponent {
 
        val afterBlock = newBlock;
 
+       /** Map from nw.init instructions to their matching NEW call */
+       val pending: collection.jcl.Map[Instruction, NEW] = new collection.jcl.HashMap
+
        /** Map an instruction from the callee to one suitable for the caller. */
-       def map(i: Instruction): Instruction = i match {
+       def map(i: Instruction): Instruction = {
+         val newInstr = i match {
            case THIS(clasz) =>
              LOAD_LOCAL(inlinedThis);
 
@@ -172,8 +183,23 @@ abstract class Inliners extends SubComponent {
            case SCOPE_EXIT(l) if inlinedLocals.isDefinedAt(l) =>
              SCOPE_EXIT(inlinedLocals(l))
 
+           case nw @ NEW(sym) =>
+             val r = NEW(sym)
+             pending(nw.init) = r
+             r
+
+           case CALL_METHOD(meth, Static(true)) if (meth.isClassConstructor) =>
+             CALL_METHOD(meth, Static(true))
+
            case _ => i
          }
+         // check any pending NEW's
+         if (pending isDefinedAt i) {
+           pending(i).init = newInstr.asInstanceOf[CALL_METHOD]
+           pending -= i
+         }
+         newInstr
+       }
 
        addLocals(caller, callee.locals map dupLocal);
        addLocal(caller, inlinedThis);
@@ -233,6 +259,7 @@ abstract class Inliners extends SubComponent {
 
        // add exception handlers of the callee
        caller.exh = (callee.exh map translateExh) ::: caller.exh;
+       assert(pending.isEmpty, "Pending NEW elements: " + pending)
      }
 
     val InlineAttr = if (settings.inline.value) try {
@@ -254,11 +281,14 @@ abstract class Inliners extends SubComponent {
       var retry = false;
       var count = 0;
       fresh.clear
+      // how many times have we already inlined this method here?
+      val inlinedMethods: Map[Symbol, Int] = new HashMap[Symbol, Int] {
+        override def default(k: Symbol) = 0
+      }
 
       do {
         retry = false;
         if (m.code ne null) {
-//          this.count = 0;
           if (settings.debug.value)
             log("Analyzing " + m + " count " + count);
           tfa.init(m);
@@ -280,7 +310,9 @@ abstract class Inliners extends SubComponent {
                         log("" + i + " has actual receiver: " + receiver);
                     }
                     if (settings.debug.value)
-                      log("Treating " + i);
+                      log("Treating " + i
+                          + "\n\tclasses.contains: " + classes.contains(receiver)
+                          + "\n\tconcreteMethod.isFinal: " + concreteMethod.isFinal);
 
                     if (   classes.contains(receiver)
                         && (isClosureClass(receiver)
@@ -288,16 +320,28 @@ abstract class Inliners extends SubComponent {
                             || msym.attributes.exists(a => a.atp == InlineAttr))) {
                       classes(receiver).lookupMethod(concreteMethod) match {
                         case Some(inc) =>
-                          if (inc != m && (inc.code ne null)
+                          if (inc.symbol != m.symbol
+                              && (inlinedMethods(inc.symbol) < 2)
+                              && (inc.code ne null)
+                              && shouldInline(m, inc)
+                              && (inc.code.blocks.length <= MAX_INLINE_SIZE)
                               && isSafeToInline(m, inc, info._2)) {
                             retry = true;
                             if (!isClosureClass(receiver)) // only count non-closures
                                 count = count + 1;
                             inline(m, bb, i, inc);
+                            inlinedMethods(inc.symbol) = inlinedMethods(inc.symbol) + 1
 
                             /* Remove this method from the cache, as the calls-private relation
                                might have changed after the inlining. */
                             callsPrivate -= m;
+                          } else {
+                            if (settings.debug.value)
+                              log("inline failed because:\n\tinc.symbol != m.symbol: " + (inc.symbol != m.symbol)
+                                  + "\n\t(inlinedMethods(inc.symbol) < 2): " + (inlinedMethods(inc.symbol) < 2)
+                                  + "\n\tinc.code ne null: " + (inc.code ne null)
+                                  + "\n\tinc.code.blocks.length < MAX_INLINE_SIZE: " + (inc.code.blocks.length < MAX_INLINE_SIZE) + "(" + inc.code.blocks.length + ")"
+                                  + "\n\tisSafeToInline(m, inc, info._2): " + isSafeToInline(m, inc, info._2));
                           }
                         case None =>
                           ();
@@ -320,29 +364,24 @@ abstract class Inliners extends SubComponent {
         throw e;
     }
 
-    def isClosureClass(cls: Symbol): Boolean = {
-      val res =
-        cls.isFinal &&
-        cls.tpe.parents.exists { t =>
-          val TypeRef(_, sym, _) = t;
-          definitions.FunctionClass exists sym.==
-        }
-      res
-    }
-
     /** Cache whether a method calls private members. */
     val callsPrivate: Map[IMethod, Boolean] = new HashMap;
+
+    def isRecursive(m: IMethod): Boolean = m.recursive
 
     /** A method is safe to inline when:
      *    - it does not contain calls to private methods when
      *      called from another class
      *    - it is not inlined into a position with non-empty stack,
      *      while having a top-level finalizer (see liftedTry problem)
+     *    - it is not recursive
      * Note:
      *    - synthetic private members are made public in this pass.
      */
     def isSafeToInline(caller: IMethod, callee: IMethod, stack: TypeStack): Boolean = {
       var callsPrivateMember = false;
+
+      if (callee.recursive) return false;
 
       callsPrivate get (callee) match {
         case Some(b) => callsPrivateMember = b;
@@ -382,7 +421,8 @@ abstract class Inliners extends SubComponent {
         return false;
 
       if (stack.length > (1 + callee.symbol.info.paramTypes.length) &&
-          (callee.exh exists (.covered.contains(callee.code.startBlock)))) {
+          callee.exh != Nil) {
+//          (callee.exh exists (.covered.contains(callee.code.startBlock)))) {
         if (settings.debug.value) log("method " + callee.symbol + " is used on a non-empty stack with finalizer.");
         false
       } else
@@ -390,4 +430,41 @@ abstract class Inliners extends SubComponent {
     }
 
   } /* class Inliner */
+
+  def isClosureClass(cls: Symbol): Boolean = {
+    val res =
+      cls.isFinal &&
+      cls.tpe.parents.exists { t =>
+        val TypeRef(_, sym, _) = t;
+        definitions.FunctionClass exists sym.==
+      }
+    res
+  }
+
+  /** small method size (in blocks) */
+  val SMALL_METHOD_SIZE = 4
+
+  /** Decide whether to inline or not. Heuristics:
+   *   - it's bad to make the caller larger (> SMALL_METHOD_SIZE)
+   *        if it was small
+   *   - it's good to inline higher order functions
+   *   - it's good to inline closures functions.
+   *   - it's bad (useless) to inline inside bridge methods
+   */
+  def shouldInline(caller: IMethod, callee: IMethod): Boolean = {
+     if (caller.symbol.hasFlag(Flags.BRIDGE)) return false;
+
+     var score = 0
+     if (callee.code.blocks.length <= SMALL_METHOD_SIZE) score = score + 1
+     if (caller.code.blocks.length <= SMALL_METHOD_SIZE
+         && (caller.code.blocks.length + callee.code.blocks.length) < SMALL_METHOD_SIZE)
+       score = score - 1
+
+     if (callee.symbol.tpe.paramTypes.exists(definitions.isFunctionType))
+       score = score + 2
+     if (isClosureClass(callee.symbol.owner))
+       score = score + 2
+
+     score > 0
+   }
 } /* class Inliners */

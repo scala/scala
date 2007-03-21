@@ -507,9 +507,11 @@ abstract class GenICode extends SubComponent  {
 
                 (pat.symbol.tpe.symbol, kind, {
                   ctx: Context =>
+                    if (settings.Xdce.value)
+                      ctx.bb.emit(LOAD_EXCEPTION(), pat.pos)
                     ctx.bb.emit(STORE_LOCAL(exception), pat.pos);
-                  val ctx1 = genLoad(body, ctx, kind);
-                  genLoad(finalizer, ctx1, UNIT);
+                    val ctx1 = genLoad(body, ctx, kind);
+                    genLoad(finalizer, ctx1, UNIT);
                 })
             }
 
@@ -522,6 +524,8 @@ abstract class GenICode extends SubComponent  {
                                           .setInfo(definitions.ThrowableClass.tpe),
                                           REFERENCE(definitions.ThrowableClass), false);
               ctx.method.addLocal(exception);
+              if (settings.Xdce.value)
+                ctx.bb.emit(LOAD_EXCEPTION())
               ctx.bb.emit(STORE_LOCAL(exception));
               val ctx1 = genLoad(finalizer, ctx, UNIT);
               ctx1.bb.emit(LOAD_LOCAL(exception));
@@ -541,6 +545,8 @@ abstract class GenICode extends SubComponent  {
                 val tmp = new Local(ctx.method.symbol.newVariable(tree.pos, unit.fresh.newName("tmp")).setInfo(tree.tpe).setFlag(Flags.SYNTHETIC),
                     kind, false);
                 ctx1.method.addLocal(tmp)
+                if (settings.Xdce.value)
+                  ctx.bb.emit(LOAD_EXCEPTION())
                 ctx1.bb.emit(STORE_LOCAL(tmp))
                 val ctx2 = genLoad(duppedFinalizer, ctx1, UNIT)
                 ctx2.bb.emit(LOAD_LOCAL(tmp))
@@ -571,7 +577,7 @@ abstract class GenICode extends SubComponent  {
           else if (sym == definitions.Object_asInstanceOf)
             cast = true
           else
-            abort("Unexpected type application " + fun + "[sym: " + sym + "]")
+            abort("Unexpected type application " + fun + "[sym: " + sym.fullNameString + "]" + " in: " + tree)
 
           val Select(obj, _) = fun
           val l = toTypeKind(obj.tpe)
@@ -642,11 +648,14 @@ abstract class GenICode extends SubComponent  {
             case rt @ REFERENCE(cls) =>
               assert(ctor.owner == cls,
                      "Symbol " + ctor.owner.fullNameString + " is different than " + tpt)
-              ctx1.bb.emit(NEW(rt), tree.pos)
+              val nw = NEW(rt)
+              ctx1.bb.emit(nw, tree.pos)
               ctx1.bb.emit(DUP(generatedType))
               ctx1 = genLoadArguments(args, ctor.info.paramTypes, ctx)
 
-              ctx1.bb.emit(CALL_METHOD(ctor, Static(true)), tree.pos)
+              val init = CALL_METHOD(ctor, Static(true))
+              nw.init = init
+              ctx1.bb.emit(init, tree.pos)
 
             case _ =>
               abort("Cannot instantiate " + tpt + "of kind: " + generatedType)
@@ -797,6 +806,9 @@ abstract class GenICode extends SubComponent  {
             if (settings.debug.value && hostClass != sym.owner)
               log("Set more precise host class for " + sym.fullNameString + " host: " + hostClass);
             ctx1.bb.emit(CALL_METHOD(sym, invokeStyle) setHostClass hostClass, tree.pos)
+            if (sym == ctx1.method.symbol) {
+              ctx1.method.recursive = true
+            }
             generatedType =
               if (sym.isClassConstructor) UNIT
               else toTypeKind(sym.info.resultType);
@@ -1524,22 +1536,27 @@ abstract class GenICode extends SubComponent  {
                 if (settings.debug.value)
                   log("Pruning empty if branch.");
                 changed = true
-                assert(p.replaceInstruction(p.lastInstruction,
+                p.replaceInstruction(p.lastInstruction,
                                      if (block == succ)
-                                       CJUMP(cont, fail, cond, kind)
+                                       if (block == fail)
+                                         CJUMP(cont, cont, cond, kind)
+                                       else
+                                         CJUMP(cont, fail, cond, kind)
                                      else if (block == fail)
                                        CJUMP(succ, cont, cond, kind)
                                      else
-                                       abort("Could not find block in preds")),
-                       "Didn't find p.lastInstruction")
+                                       abort("Could not find block in preds"))
 
               case CZJUMP(succ, fail, cond, kind) =>
                 if (settings.debug.value)
-                  log("Pruning empty if branch.");
+                  log("Pruning empty ifz branch.");
                 changed = true
                 p.replaceInstruction(p.lastInstruction,
                                      if (block == succ)
-                                       CZJUMP(cont, fail, cond, kind)
+                                       if (block == fail)
+                                         CZJUMP(cont, cont, cond, kind)
+                                       else
+                                         CZJUMP(cont, fail, cond, kind)
                                      else if (block == fail)
                                        CZJUMP(succ, cont, cond, kind)
                                      else
@@ -1547,20 +1564,21 @@ abstract class GenICode extends SubComponent  {
 
               case JUMP(b) =>
                 if (settings.debug.value)
-                  log("Pruning empty if branch.");
+                  log("Pruning empty JMP branch.");
                 changed = true
                 assert(p.replaceInstruction(p.lastInstruction, JUMP(cont)),
                        "Didn't find p.lastInstruction")
 
               case SWITCH(tags, labels) =>
                 if (settings.debug.value)
-                  log("Pruning empty if branch.");
+                  log("Pruning empty SWITCH branch.");
                 changed = true
                 p.replaceInstruction(p.lastInstruction,
                                      SWITCH(tags, labels map (l => if (l == block) cont else l)))
             }
           }
           if (changed) {
+            log("Removing block: " + block)
             method.code.removeBlock(block);
             for (val e <- method.exh) {
               e.covered = e.covered filter (.!=(block))
@@ -1788,7 +1806,7 @@ abstract class GenICode extends SubComponent  {
       def enterMethod(m: IMethod, d: DefDef): Context = {
         val ctx1 = new Context(this) setMethod(m)
         ctx1.labels = new HashMap()
-        ctx1.method.code = new Code(m.symbol.simpleName.toString())
+        ctx1.method.code = new Code(m.symbol.simpleName.toString(), m)
         ctx1.bb = ctx1.method.code.startBlock
         ctx1.defdef = d
         ctx1.scope = EmptyScope

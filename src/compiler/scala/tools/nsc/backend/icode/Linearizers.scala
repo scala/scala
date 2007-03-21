@@ -15,6 +15,7 @@ trait Linearizers requires ICodes {
 
   abstract class Linearizer {
     def linearize(c: IMethod): List[BasicBlock];
+    def linearizeAt(c: IMethod, start: BasicBlock): List[BasicBlock]
   }
 
   /**
@@ -42,6 +43,12 @@ trait Linearizers requires ICodes {
       }
 
       blocks.reverse;
+    }
+
+    def linearizeAt(m: IMethod, start: BasicBlock): List[BasicBlock] = {
+      blocks = Nil
+      worklist.clear
+      linearize(start)
     }
 
     /** Linearize another subtree and append it to the existing blocks. */
@@ -102,6 +109,12 @@ trait Linearizers requires ICodes {
       blocks.reverse
     }
 
+    def linearizeAt(m: IMethod, start: BasicBlock): List[BasicBlock] = {
+      blocks = Nil
+      dfs(start)
+      blocks.reverse
+    }
+
     def dfs(b: BasicBlock): Unit =
       if (b.size > 0 && add(b))
         b.successors foreach dfs;
@@ -144,6 +157,13 @@ trait Linearizers requires ICodes {
         m.code.startBlock :: (blocks.remove(.==(m.code.startBlock)))
     }
 
+    def linearizeAt(m: IMethod, start: BasicBlock): List[BasicBlock] = {
+      blocks = Nil
+      visited.clear
+      rpo(start)
+      blocks
+    }
+
     def rpo(b: BasicBlock): Unit =
       if (b.size > 0 && !(visited contains b)) {
         visited += b;
@@ -168,5 +188,10 @@ trait Linearizers requires ICodes {
   class DumpLinearizer extends Linearizer {
     def linearize(m: IMethod): List[BasicBlock] =
       m.code.blocks.toList;
+
+    def linearizeAt(m: IMethod, start: BasicBlock): List[BasicBlock] = {
+      error("not implemented")
+    }
   }
+
 }

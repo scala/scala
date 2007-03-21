@@ -131,16 +131,30 @@ abstract class CopyPropagation {
     val top    = new State(emptyBinding, Nil)
     val bottom = new State(emptyBinding, Nil)
 
+    val exceptionHandlerStack = Unknown :: Nil
+
     def lub2(a: Elem, b: Elem): Elem = {
       if (a eq bottom)      b
       else if (b eq bottom) a
       else if (a == b) a
       else {
-        if (a.stack.length != b.stack.length)
+        val resStack =
+          if (a.stack eq exceptionHandlerStack) a.stack
+          else if (b.stack eq exceptionHandlerStack) b.stack
+          else {
+            if (a.stack.length != b.stack.length)
+              throw new LubError(a, b, "Invalid stacks in states: ");
+            List.map2(a.stack, b.stack) { (v1, v2) =>
+              if (v1 == v2) v1 else Unknown
+            }
+          }
+
+/*        if (a.stack.length != b.stack.length)
           throw new LubError(a, b, "Invalid stacks in states: ");
         val resStack = List.map2(a.stack, b.stack) { (v1, v2) =>
           if (v1 == v2) v1 else Unknown
         }
+        */
         val commonPairs = a.bindings.toList intersect (b.bindings.toList)
         val resBindings = new HashMap[Location, Value]
         for (val Pair(k, v) <- commonPairs)
@@ -165,9 +179,11 @@ abstract class CopyPropagation {
         m.code.blocks.foreach { b =>
           in(b)  = lattice.bottom
           out(b) = lattice.bottom
+          assert(out.contains(b))
+          log("Added point: " + b)
         }
         m.exh foreach { e =>
-          in(e.startBlock) = new copyLattice.State(copyLattice.emptyBinding, Unknown :: Nil);
+          in(e.startBlock) = new copyLattice.State(copyLattice.emptyBinding, copyLattice.exceptionHandlerStack);
         }
 
         // first block is special: it's not bottom, but a precisely defined state with no bindings
@@ -244,7 +260,7 @@ abstract class CopyPropagation {
                 case _ =>
                   out.bindings += LocalVar(local) -> v;
               }
-            case Nil => error("Incorrect icode. Expecting something on the stack.")
+            case Nil => Predef.error("Incorrect icode in " + method + ". Expecting something on the stack.")
           }
           out.stack = out.stack drop 1;
 
@@ -271,7 +287,8 @@ abstract class CopyPropagation {
           case Static(onInstance) =>
             if (onInstance) {
               val obj = out.stack.drop(method.info.paramTypes.length).head
-              if (method.isPrimaryConstructor) {
+//              if (method.isPrimaryConstructor) {
+              if (method.isPrimaryConstructor/* && isClosureClass(method.owner)*/) {
                 obj match {
                   case Record(_, bindings) =>
                     for (val v <- out.stack.take(method.info.paramTypes.length + 1);
@@ -353,6 +370,9 @@ abstract class CopyPropagation {
         case SCOPE_ENTER(_) | SCOPE_EXIT(_) =>
           ()
 
+        case LOAD_EXCEPTION() =>
+          out.stack = Unknown :: Nil
+
         case _ =>
           dump
           abort("Unknown instruction: " + i)
@@ -408,7 +428,7 @@ abstract class CopyPropagation {
     final def simulateCall(state: copyLattice.State, method: Symbol, static: Boolean): copyLattice.State = {
       val out = new copyLattice.State(state.bindings, state.stack);
       out.stack = out.stack.drop(method.info.paramTypes.length + (if (static) 0 else 1));
-      if (method.info.resultType != definitions.UnitClass.tpe)
+      if (method.info.resultType != definitions.UnitClass.tpe && !method.isConstructor)
         out.stack = Unknown :: out.stack;
       if (!isPureMethod(method))
         invalidateRecords(out);
@@ -446,8 +466,9 @@ abstract class CopyPropagation {
       // this relies on having the same order in paramAccessors and
       // the arguments on the stack. It should be the same!
       for (val (p, i) <- paramAccessors.zipWithIndex) {
-        assert(p.tpe == ctor.tpe.paramTypes(i))
-        bindings += p -> values.head;
+//        assert(p.tpe == ctor.tpe.paramTypes(i), "In: " + ctor.fullNameString + " having: " + (paramAccessors map (.tpe))+ " vs. " + ctor.tpe.paramTypes)
+	if (p.tpe == ctor.tpe.paramTypes(i))
+	  bindings += p -> values.head;
         values = values.tail;
       }
 

@@ -124,8 +124,8 @@ trait Printers requires ICodes {
     }
 
     def printInstruction(i: Instruction): Unit = {
-//      if (settings.debug.value)
-//        print("/* " + Position.line(clazz.cunit.source, i.pos) + " */ ");
+      if (settings.Xdce.value)
+        print(if (i.useful) "   " else " * ");
       println(i.toString());
     }
   }

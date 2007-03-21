@@ -120,6 +120,7 @@ class Settings(error: String => unit) {
 //  val showPhases    = BooleanSetting("-showphases", "Print a synopsis of compiler phases")
 
   val inline        = BooleanSetting("-Xinline", "Perform inlining when possible")
+  val XO            = BooleanSetting("-XO", "Optimize. implies -Xinline, -Xcloselim and -Xdce")
   val Xcloselim     = BooleanSetting("-Xcloselim", "Perform closure elimination")
   val Xdce          = BooleanSetting("-Xdce", "Perform dead code elimination")
   val Xwarndeadcode = BooleanSetting("-Xwarndeadcode", "Emit warnings for dead code")

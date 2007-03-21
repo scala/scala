@@ -132,9 +132,6 @@ abstract class GenJVM extends SubComponent {
     var remoteClass: Boolean = false
 
     def genClass(c: IClass): Unit = {
-      if (settings.debug.value)
-        log("Generating class " + c.symbol +
-            " flags: " + Flags.flagsToString(c.symbol.flags))
       clasz = c
       innerClasses = ListSet.empty
 
@@ -388,10 +385,7 @@ abstract class GenJVM extends SubComponent {
     }
 
     def genMethod(m: IMethod): Unit = {
-      if (settings.debug.value)
-        log("Generating method " + m.symbol +
-            " flags: " + Flags.flagsToString(m.symbol.flags) +
-            " owner: " + m.symbol.owner);
+      log("Generating method " + m.symbol.fullNameString)
       method = m
       endPC.clear
       computeLocalVarsIndex(m)
@@ -624,19 +618,20 @@ abstract class GenJVM extends SubComponent {
         ranges
       }
 
-      this.method.exh foreach ((e) => {
+      this.method.exh foreach { e =>
         ranges(e).sort({ (p1, p2) => p1._1 < p2._1 })
-        .foreach ((p) => {
-          if (settings.debug.value)
-            log("Adding exception handler " + e + "at block: " + e.startBlock + " for " + method +
-                " from: " + p._1 + " to: " + p._2 + " catching: " + e.cls);
-          jcode.addExceptionHandler(p._1, p._2,
-                                    labels(e.startBlock).getAnchor(),
-                                    if (e.cls == NoSymbol)
-                                      null
-                                    else javaName(e.cls))
-        })
-      });
+        .foreach { p =>
+          if (p._1 < p._2) {
+            if (settings.debug.value)
+              log("Adding exception handler " + e + "at block: " + e.startBlock + " for " + method +
+                  " from: " + p._1 + " to: " + p._2 + " catching: " + e.cls);
+            jcode.addExceptionHandler(p._1, p._2,
+                                      labels(e.startBlock).getAnchor(),
+                                      if (e.cls == NoSymbol) null else javaName(e.cls))
+          } else
+            log("Empty exception range: " + p)
+        }
+      }
     }
 
     /** local variables whose scope appears in this block. */
@@ -998,6 +993,9 @@ abstract class GenJVM extends SubComponent {
               b.varsInScope -= lv
             } else
               assert(false, "Illegal local var nesting: " + method)
+
+          case LOAD_EXCEPTION() =>
+            ()
         }
 
         crtPC = jcode.getPC()

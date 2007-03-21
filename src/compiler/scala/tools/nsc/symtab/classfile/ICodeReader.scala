@@ -587,7 +587,7 @@ abstract class ICodeReader extends ClassfileParser {
     def toBasicBlock: Code = {
       import opcodes._
 
-      val code = new Code(method.symbol.name.toString);
+      val code = new Code(method.symbol.name.toString, method);
       method.setCode(code)
       var bb = code.startBlock
 

@@ -43,10 +43,13 @@ abstract class TypeFlowAnalysis {
 
     override val top    = new TypeStack
     override val bottom = new TypeStack
+    val exceptionHandlerStack: TypeStack = new TypeStack(List(REFERENCE(definitions.AnyRefClass)))
 
     def lub2(s1: TypeStack, s2: TypeStack) = {
       if (s1 eq bottom) s2
       else if (s2 eq bottom) s1
+      else if (s1 eq exceptionHandlerStack) s1
+      else if (s2 eq exceptionHandlerStack) s2
       else {
         if (s1.length != s2.length)
           throw new CheckerError("Incompatible stacks: " + s1 + " and " + s2);
@@ -124,10 +127,7 @@ abstract class TypeFlowAnalysis {
           out(b) = typeFlowLattice.bottom
         }
         m.exh foreach { e =>
-          val stack = new TypeStack
-          stack.push(
-            REFERENCE(if (e.cls eq NoSymbol) definitions.ObjectClass else e.cls))
-          in(e.startBlock) = Pair(in(e.startBlock)._1, stack)
+          in(e.startBlock) = Pair(in(e.startBlock)._1, typeStackLattice.exceptionHandlerStack)
         }
       }
     }
@@ -146,8 +146,9 @@ abstract class TypeFlowAnalysis {
       }
     }
 
-    def blockTransfer(b: BasicBlock, in: lattice.Elem): lattice.Elem =
+    def blockTransfer(b: BasicBlock, in: lattice.Elem): lattice.Elem = {
       b.toList.foldLeft(in)(interpret)
+    }
 
     /** Abstract interpretation for one instruction. */
     def interpret(in: typeFlowLattice.Elem, i: Instruction): typeFlowLattice.Elem = {
@@ -155,10 +156,10 @@ abstract class TypeFlowAnalysis {
       val bindings = out._1
       val stack = out._2
 
-/*      if (settings.debug.value) {
-        Console.println("Stack: " + stack);
-        Console.println(i);
-      } */
+//      if (settings.debug.value) {
+//        Console.println("Stack: " + stack);
+//        Console.println(i);
+//      }
       i match {
 
         case THIS(clasz) =>
@@ -318,6 +319,10 @@ abstract class TypeFlowAnalysis {
 
         case SCOPE_ENTER(_) | SCOPE_EXIT(_) =>
           ()
+
+        case LOAD_EXCEPTION() =>
+          stack.pop(stack.length)
+          stack.push(typeLattice.Object)
 
         case _ =>
           dump

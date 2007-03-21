@@ -26,7 +26,10 @@ trait ExceptionHandlers requires ICodes {
 
     var resultKind: TypeKind = _;
 
-    def setStartBlock(b: BasicBlock) = _startBlock = b;
+    def setStartBlock(b: BasicBlock) = {
+      _startBlock = b;
+      b.exceptionHandlerHeader = true
+    }
     def startBlock = _startBlock;
 
     /** The list of blocks that are covered by this exception handler */
