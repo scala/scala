@@ -13,6 +13,7 @@
 package scala.collection.immutable
 
 
+/** The canonical factory of <a href="TreeMap.html">TreeMap</a>'s. */
 object TreeMap {
 
   /** The empty map of this type

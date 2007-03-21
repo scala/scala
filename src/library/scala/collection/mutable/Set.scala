@@ -12,15 +12,9 @@
 package scala.collection.mutable
 
 
-/** This class represents mutable sets. Concrete set implementations
- *  just have to provide functionality for the abstract methods in
- *  <a href="../Set.html" target="contentFrame">
- *  <code>scala.collection.Set</code></a> as well as for <code>+=</code>,
- *  <code>-= and <code>clear</code>.
- *
- *  @author  Matthias Zenger
- *  @version 1.1, 09/05/2004
- */
+/** The canonical factory methods for <a href="Set.html">mutable sets</a>.
+   * Currently these return <a href="HashSet.html">HashSet's</a>.
+   */
 object Set {
 
   /** The empty map of this type; this is implemented as a hashtable */
@@ -31,6 +25,15 @@ object Set {
   def apply[A](elems: A*) = empty[A] ++ elems
 }
 
+/** This class represents mutable sets. Concrete set implementations
+ *  just have to provide functionality for the abstract methods in
+ *  <a href="../Set.html" target="contentFrame">
+ *  <code>scala.collection.Set</code></a> as well as for <code>+=</code>,
+ *  <code>-= and <code>clear</code>.
+ *
+ *  @author  Matthias Zenger
+ *  @version 1.1, 09/05/2004
+ */
 @cloneable
 trait Set[A] extends collection.Set[A] with Scriptable[Message[A]] {
 

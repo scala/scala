@@ -12,21 +12,9 @@
 package scala.collection.immutable
 
 
-/** <p>
- *    This class represents immutable sets. Concrete set implementations
- *    just have to provide functionality for the abstract methods in
- *    <code>scala.collection.Set</code> as well as for <code>+</code> and
- *    <code>-</code>.
- *  </p>
- *  <p>
- *    Note that abstract immutable.Set's are not covariant in their type
- *    parameter.  This is because some subclasses cannot support the
- *    <code>+</code> method for arbitrary types.
- *  </p>
- *
- *  @author  Matthias Zenger, Martin Odersky
- *  @version 1.1, 03/05/2004
- */
+/** Canonical factories for immutable sets.  The canonical immutable sets are
+  *  currently implemented using <a href="HashSet.html">immutable hash sets</a>.
+  */
 object Set {
   /** The empty set of this type
    */
@@ -37,6 +25,26 @@ object Set {
   def apply[A](elems: A*) = empty[A] ++ elems
 }
 
+/** <p>
+ *    This class defines the interface for immutable sets.  Operations
+ *    on an immutable set leave the original set unchanged, and return
+ *    a new set if needed.
+ *  </p>
+
+ *  <p>Concrete set implementations
+ *    just have to provide functionality for the abstract methods in
+ *    <code>scala.collection.Set</code> as well as for <code>+</code> and
+ *    <code>-</code>.
+ *  </p>
+ *  <p>
+ *    Note that abstract immutable.Set's are not covariant in their type
+ *    parameter.  This is because some implementations cannot support the
+ *    <code>+</code> method for arbitrary types.
+ *  </p>
+ *
+ *  @author  Matthias Zenger, Martin Odersky
+ *  @version 1.1, 03/05/2004
+ */
 trait Set[A] extends AnyRef with collection.Set[A] {
 
   /** @return an empty set of arbitrary element type

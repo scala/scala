@@ -10,6 +10,11 @@
 
 package scala.collection.immutable
 
+/** The canonical factory methods for <a href="HashSet.html">immutable HashSet's<la>.
+  *
+  *  @author  Martin Odersky
+  *  @version 2.0, 19/01/2007
+  */
 object HashSet {
 
   /** The empty set of this type.
@@ -21,6 +26,11 @@ object HashSet {
   def apply[A, B](elems: A*) = empty[A] ++ elems
 }
 
+/** This class implements immutable sets using a hash table.
+  *
+  *  @author  Martin Odersky
+  *  @version 2.0, 19/01/2007
+  */
 @serializable
 class HashSet[A] extends Set[A] with mutable.FlatHashTable[A] {
   protected var later: HashSet[A] = null

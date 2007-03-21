@@ -15,20 +15,19 @@ import Predef._
 
 
 /** <p>
- *    This class defines the interface of collections that unambiguously map
- *     keys to values (i.e. a key is mapped to at least one value).
+*     A map is a collection that maps each key to one or zero values.
  *  </p>
  *  <p>
- *    Class <code>Map</code> may only be used for accessing elements from map
- *    implementations. Two different extensions of class <code>Map</code> in
- *    the package <code><a href="mutable$content.html" target="contentFrame">
+ *    This trait provides a limited interface, only allowing reading of elements.
+ *    There are two extensions of this trait, in packages
+ *    <code><a href="mutable$content.html" target="contentFrame">
  *    scala.collection.mutable</a></code>
- *    and  <code><a href="immutable$content.html" target="contentFrame">
- *    scala.collection.immutable</a></code> provide functionality for
- *    adding new key/value mappings to a map. The class in the first package is
- *    implemented by maps that are modified destructively, whereas the class in
- *    the second package is used by functional map implementations that rely on
- *    immutable data structures.
+ *    and <code><a href="immutable$content.html" target="contentFrame">
+ *    scala.collection.immutable</a></code>, which provide functionality for
+ *    adding new key/value mappings to a map. The trait in the first package is
+ *    for maps that are modified destructively, whereas the trait in
+ *    the second package is for immutable maps which create a new map
+ *    when something is added or removed from them.
  *  </p>
  *
  *  @author  Matthias Zenger

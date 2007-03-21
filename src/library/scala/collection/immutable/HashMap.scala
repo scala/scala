@@ -13,7 +13,7 @@ package scala.collection.immutable
 
 import Predef._
 
-/** This class implements immutable maps using a hashtable.
+/** The canonical factory methods for <a href="HashMap.html">immutable HashMap's</a>.
  *
  *  @author  Martin Odersky
  *  @version 2.0, 19/01/2007
@@ -28,6 +28,11 @@ object HashMap {
   def apply[A, B](elems: (A, B)*) = empty[A, B] ++ elems
 }
 
+/** This class implements immutable maps using a hash table.
+  *
+  *  @author  Martin Odersky
+  *  @version 2.0, 19/01/2007
+  */
 @serializable
 class HashMap[A, B] extends Map[A,B] with mutable.HashTable[A] {
   type Entry = mutable.DefaultEntry[A, Any]

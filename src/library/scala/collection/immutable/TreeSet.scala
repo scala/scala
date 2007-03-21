@@ -11,6 +11,8 @@
 
 package scala.collection.immutable
 
+/** The canonical factory of <a href="TreeSet.html">TreeSet</a>'s. */
+
 object TreeSet {
 
   /** The empty set of this type

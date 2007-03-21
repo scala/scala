@@ -13,22 +13,19 @@ package scala.collection
 
 
 /** <p>
- *    This class defines the interface of collections that do not contain
- *    duplicate elements.
+ *    A set is a collection that includes at most one of any object.
  *  </p>
  *  <p>
- *    Class <code>Set</code> may only be used for accessing elements
- *    from set implementations. Two different extensions
- *    of class <code>Set</code> in the package
+ *    This trait provides a limited interface, only allowing reading of elements.
+ *    There are two extensions of this trait, in packages
  *    <code><a href="mutable$content.html" target="contentFrame">
- *    scala.collection.mutable</a></code> and
- *    <code><a href="immutable$content.html" target="contentFrame">
- *    scala.collection.immutable</a></code> provide functionality for adding
- *    new elements to a set. The class in the first package is implemented
- *    by sets the are modified destructively, whereas the class in the second
- *    package is used by functional set implementations that rely on immutable
- *    data structures.
- *  </p>
+ *    scala.collection.mutable</a></code>
+ *    and <code><a href="immutable$content.html" target="contentFrame">
+ *    scala.collection.immutable</a></code>, which provide functionality for
+ *    adding and removing objects from the set. The trait in the first package is
+ *    for sets that are modified destructively, whereas the trait in
+ *    the second package is for immutable sets which create a new set
+ *    when something is added or removed to them.
  *
  *  @author  Matthias Zenger
  *  @author  Martin Odersky

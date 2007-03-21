@@ -14,6 +14,7 @@ package scala.collection.immutable
 
 //import Predef.NoSuchElementException
 
+/** The canonical factory of <a href="ListSet.html">ListSet</a>'s */
 object ListSet {
 
   /** constructs an empty ListSet

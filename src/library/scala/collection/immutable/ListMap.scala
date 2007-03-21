@@ -12,6 +12,7 @@
 
 package scala.collection.immutable
 
+/** The canonical factory of <a href="ListMap.html">ListMap</a>'s */
 object ListMap {
 
   /** The empty map of this type

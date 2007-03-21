@@ -13,14 +13,19 @@ package scala.collection.immutable
 
 import Predef._
 
+/** <p>An object for creating immutable maps. These are implemented using
+  *         <a href="HashMap.html">immutable hash maps</a>.
+  *  </p>*/
+object Map {
+  def empty[A, B]: Map[A, B] = new EmptyMap[A, B]
+
+  def apply[A, B](elems: (A, B)*) = empty[A, B] ++ elems
+}
+
 /** <p>
- *    This class extends the <code>Map</code> interface of collections
- *    that unambiguously map keys to values (i.e. a key is mapped to at
- *    least one value).
- *  </p>
- *  <p>
- *    This class defines the interface for functional map implementations
- *    relying on immutable data structures.
+ *    This class defines the interface for immutable maps.  Operations
+ *    on an immutable map leave the original map unchanged, and return
+ *    a new map if needed.
  *  </p>
  *  <p>
  *    Concrete map implementations have to provide functionality for
@@ -34,16 +39,6 @@ import Predef._
  *  @author  Martin Odersky
  *  @version 1.2, 31/06/2006
  */
-object Map {
-
-  /** The empty map of this type; this is implemented as a treemap */
-  def empty[A, B]: Map[A, B] = new EmptyMap[A, B]
-
-  /** The canonical factory for this type
-   */
-  def apply[A, B](elems: (A, B)*) = empty[A, B] ++ elems
-}
-
 trait Map[A, +B] extends collection.Map[A, B] {
 
   /** This method returns a new map instance of the same class

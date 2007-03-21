@@ -15,16 +15,10 @@ import Predef._
 
 //import Predef.UnsupportedOperationException
 
-/** This class represents mutable maps. Concrete map implementations
- *  just have to provide functionality for the abstract methods in
- *  <code>scala.collection.Map</code> as well as for <code>update</code>,
- *  and <code>-=</code>.
- *
- *  @author  Matthias Zenger
- *  @author  Martin Odersky
- *  @version 2.0, 31/12/2006
- */
 
+/** The canonical factory methods for <a href="Map.html">mutable maps</a>.  These currently
+  *  return <a href="HashMap.html">HashMap's</a>.
+  */
 object Map {
 
   /** The empty map of this type; this is implemented as a hashtable */
@@ -35,6 +29,15 @@ object Map {
   def apply[A, B](elems: (A, B)*) = empty[A, B] ++ elems
 }
 
+/** This trait represents mutable maps. Concrete map implementations
+ *  just have to provide functionality for the abstract methods in
+ *  <code>scala.collection.Map</code> as well as for <code>update</code>,
+ *  and <code>-=</code>.
+ *
+ *  @author  Matthias Zenger
+ *  @author  Martin Odersky
+ *  @version 2.0, 31/12/2006
+ */
 @cloneable
 trait Map[A, B] extends AnyRef
       with collection.Map[A, B]
