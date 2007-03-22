@@ -317,9 +317,12 @@ trait ParallelMatching requires (transform.ExplicitOuter with PatternMatchers wi
 
       val allcomb = combine(sealedCols zip sealedComb)
       //Console.println("all comb!" + allcomb)
-      // returns true if pattern vector covers all type symbols
+      /** returns true if pattern vector pats covers a type symbols "combination"
+       *  @param pats pattern vector
+       *  @param comb pairs of (column index, type symbol)
+       */
       def covers(pats: List[Tree], comb:List[(Int,Symbol)]) = {
-        comb forall { case (i,sym) => pats(i).tpe.symbol == sym }
+        comb forall { case (i,sym) => val p = pats(i); p.tpe.symbol == sym || sym.tpe <:< p.tpe }
       }
       val coversAll = allcomb forall { combination => row exists { r => covers(r._1, combination)}}
       //Console.println("all combinations covered? "+coversAll)
