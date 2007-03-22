@@ -454,23 +454,24 @@ abstract class RefChecks extends InfoTransform {
             def nonSensibleWarning(what: String, alwaysEqual: boolean) =
               unit.warning(pos, "comparing "+what+" using `"+name.decode+"' will always yield "+
                            (alwaysEqual == (name == nme.EQ || name == nme.LE || name == nme.GE)))
-            def nonSensible(alwaysEqual: boolean) =
-              nonSensibleWarning("values of types "+qual.tpe.widen+" and "+args.head.tpe.widen,
+            def nonSensible(pre: String, alwaysEqual: boolean) =
+              nonSensibleWarning(pre+"values of types "+qual.tpe.widen+" and "+args.head.tpe.widen,
                                  alwaysEqual)
+            def hasObjectEquals = receiver.info.member(nme.equals_) == Object_equals
             if (formal == UnitClass && actual == UnitClass)
-              nonSensible(true)
+              nonSensible("", true)
             else if ((receiver == BooleanClass || receiver == UnitClass) &&
                      !(receiver isSubClass actual))
-              nonSensible(false)
+              nonSensible("", false)
             else if (isNumericValueClass(receiver) &&
                      !isNumericValueClass(actual) &&
+                     !(actual isSubClass BoxedNumberClass) &&
                      !(receiver isSubClass actual))
-              nonSensible(false)
-            else if ((receiver hasFlag FINAL) &&
-                     (fn.symbol == Object_== || fn.symbol == Object_!=) &&
-                     !(receiver isSubClass actual))
-              nonSensible(false)
-            else if (isNew && (fn.symbol == Object_== || fn.symbol == Object_!=))
+              nonSensible("", false)
+            else if ((receiver hasFlag FINAL) && hasObjectEquals && !isValueClass(receiver) &&
+                     !(receiver isSubClass actual) && actual != AllRefClass)
+              nonSensible("non-null ", false)
+            else if (isNew && hasObjectEquals)
               nonSensibleWarning("a fresh object", false)
           case _ =>
         }

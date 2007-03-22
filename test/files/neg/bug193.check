@@ -1,0 +1,17 @@
+actual = class Objectfalse
+bug193.scala:39: warning: comparing values of types scala.Int and java.lang.Object using `==' will always yield false
+     (0     ) == y;
+              ^
+actual = class Objectfalse
+bug193.scala:41: warning: comparing values of types scala.Int and java.lang.Object using `!=' will always yield true
+     (0     ) != y;
+              ^
+actual = class Objectfalse
+bug193.scala:54: warning: comparing values of types scala.Int and java.lang.Object using `==' will always yield false
+    (x     ) == y;
+             ^
+actual = class Objectfalse
+bug193.scala:56: warning: comparing values of types scala.Int and java.lang.Object using `!=' will always yield true
+    (x     ) != y;
+             ^
+four warnings found

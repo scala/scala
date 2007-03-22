@@ -362,6 +362,7 @@ trait Definitions requires SymbolTable {
 
     // boxed classes
     var BoxedArrayClass: Symbol = _
+    var BoxedNumberClass: Symbol = _
     var BoxedAnyArrayClass: Symbol = _
     var BoxedObjectArrayClass: Symbol = _
     var BoxedUnitClass: Symbol = _
@@ -862,6 +863,7 @@ trait Definitions requires SymbolTable {
 
       PatternWildcard = NoSymbol.newValue(NoPos, "_").setInfo(AllClass.typeConstructor)
 
+      BoxedNumberClass = getClass("scala.runtime.BoxedNumber")
       BoxedArrayClass = getClass("scala.runtime.BoxedArray")
       BoxedAnyArrayClass = getClass("scala.runtime.BoxedAnyArray")
       BoxedObjectArrayClass = getClass("scala.runtime.BoxedObjectArray")

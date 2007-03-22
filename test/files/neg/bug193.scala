@@ -1,4 +1,4 @@
-// $Id$
+// $Id: bug193.scala 9110 2006-11-01 16:03:28 +0000 (Wed, 01 Nov 2006) mihaylov $
 
 trait Test {
 
