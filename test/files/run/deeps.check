@@ -24,6 +24,12 @@ false
 false
 true
 
+false
+false
+true
+false
+false
+true
 Array(true,false)
 Array(true,false)
 [true;false]
@@ -73,3 +79,5 @@ a;b;a;b;a;b;a;b
 [[1; 2]; [3]]
 [[1; 2]; [3]]
 
+Array(boo,and,foo)
+Array(a)

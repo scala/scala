@@ -34,6 +34,18 @@ object Test extends Application {
     test(a3, b3)
   }
 
+  def testEquals4 {
+    Console.println("boo:and:foo".split(":") == "boo:and:foo".split(":"))
+    Console.println("boo:and:foo".split(":") equals "boo:and:foo".split(":"))
+    Console.println("boo:and:foo".split(":") deepEquals "boo:and:foo".split(":"))
+
+    val xs = new java.util.ArrayList(); xs.add("a")
+    val ys = new java.util.ArrayList(); ys.add("a")
+    Console.println(xs.toArray == ys.toArray)
+    Console.println(xs.toArray equals ys.toArray)
+    Console.println(xs.toArray deepEquals ys.toArray)
+  }
+
   def testToString1 {
     def sweep(s: String) =
       s.replaceAll("D@[0-9a-fA-F]+", "D@0000000")
@@ -76,9 +88,18 @@ object Test extends Application {
     Console.println
   }
 
+  def testToString3 {
+    Console.println("boo:and:foo".split(":").deepToString)
+
+    val xs = new java.util.ArrayList(); xs.add("a")
+    Console.println(xs.toArray.deepToString)
+  }
+
   testEquals1
   testEquals2
   testEquals3
+  testEquals4
   testToString1
   testToString2
+  testToString3
 }
