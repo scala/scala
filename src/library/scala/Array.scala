@@ -50,13 +50,13 @@ object Array {
   def concat[T](xs: Array[T]*) = {
     var len = 0
     for (val x <- xs) {
-      len = len + x.length
+      len += x.length
     }
     val result = new Array[T](len)
     var start = 0
     for (val x <- xs) {
       copy(x, 0, result, start, x.length)
-      start = start + x.length
+      start += x.length
     }
     result
   }
@@ -81,7 +81,7 @@ object Array {
   def apply[A <: AnyRef](xs: A*): Array[A] = {
     val array = new Array[A](xs.length)
     var i = 0
-    for (val x <- xs.elements) { array(i) = x; i = i + 1; }
+    for (val x <- xs.elements) { array(i) = x; i += 1 }
     array
   }
 
@@ -97,7 +97,7 @@ object Array {
    def Array[A](xs: A*): Array[A] = {
     val array = new Array[A](xs.length)
     var i = 0
-    for (val x <- xs.elements) { array(i) = x; i = i + 1; }
+    for (val x <- xs.elements) { array(i) = x; i += 1 }
     array
   }
 */
@@ -105,55 +105,55 @@ object Array {
   def apply(xs: Boolean*): Array[Boolean] = {
     val array = new Array[Boolean](xs.length)
     var i = 0
-    for (val x <- xs.elements) { array(i) = x; i = i + 1; }
+    for (val x <- xs.elements) { array(i) = x; i += 1 }
     array
   }
   def apply(xs: Byte*): Array[Byte] = {
     val array = new Array[Byte](xs.length)
     var i = 0
-    for (val x <- xs.elements) { array(i) = x; i = i + 1; }
+    for (val x <- xs.elements) { array(i) = x; i += 1 }
     array
   }
   def apply(xs: Short*): Array[Short] = {
     val array = new Array[Short](xs.length)
     var i = 0
-    for (val x <- xs.elements) { array(i) = x; i = i + 1; }
+    for (val x <- xs.elements) { array(i) = x; i += 1 }
     array
   }
   def apply(xs: Char*): Array[Char] = {
     val array = new Array[Char](xs.length)
     var i = 0
-    for (val x <- xs.elements) { array(i) = x; i = i + 1; }
+    for (val x <- xs.elements) { array(i) = x; i += 1 }
     array
   }
   def apply(xs: Int*): Array[Int] = {
     val array = new Array[Int](xs.length)
     var i = 0
-    for (val x <- xs.elements) { array(i) = x; i = i + 1; }
+    for (val x <- xs.elements) { array(i) = x; i += 1 }
     array
   }
   def apply(xs: Long*): Array[Long] = {
     val array = new Array[Long](xs.length)
     var i = 0
-    for (val x <- xs.elements) { array(i) = x; i = i + 1; }
+    for (val x <- xs.elements) { array(i) = x; i += 1 }
     array
   }
   def apply(xs: Float*): Array[Float] = {
     val array = new Array[Float](xs.length)
     var i = 0
-    for (val x <- xs.elements) { array(i) = x; i = i + 1; }
+    for (val x <- xs.elements) { array(i) = x; i += 1 }
     array
   }
   def apply(xs: Double*): Array[Double] = {
     val array = new Array[Double](xs.length)
     var i = 0
-    for (val x <- xs.elements) { array(i) = x; i = i + 1; }
+    for (val x <- xs.elements) { array(i) = x; i += 1 }
     array
   }
   def apply(xs: Unit*): Array[Unit] = {
     val array = new Array[Unit](xs.length)
     var i = 0
-    for (val x <- xs.elements) { array(i) = x; i = i + 1; }
+    for (val x <- xs.elements) { array(i) = x; i += 1 }
     array
   }
 
@@ -168,7 +168,7 @@ object Array {
     var i = 0
     while (i < n) {
       a(i) = elem
-      i = i + 1
+      i += 1
     }
     a
   }
@@ -209,11 +209,17 @@ final class Array[A](_length: Int) extends Seq[A] {
    */
   def apply(i: Int): A = throw new Error()
 
-  /** Update the element at given index.
-   *  Indices start a <code>0</code>; <code>xs.apply(0)</code> is the first
-   *  element of array <code>xs</code>.
-   *  Note the indexing syntax <code>xs(i) = x</code> is a shorthand
-   *  for <code>xs.update(i, x)</code>.
+  /** <p>
+   *    Update the element at given index.
+   *  </p>
+   *  <p>
+   *    Indices start a <code>0</code>; <code>xs.apply(0)</code> is the first
+   *    element of array <code>xs</code>.
+   *  </p>
+   *  <p>
+   *    Note the indexing syntax <code>xs(i) = x</code> is a shorthand
+   *    for <code>xs.update(i, x)</code>.
+   *  </p>
    *
    *  @param i   the index
    *  @param x   the value to be written at index <code>i</code>
@@ -289,14 +295,16 @@ final class Array[A](_length: Int) extends Seq[A] {
    */
   def deepToString(): String = throw new Error()
 
-  /** Returns a string representation of this array object. The resulting string
-   *  begins with the string <code>start</code> and is finished by the string
-   *  <code>end</code>. Inside, the string representations of elements (w.r.t.
-   *  the method <code>deepToString()</code>) are separated by the string
-   *  <code>sep</code>.
-   *  <p/>
-   *  Ex: <br/>
-   *  <code>Array(Array(1, 2), Array(3)).deepMkString("[", "; ", "]") = "[[1; 2]; 3]"</code>
+  /** <p>
+   *    Returns a string representation of this array object. The resulting string
+   *    begins with the string <code>start</code> and is finished by the string
+   *    <code>end</code>. Inside, the string representations of elements (w.r.t.
+   *    the method <code>deepToString()</code>) are separated by the string
+   *    <code>sep</code>. For example:
+   *  </p>
+   *  <p>
+   *    <code>Array(Array(1, 2), Array(3)).deepMkString("[", "; ", "]") = "[[1; 2]; [3]]"</code>
+   *  </p>
    *
    *  @param start starting string.
    *  @param sep separator string.
