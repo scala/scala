@@ -13,7 +13,7 @@ package scala
 
 import compat.Platform.arraycopy
 
-/** This object ...
+/** This object contains utility methods operating on arrays.
  *
  *  @author Martin Odersky
  *  @version 1.0
@@ -182,7 +182,8 @@ object Array {
     if (x.isInstanceOf[Array[A]]) Some(x.asInstanceOf[Array[A]]) else None
 }
 
-/** This class represents polymorphic arrays. It is never instantiated.
+/** This class represents polymorphic arrays. <code>Array[T]</code> is Scala's representation
+ *  for Java's <code>T[]</code>.
  *
  *  @author Martin Odersky
  *  @version 1.0
@@ -252,6 +253,11 @@ final class Array[A](_length: Int) extends Seq[A] {
    *  @return the elements of this array satisfying <code>p</code>.
    */
   override def filter(p: A => Boolean): Array[A] = throw new Error()
+
+  /** Returns an array consisting of all elements of this array followed
+   *  by all elements of the argument iterable.
+   */
+  override def ++[B >: A](that: Iterable[B]): Array[B] = throw new Error()
 
   /** Returns the array resulting from applying the given function <code>f</code> to each
    *  element of this array.

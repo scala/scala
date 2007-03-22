@@ -97,6 +97,8 @@ abstract class BoxedArray extends Seq[Any] {
     buf.toArray
   }
 
+  final override def ++[b >: Any](that: Iterable[b]): Array[b] = super.++(that).toArray
+
   final def zip[b](that: Array[b]): Array[Tuple2[Any,b]] = {
     val len = length
     if(len != that.length)

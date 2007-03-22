@@ -437,6 +437,46 @@ abstract class RefChecks extends InfoTransform {
 	}
       }
 
+// Comparison checking -------------------------------------------------------
+
+    def checkSensible(pos: int, fn: Tree, args: List[Tree]) = fn match {
+      case Select(qual, name) if (args.length == 1) =>
+        def isNew = qual match {
+          case Function(_, _)
+             | Apply(Select(New(_), nme.CONSTRUCTOR), _) => true
+          case _ => false
+        }
+        name match {
+          case nme.EQ | nme.NE | nme.LT | nme.GT | nme.LE | nme.GE =>
+            val formal = fn.tpe.paramTypes.head.widen.symbol
+            val actual = args.head.tpe.widen.symbol
+            val receiver = qual.tpe.widen.symbol
+            def nonSensibleWarning(what: String, alwaysEqual: boolean) =
+              unit.warning(pos, "comparing "+what+" using `"+name.decode+"' will always yield "+
+                           (alwaysEqual == (name == nme.EQ || name == nme.LE || name == nme.GE)))
+            def nonSensible(alwaysEqual: boolean) =
+              nonSensibleWarning("values of types "+qual.tpe.widen+" and "+args.head.tpe.widen,
+                                 alwaysEqual)
+            if (formal == UnitClass && actual == UnitClass)
+              nonSensible(true)
+            else if ((receiver == BooleanClass || receiver == UnitClass) &&
+                     !(receiver isSubClass actual))
+              nonSensible(false)
+            else if (isNumericValueClass(receiver) &&
+                     !isNumericValueClass(actual) &&
+                     !(receiver isSubClass actual))
+              nonSensible(false)
+            else if ((receiver hasFlag FINAL) &&
+                     (fn.symbol == Object_== || fn.symbol == Object_!=) &&
+                     !(receiver isSubClass actual))
+              nonSensible(false)
+            else if (isNew && (fn.symbol == Object_== || fn.symbol == Object_!=))
+              nonSensibleWarning("a fresh object", false)
+          case _ =>
+        }
+      case _ =>
+    }
+
 // Transformation ------------------------------------------------------------
 
     /* Convert a reference to a case factory of type `tpe' to a new of the class it produces. */
@@ -627,6 +667,9 @@ abstract class RefChecks extends InfoTransform {
           if ((pname startsWith nme.CHECK_IF_REFUTABLE_STRING) &&
               isIrrefutable(pat1, tpt.tpe)) =>
             result = qual
+
+        case Apply(fn, args) =>
+          checkSensible(tree.pos, fn, args)
 
         case If(cond, thenpart, elsepart) =>
           cond.tpe match {

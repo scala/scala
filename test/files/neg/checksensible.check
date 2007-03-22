@@ -1,0 +1,28 @@
+checksensible.scala:4: warning: comparing values of types scala.Ordered[scala.Unit] and scala.Unit using `>' will always yield false
+  println((c = 1) > 0)
+                  ^
+checksensible.scala:5: warning: comparing values of types scala.Ordered[scala.Unit] and scala.Unit using `<=' will always yield true
+  println((c = 1) <= 0)
+                  ^
+checksensible.scala:6: warning: comparing values of types scala.Unit and scala.Int using `==' will always yield false
+  println((c = 1) == 0)
+                  ^
+checksensible.scala:8: warning: comparing values of types scala.Int and java.lang.String using `==' will always yield false
+  println(1 == "abc")
+            ^
+checksensible.scala:9: warning: comparing values of types scala.Int and scala.Boolean using `!=' will always yield true
+  println(1 != true)
+            ^
+checksensible.scala:11: warning: comparing a fresh object using `==' will always yield false
+  println(((x: int) => x + 1) == null)
+                              ^
+checksensible.scala:12: warning: comparing a fresh object using `==' will always yield false
+  println(new Object == new Object)
+                     ^
+checksensible.scala:13: warning: comparing a fresh object using `!=' will always yield true
+  println(new Array(1) != new Array(1))
+                       ^
+checksensible.scala:20: warning: comparing values of types scala.Unit and scala.Int using `!=' will always yield true
+    while((c = in.read) != -1) {
+                        ^
+9 warnings found

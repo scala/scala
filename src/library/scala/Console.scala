@@ -16,6 +16,7 @@ import java.io.{OutputStream, PrintStream}
 import java.text.MessageFormat
 
 import scala.util.Fluid
+import Predef._
 
 
 /** The <code>Console</code> object implements functionality for
@@ -235,6 +236,10 @@ object Console {
   /** Read an int value from the terminal.
    */
   def readInt(): Int = readLine().toInt
+
+  /** Read an int value from the terminal.
+   */
+  def readLong(): Long = readLine().toLong
 
   /** Read a float value from the terminal.
    */

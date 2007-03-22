@@ -128,6 +128,29 @@ object Predef {
   def Tuple[a1, a2, a3, a4, a5, a6, a7, a8](x1: a1, x2: a2, x3: a3, x4: a4, x5: a5, x6: a6, x7: a7, x8: a8) = Tuple8(x1, x2, x3, x4, x5, x6, x7, x8)
   def Tuple[a1, a2, a3, a4, a5, a6, a7, a8, a9](x1: a1, x2: a2, x3: a3, x4: a4, x5: a5, x6: a6, x7: a7, x8: a8, x9: a9) = Tuple9(x1, x2, x3, x4, x5, x6, x7, x8, x9)
 
+  // printing and reading ----------------------------------------------
+
+  def print(x: Any) = Console.print(x)
+  def println() = Console.println()
+  def println(x: Any) = Console.println(x)
+  def printf(text: String, xs: Any*) = Console.printf(text, xs: _*)
+  def format(text: String, xs: Any*) = Console.format(text, xs)
+
+  def readLine(): String = Console.readLine()
+  def readLine(text: String, args: Any*) = Console.readLine(text, args)
+  def readBoolean() = Console.readBoolean()
+  def readByte() = Console.readByte()
+  def readShort() = Console.readShort()
+  def readChar() = Console.readChar()
+  def readInt() = Console.readInt()
+  def readLong() = Console.readLong()
+  def readFloat() = Console.readFloat()
+  def readDouble() = Console.readDouble()
+  def readf(format: String) = Console.readf(format)
+  def readf1(format: String) = Console.readf1(format)
+  def readf2(format: String) = Console.readf2(format)
+  def readf3(format: String) = Console.readf3(format)
+
   // views -------------------------------------------------------------
 
   implicit def identity[a](x: a): a = x
