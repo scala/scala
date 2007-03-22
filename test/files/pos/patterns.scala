@@ -27,3 +27,12 @@ object test {
     case None => println("nothing")
   }
 }
+
+// if bodies are duplicated, then we would get an error like "double definition"
+
+trait John[A,B] {
+  def filter(x:Any) =    x match {
+    case (x::xs, _) => "ga"
+    case _ => {x:String => "foobar"}
+  }
+}

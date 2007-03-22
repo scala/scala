@@ -229,5 +229,73 @@ trait CodeFactory requires transform.ExplicitOuter  {
       Apply(Select(tree, nme.eq), List(Literal(Constant(null))))
     }
 
+    // statistics
+    var nremoved = 0
+    var nsubstituted = 0
+    var nstatic = 0
+
+  def squeezedBlock(vds:List[Tree], exp:Tree)(implicit theOwner: Symbol): Tree = {
+    val tpe = exp.tpe
+    class RefTraverser(sym:Symbol) extends Traverser {
+      var nref = 0
+      var nsafeRef = 0
+      override def traverse(tree: Tree) = tree match {
+        case t:Ident if t.symbol == sym =>
+          nref = nref + 1
+          if(sym.owner == currentOwner)  { // oldOwner should match currentOwner
+            nsafeRef = nsafeRef + 1
+          } /*else if(nref == 1) {
+            Console.println("sym owner: "+sym.owner+" but currentOwner = "+currentOwner)
+          }*/
+        case t if nref > 1 => // abort, no story to tell
+
+        case t       => super . traverse (t)
+      }
+    }
+    class Subst(sym:Symbol,rhs:Tree) extends Transformer {
+      var stop = false
+      override def transform(tree: Tree) = tree match {
+        case t:Ident if t.symbol == sym =>
+          stop = true
+          rhs
+        case t if stop =>
+          t
+        case t       =>
+          super . transform (t)
+      }
+    }
+    vds match {
+      case Nil   => exp
+
+      case (vd:ValDef) :: rest =>
+        // recurse
+        val exp1 = squeezedBlock(rest, exp)
+
+        //Console.println("squeezedBlock for valdef "+vd)
+        val sym  = vd.symbol
+        val rt   = new RefTraverser(sym)
+        rt.atOwner (theOwner) (rt.traverse(exp1))
+        rt.nref match {
+          case 0 =>
+            nremoved = nremoved + 1
+            exp1
+          case 1 if rt.nsafeRef == 1 =>
+            nsubstituted = nsubstituted + 1
+            new Subst(sym, vd.rhs).transform( exp1 )
+          case _ =>
+            exp1 match {
+              case Block(vds2, exp2) => Block(vd::vds2, exp2)
+              case exp2              => Block(vd::Nil,  exp2)
+            }
+        }
+      case x::xs =>
+        squeezedBlock(xs, exp) match {
+          case Block(vds2, exp2) => Block(x::vds2, exp2)
+          case exp2              => Block(x::Nil,  exp2)
+        }
+    }
+  }
+
+
 }
 

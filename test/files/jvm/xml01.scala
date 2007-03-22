@@ -209,6 +209,8 @@ object Test {
       //Console.println("char '"+c+"' \u015e");
       assertTrue(c == '\u015e');
     }
+    // buraq: if the following test fails with 'character x not allowed', it is
+    //        related to the mutable variable in a closures in MarkupParser.parsecharref
     {
       val isr  = scala.io.Source.fromString(xmlAttrValueNorm);
       val pxmlB  = scala.xml.parsing.ConstructingParser.fromSource(isr,false);

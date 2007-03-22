@@ -15,6 +15,32 @@ trait PatternNodes requires transform.ExplicitOuter {
 
   type SymSet = collection.immutable.Set[Symbol]
 
+  /** returns the child patterns of a pattern
+   */
+  protected def patternArgs(tree: Tree): List[Tree] = { //Console.println("patternArgs "+tree.toString())
+    /*val res = */ tree match {
+      case Bind(_, pat)           => patternArgs(pat)
+
+      case a @ Apply(_, List(av @ ArrayValue(_, ts))) if isSeqApply(a) && isRightIgnoring(av) =>
+        ts.reverse.drop(1).reverse
+
+      case a @ Apply(_, List(av @ ArrayValue(_, ts))) if isSeqApply(a) =>
+        ts
+
+      case a @ Apply(_, args)     => args
+
+      case a @ UnApply(_, args)   => args
+
+      case av @ ArrayValue(_, ts) if isRightIgnoring(av) =>
+        ts.reverse.drop(1).reverse
+
+      case av @ ArrayValue(_, ts) => ts
+
+      case _                      => List()
+    }
+    //Console.println("patternArgs returns "+res.toString()) ; res
+  }
+
   /** Intermediate data structure for algebraic + pattern matcher
    */
   sealed class PatternNode {
@@ -53,9 +79,7 @@ trait PatternNodes requires transform.ExplicitOuter {
         null
     }
 
-    def getTpe(): Type = tpe
-
-    def setType(tpe: Type): Unit = { this.tpe = tpe }
+    def set(p:(PositionType,Type)): this.type = { /*assert(tpe ne null); */ this.pos = p._1; this.tpe = p._2; this }
 
     def dup(): PatternNode = {
       var res: PatternNode = this match {
@@ -76,15 +100,15 @@ trait PatternNodes requires transform.ExplicitOuter {
         case AltPat(subheader) =>
           AltPat(subheader)
         case _ =>
-          error(""); null
+          error("unexpected pattern"); null
       }
-      res.pos = pos
-      res.tpe = tpe
+      res set ((pos, tpe))
       res.or = or
       res.and = and
       res
     }
 
+    /*
     def _symbol: Symbol = this match { // @todo
       case UnapplyPat(casted, fn) =>
 	casted
@@ -97,6 +121,7 @@ trait PatternNodes requires transform.ExplicitOuter {
       case _ =>
         NoSymbol //.NONE
     }
+    */
 
     def nextH(): PatternNode = this match {
       case _h:Header => _h.next
@@ -116,14 +141,14 @@ trait PatternNodes requires transform.ExplicitOuter {
       case ConstrPat(_) =>
         q match {
           case ConstrPat(_) =>
-            isSameType(q.getTpe(), this.getTpe())
+            isSameType(q.tpe, this.tpe)
           case _ =>
             false
         }
       case SequencePat(_, plen) =>
         q match {
           case SequencePat(_, qlen) =>
-            (plen == qlen) && isSameType(q.getTpe(), this.getTpe())
+            (plen == qlen) && isSameType(q.tpe, this.tpe)
           case _ =>
             false
         }
@@ -144,14 +169,14 @@ trait PatternNodes requires transform.ExplicitOuter {
       case ConstrPat(_) =>
         q match {
           case ConstrPat(_) =>
-            isSubType(q.getTpe(), this.getTpe())
+            isSubType(q.tpe, this.tpe)
           case _ =>
             false
         }
       case SequencePat(_, plen) =>
         q match {
           case SequencePat(_, qlen) =>
-            (plen == qlen) && isSubType(q.getTpe(), this.getTpe())
+            (plen == qlen) && isSubType(q.tpe, this.tpe)
           case _ =>
             false
         }
@@ -226,7 +251,7 @@ trait PatternNodes requires transform.ExplicitOuter {
         case _h: Header =>
           val selector = _h.selector
           val next = _h.next
-          sb.append(indent + "HEADER(" + patNode.getTpe() +
+          sb.append(indent + "HEADER(" + patNode.tpe +
                           ", " + selector + ")").append('\n')
           if(patNode.or ne null) patNode.or.print(indent + "|", sb)
           if (next ne null)
@@ -234,16 +259,16 @@ trait PatternNodes requires transform.ExplicitOuter {
           else
             sb
         case ConstrPat(casted) =>
-          val s = ("-- " + patNode.getTpe().symbol.name +
-                   "(" + patNode.getTpe() + ", " + casted + ") -> ")
+          val s = ("-- " + patNode.tpe.symbol.name +
+                   "(" + patNode.tpe + ", " + casted + ") -> ")
           val nindent = newIndent(s)
           sb.append(nindent + s).append('\n')
           patNode.and.print(nindent, sb)
           cont
 
         case SequencePat( casted, plen ) =>
-          val s = ("-- " + patNode.getTpe().symbol.name + "(" +
-                   patNode.getTpe() +
+          val s = ("-- " + patNode.tpe.symbol.name + "(" +
+                   patNode.tpe +
                    ", " + casted + ", " + plen + ") -> ")
           val nindent = newIndent(s)
           sb.append(indent + s).append('\n')
@@ -251,8 +276,8 @@ trait PatternNodes requires transform.ExplicitOuter {
           cont
 
         case RightIgnoringSequencePat( casted, castedRest, plen ) =>
-          val s = ("-- ri " + patNode.getTpe().symbol.name + "(" +
-                   patNode.getTpe() +
+          val s = ("-- ri " + patNode.tpe.symbol.name + "(" +
+                   patNode.tpe +
                    ", " + casted + ", " + plen + ") -> ")
           val nindent = newIndent(s)
           sb.append(indent + s).append('\n')
@@ -274,7 +299,7 @@ trait PatternNodes requires transform.ExplicitOuter {
           cont
 
         case VariablePat(tree) =>
-          val s = "-- STABLEID(" + tree + ": " + patNode.getTpe() + ") -> "
+          val s = "-- STABLEID(" + tree + ": " + patNode.tpe + ") -> "
           val nindent = newIndent(s)
           sb.append(indent + s).append('\n')
           patNode.and.print(nindent, sb)
@@ -334,7 +359,7 @@ trait PatternNodes requires transform.ExplicitOuter {
     def optimize1(): (Boolean, SymSet, SymSet) = {
       import symtab.Flags
 
-      val selType = this.getTpe
+      val selType = this.tpe
 
       if (!isSubType(selType, definitions.ScalaObjectClass.tpe))
         return (false, null, emptySymbolSet)
@@ -364,17 +389,17 @@ trait PatternNodes requires transform.ExplicitOuter {
         //Console.println("traverse, alts="+alts)
         alts match {
           case ConstrPat(_) =>
-            //Console.print("ConstPat! of"+alts.getTpe.symbol)
-            if (alts.getTpe.symbol.hasFlag(Flags.CASE)) {
-              coveredCases   = coveredCases + alts.getTpe.symbol
-              remainingCases = remainingCases - alts.getTpe.symbol
+            //Console.print("ConstPat! of"+alts.tpe.symbol)
+            if (alts.tpe.symbol.hasFlag(Flags.CASE)) {
+              coveredCases   = coveredCases + alts.tpe.symbol
+              remainingCases = remainingCases - alts.tpe.symbol
               cases = cases + 1
             } else {
               val covered = remainingCases.filter { x =>
                 //Console.println("x.tpe is "+x.tpe)
-                val y = alts.getTpe.prefix.memberType(x)
-                //Console.println(y + " is sub of "+alts.getTpe+" ? "+isSubType(y, alts.getTpe));
-                isSubType(y, alts.getTpe)
+                val y = alts.tpe.prefix.memberType(x)
+                //Console.println(y + " is sub of "+alts.tpe+" ? "+isSubType(y, alts.tpe));
+                isSubType(y, alts.tpe)
               }
               //Console.println(" covered : "+covered)
 
@@ -466,11 +491,6 @@ trait PatternNodes requires transform.ExplicitOuter {
     private var boundVars: Array[ValDef] = new Array[ValDef](4)
     private var numVars = 0
 
-    /** substitutes a symbol on the right hand side of a ValDef
-     *
-     *  @param oldSymm ...
-     *  @param newInit ...
-     */
     def substitute(oldSym: Symbol, newInit: Tree): Unit = {
       var i = 0; while (i < numVars) {
         if (boundVars(i).rhs.symbol == oldSym) {
@@ -481,11 +501,6 @@ trait PatternNodes requires transform.ExplicitOuter {
       }
     }
 
-    /**
-     *  @param sym  ...
-     *  @param tpe  ...
-     *  @param init ...
-     */
     def newBoundVar(sym: Symbol, tpe: Type, init: Tree): Unit = {
       //if(sym == Symbol.NoSymbol ) {
       //  scala.Predef.Error("can't add variable with NoSymbol");

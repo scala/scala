@@ -446,7 +446,8 @@ abstract class Checkers {
             kind match {
               case REFERENCE(cls) =>
                 stack.push(kind)
-              case _ =>
+              //bq: had to change from _ to null, because otherwise would be unreachable code
+              case null =>
                 error("NEW call to non-reference type: " + kind)
             }
 

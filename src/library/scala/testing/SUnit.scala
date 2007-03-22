@@ -70,11 +70,9 @@ object SUnit {
    *
    *  @param name ...
    */
-  class TestCase(val name: String) extends Test with Assert {
+  abstract class TestCase(val name: String) extends Test with Assert {
 
-    protected def createResult() = new TestResult()
-
-    protected def runTest(): Unit = {}
+    protected def runTest(): Unit
 
     def run(r: TestResult): Unit =
       try {
@@ -82,8 +80,6 @@ object SUnit {
       } catch {
         case t:Throwable => r.addFailure(this, t)
       }
-
-    def run(): Unit = run(createResult())
 
     def setUp() = {}
 
@@ -125,7 +121,7 @@ object SUnit {
   class TestSuite(tests:Test*) extends Test {
 
     def this(names: Seq[String], constr: String => Test) =
-      this((names.toList map constr):_*)
+      this((names map constr):_*)
 
     val buf = new ArrayBuffer[Test]()
 

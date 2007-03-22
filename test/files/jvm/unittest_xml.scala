@@ -64,6 +64,7 @@ object Test {
   }
 
   class UtilityTest extends TestCase("scala.xml.Utility") with Assert {
+    def runTest() = {
     val x = <foo>
                <toomuchws/>
             </foo>
@@ -91,6 +92,7 @@ object Test {
 	 val pp = new xml.PrettyPrinter(80,5)
 	assertEquals("pretty print sorted attrib:"+pp.format(q), "<a a=\"2\" g=\"3\" j=\"2\" oo=\"2\"></a>", pp.format(q))
 
+  }
   }
 
   def main(args:Array[String]) = {

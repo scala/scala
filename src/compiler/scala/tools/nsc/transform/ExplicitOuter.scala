@@ -9,14 +9,14 @@ package scala.tools.nsc.transform
 import symtab._
 import Flags._
 import scala.collection.mutable.{HashMap, ListBuffer}
-import matching.{TransMatcher, PatternNodes, CodeFactory, PatternMatchers}
+import matching.{TransMatcher, PatternNodes, CodeFactory, ParallelMatching, PatternMatchers}
 
 /** This class ...
  *
  *  @author  Martin Odersky
  *  @version 1.0
  */
-abstract class ExplicitOuter extends InfoTransform with TransMatcher with PatternNodes with CodeFactory with PatternMatchers with TypingTransformers {
+abstract class ExplicitOuter extends InfoTransform with TransMatcher with PatternNodes with CodeFactory with PatternMatchers with ParallelMatching with TypingTransformers {
   import global._
   import definitions._
   import posAssigner.atPos
@@ -65,71 +65,6 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
     }
   }
 
-// <removeOption>
-  /** returns true if tpe was a real option type at prev phase, i.e.
-   *   one that  admits to extract an element type.
-   * @return true for real option type, false for all others, in particular None, scala.None.type, object scala.None
-   */
-  def wasOption(tpe: Type): Boolean = ( tpe ne null ) && (tpe match {
-    case NoType =>
-      false
-    case SingleType(_,sym) if sym eq definitions.NoneClass =>
-      false
-
-    case ThisType(sym) if sym eq definitions.SomeClass => // also eliminate Option.this.type?
-      false
-
-    case SuperType(_,_) =>
-      false
-
-    case _ =>
-      if(definitions.NoneClass eq tpe.symbol.linkedModuleOfClass) {
-	return false
-      }
-    var res: Option[Boolean] = None
-    atPhase(phase.prev) {
-      val it = tpe.baseClasses.elements; while(it.hasNext && res.isEmpty) {
-	val tp = it.next
-	if(tp.linkedModuleOfClass eq definitions.NoneClass) {
-	  res = Some(false) // extremely rare, only appears in refinements, see dbc library
-	}
-	else if(definitions.isOptionType(tp.tpe)) {
-	  res = Some(true)
-	}
-      }
-    }
-    return if(res.isEmpty) false else res.get
-  })
-
-  /** like @see wasOption, additionally tests whether argument is a reference type
-   */
-  def wasOptionRef(tpe:Type): Boolean = try {
-    wasOption(tpe) && isSubType(getOptionArg(tpe), definitions.AnyRefClass.tpe)
-  } catch {
-    case e =>
-      atPhase(phase.prev) {
-	e.printStackTrace()
-      Console.println("boom"+e.getMessage()+" tpe is "+tpe)
-      Console.println("baseclasses are "+tpe.baseClasses)
-      }
-      System.exit(-1)
-    false
-  }
-
-  /** @precond wasOption(tpe)
-   */
-  def getOptionArg(tpe:Type): Type = {
-    //Console.println("huh?"+wasOption(tpe)+" bah: "+tpe)
-    if (tpe.isInstanceOf[SingleType])
-      getOptionArg(atPhase(phase.prev){tpe.widen})
-    else if(tpe.symbol != null && tpe.symbol.isRefinementClass) {
-      getOptionArg(tpe.baseType(definitions.OptionClass))
-    } else {
-      atPhase(phase.prev){tpe}.typeArgs(0)
-    }
-  }
-
-//</removeOption>
   /** <p>
    *    The type transformation method:
    *  </p>
@@ -170,7 +105,7 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
    */
   def transformInfo(sym: Symbol, tp: Type): Type = tp match {
     case MethodType(formals, restpe1) =>
-      val restpe = transformInfo(sym, restpe1) // removeOption
+      val restpe = transformInfo(sym, restpe1)
       if (sym.owner.isTrait && ((sym hasFlag SUPERACCESSOR) || sym.isModule)) { // 5
         sym.makeNotPrivate(sym.owner)
       }
@@ -178,7 +113,7 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
       if (sym.isClassConstructor && isInner(sym.owner)) // 1
         MethodType(sym.owner.outerClass.thisType :: formals, restpe)
       else if (restpe ne restpe1)
-        MethodType(formals, restpe) // removeOption
+        MethodType(formals, restpe)
       else tp
     case ClassInfoType(parents, decls, clazz) =>
       var decls1 = decls

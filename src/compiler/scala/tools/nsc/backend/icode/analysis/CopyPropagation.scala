@@ -322,7 +322,8 @@ abstract class CopyPropagation {
                   Record(cls, new HashMap[Symbol, Value])
                 else Unknown */
                 Record(cls, new HashMap[Symbol, Value])
-              case _ =>
+              // bq: changed from _ to null, otherwise would be unreachable
+              case null =>
                 Unknown
             }
           out.stack = v1 :: out.stack

@@ -1353,7 +1353,8 @@ trait Typers requires Analyzer {
             if (!accesses(e.sym, e1.sym) && !accesses(e1.sym, e.sym) &&
                 (e.sym.isType || inBlock || (e.sym.tpe matches e1.sym.tpe)))
               if (!e.sym.isErroneous && !e1.sym.isErroneous)
-                error(e.sym.pos, e1.sym+" is defined twice");
+                error(e.sym.pos, e1.sym+" is defined twice"+
+	{if(!settings.debug.value) "" else " in "+unit.toString});
             e1 = scope.lookupNextEntry(e1);
           }
           e = e.next

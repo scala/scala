@@ -1,12 +1,12 @@
 import scala.testing.SUnit._
 
-object Test {
-  def main(args:Array[String]) = {
-    Foo.run
-    Mas.run
-    LisSeqArr.run
-    StreamFoo.run
-  }
+object Test extends TestConsoleMain {
+  def suite = new TestSuite(
+    Foo,
+    Mas,
+    LisSeqArr,
+    StreamFoo
+  )
 }
 
 // this class is used for representation
@@ -28,7 +28,7 @@ object FaaPrecise {
 object FaaPreciseSome {
   def unapply(x: Bar) = Some(x.name)  // return type Some[String]
 }
-object Foo extends Assert {
+object Foo extends TestCase("Foo") with Assert {
   def unapply(x: Any): Option[Product2[Int, String]] = x match {
     case y: Bar => Some(Tuple(y.size, y.name))
     case _ => None
@@ -48,7 +48,7 @@ object Foo extends Assert {
   def doMatch5(b:Bar) = (b:Any) match {
     case FaaPreciseSome(n:String) => n
   }
-  def run {
+  override def runTest {
     val b = new Bar
     assertEquals(doMatch1(b),(50,"medium"))
     assertEquals(doMatch2(b),null)
@@ -59,7 +59,7 @@ object Foo extends Assert {
 }
 
 // same, but now object is not top-level
-object Mas extends Assert {
+object Mas extends TestCase("Mas") with Assert {
   object Gaz {
     def unapply(x: Any): Option[Product2[Int, String]] = x match {
       case y: Baz => Some(Tuple(y.size, y.name))
@@ -70,7 +70,7 @@ object Mas extends Assert {
     var size: Int    = 60
     var name: String = "too large"
   }
-  def run {
+  def runTest {
     val b = new Baz
     assertEquals(b match {
       case Gaz(s:Int, n:String) => (s,n)
@@ -78,8 +78,8 @@ object Mas extends Assert {
   }
 }
 
-object LisSeqArr extends Assert {
-  def run {
+object LisSeqArr extends TestCase("LisSeqArr") with Assert {
+  def runTest {
     assertEquals((List(1,2,3): Any) match { case   List(x,y,_*) => (x,y)}, (1,2))
     assertEquals((List(1,2,3): Any) match { case    Seq(x,y,_*) => (x,y)}, (1,2))
     assertEquals((Array(1,2,3): Any) match { case   Seq(x,y,_*) => (x,y)}, (1,2))
@@ -96,7 +96,7 @@ object StreamFoo extends TestCase("unapply for Streams") with Assert {
       case Stream.empty => 0
       case Stream.cons(hd, tl) => hd + sum(tl)
     }
-  override def run {
+  override def runTest {
     val str: Stream[int] = Stream.fromIterator(List(1,2,3).elements)
     assertEquals(sum(str), 6)
   }

@@ -22,7 +22,6 @@ object Test { // don't do this at home
     case _           => "n.a."
   }
 
-
   def main(args:Array[String]): Unit = {
     // make up some class that has a size
     class MyNode extends SizeImpl

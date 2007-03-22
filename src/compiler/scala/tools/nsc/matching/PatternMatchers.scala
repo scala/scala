@@ -14,34 +14,20 @@ import scala.tools.nsc.util.Position
  *  @author Burak Emir
  *  @version 1.0
  */
-trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
+trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes with ParallelMatching) {
   import global._
   import typer.typed
   import symtab.Flags
 
-  // -- begin new data structure for matcher
-                        /*
-  abstract class Node
+  abstract class CantHandle extends Exception
+  object CantHandleUnapply extends CantHandle
+  object CantHandleApply   extends CantHandle
+  object CantHandleIdent   extends CantHandle
+  object CantHandleGuard   extends CantHandle
+  //object CantHandleLiteral extends Exception
 
-  class Test(var tpe: Type, var casted: Symbol) extends Node {
-    var thenp: Node  = _
-    var vbles = List[Symbol]()
-    def bindTo(v: Symbol): this.type = { vbles = v::vbles; this }
-    override def toString() = tpe.toString + "?"
-  }
-
-  class Load(var expr: Tree) extends Node {
-    def tpe = expr.tpe
-    var thenp: PatNodeList = Snil
-  }
-
-  case class Return(b:Tree) extends Node
-
-  abstract class PatNodeList
-  case class Snoc(sx: PatNodeList, x:Test) extends PatNodeList
-  case object Snil extends PatNodeList
-*/
-    // -- end
+  var nPatterns = 0
+  var nParallel = 0
 
   class PatternMatcher {
 
@@ -53,6 +39,7 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
     /** the owner of the pattern matching expression
      */
     var owner:Symbol = _
+    implicit def theOwner:Symbol = owner
 
     /** the selector expression
      */
@@ -62,24 +49,20 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
      */
     protected var root: PatternNode = _
 
-    // statistics
-    var nremoved = 0
-    var nsubstituted = 0
-    var nstatic = 0
+    import global.{ definitions => defs }
 
-    /** the symbol of the result variable
-     */
-    //protected var resultVar: Symbol = _
-
-    def defs = definitions
     var handleOuter: Tree=>Tree = _
-    /** init method, also needed in subclass AlgebraicMatcher
-     */
+
     def initialize(selector: Tree, doCheckExhaustive: Boolean, owner: Symbol, handleOuter:Tree=>Tree): Unit = {
       this.owner = owner
       this.doCheckExhaustive = doCheckExhaustive
       this.selector = selector
       this.handleOuter = handleOuter
+      if(settings.debug.value) {
+        Console.println("****")
+        Console.println("**** initalize, selector = "+selector+" selector.tpe = "+selector.tpe)
+        Console.println("****    doCheckExhaustive == "+doCheckExhaustive)
+      }
       this.root = pConstrPat(selector.pos, selector.tpe.widen);
       this.root.and = pHeader(selector.pos,
                               selector.tpe.widen,
@@ -88,233 +71,148 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
       //this.optimize = this.optimize && (settings.target.value == "jvm");
     }
 
-// ---
-  /**
-   *  @param pos ...
-   *  @param tpe ...
-   *  @param len ...
-   *  @return ...
-   */
-  def pSequencePat(pos: PositionType, tpe: Type, len: int) = {
-    //assert (tpe != null)
-    val sym = newVar(FirstPos, tpe)
-    val node = new SequencePat(sym, len)
-    node.pos = pos
-    node.tpe = tpe
-    node
-  }
+    // factories
 
-  /**
-   *  @param pos         ...
-   *  @param tpe         ...
-   *  @param castedRest1 ...
-   *  @param minlen      ...
-   *  @return            ...
-   */
-  def pRightIgnoringSequencePat(pos: PositionType, tpe: Type,
-                                castedRest: Symbol, minlen: int) = {
-    //assert (tpe != null)
-    val sym = newVar(FirstPos, tpe)
-    val node = new RightIgnoringSequencePat(sym, castedRest, minlen)
-    node.pos = pos
-    node.tpe = tpe
-    node
-  }
+    def pSequencePat(pos: PositionType, tpe: Type, len: int) = new SequencePat(newVar(FirstPos, tpe), len) set ((pos,tpe))
 
-  /**
-   *  @param pos ...
-   *  @param tpe ...
-   *  @return    ...
-   */
-  def pDefaultPat(pos: PositionType, tpe: Type) = {
-    //assert (tpe != null)
-    val node = new DefaultPat()
-    node.pos = pos
-    node.setType(tpe)
-    node
-  }
+    def pRightIgnoringSequencePat(pos: PositionType, tpe: Type, castedRest: Symbol, minlen: int) =
+      new RightIgnoringSequencePat(newVar(FirstPos, tpe), castedRest, minlen) set ((pos,tpe))
 
-  def pConstrPat(pos: PositionType, tpe: Type) = {
-    //assert (tpe != null)
-    val node = new ConstrPat(newVar(pos, tpe))
-    node.pos = pos
-    node.setType(tpe)
-    node
-  }
+    def pDefaultPat(pos: PositionType, tpe: Type) = new DefaultPat() set ((pos,tpe))
 
-  def pUnapplyPat(pos: PositionType, fn: Tree) = {
-    var tpe = definitions.unapplyUnwrap(fn.tpe)
-    if(definitions.isOptionOrSomeType(tpe)) {
-      tpe = tpe.typeArgs.head
+    def pConstrPat(pos: PositionType, tpe: Type) = new ConstrPat(newVar(pos, tpe)) set ((pos,tpe))
+
+    def pUnapplyPat(pos: PositionType, fn: Tree) = {
+      var tpe = defs.unapplyUnwrap(fn.tpe)
+      if(defs.isOptionOrSomeType(tpe)) { tpe = tpe.typeArgs.head }
+      new UnapplyPat(newVar(pos, tpe), fn) set ((pos,tpe))
     }
-    val node = new UnapplyPat(newVar(pos, tpe), fn)
-    node.pos = pos
-    node.setType(tpe)
-    //Console.println("!build unapply, fn.tpe="+fn.tpe+", casted =" + node.casted+" tpe = "+tpe)
-    node
-  }
 
-  def pConstantPat(pos: PositionType, tpe: Type, value: Any) = {
-    //assert (tpe != null)
-    val node = new ConstantPat(value)
-    node.pos = pos
-    node.setType(tpe)
-    node
-  }
+    def pConstantPat(pos: PositionType, tpe: Type, value: Any) = new ConstantPat(value) set ((pos,tpe))
 
-  def pVariablePat(pos: PositionType, tree: Tree) = {
-    //assert (tree.tpe != null)
-    val node = new VariablePat(tree)
-    node.pos = pos
-    node.setType(tree.tpe)
-    node
-  }
+    def pVariablePat(pos: PositionType, tree: Tree) = new VariablePat(tree) set ((pos,tree.tpe))
 
-  /**
-   *  @param pos    ...
-   *  @param header ...
-   *  @return       ...
-   */
-  def pAltPat(pos: PositionType, header: Header) = {
-    val node = new AltPat(header)
-    node.pos = pos
-    node.setType(header.getTpe())
-    node
-  }
+    def pAltPat(pos: PositionType, header: Header) = new AltPat(header) set ((pos, header.tpe))
 
-  // factories
+    def pHeader(pos: PositionType, tpe: Type, selector: Tree) = new Header(selector, null) set ((pos,tpe))
 
-  def pHeader(pos: PositionType, tpe: Type, selector: Tree) = {
-    //assert (tpe != null)
-    val node = new Header(selector, null)
-    node.pos = pos
-    node.setType(tpe)
-    node
-  }
-
-  def pBody(pos: PositionType) = {
-    val node = new Body(new Array[Array[ValDef]](0),
-                        new Array[Tree](0),
-                        new Array[Tree](0))
-    node.pos = pos
-    node
-  }
-
-  /**
-   *  @param pos   ...
-   *  @param bound ...
-   *  @param guard ...
-   *  @param body  ...
-   *  @return      ...
-   */
-  def pBody(pos: PositionType, bound: Array[ValDef], guard: Tree, body: Tree) = {
-    val node =
-      new Body(Array(bound), Array(guard), Array(body))
-    node.pos = pos
-    node
-  }
-
-  /**
-   *  @param pos  ...
-   *  @param name ...
-   *  @param tpe  ...
-   *  @return     ...
-   */
-  def newVar(pos: PositionType, name: Name, tpe: Type): Symbol = {
-    val sym = owner.newVariable(pos, name) // careful: pos has special meaning
-    sym.setInfo(tpe)
-    sym
-  }
-
-  /**
-   *  @param pos ...
-   *  @param tpe ...
-   *  @return    ...
-   */
-  def newVar(pos: PositionType, tpe: Type): Symbol =
-    newVar(pos, cunit.fresh.newName("temp"), tpe).setFlag(Flags.SYNTHETIC)
-
-// ---
-/* //debug
-  def squeezedBlock(vds:List[Tree], exp:Tree): Tree = {
-    Block(vds, exp)
-  }
-*/
-  def squeezedBlock(vds:List[Tree], exp:Tree): Tree = {
-    val tpe = exp.tpe
-    class RefTraverser(sym:Symbol) extends Traverser {
-      var nref = 0
-      var nsafeRef = 0
-      override def traverse(tree: Tree) = tree match {
-        case t:Ident if t.symbol == sym =>
-          nref = nref + 1
-          if(sym.owner == currentOwner)  { // oldOwner should match currentOwner
-            nsafeRef = nsafeRef + 1
-          } /*else if(nref == 1) {
-            Console.println("sym owner: "+sym.owner+" but currentOwner = "+currentOwner)
-          }*/
-        case t if nref > 1 => // abort, no story to tell
-
-        case t       => super . traverse (t)
-      }
+    def pBody(pos: PositionType) = {
+      val node = new Body(new Array[Array[ValDef]](0), new Array[Tree](0),new Array[Tree](0))
+      node.pos = pos
+      node
     }
-    class Subst(sym:Symbol,rhs:Tree) extends Transformer {
-      var stop = false
-      override def transform(tree: Tree) = tree match {
-        case t:Ident if t.symbol == sym =>
-          stop = true
-          rhs
-        case t if stop =>
-          t
-        case t       =>
-          super . transform (t)
-      }
+
+    def pBody(pos: PositionType, bound: Array[ValDef], guard: Tree, body: Tree) = {
+      val node = new Body(Array(bound), Array(guard), Array(body))
+      node.pos = pos
+      node
     }
-    vds match {
-      case Nil   => exp
 
-      case (vd:ValDef) :: rest =>
-        // recurse
-        val exp1 = squeezedBlock(rest, exp)
+    /** pretty printer */
+    def print(): Unit = Console.println(root.and.print("", new StringBuilder()).toString())
 
-        //Console.println("squeezedBlock for valdef "+vd)
-        val sym  = vd.symbol
-        val rt   = new RefTraverser(sym)
-        rt.atOwner (PatternMatcher.this.owner) (rt.traverse(exp1))
-        rt.nref match {
-          case 0 =>
-            nremoved = nremoved + 1
-            exp1
-          case 1 if rt.nsafeRef == 1 =>
-            nsubstituted = nsubstituted + 1
-            new Subst(sym, vd.rhs).transform( exp1 )
-          case _ =>
-            exp1 match {
-              case Block(vds2, exp2) => Block(vd::vds2, exp2)
-              case exp2              => Block(vd::Nil,  exp2)
-            }
+    // states ---
+    // states have constructors which implicitly get added to some set of states in scope
+
+    // --- states
+
+    var dfatree: Tree = null
+
+    /** enters a sequence of cases into the pattern matcher */
+    def construct(cases: List[Tree]): Unit = {
+      nPatterns = nPatterns + 1
+      try {
+      object hasUnapply extends Traverser {
+        override def traverse(x:Tree) = {
+          //Console.println("pat:'"+x+"' / "+x.getClass)
+          x match {
+            case _:UnApply => throw CantHandleUnapply
+            case Ident(n) if n!= nme.WILDCARD =>
+              DEBUG("I can't handle IDENT pattern:"+x)
+              DEBUG("x.tpe.symbols:"+x.tpe.symbol)
+              throw CantHandleIdent
+            case p:Select =>
+            //case p:Select =>
+            //  DEBUG("I can't handle SELECT pattern:"+p)
+            //  DEBUG("p.tpe.symbols:"+p.tpe.symbol)
+            //throw CantHandleUnapply
+            case p@Apply(_,_) if !p.tpe.symbol.hasFlag(symtab.Flags.CASE) =>
+              DEBUG("I can't handle APPLY pattern:"+p)
+              DEBUG("p.tpe.symbols:"+p.tpe.symbol)
+              throw CantHandleApply
+
+            //case p@Apply(_,_) if !p.tpe.symbol.hasFlag(symtab.Flags.CASE) => throw CantHandleUnapply //@todo
+            case _ => super.traverse(x)
+          }
         }
-      case x::xs =>
-        squeezedBlock(xs, exp) match {
-          case Block(vds2, exp2) => Block(x::vds2, exp2)
-          case exp2              => Block(x::Nil,  exp2)
+      }
+      cases foreach { case CaseDef(pat,_,_) => hasUnapply.traverse(pat) }
+      if(cases.forall{case CaseDef(_,x,_) => x == EmptyTree})  {
+        val irep = initRep(selector, cases, doCheckExhaustive)
+        val root = irep.temp.head
+
+        implicit val fail: Tree = ThrowMatchError(selector.pos, Ident(root))
+        val vdef = typed{ValDef(root, selector)}
+
+        implicit val memo       = new collection.mutable.HashMap[(Symbol,Symbol),Symbol]
+        implicit val theCastMap = new collection.mutable.HashMap[(Symbol,Type),Symbol]
+        implicit val bodies     = new collection.mutable.HashMap[Tree, (Tree,Tree,Symbol)]
+        val mch  = typed{repToTree(irep, typed, handleOuter)}
+        dfatree = typed{squeezedBlock(List(vdef), mch)}
+
+        DEBUG("**** finished\n"+dfatree.toString)
+
+        val i = cases.findIndexOf { case CaseDef(_,_,b) => bodies.get(b).isEmpty}
+        if(i != -1) {
+          val CaseDef(_,_,b) = cases(i)
+          DEBUG("*** damn, unreachable!")
+          //for(val b <- bodies) {
+          //  Console.println(b)
+          //}
+          cunit.error(b.pos, "unreachable code")
         }
-    }
-  }
 
-// ---
-    /** pretty printer
-     */
-    def print(): Unit =
-      Console.println(root.and.print("", new StringBuilder()).toString())
+        object resetTrav extends Traverser {
+          override def traverse(x:Tree): unit = x match {
+            case vd @ ValDef(_,_,_,_)=>
+              vd.symbol.resetFlag(symtab.Flags.CAPTURED)
+              if(vd.symbol.hasFlag(symtab.Flags.TRANS_FLAG)) {
+                vd.symbol.resetFlag(symtab.Flags.TRANS_FLAG)
+                vd.symbol.resetFlag(symtab.Flags.MUTABLE)
+              }
+            case _ =>
+              super.traverse(x)
+          }
+        }
+        resetTrav.traverse(dfatree)
 
-    /** enters a sequence of cases into the pattern matcher
-     */
-    def construct(cases: List[Tree]): Unit =
+        //constructParallel(cases) // ZZZ
+        nParallel = nParallel + 1
+        return
+      } else throw CantHandleGuard
+      } catch {
+        case e: CantHandle => // fall back
+            DEBUG("****")
+            DEBUG("**** falling back, "+e.getClass)
+            DEBUG("****")
+
+        case CantHandleGuard   => // fall back (actually already fell back before)
+        case e =>
+
+          if(settings.debug.value) {
+            e.printStackTrace()
+            Console.println("****")
+            Console.println("**** falling back, cause " + e.getMessage)
+            Console.println("****")
+            for(val CaseDef(pat,guard,_) <- cases)
+              Console.println(pat.toString)
+          }
+      }
+      doCheckExhaustive = false
       cases foreach enter
+    }
 
-    /** enter a single case into the pattern matcher
-     */
+    /** enter a single case into the pattern matcher */
     protected def enter(caseDef: Tree): Unit = caseDef match {
       case CaseDef(pat, guard, body) =>
         val env = new CaseEnv
@@ -333,7 +231,7 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
         //
         //print()
         //cunit.error(pat.pos, "duplicate case")
-        h.or = pDefaultPat(caseDef.pos, target.getTpe)
+        h.or = pDefaultPat(caseDef.pos, target.tpe)
         h.or.and = pBody(caseDef.pos, env.getBoundVars(), guard, body)
         //print()
         //Console.println("tao = "+target.and.or)
@@ -363,40 +261,6 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
         tree.body = nb
       }
 
-    /** returns the child patterns of a pattern
-     */
-    protected def patternArgs(tree: Tree): List[Tree] = {
-      //Console.println("patternArgs "+tree.toString())
-      val res = tree match {
-        case Bind(_, pat) =>
-          patternArgs(pat)
-
-        case a @ Apply(_, List(av @ ArrayValue(_, ts)))
-        if isSeqApply(a) && isRightIgnoring(av) =>
-          ts.reverse.drop(1).reverse
-
-        case a @ Apply(_, List(av @ ArrayValue(_, ts))) if isSeqApply(a) =>
-          ts
-
-        case a @ Apply(_, args) =>
-          args
-
-        case a @ UnApply(_, args) =>
-          args
-
-        case av @ ArrayValue(_, ts) if isRightIgnoring(av) =>
-          ts.reverse.drop(1).reverse
-
-        case av @ ArrayValue(_, ts) =>
-          ts
-
-        case _ =>
-          List()
-      }
-      //Console.println("patternArgs returns "+res.toString())
-      res
-    }
-
   protected def patternNode(tree:Tree , header:Header , env: CaseEnv ): PatternNode  = {
     //Console.println("patternNode("+tree+","+header+")");
         //else scala.Predef.error("got null tree in patternNode");
@@ -404,21 +268,15 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
     //Console.println("tree.getClass() "+tree.getClass());
     val t = tree match {
       case Bind(name, Typed(Ident( nme.WILDCARD ), tpe)) => // x@_:Type
-        val tpe2test = tree.symbol.tpe // safest! typer does not always use tpe.tpe!
-
-      // @todo: this optimization probably not allowed, because of null -- but can rework it
-      //if (isSubType(header.getTpe(), tpe2test)) {
-        //  val node = pDefaultPat(tree.pos, tpe2test)
-        //  env.newBoundVar(tree.symbol, tree.tpe, header.selector)
-        //  node
-        //} else {
-          val node = pConstrPat(tree.pos, tpe2test)
-          env.newBoundVar( tree.symbol, tpe2test, typed(Ident( node.casted )));
-          node
-        //}
+        // @note: safest! typer does not always use tpe.tpe, e.g. in the case of refinement type tests
+        val tpe2test = tree.symbol.tpe
+        // @note: if (isSubType(header.tpe, tpe2test)) then this will be translated to isNull test
+        val node = pConstrPat(tree.pos, tpe2test)
+        env.newBoundVar( tree.symbol, tpe2test, typed(Ident( node.casted )));
+        node
 
       case Bind(name, Ident(nme.WILDCARD)) => // x @ _
-        val node = pDefaultPat(tree.pos, header.getTpe())
+        val node = pDefaultPat(tree.pos, header.tpe)
         if ((env ne null) && (tree.symbol != defs.PatternWildcard))
           env.newBoundVar( tree.symbol, tree.tpe, header.selector);
         node
@@ -471,12 +329,12 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
              pConstrPat(tree.pos, tree.tpe);
           }
       case Typed(Ident( nme.WILDCARD ), tpe) => // x@_:Type
-        val doTest = isSubType(header.getTpe(), tpe.tpe) // this is already an optimization
+        val doTest = isSubType(header.tpe, tpe.tpe) // this is already an optimization
         if (doTest) pDefaultPat(tree.pos, tpe.tpe)
         else pConstrPat(tree.pos, tpe.tpe)
 
       case t @ Typed(ident, tpe) =>       // variable pattern
-        // can't optimize using isSubType(header.getTpe(),tpe.tpe);
+        // can't optimize using isSubType(header.tpe,tpe.tpe);
         //  leave that (null check!) for later
         val node =
           pConstrPat(tree.pos, tpe.tpe)
@@ -488,7 +346,7 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
           }
         node
 
-      case Ident(nme.WILDCARD) => pDefaultPat(tree.pos, header.getTpe())
+      case Ident(nme.WILDCARD) => pDefaultPat(tree.pos, header.tpe)
 
       case Ident(name) => // pattern without args or named constant
         assert(!tree.symbol.isPrimaryConstructor) // may not happen
@@ -521,8 +379,8 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
       case Alternative(ts) =>
         if (ts.length < 2)
           Predef.error("ill-formed Alternative")
-        val subroot = pConstrPat(header.pos, header.getTpe())
-        subroot.and = { val h = pHeader(header.pos, header.getTpe(), header.selector.duplicate); h.isSubHeader = true; h }
+        val subroot = pConstrPat(header.pos, header.tpe)
+        subroot.and = { val h = pHeader(header.pos, header.tpe, header.selector.duplicate); h.isSubHeader = true; h }
         val subenv = new CaseEnv
         var i = 0; while (i < ts.length) {
           val target = enter1(ts(i), -1, subroot, subroot.casted, subenv)
@@ -561,15 +419,14 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes) {
         enter1(pat, index, target, casted, env)
     }
 
+    type SelectorMap = collection.mutable.HashMap[(Symbol,Symbol),List[Symbol]]
+    val selectorMap = new SelectorMap
+
   private def newHeader(pos: PositionType, casted: Symbol, index: Int): Header = {
     //Console.println("newHeader(pos,"+casted+" (has CASE flag? "+casted.tpe.symbol.hasFlag(Flags.CASE)+") of type "+casted.tpe+" with pos "+casted.pos+"(equals FIRSTPOS? "+(casted.pos == Position.FIRSTPOS)+"),"+index+")");
     val ident = typed(Ident(casted))
     if (casted.pos == Position.FIRSTPOS) { // load the result of casted(i)
       //Console.println("FIRSTPOS");
-
-      //Console.println("DEBUG")
-      //Console.println()
-
       val t = typed(
         Apply(Select(ident, ident.tpe.member(nme.apply)),
               List(Literal(Constant(index)))))
@@ -630,14 +487,14 @@ print()
 
                          // special case List()
     pat match {
-      case UnApply(fn, List(ArrayValue(zs, List()))) if isSameType(definitions.ListModule.tpe, fn.symbol.owner.tpe) =>
-        return enter1(posAssigner.atPos(pat.pos){gen.mkAttributedRef(definitions.NilModule)}, index, target, casted, env)
+      case UnApply(fn, List(ArrayValue(zs, List()))) if isSameType(defs.ListModule.tpe, fn.symbol.owner.tpe) =>
+        return enter1(posAssigner.atPos(pat.pos){gen.mkAttributedRef(defs.NilModule)}, index, target, casted, env)
         /*
-      case UnApply(fn, List(ArrayValue(zs, pats))) if isSameType(definitions.ListModule.tpe, fn.symbol.owner.tpe) =>
+      case UnApply(fn, List(ArrayValue(zs, pats))) if isSameType(defs.ListModule.tpe, fn.symbol.owner.tpe) =>
         Console.println("special case List"+pats)
         Console.println("special case zs = "+zs)
         def makeConsPat(p:Tree) = {
-          val constpe = typeRef(definitions.ConsClass.tpe.prefix, definitions.ConsClass, List(zs.tpe))
+          val constpe = typeRef(defs.ConsClass.tpe.prefix, defs.ConsClass, List(zs.tpe))
           val patNode = pConstrPat(pat.pos, )
           patNode.and = newHeader(pat.pos, )
         }
@@ -684,7 +541,13 @@ print()
           target.and = curHeader; // (*)
 
           //Console.println("curHeader : "+curHeader)
-
+/* first try at exhaust improvement
+         selectorMap.update((casted, curHeader.selector.symbol),
+           selectorMap.get(casted, curHeader.selector.symbol) match {
+            case Some(xs) =>  pat.tpe.symbol::xs
+            case _ => pat.tpe.symbol::Nil
+          })
+*/
           if (bodycond ne null) target.and = bodycond(target.and) // restores body with the guards
 
           curHeader.or = patternNode(pat, curHeader, env)
@@ -713,7 +576,7 @@ print()
                     (patNode.isDefaultPat() || next.subsumes(patNode)))) {
                       // new node is default or subsumed
                       var header = pHeader(patNode.pos,
-                                           curHeader.getTpe(),
+                                           curHeader.tpe,
                                            curHeader.selector);
                       {curHeader.next = header; header};
                       header.or = patNode;
@@ -792,6 +655,9 @@ print()
     //////////// generator methods
 
     def toTree(): Tree = {
+      if(dfatree != null) {
+        return dfatree
+      }
      val t = if (isSimpleIntSwitch())
         intSwitchToTree()
       // else if (false && optimize && isSimpleSwitch())
@@ -822,7 +688,7 @@ print()
                 case VariablePat(tree) =>
                   //Konsole.println(((tree.symbol.flags & Flags.CASE) != 0));
                 case ConstrPat(_) =>
-                  //Konsole.println(node.getTpe().toString() + " / " + ((node.getTpe().symbol.flags & Flags.CASE) != 0));
+                  //Konsole.println(node.tpe.toString() + " / " + ((node.tpe.symbol.flags & Flags.CASE) != 0));
                     var inner = node.and;
                     def funct(inner: PatternNode): Boolean = {
                       //outer: while (true)
@@ -899,7 +765,7 @@ print()
   /** This method translates pattern matching expressions that match
    *  on integers on the top level.
    */
-  def intSwitchToTree(): Tree = {
+  private def intSwitchToTree(): Tree = {
     def insert1(tag: Int, body: Tree, current: TagBodyPair): TagBodyPair = {
       if (current eq null)
         new TagBodyPair(tag, body, null)
@@ -1008,7 +874,7 @@ print()
     var exit: Symbol = null
     /** simple optimization: if the last pattern is `case _' (no guards), we won't generate the ThrowMatchError
      */
-  def generalSwitchToTree(): Tree = {
+  private def generalSwitchToTree(): Tree = {
     this.exit = owner.newLabel(root.pos, "exit").setInfo(new MethodType(List(resultType), resultType));
     val result = exit.newValueParameter(root.pos, "result").setInfo( resultType );
     squeezedBlock(
@@ -1128,6 +994,7 @@ print()
       return false
     }
 
+  //@todo: can this be simplified? (in particular: drop "dup" method)
     protected def toOptTree(node1: PatternNode, selector: Tree): Tree = {
       def insert2(tag: Int, node: PatternNode, current: TagNodePair): TagNodePair = {
         if (current eq null)
@@ -1143,7 +1010,7 @@ print()
       }
 
       def insertNode(tag: int, node: PatternNode, current:TagNodePair): TagNodePair = {
-        val newnode = node.dup()
+        val newnode = node.dup
         newnode.or = null
         insert2(tag, newnode, current)
       }
@@ -1154,15 +1021,15 @@ print()
       while (node ne null)
       node match {
         case ConstrPat(casted) =>
-          cases = insertNode(node.getTpe().symbol.tag, node, cases)
+          cases = insertNode(node.tpe.symbol.tag, node, cases)
           node = node.or
 
         case DefaultPat() =>
           defaultCase = node
           node = node.or
 
-        case VariablePat(tree) if node.getTpe.symbol.hasFlag(Flags.CASE) =>
-          cases = insertNode(node.getTpe().symbol.tag, node, cases)
+        case VariablePat(tree) if node.tpe.symbol.hasFlag(Flags.CASE) =>
+          cases = insertNode(node.tpe.symbol.tag, node, cases)
           node = node.or
 
         case _ =>
@@ -1237,6 +1104,7 @@ print()
         case e =>
 
           Console.println("failed with "+e.getMessage()+" on: "+t)
+          //System.exit(-1)
           //null
         t
       }
@@ -1253,7 +1121,7 @@ print()
           case DefaultPat() =>
             return toTree(node.and);
 
-          case UnapplyPat(casted, Apply(fn1, _)) if casted.tpe.symbol == definitions.BooleanClass => // special case
+          case UnapplyPat(casted, Apply(fn1, _)) if casted.tpe.symbol == defs.BooleanClass => // special case
             var useSelector = selector
             val checkType = fn1.tpe match {
               case MethodType(List(argtpe),_) =>
@@ -1295,20 +1163,12 @@ print()
               toTree(node.or, selector.duplicate))
 
           case ConstrPat(casted) =>
-            def outerAlwaysEqual(left: Type, right: Type) = (left,right) match {
-              case (TypeRef(lprefix, _,_), TypeRef(rprefix,_,_)) if lprefix =:= rprefix =>
-                true
-              case _ =>
-                if(settings.XprintOuterMatches.value)
-                  cunit.warning(node.pos, "can't be sure statically that these outers are equal:"+(left,right).toString)
-                false
-            }
 
-            val ntpe = node.getTpe
+            val ntpe = node.tpe
             var cond: Tree = null
 
           // if type 2 test is same as static type, then just null test
-          if(isSubType(selector.tpe, ntpe) && isSubType(ntpe, definitions.AnyRefClass.tpe)) {
+          if(isSubType(selector.tpe, ntpe) && isSubType(ntpe, defs.AnyRefClass.tpe)) {
             cond = NotNull(selector.duplicate)
             nstatic = nstatic + 1
           } else if(ignoreSelectorType) {
@@ -1319,9 +1179,11 @@ print()
 
           // compare outer instance for patterns like foo1.Bar foo2.Bar if not statically known to match
           casted.tpe match {
-            case TypeRef(prefix,_,_) if
-              (prefix.symbol.isTerm && !prefix.symbol.isPackage)
-              &&(!outerAlwaysEqual(casted.tpe, selector.tpe)) =>
+            case TypeRef(prefix,_,_) if needsOuterTest(casted.tpe, selector.tpe) =>
+
+                //@attention, deep typer bug: if we omit "typed" here, we crash when typing the tree that contains this fragment
+                cond = typed{ addOuterCondition(cond, casted.tpe, selector.duplicate, handleOuter) }
+            /*
                 var theRef = gen.mkAttributedRef(prefix.prefix, prefix.symbol)
 
                 // needs explicitouter treatment
@@ -1329,29 +1191,25 @@ print()
 
                 val outerAcc = outerAccessor(casted.tpe.symbol)
 
-                //if(settings.XprintOuterMatches.value)
-                //  cunit.warning(node.pos, "outer match "+outerAcc)
-
                 if(outerAcc != NoSymbol) { // some guys don't have outers
                   cond = And(cond,
                              Eq(Apply(Select(
                                typed(gen.mkAsInstanceOf(selector.duplicate, ntpe, true)), outerAcc),List()), theRef))
-                } else if(settings.XprintOuterMatches.value) {
-                  cunit.warning(node.pos, " no outer accessor for "+casted.tpe.symbol+" of type "+casted.tpe)
                 }
+                */
             case _ =>
               //ignore ;
           }
 
-          val succ = squeezedBlock(List(ValDef(casted,
-                                               if(isSubType(selector.tpe,ntpe)) selector.duplicate else typed(gen.mkAsInstanceOf(selector.duplicate, ntpe, true)))),
+          val succ = squeezedBlock(List(typed {ValDef(casted,
+                                               if(isSubType(selector.tpe,ntpe)) selector.duplicate else typed(gen.mkAsInstanceOf(selector.duplicate, ntpe, true)))}),
                                    toTree(node.and))
             val fail = toTree(node.or, selector.duplicate)
 
             return myIf(cond, succ, fail)
 
           case SequencePat(casted, len) =>
-            val ntpe = node.getTpe
+            val ntpe = node.tpe
 
             val tpetest =
               if(!isSubType(selector.tpe, ntpe))
@@ -1376,7 +1234,7 @@ print()
 
           case RightIgnoringSequencePat(casted, castedRest, minlen) =>
 
-            val ntpe = node.getTpe
+            val ntpe = node.tpe
 
             val tpetest =
               if(!isSubType(selector.tpe,ntpe))
@@ -1417,7 +1275,7 @@ print()
 
           case VariablePat(tree) =>
             // objects are compared by eq, not ==
-            val cmp = if(tree.tpe.symbol.isModuleClass && selector.tpe <:< definitions.AnyRefClass.tpe)
+            val cmp = if(tree.tpe.symbol.isModuleClass && selector.tpe <:< defs.AnyRefClass.tpe)
                         Eq(selector.duplicate, tree)
                       else
                         Equals(selector.duplicate, tree)

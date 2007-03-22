@@ -13,20 +13,16 @@ trait Shmeez extends AnyRef with Treez {
   }
 }
 
-object Test {
-  import scala.testing.SUnit._
+import scala.testing.SUnit._
 
-  def main(args:Array[String]): Unit = {
-    val tr = new TestResult
-    new TestSuite(
+object Test extends TestConsoleMain {
+
+  def suite = new TestSuite(
       new TestSimpleIntSwitch,
       new Test717,
       new TestGuards
-    ).run(tr)
+    )
 
-    for(val f <- tr.failures())
-      Console println f
-  }
 
   class Foo(j:Int) {
     case class Bar(i:Int)
@@ -129,6 +125,22 @@ object Test {
     case List(1) =>
     case List(1,2,xs @ _*) =>
     case Nil =>
+  }
+
+  def j = (List[Int](), List[Int](1)) match {
+    case (Nil, _) => 'a'
+    case (_, Nil) => 'b'
+    case (h1 :: t1, h2 :: t2) => 'c'
+  }
+
+  def k (x:AnyRef) = x match {
+    case null => 1
+    case _ => 2
+  }
+
+  val FooBar = 42
+  def lala() = 42 match {
+    case FooBar => true
   }
 }
 

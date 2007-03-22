@@ -1,5 +1,4 @@
 class TestSealedExhaustive { // compile only
-
     sealed class Foo
 
     case class Bar(x:Int) extends Foo
@@ -20,11 +19,17 @@ class TestSealedExhaustive { // compile only
     def ma33(x:Kult) = x match { // exhaustive
       case Kult(_) => // exhaustive
     }
+
     def ma3(x:Mult) = (x,x) match { // not exhaustive
       case (Kult(_), Qult())    => // Kult missing
       //case Pair(Kult(_), Kult(_))    =>
       case (Qult(), Kult(_))    => // Qult missing
       //case Pair(Qult(), Qult())    =>
+    }
+
+    def ma3u(x:Mult) = ((x,x) : @unchecked) match { // not exhaustive, but not checked!
+      case (Kult(_), Qult())    =>
+      case (Qult(), Kult(_))    =>
     }
 
     sealed class Deep
@@ -64,4 +69,5 @@ class TestSealedExhaustive { // compile only
     case 1 =>
       case 1 =>
   }
+
 }
