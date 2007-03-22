@@ -1,3 +1,6 @@
+checksensible.scala:2: error: class Test needs to be abstract, since method isabstract is not defined
+class Test {
+^
 checksensible.scala:4: warning: comparing values of types scala.Ordered[scala.Unit] and scala.Unit using `>' will always yield false
   println((c = 1) > 0)
                   ^
@@ -7,11 +10,9 @@ checksensible.scala:5: warning: comparing values of types scala.Ordered[scala.Un
 checksensible.scala:6: warning: comparing values of types scala.Unit and scala.Int using `==' will always yield false
   println((c = 1) == 0)
                   ^
-actual = class Stringfalse
 checksensible.scala:8: warning: comparing values of types scala.Int and java.lang.String using `==' will always yield false
   println(1 == "abc")
             ^
-actual = class Booleanfalse
 checksensible.scala:9: warning: comparing values of types scala.Int and scala.Boolean using `!=' will always yield true
   println(1 != true)
             ^
@@ -24,7 +25,6 @@ checksensible.scala:12: warning: comparing a fresh object using `==' will always
 checksensible.scala:13: warning: comparing a fresh object using `!=' will always yield true
   println(new Array(1) != new Array(1))
                        ^
-actual = trait Nullfalse
 checksensible.scala:16: warning: comparing values of types scala.Int and scala.Null using `==' will always yield false
   if( foo.length == null )    //  == 0 makes more sense, but still
                  ^
@@ -32,3 +32,4 @@ checksensible.scala:26: warning: comparing values of types scala.Unit and scala.
     while((c = in.read) != -1) {
                         ^
 10 warnings found
+one error found

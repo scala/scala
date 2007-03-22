@@ -1,5 +1,5 @@
 import java.io._
-object Test {
+class Test {
   var c = 0
   println((c = 1) > 0)
   println((c = 1) <= 0)
@@ -29,5 +29,7 @@ object Test {
 
     in.close
   }
+
+  def isabstract: int
 
 }
