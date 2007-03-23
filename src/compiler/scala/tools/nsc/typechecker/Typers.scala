@@ -305,7 +305,7 @@ trait Typers requires Analyzer {
        *  @return      ...
        */
       def privates[T <: Tree](owner: Symbol, tree: T): T =
-        check(owner, EmptyScope, tree)
+        check(owner, EmptyScope, WildcardType, tree)
 
       /** Check that type <code>tree</code> does not refer to entities
        *  defined in scope <code>scope</code>.
@@ -316,16 +316,18 @@ trait Typers requires Analyzer {
        *  @return      ...
        */
       def locals[T <: Tree](scope: Scope, pt: Type, tree: T): T =
-        if (isFullyDefined(pt)) tree setType pt else check(NoSymbol, scope, tree)
+        check(NoSymbol, scope, pt, tree)
 
-      def check[T <: Tree](owner: Symbol, scope: Scope, tree: T): T = {
+      def check[T <: Tree](owner: Symbol, scope: Scope, pt: Type, tree: T): T = {
         this.owner = owner
         this.scope = scope
         badSymbol = NoSymbol
-        assert(tree.tpe ne null, tree)//debug
         apply(tree.tpe)
         if (badSymbol == NoSymbol) tree
         else if (badSymbol.isErroneous) setError(tree)
+        else if (isFullyDefined(pt)) tree setType pt
+        else if (tree.tpe.symbol.isAnonymousClass)
+          check(owner, scope, pt, tree setType anonymousClassRefinement(tree.tpe.symbol))
         else {
           val tp1 = try {
             heal(tree.tpe)
@@ -341,7 +343,7 @@ trait Typers requires Analyzer {
               " escapes its defining scope as part of type "+tree.tpe)
             setError(tree)
           } else
-            check(owner, scope, tree setType tp1)
+            check(owner, scope, pt, tree setType tp1)
         }
       }
 
@@ -1196,12 +1198,7 @@ trait Typers requires Analyzer {
       val expr1 = typed(block.expr, mode & ~(FUNmode | QUALmode), pt)
       val block1 = copy.Block(block, stats1, expr1)
         .setType(if (treeInfo.isPureExpr(block)) expr1.tpe else expr1.tpe.deconst)
-      if (isFullyDefined(pt)) block1
-      else {
-        if (block1.tpe.symbol.isAnonymousClass)
-          block1 setType anonymousClassRefinement(block1.tpe.symbol)
-        checkNoEscaping.locals(context.scope, pt, block1)
-      }
+      checkNoEscaping.locals(context.scope, pt, block1)
     }
 
     /**

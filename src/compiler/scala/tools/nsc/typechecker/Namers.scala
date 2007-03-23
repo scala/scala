@@ -521,7 +521,7 @@ trait Namers requires Analyzer {
       thisMethodType(
         if (tpt.isEmpty) {
           val pt = resultPt.substSym(tparamSyms, tparams map (.symbol))
-          tpt.tpe = deconstIfNotFinal(meth, typer.computeType(rhs, WildcardType/*pt*/))
+          tpt.tpe = deconstIfNotFinal(meth, typer.computeType(rhs, pt))
           tpt.tpe
         } else typer.typedType(tpt).tpe)
      }
