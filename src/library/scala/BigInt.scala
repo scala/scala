@@ -237,7 +237,7 @@ class BigInt(val bigInteger: BigInteger) extends runtime.BoxedNumber {
 
   /** Returns a BigInt whose value is the negation of this BigInt
    */
-  def - : BigInt   = new BigInt(this.bigInteger.negate())
+  def unary_- : BigInt   = new BigInt(this.bigInteger.negate())
 
   /** Returns the absolute value of this BigInt
    */
