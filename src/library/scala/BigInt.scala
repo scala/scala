@@ -31,8 +31,9 @@ object BigInt {
    */
   def apply(i: Int): BigInt =
     if (minCached <= i && i <= maxCached) {
-      var n = cache(i)
-      if (n eq null) { n = new BigInt(BigInteger.valueOf(i)); cache(i) = n }
+      val offset = i - minCached
+      var n = cache(offset)
+      if (n eq null) { n = new BigInt(BigInteger.valueOf(i)); cache(offset) = n }
       n
     } else new BigInt(BigInteger.valueOf(i))
 
