@@ -441,7 +441,7 @@ abstract class RefChecks extends InfoTransform {
 
     def checkSensible(pos: int, fn: Tree, args: List[Tree]) = fn match {
       case Select(qual, name) if (args.length == 1) =>
-        def isNew = qual match {
+        def isNew(tree: Tree) = tree match {
           case Function(_, _)
              | Apply(Select(New(_), nme.CONSTRUCTOR), _) => true
           case _ => false
@@ -469,9 +469,9 @@ abstract class RefChecks extends InfoTransform {
                      !(receiver isSubClass actual))
               nonSensible("", false)
             else if ((receiver hasFlag FINAL) && hasObjectEquals && !isValueClass(receiver) &&
-                     !(receiver isSubClass actual) && actual != AllRefClass)
+                     !(receiver isSubClass actual) && receiver != AllRefClass && actual != AllRefClass)
               nonSensible("non-null ", false)
-            else if (isNew && hasObjectEquals)
+            else if ((isNew(qual) || isNew(args.head)) && hasObjectEquals)
               nonSensibleWarning("a fresh object", false)
           case _ =>
         }
