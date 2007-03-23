@@ -392,13 +392,6 @@ abstract class GenICode extends SubComponent  {
                 log("Adding label " + tree.symbol);
           }
 
-//           if (!isTailCallLabel(tree.asInstanceOf[LabelDef], ctx)) {
-//             log("Non-tail call label found (" + tree.symbol + "), initializing arguments to default values.");
-//             genLoadLabelArguments(params map { p => zeroOf(toTypeKind(p.symbol.tpe)) },
-//                                   ctx1.labels(tree.symbol),
-//                                   ctx);
-//           }
-
           ctx.bb.emit(JUMP(ctx1.bb), tree.pos)
           ctx.bb.close
           genLoad(rhs, ctx1, expectedType /*toTypeKind(tree.symbol.info.resultType)*/)
@@ -1607,16 +1600,6 @@ abstract class GenICode extends SubComponent  {
       val kinds = ts map toTypeKind
       kinds reduceLeft maxType
     }
-
-    /** Check weather a given label definition is introduced by the tail call phase
-     *  It is considered to be so if all value parameters of the label are the
-     *  same as the value parameters of the current method.
-     */
-    def isTailCallLabel(tree: LabelDef, ctx: Context) = (
-      tree.params.length == ctx.defdef.vparamss.head &&
-      List.forall2(tree.params, ctx.defdef.vparamss.head)
-        { (x, y) => x.symbol == y.symbol }
-    );
 
     def isLoopHeaderLabel(name: Name): Boolean =
       name.startsWith("while$") || name.startsWith("doWhile$")
