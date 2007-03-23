@@ -360,6 +360,7 @@ trait Infer requires Analyzer {
             pre.memberType(sym1)
           } catch {
             case ex: MalformedType =>
+              if (settings.debug.value) ex.printStackTrace
               val sym2 = underlying(sym1)
               val itype = withoutMalformedChecks(pre.memberType(sym2))
               accessError("\n because its instance type "+itype+

@@ -1740,6 +1740,16 @@ trait Types requires SymbolTable {
               }
             else toPrefix(base(pre, clazz).prefix, clazz.owner);
           toPrefix(pre, clazz)
+        case SingleType(pre, sym) =>
+          if (sym.isPackageClass) tp // short path
+          else {
+            val v = variance; variance = 0
+            val pre1 = this(pre)
+            variance = v
+            if (pre1 eq pre) tp
+            else if (pre1.isStable) singleType(pre1, sym, variance)
+            else pre1.memberType(sym).resultType
+          }
         case TypeRef(prefix, sym, args) if (sym.isTypeParameter) =>
           def toInstance(pre: Type, clazz: Symbol): Type =
             if ((pre eq NoType) || (pre eq NoPrefix) || !clazz.isClass) tp
