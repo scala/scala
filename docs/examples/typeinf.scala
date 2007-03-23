@@ -172,7 +172,7 @@ object typeInfer {
       for (val s <- id; s != "let" && s != "in") yield s
 
     /** term = '\' ident '.' term | term1 {term1} | let ident "=" term in term */
-    def term: Parser[Term] =
+    def term: Parser[Term] = (
       ( for (
           val _ <- wschr('\\');
           val x <- ident;
@@ -193,9 +193,10 @@ object typeInfer {
           val t <- term1;
           val ts <- rep(term1))
         yield (t /: ts)((f, arg) => App(f, arg)) )
+    )
 
     /** term1 = ident | '(' term ')' */
-    def term1: Parser[Term] =
+    def term1: Parser[Term] = (
       ( for (val s <- ident)
         yield Var(s): Term )
       |||
@@ -203,7 +204,8 @@ object typeInfer {
           val _ <- wschr('(');
           val t <- term;
           val _ <- wschr(')'))
-        yield t );
+        yield t )
+    )
 
     /** all = term ';' */
     def all: Parser[Term] =
@@ -214,7 +216,7 @@ object typeInfer {
   }
 
   class ParseString(s: String) extends Parsers {
-    type intype = int
+    type inputType = int
     val input = 0
     def any = new Parser[char] {
       def apply(in: int): Parser[char]#Result =

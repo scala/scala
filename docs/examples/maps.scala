@@ -15,7 +15,7 @@ object maps {
     val empty: map
   }
 
-  class AlgBinTree[kt <: Ordered[kt], vt <: AnyRef]() extends MapStruct[kt, vt] {
+  class AlgBinTree[kt >: AllRef <: Ordered[kt], vt >: AllRef <: AnyRef]() extends MapStruct[kt, vt] {
     type map = AlgMap
 
     val empty: AlgMap = Empty()
@@ -65,7 +65,7 @@ object maps {
     }
   }
 
-  class OOBinTree[kt <: Ordered[kt], vt <: AnyRef]() extends MapStruct[kt, vt] {
+  class OOBinTree[kt >: AllRef <: Ordered[kt], vt >: AllRef <: AnyRef]() extends MapStruct[kt, vt] {
     type map = OOMap
 
     trait OOMap extends Map {
@@ -105,7 +105,7 @@ object maps {
     }
   }
 
-  class MutBinTree[kt <: Ordered[kt], vt <: AnyRef]() extends MapStruct[kt, vt] {
+  class MutBinTree[kt >: AllRef <: Ordered[kt], vt >: AllRef <: AnyRef]() extends MapStruct[kt, vt] {
     type map = MutMap
     class MutMap(key: kt, value: vt) extends Map {
       val k = key

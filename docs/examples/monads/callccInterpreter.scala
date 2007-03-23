@@ -1,5 +1,7 @@
 object callccInterpreter {
 
+  def id[a](x: a) = x
+
   type Answer = Value;
 
   case class M[A](in: (A => Answer) => Answer) {

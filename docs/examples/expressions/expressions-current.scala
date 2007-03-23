@@ -1,5 +1,7 @@
 package examples.expressions
 
+class Ref[a](var elem:a) {}
+
 abstract class Lang {
   trait Visitor {
     def caseNum(n: int): unit
@@ -21,7 +23,7 @@ abstract class Lang {
 }
 
 abstract class Lang2 extends Lang {
-  abstract class Visitor2 extends Visitor {
+  trait Visitor2 extends Visitor {
     def casePlus(left: Exp, right: Exp): unit
   }
 
@@ -32,7 +34,7 @@ abstract class Lang2 extends Lang {
   }
 
   //  class Eval2(result: Ref[int]): visitor extends Eval(result) with Visitor2 {
-  class Eval2(result: Ref[int]) requires visitor extends Visitor2 {
+  class Eval2(result: Ref[int]) requires visitor extends Eval(result) with Visitor2 {
     def casePlus(l: Exp, r: Exp) =
       result.elem = { l.visit(this); result.elem } + { r.visit(this); result.elem }
   }

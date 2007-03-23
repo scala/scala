@@ -14,8 +14,8 @@ object phonebook3 {
     /** returns true if this element's first child is the right 'name'
      *  x is treated a if it was a singleton sequence here.
      */
-    def hasName ( x: Seq[Node] ) = x(0).child.elements.next match {
-      case <name>{ Text(Name) }</name> => true
+    def hasName ( x: Seq[Node] ) = x(0).child.elements.exists {
+      case <name>{Text(Name)}</name>   => true
       case _                           => false
     }
 
@@ -41,12 +41,12 @@ object phonebook3 {
 
     /** walks through tree, returns changed/copied updated tree  */
     def copyOrChange ( ch: Iterator[Node] ):List[Node] = {
-        for( val c <- ch ) yield c match {
+      for( val c <- ch ) yield c match {
 
-        case x @ <entry>{ ch1 @ _* }</entry> if hasName( x ) =>
+        case x @ <entry>{ ch1 @ _* }</entry> if hasName(x) =>
           val it = ch1.elements;
           val nameElem:Seq[Node] = it.next;             // grab 'name' element
-          val ch2 = nameElem concat copyOrChange( it ); // concat with updated seq
+          val ch2 = nameElem ++ copyOrChange( it ); // concat with updated seq
 
           if( ch1 == ch2 ) // not present: add as first entry
 
@@ -63,13 +63,12 @@ object phonebook3 {
             </entry>
 
         case y @ <phone>{ _* }</phone> if hasWhere( y ) =>
-            Console.println("c = "+c);
-            <phone where={ Where }>{ newPhone }</phone>
+          Console.println("phone: "+c);
+          <phone where={ Where }>{ newPhone }</phone>
 
-          case _ =>
-            Console.println("c = "+c);
-            Console.println("c.attributes= "+c.attributes);
-                            c
+        case _ =>
+          Console.println("default "+c);
+          c
 
         }
     }.toList ; // for ... yield ... returns Iterator, convert to list
