@@ -181,7 +181,11 @@ abstract class TreePrinters {
             if (s._1 == nme.WILDCARD || s._1 == s._2) s._1.toString()
             else s._1.toString() + "=>" + s._2.toString()
           print("import "); print(expr)
-          print(selectors.map(selectorToString).mkString(".{", ", ", "}"))
+	  print(".")
+          selectors.map(selectorToString) match {
+            case List(one) => print(one)
+            case many => print(many.mkString("{", ", ", "}"))
+          }
 
         case DocDef(comment, definition) =>
           print(comment); println; print(definition)
