@@ -151,7 +151,7 @@ class BigInt(val bigInteger: BigInteger) extends runtime.BoxedNumber {
 
   /** Greater-than comparison of BigInts
    */
-  def >  (that: BigInt): boolean = this.bigInteger.compareTo(that.bigInteger) >= 0
+  def >  (that: BigInt): boolean = this.bigInteger.compareTo(that.bigInteger) > 0
 
   /** Addition of BigInts
    */
