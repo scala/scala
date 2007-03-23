@@ -31,5 +31,14 @@ checksensible.scala:16: warning: comparing values of types scala.Int and scala.N
 checksensible.scala:26: warning: comparing values of types scala.Unit and scala.Int using `!=' will always yield true
     while((c = in.read) != -1) {
                         ^
-10 warnings found
+checksensible.scala:33: warning: comparing values of types scala.Unit and scala.Boolean using `==' will always yield false
+  println({} == true)
+             ^
+checksensible.scala:35: warning: comparing a fresh object using `==' will always yield false
+  println(new Object == 1)
+                     ^
+checksensible.scala:36: warning: comparing values of types scala.Int and java.lang.Object using `==' will always yield false
+  println(1 == (new Object))
+            ^
+13 warnings found
 one error found

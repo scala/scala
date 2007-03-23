@@ -2259,11 +2259,10 @@ trait Typers requires Analyzer {
                 }
               case ex: TypeError =>
                 fun match {
-                  case Select(qual, name) =>
+                  case Select(qual, name)
+                  if (mode & PATTERNmode) == 0 && nme.isOpAssignmentName(name) =>
                     val qual1 = typedQualifier(qual)
-                    if ((mode & PATTERNmode) == 0 &&
-                        nme.isOpAssignmentName(name) &&
-                        treeInfo.isVariableOrGetter(qual1)) {
+                    if (treeInfo.isVariableOrGetter(qual1)) {
                       convertToAssignment(fun, qual1, name, args, ex)
                     } else {
                       reportTypeError(fun.pos, ex)

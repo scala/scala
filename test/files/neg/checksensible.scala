@@ -30,6 +30,11 @@ class Test {
     in.close
   }
 
+  println({} == true)
+  println("hello" == 2)
+  println(new Object == 1)
+  println(1 == (new Object))
+
   def isabstract: int
 
 }
