@@ -50,6 +50,15 @@ trait Map[A, +B] extends PartialFunction[A, B] with Iterable[(A, B)] {
    */
   def get(key: A): Option[B]
 
+  /** Check if this map maps <code>key</code> to a value.
+    *  Return that value if it exists, otherwise return <code>default</code>.
+    */
+  def getOrElse[B2 >: B](key: A, default: B2): B2 =
+    get(key) match {
+      case Some(v) => v
+      case None => default
+    }
+
   /** Is this an empty map?
    *
    *  @return <code>true</code> iff the map is empty.
@@ -139,10 +148,20 @@ trait Map[A, +B] extends PartialFunction[A, B] with Iterable[(A, B)] {
 
   /** Creates a string representation for this map.
    *
-   *  @return    a string showing all mappings
+   *  @return    a string showing all mappings, or a subset of them
+   *                  if the map is large.
    */
-  override def toString() =
-    elements.toList.map(kv => kv._1 + " -> " + kv._2).mkString("Map(", ", ", ")")
+  override def toString() = {
+     def elem2str(kv: (A, B)) = kv._1 + " -> " + kv._2
+     if(size <= 20)
+       elements.map(elem2str ).mkString("Map(", ", ", ")")
+     else {
+       val topr = 2
+       val initStrs = elements.take(topr).map(elem2str)
+       initStrs.mkString("Map(", ", ",
+           ", and " + (size - topr) + " more ...)")
+     }
+  }
 
   /** The default value for the map, returned when a key is not found
    *  The method implemented here yields an error,

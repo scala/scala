@@ -93,8 +93,15 @@ trait Set[A] extends (A => Boolean) with Iterable[A] {
 
   /** Returns a string representation of this set.
    *
-   *  @return a string showing all elements of this set.
+   *  @return a string showing all elements of this set, or a subset
+   *     of them if the set is large.
    */
-  override def toString(): String = mkString("Set(", ", ", ")")
-
+  override def toString(): String =
+    if(size <= 20)
+      mkString("Set(", ", ", ")")
+    else {
+      val topr = 2
+      elements.take(topr).mkString("Set(", ", ",
+          (", and " + (size - topr) + " more...)"))
+    }
 }

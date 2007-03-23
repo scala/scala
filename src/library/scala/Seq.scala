@@ -263,7 +263,18 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Iterable[A] {
    *
    *  @return a string representation of this sequence.
    */
-  override def toString() = mkString(stringPrefix+"(", ",", ")")
+  override def toString() = {
+    val middle =
+      if(length <= 20)
+        mkString(",")
+      else {
+        val topr = 2
+        elements.take(topr).mkString(",") +
+            (", and " + (length - topr) + " more...")
+      }
+    stringPrefix + "(" + middle + ")"
+  }
+
 
   /** Defines the prefix of the string representation.
    */

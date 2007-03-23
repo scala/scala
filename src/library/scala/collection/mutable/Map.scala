@@ -159,6 +159,17 @@ trait Map[A, B] extends AnyRef
    */
   def clear(): Unit = keys foreach -=
 
+  /** Check if this map maps <code>key</code> to a value.
+     *  Return that value if it exists, otherwise put <code>default</code>
+     * as that key's value and return it.
+     */
+  def getOrElsePut(key: A, default: B): B =
+    get(key) match {
+      case Some(v) => v
+      case None => this(key) = default; default
+    }
+
+
   /** This function transforms all the values of mappings contained
    *  in this map with function <code>f</code>.
    *
