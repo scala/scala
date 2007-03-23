@@ -57,9 +57,9 @@ trait ParallelMatching requires (transform.ExplicitOuter with PatternMatchers wi
           (ms,ss,(j,pat)::rs)
         case _ if (pat.symbol ne null) && (patternType =:= singleType(pat.symbol.tpe.prefix, pat.symbol))=>
           (EmptyTree::ms, (j,dummies)::ss, rs);                                                 // matching an object
-        case _ if pat.tpe <:< patternType =>
+        case _ if (pat.tpe <:< patternType) =>
           ({if(pat.tpe =:= patternType) EmptyTree else pat}::ms, (j,subpatterns(pat))::ss, rs); // subsumed (same or more specific) pattern;
-        case _ if patternType <:< pat.tpe  =>
+        case _ if (patternType <:< pat.tpe) || isDefaultPattern(pat) =>
           (EmptyTree::ms, (j,dummies)::ss, (j,pat)::rs);                                        // subsuming (matched *and* remaining pattern)
         case _ =>
           (ms,ss,(j,pat)::rs)
@@ -74,6 +74,7 @@ trait ParallelMatching requires (transform.ExplicitOuter with PatternMatchers wi
     }
 
     def getTransition(implicit theOwner: Symbol): (Symbol, Rep, Option[Rep]) = {
+      DEBUG("*** getTransition! of "+this.toString)
       // the following works for type tests... what fudge is necessary for value comparisons?
       // type test
       casted = if(scrutinee.tpe =:= patternType) scrutinee else newVar(scrutinee.pos, patternType)
