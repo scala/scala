@@ -20,7 +20,8 @@ object Test extends TestConsoleMain {
   def suite = new TestSuite(
       new TestSimpleIntSwitch,
       new Test717,
-      new TestGuards
+      new TestGuards,
+      new TestStream
     )
 
 
@@ -68,6 +69,18 @@ object Test extends TestConsoleMain {
       }
       assertTrue("ok", ret);
     }
+  }
+
+  class TestStream extends TestCase("unapply for Streams") {
+    def sum(stream: Stream[int]): int =
+      stream match {
+        case Stream.empty => 0
+        case Stream.cons(hd, tl) => hd + sum(tl)
+      }
+
+    val str: Stream[int] = Stream.fromIterator(List(1,2,3).elements)
+
+    def runTest() = assertEquals(sum(str), 6)
   }
 
   class Test806_818 { // #806, #811 compile only -- type of bind
