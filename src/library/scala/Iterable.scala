@@ -340,16 +340,6 @@ trait Iterable[+A] {
   def toList: List[A] = elements.toList
 
 
-  /**
-   *  Creates an array with the elements of this iterable,
-   *  in the order the iterable provides them.
-   */
-  def toArray[B >: A]: Array[B] = {
-    val result = new ArrayBuffer[B]
-    result ++ this
-    result.toArray
-  }
-
   /** Returns a string representation of this iterable object. The resulting string
    *  begins with the string <code>start</code> and is finished by the string
    *  <code>end</code>. Inside, the string representations of elements (w.r.t.

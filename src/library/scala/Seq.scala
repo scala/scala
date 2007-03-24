@@ -246,7 +246,7 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Iterable[A] {
   /** Converts this sequence to a fresh Array with <code>length</code>
    * elements.
    */
-  override def toArray[B >: A]: Array[B] = {
+  def toArray[B >: A]: Array[B] = {
     val result = new Array[B](length)
     copyToArray(result, 0)
     result
