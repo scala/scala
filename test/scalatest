@@ -327,7 +327,8 @@ test_run_ant() {
 test_run_shootout() {
     rm -rf "$dstbase".obj &&
     mkdir -p "$dstbase".obj &&
-    $SCALAC -d "$os_dstbase".obj -cp "$JVM_EXT_CLASSPATH" "$@" "$os_srcbase".scala &&
+    cat "$os_srcbase".scala.runner "$os_srcbase".scala > "$dstbase".obj/test.scala &&
+    $SCALAC -d "$os_dstbase".obj -cp "$JVM_EXT_CLASSPATH" "$@" "$dstbase".obj/test.scala &&
     scala_lib=`get_os_filename "$SCALA_LIB"` &&
     classpath=`get_os_pathlist "$os_dstbase".obj:$CLASSPATH` &&
     $SCALA -Dscalatest.cwd=$srcdir -Dscalatest.output=$os_dstbase.obj -Dscalatest.lib=$scala_lib -classpath $classpath:$JVM_EXT_CLASSPATH Test  &&
