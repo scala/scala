@@ -93,6 +93,9 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
     }
   }
 
+  /** interpreter settings */
+  val isettings = new InterpreterSettings
+
   /** directory to save .class files to */
   val classfilePath = File.createTempFile("scalaint", "")
   classfilePath.delete  // the file is created as a file; make it a directory
@@ -148,9 +151,19 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
   private def newLineName = {
     val num = nextLineNo
     nextLineNo = nextLineNo + 1
-    (compiler.nme.INTERPRETER_LINE_PREFIX +
-      (if (num>=0) num.toString else "_neg" + (-num).toString))
+    compiler.nme.INTERPRETER_LINE_PREFIX + num
   }
+
+  /** next result variable number to use */
+  private var nextVarNameNo = 0
+
+  /** allocate a fresh variable name */
+  private def newVarName() = {
+    val num = nextVarNameNo
+    nextVarNameNo = nextVarNameNo + 1
+    "unnamed" + num
+  }
+
 
   /** import statements that should be used for submitted code */
   private def importLines: List[String] =
@@ -172,6 +185,23 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
     writer(stream)
     stream.close
     stringWriter.toString
+  }
+
+  /** Truncate a string if it is longer than settings.maxPrintString */
+  private def truncPrintString(str: String): String = {
+    val maxpr = isettings.maxPrintString
+
+    if(maxpr <= 0)
+      return str
+
+    if(str.length <= maxpr)
+      return str
+
+    val trailer = "..."
+    if(maxpr >= trailer.length+1)
+      return str.substring(0, maxpr-3) + trailer
+
+    return str.substring(0, maxpr)
   }
 
   /** Parse a line into a sequence of trees. Returns None if the input
@@ -286,7 +316,7 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
 
     if (printResults || !succeeded) {
       // print the result
-      out.print(interpreterResultString)
+      out.print(truncPrintString(interpreterResultString))
 
       // print out types of functions; they are not printed in the
       // request printout
@@ -337,18 +367,6 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
   }
 
 
-  /** Make a dry run in order to fill caches.  This is useful
-    * for interactive interpreters so that the interpreter responds
-    * quickly to the first user-supplied query.
-    */
-  def prime: Unit =
-    if(prevRequests.isEmpty)
-      beQuietDuring {
-        nextLineNo = -1  // cosmetic: make the first user-requested line
-                         // be number 0
-        interpret("0")
-      }
-
   /** <p>
    *    This instance is no longer needed, so release any resources
    *    it is using.
@@ -386,7 +404,19 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
 
     /** whether the trees need a variable name, as opposed to standing
         alone */
-    def needsVarName: Boolean = false
+    val needsVarName: Boolean = false
+
+    /** A cache for the chosen variable name, if one has been calculated */
+    var varNameCache: Option[String] = None
+
+    /** A computed variable name, if one is needed */
+    def varName =
+      varNameCache match {
+      case None =>
+          varNameCache = Some(newVarName)
+          varNameCache.get
+      case Some(name) => name
+    }
 
     /** list of methods defined */
     val defNames =
@@ -404,7 +434,7 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
         } yield name
 
       if (needsVarName)
-        compiler.encode(lineName) :: baseNames  // add a var name
+        compiler.encode(varName) :: baseNames  // add a var name
       else
         baseNames
     }
@@ -467,7 +497,7 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
 
         // the line of code to compute
         if (needsVarName)
-          code.println("  val " + lineName + " = " + line)
+          code.println("  val " + varName + " = " + line)
         else
           code.println("  " + line)
 
@@ -652,7 +682,7 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
     override val boundNames = Nil
     override val usedNames = Nil
     override def resultExtractionCode(code: PrintWriter): Unit = {
-      code.println("+ \"" + line + "\"")
+      code.println("+ \"" + trees.head.toString + "\"")
     }
   }
 }

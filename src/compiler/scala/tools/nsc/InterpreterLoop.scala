@@ -36,6 +36,7 @@ class InterpreterLoop(in0: BufferedReader, out: PrintWriter) {
 
   var settings: Settings = _ // set by main()
   var interpreter: Interpreter = null // set by createInterpreter()
+  def isettings = interpreter.isettings
 
   /** A reverse list of commands to replay if the user
     * requests a :replay */
@@ -72,6 +73,17 @@ class InterpreterLoop(in0: BufferedReader, out: PrintWriter) {
     }
   }
 
+  /** Bind the settings so that evaluated code can modiy them */
+  def bindSettings() {
+    interpreter.beQuietDuring {
+      interpreter.bind(
+        "settings",
+        "scala.tools.nsc.InterpreterSettings",
+        isettings)
+    }
+  }
+
+
   /** print a friendly help message */
   def printHelp {
     out.println("This is an interpreter for Scala.")
@@ -89,21 +101,28 @@ class InterpreterLoop(in0: BufferedReader, out: PrintWriter) {
     out.println("Type :help for more information.")
   }
 
-  /** The main read-eval-print loop for the interpereter.  It calls
+  /** The main read-eval-print loop for the interpreter.  It calls
    *  <code>command()</code> for each line of input, and stops when
    *  <code>command()</code> returns <code>false</code>.
    */
-  def repl {
-    var firstTime = true
+  def repl() {
+    var first = true
     while (true) {
       if (interactive) {
         out.print("\nscala> ")
         out.flush
-        if (firstTime) {
-          interpreter.prime
-          firstTime = false
-        }
       }
+      if(first) {
+        /* For some reason, the first interpreted command always takes
+         * a second or two.  So, wait until the welcome message
+         * has been printed before calling bindSettings.  That way,
+         * the user can read the welcome message while this
+         * command executes.
+         */
+        bindSettings()
+        first = false
+      }
+
       var line = in.readLine()
       if (line eq null)
         return ()  // assumes null means EOF
@@ -145,7 +164,7 @@ class InterpreterLoop(in0: BufferedReader, out: PrintWriter) {
   }
 
   /** create a new interpreter and replay all commands so far */
-  def replay {
+  def replay() {
     closeInterpreter
     createInterpreter
     for (val cmd <- replayCommands) {
