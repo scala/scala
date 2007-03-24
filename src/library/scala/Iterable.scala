@@ -16,7 +16,7 @@ import Predef.IllegalArgumentException
 import collection.mutable.{Buffer,ArrayBuffer}
 import compat.StringBuilder
 
-/** This object ...
+/** Various utilities for instances of <a href="Iterable.html">Iterable</a>.
  *
  *  @author  Matthias Zenger
  *  @version 1.1, 04/02/2004
@@ -335,9 +335,20 @@ trait Iterable[+A] {
   }
 
   /**
-   * @return a list with all the elements of this iterable object
+   *  Create a fresh list with all the elements of this iterable object
    */
   def toList: List[A] = elements.toList
+
+
+  /**
+   *  Creates an array with the elements of this iterable,
+   *  in the order the iterable provides them.
+   */
+  def toArray[B >: A]: Array[B] = {
+    val result = new ArrayBuffer[B]
+    result ++ this
+    result.toArray
+  }
 
   /** Returns a string representation of this iterable object. The resulting string
    *  begins with the string <code>start</code> and is finished by the string
