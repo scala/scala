@@ -24,6 +24,7 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes with P
   object CantHandleApply   extends CantHandle
   object CantHandleIdent   extends CantHandle
   object CantHandleGuard   extends CantHandle
+  object CantOptimize      extends CantHandle
   //object CantHandleLiteral extends Exception
 
   var nPatterns = 0

@@ -8,13 +8,30 @@ trait ParallelMatching requires (transform.ExplicitOuter with PatternMatchers wi
 
   import global._
 
-  def DEBUG(x:String) = {if (settings.debug.value) Console.println(x)}
+  final def DEBUG(x:String) = {if (settings.debug.value) Console.println(x)}
   // ----------------------------------   data
 
-  trait RuleApplication
+  sealed trait RuleApplication
   case class ErrorRule    extends RuleApplication
   case class VariableRule(subst:List[Pair[Symbol,Symbol]], guard: Tree, body: Tree) extends RuleApplication
-  case class MixtureRule(scrutinee:Symbol, column:List[Tree], rest:Rep) extends RuleApplication {
+
+  def MixtureRule(scrutinee:Symbol, column:List[Tree], rest:Rep): MixtureRule = {
+    if((scrutinee.tpe =:= definitions.IntClass.tpe) && (column forall {case Literal(c) => true case _ => false})) {
+      throw CantOptimize
+      //@todo: add SwitchRule, a special case of MixtureRule
+    } else {
+      new MixtureRule(scrutinee, column, rest)
+    }
+  }
+  /*
+  class SwitchRule(val scrutinee:Symbol, val column:List[Tree], val rest:Rep) extends MixtureRule(scrutinee,column,rest) {
+    def getTransition() = {
+      //here, we generate a switch tree, bodies of the switch is the corresponding [[row in rest]]
+	  //if a default case has to be handled, body is [[that row + the default row]]
+    }
+  }
+  */
+  class MixtureRule(val scrutinee:Symbol, val column:List[Tree], val rest:Rep) extends RuleApplication {
 
     var parent: Rep = null
     def setParent(rep:Rep) = { parent = rep; this }
