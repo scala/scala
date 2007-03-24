@@ -265,7 +265,8 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Iterable[A] {
    *
    *  @return a string representation of this sequence.
    */
-  override def toString() = mkString("", ",", "")
+  override def toString() =
+    stringPrefix + "(" + mkString(",") + ")"
 
 
   /** Defines the prefix of the string representation.
