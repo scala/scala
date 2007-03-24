@@ -242,9 +242,11 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Iterable[A] {
   @deprecated
   def subseq(from: Int, end: Int): Seq[A] = slice(from, end - from)
 
-  /** Converts this sequence to a fresh Array with <code>length</code> elements.
+
+  /** Converts this sequence to a fresh Array with <code>length</code>
+   * elements.
    */
-  def toArray[B >: A]: Array[B] = {
+  override def toArray[B >: A]: Array[B] = {
     val result = new Array[B](length)
     copyToArray(result, 0)
     result
@@ -263,17 +265,7 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Iterable[A] {
    *
    *  @return a string representation of this sequence.
    */
-  override def toString() = {
-    val middle =
-      if(length <= 20)
-        mkString(",")
-      else {
-        val topr = 2
-        elements.take(topr).mkString(",") +
-            (", and " + (length - topr) + " more...")
-      }
-    stringPrefix + "(" + middle + ")"
-  }
+  override def toString() = mkString("", ",", "")
 
 
   /** Defines the prefix of the string representation.

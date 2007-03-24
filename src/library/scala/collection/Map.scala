@@ -146,22 +146,13 @@ trait Map[A, +B] extends PartialFunction[A, B] with Iterable[(A, B)] {
   override def hashCode() =
     (0 /: elements) ((hash, kv) => hash + kv.hashCode)
 
+
   /** Creates a string representation for this map.
    *
-   *  @return    a string showing all mappings, or a subset of them
-   *                  if the map is large.
+   *  @return    a string showing all mappings
    */
-  override def toString() = {
-     def elem2str(kv: (A, B)) = kv._1 + " -> " + kv._2
-     if(size <= 20)
-       elements.map(elem2str ).mkString("Map(", ", ", ")")
-     else {
-       val topr = 2
-       val initStrs = elements.take(topr).map(elem2str)
-       initStrs.mkString("Map(", ", ",
-           ", and " + (size - topr) + " more ...)")
-     }
-  }
+  override def toString() =
+    elements.toList.map(kv => kv._1 + " -> " + kv._2).mkString("Map(", ", ", ")")
 
   /** The default value for the map, returned when a key is not found
    *  The method implemented here yields an error,
@@ -172,5 +163,4 @@ trait Map[A, +B] extends PartialFunction[A, B] with Iterable[(A, B)] {
    */
   def default(key: A): B =
     throw new NoSuchElementException("key not found: " + key)
-
 }
