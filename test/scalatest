@@ -169,6 +169,7 @@ test_print_help() {
     echo "--msil          next files test the .NET backend";
     echo "--script        next files test Scala embedded in scripts";
     echo "--ant           next files test the Ant tasks";
+    echo "--shootout      next files test Debian's language shootout benchmarks";
     echo "--quick         use the 'quick' build instead of distribution";
     echo '--installed     use the installed programs on $PATH'
     echo "--no-run        run no test, use results of last run";
@@ -322,6 +323,17 @@ test_run_ant() {
     rm -rf "$dstbase".obj;
 }
 
+# Tests the shootout benchmarks
+test_run_shootout() {
+    rm -rf "$dstbase".obj &&
+    mkdir -p "$dstbase".obj &&
+    $SCALAC -d "$os_dstbase".obj -cp "$JVM_EXT_CLASSPATH" "$@" "$os_srcbase".scala &&
+    scala_lib=`get_os_filename "$SCALA_LIB"` &&
+    classpath=`get_os_pathlist "$os_dstbase".obj:$CLASSPATH` &&
+    $SCALA -Dscalatest.cwd=$srcdir -Dscalatest.output=$os_dstbase.obj -Dscalatest.lib=$scala_lib -classpath $classpath:$JVM_EXT_CLASSPATH Test  &&
+    rm -rf "$dstbase".obj;
+}
+
 # Checks the specified test.
 test_check_test() {
     [ $# = 1 ] || abort "internal error";
@@ -450,6 +462,8 @@ test_check_all() {
         "ant" $FILES_ANT;
     test_check_kind "Testing resident compiler" \
         "res" $FILES_RES;
+    test_check_kind "Testing shootout benchmarks" \
+        "shootout" $FILES_SHOOTOUT;        
 }
 
 
@@ -478,6 +492,7 @@ test_add_file() {
         msil   ) FILES_MSIL="$FILES_MSIL $1"; return;;
         script ) FILES_SCRIPT="$FILES_SCRIPT $1"; return;;
         ant    ) FILES_ANT="$FILES_ANT $1"; return;;
+        shootout ) FILES_SHOOTOUT="$FILES_SHOOTOUT $1"; return;;
         *      ) abort "unknown test type \`$TEST_TYPE'";;
     esac;
     case "$1" in
@@ -493,6 +508,7 @@ test_add_file() {
         res  | */res  | */res/*  | res/*  ) FILES_RES="$FILES_RES $1";;
         msil | */msil | */msil/* | msil/* ) FILES_MSIL="$FILES_MSIL $1";;
         script | */script | */script/* | script/* ) FILES_SCRIPT="$FILES_SCRIPT $1";;
+        shootout | */shootout | */shootout/* | shootout/* ) FILES_SHOOTOUT="$FILES_SHOOTOUT $1";;
         * ) abort "don't known what to do with \`$1'";;
     esac;
 }
@@ -568,6 +584,7 @@ FILES_MSIL="";
 FILES_SCRIPT="";
 FILES_DIS="";
 FILES_ANT="";
+FILES_SHOOTOUT="";
 
 QUICK="$PREFIX/build/quick/bin"
 QUICK_LIB="$PREFIX/build/quick/lib/library"
@@ -616,6 +633,7 @@ while [ $# -gt 0 ]; do
         --msil       ) TEST_TYPE="msil"; shift 1;;
         --script     ) TEST_TYPE="script"; shift 1;;
         --ant        ) TEST_TYPE="ant"; shift 1;;
+        --shootout   ) TEST_TYPE="shootout"; shift 1;;
         --quick      ) BIN_DIR="$QUICK/"; SCALA_LIB=$QUICK_LIB; shift 1;;
         --installed  ) BIN_DIR=""; shift 1;;
         --no-run     ) NORUN="true"; shift 1;;
@@ -658,6 +676,9 @@ if [ "$TEST_ALL" = "true" ]; then
     case "$TEST_TYPE" in
         run ) FILES_RUN="$FILES_RUN $SRCDIR/run";;
     esac;
+    case "$TEST_TYPE" in
+        auto | shootout ) FILES_SHOOTOUT="$FILES_SHOOTOUT $SRCDIR/shootout";;
+    esac;    
     case "$TEST_TYPE" in
         auto | jvm )
             FILES_JVM="$FILES_JVM $SRCDIR/run $SRCDIR/jvm"
