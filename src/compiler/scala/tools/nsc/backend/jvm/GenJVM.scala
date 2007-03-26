@@ -1257,14 +1257,12 @@ abstract class GenJVM extends SubComponent {
 
     def indexOf(m: IMethod, sym: Symbol): Int = {
       val Some(local) = m.lookupLocal(sym)
-      assert(local.index >= 0,
-             "Invalid index for: " + local + "{" + local.hashCode + "}")
-      local.index
+      indexOf(local)
     }
 
     def indexOf(local: Local): Int = {
       assert(local.index >= 0,
-             "Invalid index for: " + local + "{" + local.hashCode + "}")
+             "Invalid index for: " + local + "{" + local.hashCode + "}: ")
       local.index
     }
 

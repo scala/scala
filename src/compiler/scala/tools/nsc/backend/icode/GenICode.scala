@@ -398,8 +398,7 @@ abstract class GenICode extends SubComponent  {
 
         case ValDef(_, _, _, rhs) =>
           val sym = tree.symbol
-          var local = new Local(sym, toTypeKind(sym.info), false)
-          local = ctx.method.addLocal(local)
+          val local = ctx.method.addLocal(new Local(sym, toTypeKind(sym.info), false))
           ctx.scope.add(local)
           ctx.bb.emit(SCOPE_ENTER(local))
 
@@ -495,8 +494,7 @@ abstract class GenICode extends SubComponent  {
                 })
 
               case Bind(name, _) =>
-                val exception = new Local(pat.symbol, toTypeKind(pat.symbol.tpe), false)
-                ctx.method.addLocal(exception);
+                val exception = ctx.method.addLocal(new Local(pat.symbol, toTypeKind(pat.symbol.tpe), false))
 
                 (pat.symbol.tpe.symbol, kind, {
                   ctx: Context =>
@@ -511,12 +509,11 @@ abstract class GenICode extends SubComponent  {
           if (finalizer != EmptyTree)
             handlers = (NoSymbol, kind, {
               ctx: Context =>
-                val exception = new Local(ctx.method.symbol
+                val exception = ctx.method.addLocal(new Local(ctx.method.symbol
                                           .newVariable(finalizer.pos, unit.fresh.newName("exc"))
                                           .setFlag(Flags.SYNTHETIC)
                                           .setInfo(definitions.ThrowableClass.tpe),
-                                          REFERENCE(definitions.ThrowableClass), false);
-              ctx.method.addLocal(exception);
+                                          REFERENCE(definitions.ThrowableClass), false));
               if (settings.Xdce.value)
                 ctx.bb.emit(LOAD_EXCEPTION())
               ctx.bb.emit(STORE_LOCAL(exception));
@@ -535,9 +532,9 @@ abstract class GenICode extends SubComponent  {
               generatedType = kind; //toTypeKind(block.tpe);
               val ctx1 = genLoad(block, bodyCtx, generatedType);
               if (kind != UNIT && mayCleanStack(finalizer)) {
-                val tmp = new Local(ctx.method.symbol.newVariable(tree.pos, unit.fresh.newName("tmp")).setInfo(tree.tpe).setFlag(Flags.SYNTHETIC),
-                    kind, false);
-                ctx1.method.addLocal(tmp)
+                val tmp = ctx1.method.addLocal(
+                    new Local(ctx.method.symbol.newVariable(tree.pos, unit.fresh.newName("tmp")).setInfo(tree.tpe).setFlag(Flags.SYNTHETIC),
+                              kind, false))
                 if (settings.Xdce.value)
                   ctx.bb.emit(LOAD_EXCEPTION())
                 ctx1.bb.emit(STORE_LOCAL(tmp))
@@ -729,13 +726,13 @@ abstract class GenICode extends SubComponent  {
               generatedType = BOOL
               ctx1 = afterCtx
             } else if (code == scalaPrimitives.SYNCHRONIZED) {
-              val monitor = new Local(ctx.method.symbol.newVariable(
+              var monitor = new Local(ctx.method.symbol.newVariable(
                 tree.pos,
                 unit.fresh.newName("monitor"))
                   .setInfo(definitions.ObjectClass.tpe)
                   .setFlag(Flags.SYNTHETIC),
                 ANY_REF_CLASS, false)
-              ctx.method.addLocal(monitor)
+              monitor = ctx.method.addLocal(monitor)
 
               ctx1 = genLoadQualifier(fun, ctx1)
               ctx1.bb.emit(DUP(ANY_REF_CLASS))
@@ -1403,8 +1400,7 @@ abstract class GenICode extends SubComponent  {
           val eqEqTempVar =
             ctx.method.symbol.newVariable(l.pos, eqEqTempName).setFlag(Flags.SYNTHETIC)
           eqEqTempVar.setInfo(definitions.AnyRefClass.typeConstructor)
-          val local = new Local(eqEqTempVar, REFERENCE(definitions.AnyRefClass), false)
-          ctx.method.addLocal(local)
+          val local = ctx.method.addLocal(new Local(eqEqTempVar, REFERENCE(definitions.AnyRefClass), false))
           local.start = unit.position(l.pos).line
           local.end   = unit.position(r.pos).line
           local
