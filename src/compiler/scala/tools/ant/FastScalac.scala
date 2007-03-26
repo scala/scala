@@ -81,18 +81,18 @@ class FastScalac extends Scalac {
         // StringSetting
         List.flatten(
           List(settings.outdir, settings.classpath, settings.bootclasspath,
-               settings.extdirs, settings.encoding) map (s => List(s.nme, s.value))) :::
+               settings.extdirs, settings.encoding) map (s => List(s.name, s.value))) :::
         // '-server' option
         (if (serverAddr.isEmpty) Nil else List("-server", serverAddr.get)) :::
         // ChoiceSetting
-        (List(settings.debuginfo, settings.target) map (s => s.nme + ":" + s.value)) :::
+        (List(settings.debuginfo, settings.target) map (s => s.name + ":" + s.value)) :::
         // BooleanSetting
         trim(
           List(settings.debug, settings.deprecation, settings.nopredefs,
-               settings.verbose, reset, shutdown) map (s => if (s.value) s.nme else "")) :::
+               settings.verbose, reset, shutdown) map (s => if (s.value) s.name else "")) :::
         // PhaseSetting
         trim(
-          List(settings.log) map (s => if (s.value.isEmpty) "" else s.nme + ":" + s.value))
+          List(settings.log) map (s => if (s.value.isEmpty) "" else s.name + ":" + s.value))
 
       val args = (cmdOptions ::: (sourceFiles map (.toString()))).toArray
       try {

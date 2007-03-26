@@ -148,7 +148,10 @@ class Settings(error: String => unit) {
   /** A base class for settings of all types.
    *  Subclasses each define a `value' field of the appropriate type.
    */
-  abstract class Setting(val name: String, descr: String) {
+  abstract class Setting(descr: String) {
+
+    /** The name of the option as written on the command line, '-' included. */
+    def name: String
 
     /** If first arg defines this setting, consume it as well as all following
      *  args needed to define the setting. If this can be done without
@@ -178,8 +181,7 @@ class Settings(error: String => unit) {
   }
 
   /** A setting represented by a boolean flag (false, unless set) */
-  case class BooleanSetting(nme: String, descr: String)
-  extends Setting(nme, descr) {
+  case class BooleanSetting(name: String, descr: String) extends Setting(descr) {
     var value: boolean = false
 
     def tryToSet(args: List[String]): List[String] = args match {
@@ -195,8 +197,8 @@ class Settings(error: String => unit) {
   }
 
   /** A setting represented by a string, (`default' unless set) */
-  case class StringSetting(nme: String, arg: String, descr: String, default: String)
-  extends Setting(nme, descr) {
+  case class StringSetting(name: String, arg: String, descr: String, default: String)
+  extends Setting(descr) {
     override def hiddenToIDE = true;
     var abbreviation: String = null
 
@@ -226,8 +228,8 @@ class Settings(error: String => unit) {
   /** A setting represented by a string in a given set of <code>choices</code>,
    *  (<code>default</code> unless set).
    */
-  case class ChoiceSetting(nme: String, descr: String, choices: List[String], default: String)
-  extends Setting(nme, descr + choices.mkString(" (", ",", ")")) {
+  case class ChoiceSetting(name: String, descr: String, choices: List[String], default: String)
+  extends Setting(descr + choices.mkString(" (", ",", ")")) {
     protected var v: String = default
 
     def value: String = this.v
@@ -263,8 +265,8 @@ class Settings(error: String => unit) {
    *  index of the selected choice. The <code>defaultEmpty</code> is used when
    *  this setting is used without specifying any of the available choices.
    */
-  class DebugSetting(nme: String, descr: String, choices: List[String], default: String, defaultEmpty: String)
-  extends ChoiceSetting(nme, descr, choices, default) {
+  class DebugSetting(name: String, descr: String, choices: List[String], default: String, defaultEmpty: String)
+  extends ChoiceSetting(name, descr, choices, default) {
 
     def indexOf[a](xs: List[a], e: a): Option[Int] = xs match {
       case y :: ys => if (e == y) Some(0) else indexOf(ys, e) match {
@@ -305,8 +307,8 @@ class Settings(error: String => unit) {
    *  phase names. This is not checked here, however.
    *  (the empty list, unless set)
    */
-  case class PhasesSetting(nme: String, descr: String)
-  extends Setting(nme, descr + " <phase>") { // (see -showphases)") {
+  case class PhasesSetting(name: String, descr: String)
+  extends Setting(descr + " <phase>") { // (see -showphases)") {
     override def hiddenToIDE = true
     var value: List[String] = List()
 

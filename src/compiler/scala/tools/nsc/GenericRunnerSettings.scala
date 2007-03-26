@@ -34,8 +34,11 @@ extends Settings(error) {
      is not added to allsettings.  Thus,
   */
   class DefinesSetting
-  extends Setting("-D<prop>", "set a Java property")
+  extends Setting("set a Java property")
   {
+
+    def name = "-D<prop>"
+
     private val props = new Queue[(String, String)]
 
     def value = props.toList
