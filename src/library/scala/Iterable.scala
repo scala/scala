@@ -12,7 +12,7 @@
 package scala
 
 
-import Predef.IllegalArgumentException
+import Predef._
 import collection.mutable.{Buffer,ArrayBuffer}
 import compat.StringBuilder
 

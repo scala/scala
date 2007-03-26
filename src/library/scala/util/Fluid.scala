@@ -12,6 +12,7 @@
 package scala.util
 
 
+import Predef._
 import java.lang.InheritableThreadLocal
 
 /** Fluids provide a binding mechanism where the current

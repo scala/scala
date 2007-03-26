@@ -9,10 +9,10 @@
 // $Id$
 
 
-package scala.runtime;
+package scala.runtime
 
 
-import Predef.Class
+import Predef._
 
 @serializable
 final class BoxedShortArray(val value: Array[Short]) extends BoxedArray {

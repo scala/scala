@@ -13,7 +13,7 @@ package scala.compat
 
 
 import java.lang.System
-import Predef.Class
+import Predef._
 
 object Platform {
 

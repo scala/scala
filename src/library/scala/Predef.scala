@@ -41,6 +41,7 @@ object Predef {
   type String = java.lang.String
   type StringBuilder = compat.StringBuilder
   type Class = java.lang.Class
+  type Runnable = java.lang.Runnable
 
   type Throwable = java.lang.Throwable
   type Exception = java.lang.Exception

@@ -12,6 +12,6 @@
 package scala
 
 
-import Predef.Error
+import Predef._
 
 final class NotDefinedError(msg: String) extends Error("not defined: " + msg)

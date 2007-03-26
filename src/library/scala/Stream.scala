@@ -13,7 +13,6 @@ package scala
 
 
 import compat.StringBuilder
-import Predef.{NoSuchElementException, UnsupportedOperationException,Pair}
 
 /**
  * The object <code>Stream</code> provides helper functions

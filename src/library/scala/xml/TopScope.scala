@@ -9,6 +9,7 @@
 // $Id$
 package scala.xml;
 
+import Predef._
 import compat.StringBuilder
 
 /** top level namespace scope. only contains the predefined binding

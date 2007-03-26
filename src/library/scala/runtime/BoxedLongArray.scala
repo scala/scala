@@ -12,7 +12,7 @@
 package scala.runtime
 
 
-import Predef.Class
+import Predef._
 
 @serializable
 final class BoxedLongArray(val value: Array[Long]) extends BoxedArray {

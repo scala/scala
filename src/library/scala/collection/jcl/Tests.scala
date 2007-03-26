@@ -10,6 +10,8 @@
 
 package scala.collection.jcl;
 
+import java.lang.Integer;
+
 private[jcl] object Tests {
 
   def main(args : Array[String]) : Unit = {

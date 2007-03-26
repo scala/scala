@@ -11,6 +11,7 @@
 
 package scala.runtime
 
+import Predef._
 import compat.StringBuilder
 import compat.Platform.EOL
 

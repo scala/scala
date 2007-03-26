@@ -11,7 +11,7 @@
 
 package scala.compat
 
-import java.lang.StringBuffer
+import java.lang.{String, StringBuffer}
 
 final class StringBuilder(str: StringBuffer) {
 

@@ -11,6 +11,8 @@
 
 package scala
 
+
+import Predef._
 import compat.Platform.arraycopy
 
 /** This object contains utility methods operating on arrays.

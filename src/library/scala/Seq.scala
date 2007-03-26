@@ -11,7 +11,7 @@
 
 package scala
 
-import Predef.{IllegalArgumentException, NoSuchElementException}
+import Predef._
 import collection.mutable.ArrayBuffer
 
 object Seq {

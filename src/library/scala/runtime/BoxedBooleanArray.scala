@@ -12,7 +12,7 @@
 package scala.runtime
 
 
-import Predef.Class
+import Predef._
 
 @serializable
 final class BoxedBooleanArray(val value: Array[Boolean]) extends BoxedArray {

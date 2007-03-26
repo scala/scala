@@ -11,8 +11,7 @@
 
 package scala.xml
 
-
-import Predef.IllegalArgumentException
+import Predef._
 import compat.StringBuilder
 
 /** The class <code>NamespaceBinding</code> represents namespace bindings

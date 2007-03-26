@@ -11,7 +11,7 @@
 
 package scala.xml
 
-import Predef.IllegalArgumentException
+
 import compat.StringBuilder
 
 case object Null extends MetaData {

@@ -8,7 +8,11 @@
 
 // $Id$
 
+
 package scala.runtime
+
+
+import Predef._
 
 final class StringAdd(self: Any) {
   def +(other: String) = self.toString + other

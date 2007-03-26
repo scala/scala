@@ -12,7 +12,7 @@
 package scala.runtime
 
 
-import Predef.{Class, Error}
+import Predef._
 import collection.mutable.ArrayBuffer
 import compat.StringBuilder
 

@@ -12,8 +12,7 @@
 package scala.runtime
 
 
-import Predef.{Class, Throwable}
-import java.lang.Runnable
+import Predef._
 
 /* The object <code>ScalaRunTime</code> provides ...
  */
