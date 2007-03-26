@@ -4,7 +4,6 @@
  * $Id$
  */
 
-
 trait Tree extends Exception;
 
 case class Node(a: Tree, b: Tree) extends Tree;
@@ -210,8 +209,22 @@ object Test {
     return
   }
 
-
-
+  /** bug #1020, no crash at compile time */
+  def tryCatchInFinally: Unit = {
+    try {
+      Console.println("Try")
+    } catch {
+      case e:java.io.IOException =>
+        throw e
+    } finally {
+      val x = 10
+      // Always make sure result sets and statements are closed,
+      // and the connection is returned to the pool
+      if (x != 10) {
+        try { Console.println("Fin"); } catch { case e:java.io.IOException => ;  }
+      }
+    }
+  }
 
   def execute(f: => Unit) = try {
     f;
