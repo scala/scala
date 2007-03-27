@@ -24,6 +24,8 @@ final class RichDouble(x: Double) extends Proxy with Ordered[Double] {
   def max(y: Double): Double = Math.max(x, y)
   def abs: Double = Math.abs(x)
 
+  def round: Long = Math.round(x)
+
   def isNaN: Boolean = System.Double.IsNaN(x)
   def isInfinity: Boolean = System.Double.IsInfinity(x)
   def isPosInfinity: Boolean = System.Double.IsPositiveInfinity(x)

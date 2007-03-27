@@ -12,6 +12,7 @@
 package scala.util
 
 
+import Predef._
 import System.Threading.Thread
 import System.LocalDataStoreSlot
 

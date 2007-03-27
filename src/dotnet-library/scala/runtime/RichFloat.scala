@@ -24,6 +24,8 @@ final class RichFloat(x: Float) extends Proxy with Ordered[Float] {
   def max(y: Float) = Math.max(x, y)
   def abs: Float = Math.abs(x)
 
+  def round: Int = Math.round(x)
+
   def isNaN: Boolean = System.Single.IsNaN(x)
   def isInfinity: Boolean = System.Single.IsInfinity(x)
   def isPosInfinity: Boolean = System.Single.IsPositiveInfinity(x)

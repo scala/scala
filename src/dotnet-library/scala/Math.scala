@@ -11,6 +11,9 @@
 
 package scala
 
+
+import Predef._
+
 object Math {
 
   val E = System.Math.E
@@ -35,7 +38,7 @@ object Math {
   //def rint(x: Double): Double = System.Math.rint(x)
   def atan2(x: Double, y: Double): Double = System.Math.Atan2(x, y)
   def pow(x: Double, y: Double): Double = System.Math.Pow(x, y)
-  //def round(x: Float): Int = System.Math.Round(x).toSingle
+  def round(x: Float): Int = System.Math.Round(x).toInt
   def round(x: Double): Long = System.Math.Round(x).toLong
   def abs(x: Int): Int = System.Math.Abs(x)
   def abs(x: Long): Long = System.Math.Abs(x)

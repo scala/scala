@@ -12,10 +12,9 @@
 package scala
 
 
+import Predef._
 import scala.util.Fluid
 import System.IO.{TextReader,TextWriter}
-import compat.Platform
-import Predef._
 
 /** The <code>Console</code> object implements functionality for
  *  printing Scala values on the terminal. There are also functions
@@ -108,11 +107,11 @@ object Console {
    *  output (i.e. output not terminated by a new line character) has
    *  to be made visible on the terminal.
    */
-  def flush: Unit = out.Flush()
+  def flush(): Unit = out.Flush()
 
   /** Print a new line character on the terminal.
    */
-  def println: Unit = out.WriteLine()
+  def println(): Unit = out.WriteLine()
 
   /** Print out an object followed by a new line character.
    *
@@ -152,7 +151,7 @@ object Console {
    *
    *  @return the string read from the terminal.
    */
-  def readLine: String = in.ReadLine();
+  def readLine(): String = in.ReadLine();
 
   /** Print a formatted text and read a full line from the terminal
    *
@@ -162,7 +161,7 @@ object Console {
    */
   def readLine(text: String, args: Any*): String = {
     format(text, args: _*)
-    readLine
+    readLine()
   }
 
 
@@ -170,7 +169,7 @@ object Console {
    *
    *  @return the boolean value read from the terminal.
    */
-  def readBoolean: Boolean = readLine.toLowerCase() match {
+  def readBoolean(): Boolean = readLine().toLowerCase() match {
     case "true" => true
     case "t" => true
     case "yes" => true
@@ -180,27 +179,31 @@ object Console {
 
   /** Read a byte value from the terminal.
    */
-  def readByte: Byte = readLine.toByte
+  def readByte(): Byte = readLine().toByte
 
   /** Read a short value from the terminal.
    */
-  def readShort: Short = readLine.toShort
+  def readShort(): Short = readLine.toShort
 
   /** Read a char value from the terminal.
    */
-  def readChar: Char = readLine charAt 0
+  def readChar(): Char = readLine() charAt 0
 
   /** Read an int value from the terminal.
    */
-  def readInt: Int = readLine.toInt
+  def readInt(): Int = readLine().toInt
+
+  /** Read an int value from the terminal.
+   */
+  def readLong(): Long = readLine().toLong
 
   /** Read a float value from the terminal.
    */
-  def readFloat: Float = readLine.toFloat
+  def readFloat(): Float = readLine().toFloat
 
   /** Read a double value from the terminal.
    */
-  def readDouble: Double = readLine.toDouble
+  def readDouble(): Double = readLine().toDouble
 
 //   /** Read in some structured input, specified by a format specifier.
 //    *  See class <code>java.text.MessageFormat</code> for details of
@@ -210,7 +213,7 @@ object Console {
 //    *  @return a list of all extracted values.
 //    */
 //   def readf(format: String): List[Any] =
-//     textComponents(new MessageFormat(format).parse(in.readLine()))
+//     textComponents(new MessageFormat(format).parse(readLine()))
 
 //   /** Read in some structured input, specified by a format specifier.
 //    *  Opposed to <code>readf</code>, this function only returns the
@@ -230,9 +233,9 @@ object Console {
 //    *  @param format ...
 //    *  @return ...
 //    */
-//   def readf2(format: String): Pair[Any, Any] = {
+//   def readf2(format: String): (Any, Any) = {
 //     val res = readf(format)
-//     Pair(res.head, res.tail.head)
+//     (res.head, res.tail.head)
 //   }
 
 //   /** Read in some structured input, specified by a format specifier.
@@ -243,9 +246,9 @@ object Console {
 //    *  @param format ...
 //    *  @return ...
 //    */
-//   def readf3(format: String): Triple[Any, Any, Any] = {
+//   def readf3(format: String): (Any, Any, Any) = {
 //     val res = readf(format)
-//     Triple(res.head, res.tail.head, res.tail.tail.head)
+//     (res.head, res.tail.head, res.tail.tail.head)
 //   }
 
 //   private def textComponents(a: Array[AnyRef]): List[Any] = {

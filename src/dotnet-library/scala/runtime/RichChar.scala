@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2006-2007, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -13,6 +13,22 @@ package scala.runtime
 
 import Predef.NoSuchElementException
 
+/** <p>
+ *    For example, in the following code
+ *  </p>
+ *  <pre>
+ *    <b>object</b> test <b>extends</b> Application {
+ *      Console.println(<chr>'\40'</chr>.isWhitespace)
+ *      Console.println('\011'.isWhitespace)
+ *      Console.println('1'.asDigit == 1)
+ *      Console.println('A'.asDigit == 10)
+ *    }</pre>
+ *  <p>
+ *    the implicit conversions are performed using the predefined view
+ *    <a href="../Predef$object.html#charWrapper(scala.Char)"
+ *    target="contentFrame"><code>Predef.charWrapper</code></a>.
+ *  </p>
+ */
 final class RichChar(x: Char) extends Proxy with Ordered[Char] {
   // Proxy.self
   def self: Any = x
@@ -35,7 +51,7 @@ final class RichChar(x: Char) extends Proxy with Ordered[Char] {
   def to(y: Char): Iterator[Char] = new BufferedIterator[Char] {
     private var ch = x
     def hasNext: Boolean = ch < y
-    def next: Char =
+    def next(): Char =
       if (hasNext) { val j = ch; ch = (ch + 1).toChar; j }
       else throw new NoSuchElementException("next on empty iterator")
     def head: Char =
