@@ -1139,6 +1139,18 @@ GENERATES A DISTRIBUTION
       file="${dist.dir}/scala-${version.number}.zip"
       forceOverwrite="yes"
       fileext=".md5"/>
+  <!-- Create source archive -->
+    <copy todir="${dist.dir}/scala-${version.number}">
+      <fileset
+        dir="${basedir}"
+        excludes="build,build/**,dists/**"
+      />
+    </copy>
+    <tar basedir="${dist.dir}"
+      destfile="${dist.dir}/scala-${version.number}-sources.tgz"
+      compression="gzip"
+      includes="scala-${version.number}/**"
+    />
   </target>
 
 <!-- ===========================================================================
