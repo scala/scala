@@ -227,7 +227,7 @@ object Console {
 
   /** Read a short value from the terminal.
    */
-  def readShort(): Short = readLine().toByte
+  def readShort(): Short = readLine().toShort
 
   /** Read a char value from the terminal.
    */
