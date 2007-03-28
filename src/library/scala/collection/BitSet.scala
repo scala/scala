@@ -143,4 +143,5 @@ abstract class BitSet extends Set[Int] {
    */
   protected final def mask(n: Int): Int = 1 << (n & 0x1F)
 
+  override def toArray[B >: Int]: Array[B] = super.toArray
 }
