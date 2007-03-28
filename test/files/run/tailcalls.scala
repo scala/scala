@@ -182,6 +182,8 @@ class TailCall[S](s: S) {
 
   final def b1(x: Int): Boolean =
     (x == 1) || b1(x - 1)
+  final def b2(x: Int): Boolean =
+    (x > 0) && ((x == 1) || b1(x - 1))
 
   def h1(n: Int, v: Int): Int = hP(n, v);
   private def hP(n: Int, v: Int): Int = if (n == 0) v else hP(n - 1, v - 1);
@@ -345,6 +347,7 @@ object Test {
     check_overflow("NonTailCall.f2", NonTailCall.f2(max))
 
     check_success_b("TailCall.b1", TailCall.b1(max), true);
+    check_success_b("TailCall.b2", TailCall.b2(max), true);
   }
 }
 

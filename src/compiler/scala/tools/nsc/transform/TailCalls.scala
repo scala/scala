@@ -248,7 +248,8 @@ abstract class TailCalls extends Transform
         case TypeApply(fun, args) =>
           super.transform(tree)
 
-        case Apply(fun, args) if fun.symbol == definitions.Boolean_or =>
+        case Apply(fun, args) if (fun.symbol == definitions.Boolean_or ||
+                                  fun.symbol == definitions.Boolean_and) =>
           copy.Apply(tree, fun, transformTrees(args))
 
         case Apply(fun, args) =>
