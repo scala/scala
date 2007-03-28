@@ -33,8 +33,8 @@ trait Sorted[K,+A] extends Ranged[K,A] {
   override def range(from: K, until: K) = rangeImpl(Some(from),Some(until));
 
   /** Create a range projection of this collection with no lower-bound.
-   ** @param to The upper-bound (inclusive) of the ranged projection.
-   **/
+   *  @param to The upper-bound (inclusive) of the ranged projection.
+   */
   def to(to : K): Sorted[K,A] = {
     // tough!
     val i = keySet.from(to).elements;

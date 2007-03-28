@@ -382,4 +382,22 @@ trait Iterable[+A] {
     }
     buf.append(end)
   }
+
+  /** Fills the given array <code>xs</code> with the elements of
+   *  this sequence starting at position <code>start</code>.
+   *
+   *  @param  xs the array to fill.
+   *  @param  start starting index.
+   *  @pre    the array must be large enough to hold all elements.
+   */
+  def copyToArray[B >: A](xs: Array[B], start: Int): Unit =
+    elements.copyToArray(xs, start)
+
+  /** Converts this iterable to a fresh Array with elements.
+   */
+  def toArray[B >: A]: Array[B] = toList.toArray
+
+  /** Is this collection empty? */
+  def isEmpty = elements.hasNext
+
 }

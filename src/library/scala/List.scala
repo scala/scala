@@ -401,26 +401,23 @@ sealed abstract class List[+a] extends Seq[a] {
 
   /** <p>
    *    Add an element <code>x</code> at the beginning of this list.
-   *    Example:
    *  </p>
-   *  <pre>
-   *    1 :: List(2, 3) = List(2, 3).::(1) = List(1, 2, 3)</pre>
    *
    *  @param x the element to append.
    *  @return  the list with <code>x</code> appended at the beginning.
+   *  @ex <code>1 :: List(2, 3) = List(2, 3).::(1) = List(1, 2, 3)</code>
    */
   def ::[b >: a] (x: b): List[b] =
     new scala.::(x, this)
 
   /** <p>
    *    Returns a list resulting from the concatenation of the given
-   *    list <code>prefix</code> and this list. Example:
+   *    list <code>prefix</code> and this list.
    *  </p>
-   *  <pre>
-   *    List(1, 2) ::: List(3, 4) = List(3, 4).:::(List(1, 2)) = List(1, 2, 3, 4)</pre>
    *
    *  @param prefix the list to concatenate at the beginning of this list.
    *  @return the concatenation of the two lists.
+   *  @ex <code>List(1, 2) ::: List(3, 4) = List(3, 4).:::(List(1, 2)) = List(1, 2, 3, 4)</code>
    */
   def :::[b >: a](prefix: List[b]): List[b] =
     if (isEmpty) prefix
@@ -767,20 +764,18 @@ sealed abstract class List[+a] extends Seq[a] {
    *    Sort the list according to the comparison function
    *    <code>&lt;(e1: a, e2: a) =&gt; Boolean</code>,
    *    which should be true iff <code>e1</code> is smaller than
-   *    <code>e2</code>. Example:
-   *  </p>
-   *  <pre>
-   *    List("Steve", "Tom", "John", "Bob")
-   *      .sort((e1, e2) => (e1 compareTo e2) &lt; 0) =
-   *    List("Bob", "John", "Steve", "Tom")</pre>
-   *  <p>
-   *    Note: The current implementation is inefficent for
-   *    already sorted lists.
+   *    <code>e2</code>.
    *  </p>
    *
    *  @param lt the comparison function
    *  @return   a list sorted according to the comparison function
    *            <code>&lt;(e1: a, e2: a) =&gt; Boolean</code>.
+   *  @ex <pre>
+   *    List("Steve", "Tom", "John", "Bob")
+   *      .sort((e1, e2) => (e1 compareTo e2) &lt; 0) =
+   *    List("Bob", "John", "Steve", "Tom")</pre>
+   *  @note The current implementation is inefficent for
+   *    already sorted lists.
    */
   def sort(lt : (a,a) => Boolean): List[a] = {
     def sort_1(smaller: List[a], acc: List[a]): List[a] =

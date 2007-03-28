@@ -6,7 +6,7 @@
 
 package scala.tools.nsc
 
-import scala.tools.nsc.doc.DocGenerator
+import scala.tools.nsc.doc.{DocDriver => DocGenerator}
 import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
 import scala.tools.nsc.util.FakePos //{Position}
 

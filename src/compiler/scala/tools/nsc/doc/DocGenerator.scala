@@ -214,8 +214,8 @@ abstract class DocGenerator extends Models {
     </div>;
 
   abstract class ListModuleFrame extends Frame {
-    val path  = "modules"
-    val title = "List of all packages"
+    override val path  = "modules"
+    override val title = "List of all packages"
     def modules: TreeMap[String, ModuleClassSymbol]
     def body: NodeSeq =
       <div>
@@ -303,7 +303,6 @@ abstract class DocGenerator extends Models {
   }
 
   abstract class ContentFrame0 extends Frame {
-
     private def extendsFor(mmbr: HasTree): NodeSeq = mmbr match {
       case mmbr: ImplMod =>
         val parents = mmbr.treey.impl.parents

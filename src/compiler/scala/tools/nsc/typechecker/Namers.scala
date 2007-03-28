@@ -476,12 +476,16 @@ trait Namers requires Analyzer {
 
       var resultPt = if (tpt.isEmpty) WildcardType else typer.typedType(tpt).tpe
 
+      if (onlyPresentation)
+        methodArgumentNames(meth) = vparamss.map(.map(.symbol));
       if (meth.owner.isClass && (tpt.isEmpty || vparamss.exists(.exists(.tpt.isEmpty)))) {
         // try to complete from matching definition in base type
         for (val vparams <- vparamss; val vparam <- vparams)
           if (vparam.tpt.isEmpty) vparam.symbol setInfo WildcardType
         val schema = thisMethodType(resultPt)
         val site = meth.owner.thisType
+
+
         val overridden = intersectionType(meth.owner.info.parents).member(meth.name).filter(sym =>
           sym != NoSymbol && (site.memberType(sym) matches schema))
         if (overridden != NoSymbol && !(overridden hasFlag OVERLOADED)) {
@@ -489,6 +493,7 @@ trait Namers requires Analyzer {
             case PolyType(tparams, rt) => rt.substSym(tparams, tparamSyms)
             case mt => mt
           }
+
           for (val vparams <- vparamss) {
             var pfs = resultPt.paramTypes
             for (val vparam <- vparams) {
@@ -772,10 +777,11 @@ trait Namers requires Analyzer {
    *  This is used for error messages, where we want to speak in terms
    *  of the actual declaration or definition, not in terms of the generated setters
    *  and getters */
-  def underlying(member: Symbol) =
+  def underlying(member: Symbol) : Symbol =
     if (member hasFlag ACCESSOR) {
       if (member hasFlag DEFERRED) {
         val getter = if (member.isSetter) member.getter(member.owner) else member
+        if (inIDE && getter == NoSymbol) return NoSymbol;
         val result = getter.owner.newValue(getter.pos, getter.name)
           .setInfo(getter.tpe.resultType)
           .setFlag(DEFERRED)

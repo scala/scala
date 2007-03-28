@@ -105,6 +105,9 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
   val comments =
     if (onlyPresentation) new HashMap[Symbol,String]
     else null
+  val methodArgumentNames =
+    if (onlyPresentation) new HashMap[Symbol,List[List[Symbol]]];
+    else null;
 
 // reporting -------------------------------------------------------
 
@@ -642,6 +645,9 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
   def forCLDC: Boolean = settings.target.value == "cldc"
   def forMSIL: Boolean = settings.target.value == "msil"
   def onlyPresentation = settings.doc.value
+  // used to disable caching in lampion IDE.
+  def inIDE = false
+
   // position stuff
   final val positionConfiguration: PositionConfiguration = initConfig;
   protected def initConfig : PositionConfiguration = posConfig;

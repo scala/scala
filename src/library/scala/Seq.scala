@@ -79,7 +79,7 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Iterable[A] {
 
   /** Returns true if length == 0
    */
-  def isEmpty: Boolean = { length == 0 }
+  override def isEmpty: Boolean = { length == 0 }
 
   /** Appends two iterable objects.
    *
@@ -242,25 +242,6 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Iterable[A] {
   @deprecated
   def subseq(from: Int, end: Int): Seq[A] = slice(from, end - from)
 
-
-  /** Converts this sequence to a fresh Array with <code>length</code>
-   * elements.
-   */
-  def toArray[B >: A]: Array[B] = {
-    val result = new Array[B](length)
-    copyToArray(result, 0)
-    result
-  }
-
-  /** Fills the given array <code>xs</code> with the elements of
-   *  this sequence starting at position <code>start</code>.
-   *
-   *  @param  xs the array to fill.
-   *  @param  start starting index.
-   *  @pre    the array must be large enough to hold all elements.
-   */
-  def copyToArray[B >: A](xs: Array[B], start: Int): Unit = elements.copyToArray(xs, start)
-
   /** Customizes the <code>toString</code> method.
    *
    *  @return a string representation of this sequence.
@@ -272,5 +253,15 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Iterable[A] {
   /** Defines the prefix of the string representation.
    */
   protected def stringPrefix: String = "Seq"
+
+  /** Converts this sequence to a fresh Array with <code>length</code> elements.
+   */
+  override def toArray[B >: A]: Array[B] = {
+    val result = new Array[B](length)
+    copyToArray(result, 0)
+    result
+  }
+
+
 }
 

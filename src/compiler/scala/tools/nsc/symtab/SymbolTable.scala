@@ -25,6 +25,8 @@ abstract class SymbolTable extends Names
 
   /** Are we compiling for .NET*/
   def forMSIL: Boolean
+  /** are we in a lampion presentation compiler? then disable caching. */
+  def inIDE : Boolean;
 
   /** A period is an ordinal number for a phase in a run.
    *  Phases in later runs have higher periods than phases in earlier runs.

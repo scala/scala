@@ -791,7 +791,7 @@ trait Symbols requires SymbolTable {
       matchingSymbol(ofclazz, ofclazz.thisType)
 
     final def allOverriddenSymbols: List[Symbol] =
-      if (owner.isClass)
+      if (owner.isClass && !owner.info.baseClasses.isEmpty)
         for { val bc <- owner.info.baseClasses.tail
               val s = overriddenSymbol(bc)
               s != NoSymbol } yield s

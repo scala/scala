@@ -441,7 +441,7 @@ trait Trees requires Global {
       vparamss map (.map (vd => {
         val ret = ValDef(Modifiers(vd.mods.flags & IMPLICIT | PARAM) withAnnotations vd.mods.annotations,
             vd.name, vd.tpt.duplicate, EmptyTree).setPos(vd.pos)
-        if (false/*inIDE*/ && vd.symbol != NoSymbol)
+        if (inIDE && vd.symbol != NoSymbol)
           ret.symbol = vd.symbol
         ret
        }));

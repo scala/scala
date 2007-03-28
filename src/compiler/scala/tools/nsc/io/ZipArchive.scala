@@ -181,13 +181,10 @@ final class ZipArchive(file: File, val archive: ZipFile) extends PlainFile(file)
 
   /** A regular file archive entry */
   final class FileEntry(name: String, path: String, val entry: ZipEntry)
-        extends Entry(name, path)
-  {
-
+        extends Entry(name, path) {
+    def archive = ZipArchive.this.archive;
     override def lastModified: Long = entry.getTime()
-
     override def read = archive.getInputStream(entry);
-
     override def size = Some(entry.getSize().toInt)
   }
 

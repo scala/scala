@@ -421,6 +421,7 @@ trait Types requires SymbolTable {
      */
     //TODO: use narrow only for modules? (correct? efficiency gain?)
     def findMember(name: Name, excludedFlags: int, requiredFlags: long, stableOnly: boolean): Symbol = {
+      if (inIDE) trackTypeIDE(symbol)
       if (util.Statistics.enabled) findMemberCount = findMemberCount + 1
       val startTime = if (util.Statistics.enabled) currentTime else 0l
 
@@ -628,6 +629,7 @@ trait Types requires SymbolTable {
     private var singleDerefCache: Type = _
     private var singleDerefPeriod = NoPeriod
     override def singleDeref: Type = {
+      if (inIDE) return pre.memberType(sym).resultType
       val period = singleDerefPeriod
       if (period != currentPeriod) {
         singleDerefPeriod = currentPeriod
@@ -783,6 +785,7 @@ trait Types requires SymbolTable {
     override def closureDepth: int = { closure; closureDepthCache }
 
     override def baseClasses: List[Symbol] = {
+      if (inIDE) trackTypeIDE(symbol)
       def computeBaseClasses: List[Symbol] =
         if (parents.isEmpty) List(symbol)
         else {
@@ -831,11 +834,15 @@ trait Types requires SymbolTable {
     }
 
     override def baseType(sym: Symbol): Type = {
+      if (inIDE) { trackTypeIDE(sym); trackTypeIDE(symbol); }
       val index = closurePos(sym)
       if (index >= 0) closure(index) else NoType
     }
 
-    override def narrow: Type = symbol.thisType
+    override def narrow: Type = {
+      if (inIDE) trackTypeIDE(symbol)
+      symbol.thisType
+    }
 
     // override def isNonNull: boolean = parents forall (.isNonNull);
 
@@ -1798,6 +1805,7 @@ trait Types requires SymbolTable {
     def apply(tp: Type): Type = {
       def subst(sym: Symbol, from: List[Symbol], to: List[T]): Type =
         if (from.isEmpty) tp
+        else if (to.isEmpty && inIDE) throw new TypeError(NoPos, "type parameter list problem");
         else if (matches(from.head, sym)) toType(tp, to.head)
         else subst(sym, from.tail, to.tail)
       tp match {
@@ -2187,6 +2195,8 @@ trait Types requires SymbolTable {
     } finally {
       stc = stc - 1
     }
+  /** hook for IDE */
+  protected def trackTypeIDE(sym : Symbol) : Boolean = true;
 
   /** Does type <code>tp1</code> conform to <code>tp2</code>?
    *
@@ -2214,6 +2224,8 @@ trait Types requires SymbolTable {
 
       case (TypeRef(pre1, sym1, args1), TypeRef(pre2, sym2, args2)) =>
         //Console.println("isSubType " + tp1 + " " + tp2);//DEBUG
+        if (inIDE) { trackTypeIDE(sym1); trackTypeIDE(sym2); }
+
         def isSubArgs(tps1: List[Type], tps2: List[Type],
                       tparams: List[Symbol]): boolean = (
           tps1.isEmpty && tps2.isEmpty
@@ -2267,8 +2279,9 @@ trait Types requires SymbolTable {
       case (_, AnnotatedType(_,atp2)) =>
         tp1 <:< atp2
       case (_, TypeRef(pre2, sym2, args2))
-      if sym2.isAbstractType && !(tp2 =:= tp2.bounds.lo) && (tp1 <:< tp2.bounds.lo) =>
-        true
+      if sym2.isAbstractType && !(tp2 =:= tp2.bounds.lo) && (tp1 <:< tp2.bounds.lo) && {
+        if (!inIDE) true else trackTypeIDE(sym2)
+      } => true
       case (_, RefinedType(parents2, ref2)) =>
         (parents2 forall tp1.<:<) && (ref2.toList forall tp1.specializes) &&
         (!parents2.exists(.symbol.isAbstractType) || tp1.symbol != AllRefClass)
@@ -2284,6 +2297,7 @@ trait Types requires SymbolTable {
       case (ConstantType(_), _) => tp1.singleDeref <:< tp2
 
       case (TypeRef(pre1, sym1, args1), _) =>
+        if (inIDE) trackTypeIDE(sym1)
         (sym1 == AllClass && tp2 <:< AnyClass.tpe
          ||
          sym1 == AllRefClass && tp2.isInstanceOf[SingletonType] && (tp1 <:< tp2.widen))

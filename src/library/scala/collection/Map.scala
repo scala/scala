@@ -63,7 +63,7 @@ trait Map[A, +B] extends PartialFunction[A, B] with Iterable[(A, B)] {
    *
    *  @return <code>true</code> iff the map is empty.
    */
-  def isEmpty: Boolean = size == 0
+  override def isEmpty: Boolean = size == 0
 
   /** Retrieve the value which is associated with the given key. This
    *  method throws an exception if there is no mapping from the given

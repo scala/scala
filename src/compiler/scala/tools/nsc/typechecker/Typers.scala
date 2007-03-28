@@ -900,7 +900,7 @@ trait Typers requires Analyzer {
       if (mods.flags & (PRIVATE | LOCAL)) != (PRIVATE | LOCAL) && !stat.symbol.isModuleVar =>
         val vdef = copy.ValDef(stat, mods | PRIVATE | LOCAL, nme.getterToLocal(name), tpt, rhs)
         val value = vdef.symbol
-        val getter = if (mods hasFlag DEFERRED) value else value.getter(value.owner)
+        val getter = if ((mods hasFlag DEFERRED) || inIDE) value else value.getter(value.owner)
         assert(getter != NoSymbol, stat)
         if (getter hasFlag OVERLOADED)
           error(getter.pos, getter+" is defined twice")
@@ -1179,6 +1179,8 @@ trait Typers requires Analyzer {
       tp
     }
 
+    protected def typedFunctionIDE(fun : Function, txt : Context) = {}
+
     /**
      *  @param block ...
      *  @param mode  ...
@@ -1282,6 +1284,8 @@ trait Typers requires Analyzer {
           vparam.symbol
         }
         // XXX: here to for IDE hooks.
+        if (inIDE) // HACK to process arguments types in IDE.
+          typedFunctionIDE(fun, context);
         val vparams = List.mapConserve(fun.vparams)(typedValDef)
         for (val vparam <- vparams) {
           checkNoEscaping.locals(context.scope, WildcardType, vparam.tpt); ()
@@ -1787,7 +1791,7 @@ trait Typers requires Analyzer {
                 qual.tpe.widen+" does not have a constructor"
               else
                 decode(name)+" is not a member of "+qual.tpe.widen +
-                (if ((context.unit ne null) && Position.line(context.unit.source, qual.pos) <
+                (if (!inIDE && (context.unit ne null) && Position.line(context.unit.source, qual.pos) <
                      Position.line(context.unit.source, tree.pos))
                   "\npossible cause: maybe a semicolon is missing before `"+decode(name)+"'?"
                  else ""))
@@ -1857,8 +1861,21 @@ trait Typers requires Analyzer {
           while (defSym == NoSymbol && cx != NoContext) {
             pre = cx.enclClass.prefix
             defEntry = cx.scope.lookupEntry(name)
+            if (inIDE && (defEntry ne null) && defEntry.sym.exists) {
+              val sym = defEntry.sym
+              val namePos : Int = tree.pos
+              val symPos : Int = sym.pos
+              if (namePos < symPos) defEntry = null
+            }
             if ((defEntry ne null) && qualifies(defEntry.sym)) {
               defSym = defEntry.sym
+            } else if (inIDE) {
+              if (cx.outer == cx.enclClass) {
+                cx = cx.enclClass
+                defSym = pre.member(name) filter (
+                    sym => sym.exists && context.isAccessible(sym, pre, false))
+              }
+              if (defSym == NoSymbol) cx = cx.outer
             } else {
               cx = cx.enclClass
               defSym = pre.member(name) filter (

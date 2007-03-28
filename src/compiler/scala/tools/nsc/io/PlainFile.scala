@@ -10,10 +10,6 @@ package scala.tools.nsc.io
 import java.io.{File, FileInputStream, IOException}
 
 object PlainFile {
-
-  /** Returns "fromFile(new File(path))". */
-  //def fromPath(path: String): AbstractFile = fromFile(new File(path));
-
   /**
    * If the specified File exists, returns an abstract file backed
    * by it. Otherwise, returns null.
@@ -26,6 +22,8 @@ object PlainFile {
 /** This class implements an abstract file backed by a File.
  */
 class PlainFile(val file: File) extends AbstractFile {
+  private val fpath = try { file.getCanonicalPath }
+                      catch { case _: IOException => file.getAbsolutePath }
 
   assert(file ne null)
   assert(file.exists(), "non-existent file: " + file)
@@ -43,19 +41,11 @@ class PlainFile(val file: File) extends AbstractFile {
 
   override def size = Some(file.length.toInt)
 
-  override def hashCode(): Int =
-    try { file.getCanonicalPath().hashCode() }
-    catch { case _: IOException => 0 }
+  override def hashCode(): Int = fpath.hashCode
 
   override def equals(that: Any): Boolean =
-    try {
-      that.isInstanceOf[PlainFile] &&
-      file.getCanonicalPath().equals(that.asInstanceOf[PlainFile].file.getCanonicalPath());
-    } catch {
-      case _: IOException =>
-        that.isInstanceOf[PlainFile] &&
-        file.getAbsolutePath().equals(that.asInstanceOf[PlainFile].file.getAbsolutePath());
-    }
+    that.isInstanceOf[PlainFile] &&
+      fpath.equals(that.asInstanceOf[PlainFile].fpath)
 
   /** Is this abstract file a directory? */
   def isDirectory: Boolean = file.isDirectory()

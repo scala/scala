@@ -61,7 +61,7 @@ trait Set[A] extends (A => Boolean) with Iterable[A] {
    *
    *  @return <code>true</code> iff there is no element in the set.
    */
-  def isEmpty: Boolean = size == 0
+  override def isEmpty: Boolean = size == 0
 
   /** Checks if this set is a subset of set <code>that</code>.
    *
@@ -89,7 +89,7 @@ trait Set[A] extends (A => Boolean) with Iterable[A] {
 
   /** hashcode for this set */
   override def hashCode() =
-    (0 /: this)((hash, e) => hash * 41 + e.hashCode())
+    (0 /: this)((hash, e) => hash + e.hashCode())
 
 
   /** Returns a string representation of this set.
@@ -97,4 +97,9 @@ trait Set[A] extends (A => Boolean) with Iterable[A] {
    *  @return a string showing all elements of this set.
    */
   override def toString() = mkString("Set(", ", ", ")")
+  override def toArray[B >: A]: Array[B] = {
+    val result = new Array[B](size)
+    copyToArray(result, 0)
+    result
+  }
 }

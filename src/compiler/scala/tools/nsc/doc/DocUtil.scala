@@ -38,7 +38,12 @@ object DocUtil {
     def relative: String
 
     def aref(href0: String, target: String, text: String): NodeSeq = {
-      val href = relative + Utility.escape(href0)
+      if (href0 == null) return Text(text);
+
+      val href = {
+        if (href0.startsWith("http:") || href0.startsWith("file:")) "";
+        else relative
+      } + Utility.escape(href0)
       if ((target ne null) && target.indexOf('<') != -1) throw new Error(target)
 
       val t0 = Text(text)
@@ -90,5 +95,26 @@ object DocUtil {
     }
     ts
   }
+  implicit def coerceIterable[T](list : Iterable[T]) = NodeWrapper(list.elements);
+  implicit def coerceIterator[T](list : Iterator[T]) = NodeWrapper(list);
+  case class NodeWrapper[T](list : Iterator[T]) {
+    def mkXML(begin : NodeSeq, separator : NodeSeq, end : NodeSeq)(f : T => NodeSeq) : NodeSeq = {
+      var seq : NodeSeq = begin;
+      val i = list;
+      while (i.hasNext) {
+        seq = seq ++ f(i.next);
+        if (i.hasNext) seq = seq ++ separator;
+      }
+      seq ++ end;
+    }
 
+
+    def mkXML(begin : String, separator : String, end : String)(f : T => NodeSeq) : NodeSeq = {
+      this.mkXML(Text(begin),Text(separator),Text(end))(f);
+    }
+    def surround(open : String, close : String)(f : T => NodeSeq) = {
+      if (list.hasNext) mkXML(open, ", ", close)(f);
+      else NodeSeq.Empty;
+    }
+  }
 }

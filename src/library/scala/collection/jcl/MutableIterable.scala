@@ -45,9 +45,7 @@ trait MutableIterable[A] extends Iterable[A] {
   /** retain only elements that are also in that.
    **/
   def retainAll(that : Iterable[A]) : Boolean = elements.retain(s => that.exists(t => t == s));
-  /** @return true if the element has no elements.
-   **/
-  def isEmpty : Boolean = !elements.hasNext;
+
   /** @return the current number of elements in the collection.
    **/
   def size : Int = {
