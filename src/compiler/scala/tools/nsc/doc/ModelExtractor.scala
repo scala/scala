@@ -1,0 +1,407 @@
+package scala.tools.nsc.doc;
+import scala.collection.jcl;
+import compat.Platform.{EOL => LINE_SEPARATOR}
+
+
+/** This class attempts to reverse engineer source code intent from compiler symbol objects
+  * @author Sean McDirmid
+  */
+trait ModelExtractor {
+  val global : Global;
+  import global._;
+  def assert(b : Boolean) {
+    if (!b)
+      throw new Error;
+  }
+  case class Tag(tag : String, option : String, body : String);
+  case class Comment(body : String, attributes : List[Tag]) {
+    def decodeAttributes = {
+      val map = new jcl.LinkedHashMap[String,List[(String,String)]] {
+        override def default(key : String) = Nil;
+      }
+      attributes.foreach(a => {
+        map(a.tag) = map(a.tag) ::: ((a.option,a.body) :: Nil);
+      });
+      map;
+    }
+  }
+  protected def decode(sym : Symbol) = {
+    if (sym == definitions.ScalaObjectClass || sym == definitions.ObjectClass)
+      definitions.AnyRefClass;
+    else sym match {
+    case sym : ModuleClassSymbol => sym.sourceModule;
+    case sym => sym;
+    }
+  }
+
+  protected def decodeComment(comment0 : String) : Comment = {
+    assert(comment0.startsWith("/**"));
+    assert(comment0.endsWith("*/"));
+    val comment = comment0.substring("/**".length, comment0.length - "*/".length);
+    val tok = new java.util.StringTokenizer(comment, LINE_SEPARATOR);
+    val buf = new StringBuilder;
+    type AttrDescr = (String, String, StringBuilder)
+    val attributes = new collection.mutable.ListBuffer[AttrDescr]
+    var attr: AttrDescr = null
+    while (tok.hasMoreTokens) {
+      val s = tok.nextToken.replaceFirst("\\p{Space}?\\*", "")
+      val mat1 = pat1.matcher(s)
+      if (mat1.matches) {
+        attr = (mat1.group(1), null, new StringBuilder(mat1.group(2)))
+        //if (kind != CONSTRUCTOR)
+        attributes += attr
+      } else {
+        val mat2 = pat2.matcher(s)
+        if (mat2.matches) {
+          attr = (mat2.group(1), mat2.group(2), new StringBuilder(mat2.group(3)))
+          //if (kind != CLASS)
+          attributes += attr
+        } else if (attr ne null)
+          attr._3.append(s + LINE_SEPARATOR)
+        else
+          buf.append(s + LINE_SEPARATOR)
+      }
+    }
+    (Comment(buf.toString,attributes.toList.map({x => Tag(x._1,x._2,x._3.toString)})));
+  }
+
+
+  sealed abstract class Entity(val sym : Symbol) {
+    private[ModelExtractor] def sym0 = sym;
+
+    override def toString = sym.toString;
+    def comment : Option[String] = global.comments.get(sym);
+    // comments decoded, now what?
+    def attributes = sym.attributes;
+    def decodeComment : Option[Comment] = {
+      val comment0 = this.comment;
+      if (comment0.isEmpty) return None;
+      var comment = comment0.get.trim;
+      Some(ModelExtractor.this.decodeComment(comment));
+    }
+    protected def accessQualified(core : String, qual : String) = core match {
+      case "public" => ""; // assert(qual == null); "";
+      case core => core + (if (qual == null) "" else "[" + qual + "]");
+    }
+
+    def flagsString = {
+      import symtab.Flags;
+        val isLocal = sym.hasFlag(Flags.LOCAL);
+        val x = if (sym.hasFlag(Flags.PRIVATE)) "private" else if (sym.hasFlag(Flags.PROTECTED)) "protected" else "public";
+        var string = accessQualified(x, {
+          if (sym.hasFlag(Flags.LOCAL)) "this";
+          else if (sym.privateWithin != null && sym.privateWithin != NoSymbol)
+            sym.privateWithin.nameString;
+          else null;
+        });
+        def f(flag : Int, str : String) =
+          if (sym.hasFlag(flag)) string = string + " " + str;
+
+        f(Flags.IMPLICIT, "implicit");
+        f(Flags.SEALED, "sealed");
+        f(Flags.OVERRIDE, "override");
+        f(Flags.CASE, "case");
+        if (!sym.isTrait) f(Flags.ABSTRACT, "abstract");
+        if (!sym.isModule) f(Flags.FINAL, "final");
+        if (!sym.isTrait) f(Flags.DEFERRED, "abstract");
+        string.trim;
+    }
+    def listName = name;
+    def name = sym.nameString;
+    def fullName(sep : Char) = sym.fullNameString(sep);
+    def kind : String;
+    def header = {
+    }
+    def typeParams : List[TypeParam] = Nil;
+    def params : List[List[Param]] = Nil;
+    def resultType : Option[Type] = None;
+    def parents : Iterable[Type] = Nil;
+    def lo : Option[Type] = sym.info match {
+      case TypeBounds(lo,hi) if decode(lo.symbol) != definitions.AllClass => Some(lo);
+      case _ => None;
+    }
+    def hi : Option[Type] = sym.info match {
+    case TypeBounds(lo,hi) if decode(hi.symbol) != definitions.AnyClass => Some(hi);
+    case _ => None;
+    }
+    def variance = {
+      import symtab.Flags._;
+      if (sym.hasFlag(COVARIANT)) "+";
+      else if (sym.hasFlag(CONTRAVARIANT)) "-";
+      else "";
+    }
+    def overridden : Iterable[Symbol] = {
+      Nil;
+    }
+  }
+  class Param(sym : Symbol) extends Entity(sym) {
+    override def resultType = Some(sym.tpe);
+    //def kind = if (sym.isPublic) "val" else "";
+    def kind = "";
+  }
+  class ConstructorParam(sym : Symbol) extends Param(sym) {
+    override protected def accessQualified(core : String, qual : String) = core match {
+    case "public" => "val";
+    case "protected" => super.accessQualified(core,qual) + " val";
+    case "private" if qual == "this" => "";
+    case core => super.accessQualified(core, qual);
+    }
+  }
+
+  def Param(sym : Symbol) = new Param(sym);
+  class TypeParam(sym : Symbol) extends Entity(sym) {
+    def kind = "";
+  }
+  def TypeParam(sym : Symbol) = new TypeParam(sym);
+
+  trait Clazz extends ClassOrObject {
+    private def csym = sym.asInstanceOf[TypeSymbol];
+    override def typeParams = csym.typeParams.map(TypeParam);
+    override def params = {
+      if (constructorArgs.isEmpty) Nil;
+      else constructorArgs.values.toList :: Nil;
+    }
+    def isTrait = csym.isTrait;
+    override def kind = if (sym.isTrait) "trait" else "class";
+  }
+  trait Object extends ClassOrObject {
+    override def kind = "object";
+  }
+  case class Package(override val sym : ModuleSymbol) extends Entity(sym) {
+    override def kind = "package";
+    override def name = fullName('.');
+  }
+
+
+  trait TopLevel extends ClassOrObject;
+  class TopLevelClass (sym : Symbol) extends Entity(sym) with TopLevel with  Clazz;
+  class TopLevelObject(sym : Symbol) extends Entity(sym) with TopLevel with Object;
+
+  def compare(pathA : List[ClassOrObject], pathB : List[ClassOrObject]) : Int = {
+    var pA = pathA;
+    var pB = pathB;
+    while (true) {
+      if (pA.isEmpty) return -1;
+      if (pB.isEmpty) return +1;
+      val diff = pA.head.name compare pB.head.name;
+      if (diff != 0) return diff;
+      pA = pA.tail;
+      pB = pB.tail;
+    }
+    return 0;
+  }
+
+  trait ClassOrObject extends Entity {
+    def path : List[ClassOrObject] = this :: Nil;
+    override def listName = path.map(.name).mkString("",".","");
+
+    object freshParents extends jcl.LinkedHashSet[Type] {
+      this addAll sym.tpe.parents;
+      this.toList.foreach(e => this removeAll e.parents);
+    }
+    object constructorArgs extends jcl.LinkedHashMap[Symbol,Param] {
+      sym.constrParamAccessors.foreach(arg => {
+        val str = symtab.Flags.flagsToString(arg.flags);
+        assert(arg.hasFlag(symtab.Flags.PRIVATE) && arg.hasFlag(symtab.Flags.LOCAL));
+        val argName = arg.name.toString.trim;
+        val actual = sym.tpe.decls.elements.find(e => {
+          val eName = e.name.toString.trim;
+          argName == eName && {
+            val str = symtab.Flags.flagsToString(e.flags);
+            !e.hasFlag(symtab.Flags.LOCAL);
+          }
+        });
+        if (!actual.isEmpty) this(actual.get) = new ConstructorParam(actual.get);
+        else this(arg) = new ConstructorParam(arg);
+      });
+    }
+    object decls extends jcl.LinkedHashMap[Symbol,Member] {
+      sym.tpe.decls.elements.foreach(e => {
+        if (!constructorArgs.contains(e)) {
+          val m = Member(e);
+          if (!m.isEmpty && !this.contains(e)) this.put(e, m.get);
+        }
+      });
+    }
+    def members0(f : Symbol => Boolean) = decls.pfilter(e => f(e)).valueSet;
+    def members(c : Category) : Iterable[Member] = members0(c.f);
+
+    object inherited extends jcl.LinkedHashMap[Symbol,List[Member]]() {
+      override def default(tpe : Symbol) = Nil;
+      {
+        for (val m <- sym.tpe.members; !sym.tpe.decls.elements.contains(m) &&
+          (Values.f(m) || Methods.f(m))) {
+          val o = m.overridingSymbol(sym);
+          if ((o == NoSymbol)) {
+            val parent = decode(m.enclClass);
+            val mo = Member(m);
+            if (!mo.isEmpty) {
+              this(parent) = mo.get :: this(parent);
+            }
+          }
+        }
+      }
+    }
+    override def parents = freshParents;
+    abstract class Member(sym : Symbol) extends Entity(sym) {
+      private def overriding = sym.allOverriddenSymbols;
+      override def comment = super.comment match {
+      case ret @ Some(comment) => ret;
+      case None =>
+        val o = overriding.find(comments.contains);
+        o.map(comments.apply);
+      }
+    }
+    abstract class ValDef(sym : Symbol) extends Member(sym) {
+      override def resultType = Some(resultType0);
+      protected def resultType0 : Type;
+      override def overridden : Iterable[Symbol] = {
+        var ret : jcl.LinkedHashSet[Symbol] = null;
+        for (val parent <- ClassOrObject.this.parents) {
+          val sym0 = sym.overriddenSymbol(parent.symbol);
+          if (sym0 != NoSymbol) {
+            if (ret == null) ret = new jcl.LinkedHashSet[Symbol];
+            ret += sym0;
+          }
+        }
+        if (ret == null) Nil else ret.readOnly;
+      }
+    }
+    case class Def(override val sym : TermSymbol) extends ValDef(sym) {
+      override def resultType0 = sym.tpe.finalResultType;
+      override def typeParams = sym.tpe.typeParams.map(TypeParam);
+      override def params = methodArgumentNames.get(sym) match {
+        case Some(argss) if argss.length > 1 || (!argss.isEmpty && !argss(0).isEmpty) =>
+          argss.map(.map(Param));
+        case _ =>
+          var i = 0;
+          val ret = for (val tpe <- sym.tpe.paramTypes) yield {
+            val ret = sym.newValueParameter(sym.pos, newTermName("arg" + i));
+            ret.setInfo(tpe);
+            i = i + 1;
+            Param(ret);
+          }
+          if (ret.isEmpty) Nil;
+          else ret :: Nil;
+      }
+      override def kind = "def";
+    }
+    case class Val(override val sym : TermSymbol) extends ValDef(sym) {
+      def resultType0 : Type = sym.tpe;
+      override def kind = {
+        import symtab.Flags._;
+        if (sym.hasFlag(ACCESSOR)) {
+          val setterName = nme.getterToSetter(sym.name);
+          val setter = sym.owner.info.decl(setterName);
+          if (setter == NoSymbol) "val" else "var";
+        } else {
+          assert(sym.hasFlag(JAVA));
+          if (sym.hasFlag(FINAL)) "val" else "var";
+        }
+      }
+    }
+    case class AbstractType(override val sym : Symbol) extends Member(sym) {
+      override def kind = "type";
+    }
+
+    abstract class NestedClassOrObject(override val sym : Symbol) extends Member(sym) with ClassOrObject {
+      override def path : List[ClassOrObject] = ClassOrObject.this.path ::: (super.path);
+    }
+
+    case class NestedClass(override val sym : ClassSymbol) extends NestedClassOrObject(sym) with Clazz;
+    case class NestedObject(override val sym : ModuleSymbol) extends NestedClassOrObject(sym) with Object;
+    def isVisible(sym : Symbol) : Boolean = {
+      import symtab.Flags._;
+      if (sym.isLocalClass) return false;
+      if (sym.isLocal) return false;
+      if (sym.isPrivateLocal) return false;
+      if (sym.hasFlag(PRIVATE)) return false;
+      if (sym.hasFlag(SYNTHETIC)) return false;
+      if (sym.hasFlag(BRIDGE)) return false;
+      if (sym.nameString.indexOf("$") != -1) return false;
+      if (sym.hasFlag(CASE) && sym.isMethod) return false;
+      return true;
+    }
+    def Member(sym : Symbol) : Option[Member] = {
+      import global._;
+      import symtab.Flags._;
+      if (!isVisible(sym)) return None;
+      if (sym.hasFlag(ACCESSOR)) {
+        if (sym.isSetter) return None;
+        assert(sym.isGetter);
+        return Some[Member](new Val(sym.asInstanceOf[TermSymbol]));
+      } else if (sym.isValue && !sym.isMethod && !sym.isModule) {
+        if (!sym.hasFlag(JAVA)) {
+          Console.println("SYM: " + sym + " " + sym.fullNameString('.'));
+          Console.println("FLA: " + symtab.Flags.flagsToString(sym.flags));
+        }
+        assert(sym.hasFlag(JAVA));
+        return Some[Member](new Val(sym.asInstanceOf[TermSymbol]));
+      }
+      if (sym.isValue && !sym.isModule) {
+        val str = symtab.Flags.flagsToString(sym.flags);
+        assert(sym.isMethod);
+        return new Some[Member](new Def(sym.asInstanceOf[TermSymbol]));
+      }
+      if (sym.isAliasType || sym.isAbstractType) return Some(new AbstractType(sym));
+      if (sym.isClass) return Some(new NestedClass(sym.asInstanceOf[ClassSymbol]));
+      if (sym.isModule) return Some(new NestedObject(sym.asInstanceOf[ModuleSymbol]));
+      None;
+    }
+
+  }
+  case class Category(label : String)(g : Symbol => Boolean) {
+    val f = g;
+    def plural = label + "s";
+  }
+  val Constructors = new Category("Additional Constructor")(e => e.isConstructor && !e.isPrimaryConstructor) {
+    // override def plural = "Additional Constructors";
+  }
+  val Objects = Category("Object")(.isModule);
+  val Classes = new Category("Class")(.isClass) {
+    override def plural = "Classes";
+  }
+  val Values = new Category("Value")(e => (e.isValue) && e.hasFlag(symtab.Flags.ACCESSOR)) {
+    override def plural = "Values and Variables";
+  }
+  val Methods = Category("Method")(e => e.isValue && e.isMethod && !e.isConstructor && !e.hasFlag(symtab.Flags.ACCESSOR));
+  val Types = Category("Type")(e => e.isAliasType || e.isAbstractType);
+
+  val categories = Constructors :: Types :: Values :: Methods :: Objects :: Classes :: Nil;
+
+
+  import java.util.regex.Pattern
+  // patterns for standard tags with 1 and 2 arguments
+  private val pat1 = Pattern.compile(
+    "[ \t]*@(author|deprecated|pre|return|see|since|todo|version|ex|note)[ \t]*(.*)")
+  private val pat2 = Pattern.compile(
+    "[ \t]*@(exception|param|throws)[ \t]+(\\p{Graph}*)[ \t]*(.*)")
+
+  def sort[E <: Entity](entities : Iterable[E]) : Iterable[E] = {
+    val set = new jcl.TreeSet[E]()({eA : E => new Ordered[E] {
+      def compare(eB : E) : Int = {
+        if (eA eq eB) return 0;
+        (eA,eB) match {
+        case (eA:ClassOrObject,eB:ClassOrObject) =>
+          val diff = ModelExtractor.this.compare(eA.path, eB.path);
+          if (diff!= 0) return diff;
+        case _ =>
+        }
+        if (eA.getClass != eB.getClass) {
+          val diff = eA.getClass.getCanonicalName.compare(eB.getClass.getCanonicalName);
+          assert(diff != 0);
+          return diff;
+        }
+        if (!eA.sym0.isPackage) {
+          val diff = eA.sym0.nameString compare eB.sym0.nameString;
+          if (diff != 0) return diff;
+        }
+        val diff0 = eA.sym0.fullNameString compare eB.sym0.fullNameString;
+        assert(diff0 != 0);
+        return diff0;
+      }
+    }});
+    set addAll entities;
+    set;
+  }
+}
