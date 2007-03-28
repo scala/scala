@@ -141,13 +141,14 @@ INITIALISATION
       <contains string="${java.version}" substring="1.4"/>
     </condition>
   <!-- Finding out SVN revision -->
-    <loadfile
-      property="entries"
-      srcFile="${basedir}/.svn/entries"
-      failonerror="false"/>
+    <exec
+      executable="svn" vmlauncher="no"
+      errorproperty="svn.err" outputproperty="svn.out">
+      <arg line=" info ${basedir}"/>
+    </exec>
     <propertyregex
-      property="svn.number" input="${entries}" select="\1"
-      regexp="revision=\042([0-9]*)\042\.*"
+      property="svn.number" input="${svn.out}" select="\1"
+      regexp="Revision: ([0-9]+)"
       defaultValue="x"/>
     <property name="init.avail" value="yes"/>
   <!-- Printing out some information about what environment I am running in -->
