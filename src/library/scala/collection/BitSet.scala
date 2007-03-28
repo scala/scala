@@ -63,13 +63,14 @@ abstract class BitSet extends Set[Int] {
   /**
    * @return a copy of the array underlying this bitset
    */
+     /*
   def toArray: Array[Int] = {
     val length = memsize(capacity)
     val newarr = new Array[Int](length)
     if (arr.length > 0)
       arraycopy(this.arr, 0, newarr, 0, length)
     newarr
-  }
+  }*/
 
   /** Checks if two bitsets are structurally identical.
    *  Uses accelerated (32 x faster) check if the other set is a BitSet
