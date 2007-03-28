@@ -44,7 +44,7 @@ class HashMap[A, B] extends Map[A,B] with mutable.HashTable[A] {
 
   def empty[C]: Map[A, C] = new EmptyMap[A, C]
 
-  def get(key: A): Option[B] = {
+  def get(key: A): Option[B] = synchronized {
     var m = this
     var cnt = 0
     while (m.later != null) {
@@ -58,7 +58,7 @@ class HashMap[A, B] extends Map[A,B] with mutable.HashTable[A] {
     else Some(getValue(e))
   }
 
-  def update [B1 >: B](key: A, value: B1): Map[A, B1] = {
+  def update [B1 >: B](key: A, value: B1): Map[A, B1] = synchronized {
     makeCopyIfUpdated()
     val e = findEntry(key)
     if (e == null) {
@@ -71,7 +71,7 @@ class HashMap[A, B] extends Map[A,B] with mutable.HashTable[A] {
     later
   }
 
-  def - (key: A): Map[A, B] = {
+  def - (key: A): Map[A, B] = synchronized {
     makeCopyIfUpdated()
     val e = findEntry(key)
     if (e == null) this
@@ -82,7 +82,7 @@ class HashMap[A, B] extends Map[A,B] with mutable.HashTable[A] {
     }
   }
 
-  override def size: int = {
+  override def size: int = synchronized {
     var m = this
     var cnt = 0
     var s = tableSize
@@ -95,7 +95,7 @@ class HashMap[A, B] extends Map[A,B] with mutable.HashTable[A] {
     s
   }
 
-  def elements = {
+  def elements = synchronized {
     makeCopyIfUpdated()
     entries map {e => (e.key, getValue(e))}
   }

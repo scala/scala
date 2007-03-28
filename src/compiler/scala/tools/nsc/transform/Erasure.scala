@@ -468,7 +468,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
       } catch {
         case ex: Throwable =>
           //if (settings.debug.value)
-            Console.println("exception when typing " + tree);
+          Console.println("exception when typing " + tree);
           throw ex
       }
       def adaptCase(cdef: CaseDef): CaseDef = {

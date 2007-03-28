@@ -448,9 +448,15 @@ abstract class RefChecks extends InfoTransform {
         }
         name match {
           case nme.EQ | nme.NE | nme.LT | nme.GT | nme.LE | nme.GE =>
-            val formal = fn.tpe.paramTypes.head.widen.symbol
-            val actual = args.head.tpe.widen.symbol
-            val receiver = qual.tpe.widen.symbol
+            def underlyingClass(tp: Type): Symbol = {
+              var sym = tp.widen.symbol
+              while (sym.isAbstractType)
+                sym = sym.info.bounds.hi.widen.symbol
+              sym
+            }
+            val formal = underlyingClass(fn.tpe.paramTypes.head)
+            val actual = underlyingClass(args.head.tpe)
+            val receiver = underlyingClass(qual.tpe)
             def nonSensibleWarning(what: String, alwaysEqual: boolean) =
               unit.warning(pos, "comparing "+what+" using `"+name.decode+"' will always yield "+
                            (alwaysEqual == (name == nme.EQ || name == nme.LE || name == nme.GE)))

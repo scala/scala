@@ -338,12 +338,9 @@ trait Infer requires Analyzer {
                     explanation)
         if (context.unit != null) sym.toplevelClass match {
           case clazz : ClassSymbol =>
-            // System.err.println("TOP: " + clazz + " " + clazz.sourceFile)
             if (clazz.sourceFile != null) {
                 context.unit.depends += clazz.sourceFile
-              //Console.println("DEPEND " + global.currentRun.currentUnit + " ON " + clazz.sourceFile + " XXX " + context.unit)
             }
-
           case _ =>
         }
         val sym1 = sym filter (alt => context.isAccessible(alt, pre, site.isInstanceOf[Super]))
@@ -453,7 +450,7 @@ trait Infer requires Analyzer {
         case ex: NoInstance => WildcardType
       }
       val tvars = tparams map freshVar
-      if (isCompatible(restpe.subst(tparams, tvars), pt))
+      if (isWeaklyCompatible(restpe.subst(tparams, tvars), pt))
         List.map2(tparams, tvars) ((tparam, tvar) =>
           instantiateToBound(tvar, varianceInTypes(formals)(tparam)))
       else
@@ -489,7 +486,7 @@ trait Infer requires Analyzer {
       }
       // check first whether type variables can be fully defined from
       // expected result type.
-      if (!isCompatible(restpe.subst(tparams, tvars), pt)) {
+      if (!isWeaklyCompatible(restpe.subst(tparams, tvars), pt)) {
         throw new DeferredNoInstance(() =>
           "result type " + normalize(restpe) + " is incompatible with expected type " + pt)
       }

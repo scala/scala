@@ -39,7 +39,7 @@ class HashSet[A] extends Set[A] with mutable.FlatHashTable[A] {
 
   def empty[C]: Set[C] = new EmptySet[C]
 
-  def contains(elem: A): Boolean = {
+  def contains(elem: A): Boolean = synchronized {
     var m = this
     var cnt = 0
     while (m.later != null) {
@@ -51,7 +51,7 @@ class HashSet[A] extends Set[A] with mutable.FlatHashTable[A] {
     m.containsEntry(elem)
   }
 
-  def + (elem: A): Set[A] = {
+  def + (elem: A): Set[A] = synchronized {
     makeCopyIfUpdated()
     if (containsEntry(elem)) this
     else {
@@ -61,7 +61,7 @@ class HashSet[A] extends Set[A] with mutable.FlatHashTable[A] {
     }
   }
 
-  def - (elem: A): Set[A] = {
+  def - (elem: A): Set[A] = synchronized {
     makeCopyIfUpdated()
     if (!containsEntry(elem)) this
     else {
@@ -71,7 +71,7 @@ class HashSet[A] extends Set[A] with mutable.FlatHashTable[A] {
     }
   }
 
-  override def size: Int = {
+  override def size: Int = synchronized {
     var m = this
     var cnt = 0
     var s = tableSize
@@ -84,7 +84,7 @@ class HashSet[A] extends Set[A] with mutable.FlatHashTable[A] {
     s
   }
 
-  override def elements = {
+  override def elements = synchronized {
     makeCopyIfUpdated()
     super.elements
   }
