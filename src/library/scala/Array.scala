@@ -175,13 +175,12 @@ object Array {
     a
   }
 
- /** This method is called in a pattern match { case Array(...) => }.
+ /** This method is called as a result of a pattern match { case Array(...) => } or val Array(...) = ....
    *
    *  @param x the selector value
-   *  @return  array wrapped in an option, if this is a Seq, otherwise none
+   *  @return  array wrapped in an option
    */
-  def unapplySeq[A](x: Any): Option[Seq[A]] =
-    if (x.isInstanceOf[Array[A]]) Some(x.asInstanceOf[Array[A]]) else None
+   def unapplySeq[A](x: Array[A]): Option[Seq[A]] = Some(x)
 }
 
 /** This class represents polymorphic arrays. <code>Array[T]</code> is Scala's representation
