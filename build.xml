@@ -298,6 +298,14 @@ BUILD LOCAL REFERENCE (LOCKER) LAYER
     <property name="built.locker" value="yes"/>
     <stopwatch name="timer.locker"/>
   <!-- Build library -->
+    <if><and>
+      <isset property="os.unix"/>
+      <isset property="build.resource"/></and>
+    <then>
+      <symlink
+        link="${build.dir}"
+        resource="${build.resource}" overwrite="yes" failonerror="no"/>
+    </then></if>
     <mkdir dir="${locker.dir}/lib/library"/>
     <javac
       srcdir="${src.dir}/library"
@@ -919,6 +927,14 @@ GENERATES A DISTRIBUTION
     description="Creates a binary Scala distribution">
     <property name="dist.current.dir"
               value="${dist.dir}/scala-${version.number}"/>
+    <if><and>
+      <isset property="os.unix"/>
+      <isset property="dist.resource"/></and>
+    <then>
+      <symlink
+        link="${dist.dir}"
+        resource="${dist.resource}" overwrite="yes" failonerror="no"/>
+    </then></if>
     <mkdir dir="${dist.current.dir}"/>
   <!-- Copy all requires libraries -->
     <mkdir dir="${dist.current.dir}/lib"/>
