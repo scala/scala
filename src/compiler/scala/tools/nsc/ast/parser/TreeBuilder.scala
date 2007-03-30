@@ -62,7 +62,7 @@ abstract class TreeBuilder {
     override def traverse(tree: Tree): unit = tree match {
       case Bind(name, Typed(tree1, tpt)) =>
         if ((name != nme.WILDCARD) && (buf.elements forall (name !=)))
-          buf += (name, tpt)
+          buf += (name, if (treeInfo.mayBeTypePat(tpt)) TypeTree() else tpt)
         traverse(tree1)
       case Bind(name, tree1) =>
         if ((name != nme.WILDCARD) && (buf.elements forall (name !=)))

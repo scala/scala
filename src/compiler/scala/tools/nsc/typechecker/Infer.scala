@@ -336,13 +336,10 @@ trait Infer requires Analyzer {
           errorTree(tree, underlying(sym).toString() + " cannot be accessed in " +
                     (if (sym.isClassConstructor) context.enclClass.owner else pre.widen) +
                     explanation)
-        if (context.unit != null) sym.toplevelClass match {
-          case clazz : ClassSymbol =>
-            if (clazz.sourceFile != null) {
-                context.unit.depends += clazz.sourceFile
-            }
-          case _ =>
-        }
+
+        if (context.unit != null)
+          context.unit.depends += sym.toplevelClass
+
         val sym1 = sym filter (alt => context.isAccessible(alt, pre, site.isInstanceOf[Super]))
         if (sym1 == NoSymbol) {
           if (settings.debug.value) {

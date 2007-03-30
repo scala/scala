@@ -179,6 +179,9 @@ abstract class Constructors extends Transform {
           paramInits ::: constrPrefixBuf.toList ::: constrStatBuf.toList,
           constrBody.expr));
 
+      for (val sym <- clazz.info.decls.toList)
+        if (!isAccessed(sym)) clazz.info.decls unlink sym
+
       copy.Template(impl, impl.parents, defBuf.toList filter (stat => isAccessed(stat.symbol)))
     }
 

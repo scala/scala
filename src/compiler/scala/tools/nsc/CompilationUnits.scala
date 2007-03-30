@@ -23,7 +23,10 @@ trait CompilationUnits requires Global {
     /** the content of the compilation unit in tree form */
     var body: Tree = EmptyTree
 
-    val depends = new HashSet[AbstractFile]
+    /** Note: depends now contains toplevel classes.
+     *  To get their sourcefiles, you need to dereference with .sourcefile
+     */
+    val depends = new HashSet[Symbol]
 
     def position(pos: int) = new Position(source, pos)
 

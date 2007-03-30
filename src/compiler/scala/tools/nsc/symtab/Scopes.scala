@@ -178,7 +178,7 @@ trait Scopes requires SymbolTable {
         elems = e.next
       } else {
         var e1 = elems
-        while (e1.next != e) e1 = e1.next;
+        while (e1.next != e) e1 = e1.next
         e1.next = e.next
       }
       if (hashtable ne null) {

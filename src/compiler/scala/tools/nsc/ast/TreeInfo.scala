@@ -182,6 +182,15 @@ abstract class TreeInfo {
     case _ => false
   }
 
+  /** can this type be a type pattern */
+  def mayBeTypePat(tree: Tree): boolean = tree match {
+    case CompoundTypeTree(Template(tps, List())) => tps exists mayBeTypePat
+    case Annotated(_, tp) => mayBeTypePat(tp)
+    case AppliedTypeTree(constr, args) => mayBeTypePat(constr) || args.exists(.isInstanceOf[Bind])
+    case SelectFromTypeTree(tp, _) => mayBeTypePat(tp)
+    case _ => false
+  }
+
   /** Is this pattern node a catch-all (wildcard or variable) pattern? */
   def isDefaultCase(cdef: CaseDef) = cdef match {
     case CaseDef(Ident(nme.WILDCARD), EmptyTree, _) => true
