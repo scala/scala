@@ -1695,21 +1695,34 @@ trait Typers requires Analyzer {
           case t: Tree =>
             t
           case ex: TypeError =>
-            val Select(qual, name) = fun
-            val args1 = tryTypedArgs(args, ex)
-            val qual1 =
-              if ((args1 ne null) && !pt.isError) {
-                def templateArgType(arg: Tree) =
-                  new BoundedWildcardType(mkTypeBounds(arg.tpe, AnyClass.tpe))
-                adaptToMember(qual, name, MethodType(args1 map templateArgType, pt))
-              } else qual
-            if (qual1 ne qual) {
-              val tree1 = Apply(Select(qual1, name) setPos fun.pos, args1) setPos tree.pos
-              typed1(tree1, mode | SNDTRYmode, pt)
-            } else {
-              reportTypeError(tree.pos, ex)
-              setError(tree)
+            def errorInResult(tree: Tree): boolean = tree.pos == ex.pos || {
+              tree match {
+                case Block(_, r) => errorInResult(r)
+                case Match(_, cases) => cases exists errorInResult
+                case CaseDef(_, _, r) => errorInResult(r)
+                case Annotated(_, r) => errorInResult(r)
+                case If(_, t, e) => errorInResult(t) || errorInResult(e)
+                case Try(b, catches, _) => errorInResult(b) || (catches exists errorInResult)
+                case Typed(r, Function(List(), EmptyTree)) => errorInResult(r)
+                case _ => false
+              }
             }
+            if (errorInResult(fun) || (args exists errorInResult)) {
+              val Select(qual, name) = fun
+              val args1 = tryTypedArgs(args, ex)
+              val qual1 =
+                if ((args1 ne null) && !pt.isError) {
+                  def templateArgType(arg: Tree) =
+                    new BoundedWildcardType(mkTypeBounds(arg.tpe, AnyClass.tpe))
+                  adaptToMember(qual, name, MethodType(args1 map templateArgType, pt))
+                } else qual
+              if (qual1 ne qual) {
+                val tree1 = Apply(Select(qual1, name) setPos fun.pos, args1) setPos tree.pos
+                return typed1(tree1, mode | SNDTRYmode, pt)
+              }
+            }
+            reportTypeError(tree.pos, ex)
+            setError(tree)
         }
 
       def convertToAssignment(fun: Tree, qual: Tree, name: Name, args: List[Tree], ex: TypeError): Tree = {
