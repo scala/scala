@@ -107,7 +107,7 @@ abstract class GenJVM extends SubComponent {
         case Some(pickle) =>
           val scalaAttr = fjbgContext.JOtherAttribute(jclass,
                                                   jclass,
-                                                  nme.ScalaSignatureATTR.toString(),
+                                                  nme.ScalaSignatureATTR.toString,
                                                   pickle.bytes,
                                                   pickle.writeIndex)
           pickledBytes = pickledBytes + pickle.writeIndex
@@ -170,7 +170,7 @@ abstract class GenJVM extends SubComponent {
                                   name,
                                   javaName(parents(0).symbol),
                                   ifaces,
-                                  c.cunit.source.toString())
+                                  c.cunit.source.toString)
 
       if (isStaticModule(c.symbol) || serialVUID != None) {
         if (isStaticModule(c.symbol))
@@ -261,7 +261,7 @@ abstract class GenJVM extends SubComponent {
         case EnumTag =>
           buf.put('e'.toByte)
           buf.putShort(cpool.addUtf8(javaType(const.tpe).getSignature()).toShort)
-          buf.putShort(cpool.addUtf8(const.symbolValue.name.toString()).toShort)
+          buf.putShort(cpool.addUtf8(const.symbolValue.name.toString).toShort)
         case ArrayTag =>
           buf.put('['.toByte)
           val arr = const.arrayValue
@@ -280,14 +280,14 @@ abstract class GenJVM extends SubComponent {
         nattr = nattr + 1
         val jtype = javaType(typ)
         buf.putShort(cpool.addUtf8(jtype.getSignature()).toShort)
-        assert(consts.length <= 1, consts.toString())
+        assert(consts.length <= 1, consts.toString)
         buf.putShort((consts.length + nvPairs.length).toShort)
         if (!consts.isEmpty) {
           buf.putShort(cpool.addUtf8("value").toShort)
           emitElement(consts.head)
         }
         for (val (name, value) <- nvPairs) {
-          buf.putShort(cpool.addUtf8(name.toString()).toShort)
+          buf.putShort(cpool.addUtf8(name.toString).toShort)
           emitElement(value)
         }
       }
@@ -332,7 +332,7 @@ abstract class GenJVM extends SubComponent {
 
       val attr = jmember.getContext().JOtherAttribute(jmember.getJClass(),
                                                       jmember,
-                                                      name.toString(),
+                                                      name.toString,
                                                       arr,
                                                       length)
       jmember.addAttribute(attr)
@@ -350,7 +350,7 @@ abstract class GenJVM extends SubComponent {
         for (val innerSym <- innerClasses)
           innerClassesAttr.addEntry(javaName(innerSym),
               javaName(innerSym.rawowner),
-              innerSym.rawname.toString(),
+              innerSym.rawname.toString,
               javaFlags(innerSym));
       }
     }
@@ -509,7 +509,7 @@ abstract class GenJVM extends SubComponent {
                                            mirrorName,
                                            "java.lang.Object",
                                            JClass.NO_INTERFACES,
-                                           clasz.cunit.source.toString())
+                                           clasz.cunit.source.toString)
       for (val m <- clasz.symbol.tpe.nonPrivateMembers;
            m.owner != definitions.ObjectClass && !m.hasFlag(Flags.PROTECTED) &&
            m.isMethod && !m.hasFlag(Flags.CASE) && !m.isConstructor && !isStaticSymbol(m) )
@@ -649,7 +649,7 @@ abstract class GenJVM extends SubComponent {
 
       b traverse ( instr => {
         class CompilationError(msg: String) extends Error {
-          override def toString(): String = {
+          override def toString: String = {
             msg +
             "\nCurrent method: " + method +
             "\nCurrent block: " + b +
@@ -828,7 +828,7 @@ abstract class GenJVM extends SubComponent {
             nonNull.anchorToNext()
             // else unbox the reference at the top of the stack
             jcode.emitCHECKCAST(new JObjectType(BOXED_NUMBER))
-            val clazzName = boxKind.toType.symbol.name.toString()
+            val clazzName = boxKind.toType.symbol.name.toString
             val unboxMethod = clazzName.toLowerCase() + "Value"
             val mtype = new JMethodType(javaType(boxKind), new Array[JType](0))
             jcode.emitINVOKEVIRTUAL(BOXED_NUMBER, unboxMethod, mtype)
@@ -1318,7 +1318,7 @@ abstract class GenJVM extends SubComponent {
       (if (sym.isClass || (sym.isModule && !sym.isMethod))
         sym.fullNameString('/')
       else
-        sym.simpleName.toString().trim()) + suffix
+        sym.simpleName.toString.trim()) + suffix
     }
 
     def javaNames(syms: List[Symbol]): Array[String] = {

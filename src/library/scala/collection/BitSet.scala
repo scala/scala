@@ -160,5 +160,12 @@ abstract class BitSet extends Set[Int] {
    *             This method will implement the Iterbale.toArray behavior in a future release.
    *             Please use <code>underlying</code> to get previous <code>toArray</code> behavior.
    */
-  @deprecated override def toArray[B >: Int]: Array[B] = underlying.asInstanceOf[Array[B]];
+  @deprecated override def toArray[B >: Int]: Array[B] = {
+     val ret0 = underlying
+     val ret1 = new Array[B](ret0.length)
+     for (val i <- 0.until(ret0.length))
+       ret1(i) = (ret0(i) : Any).asInstanceOf[B]
+     ret1
+  }
+  protected override def stringPrefix = "Set";
 }

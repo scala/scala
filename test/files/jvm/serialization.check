@@ -14,8 +14,8 @@ x4 = <na>
 y4 = <na>
 x4(2): 4 - y4(2): 4
 
-x = List((buffers,20),(layers,2),(title,3))
-y = List((buffers,20),(layers,2),(title,3))
+x = List((buffers,20), (layers,2), (title,3))
+y = List((buffers,20), (layers,2), (title,3))
 x equals y: true - y equals x: true
 
 x = Map(buffers -> 20, layers -> 2, title -> 3)
@@ -34,20 +34,20 @@ x = Queue(a,b,c)
 y = Queue(a,b,c)
 x equals y: true - y equals x: true
 
-x = Stack(c,b,a)
-y = Stack(c,b,a)
+x = Stack(c, b, a)
+y = Stack(c, b, a)
 x equals y: true - y equals x: true
 
 x = Map(42 -> FortyTwo)
 y = Map(42 -> FortyTwo)
 x equals y: true - y equals x: true
 
-x = Set(0, 2)
-y = Set(0, 2)
+x = TreeSet(0, 2)
+y = TreeSet(0, 2)
 x equals y: true - y equals x: true
 
-x = ArrayBuffer(one,two)
-y = ArrayBuffer(one,two)
+x = ArrayBuffer(one, two)
+y = ArrayBuffer(one, two)
 x equals y: true - y equals x: true
 
 x = Map(title -> 3, buffers -> 20, layers -> 2)
@@ -58,24 +58,24 @@ x = Set(0, 8, 9)
 y = Set(0, 8, 9)
 x equals y: true - y equals x: true
 
-x = Set(layers, buffers, title)
-y = Set(layers, buffers, title)
+x = HashSet(layers, buffers, title)
+y = HashSet(layers, buffers, title)
 x equals y: true - y equals x: true
 
-x = LinkedList(2,3)
-y = LinkedList(2,3)
+x = LinkedList(2, 3)
+y = LinkedList(2, 3)
 x equals y: true - y equals x: true
 
 x = Queue(20, 2, 3)
 y = Queue(20, 2, 3)
 x equals y: true - y equals x: true
 
-x = Stack(20,2,3)
-y = Stack(20,2,3)
+x = Stack(20, 2, 3)
+y = Stack(20, 2, 3)
 x equals y: true - y equals x: true
 
-x = ListBuffer(white,black)
-y = ListBuffer(white,black)
+x = ListBuffer(white, black)
+y = ListBuffer(white, black)
 x equals y: true - y equals x: true
 
 x = <html><title>title</title><body></body></html>

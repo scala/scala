@@ -135,6 +135,8 @@ class ListSet[A] extends AnyRef with Set[A] {
       val tail = ListSet.this - e; new tail.Node(elem)
     }
 
-    override protected def next: ListSet[A] = ListSet.this;
+    override protected def next: ListSet[A] = ListSet.this
+
+    override def stringPrefix = "Set"
   }
 }

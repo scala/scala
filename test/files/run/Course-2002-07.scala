@@ -150,7 +150,7 @@ object M4 {
   }
 
   def test_concat[a](xss: List[List[a]]) = {
-    Console.println(concat(xss).toString() + " = concat(" + xss + ")"); // !!! .toString()
+    Console.println(concat(xss).toString + " = concat(" + xss + ")"); // !!! .toString
   }
 
   def test = {
@@ -189,7 +189,7 @@ object M5 {
   }
 
   def test_zipFun[a,b](xs: List[a], ys: List[b]) = {
-    Console.println(zipFun(xs,ys).toString() + " = zipFun(" + xs + "," + ys + ")"); // !!! .toString()
+    Console.println(zipFun(xs,ys).toString + " = zipFun(" + xs + "," + ys + ")"); // !!! .toString
   }
 
   def test = {
@@ -223,7 +223,7 @@ object M6 {
   }
 
   def test_zipFun[a,b](xs: List[a], ys: List[b]) = {
-    Console.println(zipFun(xs,ys).toString() + " = zipFun(" + xs + "," + ys + ")"); // !!! .toString()
+    Console.println(zipFun(xs,ys).toString + " = zipFun(" + xs + "," + ys + ")"); // !!! .toString
   }
 
   def test = {
@@ -256,7 +256,7 @@ object M7 {
   }
 
   def test_heads[a](xss: List[List[a]]) = {
-    Console.println(heads(xss).toString() + " = heads(" + xss + ")"); // !!! .toString()
+    Console.println(heads(xss).toString + " = heads(" + xss + ")"); // !!! .toString
   }
 
 
@@ -302,7 +302,7 @@ object M8 {
   }
 
   def test_heads[a](xss: List[List[a]]) = {
-    Console.println(heads(xss).toString() + " = heads(" + xss + ")"); // !!! .toString()
+    Console.println(heads(xss).toString + " = heads(" + xss + ")"); // !!! .toString
   }
 
 
@@ -349,16 +349,16 @@ object M9 {
     }
   }
   case class Number(x: int) extends Expr {
-    override def toString() = "Number(" + x + ")"; // !!! remove !
+    override def toString = "Number(" + x + ")"; // !!! remove !
   }
   case class Var(name: String) extends Expr {
-    override def toString() = "Var(" + name + ")"; // !!! remove !
+    override def toString = "Var(" + name + ")"; // !!! remove !
   }
   case class Sum(e1: Expr, e2: Expr) extends Expr {
-    override def toString() = "Sum(" + e1 + ", " + e2 + ")"; // !!! remove !
+    override def toString = "Sum(" + e1 + ", " + e2 + ")"; // !!! remove !
   }
   case class Prod(e1: Expr, e2: Expr) extends Expr {
-    override def toString() = "Prod(" + e1 + ", " + e2 + ")"; // !!! remove !
+    override def toString = "Prod(" + e1 + ", " + e2 + ")"; // !!! remove !
   }
 
   def test = {
@@ -392,19 +392,19 @@ object MA {
     }
   }
   case class Number(x: int) extends Expr {
-    override def toString() = x.toString()
+    override def toString = x.toString
   }
   case class Var(name: String) extends Expr {
-    override def toString() = name;
+    override def toString = name;
   }
   case class Sum(e1: Expr, e2: Expr) extends Expr {
-    override def toString() = e1.toString() + " + " + e2.toString();
+    override def toString = e1.toString + " + " + e2.toString;
   }
   case class Prod(e1: Expr, e2: Expr) extends Expr {
-    override def toString() = {
+    override def toString = {
       def factorToString(e: Expr) = e match {
-        case Sum(_, _) => "(" + e.toString() + ")"
-        case _ => e.toString()
+        case Sum(_, _) => "(" + e.toString + ")"
+        case _ => e.toString
       }
       factorToString(e1) + " * " + factorToString(e2);
     }
@@ -595,33 +595,33 @@ object MB {
   }
 
   case class Lit(x: int) extends Expr {
-    override def toString() = x.toString()
+    override def toString = x.toString
   }
 
   case class Var(name: String) extends Expr {
-    override def toString() = name;
+    override def toString = name;
   }
 
   case class Add(e1: Expr, e2: Expr) extends Expr {
-    override def toString() = e1.toString() + " + " + e2.toString(); // !!! .toString
+    override def toString = e1.toString + " + " + e2.toString; // !!! .toString
   }
 
   case class Mul(e1: Expr, e2: Expr) extends Expr {
-    override def toString() = {
+    override def toString = {
       def factorToString(e: Expr) = e match {
-        case Add(_, _) => "(" + e.toString() + ")"
-        case _         =>       e.toString()
+        case Add(_, _) => "(" + e.toString + ")"
+        case _         =>       e.toString
       }
       factorToString(e1) + " * " + factorToString(e2);
     }
   }
 
   case class Pow(e1: Expr, i2: int) extends Expr {
-    override def toString() = {
+    override def toString = {
       def factorToString(e: Expr) = e match {
-        case Add(_, _) => "(" + e.toString() + ")"
-        case Mul(_, _) => "(" + e.toString() + ")"
-        case _         =>       e.toString()
+        case Add(_, _) => "(" + e.toString + ")"
+        case Mul(_, _) => "(" + e.toString + ")"
+        case _         =>       e.toString
       }
       factorToString(e1) + "^" + i2;
     }

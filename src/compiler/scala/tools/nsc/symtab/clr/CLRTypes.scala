@@ -208,7 +208,7 @@ abstract class CLRTypes {
       }
       assemrefs -= file;
     }
-    assert(assemrefs.isEmpty, assemrefs.toString());
+    assert(assemrefs.isEmpty, assemrefs.toString);
   }
 
   //##########################################################################
