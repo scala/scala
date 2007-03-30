@@ -279,7 +279,7 @@ trait Stream[+a] extends Seq[a] {
    */
   override def dropWhile(p: a => Boolean): Stream[a] = {
     def loop(s: Stream[a]): Stream[a] =
-      if (s.isEmpty || !p(s.head)) this
+      if (s.isEmpty || !p(s.head)) s
       else loop(s.tail)
     loop(this)
   }
