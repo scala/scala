@@ -30,9 +30,9 @@ object TestMutable {
   Console.println("xs1 = " + ms1.elements.toList)
   Console.println("xs2 = " + ms2.elements.toList)
 
-  Console.println("ma0 = " + ms0.toArray.toList)
-  Console.println("ma1 = " + ms1.toArray.toList)
-  Console.println("ma2 = " + ms2.toArray.toList)
+  Console.println("ma0 = " + ms0.underlying.toList)
+  Console.println("ma1 = " + ms1.underlying.toList)
+  Console.println("ma2 = " + ms2.underlying.toList)
 
   Console.println("mi0 = " + ms0.toImmutable)
   Console.println("mi1 = " + ms1.toImmutable)
@@ -63,10 +63,10 @@ object TestImmutable {
   Console.println("ys2 = " + is2.elements.toList)
   Console.println("ys3 = " + is3.elements.toList)
 
-  Console.println("ia0 = " + is0.toArray.toList)
-  Console.println("ia1 = " + is1.toArray.toList)
-  Console.println("ia2 = " + is2.toArray.toList)
-  Console.println("ia3 = " + is3.toArray.toList)
+  Console.println("ia0 = " + is0.underlying.toList)
+  Console.println("ia1 = " + is1.underlying.toList)
+  Console.println("ia2 = " + is2.underlying.toList)
+  Console.println("ia3 = " + is3.underlying.toList)
   Console.println
 }
 

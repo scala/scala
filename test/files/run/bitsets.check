@@ -1,25 +1,3 @@
-/Users/mcdirmid/workspace/scala/test/files/run/bitsets.scala:33: warning: method toArray in class BitSet is deprecated
-  Console.println("ma0 = " + ms0.toArray.toList)
-                                ^
-/Users/mcdirmid/workspace/scala/test/files/run/bitsets.scala:34: warning: method toArray in class BitSet is deprecated
-  Console.println("ma1 = " + ms1.toArray.toList)
-                                ^
-/Users/mcdirmid/workspace/scala/test/files/run/bitsets.scala:35: warning: method toArray in class BitSet is deprecated
-  Console.println("ma2 = " + ms2.toArray.toList)
-                                ^
-/Users/mcdirmid/workspace/scala/test/files/run/bitsets.scala:66: warning: method toArray in class BitSet is deprecated
-  Console.println("ia0 = " + is0.toArray.toList)
-                                ^
-/Users/mcdirmid/workspace/scala/test/files/run/bitsets.scala:67: warning: method toArray in class BitSet is deprecated
-  Console.println("ia1 = " + is1.toArray.toList)
-                                ^
-/Users/mcdirmid/workspace/scala/test/files/run/bitsets.scala:68: warning: method toArray in class BitSet is deprecated
-  Console.println("ia2 = " + is2.toArray.toList)
-                                ^
-/Users/mcdirmid/workspace/scala/test/files/run/bitsets.scala:69: warning: method toArray in class BitSet is deprecated
-  Console.println("ia3 = " + is3.toArray.toList)
-                                ^
-7 warnings found
 ms0 = Set(2)
 ms1 = Set(2)
 ms2 = Set(2)
