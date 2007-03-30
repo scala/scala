@@ -48,12 +48,13 @@ trait MutableIterable[A] extends Iterable[A] {
 
   /** @return the current number of elements in the collection.
    **/
-  def size : Int = {
+  protected def size0 : Int = {
     var count = 0;
     val i = elements;
     while (i.hasNext) { count = count + 1; i.next; }
     count;
   }
+
   /** clear all elements from the collection.
    **/
   def clear(): Unit = {

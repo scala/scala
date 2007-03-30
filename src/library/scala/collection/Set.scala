@@ -31,7 +31,7 @@ package scala.collection
  *  @author  Martin Odersky
  *  @version 2.0, 01/01/2007
  */
-trait Set[A] extends (A => Boolean) with Iterable[A] {
+trait Set[A] extends (A => Boolean) with Collection[A] {
 
   /** Returns the number of elements in this set.
    *
@@ -92,12 +92,7 @@ trait Set[A] extends (A => Boolean) with Iterable[A] {
     (0 /: this)((hash, e) => hash + e.hashCode())
 
 
-  /** Returns a string representation of this set.
-   *
-   *  @return a string showing all elements of this set.
-   */
-  override def toString() = mkString("Set(", ", ", ")")
-  override def toArray[B >: A]: Array[B] = {
+  @deprecated override def toArray[B >: A]: Array[B] = {
     val result = new Array[B](size)
     copyToArray(result, 0)
     result

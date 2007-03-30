@@ -48,4 +48,5 @@ trait BufferWrapper[A] extends Buffer[A] with CollectionWrapper[A] {
     def previousIndex = underlying.previousIndex;
     def nextIndex = underlying.nextIndex;
   }
+  override def length = underlying.size;
 }

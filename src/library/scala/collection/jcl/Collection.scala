@@ -80,5 +80,6 @@ trait Collection[A] extends MutableIterable[A] {
     override def pfilter(p1 : A => Boolean) : MutableIterable[A] =
       Collection.this.pfilter(a => p(a) && p1(a));
     def elements = Collection.this.elements.filter(p);
+    def size = size0;
   }
 }

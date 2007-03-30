@@ -85,7 +85,7 @@ abstract class NondetWordAutom[T <: AnyRef] {
     x.toImmutable;
   }
 
-  override def toString() = {
+  override def toString = {
     val sb = new compat.StringBuilder()
     sb.append("[NondetWordAutom  nstates=")
     sb.append(nstates)
@@ -96,16 +96,16 @@ abstract class NondetWordAutom[T <: AnyRef] {
         map = map.update(j, finals(j));
       j = j + 1
     }
-    sb.append(map.toString())
+    sb.append(map.toString)
     sb.append("  delta=\n")
     for (val i <- 0 until nstates) {
       sb.append("    ")
       sb.append( i )
       sb.append("->")
-      sb.append(delta(i).toString())
+      sb.append(delta(i).toString)
       sb.append("\n    ")
       sb.append(" _>")
-      sb.append(default(i).toString())
+      sb.append(default(i).toString)
       sb.append('\n')
     }
     sb.toString()

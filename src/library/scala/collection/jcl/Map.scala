@@ -69,6 +69,7 @@ trait Map[K,E] extends MutableIterable[Tuple2[K,E]] with scala.collection.mutabl
       Map.this.pfilter(p).lense(f, g);
     override def lense[G](f0 : F => G, g0 : G => F) : jcl.Map[K,G] =
       Map.this.lense[G](x => f0(f(x)), y => g(g0(y)));
+    override def size = size0;
   }
   protected class Filter(p : K => Boolean) extends jcl.Map[K,E] {
     override def elements = Map.this.elements.filter(k => p(k._1));
@@ -87,8 +88,10 @@ trait Map[K,E] extends MutableIterable[Tuple2[K,E]] with scala.collection.mutabl
     }
     override def pfilter(p0 : K => Boolean) : jcl.Map[K,E] =
       Map.this.pfilter(k => p(k) && p0(k));
+    override def size = size0;
   }
   protected class KeySet extends Set[K] {
+    override def size = Map.this.size;
     override def add(k : K) = Map.this.put(k, default(k)) == None;
     override def elements = Map.this.elements.map(._1);
     override def has(k : K) = Map.this.contains(k);

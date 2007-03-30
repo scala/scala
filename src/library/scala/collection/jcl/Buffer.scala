@@ -86,6 +86,7 @@ trait Buffer[A] extends MutableSeq[A] with Collection[A] with Ranged[Int,A] {
   override def pfilter(p : A => Boolean) : MutableSeq[A] = super[MutableSeq].pfilter(p);
   override def rangeImpl(from : Option[Int], until : Option[Int]) : Buffer[A] = new Range(from, until);
 
+
   protected class Range(var from : Option[Int], var until : Option[Int]) extends Buffer[A] {
     if (from == None && until == None) throw new IllegalArgumentException;
     if (from != None && until != None && !(from.get < until.get)) throw new IllegalArgumentException;
@@ -104,11 +105,11 @@ trait Buffer[A] extends MutableSeq[A] with Collection[A] with Ranged[Int,A] {
     override def set(idx : Int, a : A) = Buffer.this.set(translate(idx), a);
     override def add(idx : Int, a : A) = Buffer.this.add(translate(idx), a);
     override def remove(idx : Int) = Buffer.this.remove(translate(idx));
-    override def size = {
+    override def length = {
       if (until != None) {
         if (from != None) until.get - from.get;
         else until.get;
-      } else super.size;
+      } else super.length;
     }
     def elements : BufferIterator[Int,A] = new RangeIterator;
     class RangeIterator extends BufferIterator[Int,A] {

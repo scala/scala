@@ -24,7 +24,7 @@ package scala.collection.mutable
 
 @serializable @cloneable
 class PriorityQueue[A <% Ordered[A]] extends ResizableArray[A] {
-  size = size + 1 // we do not use array(0)
+  size0 = size0 + 1 // we do not use array(0)
 
   protected def fixUp(as: Array[A], m: Int): Unit = {
     var k: Int = m
@@ -56,17 +56,17 @@ class PriorityQueue[A <% Ordered[A]] extends ResizableArray[A] {
    *
    *  @return true, iff there is no element in the queue.
    */
-  override def isEmpty: Boolean = size < 2
+  override def isEmpty: Boolean = size0 < 2
 
   /** Inserts a single element into the priority queue.
    *
    *  @param  elem        the element to insert
    */
   def +=(elem: A): Unit = {
-    ensureSize(size+1)
-    array(size) = elem
-    fixUp(array, size)
-    size = size + 1
+    ensureSize(size0+1)
+    array(size0) = elem
+    fixUp(array, size0)
+    size0 = size0 + 1
   }
 
   def +(elem: A): PriorityQueue[A] = { this += elem; this }
@@ -110,11 +110,11 @@ class PriorityQueue[A <% Ordered[A]] extends ResizableArray[A] {
    *  @return   the element with the highest priority.
    */
   def dequeue(): A =
-    if (size > 1) {
-      size = size - 1
-      swap(1, size)
-      fixDown(array, 1, size - 1)
-      array(size)
+    if (size0 > 1) {
+      size0 = size0 - 1
+      swap(1, size0)
+      fixDown(array, 1, size0 - 1)
+      array(size0)
     } else
       throw new NoSuchElementException("no element to remove from heap")
 
@@ -123,12 +123,12 @@ class PriorityQueue[A <% Ordered[A]] extends ResizableArray[A] {
    *
    *  @return   the element with the highest priority.
    */
-  def max: A = if (size > 1) array(1) else throw new NoSuchElementException("queue is empty")
+  def max: A = if (size0 > 1) array(1) else throw new NoSuchElementException("queue is empty")
 
   /** Removes all elements from the queue. After this operation is completed,
    *  the queue will be empty.
    */
-  def clear(): Unit = { size = 1 }
+  def clear(): Unit = { size0 = 1 }
 
   /** Returns an iterator which yiels all the elements of the priority
    *  queue in descending priority order.
@@ -136,9 +136,9 @@ class PriorityQueue[A <% Ordered[A]] extends ResizableArray[A] {
    *  @return  an iterator over all elements sorted in descending order.
    */
   override def elements: Iterator[A] = new Iterator[A] {
-    val as: Array[A] = new Array[A](size)
-    Array.copy(array, 0, as, 0, size)
-    var i = size - 1
+    val as: Array[A] = new Array[A](size0)
+    Array.copy(array, 0, as, 0, size0)
+    var i = size0 - 1
     def hasNext: Boolean = i > 0
     def next(): A = {
       val res = as(1)

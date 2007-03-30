@@ -29,9 +29,9 @@ class ArrayBuffer[A] extends Buffer[A] with ResizableArray[A] {
    *  @param elem  the element to append.
    */
   def +=(elem: A): Unit = {
-    ensureSize(size+1)
-    array(size) = elem
-    size = size + 1
+    ensureSize(size0+1)
+    array(size0) = elem
+    size0 = size0 + 1
   }
 
   /** Appends a number of elements provided by an iterable object
@@ -50,9 +50,9 @@ class ArrayBuffer[A] extends Buffer[A] with ResizableArray[A] {
    *  @param len    the number of elements to append
    */
   override def ++=(src: Array[A], start: int, len: int): Unit = {
-    ensureSize(size + len)
-    Array.copy(src, start, array, size, len)
-    size = size + len
+    ensureSize(size0 + len)
+    Array.copy(src, start, array, size0, len)
+    size0 = size0 + len
   }
 
   /** Prepends a single element to this buffer and return
@@ -62,10 +62,10 @@ class ArrayBuffer[A] extends Buffer[A] with ResizableArray[A] {
    *  @return      the updated buffer.
    */
   def +:(elem: A): Buffer[A] = {
-    ensureSize(size+1)
-    copy(0, 1, size)
+    ensureSize(size0+1)
+    copy(0, 1, size0)
     array(0) = elem
-    size = size + 1
+    size0 = size0 + 1
     this
   }
 
@@ -76,7 +76,7 @@ class ArrayBuffer[A] extends Buffer[A] with ResizableArray[A] {
    *  @throws Predef.IndexOutOfBoundException if <code>i</code> is out of bounds.
    */
   override def apply(i: Int) = {
-    if ((i < 0) || (i >= size))
+    if ((i < 0) || (i >= size0))
       throw new IndexOutOfBoundsException(i.toString())
     else
       array(i)
@@ -100,14 +100,14 @@ class ArrayBuffer[A] extends Buffer[A] with ResizableArray[A] {
    *  @throws Predef.IndexOutOfBoundsException if <code>n</code> is out of bounds.
    */
   def insertAll(n: Int, iter: Iterable[A]): Unit = {
-    if ((n < 0) || (n > size))
+    if ((n < 0) || (n > size0))
       throw new IndexOutOfBoundsException("cannot insert element at " + n);
     val xs = iter.elements.toList
     val len = xs.length
-    ensureSize(size+len)
-    copy(n, n + len, size - n)
+    ensureSize(size0+len)
+    copy(n, n + len, size0 - n)
     xs.copyToArray(array, n)
-    size = size + len
+    size0 = size0 + len
   }
 
   /** Replace element at index <code>n</code> with the new element
@@ -118,7 +118,7 @@ class ArrayBuffer[A] extends Buffer[A] with ResizableArray[A] {
    *  @throws Predef.IndexOutOfBoundsException if <code>n</code> is out of bounds.
    */
   def update(n: Int, newelem: A): Unit = {
-    if ((n < 0) || (n >= size))
+    if ((n < 0) || (n >= size0))
       throw new IndexOutOfBoundsException("cannot update element at " + n);
     else {
       val res = array(n)
@@ -134,18 +134,18 @@ class ArrayBuffer[A] extends Buffer[A] with ResizableArray[A] {
    *  @throws Predef.IndexOutOfBoundsException if <code>n</code> is out of bounds.
    */
   def remove(n: Int): A = {
-    if ((n < 0) || (n >= size))
+    if ((n < 0) || (n >= size0))
       throw new IndexOutOfBoundsException("cannot remove element at " + n);
     val res = array(n);
-    copy(n + 1, n, size - n - 1);
-    size = size - 1;
+    copy(n + 1, n, size0 - n - 1);
+    size0 = size0 - 1;
     res
   }
 
   /** Clears the buffer contents.
    */
   def clear(): Unit = {
-    size = 0
+    size0 = 0
   }
 
   /** Return a clone of this buffer.

@@ -1123,8 +1123,6 @@ sealed abstract class List[+a] extends Seq[a] {
     b.toList
   }
 
-  protected override def stringPrefix: String = "List"
-
 }
 
 /** The empty list.

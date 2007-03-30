@@ -11,7 +11,6 @@
 
 package scala.collection
 
-
 /** <p>
  *    The class <code>BitSet</code> provides the interface for a space-efficient
  *    implementation of dense integer sets represented as bits in array of
@@ -144,5 +143,22 @@ abstract class BitSet extends Set[Int] {
    */
   protected final def mask(n: Int): Int = 1 << (n & 0x1F)
 
-  override def toArray[B >: Int]: Array[B] = super.toArray
+  /**
+   * @return a copy of the array underlying this bitset
+   */
+  def underlying : Array[Int] = {
+     val length = memsize(capacity)
+     val newarr = new Array[Int](length)
+     if (arr.length > 0)
+       arraycopy(this.arr, 0, newarr, 0, length)
+     newarr;
+   }
+  /**
+   * @return a copy of the array underlying this bitset
+   *
+   * @deprecated This method does not currently implement behavior specified in Iterable.toArray.
+   *             This method will implement the Iterbale.toArray behavior in a future release.
+   *             Please use <code>underlying</code> to get previous <code>toArray</code> behavior.
+   */
+  @deprecated override def toArray[B >: Int]: Array[B] = underlying.asInstanceOf[Array[B]];
 }

@@ -69,13 +69,14 @@ object Seq {
  *  @author  Matthias Zenger
  *  @version 1.0, 16/07/2003
  */
-trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Iterable[A] {
+trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Collection[A] {
 
   /** Returns the length of the sequence.
    *
    *  @return the sequence length.
    */
   def length: Int
+  final def size = length
 
   /** Returns true if length == 0
    */
@@ -242,17 +243,6 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Iterable[A] {
   @deprecated
   def subseq(from: Int, end: Int): Seq[A] = slice(from, end - from)
 
-  /** Customizes the <code>toString</code> method.
-   *
-   *  @return a string representation of this sequence.
-   */
-  override def toString() =
-    stringPrefix + "(" + mkString(",") + ")"
-
-
-  /** Defines the prefix of the string representation.
-   */
-  protected def stringPrefix: String = "Seq"
 
   /** Converts this sequence to a fresh Array with <code>length</code> elements.
    */

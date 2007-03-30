@@ -18,4 +18,5 @@ trait SetWrapper[A] extends CollectionWrapper[A] with Set[A] {
   protected def underlying: java.util.Set;
   override def isEmpty = super[CollectionWrapper].isEmpty;
   override def clear() = super[CollectionWrapper].clear;
+  override def size = underlying.size;
 }

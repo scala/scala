@@ -34,7 +34,7 @@ import Predef._
  *  @author  Martin Odersky
  *  @version 1.2, 31/12/2006
  */
-trait Map[A, +B] extends PartialFunction[A, B] with Iterable[(A, B)] {
+trait Map[A, +B] extends PartialFunction[A, B] with Collection[(A, B)] {
 
   /** Compute the number of key-to-value mappings.
    *

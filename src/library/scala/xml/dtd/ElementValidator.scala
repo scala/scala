@@ -93,7 +93,7 @@ class ElementValidator() extends Function1[Node,Boolean] {
           exc = fromUndefinedAttribute( attr.key ) :: exc;
 
         case AttrDecl(_, tpe, DEFAULT(true, fixedValue)) if(attr.value != fixedValue) =>
-          exc = fromFixedAttribute( attr.key, fixedValue, attr.value.toString()) :: exc;
+          exc = fromFixedAttribute( attr.key, fixedValue, attr.value.toString) :: exc;
 
         case s =>
           //Console.println("s: "+s);

@@ -92,8 +92,8 @@ trait SynchronizedSet[A] extends Set[A] {
     super.toList
   }
 
-  override def toString() = synchronized {
-    super.toString()
+  override def toString = synchronized {
+    super.toString
   }
 
   override def <<(cmd: Message[A]): Unit = synchronized {

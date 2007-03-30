@@ -94,14 +94,14 @@ trait Iterable[+A] {
    *  @deprecated  use <code>++</code> instead
    */
   @deprecated
-  def concat[B >: A](that: Iterable[B]): Iterable[B] =
+  def concat[B >: A](that: Iterable[B]): Collection[B] =
     this ++ that
 
   /** Appends two iterable objects.
    *
    *  @return the new iterable object
    */
-  def ++ [B >: A](that: Iterable[B]): Iterable[B] = {
+  def ++ [B >: A](that: Iterable[B]): Collection[B] = {
     val buf = new ArrayBuffer[B]
     this copyToBuffer buf
     that copyToBuffer buf
@@ -115,7 +115,7 @@ trait Iterable[+A] {
    *  @return <code>f(a<sub>0</sub>), ..., f(a<sub>n</sub>)</code>
    *          if this iterable is <code>a<sub>0</sub>, ..., an</code>.
    */
-  def map[B](f: A => B): Iterable[B] = {
+  def map[B](f: A => B): Collection[B] = {
     val buf = new ArrayBuffer[B]
     val elems = elements
     while (elems.hasNext) buf += f(elems.next)
@@ -129,7 +129,7 @@ trait Iterable[+A] {
    *  @return  <code>f(a<sub>0</sub>) ::: ... ::: f(a<sub>n</sub>)</code> if
    *           this iterable is <code>a<sub>0</sub>, ..., a<sub>n</sub></code>.
    */
-  def flatMap[B](f: A => Iterable[B]): Iterable[B] = {
+  def flatMap[B](f: A => Iterable[B]): Collection[B] = {
     val buf = new ArrayBuffer[B]
     val elems = elements
     while (elems.hasNext) f(elems.next) copyToBuffer buf
@@ -142,7 +142,7 @@ trait Iterable[+A] {
    *  @param p the predicate used to filter the list.
    *  @return the elements of this list satisfying <code>p</code>.
    */
-  def filter(p: A => Boolean): Iterable[A] = {
+  def filter(p: A => Boolean): Collection[A] = {
     val buf = new ArrayBuffer[A]
     val elems = elements
     while (elems.hasNext) { val x = elems.next; if (p(x)) buf += x }
@@ -156,7 +156,7 @@ trait Iterable[+A] {
    *  @return  the longest prefix of this iterable whose elements satisfy
    *           the predicate <code>p</code>.
    */
-  def takeWhile(p: A => Boolean): Iterable[A] =
+  def takeWhile(p: A => Boolean): Collection[A] =
     new ArrayBuffer[A] ++ elements.takeWhile(p)
 
   /** Returns the longest suffix of this iterable whose first element
@@ -166,7 +166,7 @@ trait Iterable[+A] {
    *  @return  the longest suffix of the iterable whose first element
    *           does not satisfy the predicate <code>p</code>.
    */
-  def dropWhile(p: A => Boolean): Iterable[A] =
+  def dropWhile(p: A => Boolean): Collection[A] =
     new ArrayBuffer[A] ++ elements.dropWhile(p)
 
   /** Returns an iterable consisting only over the first <code>n</code>
@@ -176,7 +176,7 @@ trait Iterable[+A] {
    *  @param n the number of elements to take
    *  @return  the new iterable
    */
-  def take(n: Int): Iterable[A] =
+  def take(n: Int): Collection[A] =
     new ArrayBuffer[A] ++ elements.take(n)
 
   /** Returns this iterable without its <code>n</code> first elements
@@ -186,7 +186,7 @@ trait Iterable[+A] {
    *  @param n the number of elements to drop
    *  @return  the new iterable
    */
-  def drop(n: Int): Iterable[A] =
+  def drop(n: Int): Collection[A] =
     new ArrayBuffer[A] ++ elements.drop(n)
 
   /** Apply a function <code>f</code> to all elements of this
@@ -316,6 +316,7 @@ trait Iterable[+A] {
 
   /** Copy all elements to a given buffer
    *  @param  dest   The buffer to which elements are copied
+   *  @note Will not terminate if not finite.
    */
   def copyToBuffer[B >: A](dest: Buffer[B]): Unit = elements copyToBuffer dest
 
@@ -335,7 +336,7 @@ trait Iterable[+A] {
   }
 
   /**
-   *  Create a fresh list with all the elements of this iterable object
+   *  Create a fresh list with all the elements of this iterable object.
    */
   def toList: List[A] = elements.toList
 
@@ -368,6 +369,7 @@ trait Iterable[+A] {
    */
   def mkString(sep: String): String = this.mkString("", sep, "")
 
+
   /** Write all elements of this string into given string builder.
    *
    *  @param buf ...
@@ -393,9 +395,6 @@ trait Iterable[+A] {
   def copyToArray[B >: A](xs: Array[B], start: Int): Unit =
     elements.copyToArray(xs, start)
 
-  /** Converts this iterable to a fresh Array with elements.
-   */
-  def toArray[B >: A]: Array[B] = toList.toArray
 
   /** Is this collection empty? */
   def isEmpty = elements.hasNext

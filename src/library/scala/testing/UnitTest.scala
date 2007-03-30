@@ -48,7 +48,7 @@ object UnitTest {
     if (actual.sameElements(expected))
       report.ok
     else
-      report.fail(actual.toString(), expected.toString())
+      report.fail(actual.toString, expected.toString)
 
   /**
    *  @param actual   ...

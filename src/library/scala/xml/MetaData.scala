@@ -26,7 +26,7 @@ import compat.StringBuilder
  * @todo _vlue should be a normalized attribute value
  */
 @serializable
-abstract class MetaData extends Iterable[MetaData] {
+abstract class MetaData extends Collection[MetaData] {
 
   /** appends given MetaData items to this MetaData list.
    *
@@ -110,6 +110,9 @@ abstract class MetaData extends Iterable[MetaData] {
       x = x.next
       y
     }
+  }
+  def size : Int = 1 + {
+    if (Null == next) 0 else next.size
   }
 
   /** shallow equals method */
