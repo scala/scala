@@ -459,8 +459,11 @@ trait Namers requires Analyzer {
       val meth = context.owner
 
       val tparamSyms = typer.reenterTypeParams(tparams)
-      val vparamSymss = enterValueParams(meth, vparamss)
+      var vparamSymss = enterValueParams(meth, vparamss)
       if (tpt.isEmpty && meth.name == nme.CONSTRUCTOR) tpt.tpe = context.enclClass.owner.tpe
+
+      if (onlyPresentation)
+        methodArgumentNames(meth) = vparamss.map(.map(.symbol));
 
       def makeMethodType(vparams: List[Symbol], restpe: Type) = {
         val formals = vparams map (.tpe)
@@ -475,19 +478,17 @@ trait Namers requires Analyzer {
           else (vparamSymss :\ restype)(makeMethodType))
 
       var resultPt = if (tpt.isEmpty) WildcardType else typer.typedType(tpt).tpe
+      val site = meth.owner.thisType
 
-      if (onlyPresentation)
-        methodArgumentNames(meth) = vparamss.map(.map(.symbol));
+      def overriddenSymbol = intersectionType(meth.owner.info.parents).member(meth.name).filter(sym =>
+          sym != NoSymbol && (site.memberType(sym) matches thisMethodType(resultPt)))
+
+      // fill in result type and parameter types from overridden symbol if there is a unique one.
       if (meth.owner.isClass && (tpt.isEmpty || vparamss.exists(.exists(.tpt.isEmpty)))) {
         // try to complete from matching definition in base type
         for (val vparams <- vparamss; val vparam <- vparams)
           if (vparam.tpt.isEmpty) vparam.symbol setInfo WildcardType
-        val schema = thisMethodType(resultPt)
-        val site = meth.owner.thisType
-
-
-        val overridden = intersectionType(meth.owner.info.parents).member(meth.name).filter(sym =>
-          sym != NoSymbol && (site.memberType(sym) matches schema))
+        val overridden = overriddenSymbol
         if (overridden != NoSymbol && !(overridden hasFlag OVERLOADED)) {
           resultPt = site.memberType(overridden) match {
             case PolyType(tparams, rt) => rt.substSym(tparams, tparamSyms)
@@ -517,7 +518,11 @@ trait Namers requires Analyzer {
           }
         }
       }
-
+      // Add a () parameter section if this overrides dome method with () parameters.
+      if (meth.owner.isClass && vparamss.isEmpty && overriddenSymbol.alternatives.exists(
+        .info.isInstanceOf[MethodType])) {
+        vparamSymss = List(List())
+      }
       for (val vparams <- vparamss; val vparam <- vparams; vparam.tpt.isEmpty) {
         context.error(vparam.pos, "missing parameter type")
         vparam.tpt.tpe = ErrorType
