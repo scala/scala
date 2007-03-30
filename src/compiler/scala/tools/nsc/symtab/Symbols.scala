@@ -683,7 +683,7 @@ trait Symbols requires SymbolTable {
      */
     final def outerClass: Symbol =
       if (owner.isClass) owner
-      else if (isClassLocalToConstructor) owner.owner.outerClass
+      else if (isClassLocalToConstructor) owner.enclClass.outerClass
       else owner.outerClass
 
     /** For a paramaccessor: a superclass paramaccessor for which this symbol

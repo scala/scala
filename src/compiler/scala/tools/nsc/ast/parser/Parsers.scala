@@ -1965,7 +1965,6 @@ trait Parsers requires SyntaxAnalyzer {
           syntaxError("traits cannot have type parameters with <% bounds", false)
           implicitClassViews = List()
         }
-        //if (mods.hasFlag(Flags.CASE) && in.token != LPAREN) accept(LPAREN)
         val constrAnnots = annotations()
         val (constrMods, vparamss) =
           if (mods.hasFlag(Flags.TRAIT)) (NoMods, List())
@@ -2122,6 +2121,7 @@ trait Parsers requires SyntaxAnalyzer {
      *                     | Annotations Modifiers Def
      *                     | Annotations Modifiers Dcl
      *                     | Expr1
+     *                     | super ArgumentExprs {ArgumentExprs}
      *                     |
      */
     def templateStatSeq(): (ValDef, List[Tree]) = {
