@@ -2023,7 +2023,7 @@ trait Typers requires Analyzer {
           def annotTypeTree(ainfo: AnnotationInfo[Any]): Tree =
             TypeTree(arg1.tpe.withAttribute(ainfo)) setOriginal tree
           if (arg1.isType) {
-            val annotInfo = typedAnnotation(annot, identity[Tree])
+            val annotInfo = typedAnnotation(annot, liftcode.reify)
             if (settings.Xplugtypes.value) annotTypeTree(annotInfo) else arg1
           } else {
             val annotInfo = typedAnnotation(annot, getConstant)

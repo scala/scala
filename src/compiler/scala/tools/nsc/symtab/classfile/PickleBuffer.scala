@@ -123,6 +123,12 @@ class PickleBuffer(data: Array[byte], from: int, to: int) {
   def until[T](end: int, op: () => T): List[T] =
     if (readIndex == end) List() else op() :: until(end, op);
 
+  /** Perform operation <code>op</code> the number of
+   *  times specified.  Concatenate the results into a list.
+   */
+  def times[T](n: int, op: ()=>T): List[T] =
+    if (n == 0) List() else op() :: times(n-1, op)
+
   /** Create an index.
    *
    *  @return ...

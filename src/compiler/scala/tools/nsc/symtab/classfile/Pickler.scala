@@ -123,6 +123,7 @@ abstract class Pickler extends SubComponent {
     private def putSymbols(syms: List[Symbol]) =
       syms foreach putSymbol
 
+
     /** Store type and everythig it refers to in map <code>index</code>.
      *
      *  @param tp ...
@@ -150,13 +151,103 @@ abstract class Pickler extends SubComponent {
         case PolyType(tparams, restpe) =>
           putType(restpe); putSymbols(tparams)
         case AnnotatedType(attribs, tp) =>
-          putType(tp) // the attributes should be stored, but it is not yet
-                      // decided how to handle that.
+          putType(tp); putAnnotations(attribs)
         case _ =>
-          throw new FatalError("bad type: " + tp + "(" + tp.getClass() + ")")
+          throw new FatalError("bad type: " + tp + "(" + tp.getClass + ")")
       }
     }
     private def putTypes(tps: List[Type]): unit = tps foreach putType
+
+    private def putTree(tree: reflect.Tree): unit = if(putEntry(tree)) {
+      tree match {
+        case reflect.Ident(sym) => putSymbol(sym)
+        case reflect.Select(qual, sym) =>  putTree(qual); putSymbol(sym)
+        case reflect.Literal(value) => putConstant(Constant(value))
+        case reflect.Apply(fun, args) => putTree(fun); putRefTrees(args)
+        case reflect.TypeApply(fun, args) =>  putTree(fun); putRefTypes(args)
+        case reflect.Function(params, body) =>
+          putRefSymbols(params); putTree(body)
+        case reflect.This(sym) =>  putSymbol(sym)
+        case reflect.Block(stats, expr) => putRefTrees(stats); putTree(expr)
+        case reflect.New(clz) => putTree(clz)
+        case reflect.If(condition, trueCase, falseCase) =>
+          putTree(condition); putTree(trueCase); putTree(falseCase)
+        case reflect.Assign(destination, source) =>
+          putTree(destination); putTree(source)
+        case reflect.Target(sym, body) => putSymbol(sym); putTree(body)
+        case reflect.Goto(target) => putSymbol(target)
+        case reflect.ValDef(sym, rhs)  => putSymbol(sym); putTree(rhs)
+        case reflect.ClassDef(sym, tpe, impl) =>
+          putSymbol(sym); putType(tpe); putTree(impl)
+        case reflect.DefDef(sym, vparamss, ret, rhs) =>
+          putSymbol(sym); putRefTreess(vparamss); putType(ret); putTree(rhs)
+        case reflect.Super(psym) => putSymbol(psym)
+        case reflect.Template(parents, body) =>
+          putRefTypes(parents); putRefTrees(body)
+        case _ =>
+          throw new FatalError("bad tree: " + tree + "(" + tree.getClass + ")")
+      }
+    }
+    private def putRefTrees(trees: List[reflect.Tree]) = trees foreach putTree
+    private def putRefTreess(trees: List[List[reflect.Tree]]) =
+      trees foreach putRefTrees
+
+    private def putType(tpe: reflect.Type): unit = if(putEntry(tpe)) {
+      tpe match {
+        case reflect.NoPrefix => ()
+        case reflect.NoType => ()
+        case reflect.NamedType(fullname) => putConstant(Constant(fullname))
+        case reflect.PrefixedType(pre, sym) => putType(pre); putSymbol(sym)
+        case reflect.SingleType(pre, sym) => putType(pre); putSymbol(sym)
+        case reflect.ThisType(clazz) => putSymbol(clazz)
+        case reflect.AppliedType(tpe, args) => putType(tpe); putRefTypes(args)
+        case reflect.TypeBounds(lo, hi) => putType(lo); putType(hi)
+        case reflect.MethodType(formals, restpe) => //can be implicit
+          putRefTypes(formals); putType(restpe)
+        case reflect.PolyType(typeParams, typeBounds, resultType) =>
+          putRefSymbols(typeParams)
+          for(val (t1,t2) <- typeBounds) {
+            putType(t1)
+            putType(t2)
+          }
+          putType(resultType)
+        case _ =>
+          throw new FatalError("bad type: " + tpe + "(" + tpe.getClass + ")")
+
+      }
+    }
+    private def putRefTypes(tpes: List[reflect.Type]) =
+      tpes foreach putType
+
+    private def putSymbol(sym: reflect.Symbol): unit = if(putEntry(sym)) {
+      sym match {
+        case reflect.Class(fullname) =>
+          putConstant(Constant(fullname))
+        case reflect.Method(fullname, tpe) =>
+          putConstant(Constant(fullname))
+          putType(tpe)
+        case reflect.Field(fullname, tpe) =>
+          putConstant(Constant(fullname))
+          putType(tpe)
+        case reflect.TypeField(fullname, tpe) =>
+          putConstant(Constant(fullname))
+          putType(tpe)
+        case reflect.LocalValue(owner, name, tpe) =>
+          putSymbol(owner)
+          putConstant(Constant(name))
+          putType(tpe)
+        case reflect.LocalMethod(owner, name, tpe) =>
+          putSymbol(owner)
+          putConstant(Constant(name))
+          putType(tpe)
+        case reflect.NoSymbol => ()
+        case reflect.RootSymbol => ()
+        case reflect.LabelSymbol(name) =>
+          putConstant(Constant(name))
+      }
+    }
+    private def putRefSymbols(syms: List[reflect.Symbol]) =
+      syms foreach putSymbol
 
     /** Store constant in map <code>index</code>.
      *
@@ -179,6 +270,26 @@ abstract class Pickler extends SubComponent {
       for (val c <- attr.args) putConstant(c)
       for (val (name, c) <- attr.assocs) { putEntry(name); putConstant(c) }
     }
+
+    private def putAnnotation(annot: AnnotationInfo[Any]): unit =
+      if(putEntry(annot)) {
+        val AnnotationInfo(tpe, args, assocs) = annot
+        putType(tpe)
+        args foreach putTreeOrConstant
+        for (val (name, rhs) <- assocs) { putEntry(name); putTreeOrConstant(rhs) }
+      }
+
+    private def putTreeOrConstant(x: Any) {
+      x match {
+        case c:Constant => putConstant(c)
+        case tree:reflect.Tree => putTree(tree)
+        case _ =>
+          throw new FatalError("attribute neither tree nor constant: " + x)
+      }
+    }
+
+    private def putAnnotations(annots: List[AnnotationInfo[Any]]): unit =
+      annots foreach putAnnotation
 
     // Phase 2 methods: Write all entries to byte array ------------------------------
 
@@ -278,7 +389,9 @@ abstract class Pickler extends SubComponent {
           else if (c.tag == ClassTag) writeRef(c.typeValue)
           LITERAL + c.tag
         case AnnotatedType(attribs, tp) =>
-          writeBody(tp) // obviously, this should be improved
+          writeRef(tp)
+          writeRefs(attribs)
+          ANNOTATEDtpe
         case (target: Symbol, attr @ AnnotationInfo(atp, args, assocs)) =>
           writeRef(target)
           writeRef(atp)
@@ -289,8 +402,202 @@ abstract class Pickler extends SubComponent {
           writeRef(target)
           for (val c <- children) writeRef(c.asInstanceOf[Symbol])
           CHILDREN
+        case reflect.Ident(sym) =>
+          writeNat(IDENTtree)
+          writeRef(sym)
+          REFLTREE
+        case reflect.Select(qual, sym) =>
+          writeNat(SELECTtree)
+          writeRef(qual)
+          writeRef(sym)
+          REFLTREE
+        case reflect.Literal(value) =>
+          writeNat(LITERALtree)
+          writeRef(Constant(value))
+          REFLTREE
+        case reflect.Apply(fun, args) =>
+          writeNat(APPLYtree)
+          writeRef(fun)
+          writeRefs(args)
+          REFLTREE
+        case reflect.TypeApply(fun, args) =>
+          writeNat(TYPEAPPLYtree)
+          writeRef(fun)
+          writeRef(args)
+          REFLTREE
+        case reflect.Function(params, body) =>
+          writeNat(FUNCTIONtree)
+          writeRef(body)
+          writeRefs(params)
+          REFLTREE
+        case reflect.This(sym) =>
+          writeNat(THIStree)
+          writeRef(sym)
+          REFLTREE
+        case reflect.Block(stats, expr) =>
+          writeNat(BLOCKtree)
+          writeRef(expr)
+          writeRefs(stats)
+          REFLTREE
+        case reflect.New(clz) =>
+          writeNat(NEWtree)
+          writeRef(clz)
+          REFLTREE
+        case reflect.If(condition, trueCase, falseCase) =>
+          writeNat(IFtree)
+          writeRef(condition)
+          writeRef(trueCase)
+          writeRef(falseCase)
+          REFLTREE
+        case reflect.Assign(destination, source) =>
+          writeNat(ASSIGNtree)
+          writeRef(destination)
+          writeRef(source)
+          REFLTREE
+        case reflect.Target(sym, body) =>
+          writeNat(TARGETtree)
+          writeRef(sym)
+          writeRef(body)
+          REFLTREE
+        case reflect.Goto(target) =>
+          writeNat(GOTOtree)
+          writeRef(target)
+          REFLTREE
+        case reflect.ValDef(sym, rhs)  =>
+          writeNat(VALDEFtree)
+          writeRef(sym)
+          writeRef(rhs)
+          REFLTREE
+        case reflect.ClassDef(sym, tpe, impl) =>
+          writeNat(CLASSDEFtree)
+          writeRef(sym)
+          writeRef(tpe)
+          writeRef(impl)
+          REFLTREE
+        case reflect.DefDef(sym, vparamss, ret, rhs) =>
+          writeNat(DEFDEFtree)
+          writeRef(sym)
+          writeRef(ret)
+          writeRef(rhs)
+          for(val vparams <- vparamss) {
+            writeNat(vparams.length)
+            writeRefs(vparams)
+          }
+          REFLTREE
+        case reflect.Super(psym) =>
+          writeNat(SUPERtree)
+          writeRef(psym)
+          REFLTREE
+        case reflect.Template(parents, body) =>
+          writeNat(TEMPLATEtree)
+          writeNat(parents.length)
+          writeRefs(parents)
+          writeRefs(body)
+          REFLTREE
+        case reflect.NoPrefix =>
+          writeNat(NOPREFIXrtpe)
+          REFLTYPE
+        case reflect.NoType =>
+          writeNat(NOrtpe)
+          REFLTYPE
+        case reflect.NamedType(fullname) =>
+          writeNat(NAMEDrtpe)
+          writeRef(Constant(fullname))
+          REFLTYPE
+        case reflect.PrefixedType(pre, sym) =>
+          writeNat(PREFIXEDrtpe)
+          writeRef(pre)
+          writeRef(sym)
+          REFLTYPE
+        case reflect.SingleType(pre, sym) =>
+          writeNat(SINGLErtpe)
+          writeRef(pre)
+          writeRef(sym)
+          REFLTYPE
+        case reflect.ThisType(clazz) =>
+          writeNat(THISrtpe)
+          writeRef(clazz)
+          REFLTYPE
+        case reflect.AppliedType(tpe, args) =>
+          writeNat(APPLIEDrtpe)
+          writeRef(tpe)
+          writeRef(args)
+          REFLTYPE
+        case reflect.TypeBounds(lo, hi) =>
+          writeNat(TYPEBOUNDSrtpe)
+          writeRef(lo)
+          writeRef(hi)
+          REFLTYPE
+        case entry@reflect.MethodType(formals, restpe) => //can be implicit
+          if(entry.isInstanceOf[ImplicitMethodType])
+            writeNat(IMPLICITMETHODrtpe)
+          else
+            writeNat(METHODrtpe)
+          writeRef(restpe)
+          writeRefs(formals)
+          REFLTYPE
+        case reflect.PolyType(typeParams, typeBounds, resultType) =>
+          writeNat(POLYrtpe)
+          writeRef(resultType)
+          writeNat(typeBounds.length)
+          for(val (t1,t2) <- typeBounds) {
+            writeRef(t1)
+            writeRef(t2)
+          }
+          writeRefs(typeParams)
+          REFLTYPE
+        case reflect.Class(fullname) =>
+          writeNat(CLASSrsym)
+          writeRef(Constant(fullname))
+          REFLSYM
+        case reflect.Method(fullname, tpe) =>
+          writeNat(METHODrsym)
+          writeRef(Constant(fullname))
+          writeRef(tpe)
+          REFLSYM
+        case reflect.Field(fullname, tpe) =>
+          writeNat(FIELDrsym)
+          writeRef(Constant(fullname))
+          writeRef(tpe)
+          REFLSYM
+        case reflect.TypeField(fullname, tpe) =>
+          writeNat(TYPEFIELDrsym)
+          writeRef(Constant(fullname))
+          writeRef(tpe)
+          REFLSYM
+        case reflect.LocalValue(owner, name, tpe) =>
+          writeNat(LOCALVALUErsym)
+          writeRef(owner)
+          writeRef(Constant(name))
+          writeRef(tpe)
+          REFLSYM
+        case reflect.LocalMethod(owner, name, tpe) =>
+          writeNat(LOCALMETHODrsym)
+          writeRef(owner)
+          writeRef(Constant(name))
+          writeRef(tpe)
+          REFLSYM
+        case reflect.NoSymbol =>
+          writeNat(NOSYMBOLrsym)
+          REFLSYM
+        case reflect.RootSymbol =>
+          writeNat(ROOTSYMBOLrsym)
+          REFLSYM
+        case reflect.LabelSymbol(name) =>
+          writeNat(LABELSYMBOLrsym)
+          REFLSYM
+        case AnnotationInfo(target, args, assocs) =>
+          writeRef(target)
+          writeNat(args.length)
+          for (val tree <- args) writeRef(tree.asInstanceOf[reflect.Tree])
+          for (val (name, tree) <- assocs) {
+            writeRef(name);
+            writeRef(tree.asInstanceOf[reflect.Tree])
+          }
+          ATTRIBTREE
+
         case _ =>
-          throw new FatalError("bad entry: " + entry + " " + entry.getClass())//debug
+          throw new FatalError("bad entry: " + entry + " " + entry.getClass)
       }
       val startpos = writeIndex
       writeByte(0); writeByte(0)

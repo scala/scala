@@ -102,15 +102,71 @@ object PickleFormat {
   final val LITERALstring = 33
   final val LITERALnull = 34
   final val LITERALclass = 35
-  final val ATTRIBUTE = 40
+  final val ATTRIBUTE = 40  // an attribute with constants
   final val CHILDREN = 41
+
+  final val ANNOTATEDtpe = 42
+
+
+  final val ATTRIBTREE = 43  // an annotation with trees
+
+  final val REFLTREE = 44  // prefix saying that a prefix tree is coming
+    final val IDENTtree = 1
+    final val SELECTtree = 2
+    final val LITERALtree = 3
+    final val APPLYtree = 4
+    final val TYPEAPPLYtree = 5
+    final val FUNCTIONtree = 6
+    final val THIStree = 7
+    final val BLOCKtree = 8
+    final val NEWtree = 9
+    final val IFtree = 10
+    final val ASSIGNtree = 11
+    final val TARGETtree = 12
+    final val GOTOtree = 13
+    final val VALDEFtree = 14
+    final val CLASSDEFtree = 15
+    final val DEFDEFtree = 16
+    final val SUPERtree = 17
+    final val TEMPLATEtree = 18
+
+
+  final val REFLTYPE = 45   // prefix code that means a reflect type is coming
+    final val NOPREFIXrtpe = 1
+    final val NOrtpe = 2
+    final val NAMEDrtpe = 3
+    final val PREFIXEDrtpe = 4
+    final val SINGLErtpe = 5
+    final val THISrtpe = 6
+    final val APPLIEDrtpe = 7
+    final val TYPEBOUNDSrtpe = 8
+    final val METHODrtpe = 9
+    final val POLYrtpe = 10
+    final val IMPLICITMETHODrtpe = 11
+
+  final val REFLSYM = 46
+    final val CLASSrsym = 1
+    final val METHODrsym = 2
+    final val FIELDrsym = 3
+    final val TYPEFIELDrsym = 4
+    final val LOCALVALUErsym = 5
+    final val LOCALMETHODrsym = 6
+    final val NOSYMBOLrsym = 7
+    final val ROOTSYMBOLrsym = 8
+    final val LABELSYMBOLrsym = 9
+
+
   final val firstSymTag = NONEsym
   final val lastSymTag = VALsym
   final val lastExtSymTag = EXTMODCLASSref
-  final val firstTypeTag = NOtpe
-  final val lastTypeTag = POLYtpe
-  final val PosOffset = 64
 
+
+  //The following two are no longer accurate, because ATTRIBUTEDtpe
+  //is not in the same range as the other types
+  //final val firstTypeTag = NOtpe
+  //final val lastTypeTag = POLYtpe
+
+  final val PosOffset = 64
   final val PosTYPEsym  = PosOffset + TYPEsym
   final val PosALIASsym = PosOffset + ALIASsym
   final val PosCLASSsym = PosOffset + CLASSsym

@@ -1254,7 +1254,7 @@ trait Types requires SymbolTable {
         if(attributes.isEmpty)
           ""
         else
-          attributes.mkString("[", "] [", "] ")
+          attributes.mkString("", " ", "")
 
       attString + tp
     }
@@ -1278,9 +1278,9 @@ trait Types requires SymbolTable {
     // ----------------  methods forwarded to tp ------------------ \\
 
     override def symbol: Symbol = tp.symbol
-    override def singleDeref: Type = tp.singleDeref
-    override def widen: Type = tp.widen
-    override def deconst: Type = tp.deconst
+    override def singleDeref: Type = maybeRewrap(tp.singleDeref)
+    override def widen: Type = maybeRewrap(tp.widen)
+    override def deconst: Type = maybeRewrap(tp.deconst)
     override def bounds: TypeBounds = {
        val oftp = tp.bounds
        oftp match {

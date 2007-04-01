@@ -183,40 +183,40 @@ abstract class LiftCode extends Transform {
 
     def reify(tp: Type): reflect.Type = tp match {
       case ErrorType =>
-        if (_log_reify_type_) Console.println("cannot handle ErrorType"); null
+        if (_log_reify_type_) Console.println("cannot handle ErrorType"); reflect.NoType
       case WildcardType =>
-        if (_log_reify_type_) Console.println("cannot handle WildcardType"); null
+        if (_log_reify_type_) Console.println("cannot handle WildcardType"); reflect.NoType
       case NoType =>
-        if (_log_reify_type_) Console.println("cannot handle NoType"); null
+        if (_log_reify_type_) Console.println("cannot handle NoType"); reflect.NoType
       case NoPrefix =>
-        if (_log_reify_type_) Console.println("cannot handle NoPrefix"); null
+        if (_log_reify_type_) Console.println("cannot handle NoPrefix"); reflect.NoType
       case ThisType(sym) =>
         if (_log_reify_type_) Console.println("ThisType ("+sym+")")
         val rsym = reify(sym)
-        if (_log_reify_type_) Console.println("reified is "+rsym+" cannot handle ThisType "+tp); null
+        if (_log_reify_type_) Console.println("reified is "+rsym+" cannot handle ThisType "+tp); reflect.NoType
       case SingleType(pre, sym) =>
-        if (_log_reify_type_) Console.println("cannot handle SingleType "+tp); null
+        if (_log_reify_type_) Console.println("cannot handle SingleType "+tp); reflect.NoType
       case ConstantType(value) =>
-        if (_log_reify_type_) Console.println("cannot handle ConstantType("+value+")  "+tp); null
+        if (_log_reify_type_) Console.println("cannot handle ConstantType("+value+")  "+tp); reflect.NoType
       case TypeRef(pre, sym, args) =>
         if (_log_reify_type_) Console.println("TypeRef! try to handle prefix")
         val rpre = reify(pre)
-        if (_log_reify_type_) Console.println("cannot handle TypeRef("+pre+","+sym+","+args+") == "+tp+")"); null
+        if (_log_reify_type_) Console.println("cannot handle TypeRef("+pre+","+sym+","+args+") == "+tp+")"); reflect.NoType
 
       case TypeBounds(lo, hi) =>
-        if (_log_reify_type_) Console.println("cannot handle TypeBounds "+tp); null
+        if (_log_reify_type_) Console.println("cannot handle TypeBounds "+tp); reflect.NoType
       case RefinedType(parents, defs) =>
-        if (_log_reify_type_) Console.println("cannot handle RefinedType "+tp); null
+        if (_log_reify_type_) Console.println("cannot handle RefinedType "+tp); reflect.NoType
       case ClassInfoType(parents, defs, clazz) =>
-        if (_log_reify_type_) Console.println("cannot handle ClassInfoType "+tp); null
+        if (_log_reify_type_) Console.println("cannot handle ClassInfoType "+tp); reflect.NoType
       case MethodType(paramtypes, result) =>
-        if (_log_reify_type_) Console.println("cannot handle MethodType "+tp); null
+        if (_log_reify_type_) Console.println("cannot handle MethodType "+tp); reflect.NoType
       case PolyType(tparams, result) =>
-        if (_log_reify_type_) Console.println("cannot handle PolyType  "+tp); null;
+        if (_log_reify_type_) Console.println("cannot handle PolyType  "+tp); reflect.NoType
       case AnnotatedType(attribs, tp) =>
         reify(tp)
       case _ =>
-        null
+        reflect.NoType
     }
 
   }
