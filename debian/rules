@@ -12,7 +12,8 @@ build-stamp:
 clean:
 	dh_testdir
 	dh_clean -A
-	rm -rf build dists
+	rm -rf build simpbuild dists
+	rm -f src/actors/scala/actors/ThreadPoolScheduler.scala
 	rm -f build-stamp
 
 install: build
