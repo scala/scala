@@ -3,11 +3,11 @@ Section: devel
 Priority: optional
 Maintainer: Lex Spoon <lex@debian.org>
 Standards-Version: 3.7.2
-Build-Depends: gcj-4.1, java-gcj-compat,  gij | java-virtual-machine, ant,  debhelper (>= 5)
+Build-Depends: gcj-4.1, java-gcj-compat-dev,  gij | java-virtual-machine, ant,  debhelper (>= 5)
 
 Package: scala
 Architecture: all
-Depends: scala-library, java-gcj-compat, gij | java-virtual-machine
+Depends: scala-library, java-gcj-compat-dev, gij | java-virtual-machine
 Recommends: sbaz
 Description: The Scala programming language
  Scala is a Java-compatible programming language with many
