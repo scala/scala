@@ -23,6 +23,8 @@
 
   <!-- General properties -->
   <property name="copyright.holder" value="LAMP/EPFL"/>
+  <property name="copyright.string" value="(c) 2002-2007 ${copyright.holder}"/>
+
 
   <!-- Javac configuration properties -->
   <property name="jc.source" value="1.4"/>
@@ -307,9 +309,16 @@
   	
     <!-- Build jars -->
     <mkdir dir="${build.jar.dir}"/>
-    <copy
-      file="${topdir}/build.number"
-      tofile="${build.comp.dir}/scala.compiler.version.properties"/>
+    <echo
+      file="${build.comp.dir}/compiler.properties"
+      message="version.number=${version.number}${line.separator}"
+      append="false"
+    />
+    <echo
+      file="${build.comp.dir}/compiler.properties"
+      message="copyright.string=${copyright.string}${line.separator}"
+      append="true"
+    />
     <jar destfile="${build.jar.dir}/${comp.jar.name}">
       <fileset dir="${build.comp.dir}"/>
       <zipfileset src="${fjbg.jar}"/>
@@ -324,6 +333,7 @@
         <include name="**/*.xml"/>
         <include name="**/*.js"/>
         <include name="**/*.css"/>
+        <include name="**/*.properties"/>
       </fileset>
       <manifest>
         <attribute name="Signature-Version" value="${version.number}"/>
