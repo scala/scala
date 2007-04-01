@@ -70,8 +70,11 @@ trait StdNames requires SymbolTable {
     val EXPAND_SEPARATOR_STRING = "$$"
     val TUPLE_FIELD_PREFIX_STRING = "_"
     val CHECK_IF_REFUTABLE_STRING = "check$ifrefutable$"
+
     val INTERPRETER_WRAPPER_SUFFIX = "$object"
     val INTERPRETER_LINE_PREFIX = "line"
+    val INTERPRETER_VAR_PREFIX = "unnamed"
+    val INTERPRETER_IMPORT_WRAPPER = "$import"
 
     def LOCAL(clazz: Symbol) = newTermName(LOCALDUMMY_PREFIX_STRING + clazz.name+">")
     def TUPLE_FIELD(index: int) = newTermName(TUPLE_FIELD_PREFIX_STRING + index)
