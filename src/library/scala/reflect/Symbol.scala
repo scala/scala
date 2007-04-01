@@ -27,7 +27,7 @@ abstract class GlobalSymbol(val fullname: String) extends Symbol {
     else Class(fullname.substring(0, pointIndex))
   val name: String =
     if (pointIndex < 0) fullname
-    else fullname.substring(pointIndex, fullname.length())
+    else fullname.substring(pointIndex+1, fullname.length())
 }
 
 abstract class LocalSymbol extends Symbol
