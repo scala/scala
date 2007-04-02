@@ -22,7 +22,7 @@ class SyncVar[a] {
   private var value: a = _
 
   def get = synchronized {
-    if (!isDefined) wait()
+    while (!isDefined) wait()
     value
   }
 
