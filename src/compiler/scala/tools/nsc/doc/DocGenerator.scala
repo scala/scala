@@ -691,7 +691,11 @@ abstract class DocGenerator extends Models {
       val dir =
         if (sym.toplevelClass.isPackageClass) sym.toplevelClass
         else sym.toplevelClass.owner
-      val name = dir.fullNameString('/') + "/" + sym.sourceFile.name.replace(".scala", "")
+      val name = {
+          //dir.fullNameString('/') + "/" + sym.sourceFile.name.replace(".scala", "")
+          if (true) throw new Error
+          ""
+        }
       <span>
         <hr/>
         in {aref(urlFor(sym.owner), "_self", sym.owner.fullNameString('.'))}

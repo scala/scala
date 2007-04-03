@@ -223,9 +223,8 @@ trait ModelExtractor {
         }
       });
     }
-    def members0(f : Symbol => Boolean) = decls.pfilter(e => f(e)).valueSet;
+    def members0(f : Symbol => Boolean) = decls.pfilterKeys(e => f(e)).valueSet;
     def members(c : Category) : Iterable[Member] = members0(c.f);
-
     object inherited extends jcl.LinkedHashMap[Symbol,List[Member]]() {
       override def default(tpe : Symbol) = Nil;
       {
@@ -324,22 +323,22 @@ trait ModelExtractor {
     }
     def Member(sym : Symbol) : Option[Member] = {
       import global._;
-      import symtab.Flags._;
+      import symtab.Flags;
       if (!isVisible(sym)) return None;
-      if (sym.hasFlag(ACCESSOR)) {
+      if (sym.hasFlag(Flags.ACCESSOR)) {
         if (sym.isSetter) return None;
         assert(sym.isGetter);
         return Some[Member](new Val(sym.asInstanceOf[TermSymbol]));
       } else if (sym.isValue && !sym.isMethod && !sym.isModule) {
-        if (!sym.hasFlag(JAVA)) {
+        if (!sym.hasFlag(Flags.JAVA)) {
           Console.println("SYM: " + sym + " " + sym.fullNameString('.'));
-          Console.println("FLA: " + symtab.Flags.flagsToString(sym.flags));
+          Console.println("FLA: " + Flags.flagsToString(sym.flags));
         }
-        assert(sym.hasFlag(JAVA));
+        assert(sym.hasFlag(Flags.JAVA));
         return Some[Member](new Val(sym.asInstanceOf[TermSymbol]));
       }
       if (sym.isValue && !sym.isModule) {
-        val str = symtab.Flags.flagsToString(sym.flags);
+        val str = Flags.flagsToString(sym.flags);
         assert(sym.isMethod);
         return new Some[Member](new Def(sym.asInstanceOf[TermSymbol]));
       }
@@ -388,7 +387,7 @@ trait ModelExtractor {
         case _ =>
         }
         if (eA.getClass != eB.getClass) {
-          val diff = eA.getClass.getCanonicalName.compare(eB.getClass.getCanonicalName);
+          val diff = eA.getClass.getName.compare(eB.getClass.getName);
           assert(diff != 0);
           return diff;
         }
