@@ -21,7 +21,7 @@ trait MutableSeq[A] extends MutableIterable[A] with Seq[A] {
 
   override def apply(idx : Int) = elements.seek(idx);
 
-  def pfilter(p : A => Boolean) : MutableSeq[A] = new Filter(p);
+  override def pfilter(p : A => Boolean) : MutableSeq[A] = new Filter(p);
 
   override def pmap[B](f : A => B) : MutableSeq[B] = new Map[B](f);
 
@@ -76,6 +76,7 @@ trait MutableSeq[A] extends MutableIterable[A] with Seq[A] {
   protected class Map[B](f : A => B) extends super.Map[B](f) with MutableSeq[B] {
     override def elements = MutableSeq.this.elements.map(f);
     override def apply(idx : Int) = f(MutableSeq.this.apply(idx));
+    override def size = length;
   }
   override def length = {
     var i = elements;

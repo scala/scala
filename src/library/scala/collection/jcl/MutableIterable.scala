@@ -17,7 +17,7 @@ package scala.collection.jcl;
  *
  * @author Sean McDirmid
  */
-trait MutableIterable[A] extends Iterable[A] {
+trait MutableIterable[A] extends scala.Collection[A] {
   /** @return true if t is in the collection.
    **/
   def has(t : A ) : Boolean = elements.has(t);
@@ -37,17 +37,17 @@ trait MutableIterable[A] extends Iterable[A] {
   }
 
   /** @return the collection that t was removed from.
-   **/
+   */
   def -(t : A) : this.type = { remove(t); this; }
   /** retain only elements in the collection that predicate p is true for.
-   **/
+   */
   def retain(p : A => Boolean) : Unit = elements.retain(p);
   /** retain only elements that are also in that.
-   **/
+   */
   def retainAll(that : Iterable[A]) : Boolean = elements.retain(s => that.exists(t => t == s));
 
   /** @return the current number of elements in the collection.
-   **/
+   */
   protected def size0 : Int = {
     var count = 0;
     val i = elements;
@@ -56,7 +56,7 @@ trait MutableIterable[A] extends Iterable[A] {
   }
 
   /** clear all elements from the collection.
-   **/
+   */
   def clear(): Unit = {
     val i = elements;
     while (i.hasNext) {
@@ -64,16 +64,17 @@ trait MutableIterable[A] extends Iterable[A] {
     }
   }
   /** Creates a non-strict map of this collection. Any removals from the returned
-   ** collection will remove from this collection, while any changes to this collection will also be
-   ** reflected in the mapped collection.
-   ** @return a non-strict map of this collection.
-   **/
-  def pmap[B](f : A => B) : MutableIterable[B] = new Map[B](f);
+   *  collection will remove from this collection, while any changes to this collection will also be
+   *  reflected in the mapped collection.
+   *  @return a non-strict map of this collection.
+   */
+  override def pmap[B](f : A => B) : MutableIterable[B] = new Map[B](f);
   /** The default implementation of a map over mutable iterable collections.
    **/
   protected class Map[B](f : A => B) extends MutableIterable[B] {
     override def elements = MutableIterable.this.elements.map(f);
     override def toString = elements.toList.mkString("{", ", ", "}");
+    override def size = MutableIterable.this.size;
   }
   override def elements : MutableIterator[A];
 }

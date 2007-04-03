@@ -62,7 +62,7 @@ trait Collection[A] extends MutableIterable[A] {
    ** can update the filtered collection.
    ** @return a non-strict filter of this collection.
    **/
-  def pfilter(p : A => Boolean) : MutableIterable[A] = new Filter(p);
+  override def pfilter(p : A => Boolean) : MutableIterable[A] = new Filter(p);
 
   /** Base implementation of a filtered collection */
   class Filter(p : A => Boolean) extends Collection[A] {

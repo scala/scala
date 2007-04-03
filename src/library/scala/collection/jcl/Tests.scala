@@ -47,7 +47,7 @@ private[jcl] object Tests {
     rmap + ("bad" -> 10);
     Console.println(rmap);
     //Console.println(map);
-    val fmap : SortedMap[String,Integer] = rmap.pfilter(k => k.length == 2);
+    val fmap : SortedMap[String,Integer] = rmap.pfilterKeys(k => k.length == 2);
     Console.println(fmap);
   }
 

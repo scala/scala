@@ -76,7 +76,8 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Collection[A] {
    *  @return the sequence length.
    */
   def length: Int
-  final def size = length
+  /** should always be <code>length</code> */
+  def size = length
 
   /** Returns true if length == 0
    */

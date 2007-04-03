@@ -21,7 +21,7 @@ package scala.collection.mutable
  *  @version 1.0, 08/07/2003
  */
 @serializable
-class History[A, B] extends AnyRef with Subscriber[A, B] with Iterable[(B, A)] {
+class History[A, B] extends AnyRef with Subscriber[A, B] with Collection[(B, A)] {
 
   protected val log: Queue[(B, A)] = new Queue[(B, A)]
 
@@ -42,7 +42,7 @@ class History[A, B] extends AnyRef with Subscriber[A, B] with Iterable[(B, A)] {
 
   def events: Iterator[A] = log.elements.map { case (_, e) => e }
 
-  def size: Int = log.length
+  override def size: Int = log.length
 
   def clear(): Unit = log.clear
 }

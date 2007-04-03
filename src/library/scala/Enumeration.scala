@@ -143,8 +143,23 @@ abstract class Enumeration(initial: Int, names: String*) {
 
   /** The type of the enumerated values. */
   abstract class Value extends Ordered[Value] {
+    /** the id and bit location of this enumeration value */
     def id: Int
     override def compare(that: Value): Int = this.id - that.id
+    /** this enumeration value as an <code>Int</code> bit mask.
+     *  @throws IllegalArgumentException if <code>id</code> is greater than 31
+     */
+    def mask32 : Int  = {
+      if (id >= 32) throw new IllegalArgumentException
+      1  << id
+    }
+    /** this enumeration value as an <code>Long</code> bit mask.
+     *  @throws IllegalArgumentException if <code>id</code> is greater than 63
+     */
+    def mask64 : Long = {
+      if (id >= 64) throw new IllegalArgumentException
+      1L << id
+    }
   }
 
   /** A class implementing the Value type. This class can be overriden to
@@ -166,4 +181,138 @@ abstract class Enumeration(initial: Int, names: String*) {
       else name
   }
 
+  /** A set that efficiently stores enumeration values as bits.
+   *  @author Sean McDirmid
+   *
+   *  @ex
+   *
+<code>
+object flags extends Enumeration {
+  val Public = Value(5, "public");
+  val Private = Value(4, "private");
+  val Protected = Value(6, "protected");
+  val Final = Value(7, "final");
+}
+
+class Entity {
+  var flags0 : Int = ...;
+  def flags = flags.Set32(flags0);
+}
+
+val e : Entity = ...;
+
+if (e.flags.contains(flags.Private))
+  e.flags0 = (e.flags | flags.Final).underlying;
+</code>
+   */
+  abstract class SetXX extends collection.immutable.Set[Value] {
+    /** either Int or Long */
+    type Underlying <: AnyVal
+    type TSet <: SetXX
+    /** The integer that bit-encodes a set of enumeration values.
+     */
+    val underlying : Underlying
+    /** returns the underlying integer representation of this set as a long. */
+    protected def underlyingAsLong : Long
+    /** Equivalent to <code>++</code> for bit sets. Returns a set
+     *  that has all values in <code>this</code> and <code>set</code>.
+     */
+    def |(set   : TSet) : TSet
+    /** Equivalent to <code>+</code> for bit sets. Returns a set
+     *  that has all values in <code>this</code> with the addition of <code>value</code>.
+     */
+    def |(value : Value) : TSet
+    /** Equivalent to <code>**</code> for bit sets.
+     *  Returns a bit set that has all values that are both in <code>this</code> and <code>set</code>.
+     */
+    def &(set   : TSet) : TSet
+    /** Equivalent to <code>-</code> for bit sets.
+     *  Returns a bit set that has all values in <code>this</code> except for <code>value</code>.
+     */
+    def &~(value : Value) : TSet
+    def -(value : Value) : TSet = this &~ value
+    def +(value : Value) : TSet = this | value
+    def ++(set : TSet) : TSet = this | set
+    def **(set : TSet) : TSet = this & set
+    def size = {
+      var x = underlyingAsLong
+      var sz = 0
+      while (x != 0) {
+        if ((x & 1) != 0) sz = sz + 1
+        x = x >> 1
+      }
+      sz
+    }
+    override def stringPrefix = Enumeration.this.name;
+    def elements = new Iterator[Value] {
+      var bit = 0
+      var underlying = underlyingAsLong
+      def hasNext = underlying != 0
+      private def shift = {
+        underlying = underlying >> 1
+        bit = bit + 1
+      }
+      def next = {
+        if (underlying == 0) throw new NoSuchElementException
+        while ((underlying & 1) == 0) shift
+        val ret = values(bit)
+        shift
+        ret
+      }
+    }
+    def empty[B]: scala.collection.immutable.Set[B] = new scala.collection.immutable.HashSet[B];
+  }
+  /** An enumeration bit set that can handle enumeration values with ids up to 31 in an <code>Int</code>.
+   */
+  class Set32(val underlying : Int) extends SetXX {
+    def this() = this(0)
+    type Underlying = Int
+    type TSet = Set32
+    def underlyingAsLong = {
+      if (underlying >= 0) underlying.toLong
+      else {
+        val underlying0 = (~(1 << 31)) & underlying
+        assert(underlying0 >= 0)
+        underlying0.toLong | (1L << 31)
+      }
+    }
+    def contains(value : Value) = (underlying & value.mask32) != 0
+    def |(  set :   Set32) = new Set32(underlying |   set.underlying)
+    def |(value : Value) = new Set32(underlying | value.mask32)
+    def &~(value : Value) = new Set32(underlying & (~value.mask32))
+    def &(set : Set32) = new Set32(underlying & set.underlying)
+  }
+  /** create an empty 32 bit enumeration set */
+  def Set32 = new Set32
+  /** create a bit enumeration set according ot underlying */
+  def Set32(underlying : Int) = new Set32(underlying)
+  /** An enumeration bit set that can handle enumeration values with ids up to 63 in a <code>Long</code>.
+   */
+  class Set64(val underlying : Long) extends SetXX {
+    def this() = this(0)
+    type Underlying = Long
+    type TSet = Set64
+    def underlyingAsLong = underlying
+    def contains(value : Value) = (underlying & value.mask64) != 0
+    def |(  set :   Set64) = new Set64(underlying |   set.underlying)
+    def |(value : Value) = new Set64(underlying | value.mask64)
+    def &~(value : Value) = new Set64(underlying & (~value.mask64))
+    def &(set : Set64) = new Set64(underlying & set.underlying)
+  }
+  /** create an empty 64 bit enumeration set */
+  def Set64 = new Set64
+  /** create a bit enumeration set according ot underlying */
+  def Set64(underlying : Long) = new Set64(underlying)
+  /** used to reverse engineer bit locations from pre-defined bit masks */
+  def maskToBit(n : Long) = {
+    assert(n != 0)
+    var bit = 0
+    var m = n
+    while ((m & 1) != 1) {
+      m = m >> 1
+      bit = bit + 1
+    }
+    assert(m == 1)
+    bit
+  }
 }

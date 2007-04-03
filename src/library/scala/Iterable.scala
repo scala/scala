@@ -76,6 +76,8 @@ object Iterable {
  *  <code>elements</code> which returns an iterator over all the
  *  elements contained in the collection.
  *
+ *  @note If a collection has a known <code>size</code>, it should also sub-type <code>Collection</code>.
+ *        Only potentially unbounded collections should directly sub-class <code>Iterable</code>.
  *  @author  Matthias Zenger
  *  @version 1.1, 04/02/2004
  */
@@ -92,6 +94,7 @@ trait Iterable[+A] {
    *
    *  @return the new iterable object
    *  @deprecated  use <code>++</code> instead
+   *  @note Will not terminate for infinite-sized collections.
    */
   @deprecated
   def concat[B >: A](that: Iterable[B]): Collection[B] =
@@ -100,6 +103,7 @@ trait Iterable[+A] {
   /** Appends two iterable objects.
    *
    *  @return the new iterable object
+   *  @note Will not terminate for infinite-sized collections.
    */
   def ++ [B >: A](that: Iterable[B]): Collection[B] = {
     val buf = new ArrayBuffer[B]
@@ -111,6 +115,7 @@ trait Iterable[+A] {
   /** Returns the iterable resulting from applying the given function
    *  <code>f</code> to each element of this iterable.
    *
+   *  @note Will not terminate for infinite-sized collections.
    *  @param f function to apply to each element.
    *  @return <code>f(a<sub>0</sub>), ..., f(a<sub>n</sub>)</code>
    *          if this iterable is <code>a<sub>0</sub>, ..., an</code>.
@@ -125,6 +130,7 @@ trait Iterable[+A] {
   /** Applies the given function <code>f</code> to each element of
    *  this iterable, then concatenates the results.
    *
+   *  @note Will not terminate for infinite-sized collections.
    *  @param f the function to apply on each element.
    *  @return  <code>f(a<sub>0</sub>) ::: ... ::: f(a<sub>n</sub>)</code> if
    *           this iterable is <code>a<sub>0</sub>, ..., a<sub>n</sub></code>.
@@ -139,6 +145,7 @@ trait Iterable[+A] {
   /** Returns all the elements of this iterable that satisfy the
    *  predicate <code>p</code>. The order of the elements is preserved.
    *
+   *  @note Will not terminate for infinite-sized collections.
    *  @param p the predicate used to filter the list.
    *  @return the elements of this list satisfying <code>p</code>.
    */
@@ -152,6 +159,7 @@ trait Iterable[+A] {
   /** Returns the longest prefix of this iterable whose elements satisfy
    *  the predicate <code>p</code>.
    *
+   *  @note May not terminate for infinite-sized collections.
    *  @param p the test predicate.
    *  @return  the longest prefix of this iterable whose elements satisfy
    *           the predicate <code>p</code>.
@@ -162,6 +170,7 @@ trait Iterable[+A] {
   /** Returns the longest suffix of this iterable whose first element
    *  does not satisfy the predicate <code>p</code>.
    *
+   *  @note May not terminate for infinite-sized collections.
    *  @param p the test predicate.
    *  @return  the longest suffix of the iterable whose first element
    *           does not satisfy the predicate <code>p</code>.
@@ -183,6 +192,7 @@ trait Iterable[+A] {
    *  If this iterable has less than <code>n</code> elements, the empty
    *  iterable is returned.
    *
+   *  @note Will not terminate for infinite-sized collections.
    *  @param n the number of elements to drop
    *  @return  the new iterable
    */
@@ -192,6 +202,7 @@ trait Iterable[+A] {
   /** Apply a function <code>f</code> to all elements of this
    *  iterable object.
    *
+   *  @note Will not terminate for infinite-sized collections.
    *  @param  f   a function that is applied to every element.
    */
   def foreach(f: A => Unit): Unit = elements.foreach(f)
@@ -200,6 +211,7 @@ trait Iterable[+A] {
    *  iterable object and return true, iff the predicate yields
    *  true for all elements.
    *
+   *  @note May not terminate for infinite-sized collections.
    *  @param   p     the predicate
    *  @return true, iff the predicate yields true for all elements.
    */
@@ -209,6 +221,7 @@ trait Iterable[+A] {
    *  iterable object and return true, iff there is at least one
    *  element for which <code>p</code> yields true.
    *
+   *  @note May not terminate for infinite-sized collections.
    *  @param   p     the predicate
    *  @return true, iff the predicate yields true for at least one element.
    */
@@ -217,6 +230,7 @@ trait Iterable[+A] {
   /** Find and return the first element of the iterable object satisfying a
    *  predicate, if any.
    *
+   *  @note Will not terminate for infinite-sized collections.
    *  @param p the predicate
    *  @return the first element in the iterable object satisfying <code>p</code>,
    *  or <code>None</code> if none exists.
@@ -225,6 +239,7 @@ trait Iterable[+A] {
 
   /** Returns index of the first element satisying a predicate, or -1.
    *
+   *  @note Will not terminate for infinite-sized collections.
    *  @param  p the predicate
    *  @return   the index of the first element satisfying <code>p</code>,
    *            or -1 if such an element does not exist
@@ -243,6 +258,7 @@ trait Iterable[+A] {
   /** Returns the index of the first occurence of the specified
    *  object in this iterable object.
    *
+   *  @note May not terminate for infinite-sized collections.
    *  @param  elem  element to search for.
    *  @return the index in this sequence of the first occurence of the
    *          specified element, or -1 if the sequence does not contain
@@ -266,6 +282,7 @@ trait Iterable[+A] {
    *  function <code>f</code>, from left to right, and starting with
    *  the value <code>z</code>.
    *
+   *  @note Will not terminate for infinite-sized collections.
    *  @return <code>f(... (f(f(z, a<sub>0</sub>), a<sub>1</sub>) ...),
    *          a<sub>n</sub>)</code> if the list is
    *          <code>[a<sub>0</sub>, a<sub>1</sub>, ..., a<sub>n</sub>]</code>.
@@ -276,6 +293,7 @@ trait Iterable[+A] {
    *  function <code>f</code>, from right to left, and starting with
    *  the value <code>z</code>.
    *
+   *  @note Will not terminate for infinite-sized collections.
    *  @return <code>f(a<sub>0</sub>, f(a<sub>1</sub>, f(..., f(a<sub>n</sub>, z)...)))</code>
    *          if the list is <code>[a<sub>0</sub>, a1, ..., a<sub>n</sub>]</code>.
    */
@@ -284,16 +302,19 @@ trait Iterable[+A] {
   /** Similar to <code>foldLeft</code> but can be used as
    *  an operator with the order of list and zero arguments reversed.
    *  That is, <code>z /: xs</code> is the same as <code>xs foldLeft z</code>
+   *  @note Will not terminate for infinite-sized collections.
    */
   def /:[B](z: B)(op: (B, A) => B): B = foldLeft(z)(op)
 
   /** An alias for <code>foldRight</code>.
    *  That is, <code>xs :\ z</code> is the same as <code>xs foldRight z</code>
+   *  @note Will not terminate for infinite-sized collections.
    */
   def :\[B](z: B)(op: (A, B) => B): B = foldRight(z)(op)
 
   /** Combines the elements of this iterable object together using the binary
    *  operator <code>op</code>, from left to right
+   *  @note Will not terminate for infinite-sized collections.
    *  @param op  The operator to apply
    *  @return <code>op(... op(a<sub>0</sub>,a<sub>1</sub>), ..., a<sub>n</sub>)</code>
       if the iterable object has elements
@@ -304,6 +325,7 @@ trait Iterable[+A] {
 
 /** Combines the elements of this iterable object together using the binary
    *  operator <code>op</code>, from right to left
+   *  @note Will not terminate for infinite-sized collections.
    *  @param op  The operator to apply
    *
    *  @return <code>a<sub>0</sub> op (... op (a<sub>n-1</sub> op a<sub>n</sub>)...)</code>
@@ -315,6 +337,7 @@ trait Iterable[+A] {
   def reduceRight[B >: A](op: (B, B) => B): B = elements.reduceRight(op)
 
   /** Copy all elements to a given buffer
+   *  @note Will not terminate for infinite-sized collections.
    *  @param  dest   The buffer to which elements are copied
    *  @note Will not terminate if not finite.
    */
@@ -322,6 +345,7 @@ trait Iterable[+A] {
 
   /** Checks if the other iterable object contains the same elements.
    *
+   *  @note Will not terminate for infinite-sized collections.
    *  @param that  the other iterable object
    *  @return true, iff both iterable objects contain the same elements.
    */
@@ -337,6 +361,7 @@ trait Iterable[+A] {
 
   /**
    *  Create a fresh list with all the elements of this iterable object.
+   *  @note Will not terminate for infinite-sized collections.
    */
   def toList: List[A] = elements.toList
 
@@ -346,10 +371,9 @@ trait Iterable[+A] {
    *  <code>end</code>. Inside, the string representations of elements (w.r.t.
    *  the method <code>toString()</code>) are separated by the string
    *  <code>sep</code>.
-   *  <p/>
-   *  Ex: <br/>
-   *  <code>List(1, 2, 3).mkString("(", "; ", ")") = "(1; 2; 3)"</code>
    *
+   *  @ex  <code>List(1, 2, 3).mkString("(", "; ", ")") = "(1; 2; 3)"</code>
+   *  @note Will not terminate for infinite-sized collections.
    *  @param start starting string.
    *  @param sep separator string.
    *  @param end ending string.
@@ -364,6 +388,7 @@ trait Iterable[+A] {
    *  representations of elements (w.r.t. the method <code>toString()</code>)
    *  are separated by the string <code>sep</code>.
    *
+   *  @note Will not terminate for infinite-sized collections.
    *  @param sep separator string.
    *  @return a string representation of this iterable object.
    */
@@ -372,6 +397,7 @@ trait Iterable[+A] {
 
   /** Write all elements of this string into given string builder.
    *
+   *  @note Will not terminate for infinite-sized collections.
    *  @param buf ...
    *  @return    ...
    */
@@ -388,6 +414,7 @@ trait Iterable[+A] {
   /** Fills the given array <code>xs</code> with the elements of
    *  this sequence starting at position <code>start</code>.
    *
+   *  @note Will not terminate for infinite-sized collections.
    *  @param  xs the array to fill.
    *  @param  start starting index.
    *  @pre    the array must be large enough to hold all elements.
@@ -399,4 +426,47 @@ trait Iterable[+A] {
   /** Is this collection empty? */
   def isEmpty = elements.hasNext
 
+  private class Projection[+B](elements0 : () => Iterator[B]) extends Iterable[B] {
+    def elements = elements0();
+  }
+  /** Returns all the elements of this iterable that satisfy the
+   *  predicate <code>p</code>. The order of the elements is preserved.
+   *  Unlike <code>filter</code>, this API is not strict
+   *  and will terminate on infinite-sized collections.
+   *
+   *  @param p the predicate used to filter the list.
+   *  @return the elements of this list satisfying <code>p</code>.
+   */
+  def pfilter(p: A => Boolean) : Iterable[A] = new Projection[A](() => {
+    Iterable.this.elements.filter(p)
+  })
+  /** Returns the iterable resulting from applying the given function
+   *  <code>f</code> to each element of this iterable.  Unlike <code>map</code>,
+   *  this API is not strict and will terminate on infinite-sized collections.
+   *
+   *  @param f function to apply to each element.
+   *  @return <code>f(a<sub>0</sub>), ..., f(a<sub>n</sub>)</code>
+   *          if this iterable is <code>a<sub>0</sub>, ..., an</code>.
+   */
+  def pmap[B](f: A => B) : Iterable[B] = new Projection[B](() => {
+    Iterable.this.elements.map(f)
+  })
+  /** Applies the given function <code>f</code> to each element of
+   *  this iterable, then concatenates the results.  Unlike <code>flatMap</code>,
+   *  this API is not strict and will terminate on infinite-sized collections.
+   *
+   *  @param f the function to apply on each element.
+   *  @return  <code>f(a<sub>0</sub>) ::: ... ::: f(a<sub>n</sub>)</code> if
+   *           this iterable is <code>a<sub>0</sub>, ..., a<sub>n</sub></code>.
+   */
+  def pflatMap[B](f: A => Iterable[B]) : Iterable[B] = new Projection[B](() => {
+    Iterable.this.elements.flatMap(a => f(a).elements)
+  })
+
+  /** returns true iff this collection has a bound size.
+   *  Only true if this iterable is a <code>Collection</code>.
+   *  Many APIs in this trait will not work on collections of
+   *  unbound sizes.
+   */
+  final def hasDefiniteSize = this.isInstanceOf[Collection[Nothing]]
 }

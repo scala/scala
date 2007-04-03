@@ -54,6 +54,7 @@ trait MapWrapper[K,E] extends jcl.Map[K,E] {
     protected val underlying = MapWrapper.this.underlying.keySet;
   }
   class ValueSet extends IterableWrapper[E] {
+    def size = MapWrapper.this.size;
     val underlying = MapWrapper.this.underlying.values;
     override def has(e : E) = MapWrapper.this.underlying.containsValue(e);
   }

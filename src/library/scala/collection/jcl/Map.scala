@@ -55,7 +55,7 @@ trait Map[K,E] extends MutableIterable[Tuple2[K,E]] with scala.collection.mutabl
   /** Produces a filtered projection of this map that includes only entries of the map
    *  whose keys are true with respect to predicate "p."
    */
-  def pfilter(p : K => Boolean) : jcl.Map[K,E] = new Filter(p);
+  def pfilterKeys(p : K => Boolean) : jcl.Map[K,E] = new Filter(p);
   /**
    */
   def lense[F](f : E => F, g : F => E) : jcl.Map[K,F] = new Lense[F](f,g);
@@ -65,8 +65,8 @@ trait Map[K,E] extends MutableIterable[Tuple2[K,E]] with scala.collection.mutabl
     override def remove(key : K) = Map.this.remove(key).map(f);
     override def put(key : K, elem : F) = Map.this.put(key, g(elem)).map(f);
     override def get(key : K) = Map.this.get(key).map(f);
-    override def pfilter(p : K => Boolean) : jcl.Map[K,F] =
-      Map.this.pfilter(p).lense(f, g);
+    override def pfilterKeys(p : K => Boolean) : jcl.Map[K,F] =
+      Map.this.pfilterKeys(p).lense(f, g);
     override def lense[G](f0 : F => G, g0 : G => F) : jcl.Map[K,G] =
       Map.this.lense[G](x => f0(f(x)), y => g(g0(y)));
     override def size = size0;
@@ -86,8 +86,8 @@ trait Map[K,E] extends MutableIterable[Tuple2[K,E]] with scala.collection.mutabl
       if (!p(key)) None;
       else Map.this.get(key);
     }
-    override def pfilter(p0 : K => Boolean) : jcl.Map[K,E] =
-      Map.this.pfilter(k => p(k) && p0(k));
+    override def pfilterKeys(p0 : K => Boolean) : jcl.Map[K,E] =
+      Map.this.pfilterKeys(k => p(k) && p0(k));
     override def size = size0;
   }
   protected class KeySet extends Set[K] {
