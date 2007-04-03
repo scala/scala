@@ -72,7 +72,7 @@ PROPERTIES
 INITIALISATION
 ============================================================================ -->
 
-  <target name="init" unless="init.avail">
+  <target name="deps">
   <!-- Making sure lib/ contains everything that is needed -->
     <fail message="A required library is missing in 'lib/'. The README file describes what should be there.">
       <condition><not><and>
@@ -91,6 +91,9 @@ INITIALISATION
         <available file="${ant.home}/lib/ant-nodeps.jar"/>
       </and></not></condition>
     </fail>
+  </target>
+
+  <target name="init" depends="deps" unless="init.avail">
   <!-- Making sure enough memory is available -->
     <propertyregex
       property="memory.set" input="${env.ANT_OPTS}" select="\1"
@@ -305,6 +308,7 @@ BUILD LOCAL REFERENCE (LOCKER) LAYER
       <symlink
         link="${build.dir}"
         resource="${build.resource}" overwrite="yes" failonerror="no"/>
+      <touch file="${build.dir}/is_symlink" verbose="no"/>
     </then></if>
     <mkdir dir="${locker.dir}/lib/library"/>
     <javac
@@ -934,6 +938,7 @@ GENERATES A DISTRIBUTION
       <symlink
         link="${dist.dir}"
         resource="${dist.resource}" overwrite="yes" failonerror="no"/>
+      <touch file="${dist.dir}/is_symlink" verbose="no"/>
     </then></if>
     <mkdir dir="${dist.current.dir}"/>
   <!-- Copy all requires libraries -->
@@ -1177,6 +1182,13 @@ CLEAN
   <macrodef name="remove">
     <attribute name="dir"/>
     <sequential>
+      <if>
+        <available file="@{dir}/is_symlink"/>
+      <then>
+        <delete includeemptydirs="true" quiet="yes" failonerror="no">
+          <fileset dir="@{dir}" includes="**/*"/>
+        </delete>
+      </then></if>
       <delete dir="@{dir}" includeemptydirs="yes" quiet="yes" failonerror="no"/>
     </sequential>
   </macrodef>
@@ -1187,7 +1199,8 @@ CLEAN
     <remove dir="${api.dir}"/>
   </target>
 
-  <target name="clean.build" description="Removes all build products">
+  <target name="clean.build" depends="deps"
+    description="Removes all build products">
     <remove dir="${build.dir}"/>
   </target>
 
@@ -1195,7 +1208,7 @@ CLEAN
     <remove dir="${msil.dir}"/>
   </target>
 
-  <target name="clean.all"
+  <target name="clean.all" depends="deps"
     description="Removes all build products and distributions">
     <remove dir="${build.dir}"/>
     <remove dir="${dist.dir}"/>

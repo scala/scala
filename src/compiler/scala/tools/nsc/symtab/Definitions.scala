@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -99,15 +99,13 @@ trait Definitions requires SymbolTable {
     //  def MatchError_fail = getMember(MatchErrorModule, nme.fail)
     //  def MatchError_report = getMember(MatchErrorModule, nme.report)
     var IndexOutOfBoundsExceptionClass: Symbol = _
-    //var RemoteExecutionModule: Symbol = _
-    //  def RemoteExecution_detach = getMember(RemoteExecutionModule, "detach")
     var ScalaRunTimeModule: Symbol = _
       def SeqFactory = getMember(ScalaRunTimeModule, nme.Seq);
       def checkDefinedMethod = getMember(ScalaRunTimeModule, "checkDefined")
       def isArrayMethod = getMember(ScalaRunTimeModule, "isArray")
     var RepeatedParamClass: Symbol = _
     var ByNameParamClass: Symbol = _
-    var UnsealedClass: Symbol = _
+    //var UnsealedClass: Symbol = _
     var UncheckedClass: Symbol = _
 
     val MaxTupleArity = 22
@@ -115,7 +113,7 @@ trait Definitions requires SymbolTable {
       def tupleField(n: Int, j: Int) = getMember(TupleClass(n), "_" + j)
       def isTupleType(tp: Type): Boolean = tp match {
         case TypeRef(_, sym, elems) =>
-          elems.length <= MaxTupleArity && sym == TupleClass(elems.length);
+          elems.length <= MaxTupleArity && sym == TupleClass(elems.length)
         case _ =>
           false
       }
@@ -133,7 +131,7 @@ trait Definitions requires SymbolTable {
     /** returns true if this type is exactly ProductN[T1,...,Tn], not some subclass */
       def isExactProductType(tp: Type): Boolean = tp match {
         case TypeRef(_, sym, elems) =>
-          elems.length <= MaxProductArity && sym == ProductClass(elems.length);
+          elems.length <= MaxProductArity && sym == ProductClass(elems.length)
         case _ =>
           false
       }
@@ -283,22 +281,22 @@ trait Definitions requires SymbolTable {
       }
 
     def isCorrespondingDelegate(delegateType: Type, functionType: Type): boolean = {
-      var isCD: Boolean = false;
+      var isCD: Boolean = false
       if (DelegateClass != null && delegateType != null &&
 	  isSubType(delegateType, DelegateClass.tpe))
 	{
 	  val meth: Symbol = delegateType.member(nme.apply)
 	  meth.tpe match {
 	    case MethodType(delegateParams, delegateReturn) =>
-	      val delegateParamsO = delegateParams.map(pt => {if (pt == definitions.AnyClass.tpe) definitions.ObjectClass.tpe else pt});
-	      if(isFunctionType(functionType))
+	      val delegateParamsO = delegateParams.map(pt => {if (pt == definitions.AnyClass.tpe) definitions.ObjectClass.tpe else pt})
+	      if (isFunctionType(functionType))
 		functionType match {
 		  case TypeRef(_, _, args) =>
-		    if(delegateParamsO == args.dropRight(1) &&
-		       delegateReturn == args.last)
+		    if (delegateParamsO == args.dropRight(1) &&
+		        delegateReturn == args.last)
 		      isCD = true;
 
-		  case _ => ();
+		  case _ => ()
 		}
 
 	    case _ => ()
@@ -307,21 +305,6 @@ trait Definitions requires SymbolTable {
       isCD
     }
 
-/*    val RemoteFunctionClass: Array[Symbol] = new Array(MaxFunctionArity + 1)
-      def remoteFunctionApply(n: Int) = getMember(RemoteFunctionClass(n), nme.apply)
-      def remoteFunctionType(formals: List[Type], restpe: Type) =
-        if (formals.length <= MaxFunctionArity) {
-          val sym = RemoteFunctionClass(formals.length)
-          typeRef(sym.typeConstructor.prefix, sym, formals ::: List(restpe))
-        } else NoType;
-      def isRemoteFunctionType(tp: Type): boolean = tp match {
-        case TypeRef(_, sym, args) =>
-          (args.length > 0) && (args.length - 1 <= MaxFunctionArity) &&
-          (sym == RemoteFunctionClass(args.length - 1))
-        case _ =>
-          false
-      }
-*/
     def seqType(arg: Type) =
       typeRef(SeqClass.typeConstructor.prefix, SeqClass, List(arg))
 
@@ -798,7 +781,6 @@ trait Definitions requires SymbolTable {
       IndexOutOfBoundsExceptionClass =
         getClass(if (forMSIL) "System.IndexOutOfRangeException"
                  else "java.lang.IndexOutOfBoundsException")
-      //RemoteExecutionModule = getModule("scala.distributed.RemoteExecution")
       ScalaRunTimeModule = getModule("scala.runtime.ScalaRunTime")
       RepeatedParamClass = newCovariantPolyClass(
         ScalaPackageClass, nme.REPEATED_PARAM_CLASS_NAME,
@@ -806,7 +788,7 @@ trait Definitions requires SymbolTable {
       ByNameParamClass = newCovariantPolyClass(
         ScalaPackageClass, nme.BYNAME_PARAM_CLASS_NAME, tparam => AnyClass.typeConstructor)
       /* <unapply> */
-      UnsealedClass = getClass("scala.unsealed") //todo: remove once 2.4 is out.
+      //UnsealedClass = getClass("scala.unsealed") //todo: remove once 2.4 is out.
       UncheckedClass = getClass("scala.unchecked")
       OptionClass = getClass("scala.Option")
 
@@ -819,7 +801,6 @@ trait Definitions requires SymbolTable {
       /* </unapply> */
       for (val i <- 0 to MaxFunctionArity) {
         FunctionClass(i) = getClass("scala.Function" + i)
-        //RemoteFunctionClass(i) = getClass("scala.distributed.RemoteFunction" + i)
       }
       initValueClasses
 
