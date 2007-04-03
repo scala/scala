@@ -462,7 +462,7 @@ trait Definitions requires SymbolTable {
 
     def isUnbox(m: Symbol) = m.name == nme.unbox && {
       m.tpe match {
-        case MethodType(_, restpe) => (boxMethod get restpe.symbol) match {
+        case MethodType(_, restpe) => (unboxMethod get restpe.symbol) match {
           case Some(`m`) => true
           case _ => false
         }
@@ -472,7 +472,7 @@ trait Definitions requires SymbolTable {
 
     def isBox(m: Symbol) = m.name == nme.box && {
       m.tpe match {
-        case MethodType(List(argtpe), _) => (unboxMethod get argtpe.symbol) match {
+        case MethodType(List(argtpe), _) => (boxMethod get argtpe.symbol) match {
           case Some(`m`) => true
           case _ => false
         }
