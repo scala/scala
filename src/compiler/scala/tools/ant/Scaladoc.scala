@@ -22,7 +22,7 @@ package scala.tools.ant {
   import org.apache.tools.ant.types.{EnumeratedAttribute, Reference}
 
   import scala.tools.nsc.{Global, FatalError, Settings}
-  import scala.tools.nsc.doc.DocGenerator
+  import scala.tools.nsc.doc.DocDriver
   import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
 
   /** <p>
@@ -444,7 +444,7 @@ package scala.tools.ant {
       try {
         val run = new compiler.Run
         run.compile(sourceFiles.map { f: File => f.toString() })
-        object generator extends DocGenerator {
+        object generator extends DocDriver {
           val global = compiler
           def outdir = settings.outdir.value
           def windowTitle = settings.windowtitle.value
