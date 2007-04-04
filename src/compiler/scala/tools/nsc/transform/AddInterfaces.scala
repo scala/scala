@@ -129,8 +129,9 @@ abstract class AddInterfaces extends InfoTransform {
      */
     private def implDecls(implClass: Symbol, ifaceDecls: Scope): Scope = {
       val decls = newScope
-      decls enter (implClass.newMethod(implClass.pos, nme.MIXIN_CONSTRUCTOR)
-        setInfo MethodType(List(), UnitClass.tpe))
+      if ((ifaceDecls lookup nme.MIXIN_CONSTRUCTOR) == NoSymbol)
+        decls enter (implClass.newMethod(implClass.pos, nme.MIXIN_CONSTRUCTOR)
+                     setInfo MethodType(List(), UnitClass.tpe))
       for (val sym <- ifaceDecls.elements) {
         if (isInterfaceMember(sym)) {
           if (needsImplMethod(sym)) {
@@ -252,8 +253,10 @@ abstract class AddInterfaces extends InfoTransform {
 
   private def implTemplate(clazz: Symbol, templ: Template): Template = atPos(templ.pos) {
     val templ1 = atPos(templ.pos) {
-      Template(templ.parents, mixinConstructorDef(clazz) :: (templ.body map implMemberDef))
-      .setSymbol(clazz.newLocalDummy(templ.pos))
+      var ibody = templ.body map implMemberDef
+      if (!(ibody exists (stat => stat.isDef && stat.symbol.isMixinConstructor)))
+        ibody = mixinConstructorDef(clazz) :: ibody
+      Template(templ.parents, ibody) setSymbol clazz.newLocalDummy(templ.pos)
     }
     new ChangeOwnerTraverser(templ.symbol.owner, clazz)(
       new ChangeOwnerTraverser(templ.symbol, templ1.symbol)(templ1))

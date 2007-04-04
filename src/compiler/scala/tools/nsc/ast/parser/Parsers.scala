@@ -1057,9 +1057,10 @@ trait Parsers requires SyntaxAnalyzer {
               parents += annotType(false)
             }
             newLineOptWhenFollowedBy(LBRACE)
-            val (self, stats) = if (in.token == LBRACE) templateBody()
-                                    else (emptyValDef, List())
-            makeNew(parents.toList, self, stats, argss.toList)
+            val (self, stats, superpos, superargss) =
+              if (in.token == LBRACE) templateBody()
+              else (emptyValDef, List(), Position.NOPOS, List(List()))
+            makeNew(parents.toList, self, stats, superArgs(superpos, argss.toList, superargss))
           }
           canApply = false
         case _ =>
@@ -1073,6 +1074,17 @@ trait Parsers requires SyntaxAnalyzer {
           t = errorTermTree
       }
       simpleExprRest(t, canApply)
+    }
+
+    private def isEmpty(argss: List[List[Tree]]) = argss.head.isEmpty && argss.tail.isEmpty
+
+    private def superArgs(pos: int, extargss: List[List[Tree]], superargss: List[List[Tree]]) = {
+      var argss = extargss
+      if (isEmpty(argss))
+        argss = superargss
+      else if (!isEmpty(superargss))
+        syntaxError(pos, "super call arguments are specified twice; once here and once in a subsequent super call", false)
+      argss
     }
 
     def simpleExprRest(t: Tree, canApply: boolean): Tree = {
@@ -1150,10 +1162,19 @@ trait Parsers requires SyntaxAnalyzer {
      *                | Expr
      */
     def enumerators(): List[Enumerator] = {
+      val newStyle = in.token != VAL
       val enums = new ListBuffer[Enumerator] + generator(false)
       while (isStatSep) {
         in.nextToken()
-        enums += (if (in.token == VAL) generator(true) else Filter(expr()))
+        enums += {
+          if (newStyle) {
+            if (in.token == IF) { in.nextToken(); Filter(expr()) }
+            else generator(true)
+          } else {
+            if (in.token == VAL) generator(true)
+            else Filter(expr())
+          }
+        }
       }
       enums.toList
     }
@@ -2040,25 +2061,34 @@ trait Parsers requires SyntaxAnalyzer {
       }
       val ps = parents.toList
       newLineOptWhenFollowedBy(LBRACE)
-      val (self, body) =
+      val (self, body, superpos, superargss) =
         if (in.token == LBRACE) templateBody()
-        else { acceptEmptyTemplateBody("`{' expected"); (emptyValDef, List()) }
-      (self,
-           atPos(pos) {
-             if (!mods.hasFlag(Flags.TRAIT)) Template(ps, constrMods, vparamss, argss.toList, body)
-             else Template(ps, body)
-           })
+        else {
+          acceptEmptyTemplateBody("`{' expected")
+          (emptyValDef, List(), Position.NOPOS, List(List()))
+        }
+      val argumentss = superArgs(pos, argss.toList, superargss)
+      val impl = atPos(pos) {
+         if (mods.hasFlag(Flags.TRAIT)) {
+           if (!isEmpty(argumentss))
+             syntaxError(superpos, "traits cannot have supercall arguments", false)
+           Template(ps, body)
+         } else {
+           Template(ps, constrMods, vparamss, argumentss, body)
+         }
+      }
+      (self, impl)
     }
 
 ////////// TEMPLATES ////////////////////////////////////////////////////////////
 
     /** TemplateBody ::= [nl] `{' TemplateStatSeq `}'
      */
-    def templateBody(): (ValDef, List[Tree]) = {
+    def templateBody(): (ValDef, List[Tree], int, List[List[Tree]]) = {
       accept(LBRACE)
-      val result @ (self, stats) = templateStatSeq()
+      val result @ (self, stats, superpos, superargss) = templateStatSeq()
       accept(RBRACE)
-      if (stats.isEmpty) (self, List(EmptyTree)) else result
+      if (stats.isEmpty) (self, List(EmptyTree), Position.NOPOS, superargss) else result
     }
 
     /** Refinement ::= [nl] `{' RefineStat {semi RefineStat} `}'
@@ -2124,9 +2154,11 @@ trait Parsers requires SyntaxAnalyzer {
      *                     | super ArgumentExprs {ArgumentExprs}
      *                     |
      */
-    def templateStatSeq(): (ValDef, List[Tree]) = {
+    def templateStatSeq(): (ValDef, List[Tree], int, List[List[Tree]]) = {
       var self: ValDef = emptyValDef
-      val stats = new ListBuffer[Tree]
+      var stats = new ListBuffer[Tree]
+      var superpos = Position.NOPOS
+      val superargss = new ListBuffer[List[Tree]]
       if (isExprIntro) {
         val first = expr(InTemplate)
         if (in.token == ARROW) {
@@ -2146,12 +2178,25 @@ trait Parsers requires SyntaxAnalyzer {
         } else if (isDefIntro || isModifier || in.token == LBRACKET /*todo: remove */ || in.token == AT) {
           val annots = annotations()
           stats ++ joinComment(defOrDcl(modifiers() withAnnotations annots))
+        } else if (in.token == SUPERCALL) {
+          superpos = in.skipToken()
+          stats = new ListBuffer[Tree] ++ (stats.toList map markPreSuper)
+          while (in.token == LPAREN) { superargss += argumentExprs() }
         } else if (!isStatSep) {
           syntaxErrorOrIncomplete("illegal start of definition", true)
         }
         if (in.token != RBRACE && in.token != EOF) acceptStatSep()
       }
-      (self, stats.toList)
+      if (!superargss.hasNext) superargss += List()
+      (self, stats.toList, superpos, superargss.toList)
+    }
+
+    private def markPreSuper(stat: Tree): Tree = stat match {
+      case ValDef(mods, name, tpt, rhs) =>
+        copy.ValDef(stat, mods | Flags.PRESUPER, name, tpt, rhs)
+      case _ =>
+        syntaxError(stat.pos, "only value definitions may precede super call", false)
+        stat
     }
 
     /** RefineStatSeq    ::= RefineStat {semi RefineStat}

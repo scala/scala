@@ -37,12 +37,24 @@ trait Scanners requires SyntaxAnalyzer {
     /** the base of a number */
     var base: int = 0
 
-    def copyFrom(td: TokenData) = {
+    /** further lookahead tokens after this one */
+    var following: TokenData = null
+
+    def copyFrom(td: TokenData) {
       this.token = td.token
       this.pos = td.pos
       this.lastPos = td.lastPos
       this.name = td.name
       this.base = td.base
+      td.token = EMPTY
+    }
+
+    def pushFrom(td: TokenData) {
+      if (token != EMPTY) {
+        following = new TokenData
+        following copyFrom this
+      }
+      this copyFrom td
     }
   }
 
@@ -145,42 +157,45 @@ trait Scanners requires SyntaxAnalyzer {
       if (next.token == EMPTY) {
         fetchToken()
       } else {
-        this.copyFrom(next)
-        next.token = EMPTY
+        this copyFrom next
+        if (next.following != null) {
+          next copyFrom next.following
+          next.following = null
+        }
       }
 
       if (token == CASE) {
-        prev.copyFrom(this)
+        prev copyFrom this
         fetchToken()
         if (token == CLASS) {
+          this copyFrom prev
           token = CASECLASS
-          lastPos = prev.lastPos
         } else if (token == OBJECT) {
+          this copyFrom prev
           token = CASEOBJECT
-          lastPos = prev.lastPos
         } else {
-          next.copyFrom(this)
-          this.copyFrom(prev)
+          next pushFrom this
+          this copyFrom prev
         }
+      } else if (token == SUPER && next.token == EMPTY) {
+        prev copyFrom this
+        fetchToken()
+        val isSuperCall = token == LPAREN
+        next pushFrom this
+        this copyFrom prev
+        if (isSuperCall) token = SUPERCALL
       } else if (token == SEMI) {
-        prev.copyFrom(this)
+        prev copyFrom this
         fetchToken()
         if (token != ELSE) {
-          next.copyFrom(this)
-          this.copyFrom(prev)
+          next pushFrom this
+          this copyFrom prev
         }
-      } else if (token == IDENTIFIER && name == nme.MIXINkw) { //todo: remove eventually
-        prev.copyFrom(this)
-        fetchToken()
-        if (token == CLASS)
-          unit.warning(prev.pos, "`mixin' is no longer a reserved word; you should use `trait' instead of `mixin class'");
-        next.copyFrom(this)
-        this.copyFrom(prev)
       }
 
       if (afterLineEnd() && inLastOfStat(lastToken) && inFirstOfStat(token) &&
           (sepRegions.isEmpty || sepRegions.head == RBRACE)) {
-        next.copyFrom(this)
+        next pushFrom this
         pos = in.lineStartPos
         if (settings.migrate.value) newNewLine = lastToken != RBRACE && token != EOF;
         token = if (in.lastBlankLinePos > lastPos) NEWLINES else NEWLINE
@@ -273,7 +288,7 @@ trait Scanners requires SyntaxAnalyzer {
                 return
               case '`' =>
                 in.next
-                getStringLit('`', IDENTIFIER)
+                getStringLit('`', BACKQUOTED_IDENT)
                 return
               case '\"' =>
                 in.next
@@ -569,7 +584,6 @@ trait Scanners requires SyntaxAnalyzer {
       }
 
     private def getStringLit(delimiter: char, litType: int): unit = {
-      assert((litType==STRINGLIT) || (litType==IDENTIFIER))
       while (in.ch != delimiter && (in.isUnicode || in.ch != CR && in.ch != LF && in.ch != SU)) {
         getlitch()
       }

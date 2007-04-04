@@ -228,6 +228,8 @@ trait Contexts requires Analyzer {
       while (baseContext.tree.isInstanceOf[Template])
         baseContext = baseContext.outer
       val argContext = baseContext.makeNewScope(tree, owner)
+      argContext.reportGeneralErrors = this.reportGeneralErrors
+      argContext.reportAmbiguousErrors = this.reportAmbiguousErrors
       for (val sym <- scope.toList) argContext.scope enter sym
       argContext
     }

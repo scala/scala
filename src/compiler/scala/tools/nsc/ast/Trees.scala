@@ -17,7 +17,7 @@ trait Trees requires Global {
   //statistics
   var nodeCount = 0
 
-  case class Modifiers(flags: int, privateWithin: Name, annotations: List[Annotation]) {
+  case class Modifiers(flags: long, privateWithin: Name, annotations: List[Annotation]) {
     def isCovariant     = hasFlag(COVARIANT    )
     def isContravariant = hasFlag(CONTRAVARIANT)
     def isPrivate   = hasFlag(PRIVATE  )
@@ -34,18 +34,18 @@ trait Trees requires Global {
     def isTrait     = hasFlag(TRAIT    )
     def isImplicit  = hasFlag(IMPLICIT )
     def isPublic    = !isPrivate && !isProtected
-    def hasFlag(flag: int) = (flag & flags) != 0
-    def & (flag: Int): Modifiers = {
+    def hasFlag(flag: long) = (flag & flags) != 0
+    def & (flag: long): Modifiers = {
       val flags1 = flags & flag
       if (flags1 == flags) this
       else Modifiers(flags1, privateWithin, annotations)
     }
-    def &~ (flag: Int): Modifiers = {
+    def &~ (flag: long): Modifiers = {
       val flags1 = flags & (~flag)
       if (flags1 == flags) this
       else Modifiers(flags1, privateWithin, annotations)
     }
-    def | (flag: int): Modifiers = {
+    def | (flag: long): Modifiers = {
       val flags1 = flags | flag
       if (flags1 == flags) this
       else Modifiers(flags1, privateWithin, annotations)
@@ -55,9 +55,8 @@ trait Trees requires Global {
       else Modifiers(flags, privateWithin, annotations ::: annots)
   }
 
-  def Modifiers(flags: int, privateWithin: Name): Modifiers = Modifiers(flags, privateWithin, List())
-  def Modifiers(flags: int): Modifiers = Modifiers(flags, nme.EMPTY.toTypeName)
-  def Modifiers(flags: long): Modifiers = Modifiers(flags.asInstanceOf[int])
+  def Modifiers(flags: long, privateWithin: Name): Modifiers = Modifiers(flags, privateWithin, List())
+  def Modifiers(flags: long): Modifiers = Modifiers(flags, nme.EMPTY.toTypeName)
 
   val NoMods = Modifiers(0)
 

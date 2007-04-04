@@ -67,6 +67,7 @@ object Flags {
 
   final val EXPANDEDNAME  = 0x1000000000L // name has been expanded with class suffix
   final val IMPLCLASS     = 0x2000000000L // symbol is an implementation class
+  final val PRESUPER      = 0x2000000000L // value is evaluated before super call
   final val TRANS_FLAG    = 0x4000000000L // transient flag guaranteed to be reset
                                           // after each phase.
 
@@ -156,7 +157,7 @@ object Flags {
     else if (flag == LIFTED      ) "<lifted>"
     else if (flag == MIXEDIN     ) "<mixedin>"
     else if (flag == EXPANDEDNAME) "<expandedname>"
-    else if (flag == IMPLCLASS   ) "<implclass>"
+    else if (flag == IMPLCLASS   ) "<implclass/presuper>"
     else if (flag == TRANS_FLAG  ) "<trans-flag>"
     else if (flag == LOCKED      ) "<locked>"
     else flag.asInstanceOf[int] match {

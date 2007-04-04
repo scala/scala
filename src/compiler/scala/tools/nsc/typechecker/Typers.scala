@@ -416,6 +416,15 @@ trait Typers requires Analyzer {
       }
     }
 
+    /** The typer for an expression, depending on where we are. If we are before a superclass
+     *  call, this is a typer over a constructor context; otherwise it is the current typer.
+     */
+    def exprTyper(inConstr: boolean): Typer =
+      if (inConstr) newTyper(context.makeConstructorContext) else this
+
+    def valDefRhsTyper(vdef: ValDef): Typer =
+      newTyper(context.make(vdef, vdef.symbol)).exprTyper(vdef.mods hasFlag PRESUPER)
+
     /** <p>
      *    Post-process an identifier or selection node, performing the following:
      *  </p>
@@ -994,7 +1003,7 @@ trait Typers requires Analyzer {
             error(vdef.pos, "local variables must be initialized")
           vdef.rhs
         } else {
-          newTyper(context.make(vdef, sym)).transformedOrTyped(vdef.rhs, tpt1.tpe)
+          valDefRhsTyper(vdef).transformedOrTyped(vdef.rhs, tpt1.tpe)
         }
       copy.ValDef(vdef, vdef.mods, vdef.name, tpt1, checkDead(rhs1)) setType NoType
     }
@@ -1365,11 +1374,8 @@ trait Typers requires Analyzer {
       checkNoDoubleDefs(List.mapConserve(stats)(typedStat))
     }
 
-    def typedArg(arg: Tree, mode: int, newmode: int, pt: Type): Tree = {
-      val argTyper = if ((mode & SCCmode) != 0) newTyper(context.makeConstructorContext)
-                     else this
-      checkDead(argTyper.typed(arg, mode & stickyModes | newmode, pt))
-    }
+    def typedArg(arg: Tree, mode: int, newmode: int, pt: Type): Tree =
+      checkDead(exprTyper((mode & SCCmode) != 0).typed(arg, mode & stickyModes | newmode, pt))
 
     def typedArgs(args: List[Tree], mode: int) =
       List.mapConserve(args)(arg => typedArg(arg, mode, 0, WildcardType))

@@ -56,7 +56,7 @@ trait Namers requires Analyzer {
       sym
     }
 
-    def updatePosFlags(sym: Symbol, pos: PositionType, flags: int): Symbol = {
+    def updatePosFlags(sym: Symbol, pos: PositionType, flags: long): Symbol = {
       if (settings.debug.value) log("overwriting " + sym)
       val lockedFlag = sym.flags & LOCKED
       sym.reset(NoType)
@@ -144,7 +144,7 @@ trait Namers requires Analyzer {
       if (context.owner.isConstructor && !context.inConstructorSuffix) INCONSTRUCTOR
       else 0l
 
-    private def enterClassSymbol(pos: PositionType, flags: int, name: Name): Symbol = {
+    private def enterClassSymbol(pos: PositionType, flags: long, name: Name): Symbol = {
       var c: Symbol = context.scope.lookup(name)
       if (c.isType && !currentRun.compiles(c) && context.scope == c.owner.info.decls) {
         updatePosFlags(c, pos, flags)
@@ -166,7 +166,7 @@ trait Namers requires Analyzer {
       c
     }
 
-    private def enterModuleSymbol(pos: PositionType, flags: int, name: Name): Symbol = {
+    private def enterModuleSymbol(pos: PositionType, flags: long, name: Name): Symbol = {
       var m: Symbol = context.scope.lookup(name)
       if (m.isModule && !m.isPackage && !currentRun.compiles(m) &&
          (context.scope == m.owner.info.decls)) {
@@ -186,7 +186,7 @@ trait Namers requires Analyzer {
       m
     }
 
-    private def enterCaseFactorySymbol(pos: PositionType, flags: int, name: Name): Symbol = {
+    private def enterCaseFactorySymbol(pos: PositionType, flags: long, name: Name): Symbol = {
       var m: Symbol = context.scope.lookup(name)
       if (m.isTerm && !m.isPackage && !currentRun.compiles(m) && context.scope == m.owner.info.decls) {
         updatePosFlags(m, pos, flags)
@@ -608,13 +608,14 @@ trait Namers requires Analyzer {
                 new Namer(makeNewScope(context, tree, sym)).methodSig(tparams, vparamss, tpt, rhs);
               checkContractive(sym, result)
 
-            case ValDef(_, _, tpt, rhs) =>
+            case vdef @ ValDef(mods, _, tpt, rhs) =>
               if (tpt.isEmpty) {
                 if (rhs.isEmpty) {
         	  context.error(tpt.pos, "missing parameter type");
         	  ErrorType
                 } else {
-        	  tpt.tpe = deconstIfNotFinal(sym, newTyper(context.make(tree, sym)).computeType(rhs, WildcardType));
+        	  tpt.tpe = deconstIfNotFinal(sym,
+                    typer.valDefRhsTyper(vdef).computeType(rhs, WildcardType))
         	  tpt.tpe
                 }
               } else {

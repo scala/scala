@@ -230,14 +230,6 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
    *        1a. A class which is not a trait gets an outer field.
    *      </p>
    *    </li>
-   *    <li> <!-- 2 -->
-   *      A mixin which is not also an interface gets a mixin constructor
-   *      (@see mixinConstructorDef)
-   *    </li>
-   *    <li> <!-- 3 -->
-   *      Constructor bodies are augmented by calls to supermixin constructors
-   *      (@see addMixinConstructorCalls)
-   *    </li>
    *    <li> <!-- 4 -->
    *      A constructor of a non-trait inner class gets an outer parameter.
    *    </li>
@@ -311,9 +303,6 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
      */
     def mixinOuterAccessorDef(mixinClass: Symbol): Tree = {
       val outerAcc = outerAccessor(mixinClass).overridingSymbol(currentClass)
-      if (outerAcc == NoSymbol)
-        Console.println("cc " + currentClass + ":" + currentClass.info.decls +
-                        " at " + phase)//debug
       assert(outerAcc != NoSymbol)
       val path =
         if (mixinClass.owner.isTerm) gen.mkAttributedThis(mixinClass.owner.enclClass)
