@@ -9,21 +9,16 @@
 
 package scala.tools.ant {
 
-  import java.io.{File, InputStream, FileWriter}
-  import java.net.{URL, URLClassLoader}
-  import java.util.{ArrayList, Vector}
+import java.io.File
 
-  import org.apache.tools.ant.{AntClassLoader, BuildException,
-                               DirectoryScanner, Project}
-  import org.apache.tools.ant.taskdefs.MatchingTask
-  import org.apache.tools.ant.types.Path
-  import org.apache.tools.ant.util.{FileUtils, GlobPatternMapper,
-                                    SourceFileScanner}
-  import org.apache.tools.ant.types.{EnumeratedAttribute, Reference}
+import org.apache.tools.ant.{BuildException, Project}
+import org.apache.tools.ant.taskdefs.MatchingTask
+import org.apache.tools.ant.types.{Path, Reference}
+import org.apache.tools.ant.util.{FileUtils, GlobPatternMapper}
 
-  import scala.tools.nsc.{Global, FatalError, Settings}
-  import scala.tools.nsc.doc.DocDriver
-  import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
+import scala.tools.nsc.{Global, Settings}
+import scala.tools.nsc.doc.DocDriver
+import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
 
   /** <p>
    *    An Ant task to document Scala code.

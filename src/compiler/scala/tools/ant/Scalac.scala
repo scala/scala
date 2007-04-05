@@ -10,19 +10,15 @@
 package scala.tools.ant
 
 import java.io.File
-import java.net.{URL, URLClassLoader}
-import java.util.{ArrayList, Vector}
 
-import org.apache.tools.ant.{AntClassLoader, BuildException,
-                               DirectoryScanner, Project}
+import org.apache.tools.ant.{BuildException, Project}
 import org.apache.tools.ant.taskdefs.MatchingTask
-import org.apache.tools.ant.types.Path
+import org.apache.tools.ant.types.{Path, Reference}
 import org.apache.tools.ant.util.{FileUtils, GlobPatternMapper,
-                                    SourceFileScanner}
-import org.apache.tools.ant.types.{EnumeratedAttribute, Reference}
+                                  SourceFileScanner}
 
+import scala.tools.nsc.{Global, Settings}
 import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
-import scala.tools.nsc.{Global, FatalError, Settings}
 
 /** <p>
  *    An Ant task to compile with the new Scala compiler (NSC).
