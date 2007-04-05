@@ -128,6 +128,17 @@ abstract class TreeInfo {
       false
   }
 
+  def isSuperConstrCall(tree: Tree): boolean = tree match {
+    case Select(Super(_, _), nme.CONSTRUCTOR) =>
+      true
+    case TypeApply(constr, _) =>
+      isSuperConstrCall(constr)
+    case Apply(constr, _) =>
+      isSuperConstrCall(constr)
+    case _ =>
+      false
+  }
+
   /** Is tree a variable pattern */
   def isVarPattern(pat: Tree): boolean = pat match {
     case Ident(name) => isVariableName(name) && !pat.isInstanceOf[BackQuotedIdent]
