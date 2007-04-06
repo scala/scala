@@ -1,0 +1,7 @@
+higherkind_novalue.scala:2: error: type m takes type parameters
+  val x: m // type of kind *->* doesn't classify a value, but a val/def/... can only contain/return a value
+         ^
+higherkind_novalue.scala:3: error: type m takes type parameters
+  def y: m
+         ^
+two errors found

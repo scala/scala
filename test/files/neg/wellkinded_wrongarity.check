@@ -1,0 +1,4 @@
+wellkinded_wrongarity.scala:5: error: type Pair takes two type parameters, expected: one
+object mp extends Monad[Pair]
+                        ^
+one error found

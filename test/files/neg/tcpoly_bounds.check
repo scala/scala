@@ -1,0 +1,4 @@
+tcpoly_bounds.scala:3: error: type arguments [scala.List] do not conform to class A's type parameter bounds [m<: [x]>: scala.Nothing <: scala.Option[x]]
+object b extends A[List]
+                 ^
+one error found

@@ -1,0 +1,4 @@
+wellkinded_wrongarity2.scala:4: error: type String takes no type parameters, expected: one
+object ms extends Monad[String]
+                        ^
+one error found

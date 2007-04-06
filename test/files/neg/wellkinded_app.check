@@ -1,0 +1,4 @@
+wellkinded_app.scala:3: error: x does not take type parameters
+  type t = x[x]
+           ^
+one error found

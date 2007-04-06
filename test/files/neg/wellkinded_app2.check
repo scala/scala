@@ -1,0 +1,4 @@
+wellkinded_app2.scala:3: error: s does not take type parameters
+      val foo: s[Int]
+               ^
+one error found
