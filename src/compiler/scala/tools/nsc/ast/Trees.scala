@@ -60,6 +60,9 @@ trait Trees requires Global {
 
   val NoMods = Modifiers(0)
 
+  // @M helper method for asserts that check consistency in kinding
+  //def kindingIrrelevant(tp: Type) = (tp eq null) || phase.name == "erasure" || phase.erasedTypes
+
   abstract class Tree {
     {
       import util.Statistics
@@ -71,9 +74,9 @@ trait Trees requires Global {
     def pos = rawpos
 
     var tpe: Type = _
-
+    //var kindStar = false //@M: kindStar implies !tpe.isHigherKinded --> if true, setType does not accept higher-kinded types
     def setPos(pos: PositionType): this.type = { rawpos = pos; this }
-    def setType(tp: Type): this.type = { tpe = tp; this }
+    def setType(tp: Type): this.type = { /*assert(kindingIrrelevant(tp) || !kindStar || !tp.isHigherKinded, ""+tp+" should not be higher-kinded");*/ tpe = tp; this }
 
     def symbol: Symbol = null
     def symbol_=(sym: Symbol): unit =
@@ -281,6 +284,8 @@ trait Trees requires Global {
   case class ValDef(mods: Modifiers, name: Name, tpt: Tree, rhs: Tree)
        extends ValOrDefDef {
     assert(tpt.isType, tpt)
+    //assert(kindingIrrelevant(tpt.tpe) || !tpt.tpe.isHigherKinded, tpt.tpe) //@M a value definition should never be typed with a higher-kinded type (values must be classified by types with kind *)
+    //tpt.kindStar=true //@M turn on consistency checking in Tree
     assert(rhs.isTerm, rhs)
   }
 
@@ -307,6 +312,8 @@ trait Trees requires Global {
                     vparamss: List[List[ValDef]], tpt: Tree, rhs: Tree)
        extends ValOrDefDef {
     assert(tpt.isType)
+    //assert(kindingIrrelevant(tpt.tpe) || !tpt.tpe.isHigherKinded, tpt.tpe) //@M a method definition should never be typed with a higher-kinded type (values must be classified by types with kind *)
+    //tpt.kindStar=true //@M turn on consistency checking in Tree
     assert(rhs.isTerm)
   }
 
@@ -336,17 +343,18 @@ trait Trees requires Global {
    *
    *  @param mods
    *  @param name
+   *  @param tparams
    *  @param lo
    *  @param hi
    */
-  case class AbsTypeDef(mods: Modifiers, name: Name, lo: Tree, hi: Tree)
+  case class AbsTypeDef(mods: Modifiers, name: Name, tparams: List[AbsTypeDef], lo: Tree, hi: Tree)
        extends DefTree {
     def namePos = pos - name.length
   }
 
   def AbsTypeDef(sym: Symbol): AbsTypeDef =
     posAssigner.atPos(sym.pos) {
-      AbsTypeDef(Modifiers(sym.flags), sym.name,
+      AbsTypeDef(Modifiers(sym.flags), sym.name, sym.typeParams map AbsTypeDef,
                  TypeTree(sym.info.bounds.lo), TypeTree(sym.info.bounds.hi))
     }
 
@@ -697,7 +705,7 @@ trait Trees requires Global {
   case ModuleDef(mods, name, impl) =>                         (eliminated by refcheck)
   case ValDef(mods, name, tpt, rhs) =>
   case DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
-  case AbsTypeDef(mods, name, lo, hi) =>                          (eliminated by erasure)
+  case AbsTypeDef(mods, name, tparams, lo, hi) =>                 (eliminated by erasure)
   case AliasTypeDef(mods, name, tparams, rhs) =>                  (eliminated by erasure)
   case LabelDef(name, params, rhs) =>
   case Import(expr, selectors) =>                                 (eliminated by typecheck)
@@ -744,7 +752,7 @@ trait Trees requires Global {
     def ModuleDef(tree: Tree, mods: Modifiers, name: Name, impl: Template): ModuleDef
     def ValDef(tree: Tree, mods: Modifiers, name: Name, tpt: Tree, rhs: Tree): ValDef
     def DefDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[AbsTypeDef], vparamss: List[List[ValDef]], tpt: Tree, rhs: Tree): DefDef
-    def AbsTypeDef(tree: Tree, mods: Modifiers, name: Name, lo: Tree, hi: Tree): AbsTypeDef
+    def AbsTypeDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[AbsTypeDef], lo: Tree, hi: Tree): AbsTypeDef
     def AliasTypeDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[AbsTypeDef], rhs: Tree): AliasTypeDef
     def LabelDef(tree: Tree, name: Name, params: List[Ident], rhs: Tree): LabelDef
     def Import(tree: Tree, expr: Tree, selectors: List[(Name, Name)]): Import
@@ -796,8 +804,8 @@ trait Trees requires Global {
       new ValDef(mods, name, tpt, rhs).copyAttrs(tree)
     def DefDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[AbsTypeDef], vparamss: List[List[ValDef]], tpt: Tree, rhs: Tree) =
       new DefDef(mods, name, tparams, vparamss, tpt, rhs).copyAttrs(tree)
-    def AbsTypeDef(tree: Tree, mods: Modifiers, name: Name, lo: Tree, hi: Tree) =
-      new AbsTypeDef(mods, name, lo, hi).copyAttrs(tree)
+    def AbsTypeDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[AbsTypeDef], lo: Tree, hi: Tree) =
+      new AbsTypeDef(mods, name, tparams, lo, hi).copyAttrs(tree)
     def AliasTypeDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[AbsTypeDef], rhs: Tree) =
       new AliasTypeDef(mods, name, tparams, rhs).copyAttrs(tree)
     def LabelDef(tree: Tree, name: Name, params: List[Ident], rhs: Tree) =
@@ -904,10 +912,10 @@ trait Trees requires Global {
          (vparamss0 == vparamss) && (tpt0 == tpt) && (rhs == rhs0) => t
       case _ => copy.DefDef(tree, mods, name, tparams, vparamss, tpt, rhs)
     }
-    def AbsTypeDef(tree: Tree, mods: Modifiers, name: Name, lo: Tree, hi: Tree) = tree match {
-      case t @ AbsTypeDef(mods0, name0, lo0, hi0)
-      if (mods0 == mods) && (name0 == name) && (lo0 == lo) && (hi0 == hi) => t
-      case _ => copy.AbsTypeDef(tree, mods, name, lo, hi)
+    def AbsTypeDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[AbsTypeDef], lo: Tree, hi: Tree) = tree match {
+      case t @ AbsTypeDef(mods0, name0, tparams0, lo0, hi0)
+      if (mods0 == mods) && (name0 == name) && (tparams0 == tparams) && (lo0 == lo) && (hi0 == hi) => t
+      case _ => copy.AbsTypeDef(tree, mods, name, tparams, lo, hi)
     }
     def AliasTypeDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[AbsTypeDef], rhs: Tree) = tree match {
       case t @ AliasTypeDef(mods0, name0, tparams0, rhs0)
@@ -1133,9 +1141,9 @@ trait Trees requires Global {
           copy.DefDef(
             tree, mods, name, transformAbsTypeDefs(tparams), transformValDefss(vparamss), transform(tpt), transform(rhs))
         }
-      case AbsTypeDef(mods, name, lo, hi) =>
+      case AbsTypeDef(mods, name, tparams, lo, hi) =>
         atOwner(tree.symbol) {
-          copy.AbsTypeDef(tree, mods, name, transform(lo), transform(hi))
+          copy.AbsTypeDef(tree, mods, name, transformAbsTypeDefs(tparams), transform(lo), transform(hi))
         }
       case AliasTypeDef(mods, name, tparams, rhs) =>
         atOwner(tree.symbol) {
@@ -1277,9 +1285,9 @@ trait Trees requires Global {
         atOwner(tree.symbol) {
           traverseTrees(tparams); traverseTreess(vparamss); traverse(tpt); traverse(rhs)
         }
-      case AbsTypeDef(mods, name, lo, hi) =>
+      case AbsTypeDef(mods, name, tparams, lo, hi) =>
         atOwner(tree.symbol) {
-          traverse(lo); traverse(hi)
+          traverseTrees(tparams); traverse(lo); traverse(hi)
         }
       case AliasTypeDef(mods, name, tparams, rhs) =>
         atOwner(tree.symbol) {

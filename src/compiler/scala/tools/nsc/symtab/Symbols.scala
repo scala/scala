@@ -194,6 +194,7 @@ trait Symbols requires SymbolTable {
     final def isError = hasFlag(IS_ERROR)
     final def isErroneous = isError || isInitialized && tpe.isErroneous
     final def isTrait = isClass & hasFlag(TRAIT)
+    final def isTypeMember = isType && !isClass
     final def isAliasType = isType && !isClass && !hasFlag(DEFERRED)
     final def isAbstractType = isType && !isClass && hasFlag(DEFERRED)
     final def isTypeParameterOrSkolem = isType && hasFlag(PARAM)
@@ -524,6 +525,8 @@ trait Symbols requires SymbolTable {
      */
     def typeConstructor: Type =
       throw new Error("typeConstructor inapplicable for " + this)
+
+    def tpeHK =  if(isType) typeConstructor else tpe // @M! used in memberType
 
     /** The type parameters of this symbol */
     def unsafeTypeParams: List[Symbol] = rawInfo.typeParams
@@ -1014,7 +1017,7 @@ trait Symbols requires SymbolTable {
     def infosString = infos.toString()
 
     /** String representation of symbol's variance */
-    private def varianceString: String =
+    def varianceString: String =
       if (variance == 1) "+"
       else if (variance == -1) "-"
       else ""
@@ -1117,7 +1120,12 @@ trait Symbols requires SymbolTable {
    *  of this class. Classes are instances of a subclass.
    */
   class TypeSymbol(initOwner: Symbol, initPos: PositionType, initName: Name)
-  extends Symbol(initOwner, initPos, initName) {
+  extends Symbol(initOwner, initPos,
+// @M type params with name "_" implicitly get unique name @M TODO: the name generation is a bit hacky...
+                 if(initName.length==1 && initName(0)=='_') // faster equality test than first converting to string
+                   newTypeName("_$" + (ids+1))
+                 else initName) {
+    override def nameString: String = if(name.startsWith("_$")) "_"+idString else super.nameString // @M: undo underscore-mangling
     override def isType = true
     privateWithin = NoSymbol
     private var tyconCache: Type = null
@@ -1133,7 +1141,9 @@ trait Symbols requires SymbolTable {
           if (isInitialized) tpePeriod = currentPeriod
           tpeCache = NoType
           val targs = if (phase.erasedTypes && this != ArrayClass) List()
-          else unsafeTypeParams map (.tpe)
+          else unsafeTypeParams map (.typeConstructor) //@M! use typeConstructor to generate dummy type arguments,
+          // sym.tpe should not be called on a symbol that's supposed to be a higher-kinded type
+          // memberType should be used instead, that's why it uses tpeHK and not tpe
           tpeCache = typeRef(if (isTypeParameterOrSkolem) NoPrefix else owner.thisType, this, targs)
         }
       }
@@ -1181,6 +1191,7 @@ trait Symbols requires SymbolTable {
                    initName: Name, typeParam: Symbol)
   extends TypeSymbol(initOwner, initPos, initName) {
     override def deSkolemize = typeParam
+    override def typeParams = info.typeParams //@M! (not deSkolemize.typeParams!!), also can't leave superclass definition: use info, not rawInfo
     override def cloneSymbolImpl(owner: Symbol): Symbol = {
       throw new Error("should not clone a type skolem")
     }

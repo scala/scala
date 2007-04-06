@@ -1,16 +1,16 @@
-accesses.scala:23: error: error overriding method f2 in class A of type => scala.Unit;
+accesses.scala:23: error: error overriding method f2 in class A of type => scala.Predef.unit;
  method f2 has weaker access privileges; it should not be private
   private def f2: unit = ()
           ^
-accesses.scala:24: error: error overriding method f3 in class A of type => scala.Unit;
+accesses.scala:24: error: error overriding method f3 in class A of type => scala.Predef.unit;
  method f3 has weaker access privileges; it should be at least protected
   private[p2] def f3: unit = ()
               ^
-accesses.scala:25: error: error overriding method f4 in class A of type => scala.Unit;
+accesses.scala:25: error: error overriding method f4 in class A of type => scala.Predef.unit;
  method f4 has weaker access privileges; it should be at least private[p1]
   private[p2] def f4: unit
               ^
-accesses.scala:26: error: error overriding method f5 in class A of type => scala.Unit;
+accesses.scala:26: error: error overriding method f5 in class A of type => scala.Predef.unit;
  method f5 has weaker access privileges; it should be at least protected[p1]
   protected[p2] def f5: unit
                 ^

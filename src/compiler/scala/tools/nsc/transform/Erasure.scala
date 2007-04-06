@@ -58,39 +58,41 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
    *  </ul>
    */
   val erasure = new TypeMap {
-    def apply(tp: Type): Type = tp match {
-      case ConstantType(_) =>
-        tp
-      case st: SubType =>
-        apply(st.supertype)
-      case TypeRef(pre, sym, args) =>
-        if (sym == ArrayClass)
-          args.head match {
-            case TypeRef(_, tvar, _) if (tvar.isAbstractType) => erasedTypeRef(BoxedArrayClass)
-            case _ => typeRef(apply(pre), sym, args map this)
-          }
-        else if (sym == AnyClass || sym == AnyValClass) erasedTypeRef(ObjectClass)
-        else if (sym == UnitClass) erasedTypeRef(BoxedUnitClass)
-        else if (sym.isClass)
-          typeRef(apply(if (sym.owner.isClass) sym.owner.tpe else pre), sym, List())
-        else apply(sym.info)
-      case PolyType(tparams, restpe) =>
-        apply(restpe)
-      case MethodType(formals, restpe) =>
-        MethodType(
-          formals map apply,
-          if (restpe.symbol == UnitClass) erasedTypeRef(UnitClass) else apply(restpe))
-      case RefinedType(parents, decls) =>
-        if (parents.isEmpty) erasedTypeRef(ObjectClass)
-        else apply(parents.head)
-      case ClassInfoType(parents, decls, clazz) =>
-        ClassInfoType(
-          if ((clazz == ObjectClass) || (isValueType(clazz))) List()
-          else if (clazz == ArrayClass) List(erasedTypeRef(ObjectClass))
-          else removeDoubleObject(parents map this),
-          decls, clazz)
-      case _ =>
-        mapOver(tp)
+    def apply(tp0: Type): Type = { val tp = tp0.normalize
+      tp match {
+        case ConstantType(_) =>
+          tp
+        case st: SubType =>
+          apply(st.supertype)
+        case TypeRef(pre, sym, args) =>
+          if (sym == ArrayClass)
+            args.head match {
+              case TypeRef(_, tvar, _) if (tvar.isAbstractType) => erasedTypeRef(BoxedArrayClass)
+              case _ => typeRef(apply(pre), sym, args map this)
+            }
+          else if (sym == AnyClass || sym == AnyValClass) erasedTypeRef(ObjectClass)
+          else if (sym == UnitClass) erasedTypeRef(BoxedUnitClass)
+          else if (sym.isClass)
+            typeRef(apply(if (sym.owner.isClass) sym.owner.tpe else pre), sym, List())
+          else apply(sym.info)
+        case PolyType(tparams, restpe) =>
+          apply(restpe)
+        case MethodType(formals, restpe) =>
+          MethodType(
+            formals map apply,
+            if (restpe.symbol == UnitClass) erasedTypeRef(UnitClass) else apply(restpe))
+        case RefinedType(parents, decls) =>
+          if (parents.isEmpty) erasedTypeRef(ObjectClass)
+          else apply(parents.head)
+        case ClassInfoType(parents, decls, clazz) =>
+          ClassInfoType(
+            if ((clazz == ObjectClass) || (isValueType(clazz))) List()
+            else if (clazz == ArrayClass) List(erasedTypeRef(ObjectClass))
+            else removeDoubleObject(parents map this),
+            decls, clazz)
+        case _ =>
+          mapOver(tp).normalize
+      }
     }
   }
 
@@ -246,7 +248,9 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
      *    </tr>
      *  </table>
      */
-    private def cast(tree: Tree, pt: Type): Tree =
+    private def cast(tree: Tree, pt: Type): Tree = {
+      assert(pt eq pt.normalize)
+
       if (tree.tpe.symbol == ObjectClass) {
         if (pt.symbol == ArrayClass)
           typed {
@@ -301,6 +305,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
           }
         else gen.mkAttributedCast(tree, pt)
       } else gen.mkAttributedCast(tree, pt)
+    }
 
     /** Is symbol a member of unboxed arrays (which will be expanded directly
      *  later)?
@@ -728,7 +733,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
             copy.ClassDef(tree, mods, name, List(), emptyValDef, impl)
           case DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
             copy.DefDef(tree, mods, name, List(), vparamss, tpt, rhs)
-          case AbsTypeDef(_, _, _, _) =>
+          case AbsTypeDef(_, _, _, _, _) =>
             EmptyTree
           case AliasTypeDef(_, _, _, _) =>
             EmptyTree

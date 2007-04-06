@@ -381,7 +381,8 @@ trait Contexts requires Analyzer {
         if (settings.debug.value) log("resetting " + sym + " to " + info);
         sym.info match {
           case TypeBounds(lo, hi) if (hi <:< lo && lo <:< hi) =>
-            current = current.subst(List(sym), List(lo))
+            current = current.instantiateTypeParams(List(sym), List(lo))
+//@M TODO: when higher-kinded types are inferred, probably need a case PolyType(_, TypeBounds(...)) if ... =>
           case _ =>
         }
         sym.setInfo(info)

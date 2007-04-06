@@ -1,5 +1,5 @@
 bug752.scala:6: error: type mismatch;
- found   : (java.lang.String) => scala.Unit
+ found   : (scala.Predef.String) => scala.Unit
  required: (scala.Int) => scala.Unit
                 f(&g)
                    ^

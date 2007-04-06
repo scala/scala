@@ -70,7 +70,9 @@ trait Types requires SymbolTable {
      */
     def isTrivial: boolean = false
 
-    /** The symbol associated with the type */
+    /** The symbol associated with the type
+      * Note that the symbol of the normalized type is returned (@see normalize)
+      */
     def symbol: Symbol = NoSymbol
 
     /** The base type underlying a singleton type,
@@ -108,7 +110,7 @@ trait Types requires SymbolTable {
      *  The empty list for all other types */
     def parents: List[Type] = List()
 
-    /** For a typeref or single-type, its prefix. NoType for all other types. */
+    /** For a typeref or single-type, the prefix of the normalized type (@see normalize). NoType for all other types. */
     def prefix: Type = NoType
 
     /** For a typeref, its arguments. The empty list for all other types */
@@ -133,6 +135,18 @@ trait Types requires SymbolTable {
     /** For a poly type, its type parameters,
      *  the empty list for all other types */
     def typeParams: List[Symbol] = List()
+
+    /** Replace formal type parameter symbols with actual type arguments.
+     *
+     * Amounts to substitution except for higher-kinded types. (See overridden method in TypeRef) -- @M (contact adriaan.moors at cs.kuleuven.be)
+     */
+    def instantiateTypeParams(formals: List[Symbol], actuals: List[Type]): Type = this.subst(formals, actuals)
+
+    /** Is this type higher-kinded, i.e., is it a type constructor @M */
+    def isHigherKinded: boolean = false
+
+    /** Reduce to beta eta-long normal form. Expands type aliases and converts higher-kinded TypeRef's to PolyTypes. @M */
+    def normalize = this // @MAT
 
     /** Is this type produced as a repair for an error? */
     def isError: boolean = symbol.isError
@@ -221,7 +235,8 @@ trait Types requires SymbolTable {
 
     /** The type of `sym', seen as a member of this type. */
     def memberType(sym: Symbol): Type = {
-      sym.tpe match {
+      //@M don't prematurely instantiate higher-kinded types, they will be instantiated by transform, typedTypeApply, etc. when really necessary
+     sym.tpeHK match {
         case ov @ OverloadedType(pre, alts) =>
           OverloadedType(this, alts)
 /*
@@ -237,9 +252,9 @@ trait Types requires SymbolTable {
             ov
           }
 */
-        case _ =>
+        case tp =>
           //Console.println("" + this + ".memberType(" + sym +":" + sym.tpe +")" + sym.ownerChain);//DEBUG
-          sym.tpe.asSeenFrom(this, sym.owner)
+          tp.asSeenFrom(this, sym.owner)
       }
     }
 
@@ -1010,7 +1025,7 @@ trait Types requires SymbolTable {
     assert(value.tpe.symbol != UnitClass)
     override def isTrivial: boolean = true
     override def symbol: Symbol = value.tpe.symbol
-    override def singleDeref: Type = value.tpe
+    override def singleDeref: Type = value.tpe //M@ probably ok since constants don't take type params?
     override def deconst: Type = value.tpe
     override def toString(): String =
       value.tpe.toString() + "(" + value.escapedStringValue + ")"
@@ -1021,8 +1036,9 @@ trait Types requires SymbolTable {
   /** A class for named types of the form
    *  <code>&lt;prefix&gt;.&lt;sym.name&gt;[args]</code>
    *  Cannot be created directly; one should always use <code>typeRef</code>
-   *  for creation.
+   *  for creation. (@M: Otherwise hashing breaks)
    *
+   * @M: Higher-kinded types are represented as TypeRefs with a symbol that has type parameters, but with args==List()
    *  @param pre  ...
    *  @param sym  ...
    *  @param args ...
@@ -1041,10 +1057,18 @@ trait Types requires SymbolTable {
     override val isTrivial: boolean =
       pre.isTrivial && !sym.isTypeParameter && args.forall(.isTrivial)
 
+    // @M: propagate actual type params (args) to `tp', by replacing formal type parameters with actual ones
     def transform(tp: Type): Type =
-      tp.asSeenFrom(pre, sym.owner).subst(sym.typeParams, args)
+      tp.asSeenFrom(pre, sym.owner).instantiateTypeParams(sym.typeParams, argsMaybeDummy)
+      // @M TODO maybe we shouldn't instantiate type params if isHigherKinded -- probably needed for partial type application though
 
-    def thisInfo = if (sym.isAbstractType) transform(sym.info) else sym.info
+    //@M! use appliedType on the polytype that represents the bounds (or if aliastype, the rhs)
+    def transformInfo(tp: Type): Type =
+      appliedType(tp.asSeenFrom(pre, sym.owner), argsMaybeDummy)
+      // TODO: argsMaybeDummy --> ok? or don't instantiate type params if isHigherKinded
+
+    def thisInfo     = if (sym.isTypeMember) transformInfo(sym.info) else sym.info
+    def relativeInfo = if (sym.isTypeMember) transformInfo(pre.memberInfo(sym)) else pre.memberInfo(sym)
 
     def transform(cl: Array[Type]): Array[Type] = {
       val cl1 = new Array[Type](cl.length)
@@ -1056,7 +1080,7 @@ trait Types requires SymbolTable {
       cl1
     }
 
-    override def symbol = sym
+    override def symbol = if(normalize ne this) normalize.symbol else sym
 
     override def bounds: TypeBounds =
       if (sym.isAbstractType) transform(thisInfo.bounds).asInstanceOf[TypeBounds]
@@ -1078,17 +1102,50 @@ trait Types requires SymbolTable {
     override def narrow =
       if (sym.isModuleClass) transform(sym.thisType) else super.narrow
 
-    override def prefix: Type = pre
+    override def prefix: Type = if(normalize ne this) normalize.resultType.prefix else pre
+// @M: .resultType because normalisation may eta-expand to a poly type, we want the resultType's prefix, not the surrounding polytype's
+// @M: should PolyType override prefix to return resultType.prefix?
+
 
     override def typeArgs: List[Type] = args
 
     override def typeParams: List[Symbol] =
-      if (args.isEmpty) symbol.unsafeTypeParams else List()
+      if (args.isEmpty) sym.unsafeTypeParams else List()
+         // @MAT was symbol.unsafeTypeParams, but symbol normalizes now
+
+    override def instantiateTypeParams(formals: List[Symbol], actuals: List[Type]): Type =
+      if(isHigherKinded) {
+        val substTps = formals.intersect(typeParams)
+
+        if(substTps.length == typeParams.length)
+          typeRef(pre, sym, actuals)
+        else // partial application (needed in infer when bunching type arguments from classes and methods together)
+          typeRef(pre, sym, higherKindedArgs).subst(formals, actuals)
+      }
+      else
+        super.instantiateTypeParams(formals, actuals)
+
+    override def isHigherKinded = !typeParams.isEmpty  //@M args.isEmpty is checked in typeParams
+
+    private def higherKindedArgs = typeParams map (.typeConstructor) //@M must be .typeConstructor
+    private def argsMaybeDummy = if(isHigherKinded) higherKindedArgs else args
+
+    override def normalize =
+      if (sym.isAliasType) {
+        if(sym.info.typeParams.length == args.length) // beta-reduce
+          transform(sym.info.resultType).normalize // cycles have been checked in typeRef -- TODO: .resultType necessary?
+        else { // eta-expand
+          assert(isHigherKinded)
+          PolyType(typeParams, transform(sym.info.resultType).normalize)
+        }
+      } else if (isHigherKinded) {
+        PolyType(typeParams, typeRef(pre, sym, higherKindedArgs))
+      } else super.normalize
 
     override def decls: Scope = {
       sym.info match {
         case TypeRef(_, sym1, _) =>
-          assert(sym1 != symbol, this)
+          assert(sym1 != sym, this) // @MAT was != symbol
         case _ =>
       }
       thisInfo.decls
@@ -1097,7 +1154,7 @@ trait Types requires SymbolTable {
     override def baseType(clazz: Symbol): Type =
       if (sym == clazz) this
       else if (sym.isClass) transform(sym.info.baseType(clazz))
-      else pre.memberInfo(sym).baseType(clazz)
+      else relativeInfo.baseType(clazz) // @M! use relativeInfo instead of pre.memberInfo(sym)
 
     override def closure: Array[Type] = {
       val period = closurePeriod
@@ -1180,6 +1237,8 @@ trait Types requires SymbolTable {
 
   /** A class representing a polymorphic type or, if tparams.length == 0,
    *  a parameterless method type.
+   *  (@M: note that polymorphic nullary methods have non-empty tparams, e.g., isInstanceOf or def makeList[T] = new List[T]
+   *       ideally, there would be a NullaryMethodType, so that higher-kinded types could use PolyType instead of TypeRef with empty args)
    */
   case class PolyType(override val typeParams: List[Symbol], override val resultType: Type)
        extends Type {
@@ -1198,7 +1257,13 @@ trait Types requires SymbolTable {
     override def baseType(clazz: Symbol): Type = resultType.baseType(clazz)
     override def narrow: Type = resultType.narrow
 
+    // @M: abstractTypeSig now wraps a TypeBounds in a PolyType to represent a higher-kinded type parameter
+    // wrap lo&hi in polytypes to bind variables
+    override def bounds: TypeBounds = TypeBounds(PolyType(typeParams, resultType.bounds.lo), PolyType(typeParams, resultType.bounds.hi))
+
     // override def isNullable: boolean = resultType.isNullable;
+
+    override def isHigherKinded = !typeParams.isEmpty
 
     override def toString(): String =
       (if (typeParams.isEmpty) "=> "
@@ -1444,23 +1509,25 @@ trait Types requires SymbolTable {
    *  with possibility of approximating in case of malformed types */
   def typeRef(pre: Type, sym: Symbol, args: List[Type], variance: int): Type = {
     var sym1 = if (sym.isAbstractType) rebind(pre, sym) else sym
+    def transform(tp: Type): Type =
+      tp.resultType.asSeenFrom(pre, sym1.owner).instantiateTypeParams(sym1.typeParams, args)
+
     if (sym1.isAliasType && sym1.info.typeParams.length == args.length) {
       // note: we require that object is initialized,
       // that's why we use info.typeParams instead of typeParams.
       if (sym1.hasFlag(LOCKED))
         throw new TypeError("illegal cyclic reference involving " + sym1)
       sym1.setFlag(LOCKED)
-      val result = sym1.info.resultType.asSeenFrom(pre, sym1.owner).subst(sym1.typeParams, args)
+      val result = transform(sym1.info)
       sym1.resetFlag(LOCKED)
-      result
+      //result // @M: original version -- this would expand the type alias immediately
+      rawTypeRef(pre, sym1, args) //@MAT -- don't expand type alias, but still check there are no cycles
     } else {
       val pre1 = removeSuper(pre, sym1)
       if (pre1 ne pre) {
         if (sym1.isAbstractType) sym1 = rebind(pre1, sym1)
         typeRef(pre1, sym1, args, variance)
       } else if (checkMalformedSwitch && sym1.isAbstractType && !pre.isStable && !pre.isError) {
-        def transform(tp: Type): Type =
-          tp.asSeenFrom(pre, sym1.owner).subst(sym1.typeParams, args)
         if (healTypes && variance == 1 && !(sym1.info.bounds.hi contains sym1)) transform(sym1.info.bounds.hi)
         //else if (variance == -1 && !(sym1.info.bounds.lo contains sym1)) transform(sym1.info.bounds.lo)
         else throw new MalformedType(pre, sym1.nameString)
@@ -1521,15 +1588,17 @@ trait Types requires SymbolTable {
   }
 
   /** A creator for type applications */
-  def appliedType(tycon: Type, args: List[Type]): Type = tycon match {
-    case TypeRef(pre, sym, _) => typeRef(pre, sym, args)
-    case PolyType(tparams, restpe) => restpe.subst(tparams, args)
-    case ErrorType => tycon
-    case _ =>
-      Console.println(tycon.getClass())
-      Console.println(tycon.$tag())
-      throw new Error()
-  }
+  def appliedType(tycon: Type, args: List[Type]): Type =
+    if(args.isEmpty) tycon //@M! `if(args.isEmpty) tycon' is crucial (otherwise we create new types in phases after typer and then they don't get adapted (??))
+    else tycon match {
+      case TypeRef(pre, sym, _) => typeRef(pre, sym, args)
+      case PolyType(tparams, restpe) => restpe.instantiateTypeParams(tparams, args)
+      case ErrorType => tycon
+      case _ =>
+        Console.println(tycon.getClass())
+        Console.println(tycon.$tag())
+        throw new Error()
+    }
 
 // Hash consing --------------------------------------------------------------
 
@@ -1759,7 +1828,7 @@ trait Types requires SymbolTable {
           }
         case TypeRef(prefix, sym, args) if (sym.isTypeParameter) =>
           def toInstance(pre: Type, clazz: Symbol): Type =
-            if ((pre eq NoType) || (pre eq NoPrefix) || !clazz.isClass) tp
+            if ((pre eq NoType) || (pre eq NoPrefix) || !clazz.isClass) mapOver(tp) //@M! see test pos/tcpoly_return_overriding.scala why mapOver is necessary
             else {
               val symclazz = sym.owner;
               def throwError =
@@ -1767,7 +1836,8 @@ trait Types requires SymbolTable {
                                 " cannot be instantiated from " + pre.widen);
               def instParam(ps: List[Symbol], as: List[Type]): Type =
                 if (ps.isEmpty) throwError
-                else if (sym eq ps.head) as.head
+                else if (sym eq ps.head)  // @M! don't just replace the whole thing, might be followed by type application
+                  appliedType(as.head, List.mapConserve(args)(this)) // @M: was as.head
                 else instParam(ps.tail, as.tail);
               if (symclazz == clazz && (pre.widen.symbol isNonBottomSubClass symclazz))
                 pre.baseType(symclazz) match {
@@ -1802,24 +1872,38 @@ trait Types requires SymbolTable {
     /** Map target to type, can be tuned by subclasses */
     protected def toType(fromtp: Type, t: T): Type
 
-    def apply(tp: Type): Type = {
+    def apply(tp0: Type): Type = if(from.isEmpty) tp0 else {
+      val tp = mapOver(tp0)
+
       def subst(sym: Symbol, from: List[Symbol], to: List[T]): Type =
         if (from.isEmpty) tp
         else if (to.isEmpty && inIDE) throw new TypeError(NoPos, "type parameter list problem");
         else if (matches(from.head, sym)) toType(tp, to.head)
         else subst(sym, from.tail, to.tail)
+
       tp match {
-        case TypeRef(NoPrefix, sym, _) =>
-          val tp1 = subst(sym, from, to)
-          if (tp1 ne tp) tp1
-          else mapOver(tp)
+        // @M
+        // 1) arguments must also be substituted (even when the "head" of the applied type has already been substituted)
+        // example: (subst RBound[RT] from [type RT,type RBound] to [type RT&,type RBound&]) = RBound&[RT&]
+        // 2) avoid loops (which occur because alpha-conversion is not performed properly imo)
+        // e.g. if in class Iterable[a] there is a new Iterable[(a,b)], we must replace the a in Iterable[a] by (a,b)
+        // (must not recurse --> loops)
+        // 3) replacing m by List in m[Int] should yield List[Int], not just List
+        case TypeRef(NoPrefix, sym, args) =>
+          subst(sym, from, to) match {
+            case r @ TypeRef(pre1, sym1, args1) =>
+              if (args.isEmpty) r
+              else rawTypeRef(pre1, sym1, args)
+            case r =>
+              r
+          }
         case SingleType(NoPrefix, sym) =>
           subst(sym, from, to)
         case PolyType(tparams, restp) =>
           assert(!(tparams exists (from contains)))
-          mapOver(tp)
+          tp
         case _ =>
-          mapOver(tp)
+          tp
       }
     }
   }
@@ -1831,14 +1915,14 @@ trait Types requires SymbolTable {
       case TypeRef(pre, _, args) => typeRef(pre, sym, args, variance)
       case SingleType(pre, _) => singleType(pre, sym, variance)
     }
-    override def apply(tp: Type): Type = {
+    override def apply(tp: Type): Type = if(from.isEmpty) tp else {
       def subst(sym: Symbol, from: List[Symbol], to: List[Symbol]): Symbol =
         if (from.isEmpty) sym
         else if (matches(from.head, sym)) to.head
         else subst(sym, from.tail, to.tail)
       tp match {
         case TypeRef(pre, sym, args) if !(pre eq NoPrefix) =>
-          mapOver(typeRef(pre, subst(sym, from, to), args, variance))
+          mapOver(typeRef(pre, subst(sym, from, to), args, variance)) //@M TODO subst args? List.mapConserve(args)(this)
         case SingleType(pre, sym) if !(pre eq NoPrefix) =>
           mapOver(singleType(pre, subst(sym, from, to), variance))
         case _ =>
@@ -1883,7 +1967,7 @@ trait Types requires SymbolTable {
     var result = false
     def traverse(tp: Type): ContainsTraverser = {
       if (!result) {
-        tp match {
+        tp.normalize match {
           case TypeRef(_, sym1, _) if (sym == sym1) => result = true
           case SingleType(_, sym1) if (sym == sym1) => result = true
           case _ => mapOver(tp)
@@ -1925,7 +2009,7 @@ trait Types requires SymbolTable {
     def init = { result = NoSymbol }
     def apply(tp: Type): Type = {
       assert(tp ne null)
-      tp match {
+      tp.normalize match {
         case ThisType(sym) =>
           register(sym)
         case TypeRef(NoPrefix, sym, args) =>
@@ -2088,7 +2172,14 @@ trait Types requires SymbolTable {
    *             equivalent types.
    */
   def isSameType(tp1: Type, tp2: Type): boolean = {
-    (tp1, tp2) match {
+    //@MAT
+    def isSameTypeNormalize(tp1: Type, tp2: Type): boolean = {
+      val tp1n= tp1.normalize
+      val tp2n= tp2.normalize
+      ((tp1n ne tp1) || (tp2n ne tp2)) && isSameType(tp1n, tp2n)
+    }
+
+    val res = (tp1, tp2) match {
       case (ErrorType, _) => true
       case (WildcardType, _) => true
       case (_, ErrorType) => true
@@ -2120,7 +2211,10 @@ trait Types requires SymbolTable {
       case (ConstantType(value1), ConstantType(value2)) =>
         value1 == value2
       case (TypeRef(pre1, sym1, args1), TypeRef(pre2, sym2, args2)) =>
-        sym1 == sym2 && (phase.erasedTypes || pre1 =:= pre2) && isSameTypes(args1, args2)
+        sym1 == sym2 && (phase.erasedTypes || pre1 =:= pre2) &&
+          // @M! normalize reduces higher-kinded case to PolyType's
+        ( (tp1.isHigherKinded && tp2.isHigherKinded && tp1.normalize =:= tp2.normalize)
+         || isSameTypes(args1, args2))
       case (RefinedType(parents1, ref1), RefinedType(parents2, ref2)) =>
         def isSubScope(s1: Scope, s2: Scope): boolean = s2.toList.forall {
           sym2 =>
@@ -2165,6 +2259,8 @@ trait Types requires SymbolTable {
           ((origin1 ne tp1) || (origin2 ne tp2)) && (origin1 =:= origin2)
         } else false
     }
+
+    (res || isSameTypeNormalize(tp1, tp2)) //@MAT
   }
 
   /** Are <code>tps1</code> and <code>tps2</code> lists of pairwise equivalent
@@ -2177,7 +2273,14 @@ trait Types requires SymbolTable {
   var stc: int = 0
   private var pendingSubTypes = new collection.mutable.HashSet[SubTypePair]
 
-  def isSubType(tp1: Type, tp2: Type): boolean =
+  def isSubType(tp1: Type, tp2: Type): boolean = {
+    //@MAT
+    def isSubTypeNormalize(tp1: Type, tp2: Type): boolean = {
+      val tp1n= tp1.normalize
+      val tp2n= tp2.normalize
+      ((tp1n ne tp1) || (tp2n ne tp2)) && isSubType0(tp1n, tp2n)
+    }
+
     try {
       stc = stc + 1
       if (stc >= LogPendingSubTypesThreshold) {
@@ -2187,14 +2290,15 @@ trait Types requires SymbolTable {
         else
           try {
             pendingSubTypes += p
-            isSubType0(tp1, tp2)
+            (isSubType0(tp1, tp2) || isSubTypeNormalize(tp1, tp2))  //@MAT
           } finally {
             pendingSubTypes -= p
           }
-      } else isSubType0(tp1, tp2)
+      } else (isSubType0(tp1, tp2) || isSubTypeNormalize(tp1, tp2))  //@MAT
     } finally {
       stc = stc - 1
     }
+  }
   /** hook for IDE */
   protected def trackTypeIDE(sym : Symbol) : Boolean = true;
 
@@ -2222,8 +2326,7 @@ trait Types requires SymbolTable {
       case (SingleType(_, _), SingleType(_, _)) => tp1 =:= tp2
       case (ConstantType(_), ConstantType(_))   => tp1 =:= tp2
 
-      case (TypeRef(pre1, sym1, args1), TypeRef(pre2, sym2, args2)) =>
-        //Console.println("isSubType " + tp1 + " " + tp2);//DEBUG
+      case (TypeRef(pre1, sym1, args1), TypeRef(pre2, sym2, args2)) if !(tp1.isHigherKinded || tp2.isHigherKinded) =>         //Console.println("isSubType " + tp1 + " " + tp2);//DEBUG
         if (inIDE) { trackTypeIDE(sym1); trackTypeIDE(sym2); }
 
         def isSubArgs(tps1: List[Type], tps2: List[Type],
@@ -2236,22 +2339,22 @@ trait Types requires SymbolTable {
           isSubArgs(tps1.tail, tps2.tail, tparams.tail)
         );
         (sym1 == sym2 &&
-         (phase.erasedTypes || pre1 <:< pre2) &&
-         isSubArgs(args1, args2, sym1.typeParams)
+          (phase.erasedTypes || pre1 <:< pre2) &&
+          (sym2 == AnyClass || isSubArgs(args1, args2, sym1.typeParams)) //@M: Any is kind-polymorphic
          ||
-         sym1.isAbstractType && !(tp1 =:= tp1.bounds.hi) && (tp1.bounds.hi <:< tp2)
+          sym1.isAbstractType && !(tp1 =:= tp1.bounds.hi) && (tp1.bounds.hi <:< tp2)
          ||
-         sym2.isAbstractType && !(tp2 =:= tp2.bounds.lo) && (tp1 <:< tp2.bounds.lo)
+          sym2.isAbstractType && !(tp2 =:= tp2.bounds.lo) && (tp1 <:< tp2.bounds.lo)
          ||
 //         sym2 == NonNullClass && tp1.isNonNull
 //         ||
-         sym2.isClass &&
-           ({ val base = tp1 baseType sym2; !(base eq tp1) && (base <:< tp2) })
+          sym2.isClass &&
+            ({ val base = tp1 baseType sym2; !(base eq tp1) && (base <:< tp2) })
          ||
-         sym1 == AllClass
+          sym1 == AllClass
          ||
          // Console.println("last chance " + sym1 + " " + sym2 + " " + sym2.isClass + " " (sym2 isSubClass ObjectClass))
-         sym1 == AllRefClass && sym2.isClass && sym2 != AllClass && (sym2 isSubClass ObjectClass))
+          sym1 == AllRefClass && sym2.isClass && sym2 != AllClass && (sym2 isSubClass ObjectClass))
       case (MethodType(pts1, res1), MethodType(pts2, res2)) =>
         (pts1.length == pts2.length &&
          matchingParams(pts1, pts2, tp2.isInstanceOf[JavaMethodType]) &&
@@ -2262,6 +2365,12 @@ trait Types requires SymbolTable {
          List.forall2(tparams1, tparams2)
            ((p1, p2) => p2.info.substSym(tparams2, tparams1) <:< p1.info) &&
          res1 <:< res2.substSym(tparams2, tparams1))
+      case (_, _)  if (tp1.isHigherKinded || tp2.isHigherKinded) =>
+          (tp1.symbol == AllClass
+         ||
+          tp2.symbol == AnyClass // @M Any and Nothing are super-type resp. subtype of every well-kinded type
+         || // @M! normalize reduces higher-kinded case to PolyType's
+          (tp1.isHigherKinded && tp2.isHigherKinded) && isSubType0(tp1.normalize, tp2.normalize))
       case (TypeBounds(lo1, hi1), TypeBounds(lo2, hi2)) =>
         lo2 <:< lo1 && hi1 <:< hi2
       case (BoundedWildcardType(bounds), _) =>
@@ -2338,7 +2447,7 @@ trait Types requires SymbolTable {
     //System.out.println("specializes "+tp1+"."+sym1+":"+info1+sym1.locationString+" AND "+tp2+"."+sym2+":"+info2)//DEBUG
     sym2.isTerm && (info1 <:< info2) ||
     sym2.isAbstractType && info2.bounds.containsType(tp1.memberType(sym1)) ||
-    sym2.isAliasType && tp2.memberType(sym2).substThis(tp2.symbol, tp1) =:= tp1.memberType(sym1)
+    sym2.isAliasType && tp2.memberType(sym2).substThis(tp2.symbol, tp1) =:= tp1.memberType(sym1) //@MAT ok
   }
 
   /** A function implementing <code>tp1</code> matches <code>tp2</code> */

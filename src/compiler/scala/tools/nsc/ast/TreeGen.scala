@@ -87,6 +87,7 @@ abstract class TreeGen {
   def mkAttributedCast(tree: Tree, pt: Type): Tree = {
     if (settings.debug.value) log("casting " + tree + ":" + tree.tpe + " to " + pt)
     assert(!tree.tpe.isInstanceOf[MethodType], tree)
+    assert(pt eq pt.normalize) //@MAT only called during erasure, which already takes care of that
     typer.typed {
       atPos(tree.pos) {
         Apply(TypeApply(mkAttributedSelect(tree, Object_asInstanceOf), List(TypeTree(pt))), List())
@@ -132,7 +133,7 @@ abstract class TreeGen {
     Apply(
       TypeApply(
         mkAttributedSelect(value, sym),
-        List(TypeTree(tpe))),
+        List(TypeTree(tpe.normalize))),
       List())
   }
 
@@ -149,7 +150,7 @@ abstract class TreeGen {
     Apply(
       TypeApply(
         mkAttributedSelect(value, sym),
-        List(TypeTree(tpe))),
+        List(TypeTree(tpe.normalize))),
       List())
   }
 

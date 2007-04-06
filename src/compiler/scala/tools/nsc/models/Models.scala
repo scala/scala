@@ -120,7 +120,8 @@ abstract class Models {
         }
         ret = ret + " : " + textFor(vdef.tpt)
       case atd: AbsTypeDef =>
-        ret = ret + ((if(atd.hi ne null) " <: " + textFor(atd.hi) else "") +
+        ret = ret + "[" + (for (val tparam <- atd.tparams) yield textFor(tparam)) + "]" +
+                     ((if(atd.hi ne null) " <: " + textFor(atd.hi) else "") +
                      (if(atd.lo ne null) " >: " + textFor(atd.lo) else ""));
       case _ =>
         ret = ret + tree.toString()

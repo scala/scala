@@ -1,6 +1,6 @@
 bug588.scala:3: error: double definition:
-method visit:((scala.Int) => java.lang.String)scala.Boolean and
-method visit:((scala.Int) => scala.Unit)scala.Boolean at line 2
+method visit:((scala.Predef.int) => scala.Predef.String)scala.Predef.boolean and
+method visit:((scala.Predef.int) => scala.Predef.unit)scala.Predef.boolean at line 2
 have same type after erasure: (scala.Function1)scala.Boolean
   def visit(f: int => String): boolean
   ^

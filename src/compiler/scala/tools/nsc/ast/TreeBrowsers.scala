@@ -275,7 +275,7 @@ abstract class TreeBrowsers {
       case DefDef(mods, name, tparams, vparams, tpe, rhs) =>
         ("DefDef", name)
 
-      case AbsTypeDef(mods, name, rhs, lobound) =>
+      case AbsTypeDef(mods, name, tparams, rhs, lobound) =>
         ("AbsTypeDef", name)
 
       case AliasTypeDef(mods, name, tparams, rhs) =>
@@ -417,8 +417,8 @@ abstract class TreeBrowsers {
         tpe :: rhs :: children
       }
 
-      case AbsTypeDef(mods, name, rhs, lobound) =>
-        List(rhs, lobound)
+      case AbsTypeDef(mods, name, tparams, rhs, lobound) =>
+        rhs :: lobound :: tparams // @M: was List(rhs, lobound)
 
       case AliasTypeDef(mods, name, tparams, rhs) => {
         var children: List[Tree] = List()

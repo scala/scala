@@ -111,7 +111,7 @@ trait Definitions requires SymbolTable {
     val MaxTupleArity = 22
     val TupleClass: Array[Symbol] = new Array(MaxTupleArity + 1)
       def tupleField(n: Int, j: Int) = getMember(TupleClass(n), "_" + j)
-      def isTupleType(tp: Type): Boolean = tp match {
+      def isTupleType(tp: Type): Boolean = tp.normalize match {
         case TypeRef(_, sym, elems) =>
           elems.length <= MaxTupleArity && sym == TupleClass(elems.length)
         case _ =>
@@ -129,7 +129,7 @@ trait Definitions requires SymbolTable {
       def productProj(z:Symbol, j: Int): Symbol = getMember(z, nme.Product_(j))
       def productProj(n: Int,   j: Int): Symbol = productProj(ProductClass(n), j)
     /** returns true if this type is exactly ProductN[T1,...,Tn], not some subclass */
-      def isExactProductType(tp: Type): Boolean = tp match {
+      def isExactProductType(tp: Type): Boolean = tp.normalize match {
         case TypeRef(_, sym, elems) =>
           elems.length <= MaxProductArity && sym == ProductClass(elems.length)
         case _ =>
@@ -157,34 +157,34 @@ trait Definitions requires SymbolTable {
     private var NoneClass_ : Symbol = null
     def NoneClass: Symbol = { if(NoneClass_ eq null) SomeClass_ = getModule("scala.None"); NoneClass_ }
 
-    def isOptionType(tp: Type) = tp match {
+    def isOptionType(tp: Type) = tp.normalize match {
       case TypeRef(_, sym, List(_)) if sym == OptionClass => true
       case _ => false
     }
-    def isOptionOrSomeType(tp: Type) = tp match {
+    def isOptionOrSomeType(tp: Type) = tp.normalize match {
       case TypeRef(_, sym, List(_)) => sym == OptionClass || sym == SomeClass
       case _ => false
     }
     def optionType(tp: Type) =
       typeRef(OptionClass.typeConstructor.prefix, OptionClass, List(tp))
 
-    def isSomeType(tp: Type) = tp match {
+    def isSomeType(tp: Type) = tp.normalize match {
       case TypeRef(_, sym, List(_)) if sym == SomeClass => true
       case _ => false
     }
     def someType(tp: Type) =
       typeRef(SomeClass.typeConstructor.prefix, SomeClass, List(tp))
 
-    def isNoneType(tp: Type) = tp match {
+    def isNoneType(tp: Type) = tp.normalize match {
       case TypeRef(_, sym, List(_)) if sym == NoneClass => true
       case _ => false
     }
 
-    def unapplyUnwrap(tpe:Type) = tpe match {
+    def unapplyUnwrap(tpe:Type) = (tpe match {
       case PolyType(_,MethodType(_, res)) => res
       case MethodType(_, res)             => res
       case tpe                            => tpe
-    }
+    }).normalize
 
     /** returns type list for return type of the extraction */
     def unapplyTypeList(ufn: Symbol, ufntpe: Type) = {
@@ -272,7 +272,7 @@ trait Definitions requires SymbolTable {
           val sym = FunctionClass(formals.length)
           typeRef(sym.typeConstructor.prefix, sym, formals ::: List(restpe))
         } else NoType;
-      def isFunctionType(tp: Type): boolean = tp match {
+      def isFunctionType(tp: Type): boolean = tp.normalize match {
         case TypeRef(_, sym, args) =>
           (args.length > 0) && (args.length - 1 <= MaxFunctionArity) &&
           (sym == FunctionClass(args.length - 1))

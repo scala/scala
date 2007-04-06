@@ -565,7 +565,7 @@ abstract class DocGenerator extends Models {
         val cflags = if (tree.mods.isCovariant) "+"
         else if (tree.mods.isContravariant) "-"
         else ""
-        Text(cflags + tree.symbol.nameString) ++ ifT(tree.hi, Text(" <: "), true) ++ ifT(tree.lo, Text(" >: "), true)
+        Text(cflags + tree.symbol.nameString) ++ surround("[", "]", forTrees(tree.tparams)) ++ ifT(tree.hi, Text(" <: "), true) ++ ifT(tree.lo, Text(" >: "), true)
       case tpt: TypeTree =>
         urlFor(tpt.tpe, contentFrame)
       case id: Ident =>

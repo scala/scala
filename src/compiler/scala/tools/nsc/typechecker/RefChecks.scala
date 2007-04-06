@@ -72,11 +72,13 @@ abstract class RefChecks extends InfoTransform {
      *    1.2. O must not be final.
      *    1.3. O is deferred, or M has `override' modifier.
      *    1.4. If O is an immutable value, then so is M.
-     *    1.5. Neither M nor O are a parameterized type alias
+     *     // @M: LIFTED 1.5. Neither M nor O are a parameterized type alias
      *    1.6. If O is a type alias, then M is an alias of O.
      *    1.7. If O is an abstract type then
-     *         either M is an abstract type, and M's bounds are sharper than O's bounds.
-     *         or M is an unparameterized type alias or class which conforms to O's bounds.
+     *       1.7.1 either M is an abstract type, and M's bounds are sharper than O's bounds.
+     *             or M is a type alias or class which conforms to O's bounds.
+     *       1.7.2 higher-order type arguments must respect bounds on higher-order type parameters  -- @M
+     *              (explicit bounds and those implied by variance annotations) -- @see checkKindBounds
      *    1.8. If O and M are values, then
      *    1.8.1  M's type is a subtype of O's type, or
      *    1.8.2  M is of type []S, O is of type ()T and S <: T, or
@@ -100,7 +102,7 @@ abstract class RefChecks extends InfoTransform {
                 else "")))
       }
 
-      def overridesType(tp1: Type, tp2: Type): boolean = (tp1, tp2) match {
+      def overridesType(tp1: Type, tp2: Type): boolean = (tp1.normalize, tp2.normalize) match {
         case (MethodType(List(), rtp1), PolyType(List(), rtp2)) =>
           rtp1 <:< rtp2
         case (PolyType(List(), rtp1), MethodType(List(), rtp2)) =>
@@ -115,52 +117,52 @@ abstract class RefChecks extends InfoTransform {
        *  <code>member</code> are met.
        */
       def checkOverride(clazz: Symbol, member: Symbol, other: Symbol): unit = {
-	val pos = if (member.owner == clazz) member.pos else clazz.pos
+        val pos = if (member.owner == clazz) member.pos else clazz.pos
 
-	def overrideError(msg: String): unit =
-	  if (other.tpe != ErrorType && member.tpe != ErrorType)
-	    unit.error(pos, "error overriding " + infoString(other) +
-		       ";\n " + infoString(member) + " " + msg);
+        def overrideError(msg: String): unit =
+          if (other.tpe != ErrorType && member.tpe != ErrorType)
+            unit.error(pos, "error overriding " + infoString(other) +
+                       ";\n " + infoString(member) + " " + msg);
 
-	def overrideTypeError(): unit = {
-	  if (other.tpe != ErrorType && member.tpe != ErrorType) {
-	    overrideError("has incompatible type "+analyzer.underlying(member).tpe);
-	    explainTypes(member.tpe, other.tpe);
-	  }
-	}
+        def overrideTypeError(): unit = {
+          if (other.tpe != ErrorType && member.tpe != ErrorType) {
+            overrideError("has incompatible type "+analyzer.underlying(member).tpe.normalize);
+            explainTypes(member.tpe, other.tpe);
+          }
+        }
 
         def overrideAccessError(): unit = {
           val pwString = if (other.privateWithin == NoSymbol) ""
                          else other.privateWithin.name.toString
           val otherAccess = flagsToString(other getFlag (PRIVATE | PROTECTED), pwString)
-	  overrideError("has weaker access privileges; it should be "+
+          overrideError("has weaker access privileges; it should be "+
                         (if (otherAccess == "") "public" else "at least "+otherAccess))
         }
 
-	//Console.println(infoString(member) + " overrides " + infoString(other) + " in " + clazz);//DEBUG
+        //Console.println(infoString(member) + " overrides " + infoString(other) + " in " + clazz);//DEBUG
 
-	// return if we already checked this combination elsewhere
-	if (member.owner != clazz) {
-	  if ((member.owner isSubClass other.owner) &&
-	      ((member hasFlag DEFERRED) || !(other hasFlag DEFERRED))) {
-		//Console.println(infoString(member) + " shadows1 " + infoString(other) " in " + clazz);//DEBUG
-		return;
-	      }
-	  if (clazz.info.parents exists (parent =>
-	    (parent.symbol isSubClass other.owner) && (parent.symbol isSubClass member.owner) &&
-	    ((member hasFlag DEFERRED) || !(other hasFlag DEFERRED)))) {
-	      //Console.println(infoString(member) + " shadows2 " + infoString(other) + " in " + clazz);//DEBUG
-		return;
-	    }
-	  if (clazz.info.parents forall (parent =>
-	    (parent.symbol isSubClass other.owner) == (parent.symbol isSubClass member.owner))) {
-	      //Console.println(infoString(member) + " shadows " + infoString(other) + " in " + clazz);//DEBUG
-	      return;
-	    }
-	}
+        // return if we already checked this combination elsewhere
+        if (member.owner != clazz) {
+          if ((member.owner isSubClass other.owner) &&
+              ((member hasFlag DEFERRED) || !(other hasFlag DEFERRED))) {
+                //Console.println(infoString(member) + " shadows1 " + infoString(other) " in " + clazz);//DEBUG
+                return;
+              }
+          if (clazz.info.parents exists (parent =>
+            (parent.symbol isSubClass other.owner) && (parent.symbol isSubClass member.owner) &&
+            ((member hasFlag DEFERRED) || !(other hasFlag DEFERRED)))) {
+              //Console.println(infoString(member) + " shadows2 " + infoString(other) + " in " + clazz);//DEBUG
+                return;
+            }
+          if (clazz.info.parents forall (parent =>
+            (parent.symbol isSubClass other.owner) == (parent.symbol isSubClass member.owner))) {
+              //Console.println(infoString(member) + " shadows " + infoString(other) + " in " + clazz);//DEBUG
+              return;
+            }
+        }
 
-	if (member hasFlag PRIVATE) { // (1.1)
-	  overrideError("has weaker access privileges; it should not be private")
+        if (member hasFlag PRIVATE) { // (1.1)
+          overrideError("has weaker access privileges; it should not be private")
         }
         val mb = member.accessBoundary(member.owner)
         val ob = other.accessBoundary(member.owner)
@@ -170,81 +172,106 @@ abstract class RefChecks extends InfoTransform {
              (other hasFlag PROTECTED) && !(member hasFlag PROTECTED))) {
           overrideAccessError()
         } else if (other hasFlag FINAL) { // (1.2)
-	  overrideError("cannot override final member");
-	} else if (!(other hasFlag DEFERRED) && !(member hasFlag (OVERRIDE | ABSOVERRIDE))) { // (1.3)
-	  overrideError("needs `override' modifier");
-	} else if ((other hasFlag ABSOVERRIDE) && other.isIncompleteIn(clazz) && !(member hasFlag ABSOVERRIDE)) {
-	  overrideError("needs `abstract override' modifiers")
+          overrideError("cannot override final member");
+        } else if (!(other hasFlag DEFERRED) && !(member hasFlag (OVERRIDE | ABSOVERRIDE))) { // (1.3)
+          overrideError("needs `override' modifier");
+        } else if ((other hasFlag ABSOVERRIDE) && other.isIncompleteIn(clazz) && !(member hasFlag ABSOVERRIDE)) {
+          overrideError("needs `abstract override' modifiers")
         } else if ((member hasFlag (OVERRIDE | ABSOVERRIDE)) &&
                    (other hasFlag ACCESSOR) && other.accessed.isVariable) {
           overrideError("cannot override a mutable variable")
-	} else if (other.isStable && !member.isStable) { // (1.4)
-	  overrideError("needs to be an immutable value")
+        } else if (other.isStable && !member.isStable) { // (1.4)
+          overrideError("needs to be an immutable value")
         } else if (other.isStable && !(other hasFlag DEFERRED) && other.owner.isTrait && (member hasFlag OVERRIDE)) {
           overrideError("cannot override a value or variable definition in a trait " +
                         "\n (this is an implementation restriction)")
-	} else {
-	  if (other.isAliasType) {
-	    if (!member.typeParams.isEmpty) // (1.5)
-	      overrideError("may not be parameterized");
-	    if (!other.typeParams.isEmpty) // (1.5)
-	      overrideError("may not override parameterized type");
-	    if (!(self.memberType(member) =:= self.memberType(other))) // (1.6)
-	      overrideTypeError();
-	  } else if (other.isAbstractType) {
-	    if (!member.typeParams.isEmpty) // (1.7)
-	      overrideError("may not be parameterized");
-	    if (!(self.memberInfo(other).bounds containsType self.memberType(member))) { // (1.7) {
-	      overrideTypeError(); // todo: do an explaintypes with bounds here
+        } else {
+          if (other.isAliasType) {
+            //if (!member.typeParams.isEmpty) // (1.5)  @MAT
+            //  overrideError("may not be parameterized");
+            //if (!other.typeParams.isEmpty) // (1.5)   @MAT
+            //  overrideError("may not override parameterized type");
+            // @M: substSym
+            if (!(self.memberType(member).substSym(member.typeParams, other.typeParams) =:= self.memberType(other))) // (1.6)
+              overrideTypeError();
+          } else if (other.isAbstractType) {
+            //if (!member.typeParams.isEmpty) // (1.7)  @MAT
+            //  overrideError("may not be parameterized");
+            var memberTp = self.memberType(member)
+
+            if (!(self.memberInfo(other).bounds containsType memberTp)) { // (1.7.1) {
+              overrideTypeError(); // todo: do an explaintypes with bounds here
             }
-	  } else if (other.isTerm) {
-	    if (!overridesType(self.memberInfo(member), self.memberInfo(other))) { // 8
-	      overrideTypeError();
+
+            // check overriding (abstract type --> abstract type or abstract type --> concrete type member (a type alias))
+            // making an abstract type member concrete is like passing a type argument
+            val kindErrors = typer.infer.checkKindBounds(List(other), List(memberTp)) // (1.7.2)
+
+            if(!kindErrors.isEmpty)
+              unit.error(member.pos,
+                "The kind of "+member.keyString+" "+member.varianceString + member.nameString+
+                " does not conform to the expected kind of " + other.defString + other.locationString + "." +
+                kindErrors.toList.mkString("\n", ", ", ""))
+
+            // check a type alias's RHS corresponds to its declaration
+            // this overlaps somewhat with validateVariance
+            if(member.isAliasType) {
+              val kindErrors = typer.infer.checkKindBounds(List(member), List(memberTp.normalize))
+
+              if(!kindErrors.isEmpty)
+                unit.error(member.pos,
+                  "The kind of the right-hand side "+memberTp.normalize+" of "+member.keyString+" "+
+                  member.varianceString + member.nameString+ " does not conform to its expected kind."+
+                  kindErrors.toList.mkString("\n", ", ", ""))
             }
-	  }
-	}
+          } else if (other.isTerm) {
+            if (!overridesType(self.memberInfo(member), self.memberInfo(other))) { // 8
+              overrideTypeError();
+            }
+          }
+        }
       }
 
       val opc = new overridingPairs.Cursor(clazz)
       while (opc.hasNext) {
-	//Console.println("overrides " + opc.overriding/* + ":" + opc.overriding.tpe*/ + opc.overriding.locationString + " " + opc.overridden/* + ":" + opc.overridden.tpe*/ + opc.overridden.locationString + opc.overridden.hasFlag(DEFERRED));//DEBUG
-	if (!opc.overridden.isClass) checkOverride(clazz, opc.overriding, opc.overridden);
+        //Console.println("overrides " + opc.overriding/* + ":" + opc.overriding.tpe*/ + opc.overriding.locationString + " " + opc.overridden/* + ":" + opc.overridden.tpe*/ + opc.overridden.locationString + opc.overridden.hasFlag(DEFERRED));//DEBUG
+        if (!opc.overridden.isClass) checkOverride(clazz, opc.overriding, opc.overridden);
 
-	opc.next
+        opc.next
       }
       // 2. Check that only abstract classes have deferred members
       if (clazz.isClass && !clazz.isTrait) {
-	def abstractClassError(mustBeMixin: boolean, msg: String): unit = {
-	  unit.error(clazz.pos,
-	    (if (clazz.isAnonymousClass || clazz.isModuleClass) "object creation impossible"
-	     else if (mustBeMixin) clazz.toString() + " needs to be a mixin"
-	     else clazz.toString() + " needs to be abstract") + ", since " + msg);
-	  clazz.setFlag(ABSTRACT)
-	}
-	for (val member <- clazz.tpe.nonPrivateMembers)
-	  if ((member hasFlag DEFERRED) && !(clazz hasFlag ABSTRACT)) {
-	    abstractClassError(
+        def abstractClassError(mustBeMixin: boolean, msg: String): unit = {
+          unit.error(clazz.pos,
+            (if (clazz.isAnonymousClass || clazz.isModuleClass) "object creation impossible"
+             else if (mustBeMixin) clazz.toString() + " needs to be a mixin"
+             else clazz.toString() + " needs to be abstract") + ", since " + msg);
+          clazz.setFlag(ABSTRACT)
+        }
+        for (val member <- clazz.tpe.nonPrivateMembers)
+          if ((member hasFlag DEFERRED) && !(clazz hasFlag ABSTRACT)) {
+            abstractClassError(
               false, infoString(member) + " is not defined" + analyzer.varNotice(member))
-	  } else if ((member hasFlag ABSOVERRIDE) && member.isIncompleteIn(clazz)) {
-	    val other = member.superSymbol(clazz);
-	    abstractClassError(true,
-	      infoString(member) + " is marked `abstract' and `override'" +
-	      (if (other != NoSymbol)
-		" and overrides incomplete superclass member " + infoString(other)
-	       else ""))
-	  }
+          } else if ((member hasFlag ABSOVERRIDE) && member.isIncompleteIn(clazz)) {
+            val other = member.superSymbol(clazz);
+            abstractClassError(true,
+              infoString(member) + " is marked `abstract' and `override'" +
+              (if (other != NoSymbol)
+                " and overrides incomplete superclass member " + infoString(other)
+               else ""))
+          }
       }
 
       // 3. Check that every defined member with an `override' modifier overrides some other member.
       for (val member <- clazz.info.decls.toList)
-	if ((member hasFlag (OVERRIDE | ABSOVERRIDE)) &&
-	    (clazz.info.baseClasses.tail forall {
+        if ((member hasFlag (OVERRIDE | ABSOVERRIDE)) &&
+            (clazz.info.baseClasses.tail forall {
                bc => member.matchingSymbol(bc, clazz.thisType) == NoSymbol
             })) {
           // for (val bc <- clazz.info.baseClasses.tail) Console.println("" + bc + " has " + bc.info.decl(member.name) + ":" + bc.info.decl(member.name).tpe);//DEBUG
-	  unit.error(member.pos, member.toString() + " overrides nothing");
-	  member resetFlag OVERRIDE
-	}
+          unit.error(member.pos, member.toString() + " overrides nothing");
+          member resetFlag OVERRIDE
+        }
     }
 
   // Basetype Checking --------------------------------------------------------
@@ -270,37 +297,37 @@ abstract class RefChecks extends InfoTransform {
       var seenCaseClass = if (clazz hasFlag CASE) clazz else NoSymbol
 
       def validateTypes(tps: List[Type], includeSuper: boolean): unit = {
-	if (!tps.isEmpty) {
-	  for (val tp <- tps.tail.reverse) validateType(tp, false);
-	  if (includeSuper) validateType(tps.head, true);
-	}
+        if (!tps.isEmpty) {
+          for (val tp <- tps.tail.reverse) validateType(tp, false);
+          if (includeSuper) validateType(tps.head, true);
+        }
       }
 
       def validateType(tp: Type, includeSuper: boolean): unit = {
-	val baseClass = tp.symbol
-	if (baseClass.isClass) {
-	  val index = clazz.info.closurePos(baseClass)
-	  if (index >= 0) {
-	    if ((seenTypes(index) ne null) && !(seenTypes(index) <:< tp))
-	      unit.error(clazz.pos, "illegal inheritance;\n " + clazz +
-			 " inherits different type instances of " + baseClass +
-			 ":\n" + tp + " and " + seenTypes(index));
-	    seenTypes(index) = tp;
-	    // check that case classes do not inherit from case classes
-	    if (baseClass hasFlag CASE) {
-	      if (seenCaseClass != NoSymbol && seenCaseClass != baseClass)
-		unit.error(clazz.pos, "implementation restriction: case " +
-			   seenCaseClass + " and case " + baseClass +
+        val baseClass = tp.symbol
+        if (baseClass.isClass) {
+          val index = clazz.info.closurePos(baseClass)
+          if (index >= 0) {
+            if ((seenTypes(index) ne null) && !(seenTypes(index) <:< tp))
+              unit.error(clazz.pos, "illegal inheritance;\n " + clazz +
+                         " inherits different type instances of " + baseClass +
+                         ":\n" + tp + " and " + seenTypes(index));
+            seenTypes(index) = tp;
+            // check that case classes do not inherit from case classes
+            if (baseClass hasFlag CASE) {
+              if (seenCaseClass != NoSymbol && seenCaseClass != baseClass)
+                unit.error(clazz.pos, "implementation restriction: case " +
+                           seenCaseClass + " and case " + baseClass +
                            " cannot be combined in one object");
-	      seenCaseClass = baseClass
-	    }
-	    // check that inner classes do not inherit from Annotation
+              seenCaseClass = baseClass
+            }
+            // check that inner classes do not inherit from Annotation
             if (baseClass == ClassfileAnnotationClass)
               if (!clazz.owner.isPackageClass)
                 unit.error(clazz.pos, "inner classes cannot be classfile annotations")
-	  }
-	  validateTypes(tp.parents, includeSuper)
-	}
+          }
+          validateTypes(tp.parents, includeSuper)
+        }
       }
 
       validateTypes(clazz.info.parents, true)
@@ -322,68 +349,70 @@ abstract class RefChecks extends InfoTransform {
     private def validateVariance(base: Symbol, all: Type, variance: int): unit = {
 
       def varianceString(variance: int): String =
-	if (variance == 1) "covariant"
-	else if (variance == -1) "contravariant"
-	else "invariant";
+        if (variance == 1) "covariant"
+        else if (variance == -1) "contravariant"
+        else "invariant";
 
       def relativeVariance(tvar: Symbol): int = {
-	val clazz = tvar.owner
-	var sym = base
-	var state = CoVariance
-	while (sym != clazz && state != AnyVariance) {
-	  //Console.println("flip: " + sym + " " + sym.isParameter());//DEBUG
-	  if ((sym hasFlag PARAM) && !sym.owner.isConstructor) state = -state;
-	  else if (!sym.owner.isClass || sym.isPrivateLocal) state = AnyVariance;
-	  else if (sym.isAliasType) state = NoVariance;
-	  sym = sym.owner
-	}
-	state
+        val clazz = tvar.owner
+        var sym = base
+        var state = CoVariance
+        while (sym != clazz && state != AnyVariance) {
+          //Console.println("flip: " + sym + " " + sym.isParameter());//DEBUG
+          if ((sym hasFlag PARAM) && !sym.owner.isConstructor) state = -state;
+          else if (!sym.owner.isClass || sym.isPrivateLocal) state = AnyVariance;
+          else if (sym.isAliasType) state = NoVariance;
+          sym = sym.owner
+        }
+        state
       }
 
       def validateVariance(tp: Type, variance: int): unit = tp match {
-	case ErrorType => ;
-	case WildcardType => ;
-	case NoType => ;
-	case NoPrefix => ;
-	case ThisType(_) => ;
-	case ConstantType(_) => ;
-	case SingleType(pre, sym) =>
-	  validateVariance(pre, variance)
-	case TypeRef(pre, sym, args) =>
-	  if (sym.variance != NoVariance) {
-	    val v = relativeVariance(sym);
-	    if (v != AnyVariance && sym.variance != v * variance) {
-	      //Console.println("relativeVariance(" + base + "," + sym + ") = " + v);//DEBUG
-	      unit.error(base.pos,
-			 varianceString(sym.variance) + " " + sym +
-			 " occurs in " + varianceString(v * variance) +
-			 " position in type " + all + " of " + base);
-	    }
-	  }
-	  validateVariance(pre, variance)
-	  validateVarianceArgs(args, variance, sym.typeParams)
-	case ClassInfoType(parents, decls, symbol) =>
-	  validateVariances(parents, variance)
-	case RefinedType(parents, decls) =>
-	  validateVariances(parents, variance)
-	case TypeBounds(lo, hi) =>
-	  validateVariance(lo, -variance)
-	  validateVariance(hi, variance)
-	case MethodType(formals, result) =>
-	  validateVariance(result, variance)
-	case PolyType(tparams, result) =>
-	  validateVariance(result, variance)
+        case ErrorType => ;
+        case WildcardType => ;
+        case NoType => ;
+        case NoPrefix => ;
+        case ThisType(_) => ;
+        case ConstantType(_) => ;
+        case SingleType(pre, sym) =>
+          validateVariance(pre, variance)
+        case TypeRef(pre, sym, args) =>
+          if (sym.variance != NoVariance) {
+            val v = relativeVariance(sym);
+            if (v != AnyVariance && sym.variance != v * variance) {
+              //Console.println("relativeVariance(" + base + "," + sym + ") = " + v);//DEBUG
+              unit.error(base.pos,
+                         varianceString(sym.variance) + " " + sym +
+                         " occurs in " + varianceString(v * variance) +
+                         " position in type " + all + " of " + base);
+            }
+          }
+          validateVariance(pre, variance)
+          validateVarianceArgs(args, variance, sym.typeParams) //@M for higher-kinded typeref, args.isEmpty
+          // However, these args respect variances by construction anyway
+          // -- the interesting case is in type application, see checkKindBounds in Infer
+        case ClassInfoType(parents, decls, symbol) =>
+          validateVariances(parents, variance)
+        case RefinedType(parents, decls) =>
+          validateVariances(parents, variance)
+        case TypeBounds(lo, hi) =>
+          validateVariance(lo, -variance)
+          validateVariance(hi, variance)
+        case MethodType(formals, result) =>
+          validateVariance(result, variance)
+        case PolyType(tparams, result) =>
+          validateVariance(result, variance)
         case AnnotatedType(attribs, tp) =>
           validateVariance(tp, variance)
       }
 
       def validateVariances(tps: List[Type], variance: int): unit =
-	tps foreach (tp => validateVariance(tp, variance))
+        tps foreach (tp => validateVariance(tp, variance))
 
       def validateVarianceArgs(tps: List[Type], variance: int, tparams: List[Symbol]): unit =
-	(tps zip tparams) foreach {
-	  case (tp, tparam) => validateVariance(tp, variance * tparam.variance)
-	}
+        (tps zip tparams) foreach {
+          case (tp, tparam) => validateVariance(tp, variance * tparam.variance)
+        }
 
       validateVariance(all, variance)
     }
@@ -409,35 +438,38 @@ abstract class RefChecks extends InfoTransform {
     private def enterSyms(stats: List[Tree]): unit = {
       var index = -1
       for (val stat <- stats) {
-	index = index + 1;
-	stat match {
+        index = index + 1;
+        stat match {
           case ClassDef(_, _, _, _, _) | DefDef(_, _, _, _, _, _) | ModuleDef(_, _, _) | ValDef(_, _, _, _) =>
             assert(stat.symbol != NoSymbol, stat);//debug
             if (stat.symbol.isLocal) {
-	      currentLevel.scope.enter(newScopeEntry(stat.symbol, currentLevel.scope));
-	      symIndex(stat.symbol) = index;
+              currentLevel.scope.enter(newScopeEntry(stat.symbol, currentLevel.scope));
+              symIndex(stat.symbol) = index;
             }
           case _ =>
-	}
+        }
       }
     }
 
     private def enterReference(pos: int, sym: Symbol): unit =
       if (sym.isLocal) {
-	val e = currentLevel.scope.lookupEntry(sym.name)
-	if ((e ne null) && sym == e.sym) {
+        val e = currentLevel.scope.lookupEntry(sym.name)
+        if ((e ne null) && sym == e.sym) {
           var l = currentLevel
           while (l.scope != e.owner) l = l.outer;
-	  val symindex = symIndex(sym)
-	  if (l.maxindex < symindex) {
-	    l.refpos = pos
-	    l.refsym = sym
-	    l.maxindex = symindex
-	  }
-	}
+          val symindex = symIndex(sym)
+          if (l.maxindex < symindex) {
+            l.refpos = pos
+            l.refsym = sym
+            l.maxindex = symindex
+          }
+        }
       }
 
 // Comparison checking -------------------------------------------------------
+    object normalizeAll extends TypeMap {
+      def apply(tp: Type) = mapOver(tp).normalize
+    }
 
     def checkSensible(pos: int, fn: Tree, args: List[Tree]) = fn match {
       case Select(qual, name) if (args.length == 1) =>
@@ -461,8 +493,8 @@ abstract class RefChecks extends InfoTransform {
               unit.warning(pos, "comparing "+what+" using `"+name.decode+"' will always yield "+
                            (alwaysEqual == (name == nme.EQ || name == nme.LE || name == nme.GE)))
             def nonSensible(pre: String, alwaysEqual: boolean) =
-              nonSensibleWarning(pre+"values of types "+qual.tpe.widen+" and "+args.head.tpe.widen,
-                                 alwaysEqual)
+              nonSensibleWarning(pre+"values of types "+normalizeAll(qual.tpe.widen)+" and "+normalizeAll(args.head.tpe.widen),
+                                 alwaysEqual) // @MAT normalize for consistency in error message, otherwise part is normalized due to use of `symbol', but the rest isn't
             def hasObjectEquals = receiver.info.member(nme.equals_) == Object_equals
             if (formal == UnitClass && actual == UnitClass)
               nonSensible("", true)
@@ -511,13 +543,13 @@ abstract class RefChecks extends InfoTransform {
 
     def transformStat(tree: Tree, index: int): List[Tree] = tree match {
       case ModuleDef(mods, name, impl) =>
-	val sym = tree.symbol
-	val cdef = ClassDef(mods | MODULE, name, List(), emptyValDef, impl)
-	  .setPos(tree.pos)
+        val sym = tree.symbol
+        val cdef = ClassDef(mods | MODULE, name, List(), emptyValDef, impl)
+          .setPos(tree.pos)
           .setSymbol(sym.moduleClass)
           .setType(NoType);
-	if (sym.isStatic) List(transform(cdef))
-	else {
+        if (sym.isStatic) List(transform(cdef))
+        else {
           val vdef =
             localTyper.typed {
               atPos(tree.pos) {
@@ -526,8 +558,8 @@ abstract class RefChecks extends InfoTransform {
             }
 
           val ddef =
-	    atPhase(phase.next) {
-	      localTyper.typed {
+            atPhase(phase.next) {
+              localTyper.typed {
                 if (sym.owner.isTrait) gen.mkModuleAccessDcl(sym)
                 else gen.mkModuleAccessDef(sym, vdef.symbol)
               }
@@ -535,7 +567,7 @@ abstract class RefChecks extends InfoTransform {
 
           if (sym.owner.isTrait) transformTrees(List(cdef, ddef))
           else transformTrees(List(cdef, vdef, ddef))
-	}
+        }
 
       case ClassDef(_, _, _, _, _) if isConcreteLocalCaseFactory(tree.symbol) =>
         val clazz = tree.symbol
@@ -564,27 +596,27 @@ abstract class RefChecks extends InfoTransform {
         }
 
       case ValDef(_, _, _, _) =>
-	val tree1 = transform(tree); // important to do before forward reference check
-	if (tree.symbol.isLocal && index <= currentLevel.maxindex) {
-	  if (settings.debug.value) Console.println(currentLevel.refsym);
-	  unit.error(currentLevel.refpos, "forward reference extends over definition of " + tree.symbol);
-	}
-	List(tree1)
+        val tree1 = transform(tree); // important to do before forward reference check
+        if (tree.symbol.isLocal && index <= currentLevel.maxindex) {
+          if (settings.debug.value) Console.println(currentLevel.refsym);
+          unit.error(currentLevel.refpos, "forward reference extends over definition of " + tree.symbol);
+        }
+        List(tree1)
 
       case Import(_, _) =>
-	List()
+        List()
 
       case _ =>
-	List(transform(tree))
+        List(transform(tree))
     }
 
     override def transform(tree: Tree): Tree = try {
 
       /* Check whether argument types conform to bounds of type parameters */
       def checkBounds(pre: Type, owner: Symbol, tparams: List[Symbol], argtps: List[Type]): unit = try {
-	typer.infer.checkBounds(tree.pos, pre, owner, tparams, argtps, "");
+        typer.infer.checkBounds(tree.pos, pre, owner, tparams, argtps, "");
       } catch {
-	case ex: TypeError => unit.error(tree.pos, ex.getMessage());
+        case ex: TypeError => unit.error(tree.pos, ex.getMessage());
       }
 
       def isIrrefutable(pat: Tree, seltpe: Type): boolean = {
@@ -631,40 +663,41 @@ abstract class RefChecks extends InfoTransform {
       val sym = tree.symbol
       var result = tree
       tree match {
-	case ClassDef(mods, name, tparams, _, impl) =>
-	  validateVariance(sym, sym.info, CoVariance)
-	  validateVariance(sym, sym.typeOfThis, CoVariance)
+        case ClassDef(mods, name, tparams, _, impl) =>
+          validateVariance(sym, sym.info, CoVariance)
+          validateVariance(sym, sym.typeOfThis, CoVariance)
 
-	case DefDef(_, _, _, _, _, _) =>
-          validateVariance(sym, sym.tpe, CoVariance)
+        case DefDef(_, _, _, _, _, _) =>
+          validateVariance(sym, sym.tpe, CoVariance) //@M TODO: might be affected by change in tpe --> can't use tree.tpe though
           checkDeprecatedOvers()
 
-	case ValDef(_, _, _, _) =>
-          validateVariance(sym, sym.tpe, if (sym.isVariable) NoVariance else CoVariance)
+        case ValDef(_, _, _, _) =>
+          validateVariance(sym, sym.tpe, if (sym.isVariable) NoVariance else CoVariance) //@M TODO: might be affected by change in tpe --> can't use tree.tpe though
           checkDeprecatedOvers()
 
-	case AbsTypeDef(_, _, _, _) =>
-	  validateVariance(sym, sym.info, CoVariance)
+        case AbsTypeDef(_, _, _, _, _) =>
+          validateVariance(sym, sym.info, CoVariance)
 
-	case AliasTypeDef(_, _, _, _) =>
-	  validateVariance(sym, sym.info, CoVariance)
+        case AliasTypeDef(_, _, _, _) =>
+          validateVariance(sym, sym.info, CoVariance)
 
-	case Template(_, _) =>
-	  localTyper = localTyper.atOwner(tree, currentOwner)
-	  validateBaseTypes(currentOwner)
-	  checkAllOverrides(currentOwner)
+        case Template(_, _) =>
+          localTyper = localTyper.atOwner(tree, currentOwner)
+          validateBaseTypes(currentOwner)
+          checkAllOverrides(currentOwner)
 
-	case TypeTree() =>
-	  new TypeTraverser {
-	    def traverse(tp: Type): TypeTraverser = tp match {
-	      case TypeRef(pre, sym, args) => checkBounds(pre, sym.owner, sym.typeParams, args); this
-	      case _ => this
-	    }
-	  } traverse tree.tpe
+        case TypeTree() =>
+          new TypeTraverser {
+            def traverse(tp: Type): TypeTraverser = tp match {
+              case tr@TypeRef(pre, sym, _) if tr.isHigherKinded => this //@M a higher-kinded typeref doesn't have any args to check
+              case TypeRef(pre, sym, args) => checkBounds(pre, sym.owner, sym.typeParams, args); this
+              case _ => this
+            }
+          } traverse tree.tpe
 
-	case TypeApply(fn, args) =>
-	  checkBounds(NoPrefix, NoSymbol, fn.tpe.typeParams, args map (.tpe))
-	  if (sym.isSourceMethod && sym.hasFlag(CASE)) result = toConstructor(tree.pos, tree.tpe)
+        case TypeApply(fn, args) =>
+          checkBounds(NoPrefix, NoSymbol, fn.tpe.typeParams, args map (.tpe))
+          if (sym.isSourceMethod && sym.hasFlag(CASE)) result = toConstructor(tree.pos, tree.tpe)
 
         case Apply(
           Select(qual, nme.filter),
@@ -686,37 +719,37 @@ abstract class RefChecks extends InfoTransform {
             case _ =>
           }
 
-	case New(tpt) =>
-	  enterReference(tree.pos, tpt.tpe.symbol)
+        case New(tpt) =>
+          enterReference(tree.pos, tpt.tpe.symbol)
 
-	case Ident(name) =>
-	  if (sym.isSourceMethod && sym.hasFlag(CASE))
-	    result = toConstructor(tree.pos, tree.tpe)
-	  else if (name != nme.WILDCARD && name != nme.WILDCARD_STAR.toTypeName) {
-	    assert(sym != NoSymbol, tree)//debug
-	    enterReference(tree.pos, sym)
-	  }
+        case Ident(name) =>
+          if (sym.isSourceMethod && sym.hasFlag(CASE))
+            result = toConstructor(tree.pos, tree.tpe)
+          else if (name != nme.WILDCARD && name != nme.WILDCARD_STAR.toTypeName) {
+            assert(sym != NoSymbol, tree)//debug
+            enterReference(tree.pos, sym)
+          }
 
-	case Select(qual, name) =>
-	  if (sym.isSourceMethod && sym.hasFlag(CASE))
-	    result = toConstructor(tree.pos, tree.tpe)
-	  else qual match {
-	    case Super(qualifier, mix) =>
+        case Select(qual, name) =>
+          if (sym.isSourceMethod && sym.hasFlag(CASE))
+            result = toConstructor(tree.pos, tree.tpe)
+          else qual match {
+            case Super(qualifier, mix) =>
               val base = qual.symbol;
               //Console.println("super: " + tree + " in " + base);//DEBUG
               assert(!(base.isTrait && sym.isTerm && mix == nme.EMPTY.toTypeName)) // term should have been eliminated by super accessors
             case _ =>
           }
-	case _ =>
+        case _ =>
       }
       result = super.transform(result)
       localTyper = savedLocalTyper
       result
     } catch {
       case ex: TypeError =>
-	if (settings.debug.value) ex.printStackTrace();
-	unit.error(tree.pos, ex.getMessage())
-	tree
+        if (settings.debug.value) ex.printStackTrace();
+        unit.error(tree.pos, ex.getMessage())
+        tree
     }
   }
 }

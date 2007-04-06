@@ -114,6 +114,7 @@ class Settings(error: String => unit) {
   val browse        = PhasesSetting ("-browse", "Browse the abstract syntax tree after")
   val stop          = PhasesSetting ("-stop", "Stop after phase")
   val log           = PhasesSetting ("-log", "Log operations in")
+  val logAll        = BooleanSetting("-logall", "Log all operations")   //@M
   val version       = new BooleanSetting("-version", "Print product version and exit") { override def hiddenToIDE = true }
   val help          = new BooleanSetting("-help", "Print a synopsis of standard options") { override def hiddenToIDE = true }
   val nouescape     = new BooleanSetting("-nouescape", "disables handling of \\u unicode escapes")

@@ -401,6 +401,7 @@ class SemanticTokens(val compiler: Global) {
         //Console.err.println("ABS: " + tree.symbol + " " + unit.source.dbg(tree.namePos) + " " + unit.source.dbg(tree.pos));
         buildDef(tree.symbol, tree.namePos)
         buildDef(tree.symbol, tree.pos)
+        build(tree.tparams); //@M
         build(tree.lo)
         build(tree.hi)
       case tree: Bind =>

@@ -176,7 +176,7 @@ abstract class AddInterfaces extends InfoTransform {
    */
   private def mixinToImplClass(tp: Type): Type =
     erasure(
-      tp match {
+      tp match { //@MATN: no normalize needed (comes after erasure)
         case TypeRef(pre, sym, args) if (sym.needsImplClass) =>
           typeRef(pre, implClass(sym), args)
         case _ =>

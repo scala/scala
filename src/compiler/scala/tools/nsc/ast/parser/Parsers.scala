@@ -1636,7 +1636,7 @@ trait Parsers requires SyntaxAnalyzer {
      *  VariantTypeParam      ::= [`+' | `-'] TypeParam
      *  FunTypeParamClauseOpt ::= [FunTypeParamClause]
      *  FunTypeParamClause    ::= `[' TypeParam {`,' TypeParam} `]']
-     *  TypeParam             ::= Id TypeBounds [<% Type]
+     *  TypeParam             ::= Id TypeParamClauseOpt TypeBounds [<% Type]
      */
     def typeParamClauseOpt(owner: Name, implicitViewBuf: ListBuffer[Tree]): List[AbsTypeDef] = {
       def typeParam(): AbsTypeDef = {
@@ -1651,8 +1651,14 @@ trait Parsers requires SyntaxAnalyzer {
           }
         }
         val pos = in.currentPos
-        val pname = ident()
-        val param = atPos(pos) { typeBounds(mods, pname) }
+        val pname =
+          if (in.token == USCORE) { // @M! also allow underscore
+            in.nextToken()
+            nme.WILDCARD
+          } else ident()
+
+        val tparams = typeParamClauseOpt(pname.toTypeName, null) // @M TODO null --> no higher-order view bounds for now
+        val param = atPos(pos) { typeBounds(mods, pname, tparams) }
         if (in.token == VIEWBOUND && (implicitViewBuf ne null))
           implicitViewBuf += atPos(in.skipToken()) {
             makeFunctionTypeTree(List(Ident(pname.toTypeName)), typ())
@@ -1675,8 +1681,8 @@ trait Parsers requires SyntaxAnalyzer {
 
     /** TypeBounds ::= [`>:' Type] [`<:' Type]
      */
-    def typeBounds(mods: Modifiers, name: Name): AbsTypeDef =
-      AbsTypeDef(mods, name.toTypeName,
+    def typeBounds(mods: Modifiers, name: Name, tparams: List[AbsTypeDef]): AbsTypeDef =
+      AbsTypeDef(mods, name.toTypeName, tparams, // @M: an abstract type may have type parameters
                  bound(SUPERTYPE, nme.Nothing),
                  bound(SUBTYPE, nme.Any))
 
@@ -1930,21 +1936,26 @@ trait Parsers requires SyntaxAnalyzer {
       }
 
     /** TypeDef ::= Id [TypeParamClause] `=' Type
-     *  TypeDcl ::= Id TypeBounds
+     *  TypeDcl ::= Id [TypeParamClause] TypeBounds
      */
     def typeDefOrDcl(mods: Modifiers): Tree =
       atPos(in.currentPos) {
         val name = ident().toTypeName
-        in.token match {
+
+        // @M! a type alias as well as an abstract type may declare type parameters
+        val tparams = in.token match {
           case LBRACKET =>
-            val tparams = typeParamClauseOpt(name, null)
-            accept(EQUALS)
-            AliasTypeDef(mods, name, tparams, typ())
+             typeParamClauseOpt(name, null)
+          case _ =>
+             Nil
+        }
+
+        in.token match {
           case EQUALS =>
             in.nextToken()
-            AliasTypeDef(mods, name, List(), typ())
+            AliasTypeDef(mods, name, tparams, typ())
           case SUPERTYPE | SUBTYPE | SEMI | NEWLINE | NEWLINES | COMMA | RBRACE =>
-            typeBounds(mods | Flags.DEFERRED, name)
+            typeBounds(mods | Flags.DEFERRED, name, tparams) // @M: last arg is new
           case _ =>
             syntaxErrorOrIncomplete("`=', `>:', or `<:' expected", true)
             EmptyTree

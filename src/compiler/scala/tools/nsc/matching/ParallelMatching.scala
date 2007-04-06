@@ -568,7 +568,7 @@ trait ParallelMatching requires (transform.ExplicitOuter with PatternMatchers wi
       gen.mkIsInstanceOf(Ident(scrut), tpe)
   }
 
-  def needsOuterTest(tpe2test:Type, scrutinee:Type) = tpe2test match {
+  def needsOuterTest(tpe2test:Type, scrutinee:Type) = tpe2test.normalize match {
     case TypeRef(prefix,_,_) =>
       prefix.symbol.isTerm &&
     !prefix.symbol.isPackage &&
@@ -579,7 +579,7 @@ trait ParallelMatching requires (transform.ExplicitOuter with PatternMatchers wi
   /** returns a result if both are TypeRefs, returns Some(true) if left and right are statically known to have
    *  the same outer, i.e. if their prefixes are the same
    */
-  def outerAlwaysEqual(left: Type, right: Type): Option[Boolean] = (left,right) match {
+  def outerAlwaysEqual(left: Type, right: Type): Option[Boolean] = (left.normalize,right.normalize) match {
     case (TypeRef(lprefix, _,_), TypeRef(rprefix,_,_)) =>
       if(!(lprefix =:= rprefix)) {
         DEBUG("DEBUG(outerAlwaysEqual) Some(f) for"+(left,right))

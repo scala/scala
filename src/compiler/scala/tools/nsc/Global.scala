@@ -125,7 +125,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     informProgress(msg + " in " + (currentTime - start) + "ms")
 
   def log(msg: AnyRef): unit =
-    if (settings.log contains phase.name) inform("[log " + phase + "] " + msg)
+    if (settings.logAll.value || (settings.log contains phase.name)) inform("[log " + phase + "] " + msg)
 
   class ErrorWithPosition(val pos: Int, val error: Throwable) extends Error
 

@@ -239,8 +239,9 @@ trait Typers requires Analyzer {
       tp match {
         case TypeRef(pre, sym, args) =>
           (checkNotLocked(sym)) && (
-            !sym.isAliasType && !sym.isAbstractType ||
-            checkNonCyclic(pos, pre.memberInfo(sym).subst(sym.typeParams, args), sym)
+            !sym.isTypeMember ||
+            checkNonCyclic(pos, appliedType(pre.memberInfo(sym), args), sym)   // @M! info for a type ref to a type parameter now returns a polytype
+            // @M was: checkNonCyclic(pos, pre.memberInfo(sym).subst(sym.typeParams, args), sym)
           )
         case SingleType(pre, sym) =>
           checkNotLocked(sym)
@@ -524,7 +525,8 @@ trait Typers requires Analyzer {
      *        unapply or unapplySeq method.
      *
      *  (6) Convert all other types to TypeTree nodes.
-     *  (7) When in TYPEmode nut not FUNmode, check that types are fully parameterized
+     *  (7) When in TYPEmode but not FUNmode, check that types are fully parameterized
+     *      (7.1) @M! when in POLYmode | TAPPmode, check that types have the expected kind
      *  (8) When in both EXPRmode and FUNmode, add apply method calls to values of object type.
      *  (9) If there are undetermined type variables and not POLYmode, infer expression instance
      *  Then, if tree's type is not a subtype of expected type, try the following adaptations:
@@ -584,8 +586,16 @@ trait Typers requires Analyzer {
         if (tree.isType) {
           if ((mode & FUNmode) != 0) {
             tree
-          } else if (tree.hasSymbol && !tree.symbol.typeParams.isEmpty) { // (7)
+          } else if (tree.hasSymbol && !tree.symbol.typeParams.isEmpty && (mode & (POLYmode | TAPPmode)) == 0) { // (7)
+            // @M higher-kinded types are allowed in (POLYmode | TAPPmode) -- see (7.1)
             errorTree(tree, tree.symbol+" takes type parameters")
+            tree setType tree.tpe
+          } else if (tree.hasSymbol && ((mode & (POLYmode | TAPPmode)) == (POLYmode | TAPPmode)) &&             // (7.1) @M: check kind-arity (full checks are done in checkKindBounds in Infer)
+                     tree.symbol.typeParams.length != pt.typeParams.length &&
+                     !(tree.symbol==AnyClass || tree.symbol==AllClass || pt == WildcardType )) { //@M Any and Nothing are kind-polymorphic -- WildcardType is only used when typing type arguments to an overloaded method, before the overload is resolved
+              errorTree(tree, tree.symbol+" takes "+reporter.countElementsAsString(tree.symbol.typeParams.length, "type parameter")+
+                              ", expected: "+reporter.countAsString(pt.typeParams.length))
+              tree setType tree.tpe
           } else tree match { // (6)
             case TypeTree() => tree
             case _ => TypeTree(tree.tpe) setOriginal(tree)
@@ -648,7 +658,7 @@ trait Typers requires Analyzer {
           if (tree1.tpe <:< pt) adapt(tree1, mode, pt)
           else {
             if ((mode & (EXPRmode | FUNmode)) == EXPRmode) {
-              pt match {
+              pt.normalize match {
                 case TypeRef(_, sym, _) =>
                   // note: was if (pt.symbol == UnitClass) but this leads to a potentially
                   // infinite expansion if pt is constant type ()
@@ -824,7 +834,7 @@ trait Typers requires Analyzer {
             else
               psym addChild context.owner
           }
-          if (!(selfType <:< parent.tpe.typeOfThis) && !phase.erasedTypes) {
+          if (!(selfType <:< parent.tpe.typeOfThis) && !phase.erasedTypes) { //@M .typeOfThis seems necessary
             //Console.println(context.owner);//DEBUG
             //Console.println(context.owner.unsafeTypeParams);//DEBUG
             //Console.println(List.fromArray(context.owner.info.closure));//DEBUG
@@ -848,7 +858,7 @@ trait Typers requires Analyzer {
         if (classinfo.expansiveRefs(tparam) contains tparam) {
           error(tparam.pos, "class graph is not finitary because type parameter "+tparam.name+" is expansively recursive")
           val newinfo = ClassInfoType(
-            classinfo.parents map (.subst(List(tparam), List(AnyRefClass.tpe))),
+            classinfo.parents map (.instantiateTypeParams(List(tparam), List(AnyRefClass.tpe))),
             classinfo.decls,
             clazz)
           clazz.setInfo {
@@ -1137,13 +1147,15 @@ trait Typers requires Analyzer {
     }
 
     def typedAbsTypeDef(tdef: AbsTypeDef): AbsTypeDef = {
+      reenterTypeParams(tdef.tparams) // @M!
+      val tparams1 = List.mapConserve(tdef.tparams)(typedAbsTypeDef) // @M!
       val lo1 = checkNoEscaping.privates(tdef.symbol, typedType(tdef.lo))
       val hi1 = checkNoEscaping.privates(tdef.symbol, typedType(tdef.hi))
       checkNonCyclic(tdef.symbol)
       if (!(lo1.tpe <:< hi1.tpe))
         error(tdef.pos,
               "lower bound "+lo1.tpe+" does not conform to upper bound "+hi1.tpe)
-      copy.AbsTypeDef(tdef, tdef.mods, tdef.name, lo1, hi1) setType NoType
+      copy.AbsTypeDef(tdef, tdef.mods, tdef.name, tparams1, lo1, hi1) setType NoType
     }
 
     def typedAliasTypeDef(tdef: AliasTypeDef): AliasTypeDef = {
@@ -1231,7 +1243,7 @@ trait Typers requires Analyzer {
           body1 =
             typed {
               atPos(body1.pos) {
-                TypeApply(Select(body1, Any_asInstanceOf), List(TypeTree(pt)))
+                TypeApply(Select(body1, Any_asInstanceOf), List(TypeTree(pt))) // @M no need for pt.normalize here, is done in erasure
               }
             }
       }
@@ -1503,12 +1515,12 @@ trait Typers requires Analyzer {
               val strictTargs = List.map2(lenientTargs, tparams)((targ, tparam) =>
                 if (targ == WildcardType) tparam.tpe else targ)
               def typedArgToPoly(arg: Tree, formal: Type): Tree = {
-                val lenientPt = formal.subst(tparams, lenientTargs)
+                val lenientPt = formal.instantiateTypeParams(tparams, lenientTargs)
                 val arg1 = typedArg(arg, mode, POLYmode, lenientPt)
                 val argtparams = context.undetparams
                 context.undetparams = List()
                 if (!argtparams.isEmpty) {
-                  val strictPt = formal.subst(tparams, strictTargs)
+                  val strictPt = formal.instantiateTypeParams(tparams, strictTargs)
                   inferArgumentInstance(arg1, argtparams, strictPt, lenientPt)
                 }
                 arg1
@@ -1651,10 +1663,24 @@ trait Typers requires Analyzer {
       //Console.println("typed1("+tree.getClass()+","+Integer.toHexString(mode)+","+pt+")")
       def ptOrLub(tps: List[Type]) = if (isFullyDefined(pt)) pt else lub(tps)
 
+      //@M! get the type of the qualifier in a Select tree, otherwise: NoType
+      def prefixType(fun: Tree): Type = fun match {
+        case Select(qualifier, _) => qualifier.tpe
+//        case Ident(name) => ??
+        case _ => NoType
+      }
+
       def typedTypeApply(fun: Tree, args: List[Tree]): Tree = fun.tpe match {
         case OverloadedType(pre, alts) =>
           inferPolyAlternatives(fun, args map (.tpe))
-          typedTypeApply(fun, args)
+          val tparams = fun.symbol.typeParams
+          assert(args.length == tparams.length)  //@M: in case TypeApply we can't check the kind-arities
+          // of the type arguments as we don't know which alternative to choose... here we do
+          val args1 = map2Conserve(args, tparams) {
+            //@M! the polytype denotes the expected kind
+            (arg, tparam) => typedHigherKindedType(arg, makePolyType(tparam.typeParams, AnyClass.tpe))
+          }
+          typedTypeApply(fun, args1)
         case PolyType(tparams, restpe) if (tparams.length != 0) =>
           if (tparams.length == args.length) {
             val targs = args map (.tpe)
@@ -1663,8 +1689,14 @@ trait Typers requires Analyzer {
               if (!targs.head.symbol.isClass || targs.head.symbol.isRefinementClass)
                 error(args.head.pos, "class type required");
               Literal(Constant(targs.head)) setPos tree.pos setType ClassClass.tpe
-            } else
-              copy.TypeApply(tree, fun, args) setType restpe.subst(tparams, targs)
+            } else {
+              val resultpe0 = restpe.instantiateTypeParams(tparams, targs)
+              //@M TODO -- probably ok
+              //@M example why asSeenFrom is necessary: class Foo[a] { def foo[m[x]]: m[a] } (new Foo[Int]).foo[List] : List[Int]
+              //@M however, asSeenFrom widens a singleton type, thus cannot use it for those types
+              val resultpe = if(resultpe0.isInstanceOf[SingletonType]) resultpe0 else resultpe0.asSeenFrom(prefixType(fun), fun.symbol.owner)
+              copy.TypeApply(tree, fun, args) setType resultpe
+            }
           } else {
             errorTree(tree, "wrong number of type parameters for "+treeSymTypeMsg(fun))
           }
@@ -1867,7 +1899,7 @@ trait Typers requires Analyzer {
         var qual: Tree = EmptyTree       // the qualififier tree if transformed tree is a select
         // if we are in a constructor of a pattern, ignore all methods
         // which are not case factories (note if we don't do that
-        // case x :: xs in class List would return the :: method.
+        // case x :: xs in class List would return the :: method).
         def qualifies(sym: Symbol): boolean =
           sym.exists &&
           ((mode & PATTERNmode | FUNmode) != (PATTERNmode | FUNmode) ||
@@ -1982,6 +2014,9 @@ trait Typers requires Analyzer {
         }
       }
 
+      // @M: copied from Namers
+      def makePolyType(tparams: List[Symbol], tpe: Type) = if (tparams.isEmpty) tpe else PolyType(tparams, tpe)
+
       // begin typed1
       val sym: Symbol = tree.symbol
       if (sym ne null) sym.initialize
@@ -2004,7 +2039,7 @@ trait Typers requires Analyzer {
         case ddef @ DefDef(_, _, _, _, _, _) =>
           newTyper(makeNewScope(context, tree, sym)).typedDefDef(ddef)
 
-        case tdef @ AbsTypeDef(_, _, _, _) =>
+        case tdef @ AbsTypeDef(_, _, _, _, _) =>
           newTyper(makeNewScope(context, tree, sym)).typedAbsTypeDef(tdef)
 
         case tdef @ AliasTypeDef(_, _, _, _) =>
@@ -2263,9 +2298,39 @@ trait Typers requires Analyzer {
           copy.Typed(tree, expr1, tpt1) setType owntype
 
         case TypeApply(fun, args) =>
-          val args1 = List.mapConserve(args)(typedType)
-          // do args first in order to maintain conext.undetparams on the function side.
-          typedTypeApply(typed(fun, funMode(mode) | TAPPmode, WildcardType), args1)
+          // @M: kind-arity checking is done here and in adapt, full kind-checking is in checkKindBounds (in Infer)
+          //@M! we must type fun in order to type the args, as that requires the kinds of fun's type parameters.
+          // However, args should apparently be done first, to save context.undetparams. Unfortunately, the args
+          // *really* have to be typed *after* fun. We escape from this classic Catch-22 by simply saving&restoring undetparams.
+
+          // @M TODO: the compiler still bootstraps&all tests pass when this is commented out..
+          //val undets = context.undetparams
+
+          // @M: fun is typed in TAPPmode because it is being applied to its actual type parameters
+          val fun1 = typed(fun, funMode(mode) | TAPPmode, WildcardType)
+          val tparams = fun1.symbol.typeParams
+
+          //@M TODO: val undets_fun = context.undetparams  ?
+          // "do args first" (by restoring the context.undetparams) in order to maintain context.undetparams on the function side.
+
+          // @M TODO: the compiler still bootstraps when this is commented out.. TODO: run tests
+          //context.undetparams = undets
+
+          // @M maybe the well-kindedness check should be done when checking the type arguments conform to the type parameters' bounds?
+          val args1 = if(args.length == tparams.length) map2Conserve(args, tparams) {
+                        //@M! the polytype denotes the expected kind
+                        (arg, tparam) => typedHigherKindedType(arg, makePolyType(tparam.typeParams, AnyClass.tpe))
+                      } else {
+                        assert(fun1.symbol.info.isInstanceOf[OverloadedType])
+                      // @M this branch is hit for an overloaded polymorphic type.
+                      // Until the right alternative is known, be very liberal,
+                      // typedTypeApply will find the right alternative and then do the same check as
+                      // in the then-branch above. (see pos/tcpoly_overloaded.scala)
+                        List.mapConserve(args)(typedHigherKindedType)
+                      }
+
+          //@M TODO: context.undetparams = undets_fun ?
+          typedTypeApply(fun1, args1)
 
         case Apply(Block(stats, expr), args) =>
           typed1(atPos(tree.pos)(Block(stats, Apply(expr, args))), mode, pt)
@@ -2408,13 +2473,18 @@ trait Typers requires Analyzer {
         case AppliedTypeTree(tpt, args) =>
           val tpt1 = typed1(tpt, mode | FUNmode | TAPPmode, WildcardType)
           val tparams = tpt1.symbol.typeParams
-          val args1 = List.mapConserve(args)(typedType)
+
           if (tpt1.tpe.isError) {
             setError(tree)
-          } else if (tparams.length == args1.length) {
+          } else if (tparams.length == args.length) {
+            // @M: kind-arity checking is done here and in adapt, full kind-checking is in checkKindBounds (in Infer)
+            val args1 = map2Conserve(args, tparams) {
+              (arg, tparam) => typedHigherKindedType(arg, makePolyType(tparam.typeParams, AnyClass.tpe)) //@M! the polytype denotes the expected kind
+            }
             val argtypes = args1 map (.tpe)
-            val owntype = if (tpt1.symbol.isClass) appliedType(tpt1.tpe, argtypes)
-                          else tpt1.tpe.subst(tparams, argtypes)
+            val owntype = if (tpt1.symbol.isClass || tpt1.symbol.isTypeMember) // @M! added the latter condition
+                               appliedType(tpt1.tpe, argtypes)
+                          else tpt1.tpe.instantiateTypeParams(tparams, argtypes)
             List.map2(args, tparams) { (arg, tparam) => arg match {
               // note: can't use args1 in selector, because Bind's got replaced
               case Bind(_, _) =>
@@ -2476,8 +2546,8 @@ trait Typers requires Analyzer {
           reportTypeError(tree.pos, ex)
           setError(tree)
         case ex: Throwable =>
-          if (settings.debug.value)
-            Console.println("exception when typing "+tree+", pt = "+pt)
+//          if (settings.debug.value) // @M causes cyclic reference error
+//            Console.println("exception when typing "+tree+", pt = "+pt)
           if ((context ne null) && (context.unit ne null) &&
               (context.unit.source ne null) && (tree ne null))
             logError("AT: " + context.unit.source.dbg(tree.pos), ex);
@@ -2530,12 +2600,20 @@ trait Typers requires Analyzer {
     def typedType(tree: Tree): Tree =
       withNoGlobalVariance{ typed(tree, TYPEmode, WildcardType) }
 
+    /** Types a higher-kinded type tree -- pt denotes the expected kind*/
+    def typedHigherKindedType(tree: Tree, pt: Type): Tree =
+      if(pt.typeParams.isEmpty) typedType(tree) // kind is known and it's *
+      else withNoGlobalVariance{ typed(tree, POLYmode | TAPPmode, pt) }
+
+    def typedHigherKindedType(tree: Tree): Tree =
+      withNoGlobalVariance{ typed(tree, POLYmode | TAPPmode, WildcardType) }
+
     /** Types a type constructor tree used in a new or supertype */
     def typedTypeConstructor(tree: Tree): Tree = {
       val result = withNoGlobalVariance{ typed(tree, TYPEmode | FUNmode, WildcardType) }
       if (!phase.erasedTypes && result.tpe.isInstanceOf[TypeRef] && !result.tpe.prefix.isStable)
         error(tree.pos, result.tpe.prefix+" is not a legal prefix for a constructor")
-      result
+      result setType(result.tpe.normalize) // @MAT remove aliases when instantiating
     }
 
     def computeType(tree: Tree, pt: Type): Type = {
@@ -2558,7 +2636,7 @@ trait Typers requires Analyzer {
     /* -- Views --------------------------------------------------------------- */
 
     private def tparamsToWildcards(tp: Type, tparams: List[Symbol]) =
-      tp.subst(tparams, tparams map (t => WildcardType))
+      tp.instantiateTypeParams(tparams, tparams map (t => WildcardType))
 
     private def depoly(tp: Type): Type = tp match {
       case PolyType(tparams, restpe) => tparamsToWildcards(restpe, tparams)

@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: AllRef$.scala 9262 2006-11-14 17:29:59 +0000 (Tue, 14 Nov 2006) mihaylov $
+// $Id: AllRef$.scala 10086 2007-02-21 19:10:41Z odersky $
 
 
 package scala

@@ -64,4 +64,36 @@ abstract class Reporter {
       incompleteInputError = savedHandler
     }
   }
+
+  // @M: moved here from ConsoleReporter and made public -- also useful in e.g. Typers
+  /** Returns a string meaning "n elements".
+   *
+   *  @param n        ...
+   *  @param elements ...
+   *  @return         ...
+   */
+  def countElementsAsString(n: Int, elements: String): String =
+    n match {
+      case 0 => "no "    + elements + "s"
+      case 1 => "one "   + elements
+      case 2 => "two "   + elements + "s"
+      case 3 => "three " + elements + "s"
+      case 4 => "four "  + elements + "s"
+      case _ => "" + n + " " + elements + "s"
+    }
+
+  /** Turns a count into a friendly English description if n<=4.
+   *
+   *  @param n        ...
+   *  @return         ...
+   */
+  def countAsString(n: Int): String =
+    n match {
+      case 0 => "none"
+      case 1 => "one"
+      case 2 => "two"
+      case 3 => "three"
+      case 4 => "four"
+      case _ => "" + n
+    }
 }

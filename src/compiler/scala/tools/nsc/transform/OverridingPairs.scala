@@ -103,6 +103,7 @@ abstract class OverridingPairs {
     var overriding: Symbol = _
     var overridden: Symbol = _
 
+    //@M: note that next is called once during object initialisation
     def hasNext: boolean = curEntry ne null
 
     def next: unit =
@@ -131,6 +132,6 @@ abstract class OverridingPairs {
         }
       }
 
-    next
+    next //@M: ATTN! this method gets called during construction!
   }
 }

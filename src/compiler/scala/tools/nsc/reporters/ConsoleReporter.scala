@@ -40,23 +40,8 @@ class ConsoleReporter(val settings: Settings, reader: BufferedReader, writer: Pr
    *  @return         ...
    */
   private def getCountString(severity: Severity): String =
-    getCountString0(count(severity), label(severity))
+    countElementsAsString(count(severity), label(severity))
 
-  /** Returns a string meaning "n elements".
-   *
-   *  @param n        ...
-   *  @param elements ...
-   *  @return         ...
-   */
-  private def getCountString0(n: Int, elements: String): String =
-    n match {
-      case 0 => "no "    + elements + "s"
-      case 1 => "one "   + elements
-      case 2 => "two "   + elements + "s"
-      case 3 => "three " + elements + "s"
-      case 4 => "four "  + elements + "s"
-      case _ => "" + n + " " + elements + "s"
-    }
 
   /** Prints the message. */
   def printMessage(msg: String) = writer.println(msg)
