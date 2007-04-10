@@ -1,7 +1,7 @@
 object Test {
   import scala.testing.SUnit._
 
-  def main(args:Array[String]): Unit = {
+  def main(args: Array[String]) {
     val tr = new TestResult
     new TestSuite(
 
@@ -11,23 +11,23 @@ object Test {
       new Test04,
       new Test05,
       new Test06,
-      new Test07
+      new Test07,
+      new Test08
 
     ).run(tr)
 
-    for(val f <- tr.failures())
-      Console println f
+    for (val f <- tr.failures()) println(f)
   }
 
   class Test01 extends TestCase("uno (all ignoring patterns on List)") {
-    def doMatch(l:List[String]):String = l match {
-        case List(_*) => "ok"
+    def doMatch(xs: List[String]): String = xs match {
+      case List(_*) => "ok"
     }
-    override def runTest() = {
-      val list1 = List();
-      assertEquals(doMatch(list1), "ok");
-      val list2 = List("1","2","3");
-      assertEquals(doMatch(list2), "ok");
+    override def runTest() {
+      val list1 = List()
+      assertEquals(doMatch(list1), "ok")
+      val list2 = List("1","2","3")
+      assertEquals(doMatch(list2), "ok")
     }
   }
 
@@ -45,33 +45,33 @@ object Test {
     */
 
   class Test02 extends TestCase("due (all ignoring patterns on Seq)") {
-    def doMatch(l:Seq[String]):String = l match {
-        case Seq(_*) => "ok"
+    def doMatch(l: Seq[String]): String = l match {
+      case Seq(_*) => "ok"
     }
-    override def runTest() = {
-      val list1 = List();
-      assertEquals(doMatch(list1), "ok");
-      val list2 = List("1","2","3");
-      assertEquals(doMatch(list2), "ok");
-      val array3 = Array[String]();
-      assertEquals(doMatch(array3), "ok");
-      val array4 = Array[String]("ga","gu");
-      assertEquals(doMatch(array4), "ok");
+    override def runTest() {
+      val list1 = List()
+      assertEquals(doMatch(list1), "ok")
+      val list2 = List("1", "2", "3")
+      assertEquals(doMatch(list2), "ok")
+      val array3 = Array[String]()
+      assertEquals(doMatch(array3), "ok")
+      val array4 = Array[String]("ga", "gu")
+      assertEquals(doMatch(array4), "ok")
     }
   }
 
   class Test03 extends TestCase("tre (right-ignoring patterns on List, defaults)") {
-    def doMatch(l:List[String]):String = l match {
-        case List(_,_,_,_*) => "ok"
-        case _ => "not ok"
+    def doMatch(xs: List[String]): String = xs match {
+      case List(_,_,_,_*) => "ok"
+      case _ => "not ok"
     }
-    override def runTest() = {
-      val list1 = List();
-      assertEquals(doMatch(list1), "not ok");
-      val list2 = List("1","2","3");
-      assertEquals(doMatch(list2), "ok");
-      val list3 = List("1","2","3","4");
-      assertEquals(doMatch(list3), "ok");
+    override def runTest() {
+      val list1 = List()
+      assertEquals(doMatch(list1), "not ok")
+      val list2 = List("1","2","3")
+      assertEquals(doMatch(list2), "ok")
+      val list3 = List("1","2","3","4")
+      assertEquals(doMatch(list3), "ok")
     }
   }
 
@@ -81,20 +81,16 @@ object Test {
 
     override def runTest() = {
       val a = Foo(0, 'a') match {
-        case Foo(i, c, chars @ _*) =>
-          c
-        case _ =>
-          null
+        case Foo(i, c, chars @ _*) => c
+        case _ => null
       }
-      assertEquals(a,'a')
+      assertEquals(a, 'a')
 
       val b = Foo(0, 'a') match {
-        case Foo(i, chars @ _*) =>
-          'b'
-        case _ =>
-          null
+        case Foo(i, chars @ _*) => 'b'
+        case _ => null
       }
-      assertEquals(b,'b')
+      assertEquals(b, 'b')
     }
   }
 
@@ -104,7 +100,7 @@ object Test {
     case class Foo() extends Con
     case class Bar(xs:Con*) extends Con
 
-    override def runTest() = {
+    override def runTest() {
       val res = (Bar(Foo()):Con) match {
         case Bar(xs@_*) => xs // this should be optimized away to a pattern Bar(xs)
         case _ => Nil
@@ -115,18 +111,15 @@ object Test {
 
   class Test06 extends TestCase("sei (not regular) fancy guards / bug#644 ") {
 
-    case class A(i:Any)
+    case class A(i: Any)
 
-    def doMatch(x:Any, bla:int) = x match {
-      case x:A if (bla==1) =>
-        0
-      case A(1) =>
-        1
-      case A(A(1)) =>
-        2
+    def doMatch(x: Any, bla: int) = x match {
+      case x:A if (bla==1) => 0
+      case A(1) => 1
+      case A(A(1)) => 2
     }
 
-    override def runTest(): Unit= {
+    override def runTest() {
       assertEquals(doMatch(A(null),1), 0)
       assertEquals(doMatch(A(1),2), 1)
       assertEquals(doMatch(A(A(1)),2), 2)
@@ -135,7 +128,7 @@ object Test {
   }
 
   class Test07 extends TestCase("sette List of chars") {
-    def doMatch1(xs:List[char]) = xs match {
+    def doMatch1(xs: List[char]) = xs match {
       case List(x, y, _*) => x::y::Nil
     }
     def doMatch2(xs:List[char]) = xs match {
@@ -150,4 +143,16 @@ object Test {
       //assertEquals(doMatch3(List('a','b','c','d')), List('d'))
     }
   }
+
+  class Test08 extends TestCase("backquoted identifiers in pattern") {
+    override def runTest() {
+      val xs = List(2, 3)
+      val ys = List(1, 2, 3) match {
+        case x :: `xs` => xs
+        case _ => Nil
+      }
+      assertEquals(xs, ys)
+    }
+  }
+
 }

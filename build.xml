@@ -320,13 +320,13 @@ BUILD LOCAL REFERENCE (LOCKER) LAYER
     <starr
       srcdir="${src.dir}/library"
       destdir="${locker.dir}/lib/library"
-      usepredefs="no" deprecation="yes"
+      usepredefs="no" deprecation="yes" unchecked="yes"
       classpath="${locker.dir}/lib/library"
       includes="scala/Predef.scala"/>
     <starr
       srcdir="${src.dir}/library"
       destdir="${locker.dir}/lib/library"
-      deprecation="yes"
+      deprecation="yes" unchecked="yes"
       classpath="${locker.dir}/lib/library">
       <include name="**/*.scala"/>
       <exclude name="scala/Predef.scala"/>
@@ -339,7 +339,7 @@ BUILD LOCAL REFERENCE (LOCKER) LAYER
     <starr
       srcdir="${src.dir}/compiler"
       destdir="${locker.dir}/lib/compiler"
-      deprecation="yes">
+      deprecation="yes" unchecked="yes">
       <classpath>
         <pathelement location="${locker.dir}/lib/library"/>
         <pathelement location="${locker.dir}/lib/compiler"/>
@@ -434,14 +434,16 @@ BUILD QUICK-TEST LAYER
     <locker
       srcdir="${src.dir}/library"
       destdir="${quick.dir}/lib/library"
-      usepredefs="no" addparams="${nsc.params}" deprecation="yes"
+      usepredefs="no" addparams="${nsc.params}"
+      deprecation="yes" unchecked="yes"
       scalacdebugging="${nsc.log-files}"
       classpath="${quick.dir}/lib/library"
       includes="scala/Predef.scala"/>
     <locker
       srcdir="${src.dir}/library"
       destdir="${quick.dir}/lib/library"
-      addparams="${nsc.params}" deprecation="yes"
+      addparams="${nsc.params}"
+      deprecation="yes" unchecked="yes"
       scalacdebugging="${nsc.log-files}"
       classpath="${quick.dir}/lib/library">
       <include name="**/*.scala"/>
@@ -455,7 +457,8 @@ BUILD QUICK-TEST LAYER
     <locker
       srcdir="${src.dir}/dbc"
       destdir="${quick.dir}/lib/dbc"
-      addparams="${nsc.params}" deprecation="yes"
+      addparams="${nsc.params}"
+      deprecation="yes" unchecked="yes"
       scalacdebugging="${nsc.log-files}">
       <classpath>
         <pathelement location="${quick.dir}/lib/library"/>
@@ -475,7 +478,8 @@ BUILD QUICK-TEST LAYER
     <locker
       srcdir="${src.dir}/actors"
       destdir="${quick.dir}/lib/actors"
-      addparams="${nsc.params}" deprecation="yes"
+      addparams="${nsc.params}"
+      deprecation="yes" unchecked="yes"
       scalacdebugging="${nsc.log-files}">
       <classpath>
         <pathelement location="${quick.dir}/lib/library"/>
@@ -634,13 +638,15 @@ TEST
     <quick
       srcdir="${src.dir}/library"
       destdir="${strap.dir}/lib/library"
-      usepredefs="no" addparams="${nsc.params}" deprecation="yes"
+      usepredefs="no" addparams="${nsc.params}"
+      deprecation="yes" unchecked="yes"
       classpath="${strap.dir}/lib/library"
       includes="scala/Predef.scala"/>
     <quick
       srcdir="${src.dir}/library"
       destdir="${strap.dir}/lib/library"
-      addparams="${nsc.params}" deprecation="yes"
+      addparams="${nsc.params}"
+      deprecation="yes" unchecked="yes"
       classpath="${strap.dir}/lib/library">
       <include name="**/*.scala"/>
       <exclude name="scala/Predef.scala"/>
@@ -653,7 +659,8 @@ TEST
     <quick
       srcdir="${src.dir}/dbc"
       destdir="${strap.dir}/lib/dbc"
-      addparams="${nsc.params}" deprecation="yes">
+      addparams="${nsc.params}"
+      deprecation="yes" unchecked="yes">
       <classpath>
         <pathelement location="${strap.dir}/lib/library"/>
         <pathelement location="${strap.dir}/lib/dbc"/>
@@ -804,6 +811,7 @@ DOCUMENTATION
       srcdir="${src.dir}"
       destdir="${api-lib.dir}"
       sourcepath=""
+      deprecation="yes" unchecked="yes"
       windowtitle="Scala Library Documentation"
       documenttitle="&lt;div&gt;Scala ${version.number}&lt;/div&gt;"
       classpath="${quick.dir}/lib/library${path.separator}${quick.dir}/lib/actors">

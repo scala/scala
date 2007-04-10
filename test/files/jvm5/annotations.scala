@@ -1,5 +1,3 @@
-import java.lang.Deprecated
-
 object Test1 {
   class Foo {
     @remote
@@ -37,6 +35,7 @@ public class Main {
 }
 */
 object Test3 {
+  import java.lang.Deprecated
   class Foo {
     @Deprecated
     def foo: Unit = ()
@@ -62,13 +61,13 @@ public class Main {
         Annotation[] annotations = clazz.getAnnotations();
         for (int i = 0; i < annotations.length; i++)
             System.out.println(annotations[i]);
-        // @test.Main$Source(url=http://scala.epfl.ch, mail=scala@lists.epfl.ch)
+        // @test.Main$Source(url=http://scala-lang.org, mail=scala@lists.epfl.ch)
     }
 }
 */
 object Test4 {
   import test.SourceAnnotation // defined in SourceAnnotation.java
-  @SourceAnnotation{val value = "http://scala.epfl.ch", val mail = "scala@lists.epfl.ch"}
+  @SourceAnnotation{val value = "http://scala-lang.org", val mail = "scala@lists.epfl.ch"}
   class Foo1
   @SourceAnnotation("http://bloodsuckers.com") { val mail = "you@bloodsuckers.com" }
   class Foo2
