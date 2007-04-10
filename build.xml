@@ -494,7 +494,8 @@ BUILD QUICK-TEST LAYER
     <locker
       srcdir="${src.dir}/compiler"
       destdir="${quick.dir}/lib/compiler"
-      addparams="${nsc.params}" deprecation="yes"
+      addparams="${nsc.params}"
+      deprecation="yes" unchecked="yes"
       scalacdebugging="${nsc.log-files}">
       <classpath>
         <pathelement location="${quick.dir}/lib/library"/>
