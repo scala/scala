@@ -117,28 +117,22 @@ abstract class TreeInfo {
 
   /** Is tree a self constructor call?
    */
-  def isSelfConstrCall(tree: Tree): boolean = tree match {
-    case Ident(nme.CONSTRUCTOR) =>
-      true
-    case Select(This(_), nme.CONSTRUCTOR) =>
-      true
-    case TypeApply(constr, _) =>
-      isSelfConstrCall(constr)
-    case Apply(constr, _) =>
-      isSelfConstrCall(constr)
-    case _ =>
-      false
+  def isSelfConstrCall(tree: Tree): boolean = methPart(tree) match {
+    case Ident(nme.CONSTRUCTOR)
+       | Select(This(_), nme.CONSTRUCTOR) => true
+    case _ => false
   }
 
-  def isSuperConstrCall(tree: Tree): boolean = tree match {
-    case Select(Super(_, _), nme.CONSTRUCTOR) =>
-      true
-    case TypeApply(constr, _) =>
-      isSuperConstrCall(constr)
-    case Apply(constr, _) =>
-      isSuperConstrCall(constr)
-    case _ =>
-      false
+  def isSuperConstrCall(tree: Tree): boolean = methPart(tree) match {
+    case Select(Super(_, _), nme.CONSTRUCTOR) => true
+    case _ => false
+  }
+
+  def isSelfOrSuperConstrCall(tree: Tree): boolean = methPart(tree) match {
+    case Ident(nme.CONSTRUCTOR)
+       | Select(This(_), nme.CONSTRUCTOR)
+       | Select(Super(_, _), nme.CONSTRUCTOR) => true
+    case _ => false
   }
 
   /** Is tree a variable pattern */
@@ -155,15 +149,9 @@ abstract class TreeInfo {
     case _ :: stats1 => firstConstructor(stats1)
   }
 
-  /** The reference to super in the body of a primary constructor */
-  def superRef(tree: Tree): Tree = tree match {
-    case Block(stats, _) if !stats.isEmpty => superRef(stats.last)
-    case Apply(sr, _) => sr
-    case _ => EmptyTree
-  }
-
   /** The value definitions marked PRESUPER in this statement sequence */
-  def preSuperFields(stats: List[Tree]) = stats filter isPreSuper
+  def preSuperFields(stats: List[Tree]): List[ValDef] =
+    for (val vdef @ ValDef(mods, _, _, _) <- stats; mods hasFlag PRESUPER) yield vdef
 
   def isPreSuper(tree: Tree) = tree match {
     case ValDef(mods, _, _, _) => mods hasFlag PRESUPER
@@ -271,6 +259,14 @@ abstract class TreeInfo {
     case TypeApply(fn, _) => methPart(fn)
     case AppliedTypeTree(fn, _) => methPart(fn)
     case _ => tree
+  }
+
+  def firstArgument(tree: Tree): Tree = tree match {
+    case Apply(fn, args) =>
+      val f = firstArgument(fn)
+      if (f == EmptyTree && !args.isEmpty) args.head else f
+    case _ =>
+      EmptyTree
   }
 
   /** Top-level definition sequence contains a leading import of Predef or scala.Predef

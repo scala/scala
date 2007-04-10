@@ -125,8 +125,7 @@ trait Typers requires Analyzer {
   private def funMode(mode: int) = mode & (stickyModes | SCCmode) | FUNmode | POLYmode
 
   private def argMode(fun: Tree, mode: int) =
-    if (treeInfo.isSelfConstrCall(fun) || treeInfo.isSuperConstrCall(fun)) mode | SCCmode
-    else mode
+    if (treeInfo.isSelfOrSuperConstrCall(fun)) mode | SCCmode else mode
 
   private var xxx = 10;
   class Typer(context0: Context) {
@@ -566,7 +565,7 @@ trait Typers requires Analyzer {
           inferExprInstance(tree, tparams, pt)
           adapt(tree, mode, pt)
         } else {
-          val typer1 = constrTyperIf(treeInfo.isSelfConstrCall(tree) || treeInfo.isSuperConstrCall(tree))
+          val typer1 = constrTyperIf(treeInfo.isSelfOrSuperConstrCall(tree))
           typer1.typed(typer1.applyImplicitArgs(tree), mode, pt)
         }
       case mt: MethodType
@@ -738,19 +737,18 @@ trait Typers requires Analyzer {
       if (member(qual, name) != NoSymbol) qual
       else adaptToMember(qual, name, WildcardType)
 
-    private def completeParentType(tpt: Tree, tparams: List[Symbol], enclTparams: List[Symbol], vparamss: List[List[ValDef]], superargs: List[Tree]): Type = {
+    private def typePrimaryConstrBody(cbody: Tree, tparams: List[Symbol], enclTparams: List[Symbol], vparamss: List[List[ValDef]]): Tree = {
       enclTparams foreach context.scope.enter
       namer.enterValueParams(context.owner, vparamss)
-      val newTree = New(tpt)
-        .setType(PolyType(tparams, appliedType(tpt.tpe, tparams map (.tpe))))
-      val tree = typed(atPos(tpt.pos)(Apply(Select(newTree, nme.CONSTRUCTOR), superargs)))
-      if (settings.debug.value) log("superconstr "+tree+" co = "+context.owner);//debug
-      tree.tpe
+      typed(cbody)
     }
 
-    def parentTypes(templ: Template): List[Tree] = try {
+    def parentTypes(templ: Template): List[Tree] =
       if (templ.parents.isEmpty) List()
-      else {
+      else try {
+        val clazz = context.owner
+
+        // Normalize supertype and mixins so that supertype is always a class, not a trait.
         var supertpt = typedTypeConstructor(templ.parents.head)
         val firstParent = supertpt.tpe.symbol
         var mixins = templ.parents.tail map typedType
@@ -762,43 +760,71 @@ trait Typers requires Analyzer {
             supertpt = TypeTree(supertpt1.tpe.parents.head) setOriginal supertpt /* setPos supertpt.pos */
           }
         }
-        val constr = treeInfo.firstConstructor(templ.body)
-        if (supertpt.tpe.symbol != firstParent) {
-          constr match {
-            case DefDef(_, _, _, _, _, Block(List(Apply(_, superargs)), _)) =>
-              if (!superargs.isEmpty)
-                error(superargs.head.pos, firstParent+" is a trait; does not take constructor arguments")
-            case _ =>
-          }
+
+        // Determine
+        //  - supertparams: Missing type parameters from supertype
+        //  - supertpe: Given supertype, polymorphic in supertparams
+        val supertparams = if (supertpt.hasSymbol) supertpt.symbol.typeParams else List()
+        var supertpe = supertpt.tpe
+        if (!supertparams.isEmpty)
+          supertpe = PolyType(supertparams, appliedType(supertpe, supertparams map (.tpe)))
+
+        // A method to replace a super reference by a New in a supercall
+        def transformSuperCall(scall: Tree): Tree = (scall: @unchecked) match {
+          case Apply(fn, args) =>
+            copy.Apply(scall, transformSuperCall(fn), args)
+          case Select(Super(_, _), nme.CONSTRUCTOR) =>
+            copy.Select(
+              scall,
+              New(TypeTree(supertpe) setOriginal supertpt) setType supertpe setPos supertpt.pos,
+              nme.CONSTRUCTOR)
         }
-        if (supertpt.hasSymbol) {
-          val tparams = supertpt.symbol.typeParams
-          if (!tparams.isEmpty) {
-            constr match {
-              case EmptyTree =>
-                error(supertpt.pos, "missing type arguments")
-              case DefDef(_, _, _, vparamss, _, Block(List(Apply(_, superargs)), _)) =>
-                val outercontext = context.outer
-                supertpt = TypeTree(
-                  newTyper(makeNewScope(outercontext, constr, outercontext.owner))
-                    .completeParentType(
-                      supertpt,
-                      tparams,
-                      context.owner.unsafeTypeParams,
-                      vparamss map (.map(.duplicate)),
-                      superargs map (.duplicate))) setOriginal supertpt /* setPos supertpt.pos */
+
+        treeInfo.firstConstructor(templ.body) match {
+          case constr @ DefDef(_, _, _, vparamss, _, cbody @ Block(cstats, cunit)) =>
+            // Convert constructor body to block in environment and typecheck it
+            val cstats1: List[Tree] = cstats map (.duplicate)
+            val scall = if (cstats.isEmpty) EmptyTree else cstats.last
+            val cbody1 = scall match {
+              case Apply(_, _) =>
+                copy.Block(cbody, cstats1.init,
+                           if (supertparams.isEmpty) cunit.duplicate
+                           else transformSuperCall(scall))
+              case _ =>
+                copy.Block(cbody, cstats1, cunit.duplicate)
             }
-          }
+
+            val outercontext = context.outer
+            val cbody2 =
+              newTyper(makeNewScope(outercontext, constr, outercontext.owner))
+                .typePrimaryConstrBody(
+                  cbody1, supertparams, clazz.unsafeTypeParams, vparamss map (.map(.duplicate)))
+
+            scall match {
+              case Apply(_, _) =>
+                val sarg = treeInfo.firstArgument(scall)
+                if (sarg != EmptyTree && supertpe.symbol != firstParent)
+                  error(sarg.pos, firstParent+" is a trait; does not take constructor arguments")
+                if (!supertparams.isEmpty) supertpt = TypeTree(cbody2.tpe) setPos supertpt.pos
+              case _ =>
+                if (!supertparams.isEmpty) error(supertpt.pos, "missing type arguments")
+            }
+
+            List.map2(cstats1, treeInfo.preSuperFields(templ.body)) {
+              (ldef, gdef) => gdef.tpt.tpe = ldef.symbol.tpe
+            }
+          case _ =>
+            if (!supertparams.isEmpty) error(supertpt.pos, "missing type arguments")
         }
-        //Console.println("parents("+context.owner+") = "+supertpt :: mixins);//DEBUG
-        List.mapConserve(supertpt :: mixins)(tpt => checkNoEscaping.privates(context.owner, tpt))
+
+        //Console.println("parents("+clazz") = "+supertpt :: mixins);//DEBUG
+        List.mapConserve(supertpt :: mixins)(tpt => checkNoEscaping.privates(clazz, tpt))
+      } catch {
+        case ex: TypeError =>
+          templ.tpe = null
+          reportTypeError(templ.pos, ex)
+          List(TypeTree(AnyRefClass.tpe))
       }
-    } catch {
-      case ex: TypeError =>
-        templ.tpe = null
-        reportTypeError(templ.pos, ex)
-        List(TypeTree(AnyRefClass.tpe))
-    }
 
     /** <p>Check that</p>
      *  <ul>
@@ -1339,10 +1365,11 @@ trait Typers requires Analyzer {
             val localTyper = if (inBlock || (stat.isDef && !stat.isInstanceOf[LabelDef])) this
                              else newTyper(context.make(stat, exprOwner))
             val result = checkDead(localTyper.typed(stat))
-            if (treeInfo.isSelfConstrCall(stat) || treeInfo.isSuperConstrCall(stat))
+            if (treeInfo.isSelfOrSuperConstrCall(result)) {
               context.inConstructorSuffix = true
-            if (treeInfo.isSelfConstrCall(result) && result.symbol.pos >= exprOwner.enclMethod.pos)
-              error(stat.pos, "called constructor's definition must precede calling constructor's definition")
+              if (treeInfo.isSelfConstrCall(result) && result.symbol.pos >= exprOwner.enclMethod.pos)
+                error(stat.pos, "called constructor's definition must precede calling constructor's definition")
+            }
             result
         }
       }

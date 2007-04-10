@@ -1170,7 +1170,8 @@ trait Parsers requires SyntaxAnalyzer {
     /** Generator ::= val Pattern1 `<-' Expr
      */
     def generator(eqOK: boolean): Enumerator = {
-      val pos = accept(VAL)
+      val pos = in.currentPos;
+      if (in.token == VAL) in.nextToken()
       val pat = pattern1(false)
       val tok = in.token
       if (tok == EQUALS && eqOK) in.nextToken()
