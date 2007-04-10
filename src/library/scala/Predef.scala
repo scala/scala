@@ -304,20 +304,6 @@ object Predef {
   implicit def double2Double(x: double) = new java.lang.Double(x)
   implicit def boolean2Boolean(x: boolean) = new java.lang.Boolean(x)
 
-  implicit def byte2Type(x: byte) = ObjectType(classOf[byte])
-  implicit def short2Type(x: short) = ObjectType(classOf[short])
-  implicit def char2Type(x: char) = ObjectType(classOf[char])
-  implicit def int2Type(x: int) = ObjectType(classOf[int])
-  implicit def long2Type(x: long) = ObjectType(classOf[long])
-  implicit def float2Type(x: float) = ObjectType(classOf[float])
-  implicit def double2Type(x: double) = ObjectType(classOf[double])
-  implicit def boolean2Type(x: boolean) = ObjectType(classOf[boolean])
-  implicit def object2Type(x: AnyRef) = ObjectType(x.getClass)
-  implicit def any2Type(a: Any) = a match {
-    case x: AnyRef => ObjectType(x.getClass)
-    case _ => null
-  }
-
   def currentThread = java.lang.Thread.currentThread()
 
 }
