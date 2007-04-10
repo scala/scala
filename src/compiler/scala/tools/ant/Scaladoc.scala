@@ -513,13 +513,12 @@ class Scaladoc extends MatchingTask {
       val run = new compiler.Run
       run.compile(sourceFiles.map (.toString()))
       object generator extends DocDriver {
-        val global = compiler
+        val global: compiler.type = compiler
         def outdir = settings.outdir.value
         def windowTitle = settings.windowtitle.value
         def documentTitle = settings.documenttitle.value
       }
-      val run1 = run.asInstanceOf[generator.global.Run] //temporary hack (mics)
-      generator.process(run1.units)
+      generator.process(run.units)
       if (reporter.errors > 0)
         error(
           "Document failed with " +
