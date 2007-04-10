@@ -99,7 +99,7 @@ trait Namers requires Analyzer {
         innerNamerCache
       }
 
-      def primaryConstructorParamNamer: Namer = {
+      def primaryConstructorParamNamer: Namer = { //todo: can we merge this with SCCmode?
         val classContext = context.enclClass
         val outerContext = classContext.outer.outer
         val paramContext = outerContext.makeNewScope(outerContext.tree, outerContext.owner)
@@ -661,22 +661,17 @@ trait Namers requires Analyzer {
               checkContractive(sym, result)
 
             case vdef @ ValDef(mods, _, tpt, rhs) =>
+              val typer1 = typer.constrTyperIf(sym.hasFlag(PARAM | PRESUPER) && sym.owner.isConstructor)
               if (tpt.isEmpty) {
                 if (rhs.isEmpty) {
                   context.error(tpt.pos, "missing parameter type");
                   ErrorType
                 } else {
         	  tpt.tpe = deconstIfNotFinal(sym,
-                    typer.valDefRhsTyper(vdef).computeType(rhs, WildcardType))
+                newTyper(typer1.context.make(vdef, sym)).computeType(rhs, WildcardType))
         	  tpt.tpe
                 }
-              } else {
-                val typer1 =
-                  if (sym.hasFlag(PARAM) && sym.owner.isConstructor && !phase.erasedTypes)
-                    newTyper(context.makeConstructorContext)
-                  else typer;
-                typer1.typedType(tpt).tpe
-              }
+              } else typer1.typedType(tpt).tpe
 
             case tree @ AliasTypeDef(_, _, tparams, rhs) =>
               new Namer(makeNewScope(context, tree, sym)).aliasTypeSig(sym, tparams, rhs)

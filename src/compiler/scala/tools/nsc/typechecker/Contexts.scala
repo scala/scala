@@ -230,10 +230,23 @@ trait Contexts requires Analyzer {
       val argContext = baseContext.makeNewScope(tree, owner)
       argContext.reportGeneralErrors = this.reportGeneralErrors
       argContext.reportAmbiguousErrors = this.reportAmbiguousErrors
-      for (val sym <- scope.toList) argContext.scope enter sym
+      def enterElems(c: Context) {
+        def enterLocalElems(e: ScopeEntry) {
+          if (e != null && e.owner == c.scope) {
+            enterLocalElems(e.next)
+            argContext.scope enter e.sym
+          }
+        }
+        if (c.owner.isTerm && !c.owner.isLocalDummy) {
+          enterElems(c.outer)
+          enterLocalElems(c.scope.elems)
+        }
+      }
+      enterElems(this)
       argContext
     }
 
+    //todo: remove
     def makeConstructorSuffixContext = {
       val c = make(tree)
       c.inConstructorSuffix = true

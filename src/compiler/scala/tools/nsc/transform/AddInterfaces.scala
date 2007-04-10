@@ -129,8 +129,9 @@ abstract class AddInterfaces extends InfoTransform {
      */
     private def implDecls(implClass: Symbol, ifaceDecls: Scope): Scope = {
       val decls = newScope
-      decls enter (implClass.newMethod(implClass.pos, nme.MIXIN_CONSTRUCTOR)
-        setInfo MethodType(List(), UnitClass.tpe))
+      if ((ifaceDecls lookup nme.MIXIN_CONSTRUCTOR) == NoSymbol)
+        decls enter (implClass.newMethod(implClass.pos, nme.MIXIN_CONSTRUCTOR)
+                     setInfo MethodType(List(), UnitClass.tpe))
       for (val sym <- ifaceDecls.elements) {
         if (isInterfaceMember(sym)) {
           if (needsImplMethod(sym)) {
@@ -244,16 +245,18 @@ abstract class AddInterfaces extends InfoTransform {
     else if (needsImplMethod(tree.symbol)) implMethodDef(tree, tree.symbol)
     else EmptyTree
 
-  /** The mixin constructor definition
+  /** Add mixin constructor definition
    *    def $init$(): Unit = ()
+   *  to `stats' unless there is already one.
    */
-  private def mixinConstructorDef(clazz: Symbol): Tree =
-    DefDef(clazz.primaryConstructor, vparamss => Block(List(), Literal(())))
+  private def addMixinConstructorDef(clazz: Symbol, stats: List[Tree]): List[Tree] =
+    if (treeInfo.firstConstructor(stats) != EmptyTree) stats
+    else DefDef(clazz.primaryConstructor, vparamss => Block(List(), Literal(()))) :: stats
 
   private def implTemplate(clazz: Symbol, templ: Template): Template = atPos(templ.pos) {
     val templ1 = atPos(templ.pos) {
-      Template(templ.parents, mixinConstructorDef(clazz) :: (templ.body map implMemberDef))
-      .setSymbol(clazz.newLocalDummy(templ.pos))
+      Template(templ.parents, addMixinConstructorDef(clazz, templ.body map implMemberDef))
+        .setSymbol(clazz.newLocalDummy(templ.pos))
     }
     new ChangeOwnerTraverser(templ.symbol.owner, clazz)(
       new ChangeOwnerTraverser(templ.symbol, templ1.symbol)(templ1))

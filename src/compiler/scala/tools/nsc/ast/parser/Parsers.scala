@@ -1057,10 +1057,9 @@ trait Parsers requires SyntaxAnalyzer {
               parents += annotType(false)
             }
             newLineOptWhenFollowedBy(LBRACE)
-            val (self, stats, superpos, superargss) =
-              if (in.token == LBRACE) templateBody()
-              else (emptyValDef, List(), Position.NOPOS, List(List()))
-            makeNew(parents.toList, self, stats, superArgs(superpos, argss.toList, superargss))
+            val (self, stats) = if (in.token == LBRACE) templateBody()
+                                    else (emptyValDef, List())
+            makeNew(parents.toList, self, stats, argss.toList)
           }
           canApply = false
         case _ =>
@@ -1074,17 +1073,6 @@ trait Parsers requires SyntaxAnalyzer {
           t = errorTermTree
       }
       simpleExprRest(t, canApply)
-    }
-
-    private def isEmpty(argss: List[List[Tree]]) = argss.head.isEmpty && argss.tail.isEmpty
-
-    private def superArgs(pos: int, extargss: List[List[Tree]], superargss: List[List[Tree]]) = {
-      var argss = extargss
-      if (isEmpty(argss))
-        argss = superargss
-      else if (!isEmpty(superargss))
-        syntaxError(pos, "super call arguments are specified twice; once here and once in a subsequent super call", false)
-      argss
     }
 
     def simpleExprRest(t: Tree, canApply: boolean): Tree = {
@@ -1907,7 +1895,7 @@ trait Parsers requires SyntaxAnalyzer {
      *                    |  ConstrBlock
      */
     def constrExpr(vparamss: List[List[ValDef]]): Tree =
-      if (in.token == LBRACE) constrBlock(vparamss) else selfInvocation(vparamss)
+      if (in.token == LBRACE) constrBlock(vparamss) else Block(List(selfInvocation(vparamss)), Literal())
 
     /** SelfInvocation  ::= this ArgumentExprs {ArgumentExprs}
      */
@@ -1932,7 +1920,7 @@ trait Parsers requires SyntaxAnalyzer {
         val stats = if (isStatSep) { in.nextToken(); blockStatSeq(statlist) }
                     else statlist.toList
         accept(RBRACE)
-        makeBlock(stats)
+        Block(stats, Literal(()))
       }
 
     /** TypeDef ::= Id [TypeParamClause] `=' Type
@@ -1999,9 +1987,8 @@ trait Parsers requires SyntaxAnalyzer {
         }
         val constrAnnots = annotations()
         val (constrMods, vparamss) =
-          if (mods.hasFlag(Flags.TRAIT)) (NoMods, List())
-          else (accessModifierOpt(),
-                    paramClauses(name, implicitClassViews, mods.hasFlag(Flags.CASE)))
+          if (mods.hasFlag(Flags.TRAIT)) (Modifiers(Flags.TRAIT), List())
+          else (accessModifierOpt(), paramClauses(name, implicitClassViews, mods.hasFlag(Flags.CASE)))
         val thistpe = requiresTypeOpt()
         val (self0, template) =
           classTemplate(mods, name, constrMods withAnnotations constrAnnots, vparamss)
@@ -2072,34 +2059,21 @@ trait Parsers requires SyntaxAnalyzer {
       }
       val ps = parents.toList
       newLineOptWhenFollowedBy(LBRACE)
-      val (self, body, superpos, superargss) =
+      val (self, body) =
         if (in.token == LBRACE) templateBody()
-        else {
-          acceptEmptyTemplateBody("`{' expected")
-          (emptyValDef, List(), Position.NOPOS, List(List()))
-        }
-      val argumentss = superArgs(pos, argss.toList, superargss)
-      val impl = atPos(pos) {
-         if (mods.hasFlag(Flags.TRAIT)) {
-           if (!isEmpty(argumentss))
-             syntaxError(superpos, "traits cannot have supercall arguments", false)
-           Template(ps, body)
-         } else {
-           Template(ps, constrMods, vparamss, argumentss, body)
-         }
-      }
-      (self, impl)
+        else { acceptEmptyTemplateBody("`{' expected"); (emptyValDef, List()) }
+      (self, atPos(pos) { Template(ps, constrMods, vparamss, argss.toList, body) })
     }
 
 ////////// TEMPLATES ////////////////////////////////////////////////////////////
 
     /** TemplateBody ::= [nl] `{' TemplateStatSeq `}'
      */
-    def templateBody(): (ValDef, List[Tree], int, List[List[Tree]]) = {
+    def templateBody(): (ValDef, List[Tree]) = {
       accept(LBRACE)
-      val result @ (self, stats, superpos, superargss) = templateStatSeq()
+      val result @ (self, stats) = templateStatSeq()
       accept(RBRACE)
-      if (stats.isEmpty) (self, List(EmptyTree), Position.NOPOS, superargss) else result
+      if (stats.isEmpty) (self, List(EmptyTree)) else result
     }
 
     /** Refinement ::= [nl] `{' RefineStat {semi RefineStat} `}'
@@ -2165,11 +2139,9 @@ trait Parsers requires SyntaxAnalyzer {
      *                     | super ArgumentExprs {ArgumentExprs}
      *                     |
      */
-    def templateStatSeq(): (ValDef, List[Tree], int, List[List[Tree]]) = {
+    def templateStatSeq(): (ValDef, List[Tree]) = {
       var self: ValDef = emptyValDef
-      var stats = new ListBuffer[Tree]
-      var superpos = Position.NOPOS
-      val superargss = new ListBuffer[List[Tree]]
+      val stats = new ListBuffer[Tree]
       if (isExprIntro) {
         val first = expr(InTemplate)
         if (in.token == ARROW) {
@@ -2189,25 +2161,12 @@ trait Parsers requires SyntaxAnalyzer {
         } else if (isDefIntro || isModifier || in.token == LBRACKET /*todo: remove */ || in.token == AT) {
           val annots = annotations()
           stats ++ joinComment(defOrDcl(modifiers() withAnnotations annots))
-        } else if (in.token == SUPERCALL) {
-          superpos = in.skipToken()
-          stats = new ListBuffer[Tree] ++ (stats.toList map markPreSuper)
-          while (in.token == LPAREN) { superargss += argumentExprs() }
         } else if (!isStatSep) {
           syntaxErrorOrIncomplete("illegal start of definition", true)
         }
         if (in.token != RBRACE && in.token != EOF) acceptStatSep()
       }
-      if (!superargss.hasNext) superargss += List()
-      (self, stats.toList, superpos, superargss.toList)
-    }
-
-    private def markPreSuper(stat: Tree): Tree = stat match {
-      case ValDef(mods, name, tpt, rhs) =>
-        copy.ValDef(stat, mods | Flags.PRESUPER, name, tpt, rhs)
-      case _ =>
-        syntaxError(stat.pos, "only value definitions may precede super call", false)
-        stat
+      (self, stats.toList)
     }
 
     /** RefineStatSeq    ::= RefineStat {semi RefineStat}

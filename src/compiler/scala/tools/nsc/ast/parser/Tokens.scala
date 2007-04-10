@@ -69,7 +69,6 @@ object Tokens {
   final val RETURN = 57
   final val MATCH = 58
   final val REQUIRES = 59
-  final val SUPERCALL = 60
 
   /** special symbols */
   final val COMMA = 61

@@ -451,15 +451,22 @@ trait Trees requires Global {
         if (inIDE && vd.symbol != NoSymbol)
           ret.symbol = vd.symbol
         ret
-       }));
-    if (vparamss1.isEmpty ||
-        !vparamss1.head.isEmpty && (vparamss1.head.head.mods.flags & IMPLICIT) != 0)
-      vparamss1 = List() :: vparamss1;
-    val superRef: Tree = Select(Super(nme.EMPTY.toTypeName, nme.EMPTY.toTypeName), nme.CONSTRUCTOR)
-    val superCall = posAssigner.atPos(parents.head.pos) { (superRef /: argss) (Apply) }
-    val constr: Tree =
-      DefDef(constrMods, nme.CONSTRUCTOR, List(), vparamss1, TypeTree(), superCall)
-    Template(parents, List.flatten(vparamss) ::: constr :: body)
+       }))
+    val constrs =
+      if (constrMods hasFlag TRAIT) {
+        if (body forall treeInfo.isInterfaceMember) List()
+        else List(
+          DefDef(NoMods, nme.MIXIN_CONSTRUCTOR, List(), List(List()), TypeTree(), Block(List(), Literal(()))))
+      } else {
+        if (vparamss1.isEmpty ||
+            !vparamss1.head.isEmpty && (vparamss1.head.head.mods.flags & IMPLICIT) != 0)
+          vparamss1 = List() :: vparamss1;
+        val superRef: Tree = Select(Super(nme.EMPTY.toTypeName, nme.EMPTY.toTypeName), nme.CONSTRUCTOR)
+        val superCall = posAssigner.atPos(parents.head.pos) { (superRef /: argss) (Apply) }
+        List(
+          DefDef(constrMods, nme.CONSTRUCTOR, List(), vparamss1, TypeTree(), Block(List(superCall), Literal(()))))
+      }
+    Template(parents, List.flatten(vparamss) ::: constrs ::: body)
   }
 
   /** Block of expressions (semicolon separated expressions) */

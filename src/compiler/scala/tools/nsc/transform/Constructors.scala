@@ -91,7 +91,8 @@ abstract class Constructors extends Transform {
           new ChangeOwnerTraverser(oldowner, constr.symbol)(tree))
 
       def canBeMoved(tree: Tree) = tree match {
-        case ValDef(_, _, _, _) => !thisRefSeen
+        //todo: eliminate thisRefSeen
+        case ValDef(mods, _, _, _) => (mods hasFlag PRESUPER | PARAMACCESSOR) || !thisRefSeen
         case _ => false
       }
 

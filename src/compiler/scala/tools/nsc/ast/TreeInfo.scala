@@ -120,6 +120,8 @@ abstract class TreeInfo {
   def isSelfConstrCall(tree: Tree): boolean = tree match {
     case Ident(nme.CONSTRUCTOR) =>
       true
+    case Select(This(_), nme.CONSTRUCTOR) =>
+      true
     case TypeApply(constr, _) =>
       isSelfConstrCall(constr)
     case Apply(constr, _) =>
@@ -148,21 +150,27 @@ abstract class TreeInfo {
   /** The first constructor definitions in `stats' */
   def firstConstructor(stats: List[Tree]): Tree = stats match {
     case List() => EmptyTree
-    case (constr @ DefDef(_, nme.CONSTRUCTOR, _, _, _, _)) :: _ => constr
+    case (constr @ DefDef(_, name, _, _, _, _)) :: _
+    if (name == nme.CONSTRUCTOR || name == nme.MIXIN_CONSTRUCTOR) => constr
     case _ :: stats1 => firstConstructor(stats1)
   }
-/*
-  /** The super call that calls mixin `mix' in stats */
-  def superCall(stats: List[Tree], mix: Name): Tree = stats match {
-    case scall @ Apply(Select(Super(_, mix1), name), List()) :: _
-    if ((name == nme.CONSTRUCTOR || name == nme.MIXIN_CONSTRUCTOR) && mix1 == mix) =>
-      scall
-    case _ :: stats1 =>
-      superCall(stats1, name)
-    case _ =>
-      assert(false, "no supercall to " + mix + " in " + stats)
+
+  /** The reference to super in the body of a primary constructor */
+  def superRef(tree: Tree): Tree = tree match {
+    case Block(stats, _) if !stats.isEmpty => superRef(stats.last)
+    case Apply(sr, _) => sr
+    case _ => EmptyTree
   }
-*/
+
+  /** The value definitions marked PRESUPER in this statement sequence */
+  def preSuperFields(stats: List[Tree]) = stats filter isPreSuper
+
+  def isPreSuper(tree: Tree) = tree match {
+    case ValDef(mods, _, _, _) => mods hasFlag PRESUPER
+    case _ => false
+  }
+
+
   /** Is name a left-associative operator? */
   def isLeftAssoc(operator: Name): boolean =
     operator.length > 0 && operator(operator.length - 1) != ':';

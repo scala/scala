@@ -37,24 +37,12 @@ trait Scanners requires SyntaxAnalyzer {
     /** the base of a number */
     var base: int = 0
 
-    /** further lookahead tokens after this one */
-    var following: TokenData = null
-
-    def copyFrom(td: TokenData) {
+    def copyFrom(td: TokenData) = {
       this.token = td.token
       this.pos = td.pos
       this.lastPos = td.lastPos
       this.name = td.name
       this.base = td.base
-      td.token = EMPTY
-    }
-
-    def pushFrom(td: TokenData) {
-      if (token != EMPTY) {
-        following = new TokenData
-        following copyFrom this
-      }
-      this copyFrom td
     }
   }
 
@@ -158,44 +146,34 @@ trait Scanners requires SyntaxAnalyzer {
         fetchToken()
       } else {
         this copyFrom next
-        if (next.following != null) {
-          next copyFrom next.following
-          next.following = null
-        }
+        next.token = EMPTY
       }
 
       if (token == CASE) {
         prev copyFrom this
         fetchToken()
         if (token == CLASS) {
-          this copyFrom prev
           token = CASECLASS
+          lastPos = prev.lastPos
         } else if (token == OBJECT) {
-          this copyFrom prev
           token = CASEOBJECT
+          lastPos = prev.lastPos
         } else {
-          next pushFrom this
+          next copyFrom this
           this copyFrom prev
         }
-      } else if (token == SUPER && next.token == EMPTY) {
-        prev copyFrom this
-        fetchToken()
-        val isSuperCall = token == LPAREN
-        next pushFrom this
-        this copyFrom prev
-        if (isSuperCall) token = SUPERCALL
       } else if (token == SEMI) {
         prev copyFrom this
         fetchToken()
         if (token != ELSE) {
-          next pushFrom this
+          next copyFrom this
           this copyFrom prev
         }
       }
 
       if (afterLineEnd() && inLastOfStat(lastToken) && inFirstOfStat(token) &&
           (sepRegions.isEmpty || sepRegions.head == RBRACE)) {
-        next pushFrom this
+        next copyFrom this
         pos = in.lineStartPos
         if (settings.migrate.value) newNewLine = lastToken != RBRACE && token != EOF;
         token = if (in.lastBlankLinePos > lastPos) NEWLINES else NEWLINE

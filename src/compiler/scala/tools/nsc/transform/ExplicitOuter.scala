@@ -91,10 +91,6 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
    *      </p>
    *    </li>
    *    <li>
-   *      Add a mixin constructor <code>$init$</code> to all mixins except interfaces
-   *      Leave all other types unchanged. todo: move to later
-   *    </li>
-   *    <li>
    *      Make all super accessors and modules in traits non-private, mangling
    *      their names.
    *    </li>
@@ -346,9 +342,7 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
           if (sym.isClassConstructor) {
             rhs match {
               case Literal(_) =>
-                // replace unit rhs () by empty block {()}
-                val rhs1 = Block(List(), rhs) setPos rhs.pos setType rhs.tpe
-                transform(copy.DefDef(tree, mods, name, tparams, vparamss, tpt, rhs1))
+                Predef.error("unexpected case") //todo: remove
               case _ =>
                 val clazz = sym.owner
                 val vparamss1 =

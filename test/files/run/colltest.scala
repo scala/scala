@@ -1,6 +1,6 @@
 import collection.mutable._
 class TestSet(s0: Set[int], s1: Set[int]) {
-  val Iterations = 1000000
+  val Iterations = 10
   val Range = 100000
   val testEachStep = false
   val Threshold = 20000

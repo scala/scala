@@ -1,0 +1,4 @@
+patternalts.scala:3: error: illegal variable in pattern alternative
+    case List(x) | List() => Console.println(x)
+              ^
+one error found
