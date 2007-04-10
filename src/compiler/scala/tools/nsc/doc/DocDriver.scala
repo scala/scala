@@ -1,9 +1,19 @@
+/* NSC -- new Scala compiler
+ * Copyright 2007-2008 LAMP/EPFL
+ * @author  Sean McDirmid
+ */
+// $Id: $
+
 package scala.tools.nsc.doc;
+
 import scala.collection.jcl;
 import symtab.Flags._;
 import scala.xml._;
 
-abstract class DocDriver extends ModelFrames with ModelToXML  {
+/**
+ *  @author Sean McDirmid
+ */
+abstract class DocDriver extends ModelFrames with ModelToXML {
   import global._;
 
   object additions extends jcl.LinkedHashSet[Symbol];
@@ -25,7 +35,7 @@ abstract class DocDriver extends ModelFrames with ModelToXML  {
 
     def g(pkg : Package, clazz : ClassOrObject) : Unit = {
       allClasses(pkg) += clazz;
-      clazz.decls.map(._2).foreach{
+      clazz.decls.map(._2).foreach {
       case clazz : ClassOrObject =>
         g(pkg, clazz);
       case _ =>

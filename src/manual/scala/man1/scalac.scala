@@ -123,6 +123,10 @@ object scalac extends Command {
           CmdOption("r", Argument("path")),
           "List of assemblies referenced by the program (only relevant with -target:msil)"),
         Definition(
+          CmdOption("addparams"),
+          SeqPara(
+            "")),
+        Definition(
           CmdOption("deprecation"),
           SeqPara(
             "Indicate whether source should be compiled with deprecation " &
