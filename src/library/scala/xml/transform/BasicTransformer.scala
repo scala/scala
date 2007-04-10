@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -11,7 +11,6 @@
 
 package scala.xml.transform
 
-
 /** A class for XML transformations.
  *
  *  @author  Burak Emir
@@ -19,28 +18,36 @@ package scala.xml.transform
  */
 abstract class BasicTransformer extends Function1[Node,Node] {
 
-  protected case class NeedsCopy(result: Seq[Node]) extends java.lang.Throwable
+  protected case class NeedsCopy(result: Seq[Node]) extends Throwable
 
   /** Returns a new node buffer with the first <code>pos</code> elements
    *  from <code>ns</code>.
+   *
+   *  @param pos ..
+   *  @param ns  ..
+   *  @return    ..
    */
-  protected def buffer(pos: Int, ns :Seq[Node]): NodeBuffer = {
+  protected def buffer(pos: Int, ns: Seq[Node]): NodeBuffer = {
     val nb = new NodeBuffer()
     var jt = ns.elements
     var j = 0; while (j < pos-1) {
       nb.append(jt.next)
-      j = j + 1
+      j += 1
     }
     nb
   }
 
-  /** turns a nodebuffer into a sequence, so hashcode works */
+  /** Turns a nodebuffer into a sequence, so hashcode works.
+   *
+   *  @param nb ..
+   *  @return   ..
+   */
   protected def freeze(nb: NodeBuffer): Seq[Node] = {
     val arr = new Array[Node](nb.length)
     var i = 0
     val it = nb.elements; while (it.hasNext) {
       arr(i) = it.next
-      i = i + 1
+      i += 1
     }
     val seq: Seq[Node] = arr
     seq
@@ -79,7 +86,7 @@ abstract class BasicTransformer extends Function1[Node,Node] {
         if (!unchanged(n, n2)) {
           throw NeedsCopy(n2)
         }
-        i = i + 1
+        i += 1
       }
       ns
     } catch {
