@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -13,8 +13,8 @@ package scala.xml.parsing
 
 import scala.collection.mutable.{HashMap, Map}
 import scala.io.Source
-import scala.xml.dtd._
 import scala.util.logging.Logged
+import scala.xml.dtd._
 
 /** class that handles markup - provides callback methods to MarkupParser.
  *  the default is nonvalidating behaviour
@@ -59,7 +59,7 @@ abstract class MarkupHandler extends AnyRef with Logged {
 
  //def checkChildren(pos:int, pre: String, label:String,ns:NodeSeq): Unit = {}
 
-  def endDTD(n:String): Unit = {}
+  def endDTD(n: String): Unit = {}
 
   /** callback method invoked by MarkupParser after start-tag of element.
    *
@@ -68,7 +68,7 @@ abstract class MarkupHandler extends AnyRef with Logged {
    *  @param label    the local name
    *  @param attrs    the attributes (metadata)
    */
-  def elemStart(pos: int, pre: String, label: String, attrs: MetaData, scope:NamespaceBinding): Unit = {}
+  def elemStart(pos: int, pre: String, label: String, attrs: MetaData, scope: NamespaceBinding): Unit = {}
 
   /** callback method invoked by MarkupParser after end-tag of element.
    *

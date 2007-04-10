@@ -107,19 +107,19 @@ class XMLEventReader extends Iterator[XMLEvent] {
     final def elem(pos: int, pre: String, label: String, attrs: MetaData, pscope: NamespaceBinding, nodes: NodeSeq): NodeSeq =
       NodeSeq.Empty
 
-    def procInstr(pos: Int, target: String, txt: String) {
+    def procInstr(pos: Int, target: String, txt: String): NodeSeq = {
       setEvent(ElemStart(null, "comm", null, null)); doNotify
     }
 
-    def comment(pos: Int, txt: String) {
+    def comment(pos: Int, txt: String): NodeSeq = {
       setEvent(ElemStart(null, "comm", null, null)); doNotify
     }
 
-    def entityRef(pos: Int, n: String) {
+    def entityRef(pos: Int, n: String): NodeSeq = {
       setEvent(ElemStart(null, "eref", null, null)); doNotify
     }
 
-    def text(pos: Int, txt:String) {
+    def text(pos: Int, txt:String): NodeSeq = {
       setEvent(ElemStart(null, "tex", null, null)); doNotify
     }
 
