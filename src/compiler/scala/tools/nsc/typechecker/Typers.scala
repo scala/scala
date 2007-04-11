@@ -772,7 +772,7 @@ trait Typers requires Analyzer {
         // A method to replace a super reference by a New in a supercall
         def transformSuperCall(scall: Tree): Tree = (scall: @unchecked) match {
           case Apply(fn, args) =>
-            copy.Apply(scall, transformSuperCall(fn), args)
+            copy.Apply(scall, transformSuperCall(fn), args map (.duplicate))
           case Select(Super(_, _), nme.CONSTRUCTOR) =>
             copy.Select(
               scall,
