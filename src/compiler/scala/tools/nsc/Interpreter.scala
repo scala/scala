@@ -493,8 +493,8 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
     val boundNames =
       defNames ::: valAndVarNames ::: moduleNames ::: classNames ::: typeNames
 
-    /** names to print out to the user after evaluation */
-    def namesToPrintForUser = valAndVarNames
+    /** the line of code to compute */
+    def toCompute = line
 
     /** generate the source code for the object that computes this request */
     def objectSourceCode: String =
@@ -510,8 +510,7 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
         if (needsVarName)
           code.print("  val " + varName + " = ")
 
-        // the line of code to compute
-        code.println(line)
+        code.println(toCompute)
 
         code.println(importsTrailer)
 
@@ -529,7 +528,7 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
       stringFrom(code => {
         code.println("object " + resultObjectName)
         code.println("{ val result: String = {")
-        code.println(objectName + ";")  // evaluate the object, to make sure its constructor is run
+        code.println(objectName + accessPath + ";")  // evaluate the object, to make sure its constructor is run
         code.print("\"\"")  // print an initial empty string, so later code can
                             // uniformly be: + morestuff
         resultExtractionCode(code)
@@ -538,7 +537,7 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
       })
 
     def resultExtractionCode(code: PrintWriter): Unit =
-      for (val vname <- namesToPrintForUser) {
+      for (val vname <- valAndVarNames) {
         code.print(" + \"" + vname + ": " + typeOf(vname) +
                    " = \" + " + objectName + accessPath +
                    "." + vname + " + \"\\n\"")
@@ -645,11 +644,17 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
   /** Assignment of a single variable: lhs = exp */
   private class AssignReq(val lhs: Name, line: String, lineName: String)
   extends Request(line, lineName) {
-    override def resultExtractionCode(code: PrintWriter): Unit = {
-      super.resultExtractionCode(code)
-      code.println(" + \"" + lhs + " = \" + " + lhs)
+    override val needsVarName = true
+
+    /** Perform the assignment, and then return the new value */
+    override def toCompute = "{" + line + ";" + lhs + "}"
+
+    /** Print out lhs instead of the generated varName */
+    override def resultExtractionCode(code: PrintWriter) {
+      code.print(" + \"" + lhs + ": " + typeOf(compiler.encode(varName)) +
+                 " = \" + " + objectName + accessPath +
+                 "." + varName + " + \"\\n\"")
     }
-    override def namesToPrintForUser = Nil
   }
 
   /** A single expression */
@@ -708,7 +713,7 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
   extends Request(line, lineName) {
     override val boundNames = Nil
     override def resultExtractionCode(code: PrintWriter): Unit = {
-      code.println("+ \"" + trees.head.toString + "\"")
+      code.println("+ \"" + trees.head.toString + "\\n\"")
     }
   }
 }
