@@ -598,7 +598,9 @@ trait Typers requires Analyzer {
             tree setType tree.tpe
           } else if (tree.hasSymbol && ((mode & (POLYmode | TAPPmode)) == (POLYmode | TAPPmode)) &&             // (7.1) @M: check kind-arity (full checks are done in checkKindBounds in Infer)
                      tree.symbol.typeParams.length != pt.typeParams.length &&
-                     !(tree.symbol==AnyClass || tree.symbol==AllClass || pt == WildcardType )) { //@M Any and Nothing are kind-polymorphic -- WildcardType is only used when typing type arguments to an overloaded method, before the overload is resolved
+                     !(tree.symbol==AnyClass || tree.symbol==AllClass || pt == WildcardType )) { //@M Any and Nothing are kind-polymorphic
+                       // WildcardType is only used when typing type arguments to an overloaded method, before the overload is resolved
+                       // (or in the case of an error type) -- see case TypeApply in typed1
               errorTree(tree, tree.symbol+" takes "+reporter.countElementsAsString(tree.symbol.typeParams.length, "type parameter")+
                               ", expected: "+reporter.countAsString(pt.typeParams.length))
               tree setType tree.tpe
@@ -2334,7 +2336,7 @@ trait Typers requires Analyzer {
                         //@M! the polytype denotes the expected kind
                         (arg, tparam) => typedHigherKindedType(arg, makePolyType(tparam.typeParams, AnyClass.tpe))
                       } else {
-                        assert(fun1.symbol.info.isInstanceOf[OverloadedType])
+                        assert(fun1.symbol.info.isInstanceOf[OverloadedType] || fun1.symbol.isError)
                       // @M this branch is hit for an overloaded polymorphic type.
                       // Until the right alternative is known, be very liberal,
                       // typedTypeApply will find the right alternative and then do the same check as
