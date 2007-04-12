@@ -43,7 +43,8 @@
   -->
 
   <property name="fjbg.jar" value="${lib.dir}/fjbg.jar"/>
-  <property name="ant.jar" value="/usr/share/java/ant.jar"/>
+  <property name="ant.jar" value="${ant.home}/lib/ant.jar"/>
+
 
   <!-- Location of build products properties -->
   <property name="build.dir" value="${topdir}/simpbuild"/>
