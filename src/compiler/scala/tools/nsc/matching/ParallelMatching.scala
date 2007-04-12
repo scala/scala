@@ -532,40 +532,45 @@ trait ParallelMatching requires (transform.ExplicitOuter with PatternMatchers wi
 
   /** returns the condition in "if(cond) k1 else k2"
    */
-  def condition(tpe: Type, scrut: Symbol) = {
+  def condition(tpe: Type, scrut: Symbol): Tree = {
     val res = condition1(tpe, scrut)
     DEBUG("condition, tpe = "+tpe+", scrut.tpe = "+scrut.tpe+", res = "+res)
     res
   }
-  def condition1(tpe: Type, scrut: Symbol) = {
+  def condition1(tpe: Type, scrut: Symbol): Tree = {
+    assert (scrut ne NoSymbol)
+    condition(tpe, Ident(scrut) . setType (scrut.tpe) . setSymbol (scrut))
+  }
+
+  def condition(tpe: Type, scrutineeTree: Tree): Tree = {
     assert(  tpe ne NoType  )
-    assert(scrut ne NoSymbol)
+    assert(scrutineeTree.tpe ne NoType)
     if(tpe.isInstanceOf[SingletonType] && !tpe.isInstanceOf[ConstantType]) {
-      if(scrut.tpe <:< definitions.AnyRefClass.tpe)
-        Eq(gen.mkAttributedRef(tpe.symbol), Ident(scrut))             // object
+      if(scrutineeTree.tpe <:< definitions.AnyRefClass.tpe)
+        Eq(gen.mkAttributedRef(tpe.symbol), scrutineeTree)             // object
       else
-        Equals(gen.mkAttributedRef(tpe.symbol), Ident(scrut))             // object
+        Equals(gen.mkAttributedRef(tpe.symbol), scrutineeTree)             // object
     } else if(tpe.isInstanceOf[ConstantType]) {
       val value = tpe.asInstanceOf[ConstantType].value
       //if(false && value.isInstanceOf[NamedConstant])
       //  Equals(Ident(scrut), value.asInstanceOf[NamedConstant].tree)             // constant
       //assert(scrut.tpe <:< definitions.AnyRefClass.tpe, "stupid, should be caught by type checker "+value)
       //else
-      if(value == Constant(null) && scrut.tpe <:< definitions.AnyRefClass.tpe)
-        Eq(Ident(scrut), Literal(value))             // constant
+      if(value == Constant(null) && scrutineeTree.tpe <:< definitions.AnyRefClass.tpe)
+        Eq(scrutineeTree, Literal(value))             // constant
       else
-        Equals(Ident(scrut), Literal(value))             // constant
-    } else if(scrut.tpe <:< tpe && tpe <:< definitions.AnyRefClass.tpe)
-      NotNull(Ident(scrut))
+        Equals(scrutineeTree, Literal(value))             // constant
+    } else if(scrutineeTree.tpe <:< tpe && tpe <:< definitions.AnyRefClass.tpe)
+      NotNull(scrutineeTree)
     else if(tpe.prefix.symbol.isTerm && tpe.symbol.linkedModuleOfClass != NoSymbol) { // object
-      Console.println("iT"+tpe.prefix.symbol.isTerm)
-      Console.println("lmoc"+tpe.symbol.linkedModuleOfClass)
-      Eq(gen.mkAttributedRef(tpe.prefix, tpe.symbol.linkedModuleOfClass), Ident(scrut))
+      //Console.println("iT"+tpe.prefix.symbol.isTerm)
+      //Console.println("lmoc"+tpe.symbol.linkedModuleOfClass)
+      Eq(gen.mkAttributedRef(tpe.prefix, tpe.symbol.linkedModuleOfClass), scrutineeTree)
     } else
       //Console.println(tpe.prefix.symbol.isTerm)
       //Console.println(tpe.symbol)
       //Console.println(tpe.symbol.linkedModuleOfClass)
-      gen.mkIsInstanceOf(Ident(scrut), tpe)
+      gen.mkIsInstanceOf(scrutineeTree, tpe)
   }
 
   def needsOuterTest(tpe2test:Type, scrutinee:Type) = tpe2test.normalize match {

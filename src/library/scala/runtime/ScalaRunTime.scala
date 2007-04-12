@@ -71,6 +71,7 @@ object ScalaRunTime {
   def _toString(x: Product): String =
     caseFields(x).mkString(x.productPrefix + "(", ",", ")")
 
+  // todo: use productArity, productElement
   def _hashCode(x: Product): Int = {
     var code = x.getClass().hashCode()
     val arr =  x.arity
@@ -82,6 +83,7 @@ object ScalaRunTime {
     code
   }
 
+  // todo: use productArity, productElement
   def _equals(x: Product, y: Any): Boolean = y match {
     case y1: Product if x.arity == y1.arity =>
       val arity = x.arity
@@ -93,6 +95,7 @@ object ScalaRunTime {
       false
   }
 
+  // todo: use productArity, productElement
   def _equalsWithVarArgs(x: Product, y: Any): Boolean = y match {
     case y1: Product if x.arity == y1.arity =>
       val arity = x.arity

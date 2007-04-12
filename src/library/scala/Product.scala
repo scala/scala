@@ -26,11 +26,24 @@ trait Product extends AnyRef {
    *  @throws IndexOutOfBoundsException
    *  @return  ...
    */
-  def element(n: Int): Any
+  def productElement(n: Int): Any = element(n)
+
+  /** for a case class <code>A(x_1,...,x_k))</code>, returns <code>x_(i+1)</code>
+   *  for <code>0 &lt;= i &lt; k</code>
+   *
+   *  @param  n the position of the n-th element
+   *  @throws IndexOutOfBoundsException
+   *  @return  ...
+   */
+  @deprecated def element(n: Int): Any /* = productElement(n) */
 
   /** return k for a product <code>A(x_1,...,x_k))</code>
    */
-  def arity: Int
+  def productArity: Int = arity
+
+  /** return k for a product <code>A(x_1,...,x_k))</code>
+   */
+  @deprecated def arity: Int /* = productElement(n) */
 
   /**
    *  By default the empty string. Implementations may override this

@@ -1168,6 +1168,10 @@ print()
             val ntpe = node.tpe
             var cond: Tree = null
 
+          // new, but doesn't work
+          // cond = if(ignoreSelectorType) Literal(Constant(true))
+          //       else condition(ntpe, selector.duplicate)
+
           // if type 2 test is same as static type, then just null test
           if(isSubType(selector.tpe, ntpe) && isSubType(ntpe, defs.AnyRefClass.tpe)) {
             cond = NotNull(selector.duplicate)

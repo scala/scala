@@ -72,14 +72,32 @@ trait SyntheticMethods requires Analyzer {
       typed(DefDef(method, vparamss => Literal(Constant(clazz.name.decode))))
     }
 
-    def productArityMethod(nargs:Int ): Tree = {
-      val method = syntheticMethod(nme.arity, FINAL, PolyType(List(), IntClass.tpe))
+    /*deprecated*/ def OLDproductArityMethod(nargs:Int ): Tree = {
+      val method = syntheticMethod("arity", FINAL, PolyType(List(), IntClass.tpe))
       typed(DefDef(method, vparamss => Literal(Constant(nargs))))
+    }
+
+    def productArityMethod(nargs:Int ): Tree = {
+      val method = syntheticMethod(nme.productArity, FINAL, PolyType(List(), IntClass.tpe))
+      typed(DefDef(method, vparamss => Literal(Constant(nargs))))
+    }
+
+    /*deprecated*/ def OLDproductElementMethod(accs: List[Symbol]): Tree = {
+      //val retTpe = lub(accs map (.tpe.resultType))
+      val method = syntheticMethod("element", FINAL, MethodType(List(IntClass.tpe), AnyClass.tpe/*retTpe*/))
+      typed(DefDef(method, vparamss => Match(Ident(vparamss.head.head), {
+	(for(val (sym,i) <- accs.zipWithIndex) yield {
+	  CaseDef(Literal(Constant(i)),EmptyTree, Ident(sym))
+	}):::List(CaseDef(Ident(nme.WILDCARD), EmptyTree,
+		    Throw(New(TypeTree(IndexOutOfBoundsExceptionClass.tpe), List(List(
+		      Select(Ident(vparamss.head.head), nme.toString_)
+		    ))))))
+      })))
     }
 
     def productElementMethod(accs: List[Symbol]): Tree = {
       //val retTpe = lub(accs map (.tpe.resultType))
-      val method = syntheticMethod(nme.element, FINAL, MethodType(List(IntClass.tpe), AnyClass.tpe/*retTpe*/))
+      val method = syntheticMethod(nme.productElement, FINAL, MethodType(List(IntClass.tpe), AnyClass.tpe/*retTpe*/))
       typed(DefDef(method, vparamss => Match(Ident(vparamss.head.head), {
 	(for(val (sym,i) <- accs.zipWithIndex) yield {
 	  CaseDef(Literal(Constant(i)),EmptyTree, Ident(sym))
@@ -230,9 +248,13 @@ trait SyntheticMethods requires Analyzer {
 
         if (!hasDirectImplementation(nme.productPrefix)) ts += productPrefixMethod
 	val accessors = clazz.caseFieldAccessors
-	if (!hasImplementation(nme.arity))
+	if (!hasImplementation("arity")) // remove after starr update
+	  ts += OLDproductArityMethod(accessors.length)
+	if (!hasImplementation(nme.productArity))
 	  ts += productArityMethod(accessors.length)
-	if (!hasImplementation(nme.element))
+	if (!hasImplementation("element")) // remove after starr update
+	  ts += OLDproductElementMethod(accessors)
+	if (!hasImplementation(nme.productElement))
 	  ts += productElementMethod(accessors)
       }
 

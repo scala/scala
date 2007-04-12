@@ -26,6 +26,7 @@ object genprod {
   val SUP_PRODUCT_ARITY  = 23
   val SUP_TUPLE_ARITY    = 23
   val SUP_FUNCTION_ARITY =  9
+  val SUP_CHOICE_ARITY   =  9 // not implemented yet
 
   def productClassname(i: Int) = "Product"+i
 
@@ -38,6 +39,10 @@ object genprod {
   def functionClassname(i: Int) = "Function"+i
 
   def functionFilename(i: Int) = functionClassname(i)+".scala"
+
+  def choiceClassname(i: Int) = "Choice"+i
+
+  def choiceFilename(i: Int) = choiceClassname(i)+".scala"
 
   def targs(i: Int) =
     for (val j <- List.range(1, i+1)) yield "T" + j
@@ -81,6 +86,9 @@ object genprod {
 
   def functionFiles =
     for(val i <- List.range(0, SUP_FUNCTION_ARITY)) yield FunctionFile.make(i)
+
+  //def choiceFiles =
+  //  for(val i <- List.range(2, SUP_CHOICE_ARITY)) yield ChoiceFile.make(i)
 
   def allfiles =
     productFiles ::: tupleFiles ::: functionFiles
@@ -303,7 +311,13 @@ trait {productClassname(i)}{__typeArgs__} extends Product {{
    *  The arity of this product.
    *  @return {i}
    */
-  override def arity = {i}
+  @deprecated override def arity = productArity
+
+  /**
+   *  The arity of this product.
+   *  @return {i}
+   */
+  override def productArity = {i}
 
   /**
    *  Returns the n-th projection of this product if 0&amp;lt;=n&amp;lt;arity,
@@ -313,7 +327,17 @@ trait {productClassname(i)}{__typeArgs__} extends Product {{
    *  @return  same as _(n+1)
    *  @throws  IndexOutOfBoundsException
    */
-  override def element(n: Int) = n match {{
+  @deprecated override def element(n: Int) = productElement(n)
+
+  /**
+   *  Returns the n-th projection of this product if 0&amp;lt;=n&amp;lt;arity,
+   *  otherwise <code>null</code>.
+   *
+   *  @param n number of the projection to be returned
+   *  @return  same as _(n+1)
+   *  @throws  IndexOutOfBoundsException
+   */
+  override def productElement(n: Int) = n match {{
     {for(val Tuple2(m, j) <- mdefs(i).zip(List.range(0, i)))
      yield "case "+j+" => "+m+"\n    "}case _ => throw new IndexOutOfBoundsException(n.toString())
   }}
