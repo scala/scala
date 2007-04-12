@@ -1009,7 +1009,7 @@ trait Parsers requires SyntaxAnalyzer {
       }
     }
 
-    /* SimpleExpr    ::= new AnnotType {`(' [Exprs [`,']] `)'} {`with' AnnotType} [TemplateBody]
+    /* SimpleExpr    ::= new ClassTemplate
      *                |  BlockExpr
      *                |  SimpleExpr1
      * SimpleExpr1   ::= literal
@@ -1047,19 +1047,8 @@ trait Parsers requires SyntaxAnalyzer {
           canApply = false
         case NEW =>
           t = atPos(in.skipToken()) {
-            val parents = new ListBuffer[Tree] + annotType(false)
-            val argss = new ListBuffer[List[Tree]]
-            if (in.token == LPAREN)
-              do { argss += argumentExprs() } while (in.token == LPAREN)
-            else argss += List()
-            while (in.token == WITH) {
-              in.nextToken()
-              parents += annotType(false)
-            }
-            newLineOptWhenFollowedBy(LBRACE)
-            val (self, stats) = if (in.token == LBRACE) templateBody()
-                                    else (emptyValDef, List())
-            makeNew(parents.toList, self, stats, argss.toList)
+            val (parents, argss, self, stats) = template(false)
+            makeNew(parents, self, stats, argss)
           }
           canApply = false
         case _ =>
@@ -1133,50 +1122,54 @@ trait Parsers requires SyntaxAnalyzer {
       ts.toList
     }
 
-    /** CaseClause : =>= case Pattern [if PostfixExpr] `=>' Block
+    /** CaseClause ::= case Pattern [Guard] `=>' Block
      */
     def caseClause(): CaseDef =
       atPos(accept(CASE)) {
         val pat = pattern()
-        val guard =
-          if (in.token == IF) { in.nextToken(); stripParens(postfixExpr()) }
-          else EmptyTree
-        makeCaseDef(pat, guard, atPos(accept(ARROW))(block()))
+        val gd = guard()
+        makeCaseDef(pat, gd, atPos(accept(ARROW))(block()))
       }
 
+    /** Guard ::= if PostfixExpr
+     */
+    def guard(): Tree =
+      if (in.token == IF) { in.nextToken(); stripParens(postfixExpr()) }
+      else EmptyTree
+
     /** Enumerators ::= Generator {semi Enumerator}
-     *  Enumerator  ::= Generator
-     *                | val Pattern1 `=' Expr
-     *                | Expr
+     *  Enumerator  ::=  Generator
+     *                |  Guard
+     *                |  val Pattern1 `=' Expr
      */
     def enumerators(): List[Enumerator] = {
       val newStyle = in.token != VAL
-      val enums = new ListBuffer[Enumerator] + generator(false)
+      val enums = new ListBuffer[Enumerator]
+      generator(enums, false)
       while (isStatSep) {
         in.nextToken()
-        enums += {
-          if (newStyle) {
-            if (in.token == IF) { in.nextToken(); Filter(expr()) }
-            else generator(true)
-          } else {
-            if (in.token == VAL) generator(true)
-            else Filter(expr())
-          }
+        if (newStyle) {
+          if (in.token == IF) enums += Filter(guard())
+            else generator(enums, true)
+        } else {
+          if (in.token == VAL) generator(enums, true)
+          else enums += Filter(expr())
         }
       }
       enums.toList
     }
 
-    /** Generator ::= val Pattern1 `<-' Expr
+    /** Generator ::= val Pattern1 `<-' Expr [Guard]
      */
-    def generator(eqOK: boolean): Enumerator = {
+    def generator(enums: ListBuffer[Enumerator], eqOK: boolean) {
       val pos = in.currentPos;
       if (in.token == VAL) in.nextToken()
       val pat = pattern1(false)
       val tok = in.token
       if (tok == EQUALS && eqOK) in.nextToken()
       else accept(LARROW)
-      makeGenerator(pos, pat, tok == EQUALS, expr)
+      enums += makeGenerator(pos, pat, tok == EQUALS, expr)
+      if (in.token == IF) enums += Filter(guard())
     }
 
 //////// PATTERNS ////////////////////////////////////////////////////////////
@@ -1972,8 +1965,8 @@ trait Parsers requires SyntaxAnalyzer {
     }
 
     /** ClassDef ::= Id [TypeParamClause] Annotations
-                     [AccessModifier] ClassParamClauses RequiresTypeOpt ClassTemplate
-     *  TraitDef ::= Id [TypeParamClause] RequiresTypeOpt TraitTemplate
+                     [AccessModifier] ClassParamClauses RequiresTypeOpt ClassTemplateOpt
+     *  TraitDef ::= Id [TypeParamClause] RequiresTypeOpt TraitTemplateOpt
      */
     def classDef(mods: Modifiers): ClassDef =
       atPos(in.skipToken()) {
@@ -1992,7 +1985,7 @@ trait Parsers requires SyntaxAnalyzer {
           else (accessModifierOpt(), paramClauses(name, implicitClassViews, mods.hasFlag(Flags.CASE)))
         val thistpe = requiresTypeOpt()
         val (self0, template) =
-          classTemplate(mods, name, constrMods withAnnotations constrAnnots, vparamss)
+          templateOpt(mods, name, constrMods withAnnotations constrAnnots, vparamss)
         val mods1 = if (mods.hasFlag(Flags.TRAIT) &&
                         (template.body forall treeInfo.isInterfaceMember))
                       mods | Flags.INTERFACE
@@ -2003,12 +1996,12 @@ trait Parsers requires SyntaxAnalyzer {
         result
       }
 
-    /** ObjectDef       ::= Id ClassTemplate
+    /** ObjectDef       ::= Id ClassTemplateOpt
      */
     def objectDef(mods: Modifiers): ModuleDef =
       atPos(in.skipToken()) {
         val name = ident()
-        val (self, template0) = classTemplate(mods, name, NoMods, List())
+        val (self, template0) = templateOpt(mods, name, NoMods, List())
         val template = self match {
           case ValDef(mods, name, tpt, EmptyTree) if (name != nme.WILDCARD) =>
             val vd = ValDef(mods, name, tpt, This(nme.EMPTY.toTypeName)) setPos self.pos
@@ -2019,12 +2012,58 @@ trait Parsers requires SyntaxAnalyzer {
         ModuleDef(mods, name, template)
       }
 
-    /** ClassTemplate      ::= [extends TemplateParents] [TemplateBody]
-     *  TemplateParents    ::= AnnotType {`(' [Exprs] `)'} {`with' AnnotType}
-     *  TraitTemplate      ::= [extends MixinParents] [TemplateBody]
-     *  MixinParents       ::= AnnotType {with AnnotType}
+
+    /** ClassParents       ::= AnnotType {`(' [Exprs [`,']] `)'} {with AnnotType}
+     *  TraitParents       ::= AnnotType {with AnnotType}
      */
-    def classTemplate(mods: Modifiers, name: Name, constrMods: Modifiers, vparamss: List[List[ValDef]]): (ValDef, Template) = {
+    def templateParents(isTrait: boolean): (List[Tree], List[List[Tree]]) = {
+      val parents = new ListBuffer[Tree] + annotType(false)
+      val argss = new ListBuffer[List[Tree]]
+      if (in.token == LPAREN && !isTrait)
+        do { argss += argumentExprs() } while (in.token == LPAREN)
+      else argss += List()
+      while (in.token == WITH) {
+        in.nextToken()
+        parents += annotType(false)
+      }
+      (parents.toList, argss.toList)
+    }
+
+    /** ClassTemplate ::= [EarlyDefs with] ClassParents [TemplateBody]
+     *  TraitTemplate ::= [EarlyDefs with] TraitParents [TemplateBody]
+     *  EarlyDefs     ::= `{' [EarlyDef {semi EarlyDef}] `}'
+     *  EarlyDef      ::= Annotations Modifiers PatDef
+     */
+    def template(isTrait: boolean): (List[Tree], List[List[Tree]], ValDef, List[Tree]) = {
+      newLineOptWhenFollowedBy(LBRACE)
+      if (in.token == LBRACE) {
+        val (self, body) = templateBody()
+        if (in.token == WITH && (self eq emptyValDef)) {
+          val vdefs: List[ValDef] = body flatMap {
+            case vdef @ ValDef(mods, name, tpt, rhs) if !(mods hasFlag Flags.DEFERRED) =>
+              List(copy.ValDef(vdef, mods | Flags.PRESUPER, name, tpt, rhs))
+            case stat =>
+              syntaxError(stat.pos, "only concrete field definitions allowed in early object initialization section", false)
+              List()
+          }
+          in.nextToken()
+          val (parents, argss) = templateParents(isTrait)
+          val (self1, body1) = templateBodyOpt()
+          (parents, argss, self1, vdefs ::: body1)
+        } else {
+          (List(), List(List()), self, body)
+        }
+      } else {
+        val (parents, argss) = templateParents(isTrait)
+        val (self, body) = templateBodyOpt()
+        (parents, argss, self, body)
+      }
+    }
+
+    /** ClassTemplateOpt ::= [extends ClassTemplate | TemplateBody]
+     *  TraitTemplateOpt ::= [extends TraitTemplate | TemplateBody]
+     */
+    def templateOpt(mods: Modifiers, name: Name, constrMods: Modifiers, vparamss: List[List[ValDef]]): (ValDef, Template) = {
       val pos = in.currentPos;
       def acceptEmptyTemplateBody(msg: String): unit = {
         if (in.token == LPAREN && settings.migrate.value)
@@ -2032,38 +2071,21 @@ trait Parsers requires SyntaxAnalyzer {
         if (!(isStatSep || in.token == COMMA || in.token == RBRACE || in.token == EOF))
           syntaxError(msg, true)
       }
-      val parents = new ListBuffer[Tree]
-      val argss = new ListBuffer[List[Tree]]
-      if (in.token == EXTENDS) {
-        in.nextToken()
-        val parent = annotType(false)
-        // System.err.println("classTempl: " + parent)
-        parents += parent
-        if (in.token == LPAREN && !mods.hasFlag(Flags.TRAIT))
-          do { argss += argumentExprs() } while (in.token == LPAREN)
-        else argss += List()
-        while (in.token == WITH) {
+      val (parents0, argss, self, body) =
+        if (in.token == EXTENDS) {
           in.nextToken()
-          parents += annotType(false)
+          template(mods hasFlag Flags.TRAIT)
+        } else {
+          newLineOptWhenFollowedBy(LBRACE)
+          val (self, body) =
+            if (in.token == LBRACE) templateBody()
+            else { acceptEmptyTemplateBody("`extends' or `{' expected"); (emptyValDef, List()) }
+          (List(), List(List()), self, body)
         }
-      } else {
-        if (in.token == WITH && settings.migrate.value)
-          syntaxErrorMigrate("`extends' needed before `with'")
-        newLineOptWhenFollowedBy(LBRACE)
-        if (in.token != LBRACE) acceptEmptyTemplateBody("`extends' or `{' expected")
-        argss += List()
-      }
-      if (name != nme.ScalaObject.toTypeName)
-        parents += scalaScalaObjectConstr
-      if (mods.hasFlag(Flags.CASE)) {
-        parents += productConstr
-      }
-      val ps = parents.toList
-      newLineOptWhenFollowedBy(LBRACE)
-      val (self, body) =
-        if (in.token == LBRACE) templateBody()
-        else { acceptEmptyTemplateBody("`{' expected"); (emptyValDef, List()) }
-      (self, atPos(pos) { Template(ps, constrMods, vparamss, argss.toList, body) })
+      var parents = parents0
+      if (name != nme.ScalaObject.toTypeName) parents = parents ::: List(scalaScalaObjectConstr)
+      if (mods.hasFlag(Flags.CASE)) parents = parents ::: List(productConstr)
+      (self, atPos(pos) { Template(parents, constrMods, vparamss, argss, body) })
     }
 
 ////////// TEMPLATES ////////////////////////////////////////////////////////////
@@ -2075,6 +2097,12 @@ trait Parsers requires SyntaxAnalyzer {
       val result @ (self, stats) = templateStatSeq()
       accept(RBRACE)
       if (stats.isEmpty) (self, List(EmptyTree)) else result
+    }
+
+    def templateBodyOpt(): (ValDef, List[Tree]) = {
+      newLineOptWhenFollowedBy(LBRACE)
+      if (in.token == LBRACE) templateBody()
+      else (emptyValDef, List())
     }
 
     /** Refinement ::= [nl] `{' RefineStat {semi RefineStat} `}'

@@ -120,7 +120,25 @@ abstract class Constructors extends Transform {
       val defBuf = new ListBuffer[Tree]
       val constrStatBuf = new ListBuffer[Tree]
       val constrPrefixBuf = new ListBuffer[Tree]
-      constrBody.stats foreach (constrStatBuf +=)
+      val presupers = treeInfo.preSuperFields(stats)
+      for (val stat <- constrBody.stats) {
+        constrStatBuf += stat
+        stat match {
+          case ValDef(mods, name, _, _) if (mods hasFlag PRESUPER) =>
+            constrStatBuf +=
+              localTyper.typed {
+                atPos(stat.pos) {
+                  val fields = presupers filter (
+                    vdef => nme.localToGetter(vdef.name) == name)
+                  assert(fields.length == 1)
+                  Assign(
+                    gen.mkAttributedRef(clazz.thisType, fields.head.symbol),
+                    Ident(stat.symbol))
+                }
+              }
+          case _ =>
+        }
+      }
 
       for (val stat <- stats) stat match {
         case DefDef(mods, name, tparams, vparamss, tpt, rhs) =>

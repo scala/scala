@@ -452,11 +452,19 @@ trait Trees requires Global {
           ret.symbol = vd.symbol
         ret
        }))
+    val (vdefs, rest) = body span treeInfo.isPreSuper
+    val (lvdefs, gvdefs) = List.unzip {
+      vdefs map {
+        case vdef @ ValDef(mods, name, tpt, rhs) =>
+          (copy.ValDef(vdef, Modifiers(PRESUPER), name, tpt, rhs),
+           copy.ValDef(vdef, mods, name, TypeTree(), EmptyTree))
+      }
+    }
     val constrs =
       if (constrMods hasFlag TRAIT) {
         if (body forall treeInfo.isInterfaceMember) List()
         else List(
-          DefDef(NoMods, nme.MIXIN_CONSTRUCTOR, List(), List(List()), TypeTree(), Block(List(), Literal(()))))
+          DefDef(NoMods, nme.MIXIN_CONSTRUCTOR, List(), List(List()), TypeTree(), Block(lvdefs, Literal(()))))
       } else {
         if (vparamss1.isEmpty ||
             !vparamss1.head.isEmpty && (vparamss1.head.head.mods.flags & IMPLICIT) != 0)
@@ -464,9 +472,9 @@ trait Trees requires Global {
         val superRef: Tree = Select(Super(nme.EMPTY.toTypeName, nme.EMPTY.toTypeName), nme.CONSTRUCTOR)
         val superCall = posAssigner.atPos(parents.head.pos) { (superRef /: argss) (Apply) }
         List(
-          DefDef(constrMods, nme.CONSTRUCTOR, List(), vparamss1, TypeTree(), Block(List(superCall), Literal(()))))
+          DefDef(constrMods, nme.CONSTRUCTOR, List(), vparamss1, TypeTree(), Block(lvdefs ::: List(superCall), Literal(()))))
       }
-    Template(parents, List.flatten(vparamss) ::: constrs ::: body)
+    Template(parents, gvdefs ::: List.flatten(vparamss) ::: constrs ::: rest)
   }
 
   /** Block of expressions (semicolon separated expressions) */

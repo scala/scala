@@ -1319,7 +1319,7 @@ trait Types requires SymbolTable {
         if(attributes.isEmpty)
           ""
         else
-          attributes.mkString("", " ", "")
+          attributes.mkString("@", " @", " ")
 
       attString + tp
     }

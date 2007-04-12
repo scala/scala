@@ -305,7 +305,8 @@ trait Namers requires Analyzer {
           case ValDef(mods, name, tp, rhs) =>
             if (context.owner.isClass && (mods.flags & (PRIVATE | LOCAL)) != (PRIVATE | LOCAL)) {
               val accflags = ACCESSOR |
-                (if ((mods.flags & MUTABLE) != 0) mods.flags & ~MUTABLE else mods.flags | STABLE)
+                (if ((mods.flags & MUTABLE) != 0) mods.flags & ~MUTABLE & ~PRESUPER
+                 else mods.flags & ~PRESUPER | STABLE)
               val getter = owner.newMethod(tree.pos, name).setFlag(accflags)
               getter.setInfo(namerOf(getter).getterTypeCompleter(tree))
               setPrivateWithin(tree, getter, mods)
@@ -668,7 +669,7 @@ trait Namers requires Analyzer {
                   ErrorType
                 } else {
         	  tpt.tpe = deconstIfNotFinal(sym,
-                newTyper(typer1.context.make(vdef, sym)).computeType(rhs, WildcardType))
+                    newTyper(typer1.context.make(vdef, sym)).computeType(rhs, WildcardType))
         	  tpt.tpe
                 }
               } else typer1.typedType(tpt).tpe

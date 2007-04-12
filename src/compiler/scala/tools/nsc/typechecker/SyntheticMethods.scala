@@ -40,16 +40,17 @@ trait SyntheticMethods requires Analyzer {
    */
   def addSyntheticMethods(templ: Template, clazz: Symbol, unit: CompilationUnit): Template = {
 
-    def hasImplementation(name: Name): Boolean = {
+    def hasImplementation(name: Name): boolean = {
       val sym = clazz.info.nonPrivateMember(name)
-      (sym.isTerm &&
-       (sym.owner == clazz ||
-        !(ObjectClass isNonBottomSubClass sym.owner) && !(sym hasFlag DEFERRED)))
+      sym.isTerm && !(sym hasFlag DEFERRED)
     }
 
-    def hasDirectImplementation(name: Name): Boolean = {
-      val sym = clazz.info.nonPrivateMember(name)
-      (sym.isTerm && sym.owner == clazz)
+    def hasOverridingImplementation(meth: Symbol): boolean = {
+      val sym = clazz.info.nonPrivateMember(meth.name)
+      sym.alternatives exists { sym =>
+        sym != meth && !(sym hasFlag DEFERRED) &&
+        (clazz.thisType.memberType(sym) matches clazz.thisType.memberType(meth))
+      }
     }
 
     def syntheticMethod(name: Name, flags: Int, tpe: Type) =
@@ -239,22 +240,22 @@ trait SyntheticMethods requires Analyzer {
 
         if (clazz.info.nonPrivateDecl(nme.tag) == NoSymbol) ts += tagMethod
         if (clazz.isModuleClass) {
-          if (!hasImplementation(nme.toString_)) ts += moduleToStringMethod
+          if (!hasOverridingImplementation(Object_toString)) ts += moduleToStringMethod
         } else {
-          if (!hasImplementation(nme.hashCode_)) ts += forwardingMethod(nme.hashCode_)
-          if (!hasImplementation(nme.toString_)) ts += forwardingMethod(nme.toString_)
-          if (!hasImplementation(nme.equals_)) ts += equalsMethod
+          if (!hasOverridingImplementation(Object_hashCode)) ts += forwardingMethod(nme.hashCode_)
+          if (!hasOverridingImplementation(Object_toString)) ts += forwardingMethod(nme.toString_)
+          if (!hasOverridingImplementation(Object_equals)) ts += equalsMethod
         }
 
-        if (!hasDirectImplementation(nme.productPrefix)) ts += productPrefixMethod
+        if (!hasOverridingImplementation(Product_productPrefix)) ts += productPrefixMethod
 	val accessors = clazz.caseFieldAccessors
 	if (!hasImplementation("arity")) // remove after starr update
 	  ts += OLDproductArityMethod(accessors.length)
-	if (!hasImplementation(nme.productArity))
+	if (!hasOverridingImplementation(Product_productArity))
 	  ts += productArityMethod(accessors.length)
 	if (!hasImplementation("element")) // remove after starr update
 	  ts += OLDproductElementMethod(accessors)
-	if (!hasImplementation(nme.productElement))
+	if (!hasOverridingImplementation(Product_productElement))
 	  ts += productElementMethod(accessors)
       }
 

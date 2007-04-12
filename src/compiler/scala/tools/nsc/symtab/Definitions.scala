@@ -123,6 +123,10 @@ trait Definitions requires SymbolTable {
           typeRef(sym.typeConstructor.prefix, sym, elems)
         } else NoType;
 
+    var ProductRootClass: Symbol = _
+      def Product_productArity = getMember(ProductRootClass, nme.productArity)
+      def Product_productElement = getMember(ProductRootClass, nme.productElement)
+      def Product_productPrefix = getMember(ProductRootClass, nme.productPrefix)
     val MaxProductArity = 22
     /* <unapply> */
     val ProductClass: Array[Symbol] = new Array(MaxProductArity + 1)
@@ -791,6 +795,7 @@ trait Definitions requires SymbolTable {
       //UnsealedClass = getClass("scala.unsealed") //todo: remove once 2.4 is out.
       UncheckedClass = getClass("scala.unchecked")
       OptionClass = getClass("scala.Option")
+      ProductRootClass = getClass("scala.Product")
 
       for (val i <- 1 to MaxTupleArity) {
         TupleClass(i)   = getClass(  "scala.Tuple" + i)
