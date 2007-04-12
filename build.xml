@@ -72,7 +72,7 @@ PROPERTIES
 INITIALISATION
 ============================================================================ -->
 
-  <target name="deps">
+  <target name="ant-init">
   <!-- Making sure lib/ contains everything that is needed -->
     <fail message="A required library is missing in 'lib/'. The README file describes what should be there.">
       <condition><not><and>
@@ -93,7 +93,7 @@ INITIALISATION
     </fail>
   </target>
 
-  <target name="init" depends="deps" unless="init.avail">
+  <target name="init" depends="ant-init" unless="init.avail">
   <!-- Making sure enough memory is available -->
     <propertyregex
       property="memory.set" input="${env.ANT_OPTS}" select="\1"
@@ -1202,22 +1202,22 @@ CLEAN
     </sequential>
   </macrodef>
 
-  <target name="clean" description="Removes QUICK, STRAP and API build products">
+  <target name="clean" depends="ant-init" description="Removes QUICK, STRAP and API build products">
     <remove dir="${quick.dir}"/>
     <remove dir="${strap.dir}"/>
     <remove dir="${api.dir}"/>
   </target>
 
-  <target name="clean.build" depends="deps"
+  <target name="clean.build" depends="ant-init"
     description="Removes all build products">
     <remove dir="${build.dir}"/>
   </target>
 
-  <target name="clean.msil" description="Removes all MSIL build products">
+  <target name="clean.msil"  depends="ant-init" description="Removes all MSIL build products">
     <remove dir="${msil.dir}"/>
   </target>
 
-  <target name="clean.all" depends="deps"
+  <target name="clean.all" depends="ant-init"
     description="Removes all build products and distributions">
     <remove dir="${build.dir}"/>
     <remove dir="${dist.dir}"/>
