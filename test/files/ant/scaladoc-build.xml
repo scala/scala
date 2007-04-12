@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- $Id$ -->
+<!-- $Id: $ -->
 
-<project name="fsc" default="run" basedir=".">
+<project name="scaladoc" default="run" basedir=".">
 
   <import file="${basedir}/imported.xml"/>
 
@@ -12,7 +12,7 @@ BUILD
   <target name="build" depends="init">
     <echo level="verbose" message="build.dir=${build.dir}"/>
     <mkdir dir="${build.dir}"/>
-    <fsc
+    <scaladoc
       srcdir="${source.dir}"
       includes="**/${ant.project.name}*.scala"
       deprecation="yes" unchecked="yes"

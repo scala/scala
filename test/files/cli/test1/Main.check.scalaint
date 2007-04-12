@@ -24,7 +24,7 @@ Type in expressions to have them evaluated.
 Type :help for more information.
 
 scala> 1: test 1 passed (1)
-line0: scala.Unit = {}
+unnamed0: scala.Unit = ()
 
 scala> 
 This is an interpreter for Scala.
@@ -32,7 +32,7 @@ Type in expressions to have them evaluated.
 Type :help for more information.
 
 scala> 1: test 2 passed (1)
-line0: scala.Unit = {}
+unnamed0: scala.Unit = ()
 
 scala> 
 This is an interpreter for Scala.
@@ -40,6 +40,6 @@ Type in expressions to have them evaluated.
 Type :help for more information.
 
 scala> 1: test 3 passed (1)
-line0: scala.Unit = {}
+unnamed0: scala.Unit = ()
 
 scala> 

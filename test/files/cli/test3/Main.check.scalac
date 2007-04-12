@@ -1,5 +1,5 @@
-Scala compiler error: bad option: '-dd'
-  Scala compiler -help  gives more information
+scalac error: bad option: '-dd'
+  scalac -help  gives more information
 Usage: scalac <options | source files>
 where possible options include: 
   -doc                            Generate documentation
@@ -17,6 +17,8 @@ where possible options include:
   -documenttitle <documenttitle>  Specify document title of generated HTML documentation
   -target:<target>                Specify which backend to use (jvm-1.5,jvm-1.4,msil,cldc)
   -migrate                        Assist in migrating from Scala version 1.0
+  -o <file>                       Name of the output assembly (only relevant with -target:msil)
+  -r <path>                       List of assemblies referenced by the program (only relevant with -target:msil)
   -debug                          Output debugging messages
   -deprecation                    enable detailed deprecation warnings
   -unchecked                      enable detailed unchecked warnings
@@ -37,12 +39,15 @@ where possible options include:
   -browse:<phase>                 Browse the abstract syntax tree after <phase>
   -stop:<phase>                   Stop after phase <phase>
   -log:<phase>                    Log operations in <phase>
+  -logall                         Log all operations
   -version                        Print product version and exit
   -help                           Print a synopsis of standard options
   -nouescape                      disables handling of \u unicode escapes
   -Xinline                        Perform inlining when possible
+  -XO                             Optimize. implies -Xinline, -Xcloselim and -Xdce
   -Xcloselim                      Perform closure elimination
   -Xdce                           Perform dead code elimination
+  -Xwarndeadcode                  Emit warnings for dead code
   -XbytecodeRead                  Enable bytecode reader.
   -Xdetach                        Perform detaching of remote closures
   -Xshowcls <class>               Show class info
@@ -52,9 +57,7 @@ where possible options include:
   -Xprintpos                      Print tree positions (as offsets)
   -Xscript                        compile script file
   -Xexperimental                  enable experimental extensions
-  -Xunapply                       enable unapply pattern matching
   -Xplugtypes                     parse but ignore annotations in more locations
   -Xkilloption                    optimizes option types
-  -XprintOuterMatches             prints outer-checks caused by pattern matching
 
 one error found

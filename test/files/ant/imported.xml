@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- $Id: $ -->
+<!-- $Id$ -->
 
 <project name="imported" default="run" basedir=".">
 
