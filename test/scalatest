@@ -703,7 +703,7 @@ if [ "$TEST_ALL" = "true" ]; then
         auto | script ) FILES_SCRIPT="$FILES_SCRIPT $SRCDIR/script";;
     esac;
     case "$TEST_TYPE" in
-        auto | ant ) FILES_ANT="$FILES_ANT $SRCDIR/ant";;
+        ant ) FILES_ANT="$FILES_ANT $SRCDIR/ant";;
     esac;
 fi;
 
