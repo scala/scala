@@ -123,10 +123,6 @@ object scalac extends Command {
           CmdOption("r", Argument("path")),
           "List of assemblies referenced by the program (only relevant with -target:msil)"),
         Definition(
-          CmdOption("addparams"),
-          SeqPara(
-            "")),
-        Definition(
           CmdOption("deprecation"),
           SeqPara(
             "Indicate whether source should be compiled with deprecation " &
@@ -139,7 +135,8 @@ object scalac extends Command {
           SeqPara(
             "Enable detailed unchecked warnings",
             "Non variable type-arguments in type patterns are unchecked " &
-            "since they are eliminated by erasure")),
+            "since they are eliminated by erasure",
+            "Available since Scala version 2.3.0")),
         Definition(
           CmdOption("resident"),
           "Compiler stays resident, files to compile are read from standard " &
