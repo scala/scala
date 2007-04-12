@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2002-2007, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -28,7 +28,7 @@ object ScalaRunTime {
   val DoubleTag = ".Double"
   val BooleanTag = ".Boolean"
 
-  def isArray(x:AnyRef): Boolean = x != null && x.getClass.isArray
+  def isArray(x: AnyRef): Boolean = x != null && x.getClass.isArray
   def isValueTag(tag: String) = tag.charAt(0) == '.'
   def isValueClass(clazz: Class) = clazz.isPrimitive()
 
@@ -61,51 +61,48 @@ object ScalaRunTime {
   }
 
   def caseFields(x: Product): List[Any] = {
-    val arity = x.arity
+    val arity = x.productArity
     def fields(from: Int): List[Any] =
       if (from == arity) List()
-      else x.element(from) :: fields(from + 1)
+      else x.productElement(from) :: fields(from + 1)
     fields(0)
   }
 
   def _toString(x: Product): String =
     caseFields(x).mkString(x.productPrefix + "(", ",", ")")
 
-  // todo: use productArity, productElement
   def _hashCode(x: Product): Int = {
     var code = x.getClass().hashCode()
-    val arr =  x.arity
+    val arr =  x.productArity
     var i = 0
     while (i < arr) {
-      code = code * 41 + x.element(i).hashCode()
-      i = i + 1
+      code = code * 41 + x.productElement(i).hashCode()
+      i += 1
     }
     code
   }
 
-  // todo: use productArity, productElement
   def _equals(x: Product, y: Any): Boolean = y match {
-    case y1: Product if x.arity == y1.arity =>
-      val arity = x.arity
+    case y1: Product if x.productArity == y1.productArity =>
+      val arity = x.productArity
       var i = 0
-      while (i < arity && x.element(i) == y1.element(i))
-        i = i + 1
+      while (i < arity && x.productElement(i) == y1.productElement(i))
+        i += 1
       i == arity
     case _ =>
       false
   }
 
-  // todo: use productArity, productElement
   def _equalsWithVarArgs(x: Product, y: Any): Boolean = y match {
-    case y1: Product if x.arity == y1.arity =>
-      val arity = x.arity
+    case y1: Product if x.productArity == y1.productArity =>
+      val arity = x.productArity
       var i = 0
-      while (i < arity - 1 && x.element(i) == y1.element(i))
-        i = i + 1;
+      while (i < arity - 1 && x.productElement(i) == y1.productElement(i))
+        i += 1
       i == arity - 1 && {
-        x.element(i) match {
+        x.productElement(i) match {
           case xs: Seq[_] =>
-            y1.element(i) match {
+            y1.productElement(i) match {
               case ys: Seq[_] => xs sameElements ys
             }
         }

@@ -2,8 +2,8 @@
 ##############################################################################
 #                      __                                                    #
 #      ________ ___   / /  ___     Scala Tools Launch Script                 #
-#     / __/ __// _ | / /  / _ |    (c) 2002-2006, LAMP/EPFL                  #
-#   __\ \/ /__/ __ |/ /__/ __ |                                              #
+#     / __/ __// _ | / /  / _ |    (c) 2002-2007, LAMP/EPFL                  #
+#   __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/                    #
 #  /____/\___/_/ |_/____/_/ | |                                              #
 #                           |/                                               #
 ##############################################################################
@@ -703,7 +703,7 @@ if [ "$TEST_ALL" = "true" ]; then
         auto | script ) FILES_SCRIPT="$FILES_SCRIPT $SRCDIR/script";;
     esac;
     case "$TEST_TYPE" in
-        ant ) FILES_ANT="$FILES_ANT $SRCDIR/ant";;
+        auto | ant ) FILES_ANT="$FILES_ANT $SRCDIR/ant";;
     esac;
 fi;
 
