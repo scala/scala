@@ -226,8 +226,9 @@ trait Namers requires Analyzer {
       tskolems
     }
 
-    //@M? Replace type parameters with their TypeSkolems, which can later be deskolemized to the original type param
-    // (a skolem is a representation of a bound variable when viewed outside its scope?)
+    /** Replace type parameters with their TypeSkolems, which can later be deskolemized to the original type param
+     * (a skolem is a representation of a bound variable when viewed outside its scope)
+     */
     def skolemize(tparams: List[AbsTypeDef]): unit = {
       val tskolems = newTypeSkolems(tparams map (.symbol))
       for (val (tparam, tskolem) <- tparams zip tskolems) tparam.symbol = tskolem
@@ -368,7 +369,7 @@ trait Namers requires Analyzer {
 // --- Lazy Type Assignment --------------------------------------------------
 
     def typeCompleter(tree: Tree) = new TypeCompleter(tree) {
-      override def complete(sym: Symbol): unit = {  //@M? toString (on sym/tree/...? don't know exactly) will force a lazy type and execute this method (quantum debugging!)
+      override def complete(sym: Symbol): unit = {
         if (settings.debug.value) log("defining " + sym);
         val tp = typeSig(tree)
         sym.setInfo(tp)
@@ -440,15 +441,6 @@ trait Namers requires Analyzer {
       vparamss.map(.map(enterValueParam))
     }
 
-    /** A creator for polytypes. If tparams is empty, simply returns result type */
-    private def makePolyType(tparams: List[Symbol], tpe: Type): Type =
-      if (tparams.isEmpty) tpe
-      else
-        PolyType(tparams, tpe match {
-          case PolyType(List(), tpe1) => tpe1
-          case _ => tpe
-        });
-
     private def templateSig(templ0: Template): Type = {
       var templ = templ0
       val clazz = context.owner
@@ -491,7 +483,7 @@ trait Namers requires Analyzer {
         context.scope enter self.symbol
         clazz.thisSym.name = self.name
       }
-      makePolyType(tparamSyms, templateSig(impl))
+      parameterizedType(tparamSyms, templateSig(impl))
     }
 
     private def methodSig(tparams: List[AbsTypeDef], vparamss: List[List[ValDef]],
@@ -512,7 +504,7 @@ trait Namers requires Analyzer {
       }
 
       def thisMethodType(restype: Type) =
-        makePolyType(
+        parameterizedType(
           tparamSyms,
           if (vparamSymss.isEmpty) PolyType(List(), restype)
           else (vparamSymss :\ restype)(makeMethodType))
@@ -623,11 +615,11 @@ trait Namers requires Analyzer {
       var ht = typer.typedType(hi).tpe
       if (ht.isError) ht = AnyClass.tpe
 
-      makePolyType(tparamSyms,  mkTypeBounds(lt, ht)) //@M
+      parameterizedType(tparamSyms,  mkTypeBounds(lt, ht)) //@M
     }
 
     private def aliasTypeSig(tpsym: Symbol, tparams: List[AbsTypeDef], rhs: Tree): Type =
-      makePolyType(typer.reenterTypeParams(tparams), typer.typedType(rhs).tpe);
+      parameterizedType(typer.reenterTypeParams(tparams), typer.typedType(rhs).tpe);
 
     def typeSig(tree: Tree): Type = {
       val sym: Symbol = tree.symbol

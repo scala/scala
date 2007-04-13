@@ -1693,7 +1693,7 @@ trait Typers requires Analyzer {
           // of the type arguments as we don't know which alternative to choose... here we do
           val args1 = map2Conserve(args, tparams) {
             //@M! the polytype denotes the expected kind
-            (arg, tparam) => typedHigherKindedType(arg, makePolyType(tparam.typeParams, AnyClass.tpe))
+            (arg, tparam) => typedHigherKindedType(arg, parameterizedType(tparam.typeParams, AnyClass.tpe))
           }
           typedTypeApply(fun, args1)
         case PolyType(tparams, restpe) if (tparams.length != 0) =>
@@ -2029,9 +2029,6 @@ trait Typers requires Analyzer {
         }
       }
 
-      // @M: copied from Namers
-      def makePolyType(tparams: List[Symbol], tpe: Type) = if (tparams.isEmpty) tpe else PolyType(tparams, tpe)
-
       // begin typed1
       val sym: Symbol = tree.symbol
       if (sym ne null) sym.initialize
@@ -2336,7 +2333,7 @@ trait Typers requires Analyzer {
           // @M maybe the well-kindedness check should be done when checking the type arguments conform to the type parameters' bounds?
           val args1 = if(args.length == tparams.length) map2Conserve(args, tparams) {
                         //@M! the polytype denotes the expected kind
-                        (arg, tparam) => typedHigherKindedType(arg, makePolyType(tparam.typeParams, AnyClass.tpe))
+                        (arg, tparam) => typedHigherKindedType(arg, parameterizedType(tparam.typeParams, AnyClass.tpe))
                       } else {
                         assert(fun1.symbol.info.isInstanceOf[OverloadedType] || fun1.symbol.isError)
                       // @M this branch is hit for an overloaded polymorphic type.
@@ -2496,7 +2493,7 @@ trait Typers requires Analyzer {
           } else if (tparams.length == args.length) {
             // @M: kind-arity checking is done here and in adapt, full kind-checking is in checkKindBounds (in Infer)
             val args1 = map2Conserve(args, tparams) {
-              (arg, tparam) => typedHigherKindedType(arg, makePolyType(tparam.typeParams, AnyClass.tpe)) //@M! the polytype denotes the expected kind
+              (arg, tparam) => typedHigherKindedType(arg, parameterizedType(tparam.typeParams, AnyClass.tpe)) //@M! the polytype denotes the expected kind
             }
             val argtypes = args1 map (.tpe)
             val owntype = if (tpt1.symbol.isClass || tpt1.symbol.isTypeMember) // @M! added the latter condition

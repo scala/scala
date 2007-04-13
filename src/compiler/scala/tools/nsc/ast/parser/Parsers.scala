@@ -1937,7 +1937,7 @@ trait Parsers requires SyntaxAnalyzer {
             in.nextToken()
             AliasTypeDef(mods, name, tparams, typ())
           case SUPERTYPE | SUBTYPE | SEMI | NEWLINE | NEWLINES | COMMA | RBRACE =>
-            typeBounds(mods | Flags.DEFERRED, name, tparams) // @M: last arg is new
+            typeBounds(mods | Flags.DEFERRED, name, tparams)
           case _ =>
             syntaxErrorOrIncomplete("`=', `>:', or `<:' expected", true)
             EmptyTree
@@ -2048,14 +2048,14 @@ trait Parsers requires SyntaxAnalyzer {
           }
           in.nextToken()
           val (parents, argss) = templateParents(isTrait)
-          val (self1, body1) = templateBodyOpt()
+          val (self1, body1) = templateBodyOpt(isTrait)
           (parents, argss, self1, vdefs ::: body1)
         } else {
           (List(), List(List()), self, body)
         }
       } else {
         val (parents, argss) = templateParents(isTrait)
-        val (self, body) = templateBodyOpt()
+        val (self, body) = templateBodyOpt(isTrait)
         (parents, argss, self, body)
       }
     }
@@ -2064,22 +2064,14 @@ trait Parsers requires SyntaxAnalyzer {
      *  TraitTemplateOpt ::= [extends TraitTemplate | TemplateBody]
      */
     def templateOpt(mods: Modifiers, name: Name, constrMods: Modifiers, vparamss: List[List[ValDef]]): (ValDef, Template) = {
-      val pos = in.currentPos
-      def acceptEmptyTemplateBody(msg: String) {
-        if (in.token == LPAREN && settings.migrate.value)
-          syntaxErrorMigrate("traits may not have parameters")
-        if (!(isStatSep || in.token == COMMA || in.token == RBRACE || in.token == EOF))
-          syntaxError(msg, true)
-      }
+      val pos = in.currentPos;
       val (parents0, argss, self, body) =
         if (in.token == EXTENDS) {
           in.nextToken()
           template(mods hasFlag Flags.TRAIT)
         } else {
           newLineOptWhenFollowedBy(LBRACE)
-          val (self, body) =
-            if (in.token == LBRACE) templateBody()
-            else { acceptEmptyTemplateBody("`extends' or `{' expected"); (emptyValDef, List()) }
+          val (self, body) = templateBodyOpt(mods hasFlag Flags.TRAIT)
           (List(), List(List()), self, body)
         }
       var parents = parents0
@@ -2099,10 +2091,16 @@ trait Parsers requires SyntaxAnalyzer {
       if (stats.isEmpty) (self, List(EmptyTree)) else result
     }
 
-    def templateBodyOpt(): (ValDef, List[Tree]) = {
+    def templateBodyOpt(isTrait: boolean): (ValDef, List[Tree]) = {
       newLineOptWhenFollowedBy(LBRACE)
-      if (in.token == LBRACE) templateBody()
-      else (emptyValDef, List())
+      if (in.token == LBRACE) {
+        templateBody()
+      } else {
+        if (in.token == LPAREN)
+          syntaxError((if (isTrait) "parents of traits" else "mixins")+
+                      " may not have parameters", true)
+        (emptyValDef, List())
+      }
     }
 
     /** Refinement ::= [nl] `{' RefineStat {semi RefineStat} `}'

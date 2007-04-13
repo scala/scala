@@ -689,9 +689,11 @@ abstract class RefChecks extends InfoTransform {
         case TypeTree() =>
           new TypeTraverser {
             def traverse(tp: Type): TypeTraverser = tp match {
-              case tr@TypeRef(pre, sym, _) if tr.isHigherKinded => this //@M a higher-kinded typeref doesn't have any args to check
-              case TypeRef(pre, sym, args) => checkBounds(pre, sym.owner, sym.typeParams, args); this
-              case _ => this
+              case TypeRef(pre, sym, args) =>
+                if (!tp.isHigherKinded) checkBounds(pre, sym.owner, sym.typeParams, args)
+                this
+              case _ =>
+                this
             }
           } traverse tree.tpe
 

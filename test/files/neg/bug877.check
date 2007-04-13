@@ -1,4 +1,4 @@
-bug877.scala:3: error: ';' expected but '(' found.
+bug877.scala:3: error: parents of traits may not have parameters
 trait Foo extends A(22A, Bug!) {}
                    ^
 one error found
