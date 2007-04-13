@@ -1213,7 +1213,7 @@ CLEAN
     <remove dir="${build.dir}"/>
   </target>
 
-  <target name="clean.msil"  depends="ant-init" description="Removes all MSIL build products">
+  <target name="clean.msil" depends="ant-init" description="Removes all MSIL build products">
     <remove dir="${msil.dir}"/>
   </target>
 

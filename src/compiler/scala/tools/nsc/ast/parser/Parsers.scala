@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -92,7 +92,7 @@ trait Parsers requires SyntaxAnalyzer {
 
 /////// ERROR HANDLING //////////////////////////////////////////////////////
 
-    private def skip(): unit = {
+    private def skip() {
       //System.out.println("<skipping> " + in.token2string(in.token))//DEBUG
       var nparens = 0
       var nbraces = 0
@@ -107,14 +107,14 @@ trait Parsers requires SyntaxAnalyzer {
           case NEWLINES =>
             if (nparens == 0 && nbraces == 0) return
           case RPAREN =>
-            nparens = nparens - 1
+            nparens -= 1
           case RBRACE =>
             if (nbraces == 0) return
-            nbraces = nbraces - 1
+            nbraces -= 1
           case LPAREN =>
-            nparens = nparens + 1
+            nparens += 1
           case LBRACE =>
-            nbraces = nbraces + 1
+            nbraces += 1
           case _ =>
         }
         in.nextToken()
@@ -124,7 +124,7 @@ trait Parsers requires SyntaxAnalyzer {
     def syntaxError(msg: String, skipIt: boolean): unit =
       syntaxError(in.currentPos, msg, skipIt)
 
-    def syntaxError(pos: int, msg: String, skipIt: boolean): unit = {
+    def syntaxError(pos: int, msg: String, skipIt: boolean) {
       if (pos != in.errpos) {
         unit.error(pos, msg)
         in.errpos = pos
@@ -145,7 +145,7 @@ trait Parsers requires SyntaxAnalyzer {
         in.errpos = in.currentPos
       }
 
-    def incompleteInputError(pos: int, msg: String): unit = {
+    def incompleteInputError(pos: int, msg: String) {
       if (pos != in.errpos) {
         unit.incompleteInputError(pos, msg)
         in.errpos = pos
@@ -155,8 +155,8 @@ trait Parsers requires SyntaxAnalyzer {
     def incompleteInputError(msg: String): unit =
       incompleteInputError(in.currentPos, msg)  // in.currentPos should be at the EOF
 
-    def syntaxErrorOrIncomplete(msg: String, skipIt: Boolean): unit = {
-      if(in.token == EOF)
+    def syntaxErrorOrIncomplete(msg: String, skipIt: Boolean) {
+      if (in.token == EOF)
         incompleteInputError(msg)
       else
         syntaxError(in.currentPos, msg, skipIt)
@@ -178,7 +178,7 @@ trait Parsers requires SyntaxAnalyzer {
           in.token2string(token) + " expected but " +
           in.token2string(in.token) + " found."
 
-        if(in.token == EOF)
+        if (in.token == EOF)
           incompleteInputError(posToReport, msg)
         else
           syntaxError(posToReport, msg, true)
@@ -2064,8 +2064,8 @@ trait Parsers requires SyntaxAnalyzer {
      *  TraitTemplateOpt ::= [extends TraitTemplate | TemplateBody]
      */
     def templateOpt(mods: Modifiers, name: Name, constrMods: Modifiers, vparamss: List[List[ValDef]]): (ValDef, Template) = {
-      val pos = in.currentPos;
-      def acceptEmptyTemplateBody(msg: String): unit = {
+      val pos = in.currentPos
+      def acceptEmptyTemplateBody(msg: String) {
         if (in.token == LPAREN && settings.migrate.value)
           syntaxErrorMigrate("traits may not have parameters")
         if (!(isStatSep || in.token == COMMA || in.token == RBRACE || in.token == EOF))
