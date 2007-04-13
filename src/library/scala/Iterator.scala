@@ -13,7 +13,7 @@ package scala
 
 
 import Predef._
-import collection.mutable.{Buffer, ArrayBuffer}
+import collection.mutable.{Buffer, ListBuffer}
 import compat.StringBuilder
 
 /** The <code>Iterator</code> object provides various functions for
@@ -62,10 +62,12 @@ object Iterator {
       private var i = start
       val end = if ((start + length) < xs.length) start else xs.length
       def hasNext: Boolean = i < end
-      def next(): a = if (hasNext) { val x = xs(i) ; i = i + 1 ; x }
-                      else throw new NoSuchElementException("next on empty iterator")
-      def head: a = if (hasNext) xs(i);
-                    else throw new NoSuchElementException("head on empty iterator")
+      def next(): a =
+        if (hasNext) { val x = xs(i) ; i += 1 ; x }
+        else throw new NoSuchElementException("next on empty iterator")
+      def head: a =
+        if (hasNext) xs(i)
+        else throw new NoSuchElementException("head on empty iterator")
   }
 
   /**
@@ -77,7 +79,7 @@ object Iterator {
       private var i = 0
       private val len = str.length()
       def hasNext = i < len
-      def next() = { val c = str charAt i; i = i + 1; c }
+      def next() = { val c = str charAt i; i += 1; c }
       def head = str charAt i
     }
 
@@ -87,9 +89,9 @@ object Iterator {
    */
   def fromProduct(n: Product): Iterator[Any] = new Iterator[Any] {
     private var c: Int = 0
-    private val cmax = n.arity
+    private val cmax = n.productArity
     def hasNext = c < cmax
-    def next() = { val a = n element c; c = c + 1; a }
+    def next() = { val a = n productElement c; c += 1; a }
   }
 
   /**
@@ -126,7 +128,7 @@ object Iterator {
       private var i = lo
       def hasNext: Boolean = if (step > 0) i < end else i > end
       def next(): Int =
-        if (hasNext) { val j = i; i = i + step; j }
+        if (hasNext) { val j = i; i += step; j }
         else throw new NoSuchElementException("next on empty iterator")
       def head: Int =
         if (hasNext) i
@@ -178,7 +180,7 @@ object Iterator {
     new BufferedIterator[Int] {
       private var i = lo
       def hasNext: Boolean = true
-      def next(): Int = { val j = i; i = i + step; j }
+      def next(): Int = { val j = i; i += step; j }
       def head: Int = i
     }
 
@@ -228,7 +230,7 @@ trait Iterator[+A] {
     var remaining = n
     def hasNext = remaining > 0 && Iterator.this.hasNext
     def next(): A =
-      if (hasNext) { remaining = remaining - 1; Iterator.this.next }
+      if (hasNext) { remaining -= 1; Iterator.this.next }
       else throw new NoSuchElementException("next on empty iterator")
   }
 
@@ -367,7 +369,7 @@ trait Iterator[+A] {
     def hasNext = Iterator.this.hasNext
     def next = {
       val ret = (Iterator.this.next, idx)
-      idx = idx + 1
+      idx += 1
       ret
     }
   }
@@ -389,7 +391,7 @@ trait Iterator[+A] {
    */
   def forall(p: A => Boolean): Boolean = {
     var res = true
-    while (res && hasNext) { res = p(next) }
+    while (res && hasNext) res = p(next)
     res
   }
 
@@ -403,7 +405,7 @@ trait Iterator[+A] {
    */
   def exists(p: A => Boolean): Boolean = {
     var res = false
-    while (!res && hasNext) { res = p(next) }
+    while (!res && hasNext) res = p(next)
     res
   }
 
@@ -441,7 +443,7 @@ trait Iterator[+A] {
    */
   def foldLeft[B](z: B)(op: (B, A) => B): B = {
     var acc = z
-    while (hasNext) { acc = op(acc, next) }
+    while (hasNext) acc = op(acc, next)
     acc
   }
 
@@ -523,8 +525,7 @@ trait Iterator[+A] {
       }
       hd
     }
-    def next: A =
-      if (ahead) { ahead = false; hd } else head;
+    def next: A = if (ahead) { ahead = false; hd } else head
     def hasNext: Boolean = ahead || Iterator.this.hasNext
   }
 
@@ -534,7 +535,7 @@ trait Iterator[+A] {
     private var cnt = -1
     def count = cnt
     def hasNext: Boolean = Iterator.this.hasNext
-    def next: A = { cnt = cnt + 1; Iterator.this.next }
+    def next: A = { cnt += 1; Iterator.this.next }
   }
 
   /** Creates two new iterators that both iterate over the same elements
@@ -586,7 +587,7 @@ trait Iterator[+A] {
     var i = start
     while (hasNext) {
       xs(i) = next
-      i = i + 1
+      i += 1
     }
   }
 
@@ -602,10 +603,8 @@ trait Iterator[+A] {
    *  @return  a list which enumerates all elements of this iterator.
    */
   def toList: List[A] = {
-    val res = new collection.mutable.ListBuffer[A]
-    while (hasNext) {
-      res += next
-    }
+    val res = new ListBuffer[A]
+    while (hasNext) res += next
     res.toList
   }
 
@@ -633,10 +632,18 @@ trait Iterator[+A] {
    *  are separated by the string <code>sep</code>.
    *
    *  @param sep separator string.
-   *  @return a string representation of this iterable object. */
+   *  @return a string representation of this iterable object.
+   */
   def mkString(sep: String): String = this.mkString("", sep, "")
 
-  /** Write all elements of this string into given string builder */
+  /** Write all elements of this string into given string builder.
+   *
+   *  @param buf   ...
+   *  @param start the starting string
+   *  @param sep   the separator string
+   *  @param end   the ending string
+   *  @return      ...
+   */
   def addString(buf: StringBuilder, start: String, sep: String, end: String): StringBuilder = {
     buf.append(start)
     val elems = this
