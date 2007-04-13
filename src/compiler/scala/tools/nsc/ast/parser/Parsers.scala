@@ -2071,7 +2071,7 @@ trait Parsers requires SyntaxAnalyzer {
           template(mods hasFlag Flags.TRAIT)
         } else {
           newLineOptWhenFollowedBy(LBRACE)
-          val (self, body) = templateBodyOpt(mods hasFlag Flags.TRAIT)
+          val (self, body) = templateBodyOpt(false)
           (List(), List(List()), self, body)
         }
       var parents = parents0
@@ -2091,13 +2091,13 @@ trait Parsers requires SyntaxAnalyzer {
       if (stats.isEmpty) (self, List(EmptyTree)) else result
     }
 
-    def templateBodyOpt(isTrait: boolean): (ValDef, List[Tree]) = {
+    def templateBodyOpt(traitParentSeen: boolean): (ValDef, List[Tree]) = {
       newLineOptWhenFollowedBy(LBRACE)
       if (in.token == LBRACE) {
         templateBody()
       } else {
         if (in.token == LPAREN)
-          syntaxError((if (isTrait) "parents of traits" else "mixins")+
+          syntaxError((if (traitParentSeen) "parents of traits" else "traits")+
                       " may not have parameters", true)
         (emptyValDef, List())
       }

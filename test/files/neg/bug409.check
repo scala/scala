@@ -1,4 +1,4 @@
-bug409.scala:6: error: mixins may not have parameters
+bug409.scala:6: error: traits may not have parameters
 class Toto extends Expr with Case1(12);
                                   ^
 one error found
