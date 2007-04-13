@@ -66,7 +66,7 @@ trait Trees requires Global {
   abstract class Tree {
     {
       import util.Statistics
-      if (Statistics.enabled) nodeCount = nodeCount + 1
+      if (Statistics.enabled) nodeCount += 1
     }
 
     private var rawpos: PositionType = NoPos
@@ -104,31 +104,34 @@ trait Trees requires Global {
       case t: Tree => this eq t
       case _ => false
     }
+
     def equalsStructure(that: Tree): Boolean = {
-      val this0 = this.asInstanceOf[Product];
-      val that0 = that.asInstanceOf[Product];
-      if (this == that) return true;
-      if (this.getClass != that.getClass) return false;
-      assert(this0.arity == that0.arity);
-      def equals0(thiz : Any, that : Any) : Boolean = thiz match {
-      case thiz : Tree =>
-        thiz.equalsStructure(that.asInstanceOf[Tree]);
-      case thiz : List[_] =>
-        val that0 = that.asInstanceOf[List[Any]];
-        if (thiz.length != that0.length) false;
-        else {
-          val results0 = for (val i <- 0.until(thiz.length).toList)
-            yield equals0(thiz(i), that0(i));
-          results0.foldLeft(true)((x,y) => x && y);
-        }
-      case thiz => thiz == that;
+      val this0 = this.asInstanceOf[Product]
+      val that0 = that.asInstanceOf[Product]
+      if (this == that) return true
+      if (this.getClass != that.getClass) return false
+      assert(this0.productArity == that0.productArity)
+      def equals0(thiz: Any, that: Any): Boolean = thiz match {
+        case thiz: Tree =>
+          thiz.equalsStructure(that.asInstanceOf[Tree])
+        case thiz: List[_] =>
+          val that0 = that.asInstanceOf[List[Any]]
+          if (thiz.length != that0.length) false
+          else {
+            val results0 = for (val i <- 0.until(thiz.length).toList)
+              yield equals0(thiz(i), that0(i))
+            results0.foldLeft(true)((x,y) => x && y)
+          }
+        case thiz =>
+          thiz == that
       }
-      val results = for (val i <- 0.until(this0.arity).toList) yield
-        equals0(this0.element(i), that0.element(i));
-      val b = results.foldLeft(true)((x,y) => x && y);
+      val results = for (val i <- 0.until(this0.productArity).toList) yield
+        equals0(this0.productElement(i), that0.productElement(i))
+      val b = results.foldLeft(true)((x,y) => x && y)
       b && (if (tpe == null || tpe == NoType) that.tpe == null || that.tpe == NoType
             else tpe == that.tpe)
     }
+
     def duplicate: this.type =
       (duplicator transform this).asInstanceOf[this.type]
 
@@ -168,7 +171,7 @@ trait Trees requires Global {
 
   private def syntheticParams(owner: Symbol, mtp: Type): List[List[Symbol]] = {
     var cnt = 0
-    def freshName() = { cnt = cnt + 1; newTermName("x$" + cnt) }
+    def freshName() = { cnt += 1; newTermName("x$" + cnt) }
     def synthetics(mtp: Type): List[List[Symbol]] = mtp match {
       case PolyType(_, restp) =>
         synthetics(restp)
@@ -289,11 +292,10 @@ trait Trees requires Global {
     assert(rhs.isTerm, rhs)
   }
 
-  def ValDef(sym: Symbol, rhs: Tree): ValDef = {
+  def ValDef(sym: Symbol, rhs: Tree): ValDef =
     posAssigner.atPos(sym.pos) {
       ValDef(Modifiers(sym.flags), sym.name, TypeTree(sym.tpe), rhs) setSymbol sym
     }
-  }
 
   def ValDef(sym: Symbol): ValDef = ValDef(sym, EmptyTree)
 
