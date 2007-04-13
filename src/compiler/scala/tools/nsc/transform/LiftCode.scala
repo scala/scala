@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author Gilles Dubochet
  */
 // $Id$
@@ -81,17 +81,22 @@ abstract class LiftCode extends Transform {
         val rsym = reify(tree.symbol);
         if (rsym == reflect.NoSymbol) throw new TypeError("cannot reify symbol: " + tree.symbol)
         else reflect.Select(reify(qual), reify(tree.symbol))
+
       case Literal(constant) =>
         reflect.Literal(constant.value)
+
       case Apply(name, args) if name.toString().startsWith("label$") =>
         env.getTarget(name.toString()) match {
           case None => throw new TypeError("cannot reify tree (no forward jumps allowed): " + tree)
           case Some(label) => reflect.Goto(label)
         }
+
       case Apply(fun, args) =>
         reflect.Apply(reify(fun), args map reify)
+
       case TypeApply(fun, args) =>
         reflect.TypeApply(reify(fun), args map (.tpe) map reify)
+
       case Function(vparams, body) =>
         var env1 = env;
         for (val vparam <- vparams) {
@@ -108,9 +113,13 @@ abstract class LiftCode extends Transform {
       case New(clazz) =>
         val reifiedClass = reify(clazz)
         reflect.New(reifiedClass)
-      case Typed(t, _) => reify(t)
-      case If(cond, thenp, elsep) => reflect.If(reify(cond), reify(thenp), reify(elsep))
-      case Assign(lhs, rhs) => reflect.Assign(reify(lhs), reify(rhs))
+      case Typed(t, _) =>
+        reify(t)
+      case If(cond, thenp, elsep) =>
+        reflect.If(reify(cond), reify(thenp), reify(elsep))
+      case Assign(lhs, rhs) =>
+        reflect.Assign(reify(lhs), reify(rhs))
+
       case LabelDef(name, Nil, body) =>
         val sym = new reflect.LabelSymbol(name.toString())
         env.addTarget(name.toString(), sym)
@@ -183,36 +192,36 @@ abstract class LiftCode extends Transform {
 
     def reify(tp: Type): reflect.Type = tp match {
       case ErrorType =>
-        if (_log_reify_type_) Console.println("cannot handle ErrorType"); reflect.NoType
+        if (_log_reify_type_) println("cannot handle ErrorType"); reflect.NoType
       case WildcardType =>
-        if (_log_reify_type_) Console.println("cannot handle WildcardType"); reflect.NoType
+        if (_log_reify_type_) println("cannot handle WildcardType"); reflect.NoType
       case NoType =>
-        if (_log_reify_type_) Console.println("cannot handle NoType"); reflect.NoType
+        if (_log_reify_type_) println("cannot handle NoType"); reflect.NoType
       case NoPrefix =>
-        if (_log_reify_type_) Console.println("cannot handle NoPrefix"); reflect.NoType
+        if (_log_reify_type_) println("cannot handle NoPrefix"); reflect.NoType
       case ThisType(sym) =>
-        if (_log_reify_type_) Console.println("ThisType ("+sym+")")
+        if (_log_reify_type_) println("ThisType ("+sym+")")
         val rsym = reify(sym)
-        if (_log_reify_type_) Console.println("reified is "+rsym+" cannot handle ThisType "+tp); reflect.NoType
+        if (_log_reify_type_) println("reified is "+rsym+" cannot handle ThisType "+tp); reflect.NoType
       case SingleType(pre, sym) =>
-        if (_log_reify_type_) Console.println("cannot handle SingleType "+tp); reflect.NoType
+        if (_log_reify_type_) println("cannot handle SingleType "+tp); reflect.NoType
       case ConstantType(value) =>
-        if (_log_reify_type_) Console.println("cannot handle ConstantType("+value+")  "+tp); reflect.NoType
+        if (_log_reify_type_) println("cannot handle ConstantType("+value+")  "+tp); reflect.NoType
       case TypeRef(pre, sym, args) =>
-        if (_log_reify_type_) Console.println("TypeRef! try to handle prefix")
+        if (_log_reify_type_) println("TypeRef! try to handle prefix")
         val rpre = reify(pre)
-        if (_log_reify_type_) Console.println("cannot handle TypeRef("+pre+","+sym+","+args+") == "+tp+")"); reflect.NoType
+        if (_log_reify_type_) println("cannot handle TypeRef("+pre+","+sym+","+args+") == "+tp+")"); reflect.NoType
 
       case TypeBounds(lo, hi) =>
-        if (_log_reify_type_) Console.println("cannot handle TypeBounds "+tp); reflect.NoType
+        if (_log_reify_type_) println("cannot handle TypeBounds "+tp); reflect.NoType
       case RefinedType(parents, defs) =>
-        if (_log_reify_type_) Console.println("cannot handle RefinedType "+tp); reflect.NoType
+        if (_log_reify_type_) println("cannot handle RefinedType "+tp); reflect.NoType
       case ClassInfoType(parents, defs, clazz) =>
-        if (_log_reify_type_) Console.println("cannot handle ClassInfoType "+tp); reflect.NoType
+        if (_log_reify_type_) println("cannot handle ClassInfoType "+tp); reflect.NoType
       case MethodType(paramtypes, result) =>
-        if (_log_reify_type_) Console.println("cannot handle MethodType "+tp); reflect.NoType
+        if (_log_reify_type_) println("cannot handle MethodType "+tp); reflect.NoType
       case PolyType(tparams, result) =>
-        if (_log_reify_type_) Console.println("cannot handle PolyType  "+tp); reflect.NoType
+        if (_log_reify_type_) println("cannot handle PolyType  "+tp); reflect.NoType
       case AnnotatedType(attribs, tp) =>
         reify(tp)
       case _ =>
@@ -249,39 +258,40 @@ abstract class LiftCode extends Transform {
     }
 
     def inject(value: Any): Tree = {
-	  def treatProduct(c:Product) = {
-        val name = objectName(c);
-        if (name.length() != 0) gen.mkAttributedRef(definitions.getModule(name))
+      def treatProduct(c: Product) = {
+        val name = objectName(c)
+        if (name.length() != 0)
+          gen.mkAttributedRef(definitions.getModule(name))
         else {
-          val name = className(c);
-          if (name.length() == 0) throw new Error("don't know how to inject " + value);
-          val injectedArgs = new ListBuffer[Tree];
-          for (val i <- 0 until c.arity /*caseArity*/)
-            injectedArgs += inject(c.element(i));
+          val name = className(c)
+          if (name.length() == 0) throw new Error("don't know how to inject " + value)
+          val injectedArgs = new ListBuffer[Tree]
+          for (val i <- 0 until c.productArity)
+            injectedArgs += inject(c.productElement(i))
           New(Ident(definitions.getClass(name)), List(injectedArgs.toList))
         }
-	  }
-	  value match {
-      case FreeValue(tree) =>
-        New(Ident(definitions.getClass("scala.reflect.Literal")), List(List(tree)))
-      case ()           => Literal(Constant(()))
-      case x: String    => Literal(Constant(x))
-      case x: Boolean   => Literal(Constant(x))
-      case x: Byte      => Literal(Constant(x))
-      case x: Short     => Literal(Constant(x))
-      case x: Char      => Literal(Constant(x))
-      case x: Int       => Literal(Constant(x))
-      case x: Long      => Literal(Constant(x))
-      case x: Float     => Literal(Constant(x))
-      case x: Double    => Literal(Constant(x))
-      case c: Product   => treatProduct(c)
-      case null =>
-        gen.mkAttributedRef(definitions.getModule("scala.reflect.NoType"))
-      case _ =>
-        throw new Error("don't know how to inject " + value)
+      }
+      value match {
+        case FreeValue(tree) =>
+          New(Ident(definitions.getClass("scala.reflect.Literal")), List(List(tree)))
+        case ()           => Literal(Constant(()))
+        case x: String    => Literal(Constant(x))
+        case x: Boolean   => Literal(Constant(x))
+        case x: Byte      => Literal(Constant(x))
+        case x: Short     => Literal(Constant(x))
+        case x: Char      => Literal(Constant(x))
+        case x: Int       => Literal(Constant(x))
+        case x: Long      => Literal(Constant(x))
+        case x: Float     => Literal(Constant(x))
+        case x: Double    => Literal(Constant(x))
+        case c: Product   => treatProduct(c)
+        case null =>
+          gen.mkAttributedRef(definitions.getModule("scala.reflect.NoType"))
+        case _ =>
+          throw new Error("don't know how to inject " + value)
+      }
     }
-   }
-  }
+  } // Injector
 
   def reify(tree: Tree): reflect.Tree =
     new Reifier(new ReifyEnvironment(), reflect.NoSymbol).reify(tree)
