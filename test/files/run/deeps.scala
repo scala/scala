@@ -1,17 +1,24 @@
+//############################################################################
+// deepEquals / deepToString
+//############################################################################
+// $Id: $
+
+//############################################################################
+
 object Test extends Application {
 
   def testEquals1 {
-    Console.println(Array(1) == Array(1))
-    Console.println(Array(1) equals Array(1))
-    Console.println(Array(1) deepEquals Array(1))
-    Console.println
+    println(Array(1) == Array(1))
+    println(Array(1) equals Array(1))
+    println(Array(1) deepEquals Array(1))
+    println
   }
 
   def testEquals2 {
-    Console.println(Array(Array(1), Array(2)) == Array(Array(1), Array(2)))
-    Console.println(Array(Array(1), Array(2)) equals Array(Array(1), Array(2)))
-    Console.println(Array(Array(1), Array(2)) deepEquals Array(Array(1), Array(2)))
-    Console.println
+    println(Array(Array(1), Array(2)) == Array(Array(1), Array(2)))
+    println(Array(Array(1), Array(2)) equals Array(Array(1), Array(2)))
+    println(Array(Array(1), Array(2)) deepEquals Array(Array(1), Array(2)))
+    println
   }
 
   def testEquals3 {
@@ -22,12 +29,12 @@ object Test extends Application {
     val a3 = Array(a2, b2)
     val b3 = Array(a2, b2)
     def test[T](x: Array[T], y: Array[T]) {
-      Console.println("x=" + x.deepToString)
-      Console.println("y=" + y.deepToString)
-      Console.println(x == y)
-      Console.println(x equals y)
-      Console.println(x deepEquals y)
-      Console.println
+      println("x=" + x.deepToString)
+      println("y=" + y.deepToString)
+      println(x == y)
+      println(x equals y)
+      println(x deepEquals y)
+      println
     }
     test(a1, b1)
     test(a2, b2)
@@ -35,15 +42,15 @@ object Test extends Application {
   }
 
   def testEquals4 {
-    Console.println("boo:and:foo".split(":") == "boo:and:foo".split(":"))
-    Console.println("boo:and:foo".split(":") equals "boo:and:foo".split(":"))
-    Console.println("boo:and:foo".split(":") deepEquals "boo:and:foo".split(":"))
+    println("boo:and:foo".split(":") == "boo:and:foo".split(":"))
+    println("boo:and:foo".split(":") equals "boo:and:foo".split(":"))
+    println("boo:and:foo".split(":") deepEquals "boo:and:foo".split(":"))
 
     val xs = new java.util.ArrayList(); xs.add("a")
     val ys = new java.util.ArrayList(); ys.add("a")
-    Console.println(xs.toArray == ys.toArray)
-    Console.println(xs.toArray equals ys.toArray)
-    Console.println(xs.toArray deepEquals ys.toArray)
+    println(xs.toArray == ys.toArray)
+    println(xs.toArray equals ys.toArray)
+    println(xs.toArray deepEquals ys.toArray)
   }
 
   def testToString1 {
@@ -52,11 +59,11 @@ object Test extends Application {
        .replaceAll("Z@[0-9a-fA-F]+", "Z@0000000")
        .replaceAll(";@[0-9a-fA-F]+", ";@0000000")
     def test[T](a: Array[T]) {
-      Console.println(sweep(a.toString))
-      Console.println(a.deepToString)
-      Console.println(a.deepMkString("[", ";", "]"))
-      Console.println(a.deepMkString(";"))
-      Console.println
+      println(sweep(a.toString))
+      println(a.deepToString)
+      println(a.deepMkString("[", ";", "]"))
+      println(a.deepMkString(";"))
+      println
     }
 
     val ba1 = Array(true, false)
@@ -82,17 +89,17 @@ object Test extends Application {
   }
 
   def testToString2 {
-    Console.println(Array(Array(true, false), Array(false)).deepMkString("[", "; ", "]"))
-    Console.println(Array(Array('1', '2'), Array('3')).deepMkString("[", "; ", "]"))
-    Console.println(Array(Array(1, 2), Array(3)).deepMkString("[", "; ", "]"))
-    Console.println
+    println(Array(Array(true, false), Array(false)).deepMkString("[", "; ", "]"))
+    println(Array(Array('1', '2'), Array('3')).deepMkString("[", "; ", "]"))
+    println(Array(Array(1, 2), Array(3)).deepMkString("[", "; ", "]"))
+    println
   }
 
   def testToString3 {
-    Console.println("boo:and:foo".split(":").deepToString)
+    println("boo:and:foo".split(":").deepToString)
 
     val xs = new java.util.ArrayList(); xs.add("a")
-    Console.println(xs.toArray.deepToString)
+    println(xs.toArray.deepToString)
   }
 
   testEquals1
