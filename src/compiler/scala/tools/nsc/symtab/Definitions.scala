@@ -485,7 +485,7 @@ trait Definitions requires SymbolTable {
         })
       val clazz =
         newClass(ScalaPackageClass, name, List(AnyValClass.typeConstructor))
-        .setFlag(ABSTRACT)
+        .setFlag(ABSTRACT | FINAL)
       boxedClass(clazz) = getClass(boxedName)
       boxedArrayClass(clazz) = getClass("scala.runtime.Boxed" + name + "Array")
       refClass(clazz) = getClass("scala.runtime." + name + "Ref")
