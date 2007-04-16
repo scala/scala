@@ -66,18 +66,18 @@ trait Idioms {
   } // TODO: `.` -->  java.lang.ClassFormatError: Illegal method name "." in class Idioms$IdiomaticTarget
 
   class IdiomaticFunction[idi[x], idiom <: Idiom[idi], s, t](i: idiom, fun: s => t) {
-    def `(` (a: idi[s]) = new IdiomaticApp[idi, idiom, t](i, i.liftedApply(i.pure(fun))(a))
+    def <| (a: idi[s]) = new IdiomaticApp[idi, idiom, t](i, i.liftedApply(i.pure(fun))(a))
   }
 
   class IdiomaticApp[idi[x], idiom <: Idiom[idi], x](i: idiom, a: idi[x]) {
     // where x <: s=>t -- TODO can this be expressed without generalised constraints?
-    def `,` [s, t](b: idi[s]) = new IdiomaticApp[idi, idiom, t](i, i.liftedApply(a.asInstanceOf[idi[s=>t]])(b))
+    def <> [s, t](b: idi[s]) = new IdiomaticApp[idi, idiom, t](i, i.liftedApply(a.asInstanceOf[idi[s=>t]])(b))
 
-    def `)` : idi[x] = a
+    def |> : idi[x] = a
   }
 
   class IdiomaticApp2[idi[x], idiom <: Idiom[idi], x](i: idiom, a: idi[x]) extends IdiomaticApp[idi, idiom, x](i, a) {
-    def `(` [s, t](b: idi[s]) = `,`[s,t](b)
+    def <| [s, t](b: idi[s]) = <>[s,t](b)
   }
 }
 
@@ -98,7 +98,7 @@ trait ParserIdioms extends Parsers with Idioms {
   def num = or(accept('0', 0), or(accept('1', 1),accept('2', 2)))
 
   // TODO: how can parserIdiom(curry2(_)) be omitted?
-  def expr: Parser[Expr] = parserIdiomFun(curry2(Plus)) `(` num `,` num `)`
+  def expr: Parser[Expr] = parserIdiomFun(curry2(Plus)) <| num <> num |>
 
   implicit def curry2[s,t,u](fun: (s, t)=>u)(a: s)(b: t) = fun(a, b)
   implicit def curry3[r,s,t,u](fun: (r,s, t)=>u)(a: r)(b: s)(c: t) = fun(a, b, c)
