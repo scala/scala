@@ -123,6 +123,12 @@ trait Typers requires Analyzer {
   /** The mode <code>ALTmode</code> is set when we are under a pattern alternative */
   val ALTmode       = 0x2000
 
+  /** The mode <code>HKmode</code> is set when we are typing a higher-kinded type
+   * adapt should then check kind-arity based on the prototypical type's kind arity
+   * type arguments should not be inferred
+   */
+  val HKmode        = 0x4000 // @M: could also use POLYmode | TAPPmode
+
   private val stickyModes: int  = EXPRmode | PATTERNmode | TYPEmode | CONSTmode | ALTmode
 
   private def funMode(mode: int) = mode & (stickyModes | SCCmode) | FUNmode | POLYmode
@@ -541,8 +547,8 @@ trait Typers requires Analyzer {
      *        unapply or unapplySeq method.
      *
      *  (6) Convert all other types to TypeTree nodes.
-     *  (7) When in TYPEmode but not FUNmode, check that types are fully parameterized
-     *      (7.1) @M! when in POLYmode | TAPPmode, check that types have the expected kind
+     *  (7) When in TYPEmode but not FUNmode or HKmode, check that types are fully parameterized
+     *      (7.1) In HKmode, higher-kinded types are allowed, but they must have the expected kind-arity
      *  (8) When in both EXPRmode and FUNmode, add apply method calls to values of object type.
      *  (9) If there are undetermined type variables and not POLYmode, infer expression instance
      *  Then, if tree's type is not a subtype of expected type, try the following adaptations:
@@ -565,6 +571,7 @@ trait Typers requires Analyzer {
       if ((mode & EXPRmode) != 0 && sym == ByNameParamClass) => // (2)
         adapt(tree setType arg, mode, pt)
       case PolyType(tparams, restpe) if ((mode & (TAPPmode | PATTERNmode)) == 0) => // (3)
+        assert((mode & HKmode) == 0) //@M
         val tparams1 = cloneSymbols(tparams)
         val tree1 = if (tree.isType) tree
                     else TypeApply(tree, tparams1 map (tparam =>
@@ -605,15 +612,19 @@ trait Typers requires Analyzer {
         if (tree.isType) {
           if ((mode & FUNmode) != 0) {
             tree
-          } else if (tree.hasSymbol && !tree.symbol.typeParams.isEmpty && (mode & (POLYmode | TAPPmode)) == 0) { // (7)
-            // @M higher-kinded types are allowed in (POLYmode | TAPPmode) -- see (7.1)
+          } else if (tree.hasSymbol && !tree.symbol.typeParams.isEmpty && (mode & HKmode) == 0) { // (7)
+            // @M When not typing a higher-kinded type ((mode & HKmode) == 0), types must be of kind *,
+            // and thus parameterised types must be applied to their type arguments
             errorTree(tree, tree.symbol+" takes type parameters")
             tree setType tree.tpe
-          } else if (tree.hasSymbol && ((mode & (POLYmode | TAPPmode)) == (POLYmode | TAPPmode)) &&             // (7.1) @M: check kind-arity (full checks are done in checkKindBounds in Infer)
+          } else if (tree.hasSymbol && ((mode & HKmode) != 0) && // (7.1) @M: check kind-arity
                      tree.symbol.typeParams.length != pt.typeParams.length &&
-                     !(tree.symbol==AnyClass || tree.symbol==AllClass || pt == WildcardType )) { //@M Any and Nothing are kind-polymorphic
-                       // WildcardType is only used when typing type arguments to an overloaded method, before the overload is resolved
-                       // (or in the case of an error type) -- see case TypeApply in typed1
+                     !(tree.symbol==AnyClass || tree.symbol==AllClass || pt == WildcardType )) {
+              // Check that the actual kind arity (tree.symbol.typeParams.length) conforms to the expected
+              // kind-arity (pt.typeParams.length). Full checks are done in checkKindBounds in Infer.
+              // Note that we treat Any and Nothing as kind-polymorphic.
+              // We can't perform this check when typing type arguments to an overloaded method before the overload is resolved
+              // (or in the case of an error type) -- this is indicated by pt == WildcardType (see case TypeApply in typed1).
               errorTree(tree, tree.symbol+" takes "+reporter.countElementsAsString(tree.symbol.typeParams.length, "type parameter")+
                               ", expected: "+reporter.countAsString(pt.typeParams.length))
               tree setType tree.tpe
@@ -651,6 +662,7 @@ trait Typers requires Analyzer {
                    ((mode & TAPPmode) == 0 || tree.tpe.typeParams.isEmpty) &&
                    member(adaptToName(tree, nme.apply), nme.apply)
                      .filter(m => m.tpe.paramSectionCount > 0) != NoSymbol) { // (8)
+          assert((mode & HKmode) == 0) //@M
           val qual = adaptToName(tree, nme.apply) match {
             case id @ Ident(_) =>
               val pre = if (id.symbol.owner.isPackageClass) id.symbol.owner.thisType
@@ -665,6 +677,7 @@ trait Typers requires Analyzer {
           }
           typed(atPos(tree.pos)(Select(qual, nme.apply)), mode, pt)
         } else if (!context.undetparams.isEmpty && (mode & POLYmode) == 0) { // (9)
+          assert((mode & HKmode) == 0) //@M
           instantiate(tree, mode, pt)
         } else if (tree.tpe <:< pt) {
           tree
@@ -2669,17 +2682,17 @@ trait Typers requires Analyzer {
     /** Types a higher-kinded type tree -- pt denotes the expected kind*/
     def typedHigherKindedType(tree: Tree, pt: Type): Tree =
       if(pt.typeParams.isEmpty) typedType(tree) // kind is known and it's *
-      else withNoGlobalVariance{ typed(tree, POLYmode | TAPPmode, pt) }
+      else withNoGlobalVariance{ typed(tree, HKmode, pt) }
 
     def typedHigherKindedType(tree: Tree): Tree =
-      withNoGlobalVariance{ typed(tree, POLYmode | TAPPmode, WildcardType) }
+      withNoGlobalVariance{ typed(tree, HKmode, WildcardType) }
 
     /** Types a type constructor tree used in a new or supertype */
     def typedTypeConstructor(tree: Tree): Tree = {
       val result = withNoGlobalVariance{ typed(tree, TYPEmode | FUNmode, WildcardType) }
       if (!phase.erasedTypes && result.tpe.isInstanceOf[TypeRef] && !result.tpe.prefix.isStable)
         error(tree.pos, result.tpe.prefix+" is not a legal prefix for a constructor")
-      result setType(result.tpe.normalize) // @MAT remove aliases when instantiating
+      result setType(result.tpe) // @M: no need to normalize here, see GenICode line 627: generatedType = toTypeKind(tpt.tpe.normalize)
     }
 
     def computeType(tree: Tree, pt: Type): Type = {

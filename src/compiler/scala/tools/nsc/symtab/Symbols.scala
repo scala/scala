@@ -209,6 +209,7 @@ trait Symbols requires SymbolTable {
     final def isRootPackage = isPackage && name == nme.ROOTPKG
     final def isEmptyPackage = isPackage && name == nme.EMPTY_PACKAGE_NAME
     final def isEmptyPackageClass = isPackageClass && name == nme.EMPTY_PACKAGE_NAME.toTypeName
+    final def isPredefModule = isModule && name == nme.Predef
     def isDeprecated =
       attributes exists (attr => attr.atp.symbol == DeprecatedAttr)
 
@@ -1120,12 +1121,7 @@ trait Symbols requires SymbolTable {
    *  of this class. Classes are instances of a subclass.
    */
   class TypeSymbol(initOwner: Symbol, initPos: PositionType, initName: Name)
-  extends Symbol(initOwner, initPos,
-// @M type params with name "_" implicitly get unique name @M TODO: the name generation is a bit hacky...
-                 if(initName.length==1 && initName(0)=='_') // faster equality test than first converting to string
-                   newTypeName("_$" + (ids+1))
-                 else initName) {
-    override def nameString: String = if(name.startsWith("_$")) "_"+idString else super.nameString // @M: undo underscore-mangling
+  extends Symbol(initOwner, initPos, initName) {
     override def isType = true
     privateWithin = NoSymbol
     private var tyconCache: Type = null

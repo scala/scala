@@ -126,7 +126,8 @@ trait Namers requires Analyzer {
         if ((prev ne null) && prev.owner == context.scope &&
             (!prev.sym.isSourceMethod ||
              nme.isSetterName(sym.name) ||
-             sym.owner.isPackageClass)) {
+             sym.owner.isPackageClass) &&
+             !(sym.owner.isTypeParameter && sym.name.length==1 && sym.name(0)=='_')) { //@M: allow repeated use of `_' for higher-order type params
            doubleDefError(sym.pos, prev.sym)
            sym setInfo ErrorType
         } else context.scope enter sym

@@ -670,7 +670,7 @@ trait Types requires SymbolTable {
     override def symbol = sym
     override def prefix: Type = pre
     override def prefixString: String =
-      if ((sym.isEmptyPackage || sym.isInterpreterWrapper) && !settings.debug.value) ""
+      if ((sym.isEmptyPackage || sym.isInterpreterWrapper || sym.isPredefModule) && !settings.debug.value) ""
       else pre.prefixString + sym.nameString + "."
   }
 

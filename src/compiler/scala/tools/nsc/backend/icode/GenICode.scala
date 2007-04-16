@@ -624,7 +624,7 @@ abstract class GenICode extends SubComponent  {
           assert(ctor.isClassConstructor,
                  "'new' call to non-constructor: " + tree)
 
-          generatedType = toTypeKind(tpt.tpe)
+          generatedType = toTypeKind(tpt.tpe.normalize) // @M: because typedTypeConstructor doesn't normalize anymore
           assert(generatedType.isReferenceType || generatedType.isArrayType,
                  "Non reference type cannot be instantiated: " + generatedType)
 
