@@ -74,9 +74,13 @@ object Test4 {
   @SourceAnnotation("http://bloodsuckers.com")
   class Foo3
   def run {
-    classOf[Foo1].getAnnotations foreach Console.println
-    classOf[Foo2].getAnnotations foreach Console.println
-    classOf[Foo3].getAnnotations foreach Console.println
+    def printSourceAnnotation(a: Any) {
+      val ann = a.asInstanceOf[SourceAnnotation]
+      Console.println("@test.SourceAnnotation(mail=" + ann.mail + ", value=" + ann.value + ")")
+    }
+    classOf[Foo1].getAnnotations foreach printSourceAnnotation
+    classOf[Foo2].getAnnotations foreach printSourceAnnotation
+    classOf[Foo3].getAnnotations foreach printSourceAnnotation
   }
 }
 
