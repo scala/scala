@@ -169,6 +169,7 @@ test_print_help() {
     echo "--msil          next files test the .NET backend";
     echo "--script        next files test Scala embedded in scripts";
     echo "--ant           next files test the Ant tasks";
+    echo "--pending       perform the tests in the 'pending' directory";
     echo "--shootout      next files test Debian's language shootout benchmarks";
     echo "--quick         use the 'quick' build instead of distribution";
     echo '--installed     use the installed programs on $PATH'
