@@ -123,8 +123,8 @@ class BigInt(val bigInteger: BigInteger) extends runtime.BoxedNumber {
   /** Compares this BigInt with the specified value for equality.
    */
   override def equals (that: Any): boolean = that match {
-    case that: runtime.BoxedDouble => this.bigInteger.doubleValue == that
-    case that: runtime.BoxedFloat  => this.bigInteger.floatValue == that
+    case that: runtime.BoxedDouble => this.bigInteger.doubleValue == that.doubleValue
+    case that: runtime.BoxedFloat  => this.bigInteger.floatValue == that.floatValue
     case that: runtime.BoxedNumber => this equals BigInt(that.longValue)
     case _ => false
   }
