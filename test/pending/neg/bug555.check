@@ -1,4 +1,0 @@
-bug555.scala:4: error: block must end in result expression, not in definition
-  }
-  ^
-one error found
