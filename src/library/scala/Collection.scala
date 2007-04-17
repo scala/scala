@@ -1,4 +1,18 @@
-package scala;
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+// $Id$
+
+
+package scala
+
+
+import Predef._
 
 /** Variant of <code>Iterable</code> used to describe
  *  collections with a finite number of elements.
@@ -24,7 +38,7 @@ trait Collection[+A] extends Iterable[A] {
   /** Defines the prefix of this object's <code>toString</code> representation.
    */
   protected def stringPrefix : String = {
-    val string = getClass.getName
+    val string = this.getClass.getName
     val idx = string.lastIndexOf('.' : Int)
     if (idx != -1) string.substring(idx + 1)
     else string
