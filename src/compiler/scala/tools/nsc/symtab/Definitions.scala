@@ -10,7 +10,8 @@ import scala.collection.mutable.{HashMap, HashSet}
 import scala.tools.nsc.util.Position
 import Flags._
 
-trait Definitions requires SymbolTable {
+trait Definitions {
+  self: SymbolTable =>
 
   object definitions {
     def isDefinitionsInitialized = isInitialized

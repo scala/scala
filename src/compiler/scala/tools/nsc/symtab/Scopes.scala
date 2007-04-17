@@ -6,7 +6,8 @@
 
 package scala.tools.nsc.symtab
 
-trait Scopes requires SymbolTable {
+trait Scopes {
+  self: SymbolTable =>
 
   class ScopeEntry(val sym: Symbol, val owner: Scope) {
     /** hook to notify IDE that new symbol has been added to this scope */

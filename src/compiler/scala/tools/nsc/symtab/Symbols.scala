@@ -10,7 +10,8 @@ import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.util.{Position, SourceFile}
 import Flags._
 
-trait Symbols requires SymbolTable {
+trait Symbols {
+  self: SymbolTable =>
   import definitions._
 
   private var ids = 0

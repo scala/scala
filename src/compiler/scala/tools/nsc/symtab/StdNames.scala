@@ -8,7 +8,8 @@ package scala.tools.nsc.symtab
 
 import scala.tools.nsc.util.NameTransformer
 
-trait StdNames requires SymbolTable {
+trait StdNames {
+  self: SymbolTable =>
 
   object nme {
 

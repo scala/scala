@@ -12,7 +12,8 @@ import compat.StringBuilder
 
 import classfile.PickleFormat._
 
-trait Constants requires SymbolTable {
+trait Constants {
+  self: SymbolTable =>
 
   import definitions._
 

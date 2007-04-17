@@ -2060,8 +2060,8 @@ trait Parsers requires SyntaxAnalyzer {
       }
     }
 
-    /** ClassTemplateOpt ::= [extends ClassTemplate | TemplateBody]
-     *  TraitTemplateOpt ::= [extends TraitTemplate | TemplateBody]
+    /** ClassTemplateOpt ::= extends ClassTemplate | [[extends] TemplateBody]
+     *  TraitTemplateOpt ::= extends TraitTemplate | [[extends] TemplateBody]
      */
     def templateOpt(mods: Modifiers, name: Name, constrMods: Modifiers, vparamss: List[List[ValDef]]): (ValDef, Template) = {
       val pos = in.currentPos;

@@ -6,7 +6,8 @@
 
 package scala.tools.nsc.symtab
 
-trait InfoTransformers requires SymbolTable {
+trait InfoTransformers {
+  self: SymbolTable =>
 
   abstract class InfoTransformer {
     var prev: InfoTransformer = this

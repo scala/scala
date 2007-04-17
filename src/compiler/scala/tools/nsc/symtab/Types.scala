@@ -32,7 +32,8 @@ import Flags._
   case AnnotatedType(attribs, tp) =>
 */
 
-trait Types requires SymbolTable {
+trait Types {
+  self: SymbolTable =>
   import definitions._
 
   //statistics
@@ -2723,17 +2724,23 @@ trait Types requires SymbolTable {
       case ts =>
         try {
           val glbOwner = commonOwner(ts)
-          val glbBase = intersectionType(ts, glbOwner)
+          def refinedToParents(t: Type): List[Type] = t match {
+            case RefinedType(ps, _) => ps flatMap refinedToParents
+            case _ => List(t)
+          }
+          val ts1 = ts flatMap refinedToParents
+          val glbBase = intersectionType(ts1, glbOwner)
           if (phase.erasedTypes || depth == 0) glbBase
           else {
-            val glbType = refinedType(ts, glbOwner)
+            val glbType = refinedType(ts1, glbOwner)
             val glbThisType = glbType.symbol.thisType
             def glbsym(proto: Symbol): Symbol = try {
               val prototp = glbThisType.memberInfo(proto)
-              val syms = for (
-                val t <- ts;
-                val alt <- t.nonPrivateMember(proto.name).alternatives;
-                glbThisType.memberInfo(alt) matches prototp) yield alt;
+              val syms = for {
+                val t <- ts
+                val alt <- t.nonPrivateMember(proto.name).alternatives
+                glbThisType.memberInfo(alt) matches prototp
+              } yield alt
               val symtypes = syms map glbThisType.memberInfo
               assert(!symtypes.isEmpty)
               proto.cloneSymbol(glbType.symbol).setInfo(

@@ -13,8 +13,10 @@ import scala.tools.nsc.symtab.Flags._
 import scala.tools.nsc.util.{HashSet, Position, SourceFile}
 
 
-trait Trees requires Global {
+trait Trees {
+  self: Global =>
   //statistics
+
   var nodeCount = 0
 
   case class Modifiers(flags: long, privateWithin: Name, annotations: List[Annotation]) {
@@ -719,23 +721,23 @@ trait Trees requires Global {
   case EmptyTree =>
   case PackageDef(name, stats) =>
   case ClassDef(mods, name, tparams, self, impl) =>
-  case ModuleDef(mods, name, impl) =>                         (eliminated by refcheck)
+  case ModuleDef(mods, name, impl) =>                             (eliminated by refcheck)
   case ValDef(mods, name, tpt, rhs) =>
   case DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
   case AbsTypeDef(mods, name, tparams, lo, hi) =>                 (eliminated by erasure)
   case AliasTypeDef(mods, name, tparams, rhs) =>                  (eliminated by erasure)
   case LabelDef(name, params, rhs) =>
   case Import(expr, selectors) =>                                 (eliminated by typecheck)
-  case Annotation(constr, elements) =>                             (eliminated by typecheck)
+  case Annotation(constr, elements) =>                            (eliminated by typecheck)
   case DocDef(comment, definition) =>                             (eliminated by typecheck)
   case Template(parents, body) =>
   case Block(stats, expr) =>
-  case CaseDef(pat, guard, body) =>                               (eliminated by transmatch)
-  case Sequence(trees) =>                                         (eliminated by transmatch)
-  case Alternative(trees) =>                                      (eliminated by transmatch)
-  case Star(elem) =>                                              (eliminated by transmatch)
-  case Bind(name, body) =>                                        (eliminated by transmatch)
-  case UnApply(fun: Tree, args)                                   (introduced by typer, eliminated by transmatch)
+  case CaseDef(pat, guard, body) =>                               (eliminated by transmatch/explicitouter)
+  case Sequence(trees) =>                                         (eliminated by transmatch/explicitouter)
+  case Alternative(trees) =>                                      (eliminated by transmatch/explicitouter)
+  case Star(elem) =>                                              (eliminated by transmatch/explicitouter)
+  case Bind(name, body) =>                                        (eliminated by transmatch/explicitouter)
+  case UnApply(fun: Tree, args)                                   (introduced by typer, eliminated by transmatch/explicitouter)
   case ArrayValue(elemtpt, trees) =>                              (introduced by uncurry)
   case Function(vparams, body) =>                                 (eliminated by lambdaLift)
   case Assign(lhs, rhs) =>

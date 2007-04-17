@@ -359,26 +359,27 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
   def phaseDescriptors: List[SubComponent] = List(
     analyzer.namerFactory: SubComponent, // note: types are there because otherwise
     analyzer.typerFactory: SubComponent, // consistency check after refchecks would fail.
-    superAccessors,
-    pickler,
-    refchecks,
-    liftcode,
-    uncurry,
-    tailCalls,
-    explicitOuter,
+    superAccessors,  // add super accessors
+    pickler,         // serializes symbol tables
+    refchecks,       // perform reference and override checking, translate nested objects
+    liftcode,        // generate reified trees
+    uncurry,         // uncurry, translate function values to anonymous classes
+    tailCalls,       // replace tail calls by jumps
+    explicitOuter,   // replace C.this by explicit outer pointers, eliminate pattern matching
 //    checkDefined,
-    erasure,
-    lambdaLift,
+    erasure,         // erase generic types to Java 1.4 types, add interfaces for traits
+    lambdaLift,      // move nested functions to top level
 //    detach,
-    constructors,
-    flatten,
-    mixer,
-    cleanup,
-    genicode,
-    inliner,
-    closureElimination,
-    deadCode,
-    if (forMSIL) genMSIL else genJVM,
+    constructors,    // move field definitions into constructors
+    flatten,         // get rid of inner classes
+    mixer,           // do mixin composition
+    cleanup,         // some platform-specific cleanups
+
+    genicode,        // generate portable intermediate code
+    inliner,         // optimization: do inlining
+    closureElimination, // optimization: get rid of uncalled closures
+    deadCode,           // optimization: get rid of dead cpde
+    if (forMSIL) genMSIL else genJVM, // generate .class files
     sampleTransform)
 
   protected def insertBefore(c: SubComponent, cs: List[SubComponent], before: SubComponent): List[SubComponent] = cs match {
