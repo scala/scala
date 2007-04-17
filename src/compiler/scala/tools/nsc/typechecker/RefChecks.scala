@@ -503,7 +503,7 @@ abstract class RefChecks extends InfoTransform {
               nonSensible("", false)
             else if (isNumericValueClass(receiver) &&
                      !isNumericValueClass(actual) &&
-                     !(actual isSubClass BoxedNumberClass) &&
+                     !(forMSIL || (actual isSubClass BoxedNumberClass)) &&
                      !(receiver isSubClass actual))
               nonSensible("", false)
             else if ((receiver hasFlag FINAL) && hasObjectEquals && !isValueClass(receiver) &&

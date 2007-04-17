@@ -849,7 +849,7 @@ trait Definitions requires SymbolTable {
 
       PatternWildcard = NoSymbol.newValue(NoPos, "_").setInfo(AllClass.typeConstructor)
 
-      BoxedNumberClass = getClass("scala.runtime.BoxedNumber")
+      BoxedNumberClass = if (forMSIL) null else getClass("scala.runtime.BoxedNumber")
       BoxedArrayClass = getClass("scala.runtime.BoxedArray")
       BoxedAnyArrayClass = getClass("scala.runtime.BoxedAnyArray")
       BoxedObjectArrayClass = getClass("scala.runtime.BoxedObjectArray")
