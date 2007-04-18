@@ -2,7 +2,7 @@
  * Copyright 2007-2008 LAMP/EPFL
  * @author  Sean McDirmid
  */
-// $Id: $
+// $Id$
 
 package scala.tools.nsc.doc;
 

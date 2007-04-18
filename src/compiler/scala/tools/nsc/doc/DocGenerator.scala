@@ -1177,7 +1177,8 @@ abstract class DocGenerator extends Models {
       def sym = definitions.getClass("scala.runtime.BoxedNumber")
       def descr = boxedValDescr(sym)
     }
-    val rsrcdir = "scala/tools/nsc/doc/".replace('/', File.separatorChar)
+    // The name of a resource is a '/'-separated path name that identifies the resource.
+    val rsrcdir = "scala/tools/nsc/doc/"
     for (val base <- List("style.css", "script.js")) {
       try {
         val in = loader.getResourceAsStream(rsrcdir + base)

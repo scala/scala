@@ -1,9 +1,16 @@
-package scala.tools.nsc.doc;
+/* NSC -- new Scala compiler
+ * Copyright 2005-2007 LAMP/EPFL
+ * @author  Sean McDirmid
+ */
+// $Id$
 
-import compat.Platform.{EOL => LINE_SEPARATOR};
-import scala.xml._;
-import java.io.{File,FileWriter};
-import scala.collection.jcl;
+package scala.tools.nsc.doc
+
+import java.io.{File, FileWriter}
+
+import scala.collection.jcl
+import scala.compat.Platform.{EOL => LINE_SEPARATOR}
+import scala.xml._
 
 /** This class provides HTML document framing functionality.
   *
@@ -25,14 +32,14 @@ trait ModelFrames extends ModelExtractor {
   def rootTitle = <div class="page-title"> Scala 2<br/>API Specification</div>;
   def rootDesc = <p>This document is the API specification for Scala 2.</p>;
 
-  final def hasLink(sym : global.Symbol) : Boolean = {
+  final def hasLink(sym: global.Symbol) : Boolean = {
     if (sym == global.NoSymbol) false;
     else if (hasLink0(sym)) true;
     else {
       hasLink(decode(sym.owner));
     }
   }
-  def hasLink0(sym : global.Symbol) : Boolean = true;
+  def hasLink0(sym: global.Symbol): Boolean = true;
 
   abstract class Frame extends UrlContext {
     { // just save.
@@ -131,7 +138,7 @@ trait ModelFrames extends ModelExtractor {
       })
     }
   }
-  protected def rootFor(sym : global.Symbol) = "";
+  protected def rootFor(sym: global.Symbol) = "";
 
   private val doctitle: NodeSeq =
     <div class="doctitle-larger">{load(documentTitle)}</div>;
@@ -300,8 +307,9 @@ trait ModelFrames extends ModelExtractor {
 
   private val loader = getClass().getClassLoader()
   def copyResources = {
-    import java.io._;
-    val rsrcdir = "scala/tools/nsc/doc/".replace('/', File.separatorChar)
+    import java.io._
+    // The name of a resource is a '/'-separated path name that identifies the resource.
+    val rsrcdir = "scala/tools/nsc/doc/"
     for (val base <- List("style.css", "script.js")) {
       try {
         val in = loader.getResourceAsStream(rsrcdir + base)

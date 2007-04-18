@@ -1,5 +1,15 @@
-package scala.tools.nsc.doc;
+/* NSC -- new Scala compiler
+ * Copyright 2007-2008 LAMP/EPFL
+ * @author  Sean McDirmid
+ */
+// $Id$
 
+package scala.tools.nsc.doc
+
+/**
+ *  @author Sean McDirmid
+ *  @version 1.0
+ */
 class ModelAdditions(val global : Global) {
   import global._;
   import definitions._;

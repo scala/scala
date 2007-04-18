@@ -1,11 +1,20 @@
-package scala.tools.nsc.doc;
-import scala.collection.jcl;
+/* NSC -- new Scala compiler
+ * Copyright 2007-2008 LAMP/EPFL
+ * @author  Sean McDirmid
+ */
+// $Id$
+
+package scala.tools.nsc.doc
+
+import scala.collection.jcl
 import compat.Platform.{EOL => LINE_SEPARATOR}
 
 
-/** This class attempts to reverse engineer source code intent from compiler symbol objects
-  * @author Sean McDirmid
-  */
+/** This class attempts to reverse engineer source code intent from compiler
+ *  symbol objects.
+ *
+ * @author Sean McDirmid
+ */
 trait ModelExtractor {
   val global : Global;
   import global._;

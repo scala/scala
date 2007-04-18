@@ -79,6 +79,7 @@ exec scsh -e main -s "$0" "$@"
           (with-cwd scala-svn-module-name
                     (start-section "Creating small Scala distribution")
                     (fail-if-error (run (ant pack)))
+                    (fail-if-error (run (ant docs.compiler)))
                     (start-section "Testing Scala compiler")
                     (fail-if-error
                      (run (./test/scalatest --color=none

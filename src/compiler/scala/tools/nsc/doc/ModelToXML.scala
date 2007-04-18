@@ -1,4 +1,11 @@
-package scala.tools.nsc.doc;
+/* NSC -- new Scala compiler
+ * Copyright 2007-2008 LAMP/EPFL
+ * @author  Sean McDirmid
+ */
+// $Id$
+
+package scala.tools.nsc.doc
+
 import scala.xml._
 
 /** This class has functionality to format source code models as XML blocks.
