@@ -612,10 +612,11 @@ SCALA_LIB="$LATEST_LIB";
 
 [ -x "$JAVACMD" ] || JAVACMD=java;
 [ -n "$JAVA_OPTS" ] || JAVA_OPTS="-Xmx256M -Xms16M";
-case `$JAVACMD \-version 2>&1 | head -1` in
-    *1.5*) JAVA5="true";;
-    *1.6*) JAVA5="true"; JAVA_OPTS="$JAVA_OPTS -Xss32m";;
-        *) JAVA5="false";;
+# -Xss option available in Java versions 1.5 or newer
+case `$JAVACMD \-version 2>&1 | xargs` in
+    *1.[5-7].* ) JAVA5="true"; JAVA_OPTS="$JAVA_OPTS -Xss16m";; # stack size
+    *1.4.*GNU* ) JAVA5="false"; GIJ="true"; JAVA_OPTS="--mx256m --ms16m";;
+             * ) JAVA5="false";;
 esac;
 
 DIFF="diff";
@@ -744,7 +745,11 @@ printf_outline "Scala version is    : $scala_version\\n";
 javacmd=`which $JAVACMD`;
 bin_dir=`test_get_location $javacmd`;
 printf_outline "Java binaries in    : $bin_dir\\n";
-jvm_version=`$JAVACMD -version 2>&1 | head -3 | tail -1`
+if [ "$GIJ" = "true" ]; then
+    jvm_version=`$JAVACMD -version 2>&1 | head -2 | tail -1`
+else
+    jvm_version=`$JAVACMD -version 2>&1 | head -3 | tail -1`
+fi;
 printf_outline "Java runtime is     : $jvm_version\\n";
 [ -n "$JAVA_OPTS" ] && printf_outline "Java options are    : $JAVA_OPTS\\n";
 printf_outline "\\n";
