@@ -332,7 +332,7 @@ test_run_shootout() {
     $SCALAC -d "$os_dstbase".obj -cp "$JVM_EXT_CLASSPATH" "$@" "$dstbase".obj/test.scala &&
     scala_lib=`get_os_filename "$SCALA_LIB"` &&
     classpath=`get_os_pathlist "$os_dstbase".obj:$CLASSPATH` &&
-    env JAVACMD="$JAVACMD $JAVA_OPTS" $SCALA -Dscalatest.cwd=$srcdir -Dscalatest.output=$os_dstbase.obj -Dscalatest.lib=$scala_lib -classpath $classpath:$JVM_EXT_CLASSPATH Test  &&
+    env JAVACMD="$JAVACMD" JAVA_OPTS="$JAVA_OPTS" $SCALA -Dscalatest.cwd=$srcdir -Dscalatest.output=$os_dstbase.obj -Dscalatest.lib=$scala_lib -classpath $classpath:$JVM_EXT_CLASSPATH Test  &&
     rm -rf "$dstbase".obj;
 }
 
