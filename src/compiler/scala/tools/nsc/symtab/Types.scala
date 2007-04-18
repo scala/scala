@@ -1082,6 +1082,14 @@ trait Types {
     }
 
     override def symbol = if (sym.isAliasType) normalize.symbol else sym
+/* @MAT
+whenever you see `tp.symbol.isXXXX' and then act on tp based on that predicate, you're on thin ice,
+as `symbol' (and `prefix') automatically normalize, but the other inspectors don't.
+In other words, even if `tp.normalize.sym.isXXX' is true, `tp.sym.isXXX' may be false (if sym were a public method to access the non-normalized symbol)...
+
+In retrospect, I think `tp.symbol.isXXX' or (worse) `tp.symbol==XXX' should be replaced by `val tp = tp0.asXXX'.
+A type's symbol should never be inspected directly.
+*/
 
     override def bounds: TypeBounds =
       if (sym.isAbstractType) transform(thisInfo.bounds).asInstanceOf[TypeBounds]

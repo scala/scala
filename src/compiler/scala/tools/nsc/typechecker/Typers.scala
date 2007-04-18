@@ -1314,14 +1314,14 @@ trait Typers requires Analyzer {
              pt.symbol == PartialFunctionClass &&
              fun.vparams.length == 1 && fun.body.isInstanceOf[Match])
             && // see bug901 for a reason why next conditions are neeed
-            (pt.typeArgs.length - 1 == fun.vparams.length
+            (pt.normalize.typeArgs.length - 1 == fun.vparams.length
              ||
              fun.vparams.exists(.tpt.isEmpty)))
-          (pt.symbol, pt.typeArgs.init, pt.typeArgs.last)
+          (pt.symbol, pt.normalize.typeArgs.init, pt.normalize.typeArgs.last)
         else
           (FunctionClass(fun.vparams.length), fun.vparams map (x => NoType), WildcardType)
 
-      val (clazz, argpts, respt) = decompose(if (codeExpected) pt.typeArgs.head else pt)
+      val (clazz, argpts, respt) = decompose(if (codeExpected) pt.normalize.typeArgs.head else pt)
 
       if (fun.vparams.length != argpts.length)
         errorTree(fun, "wrong number of parameters; expected = " + argpts.length)

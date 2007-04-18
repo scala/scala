@@ -793,7 +793,7 @@ trait Namers requires Analyzer {
         if (elemtp =:= tp)
           result = nested
         else if (isFunctionType(tp) &&
-                 (!isFunctionType(elemtp) || tp.typeArgs.length > elemtp.typeArgs.length))
+                 (!isFunctionType(elemtp) || tp.normalize.typeArgs.length > elemtp.normalize.typeArgs.length))
           result = true
         else (tp, elemtp) match {
           case (TypeRef(pre, sym, args), TypeRef(elempre, elemsym, elemargs)) =>

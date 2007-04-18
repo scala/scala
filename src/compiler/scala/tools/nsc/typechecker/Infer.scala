@@ -45,7 +45,7 @@ trait Infer requires Analyzer {
       case formal => formal
     }
     if (isVarArgs(formals1)) {
-      val ft = formals1.last.typeArgs.head
+      val ft = formals1.last.normalize.typeArgs.head
       formals1.init ::: (for (val i <- List.range(formals1.length - 1, nargs)) yield ft)
     } else formals1
   }
