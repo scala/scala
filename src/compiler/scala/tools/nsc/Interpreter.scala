@@ -60,10 +60,10 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
   import compiler.{Tree, TermTree,
                    ValOrDefDef, ValDef, DefDef, Assign,
                    ClassDef, ModuleDef, Ident, Select, AliasTypeDef,
-                   Import}
+                   Import, MemberDef}
   import compiler.CompilationUnit
-  import compiler.Symbol
-  import compiler.Name
+  import compiler.{Symbol,Name,Type}
+  import compiler.nme
 
   /** construct an interpreter that reports to Console */
   def this(settings: Settings) =
@@ -200,38 +200,123 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
    *  3. An access path which can be traverested to access
    *  any bindings inside code wrapped by #1 and #2 .
    *
+   * The argument is a set of Names that need to be imported.
+   *
+   * Limitations: This method is not as precise as it could be.
+   * (1) It does not process wildcard imports to see what exactly
+   * they import.
+   * (2) If it imports any names from a request, it imports all
+   * of them, which is not really necessary.
+   * (3) It imports multiple same-named implicits, but only the
+   * last one imported is actually usable.
+   *
    */
-  private def importsCode: (String, String, String) = {
+  private def importsCode(wanted: Set[Name]): (String, String, String) = {
+    /** Narrow down the list of requests from which imports
+     *  should be taken.  Removes requests which cannot contribute
+     *  useful imports for the specified set of wanted names.
+     */
+    def reqsToUse: List[Request] = {
+      /** Loop through the requests in reverse and select
+       *  which ones to keep.  'wanted' is the set of
+       *  names that need to be imported, and
+       *  'shadowed' is the list of names useless to import
+       *  because a later request will re-import it anyway. */
+      def select(reqs: List[Request],
+                 wanted: Set[Name])
+      :List[Request] =
+      {
+        reqs match {
+          case Nil => Nil
+
+          case req::rest =>
+            val keepit = req.definesImplicit || (req match {
+              case req:ImportReq =>
+                req.importsWildcard ||
+                req.importedNames.exists(wanted.contains)
+              case _ =>
+                req.boundNames.exists(wanted.contains)
+            })
+
+            val newWanted =
+              if (keepit) {
+                req match {
+                  case req:ImportReq =>
+                    wanted -- req.importedNames ++ req.usedNames
+
+                  case _ => wanted -- req.boundNames
+                }
+              } else {
+                wanted
+              }
+
+            val restToKeep = select(rest, newWanted)
+
+            if(keepit)
+              req :: restToKeep
+            else
+              restToKeep
+        }
+      }
+
+      select(prevRequests.toList.reverse, wanted).reverse
+    }
+
+
     val code = new StringBuffer
     val trailingBraces = new StringBuffer
     val accessPath = new StringBuffer
     val impname = compiler.nme.INTERPRETER_IMPORT_WRAPPER
+    val currentImps = mutable.Set.empty[Name]
 
+    // add code for a new object to hold some imports
     def addWrapper() {
       code.append("object " + impname + "{\n")
       trailingBraces.append("}\n")
       accessPath.append("." + impname)
+      currentImps.clear
     }
-    for(val req <- prevRequests) {
+
+    addWrapper()
+
+    // loop through previous requests, adding imports
+    // for each one
+    for(val req <- reqsToUse) {
       req match {
         case req:ImportReq =>
           // If the user entered an import, then just use it
-          addWrapper()
+
+          // add an import wrapping level if the import might
+          // conflict with some other import
+          if(req.importsWildcard ||
+             currentImps.exists(req.importedNames.contains))
+            if(!currentImps.isEmpty)
+              addWrapper()
+
           code.append(req.line + ";\n")
+
+          // give wildcard imports a import wrapper all to their own
+          if(req.importsWildcard)
+            addWrapper()
+          else
+            currentImps ++= req.importedNames
+
         case req =>
           // For other requests, import each bound variable.
           // import them explicitly instead of with _, so that
           // ambiguity errors will not be generated.
           for(val imv <- req.boundNames) {
-            addWrapper()
+            if(currentImps.contains(imv))
+              addWrapper()
             code.append("import ")
             code.append(req.objectName + req.accessPath + "." + imv + ";\n")
+            currentImps += imv
           }
       }
     }
 
     addWrapper() // Add one extra wrapper, to prevent warnings
-                 // in the (frequent!) case of redefining
+                 // in the frequent case of redefining
                  // the value bound in the last interpreter
                  // request.
 
@@ -415,6 +500,19 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
     Interpreter.deleteRecursively(classfilePath)
 
 
+  /** A traverser that finds all mentioned identifiers, i.e. things
+      that need to be imported.
+      It might return extra names.  */
+  private class ImportVarsTraverser(definedVars: List[Name]) extends Traverser {
+    val importVars = new HashSet[Name]()
+
+    override def traverse(ast: Tree): unit = ast match {
+      case Ident(name) => importVars += name
+      case _ => super.traverse(ast)
+    }
+  }
+
+
   /** One line of code submitted by the user for interpretation */
   private abstract class Request(val line: String, val lineName: String) {
     val Some(trees) = parse(line)
@@ -424,10 +522,6 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
 
     /** name of the object that retrieves the result from the above object */
     def resultObjectName = "RequestResult$" + objectName
-
-    /** Code to append to objectName to access anything that
-     *  the request binds.  */
-    val accessPath = importsCode._3
 
     /** whether the trees need a variable name, as opposed to standing
         alone */
@@ -493,6 +587,28 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
     val boundNames =
       defNames ::: valAndVarNames ::: moduleNames ::: classNames ::: typeNames
 
+    /** list of names used by this expression */
+    val usedNames: List[Name] = {
+      val ivt = new ImportVarsTraverser(boundNames)
+      ivt.traverseTrees(trees)
+      ivt.importVars.toList
+    }
+
+    /** Whether this request defines an implicit.  */
+    def definesImplicit = trees.exists {
+      case tree:MemberDef =>
+        tree.mods.hasFlag(symtab.Flags.IMPLICIT)
+      case _ => false
+    }
+
+    def myImportsCode = importsCode(Set.empty ++ usedNames)
+
+    /** Code to append to objectName to access anything that
+     *  the request binds.  */
+    val accessPath = myImportsCode._3
+
+
+
     /** the line of code to compute */
     def toCompute = line
 
@@ -502,7 +618,7 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
         // header for the wrapper object
         code.println("object " + objectName + " {")
 
-        val (importsPreamble, importsTrailer, _) = importsCode
+        val (importsPreamble, importsTrailer, _) = myImportsCode
 
         code.print(importsPreamble)
 
@@ -557,6 +673,7 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
       )
       if (reporter.hasErrors) return false
 
+
       // extract and remember types
       typeOf = findTypes(objRun)
 
@@ -589,11 +706,12 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
             compiler.atPhase(objRun.typerPhase.next) {
               sym.info.member(compiler.newTermName(name)) })
 
-      names.foldLeft(Map.empty[Name, String])((map, name) => {
+      names.foldLeft(Map.empty[Name,String])((map, name) => {
           val rawType =
             compiler.atPhase(objRun.typerPhase.next) {
               resObjSym.info.member(name).tpe
             }
+
           // the types are all =>T; remove the =>
           val cleanedType= rawType match {
             case compiler.PolyType(Nil, rt) => rt
@@ -715,16 +833,32 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
     override def resultExtractionCode(code: PrintWriter): Unit = {
       code.println("+ \"" + trees.head.toString + "\\n\"")
     }
+
+    /** Whether this import includes a wildcard import */
+    def importsWildcard =
+      trees.exists {
+        case Import(_, selectors) =>
+          selectors.map(._1).contains(nme.USCOREkw)
+        case _ => false
+      }
+
+    /** The individual names imported by this statement */
+    def importedNames: Seq[Name] =
+      for {
+        val Import(_, selectors) <- trees
+        val (_,sel) <- selectors
+        sel != null
+        sel != nme.USCOREkw
+        val name <- List(sel.toTypeName, sel.toTermName)
+      }
+      yield name
   }
 }
 
-/** The object <code>Interpreter</code> ...
- */
+/** Utility methods for the Interpreter. */
 object Interpreter {
 
   /** Delete a directory tree recursively.  Use with care!
-   *
-   *  @param path ...
    */
   def deleteRecursively(path: File): Unit = {
     path match  {
@@ -741,7 +875,7 @@ object Interpreter {
    *   from an interpreter output string.
    */
   def stripWrapperGunk(str: String): String = {
-    val wrapregex = "line[0-9]+\\$object(\\$\\$import)*"
+    val wrapregex = "line[0-9]+\\$object(\\$\\$iw)*"
     str.replaceAll(wrapregex+"\\.", "")
        .replaceAll(wrapregex+"\\$", "")
   }
