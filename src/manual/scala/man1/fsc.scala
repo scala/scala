@@ -39,9 +39,9 @@ object fsc extends Command {
     "change, for example due to upgrading a library, then the daemon "&
     "should be explicitly shut down with " & MBold("-shutdown") & ".",
 
-    "Note that the "&Link(MBold("scala"),"scala.html")&" script runner "&
-    "will also use "&
-    "the offline compiler by default, with the sae advantages and caveats.")
+    "Note that the " & Link(MBold("scala"), "scala.html") & " script runner " &
+    "will also use " &
+    "the offline compiler by default, with the same advantages and caveats.")
 
   val options = Section("OPTIONS",
 
@@ -111,8 +111,21 @@ object fsc extends Command {
         "Specify the " & MBold("java") & " command to be used " &
         "for running the Scala code.  Arguments may be specified " &
         "as part of the environment variable; spaces, quotation marks, " &
-        "etc., will be passed directly to the shell for expansion.")))
+        "etc., will be passed directly to the shell for expansion."),
+      Definition(
+        MBold("JAVA_OPTS"),
+        SeqPara(
+          "Specify the options to be passed to the " & MBold("java") &
+          " command defined by " & MBold("JAVACMD") & ".",
 
+          "With Java 1.5 (or newer) one may for example configure the " &
+          "memory usage of the JVM as follows: " &
+          Mono("JAVA_OPTS=-Xmx512M -Xms16M -Xss16M"),
+
+          "With " & Link("GNU Java", "http://gcc.gnu.org/java/") & " one " &
+          "may configure the memory usage of the GIJ as follows: " &
+          Mono("JAVA_OPTS=--mx512m --ms16m")
+        ))))
 
   val exitStatus = Section("EXIT STATUS",
 
@@ -132,7 +145,7 @@ object fsc extends Command {
     title = command
     date = lastModified
     author = "Lex Spoon"
-    version = "0.2"
+    version = "0.4"
     sections = List(
       name,
       synopsis,
