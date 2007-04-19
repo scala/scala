@@ -800,7 +800,12 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
       case List(ClassDef(_, name, _, _, _)) => name
     }
 
-    def keyword = trees.head.asInstanceOf[ClassDef].keyword
+    def classdef = trees.head.asInstanceOf[ClassDef]
+
+    // TODO: MemberDef.keyword does not include "trait";
+    // otherwise it could be used here
+    def keyword: String =
+      if(classdef.mods.isTrait) "trait" else "class"
 
     override def resultExtractionCode(code: PrintWriter): Unit = {
       super.resultExtractionCode(code)
@@ -872,7 +877,7 @@ object Interpreter {
   }
 
   /** Heuristically strip interpreter wrapper prefixes
-   *   from an interpreter output string.
+   *  from an interpreter output string.
    */
   def stripWrapperGunk(str: String): String = {
     val wrapregex = "line[0-9]+\\$object(\\$\\$iw)*"
