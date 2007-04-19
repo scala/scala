@@ -256,7 +256,7 @@ class InterpreterLoop(in0: BufferedReader, out: PrintWriter) {
       new java.net.URLClassLoader(
                  settings.classpath.value.split(File.pathSeparator).
                          map(s => new File(s).toURL),
-                 ClassLoader.getSystemClassLoader)
+		 classOf[InterpreterLoop].getClassLoader)
 
     createInterpreter
 
