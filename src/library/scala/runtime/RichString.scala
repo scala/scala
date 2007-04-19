@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -113,7 +113,7 @@ final class RichString(val self: String) extends Proxy with Seq[Char] with Order
    */
   def stripMargin(marginChar: Char): String = {
     val buf = new scala.compat.StringBuilder()
-    for (val line <- linesWithSeparators) {
+    for (line <- linesWithSeparators) {
       val len = line.length
       var index = 0;
       while (index < len && line.charAt(index) <= ' ') index = index + 1

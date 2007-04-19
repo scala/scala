@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -53,8 +53,8 @@ class ClassPath(onlyPresentation: Boolean) {
   }
 
   class Context(val entries: List[Entry]) {
-    def find(name: String, isDir: Boolean) : Context = if (isPackage) {
-      def find0(entries: List[Entry]) : Context = {
+    def find(name: String, isDir: Boolean): Context = if (isPackage) {
+      def find0(entries: List[Entry]): Context = {
         if (entries.isEmpty) new Context(Nil)
         else {
           val ret = find0(entries.tail)
@@ -240,7 +240,7 @@ class ClassPath(onlyPresentation: Boolean) {
       while (strtok.hasMoreTokens()) {
         val file = AbstractFile.getDirectory(strtok.nextToken())
         if (file ne null) {
-          for (val file0 <- file) {
+          for (file0 <- file) {
             val name = file0.name
             if (name.endsWith(".jar") || name.endsWith(".zip") || file0.isDirectory) {
               val archive = AbstractFile.getDirectory(new File(file.file, name))

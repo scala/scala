@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2006-2007, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -18,18 +18,24 @@ trait Buffer[A] extends MutableSeq[A] with Collection[A] with Ranged[Int,A] {
   final protected type SortedSelf = Buffer[A];
 
   trait MutableSeqProjection extends super[MutableSeq].Projection;
+
   trait Projection extends MutableSeqProjection with super[Collection].Projection {
     override def filter(p : A => Boolean) = super[MutableSeqProjection].filter(p);
   }
+
   override def projection = new Projection {}
 
   override def elements : BufferIterator[Int,A];
+
   /** The first index of a buffer is 0. */
   override def first = 0;
+
   /** The last index of a buffer is its size - 1. */
   override def last = size - 1;
+
   /** Indices are compared through subtraction. */
   final def compare(k0 : Int, k1 : Int) = k0 - k1;
+
   /** Removes the element at index "idx" */
   def remove(idx : Int) = {
     val i = elements;
@@ -69,7 +75,7 @@ trait Buffer[A] extends MutableSeq[A] with Collection[A] with Ranged[Int,A] {
    */
   def addAll(idx: Int, that: Iterable[A]): Unit = {
     val i = elements; i.seek(idx);
-    for (val that <- that) {
+    for (that <- that) {
       i.add(that); i.next;
     }
   }

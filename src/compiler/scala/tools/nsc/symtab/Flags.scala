@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -128,7 +128,7 @@ object Flags extends Enumeration {
     ss.filter("" !=).mkString("", " ", "")
 
   def flagsToString(flags: long): String =
-    listToString(for (val i <- List.range(0, 63)) yield flagToString(flags & (1L << i)))
+    listToString(for (i <- List.range(0, 63)) yield flagToString(flags & (1L << i)))
 
   def flagsToString(flags: long, privateWithin: String): String = {
     var f = flags
@@ -210,36 +210,36 @@ object Flags extends Enumeration {
     def isVariable  = (mods &   MUTABLE) != 0
     def isPublic    = !isPrivate && !isProtected
   }
-  case class FlagEnum(mask : Int) extends Val(maskToBit(mask), flagToString(mask));
+  case class FlagEnum(mask: Int) extends Val(maskToBit(mask), flagToString(mask))
 
-  val Implicit = FlagEnum(IMPLICIT)
-  val Final    = FlagEnum(FINAL)
-  val Private  = FlagEnum(PRIVATE)
-  val Protected= FlagEnum(PROTECTED)
-  val Sealed   = FlagEnum(SEALED)
-  val Override = FlagEnum(OVERRIDE)
-  val Case     = FlagEnum(CASE)
-  val Abstract = FlagEnum(ABSTRACT)
-  val Deferred = FlagEnum(DEFERRED)
-  val Method   = FlagEnum(METHOD)
-  val Module   = FlagEnum(MODULE)
-  val Interface= FlagEnum(INTERFACE)
-  val Mutable  = FlagEnum(MUTABLE)
-  val Param    = FlagEnum(PARAM)
-  val Package  = FlagEnum(PACKAGE)
-  val Deprecated=FlagEnum(DEPRECATED)
-  val Covariant=FlagEnum(COVARIANT)
-  val Contravariant=FlagEnum(CONTRAVARIANT)
-  val AbsOverride=FlagEnum(ABSOVERRIDE)
-  val Local=FlagEnum(LOCAL)
-  val Synthetic=FlagEnum(SYNTHETIC)
-  val Stable=FlagEnum(STABLE)
-  val CaseAccessor=FlagEnum(CASEACCESSOR)
-  val Trait=FlagEnum(TRAIT)
-  val Bridge=FlagEnum(BRIDGE)
-  val Accessor=FlagEnum(ACCESSOR)
-  val SuperAccessor=FlagEnum(SUPERACCESSOR)
-  val ParamAccessor=FlagEnum(PARAMACCESSOR)
-  val ModuleVar=FlagEnum(MODULEVAR)
+  val Implicit      = FlagEnum(IMPLICIT)
+  val Final         = FlagEnum(FINAL)
+  val Private       = FlagEnum(PRIVATE)
+  val Protected     = FlagEnum(PROTECTED)
+  val Sealed        = FlagEnum(SEALED)
+  val Override      = FlagEnum(OVERRIDE)
+  val Case          = FlagEnum(CASE)
+  val Abstract      = FlagEnum(ABSTRACT)
+  val Deferred      = FlagEnum(DEFERRED)
+  val Method        = FlagEnum(METHOD)
+  val Module        = FlagEnum(MODULE)
+  val Interface     = FlagEnum(INTERFACE)
+  val Mutable       = FlagEnum(MUTABLE)
+  val Param         = FlagEnum(PARAM)
+  val Package       = FlagEnum(PACKAGE)
+  val Deprecated    = FlagEnum(DEPRECATED)
+  val Covariant     = FlagEnum(COVARIANT)
+  val Contravariant = FlagEnum(CONTRAVARIANT)
+  val AbsOverride   = FlagEnum(ABSOVERRIDE)
+  val Local         = FlagEnum(LOCAL)
+  val Synthetic     = FlagEnum(SYNTHETIC)
+  val Stable        = FlagEnum(STABLE)
+  val CaseAccessor  = FlagEnum(CASEACCESSOR)
+  val Trait         = FlagEnum(TRAIT)
+  val Bridge        = FlagEnum(BRIDGE)
+  val Accessor      = FlagEnum(ACCESSOR)
+  val SuperAccessor = FlagEnum(SUPERACCESSOR)
+  val ParamAccessor = FlagEnum(PARAMACCESSOR)
+  val ModuleVar     = FlagEnum(MODULEVAR)
 
 }

@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -11,7 +11,6 @@
 
 package scala.xml
 
-import compat.StringBuilder
 import collection.mutable.{Set, HashSet}
 
 /**
@@ -76,7 +75,7 @@ object Utility extends AnyRef with parsing.TokenTests {
    * @return     ...
    */
   final def escape(text: String, s: StringBuilder): StringBuilder = {
-    for (val c <- Iterator.fromString(text)) c match {
+    for (c <- Iterator.fromString(text)) c match {
       case '<' => s.append("&lt;")
       case '>' => s.append("&gt;")
       case '&' => s.append("&amp;")
@@ -130,13 +129,13 @@ object Utility extends AnyRef with parsing.TokenTests {
   def collectNamespaces(n: Node, set: Set[String]): Unit = {
     if (n.typeTag$ >= 0) {
       set += n.namespace
-      for (val a <- n.attributes) a match {
+      for (a <- n.attributes) a match {
         case _:PrefixedAttribute =>
           set += a.getNamespace(n)
         case _ =>
       }
-      for (val i <- n.child)
-        collectNamespaces(i, set);
+      for (i <- n.child)
+        collectNamespaces(i, set)
     }
   }
 
@@ -186,17 +185,13 @@ object Utility extends AnyRef with parsing.TokenTests {
         x.toString(sb)
 
       case g: Group =>
-        for (val c <- g.nodes) {
-          toXML(c, x.scope, sb, stripComment)
-        }
+        for (c <- g.nodes) toXML(c, x.scope, sb, stripComment)
 
       case _  =>
         // print tag with namespace declarations
         sb.append('<')
         x.nameToString(sb)
-        if (x.attributes ne null) {
-          x.attributes.toString(sb)
-        }
+        if (x.attributes ne null) x.attributes.toString(sb)
         x.scope.toString(sb, pscope)
         sb.append('>')
         sequenceToXML(x.child, pscope, sb, stripComment)
@@ -225,8 +220,8 @@ object Utility extends AnyRef with parsing.TokenTests {
         sb.append(' ')
         toXML(x, x.scope, sb, stripComment)
       }
-    } else for (val c <- children) {
-      toXML(c, c.scope, sb, stripComment)
+    } else {
+      for (c <- children) toXML(c, c.scope, sb, stripComment)
     }
   }
 
@@ -238,7 +233,7 @@ object Utility extends AnyRef with parsing.TokenTests {
    */
   final def prefix(name: String): Option[String] = {
     val i = name.indexOf(':'.asInstanceOf[Int])
-    if( i != -1 ) Some( name.substring(0, i) ) else None
+    if (i != -1) Some(name.substring(0, i)) else None
   }
 
   /**
@@ -330,7 +325,7 @@ object Utility extends AnyRef with parsing.TokenTests {
    */
   def appendEscapedQuoted(s: String, sb: StringBuilder) = {
     sb.append('"')
-    for (val c <- s) c match {
+    for (c <- s) c match {
       case '"' => sb.append('\\'); sb.append('"')
       case _   => sb.append(c)
     }
@@ -370,7 +365,7 @@ object Utility extends AnyRef with parsing.TokenTests {
         case '<' =>
           return "< not allowed in attribute value";
         case '&' =>
-          val n = getName(value, i+1);
+          val n = getName(value, i+1)
           if (n eq null)
             return "malformed entity reference in attribute value ["+value+"]";
           i = i + n.length() + 1

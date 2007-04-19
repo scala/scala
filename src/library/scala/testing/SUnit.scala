@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -12,7 +12,6 @@
 package scala.testing
 
 import scala.collection.mutable.ArrayBuffer
-import compat.StringBuilder
 
 /**
  * <p>
@@ -36,7 +35,7 @@ import compat.StringBuilder
  *
  * <b>val</b> r = <b>new</b> TestResult()
  * suite.run(r)
- * <b>for</b> (<b>val</b> tf &lt;- r.failures()) {
+ * <b>for</b> (tf &lt;- r.failures()) {
  *   Console.println(tf.toString())
  * }
  * </pre>
@@ -56,7 +55,7 @@ object SUnit {
     def main(args:Array[String]) {
       val r = new TestResult()
       suite.run(r)
-      for (val tf <- r.failures())
+      for (tf <- r.failures())
         Console.println(tf.toString())
     }
   }
@@ -131,10 +130,7 @@ object SUnit {
       buf += t
 
     def run(r: TestResult): Unit =
-      for(val t <- buf) {
-        t.run(r)
-      }
-
+      for (t <- buf) t.run(r)
   }
 
   /** an AssertFailed is thrown for a failed assertion */

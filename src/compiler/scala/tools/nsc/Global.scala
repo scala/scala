@@ -204,8 +204,9 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     val global: Global.this.type = Global.this
   }
 
-  def rootLoader: LazyType = if (forMSIL) new loaders.NamespaceLoader(classPath.root)
-                             else new loaders.PackageLoader(classPath.root /* getRoot() */)
+  def rootLoader: LazyType =
+    if (forMSIL) new loaders.NamespaceLoader(classPath.root)
+    else new loaders.PackageLoader(classPath.root /* getRoot() */)
 
   val migrateMsg = "migration problem when moving from Scala version 1.0 to version 2.0:\n"
 
@@ -215,8 +216,8 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
 
   val MaxPhases = 64
 
-  val phaseWithId = new Array[Phase](MaxPhases);
-  { for (val i <- List.range(0, MaxPhases)) phaseWithId(i) = NoPhase }
+  val phaseWithId = new Array[Phase](MaxPhases)
+  for (i <- List.range(0, MaxPhases)) phaseWithId(i) = NoPhase
 
   abstract class GlobalPhase(prev: Phase) extends Phase(prev) {
     phaseWithId(id) = this
@@ -412,7 +413,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
 
     private var p: Phase = firstPhase
 
-    for (val pd <- phaseDescriptors.takeWhile(pd => !(settings.stop contains pd.phaseName)))
+    for (pd <- phaseDescriptors.takeWhile(pd => !(settings.stop contains pd.phaseName)))
       if (!(settings.skip contains pd.phaseName)) p = pd.newPhase(p)
 
     def cancel { reporter.cancelled = true }
@@ -482,8 +483,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     def compileSources(sources: List[SourceFile]): unit = {
       val startTime = currentTime
       reporter.reset
-      for (val source <- sources)
-        addUnit(new CompilationUnit(source))
+      for (source <- sources) addUnit(new CompilationUnit(source))
 
       globalPhase = firstPhase
       while (globalPhase != terminalPhase && !reporter.hasErrors) {
@@ -511,7 +511,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
         showDef(newTermName(settings.Xshowobj.value), true)
 
       if (reporter.hasErrors) {
-        for (val (sym, file) <- symSource.elements) {
+        for ((sym, file) <- symSource.elements) {
           sym.reset(new loaders.SourcefileLoader(file))
           if (sym.isTerm) sym.moduleClass.reset(loaders.moduleClassLoader)
         }
@@ -524,7 +524,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
           warning("there were unchecked warnings; re-run with -unchecked for details")
         }
       }
-      for (val (sym, file) <- symSource.elements) resetPackageClass(sym.owner)
+      for ((sym, file) <- symSource.elements) resetPackageClass(sym.owner)
       //units foreach (.clear())
       informTime("total", startTime)
     }

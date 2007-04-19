@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2005-2007, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -11,9 +11,10 @@
 
 package scala.actors
 
-import compat.Platform
 import java.lang.{InterruptedException, Runnable, Thread}
+
 import scala.collection.mutable.PriorityQueue
+import scala.compat.Platform
 
 /**
  * This class allows the (local) sending of a message to an actor after
@@ -50,7 +51,7 @@ object TimerThread {
           }
 
           // process guys waiting for signal and empty list
-          for (val wa <- lateList) {
+          for (wa <- lateList) {
             if (wa.valid) {
               wa.actor ! TIMEOUT
             }

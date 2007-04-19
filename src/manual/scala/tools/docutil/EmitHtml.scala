@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author Stephane Micheloud
  * Adapted from Lex Spoon's sbaz manual
  */
@@ -19,8 +19,8 @@ object EmitHtml {
         .replaceAll(">", "&gt;")
 
 /* */
-  def emitSection(section: Section, depth: int): Unit = {
-    def emitPara(text: AbstractText): Unit = {
+  def emitSection(section: Section, depth: int) {
+    def emitPara(text: AbstractText) {
       out.println("<div>")
       emitText(text)
       out.println("\n</div>")
@@ -72,7 +72,7 @@ object EmitHtml {
 
         case DefinitionList(definitions @ _*) =>
           out.println("<ins><dl>")
-          for (val d <- definitions) {
+          for (d <- definitions) {
             out.println("<dt>")
             emitText(d.term)
             out.println("\n</dt>")
@@ -110,7 +110,7 @@ object EmitHtml {
 
         case lst:BulletList =>
           out.println("<ul>")
-          for (val item <- lst.items) {
+          for (item <- lst.items) {
             out.print("<li>")
             emitText(item)
             out.println("</li>")
@@ -119,7 +119,7 @@ object EmitHtml {
 
         case lst:NumberedList =>
           out.println("<ol>")
-          for(val item <- lst.items) {
+          for (item <- lst.items) {
             out.print("<li>")
             emitText(item)
           }
@@ -204,7 +204,7 @@ object EmitHtml {
 /*
  private def group(ns: Iterable[NodeSeq]): NodeSeq = {
     val zs = new NodeBuffer
-    for (val z <- ns) { zs &+ z }
+    for (z <- ns) { zs &+ z }
     zs
   }
 
@@ -337,7 +337,7 @@ object EmitHtml {
 */
   }
 */
-  def main(args: Array[String]) = {
+  def main(args: Array[String]) {
     if (args.length < 1) {
       System.err.println("usage: EmitHtml <classname>")
       exit(1)

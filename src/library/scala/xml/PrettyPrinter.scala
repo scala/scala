@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -86,10 +86,10 @@ class PrettyPrinter( width:Int, step:Int ) {
     if (cur < ind)
       cur == ind
     if (cur + s.length() > width) {            // fits in this line
-      items = Box( ind, s ) :: items
-      cur = cur + s.length()
+      items = Box(ind, s) :: items
+      cur += s.length()
     } else try {
-      for (val b <- cut(s, ind).elements)  // break it up
+      for (b <- cut(s, ind).elements)  // break it up
         items = b :: items
     } catch {
       case _:BrokenException => makePara(ind, s) // give up, para
@@ -187,9 +187,9 @@ class PrettyPrinter( width:Int, step:Int ) {
              val sq:Seq[String] = stg.split(" ");
              val it = sq.elements;
              it.next;
-             for( val c <- it ) {
-             makeBox( ind+len2-2, c );
-             makeBreak();
+             for(c <- it) {
+               makeBox( ind+len2-2, c );
+               makeBreak();
              }
              }*/
             makeBox(ind, stg.substring(len2, stg.length()))
@@ -205,7 +205,7 @@ class PrettyPrinter( width:Int, step:Int ) {
   }
 
   protected def traverse(it: Iterator[Node], scope: NamespaceBinding, ind: Int ): Unit =
-    for (val c <- it) {
+    for (c <- it) {
       traverse(c, scope, ind)
       makeBreak()
     }
@@ -225,7 +225,7 @@ class PrettyPrinter( width:Int, step:Int ) {
     reset()
     traverse(n, pscope, 0)
     var cur = 0
-    for (val b <- items.reverse) b match {
+    for (b <- items.reverse) b match {
       case Break =>
         if (!lastwasbreak) sb.append('\n')  // on windows: \r\n ?
         lastwasbreak = true
@@ -239,7 +239,7 @@ class PrettyPrinter( width:Int, step:Int ) {
         lastwasbreak = false
         while (cur < i) {
           sb.append(' ')
-          cur = cur + 1
+          cur += 1
         }
         sb.append(s)
       case Para( s ) =>
@@ -299,7 +299,7 @@ class PrettyPrinter( width:Int, step:Int ) {
    *  @param sb   the string buffer to which to append to
    */
   def formatNodes(nodes: Seq[Node], pscope: NamespaceBinding, sb: StringBuilder): Unit =
-    for (val n <- nodes.elements) {
+    for (n <- nodes.elements) {
       sb.append(format(n, pscope))
     }
 

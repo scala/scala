@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -50,11 +50,11 @@ trait Benchmark {
    *  @return        ...
    */
   def runBenchmark(noTimes: Int): List[Long] =
-    for (val i <- List.range(1, noTimes + 1)) yield {
+    for (i <- List.range(1, noTimes + 1)) yield {
       val startTime = Platform.currentTime
-      var i = 0; while(i < multiplier) {
+      var i = 0; while (i < multiplier) {
         run()
-        i = i + 1
+        i += 1
       }
       val stopTime = Platform.currentTime
       Platform.collectGarbage
@@ -70,10 +70,10 @@ trait Benchmark {
   def main(args: Array[String]): Unit = {
     if (args.length > 1) {
       val logFile = new java.io.FileWriter(args(1), true) // append, not overwrite
-      if(args.length >= 3)
+      if (args.length >= 3)
          multiplier = args(2).toInt
       logFile.write(getClass().getName())
-      for (val t <- runBenchmark(args(0).toInt))
+      for (t <- runBenchmark(args(0).toInt))
         logFile.write("\t\t" + t)
 
       logFile.write(Platform.EOL)

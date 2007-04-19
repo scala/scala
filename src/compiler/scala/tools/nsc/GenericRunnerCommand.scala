@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2006 LAMP/EPFL
+ * Copyright 2007 LAMP/EPFL
  * @author  Lex Spoon
  */
 
@@ -29,8 +29,8 @@ class GenericRunnerCommand(allargs: List[String], error: String => Unit) {
 
     while (!args.isEmpty && ok && args.head.startsWith("-")) {
       val args0 = args
-      for (val setting <- settings.allSettings)
-        if(args eq args0)
+      for (setting <- settings.allSettings)
+        if (args eq args0)
           args = setting.tryToSet(args)
       if (args eq args0) {
         error("unknown option: '" + args.head + "'")
@@ -38,7 +38,7 @@ class GenericRunnerCommand(allargs: List[String], error: String => Unit) {
       }
     }
 
-    if(!args.isEmpty) {
+    if (!args.isEmpty) {
       thingToRun = Some(args.head)
       arguments = args.tail
     }

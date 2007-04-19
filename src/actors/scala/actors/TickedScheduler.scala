@@ -1,12 +1,20 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2005-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+// $Id: $
 
 package scala.actors
 
-import compat.Platform
-
-import java.lang.{Runnable, Thread, InterruptedException}
+import java.lang.{Thread, InterruptedException}
 
 import scala.collection.Set
-import scala.collection.mutable.{ArrayBuffer, Buffer, HashMap, Queue, Stack, HashSet}
+import scala.collection.mutable.{ArrayBuffer, Buffer, HashMap, Queue}
+import scala.compat.Platform
 
 /**
  * <p>This scheduler uses a thread pool to execute tasks that are generated
@@ -30,16 +38,16 @@ class TickedScheduler extends Thread with IScheduler {
 
   private var pendingReactions = 0
   def pendReaction: unit = synchronized {
-    pendingReactions = pendingReactions + 1
+    pendingReactions += 1
   }
   def unPendReaction: unit = synchronized {
-    pendingReactions = pendingReactions - 1
+    pendingReactions -= 1
   }
 
   def printActorDump {}
 
   def start(task: Reaction): unit = synchronized {
-    pendingReactions = pendingReactions + 1
+    pendingReactions += 1
     execute(task)
   }
 
@@ -48,7 +56,7 @@ class TickedScheduler extends Thread with IScheduler {
   private var TICK_FREQ = 5
   private var CHECK_FREQ = 50
 
-  for (val i <- List.range(0, 2)) {
+  for (i <- List.range(0, 2)) {
     val worker = new WorkerThread(this)
     workers += worker
     worker.start()

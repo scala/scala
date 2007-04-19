@@ -12,7 +12,7 @@ import java.io.{BufferedReader, InputStreamReader, File, FileReader, PrintWriter
 import java.io.IOException
 
 import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
-import scala.tools.nsc.util.{Position}
+import scala.tools.nsc.util.Position
 import nsc.{InterpreterResults=>IR}
 
 /** The main loop of the command-line interface to the
@@ -118,7 +118,7 @@ class InterpreterLoop(in0: BufferedReader, out: PrintWriter) {
         out.print("\nscala> ")
         out.flush
       }
-      if(first) {
+      if (first) {
         /* For some reason, the first interpreted command always takes
          * a second or two.  So, wait until the welcome message
          * has been printed before calling bindSettings.  That way,
@@ -173,7 +173,7 @@ class InterpreterLoop(in0: BufferedReader, out: PrintWriter) {
   def replay() {
     closeInterpreter
     createInterpreter
-    for (val cmd <- replayCommands) {
+    for (cmd <- replayCommands) {
       out.println("Replaying: " + cmd)
       command(cmd)
       out.println
@@ -215,9 +215,9 @@ class InterpreterLoop(in0: BufferedReader, out: PrintWriter) {
         shouldReplay = Some(line)
       })
     }
-    else if (line.matches(replayRegexp))
+    else if (line matches replayRegexp)
       replay
-    else if (line.startsWith(":"))
+    else if (line startsWith ":")
       out.println("Unknown command.  Type :help for help.")
     else
       shouldReplay = interpretStartingWith(line)

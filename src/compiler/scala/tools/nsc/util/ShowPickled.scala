@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -62,7 +62,7 @@ object ShowPickled extends Names {
     case _ => "***BAD TAG***(" + tag + ")"
   }
 
-  def printFile(buf: PickleBuffer, out: PrintStream): unit = {
+  def printFile(buf: PickleBuffer, out: PrintStream) {
     out.println("Version " + buf.readNat() + "." + buf.readNat())
     val index = buf.createIndex
 
@@ -169,8 +169,7 @@ object ShowPickled extends Names {
                     ", factual = " + buf.readIndex)
     }
 
-    for (val i <- 0 until index.length)
-      printEntry(i)
+    for (i <- 0 until index.length) printEntry(i)
   }
 
   def main(args: Array[String]): unit = {

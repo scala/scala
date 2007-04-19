@@ -51,12 +51,10 @@ object Array {
    */
   def concat[T](xs: Array[T]*) = {
     var len = 0
-    for (val x <- xs) {
-      len += x.length
-    }
+    for (x <- xs) len += x.length
     val result = new Array[T](len)
     var start = 0
-    for (val x <- xs) {
+    for (x <- xs) {
       copy(x, 0, result, start, x.length)
       start += x.length
     }
@@ -71,7 +69,7 @@ object Array {
    */
   def range(start: Int, end: Int): Array[Int] = {
     val result = new Array[Int](end - start)
-    for (val i <- Iterator.range(start, end)) result(i - start) = i
+    for (i <- start until end) result(i - start) = i
     result
   }
 
@@ -83,7 +81,7 @@ object Array {
   def apply[A <: AnyRef](xs: A*): Array[A] = {
     val array = new Array[A](xs.length)
     var i = 0
-    for (val x <- xs.elements) { array(i) = x; i += 1 }
+    for (x <- xs.elements) { array(i) = x; i += 1 }
     array
   }
 
@@ -99,7 +97,7 @@ object Array {
    def Array[A](xs: A*): Array[A] = {
     val array = new Array[A](xs.length)
     var i = 0
-    for (val x <- xs.elements) { array(i) = x; i += 1 }
+    for (x <- xs.elements) { array(i) = x; i += 1 }
     array
   }
 */
@@ -107,55 +105,55 @@ object Array {
   def apply(xs: Boolean*): Array[Boolean] = {
     val array = new Array[Boolean](xs.length)
     var i = 0
-    for (val x <- xs.elements) { array(i) = x; i += 1 }
+    for (x <- xs.elements) { array(i) = x; i += 1 }
     array
   }
   def apply(xs: Byte*): Array[Byte] = {
     val array = new Array[Byte](xs.length)
     var i = 0
-    for (val x <- xs.elements) { array(i) = x; i += 1 }
+    for (x <- xs.elements) { array(i) = x; i += 1 }
     array
   }
   def apply(xs: Short*): Array[Short] = {
     val array = new Array[Short](xs.length)
     var i = 0
-    for (val x <- xs.elements) { array(i) = x; i += 1 }
+    for (x <- xs.elements) { array(i) = x; i += 1 }
     array
   }
   def apply(xs: Char*): Array[Char] = {
     val array = new Array[Char](xs.length)
     var i = 0
-    for (val x <- xs.elements) { array(i) = x; i += 1 }
+    for (x <- xs.elements) { array(i) = x; i += 1 }
     array
   }
   def apply(xs: Int*): Array[Int] = {
     val array = new Array[Int](xs.length)
     var i = 0
-    for (val x <- xs.elements) { array(i) = x; i += 1 }
+    for (x <- xs.elements) { array(i) = x; i += 1 }
     array
   }
   def apply(xs: Long*): Array[Long] = {
     val array = new Array[Long](xs.length)
     var i = 0
-    for (val x <- xs.elements) { array(i) = x; i += 1 }
+    for (x <- xs.elements) { array(i) = x; i += 1 }
     array
   }
   def apply(xs: Float*): Array[Float] = {
     val array = new Array[Float](xs.length)
     var i = 0
-    for (val x <- xs.elements) { array(i) = x; i += 1 }
+    for (x <- xs.elements) { array(i) = x; i += 1 }
     array
   }
   def apply(xs: Double*): Array[Double] = {
     val array = new Array[Double](xs.length)
     var i = 0
-    for (val x <- xs.elements) { array(i) = x; i += 1 }
+    for (x <- xs.elements) { array(i) = x; i += 1 }
     array
   }
   def apply(xs: Unit*): Array[Unit] = {
     val array = new Array[Unit](xs.length)
     var i = 0
-    for (val x <- xs.elements) { array(i) = x; i += 1 }
+    for (x <- xs.elements) { array(i) = x; i += 1 }
     array
   }
 

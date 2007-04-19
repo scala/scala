@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -13,8 +13,7 @@ package scala.xml
 
 
 object TextBuffer {
-  def fromString(str: String): TextBuffer =
-    new TextBuffer().append(str)
+  def fromString(str: String): TextBuffer = new TextBuffer().append(str)
 }
 
 /** The class <code>TextBuffer</code> is for creating text nodes without
@@ -36,12 +35,8 @@ class TextBuffer {
    *  @return ...
    */
   def append(cs: Seq[Char]): TextBuffer = {
-    for (val c <- cs) {
-      if (Utility.isSpace(c))
-        appendSpace
-      else
-        appendChar(c)
-    }
+    for (c <- cs)
+      if (Utility.isSpace(c)) appendSpace else appendChar(c)
     this
   }
 
@@ -54,7 +49,7 @@ class TextBuffer {
     if (len == 0) return Nil
 
     if (Utility.isSpace(sb.charAt(len - 1))) {
-      len = len - 1
+      len -= 1
       sb.setLength(len)
     }
     if (len == 0) return Nil

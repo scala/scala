@@ -54,7 +54,7 @@ object List {
     var i = from
     while (i < end) {
       b += i
-      i = i + step
+      i += step
     }
     b.toList
   }
@@ -71,7 +71,7 @@ object List {
     var i = from
     while (i < end) {
       b += i
-      i = i + step(i)
+      i += step(i)
     }
     b.toList
   }
@@ -87,7 +87,7 @@ object List {
     var i = 0
     while (i < n) {
       b += elem
-      i = i + 1
+      i += 1
     }
     b.toList
   }
@@ -106,7 +106,7 @@ object List {
     var i = 0
     while (i < n) {
       b += maker(i)
-      i = i + 1
+      i += 1
     }
     b.toList
   }
@@ -125,7 +125,7 @@ object List {
    */
   def concat[a](xss: List[a]*): List[a] = {
     val b = new ListBuffer[a]
-    for (val xs <- xss) {
+    for (xs <- xss) {
       var xc = xs
       while (!xc.isEmpty) {
         b += xc.head
@@ -180,7 +180,7 @@ object List {
     var res: List[a] = Nil
     var i = start + len
     while (i > start) {
-      i = i - 1
+      i -= 1
       res = arr(i) :: res
     }
     res
@@ -452,7 +452,7 @@ sealed abstract class List[+a] extends Seq[a] {
     var these = this
     var len = 0
     while (!these.isEmpty) {
-      len = len + 1
+      len += 1
       these = these.tail
     }
     len
@@ -469,7 +469,7 @@ sealed abstract class List[+a] extends Seq[a] {
     var these = this
     while (!these.isEmpty) {
       b += i
-      i = i + 1
+      i += 1
       these = these.tail
     }
     b.toList
@@ -537,7 +537,7 @@ sealed abstract class List[+a] extends Seq[a] {
     var i = 0
     var these = this
     while (!these.isEmpty && i < n) {
-      i = i + 1
+      i += 1
       b += these.head
       these = these.tail
     }
@@ -592,7 +592,7 @@ sealed abstract class List[+a] extends Seq[a] {
     var i = 0
     var these = this
     while (!these.isEmpty && i < n) {
-      i = i + 1
+      i += 1
       b += these.head
       these = these.tail
     }
@@ -716,7 +716,7 @@ sealed abstract class List[+a] extends Seq[a] {
     if (these.isEmpty) this
     else {
       val b = new ListBuffer[a]
-      var these1 = this;
+      var these1 = this
       while (these1 ne these) {
         b += these1.head
         these1 = these1.tail
@@ -839,7 +839,7 @@ sealed abstract class List[+a] extends Seq[a] {
     var cnt = 0
     var these = this
     while (!these.isEmpty) {
-      if (p(these.head)) cnt = cnt + 1
+      if (p(these.head)) cnt += 1
       these = these.tail
     }
     cnt
@@ -1020,7 +1020,7 @@ sealed abstract class List[+a] extends Seq[a] {
     while(!these.isEmpty) {
       b += (these.head, idx)
       these = these.tail
-      idx = idx + 1
+      idx += 1
     }
 
     b.toList

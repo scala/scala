@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author  Lex Spoon
  */
 
@@ -7,9 +7,8 @@
 
 package scala.tools.nsc
 
-import java.lang.Class
-import java.lang.{ClassNotFoundException, NoSuchMethodException}
 import java.io.File
+import java.lang.{Class, ClassNotFoundException, NoSuchMethodException}
 import java.lang.reflect.{Method,Modifier}
 import java.net.URLClassLoader
 

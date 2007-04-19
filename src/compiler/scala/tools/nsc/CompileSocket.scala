@@ -79,10 +79,10 @@ object CompileSocket {
 
     val potentials =
       for {
-        val trial <- totry
+        trial <- totry
         val expanded = expand(trial)
-        !expanded.isEmpty
-        isDirWritable(expanded.get)
+        if !expanded.isEmpty
+        if isDirWritable(expanded.get)
       }
       yield expanded.get
 
@@ -138,7 +138,7 @@ object CompileSocket {
     if (hits.length == 0) -1
     else
       try {
-        for (val i <- 1 until hits.length) hits(i).delete()
+        for (i <- 1 until hits.length) hits(i).delete()
         hits(0).getName.toInt
       } catch {
         case ex: NumberFormatException =>
@@ -159,7 +159,7 @@ object CompileSocket {
     if (port < 0)
       startNewServer(vmArgs)
     while (port < 0 && attempts < MaxAttempts) {
-      attempts = attempts + 1
+      attempts += 1
       Thread.sleep(sleepTime)
       port = pollPort()
     }

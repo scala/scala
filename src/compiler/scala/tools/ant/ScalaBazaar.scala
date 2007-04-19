@@ -257,7 +257,7 @@ package scala.tools.ant {
           <version>{version.get}</version>{
             if (!depends.isEmpty)
               <depends>{
-                for (val depend <- depends) yield
+                for (depend <- depends) yield
                   <name>{depend}</name>
               }</depends>
             else Nil
@@ -289,13 +289,13 @@ package scala.tools.ant {
 
       val zipContent =
         for {
-          val Pair(folder, fileSets) <- fileSetsMap.fileSets
-          val fileSet <- fileSets
-          val file <- List.fromArray(fileSet.getDirectoryScanner(getProject).getIncludedFiles)
+          Pair(folder, fileSets) <- fileSetsMap.fileSets
+          fileSet <- fileSets
+          file <- List.fromArray(fileSet.getDirectoryScanner(getProject).getIncludedFiles)
         } yield Triple(folder, fileSet.getDir(getProject), file)
       val zip = new ZipOutputStream(new FileOutputStream(file.get, false))
       if (!zipContent.isEmpty) {
-        for (val Triple(destFolder, srcFolder, file) <- zipContent) {
+        for (Triple(destFolder, srcFolder, file) <- zipContent) {
           log(file, Project.MSG_DEBUG)
           zip.putNextEntry(new ZipEntry(destFolder + "/" + file))
           val input = new FileInputStream(nameToFile(srcFolder)(file))

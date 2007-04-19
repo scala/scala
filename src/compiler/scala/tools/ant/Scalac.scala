@@ -605,7 +605,7 @@ class Scalac extends MatchingTask {
     while (!args.isEmpty) {
       val argsBuf = args
       if (args.head startsWith "-") {
-        for (val setting <- settings.allSettings)
+        for (setting <- settings.allSettings)
           args = setting.tryToSet(args);
       } else error("Parameter '" + args.head + "' does not start with '-'.")
       if (argsBuf eq args)

@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -8,10 +8,9 @@ package scala.tools.nsc
 
 import java.io.{BufferedReader, File, FileInputStream, FileOutputStream,
                 FileReader, InputStreamReader, PrintWriter}
-import java.util.jar.{JarEntry, JarOutputStream}
 import java.lang.reflect.InvocationTargetException
+import java.util.jar.{JarEntry, JarOutputStream}
 
-import compat.StringBuilder
 import scala.tools.nsc.io.PlainFile
 import scala.tools.nsc.reporters.ConsoleReporter
 import scala.tools.nsc.util.{CompoundSourceFile, SourceFile, SourceFileFragment}
@@ -67,7 +66,7 @@ object ScriptRunner {
       val buf = new Array[byte](10240)
 
       def addFromDir(dir: File, prefix: String): Unit = {
-        for (val entry <- dir.listFiles) {
+        for (entry <- dir.listFiles) {
           if (entry.isFile) {
             jar.putNextEntry(new JarEntry(prefix + entry.getName))
 
@@ -165,16 +164,13 @@ object ScriptRunner {
       scriptFileIn: String): Boolean =
   {
     val scriptFile = CompileClient.absFileName(scriptFileIn)
-    for {
-      val setting:settings.StringSetting <- List(
+    for (setting:settings.StringSetting <- List(
             settings.classpath,
             settings.sourcepath,
             settings.bootclasspath,
             settings.extdirs,
-            settings.outdir)
-    } {
+            settings.outdir))
       setting.value = CompileClient.absFileNames(setting.value)
-    }
 
     val compSettingNames =
       (new Settings(error)).allSettings.map(.name)

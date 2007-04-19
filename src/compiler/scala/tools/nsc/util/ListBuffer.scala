@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -18,7 +18,7 @@ class ListBuffer[T] extends Iterator[T] {
   }
 
   def ++=(xs: Iterable[T]): unit =
-    for (val x <- xs.elements) +=(x)
+    for (x <- xs.elements) +=(x)
 
   def +(x: T): ListBuffer[T] = { +=(x); this }
   def ++(xs: Iterable[T]): ListBuffer[T] = { ++=(xs); this }

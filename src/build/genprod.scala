@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2002-2007, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -45,19 +45,19 @@ object genprod {
   def choiceFilename(i: Int) = choiceClassname(i)+".scala"
 
   def targs(i: Int) =
-    for (val j <- List.range(1, i+1)) yield "T" + j
+    for (j <- List.range(1, i+1)) yield "T" + j
 
   def covariantArgs(i: Int) =
-    for (val t <- targs(i)) yield "+" + t
+    for (t <- targs(i)) yield "+" + t
 
   def contraCoArgs(i: Int) =
-    (for (val t <- targs(i)) yield  "-" + t) ::: List("+R")
+    (for (t <- targs(i)) yield  "-" + t) ::: List("+R")
 
   def vdefs(i: Int) =
-    for (val j <- List.range(1, i+1)) yield "v" + j
+    for (j <- List.range(1, i+1)) yield "v" + j
 
   def mdefs(i: Int) =
-    for (val j <- List.range(1, i+1)) yield "_" + j
+    for (j <- List.range(1, i+1)) yield "_" + j
 
 
   def zippedAndCommaSeparated (left: List[String], right: List[String]): String = {
@@ -79,16 +79,16 @@ object genprod {
   def funArgs(i: Int) = zippedAndCommaSeparated(vdefs(i), targs(i))
 
   def productFiles =
-    for(val i <- List.range(1, SUP_PRODUCT_ARITY)) yield ProductFile.make(i)
+    for (i <- List.range(1, SUP_PRODUCT_ARITY)) yield ProductFile.make(i)
 
   def tupleFiles =
-    for(val i <- List.range(1, SUP_TUPLE_ARITY)) yield TupleFile.make(i)
+    for (i <- List.range(1, SUP_TUPLE_ARITY)) yield TupleFile.make(i)
 
   def functionFiles =
-    for(val i <- List.range(0, SUP_FUNCTION_ARITY)) yield FunctionFile.make(i)
+    for (i <- List.range(0, SUP_FUNCTION_ARITY)) yield FunctionFile.make(i)
 
   //def choiceFiles =
-  //  for(val i <- List.range(2, SUP_CHOICE_ARITY)) yield ChoiceFile.make(i)
+  //  for (i <- List.range(2, SUP_CHOICE_ARITY)) yield ChoiceFile.make(i)
 
   def allfiles =
     productFiles ::: tupleFiles ::: functionFiles
@@ -101,7 +101,7 @@ object genprod {
     import java.io.{File, FileOutputStream}
     import java.nio.channels.Channels
     val out = args(0)
-    for (val node <- allfiles) {
+    for (node <- allfiles) {
       val f = new File(out + File.separator + node.attributes("name"))
       try {
         f.createNewFile
@@ -132,7 +132,7 @@ object FunctionFile {
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2002-2007, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -239,7 +239,7 @@ object TupleFile {
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2002-2007, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -338,11 +338,11 @@ trait {productClassname(i)}{__typeArgs__} extends Product {{
    *  @throws  IndexOutOfBoundsException
    */
   override def productElement(n: Int) = n match {{
-    {for(val Tuple2(m, j) <- mdefs(i).zip(List.range(0, i)))
+    {for (Tuple2(m, j) <- mdefs(i).zip(List.range(0, i)))
      yield "case "+j+" => "+m+"\n    "}case _ => throw new IndexOutOfBoundsException(n.toString())
   }}
 
-  {for(val Tuple2(m, t) <- mdefs(i) zip targs(i)) yield
+  {for (Tuple2(m, t) <- mdefs(i) zip targs(i)) yield
     "/** projection of this product */\n  def " + m + ": " + t + "\n\n" }
 }}
 </file>

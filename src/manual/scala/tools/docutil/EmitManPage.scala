@@ -19,8 +19,8 @@ object EmitManPage {
   def escape(text: String) =
     text.replaceAll("-", "\\-")
 
-  def emitSection(section: Section, depth: int): Unit = {
-    def emitPara(text: AbstractText): Unit = {
+  def emitSection(section: Section, depth: int) {
+    def emitPara(text: AbstractText) {
       emitText(text)
       out.println("\n.IP")
     }
@@ -68,12 +68,12 @@ object EmitManPage {
 
         case DefinitionList(definitions @ _*) =>
           var n = definitions.length
-          for (val d <- definitions) {
+          for (d <- definitions) {
             out.println(".TP")
             emitText(d.term)
             out.println
             emitText(d.description)
-            if (n > 1) { out.println; n = n - 1 }
+            if (n > 1) { out.println; n -= 1 }
           }
 
         case Link(label, url) =>
@@ -101,7 +101,7 @@ object EmitManPage {
           out.println("\n.fi")
 
         case lst:BulletList =>
-          for(val item <- lst.items) {
+          for(item <- lst.items) {
             out.println(".IP")
             emitText(item)
             out.println
@@ -109,7 +109,7 @@ object EmitManPage {
 
         case lst:NumberedList =>
           for {
-            val idx <- List.range(0, lst.items.length)
+            idx <- List.range(0, lst.items.length)
             val item = lst.items(idx)
           } {
             out.println(".IP \"   " + (idx+1) + ".\"")
@@ -143,7 +143,7 @@ object EmitManPage {
     section.paragraphs.foreach(emitParagraph)
   }
 
-  def emitDocument(doc: Document) = {
+  def emitDocument(doc: Document) {
     out.println(".\\\" ##########################################################################")
     out.println(".\\\" #                      __                                                #")
     out.println(".\\\" #      ________ ___   / /  ___     Scala 2 On-line Manual Pages          #")

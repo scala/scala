@@ -439,8 +439,8 @@ class Scaladoc extends MatchingTask {
     // older than the .scala file will be used.
     val sourceFiles: List[File] =
       for {
-        val originDir <- getOrigin
-        val originFile <- {
+        originDir <- getOrigin
+        originFile <- {
           val includedFiles =
             getDirectoryScanner(originDir).getIncludedFiles()
           val list = List.fromArray(includedFiles)
@@ -493,7 +493,7 @@ class Scaladoc extends MatchingTask {
     while (!args.isEmpty) {
       val argsBuf = args
       if (args.head startsWith "-") {
-        for (val setting <- settings.allSettings)
+        for (setting <- settings.allSettings)
           args = setting.tryToSet(args);
       } else error("Parameter '" + args.head + "' does not start with '-'.")
       if (argsBuf eq args)

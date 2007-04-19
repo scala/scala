@@ -1,13 +1,13 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
 
 package scala.tools.nsc
 
-import java.lang.{Class, ClassLoader}
 import java.io.{File, PrintWriter, StringWriter}
+import java.lang.{Class, ClassLoader}
 import java.net.{URL, URLClassLoader}
 
 import scala.collection.mutable
@@ -281,7 +281,7 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
 
     // loop through previous requests, adding imports
     // for each one
-    for(val req <- reqsToUse) {
+    for (req <- reqsToUse) {
       req match {
         case req:ImportReq =>
           // If the user entered an import, then just use it
@@ -305,8 +305,8 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
           // For other requests, import each bound variable.
           // import them explicitly instead of with _, so that
           // ambiguity errors will not be generated.
-          for(val imv <- req.boundNames) {
-            if(currentImps.contains(imv))
+          for (imv <- req.boundNames) {
+            if (currentImps.contains(imv))
               addWrapper()
             code.append("import ")
             code.append(req.objectName + req.accessPath + "." + imv + ";\n")
@@ -543,18 +543,14 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
 
     /** list of methods defined */
     val defNames =
-      for {
-        val DefDef(mods, name, _, _, _, _) <- trees
-        mods.isPublic
-      } yield name
+      for (DefDef(mods, name, _, _, _, _) <- trees if mods.isPublic)
+        yield name
 
     /** list of val's and var's defined */
     val valAndVarNames = {
       val baseNames =
-        for {
-          val ValDef(mods, name, _, _) <- trees
-          mods.isPublic
-        } yield name
+        for (ValDef(mods, name, _, _) <- trees if mods.isPublic)
+          yield name
 
       if (needsVarName)
         compiler.encode(varName) :: baseNames  // add a var name
@@ -565,7 +561,7 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
     /** list of modules defined */
     val moduleNames = {
       val explicit =
-        for(val ModuleDef(mods, name, _) <- trees; mods.isPublic)
+        for (ModuleDef(mods, name, _) <- trees if mods.isPublic)
           yield name
       val caseClasses =
         for {val ClassDef(mods, name, _, _, _) <- trees
@@ -577,12 +573,12 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
 
     /** list of classes defined */
     val classNames =
-      for (val ClassDef(mods, name, _, _, _) <- trees; mods.isPublic)
+      for (ClassDef(mods, name, _, _, _) <- trees if mods.isPublic)
         yield name
 
     /** list of type aliases defined */
     val typeNames =
-      for (val AliasTypeDef(mods, name, _, _) <- trees; mods.isPublic)
+      for (AliasTypeDef(mods, name, _, _) <- trees if mods.isPublic)
         yield name
 
     /** all (public) names defined by these statements */
@@ -655,7 +651,7 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
       })
 
     def resultExtractionCode(code: PrintWriter): Unit =
-      for (val vname <- valAndVarNames) {
+      for (vname <- valAndVarNames) {
         code.print(" + \"" + vname + ": " + typeOf(vname) +
                    " = \" + " + objectName + accessPath +
                    "." + vname + " + \"\\n\"")
@@ -752,7 +748,7 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
     /** return a summary of the defined methods */
     def defTypesSummary: String =
       stringFrom(summ => {
-        for (val methname <- defNames)
+        for (methname <- defNames)
           summ.println("" + methname + ": " + typeOf(methname))
       })
   }
@@ -871,7 +867,7 @@ object Interpreter {
     path match  {
       case _ if !path.exists => {}
       case _ if path.isDirectory =>
-        for (val p <- path.listFiles)
+        for (p <- path.listFiles)
           deleteRecursively(p)
         path.delete
       case _ => path.delete

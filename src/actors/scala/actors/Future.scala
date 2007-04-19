@@ -1,3 +1,12 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2005-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+// $Id: $
 
 package scala.actors
 
@@ -58,7 +67,7 @@ object Futures {
 
     var cnt = 0
     val mappedFts = fts.map(ft =>
-      Pair({cnt=cnt+1; cnt-1}, ft))
+      Pair({cnt+=1; cnt-1}, ft))
 
     val unsetFts = mappedFts.filter((p: Pair[int, Future[Any]]) => {
       if (p._2.isSet) { resultsMap(p._1) = Some(p._2()); false }
@@ -101,7 +110,7 @@ object Futures {
 
     var results: List[Option[Any]] = Nil
     val size = resultsMap.size
-    for (val i <- 0 until size) {
+    for (i <- 0 until size) {
       results = resultsMap(size - i - 1) :: results
     }
     results

@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -8,7 +8,6 @@ package scala.tools.nsc.symtab
 
 
 import java.lang.Integer.toOctalString
-import compat.StringBuilder
 
 import classfile.PickleFormat._
 
@@ -200,7 +199,7 @@ trait Constants {
     def escapedStringValue: String = {
       def escape(text: String): String = {
         val buf = new StringBuilder
-        for (val c <- Iterator.fromString(text))
+        for (c <- Iterator.fromString(text))
           if (c.isControl)
             buf.append("\\0" + toOctalString(c.asInstanceOf[Int]))
           else

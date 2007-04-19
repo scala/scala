@@ -1,13 +1,11 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
 
 package scala.tools.nsc
 
-
-import compat.StringBuilder
 
 /** A class representing command line info for scalac */
 class CompilerCommand(arguments: List[String], val settings: Settings,
@@ -31,7 +29,7 @@ class CompilerCommand(arguments: List[String], val settings: Settings,
     def format(s: String): String = {
       val buf = new StringBuilder(s)
       var i = s.length()
-      while (i < helpSyntaxColumnWidth) { buf.append(' '); i = i + 1 }
+      while (i < helpSyntaxColumnWidth) { buf.append(' '); i += 1 }
       buf.toString()
     }
     settings.allSettings
@@ -55,7 +53,7 @@ class CompilerCommand(arguments: List[String], val settings: Settings,
         ok = false
       } else {
         val args0 = args
-        for (val setting <- settings.allSettings)
+        for (setting <- settings.allSettings)
           if (args eq args0)
             args = setting.tryToSet(args)
 

@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2005-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2005-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -47,10 +47,10 @@ object Responder {
   }
 
   def loop[a](r: Responder[unit]): Responder[Nothing] =
-    for (val _ <- r; val y <- loop(r)) yield y
+    for (_ <- r; val y <- loop(r)) yield y
 
   def loopWhile[a](cond: => boolean)(r: Responder[unit]): Responder[unit] =
-    if (cond) for (val _ <- r; val y <- loopWhile(cond)(r)) yield y
+    if (cond) for (_ <- r; val y <- loopWhile(cond)(r)) yield y
     else constant(())
 
 }
