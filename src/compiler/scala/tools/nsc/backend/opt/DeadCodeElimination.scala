@@ -39,12 +39,14 @@ abstract class DeadCodeElimination extends SubComponent {
   /** Remove dead code.
    */
   class DeadCode {
-    def analyzeClass(cls: IClass): Unit =
+
+    def analyzeClass(cls: IClass): Unit = {
       cls.methods.foreach { m =>
         this.method = m
 //        analyzeMethod(m);
 	dieCodeDie(m)
       }
+    }
 
     val rdef = new reachingDefinitions.ReachingDefinitionsAnalysis;
 
@@ -57,6 +59,9 @@ abstract class DeadCodeElimination extends SubComponent {
     /** what instructions have been marked as useful? */
     val useful: mutable.Map[BasicBlock, mutable.BitSet] = new mutable.HashMap
 
+    /** what local variables have been accessed at least once? */
+    var accessedLocals: List[Local] = Nil
+
     /** the current method. */
     var method: IMethod = _
 
@@ -64,10 +69,15 @@ abstract class DeadCodeElimination extends SubComponent {
       log("dead code elimination on " + m);
 //      (new DepthFirstLinerizer).linearize(m)
       m.code.blocks.clear
+      accessedLocals = m.params.reverse
       m.code.blocks ++= linearizer.linearize(m)
       collectRDef(m)
       mark
       sweep(m)
+      if (m.locals.diff(accessedLocals).length > 0) {
+        log("Removed dead locals: " + m.locals.diff(accessedLocals))
+        m.locals = accessedLocals.reverse
+      }
     }
 
     /** collect reaching definitions and initial useful instructions for this method. */
@@ -84,8 +94,8 @@ abstract class DeadCodeElimination extends SubComponent {
             case LOAD_LOCAL(l) =>
               defs = defs + ((bb, idx)) -> rd._1
 //              Console.println(i + ": " + (bb, idx) + " rd: " + rd + " and having: " + defs)
-            case RETURN(_) | JUMP(_) | CJUMP(_, _, _, _) | CZJUMP(_, _, _, _) |
-                 DROP(_) | THROW()   | STORE_FIELD(_, _) | STORE_ARRAY_ITEM(_) |
+            case RETURN(_) | JUMP(_) | CJUMP(_, _, _, _) | CZJUMP(_, _, _, _) | STORE_FIELD(_, _) |
+                 DROP(_) | THROW()   | STORE_ARRAY_ITEM(_) | SCOPE_ENTER(_) | SCOPE_EXIT(_) |
                  LOAD_EXCEPTION() | SWITCH(_, _) | MONITOR_ENTER() | MONITOR_EXIT() => worklist += ((bb, idx))
             case CALL_METHOD(m1, _) if isSideEffecting(m1) => worklist += ((bb, idx))
             case CALL_METHOD(m1, SuperCall(_)) =>
@@ -147,15 +157,24 @@ abstract class DeadCodeElimination extends SubComponent {
               case Some(is) => is foreach bb.emit
               case None => ()
             }
+            // check for accessed locals
+            i match {
+              case LOAD_LOCAL(l) if !l.arg =>
+                accessedLocals = l :: accessedLocals
+              case STORE_LOCAL(l) if !l.arg =>
+                accessedLocals = l :: accessedLocals
+              case _ => ()
+            }
           } else {
             i match {
               case NEW(REFERENCE(sym)) =>
                 log("skipped object creation: " + sym)
                 //Console.println("skipping class file altogether: " + sym.fullNameString)
-                icodes.classes -= sym
+                if (inliner.isClosureClass(sym))
+                  icodes.classes -= sym
               case _ => ()
             }
-            log("Skipped: bb_" + bb + ": " + idx + "( " + i + ")")
+            if (settings.debug.value) log("Skipped: bb_" + bb + ": " + idx + "( " + i + ")")
           }
         }
 

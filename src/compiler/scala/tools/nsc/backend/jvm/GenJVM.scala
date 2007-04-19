@@ -1272,7 +1272,7 @@ abstract class GenJVM extends SubComponent {
 
     /**
      * Compute the indexes of each local variable of the given
-     * method.
+     * method. Assumes parameters come first in the list of locals.
      */
     def computeLocalVarsIndex(m: IMethod): Unit = {
       var idx = 1
