@@ -82,5 +82,6 @@ val two = one + x5
     val input = new BufferedReader(new StringReader(testCodeString))
     val repl = new InterpreterLoop(input, new PrintWriter(Console.out))
     repl.main(new Settings)
+    println()
   }
 }
