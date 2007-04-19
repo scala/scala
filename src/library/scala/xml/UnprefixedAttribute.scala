@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -68,9 +68,7 @@ class UnprefixedAttribute(val key: String, val value: Seq[Node], next1: MetaData
     sb.append(key)
     sb.append('=')
     val sb2 = new StringBuilder()
-    for (val c <- value) {
-      Utility.toXML(c, TopScope, sb2, true)
-    }
+    for (c <- value) Utility.toXML(c, TopScope, sb2, true)
     Utility.appendQuoted(sb2.toString(), sb)
   }
 
@@ -78,7 +76,7 @@ class UnprefixedAttribute(val key: String, val value: Seq[Node], next1: MetaData
     (null == next(null, scope, key)) && next.wellformed(scope)
 
   def remove(key: String) =
-    if(this.key == key) next else copy(next.remove(key))
+    if (this.key == key) next else copy(next.remove(key))
 
   def remove(namespace: String, scope: NamespaceBinding, key: String): MetaData =
     next.remove(namespace, scope, key)

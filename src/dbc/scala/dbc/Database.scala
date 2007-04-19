@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -9,30 +9,32 @@
 // $Id:Database.scala 6853 2006-03-20 16:58:47 +0100 (Mon, 20 Mar 2006) dubochet $
 
 
-package scala.dbc;
+package scala.dbc
 
 
-import java.sql._;
+import java.sql._
 
 /** A link to a database. The <code>Database</code> abstract class must
-  * be specialised for every different DBMS.
-  * @author  Gilles Dubochet **/
+ *  be specialised for every different DBMS.
+ *
+ *  @author  Gilles Dubochet
+ */
 case class Database(dbms: Vendor) {
 
   class Closed extends Exception {}
 
   /** A lock used for operations that need to be atomic for this database
    *  instance. */
-  private val lock: scala.concurrent.Lock = new scala.concurrent.Lock();
+  private val lock: scala.concurrent.Lock = new scala.concurrent.Lock()
 
   /** The vendor of the DBMS that contains this database. */
-  private val vendor: Vendor = dbms;
+  private val vendor: Vendor = dbms
 
   /** The Database connections available to use. */
-  private var availableConnections: List[Connection] = Nil;
+  private var availableConnections: List[Connection] = Nil
 
   /** The connections that are currently in use. */
-  private var usedConnections: List[Connection] = Nil;
+  private var usedConnections: List[Connection] = Nil
 
   /** Whether the database no longer accepts new connections. */
   private var closing: Boolean = false;
@@ -40,7 +42,7 @@ case class Database(dbms: Vendor) {
   /** Retrieves a connection from the available connection pool or creates
    *  a new one.
    *
-   *  @returns A connection that can be used to access the database.
+   *  @return A connection that can be used to access the database.
    */
   private def getConnection: Connection = {
     if (closing) {
@@ -72,23 +74,23 @@ case class Database(dbms: Vendor) {
    */
   private def closeConnection(connection: Connection): Unit = {
     if (closing) {
-      connection.close();
+      connection.close()
     } else {
-      lock.acquire;
+      lock.acquire
       usedConnections = usedConnections.remove(e => (e.equals(connection)));
       if (availableConnections.length < vendor.retainedConnections)
         availableConnections = connection :: availableConnections
       else
-        connection.close();
-      lock.release;
+        connection.close()
+      lock.release
     }
   }
 
   /** ..
    */
-  def close: Unit = {
-    closing = true;
-    for (val conn <- availableConnections) conn.close();
+  def close {
+    closing = true
+    for (conn <- availableConnections) conn.close()
   }
 
   /** Executes a statement that returns a relation on this database.
@@ -108,12 +110,12 @@ case class Database(dbms: Vendor) {
   def executeStatement(relationStatement: statement.Relation,
                        debug: Boolean): result.Relation =
     new scala.dbc.result.Relation {
-      val statement = relationStatement;
-      if (debug) Console.println("## " + statement.sqlString);
-      private val connection = getConnection;
-      val sqlResult = connection.createStatement().executeQuery(statement.sqlString);
-      closeConnection(connection);
-      statement.typeCheck(this);
+      val statement = relationStatement
+      if (debug) Console.println("## " + statement.sqlString)
+      private val connection = getConnection
+      val sqlResult = connection.createStatement().executeQuery(statement.sqlString)
+      closeConnection(connection)
+      statement.typeCheck(this)
     }
 
   /** Executes a statement that updates the state of the database.
@@ -159,10 +161,10 @@ case class Database(dbms: Vendor) {
    */
   def executeStatement[ResultType](transactionStatement: statement.Transaction[ResultType], debug: Boolean): result.Status[ResultType] = {
     new scala.dbc.result.Status[ResultType] {
-      val touchedCount = None;
-      val statement = transactionStatement;
-      private val connection = getConnection;
-      connection.setAutoCommit(false);
+      val touchedCount = None
+      val statement = transactionStatement
+      private val connection = getConnection
+      connection.setAutoCommit(false)
       val jdbcStatement: java.sql.Statement = connection.createStatement();
       if (debug) Console.println("## " + transactionStatement.sqlStartString);
       jdbcStatement.execute(transactionStatement.sqlStartString);
@@ -175,11 +177,11 @@ case class Database(dbms: Vendor) {
         case e: Throwable => {
           if (debug) Console.println("## " + transactionStatement.sqlAbortString);
           jdbcStatement.execute(transactionStatement.sqlAbortString);
-          throw e;
+          throw e
         }
       }
-      connection.setAutoCommit(true);
-      closeConnection(connection);
+      connection.setAutoCommit(true)
+      closeConnection(connection)
     }
   }
 

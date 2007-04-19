@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -10,8 +10,6 @@
 
 
 package scala.util.parsing
-
-import compat.StringBuilder
 
 /** This class ...
  *
@@ -27,7 +25,7 @@ class SimpleTokenizer(in: Iterator[char], delimiters: String) extends Iterator[S
   private def delimArray: Array[boolean] = {
     val ds = List.fromString(delimiters)
     val da = new Array[boolean]((0 /: ds)(max) + 1)
-    for (val ch <- ds) { da(ch) = true }
+    for (ch <- ds) { da(ch) = true }
     da
   }
 

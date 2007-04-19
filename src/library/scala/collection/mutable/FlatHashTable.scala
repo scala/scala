@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id: HashSet.scala 9235 2006-11-13 14:59:18 +0000 (Mon, 13 Nov 2006) mihaylov $
@@ -94,7 +94,7 @@ trait FlatHashTable[A] {
           h1 = (h1 + 1) % table.length
         }
         table(h0) = null
-        tableSize = tableSize - 1
+        tableSize -= 1
         if (tableDebug) checkConsistent()
         return
       }
@@ -123,13 +123,13 @@ trait FlatHashTable[A] {
     while (i < oldtable.length) {
       val entry = oldtable(i)
       if (null != entry) addEntry(entry.asInstanceOf[A])
-      i = i + 1
+      i += 1
     }
     if (tableDebug) checkConsistent()
   }
 
   private def checkConsistent() {
-    for (val i <- 0 until table.length)
+    for (i <- 0 until table.length)
       if (table(i) != null && !containsEntry(table(i).asInstanceOf[A]))
         assert(false, i+" "+table(i)+" "+table.toString)
   }
@@ -153,7 +153,7 @@ trait FlatHashTable[A] {
 
   protected def clear() {
     var i = table.length - 1
-    while (i >= 0) { table(i) = null; i = i - 1 }
+    while (i >= 0) { table(i) = null; i -= 1 }
     tableSize = 0
   }
 }

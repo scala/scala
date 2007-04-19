@@ -111,7 +111,7 @@ abstract class DocGenerator extends Models {
               else
                 urlFor(ts.head, target) ++ {
                   val sep = Text(", ")
-                  for (val t <- ts.tail)
+                  for (t <- ts.tail)
                   yield Group(sep ++ urlFor(t, target))
                 }
             )
@@ -121,7 +121,7 @@ abstract class DocGenerator extends Models {
             .++ (Text("[") ++ urlFor(tpe.typeArgs.head, target)
             .++ {
               val sep = Text(", ")
-              for (val t <- tpe.typeArgs.tail)
+              for (t <- tpe.typeArgs.tail)
               yield Group(sep ++ urlFor(t, target))
             }
             .++ (Text("]")))
@@ -135,7 +135,7 @@ abstract class DocGenerator extends Models {
             aref(urlFor(parents1.head.symbol), target, parents1.head.toString())
             .++ {
               val sep = Text(" with ")
-              for (val t <- parents1.tail)
+              for (t <- parents1.tail)
               yield Group(sep ++ urlFor(t, target))
             }
           case _ =>
@@ -227,7 +227,7 @@ abstract class DocGenerator extends Models {
       </div>
       <ul class="list">
         { {
-          for (val top <- modules.elements.toList) yield
+          for (top <- modules.elements.toList) yield
             <li><a href={urlFor(top._2)} target={classesFrame} onclick="resetKind();">{top._2.fullNameString('.')}</a></li>
         } }
       </ul>;
@@ -250,7 +250,7 @@ abstract class DocGenerator extends Models {
           Package Summary
         </td></tr>
         { {
-          for (val top <- modules.elements.toList) yield
+          for (top <- modules.elements.toList) yield
             <tr><td class="signature">
               <code>{Text("package")}
               {(aref(top._2.fullNameString('/') + "$content.html", "_self", top._2.fullNameString('.')))}</code>
@@ -286,13 +286,13 @@ abstract class DocGenerator extends Models {
         if (ids contains id) null
         else { ids += id; id }
       }
-      val body = <div>{ { for (val kind <- KINDS; classes contains kind) yield {
+      val body = <div>{ { for (kind <- KINDS if classes contains kind) yield {
         <div id={pluralFor(kind)} class="kinds">
           {Text(pluralFor(kind))}
         </div>
         <ul class="list">
           { {
-            for (val mmbr <- classes(kind).toList) yield
+            for (mmbr <- classes(kind).toList) yield
               <li id={idFor(kind, mmbr.tree)}>{urlFor(mmbr.tree, contentFrame)}</li>
           } }
         </ul>
@@ -312,7 +312,7 @@ abstract class DocGenerator extends Models {
             <code>{Text(" extends ")}</code>{forType(parents.head.tpe)}
           </dd> ++ (
           { {
-            for (val parent <- parents.tail) yield
+            for (parent <- parents.tail) yield
               <dd>
                 <code>{Text(" with ")}</code>{forType(parent.tpe)}
               </dd>
@@ -344,7 +344,7 @@ abstract class DocGenerator extends Models {
           Group(name ++ Text(buf.toString))
         }
         val sep = Text("@")
-        for (val attr <- tree.symbol.attributes)
+        for (attr <- tree.symbol.attributes)
         yield Group(br(sep ++ attrFor(attr)))
       }
 
@@ -362,7 +362,7 @@ abstract class DocGenerator extends Models {
         <dt>
           { attrsFor(mmbr.tree) }
           <code>
-            { { for (val str <- stringsFor(mmbr.mods)) yield Text(str + " ") } }
+            { { for (str <- stringsFor(mmbr.mods)) yield Text(str + " ") } }
             { Text(codeFor(mmbr.kind)) }
           </code>
           <em>{ Text(nameFor(mmbr.tree)) }</em>
@@ -388,7 +388,7 @@ abstract class DocGenerator extends Models {
           </dt>
           <dd>{ {
             val links =
-              for (val subc <- subcs)
+              for (subc <- subcs)
               yield aref(urlFor(subc), contentFrame, subc.nameString)
             links.reduceRight { (link: Seq[Node], seq: Seq[Node]) => link ++ Text(", ") ++ seq }
           } }</dd>
@@ -412,7 +412,7 @@ abstract class DocGenerator extends Models {
     def listMembersShort(mmbr: HasTree): NodeSeq =
       if (mmbr.isInstanceOf[Composite]) {
         val map = organize(mmbr.asInstanceOf[Composite], emptyMap)
-        for (val kind <- KINDS) yield Group(
+        for (kind <- KINDS) yield Group(
           (if (map contains kind)
              <table cellpadding="3" class="member" summary="">
                <tr>
@@ -442,9 +442,9 @@ abstract class DocGenerator extends Models {
         (kind == VAR && sym.isVariable) ||
         (kind == VAL && sym.isValue && !sym.isVariable && sym.hasGetter)
       val parents = sym.info.parents
-      for (val p <- parents; !ignored.contains(p.symbol);
+      for (p <- parents if !ignored.contains(p.symbol);
            val decls = p.decls.toList filter(member => isVisible(member));
-           !decls.isEmpty) yield Group(
+           if !decls.isEmpty) yield Group(
         <table cellpadding="3" class="inherited" summary="">
           <tr>
             <td colspan="2" class="title">
@@ -466,7 +466,7 @@ abstract class DocGenerator extends Models {
               (x, y) => (x.nameString compareTo y.nameString) < 0)
             <td colspan="2" class="signature">
               {aref1(members.head)}
-              {for (val m <- members.tail) yield Text(", ") ++ aref1(m)}
+              {for (m <- members.tail) yield Text(", ") ++ aref1(m)}
             </td>
           } </tr>
         </table>)
@@ -481,8 +481,8 @@ abstract class DocGenerator extends Models {
         val map = organize(mmbr.asInstanceOf[Composite], emptyMap)
         val mmbrx = mmbr
         val pathx = path
-        for (val kind0 <- List(OBJECT, CLASS); map contains kind0)
-          for (val mmbr <- map(kind0))
+        for (kind0 <- List(OBJECT, CLASS) if map contains kind0)
+          for (mmbr <- map(kind0))
             new ContentFrame {
               def clazz = mmbr.asInstanceOf[ImplMod]
               def kind = kind0
@@ -490,14 +490,14 @@ abstract class DocGenerator extends Models {
                 labelFor(kind0) + " " + mmbr.tree.symbol.nameString + " in " +
                 codeFor(mmbrx.kind) + " " + mmbr.tree.symbol.owner.fullNameString('.')
             }
-        for (val kind <- List(TRAIT, CONSTRUCTOR, VAL, VAR, DEF); map contains kind) yield Group(
+        for (kind <- List(TRAIT, CONSTRUCTOR, VAL, VAR, DEF) if map contains kind) yield Group(
           <table cellpadding="3" class="member-detail" summary="">
             <tr>
               <td class="title">{Text(labelFor(kind))} Detail</td>
             </tr>
           </table>
           <div>
-            {for (val mmbr <- map(kind).toList) yield fullHeader(mmbr)}
+            {for (mmbr <- map(kind).toList) yield fullHeader(mmbr)}
           </div>)
       } else
         NodeSeq.Empty
@@ -509,7 +509,7 @@ abstract class DocGenerator extends Models {
     def shortHeader(mmbr: HasTree): NodeSeq =
       <tr>
         <td valign="top" class="modifiers">
-          { for (val str <- stringsFor(mmbr.mods)) yield <code>{(Text(str + " "))}</code> }
+          { for (str <- stringsFor(mmbr.mods)) yield <code>{(Text(str + " "))}</code> }
         </td>
         <td class="signature">
           <code>{Text(codeFor(mmbr.kind))}</code>
@@ -614,7 +614,7 @@ abstract class DocGenerator extends Models {
       case ddef: DefDef =>
         if (!ddef.vparamss.isEmpty &&
             (!ddef.vparamss.tail.isEmpty || !ddef.vparamss.head.isEmpty)) {
-          val nodes = for (val vparams <- ddef.vparamss)
+          val nodes = for (vparams <- ddef.vparamss)
             yield surround("(", ")", forTrees(vparams));
           nodes.flatMap(x => x.toList)
         } else NodeSeq.Empty
@@ -649,7 +649,7 @@ abstract class DocGenerator extends Models {
       </div>
       <p>
         This document is the API specification for Scala 2.
-      </p> ++ (for (val kind <- KINDS; classes contains kind) yield Group(hr(
+      </p> ++ (for (kind <- KINDS if classes contains kind) yield Group(hr(
           <table cellpadding="3" class="member" summary="">
             <tr>
               <td colspan="2" class="title">
@@ -657,7 +657,7 @@ abstract class DocGenerator extends Models {
               </td>
             </tr>
             { {
-              for (val mmbr <- classes(kind).toList) yield shortHeader(mmbr)
+              for (mmbr <- classes(kind).toList) yield shortHeader(mmbr)
             } }
           </table>)))
   }
@@ -768,15 +768,15 @@ abstract class DocGenerator extends Models {
       <hr/> ++ ({
         val decls = sym.tpe.decls.toList
         //compute table members once for each relevant kind
-        val tables = for (val k <- kinds.keys.toList)
+        val tables = for (k <- kinds.keys.toList)
                      yield (k, decls filter kinds(k))
-        for (val (k, members) <- tables; !members.isEmpty) yield
+        for ((k, members) <- tables if !members.isEmpty) yield
           <table cellpadding="3" class="member" summary="">
             <tr>
               <td colspan="2" class="title">{k} Summary</td>
             </tr>
             { {
-              for (val m <- members) yield
+              for (m <- members) yield
                 <tr>
                   <td valign="top" class="modifiers">
                   </td>
@@ -821,9 +821,9 @@ abstract class DocGenerator extends Models {
     var members = emptyMap
 
     var topLevel = ListMap.empty[ModuleClassSymbol, ListMap[Kind,TreeSet[HasTree]]]
-    for (val unit <- units) {
+    for (unit <- units) {
       val sourceMod = new SourceMod(unit)
-      for (val mmbr <- sourceMod.members) mmbr.tree match {
+      for (mmbr <- sourceMod.members) mmbr.tree match {
         case cdef: ImplDef =>
           assert(cdef.symbol.owner != NoSymbol)
           val sym = cdef.symbol.owner.asInstanceOf[ModuleClassSymbol]
@@ -832,13 +832,13 @@ abstract class DocGenerator extends Models {
               topLevel = topLevel.update(sym, emptyMap)
             topLevel = topLevel.update(sym, organize0(mmbr, topLevel(sym)))
           }
-          for (val p <- cdef.symbol.info.parents) {
+          for (p <- cdef.symbol.info.parents) {
             subclasses(p.symbol) = cdef.symbol :: subclasses(p.symbol)
           }
           import Flags._
           val mmbrs = cdef.symbol.info.findMember(nme.ANYNAME, MUTABLE | METHOD | BRIDGE | ACCESSOR, 0, false).alternatives
-          for (val c <- mmbrs; c.isClass)
-            for (val p <- c.info.parents) {
+          for (c <- mmbrs if c.isClass)
+            for (p <- c.info.parents) {
               subclasses(p.symbol) = c :: subclasses(p.symbol)
             }
 
@@ -849,7 +849,7 @@ abstract class DocGenerator extends Models {
 
     val modules0 = {
       var modules0 = new TreeMap[String, ModuleClassSymbol]
-      for (val top <- topLevel.elements)
+      for (top <- topLevel.elements)
         modules0 = modules0.insert(top._1.fullNameString, top._1)
       modules0
     }
@@ -896,7 +896,7 @@ abstract class DocGenerator extends Models {
     new ListClassFrame {
       def classes = {
         var allClasses = emptyMap
-        for (val top <- topLevel.elements)
+        for (top <- topLevel.elements)
           allClasses = merge(allClasses, top._2)
         allClasses
       }
@@ -906,7 +906,7 @@ abstract class DocGenerator extends Models {
     }
 
     // class from for each module.
-    for (val top <- topLevel.elements) {
+    for (top <- topLevel.elements) {
       val module = top._1
       val members = top._2
 
@@ -924,7 +924,7 @@ abstract class DocGenerator extends Models {
       }
 
       // do root frame for each class and object
-      for (val kind <- members.elements) for (val mmbr <- kind._2.toList) {
+      for (kind <- members.elements) for (mmbr <- kind._2.toList) {
         val kind0 = kind._1
         new ContentFrame {
           def title =
@@ -1179,7 +1179,7 @@ abstract class DocGenerator extends Models {
     }
     // The name of a resource is a '/'-separated path name that identifies the resource.
     val rsrcdir = "scala/tools/nsc/doc/"
-    for (val base <- List("style.css", "script.js")) {
+    for (base <- List("style.css", "script.js")) {
       try {
         val in = loader.getResourceAsStream(rsrcdir + base)
         val out = new FileOutputStream(new File(outdir + File.separator + base))
@@ -1201,7 +1201,7 @@ abstract class DocGenerator extends Models {
   def organize(c: Composite, map0: ListMap[Kind, TreeSet[HasTree]]) = {
     var map = map0
     //System.err.println("MemBERS: " + c.members.toList)
-    for (val mmbr <- c.members.toList) map = organize0(mmbr, map)
+    for (mmbr <- c.members.toList) map = organize0(mmbr, map)
     map
   }
 
@@ -1312,7 +1312,7 @@ abstract class DocGenerator extends Models {
     else {
       val attrs = <dl>
     { {
-      for (val attr <- attributes.toList) yield
+      for (attr <- attributes.toList) yield
         <dt style="margin:10px 0 0 20px;">
           {tag(attr._1)}
         </dt>

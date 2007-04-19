@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -11,10 +11,12 @@
 
 package scala.xml
 
-import compat.StringBuilder
-
 /** prefixed attributes always have a non-null namespace.
+ *
+ *  @param pre   ...
+ *  @param key   ...
  *  @param value the attribute value, which may not be null
+ *  @param next  ...
  */
 class PrefixedAttribute(val pre: String,
                         val key: String,
@@ -77,16 +79,13 @@ class PrefixedAttribute(val pre: String,
     sb.append(key)
     sb.append('=')
     val sb2 = new StringBuilder()
-    for (val c <- value) {
-      Utility.toXML(c, TopScope, sb2, true)
-    }
+    for (c <- value) Utility.toXML(c, TopScope, sb2, true)
     Utility.appendQuoted(sb2.toString(), sb)
   }
 
-  def wellformed(scope: NamespaceBinding): Boolean = {
+  def wellformed(scope: NamespaceBinding): Boolean =
     (null == next(scope.getURI(pre), scope, key) &&
      next.wellformed(scope))
-  }
 
   def remove(key: String) =
     copy(next.remove(key))

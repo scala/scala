@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -42,7 +42,7 @@ trait Symbols {
     var rawname = initName
     var rawflags: long = 0
     private var rawpos = initPos
-    val id = { ids = ids + 1; ids }
+    val id = { ids += 1; ids }
 
     var validTo: Period = NoPeriod
 
@@ -56,11 +56,11 @@ trait Symbols {
       else if (isTypeParameter) pos - name.length
       else if (isVariable || isMethod || isClass || isModule) {
         var ret = pos
-        if (buf(pos) == ',') ret = ret + 1
-        else if (isClass)  ret = ret + ("class").length()
-        else if (isModule) ret = ret + ("object").length()
-        else ret = ret + ("var").length()
-        while (buf(ret).isWhitespace) ret = ret + 1
+        if (buf(pos) == ',') ret += 1
+        else if (isClass)  ret += "class".length()
+        else if (isModule) ret += "object".length()
+        else ret += "var".length()
+        while (buf(ret).isWhitespace) ret += 1
         ret
       }
       else if (isValue) {
@@ -71,7 +71,7 @@ trait Symbols {
               (buf(pos + 3) == ' ')) {
             var pos0 = pos + 4
             while (pos0 < buf.length && buf(pos0).isWhitespace)
-              pos0 = pos0 + 1
+              pos0 += 1
             pos0
 
           } else pos
@@ -412,7 +412,7 @@ trait Symbols {
         } finally {
           phase = current
         }
-        cnt = cnt + 1
+        cnt += 1
         // allow for two completions:
         //   one: sourceCompleter to LazyType, two: LazyType to completed type
         if (cnt == 3) throw new Error("no progress in completing " + this + ":" + tp)
@@ -802,9 +802,9 @@ trait Symbols {
 
     final def allOverriddenSymbols: List[Symbol] =
       if (owner.isClass && !owner.info.baseClasses.isEmpty)
-        for { val bc <- owner.info.baseClasses.tail
+        for { bc <- owner.info.baseClasses.tail
               val s = overriddenSymbol(bc)
-              s != NoSymbol } yield s
+              if s != NoSymbol } yield s
       else List()
 
     /** The symbol accessed by a super in the definition of this symbol when
@@ -1169,7 +1169,7 @@ trait Symbols {
         case TypeRef(_, sym, _) =>
           assert(sym != this, this)
         case ClassInfoType(parents, _, _) =>
-          for(val p <- parents) assert(p.symbol != this, owner)
+          for(p <- parents) assert(p.symbol != this, owner)
         case _ =>
       }
       super.setInfo(tp)
@@ -1339,13 +1339,13 @@ trait Symbols {
 
   def cloneSymbols(syms: List[Symbol]): List[Symbol] = {
     val syms1 = syms map (.cloneSymbol)
-    for (val sym1 <- syms1) sym1.setInfo(sym1.info.substSym(syms, syms1))
+    for (sym1 <- syms1) sym1.setInfo(sym1.info.substSym(syms, syms1))
     syms1
   }
 
   def cloneSymbols(syms: List[Symbol], owner: Symbol): List[Symbol] = {
     val syms1 = syms map (.cloneSymbol(owner))
-    for (val sym1 <- syms1) sym1.setInfo(sym1.info.substSym(syms, syms1))
+    for (sym1 <- syms1) sym1.setInfo(sym1.info.substSym(syms, syms1))
     syms1
   }
 

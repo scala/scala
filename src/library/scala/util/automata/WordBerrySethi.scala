@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -123,11 +123,11 @@ abstract class WordBerrySethi extends BaseBerrySethi {
     //@ifdef compiler if( label == Wildcard )
     //@ifdef compiler   defaultq.update(src, dest::defaultq( src ))
     //@ifdef compiler else
-    val q = deltaq( src );
+    val q = deltaq(src)
     q.update(label, dest::(q.get(label) match {
       case Some(x) => x
       case _       => Nil
-    }));
+    }))
   }
 
   protected def initialize(subexpr: Seq[RegExp]): Unit = {
@@ -157,7 +157,7 @@ abstract class WordBerrySethi extends BaseBerrySethi {
     while (j < pos) {
       deltaq(j) = new mutable.HashMap[_labelT,List[Int]]()
       defaultq(j) = Nil
-      j = j + 1
+      j += 1
     }
   }
 
@@ -175,7 +175,7 @@ abstract class WordBerrySethi extends BaseBerrySethi {
         else
           makeTransition( j, k, labelAt(k))
       }
-      j = j + 1
+      j += 1
     }
   }
 
@@ -203,7 +203,7 @@ abstract class WordBerrySethi extends BaseBerrySethi {
         var i = 0
         while (i < deltaq.length) {
           delta1 = delta1.update(i, deltaq(i))
-          i = i + 1
+          i += 1
         }
         val finalsArr = new Array[Int](pos)
 
@@ -213,7 +213,7 @@ abstract class WordBerrySethi extends BaseBerrySethi {
               case Some(z) => z
               case None => 0 // 0 == not final
             };
-            k = k + 1
+            k += 1
           }
         }
 
@@ -223,7 +223,7 @@ abstract class WordBerrySethi extends BaseBerrySethi {
         {
           var k = 0; while (k < initials.size) {
             initialsArr(k) = it.next
-            k = k + 1
+            k += 1
           }
         }
 
@@ -234,15 +234,15 @@ abstract class WordBerrySethi extends BaseBerrySethi {
             val labels = delta1(k).keys
             val hmap =
               new mutable.HashMap[_labelT, immutable.BitSet]
-            for (val lab <- labels) {
+            for (lab <- labels) {
               val trans = delta1(k)
               val x = new mutable.BitSet(pos)
-              for (val q <- trans(lab))
+              for (q <- trans(lab))
                 x += q
               hmap.update(lab, x.toImmutable)
             }
             deltaArr(k) = hmap
-            k = k + 1
+            k += 1
           }
         }
         val defaultArr = new Array[immutable.BitSet](pos)
@@ -250,10 +250,10 @@ abstract class WordBerrySethi extends BaseBerrySethi {
         {
           var k = 0; while(k < pos) {
             val x = new mutable.BitSet(pos)
-            for (val q <- defaultq(k))
+            for (q <- defaultq(k))
               x += q
             defaultArr(k) = x.toImmutable
-            k = k + 1
+            k += 1
           }
         }
 

@@ -798,14 +798,14 @@ trait Definitions {
       OptionClass = getClass("scala.Option")
       ProductRootClass = getClass("scala.Product")
 
-      for (val i <- 1 to MaxTupleArity) {
+      for (i <- 1 to MaxTupleArity) {
         TupleClass(i)   = getClass(  "scala.Tuple" + i)
       }
-      for (val i <- 1 to MaxProductArity) {
+      for (i <- 1 to MaxProductArity) {
         ProductClass(i) = getClass("scala.Product" + i)
       }
       /* </unapply> */
-      for (val i <- 0 to MaxFunctionArity) {
+      for (i <- 0 to MaxFunctionArity) {
         FunctionClass(i) = getClass("scala.Function" + i)
       }
       initValueClasses

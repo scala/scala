@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -64,11 +64,11 @@ abstract class DetWordAutom[T <: AnyRef] {
     var j = 0; while( j < nstates ) {
       if (j < finals.length)
         map = map.update(j, finals(j))
-      j = j + 1
+      j += 1
     }
     sb.append(map.toString())
     sb.append(" delta=\n")
-    for (val i <- 0 until nstates) {
+    for (i <- 0 until nstates) {
       sb.append( i )
       sb.append("->")
       sb.append(delta(i).toString())

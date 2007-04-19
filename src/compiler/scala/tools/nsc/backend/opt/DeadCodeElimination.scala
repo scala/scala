@@ -1,35 +1,35 @@
 /* NSC -- new scala compiler
- * Copyright 2005 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author  Iulian Dragos
  */
 
 // $Id$
 
-package scala.tools.nsc.backend.opt;
+package scala.tools.nsc.backend.opt
 
 import scala.collection._
-import scala.collection.immutable.{Map, HashMap, Set, HashSet};
-import scala.tools.nsc.backend.icode.analysis.LubError;
-import scala.tools.nsc.symtab._;
+import scala.collection.immutable.{Map, HashMap, Set, HashSet}
+import scala.tools.nsc.backend.icode.analysis.LubError
+import scala.tools.nsc.symtab._
 
 /**
  */
 abstract class DeadCodeElimination extends SubComponent {
-  import global._;
-  import icodes._;
-  import icodes.opcodes._;
+  import global._
+  import icodes._
+  import icodes.opcodes._
 
-  val phaseName = "dce";
+  val phaseName = "dce"
 
   /** Create a new phase */
-  override def newPhase(p: Phase) = new DeadCodeEliminationPhase(p);
+  override def newPhase(p: Phase) = new DeadCodeEliminationPhase(p)
 
   /** Dead code elimination phase.
    */
   class DeadCodeEliminationPhase(prev: Phase) extends ICodePhase(prev) {
 
     def name = phaseName
-    val dce = new DeadCode();
+    val dce = new DeadCode()
 
     override def apply(c: IClass): Unit =
       if (settings.Xdce.value)
@@ -86,10 +86,10 @@ abstract class DeadCodeElimination extends SubComponent {
       rdef.init(m);
       rdef.run;
 
-      for (val bb <- m.code.blocks.toList) {
+      for (bb <- m.code.blocks.toList) {
         useful(bb) = new mutable.BitSet(bb.size)
         var rd = rdef.in(bb);
-        for (val Pair(i, idx) <- bb.toList.zipWithIndex) {
+        for (Pair(i, idx) <- bb.toList.zipWithIndex) {
           i match {
             case LOAD_LOCAL(l) =>
               defs = defs + ((bb, idx)) -> rd._1
@@ -123,7 +123,7 @@ abstract class DeadCodeElimination extends SubComponent {
           useful(bb) += idx
           instr match {
             case LOAD_LOCAL(l1) =>
-              for (val (l2, bb1, idx1) <- defs((bb, idx)); l1 == l2; !useful(bb1)(idx1))
+              for ((l2, bb1, idx1) <- defs((bb, idx)) if l1 == l2; if !useful(bb1)(idx1))
                 worklist += ((bb1, idx1))
 
             case nw @ NEW(_) =>
@@ -134,7 +134,7 @@ abstract class DeadCodeElimination extends SubComponent {
               ()
 
             case _ =>
-              for (val (bb1, idx1) <- findDefs(bb, idx, instr.consumed); !useful(bb1)(idx1))
+              for ((bb1, idx1) <- findDefs(bb, idx, instr.consumed) if !useful(bb1)(idx1))
                 worklist += ((bb1, idx1))
           }
         }
@@ -144,12 +144,12 @@ abstract class DeadCodeElimination extends SubComponent {
     def sweep(m: IMethod) {
       val compensations = computeCompensations(m)
 
-      for (val bb <- m.code.blocks.toList) {
+      for (bb <- m.code.blocks.toList) {
 //        Console.println("** Sweeping block " + bb + " **")
         val oldInstr = bb.toList
         bb.open
         bb.clear
-        for (val Pair(i, idx) <- oldInstr.zipWithIndex) {
+        for (Pair(i, idx) <- oldInstr.zipWithIndex) {
           if (useful(bb)(idx)) {
 //            log(" " + i + " is useful")
             bb.emit(i, i.pos)
@@ -188,12 +188,12 @@ abstract class DeadCodeElimination extends SubComponent {
     private def computeCompensations(m: IMethod): mutable.Map[(BasicBlock, Int), List[Instruction]] = {
       val compensations: mutable.Map[(BasicBlock, Int), List[Instruction]] = new mutable.HashMap
 
-      for (val bb <- m.code.blocks.toList) {
+      for (bb <- m.code.blocks.toList) {
         assert(bb.isClosed, "Open block in computeCompensations")
-        for (val (i, idx) <- bb.toList.zipWithIndex) {
+        for ((i, idx) <- bb.toList.zipWithIndex) {
           if (!useful(bb)(idx)) {
             val defs = findDefs(bb, idx, i.consumed)
-            for (val d <- defs) {
+            for (d <- defs) {
               if (!compensations.isDefinedAt(d))
                 compensations(d) = i.consumedTypes map DROP
             }
@@ -219,7 +219,7 @@ abstract class DeadCodeElimination extends SubComponent {
         }
       }
 
-      for (val b <- linearizer.linearizeAt(method, bb))
+      for (b <- linearizer.linearizeAt(method, bb))
         find(b) match {
           case Some(p) => return p
           case None => ()
@@ -236,7 +236,7 @@ abstract class DeadCodeElimination extends SubComponent {
       var d = 0
       // "I look for who produced the 'n' elements below the 'd' topmost slots of the stack"
       while (n > 0 && i > 0) {
-        i = i - 1
+        i -= 1
         val prod = instrs(i).produced
         if (prod > d) {
           res = (bb, i) :: res
@@ -244,8 +244,8 @@ abstract class DeadCodeElimination extends SubComponent {
           if (bb(i) != LOAD_EXCEPTION)
             d = instrs(i).consumed
         } else {
-          d = d - prod
-          d = d + instrs(i).consumed;
+          d -= prod
+          d += instrs(i).consumed
         }
       }
 

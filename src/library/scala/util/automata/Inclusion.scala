@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -29,9 +29,9 @@ trait Inclusion[A <: AnyRef] {
    */
   def inclusion(dfa1: DetWordAutom[A], dfa2: DetWordAutom[A]) = {
 
-    def encode(q1:Int, q2:Int) = 1 + q1 + q2 * dfa1.nstates
-    def decode2(c:Int) = (c-1) / (dfa1.nstates) //integer division
-    def decode1(c:Int) = (c-1) % (dfa1.nstates)
+    def encode(q1: Int, q2: Int) = 1 + q1 + q2 * dfa1.nstates
+    def decode2(c: Int) = (c-1) / (dfa1.nstates) //integer division
+    def decode1(c: Int) = (c-1) % (dfa1.nstates)
 
     var q1 = 0 //dfa1.initstate; // == 0
     var q2 = 0 //dfa2.initstate; // == 0
@@ -45,7 +45,7 @@ trait Inclusion[A <: AnyRef] {
     mark(last) = max // mark (q1,q2)
     while (current != 0 && result) {
       //Console.println("current = [["+q1+" "+q2+"]] = "+current);
-      for (val letter <- labels) {
+      for (letter <- labels) {
         val r1 = dfa1.next(q1,letter)
         val r2 = dfa2.next(q2,letter)
         if (dfa1.isFinal(r1) && !dfa2.isFinal(r2))

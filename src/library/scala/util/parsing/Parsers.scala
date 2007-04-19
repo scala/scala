@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -57,7 +57,7 @@ abstract class Parsers {
     }
 
     def &&& [b](p: => Parser[b]): Parser[b] =
-      for (val _ <- this; val x <- p) yield x
+      for (_ <- this; val x <- p) yield x
   }
 
   def not[a](p: Parser[a]) = new Parser[unit] {
@@ -75,11 +75,11 @@ abstract class Parsers {
     rep1(p) ||| succeed(List())
 
   def rep1[a](p: Parser[a]): Parser[List[a]] =
-    for (val x <- p; val xs <- rep(p)) yield x :: xs
+    for (x <- p; val xs <- rep(p)) yield x :: xs
 
   def repWith[a, b](p: Parser[a], sep: Parser[b]): Parser[List[a]] =
-    for (val x <- p; val xs <- rep(sep &&& p)) yield x :: xs
+    for (x <- p; val xs <- rep(sep &&& p)) yield x :: xs
 
   def opt[a](p: Parser[a]): Parser[List[a]] =
-    (for (val x <- p) yield List(x)) ||| succeed(List())
+    (for (x <- p) yield List(x)) ||| succeed(List())
 }

@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -13,14 +13,8 @@ package scala.xml.parsing
 
 import java.io.{InputStream, Reader, File, FileDescriptor, FileInputStream}
 import scala.collection.mutable.{HashMap,Stack}
-import compat.StringBuilder
 
-import org.xml.sax.Attributes
-import org.xml.sax.ContentHandler
-
-import org.xml.sax.ErrorHandler
-import org.xml.sax.Locator
-import org.xml.sax.InputSource
+import org.xml.sax.{Attributes, InputSource}
 
 import org.xml.sax.SAXException
 import org.xml.sax.SAXNotRecognizedException
@@ -97,7 +91,7 @@ abstract class FactoryAdapter extends DefaultHandler() {
             buffer.append(ch(i))
             ws = false
           }
-	  i = i + 1
+	  i += 1
         }
       } else { // compliant:report every character
         buffer.append(ch, offset, length)
@@ -133,7 +127,7 @@ abstract class FactoryAdapter extends DefaultHandler() {
     var m: MetaData = Null
 
     var scpe = scopeStack.top
-    for (val i <- List.range(0, attributes.getLength())) {
+    for (i <- List.range(0, attributes.getLength())) {
       //val attrType = attributes.getType(i); // unused for now
       val qname = attributes.getQName(i)
       val value = attributes.getValue(i)

@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -11,7 +11,6 @@
 
 package scala.xml.parsing
 
-import compat.StringBuilder
 import scala.io.Source
 import scala.xml.dtd._
 
@@ -211,13 +210,13 @@ trait MarkupParser requires (MarkupParser with MarkupHandler) extends AnyRef wit
     //Console.println("[MarkupParser::document] children now: "+children.toList);
     var elemCount = 0;
     var theNode: Node = null;
-    for (val c <- children) c match {
+    for (c <- children) c match {
       case _:ProcInstr => ;
       case _:Comment => ;
       case _:EntityRef => // todo: fix entities, shouldn't be "special"
         reportSyntaxError("no entity references alllowed here");
       case s:SpecialNode =>
-        if(s.toString().trim().length() > 0) //non-empty text nodes not allowed
+        if (s.toString().trim().length() > 0) //non-empty text nodes not allowed
           elemCount = elemCount + 2;
       case m:Node =>
         elemCount = elemCount + 1;
@@ -439,27 +438,27 @@ trait MarkupParser requires (MarkupParser with MarkupHandler) extends AnyRef wit
    * see [15]
    */
   def xComment: NodeSeq = {
-    val sb: StringBuilder = new StringBuilder();
-    xToken('-');
-    xToken('-');
+    val sb: StringBuilder = new StringBuilder()
+    xToken('-')
+    xToken('-')
     while (true) {
       if (ch == '-'  && { sb.append(ch); nextch; ch == '-' }) {
-        sb.setLength(sb.length() - 1);
-        nextch;
-        xToken('>');
-        return handle.comment(pos, sb.toString());
-      } else sb.append(ch);
-      nextch;
+        sb.setLength(sb.length() - 1)
+        nextch
+        xToken('>')
+        return handle.comment(pos, sb.toString())
+      } else sb.append(ch)
+      nextch
     }
-    throw FatalError("this cannot happen");
-  };
+    throw FatalError("this cannot happen")
+  }
 
   /* todo: move this into the NodeBuilder class */
   def appendText(pos: Int, ts: NodeBuffer, txt: String): Unit = {
     if (preserveWS)
       ts &+ handle.text(pos, txt);
     else
-      for (val t <- TextBuffer.fromString(txt).toText) {
+      for (t <- TextBuffer.fromString(txt).toText) {
         ts &+ handle.text(pos, t.text);
       }
   }

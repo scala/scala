@@ -81,7 +81,7 @@ trait SyntheticMethods requires Analyzer {
       //val retTpe = lub(accs map (.tpe.resultType))
       val method = syntheticMethod(nme.productElement, FINAL, MethodType(List(IntClass.tpe), AnyClass.tpe/*retTpe*/))
       typed(DefDef(method, vparamss => Match(Ident(vparamss.head.head), {
-	(for(val (sym,i) <- accs.zipWithIndex) yield {
+	(for((sym,i) <- accs.zipWithIndex) yield {
 	  CaseDef(Literal(Constant(i)),EmptyTree, Ident(sym))
 	}):::List(CaseDef(Ident(nme.WILDCARD), EmptyTree,
 		    Throw(New(TypeTree(IndexOutOfBoundsExceptionClass.tpe), List(List(
@@ -212,7 +212,7 @@ trait SyntheticMethods requires Analyzer {
         // case classes are implicitly declared serializable
         clazz.attributes = AnnotationInfo(SerializableAttr.tpe, List(), List()) :: clazz.attributes
 
-        for (val stat <- templ.body) {
+        for (stat <- templ.body) {
           if (stat.isDef && stat.symbol.isMethod && stat.symbol.hasFlag(CASEACCESSOR) && !isPublic(stat.symbol)) {
             ts += newAccessorMethod(stat)
             stat.symbol.resetFlag(CASEACCESSOR)
@@ -244,7 +244,7 @@ trait SyntheticMethods requires Analyzer {
         if (!hasImplementation(nme.readResolve)) ts += readResolveMethod
       }
       if (!forCLDC && !forMSIL)
-        for (val sym <- clazz.info.decls.toList)
+        for (sym <- clazz.info.decls.toList)
           if (!sym.getAttributes(BeanPropertyAttr).isEmpty)
             if (sym.isGetter)
               addBeanGetterMethod(sym)

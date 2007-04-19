@@ -151,7 +151,7 @@ abstract class BitSet extends Set[Int] {
      val newarr = new Array[Int](length)
      if (arr.length > 0)
        arraycopy(this.arr, 0, newarr, 0, length)
-     newarr;
+     newarr
    }
   /**
    * @return a copy of the array underlying this bitset
@@ -163,9 +163,9 @@ abstract class BitSet extends Set[Int] {
   @deprecated override def toArray[B >: Int]: Array[B] = {
      val ret0 = underlying
      val ret1 = new Array[B](ret0.length)
-     for (val i <- 0.until(ret0.length))
+     for (i <- 0.until(ret0.length))
        ret1(i) = (ret0(i) : Any).asInstanceOf[B]
      ret1
   }
-  protected override def stringPrefix = "Set";
+  protected override def stringPrefix = "Set"
 }
