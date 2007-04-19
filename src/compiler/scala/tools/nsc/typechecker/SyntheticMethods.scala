@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author Martin Odersky
  */
 // $Id$
@@ -7,7 +7,6 @@
 package scala.tools.nsc.typechecker
 
 import symtab.Flags._
-import util.FreshNameCreator
 import scala.collection.mutable.ListBuffer
 
 /** <ul>
@@ -73,27 +72,9 @@ trait SyntheticMethods requires Analyzer {
       typed(DefDef(method, vparamss => Literal(Constant(clazz.name.decode))))
     }
 
-    /*deprecated*/ def OLDproductArityMethod(nargs:Int ): Tree = {
-      val method = syntheticMethod("arity", FINAL, PolyType(List(), IntClass.tpe))
-      typed(DefDef(method, vparamss => Literal(Constant(nargs))))
-    }
-
     def productArityMethod(nargs:Int ): Tree = {
       val method = syntheticMethod(nme.productArity, FINAL, PolyType(List(), IntClass.tpe))
       typed(DefDef(method, vparamss => Literal(Constant(nargs))))
-    }
-
-    /*deprecated*/ def OLDproductElementMethod(accs: List[Symbol]): Tree = {
-      //val retTpe = lub(accs map (.tpe.resultType))
-      val method = syntheticMethod("element", FINAL, MethodType(List(IntClass.tpe), AnyClass.tpe/*retTpe*/))
-      typed(DefDef(method, vparamss => Match(Ident(vparamss.head.head), {
-	(for(val (sym,i) <- accs.zipWithIndex) yield {
-	  CaseDef(Literal(Constant(i)),EmptyTree, Ident(sym))
-	}):::List(CaseDef(Ident(nme.WILDCARD), EmptyTree,
-		    Throw(New(TypeTree(IndexOutOfBoundsExceptionClass.tpe), List(List(
-		      Select(Ident(vparamss.head.head), nme.toString_)
-		    ))))))
-      })))
     }
 
     def productElementMethod(accs: List[Symbol]): Tree = {
@@ -249,12 +230,8 @@ trait SyntheticMethods requires Analyzer {
 
         if (!hasOverridingImplementation(Product_productPrefix)) ts += productPrefixMethod
 	val accessors = clazz.caseFieldAccessors
-	if (!hasImplementation("arity")) // remove after starr update
-	  ts += OLDproductArityMethod(accessors.length)
 	if (!hasOverridingImplementation(Product_productArity))
 	  ts += productArityMethod(accessors.length)
-	if (!hasImplementation("element")) // remove after starr update
-	  ts += OLDproductElementMethod(accessors)
 	if (!hasOverridingImplementation(Product_productElement))
 	  ts += productElementMethod(accessors)
       }

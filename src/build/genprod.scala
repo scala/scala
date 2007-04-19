@@ -285,7 +285,7 @@ object ProductFile {
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2002-2007, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -311,23 +311,7 @@ trait {productClassname(i)}{__typeArgs__} extends Product {{
    *  The arity of this product.
    *  @return {i}
    */
-  @deprecated override def arity = productArity
-
-  /**
-   *  The arity of this product.
-   *  @return {i}
-   */
   override def productArity = {i}
-
-  /**
-   *  Returns the n-th projection of this product if 0&amp;lt;=n&amp;lt;arity,
-   *  otherwise <code>null</code>.
-   *
-   *  @param n number of the projection to be returned
-   *  @return  same as _(n+1)
-   *  @throws  IndexOutOfBoundsException
-   */
-  @deprecated override def element(n: Int) = productElement(n)
 
   /**
    *  Returns the n-th projection of this product if 0&amp;lt;=n&amp;lt;arity,
