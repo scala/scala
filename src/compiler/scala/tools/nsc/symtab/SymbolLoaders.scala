@@ -137,8 +137,8 @@ abstract class SymbolLoaders {
 
       /** Is the given name a valid input file base name? */
       def isValid(name: String): boolean =
-        name.length() > 0 && (settings.XbytecodeRead.value ||
-          (!name.endsWith("$class") && name.indexOf("$anon") == -1));
+        name.length() > 0 && !name.endsWith("$class") && (settings.XbytecodeRead.value ||
+          (name.indexOf("$anon") == -1));
 
       val classes  = new HashMap[String, global.classPath0.Context]
       val packages = new HashMap[String, global.classPath0.Context]

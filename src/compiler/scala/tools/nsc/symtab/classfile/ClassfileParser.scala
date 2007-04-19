@@ -197,21 +197,23 @@ abstract class ClassfileParser {
         if (name == nme.MODULE_INSTANCE_FIELD) {
           val index = in.getChar(start + 1)
           val name = getExternalName(in.getChar(starts(index) + 1))
-          assert(name.endsWith("$"), "Not a module class: " + name)
+          //assert(name.endsWith("$"), "Not a module class: " + name)
           f = definitions.getModule(name.subName(0, name.length - 1))
         } else {
           val owner = if (static) ownerTpe.symbol.linkedClassOfClass else ownerTpe.symbol
-//          Console.println("" + owner.info.decl(name).tpe + " =:= " + tpe)
-          f = owner.info.member(name).suchThat(.tpe.=:=(tpe))
+//          println("\t" + owner.info.member(name).tpe.widen + " =:= " + tpe)
+          f = owner.info.member(name).suchThat(.tpe.widen.=:=(tpe))
           if (f == NoSymbol)
             f = owner.info.member(newTermName(name.toString + nme.LOCAL_SUFFIX)).suchThat(.tpe.=:=(tpe))
           if (f == NoSymbol) {
             // if it's an impl class, try to find it's static member inside the class
-            assert(ownerTpe.symbol.isImplClass, "Not an implementation class: " + owner + " couldn't find " + name + ": " + tpe);
+            assert(ownerTpe.symbol.isImplClass, "Not an implementation class: " + owner + " couldn't find " + name + ": " + tpe + " inside: \n" + ownerTpe.members);
             f = ownerTpe.member(name).suchThat(.tpe.=:=(tpe))
+//            println("\townerTpe.decls: " + ownerTpe.decls)
+//            println("Looking for: " + name + ": " + tpe + " inside: " + ownerTpe.symbol + "\n\tand found: " + ownerTpe.members)
           }
         }
-        assert(f != NoSymbol)
+        assert(f != NoSymbol, "could not find " + name + ": " + tpe + "inside: \n" + ownerTpe.members)
         values(index) = f
       }
       f
@@ -252,8 +254,11 @@ abstract class ClassfileParser {
           c = sigToType(name)
           values(index) = c
         } else {
-          values(index) = definitions.getClass(name)
-          c = definitions.getClass(name).tpe
+          val sym = if (name.endsWith("$")) definitions.getModule(name.subName(0, name.length - 1))
+                    else if (name.endsWith("$class")) definitions.getModule(name)
+                    else definitions.getClass(name)
+          values(index) = sym
+          c = sym.tpe
         }
       } else c = value match {
           case tp: Type => tp
@@ -294,6 +299,7 @@ abstract class ClassfileParser {
       value match {
         case  ct: Constant => ct
         case cls: Symbol   => Constant(cls.tpe)
+        case arr: Type     => Constant(arr)
       }
     }
 
@@ -445,7 +451,7 @@ abstract class ClassfileParser {
         sawPrivateConstructor = true
       in.skip(2); skipAttributes()
     } else {
-      if ((jflags & JAVA_ACC_BRIDGE) != 0) sflags = sflags | PRIVATE
+      if ((jflags & JAVA_ACC_BRIDGE) != 0) sflags = sflags | BRIDGE //PRIVATE
       if ((sflags & PRIVATE) != 0 && !global.settings.XbytecodeRead.value) {
         in.skip(4); skipAttributes()
       } else {

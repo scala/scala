@@ -44,17 +44,22 @@ abstract class ICodeReader extends ClassfileParser {
     var classFile: AbstractFile = null;
     var sym = cls
     isScalaModule = cls.isModule && !cls.hasFlag(JAVA)
+    log("Reading class: " + cls + " isScalaModule?: " + isScalaModule)
     val name = cls.fullNameString(java.io.File.separatorChar) + (if (isScalaModule) "$" else "")
-    classFile = classPath.root.find(name, false).classFile
-    if (cls.isModule && !cls.hasFlag(JAVA))
-      sym = cls.linkedClassOfModule
-    assert(classFile ne null, "No classfile for " + cls)
+    val entry = classPath.root.find(name, false)
+    if (entry ne null) {
+      classFile = entry.classFile
+      if (cls.isModule && !cls.hasFlag(JAVA))
+        sym = cls.linkedClassOfModule
+      assert(classFile ne null, "No classfile for " + cls)
 
 //    for (val s <- cls.info.members)
 //      Console.println("" + s + ": " + s.tpe)
-    this.instanceCode = new IClass(sym)
-    this.staticCode   = new IClass(sym.linkedClassOfClass)
-    parse(classFile, sym)
+      this.instanceCode = new IClass(sym)
+      this.staticCode   = new IClass(sym.linkedClassOfClass)
+      parse(classFile, sym)
+    } else
+      log("Could not find: " + cls)
 
     (staticCode, instanceCode)
   }
@@ -63,7 +68,10 @@ abstract class ICodeReader extends ClassfileParser {
    *  the module symbol.
    */
   override def getOwner(jflags: Int): Symbol = {
-    if (isScalaModule) this.staticModule else super.getOwner(jflags)
+    if (isScalaModule) {
+      println("a scala module: " + this.staticModule)
+      this.staticModule
+    } else super.getOwner(jflags)
   }
 
   override def parseClass(): Unit = {
@@ -117,7 +125,7 @@ abstract class ICodeReader extends ClassfileParser {
   override def parseMethod(): Unit = {
     val (jflags, sym) = parseMember();
     if (sym != NoSymbol) {
-      Console.println("Parsing method " + sym.fullNameString);
+      Console.println("Parsing method " + sym.fullNameString + ": " + sym.tpe);
       this.method = new IMethod(sym);
       getCode(jflags).addMethod(this.method);
       if ((jflags & JAVA_ACC_NATIVE) != 0)
@@ -212,7 +220,7 @@ abstract class ICodeReader extends ClassfileParser {
 
         case JVM.bipush      => code.emit(CONSTANT(Constant(in.nextByte))); size = size + 1;
         case JVM.sipush      => code.emit(CONSTANT(Constant(in.nextChar))); size = size + 2;
-        case JVM.ldc         => code.emit(CONSTANT(pool.getConstant(in.nextByte))); size = size + 1;
+        case JVM.ldc         => code.emit(CONSTANT(pool.getConstant(toUnsignedByte(in.nextByte)))); size = size + 1;
         case JVM.ldc_w       => code.emit(CONSTANT(pool.getConstant(in.nextChar))); size = size + 2;
         case JVM.ldc2_w      => code.emit(CONSTANT(pool.getConstant(in.nextChar))); size = size + 2;
         case JVM.iload       => code.emit(LOAD_LOCAL(code.getLocal(in.nextByte, INT)));    size = size + 1;
@@ -345,6 +353,7 @@ abstract class ICodeReader extends ClassfileParser {
         case JVM.iinc        =>
           size = size + 2
           val local = code.getLocal(in.nextByte, INT)
+          code.emit(LOAD_LOCAL(local))
           code.emit(CONSTANT(Constant(in.nextByte)))
           code.emit(CALL_PRIMITIVE(Arithmetic(ADD, INT)))
           code.emit(STORE_LOCAL(local))
@@ -391,10 +400,16 @@ abstract class ICodeReader extends ClassfileParser {
         case JVM.jsr         => Predef.error("Cannot handle jsr/ret")
         case JVM.ret         => Predef.error("Cannot handle jsr/ret")
         case JVM.tableswitch =>
-          var byte1 = in.nextByte; size = size + 1;
+          val padding = if ((pc + size) % 4 != 0) 4 - ((pc + size) % 4) else 0
+          size = size + padding;
+          in.bp = in.bp + padding
+          assert((pc + size % 4) != 0)
+/*          var byte1 = in.nextByte; size = size + 1;
           while (byte1 == 0) { byte1 = in.nextByte; size = size + 1; }
           val default = byte1 << 24 | in.nextByte << 16 | in.nextByte << 8 | in.nextByte;
           size = size + 3
+       */
+          val default = pc + in.nextInt; size = size + 4
           val low  = in.nextInt
           val high = in.nextInt
           size = size + 8
@@ -479,8 +494,8 @@ abstract class ICodeReader extends ClassfileParser {
           code.emit(CREATE_ARRAY(kind))
 
         case JVM.anewarray     =>
-          val tpe = REFERENCE(pool.getClassSymbol(in.nextChar)); size = size + 2;
-          code.emit(CREATE_ARRAY(tpe))
+          val tpe = pool.getClassOrArrayType(in.nextChar); size = size + 2;
+          code.emit(CREATE_ARRAY(toTypeKind(tpe)))
 
         case JVM.arraylength   => code.emit(CALL_PRIMITIVE(ArrayLength(OBJECT))); // the kind does not matter
         case JVM.athrow        => code.emit(THROW());
@@ -608,8 +623,10 @@ abstract class ICodeReader extends ClassfileParser {
           if (!bb.isClosed && otherBlock != bb) {
             bb.emit(JUMP(otherBlock))
             bb.close
+//            Console.println("\t> closing bb: " + bb)
           }
           bb = otherBlock
+//          Console.println("\t> entering bb: " + bb)
         }
         instr match {
           case LJUMP(target) =>
@@ -660,10 +677,12 @@ abstract class ICodeReader extends ClassfileParser {
             case DUP_X1 =>
               val (one, two) = stack.pop2
               push(one); push(two); push(one);
+              out = (bindings, stack)
 
             case DUP_X2 =>
               val (one, two, three) = stack.pop3
               push(one); push(three); push(two); push(one);
+              out = (bindings, stack)
 
             case DUP2_X1 =>
               val (one, two) = stack.pop2
@@ -673,6 +692,7 @@ abstract class ICodeReader extends ClassfileParser {
                 val three = stack.pop
                 push(two); push(one); push(three); push(two); push(one);
               }
+              out = (bindings, stack)
 
             case DUP2_X2 =>
               val (one, two) = stack.pop2
@@ -691,6 +711,7 @@ abstract class ICodeReader extends ClassfileParser {
                   push(two); push(one); push(four); push(one); push(three); push(two); push(one);
                 }
               }
+              out = (bindings, stack)
 
             case _ =>
               out = super.interpret(in, i)
@@ -699,7 +720,7 @@ abstract class ICodeReader extends ClassfileParser {
         }
       }
 
-      method.dump
+//      method.dump
       tfa.init(method)
       tfa.run
       for (val bb <- linearizer.linearize(method)) {
