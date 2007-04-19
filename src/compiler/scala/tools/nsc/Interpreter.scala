@@ -496,7 +496,7 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
    *    each command is executed because of Java's demand loading.
    *  </p>
    */
-  def close: Unit =
+  def close(): Unit =
     Interpreter.deleteRecursively(classfilePath)
 
 
