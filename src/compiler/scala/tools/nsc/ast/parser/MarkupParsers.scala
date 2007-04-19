@@ -504,6 +504,7 @@ class MarkupParser(p: UnitParser, presWS: boolean) /*with scala.xml.parsing.Mark
     //var tree = element;
     var tree:Tree = null
     val ts = new mutable.ArrayBuffer[Tree]()
+    tmppos = pos    // Iuli: added this line, as it seems content_LT uses tmppos when creating trees
     content_LT(ts)
     //Console.println("xLiteral:ts = "+ts.toList)
     lastend = s.in.bp
