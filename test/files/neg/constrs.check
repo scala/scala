@@ -11,7 +11,7 @@ constrs.scala:12: error: called constructor's definition must precede calling co
     def this(x: boolean) = this(x)
                            ^
 constrs.scala:16: error: type mismatch;
- found   : scala.Int(1)
+ found   : Int(1)
  required: a
     def this() = this(1)
                       ^

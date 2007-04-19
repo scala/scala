@@ -1,6 +1,6 @@
 bug1041.scala:3: error: type mismatch;
- found   : scala.Int(1)
- required: scala.List[scala.Int]
+ found   : Int(1)
+ required: List[Int]
     case 1 => 4
          ^
 one error found

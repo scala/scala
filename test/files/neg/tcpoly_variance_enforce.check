@@ -7,7 +7,7 @@ FooContra's type parameters do not match type m's expected parameters: type x (i
 object fcollcon extends coll[FooContra]     // error
                         ^
 tcpoly_variance_enforce.scala:17: error: the kinds of the type arguments (FooString) do not conform to the expected kinds of the type parameters (type m) in trait coll.
-FooString's type parameters do not match type m's expected parameters: type x (in class FooString)'s bounds >: scala.Nothing <: String are stricter than type x's declared bounds >: scala.Nothing <: scala.Any
+FooString's type parameters do not match type m's expected parameters: type x (in class FooString)'s bounds >: Nothing <: String are stricter than type x's declared bounds >: Nothing <: Any
 object fcollwb extends coll[FooString]      // error
                        ^
 tcpoly_variance_enforce.scala:19: error: the kinds of the type arguments (FooCov) do not conform to the expected kinds of the type parameters (type m) in trait coll2.
@@ -19,19 +19,19 @@ FooInvar's type parameters do not match type m's expected parameters: type x (in
 object fcoll2inv extends coll2[FooInvar]    // error
                          ^
 tcpoly_variance_enforce.scala:22: error: the kinds of the type arguments (FooString) do not conform to the expected kinds of the type parameters (type m) in trait coll2.
-FooString's type parameters do not match type m's expected parameters: type x (in class FooString) is covariant, but type x is declared contravarianttype x (in class FooString)'s bounds >: scala.Nothing <: String are stricter than type x's declared bounds >: scala.Nothing <: scala.Any
+FooString's type parameters do not match type m's expected parameters: type x (in class FooString) is covariant, but type x is declared contravarianttype x (in class FooString)'s bounds >: Nothing <: String are stricter than type x's declared bounds >: Nothing <: Any
 object fcoll2wb extends coll2[FooString]      // error
                         ^
 tcpoly_variance_enforce.scala:27: error: the kinds of the type arguments (FooString) do not conform to the expected kinds of the type parameters (type m) in trait coll3.
-FooString's type parameters do not match type m's expected parameters: type x (in class FooString)'s bounds >: scala.Nothing <: String are stricter than type x's declared bounds >: scala.Nothing <: scala.Any
+FooString's type parameters do not match type m's expected parameters: type x (in class FooString)'s bounds >: Nothing <: String are stricter than type x's declared bounds >: Nothing <: Any
 object fcoll3wb extends  coll3[FooString]   // error
                          ^
-tcpoly_variance_enforce.scala:30: error: the kinds of the type arguments (FooString,scala.Int) do not conform to the expected kinds of the type parameters (type m,type y) in trait coll4.
-FooString's type parameters do not match type m's expected parameters: type x (in class FooString)'s bounds >: scala.Nothing <: String are stricter than type x's declared bounds >: scala.Nothing <: y
+tcpoly_variance_enforce.scala:30: error: the kinds of the type arguments (FooString,Int) do not conform to the expected kinds of the type parameters (type m,type y) in trait coll4.
+FooString's type parameters do not match type m's expected parameters: type x (in class FooString)'s bounds >: Nothing <: String are stricter than type x's declared bounds >: Nothing <: y
 object fcoll4_1 extends  coll4[FooString, Int] // error
                          ^
-tcpoly_variance_enforce.scala:31: error: the kinds of the type arguments (FooString,scala.Any) do not conform to the expected kinds of the type parameters (type m,type y) in trait coll4.
-FooString's type parameters do not match type m's expected parameters: type x (in class FooString)'s bounds >: scala.Nothing <: String are stricter than type x's declared bounds >: scala.Nothing <: y
+tcpoly_variance_enforce.scala:31: error: the kinds of the type arguments (FooString,Any) do not conform to the expected kinds of the type parameters (type m,type y) in trait coll4.
+FooString's type parameters do not match type m's expected parameters: type x (in class FooString)'s bounds >: Nothing <: String are stricter than type x's declared bounds >: Nothing <: y
 object fcoll4_2 extends  coll4[FooString, Any] // error
                          ^
 tcpoly_variance_enforce.scala:37: error: the kinds of the type arguments (FooInvar) do not conform to the expected kinds of the type parameters (type m) in trait coll.

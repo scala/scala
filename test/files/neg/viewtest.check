@@ -1,6 +1,6 @@
 viewtest.scala:43: error: type mismatch;
- found   : scala.List[a(in method compareTo)]
- required: scala.List[a(in method view3)]
+ found   : List[a(in method compareTo)]
+ required: List[a(in method view3)]
         case y1: List[a] => compareLists(x, y1)
                                             ^
 viewtest.scala:104: error: ambiguous implicit values:

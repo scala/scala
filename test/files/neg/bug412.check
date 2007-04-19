@@ -1,5 +1,5 @@
 bug412.scala:9: error: type mismatch;
- found   : scala.Null(null)
+ found   : Null(null)
  required: A.this.CX with A.this.C2
     val c: CX with C2 = null;
                         ^

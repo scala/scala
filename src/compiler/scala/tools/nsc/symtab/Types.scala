@@ -623,7 +623,7 @@ trait Types {
     override def singleDeref: Type = sym.typeOfThis
     override def prefixString =
       if (settings.debug.value) sym.nameString + ".this."
-      else if (sym.isRoot || sym.isEmptyPackageClass || sym.isInterpreterWrapper) ""
+      else if (sym.isRoot || sym.isEmptyPackageClass || sym.isInterpreterWrapper || sym.isScalaPackageClass) ""
       else if (sym.isAnonymousClass || sym.isRefinementClass) "this."
       else if (sym.isPackageClass) sym.fullNameString + "."
       else sym.nameString + ".this."
@@ -671,7 +671,7 @@ trait Types {
     override def symbol = sym
     override def prefix: Type = pre
     override def prefixString: String =
-      if ((sym.isEmptyPackage || sym.isInterpreterWrapper || sym.isPredefModule) && !settings.debug.value) ""
+      if ((sym.isEmptyPackage || sym.isInterpreterWrapper || sym.isPredefModule || sym.isScalaPackage) && !settings.debug.value) ""
       else pre.prefixString + sym.nameString + "."
   }
 
@@ -1213,7 +1213,7 @@ A type's symbol should never be inspected directly.
     override def prefixString =
       if (settings.debug.value) super.prefixString
       else if (sym.isRoot || sym.isEmptyPackageClass || sym.isInterpreterWrapper ||
-               sym.isAnonymousClass || sym.isRefinementClass) ""
+               sym.isAnonymousClass || sym.isRefinementClass || sym.isScalaPackageClass) ""
       else if (sym.isPackageClass) sym.fullNameString + "."
       else super.prefixString
   }

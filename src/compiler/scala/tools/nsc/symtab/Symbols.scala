@@ -212,7 +212,10 @@ trait Symbols {
     final def isRootPackage = isPackage && name == nme.ROOTPKG
     final def isEmptyPackage = isPackage && name == nme.EMPTY_PACKAGE_NAME
     final def isEmptyPackageClass = isPackageClass && name == nme.EMPTY_PACKAGE_NAME.toTypeName
-    final def isPredefModule = isModule && name == nme.Predef
+    final def isPredefModule = isModule && name == nme.Predef // not printed as a prefix
+    final def isScalaPackage = isPackage && name == nme.scala_ // not printed as a prefix
+    final def isScalaPackageClass = isPackageClass && name == nme.scala_.toTypeName // not printed as a prefix
+
     def isDeprecated =
       attributes exists (attr => attr.atp.symbol == DeprecatedAttr)
 

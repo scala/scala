@@ -1,4 +1,4 @@
-bug1024.scala:2: error: type _ escapes its defining scope as part of type (scala.List[_], scala.Int)
+bug1024.scala:2: error: type _ escapes its defining scope as part of type (List[_], Int)
   val (a: List[_], b) = (List(1 ,2 ,3 ), 4)
       ^
 one error found

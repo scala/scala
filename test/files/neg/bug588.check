@@ -1,13 +1,13 @@
 bug588.scala:3: error: double definition:
 method visit:((int) => String)boolean and
 method visit:((int) => unit)boolean at line 2
-have same type after erasure: (scala.Function1)scala.Boolean
+have same type after erasure: (Function1)Boolean
   def visit(f: int => String): boolean
   ^
 bug588.scala:10: error: double definition:
-method f:(Test.this.TypeB)scala.Unit and
-method f:(Test.this.TypeA)scala.Unit at line 9
-have same type after erasure: (Test#TraitA)scala.Unit
+method f:(Test.this.TypeB)Unit and
+method f:(Test.this.TypeA)Unit at line 9
+have same type after erasure: (Test#TraitA)Unit
   def f(brac : TypeB) : Unit;
   ^
 two errors found
