@@ -136,7 +136,6 @@ trait Typers requires Analyzer {
   private def argMode(fun: Tree, mode: int) =
     if (treeInfo.isSelfOrSuperConstrCall(fun)) mode | SCCmode else mode
 
-  private var xxx = 10;
   class Typer(context0: Context) {
     import context0.unit
 
