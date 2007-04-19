@@ -18,11 +18,9 @@ trait Buffer[A] extends MutableSeq[A] with Collection[A] with Ranged[Int,A] {
   final protected type SortedSelf = Buffer[A];
 
   trait MutableSeqProjection extends super[MutableSeq].Projection;
-
   trait Projection extends MutableSeqProjection with super[Collection].Projection {
     override def filter(p : A => Boolean) = super[MutableSeqProjection].filter(p);
   }
-
   override def projection = new Projection {}
 
   override def elements : BufferIterator[Int,A];
