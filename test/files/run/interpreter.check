@@ -4,17 +4,17 @@ Type :help for more information.
 
 scala> 
 scala> 
-scala> unnamed0: scala.Int = 7
+scala> unnamed0: Int = 7
 
 scala>      |      |      |      | gcd: (int,int)int
 
 scala> five: int = 5
 
-scala> x: scala.Int = 1
+scala> x: Int = 1
 
-scala> x: scala.Int = 2
+scala> x: Int = 2
 
-scala> three: scala.Int = 3
+scala> three: Int = 3
 
 scala> defined type alias anotherint
 
@@ -46,90 +46,90 @@ scala> m: int = 3
 
 scala> 
 scala> 
-scala> one: scala.Int = 1
+scala> one: Int = 1
 
-scala> one: scala.Int = 1
+scala> one: Int = 1
 
-scala> one: scala.Int = 1
+scala> one: Int = 1
 
-scala> one: scala.Int = 1
+scala> one: Int = 1
 
-scala> one: scala.Int = 1
+scala> one: Int = 1
 
-scala> one: scala.Int = 1
+scala> one: Int = 1
 
-scala> one: scala.Int = 1
+scala> one: Int = 1
 
-scala> one: scala.Int = 1
+scala> one: Int = 1
 
-scala> one: scala.Int = 1
+scala> one: Int = 1
 
-scala> one: scala.Int = 1
+scala> one: Int = 1
 
-scala> one: scala.Int = 1
+scala> one: Int = 1
 
-scala> one: scala.Int = 1
+scala> one: Int = 1
 
-scala> one: scala.Int = 1
+scala> one: Int = 1
 
-scala> one: scala.Int = 1
+scala> one: Int = 1
 
-scala> one: scala.Int = 1
+scala> one: Int = 1
 
-scala> one: scala.Int = 1
+scala> one: Int = 1
 
-scala> one: scala.Int = 1
+scala> one: Int = 1
 
-scala> one: scala.Int = 1
+scala> one: Int = 1
 
-scala> one: scala.Int = 1
+scala> one: Int = 1
 
-scala> one: scala.Int = 1
-
-scala> 
-scala> 
-scala> x1: scala.Int = 1
-
-scala> x2: scala.Int = 1
-
-scala> x3: scala.Int = 1
-
-scala> x4: scala.Int = 1
-
-scala> x5: scala.Int = 1
-
-scala> x6: scala.Int = 1
-
-scala> x7: scala.Int = 1
-
-scala> x8: scala.Int = 1
-
-scala> x9: scala.Int = 1
-
-scala> x10: scala.Int = 1
-
-scala> x11: scala.Int = 1
-
-scala> x12: scala.Int = 1
-
-scala> x13: scala.Int = 1
-
-scala> x14: scala.Int = 1
-
-scala> x15: scala.Int = 1
-
-scala> x16: scala.Int = 1
-
-scala> x17: scala.Int = 1
-
-scala> x18: scala.Int = 1
-
-scala> x19: scala.Int = 1
-
-scala> x20: scala.Int = 1
+scala> one: Int = 1
 
 scala> 
-scala> two: scala.Int = 2
+scala> 
+scala> x1: Int = 1
+
+scala> x2: Int = 1
+
+scala> x3: Int = 1
+
+scala> x4: Int = 1
+
+scala> x5: Int = 1
+
+scala> x6: Int = 1
+
+scala> x7: Int = 1
+
+scala> x8: Int = 1
+
+scala> x9: Int = 1
+
+scala> x10: Int = 1
+
+scala> x11: Int = 1
+
+scala> x12: Int = 1
+
+scala> x13: Int = 1
+
+scala> x14: Int = 1
+
+scala> x15: Int = 1
+
+scala> x16: Int = 1
+
+scala> x17: Int = 1
+
+scala> x18: Int = 1
+
+scala> x19: Int = 1
+
+scala> x20: Int = 1
+
+scala> 
+scala> two: Int = 2
 
 scala> 
 scala> 
