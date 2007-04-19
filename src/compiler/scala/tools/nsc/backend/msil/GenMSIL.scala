@@ -489,7 +489,7 @@ abstract class GenMSIL extends SubComponent {
 	}
       }
 
-      tBuilder.setPosition(iclass.cunit.position(sym.pos).line, iclass.cunit.source.file.name)
+      tBuilder.setPosition((sym.pos).line.get, iclass.cunit.source.file.name)
 
       if (isTopLevelModule(sym)) {
 	if (settings.debug.value)
@@ -1177,7 +1177,7 @@ abstract class GenMSIL extends SubComponent {
 
 	needAdditionalRet = false
 
-	var currentLineNr = try { clasz.cunit.position(instr.pos).line } catch {
+	var currentLineNr = try { (instr.pos).line.get } catch {
           case _: Error =>
             log("Warning: wrong position in: " + method)
           lastLineNr
@@ -1579,7 +1579,7 @@ abstract class GenMSIL extends SubComponent {
 
     } // end genBlock
 
-    def genPrimitive(primitive: Primitive, pos: Int): Unit = {
+    def genPrimitive(primitive: Primitive, pos: Position): Unit = {
       primitive match {
         case Negation(kind) =>
           kind match {
@@ -1630,7 +1630,7 @@ abstract class GenMSIL extends SubComponent {
           case _ =>
 	    Console.println("Illegal conversion at: " + clasz +
 			    " at: " + method.sourceFile + ":" +
-			    Position.line(clasz.cunit.source, pos))
+			    pos.line.get)
 	}
 
         case ArrayLength(_) =>

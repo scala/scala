@@ -63,12 +63,10 @@ trait MutableIterable[A] extends scala.Collection[A] {
       i.next; i.remove;
     }
   }
-  /** Creates a non-strict map of this collection. Any removals from the returned
-   *  collection will remove from this collection, while any changes to this collection will also be
-   *  reflected in the mapped collection.
-   *  @return a non-strict map of this collection.
-   */
-  override def pmap[B](f : A => B) : MutableIterable[B] = new Map[B](f);
+  trait Projection extends super.Projection {
+    override def map[B](f : A => B) : MutableIterable[B] = new Map[B](f);
+  }
+  override def projection = new Projection {}
   /** The default implementation of a map over mutable iterable collections.
    **/
   protected class Map[B](f : A => B) extends MutableIterable[B] {

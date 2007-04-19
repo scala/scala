@@ -10,7 +10,7 @@ import java.io.{PrintWriter, StringWriter}
 
 import scala.tools.nsc.symtab.Flags
 import scala.tools.nsc.symtab.Flags._
-import scala.tools.nsc.util.{HashSet, Position, SourceFile}
+import scala.tools.nsc.util.{HashSet, Position, NoPosition, SourceFile}
 
 
 trait Trees {
@@ -71,13 +71,13 @@ trait Trees {
       if (Statistics.enabled) nodeCount += 1
     }
 
-    private var rawpos: PositionType = NoPos
+    private var rawpos: Position = NoPosition
 
     def pos = rawpos
 
     var tpe: Type = _
     //var kindStar = false //@M: kindStar implies !tpe.isHigherKinded --> if true, setType does not accept higher-kinded types
-    def setPos(pos: PositionType): this.type = { rawpos = pos; this }
+    def setPos(pos: Position): this.type = { rawpos = pos; this }
     def setType(tp: Type): this.type = { /*assert(kindingIrrelevant(tp) || !kindStar || !tp.isHigherKinded, ""+tp+" should not be higher-kinded");*/ tpe = tp; this }
 
     def symbol: Symbol = null
@@ -353,7 +353,7 @@ trait Trees {
    */
   case class AbsTypeDef(mods: Modifiers, name: Name, tparams: List[AbsTypeDef], lo: Tree, hi: Tree)
        extends DefTree {
-    def namePos = pos - name.length
+    def namePos = pos.offset.map(n => n - name.length).get(-1)
   }
 
   def AbsTypeDef(sym: Symbol): AbsTypeDef =
@@ -1462,13 +1462,13 @@ trait Trees {
   }
 
   object posAssigner extends Traverser {
-    private var pos: PositionType = _
+    private var pos: Position = _
     override def traverse(t: Tree): unit =
-      if (t != EmptyTree && t.pos == NoPos) {
+      if (t != EmptyTree && t.pos == NoPosition) {
         t.setPos(pos)
         super.traverse(t)
       }
-    def atPos[T <: Tree](pos: PositionType)(tree: T): T = {
+    def atPos[T <: Tree](pos: Position)(tree: T): T = {
       this.pos = pos
       traverse(tree)
       tree
@@ -1477,7 +1477,7 @@ trait Trees {
 
   object resetPos extends Traverser {
     override def traverse(t: Tree): unit = {
-      if (t != EmptyTree) t.setPos(NoPos)
+      if (t != EmptyTree) t.setPos(NoPosition)
       super.traverse(t)
     }
   }

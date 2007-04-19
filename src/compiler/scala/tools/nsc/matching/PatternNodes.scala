@@ -7,7 +7,7 @@
 package scala.tools.nsc.matching
 
 import compat.StringBuilder
-import scala.tools.nsc.util.Position
+import scala.tools.nsc.util.{Position, NoPosition}
 
 trait PatternNodes requires transform.ExplicitOuter {
 
@@ -44,7 +44,7 @@ trait PatternNodes requires transform.ExplicitOuter {
   /** Intermediate data structure for algebraic + pattern matcher
    */
   sealed class PatternNode {
-    var pos = FirstPos
+    var pos : Position = NoPosition
     var tpe: Type  = _
     var or: PatternNode = _
     var and: PatternNode = _
@@ -79,7 +79,7 @@ trait PatternNodes requires transform.ExplicitOuter {
         null
     }
 
-    def set(p:(PositionType,Type)): this.type = { /*assert(tpe ne null); */ this.pos = p._1; this.tpe = p._2; this }
+    def set(p:(Position,Type)): this.type = { /*assert(tpe ne null); */ this.pos = p._1; this.tpe = p._2; this }
 
     def dup(): PatternNode = {
       var res: PatternNode = this match {

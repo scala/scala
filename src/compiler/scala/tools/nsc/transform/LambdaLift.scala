@@ -10,6 +10,7 @@ import symtab._
 import Flags._
 import util.TreeSet
 import scala.collection.mutable.{HashMap, ListBuffer}
+import scala.tools.nsc.util.{Position, NoPosition}
 
 abstract class LambdaLift extends InfoTransform {
   import global._
@@ -306,7 +307,7 @@ abstract class LambdaLift extends InfoTransform {
       }
     }
 
-    private def addFreeArgs(pos: PositionType, sym: Symbol, args: List[Tree]) = {
+    private def addFreeArgs(pos: Position, sym: Symbol, args: List[Tree]) = {
       def freeArg(fv: Symbol) = atPos(pos)(proxyRef(fv))
       val fvs = freeVars(sym).toList
       if (fvs.isEmpty) args else args ::: (fvs map freeArg)

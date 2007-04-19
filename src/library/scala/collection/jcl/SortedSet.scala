@@ -34,9 +34,17 @@ trait SortedSet[A] extends scala.collection.SortedSet[A] with jcl.Set[A] with So
     else last;
   }
   override def rangeImpl(from : Option[A], until : Option[A]) : SortedSet[A] = new Range(from, until);
-  override def pfilter(p : A => Boolean) : SortedSet[A] = new Filter(p);
+  trait Projection extends super.Projection {
+    override def filter(p : A => Boolean) : SortedSet[A] = new Filter(p);
+  }
+  override def projection : Projection = new Projection {}
+
   protected class Filter(p : A => Boolean) extends super.Filter(p) with SortedSet[A] {
     def compare(a0 : A, a1 : A) : Int = SortedSet.this.compare(a0, a1);
+    trait Projection extends super[Filter].Projection with super[SortedSet].Projection {
+      override def filter(p0 : A => Boolean) = SortedSet.this.projection.filter(k => p(k) && p0(k));
+    }
+    override def projection : Projection = new Projection {};
   }
 
   protected class Range(from : Option[A], until : Option[A]) extends Filter(key => {

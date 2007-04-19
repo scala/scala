@@ -6,7 +6,7 @@
 
 package scala.tools.nsc
 
-import scala.tools.nsc.util.{FreshNameCreator,Position,SourceFile}
+import scala.tools.nsc.util.{FreshNameCreator,OffsetPosition,Position,SourceFile}
 import scala.tools.nsc.io.AbstractFile
 import scala.collection.mutable.HashSet
 
@@ -28,39 +28,39 @@ trait CompilationUnits requires Global {
      */
     val depends = new HashSet[Symbol]
 
-    def position(pos: int) = new Position(source, pos)
+    def position(pos: Int) = new OffsetPosition(source, pos)
 
     /** The icode representation of classes in this compilation unit.
      *  It is empty up to phase 'icode'.
      */
     val icode: HashSet[icodes.IClass] = new HashSet
 
-    val errorPositions = new HashSet[int]
+    val errorPositions = new HashSet[Position]
 
-    def error(pos: int, msg: String) =
+    def error(pos: Position, msg: String) =
       if (!(errorPositions contains pos)) {
         errorPositions += pos
-        reporter.error(position(pos), msg)
+        reporter.error((pos), msg)
       }
 
-    def warning(pos: int, msg: String) =
+    def warning(pos: Position, msg: String) =
       if (!(errorPositions contains pos)) {
         errorPositions += pos
-        reporter.warning(position(pos), msg)
+        reporter.warning((pos), msg)
       }
 
-    def deprecationWarning(pos: int, msg: String) =
+    def deprecationWarning(pos: Position, msg: String) =
       if (settings.deprecation.value) warning(pos, msg)
       else currentRun.deprecationWarnings = true
 
-    def uncheckedWarning(pos: int, msg: String) =
+    def uncheckedWarning(pos: Position, msg: String) =
       if (settings.unchecked.value) warning(pos, msg)
       else currentRun.uncheckedWarnings = true
 
-    def incompleteInputError(pos:int, msg:String) =
+    def incompleteInputError(pos: Position, msg:String) =
       if (!(errorPositions contains pos)) {
         errorPositions += pos
-        reporter.incompleteInputError(position(pos), msg)
+        reporter.incompleteInputError((pos), msg)
       }
 
     override def toString() = source.toString()

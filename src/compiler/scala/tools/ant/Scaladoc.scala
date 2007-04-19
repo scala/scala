@@ -486,7 +486,6 @@ class Scaladoc extends MatchingTask {
                        .replaceAll("&amp;", "&").replaceAll("&quot;", "\"")
     settings.deprecation.value = deprecation
     settings.unchecked.value = unchecked
-
     log("Scaladoc params = '" + addParams + "'", Project.MSG_DEBUG)
     var args =
       if (addParams.trim() == "") Nil
@@ -520,17 +519,17 @@ class Scaladoc extends MatchingTask {
         def documentTitle = settings.documenttitle.value
       }
       generator.process(run.units)
-      if (reporter.errors > 0)
+      if (reporter.ERROR.count > 0)
         error(
           "Document failed with " +
-          reporter.errors + " error" +
-          (if (reporter.errors > 1) "s" else "") +
+          reporter.ERROR.count + " error" +
+          (if (reporter.ERROR.count > 1) "s" else "") +
           "; see the documenter error output for details.")
-      else if (reporter.warnings > 0)
+      else if (reporter.WARNING.count > 0)
         log(
           "Document succeeded with " +
-          reporter.warnings + " warning" +
-          (if (reporter.warnings > 1) "s" else "") +
+          reporter.WARNING.count + " warning" +
+          (if (reporter.WARNING.count > 1) "s" else "") +
           "; see the documenter output for details.")
       reporter.printSummary()
     } catch {

@@ -22,6 +22,9 @@ class CharArrayReader(buf: Array[char], start: int, /* startline: int, startcol:
   */
   var ch: char = _
   var bp = start
+  var oldBp = -1
+  var oldCh : char = _
+
   //private var cline: int = _
   //private var ccol: int = _
   def cpos = bp
@@ -51,6 +54,8 @@ class CharArrayReader(buf: Array[char], start: int, /* startline: int, startcol:
     //cline = nextline
     //ccol = nextcol
     if(!hasNext) return SU  // there is an endless stream of SU's at the end
+    oldBp = bp
+    oldCh = ch;
     ch = buf(bp)
     isUnicode = false
     bp = bp + 1
@@ -90,6 +95,13 @@ class CharArrayReader(buf: Array[char], start: int, /* startline: int, startcol:
         if (ch > ' ') onlyBlankChars = false
         // nextcol = nextcol + 1
     }
+  }
+  def rewind = {
+    if (oldBp == -1) throw new IllegalArgumentException
+    bp = oldBp
+    ch = oldCh
+    oldBp = -1
+    oldCh = 'x'
   }
 
   def copy: CharArrayReader =

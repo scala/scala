@@ -540,7 +540,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
           sym1 + ":" + tpe1 +
             (if (sym1.owner == root) "" else sym1.locationString) + " and\n" +
           sym2 + ":" + tpe2 +
-            (if (sym2.owner == root) " at line " + Position.line(unit.source, sym2.pos) else sym2.locationString) +
+            (if (sym2.owner == root) " at line " + (sym2.pos).line.get else sym2.locationString) +
           "\nhave same type" +
           (if (tpe1 =:= tpe2) "" else " after erasure: " + atPhase(phase.next)(sym1.tpe)))
         sym1.setInfo(ErrorType)

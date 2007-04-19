@@ -22,20 +22,23 @@ trait MarkupParsers requires SyntaxAnalyzer {
   import global._
   //import posAssigner.atPos
 
-class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean) /*with scala.xml.parsing.MarkupParser[Tree,Tree] */{
+class MarkupParser(p: UnitParser, presWS: boolean) /*with scala.xml.parsing.MarkupParser[Tree,Tree] */{
 
   import Tokens.{EMPTY, LBRACE, RBRACE}
 
   final val preserveWS = presWS;
 
   import p.{symbXMLBuilder => handle}
-  import s.token
+  def s = p.in
+  import p.in.g2p
+  import p.in.p2g
+  import p.in.token
 
   /** holds the position in the source file */
-  /*[Duplicate]*/ var pos: Int = _
+  /*[Duplicate]*/ var pos: Position = _
 
   /** holds temporary values of pos */
-  /*[Duplicate]*/ var tmppos: Int = _
+  /*[Duplicate]*/ var tmppos: Position = _
 
   /** holds the next character */
   /*[Duplicate]*/ var ch: Char = _
@@ -58,7 +61,7 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
     else
       reportSyntaxError("'" + that + "' expected instead of '" + ch + "'")
 
-  var debugLastStartElement = new mutable.Stack[(Int, String)]
+  var debugLastStartElement = new mutable.Stack[(Position, String)]
 
   /** checks whether next character starts a Scala block, if yes, skip it.
    * @return true if next character starts a scala block
@@ -266,7 +269,7 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
    *  @param ts  ...
    *  @param txt ...
    */
-  /*[Duplicate]*/ def appendText(pos: int, ts: mutable.Buffer[Tree],
+  /*[Duplicate]*/ def appendText(pos: Position, ts: mutable.Buffer[Tree],
                                  txt: String): Unit =
     if (!preserveWS) {
       for (val t <- TextBuffer.fromString(txt).toText) {
@@ -298,7 +301,7 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
    *  @precond ch == '{'
    *  @postcond: xEmbeddedBlock == false!
    */
-  def content_BRACE(p: Int, ts:mutable.ArrayBuffer[Tree]): Unit = {
+  def content_BRACE(p: Position, ts:mutable.ArrayBuffer[Tree]): Unit = {
     if (xCheckEmbeddedBlock)
       ts.append(xEmbeddedExpr)
     else {
@@ -520,7 +523,7 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
         lastch  = s.in.ch
         xSpaceOpt
       }
-      tree = handle.makeXMLseq( pos, ts )
+      tree = handle.makeXMLseq((pos), ts )
     } else {
       assert(ts.length == 1)
       tree = ts(0)
@@ -532,13 +535,13 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
     //}
     //Console.println("out of xLiteral, parsed:"+tree.toString());
     s.next.token = Tokens.EMPTY;
-    s.nextToken()
+    s.nextToken
     popScannerState
     tree
   }
   catch {
     case _:ArrayIndexOutOfBoundsException =>
-      s.syntaxError(debugLastStartElement.top._1,
+      s.syntaxError((debugLastStartElement.top._1),
                     "missing end tag in XML literal for <"
                     +debugLastStartElement.top._2+">");
       EmptyTree;
@@ -555,12 +558,12 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
     var tree = xPattern; xSpaceOpt;
     handle.isPattern = oldMode;
     s.next.token = Tokens.EMPTY;
-    s.nextToken()
+    s.nextToken
     popScannerState
     tree
   } catch {
     case _:ArrayIndexOutOfBoundsException =>
-      s.syntaxError(debugLastStartElement.top._1,
+      s.syntaxError((debugLastStartElement.top._1),
                     "missing end tag in XML literal for <"
                     +debugLastStartElement.top._2+">");
       EmptyTree;

@@ -8,7 +8,7 @@ package scala.tools.nsc.typechecker
 
 import scala.tools.nsc.reporters.AbstractReporter
 import scala.tools.nsc.symtab.Flags._
-import scala.tools.nsc.util.Position
+import scala.tools.nsc.util.{Position, NoPosition}
 
 abstract class TreeCheckers extends Analyzer {
 
@@ -99,7 +99,7 @@ abstract class TreeCheckers extends Analyzer {
               }
             case _ =>
           }
-          if (tree.pos == NoPos && tree != EmptyTree) {
+          if (tree.pos == NoPosition && tree != EmptyTree) {
             error(tree.pos, "tree without position: " + tree)
           } else if ((tree.tpe eq null) && phase.id >= currentRun.typerPhase.id) {
             error(tree.pos, "tree without type: " + tree)

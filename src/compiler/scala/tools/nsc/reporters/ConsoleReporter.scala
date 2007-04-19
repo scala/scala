@@ -7,16 +7,15 @@
 package scala.tools.nsc.reporters
 
 import java.io.{BufferedReader, InputStreamReader, IOException, PrintWriter}
+import util.{FakePos,Position}
 
 import compat.StringBuilder
-import scala.tools.nsc.util.{FakePos, Position}
 
 /**
  * This class implements a Reporter that displays messages on a text
  * console.
  */
 class ConsoleReporter(val settings: Settings, reader: BufferedReader, writer: PrintWriter) extends AbstractReporter {
-
   /** Whether a short file name should be displayed before errors */
   var shortname: Boolean = false
 
@@ -40,7 +39,7 @@ class ConsoleReporter(val settings: Settings, reader: BufferedReader, writer: Pr
    *  @return         ...
    */
   private def getCountString(severity: Severity): String =
-    countElementsAsString(count(severity), label(severity))
+    countElementsAsString((severity).count, label(severity))
 
 
   /** Prints the message. */
@@ -52,13 +51,12 @@ class ConsoleReporter(val settings: Settings, reader: BufferedReader, writer: Pr
       val pos = posIn.inUltimateSource
       val buf = new StringBuilder(msg)
       buf.insert(0, " ")
-      if (pos.line != Position.NOLINE)
-	buf.insert(0, ":" + pos.line + ":")
+      buf.insert(0, pos.line.map(ln => ":" + pos.line.get + ":").get(":"))
       pos match {
         case FakePos(msg) =>
           buf.insert(0, msg)
-        case _ =>
-          val file = pos.source.file
+        case _ if !pos.source.isEmpty =>
+          val file = pos.source.get.file
           buf.insert(0, if (shortname) file.name else file.path)
       }
       printMessage(buf.toString())
@@ -72,7 +70,7 @@ class ConsoleReporter(val settings: Settings, reader: BufferedReader, writer: Pr
   /**
    *  @param pos ...
    */
-  def printSourceLine(pos: Position) = if ((pos ne null) && pos.offset != Position.NOPOS) {
+  def printSourceLine(pos: Position) = {
     printMessage(pos.lineContent.stripLineEnd)
     printColumnMarker(pos)
   }
@@ -81,25 +79,25 @@ class ConsoleReporter(val settings: Settings, reader: BufferedReader, writer: Pr
    *
    *  @param pos ...
    */
-  def printColumnMarker(pos: Position) = if (pos ne null) {
-    val buffer = new StringBuilder(pos.column)
+  def printColumnMarker(pos: Position) = if (!pos.column.isEmpty) {
+    val buffer = new StringBuilder(pos.column.get)
     var i = 1
-    while (i < pos.column) {
+    while (i < pos.column.get) {
       buffer.append(' ')
       i = i + 1
     }
-    if (pos.column > 0) buffer.append('^')
+    if (pos.column.get > 0) buffer.append('^')
     printMessage(buffer.toString())
   }
 
   /** Prints the number of errors and warnings if their are non-zero. */
   def printSummary() = {
-    if (warnings > 0) printMessage(getCountString(WARNING) + " found")
-    if (  errors > 0) printMessage(getCountString(ERROR  ) + " found")
+    if (WARNING.count > 0) printMessage(getCountString(WARNING) + " found")
+    if (  ERROR.count > 0) printMessage(getCountString(ERROR  ) + " found")
   }
 
   def display(pos: Position, msg: String, severity: Severity): Unit = {
-    incr(severity)
+    severity.count = severity.count + 1
     print(pos, msg, severity)
   }
 

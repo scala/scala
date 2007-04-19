@@ -232,7 +232,7 @@ trait ModelExtractor {
         }
       });
     }
-    def members0(f : Symbol => Boolean) = decls.pfilterKeys(e => f(e)).valueSet;
+    def members0(f : Symbol => Boolean) = decls.projection.filterKeys(f).valueSet;
     def members(c : Category) : Iterable[Member] = members0(c.f);
     object inherited extends jcl.LinkedHashMap[Symbol,List[Member]]() {
       override def default(tpe : Symbol) = Nil;

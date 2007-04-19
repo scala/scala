@@ -8,7 +8,7 @@ package scala.tools.nsc.symtab
 
 import compat.Platform.currentTime
 import scala.collection.mutable.{ListBuffer, HashMap}
-import scala.tools.nsc.util.{HashSet, Position}
+import scala.tools.nsc.util.{HashSet, Position, NoPosition}
 import Flags._
 
 /* A standard type pattern match:
@@ -1474,7 +1474,7 @@ A type's symbol should never be inspected directly.
     if (phase.erasedTypes)
       if (parents.isEmpty) ObjectClass.tpe else parents.head
     else {
-      val clazz = owner.newRefinementClass(NoPos)
+      val clazz = owner.newRefinementClass(NoPosition)
       val result = refinementOfClass(clazz, parents, decls)
       clazz.setInfo(result)
       result
@@ -1894,7 +1894,7 @@ A type's symbol should never be inspected directly.
 
       def subst(sym: Symbol, from: List[Symbol], to: List[T]): Type =
         if (from.isEmpty) tp
-        else if (to.isEmpty && inIDE) throw new TypeError(NoPos, "type parameter list problem");
+        else if (to.isEmpty && inIDE) throw new TypeError(NoPosition, "type parameter list problem");
         else if (matches(from.head, sym)) toType(tp, to.head)
         else subst(sym, from.tail, to.tail)
 
@@ -2920,8 +2920,8 @@ A type's symbol should never be inspected directly.
 // Errors and Diagnostics -----------------------------------------------------
 
   /** An exception signalling a type error */
-  class TypeError(val pos: PositionType, val msg: String) extends java.lang.Error(msg) {
-    def this(msg: String) = this(NoPos, msg)
+  class TypeError(val pos: Position, val msg: String) extends java.lang.Error(msg) {
+    def this(msg: String) = this(NoPosition, msg)
   }
 
   class NoCommonType(tps: List[Type]) extends java.lang.Error(

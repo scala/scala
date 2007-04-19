@@ -9,7 +9,7 @@ package scala.tools.nsc.transform
 import symtab._
 import Flags._
 import scala.collection.mutable.ListBuffer
-import scala.tools.nsc.util.Position
+import scala.tools.nsc.util.{Position,NoPosition}
 
 abstract class Mixin extends InfoTransform {
   import global._
@@ -376,7 +376,7 @@ abstract class Mixin extends InfoTransform {
      *
      *  @param pos ...
      */
-    private def selfRef(pos: PositionType) =
+    private def selfRef(pos: Position) =
       gen.mkAttributedIdent(self) setPos pos
 
     /** Replace a super reference by this or the self parameter, depending
@@ -419,7 +419,7 @@ abstract class Mixin extends InfoTransform {
       val newDefs = new ListBuffer[Tree]
 
       /** Attribute given tree and anchor at given position */
-      def attributedDef(pos: PositionType, tree: Tree): Tree = {
+      def attributedDef(pos: Position, tree: Tree): Tree = {
         if (settings.debug.value) log("add new def to " + clazz + ": " + tree)
         localTyper.typed { atPos(pos) { tree } }
       }
@@ -427,10 +427,10 @@ abstract class Mixin extends InfoTransform {
       /** The position of given symbol, or, if this is undefined,
        *  the position of the current class. */
       def position(sym: Symbol) =
-        if (sym.pos == NoPos) clazz.pos else sym.pos
+        if (sym.pos == NoPosition) clazz.pos else sym.pos
 
       /** Add tree at given position as new definition */
-      def addDef(pos: PositionType, tree: Tree): unit =
+      def addDef(pos: Position, tree: Tree): unit =
         newDefs += attributedDef(pos, tree)
 
       /** Add new method definition.

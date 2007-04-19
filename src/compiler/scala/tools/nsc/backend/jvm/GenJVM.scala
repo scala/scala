@@ -13,7 +13,7 @@ import java.nio.ByteBuffer
 import scala.collection.immutable.{Set, ListSet}
 import scala.collection.mutable.{Map, HashMap, HashSet}
 import scala.tools.nsc.symtab._
-import scala.tools.nsc.util.Position
+import scala.tools.nsc.util.{Position, NoPosition}
 
 import ch.epfl.lamp.fjbg._
 
@@ -424,7 +424,7 @@ abstract class GenJVM extends SubComponent {
           if (outerField != NoSymbol) {
             log("Adding fake local to represent outer 'this' for closure " + clasz)
             val _this = new Local(
-              method.symbol.newVariable(NoPos, "this$"), toTypeKind(outerField.tpe), false)
+              method.symbol.newVariable(NoPosition, "this$"), toTypeKind(outerField.tpe), false)
             m.locals = m.locals ::: List(_this)
             computeLocalVarsIndex(m) // since we added a new local, we need to recompute indexes
 
@@ -999,13 +999,17 @@ abstract class GenJVM extends SubComponent {
         }
 
         crtPC = jcode.getPC()
+        val crtLine = instr.pos.line.get(lastLineNr);
+        /*
         val crtLine = try {
-          clasz.cunit.position(instr.pos).line
+          (instr.pos).line.get
         } catch {
-          case _: Error =>
+          case _: NoSuchElementException =>
             log("Warning: wrong position in: " + method)
             lastLineNr
         }
+        */
+
         if (b.lastInstruction == instr)
           endPC(b) = jcode.getPC();
 
@@ -1033,7 +1037,7 @@ abstract class GenJVM extends SubComponent {
      *  @param primitive ...
      *  @param pos       ...
      */
-    def genPrimitive(primitive: Primitive, pos: Int): Unit = {
+    def genPrimitive(primitive: Primitive, pos: Position): Unit = {
       primitive match {
         case Negation(kind) =>
           kind match {
@@ -1169,7 +1173,7 @@ abstract class GenJVM extends SubComponent {
             log("Converting from: " + src + " to: " + dst);
           if (dst == BOOL) {
             Console.println("Illegal conversion at: " + clasz +
-                            " at: " + method.sourceFile + ":" + Position.line(clasz.cunit.source, pos));
+                            " at: " + method.sourceFile + ":" + pos.line.get(-1));
           } else
             jcode.emitT2T(javaType(src), javaType(dst));
 

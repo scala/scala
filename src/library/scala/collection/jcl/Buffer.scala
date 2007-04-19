@@ -17,6 +17,12 @@ package scala.collection.jcl;
 trait Buffer[A] extends MutableSeq[A] with Collection[A] with Ranged[Int,A] {
   final protected type SortedSelf = Buffer[A];
 
+  trait MutableSeqProjection extends super[MutableSeq].Projection;
+  trait Projection extends MutableSeqProjection with super[Collection].Projection {
+    override def filter(p : A => Boolean) = super[MutableSeqProjection].filter(p);
+  }
+  override def projection = new Projection {}
+
   override def elements : BufferIterator[Int,A];
   /** The first index of a buffer is 0. */
   override def first = 0;
@@ -83,7 +89,6 @@ trait Buffer[A] extends MutableSeq[A] with Collection[A] with Ranged[Int,A] {
   override def +(a : A) : this.type = super[Collection].+(a);
   override def -=(a : A) = super[Collection].-=(a);
   override def isEmpty = super[MutableSeq].isEmpty;
-  override def pfilter(p : A => Boolean) : MutableSeq[A] = super[MutableSeq].pfilter(p);
   override def rangeImpl(from : Option[Int], until : Option[Int]) : Buffer[A] = new Range(from, until);
 
 

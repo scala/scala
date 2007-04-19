@@ -324,7 +324,7 @@ trait ModelFrames extends ModelExtractor {
         out.close()
       } catch {
       case _ =>
-        error("Resource file '" + base + "' not found")
+        System.err.println("Resource file '" + rsrcdir + base + "' not found")
       }
     }
   }

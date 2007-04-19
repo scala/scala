@@ -7,7 +7,7 @@
 package scala.tools.nsc.models
 
 import scala.tools.nsc.Global
-import scala.tools.nsc.util.Position
+import scala.tools.nsc.util.{Position,NoPosition}
 
 /** This abstract class ...
  *
@@ -331,7 +331,7 @@ abstract class Models {
       } else super.member(tree, members)
 
       def sym = tree0.symbol
-      if ((tree0 eq null) || tree0.pos == NoPos) null
+      if ((tree0 eq null) || tree0.pos == NoPosition) null
       else if (!acceptPrivate &&
                tree0.isInstanceOf[ValOrDefDef] &&
                tree.asInstanceOf[ValOrDefDef].mods.isPrivate) null

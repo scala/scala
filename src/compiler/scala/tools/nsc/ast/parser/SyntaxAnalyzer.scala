@@ -17,7 +17,7 @@ abstract class SyntaxAnalyzer extends SubComponent with Parsers with MarkupParse
   class ParserPhase(prev: scala.tools.nsc.Phase) extends StdPhase(prev) {
     def apply(unit: global.CompilationUnit): unit = {
       global.informProgress("parsing " + unit)
-      unit.body = new Parser(unit).parse()
+      unit.body = new UnitParser(unit).parse()
     }
   }
 }

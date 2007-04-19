@@ -16,7 +16,7 @@
  */
 package scala.tools.nsc.symtab.classfile
 
-import scala.tools.nsc.util.Position
+import scala.tools.nsc.util.{Position,NoPosition}
 import scala.tools.nsc.io.AbstractFile
 import scala.collection.mutable.{ListBuffer, ArrayBuffer}
 import scala.collection.immutable.{Map, ListMap}
@@ -399,7 +399,7 @@ abstract class ClassfileParser {
         {
           //Console.println("adding constructor to " + clazz);//DEBUG
           instanceDefs.enter(
-            clazz.newConstructor(NoPos)
+            clazz.newConstructor(NoPosition)
             .setFlag(clazz.flags & ConstrFlags)
             .setInfo(MethodType(List(), clazz.tpe)))
 
@@ -409,7 +409,7 @@ abstract class ClassfileParser {
             val value = instanceDefs.lookup(nme.value)
             if (value != NoSymbol) {
               instanceDefs.enter(
-                clazz.newConstructor(NoPos)
+                clazz.newConstructor(NoPosition)
                 .setFlag(clazz.flags & ConstrFlags)
                 .setInfo(MethodType(List(value.tpe.resultType), clazz.tpe)))
             }
@@ -428,7 +428,7 @@ abstract class ClassfileParser {
       val name = pool.getName(in.nextChar)
       val info = pool.getType(in.nextChar)
       val sym = getOwner(jflags)
-        .newValue(NoPos, name).setFlag(sflags)
+        .newValue(NoPosition, name).setFlag(sflags)
       sym.setInfo(if ((jflags & JAVA_ACC_ENUM) == 0) info else mkConstantType(Constant(sym)))
       setPrivateWithin(sym, jflags)
       parseAttributes(sym, info)
@@ -458,7 +458,7 @@ abstract class ClassfileParser {
               info = MethodType(formals, clazz.tpe)
           }
         val sym = getOwner(jflags)
-          .newMethod(NoPos, name).setFlag(sflags).setInfo(info)
+          .newMethod(NoPosition, name).setFlag(sflags).setInfo(info)
         setPrivateWithin(sym, jflags)
         parseAttributes(sym, info)
         getScope(jflags).enter(sym)
@@ -505,9 +505,9 @@ abstract class ClassfileParser {
             }
             val name = fresh.newName("T_" + sym.name)
             val newtparam =
-              if (covariant) clazz.newAbstractType(NoPos, name)
+              if (covariant) clazz.newAbstractType(NoPosition, name)
               else {
-                val s = sym.newTypeParameter(NoPos, name)
+                val s = sym.newTypeParameter(NoPosition, name)
                 newTParams += s
                 s
               }
@@ -564,7 +564,7 @@ abstract class ClassfileParser {
       index = index + 1
       while (sig(index) != '>') {
         val tpname = subName(':'.==).toTypeName
-        val s = sym.newTypeParameter(NoPos, tpname)
+        val s = sym.newTypeParameter(NoPosition, tpname)
         tparams = tparams + tpname -> s
         val ts = new ListBuffer[Type]
         while (sig(index) == ':') {
@@ -716,12 +716,12 @@ abstract class ClassfileParser {
             (jflags & (JAVA_ACC_PUBLIC | JAVA_ACC_PROTECTED)) != 0 &&
             pool.getClassSymbol(outerIndex) == sym) {
           val innerAlias = getOwner(jflags)
-            .newAliasType(NoPos, pool.getName(nameIndex).toTypeName)
+            .newAliasType(NoPosition, pool.getName(nameIndex).toTypeName)
             .setInfo(pool.getClassSymbol(innerIndex).tpe)
           getScope(jflags).enter(innerAlias)
 
           if ((jflags & JAVA_ACC_STATIC) != 0) {
-            val innerVal = staticModule.newValue(NoPos, pool.getName(nameIndex).toTermName)
+            val innerVal = staticModule.newValue(NoPosition, pool.getName(nameIndex).toTermName)
               .setInfo(pool.getClassSymbol(innerIndex).linkedModuleOfClass.moduleClass.thisType)
             staticDefs.enter(innerVal)
           }

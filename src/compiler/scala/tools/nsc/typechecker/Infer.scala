@@ -5,7 +5,7 @@
 // $Id$
 
 package scala.tools.nsc.typechecker
-
+import scala.tools.nsc.util.{Position, NoPosition}
 import scala.collection.mutable.ListBuffer
 import symtab.Flags._
 
@@ -55,7 +55,7 @@ trait Infer requires Analyzer {
       List(if (actuals.length == 0) UnitClass.tpe else tupleType(actuals))
     else actuals
 
-  def actualArgs(pos: PositionType, actuals: List[Tree], nformals: int): List[Tree] =
+  def actualArgs(pos: Position, actuals: List[Tree], nformals: int): List[Tree] =
     if (nformals == 1 && actuals.length != 1) List(atPos(pos)(gen.mkTuple(actuals))) else actuals
 
   /** A fresh type varable with given type parameter as origin.
@@ -257,7 +257,7 @@ trait Infer requires Analyzer {
         "\n possible cause: missing arguments for method or constructor"
        else "")
 
-    def error(pos: PositionType, msg: String): unit =
+    def error(pos: Position, msg: String): unit =
       context.error(pos, msg)
 
     def errorTree(tree: Tree, msg: String): Tree = {
@@ -265,7 +265,7 @@ trait Infer requires Analyzer {
       setError(tree)
     }
 
-    def typeError(pos: PositionType, found: Type, req: Type) {
+    def typeError(pos: Position, found: Type, req: Type) {
       if (!found.isErroneous && !req.isErroneous) {
         error(pos, typeErrorMsg(found, req))
         if (settings.explaintypes.value) explainTypes(found, req)
@@ -594,7 +594,7 @@ trait Infer requires Analyzer {
     }
 
     /** error if arguments not within bounds. */
-    def checkBounds(pos: PositionType, pre: Type, owner: Symbol,
+    def checkBounds(pos: Position, pre: Type, owner: Symbol,
                     tparams: List[Symbol], targs: List[Type], prefix: String) = {
       //@M validate variances & bounds of targs wrt variances & bounds of tparams
       //@M TODO: better place to check this?
@@ -897,7 +897,7 @@ trait Infer requires Analyzer {
       }
     }
 
-    def checkCheckable(pos: PositionType, tp: Type): unit = {
+    def checkCheckable(pos: Position, tp: Type): unit = {
       def patternWarning(tp: Type, prefix: String) =
         context.unit.uncheckedWarning(pos, prefix+tp+" in type pattern is unchecked since it is eliminated by erasure")
       def isLocalBinding(sym: Symbol) =
@@ -954,7 +954,7 @@ trait Infer requires Analyzer {
       }
     }
 
-    def inferTypedPattern(pos: PositionType, pattp: Type, pt: Type): Type = {
+    def inferTypedPattern(pos: Position, pattp: Type, pt: Type): Type = {
       checkCheckable(pos, pattp)
       if (!(pattp <:< pt)) {
         val tpparams = freeTypeParamsOfTerms.collect(pattp)
@@ -1049,7 +1049,7 @@ trait Infer requires Analyzer {
 
     /* -- Overload Resolution ---------------------------------------------- */
 
-    def checkNotShadowed(pos: PositionType, pre: Type, best: Symbol, eligible: List[Symbol]) =
+    def checkNotShadowed(pos: Position, pre: Type, best: Symbol, eligible: List[Symbol]) =
       if (!phase.erasedTypes)
         for (val alt <- eligible) {
           if (alt.owner != best.owner && alt.owner.isSubClass(best.owner))

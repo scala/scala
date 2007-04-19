@@ -12,7 +12,7 @@ import java.nio.charset._
 import compat.Platform.currentTime
 import scala.tools.nsc.io.{SourceReader, AbstractFile}
 import scala.tools.nsc.reporters._
-import scala.tools.nsc.util.{ClassPath, Position, SourceFile}
+import scala.tools.nsc.util.{ClassPath, SourceFile}
 
 import scala.collection.mutable.{HashSet, HashMap, ListBuffer}
 
@@ -648,26 +648,4 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
   def onlyPresentation = settings.doc.value
   // used to disable caching in lampion IDE.
   def inIDE = false
-
-  // position stuff
-  final val positionConfiguration: PositionConfiguration = initConfig;
-  protected def initConfig : PositionConfiguration = posConfig;
-
-  private object posConfig extends PositionConfiguration {
-    type PositionType = Int
-    def coercePosToInt(pos: Int): Int = pos
-    def coerceIntToPos(pos: Int): Int = pos
-    val NoPos: Int = Position.NOPOS
-    val FirstPos: Int = Position.FIRSTPOS
-  }
-  final type PositionType = positionConfiguration.PositionType
-  final val FirstPos = {
-    val posConfig : PositionConfiguration = positionConfiguration;
-    posConfig.FirstPos.asInstanceOf[PositionType];
-  }
-  final def NoPos = positionConfiguration.NoPos
-  final def coerceIntToPos(pos: Int): PositionType =
-    positionConfiguration.coerceIntToPos(pos)
-  implicit final def coercePosToInt(pos: PositionType): Int =
-    positionConfiguration.coercePosToInt(pos)
 }

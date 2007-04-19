@@ -7,7 +7,7 @@
 package scala.tools.nsc.symtab
 
 import scala.collection.mutable.{HashMap, HashSet}
-import scala.tools.nsc.util.Position
+import scala.tools.nsc.util.{Position, NoPosition}
 import Flags._
 
 trait Definitions {
@@ -399,7 +399,7 @@ trait Definitions {
     }
 
     private def newClass(owner: Symbol, name: Name, parents: List[Type]): Symbol = {
-      val clazz = owner.newClass(NoPos, name.toTypeName)
+      val clazz = owner.newClass(NoPosition, name.toTypeName)
       clazz.setInfo(ClassInfoType(parents, newScope, clazz))
       owner.info.decls.enter(clazz)
       clazz
@@ -415,14 +415,14 @@ trait Definitions {
     }
 
     private def newAlias(owner: Symbol, name: Name, alias: Type): Symbol = {
-      val tpsym = owner.newAliasType(NoPos, name.toTypeName)
+      val tpsym = owner.newAliasType(NoPosition, name.toTypeName)
       tpsym.setInfo(alias)
       owner.info.decls.enter(tpsym)
       tpsym
     }
 
     private def newMethod(owner: Symbol, name: Name): Symbol = {
-      val msym = owner.newMethod(NoPos, name.encode)
+      val msym = owner.newMethod(NoPosition, name.encode)
       owner.info.decls.enter(msym)
       msym
     }
@@ -440,7 +440,7 @@ trait Definitions {
       newMethod(owner, name).setInfo(PolyType(List(),restpe))
 
     private def newTypeParam(owner: Symbol, index: int): Symbol =
-      owner.newTypeParameter(NoPos, "T" + index)
+      owner.newTypeParameter(NoPosition, "T" + index)
         .setInfo(mkTypeBounds(AllClass.typeConstructor, AnyClass.typeConstructor))
 
     val boxedClass = new HashMap[Symbol, Symbol]
@@ -492,7 +492,7 @@ trait Definitions {
       refClass(clazz) = getClass("scala.runtime." + name + "Ref")
       abbrvTag(clazz) = tag
 
-      val module = ScalaPackageClass.newModule(NoPos, name)
+      val module = ScalaPackageClass.newModule(NoPosition, name)
       ScalaPackageClass.info.decls.enter(module)
       val mclass = module.moduleClass
       mclass.setInfo(ClassInfoType(List(), newScope, mclass))
@@ -693,14 +693,14 @@ trait Definitions {
       if (isInitialized) return
       isInitialized = true
       RootClass =
-        NoSymbol.newClass(NoPos, nme.ROOT.toTypeName)
+        NoSymbol.newClass(NoPosition, nme.ROOT.toTypeName)
           .setFlag(FINAL | MODULE | PACKAGE | JAVA).setInfo(rootLoader)
-      RootPackage = NoSymbol.newValue(NoPos, nme.ROOTPKG)
+      RootPackage = NoSymbol.newValue(NoPosition, nme.ROOTPKG)
           .setFlag(FINAL | MODULE | PACKAGE | JAVA)
           .setInfo(PolyType(List(), RootClass.tpe))
 
       EmptyPackage =
-        RootClass.newPackage(NoPos, nme.EMPTY_PACKAGE_NAME).setFlag(FINAL)
+        RootClass.newPackage(NoPosition, nme.EMPTY_PACKAGE_NAME).setFlag(FINAL)
       EmptyPackageClass = EmptyPackage.moduleClass
       EmptyPackageClass.setInfo(ClassInfoType(List(), newScope, EmptyPackageClass))
 
@@ -848,7 +848,7 @@ trait Definitions {
       String_+ = newMethod(
         StringClass, "+", anyparam, StringClass.typeConstructor) setFlag FINAL
 
-      PatternWildcard = NoSymbol.newValue(NoPos, "_").setInfo(AllClass.typeConstructor)
+      PatternWildcard = NoSymbol.newValue(NoPosition, "_").setInfo(AllClass.typeConstructor)
 
       BoxedNumberClass = if (forMSIL) null else getClass("scala.runtime.BoxedNumber")
       BoxedArrayClass = getClass("scala.runtime.BoxedArray")

@@ -14,7 +14,6 @@ import scala.tools.nsc.symtab._;
  */
 abstract class Inliners extends SubComponent {
   import global._;
-  import RequiresIntsAsPositions._;
   import icodes._;
   import icodes.opcodes._;
 
@@ -67,7 +66,7 @@ abstract class Inliners extends SubComponent {
                callee: IMethod): Unit = {
        log("Inlining " + callee + " in " + caller + " at pos: " +
            (try {
-             classes(caller.symbol.owner).cunit.position(instr.pos).toString
+             instr.pos.offset.get
            } catch {
              case _ => "<nopos>"
            }));

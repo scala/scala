@@ -7,7 +7,7 @@
 package scala.tools.nsc.matching
 
 import compat.StringBuilder
-import scala.tools.nsc.util.Position
+import scala.tools.nsc.util.{Position,NoPosition}
 
 /** This trait ...
  *
@@ -74,36 +74,36 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes with P
 
     // factories
 
-    def pSequencePat(pos: PositionType, tpe: Type, len: int) = new SequencePat(newVar(FirstPos, tpe), len) set ((pos,tpe))
+    def pSequencePat(pos: Position, tpe: Type, len: int) = new SequencePat(newVar(NoPosition, tpe), len) set ((pos,tpe))
 
-    def pRightIgnoringSequencePat(pos: PositionType, tpe: Type, castedRest: Symbol, minlen: int) =
-      new RightIgnoringSequencePat(newVar(FirstPos, tpe), castedRest, minlen) set ((pos,tpe))
+    def pRightIgnoringSequencePat(pos: Position, tpe: Type, castedRest: Symbol, minlen: int) =
+      new RightIgnoringSequencePat(newVar(NoPosition, tpe), castedRest, minlen) set ((pos,tpe))
 
-    def pDefaultPat(pos: PositionType, tpe: Type) = new DefaultPat() set ((pos,tpe))
+    def pDefaultPat(pos: Position, tpe: Type) = new DefaultPat() set ((pos,tpe))
 
-    def pConstrPat(pos: PositionType, tpe: Type) = new ConstrPat(newVar(pos, tpe)) set ((pos,tpe))
+    def pConstrPat(pos: Position, tpe: Type) = new ConstrPat(newVar(pos, tpe)) set ((pos,tpe))
 
-    def pUnapplyPat(pos: PositionType, fn: Tree) = {
+    def pUnapplyPat(pos: Position, fn: Tree) = {
       var tpe = defs.unapplyUnwrap(fn.tpe)
       if(defs.isOptionOrSomeType(tpe)) { tpe = tpe.typeArgs.head }
       new UnapplyPat(newVar(pos, tpe), fn) set ((pos,tpe))
     }
 
-    def pConstantPat(pos: PositionType, tpe: Type, value: Any) = new ConstantPat(value) set ((pos,tpe))
+    def pConstantPat(pos: Position, tpe: Type, value: Any) = new ConstantPat(value) set ((pos,tpe))
 
-    def pVariablePat(pos: PositionType, tree: Tree) = new VariablePat(tree) set ((pos,tree.tpe))
+    def pVariablePat(pos: Position, tree: Tree) = new VariablePat(tree) set ((pos,tree.tpe))
 
-    def pAltPat(pos: PositionType, header: Header) = new AltPat(header) set ((pos, header.tpe))
+    def pAltPat(pos: Position, header: Header) = new AltPat(header) set ((pos, header.tpe))
 
-    def pHeader(pos: PositionType, tpe: Type, selector: Tree) = new Header(selector, null) set ((pos,tpe))
+    def pHeader(pos: Position, tpe: Type, selector: Tree) = new Header(selector, null) set ((pos,tpe))
 
-    def pBody(pos: PositionType) = {
+    def pBody(pos: Position) = {
       val node = new Body(new Array[Array[ValDef]](0), new Array[Tree](0),new Array[Tree](0))
       node.pos = pos
       node
     }
 
-    def pBody(pos: PositionType, bound: Array[ValDef], guard: Tree, body: Tree) = {
+    def pBody(pos: Position, bound: Array[ValDef], guard: Tree, body: Tree) = {
       val node = new Body(Array(bound), Array(guard), Array(body))
       node.pos = pos
       node
@@ -423,10 +423,10 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes with P
     type SelectorMap = collection.mutable.HashMap[(Symbol,Symbol),List[Symbol]]
     val selectorMap = new SelectorMap
 
-  private def newHeader(pos: PositionType, casted: Symbol, index: Int): Header = {
+  private def newHeader(pos: Position, casted: Symbol, index: Int): Header = {
     //Console.println("newHeader(pos,"+casted+" (has CASE flag? "+casted.tpe.symbol.hasFlag(Flags.CASE)+") of type "+casted.tpe+" with pos "+casted.pos+"(equals FIRSTPOS? "+(casted.pos == Position.FIRSTPOS)+"),"+index+")");
     val ident = typed(Ident(casted))
-    if (casted.pos == Position.FIRSTPOS) { // load the result of casted(i)
+    if (casted.pos == NoPosition) { // load the result of casted(i)
       //Console.println("FIRSTPOS");
       val t = typed(
         Apply(Select(ident, ident.tpe.member(nme.apply)),

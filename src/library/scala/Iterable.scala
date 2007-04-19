@@ -426,42 +426,53 @@ trait Iterable[+A] {
   /** Is this collection empty? */
   def isEmpty = elements.hasNext
 
-  private class Projection[+B](elements0 : () => Iterator[B]) extends Iterable[B] {
+  private class ProjectionImpl[+B](elements0 : () => Iterator[B]) extends Iterable[B] {
     def elements = elements0();
   }
-  /** Returns all the elements of this iterable that satisfy the
-   *  predicate <code>p</code>. The order of the elements is preserved.
-   *  Unlike <code>filter</code>, this API is not strict
-   *  and will terminate on infinite-sized collections.
-   *
-   *  @param p the predicate used to filter the list.
-   *  @return the elements of this list satisfying <code>p</code>.
+
+  trait Projection {
+    /** Returns all the elements of this iterable that satisfy the
+     *  predicate <code>p</code>. The order of the elements is preserved.
+     *  Unlike <code>filter</code> in <code>Iterable</code>, this API is
+     *  not strict and will terminate on infinite-sized collections.
+     *
+     *  @param p the predicate used to filter the list.
+     *  @return the elements of this list satisfying <code>p</code>.
+     */
+    def filter(p : A => Boolean) : Iterable[A] = new ProjectionImpl[A](() => {
+      Iterable.this.elements.filter(p)
+    })
+    /** Returns the iterable resulting from applying the given function
+     *  <code>f</code> to each element of this iterable.  Unlike <code>map</code>
+     *  in <code>Iterable</code>, this API is not strict and will terminate on
+     *  infinite-sized collections.
+     *
+     *  @param f function to apply to each element.
+     *  @return <code>f(a<sub>0</sub>), ..., f(a<sub>n</sub>)</code>
+     *          if this iterable is <code>a<sub>0</sub>, ..., an</code>.
+     */
+    def map[B](f: A => B) : Iterable[B] = new ProjectionImpl[B](() => {
+      Iterable.this.elements.map(f)
+    })
+    /** Applies the given function <code>f</code> to each element of
+     *  this iterable, then concatenates the results.  Unlike <code>flatMap</code>
+     *  in <code>Iterable</code>,
+     *  this API is not strict and will terminate on infinite-sized collections.
+     *
+     *  @param f the function to apply on each element.
+     *  @return  <code>f(a<sub>0</sub>) ::: ... ::: f(a<sub>n</sub>)</code> if
+     *           this iterable is <code>a<sub>0</sub>, ..., a<sub>n</sub></code>.
+     */
+    def flatMap[B](f: A => Iterable[B]) : Iterable[B] = new ProjectionImpl[B](() => {
+      Iterable.this.elements.flatMap(a => f(a).elements)
+    })
+  }
+  /**
+   * returns a facade that can be used to call non-strict <code>filter</code>,
+   * <code>map</code>, and <code>flatMap</code> methods that build projections
+   * of the collection.
    */
-  def pfilter(p: A => Boolean) : Iterable[A] = new Projection[A](() => {
-    Iterable.this.elements.filter(p)
-  })
-  /** Returns the iterable resulting from applying the given function
-   *  <code>f</code> to each element of this iterable.  Unlike <code>map</code>,
-   *  this API is not strict and will terminate on infinite-sized collections.
-   *
-   *  @param f function to apply to each element.
-   *  @return <code>f(a<sub>0</sub>), ..., f(a<sub>n</sub>)</code>
-   *          if this iterable is <code>a<sub>0</sub>, ..., an</code>.
-   */
-  def pmap[B](f: A => B) : Iterable[B] = new Projection[B](() => {
-    Iterable.this.elements.map(f)
-  })
-  /** Applies the given function <code>f</code> to each element of
-   *  this iterable, then concatenates the results.  Unlike <code>flatMap</code>,
-   *  this API is not strict and will terminate on infinite-sized collections.
-   *
-   *  @param f the function to apply on each element.
-   *  @return  <code>f(a<sub>0</sub>) ::: ... ::: f(a<sub>n</sub>)</code> if
-   *           this iterable is <code>a<sub>0</sub>, ..., a<sub>n</sub></code>.
-   */
-  def pflatMap[B](f: A => Iterable[B]) : Iterable[B] = new Projection[B](() => {
-    Iterable.this.elements.flatMap(a => f(a).elements)
-  })
+  def projection : Projection = new Projection {};
 
   /** returns true iff this collection has a bound size.
    *  Only true if this iterable is a <code>Collection</code>.

@@ -12,7 +12,7 @@ import scala.collection.mutable._
 import scala.tools.nsc._
 import scala.tools.nsc.backend.icode._
 import scala.tools.nsc.io._
-import scala.tools.nsc.util.Position
+import scala.tools.nsc.util.{Position,NoPosition}
 
 import ClassfileConstants._
 import Flags._
@@ -863,7 +863,7 @@ abstract class ICodeReader extends ClassfileParser {
     /** Return a fresh Local variable for the given index.
      */
     def freshLocal(idx: Int, kind: TypeKind, isArg: Boolean) = {
-      val sym = method.symbol.newVariable(NoPos, "loc" + idx).setInfo(kind.toType);
+      val sym = method.symbol.newVariable(NoPosition, "loc" + idx).setInfo(kind.toType);
       val l = new Local(sym, kind, isArg)
       method.addLocal(l)
       l

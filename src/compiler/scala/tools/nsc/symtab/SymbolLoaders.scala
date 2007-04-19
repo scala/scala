@@ -10,7 +10,7 @@ import compat.Platform.currentTime
 import java.io.{File, IOException}
 import scala.collection.mutable.{HashMap, HashSet}
 import scala.tools.nsc.io.AbstractFile
-import scala.tools.nsc.util.{ClassPath, NameTransformer, Position}
+import scala.tools.nsc.util.{ClassPath, NameTransformer, Position, NoPosition}
 import classfile.{ClassfileParser, SymblfileParser}
 import Flags._
 import ch.epfl.lamp.compiler.msil.{Type => MSILType, Attribute => MSILAttribute};
@@ -101,7 +101,7 @@ abstract class SymbolLoaders {
     protected var root: Symbol = _
 
     def enterPackage(name: String, completer: SymbolLoader): unit = {
-      val pkg = root.newPackage(NoPos, newTermName(name))
+      val pkg = root.newPackage(NoPosition, newTermName(name))
       pkg.moduleClass.setInfo(completer)
       pkg.setInfo(pkg.moduleClass.tpe)
       root.info.decls.enter(pkg)
@@ -112,8 +112,8 @@ abstract class SymbolLoaders {
       val owner = if (root.isRoot) definitions.EmptyPackageClass else root
       val className = newTermName(name)
       assert(owner.info.decls.lookup(name) == NoSymbol, owner.fullNameString + "." + name)
-      val clazz = owner.newClass(NoPos, name.toTypeName)
-      val module = owner.newModule(NoPos, name)
+      val clazz = owner.newClass(NoPosition, name.toTypeName)
+      val module = owner.newModule(NoPosition, name)
       clazz.setInfo(completer)
       module.setInfo(completer)
       module.moduleClass.setInfo(moduleClassLoader)

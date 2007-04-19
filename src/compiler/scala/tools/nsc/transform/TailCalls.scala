@@ -282,7 +282,7 @@ abstract class TailCalls extends Transform
 
     private def rewriteTailCall(fun: Tree, args: List[Tree]): Tree = {
       log("Rewriting tail recursive method call at: " +
-                      unit.position(fun.pos))
+                      (fun.pos))
       ctx.accessed = true
       typed(atPos(fun.pos)(
         Apply(Ident(ctx.label), args)))

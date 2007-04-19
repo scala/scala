@@ -209,7 +209,7 @@ trait CodeFactory requires transform.ExplicitOuter  {
   def GreaterThanOrEquals(left: Tree, right: Tree): Tree =
     Apply(Select(left, nme.GE), List(right))
 
-  def ThrowMatchError(pos: PositionType, obj: Tree) =
+  def ThrowMatchError(pos: Position, obj: Tree) =
     atPos(pos) {
       Throw(
         New(

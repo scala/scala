@@ -48,7 +48,7 @@ abstract class CleanUp extends Transform {
     private def freshClassConstantMethName() = unit.fresh.newName("class$Method")
     private def freshClassConstantVarName() = unit.fresh.newName("class$Cache")
 
-    private def classConstantMethod(pos: PositionType, sig: String): Symbol = classConstantMeth.get(sig) match {
+    private def classConstantMethod(pos: Position, sig: String): Symbol = classConstantMeth.get(sig) match {
       case Some(meth) =>
         meth
       case None =>

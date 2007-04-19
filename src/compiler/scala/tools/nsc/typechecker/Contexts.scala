@@ -7,7 +7,7 @@
 package scala.tools.nsc.typechecker
 
 import symtab.Flags._
-import scala.tools.nsc.util.Position
+import scala.tools.nsc.util.{Position,NoPosition}
 
 /** This trait ...
  *
@@ -42,7 +42,7 @@ trait Contexts requires Analyzer {
       val qual = gen.mkAttributedStableRef(pkg)
       sc = sc.makeNewImport(
         Import(qual, List((nme.WILDCARD, null)))
-        .setSymbol(NoSymbol.newImport(NoPos).setFlag(SYNTHETIC).setInfo(ImportType(qual)))
+        .setSymbol(NoSymbol.newImport(NoPosition).setFlag(SYNTHETIC).setInfo(ImportType(qual)))
         .setType(NoType))
       sc.depth = sc.depth + 1
     }
@@ -253,7 +253,7 @@ trait Contexts requires Analyzer {
       c
     }
 
-    def error(pos: Int, err: Error) {
+    def error(pos: Position, err: Error) {
       val msg = err.getMessage()
       if (reportGeneralErrors)
         unit.error(pos, if (checking) "**** ERROR DURING INTERNAL CHECKING ****\n" + msg else msg)
@@ -261,14 +261,14 @@ trait Contexts requires Analyzer {
         throw err
     }
 
-    def error(pos: PositionType, msg: String) {
+    def error(pos: Position, msg: String) {
       if (reportGeneralErrors)
         unit.error(pos, if (checking) "**** ERROR DURING INTERNAL CHECKING ****\n" + msg else msg)
       else
         throw new TypeError(pos, msg)
     }
 
-    def warning(pos:  PositionType, msg: String) {
+    def warning(pos:  Position, msg: String) {
       if (reportGeneralErrors) unit.warning(pos, msg)
     }
 
@@ -279,7 +279,7 @@ trait Contexts requires Analyzer {
      *  @param sym2 ...
      *  @param rest ...
      */
-    def ambiguousError(pos: PositionType, pre: Type, sym1: Symbol,
+    def ambiguousError(pos: Position, pre: Type, sym1: Symbol,
                        sym2: Symbol, rest: String): unit = {
       val msg =
         ("ambiguous reference to overloaded definition,\n" +

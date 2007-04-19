@@ -56,13 +56,11 @@ trait Collection[A] extends MutableIterable[A] {
    */
   def transform(f: A => A): Boolean;
 
-  /** Used for non-strict filtered collection that only includes elements of this collection that are true for "p."
-   ** Any elements added to or removed from the resulting
-   ** filter will update this collection. Any changes to this collection
-   ** can update the filtered collection.
-   ** @return a non-strict filter of this collection.
-   **/
-  override def pfilter(p : A => Boolean) : MutableIterable[A] = new Filter(p);
+  trait Projection extends super.Projection {
+    override def filter(p : A => Boolean) : MutableIterable[A] = new Filter(p);
+  }
+  override def projection : Projection = new Projection {}
+
 
   /** Base implementation of a filtered collection */
   class Filter(p : A => Boolean) extends Collection[A] {
@@ -77,8 +75,11 @@ trait Collection[A] extends MutableIterable[A] {
       if (!p(a)) throw new IllegalArgumentException;
       Collection.this.remove(a);
     }
-    override def pfilter(p1 : A => Boolean) : MutableIterable[A] =
-      Collection.this.pfilter(a => p(a) && p1(a));
+    class Projection extends super.Projection {
+      override def filter(p0 : A => Boolean) : MutableIterable[A] =
+        Collection.this.projection.filter(a => p(a) && p0(a));
+    }
+    override def projection : Projection = new Projection;
     def elements = Collection.this.elements.filter(p);
     def size = size0;
   }

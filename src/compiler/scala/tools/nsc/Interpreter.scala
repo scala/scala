@@ -13,7 +13,7 @@ import java.net.{URL, URLClassLoader}
 import scala.collection.mutable
 import scala.collection.mutable.{ListBuffer, HashSet, ArrayBuffer}
 
-import ast.parser.SyntaxAnalyzer
+//import ast.parser.SyntaxAnalyzer
 import io.PlainFile
 import reporters.{ConsoleReporter, Reporter}
 import symtab.Flags
@@ -333,7 +333,9 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
         val unit =
           new CompilationUnit(
             new SourceFile("<console>", code.toCharArray()))
-        new compiler.syntaxAnalyzer.Parser(unit).templateStatSeq._2
+        val scanner = new compiler.syntaxAnalyzer.UnitParser(unit);
+        val xxx = scanner.templateStatSeq;
+        xxx._2
       }
 
       // parse the main code along with the imports

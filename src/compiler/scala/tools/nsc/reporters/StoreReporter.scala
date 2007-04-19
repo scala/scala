@@ -7,9 +7,8 @@
 // $Id$
 
 package scala.tools.nsc.reporters;
-import scala.tools.nsc.util.Position;
 import scala.collection.mutable.HashSet;
-
+import scala.tools.nsc.util.Position
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.IOException;
@@ -20,7 +19,6 @@ import java.io.PrintWriter;
  * console.
  */
 class StoreReporter extends Reporter {
-
   class Info(val pos: Position, val msg: String, val severity: Severity) {
     override def toString() = "pos: " + pos + " " + msg + " " + severity;
   }
@@ -29,7 +27,7 @@ class StoreReporter extends Reporter {
 
   protected def info0(pos : Position, msg : String, severity : Severity, force : Boolean) : Unit = if (!force) {
     infos += new Info(pos, msg, severity);
-    incr(severity);
+    (severity).count = severity.count + 1
   }
   override def reset = {
     super.reset;

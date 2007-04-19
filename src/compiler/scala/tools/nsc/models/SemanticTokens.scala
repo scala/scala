@@ -11,7 +11,7 @@ import java.lang.Character.isJavaIdentifierPart
 import scala.collection.mutable.{HashMap,HashSet}
 import scala.tools.nsc.Global
 import scala.tools.nsc.symtab.{Flags,Names}
-import scala.tools.nsc.util.{NameTransformer,Position,SourceFile}
+import scala.tools.nsc.util.{NameTransformer,Position,SourceFile,NoPosition}
 import scala.tools.nsc.symtab.Flags.DEFERRED
 
 class SemanticTokens(val compiler: Global) {
@@ -39,11 +39,11 @@ class SemanticTokens(val compiler: Global) {
     if (keywords.isEmpty)
       pos
     else if (pos == source.content.length)
-      NoPos
+      -1
     else if (source.beginsWith(pos, " "))
       eatKeywords(source, pos + 1)
     else if (source.beginsWith(pos, keywords.head + " "))
-      eatKeywords(source, pos + keywords.head.length() + 1)
+      eatKeywords(source, pos + keywords.head.length + 1)
     else
       eatKeyword(source, pos, keywords.tail)
   }
@@ -52,7 +52,7 @@ class SemanticTokens(val compiler: Global) {
     val keywords =
       "package" :: "val" :: "var" :: "def" :: "class" :: "trait" :: "override" :: "case" ::
       "object" :: "sealed" :: "private" :: "protected" :: Nil
-    if (pos != NoPos) eatKeyword(source, pos, keywords)
+    if (pos != -1) eatKeyword(source, pos, keywords)
     else pos
   }
 
@@ -131,13 +131,13 @@ class SemanticTokens(val compiler: Global) {
     def source = unit.source
 
     def dbg(tree : Tree) = {
-      def treePos : Int = if (tree ne null) tree.pos else -1;
+      def treePos : Position = if (tree ne null) tree.pos else NoPosition;
       (
         "TREE=" + tree +
           (if (tree ne null) (" CLASS=" + tree.getClass()) else "") +
             " SYM=" + tree.symbol +
               " POS=" +
-                (new Position(source, treePos)).dbgString
+                treePos.dbgString
     )}
 
     val symbols = new HashMap[Symbol,Info];
@@ -200,14 +200,14 @@ class SemanticTokens(val compiler: Global) {
       for (val tree : T <- trees) build(tree)
 
     def build(tree0: Tree) : Unit = try {
-      /* if (tree0.pos != NoPos) */ tree0 match {
+      /* if (tree0.pos != NoPosition) */ tree0 match {
       case tree: ImplDef =>
-        val pos = eatKeywords(unit.source, tree.pos)
-        if (pos == NoPos) {
+        val pos = eatKeywords(unit.source, tree.pos.offset.get)
+        if (pos == -1) {
           // inner types.
             // Console.err.println("NOPOS: " + tree.getClass() + " " + (new Position(unit.source, tree.pos)).dbgString);
           //Thread.dumpStack();
-        } else buildDef(tree.symbol, eatKeywords(unit.source, tree.pos));
+        } else buildDef(tree.symbol, eatKeywords(unit.source, tree.pos.offset.get));
         tree match {
           case cdef: ClassDef => build(cdef.tparams)
           case _ => ;
@@ -221,13 +221,13 @@ class SemanticTokens(val compiler: Global) {
           // Adding the condition thus keeps the old behavior.
           // todo: review whether this is correct, or whether abstract getters should be included.
           {
-            val pos : Int = if (tree.name.toString().equals("<init>")) NoPos else
-              eatKeywords(unit.source, tree.pos);
+            val pos : Int = if (tree.name.toString().equals("<init>")) -1 else
+              eatKeywords(unit.source, tree.pos.offset.get);
           if (false) Console.err.println("VALDEF: tree=" + tree + " sym=" + tree.symbol + " pos0=" +
             tree.symbol.pos + " alias=" + tree.symbol.alias + " pos1=" +
-            pos + " pos2=" + tree.pos + " " + unit.source.dbg(tree.pos) + " " + tree.symbol.hasFlag(Flags.SYNTHETIC));
+            pos + " pos2=" + tree.pos.dbgString + " " + tree.symbol.hasFlag(Flags.SYNTHETIC));
 
-          if (pos != NoPos && !tree.hasFlag(Flags.SYNTHETIC))
+          if (pos != -1 && !tree.hasFlag(Flags.SYNTHETIC))
             buildDef(tree.symbol, pos);
               }
 
@@ -236,8 +236,8 @@ class SemanticTokens(val compiler: Global) {
                 build(ddef.tparams);
 
                 for (val l0 <- ddef.vparamss; val arg <- l0) {
-                  val pos0 : Int = if (!unit.source.beginsWith(arg.pos, "val ")) arg.pos;
-                                             else unit.source.skipWhitespace(arg.pos + ("val ").length());
+                  val pos0 : Int = if (!unit.source.beginsWith(arg.pos.offset.get, "val ")) arg.pos.offset.get;
+                                             else unit.source.skipWhitespace(arg.pos.offset.get + ("val ").length());
                   buildDef(arg.symbol, pos0);
                   build(arg.tpt);
                 }
@@ -261,22 +261,22 @@ class SemanticTokens(val compiler: Global) {
       case tree: PackageDef =>
         //Console.err.println("PACKAGE: " + tree.name);
         if (false) {
-          val pos = eatKeywords(unit.source, tree.pos)
-          if (pos != NoPos)
+          val pos = eatKeywords(unit.source, tree.pos.offset.get(-1))
+          if (pos != -1)
             buildDef(tree.symbol, pos)
         }
         build(tree.stats)
       case tree: Function =>
-        for (val arg <- tree.vparams) if (arg.pos != NoPos) {
+        for (val arg <- tree.vparams) if (arg.pos != NoPosition) {
           val name = arg.name.toString().trim()
           val pos: Int =
-            if (unit.source.beginsWith(arg.pos, "val "))
-              unit.source.skipWhitespace(arg.pos + ("val ").length())
-            else if (unit.source.content(arg.pos) == ':') {
-              var posx : Int = arg.pos
+            if (unit.source.beginsWith(arg.pos.offset.get(-1), "val "))
+              unit.source.skipWhitespace(arg.pos.offset.get(-1) + ("val ").length())
+            else if (unit.source.content(arg.pos.offset.get) == ':') {
+              var posx : Int = arg.pos.offset.get
               while (unit.source.content(posx - 1).isWhitespace) posx = posx - 1
               posx - name.length()
-            } else arg.pos
+            } else arg.pos.offset.get
           buildDef(arg.symbol, pos)
           build(arg.tpt)
         }
@@ -291,19 +291,19 @@ class SemanticTokens(val compiler: Global) {
           if (false) Console.err.println("NO_ORIGINAL: " + tree + " " + tree.tpe + " " + classes(tree.tpe.getClass()));
         }
         if (tree.tpe ne null) buildT(tree1, tree.tpe);
-        def buildT( tree : Tree, tpe : Type) : Unit = if (tree.pos != NoPos) tpe match {
+        def buildT( tree : Tree, tpe : Type) : Unit = if (tree.pos != NoPosition) tpe match {
           case tpe0 : TypeRef => tree match {
             case apt : AppliedTypeTree =>
-              buildUse(tpe.symbol, apt.tpt.pos, tpe0);
+              buildUse(tpe.symbol, apt.tpt.pos.offset.get(-1), tpe0);
           //Console.err.println("APT: " + treex + " vs. " + treex.original);
           //Console.err.println("APT: " + treex.pos + " vs. " + treex.original.pos + " " + unit.source.dbg(treex.original.pos));
               //Console.err.println("APT: " + apt.tpt + " sym0=" + apt.tpt.symbol + " sym1=" + tpe0.sym + " apt.args=" + apt.args + " tpe0.args=" + tpe0.args);
 
               buildTs (apt.args, tpe0.args);
-            case ident : Ident => buildUse(tpe0.sym, ident.pos, tpe0);
+            case ident : Ident => buildUse(tpe0.sym, ident.pos.offset.get(-1), tpe0);
             case select : Select =>
           if (select.symbol == NoSymbol)
-            if (false) Console.err.println("BUILD_SELECT: " + select + " @ " + tpe0 + " SYM=" + select.symbol + " " + unit.source.dbg(select.pos));
+            if (false) Console.err.println("BUILD_SELECT: " + select + " @ " + tpe0 + " SYM=" + select.symbol + " " + (select.pos).dbgString);
               try {
                 // build(select);
             buildUse(tpe0.symbol, selectPos(select), tpe0);
@@ -311,32 +311,32 @@ class SemanticTokens(val compiler: Global) {
                         buildT(select.qualifier, tpe0.prefix);
           } catch {
                         case e : Error =>
-                          Console.err.println("BUILD_SELECT: " + select + " @ " + tpe0 + " " + unit.source.dbg(select.pos));
+                          Console.err.println("BUILD_SELECT: " + select + " @ " + tpe0 + " " + (select.pos).dbgString);
                           throw e;
               }
             case tpt : TypeTree =>
           if (tpt.symbol ne null) {
-            Console.err.println("SYM0 " + tpt.symbol + " " + unit.source.dbg(tpt.pos));
-            buildUse(tpt.symbol, tpt.pos, tpe0);
+            Console.err.println("SYM0 " + tpt.symbol + " " + (tpt.pos).dbgString);
+            buildUse(tpt.symbol, tpt.pos.offset.get(-1), tpe0);
           } else if (tpe0.symbol ne null) {
             //Console.err.println("TYPE_SYM1 " + tpe0.symbol + " " + unit.source.dbg(tpt.pos));
-            buildUse(tpe0.symbol, tpt.pos, tpe0);
+            buildUse(tpe0.symbol, tpt.pos.offset.get(-1), tpe0);
           } else {
-            Console.err.println("UNKNOWN TPT0: " + unit.source.dbg(tpt.pos) + " tpt=" + tpt + " " + tpt.symbol + " tpe0="+ tpe0 + " " + tpe0.symbol + " tpe0.args=" + tpe0.args);
+            Console.err.println("UNKNOWN TPT0: " + (tpt.pos).dbgString + " tpt=" + tpt + " " + tpt.symbol + " tpe0="+ tpe0 + " " + tpe0.symbol + " tpe0.args=" + tpe0.args);
           }
             case sft : SelectFromTypeTree =>
               build(sft.qualifier); // XXX: broken
                 if (false) Console.err.println("SFTT: " + sft + " sym=" + sft.symbol + " selector=" + sft.selector + " qual=" + sft.qualifier + " qual.sym=" +
                           sft.qualifier.symbol +
-                          " qual.pos=" + unit.source.dbg(sft.qualifier.pos) + " symbol=" + sft.symbol + " type=" + tpe0 +
+                          " qual.pos=" + (sft.qualifier.pos).dbgString + " symbol=" + sft.symbol + " type=" + tpe0 +
                           " type.sym=" + tpe0.symbol);
-            case _ => Console.err.println("UNKNOWN TPT2: " + tree + " vs. " + tpe0 + " " + tree.getClass() + " " + unit.source.content(tree.pos));
+            case _ => Console.err.println("UNKNOWN TPT2: " + tree + " vs. " + tpe0 + " " + tree.getClass() + " " + (tree.pos).dbgString);
           }
           case tpe0 : MethodType => tree match {
             case tpt: TypeTree =>
               if (tpt.original ne null) buildT(tpt.original, tpe);
               else {
-                        Console.err.println("UNKNOWN TPT3: " + tree + " vs. " + tpe0 + " " + unit.source.content(tree.pos));
+                        Console.err.println("UNKNOWN TPT3: " + tree + " vs. " + tpe0 + " " + (tree.pos).dbgString);
               }
             case ident  : Ident  => buildT(ident,  tpe0.resultType);
             case select : Select => buildT(select, tpe0.resultType);
@@ -355,33 +355,33 @@ class SemanticTokens(val compiler: Global) {
             case stt : SingletonTypeTree => stt.ref match {
                 case ths : This => build(ths);
 
-          case _ => Console.err.println("UNKNOWN TPE11: " + tpe0 + " " + stt + " " + stt.ref + " " + stt.ref.getClass() + " " + unit.source.dbg(tree.pos));
+          case _ => Console.err.println("UNKNOWN TPE11: " + tpe0 + " " + stt + " " + stt.ref + " " + stt.ref.getClass() + " " + (tree.pos).dbgString);
         }
         case tt : This =>
         case _ : Ident =>
         case _ : Select =>
         case tt : TypeTree =>
-          if (false) Console.err.println("UNKNOWN TPE12: " + tpe0 + " " + tree + " " + tree.getClass() + " " + unit.source.dbg(tree.pos));
+          if (false) Console.err.println("UNKNOWN TPE12: " + tpe0 + " " + tree + " " + tree.getClass() + " " + (tree.pos).dbgString);
         case _ =>
-          if (false) Console.err.println("UNKNOWN TPE10: " + tpe0 + " " + tree + " " + tree.getClass() + " " + unit.source.dbg(tree.pos));
+          if (false) Console.err.println("UNKNOWN TPE10: " + tpe0 + " " + tree + " " + tree.getClass() + " " + (tree.pos).dbgString);
           }
           case tpe0 : SingleType => tree match {
-        case ident  : Ident  => buildUse(tpe0.sym, ident.pos, tpe0);
+        case ident  : Ident  => buildUse(tpe0.sym, ident.pos.offset.get(-1), tpe0);
         case select : Select =>
         buildUse(tpe0.symbol, selectPos(select), tpe0);
         //Console.err.println("QUALIFIER-0: " + select.qualifier + " " + unit.source.dbg(select.qualifier.pos) + " " + tpe0.prefix + " " + tpe0.prefix.getClass() + " " + tpe0.prefix.getClass().getSuperclass() +" " + tpe0.prefix.widen + " " + tpe0.prefix.toLongString);
         buildT(select.qualifier, tpe0.prefix);
 
         case _ =>
-          if (false) Console.err.println("UNKNOWN TPE8: " + tree + " " + unit.source.dbg(tree.pos) + " TPE=" + tpe0 + " PRE=" + tpe0.pre + " SYM=" + tpe0.sym);
+          if (false) Console.err.println("UNKNOWN TPE8: " + tree + " " + (tree.pos).dbgString + " TPE=" + tpe0 + " PRE=" + tpe0.pre + " SYM=" + tpe0.sym);
 
           }
       case ctype : ConstantType =>
-        if (false) Console.err.println("UNKNOWN CONSTANT_TYPE: " + tree + " " + ctype + " " + unit.source.dbg(tree.pos));
+        if (false) Console.err.println("UNKNOWN CONSTANT_TYPE: " + tree + " " + ctype + " " + (tree.pos).dbgString);
 
           case ErrorType =>
           case _ => {
-        if (false) Console.err.println("UNKNOWN TPE4: " + tree + " " + tpe + " " + tpe.getClass() + " " + unit.source.dbg(tree.pos));
+        if (false) Console.err.println("UNKNOWN TPE4: " + tree + " " + tpe + " " + tpe.getClass() + " " + (tree.pos).dbgString);
           }
         };
     def buildTs(trees : List[Tree], types : List[Type]): Unit = if (!trees.isEmpty && !types.isEmpty) {
@@ -392,53 +392,53 @@ class SemanticTokens(val compiler: Global) {
         Console.println("" + treex + " vs. " + treex.original);
         if (treex.original ne null)
           Console.println("" + treex.tpe + " vs. " + treex.original.tpe);
-               logError("Tree vs. Type mismatch: " + trees + " " + types + " " + unit.source.dbg(tree.pos), null);
+               logError("Tree vs. Type mismatch: " + trees + " " + types + " " + (tree.pos).dbgString, null);
         doLog = false;
       }
     };
 
       case tree: AbsTypeDef =>
-        //Console.err.println("ABS: " + tree.symbol + " " + unit.source.dbg(tree.namePos) + " " + unit.source.dbg(tree.pos));
+        //Console.err.println("ABS: " + tree.symbol + " " + unit.source.dbg(tree.namePos) + " " + tree.pos.dbgString);
         buildDef(tree.symbol, tree.namePos)
-        buildDef(tree.symbol, tree.pos)
+        buildDef(tree.symbol, tree.pos.offset.get(-1))
         build(tree.tparams); //@M
         build(tree.lo)
         build(tree.hi)
       case tree: Bind =>
-        buildDef(tree.symbol, tree.pos)
+        buildDef(tree.symbol, tree.pos.offset.get(-1))
         build(tree.body)
       case tree: Ident =>
-        buildUse(tree.symbol, tree.pos, tree.tpe)
+        buildUse(tree.symbol, tree.pos.offset.get(-1), tree.tpe)
       case tree: Select =>
         try {
           build(tree.qualifier)
             } catch {
-              case e : Error => Console.err.println("SELECTQ: " + tree + " " + tree.qualifier + " " + unit.source.dbg(tree.qualifier.pos)); throw e;
+              case e : Error => Console.err.println("SELECTQ: " + tree + " " + tree.qualifier + " " + (tree.qualifier.pos).dbgString); throw e;
             }
             try {
-              if (tree.pos >= unit.source.content.length) {
-                if (false) Console.err.println("BAD_SELECT_QUALIFIER " + tree + " @ " + unit.source.dbg(tree.pos));
+              if (tree.pos.offset.get >= unit.source.content.length) {
+                if (false) Console.err.println("BAD_SELECT_QUALIFIER " + tree + " @ " + (tree.pos).dbgString);
 
         } else {
-          //Console.err.println("SELECT-0: " + tree.symbol + " " + unit.source.dbg(tree.pos) + " " + (tree.pos - selectPos(tree)));
+          //Console.err.println("SELECT-0: " + tree.symbol + " " + tree.pos.dbgString + " " + (tree.pos - selectPos(tree)));
                     buildUse(tree.symbol, selectPos(tree), tree.tpe);
               }
             } catch {
-              case e : Error => Console.err.println("SELECTU: " + tree + " " + tree.symbol + " " + unit.source.dbg(tree.pos)); throw e;
+              case e : Error => Console.err.println("SELECTU: " + tree + " " + tree.symbol + " " + tree.pos.dbgString); throw e;
             }
     case tree: TypeApply =>
-      //Console.err.println("TYPE_APPLY: " + tree + " " + unit.source.dbg(tree.pos));
+      //Console.err.println("TYPE_APPLY: " + tree + " " + tree.pos.dbgString);
       if (!tree.args.isEmpty) {
         //Console.err.println("ARGS: " + unit.source.dbg(tree.args0.head.pos));
       }
       build(tree.fun)
       build(tree.args)
     case tree: Apply =>
-      //Console.err.println("NORM_APPLY: " + tree + " " + unit.source.dbg(tree.pos));
+      //Console.err.println("NORM_APPLY: " + tree + " " + tree.pos.dbgString);
       build(tree.fun)
       build(tree.args)
       case tree: GenericApply =>
-        //Console.err.println("GEN_APPLY: " + tree + " " + unit.source.dbg(tree.pos));
+        //Console.err.println("GEN_APPLY: " + tree + " " + tree.pos.dbgString);
         build(tree.fun)
         build(tree.args)
       case tree: Typed =>
@@ -469,12 +469,12 @@ class SemanticTokens(val compiler: Global) {
       case tree : Try        => build(tree.block); build(tree.catches); build(tree.finalizer);
       case tree : Alternative => build(tree.trees);
       case tree : This    =>
-        //Console.err.println("THIS: " + tree.symbol + " " + tree.qual + " " + unit.source.dbg(tree.pos) + " " + tree.tpe);
-        if (tree.symbol ne null) buildUse(tree.symbol, tree.pos, tree.tpe);
+        //Console.err.println("THIS: " + tree.symbol + " " + tree.qual + " " + tree.pos.dbgString + " " + tree.tpe);
+        if (tree.symbol ne null) buildUse(tree.symbol, tree.pos.offset.get(-1), tree.tpe);
         //Thread.dumpStack();
       case tree : AliasTypeDef =>
         //Console.err.println("ALIAS: " + tree);
-        build(tree.rhs); build(tree.tparams); buildDef(tree.symbol, tree.pos);
+        build(tree.rhs); build(tree.tparams); buildDef(tree.symbol, tree.pos.offset.get(-1));
           case tree : DocDef     => build(tree.definition);
       case tree: Import => build(tree.expr)
       case tree: AppliedTypeTree => ;
@@ -484,11 +484,11 @@ class SemanticTokens(val compiler: Global) {
       case tree: Literal => ;
       case EmptyTree => ;
       case _ => ;
-        Console.err.println("BAIL: " + unit.source.dbg(tree0.pos) + " " + tree0 + " " + tree0.getClass());
+        Console.err.println("BAIL: " + (tree0.pos) + " " + tree0 + " " + tree0.getClass());
     }
   } catch {
     case t: Throwable =>
-      logError("Error occured at " + unit.source.dbg(tree0.pos), t)
+      logError("Error occured at " + (tree0.pos), t)
   }
 
   def buildUse(term: Symbol, pos: Int, tpe: Type) = buildSym(term, pos, false, tpe)
@@ -497,7 +497,7 @@ class SemanticTokens(val compiler: Global) {
   def buildSym(term: Symbol, pos: Int, isDef: Boolean, tpe: Type): Unit =
     if (term.hasFlag(Flags.ACCESSOR))
       buildSym(analyzer.underlying(term), pos, isDef, tpe)
-    else if (pos == NoPos) {
+    else if (pos == -1) {
       //Console.err.println("NOPOS: " + term)
       //Thread.dumpStack()
     }
@@ -528,9 +528,9 @@ class SemanticTokens(val compiler: Global) {
       }
     }
 
-  def selectPos(tree : Select): Int = if (tree.pos == NoPos) NoPos else {
+  def selectPos(tree : Select): Int = if (tree.pos == NoPosition) -1 else {
     val buf = unit.source.content
-    if (tree.pos >= buf.length) {
+    if (tree.pos.offset.get >= buf.length) {
       if (false) {
         Console.err.println("" + tree + "@" + tree.pos + " not in " +
                            unit.source.file.name + "[" + buf.length + "]");
@@ -541,13 +541,13 @@ class SemanticTokens(val compiler: Global) {
     }
 
     val pos : Int =
-      if (buf(tree.pos) != '.') tree.pos
+      if (buf(tree.pos.offset.get) != '.') tree.pos.offset.get
       else {
         def f(x : Int) : Int = {
           if (buf(x).isWhitespace) f(x + 1)
           else x
         }
-        f(tree.pos + 1)
+        f(tree.pos.offset.get + 1)
       }
     pos
   };
@@ -597,8 +597,8 @@ class SemanticTokens(val compiler: Global) {
             sem.symbol.pos == tok.symbol.pos) return;
 
         if (false) {
-          Console.err.println("NOT_GAP: " + sem.symbol + " " + sem.symbol.getClass() + " " + unit.source.dbg(sem.symbol.pos) + " " + sem.symbol.flags);
-          Console.err.println("NOT_GAP: " + tok.symbol + " " + tok.symbol.getClass() + " " + unit.source.dbg(tok.symbol.pos) + " " + tok.symbol.flags);
+          Console.err.println("NOT_GAP: " + sem.symbol + " " + sem.symbol.getClass() + " " + (sem.symbol.pos).dbgString + " " + sem.symbol.flags);
+          Console.err.println("NOT_GAP: " + tok.symbol + " " + tok.symbol.getClass() + " " + (tok.symbol.pos).dbgString + " " + tok.symbol.flags);
           Console.err.println("LIST: " + this);
           Console.err.println("POS: " + unit.source.dbg(offset));
 

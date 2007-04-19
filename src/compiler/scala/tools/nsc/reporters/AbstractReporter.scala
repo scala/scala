@@ -7,7 +7,7 @@
 package scala.tools.nsc.reporters
 
 import scala.collection.mutable.HashSet
-import nsc.util.Position
+import scala.tools.nsc.util.Position
 import nsc.Settings
 
 /**

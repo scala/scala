@@ -28,7 +28,7 @@ object Main extends AnyRef with EvalLoop {
                    msg + "\n  scalac -help  gives more information")
 
   /* needed ?? */
-  def errors() = reporter.errors
+  //def errors() = reporter.errors
 
   def resident(compiler: Global): unit =
     loop { line =>

@@ -97,4 +97,14 @@ object Tokens {
 
   /** XML mode */
   final val XMLSTART = 96
+
+  /** for IDE only */
+  final val LINE_COMMENT = 97
+  final val COMMENT_START = 98
+  final val COMMENT_END   = 99
+  final val DOC_START = 100
+  final val DOUBLE_QUOTE     = 101
+  final val BACK_QUOTE       = 102
+  final val MULTI_QUOTE      = 103
+  final val EMPTY_STRING     = 104
 }

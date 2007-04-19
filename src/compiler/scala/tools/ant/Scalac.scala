@@ -634,17 +634,17 @@ class Scalac extends MatchingTask {
               "(no error message provided); see the error output for details.")
     }
     reporter.printSummary()
-    if (reporter.errors > 0)
+    if (reporter.hasErrors)
       error(
           "Compile failed with " +
-          reporter.errors + " error" +
-          (if (reporter.errors > 1) "s" else "") +
+          reporter.ERROR.count + " error" +
+          (if (reporter.ERROR.count > 1) "s" else "") +
           "; see the compiler error output for details.")
-    else if (reporter.warnings > 0)
+    else if (reporter.WARNING.count > 0)
       log(
           "Compile suceeded with " +
-          reporter.warnings + " warning" +
-          (if (reporter.warnings > 1) "s" else "") +
+          reporter.WARNING.count + " warning" +
+          (if (reporter.WARNING.count > 1) "s" else "") +
           "; see the compiler output for details.")
   }
 

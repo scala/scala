@@ -21,7 +21,6 @@ abstract class SymbolicXMLBuilder(make: TreeBuilder, p: Parsers # Parser, preser
 
   val global: Global
   import global._
-  import RequiresIntsAsPositions._
   import global.posAssigner.atPos
   //import scala.tools.scalac.ast.{TreeList => myTreeList}
 
@@ -103,7 +102,7 @@ abstract class SymbolicXMLBuilder(make: TreeBuilder, p: Parsers # Parser, preser
    *  @todo map:       a map of attributes !!!
    */
 
-  protected def mkXML(pos: int, isPattern: boolean, pre: Tree, label: Tree, attrs: /*Array[*/Tree/*]*/ , scope:Tree, children: mutable.Buffer[Tree]): Tree = {
+  protected def mkXML(pos: Position, isPattern: boolean, pre: Tree, label: Tree, attrs: /*Array[*/Tree/*]*/ , scope:Tree, children: mutable.Buffer[Tree]): Tree = {
     if (isPattern) {
       convertToTextPat(children)
       atPos (pos) { //@todo maybe matching on attributes, scope?
@@ -118,12 +117,12 @@ abstract class SymbolicXMLBuilder(make: TreeBuilder, p: Parsers # Parser, preser
     }
   }
 
-  final def entityRef(pos: int, n: String) = {
+  final def entityRef(pos: Position, n: String) = {
     atPos(pos) { New( _scala_xml_EntityRef, LL(Literal(Constant( n )))) }
 
   };
   // create scala.xml.Text here <: scala.xml.Node
-  final def text(pos: Int, txt:String): Tree =  {
+  final def text(pos: Position, txt:String): Tree =  {
     //makeText( isPattern, gen.mkStringLit( txt ))
     val txt1 = Literal(Constant(txt))
     atPos(pos) {
@@ -141,15 +140,15 @@ abstract class SymbolicXMLBuilder(make: TreeBuilder, p: Parsers # Parser, preser
     New(_scala_xml_Text, LL(txt))
 
   // create
-  def comment(pos: int, text: String): Tree =
+  def comment(pos: Position, text: String): Tree =
     atPos(pos) { Comment( Literal(Constant(text))) }
 
   // create
-  def charData(pos: int, txt: String): Tree =
+  def charData(pos: Position, txt: String): Tree =
     atPos(pos) { makeText1(Literal(Constant(txt))) }; //{ CharData( Literal(Constant(txt))) };
 
   // create scala.xml.Text here <: scala.xml.Node
-  def procInstr( pos: int, target: String, txt: String ) =
+  def procInstr( pos: Position, target: String, txt: String ) =
     atPos(pos) { ProcInstr(Literal(Constant(target)), Literal(Constant(txt))) }
 
   protected def Comment(txt: Tree) = New(_scala_xml_Comment, LL(txt))
@@ -158,7 +157,7 @@ abstract class SymbolicXMLBuilder(make: TreeBuilder, p: Parsers # Parser, preser
     New(_scala_xml_ProcInstr, LL(target, txt))
 
   /** @todo: attributes */
-  def makeXMLpat(pos: int, n: String, args: mutable.Buffer[Tree]): Tree = {
+  def makeXMLpat(pos: Position, n: String, args: mutable.Buffer[Tree]): Tree = {
 	val (prepat, labpat) = n.indexOf(':') match {
 		case -1 => (Ident(nme.WILDCARD), Literal(Constant(n)))
 	  //case 0  => // is erroneous, but cannot happen
@@ -180,7 +179,7 @@ abstract class SymbolicXMLBuilder(make: TreeBuilder, p: Parsers # Parser, preser
     case _ => t
   }
 
-  def parseAttribute(pos: Int, s: String): Tree = {
+  def parseAttribute(pos: Position, s: String): Tree = {
     val ns = xml.Utility.parseAttributeValue(s)
     val ts:collection.mutable.ListBuffer[Tree] = new collection.mutable.ListBuffer
     val it = ns.elements
@@ -213,7 +212,7 @@ abstract class SymbolicXMLBuilder(make: TreeBuilder, p: Parsers # Parser, preser
     case _ => false
   }
 
-  def makeXMLseq( pos:int, args:mutable.Buffer[Tree] ) = {
+  def makeXMLseq(pos: Position, args:mutable.Buffer[Tree] ) = {
     var _buffer = New( _scala_xml_NodeBuffer, List(Nil))
     val it = args.elements
     while (it.hasNext) {
@@ -231,18 +230,18 @@ abstract class SymbolicXMLBuilder(make: TreeBuilder, p: Parsers # Parser, preser
     if (i != -1) Some(name.substring(0, i)) else None
   }
 
-  def group(pos: int, args: mutable.Buffer[Tree]): Tree = {
+  def group(pos: Position, args: mutable.Buffer[Tree]): Tree = {
     atPos(pos) { New( _scala_xml_Group, LL( makeXMLseq(pos, args))) }
   }
 
   /** code that constructs an unparsed node
   */
-  def unparsed(pos: int, str: String): Tree = {
+  def unparsed(pos: Position, str: String): Tree = {
     atPos(pos) { New( _scala_xml_Unparsed, LL( Literal(Constant(str)))) }
   }
 
   /** makes an element */
-  def element(pos: int, qname: String, attrMap: mutable.Map[String,Tree], args: mutable.Buffer[Tree]): Tree = {
+  def element(pos: Position, qname: String, attrMap: mutable.Map[String,Tree], args: mutable.Buffer[Tree]): Tree = {
     //Console.println("SymbolicXMLBuilder::element("+pos+","+qname+","+attrMap+","+args+")");
     var setNS = new mutable.HashMap[String, Tree]
 

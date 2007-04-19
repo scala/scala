@@ -564,7 +564,7 @@ abstract class Checkers {
           printed = printed + 1
         });
       buf foreach Console.println
-      Console.println("at: " + clasz.cunit.position(buf.head.pos))
+      Console.println("at: " + (buf.head.pos))
     }
 
     def error(msg: String, stack: TypeStack): Unit =

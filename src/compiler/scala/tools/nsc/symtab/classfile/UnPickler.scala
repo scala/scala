@@ -6,7 +6,7 @@
 
 package scala.tools.nsc.symtab.classfile
 
-import scala.tools.nsc.util.Position
+import scala.tools.nsc.util.{Position,NoPosition}
 import scala.tools.util.UTF8Codec
 import java.lang.{Float, Double}
 
@@ -23,7 +23,6 @@ import java.io.IOException
 abstract class UnPickler {
   val global: Global
   import global._
-  import RequiresIntsAsPositions._;
 
   /**
    *  @param bytes    bytearray from which we unpickle
@@ -156,11 +155,11 @@ abstract class UnPickler {
         case NONEsym =>
           sym = NoSymbol
         case _ =>
-          val unusedPos = {
-            if (tag > PosOffset) readNat();
-            else Position.NOPOS
+          val unusedPos : Int = {
+            if (tag > PosOffset) readNat;
+            else -1
           }
-          val pos : PositionType = if (true) FirstPos else unusedPos;
+          val pos : Position = NoPosition;
           val name = readNameRef()
           val owner = readSymbolRef()
           val flags = readNat()

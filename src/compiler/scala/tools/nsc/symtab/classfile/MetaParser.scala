@@ -8,7 +8,7 @@ package scala.tools.nsc.symtab.classfile
 
 import java.util.{StringTokenizer, NoSuchElementException}
 import scala.collection.mutable.ListBuffer
-import scala.tools.nsc.util.Position
+import scala.tools.nsc.util.{Position,NoPosition}
 
 abstract class MetaParser{
 
@@ -66,7 +66,7 @@ abstract class MetaParser{
       else if (token == "-") { nextToken(); Flags.CONTRAVARIANT }
       else 0;
     assert(token.startsWith("?"));
-    val sym = owner.newTypeParameter(NoPos, newTypeName(token)).setFlag(vflag)
+    val sym = owner.newTypeParameter(NoPosition, newTypeName(token)).setFlag(vflag)
     nextToken()
     val lo =
       if (token == ">") { nextToken(); parseType() }

@@ -8,6 +8,7 @@ package scala.tools.nsc.typechecker
 
 import scala.collection.mutable.ListBuffer
 import nsc.symtab.Flags._
+import scala.tools.nsc.util.{Position}
 
 /** This phase adds super accessors for all super calls that
  *  either appear in a trait or have as a target a member of some outer class.
@@ -289,7 +290,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
      * inherit anything. Since we can't (yet) add accessors for 'required'
      * classes, this has to be signaled as error.
      */
-    private def needsProtectedAccessor(sym: Symbol, pos: PositionType): Boolean = {
+    private def needsProtectedAccessor(sym: Symbol, pos: Position): Boolean = {
       val res = /* settings.debug.value && */
       ((sym hasFlag PROTECTED)
        && (!validCurrentOwner || !(currentOwner.enclClass.thisSym isSubClass sym.owner))

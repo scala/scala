@@ -65,7 +65,7 @@ trait Namers requires Analyzer {
       sym
     }
 
-    def updatePosFlags(sym: Symbol, pos: PositionType, flags: long): Symbol = {
+    def updatePosFlags(sym: Symbol, pos: Position, flags: long): Symbol = {
       if (settings.debug.value) log("overwriting " + sym)
       val lockedFlag = sym.flags & LOCKED
       sym.reset(NoType)
@@ -114,7 +114,7 @@ trait Namers requires Analyzer {
         innerNamer
     }
 
-    private def doubleDefError(pos: PositionType, sym: Symbol): unit =
+    private def doubleDefError(pos: Position, sym: Symbol): unit =
       context.error(pos,
         sym.name.toString() + " is already defined as " +
         (if (sym.hasFlag(CASE)) "case class " + sym.name else sym.toString()))
@@ -135,7 +135,7 @@ trait Namers requires Analyzer {
       sym
     }
 
-    def enterPackageSymbol(pos: PositionType, name: Name): Symbol = {
+    def enterPackageSymbol(pos: Position, name: Name): Symbol = {
       val cscope = if (context.owner == EmptyPackageClass) RootClass.info.decls
                    else context.scope
       val p: Symbol = cscope.lookup(name)
@@ -154,7 +154,7 @@ trait Namers requires Analyzer {
       if (context.owner.isConstructor && !context.inConstructorSuffix) INCONSTRUCTOR
       else 0l
 
-    private def enterClassSymbol(pos: PositionType, flags: long, name: Name): Symbol = {
+    private def enterClassSymbol(pos: Position, flags: long, name: Name): Symbol = {
       var c: Symbol = context.scope.lookup(name)
       if (c.isType && !currentRun.compiles(c) && context.scope == c.owner.info.decls) {
         updatePosFlags(c, pos, flags)
@@ -176,7 +176,7 @@ trait Namers requires Analyzer {
       c
     }
 
-    private def enterModuleSymbol(pos: PositionType, flags: long, name: Name): Symbol = {
+    private def enterModuleSymbol(pos: Position, flags: long, name: Name): Symbol = {
       var m: Symbol = context.scope.lookup(name)
       if (m.isModule && !m.isPackage && !currentRun.compiles(m) &&
          (context.scope == m.owner.info.decls)) {
@@ -196,7 +196,7 @@ trait Namers requires Analyzer {
       m
     }
 
-    private def enterCaseFactorySymbol(pos: PositionType, flags: long, name: Name): Symbol = {
+    private def enterCaseFactorySymbol(pos: Position, flags: long, name: Name): Symbol = {
       var m: Symbol = context.scope.lookup(name)
       if (m.isTerm && !m.isPackage && !currentRun.compiles(m) && context.scope == m.owner.info.decls) {
         updatePosFlags(m, pos, flags)
@@ -677,7 +677,7 @@ trait Namers requires Analyzer {
               val expr1 = typer.typedQualifier(expr)
               val base = expr1.tpe
               typer.checkStable(expr1)
-              def checkNotRedundant(pos: PositionType, from: Name, to: Name): boolean = {
+              def checkNotRedundant(pos: Position, from: Name, to: Name): boolean = {
                 if (!tree.symbol.hasFlag(SYNTHETIC) &&
                     !((expr1.symbol ne null) && expr1.symbol.isInterpreterWrapper) &&
                     base.member(from) != NoSymbol) {

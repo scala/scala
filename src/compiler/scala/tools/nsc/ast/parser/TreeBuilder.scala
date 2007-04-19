@@ -5,6 +5,7 @@
 // $Id$
 
 package scala.tools.nsc.ast.parser
+import scala.tools.nsc.util.Position
 
 import symtab.Flags._
 import scala.collection.mutable.ListBuffer
@@ -13,7 +14,6 @@ abstract class TreeBuilder {
 
   val global: Global
   import global._
-  import RequiresIntsAsPositions._;
   import posAssigner.atPos;
   def freshName(prefix: String): Name
 
@@ -184,7 +184,7 @@ abstract class TreeBuilder {
     else Block(stats.init, stats.last)
 
   /** Create tree for for-comprehension generator &lt;val pat0 &lt;- rhs0&gt; */
-  def makeGenerator(pos: int, pat: Tree, valeq: boolean, rhs: Tree): Enumerator = {
+  def makeGenerator(pos: Position, pat: Tree, valeq: boolean, rhs: Tree): Enumerator = {
     val pat1 = patvarTransformer.transform(pat);
     val rhs1 =
       if (valeq) rhs
@@ -212,8 +212,8 @@ abstract class TreeBuilder {
     ValDef(Modifiers(PARAM | SYNTHETIC), pname, TypeTree(), EmptyTree)
 
   abstract class Enumerator
-  case class ValFrom(pos: int, pat: Tree, rhs: Tree) extends Enumerator
-  case class ValEq(pos: int, pat: Tree, rhs: Tree) extends Enumerator
+  case class ValFrom(pos: Position, pat: Tree, rhs: Tree) extends Enumerator
+  case class ValEq(pos: Position, pat: Tree, rhs: Tree) extends Enumerator
   case class Filter(test: Tree) extends Enumerator
 
   /** Create tree for for-comprehension &lt;for (enums) do body&gt; or

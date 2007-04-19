@@ -8,7 +8,7 @@ package scala.tools.nsc.symtab.classfile
 
 import java.lang.{Float, Double}
 import scala.collection.mutable.HashMap
-import scala.tools.nsc.util.{Position, ShowPickled}
+import scala.tools.nsc.util.{Position, NoPosition, ShowPickled}
 import Flags._
 import PickleFormat._
 
@@ -310,8 +310,8 @@ abstract class Pickler extends SubComponent {
      */
     private def writeSymInfo(sym: Symbol): int = {
       var posOffset = 0
-      if (sym.pos != Position.NOPOS && sym.owner.isClass) {
-        writeNat(sym.pos)
+      if (sym.pos != NoPosition && sym.owner.isClass && !sym.pos.offset.isEmpty) {
+        writeNat(sym.pos.offset.get)
         posOffset = PosOffset
       }
       writeRef(sym.name)

@@ -519,7 +519,7 @@ trait ParallelMatching requires (transform.ExplicitOuter with PatternMatchers wi
 
   // ----------------------------------   helper functions that generate symbols, trees for type tests, pattern tests
 
-  def newVar(pos: PositionType, name: Name, tpe: Type)(implicit theOwner: Symbol): Symbol = {
+  def newVar(pos: Position, name: Name, tpe: Type)(implicit theOwner: Symbol): Symbol = {
     if(tpe eq null) assert(tpe ne null, "newVar("+name+", null)")
     val sym = theOwner.newVariable(pos, name) // careful: pos has special meaning
     sym.setFlag(symtab.Flags.TRANS_FLAG)
@@ -527,7 +527,7 @@ trait ParallelMatching requires (transform.ExplicitOuter with PatternMatchers wi
     sym
   }
 
-  def newVar(pos: PositionType, tpe: Type)(implicit theOwner: Symbol): Symbol =
+  def newVar(pos: Position, tpe: Type)(implicit theOwner: Symbol): Symbol =
     newVar(pos, cunit.fresh.newName("temp"), tpe).setFlag(symtab.Flags.SYNTHETIC)
 
   /** returns the condition in "if(cond) k1 else k2"

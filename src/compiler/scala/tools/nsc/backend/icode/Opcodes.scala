@@ -9,7 +9,7 @@
 package scala.tools.nsc.backend.icode;
 
 import scala.tools.nsc.ast._;
-import scala.tools.nsc.util.Position;
+import scala.tools.nsc.util.{Position,NoPosition};
 
 /*
   A pattern match
@@ -75,7 +75,7 @@ trait Opcodes requires ICodes {
     def difference = produced-consumed;
 
     /** The corresponding position in the source file */
-    var pos: Int = Position.NOPOS;
+    var pos: Position = NoPosition;
 
     /** Used by dead code elimination. */
     var useful: Boolean = false

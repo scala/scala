@@ -6,7 +6,7 @@
 
 package scala.tools.nsc.symtab.clr;
 
-import scala.tools.nsc.util.Position;
+import scala.tools.nsc.util.{Position,NoPosition};
 
 import scala.collection.mutable.{ListBuffer, Map, HashMap, Set, HashSet};
 import java.util.{Arrays, Comparator, StringTokenizer};
@@ -190,7 +190,7 @@ abstract class CLRTypes {
 	return assem;
       }
     }
-    global.reporter.error(new Position(null, Position.NOPOS),
+    global.reporter.error(NoPosition,
                           "cannot find assembly " + name + "; use the -r option to specify its location");
     throw new Error();
   }

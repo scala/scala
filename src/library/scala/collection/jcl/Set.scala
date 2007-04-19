@@ -44,13 +44,14 @@ trait Set[A] extends Collection[A] with scala.collection.mutable.Set[A] {
     }
     addAll(toAdd)
   }
-
-  override def pfilter(p: A => Boolean): Set[A] = new Filter(p)
-
-  class Filter(p: A => Boolean) extends super.Filter(p) with Set[A] {
-    override def filter(p: A => Boolean): scala.collection.mutable.Set[A] = {
-      super[Set].retain(p)
-      this
-    }
+  trait Projection extends super.Projection {
+    override def filter(p : A => Boolean) : Set[A] = new Filter(p);
+  }
+  override def projection : Projection = new Projection {}
+  class Filter(p : A => Boolean) extends super.Filter(p) with Set[A] {
+    override def retain(p0 : A => Boolean): Unit =
+      Set.this.retain(e => !p(e) || p0(e))
+    trait Projection extends super[Filter].Projection with super[Set].Projection {}
+    override def projection : Projection = new Projection {}
   }
 }

@@ -26,13 +26,21 @@ trait SortedMap[K,E] extends scala.collection.SortedMap[K,E] with Map[K,E] with 
   }
   override def rangeImpl(from : Option[K], until : Option[K]) : SortedMap[K,E] = Range(from, until);
   override def keySet : SortedSet[K] = new KeySet;
-  override def pfilterKeys(p : K => Boolean) : SortedMap[K,E] = new Filter(p);
+
+  class Projection extends super.Projection {
+    override def filterKeys(p : K => Boolean) : SortedMap[K,E] = new Filter(p);
+  }
+  override def projection = new Projection;
+
   override def lense[F](f : E => F, g : F => E) : jcl.SortedMap[K,F] = new Lense[F](f,g);
 
   protected class Lense[F](f : E => F, g : F => E) extends super.Lense[F](f,g) with SortedMap[K,F] {
     def compare(k0 : K, k1 : K) = SortedMap.this.compare(k0, k1);
-    override def pfilterKeys(p : K => Boolean) : jcl.SortedMap[K,F] =
-      SortedMap.this.pfilterKeys(p).lense(f, g);
+    class Projection extends super.Projection {
+      override def filterKeys(p : K => Boolean) : SortedMap[K,F] =
+        SortedMap.this.projection.filterKeys(p).lense(f,g);
+    }
+    override def projection = new Projection;
     override def lense[G](f0 : F => G, g0 : G => F) : jcl.SortedMap[K,G] =
       SortedMap.this.lense[G]({x:E => f0(f(x))}, {y:G => g(g0(y))});
     override def rangeImpl(from : Option[K], until : Option[K]) =
@@ -48,11 +56,13 @@ trait SortedMap[K,E] extends scala.collection.SortedMap[K,E] with Map[K,E] with 
   protected class SuperFilter(p : K => Boolean) extends super.Filter(p);
   protected class Filter(p : K => Boolean) extends SuperFilter(p) with SortedMap[K,E] {
     def compare(k0 : K, k1 : K) = SortedMap.this.compare(k0,k1);
-    override def pfilterKeys(p0 : K => Boolean) : SortedMap[K,E] =
-      SortedMap.this.pfilterKeys(k => p(k) && p0(k));
-
+    class Projection extends super.Projection {
+      override def filterKeys(p0 : K => Boolean) : SortedMap[K,E] =
+        SortedMap.this.projection.filterKeys(k => p(k) && p0(k));
+    }
+    override def projection = new Projection;
     override def rangeImpl(from : Option[K], until : Option[K]) : SortedMap[K,E] =
-      SortedMap.this.Range(from, until).pfilterKeys(p);
+      SortedMap.this.Range(from, until).projection.filterKeys(p);
   }
 
   protected def Range(from : Option[K], until : Option[K]) : SortedMap[K,E] = new Range(from,until);
@@ -78,13 +88,18 @@ trait SortedMap[K,E] extends scala.collection.SortedMap[K,E] with Map[K,E] with 
       if (until != None && compare(this.until.get, until.get) < 0) return rangeImpl(from, this.until);
       SortedMap.this.Range(from, until);
     }
-    override def pfilterKeys(p : K => Boolean) : SortedMap[K,E] = new Filter(p);
+    class Projection extends super.Projection {
+      override def filterKeys(p : K => Boolean) : SortedMap[K,E] = new Filter(p);
+    }
+    override def projection = new Projection;
     protected class Filter(p : K => Boolean) extends SuperFilter(p) with SortedMap[K,E] {
       def compare(k0 : K, k1 : K) = Range.this.compare(k0, k1);
-      override def pfilterKeys(p0 : K => Boolean) =
-        Range.this.pfilterKeys(key => p(key) && p0(key));
+      class Projection extends super.Projection {
+        override def filterKeys(p0 : K => Boolean) = Range.this.projection.filterKeys(k => p(k) && p0(k));
+      }
+      override def projection = new Projection;
       override def rangeImpl(from : Option[K], until : Option[K]) : SortedMap[K,E] =
-        Range.this.rangeImpl(from,until).pfilterKeys(p);
+        Range.this.rangeImpl(from,until).projection.filterKeys(p);
     }
   }
 }

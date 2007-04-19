@@ -8,34 +8,40 @@ package scala.tools.nsc.ast.parser
 
 import compat.StringBuilder
 import Tokens._
-import scala.tools.nsc.util.{Position, SourceFile}
+import scala.tools.nsc.util.{Position, OffsetPosition, SourceFile}
 import SourceFile.{LF, FF, CR, SU}
 import scala.tools.nsc.util.CharArrayReader
 
 trait Scanners requires SyntaxAnalyzer {
-
   import global._
-
+  abstract class AbstractTokenData {
+    def token : Int
+    type ScanPosition
+    val NoPos : ScanPosition
+    def pos   : ScanPosition
+    def currentPos : ScanPosition
+    def name : Name
+  }
   /** A class for representing a token's data. */
-  class TokenData {
+  trait TokenData extends AbstractTokenData {
+    type ScanPosition = Int
 
+
+    val NoPos = -1
     /** the next token */
-    var token: int = EMPTY
-
+    var token: Int = EMPTY
     /** the token's position */
-    var pos: int = 0
+    var pos: Int = (0)
+    override def currentPos : Int = pos - 1
 
     /** the first character position after the previous token */
-    var lastPos: int = 0
-
-    def currentPos = pos - 1
-
+    var lastPos: Int = 0
 
     /** the name of an identifier or token */
     var name: Name = null
 
     /** the base of a number */
-    var base: int = 0
+    var base: Int = 0
 
     def copyFrom(td: TokenData) = {
       this.token = td.token
@@ -45,20 +51,198 @@ trait Scanners requires SyntaxAnalyzer {
       this.base = td.base
     }
   }
+  abstract class AbstractScanner extends AbstractTokenData {
+    implicit def p2g(pos : Position    ) : ScanPosition
+    implicit def g2p(pos : ScanPosition) : Position
+    def configuration : ScannerConfiguration
+    def warning(pos : ScanPosition, msg : String) : Unit
+    def error  (pos : ScanPosition, msg : String) : Unit
+    def incompleteInputError(pos : ScanPosition, msg : String) : Unit
+    def deprecationWarning(pos : ScanPosition, msg : String) : Unit
+    /** the last error position
+     */
+    var errpos : ScanPosition
+    var lastPos : ScanPosition
+    def skipToken: ScanPosition
+    def nextToken: Unit
+    def next : AbstractTokenData
+    def intVal(negated: Boolean): Long
+    def floatVal(negated: Boolean): Double
+    def intVal : Long = intVal(false)
+    def floatVal : Double = floatVal(false)
+    //def token2string(token : Int) : String = configuration.token2string(token)
+    /* disabled in presentation compiler */
+    var newNewLine : Boolean
+    /* disabled in presentation compiler */
+    var skipping : Boolean
+    /** return recent scala doc, if any */
+    def flushDoc : String
+
+  }
+
+
+  trait ScannerConfiguration {
+//  Keywords -----------------------------------------------------------------
+  /** Keyword array; maps from name indices to tokens */
+    private var key: Array[byte] = _
+    private var maxKey = 0
+    private var tokenName = new Array[Name](128)
+
+    {
+      var tokenCount = 0
+
+      // Enter keywords
+
+      def enterKeyword(n: Name, tokenId: int): unit = {
+        while (tokenId >= tokenName.length) {
+          val newTokName = new Array[Name](tokenName.length * 2)
+          Array.copy(tokenName, 0, newTokName, 0, newTokName.length)
+          tokenName = newTokName
+        }
+        tokenName(tokenId) = n
+        if (n.start > maxKey) maxKey = n.start
+        if (tokenId >= tokenCount) tokenCount = tokenId + 1
+      }
+
+      enterKeyword(nme.ABSTRACTkw, ABSTRACT)
+      enterKeyword(nme.CASEkw, CASE)
+      enterKeyword(nme.CATCHkw, CATCH)
+      enterKeyword(nme.CLASSkw, CLASS)
+      enterKeyword(nme.DEFkw, DEF)
+      enterKeyword(nme.DOkw, DO)
+      enterKeyword(nme.ELSEkw, ELSE)
+      enterKeyword(nme.EXTENDSkw, EXTENDS)
+      enterKeyword(nme.FALSEkw, FALSE)
+      enterKeyword(nme.FINALkw, FINAL)
+      enterKeyword(nme.FINALLYkw, FINALLY)
+      enterKeyword(nme.FORkw, FOR)
+      enterKeyword(nme.IFkw, IF)
+      enterKeyword(nme.IMPLICITkw, IMPLICIT)
+      enterKeyword(nme.IMPORTkw, IMPORT)
+      enterKeyword(nme.MATCHkw, MATCH)
+      enterKeyword(nme.NEWkw, NEW)
+      enterKeyword(nme.NULLkw, NULL)
+      enterKeyword(nme.OBJECTkw, OBJECT)
+      enterKeyword(nme.OVERRIDEkw, OVERRIDE)
+      enterKeyword(nme.PACKAGEkw, PACKAGE)
+      enterKeyword(nme.PRIVATEkw, PRIVATE)
+      enterKeyword(nme.PROTECTEDkw, PROTECTED)
+      enterKeyword(nme.REQUIRESkw, REQUIRES)
+      enterKeyword(nme.RETURNkw, RETURN)
+      enterKeyword(nme.SEALEDkw, SEALED)
+      enterKeyword(nme.SUPERkw, SUPER)
+      enterKeyword(nme.THISkw, THIS)
+      enterKeyword(nme.THROWkw, THROW)
+      enterKeyword(nme.TRAITkw, TRAIT)
+      enterKeyword(nme.TRUEkw, TRUE)
+      enterKeyword(nme.TRYkw, TRY)
+      enterKeyword(nme.TYPEkw, TYPE)
+      enterKeyword(nme.VALkw, VAL)
+      enterKeyword(nme.VARkw, VAR)
+      enterKeyword(nme.WHILEkw, WHILE)
+      enterKeyword(nme.WITHkw, WITH)
+      enterKeyword(nme.YIELDkw, YIELD)
+      enterKeyword(nme.DOTkw, DOT)
+      enterKeyword(nme.USCOREkw, USCORE)
+      enterKeyword(nme.COLONkw, COLON)
+      enterKeyword(nme.EQUALSkw, EQUALS)
+      enterKeyword(nme.ARROWkw, ARROW)
+      enterKeyword(nme.LARROWkw, LARROW)
+      enterKeyword(nme.SUBTYPEkw, SUBTYPE)
+      enterKeyword(nme.VIEWBOUNDkw, VIEWBOUND)
+      enterKeyword(nme.SUPERTYPEkw, SUPERTYPE)
+      enterKeyword(nme.HASHkw, HASH)
+      enterKeyword(nme.ATkw, AT)
+
+      // Build keyword array
+      key = new Array[byte](maxKey+1)
+      for (val i <- 0 to maxKey)
+        key(i) = IDENTIFIER
+      for (val j <- 0 until tokenCount)
+        if (tokenName(j) ne null)
+          key(tokenName(j).start) = j.asInstanceOf[byte]
+
+    }
+//Token representation -----------------------------------------------------
+
+  /** Convert name to token */
+  def name2token(name: Name): int =
+    if (name.start <= maxKey) key(name.start) else IDENTIFIER
+
+  /** Returns the string representation of given token. */
+  def token2string(token: int): String = token match {
+    case IDENTIFIER | BACKQUOTED_IDENT =>
+      "identifier"/* + \""+name+"\""*/
+    case CHARLIT =>
+      "character literal"
+    case INTLIT =>
+      "integer literal"
+    case LONGLIT =>
+      "long literal"
+    case FLOATLIT =>
+      "float literal"
+    case DOUBLELIT =>
+      "double literal"
+    case STRINGLIT =>
+      "string literal"
+    case SYMBOLLIT =>
+      "symbol literal"
+    case LPAREN =>
+      "'('"
+    case RPAREN =>
+      "')'"
+    case LBRACE =>
+      "'{'"
+    case RBRACE =>
+      "'}'"
+    case LBRACKET =>
+      "'['"
+    case RBRACKET =>
+      "']'"
+    case EOF =>
+      "eof"
+    case ERROR =>
+      "something"
+    case SEMI =>
+      "';'"
+    case NEWLINE =>
+      "';'"
+    case NEWLINES =>
+      "';'"
+    case COMMA =>
+      "','"
+    case CASECLASS =>
+      "case class"
+    case CASEOBJECT =>
+      "case object"
+    case XMLSTART =>
+      "$XMLSTART$<"
+    case _ =>
+      try {
+        "'" + tokenName(token) + "'"
+      } catch {
+        case _: ArrayIndexOutOfBoundsException =>
+          "'<" + token + ">'"
+        case _: NullPointerException =>
+          "'<(" + token + ")>'"
+      }
+    }
+  }
+
 
   /** A scanner for the programming language Scala.
    *
    *  @author     Matthias Zenger, Martin Odersky, Burak Emir
    *  @version    1.1
    */
-  class Scanner(unit: CompilationUnit) extends TokenData {
-
+  abstract class Scanner extends AbstractScanner with TokenData {
     import Tokens._
     import java.lang.{Integer, Long, Float, Double, Character}
+    override def intVal = super.intVal
+    override def floatVal = super.floatVal
+    override var errpos : Int = -1
 
-    /** Character input reader
-     */
-    val in = new CharArrayReader(unit.source.getContent(), !settings.nouescape.value, syntaxError)
+    val in : CharArrayReader
 
     /** character buffer for literals
      */
@@ -78,19 +262,29 @@ trait Scanners requires SyntaxAnalyzer {
      */
     var docBuffer: StringBuilder = null
 
+    def flushDoc = {
+      val ret = if (docBuffer != null) docBuffer.toString else null;
+      docBuffer = null
+      ret
+    }
+
+
+    /** Process comments and strings in scanner */
+    protected def matchInScanner = true
+
+
     /** add the given character to the documentation buffer
      */
     protected def putDocChar(c: char): unit =
       if (docBuffer ne null) docBuffer.append(c)
 
+    private class TokenData0 extends TokenData {
+    }
     /** we need one token lookahead
      */
-    val next = new TokenData()
-    val prev = new TokenData()
+    val next : TokenData = new TokenData0
+    val prev : TokenData = new TokenData0
 
-    /** the last error position
-     */
-    var errpos = -1
 
     /** a stack which indicates whether line-ends can be statement separators
      */
@@ -110,13 +304,13 @@ trait Scanners requires SyntaxAnalyzer {
 
     /** read next token and return last position
      */
-    def skipToken(): int = {
-      val p = pos; nextToken()
+    def skipToken: Int = {
+      val p = pos; nextToken
       // XXX: account for off by one error //???
-      p - 1
+      (p - 1)
     }
 
-    def nextToken(): unit = {
+    def nextToken: Unit = {
       if (token == LPAREN) {
         sepRegions = RPAREN :: sepRegions
       } else if (token == LBRACKET) {
@@ -136,7 +330,7 @@ trait Scanners requires SyntaxAnalyzer {
       }
 
       if (newNewLine && !skipping) {
-        unit.warning(pos, migrateMsg + "new line will start a new statement here;\n"
+        warning(pos, migrateMsg + "new line will start a new statement here;\n"
                      + "to suppress it, enclose expression in parentheses (...)")
         newNewLine = false
       }
@@ -148,7 +342,6 @@ trait Scanners requires SyntaxAnalyzer {
         this copyFrom next
         next.token = EMPTY
       }
-
       if (token == CASE) {
         prev copyFrom this
         fetchToken()
@@ -169,6 +362,13 @@ trait Scanners requires SyntaxAnalyzer {
           next copyFrom this
           this copyFrom prev
         }
+      } else if (token == IDENTIFIER && name == nme.MIXINkw) { //todo: remove eventually
+        prev.copyFrom(this)
+        fetchToken()
+        if (token == CLASS)
+          warning(prev.pos, "`mixin' is no longer a reserved word; you should use `trait' instead of `mixin class'");
+        next.copyFrom(this)
+        this.copyFrom(prev)
       }
 
       if (afterLineEnd() && inLastOfStat(lastToken) && inFirstOfStat(token) &&
@@ -240,6 +440,23 @@ trait Scanners requires SyntaxAnalyzer {
                 in.next
                 getOperatorRest; // XXX
                 return
+
+              case '/' if !matchInScanner =>
+                in.next
+                if (in.ch == '/') {
+                  in.next; token = LINE_COMMENT
+                  return
+                } else if (in.ch == '*') {
+                  in.next
+                  if (in.ch == '*') {
+                    in.next; token = DOC_START
+                  } else token = COMMENT_START
+                  return
+                } else {
+                  putChar('/')
+                  getOperatorRest
+                  return
+                }
               case '/' =>
                 in.next
                 if (!skipComment()) {
@@ -247,7 +464,6 @@ trait Scanners requires SyntaxAnalyzer {
                   getOperatorRest
                   return
                 }
-
               case '0' =>
                 putChar(in.ch)
                 in.next
@@ -264,10 +480,27 @@ trait Scanners requires SyntaxAnalyzer {
                 base = 10
                 getNumber
                 return
+              case '`' if !matchInScanner =>
+                in.next; token = BACK_QUOTE
+                return
               case '`' =>
                 in.next
                 getStringLit('`', BACKQUOTED_IDENT)
                 return
+              case '\"' if !matchInScanner =>
+                in.next
+                if (in.ch == '\"') {
+                  in.next
+                  if (in.ch == '\"') {
+                    in.next; token = MULTI_QUOTE
+                  } else {
+                    token = EMPTY_STRING
+                  }
+                  return
+                } else {
+                  token = DOUBLE_QUOTE
+                  return
+                }
               case '\"' =>
                 in.next
                 if (in.ch == '\"') {
@@ -396,7 +629,8 @@ trait Scanners requires SyntaxAnalyzer {
       }
     }
 
-    private def skipComment(): boolean =
+    private def skipComment(): boolean = {
+      assert(matchInScanner)
       if (in.ch == '/') {
         do {
           in.next
@@ -406,8 +640,9 @@ trait Scanners requires SyntaxAnalyzer {
         docBuffer = null
         var openComments = 1
         in.next
+        val scalaDoc = ("/**", "*/")
         if (in.ch == '*' && onlyPresentation)
-          docBuffer = new StringBuilder("/**")
+          docBuffer = new StringBuilder(scalaDoc._1)
         while (openComments > 0) {
           do {
             do {
@@ -434,6 +669,7 @@ trait Scanners requires SyntaxAnalyzer {
       } else {
         false
       }
+    }
 
     def inFirstOfStat(token: int) = token match {
       case EOF | CASE | CATCH | ELSE | EXTENDS | FINALLY | MATCH | REQUIRES | WITH | YIELD |
@@ -500,7 +736,7 @@ trait Scanners requires SyntaxAnalyzer {
             return
           case SU =>
             setName
-            token = name2token(name)
+            token = configuration.name2token(name)
             return
           case _ =>
             if (java.lang.Character.isUnicodeIdentifierPart(in.ch)) {
@@ -508,7 +744,7 @@ trait Scanners requires SyntaxAnalyzer {
               in.next
             } else {
               setName
-              token = name2token(name)
+              token = configuration.name2token(name)
               return
             }
         }
@@ -525,20 +761,23 @@ trait Scanners requires SyntaxAnalyzer {
             in.next
           case '/' =>
             in.next
-            if (skipComment()) {
+            if (matchInScanner && skipComment) {
               setName
-              token = name2token(name)
+              token = configuration.name2token(name)
               return
-            } else {
-              putChar('/')
-            }
+            } else if (!matchInScanner && (in.ch == '*' || in.ch == '/')) {
+              in.rewind
+              setName
+              token = configuration.name2token(name)
+              return
+            } else putChar('/')
           case _ =>
             if (isSpecial(in.ch)) {
               putChar(in.ch)
               in.next
             } else {
               setName
-              token = name2token(name)
+              token = configuration.name2token(name)
               return
             }
         }
@@ -557,11 +796,13 @@ trait Scanners requires SyntaxAnalyzer {
           if (isSpecial(in.ch)) getOperatorRest
           else {
             setName
-            token = name2token(name)
+            token = configuration.name2token(name)
           }
       }
 
-    private def getStringLit(delimiter: char, litType: int): unit = {
+    private def getStringLit(delimiter: char, litType: int): Unit = {
+      assert(matchInScanner)
+      //assert((litType==STRINGLIT) || (litType==IDENTIFIER))
       while (in.ch != delimiter && (in.isUnicode || in.ch != CR && in.ch != LF && in.ch != SU)) {
         getlitch()
       }
@@ -575,7 +816,8 @@ trait Scanners requires SyntaxAnalyzer {
       }
     }
 
-    private def getMultiLineStringLit: unit =
+    private def getMultiLineStringLit: Unit = {
+      assert(matchInScanner)
       if (in.ch == '\"') {
         in.next
         if (in.ch == '\"') {
@@ -600,6 +842,7 @@ trait Scanners requires SyntaxAnalyzer {
         in.next
         getMultiLineStringLit
       }
+    }
 
 // Literals -----------------------------------------------------------------
 
@@ -716,7 +959,6 @@ trait Scanners requires SyntaxAnalyzer {
       }
     }
 
-    def intVal: long = intVal(false)
 
     /** convert name, base to double value
     */
@@ -724,7 +966,7 @@ trait Scanners requires SyntaxAnalyzer {
       val limit: double =
         if (token == DOUBLELIT) Double.MAX_VALUE else Float.MAX_VALUE
       try {
-        val value = Double.valueOf(name.toString()).doubleValue()
+        val value : double = Double.valueOf(name.toString()).doubleValue()
         if (value > limit)
           syntaxError("floating point number too large")
         if (negated) -value else value
@@ -734,9 +976,6 @@ trait Scanners requires SyntaxAnalyzer {
           0.0
       }
     }
-
-    def floatVal: double = floatVal(false)
-
     /** read a number into name and set base
     */
     protected def getNumber:unit = {
@@ -779,7 +1018,7 @@ trait Scanners requires SyntaxAnalyzer {
     def xSync = {
       token = NEWLINE; // avoid getting NEWLINE from nextToken if last was RBRACE
       //in.next
-      nextToken()
+      nextToken
     }
 
 // Errors -----------------------------------------------------------------
@@ -787,7 +1026,7 @@ trait Scanners requires SyntaxAnalyzer {
     /** generate an error at the given position
     */
     def syntaxError(pos: int, msg: String): unit = {
-      unit.error(pos, msg)
+      error(pos, msg)
       token = ERROR
       errpos = pos
     }
@@ -798,157 +1037,9 @@ trait Scanners requires SyntaxAnalyzer {
 
     /** signal an error where the input ended in the middle of a token */
     def incompleteInputError(msg: String): unit = {
-      unit.incompleteInputError(pos, msg)
+      incompleteInputError(pos, msg)
       token = EOF
       errpos = pos
-    }
-
-// Keywords -----------------------------------------------------------------
-
-    /** Keyword array; maps from name indices to tokens */
-    private var key: Array[byte] = _
-    private var maxKey = 0
-    private var tokenName = new Array[Name](128)
-
-    {
-      var tokenCount = 0
-
-      // Enter keywords
-
-      def enterKeyword(n: Name, tokenId: int): unit = {
-        while (tokenId >= tokenName.length) {
-          val newTokName = new Array[Name](tokenName.length * 2)
-          Array.copy(tokenName, 0, newTokName, 0, newTokName.length)
-          tokenName = newTokName
-        }
-        tokenName(tokenId) = n
-        if (n.start > maxKey) maxKey = n.start
-        if (tokenId >= tokenCount) tokenCount = tokenId + 1
-      }
-
-      enterKeyword(nme.ABSTRACTkw, ABSTRACT)
-      enterKeyword(nme.CASEkw, CASE)
-      enterKeyword(nme.CATCHkw, CATCH)
-      enterKeyword(nme.CLASSkw, CLASS)
-      enterKeyword(nme.DEFkw, DEF)
-      enterKeyword(nme.DOkw, DO)
-      enterKeyword(nme.ELSEkw, ELSE)
-      enterKeyword(nme.EXTENDSkw, EXTENDS)
-      enterKeyword(nme.FALSEkw, FALSE)
-      enterKeyword(nme.FINALkw, FINAL)
-      enterKeyword(nme.FINALLYkw, FINALLY)
-      enterKeyword(nme.FORkw, FOR)
-      enterKeyword(nme.IFkw, IF)
-      enterKeyword(nme.IMPLICITkw, IMPLICIT)
-      enterKeyword(nme.IMPORTkw, IMPORT)
-      enterKeyword(nme.MATCHkw, MATCH)
-      enterKeyword(nme.NEWkw, NEW)
-      enterKeyword(nme.NULLkw, NULL)
-      enterKeyword(nme.OBJECTkw, OBJECT)
-      enterKeyword(nme.OVERRIDEkw, OVERRIDE)
-      enterKeyword(nme.PACKAGEkw, PACKAGE)
-      enterKeyword(nme.PRIVATEkw, PRIVATE)
-      enterKeyword(nme.PROTECTEDkw, PROTECTED)
-      enterKeyword(nme.REQUIRESkw, REQUIRES)
-      enterKeyword(nme.RETURNkw, RETURN)
-      enterKeyword(nme.SEALEDkw, SEALED)
-      enterKeyword(nme.SUPERkw, SUPER)
-      enterKeyword(nme.THISkw, THIS)
-      enterKeyword(nme.THROWkw, THROW)
-      enterKeyword(nme.TRAITkw, TRAIT)
-      enterKeyword(nme.TRUEkw, TRUE)
-      enterKeyword(nme.TRYkw, TRY)
-      enterKeyword(nme.TYPEkw, TYPE)
-      enterKeyword(nme.VALkw, VAL)
-      enterKeyword(nme.VARkw, VAR)
-      enterKeyword(nme.WHILEkw, WHILE)
-      enterKeyword(nme.WITHkw, WITH)
-      enterKeyword(nme.YIELDkw, YIELD)
-      enterKeyword(nme.DOTkw, DOT)
-      enterKeyword(nme.USCOREkw, USCORE)
-      enterKeyword(nme.COLONkw, COLON)
-      enterKeyword(nme.EQUALSkw, EQUALS)
-      enterKeyword(nme.ARROWkw, ARROW)
-      enterKeyword(nme.LARROWkw, LARROW)
-      enterKeyword(nme.SUBTYPEkw, SUBTYPE)
-      enterKeyword(nme.VIEWBOUNDkw, VIEWBOUND)
-      enterKeyword(nme.SUPERTYPEkw, SUPERTYPE)
-      enterKeyword(nme.HASHkw, HASH)
-      enterKeyword(nme.ATkw, AT)
-
-      // Build keyword array
-      key = new Array[byte](maxKey+1)
-      for (val i <- 0 to maxKey)
-        key(i) = IDENTIFIER
-      for (val j <- 0 until tokenCount)
-        if (tokenName(j) ne null)
-          key(tokenName(j).start) = j.asInstanceOf[byte]
-
-    }
-
-// Token representation -----------------------------------------------------
-
-    /** Convert name to token */
-    def name2token(name: Name): int =
-      if (name.start <= maxKey) key(name.start) else IDENTIFIER
-
-    /** Returns the string representation of given token. */
-    def token2string(token: int): String = token match {
-      case IDENTIFIER | BACKQUOTED_IDENT =>
-        "identifier"/* + \""+name+"\""*/
-      case CHARLIT =>
-        "character literal"
-      case INTLIT =>
-        "integer literal"
-      case LONGLIT =>
-        "long literal"
-      case FLOATLIT =>
-        "float literal"
-      case DOUBLELIT =>
-        "double literal"
-      case STRINGLIT =>
-        "string literal"
-      case SYMBOLLIT =>
-        "symbol literal"
-      case LPAREN =>
-        "'('"
-      case RPAREN =>
-        "')'"
-      case LBRACE =>
-        "'{'"
-      case RBRACE =>
-        "'}'"
-      case LBRACKET =>
-        "'['"
-      case RBRACKET =>
-        "']'"
-      case EOF =>
-        "eof"
-      case ERROR =>
-        "something"
-      case SEMI =>
-        "';'"
-      case NEWLINE =>
-        "';'"
-      case NEWLINES =>
-        "';'"
-      case COMMA =>
-        "','"
-      case CASECLASS =>
-        "case class"
-      case CASEOBJECT =>
-        "case object"
-      case XMLSTART =>
-        "$XMLSTART$<"
-      case _ =>
-        try {
-          "'" + tokenName(token) + "'"
-        } catch {
-          case _: ArrayIndexOutOfBoundsException =>
-            "'<" + token + ">'"
-          case _: NullPointerException =>
-            "'<(" + token + ")>'"
-        }
     }
 
     override def toString() = token match {
@@ -975,12 +1066,24 @@ trait Scanners requires SyntaxAnalyzer {
       case COMMA =>
         ","
       case _ =>
-        token2string(token)
+        configuration.token2string(token)
     }
 
     /** INIT: read lookahead character and token.
      */
-    in.next
-    nextToken()
+    def init = {
+      in.next
+      nextToken
+    }
+  }
+  class UnitScanner(unit : CompilationUnit) extends Scanner with ScannerConfiguration {
+    override def configuration = this
+    val in = new CharArrayReader(unit.source.getContent(), !settings.nouescape.value, syntaxError)
+    def warning(pos : Int, msg : String) = unit.warning(pos, msg)
+    def error  (pos : Int, msg : String) = unit.  error(pos, msg)
+    def incompleteInputError(pos : Int, msg : String) = unit.incompleteInputError(pos, msg)
+    def deprecationWarning(pos : Int, msg : String) = unit.deprecationWarning(pos, msg)
+    implicit def p2g(pos : Position) : Int = pos.offset.get(-1)
+    implicit def g2p(pos : Int     ) : Position = new OffsetPosition(unit.source, pos)
   }
 }

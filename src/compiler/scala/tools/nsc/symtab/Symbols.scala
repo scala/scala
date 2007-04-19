@@ -7,7 +7,7 @@
 package scala.tools.nsc.symtab
 
 import scala.tools.nsc.io.AbstractFile
-import scala.tools.nsc.util.{Position, SourceFile}
+import scala.tools.nsc.util.{Position, NoPosition, SourceFile}
 import Flags._
 
 trait Symbols {
@@ -23,18 +23,20 @@ trait Symbols {
 
   val emptySymbolArray = new Array[Symbol](0)
   val emptySymbolSet = Set.empty[Symbol]
-  type PositionType;
-  def NoPos : PositionType;
-  def FirstPos : PositionType;
-  implicit def coercePosToInt(pos : PositionType) : Int;
-  def coerceIntToPos(pos : Int) : PositionType;
+/*
+  type Position;
+  def NoPos : Position;
+  def FirstPos : Position;
+  implicit def coercePosToInt(pos : Position) : Int;
+  def coerceIntToPos(pos : Int) : Position;
   object RequiresIntsAsPositions {
     implicit def coerceIntToPos0(pos: Int) =
       coerceIntToPos(pos)
   }
+  */
 
   /** The class for all symbols */
-  abstract class Symbol(initOwner: Symbol, initPos: PositionType, initName: Name) {
+  abstract class Symbol(initOwner: Symbol, initPos: Position, initName: Name) {
 
     var rawowner = initOwner
     var rawname = initName
@@ -45,12 +47,12 @@ trait Symbols {
     var validTo: Period = NoPeriod
 
     def pos = rawpos
-    def setPos(pos: PositionType): this.type = { this.rawpos = pos; this }
+    def setPos(pos: Position): this.type = { this.rawpos = pos; this }
 
     def namePos(source: SourceFile) = {
-      val pos: Int = this.pos
+      val pos: Int = this.pos.offset.get(-1)
       val buf = source.content
-      if (pos == Position.NOPOS) Position.NOPOS
+      if (pos == -1) -1
       else if (isTypeParameter) pos - name.length
       else if (isVariable || isMethod || isClass || isModule) {
         var ret = pos
@@ -84,46 +86,46 @@ trait Symbols {
 
 // Creators -------------------------------------------------------------------
 
-    final def newValue(pos: PositionType, name: Name) =
+    final def newValue(pos: Position, name: Name) =
       new TermSymbol(this, pos, name)
-    final def newVariable(pos: PositionType, name: Name) =
+    final def newVariable(pos: Position, name: Name) =
       newValue(pos, name).setFlag(MUTABLE)
-    final def newValueParameter(pos: PositionType, name: Name) =
+    final def newValueParameter(pos: Position, name: Name) =
       newValue(pos, name).setFlag(PARAM)
-    final def newLocalDummy(pos: PositionType) =
+    final def newLocalDummy(pos: Position) =
       newValue(pos, nme.LOCAL(this)).setInfo(NoType)
-    final def newMethod(pos: PositionType, name: Name) =
+    final def newMethod(pos: Position, name: Name) =
       newValue(pos, name).setFlag(METHOD)
-    final def newLabel(pos: PositionType, name: Name) =
+    final def newLabel(pos: Position, name: Name) =
       newMethod(pos, name).setFlag(LABEL)
-    final def newConstructor(pos: PositionType) =
+    final def newConstructor(pos: Position) =
       newMethod(pos, nme.CONSTRUCTOR)
-    final def newModule(pos: PositionType, name: Name, clazz: ClassSymbol) =
+    final def newModule(pos: Position, name: Name, clazz: ClassSymbol) =
       new ModuleSymbol(this, pos, name).setFlag(MODULE | FINAL)
         .setModuleClass(clazz)
-    final def newModule(pos: PositionType, name: Name) = {
+    final def newModule(pos: Position, name: Name) = {
       val m = new ModuleSymbol(this, pos, name).setFlag(MODULE | FINAL)
       m.setModuleClass(new ModuleClassSymbol(m))
     }
-    final def newPackage(pos: PositionType, name: Name) = {
+    final def newPackage(pos: Position, name: Name) = {
       assert(name == nme.ROOT || isPackageClass)
       val m = newModule(pos, name).setFlag(JAVA | PACKAGE)
       m.moduleClass.setFlag(JAVA | PACKAGE)
       m
     }
-    final def newThisSym(pos: PositionType) =
+    final def newThisSym(pos: Position) =
       newValue(pos, nme.this_).setFlag(SYNTHETIC)
     final def newThisSkolem: Symbol =
       new ThisSkolem(owner, pos, name, this)
         .setFlag(SYNTHETIC | FINAL)
-    final def newImport(pos: PositionType) =
+    final def newImport(pos: Position) =
       newValue(pos, nme.IMPORT)
     final def newOverloaded(pre: Type, alternatives: List[Symbol]): Symbol =
       newValue(alternatives.head.pos, alternatives.head.name)
       .setFlag(OVERLOADED)
       .setInfo(OverloadedType(pre, alternatives))
 
-    final def newOuterAccessor(pos: PositionType) = {
+    final def newOuterAccessor(pos: Position) = {
       val sym = newMethod(pos, nme.OUTER)
       sym setFlag (STABLE | SYNTHETIC)
       if (isTrait) sym setFlag DEFERRED
@@ -134,28 +136,28 @@ trait Symbols {
 
     final def newErrorValue(name: Name) =
       newValue(pos, name).setFlag(SYNTHETIC | IS_ERROR).setInfo(ErrorType)
-    final def newAliasType(pos: PositionType, name: Name) =
+    final def newAliasType(pos: Position, name: Name) =
       new TypeSymbol(this, pos, name)
-    final def newAbstractType(pos: PositionType, name: Name) =
+    final def newAbstractType(pos: Position, name: Name) =
       new TypeSymbol(this, pos, name).setFlag(DEFERRED)
-    final def newTypeParameter(pos: PositionType, name: Name) =
+    final def newTypeParameter(pos: Position, name: Name) =
       newAbstractType(pos, name).setFlag(PARAM)
     final def newTypeSkolem: Symbol =
       new TypeSkolem(owner, pos, name, this)
         .setFlag(flags)
-    final def newClass(pos: PositionType, name: Name) =
+    final def newClass(pos: Position, name: Name) =
       new ClassSymbol(this, pos, name)
-    final def newModuleClass(pos: PositionType, name: Name) =
+    final def newModuleClass(pos: Position, name: Name) =
       new ModuleClassSymbol(this, pos, name)
-    final def newAnonymousClass(pos: PositionType) =
+    final def newAnonymousClass(pos: Position) =
       newClass(pos, nme.ANON_CLASS_NAME.toTypeName)
-    final def newAnonymousFunctionClass(pos: PositionType) = {
+    final def newAnonymousFunctionClass(pos: Position) = {
       val anonfun = newClass(pos, nme.ANON_FUN_NAME.toTypeName)
       anonfun.attributes =
         AnnotationInfo(definitions.SerializableAttr.tpe, List(), List()) :: anonfun.attributes
       anonfun
     }
-    final def newRefinementClass(pos: PositionType) =
+    final def newRefinementClass(pos: Position) =
       newClass(pos, nme.REFINE_CLASS_NAME.toTypeName)
     final def newErrorClass(name: Name) = {
       val clazz = newClass(pos, name).setFlag(SYNTHETIC | IS_ERROR)
@@ -1038,7 +1040,7 @@ trait Symbols {
   }
 
   /** A class for term symbols */
-  class TermSymbol(initOwner: Symbol, initPos: PositionType, initName: Name)
+  class TermSymbol(initOwner: Symbol, initPos: Position, initName: Name)
   extends Symbol(initOwner, initPos, initName) {
     override def isTerm = true
 
@@ -1080,7 +1082,7 @@ trait Symbols {
   }
 
   /** A class for module symbols */
-  class ModuleSymbol(initOwner: Symbol, initPos: PositionType, initName: Name)
+  class ModuleSymbol(initOwner: Symbol, initPos: Position, initName: Name)
   extends TermSymbol(initOwner, initPos, initName) {
 
     private var flatname = nme.EMPTY
@@ -1108,7 +1110,7 @@ trait Symbols {
   }
 
   /** A class for type parameters viewed from inside their scopes */
-  class ThisSkolem(initOwner: Symbol, initPos: PositionType,
+  class ThisSkolem(initOwner: Symbol, initPos: Position,
                    initName: Name, clazz: Symbol)
   extends TermSymbol(initOwner, initPos, initName) {
     override def deSkolemize = clazz
@@ -1121,7 +1123,7 @@ trait Symbols {
   /** A class of type symbols. Alias and abstract types are direct instances
    *  of this class. Classes are instances of a subclass.
    */
-  class TypeSymbol(initOwner: Symbol, initPos: PositionType, initName: Name)
+  class TypeSymbol(initOwner: Symbol, initPos: Position, initName: Name)
   extends Symbol(initOwner, initPos, initName) {
     override def isType = true
     privateWithin = NoSymbol
@@ -1184,7 +1186,7 @@ trait Symbols {
   }
 
   /** A class for type parameters viewed from inside their scopes */
-  class TypeSkolem(initOwner: Symbol, initPos: PositionType,
+  class TypeSkolem(initOwner: Symbol, initPos: Position,
                    initName: Name, typeParam: Symbol)
   extends TypeSymbol(initOwner, initPos, initName) {
     override def deSkolemize = typeParam
@@ -1198,7 +1200,7 @@ trait Symbols {
   }
 
   /** A class for class symbols */
-  class ClassSymbol(initOwner: Symbol, initPos: PositionType, initName: Name)
+  class ClassSymbol(initOwner: Symbol, initPos: Position, initName: Name)
   extends TypeSymbol(initOwner, initPos, initName) {
 
     /** The classfile from which this class was loaded. Maybe null. */
@@ -1287,7 +1289,7 @@ trait Symbols {
    *  Note: Not all module classes are of this type; when unpickled, we get
    *  plain class symbols!
    */
-  class ModuleClassSymbol(owner: Symbol, pos: PositionType, name: Name)
+  class ModuleClassSymbol(owner: Symbol, pos: Position, name: Name)
   extends ClassSymbol(owner, pos, name) {
     private var module: Symbol = null
     def this(module: TermSymbol) = {
@@ -1300,7 +1302,7 @@ trait Symbols {
   }
 
   /** An object repreesenting a missing symbol */
-  object NoSymbol extends Symbol(null, NoPos, nme.NOSYMBOL) {
+  object NoSymbol extends Symbol(null, NoPosition, nme.NOSYMBOL) {
     setInfo(NoType)
     privateWithin = this
     override def setInfo(info: Type): this.type = {

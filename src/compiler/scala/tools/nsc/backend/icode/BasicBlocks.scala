@@ -10,7 +10,7 @@ package scala.tools.nsc.backend.icode
 import compat.StringBuilder
 import scala.tools.nsc.ast._
 import scala.collection.mutable.{Map, Set, LinkedHashSet}
-import scala.tools.nsc.util.Position
+import scala.tools.nsc.util.{Position,NoPosition}
 import scala.tools.nsc.backend.icode.analysis.ProgramPoint
 
 trait BasicBlocks requires ICodes {
@@ -301,9 +301,9 @@ trait BasicBlocks requires ICodes {
       if (!instructionList.isEmpty)
         emit(instr, instructionList.head.pos)
       else
-        emit(instr, Position.NOPOS)
+        emit(instr, NoPosition)
 
-    def emit(instr: Instruction, pos: Int) = {
+    def emit(instr: Instruction, pos: Position) = {
       if (closed) {
         print()
         Console.println("trying to emit: " + instr)

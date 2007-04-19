@@ -20,10 +20,11 @@ trait MutableSeq[A] extends MutableIterable[A] with Seq[A] {
   override def isEmpty = super[MutableIterable].isEmpty;
 
   override def apply(idx : Int) = elements.seek(idx);
-
-  override def pfilter(p : A => Boolean) : MutableSeq[A] = new Filter(p);
-
-  override def pmap[B](f : A => B) : MutableSeq[B] = new Map[B](f);
+  trait Projection extends super.Projection {
+    override def filter(p : A => Boolean) : MutableSeq[A] = new Filter(p);
+    override def map[B](f : A => B) : MutableSeq[B] = new Map[B](f);
+  }
+  override def projection = new Projection {}
 
   /** Find the index of "a" in this sequence.
    *  @returns None if the "a" is not in this sequence.

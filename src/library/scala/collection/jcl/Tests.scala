@@ -29,11 +29,11 @@ private[jcl] object Tests {
     rset + "bad";
     Console.println(rset);
     Console.println(set);
-    val fset : SortedSet[String] = rset.pfilter(.endsWith("d"));
+    val fset : SortedSet[String] = rset.projection.filter(.endsWith("d"));
     Console.println(fset);
     fset += "cd";
     Console.println(set);
-    set.pmap(.length).retain(x => x == 3);
+    set.projection.map(.length).retain(x => x == 3);
     Console.println(set);
     Console.println(rset);
     Console.println(fset);
@@ -47,7 +47,7 @@ private[jcl] object Tests {
     rmap + ("bad" -> 10);
     Console.println(rmap);
     //Console.println(map);
-    val fmap : SortedMap[String,Integer] = rmap.pfilterKeys(k => k.length == 2);
+    val fmap : SortedMap[String,Integer] = rmap.projection.filterKeys(k => k.length == 2);
     Console.println(fmap);
   }
 
@@ -55,7 +55,7 @@ private[jcl] object Tests {
     val set = new HashSet[String];
     set + "hello" + "world" + "you" + "to";
     Console.println(set);
-    val fset = set.pfilter(s => s.length <= 3);
+    val fset = set.projection.filter(s => s.length <= 3);
     Console.println(fset);
     fset += "xxx";
     Console.println(set);
@@ -66,7 +66,7 @@ private[jcl] object Tests {
       case e : IllegalArgumentException =>
       case _ => throw new Error;
     }
-    val mset : MutableIterable[Int] = set.pmap(s => s.length);
+    val mset : MutableIterable[Int] = set.projection.map(s => s.length);
     Console.println(mset);
     mset.retain(n => n < 5);
     Console.println(set);

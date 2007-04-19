@@ -163,4 +163,17 @@ trait Map[A, +B] extends PartialFunction[A, B] with Collection[(A, B)] {
    */
   def default(key: A): B =
     throw new NoSuchElementException("key not found: " + key)
+
+  trait Projection extends super.Projection {
+    /** filter based on keys only */
+    def filterKeys(p : A => Boolean) = filter(e => p(e._1))
+    /** map elements using existing key set */
+    def mapElements[C](f : B => C) : Map[A,C] = new Map[A,C] {
+      def elements = Map.this.elements.map(e => (e._1, f(e._2)))
+      def size = Map.this.size
+      override def contains(key : A) = Map.this.contains(key)
+      override def get(key : A) = Map.this.get(key).map(f)
+    }
+  }
+  override def projection : Projection = new Projection {}
 }

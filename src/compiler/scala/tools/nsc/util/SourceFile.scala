@@ -50,10 +50,10 @@ class SourceFile(val file: AbstractFile, _content: Array[Char]) {
     else true
 
   def position(offset: Int) =
-    new Position(this, offset)
+    new OffsetPosition(this, offset)
 
   def position(line: Int, column: Int) =
-    new Position(this, lineToOffset(line) + column)
+    new OffsetPosition(this, lineToOffset(line) + column)
 
   /** Map a position to a position in the underlying source file.
    *  For regular source files, simply return the argument.
@@ -65,17 +65,19 @@ class SourceFile(val file: AbstractFile, _content: Array[Char]) {
   // NOTE: all indexes are based on zero!!!!
   override def toString(): String = file.name /* + ":" + content.length */
 
-  def dbg(offset: Int) = (new Position(this, offset)).dbgString
+  def dbg(offset: Int) = (new OffsetPosition(this, offset)).dbgString
 
   object line {
     var index  = 0
     var offset = 0
 
+
+
     def find(toFind: Int, isIndex: Boolean): Int = {
       if (toFind == 0) return 0
 
-      if (!isIndex) assert(toFind != Position.NOPOS)
-      if ( isIndex) assert(toFind > Position.NOLINE - Position.FIRSTLINE)
+      //if (!isIndex) assert(toFind != -1)
+      //if ( isIndex) assert(toFind > 0)
 
       if (!isIndex && (toFind >= content.length))
         throw new Error(toFind + " not valid offset in " +
@@ -177,13 +179,16 @@ extends SourceFile(name, contents)
     this("(virtual file)", components.toList:_*)
 
   override def positionInUltimateSource(position: Position) = {
-    var off = position.offset
-    var compsLeft = components
-    while(compsLeft.head.content.length-1 <= off) {
-      off = off - compsLeft.head.content.length + 1
-      compsLeft = compsLeft.tail
+    if (position.offset.isEmpty) super.positionInUltimateSource(position)
+    else {
+      var off = position.offset.get
+      var compsLeft = components
+      while(compsLeft.head.content.length-1 <= off) {
+        off = off - compsLeft.head.content.length + 1
+        compsLeft = compsLeft.tail
+      }
+      compsLeft.head.positionInUltimateSource(new OffsetPosition(compsLeft.head, off))
     }
-    compsLeft.head.positionInUltimateSource(new Position(compsLeft.head, off))
   }
 }
 
@@ -216,7 +221,8 @@ extends SourceFile(name, contents)
       stop)
 
   override def positionInUltimateSource(position: Position) = {
-    underlyingFile.positionInUltimateSource(
-      new Position(underlyingFile, position.offset + start))
+    if (position.offset.isEmpty) super.positionInUltimateSource(position)
+    else underlyingFile.positionInUltimateSource(
+      new OffsetPosition(underlyingFile, position.offset.get + start))
   }
 }

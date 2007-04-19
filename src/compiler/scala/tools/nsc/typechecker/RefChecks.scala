@@ -9,7 +9,7 @@ package scala.tools.nsc.typechecker
 import symtab.Flags._
 import collection.mutable.HashMap
 import transform.InfoTransform
-
+import scala.tools.nsc.util.{Position, NoPosition}
 import compat.Math.MIN_INT
 
 /** <p>
@@ -422,7 +422,7 @@ abstract class RefChecks extends InfoTransform {
     class LevelInfo(val outer: LevelInfo) {
       val scope: Scope = if (outer eq null) newScope else newScope(outer.scope)
       var maxindex: int = MIN_INT
-      var refpos: int = _
+      var refpos: Position = _
       var refsym: Symbol = _
     }
 
@@ -451,7 +451,7 @@ abstract class RefChecks extends InfoTransform {
       }
     }
 
-    private def enterReference(pos: int, sym: Symbol): unit =
+    private def enterReference(pos: Position, sym: Symbol): unit =
       if (sym.isLocal) {
         val e = currentLevel.scope.lookupEntry(sym.name)
         if ((e ne null) && sym == e.sym) {
@@ -471,7 +471,7 @@ abstract class RefChecks extends InfoTransform {
       def apply(tp: Type) = mapOver(tp).normalize
     }
 
-    def checkSensible(pos: int, fn: Tree, args: List[Tree]) = fn match {
+    def checkSensible(pos: Position, fn: Tree, args: List[Tree]) = fn match {
       case Select(qual, name) if (args.length == 1) =>
         def isNew(tree: Tree) = tree match {
           case Function(_, _)
@@ -519,7 +519,7 @@ abstract class RefChecks extends InfoTransform {
 // Transformation ------------------------------------------------------------
 
     /* Convert a reference to a case factory of type `tpe' to a new of the class it produces. */
-    def toConstructor(pos: PositionType, tpe: Type): Tree = {
+    def toConstructor(pos: Position, tpe: Type): Tree = {
       var rtpe = tpe.finalResultType
       assert(rtpe.symbol hasFlag CASE, tpe);
       localTyper.typedOperator {

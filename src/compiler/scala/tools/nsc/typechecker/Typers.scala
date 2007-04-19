@@ -12,7 +12,7 @@ package scala.tools.nsc.typechecker
 
 import scala.collection.mutable.{HashMap, ListBuffer}
 import scala.compat.Platform.currentTime
-import scala.tools.nsc.util.{HashSet, Position, Set}
+import scala.tools.nsc.util.{HashSet, Position, Set, NoPosition}
 import symtab.Flags._
 import util.HashSet
 
@@ -144,7 +144,7 @@ trait Typers requires Analyzer {
       override def isCoercible(tp: Type, pt: Type): boolean = (
         tp.isError || pt.isError ||
         context0.implicitsEnabled && // this condition prevents chains of views
-        inferView(NoPos, tp, pt, false) != EmptyTree
+        inferView(NoPosition, tp, pt, false) != EmptyTree
       )
     }
 
@@ -155,7 +155,7 @@ trait Typers requires Analyzer {
      *  @param reportAmbiguous ...
      *  @return                ...
      */
-    private def inferView(pos: PositionType, from: Type, to: Type, reportAmbiguous: boolean): Tree = {
+    private def inferView(pos: Position, from: Type, to: Type, reportAmbiguous: boolean): Tree = {
       if (settings.debug.value) log("infer view from "+from+" to "+to)//debug
       if (phase.id > currentRun.typerPhase.id) EmptyTree
       else from match {
@@ -180,7 +180,7 @@ trait Typers requires Analyzer {
      *  @param reportAmbiguous ...
      *  @return                ...
      */
-    private def inferView(pos: PositionType, from: Type, name: Name, tp: Type, reportAmbiguous: boolean): Tree = {
+    private def inferView(pos: Position, from: Type, name: Name, tp: Type, reportAmbiguous: boolean): Tree = {
       val to = refinedType(List(WildcardType), NoSymbol)
       val psym = (if (name.isTypeName) to.symbol.newAbstractType(pos, name)
                   else to.symbol.newValue(pos, name)) setInfo tp
@@ -205,9 +205,9 @@ trait Typers requires Analyzer {
      *  @param pos0   The position where to report the error
      *  @param ex     The exception that caused the error
      */
-    def reportTypeError(pos0: PositionType, ex: TypeError): unit = {
+    def reportTypeError(pos0: Position, ex: TypeError): unit = {
       if (settings.debug.value) ex.printStackTrace()
-      val pos = if (ex.pos == NoPos) pos0 else ex.pos
+      val pos = if (ex.pos == NoPosition) pos0 else ex.pos
       ex match {
         case CyclicReference(sym, info: TypeCompleter) =>
           val msg =
@@ -244,7 +244,7 @@ trait Typers requires Analyzer {
      *  @param tp  ...
      *  @return    <code>true</code> if <code>tp</code> is not a subtype of itself.
      */
-    def checkNonCyclic(pos: PositionType, tp: Type): boolean = {
+    def checkNonCyclic(pos: Position, tp: Type): boolean = {
       def checkNotLocked(sym: Symbol): boolean = {
         sym.initialize
         if (sym hasFlag LOCKED) {
@@ -271,7 +271,7 @@ trait Typers requires Analyzer {
       }
     }
 
-    def checkNonCyclic(pos: PositionType, tp: Type, lockedSym: Symbol): boolean = {
+    def checkNonCyclic(pos: Position, tp: Type, lockedSym: Symbol): boolean = {
       lockedSym.setFlag(LOCKED)
       val result = checkNonCyclic(pos, tp)
       lockedSym.resetFlag(LOCKED)
@@ -288,7 +288,7 @@ trait Typers requires Analyzer {
       }
     }
 
-    def checkParamsConvertible(pos: PositionType, tpe: Type): unit = tpe match {
+    def checkParamsConvertible(pos: Position, tpe: Type): unit = tpe match {
       case MethodType(formals, restpe) =>
         if (formals.exists(.symbol.==(ByNameParamClass)) && formals.length != 1)
           error(pos, "methods with `=>'-parameter can be converted to function values only if they take no other parameters")
@@ -298,7 +298,7 @@ trait Typers requires Analyzer {
       case _ =>
     }
 
-    def checkRegPatOK(pos: PositionType, mode: int): unit =
+    def checkRegPatOK(pos: Position, mode: int): unit =
       if ((mode & REGPATmode) == 0) {
         error(pos, "no regular expression pattern allowed here\n"+
               "(regular expression patterns are only allowed in arguments to *-parameters)")
@@ -644,7 +644,7 @@ trait Typers requires Analyzer {
             } catch {
               case tpe : TypeError => throw tpe
               case t : Throwable =>
-                logError("CONTEXT: " + context.unit.source.dbg(tree.pos), t)
+                logError("CONTEXT: " + (tree.pos).dbgString, t)
               throw t
             }
             tree1
@@ -1395,7 +1395,7 @@ trait Typers requires Analyzer {
             val result = checkDead(localTyper.typed(stat))
             if (treeInfo.isSelfOrSuperConstrCall(result)) {
               context.inConstructorSuffix = true
-              if (treeInfo.isSelfConstrCall(result) && result.symbol.pos >= exprOwner.enclMethod.pos)
+              if (treeInfo.isSelfConstrCall(result) && result.symbol.pos.offset.get(0) >= exprOwner.enclMethod.pos.offset.get(0))
                 error(stat.pos, "called constructor's definition must precede calling constructor's definition")
             }
             result
@@ -1645,7 +1645,7 @@ trait Typers requires Analyzer {
 
     def typedAnnotation[T](annot: Annotation, reify: Tree => T): AnnotationInfo[T] = {
       var attrError: Boolean = false;
-      def error(pos: PositionType, msg: String): Null = {
+      def error(pos: Position, msg: String): Null = {
         context.error(pos, msg)
         attrError = true
         null
@@ -2160,8 +2160,8 @@ trait Typers requires Analyzer {
                 qual.tpe.widen+" does not have a constructor"
               else
                 decode(name)+" is not a member of "+qual.tpe.widen +
-                (if (!inIDE && (context.unit ne null) && Position.line(context.unit.source, qual.pos) <
-                     Position.line(context.unit.source, tree.pos))
+                (if (!inIDE && (context.unit ne null) && (qual.pos).line.get <
+                     tree.pos.line.get)
                   "\npossible cause: maybe a semicolon is missing before `"+decode(name)+"'?"
                  else ""))
           }
@@ -2232,9 +2232,9 @@ trait Typers requires Analyzer {
             defEntry = cx.scope.lookupEntry(name)
             if (inIDE && (defEntry ne null) && defEntry.sym.exists) {
               val sym = defEntry.sym
-              val namePos : Int = tree.pos
-              val symPos : Int = sym.pos
-              if (namePos < symPos) defEntry = null
+              val namePos : Position = tree.pos
+              val symPos : Position = sym.pos
+              if (namePos.offset.get < symPos.offset.get) defEntry = null
             }
             if ((defEntry ne null) && qualifies(defEntry.sym)) {
               defSym = defEntry.sym
@@ -2629,7 +2629,7 @@ trait Typers requires Analyzer {
 //            Console.println("exception when typing "+tree+", pt = "+pt)
           if ((context ne null) && (context.unit ne null) &&
               (context.unit.source ne null) && (tree ne null))
-            logError("AT: " + context.unit.source.dbg(tree.pos), ex);
+            logError("AT: " + (tree.pos).dbgString, ex);
           throw(ex)
       }
 
@@ -2739,7 +2739,7 @@ trait Typers requires Analyzer {
      *                 to <code>pt</code>, EmptyTree otherwise.
      *  @pre           <code>info.tpe</code> does not contain an error
      */
-    private def typedImplicit(pos: PositionType, info: ImplicitInfo, pt: Type, isLocal: boolean): Tree = {
+    private def typedImplicit(pos: Position, info: ImplicitInfo, pt: Type, isLocal: boolean): Tree = {
       def isStable(tp: Type): boolean = tp match {
         case TypeRef(pre, sym, _) => sym.isPackageClass || sym.isModuleClass && isStable(pre)
         case _ => tp.isStable
@@ -2780,7 +2780,7 @@ trait Typers requires Analyzer {
      *  @return                 ...
      *  @see                    <code>isCoercible</code>
      */
-    private def inferImplicit(pos: PositionType, pt: Type, isView: boolean, reportAmbiguous: boolean): Tree = {
+    private def inferImplicit(pos: Position, pt: Type, isView: boolean, reportAmbiguous: boolean): Tree = {
 
       if (util.Statistics.enabled) implcnt = implcnt + 1
       val startTime = if (util.Statistics.enabled) currentTime else 0l

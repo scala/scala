@@ -196,7 +196,7 @@ abstract class GenICode extends SubComponent  {
     private def genLoad(tree: Tree, ctx: Context, expectedType: TypeKind): Context = {
       var generatedType = expectedType
       if (settings.debug.value)
-        log("at line: " + unit.position(tree.pos).line)
+        log("at line: " + (tree.pos).line.map(.toString).get(tree.pos.toString))
 
       /**
        * Generate code for primitive arithmetic operations.
@@ -404,7 +404,7 @@ abstract class GenICode extends SubComponent  {
 
           if (rhs == EmptyTree) {
             if (settings.debug.value)
-              log("Uninitialized variable " + tree + " at: " + unit.position(tree.pos));
+              log("Uninitialized variable " + tree + " at: " + (tree.pos));
             ctx.bb.emit(getZeroOf(local.kind))
           }
 
@@ -686,7 +686,7 @@ abstract class GenICode extends SubComponent  {
                     l
                   case _       =>
                     abort("Unknown label target: " + sym +
-                          " at: " + unit.position(fun.pos) + ": ctx: " + ctx)
+                          " at: " + (fun.pos) + ": ctx: " + ctx)
                 }
             }
             val ctx1 = genLoadLabelArguments(args, label, ctx)
@@ -768,7 +768,7 @@ abstract class GenICode extends SubComponent  {
               generatedType = scalaPrimitives.generatedKind(code)
             } else
               abort("Primitive operation not handled yet: " + sym.fullNameString + "(" +
-                    fun.symbol.simpleName + ") " + " at: " + unit.position(tree.pos));
+                    fun.symbol.simpleName + ") " + " at: " + (tree.pos));
             ctx1
           } else {  // normal method call
             if (settings.debug.value)
@@ -827,7 +827,7 @@ abstract class GenICode extends SubComponent  {
           assert(tree.symbol.isModule,
                  "Selection of non-module from empty package: " + tree.toString() +
                  " sym: " + tree.symbol +
-                 " at: " + unit.position(tree.pos))
+                 " at: " + (tree.pos))
           if (settings.debug.value)
             log("LOAD_MODULE from Select(<emptypackage>): " + tree.symbol);
           ctx.bb.emit(LOAD_MODULE(tree.symbol), tree.pos)
@@ -944,7 +944,7 @@ abstract class GenICode extends SubComponent  {
 
               case _ =>
                 abort("Invalid case statement in switch-like pattern match: " +
-                      tree + " at: " + unit.position(tree.pos))
+                      tree + " at: " + (tree.pos))
             }
           ctx1.bb.emit(SWITCH(tags.reverse map (x => List(x)),
                              (default :: targets).reverse), tree.pos)
@@ -955,7 +955,7 @@ abstract class GenICode extends SubComponent  {
 
         case _ =>
           abort("Unexpected tree in genLoad: " + tree + " at: " +
-                unit.position(tree.pos))
+                (tree.pos))
       }
 
       // emit conversion
@@ -975,7 +975,7 @@ abstract class GenICode extends SubComponent  {
 
           case _ =>
             assert(from != UNIT, "Can't convert from UNIT to " + to +
-                 tree + " at: " + unit.position(tree.pos));
+                 tree + " at: " + (tree.pos));
             ctx.bb.emit(CALL_PRIMITIVE(Conversion(from, to)), tree.pos);
         }
       } else if (from == SCALA_ALL) {
@@ -1401,8 +1401,8 @@ abstract class GenICode extends SubComponent  {
             ctx.method.symbol.newVariable(l.pos, eqEqTempName).setFlag(Flags.SYNTHETIC)
           eqEqTempVar.setInfo(definitions.AnyRefClass.typeConstructor)
           val local = ctx.method.addLocal(new Local(eqEqTempVar, REFERENCE(definitions.AnyRefClass), false))
-          local.start = unit.position(l.pos).line
-          local.end   = unit.position(r.pos).line
+          local.start = (l.pos).line.get
+          local.end   = (r.pos).line.get
           local
       }
 

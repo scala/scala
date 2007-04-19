@@ -8,6 +8,7 @@ package scala.tools.nsc.transform
 
 import symtab.Flags._
 import scala.collection.mutable.{HashMap, HashSet}
+import scala.tools.nsc.util.{Position}
 
 /*<export>*/
 /** - uncurry all symbol and tree types (@see UnCurryPhase)
@@ -286,7 +287,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
       }
     }
 
-    def transformArgs(pos: PositionType, args: List[Tree], formals: List[Type]) = {
+    def transformArgs(pos: Position, args: List[Tree], formals: List[Type]) = {
       if (formals.isEmpty) {
         assert(args.isEmpty); List()
       } else {
@@ -415,7 +416,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
         case Try(block, catches, finalizer) =>
           if (needTryLift) {
             if (settings.debug.value)
-              log("lifting try at: " + unit.position(tree.pos));
+              log("lifting try at: " + (tree.pos));
 
             val sym = currentOwner.newMethod(tree.pos, unit.fresh.newName("liftedTry"));
             sym.setInfo(MethodType(List(), tree.tpe));
