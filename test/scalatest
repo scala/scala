@@ -303,8 +303,7 @@ test_run_msil() {
 # Tests a script with Scala code embedded in it
 test_run_script() {
     argsfile="$srcbase.args"
-    if [ ! -r "$argsfile" ]
-    then
+    if [ ! -r "$argsfile" ]; then
         argsfile=/dev/null
     fi
     chmod +x "$srcbase.scala" 2> /dev/null
@@ -326,13 +325,21 @@ test_run_ant() {
 
 # Tests the shootout benchmarks
 test_run_shootout() {
+    javaopts=$JAVA_OPTS;
+    if [ -f "$os_srcbase".javaopts ]; then
+        javaopts="$javaopts `cat "$os_srcbase".javaopts`"
+        if [ "$JAVA5" = "false" ]; then
+             # -Xss option available in Java versions 1.5 or newer
+             javaopts=`echo "$javaopts" | sed -e "s/-Xss[0-9]*[MmKk]//g"`
+        fi
+    fi
     rm -rf "$dstbase".obj &&
     mkdir -p "$dstbase".obj &&
     cat "$os_srcbase".scala.runner "$os_srcbase".scala > "$dstbase".obj/test.scala &&
     $SCALAC -d "$os_dstbase".obj -cp "$JVM_EXT_CLASSPATH" "$@" "$dstbase".obj/test.scala &&
     scala_lib=`get_os_filename "$SCALA_LIB"` &&
     classpath=`get_os_pathlist "$os_dstbase".obj:$CLASSPATH` &&
-    env JAVACMD="$JAVACMD" JAVA_OPTS="$JAVA_OPTS" $SCALA -Dscalatest.cwd=$srcdir -Dscalatest.output=$os_dstbase.obj -Dscalatest.lib=$scala_lib -classpath $classpath:$JVM_EXT_CLASSPATH Test  &&
+    env JAVACMD="$JAVACMD" JAVA_OPTS="$javaopts" $SCALA -Dscalatest.cwd=$srcdir -Dscalatest.output=$os_dstbase.obj -Dscalatest.lib=$scala_lib -classpath $classpath:$JVM_EXT_CLASSPATH Test  &&
     rm -rf "$dstbase".obj;
 }
 
@@ -612,9 +619,8 @@ SCALA_LIB="$LATEST_LIB";
 
 [ -x "$JAVACMD" ] || JAVACMD=java;
 [ -n "$JAVA_OPTS" ] || JAVA_OPTS="-Xmx256M -Xms16M";
-# -Xss option available in Java versions 1.5 or newer
 case `$JAVACMD \-version 2>&1 | xargs` in
-    *1.[5-7].* ) JAVA5="true"; JAVA_OPTS="$JAVA_OPTS -Xss16m";; # stack size
+    *1.[5-7].* ) JAVA5="true";;
     *1.4.*GNU* ) JAVA5="false"; GIJ="true"; JAVA_OPTS="--mx256m --ms16m";;
              * ) JAVA5="false";;
 esac;
