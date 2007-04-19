@@ -75,6 +75,12 @@ class InterpreterLoop(in0: BufferedReader, out: PrintWriter) {
 
   /** Bind the settings so that evaluated code can modiy them */
   def bindSettings() {
+// TODO: The isettings should not be bound like this,
+//       because the interpreter should not be forced to
+//       use a compatible classloader.  Instead, the
+//       settings object should be compiled inside the
+//       interpreter, and InterpreterLoop should grab the
+//       settings via reflection.
     interpreter.beQuietDuring {
       interpreter.bind(
         "settings",
