@@ -2513,11 +2513,12 @@ trait Typers requires Analyzer {
                         //@M! the polytype denotes the expected kind
                         (arg, tparam) => typedHigherKindedType(arg, parameterizedType(tparam.typeParams, AnyClass.tpe))
                       } else {
-                        assert(fun1.symbol.info.isInstanceOf[OverloadedType] || fun1.symbol.isError)
-                      // @M this branch is hit for an overloaded polymorphic type.
-                      // Until the right alternative is known, be very liberal,
+                      //@M  this branch is correctly hit for an overloaded polymorphic type. It also has to handle erroneous cases.
+                      // Until the right alternative for an overloaded method is known, be very liberal,
                       // typedTypeApply will find the right alternative and then do the same check as
                       // in the then-branch above. (see pos/tcpoly_overloaded.scala)
+                      // this assert is too strict: be tolerant for errors like trait A { def foo[m[x], g]=error(""); def x[g] = foo[g/*ERR: missing argument type*/] }
+                      //assert(fun1.symbol.info.isInstanceOf[OverloadedType] || fun1.symbol.isError) //, (fun1.symbol,fun1.symbol.info,fun1.symbol.info.getClass,args,tparams))
                         List.mapConserve(args)(typedHigherKindedType)
                       }
 
@@ -2691,7 +2692,7 @@ trait Typers requires Analyzer {
       val result = withNoGlobalVariance{ typed(tree, TYPEmode | FUNmode, WildcardType) }
       if (!phase.erasedTypes && result.tpe.isInstanceOf[TypeRef] && !result.tpe.prefix.isStable)
         error(tree.pos, result.tpe.prefix+" is not a legal prefix for a constructor")
-      result setType(result.tpe) // @M: no need to normalize here, see GenICode line 627: generatedType = toTypeKind(tpt.tpe.normalize)
+      result setType(result.tpe) // @M: normalization is done during erasure
     }
 
     def computeType(tree: Tree, pt: Type): Type = {

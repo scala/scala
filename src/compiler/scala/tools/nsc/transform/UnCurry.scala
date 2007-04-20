@@ -82,7 +82,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
    *  - if symbol is a def parameter with transformed type T, return () => T
    */
   def transformInfo(sym: Symbol, tp: Type): Type =
-    if (sym.isType) uncurryType(tp.normalize) else uncurry(tp.normalize)
+    if (sym.isType) uncurryType(tp.normalize) else uncurry(tp.normalize) // @MAT
 
   class UnCurryTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
 
