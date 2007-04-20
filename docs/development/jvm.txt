@@ -6,19 +6,23 @@ This document gathers technical informations about the Java VM to help
 Java/Scala developers tuning their runtime settings on the Java VM.
 
 
-VM Options
-----------
+Java VM Options
+----------------
 
 * -Xmx option (maximum heap size)
 
   Heaps larger than 2GB are available starting with J2SE 1.3.1
 
-  Default: 64M (32-bit UNIX and Windows)
+  Default:
+    -client:  64M (32-bit UNIX and Windows, MacOS X)
+    -server: 128M (MacOS X, see [vm11])
 
 * -Xms option (initial heap size)
 
   Minimum: 1025K (Linux-i586, Solaris-i586), etc.. (see [vm08])
-  Default: 2M (32-bit UNIX and Windows)
+  Default:
+    -client:  2M (32-bit UNIX and Windows, MacOS X)
+    -server: 32M (MacOS X, see [vm11])
 
 * -Xss option (thread stack size)
 
@@ -89,6 +93,15 @@ VM Options and Tools
 
 [vm09] A Collection of JVM Options (13-Dec-2005)
        http://blogs.sun.com/watt/resource/jvm-options-list.html
+
+[vm10] The Java VM for Mac OS X (Apple Developer Connection, 2006-05-23)
+       http://developer.apple.com/documentation/Java/Conceptual/Java14Development/06-JavaVM/JavaVM.html#//apple_ref/doc/uid/TP40001903-211276-TPXREF107
+
+[vm11] Java Virtual Machine Options (Apple Developer Connection, 2006-05-23)
+       http://developer.apple.com/documentation/Java/Conceptual/JavaPropVMInfoRef/Articles/JavaVirtualMachineOptions.html#//apple_ref/doc/uid/TP40001974-SW1
+
+[vm12] Options in JVM profiles (IBM)
+       http://publib.boulder.ibm.com/infocenter/cicsts/v3r1/index.jsp?topic=/com.ibm.cics.ts31.doc/dfha2/dfha2jb.htm
 
 
 Garbage Collection
