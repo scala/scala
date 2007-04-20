@@ -46,6 +46,12 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
   //def this() = this(new Settings, new ConsoleReporter)
 
   // sub-components --------------------------------------------------
+  object nodePrinters extends NodePrinters {
+    val global: Global.this.type = Global.this
+    infolevel = InfoLevel.Verbose
+  }
+  val nodeToString = nodePrinters.nodeToString
+
   object treePrinters extends TreePrinters {
     val global: Global.this.type = Global.this
   }
@@ -425,11 +431,11 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     private var unitc: Int = 0
     def advancePhase: Unit = {
       unitc = 0
-      phasec = phasec + 1
+      phasec += 1
       refreshProgress
     }
     def advanceUnit: Unit = {
-      unitc = unitc + 1
+      unitc += 1
       refreshProgress
     }
     private def refreshProgress = if (fileset.size > 0)
@@ -459,7 +465,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
       if (onlyPresentation) typerPhase.next.next
       else new TerminalPhase(p)
 
-    private def addUnit(unit: CompilationUnit): unit = {
+    private def addUnit(unit: CompilationUnit) {
       unitbuf += unit
       fileset += unit.source.getFile()
     }
@@ -480,7 +486,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
       else if (sym.isModuleClass) compiles(sym.sourceModule)
       else false
 
-    def compileSources(sources: List[SourceFile]): unit = {
+    def compileSources(sources: List[SourceFile]) {
       val startTime = currentTime
       reporter.reset
       for (source <- sources) addUnit(new CompilationUnit(source))
@@ -576,7 +582,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     }
   } // class Run
 
-  def showDef(name: Name, module: boolean): unit = {
+  def showDef(name: Name, module: boolean) {
     def getSym(name: Name, module: boolean): Symbol = {
       var i = name.length - 1
       while (i != 0 && name(i) != '#' && name(i) != '.') i = i - 1
@@ -608,7 +614,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     }
     new File(outdir, filename.substring(start) + suffix)
   }
-
+/*
   private def writeSymblFile(clazz: Symbol, pickled: PickleBuffer) = {
     val file = getFile(clazz, ".symbl")
     try {
@@ -622,8 +628,8 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
       error("could not write file " + file)
     }
   }
-
-  private def writeICode(): Unit = {
+*/
+  private def writeICode() {
     val printer = new icodes.TextPrinter(null, icodes.linearizer)
     icodes.classes.values.foreach((cls) => {
       val suffix = if (cls.symbol.hasFlag(Flags.MODULE)) "$.icode" else ".icode"
