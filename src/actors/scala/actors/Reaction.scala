@@ -53,7 +53,7 @@ private[actors] class Reaction(a: Actor,
             a.act()
           else
             f(msg)
-          a.exit()
+          a.kill(); a.exit()
         }
       } catch {
         case _: ExitActorException =>

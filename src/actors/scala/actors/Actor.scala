@@ -178,9 +178,10 @@ object Actor {
   def seq[a, b](first: => a, next: => b): Nothing = {
     val s = self
     val killNext = s.kill
-    s.kill = () => { s.kill = killNext; next; exit('normal) }
+    s.kill = () => { s.kill = killNext; next; s.kill() }
     first
-    exit('normal)
+    s.kill()
+    throw new ExitActorException
   }
 
   /**
@@ -214,7 +215,7 @@ object Actor {
    * <p>
    *   For each linked actor <code>a</code> with
    *   <code>trapExit</code> set to <code>true</code>, send message
-   *   <code>{'EXIT, self, reason}</code> to <code>a</code>.
+   *   <code>Exit(self, reason)</code> to <code>a</code>.
    * </p>
    * <p>
    *   For each linked actor <code>a</code> with
@@ -224,6 +225,21 @@ object Actor {
    * </p>
    */
   def exit(reason: AnyRef): Nothing = self.exit(reason)
+
+  /**
+   * <p>
+   *   Terminates execution of <code>self</code> with the following
+   *   effect on linked actors:
+   * </p>
+   * <p>
+   *   For each linked actor <code>a</code> with
+   *   <code>trapExit</code> set to <code>true</code>, send message
+   *   <code>Exit(self, 'normal)</code> to <code>a</code>.
+   * </p>
+   */
+  def exit(): Nothing = self.exit()
+
+  def continue: unit = self.kill()
 }
 
 /**
@@ -526,7 +542,7 @@ trait Actor extends OutputChannel[Any] {
   private[actors] def tick(): Unit =
     Scheduler tick this
 
-  private[actors] var kill = () => {}
+  private[actors] var kill: () => unit = () => {}
 
   def suspendActor() {
     isWaiting = true
@@ -632,7 +648,7 @@ trait Actor extends OutputChannel[Any] {
    * <p>
    *   For each linked actor <code>a</code> with
    *   <code>trapExit</code> set to <code>true</code>, send message
-   *   <code>{'EXIT, self, reason}</code> to <code>a</code>.
+   *   <code>Exit(self, reason)</code> to <code>a</code>.
    * </p>
    * <p>
    *   For each linked actor <code>a</code> with
@@ -642,19 +658,19 @@ trait Actor extends OutputChannel[Any] {
    * </p>
    */
   def exit(reason: AnyRef): Nothing = {
-    if (reason == 'normal) kill()
-    // links
-    if (!links.isEmpty) {
-      exitReason = reason
-      exitLinked()
-    }
-    throw new ExitActorException
+    exitReason = reason
+    exit()
   }
 
   /**
    * Terminates with exit reason <code>'normal</code>.
    */
-  def exit(): Nothing = exit('normal)
+  def exit(): Nothing = {
+    // links
+    if (!links.isEmpty)
+      exitLinked()
+    throw new ExitActorException
+  }
 
   // Assume !links.isEmpty
   private[actors] def exitLinked() {
@@ -686,7 +702,7 @@ trait Actor extends OutputChannel[Any] {
   // Assume !this.exiting
   private[actors] def exit(from: Actor, reason: AnyRef) {
     if (trapExit) {
-      this ! Triple('EXIT, from, reason)
+      this ! Exit(from, reason)
     }
     else if (reason != 'normal)
       this.synchronized {
@@ -694,8 +710,9 @@ trait Actor extends OutputChannel[Any] {
         exitReason = reason
         if (isSuspended)
           resumeActor()
-        else if (isDetached)
+        else if (isDetached) {
           scheduleActor(null, null)
+        }
       }
   }
 
@@ -722,6 +739,8 @@ trait Actor extends OutputChannel[Any] {
  */
 case object TIMEOUT
 
+
+case class Exit(from: Actor, reason: AnyRef)
 
 /** <p>
  *    This class is used to manage control flow of actor

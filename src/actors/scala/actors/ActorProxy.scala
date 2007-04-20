@@ -33,7 +33,7 @@ private[actors] class ActorProxy(t: Thread) extends Actor {
    * <p>
    *   For each linked actor <code>a</code> with
    *   <code>trapExit</code> set to <code>true</code>, send message
-   *   <code>{'EXIT, self, reason}</code> to <code>a</code>.
+   *   <code>Exit(self, reason)</code> to <code>a</code>.
    * </p>
    * <p>
    *   For each linked actor <code>a</code> with
