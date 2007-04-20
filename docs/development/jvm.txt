@@ -100,7 +100,10 @@ VM Options and Tools
 [vm11] Java Virtual Machine Options (Apple Developer Connection, 2006-05-23)
        http://developer.apple.com/documentation/Java/Conceptual/JavaPropVMInfoRef/Articles/JavaVirtualMachineOptions.html#//apple_ref/doc/uid/TP40001974-SW1
 
-[vm12] Options in JVM profiles (IBM)
+[vm12] Running your Java application on AIX, Part 2: JVM memory models (22 Oct 2003)
+       http://www-128.ibm.com/developerworks/aix/library/au-JavaPart2.html
+
+[vm13] Options in JVM profiles (IBM)
        http://publib.boulder.ibm.com/infocenter/cicsts/v3r1/index.jsp?topic=/com.ibm.cics.ts31.doc/dfha2/dfha2jb.htm
 
 
