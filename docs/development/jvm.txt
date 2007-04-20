@@ -48,8 +48,19 @@ Scala Environment Options
   Scala default: -Xmx256M -Xms16M (v2.x)
 
 
+In the following example, simply replace <jdk> by
+"java-1.4", "java-1.5", "java-1.6", "java-1.7" or
+"java-ibm-1.5" to experiment with different Java VMs:
+
+> env JAVACMD=/home/linuxsoft/apps/<jdk>/bin/java \
+      JAVA_OPTS="-Xmx256M -Xms16M -Xss128k" \
+      test/scalatest test/files/shootout/message.scala
+
+
+
 Resources
 =========
+
 
 VM Options and Tools
 --------------------
@@ -75,6 +86,10 @@ VM Options and Tools
 [vm08] Java HotSpot: load the VM from a non-primordial thread and effects
        on stack and heap limits.
        http://blogs.sun.com/ksrini/entry/hotspot_primordial_thread_jni_stack
+
+[vm09] A Collection of JVM Options (13-Dec-2005)
+       http://blogs.sun.com/watt/resource/jvm-options-list.html
+
 
 Garbage Collection
 ------------------
