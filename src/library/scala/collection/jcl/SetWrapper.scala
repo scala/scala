@@ -14,7 +14,7 @@ package scala.collection.jcl;
  *
  *  @author Sean McDirmid
  */
-trait SetWrapper[A] extends CollectionWrapper[A] with Set[A] {
+trait SetWrapper[A] extends Set[A] with CollectionWrapper[A] {
   protected def underlying: java.util.Set;
   override def isEmpty = super[CollectionWrapper].isEmpty;
   override def clear() = super[CollectionWrapper].clear;

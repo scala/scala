@@ -35,4 +35,5 @@ trait SortedSetWrapper[A] extends SortedSet[A] with SetWrapper[A] {
     }
     override def elements : MutableIterator[A] = super[SortedSetWrapper].elements;
   }
+  override def toString = super.toString;
 }

@@ -15,6 +15,6 @@ package scala.collection.jcl;
  *
  *  @author Sean McDirmid
  */
-class TreeSet[A <% Ordered[A]] extends CollectionWrapper[A] with SortedSetWrapper[A] {
+class TreeSet[A <% Ordered[A]] extends SortedSetWrapper[A] {
   val underlying = new java.util.TreeSet(new Comparator[A]);
 }
