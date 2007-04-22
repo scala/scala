@@ -49,7 +49,7 @@ final case class Symbol(name: String) {
    */
   def intern: Symbol = synchronized { internedSymbols get name match {
     case Some(sym) if sym.isValid => sym.apply
-    case None =>
+    case _ =>
       internedSymbols(name) = new ref.WeakReference(this); this
   } }
 }
