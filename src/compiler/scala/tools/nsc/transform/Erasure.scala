@@ -471,7 +471,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
       var tree1 = try {
         super.typed1(adaptMember(tree), mode, pt)
       } catch {
-        case ex: Throwable =>
+        case ex: Exception =>
           //if (settings.debug.value)
           Console.println("exception when typing " + tree);
           throw ex

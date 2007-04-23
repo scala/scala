@@ -57,7 +57,8 @@ object Flags extends Enumeration {
   final val PARAMACCESSOR = 0x20000000    // for value definitions: is an access method
                                           // for a final val parameter
                                           // for parameters: is a val parameter
-  final val MODULEVAR     = 0x40000000
+  final val MODULEVAR     = 0x40000000    // for term symbols: is the variable caching a module value
+  final val MONOMORPHIC   = 0x40000000    // for type symbols: does not have type parameters
 
   final val IS_ERROR      = 0x100000000L  // symbol is an error symbol
   final val OVERLOADED    = 0x200000000L  // symbol is overloaded

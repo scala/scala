@@ -102,10 +102,25 @@ trait Infer requires Analyzer {
    *  @param tp ...
    *  @return   ...
    */
-  def isFullyDefined(tp: Type): boolean = try {
-    instantiate(tp); true
-  } catch {
-    case ex: NoInstance => false
+  def isFullyDefined(tp: Type): boolean = tp match {
+    case WildcardType | NoType =>
+      false
+    case NoPrefix | ThisType(_) | ConstantType(_) =>
+      true
+    case TypeRef(pre, sym, args) =>
+      isFullyDefined(pre) && (args.isEmpty || (args forall isFullyDefined))
+    case SingleType(pre, sym) =>
+      isFullyDefined(pre)
+    case RefinedType(ts, decls) =>
+      ts forall isFullyDefined
+    case TypeVar(origin, constr) if (constr.inst == NoType) =>
+      false
+    case _ =>
+      try {
+        instantiate(tp); true
+      } catch {
+        case ex: NoInstance => false
+      }
   }
 
   /** Do type arguments <code>targs</code> conform to formal parameters
@@ -367,6 +382,38 @@ trait Infer requires Analyzer {
           tree setSymbol sym1 setType owntype
         }
       }
+
+    def isPlausiblyCompatible(tp: Type, pt: Type): boolean = tp match {
+      case PolyType(_, restp) =>
+        isPlausiblyCompatible(restp, pt)
+      case MethodType(formals, restp) =>
+        pt.normalize match {
+          case TypeRef(pre, sym, args) =>
+            !sym.isClass || {
+              val l = args.length - 1
+              l == formals.length &&
+              sym == FunctionClass(l) &&
+              List.forall2(args, formals) (isPlausiblySubType) &&
+              isPlausiblySubType(restp, args.last)
+            }
+          case _ =>
+            true
+        }
+      case _ =>
+        true
+    }
+
+    def isPlausiblySubType(tp1: Type, tp2: Type): boolean = tp1.normalize match {
+      case TypeRef(_, sym1, _) =>
+        !sym1.isClass || {
+          tp2.normalize match {
+            case TypeRef(_, sym2, _) => !sym2.isClass || (sym1 isSubClass sym2)
+            case _ => true
+          }
+        }
+      case _ =>
+        true
+    }
 
     def isCompatible(tp: Type, pt: Type): boolean = {
       val tp1 = normalize(tp)

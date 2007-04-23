@@ -220,7 +220,7 @@ trait Scopes {
      */
     def lookupEntry(name: Name): ScopeEntry = {
       var e: ScopeEntry = null
-      if (false & (hashtable ne null)) {
+      if (hashtable ne null) {
         e = hashtable(name.start & HASHMASK)
         while ((e ne null) && e.sym.name != name) e = e.tail;
       } else {

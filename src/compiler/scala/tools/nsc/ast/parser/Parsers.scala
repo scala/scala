@@ -391,6 +391,13 @@ trait Parsers {
         syntaxError(
           pos, "left- and right-associative operators with same precedence may not be mixed", false)
 
+    def checkNoImplicitParams() = implicitParams match {
+      case vd :: _ =>
+        syntaxError(vd.pos, "unbound wildcard parameter", false)
+        implicitParams = List()
+      case _ =>
+    }
+
     def reduceStack(isExpr: boolean, base: List[OpInfo], top0: Tree, prec: int, leftAssoc: boolean): Tree = {
       var top = top0
       if (opstack != base && precedence(opstack.head.operator) == prec)
@@ -519,7 +526,7 @@ trait Parsers {
     }
 
     /** SimpleExpr    ::= literal
-    *                  | symbol [ArgumentExprs]
+    *                  | symbol
     *                  | null
     */
     def literal(isPattern: boolean, isNegated: boolean): Tree = {
@@ -556,7 +563,6 @@ trait Parsers {
       if (isSymLit) {
         atPos(pos) {
           var symid = scalaDot(nme.Symbol)
-          if (isPattern) { symid = /*convertToTypeId*/(symid) }
           val symobj = Apply(symid, List(t))
           if (isPattern) symobj else Select(symobj, nme.intern)
         }
@@ -818,23 +824,12 @@ trait Parsers {
      *  (also eats trailing comma if it finds one)
      */
     def exprs(): List[Tree] = {
-      val savedImplicitParams = implicitParams
-      implicitParams = List()
-      var first = expr()
-      if (!implicitParams.isEmpty) {
-        first = Function(implicitParams.reverse, first)
-        implicitParams = List()
-      }
-      val ts = new ListBuffer[Tree] + first
+      val ts = new ListBuffer[Tree] + expr()
       while (in.token == COMMA) {
         in.nextToken;
         if (in.token == RPAREN) return List(makeTupleTerm(ts.toList, false))
         ts += expr()
-        if (!implicitParams.isEmpty) {
-          syntaxError(implicitParams.head.pos, "section outside (...)", false)
-        }
       }
-      implicitParams = savedImplicitParams
       ts.toList
     }
 
@@ -843,7 +838,6 @@ trait Parsers {
     private final val InTemplate = 2
 
     /** Expr       ::= (Bindings | Id)  `=>' Expr
-     *               | PostfixExpr `:' Type
      *               | Expr1
      *  ResultExpr ::= (Bindings | Id `:' CompoundType) `=>' Block
      *               | Expr1
@@ -938,6 +932,7 @@ trait Parsers {
           Throw(expr())
         }
       case DOT =>
+        //todo: deprecate
         atPos(in.skipToken) {
           if (isIdent) {
             makeDotClosure(stripParens(simpleExpr()))
@@ -999,6 +994,8 @@ trait Parsers {
      *                  | InfixExpr Id [nl] InfixExpr
      */
     def postfixExpr(): Tree = {
+      var savedImplicitParams = implicitParams
+      implicitParams = List()
       val base = opstack
       var top = prefixExpr()
       while (isIdent) {
@@ -1018,7 +1015,18 @@ trait Parsers {
             topinfo.operator.encode).setPos(topinfo.pos)
         }
       }
-      reduceStack(true, base, top, 0, true)
+      var res = reduceStack(true, base, top, 0, true)
+      def isWildcard(t: Tree): boolean = t match {
+        case Ident(name1) if name1 == implicitParams.head.name => true
+        case Typed(t1, _) => isWildcard(t1)
+        case Annotated(t1, _) => isWildcard(t1)
+        case _ => false
+      }
+      if (!implicitParams.isEmpty)
+        if (isWildcard(res)) savedImplicitParams = savedImplicitParams ::: implicitParams
+        else res = Function(implicitParams.reverse, res)
+      implicitParams = savedImplicitParams
+      res
     }
 
     /** PrefixExpr   ::= [`-' | `+' | `~' | `!' | `&'] SimpleExpr
@@ -1053,7 +1061,7 @@ trait Parsers {
 
     /* SimpleExpr    ::= new ClassTemplate
      *                |  BlockExpr
-     *                |  SimpleExpr1
+     *                |  SimpleExpr1 [`_']
      * SimpleExpr1   ::= literal
      *                |  xLiteral
      *                |  Path
@@ -1120,6 +1128,8 @@ trait Parsers {
           }
         case LPAREN | LBRACE if (canApply) =>
           simpleExprRest(atPos(in.currentPos) { Apply(stripParens(t), argumentExprs()) }, true)
+        case USCORE =>
+          atPos(in.skipToken) { Typed(stripParens(t), Function(List(), EmptyTree)) }
         case _ =>
           t
       }
@@ -1399,7 +1409,7 @@ trait Parsers {
       else
         mods
 
-    private def addMod(mods: Modifiers, mod: int): Modifiers = {
+    private def addMod(mods: Modifiers, mod: long): Modifiers = {
       if (mods hasFlag mod) syntaxError(in.currentPos, "repeated modifier", false)
       in.nextToken
       mods | mod
@@ -2244,6 +2254,7 @@ trait Parsers {
         }
         if (in.token != RBRACE && in.token != EOF) acceptStatSep()
       }
+      checkNoImplicitParams()
       (self, stats.toList)
     }
 
@@ -2301,6 +2312,7 @@ trait Parsers {
           syntaxErrorOrIncomplete("illegal start of statement", true)
         }
       }
+      checkNoImplicitParams()
       stats.toList
     }
 
@@ -2329,6 +2341,7 @@ trait Parsers {
         } else {
           ts ++= topStatSeq()
         }
+        assert(implicitParams.isEmpty)
         val stats = ts.toList
         stats match {
           case List(stat @ PackageDef(_, _)) => stat

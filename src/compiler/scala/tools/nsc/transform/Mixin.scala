@@ -665,8 +665,8 @@ abstract class Mixin extends InfoTransform {
         atPhase(phase.next)(postTransform(tree1))
       } catch {
         case ex: Throwable =>
-          Console.println("exception when traversing " + tree)
-        throw ex
+          if (settings.debug.value) Console.println("exception when traversing " + tree)
+          throw ex
       }
     }
   }

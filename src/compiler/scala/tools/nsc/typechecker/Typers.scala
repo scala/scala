@@ -642,7 +642,7 @@ trait Typers requires Analyzer {
               inferConstructorInstance(tree1, clazz.typeParams, widen(pt))
             } catch {
               case tpe : TypeError => throw tpe
-              case t : Throwable =>
+              case t : Exception
                 logError("CONTEXT: " + (tree.pos).dbgString, t)
               throw t
             }
@@ -2624,7 +2624,7 @@ trait Typers requires Analyzer {
           //Console.println("caught "+ex+" in typed");//DEBUG
           reportTypeError(tree.pos, ex)
           setError(tree)
-        case ex: Throwable =>
+        case ex: Exception
 //          if (settings.debug.value) // @M causes cyclic reference error
 //            Console.println("exception when typing "+tree+", pt = "+pt)
           if ((context ne null) && (context.unit ne null) &&
@@ -2744,7 +2744,7 @@ trait Typers requires Analyzer {
         case TypeRef(pre, sym, _) => sym.isPackageClass || sym.isModuleClass && isStable(pre)
         case _ => tp.isStable
       }
-      if (isCompatible(depoly(info.tpe), pt) && isStable(info.pre)) {
+      if (isPlausiblyCompatible(info.tpe, pt) && isCompatible(depoly(info.tpe), pt) && isStable(info.pre)) {
         val tree = atPos(pos) {
           if (info.pre == NoPrefix/*isLocal*/) Ident(info.name)
           else Select(gen.mkAttributedQualifier(info.pre), info.name)

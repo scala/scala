@@ -172,6 +172,9 @@ trait Symbols {
     def isTerm   = false         //to be overridden
     def isType   = false         //to be overridden
     def isClass  = false         //to be overridden
+    def isTypeMember = false     //to be overridden
+    def isAliasType = false      //to be overridden
+    def isAbstractType = false     //to be overridden
 
     final def isValue = isTerm && !(isModule && hasFlag(PACKAGE | JAVA))
     final def isVariable  = isTerm && hasFlag(MUTABLE) && !isMethod
@@ -194,12 +197,10 @@ trait Symbols {
     final def isPackage = isModule && hasFlag(PACKAGE)
     final def isThisSym = isTerm && owner.thisSym == this
     final def isThisSkolem = isTerm && deSkolemize != this
+    final def isMonomorphicType = isType && hasFlag(MONOMORPHIC)
     final def isError = hasFlag(IS_ERROR)
     final def isErroneous = isError || isInitialized && tpe.isErroneous
     final def isTrait = isClass & hasFlag(TRAIT)
-    final def isTypeMember = isType && !isClass
-    final def isAliasType = isType && !isClass && !hasFlag(DEFERRED)
-    final def isAbstractType = isType && !isClass && hasFlag(DEFERRED)
     final def isTypeParameterOrSkolem = isType && hasFlag(PARAM)
     final def isTypeParameter         = isTypeParameterOrSkolem && deSkolemize == this
     final def isClassLocalToConstructor = isClass && hasFlag(INCONSTRUCTOR)
@@ -536,15 +537,15 @@ trait Symbols {
     def tpeHK =  if(isType) typeConstructor else tpe // @M! used in memberType
 
     /** The type parameters of this symbol */
-    def unsafeTypeParams: List[Symbol] = rawInfo.typeParams
+    def unsafeTypeParams: List[Symbol] =
+      if (isMonomorphicType) List() else rawInfo.typeParams
     /*
       val limit = phaseId(validTo)
       (if (limit < phase.id) infos.info else rawInfo).typeParams
     */
 
-    def typeParams: List[Symbol] = {
-      rawInfo.load(this); rawInfo.typeParams
-    }
+    def typeParams: List[Symbol] =
+      if (isMonomorphicType) List() else { rawInfo.load(this); rawInfo.typeParams }
 
     def getAttributes(clazz: Symbol): List[AnnotationInfo[Constant]] =
       attributes.filter(.atp.symbol.isNonBottomSubClass(clazz))
@@ -1128,12 +1129,17 @@ trait Symbols {
    */
   class TypeSymbol(initOwner: Symbol, initPos: Position, initName: Name)
   extends Symbol(initOwner, initPos, initName) {
-    override def isType = true
     privateWithin = NoSymbol
     private var tyconCache: Type = null
     private var tyconRunId = NoRunId
     private var tpeCache: Type = _
     private var tpePeriod = NoPeriod
+
+    override def isType = true
+    override def isTypeMember = true
+    override def isAbstractType = hasFlag(DEFERRED)
+    override def isAliasType = !hasFlag(DEFERRED)
+
     override def tpe: Type = {
       if (tpeCache eq NoType) throw CyclicReference(this, typeConstructor)
       if (tpePeriod != currentPeriod) {
@@ -1165,13 +1171,9 @@ trait Symbols {
     override def setInfo(tp: Type): this.type = {
       tpePeriod = NoPeriod
       tyconCache = null
-      tp match { //debug
-        case TypeRef(_, sym, _) =>
-          assert(sym != this, this)
-        case ClassInfoType(parents, _, _) =>
-          for(p <- parents) assert(p.symbol != this, owner)
-        case _ =>
-      }
+      if (tp.isComplete)
+        if (tp.isInstanceOf[PolyType]) resetFlag(MONOMORPHIC)
+        else if (!tp.isInstanceOf[AnnotatedType]) setFlag(MONOMORPHIC)
       super.setInfo(tp)
       this
     }
@@ -1222,7 +1224,12 @@ trait Symbols {
       else super.isFromClassFile
     }
     private var thissym: Symbol = this
+
     override def isClass: boolean = true
+    override def isTypeMember = false
+    override def isAbstractType = false
+    override def isAliasType = false
+
     override def reset(completer: Type): unit = {
       super.reset(completer)
       thissym = this

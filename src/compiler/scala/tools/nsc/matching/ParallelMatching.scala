@@ -72,7 +72,20 @@ trait ParallelMatching requires (transform.ExplicitOuter with PatternMatchers wi
       pat match {
         case Literal(Constant(null)) if !(patternType =:= pat.tpe) => //special case for constant null pattern
           (ms,ss,(j,pat)::rs)
-        case _ if (pat.symbol ne null) && (patternType =:= singleType(pat.symbol.tpe.prefix, pat.symbol))=>
+        case _ if (pat.symbol ne null) && /*
+          Martin: the following causes a lot of Error's in rebind/singletonType
+          these errors are masked by including the two tests below.
+          However, if you uncomment them you will get a bug in genLoad:
+                                       ^
+   [locker] java.lang.AssertionError: assertion failed: Trying to access the this of another class: tree.symbol = class TreeBrowsers, ctx.clazz.symbol = object TreeBrowsers$TreeInfo compilation unit:TreeBrowsers.scala
+   [locker] 	at scala.Predef$.assert(Predef.scala:90)
+   [locker] 	at scala.tools.nsc.backend.icode.GenICode$ICodePhase.scala$tools$nsc$backend$icode$GenICode$ICodePhase$$genLoad(GenICode.scala:809)
+   [locker] 	at scala.tools.nsc.backend.icode.GenICode$ICodePhase.genLoadQualifier(GenICode.scala:996)
+   [locker] 	at scala.tools.nsc.backend.icode.GenICode$ICodePhase.scala$tools$nsc$backend$icode$GenICode$ICodePhase$$genLoad(GenICode.scala:785)
+
+          (pat.symbol != NoSymbol) && pat.symbol.tpe.prefix.isStable &&
+          */
+          (patternType =:= singleType(pat.symbol.tpe.prefix, pat.symbol)) =>
           (EmptyTree::ms, (j,dummies)::ss, rs);                                                 // matching an object
         case _ if (pat.tpe <:< patternType) =>
           ({if(pat.tpe =:= patternType) EmptyTree else pat}::ms, (j,subpatterns(pat))::ss, rs); // subsumed (same or more specific) pattern;
