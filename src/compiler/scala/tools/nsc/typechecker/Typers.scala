@@ -642,7 +642,7 @@ trait Typers requires Analyzer {
               inferConstructorInstance(tree1, clazz.typeParams, widen(pt))
             } catch {
               case tpe : TypeError => throw tpe
-              case t : Exception
+              case t : Exception =>
                 logError("CONTEXT: " + (tree.pos).dbgString, t)
               throw t
             }
@@ -2624,7 +2624,7 @@ trait Typers requires Analyzer {
           //Console.println("caught "+ex+" in typed");//DEBUG
           reportTypeError(tree.pos, ex)
           setError(tree)
-        case ex: Exception
+        case ex: Exception =>
 //          if (settings.debug.value) // @M causes cyclic reference error
 //            Console.println("exception when typing "+tree+", pt = "+pt)
           if ((context ne null) && (context.unit ne null) &&
