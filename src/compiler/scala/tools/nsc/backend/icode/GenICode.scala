@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -7,8 +7,7 @@
 
 package scala.tools.nsc.backend.icode
 
-import compat.StringBuilder
-import scala.collection.mutable.{Map, HashMap, ListBuffer, Buffer, Set, HashSet}
+import scala.collection.mutable.{Map, HashMap, ListBuffer, Buffer, HashSet}
 import scala.tools.nsc.symtab._
 
 
@@ -67,9 +66,7 @@ abstract class GenICode extends SubComponent  {
 
     def gen(trees: List[Tree], ctx: Context): Context = {
       var ctx1 = ctx
-      for (val t <- trees)
-        ctx1 = gen(t, ctx1)
-
+      for (t <- trees) ctx1 = gen(t, ctx1)
       ctx1
     }
 
@@ -141,7 +138,7 @@ abstract class GenICode extends SubComponent  {
     private def genStat(trees: List[Tree], ctx: Context): Context = {
       var currentCtx = ctx
 
-      for (val t <- trees)
+      for (t <- trees)
         currentCtx = genStat(t, currentCtx)
 
       currentCtx
@@ -457,7 +454,7 @@ abstract class GenICode extends SubComponent  {
           val returnedKind = toTypeKind(expr.tpe)
           var ctx1 = genLoad(expr, ctx, returnedKind)
           val oldcleanups = ctx1.cleanups
-          for (val op <- ctx1.cleanups) op match {
+          for (op <- ctx1.cleanups) op match {
             case MonitorRelease(m) =>
               ctx1.bb.emit(LOAD_LOCAL(m))
               ctx1.bb.emit(MONITOR_EXIT())
@@ -477,7 +474,7 @@ abstract class GenICode extends SubComponent  {
 
         case Try(block, catches, finalizer) =>
           val kind = toTypeKind(tree.tpe)
-          var handlers = for (val CaseDef(pat, _, body) <- catches.reverse)
+          var handlers = for (CaseDef(pat, _, body) <- catches.reverse)
             yield pat match {
               case Typed(Ident(nme.WILDCARD), tpt) => (tpt.tpe.symbol, kind, {
                 ctx: Context =>
@@ -924,29 +921,28 @@ abstract class GenICode extends SubComponent  {
           var tags: List[Int] = Nil
           var default: BasicBlock = afterCtx.bb
 
-          for (val caze <- cases)
-            caze match {
-              case CaseDef(Literal(value), EmptyTree, body) =>
-                tags = value.intValue :: tags
-                val tmpCtx = ctx1.newBlock
-                targets = tmpCtx.bb :: targets
+          for (caze <- cases) caze match {
+            case CaseDef(Literal(value), EmptyTree, body) =>
+              tags = value.intValue :: tags
+              val tmpCtx = ctx1.newBlock
+              targets = tmpCtx.bb :: targets
 
-                caseCtx = genLoad(body, tmpCtx , kind)
-                caseCtx.bb.emit(JUMP(afterCtx.bb), caze.pos)
-                caseCtx.bb.close
+              caseCtx = genLoad(body, tmpCtx , kind)
+              caseCtx.bb.emit(JUMP(afterCtx.bb), caze.pos)
+              caseCtx.bb.close
 
-              case CaseDef(Ident(nme.WILDCARD), EmptyTree, body) =>
-                val tmpCtx = ctx1.newBlock
-                default = tmpCtx.bb
+            case CaseDef(Ident(nme.WILDCARD), EmptyTree, body) =>
+              val tmpCtx = ctx1.newBlock
+              default = tmpCtx.bb
 
-                caseCtx = genLoad(body, tmpCtx , kind)
-                caseCtx.bb.emit(JUMP(afterCtx.bb), caze.pos)
-                caseCtx.bb.close
+              caseCtx = genLoad(body, tmpCtx , kind)
+              caseCtx.bb.emit(JUMP(afterCtx.bb), caze.pos)
+              caseCtx.bb.close
 
-              case _ =>
-                abort("Invalid case statement in switch-like pattern match: " +
-                      tree + " at: " + (tree.pos))
-            }
+            case _ =>
+              abort("Invalid case statement in switch-like pattern match: " +
+                    tree + " at: " + (tree.pos))
+          }
           ctx1.bb.emit(SWITCH(tags.reverse map (x => List(x)),
                              (default :: targets).reverse), tree.pos)
           ctx1.bb.close
@@ -1219,7 +1215,7 @@ abstract class GenICode extends SubComponent  {
         log("Lifted string concatenations for " + tree + "\n to: " + concatenations);
 
       ctx1.bb.emit(CALL_PRIMITIVE(StartConcat), tree.pos);
-      for (val elem <- concatenations) {
+      for (elem <- concatenations) {
         val kind = toTypeKind(elem.tpe)
         ctx1 = genLoad(elem, ctx1, kind)
         ctx1.bb.emit(CALL_PRIMITIVE(StringConcat(kind)), elem.pos)
@@ -1462,7 +1458,7 @@ abstract class GenICode extends SubComponent  {
       assert(ctx.clazz.symbol eq cls,
              "Classes are not the same: " + ctx.clazz.symbol + ", " + cls)
 
-      for (val f <- cls.info.decls.elements)
+      for (f <- cls.info.decls.elements)
         if (!f.isMethod && f.isTerm)
           ctx.clazz.addField(new IField(f));
     }
@@ -1476,7 +1472,7 @@ abstract class GenICode extends SubComponent  {
         case Nil => ()
 
         case vparams :: Nil =>
-          for (val p <- vparams) {
+          for (p <- vparams) {
             val lv = new Local(p.symbol, toTypeKind(p.symbol.info), true)
             ctx.method.addParam(lv)
             ctx.scope.add(lv)
@@ -1569,8 +1565,8 @@ abstract class GenICode extends SubComponent  {
           }
           if (changed) {
             log("Removing block: " + block)
-            method.code.removeBlock(block);
-            for (val e <- method.exh) {
+            method.code.removeBlock(block)
+            for (e <- method.exh) {
               e.covered = e.covered filter (.!=(block))
               e.blocks  = e.blocks filter (.!=(block))
               if (e.startBlock eq block)
@@ -1782,7 +1778,12 @@ abstract class GenICode extends SubComponent  {
         this
       }
 
-      /** Prepare a new context upon entry into a method */
+      /** Prepare a new context upon entry into a method.
+       *
+       *  @param m ...
+       *  @param d ...
+       *  @return  ...
+       */
       def enterMethod(m: IMethod, d: DefDef): Context = {
         val ctx1 = new Context(this) setMethod(m)
         ctx1.labels = new HashMap()
@@ -1804,7 +1805,7 @@ abstract class GenICode extends SubComponent  {
         }
         block.varsInScope = new HashSet()
         block.varsInScope ++= scope.varsInScope
-        new Context(this) setBasicBlock block;
+        new Context(this) setBasicBlock block
       }
 
       def enterScope = {
@@ -1824,7 +1825,7 @@ abstract class GenICode extends SubComponent  {
        * previously active handlers).
        */
       def newHandler(cls: Symbol, resultKind: TypeKind): ExceptionHandler = {
-        handlerCount = handlerCount + 1
+        handlerCount += 1
         val exh = new ExceptionHandler(method, "" + handlerCount, cls)
 	exh.resultKind = resultKind
         method.addHandler(exh)
@@ -1945,11 +1946,11 @@ abstract class GenICode extends SubComponent  {
        * Patch the code by replacing pseudo call instructions with
        * jumps to the given basic block.
        */
-      def patch(code: Code): Unit = {
+      def patch(code: Code) {
         def substMap: Map[Instruction, Instruction] = {
-          val map = new HashMap[Instruction, Instruction]();
+          val map = new HashMap[Instruction, Instruction]()
 
-          toPatch foreach (i => map += i -> patch(i));
+          toPatch foreach (i => map += i -> patch(i))
           map
         }
 

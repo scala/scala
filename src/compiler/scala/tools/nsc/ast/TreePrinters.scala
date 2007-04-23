@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id: TreePrinters.scala 9925 2007-02-07 18:30:46 +0000 (Wed, 07 Feb 2007) odersky $
@@ -7,7 +7,6 @@
 package scala.tools.nsc.ast
 
 import compat.Platform.{EOL => LINE_SEPARATOR}
-import compat.StringBuilder
 import java.io.{OutputStream, PrintWriter, Writer}
 import symtab.Flags._
 
@@ -23,13 +22,13 @@ abstract class TreePrinters {
 
     def flush = out.flush()
 
-    def indent = indentMargin = indentMargin + indentStep
-    def undent = indentMargin = indentMargin - indentStep
+    def indent = indentMargin += indentStep
+    def undent = indentMargin -= indentStep
 
     def println = {
       out.println()
       while (indentMargin > indentString.length())
-        indentString = indentString + indentString
+        indentString += indentString
       if (indentMargin > 0)
         out.write(indentString, 0, indentMargin)
     }
@@ -195,7 +194,7 @@ abstract class TreePrinters {
           if (!args.isEmpty)
             printRow(args, "(", ",", ")")
           if (!elements.isEmpty)
-            print((for (val Assign(name, value) <- elements) yield "val " + name + " = " + value).
+            print((for (Assign(name, value) <- elements) yield "val " + name + " = " + value).
                   mkString("{", ",", "}"))
 
         case Template(parents, body) =>
@@ -308,7 +307,7 @@ abstract class TreePrinters {
             if (!args.isEmpty)
               printRow(args, "(", ",", ")")
             if (!elements.isEmpty)
-              print((for (val Assign(name, value) <- elements) yield "val " + name + " = " + value).
+              print((for (Assign(name, value) <- elements) yield "val " + name + " = " + value).
                     mkString("{", ",", "}"))
           }
           if (tree.isType) { printAnnot(); print(" "); print(tree) }
@@ -353,7 +352,7 @@ abstract class TreePrinters {
         } else tree)
     }
 
-    def print(unit: CompilationUnit): unit = {
+    def print(unit: CompilationUnit) {
       print("// Scala source: " + unit.source + LINE_SEPARATOR)
       if (unit.body ne null) {
         print(unit.body); println
@@ -363,10 +362,10 @@ abstract class TreePrinters {
       println; flush
     }
 
-    def printAll(): unit = {
+    def printAll() {
       print("[[syntax trees at end of " + phase + "]]")
       atPhase(phase.next) {
-        for (val unit <- global.currentRun.units) print(unit)
+        for (unit <- global.currentRun.units) print(unit)
       }
     }
   }
@@ -381,7 +380,7 @@ abstract class TreePrinters {
     object ConsoleWriter extends Writer {
       override def write(str: String): unit = Console.print(str)
 
-      def write(cbuf: Array[char], off: int, len: int): unit = {
+      def write(cbuf: Array[char], off: int, len: int) {
         val str = new String(cbuf, off, len)
         write(str)
       }

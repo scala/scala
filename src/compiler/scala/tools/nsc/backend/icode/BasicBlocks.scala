@@ -7,13 +7,13 @@
 
 package scala.tools.nsc.backend.icode
 
-import compat.StringBuilder
-import scala.tools.nsc.ast._
+//import scala.tools.nsc.ast._
 import scala.collection.mutable.{Map, Set, LinkedHashSet}
 import scala.tools.nsc.util.{Position,NoPosition}
 import scala.tools.nsc.backend.icode.analysis.ProgramPoint
 
-trait BasicBlocks requires ICodes {
+trait BasicBlocks {
+  self: ICodes =>
   import opcodes._
 
   /** This class represents a basic block. Each
@@ -70,7 +70,7 @@ trait BasicBlocks requires ICodes {
       instrs
     }
 
-    def fromList(is: List[Instruction]): Unit = {
+    def fromList(is: List[Instruction]) {
       instrs = toInstructionArray(is)
       closed = true
     }
@@ -85,7 +85,7 @@ trait BasicBlocks requires ICodes {
       var i = 0
       while (i < instrs.length) {
         if (instrs(i) eq inst) return i
-        i = i + 1
+        i += 1
       }
       -1
     }
@@ -105,8 +105,8 @@ trait BasicBlocks requires ICodes {
     def traverseBackwards(f: Instruction => Unit) = {
       var i = instrs.length - 1
       while (i >= 0) {
-        f(instrs(i));
-        i = i - 1
+        f(instrs(i))
+        i -= 1
       }
     }
 
@@ -125,11 +125,11 @@ trait BasicBlocks requires ICodes {
       var i = pos
       var d = 0
       while (i > 0) {
-        i = i - 1
+        i -= 1
         val prod = instrs(i).produced
         if (prod > 0 && d == 0)
           return Some(i)
-        d = d + (instrs(i).consumed - instrs(i).produced);
+        d += (instrs(i).consumed - instrs(i).produced)
       }
       None
     }
@@ -172,7 +172,7 @@ trait BasicBlocks requires ICodes {
           instrs(i) = newInstr
           changed = true
         }
-        i = i + 1
+        i += 1
       }
       changed
     }
@@ -192,7 +192,7 @@ trait BasicBlocks requires ICodes {
       var changed = false
 
       while (i < instrs.length && (instrs(i) ne iold))
-        i = i + 1;
+        i += 1
 
       if (i < instrs.length) {
         val newInstrs = new Array[Instruction](instrs.length + is.length - 1);
@@ -201,7 +201,7 @@ trait BasicBlocks requires ICodes {
         var j = i
         for (val x <- is) {
           newInstrs(j) = x
-          j = j + 1
+          j += 1
         }
         if (i + 1 < instrs.length)
           Array.copy(instrs, i + 1, newInstrs, j, instrs.length - i - 1)
@@ -222,7 +222,7 @@ trait BasicBlocks requires ICodes {
         var j = i
         for (val x <- is) {
           newInstrs(j) = x
-          j = j + 1
+          j += 1
         }
         if (i + 1 < instrs.length)
           Array.copy(instrs, i + 1, newInstrs, j, instrs.length - i)
@@ -234,7 +234,7 @@ trait BasicBlocks requires ICodes {
      *
      *  @param positions ...
      */
-    def removeInstructionsAt(positions: Int*): Unit = {
+    def removeInstructionsAt(positions: Int*) {
       assert(closed)
       val removed = positions.toList
       val newInstrs = new Array[Instruction](instrs.length - positions.length)
@@ -243,9 +243,9 @@ trait BasicBlocks requires ICodes {
       while (i < instrs.length) {
         if (!removed.contains(i)) {
           newInstrs(j) = instrs(i)
-          j = j + 1
+          j += 1
         }
-        i = i + 1
+        i += 1
       }
       instrs = newInstrs
     }
@@ -278,7 +278,7 @@ trait BasicBlocks requires ICodes {
         }
       }
 
-    private def substOnList(map: Map[Instruction, Instruction]): Unit = {
+    private def substOnList(map: Map[Instruction, Instruction]) {
       def subst(l: List[Instruction]): List[Instruction] = l match {
         case Nil => Nil
         case x :: xs =>
@@ -371,7 +371,7 @@ trait BasicBlocks requires ICodes {
       var array = new Array[Instruction](l.length)
       var i: Int = 0
 
-      l foreach (x => { array(i) = x; i = i + 1 })
+      l foreach (x => { array(i) = x; i += 1 })
       array
     }
 

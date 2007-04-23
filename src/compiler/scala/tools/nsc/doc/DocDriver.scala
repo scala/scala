@@ -4,11 +4,13 @@
  */
 // $Id$
 
-package scala.tools.nsc.doc;
+package scala.tools.nsc.doc
 
-import scala.collection.jcl;
-import symtab.Flags._;
-import scala.xml._;
+import java.util.zip.ZipFile
+
+import scala.collection.jcl
+import symtab.Flags._
+import scala.xml._
 
 /**
  *  @author Sean McDirmid
@@ -16,15 +18,15 @@ import scala.xml._;
 abstract class DocDriver extends ModelFrames with ModelToXML {
   import global._;
 
-  object additions extends jcl.LinkedHashSet[Symbol];
+  object additions extends jcl.LinkedHashSet[Symbol]
   object additions0 extends ModelAdditions(global) {
-    override def addition(sym : global.Symbol) = {
-      super.addition(sym);
+    override def addition(sym: global.Symbol) = {
+      super.addition(sym)
       sym match {
-      case sym : global.ClassSymbol => additions += sym.asInstanceOf[Symbol];
-      case sym : global.ModuleSymbol => additions += sym.asInstanceOf[Symbol];
-      case sym : global.TypeSymbol => additions += sym.asInstanceOf[Symbol];
-      case _ =>
+        case sym : global.ClassSymbol => additions += sym.asInstanceOf[Symbol]
+        case sym : global.ModuleSymbol => additions += sym.asInstanceOf[Symbol]
+        case sym : global.TypeSymbol => additions += sym.asInstanceOf[Symbol]
+        case _ =>
       }
     }
     def init : Unit = {}
@@ -56,19 +58,19 @@ abstract class DocDriver extends ModelFrames with ModelToXML {
     units.foreach(unit => f(null, unit.body));
 
 
-    for (val p <- allClasses; val d <- p._2) {
+    for (p <- allClasses; val d <- p._2) {
       symbols += d.sym;
-      for (val pp <- d.sym.tpe.parents) subClasses(pp.symbol) += d;
+      for (pp <- d.sym.tpe.parents) subClasses(pp.symbol) += d;
     }
-    additions0.init;
-    copyResources;
-    val packages0 = sort(allClasses.keySet);
-    new AllPackagesFrame     with Frame { def packages = packages0; };
-    new PackagesContentFrame with Frame { def packages = packages0; };
-    new NavigationFrame      with Frame { };
+    additions0.init
+    copyResources
+    val packages0 = sort(allClasses.keySet)
+    new AllPackagesFrame     with Frame { def packages = packages0; }
+    new PackagesContentFrame with Frame { def packages = packages0; }
+    new NavigationFrame      with Frame { }
     new ListClassFrame with Frame {
       def classes = {
-        for (val p <- allClasses; val d <- p._2) yield d;
+        for (p <- allClasses; d <- p._2) yield d;
       }
       object organized extends jcl.LinkedHashMap[(List[String],Boolean),List[ClassOrObject]] {
         override def default(key : (List[String],Boolean)) = Nil;
@@ -97,7 +99,7 @@ abstract class DocDriver extends ModelFrames with ModelToXML {
       }
 
     }
-    for (val (pkg0,classes0) <- allClasses) {
+    for ((pkg0,classes0) <- allClasses) {
       new ListClassFrame with Frame {
         def title =
           "List of classes and objects in package " + pkg0.fullName('.')
@@ -109,7 +111,7 @@ abstract class DocDriver extends ModelFrames with ModelToXML {
         def classes = classes0;
         def pkg = pkg0;
       }
-      for (val clazz0 <- classes0) {
+      for (clazz0 <- classes0) {
         new ClassContentFrame with Frame {
           def clazz = clazz0;
           def title =
@@ -117,7 +119,7 @@ abstract class DocDriver extends ModelFrames with ModelToXML {
         }
       }
     }
-    for (val sym <- additions) sym match {
+    for (sym <- additions) sym match {
     case sym :  ClassSymbol =>
       val add = new TopLevelClass(sym);
       new ClassContentFrame with Frame {
@@ -164,32 +166,35 @@ abstract class DocDriver extends ModelFrames with ModelToXML {
     })++super.classBody(entity);
   protected def urlFor(sym : Symbol)(implicit frame : Frame) = frame.urlFor(sym);
 
-  override protected def decodeTag(tag : String) : String = tag match {
-  case "exception"  => "Throws"
-  case "ex"         => "Examples"
-  case "param"      => "Parameters"
-  case "pre"        => "Precondition"
-  case "return"     => "Returns"
-  case "note"       => "Notes"
-  case "see"        => "See Also"
-  case tag => super.decodeTag(tag);
+  override protected def decodeTag(tag: String): String = tag match {
+    case "exception"  => "Throws"
+    case "ex"         => "Examples"
+    case "param"      => "Parameters"
+    case "pre"        => "Precondition"
+    case "return"     => "Returns"
+    case "note"       => "Notes"
+    case "see"        => "See Also"
+    case tag => super.decodeTag(tag)
   }
-  override protected def decodeOption(tag : String, option : String) : NodeSeq = tag match {
-  case "throws" if additions0.exceptions.contains(option) =>
-    val (sym, s) = additions0.exceptions(option);
-    val path = "../" //todo: fix path
-    val href = path + sym.fullNameString('/') +
-    (if (sym.isModule || sym.isModuleClass) NAME_SUFFIX_OBJECT else "") +
-      "#" + s
-    <a href={href}>{option}</a> ++ {Text(" - ")};
-  case _ => super.decodeOption(tag,option);
+
+  override protected def decodeOption(tag: String, option: String): NodeSeq = tag match {
+    case "throws" if additions0.exceptions.contains(option) =>
+      val (sym, s) = additions0.exceptions(option);
+      val path = "../" //todo: fix path
+      val href = path + sym.fullNameString('/') +
+      (if (sym.isModule || sym.isModuleClass) NAME_SUFFIX_OBJECT else "") +
+        "#" + s
+      <a href={href}>{option}</a> ++ {Text(" - ")};
+    case _ =>
+      super.decodeOption(tag,option)
   }
+
   object roots extends jcl.LinkedHashMap[String,String];
   roots("classes") = "http://java.sun.com/j2se/1.5.0/docs/api";
   roots("rt") = roots("classes");
   roots("scala-library") = "http://www.scala-lang.org/docu/files/api";
 
-  private def keyFor(file : java.util.zip.ZipFile) : String = {
+  private def keyFor(file: ZipFile): String = {
     var name = file.getName;
     var idx = name.lastIndexOf(java.io.File.pathSeparator);
     if (idx == -1) idx = name.lastIndexOf('/');

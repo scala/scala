@@ -1,28 +1,22 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
 
 package scala.tools.nsc.ast
 
-import compat.StringBuilder
-import scala.concurrent.Lock
-import symtab.Flags._
-
-import java.lang.Math
-import java.util.HashMap
-import java.io.StringWriter
-
-import javax.swing.tree._
-import javax.swing.event.TreeModelListener
-import javax.swing._
-
-import java.awt.BorderLayout
 import java.awt.{List => awtList, _}
 import java.awt.event._
+import java.io.StringWriter
 
+import javax.swing._
+import javax.swing.event.TreeModelListener
+import javax.swing.tree._
+
+import scala.concurrent.Lock
 import scala.text._
+import symtab.Flags._
 
 /**
  * Tree browsers can show the AST in a graphical and interactive
@@ -77,7 +71,7 @@ abstract class TreeBrowsers {
       val phase: Phase = globalPhase
       var unitList: List[UnitTree] = Nil
 
-      for (val i <- units)
+      for (i <- units)
         unitList = UnitTree(i) :: unitList
       val tm = new ASTTreeModel(ProgramTree(unitList))
 
@@ -230,8 +224,8 @@ abstract class TreeBrowsers {
           str.append(buf.toString())
           str.append("\nSymbol tpe: ")
           if (t.symbol ne null) {
-            str.append(t.symbol.tpe).append("\n");
-            buf = new StringWriter();
+            str.append(t.symbol.tpe).append("\n")
+            buf = new StringWriter()
             TypePrinter.toDocument(t.symbol.tpe).format(getWidth() / getColumnWidth(), buf)
             str.append(buf.toString())
           }

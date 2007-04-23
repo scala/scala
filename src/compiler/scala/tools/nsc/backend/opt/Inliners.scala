@@ -1,36 +1,37 @@
-/* NSC -- new scala compiler
- * Copyright 2005 LAMP/EPFL
+/* NSC -- new Scala compiler
+ * Copyright 2005-2007 LAMP/EPFL
  * @author  Iulian Dragos
  */
 
 // $Id$
 
-package scala.tools.nsc.backend.opt;
+package scala.tools.nsc.backend.opt
 
-import scala.collection.mutable.{Map, HashMap, Set, HashSet};
-import scala.tools.nsc.symtab._;
+import scala.collection.mutable.{Map, HashMap, Set, HashSet}
+import scala.tools.nsc.symtab._
 
 /**
+ *  @author Iulian Dragos
  */
 abstract class Inliners extends SubComponent {
-  import global._;
-  import icodes._;
-  import icodes.opcodes._;
+  import global._
+  import icodes._
+  import icodes.opcodes._
 
-  val phaseName = "inliner";
+  val phaseName = "inliner"
 
   /** The maximum size in basic blocks of methods considered for inlining. */
   final val MAX_INLINE_SIZE = 16
 
   /** Create a new phase */
-  override def newPhase(p: Phase) = new InliningPhase(p);
+  override def newPhase(p: Phase) = new InliningPhase(p)
 
   /** The Inlining phase.
    */
   class InliningPhase(prev: Phase) extends ICodePhase(prev) {
 
     def name = phaseName
-    val inliner = new Inliner;
+    val inliner = new Inliner
 
     override def apply(c: IClass): Unit =
       inliner.analyzeClass(c)
@@ -46,7 +47,7 @@ abstract class Inliners extends SubComponent {
     val fresh = new HashMap[String, Int]
 
     /* fresh name counter */
-    var count = 0;
+    var count = 0
 
     def freshName(s: String) = fresh.get(s) match {
       case Some(count) =>
@@ -71,14 +72,14 @@ abstract class Inliners extends SubComponent {
              case _ => "<nopos>"
            }));
 
-       val targetPos = instr.pos;
-       val a = new analysis.MethodTFA(callee);
+       val targetPos = instr.pos
+       val a = new analysis.MethodTFA(callee)
 
        /* The exception handlers that are active at the current block. */
-       val activeHandlers = caller.exh.filter(.covered.contains(block));
+       val activeHandlers = caller.exh.filter(.covered.contains(block))
 
        /* Map 'original' blocks to the ones inlined in the caller. */
-       val inlinedBlock: Map[BasicBlock, BasicBlock] = new HashMap;
+       val inlinedBlock: Map[BasicBlock, BasicBlock] = new HashMap
 
        val varsInScope: Set[Local] = new HashSet[Local] ++ block.varsInScope.elements
 
@@ -104,8 +105,8 @@ abstract class Inliners extends SubComponent {
 
        /** Add a new block in the current context. */
        def newBlock = {
-         val b = caller.code.newBlock;
-         activeHandlers.foreach (.addCoveredBlock(b));
+         val b = caller.code.newBlock
+         activeHandlers.foreach (.addCoveredBlock(b))
          if (retVal ne null) b.varsInScope += retVal
          b.varsInScope += inlinedThis
          b.varsInScope ++= varsInScope
@@ -113,9 +114,9 @@ abstract class Inliners extends SubComponent {
        }
 
        def translateExh(e: ExceptionHandler) = {
-         var handler: ExceptionHandler = e.dup;
-         handler.covered = handler.covered.map(inlinedBlock);
-         handler.setStartBlock(inlinedBlock(e.startBlock));
+         var handler: ExceptionHandler = e.dup
+         handler.covered = handler.covered.map(inlinedBlock)
+         handler.setStartBlock(inlinedBlock(e.startBlock))
          handler
        }
 
@@ -290,11 +291,11 @@ abstract class Inliners extends SubComponent {
         if (m.code ne null) {
           if (settings.debug.value)
             log("Analyzing " + m + " count " + count);
-          tfa.init(m);
-          tfa.run;
-          for (val bb <- linearizer.linearize(m)) {
+          tfa.init(m)
+          tfa.run
+          for (bb <- linearizer.linearize(m)) {
             var info = tfa.in(bb);
-            for (val i <- bb.toList) {
+            for (i <- bb.toList) {
               if (!retry) {
                 i match {
                   case CALL_METHOD(msym, Dynamic) =>
@@ -349,9 +350,9 @@ abstract class Inliners extends SubComponent {
 
                   case _ => ();
                 }
-                info = tfa.interpret(info, i);
+                info = tfa.interpret(info, i)
               }}}}
-      } while (retry && count < 15);
+      } while (retry && count < 15)
       m.normalize
     } catch {
       case e =>
@@ -360,7 +361,7 @@ abstract class Inliners extends SubComponent {
                         "\nMethod owner: " + m.symbol.owner);
         e.printStackTrace();
         m.dump
-        throw e;
+        throw e
     }
 
     /** Cache whether a method calls private members. */
@@ -385,8 +386,8 @@ abstract class Inliners extends SubComponent {
       callsPrivate get (callee) match {
         case Some(b) => callsPrivateMember = b;
         case None =>
-          for (val b <- callee.code.blocks)
-            for (val i <- b.toList)
+          for (b <- callee.code.blocks)
+            for (i <- b.toList)
               i match {
                 case CALL_METHOD(m, style) =>
                   if (m.hasFlag(Flags.PRIVATE) ||

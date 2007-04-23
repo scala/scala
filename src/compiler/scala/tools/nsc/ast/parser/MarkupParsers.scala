@@ -1,12 +1,11 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author Burak Emir
  */
 // $Id$
 
 package scala.tools.nsc.ast.parser
 
-import compat.StringBuilder
 import scala.collection.immutable.ListMap
 import scala.collection.mutable
 import scala.tools.nsc.util.Position
@@ -17,7 +16,8 @@ import scala.xml.{Text, TextBuffer}
  *  @author  Burak Emir
  *  @version 1.0
  */
-trait MarkupParsers requires SyntaxAnalyzer {
+trait MarkupParsers {
+  self: SyntaxAnalyzer =>
 
   import global._
   //import posAssigner.atPos
@@ -26,7 +26,7 @@ class MarkupParser(p: UnitParser, presWS: boolean) /*with scala.xml.parsing.Mark
 
   import Tokens.{EMPTY, LBRACE, RBRACE}
 
-  final val preserveWS = presWS;
+  final val preserveWS = presWS
 
   import p.{symbXMLBuilder => handle}
   def s = p.in
@@ -254,7 +254,7 @@ class MarkupParser(p: UnitParser, presWS: boolean) /*with scala.xml.parsing.Mark
     xToken('-')
     while (true) {
       if( ch=='-'  && { sb.append(ch); nextch; ch == '-' } ) {
-        sb.setLength(sb.length() - 1);
+        sb.setLength(sb.length() - 1)
         nextch
         xToken('>')
         return handle.comment(pos, sb.toString())
@@ -272,7 +272,7 @@ class MarkupParser(p: UnitParser, presWS: boolean) /*with scala.xml.parsing.Mark
   /*[Duplicate]*/ def appendText(pos: Position, ts: mutable.Buffer[Tree],
                                  txt: String): Unit =
     if (!preserveWS) {
-      for (val t <- TextBuffer.fromString(txt).toText) {
+      for (t <- TextBuffer.fromString(txt).toText) {
         ts.append(handle.text(pos, t.text))
       }
     }
@@ -555,7 +555,7 @@ class MarkupParser(p: UnitParser, presWS: boolean) /*with scala.xml.parsing.Mark
   def xLiteralPattern:Tree = try {
     init; pushScannerState
     val oldMode = handle.isPattern;
-    handle.isPattern = true;
+    handle.isPattern = true
     var tree = xPattern; xSpaceOpt;
     handle.isPattern = oldMode;
     s.next.token = Tokens.EMPTY;
@@ -571,12 +571,12 @@ class MarkupParser(p: UnitParser, presWS: boolean) /*with scala.xml.parsing.Mark
   }
 
   def xEmbeddedExpr: Tree = {
-    sync;
+    sync
     val b = p.block() //p.expr(true,false);
     if(/*s.*/token != RBRACE) {
-      reportSyntaxError(" expected end of Scala block");
+      reportSyntaxError(" expected end of Scala block")
     }
-    init;
+    init
     return b
   }
 
@@ -586,9 +586,9 @@ class MarkupParser(p: UnitParser, presWS: boolean) /*with scala.xml.parsing.Mark
     sync;
     val b = p.patterns(true);
     if (/*s.*/token != RBRACE) {
-      reportSyntaxError(" expected end of Scala patterns");
+      reportSyntaxError(" expected end of Scala patterns")
     }
-    init;
+    init
     return b
   }
 

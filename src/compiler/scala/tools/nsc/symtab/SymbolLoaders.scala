@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -13,7 +13,7 @@ import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.util.{ClassPath, NameTransformer, Position, NoPosition}
 import classfile.{ClassfileParser, SymblfileParser}
 import Flags._
-import ch.epfl.lamp.compiler.msil.{Type => MSILType, Attribute => MSILAttribute};
+import ch.epfl.lamp.compiler.msil.{Type => MSILType, Attribute => MSILAttribute}
 
 /** This class ...
  *
@@ -142,8 +142,8 @@ abstract class SymbolLoaders {
 
       val classes  = new HashMap[String, global.classPath0.Context]
       val packages = new HashMap[String, global.classPath0.Context]
-      for (val dir <- directory.entries) if (dir.location ne null) {
-        for (val file <- dir.location) {
+      for (dir <- directory.entries) if (dir.location ne null) {
+        for (file <- dir.location) {
           if (file.isDirectory && directory.validPackage(file.name) && !packages.isDefinedAt(file.name))
             packages(file.name) = directory.find(file.name, true);
           else if (!global.forMSIL && !file.isDirectory && file.name.endsWith(".class")) {
@@ -155,8 +155,8 @@ abstract class SymbolLoaders {
           }
         }
       }
-      for (val dir <- directory.entries) if (dir.source ne null) {
-        for (val file <- dir.source.location) {
+      for (dir <- directory.entries) if (dir.source ne null) {
+        for (file <- dir.source.location) {
           if (file.isDirectory && directory.validPackage(file.name) && !packages.isDefinedAt(file.name))
             packages(file.name) = directory.find(file.name, true)
           else if (dir.source.compile && !file.isDirectory && file.name.endsWith(".scala")) {
@@ -174,7 +174,7 @@ abstract class SymbolLoaders {
       }
 
       // do classes first
-      for (val (name, file) <- classes.elements) {
+      for ((name, file) <- classes.elements) {
         val loader = if (!file.isSourceFile) {
           new ClassfileLoader(file.classFile, file.sourceFile, file.sourcePath)
         } else {
@@ -184,7 +184,7 @@ abstract class SymbolLoaders {
         enterClassAndModule(name, loader)
       }
 
-      for (val (name, file) <- packages.elements)
+      for ((name, file) <- packages.elements)
         enterPackage(name, newPackageLoader(file))
     }
   }
@@ -215,44 +215,44 @@ abstract class SymbolLoaders {
       !types.contains(name)
     }
 
-    override protected def doComplete(root: Symbol): Unit = {
-      clrTypes.collectMembers(root, types, namespaces);
+    override protected def doComplete(root: Symbol) {
+      clrTypes.collectMembers(root, types, namespaces)
 
-      super.doComplete(root);
+      super.doComplete(root)
 
-      for (val namespace <- namespaces.elements) {
-        val oldPkg = root.info.decls.lookup(newTermName(namespace));
+      for (namespace <- namespaces.elements) {
+        val oldPkg = root.info.decls.lookup(newTermName(namespace))
         if (oldPkg == NoSymbol)
-          enterPackage(namespace, new NamespaceLoader(new classPath0.Context(List())));
-        //else System.out.println("PackageLoader: package already in scope: " + oldPkg.fullNameString);
+          enterPackage(namespace, new NamespaceLoader(new classPath0.Context(List())))
+        //else System.out.println("PackageLoader: package already in scope: " + oldPkg.fullNameString)
       }
 
       // import the CLR types contained in the package (namespace)
-      for (val (name, typ) <- types.elements) {
+      for ((name, typ) <- types.elements) {
         assert(namespace == typ.Namespace, typ.FullName);
 
         if (typ.IsDefined(clrTypes.SCALA_SYMTAB_ATTR, false)) {
-          val attrs = typ.GetCustomAttributes(clrTypes.SCALA_SYMTAB_ATTR, false);
-          assert (attrs.length == 1, attrs.length);
-          val a = attrs(0).asInstanceOf[MSILAttribute];
+          val attrs = typ.GetCustomAttributes(clrTypes.SCALA_SYMTAB_ATTR, false)
+          assert (attrs.length == 1, attrs.length)
+          val a = attrs(0).asInstanceOf[MSILAttribute]
           if (a.getConstructor() == clrTypes.SYMTAB_CONSTR)
-            enterClassAndModule(name, new MSILTypeLoader(typ));
+            enterClassAndModule(name, new MSILTypeLoader(typ))
         }
         else
-          enterClassAndModule(name, new MSILTypeLoader(typ));
+          enterClassAndModule(name, new MSILTypeLoader(typ))
       }
     }
   }  // NamespaceLoader
 
   class MSILTypeLoader(typ: MSILType) extends SymbolLoader {
     private object typeParser extends clr.TypeParser {
-      val global: SymbolLoaders.this.global.type = SymbolLoaders.this.global;
+      val global: SymbolLoaders.this.global.type = SymbolLoaders.this.global
     }
-    protected def doComplete(root: Symbol): Unit = {
-      typeParser.parse(typ, root);
+    protected def doComplete(root: Symbol) {
+      typeParser.parse(typ, root)
     }
-    protected def kindString: String = typ.FullName;
-    protected def sourceString = typ.Assembly.FullName;
+    protected def kindString: String = typ.FullName
+    protected def sourceString = typ.Assembly.FullName
   }
 
   class ClassfileLoader(classFile: AbstractFile, override val sourceFile: AbstractFile, sourcePath0: AbstractFile) extends SymbolLoader {
@@ -286,13 +286,13 @@ abstract class SymbolLoaders {
 
   object moduleClassLoader extends SymbolLoader {
     protected def doComplete(root: Symbol): unit = root.sourceModule.initialize
-    protected def kindString: String = "";
-    protected def sourceString = "";
+    protected def kindString: String = ""
+    protected def sourceString = ""
   }
 
   object clrTypes extends clr.CLRTypes {
-    val global: SymbolLoaders.this.global.type = SymbolLoaders.this.global;
-    if (global.forMSIL) init();
+    val global: SymbolLoaders.this.global.type = SymbolLoaders.this.global
+    if (global.forMSIL) init()
   }
 
 }

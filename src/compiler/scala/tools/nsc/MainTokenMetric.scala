@@ -7,7 +7,7 @@
 package scala.tools.nsc
 
 import compat.Math.log
-import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
+import scala.tools.nsc.reporters.ConsoleReporter
 
 /** The main class for NSC, a compiler for the programming
  *  language Scala.
@@ -21,10 +21,10 @@ object MainTokenMetric {
     import compiler.syntaxAnalyzer.UnitScanner
     import ast.parser.Tokens.EOF
     var totale = 0
-    for (val source <- fnames) {
+    for (source <- fnames) {
       val s = new UnitScanner(new CompilationUnit(compiler.getSourceFile(source)))
       var i = 0
-      while(s.token != EOF) {
+      while (s.token != EOF) {
         i += 1
         s.nextToken
       }
@@ -35,7 +35,7 @@ object MainTokenMetric {
       Console.print(i.toString())
       Console.print(" ")
       Console.println(source.toString())
-      totale = totale + i
+      totale += i
     }
     Console.println(totale.toString()+" total")
   }
@@ -55,7 +55,7 @@ object MainTokenMetric {
     }
   }
 
-  def main(args: Array[String]): unit = {
+  def main(args: Array[String]) {
     process(args)
     exit(if (reporter.hasErrors) 1 else 0)
   }

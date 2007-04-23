@@ -120,14 +120,14 @@ trait Trees {
           val that0 = that.asInstanceOf[List[Any]]
           if (thiz.length != that0.length) false
           else {
-            val results0 = for (val i <- 0.until(thiz.length).toList)
+            val results0 = for (i <- 0.until(thiz.length).toList)
               yield equals0(thiz(i), that0(i))
             results0.foldLeft(true)((x,y) => x && y)
           }
         case thiz =>
           thiz == that
       }
-      val results = for (val i <- 0.until(this0.productArity).toList) yield
+      val results = for (i <- 0.until(this0.productArity).toList) yield
         equals0(this0.productElement(i), that0.productElement(i))
       val b = results.foldLeft(true)((x,y) => x && y)
       b && (if (tpe == null || tpe == NoType) that.tpe == null || that.tpe == NoType
@@ -1495,7 +1495,7 @@ trait Trees {
       case Template(parents, body) =>
         tree.symbol = NoSymbol
         tree.tpe = null
-        for (val stat <- body)
+        for (stat <- body)
           if (stat.isDef) erasedSyms.addEntry(stat.symbol)
         super.traverse(tree)
       case _: DefTree =>

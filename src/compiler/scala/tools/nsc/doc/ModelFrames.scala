@@ -17,29 +17,27 @@ import scala.xml._
   *  @author  Sean McDirmid, Stephane Micheloud
   */
 trait ModelFrames extends ModelExtractor {
-  import DocUtil._;
-  def outdir: String;
-  def windowTitle: String;
-  def documentTitle: String;
-  def contentFrame = "contentFrame";
-  def classesFrame = "classesFrame";
-  def modulesFrame = "modulesFrame";
-  protected val FILE_EXTENSION_HTML = ".html";
-  protected val NAME_SUFFIX_OBJECT  = "$object";
-  protected val NAME_SUFFIX_PACKAGE = "$package";
+  import DocUtil._
+  def outdir: String
+  def windowTitle: String
+  def documentTitle: String
+  def contentFrame = "contentFrame"
+  def classesFrame = "classesFrame"
+  def modulesFrame = "modulesFrame"
+  protected val FILE_EXTENSION_HTML = ".html"
+  protected val NAME_SUFFIX_OBJECT  = "$object"
+  protected val NAME_SUFFIX_PACKAGE = "$package"
 
 
   def rootTitle = <div class="page-title"> Scala 2<br/>API Specification</div>;
   def rootDesc = <p>This document is the API specification for Scala 2.</p>;
 
-  final def hasLink(sym: global.Symbol) : Boolean = {
-    if (sym == global.NoSymbol) false;
-    else if (hasLink0(sym)) true;
-    else {
-      hasLink(decode(sym.owner));
-    }
-  }
-  def hasLink0(sym: global.Symbol): Boolean = true;
+  final def hasLink(sym: global.Symbol): Boolean =
+    if (sym == global.NoSymbol) false
+    else if (hasLink0(sym)) true
+    else hasLink(decode(sym.owner))
+
+  def hasLink0(sym: global.Symbol): Boolean = true
 
   abstract class Frame extends UrlContext {
     { // just save.
@@ -310,7 +308,7 @@ trait ModelFrames extends ModelExtractor {
     import java.io._
     // The name of a resource is a '/'-separated path name that identifies the resource.
     val rsrcdir = "scala/tools/nsc/doc/"
-    for (val base <- List("style.css", "script.js")) {
+    for (base <- List("style.css", "script.js")) {
       try {
         val in = loader.getResourceAsStream(rsrcdir + base)
         val out = new FileOutputStream(new File(outdir + File.separator + base))

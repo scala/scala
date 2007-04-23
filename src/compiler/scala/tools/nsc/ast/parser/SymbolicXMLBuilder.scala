@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author Burak Emir
  */
 // $Id$
@@ -89,7 +89,7 @@ abstract class SymbolicXMLBuilder(make: TreeBuilder, p: Parsers # Parser, preser
   private def bufferToArray(buf: mutable.Buffer[Tree]): Array[Tree] = {
     val arr = new Array[Tree](buf.length)
     var i = 0
-    for (val x <- buf.elements) { arr(i) = x; i = i + 1; }
+    for (x <- buf.elements) { arr(i) = x; i = i + 1; }
     arr
   }
   */
@@ -110,7 +110,7 @@ abstract class SymbolicXMLBuilder(make: TreeBuilder, p: Parsers # Parser, preser
           pre, label, Ident( nme.WILDCARD ) /* md */ , Ident( nme.WILDCARD )) /* scope */ ::: children.toList )
       }
     } else {
-      var ab = List(pre, label, attrs, scope);
+      var ab = List(pre, label, attrs, scope)
       if (children.length > 0)
         ab = ab ::: List(Typed(makeXMLseq(pos, children), Ident(nme.WILDCARD_STAR.toTypeName)));
       atPos(pos) { New( _scala_xml_Elem, List(ab) )}
@@ -183,7 +183,7 @@ abstract class SymbolicXMLBuilder(make: TreeBuilder, p: Parsers # Parser, preser
     val ns = xml.Utility.parseAttributeValue(s)
     val ts:collection.mutable.ListBuffer[Tree] = new collection.mutable.ListBuffer
     val it = ns.elements
-    while(it.hasNext) it.next match {
+    while (it.hasNext) it.next match {
       case Text(s)      => ts += text(pos, s) // makeText1(Literal(Constant(s)))
       case EntityRef(s) => ts += entityRef(pos, s)
     }
@@ -201,7 +201,7 @@ abstract class SymbolicXMLBuilder(make: TreeBuilder, p: Parsers # Parser, preser
         buf.remove(i)
         buf.insert(i, t2)
       }
-      i = i + 1
+      i += 1
     }
   }
 
@@ -261,7 +261,7 @@ abstract class SymbolicXMLBuilder(make: TreeBuilder, p: Parsers # Parser, preser
     val attrIt = attrMap.keys
     while (attrIt.hasNext) {
       val z = attrIt.next
-      if (z.startsWith("xmlns")) {  // handle namespace
+      if (z startsWith "xmlns") {  // handle namespace
         val i = z.indexOf(':')
         if( i == -1 )
           handleNamespaceBinding(null, attrMap(z))
@@ -311,7 +311,7 @@ abstract class SymbolicXMLBuilder(make: TreeBuilder, p: Parsers # Parser, preser
         Assign(Ident(_md), New(_scala_xml_UnprefixedAttribute,
                                LL(Literal(Constant(key)),value,Ident(_md))
                              ))};
-      tlist2 = t :: tlist2;
+      tlist2 = t :: tlist2
     }
 
     var it = attrMap.elements

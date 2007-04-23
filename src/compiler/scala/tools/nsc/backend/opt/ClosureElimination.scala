@@ -1,5 +1,5 @@
- /* NSC -- new scala compiler
- * Copyright 2005 LAMP/EPFL
+ /* NSC -- new Scala compiler
+ * Copyright 2005-2007 LAMP/EPFL
  * @author  Iulian Dragos
  */
 
@@ -12,23 +12,24 @@ import scala.tools.nsc.backend.icode.analysis.LubError;
 import scala.tools.nsc.symtab._;
 
 /**
+ *  @author Iulian Dragos
  */
 abstract class ClosureElimination extends SubComponent {
-  import global._;
-  import icodes._;
-  import icodes.opcodes._;
+  import global._
+  import icodes._
+  import icodes.opcodes._
 
-  val phaseName = "closelim";
+  val phaseName = "closelim"
 
   /** Create a new phase */
-  override def newPhase(p: Phase) = new ClosureEliminationPhase(p);
+  override def newPhase(p: Phase) = new ClosureEliminationPhase(p)
 
   /** The Inlining phase.
    */
   class ClosureEliminationPhase(prev: Phase) extends ICodePhase(prev) {
 
     def name = phaseName
-    val closser = new ClosureElim;
+    val closser = new ClosureElim
 
     override def apply(c: IClass): Unit =
       closser.analyzeClass(c)
@@ -43,11 +44,11 @@ abstract class ClosureElimination extends SubComponent {
   class ClosureElim {
 
     /* fresh name counter */
-    var count = 0;
+    var count = 0
 
     def freshName(s: String) = {
-      val ret = s + this.count;
-      this.count = this.count + 1;
+      val ret = s + this.count
+      this.count += 1
       ret
     }
 
@@ -72,46 +73,46 @@ abstract class ClosureElimination extends SubComponent {
           else
             Some(DROP(REFERENCE(definitions.ObjectClass)) :: Nil);
 
-        case _ => None;
+        case _ => None
       });
 
     def analyzeClass(cls: IClass): Unit = if (settings.Xcloselim.value) {
       cls.methods.foreach { m =>
-        analyzeMethod(m);
+        analyzeMethod(m)
         peephole.transformMethod(m);
      }}
 
 
-    val cpp = new copyPropagation.CopyAnalysis;
+    val cpp = new copyPropagation.CopyAnalysis
 
 
-    import copyPropagation._;
+    import copyPropagation._
 
     /* Some embryonic copy propagation. */
     def analyzeMethod(m: IMethod): Unit = try {if (m.code ne null) {
-      log("Analyzing " + m);
-      cpp.init(m);
-      cpp.run;
+      log("Analyzing " + m)
+      cpp.init(m)
+      cpp.run
 
-      for (val bb <- linearizer.linearize(m)) {
-        var info = cpp.in(bb);
+      for (bb <- linearizer.linearize(m)) {
+        var info = cpp.in(bb)
 
-        for (val i <- bb.toList) {
+        for (i <- bb.toList) {
           i match {
             case LOAD_LOCAL(l) if (info.bindings.isDefinedAt(LocalVar(l))) =>
-              val t = info.getBinding(l);
+              val t = info.getBinding(l)
               t match {
                 case Deref(LocalVar(v)) =>
                   bb.replaceInstruction(i, valueToInstruction(t));
-                  log("replaced " + i + " with " + t);
+                  log("replaced " + i + " with " + t)
 
                 case This() =>
                   bb.replaceInstruction(i, valueToInstruction(t));
-                  log("replaced " + i + " with " + t);
+                  log("replaced " + i + " with " + t)
 
                 case _ =>
                   bb.replaceInstruction(i, LOAD_LOCAL(info.getAlias(l)));
-                  log("replaced " + i + " with " + info.getAlias(l));
+                  log("replaced " + i + " with " + info.getAlias(l))
 
               }
 
@@ -144,13 +145,13 @@ abstract class ClosureElimination extends SubComponent {
 
             case _ => ();
           }
-          info = cpp.interpret(info, i);
+          info = cpp.interpret(info, i)
         }
       }
     }} catch {
       case e: LubError =>
-        Console.println("In method: " + m);
-        Console.println(e);
+        Console.println("In method: " + m)
+        Console.println(e)
         e.printStackTrace
     }
 
@@ -176,20 +177,20 @@ abstract class ClosureElimination extends SubComponent {
   /** Peephole optimization. */
   class PeepholeOpt(peep: (Instruction, Instruction) => Option[List[Instruction]]) {
 
-    private var method: IMethod = null;
+    private var method: IMethod = null
 
     def transformMethod(m: IMethod): Unit = if (m.code ne null) {
-      method = m;
-      for (val b <- m.code.blocks)
-        transformBlock(b);
+      method = m
+      for (b <- m.code.blocks)
+        transformBlock(b)
     }
 
     def transformBlock(b: BasicBlock): Unit = if (b.size >= 2) {
       var newInstructions: List[Instruction] = Nil;
 
-      newInstructions = b.toList;
+      newInstructions = b.toList
 
-      var redo = false;
+      var redo = false
       do {
         var h = newInstructions.head;
         var t = newInstructions.tail;
@@ -206,10 +207,10 @@ abstract class ClosureElimination extends SubComponent {
           }
           seen = h :: seen;
           h = t.head;
-          t = t.tail;
+          t = t.tail
         }
       } while (redo);
-      b.fromList(newInstructions);
+      b.fromList(newInstructions)
     }
   }
 

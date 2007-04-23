@@ -16,8 +16,8 @@ import compat.Platform.{EOL => LINE_SEPARATOR}
  * @author Sean McDirmid
  */
 trait ModelExtractor {
-  val global : Global;
-  import global._;
+  val global : Global
+  import global._
   def assert(b : Boolean) {
     if (!b)
       throw new Error;
@@ -31,7 +31,7 @@ trait ModelExtractor {
       attributes.foreach(a => {
         map(a.tag) = map(a.tag) ::: ((a.option,a.body) :: Nil);
       });
-      map;
+      map
     }
   }
   protected def decode(sym : Symbol) = {
@@ -237,12 +237,12 @@ trait ModelExtractor {
     object inherited extends jcl.LinkedHashMap[Symbol,List[Member]]() {
       override def default(tpe : Symbol) = Nil;
       {
-        for (val m <- sym.tpe.members; !sym.tpe.decls.elements.contains(m) &&
+        for (m <- sym.tpe.members if !sym.tpe.decls.elements.contains(m) &&
           (Values.f(m) || Methods.f(m))) {
-          val o = m.overridingSymbol(sym);
+          val o = m.overridingSymbol(sym)
           if ((o == NoSymbol)) {
-            val parent = decode(m.enclClass);
-            val mo = Member(m);
+            val parent = decode(m.enclClass)
+            val mo = Member(m)
             if (!mo.isEmpty) {
               this(parent) = mo.get :: this(parent);
             }
@@ -265,7 +265,7 @@ trait ModelExtractor {
       protected def resultType0 : Type;
       override def overridden : Iterable[Symbol] = {
         var ret : jcl.LinkedHashSet[Symbol] = null;
-        for (val parent <- ClassOrObject.this.parents) {
+        for (parent <- ClassOrObject.this.parents) {
           val sym0 = sym.overriddenSymbol(parent.symbol);
           if (sym0 != NoSymbol) {
             if (ret == null) ret = new jcl.LinkedHashSet[Symbol];
@@ -282,17 +282,17 @@ trait ModelExtractor {
         case Some(argss) if argss.length > 1 || (!argss.isEmpty && !argss(0).isEmpty) =>
           argss.map(.map(Param));
         case _ =>
-          var i = 0;
-          val ret = for (val tpe <- sym.tpe.paramTypes) yield {
+          var i = 0
+          val ret = for (tpe <- sym.tpe.paramTypes) yield {
             val ret = sym.newValueParameter(sym.pos, newTermName("arg" + i));
             ret.setInfo(tpe);
-            i = i + 1;
-            Param(ret);
+            i += 1
+            Param(ret)
           }
-          if (ret.isEmpty) Nil;
-          else ret :: Nil;
+          if (ret.isEmpty) Nil
+          else ret :: Nil
       }
-      override def kind = "def";
+      override def kind = "def"
     }
     case class Val(override val sym : TermSymbol) extends ValDef(sym) {
       def resultType0 : Type = sym.tpe;
@@ -320,19 +320,19 @@ trait ModelExtractor {
     case class NestedObject(override val sym : ModuleSymbol) extends NestedClassOrObject(sym) with Object;
     def isVisible(sym : Symbol) : Boolean = {
       import symtab.Flags._;
-      if (sym.isLocalClass) return false;
-      if (sym.isLocal) return false;
-      if (sym.isPrivateLocal) return false;
-      if (sym.hasFlag(PRIVATE)) return false;
-      if (sym.hasFlag(SYNTHETIC)) return false;
-      if (sym.hasFlag(BRIDGE)) return false;
-      if (sym.nameString.indexOf("$") != -1) return false;
-      if (sym.hasFlag(CASE) && sym.isMethod) return false;
-      return true;
+      if (sym.isLocalClass) return false
+      if (sym.isLocal) return false
+      if (sym.isPrivateLocal) return false
+      if (sym.hasFlag(PRIVATE)) return false
+      if (sym.hasFlag(SYNTHETIC)) return false
+      if (sym.hasFlag(BRIDGE)) return false
+      if (sym.nameString.indexOf("$") != -1) return false
+      if (sym.hasFlag(CASE) && sym.isMethod) return false
+      return true
     }
-    def Member(sym : Symbol) : Option[Member] = {
-      import global._;
-      import symtab.Flags;
+    def Member(sym: Symbol): Option[Member] = {
+      import global._
+      import symtab.Flags
       if (!isVisible(sym)) return None;
       if (sym.hasFlag(Flags.ACCESSOR)) {
         if (sym.isSetter) return None;
@@ -343,8 +343,8 @@ trait ModelExtractor {
           Console.println("SYM: " + sym + " " + sym.fullNameString('.'));
           Console.println("FLA: " + Flags.flagsToString(sym.flags));
         }
-        assert(sym.hasFlag(Flags.JAVA));
-        return Some[Member](new Val(sym.asInstanceOf[TermSymbol]));
+        assert(sym.hasFlag(Flags.JAVA))
+        return Some[Member](new Val(sym.asInstanceOf[TermSymbol]))
       }
       if (sym.isValue && !sym.isModule) {
         val str = Flags.flagsToString(sym.flags);
@@ -359,8 +359,8 @@ trait ModelExtractor {
 
   }
   case class Category(label : String)(g : Symbol => Boolean) {
-    val f = g;
-    def plural = label + "s";
+    val f = g
+    def plural = label + "s"
   }
   val Constructors = new Category("Additional Constructor")(e => e.isConstructor && !e.isPrimaryConstructor) {
     // override def plural = "Additional Constructors";
@@ -410,6 +410,6 @@ trait ModelExtractor {
       }
     }});
     set addAll entities;
-    set;
+    set
   }
 }

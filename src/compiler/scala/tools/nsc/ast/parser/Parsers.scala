@@ -49,14 +49,19 @@ import Tokens._
  *    </li>
  *  </ol>
  */
-trait Parsers requires SyntaxAnalyzer {
+trait Parsers {
+  self: SyntaxAnalyzer =>
 
   import global._
   //import RequiresIntsAsPositions._
   private val glob: global.type = global
   import global.posAssigner.atPos
 
-  class UnitParser(unit : global.CompilationUnit) extends Parser {
+  /** ...
+   *
+   *  @author Sean McDirmid
+   */
+  class UnitParser(unit: global.CompilationUnit) extends Parser {
     val in = new UnitScanner(unit)
     in.init
     import in.ScanPosition
@@ -69,25 +74,24 @@ trait Parsers requires SyntaxAnalyzer {
   }
 
   abstract class Parser {
-    protected val in : AbstractScanner
+    protected val in: AbstractScanner
     import in.ScanPosition
-    protected def freshName(prefix : String) : Name
-    protected def posToReport : ScanPosition
+    protected def freshName(prefix: String): Name
+    protected def posToReport: ScanPosition
     import in.{p2g, g2p}
 
     /** the markup parser */
     def xmlp = {
       if (xmlp0 == null)
         xmlp0 = this match {
-        case in : UnitParser => new MarkupParser(in, true)
-        case _ =>
-          Console.println("Cannot create XML PARSER " + in)
-          null
-        }
-      xmlp0;
+          case in: UnitParser => new MarkupParser(in, true)
+          case _ =>
+            Console.println("Cannot create XML PARSER " + in)
+            null
+          }
+      xmlp0
     }
-    private var xmlp0 : MarkupParser = null;
-
+    private var xmlp0: MarkupParser = null
 
     object treeBuilder extends TreeBuilder {
       val global: Parsers.this.global.type = Parsers.this.global
@@ -118,7 +122,7 @@ trait Parsers requires SyntaxAnalyzer {
 
 /////// ERROR HANDLING //////////////////////////////////////////////////////
 
-    private def skip(): Unit = {
+    private def skip() {
       //System.out.println("<skipping> " + in.configuration.token2string(in.token))//DEBUG
       var nparens = 0
       var nbraces = 0
@@ -150,7 +154,7 @@ trait Parsers requires SyntaxAnalyzer {
     def syntaxError(msg: String, skipIt: boolean): unit =
       syntaxError(in.currentPos, msg, skipIt)
 
-    def syntaxError(pos: ScanPosition, msg: String, skipIt: boolean): Unit = {
+    def syntaxError(pos: ScanPosition, msg: String, skipIt: boolean) {
       if (pos != in.errpos) {
         in.error(pos, msg)
         in.errpos = pos
@@ -171,7 +175,7 @@ trait Parsers requires SyntaxAnalyzer {
         in.errpos = in.currentPos
       }
 
-    def incompleteInputError(pos: ScanPosition, msg: String): Unit = {
+    def incompleteInputError(pos: ScanPosition, msg: String) {
       if (pos != in.errpos) {
         in.incompleteInputError(pos, msg)
         in.errpos = pos
@@ -181,20 +185,20 @@ trait Parsers requires SyntaxAnalyzer {
     def incompleteInputError(msg: String): Unit =
       incompleteInputError(in.currentPos, msg)  // in.currentPos should be at the EOF
 
-    def syntaxErrorOrIncomplete(msg: String, skipIt: Boolean): Unit = {
-      if(in.token == EOF)
+    def syntaxErrorOrIncomplete(msg: String, skipIt: Boolean) {
+      if (in.token == EOF)
         incompleteInputError(msg)
       else
         syntaxError(in.currentPos, msg, skipIt)
     }
 
-    def mismatch(expected : Int, found : Int) = {
+    def mismatch(expected: Int, found: Int) {
       val posToReport = this.posToReport
       val msg =
         in.configuration.token2string(expected) + " expected but " +
         in.configuration.token2string(found) + " found."
 
-      if(found == EOF)
+      if (found == EOF)
         incompleteInputError(posToReport, msg)
       else
         syntaxError(posToReport, msg, true)
@@ -289,9 +293,8 @@ trait Parsers requires SyntaxAnalyzer {
     */
     def joinComment(trees: => List[Tree]): List[Tree] = {
       val buf = in.flushDoc
-      if (buf ne null) {
-        trees map (t => DocDef(buf, t) setPos t.pos)
-      } else trees
+      if (buf ne null) trees map (t => DocDef(buf, t) setPos t.pos)
+      else trees
     }
 
 /////// TREE CONSTRUCTION ////////////////////////////////////////////////////
@@ -574,12 +577,12 @@ trait Parsers requires SyntaxAnalyzer {
         in.nextToken
       }
 
-    def newLineOptWhenFollowedBy(token: int): unit = {
+    def newLineOptWhenFollowedBy(token: int) {
       // note: next is defined here because current == NEWLINE
       if (in.token == NEWLINE && in.next.token == token) newLineOpt()
     }
 
-    def newLineOptWhenFollowing(p: int => boolean): unit = {
+    def newLineOptWhenFollowing(p: int => boolean) {
       // note: next is defined here because current == NEWLINE
       if (in.token == NEWLINE && p(in.next.token)) newLineOpt()
     }

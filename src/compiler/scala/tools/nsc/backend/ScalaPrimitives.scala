@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -206,7 +206,7 @@ abstract class ScalaPrimitives {
   private var primitives: Map[Symbol, Int] = _
 
   /** Initialize the primitive map */
-  def init: Unit = {
+  def init {
     primitives = new HashMap()
 
     // scala.Any
@@ -468,24 +468,24 @@ abstract class ScalaPrimitives {
   }
 
   /** Add a primitive operation to the map */
-  def addPrimitive(s: Symbol, code: Int): Unit = {
+  def addPrimitive(s: Symbol, code: Int) {
     assert(!(primitives contains s), "Duplicate primitive " + s)
     primitives(s) = code
   }
 
-  def addPrimitives(cls: Symbol, method: Name, code: Int): Unit = {
+  def addPrimitives(cls: Symbol, method: Name, code: Int) {
     val tpe = cls.info
     val sym = tpe.member(method)
     if (sym == NoSymbol)
       inform("Unknown primitive method " + cls + "." + method)
-    for (val s <- sym.alternatives)
+    for (s <- sym.alternatives)
       addPrimitive(
         s,
         if (code == ADD && s.info.paramTypes.head == definitions.StringClass.tpe) CONCAT
         else code)
   }
 
-  def isCoercion(code: Int): Boolean = (code >= B2B) && (code <= D2D);
+  def isCoercion(code: Int): Boolean = (code >= B2B) && (code <= D2D)
 
   /** Check whether the given operation code is an array operation. */
   def isArrayOp(code: Int): Boolean =

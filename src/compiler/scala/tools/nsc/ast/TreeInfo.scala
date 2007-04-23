@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -7,7 +7,7 @@
 package scala.tools.nsc.ast
 
 import symtab.Flags._
-import util.{Set, HashSet}
+import util.HashSet
 
 /** This class ...
  *
@@ -151,7 +151,7 @@ abstract class TreeInfo {
 
   /** The value definitions marked PRESUPER in this statement sequence */
   def preSuperFields(stats: List[Tree]): List[ValDef] =
-    for (val vdef @ ValDef(mods, _, _, _) <- stats; mods hasFlag PRESUPER) yield vdef
+    for (vdef @ ValDef(mods, _, _, _) <- stats if mods hasFlag PRESUPER) yield vdef
 
   def isPreSuper(tree: Tree) = tree match {
     case ValDef(mods, _, _, _) => mods hasFlag PRESUPER
@@ -161,7 +161,7 @@ abstract class TreeInfo {
 
   /** Is name a left-associative operator? */
   def isLeftAssoc(operator: Name): boolean =
-    operator.length > 0 && operator(operator.length - 1) != ':';
+    operator.length > 0 && operator(operator.length - 1) != ':'
 
   private val reserved = new HashSet[Name]
   reserved addEntry nme.false_

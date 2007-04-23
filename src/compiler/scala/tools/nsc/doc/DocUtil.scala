@@ -81,14 +81,14 @@ object DocUtil {
 
   def merge[T](ts0: TreeSet[T], ts1: TreeSet[T]): TreeSet[T] = {
     var ts = ts0
-    for (val t <- ts1.toList) ts = ts + t
+    for (t <- ts1.toList) ts += t
     ts
   }
 
   def merge[T,S <: Ordered[S]](ts0: ListMap[T,TreeSet[S]],
                                ts1: ListMap[T,TreeSet[S]]): ListMap[T,TreeSet[S]] = {
     var ts = ts0
-    for (val t <- ts1.elements) {
+    for (t <- ts1.elements) {
       if (!ts.contains(t._1))
         ts = ts.update(t._1, new TreeSet[S]);
       ts = ts.update(t._1, merge(ts(t._1), t._2))

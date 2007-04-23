@@ -1,14 +1,13 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
 
 package scala.tools.nsc.ast
 
-import scala.tools.nsc.util.Position
-import symtab.Flags._
 import scala.collection.mutable.ListBuffer
+import symtab.Flags._
 
 abstract class TreeGen {
 
@@ -38,7 +37,7 @@ abstract class TreeGen {
       if (sym.isRoot) {
         mkAttributedThis(sym)
       } else if (sym.isModuleClass) {
-        val qual = mkAttributedRef(pre, sym.sourceModule);
+        val qual = mkAttributedRef(pre, sym.sourceModule)
         qual.tpe match {
           case MethodType(List(), restpe) =>
             Apply(qual, List()) setType restpe
@@ -193,8 +192,8 @@ abstract class TreeGen {
       .setInfo(accessor.tpe.finalResultType)
       .setFlag(MODULEVAR);
     if (mvar.owner.isClass) {
-      mvar setFlag (PRIVATE | LOCAL | SYNTHETIC);
-      mvar.owner.info.decls.enter(mvar);
+      mvar setFlag (PRIVATE | LOCAL | SYNTHETIC)
+      mvar.owner.info.decls.enter(mvar)
     }
     ValDef(mvar, if (mvar.owner.isClass) EmptyTree else Literal(Constant(null)))
   }
@@ -204,7 +203,7 @@ abstract class TreeGen {
     DefDef(accessor, vparamss =>
       mkCached(mvar,
         New(TypeTree(mvar.tpe),
-            List(for (val pt <- mvar.tpe.symbol.primaryConstructor.info.paramTypes)
+            List(for (pt <- mvar.tpe.symbol.primaryConstructor.info.paramTypes)
                  yield This(accessor.owner.enclClass)))))
 
   // def m: T;
@@ -228,7 +227,7 @@ abstract class TreeGen {
   def evalOnceAll(exprs: List[Tree], owner: Symbol, unit: CompilationUnit)(within: (List[() => Tree]) => Tree): Tree = {
     val vdefs = new ListBuffer[ValDef]
     val exprs1 = new ListBuffer[() => Tree]
-    for (val expr <- exprs) {
+    for (expr <- exprs) {
       if (treeInfo.isPureExpr(expr)) {
         exprs1 += (() => expr)
       } else {

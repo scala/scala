@@ -8,7 +8,6 @@ package scala.tools.nsc
 
 import java.io.{BufferedReader, File, InputStreamReader, PrintWriter}
 
-import scala.compat.StringBuilder
 import scala.tools.util.StringOps
 
 /** The main class for NSC, a compiler for the programming

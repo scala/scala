@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author
  */
 // $Id$
@@ -8,7 +8,7 @@ package scala.tools.nsc.transform
 
 import symtab.Flags._
 import scala.collection.mutable.{HashMap, HashSet}
-import scala.tools.nsc.util.{Position}
+import scala.tools.nsc.util.Position
 
 /*<export>*/
 /** - uncurry all symbol and tree types (@see UnCurryPhase)
@@ -250,7 +250,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
         val applyMethod = anonClass.newMethod(fun.pos, nme.apply)
           .setFlag(FINAL).setInfo(MethodType(formals, restpe));
         anonClass.info.decls enter applyMethod;
-        for (val vparam <- fun.vparams) vparam.symbol.owner = applyMethod;
+        for (vparam <- fun.vparams) vparam.symbol.owner = applyMethod;
         new ChangeOwnerTraverser(fun.symbol, applyMethod).traverse(fun.body);
         var members = List(
           DefDef(Modifiers(FINAL), nme.apply, List(), List(fun.vparams), TypeTree(restpe), fun.body)

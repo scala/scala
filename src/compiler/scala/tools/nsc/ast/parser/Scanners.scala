@@ -1,38 +1,41 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
 
 package scala.tools.nsc.ast.parser
 
-import compat.StringBuilder
-import Tokens._
-import scala.tools.nsc.util.{Position, OffsetPosition, SourceFile}
+import scala.tools.nsc.util.{CharArrayReader, Position, OffsetPosition,
+                             SourceFile}
 import SourceFile.{LF, FF, CR, SU}
-import scala.tools.nsc.util.CharArrayReader
+import Tokens._
 
-trait Scanners requires SyntaxAnalyzer {
+trait Scanners {
+  self: SyntaxAnalyzer =>
   import global._
+
+  /** ...
+   */
   abstract class AbstractTokenData {
-    def token : Int
+    def token: Int
     type ScanPosition
-    val NoPos : ScanPosition
-    def pos   : ScanPosition
-    def currentPos : ScanPosition
-    def name : Name
+    val NoPos: ScanPosition
+    def pos: ScanPosition
+    def currentPos: ScanPosition
+    def name: Name
   }
+
   /** A class for representing a token's data. */
   trait TokenData extends AbstractTokenData {
     type ScanPosition = Int
 
-
-    val NoPos = -1
+    val NoPos: Int = -1
     /** the next token */
     var token: Int = EMPTY
     /** the token's position */
-    var pos: Int = (0)
-    override def currentPos : Int = pos - 1
+    var pos: Int = 0
+    override def currentPos: Int = pos - 1
 
     /** the first character position after the previous token */
     var lastPos: Int = 0
@@ -51,39 +54,40 @@ trait Scanners requires SyntaxAnalyzer {
       this.base = td.base
     }
   }
+
+  /** ...
+   */
   abstract class AbstractScanner extends AbstractTokenData {
-    implicit def p2g(pos : Position    ) : ScanPosition
-    implicit def g2p(pos : ScanPosition) : Position
-    def configuration : ScannerConfiguration
-    def warning(pos : ScanPosition, msg : String) : Unit
-    def error  (pos : ScanPosition, msg : String) : Unit
-    def incompleteInputError(pos : ScanPosition, msg : String) : Unit
-    def deprecationWarning(pos : ScanPosition, msg : String) : Unit
+    implicit def p2g(pos: Position): ScanPosition
+    implicit def g2p(pos: ScanPosition): Position
+    def configuration: ScannerConfiguration
+    def warning(pos: ScanPosition, msg: String): Unit
+    def error  (pos: ScanPosition, msg: String): Unit
+    def incompleteInputError(pos: ScanPosition, msg: String): Unit
+    def deprecationWarning(pos: ScanPosition, msg: String): Unit
     /** the last error position
      */
-    var errpos : ScanPosition
-    var lastPos : ScanPosition
+    var errpos: ScanPosition
+    var lastPos: ScanPosition
     def skipToken: ScanPosition
     def nextToken: Unit
-    def next : AbstractTokenData
+    def next: AbstractTokenData
     def intVal(negated: Boolean): Long
     def floatVal(negated: Boolean): Double
-    def intVal : Long = intVal(false)
-    def floatVal : Double = floatVal(false)
+    def intVal: Long = intVal(false)
+    def floatVal: Double = floatVal(false)
     //def token2string(token : Int) : String = configuration.token2string(token)
     /* disabled in presentation compiler */
-    var newNewLine : Boolean
+    var newNewLine: Boolean
     /* disabled in presentation compiler */
-    var skipping : Boolean
+    var skipping: Boolean
     /** return recent scala doc, if any */
-    def flushDoc : String
-
+    def flushDoc: String
   }
-
 
   trait ScannerConfiguration {
 //  Keywords -----------------------------------------------------------------
-  /** Keyword array; maps from name indices to tokens */
+    /** Keyword array; maps from name indices to tokens */
     private var key: Array[byte] = _
     private var maxKey = 0
     private var tokenName = new Array[Name](128)
@@ -93,7 +97,7 @@ trait Scanners requires SyntaxAnalyzer {
 
       // Enter keywords
 
-      def enterKeyword(n: Name, tokenId: int): unit = {
+      def enterKeyword(n: Name, tokenId: int) {
         while (tokenId >= tokenName.length) {
           val newTokName = new Array[Name](tokenName.length * 2)
           Array.copy(tokenName, 0, newTokName, 0, newTokName.length)
@@ -155,10 +159,10 @@ trait Scanners requires SyntaxAnalyzer {
       enterKeyword(nme.ATkw, AT)
 
       // Build keyword array
-      key = new Array[byte](maxKey+1)
-      for (val i <- 0 to maxKey)
+      key = new Array[byte](maxKey + 1)
+      for (i <- 0 to maxKey)
         key(i) = IDENTIFIER
-      for (val j <- 0 until tokenCount)
+      for (j <- 0 until tokenCount)
         if (tokenName(j) ne null)
           key(tokenName(j).start) = j.asInstanceOf[byte]
 
@@ -236,13 +240,12 @@ trait Scanners requires SyntaxAnalyzer {
    *  @version    1.1
    */
   abstract class Scanner extends AbstractScanner with TokenData {
-    import Tokens._
-    import java.lang.{Integer, Long, Float, Double, Character}
+    import java.lang.{Integer, Long, Float, Double, Character} // MAX_VALUE, valueOf
     override def intVal = super.intVal
     override def floatVal = super.floatVal
-    override var errpos : Int = -1
+    override var errpos: Int = NoPos
 
-    val in : CharArrayReader
+    val in: CharArrayReader
 
     /** character buffer for literals
      */
@@ -253,7 +256,7 @@ trait Scanners requires SyntaxAnalyzer {
     protected def putChar(c: char): unit = cbuf.append(c)
 
     /** Clear buffer and set name */
-    private def setName: unit = {
+    private def setName {
       name = newTermName(cbuf.toString())
       cbuf.setLength(0)
     }
@@ -263,7 +266,7 @@ trait Scanners requires SyntaxAnalyzer {
     var docBuffer: StringBuilder = null
 
     def flushDoc = {
-      val ret = if (docBuffer != null) docBuffer.toString else null;
+      val ret = if (docBuffer != null) docBuffer.toString else null
       docBuffer = null
       ret
     }
@@ -278,8 +281,8 @@ trait Scanners requires SyntaxAnalyzer {
     protected def putDocChar(c: char): unit =
       if (docBuffer ne null) docBuffer.append(c)
 
-    private class TokenData0 extends TokenData {
-    }
+    private class TokenData0 extends TokenData
+
     /** we need one token lookahead
      */
     val next : TokenData = new TokenData0
@@ -310,7 +313,7 @@ trait Scanners requires SyntaxAnalyzer {
       (p - 1)
     }
 
-    def nextToken: Unit = {
+    def nextToken {
       if (token == LPAREN) {
         sepRegions = RPAREN :: sepRegions
       } else if (token == LBRACKET) {
@@ -587,7 +590,7 @@ trait Scanners requires SyntaxAnalyzer {
                 in.next; token = COMMA
                 return
               case '(' =>   //scala-mode: need to understand character quotes
-                in.next; token = LPAREN;
+                in.next; token = LPAREN
                 return
               case '{' =>
                 in.next; token = LBRACE
@@ -663,7 +666,7 @@ trait Scanners requires SyntaxAnalyzer {
           } while (in.ch != '/' && in.ch != SU)
           if (in.ch == '/') in.next
           else incompleteInputError("unclosed comment")
-          openComments = openComments - 1
+          openComments -= 1
         }
         true
       } else {
@@ -739,7 +742,7 @@ trait Scanners requires SyntaxAnalyzer {
             token = configuration.name2token(name)
             return
           case _ =>
-            if (java.lang.Character.isUnicodeIdentifierPart(in.ch)) {
+            if (Character.isUnicodeIdentifierPart(in.ch)) {
               putChar(in.ch)
               in.next
             } else {
@@ -953,7 +956,7 @@ trait Scanners requires SyntaxAnalyzer {
                 return 0
               }
           value = value * base + d
-          i = i + 1
+          i += 1
         }
         if (negated) -value else value
       }
@@ -966,7 +969,7 @@ trait Scanners requires SyntaxAnalyzer {
       val limit: double =
         if (token == DOUBLELIT) Double.MAX_VALUE else Float.MAX_VALUE
       try {
-        val value : double = Double.valueOf(name.toString()).doubleValue()
+        val value: double = Double.valueOf(name.toString()).doubleValue()
         if (value > limit)
           syntaxError("floating point number too large")
         if (negated) -value else value
@@ -978,7 +981,7 @@ trait Scanners requires SyntaxAnalyzer {
     }
     /** read a number into name and set base
     */
-    protected def getNumber:unit = {
+    protected def getNumber {
       while (in.digit2int(in.ch, if (base < 10) 10 else base) >= 0) {
         putChar(in.ch)
         in.next
@@ -1076,14 +1079,17 @@ trait Scanners requires SyntaxAnalyzer {
       nextToken
     }
   }
-  class UnitScanner(unit : CompilationUnit) extends Scanner with ScannerConfiguration {
+
+  /** ...
+   */
+  class UnitScanner(unit: CompilationUnit) extends Scanner with ScannerConfiguration {
     override def configuration = this
     val in = new CharArrayReader(unit.source.getContent(), !settings.nouescape.value, syntaxError)
-    def warning(pos : Int, msg : String) = unit.warning(pos, msg)
-    def error  (pos : Int, msg : String) = unit.  error(pos, msg)
-    def incompleteInputError(pos : Int, msg : String) = unit.incompleteInputError(pos, msg)
-    def deprecationWarning(pos : Int, msg : String) = unit.deprecationWarning(pos, msg)
-    implicit def p2g(pos : Position) : Int = pos.offset.get(-1)
-    implicit def g2p(pos : Int     ) : Position = new OffsetPosition(unit.source, pos)
+    def warning(pos: Int, msg: String) = unit.warning(pos, msg)
+    def error  (pos: Int, msg: String) = unit.  error(pos, msg)
+    def incompleteInputError(pos: Int, msg: String) = unit.incompleteInputError(pos, msg)
+    def deprecationWarning(pos: Int, msg: String) = unit.deprecationWarning(pos, msg)
+    implicit def p2g(pos: Position): Int = pos.offset.get(-1)
+    implicit def g2p(pos: Int): Position = new OffsetPosition(unit.source, pos)
   }
 }

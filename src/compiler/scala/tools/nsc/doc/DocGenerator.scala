@@ -26,7 +26,6 @@ abstract class DocGenerator extends Models {
   import global._
   import DocUtil._
   import Kinds._
-  import compat.StringBuilder
 
 
   def outdir: String
@@ -336,7 +335,7 @@ abstract class DocGenerator extends Models {
           if (!args.isEmpty)
             buf.append(args.map(.escapedStringValue).mkString("(", ",", ")"))
           if (!nvPairs.isEmpty)
-            for (val ((name, value), index) <- nvPairs.zipWithIndex) {
+            for (((name, value), index) <- nvPairs.zipWithIndex) {
               if (index > 0)
                 buf.append(", ")
               buf.append(name).append(" = ").append(value)
@@ -419,8 +418,7 @@ abstract class DocGenerator extends Models {
                  <td colspan="2" class="title">{Text(labelFor(kind))} Summary</td>
                </tr>
                { {
-                 for (val mmbr <- map(kind).toList) yield
-                   shortHeader(mmbr)
+                 for (mmbr <- map(kind).toList) yield shortHeader(mmbr)
                } }
              </table>
            else

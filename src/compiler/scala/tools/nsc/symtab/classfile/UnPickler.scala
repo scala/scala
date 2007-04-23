@@ -1,19 +1,20 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
 
 package scala.tools.nsc.symtab.classfile
 
-import scala.tools.nsc.util.{Position,NoPosition}
-import scala.tools.util.UTF8Codec
+import java.io.IOException
 import java.lang.{Float, Double}
+
+import scala.tools.nsc.util.{Position, NoPosition}
+import scala.tools.util.UTF8Codec
 
 import Flags._
 import PickleFormat._
 import collection.mutable.{HashMap, ListBuffer}
-import java.io.IOException
 
 /** This abstract class implements ..
  *
@@ -45,7 +46,7 @@ abstract class UnPickler {
     private val entries = new Array[AnyRef](index.length)
     private val symScopes = new HashMap[Symbol, Scope]
 
-    for (val i <- 0 until index.length) {
+    for (i <- 0 until index.length) {
       if (isSymbolEntry(i)) { at(i, readSymbol); {} }
       else if (isAnnotationEntry(i)) { at(i, readAnnotation); {} }
     }
@@ -156,10 +157,10 @@ abstract class UnPickler {
           sym = NoSymbol
         case _ =>
           val unusedPos : Int = {
-            if (tag > PosOffset) readNat;
+            if (tag > PosOffset) readNat
             else -1
           }
-          val pos : Position = NoPosition;
+          val pos: Position = NoPosition
           val name = readNameRef()
           val owner = readSymbolRef()
           val flags = readNat()
@@ -530,7 +531,7 @@ abstract class UnPickler {
 
     private class LazyTypeRef(i: int) extends LazyType {
       private val definedAtRunId = currentRunId
-      override def complete(sym: Symbol): unit = {
+      override def complete(sym: Symbol) {
         val tp = at(i, readType)
         sym setInfo tp
         if (currentRunId != definedAtRunId) sym.setInfo(adaptToNewRunMap(tp))
@@ -539,7 +540,7 @@ abstract class UnPickler {
     }
 
     private class LazyTypeRefAndAlias(i: int, j: int) extends LazyTypeRef(i) {
-      override def complete(sym: Symbol): unit = {
+      override def complete(sym: Symbol) {
         super.complete(sym)
         var alias = at(j, readSymbol)
         if (alias hasFlag OVERLOADED)

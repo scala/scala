@@ -159,9 +159,9 @@ trait ModelToXML extends ModelExtractor {
         <div>{xs.mkXML("","\n","")(m => longHeader(m))}</div>);
   }
 
-  def shortList(entity : ClassOrObject, category : Category)(implicit from : Frame) : NodeSeq = {
-    val xs = entity.members(category);
-    var seq : NodeSeq = NodeSeq.Empty;
+  def shortList(entity: ClassOrObject, category: Category)(implicit from: Frame) : NodeSeq = {
+    val xs = entity.members(category)
+    var seq : NodeSeq = NodeSeq.Empty
     if (xs.elements.hasNext) {
       // alphabetic
       val set = new scala.collection.jcl.TreeSet[entity.Member]()(mA => new Ordered[entity.Member] {
@@ -171,7 +171,7 @@ trait ModelToXML extends ModelExtractor {
           if (diff != 0) return diff;
           val diff0 = mA.hashCode - mB.hashCode;
           assert(diff0 != 0);
-          return diff0;
+          return diff0
         }
       });
       set addAll xs;
@@ -181,7 +181,7 @@ trait ModelToXML extends ModelExtractor {
       </table>
     }
     // list inherited members...if any.
-    for (val (tpe,members) <- entity.inherited) {
+    for ((tpe,members) <- entity.inherited) {
       val members0 = members.filter(m => category.f(m.sym));
       if (!members0.isEmpty) seq = seq ++ <table cellpadding="3" class="inherited" summary="">
         <tr><td colspan="2" class="title">
@@ -200,8 +200,8 @@ trait ModelToXML extends ModelExtractor {
     seq;
   }
 
-  protected def decodeOption(tag : String, string : String) : NodeSeq = <code>{Text(string + " - ")}</code>;
-  protected def decodeTag(tag : String) : String =
+  protected def decodeOption(tag: String, string: String): NodeSeq = <code>{Text(string + " - ")}</code>;
+  protected def decodeTag(tag: String): String =
     "" + Character.toUpperCase(tag.charAt(0)) + tag.substring(1);
 
   def shortHeader(entity : Entity)(implicit from : Frame) : NodeSeq = {
@@ -227,7 +227,7 @@ trait ModelToXML extends ModelExtractor {
       if (!args.isEmpty)
         buf.append(args.map(.escapedStringValue).mkString("(", ",", ")"))
       if (!nvPairs.isEmpty)
-        for (val ((name, value), index) <- nvPairs.zipWithIndex) {
+        for (((name, value), index) <- nvPairs.zipWithIndex) {
           if (index > 0)
             buf.append(", ")
           buf.append(name).append(" = ").append(value)
@@ -237,7 +237,7 @@ trait ModelToXML extends ModelExtractor {
     if (entity.sym.hasFlag(symtab.Flags.CASE)) NodeSeq.Empty;
     else {
       val sep = Text("@")
-      for (val attr <- entity.attributes)
+      for (attr <- entity.attributes)
         yield Group({(sep ++ attrFor(attr) ++ <br/>)})
     }
   }

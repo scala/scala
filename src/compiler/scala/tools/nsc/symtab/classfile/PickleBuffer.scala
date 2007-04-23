@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -31,16 +31,16 @@ class PickleBuffer(data: Array[byte], from: int, to: int) {
   // -- Basic output routines --------------------------------------------
 
   /** Write a byte of data */
-  def writeByte(b: int): unit = {
+  def writeByte(b: int) {
     if (writeIndex == bytes.length) dble
     bytes(writeIndex) = b.asInstanceOf[byte]
-    writeIndex = writeIndex + 1
+    writeIndex += 1
   }
 
   /** Write a natural number in big endian format, base 128.
    *  All but the last digits have bit 0x80 set.
    */
-  def writeNat(x: int): unit = {
+  def writeNat(x: int) {
     def writeNatPrefix(x: int): unit = {
       val y = x >>> 7
       if (y != 0) writeNatPrefix(y)
@@ -57,8 +57,8 @@ class PickleBuffer(data: Array[byte], from: int, to: int) {
    *  @param pos ...
    *  @param x   ...
    */
-  def patchNat(pos: int, x: int): unit = {
-    def patchNatPrefix(x: int): unit = {
+  def patchNat(pos: int, x: int) {
+    def patchNatPrefix(x: int) {
       writeByte(0)
       Array.copy(bytes, pos, bytes, pos+1, writeIndex - (pos+1))
       bytes(pos) = ((x & 0x7f) | 0x80).asInstanceOf[byte]
@@ -74,7 +74,7 @@ class PickleBuffer(data: Array[byte], from: int, to: int) {
    *
    *  @param x The long number to be written.
    */
-  def writeLong(x: long): unit = {
+  def writeLong(x: long) {
     val y = x >> 8
     val z = x & 0xff
     if (-y != (z >> 7)) writeLong(y)
@@ -85,7 +85,7 @@ class PickleBuffer(data: Array[byte], from: int, to: int) {
 
   /** Read a byte */
   def readByte(): int = {
-    val x = bytes(readIndex); readIndex = readIndex + 1; x
+    val x = bytes(readIndex); readIndex += 1; x
   }
 
   /** Read a natural number in big endian format, base 128.
@@ -106,7 +106,7 @@ class PickleBuffer(data: Array[byte], from: int, to: int) {
     var i = 0
     while (i < len) {
       x = (x << 8) + (readByte() & 0xff)
-      i = i + 1
+      i += 1
     }
     val leading = 64 - (len << 3)
     x << leading >> leading
@@ -135,7 +135,7 @@ class PickleBuffer(data: Array[byte], from: int, to: int) {
    */
   def createIndex: Array[int] = {
     val index = new Array[int](readNat())
-    for (val i <- Iterator.range(0, index.length)) {
+    for (i <- 0 until index.length) {
       index(i) = readIndex
       readByte()
       readIndex = readNat() + readIndex

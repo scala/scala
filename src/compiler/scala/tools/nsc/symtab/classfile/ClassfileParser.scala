@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -16,13 +16,14 @@
  */
 package scala.tools.nsc.symtab.classfile
 
-import scala.tools.nsc.util.{Position,NoPosition}
-import scala.tools.nsc.io.AbstractFile
-import scala.collection.mutable.{ListBuffer, ArrayBuffer}
-import scala.collection.immutable.{Map, ListMap}
-
-import java.lang.Integer.toHexString
 import java.io.IOException
+import java.lang.Integer.toHexString
+
+import scala.collection.immutable.{Map, ListMap}
+import scala.collection.mutable.{ListBuffer, ArrayBuffer}
+import scala.tools.nsc.io.AbstractFile
+import scala.tools.nsc.util.{Position,NoPosition}
+
 
 /** This abstract class implements a class file parser.
  *
@@ -121,7 +122,7 @@ abstract class ClassfileParser {
     { var i = 1
       while (i < starts.length) {
         starts(i) = in.bp
-        i = i + 1
+        i += 1
         in.nextByte match {
           case CONSTANT_UTF8 | CONSTANT_UNICODE =>
             in.skip(in.nextChar)
@@ -132,7 +133,7 @@ abstract class ClassfileParser {
             in.skip(4)
           case CONSTANT_LONG | CONSTANT_DOUBLE =>
             in.skip(8)
-            i = i + 1
+            i += 1
           case _ =>
             errorBadTag(in.bp - 1)
         }
@@ -370,7 +371,7 @@ abstract class ClassfileParser {
     val superType = if (isAnnotation) { in.nextChar; definitions.AnnotationClass.tpe }
                     else pool.getSuperClass(in.nextChar).tpe
     val ifaceCount = in.nextChar
-    var ifaces = for (val i <- List.range(0, ifaceCount)) yield pool.getSuperClass(in.nextChar).tpe
+    var ifaces = for (i <- List.range(0, ifaceCount)) yield pool.getSuperClass(in.nextChar).tpe
     if (isAnnotation) ifaces = definitions.ClassfileAnnotationClass.tpe :: ifaces
     val parents = superType :: ifaces
 
@@ -395,10 +396,10 @@ abstract class ClassfileParser {
       staticModule.moduleClass.setFlag(JAVA)
       in.bp = curbp
       val fieldCount = in.nextChar
-      for (val i <- 0 until fieldCount) parseField()
+      for (i <- 0 until fieldCount) parseField()
       sawPrivateConstructor = false
       val methodCount = in.nextChar
-      for (val i <- 0 until methodCount) parseMethod()
+      for (i <- 0 until methodCount) parseMethod()
       if (!sawPrivateConstructor &&
           (instanceDefs.lookup(nme.CONSTRUCTOR) == NoSymbol &&
            (sflags & INTERFACE) == 0))
@@ -424,7 +425,7 @@ abstract class ClassfileParser {
     }
   }
 
-  def parseField(): unit = {
+  def parseField() {
     val jflags = in.nextChar
     var sflags = transFlags(jflags)
     if ((sflags & FINAL) == 0) sflags = sflags | MUTABLE
@@ -442,7 +443,7 @@ abstract class ClassfileParser {
     }
   }
 
-  def parseMethod(): unit = {
+  def parseMethod() {
     val jflags = in.nextChar
     var sflags = transFlags(jflags)
     if ((jflags & JAVA_ACC_PRIVATE) != 0 && !global.settings.XbytecodeRead.value) {
@@ -500,7 +501,7 @@ abstract class ClassfileParser {
       while (sig(index) != '>') {
         sig(index) match {
           case variance @ ('+' | '-' | '*') =>
-            index = index + 1
+            index += 1
             val bounds = variance match {
               case '+' => mkTypeBounds(definitions.AllRefClass.typeConstructor,
                                        sig2type(tparams, covariant))
@@ -526,7 +527,7 @@ abstract class ClassfileParser {
       xs.toList
     }
     def sig2type(tparams: Map[Name,Symbol], covariant: Boolean): Type = {
-      val tag = sig(index); index = index + 1
+      val tag = sig(index); index += 1
       tag match {
         case BYTE_TAG   => definitions.ByteClass.tpe
         case CHAR_TAG   => definitions.CharClass.tpe
@@ -541,40 +542,40 @@ abstract class ClassfileParser {
           var tpe = definitions.getClass(subName(c => ((c == ';') || (c == '<')))).tpe
           if (sig(index) == '<')
             tpe = appliedType(tpe, typeParams(tparams, covariant))
-          index = index + 1
+          index += 1
           tpe
         case ARRAY_TAG =>
-          while ('0' <= sig(index) && sig(index) <= '9') index = index + 1
+          while ('0' <= sig(index) && sig(index) <= '9') index += 1
           appliedType(definitions.ArrayClass.tpe, List(sig2type(tparams, covariant)))
         case '(' =>
           val paramtypes = new ListBuffer[Type]()
           while (sig(index) != ')') {
             paramtypes += objToAny(sig2type(tparams, false))
           }
-          index = index + 1
+          index += 1
           val restype = if (sym.isConstructor) {
             assert(sig(index) == 'V')
-            index = index + 1
+            index += 1
             clazz.tpe
           } else
             sig2type(tparams, true)
           MethodType(paramtypes.toList, restype)
         case 'T' =>
           val n = subName(';'.==).toTypeName
-          index = index + 1
+          index += 1
           tparams(n).typeConstructor
       }
     }
     var tparams = classTParams
     if (sig(index) == '<') {
-      index = index + 1
+      index += 1
       while (sig(index) != '>') {
         val tpname = subName(':'.==).toTypeName
         val s = sym.newTypeParameter(NoPosition, tpname)
         tparams = tparams + tpname -> s
         val ts = new ListBuffer[Type]
         while (sig(index) == ':') {
-          index = index + 1
+          index += 1
           if (sig(index) != ':') // guard against empty class bound
             ts += sig2type(tparams, false)
         }
@@ -582,7 +583,7 @@ abstract class ClassfileParser {
                                intersectionType(ts.toList, sym)))
         newTParams += s
       }
-      index = index + 1
+      index += 1
     }
     val tpe =
       if (sym.isClass) {
@@ -599,14 +600,14 @@ abstract class ClassfileParser {
     else PolyType(newTParams.toList, tpe)
   }
 
-  def parseAttributes(sym: Symbol, symtype: Type): unit = {
+  def parseAttributes(sym: Symbol, symtype: Type) {
     def convertTo(c: Constant, pt: Type): Constant = {
       if (pt.symbol == definitions.BooleanClass && c.tag == IntTag)
         Constant(c.value != 0)
       else
         c convertTo pt
     }
-    def parseAttribute(): unit = {
+    def parseAttribute() {
       val attrName = pool.getName(in.nextChar)
       val attrLen = in.nextInt
       val oldpb = in.bp
@@ -690,21 +691,21 @@ abstract class ClassfileParser {
           Constant(s)
         case ARRAY_TAG  =>
           val arr = new ArrayBuffer[Constant]()
-          for (val i <- 0 until index) {
+          for (i <- 0 until index) {
             arr += parseTaggedConstant
           }
           new ArrayConstant(arr.toArray,
               appliedType(definitions.ArrayClass.typeConstructor, List(arr(0).tpe)))
       }
     }
-    def parseAnnotations(len: Int): Unit = {
+    def parseAnnotations(len: Int) {
       val nAttr = in.nextChar
-      for (val n <- 0 until nAttr) {
+      for (n <- 0 until nAttr) {
         val attrNameIndex = in.nextChar
         val attrType = pool.getType(attrNameIndex)
         val nargs = in.nextChar
         val nvpairs = new ListBuffer[(Name,Constant)]
-        for (val i <- 0 until nargs) {
+        for (i <- 0 until nargs) {
           val name = pool.getName(in.nextChar)
           nvpairs += (name, parseTaggedConstant)
         }
@@ -712,8 +713,8 @@ abstract class ClassfileParser {
       }
     }
 
-    def parseInnerClasses(): unit = {
-      for (val i <- 0 until in.nextChar) {
+    def parseInnerClasses() {
+      for (i <- 0 until in.nextChar) {
         val innerIndex = in.nextChar
         val outerIndex = in.nextChar
         val nameIndex = in.nextChar
@@ -735,19 +736,19 @@ abstract class ClassfileParser {
       }
     }
     val attrCount = in.nextChar
-    for (val i <- 0 until attrCount) parseAttribute()
+    for (i <- 0 until attrCount) parseAttribute()
   }
 
-  def skipAttributes(): unit = {
+  def skipAttributes() {
     val attrCount = in.nextChar
-    for (val i <- 0 until attrCount) {
+    for (i <- 0 until attrCount) {
       in.skip(2); in.skip(in.nextInt)
     }
   }
 
-  def skipMembers(): unit = {
+  def skipMembers() {
     val memberCount = in.nextChar
-    for (val i <- 0 until memberCount) {
+    for (i <- 0 until memberCount) {
       in.skip(6); skipAttributes()
     }
   }

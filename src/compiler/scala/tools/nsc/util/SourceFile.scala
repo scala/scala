@@ -1,17 +1,12 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
+/* NSC -- new Scala compiler
+ * Copyright 2005-2007 LAMP/EPFL
+ * @author  Martin Odersky
+ */
 
 // $Id$
 
 package scala.tools.nsc.util
 
-
-import compat.StringBuilder
 import scala.tools.nsc.io.{AbstractFile, VirtualFile}
 
 /** Uses positions that are offsets rather than line/column pairs.
@@ -33,7 +28,7 @@ object SourceFile {
 class SourceFile(val file: AbstractFile, _content: Array[Char]) {
   import SourceFile._
 
-  def this(_file: AbstractFile) = this(_file, _file.toCharArray);
+  def this(_file: AbstractFile) = this(_file, _file.toCharArray)
 
   def this(sourceName: String, content: Array[Char]) =
     this(new VirtualFile(sourceName), content)
@@ -46,7 +41,7 @@ class SourceFile(val file: AbstractFile, _content: Array[Char]) {
 
   def isLineBreak(idx: Int) =
     if (!SourceFile.isLineBreak(content(idx))) false
-    else if (content(idx) == CR && idx + 1 < content.length && content(idx + 1) == LF) false;
+    else if (content(idx) == CR && idx + 1 < content.length && content(idx + 1) == LF) false
     else true
 
   def position(offset: Int) =
@@ -70,8 +65,6 @@ class SourceFile(val file: AbstractFile, _content: Array[Char]) {
   object line {
     var index  = 0
     var offset = 0
-
-
 
     def find(toFind: Int, isIndex: Boolean): Int = {
       if (toFind == 0) return 0
@@ -117,7 +110,7 @@ class SourceFile(val file: AbstractFile, _content: Array[Char]) {
     while (idx < text.length()) {
       if (offset + idx >= content.length) return false
       if (content(offset + idx) != text.charAt(idx)) return false
-      idx = idx + 1
+      idx += 1
     }
     return true
   }
@@ -132,7 +125,7 @@ class SourceFile(val file: AbstractFile, _content: Array[Char]) {
     val buf = new StringBuilder()
     while (!isLineBreak(offset) && offset < content.length) {
       buf.append(content(offset))
-      offset = offset + 1
+      offset += 1
     }
     buf.toString()
   }
@@ -221,7 +214,8 @@ extends SourceFile(name, contents)
       stop)
 
   override def positionInUltimateSource(position: Position) = {
-    if (position.offset.isEmpty) super.positionInUltimateSource(position)
+    if (position.offset.isEmpty)
+      super.positionInUltimateSource(position)
     else underlyingFile.positionInUltimateSource(
       new OffsetPosition(underlyingFile, position.offset.get + start))
   }

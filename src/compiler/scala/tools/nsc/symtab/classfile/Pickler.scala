@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -7,7 +7,6 @@
 package scala.tools.nsc.symtab.classfile
 
 import java.lang.{Float, Double}
-import scala.collection.mutable.HashMap
 import scala.tools.nsc.util.{Position, NoPosition, ShowPickled}
 import Flags._
 import PickleFormat._
@@ -57,6 +56,7 @@ abstract class Pickler extends SubComponent {
 
   private class Pickle(rootName: Name, rootOwner: Symbol)
         extends PickleBuffer(new Array[byte](4096), -1, 0) {
+    import scala.collection.mutable.HashMap
     private var entries = new Array[AnyRef](256)
     private var ep = 0
     private val index = new HashMap[AnyRef, int]
@@ -111,7 +111,7 @@ abstract class Pickler extends SubComponent {
         if (!sym.children.isEmpty)
           putChildren(sym, sym.children.toList.sort((x, y) => x isLess y))
 
-        for (val attr <- sym.attributes.reverse) {
+        for (attr <- sym.attributes.reverse) {
           if (attr.atp.symbol isNonBottomSubClass definitions.StaticAnnotationClass)
             putAnnotation(sym, attr)
         }
@@ -158,7 +158,7 @@ abstract class Pickler extends SubComponent {
     }
     private def putTypes(tps: List[Type]): unit = tps foreach putType
 
-    private def putTree(tree: reflect.Tree): unit = if(putEntry(tree)) {
+    private def putTree(tree: reflect.Tree): unit = if (putEntry(tree)) {
       tree match {
         case reflect.Ident(sym) => putSymbol(sym)
         case reflect.Select(qual, sym) =>  putTree(qual); putSymbol(sym)
@@ -267,8 +267,8 @@ abstract class Pickler extends SubComponent {
     private def putAnnotation(sym: Symbol, attr: AnnotationInfo[Constant]): unit = {
       assert(putEntry((sym, attr)))
       putType(attr.atp)
-      for (val c <- attr.args) putConstant(c)
-      for (val (name, c) <- attr.assocs) { putEntry(name); putConstant(c) }
+      for (c <- attr.args) putConstant(c)
+      for ((name, c) <- attr.assocs) { putEntry(name); putConstant(c) }
     }
 
     private def putAnnotation(annot: AnnotationInfo[Any]): unit =
@@ -276,7 +276,7 @@ abstract class Pickler extends SubComponent {
         val AnnotationInfo(tpe, args, assocs) = annot
         putType(tpe)
         args foreach putTreeOrConstant
-        for (val (name, rhs) <- assocs) { putEntry(name); putTreeOrConstant(rhs) }
+        for ((name, rhs) <- assocs) { putEntry(name); putTreeOrConstant(rhs) }
       }
 
     private def putTreeOrConstant(x: Any) {
@@ -395,12 +395,12 @@ abstract class Pickler extends SubComponent {
         case (target: Symbol, attr @ AnnotationInfo(atp, args, assocs)) =>
           writeRef(target)
           writeRef(atp)
-          for (val c <- args) writeRef(c.asInstanceOf[Constant])
-          for (val (name, c) <- assocs) { writeRef(name); writeRef(c.asInstanceOf[Constant]) }
+          for (c <- args) writeRef(c.asInstanceOf[Constant])
+          for ((name, c) <- assocs) { writeRef(name); writeRef(c.asInstanceOf[Constant]) }
           ATTRIBUTE
         case (target: Symbol, children: List[_]) =>
           writeRef(target)
-          for (val c <- children) writeRef(c.asInstanceOf[Symbol])
+          for (c <- children) writeRef(c.asInstanceOf[Symbol])
           CHILDREN
         case reflect.Ident(sym) =>
           writeNat(IDENTtree)
@@ -589,8 +589,8 @@ abstract class Pickler extends SubComponent {
         case AnnotationInfo(target, args, assocs) =>
           writeRef(target)
           writeNat(args.length)
-          for (val tree <- args) writeRef(tree.asInstanceOf[reflect.Tree])
-          for (val (name, tree) <- assocs) {
+          for (tree <- args) writeRef(tree.asInstanceOf[reflect.Tree])
+          for ((name, tree) <- assocs) {
             writeRef(name);
             writeRef(tree.asInstanceOf[reflect.Tree])
           }
@@ -612,7 +612,7 @@ abstract class Pickler extends SubComponent {
       writeNat(MinorVersion)
       writeNat(ep)
       if (settings.debug.value) log("" + ep + " entries")//debug
-      for (val i <- 0 until ep) writeEntry(entries(i));
+      for (i <- 0 until ep) writeEntry(entries(i))
       if (settings.Xshowcls.value == rootName.toString) {
         readIndex = 0
         ShowPickled.printFile(this, Console.out)

@@ -1,12 +1,10 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
 
 package scala.tools.nsc.util
-
-import compat.StringBuilder
 
 object NameTransformer {
   private val nops = 128
@@ -62,7 +60,7 @@ object NameTransformer {
       } else if (buf ne null) {
         buf.append(c)
       }
-      i = i + 1
+      i += 1
     }
     if (buf eq null) name else buf.toString()
   }
@@ -88,21 +86,21 @@ object NameTransformer {
           val ch2 = name.charAt(i+2)
           if ('a' <= ch2 && ch2 <= 'z') {
             ops = code2op((ch1 - 'a') * 26 + ch2 - 'a')
-            while ((ops ne null) && !name.startsWith(ops.code, i)) ops = ops.next;
+            while ((ops ne null) && !name.startsWith(ops.code, i)) ops = ops.next
             if (ops ne null) {
               if (buf eq null) {
                 buf = new StringBuilder()
                 buf.append(name.substring(0, i))
               }
               buf.append(ops.op)
-              i = i + ops.code.length()
+              i += ops.code.length()
             }
           }
         }
       }
       if (ops eq null) {
         if (buf ne null) buf.append(c)
-        i = i + 1
+        i += 1
       }
     }
     //System.out.println("= " + (if (buf == null) name else buf.toString()));//DEBUG

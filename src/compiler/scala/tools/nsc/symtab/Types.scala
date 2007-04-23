@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -723,11 +723,11 @@ trait Types {
             val pclosure = new Array[Array[Type]](nparents)
             val index = new Array[int](nparents)
             var i = 0
-            for (val p <- parents) {
+            for (p <- parents) {
               pclosure(i) = if (p.closure eq null) AnyClass.info.closure // cyclic reference
                             else p.closure
               index(i) = 0
-              i = i + 1
+              i += 1
             }
             def nextBaseType(i: int): Type = {
               val j = index(i)
@@ -741,7 +741,7 @@ trait Types {
               while (i < nparents) {
                 if (nextBaseType(i).symbol isLess minSym)
                   minSym = nextBaseType(i).symbol
-                i = i + 1
+                i += 1
               }
               var minTypes: List[Type] = List()
               i = 0
@@ -959,12 +959,12 @@ trait Types {
      */
     private def computeRefs() {
       refs = Array(Map(), Map())
-      for (val tparam <- symbol.typeParams) {
+      for (tparam <- symbol.typeParams) {
         val enterRefs = new TypeMap {
           def apply(tp: Type): Type = {
             tp match {
               case TypeRef(_, sym, args) =>
-                for (val (tparam1, arg) <- sym.info.typeParams zip args)
+                for ((tparam1, arg) <- sym.info.typeParams zip args)
                   if (arg contains tparam) {
                     addRef(NonExpansive, tparam, tparam1)
                     if (arg.symbol != tparam) addRef(Expansive, tparam, tparam1)
@@ -974,7 +974,7 @@ trait Types {
             mapOver(tp)
           }
         }
-        for (val p <- parents) enterRefs(p)
+        for (p <- parents) enterRefs(p)
       }
       state = Initializing
     }
@@ -989,16 +989,16 @@ trait Types {
       val lastRefs = Array(refs(0), refs(1))
       state = Initialized
       var change = false
-      for (val (from, targets) <- refs(NonExpansive).elements)
-        for (val target <- targets) {
+      for ((from, targets) <- refs(NonExpansive).elements)
+        for (target <- targets) {
           var thatInfo = classInfo(target)
           if (thatInfo.state != Initialized)
             change = change | thatInfo.propagate()
           addRefs(NonExpansive, from, thatInfo.getRefs(NonExpansive, target))
           addRefs(Expansive, from, thatInfo.getRefs(Expansive, target))
         }
-      for (val (from, targets) <- refs(Expansive).elements)
-        for (val target <- targets) {
+      for ((from, targets) <- refs(Expansive).elements)
+        for (target <- targets) {
           var thatInfo = classInfo(target)
           addRefs(Expansive, from, thatInfo.getRefs(NonExpansive, target))
         }
@@ -1495,11 +1495,11 @@ A type's symbol should never be inspected directly.
     else {
       val result = refinedType(parents, original.symbol.owner)
       val syms1 = decls.toList
-      for (val sym <- syms1)
+      for (sym <- syms1)
         result.decls.enter(sym.cloneSymbol(result.symbol))
       val syms2 = result.decls.toList
       val resultThis = result.symbol.thisType
-      for (val sym <- syms2)
+      for (sym <- syms2)
         sym.setInfo(sym.info.substSym(syms1, syms2).substThis(original.symbol, resultThis))
       result
     }
@@ -2135,14 +2135,14 @@ A type's symbol should never be inspected directly.
   /** The maximum depth of all types in the closures of each of the types `tps' */
   final def maxClosureDepth(tps: Seq[Type]): int = {
     var d = 0
-    for (val tp <- tps) d = max(d, tp.closureDepth)
+    for (tp <- tps) d = max(d, tp.closureDepth)
     d
   }
 
   /** The maximum depth of all types `tps' */
   final def maxDepth(tps: Seq[Type]): int = {
     var d = 0
-    for (val tp <- tps) d = max(d, maxDepth(tp))
+    for (tp <- tps) d = max(d, maxDepth(tp))
     d
   }
 
@@ -2558,7 +2558,7 @@ A type's symbol should never be inspected directly.
     val glbs = glbList(tss1, depth)
     val result = new Array[Type](glbs.length)
     var i = 0
-    for (val x <- glbs.elements) { result(i) = x; i = i + 1; }
+    for (x <- glbs.elements) { result(i) = x; i += 1 }
     result
     // Array(glbs: _*);
   }
@@ -2688,7 +2688,7 @@ A type's symbol should never be inspected directly.
               // efficiency.
               alt != sym && !specializesSym(lubThisType, sym, tp, alt)))
           }
-          for (val sym <- lubBase.nonPrivateMembers)
+          for (sym <- lubBase.nonPrivateMembers)
             // add a refinement symbol for all non-class members of lubBase
             // which are refined by every type in ts.
             if (!sym.isClass && !sym.isConstructor && (narrowts forall (t => refines(t, sym))))
@@ -2769,13 +2769,13 @@ A type's symbol should never be inspected directly.
                     if (symbounds.isEmpty)
                       mkTypeBounds(AllClass.tpe, AnyClass.tpe)
                     else glbBounds(symbounds)
-                  for (val t <- symtypes; !isTypeBound(t))
+                  for (t <- symtypes if !isTypeBound(t))
                     if (result.bounds containsType t) result = t
                     else throw new MalformedClosure(symtypes);
                   result
                 })
             }
-            for (val t <- ts; val sym <- t.nonPrivateMembers)
+            for (t <- ts; val sym <- t.nonPrivateMembers)
               if (!sym.isClass && !sym.isConstructor && !(glbThisType specializes sym))
                 try {
                   addMember(glbThisType, glbType, glbsym(sym))
@@ -2873,7 +2873,7 @@ A type's symbol should never be inspected directly.
     if (settings.debug.value) log("add member " + sym)//debug
     if (!(thistp specializes sym)) {
       if (sym.isTerm)
-        for (val alt <- tp.nonPrivateDecl(sym.name).alternatives)
+        for (alt <- tp.nonPrivateDecl(sym.name).alternatives)
           if (specializesSym(thistp, sym, thistp, alt))
             tp.decls unlink alt;
       tp.decls enter sym
