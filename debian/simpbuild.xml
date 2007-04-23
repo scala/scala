@@ -87,9 +87,7 @@
   <property name="build.bin.dir" value="${build.dir}/bin"/>
   <property name="build.manual.dir" value="${build.dir}/manual.classes"/>
   <property name="api.lib.pdir" value="${api.dir}/${lib.dir.name}"/>
-  <property name="api.lib.dir" value="${api.lib.pdir}/api"/>
-  <property name="api.comp.pdir" value="${api.dir}/${comp.dir.name}"/>
-  <property name="api.comp.dir" value="${api.comp.pdir}/api"/>
+  <property name="api.lib.dir" value="${api.lib.pdir}/scala/api"/>
 
   <!-- sbaz properties -->
   <property name="sbaz.lib.name" value="${dist.name}-library"/>
@@ -173,22 +171,22 @@
 
   <!-- Creating tasks -->
   <taskdef
-    name="starr"
+    name="scalac"
     classname="scala.tools.ant.Scalac"
     classpathref="starr.classpath"
   />
   <taskdef
-    name="starrtool"
+    name="scalatool"
     classname="scala.tools.ant.ScalaTool"
     classpathref="starr.classpath"
   />
   <taskdef
-    name="starrdoc"
+    name="scaladoc"
     classname="scala.tools.ant.Scaladoc"
     classpathref="starr.classpath"
   />
   <taskdef
-    name="starrsbaz"
+    name="sbaz"
     classname="scala.tools.ant.ScalaBazaar"
     classpathref="starr.classpath"
   />
@@ -235,7 +233,7 @@
     >
       <include name="**/*.java"/>
     </javac>
-    <starr
+    <scalac
       srcdir="${src.lib.dir}"
       destdir="${build.lib.dir}"
       usepredefs="no"
@@ -245,8 +243,8 @@
       </classpath>
       <include name="scala/Predef.scala"/>
       <include name="scala/runtime/ScalaRunTime.scala"/>
-    </starr>
-    <starr
+    </scalac>
+    <scalac
       srcdir="${src.lib.dir}"
       destdir="${build.lib.dir}"
     >
@@ -257,11 +255,11 @@
       <exclude name="scala/Predef.scala"/>
       <exclude name="scala/runtime/ScalaRunTime.scala"/>
       <exclude name="scala/dbc/**"/>
-    </starr>
+    </scalac>
 
     <!-- Build compiler -->
     <mkdir dir="${build.comp.dir}"/>
-    <starr
+    <scalac
       srcdir="${src.comp.dir}"
       destdir="${build.comp.dir}"
     >
@@ -271,11 +269,11 @@
         <path refid="starr.classpath"/>
       </classpath>
       <include name="**/*.scala"/>
-    </starr>
+    </scalac>
 
     <!-- Build DBC -->
     <mkdir dir="${build.dbc.dir}"/>
-    <starr
+    <scalac
       srcdir="${src.dbc.dir}"
       destdir="${build.dbc.dir}"
     >
@@ -284,7 +282,7 @@
         <pathelement location="${build.comp.dir}"/>
       </classpath>
       <include name="**/*.scala"/>
-    </starr>
+    </scalac>
 
     <!-- Build Actors -->
     <mkdir dir="${build.actors.dir}"/>
@@ -295,7 +293,7 @@
       <include name="**/*.java"/>
     </javac>
 
-    <starr
+    <scalac
       srcdir="${src.actors.dir}"
       destdir="${build.actors.dir}"
     >
@@ -305,7 +303,7 @@
         <pathelement location="${build.actors.dir}"/>
       </classpath>
       <include name="**/*.scala"/>
-    </starr>
+    </scalac>
 
   	
     <!-- Build jars -->
@@ -361,7 +359,7 @@
 
     <!-- build tool scripts -->
     <mkdir dir="${build.bin.dir}"/>
-    <starrtool
+    <scalatool
       file="${build.bin.dir}/${scala.exec.name}"
       version="${version.number}"
       copyright="${copyright}"
@@ -369,7 +367,7 @@
       class="scala.tools.nsc.MainGenericRunner"
       javaFlags="-Xmx256M -Xms16M"
     />
-    <starrtool
+    <scalatool
       file="${build.bin.dir}/${scalac.exec.name}"
       name="Scala compiler"
       class="scala.tools.nsc.Main"
@@ -377,7 +375,7 @@
       copyright="${copyright}"
       javaFlags="-Xmx256M -Xms16M"
     />
-    <starrtool
+    <scalatool
       file="${build.bin.dir}/${scaladoc.exec.name}"
       name="Scala doc generator"
       class="scala.tools.nsc.Main"
@@ -386,7 +384,7 @@
       copyright="${copyright}"
       javaFlags="-Xmx256M -Xms16M"
     />
-    <starrtool
+    <scalatool
       file="${build.bin.dir}/${fsc.exec.name}"
       name="Fast Scala compiler"
       class="scala.tools.nsc.CompileClient"
@@ -420,7 +418,7 @@
 
   <target name="docs.lib">
     <mkdir dir="${api.lib.dir}"/>
-    <starrdoc
+    <scaladoc
       srcdir="${src.dir}"
       destdir="${api.lib.dir}"
       sourcepath=""
@@ -432,16 +430,16 @@
       </classpath>
       <include name="${dbc.dir.name}/**/*.scala"/>
       <include name="${lib.dir.name}/**/*.scala"/>
-    </starrdoc>
+    </scaladoc>
   </target>
 
   <target name="docs.manual">
     <mkdir dir="${build.manual.dir}"/>
-    <starr srcdir="${topdir}/src/manual" destdir="${build.manual.dir}">
+    <scalac srcdir="${topdir}/src/manual" destdir="${build.manual.dir}">
       <classpath>
         <path refid="starr.classpath"/>
       </classpath>
-    </starr>
+    </scalac>
     <emit command="scala"/>
     <emit command="scalac"/>
     <emit command="scaladoc"/>
@@ -459,11 +457,11 @@
 
   <target name="docs" depends="docs.lib, docs.manual"/>
 
-  <target name="dist" depends="build,docs" >
+  <target name="dist" depends="build,docs">
     <!-- Create the SBaz packages -->
     <mkdir dir="${dist.sbaz.dir}"/>
     <!-- Create the Scala library package -->
-    <starrsbaz
+    <sbaz
       file="${dist.sbaz.dir}/${sbaz.lib.name}-${version.number}.sbp"
       adfile="${dist.sbaz.dir}/${sbaz.lib.name}-${version.number}.advert"
       name="${sbaz.lib.name}"
@@ -477,9 +475,9 @@
       <srcset dir="${build.jar.dir}" includes="${libsrc.jar.name}"/>
       <srcset dir="${build.jar.dir}" includes="${dbcsrc.jar.name}"/>
       <srcset dir="${build.jar.dir}" includes="${actorssrc.jar.name}"/>
-    </starrsbaz>
+    </sbaz>
     <!-- Create the Scala developper package -->
-    <starrsbaz
+    <sbaz
       file="${dist.sbaz.dir}/${sbaz.dev.name}-${version.number}.sbp"
       adfile="${dist.sbaz.dir}/${sbaz.dev.name}-${version.number}.advert"
       name="${sbaz.dev.name}"
@@ -492,12 +490,12 @@
       <libset dir="${build.jar.dir}" includes="${comp.jar.name}"/>
       <manset dir="${tooldocs.dir}" includes="man1/*.1"/>
       <docset dir="${docs.dir}" includes="README,LICENSE"/>
-      <docset dir="${api.lib.pdir}" includes="api/**"/>
+      <docset dir="${api.lib.pdir}" includes="scala/**"/>
       <docset dir="${tooldocs.dir}" includes="*.html"/>
       <srcset dir="${build.jar.dir}" includes="${compsrc.jar.name}"/>
-    </starrsbaz>
+    </sbaz>
     <!-- Creates the empty umbrella Scala package -->
-    <starrsbaz
+    <sbaz
       file="${dist.sbaz.dir}/${sbaz.scala.name}-${version.number}.sbp"
       adfile="${dist.sbaz.dir}/${sbaz.scala.name}-${version.number}.advert"
       name="${sbaz.scala.name}"
@@ -507,7 +505,7 @@
       link="${sbaz.universe}/${sbaz.scala.name}-${version.number}.sbp"
     />
     <!-- Creates the Scala test package -->
-    <starrsbaz
+    <sbaz
       file="${dist.sbaz.dir}/${sbaz.test.name}-${version.number}.sbp"
       adfile="${dist.sbaz.dir}/${sbaz.test.name}-${version.number}.advert"
       name="${sbaz.test.name}"
@@ -523,7 +521,7 @@
         dir="${topdir}/test"
         includes="files/**/*.check,files/**/*.java,files/**/*.scala,files/**/*.args,files/cli/**/*.check.*,files/jvm*/**"
       />
-    </starrsbaz>
+    </sbaz>
   </target>
 
   <target name="install" depends="dist">
