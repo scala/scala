@@ -11,19 +11,18 @@
 
 package scala.xml.dtd
 
-import compat.StringBuilder
 import scala.util.regexp.WordExp
-import scala.util.automata._
+import scala.util.automata.{DetWordAutom, SubsetConstruction, WordBerrySethi}
 
-object ContentModel extends WordExp  {
+object ContentModel extends WordExp {
   type _labelT = ElemName
   type _regexpT = RegExp
 
-  object Translator extends WordBerrySethi  {
+  object Translator extends WordBerrySethi {
 
-    override val lang: ContentModel.this.type = ContentModel.this;
-    import lang._ ;
-    //val re  = Sequ(Star(Letter(IntConst( 3 ))));
+    override val lang: ContentModel.this.type = ContentModel.this
+    import lang._
+    //val re  = Sequ(Star(Letter(IntConst( 3 ))))
     //val aut = automatonFrom(re, 7)
   }
 
@@ -32,21 +31,20 @@ object ContentModel extends WordExp  {
     override def toString() = "ElemName(\""+name+"\")"
   }
 
-  def isMixed(cm: ContentModel) = cm.isInstanceOf[MIXED];
+  def isMixed(cm: ContentModel) = cm.isInstanceOf[MIXED]
   def containsText(cm: ContentModel) = (cm == PCDATA) || isMixed(cm)
 
   def parse(s: String): ContentModel = ContentModelParser.parse(s)
 
   def getLabels(r: RegExp): scala.collection.Set[String] = {
     val s = new scala.collection.mutable.HashSet[String]()
-    def traverse1(xs: Seq[RegExp]): Unit = {
-      val it = xs.elements;
-      while( it.hasNext )
-        traverse( it.next );
-      }
-    def traverse(r: RegExp): Unit = {
+    def traverse1(xs: Seq[RegExp]) {
+      val it = xs.elements
+      while (it.hasNext) traverse(it.next)
+    }
+    def traverse(r: RegExp) {
       r match {
-        case Letter(ElemName( name )) => s += name;
+        case Letter(ElemName(name)) => s += name
         case Star(  x @ _  ) => traverse( x ) // bug if x@_*
         case Sequ( xs @ _* ) => traverse1(xs)
         case Alt(  xs @ _* ) => traverse1(xs)
@@ -63,12 +61,11 @@ object ContentModel extends WordExp  {
   }
 
   /* precond: rs.length >= 1 */
-  private def toString(rs: Seq[RegExp], sb: StringBuilder, sep: Char): Unit = {
-
+  private def toString(rs: Seq[RegExp], sb: StringBuilder, sep: Char) {
     val it = rs.elements
     val fst = it.next
     toString(fst, sb)
-    for(val z <- it) {
+    for (z <- it) {
       sb.append(sep)
       toString(z, sb)
     }
@@ -112,24 +109,24 @@ sealed abstract class ContentModel {
   def toString(sb:StringBuilder): StringBuilder;
   /*
   def validate(cs: NodeSeq): Boolean = this.match {
-    case ANY         => true ;
-    case EMPTY       => cs.length == 0;
+    case ANY         => true
+    case EMPTY       => cs.length == 0
     case PCDATA      => cs.length == 0
-                     || (cs.length == 1 && cs(0).isInstanceOf[Text]);
-    case m@MIXED(r)    => m.runDFA(cs);
-    case e@ELEMENTS(r) => e.runDFA(cs);
+                     || (cs.length == 1 && cs(0).isInstanceOf[Text])
+    case m@MIXED(r)    => m.runDFA(cs)
+    case e@ELEMENTS(r) => e.runDFA(cs)
   }
   */
 }
 
 case object PCDATA extends ContentModel {
-  override def toString(sb:StringBuilder): StringBuilder = sb.append("(#PCDATA)")
+  override def toString(sb: StringBuilder): StringBuilder = sb.append("(#PCDATA)")
 }
 case object EMPTY extends ContentModel {
-  override def toString(sb:StringBuilder): StringBuilder = sb.append("EMPTY")
+  override def toString(sb: StringBuilder): StringBuilder = sb.append("EMPTY")
 }
 case object ANY extends ContentModel {
-  override def toString(sb:StringBuilder): StringBuilder = sb.append("ANY")
+  override def toString(sb: StringBuilder): StringBuilder = sb.append("ANY")
 }
 sealed abstract class DFAContentModel extends ContentModel {
   import ContentModel.ElemName
@@ -145,7 +142,7 @@ sealed abstract class DFAContentModel extends ContentModel {
   }
 }
 case class MIXED(r:ContentModel.RegExp) extends DFAContentModel {
-  import ContentModel.{ Alt, Eps, RegExp };
+  import ContentModel.{Alt, Eps, RegExp}
   /*
   def getIterator(ns:NodeSeq) = new Iterator[String] {
     def cond(n:Node) =
@@ -167,7 +164,7 @@ Console.println("ns = "+ns);
     }
   }
   */
-  override def toString(sb:StringBuilder): StringBuilder =  {
+  override def toString(sb: StringBuilder): StringBuilder =  {
     sb.append("(#PCDATA|");
     //r match {
     //  case Alt(Eps, rs@_*) => ContentModel.toString(Alt(rs:_*):RegExp, sb);

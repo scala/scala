@@ -1,5 +1,6 @@
 /* NSC -- new scala compiler
  * Copyright 2005-2007 LAMP/EPFL
+ * @author Nikolay Mihaylov
  */
 
 // $Id$
@@ -12,7 +13,6 @@ import java.nio.{ByteBuffer, ByteOrder}
 import scala.collection.mutable.{Map, HashMap, HashSet, Stack}
 import scala.tools.nsc.symtab._
 import scala.tools.nsc.util.Position
-import compat.StringBuilder
 
 import ch.epfl.lamp.compiler.msil.{Type => MsilType, _}
 import ch.epfl.lamp.compiler.msil.emit._
@@ -277,7 +277,7 @@ abstract class GenMSIL extends SubComponent {
 	val symtab: Array[Byte] = new Array[Byte](pickle.writeIndex + 8)
 	symtab(0) = 1.toByte
 	var size:Int = pickle.writeIndex
-	for(val i <- Iterator.range(2, 6)) {
+	for (i <- 2 until 6) {
 	  symtab(i) = (size & 0xff).toByte
 	  size = size >> 8
 	}
@@ -298,7 +298,7 @@ abstract class GenMSIL extends SubComponent {
 
       if (settings.debug.value)
 	log("creating attributes: " + attributes + " for member : " + member)
-      for(val AnnotationInfo(typ, consts, nvPairs) <- attributes /* !typ.symbol.hasFlag(Flags.JAVA) */ ) {
+      for (AnnotationInfo(typ, consts, nvPairs) <- attributes /* !typ.symbol.hasFlag(Flags.JAVA) */ ) {
 //	assert(consts.length <= 1,
 //	       "too many constant arguments for attribute; "+consts.toString())
 
@@ -455,7 +455,7 @@ abstract class GenMSIL extends SubComponent {
     }
 
     private def createTypes(): Unit =
-      for (val sym <- classes.keys) {
+      for (sym <- classes.keys) {
 	if (settings.debug.value)
 	  log("Calling CreatType for " +  sym + ", " + types(sym))
 	types(sym).asInstanceOf[TypeBuilder].CreateType()
@@ -554,7 +554,7 @@ abstract class GenMSIL extends SubComponent {
       }
 
       if (mcode != null) {
-	for (val local <- (m.locals.diff(m.params))) {
+	for (local <- m.locals.diff(m.params)) {
 	  if (settings.debug.value)
 	    log("add local var: " + local + ", of kind " + local.kind)
 	  val t: MsilType = msilType(local.kind)
@@ -697,7 +697,7 @@ abstract class GenMSIL extends SubComponent {
 	var res = ""
 	res = res + TopBlock.indent + "BlockList0:\n"
 	TopBlock.indent = TopBlock.indent + "  "
-	for(val b <- blocks)
+	for (b <- blocks)
 	  res = res + b + "\n"
 	TopBlock.indent = TopBlock.indent.substring(0,TopBlock.indent.length-2)
 	res
@@ -778,7 +778,7 @@ abstract class GenMSIL extends SubComponent {
 	TopBlock.indent = TopBlock.indent.substring(0,TopBlock.indent.length-4)
 	res = res + TopBlock.indent + "  " + "catch:\n"
 	TopBlock.indent = TopBlock.indent + "    "
-	for(val b <- catchBlocks)
+	for (b <- catchBlocks)
 	  res = res + b + "\n"
 	TopBlock.indent = TopBlock.indent.substring(0,TopBlock.indent.length-4)
 	res = res + TopBlock.indent + "  " + "finally:\n"
@@ -887,9 +887,9 @@ abstract class GenMSIL extends SubComponent {
 	      }
 	      // get leaving blocks and their outside targets
 	      def leavingBlocks(blocks: List[BasicBlock]): List[(BasicBlock, List[BasicBlock])] = {
-		for {val b <- blocks
+		for {b <- blocks
 		     val t = outsideTargets(b, blocks)
-		     t.length != 0 } yield (b, t)
+		     if t.length != 0 } yield (b, t)
 	      }
 
 	      def replaceOutJumps(blocks: List[BasicBlock], leaving: List[(BasicBlock, List[BasicBlock])], exh: ExceptionHandler): (List[BasicBlock], Option[BasicBlock]) = {
@@ -1064,20 +1064,20 @@ abstract class GenMSIL extends SubComponent {
       var orderedBlocks: List[BasicBlock] = Nil
       def flatten(block: Block): Unit = {
 	if (block == TopBlock) {
-	  for (val b <- TopBlock.blocks) flatten(b)
+	  for (b <- TopBlock.blocks) flatten(b)
 	} else block match {
 	  case cb: CodeBlock =>
 	    orderedBlocks = orderedBlocks ::: cb.basicBlocks
 	  case bl: BlockList =>
-	    for (val b <- bl.blocks) flatten(b)
+	    for (b <- bl.blocks) flatten(b)
 	  case cb: CatchBlock =>
-	    for (val b <- cb.blocks) flatten(b)
+	    for (b <- cb.blocks) flatten(b)
 	  case eb: ExceptionBlock =>
 	    val handler = eb.handler
 	    addExHInstruction(eb.tryBlock.firstBasicBlock, new BeginExceptionBlock(handler))
 	    omitJump(eb.tryBlock.lastBasicBlock)
 	    flatten(eb.tryBlock)
-	    for(val c <- eb.catchBlocks) {
+	    for (c <- eb.catchBlocks) {
 	      val t: MsilType = (if (c.exSym == NoSymbol) EXCEPTION
 				 else getType(c.exSym))
 	      addExHInstruction(c.firstBasicBlock, new BeginCatchBlock(handler, t))
@@ -1480,14 +1480,14 @@ abstract class GenMSIL extends SubComponent {
 
 	    mcode.Emit(OpCodes.Stloc, switchLocal)
 	    var i: Int = 0
-	    for(val l <- tags) {
+	    for (l <- tags) {
 	      var targetLabel = labels(branches(i))
-	      for(val i <- l) {
+	      for (i <- l) {
 		mcode.Emit(OpCodes.Ldloc, switchLocal)
 		loadI4(i, mcode)
 		mcode.Emit(OpCodes.Beq, targetLabel)
 	      }
-	      i = i + 1
+	      i += 1
 	    }
 	    val defaultTarget = labels(branches(i))
             if (nextBlock != defaultTarget && !omitJumpBlocks.contains(currentBlock))
@@ -1732,7 +1732,7 @@ abstract class GenMSIL extends SubComponent {
     def makeLabels(bs: List[BasicBlock]) = {
       if (settings.debug.value)
         log("Making labels for: " + method)
-      for (val bb <- bs) labels(bb) = mcode.DefineLabel()
+      for (bb <- bs) labels(bb) = mcode.DefineLabel()
     }
 
     ////////////////////// local vars ///////////////////////
@@ -1747,21 +1747,21 @@ abstract class GenMSIL extends SubComponent {
       if (isStaticSymbol(m.symbol))
         idx = 0
 
-      for (val l <- params) {
+      for (l <- params) {
         if (settings.debug.value)
           log("Index value for parameter " + l + ": " + idx)
         l.index = idx
-        idx = idx + 1 // sizeOf(l.kind)
+        idx += 1 // sizeOf(l.kind)
       }
 
       val locvars = m.locals.diff(params)
       idx = 0
 
-      for (val l <- locvars) {
+      for (l <- locvars) {
         if (settings.debug.value)
           log("Index value for local variable " + l + ": " + idx)
         l.index = idx
-        idx = idx + 1 // sizeOf(l.kind)
+        idx += 1 // sizeOf(l.kind)
       }
 
     }
@@ -1899,7 +1899,7 @@ abstract class GenMSIL extends SubComponent {
         false
       }
 
-      for (val m <- cls.methods) {
+      for (m <- cls.methods) {
 	if (isEntryPoint(m.symbol)) {
 	  if (entryPoint == null)
 	    entryPoint = m.symbol
@@ -1977,7 +1977,7 @@ abstract class GenMSIL extends SubComponent {
       if (parents.length > 1) {
 	if (settings.debug.value){
 	  log("interfaces:")
-	  for(val i <- Iterator.range(0, interfaces.length)){
+	  for (i <- Iterator.range(0, interfaces.length)){
 	    log("  type: " + parents(i + 1).symbol + ", msil type: " + interfaces(i))
 	  }
 	}
@@ -2002,7 +2002,7 @@ abstract class GenMSIL extends SubComponent {
 
     def createClassMembers0(iclass: IClass): Unit = {
       val mtype = getType(iclass.symbol).asInstanceOf[TypeBuilder]
-      for (val ifield <- iclass.fields) {
+      for (ifield <- iclass.fields) {
         val sym = ifield.symbol
         if (settings.debug.value)
           log("Adding field: " + sym.fullNameString)
@@ -2014,7 +2014,7 @@ abstract class GenMSIL extends SubComponent {
       }
 
       if (iclass.symbol != definitions.ArrayClass)
-      for (val m: IMethod <- iclass.methods) {
+      for (m: IMethod <- iclass.methods) {
         val sym = m.symbol
         if (settings.debug.value)
           log("Creating MethodBuilder for " + Flags.flagsToString(sym.flags) + " " +
@@ -2028,7 +2028,7 @@ abstract class GenMSIL extends SubComponent {
         if (m.symbol.isClassConstructor) {
 	  val constr =
             ownerType.DefineConstructor(attr, CallingConventions.Standard, paramTypes)
-          for (val i <- Iterator.range(0, paramTypes.length)) {
+          for (i <- Iterator.range(0, paramTypes.length)) {
 	    constr.DefineParameter(i, ParameterAttributes.None, msilName(m.params(i).sym))
 	  }
 	  mapConstructor(sym, constr)
@@ -2037,7 +2037,7 @@ abstract class GenMSIL extends SubComponent {
 	  var resType = msilType(m.returnType)
 	  val method =
             ownerType.DefineMethod(getMethodName(sym), attr, resType, paramTypes)
-          for (val i <- Iterator.range(0, paramTypes.length)){
+          for (i <- Iterator.range(0, paramTypes.length)){
 	    method.DefineParameter(i, ParameterAttributes.None, msilName(m.params(i).sym))
 	  }
           if (!methods.contains(sym))
@@ -2145,15 +2145,15 @@ abstract class GenMSIL extends SubComponent {
 						 MOBJECT,
 						 MsilType.EmptyTypes)
 
-      for (val m <- sym.tpe.nonPrivateMembers;
-           m.owner != definitions.ObjectClass && !m.hasFlag(Flags.PROTECTED) &&
+      for (m <- sym.tpe.nonPrivateMembers
+           if m.owner != definitions.ObjectClass && !m.hasFlag(Flags.PROTECTED) &&
            m.isMethod && !m.isClassConstructor && !isStaticSymbol(m) && !m.hasFlag(Flags.CASE))
 	{
 	  if (settings.debug.value)
             log("   Mirroring method: " + m)
           val paramTypes = msilParamTypes(m)
           val paramNames: Array[String] = new Array[String](paramTypes.length)
-          for (val i <- Iterator.range(0, paramTypes.length))
+          for (i <- 0 until paramTypes.length)
             paramNames(i) = "x_" + i
 
 	  // CHECK: verify if getMethodName is better than msilName
@@ -2214,7 +2214,7 @@ abstract class GenMSIL extends SubComponent {
 	"$delegateCaller$$" + nbDelegateCallers,
 	MethodAttributes.Final | MethodAttributes.Public | MethodAttributes.Static,
 	msilType(returnType), paramTypes.map(msilType).toArray)
-      for(val i <- Iterator.range(0, paramTypes.length))
+      for (i <- 0 until paramTypes.length)
 	caller.DefineParameter(i, ParameterAttributes.None, "arg" + i)
       val delegCtor = msilType(delegateType).GetConstructor(Array(MOBJECT, INT_PTR))
       mcode.Emit(OpCodes.Ldnull)
@@ -2226,7 +2226,7 @@ abstract class GenMSIL extends SubComponent {
       val functionApply: MethodInfo = getMethod(functionType.member(nme.apply))
       val dcode: ILGenerator = caller.GetILGenerator()
       dcode.Emit(OpCodes.Ldsfld, anonfunField)
-      for(val i <- Iterator.range(0, paramTypes.length)) {
+      for (i <- 0 until paramTypes.length) {
 	loadArg(dcode)(i)
 	emitBox(dcode, toTypeKind(paramTypes(i)))
       }

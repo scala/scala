@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -210,7 +210,7 @@ trait Namers requires Analyzer {
 
     def enterSyms(trees: List[Tree]): Namer = {
       var namer : Namer = this
-      for (val tree <- trees) {
+      for (tree <- trees) {
         val txt = namer.enterSym(tree)
         if (!(txt eq namer.context)) namer = new Namer(txt)
       }
@@ -232,7 +232,7 @@ trait Namers requires Analyzer {
      */
     def skolemize(tparams: List[AbsTypeDef]): unit = {
       val tskolems = newTypeSkolems(tparams map (.symbol))
-      for (val (tparam, tskolem) <- tparams zip tskolems) tparam.symbol = tskolem
+      for ((tparam, tskolem) <- tparams zip tskolems) tparam.symbol = tskolem
     }
 
     def applicableTypeParams(owner: Symbol): List[Symbol] =
@@ -241,14 +241,12 @@ trait Namers requires Analyzer {
 
     def deSkolemize: TypeMap = new DeSkolemizeMap(applicableTypeParams(context.owner))
 
-
-    private def doLateParams = if(!lateParams.isEmpty) {
-        val todo = lateParams.toList
-        lateParams.clear
-        for(val rec <- todo) {
-          rec._1.finishWith0(rec._2, rec._3, rec._4)
-        }
-      }
+    private def doLateParams = if (!lateParams.isEmpty) {
+      val todo = lateParams.toList
+      lateParams.clear
+      for (rec <- todo)
+        rec._1.finishWith0(rec._2, rec._3, rec._4)
+    }
 
     private def finishWith0(sym: Symbol, tree: Tree, tparams: List[AbsTypeDef]): unit = {
       if (settings.debug.value) log("entered " + sym + " in " + context.owner + ", scope-id = " + context.scope.hashCode());
@@ -519,7 +517,7 @@ trait Namers requires Analyzer {
       // fill in result type and parameter types from overridden symbol if there is a unique one.
       if (meth.owner.isClass && (tpt.isEmpty || vparamss.exists(.exists(.tpt.isEmpty)))) {
         // try to complete from matching definition in base type
-        for (val vparams <- vparamss; val vparam <- vparams)
+        for (vparams <- vparamss; vparam <- vparams)
           if (vparam.tpt.isEmpty) vparam.symbol setInfo WildcardType
         val overridden = overriddenSymbol
         if (overridden != NoSymbol && !(overridden hasFlag OVERLOADED)) {
@@ -528,9 +526,9 @@ trait Namers requires Analyzer {
             case mt => mt
           }
 
-          for (val vparams <- vparamss) {
+          for (vparams <- vparamss) {
             var pfs = resultPt.paramTypes
-            for (val vparam <- vparams) {
+            for (vparam <- vparams) {
               if (vparam.tpt.isEmpty) {
                 vparam.tpt.tpe = pfs.head
                 vparam.symbol setInfo pfs.head
@@ -556,7 +554,7 @@ trait Namers requires Analyzer {
         .info.isInstanceOf[MethodType])) {
         vparamSymss = List(List())
       }
-      for (val vparams <- vparamss; val vparam <- vparams; vparam.tpt.isEmpty) {
+      for (vparams <- vparamss; vparam <- vparams if vparam.tpt.isEmpty) {
         context.error(vparam.pos, "missing parameter type")
         vparam.tpt.tpe = ErrorType
       }
@@ -594,7 +592,7 @@ trait Namers requires Analyzer {
       if (sym hasFlag IMPLICIT) {
         val p = provided(tp);
         //Console.println("check contractive: "+sym+" "+p+"/"+required(tp))
-        for (val r <- required(tp)) {
+        for (r <- required(tp)) {
           if (!isContainedIn(r, p) || (r =:= p)) {
             context.error(sym.pos, "implicit " + sym + " is not contractive," +
                           "\n because the implicit parameter type " + r +
@@ -627,9 +625,9 @@ trait Namers requires Analyzer {
       tree match {
         case defn: MemberDef =>
           val ainfos = for {
-            val annot <- defn.mods.annotations
+            annot <- defn.mods.annotations
             val ainfo = typer.typedAnnotation(annot, typer.getConstant)
-            !ainfo.atp.isError
+            if !ainfo.atp.isError
           } yield ainfo
           if (!ainfos.isEmpty) {
             val annotated = if (sym.isModule) sym.moduleClass else sym

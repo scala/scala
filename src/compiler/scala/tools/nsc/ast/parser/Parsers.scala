@@ -1877,7 +1877,7 @@ trait Parsers {
         }
         trees
       }
-      for (val p <- lhs.toList; val d <- mkDefs(p)) yield d
+      for (p <- lhs.toList; d <- mkDefs(p)) yield d
     }
 
     /** VarDef ::= Id {`,' Id} [`:' Type] `=' Expr
@@ -1903,7 +1903,7 @@ trait Parsers {
         newmods = newmods | Flags.DEFERRED
         EmptyTree
       }
-      for (val (pos, name) <- lhs.toList) yield
+      for ((pos, name) <- lhs.toList) yield
         atPos(pos) { ValDef(newmods, name, tp.duplicate, rhs.duplicate) }
     }
 

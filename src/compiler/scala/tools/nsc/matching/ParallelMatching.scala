@@ -1,10 +1,19 @@
+/* NSC -- new Scala compiler
+ * Copyright 2005-2007 LAMP/EPFL
+ * @author Burak Emir
+ */
+// $Id$
+
 package scala.tools.nsc.matching
 
-import compat.StringBuilder
 import scala.tools.nsc.util.Position
 
-/** utility methods (not just for ParallelMatching) */
-trait ParallelMatching requires (transform.ExplicitOuter with PatternMatchers with CodeFactory) {
+/** Utility methods (not just for ParallelMatching).
+ *
+ *  @author Burak Emir
+ */
+trait ParallelMatching  {
+  self: transform.ExplicitOuter with PatternMatchers with CodeFactory =>
 
   import global._
 
@@ -12,7 +21,7 @@ trait ParallelMatching requires (transform.ExplicitOuter with PatternMatchers wi
   // ----------------------------------   data
 
   sealed trait RuleApplication
-  case class ErrorRule    extends RuleApplication
+  case class ErrorRule extends RuleApplication
   case class VariableRule(subst:List[Pair[Symbol,Symbol]], guard: Tree, body: Tree) extends RuleApplication
 
   def MixtureRule(scrutinee:Symbol, column:List[Tree], rest:Rep): MixtureRule = {
@@ -337,14 +346,13 @@ trait ParallelMatching requires (transform.ExplicitOuter with PatternMatchers wi
     def combine(colcom: List[(Int,Set[Symbol])]): List[List[(Int,Symbol)]] = colcom match {
       case Nil => Nil
       case (i,syms)::Nil  => syms.toList.map { sym => List((i,sym)) }
-      case (i,syms)::cs   => for(val s <- syms.toList; val rest <- combine(cs)) yield (i,s) :: rest
+      case (i,syms)::cs   => for (s <- syms.toList; rest <- combine(cs)) yield (i,s) :: rest
     }
 
     if(!sealedCols.isEmpty) {
       DEBUG("cols"+sealedCols)
       DEBUG("comb")
-      for(val com <- sealedComb)
-        DEBUG(com.toString)
+      for (com <- sealedComb) DEBUG(com.toString)
 
       val allcomb = combine(sealedCols zip sealedComb)
       //Console.println("all comb!" + allcomb)
@@ -358,10 +366,9 @@ trait ParallelMatching requires (transform.ExplicitOuter with PatternMatchers wi
       val coversAll = allcomb forall { combination => row exists { r => covers(r._1, combination)}}
       //Console.println("all combinations covered? "+coversAll)
       if(!coversAll) {
-        val sb = new compat.StringBuilder()
+        val sb = new StringBuilder()
         sb.append("match is not exhaustive!\n")
-        for(val open <- allcomb;
-            !(row exists { r => covers(r._1, open)})) {
+        for (open <- allcomb if !(row exists { r => covers(r._1, open)})) {
               sb.append("missing combination ")
               val NPAD = 15
               def pad(s:String) = { Iterator.range(1,NPAD - s.length).foreach { x => sb.append(" ") }; sb.append(s) }
@@ -410,10 +417,10 @@ trait ParallelMatching requires (transform.ExplicitOuter with PatternMatchers wi
       val sb   = new StringBuilder
       val NPAD = 15
       def pad(s:String) = { Iterator.range(1,NPAD - s.length).foreach { x => sb.append(" ") }; sb.append(s) }
-      for(val tmp <- temp) pad(tmp.name.toString)
+      for (tmp <- temp) pad(tmp.name.toString)
       sb.append('\n')
-      for(val (r,i) <- row.zipWithIndex) {
-        for(val c <- r._1 ::: List(r._2, r._3)) {
+      for ((r,i) <- row.zipWithIndex) {
+        for (c <- r._1 ::: List(r._2, r._3)) {
           pad(c.toString)
         }
         sb.append('\n')
@@ -556,20 +563,20 @@ trait ParallelMatching requires (transform.ExplicitOuter with PatternMatchers wi
   }
 
   def condition(tpe: Type, scrutineeTree: Tree): Tree = {
-    assert(  tpe ne NoType  )
+    assert(tpe ne NoType)
     assert(scrutineeTree.tpe ne NoType)
-    if(tpe.isInstanceOf[SingletonType] && !tpe.isInstanceOf[ConstantType]) {
-      if(scrutineeTree.tpe <:< definitions.AnyRefClass.tpe)
+    if (tpe.isInstanceOf[SingletonType] && !tpe.isInstanceOf[ConstantType]) {
+      if (scrutineeTree.tpe <:< definitions.AnyRefClass.tpe)
         Eq(gen.mkAttributedRef(tpe.symbol), scrutineeTree)             // object
       else
         Equals(gen.mkAttributedRef(tpe.symbol), scrutineeTree)             // object
-    } else if(tpe.isInstanceOf[ConstantType]) {
+    } else if (tpe.isInstanceOf[ConstantType]) {
       val value = tpe.asInstanceOf[ConstantType].value
       //if(false && value.isInstanceOf[NamedConstant])
       //  Equals(Ident(scrut), value.asInstanceOf[NamedConstant].tree)             // constant
       //assert(scrut.tpe <:< definitions.AnyRefClass.tpe, "stupid, should be caught by type checker "+value)
       //else
-      if(value == Constant(null) && scrutineeTree.tpe <:< definitions.AnyRefClass.tpe)
+      if (value == Constant(null) && scrutineeTree.tpe <:< definitions.AnyRefClass.tpe)
         Eq(scrutineeTree, Literal(value))             // constant
       else
         Equals(scrutineeTree, Literal(value))             // constant
@@ -615,8 +622,8 @@ trait ParallelMatching requires (transform.ExplicitOuter with PatternMatchers wi
     theRef = handleOuter(theRef)
 
     val outerAcc = outerAccessor(tpe2test.symbol)
-    if(outerAcc == NoSymbol) {
-      if(settings.debug.value) cunit.warning(scrutinee.pos, "no outer acc for "+tpe2test.symbol)
+    if (outerAcc == NoSymbol) {
+      if (settings.debug.value) cunit.warning(scrutinee.pos, "no outer acc for "+tpe2test.symbol)
       cond
     } else
       And(cond,

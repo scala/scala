@@ -98,8 +98,8 @@ abstract class LiftCode extends Transform {
         reflect.TypeApply(reify(fun), args map (.tpe) map reify)
 
       case Function(vparams, body) =>
-        var env1 = env;
-        for (val vparam <- vparams) {
+        var env1 = env
+        for (vparam <- vparams) {
           val local = reflect.LocalValue(
             currentOwner, vparam.symbol.name.toString(), reify(vparam.symbol.tpe));
           env1.update(vparam.symbol, local);
@@ -142,7 +142,7 @@ abstract class LiftCode extends Transform {
         reflect.ClassDef(rsym, rtpe, rimp.asInstanceOf[reflect.Template])
 
       case tmpl @ Template(parents, body) =>
-        val rparents = for(val p <- parents) yield { reify(p.tpe) }
+        val rparents = for (p <- parents) yield { reify(p.tpe) }
         reflect.Template(rparents, body.map(reify))
 
       case dd @ DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
@@ -266,7 +266,7 @@ abstract class LiftCode extends Transform {
           val name = className(c)
           if (name.length() == 0) throw new Error("don't know how to inject " + value)
           val injectedArgs = new ListBuffer[Tree]
-          for (val i <- 0 until c.productArity)
+          for (i <- 0 until c.productArity)
             injectedArgs += inject(c.productElement(i))
           New(Ident(definitions.getClass(name)), List(injectedArgs.toList))
         }

@@ -278,7 +278,7 @@ abstract class WordBerrySethi extends BaseBerrySethi {
    System.out.println("#positions:" + pos);
    System.out.println("posMap:");
 
-   for( Iterator it = this.posMap.keySet().iterator();
+   for (Iterator it = this.posMap.keySet().iterator();
    it.hasNext(); ) {
    Tree t = (Tree) it.next();
                   switch(t) {
@@ -289,7 +289,7 @@ abstract class WordBerrySethi extends BaseBerrySethi {
                   }
             }
             System.out.println("\nfollow: ");
-            for( int j = 1; j < pos; j++ ) {
+            for (int j = 1; j < pos; j++ ) {
                   TreeSet fol = (TreeSet) this.follow.get(new Integer(j));
                   System.out.print("("+j+" -> "+fol.toString()+") ");
                   //debugPrint( fol );

@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -9,47 +9,53 @@
 // $Id$
 
 
-package scala.xml.factory;
+package scala.xml.factory
 
 
-import scala.xml.parsing.ValidatingMarkupHandler;
+import scala.xml.parsing.ValidatingMarkupHandler
 
+/**
+ *  @author Burak Emir
+ */
 abstract class Binder(val preserveWS: Boolean) extends ValidatingMarkupHandler {
 
-  var result: NodeBuffer = new NodeBuffer();
+  var result: NodeBuffer = new NodeBuffer()
 
   def reportSyntaxError(pos:Int, str:String) = {}
 
-  final def procInstr(pos: Int, target: String, txt: String ) =
-    ProcInstr(target, txt);
+  final def procInstr(pos: Int, target: String, txt: String) =
+    ProcInstr(target, txt)
 
-  final def comment(pos: Int, txt: String ) =
-    Comment( txt );
+  final def comment(pos: Int, txt: String) =
+    Comment(txt)
 
   final def entityRef(pos: Int, n: String) =
-    EntityRef( n );
+    EntityRef(n)
 
-  final def text(pos: Int, txt:String) =
-    Text( txt );
+  final def text(pos: Int, txt: String) =
+    Text(txt)
 
   final def traverse(n:Node): Unit = n match {
-    case x:ProcInstr => result &+ procInstr(0, x.target, x.text)
-    case x:Comment   => result &+ comment(0, x.text)
-    case x:Text      => result &+ text(0, x.data)
-    case x:EntityRef => result &+ entityRef(0, x.entityName)
+    case x:ProcInstr =>
+      result &+ procInstr(0, x.target, x.text)
+    case x:Comment   =>
+      result &+ comment(0, x.text)
+    case x:Text      =>
+      result &+ text(0, x.data)
+    case x:EntityRef =>
+      result &+ entityRef(0, x.entityName)
     case _ =>
-      elemStart(0, n.prefix, n.label, n.attributes, n.scope);
-      val old = result;
-      result = new NodeBuffer();
-      for(val m <- n.child)
-        traverse(m);
+      elemStart(0, n.prefix, n.label, n.attributes, n.scope)
+      val old = result
+      result = new NodeBuffer()
+      for (m <- n.child) traverse(m)
       result = old &+ elem(0, n.prefix, n.label, n.attributes, n.scope, NodeSeq.fromSeq(result)).toList;
-      elemEnd(0, n.prefix, n.label);
+      elemEnd(0, n.prefix, n.label)
   }
 
-  final def validate(n:Node): Node = {
-    this.rootLabel = n.label;
-    traverse(n);
+  final def validate(n: Node): Node = {
+    this.rootLabel = n.label
+    traverse(n)
     result(0)
   }
 }

@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2006 LAMP/EPFL
+ * Copyright 2006-2007 LAMP/EPFL
  * @author  Lex Spoon
  */
 
@@ -29,13 +29,11 @@ extends Settings(error) {
         "-nocompdaemon",
         "do not use the fsc compilation daemon")
 
-  /* For some reason, "object defines extends Setting(...)"
-     does not work here.  The object is present but the setting
-     is not added to allsettings.  Thus,
-  */
-  class DefinesSetting
-  extends Setting("set a Java property")
-  {
+  /** For some reason, "object defines extends Setting(...)"
+   *  does not work here.  The object is present but the setting
+   *  is not added to allsettings.  Thus,
+   */
+  class DefinesSetting extends Setting("set a Java property") {
 
     def name = "-D<prop>"
 
@@ -47,17 +45,15 @@ extends Settings(error) {
       args match {
         case arg0::rest
         if arg0.startsWith("-D") =>
-        {
           val stripD = arg0.substring(2)
           val eqidx = stripD.indexOf('=')
           val addition =
-            if(eqidx < 0)
+            if (eqidx < 0)
               (stripD, "")
             else
               (stripD.substring(0, eqidx), stripD.substring(eqidx+1))
           props += addition
           rest
-        }
 
         case _ => args
       }
@@ -66,7 +62,7 @@ extends Settings(error) {
     /** Apply the specified properties to the current JVM */
     def applyToCurrentJVM = {
       val systemProps = getProperties
-      for(val (key, value) <- props.toList)
+      for ((key, value) <- props.toList)
         systemProps.setProperty(key, value)
     }
 

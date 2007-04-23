@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -14,7 +14,8 @@ import symtab.Flags._
  *  @author Martin Odersky
  *  @version 1.0
  */
-trait Infer requires Analyzer {
+trait Infer {
+  self: Analyzer =>
   import global._
   import definitions._
   import posAssigner.atPos
@@ -46,7 +47,7 @@ trait Infer requires Analyzer {
     }
     if (isVarArgs(formals1)) {
       val ft = formals1.last.normalize.typeArgs.head
-      formals1.init ::: (for (val i <- List.range(formals1.length - 1, nargs)) yield ft)
+      formals1.init ::: (for (i <- List.range(formals1.length - 1, nargs)) yield ft)
     } else formals1
   }
 
@@ -157,7 +158,7 @@ trait Infer requires Analyzer {
         val bound: Type = if (up) tparam.info.bounds.hi else tparam.info.bounds.lo
         // Console.println("solveOne0 "+tvar+" "+config+" "+bound);//DEBUG
         var cyclic = bound contains tparam
-        for (val (tvar2, (tparam2, variance2)) <- config) {
+        for ((tvar2, (tparam2, variance2)) <- config) {
           if (tparam2 != tparam &&
               ((bound contains tparam2) ||
                up && (tparam2.info.bounds.lo =:= tparam.tpe) ||  //@M TODO: might be affected by change to tpe in Symbol
@@ -172,7 +173,7 @@ trait Infer requires Analyzer {
               tvar.constr.hibounds =
                 bound.instantiateTypeParams(tparams, tvars) :: tvar.constr.hibounds
             }
-            for (val tparam2 <- tparams)
+            for (tparam2 <- tparams)
               if (tparam2.info.bounds.lo =:= tparam.tpe)  //@M TODO: might be affected by change to tpe in Symbol
                 tvar.constr.hibounds =
                   tparam2.tpe.instantiateTypeParams(tparams, tvars) :: tvar.constr.hibounds
@@ -181,7 +182,7 @@ trait Infer requires Analyzer {
               tvar.constr.lobounds =
                 bound.instantiateTypeParams(tparams, tvars) :: tvar.constr.lobounds
             }
-            for (val tparam2 <- tparams)
+            for (tparam2 <- tparams)
               if (tparam2.info.bounds.hi =:= tparam.tpe)  //@M TODO: might be affected by change to tpe in Symbol
                 tvar.constr.lobounds =
                   tparam2.tpe.instantiateTypeParams(tparams, tvars) :: tvar.constr.lobounds
@@ -193,7 +194,7 @@ trait Infer requires Analyzer {
         assertNonCyclic(tvar)//debug
       }
     }
-    for (val (tvar, (tparam, variance)) <- config)
+    for ((tvar, (tparam, variance)) <- config)
       solveOne(tvar, tparam, variance)
     tvars map instantiate
   }
@@ -310,9 +311,9 @@ trait Infer requires Analyzer {
         val syms1 = typeRefs.collect(tp1)
         val syms2 = typeRefs.collect(tp2)
         for {
-          val sym1 <- syms1
-          val sym2 <- syms2
-          sym1 != sym2 && sym1.toString == sym2.toString
+          sym1 <- syms1
+          sym2 <- syms2
+          if sym1 != sym2 && sym1.toString == sym2.toString
         } yield {
           val name = sym1.name
           explainName(sym1)
@@ -324,7 +325,7 @@ trait Infer requires Analyzer {
 
       val result = op
 
-      for (val (sym1, sym2, name) <- patches) {
+      for ((sym1, sym2, name) <- patches) {
         sym1.name = name
         sym2.name = name
       }
@@ -534,7 +535,7 @@ trait Infer requires Analyzer {
         throw new DeferredNoInstance(() =>
           "result type " + normalize(restpe) + " is incompatible with expected type " + pt)
       }
-      for (val tvar <- tvars)
+      for (tvar <- tvars)
         if (!isFullyDefined(tvar)) tvar.constr.inst = NoType
 
       // Then define remaining type variables from argument types.
@@ -700,16 +701,16 @@ trait Infer requires Analyzer {
         def varianceMismatches(as: Iterable[(Symbol, Symbol)]): unit = _varianceMismatches ++= as
         def stricterBounds(as: Iterable[(Symbol, Symbol)]): unit = _stricterBounds ++= as
 
-        for(val (hkarg, hkparam) <- hkargs zip hkparams) {
-          if(hkparam.typeParams.isEmpty) { // base-case: kind *
-            if(!variancesMatch(hkarg, hkparam))
+        for ((hkarg, hkparam) <- hkargs zip hkparams) {
+          if (hkparam.typeParams.isEmpty) { // base-case: kind *
+            if (!variancesMatch(hkarg, hkparam))
               varianceMismatch(hkarg, hkparam)
 
             // instantiateTypeParams(tparams, targs) --> higher-order bounds may contain references to type arguments
             // substSym(hkparams, hkargs) --> these types are going to be compared as types of kind *
             //    --> their arguments use different symbols, but are conceptually the same
             //        (could also replace the types by polytypes, but can't just strip the symbols, as ordering is lost then)
-            if(!(hkparam.info.instantiateTypeParams(tparams, targs).bounds.substSym(hkparams, hkargs) <:< hkarg.info.bounds))
+            if (!(hkparam.info.instantiateTypeParams(tparams, targs).bounds.substSym(hkparams, hkargs) <:< hkarg.info.bounds))
               stricterBound(hkarg, hkparam)
           } else {
             val (vm, sb) = checkKindBoundsHK(hkarg.typeParams, hkparam.typeParams)
@@ -728,20 +729,23 @@ trait Infer requires Analyzer {
         else "invariant";
 
       def qualify(a0: Symbol, b0: Symbol): String = if(a0.toString != b0.toString) "" else {
-        assert((a0 ne b0) && (a0.owner ne b0.owner)); var a=a0; var b=b0
-        while(a.owner.name == b.owner.name) {a=a.owner; b=b.owner}
-        if(a.locationString ne "") " (" + a.locationString.trim + ")" else ""
+        assert((a0 ne b0) && (a0.owner ne b0.owner));
+        var a = a0; var b = b0
+        while (a.owner.name == b.owner.name) { a = a.owner; b = b.owner}
+        if (a.locationString ne "") " (" + a.locationString.trim + ")" else ""
       }
 
       val errors = new ListBuffer[String]
       (tparams zip targs).foreach{ case (tparam, targ) if(targ.isHigherKinded) =>
         val (varianceMismatches, stricterBounds) = checkKindBoundsHK(targ.typeParams, tparam.typeParams)
 
-        if(!(varianceMismatches.isEmpty && stricterBounds.isEmpty)){
+        if (!(varianceMismatches.isEmpty && stricterBounds.isEmpty)){
           errors += (targ+"'s type parameters do not match "+tparam+"'s expected parameters: "+
-            (for(val (a,p) <- varianceMismatches) yield a+qualify(a,p)+ " is "+varStr(a)+", but "+
+            (for ((a, p) <- varianceMismatches)
+             yield a+qualify(a,p)+ " is "+varStr(a)+", but "+
               p+qualify(p,a)+" is declared "+varStr(p)).toList.mkString("", ", ", "") +
-            (for(val (a,p) <- stricterBounds) yield a+qualify(a,p)+"'s bounds "+a.info+" are stricter than "+
+            (for ((a, p) <- stricterBounds)
+              yield a+qualify(a,p)+"'s bounds "+a.info+" are stricter than "+
               p+qualify(p,a)+"'s declared bounds "+p.info).toList.mkString("", ", ", ""))
         }
         case _ =>
@@ -962,7 +966,7 @@ trait Infer requires Analyzer {
           else if (sym == AllClass || sym == AllRefClass)
             error(pos, "this type cannot be used in a type pattern")
           else
-            for (val arg <- args) {
+            for (arg <- args) {
               if (sym == ArrayClass) checkCheckable(pos, arg)
               else arg match {
                 case TypeRef(_, sym, _) if isLocalBinding(sym) =>
@@ -973,7 +977,7 @@ trait Infer requires Analyzer {
             }
           checkCheckable(pos, pre)
         case RefinedType(parents, decls) =>
-          if (decls.isEmpty) for (val p <- parents) checkCheckable(pos, p)
+          if (decls.isEmpty) for (p <- parents) checkCheckable(pos, p)
           else patternWarning(tp, "refinement ")
         case ThisType(_) =>
           ;
@@ -984,8 +988,8 @@ trait Infer requires Analyzer {
       }
     }
 
-    /** Type intersection of simple type `tp1' with general type `tp2'
-     *  The result eliminates some redundancies
+    /** Type intersection of simple type <code>tp1</code> with general
+     *  type <code>tp2</code>. The result eliminates some redundancies.
      */
     def intersect(tp1: Type, tp2: Type): Type = {
       if (tp1 <:< tp2) tp1
@@ -1081,7 +1085,8 @@ trait Infer requires Analyzer {
     /** A traverser to collect type parameters referred to in a type
      */
     object freeTypeParamsOfTerms extends SymCollector {
-      protected def includeCondition(sym: Symbol): boolean = sym.isAbstractType && sym.owner.isTerm
+      protected def includeCondition(sym: Symbol): boolean =
+        sym.isAbstractType && sym.owner.isTerm
     }
 
     object typeRefs extends SymCollector {
@@ -1098,7 +1103,7 @@ trait Infer requires Analyzer {
 
     def checkNotShadowed(pos: Position, pre: Type, best: Symbol, eligible: List[Symbol]) =
       if (!phase.erasedTypes)
-        for (val alt <- eligible) {
+        for (alt <- eligible) {
           if (alt.owner != best.owner && alt.owner.isSubClass(best.owner))
             error(pos,
                   "erroneous reference to overloaded definition,\n"+

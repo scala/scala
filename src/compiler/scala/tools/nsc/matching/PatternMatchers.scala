@@ -1,13 +1,12 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author Burak Emir
  */
 // $Id$
 
 package scala.tools.nsc.matching
 
-import compat.StringBuilder
-import scala.tools.nsc.util.{Position,NoPosition}
+import scala.tools.nsc.util.{Position, NoPosition}
 
 /** This trait ...
  *
@@ -167,7 +166,7 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes with P
         if(i != -1) {
           val CaseDef(_,_,b) = cases(i)
           DEBUG("*** damn, unreachable!")
-          //for(val b <- bodies) {
+          //for (b <- bodies) {
           //  Console.println(b)
           //}
           cunit.error(b.pos, "unreachable code")
@@ -205,7 +204,7 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes with P
             Console.println("****")
             Console.println("**** falling back, cause " + e.getMessage)
             Console.println("****")
-            for(val CaseDef(pat,guard,_) <- cases)
+            for (CaseDef(pat,guard,_) <- cases)
               Console.println(pat.toString)
           }
       }
@@ -228,17 +227,17 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes with P
         case _h: Header =>
           val h = _h.findLast;
 
-        // target.and is a header
-        //
-        //print()
-        //cunit.error(pat.pos, "duplicate case")
-        h.or = pDefaultPat(caseDef.pos, target.tpe)
-        h.or.and = pBody(caseDef.pos, env.getBoundVars(), guard, body)
-        //print()
-        //Console.println("tao = "+target.and.or)
-        //Console.println("tao = "+target.and.or.or)
+          // target.and is a header
+          //
+          //print()
+          //cunit.error(pat.pos, "duplicate case")
+          h.or = pDefaultPat(caseDef.pos, target.tpe)
+          h.or.and = pBody(caseDef.pos, env.getBoundVars(), guard, body)
+          //print()
+          //Console.println("tao = "+target.and.or)
+          //Console.println("tao = "+target.and.or.or)
         case _ =>
-          Predef.error("overlapping match at unit = " + cunit + "; cdef = " + caseDef);
+          Predef.error("overlapping match at unit = " + cunit + "; cdef = " + caseDef)
 
       }
     }
@@ -386,7 +385,7 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes with P
         var i = 0; while (i < ts.length) {
           val target = enter1(ts(i), -1, subroot, subroot.casted, subenv)
           target.and = pBody(tree.pos)
-          i = i + 1
+          i += 1
         }
         pAltPat(tree.pos, subroot.and.asInstanceOf[Header])
 /*
@@ -622,7 +621,7 @@ print()
       }
       var i = 0; while (i < pats.length) {
         target = enter1(pats(i), i, target, casted, env)
-        i = i + 1
+        i += 1
       }
       target
     }

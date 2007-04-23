@@ -187,9 +187,9 @@ class PrettyPrinter( width:Int, step:Int ) {
              val sq:Seq[String] = stg.split(" ");
              val it = sq.elements;
              it.next;
-             for(c <- it) {
-               makeBox( ind+len2-2, c );
-               makeBreak();
+             for (c <- it) {
+               makeBox(ind+len2-2, c)
+               makeBreak()
              }
              }*/
             makeBox(ind, stg.substring(len2, stg.length()))

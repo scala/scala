@@ -101,7 +101,7 @@ object EmitManPage {
           out.println("\n.fi")
 
         case lst:BulletList =>
-          for(item <- lst.items) {
+          for (item <- lst.items) {
             out.println(".IP")
             emitText(item)
             out.println

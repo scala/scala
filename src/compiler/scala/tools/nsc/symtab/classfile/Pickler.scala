@@ -206,7 +206,7 @@ abstract class Pickler extends SubComponent {
           putRefTypes(formals); putType(restpe)
         case reflect.PolyType(typeParams, typeBounds, resultType) =>
           putRefSymbols(typeParams)
-          for(val (t1,t2) <- typeBounds) {
+          for ((t1,t2) <- typeBounds) {
             putType(t1)
             putType(t2)
           }
@@ -479,7 +479,7 @@ abstract class Pickler extends SubComponent {
           writeRef(sym)
           writeRef(ret)
           writeRef(rhs)
-          for(val vparams <- vparamss) {
+          for (vparams <- vparamss) {
             writeNat(vparams.length)
             writeRefs(vparams)
           }
@@ -540,7 +540,7 @@ abstract class Pickler extends SubComponent {
           writeNat(POLYrtpe)
           writeRef(resultType)
           writeNat(typeBounds.length)
-          for(val (t1,t2) <- typeBounds) {
+          for ((t1,t2) <- typeBounds) {
             writeRef(t1)
             writeRef(t2)
           }
