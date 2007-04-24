@@ -29,6 +29,7 @@ private[actors] class ActorProxy(t: Thread) extends Actor {
    * Terminates with exit reason <code>'normal</code>.
    */
   override def exit(): Nothing = {
+    shouldExit = false
     // links
     if (!links.isEmpty)
       exitLinked()
