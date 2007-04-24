@@ -12,6 +12,8 @@
 package scala.runtime
 
 
+import Predef._
+
 final class RichFloat(x: Float) extends Proxy with Ordered[Float] {
 
   // Proxy.self
