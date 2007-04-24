@@ -320,12 +320,15 @@ BUILD LOCAL REFERENCE (LOCKER) LAYER
     <starr
       srcdir="${src.dir}/library"
       destdir="${locker.dir}/lib/library"
-      usepredefs="no" deprecation="yes" unchecked="yes"
+      usepredefs="no"
+      addparams="${nsc.params}"
+      deprecation="yes" unchecked="yes"
       classpath="${locker.dir}/lib/library"
       includes="scala/Predef.scala"/>
     <starr
       srcdir="${src.dir}/library"
       destdir="${locker.dir}/lib/library"
+      addparams="${nsc.params}"
       deprecation="yes" unchecked="yes"
       classpath="${locker.dir}/lib/library">
       <include name="**/*.scala"/>
@@ -339,6 +342,7 @@ BUILD LOCAL REFERENCE (LOCKER) LAYER
     <starr
       srcdir="${src.dir}/compiler"
       destdir="${locker.dir}/lib/compiler"
+      addparams="${nsc.params}"
       deprecation="yes" unchecked="yes">
       <classpath>
         <pathelement location="${locker.dir}/lib/library"/>
@@ -434,7 +438,8 @@ BUILD QUICK-TEST LAYER
     <locker
       srcdir="${src.dir}/library"
       destdir="${quick.dir}/lib/library"
-      usepredefs="no" addparams="${nsc.params}"
+      usepredefs="no"
+      addparams="${nsc.params}"
       deprecation="yes" unchecked="yes"
       scalacdebugging="${nsc.log-files}"
       classpath="${quick.dir}/lib/library"
