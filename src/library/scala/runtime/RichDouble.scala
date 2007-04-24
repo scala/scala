@@ -25,6 +25,24 @@ final class RichDouble(x: Double) extends Proxy with Ordered[Double] {
   def abs: Double = Math.abs(x)
 
   def round: Long = Math.round(x)
+  def ceil: Double = Math.ceil(x)
+  def floor: Double = Math.floor(x)
+
+  /** Converts an angle measured in degrees to an approximately equivalent
+   *  angle measured in radians.
+   *
+   *  @param  x an angle, in degrees
+   *  @return the measurement of the angle <code>x</code> in radians.
+   */
+  def toRadians: Double = Math.toRadians(x)
+
+  /** Converts an angle measured in radians to an approximately equivalent
+   *  angle measured in degrees.
+   *
+   *  @param  x angle, in radians
+   *  @return the measurement of the angle <code>x</code> in degrees.
+   */
+  def toDegrees: Double = Math.toDegrees(x)
 
   // isNaN is provided by the implicit conversion to java.lang.Double
   // def isNaN: Boolean = java.lang.Double.isNaN(x)

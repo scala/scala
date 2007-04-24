@@ -25,6 +25,24 @@ final class RichFloat(x: Float) extends Proxy with Ordered[Float] {
   def abs: Float = Math.abs(x)
 
   def round: Int = Math.round(x)
+  def ceil: Float = Math.ceil(x).toFloat
+  def floor: Float = Math.floor(x).toFloat
+
+  /** Converts an angle measured in degrees to an approximately equivalent
+   *  angle measured in radians.
+   *
+   *  @param  x an angle, in degrees
+   *  @return the measurement of the angle <code>x</code> in radians.
+   */
+  def toRadians: Float = Math.toRadians(x).toFloat
+
+  /** Converts an angle measured in radians to an approximately equivalent
+   *  angle measured in degrees.
+   *
+   *  @param  x angle, in radians
+   *  @return the measurement of the angle <code>x</code> in degrees.
+   */
+  def toDegrees: Float = Math.toDegrees(x).toFloat
 
   // isNaN is provided by the implicit conversion to java.lang.Float
   // def isNaN: Boolean = java.lang.Float.isNaN(x)

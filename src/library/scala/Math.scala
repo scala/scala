@@ -17,6 +17,57 @@ package scala
  */
 object Math {
 
+  /** The smalles possible value for scala.Byte. */
+  val MIN_BYTE   = java.lang.Byte.MIN_VALUE
+  /** The greatest possible value for scala.Byte. */
+  val MAX_BYTE   = java.lang.Byte.MAX_VALUE
+
+  /** The smalles possible value for scala.Short. */
+  val MIN_SHORT  = java.lang.Short.MIN_VALUE
+  /** The greatest possible value for scala.Short. */
+  val MAX_SHORT  = java.lang.Short.MAX_VALUE
+
+  /** The smalles possible value for scala.Char. */
+  val MIN_CHAR   = java.lang.Character.MIN_VALUE
+  /** The greatest possible value for scala.Char. */
+  val MAX_CHAR   = java.lang.Character.MAX_VALUE
+
+  /** The smalles possible value for scala.Int. */
+  val MIN_INT    = java.lang.Integer.MIN_VALUE
+  /** The greatest possible value for scala.Int. */
+  val MAX_INT    = java.lang.Integer.MAX_VALUE
+
+  /** The smalles possible value for scala.Long. */
+  val MIN_LONG   = java.lang.Long.MIN_VALUE
+  /** The greatest possible value for scala.Long. */
+  val MAX_LONG   = java.lang.Long.MAX_VALUE
+
+  /** The smalles possible value for scala.Float. */
+  val MIN_FLOAT  = -java.lang.Float.MAX_VALUE
+  /** The smalles difference between two values of scala.Float. */
+  val EPS_FLOAT  = java.lang.Float.MIN_VALUE
+  /** The greatest possible value for scala.Float. */
+  val MAX_FLOAT  = java.lang.Float.MAX_VALUE
+  /** A value of type scala.Float that represents no number. */
+  val NaN_FLOAT  = java.lang.Float.NaN
+  /** Negative infinity of type scala.Float*/
+  val NEG_INF_FLOAT = java.lang.Float.NEGATIVE_INFINITY
+  /** Positive infinity of type scala.Float*/
+  val POS_INF_FLOAT = java.lang.Float.POSITIVE_INFINITY
+
+  /** The smalles possible value for scala.Double. */
+  val MIN_DOUBLE = -java.lang.Double.MAX_VALUE
+  /** The smalles difference between two values of scala.Double. */
+  val EPS_DOUBLE = java.lang.Double.MIN_VALUE
+  /** The greatest possible value for scala.Double. */
+  val MAX_DOUBLE = java.lang.Double.MAX_VALUE
+  /** A value of type scala.Double that represents no number. */
+  val NaN_DOUBLE = java.lang.Double.NaN
+  /** Negative infinity of type scala.Double*/
+  val NEG_INF_DOUBLE = java.lang.Double.NEGATIVE_INFINITY
+  /** Positive infinity of type scala.Double*/
+  val POS_INF_DOUBLE = java.lang.Double.POSITIVE_INFINITY
+
   /** The <code>double</code> value that is closer than any other to
    *  <code>e</code>, the base of the natural logarithms.
    */
@@ -67,6 +118,7 @@ object Math {
   def log(x: Double): Double = java.lang.Math.log(x)
   def sqrt(x: Double): Double = java.lang.Math.sqrt(x)
   def IEEEremainder(x: Double, y: Double): Double = java.lang.Math.IEEEremainder(x, y)
+
   def ceil(x: Double): Double = java.lang.Math.ceil(x)
   def floor(x: Double): Double = java.lang.Math.floor(x)
 
