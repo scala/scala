@@ -18,8 +18,7 @@ import scala.compat.Platform
 
 /**
  * <p>This scheduler uses a thread pool to execute tasks that are generated
- * by the execution of actors. Unlike <code>ThreadPoolScheduler</code>, this
- * scheduler is available on all Java versions >= 1.4.</p>
+ * by the execution of actors.</p>
  *
  * @version 0.9.5
  * @author Philipp Haller
