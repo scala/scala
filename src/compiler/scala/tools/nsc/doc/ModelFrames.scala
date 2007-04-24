@@ -10,7 +10,7 @@ import java.io.{File, FileWriter}
 
 import scala.collection.jcl
 import scala.compat.Platform.{EOL => LINE_SEPARATOR}
-import scala.xml._
+import scala.xml.{NodeSeq, Text, Unparsed, Utility}
 
 /** This class provides HTML document framing functionality.
   *
@@ -20,17 +20,19 @@ trait ModelFrames extends ModelExtractor {
   import DocUtil._
   def outdir: String
   def windowTitle: String
-  def documentTitle: String
+  def docTitle: String
   def contentFrame = "contentFrame"
   def classesFrame = "classesFrame"
   def modulesFrame = "modulesFrame"
+
   protected val FILE_EXTENSION_HTML = ".html"
   protected val NAME_SUFFIX_OBJECT  = "$object"
   protected val NAME_SUFFIX_PACKAGE = "$package"
 
-
-  def rootTitle = <div class="page-title"> Scala 2<br/>API Specification</div>;
-  def rootDesc = <p>This document is the API specification for Scala 2.</p>;
+  def rootTitle =
+    <div class="page-title">{load(docTitle)}<br/>API Specification</div>;
+  def rootDesc =
+    <p>{load("This document is the API specification for " + docTitle)}</p>;
 
   final def hasLink(sym: global.Symbol): Boolean =
     if (sym == global.NoSymbol) false
@@ -52,7 +54,7 @@ trait ModelFrames extends ModelExtractor {
         idx = path.indexOf('/', idx)
         //System.err.println(path + " idx=" + idx)
         ct.append(if (idx != -1) "../" else "")
-        idx = idx + (if (idx == -1) 0 else 1)
+        idx += (if (idx == -1) 0 else 1)
       }
       ct.toString
     }
@@ -67,31 +69,38 @@ trait ModelFrames extends ModelExtractor {
       writer.write(str, 0, str.length())
       writer.close()
     }
-    protected def body: NodeSeq;
-    protected def title: String;
-    protected def hasBody = true;
+    protected def body: NodeSeq
+    protected def title: String
+    protected def hasBody = true
 
-    //def urlFor(entity : Entity, target : String) : NodeSeq;
-    def urlFor(entity : Entity) : String = {
-      val ret = this.urlFor(entity.sym);
-      assert(ret != null); ret;
+    //def urlFor(entity: Entity, target: String): NodeSeq
+    def urlFor(entity: Entity): String = {
+      val ret = this.urlFor(entity.sym)
+      assert(ret != null);
+      ret
     }
-    def link(entity : Entity, target : String) = aref(urlFor(entity), target, entity.name);
-    protected def shortHeader(entity : Entity) : NodeSeq;
-    protected def  longHeader(entity : Entity) : NodeSeq;
-    import global._;
-    import symtab.Flags;
+    def link(entity: Entity, target: String) = aref(urlFor(entity), target, entity.name)
+    protected def shortHeader(entity: Entity): NodeSeq
+    protected def  longHeader(entity: Entity): NodeSeq
+    import global._
+    import symtab.Flags
 
     def urlFor(sym: Symbol): String = sym match {
-    case sym : TypeSymbol if sym == definitions.AnyRefClass => urlFor0(sym,sym) + FILE_EXTENSION_HTML;
-    case psym : ModuleSymbol if psym.isPackage => urlFor0(sym,sym) + FILE_EXTENSION_HTML;
-    case sym if !hasLink(sym) => null;
-    case msym: ModuleSymbol => urlFor0(sym, sym) + FILE_EXTENSION_HTML
-    case csym: ClassSymbol =>  urlFor0(sym, sym) + FILE_EXTENSION_HTML
-    case _ =>
-      val cnt = urlFor(decode(sym.owner));
-      if (cnt == null) null else cnt + "#" + docName(sym)
+      case sym : TypeSymbol if sym == definitions.AnyRefClass =>
+        urlFor0(sym,sym) + FILE_EXTENSION_HTML
+      case psym : ModuleSymbol if psym.isPackage =>
+        urlFor0(sym,sym) + FILE_EXTENSION_HTML
+      case sym if !hasLink(sym) =>
+        null
+      case msym: ModuleSymbol =>
+        urlFor0(sym, sym) + FILE_EXTENSION_HTML
+      case csym: ClassSymbol =>
+        urlFor0(sym, sym) + FILE_EXTENSION_HTML
+      case _ =>
+        val cnt = urlFor(decode(sym.owner));
+        if (cnt == null) null else cnt + "#" + docName(sym)
     }
+
     def docName(sym: Symbol): String = {
       def javaParams(paramTypes: List[Type]): String = {
         def javaName(pt: Type): String = {
@@ -117,6 +126,7 @@ trait ModelFrames extends ModelExtractor {
           case _ => ""
         }), encoding)
     }
+
     def urlFor0(sym: Symbol, orig: Symbol): String = {
       (if (sym == NoSymbol) "XXX"
        else if (sym.owner.isPackageClass) {
@@ -136,15 +146,15 @@ trait ModelFrames extends ModelExtractor {
       })
     }
   }
-  protected def rootFor(sym: global.Symbol) = "";
+  protected def rootFor(sym: global.Symbol) = ""
 
   private val doctitle: NodeSeq =
-    <div class="doctitle-larger">{load(documentTitle)}</div>;
+    <div class="doctitle-larger">{load(docTitle)}</div>;
 
   abstract class AllPackagesFrame extends Frame {
-    override val path  = "modules";
-    override val title = "List of all packages";
-    def packages : Iterable[Package];
+    override val path  = "modules"
+    override val title = "List of all packages"
+    def packages: Iterable[Package]
     override def body: NodeSeq =
       <div>
         {doctitle}
@@ -158,9 +168,9 @@ trait ModelFrames extends ModelExtractor {
       </ul>;
   }
   abstract class PackagesContentFrame extends Frame {
-    val path  = "root-content";
-    val title = "All Packages";
-    def packages : Iterable[Package];
+    val path  = "root-content"
+    val title = "All Packages"
+    def packages : Iterable[Package]
     //def modules: TreeMap[String, ModuleClassSymbol]
     def body: NodeSeq =
       {rootTitle} ++ {rootDesc} ++ <hr/> ++
@@ -184,7 +194,7 @@ trait ModelFrames extends ModelExtractor {
         p.substring(0, p.length() - NAME_SUFFIX_PACKAGE.length());
       else p) + navSuffix;
     }
-    protected def navSuffix = "$content.html";
+    protected def navSuffix = "$content.html"
 
     def body: NodeSeq = {
       val nav = if (navLabel == null) NodeSeq.Empty else
@@ -193,7 +203,7 @@ trait ModelFrames extends ModelExtractor {
             {aref(navPath, contentFrame, navLabel)}
           </td></tr>
         </table>;
-      val ids = new jcl.LinkedHashSet[String];
+      val ids = new jcl.LinkedHashSet[String]
       def idFor(kind: Category, t: Entity)(seq : NodeSeq): NodeSeq = {
         val ch = t.listName.charAt(0);
         val id = kind.plural + "_" + ch;

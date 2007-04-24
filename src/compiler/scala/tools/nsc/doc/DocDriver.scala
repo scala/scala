@@ -16,7 +16,7 @@ import scala.xml._
  *  @author Sean McDirmid
  */
 abstract class DocDriver extends ModelFrames with ModelToXML {
-  import global._;
+  import global._
 
   object additions extends jcl.LinkedHashSet[Symbol]
   object additions0 extends ModelAdditions(global) {

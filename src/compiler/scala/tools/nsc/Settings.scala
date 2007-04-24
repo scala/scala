@@ -6,8 +6,8 @@
 
 package scala.tools.nsc
 
-import java.lang.System
 import java.io.File
+import java.lang.System
 
 class Settings(error: String => unit) {
   def this() = this(Console.println)
@@ -73,9 +73,6 @@ class Settings(error: String => unit) {
     new java.io.OutputStreamWriter(
       new java.io.ByteArrayOutputStream()).getEncoding
 
-  private val windowtitleDefault = "Scala Library Documentation"
-  private val documenttitleDefault = "Scala 2"
-
   val doc           = new BooleanSetting("-doc", "Generate documentation") { override def hiddenToIDE = true }
   val debuginfo     = new DebugSetting("-g", "Generate debugging info", List("none", "source", "line", "vars", "notc"), "vars", "vars")
   val nowarnings    = BooleanSetting("-nowarn", "Generate no warnings")
@@ -88,12 +85,10 @@ class Settings(error: String => unit) {
   val extdirs       = StringSetting ("-extdirs", "dirs", "Override location of installed extensions", extdirsDefault)
   val outdir        = StringSetting ("-d", "directory", "Specify where to place generated class files", ".")
   val encoding      = new StringSetting ("-encoding", "encoding", "Specify character encoding used by source files", encodingDefault) { override def hiddenToIDE = false }
-  val windowtitle   = StringSetting ("-windowtitle", "windowtitle", "Specify window title of generated HTML documentation", windowtitleDefault)
-  val documenttitle = StringSetting ("-documenttitle", "documenttitle", "Specify document title of generated HTML documentation", documenttitleDefault)
   val target        = ChoiceSetting ("-target", "Specify which backend to use", List("jvm-1.5", "jvm-1.4", "msil", "cldc"), "jvm-1.4")
   val migrate       = BooleanSetting("-migrate", "Assist in migrating from Scala version 1.0")
-  val assemname     = StringSetting ("-o", "file", "Name of the output assembly (only relevant with -target:msil)", "")
-  val assemrefs     = StringSetting ("-r", "path", "List of assemblies referenced by the program (only relevant with -target:msil)", ".")
+  val assemname     = StringSetting ("-o", "file", "Name of the output assembly (only relevant with -target:msil)", "").dependsOn(target, "msil")
+  val assemrefs     = StringSetting ("-r", "path", "List of assemblies referenced by the program (only relevant with -target:msil)", ".").dependsOn(target, "msil")
   val debug         = new BooleanSetting("-debug", "Output debugging messages") { override def hiddenToIDE = true }
   val deprecation   = BooleanSetting ("-deprecation", "enable detailed deprecation warnings")
   val unchecked     = BooleanSetting ("-unchecked", "enable detailed unchecked warnings")
@@ -138,12 +133,62 @@ class Settings(error: String => unit) {
   //Xplugtypes.value = true // just while experimenting
   val Xkilloption   = BooleanSetting("-Xkilloption", "optimizes option types")
 
+  /** scaladoc specific options */
+  val windowtitle    = StringSetting("-windowtitle", "windowtitle",
+                                     "Specify window title of generated HTML documentation",
+                                     /*default*/"Scala 2 API Specification").dependsOn(doc)
+  val doctitle       = StringSetting("-doctitle", "doctitle",
+                                     "Include title for the overview page",
+                                     /*default*/"Scala 2").dependsOn(doc)
+  val stylesheetfile = StringSetting("-stylesheetfile", "stylesheetfile",
+                                     "File to change style of the generated documentation",
+                                     /*default*/"style.css").dependsOn(doc)
+  val pageheader     = StringSetting("-header", "pageheader",
+                                     "Include header text for each page",
+                                     /*default*/"").dependsOn(doc)
+  val pagefooter     = StringSetting("-footer", "pagefooter",
+                                     "Include footer text for each page",
+                                     /*default*/"").dependsOn(doc)
+  val pagetop        = StringSetting("-top", "pagetop",
+                                     "Include top text for each page",
+                                     /*default*/"").dependsOn(doc)
+  val pagebottom     = StringSetting("-bottom", "pagebottom",
+                                     "Include bottom text for each page",
+                                     /*default*/"").dependsOn(doc)
+  val nocomment      = new BooleanSetting("-nocomment", "Suppress description and tags, generate only declarations.") {
+                         override def hiddenToIDE = true; dependsOn(doc)
+                       }
+  val doccharset     = StringSetting("-charset", "doccharset",
+                                     "Charset for cross-platform viewing of generated documentation.",
+                                     /*default*/"").dependsOn(doc)
+  val linksource     = new BooleanSetting("-linksource", "Generate source in HTML") {
+                         override def hiddenToIDE = true; dependsOn(doc)
+                       }
+
   /** A list of all settings */
   def allSettings: List[Setting] = allsettings.reverse
 
   /** Disable a setting */
   def disable(s: Setting) = {
     allsettings = allsettings filter (s !=)
+  }
+
+  def checkDependencies: boolean = {
+    def hasValue(s: Setting, value: String): boolean = s match {
+      case bs: BooleanSetting => bs.value
+      case ss: StringSetting  => ss.value == value
+      case cs: ChoiceSetting  => cs.value == value
+      case _ => "" == value
+    }
+    var ok = true
+    for (setting <- allsettings if !setting.dependency.isEmpty) {
+      val (dep, value) = setting.dependency.get
+      if (! (setting.isDefault || hasValue(dep, value))) {
+        error("incomplete option " + setting.name + " (requires " + dep.name + ")")
+        ok = false
+      }
+    }
+    ok
   }
 
   /** A base class for settings of all types.
@@ -175,7 +220,14 @@ class Settings(error: String => unit) {
 
     /** override if option should be hidden from IDE.
       */
-    def hiddenToIDE : Boolean = false
+    def hiddenToIDE: Boolean = false
+
+    protected var setByUser: boolean = false
+    def isDefault: Boolean = !setByUser
+
+    protected[Settings] var dependency: Option[(Setting, String)] = None
+    def dependsOn(s: Setting, value: String): this.type = { dependency = Some((s, value)); this }
+    def dependsOn(s: Setting): this.type = dependsOn(s, "")
 
     // initialization
     allsettings = this :: allsettings
@@ -183,27 +235,29 @@ class Settings(error: String => unit) {
 
   /** A setting represented by a boolean flag (false, unless set) */
   case class BooleanSetting(name: String, descr: String) extends Setting(descr) {
-    var value: boolean = false
+    protected var v: boolean = false
+
+    def value: boolean = this.v
+    def value_=(s: boolean) { setByUser = true; this.v = s }
 
     def tryToSet(args: List[String]): List[String] = args match {
       case n :: rest if (n == name) => value = true; rest
       case _ => args
     }
 
-    def unparse: List[String] =
-      if (value)
-        List(name)
-      else
-        Nil
+    def unparse: List[String] = if (value) List(name) else Nil
   }
 
   /** A setting represented by a string, (`default' unless set) */
   case class StringSetting(name: String, arg: String, descr: String, default: String)
   extends Setting(descr) {
-    override def hiddenToIDE = true;
+    override def hiddenToIDE = true
     var abbreviation: String = null
 
-    var value: String = default
+    protected var v: String = default
+
+    def value: String = this.v
+    def value_=(s: String) { setByUser = true; this.v = s }
 
     def tryToSet(args: List[String]): List[String] = args match {
       case n :: rest if (name == n || abbreviation == n) =>
@@ -220,10 +274,7 @@ class Settings(error: String => unit) {
     override def helpSyntax = name + " <" + arg + ">"
 
     def unparse: List[String] =
-      if (value == default)
-        Nil
-      else
-        List(name, value)
+      if (value == default) Nil else List(name, value)
   }
 
   /** A setting represented by a string in a given set of <code>choices</code>,
@@ -234,7 +285,7 @@ class Settings(error: String => unit) {
     protected var v: String = default
 
     def value: String = this.v
-    def value_=(s: String): Unit = this.v = s;
+    def value_=(s: String) { setByUser = true; this.v = s }
 
     protected def argument: String = name.substring(1)
 
@@ -256,10 +307,7 @@ class Settings(error: String => unit) {
     override def helpSyntax = name + ":<" + argument + ">"
 
     def unparse: List[String] =
-      if (value == default)
-        Nil
-      else
-        List(name + ":" + value)
+      if (value == default) Nil else List(name + ":" + value)
   }
 
   /** Same as ChoiceSetting but have a <code>level</code> int which tells the
@@ -276,10 +324,11 @@ class Settings(error: String => unit) {
         }
       case _ => None
     }
-    var level: Int = indexOf(choices, default).get;
+    var level: Int = indexOf(choices, default).get
 
-    override def value_=(choice: String): Unit = {
-      this.v     = choice
+    override def value_=(choice: String) {
+      setByUser = true
+      this.v = choice
       this.level = indexOf(choices, choice).get
     }
 
@@ -311,7 +360,10 @@ class Settings(error: String => unit) {
   case class PhasesSetting(name: String, descr: String)
   extends Setting(descr + " <phase>") { // (see -showphases)") {
     override def hiddenToIDE = true
-    var value: List[String] = List()
+    protected var v: List[String] = List()
+
+    def value: List[String] = this.v
+    def value_=(s: List[String]) { setByUser = true; this.v = s }
 
     def tryToSet(args: List[String]): List[String] = args match {
       case n :: rest if (n startsWith (name + ":")) =>

@@ -37,7 +37,7 @@ object Main extends AnyRef with EvalLoop {
       (new compiler.Run) compile command.files
     }
 
-  def process(args: Array[String]): unit = {
+  def process(args: Array[String]) {
     val settings = new Settings(error)
     reporter = new ConsoleReporter(settings)
     val command = new CompilerCommand(List.fromArray(args), settings, error, false)
@@ -47,7 +47,7 @@ object Main extends AnyRef with EvalLoop {
       reporter.info(null, command.usageMsg, true)
     else {
       try {
-        object compiler extends Global(command.settings, reporter);
+        object compiler extends Global(command.settings, reporter)
         if (command.settings.resident.value)
           resident(compiler)
         else if (command.files.isEmpty)
@@ -60,7 +60,7 @@ object Main extends AnyRef with EvalLoop {
               val global : compiler.type = compiler
               def outdir = command.settings.outdir.value
               def windowTitle = command.settings.windowtitle.value
-              def documentTitle = command.settings.documenttitle.value
+              def docTitle = command.settings.doctitle.value
             };
             generator.process(run.units)
           }

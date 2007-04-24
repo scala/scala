@@ -41,7 +41,7 @@ import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
  *    <li>extdirsref,</li>
  *    <li>encoding,</li>
  *    <li>windowtitle,</li>
- *    <li>documenttitle,</li>
+ *    <li>doctitle,</li>
  *    <li>addparams,</li>
  *    <li>deprecation,</li>
  *    <li>unchecked.</li>
@@ -101,7 +101,7 @@ class Scaladoc extends MatchingTask {
   /** The window title of the generated HTML documentation. */
   private var windowtitle: Option[String] = None
   /** The document title of the generated HTML documentation. */
-  private var documenttitle: Option[String] = None
+  private var doctitle: Option[String] = None
 
   /** Instruct the compiler to use additional parameters */
   private var addParams: String = ""
@@ -257,12 +257,12 @@ class Scaladoc extends MatchingTask {
   def setWindowtitle(input: String): Unit =
     windowtitle = Some(input)
 
-  /** Sets the <code>documenttitle</code> attribute.
+  /** Sets the <code>doctitle</code> attribute.
    *
-   *  @param input The value of <code>documenttitle</code>.
+   *  @param input The value of <code>doctitle</code>.
    */
-  def setDocumenttitle(input: String): Unit =
-    documenttitle = Some(input)
+  def setDoctitle(input: String): Unit =
+    doctitle = Some(input)
 
   /** Set the <code>addparams</code> info attribute.
    *
@@ -476,14 +476,14 @@ class Scaladoc extends MatchingTask {
     if (!extdirs.isEmpty) settings.extdirs.value = asString(getExtdirs)
     if (!encoding.isEmpty) settings.encoding.value = encoding.get
     if (!windowtitle.isEmpty) settings.windowtitle.value = windowtitle.get
-    if (!documenttitle.isEmpty) settings.documenttitle.value =
+    if (!doctitle.isEmpty) settings.doctitle.value =
       // In Ant script characters '<' and '>' must be encoded when
-      // used in attribute values, e.g. for attribute "documenttitle"
+      // used in attribute values, e.g. for attribute "doctitle"
       // in task Scaladoc you may write:
-      //   documenttitle="&lt;div&gt;Scala&lt;/div&gt;"
+      //   doctitle="&lt;div&gt;Scala&lt;/div&gt;"
       // so we have to decode them here.
-      documenttitle.get.replaceAll("&lt;", "<").replaceAll("&gt;",">")
-                       .replaceAll("&amp;", "&").replaceAll("&quot;", "\"")
+      doctitle.get.replaceAll("&lt;", "<").replaceAll("&gt;",">")
+                  .replaceAll("&amp;", "&").replaceAll("&quot;", "\"")
     settings.deprecation.value = deprecation
     settings.unchecked.value = unchecked
     log("Scaladoc params = '" + addParams + "'", Project.MSG_DEBUG)
@@ -516,7 +516,7 @@ class Scaladoc extends MatchingTask {
         val global: compiler.type = compiler
         def outdir = settings.outdir.value
         def windowTitle = settings.windowtitle.value
-        def documentTitle = settings.documenttitle.value
+        def docTitle = settings.doctitle.value
       }
       generator.process(run.units)
       if (reporter.ERROR.count > 0)
