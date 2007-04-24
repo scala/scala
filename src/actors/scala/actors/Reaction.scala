@@ -19,7 +19,7 @@ import java.lang.{InterruptedException, Runnable}
  *    return type <code>Nothing</code>.
  *  </p>
  *
- * @version 0.9.4
+ * @version 0.9.5
  * @author Philipp Haller
  */
 private[actors] class ExitActorException extends Throwable
@@ -29,7 +29,7 @@ private[actors] class ExitActorException extends Throwable
  * an instance of an <code>Actor</code> with a
  * <code>java.lang.Runnable</code>.
  *
- * @version 0.9.4
+ * @version 0.9.5
  * @author Philipp Haller
  */
 private[actors] class Reaction(a: Actor,
