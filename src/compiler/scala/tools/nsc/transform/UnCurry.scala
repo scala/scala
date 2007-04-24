@@ -43,8 +43,13 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
 
 // ------ Type transformation --------------------------------------------------------
 
+//@MAT: uncurry and uncurryType fully expand type aliases in their input and output
+// note: don't normalize higher-kined types -- @M TODO: maybe split those uses of normalize?
+// OTOH, should be a problem as calls to normalize only occur on types with kind * in principle (in well-typed programs)
+  private def expandAlias(tp: Type): Type = if(!tp.isHigherKinded) tp.normalize else tp
+
   private val uncurry: TypeMap = new TypeMap {
-    def apply(tp: Type): Type = tp match {
+    def apply(tp0: Type): Type = {val tp=expandAlias(tp0); tp match {
       case MethodType(formals, MethodType(formals1, restpe)) =>
         apply(MethodType(formals ::: formals1, restpe))
       case mt: ImplicitMethodType =>
@@ -55,34 +60,36 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
         PolyType(tparams, apply(MethodType(List(), restpe)))
       case TypeRef(pre, sym, List(arg1, arg2)) if (arg1.symbol == ByNameParamClass) =>
         assert(sym == FunctionClass(1))
-        apply(typeRef(pre, definitions.ByNameFunctionClass, List(arg1.typeArgs(0), arg2)))
+        apply(typeRef(pre, definitions.ByNameFunctionClass, List(expandAlias(arg1.typeArgs(0)), arg2)))
       case TypeRef(pre, sym, List(arg)) if (sym == ByNameParamClass) =>
         apply(functionType(List(), arg))
       case TypeRef(pre, sym, args) if (sym == RepeatedParamClass) =>
         apply(rawTypeRef(pre, SeqClass, args))
       case _ =>
-        mapOver(tp)
-    }
+        expandAlias(mapOver(tp))
+    }}
   }
 
   private val uncurryType = new TypeMap {
-    def apply(tp: Type): Type = tp match {
+    def apply(tp0: Type): Type = {val tp=expandAlias(tp0); tp match {
       case ClassInfoType(parents, decls, clazz) =>
         val parents1 = List.mapConserve(parents)(uncurry)
         if (parents1 eq parents) tp
-        else ClassInfoType(parents1, decls, clazz)
+        else ClassInfoType(parents1, decls, clazz) // @MAT normalize in decls??
       case PolyType(_, _) =>
         mapOver(tp)
       case _ =>
         tp
-    }
+    }}
   }
 
   /** - return symbol's transformed type,
    *  - if symbol is a def parameter with transformed type T, return () => T
+   *
+   * @MAT: starting with this phase, the info of every symbol will be normalized
    */
   def transformInfo(sym: Symbol, tp: Type): Type =
-    if (sym.isType) uncurryType(tp.normalize) else uncurry(tp.normalize) // @MAT
+    if (sym.isType) uncurryType(tp) else uncurry(tp)
 
   class UnCurryTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
 
