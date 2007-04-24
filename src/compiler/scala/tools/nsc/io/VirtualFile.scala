@@ -7,7 +7,6 @@
 
 package scala.tools.nsc.io
 
-import compat.Math.MIN_LONG
 import java.io.{File,InputStream}
 
 /** This class implements an empty abstract regular file.
@@ -44,7 +43,7 @@ class VirtualFile(val name: String, _path: String) extends AbstractFile {
   def isDirectory: Boolean = false
 
   /** Returns the time that this abstract file was last modified. */
-  def lastModified: Long = MIN_LONG
+  def lastModified: Long = Math.MIN_LONG
 
   /** Returns all abstract subfiles of this abstract directory. */
   def elements: Iterator[AbstractFile] = {

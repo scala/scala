@@ -236,7 +236,7 @@ private case class INode[A <% Ordered[A],B](t1: GBTree[A,B],
     balance_p(GBNode(key, value, smaller, t1),smaller);
   protected def balance_p(t:GBTree[A,B],subtree:GBTree[A,B]):InsertTree[A,B] = {
     val (subHeight, subSize) = subtree.count
-    val totalHeight = 2 * compat.Math.max(height, subHeight)
+    val totalHeight = 2 * Math.max(height, subHeight)
     val totalSize = size + subSize + 1
     val BalanceHeight = totalSize * totalSize
     if (totalHeight > BalanceHeight) ITree(t.balance(totalSize))
@@ -308,7 +308,7 @@ private case class GBNode[A <% Ordered[A],B](key: A,
     if (mySize == 1)
       (1, mySize)
     else
-      (2 * compat.Math.max(sHeight, bHeight), mySize)
+      (2 * Math.max(sHeight, bHeight), mySize)
   }
 
   def isDefinedAt(sKey: A): Boolean =

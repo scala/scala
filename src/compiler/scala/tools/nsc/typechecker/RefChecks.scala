@@ -10,7 +10,6 @@ import symtab.Flags._
 import collection.mutable.HashMap
 import transform.InfoTransform
 import scala.tools.nsc.util.{Position, NoPosition}
-import compat.Math.MIN_INT
 
 /** <p>
  *    Post-attribution checking and transformation.
@@ -421,7 +420,7 @@ abstract class RefChecks extends InfoTransform {
 
     class LevelInfo(val outer: LevelInfo) {
       val scope: Scope = if (outer eq null) newScope else newScope(outer.scope)
-      var maxindex: int = MIN_INT
+      var maxindex: int = Math.MIN_INT
       var refpos: Position = _
       var refsym: Symbol = _
     }

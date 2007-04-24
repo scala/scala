@@ -6,7 +6,6 @@
 
 package scala.tools.nsc
 
-import compat.Math.log
 import scala.tools.nsc.reporters.ConsoleReporter
 
 /** The main class for NSC, a compiler for the programming
@@ -28,7 +27,7 @@ object MainTokenMetric {
         i += 1
         s.nextToken
       }
-      var j = 0 ; while(j + log(i) / log(10) < 7) {
+      var j = 0 ; while(j + Math.log(i) / Math.log(10) < 7) {
         j += 1
         Console.print(' ')
       }

@@ -1108,7 +1108,7 @@ abstract class DocGenerator extends Models {
        *  </p>
        *  <p>
        *    Values <code>""" + maxValue + """</code> and <code>""" + minValue + """</code>
-       *    are in defined in object <a href="compat/Math$object.html">scala.compat.Math</a>.
+       *    are in defined in object <a href="Math$object.html">scala.Math</a>.
        *  </p>
        */"""
     }

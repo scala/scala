@@ -25,7 +25,6 @@ package scala.collection
 abstract class BitSet extends Set[Int] {
 
   import compat.Platform.arraycopy
-  import compat.Math.min
 
   /** number of bits in this bitset */
   def size: Int
@@ -81,7 +80,7 @@ abstract class BitSet extends Set[Int] {
   override def equals(other: Any): Boolean = other match {
     case that: BitSet =>
       (size == that.size) && {
-        var len = memsize(min(this.capacity, that.capacity))
+        var len = memsize(Math.min(this.capacity, that.capacity))
         var i = 0
         while (i < len && arr(i) == that.arr(i)) i = i + 1
         i == len
@@ -109,7 +108,7 @@ abstract class BitSet extends Set[Int] {
     case that: BitSet =>
       val thisLen = memsize(this.capacity)
       val thatLen = memsize(that.capacity)
-      val minLen = min(thisLen, thatLen)
+      val minLen = Math.min(thisLen, thatLen)
       var i = 0
       while (i < minLen && that.arr(i) == (that.arr(i) | arr(i))) i = i + 1
       while (i < thisLen && arr(i) == 0) i = i + 1
