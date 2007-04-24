@@ -1145,8 +1145,8 @@ A type's symbol should never be inspected directly.
           PolyType(typeParams, transform(sym.info.resultType).normalize)
         }
       } else if (isHigherKinded) {
-        PolyType(typeParams, typeRef(pre, sym, higherKindedArgs))
-      } else super.normalize
+        PolyType(typeParams, typeRef(pre, sym, higherKindedArgs)) // @M TODO: transform?
+      } else super.normalize // @M TODO: transform?
 
     override def decls: Scope = {
       sym.info match {
@@ -1394,14 +1394,6 @@ A type's symbol should never be inspected directly.
     override def isComplete: boolean = false
     override def complete(sym: Symbol): unit
     override def toString = "<?>"
-  }
-
-  /** A class representing a lazy type with known type parameters.
-   */
-  class LazyPolyType(override val typeParams: List[Symbol], restp: Type) extends LazyType {
-    override def complete(sym: Symbol): unit = {
-      restp.complete(sym)
-    }
   }
 
 // Creators ---------------------------------------------------------------

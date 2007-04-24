@@ -46,15 +46,6 @@ trait Namers requires Analyzer {
   protected final def doEnterValueParams = !inIDE;
   protected def inIDE = false;
 
-  //@M a worklist of AbsTypeDef trees we must process when the next finishWith is called
-  // example: trait FOO3[m[A <: B], B]
-  // if we go depth-first, B will not be in scope yet when we create the context in which A <: B will be typed
-  // instead, an AbsTypeDef registers its type parameters in lateParams, which will be processed when all
-  // type parameters in the enclosing scope have been entered (i.e., when m as well as B have been entered by
-  // the finishWith in the case for ClassDef in enterSym, that finishWith will then handle m's type param, A,
-  // which has been registered in lateParams by the finishWithLate in the case for AbsTypeDef)
-  private val lateParams = new scala.collection.mutable.ListBuffer[(Namer, Symbol, Tree, List[AbsTypeDef])]
-
   class Namer(val context: Context) {
 
     val typer = newTyper(context)
@@ -241,41 +232,36 @@ trait Namers requires Analyzer {
 
     def deSkolemize: TypeMap = new DeSkolemizeMap(applicableTypeParams(context.owner))
 
-    private def doLateParams = if (!lateParams.isEmpty) {
-      val todo = lateParams.toList
-      lateParams.clear
-      for (rec <- todo)
-        rec._1.finishWith0(rec._2, rec._3, rec._4)
-    }
-
-    private def finishWith0(sym: Symbol, tree: Tree, tparams: List[AbsTypeDef]): unit = {
-      if (settings.debug.value) log("entered " + sym + " in " + context.owner + ", scope-id = " + context.scope.hashCode());
-
-      var ltype: LazyType = namerOf(sym).typeCompleter(tree)
-
-      if (!tparams.isEmpty) {
-        new Namer(context.makeNewScope(tree, sym)).enterSyms(tparams)
-
-        ltype = new LazyPolyType(tparams map (.symbol), ltype)
-
-        if (sym.isTerm) // skolemize the type parameters of a method
-         skolemize(tparams)
+    /** A class representing a lazy type with known type parameters.
+     */
+    class LazyPolyType(tparams: List[Tree], restp: Type, owner: Tree, ownerSym: Symbol, ctx: Context) extends LazyType { //@M
+      override val typeParams: List[Symbol]= tparams map (.symbol) //@M
+      override def complete(sym: Symbol): unit = {
+        if(ownerSym.isAbstractType) //@M an abstract type's type parameters are entered
+          new Namer(ctx.makeNewScope(owner, ownerSym)).enterSyms(tparams) //@M
+        restp.complete(sym)
       }
-
-      sym.setInfo(ltype)
-
-      doLateParams
     }
 
     def enterSym(tree: Tree): Context = {
-      def finishWith(tparams: List[AbsTypeDef]): unit = finishWith0(tree.symbol, tree, tparams)
-      def finish = finishWith(List())
-      def finishWithLate(tparams: List[AbsTypeDef]): unit = {
-        if(tparams.isEmpty) finishWith(tparams)
-        else {
-          lateParams += (this, tree.symbol, tree, tparams) // this and tree.symbol must be remembered too, these will change by the time the worklist is performed (new nested namer, skolemization for tree's symbol)
+
+      def finishWith(tparams: List[AbsTypeDef]): unit = {
+        val sym = tree.symbol
+        if (settings.debug.value) log("entered " + sym + " in " + context.owner + ", scope-id = " + context.scope.hashCode());
+        var ltype: LazyType = namerOf(sym).typeCompleter(tree)
+        if (!tparams.isEmpty) {
+          //@M! AbsTypeDef's type params are handled differently
+          //@M e.g., in [A[x <: B], B], A and B are entered first as both are in scope in the definition of x
+          //@M x is only in scope in `A[x <: B]'
+          if(!sym.isAbstractType) //@M
+            new Namer(context.makeNewScope(tree, sym)).enterSyms(tparams)
+          ltype = new LazyPolyType(tparams, ltype, tree, sym, context) //@M
+          if (sym.isTerm) skolemize(tparams)
         }
+        sym.setInfo(ltype)
       }
+      def finish = finishWith(List())
+
 
       if (tree.symbol == NoSymbol) {
         val owner = context.owner
@@ -295,7 +281,6 @@ trait Namers requires Analyzer {
             tree.symbol = enterClassSymbol(tree.pos, mods.flags, name)
             setPrivateWithin(tree, tree.symbol, mods)
             finishWith(tparams)
-            assert(lateParams.isEmpty)
           case ModuleDef(mods, name, _) =>
             tree.symbol = enterModuleSymbol(tree.pos, mods.flags | MODULE | FINAL, name)
             setPrivateWithin(tree, tree.symbol, mods)
@@ -336,18 +321,16 @@ trait Namers requires Analyzer {
               .setFlag(mods.flags | owner.getFlag(ConstrFlags))
             setPrivateWithin(tree, tree.symbol, mods)
             finishWith(tparams)
-            assert(lateParams.isEmpty)
           case DefDef(mods, name, tparams, _, _, _) =>
             tree.symbol = enterInScope(owner.newMethod(tree.pos, name))
               .setFlag(mods.flags)
             setPrivateWithin(tree, tree.symbol, mods)
             finishWith(tparams)
-            assert(lateParams.isEmpty)
           case AbsTypeDef(mods, name, tparams, _, _) =>
             tree.symbol = enterInScope(owner.newAbstractType(tree.pos, name))
               .setFlag(mods.flags)
             setPrivateWithin(tree, tree.symbol, mods)
-            finishWithLate(tparams) // @M! enter this AbsTypeDef's type params in scope after all the siblings of this abstypedef have been entered (e.g., in [A[x <: B], B], A and B are entered first, then x is entered)
+            finishWith(tparams)
           case AliasTypeDef(mods, name, tparams, _) =>
             tree.symbol = enterInScope(owner.newAliasType(tree.pos, name))
               .setFlag(mods.flags)
@@ -456,10 +439,7 @@ trait Namers requires Analyzer {
       }
       val parents = typer.parentTypes(templ) map checkParent
       val decls = newDecls(templ, clazz)
-      val namer = new Namer(context.make(templ, clazz, decls))
-      namer.enterSyms(templ.body)
-      namer.doLateParams // @M set info on higher-kinded type members -- @M TODO cleanup & document
-
+      new Namer(context.make(templ, clazz, decls)).enterSyms(templ.body)
       ClassInfoType(parents, decls, clazz)
     }
 
