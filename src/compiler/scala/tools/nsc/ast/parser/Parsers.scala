@@ -863,130 +863,145 @@ trait Parsers {
     def expr(): Tree = expr(Local)
 
     /** XXX: Hook for IDE */
-    def expr(location: int): Tree = in.token match {
-      case IF =>
-        val pos = in.skipToken
-        accept(LPAREN)
-        val cond = expr()
-        accept(RPAREN)
-        newLinesOpt()
-        val thenp = expr()
-        val elsep =
-          if (in.token == ELSE) { in.nextToken; expr() }
-          else EmptyTree
-        atPos(pos) { If(cond, thenp, elsep) }
-      case TRY =>
-        atPos(in.skipToken) {
-          accept(LBRACE)
-          val body = block()
-          accept(RBRACE)
-          val catches =
-            if (in.token == CATCH) {
-              in.nextToken
+    def expr(location: int): Tree = {
+      var savedImplicitParams = implicitParams
+      implicitParams = List()
+      var res = in.token match {
+        case IF =>
+          val pos = in.skipToken
+          accept(LPAREN)
+          val cond = expr()
+          accept(RPAREN)
+          newLinesOpt()
+          val thenp = expr()
+          val elsep =
+            if (in.token == ELSE) { in.nextToken; expr() }
+            else EmptyTree
+          atPos(pos) { If(cond, thenp, elsep) }
+        case TRY =>
+          atPos(in.skipToken) {
+            accept(LBRACE)
+            val body = block()
+            accept(RBRACE)
+            val catches =
+              if (in.token == CATCH) {
+                in.nextToken
+                accept(LBRACE)
+                val cases = caseClauses()
+                accept(RBRACE)
+                cases
+              } else List()
+            val finalizer =
+              if (in.token == FINALLY) { in.nextToken; expr() }
+              else EmptyTree
+            Try(body, catches, finalizer)
+          }
+        case WHILE =>
+          val lname: Name = freshName("while$")
+          val pos = in.skipToken
+          accept(LPAREN)
+          val cond = expr()
+          accept(RPAREN)
+          newLinesOpt()
+          val body = expr()
+          atPos(pos) { makeWhile(lname, cond, body) }
+        case DO =>
+          val lname: Name = freshName("doWhile$")
+          val pos = in.skipToken
+          val body = expr()
+          if (isStatSep) in.nextToken
+          accept(WHILE)
+          accept(LPAREN)
+          val cond = expr()
+          accept(RPAREN)
+          atPos(pos) { makeDoWhile(lname, body, cond) }
+        case FOR =>
+          atPos(in.skipToken) {
+            val startToken = in.token
+            accept(if (startToken == LBRACE) LBRACE else LPAREN)
+            val enums = enumerators()
+            accept(if (startToken == LBRACE) RBRACE else RPAREN)
+            newLinesOpt()
+            if (in.token == YIELD) {
+              in.nextToken; makeForYield(enums, expr())
+            } else makeFor(enums, expr())
+          }
+        case RETURN =>
+          atPos(in.skipToken) {
+            Return(if (isExprIntro) expr() else Literal(()))
+          }
+        case THROW =>
+          atPos(in.skipToken) {
+            Throw(expr())
+          }
+        case DOT =>
+          //todo: deprecate
+          atPos(in.skipToken) {
+            if (isIdent) {
+              makeDotClosure(stripParens(simpleExpr()))
+            } else {
+              syntaxErrorOrIncomplete("identifier expected", true)
+              errorTermTree
+            }
+          }
+        case _ =>
+          var t = postfixExpr()
+          if (in.token == EQUALS) {
+            t match {
+              case Ident(_) | Select(_, _) | Apply(_, _) =>
+                t = atPos(in.skipToken) { makeAssign(t, expr()) }
+              case _ =>
+            }
+          } else if (in.token == COLON) {
+            t = stripParens(t)
+            val pos = in.skipToken
+            val annots = annotations()
+            if (in.token == USCORE) {
+              val pos1 = in.skipToken
+              if (isIdent && in.name == nme.STAR) {
+                in.nextToken
+                t = atPos(pos) {
+                  Typed(t, atPos(pos1) { Ident(nme.WILDCARD_STAR.toTypeName) })
+                }
+              } else {
+                syntaxErrorOrIncomplete("`*' expected", true)
+              }
+            } else if (annots.isEmpty || isTypeIntro) {
+              t = atPos(pos) {
+                val tpt = if (location != Local) compoundType(false) else typ()
+                // this does not correspond to syntax, but is necessary to
+                // accept closures. We might restrict closures to be between {...} only!
+                Typed(t, (tpt /: annots) (makeAnnotated))
+              }
+            } else {
+              t = (t /: annots) (makeAnnotated)
+            }
+          } else if (in.token == MATCH) {
+            t = atPos(in.skipToken) {
               accept(LBRACE)
               val cases = caseClauses()
               accept(RBRACE)
-              cases
-            } else List()
-          val finalizer =
-            if (in.token == FINALLY) { in.nextToken; expr() }
-            else EmptyTree
-          Try(body, catches, finalizer)
-        }
-      case WHILE =>
-        val lname: Name = freshName("while$")
-        val pos = in.skipToken
-        accept(LPAREN)
-        val cond = expr()
-        accept(RPAREN)
-        newLinesOpt()
-        val body = expr()
-        atPos(pos) { makeWhile(lname, cond, body) }
-      case DO =>
-        val lname: Name = freshName("doWhile$")
-        val pos = in.skipToken
-        val body = expr()
-        if (isStatSep) in.nextToken
-        accept(WHILE)
-        accept(LPAREN)
-        val cond = expr()
-        accept(RPAREN)
-        atPos(pos) { makeDoWhile(lname, body, cond) }
-      case FOR =>
-        atPos(in.skipToken) {
-          val startToken = in.token
-          accept(if (startToken == LBRACE) LBRACE else LPAREN)
-          val enums = enumerators()
-          accept(if (startToken == LBRACE) RBRACE else RPAREN)
-          newLinesOpt()
-          if (in.token == YIELD) {
-            in.nextToken; makeForYield(enums, expr())
-          } else makeFor(enums, expr())
-        }
-      case RETURN =>
-        atPos(in.skipToken) {
-          Return(if (isExprIntro) expr() else Literal(()))
-        }
-      case THROW =>
-        atPos(in.skipToken) {
-          Throw(expr())
-        }
-      case DOT =>
-        //todo: deprecate
-        atPos(in.skipToken) {
-          if (isIdent) {
-            makeDotClosure(stripParens(simpleExpr()))
-          } else {
-            syntaxErrorOrIncomplete("identifier expected", true)
-            errorTermTree
-          }
-        }
-      case _ =>
-        var t = postfixExpr()
-        if (in.token == EQUALS) {
-          t match {
-            case Ident(_) | Select(_, _) | Apply(_, _) =>
-              t = atPos(in.skipToken) { makeAssign(t, expr()) }
-            case _ =>
-          }
-        } else if (in.token == COLON) {
-          t = stripParens(t)
-          val pos = in.skipToken
-          val annots = annotations()
-          if (in.token == USCORE) {
-            val pos1 = in.skipToken
-            if (isIdent && in.name == nme.STAR) {
-              in.nextToken
-              t = atPos(pos) {
-                Typed(t, atPos(pos1) { Ident(nme.WILDCARD_STAR.toTypeName) })
-              }
-            } else {
-              syntaxErrorOrIncomplete("`*' expected", true)
+              Match(stripParens(t), cases)
             }
-          } else if (annots.isEmpty || isTypeIntro) {
-            t = atPos(pos) {
-              val tpt = if (location != Local) compoundType(false) else typ()
-              // this does not correspond to syntax, but is necessary to
-              // accept closures. We might restrict closures to be between {...} only!
-              Typed(t, (tpt /: annots) (makeAnnotated))
+          }
+          if (in.token == ARROW && location != InTemplate) {
+            t = atPos(in.skipToken) {
+              Function(convertToParams(t), if (location == Local) expr() else block())
             }
-          } else {
-            t = (t /: annots) (makeAnnotated)
           }
-        } else if (in.token == MATCH) {
-          t = atPos(in.skipToken) {
-            accept(LBRACE)
-            val cases = caseClauses()
-            accept(RBRACE)
-            Match(stripParens(t), cases)
-          }
-        }
-        if (in.token == ARROW && location != InTemplate) {
-          t = atPos(in.skipToken) {
-            Function(convertToParams(t), if (location == Local) expr() else block())
-          }
-        }
-        stripParens(t)
+          stripParens(t)
+      }
+      def isWildcard(t: Tree): boolean = t match {
+        case Ident(name1) if name1 == implicitParams.head.name => true
+        case Typed(t1, _) => isWildcard(t1)
+        case Annotated(t1, _) => isWildcard(t1)
+        case _ => false
+      }
+      if (!implicitParams.isEmpty)
+        if (isWildcard(res)) savedImplicitParams = savedImplicitParams ::: implicitParams
+        else res = Function(implicitParams.reverse, res)
+      implicitParams = savedImplicitParams
+      res
     }
 
     /** PostfixExpr   ::= InfixExpr [Id [nl]]
@@ -994,8 +1009,6 @@ trait Parsers {
      *                  | InfixExpr Id [nl] InfixExpr
      */
     def postfixExpr(): Tree = {
-      var savedImplicitParams = implicitParams
-      implicitParams = List()
       val base = opstack
       var top = prefixExpr()
       while (isIdent) {
@@ -1015,18 +1028,7 @@ trait Parsers {
             topinfo.operator.encode).setPos(topinfo.pos)
         }
       }
-      var res = reduceStack(true, base, top, 0, true)
-      def isWildcard(t: Tree): boolean = t match {
-        case Ident(name1) if name1 == implicitParams.head.name => true
-        case Typed(t1, _) => isWildcard(t1)
-        case Annotated(t1, _) => isWildcard(t1)
-        case _ => false
-      }
-      if (!implicitParams.isEmpty)
-        if (isWildcard(res)) savedImplicitParams = savedImplicitParams ::: implicitParams
-        else res = Function(implicitParams.reverse, res)
-      implicitParams = savedImplicitParams
-      res
+      reduceStack(true, base, top, 0, true)
     }
 
     /** PrefixExpr   ::= [`-' | `+' | `~' | `!' | `&'] SimpleExpr
