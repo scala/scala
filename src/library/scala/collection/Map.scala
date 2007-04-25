@@ -53,7 +53,7 @@ trait Map[A, +B] extends PartialFunction[A, B] with Collection[(A, B)] {
   /** Check if this map maps <code>key</code> to a value.
     *  Return that value if it exists, otherwise return <code>default</code>.
     */
-  def getOrElse[B2 >: B](key: A, default: B2): B2 =
+  def getOrElse[B2 >: B](key: A, default: =>B2): B2 =
     get(key) match {
       case Some(v) => v
       case None => default
