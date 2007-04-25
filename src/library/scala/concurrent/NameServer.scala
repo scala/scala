@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -17,7 +17,7 @@ package scala.concurrent
  *  @version 1.0, 01/10/2003
  *  @deprecated  use scala.actors package instead
  */
-[deprecated]
+@deprecated
 object NameServer {
 
   val names = new scala.collection.mutable.HashMap[Symbol, Process]

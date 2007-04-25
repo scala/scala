@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -10,7 +10,6 @@
 
 
 package scala.concurrent
-
 
 import java.lang.Thread
 
@@ -21,7 +20,7 @@ import java.lang.Thread
  * @version 1.0
  * @deprecated  use scala.actors package instead
  */
-[deprecated]
+@deprecated
 abstract class Actor extends Thread {
   private val in = new MailBox
 

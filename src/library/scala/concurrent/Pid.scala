@@ -1,12 +1,12 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: Pid.scala 7955 2006-06-22 13:55:30 +0000 (Thu, 22 Jun 2006) michelou $
+// $Id: $
 
 
 package scala.concurrent
@@ -19,7 +19,7 @@ package scala.concurrent
  * @version 1.0
  * @deprecated  use scala.actors package instead
  */
-[deprecated]
+@deprecated
 class Pid(actor: Actor) {
   private var target = actor
 
