@@ -1902,7 +1902,7 @@ trait Typers requires Analyzer {
       def typedTypeApply(fun: Tree, args: List[Tree]): Tree = fun.tpe match {
         case OverloadedType(pre, alts) =>
           inferPolyAlternatives(fun, args map (.tpe))
-          val tparams = fun.symbol.typeParams
+          val tparams = fun.symbol.typeParams //@M TODO: fun.symbol.info.typeParams ? (as in typedAppliedTypeTree)
           assert(args.length == tparams.length)  //@M: in case TypeApply we can't check the kind-arities
           // of the type arguments as we don't know which alternative to choose... here we do
           val args1 = map2Conserve(args, tparams) {
@@ -2344,7 +2344,7 @@ trait Typers requires Analyzer {
 
       def typedAppliedTypeTree(tpt: Tree, args: List[Tree]) = {
         val tpt1 = typed1(tpt, mode | FUNmode | TAPPmode, WildcardType)
-        val tparams = tpt1.symbol.typeParams
+        val tparams = tpt1.symbol.info.typeParams // must be .info.typeParams (see pos/tcpoly_typeapp.scala)
 
         if (tpt1.tpe.isError) {
           setError(tree)
