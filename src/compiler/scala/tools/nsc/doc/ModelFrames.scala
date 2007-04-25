@@ -266,7 +266,7 @@ trait ModelFrames extends ModelExtractor {
             <!-- <table><tr></tr></table> -->
           </td>
           <td align="right" valign="top" style="white-space:nowrap;" rowspan="2">
-            <div class="doctitle-larger">{docTitle}</div>
+            <div class="doctitle-larger">{windowTitle}</div>
           </td>
         </tr>
         <tr><td></td></tr>

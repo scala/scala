@@ -31,7 +31,7 @@ trait ModelToXML extends ModelExtractor {
     }) else aref(url, entity.nameString);
   }
 
-  def link(tpe: Type)(implicit frame : Frame) : NodeSeq = {
+  def link(tpe: Type)(implicit frame: Frame): NodeSeq = {
     if (!tpe.typeArgs.isEmpty) {
       if (definitions.isFunctionType(tpe)) {
         val (args,r) = tpe.typeArgs.splitAt(tpe.typeArgs.length - 1);
@@ -61,15 +61,11 @@ trait ModelToXML extends ModelExtractor {
     }
   }
 
-  private def printIf[T](what : Option[T], before : String, after : String)(f : T => NodeSeq) : NodeSeq = {
-    if (what.isEmpty) return Text("");
-    var seq : NodeSeq = Text(before);
-    seq = seq ++ f(what.get);
-    seq = seq ++ Text(after);
-    seq
-  }
+  private def printIf[T](what: Option[T], before: String, after: String)(f: T => NodeSeq): NodeSeq =
+    if (what.isEmpty) Text("")
+    else Text(before) ++ f(what.get) ++ Text(after)
 
-  def bodyFor(entity : Entity)(implicit frame : Frame) : NodeSeq = {
+  def bodyFor(entity: Entity)(implicit frame: Frame): NodeSeq = {
     var seq = {entity.typeParams.surround("[", "]")(e => {
       Text(e.variance) ++ <em>{e.name}</em> ++
         {printIf(e.hi, " <: ", "")(link)} ++
@@ -77,22 +73,21 @@ trait ModelToXML extends ModelExtractor {
     })} ++ printIf(entity.hi, " <: ", "")(link) ++
            printIf(entity.lo, " >: ", "")(link);
     {entity.params.foreach(xs => {
-      seq = seq ++ xs.mkXML("(", ", ", ")")(arg => {
-        var seq : NodeSeq = {
-          val str = arg.flagsString.trim;
-          if (str.length == 0) NodeSeq.Empty;
-          else <code>{Text(str)} </code>;
-        }
-        seq = seq ++ <em>{arg.name}</em>;
-        seq = seq ++ Text(" : ") ++ link(arg.resultType.get);
-        seq;
-      });
-      seq;
+      seq = seq ++ xs.mkXML("(", ", ", ")")(arg =>
+        {
+          val str = arg.flagsString.trim
+          if (str.length == 0) NodeSeq.Empty
+          else <code>{Text(str)} </code>
+        } ++
+        <em>{arg.name}</em> ++
+        Text(" : ") ++ link(arg.resultType.get)
+      );
+      seq
     })};
     seq ++ {printIf(entity.resultType, " : ", "")(tpe => link(tpe))}
   }
 
-  def extendsFor(entity : Entity)(implicit frame : Frame) : NodeSeq = {
+  def extendsFor(entity: Entity)(implicit frame: Frame): NodeSeq = {
     if (entity.parents.isEmpty) NodeSeq.Empty;
     else <code> extends </code>++
       entity.parents.mkXML(Text(""), <code> with </code>, Text(""))(link);
@@ -119,14 +114,14 @@ trait ModelToXML extends ModelExtractor {
       <dd>{extendsFor(entity)}</dd>
     </dl>;
   } ++ {
-    val cmnt = entity.decodeComment;
-    if (cmnt.isEmpty) NodeSeq.Empty;
-    else longComment(cmnt.get);
+    val cmnt = entity.decodeComment
+    if (cmnt.isEmpty) NodeSeq.Empty
+    else longComment(cmnt.get)
   } ++ (entity match {
-      case entity : ClassOrObject => {classBody(entity)};
-      case _ => NodeSeq.Empty;
+      case entity: ClassOrObject => classBody(entity)
+      case _ => NodeSeq.Empty
   }) ++ {
-    val overridden = entity.overridden;
+    val overridden = entity.overridden
     if (!overridden.isEmpty) {
       var seq : NodeSeq = Text("Overrides ");
       seq = seq ++ overridden.mkXML("",", ", "")(sym => link(decode(sym.owner)) ++ Text(".") ++ link(sym));
@@ -134,9 +129,9 @@ trait ModelToXML extends ModelExtractor {
     } else NodeSeq.Empty;
   } ++ <hr/>);
 
-  def longComment(cmnt : Comment) : NodeSeq = {
+  def longComment(cmnt: Comment): NodeSeq = {
     val attrs = <dl>{
-      var seq : NodeSeq = NodeSeq.Empty;
+      var seq: NodeSeq = NodeSeq.Empty
       cmnt.decodeAttributes.foreach{
       case (tag,xs) =>
         seq = seq ++ <dt style="margin:10px 0 0 20px;">
@@ -149,13 +144,17 @@ trait ModelToXML extends ModelExtractor {
       };
       seq;
     }</dl>;
-    <span><dl><dd>{parse(cmnt.body)}</dd></dl>{attrs}</span>
+    <xml:group>
+      <dl><dd>{parse(cmnt.body)}</dd></dl>
+      {attrs}
+    </xml:group>
   }
 
-  def classBody(entity : ClassOrObject)(implicit from : Frame) : NodeSeq = <span>
-  {categories.mkXML("","\n","")(c => shortList(entity, c)) : NodeSeq}
-  {categories.mkXML("","\n","")(c =>  longList(entity, c)) : NodeSeq}
-  </span>;
+  def classBody(entity: ClassOrObject)(implicit from: Frame): NodeSeq =
+    <xml:group>
+      {categories.mkXML("","\n","")(c => shortList(entity, c)) : NodeSeq}
+      {categories.mkXML("","\n","")(c =>  longList(entity, c)) : NodeSeq}
+    </xml:group>;
 
   def longList(entity : ClassOrObject,category : Category)(implicit from : Frame) : NodeSeq = {
     val xs = entity.members(category);
@@ -167,13 +166,13 @@ trait ModelToXML extends ModelExtractor {
         <div>{xs.mkXML("","\n","")(m => longHeader(m))}</div>);
   }
 
-  def shortList(entity: ClassOrObject, category: Category)(implicit from: Frame) : NodeSeq = {
+  def shortList(entity: ClassOrObject, category: Category)(implicit from: Frame): NodeSeq = {
     val xs = entity.members(category)
-    var seq : NodeSeq = NodeSeq.Empty
+    var seq: NodeSeq = NodeSeq.Empty
     if (xs.elements.hasNext) {
       // alphabetic
       val set = new scala.collection.jcl.TreeSet[entity.Member]()(mA => new Ordered[entity.Member] {
-        def compare(mB : entity.Member) : Int = {
+        def compare(mB: entity.Member): Int = {
           if (mA eq mB) return 0;
           val diff = mA.name compare mB.name;
           if (diff != 0) return diff;
@@ -183,7 +182,7 @@ trait ModelToXML extends ModelExtractor {
         }
       });
       set addAll xs;
-      seq = seq ++   <table cellpadding="3" class="member" summary="">
+      seq = seq ++ <table cellpadding="3" class="member" summary="">
       <tr><td colspan="2" class="title">{Text(category.label + " Summary")}</td></tr>
       {set.mkXML("","\n","")(mmbr => shortHeader(mmbr))}
       </table>
@@ -220,16 +219,23 @@ trait ModelToXML extends ModelExtractor {
         <code>{Text(entity.flagsString)} {Text(entity.kind)}</code>
       </td>
       <td class="signature">
-        <em>{link(decode(entity.sym))}</em>{bodyFor(entity) ++ extendsFor(entity)}
+        <em>{link(decode(entity.sym))}</em>
+        {bodyFor(entity) ++ extendsFor(entity)}
         {
-          val cmnt = entity.decodeComment;
-          if (cmnt.isEmpty) NodeSeq.Empty;
-          else <br>{parse(cmnt.get.body)}</br>;
+          entity.resultType match {
+            case Some(PolyType(_, ConstantType(v))) => Text(" = " + v.escapedStringValue)
+            case _ => NodeSeq.Empty
+          }
+        }
+        {
+          val cmnt = entity.decodeComment
+          if (cmnt.isEmpty) NodeSeq.Empty
+          else <div>{parse(cmnt.get.body)}</div>;
         }
       </td>
     </tr>
 
-  def attrsFor(entity : Entity)(implicit from : Frame) : NodeSeq = {
+  def attrsFor(entity: Entity)(implicit from: Frame): NodeSeq = {
     def attrFor(attr: AnnotationInfo[Constant]): Node = {
       val buf = new StringBuilder
       val AnnotationInfo(tpe, args, nvPairs) = attr

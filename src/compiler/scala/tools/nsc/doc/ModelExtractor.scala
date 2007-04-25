@@ -75,26 +75,26 @@ trait ModelExtractor {
   }
 
 
-  sealed abstract class Entity(val sym : Symbol) {
-    private[ModelExtractor] def sym0 = sym;
+  sealed abstract class Entity(val sym: Symbol) {
+    private[ModelExtractor] def sym0 = sym
 
-    override def toString = sym.toString;
-    def comment : Option[String] = global.comments.get(sym);
+    override def toString = sym.toString
+    def comment : Option[String] = global.comments.get(sym)
     // comments decoded, now what?
-    def attributes = sym.attributes;
+    def attributes = sym.attributes
     def decodeComment : Option[Comment] = {
       val comment0 = this.comment;
       if (comment0.isEmpty) return None;
       var comment = comment0.get.trim;
       Some(ModelExtractor.this.decodeComment(comment));
     }
-    protected def accessQualified(core : String, qual : String) = core match {
+    protected def accessQualified(core: String, qual: String) = core match {
       case "public" => ""; // assert(qual == null); "";
       case core => core + (if (qual == null) "" else "[" + qual + "]");
     }
 
     def flagsString = {
-      import symtab.Flags;
+      import symtab.Flags
         val isLocal = sym.hasFlag(Flags.LOCAL);
         val x = if (sym.hasFlag(Flags.PRIVATE)) "private" else if (sym.hasFlag(Flags.PROTECTED)) "protected" else "public";
         var string = accessQualified(x, {
@@ -121,74 +121,75 @@ trait ModelExtractor {
     def kind : String;
     def header = {
     }
-    def typeParams : List[TypeParam] = Nil;
-    def params : List[List[Param]] = Nil;
-    def resultType : Option[Type] = None;
-    def parents : Iterable[Type] = Nil;
-    def lo : Option[Type] = sym.info match {
+    def typeParams : List[TypeParam] = Nil
+    def params: List[List[Param]] = Nil
+    def resultType: Option[Type] = None
+    def parents: Iterable[Type] = Nil
+    def lo: Option[Type] = sym.info match {
       case TypeBounds(lo,hi) if decode(lo.symbol) != definitions.AllClass => Some(lo);
       case _ => None;
     }
     def hi : Option[Type] = sym.info match {
-    case TypeBounds(lo,hi) if decode(hi.symbol) != definitions.AnyClass => Some(hi);
-    case _ => None;
+      case TypeBounds(lo,hi) if decode(hi.symbol) != definitions.AnyClass => Some(hi)
+      case _ => None
     }
     def variance = {
-      import symtab.Flags._;
-      if (sym.hasFlag(COVARIANT)) "+";
-      else if (sym.hasFlag(CONTRAVARIANT)) "-";
-      else "";
+      import symtab.Flags._
+      if (sym hasFlag COVARIANT) "+"
+      else if (sym hasFlag CONTRAVARIANT) "-"
+      else ""
     }
-    def overridden : Iterable[Symbol] = {
-      Nil;
-    }
+    def overridden: Iterable[Symbol] = Nil
   }
-  class Param(sym : Symbol) extends Entity(sym) {
-    override def resultType = Some(sym.tpe);
+
+  class Param(sym: Symbol) extends Entity(sym) {
+    override def resultType = Some(sym.tpe)
     //def kind = if (sym.isPublic) "val" else "";
-    def kind = "";
+    def kind = ""
   }
-  class ConstructorParam(sym : Symbol) extends Param(sym) {
+
+  class ConstructorParam(sym: Symbol) extends Param(sym) {
     override protected def accessQualified(core : String, qual : String) = core match {
-    case "public" => "val";
-    case "protected" => super.accessQualified(core,qual) + " val";
-    case "private" if qual == "this" => "";
-    case core => super.accessQualified(core, qual);
+      case "public" => "val"
+      case "protected" => super.accessQualified(core,qual) + " val"
+      case "private" if qual == "this" => ""
+      case core => super.accessQualified(core, qual)
     }
   }
 
-  def Param(sym : Symbol) = new Param(sym);
-  class TypeParam(sym : Symbol) extends Entity(sym) {
-    def kind = "";
+  def Param(sym: Symbol) = new Param(sym)
+  class TypeParam(sym: Symbol) extends Entity(sym) {
+    def kind = ""
   }
-  def TypeParam(sym : Symbol) = new TypeParam(sym);
+  def TypeParam(sym: Symbol) = new TypeParam(sym)
 
   trait Clazz extends ClassOrObject {
-    private def csym = sym.asInstanceOf[TypeSymbol];
-    override def typeParams = csym.typeParams.map(TypeParam);
+    private def csym = sym.asInstanceOf[TypeSymbol]
+    override def typeParams = csym.typeParams.map(TypeParam)
     override def params = {
-      if (constructorArgs.isEmpty) Nil;
-      else constructorArgs.values.toList :: Nil;
+      if (constructorArgs.isEmpty) Nil
+      else constructorArgs.values.toList :: Nil
     }
-    def isTrait = csym.isTrait;
-    override def kind = if (sym.isTrait) "trait" else "class";
+    def isTrait = csym.isTrait
+    override def kind = if (sym.isTrait) "trait" else "class"
   }
+
   trait Object extends ClassOrObject {
-    override def kind = "object";
-  }
-  case class Package(override val sym : ModuleSymbol) extends Entity(sym) {
-    override def kind = "package";
-    override def name = fullName('.');
+    override def kind = "object"
   }
 
+  case class Package(override val sym: ModuleSymbol) extends Entity(sym) {
+    override def kind = "package"
+    override def name = fullName('.')
+  }
 
-  trait TopLevel extends ClassOrObject;
-  class TopLevelClass (sym : Symbol) extends Entity(sym) with TopLevel with  Clazz;
-  class TopLevelObject(sym : Symbol) extends Entity(sym) with TopLevel with Object;
+  trait TopLevel extends ClassOrObject
+  class TopLevelClass (sym: Symbol) extends Entity(sym) with TopLevel with Clazz
+  class TopLevelObject(sym: Symbol) extends Entity(sym) with TopLevel with Object
 
-  def compare(pathA : List[ClassOrObject], pathB : List[ClassOrObject]) : Int = {
-    var pA = pathA;
-    var pB = pathB;
+  def compare(pathA: List[ClassOrObject], pathB: List[ClassOrObject]): Int = {
+    var pA = pathA
+    var pB = pathB
     while (true) {
       if (pA.isEmpty) return -1;
       if (pB.isEmpty) return +1;
@@ -260,10 +261,10 @@ trait ModelExtractor {
         o.map(comments.apply);
       }
     }
-    abstract class ValDef(sym : Symbol) extends Member(sym) {
+    abstract class ValDef(sym: Symbol) extends Member(sym) {
       override def resultType = Some(resultType0);
-      protected def resultType0 : Type;
-      override def overridden : Iterable[Symbol] = {
+      protected def resultType0: Type
+      override def overridden: Iterable[Symbol] = {
         var ret : jcl.LinkedHashSet[Symbol] = null;
         for (parent <- ClassOrObject.this.parents) {
           val sym0 = sym.overriddenSymbol(parent.symbol);
@@ -294,7 +295,7 @@ trait ModelExtractor {
       }
       override def kind = "def"
     }
-    case class Val(override val sym : TermSymbol) extends ValDef(sym) {
+    case class Val(override val sym: TermSymbol) extends ValDef(sym) {
       def resultType0 : Type = sym.tpe;
       override def kind = {
         import symtab.Flags._;
