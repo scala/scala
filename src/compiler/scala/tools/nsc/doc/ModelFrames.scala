@@ -18,9 +18,19 @@ import scala.xml.{NodeSeq, Text, Unparsed, Utility}
   */
 trait ModelFrames extends ModelExtractor {
   import DocUtil._
-  def outdir: String
-  def windowTitle: String
-  def docTitle: String
+  def settings: Settings
+
+  val outdir      = settings.outdir.value
+  val windowTitle = settings.windowtitle.value
+  val docTitle    = load(settings.doctitle.value)
+
+  val stylesheetSetting = settings.stylesheetfile
+
+  def pageHeader  = load(settings.pageheader.value)
+  def pageFooter  = load(settings.pagefooter.value)
+  def pageTop     = load(settings.pagetop.value)
+  def pageBottom  = load(settings.pagebottom.value)
+
   def contentFrame = "contentFrame"
   def classesFrame = "classesFrame"
   def modulesFrame = "modulesFrame"
@@ -29,10 +39,9 @@ trait ModelFrames extends ModelExtractor {
   protected val NAME_SUFFIX_OBJECT  = "$object"
   protected val NAME_SUFFIX_PACKAGE = "$package"
 
-  def rootTitle =
-    <div class="page-title">{load(docTitle)}<br/>API Specification</div>;
+  def rootTitle = <div class="page-title">{docTitle}</div>;
   def rootDesc =
-    <p>{load("This document is the API specification for " + docTitle)}</p>;
+    <p>{load("This document is the API specification for " + windowTitle)}</p>;
 
   final def hasLink(sym: global.Symbol): Boolean =
     if (sym == global.NoSymbol) false
@@ -148,16 +157,13 @@ trait ModelFrames extends ModelExtractor {
   }
   protected def rootFor(sym: global.Symbol) = ""
 
-  private val doctitle: NodeSeq =
-    <div class="doctitle-larger">{load(docTitle)}</div>;
-
   abstract class AllPackagesFrame extends Frame {
     override val path  = "modules"
     override val title = "List of all packages"
     def packages: Iterable[Package]
     override def body: NodeSeq =
       <div>
-        {doctitle}
+        <div class="doctitle-larger">{windowTitle}</div>
         <a href="all-classes.html" target={classesFrame} onclick="resetKind();">{"All objects and classes"}</a>
       </div>
       <div class="kinds">Packages</div>
@@ -184,7 +190,7 @@ trait ModelFrames extends ModelExtractor {
       </table>;
   }
 
-  val classFrameKinds = Objects :: Classes :: Nil;
+  val classFrameKinds = Objects :: Classes :: Nil
   abstract class ListClassFrame extends Frame {
     def classes: Iterable[ClassOrObject]
     def navLabel: String
@@ -227,13 +233,13 @@ trait ModelFrames extends ModelExtractor {
       })}</div>;
       nav ++ body
     }
-    def optional(cls : ClassOrObject) : NodeSeq = NodeSeq.Empty;
+    def optional(cls: ClassOrObject): NodeSeq = NodeSeq.Empty
   }
   abstract class PackageContentFrame extends Frame {
-    override def path  = pkg.fullName('/') + "$content";
-    override def title = "All classes and objects in " + pkg.fullName('.');
-    protected def pkg : Package;
-    protected def classes : Iterable[ClassOrObject];
+    override def path = pkg.fullName('/') + "$content"
+    override def title = "All classes and objects in " + pkg.fullName('.')
+    protected def pkg: Package
+    protected def classes: Iterable[ClassOrObject]
     def body: NodeSeq =
       {rootTitle} ++ {rootDesc} ++ {classFrameKinds.mkXML("","\n","")(kind => {
         val classes = sort(this.classes.filter(e => kind.f(e.sym) && e.isInstanceOf[TopLevel]));
@@ -245,31 +251,37 @@ trait ModelFrames extends ModelExtractor {
       })};
   }
   abstract class ClassContentFrame extends Frame {
-    def clazz: ClassOrObject;
-    def body: NodeSeq = <span>{navigation}{header0}{longHeader(clazz)}</span>;
+    def clazz: ClassOrObject
+    def body: NodeSeq =
+      <xml:group>
+        {pageHeader}{navigation}{pageTop}
+        {header0}{longHeader(clazz)}
+        {pageBottom}{navigation}{pageFooter}
+      </xml:group>;
     final def path = urlFor0(clazz.sym, clazz.sym)
     private def navigation: NodeSeq =
       <table class="navigation" summary="">
         <tr>
           <td valign="top" class="navigation-links">
-            <table><tr>
-            </tr></table>
+            <!-- <table><tr></tr></table> -->
           </td>
           <td align="right" valign="top" style="white-space:nowrap;" rowspan="2">
-            {doctitle}
+            <div class="doctitle-larger">{docTitle}</div>
           </td>
         </tr>
         <tr><td></td></tr>
       </table>;
-    private def header0: NodeSeq = <span>
-      <div class="entity">
-        {Text(clazz.kind)}
-        <span class="entity">{Text(clazz.name)}</span> in
-        {aref(urlFor(decode(clazz.sym.owner)), "_self", decode(clazz.sym.owner).fullNameString('.'))}
-      </div><hr/>
-    </span>;
+    private def header0: NodeSeq =
+      <xml:group>
+        <div class="entity">
+          {Text(clazz.kind)}
+          <span class="entity">{Text(clazz.name)}</span> in
+          {aref(urlFor(decode(clazz.sym.owner)), "_self", decode(clazz.sym.owner).fullNameString('.'))}
+        </div>
+        <hr/>
+      </xml:group>;
   }
-  def longComment(cmnt : Comment) : NodeSeq;
+  def longComment(cmnt: Comment): NodeSeq
 
   val index =
     <frameset cols="25%, 75%">
@@ -313,28 +325,36 @@ trait ModelFrames extends ModelExtractor {
       </form>
   }
 
-  private val loader = getClass().getClassLoader()
   def copyResources = {
     import java.io._
-    // The name of a resource is a '/'-separated path name that identifies the resource.
-    val rsrcdir = "scala/tools/nsc/doc/"
-    for (base <- List("style.css", "script.js")) {
-      try {
-        val in = loader.getResourceAsStream(rsrcdir + base)
-        val out = new FileOutputStream(new File(outdir + File.separator + base))
-        val buf = new Array[byte](1024)
-        var len = 0
-        while (len != -1) {
-          out.write(buf, 0, len)
-          len = in.read(buf)
-        }
-        in.close()
-        out.close()
-      } catch {
-      case _ =>
-        System.err.println("Resource file '" + rsrcdir + base + "' not found")
-      }
+    val loader = this.getClass().getClassLoader()
+    def basename(path: String): String = {
+      val pos = path lastIndexOf System.getProperty("file.separator", "/")
+      if (pos != -1) path.substring(pos + 1) else path
     }
+    def copyResource(name: String, isFile: boolean) = try {
+      val (in, outfile) =
+        if (isFile)
+          (new FileInputStream(name), basename(name))
+        else {
+          // The name of a resource is a '/'-separated path name that identifies the resource.
+          (loader.getResourceAsStream("scala/tools/nsc/doc/" + name), name)
+        }
+      val out = new FileOutputStream(new File(outdir + File.separator + outfile))
+      val buf = new Array[byte](1024)
+      var len = 0
+      while (len != -1) {
+        out.write(buf, 0, len)
+        len = in.read(buf)
+      }
+      in.close()
+      out.close()
+    } catch {
+      case _ =>
+        System.err.println("Resource file '" + name + "' not found")
+    }
+    copyResource(stylesheetSetting.value, !stylesheetSetting.isDefault)
+    copyResource("script.js", false)
   }
   private val patVal = java.util.regex.Pattern.compile(
       "scala\\.(Byte|Boolean|Char|Double|Float|Int|Long|Short)")

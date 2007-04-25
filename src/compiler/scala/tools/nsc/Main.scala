@@ -57,11 +57,9 @@ object Main extends AnyRef with EvalLoop {
           run compile command.files
           if (command.settings.doc.value) {
             object generator extends DocGenerator {
-              val global : compiler.type = compiler
-              def outdir = command.settings.outdir.value
-              def windowTitle = command.settings.windowtitle.value
-              def docTitle = command.settings.doctitle.value
-            };
+              val global: compiler.type = compiler
+              def settings = command.settings
+            }
             generator.process(run.units)
           }
         }
@@ -75,7 +73,7 @@ object Main extends AnyRef with EvalLoop {
     }
   }
 
-  def main(args: Array[String]): unit = {
+  def main(args: Array[String]) {
     process(args)
     exit(if (reporter.hasErrors) 1 else 0)
   }

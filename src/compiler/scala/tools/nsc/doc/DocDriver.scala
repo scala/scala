@@ -142,18 +142,20 @@ abstract class DocDriver extends ModelFrames with ModelToXML {
           add.kind + " " + add.name + " in package " + add.sym.owner.fullNameString('.')
       }
     }
-    new RootFrame with Frame;
+    new RootFrame with Frame
   }
-  override def longList(entity : ClassOrObject,category : Category)(implicit from : Frame) : NodeSeq = category match {
-  case (Classes | Objects) => NodeSeq.Empty;
-  case _ => super.longList(entity,category);
+  override def longList(entity: ClassOrObject, category: Category)(implicit from: Frame) : NodeSeq = category match {
+    case Classes | Objects => NodeSeq.Empty
+    case _ => super.longList(entity, category)
   }
+
   trait Frame extends super.Frame {
-    def longHeader(entity : Entity) = DocDriver.this.longHeader(entity)(this);
-    def shortHeader(entity : Entity) = DocDriver.this.shortHeader(entity)(this);
+    def longHeader(entity : Entity) = DocDriver.this.longHeader(entity)(this)
+    def shortHeader(entity : Entity) = DocDriver.this.shortHeader(entity)(this)
   }
-  import DocUtil._;
-  override def classBody(entity : ClassOrObject)(implicit from : Frame) : NodeSeq =
+
+  import DocUtil._
+  override def classBody(entity: ClassOrObject)(implicit from: Frame): NodeSeq =
     (subClasses.get(entity.sym) match {
     case Some(symbols) =>
       <dl>
@@ -162,9 +164,11 @@ abstract class DocDriver extends ModelFrames with ModelToXML {
         aref(urlFor(cls.sym), cls.path.map(.name).mkString("",".",""));
       })}</dd>
       </dl><hr/>;
-    case None => NodeSeq.Empty;
+    case None =>
+      NodeSeq.Empty
     })++super.classBody(entity);
-  protected def urlFor(sym : Symbol)(implicit frame : Frame) = frame.urlFor(sym);
+
+  protected def urlFor(sym: Symbol)(implicit frame: Frame) = frame.urlFor(sym)
 
   override protected def decodeTag(tag: String): String = tag match {
     case "exception"  => "Throws"

@@ -9,7 +9,7 @@ package scala.tools.nsc.doc
 import java.io.StringReader
 import org.xml.sax.InputSource
 
-import scala.collection.immutable._
+import scala.collection.immutable.{ListMap, TreeSet}
 import scala.xml._
 
 object DocUtil {
@@ -17,12 +17,15 @@ object DocUtil {
   //def dquote(str: String): NodeSeq =
   //  DQUOTE :: Text(str) :: DQUOTE :: Nil
 
-  def load(str: String): NodeSeq = {
-    val xmlSrc =
-      if (str.matches("^(<!--.*-->)*<[^>]+>.*<[^>]+>(<!--.*-->)*$")) str
-      else "<span>" + str + "</span>"
-    XML.load(new StringReader(xmlSrc))
-  }
+  def load(str: String): NodeSeq =
+    if ((str == null) || (str.length == 0))
+      NodeSeq.Empty
+    else {
+      val xmlSrc =
+        if (str.matches("^(<!--.*-->)*<[^>]+>.*<[^>]+>(<!--.*-->)*$")) str
+        else "<div>" + str + "</div>"
+      XML.load(new StringReader(xmlSrc))
+    }
 
   //object DQUOTE extends SpecialNode {
    // def toString(sb: StringBuffer) = {
@@ -95,26 +98,27 @@ object DocUtil {
     }
     ts
   }
-  implicit def coerceIterable[T](list : Iterable[T]) = NodeWrapper(list.elements);
-  implicit def coerceIterator[T](list : Iterator[T]) = NodeWrapper(list);
+  implicit def coerceIterable[T](list : Iterable[T]) = NodeWrapper(list.elements)
+  implicit def coerceIterator[T](list : Iterator[T]) = NodeWrapper(list)
+
   case class NodeWrapper[T](list : Iterator[T]) {
-    def mkXML(begin : NodeSeq, separator : NodeSeq, end : NodeSeq)(f : T => NodeSeq) : NodeSeq = {
-      var seq : NodeSeq = begin;
-      val i = list;
+
+    def mkXML(begin: NodeSeq, separator: NodeSeq, end: NodeSeq)(f: T => NodeSeq): NodeSeq = {
+      var seq: NodeSeq = begin
+      val i = list
       while (i.hasNext) {
         seq = seq ++ f(i.next);
         if (i.hasNext) seq = seq ++ separator;
       }
-      seq ++ end;
+      seq ++ end
     }
 
-
-    def mkXML(begin : String, separator : String, end : String)(f : T => NodeSeq) : NodeSeq = {
+    def mkXML(begin: String, separator: String, end: String)(f: T => NodeSeq): NodeSeq = {
       this.mkXML(Text(begin),Text(separator),Text(end))(f);
     }
-    def surround(open : String, close : String)(f : T => NodeSeq) = {
-      if (list.hasNext) mkXML(open, ", ", close)(f);
-      else NodeSeq.Empty;
-    }
+
+    def surround(open: String, close: String)(f: T => NodeSeq) =
+      if (list.hasNext) mkXML(open, ", ", close)(f)
+      else NodeSeq.Empty
   }
 }

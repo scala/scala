@@ -42,6 +42,11 @@ import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
  *    <li>encoding,</li>
  *    <li>windowtitle,</li>
  *    <li>doctitle,</li>
+ *    <li>stylesheetfile,</li>
+ *    <li>header,</li>
+ *    <li>footer,</li>
+ *    <li>top,</li>
+ *    <li>bottom,</li>
  *    <li>addparams,</li>
  *    <li>deprecation,</li>
  *    <li>unchecked.</li>
@@ -100,13 +105,25 @@ class Scaladoc extends MatchingTask {
 
   /** The window title of the generated HTML documentation. */
   private var windowtitle: Option[String] = None
+
   /** The document title of the generated HTML documentation. */
   private var doctitle: Option[String] = None
 
+  /** The user-specified stylesheet file. */
+  private var stylesheetfile: Option[String] = None
+
+  /** The user-specified header/footer and top/bottom texts. */
+  private var pageheader: Option[String] = None
+  private var pagefooter: Option[String] = None
+  private var pagetop   : Option[String] = None
+  private var pagebottom: Option[String] = None
+
   /** Instruct the compiler to use additional parameters */
   private var addParams: String = ""
+
   /** Instruct the compiler to generate deprecation information. */
   private var deprecation: Boolean = false
+
   /** Instruct the compiler to generate unchecked information. */
   private var unchecked: Boolean = false
 
@@ -263,6 +280,41 @@ class Scaladoc extends MatchingTask {
    */
   def setDoctitle(input: String): Unit =
     doctitle = Some(input)
+
+  /** Sets the <code>stylesheetfile</code> attribute.
+   *
+   *  @param input The value of <code>stylesheetfile</code>.
+   */
+  def setStylesheetfile(input: String): Unit =
+    stylesheetfile = Some(input)
+
+  /** Sets the <code>header</code> attribute.
+   *
+   *  @param input The value of <code>header</code>.
+   */
+  def setHeader(input: String): Unit =
+    pageheader = Some(input)
+
+  /** Sets the <code>footer</code> attribute.
+   *
+   *  @param input The value of <code>footer</code>.
+   */
+  def setFooter(input: String): Unit =
+    pagefooter = Some(input)
+
+  /** Sets the <code>top</code> attribute.
+   *
+   *  @param input The value of <code>top</code>.
+   */
+  def setTop(input: String): Unit =
+    pagetop = Some(input)
+
+  /** Sets the <code>bottom</code> attribute.
+   *
+   *  @param input The value of <code>bottom</code>.
+   */
+  def setBottom(input: String): Unit =
+    pagebottom = Some(input)
 
   /** Set the <code>addparams</code> info attribute.
    *
@@ -460,6 +512,16 @@ class Scaladoc extends MatchingTask {
         nameToFile(originDir)(originFile)
       }
 
+    def decodeEscapes(s: String): String = {
+      // In Ant script characters '<' and '>' must be encoded when
+      // used in attribute values, e.g. for attributes "doctitle", "header", ..
+      // in task Scaladoc you may write:
+      //   doctitle="&lt;div&gt;Scala&lt;/div&gt;"
+      // so we have to decode them here.
+      s.replaceAll("&lt;", "<").replaceAll("&gt;",">")
+       .replaceAll("&amp;", "&").replaceAll("&quot;", "\"")
+    }
+
     // Builds-up the compilation settings for Scalac with the existing Ant
     // parameters.
     val settings = new Settings(error)
@@ -476,14 +538,12 @@ class Scaladoc extends MatchingTask {
     if (!extdirs.isEmpty) settings.extdirs.value = asString(getExtdirs)
     if (!encoding.isEmpty) settings.encoding.value = encoding.get
     if (!windowtitle.isEmpty) settings.windowtitle.value = windowtitle.get
-    if (!doctitle.isEmpty) settings.doctitle.value =
-      // In Ant script characters '<' and '>' must be encoded when
-      // used in attribute values, e.g. for attribute "doctitle"
-      // in task Scaladoc you may write:
-      //   doctitle="&lt;div&gt;Scala&lt;/div&gt;"
-      // so we have to decode them here.
-      doctitle.get.replaceAll("&lt;", "<").replaceAll("&gt;",">")
-                  .replaceAll("&amp;", "&").replaceAll("&quot;", "\"")
+    if (!doctitle.isEmpty) settings.doctitle.value = decodeEscapes(doctitle.get)
+    if (!stylesheetfile.isEmpty) settings.stylesheetfile.value = stylesheetfile.get
+    if (!pageheader.isEmpty) settings.pageheader.value = decodeEscapes(pageheader.get)
+    if (!pagefooter.isEmpty) settings.pagefooter.value = decodeEscapes(pagefooter.get)
+    if (!pagetop.isEmpty) settings.pagetop.value = decodeEscapes(pagetop.get)
+    if (!pagebottom.isEmpty) settings.pagebottom.value = decodeEscapes(pagebottom.get)
     settings.deprecation.value = deprecation
     settings.unchecked.value = unchecked
     log("Scaladoc params = '" + addParams + "'", Project.MSG_DEBUG)
@@ -504,19 +564,17 @@ class Scaladoc extends MatchingTask {
 
   /** Performs the compilation. */
   override def execute() = {
-    val Pair(settings, sourceFiles) = initialize
-    val reporter = new ConsoleReporter(settings)
+    val Pair(commandSettings, sourceFiles) = initialize
+    val reporter = new ConsoleReporter(commandSettings)
 
     // Compiles the actual code
-    val compiler = new Global(settings, reporter)
+    val compiler = new Global(commandSettings, reporter)
     try {
       val run = new compiler.Run
       run.compile(sourceFiles.map (.toString()))
       object generator extends DocDriver {
         val global: compiler.type = compiler
-        def outdir = settings.outdir.value
-        def windowTitle = settings.windowtitle.value
-        def docTitle = settings.doctitle.value
+        def settings = commandSettings
       }
       generator.process(run.units)
       if (reporter.ERROR.count > 0)

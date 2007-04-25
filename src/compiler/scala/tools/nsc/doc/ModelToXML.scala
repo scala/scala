@@ -13,22 +13,25 @@ import scala.xml._
  *  @author  Sean McDirmid, Stephane Micheloud
  */
 trait ModelToXML extends ModelExtractor {
-  import global._;
-  import DocUtil._;
+  import global._
+  import DocUtil._
   // decode entity into XML.
-  type Frame;
+  type Frame
 
-  protected def urlFor(sym : Symbol)(implicit frame : Frame) : String;
-  protected def anchor(sym : Symbol)(implicit frame : Frame) : NodeSeq;
-  def aref(href : String, label : String)(implicit frame : Frame) : NodeSeq;
-  def link(entity : Symbol)(implicit frame : Frame) : NodeSeq = {
+  protected def urlFor(sym: Symbol)(implicit frame: Frame): String
+  protected def anchor(sym: Symbol)(implicit frame: Frame): NodeSeq
+
+  def aref(href: String, label: String)(implicit frame: Frame): NodeSeq
+
+  def link(entity: Symbol)(implicit frame: Frame): NodeSeq = {
     val url = urlFor(entity);
     // nothing to do but be verbose.
     if (url == null) Text({
       entity.owner.fullNameString('.') + '.' + entity.nameString;
     }) else aref(url, entity.nameString);
   }
-  def link(tpe    : Type)(implicit frame : Frame) : NodeSeq = {
+
+  def link(tpe: Type)(implicit frame : Frame) : NodeSeq = {
     if (!tpe.typeArgs.isEmpty) {
       if (definitions.isFunctionType(tpe)) {
         val (args,r) = tpe.typeArgs.splitAt(tpe.typeArgs.length - 1);
@@ -57,13 +60,15 @@ trait ModelToXML extends ModelExtractor {
       }
     }
   }
+
   private def printIf[T](what : Option[T], before : String, after : String)(f : T => NodeSeq) : NodeSeq = {
     if (what.isEmpty) return Text("");
     var seq : NodeSeq = Text(before);
     seq = seq ++ f(what.get);
     seq = seq ++ Text(after);
-    seq;
+    seq
   }
+
   def bodyFor(entity : Entity)(implicit frame : Frame) : NodeSeq = {
     var seq = {entity.typeParams.surround("[", "]")(e => {
       Text(e.variance) ++ <em>{e.name}</em> ++
@@ -86,11 +91,13 @@ trait ModelToXML extends ModelExtractor {
     })};
     seq ++ {printIf(entity.resultType, " : ", "")(tpe => link(tpe))}
   }
+
   def extendsFor(entity : Entity)(implicit frame : Frame) : NodeSeq = {
     if (entity.parents.isEmpty) NodeSeq.Empty;
     else <code> extends </code>++
       entity.parents.mkXML(Text(""), <code> with </code>, Text(""))(link);
   }
+
   def parse(str: String): NodeSeq = {
     new SpecialNode {
       def label = "#PCDATA"
@@ -100,6 +107,7 @@ trait ModelToXML extends ModelExtractor {
       }
     }
   }
+
   def longHeader(entity : Entity)(implicit from : Frame) : NodeSeq = Group({
     anchor(entity.sym) ++ <dl>
       <dt>
@@ -122,7 +130,7 @@ trait ModelToXML extends ModelExtractor {
     if (!overridden.isEmpty) {
       var seq : NodeSeq = Text("Overrides ");
       seq = seq ++ overridden.mkXML("",", ", "")(sym => link(decode(sym.owner)) ++ Text(".") ++ link(sym));
-      seq;
+      seq
     } else NodeSeq.Empty;
   } ++ <hr/>);
 
@@ -200,11 +208,13 @@ trait ModelToXML extends ModelExtractor {
     seq;
   }
 
-  protected def decodeOption(tag: String, string: String): NodeSeq = <code>{Text(string + " - ")}</code>;
+  protected def decodeOption(tag: String, string: String): NodeSeq =
+    <code>{Text(string + " - ")}</code>;
+
   protected def decodeTag(tag: String): String =
     "" + Character.toUpperCase(tag.charAt(0)) + tag.substring(1);
 
-  def shortHeader(entity : Entity)(implicit from : Frame) : NodeSeq = {
+  def shortHeader(entity: Entity)(implicit from: Frame): NodeSeq =
     <tr>
       <td valign="top" class="modifiers">
         <code>{Text(entity.flagsString)} {Text(entity.kind)}</code>
@@ -216,9 +226,9 @@ trait ModelToXML extends ModelExtractor {
           if (cmnt.isEmpty) NodeSeq.Empty;
           else <br>{parse(cmnt.get.body)}</br>;
         }
-        </td>
+      </td>
     </tr>
-  }
+
   def attrsFor(entity : Entity)(implicit from : Frame) : NodeSeq = {
     def attrFor(attr: AnnotationInfo[Constant]): Node = {
       val buf = new StringBuilder

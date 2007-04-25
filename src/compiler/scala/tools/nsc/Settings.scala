@@ -136,10 +136,10 @@ class Settings(error: String => unit) {
   /** scaladoc specific options */
   val windowtitle    = StringSetting("-windowtitle", "windowtitle",
                                      "Specify window title of generated HTML documentation",
-                                     /*default*/"Scala 2 API Specification").dependsOn(doc)
+                                     /*default*/"Scala 2").dependsOn(doc)
   val doctitle       = StringSetting("-doctitle", "doctitle",
                                      "Include title for the overview page",
-                                     /*default*/"Scala 2").dependsOn(doc)
+                                     /*default*/"Scala 2<br/>API Specification").dependsOn(doc)
   val stylesheetfile = StringSetting("-stylesheetfile", "stylesheetfile",
                                      "File to change style of the generated documentation",
                                      /*default*/"style.css").dependsOn(doc)
