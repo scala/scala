@@ -819,7 +819,7 @@ DOCUMENTATION
       sourcepath=""
       deprecation="yes" unchecked="yes"
       windowtitle="Scala Library Documentation"
-      documenttitle="&lt;div&gt;Scala ${version.number}&lt;/div&gt;"
+      doctitle="&lt;div&gt;Scala ${version.number}&lt;/div&gt;"
       classpath="${quick.dir}/lib/library${path.separator}${quick.dir}/lib/actors">
       <include name="dbc/**/*.scala"/>
       <include name="actors/**/*.scala"/>
@@ -837,7 +837,7 @@ DOCUMENTATION
       destdir="${api-comp.dir}"
       sourcepath=""
       windowtitle="Scala Compiler Documentation"
-      documenttitle="&lt;div&gt;Scala ${version.number}&lt;/div&gt;">
+      doctitle="&lt;div&gt;Scala ${version.number}&lt;/div&gt;">
       <classpath>
         <pathelement location="${quick.dir}/lib/library"/>
         <pathelement location="${quick.dir}/lib/compiler"/>
