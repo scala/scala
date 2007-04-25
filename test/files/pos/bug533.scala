@@ -1,4 +1,4 @@
-import scala.concurrent._
+import scala.actors._
 
 object test extends Actor {
   receive {
