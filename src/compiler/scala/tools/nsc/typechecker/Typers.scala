@@ -2344,13 +2344,14 @@ trait Typers requires Analyzer {
 
       def typedAppliedTypeTree(tpt: Tree, args: List[Tree]) = {
         val tpt1 = typed1(tpt, mode | FUNmode | TAPPmode, WildcardType)
-        val tparams = tpt1.symbol.info.typeParams // must be .info.typeParams (see pos/tcpoly_typeapp.scala)
+        val tparams = tpt1.symbol.typeParams
 
         if (tpt1.tpe.isError) {
           setError(tree)
         } else if (tparams.length == args.length) {
           // @M: kind-arity checking is done here and in adapt, full kind-checking is in checkKindBounds (in Infer)
-          val args1 = map2Conserve(args, tparams) {
+          val args1 = if(!tpt1.symbol.rawInfo.isComplete) List.mapConserve(args){typedHigherKindedType(_)} // if symbol hasn't been fully loaded, can't check kind-arity
+          else map2Conserve(args, tparams) {
             (arg, tparam) => typedHigherKindedType(arg, parameterizedType(tparam.typeParams, AnyClass.tpe)) //@M! the polytype denotes the expected kind
           }
           val argtypes = args1 map (.tpe)
