@@ -603,7 +603,7 @@ trait Typers requires Analyzer {
         } else if (context.implicitsEnabled) {
           errorTree(tree, "missing arguments for "+meth+meth.locationString+
                     (if (meth.isConstructor) ""
-                     else ";\nprefix this method with `&' if you want to treat it as a partially applied function"))
+                     else ";\nfollow this method with `_' if you want to treat it as a partially applied function"))
         } else {
           setError(tree)
         }
@@ -2452,9 +2452,19 @@ trait Typers requires Analyzer {
           typedIf(cond, thenp, elsep)
 
         case Match(selector, cases) =>
-          val selector1 = checkDead(typed(selector))
-          val cases1 = typedCases(tree, cases, selector1.tpe.widen, pt)
-          copy.Match(tree, selector1, cases1) setType ptOrLub(cases1 map (.tpe))
+          if (selector == EmptyTree) {
+            val arity = if (isFunctionType(pt)) pt.normalize.typeArgs.length - 1 else 1
+            val params = for (i <- List.range(0, arity)) yield
+              ValDef(Modifiers(PARAM | SYNTHETIC), unit.fresh.newName("x$"), TypeTree(), EmptyTree)
+            val ids = for (p <- params) yield Ident(p.name)
+            val selector1 = atPos(tree.pos) { if (arity == 1) ids.head else gen.mkTuple(ids) }
+            val body = copy.Match(tree, selector1, cases)
+            typed1(atPos(tree.pos) { Function(params, body) }, mode, pt)
+          } else {
+            val selector1 = checkDead(typed(selector))
+            val cases1 = typedCases(tree, cases, selector1.tpe.widen, pt)
+            copy.Match(tree, selector1, cases1) setType ptOrLub(cases1 map (.tpe))
+          }
 
         case Return(expr) =>
           typedReturn(expr)

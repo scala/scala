@@ -864,6 +864,12 @@ trait Parsers {
 
     /** XXX: Hook for IDE */
     def expr(location: int): Tree = {
+      def isWildcard(t: Tree): boolean = t match {
+        case Ident(name1) if !implicitParams.isEmpty && name1 == implicitParams.head.name => true
+        case Typed(t1, _) => isWildcard(t1)
+        case Annotated(t1, _) => isWildcard(t1)
+        case _ => false
+      }
       var savedImplicitParams = implicitParams
       implicitParams = List()
       var res = in.token match {
@@ -969,6 +975,11 @@ trait Parsers {
             } else if (annots.isEmpty || isTypeIntro) {
               t = atPos(pos) {
                 val tpt = if (location != Local) compoundType(false) else typ()
+                if (isWildcard(t))
+                  (implicitParams: @unchecked) match {
+                    case (vd @ ValDef(mods, name, _, _)) :: rest =>
+                      implicitParams = copy.ValDef(vd, mods, name, tpt.duplicate, EmptyTree) :: rest
+                  }
                 // this does not correspond to syntax, but is necessary to
                 // accept closures. We might restrict closures to be between {...} only!
                 Typed(t, (tpt /: annots) (makeAnnotated))
@@ -990,12 +1001,6 @@ trait Parsers {
             }
           }
           stripParens(t)
-      }
-      def isWildcard(t: Tree): boolean = t match {
-        case Ident(name1) if name1 == implicitParams.head.name => true
-        case Typed(t1, _) => isWildcard(t1)
-        case Annotated(t1, _) => isWildcard(t1)
-        case _ => false
       }
       if (!implicitParams.isEmpty)
         if (isWildcard(res)) savedImplicitParams = savedImplicitParams ::: implicitParams
@@ -1155,7 +1160,7 @@ trait Parsers {
      */
     def blockExpr(): Tree = {
       val res = atPos(accept(LBRACE)) {
-        if (in.token == CASE) makeVisitor(caseClauses(), true)
+        if (in.token == CASE) Match(EmptyTree, caseClauses())
         else block()
       }
       accept(RBRACE)
