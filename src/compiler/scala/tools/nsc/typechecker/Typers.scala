@@ -2350,7 +2350,7 @@ trait Typers requires Analyzer {
           setError(tree)
         } else if (tparams.length == args.length) {
           // @M: kind-arity checking is done here and in adapt, full kind-checking is in checkKindBounds (in Infer)
-          val args1 = if(!tpt1.symbol.rawInfo.isComplete) List.mapConserve(args){typedHigherKindedType(_)} // if symbol hasn't been fully loaded, can't check kind-arity
+          val args1 = if(!tpt1.symbol.rawInfo.isComplete) List.mapConserve(args){(x: Tree) => typedHigherKindedType(x)} // if symbol hasn't been fully loaded, can't check kind-arity
           else map2Conserve(args, tparams) {
             (arg, tparam) => typedHigherKindedType(arg, parameterizedType(tparam.typeParams, AnyClass.tpe)) //@M! the polytype denotes the expected kind
           }
