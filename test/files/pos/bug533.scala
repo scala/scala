@@ -1,9 +1,11 @@
 import scala.actors._
 
 object test extends Actor {
-  receive {
-    case TIMEOUT => Console.println("TIMEOUT")
-    //case _       => Console.println("_")
+  def act() {
+    receive {
+      case TIMEOUT => Console.println("TIMEOUT")
+      //case _       => Console.println("_")
+    }
   }
 }
 
