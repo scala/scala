@@ -43,6 +43,20 @@ object Actor {
   }
 
   /**
+   * Resets an actor proxy associated with the current thread.
+   * It replaces the implicit <code>ActorProxy</code> instance
+   * of the current thread (if any) with a new instance.
+   *
+   * This permits to re-use the current thread as an actor
+   * even if its <code>ActorProxy</code> has died for some reason.
+   */
+  def resetProxy: unit = synchronized {
+    val a = tl.get.asInstanceOf[Actor]
+    if ((null ne a) && a.isInstanceOf[ActorProxy])
+      tl.set(new ActorProxy(currentThread))
+  }
+
+  /**
    * <p>This function is used for the definition of actors.</p>
    * <p>The following example demonstrates its usage:</p><pre>
    * import scala.actors.Actor._
