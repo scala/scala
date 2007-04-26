@@ -15,27 +15,27 @@ object parsers2 {
 
     def ident: Parser[Tree] =
       for (
-        val c: char <- chr(isLetter);
-        val cs: List[char] <- rep(chr(isLetterOrDigit))
+        c: char <- chr(isLetter);
+        cs: List[char] <- rep(chr(isLetterOrDigit))
       ) yield Id((c :: cs).mkString("", "", ""))
 
     def number: Parser[Tree] =
       for (
-        val d: char <- chr(isDigit);
-        val ds: List[char] <- rep(chr(isDigit))
+        d: char <- chr(isDigit);
+        ds: List[char] <- rep(chr(isDigit))
       ) yield Num(((d - '0') /: ds) ((x, digit) => x * 10 + digit - '0'))
 
     def list: Parser[Tree] =
       for (
-        val _ <- chr('(');
-        val es <- listElems ||| succeed(List());
-        val _ <- chr(')')
+        _ <- chr('(');
+        es <- listElems ||| succeed(List());
+        _ <- chr(')')
       ) yield Lst(es)
 
     def listElems: Parser[List[Tree]] =
       for (
-        val x <- expr;
-        val xs <- chr(',') &&& listElems ||| succeed(List())
+        x <- expr;
+        xs <- chr(',') &&& listElems ||| succeed(List())
       ) yield x :: xs
 
     def expr: Parser[Tree] =

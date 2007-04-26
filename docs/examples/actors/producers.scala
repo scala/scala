@@ -102,11 +102,11 @@ object producers extends Application {
 
   actor {
     Console.print("PreOrder:")
-    for (val x <- new PreOrder(tree).iterator) Console.print(" "+x)
+    for (x <- new PreOrder(tree).iterator) Console.print(" "+x)
     Console.print("\nPostOrder:")
-    for (val x <- new PostOrder(tree).iterator) Console.print(" "+x)
+    for (x <- new PostOrder(tree).iterator) Console.print(" "+x)
     Console.print("\nInOrder:")
-    for (val x <- new InOrder(tree).iterator) Console.print(" "+x)
+    for (x <- new InOrder(tree).iterator) Console.print(" "+x)
     Console.print("\n")
   }
 }

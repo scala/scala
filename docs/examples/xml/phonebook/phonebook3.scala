@@ -41,7 +41,7 @@ object phonebook3 {
 
     /** walks through tree, returns changed/copied updated tree  */
     def copyOrChange ( ch: Iterator[Node] ):List[Node] = {
-      for( val c <- ch ) yield c match {
+      for(c <- ch ) yield c match {
 
         case x @ <entry>{ ch1 @ _* }</entry> if hasName(x) =>
           val it = ch1.elements;

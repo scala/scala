@@ -39,7 +39,7 @@ abstract class Parsers {
     }
 
     def &&& [b](p: => Parser[b]): Parser[b] =
-      for (val _ <- this; val x <- p) yield x
+      for (_ <- this; x <- p) yield x
   }
 
   def succeed[a](x: a) = new Parser[a] {
@@ -50,10 +50,10 @@ abstract class Parsers {
     rep1(p) ||| succeed(List())
 
   def rep1[a](p: Parser[a]): Parser[List[a]] =
-    for (val x <- p; val xs <- rep(p)) yield x :: xs
+    for (x <- p; xs <- rep(p)) yield x :: xs
 
   def opt[a](p: Parser[a]): Parser[List[a]] =
-    (for (val x <- p) yield List(x)) ||| succeed(List())
+    (for (x <- p) yield List(x)) ||| succeed(List())
 }
 
 class Tokenizer(in: Iterator[char], delimiters: String) extends Iterator[String] {
@@ -102,7 +102,7 @@ trait TokenParsers extends Parsers {
 trait CharParsers extends Parsers {
   def any: Parser[char]
   def chr(ch: char) =
-    for (val c <- any; c == ch) yield c
+    for (c <- any; if c == ch) yield c
   def chr(p: char => boolean) =
-    for (val c <- any; p(c)) yield c
+    for (c <- any; if p(c)) yield c
 }

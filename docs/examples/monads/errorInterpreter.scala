@@ -61,14 +61,14 @@ object errorInterpreter {
   def interp(t: Term, e: Environment): M[Value] = t match {
     case Var(x) => lookup(x, e)
     case Con(n) => unitM(Num(n))
-    case Add(l, r) => for (val a <- interp(l, e);
-                           val b <- interp(r, e);
-                           val c <- add(a, b))
+    case Add(l, r) => for (a <- interp(l, e);
+                           b <- interp(r, e);
+                           c <- add(a, b))
                       yield c
     case Lam(x, t) => unitM(Fun(a => interp(t, Pair(x, a) :: e)))
-    case App(f, t) => for (val a <- interp(f, e);
-                           val b <- interp(t, e);
-                           val c <- apply(a, b))
+    case App(f, t) => for (a <- interp(f, e);
+                           b <- interp(t, e);
+                           c <- apply(a, b))
                       yield c
   }
 

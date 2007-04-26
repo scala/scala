@@ -163,55 +163,55 @@ object typeInfer {
     /** identifiers or keywords */
     def id: Parser[String] =
       for (
-        val c: char <- rep(chr(' ')) &&& chr(isLetter);
-        val cs: List[char] <- rep(chr(isLetterOrDigit))
+        c: char <- rep(chr(' ')) &&& chr(isLetter);
+        cs: List[char] <- rep(chr(isLetterOrDigit))
       ) yield (c :: cs).mkString("", "", "")
 
     /** Non-keyword identifiers */
     def ident: Parser[String] =
-      for (val s <- id; s != "let" && s != "in") yield s
+      for (s <- id; if s != "let" && s != "in") yield s
 
     /** term = '\' ident '.' term | term1 {term1} | let ident "=" term in term */
     def term: Parser[Term] = (
       ( for (
-          val _ <- wschr('\\');
-          val x <- ident;
-          val _ <- wschr('.');
-          val t <- term)
+          _ <- wschr('\\');
+          x <- ident;
+          _ <- wschr('.');
+          t <- term)
         yield Lam(x, t): Term )
       |||
       ( for (
-          val letid <- id; letid == "let";
-          val x <- ident;
-          val _ <- wschr('=');
-          val t <- term;
-          val inid <- id; inid == "in";
-          val c <- term)
+          letid <- id; if letid == "let";
+          x <- ident;
+          _ <- wschr('=');
+          t <- term;
+          inid <- id; if inid == "in";
+          c <- term)
         yield Let(x, t, c) )
       |||
       ( for (
-          val t <- term1;
-          val ts <- rep(term1))
+          t <- term1;
+          ts <- rep(term1))
         yield (t /: ts)((f, arg) => App(f, arg)) )
     )
 
     /** term1 = ident | '(' term ')' */
     def term1: Parser[Term] = (
-      ( for (val s <- ident)
+      ( for (s <- ident)
         yield Var(s): Term )
       |||
       ( for (
-          val _ <- wschr('(');
-          val t <- term;
-          val _ <- wschr(')'))
+          _ <- wschr('(');
+          t <- term;
+          _ <- wschr(')'))
         yield t )
     )
 
     /** all = term ';' */
     def all: Parser[Term] =
       for (
-        val t <- term;
-        val _ <- wschr(';'))
+        t <- term;
+        _ <- wschr(';'))
       yield t
   }
 

@@ -4,7 +4,7 @@ object iterators {
 
   def Array(elems: Double*): Array[Double] = {
     val ar = new Array[Double](elems.length)
-    for (val i <- Iterator.range(0, elems.length))
+    for (i <- Iterator.range(0, elems.length))
       ar(i) = elems(i)
     ar
   }
