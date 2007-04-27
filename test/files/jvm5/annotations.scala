@@ -67,16 +67,18 @@ public class Main {
 */
 object Test4 {
   import test.SourceAnnotation // defined in SourceAnnotation.java
-  @SourceAnnotation{val value = "http://scala-lang.org", val mail = "scala@lists.epfl.ch"}
+  @SourceAnnotation{val value = "http://scala-lang.org",
+                    val mails = Array("scala@lists.epfl.ch", "scala-lounge@lists.epfl.ch")}
   class Foo1
-  @SourceAnnotation("http://bloodsuckers.com") { val mail = "you@bloodsuckers.com" }
+  @SourceAnnotation("http://bloodsuckers.com") { val mails = Array("you@bloodsuckers.com") }
   class Foo2
   @SourceAnnotation("http://bloodsuckers.com")
   class Foo3
   def run {
     def printSourceAnnotation(a: Any) {
       val ann = a.asInstanceOf[SourceAnnotation]
-      Console.println("@test.SourceAnnotation(mail=" + ann.mail + ", value=" + ann.value + ")")
+      Console.println("@test.SourceAnnotation(mails=" + ann.mails.deepMkString("{", ",", "}") +
+                      ", value=" + ann.value + ")")
     }
     classOf[Foo1].getAnnotations foreach printSourceAnnotation
     classOf[Foo2].getAnnotations foreach printSourceAnnotation
