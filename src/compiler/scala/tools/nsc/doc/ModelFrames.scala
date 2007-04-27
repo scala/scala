@@ -190,7 +190,7 @@ trait ModelFrames extends ModelExtractor {
       </table>;
   }
 
-  val classFrameKinds = Objects :: Classes :: Nil
+  val classFrameKinds = Classes :: Objects :: Nil;
   abstract class ListClassFrame extends Frame {
     def classes: Iterable[ClassOrObject]
     def navLabel: String
@@ -273,12 +273,11 @@ trait ModelFrames extends ModelExtractor {
       </table>;
     private def header0: NodeSeq =
       <xml:group>
-        <div class="entity">
-          {Text(clazz.kind)}
-          <span class="entity">{Text(clazz.name)}</span> in
-          {aref(urlFor(decode(clazz.sym.owner)), "_self", decode(clazz.sym.owner).fullNameString('.'))}
-        </div>
-        <hr/>
+      <div class="entity">
+        {aref(urlFor(decode(clazz.sym.owner)), "_self", decode(clazz.sym.owner).fullNameString('.'))}
+        <br/>
+        <span class="entity">{Text(clazz.kind)}  {Text(clazz.name)}</span>
+      </div><hr/>
       </xml:group>;
   }
   def longComment(cmnt: Comment): NodeSeq

@@ -28,7 +28,7 @@ trait CompilationUnits requires Global {
      */
     val depends = new HashSet[Symbol]
 
-    def position(pos: Int) = new OffsetPosition(source, pos)
+    def position(pos: Int) = source.position(pos)
 
     /** The icode representation of classes in this compilation unit.
      *  It is empty up to phase 'icode'.

@@ -107,4 +107,8 @@ object Tokens {
   final val BACK_QUOTE       = 102
   final val MULTI_QUOTE      = 103
   final val EMPTY_STRING     = 104
+  final val WHITESPACE = 105
+  final val IGNORE = 106
+  final val XML_SINGLEEND = 107
+  final val XML_STARTEND = 108
 }

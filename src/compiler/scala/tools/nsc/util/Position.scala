@@ -9,24 +9,11 @@
 // $Id$
 package scala.tools.nsc.util
 
-object NoPosition extends Position {
-  def offset = None
-  def line   = None
-  def column = None
-  def source = None
-}
-case class FakePos(msg : String) extends Position {
-  def offset = None
-  def line   = None
-  def column = None
-  def source = None
-}
-
 abstract class Position {
-  def offset : Option[Int]
-  def line   : Option[Int]
-  def column : Option[Int]
-  def source : Option[SourceFile]
+  def offset : Option[Int] = None
+  def line   : Option[Int] = None
+  def column : Option[Int] = None
+  def source : Option[SourceFile] = None
   def lineContent: String =
     if (!line.isEmpty && !source.isEmpty) source.get.lineToString(line.get - 1)
     else "NO_LINE"
@@ -52,19 +39,23 @@ abstract class Position {
   }
 
 }
-case class LinePosition(line0 : Int, val source : Option[SourceFile]) extends Position {
+
+object NoPosition extends Position;
+case class FakePos(msg : String) extends Position;
+
+case class LinePosition(line0 : Int, override val source : Option[SourceFile]) extends Position {
   def this(line0 : Int) = this(line0, None)
   assert(line0 >= 1)
-  def offset = None
-  def column = None
-  def line = Some(line0)
+  override def offset = None
+  override def column = None
+  override def line = Some(line0)
 }
 case class OffsetPosition(source0 : SourceFile, offset0 : Int) extends Position {
   private val tabInc = 8
-  def source = Some(source0)
-  def offset = Some(offset0)
-  def line = Some(source0.offsetToLine(offset0) + 1)
-  def column = {
+  override def source = Some(source0)
+  override def offset = Some(offset0)
+  override def line = Some(source0.offsetToLine(offset0) + 1)
+  override def column = {
     var column = 1
     // find beginning offset for line
     val line = source0.offsetToLine(offset0)

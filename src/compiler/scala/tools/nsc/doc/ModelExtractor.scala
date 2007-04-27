@@ -376,7 +376,7 @@ trait ModelExtractor {
   val Methods = Category("Method")(e => e.isValue && e.isMethod && !e.isConstructor && !e.hasFlag(symtab.Flags.ACCESSOR));
   val Types = Category("Type")(e => e.isAliasType || e.isAbstractType);
 
-  val categories = Constructors :: Types :: Values :: Methods :: Objects :: Classes :: Nil;
+  val categories = Constructors :: Types :: Values :: Methods :: Classes :: Objects :: Nil;
 
 
   import java.util.regex.Pattern

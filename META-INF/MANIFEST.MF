@@ -1,0 +1,25 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Scala Compiler
+Bundle-SymbolicName: nsc;singleton:=true
+Bundle-Version: 1.0.0
+Eclipse-LazyStart: true
+Bundle-ClassPath: lib/fjbg.jar,
+ build/quick/lib/library/,
+ build/quick/lib/compiler/
+Export-Package: ch.epfl.lamp.fjbg,
+ scala,
+ scala.collection,
+ scala.runtime,
+ scala.collection.immutable,
+ scala.collection.mutable,
+ scala.collection.jcl,
+ scala.util,
+ scala.tools.nsc,
+ scala.tools.nsc.util,
+ scala.tools.nsc.typechecker,
+ scala.tools.nsc.symtab,
+ scala.tools.nsc.ast,
+ scala.tools.nsc.ast.parser,
+ scala.tools.nsc.reporters
+Require-Bundle: org.apache.ant

@@ -44,11 +44,8 @@ class SourceFile(val file: AbstractFile, _content: Array[Char]) {
     else if (content(idx) == CR && idx + 1 < content.length && content(idx + 1) == LF) false
     else true
 
-  def position(offset: Int) =
-    new OffsetPosition(this, offset)
-
-  def position(line: Int, column: Int) =
-    new OffsetPosition(this, lineToOffset(line) + column)
+  def position(offset: Int) = new OffsetPosition(this, offset)
+  def position(line: Int, column: Int) = new OffsetPosition(this, lineToOffset(line) + column)
 
   /** Map a position to a position in the underlying source file.
    *  For regular source files, simply return the argument.

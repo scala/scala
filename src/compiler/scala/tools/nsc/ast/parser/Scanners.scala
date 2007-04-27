@@ -426,23 +426,23 @@ trait Scanners {
               val last = in.last
               in.next
               last match {
-                case ' '|'\t'|'\n'|'{'|'('|'>' if xml.Parsing.isNameStart(in.ch) || in.ch == '!' || in.ch == '?' =>
-                  token = XMLSTART
-                case _ =>
-                  // Console.println("found '<', but last is '"+in.last+"'"); // DEBUG
-                  putChar('<')
-                  getOperatorRest
+              case ' '|'\t'|'\n'|'{'|'('|'>' if xml.Parsing.isNameStart(in.ch) || in.ch == '!' || in.ch == '?' =>
+                token = XMLSTART
+              case _ =>
+                // Console.println("found '<', but last is '"+in.last+"'"); // DEBUG
+                putChar('<')
+                getOperatorRest
               }
               return
 
-              case '~' | '!' | '@' | '#' | '%' |
-                   '^' | '*' | '+' | '-' | /*'<' | */
-                   '>' | '?' | ':' | '=' | '&' |
-                   '|' | '\\' =>
-                putChar(in.ch)
-                in.next
-                getOperatorRest; // XXX
-                return
+            case '~' | '!' | '@' | '#' | '%' |
+                 '^' | '*' | '+' | '-' | /*'<' | */
+                 '>' | '?' | ':' | '=' | '&' |
+                 '|' | '\\' =>
+               putChar(in.ch)
+               in.next
+               getOperatorRest; // XXX
+               return
 
               case '/' if !matchInScanner =>
                 in.next
@@ -878,8 +878,7 @@ trait Scanners {
             case '\'' => putChar('\'')
             case '\\' => putChar('\\')
             case _    =>
-              syntaxError(in.cpos - 1, // Position.encode(in.cline, in.ccol - 1),
-                          "invalid escape character")
+              syntaxError(in.cpos - 1, "invalid escape character")
               putChar(in.ch)
           }
           in.next
