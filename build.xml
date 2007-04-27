@@ -1152,7 +1152,7 @@ GENERATES A DISTRIBUTION
         includes="clitest,diff/diff.*,diff/lib*.dll,scalatest,scalatest.bat"/>
       <miscset
         dir="${basedir}/test"
-        includes="files/**/*.args,files/**/*.check,files/**/*.jar,files/**/*.java,files/**/*.scala,files/cli/**/*.check.*"/>
+        includes="files/**/*.args,files/**/*.check,files/**/*.jar,files/**/*.java,files/**/*.scala,files/cli/**/*.check.*,files/shootout/*.javaopts,files/shootout/*.runner,files/shootout/*.txt"/>
     </quicksbaz>
   </target>
 
