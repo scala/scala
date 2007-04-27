@@ -1533,7 +1533,9 @@ trait Typers requires Analyzer {
 
               if (fun.symbol == List_apply && args.isEmpty) {
                 atPos(tree.pos) { gen.mkNil setType restpe }
-              } else if ((mode & CONSTmode) != 0 && fun.symbol.owner == PredefModule.tpe.symbol && fun.symbol.name == nme.Array) {
+              } else if ((mode & CONSTmode) != 0 &&
+                         fun.symbol.owner == definitions.ArrayModule.tpe.symbol &&
+                         fun.symbol.name == nme.apply) {
                 val elems = new Array[Constant](args2.length)
                 var i = 0;
                 for (val arg <- args2) arg match {

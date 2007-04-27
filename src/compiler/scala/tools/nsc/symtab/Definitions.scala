@@ -90,6 +90,7 @@ trait Definitions {
     var ListModule: Symbol = _
       def List_apply = getMember(ListModule, nme.apply)
     var ArrayClass: Symbol = _
+    var ArrayModule: Symbol = _
     var SerializableClass: Symbol = _
     var PredefModule: Symbol = _
       def Predef_classOf = getMember(PredefModule, nme.classOf)
@@ -778,6 +779,7 @@ trait Definitions {
       ListClass = getClass("scala.List")
       ListModule = getModule("scala.List")
       ArrayClass = getClass("scala.Array")
+      ArrayModule = getModule("scala.Array")
       SerializableClass = if (forMSIL || forCLDC) null else getClass("java.io.Serializable")
       PredefModule = getModule("scala.Predef")
       ConsoleModule = getModule("scala.Console")
