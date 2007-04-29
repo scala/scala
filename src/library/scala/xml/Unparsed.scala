@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: Text.scala 8097 2006-07-11 17:15:02 +0200 (Tue, 11 Jul 2006) emir $
+// $Id$
 
 
 package scala.xml

@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: Process.scala 10086 2007-02-21 19:10:41 +0000 (Wed, 21 Feb 2007) odersky $
+// $Id$
 
 
 package scala.concurrent

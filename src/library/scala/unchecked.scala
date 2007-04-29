@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: unsealed.scala 10201 2007-03-04 10:53:12 +0000 (Sun, 04 Mar 2007) mihaylov $
+// $Id$
 
 
 package scala

@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: Actor.scala 9235 2006-11-13 14:59:18 +0000 (Mon, 13 Nov 2006) mihaylov $
+// $Id$
 
 
 package scala.concurrent
@@ -44,6 +44,3 @@ abstract class Actor extends Thread {
 
   def self_= (p: Pid) = pid = p
 }
-
-
-

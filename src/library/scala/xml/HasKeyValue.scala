@@ -1,5 +1,7 @@
 package scala.xml
 
+// $Id$
+
 /** use this class to match on (unprefixed) attribute values
  *  <p>
  val hasName = new HasKeyValue("name")
