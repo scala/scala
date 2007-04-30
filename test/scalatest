@@ -252,13 +252,22 @@ test_run_res() {
 
 
 # Tests the JVM backend.
+# NB. property '-Djavacmd=$JAVACMD' is e.g used by jvm/inner.scala
 test_run_jvm() {
+    javaopts=$JAVA_OPTS;
+    if [ -f "$os_srcbase".javaopts ]; then
+        javaopts="$javaopts `cat "$os_srcbase".javaopts`"
+        if [ "$JAVA5" = "false" ]; then
+             # -Xss option available in Java versions 1.5 or newer
+             javaopts=`echo "$javaopts" | sed -e "s/-Xss[0-9]*[MmKk]//g"`
+        fi
+    fi
     rm -rf "$dstbase".obj &&
     mkdir -p "$dstbase".obj &&
-    $SCALAC -d "$os_dstbase".obj -cp "$JVM_EXT_CLASSPATH" "$@" "$os_srcbase".scala &&
+    env JAVACMD="$JAVACMD" JAVA_OPTS="$javaopts" $SCALAC -d "$os_dstbase".obj -cp "$JVM_EXT_CLASSPATH" "$@" "$os_srcbase".scala &&
     scala_lib=`get_os_filename "$SCALA_LIB"` &&
     classpath=`get_os_pathlist "$os_dstbase".obj:$CLASSPATH` &&
-    $SCALA -Dscalatest.output=$os_dstbase.obj -Dscalatest.lib=$scala_lib -classpath $classpath:$JVM_EXT_CLASSPATH Test "jvm" &&
+    $SCALA -Djavacmd="$JAVACMD" -Dscalatest.output=$os_dstbase.obj -Dscalatest.lib=$scala_lib -classpath $classpath:$JVM_EXT_CLASSPATH Test "jvm" &&
     rm -rf "$dstbase".obj;
 }
 
@@ -620,6 +629,7 @@ SCALA_LIB="$LATEST_LIB";
 [ -x "$JAVACMD" ] || JAVACMD=java;
 [ -n "$JAVA_OPTS" ] || JAVA_OPTS="-Xmx256M -Xms16M";
 case `$JAVACMD \-version 2>&1 | xargs` in
+    *1.5.*IBM* ) JAVA5="true"; IBM_J9="true";;
     *1.[5-7].* ) JAVA5="true";;
     *1.4.*GNU* ) JAVA5="false"; GIJ="true"; JAVA_OPTS="--mx256m --ms16m";;
              * ) JAVA5="false";;

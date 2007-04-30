@@ -52,21 +52,26 @@ class A {
 }
 
 object Scalatest {
-  val outputdir = System.getProperty("scalatest.output", "inner-jvm.obj")
-  val scalalib  = System.getProperty("scalatest.lib", "")
-  val classpath = outputdir + File.pathSeparator + scalalib
+  private val outputdir = System.getProperty("scalatest.output", "inner-jvm.obj")
+  private val scalalib  = System.getProperty("scalatest.lib", "")
+  private val classpath = outputdir + File.pathSeparator + scalalib
+  private val javacmd   = System.getProperty("javacmd", "java")
+  private val javac     = javacmd + "c"
 
-  def javac(src: String) = {
-    val tmpfilename = outputdir + File.separator + "tmpJavaInterraction.java"
+  def javac(src: String, fname: String) {
+    val tmpfilename = outputdir + File.separator + fname
     val tmpfile = new FileWriter(tmpfilename)
     tmpfile.write(src)
     tmpfile.close
-    exec("javac -d " + outputdir + " -classpath " + classpath + " " + tmpfilename)
+    exec(javac + " -d " + outputdir + " -classpath " + classpath + " " + tmpfilename)
   }
 
+  def java(cname: String) =
+    exec(javacmd + " -cp " + classpath + " " + cname)
+
   /** Execute cmd, wait for the process to end and pipe it's output to stdout */
-  def exec(cmd: String) = {
-    val proc = Runtime.getRuntime().exec(cmd);
+  private def exec(cmd: String) {
+    val proc = Runtime.getRuntime().exec(cmd)
     val inp = new BufferedReader(new InputStreamReader(proc.getInputStream))
     val errp = new BufferedReader(new InputStreamReader(proc.getErrorStream))
     proc.waitFor()
@@ -96,9 +101,9 @@ public class tmpJavaInterraction {
     }
 }
 """
-  def main(args: Array[String]): Unit = {
-    Scalatest.javac(program)
-    Scalatest.exec("java -cp " + Scalatest.classpath + " tmpJavaInterraction")
+  def main(args: Array[String]) {
+    Scalatest.javac(program, "tmpJavaInterraction.java")
+    Scalatest.java("tmpJavaInterraction")
   }
 }
 

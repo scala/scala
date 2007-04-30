@@ -13,6 +13,15 @@ a b c
 b c 
 b c 
 
+      
+<head><title>Scala</title></head>
+
+      
+<body>1 2 3</body>
+
+    
+<head><title>Scala</title></head>
+
 testNew
 3
 1 2 3 
@@ -26,3 +35,12 @@ testNew
 0 2 4 6 8 
 0 2 4 6 8 
 a b c 
+
+      
+<head><title>Scala</title></head>
+
+      
+<body>1 2 3</body>
+
+    
+<head><title>Scala</title></head>
