@@ -471,7 +471,7 @@ trait Namers requires Analyzer {
 
       val tparamSyms = typer.reenterTypeParams(tparams)
       var vparamSymss = enterValueParams(meth, vparamss)
-      if (tpt.isEmpty && meth.name == nme.CONSTRUCTOR) tpt.tpe = context.enclClass.owner.tpe
+      if (tpt.isEmpty && meth.name == nme.CONSTRUCTOR) tpt.tpe = context.enclClass.owner.tpe.notNull
 
       if (onlyPresentation)
         methodArgumentNames(meth) = vparamss.map(.map(.symbol));

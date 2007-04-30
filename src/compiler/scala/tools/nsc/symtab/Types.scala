@@ -63,6 +63,55 @@ trait Types {
    */
   var intersectionWitness = new HashMap[List[Type], Type]
 
+  /** A proxy for a type (identified by field `tp') that forwards all operations to it
+   *  Every operation that is overridden for some kind of types should be forwarded.
+   */
+  trait TypeProxy extends Type {
+    val tp: Type
+
+    private def maybeRewrap(newtp: Type) = if (newtp eq tp) this else newtp
+
+    // the following are all operations in class Type that are overridden in some subclass
+    // Important to keep this up-to-date when new operations are added!
+    override def isTrivial = tp.isTrivial
+    override def symbol = tp.symbol
+    override def singleDeref = maybeRewrap(tp.singleDeref)
+    override def widen = maybeRewrap(tp.widen)
+    override def deconst = maybeRewrap(tp.deconst)
+    override def typeOfThis = tp.typeOfThis
+    override def narrow = tp.narrow
+    override def bounds = tp.bounds
+    override def parents = tp.parents
+    override def prefix = tp.prefix
+    override def typeArgs = tp.typeArgs
+    override def resultType = maybeRewrap(tp.resultType)
+    override def finalResultType = maybeRewrap(tp.finalResultType)
+    override def paramSectionCount = tp.paramSectionCount
+    override def paramTypes = tp.paramTypes
+    override def typeParams = tp.typeParams
+    override def notNull = maybeRewrap(tp.notNull)
+    override def instantiateTypeParams(formals: List[Symbol], actuals: List[Type]) =
+      tp.instantiateTypeParams(formals, actuals)
+    override def isHigherKinded: boolean = tp.isHigherKinded
+    override def normalize = maybeRewrap(tp.normalize)
+    override def isError = tp.isError
+    override def isErroneous = tp.isErroneous
+    override def isStable: boolean = tp.isStable
+    override def isNotNull = tp.isNotNull
+    override def decls = tp.decls
+    override def baseType(clazz: Symbol) = tp.baseType(clazz)
+    override def closure = tp.closure
+    override def closureDepth = tp.closureDepth
+    override def baseClasses = tp.baseClasses
+    override def cloneInfo(owner: Symbol) = maybeRewrap(tp.cloneInfo(owner))
+    override def prefixString = tp.prefixString
+    override def isComplete = tp.isComplete
+    override def complete(sym: Symbol) = tp.complete(sym)
+    override def load(sym: Symbol): unit = tp.load(sym)
+    override def withAttributes(attribs: List[AnnotationInfo[Any]]) = tp.withAttributes(attribs)
+    override def withoutAttributes = tp.withoutAttributes
+  }
+
   /** The base class for all types */
   abstract class Type {
 
@@ -85,19 +134,19 @@ trait Types {
      *  identity for all other types */
     def widen: Type = this
 
+    /** Map a constant type or not-null-type to its underlying base type,
+     *  identity for all other types */
+    def deconst: Type = this
+
     /** The type of <code>this</code> of a class type or reference type
      */
-    def typeOfThis = symbol.typeOfThis
+    def typeOfThis: Type = symbol.typeOfThis
 
     /** Map to a this type which is a subtype of this type.
      */
     def narrow: Type =
       if (phase.erasedTypes) this
       else refinedType(List(this), commonOwner(this), EmptyScope).narrow
-
-    /** Map a constant type to its underlying base type,
-     *  identity for all other types */
-    def deconst: Type = this
 
     /** For a TypeBounds type, itself;
      *  for a reference denoting an abstract type, its bounds,
@@ -137,6 +186,10 @@ trait Types {
      *  the empty list for all other types */
     def typeParams: List[Symbol] = List()
 
+    /** Mixin a NotNull trait unless type already has one */
+    def notNull: Type =
+      if (isNotNull) this else NotNullType(this)
+
     /** Replace formal type parameter symbols with actual type arguments.
      *
      * Amounts to substitution except for higher-kinded types. (See overridden method in TypeRef) -- @M (contact adriaan.moors at cs.kuleuven.be)
@@ -162,11 +215,11 @@ trait Types {
     /** Does this type denote a stable reference (i.e. singleton type)? */
     def isStable: boolean = false
 
+    /** Is this type guaranteed not to have `null' as a value? */
+    def isNotNull: boolean = false
+
     /** Does this type denote a reference type which can be null? */
     // def isNullable: boolean = false
-
-    /** Is this type guaranteed to be non-null? */
-    // def isNonNull: boolean = false
 
     /** For a classtype or refined type, its defined or declared members;
      *  inherited by subtypes and typerefs.
@@ -549,7 +602,14 @@ trait Types {
     override def closure: Array[Type] = supertype.closure
     override def closureDepth: int = supertype.closureDepth
     override def baseClasses: List[Symbol] = supertype.baseClasses
-    // override def isNonNull = supertype.isNonNull
+    override def isNotNull = supertype.isNotNull
+  }
+
+  case class NotNullType(tp: Type) extends SubType with TypeProxy {
+    override def supertype = tp
+    override def isNotNull: boolean = true
+    override def deconst: Type = tp
+    override def toString(): String = supertype.toString() + " with NotNull"
   }
 
   /** A base class for types that represent a single value
@@ -618,7 +678,7 @@ trait Types {
   case class ThisType(sym: Symbol) extends SingletonType {
     //assert(sym.isClass && !sym.isModuleClass || sym.isRoot, sym)
     override def isTrivial: boolean = sym.isPackageClass
-    // override def isNonNull = true
+    override def isNotNull = true
     override def symbol = sym
     override def singleDeref: Type = sym.typeOfThis
     override def prefixString =
@@ -641,7 +701,7 @@ trait Types {
   case class SingleType(pre: Type, sym: Symbol) extends SingletonType {
     override val isTrivial: boolean = pre.isTrivial
     // override def isNullable = supertype.isNullable
-    // override def isNonNull = supertype.isNonNull
+    override def isNotNull = supertype.isNotNull
     private var singleDerefCache: Type = _
     private var singleDerefPeriod = NoPeriod
     override def singleDeref: Type = {
@@ -677,7 +737,7 @@ trait Types {
 
   case class SuperType(thistpe: Type, supertp: Type) extends SingletonType {
     override val isTrivial: boolean = thistpe.isTrivial && supertp.isTrivial
-    // override def isNonNull = true;
+    override def isNotNull = true;
     override def symbol = thistpe.symbol
     override def singleDeref = supertp
     override def prefix: Type = supertp.prefix
@@ -860,7 +920,7 @@ trait Types {
       symbol.thisType
     }
 
-    // override def isNonNull: boolean = parents forall (.isNonNull);
+    override def isNotNull: boolean = parents exists (.isNotNull)
 
     // override def isNullable: boolean =
     // parents forall (p => p.isNullable && !p.symbol.isAbstractType);
@@ -1025,8 +1085,11 @@ trait Types {
   case class ConstantType(value: Constant) extends SingletonType {
     assert(value.tpe.symbol != UnitClass)
     override def isTrivial: boolean = true
+    override def isNotNull = value.value != null
     override def symbol: Symbol = value.tpe.symbol
-    override def singleDeref: Type = value.tpe //M@ probably ok since constants don't take type params?
+    override def singleDeref: Type =
+      if (value.value.isInstanceOf[String]) value.tpe
+      else value.tpe
     override def deconst: Type = value.tpe
     override def toString(): String =
       value.tpe.toString() + "(" + value.escapedStringValue + ")"
@@ -1320,7 +1383,7 @@ A type's symbol should never be inspected directly.
     * to the core compiler, but can be observed by type-system plugins.  The
     * core compiler does take care to propagate attributes and to save them
     * in the symbol tables of object files. */
-  case class AnnotatedType(attributes: List[AnnotationInfo[Any]], tp: Type) extends Type {
+  case class AnnotatedType(attributes: List[AnnotationInfo[Any]], tp: Type) extends TypeProxy {
     override def toString(): String = {
       val attString =
         if (attributes.isEmpty)
@@ -1339,20 +1402,7 @@ A type's symbol should never be inspected directly.
     /** Remove any attributes from this type */
     override def withoutAttributes = tp.withoutAttributes
 
-    override def isTrivial: boolean = tp.isTrivial
-
-    /** Return the argument, unless it is eq to tp, in which case return the
-      * receiver. This method is used for methods like singleDeref and widen,
-      * so that the attributes are remembered more frequently. */
-    private def maybeRewrap(newtp: Type) =
-      if (newtp eq tp) this else newtp
-
-    // ----------------  methods forwarded to tp ------------------ \\
-
-    override def symbol: Symbol = tp.symbol
-    override def singleDeref: Type = maybeRewrap(tp.singleDeref)
-    override def widen: Type = maybeRewrap(tp.widen)
-    override def deconst: Type = maybeRewrap(tp.deconst)
+    /** Martin to Lex: I don't understand what the following 2 method do? */
     override def bounds: TypeBounds = {
        val oftp = tp.bounds
        oftp match {
@@ -1360,17 +1410,6 @@ A type's symbol should never be inspected directly.
          case _ => oftp
        }
     }
-    override def parents: List[Type] = tp.parents
-    override def prefix: Type = tp.prefix
-    override def typeArgs: List[Type] = tp.typeArgs
-    override def resultType: Type = maybeRewrap(tp.resultType)
-    override def finalResultType: Type = maybeRewrap(tp.finalResultType)
-    override def paramSectionCount: int = tp.paramSectionCount
-    override def paramTypes: List[Type] = tp.paramTypes
-    override def typeParams: List[Symbol] = tp.typeParams
-    override def isStable: boolean = tp.isStable
-    override def nonPrivateDecl(name: Name): Symbol = tp.nonPrivateDecl(name)
-    override def baseType(clazz: Symbol): Type = tp.baseType(clazz)
     override def closure: Array[Type] = {
        val oftp = tp.closure
        if ((oftp.length == 1 &&) (oftp(0) eq this))
@@ -1378,14 +1417,6 @@ A type's symbol should never be inspected directly.
        else
          oftp
      }
-    override def closureDepth: int = tp.closureDepth
-    override def baseClasses: List[Symbol] = tp.baseClasses
-    override def cloneInfo(owner: Symbol) = maybeRewrap(cloneInfo(owner))
-    override def isComplete: boolean = tp.isComplete
-    override def complete(sym: Symbol) = tp.complete(sym)
-    override def load(sym: Symbol): unit = tp.load(sym)
-    override def findMember(name: Name, excludedFlags: int, requiredFlags: long, stableOnly: boolean): Symbol =
-      tp.findMember(name, excludedFlags, requiredFlags, stableOnly)
   }
 
   /** A class representing an as-yet unevaluated type.
@@ -1750,12 +1781,14 @@ A type's symbol should never be inspected directly.
       case TypeVar(_, constr) =>
         if (constr.inst != NoType) this(constr.inst)
         else tp
+      case NotNullType(tp) =>
+        val tp1 = this(tp)
+        if (tp1 eq tp) tp
+        else NotNullType(tp1)
       case AnnotatedType(attribs, atp) =>
         val atp1 = this(atp)
-        if (atp1 eq atp)
-          tp
-        else
-          AnnotatedType(attribs, atp1)
+        if (atp1 eq atp) tp
+        else AnnotatedType(attribs, atp1)
       case _ =>
         tp
         // throw new Error("mapOver inapplicable for " + tp);
@@ -2105,6 +2138,7 @@ A type's symbol should never be inspected directly.
       case MethodType(_, _) => mapOver(tp)
       case TypeVar(_, _) => mapOver(tp)
       case AnnotatedType(_,_) => mapOver(tp)
+      case NotNullType(_) => mapOver(tp)
       case _ => tp
     }
   }
@@ -2290,7 +2324,10 @@ A type's symbol should never be inspected directly.
         } finally {
           pendingSubTypes -= p
         }
-    } else isSubType0(tp1, tp2)
+    } else {
+      isSubType0(tp1, tp2)
+    }
+
   } finally {
     stc = stc - 1
   }
@@ -2322,7 +2359,9 @@ A type's symbol should never be inspected directly.
       case (SingleType(_, _), SingleType(_, _)) => tp1 =:= tp2
       case (ConstantType(_), ConstantType(_))   => tp1 =:= tp2
 
-      case (TypeRef(pre1, sym1, args1), TypeRef(pre2, sym2, args2)) if !(tp1.isHigherKinded || tp2.isHigherKinded) =>         //Console.println("isSubType " + tp1 + " " + tp2);//DEBUG
+      case (TypeRef(pre1, sym1, args1), TypeRef(pre2, sym2, args2))
+      if !(tp1.isHigherKinded || tp2.isHigherKinded) =>
+        //Console.println("isSubType " + tp1 + " " + tp2);//DEBUG
         if (inIDE) { trackTypeIDE(sym1); trackTypeIDE(sym2); }
 
         def isSubArgs(tps1: List[Type], tps2: List[Type],
@@ -2342,15 +2381,14 @@ A type's symbol should never be inspected directly.
          ||
           sym2.isAbstractType && !(tp2 =:= tp2.bounds.lo) && (tp1 <:< tp2.bounds.lo)
          ||
-//         sym2 == NonNullClass && tp1.isNonNull
-//         ||
-          sym2.isClass &&
-            ({ val base = tp1 baseType sym2; !(base eq tp1) && (base <:< tp2) })
+         sym2.isClass &&
+         ({ val base = tp1 baseType sym2; !(base eq tp1) && (base <:< tp2) })
          ||
-          sym1 == AllClass
+         sym1 == AllClass
          ||
          // Console.println("last chance " + sym1 + " " + sym2 + " " + sym2.isClass + " " (sym2 isSubClass ObjectClass))
-          sym1 == AllRefClass && sym2.isClass && sym2 != AllClass && (sym2 isSubClass ObjectClass))
+         sym1 == AllRefClass &&
+         sym2.isClass && (sym2 isNonBottomSubClass ObjectClass) && (!(tp2.normalize.symbol isNonBottomSubClass NotNullClass)))
       case (MethodType(pts1, res1), MethodType(pts2, res2)) =>
         (pts1.length == pts2.length &&
          matchingParams(pts1, pts2, tp2.isInstanceOf[JavaMethodType]) &&
@@ -2377,16 +2415,21 @@ A type's symbol should never be inspected directly.
         atp1 <:< tp2
       case (_, AnnotatedType(_,atp2)) =>
         tp1 <:< atp2
+      case (NotNullType(ntp1), _) =>
+        ntp1 <:< tp2
+      case (_, NotNullType(ntp2)) =>
+        tp1.isNotNull && tp1 <:< ntp2
       case (_, _)  if (tp1.isHigherKinded || tp2.isHigherKinded) =>
-          (tp1.symbol == AllClass
+        (tp1.symbol == AllClass
          ||
-          tp2.symbol == AnyClass // @M Any and Nothing are super-type resp. subtype of every well-kinded type
+         tp2.symbol == AnyClass // @M Any and Nothing are super-type resp. subtype of every well-kinded type
          || // @M! normalize reduces higher-kinded case to PolyType's
-          (tp1.isHigherKinded && tp2.isHigherKinded) && isSubType0(tp1.normalize, tp2.normalize))
+         (tp1.isHigherKinded && tp2.isHigherKinded) && isSubType0(tp1.normalize, tp2.normalize))
       case (_, TypeRef(pre2, sym2, args2))
-      if sym2.isAbstractType && !(tp2 =:= tp2.bounds.lo) && (tp1 <:< tp2.bounds.lo) && {
-        if (!inIDE) true else trackTypeIDE(sym2)
-      } => true
+      if (sym2.isAbstractType && !(tp2 =:= tp2.bounds.lo) && (tp1 <:< tp2.bounds.lo) &&
+            (if (!inIDE) true else trackTypeIDE(sym2)) ||
+          sym2 == NotNullClass && tp1.isNotNull) =>
+        true
       case (_, RefinedType(parents2, ref2)) =>
         (parents2 forall tp1.<:<) && (ref2.toList forall tp1.specializes) &&
         (!parents2.exists(.symbol.isAbstractType) || tp1.symbol != AllRefClass)
@@ -2399,24 +2442,20 @@ A type's symbol should never be inspected directly.
          once patern matching bug is fixed */
       case (ThisType(_), _) => tp1.singleDeref <:< tp2
       case (SingleType(_, _), _) => tp1.singleDeref <:< tp2
-      case (ConstantType(_), _) => tp1.singleDeref <:< tp2
+      case (ConstantType(_), _) =>
+        tp1.singleDeref <:< tp2
 
       case (TypeRef(pre1, sym1, args1), _) =>
         if (inIDE) trackTypeIDE(sym1)
         (sym1 == AllClass && tp2 <:< AnyClass.tpe
          ||
          sym1 == AllRefClass && tp2.isInstanceOf[SingletonType] && (tp1 <:< tp2.widen))
-/*         ||
-         sym1 == AllRefClass && tp2.symbol != AllClass &&
-         tp2 <:< AnyRefClass.tpe))
-           if (X) tp2.isNullable
-           else tp2.symbol != AllClass && tp2 <:< AnyRefClass.tpe))*/
       case _ =>
         false
     }
   } || {
-    val tp1n= tp1.normalize
-    val tp2n= tp2.normalize
+    val tp1n = tp1.normalize
+    val tp2n = tp2.normalize
     ((tp1n ne tp1) || (tp2n ne tp2)) && isSubType0(tp1n, tp2n)
   }
 
@@ -2626,7 +2665,7 @@ A type's symbol should never be inspected directly.
 
   /** The least upper bound wrt &lt;:&lt; of a list of types */
   def lub(ts: List[Type], depth: int): Type = {
-    def lub0(ts0: List[Type]): Type = elimSub(ts0 map (.deconst)) match {
+    def lub0(ts0: List[Type]): Type = elimSub(ts0 map (_.deconst)) match {
       case List() => AllClass.tpe
       case List(t) => t
       case ts @ PolyType(tparams, _) :: _ =>
@@ -2702,7 +2741,7 @@ A type's symbol should never be inspected directly.
 //      indent = indent.substring(0, indent.length() - 2)
 //      log(indent + "lub of " + ts + " is " + res)//debug
 //    }
-    res
+    if (ts forall (_.isNotNull)) res.notNull else res
   }
 
   def glb(ts: List[Type]): Type = glb(ts, maxClosureDepth(ts) + LubGlbMargin)
@@ -2791,7 +2830,7 @@ A type's symbol should never be inspected directly.
       indent = indent.substring(0, indent.length() - 2)
       log(indent + "glb of " + ts + " is " + res)//debug
     }
-    res
+    if (ts exists (_.isNotNull)) res.notNull else res
   }
 
   /** The most deeply nested owner that contains all the symbols

@@ -106,6 +106,7 @@ trait Definitions {
       def SeqFactory = getMember(ScalaRunTimeModule, nme.Seq);
       def checkDefinedMethod = getMember(ScalaRunTimeModule, "checkDefined")
       def isArrayMethod = getMember(ScalaRunTimeModule, "isArray")
+    var NotNullClass: Symbol = _
     var BoxesUtilityModule: Symbol = _
     var ComparatorModule: Symbol = _
       def Comparator_equals = getMember(ComparatorModule, nme.equals_)
@@ -873,6 +874,7 @@ trait Definitions {
         getClass(if (forMSIL) "System.IndexOutOfRangeException"
                  else "java.lang.IndexOutOfBoundsException")
       ScalaRunTimeModule = getModule("scala.runtime.ScalaRunTime")
+      NotNullClass = getClass("scala.NotNull")
       BoxesUtilityModule = getModule("scala.runtime.BoxesUtility")
       ComparatorModule = getModule("scala.runtime.Comparator")
       RepeatedParamClass = newCovariantPolyClass(

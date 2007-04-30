@@ -502,7 +502,7 @@ abstract class Mixin extends InfoTransform {
                   case _ => Select(This(clazz), sym.accessed)
                 }
                 if (sym.isSetter) Assign(accessedRef, Ident(vparams.head))
-                else accessedRef
+                else gen.mkCheckInit(accessedRef)
               })
             } else if (sym.isModule && !(sym hasFlag LIFTED | BRIDGE)) {
               // add modules

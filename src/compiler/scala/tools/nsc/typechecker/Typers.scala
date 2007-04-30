@@ -987,7 +987,9 @@ trait Typers requires Analyzer {
           getter.attributes = value.initialize.attributes
           val result = DefDef(getter, vparamss =>
               if (mods hasFlag DEFERRED) EmptyTree
-              else typed(atPos(vdef.pos)(Select(This(value.owner), value)), EXPRmode, value.tpe))
+              else typed(
+                atPos(vdef.pos) { gen.mkCheckInit(Select(This(value.owner), value)) },
+                EXPRmode, value.tpe))
           result.tpt.asInstanceOf[TypeTree] setOriginal tpt /* setPos tpt.pos */
           checkNoEscaping.privates(getter, result.tpt)
           copy.DefDef(result, result.mods withAnnotations mods.annotations, result.name,
@@ -1777,8 +1779,9 @@ trait Typers requires Analyzer {
         val elemtpt1 = typedType(elemtpt)
         val elems1 = List.mapConserve(elems)(elem => typed(elem, mode, elemtpt1.tpe))
         copy.ArrayValue(tree, elemtpt1, elems1)
-          .setType(if (isFullyDefined(pt) && !phase.erasedTypes) pt
-                   else appliedType(ArrayClass.typeConstructor, List(elemtpt1.tpe)))
+          .setType(
+            (if (isFullyDefined(pt) && !phase.erasedTypes) pt
+             else appliedType(ArrayClass.typeConstructor, List(elemtpt1.tpe))).notNull)
       }
 
       def typedAssign(lhs: Tree, rhs: Tree): Tree = {

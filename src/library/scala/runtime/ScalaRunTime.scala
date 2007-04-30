@@ -32,6 +32,9 @@ object ScalaRunTime {
   def isValueTag(tag: String) = tag.charAt(0) == '.'
   def isValueClass(clazz: Class) = clazz.isPrimitive()
 
+  def checkInitialized[T <: AnyRef](x: T): T =
+    if (x == null) throw new UninitializedError else x
+
   abstract class Try[a] {
     def Catch[b >: a](handler: PartialFunction[Throwable, b]): b
     def Finally(handler: Unit): a
