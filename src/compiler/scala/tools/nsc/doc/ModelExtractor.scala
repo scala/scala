@@ -16,14 +16,17 @@ import compat.Platform.{EOL => LINE_SEPARATOR}
  * @author Sean McDirmid
  */
 trait ModelExtractor {
-  val global : Global
+  val global: Global
   import global._
+
   def assert(b : Boolean) {
     if (!b)
       throw new Error;
   }
-  case class Tag(tag : String, option : String, body : String);
-  case class Comment(body : String, attributes : List[Tag]) {
+
+  case class Tag(tag: String, option: String, body: String)
+
+  case class Comment(body: String, attributes: List[Tag]) {
     def decodeAttributes = {
       val map = new jcl.LinkedHashMap[String,List[(String,String)]] {
         override def default(key : String) = Nil;
@@ -34,21 +37,20 @@ trait ModelExtractor {
       map
     }
   }
-  protected def decode(sym : Symbol) = {
+  protected def decode(sym: Symbol) =
     if (sym == definitions.ScalaObjectClass || sym == definitions.ObjectClass)
-      definitions.AnyRefClass;
+      definitions.AnyRefClass
     else sym match {
-    case sym : ModuleClassSymbol => sym.sourceModule;
-    case sym => sym;
+      case sym : ModuleClassSymbol => sym.sourceModule
+      case sym => sym
     }
-  }
 
   protected def decodeComment(comment0 : String) : Comment = {
-    assert(comment0.startsWith("/**"));
-    assert(comment0.endsWith("*/"));
-    val comment = comment0.substring("/**".length, comment0.length - "*/".length);
-    val tok = new java.util.StringTokenizer(comment, LINE_SEPARATOR);
-    val buf = new StringBuilder;
+    assert(comment0.startsWith("/**"))
+    assert(comment0.endsWith("*/"))
+    val comment = comment0.substring("/**".length, comment0.length - "*/".length)
+    val tok = new java.util.StringTokenizer(comment, LINE_SEPARATOR)
+    val buf = new StringBuilder
     type AttrDescr = (String, String, StringBuilder)
     val attributes = new collection.mutable.ListBuffer[AttrDescr]
     var attr: AttrDescr = null
@@ -89,14 +91,17 @@ trait ModelExtractor {
       Some(ModelExtractor.this.decodeComment(comment));
     }
     protected def accessQualified(core: String, qual: String) = core match {
-      case "public" => ""; // assert(qual == null); "";
-      case core => core + (if (qual == null) "" else "[" + qual + "]");
+      case "public" => "" // assert(qual == null); "";
+      case core => core + (if (qual == null) "" else "[" + qual + "]")
     }
 
     def flagsString = {
       import symtab.Flags
-        val isLocal = sym.hasFlag(Flags.LOCAL);
-        val x = if (sym.hasFlag(Flags.PRIVATE)) "private" else if (sym.hasFlag(Flags.PROTECTED)) "protected" else "public";
+        val isLocal = sym.hasFlag(Flags.LOCAL)
+        val x =
+          if (sym.hasFlag(Flags.PRIVATE)) "private"
+          else if (sym.hasFlag(Flags.PROTECTED)) "protected"
+          else "public"
         var string = accessQualified(x, {
           if (sym.hasFlag(Flags.LOCAL)) "this";
           else if (sym.privateWithin != null && sym.privateWithin != NoSymbol)

@@ -23,44 +23,42 @@ abstract class DocDriver extends ModelFrames with ModelToXML {
     override def addition(sym: global.Symbol) = {
       super.addition(sym)
       sym match {
-        case sym : global.ClassSymbol => additions += sym.asInstanceOf[Symbol]
+        case sym : global.ClassSymbol  => additions += sym.asInstanceOf[Symbol]
         case sym : global.ModuleSymbol => additions += sym.asInstanceOf[Symbol]
-        case sym : global.TypeSymbol => additions += sym.asInstanceOf[Symbol]
+        case sym : global.TypeSymbol   => additions += sym.asInstanceOf[Symbol]
         case _ =>
       }
     }
-    def init : Unit = {}
+    def init: Unit = {}
   }
 
-  def process(units: Iterator[CompilationUnit]): Unit = {
+  def process(units: Iterator[CompilationUnit]) {
     assert(global.definitions != null);
 
-    def g(pkg : Package, clazz : ClassOrObject) : Unit = {
+    def g(pkg: Package, clazz: ClassOrObject) {
       allClasses(pkg) += clazz;
       clazz.decls.map(._2).foreach {
-      case clazz : ClassOrObject =>
-        g(pkg, clazz);
-      case _ =>
+        case clazz : ClassOrObject => g(pkg, clazz)
+        case _ =>
       }
     }
-    def f(pkg : Package, tree : Tree) : Unit = if (!tree.symbol.hasFlag(symtab.Flags.PRIVATE)) tree match {
-    case tree : PackageDef =>
-      val pkg1 = new Package(tree.symbol.asInstanceOf[ModuleSymbol]);
-      tree.stats.foreach(stat => f(pkg1, stat));
-    case tree : ClassDef =>
-      assert(pkg != null);
-      g(pkg, new TopLevelClass(tree.symbol.asInstanceOf[ClassSymbol]));
-    case tree : ModuleDef =>
-      assert(pkg != null);
-      g(pkg, new TopLevelObject(tree.symbol.asInstanceOf[ModuleSymbol]));
-    case _ =>
+    def f(pkg: Package, tree: Tree): Unit = if (!tree.symbol.hasFlag(symtab.Flags.PRIVATE)) tree match {
+      case tree : PackageDef =>
+        val pkg1 = new Package(tree.symbol.asInstanceOf[ModuleSymbol]);
+        tree.stats.foreach(stat => f(pkg1, stat))
+      case tree : ClassDef =>
+        assert(pkg != null);
+        g(pkg, new TopLevelClass(tree.symbol.asInstanceOf[ClassSymbol]))
+      case tree : ModuleDef =>
+        assert(pkg != null);
+        g(pkg, new TopLevelObject(tree.symbol.asInstanceOf[ModuleSymbol]))
+      case _ =>
     }
-    units.foreach(unit => f(null, unit.body));
+    units.foreach(unit => f(null, unit.body))
 
-
-    for (p <- allClasses; val d <- p._2) {
-      symbols += d.sym;
-      for (pp <- d.sym.tpe.parents) subClasses(pp.symbol) += d;
+    for (p <- allClasses; d <- p._2) {
+      symbols += d.sym
+      for (pp <- d.sym.tpe.parents) subClasses(pp.symbol) += d
     }
     additions0.init
     copyResources
@@ -69,9 +67,7 @@ abstract class DocDriver extends ModelFrames with ModelToXML {
     new PackagesContentFrame with Frame { def packages = packages0; }
     new NavigationFrame      with Frame { }
     new ListClassFrame with Frame {
-      def classes = {
-        for (p <- allClasses; d <- p._2) yield d;
-      }
+      def classes = for (p <- allClasses; d <- p._2) yield d
       object organized extends jcl.LinkedHashMap[(List[String],Boolean),List[ClassOrObject]] {
         override def default(key : (List[String],Boolean)) = Nil;
         classes.foreach(cls => {
@@ -121,23 +117,23 @@ abstract class DocDriver extends ModelFrames with ModelToXML {
     }
     for (sym <- additions) sym match {
     case sym :  ClassSymbol =>
-      val add = new TopLevelClass(sym);
+      val add = new TopLevelClass(sym)
       new ClassContentFrame with Frame {
-        def clazz = add;
+        def clazz = add
         def title =
           add.kind + " " + add.name + " in package " + add.sym.owner.fullNameString('.')
       }
-    case sym :  TypeSymbol =>
-      val add = new TopLevelClass(sym);
+    case sym :TypeSymbol =>
+      val add = new TopLevelClass(sym)
       new ClassContentFrame with Frame {
-        def clazz = add;
+        def clazz = add
         def title =
           add.kind + " " + add.name + " in package " + add.sym.owner.fullNameString('.')
       }
-    case sym : ModuleSymbol =>
-      val add = new TopLevelObject(sym);
+    case sym :ModuleSymbol =>
+      val add = new TopLevelObject(sym)
       new ClassContentFrame with Frame {
-        def clazz = add;
+        def clazz = add
         def title =
           add.kind + " " + add.name + " in package " + add.sym.owner.fullNameString('.')
       }
@@ -208,7 +204,7 @@ abstract class DocDriver extends ModelFrames with ModelToXML {
   }
 
   // <code>{Text(string + " - ")}</code>;
-  override def hasLink0(sym : Symbol) : Boolean = {
+  override def hasLink0(sym: Symbol): Boolean = {
     if (sym == NoSymbol) return false;
     val ret = super.hasLink0(sym) && (additions.contains(sym) || symbols.contains(sym));
     if (ret) return true;
@@ -224,9 +220,10 @@ abstract class DocDriver extends ModelFrames with ModelToXML {
     }
     return false;
   }
-  def aref(href : String, label : String)(implicit frame : Frame) =
-    frame.aref(href, "_self", label);
-  protected def anchor(entity : Symbol)(implicit frame : Frame) : NodeSeq =
+  def aref(href: String, label: String)(implicit frame: Frame) =
+    frame.aref(href, "_self", label)
+
+  protected def anchor(entity: Symbol)(implicit frame: Frame): NodeSeq =
     <a name={Text(frame.docName(entity))}></a>
 
   object symbols extends jcl.LinkedHashSet[Symbol];

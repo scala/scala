@@ -82,9 +82,11 @@ function init() {
   api['java/lang/ThreadLocal']                    = java_api_root;
   api['java/lang/Throwable']                      = java_api_root;
   api['java/lang/Void']                           = java_api_root;
+
   api['java/math/BigDecimal']                     = java_api_root;
   api['java/math/BigInteger']                     = java_api_root;
   api['java/math/MathContext']                    = java_api_root;
+
   api['java/net/Authenticator']                   = java_api_root;
   api['java/net/BindException']                   = java_api_root;
   api['java/net/HttpURLConnection']               = java_api_root;
@@ -105,6 +107,7 @@ function init() {
   api['java/net/URLConnection']                   = java_api_root;
   api['java/net/URLDecoder']                      = java_api_root;
   api['java/net/URLStreamHandler']                = java_api_root;
+
   api['java/nio/Buffer']                          = java_api_root;
   api['java/nio/ByteBuffer']                      = java_api_root;
   api['java/nio/BufferOverflowException']         = java_api_root;
@@ -126,24 +129,43 @@ function init() {
   api['java/nio/channels/ServerSocketChannel']    = java_api_root;
   api['java/nio/channels/SocketChannel']          = java_api_root;
   api['java/nio/charset/CharsetDecoder']          = java_api_root;
+
   api['java/rmi/AccessException']                 = java_api_root;
   api['java/rmi/MarshalledObject']                = java_api_root;
   api['java/rmi/Naming']                          = java_api_root;
   api['java/rmi/RMISecurityManager']              = java_api_root;
   api['java/rmi/Remote']                          = java_api_root; //interface
+
   api['java/sql/Array']                           = java_api_root; //interface
+  api['java/sql/BatchUpdateException']            = java_api_root; //exception
   api['java/sql/Blob']                            = java_api_root; //interface
   api['java/sql/CallableStatement']               = java_api_root; //interface
+  api['java/sql/Clob']                            = java_api_root; //interface
   api['java/sql/Connection']                      = java_api_root; //interface
+  api['java/sql/DataTruncation']                  = java_api_root; //exception
+  api['java/sql/DatabaseMetaData']                = java_api_root; //interface
   api['java/sql/Date']                            = java_api_root;
+  api['java/sql/Driver']                          = java_api_root; //interface
   api['java/sql/DriverManager']                   = java_api_root;
+  api['java/sql/DriverPropertyInfo']              = java_api_root;
+  api['java/sql/ParameterMetaData']               = java_api_root; //interface
+  api['java/sql/PreparedStatement']               = java_api_root; //interface
+  api['java/sql/Ref']                             = java_api_root; //interface
   api['java/sql/ResultSet']                       = java_api_root; //interface
   api['java/sql/ResultSetMetaData']               = java_api_root; //interface
+  api['java/sql/SQLData']                         = java_api_root; //interface
+  api['java/sql/SQLInput']                        = java_api_root; //interface
+  api['java/sql/SQLOutput']                       = java_api_root; //interface
+  api['java/sql/SQLException']                    = java_api_root; //exception
   api['java/sql/SQLPermission']                   = java_api_root;
+  api['java/sql/SQLWarning']                      = java_api_root; //exception
+  api['java/sql/SavePoint']                       = java_api_root; //interface
+  api['java/sql/Statement']                       = java_api_root; //interface
+  api['java/sql/Struct']                          = java_api_root; //interface
   api['java/sql/Time']                            = java_api_root;
   api['java/sql/Timestamp']                       = java_api_root;
   api['java/sql/Types']                           = java_api_root;
-  api['java/text/MessageFormat']                  = java_api_root;
+
   api['java/text/Annotation']                     = java_api_root;
   api['java/text/AttributedCharacterIterator']    = java_api_root;
   api['java/text/AttributedString']               = java_api_root;
@@ -165,6 +187,13 @@ function init() {
   api['java/text/ParsePosition']                  = java_api_root;
   api['java/text/SimpleDateFormat']               = java_api_root;
   api['java/text/StringCharacterIterator']        = java_api_root;
+
+  api['java/util/AbstractCollection']             = java_api_root;
+  api['java/util/AbstractList']                   = java_api_root;
+  api['java/util/AbstractMap']                    = java_api_root;
+  api['java/util/AbstractSequentialList']         = java_api_root;
+  api['java/util/AbstractSet']                    = java_api_root;
+  api['java/util/ArrayList']                      = java_api_root;
   api['java/util/Arrays']                         = java_api_root;
   api['java/util/BitSet']                         = java_api_root;
   api['java/util/Calendar']                       = java_api_root;
@@ -174,23 +203,44 @@ function init() {
   api['java/util/Currency']                       = java_api_root;
   api['java/util/Date']                           = java_api_root;
   api['java/util/Dictionary']                     = java_api_root;
+  api['java/util/EnumMap']                        = java_api_root;
+  api['java/util/EnumSet']                        = java_api_root;
+  api['java/util/Enumeration']                    = java_api_root; //interface
+  api['java/util/EventListener']                  = java_api_root; //interface
+  api['java/util/EventListenerProxy']             = java_api_root;
+  api['java/util/EventObject']                    = java_api_root;
+  api['java/util/Formattable']                    = java_api_root; //interface
   api['java/util/Formatter']                      = java_api_root;
+  api['java/util/GregorianCalendar']              = java_api_root;
   api['java/util/HashMap']                        = java_api_root;
   api['java/util/HashSet']                        = java_api_root;
-  api['java/util/Hashapi']                      = java_api_root;
+  api['java/util/Hashtable']                      = java_api_root;
+  api['java/util/IdentityHashMap']                = java_api_root;
   api['java/util/IllegalFormatException']         = java_api_root;
+  api['java/util/Iterator']                       = java_api_root; //interface
   api['java/util/LinkedHashMap']                  = java_api_root;
   api['java/util/LinkedHashSet']                  = java_api_root;
   api['java/util/LinkedList']                     = java_api_root;
   api['java/util/List']                           = java_api_root; //interface
+  api['java/util/ListIterator']                   = java_api_root; //interface
+  api['java/util/ListResourceBundle']             = java_api_root;
+  api['java/util/Locale']                         = java_api_root;
   api['java/util/Map']                            = java_api_root;
   api['java/util/Observable']                     = java_api_root;
+  api['java/util/Observer']                       = java_api_root; //interface
   api['java/util/PriorityQueue']                  = java_api_root;
   api['java/util/Properties']                     = java_api_root;
+  api['java/util/PropertyPermission']             = java_api_root;
+  api['java/util/PropertyResourceBundle']         = java_api_root;
+  api['java/util/Queue']                          = java_api_root; //interface
   api['java/util/Random']                         = java_api_root;
+  api['java/util/RandomAccess']                   = java_api_root; //interface
   api['java/util/ResourceBundle']                 = java_api_root;
   api['java/util/Scanner']                        = java_api_root; //(1.5)
   api['java/util/Set']                            = java_api_root;
+  api['java/util/SimpleTimeZone']                 = java_api_root;
+  api['java/util/SortedMap']                      = java_api_root; //interface
+  api['java/util/SortedSet']                      = java_api_root; //infterface
   api['java/util/Stack']                          = java_api_root;
   api['java/util/StringTokenizer']                = java_api_root;
   api['java/util/Timer']                          = java_api_root;
@@ -545,6 +595,12 @@ function init() {
   src['scala/testing/SUnit']                            = lib_src_root;
   src['scala/testing/UnitTest']                         = lib_src_root; // object
 
+  src['scala/text/DocBreak']                            = lib_src_root;
+  src['scala/text/DocCons']                             = lib_src_root;
+  src['scala/text/DocGroup']                            = lib_src_root;
+  src['scala/text/DocNest']                             = lib_src_root;
+  src['scala/text/DocNil']                              = lib_src_root;
+  src['scala/text/DocText']                             = lib_src_root;
   src['scala/text/Document']                            = lib_src_root;
 
   src['scala/util/Fluid']                               = lib_src_root;

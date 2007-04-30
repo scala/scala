@@ -96,17 +96,19 @@ trait ModelFrames extends ModelExtractor {
 
     def urlFor(sym: Symbol): String = sym match {
       case sym : TypeSymbol if sym == definitions.AnyRefClass =>
-        urlFor0(sym,sym) + FILE_EXTENSION_HTML
+        urlFor0(sym, sym) + FILE_EXTENSION_HTML
       case psym : ModuleSymbol if psym.isPackage =>
-        urlFor0(sym,sym) + FILE_EXTENSION_HTML
+        urlFor0(sym, sym) + FILE_EXTENSION_HTML
       case sym if !hasLink(sym) =>
         null
+      case sym if sym.hasFlag(Flags.JAVA) =>
+        null // handled in ModelToXML.link
       case msym: ModuleSymbol =>
         urlFor0(sym, sym) + FILE_EXTENSION_HTML
       case csym: ClassSymbol =>
         urlFor0(sym, sym) + FILE_EXTENSION_HTML
       case _ =>
-        val cnt = urlFor(decode(sym.owner));
+        val cnt = urlFor(decode(sym.owner))
         if (cnt == null) null else cnt + "#" + docName(sym)
     }
 
@@ -145,13 +147,11 @@ trait ModelFrames extends ModelExtractor {
         case msym: ModuleSymbol =>
           if (msym hasFlag Flags.PACKAGE) NAME_SUFFIX_PACKAGE
           else NAME_SUFFIX_OBJECT
-        case csym: ClassSymbol =>
-          if (csym.isModuleClass) {
-            if (csym hasFlag Flags.PACKAGE) NAME_SUFFIX_PACKAGE
-            else NAME_SUFFIX_OBJECT
-          }
-          else ""
-        case _ => ""
+        case csym: ClassSymbol if csym.isModuleClass =>
+          if (csym hasFlag Flags.PACKAGE) NAME_SUFFIX_PACKAGE
+          else NAME_SUFFIX_OBJECT
+        case _ =>
+          ""
       })
     }
   }
@@ -235,6 +235,7 @@ trait ModelFrames extends ModelExtractor {
     }
     def optional(cls: ClassOrObject): NodeSeq = NodeSeq.Empty
   }
+
   abstract class PackageContentFrame extends Frame {
     override def path = pkg.fullName('/') + "$content"
     override def title = "All classes and objects in " + pkg.fullName('.')
@@ -250,6 +251,7 @@ trait ModelFrames extends ModelExtractor {
         </table>
       })};
   }
+
   abstract class ClassContentFrame extends Frame {
     def clazz: ClassOrObject
     def body: NodeSeq =
@@ -271,14 +273,21 @@ trait ModelFrames extends ModelExtractor {
         </tr>
         <tr><td></td></tr>
       </table>;
-    private def header0: NodeSeq =
+    private def header0: NodeSeq = {
+      val owner = decode(clazz.sym.owner)
+      val name =
+        owner.fullNameString('/') + (if (owner.isPackage) "/" + clazz.name else "")
       <xml:group>
       <div class="entity">
-        {aref(urlFor(decode(clazz.sym.owner)), "_self", decode(clazz.sym.owner).fullNameString('.'))}
+        {aref(urlFor(owner), "_self", owner.fullNameString('.'))}
         <br/>
         <span class="entity">{Text(clazz.kind)}  {Text(clazz.name)}</span>
       </div><hr/>
-      </xml:group>;
+      <div style="font-size:smaller; color:gray;">
+        [source: <a class={name} href=""><code>{name + ".scala"}</code></a>]
+      </div><hr/>
+      </xml:group>
+    }
   }
   def longComment(cmnt: Comment): NodeSeq
 
@@ -355,6 +364,7 @@ trait ModelFrames extends ModelExtractor {
     copyResource(stylesheetSetting.value, !stylesheetSetting.isDefault)
     copyResource("script.js", false)
   }
+
   private val patVal = java.util.regex.Pattern.compile(
-      "scala\\.(Byte|Boolean|Char|Double|Float|Int|Long|Short)")
+    "scala\\.(Byte|Boolean|Char|Double|Float|Int|Long|Short)")
 }

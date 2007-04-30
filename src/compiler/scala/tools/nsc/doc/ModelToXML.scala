@@ -24,11 +24,17 @@ trait ModelToXML extends ModelExtractor {
   def aref(href: String, label: String)(implicit frame: Frame): NodeSeq
 
   def link(entity: Symbol)(implicit frame: Frame): NodeSeq = {
-    val url = urlFor(entity);
+    val url = urlFor(entity)
     // nothing to do but be verbose.
-    if (url == null) Text({
-      entity.owner.fullNameString('.') + '.' + entity.nameString;
-    }) else aref(url, entity.nameString);
+    if (url == null) {
+      val name = entity.owner.fullNameString('.') + '.' + entity.nameString
+      if (entity.hasFlag(symtab.Flags.JAVA))
+        <a class={name.replace('.', '/')} href="" target="contentFrame">{name}</a>
+      else
+        Text(name)
+    }
+    else
+      aref(url, entity.nameString)
   }
 
   def link(tpe: Type)(implicit frame: Frame): NodeSeq = {
@@ -103,7 +109,7 @@ trait ModelToXML extends ModelExtractor {
     }
   }
 
-  def longHeader(entity : Entity)(implicit from : Frame) : NodeSeq = Group({
+  def longHeader(entity: Entity)(implicit from: Frame): NodeSeq = Group({
     anchor(entity.sym) ++ <dl>
       <dt>
         {attrsFor(entity)}
@@ -156,14 +162,15 @@ trait ModelToXML extends ModelExtractor {
       {categories.mkXML("","\n","")(c =>  longList(entity, c)) : NodeSeq}
     </xml:group>;
 
-  def longList(entity : ClassOrObject,category : Category)(implicit from : Frame) : NodeSeq = {
-    val xs = entity.members(category);
-    if (!xs.elements.hasNext) return NodeSeq.Empty;
-    Group(
+  def longList(entity: ClassOrObject, category: Category)(implicit from: Frame): NodeSeq = {
+    val xs = entity.members(category)
+    if (!xs.elements.hasNext)
+      NodeSeq.Empty
+    else Group(
         <table cellpadding="3" class="member-detail" summary="">
           <tr><td class="title">{Text(category.label)} Details</td></tr>
         </table>
-        <div>{xs.mkXML("","\n","")(m => longHeader(m))}</div>);
+        <div>{xs.mkXML("","\n","")(m => longHeader(m))}</div>)
   }
 
   def shortList(entity: ClassOrObject, category: Category)(implicit from: Frame): NodeSeq = {

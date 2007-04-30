@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -9,7 +9,7 @@
 // $Id:Select.scala 6853 2006-03-20 16:58:47 +0100 (Mon, 20 Mar 2006) dubochet $
 
 
-package scala.dbc.statement;
+package scala.dbc.statement
 
 
 /** A statement that when executed on a database will return a relation.
@@ -21,7 +21,7 @@ abstract class Select extends Relation {
    * relation. <h3>Compatibility notice</h3> Some DBMS (PostgreSQL) allow
    * uniqueness constrains on an arbitrary field instead of the entire
    * tuple. */
-  def setQuantifier: Option[SetQuantifier];
+  def setQuantifier: Option[SetQuantifier]
 
   /** Defines the output fields that a tuple in the returned relation will
    * contain, and their content with respect to the tables in the
@@ -29,25 +29,28 @@ abstract class Select extends Relation {
    * empty), all possible input fields will be returned. <h3>Compatibility
    * notice</h3> SQL's qualified asterisk select sublist is not
    * available. */
-  def selectList: List[DerivedColumn];
+  def selectList: List[DerivedColumn]
 
   /** Defines the relations from which the query will obtain its data.*/
-  def fromClause: List[Relation];
+  def fromClause: List[Relation]
 
   /** Defines condition that must be true in the returned relation's tuples.
-   * This value expression must return a boolean or boolean-compatible
-   * value. This condition is applied before any GROUP BY clause. */
-  def whereClause: Option[Expression];
+   *  This value expression must return a boolean or boolean-compatible
+   *  value. This condition is applied before any GROUP BY clause.
+   */
+  def whereClause: Option[Expression]
 
   /** Defines the grouping of the returned relation's tuples. One tuple is
-   * returned for every group. The value of <code>selectList</code> must
-   * use aggregate functions for calculation. */
-  def groupByClause: Option[List[Expression]];
+   *  returned for every group. The value of <code>selectList</code> must
+   *  use aggregate functions for calculation.
+   */
+  def groupByClause: Option[List[Expression]]
 
   /** Defines conditions that must be true in the returned relation's tuples.
-   * The value expression must return a boolean can only refer to fields
-   * that are grouped or to any field from inside an aggregate function. */
-  def havingClause: Option[Expression];
+   *  The value expression must return a boolean can only refer to fields
+   *  that are grouped or to any field from inside an aggregate function.
+   */
+  def havingClause: Option[Expression]
 
   /* def windowClause: Option[_]; */
 
@@ -89,7 +92,8 @@ abstract class Select extends Relation {
   );
 
   /** A SQL-99 compliant string representation of the relation sub-
-   * statement. This only has a meaning inside a query. */
-  def sqlInnerString: String = "("+sqlString+")";
+   *  statement. This only has a meaning inside a query.
+   */
+  def sqlInnerString: String = "("+sqlString+")"
 
 }
