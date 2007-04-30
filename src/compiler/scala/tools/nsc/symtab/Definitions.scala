@@ -37,6 +37,7 @@ trait Definitions {
     var AllClass: Symbol = _
 
     var ClassClass: Symbol = _
+    var MethodClass: Symbol = _
     var StringClass: Symbol = _
     var ThrowableClass: Symbol = _
     var NullPointerExceptionClass: Symbol = _
@@ -105,6 +106,9 @@ trait Definitions {
       def SeqFactory = getMember(ScalaRunTimeModule, nme.Seq);
       def checkDefinedMethod = getMember(ScalaRunTimeModule, "checkDefined")
       def isArrayMethod = getMember(ScalaRunTimeModule, "isArray")
+    var BoxesUtilityModule: Symbol = _
+    var ComparatorModule: Symbol = _
+      def Comparator_equals = getMember(ComparatorModule, nme.equals_)
     var RepeatedParamClass: Symbol = _
     var ByNameParamClass: Symbol = _
     //var UnsealedClass: Symbol = _
@@ -153,7 +157,7 @@ trait Definitions {
     def getProductArgs(tpe: Type): Option[List[Type]] =
       tpe.baseClasses.find { x => definitions.isExactProductType(x.tpe) } match {
         case Some(p) => Some(tpe.baseType(p).typeArgs)
-	case _       => None
+        case _       => None
       }
 
     var OptionClass: Symbol = _
@@ -197,9 +201,9 @@ trait Definitions {
       assert(ufn.isMethod)
       //Console.println("utl "+ufntpe+" "+ufntpe.symbol)
       ufn.name match {
-	case nme.unapply    => unapplyTypeListFromReturnType(ufntpe)
-	case nme.unapplySeq => unapplyTypeListFromReturnTypeSeq(ufntpe)
-	case _ => throw new IllegalArgumentException("expected function symbol of extraction")
+        case nme.unapply    => unapplyTypeListFromReturnType(ufntpe)
+        case nme.unapplySeq => unapplyTypeListFromReturnTypeSeq(ufntpe)
+        case _ => throw new IllegalArgumentException("expected function symbol of extraction")
       }
     }
     /** (the inverse of unapplyReturnTypeSeq)
@@ -214,14 +218,14 @@ trait Definitions {
       val O = OptionClass
       val S = SomeClass
       tp.symbol match { // unapplySeqResultToMethodSig
-	case  B => Nil
-	case  O | S =>
-	  val prod = tp.typeArgs.head
+        case  B => Nil
+        case  O | S =>
+          val prod = tp.typeArgs.head
           getProductArgs(prod)  match {
             case Some(all @ (x1::x2::xs)) => all       // n >= 2
             case _                        => prod::Nil // special n == 0 ||  n == 1
           }
-	case _ => throw new IllegalArgumentException(tp.symbol + " in not in {boolean, option, some}")
+        case _ => throw new IllegalArgumentException(tp.symbol + " in not in {boolean, option, some}")
       }
     }
 
@@ -234,13 +238,13 @@ trait Definitions {
       val tp = unapplyUnwrap(tp1)
       val   O = OptionClass; val S = SomeClass; tp.symbol match {
       case  O                  | S =>
-	val ts = unapplyTypeListFromReturnType(tp1)
-	val last1 = ts.last.baseType(SeqClass) match {
+        val ts = unapplyTypeListFromReturnType(tp1)
+        val last1 = ts.last.baseType(SeqClass) match {
           case TypeRef(pre, seqClass, args) => typeRef(pre, RepeatedParamClass, args)
-	  case _ => throw new IllegalArgumentException("last not seq")
-	}
-	ts.init ::: List(last1)
-	case _ => throw new IllegalArgumentException(tp.symbol + " in not in {option, some}")
+          case _ => throw new IllegalArgumentException("last not seq")
+        }
+        ts.init ::: List(last1)
+        case _ => throw new IllegalArgumentException(tp.symbol + " in not in {option, some}")
       }
     }
 
@@ -250,11 +254,11 @@ trait Definitions {
      *  else Some[Product[Ti]]
     def unapplyReturnType(elems: List[Type], useWildCards: Boolean) =
       if (elems.isEmpty)
-	BooleanClass.tpe
+        BooleanClass.tpe
       else if (elems.length == 1)
-	optionType(if(useWildCards) WildcardType else elems(0))
+        optionType(if(useWildCards) WildcardType else elems(0))
       else
-	productType({val es = elems; if(useWildCards) elems map { x => WildcardType} else elems})
+        productType({val es = elems; if(useWildCards) elems map { x => WildcardType} else elems})
      */
 
     def unapplyReturnTypeExpected(argsLength: int) = argsLength match {
@@ -305,9 +309,9 @@ trait Definitions {
 		  case _ => ()
 		}
 
-	    case _ => ()
-	  }
-	}
+            case _ => ()
+          }
+        }
       isCD
     }
 
@@ -336,9 +340,9 @@ trait Definitions {
     var Object_synchronized: Symbol = _
     var Object_isInstanceOf: Symbol = _
     var Object_asInstanceOf: Symbol = _
-      def Object_equals   = getMember(ObjectClass, nme.equals_)
-      def Object_hashCode = getMember(ObjectClass, nme.hashCode_)
-      def Object_toString = getMember(ObjectClass, nme.toString_)
+    def Object_equals   = getMember(ObjectClass, nme.equals_)
+    def Object_hashCode = getMember(ObjectClass, nme.hashCode_)
+    def Object_toString = getMember(ObjectClass, nme.toString_)
 
     var String_+           : Symbol = _
 
@@ -351,10 +355,11 @@ trait Definitions {
 
     // boxed classes
     var BoxedArrayClass: Symbol = _
-    var BoxedNumberClass: Symbol = _
     var BoxedAnyArrayClass: Symbol = _
     var BoxedObjectArrayClass: Symbol = _
     var BoxedUnitClass: Symbol = _
+    var BoxedNumberClass: Symbol = _
+    var BoxedCharacterClass: Symbol = _
     var BoxedUnitModule: Symbol = _
       def BoxedUnit_UNIT = getMember(BoxedUnitModule, "UNIT")
     var ObjectRefClass: Symbol = _
@@ -445,11 +450,82 @@ trait Definitions {
         .setInfo(mkTypeBounds(AllClass.typeConstructor, AnyClass.typeConstructor))
 
     val boxedClass = new HashMap[Symbol, Symbol]
-    val unboxMethod = new HashMap[Symbol, Symbol] // Type -> Method
-    val boxMethod = new HashMap[Symbol, Symbol] // Type -> Method
-    val boxedArrayClass = new HashMap[Symbol, Symbol]
 
-    def isUnbox(m: Symbol) = m.name == nme.unbox && {
+    private var unboxMethodCache: collection.mutable.Map[Symbol, Symbol] = null
+    def unboxMethod =
+      if (unboxMethodCache != null) unboxMethodCache
+      else {
+        unboxMethodCache = new collection.mutable.Map[Symbol, Symbol] {
+          private val container = new HashMap[Symbol, Symbol]
+          private val classes =
+            List(BooleanClass, ByteClass, ShortClass, CharClass, IntClass, LongClass, FloatClass, DoubleClass)
+          for (val cl <- classes)
+            container.update(cl, getMember(BoxesUtilityModule, "unboxTo" + cl.name))
+          def -= (key: Symbol): Unit = throw new Error()
+          def update(key: Symbol, value: Symbol): Unit =
+            container.update(key, value)
+          def size: Int = container.size
+          def elements = container.elements
+          def get(key: Symbol): Option[Symbol] = container.get(key)
+        }
+        unboxMethodCache
+      }
+
+    private var boxMethodCache: collection.mutable.Map[Symbol, Symbol] = null
+    def boxMethod =
+      if (boxMethodCache != null) boxMethodCache
+      else {
+        boxMethodCache = new collection.mutable.Map[Symbol, Symbol] {
+          private val container = new HashMap[Symbol, Symbol]
+          private val BooleanClass = definitions.BooleanClass
+          private val ByteClass = definitions.ByteClass
+          private val CharClass = definitions.CharClass
+          private val ShortClass = definitions.ShortClass
+          private val IntClass = definitions.IntClass
+          private val LongClass = definitions.LongClass
+          private val FloatClass = definitions.FloatClass
+          private val DoubleClass = definitions.DoubleClass
+          private val classes =
+            List(BooleanClass, ByteClass, ShortClass, CharClass, IntClass, LongClass, FloatClass, DoubleClass)
+          for (val cl <- classes) {
+            val boxedName =
+              if (!forMSIL) cl match {
+                case BooleanClass => "Boolean"
+                case ByteClass => "Byte"
+                case CharClass => "Character"
+                case ShortClass => "Short"
+                case IntClass => "Integer"
+                case LongClass => "Long"
+                case FloatClass => "Float"
+                case DoubleClass => "Double"
+              }
+              else cl match {
+                case BooleanClass => "Boolean"
+                case ByteClass => "Byte"
+                case CharClass => "Char"
+                case ShortClass => "Int16"
+                case IntClass => "Int32"
+                case LongClass => "Int64"
+                case FloatClass => "Single"
+                case DoubleClass => "Double"
+              }
+            container.update(cl, getMember(BoxesUtilityModule, "boxTo" + boxedName))
+          }
+          def -= (key: Symbol): Unit = throw new Error()
+          def update(key: Symbol, value: Symbol): Unit = {
+              assert(value.isMethod)
+              container.update(key, value)
+            }
+          def size: Int = container.size
+          def elements = container.elements
+          def get(key: Symbol): Option[Symbol] = container.get(key)
+        }
+        boxMethodCache
+      }
+
+    val boxedArrayClass: collection.mutable.Map[Symbol, Symbol] = new HashMap[Symbol, Symbol]
+
+    def isUnbox(m: Symbol) = (unboxMethod.values contains m) && {
       m.tpe match {
         case MethodType(_, restpe) => (unboxMethod get restpe.symbol) match {
           case Some(`m`) => true
@@ -459,7 +535,8 @@ trait Definitions {
       }
     }
 
-    def isBox(m: Symbol) = m.name == nme.box && {
+    /** Test whether a method symbol is that of a boxing method. */
+    def isBox(m: Symbol) = (boxMethod.values contains m) && {
       m.tpe match {
         case MethodType(List(argtpe), _) => (boxMethod get argtpe.symbol) match {
           case Some(`m`) => true
@@ -473,9 +550,18 @@ trait Definitions {
     private val abbrvTag = new HashMap[Symbol, char]
 
     private def newValueClass(name: Name, tag: char): Symbol = {
-      def boxedName: String =
-        if (!forMSIL) "scala.runtime.Boxed" + name
-        else "System." + (name match {
+      val boxedName =
+        if (!forMSIL) name match {
+          case nme.Boolean => "Boolean"
+          case nme.Byte => "Byte"
+          case nme.Char => "Character"
+          case nme.Short => "Short"
+          case nme.Int => "Integer"
+          case nme.Long => "Long"
+          case nme.Float => "Float"
+          case nme.Double => "Double"
+        }
+        else name match {
           case nme.Boolean => "Boolean"
           case nme.Byte => "Byte"
           case nme.Char => "Char"
@@ -484,11 +570,13 @@ trait Definitions {
           case nme.Long => "Int64"
           case nme.Float => "Single"
           case nme.Double => "Double"
-        })
+        }
+      val boxedPathName =
+        if (!forMSIL) "java.lang." + boxedName else "System." + boxedName
       val clazz =
         newClass(ScalaPackageClass, name, List(AnyValClass.typeConstructor))
         .setFlag(ABSTRACT | FINAL)
-      boxedClass(clazz) = getClass(boxedName)
+      boxedClass(clazz) = getClass(boxedPathName)
       boxedArrayClass(clazz) = getClass("scala.runtime.Boxed" + name + "Array")
       refClass(clazz) = getClass("scala.runtime." + name + "Ref")
       abbrvTag(clazz) = tag
@@ -498,16 +586,11 @@ trait Definitions {
       val mclass = module.moduleClass
       mclass.setInfo(ClassInfoType(List(), newScope, mclass))
       module.setInfo(mclass.tpe)
-      val box = newMethod(mclass, nme.box, List(clazz.typeConstructor),
-                          ObjectClass.typeConstructor)
-      boxMethod(clazz) = box
-      val unbox = newMethod(mclass, nme.unbox, List(ObjectClass.typeConstructor),
-                            clazz.typeConstructor)
-      unboxMethod(clazz) = unbox
-
       clazz
     }
 
+    /** Sets-up symbols etc. for value classes, and their boxed versions. This
+      * method is called once from within the body of init. */
     private def initValueClasses: Unit = {
       val booltype = BooleanClass.typeConstructor
       val boolparam = List(booltype)
@@ -737,6 +820,7 @@ trait Definitions {
       StringClass = getClass(if (forMSIL) "System.String" else "java.lang.String")
 
       ClassClass = getClass(if (forMSIL) "System.Type" else "java.lang.Class")
+      MethodClass = getClass("java.lang.reflect.Method")
       ThrowableClass = getClass(if (forMSIL) "System.Exception" else "java.lang.Throwable")
       NullPointerExceptionClass = getClass(if (forMSIL) "System.NullReferenceException"
                                            else "java.lang.NullPointerException")
@@ -789,6 +873,8 @@ trait Definitions {
         getClass(if (forMSIL) "System.IndexOutOfRangeException"
                  else "java.lang.IndexOutOfBoundsException")
       ScalaRunTimeModule = getModule("scala.runtime.ScalaRunTime")
+      BoxesUtilityModule = getModule("scala.runtime.BoxesUtility")
+      ComparatorModule = getModule("scala.runtime.Comparator")
       RepeatedParamClass = newCovariantPolyClass(
         ScalaPackageClass, nme.REPEATED_PARAM_CLASS_NAME,
         tparam => typeRef(SeqClass.typeConstructor.prefix, SeqClass, List(tparam.typeConstructor)))
@@ -852,11 +938,12 @@ trait Definitions {
 
       PatternWildcard = NoSymbol.newValue(NoPosition, "_").setInfo(AllClass.typeConstructor)
 
-      BoxedNumberClass = if (forMSIL) null else getClass("scala.runtime.BoxedNumber")
+      BoxedNumberClass = if (forMSIL) null else getClass("java.lang.Number")
       BoxedArrayClass = getClass("scala.runtime.BoxedArray")
       BoxedAnyArrayClass = getClass("scala.runtime.BoxedAnyArray")
       BoxedObjectArrayClass = getClass("scala.runtime.BoxedObjectArray")
       BoxedUnitClass = getClass("scala.runtime.BoxedUnit")
+      BoxedCharacterClass = getClass("java.lang.Character")
       BoxedUnitModule = getModule("scala.runtime.BoxedUnit")
       ObjectRefClass = getClass("scala.runtime.ObjectRef")
 
@@ -902,8 +989,8 @@ trait Definitions {
         newMethod(StringClass, "toCharArray", List(),
                   appliedType(ArrayClass.typeConstructor, List(charType)));
 
-	// Delegate_scalaCallerInfos = new HashMap()
-	Delegate_scalaCallerTargets = new HashMap()
+        // Delegate_scalaCallerInfos = new HashMap()
+        Delegate_scalaCallerTargets = new HashMap()
       }
 
       AnnotationDefaultAttr = newClass(RootClass,

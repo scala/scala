@@ -19,10 +19,10 @@ final class BoxedLongArray(val value: Array[Long]) extends BoxedArray {
 
   def length: Int = value.length
 
-  def apply(index: Int): Any = Long.box(value(index))
+  def apply(index: Int): Any = BoxesUtility.boxToLong(value(index))
 
   def update(index: Int, elem: Any): Unit = {
-    value(index) = Long.unbox(elem.asInstanceOf[AnyRef])
+    value(index) = BoxesUtility.unboxToLong(elem.asInstanceOf[AnyRef])
   }
 
   def unbox(elemTag: String): AnyRef = value

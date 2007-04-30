@@ -177,32 +177,42 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
   class Eraser(context: Context) extends Typer(context) {
 
     /** Box `tree' of unboxed type */
-    private def box(tree: Tree): Tree =
-      typed {
-        atPos(tree.pos) {
-          val sym = tree.tpe.symbol;
-          if (sym == UnitClass) {
-            if (treeInfo.isPureExpr(tree)) gen.mkAttributedRef(BoxedUnit_UNIT)
-            else Block(List(tree), gen.mkAttributedRef(BoxedUnit_UNIT))
-          } else if (sym == ArrayClass) {
-            val elemClass = tree.tpe.typeArgs.head.symbol;
-            val boxedClass = if (isValueClass(elemClass)) boxedArrayClass(elemClass)
-                             else BoxedObjectArrayClass;
-            Apply(Select(New(TypeTree(boxedClass.tpe)), nme.CONSTRUCTOR), List(tree))
-          } else {
-            Apply(gen.mkAttributedRef(boxMethod(tree.tpe.symbol)), List(tree)).
-              setPos(tree.pos) setType ObjectClass.tpe
+    private def box(tree: Tree): Tree = tree match {
+      case LabelDef(name, params, rhs) =>
+        val rhs1 = box(rhs)
+        copy.LabelDef(tree, name, params, rhs1) setType rhs1.tpe
+      case _ =>
+        typed {
+          atPos(tree.pos) {
+            val sym = tree.tpe.symbol;
+            if (sym == UnitClass) {
+              if (treeInfo.isPureExpr(tree)) gen.mkAttributedRef(BoxedUnit_UNIT)
+              else Block(List(tree), gen.mkAttributedRef(BoxedUnit_UNIT))
+            } else if (sym == ArrayClass) {
+              val elemClass = tree.tpe.typeArgs.head.symbol;
+              val boxedClass = if (isValueClass(elemClass)) boxedArrayClass(elemClass)
+                               else BoxedObjectArrayClass;
+              Apply(Select(New(TypeTree(boxedClass.tpe)), nme.CONSTRUCTOR), List(tree))
+            } else {
+              Apply(gen.mkAttributedRef(boxMethod(tree.tpe.symbol)), List(tree)).
+                setPos(tree.pos) setType ObjectClass.tpe
+            }
           }
         }
-      }
+    }
 
     /** generate  ScalaRuntime.boxArray(tree) */
-    private def boxArray(tree: Tree): Tree =
-      typed {
-        atPos(tree.pos) {
-          gen.mkRuntimeCall(nme.boxArray, List(tree))
+    private def boxArray(tree: Tree): Tree = tree match {
+      case LabelDef(name, params, rhs) =>
+        val rhs1 = boxArray(rhs)
+        copy.LabelDef(tree, name, params, rhs1) setType rhs1.tpe
+      case _ =>
+        typed {
+          atPos(tree.pos) {
+            gen.mkRuntimeCall(nme.boxArray, List(tree))
+          }
         }
-      }
+    }
 
     /** Unbox <code>tree</code> of boxed type to expected type <code>pt</code>.
      *
@@ -210,24 +220,29 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
      *  @param pt   the expected type.
      *  @return     the unboxed tree
      */
-    private def unbox(tree: Tree, pt: Type): Tree =
-      typed {
-        atPos(tree.pos) {
-          if (pt.symbol == UnitClass) {
-            if (treeInfo.isPureExpr(tree)) Literal(())
-            else Block(List(tree), Literal(()))
-          }
-          else if (pt.symbol == ArrayClass) {
-            val tree1 = adaptToType(tree, BoxedArrayClass.tpe)
-            gen.mkRuntimeCall(nme.arrayValue, List(tree1, Literal(pt.typeArgs.head)))
-          }
-          else {
-            atPos(tree.pos) {
-              Apply(gen.mkAttributedRef(unboxMethod(pt.symbol)), List(tree)) setType pt
+    private def unbox(tree: Tree, pt: Type): Tree = tree match {
+      case LabelDef(name, params, rhs) =>
+        val rhs1 = unbox(rhs, pt)
+        copy.LabelDef(tree, name, params, rhs1) setType rhs1.tpe
+      case _ =>
+        typed {
+          atPos(tree.pos) {
+            if (pt.symbol == UnitClass) {
+              if (treeInfo.isPureExpr(tree)) Literal(())
+              else Block(List(tree), Literal(()))
+            }
+            else if (pt.symbol == ArrayClass) {
+              val tree1 = adaptToType(tree, BoxedArrayClass.tpe)
+              gen.mkRuntimeCall(nme.arrayValue, List(tree1, Literal(pt.typeArgs.head)))
+            }
+            else {
+              atPos(tree.pos) {
+                Apply(gen.mkAttributedRef(unboxMethod(pt.symbol)), List(tree)) setType pt
+              }
             }
           }
         }
-      }
+    }
 
     /** <p>
      *    Generate a cast operation from <code>tree.tpe</code> to <code>pt</code>.
@@ -762,7 +777,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
               }
               // todo: get rid of instanceOfErased
               // todo: also handle the case where the singleton type is buried in a compound
-	    else if (fn.symbol == Any_isInstanceOf || fn.symbol == Any_isInstanceOfErased)
+            else if (fn.symbol == Any_isInstanceOf || fn.symbol == Any_isInstanceOfErased)
               fn match {
                 case TypeApply(sel @ Select(qual, name), List(targ)) =>
                   def mkIsInstanceOf(q: () => Tree)(tp: Type): Tree =

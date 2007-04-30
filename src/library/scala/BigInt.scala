@@ -115,7 +115,7 @@ object BigInt {
  *  @version 1.0, 15/07/2003
  */
 @serializable
-class BigInt(val bigInteger: BigInteger) extends runtime.BoxedNumber {
+class BigInt(val bigInteger: BigInteger) extends java.lang.Number {
 
   /** Returns the hash code for this BigInt. */
   override def hashCode(): Int = this.bigInteger.hashCode()
@@ -123,9 +123,10 @@ class BigInt(val bigInteger: BigInteger) extends runtime.BoxedNumber {
   /** Compares this BigInt with the specified value for equality.
    */
   override def equals (that: Any): boolean = that match {
-    case that: runtime.BoxedDouble => this.bigInteger.doubleValue == that.doubleValue
-    case that: runtime.BoxedFloat  => this.bigInteger.floatValue == that.floatValue
-    case that: runtime.BoxedNumber => this equals BigInt(that.longValue)
+    case that: java.lang.Double => this.bigInteger.doubleValue == that.doubleValue
+    case that: java.lang.Float  => this.bigInteger.floatValue == that.floatValue
+    case that: java.lang.Number => this equals BigInt(that.longValue)
+    case that: java.lang.Character => this equals BigInt(that.charValue.asInstanceOf[Int])
     case _ => false
   }
 
@@ -300,14 +301,14 @@ class BigInt(val bigInteger: BigInteger) extends runtime.BoxedNumber {
    *  Note that this conversion can lose information about the overall magnitude of the
    *  BigInt value as well as return a result with the opposite sign.
    */
-  def byteValue   = intValue.toByte
+  override def byteValue   = intValue.toByte
 
   /** Converts this BigInt to a <tt>short</tt>.
    *  If the BigInt is too big to fit in a byte, only the low-order 16 bits are returned.
    *  Note that this conversion can lose information about the overall magnitude of the
    *  BigInt value as well as return a result with the opposite sign.
    */
-  def shortValue  = intValue.toShort
+  override def shortValue  = intValue.toShort
 
   /** Converts this BigInt to a <tt>char</tt>.
    *  If the BigInt is too big to fit in a char, only the low-order 16 bits are returned.

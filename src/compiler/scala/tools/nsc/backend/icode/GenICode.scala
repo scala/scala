@@ -583,8 +583,11 @@ abstract class GenICode extends SubComponent  {
             } else
               ctx1.bb.emit(CONSTANT(Constant(false)))
           }
-          else if (r.isValueType /*|| r.isArrayType */)
-            genBoxedConversion(l, r, ctx1, cast)
+          else if (r.isValueType && cast) {
+            assert(false) /* Erasure should have added an unboxing operation to prevent that. */
+          }
+          else if (r.isValueType)
+            ctx.bb.emit(IS_INSTANCE(REFERENCE(definitions.boxedClass(r.toType.symbol))))
           else
             genCast(l, r, ctx1, cast);
 
@@ -653,8 +656,8 @@ abstract class GenICode extends SubComponent  {
           if (settings.debug.value)
             log("BOX : " + fun.symbol.fullNameString);
           val ctx1 = genLoad(expr, ctx, toTypeKind(expr.tpe))
-          val boxType = fun.symbol.owner.linkedClassOfClass.tpe
-          ctx1.bb.emit(BOX(toTypeKind(boxType)), expr.pos)
+          val nativeKind = toTypeKind(expr.tpe)
+          ctx1.bb.emit(BOX(nativeKind), expr.pos)
           generatedType = ANY_REF_CLASS
           ctx1
 
@@ -663,8 +666,8 @@ abstract class GenICode extends SubComponent  {
             log("UNBOX : " + fun.symbol.fullNameString)
           val ctx1 = genLoad(expr, ctx, toTypeKind(expr.tpe))
           assert(expectedType.isValueType)
-          generatedType = toTypeKind(fun.symbol.owner.linkedClassOfClass.tpe)
-          ctx1.bb.emit(UNBOX(generatedType), expr.pos)
+          generatedType = expectedType
+          ctx1.bb.emit(UNBOX(expectedType), expr.pos)
           ctx1
 
         case Apply(fun, args) =>
@@ -999,11 +1002,6 @@ abstract class GenICode extends SubComponent  {
     def isStaticSymbol(s: Symbol): Boolean =
       s.hasFlag(Flags.STATIC) || s.hasFlag(Flags.STATICMEMBER) || s.owner.isImplClass
 
-//     def isUnbox(s: Symbol): Boolean = (
-//       s.name.==(nme.unbox) && s.owner.isModuleClass
-//       && s.owner.linkedClassOfClass.isSubClass(definitions.AnyValClass)
-//     )
-
     /**
      * Generate code that loads args into label parameters.
      */
@@ -1054,42 +1052,6 @@ abstract class GenICode extends SubComponent  {
       else {
         ctx.bb.emit(DROP(from))
         ctx.bb.emit(CONSTANT(Constant(from == to)))
-      }
-    }
-
-    /** Generate a conversion from a reference type to a value type, like in
-     *  Any -> Array[Int] or Any -> Int
-     *
-     *  @param from ...
-     *  @param to   ...
-     *  @param ctx  ...
-     *  @param cast ...
-     */
-    def genBoxedConversion(from: TypeKind, to: TypeKind, ctx: Context, cast: Boolean): Unit = {
-      assert(to.isValueType || to.isArrayType,
-             "Expecting conversion to value type: " + to)
-
-      val boxedCls = to match {
-        case ARRAY(ARRAY(_)) | ARRAY(REFERENCE(_)) =>
-          definitions.BoxedObjectArrayClass
-        case ARRAY(elem) =>
-          definitions.boxedArrayClass(elem.toType.symbol)
-        case _ =>
-          if (cast) {
-            ctx.bb.emit(UNBOX(to))
-            return
-          }
-          else
-            definitions.boxedClass(to.toType.symbol)
-      }
-
-      if (cast) {
-        ctx.bb.emit(CHECK_CAST(REFERENCE(boxedCls)))
-        ctx.bb.emit(CONSTANT(Constant(definitions.signature(to.toType))))
-        ctx.bb.emit(CALL_METHOD(definitions.getMember(boxedCls, "unbox"),
-                                Dynamic))
-      } else {
-        ctx.bb.emit(IS_INSTANCE(REFERENCE(boxedCls)))
       }
     }
 
@@ -1331,8 +1293,8 @@ abstract class GenICode extends SubComponent  {
             if (code == scalaPrimitives.ZNOT) {
               val Select(leftArg, _) = fun
               genCond(leftArg, ctx, elseCtx, thenCtx)
-            } else if ((code == scalaPrimitives.EQ ||
-                        code == scalaPrimitives.NE)) {
+            }
+            else if ((code == scalaPrimitives.EQ || code == scalaPrimitives.NE)) {
               val Select(leftArg, _) = fun;
               if (toTypeKind(leftArg.tpe).isReferenceType) {
                 if (code == scalaPrimitives.EQ)
@@ -1342,10 +1304,12 @@ abstract class GenICode extends SubComponent  {
               }
               else
                 genComparisonOp(leftArg, args.head, code);
-            } else if (scalaPrimitives.isComparisonOp(code)) {
+            }
+            else if (scalaPrimitives.isComparisonOp(code)) {
               val Select(leftArg, _) = fun
               genComparisonOp(leftArg, args.head, code)
-            } else {
+            }
+            else {
               code match {
                 case scalaPrimitives.ZAND =>
                   val Select(leftArg, _) = fun
@@ -1362,6 +1326,9 @@ abstract class GenICode extends SubComponent  {
                   genCond(args.head, ctxInterm, thenCtx, elseCtx)
 
                 case _ =>
+                  // TODO (maybe): deal with the equals case here
+                  // Current semantics: rich equals (from runtime.Comparator) only when == is used
+                  // See genEqEqPrimitive for implementation
                   var ctx1 = genLoad(tree, ctx, BOOL)
                   ctx1.bb.emit(CZJUMP(thenCtx.bb, elseCtx.bb, NE, BOOL), tree.pos)
                   ctx1.bb.close
@@ -1403,51 +1370,76 @@ abstract class GenICode extends SubComponent  {
           local
       }
 
-      (l, r) match {
-        // null == expr -> expr eq null
-        case (Literal(Constant(null)), expr) =>
-          val ctx1 = genLoad(expr, ctx, ANY_REF_CLASS)
-          ctx1.bb.emit(CZJUMP(thenCtx.bb, elseCtx.bb, EQ, ANY_REF_CLASS))
-          ctx1.bb.close
-
-        // expr == null -> if(expr eq null) true else expr.equals(null)
-        case (expr, Literal(Constant(null))) =>
-          val eqEqTempLocal = getTempLocal
-          var ctx1 = genLoad(expr, ctx, ANY_REF_CLASS)
-          ctx1.bb.emit(DUP(ANY_REF_CLASS))
-          ctx1.bb.emit(STORE_LOCAL(eqEqTempLocal), l.pos)
-          val nonNullCtx = ctx1.newBlock
-          ctx1.bb.emit(CZJUMP(thenCtx.bb, nonNullCtx.bb, EQ, ANY_REF_CLASS))
-          ctx1.bb.close
-
-          nonNullCtx.bb.emit(LOAD_LOCAL(eqEqTempLocal), l.pos)
-          nonNullCtx.bb.emit(CONSTANT(Constant(null)), r.pos)
-          nonNullCtx.bb.emit(CALL_METHOD(definitions.Object_equals, Dynamic))
-          nonNullCtx.bb.emit(CZJUMP(thenCtx.bb, elseCtx.bb, NE, BOOL))
-          nonNullCtx.bb.close
-
-        // l == r -> if (l eq null) r eq null else l.equals(r)
-        case _ =>
-          val eqEqTempLocal = getTempLocal
-          var ctx1 = genLoad(l, ctx, ANY_REF_CLASS)
-          ctx1 = genLoad(r, ctx1, ANY_REF_CLASS)
-          val nullCtx = ctx1.newBlock
-          val nonNullCtx = ctx1.newBlock
-          ctx1.bb.emit(STORE_LOCAL(eqEqTempLocal), l.pos)
-          ctx1.bb.emit(DUP(ANY_REF_CLASS))
-          ctx1.bb.emit(CZJUMP(nullCtx.bb, nonNullCtx.bb, EQ, ANY_REF_CLASS))
-          ctx1.bb.close
-
-          nullCtx.bb.emit(DROP(ANY_REF_CLASS), l.pos) // type of AnyRef
-          nullCtx.bb.emit(LOAD_LOCAL(eqEqTempLocal))
-          nullCtx.bb.emit(CZJUMP(thenCtx.bb, elseCtx.bb, EQ, ANY_REF_CLASS))
-          nullCtx.bb.close
-
-          nonNullCtx.bb.emit(LOAD_LOCAL(eqEqTempLocal), l.pos)
-          nonNullCtx.bb.emit(CALL_METHOD(definitions.Object_equals, Dynamic))
-          nonNullCtx.bb.emit(CZJUMP(thenCtx.bb, elseCtx.bb, NE, BOOL))
-          nonNullCtx.bb.close
+      def mustUseAnyComparator: Boolean = {
+        val lsym = l.tpe.symbol
+        val rsym = r.tpe.symbol
+        (lsym == definitions.ObjectClass) ||
+        (rsym == definitions.ObjectClass) ||
+        (lsym isNonBottomSubClass definitions.BoxedNumberClass)||
+        (lsym isNonBottomSubClass definitions.BoxedCharacterClass) ||
+        (rsym isNonBottomSubClass definitions.BoxedNumberClass) ||
+        (rsym isNonBottomSubClass definitions.BoxedCharacterClass)
       }
+
+      if (mustUseAnyComparator) {
+
+        val ctx1 = genLoad(l, ctx, ANY_REF_CLASS)
+        val ctx2 = genLoad(r, ctx1, ANY_REF_CLASS)
+        ctx2.bb.emit(CALL_METHOD(definitions.Comparator_equals, Static(false)))
+        ctx2.bb.emit(CZJUMP(thenCtx.bb, elseCtx.bb, NE, BOOL))
+        ctx2.bb.close
+
+      }
+      else {
+
+        (l, r) match {
+          // null == expr -> expr eq null
+          case (Literal(Constant(null)), expr) =>
+            val ctx1 = genLoad(expr, ctx, ANY_REF_CLASS)
+            ctx1.bb.emit(CZJUMP(thenCtx.bb, elseCtx.bb, EQ, ANY_REF_CLASS))
+            ctx1.bb.close
+
+          // expr == null -> if(expr eq null) true else expr.equals(null)
+          case (expr, Literal(Constant(null))) =>
+            val eqEqTempLocal = getTempLocal
+            var ctx1 = genLoad(expr, ctx, ANY_REF_CLASS)
+            ctx1.bb.emit(DUP(ANY_REF_CLASS))
+            ctx1.bb.emit(STORE_LOCAL(eqEqTempLocal), l.pos)
+            val nonNullCtx = ctx1.newBlock
+            ctx1.bb.emit(CZJUMP(thenCtx.bb, nonNullCtx.bb, EQ, ANY_REF_CLASS))
+            ctx1.bb.close
+
+            nonNullCtx.bb.emit(LOAD_LOCAL(eqEqTempLocal), l.pos)
+            nonNullCtx.bb.emit(CONSTANT(Constant(null)), r.pos)
+            nonNullCtx.bb.emit(CALL_METHOD(definitions.Object_equals, Dynamic))
+            nonNullCtx.bb.emit(CZJUMP(thenCtx.bb, elseCtx.bb, NE, BOOL))
+            nonNullCtx.bb.close
+
+          // l == r -> if (l eq null) r eq null else l.equals(r)
+          case _ =>
+            val eqEqTempLocal = getTempLocal
+            var ctx1 = genLoad(l, ctx, ANY_REF_CLASS)
+            ctx1 = genLoad(r, ctx1, ANY_REF_CLASS)
+            val nullCtx = ctx1.newBlock
+            val nonNullCtx = ctx1.newBlock
+            ctx1.bb.emit(STORE_LOCAL(eqEqTempLocal), l.pos)
+            ctx1.bb.emit(DUP(ANY_REF_CLASS))
+            ctx1.bb.emit(CZJUMP(nullCtx.bb, nonNullCtx.bb, EQ, ANY_REF_CLASS))
+            ctx1.bb.close
+
+            nullCtx.bb.emit(DROP(ANY_REF_CLASS), l.pos) // type of AnyRef
+            nullCtx.bb.emit(LOAD_LOCAL(eqEqTempLocal))
+            nullCtx.bb.emit(CZJUMP(thenCtx.bb, elseCtx.bb, EQ, ANY_REF_CLASS))
+            nullCtx.bb.close
+
+            nonNullCtx.bb.emit(LOAD_LOCAL(eqEqTempLocal), l.pos)
+            nonNullCtx.bb.emit(CALL_METHOD(definitions.Object_equals, Dynamic))
+            nonNullCtx.bb.emit(CZJUMP(thenCtx.bb, elseCtx.bb, NE, BOOL))
+            nonNullCtx.bb.close
+        }
+
+      }
+
     }
 
     /**

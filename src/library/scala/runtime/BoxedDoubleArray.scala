@@ -19,10 +19,10 @@ final class BoxedDoubleArray(val value: Array[Double]) extends BoxedArray {
 
   def length: Int = value.length
 
-  def apply(index: Int): Any = Double.box(value(index))
+  def apply(index: Int): Any = BoxesUtility.boxToDouble(value(index))
 
   def update(index: Int, elem: Any): Unit = {
-    value(index) = Double.unbox(elem.asInstanceOf[AnyRef])
+    value(index) = BoxesUtility.unboxToDouble(elem.asInstanceOf[AnyRef])
   }
 
   def unbox(elemTag: String): AnyRef = value
