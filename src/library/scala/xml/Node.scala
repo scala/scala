@@ -140,8 +140,13 @@ abstract class Node extends NodeSeq {
   /**
    *  Returns a hashcode. A standard implementation of hashcodes is obtained by calling
    *  Utility.hashCode(pre, label, attributes.hashCode(), child);
+   *  Martin to Burak: to do: if you make this method abstract, the compiler will now
+   *  complain if there's no implementation in a subclass. Is this what we want? Note that
+   *  this would break doc/DocGenator and doc/ModelToXML, with an error message like:
+doc/ModelToXML.scala:95: error: object creation impossible, since there is a deferred declaration of method hashCode in class Node of type ()Int which is not implemented in a subclass
+    new SpecialNode {
    */
-  override def hashCode(): Int
+  override def hashCode(): Int = super.hashCode
 
   // implementations of NodeSeq methods
 
@@ -189,7 +194,12 @@ abstract class Node extends NodeSeq {
    * Returns a text representation of this node. Note that this is not equivalent to
    * the XPath node-test called text(), it is rather an implementation of the
    * XPath function string()
+   *  Martin to Burak: to do: if you make this method abstract, the compiler will now
+   *  complain if there's no implementation in a subclass. Is this what we want? Note that
+   *  this would break doc/DocGenator and doc/ModelToXML, with an error message like:
+doc\DocGenerator.scala:1219: error: object creation impossible, since there is a deferred declaration of method text in class Node of type => String which is not implemented in a subclass
+    new SpecialNode {
+    ^
    */
-  override def text: String
-
+  override def text: String = super.text
 }

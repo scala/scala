@@ -1620,17 +1620,20 @@ trait Typers requires Analyzer {
                 unapp),
               List(arg))
           }
-          //Console.println("UNAPPLY2 "+fun+"/"+fun.tpe+" "+fun1untyped)
           val fun1 = typed(fun1untyped)
           if (fun1.tpe.isErroneous) setError(tree)
           else {
             val formals0 = unapplyTypeList(fun1.symbol, fun1.tpe)
             val formals1 = formalTypes(formals0, args.length)
-            val args1 = typedArgs(args, mode, formals0, formals1)
-            if (!isFullyDefined(pt)) assert(false, tree+" ==> "+UnApply(fun1, args1)+", pt = "+pt)
-            // restore old type (this will never work, but just pass typechecking)
-            arg.tpe = oldArgType
-            UnApply(fun1, args1) setPos tree.pos setType pt
+            if (formals1.length == args.length) {
+              val args1 = typedArgs(args, mode, formals0, formals1)
+              if (!isFullyDefined(pt)) assert(false, tree+" ==> "+UnApply(fun1, args1)+", pt = "+pt)
+              // restore old type (this will never work, but just pass typechecking)
+              arg.tpe = oldArgType
+              UnApply(fun1, args1) setPos tree.pos setType pt
+            } else {
+              errorTree(tree, "wrong number of arguments for "+treeSymTypeMsg(fun))
+            }
           }
 
 /* --- end unapply  --- */

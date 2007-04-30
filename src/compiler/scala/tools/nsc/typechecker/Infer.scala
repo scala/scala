@@ -853,7 +853,8 @@ trait Infer {
             tparam.variance != 0 || arg1 =:= arg2
           } contains false)
       }
-      if (tp1.symbol.isClass && tp1.symbol.hasFlag(FINAL)) tp1 <:< tp2
+      if (tp1.symbol.isClass && tp1.symbol.hasFlag(FINAL))
+        tp1 <:< tp2 || isNumericValueClass(tp1.symbol) && isNumericValueClass(tp2.symbol)
       else tp1.baseClasses forall (bc =>
         tp2.closurePos(bc) < 0 || isConsistent(tp1.baseType(bc), tp2.baseType(bc)))
     }
@@ -1167,34 +1168,36 @@ trait Infer {
      *  Otherwise, if there is no best alternative, error.
      */
     def inferMethodAlternative(tree: Tree, undetparams: List[Symbol], argtpes: List[Type], pt: Type): unit = tree.tpe match {
-      case OverloadedType(pre, alts) => tryTwice {
-        if (settings.debug.value) log("infer method alt " + tree.symbol + " with alternatives " + (alts map pre.memberType) + ", argtpes = " + argtpes + ", pt = " + pt)
-        val applicable = alts filter (alt => isApplicable(undetparams, pre.memberType(alt), argtpes, pt))
-        def improves(sym1: Symbol, sym2: Symbol) = (
-          sym2 == NoSymbol || sym2.isError ||
-          specializes(pre.memberType(sym1), pre.memberType(sym2))
-        )
-        val best = ((NoSymbol: Symbol) /: applicable) ((best, alt) =>
-          if (improves(alt, best)) alt else best)
-        val competing = applicable dropWhile (alt => best == alt || improves(best, alt))
-        if (best == NoSymbol) {
-          if (pt == WildcardType) {
-            errorTree(tree, applyErrorMsg(tree, " cannot be applied to ", argtpes, pt))
+      case OverloadedType(pre, alts) =>
+        tryTwice {
+          if (settings.debug.value) log("infer method alt " + tree.symbol + " with alternatives " + (alts map pre.memberType) + ", argtpes = " + argtpes + ", pt = " + pt)
+          val applicable = alts filter (alt => isApplicable(undetparams, pre.memberType(alt), argtpes, pt))
+          def improves(sym1: Symbol, sym2: Symbol) = (
+            sym2 == NoSymbol || sym2.isError ||
+            specializes(pre.memberType(sym1), pre.memberType(sym2))
+          )
+          val best = ((NoSymbol: Symbol) /: applicable) ((best, alt) =>
+            if (improves(alt, best)) alt else best)
+          val competing = applicable dropWhile (alt => best == alt || improves(best, alt))
+          if (best == NoSymbol) {
+            if (pt == WildcardType) {
+              errorTree(tree, applyErrorMsg(tree, " cannot be applied to ", argtpes, pt))
+            } else {
+              inferMethodAlternative(tree, undetparams, argtpes, WildcardType)
+            }
+          } else if (!competing.isEmpty) {
+            if (!(argtpes exists (.isErroneous)) && !pt.isErroneous)
+              context.ambiguousError(tree.pos, pre, best, competing.head,
+                                     "argument types " + argtpes.mkString("(", ",", ")") +
+                                     (if (pt == WildcardType) "" else " and expected result type " + pt))
+            setError(tree)
+            ()
           } else {
-            inferMethodAlternative(tree, undetparams, argtpes, WildcardType)
+            checkNotShadowed(tree.pos, pre, best, applicable)
+            tree.setSymbol(best).setType(pre.memberType(best))
           }
-        } else if (!competing.isEmpty) {
-          if (!(argtpes exists (.isErroneous)) && !pt.isErroneous)
-            context.ambiguousError(tree.pos, pre, best, competing.head,
-                                   "argument types " + argtpes.mkString("(", ",", ")") +
-                                   (if (pt == WildcardType) "" else " and expected result type " + pt))
-          setError(tree)
-          ()
-        } else {
-          checkNotShadowed(tree.pos, pre, best, applicable)
-          tree.setSymbol(best).setType(pre.memberType(best))
         }
-      }
+      case _ =>
     }
 
     /** Try inference twice, once without views and once with views,

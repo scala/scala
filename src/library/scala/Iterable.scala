@@ -411,6 +411,8 @@ trait Iterable[+A] {
     buf.append(end)
   }
 
+  def addString(buf: StringBuilder, sep: String): StringBuilder = addString(buf, "", sep, "")
+
   /** Fills the given array <code>xs</code> with the elements of
    *  this sequence starting at position <code>start</code>.
    *

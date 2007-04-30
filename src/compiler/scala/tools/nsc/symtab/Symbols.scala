@@ -303,7 +303,7 @@ trait Symbols {
      *  A class is local, if
      *   - it is anonymous, or
      *   - its owner is a value
-     *   - it is defined within a local class214
+     *   - it is defined within a local class
      */
     final def isLocalClass: boolean =
       isClass && (isAnonymousClass || isRefinementClass || isLocal ||
@@ -783,7 +783,7 @@ trait Symbols {
      */
     def moduleClass: Symbol = NoSymbol
 
-    /** The non-abstract, symbol whose type matches the type of this symbol
+    /** The non-private symbol whose type matches the type of this symbol
      *  in in given class.
      *
      *  @param ofclazz   The class containing the symbol's definition
@@ -791,6 +791,12 @@ trait Symbols {
      */
     final def matchingSymbol(ofclazz: Symbol, site: Type): Symbol =
       ofclazz.info.nonPrivateDecl(name).filter(sym =>
+        !sym.isTerm || (site.memberType(this) matches site.memberType(sym)))
+
+    /** The non-private member of `site' whose type and name match the type of this symbol
+     */
+    final def matchingSymbol(site: Type): Symbol =
+      site.nonPrivateMember(name).filter(sym =>
         !sym.isTerm || (site.memberType(this) matches site.memberType(sym)))
 
     /** The symbol overridden by this symbol in given class `ofclazz' */

@@ -1003,7 +1003,7 @@ trait Parsers {
           stripParens(t)
       }
       if (!implicitParams.isEmpty)
-        if (isWildcard(res)) savedImplicitParams = savedImplicitParams ::: implicitParams
+        if (isWildcard(res)) savedImplicitParams = implicitParams ::: savedImplicitParams
         else res = Function(implicitParams.reverse, res)
       implicitParams = savedImplicitParams
       res

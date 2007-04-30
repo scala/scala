@@ -83,7 +83,9 @@ abstract class RefChecks extends InfoTransform {
      *    1.8.2  M is of type []S, O is of type ()T and S <: T, or
      *    1.8.3  M is of type ()S, O is of type []T and S <: T, or
      *  2. Check that only abstract classes have deferred members
-     *  3. Check that every member with an `override' modifier
+     *  3. Check that concrete classes do not have deferred definitions
+     *     that are not implemented in a subclass.
+     *  4. Check that every member with an `override' modifier
      *     overrides some other member.
      */
     private def checkAllOverrides(clazz: Symbol): unit = {
@@ -259,9 +261,26 @@ abstract class RefChecks extends InfoTransform {
                 " and overrides incomplete superclass member " + infoString(other)
                else ""))
           }
+        // 3. Check that concrete classes do not have deferred definitions
+        // that are not implemented in a subclass.
+        def checkNoAbstractDecls(bc: Symbol) {
+          for (val decl <- bc.info.decls.elements) {
+            if (decl hasFlag DEFERRED) {
+              val impl = decl.matchingSymbol(clazz.thisType)
+              if (impl == NoSymbol || (decl.owner isSubClass impl.owner)) {
+                abstractClassError(false, "there is a deferred declaration of "+infoString(decl)+
+                                   " which is not implemented in a subclass"+analyzer.varNotice(decl))
+              }
+            }
+          }
+          val parents = bc.info.parents
+          if (!parents.isEmpty && parents.head.symbol.hasFlag(ABSTRACT))
+            checkNoAbstractDecls(parents.head.symbol)
+        }
+        if (!(clazz hasFlag ABSTRACT)) checkNoAbstractDecls(clazz)
       }
 
-      // 3. Check that every defined member with an `override' modifier overrides some other member.
+      // 4. Check that every defined member with an `override' modifier overrides some other member.
       for (val member <- clazz.info.decls.toList)
         if ((member hasFlag (OVERRIDE | ABSOVERRIDE)) &&
             (clazz.info.baseClasses.tail forall {

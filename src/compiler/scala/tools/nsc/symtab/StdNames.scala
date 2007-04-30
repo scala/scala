@@ -152,6 +152,7 @@ trait StdNames {
 
     val ERROR = newTermName("<error>")
     val ERRORtype = newTypeName("<error>")
+    val LOCALCHILD = newTypeName("<local child>")
 
     val NOSYMBOL = newTermName("<none>")
     val EMPTY = newTermName("")
