@@ -357,7 +357,7 @@ trait Symbols {
      */
     def originalName = nme.originalName(name)
 
-    final def flags = {
+    final def flags: long = {
       val fs = rawflags & phase.flagMask
       (fs | ((fs & LateFlags) >>> LateShift)) & ~(fs >>> AntiShift)
     }
@@ -858,7 +858,7 @@ trait Symbols {
       if (this hasFlag PRIVATE) {
         setFlag(notPRIVATE)
         if (!hasFlag(DEFERRED) && isTerm) setFlag(lateFINAL)
-        if (!isStaticModule) {
+        if (!isStaticModule && !isClassConstructor) {
           expandName(base)
           if (isModule) moduleClass.makeNotPrivate(base)
         }
@@ -883,8 +883,7 @@ trait Symbols {
     /** The expanded name of `name' relative to this class as base
      */
     def expandedName(name: Name): Name = {
-
-      newTermName(fullNameString('$') + nme.EXPAND_SEPARATOR_STRING + name)
+        newTermName(fullNameString('$') + nme.EXPAND_SEPARATOR_STRING + name)
     }
 
     def sourceFile: AbstractFile =

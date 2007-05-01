@@ -622,7 +622,7 @@ abstract class GenICode extends SubComponent  {
         case Apply(fun @ Select(New(tpt), nme.CONSTRUCTOR), args) =>
           val ctor = fun.symbol
           assert(ctor.isClassConstructor,
-                 "'new' call to non-constructor: " + tree)
+                 "'new' call to non-constructor: " + ctor.name)
 
           generatedType = toTypeKind(tpt.tpe)
           assert(generatedType.isReferenceType || generatedType.isArrayType,
@@ -951,7 +951,9 @@ abstract class GenICode extends SubComponent  {
           ctx1.bb.close
           afterCtx
 
-        case EmptyTree => ctx
+        case EmptyTree =>
+          ctx.bb.emit(getZeroOf(expectedType))
+          ctx
 
         case _ =>
           abort("Unexpected tree in genLoad: " + tree + " at: " +
