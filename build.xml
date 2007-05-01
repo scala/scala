@@ -56,12 +56,10 @@ PROPERTIES
   <property name="dist.dir" value="${basedir}/dists"/>
   <property name="lib.jar.name" value="scala-library.jar"/>
   <property name="dbc.jar.name" value="scala-dbc.jar"/>
-  <property name="actors.jar.name" value="scala-actors.jar"/>
   <property name="comp.jar.name" value="scala-compiler.jar"/>
   <property name="libsrc.jar.name" value="scala-library-src.jar"/>
   <property name="dbcsrc.jar.name" value="scala-dbc-src.jar"/>
   <property name="compsrc.jar.name" value="scala-compiler-src.jar"/>
-  <property name="actorssrc.jar.name" value="scala-actors-src.jar"/>
   <property name="scala.exec.name" value="scala"/>
   <property name="scalac.exec.name" value="scalac"/>
   <property name="scaladoc.exec.name" value="scaladoc"/>
@@ -491,7 +489,6 @@ BUILD QUICK-TEST LAYER
         <pathelement location="${quick.dir}/lib/actors"/>
       </classpath>
       <include name="scala/actors/**/*.scala"/>
-      <exclude name="scala/actors/ThreadPoolScheduler.scala" if="java14"/>
       <excludesfile name="${nsc.excludes.file}" if="excludes.avail"/>
     </locker>
   <!-- Build compiler -->
@@ -691,7 +688,6 @@ TEST
         <pathelement location="${strap.dir}/lib/actors"/>
       </classpath>
       <include name="scala/actors/**/*.scala"/>
-      <exclude name="scala/actors/ThreadPoolScheduler.scala" if="java14"/>
       <excludesfile name="${nsc.excludes.file}" if="excludes.avail"/>
     </quick>
   <!-- Build compiler -->
@@ -823,7 +819,6 @@ DOCUMENTATION
       classpath="${quick.dir}/lib/library${path.separator}${quick.dir}/lib/actors">
       <include name="dbc/**/*.scala"/>
       <include name="actors/**/*.scala"/>
-      <exclude name="actors/scala/actors/ThreadPoolScheduler.scala" if="java14"/>
       <include name="library/**/*.scala"/>
       <excludesfile name="${nsc.excludes.file}" if="excludes.avail"/>
     </quickdoc>
@@ -978,6 +973,7 @@ GENERATES A DISTRIBUTION
     </jar>
     <jar destfile="${dist.current.dir}/lib/${lib.jar.name}">
       <fileset dir="${strap.dir}/lib/library"/>
+      <fileset dir="${strap.dir}/lib/actors"/>
       <manifest>
         <attribute name="Signature-Version" value="${version.number}"/>
         <attribute name="Built-By" value="${user.name}"/>
@@ -1009,30 +1005,13 @@ GENERATES A DISTRIBUTION
         </section>
       </manifest>
     </jar>
-    <jar destfile="${dist.current.dir}/lib/${actors.jar.name}">
-      <fileset dir="${strap.dir}/lib/actors"/>
-      <manifest>
-        <attribute name="Signature-Version" value="${version.number}"/>
-        <attribute name="Built-By" value="${user.name}"/>
-        <attribute name="Class-Path" value="${lib.jar.name}"/>
-        <section name="scala/actors">
-          <attribute name="Extension-Name" value="scala.actors"/>
-          <attribute name="Specification-Title" value="Scala Actors Library"/>
-          <attribute name="Specification-Version" value="${version.number}"/>
-          <attribute name="Specification-Vendor" value="${vendor.name}"/>
-          <attribute name="Implementation-Title" value="scala.actors"/>
-          <attribute name="Implementation-Version" value="${version.number}"/>
-          <attribute name="Implementation-Vendor" value="${vendor.name}"/>
-        </section>
-      </manifest>
-    </jar>
-    	
+    
     <!-- build source jars -->
     <jar
-      destfile="${dist.current.dir}/lib/${libsrc.jar.name}"
-      basedir="${src.dir}/library"
-      includes="**/*.scala"
-    />
+      destfile="${dist.current.dir}/lib/${libsrc.jar.name}">
+      <fileset dir="${src.dir}/library"/>
+      <fileset dir="${src.dir}/actors"/>
+    </jar>
     <jar
       destfile="${dist.current.dir}/lib/${dbcsrc.jar.name}"
       basedir="${src.dir}/dbc"
@@ -1041,11 +1020,6 @@ GENERATES A DISTRIBUTION
     <jar
       destfile="${dist.current.dir}/lib/${compsrc.jar.name}"
       basedir="${src.dir}/compiler"
-      includes="**/*.scala"
-    />
-    <jar
-      destfile="${dist.current.dir}/lib/${actorssrc.jar.name}"
-      basedir="${src.dir}/actors"
       includes="**/*.scala"
     />
 
@@ -1113,8 +1087,8 @@ GENERATES A DISTRIBUTION
       version="${version.number}"
       desc="The Scala library. This is the minimal requirement to run any Scala program."
       link="${sbaz.universe}/scala-library-${version.number}.sbp">
-      <libset dir="${dist.current.dir}/lib" includes="${lib.jar.name},${dbc.jar.name},${actors.jar.name}"/>
-      <srcset dir="${dist.current.dir}/lib" includes="${libsrc.jar.name},${dbcsrc.jar.name},${actorssrc.jar.name}"/>
+      <libset dir="${dist.current.dir}/lib" includes="${lib.jar.name},${dbc.jar.name}"/>
+      <srcset dir="${dist.current.dir}/lib" includes="${libsrc.jar.name},${dbcsrc.jar.name}"/>
     </quicksbaz>
   <!-- Create the Scala developper package -->
     <quicksbaz
