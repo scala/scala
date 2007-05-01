@@ -11,6 +11,8 @@
 
 package scala
 
+import Predef._
+
 /** The <code>Range</code> class represents integer values in range
  *  <code>[start;end)</code> with .
  *
