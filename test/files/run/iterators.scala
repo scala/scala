@@ -38,7 +38,7 @@ object Test {
     val r2 = Iterator.range(0, 10, 2)
     val xs2 = List(r2 contains 5, r2 contains 6)
     val r3 = Iterator.range(0, 10, 11)
-    val xs2 = List(r2 contains 5, r2 contains 6)
+    val xs3 = List(r3 contains 5, r3 contains 6)
     // 2 + 1 + 0
     trues(xs1) + trues(xs2) + trues(xs3)
   }
