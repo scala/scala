@@ -11,7 +11,7 @@ import scala.collection.mutable.{ArrayBuffer, Buffer, HashMap, Queue, Stack, Has
 /**
  * FJTaskScheduler2
  *
- * @version 0.9.5
+ * @version 0.9.6
  * @author Philipp Haller
  */
 class FJTaskScheduler2 extends Thread with IScheduler {

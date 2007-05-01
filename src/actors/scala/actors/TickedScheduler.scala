@@ -20,7 +20,7 @@ import scala.compat.Platform
  * <p>This scheduler uses a thread pool to execute tasks that are generated
  * by the execution of actors.</p>
  *
- * @version 0.9.5
+ * @version 0.9.6
  * @author Philipp Haller
  */
 class TickedScheduler extends Thread with IScheduler {

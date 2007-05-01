@@ -14,7 +14,7 @@ package scala.actors
  * The <code>InputChannel</code> trait provides a common interface
  * for all channels from which values can be received.
  *
- * @version 0.9.4
+ * @version 0.9.6
  * @author Philipp Haller
  */
 trait InputChannel[+Msg] {

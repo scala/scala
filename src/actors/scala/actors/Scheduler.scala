@@ -22,7 +22,7 @@ import scala.collection.mutable.{ArrayBuffer, Buffer, HashMap, Queue, Stack, Has
  * The <code>Scheduler</code> object is used by
  * <code>Actor</code> to execute tasks of an execution of an actor.
  *
- * @version 0.9.5
+ * @version 0.9.6
  * @author Philipp Haller
  */
 object Scheduler {
@@ -91,7 +91,7 @@ object Scheduler {
  * This abstract class provides a common interface for all
  * schedulers used to execute actor tasks.
  *
- * @version 0.9.5
+ * @version 0.9.6
  * @author Philipp Haller
  */
 trait IScheduler {
@@ -125,7 +125,7 @@ trait IScheduler {
  * This scheduler executes the tasks of an actor on a single
  * thread (the current thread).
  *
- * @version 0.9.5
+ * @version 0.9.6
  * @author Philipp Haller
  */
 class SingleThreadedScheduler extends IScheduler {
@@ -165,7 +165,7 @@ class SingleThreadedScheduler extends IScheduler {
  * The <code>QuickException</code> class is used to manage control flow
  * of certain schedulers and worker threads.
  *
- * @version 0.9.4
+ * @version 0.9.6
  * @author Philipp Haller
  */
 private[actors] class QuitException extends Throwable {
@@ -225,7 +225,7 @@ private[actors] class QuitException extends Throwable {
  *   execution. QED
  * </p>
  *
- * @version 0.9.4
+ * @version 0.9.6
  * @author Philipp Haller
  */
 class WorkerThread(sched: IScheduler) extends Thread {

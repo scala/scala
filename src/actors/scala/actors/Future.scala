@@ -17,7 +17,7 @@ package scala.actors
  * A future can be queried to find out whether its value
  * is already available.
  *
- * @version 0.9.4
+ * @version 0.9.6
  * @author Philipp Haller
  */
 abstract class Future[T](val ch: InputChannel[Any]) extends Function0[T] {
@@ -28,7 +28,7 @@ abstract class Future[T](val ch: InputChannel[Any]) extends Function0[T] {
 /**
  * The Futures object contains methods that operate on Futures.
  *
- * @version 0.9.4
+ * @version 0.9.6
  * @author Philipp Haller
  */
 object Futures {

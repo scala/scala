@@ -5,7 +5,7 @@ package scala.actors
  * This class is used by our efficient message queue
  * implementation.
  *
- * @version 0.9.4
+ * @version 0.9.6
  * @author Philipp Haller
  */
 class MessageQueueElement {
