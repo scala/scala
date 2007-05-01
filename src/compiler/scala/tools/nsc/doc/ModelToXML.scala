@@ -28,12 +28,20 @@ trait ModelToXML extends ModelExtractor {
     // nothing to do but be verbose.
     if (url == null) {
       val name = entity.owner.fullNameString('.') + '.' + entity.nameString
-      if (entity.hasFlag(symtab.Flags.JAVA))
-        <a class={name.replace('.', '/')} href="" target="contentFrame">{name}</a>
-      else
+      if (entity.hasFlag(symtab.Flags.JAVA)) {
+        def sig(sym: Symbol): String =
+          sym.nameString + "(" + (sym.tpe match {
+            case MethodType(pt, _) => pt.mkString(", ")
+            case _ => ""
+          }) + ")"
+        val ownerName = entity.owner.fullNameString('/')
+        val (name0, anchor) =
+          if (entity.isMethod) (ownerName, "#" + sig(entity))
+          else (ownerName + "/" + entity.nameString, "")
+        <a class={name0} href={anchor} target="contentFrame">{name}</a>
+      } else
         Text(name)
-    }
-    else
+    } else
       aref(url, entity.nameString)
   }
 
@@ -141,7 +149,7 @@ trait ModelToXML extends ModelExtractor {
       cmnt.decodeAttributes.foreach{
       case (tag,xs) =>
         seq = seq ++ <dt style="margin:10px 0 0 20px;">
-        {decodeTag(tag)}</dt> ++ {xs.flatMap{
+        <b>{decodeTag(tag)}</b></dt> ++ {xs.flatMap{
         case (option,body) => <dd>{
           if (option == null) NodeSeq.Empty;
           else decodeOption(tag, option);
