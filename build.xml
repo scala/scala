@@ -607,7 +607,7 @@ MSIL
       <include name="scala/Console.scala" />
       <include name="scala/Application.scala" />
       <include name="scala/ByNameFunction.scala" />
-      <include name="scala/*Attribute.scala" />
+      <include name="scala/*Annotation.scala" />
       <include name="scala/Function*.scala" />
       <include name="scala/Tuple*.scala" />
       <include name="scala/Product*.scala" />

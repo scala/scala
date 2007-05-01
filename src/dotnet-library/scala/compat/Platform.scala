@@ -17,6 +17,7 @@ import Predef._
 object Platform {
 
   type StackOverflowError = System.StackOverflowException
+  type ConcurrentModificationException = System.Exception
 
   /**
    *  @param src     ..
@@ -40,6 +41,8 @@ object Platform {
    */
   def createArray(elemClass: Class, length: Int): AnyRef =
     System.Array.CreateInstance(elemClass, length);
+
+  def arrayclear(arr: Array[Int]): Unit = System.Array.Clear(arr.asInstanceOf[System.Array], 0, arr.length)
 
   def getClassForName(name: String): Class = System.Type.GetType(name)
 

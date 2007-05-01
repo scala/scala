@@ -18,6 +18,7 @@ import Predef._
 object Platform {
 
   type StackOverflowError = java.lang.StackOverflowError
+  type ConcurrentModificationException = java.util.ConcurrentModificationException
 
   /**
    *  @param src     ..
@@ -38,6 +39,8 @@ object Platform {
    */
   def createArray(elemClass: Class, length: Int): AnyRef =
     java.lang.reflect.Array.newInstance(elemClass, length)
+
+  def arrayclear(arr: Array[Int]): Unit = java.util.Arrays.fill(arr, 0)
 
   def getClassForName(name: String): Class = java.lang.Class.forName(name)
 

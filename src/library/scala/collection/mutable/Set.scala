@@ -12,6 +12,8 @@
 package scala.collection.mutable
 
 
+import compat.Platform.ConcurrentModificationException
+
 /** The canonical factory methods for <a href="Set.html">mutable sets</a>.
    * Currently these return <a href="HashSet.html">HashSet's</a>.
    */
@@ -209,7 +211,7 @@ trait Set[A] extends collection.Set[A] with Scriptable[Message[A]] {
     override val hashCode = Set.this.hashCode
     private def check =
       if (false && hashCode != Set.this.hashCode)
-        throw new java.util.ConcurrentModificationException
+        throw new ConcurrentModificationException
 
     def contains(item : A) = {
       check

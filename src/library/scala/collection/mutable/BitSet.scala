@@ -24,7 +24,7 @@ package scala.collection.mutable
 @serializable
 class BitSet(initSize: Int) extends collection.BitSet with Set[Int] {
 
-  import compat.Platform.arraycopy
+  import compat.Platform.{arraycopy, arrayclear}
 
   /** default constructor, initial size of 512 bits. */
   def this() = this(0)
@@ -78,7 +78,7 @@ class BitSet(initSize: Int) extends collection.BitSet with Set[Int] {
   /** Clears all bits of the set.
    */
   override def clear(): Unit = {
-    java.util.Arrays.fill(arr, 0)
+    arrayclear(arr)
     size = 0
   }
 
