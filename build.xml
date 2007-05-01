@@ -67,7 +67,7 @@ PROPERTIES
   <property name="comp.prop.name" value="compiler.properties"/>
 
 <!-- ===========================================================================
-INITIALISATION
+ANT INITIALISATION
 ============================================================================ -->
 
   <target name="ant-init">
@@ -91,6 +91,10 @@ INITIALISATION
     </fail>
   </target>
 
+<!-- ===========================================================================
+INITIALISATION
+============================================================================ -->
+
   <target name="init" depends="ant-init" unless="init.avail">
   <!-- Making sure enough memory is available -->
     <propertyregex
@@ -105,11 +109,6 @@ INITIALISATION
       <format property="human" pattern="EEEE, d MMMM yyyy, HH:mm:ss (zz)"/>
       <format property="short" pattern="yyyyMMdd-HHmmss"/>
     </tstamp>
-  <!-- Creating class-pathes -->
-    <path id="starr.classpath">
-      <pathelement location="${lib.starr.jar}"/>
-      <pathelement location="${comp.starr.jar}"/>
-    </path>
   <!-- Finding out what system architecture is being used -->
     <condition property="os.win"><os family="windows"/></condition>
     <if><isset property="os.win"/><then>
@@ -168,6 +167,14 @@ SETUP
 ============================================================================ -->
 
   <target name="setup" depends="init">
+  <!-- Creating class-pathes -->
+    <path id="starr.classpath">
+      <pathelement location="${lib.starr.jar}"/>
+      <pathelement location="${comp.starr.jar}"/>
+      <pathelement location="${fjbg.jar}"/>
+      <pathelement location="${msil.jar}"/>
+      <pathelement location="${ant.jar}"/>
+    </path>
   <!-- Creating boot-level tasks -->
     <taskdef
       name="starr"
