@@ -37,5 +37,5 @@ class Range(val start: Int, val end: Int, val step: Int) extends BufferedIterato
     1 + (Math.abs(start - end) - 1) / Math.abs(step)
 
   def contains(x: Int): Boolean =
-    Iterator.range(0, length) exists { x == start + _ * step }
+    Iterator.range(0, length) exists (i => x == start + i * step)
 }
