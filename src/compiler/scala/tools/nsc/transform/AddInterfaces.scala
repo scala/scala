@@ -292,8 +292,10 @@ abstract class AddInterfaces extends InfoTransform {
       yield mixinConstructorCall(implClass(mc))
     }
     (tree: @unchecked) match {
-      case Block(supercall :: stats, expr) =>
-        copy.Block(tree, supercall :: mixinConstructorCalls ::: stats, expr)
+      case Block(stats, expr) =>
+        val (presuper, supercall :: rest) = stats span (_.symbol.hasFlag(PRESUPER))
+        //assert(supercall.symbol.isClassConstructor, supercall)
+        copy.Block(tree, presuper ::: (supercall :: mixinConstructorCalls ::: rest), expr)
     }
   }
 
