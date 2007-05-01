@@ -45,9 +45,14 @@ function init() {
   api['java/io/PrintStream']                      = java_api_root;
   api['java/io/PrintWriter']                      = java_api_root;
   api['java/io/Reader']                           = java_api_root;
+  api['java/io/SequenceInputStream']              = java_api_root;
+  api['java/io/SerializablePermission']           = java_api_root;
+  api['java/io/StreamTokenizer']                  = java_api_root;
+  api['java/io/StringBufferInputStream']          = java_api_root;
   api['java/io/StringReader']                     = java_api_root;
   api['java/io/StringWriter']                     = java_api_root;
   api['java/io/Writer']                           = java_api_root;
+
   api['java/lang/ArithmeticException']            = java_api_root;
   api['java/lang/ArrayIndexOutOfBoundsException'] = java_api_root;
   api['java/lang/Boolean']                        = java_api_root;
@@ -130,11 +135,23 @@ function init() {
   api['java/nio/channels/SocketChannel']          = java_api_root;
   api['java/nio/charset/CharsetDecoder']          = java_api_root;
 
-  api['java/rmi/AccessException']                 = java_api_root;
+  api['java/rmi/AccessException']                 = java_api_root; //exception
+  api['java/rmi/AlreadyBoundException']           = java_api_root; //exception
+  api['java/rmi/ConnectException']                = java_api_root; //exception
+  api['java/rmi/ConnectIOException']              = java_api_root; //exception
+  api['java/rmi/MarshalException']                = java_api_root; //exception
   api['java/rmi/MarshalledObject']                = java_api_root;
   api['java/rmi/Naming']                          = java_api_root;
+  api['java/rmi/RMISecurityException']            = java_api_root; //exception
   api['java/rmi/RMISecurityManager']              = java_api_root;
   api['java/rmi/Remote']                          = java_api_root; //interface
+  api['java/rmi/ServerError']                     = java_api_root; //exception
+  api['java/rmi/ServerException']                 = java_api_root; //exception
+  api['java/rmi/ServerRuntimeException']          = java_api_root; //exception
+  api['java/rmi/StubNotFoundException']           = java_api_root; //exception
+  api['java/rmi/UnexpectedException']             = java_api_root; //exception
+  api['java/rmi/UnknownHostException']            = java_api_root; //exception
+  api['java/rmi/UnmarshalException']              = java_api_root; //exception
 
   api['java/sql/Array']                           = java_api_root; //interface
   api['java/sql/BatchUpdateException']            = java_api_root; //exception
@@ -167,7 +184,7 @@ function init() {
   api['java/sql/Types']                           = java_api_root;
 
   api['java/text/Annotation']                     = java_api_root;
-  api['java/text/AttributedCharacterIterator']    = java_api_root;
+  api['java/text/AttributedCharacterIterator']    = java_api_root; //interface
   api['java/text/AttributedString']               = java_api_root;
   api['java/text/Bidi']                           = java_api_root;
   api['java/text/BreakIterator']                  = java_api_root;
@@ -183,8 +200,9 @@ function init() {
   api['java/text/MessageFormat']                  = java_api_root;
   api['java/text/Normalizer']                     = java_api_root;
   api['java/text/NumberFormat']                   = java_api_root;
-  api['java/text/ParseException']                 = java_api_root;
+  api['java/text/ParseException']                 = java_api_root; //exception
   api['java/text/ParsePosition']                  = java_api_root;
+  api['java/text/RuleBasedCollator']              = java_api_root;
   api['java/text/SimpleDateFormat']               = java_api_root;
   api['java/text/StringCharacterIterator']        = java_api_root;
 
@@ -268,46 +286,88 @@ function init() {
   api['scala/Null']                            = scala_api_root;
   api['scala/Short']                           = scala_api_root;
   api['scala/Unit']                            = scala_api_root;
-  api['java/lang/Boolean']                     = scala_api_root;
-  api['java/lang/Byte']                        = scala_api_root;
-  api['java/lang/Character']                   = scala_api_root;
-  api['java/lang/Double']                      = scala_api_root;
-  api['java/lang/Integer']                     = scala_api_root;
-  api['java/lang/Float']                       = scala_api_root;
-  api['java/lang/Long']                        = scala_api_root;
-  api['java/lang/Number']                      = scala_api_root;
-  api['java/lang/Short']                       = scala_api_root;
 
   // initialize Ant classes
   api['org/apache/tools/ant/AntClassLoader']            = ant_api_root;
   api['org/apache/tools/ant/AntTypeDefinition']         = ant_api_root;
   api['org/apache/tools/ant/BuildEvent']                = ant_api_root;
+  api['org/apache/tools/ant/BuildListener']             = ant_api_root; //interface
+  api['org/apache/tools/ant/BuildLogger']               = ant_api_root; //interface
   api['org/apache/tools/ant/ComponentHelper']           = ant_api_root;
   api['org/apache/tools/ant/DefaultLogger']             = ant_api_root;
   api['org/apache/tools/ant/DemuxInputStream']          = ant_api_root;
   api['org/apache/tools/ant/DemuxOutputStream']         = ant_api_root;
   api['org/apache/tools/ant/Diagnostics']               = ant_api_root;
   api['org/apache/tools/ant/DirectoryScanner']          = ant_api_root;
+  api['org/apache/tools/ant/Executor']                  = ant_api_root; //interface
+  api['org/apache/tools/ant/FileScanner']               = ant_api_root; //interface
   api['org/apache/tools/ant/Project']                   = ant_api_root;
+  api['org/apache/tools/ant/SubBuildListener']          = ant_api_root; //interface
   api['org/apache/tools/ant/Target']                    = ant_api_root;
   api['org/apache/tools/ant/Task']                      = ant_api_root;
+  api['org/apache/tools/ant/TaskContainer']             = ant_api_root; //interface
+  api['org/apache/tools/ant/TypeAdapter']               = ant_api_root; //interface
+  api['org/apache/tools/ant/XmlLogger']                 = ant_api_root;
+
   api['org/apache/tools/ant/taskdefs/Ant']              = ant_api_root;
   api['org/apache/tools/ant/taskdefs/Available']        = ant_api_root;
   api['org/apache/tools/ant/taskdefs/MatchingTask']     = ant_api_root;
+
   api['org/apache/tools/ant/types/FileSet']             = ant_api_root;
   api['org/apache/tools/ant/types/FilterChain']         = ant_api_root;
   api['org/apache/tools/ant/types/FilterSet']           = ant_api_root;
   api['org/apache/tools/ant/types/Path']                = ant_api_root;
   api['org/apache/tools/ant/types/Reference']           = ant_api_root;
   api['org/apache/tools/ant/types/Resource']            = ant_api_root;
+
+  api['org/apache/tools/ant/util/FileNameMapper']       = ant_api_root; //interface
+  api['org/apache/tools/ant/util/Base64Converter']      = ant_api_root;
+  api['org/apache/tools/ant/util/ChainedMapper']        = ant_api_root;
+  api['org/apache/tools/ant/util/DateUtils']            = ant_api_root;
+  api['org/apache/tools/ant/util/FileTokenizer']        = ant_api_root;
   api['org/apache/tools/ant/util/FileUtils']            = ant_api_root;
+  api['org/apache/tools/ant/util/LoaderUtils']          = ant_api_root;
+  api['org/apache/tools/ant/util/Retryable']            = ant_api_root; //interface
+  api['org/apache/tools/ant/util/SourceFileScanner']    = ant_api_root;
+  api['org/apache/tools/ant/util/StringUtils']          = ant_api_root;
+  api['org/apache/tools/ant/util/TimeoutObserver']      = ant_api_root; //interface
+  api['org/apache/tools/ant/util/Tokenizer']            = ant_api_root; //interface
+  api['org/apache/tools/ant/util/UUEncoder']            = ant_api_root;
+  api['org/apache/tools/ant/util/Watchdog']             = ant_api_root;
+  api['org/apache/tools/ant/util/XMLFragment']          = ant_api_root;
+
+  api['org/apache/tools/bzip2/BZip2Constants']          = ant_api_root; //interface
+  api['org/apache/tools/bzip2/CBZip2InputStream']       = ant_api_root;
+  api['org/apache/tools/bzip2/CBZip2OutputStream']      = ant_api_root;
+
+  api['org/apache/tools/mail/ErrorInQuitException']     = ant_api_root; //exception
   api['org/apache/tools/mail/MailMessage']              = ant_api_root;
+  api['org/apache/tools/mail/SmtpResponseReader']       = ant_api_root;
+
+  api['org/apache/tools/tar/TarBuffer']                 = ant_api_root;
+  api['org/apache/tools/tar/TarConstants']              = ant_api_root; //interface
+  api['org/apache/tools/tar/TarEntry']                  = ant_api_root;
+  api['org/apache/tools/tar/TarInputStream']            = ant_api_root;
+  api['org/apache/tools/tar/TarOutputStream']           = ant_api_root;
+  api['org/apache/tools/tar/TarUtils']                  = ant_api_root;
+
+  api['org/apache/tools/zip/AsiExtraField']             = ant_api_root;
+  api['org/apache/tools/zip/ExtraFieldUtils']           = ant_api_root;
+  api['org/apache/tools/zip/JarMarker']                 = ant_api_root;
+  api['org/apache/tools/zip/UnrecognizedExtraField']    = ant_api_root;
+  api['org/apache/tools/zip/ZipEntry']                  = ant_api_root;
+  api['org/apache/tools/zip/ZipExtraField']             = ant_api_root; //interface
   api['org/apache/tools/zip/ZipFile']                   = ant_api_root;
+  api['org/apache/tools/zip/ZipLong']                   = ant_api_root;
+  api['org/apache/tools/zip/ZipOutputStream']           = ant_api_root;
+  api['org/apache/tools/zip/ZipShort']                  = ant_api_root;
+  api['org/apache/tools/zip/UnixStat']                  = ant_api_root; //interface
 
   // initialize Eclipse classes
   api['org/eclipse/ant/core/Property']                  = eclipse_api_root;
   api['org/eclipse/ant/core/Task']                      = eclipse_api_root;
   api['org/eclipse/ant/core/Type']                      = eclipse_api_root;
+
   api['org/eclipse/core/runtime/Assert']                = eclipse_api_root;
   api['org/eclipse/core/runtime/AssertFailedException'] = eclipse_api_root;
   api['org/eclipse/core/runtime/CoreException']         = eclipse_api_root;
@@ -317,6 +377,7 @@ function init() {
   api['org/eclipse/core/runtime/Preferences']           = eclipse_api_root;
   api['org/eclipse/core/runtime/RegistryFactory']       = eclipse_api_root;
   api['org/eclipse/core/runtime/Status']                = eclipse_api_root;
+
   api['org/eclipse/debug/core/ILaunch']                 = eclipse_api_root;
   api['org/eclipse/debug/core/ILaunchConfiguration']    = eclipse_api_root;
   api['org/eclipse/debug/core/ILaunchManager']          = eclipse_api_root;
@@ -402,12 +463,14 @@ function init() {
   src['scala/Nil']                                      = lib_src_root; // object
   src['scala/None']                                     = lib_src_root; // object
   src['scala/NotDefinedError']                          = lib_src_root;
+  src['scala/NotNull']                                  = lib_src_root;
   src['scala/Option']                                   = lib_src_root;
   src['scala/Ordered']                                  = lib_src_root;
   src['scala/PartialFunction']                          = lib_src_root;
   src['scala/Predef']                                   = lib_src_root; // object
   src['scala/Product']                                  = lib_src_root;
   src['scala/Proxy']                                    = lib_src_root;
+  src['scala/Range']                                    = lib_src_root;
   src['scala/Responder']                                = lib_src_root;
   src['scala/Seq']                                      = lib_src_root;
   src['scala/SeqProxy']                                 = lib_src_root;
@@ -432,6 +495,33 @@ function init() {
   src['scala/unsealed']                                 = lib_src_root;
   src['scala/volatile']                                 = lib_src_root;
 
+  src['scala/actors/Actor']                             = actors_src_root;
+  src['scala/actors/ActorProxy']                        = actors_src_root;
+  src['scala/actors/Channel']                           = actors_src_root;
+  src['scala/actors/Debug']                             = actors_src_root;
+  src['scala/actors/FJTask']                            = actors_src_root;
+  src['scala/actors/FJTaskRunner']                      = actors_src_root;
+  src['scala/actors/FJTaskRunnerGroup']                 = actors_src_root;
+  src['scala/actors/FJTaskScheduler2']                  = actors_src_root;
+  src['scala/actors/Future']                            = actors_src_root;
+  src['scala/actors/InputChannel']                      = actors_src_root;
+  src['scala/actors/LinkedNode']                        = actors_src_root;
+  src['scala/actors/LinkedQueue']                       = actors_src_root;
+  src['scala/actors/MessageQueue']                      = actors_src_root;
+  src['scala/actors/OutputChannel']                     = actors_src_root;
+  src['scala/actors/Reaction']                          = actors_src_root;
+  src['scala/actors/Scheduler']                         = actors_src_root;
+  src['scala/actors/ThreadPoolScheduler']               = actors_src_root;
+  src['scala/actors/TickedScheduler']                   = actors_src_root;
+  src['scala/actors/TimerThread']                       = actors_src_root;
+  src['scala/actors/remote/FreshNameCreator']           = actors_src_root;
+  src['scala/actors/remote/JavaSerizalizer']            = actors_src_root;
+  src['scala/actors/remote/NetKernel']                  = actors_src_root;
+  src['scala/actors/remote/RemoteActor']                = actors_src_root;
+  src['scala/actors/remote/Serializer']                 = actors_src_root;
+  src['scala/actors/remote/Service']                    = actors_src_root;
+  src['scala/actors/remote/TcpService']                 = actors_src_root;
+  
   src['scala/collection/BitSet']                        = lib_src_root;
   src['scala/collection/Map']                           = lib_src_root;
   src['scala/collection/MapProxy']                      = lib_src_root;
@@ -678,37 +768,6 @@ function init() {
   src['scala/xml/transform/BasicTransformer']           = lib_src_root;
   src['scala/xml/transform/RewriteRule']                = lib_src_root;
   src['scala/xml/transform/RuleTransformer']            = lib_src_root;
-
-  // scala-actors-src.jar
-  src['scala/actors/Actor']                             = actors_src_root;
-  src['scala/actors/ActorProxy']                        = actors_src_root;
-  src['scala/actors/Channel']                           = actors_src_root;
-  src['scala/actors/Debug']                             = actors_src_root;
-  src['scala/actors/FJTask']                            = actors_src_root;
-  src['scala/actors/FJTaskRunner']                      = actors_src_root;
-  src['scala/actors/FJTaskRunnerGroup']                 = actors_src_root;
-  src['scala/actors/FJTaskScheduler2']                  = actors_src_root;
-  src['scala/actors/Future']                            = actors_src_root;
-  src['scala/actors/InputChannel']                      = actors_src_root;
-  src['scala/actors/LinkedNode']                        = actors_src_root;
-  src['scala/actors/LinkedQueue']                       = actors_src_root;
-  src['scala/actors/MessageQueue']                      = actors_src_root;
-  src['scala/actors/OutputChannel']                     = actors_src_root;
-  // declared in 'Scheduler'
-  //src['scala/actors/IScheduler']                        = actors_src_root;
-  src['scala/actors/Reaction']                          = actors_src_root;
-  src['scala/actors/Scheduler']                         = actors_src_root;
-  src['scala/actors/ThreadPoolScheduler']               = actors_src_root;
-  src['scala/actors/TickedScheduler']                   = actors_src_root;
-  src['scala/actors/TimerThread']                       = actors_src_root;
-
-  src['scala/actors/remote/FreshNameCreator']           = actors_src_root;
-  src['scala/actors/remote/JavaSerizalizer']            = actors_src_root;
-  src['scala/actors/remote/NetKernel']                  = actors_src_root;
-  src['scala/actors/remote/RemoteActor']                = actors_src_root;
-  src['scala/actors/remote/Serializer']                 = actors_src_root;
-  src['scala/actors/remote/Service']                    = actors_src_root;
-  src['scala/actors/remote/TcpService']                 = actors_src_root;
 
   // scala-dbc-src.jar
   src['scala/dbc/DataType']                             = dbc_src_root;
