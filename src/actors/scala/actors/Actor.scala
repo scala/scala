@@ -528,7 +528,7 @@ trait Actor extends OutputChannel[Any] {
     case x => x
   }
 
-  private[actors] def sender: Actor =
+  def sender: Actor =
     if (sessions.isEmpty) null
     else sessions.head.asInstanceOf[Channel[Any]].receiver
 
@@ -606,6 +606,9 @@ trait Actor extends OutputChannel[Any] {
   def start() {
     Scheduler start new Reaction(this)
   }
+
+  def loop(body: => Unit): Nothing =
+    Actor.seq(body, loop(body))
 
   private[actors] var links: List[Actor] = Nil
 
