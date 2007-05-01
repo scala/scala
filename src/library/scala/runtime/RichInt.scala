@@ -18,8 +18,6 @@ final class RichInt(x: Int) extends Proxy with Ordered[Int] {
   // Ordered[Int]
   def compare (y: Int): Int = if (x < y) -1 else if (x > y) 1 else 0
 
-  def upto(y: Int): List[Int] = List.range(x, y + 1)
-
   def until(y: Int): Iterator[Int] = Iterator.range(x, y)
   def to(y: Int): Iterator[Int] = Iterator.range(x, y + 1)
 

@@ -14,7 +14,6 @@ package scala
 
 import Predef._
 import collection.mutable.{Buffer, ListBuffer}
-import compat.StringBuilder
 
 /** The <code>Iterator</code> object provides various functions for
  *  creating specialized iterators.
@@ -102,54 +101,42 @@ object Iterator {
 
   /** Create an iterator with elements
    *  <code>e<sub>n+1</sub> = e<sub>n</sub> + 1</code>
-   *  where <code>e<sub>0</sub> = lo</code>
+   *  where <code>e<sub>0</sub> = start</code>
    *  and <code>e<sub>i</sub> &lt; end</code>.
    *
-   *  @param lo  the start value of the iterator
-   *  @param end the end value of the iterator
-   *  @return    the iterator with values in range <code>[lo;end)</code>.
+   *  @param start the start value of the iterator
+   *  @param end   the end value of the iterator
+   *  @return      the iterator with values in range <code>[start;end)</code>.
    */
-  def range(lo: Int, end: Int): Iterator[Int] =
-    range(lo, end, 1)
+  def range(start: Int, end: Int): Range = range(start, end, 1)
 
   /** Create an iterator with elements
    *  <code>e<sub>n+1</sub> = e<sub>n</sub> + step</code>
-   *  where <code>e<sub>0</sub> = lo</code>
+   *  where <code>e<sub>0</sub> = start</code>
    *  and <code>e<sub>i</sub> &lt; end</code>.
    *
-   *  @param lo   the start value of the iterator
-   *  @param end  the end value of the iterator
-   *  @param step the increment value of the iterator (must be positive or negative)
-   *  @return     the iterator with values in range <code>[lo;end)</code>.
+   *  @param start the start value of the iterator
+   *  @param end   the end value of the iterator
+   *  @param step  the increment value of the iterator (must be positive or negative)
+   *  @return      the iterator with values in range <code>[start;end)</code>.
    */
-  def range(lo: Int, end: Int, step: Int): Iterator[Int] = {
-    assert(step != 0)
-    new BufferedIterator[Int] {
-      private var i = lo
-      def hasNext: Boolean = if (step > 0) i < end else i > end
-      def next(): Int =
-        if (hasNext) { val j = i; i += step; j }
-        else throw new NoSuchElementException("next on empty iterator")
-      def head: Int =
-        if (hasNext) i
-        else throw new NoSuchElementException("head on empty iterator")
-    }
-  }
+  def range(start: Int, end: Int, step: Int): Range =
+    new Range(start, end, step)
 
   /** Create an iterator with elements
    *  <code>e<sub>n+1</sub> = step(e<sub>n</sub>)</code>
-   *  where <code>e<sub>0</sub> = lo</code>
+   *  where <code>e<sub>0</sub> = start</code>
    *  and <code>e<sub>i</sub> &lt; end</code>.
    *
-   *  @param lo   the start value of the iterator
-   *  @param end  the end value of the iterator
-   *  @param step the increment function of the iterator
-   *  @return     the iterator with values in range <code>[lo;end)</code>.
+   *  @param start the start value of the iterator
+   *  @param end   the end value of the iterator
+   *  @param step  the increment function of the iterator
+   *  @return      the iterator with values in range <code>[start;end)</code>.
    */
-  def range(lo: Int, end: Int, step: Int => Int): Iterator[Int] =
+  def range(start: Int, end: Int, step: Int => Int): Iterator[Int] =
     new BufferedIterator[Int] {
-      private var i = lo
-      def hasNext: Boolean =  i < end
+      private var i = start
+      def hasNext: Boolean = i < end
       def next(): Int =
         if (i < end) { val j = i; i = step(i); j }
         else throw new NoSuchElementException("next on empty iterator")
@@ -160,25 +147,25 @@ object Iterator {
 
   /** Create an iterator with elements
    *  <code>e<sub>n+1</sub> = e<sub>n</sub> + 1</code>
-   *  where <code>e<sub>0</sub> = lo</code>.
+   *  where <code>e<sub>0</sub> = start</code>.
    *
-   *  @param lo the start value of the iterator
-   *  @return   the iterator starting at value <code>lo</code>.
+   *  @param start the start value of the iterator
+   *  @return      the iterator starting at value <code>start</code>.
    */
-  def from(lo: Int): Iterator[Int] =
-    from(lo, 1)
+  def from(start: Int): Iterator[Int] =
+    from(start, 1)
 
   /** Create an iterator with elements
    * <code>e<sub>n+1</sub> = e<sub>n</sub> + step</code>
-   *  where <code>e<sub>0</sub> = lo</code>.
+   *  where <code>e<sub>0</sub> = start</code>.
    *
-   *  @param lo   the start value of the iterator
-   *  @param step the increment value of the iterator
-   *  @return     the iterator starting at value <code>lo</code>.
+   *  @param start the start value of the iterator
+   *  @param step  the increment value of the iterator
+   *  @return      the iterator starting at value <code>start</code>.
    */
-  def from(lo: Int, step: Int): Iterator[Int] =
+  def from(start: Int, step: Int): Iterator[Int] =
     new BufferedIterator[Int] {
-      private var i = lo
+      private var i = start
       def hasNext: Boolean = true
       def next(): Int = { val j = i; i += step; j }
       def head: Int = i
@@ -186,15 +173,15 @@ object Iterator {
 
   /** Create an iterator with elements
    *  <code>e<sub>n+1</sub> = step(e<sub>n</sub>)</code>
-   *  where <code>e<sub>0</sub> = lo</code>.
+   *  where <code>e<sub>0</sub> = start</code>.
    *
-   *  @param lo   the start value of the iterator
-   *  @param step the increment function of the iterator
-   *  @return     the iterator starting at value <code>lo</code>.
+   *  @param start the start value of the iterator
+   *  @param step  the increment function of the iterator
+   *  @return      the iterator starting at value <code>start</code>.
    */
-  def from(lo: Int, step: Int => Int): Iterator[Int] =
+  def from(start: Int, step: Int => Int): Iterator[Int] =
     new BufferedIterator[Int] {
-      private var i = lo
+      private var i = start
       def hasNext: Boolean = true
       def next(): Int = { val j = i; i = step(i); j }
       def head: Int = i
