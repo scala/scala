@@ -37,8 +37,10 @@ object Test {
     val xs1 = List(r1 contains 5, r1 contains 6)
     val r2 = Iterator.range(0, 10, 2)
     val xs2 = List(r2 contains 5, r2 contains 6)
-    // 2 + 1
-    trues(xs1) + trues(xs2)
+    val r3 = Iterator.range(0, 10, 11)
+    val xs2 = List(r2 contains 5, r2 contains 6)
+    // 2 + 1 + 0
+    trues(xs1) + trues(xs2) + trues(xs3)
   }
 
   def check_take: Int = {

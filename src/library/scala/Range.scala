@@ -13,8 +13,15 @@ package scala
 
 import Predef._
 
-/** The <code>Range</code> class represents integer values in range
- *  <code>[start;end)</code> with .
+/** <p>
+ *    The <code>Range</code> class represents integer values in range
+ *    <code>[start;end)</code> with non-zero step value <code>step</code>.
+ *    For example:
+ *  </p><pre>
+ *     <b>val</b> r1 = Iterator.range(0, 10)
+ *     <b>val</b> r2 = Iterator.range(r1.start, r1.end, r1.step + 1)
+ *     println(r2.length) // = 5
+ *  </pre>
  *
  *  @author  Stephane Micheloud
  *  @version 1.0, 01/05/2007
