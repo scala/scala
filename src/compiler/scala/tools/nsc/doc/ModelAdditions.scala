@@ -177,7 +177,7 @@ class ModelAdditions(val global : Global) {
    addition(UnitClass);
 
    def boxedValDescr(what : String) = {
-     val sym = definitions.getClass("scala.runtime.Boxed" + what);
+     val sym = definitions.getClass("java.lang." + what);
      addition(sym);
      comments(sym) = """
      /** <p>
@@ -191,7 +191,7 @@ class ModelAdditions(val global : Global) {
       *  </p>
       */"""
    };
-   ("Float" :: "Long" :: "Number" :: "Int" :: Nil).foreach(boxedValDescr);
+   ("Float" :: "Long" :: "Number" :: "Integer" :: Nil).foreach(boxedValDescr);
 
    object exceptions extends collection.jcl.TreeMap[String,(Symbol,String)] {
      def f(name : String) = {

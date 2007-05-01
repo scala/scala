@@ -268,15 +268,15 @@ function init() {
   api['scala/Null']                            = scala_api_root;
   api['scala/Short']                           = scala_api_root;
   api['scala/Unit']                            = scala_api_root;
-  api['scala/runtime/BoxedBoolean']            = scala_api_root;
-  api['scala/runtime/BoxedByte']               = scala_api_root;
-  api['scala/runtime/BoxedChar']               = scala_api_root;
-  api['scala/runtime/BoxedDouble']             = scala_api_root;
-  api['scala/runtime/BoxedInt']                = scala_api_root;
-  api['scala/runtime/BoxedFloat']              = scala_api_root;
-  api['scala/runtime/BoxedLong']               = scala_api_root;
-  api['scala/runtime/BoxedNumber']             = scala_api_root;
-  api['scala/runtime/BoxedShort']              = scala_api_root;
+  api['java/lang/Boolean']                     = scala_api_root;
+  api['java/lang/Byte']                        = scala_api_root;
+  api['java/lang/Character']                   = scala_api_root;
+  api['java/lang/Double']                      = scala_api_root;
+  api['java/lang/Integer']                     = scala_api_root;
+  api['java/lang/Float']                       = scala_api_root;
+  api['java/lang/Long']                        = scala_api_root;
+  api['java/lang/Number']                      = scala_api_root;
+  api['java/lang/Short']                       = scala_api_root;
 
   // initialize Ant classes
   api['org/apache/tools/ant/AntClassLoader']            = ant_api_root;
