@@ -56,9 +56,9 @@ abstract class GenJVM extends SubComponent {
    */
   class BytecodeGenerator {
     val MIN_SWITCH_DENSITY = 0.7
-    val JAVA_LANG_STRINGBUFFER = "java.lang.StringBuffer"
+    val StringBufferClass = if (settings.target.value == "jvm-1.5") "java.lang.StringBuilder" else "java.lang.StringBuffer"
 
-    val stringBufferType = new JObjectType(JAVA_LANG_STRINGBUFFER)
+    val stringBufferType = new JObjectType(StringBufferClass)
     val toStringType = new JMethodType(JObjectType.JAVA_LANG_STRING, JType.EMPTY_ARRAY)
 
     def attributeType(name: String) =
@@ -1146,9 +1146,9 @@ abstract class GenJVM extends SubComponent {
           jcode.emitARRAYLENGTH()
 
         case StartConcat =>
-          jcode.emitNEW(JAVA_LANG_STRINGBUFFER)
+          jcode.emitNEW(StringBufferClass)
           jcode.emitDUP()
-          jcode.emitINVOKESPECIAL(JAVA_LANG_STRINGBUFFER,
+          jcode.emitINVOKESPECIAL(StringBufferClass,
                                   JMethod.INSTANCE_CONSTRUCTOR_NAME,
                                   JMethodType.ARGLESS_VOID_FUNCTION)
 
@@ -1157,12 +1157,12 @@ abstract class GenJVM extends SubComponent {
             case REFERENCE(_) | ARRAY(_)=> JObjectType.JAVA_LANG_OBJECT
             case _ => javaType(el)
           }
-          jcode.emitINVOKEVIRTUAL(JAVA_LANG_STRINGBUFFER,
+          jcode.emitINVOKEVIRTUAL(StringBufferClass,
                                   "append",
                                   new JMethodType(stringBufferType,
                                   Array(jtype)))
         case EndConcat =>
-          jcode.emitINVOKEVIRTUAL(JAVA_LANG_STRINGBUFFER,
+          jcode.emitINVOKEVIRTUAL(StringBufferClass,
                                   "toString",
                                   toStringType)
 
