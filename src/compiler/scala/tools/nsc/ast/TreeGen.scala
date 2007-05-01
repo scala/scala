@@ -156,10 +156,15 @@ abstract class TreeGen {
   def mkAsInstanceOf(value: Tree, tpe: Type): Tree =
     mkAsInstanceOf(value, tpe, global.phase.erasedTypes)
 
-  def mkCheckInit(tree: Tree): Tree =
-    if (tree.hasSymbol && tree.symbol.tpe <:< NotNullClass.tpe && !tree.symbol.tpe.isNotNull)
+  def mkCheckInit(tree: Tree): Tree = {
+    var tpe = tree.tpe
+    if (tpe == null && tree.hasSymbol) tpe = tree.symbol.tpe
+    if (!global.phase.erasedTypes && settings.checknull.value &&
+        tpe <:< NotNullClass.tpe && !tpe.isNotNull)
       mkRuntimeCall(nme.checkInitialized, List(tree))
-    else tree
+    else
+      tree
+  }
 
   /** Builds a list with given head and tail. */
   def mkNewCons(head: Tree, tail: Tree): Tree =

@@ -2011,15 +2011,19 @@ trait Typers requires Analyzer {
             case fun1: Tree =>
               val fun2 = if (stableApplication) stabilizeFun(fun1, mode, pt) else fun1
               if (util.Statistics.enabled) appcnt = appcnt + 1
-              if (phase.id <= currentRun.typerPhase.id &&
-                  fun2.isInstanceOf[Select] &&
-                  !fun2.tpe.isInstanceOf[ImplicitMethodType] &&
-                  ((fun2.symbol eq null) || !fun2.symbol.isConstructor) &&
-                  (mode & (EXPRmode | SNDTRYmode)) == EXPRmode) {
-                tryTypedApply(fun2, args)
-              } else {
-                doTypedApply(tree, fun2, args, mode, pt)
-              }
+              val res =
+                if (phase.id <= currentRun.typerPhase.id &&
+                    fun2.isInstanceOf[Select] &&
+                    !fun2.tpe.isInstanceOf[ImplicitMethodType] &&
+                    ((fun2.symbol eq null) || !fun2.symbol.isConstructor) &&
+                    (mode & (EXPRmode | SNDTRYmode)) == EXPRmode) {
+                      tryTypedApply(fun2, args)
+                    } else {
+                      doTypedApply(tree, fun2, args, mode, pt)
+                    }
+              if (fun2.symbol == Array_apply) typed { atPos(tree.pos) { gen.mkCheckInit(res) } }
+              else res
+
             case ex: TypeError =>
               fun match {
                 case Select(qual, name)
@@ -2180,6 +2184,9 @@ trait Typers requires Analyzer {
           }
           val result = stabilize(checkAccessible(tree1, sym, qual.tpe, qual), qual.tpe, mode, pt)
           if (sym.isCaseFactory && !phase.erasedTypes) checkStable(qual)
+          if (!global.phase.erasedTypes && settings.checknull.value &&
+              !(qual.tpe <:< NotNullClass.tpe) && !qual.tpe.isNotNull)
+            unit.warning(tree.pos, "potential null pointer dereference")
           result
         }
       }
