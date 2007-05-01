@@ -71,7 +71,7 @@ trait FlatHashTable[A] {
   }
 
   def removeEntry(elem: A) {
-    checkConsistent()
+    if (tableDebug) checkConsistent()
     def precedes(i: int, j: int) = {
       val d = table.length >> 1
       if (i <= j) j - i < d

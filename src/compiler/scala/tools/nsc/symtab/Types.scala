@@ -1203,10 +1203,9 @@ A type's symbol should never be inspected directly.
       if (sym.isAliasType) {
         if (sym.info.typeParams.length == args.length) // beta-reduce
           transform(sym.info.resultType).normalize // cycles have been checked in typeRef
-        else { // eta-expand
-          assert(isHigherKinded)
+        else if (isHigherKinded)
           PolyType(typeParams, transform(sym.info.resultType).normalize)
-        }
+        else this
       } else if (isHigherKinded) {
         PolyType(typeParams, typeRef(pre, sym, higherKindedArgs)) // @M TODO: transform?
       } else super.normalize // @M TODO: transform?

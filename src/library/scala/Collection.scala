@@ -38,10 +38,12 @@ trait Collection[+A] extends Iterable[A] {
   /** Defines the prefix of this object's <code>toString</code> representation.
    */
   protected def stringPrefix : String = {
-    val string = this.getClass.getName
-    val idx = string.lastIndexOf('.' : Int)
-    if (idx != -1) string.substring(idx + 1)
-    else string
+    var string = this.getClass.getName
+    val idx1 = string.lastIndexOf('.' : Int)
+    if (idx1 != -1) string = string.substring(idx1 + 1)
+    val idx2 = string.indexOf('$')
+    if (idx2 != -1) string = string.substring(0, idx2)
+    string
   }
 
 }

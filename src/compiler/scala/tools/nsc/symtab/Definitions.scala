@@ -91,6 +91,7 @@ trait Definitions {
     var ListModule: Symbol = _
       def List_apply = getMember(ListModule, nme.apply)
     var ArrayClass: Symbol = _
+      def Array_apply = getMember(ArrayClass, nme.apply)
     var ArrayModule: Symbol = _
     var SerializableClass: Symbol = _
     var PredefModule: Symbol = _

@@ -178,6 +178,6 @@ trait Set[A] extends AnyRef with collection.Set[A] {
    *  @param p The predicate used to filter the set
    */
   override def filter(p: A => Boolean): Set[A] =
-    foldLeft(this)((set, elem) => if (p(elem)) set else set - elem)
+    (this /: toList)((set, elem) => if (p(elem)) set else set - elem)
 
 }
