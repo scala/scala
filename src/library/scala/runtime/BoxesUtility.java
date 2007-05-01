@@ -1,5 +1,20 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2006-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+// $Id$
+
+
 package scala.runtime;
 
+/**
+ *  @author  Gilles Dubochet
+ *  @version 1.0
+ */
 public class BoxesUtility {
 
     private static int charLowBound = 0;

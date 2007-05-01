@@ -1,11 +1,30 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2006-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+// $Id$
+
+
 package scala.runtime;
 
+/**
+ *  @author  Gilles Dubochet
+ *  @version 1.0
+ */
 public class Comparator {
 
-    /* A rich implementation of the equals method that overrides the default equals because Java's boxed primitives are
-     * utterly broken. This equals is inserted instead of a normal equals by the Scala compiler (in the icode phase,
-     * method genEqEqPrimitive) only when either side of the comparison is a subclass of AnyVal, of java.lang.Number, of
-     * java.lang.Character or is exactly Any or AnyRef. */
+    /** A rich implementation of the equals method that overrides the default
+     *  equals because Java's boxed primitives are utterly broken. This equals
+     *  is inserted instead of a normal equals by the Scala compiler (in the
+     *  ICode phase, method <code>genEqEqPrimitive</code>) only when either
+     *  side of the comparison is a subclass of <code>AnyVal</code>, of
+     *  <code>java.lang.Number</code>, of <code>java.lang.Character</code> or
+     *  is exactly <code>Any</code> or <code>AnyRef</code>.
+     */
     public static boolean equals(Object a, Object b) {
         if (a == null)
             return b == null;
