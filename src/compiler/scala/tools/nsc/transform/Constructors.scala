@@ -70,7 +70,7 @@ abstract class Constructors extends Transform {
             else
               super.transform(tree)
           case Select(This(_), _)
-          if ((tree.symbol hasFlag PARAMACCESSOR) && tree.symbol.owner == clazz) =>
+          if ((tree.symbol hasFlag PARAMACCESSOR) && !tree.symbol.isSetter && tree.symbol.owner == clazz) =>
             gen.mkAttributedIdent(parameter(tree.symbol)) setPos tree.pos
           case Select(_, _) =>
             thisRefSeen = true
