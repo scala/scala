@@ -1206,8 +1206,11 @@ A type's symbol should never be inspected directly.
         else if (isHigherKinded)
           PolyType(typeParams, transform(sym.info.resultType).normalize)
         else {
-          log("normalizing "+this+" with mismatch between type params "+sym.info.typeParams+" and args "+args)
-          this
+          log("Error: normalizing "+this+" with mismatch between type params "+sym.info.typeParams+" and args "+args)
+          //this
+          transform(sym.info.resultType).normalize // technically wrong, but returning `this' is even worse (cycle!)
+          // only happens when compiling `val x: Class' with -Xgenerics,
+          // when `type Class = java.lang.Class' has already been compiled (without -Xgenerics)
         }
       } else if (isHigherKinded) {
         PolyType(typeParams, typeRef(pre, sym, higherKindedArgs)) // @M TODO: transform?
