@@ -26,22 +26,9 @@ trait ModelToXML extends ModelExtractor {
   def link(entity: Symbol)(implicit frame: Frame): NodeSeq = {
     val url = urlFor(entity)
     // nothing to do but be verbose.
-    if (url == null) {
-      val name = entity.owner.fullNameString('.') + '.' + entity.nameString
-      if (entity.hasFlag(symtab.Flags.JAVA)) {
-        def sig(sym: Symbol): String =
-          sym.nameString + "(" + (sym.tpe match {
-            case MethodType(pt, _) => pt.mkString(", ")
-            case _ => ""
-          }) + ")"
-        val ownerName = entity.owner.fullNameString('/')
-        val (name0, anchor) =
-          if (entity.isMethod) (ownerName, "#" + sig(entity))
-          else (ownerName + "/" + entity.nameString, "")
-        <a class={name0} href={anchor} target="contentFrame">{name}</a>
-      } else
-        Text(name)
-    } else
+    if (url == null)
+      Text(entity.owner.fullNameString('.') + '.' + entity.nameString)
+    else
       aref(url, entity.nameString)
   }
 
@@ -69,9 +56,8 @@ trait ModelToXML extends ModelExtractor {
               (parents.head.symbol eq definitions.ObjectClass)) parents.tail;
           else parents;
        parents1.mkXML(Text(""), <code> with </code>, Text(""))(link);
-     case _ => {
-        link(decode(tpe.symbol));
-      }
+     case _ =>
+       link(decode(tpe.symbol))
     }
   }
 

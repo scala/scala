@@ -101,8 +101,6 @@ trait ModelFrames extends ModelExtractor {
         urlFor0(sym, sym) + FILE_EXTENSION_HTML
       case sym if !hasLink(sym) =>
         null
-      case sym if sym.hasFlag(Flags.JAVA) =>
-        null // handled in ModelToXML.link
       case msym: ModuleSymbol =>
         urlFor0(sym, sym) + FILE_EXTENSION_HTML
       case csym: ClassSymbol =>
@@ -275,8 +273,6 @@ trait ModelFrames extends ModelExtractor {
       </table>;
     private def header0: NodeSeq = {
       val owner = decode(clazz.sym.owner)
-      val name =
-        owner.fullNameString('/') + (if (owner.isPackage) "/" + clazz.name else "")
       <xml:group>
       <div class="entity">
         {aref(urlFor(owner), "_self", owner.fullNameString('.'))}
@@ -284,7 +280,16 @@ trait ModelFrames extends ModelExtractor {
         <span class="entity">{Text(clazz.kind)}  {Text(clazz.name)}</span>
       </div><hr/>
       <div style="font-size:smaller; color:gray;">
-        [source: <a class={name} href=""><code>{name + ".scala"}</code></a>]
+        {
+          if (global.definitions.SyntheticClasses contains clazz.sym)
+            Text("[Source: none]")
+          else {
+            val name = owner.fullNameString('/') + (if (owner.isPackage) "/" + clazz.name else "")
+            Text("[source: ") ++
+            <a class={name} href=""><code>{name + ".scala"}</code></a> ++
+            Text("]")
+          }
+        }
       </div><hr/>
       </xml:group>
     }

@@ -49,6 +49,7 @@ trait Definitions {
     // Symbol -> (Symbol, Type): scalaCaller -> (scalaMethodSym, DelegateType)
     // var Delegate_scalaCallerInfos: HashMap[Symbol, (Symbol, Type)] = _
     var Delegate_scalaCallerTargets: HashMap[Symbol, Symbol] = _
+    var SyntheticClasses: HashSet[Symbol] = _
 
     // the scala value classes
     var UnitClass: Symbol = _
@@ -775,7 +776,7 @@ trait Definitions {
 
     private var isInitialized = false
 
-    def init: unit = {
+    def init {
       if (isInitialized) return
       isInitialized = true
       RootClass =
@@ -1002,6 +1003,13 @@ trait Definitions {
       SerializableAttr = getClass("scala.serializable")
       BeanPropertyAttr = if (forCLDC || forMSIL) null else getClass("scala.reflect.BeanProperty")
       DeprecatedAttr = getClass("scala.deprecated")
+
+      SyntheticClasses = new HashSet[Symbol]
+      SyntheticClasses ++= List(
+        AllClass, AllRefClass, AnyClass, AnyRefClass, AnyValClass,
+        //value classes
+        BooleanClass, ByteClass, CharClass, DoubleClass, FloatClass,
+        IntClass, LongClass, ShortClass, UnitClass)
     }
 
     var nbScalaCallers: Int = 0
@@ -1017,7 +1025,7 @@ trait Definitions {
       // val newCaller = newPolyMethod(DelegateClass, name,
       // tparam => MethodType(paramTypes, tparam.typeConstructor)) setFlag (FINAL | STATIC)
       Delegate_scalaCallers = Delegate_scalaCallers ::: List(newCaller)
-      nbScalaCallers = nbScalaCallers + 1
+      nbScalaCallers += 1
       newCaller
     }
 
