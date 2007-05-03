@@ -2171,8 +2171,8 @@ trait Typers requires Analyzer {
                 qual.tpe.widen+" does not have a constructor"
               else
                 decode(name)+" is not a member of "+qual.tpe.widen +
-                (if (!inIDE && (context.unit ne null) && (qual.pos).line.get <
-                     tree.pos.line.get)
+                (if (!inIDE && (context.unit ne null) &&
+                    ((for(a <- qual.pos.line; b <- tree.pos.line) yield a < b).getOrElse(false)))
                   "\npossible cause: maybe a semicolon is missing before `"+decode(name)+"'?"
                  else ""))
           }
