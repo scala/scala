@@ -16,7 +16,8 @@ package scala.concurrent
  *
  *  @author  Erik Stenman
  *  @version 1.0, 01/10/2003
- *  @deprecated  use scala.actors package instead
+ *
+ *  @deprecated  use <a href="../actors$content.html">scala.actors</a> package instead
  */
 @deprecated
 object Process {
@@ -87,7 +88,7 @@ class Process(body: => Unit) extends Actor() {
 
   //def self = this
 
-  def exit(reason: AnyRef): Unit = {
+  def exit(reason: AnyRef) {
     exitReason = reason
     interrupt()
   }

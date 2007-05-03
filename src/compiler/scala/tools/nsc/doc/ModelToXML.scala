@@ -88,7 +88,7 @@ trait ModelToXML extends ModelExtractor {
   }
 
   def extendsFor(entity: Entity)(implicit frame: Frame): NodeSeq = {
-    if (entity.parents.isEmpty) NodeSeq.Empty;
+    if (entity.parents.isEmpty) NodeSeq.Empty
     else <code> extends </code>++
       entity.parents.mkXML(Text(""), <code> with </code>, Text(""))(link);
   }
@@ -122,18 +122,26 @@ trait ModelToXML extends ModelExtractor {
       case _ => NodeSeq.Empty
   }) ++ {
     val overridden = entity.overridden
-    if (!overridden.isEmpty) {
-      var seq : NodeSeq = Text("Overrides ");
-      seq = seq ++ overridden.mkXML("",", ", "")(sym => link(decode(sym.owner)) ++ Text(".") ++ link(sym));
-      seq
-    } else NodeSeq.Empty;
+    if (overridden.isEmpty)
+      NodeSeq.Empty
+    else {
+      <dl>
+        <dt style="margin:10px 0 0 20px;">
+          <b>Overrides</b>
+        </dt>
+        <dd>
+        { overridden.mkXML("",", ", "")(sym => link(decode(sym.owner)) ++ Text(".") ++ link(sym))
+        }
+        </dd>
+      </dl>
+    }
   } ++ <hr/>);
 
   def longComment(cmnt: Comment): NodeSeq = {
     val attrs = <dl>{
       var seq: NodeSeq = NodeSeq.Empty
       cmnt.decodeAttributes.foreach{
-      case (tag,xs) =>
+      case (tag, xs) =>
         seq = seq ++ <dt style="margin:10px 0 0 20px;">
         <b>{decodeTag(tag)}</b></dt> ++ {xs.flatMap{
         case (option,body) => <dd>{
@@ -142,7 +150,7 @@ trait ModelToXML extends ModelExtractor {
         }{parse(body)}</dd>
         }}
       };
-      seq;
+      seq
     }</dl>;
     <xml:group>
       <dl><dd>{parse(cmnt.body)}</dd></dl>

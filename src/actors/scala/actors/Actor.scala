@@ -262,13 +262,22 @@ object Actor {
  *   implementation of event-based actors.
  * </p>
  * <p>
- *   The main ideas of our approach are explained in the papers<br>
- *   <b>Event-Based Programming without Inversion of Control</b>,
- *   Philipp Haller and Martin Odersky, <i>Proc. JMLC 2006</i>
- *   <br><br>
- *   <b>Actors that Unify Threads and Events</b>,
- *   Philipp Haller and Martin Odersky, <i>LAMP-REPORT-2007-001, EPFL</i>
+ *   The main ideas of our approach are explained in the two papers
  * </p>
+ * <ul>
+ *   <li>
+ *     <a href="http://lampwww.epfl.ch/~odersky/papers/jmlc06.pdf">
+ *     <span style="font-weight:bold; white-space:nowrap;">Event-Based
+ *     Programming without Inversion of Control</span></a>,<br/>
+ *     Philipp Haller and Martin Odersky, <i>Proc. JMLC 2006</i>, and
+ *   </li>
+ *   <li>
+ *     <a href="http://www.scala-lang.org/docu/files/haller07actorsunify.pdf">
+ *     <span style="font-weight:bold; white-space:nowrap;">Actors that
+ *     Unify Threads and Events</span></a>,<br/>
+ *     Philipp Haller and Martin Odersky, <i>LAMP-REPORT-2007-001, EPFL</i>.
+ *   </li>
+ * </ul>
  *
  * @version 0.9.6
  * @author Philipp Haller
@@ -730,9 +739,9 @@ trait Actor extends OutputChannel[Any] {
 
 /** <p>
  *    This object is used as the timeout pattern in
- *    <a href="Actor.html#receiveWithin(scala.Long)" target="contentFrame">
+ *    <a href="Actor.html#receiveWithin(Long)" target="contentFrame">
  *    <code>receiveWithin</code></a> and
- *    <a href="Actor.html#reactWithin(scala.Long)" target="contentFrame">
+ *    <a href="Actor.html#reactWithin(Long)" target="contentFrame">
  *    <code>reactWithin</code></a>.
  *  </p>
  *  <p>

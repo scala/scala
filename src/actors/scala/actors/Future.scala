@@ -11,14 +11,18 @@
 package scala.actors
 
 /**
- * A Future is a function of arity 0 that returns a value of type Any.
- * Applying a future blocks the current actor until its value
- * is available.
- * A future can be queried to find out whether its value
- * is already available.
+ * <p>
+ *   A Future is a function of arity 0 that returns a value of type Any.
+ *   Applying a future blocks the current actor until its value
+ *   is available.
+ * </p>
+ * <p>
+ *   A future can be queried to find out whether its value
+ *   is already available.
+ * </p>
  *
- * @version 0.9.6
  * @author Philipp Haller
+ * @version 0.9.6
  */
 abstract class Future[T](val ch: InputChannel[Any]) extends Function0[T] {
   protected var value: Option[T] = None
@@ -26,7 +30,7 @@ abstract class Future[T](val ch: InputChannel[Any]) extends Function0[T] {
 }
 
 /**
- * The Futures object contains methods that operate on Futures.
+ * The <code>Futures</code> object contains methods that operate on Futures.
  *
  * @version 0.9.6
  * @author Philipp Haller
@@ -58,9 +62,13 @@ object Futures {
   }
 
   /**
-   * Awaits all futures returning an option containing a list of replies,
-   * or timeouts returning None.
-   * Note that some of the futures might already have been awaited.
+   * <p>
+   *   Awaits all futures returning an option containing a list of replies,
+   *   or timeouts returning <code>None</code>.
+   * </p>
+   * <p>
+   *   Note that some of the futures might already have been awaited.
+   * </p>
    */
   def awaitAll(timeout: long, fts: Future[Any]*): List[Option[Any]] = {
     var resultsMap: collection.mutable.Map[Int, Option[Any]] = new collection.mutable.HashMap[Int, Option[Any]]

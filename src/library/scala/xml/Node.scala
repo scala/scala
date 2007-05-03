@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -10,8 +10,6 @@
 
 
 package scala.xml
-
-import compat.StringBuilder
 
 /**
  * This object provides methods ...
@@ -27,7 +25,7 @@ object Node {
   /** the empty namespace */
   val EmptyNamespace = ""
 
-  def unapplySeq(n:Node) = Some (Tuple3(n.label, n.attributes, n.child))
+  def unapplySeq(n: Node) = Some(Tuple3(n.label, n.attributes, n.child))
 
 }
 
@@ -51,8 +49,9 @@ abstract class Node extends NodeSeq {
   def typeTag$: Int = 0
 
   /**
-   *  method returning the namespace bindings of this node. by default, this is TopScope,
-   *  which means there are no namespace bindings except the predefined one for "xml".
+   *  method returning the namespace bindings of this node. by default, this
+   *  is TopScope, which means there are no namespace bindings except the
+   *  predefined one for "xml".
    */
   def scope: NamespaceBinding = TopScope
 
@@ -90,11 +89,13 @@ abstract class Node extends NodeSeq {
    * @return value of <code>PrefixedAttribute</code> with given namespace
    *         and given key, otherwise <code>null</code>.
    */
-  final def attribute(uri: String, key: String): Option[Seq[Node]] = attributes.get(uri, this, key)
+  final def attribute(uri: String, key: String): Option[Seq[Node]] =
+    attributes.get(uri, this, key)
 
   /**
-   * Returns attribute meaning all attributes of this node, prefixed and unprefixed,
-   * in no particular order. In class Node, this defaults to Null (the empty attribute list).
+   * Returns attribute meaning all attributes of this node, prefixed and
+   * unprefixed, in no particular order. In class <code>Node</code>, this
+   * defaults to <code>Null</code> (the empty attribute list).
    *
    * @return all attributes of this node
    */
@@ -137,14 +138,18 @@ abstract class Node extends NodeSeq {
     case _ => false
   }
 
-  /**
-   *  Returns a hashcode. A standard implementation of hashcodes is obtained by calling
-   *  Utility.hashCode(pre, label, attributes.hashCode(), child);
-   *  Martin to Burak: to do: if you make this method abstract, the compiler will now
-   *  complain if there's no implementation in a subclass. Is this what we want? Note that
-   *  this would break doc/DocGenator and doc/ModelToXML, with an error message like:
-doc/ModelToXML.scala:95: error: object creation impossible, since there is a deferred declaration of method hashCode in class Node of type ()Int which is not implemented in a subclass
-    new SpecialNode {
+  /** <p>
+   *    Returns a hashcode. A standard implementation of hashcodes is obtained
+   *    by calling <code>Utility.hashCode(pre, label, attributes.hashCode(), child)</code>.
+   *  </p>
+   *  <p>
+   *    Martin to Burak: to do: if you make this method abstract, the compiler
+   *    will now complain if there's no implementation in a subclass. Is this
+   *    what we want? Note that this would break <code>doc/DocGenator</code> and
+   *    doc/ModelToXML, with an error message like:
+   *  </p><pre>
+   *  doc/ModelToXML.scala:95: error: object creation impossible, since there is a deferred declaration of method hashCode in class Node of type ()Int which is not implemented in a subclass
+   * new SpecialNode {<pre>
    */
   override def hashCode(): Int = super.hashCode
 
@@ -177,12 +182,12 @@ doc/ModelToXML.scala:95: error: object creation impossible, since there is a def
    * @param sb ...
    * @return   ...
    */
-  def nameToString(sb: StringBuilder): StringBuilder  = {
+  def nameToString(sb: StringBuilder): StringBuilder = {
     if (null != prefix) {
       sb.append(prefix)
       sb.append(':')
     }
-    sb.append(label);
+    sb.append(label)
   }
 
   /**

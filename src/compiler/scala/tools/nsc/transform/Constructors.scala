@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author
  */
 // $Id$
@@ -31,7 +31,7 @@ abstract class Constructors extends Transform {
       var constrParams: List[Symbol] = null
       var constrBody: Block = null
       // decompose primary constructor into the three entities above.
-      for (val stat <- stats) {
+      for (stat <- stats) {
         stat match {
           case ddef @ DefDef(_, _, _, List(vparams), _, rhs @ Block(_, Literal(_))) =>
             if (ddef.symbol.isPrimaryConstructor) {
@@ -101,7 +101,7 @@ abstract class Constructors extends Transform {
           localTyper.typed {
             Assign(Select(This(clazz), to), from)
           }
-      }
+        }
 
       def copyParam(to: Symbol, from: Symbol): Tree = {
         var result = mkAssign(to, Ident(from))
@@ -121,7 +121,7 @@ abstract class Constructors extends Transform {
       val constrStatBuf = new ListBuffer[Tree]
       val constrPrefixBuf = new ListBuffer[Tree]
       val presupers = treeInfo.preSuperFields(stats)
-      for (val stat <- constrBody.stats) {
+      for (stat <- constrBody.stats) {
         constrStatBuf += stat
         stat match {
           case ValDef(mods, name, _, _) if (mods hasFlag PRESUPER) =>
@@ -140,7 +140,7 @@ abstract class Constructors extends Transform {
         }
       }
 
-      for (val stat <- stats) stat match {
+      for (stat <- stats) stat match {
         case DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
           stat.symbol.tpe match {
             case MethodType(List(), tp @ ConstantType(c)) =>
@@ -186,9 +186,9 @@ abstract class Constructors extends Transform {
         }
       }
 
-      for (val stat <- defBuf.elements) accessTraverser.traverse(stat);
+      for (stat <- defBuf.elements) accessTraverser.traverse(stat)
 
-      val paramInits = for (val acc <- paramAccessors; isAccessed(acc))
+      val paramInits = for (acc <- paramAccessors if isAccessed(acc))
                        yield copyParam(acc, parameter(acc))
 
       defBuf += copy.DefDef(
@@ -198,7 +198,7 @@ abstract class Constructors extends Transform {
           paramInits ::: constrPrefixBuf.toList ::: constrStatBuf.toList,
           constrBody.expr));
 
-      for (val sym <- clazz.info.decls.toList)
+      for (sym <- clazz.info.decls.toList)
         if (!isAccessed(sym)) clazz.info.decls unlink sym
 
       copy.Template(impl, impl.parents, defBuf.toList filter (stat => isAccessed(stat.symbol)))

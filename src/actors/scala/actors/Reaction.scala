@@ -19,18 +19,20 @@ import java.lang.{InterruptedException, Runnable}
  *    return type <code>Nothing</code>.
  *  </p>
  *
- * @version 0.9.6
- * @author Philipp Haller
+ *  @version 0.9.6
+ *  @author Philipp Haller
  */
 private[actors] class ExitActorException extends Throwable
 
-/**
- * The abstract class <code>Reaction</code> associates
- * an instance of an <code>Actor</code> with a
- * <code>java.lang.Runnable</code>.
+/** <p>
+ *    The abstract class <code>Reaction</code> associates
+ *    an instance of an <code>Actor</code> with a
+ *    <a class="java/lang/Runnable" href="" target="contentFrame">
+ *    <code>java.lang.Runnable</code></a>.
+ *  </p>
  *
- * @version 0.9.6
- * @author Philipp Haller
+ *  @version 0.9.6
+ *  @author Philipp Haller
  */
 private[actors] class Reaction(a: Actor,
                                f: PartialFunction[Any, Unit],
@@ -39,7 +41,7 @@ private[actors] class Reaction(a: Actor,
 
   def actor = a
 
-  def run(): Unit = {
+  def run() {
     val saved = Actor.tl.get.asInstanceOf[Actor]
     Actor.tl.set(a)
     Scheduler.unPendReaction
