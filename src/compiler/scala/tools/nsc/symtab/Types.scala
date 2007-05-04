@@ -1206,7 +1206,7 @@ A type's symbol should never be inspected directly.
         else if (isHigherKinded)
           PolyType(typeParams, transform(sym.info.resultType).normalize)
         else {
-          log("Error: normalizing "+this+" with mismatch between type params "+sym.info.typeParams+" and args "+args)
+          log("Error: normalizing "+sym.rawname+" with mismatch between type params "+sym.info.typeParams+" and args "+args)
           //this
           transform(sym.info.resultType).normalize // technically wrong, but returning `this' is even worse (cycle!)
           // only happens when compiling `val x: Class' with -Xgenerics,
