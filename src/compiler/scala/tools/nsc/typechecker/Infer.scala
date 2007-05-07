@@ -860,9 +860,11 @@ trait Infer {
     }
 
     /** Type with all top-level occurrences of abstract types replaced by their bounds */
-    def widen(tp: Type): Type = tp.normalize match {
-      case TypeRef(pre, sym, _) if sym.isAbstractType =>
+    def widen(tp: Type): Type = tp match { // @M don't normalize here (compiler loops on pos/bug1090.scala )
+      case TypeRef(_, sym, _) if sym.isAbstractType =>
         widen(tp.bounds.hi)
+      case TypeRef(_, sym, _) if sym.isAliasType =>
+        widen(tp.normalize)
       case rtp @ RefinedType(parents, decls) =>
         copyRefinedType(rtp, List.mapConserve(parents)(widen), decls)
       case _ =>
