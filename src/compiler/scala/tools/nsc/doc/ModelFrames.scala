@@ -136,10 +136,11 @@ trait ModelFrames extends ModelExtractor {
         }), encoding)
     }
 
+
     def urlFor0(sym: Symbol, orig: Symbol): String = {
       (if (sym == NoSymbol) "XXX"
        else if (sym.owner.isPackageClass) {
-         rootFor(sym) + sym.fullNameString('/');
+         rootFor(sym) + pkgPath(sym);
        } else urlFor0(decode(sym.owner), orig) + "." + Utility.escape(sym.nameString)) +
       (sym match {
         case msym: ModuleSymbol =>
@@ -153,6 +154,11 @@ trait ModelFrames extends ModelExtractor {
       })
     }
   }
+  def pkgPath(sym : global.Symbol) = sym.fullNameString('/') match {
+    case "<empty>" => "_empty_"
+    case path => path
+  }
+
   protected def rootFor(sym: global.Symbol) = ""
 
   abstract class AllPackagesFrame extends Frame {
@@ -182,7 +188,7 @@ trait ModelFrames extends ModelExtractor {
         <tr><td colspan="2" class="title">Package Summary</td></tr>
         {sort(packages).mkXML("","\n","")(pkg => <tr><td class="signature">
           <code>package
-          {aref(pkg.fullName('/') + "$content.html", "_self", pkg.fullName('.'))}
+          {aref(pkgPath(pkg.sym) + "$content.html", "_self", pkg.fullName('.'))}
           </code>
         </td></tr>)}
       </table>;
@@ -235,7 +241,7 @@ trait ModelFrames extends ModelExtractor {
   }
 
   abstract class PackageContentFrame extends Frame {
-    override def path = pkg.fullName('/') + "$content"
+    override def path = pkgPath(pkg.sym) + "$content"
     override def title = "All classes and objects in " + pkg.fullName('.')
     protected def pkg: Package
     protected def classes: Iterable[ClassOrObject]
