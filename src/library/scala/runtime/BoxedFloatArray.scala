@@ -19,10 +19,10 @@ final class BoxedFloatArray(val value: Array[Float]) extends BoxedArray {
 
   def length: Int = value.length
 
-  def apply(index: Int): Any = BoxesUtility.boxToFloat(value(index))
+  def apply(index: Int): Any = Float.box(value(index))
 
   def update(index: Int, elem: Any): Unit = {
-    value(index) = BoxesUtility.unboxToFloat(elem.asInstanceOf[AnyRef])
+    value(index) = Float.unbox(elem.asInstanceOf[AnyRef])
   }
 
   def unbox(elemTag: String): AnyRef = value
