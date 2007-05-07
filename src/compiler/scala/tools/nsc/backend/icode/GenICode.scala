@@ -456,8 +456,10 @@ abstract class GenICode extends SubComponent  {
           val oldcleanups = ctx1.cleanups
           for (op <- ctx1.cleanups) op match {
             case MonitorRelease(m) =>
+              if (settings.debug.value) log("removing " + m + " from cleanups: " + ctx1.cleanups)
               ctx1.bb.emit(LOAD_LOCAL(m))
               ctx1.bb.emit(MONITOR_EXIT())
+              ctx1.exitSynchronized(m)
             case Finalizer(f) =>
               if (settings.debug.value) log("removing " + f + " from cleanups: " + ctx1.cleanups)
               // we have to run this without the same finalizer in
