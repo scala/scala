@@ -22,7 +22,12 @@ import collection.mutable.{Set, HashSet}
 object Utility extends AnyRef with parsing.TokenTests {
 
 
-  /** precondition: node is not a text node (it might be trimmed)
+  /** trims an element - call this method, when you know that it is an element (and not a text node)
+   *    so you know that it will not be trimmed away. With this assumption, the function can
+   *    return a Node, rather than a Seq[Node]. If you don't know, call trimProper and account for
+   *    the fact that you may get back an empty sequence of nodes
+   *
+   *  precondition: node is not a text node (it might be trimmed)
    */
 
   def trim(x:Node): Node = x match {
@@ -30,7 +35,8 @@ object Utility extends AnyRef with parsing.TokenTests {
       Elem(pre,lab,md,scp, (child flatMap trimProper):_*)
   }
 
-  /** attribute values and Atom nodes that are not Text nodes are unaffected */
+  /** trim a child of an element. Attribute values and Atom nodes that are not Text nodes are unaffected
+   */
   def trimProper(x:Node): Seq[Node] = x match {
     case Elem(pre,lab,md,scp,child@_*) =>
       Elem(pre,lab,md,scp, (child flatMap trimProper):_*)

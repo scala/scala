@@ -1,77 +1,63 @@
-/* examples/xml/phonebook/phonebook3.scala */
-package phonebook
+package phonebook;
 
 object phonebook3 {
 
-  import scala.xml.{Elem, Node, Text}
-  import scala.xml.Utility.view
-  import scala.xml.PrettyPrinter
-  import Node.NoAttributes
+  import scala.xml.{Elem, Node, Text} ;
+  import scala.xml.PrettyPrinter ;
+  import Node.NoAttributes ;
 
-  /* finds entry for Name, Where, changes it, or adds if not present */
-  def change ( phonebook: Node, Name: String, Where: String, newPhone: String ) = {
+  /* this method "changes" (returns an updated copy) of the phonebook when the
+   *   entry for Name exists. If it has an attribute "where" whose value is equal to the
+   *   parameter Where, it is changed, otherwise, it is added.
+   */
+  def change ( phonebook:Node, Name:String, Where:String, newPhone:String ) = {
 
-    /** returns true if this element's first child is the right 'name'
-     *  x is treated a if it was a singleton sequence here.
-     */
-    def hasName ( x: Seq[Node] ) = x(0).child.elements.exists {
-      case <name>{Text(Name)}</name>   => true
-      case _                           => false
-    }
+    /** this nested function walks through tree, and returns an updated copy of it  */
+    def copyOrChange ( ch: Iterator[Node] ) = {
 
-    /** returns true if this element has the right 'where' attribute
-     *  y is treated a if it was a singleton sequence here.
-     *  n.attribute(s) is the same as n.attributes.get(s)
-     */
-    def hasWhere ( y: Node ) = y.attribute("where") match {
-      case Some(Text(Where)) => true
-      case None              => false
-    }
+      import xml.Utility.{trim,trimProper} //removes whitespace nodes, which are annoying in matches
 
-    /** returns true if this element has the right 'where' attribute
-     *  the apply method of MetaData (n.attributes) returns raw a
-     *  sequence of nodes.
-     */
-    def hasWhere2 ( y: Node ) = y.attributes("where") match {
-      case null        => false
-      case Text(Where) => true
-      case _           => false
-    }
+      for( val c <- ch ) yield
+        trimProper(c) match {
 
+          // if the node is the particular entry we are looking for, return an updated copy
 
-    /** walks through tree, returns changed/copied updated tree  */
-    def copyOrChange ( ch: Iterator[Node] ):List[Node] = {
-      for(c <- ch ) yield c match {
+          case x @ <entry><name>{ Text(Name) }</name>{ ch1 @ _* }</entry> =>
 
-        case x @ <entry>{ ch1 @ _* }</entry> if hasName(x) =>
-          val it = ch1.elements;
-          val nameElem:Seq[Node] = it.next;             // grab 'name' element
-          val ch2 = nameElem ++ copyOrChange( it ); // concat with updated seq
+            var updated = false;
+            val ch2 = for(val c <- ch1) yield c match { // does it have the phone number?
 
-          if( ch1 == ch2 ) // not present: add as first entry
+              case y @ <phone>{ _* }</phone> if y.attribute("where") == Where =>
+                updated = true
+                <phone where={ Where }>{ newPhone }</phone>
 
-            <entry>
-              <name>{ Name }</name>
-              <phone where={ Where }>{ newPhone }</phone>
-              { ch1 }
-            </entry>
+              case y => y
 
-          else             // was present and changed
+            }
+            if( !updated ) { // no, so we add as first entry
 
-            <entry>
-              { ch2 }
-            </entry>
+              <entry>
+                <name>{ Name }</name>
+                <phone where={ Where }>{ newPhone }</phone>
+                { ch1 }
+              </entry>
 
-        case y @ <phone>{ _* }</phone> if hasWhere( y ) =>
-          Console.println("phone: "+c);
-          <phone where={ Where }>{ newPhone }</phone>
+            } else {         // yes, and we changed it as we should
 
-        case _ =>
-          Console.println("default "+c);
-          c
+              <entry>
+                { ch2 }
+              </entry>
+
+            }
+          // end case x @ <entry>...
+
+          // other entries are copied without changing them
+
+          case x =>
+            x
 
         }
-    }.toList ; // for ... yield ... returns Iterator, convert to list
+    } ; // for ... yield ... returns an Iterator[Node]
 
     // decompose phonebook, apply updates
     phonebook match {
