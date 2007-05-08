@@ -27,7 +27,7 @@ object phonebook3 {
             var updated = false;
             val ch2 = for(val c <- ch1) yield c match { // does it have the phone number?
 
-              case y @ <phone>{ _* }</phone> if y.attribute("where") == Where =>
+              case y @ <phone>{ _* }</phone> if y \ "@where" == Where =>
                 updated = true
                 <phone where={ Where }>{ newPhone }</phone>
 
