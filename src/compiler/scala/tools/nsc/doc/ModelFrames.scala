@@ -285,7 +285,7 @@ trait ModelFrames extends ModelExtractor {
         <br/>
         <span class="entity">{Text(clazz.kind)}  {Text(clazz.name)}</span>
       </div><hr/>
-      <div style="font-size:smaller; color:gray;">
+      <div class="source">
         {
           if (global.definitions.SyntheticClasses contains clazz.sym)
             Text("[Source: none]")
