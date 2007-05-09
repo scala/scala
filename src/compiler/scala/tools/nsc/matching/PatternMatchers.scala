@@ -166,9 +166,9 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes with P
         if(i != -1) {
           val CaseDef(_,_,b) = cases(i)
           //DEBUG("*** damn, unreachable!")
-          //for (b <- bodies) {
+          //Console.println("damn, unreachable!")
+          //for (b <- bodies)
           //  Console.println(b)
-          //}
           cunit.error(b.pos, "unreachable code")
         }
 
@@ -245,7 +245,7 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes with P
     protected def updateBody(tree: Body, bound: Array[ValDef],
                              guard: Tree, body: Tree): Unit =
       if (tree.guard(tree.guard.length - 1) == EmptyTree) {
-        cunit.error(body.pos, "unreachable code")
+        cunit.error(body.pos, "B unreachable code")
       } else {
         val bd = new Array[Array[ValDef]](tree.bound.length + 1)
         val ng = new Array[Tree](tree.guard.length + 1)
