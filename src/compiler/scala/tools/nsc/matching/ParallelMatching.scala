@@ -17,7 +17,8 @@ trait ParallelMatching  {
 
   import global._
 
-  final def DEBUG(x:String) = {if (settings.debug.value) Console.println(x)}
+  //final def DEBUG(x:String) = {if (settings.debug.value) Console.println(x)}
+  //final def DEBUG(x:String) = {Console.println(x)}
   // ----------------------------------   data
 
   sealed trait RuleApplication
@@ -91,10 +92,9 @@ trait ParallelMatching  {
    [locker] 	at scala.tools.nsc.backend.icode.GenICode$ICodePhase.scala$tools$nsc$backend$icode$GenICode$ICodePhase$$genLoad(GenICode.scala:809)
    [locker] 	at scala.tools.nsc.backend.icode.GenICode$ICodePhase.genLoadQualifier(GenICode.scala:996)
    [locker] 	at scala.tools.nsc.backend.icode.GenICode$ICodePhase.scala$tools$nsc$backend$icode$GenICode$ICodePhase$$genLoad(GenICode.scala:785)
-
           (pat.symbol != NoSymbol) && pat.symbol.tpe.prefix.isStable &&
           */
-          (patternType =:= singleType(pat.symbol.tpe.prefix, pat.symbol)) =>
+         (patternType =:= singleType(pat.symbol.tpe.prefix, pat.symbol)) =>
           (EmptyTree::ms, (j,dummies)::ss, rs);                                                 // matching an object
         case _ if (pat.tpe <:< patternType) =>
           ({if(pat.tpe =:= patternType) EmptyTree else pat}::ms, (j,subpatterns(pat))::ss, rs); // subsumed (same or more specific) pattern;
@@ -113,7 +113,7 @@ trait ParallelMatching  {
     }
 
     def getTransition(implicit theOwner: Symbol): (Symbol, Rep, Option[Rep]) = {
-      DEBUG("*** getTransition! of "+this.toString)
+      //DEBUG("*** getTransition! of "+this.toString)
       // the following works for type tests... what fudge is necessary for value comparisons?
       // type test
       casted = if(scrutinee.tpe =:= patternType) scrutinee else newVar(scrutinee.pos, patternType)
@@ -137,12 +137,12 @@ trait ParallelMatching  {
         ntemps = ntemps ::: rest.temp
         val ntriples = subtests map {
           case (j,pats) =>
-            val (vs:List[Symbol],_) = strip(column(j));
-            val (opats,osubst:List[(Symbol,Symbol)],og,ob) = rest.row(j);
-            val subst1:List[(Symbol,Symbol)] = vs map { v => (v,casted) }
+            val (vs,_) = strip(column(j));
+            val (opats,osubst,og,ob) = rest.row(j);
+            val subst1 = vs map { v => (v,casted) }
 
-            DEBUG("getTransition, vs = "+vs)
-            DEBUG("getTransition, subst1 = "+subst1)
+            //DEBUG("getTransition, vs = "+vs)
+            //DEBUG("getTransition, subst1 = "+subst1)
 
           // def doSubst(vs:List[Symbol], exp:Tree) = { new TreeSymSubstituter(vs,vs map {x=> casted}).traverse(exp); exp }
 
@@ -153,8 +153,8 @@ trait ParallelMatching  {
         }
         Rep(ntemps, ntriples) setParent this
       }
-      DEBUG("nmatrix for type "+patternType)
-      DEBUG(nmatrix.toString)
+      //DEBUG("nmatrix for type "+patternType)
+      //DEBUG(nmatrix.toString)
 
       // and then more or this... Console.println(nmatrix.applyRule)
       // CONTINUE HERE: epsilon transitions, which ensure that transitions are tested in the right order.
@@ -169,16 +169,17 @@ trait ParallelMatching  {
         if(ntriples.isEmpty) None else Some(Rep(ntemps, ntriples) setParent this)
       }
       if(!nmatrixFail.isEmpty) {
-        DEBUG("nmatrix for failing type test "+patternType)
-        DEBUG(nmatrixFail.get.toString)
+        //DEBUG("nmatrix for failing type test "+patternType)
+        //DEBUG(nmatrixFail.get.toString)
       } else {
-        DEBUG("pattern type "+patternType+" cannot fail for "+scrutinee)
+        //DEBUG("pattern type "+patternType+" cannot fail for "+scrutinee)
       }
       (casted, nmatrix, nmatrixFail)
     } // end getTransitions
   }
 
   def repToTree(rep:Rep, typed:Tree => Tree, handleOuter: Tree => Tree)(implicit theOwner: Symbol, failTree: Tree, bodies: collection.mutable.Map[Tree,(Tree,Tree, Symbol)]): Tree = {
+    //Console.println("repToTree")
     rep.applyRule match {
       case VariableRule(subst, EmptyTree, b) => bodies.get(b) match {
         case Some(EmptyTree, b, theLabel) =>
@@ -200,7 +201,7 @@ trait ParallelMatching  {
         // make new value parameter for each vsym in subst
         // (**) approach 2
         //val pdefsyms = subst map { case (v,tmp) => theLabel.newValueParameter(v.pos, v.name+"_!") . setInfo (v.tpe). setFlag(symtab.Flags.MUTABLE) }
-        DEBUG("subst of "+b.hashCode+"! in case VariableRule (new) "+subst)
+        //DEBUG("subst of "+b.hashCode+"! in case VariableRule (new) "+subst)
         val vdefs    = subst map { case (v,t) => ValDef(v, {v.setFlag(symtab.Flags.TRANS_FLAG);
                                                             if(v.tpe =:= t.tpe) typed{Ident(t)} else typed{gen.mkAsInstanceOf(Ident(t),v.tpe)}}) }
         // this weird thing should only be done for shared states.
@@ -278,46 +279,63 @@ trait ParallelMatching  {
     }
   }
 
-    def makeRep(temp:List[Symbol], row1:List[(List[Tree], List[(Symbol,Symbol)], Tree, Tree)]/*, exCh:List[Boolean]*/): Rep = {
-      var i = -1
-      val row = row1 flatMap {
-        xx =>
-          def isAlternative(p: Tree): Boolean = p match {
-            case Bind(_,p)       => isAlternative(p)
-            case Alternative(ps) => true
-            case _               => false
-          }
-          def getAlternativeBranches(p:Tree): List[Tree] = {
-            def get_BIND(pctx:Tree => Tree, p:Tree):List[Tree] = p match {
-              case b @ Bind(n,p)       => get_BIND({ x:Tree => pctx(copy.Bind(b, n, x) setType x.tpe) }, p)
-              case Alternative(ps) => ps map pctx
-            }
-            get_BIND({x=>x}, p)
-          }
-          val (pats,subst,g,b) = xx
-          i = pats findIndexOf isAlternative
-          if(i == -1)
-            List((pats,subst,g,b))
-          else {
-            val prefix:List[Tree] = pats.take(i)
-            val alts  = getAlternativeBranches(pats(i))
-            val suffix:List[Tree] = pats.drop(i+1)
-            alts map { p => (prefix ::: p :: suffix, subst, g, b) }
-          }
-      }
-      if(i == -1)
-        Rep(temp,row/*,ex*/)
-      else
-        makeRep(temp,row/*,ex*/)
-    }
+object Rep {
+  type RepType = Product2[List[Symbol], List[(List[Tree], List[(Symbol,Symbol)], Tree, Tree)]]
+  def unapply(x:Rep):Option[RepType] =
+    if(x.isInstanceOf[RepImpl]) Some(x.asInstanceOf[RepImpl]) else None
 
-  case class Rep(val temp:List[Symbol], val row:List[(List[Tree], List[(Symbol,Symbol)], Tree, Tree)]/*, val exhaustivenessChecked:List[Boolean]*/) {
-    assert(row.forall { case (pats,subst,g,b) => temp.length == pats.length })
+  private
+  case class RepImpl(val temp:List[Symbol], val row:List[(List[Tree], List[(Symbol,Symbol)], Tree, Tree)]) extends Rep with RepType {
+    assert(row.forall { case (pats,subst,g,b) => temp.length == pats.length });
+    def _1 = temp
+    def _2 = row
+  }
+
+  /** the injection here handles alternatives */
+  def apply(temp:List[Symbol], row1:List[(List[Tree], List[(Symbol,Symbol)], Tree, Tree)]): Rep = {
+    var i = -1
+    val row = row1 flatMap {
+      xx =>
+        def isAlternative(p: Tree): Boolean = p match {
+          case Bind(_,p)       => isAlternative(p)
+          case Alternative(ps) => true
+          case _               => false
+        }
+      def getAlternativeBranches(p:Tree): List[Tree] = {
+        def get_BIND(pctx:Tree => Tree, p:Tree):List[Tree] = p match {
+          case b @ Bind(n,p)       => get_BIND({ x:Tree => pctx(copy.Bind(b, n, x) setType x.tpe) }, p)
+          case Alternative(ps) => ps map pctx
+        }
+        get_BIND({x=>x}, p)
+      }
+      val (pats,subst,g,b) = xx
+      i = pats findIndexOf isAlternative
+      if(i == -1)
+        List((pats,subst,g,b))
+      else {
+        val prefix:List[Tree] = pats.take(i)
+        val alts  = getAlternativeBranches(pats(i))
+        val suffix:List[Tree] = pats.drop(i+1)
+        alts map { p => (prefix ::: p :: suffix, subst, g, b) }
+      }
+    }
+    if(i == -1)
+      RepImpl(temp,row).init
+    else
+      Rep(temp,row) // recursive call
+  }
+}
+
+  abstract class Rep {
+    val temp:List[Symbol]
+    val row:List[(List[Tree], List[(Symbol,Symbol)], Tree, Tree)]
 
     var sealedCols = List[Int]()
     var sealedComb = List[Set[Symbol]]()
     //Console.println(" the matrix "+this.toString)
-    temp.zipWithIndex.foreach {
+
+    def init: this.type = {
+      temp.zipWithIndex.foreach {
       case (sym,i) =>
         //Console.println("sym! "+sym+" mutable? "+sym.hasFlag(symtab.Flags.MUTABLE)+" captured? "+sym.hasFlag(symtab.Flags.CAPTURED))
         if (sym.hasFlag(symtab.Flags.MUTABLE) &&  // indicates that have not yet checked exhaustivity
@@ -341,48 +359,52 @@ trait ParallelMatching  {
                 sealedComb = cases::sealedComb
               }
             }
-    }
-    //  computes cartesian product, keeps indices available
-    def combine(colcom: List[(Int,Set[Symbol])]): List[List[(Int,Symbol)]] = colcom match {
-      case Nil => Nil
-      case (i,syms)::Nil  => syms.toList.map { sym => List((i,sym)) }
-      case (i,syms)::cs   => for (s <- syms.toList; rest <- combine(cs)) yield (i,s) :: rest
-    }
-
-    if(!sealedCols.isEmpty) {
-      DEBUG("cols"+sealedCols)
-      DEBUG("comb")
-      for (com <- sealedComb) DEBUG(com.toString)
-
-      val allcomb = combine(sealedCols zip sealedComb)
-      //Console.println("all comb!" + allcomb)
-      /** returns true if pattern vector pats covers a type symbols "combination"
-       *  @param pats pattern vector
-       *  @param comb pairs of (column index, type symbol)
-       */
-      def covers(pats: List[Tree], comb:List[(Int,Symbol)]) = {
-        comb forall { case (i,sym) => val p = pats(i); p.tpe.symbol == sym || sym.tpe <:< p.tpe }
       }
-      val coversAll = allcomb forall { combination => row exists { r => covers(r._1, combination)}}
-      //Console.println("all combinations covered? "+coversAll)
-      if(!coversAll) {
-        val sb = new StringBuilder()
-        sb.append("match is not exhaustive!\n")
-        for (open <- allcomb if !(row exists { r => covers(r._1, open)})) {
-              sb.append("missing combination ")
-              val NPAD = 15
-              def pad(s:String) = { Iterator.range(1,NPAD - s.length).foreach { x => sb.append(" ") }; sb.append(s) }
-              List.range(0, temp.length) foreach {
-                 i => open.find { case (j,sym) => j==i } match {
-                  case None => pad("*")
-                  case Some((_,sym)) => pad(sym.name.toString)
-                }
+
+      //  computes cartesian product, keeps indices available
+      def combine(colcom: List[(Int,Set[Symbol])]): List[List[(Int,Symbol)]] = colcom match {
+        case Nil => Nil
+        case (i,syms)::Nil  => syms.toList.map { sym => List((i,sym)) }
+        case (i,syms)::cs   => for (s <- syms.toList; rest <- combine(cs)) yield (i,s) :: rest
+      }
+
+      if(!sealedCols.isEmpty) {
+        //DEBUG("cols"+sealedCols)
+        //DEBUG("comb")
+        //for (com <- sealedComb) DEBUG(com.toString)
+
+        val allcomb = combine(sealedCols zip sealedComb)
+        //Console.println("all comb!" + allcomb)
+        /** returns true if pattern vector pats covers a type symbols "combination"
+         *  @param pats pattern vector
+         *  @param comb pairs of (column index, type symbol)
+         */
+        def covers(pats: List[Tree], comb:List[(Int,Symbol)]) = {
+          comb forall { case (i,sym) => val p = pats(i); p.tpe.symbol == sym || sym.tpe <:< p.tpe }
+        }
+        val coversAll = allcomb forall { combination => row exists { r => covers(r._1, combination)}}
+        //Console.println("all combinations covered? "+coversAll)
+        if(!coversAll) {
+          val sb = new StringBuilder()
+          sb.append("match is not exhaustive!\n")
+          for (open <- allcomb if !(row exists { r => covers(r._1, open)})) {
+            sb.append("missing combination ")
+            val NPAD = 15
+            def pad(s:String) = { Iterator.range(1,NPAD - s.length).foreach { x => sb.append(" ") }; sb.append(s) }
+            List.range(0, temp.length) foreach {
+              i => open.find { case (j,sym) => j==i } match {
+                case None => pad("*")
+                case Some((_,sym)) => pad(sym.name.toString)
               }
-              sb.append('\n')
             }
-        cunit.warning(temp.head.pos, sb.toString)
+            sb.append('\n')
+          }
+          cunit.warning(temp.head.pos, sb.toString)
+        }
       }
-    }
+      return this
+    } // end init
+
     // if this was the *fail* branch, the Rep preceding this Rep
     var mixtureParent: MixtureRule = null
 
@@ -399,7 +421,7 @@ trait ParallelMatching  {
       case (pats,subst,g,b)::xs =>
         if(pats forall isDefaultPattern) {
           val subst1 = pats.zip(temp) flatMap { case (p,tmp) => val (vs,_) = strip(p); vs.zipAll(Nil,null,tmp)}
-          DEBUG("applyRule! subst1="+subst1)
+          //DEBUG("applyRule! subst1="+subst1)
           VariableRule (subst:::subst1, g, b)
         } else {
           val i = pats findIndexOf {x => !isDefaultPattern(x)}
@@ -409,7 +431,7 @@ trait ParallelMatching  {
           val restTemp =                                     temp.take(i) ::: temp.drop(i+1)
           val restRows = row map { case (pats,subst,g,b) => (pats.take(i) ::: pats.drop(i+1),subst,g,b) }
           //val restEx   =                    exhaustivenessChecked.take(i) ::: exhaustivenessChecked.drop(i+1)
-          MixtureRule(temp(i), column, makeRep(restTemp,restRows/*,restEx*/)) setParent this
+          MixtureRule(temp(i), column, Rep(restTemp,restRows/*,restEx*/)) setParent this
         }
     }
     // a fancy toString method for debugging
@@ -435,7 +457,7 @@ trait ParallelMatching  {
     if(!checkExhaustive)
       root.setFlag(symtab.Flags.CAPTURED)
     val row  = cases map { case CaseDef(pat,g,b) => (List(pat),List(),g,b) }
-    makeRep(List(root), row)
+    Rep(List(root), row)
   }
   /** this tree node is used several times in the parallel algo and will never be needed for matching, so it is reused */
    val Ident_WILDCARD = Ident(nme.WILDCARD) setType definitions.AnyClass.tpe
@@ -554,7 +576,7 @@ trait ParallelMatching  {
    */
   def condition(tpe: Type, scrut: Symbol): Tree = {
     val res = condition1(tpe, scrut)
-    DEBUG("condition, tpe = "+tpe+", scrut.tpe = "+scrut.tpe+", res = "+res)
+    //DEBUG("condition, tpe = "+tpe+", scrut.tpe = "+scrut.tpe+", res = "+res)
     res
   }
   def condition1(tpe: Type, scrut: Symbol): Tree = {
@@ -607,7 +629,7 @@ trait ParallelMatching  {
   def outerAlwaysEqual(left: Type, right: Type): Option[Boolean] = (left.normalize,right.normalize) match {
     case (TypeRef(lprefix, _,_), TypeRef(rprefix,_,_)) =>
       if(!(lprefix =:= rprefix)) {
-        DEBUG("DEBUG(outerAlwaysEqual) Some(f) for"+(left,right))
+        //DEBUG("DEBUG(outerAlwaysEqual) Some(f) for"+(left,right))
       }
       Some(lprefix =:= rprefix)
     case _                                             => None

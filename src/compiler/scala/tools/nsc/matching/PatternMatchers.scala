@@ -128,17 +128,17 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes with P
           x match {
             case _:UnApply => throw CantHandleUnapply
             case Ident(n) if n!= nme.WILDCARD =>
-              DEBUG("I can't handle IDENT pattern:"+x)
-              DEBUG("x.tpe.symbols:"+x.tpe.symbol)
+              //DEBUG("I can't handle IDENT pattern:"+x)
+              //DEBUG("x.tpe.symbols:"+x.tpe.symbol)
               throw CantHandleIdent
             case p:Select =>
             //case p:Select =>
-            //  DEBUG("I can't handle SELECT pattern:"+p)
-            //  DEBUG("p.tpe.symbols:"+p.tpe.symbol)
+            //  //DEBUG("I can't handle SELECT pattern:"+p)
+            //  //DEBUG("p.tpe.symbols:"+p.tpe.symbol)
             //throw CantHandleUnapply
             case p@Apply(_,_) if !p.tpe.symbol.hasFlag(symtab.Flags.CASE) =>
-              DEBUG("I can't handle APPLY pattern:"+p)
-              DEBUG("p.tpe.symbols:"+p.tpe.symbol)
+              //DEBUG("I can't handle APPLY pattern:"+p)
+              //DEBUG("p.tpe.symbols:"+p.tpe.symbol)
               throw CantHandleApply
 
             //case p@Apply(_,_) if !p.tpe.symbol.hasFlag(symtab.Flags.CASE) => throw CantHandleUnapply //@todo
@@ -160,15 +160,15 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes with P
         val mch  = typed{repToTree(irep, typed, handleOuter)}
         dfatree = typed{squeezedBlock(List(vdef), mch)}
 
-        DEBUG("**** finished\n"+dfatree.toString)
+        //DEBUG("**** finished\n"+dfatree.toString)
 
         val i = cases.findIndexOf { case CaseDef(_,_,b) => bodies.get(b).isEmpty}
         if(i != -1) {
           val CaseDef(_,_,b) = cases(i)
-          DEBUG("*** damn, unreachable!")
-          //for (b <- bodies) {
+          //DEBUG("*** damn, unreachable!")
+          //Console.println("damn, unreachable!")
+          //for (b <- bodies)
           //  Console.println(b)
-          //}
           cunit.error(b.pos, "unreachable code")
         }
 
@@ -192,9 +192,9 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes with P
       } else throw CantHandleGuard
       } catch {
         case e: CantHandle => // fall back
-            DEBUG("****")
-            DEBUG("**** falling back, "+e.getClass)
-            DEBUG("****")
+            //DEBUG("****")
+            //DEBUG("**** falling back, "+e.getClass)
+            //DEBUG("****")
 
         case CantHandleGuard   => // fall back (actually already fell back before)
         case e =>
@@ -245,7 +245,7 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes with P
     protected def updateBody(tree: Body, bound: Array[ValDef],
                              guard: Tree, body: Tree): Unit =
       if (tree.guard(tree.guard.length - 1) == EmptyTree) {
-        cunit.error(body.pos, "unreachable code")
+        cunit.error(body.pos, "B unreachable code")
       } else {
         val bd = new Array[Array[ValDef]](tree.bound.length + 1)
         val ng = new Array[Tree](tree.guard.length + 1)
@@ -1113,7 +1113,7 @@ print()
     protected def toTree_refined(node: PatternNode, selector:Tree, ignoreSelectorType: Boolean): Tree = {
       //Console.println("pm.toTree("+node+","+selector+") selector.tpe = "+selector.tpe+")")
       if (selector.tpe eq null)
-        scala.Predef.error("cannot go on")
+        scala.Predef.error("cannot go on due to internal error (type attribute set to null)")
       if (node eq null)
         return Literal(Constant(false));
       else

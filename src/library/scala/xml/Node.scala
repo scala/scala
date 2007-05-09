@@ -137,14 +137,12 @@ abstract class Node extends NodeSeq {
     case _ => false
   }
 
-  /**
-   *  Returns a hashcode. A standard implementation of hashcodes is obtained by calling
-   *  Utility.hashCode(pre, label, attributes.hashCode(), child);
-   *  Martin to Burak: to do: if you make this method abstract, the compiler will now
-   *  complain if there's no implementation in a subclass. Is this what we want? Note that
-   *  this would break doc/DocGenator and doc/ModelToXML, with an error message like:
-doc/ModelToXML.scala:95: error: object creation impossible, since there is a deferred declaration of method hashCode in class Node of type ()Int which is not implemented in a subclass
-    new SpecialNode {
+  /** <p>
+   *    Returns a hashcode. The default implementation here calls only
+   *    super.hashcode (which is the same as for objects). A more useful
+   *    implementation can be invoked by calling
+   *  <code>Utility.hashCode(pre, label, attributes.hashCode(), child)</code>.
+   *  </p>
    */
   override def hashCode(): Int = super.hashCode
 
