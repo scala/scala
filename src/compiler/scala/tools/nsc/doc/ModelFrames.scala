@@ -104,6 +104,8 @@ trait ModelFrames extends ModelExtractor {
       case msym: ModuleSymbol =>
         urlFor0(sym, sym) + FILE_EXTENSION_HTML
       case csym: ClassSymbol =>
+        if (csym.name == "$colon$colon")
+          Console.println("****************************" + csym.name)
         urlFor0(sym, sym) + FILE_EXTENSION_HTML
       case _ =>
         val cnt = urlFor(decode(sym.owner))
@@ -136,12 +138,11 @@ trait ModelFrames extends ModelExtractor {
         }), encoding)
     }
 
-
-    def urlFor0(sym: Symbol, orig: Symbol): String = {
+    def urlFor0(sym: Symbol, orig: Symbol): String =
       (if (sym == NoSymbol) "XXX"
-       else if (sym.owner.isPackageClass) {
-         rootFor(sym) + pkgPath(sym);
-       } else urlFor0(decode(sym.owner), orig) + "." + Utility.escape(sym.nameString)) +
+       else if (sym.owner.isPackageClass) rootFor(sym) + pkgPath(sym)
+       else urlFor0(decode(sym.owner), orig) + "." + Utility.escape(sym.nameString)
+      ) +
       (sym match {
         case msym: ModuleSymbol =>
           if (msym hasFlag Flags.PACKAGE) NAME_SUFFIX_PACKAGE
@@ -152,7 +153,6 @@ trait ModelFrames extends ModelExtractor {
         case _ =>
           ""
       })
-    }
   }
   def pkgPath(sym : global.Symbol) = sym.fullNameString('/') match {
     case "<empty>" => "_empty_"
