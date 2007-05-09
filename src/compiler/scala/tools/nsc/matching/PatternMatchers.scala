@@ -19,6 +19,7 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes with P
   import symtab.Flags
 
   abstract class CantHandle extends Exception
+  object CantHandleSeq     extends CantHandle
   object CantHandleUnapply extends CantHandle
   object CantHandleApply   extends CantHandle
   object CantHandleIdent   extends CantHandle
@@ -126,7 +127,8 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes with P
         override def traverse(x:Tree) = {
           //Console.println("pat:'"+x+"' / "+x.getClass)
           x match {
-            case _:UnApply => throw CantHandleUnapply
+            case _:ArrayValue => throw CantHandleSeq
+            case _:UnApply    => throw CantHandleUnapply
             case Ident(n) if n!= nme.WILDCARD =>
               //DEBUG("I can't handle IDENT pattern:"+x)
               //DEBUG("x.tpe.symbols:"+x.tpe.symbol)
@@ -1099,7 +1101,7 @@ print()
       val t = toTree_refined(node, selector, false)
       try {
         //Console.println("type-checking "+t)
-        typed { t } // DEBUG
+        typed { t } // //DEBUG
       } catch {
         case e =>
 
