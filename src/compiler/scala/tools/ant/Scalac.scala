@@ -61,9 +61,7 @@ import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
  *    <li>bootclasspath,</li>
  *    <li>extdirs.</li>
  * </ul>
- *
- * @author Gilles Dubochet, Stephane Micheloud
- */
+ * @author Gilles Dubochet, Stephane Micheloud */
 class Scalac extends MatchingTask {
 
   /** The unique Ant file utilities instance to use in this task. */
@@ -98,8 +96,7 @@ class Scalac extends MatchingTask {
   }
 
   /** Defines valid values for the <code>deprecation</code> and
-   *  <code>unchecked</code> properties.
-   */
+   *  <code>unchecked</code> properties. */
   object Flag extends PermissibleValue {
     val values = List("yes", "no", "on", "off")
   }
@@ -133,24 +130,23 @@ class Scalac extends MatchingTask {
   private var logPhase: List[String] = Nil
 
   /** Whether to use implicit predefined values or not. */
-  private var usepredefs: Boolean = true
+  private var usepredefs: Option[Boolean] = None
   /** Instruct the compiler to generate debugging information */
-  private var debugInfo: String = "line"
+  private var debugInfo: Option[String] = None
   /** Instruct the compiler to use additional parameters */
   private var addParams: String = ""
   /** Instruct the compiler to generate deprecation information. */
-  private var deprecation: Boolean = false
+  private var deprecation: Option[Boolean] = None
   /** Instruct the compiler to generate unchecked information. */
-  private var unchecked: Boolean = false
+  private var unchecked: Option[Boolean] = None
 
   // Name of the output assembly (only relevant with -target:msil)
-  private var assemname: String = ""
+  private var assemname: Option[String] = None
   // List of assemblies referenced by the program (only relevant with -target:msil)
-  private var assemrefs: String = "."
+  private var assemrefs: Option[String] = None
 
   /** Whether the compiler is being debuged. Prints more information in case
-   *  in case of failure.
-   */
+   *  in case of failure. */
   private var scalacDebugging: Boolean = false
 
 /*============================================================================*\
@@ -158,97 +154,74 @@ class Scalac extends MatchingTask {
 \*============================================================================*/
 
   /** Sets the srcdir attribute. Used by Ant.
-   *
-   *  @param input The value of <code>origin</code>.
-   */
+   *  @param input The value of <code>origin</code>. */
   def setSrcdir(input: Path) =
     if (origin.isEmpty) origin = Some(input)
     else origin.get.append(input)
 
   /** Sets the <code>origin</code> as a nested src Ant parameter.
-   *
-   *  @return An origin path to be configured.
-   */
+   *  @return An origin path to be configured. */
   def createSrc(): Path = {
     if (origin.isEmpty) origin = Some(new Path(getProject()))
     origin.get.createPath()
   }
 
   /** Sets the <code>origin</code> as an external reference Ant parameter.
-   *
-   *  @param input A reference to an origin path.
-   */
+   *  @param input A reference to an origin path. */
   def setSrcref(input: Reference) =
     createSrc().setRefid(input)
 
   /** Sets the <code>destdir</code> attribute. Used by Ant.
-   *
-   *  @param input The value of <code>destination</code>.
-   */
+   *  @param input The value of <code>destination</code>. */
   def setDestdir(input: File) =
       destination = Some(input)
 
   /** Sets the <code>classpath</code> attribute. Used by Ant.
-   *
-   *  @param input The value of <code>classpath</code>.
-   */
+   *  @param input The value of <code>classpath</code>. */
   def setClasspath(input: Path) =
     if (classpath.isEmpty) classpath = Some(input)
     else classpath.get.append(input)
 
   /** Sets the <code>classpath</code> as a nested classpath Ant parameter.
-   *
-   *  @return A class path to be configured.
-   */
+   *  @return A class path to be configured. */
   def createClasspath(): Path = {
     if (classpath.isEmpty) classpath = Some(new Path(getProject()))
     classpath.get.createPath()
   }
 
   /** Sets the <code>classpath</code> as an external reference Ant parameter.
-   *
-   *  @param input A reference to a class path.
-   */
+   *  @param input A reference to a class path. */
   def setClasspathref(input: Reference) =
     createClasspath().setRefid(input)
 
   /** Sets the <code>sourcepath</code> attribute. Used by Ant.
-   *
-   *  @param input The value of <code>sourcepath</code>.
-   */
+   *  @param input The value of <code>sourcepath</code>. */
   def setSourcepath(input: Path) =
     if (sourcepath.isEmpty) sourcepath = Some(input)
     else sourcepath.get.append(input)
 
   /** Sets the <code>sourcepath</code> as a nested sourcepath Ant parameter.
-   *
-   *  @return A source path to be configured.
-   */
+   *  @return A source path to be configured. */
   def createSourcepath(): Path = {
     if (sourcepath.isEmpty) sourcepath = Some(new Path(getProject()))
     sourcepath.get.createPath()
   }
 
   /** Sets the <code>sourcepath</code> as an external reference Ant parameter.
-   *
-   *  @param input A reference to a source path.
-   */
+   *  @param input A reference to a source path. */
   def setSourcepathref(input: Reference) =
     createSourcepath().setRefid(input)
 
   /** Sets the boot classpath attribute. Used by Ant.
    *
-   *  @param input The value of <code>bootclasspath</code>.
-   */
+   *  @param input The value of <code>bootclasspath</code>. */
   def setBootclasspath(input: Path) =
     if (bootclasspath.isEmpty) bootclasspath = Some(input)
     else bootclasspath.get.append(input)
 
   /** Sets the <code>bootclasspath</code> as a nested sourcepath Ant
    *  parameter.
-   *
-   *  @return A source path to be configured.
-   */
+   *  @return A source path to be configured. */
   def createBootclasspath(): Path = {
     if (bootclasspath.isEmpty) bootclasspath = Some(new Path(getProject()))
     bootclasspath.get.createPath()
@@ -256,70 +229,52 @@ class Scalac extends MatchingTask {
 
   /** Sets the <code>bootclasspath</code> as an external reference Ant
    *  parameter.
-   *
-   *  @param input A reference to a source path.
-   */
+   *  @param input A reference to a source path. */
   def setBootclasspathref(input: Reference) =
     createBootclasspath().setRefid(input)
 
   /** Sets the external extensions path attribute. Used by Ant.
-   *
-   *  @param input The value of <code>extdirs</code>.
-   */
+   *  @param input The value of <code>extdirs</code>. */
   def setExtdirs(input: Path) =
     if (extdirs.isEmpty) extdirs = Some(input)
     else extdirs.get.append(input)
 
   /** Sets the <code>extdirs</code> as a nested sourcepath Ant parameter.
-   *
-   *  @return An extensions path to be configured.
-   */
+   *  @return An extensions path to be configured. */
   def createExtdirs(): Path = {
     if (extdirs.isEmpty) extdirs = Some(new Path(getProject()))
     extdirs.get.createPath()
   }
 
   /** Sets the <code>extdirs</code> as an external reference Ant parameter.
-   *
-   *  @param input A reference to an extensions path.
-   */
+   *  @param input A reference to an extensions path. */
   def setExtdirsref(input: Reference) =
     createExtdirs().setRefid(input)
 
   /** Sets the <code>encoding</code> attribute. Used by Ant.
-   *
-   *  @param input The value of <code>encoding</code>.
-   */
+   *  @param input The value of <code>encoding</code>. */
   def setEncoding(input: String): Unit =
     encoding = Some(input)
 
   /** Sets the <code>target</code> attribute. Used by Ant.
-   *
-   *  @param input The value for <code>target</code>.
-   */
+   *  @param input The value for <code>target</code>. */
   def setTarget(input: String): Unit =
     if (Target.isPermissible(input)) backend = Some(input)
     else error("Unknown target '" + input + "'")
 
   /** Sets the <code>force</code> attribute. Used by Ant.
-   *
-   *  @param input The value for <code>force</code>.
-   */
+   *  @param input The value for <code>force</code>. */
   def setForce(input: Boolean): Unit =
     force = input
 
   /** Sets the logging level attribute. Used by Ant.
-   *
-   *  @param input The value for <code>logging</code>.
-   */
+   *  @param input The value for <code>logging</code>. */
   def setLogging(input: String) =
     if (LoggingLevel.isPermissible(input)) logging = Some(input)
     else error("Logging level '" + input + "' does not exist.")
 
   /** Sets the <code>logphase</code> attribute. Used by Ant.
-   *
-   *  @param input The value for <code>logPhase</code>.
-   */
+   *  @param input The value for <code>logPhase</code>. */
   def setLogPhase(input: String) = {
     logPhase = List.fromArray(input.split(",")).flatMap { s: String =>
       val st = s.trim()
@@ -333,58 +288,46 @@ class Scalac extends MatchingTask {
   }
 
   /** Sets the <code>usepredefs</code> attribute. Used by Ant.
-   *
-   *  @param input The value for <code>usepredefs</code>.
-   */
+   *  @param input The value for <code>usepredefs</code>. */
   def setUsepredefs(input: Boolean): Unit =
-    usepredefs = input
+    usepredefs = Some(input)
 
   /** Set the <code>debug</code> info attribute.
-   *
-   *  @param input The value for <code>debug</code>.
-   */
+   *  @param input The value for <code>debug</code>. */
   def setDebuginfo(input: String): Unit =
-    debugInfo = input
+    debugInfo = Some(input)
 
   /** Set the <code>addparams</code> info attribute.
-   *
-   *  @param input The value for <code>addparams</code>.
-   */
+   *  @param input The value for <code>addparams</code>. */
   def setAddparams(input: String): Unit =
     addParams = input
 
   /** Set the <code>deprecation</code> info attribute.
-   *
-   *  @param input One of the flags <code>yes/no</code> or <code>on/off</code>.
-   */
+   *  @param input One of the flags <code>yes/no</code> or <code>on/off</code>. */
   def setDeprecation(input: String): Unit =
     if (Flag.isPermissible(input))
-      deprecation = "yes".equals(input) || "on".equals(input)
+      deprecation = Some("yes" == input || "on" == input)
     else
       error("Unknown deprecation flag '" + input + "'")
 
   /** Set the <code>unchecked</code> info attribute.
-   *
-   *  @param input One of the flags <code>yes/no</code> or <code>on/off</code>.
-   */
+   *  @param input One of the flags <code>yes/no</code> or <code>on/off</code>. */
   def setUnchecked(input: String): Unit =
     if (Flag.isPermissible(input))
-      unchecked = "yes".equals(input) || "on".equals(input)
+      unchecked = Some("yes" == input || "on" == input)
     else
       error("Unknown unchecked flag '" + input + "'")
 
   /** Set the <code>scalacdebugging</code> info attribute.
-   *
-   *  @param input The specified flag
-   */
+   *  @param input The specified flag */
   def setScalacdebugging(input: Boolean): Unit =
     scalacDebugging = input
 
   def setAssemname(input: String): Unit =
-    assemname = input
+    assemname = Some(input)
 
   def setAssemrefs(input: String): Unit =
-    assemrefs = input
+    assemrefs = Some(input)
 
 /*============================================================================*\
 **                             Properties getters                             **
@@ -392,54 +335,42 @@ class Scalac extends MatchingTask {
 
   /** Gets the value of the <code>classpath</code> attribute in a
    *  Scala-friendly form.
-   *
-   *  @return The class path as a list of files.
-   */
+   *  @return The class path as a list of files. */
   private def getClasspath: List[File] =
     if (classpath.isEmpty) error("Member 'classpath' is empty.")
     else List.fromArray(classpath.get.list()).map(nameToFile)
 
   /** Gets the value of the <code>origin</code> attribute in a
-   * Scala-friendly form.
-   *
-   *  @return The origin path as a list of files.
-   */
+   *  Scala-friendly form.
+   *  @return The origin path as a list of files. */
   private def getOrigin: List[File] =
     if (origin.isEmpty) error("Member 'origin' is empty.")
     else List.fromArray(origin.get.list()).map(nameToFile)
 
   /** Gets the value of the <code>destination</code> attribute in a
    *  Scala-friendly form.
-   *
-   *  @return The destination as a file.
-   */
+   *  @return The destination as a file. */
   private def getDestination: File =
     if (destination.isEmpty) error("Member 'destination' is empty.")
     else existing(getProject().resolveFile(destination.get.toString()))
 
   /** Gets the value of the <code>sourcepath</code> attribute in a
    *  Scala-friendly form.
-   *
-   *  @return The source path as a list of files.
-   */
+   *  @return The source path as a list of files. */
   private def getSourcepath: List[File] =
     if (sourcepath.isEmpty) error("Member 'sourcepath' is empty.")
     else List.fromArray(sourcepath.get.list()).map(nameToFile)
 
   /** Gets the value of the <code>bootclasspath</code> attribute in a
    *  Scala-friendly form.
-   *
-   *  @return The boot class path as a list of files.
-   */
+   *  @return The boot class path as a list of files. */
   private def getBootclasspath: List[File] =
     if (bootclasspath.isEmpty) error("Member 'bootclasspath' is empty.")
     else List.fromArray(bootclasspath.get.list()).map(nameToFile)
 
   /** Gets the value of the <code>extdirs</code> attribute in a
    *  Scala-friendly form.
-   *
-   *  @return The extensions path as a list of files.
-   */
+   *  @return The extensions path as a list of files. */
   private def getExtdirs: List[File] =
     if (extdirs.isEmpty) error("Member 'extdirs' is empty.")
     else List.fromArray(extdirs.get.list()).map(nameToFile)
@@ -449,37 +380,30 @@ class Scalac extends MatchingTask {
 \*============================================================================*/
 
   /** This is forwarding method to circumvent bug #281 in Scala 2. Remove when
-   *  bug has been corrected.
-   */
+   *  bug has been corrected. */
   override protected def getDirectoryScanner(baseDir: File) =
     super.getDirectoryScanner(baseDir)
 
   /** Transforms a string name into a file relative to the provided base
    *  directory.
-   *
    *  @param base A file pointing to the location relative to which the name
    *              will be resolved.
    *  @param name A relative or absolute path to the file as a string.
-   *  @return     A file created from the name and the base file.
-   */
+   *  @return     A file created from the name and the base file. */
   private def nameToFile(base: File)(name: String): File =
     existing(fileUtils.resolveFile(base, name))
 
   /** Transforms a string name into a file relative to the build root
    *  directory.
-   *
    *  @param name A relative or absolute path to the file as a string.
-   *  @return     A file created from the name.
-   */
+   *  @return     A file created from the name. */
   private def nameToFile(name: String): File =
     existing(getProject().resolveFile(name))
 
   /** Tests if a file exists and prints a warning in case it doesn't. Always
    *  returns the file, even if it doesn't exist.
-   *
    *  @param file A file to test for existance.
-   *  @return     The same file.
-   */
+   *  @return     The same file. */
   private def existing(file: File): File = {
     if (!file.exists())
       log("Element '" + file.toString() + "' does not exist.",
@@ -488,27 +412,21 @@ class Scalac extends MatchingTask {
   }
 
   /** Transforms a path into a Scalac-readable string.
-   *
    *  @param path A path to convert.
-   *  @return     A string-representation of the path like <code>a.jar:b.jar</code>.
-   */
+   *  @return     A string-representation of the path like <code>a.jar:b.jar</code>. */
   private def asString(path: List[File]): String =
-    path.map(asString).mkString("", File.pathSeparator, "")
+    path.map(asString).mkString(File.pathSeparator)
 
   /** Transforms a file into a Scalac-readable string.
-   *
    *  @param path A file to convert.
-   *  @return     A string-representation of the file like <code>/x/k/a.scala</code>.
-   */
+   *  @return     A string-representation of the file like <code>/x/k/a.scala</code>. */
   private def asString(file: File): String =
     file.getAbsolutePath()
 
   /** Generates a build error. Error location will be the current task in the
    *  ant file.
-   *
    *  @param message         A message describing the error.
-   *  @throws BuildException A build error exception thrown in every case.
-   */
+   *  @throws BuildException A build error exception thrown in every case. */
   private def error(message: String): Nothing =
     throw new BuildException(message, getLocation())
 
@@ -563,7 +481,8 @@ class Scalac extends MatchingTask {
 
           list
         }
-      } yield {
+      }
+      yield {
         log(originFile.toString(), Project.MSG_DEBUG)
         nameToFile(originDir)(originFile)
       }
@@ -590,13 +509,13 @@ class Scalac extends MatchingTask {
       settings.debug.value = true
     }
     if (!logPhase.isEmpty) settings.log.value = logPhase
-    settings.nopredefs.value = !usepredefs
-    settings.debuginfo.value = debugInfo
-    settings.deprecation.value = deprecation
-    settings.unchecked.value = unchecked
+    if (!usepredefs.isEmpty) settings.nopredefs.value = !usepredefs.get
+    if (!debugInfo.isEmpty) settings.debuginfo.value = debugInfo.get
+    if (!deprecation.isEmpty) settings.deprecation.value = deprecation.get
+    if (!unchecked.isEmpty) settings.unchecked.value = unchecked.get
 
-    settings.assemname.value = assemname
-    settings.assemrefs.value = assemrefs
+    if (!assemname.isEmpty) settings.assemname.value = assemname.get
+    if (!assemrefs.isEmpty) settings.assemrefs.value = assemrefs.get
 
     log("Scalac params = '" + addParams + "'", Project.MSG_DEBUG)
     var args =
@@ -607,7 +526,8 @@ class Scalac extends MatchingTask {
       if (args.head startsWith "-") {
         for (setting <- settings.allSettings)
           args = setting.tryToSet(args);
-      } else error("Parameter '" + args.head + "' does not start with '-'.")
+      }
+      else error("Parameter '" + args.head + "' does not start with '-'.")
       if (argsBuf eq args)
         error("Parameter '" + args.head + "' is not recognised by Scalac.")
     }
@@ -623,7 +543,8 @@ class Scalac extends MatchingTask {
     val compiler = new Global(settings, reporter)
     try {
       (new compiler.Run).compile(sourceFiles.map (.toString()))
-     } catch {
+     }
+     catch {
       case exception: Throwable if (exception.getMessage ne null) =>
         exception.printStackTrace()
         error("Compile failed because of an internal compiler error (" +
