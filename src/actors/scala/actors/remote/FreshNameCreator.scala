@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2005-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2005-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -26,11 +26,11 @@ object FreshNameCreator {
       case None => 0
     }
     counters.update(prefix, count)
-    new Symbol(prefix + count)
+    Symbol(prefix + count)
   }
 
   def newName(): Symbol = {
-    counter = counter + 1
-    new Symbol("$" + counter + "$")
+    counter += 1
+    Symbol("$" + counter + "$")
   }
 }

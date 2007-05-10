@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2005-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2005-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -14,6 +14,9 @@ import scala.collection.mutable.{HashMap, HashSet}
 
 case class NamedSend(senderName: Symbol, receiver: Symbol, data: Array[Byte])
 
+/**
+ *  @author Philipp Haller
+ */
 class NetKernel(service: Service) {
 
   def sendToNode(node: Node, msg: AnyRef) = {
@@ -21,18 +24,17 @@ class NetKernel(service: Service) {
     service.send(node, bytes)
   }
 
-  def namedSend(node: Node, senderName: Symbol, receiver: Symbol, msg: AnyRef): Unit = {
+  def namedSend(node: Node, senderName: Symbol, receiver: Symbol, msg: AnyRef) {
     val bytes = service.serializer.serialize(msg)
     sendToNode(node, NamedSend(senderName, receiver, bytes))
   }
 
-  def send(node: Node, name: Symbol, msg: AnyRef): Unit = {
+  def send(node: Node, name: Symbol, msg: AnyRef) {
     val senderName = names.get(Actor.self) match {
-      case None => {
+      case None =>
         val freshName = FreshNameCreator.newName("remotesender")
         register(freshName, Actor.self)
         freshName
-      }
       case Some(name) =>
         name
     }
@@ -43,11 +45,11 @@ class NetKernel(service: Service) {
     msg match {
       case NamedSend(senderName, receiver, data) =>
         actors.get(receiver) match {
-          case Some(a) => {
+          case Some(a) =>
             val msg = service.serializer.deserialize(data)
             val senderProxy = new Actor {
               def act() = { a ! msg }
-              override def !(msg: Any): Unit = {
+              override def !(msg: Any) {
                 msg match {
                   case refmsg: AnyRef =>
                     namedSend(senderNode, receiver, senderName, refmsg)
@@ -55,7 +57,6 @@ class NetKernel(service: Service) {
               }
             }
             senderProxy.start()
-          }
           case None =>
             // message is lost
         }
