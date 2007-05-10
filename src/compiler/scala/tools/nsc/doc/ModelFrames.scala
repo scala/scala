@@ -104,8 +104,6 @@ trait ModelFrames extends ModelExtractor {
       case msym: ModuleSymbol =>
         urlFor0(sym, sym) + FILE_EXTENSION_HTML
       case csym: ClassSymbol =>
-        if (csym.name == "$colon$colon")
-          Console.println("****************************" + csym.name)
         urlFor0(sym, sym) + FILE_EXTENSION_HTML
       case _ =>
         val cnt = urlFor(decode(sym.owner))

@@ -191,7 +191,7 @@ abstract class NodePrinters {
           case Super(qual, mix) =>
             printcln("Super(\"" + qual + "\", \"" + mix + "\")" + nodeinfo2(tree))
           case Template(parents, body) =>
-            println("Template(,")
+            println("Template(," + nodeinfo(tree))
             println("  " + parents.map(p => p.tpe.symbol) + ", // parents")
             if (body.isEmpty)
               println("  List() // no body")
