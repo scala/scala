@@ -57,6 +57,7 @@ abstract class GenJVM extends SubComponent {
   class BytecodeGenerator {
     val MIN_SWITCH_DENSITY = 0.7
     val StringBufferClass = if (settings.target.value == "jvm-1.5") "java.lang.StringBuilder" else "java.lang.StringBuffer"
+    val BoxesUtility = "scala.runtime.BoxesUtility"
 
     val stringBufferType = new JObjectType(StringBufferClass)
     val toStringType = new JMethodType(JObjectType.JAVA_LANG_STRING, JType.EMPTY_ARRAY)
@@ -787,17 +788,13 @@ abstract class GenJVM extends SubComponent {
             }
 
           case BOX(kind) =>
-            val kindSymbol = kind.toType.symbol
-            val boxMethod = definitions.boxMethod(kindSymbol)
-            val boxedType = definitions.boxedClass(kindSymbol)
+            val boxedType = definitions.boxedClass(kind.toType.symbol)
             val mtype = new JMethodType(javaType(boxedType), Array(javaType(kind)))
-            jcode.emitINVOKESTATIC(javaName(definitions.BoxesUtilityModule), boxMethod.name.toString, mtype)
+            jcode.emitINVOKESTATIC(BoxesUtility, "boxTo" + boxedType.nameString, mtype)
 
           case UNBOX(kind) =>
-            val kindSymbol = kind.toType.symbol
-            val unboxMethod = definitions.unboxMethod(kindSymbol)
             val mtype = new JMethodType(javaType(kind), Array(JObjectType.JAVA_LANG_OBJECT))
-            jcode.emitINVOKESTATIC(javaName(definitions.BoxesUtilityModule), unboxMethod.name.toString, mtype)
+            jcode.emitINVOKESTATIC(BoxesUtility, "unboxTo" + kind.toType.symbol.nameString, mtype)
 
           case NEW(REFERENCE(cls)) =>
             val className = javaName(cls)

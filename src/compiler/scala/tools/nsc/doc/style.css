@@ -45,6 +45,11 @@ div.page-title {
 	text-align: center;
 }
 
+div.source {
+	font-size: smaller;
+	color: gray;
+}
+
 span.entity {
 	color: #ff6666;
 }

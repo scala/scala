@@ -19,10 +19,10 @@ final class BoxedByteArray(val value: Array[Byte]) extends BoxedArray {
 
   def length: Int = value.length
 
-  def apply(index: Int): Any = BoxesUtility.boxToByte(value(index))
+  def apply(index: Int): Any = Byte.box(value(index))
 
   def update(index: Int, elem: Any): Unit = {
-    value(index) = BoxesUtility.unboxToByte(elem.asInstanceOf[AnyRef])
+    value(index) = Byte.unbox(elem.asInstanceOf[AnyRef])
   }
 
   def unbox(elemTag: String): AnyRef = value

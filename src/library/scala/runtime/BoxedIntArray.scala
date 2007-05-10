@@ -19,10 +19,10 @@ final class BoxedIntArray(val value: Array[Int]) extends BoxedArray {
 
   def length: Int = value.length
 
-  def apply(index: Int): Any = BoxesUtility.boxToInteger(value(index))
+  def apply(index: Int): Any = Int.box(value(index))
 
   def update(index: Int, elem: Any): Unit = {
-    value(index) = BoxesUtility.unboxToInt(elem.asInstanceOf[AnyRef])
+    value(index) = Int.unbox(elem.asInstanceOf[AnyRef])
   }
 
   def unbox(elemTag: String): AnyRef = value

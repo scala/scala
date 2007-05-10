@@ -72,8 +72,23 @@ object scaladoc extends Command {
           CmdOption("windowtitle", Argument("windowtitle")),
           "Specify window title of generated HTML documentation"),
         Definition(
-          CmdOption("documenttitle", Argument("documenttitle")),
-          "Specify document title of generated HTML documentation"),
+          CmdOption("doctitle", Argument("doctitle")),
+          "Include title for the overview page"),
+        Definition(
+          CmdOption("stylesheetfile", Argument("stylesheetfile")),
+          "File to change style of the generated documentation"),
+        Definition(
+          CmdOption("header", Argument("pageheader")),
+          "Include header text for each page"),
+        Definition(
+          CmdOption("footer", Argument("pagefooter")),
+          "Include footer text for each page"),
+        Definition(
+          CmdOption("top", Argument("pagetop")),
+          "Include top text for each page"),
+        Definition(
+          CmdOption("bottom", Argument("pagebottom")),
+          "Include bottom text for each page"),
         Definition(
           CmdOption("version"),
           "Print product version and exit."),
@@ -112,9 +127,9 @@ object scaladoc extends Command {
 
   def manpage = new Document {
     title = command
-    date = "October 4, 2006"
+    date = "May 1, 2007"
     author = "Stephane Micheloud"
-    version = "0.3"
+    version = "0.4"
     sections = List(
       name,
       synopsis,

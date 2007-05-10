@@ -100,7 +100,7 @@ abstract class DocDriver extends ModelFrames with ModelToXML {
         def title =
           "List of classes and objects in package " + pkg0.fullName('.')
         def classes = classes0;
-        def path = pkg0.fullName('/') + NAME_SUFFIX_PACKAGE;
+        def path = pkgPath(pkg0.sym) + NAME_SUFFIX_PACKAGE;
         def navLabel = pkg0.fullName('.');
       }
       new PackageContentFrame with Frame {

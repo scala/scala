@@ -7,7 +7,7 @@
 package scala.tools.nsc.reporters
 
 import java.io.{BufferedReader, InputStreamReader, IOException, PrintWriter}
-import util.{FakePos,Position}
+import util.{FakePos,Position,NoPosition}
 
 import compat.StringBuilder
 
@@ -53,6 +53,7 @@ class ConsoleReporter(val settings: Settings, reader: BufferedReader, writer: Pr
       buf.insert(0, " ")
       buf.insert(0, pos.line.map(ln => ":" + pos.line.get + ":").get(":"))
       pos match {
+        case NoPosition =>
         case FakePos(msg) =>
           buf.insert(0, msg)
         case _ if !pos.source.isEmpty =>

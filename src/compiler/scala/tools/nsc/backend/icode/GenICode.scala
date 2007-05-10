@@ -43,6 +43,10 @@ abstract class GenICode extends SubComponent  {
     val SCALA_ALLREF = REFERENCE(definitions.AllRefClass)
     val THROWABLE    = REFERENCE(definitions.ThrowableClass)
 
+    val BoxedCharacterClass = definitions.getClass("java.lang.Character")
+    val Comparator_equals = definitions.getMember(definitions.getModule("scala.runtime.Comparator"),
+                                                 nme.equals_)
+
     /** Tree transformer that makes fresh label defs. */
     val duplicator = new DuplicateLabels
 
@@ -1380,16 +1384,16 @@ abstract class GenICode extends SubComponent  {
         (lsym == definitions.ObjectClass) ||
         (rsym == definitions.ObjectClass) ||
         (lsym isNonBottomSubClass definitions.BoxedNumberClass)||
-        (lsym isNonBottomSubClass definitions.BoxedCharacterClass) ||
+        (lsym isNonBottomSubClass BoxedCharacterClass) ||
         (rsym isNonBottomSubClass definitions.BoxedNumberClass) ||
-        (rsym isNonBottomSubClass definitions.BoxedCharacterClass)
+        (rsym isNonBottomSubClass BoxedCharacterClass)
       }
 
       if (mustUseAnyComparator) {
 
         val ctx1 = genLoad(l, ctx, ANY_REF_CLASS)
         val ctx2 = genLoad(r, ctx1, ANY_REF_CLASS)
-        ctx2.bb.emit(CALL_METHOD(definitions.Comparator_equals, Static(false)))
+        ctx2.bb.emit(CALL_METHOD(Comparator_equals, Static(false)))
         ctx2.bb.emit(CZJUMP(thenCtx.bb, elseCtx.bb, NE, BOOL))
         ctx2.bb.close
 

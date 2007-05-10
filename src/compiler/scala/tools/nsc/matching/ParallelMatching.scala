@@ -66,11 +66,15 @@ trait ParallelMatching  {
     }
     private val isCaseScrutinee = patternType.symbol.hasFlag(symtab.Flags.CASE)
     private val dummies = if(!isCaseScrutinee) Nil else patternType.symbol.caseFieldAccessors.map { x => EmptyTree }
-    private def subpatterns(pat:Tree): List[Tree] = pat match {
+ /*   private def subpatternTop(pat:Tree): List[Tree] = pat match {
+      case ArrayValue(_,ps) => ps // experimental, is a sequence pattern after all (problem, columns get different length %/)
+      case _              => subpatterns(pat)
+    }
+ */   private def subpatterns(pat:Tree): List[Tree] = pat match {
       case Bind(_,p)                                                          => subpatterns(p)
       case app @ Apply(fn, pats) if app.tpe.symbol.hasFlag(symtab.Flags.CASE) => pats
       case _: UnApply                                                         => throw CantHandleUnapply
-      case pat                                                                => /*DEBUG("dummy patterns for "+pat+" of class "+pat.getClass);*/dummies
+      case pat                                                                => /*//DEBUG("dummy patterns for "+pat+" of class "+pat.getClass);*/dummies
     }
       // more specific patterns, subpatterns, remaining patterns
     private var sr = column.zipWithIndex.foldLeft (moreSpecific,subsumed,remaining) {
@@ -94,6 +98,8 @@ trait ParallelMatching  {
    [locker] 	at scala.tools.nsc.backend.icode.GenICode$ICodePhase.scala$tools$nsc$backend$icode$GenICode$ICodePhase$$genLoad(GenICode.scala:785)
           (pat.symbol != NoSymbol) && pat.symbol.tpe.prefix.isStable &&
           */
+        //{Console.println(pat.symbol+" "+definitions.isValueType(patternType.symbol)); !definitions.isValueType(patternType.symbol)}&&
+        // try patternType.prefix?
          (patternType =:= singleType(pat.symbol.tpe.prefix, pat.symbol)) =>
           (EmptyTree::ms, (j,dummies)::ss, rs);                                                 // matching an object
         case _ if (pat.tpe <:< patternType) =>
@@ -183,8 +189,10 @@ trait ParallelMatching  {
     rep.applyRule match {
       case VariableRule(subst, EmptyTree, b) => bodies.get(b) match {
         case Some(EmptyTree, b, theLabel) =>
+          //DEBUG("H E L L O"+subst+" "+b)
           // (**) approach 2
           val body  = Apply(Ident(theLabel), subst.map { p => Ident(p._2) })
+          //DEBUG("W O RL D"+body)
           return body
 
         // (*) approach 1
@@ -202,6 +210,7 @@ trait ParallelMatching  {
         // (**) approach 2
         //val pdefsyms = subst map { case (v,tmp) => theLabel.newValueParameter(v.pos, v.name+"_!") . setInfo (v.tpe). setFlag(symtab.Flags.MUTABLE) }
         //DEBUG("subst of "+b.hashCode+"! in case VariableRule (new) "+subst)
+        //DEBUG("b itself is "+b)
         val vdefs    = subst map { case (v,t) => ValDef(v, {v.setFlag(symtab.Flags.TRANS_FLAG);
                                                             if(v.tpe =:= t.tpe) typed{Ident(t)} else typed{gen.mkAsInstanceOf(Ident(t),v.tpe)}}) }
         // this weird thing should only be done for shared states.
@@ -258,11 +267,11 @@ trait ParallelMatching  {
 
         // dig out case field accessors that were buried in (***)
         val cfa  = casted.caseFieldAccessors
-        //DEBUG(casted.toString)
-        //DEBUG(cfa.toString)
+        //DEBUG("case field accessors, casted = "+casted.toString)
+        //DEBUG("case field accessors, the things themselves = "+cfa.toString)
         val caseTemps = (if(!srep.temp.isEmpty && srep.temp.head == casted) srep.temp.tail else srep.temp).zip(cfa)
 
-        //DEBUG(caseTemps.toString)
+        //DEBUG("case temps"+caseTemps.toString)
         var vdefs     = caseTemps map {
           case (tmp,meth) =>
             val typedAccess = typed { Apply(Select(typed{Ident(casted)}, meth),List()) }
@@ -275,7 +284,7 @@ trait ParallelMatching  {
         case Literal(Constant(false)) => elsep
         case _ => If(cond, thenp, elsep)
       }
-        typed { makeIf(cond, /*squeezed*/Block(vdefs,succ), fail) }
+        typed { makeIf(cond, squeezedBlock(vdefs,succ), fail) }
     }
   }
 
@@ -371,7 +380,7 @@ object Rep {
       if(!sealedCols.isEmpty) {
         //DEBUG("cols"+sealedCols)
         //DEBUG("comb")
-        //for (com <- sealedComb) DEBUG(com.toString)
+        //for (com <- sealedComb) //DEBUG(com.toString)
 
         val allcomb = combine(sealedCols zip sealedComb)
         //Console.println("all comb!" + allcomb)

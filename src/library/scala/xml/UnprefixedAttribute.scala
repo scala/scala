@@ -11,14 +11,13 @@
 
 package scala.xml
 
-import compat.StringBuilder
-
-/** unprefixed attributes have the null namespace, and no prefix field
+/** Unprefixed attributes have the null namespace, and no prefix field
  *
+ *  @author Burak Emir
  */
 class UnprefixedAttribute(val key: String, val value: Seq[Node], next1: MetaData) extends MetaData {
 
-  val next = if(value ne null) next1 else next1.remove(key)
+  val next = if (value ne null) next1 else next1.remove(key)
 
   /** same as this(key, Utility.parseAttributeValue(value), next) */
   def this(key: String, value: String, next: MetaData) =
@@ -28,7 +27,7 @@ class UnprefixedAttribute(val key: String, val value: Seq[Node], next1: MetaData
   def copy(next: MetaData) =
     new UnprefixedAttribute(key, value, next)
 
-  def equals1(m:MetaData) =
+  def equals1(m: MetaData) =
     !m.isPrefixed && (m.key == key) && (m.value sameElements value)
 
   /** returns null */
@@ -63,8 +62,11 @@ class UnprefixedAttribute(val key: String, val value: Seq[Node], next1: MetaData
   /** returns false */
   final def isPrefixed = false
 
-  /** appends string representation of only this attribute to stringbuffer */
-  def toString1(sb:StringBuilder): Unit = if(value ne null) {
+  /** appends string representation of only this attribute to stringbuffer.
+   *
+   *  @param sb ..
+   */
+  def toString1(sb: StringBuilder): Unit = if (value ne null) {
     sb.append(key)
     sb.append('=')
     val sb2 = new StringBuilder()

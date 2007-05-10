@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -10,8 +10,6 @@
 
 
 package scala.xml
-
-import compat.StringBuilder
 
 /**
  * This object provides methods ...
@@ -27,7 +25,7 @@ object Node {
   /** the empty namespace */
   val EmptyNamespace = ""
 
-  def unapplySeq(n:Node) = Some (Tuple3(n.label, n.attributes, n.child))
+  def unapplySeq(n: Node) = Some(Tuple3(n.label, n.attributes, n.child))
 
 }
 
@@ -51,8 +49,9 @@ abstract class Node extends NodeSeq {
   def typeTag$: Int = 0
 
   /**
-   *  method returning the namespace bindings of this node. by default, this is TopScope,
-   *  which means there are no namespace bindings except the predefined one for "xml".
+   *  method returning the namespace bindings of this node. by default, this
+   *  is TopScope, which means there are no namespace bindings except the
+   *  predefined one for "xml".
    */
   def scope: NamespaceBinding = TopScope
 
@@ -90,11 +89,13 @@ abstract class Node extends NodeSeq {
    * @return value of <code>PrefixedAttribute</code> with given namespace
    *         and given key, otherwise <code>null</code>.
    */
-  final def attribute(uri: String, key: String): Option[Seq[Node]] = attributes.get(uri, this, key)
+  final def attribute(uri: String, key: String): Option[Seq[Node]] =
+    attributes.get(uri, this, key)
 
   /**
-   * Returns attribute meaning all attributes of this node, prefixed and unprefixed,
-   * in no particular order. In class Node, this defaults to Null (the empty attribute list).
+   * Returns attribute meaning all attributes of this node, prefixed and
+   * unprefixed, in no particular order. In class <code>Node</code>, this
+   * defaults to <code>Null</code> (the empty attribute list).
    *
    * @return all attributes of this node
    */
@@ -175,12 +176,12 @@ abstract class Node extends NodeSeq {
    * @param sb ...
    * @return   ...
    */
-  def nameToString(sb: StringBuilder): StringBuilder  = {
+  def nameToString(sb: StringBuilder): StringBuilder = {
     if (null != prefix) {
       sb.append(prefix)
       sb.append(':')
     }
-    sb.append(label);
+    sb.append(label)
   }
 
   /**

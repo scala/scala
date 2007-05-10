@@ -109,9 +109,6 @@ trait Definitions {
       def checkDefinedMethod = getMember(ScalaRunTimeModule, "checkDefined")
       def isArrayMethod = getMember(ScalaRunTimeModule, "isArray")
     var NotNullClass: Symbol = _
-    var BoxesUtilityModule: Symbol = _
-    var ComparatorModule: Symbol = _
-      def Comparator_equals = getMember(ComparatorModule, nme.equals_)
     var RepeatedParamClass: Symbol = _
     var ByNameParamClass: Symbol = _
     //var UnsealedClass: Symbol = _
@@ -362,7 +359,6 @@ trait Definitions {
     var BoxedObjectArrayClass: Symbol = _
     var BoxedUnitClass: Symbol = _
     var BoxedNumberClass: Symbol = _
-    var BoxedCharacterClass: Symbol = _
     var BoxedUnitModule: Symbol = _
       def BoxedUnit_UNIT = getMember(BoxedUnitModule, "UNIT")
     var ObjectRefClass: Symbol = _
@@ -453,82 +449,11 @@ trait Definitions {
         .setInfo(mkTypeBounds(AllClass.typeConstructor, AnyClass.typeConstructor))
 
     val boxedClass = new HashMap[Symbol, Symbol]
+    val unboxMethod = new HashMap[Symbol, Symbol] // Type -> Method
+    val boxMethod = new HashMap[Symbol, Symbol] // Type -> Method
+    val boxedArrayClass = new HashMap[Symbol, Symbol]
 
-    private var unboxMethodCache: collection.mutable.Map[Symbol, Symbol] = null
-    def unboxMethod =
-      if (unboxMethodCache != null) unboxMethodCache
-      else {
-        unboxMethodCache = new collection.mutable.Map[Symbol, Symbol] {
-          private val container = new HashMap[Symbol, Symbol]
-          private val classes =
-            List(BooleanClass, ByteClass, ShortClass, CharClass, IntClass, LongClass, FloatClass, DoubleClass)
-          for (val cl <- classes)
-            container.update(cl, getMember(BoxesUtilityModule, "unboxTo" + cl.name))
-          def -= (key: Symbol): Unit = throw new Error()
-          def update(key: Symbol, value: Symbol): Unit =
-            container.update(key, value)
-          def size: Int = container.size
-          def elements = container.elements
-          def get(key: Symbol): Option[Symbol] = container.get(key)
-        }
-        unboxMethodCache
-      }
-
-    private var boxMethodCache: collection.mutable.Map[Symbol, Symbol] = null
-    def boxMethod =
-      if (boxMethodCache != null) boxMethodCache
-      else {
-        boxMethodCache = new collection.mutable.Map[Symbol, Symbol] {
-          private val container = new HashMap[Symbol, Symbol]
-          private val BooleanClass = definitions.BooleanClass
-          private val ByteClass = definitions.ByteClass
-          private val CharClass = definitions.CharClass
-          private val ShortClass = definitions.ShortClass
-          private val IntClass = definitions.IntClass
-          private val LongClass = definitions.LongClass
-          private val FloatClass = definitions.FloatClass
-          private val DoubleClass = definitions.DoubleClass
-          private val classes =
-            List(BooleanClass, ByteClass, ShortClass, CharClass, IntClass, LongClass, FloatClass, DoubleClass)
-          for (val cl <- classes) {
-            val boxedName =
-              if (!forMSIL) cl match {
-                case BooleanClass => "Boolean"
-                case ByteClass => "Byte"
-                case CharClass => "Character"
-                case ShortClass => "Short"
-                case IntClass => "Integer"
-                case LongClass => "Long"
-                case FloatClass => "Float"
-                case DoubleClass => "Double"
-              }
-              else cl match {
-                case BooleanClass => "Boolean"
-                case ByteClass => "Byte"
-                case CharClass => "Char"
-                case ShortClass => "Int16"
-                case IntClass => "Int32"
-                case LongClass => "Int64"
-                case FloatClass => "Single"
-                case DoubleClass => "Double"
-              }
-            container.update(cl, getMember(BoxesUtilityModule, "boxTo" + boxedName))
-          }
-          def -= (key: Symbol): Unit = throw new Error()
-          def update(key: Symbol, value: Symbol): Unit = {
-              assert(value.isMethod)
-              container.update(key, value)
-            }
-          def size: Int = container.size
-          def elements = container.elements
-          def get(key: Symbol): Option[Symbol] = container.get(key)
-        }
-        boxMethodCache
-      }
-
-    val boxedArrayClass: collection.mutable.Map[Symbol, Symbol] = new HashMap[Symbol, Symbol]
-
-    def isUnbox(m: Symbol) = (unboxMethod.values contains m) && {
+    def isUnbox(m: Symbol) = m.name == nme.unbox && {
       m.tpe match {
         case MethodType(_, restpe) => (unboxMethod get restpe.symbol) match {
           case Some(`m`) => true
@@ -554,7 +479,7 @@ trait Definitions {
 
     private def newValueClass(name: Name, tag: char): Symbol = {
       val boxedName =
-        if (!forMSIL) name match {
+        if (!forMSIL) "java.lang." + (name match {
           case nme.Boolean => "Boolean"
           case nme.Byte => "Byte"
           case nme.Char => "Character"
@@ -563,8 +488,8 @@ trait Definitions {
           case nme.Long => "Long"
           case nme.Float => "Float"
           case nme.Double => "Double"
-        }
-        else name match {
+        })
+        else "System." + (name match {
           case nme.Boolean => "Boolean"
           case nme.Byte => "Byte"
           case nme.Char => "Char"
@@ -573,13 +498,12 @@ trait Definitions {
           case nme.Long => "Int64"
           case nme.Float => "Single"
           case nme.Double => "Double"
-        }
-      val boxedPathName =
-        if (!forMSIL) "java.lang." + boxedName else "System." + boxedName
+        })
+
       val clazz =
         newClass(ScalaPackageClass, name, List(AnyValClass.typeConstructor))
         .setFlag(ABSTRACT | FINAL)
-      boxedClass(clazz) = getClass(boxedPathName)
+      boxedClass(clazz) = getClass(boxedName)
       boxedArrayClass(clazz) = getClass("scala.runtime.Boxed" + name + "Array")
       refClass(clazz) = getClass("scala.runtime." + name + "Ref")
       abbrvTag(clazz) = tag
@@ -589,6 +513,14 @@ trait Definitions {
       val mclass = module.moduleClass
       mclass.setInfo(ClassInfoType(List(), newScope, mclass))
       module.setInfo(mclass.tpe)
+
+      val box = newMethod(mclass, nme.box, List(clazz.typeConstructor),
+                          ObjectClass.typeConstructor)
+      boxMethod(clazz) = box
+      val unbox = newMethod(mclass, nme.unbox, List(ObjectClass.typeConstructor),
+                            clazz.typeConstructor)
+      unboxMethod(clazz) = unbox
+
       clazz
     }
 
@@ -877,8 +809,6 @@ trait Definitions {
                  else "java.lang.IndexOutOfBoundsException")
       ScalaRunTimeModule = getModule("scala.runtime.ScalaRunTime")
       NotNullClass = getClass("scala.NotNull")
-      BoxesUtilityModule = getModule("scala.runtime.BoxesUtility")
-      ComparatorModule = getModule("scala.runtime.Comparator")
       RepeatedParamClass = newCovariantPolyClass(
         ScalaPackageClass, nme.REPEATED_PARAM_CLASS_NAME,
         tparam => typeRef(SeqClass.typeConstructor.prefix, SeqClass, List(tparam.typeConstructor)))
@@ -947,7 +877,6 @@ trait Definitions {
       BoxedAnyArrayClass = getClass("scala.runtime.BoxedAnyArray")
       BoxedObjectArrayClass = getClass("scala.runtime.BoxedObjectArray")
       BoxedUnitClass = getClass("scala.runtime.BoxedUnit")
-      BoxedCharacterClass = getClass("java.lang.Character")
       BoxedUnitModule = getModule("scala.runtime.BoxedUnit")
       ObjectRefClass = getClass("scala.runtime.ObjectRef")
 

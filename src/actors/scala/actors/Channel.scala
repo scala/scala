@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2005-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2005-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -20,8 +20,8 @@ package scala.actors
  *    The following example demonstrates its usage:
  *  </p><pre>
  *  receive {
- *    case Chan1 ! msg1 => ...
- *    case Chan2 ! msg2 => ...
+ *    <b>case</b> Chan1 ! msg1 => ...
+ *    <b>case</b> Chan2 ! msg2 => ...
  *  }
  *  </pre>
  *
@@ -55,7 +55,7 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
    *
    * @param  msg the message to be sent
    */
-  def !(msg: Msg): unit = {
+  def !(msg: Msg) {
     receiver ! scala.actors.!(this, msg)
   }
 
@@ -63,7 +63,7 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
    * Forwards <code>msg</code> to <code>this</code> keeping the
    * last sender as sender instead of <code>self</code>.
    */
-  def forward(msg: Msg): unit = {
+  def forward(msg: Msg) {
     receiver forward scala.actors.!(this, msg)
   }
 
