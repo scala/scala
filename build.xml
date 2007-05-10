@@ -103,6 +103,10 @@ INITIALISATION
     <fail
       unless="memory.set"
       message="SABBUS requires additional memory. Please set the 'ANT_OPTS' environment property to '-Xmx512M' or more."/>
+    <propertyregex
+      property="memory.info" input="${env.ANT_OPTS}" defaultValue=""
+      select=" (raise to 600 MB for performance)"
+      regexp="-Xmx([1-5][0-9]{2})(M|m)"/>
   <!-- This is the start time for the distribution -->
     <stopwatch name="timer.dist"/>
     <tstamp prefix="time">
@@ -153,13 +157,13 @@ INITIALISATION
     <property name="init.avail" value="yes"/>
   <!-- Printing out some information about what environment I am running in -->
     <echo level="info"
-      message="OS:   ${os.type} (${os.name} ${os.arch} ${os.version});"/>
+      message="OS:     ${os.type} (${os.name} ${os.arch} ${os.version});"/>
     <echo level="info"
-      message="Java: ${java.version} ('${java.home}');"/>
+      message="Java:   ${java.vm.name} ${java.vm.version} ('${java.home}');"/>
     <echo level="info"
-      message="JVM:  ${java.vm.name} ${java.vm.version};"/>
+      message="Memory: ${memory.set} MB${memory.info};"/>
     <echo level="info"
-      message="Ant:  ${ant.version}."/>
+      message="Ant:    ${ant.version}."/>
   </target>
 
 <!-- ===========================================================================
