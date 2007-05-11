@@ -142,7 +142,7 @@ trait Namers requires Analyzer {
     }
 
     def inConstructorFlag: long =
-      if (context.owner.isConstructor && !context.inConstructorSuffix) INCONSTRUCTOR
+      if (context.owner.isConstructor && !context.inConstructorSuffix || context.owner.isEarly) INCONSTRUCTOR
       else 0l
 
     private def enterClassSymbol(pos: Position, flags: long, name: Name): Symbol = {
