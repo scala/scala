@@ -1159,7 +1159,7 @@ trait Types {
     override val isTrivial: boolean =
       pre.isTrivial && !sym.isTypeParameter && args.forall(.isTrivial)
 
-    override def isNotNull = sym.isModuleClass
+    override def isNotNull = sym.isModuleClass || sym == AllClass
 
     // @M: propagate actual type params (args) to `tp', by replacing formal type parameters with actual ones
     def transform(tp: Type): Type =
