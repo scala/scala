@@ -65,6 +65,7 @@ PROPERTIES
   <property name="scaladoc.exec.name" value="scaladoc"/>
   <property name="fsc.exec.name" value="fsc"/>
   <property name="comp.prop.name" value="compiler.properties"/>
+  <property name="lib.prop.name" value="library.properties"/>
 
 <!-- ===========================================================================
 ANT INITIALISATION
@@ -346,6 +347,16 @@ BUILD LOCAL REFERENCE (LOCKER) LAYER
       <exclude name="scala/actors/**"/>
       <excludesfile name="${nsc.excludes.file}" if="excludes.avail"/>
     </starr>
+    <echo
+      file="${locker.dir}/lib/library/${lib.prop.name}"
+      message="version.number=${version.number}${line.separator}"
+      append="false"
+    />
+    <echo
+      file="${locker.dir}/lib/library/${lib.prop.name}"
+      message="copyright.string=${copyright.string}${line.separator}"
+      append="true"
+    />
   <!-- Build compiler -->
     <mkdir dir="${locker.dir}/lib/compiler"/>
     <starr
@@ -466,6 +477,16 @@ BUILD QUICK-TEST LAYER
       <exclude name="scala/actors/**"/>
       <excludesfile name="${nsc.excludes.file}" if="excludes.avail"/>
     </locker>
+    <echo
+      file="${quick.dir}/lib/library/${lib.prop.name}"
+      message="version.number=${version.number}${line.separator}"
+      append="false"
+    />
+    <echo
+      file="${quick.dir}/lib/library/${lib.prop.name}"
+      message="copyright.string=${copyright.string}${line.separator}"
+      append="true"
+    />
   <!-- Build DBC -->
     <mkdir dir="${quick.dir}/lib/dbc"/>
     <locker
@@ -668,6 +689,16 @@ TEST
       <exclude name="scala/actors/**"/>
       <excludesfile name="${nsc.excludes.file}" if="excludes.avail"/>
     </quick>
+    <echo
+      file="${strap.dir}/lib/library/${lib.prop.name}"
+      message="version.number=${version.number}${line.separator}"
+      append="false"
+    />
+    <echo
+      file="${strap.dir}/lib/library/${lib.prop.name}"
+      message="copyright.string=${copyright.string}${line.separator}"
+      append="true"
+    />
   <!-- Build DBC -->
     <mkdir dir="${strap.dir}/lib/dbc"/>
     <quick
@@ -970,6 +1001,7 @@ GENERATES A DISTRIBUTION
       <manifest>
         <attribute name="Signature-Version" value="${version.number}"/>
         <attribute name="Built-By" value="${user.name}"/>
+        <attribute name="Main-Class" value="scala.tools.nsc.Main"/>
         <attribute name="Class-Path" value="${lib.jar.name}"/>
         <section name="scala/tools/nsc">
           <attribute name="Extension-Name" value="scala.tools.nsc"/>
@@ -988,6 +1020,7 @@ GENERATES A DISTRIBUTION
       <manifest>
         <attribute name="Signature-Version" value="${version.number}"/>
         <attribute name="Built-By" value="${user.name}"/>
+        <attribute name="Main-Class" value="scala.runtime.Properties"/>
         <section name="scala">
           <attribute name="Extension-Name" value="scala"/>
           <attribute name="Specification-Title" value="Scala Library"/>
