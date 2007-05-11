@@ -293,6 +293,8 @@ trait Typers requires Analyzer {
           error(pos, "methods with `=>'-parameter can be converted to function values only if they take no other parameters")
         if (formals exists (.symbol.==(RepeatedParamClass)))
           error(pos, "methods with `*'-parameters cannot be converted to function values");
+        if (restpe.isDependent)
+          error(pos, "method with dependent type "+tpe+" cannot be converted to function value");
         checkParamsConvertible(pos, restpe)
       case _ =>
     }
@@ -1152,13 +1154,13 @@ trait Typers requires Analyzer {
       val tparams1 = List.mapConserve(ddef.tparams)(typedAbsTypeDef)
       val vparamss1 = List.mapConserve(ddef.vparamss)(vparams1 =>
         List.mapConserve(vparams1)(typedValDef))
-      for (val vparams <- vparamss1; val vparam <- vparams) {
-        checkNoEscaping.locals(context.scope, WildcardType, vparam.tpt); ()
+      var tpt1 = checkNoEscaping.privates(meth, typedType(ddef.tpt))
+      if (!settings.Xexperimental.value) {
+        for (val vparams <- vparamss1; val vparam <- vparams) {
+          checkNoEscaping.locals(context.scope, WildcardType, vparam.tpt); ()
+        }
+        checkNoEscaping.locals(context.scope, WildcardType, tpt1)
       }
-      var tpt1 =
-        checkNoEscaping.locals(context.scope, WildcardType,
-          checkNoEscaping.privates(meth,
-            typedType(ddef.tpt)))
       checkNonCyclic(ddef, tpt1)
       ddef.tpt.setType(tpt1.tpe)
       var rhs1 =
@@ -1492,7 +1494,7 @@ trait Typers requires Analyzer {
           context.undetparams = undetparams
           inferMethodAlternative(fun, context.undetparams, args1 map (.tpe.deconst), pt)
           doTypedApply(tree, adapt(fun, funMode(mode), WildcardType), args1, mode, pt)
-        case MethodType(formals0, restpe) =>
+        case mt @ MethodType(formals0, _) =>
           val formals = formalTypes(formals0, args.length)
           var args1 = actualArgs(tree.pos, args, formals.length)
           if (args1.length != args.length) {
@@ -1507,6 +1509,7 @@ trait Typers requires Analyzer {
             context.undetparams = List()
             if (tparams.isEmpty) {
               val args2 = typedArgs(args1, argMode(fun, mode), formals0, formals)
+              val restpe = mt.resultType(args2 map (_.tpe))
               def ifPatternSkipFormals(tp: Type) = tp match {
                 case MethodType(_, rtp) if ((mode & PATTERNmode) != 0) => rtp
                 case _ => tp
@@ -1553,7 +1556,7 @@ trait Typers requires Analyzer {
                 constfold(copy.Apply(tree, fun, args2).setType(ifPatternSkipFormals(restpe)))
             } else {
               assert((mode & PATTERNmode) == 0); // this case cannot arise for patterns
-              val lenientTargs = protoTypeArgs(tparams, formals, restpe, pt)
+              val lenientTargs = protoTypeArgs(tparams, formals, mt.resultApprox, pt)
               val strictTargs = List.map2(lenientTargs, tparams)((targ, tparam) =>
                 if (targ == WildcardType) tparam.tpe else targ)
               def typedArgToPoly(arg: Tree, formal: Type): Tree = {
@@ -1597,7 +1600,7 @@ trait Typers requires Analyzer {
           if (!isApplicableSafe(List(), unappType, List(arg.tpe), WildcardType)) {
             //Console.println("UNAPP: need to typetest, arg.tpe = "+arg.tpe+", unappType = "+unappType)
             def freshArgType(tp: Type): (Type, List[Symbol]) = tp match {
-              case MethodType(formals, restpe) =>
+              case MethodType(formals, _) =>
                 (formals(0), List())
               case PolyType(tparams, restype) =>
                 val tparams1 = cloneSymbols(tparams)
@@ -2021,6 +2024,11 @@ trait Typers requires Analyzer {
                     } else {
                       doTypedApply(tree, fun2, args, mode, pt)
                     }
+            /*
+              if (fun2.hasSymbol && fun2.symbol.isConstructor && (mode & EXPRmode) != 0) {
+                res.tpe = res.tpe.notNull
+              }
+              */
               if (fun2.symbol == Array_apply) typed { atPos(tree.pos) { gen.mkCheckInit(res) } }
               else res
 
@@ -2185,8 +2193,9 @@ trait Typers requires Analyzer {
           val result = stabilize(checkAccessible(tree1, sym, qual.tpe, qual), qual.tpe, mode, pt)
           if (sym.isCaseFactory && !phase.erasedTypes) checkStable(qual)
           if (!global.phase.erasedTypes && settings.checknull.value &&
+              !sym.isConstructor &&
               !(qual.tpe <:< NotNullClass.tpe) && !qual.tpe.isNotNull)
-            unit.warning(tree.pos, "potential null pointer dereference")
+            unit.warning(tree.pos, "potential null pointer dereference: "+tree)
           result
         }
       }

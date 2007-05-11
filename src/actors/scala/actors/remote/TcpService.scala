@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2005-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2005-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -53,12 +53,12 @@ class TcpService(port: Int) extends Thread with Service {
   def send(node: Node, data: Array[byte]): unit = synchronized {
     // retrieve worker thread (if any) that already has connection
     getConnection(node) match {
-      case None => {
+      case None =>
         // we are not connected, yet
         val newWorker = connect(node)
         newWorker transmit data
-      }
-      case Some(worker) => worker transmit data
+      case Some(worker) =>
+        worker transmit data
     }
   }
 
@@ -172,7 +172,7 @@ class TcpServiceWorker(parent: TcpService, so: Socket) extends Thread {
     running = false
   }
 
-  override def run(): Unit = {
+  override def run() {
     try {
       while (running) {
         if (in.available() > 0) {

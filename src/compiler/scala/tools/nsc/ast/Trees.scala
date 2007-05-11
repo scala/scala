@@ -76,7 +76,7 @@ trait Trees {
     def pos = rawpos
 
     var tpe: Type = _
-    //var kindStar = false //@M: kindStar implies !tpe.isHigherKinded --> if true, setType does not accept higher-kinded types
+
     def setPos(pos: Position): this.type = { rawpos = pos; this }
     def setType(tp: Type): this.type = { /*assert(kindingIrrelevant(tp) || !kindStar || !tp.isHigherKinded, ""+tp+" should not be higher-kinded");*/ tpe = tp; this }
 
@@ -720,49 +720,93 @@ trait Trees {
 /* A standard pattern match
   case EmptyTree =>
   case PackageDef(name, stats) =>
+     // package name { stats }
   case ClassDef(mods, name, tparams, self, impl) =>
+     // mods class name[tparams] requires self impl
   case ModuleDef(mods, name, impl) =>                             (eliminated by refcheck)
+     // mods object name impl  where impl = extends parents { defs }
   case ValDef(mods, name, tpt, rhs) =>
+     // mods val name: tpt = rhs
   case DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
+     // mods def name[tparams](vparams): tpt = rhs
   case AbsTypeDef(mods, name, tparams, lo, hi) =>                 (eliminated by erasure)
+     // mods type name[tparams] >: lo <: hi
   case AliasTypeDef(mods, name, tparams, rhs) =>                  (eliminated by erasure)
+     // mods type name[tparams] = rhs
   case LabelDef(name, params, rhs) =>
+     // used for tailcalls and like
   case Import(expr, selectors) =>                                 (eliminated by typecheck)
+     // import expr.{selectors}
   case Annotation(constr, elements) =>                            (eliminated by typecheck)
+     // @constr(elements) where constr = tp(args), elements = { val x1 = c1, ..., val xn = cn }
   case DocDef(comment, definition) =>                             (eliminated by typecheck)
+     // /** comment */ definition
   case Template(parents, body) =>
+     // extends parents { body }
   case Block(stats, expr) =>
+     // { stats; expr }
   case CaseDef(pat, guard, body) =>                               (eliminated by transmatch/explicitouter)
+    // case pat if guard => body
   case Sequence(trees) =>                                         (eliminated by transmatch/explicitouter)
+    // pat1, ..., pat_n
   case Alternative(trees) =>                                      (eliminated by transmatch/explicitouter)
+    // pat1 | ... | patn
   case Star(elem) =>                                              (eliminated by transmatch/explicitouter)
+    // pat*
   case Bind(name, body) =>                                        (eliminated by transmatch/explicitouter)
+    // name @ pat
   case UnApply(fun: Tree, args)                                   (introduced by typer, eliminated by transmatch/explicitouter)
+    // used for unapply's
   case ArrayValue(elemtpt, trees) =>                              (introduced by uncurry)
+    // used to pass arguments to vararg arguments
   case Function(vparams, body) =>                                 (eliminated by lambdaLift)
+    // vparams => body  where vparams:List[ValDef]
   case Assign(lhs, rhs) =>
+    // lhs = rhs
   case If(cond, thenp, elsep) =>
+    // if (cond) thenp else elsep
   case Match(selector, cases) =>
+    // selector match { cases }
   case Return(expr) =>
+    // return expr
   case Try(block, catches, finalizer) =>
+    // try block catch { catches } finally finalizer where catches: List[CaseDef]
   case Throw(expr) =>
+    // throw expr
   case New(tpt) =>
+    // new tpt   always in the context: new tpt.<init>[targs](args)
   case Typed(expr, tpt) =>                                        (eliminated by erasure)
+    // expr: tpt
   case TypeApply(fun, args) =>
+    // fun[args]
   case Apply(fun, args) =>
+    // fun(args)
   case ApplyDynamic(qual, args)                                   (introduced by erasure, eliminated by cleanup)
+    // fun(args)
   case Super(qual, mix) =>
+    // qual.super[mix]
   case This(qual) =>
+    // qual.this
   case Select(qualifier, selector) =>
+    // qualifier.selector
   case Ident(name) =>
+    // name
   case Literal(value) =>
+    // value
   case TypeTree() =>                                              (introduced by refcheck)
+    // a type that's not written out, but given in the attribute
   case Annotated(annot, arg) =>                                   (eliminated by typer)
+    // arg @annot  for types,  arg: @annot for exprs
   case SingletonTypeTree(ref) =>                                  (eliminated by uncurry)
+    // ref.type
   case SelectFromTypeTree(qualifier, selector) =>                 (eliminated by uncurry)
+    // qualifier # selector, a path-dependent type p.T is expressed as p.type # T
   case CompoundTypeTree(templ: Template) =>                       (eliminated by uncurry)
+    // parent1 with ... with parentN { refinement }
   case AppliedTypeTree(tpt, args) =>                              (eliminated by uncurry)
+    // tpt[args]
   case WildcardTypeTree(lo, hi) =>                                (eliminated by uncurry)
+    // todo: get rid of that!
 */
 
   abstract class TreeCopier {

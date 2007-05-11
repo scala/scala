@@ -250,6 +250,9 @@ trait Symbols {
     /** Is this symbol an implementation class for a mixin? */
     final def isImplClass: boolean = isClass && hasFlag(IMPLCLASS)
 
+    /** Is thhis symbol early initialized */
+    final def isEarly: boolean = isTerm && hasFlag(PRESUPER)
+
     /** Is this symbol a trait which needs an implementation class? */
     final def needsImplClass: boolean =
       isTrait && (!hasFlag(INTERFACE) || hasFlag(lateINTERFACE)) && !isImplClass

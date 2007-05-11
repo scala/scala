@@ -142,7 +142,7 @@ trait Namers requires Analyzer {
     }
 
     def inConstructorFlag: long =
-      if (context.owner.isConstructor && !context.inConstructorSuffix) INCONSTRUCTOR
+      if (context.owner.isConstructor && !context.inConstructorSuffix || context.owner.isEarly) INCONSTRUCTOR
       else 0l
 
     private def enterClassSymbol(pos: Position, flags: long, name: Name): Symbol = {
@@ -471,22 +471,62 @@ trait Namers requires Analyzer {
 
       val tparamSyms = typer.reenterTypeParams(tparams)
       var vparamSymss = enterValueParams(meth, vparamss)
-      if (tpt.isEmpty && meth.name == nme.CONSTRUCTOR) tpt.tpe = context.enclClass.owner.tpe.notNull
+      if (tpt.isEmpty && meth.name == nme.CONSTRUCTOR) tpt.tpe = context.enclClass.owner.tpe
 
       if (onlyPresentation)
         methodArgumentNames(meth) = vparamss.map(.map(.symbol));
 
-      def makeMethodType(vparams: List[Symbol], restpe: Type) = {
-        val formals = vparams map (.tpe)
-        if (!vparams.isEmpty && vparams.head.hasFlag(IMPLICIT)) ImplicitMethodType(formals, restpe)
-        else MethodType(formals, restpe)
+      def convertToDeBruijn(vparams: List[Symbol], level: int): TypeMap = new TypeMap {
+        def apply(tp: Type) = {
+          tp match {
+            case SingleType(_, sym) =>
+              if (settings.Xexperimental.value && sym.owner == meth && (vparams contains sym)) {
+                if (sym hasFlag IMPLICIT) {
+                  context.error(sym.pos, "illegal type dependence on implicit parameter")
+                  ErrorType
+                } else DeBruijnIndex(level, vparams indexOf sym)
+              } else tp
+            case MethodType(formals, restpe) =>
+              val formals1 = List.mapConserve(formals)(this)
+              val restpe1 = convertToDeBruijn(vparams, level + 1)(restpe)
+              if ((formals1 eq formals) && (restpe1 eq restpe)) tp
+              else copyMethodType(tp, formals1, restpe1)
+            case _ =>
+              mapOver(tp)
+          }
+        }
       }
 
-      def thisMethodType(restype: Type) =
+      val checkDependencies: TypeTraverser = new TypeTraverser {
+        def traverse(tp: Type) = {
+          tp match {
+            case SingleType(_, sym) =>
+              if (settings.Xexperimental.value && sym.owner == meth &&
+                  (vparamSymss exists (_ contains sym)))
+                context.error(
+                  sym.pos,
+                  "illegal dependent method type: parameter appears in the type "+
+                  "of another parameter in the same section or an earlier one")
+            case _ =>
+              mapOver(tp)
+          }
+          this
+        }
+      }
+
+      def makeMethodType(vparams: List[Symbol], restpe: Type) = {
+        val formals = vparams map (_.tpe)
+        val restpe1 = convertToDeBruijn(vparams, 1)(restpe)
+        if (!vparams.isEmpty && vparams.head.hasFlag(IMPLICIT))
+          ImplicitMethodType(formals, restpe1)
+        else MethodType(formals, restpe1)
+      }
+
+      def thisMethodType(restpe: Type) =
         parameterizedType(
           tparamSyms,
-          if (vparamSymss.isEmpty) PolyType(List(), restype)
-          else (vparamSymss :\ restype)(makeMethodType))
+          if (vparamSymss.isEmpty) PolyType(List(), restpe)
+          else checkDependencies((vparamSymss :\ restpe) (makeMethodType)))
 
       var resultPt = if (tpt.isEmpty) WildcardType else typer.typedType(tpt).tpe
       val site = meth.owner.thisType

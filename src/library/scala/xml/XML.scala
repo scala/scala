@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -25,7 +25,7 @@ import java.io.{InputStream, Reader, StringReader, Writer}
  *  @author  Burak Emir
  *  @version 1.0, 25/04/2005
  */
-object XML  {
+object XML {
 
   val xml       = "xml"
   val xmlns     = "xmlns"
@@ -33,6 +33,7 @@ object XML  {
   val preserve  = "preserve"
   val space     = "space"
   val lang      = "lang"
+  val encoding  = "ISO-8859-1"
 
   // functions for generic xml loading, saving
 
@@ -89,7 +90,7 @@ object XML  {
    *  @param node     ...
    */
   final def save(filename: String, node: Node): Unit =
-    save(filename, node, "ISO-8859-1")
+    save(filename, node, encoding)
 
   /** saves XML to filename with given encoding, without xml-decl without
    *  <code>doctype</code>.
@@ -110,7 +111,7 @@ object XML  {
    *  @param doctype  if not null, write doctype declaration
    */
   final def saveFull(filename: String, node: Node, xmlDecl: Boolean, doctype: dtd.DocType): Unit =
-    saveFull(filename, node, "ISO-8859-1", xmlDecl, doctype)
+    saveFull(filename, node, encoding, xmlDecl, doctype)
 
   /** Saves a node to a file with given filename using given encoding
    *  optionally with xmldecl and doctype declaration.
@@ -122,7 +123,7 @@ object XML  {
    *  @param doctype  if not null, write doctype declaration
    */
 
-  final def saveFull(filename: String, node: Node, enc: String, xmlDecl: Boolean, doctype: dtd.DocType): Unit = {
+  final def saveFull(filename: String, node: Node, enc: String, xmlDecl: Boolean, doctype: dtd.DocType) {
     var fos: FileOutputStream = null
     var w: Writer = null
     try {
@@ -148,7 +149,7 @@ object XML  {
    *  @param xmlDecl  if true, write xml declaration
    *  @param doctype  if not null, write doctype declaration
    */
-  final def write(w: java.io.Writer, node: Node, enc: String, xmlDecl: Boolean, doctype: dtd.DocType): Unit = {
+  final def write(w: java.io.Writer, node: Node, enc: String, xmlDecl: Boolean, doctype: dtd.DocType) {
     /* TODO: optimize by giving writer parameter to toXML*/
     if (xmlDecl) w.write("<?xml version='1.0' encoding='" + enc + "'?>\n")
     if (doctype ne null) w.write( doctype.toString() + "\n")
