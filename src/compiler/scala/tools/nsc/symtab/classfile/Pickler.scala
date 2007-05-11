@@ -138,7 +138,7 @@ abstract class Pickler extends SubComponent {
      */
     private def putType(tp: Type): unit = if (putEntry(tp)) {
       tp match {
-        case NoType | NoPrefix =>
+        case NoType | NoPrefix | DeBruijnIndex(_, _) =>
           ;
         case ThisType(sym) =>
           putSymbol(sym)
@@ -388,6 +388,8 @@ abstract class Pickler extends SubComponent {
           else METHODtpe
         case PolyType(tparams, restpe) =>
           writeRef(restpe); writeRefs(tparams); POLYtpe
+        case DeBruijnIndex(l, i) =>
+          writeNat(l); writeNat(i); DEBRUIJNINDEXtpe
         case c @ Constant(_) =>
           if (c.tag == BooleanTag) writeLong(if (c.booleanValue) 1 else 0)
           else if (ByteTag <= c.tag && c.tag <= LongTag) writeLong(c.longValue)

@@ -211,7 +211,7 @@ trait Infer {
    *  @return   ...
    */
   def normalize(tp: Type): Type = skipImplicit(tp) match {
-    case MethodType(formals, restpe) =>
+    case MethodType(formals, restpe) if (!restpe.isDependent) =>
       if (util.Statistics.enabled) normM = normM + 1
       functionType(formals, normalize(restpe))
     case PolyType(List(), restpe) =>
@@ -269,7 +269,7 @@ trait Infer {
 
     def typeErrorMsg(found: Type, req: Type) =
       "type mismatch" + foundReqMsg(found, req) +
-      (if (!(found.resultType eq found) && isWeaklyCompatible(found.resultType, req))
+      (if ((found.resultApprox ne found) && isWeaklyCompatible(found.resultApprox, req))
         "\n possible cause: missing arguments for method or constructor"
        else "")
 
@@ -385,9 +385,9 @@ trait Infer {
       }
 
     def isPlausiblyCompatible(tp: Type, pt: Type): boolean = tp match {
-      case PolyType(_, restp) =>
-        isPlausiblyCompatible(restp, pt)
-      case MethodType(formals, restp) =>
+      case PolyType(_, restpe) =>
+        isPlausiblyCompatible(restpe, pt)
+      case MethodType(formals, _) =>
         pt.normalize match {
           case TypeRef(pre, sym, args) =>
             !sym.isClass || {
@@ -395,7 +395,7 @@ trait Infer {
               l == formals.length &&
               sym == FunctionClass(l) &&
               List.forall2(args, formals) (isPlausiblySubType) &&
-              isPlausiblySubType(restp, args.last)
+              isPlausiblySubType(tp.resultApprox, args.last)
             }
           case _ =>
             true
@@ -572,9 +572,10 @@ trait Infer {
     def isApplicable(undetparams: List[Symbol], ftpe: Type,
                      argtpes0: List[Type], pt: Type): boolean =
       ftpe match {
-        case MethodType(formals0, restpe) =>
+        case MethodType(formals0, _) =>
           val formals = formalTypes(formals0, argtpes0.length)
           val argtpes = actualTypes(argtpes0, formals.length)
+          val restpe = ftpe.resultType(argtpes)
           if (undetparams.isEmpty) {
             (formals.length == argtpes.length &&
              isCompatible(argtpes, formals) &&
@@ -809,10 +810,11 @@ trait Infer {
      */
     def inferMethodInstance(fn: Tree, undetparams: List[Symbol],
                             args: List[Tree], pt: Type): List[Symbol] = fn.tpe match {
-      case MethodType(formals0, restpe) =>
+      case MethodType(formals0, _) =>
         try {
           val formals = formalTypes(formals0, args.length)
           val argtpes = actualTypes(args map (.tpe.deconst), formals.length)
+          val restpe = fn.tpe.resultType(argtpes)
           val uninstantiated = new ListBuffer[Symbol]
           val targs = methTypeArgs(undetparams, formals, restpe, argtpes, pt, uninstantiated)
           checkBounds(fn.pos, NoPrefix, NoSymbol, undetparams, targs, "inferred ")

@@ -52,6 +52,7 @@ object PickleFormat {
  *                  | 35 LITERALclass len_Nat type_Ref
  *                  | 40 ATTRIBUTE len_Nat sym_Ref info_Ref {constant_Ref} {nameRef constantRef}
  *                  | 41 CHILDREN len_Nat sym_Ref {sym_Ref}
+ *                  | 47 DEBRUIJNINDEXtpe len_Nat level_Nat index_Nat
  *                  | 68 PosTYPEsym len_Nat pos_Nat SymbolInfo
  *                  | 69 PosALIASsym len_Nat pos_Nat SymbolInfo
  *                  | 70 PosCLASSsym len_Nat pos_Nat SymbolInfo [thistype_Ref]
@@ -89,6 +90,7 @@ object PickleFormat {
   final val METHODtpe = 20
   final val POLYtpe = 21
   final val IMPLICITMETHODtpe = 22
+
   final val LITERAL = 23   // base line for literals
   final val LITERALunit = 24
   final val LITERALboolean = 25
@@ -106,10 +108,7 @@ object PickleFormat {
   final val CHILDREN = 41
 
   final val ANNOTATEDtpe = 42
-
-
   final val ATTRIBTREE = 43  // an annotation with trees
-
   final val REFLTREE = 44  // prefix saying that a prefix tree is coming
     final val IDENTtree = 1
     final val SELECTtree = 2
@@ -155,6 +154,7 @@ object PickleFormat {
     final val ROOTSYMBOLrsym = 8
     final val LABELSYMBOLrsym = 9
 
+  final val DEBRUIJNINDEXtpe = 47
 
   final val firstSymTag = NONEsym
   final val lastSymTag = VALsym

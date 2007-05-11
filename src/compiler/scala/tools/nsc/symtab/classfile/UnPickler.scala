@@ -264,6 +264,8 @@ abstract class UnPickler {
                 // This way, people can distribute classfiles
                 // including annotated types without them much
                 // affecting those who disable -Xplugtypes
+        case DEBRUIJNINDEXtpe =>
+          DeBruijnIndex(readNat(), readNat())
         case _ =>
           errorBadSignature("bad type tag: " + tag)
       }

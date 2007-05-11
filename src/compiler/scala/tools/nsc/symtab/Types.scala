@@ -13,23 +13,43 @@ import Flags._
 
 /* A standard type pattern match:
   case ErrorType =>
+    // internal: error
   case WildcardType =>
+    // internal: unknown
   case NoType =>
   case NoPrefix =>
-  case ThisType(_) =>
+  case ThisType(sym) =>
+    // sym.this.type
   case SingleType(pre, sym) =>
+    // pre.sym.type
   case ConstantType(value) =>
+    // int(2)
   case TypeRef(pre, sym, args) =>
-  case TypeBounds(lo, hi) =>
+    // pre.sym[targs]
   case RefinedType(parents, defs) =>
+    // parent1 with ... with parentn { defs }
+  case AnnotatedType(attribs, tp) =>
+    // tp @attribs
+
+  // the following are non-value types; you cannot write them down in Scala source.
+
+  case TypeBounds(lo, hi) =>
+    // >: lo <: hi
   case ClassInfoType(parents, defs, clazz) =>
+    // same as RefinedType except as body of class
   case MethodType(paramtypes, result) =>
+    // (paramtypes)result
   case PolyType(tparams, result) =>
-  // the last three types are not used after phase `typer'.
+    // [tparams]result where result is a MethodType or ClassInfoType
+
+  // the last five types are not used after phase `typer'.
+
   case OverloadedType(pre, tparams, alts) =>
+    // all alternatives of an overloaded ident
   case AntiPolyType(pre: Type, targs) =>
   case TypeVar(_, _) =>
-  case AnnotatedType(attribs, tp) =>
+    // a type variable
+  case DeBruijnIndex(level, index)
 */
 
 trait Types {
@@ -74,6 +94,11 @@ trait Types {
     // the following are all operations in class Type that are overridden in some subclass
     // Important to keep this up-to-date when new operations are added!
     override def isTrivial = tp.isTrivial
+    override def isHigherKinded: boolean = tp.isHigherKinded
+    override def isNotNull = tp.isNotNull
+    override def isError = tp.isError
+    override def isErroneous = tp.isErroneous
+    override def isStable: boolean = tp.isStable
     override def symbol = tp.symbol
     override def singleDeref = maybeRewrap(tp.singleDeref)
     override def widen = maybeRewrap(tp.widen)
@@ -85,6 +110,7 @@ trait Types {
     override def prefix = tp.prefix
     override def typeArgs = tp.typeArgs
     override def resultType = maybeRewrap(tp.resultType)
+    override def resultType(actuals: List[Type]) = maybeRewrap(tp.resultType(actuals))
     override def finalResultType = maybeRewrap(tp.finalResultType)
     override def paramSectionCount = tp.paramSectionCount
     override def paramTypes = tp.paramTypes
@@ -92,12 +118,7 @@ trait Types {
     override def notNull = maybeRewrap(tp.notNull)
     override def instantiateTypeParams(formals: List[Symbol], actuals: List[Type]) =
       tp.instantiateTypeParams(formals, actuals)
-    override def isHigherKinded: boolean = tp.isHigherKinded
     override def normalize = maybeRewrap(tp.normalize)
-    override def isError = tp.isError
-    override def isErroneous = tp.isErroneous
-    override def isStable: boolean = tp.isStable
-    override def isNotNull = tp.isNotNull
     override def decls = tp.decls
     override def baseType(clazz: Symbol) = tp.baseType(clazz)
     override def closure = tp.closure
@@ -119,6 +140,22 @@ trait Types {
      *  prefix or owner.
      */
     def isTrivial: boolean = false
+
+    /** Is this type higher-kinded, i.e., is it a type constructor @M */
+    def isHigherKinded: boolean = false
+
+    /** Does this type denote a stable reference (i.e. singleton type)? */
+    def isStable: boolean = false
+
+    /** Is this type guaranteed not to have `null' as a value? */
+    def isNotNull: boolean = false
+
+    /** Does this depend on an enclosing method parameter? */
+    def isDependent: boolean = {
+      IsDependentTraverser.result = false
+      IsDependentTraverser.traverse(this)
+      IsDependentTraverser.result
+    }
 
     /** The symbol associated with the type
       * Note that the symbol of the normalized type is returned (@see normalize)
@@ -170,6 +207,10 @@ trait Types {
      *  the type itself for all other types */
     def resultType: Type = this
 
+    def resultType(actuals: List[Type]) = this
+
+    def resultApprox: Type = ApproximateDeBruijnMap(resultType)
+
     /** For a curried method or poly type its non-method result type,
      *  the type itself for all other types */
     def finalResultType: Type = this
@@ -188,16 +229,13 @@ trait Types {
 
     /** Mixin a NotNull trait unless type already has one */
     def notNull: Type =
-      if (isNotNull) this else NotNullType(this)
+      if (isNotNull || phase.erasedTypes) this else NotNullType(this)
 
     /** Replace formal type parameter symbols with actual type arguments.
      *
      * Amounts to substitution except for higher-kinded types. (See overridden method in TypeRef) -- @M (contact adriaan.moors at cs.kuleuven.be)
      */
     def instantiateTypeParams(formals: List[Symbol], actuals: List[Type]): Type = this.subst(formals, actuals)
-
-    /** Is this type higher-kinded, i.e., is it a type constructor @M */
-    def isHigherKinded: boolean = false
 
     /** Reduce to beta eta-long normal form. Expands type aliases and converts higher-kinded TypeRef's to PolyTypes. @M */
     def normalize = this // @MAT
@@ -211,12 +249,6 @@ trait Types {
       ErroneousTraverser.traverse(this)
       ErroneousTraverser.result
     }
-
-    /** Does this type denote a stable reference (i.e. singleton type)? */
-    def isStable: boolean = false
-
-    /** Is this type guaranteed not to have `null' as a value? */
-    def isNotNull: boolean = false
 
     /** Does this type denote a reference type which can be null? */
     // def isNullable: boolean = false
@@ -694,6 +726,12 @@ trait Types {
     override def narrow: Type = this
   }
 
+  case class DeBruijnIndex(level: int, paramId: int) extends Type {
+    override def isTrivial = true
+    override def isStable = true
+    override def toString = "<param "+level+"."+paramId+">"
+  }
+
   /** A class for singleton types of the form &lt;prefix&gt;.&lt;sym.name&gt;.type.
    *  Cannot be created directly; one should always use
    *  <code>singleType</code> for creation.
@@ -1121,6 +1159,8 @@ trait Types {
     override val isTrivial: boolean =
       pre.isTrivial && !sym.isTypeParameter && args.forall(.isTrivial)
 
+    override def isNotNull = sym.isModuleClass
+
     // @M: propagate actual type params (args) to `tp', by replacing formal type parameters with actual ones
     def transform(tp: Type): Type =
       tp.asSeenFrom(pre, sym.owner).instantiateTypeParams(sym.typeParams, argsMaybeDummy)
@@ -1202,6 +1242,7 @@ A type's symbol should never be inspected directly.
     override def normalize =
       if (sym.isAliasType) {
         if (sym.info.typeParams.length == args.length || !sym.info.isComplete) // beta-reduce  -- check if the info has been loaded, if not, the arity check is meaningless
+          // Martin to Adriaan: I believe sym.info.isComplete is redundant here
           transform(sym.info.resultType).normalize // cycles have been checked in typeRef
         else if (isHigherKinded)
           PolyType(typeParams, transform(sym.info.resultType).normalize)
@@ -1296,15 +1337,29 @@ A type's symbol should never be inspected directly.
     //assert(paramTypes forall (pt => !pt.symbol.isImplClass))//DEBUG
     override def paramSectionCount: int = resultType.paramSectionCount + 1
 
+    override def resultType(actuals: List[Type]) =
+      new InstantiateDeBruijnMap(actuals).apply(resultType)
+
     override def finalResultType: Type = resultType.finalResultType
 
+    protected def paramPrefix = "("
+
+    private def dependentToString(base: int): String = {
+      val params = for ((pt, n) <- paramTypes.zipWithIndex) yield "x$"+n+":"+pt
+      val res = resultType match {
+        case mt: MethodType => mt.dependentToString(base + params.length)
+        case rt => rt.toString
+      }
+      params.mkString(paramPrefix, ",", ")")+res
+    }
+
     override def toString(): String =
-      paramTypes.mkString("(", ",", ")") + resultType
+      if (resultType.isDependent) dependentToString(0)
+      else paramTypes.mkString(paramPrefix, ",", ")") + resultType
   }
 
   class ImplicitMethodType(pts: List[Type], rt: Type) extends MethodType(pts, rt) {
-    override def toString(): String =
-      paramTypes.mkString("(implicit ", ",", ")") + resultType
+    override protected def paramPrefix = "(implicit "
   }
 
   class JavaMethodType(pts: List[Type], rt: Type) extends MethodType(pts, rt)
@@ -1709,6 +1764,7 @@ A type's symbol should never be inspected directly.
       case NoPrefix => tp
       case ThisType(_) => tp
       case ConstantType(_) => tp
+      case DeBruijnIndex(_, _) => tp
       case SingleType(pre, sym) =>
         if (sym.isPackageClass) tp // short path
         else {
@@ -1764,9 +1820,7 @@ A type's symbol should never be inspected directly.
         variance = -variance
         val result1 = this(result)
         if ((paramtypes1 eq paramtypes) && (result1 eq result)) tp
-        else if (tp.isInstanceOf[ImplicitMethodType]) ImplicitMethodType(paramtypes1, result1)
-        else if (tp.isInstanceOf[JavaMethodType]) JavaMethodType(paramtypes1, result1)
-        else MethodType(paramtypes1, result1)
+        else copyMethodType(tp, paramtypes1, result1)
       case PolyType(tparams, result) =>
         variance = -variance
         val tparams1 = mapOver(tparams)
@@ -1828,6 +1882,12 @@ A type's symbol should never be inspected directly.
           ((sym1, info1) => sym1.setInfo(info1.substSym(syms, syms1)))
         }
       }
+    }
+
+    protected def copyMethodType(tp: Type, formals: List[Type], restpe: Type): Type = tp match {
+      case _: ImplicitMethodType => ImplicitMethodType(formals, restpe)
+      case _: JavaMethodType => JavaMethodType(formals, restpe)
+      case _ => MethodType(formals, restpe)
     }
   }
 
@@ -1996,6 +2056,26 @@ A type's symbol should never be inspected directly.
     def apply(tp: Type): Type = if (tp eq from) to else mapOver(tp)
   }
 
+  class InstantiateDeBruijnMap(actuals: List[Type]) extends TypeMap {
+    def apply(tp: Type): Type = tp match {
+      case DeBruijnIndex(level, pid) =>
+        if (level == 1)
+          if (pid < actuals.length) actuals(pid) else tp
+        else DeBruijnIndex(level - 1, pid)
+      case _ =>
+        mapOver(tp)
+    }
+  }
+
+  object ApproximateDeBruijnMap extends TypeMap {
+    def apply(tp: Type): Type = tp match {
+      case DeBruijnIndex(level, pid) =>
+        WildcardType
+      case _ =>
+        mapOver(tp)
+    }
+  }
+
   /** A map to convert every occurrence of a wildcard type to a fresh
    *  type variable */
   object wildcardToTypeVarMap extends TypeMap {
@@ -2043,6 +2123,17 @@ A type's symbol should never be inspected directly.
       if (!result) {
         result = tp.isError
         mapOver(tp)
+      }
+      this
+    }
+  }
+
+  object IsDependentTraverser extends TypeTraverser {
+    var result: boolean = _
+    def traverse(tp: Type): TypeTraverser = {
+      tp match {
+        case DeBruijnIndex(_, _) => result = true
+        case _ => if (!result) mapOver(tp)
       }
       this
     }
@@ -2420,10 +2511,6 @@ A type's symbol should never be inspected directly.
         atp1 <:< tp2
       case (_, AnnotatedType(_,atp2)) =>
         tp1 <:< atp2
-      case (NotNullType(ntp1), _) =>
-        ntp1 <:< tp2
-      case (_, NotNullType(ntp2)) =>
-        tp1.isNotNull && tp1 <:< ntp2
       case (_, _)  if (tp1.isHigherKinded || tp2.isHigherKinded) =>
         (tp1.symbol == AllClass
          ||
@@ -2436,7 +2523,8 @@ A type's symbol should never be inspected directly.
           sym2 == NotNullClass && tp1.isNotNull) =>
         true
       case (_, RefinedType(parents2, ref2)) =>
-        (parents2 forall tp1.<:<) && (ref2.toList forall tp1.specializes) &&
+        (parents2 forall (tp2 => tp1 <:< tp2 || tp2.symbol == NotNullClass && tp1.isNotNull)) &&
+        (ref2.toList forall tp1.specializes) &&
         (!parents2.exists(.symbol.isAbstractType) || tp1.symbol != AllRefClass)
       case (RefinedType(parents1, ref1), _) =>
         parents1 exists (.<:<(tp2))
@@ -2445,6 +2533,10 @@ A type's symbol should never be inspected directly.
          | {SingleType(_, _), _}
          | {ConstantType(_), _} =>
          once patern matching bug is fixed */
+      case (_, NotNullType(ntp2)) =>
+        tp1.isNotNull && tp1 <:< ntp2
+      case (NotNullType(ntp1), _) =>
+        ntp1 <:< tp2
       case (ThisType(_), _) => tp1.singleDeref <:< tp2
       case (SingleType(_, _), _) => tp1.singleDeref <:< tp2
       case (ConstantType(_), _) =>

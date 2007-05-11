@@ -279,7 +279,7 @@ abstract class TreePrinters {
           if (!qual.isEmpty) print(symName(tree, qual) + ".")
           print("this")
 
-        case Select(qual @ New(tpe), name) =>
+        case Select(qual @ New(tpe), name) if (!settings.debug.value) =>
           print(qual)
 
         case Select(qualifier, name) =>
