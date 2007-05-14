@@ -717,7 +717,7 @@ abstract class GenJVM extends SubComponent {
             if (settings.debug.value)
               log("genearting LOAD_MODULE for: " + module + " flags: " +
                   Flags.flagsToString(module.flags));
-            if (clasz.symbol == module.moduleClass)
+            if (clasz.symbol == module.moduleClass && jmethod.getName() != nme.readResolve.toString)
               jcode.emitALOAD_0()
             else
               jcode.emitGETSTATIC(javaName(module) /* + "$" */ ,
