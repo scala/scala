@@ -68,6 +68,8 @@ trait ModelFrames extends ModelExtractor {
       ct.toString
     }
     def save(nodes: NodeSeq) = {
+      val path = this.path
+      if (path.startsWith("http://")) throw new Error("frame: " + this)
       val path0 = outdir + File.separator + path + FILE_EXTENSION_HTML
       //if (settings.debug.value) inform("Writing XML nodes to " + path0)
       val file = new File(path0)

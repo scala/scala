@@ -191,7 +191,7 @@ class ModelAdditions(val global : Global) {
       *  </p>
       */"""
    };
-   ("Float" :: "Long" :: "Number" :: "Integer" :: Nil).foreach(boxedValDescr);
+   //("Float" :: "Long" :: "Number" :: "Integer" :: Nil).foreach(boxedValDescr);
 
    object exceptions extends collection.jcl.TreeMap[String,(Symbol,String)] {
      def f(name : String) = {
