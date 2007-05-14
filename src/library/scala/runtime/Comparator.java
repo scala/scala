@@ -13,7 +13,7 @@ package scala.runtime;
 
 /**
  *  @author  Gilles Dubochet
- *  @version 1.0
+ *  @version 1.1
  */
 public class Comparator {
 
@@ -32,26 +32,34 @@ public class Comparator {
             return true;
         else if (a == b)
             return true;
-        else if ((a instanceof Byte || a instanceof Short || a instanceof Integer) && b instanceof Number)
-            return ((Number)a).intValue() == ((Number)b).intValue();
-        else if (a instanceof Number && (b instanceof Byte || b instanceof Short || b instanceof Integer))
-            return ((Number)a).intValue() == ((Number)b).intValue();
-        else if (a instanceof Long && b instanceof Number)
-            return ((Long)a).longValue() == ((Number)b).longValue();
-        else if (a instanceof Number && b instanceof Long)
-            return ((Number)a).longValue() == ((Long)b).longValue();
-        else if (a instanceof Float && b instanceof Number)
-            return ((Float)a).floatValue() == ((Number)b).floatValue();
-        else if (a instanceof Number && b instanceof Float)
-            return ((Number)a).floatValue() == ((Float)b).floatValue();
-        else if (a instanceof Number && b instanceof Number)
-            return ((Number)a).doubleValue() == ((Number)b).doubleValue();
-        else if (a instanceof Number && b instanceof Character)
-            return ((Number)a).intValue() == ((Character)b).charValue();
-        else if (a instanceof Character && b instanceof Number)
-            return ((Character)a).charValue() == ((Number)b).intValue();
-        else if (a instanceof Character && b instanceof Character)
-            return ((Character)a).charValue() == ((Character)b).charValue();
+
+        final Number aNum = a instanceof Number ? (Number)a : null;
+        final Character aChar = a instanceof Character ? (Character)a : null;
+        final Number bNum = b instanceof Number ? (Number)b : null;
+        final Character bChar = b instanceof Character ? (Character)b : null;
+
+        if ((aNum != null || aChar != null) && (bNum != null || bChar != null)) {
+            if (a instanceof Double || b instanceof Double) {
+                double aa = (aNum != null) ? aNum.doubleValue() : (double)aChar.charValue();
+                double bb = (bNum != null) ? bNum.doubleValue() : (double)bChar.charValue();
+                return aa == bb;
+            }
+            else if (a instanceof Float || b instanceof Float) {
+                float aa = (aNum != null) ? aNum.floatValue() : (float)aChar.charValue();
+                float bb = (bNum != null) ? bNum.floatValue() : (float)bChar.charValue();
+                return aa == bb;
+            }
+            else if (a instanceof Long || b instanceof Long) {
+                long aa = (aNum != null) ? aNum.longValue() : (long)aChar.charValue();
+                long bb = (bNum != null) ? bNum.longValue() : (long)bChar.charValue();
+                return aa == bb;
+            }
+            else {
+                int aa = (aNum != null) ? aNum.intValue() : aChar.charValue();
+                int bb = (bNum != null) ? bNum.intValue() : bChar.charValue();
+                return aa == bb;
+            }
+        }
         else
             return false;
     }
