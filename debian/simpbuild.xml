@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- This is a simplified build file for Scala on Debian -->
 <!-- $Id$ -->
-
 <project name="scala" default="build">
   <property environment="env"/>
 
@@ -43,6 +42,7 @@
   -->
 
   <property name="fjbg.jar" value="${lib.dir}/fjbg.jar"/>
+  <property name="msil.jar" value="${lib.dir}/msil.jar"/>
   <property name="ant.jar" value="${ant.home}/lib/ant.jar"/>
 
 
@@ -52,41 +52,37 @@
   <property name="tooldocs.dir" value="${build.dir}/manual"/>
 
   <!-- Location of source and build elements names properties -->
-  <property name="lib.dir.name" value="library"/>
-  <property name="comp.dir.name" value="compiler"/>
-  <property name="dbc.dir.name" value="dbc"/>
-  <property name="actors.dir.name" value="actors"/>
-  <property name="src.lib.dir" value="${src.dir}/${lib.dir.name}"/>
-  <property name="src.comp.dir" value="${src.dir}/${comp.dir.name}"/>
-  <property name="src.dbc.dir" value="${src.dir}/${dbc.dir.name}"/>
-  <property name="src.actors.dir" value="${src.dir}/${actors.dir.name}"/>
+  <property name="src.lib.dir" value="${src.dir}/library"/>
+  <property name="src.comp.dir" value="${src.dir}/compiler"/>
+  <property name="src.dbc.dir" value="${src.dir}/dbc"/>
+  <property name="src.actors.dir" value="${src.dir}/actors"/>
   <property name="exec.dir.name" value="exec"/>
 
   <!-- Location of structure of the distribution properties -->
   <property name="dist.sbaz.dir" value="${build.dir}/sbaz"/>
   <property name="dist.name" value="scala"/>
-  <property name="lib.jar.name" value="${dist.name}-${lib.dir.name}.jar"/>
+  <property name="lib.jar.name" value="${dist.name}-library.jar"/>
   <property name="lib-dbc.jar.name" value="${dist.name}-dbc.jar"/>
-  <property name="comp.jar.name" value="${dist.name}-${comp.dir.name}.jar"/>
-  <property name="actors.jar.name" value="${dist.name}-${actors.dir.name}.jar"/>
-  <property name="libsrc.jar.name" value="${dist.name}-${lib.dir.name}-src.jar"/>
+  <property name="comp.jar.name" value="${dist.name}-compiler.jar"/>
+
+  <property name="libsrc.jar.name" value="${dist.name}-library-src.jar"/>
   <property name="dbcsrc.jar.name" value="${dist.name}-dbc-src.jar"/>
-  <property name="compsrc.jar.name" value="${dist.name}-${comp.dir.name}-src.jar"/>
-  <property name="actorssrc.jar.name" value="${dist.name}-${actors.dir.name}-src.jar"/>
+  <property name="compsrc.jar.name" value="${dist.name}-compiler-src.jar"/>
+  <property name="actorssrc.jar.name" value="${dist.name}-actors-src.jar"/>
   <property name="scala.exec.name" value="${dist.name}"/>
   <property name="scalac.exec.name" value="scalac"/>
   <property name="scaladoc.exec.name" value="scaladoc"/>
   <property name="fsc.exec.name" value="fsc"/>
 
   <!-- Shorcut names -->
-  <property name="build.lib.dir" value="${build.dir}/${lib.dir.name}"/>
-  <property name="build.comp.dir" value="${build.dir}/${comp.dir.name}"/>
-  <property name="build.dbc.dir" value="${build.dir}/${dbc.dir.name}"/>
-  <property name="build.actors.dir" value="${build.dir}/${actors.dir.name}"/>
+  <property name="build.lib.dir" value="${build.dir}/library"/>
+  <property name="build.comp.dir" value="${build.dir}/compiler"/>
+  <property name="build.dbc.dir" value="${build.dir}/dbc"/>
+  <property name="build.actors.dir" value="${build.dir}/actors"/>
   <property name="build.jar.dir" value="${build.dir}/lib"/>
   <property name="build.bin.dir" value="${build.dir}/bin"/>
   <property name="build.manual.dir" value="${build.dir}/manual.classes"/>
-  <property name="api.lib.pdir" value="${api.dir}/${lib.dir.name}"/>
+  <property name="api.lib.pdir" value="${api.dir}/library"/>
   <property name="api.lib.dir" value="${api.lib.pdir}/scala/api"/>
 
   <!-- sbaz properties -->
@@ -137,6 +133,8 @@
 
   <path id="starr.classpath">
     <pathelement location="${fjbg.jar}"/>
+    <pathelement location="${msil.jar}"/>
+    <pathelement location="${ant.jar}"/>
     <pathelement location="${starr.lib.jar}"/>
     <pathelement location="${starr.comp.jar}"/>
   </path>
@@ -237,6 +235,7 @@
       srcdir="${src.lib.dir}"
       destdir="${build.lib.dir}"
       usepredefs="no"
+      deprecation="yes" unchecked="yes"
     >
       <classpath>
         <pathelement location="${build.lib.dir}"/> <!-- XXX ??? -->
@@ -247,6 +246,7 @@
     <scalac
       srcdir="${src.lib.dir}"
       destdir="${build.lib.dir}"
+      deprecation="yes" unchecked="yes"
     >
       <classpath>
         <pathelement location="${build.lib.dir}"/>
@@ -262,6 +262,7 @@
     <scalac
       srcdir="${src.comp.dir}"
       destdir="${build.comp.dir}"
+      deprecation="yes" unchecked="yes"
     >
       <classpath>
         <pathelement location="${build.lib.dir}"/>
@@ -276,6 +277,7 @@
     <scalac
       srcdir="${src.dbc.dir}"
       destdir="${build.dbc.dir}"
+      deprecation="yes" unchecked="yes"
     >
       <classpath>
         <pathelement location="${build.lib.dir}"/>
@@ -296,6 +298,7 @@
     <scalac
       srcdir="${src.actors.dir}"
       destdir="${build.actors.dir}"
+      deprecation="yes" unchecked="yes"
     >
       <classpath>
         <pathelement location="${build.lib.dir}"/>
@@ -336,24 +339,63 @@
       </fileset>
       <manifest>
         <attribute name="Signature-Version" value="${version.number}"/>
+        <attribute name="Built-By" value="${user.name}"/>
+        <attribute name="Main-Class" value="scala.tools.nsc.Main"/>
+        <attribute name="Class-Path" value="${lib.jar.name}"/>
+        <section name="scala/tools/nsc">
+          <attribute name="Extension-Name" value="scala.tools.nsc"/>
+          <attribute name="Specification-Title" value="Scala Compiler"/>
+          <attribute name="Specification-Version" value="${version.number}"/>
+          <attribute name="Specification-Vendor" value="${vendor.name}"/>
+          <attribute name="Implementation-Title" value="scala.tools.nsc"/>
+          <attribute name="Implementation-Version" value="${version.number}"/>
+          <attribute name="Implementation-Vendor" value="${vendor.name}"/>
+        </section>
       </manifest>
     </jar>
+    <echo
+      file="${build.lib.dir}/library.properties"
+      message="version.number=${version.number}${line.separator}"
+      append="false"
+    />
+    <echo
+      file="${build.lib.dir}/library.properties"
+      message="copyright.string=${copyright.string}${line.separator}"
+      append="true"
+    />
     <jar destfile="${build.jar.dir}/${lib.jar.name}">
       <fileset dir="${build.lib.dir}"/>
+      <fileset dir="${build.actors.dir}"/>
       <manifest>
         <attribute name="Signature-Version" value="${version.number}"/>
+        <attribute name="Built-By" value="${user.name}"/>
+        <attribute name="Main-Class" value="scala.runtime.Properties"/>
+        <section name="scala">
+          <attribute name="Extension-Name" value="scala"/>
+          <attribute name="Specification-Title" value="Scala Library"/>
+          <attribute name="Specification-Version" value="${version.number}"/>
+          <attribute name="Specification-Vendor" value="${vendor.name}"/>
+          <attribute name="Implementation-Title" value="scala"/>
+          <attribute name="Implementation-Version" value="${version.number}"/>
+          <attribute name="Implementation-Vendor" value="${vendor.name}"/>
+        </section>
       </manifest>
     </jar>
     <jar destfile="${build.jar.dir}/${lib-dbc.jar.name}">
       <fileset dir="${build.dbc.dir}"/>
       <manifest>
         <attribute name="Signature-Version" value="${version.number}"/>
-      </manifest>
-    </jar>
-    <jar destfile="${build.jar.dir}/${actors.jar.name}">
-      <fileset dir="${build.actors.dir}"/>
-      <manifest>
-        <attribute name="Signature-Version" value="${version.number}"/>
+        <attribute name="Built-By" value="${user.name}"/>
+        <attribute name="Class-Path" value="${lib.jar.name}"/>
+        <section name="scala/dbc">
+          <attribute name="Extension-Name" value="scala.dbc"/>
+          <attribute name="Specification-Title" value="Scala DBC Library"/>
+          <attribute name="Specification-Version" value="${version.number}"/>
+          <attribute name="Specification-Vendor" value="${vendor.name}"/>
+          <attribute name="Implementation-Title" value="scala.dbc"/>
+          <attribute name="Implementation-Version" value="${version.number}"/>
+          <attribute name="Implementation-Vendor" value="${vendor.name}"/>
+        </section>
       </manifest>
     </jar>
 
@@ -396,9 +438,10 @@
     <!-- build source jars -->
     <jar
       destfile="${build.jar.dir}/${libsrc.jar.name}"
-      basedir="${src.lib.dir}"
-      includes="**/*.scala"
-    />
+      includes="**/*.scala">
+      <fileset dir="${src.dir}/library"/>
+      <fileset dir="${src.dir}/actors"/>
+    </jar>
     <jar
       destfile="${build.jar.dir}/${dbcsrc.jar.name}"
       basedir="${src.dbc.dir}"
@@ -407,11 +450,6 @@
     <jar
       destfile="${build.jar.dir}/${compsrc.jar.name}"
       basedir="${src.comp.dir}"
-      includes="**/*.scala"
-    />
-    <jar
-      destfile="${build.jar.dir}/${actorssrc.jar.name}"
-      basedir="${src.actors.dir}"
       includes="**/*.scala"
     />
   </target>
@@ -423,19 +461,20 @@
       destdir="${api.lib.dir}"
       sourcepath=""
       windowtitle="Scala Library Documentation"
-      doctitle="&lt;div&gt;Scala 2v${version.number}&lt;/div&gt;"
+      documenttitle="&lt;div&gt;Scala 2v${version.number}&lt;/div&gt;"
     >
       <classpath>
         <pathelement location="${build.jar.dir}/${lib.jar.name}"/>
       </classpath>
-      <include name="${dbc.dir.name}/**/*.scala"/>
-      <include name="${lib.dir.name}/**/*.scala"/>
+      <include name="dbc/**/*.scala"/>
+      <include name="library/**/*.scala"/>
     </scaladoc>
   </target>
 
   <target name="docs.manual">
     <mkdir dir="${build.manual.dir}"/>
-    <scalac srcdir="${topdir}/src/manual" destdir="${build.manual.dir}">
+    <scalac srcdir="${topdir}/src/manual" destdir="${build.manual.dir}"
+      deprecation="yes" unchecked="yes">
       <classpath>
         <path refid="starr.classpath"/>
       </classpath>
@@ -471,10 +510,8 @@
     >
       <libset dir="${build.jar.dir}" includes="${lib.jar.name}"/>
       <libset dir="${build.jar.dir}" includes="${lib-dbc.jar.name}"/>
-      <libset dir="${build.jar.dir}" includes="${actors.jar.name}"/>
       <srcset dir="${build.jar.dir}" includes="${libsrc.jar.name}"/>
       <srcset dir="${build.jar.dir}" includes="${dbcsrc.jar.name}"/>
-      <srcset dir="${build.jar.dir}" includes="${actorssrc.jar.name}"/>
     </sbaz>
     <!-- Create the Scala developper package -->
     <sbaz
@@ -519,7 +556,7 @@
       />
       <miscset
         dir="${topdir}/test"
-        includes="files/**/*.check,files/**/*.java,files/**/*.scala,files/**/*.args,files/cli/**/*.check.*,files/jvm*/**"
+        includes="files/**"
       />
     </sbaz>
   </target>
