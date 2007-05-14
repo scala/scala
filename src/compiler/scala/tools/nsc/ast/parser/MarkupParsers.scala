@@ -526,8 +526,6 @@ class MarkupParser(p: UnitParser, presWS: boolean) /*with scala.xml.parsing.Mark
     //}
     xSpaceOpt
     // parse more XML ?
-    Console.println("[ch = "+ch+"]")
-    Console.println("[s.in.ch = "+s.in.ch+"]")
     if (ch == '<') {
       //val ts = new mutable.ArrayBuffer[Tree]();
       //ts.append( tree );
