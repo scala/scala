@@ -161,7 +161,7 @@ abstract class Constructors extends Transform {
             }
             defBuf += copy.ValDef(stat, mods, name, tpt, EmptyTree)
           }
-        case ClassDef(_, _, _, _, _) =>
+        case ClassDef(_, _, _, _) =>
           defBuf += (new ConstructorTransformer).transform(stat)
         case _ =>
           constrStatBuf += intoConstructor(impl.symbol, stat)
@@ -201,13 +201,14 @@ abstract class Constructors extends Transform {
       for (sym <- clazz.info.decls.toList)
         if (!isAccessed(sym)) clazz.info.decls unlink sym
 
-      copy.Template(impl, impl.parents, defBuf.toList filter (stat => isAccessed(stat.symbol)))
+      copy.Template(impl, impl.parents, impl.self,
+                    defBuf.toList filter (stat => isAccessed(stat.symbol)))
     }
 
     override def transform(tree: Tree): Tree = {
       tree match {
-        case ClassDef(mods, name, tparams, self, impl) if !tree.symbol.hasFlag(INTERFACE) =>
-          copy.ClassDef(tree, mods, name, tparams, self, transformClassTemplate(impl))
+        case ClassDef(mods, name, tparams, impl) if !tree.symbol.hasFlag(INTERFACE) =>
+          copy.ClassDef(tree, mods, name, tparams, transformClassTemplate(impl))
         case _ =>
           super.transform(tree)
       }

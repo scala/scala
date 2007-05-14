@@ -742,10 +742,10 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
       override def transform(tree: Tree): Tree = {
         if (tree.symbol == ArrayClass) return tree
         val tree1 = tree match {
-          case ClassDef(mods, name, tparams, self, impl) =>
+          case ClassDef(mods, name, tparams, impl) =>
             if (settings.debug.value)
               log("defs of " + tree.symbol + " = " + tree.symbol.info.decls)
-            copy.ClassDef(tree, mods, name, List(), emptyValDef, impl)
+            copy.ClassDef(tree, mods, name, List(), impl)
           case DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
             copy.DefDef(tree, mods, name, List(), vparamss, tpt, rhs)
           case AbsTypeDef(_, _, _, _, _) =>
@@ -830,11 +830,11 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
             }
             tree
 
-          case Template(parents, body) =>
+          case Template(parents, self, body) =>
             assert(!currentOwner.isImplClass)
             //Console.println("checking no dble defs " + tree)//DEBUG
             checkNoDoubleDefs(tree.symbol.owner)
-            copy.Template(tree, parents, addBridges(body, currentOwner))
+            copy.Template(tree, parents, emptyValDef, addBridges(body, currentOwner))
           case _ =>
             tree
         }

@@ -564,7 +564,7 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
         for (ModuleDef(mods, name, _) <- trees if mods.isPublic)
           yield name
       val caseClasses =
-        for {val ClassDef(mods, name, _, _, _) <- trees
+        for {val ClassDef(mods, name, _, _) <- trees
              mods.isPublic
              mods.hasFlag(Flags.CASE)}
         yield name.toTermName
@@ -573,7 +573,7 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
 
     /** list of classes defined */
     val classNames =
-      for (ClassDef(mods, name, _, _, _) <- trees if mods.isPublic)
+      for (ClassDef(mods, name, _, _) <- trees if mods.isPublic)
         yield name
 
     /** list of type aliases defined */
@@ -795,7 +795,7 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
   private class ClassReq(line: String, lineName: String)
   extends Request(line, lineName) {
     def newClassName = trees match {
-      case List(ClassDef(_, name, _, _, _)) => name
+      case List(ClassDef(_, name, _, _)) => name
     }
 
     def classdef = trees.head.asInstanceOf[ClassDef]

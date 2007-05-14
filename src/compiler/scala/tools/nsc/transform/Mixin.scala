@@ -339,7 +339,7 @@ abstract class Mixin extends InfoTransform {
     private def preTransform(tree: Tree): Tree = {
       val sym = tree.symbol
       tree match {
-        case Template(parents, body) =>
+        case Template(parents, self, body) =>
           localTyper = erasure.newTyper(rootContext.make(tree, currentOwner))
           atPhase(phase.next)(currentOwner.owner.info)//todo: needed?
           if (!currentOwner.isTrait) addMixedinMembers(currentOwner)
@@ -554,14 +554,14 @@ abstract class Mixin extends InfoTransform {
         tree.tpe = toInterface(tree.tpe);
 
       tree match {
-        case Template(parents, body) =>
+        case Template(parents, self, body) =>
           // change parents of templates to conform to parents in the symbol info
           val parents1 = currentOwner.info.parents map (t => TypeTree(t) setPos tree.pos)
 
           // add all new definitions to current class or interface
           val body1 = addNewDefs(currentOwner, body)
 
-          copy.Template(tree, parents1, body1)
+          copy.Template(tree, parents1, self, body1)
 
         case Apply(TypeApply(sel @ Select(qual, name), List(targ)), List())
         if (tree.symbol == Object_asInstanceOf && (qual.tpe <:< targ.tpe)) =>

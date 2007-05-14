@@ -192,7 +192,7 @@ abstract class LambdaLift extends InfoTransform {
        try { //debug
         val sym = tree.symbol;
         tree match {
-          case ClassDef(_, _, _, _, _) =>
+          case ClassDef(_, _, _, _) =>
             liftedDefs(tree.symbol) = new ListBuffer
             if (sym.isLocal) renamable addEntry sym
           case DefDef(_, _, _, _, _, _) =>
@@ -321,9 +321,9 @@ abstract class LambdaLift extends InfoTransform {
             sym.updateInfo(
               lifted(MethodType(sym.info.paramTypes ::: (ps map (.tpe)), sym.info.resultType)));
             copy.DefDef(tree, mods, name, tparams, List(vparams ::: freeParams), tpt, rhs)
-          case ClassDef(mods, name, tparams, self, impl @ Template(parents, body)) =>
-            copy.ClassDef(tree, mods, name, tparams, self,
-                          copy.Template(impl, parents, body ::: freeParams))
+          case ClassDef(mods, name, tparams, impl @ Template(parents, self, body)) =>
+            copy.ClassDef(tree, mods, name, tparams,
+                          copy.Template(impl, parents, self, body ::: freeParams))
         }
       case None =>
         tree
@@ -343,7 +343,7 @@ abstract class LambdaLift extends InfoTransform {
     private def postTransform(tree: Tree): Tree = {
       val sym = tree.symbol
       tree match {
-        case ClassDef(_, _, _, _, _) =>
+        case ClassDef(_, _, _, _) =>
           val tree1 = addFreeParams(tree, sym)
           if (sym.isLocal) liftDef(tree1) else tree1
         case DefDef(_, _, _, _, _, _) =>
@@ -399,10 +399,10 @@ abstract class LambdaLift extends InfoTransform {
     /** Transform statements and add lifted definitions to them. */
     override def transformStats(stats: List[Tree], exprOwner: Symbol): List[Tree] = {
       def addLifted(stat: Tree): Tree = stat match {
-        case ClassDef(mods, name, tparams, self, impl @ Template(parents, body)) =>
+        case ClassDef(mods, name, tparams, impl @ Template(parents, self, body)) =>
           val lifted = liftedDefs(stat.symbol).toList map addLifted
           val result = copy.ClassDef(
-            stat, mods, name, tparams, self, copy.Template(impl, parents, body ::: lifted))
+            stat, mods, name, tparams, copy.Template(impl, parents, self, body ::: lifted))
           liftedDefs -= stat.symbol
           result
         case _ =>

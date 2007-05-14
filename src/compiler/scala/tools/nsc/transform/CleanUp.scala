@@ -90,12 +90,12 @@ abstract class CleanUp extends Transform {
       }
 
     override def transform(tree: Tree): Tree = tree match {
-      case Template(parents, body) =>
+      case Template(parents, self, body) =>
         classConstantMeth.clear
         newDefs.clear
         localTyper = typer.atOwner(tree, currentOwner)
         val body1 = transformTrees(body)
-        copy.Template(tree, parents, newDefs.toList ::: body1)
+        copy.Template(tree, parents, self, newDefs.toList ::: body1)
       case Literal(c) if (c.tag == ClassTag) =>
         val tpe = c.typeValue
         atPos(tree.pos) {

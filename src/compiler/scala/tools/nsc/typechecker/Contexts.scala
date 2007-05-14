@@ -26,7 +26,7 @@ trait Contexts requires Analyzer {
 
   private val startContext = {
     NoContext.make(
-    global.Template(List(), List()) setSymbol global.NoSymbol setType global.NoType,
+    global.Template(List(), emptyValDef, List()) setSymbol global.NoSymbol setType global.NoType,
     global.definitions.RootClass,
     global.definitions.RootClass.info.decls)
   }
@@ -157,7 +157,7 @@ trait Contexts requires Analyzer {
       c.owner = owner
       c.scope = scope
       tree match {
-        case Template(_, _) | PackageDef(_, _) =>
+        case Template(_, _, _) | PackageDef(_, _) =>
           c.enclClass = c
           c.prefix = c.owner.thisType
           c.inConstructorSuffix = false

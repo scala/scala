@@ -24,7 +24,7 @@ abstract class TreeInfo {
 
   def isOwnerDefinition(tree: Tree): boolean = tree match {
     case PackageDef(_, _)
-       | ClassDef(_, _, _, _, _)
+       | ClassDef(_, _, _, _)
        | ModuleDef(_, _, _)
        | DefDef(_, _, _, _, _, _)
        | Import(_, _) => true
@@ -58,7 +58,7 @@ abstract class TreeInfo {
    */
   def isPureDef(tree: Tree): boolean = tree match {
     case EmptyTree
-       | ClassDef(_, _, _, _, _)
+       | ClassDef(_, _, _, _)
        | AbsTypeDef(_, _, _, _, _)
        | AliasTypeDef(_, _, _, _)
        | Import(_, _)
@@ -191,7 +191,7 @@ abstract class TreeInfo {
 
   /** can this type be a type pattern */
   def mayBeTypePat(tree: Tree): boolean = tree match {
-    case CompoundTypeTree(Template(tps, List())) => tps exists mayBeTypePat
+    case CompoundTypeTree(Template(tps, _, List())) => tps exists mayBeTypePat
     case Annotated(_, tp) => mayBeTypePat(tp)
     case AppliedTypeTree(constr, args) => mayBeTypePat(constr) || args.exists(.isInstanceOf[Bind])
     case SelectFromTypeTree(tp, _) => mayBeTypePat(tp)

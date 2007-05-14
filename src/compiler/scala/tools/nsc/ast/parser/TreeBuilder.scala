@@ -146,8 +146,8 @@ abstract class TreeBuilder {
       val x = nme.ANON_CLASS_NAME.toTypeName
       Block(
         List(ClassDef(
-          Modifiers(FINAL | SYNTHETIC), x, List(), self,
-          Template(parents, NoMods, List(List()), argss, stats))),
+          Modifiers(FINAL | SYNTHETIC), x, List(),
+          Template(parents, self, NoMods, List(List()), argss, stats))),
         New(Ident(x), List(List())))
     }
 
@@ -160,7 +160,7 @@ abstract class TreeBuilder {
   /** A type tree corresponding to (possibly unary) intersection type */
   def makeIntersectionTypeTree(tps: List[Tree]): Tree =
     if (tps.tail.isEmpty) tps.head
-    else CompoundTypeTree(Template(tps, List()))
+    else CompoundTypeTree(Template(tps, emptyValDef, List()))
 
   /** Create tree representing a while loop */
   def makeWhile(lname: Name, cond: Tree, body: Tree): Tree = {

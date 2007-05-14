@@ -255,6 +255,6 @@ trait SyntheticMethods requires Analyzer {
     }
     val synthetics = ts.toList
     copy.Template(
-      templ, templ.parents, if (synthetics.isEmpty) templ.body else templ.body ::: synthetics)
+      templ, templ.parents, templ.self, if (synthetics.isEmpty) templ.body else templ.body ::: synthetics)
   }
 }

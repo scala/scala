@@ -188,7 +188,7 @@ abstract class TailCalls extends Transform
         case PackageDef(name, stats) =>
           super.transform(tree)
 
-        case ClassDef(_, name, _, _, _) =>
+        case ClassDef(_, name, _, _) =>
           log("Entering class " + name)
           val res = super.transform(tree)
           log("Leaving class " + name)
@@ -199,7 +199,7 @@ abstract class TailCalls extends Transform
         case AliasTypeDef(mods, name, tparams, rhs) => tree // (eliminated by erasure)
         case LabelDef(name, params, rhs) => super.transform(tree)
 
-        case Template(parents, body) =>
+        case Template(parents, self, body) =>
           super.transform(tree)
 
         case Block(stats, expr) =>

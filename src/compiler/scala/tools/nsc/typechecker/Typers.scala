@@ -942,19 +942,11 @@ trait Typers requires Analyzer {
       val clazz = cdef.symbol
       reenterTypeParams(cdef.tparams)
       val tparams1 = List.mapConserve(cdef.tparams)(typedAbsTypeDef)
-      val self1 = cdef.self match {
-        case ValDef(mods, name, tpt, EmptyTree) =>
-          val tpt1 = checkNoEscaping.privates(clazz.thisSym, typedType(tpt))
-          copy.ValDef(cdef.self, mods, name, tpt1, EmptyTree) setType NoType
-      }
-      val implScope = newScope
-      if (self1.name != nme.WILDCARD) implScope enter self1.symbol
-      val impl1 = newTyper(context.make(cdef.impl, clazz, implScope))
+      val impl1 = newTyper(context.make(cdef.impl, clazz, newTemplateScope(cdef.impl, clazz)))
         .typedTemplate(cdef.impl, parentTypes(cdef.impl))
       val impl2 = addSyntheticMethods(impl1, clazz, context.unit)
-      val ret = copy.ClassDef(cdef, cdef.mods, cdef.name, tparams1, self1, impl2)
+      copy.ClassDef(cdef, cdef.mods, cdef.name, tparams1, impl2)
         .setType(NoType)
-      ret
     }
 
     /**
@@ -1042,6 +1034,12 @@ trait Typers requires Analyzer {
       val clazz = context.owner
       if (templ.symbol == NoSymbol)
         templ setSymbol clazz.newLocalDummy(templ.pos)
+      val self1 = templ.self match {
+        case vd @ ValDef(mods, name, tpt, EmptyTree) =>
+          val tpt1 = checkNoEscaping.privates(clazz.thisSym, typedType(tpt))
+          copy.ValDef(vd, mods, name, tpt1, EmptyTree) setType NoType
+      }
+      if (self1.name != nme.WILDCARD) context.scope enter self1.symbol
       val selfType =
         if (clazz.isAnonymousClass && !phase.erasedTypes)
           intersectionType(clazz.info.parents, clazz.owner)
@@ -1056,7 +1054,7 @@ trait Typers requires Analyzer {
           templ.body flatMap addGetterSetter
         else templ.body
       val body1 = typedStats(body, templ.symbol)
-      copy.Template(templ, parents1, body1) setType clazz.tpe
+      copy.Template(templ, parents1, self1, body1) setType clazz.tpe
     }
 
     /**
@@ -2411,11 +2409,11 @@ trait Typers requires Analyzer {
             .typedStats(stats, NoSymbol)
           copy.PackageDef(tree, name, stats1) setType NoType
 
-        case tree @ ClassDef(_, _, _, _, _) =>
+        case tree @ ClassDef(_, _, _, _) =>
           newTyper(makeNewScope(context, tree, sym)).typedClassDef(tree)
 
         case tree @ ModuleDef(_, _, _) =>
-          newTyper(context.make(tree, sym.moduleClass)).typedModuleDef(tree)
+          newTyper(makeNewScope(context, tree, sym.moduleClass)).typedModuleDef(tree)
 
         case vdef @ ValDef(_, _, _, _) =>
           typedValDef(vdef)

@@ -144,7 +144,7 @@ abstract class NodePrinters {
             }
             traverse(expr, level + 1, false)
             printcln(")")
-          case ClassDef(mods, name, tparams, tpt, impl) =>
+          case ClassDef(mods, name, tparams, impl) =>
             println("ClassDef(" + nodeinfo(tree))
             println("  " + symflags(tree))
             println("  \"" + name + "\",")
@@ -190,7 +190,7 @@ abstract class NodePrinters {
             printcln("  \"" + selector + "\")")
           case Super(qual, mix) =>
             printcln("Super(\"" + qual + "\", \"" + mix + "\")" + nodeinfo2(tree))
-          case Template(parents, body) =>
+          case Template(parents, self, body) =>
             println("Template(," + nodeinfo(tree))
             println("  " + parents.map(p => p.tpe.symbol) + ", // parents")
             if (body.isEmpty)

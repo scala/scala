@@ -122,20 +122,12 @@ abstract class TreePrinters {
         case EmptyTree =>
           print("<empty>")
 
-        case ClassDef(mods, name, tparams, self, impl) =>
+        case ClassDef(mods, name, tparams, impl) =>
           printAnnotations(tree)
           printModifiers(tree, mods)
           print((if (mods hasFlag TRAIT) "trait " else "class ") + symName(tree, name))
           printTypeParams(tparams)
-          print(" extends ");
-          printRow(impl.parents, " with ")
-          print(" {");
-          if (self.name != nme.WILDCARD) {
-            print(" "); print(self.name); printOpt(": ", self.tpt); print(" => ")
-          } else if (!self.tpt.isEmpty) {
-            print(" _ : "); print(self.tpt); print(" => ")
-          }
-          printColumn(impl.body, "", ";", "}")
+          print(" extends "); print(impl)
 
         case PackageDef(packaged, stats) =>
           printAnnotations(tree)
@@ -197,9 +189,16 @@ abstract class TreePrinters {
             print((for (Assign(name, value) <- elements) yield "val " + name + " = " + value).
                   mkString("{", ",", "}"))
 
-        case Template(parents, body) =>
+        case Template(parents, self, body) =>
           printRow(parents, " with ")
-          if (!body.isEmpty) printColumn(body, " {", ";", "}")
+          if (!body.isEmpty) {
+            if (self.name != nme.WILDCARD) {
+              print(" { "); print(self.name); printOpt(": ", self.tpt); print(" => ")
+            } else if (!self.tpt.isEmpty) {
+              print(" _ : "); print(self.tpt); print(" => ")
+            }
+            printColumn(body, "", ";", "}")
+          }
 
         case Block(stats, expr) =>
           printColumn(stats ::: List(expr), "{", ";", "}")
@@ -341,7 +340,7 @@ abstract class TreePrinters {
       printRaw(
         if (tree.isDef && tree.symbol != NoSymbol) {
           tree match {
-            case ClassDef(_, _, _, _, impl) => ClassDef(tree.symbol, impl)
+            case ClassDef(_, _, _, impl) => ClassDef(tree.symbol, impl)
             case ModuleDef(_, _, impl)      => ModuleDef(tree.symbol, impl)
 //            case ValDef(_, _, _, rhs)       => ValDef(tree.symbol, rhs)
             case DefDef(_, _, _, vparamss, _, rhs) => DefDef(tree.symbol, vparamss, rhs)

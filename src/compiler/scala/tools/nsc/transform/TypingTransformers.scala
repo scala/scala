@@ -39,7 +39,7 @@ trait TypingTransformers {
     override def transform(tree: Tree): Tree = {
       curTree = tree
       tree match {
-        case Template(_, _) =>
+        case Template(_, _, _) =>
           // enter template into context chain
           atOwner(currentOwner) { super.transform(tree) }
         case _ =>

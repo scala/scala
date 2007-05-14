@@ -229,7 +229,7 @@ abstract class AddInterfaces extends InfoTransform {
     else tree
 
   private def ifaceTemplate(templ: Template): Template =
-    copy.Template(templ, templ.parents, templ.body map ifaceMemberDef)
+    copy.Template(templ, templ.parents, emptyValDef, templ.body map ifaceMemberDef)
 
   private def implMethodDef(tree: Tree, ifaceMethod: Symbol): Tree =
     implMethodMap.get(ifaceMethod) match {
@@ -255,7 +255,8 @@ abstract class AddInterfaces extends InfoTransform {
 
   private def implTemplate(clazz: Symbol, templ: Template): Template = atPos(templ.pos) {
     val templ1 = atPos(templ.pos) {
-      Template(templ.parents, addMixinConstructorDef(clazz, templ.body map implMemberDef))
+      Template(templ.parents, emptyValDef,
+               addMixinConstructorDef(clazz, templ.body map implMemberDef))
         .setSymbol(clazz.newLocalDummy(templ.pos))
     }
     new ChangeOwnerTraverser(templ.symbol.owner, clazz)(
@@ -266,7 +267,7 @@ abstract class AddInterfaces extends InfoTransform {
     val buf = new ListBuffer[Tree]
     for (val tree <- trees)
       tree match {
-        case ClassDef(_, _, _, _, impl) =>
+        case ClassDef(_, _, _, impl) =>
           if (tree.symbol.needsImplClass)
             buf += {
               val clazz = implClass(tree.symbol).initialize
@@ -306,16 +307,16 @@ abstract class AddInterfaces extends InfoTransform {
     override def transform(tree: Tree): Tree = {
       val sym = tree.symbol
       val tree1 = tree match {
-        case ClassDef(mods, name, tparams, self, impl) if (sym.needsImplClass) =>
+        case ClassDef(mods, name, tparams, impl) if (sym.needsImplClass) =>
           implClass(sym).initialize // to force lateDEFERRED flags
-          copy.ClassDef(tree, mods | INTERFACE, name, tparams, self, ifaceTemplate(impl))
+          copy.ClassDef(tree, mods | INTERFACE, name, tparams, ifaceTemplate(impl))
         case DefDef(mods, name, tparams, vparamss, tpt, rhs)
         if (sym.isClassConstructor && sym.isPrimaryConstructor && sym.owner != ArrayClass) =>
           copy.DefDef(tree, mods, name, tparams, vparamss, tpt,
                       addMixinConstructorCalls(rhs, sym.owner)) // (3)
-        case Template(parents, body) =>
+        case Template(parents, self, body) =>
           val parents1 = sym.owner.info.parents map (t => TypeTree(t) setPos tree.pos)
-          copy.Template(tree, parents1, body)
+          copy.Template(tree, parents1, emptyValDef, body)
         case This(_) =>
           if (sym.needsImplClass) {
             val impl = implClass(sym)
