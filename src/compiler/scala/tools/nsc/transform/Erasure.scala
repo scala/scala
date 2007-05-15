@@ -90,8 +90,10 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
             else if (clazz == ArrayClass) List(erasedTypeRef(ObjectClass))
             else removeDoubleObject(parents map this),
             decls, clazz)
+        case NotNullType(tp) =>
+          apply(tp)
         case _ =>
-          mapOver(tp)/*.normalize MARTIN: I don't think this is needed?*/
+          mapOver(tp)
       }
     }
   }
