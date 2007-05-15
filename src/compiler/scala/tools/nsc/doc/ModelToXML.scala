@@ -35,7 +35,7 @@ trait ModelToXML extends ModelExtractor {
   def link(tpe: Type)(implicit frame: Frame): NodeSeq = {
     if (!tpe.typeArgs.isEmpty) {
       if (definitions.isFunctionType(tpe)) {
-        val (args,r) = tpe.typeArgs.splitAt(tpe.typeArgs.length - 1);
+        val (args,r) = tpe.normalize.typeArgs.splitAt(tpe.normalize.typeArgs.length - 1);
         args.mkXML("(", ", ", ")")(link) ++ Text(" => ") ++ link(r.head);
       } else if (tpe.symbol == definitions.RepeatedParamClass) {
         assert(tpe.typeArgs.length == 1);
