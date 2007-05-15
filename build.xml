@@ -1049,7 +1049,7 @@ GENERATES A DISTRIBUTION
         </section>
       </manifest>
     </jar>
-    
+
     <!-- build source jars -->
     <jar
       destfile="${dist.current.dir}/lib/${libsrc.jar.name}">
