@@ -56,7 +56,7 @@ class NetKernel(service: Service) {
                 }
               }
             }
-            senderProxy.start()
+            senderProxy.start(); {}
           case None =>
             // message is lost
         }

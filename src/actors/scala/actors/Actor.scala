@@ -612,8 +612,9 @@ trait Actor extends OutputChannel[Any] {
   /**
    * Starts this actor.
    */
-  def start() {
+  def start(): Actor = {
     Scheduler start new Reaction(this)
+    this
   }
 
   def loop(body: => Unit): Nothing =
