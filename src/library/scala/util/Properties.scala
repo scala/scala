@@ -8,7 +8,7 @@
 
 // $Id$
 
-package scala.runtime
+package scala.util
 
 /** A utility to load the library properties from a Java properties file
  *  included in the jar.

@@ -489,7 +489,11 @@ abstract class GenMSIL extends SubComponent {
 	}
       }
 
-      tBuilder.setPosition((sym.pos).line.get, iclass.cunit.source.file.name)
+      val line = (sym.pos).line match {
+        case Some(l) => l
+        case None => 0
+      }
+      tBuilder.setPosition(line, iclass.cunit.source.file.name)
 
       if (isTopLevelModule(sym)) {
 	if (settings.debug.value)
@@ -895,27 +899,27 @@ abstract class GenMSIL extends SubComponent {
 	      def replaceOutJumps(blocks: List[BasicBlock], leaving: List[(BasicBlock, List[BasicBlock])], exh: ExceptionHandler): (List[BasicBlock], Option[BasicBlock]) = {
 		def replaceJump(block: BasicBlock, from: BasicBlock, to: BasicBlock) = block.lastInstruction match {
 		  case JUMP(where) =>
-		    assert(from == where)
+		    //assert(from == where)
 		  block.replaceInstruction(block.lastInstruction, JUMP(to))
 		  case CJUMP(success, failure, cond, kind) =>
 		    if (from == success)
 		      block.replaceInstruction(block.lastInstruction, CJUMP(to, failure, cond, kind))
 		    else
-		      assert(from == failure)
+		      //assert(from == failure)
 		    if (from == failure)
 		      block.replaceInstruction(block.lastInstruction, CJUMP(success, to, cond, kind))
 		  case CZJUMP(success, failure, cond, kind) =>
 		    if (from == success)
 		      block.replaceInstruction(block.lastInstruction, CZJUMP(to, failure, cond, kind))
 		    else
-		      assert(from == failure)
+		      //assert(from == failure)
 		    if (from == failure)
 		      block.replaceInstruction(block.lastInstruction, CZJUMP(success, to, cond, kind))
 		  case SWITCH(tags, labels) => // labels: List[BasicBlock]
 		    val newLabels = labels.map(b => if (b == from) to else b)
 		    assert(newLabels.contains(to))
 		    block.replaceInstruction(block.lastInstruction, SWITCH(tags, newLabels))
-		  case _ => abort("expected branch at the end of block " + block)
+		  case _ => () //abort("expected branch at the end of block " + block)
 		}
 
 		val jumpOutBlock = blocks.last.code.newBlock
@@ -934,20 +938,20 @@ abstract class GenMSIL extends SubComponent {
 		(blocks, None)
 	      else if (leaving.length == 1) {
 		val outside = leaving(0)._2
-		assert(outside.forall(b => b == outside(0)), "exception-block leaving to multiple targets")
+		//assert(outside.forall(b => b == outside(0)), "exception-block leaving to multiple targets")
 		if (!firstBlockAfter.isDefinedAt(exh))
 		  firstBlockAfter(exh) = outside(0)
-		else
-		  assert(firstBlockAfter(exh) == outside(0), "try/catch leaving to multiple targets: " + firstBlockAfter(exh) + ", new: " + outside(0))
+		//else ()
+		  //assert(firstBlockAfter(exh) == outside(0), "try/catch leaving to multiple targets: " + firstBlockAfter(exh) + ", new: " + outside(0))
 		val last = leaving(0)._1
 		(blocks.diff(List(last)) ::: List(last), None)
 	      } else {
 		val outside = leaving.flatMap(p => p._2)
-		assert(outside.forall(b => b == outside(0)), "exception-block leaving to multiple targets")
+		//assert(outside.forall(b => b == outside(0)), "exception-block leaving to multiple targets")
 		if (!firstBlockAfter.isDefinedAt(exh))
 		  firstBlockAfter(exh) = outside(0)
-		else
-		  assert(firstBlockAfter(exh) == outside(0), "try/catch leaving to multiple targets")
+		//else
+		  //assert(firstBlockAfter(exh) == outside(0), "try/catch leaving to multiple targets")
 		replaceOutJumps(blocks, leaving, exh)
 	      }
 	    }
@@ -1177,8 +1181,9 @@ abstract class GenMSIL extends SubComponent {
 
 	needAdditionalRet = false
 
-	var currentLineNr = try { (instr.pos).line.get } catch {
-          case _: Error =>
+	val currentLineNr = (instr.pos).line match {
+          case Some(line) => line
+          case None =>
             log("Warning: wrong position in: " + method)
           lastLineNr
 	} // if getting line number fails

@@ -16,6 +16,61 @@ import Predef._
 
 object Math {
 
+  /** The smalles possible value for scala.Byte. */
+  val MIN_BYTE   = System.Byte.MinValue
+  /** The greatest possible value for scala.Byte. */
+  val MAX_BYTE   = System.Byte.MaxValue
+
+  /** The smalles possible value for scala.Short. */
+  val MIN_SHORT  = System.Int16.MinValue
+  /** The greatest possible value for scala.Short. */
+  val MAX_SHORT  = System.Int16.MaxValue
+
+  /** The smalles possible value for scala.Char. */
+  val MIN_CHAR   = System.Char.MinValue
+  /** The greatest possible value for scala.Char. */
+  val MAX_CHAR   = System.Char.MaxValue
+
+  /** The smalles possible value for scala.Int. */
+  val MIN_INT    = System.Int32.MinValue
+  /** The greatest possible value for scala.Int. */
+  val MAX_INT    = System.Int32.MaxValue
+
+  /** The smalles possible value for scala.Long. */
+  val MIN_LONG   = System.Int64.MinValue
+  /** The greatest possible value for scala.Long. */
+  val MAX_LONG   = System.Int64.MaxValue
+
+  /** The smalles possible value for scala.Float. */
+  val MIN_FLOAT  = System.Single.MinValue
+  /** The smalles difference between two values of scala.Float. */
+  val EPS_FLOAT  = System.Single.Epsilon
+  /** The greatest possible value for scala.Float. */
+  val MAX_FLOAT  = System.Single.MinValue
+  /** A value of type scala.Float that represents no number. */
+  //val NaN_FLOAT  = System.Single.NaN
+  /** Negative infinity of type scala.Float*/
+  //val NEG_INF_FLOAT = System.Double.NegativeInfinity
+  /** Positive infinity of type scala.Float*/
+  //val POS_INF_FLOAT = System.Double.PositiveInfinity
+
+  /** The smalles possible value for scala.Double. */
+  val MIN_DOUBLE = System.Double.MinValue
+  /** The smalles difference between two values of scala.Double. */
+  val EPS_DOUBLE = System.Double.Epsilon
+  /** The greatest possible value for scala.Double. */
+  val MAX_DOUBLE = System.Double.MaxValue
+  /** A value of type scala.Double that represents no number. */
+  //val NaN_DOUBLE = System.Double.NaN
+  /** Negative infinity of type scala.Double*/
+  //val NEG_INF_DOUBLE = System.Double.NegativeInfinity
+  /** Positive infinity of type scala.Double*/
+  //val POS_INF_DOUBLE = System.Double.PositiveInfinity
+
+  /** The <code>double</code> value that is closer than any other to
+   *  <code>e</code>, the base of the natural logarithms.
+   */
+
   val E = System.Math.E
   val Pi = System.Math.PI
 
@@ -27,19 +82,24 @@ object Math {
   def asin(x: Double): Double = System.Math.Asin(x)
   def acos(x: Double): Double = System.Math.Acos(x)
   def atan(x: Double): Double = System.Math.Atan(x)
-  //def toRadians(x: Double): Double = System.Math.toRadians(x)
-  //def toDegrees(x: Double): Double = System.Math.toDegrees(x)
+
+  def toRadians(x: Double): Double = x * Pi / 180.0
+  def toDegrees(x: Double): Double = x * 180.0 / Pi
+
   def exp(x: Double): Double = System.Math.Exp(x)
   def log(x: Double): Double = System.Math.Log(x)
   def sqrt(x: Double): Double = System.Math.Sqrt(x)
+
   def IEEEremainder(x: Double, y: Double): Double = System.Math.IEEERemainder(x, y)
   def ceil(x: Double): Double = System.Math.Ceiling(x)
   def floor(x: Double): Double = System.Math.Floor(x)
+
   //def rint(x: Double): Double = System.Math.rint(x)
   def atan2(x: Double, y: Double): Double = System.Math.Atan2(x, y)
   def pow(x: Double, y: Double): Double = System.Math.Pow(x, y)
   def round(x: Float): Int = System.Math.Round(x).toInt
   def round(x: Double): Long = System.Math.Round(x).toLong
+
   def abs(x: Int): Int = System.Math.Abs(x)
   def abs(x: Long): Long = System.Math.Abs(x)
   def abs(x: Float): Float = System.Math.Abs(x)
