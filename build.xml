@@ -1020,7 +1020,7 @@ GENERATES A DISTRIBUTION
       <manifest>
         <attribute name="Signature-Version" value="${version.number}"/>
         <attribute name="Built-By" value="${user.name}"/>
-        <attribute name="Main-Class" value="scala.runtime.Properties"/>
+        <attribute name="Main-Class" value="scala.util.Properties"/>
         <section name="scala">
           <attribute name="Extension-Name" value="scala"/>
           <attribute name="Specification-Title" value="Scala Library"/>
