@@ -476,9 +476,10 @@ trait MarkupParsers {
           if (expectRBRACE) {
             if (ch == '}')
               nextch
-            else
+            else {
               reportSyntaxError("in XML content, please use '}}' to express '}'")
               throw ConfusedAboutBracesException
+            }
           }
           exit = xCheckEmbeddedBlock ||(ch == '<') || (ch == '&')
         }
