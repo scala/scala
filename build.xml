@@ -1030,6 +1030,16 @@ GENERATES A DISTRIBUTION
           <attribute name="Implementation-Version" value="${version.number}"/>
           <attribute name="Implementation-Vendor" value="${vendor.name}"/>
         </section>
+        <attribute name="Bundle-DocURL" value="http://www.scala-lang.org/"/>
+        <attribute name="Bundle-ManifestVersion" value="2"/>
+        <attribute name="Bundle-Name" value="Scala Library Bundle"/>
+        <attribute name="Bundle-SymbolicName" value="scala_library"/>
+        <attribute name="Bundle-Version" value="${version.number}"/>
+        <attribute name="Bundle-Vendor" value="${vendor.name}"/>
+        <!-- CAUTION! Do not remove superflous blanks (Ant bug) -->
+        <attribute name="Export-Package" value="scala, scala.actors, scala.actors.remote,             scala.collection, scala.collection.immutable, scala.collection.jcl,  scala.collection.mutable, scala.compat, scala.concurrent, scala.io,  scala.mobile, scala.ref, scala.reflect, scala.runtime,scala.testing, scala.text, scala.util, scala.util.automata, scala.util.grammar,     scala.util.logging, scala.util.parsing, scala.util.regexp, scala.xml,scala.xml.dtd, scala.xml.factory, scala.xml.parsing, scala.xml.path,scala.xml.pull, scala.xml.transform;version=&#34;${version.number}&#34;"/>
+        <attribute name="Import-Package" value="javax.xml.parsers, org.xml.sax, org.xml.sax.helpers"/>
+        <attribute name="Bundle-RequiredExecutionEnvironment" value="J2SE-1.4"/>
       </manifest>
     </jar>
     <jar destfile="${dist.current.dir}/lib/${dbc.jar.name}">
