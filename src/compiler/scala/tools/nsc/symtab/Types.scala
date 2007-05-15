@@ -1685,6 +1685,7 @@ A type's symbol should never be inspected directly.
       case TypeRef(pre, sym, _) => typeRef(pre, sym, args)
       case PolyType(tparams, restpe) => restpe.instantiateTypeParams(tparams, args)
       case ErrorType => tycon
+      case st: SingletonType => appliedType(st.widen, args) // @M TODO: what to do? see bug1
       case _ =>
         Console.println(tycon.getClass())
         Console.println(tycon.$tag())
