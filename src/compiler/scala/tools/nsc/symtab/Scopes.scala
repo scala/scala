@@ -222,11 +222,13 @@ trait Scopes {
       var e: ScopeEntry = null
       if (hashtable ne null) {
         e = hashtable(name.start & HASHMASK)
-        while ((e ne null) && e.sym.name != name) e = e.tail;
+        while ((e ne null) && e.sym.name != name) {
+          e = e.tail
+        }
       } else {
         e = elems
         while ((e ne null) && e.sym.name != name) {
-          e = e.next;
+          e = e.next
         }
       }
       e

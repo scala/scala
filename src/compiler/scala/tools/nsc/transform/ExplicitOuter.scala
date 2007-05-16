@@ -190,7 +190,7 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
       val savedOuterParam = outerParam
       try {
         tree match {
-          case Template(_, _) =>
+          case Template(_, _, _) =>
             outerParam = NoSymbol
           case DefDef(_, _, _, vparamss, _, _) =>
             if (tree.symbol.isClassConstructor && isInner(tree.symbol.owner)) {
@@ -320,7 +320,7 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
         if (sym hasFlag PROTECTED) sym setFlag notPROTECTED
       }
       tree match {
-        case Template(parents, decls) =>
+        case Template(parents, self, decls) =>
           val newDefs = new ListBuffer[Tree]
           atOwner(tree, currentOwner) {
             if (!(currentClass hasFlag INTERFACE) || (currentClass hasFlag lateINTERFACE)) {
@@ -336,7 +336,8 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
             }
           }
           super.transform(
-            copy.Template(tree, parents, if (newDefs.isEmpty) decls else decls ::: newDefs.toList)
+            copy.Template(tree, parents, self,
+                          if (newDefs.isEmpty) decls else decls ::: newDefs.toList)
           )
         case DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
           if (sym.isClassConstructor) {

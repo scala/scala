@@ -43,7 +43,7 @@ abstract class GenICode extends SubComponent  {
     val SCALA_ALLREF = REFERENCE(definitions.AllRefClass)
     val THROWABLE    = REFERENCE(definitions.ThrowableClass)
 
-    val BoxedCharacterClass = definitions.getClass("java.lang.Character")
+    val BoxedCharacterClass = if (forMSIL) null else definitions.getClass("java.lang.Character")
     val Comparator_equals = definitions.getMember(definitions.getModule("scala.runtime.Comparator"),
                                                  nme.equals_)
 
@@ -82,7 +82,7 @@ abstract class GenICode extends SubComponent  {
       case PackageDef(name, stats) =>
         gen(stats, ctx setPackage name)
 
-      case ClassDef(mods, name, _, _, impl) =>
+      case ClassDef(mods, name, _, impl) =>
         log("Generating class: " + tree.symbol.fullNameString)
         ctx setClass (new IClass(tree.symbol) setCompilationUnit unit)
         addClassFields(ctx, tree.symbol);
@@ -132,7 +132,7 @@ abstract class GenICode extends SubComponent  {
           ctx1.method.setCode(null)
         ctx1
 
-      case Template(parents, body) =>
+      case Template(_, _, body) =>
         gen(body, ctx)
 
       case _ =>
@@ -1384,9 +1384,9 @@ abstract class GenICode extends SubComponent  {
         (lsym == definitions.ObjectClass) ||
         (rsym == definitions.ObjectClass) ||
         (lsym isNonBottomSubClass definitions.BoxedNumberClass)||
-        (lsym isNonBottomSubClass BoxedCharacterClass) ||
+        (!forMSIL && (lsym isNonBottomSubClass BoxedCharacterClass)) ||
         (rsym isNonBottomSubClass definitions.BoxedNumberClass) ||
-        (rsym isNonBottomSubClass BoxedCharacterClass)
+        (!forMSIL && (rsym isNonBottomSubClass BoxedCharacterClass))
       }
 
       if (mustUseAnyComparator) {

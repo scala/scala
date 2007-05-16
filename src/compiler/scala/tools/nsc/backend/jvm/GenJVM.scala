@@ -713,13 +713,16 @@ abstract class GenJVM extends SubComponent {
                                   javaType(field))
 
           case LOAD_MODULE(module) =>
-            assert(module.isModule || module.isModuleClass, "Expected module: " + module)
+//            assert(module.isModule, "Expected module: " + module)
             if (settings.debug.value)
               log("genearting LOAD_MODULE for: " + module + " flags: " +
                   Flags.flagsToString(module.flags));
-            jcode.emitGETSTATIC(javaName(module) /* + "$" */ ,
-                                nme.MODULE_INSTANCE_FIELD.toString,
-                                javaType(module));
+            if (clasz.symbol == module.moduleClass && jmethod.getName() != nme.readResolve.toString)
+              jcode.emitALOAD_0()
+            else
+              jcode.emitGETSTATIC(javaName(module) /* + "$" */ ,
+                                  nme.MODULE_INSTANCE_FIELD.toString,
+                                  javaType(module));
 
           case STORE_ARRAY_ITEM(kind) =>
             jcode.emitASTORE(javaType(kind))

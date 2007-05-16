@@ -459,7 +459,7 @@ abstract class RefChecks extends InfoTransform {
       for (val stat <- stats) {
         index = index + 1;
         stat match {
-          case ClassDef(_, _, _, _, _) | DefDef(_, _, _, _, _, _) | ModuleDef(_, _, _) | ValDef(_, _, _, _) =>
+          case ClassDef(_, _, _, _) | DefDef(_, _, _, _, _, _) | ModuleDef(_, _, _) | ValDef(_, _, _, _) =>
             assert(stat.symbol != NoSymbol, stat);//debug
             if (stat.symbol.isLocal) {
               currentLevel.scope.enter(newScopeEntry(stat.symbol, currentLevel.scope));
@@ -563,7 +563,7 @@ abstract class RefChecks extends InfoTransform {
     def transformStat(tree: Tree, index: int): List[Tree] = tree match {
       case ModuleDef(mods, name, impl) =>
         val sym = tree.symbol
-        val cdef = ClassDef(mods | MODULE, name, List(), emptyValDef, impl)
+        val cdef = ClassDef(mods | MODULE, name, List(), impl)
           .setPos(tree.pos)
           .setSymbol(sym.moduleClass)
           .setType(NoType);
@@ -588,7 +588,7 @@ abstract class RefChecks extends InfoTransform {
           else transformTrees(List(cdef, vdef, ddef))
         }
 
-      case ClassDef(_, _, _, _, _) if isConcreteLocalCaseFactory(tree.symbol) =>
+      case ClassDef(_, _, _, _) if isConcreteLocalCaseFactory(tree.symbol) =>
         val clazz = tree.symbol
         val factory = clazz.caseFactory
         if (factory == NoSymbol) {
@@ -682,7 +682,7 @@ abstract class RefChecks extends InfoTransform {
       val sym = tree.symbol
       var result = tree
       tree match {
-        case ClassDef(mods, name, tparams, _, impl) =>
+        case ClassDef(mods, name, tparams, impl) =>
           validateVariance(sym, sym.info, CoVariance)
           validateVariance(sym, sym.typeOfThis, CoVariance)
 
@@ -700,7 +700,7 @@ abstract class RefChecks extends InfoTransform {
         case AliasTypeDef(_, _, _, _) =>
           validateVariance(sym, sym.info, CoVariance)
 
-        case Template(_, _) =>
+        case Template(_, _, _) =>
           localTyper = localTyper.atOwner(tree, currentOwner)
           validateBaseTypes(currentOwner)
           checkAllOverrides(currentOwner)

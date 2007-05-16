@@ -200,7 +200,7 @@ trait Trees {
     def mods: Modifiers
     def keyword: String = this match {
       case AliasTypeDef(_, _, _, _) => "type"
-      case ClassDef(_, _, _, _, _)  => "class"
+      case ClassDef(_, _, _, _)  => "class"
       case DefDef(_, _, _, _, _, _) => "def"
       case ModuleDef(_, _, _)       => "object"
       case PackageDef(_, _)         => "package"
@@ -224,7 +224,7 @@ trait Trees {
   }
 
   /** Class definition */
-  case class ClassDef(mods: Modifiers, name: Name, tparams: List[AbsTypeDef], self: ValDef, impl: Template)
+  case class ClassDef(mods: Modifiers, name: Name, tparams: List[AbsTypeDef], impl: Template)
        extends ImplDef
 
   /**
@@ -237,7 +237,6 @@ trait Trees {
       ClassDef(Modifiers(sym.flags),
                sym.name,
                sym.typeParams map AbsTypeDef,
-               if (sym.thisSym == sym || phase.erasedTypes) emptyValDef else ValDef(sym.thisSym),
                impl) setSymbol sym
     }
 
@@ -253,7 +252,10 @@ trait Trees {
    *  @return          ...
    */
   def ClassDef(sym: Symbol, constrMods: Modifiers, vparamss: List[List[ValDef]], argss: List[List[Tree]], body: List[Tree]): ClassDef =
-    ClassDef(sym, Template(sym.info.parents map TypeTree, constrMods, vparamss, argss, body))
+    ClassDef(sym,
+      Template(sym.info.parents map TypeTree,
+               if (sym.thisSym == sym || phase.erasedTypes) emptyValDef else ValDef(sym.thisSym),
+               constrMods, vparamss, argss, body))
 
   /** Singleton object definition
    *
@@ -301,7 +303,10 @@ trait Trees {
 
   def ValDef(sym: Symbol): ValDef = ValDef(sym, EmptyTree)
 
-  object emptyValDef extends ValDef(Modifiers(PRIVATE), nme.WILDCARD, TypeTree(NoType), EmptyTree)
+  object emptyValDef
+  extends ValDef(Modifiers(PRIVATE), nme.WILDCARD, TypeTree(NoType), EmptyTree) {
+    override def isEmpty = true
+  }
 
   /** Method definition
    *
@@ -434,7 +439,7 @@ trait Trees {
    *  @param parents
    *  @param body
    */
-  case class Template(parents: List[Tree], body: List[Tree])
+  case class Template(parents: List[Tree], self: ValDef, body: List[Tree])
        extends SymTree {
     // System.err.println("TEMPLATE: " + parents)
   }
@@ -446,7 +451,7 @@ trait Trees {
    *  @param body        ...
    *  @return            ...
    */
-  def Template(parents: List[Tree], constrMods: Modifiers, vparamss: List[List[ValDef]], argss: List[List[Tree]], body: List[Tree]): Template = {
+  def Template(parents: List[Tree], self: ValDef, constrMods: Modifiers, vparamss: List[List[ValDef]], argss: List[List[Tree]], body: List[Tree]): Template = {
     /** Add constructor to template */
     var vparamss1 =
       vparamss map (.map (vd => {
@@ -478,7 +483,7 @@ trait Trees {
         List(
           DefDef(constrMods, nme.CONSTRUCTOR, List(), vparamss1, TypeTree(), Block(lvdefs ::: List(superCall), Literal(()))))
       }
-    Template(parents, gvdefs ::: List.flatten(vparamss) ::: constrs ::: rest)
+    Template(parents, self, gvdefs ::: List.flatten(vparamss) ::: constrs ::: rest)
   }
 
   /** Block of expressions (semicolon separated expressions) */
@@ -721,8 +726,8 @@ trait Trees {
   case EmptyTree =>
   case PackageDef(name, stats) =>
      // package name { stats }
-  case ClassDef(mods, name, tparams, self, impl) =>
-     // mods class name[tparams] requires self impl
+  case ClassDef(mods, name, tparams, impl) =>
+     // mods class name[tparams] impl
   case ModuleDef(mods, name, impl) =>                             (eliminated by refcheck)
      // mods object name impl  where impl = extends parents { defs }
   case ValDef(mods, name, tpt, rhs) =>
@@ -741,8 +746,8 @@ trait Trees {
      // @constr(elements) where constr = tp(args), elements = { val x1 = c1, ..., val xn = cn }
   case DocDef(comment, definition) =>                             (eliminated by typecheck)
      // /** comment */ definition
-  case Template(parents, body) =>
-     // extends parents { body }
+  case Template(parents, self, body) =>
+     // extends parents { self => body }
   case Block(stats, expr) =>
      // { stats; expr }
   case CaseDef(pat, guard, body) =>                               (eliminated by transmatch/explicitouter)
@@ -810,7 +815,7 @@ trait Trees {
 */
 
   abstract class TreeCopier {
-    def ClassDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[AbsTypeDef], self: ValDef, impl: Template): ClassDef
+    def ClassDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[AbsTypeDef], impl: Template): ClassDef
     def PackageDef(tree: Tree, name: Name, stats: List[Tree]): PackageDef
     def ModuleDef(tree: Tree, mods: Modifiers, name: Name, impl: Template): ModuleDef
     def ValDef(tree: Tree, mods: Modifiers, name: Name, tpt: Tree, rhs: Tree): ValDef
@@ -821,7 +826,7 @@ trait Trees {
     def Import(tree: Tree, expr: Tree, selectors: List[(Name, Name)]): Import
     def Annotation(tree: Tree, constr: Tree, elements: List[Tree]): Annotation
     def DocDef(tree: Tree, comment: String, definition: Tree): DocDef
-    def Template(tree: Tree, parents: List[Tree], body: List[Tree]): Template
+    def Template(tree: Tree, parents: List[Tree], self: ValDef, body: List[Tree]): Template
     def Block(tree: Tree, stats: List[Tree], expr: Tree): Block
     def CaseDef(tree: Tree, pat: Tree, guard: Tree, body: Tree): CaseDef
     def Sequence(tree: Tree, trees: List[Tree]): Sequence
@@ -857,8 +862,8 @@ trait Trees {
   }
 
   class StrictTreeCopier extends TreeCopier {
-    def ClassDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[AbsTypeDef], self: ValDef, impl: Template) =
-      new ClassDef(mods, name, tparams, self, impl).copyAttrs(tree);
+    def ClassDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[AbsTypeDef], impl: Template) =
+      new ClassDef(mods, name, tparams, impl).copyAttrs(tree);
     def PackageDef(tree: Tree, name: Name, stats: List[Tree]) =
       new PackageDef(name, stats).copyAttrs(tree)
     def ModuleDef(tree: Tree, mods: Modifiers, name: Name, impl: Template) =
@@ -879,8 +884,8 @@ trait Trees {
       new Annotation(constr, elements).copyAttrs(tree)
     def DocDef(tree: Tree, comment: String, definition: Tree) =
       new DocDef(comment, definition).copyAttrs(tree)
-    def Template(tree: Tree, parents: List[Tree], body: List[Tree]) =
-      new Template(parents, body).copyAttrs(tree)
+    def Template(tree: Tree, parents: List[Tree], self: ValDef, body: List[Tree]) =
+      new Template(parents, self, body).copyAttrs(tree)
     def Block(tree: Tree, stats: List[Tree], expr: Tree) =
       new Block(stats, expr).copyAttrs(tree)
     def CaseDef(tree: Tree, pat: Tree, guard: Tree, body: Tree) =
@@ -949,10 +954,10 @@ trait Trees {
 
   class LazyTreeCopier(copy: TreeCopier) extends TreeCopier {
     def this() = this(new StrictTreeCopier)
-    def ClassDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[AbsTypeDef], self: ValDef, impl: Template) = tree match {
-      case t @ ClassDef(mods0, name0, tparams0, self0, impl0)
-      if (mods0 == mods && (name0 == name) && (tparams0 == tparams) && (self0 == self) && (impl0 == impl)) => t
-      case _ => copy.ClassDef(tree, mods, name, tparams, self, impl)
+    def ClassDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[AbsTypeDef], impl: Template) = tree match {
+      case t @ ClassDef(mods0, name0, tparams0, impl0)
+      if (mods0 == mods && (name0 == name) && (tparams0 == tparams) && (impl0 == impl)) => t
+      case _ => copy.ClassDef(tree, mods, name, tparams, impl)
     }
     def PackageDef(tree: Tree, name: Name, stats: List[Tree]) = tree match {
       case t @ PackageDef(name0, stats0)
@@ -1005,10 +1010,10 @@ trait Trees {
       if (comment0 == comment) && (definition0 == definition) => t
       case _ => copy.DocDef(tree, comment, definition)
     }
-    def Template(tree: Tree, parents: List[Tree], body: List[Tree]) = tree match {
-      case t @ Template(parents0, body0)
-      if (parents0 == parents) && (body0 == body) => t
-      case _ => copy.Template(tree, parents, body)
+    def Template(tree: Tree, parents: List[Tree], self: ValDef, body: List[Tree]) = tree match {
+      case t @ Template(parents0, self0, body0)
+      if (parents0 == parents) && (self0 == self) && (body0 == body) => t
+      case _ => copy.Template(tree, parents, self, body)
     }
     def Block(tree: Tree, stats: List[Tree], expr: Tree) = tree match {
       case t @ Block(stats0, expr0)
@@ -1184,12 +1189,9 @@ trait Trees {
         atOwner(tree.symbol.moduleClass) {
           copy.PackageDef(tree, name, transformStats(stats, currentOwner))
         }
-      case ClassDef(mods, name, tparams, self, impl) =>
+      case ClassDef(mods, name, tparams, impl) =>
         atOwner(tree.symbol) {
-          copy.ClassDef(tree, mods, name,
-                        transformAbsTypeDefs(tparams),
-                        if (self ne emptyValDef) transformValDef(self) else self,
-                        transformTemplate(impl))
+          copy.ClassDef(tree, mods, name, transformAbsTypeDefs(tparams), transformTemplate(impl))
         }
       case ModuleDef(mods, name, impl) =>
         atOwner(tree.symbol.moduleClass) {
@@ -1220,8 +1222,8 @@ trait Trees {
         copy.Annotation(tree, transform(constr), transformTrees(elements))
       case DocDef(comment, definition) =>
         copy.DocDef(tree, comment, transform(definition))
-      case Template(parents, body) =>
-        copy.Template(tree, transformTrees(parents), transformStats(body, tree.symbol))
+      case Template(parents, self, body) =>
+        copy.Template(tree, transformTrees(parents), transformValDef(self), transformStats(body, tree.symbol))
       case Block(stats, expr) =>
         copy.Block(tree, transformStats(stats, currentOwner), transform(expr))
       case CaseDef(pat, guard, body) =>
@@ -1297,7 +1299,7 @@ trait Trees {
     def transformAbsTypeDefs(trees: List[AbsTypeDef]): List[AbsTypeDef] =
       List.mapConserve(trees)(tree => transform(tree).asInstanceOf[AbsTypeDef])
     def transformValDef(tree: ValDef): ValDef =
-      transform(tree).asInstanceOf[ValDef]
+      if (tree.isEmpty) tree else transform(tree).asInstanceOf[ValDef]
     def transformValDefs(trees: List[ValDef]): List[ValDef] =
       List.mapConserve(trees)(transformValDef)
     def transformValDefss(treess: List[List[ValDef]]): List[List[ValDef]] =
@@ -1330,11 +1332,9 @@ trait Trees {
         atOwner(tree.symbol.moduleClass) {
           traverseTrees(stats)
         }
-      case ClassDef(mods, name, tparams, self, impl) =>
+      case ClassDef(mods, name, tparams, impl) =>
         atOwner(tree.symbol) {
-          traverseTrees(tparams);
-          if (self ne emptyValDef) traverse(self);
-          traverse(impl)
+          traverseTrees(tparams); traverse(impl)
         }
       case ModuleDef(mods, name, impl) =>
         atOwner(tree.symbol.moduleClass) {
@@ -1366,8 +1366,10 @@ trait Trees {
         traverse(annot); traverse(arg)
       case DocDef(comment, definition) =>
         traverse(definition)
-      case Template(parents, body) =>
-        traverseTrees(parents); traverseStats(body, tree.symbol)
+      case Template(parents, self, body) =>
+        traverseTrees(parents)
+        if (!self.isEmpty) traverse(self)
+        traverseStats(body, tree.symbol)
       case Block(stats, expr) =>
         traverseTrees(stats); traverse(expr)
       case CaseDef(pat, guard, body) =>
@@ -1536,7 +1538,7 @@ trait Trees {
     override def traverse(tree: Tree): unit = tree match {
       case EmptyTree | TypeTree() =>
         ;
-      case Template(parents, body) =>
+      case Template(parents, self, body) =>
         tree.symbol = NoSymbol
         tree.tpe = null
         for (stat <- body)

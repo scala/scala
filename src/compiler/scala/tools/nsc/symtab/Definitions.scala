@@ -37,7 +37,6 @@ trait Definitions {
     var AllClass: Symbol = _
 
     var ClassClass: Symbol = _
-    var MethodClass: Symbol = _
     var StringClass: Symbol = _
     var ThrowableClass: Symbol = _
     var NullPointerExceptionClass: Symbol = _
@@ -755,7 +754,6 @@ trait Definitions {
       StringClass = getClass(if (forMSIL) "System.String" else "java.lang.String")
 
       ClassClass = getClass(if (forMSIL) "System.Type" else "java.lang.Class")
-      MethodClass = getClass("java.lang.reflect.Method")
       ThrowableClass = getClass(if (forMSIL) "System.Exception" else "java.lang.Throwable")
       NullPointerExceptionClass = getClass(if (forMSIL) "System.NullReferenceException"
                                            else "java.lang.NullPointerException")
@@ -872,7 +870,8 @@ trait Definitions {
 
       PatternWildcard = NoSymbol.newValue(NoPosition, "_").setInfo(AllClass.typeConstructor)
 
-      BoxedNumberClass = if (forMSIL) null else getClass("java.lang.Number")
+      BoxedNumberClass = if (forMSIL)  getClass("System.IConvertible")
+                         else getClass("java.lang.Number")
       BoxedArrayClass = getClass("scala.runtime.BoxedArray")
       BoxedAnyArrayClass = getClass("scala.runtime.BoxedAnyArray")
       BoxedObjectArrayClass = getClass("scala.runtime.BoxedObjectArray")

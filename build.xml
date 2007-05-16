@@ -65,6 +65,7 @@ PROPERTIES
   <property name="scaladoc.exec.name" value="scaladoc"/>
   <property name="fsc.exec.name" value="fsc"/>
   <property name="comp.prop.name" value="compiler.properties"/>
+  <property name="lib.prop.name" value="library.properties"/>
 
 <!-- ===========================================================================
 ANT INITIALISATION
@@ -103,6 +104,10 @@ INITIALISATION
     <fail
       unless="memory.set"
       message="SABBUS requires additional memory. Please set the 'ANT_OPTS' environment property to '-Xmx512M' or more."/>
+    <propertyregex
+      property="memory.info" input="${env.ANT_OPTS}" defaultValue=""
+      select=" (raise to 600 MB for performance)"
+      regexp="-Xmx([1-5][0-9]{2})(M|m)"/>
   <!-- This is the start time for the distribution -->
     <stopwatch name="timer.dist"/>
     <tstamp prefix="time">
@@ -153,13 +158,13 @@ INITIALISATION
     <property name="init.avail" value="yes"/>
   <!-- Printing out some information about what environment I am running in -->
     <echo level="info"
-      message="OS:   ${os.type} (${os.name} ${os.arch} ${os.version});"/>
+      message="OS:     ${os.type} (${os.name} ${os.arch} ${os.version});"/>
     <echo level="info"
-      message="Java: ${java.version} ('${java.home}');"/>
+      message="Java:   ${java.vm.name} ${java.vm.version} ('${java.home}');"/>
     <echo level="info"
-      message="JVM:  ${java.vm.name} ${java.vm.version};"/>
+      message="Memory: ${memory.set} MB${memory.info};"/>
     <echo level="info"
-      message="Ant:  ${ant.version}."/>
+      message="Ant:    ${ant.version}."/>
   </target>
 
 <!-- ===========================================================================
@@ -342,6 +347,16 @@ BUILD LOCAL REFERENCE (LOCKER) LAYER
       <exclude name="scala/actors/**"/>
       <excludesfile name="${nsc.excludes.file}" if="excludes.avail"/>
     </starr>
+    <echo
+      file="${locker.dir}/lib/library/${lib.prop.name}"
+      message="version.number=${version.number}${line.separator}"
+      append="false"
+    />
+    <echo
+      file="${locker.dir}/lib/library/${lib.prop.name}"
+      message="copyright.string=${copyright.string}${line.separator}"
+      append="true"
+    />
   <!-- Build compiler -->
     <mkdir dir="${locker.dir}/lib/compiler"/>
     <starr
@@ -462,6 +477,16 @@ BUILD QUICK-TEST LAYER
       <exclude name="scala/actors/**"/>
       <excludesfile name="${nsc.excludes.file}" if="excludes.avail"/>
     </locker>
+    <echo
+      file="${quick.dir}/lib/library/${lib.prop.name}"
+      message="version.number=${version.number}${line.separator}"
+      append="false"
+    />
+    <echo
+      file="${quick.dir}/lib/library/${lib.prop.name}"
+      message="copyright.string=${copyright.string}${line.separator}"
+      append="true"
+    />
   <!-- Build DBC -->
     <mkdir dir="${quick.dir}/lib/dbc"/>
     <locker
@@ -664,6 +689,16 @@ TEST
       <exclude name="scala/actors/**"/>
       <excludesfile name="${nsc.excludes.file}" if="excludes.avail"/>
     </quick>
+    <echo
+      file="${strap.dir}/lib/library/${lib.prop.name}"
+      message="version.number=${version.number}${line.separator}"
+      append="false"
+    />
+    <echo
+      file="${strap.dir}/lib/library/${lib.prop.name}"
+      message="copyright.string=${copyright.string}${line.separator}"
+      append="true"
+    />
   <!-- Build DBC -->
     <mkdir dir="${strap.dir}/lib/dbc"/>
     <quick
@@ -966,6 +1001,7 @@ GENERATES A DISTRIBUTION
       <manifest>
         <attribute name="Signature-Version" value="${version.number}"/>
         <attribute name="Built-By" value="${user.name}"/>
+        <attribute name="Main-Class" value="scala.tools.nsc.Main"/>
         <attribute name="Class-Path" value="${lib.jar.name}"/>
         <section name="scala/tools/nsc">
           <attribute name="Extension-Name" value="scala.tools.nsc"/>
@@ -978,12 +1014,20 @@ GENERATES A DISTRIBUTION
         </section>
       </manifest>
     </jar>
+    <!-- version ::= major('.'minor('.'micro('.'qualifier)?)?)?              -->
+    <!-- see http://www2.osgi.org/javadoc/r4/org/osgi/framework/Version.html -->
+    <propertyregex
+      property="osgi.version.number" input="${version.number}"
+      regexp="([^-]*)(-.*)?" select="\1"
+    />
+    <echo level="verbose" message="OSGI version: ${osgi.version.number}"/>
     <jar destfile="${dist.current.dir}/lib/${lib.jar.name}">
       <fileset dir="${strap.dir}/lib/library"/>
       <fileset dir="${strap.dir}/lib/actors"/>
       <manifest>
         <attribute name="Signature-Version" value="${version.number}"/>
         <attribute name="Built-By" value="${user.name}"/>
+        <attribute name="Main-Class" value="scala.util.Properties"/>
         <section name="scala">
           <attribute name="Extension-Name" value="scala"/>
           <attribute name="Specification-Title" value="Scala Library"/>
@@ -993,6 +1037,16 @@ GENERATES A DISTRIBUTION
           <attribute name="Implementation-Version" value="${version.number}"/>
           <attribute name="Implementation-Vendor" value="${vendor.name}"/>
         </section>
+        <attribute name="Bundle-DocURL" value="http://www.scala-lang.org/"/>
+        <attribute name="Bundle-ManifestVersion" value="2"/>
+        <attribute name="Bundle-Name" value="Scala Library Bundle"/>
+        <attribute name="Bundle-SymbolicName" value="scala_library"/>
+        <attribute name="Bundle-Version" value="${osgi.version.number}"/>
+        <attribute name="Bundle-Vendor" value="${vendor.name}"/>
+        <!-- CAUTION! Do not remove superflous blanks (Ant bug) -->
+        <attribute name="Export-Package" value="scala, scala.actors, scala.actors.remote,             scala.collection, scala.collection.immutable, scala.collection.jcl,  scala.collection.mutable, scala.compat, scala.concurrent, scala.io,  scala.mobile, scala.ref, scala.reflect, scala.runtime,scala.testing, scala.text, scala.util, scala.util.automata, scala.util.grammar,     scala.util.logging, scala.util.parsing, scala.util.regexp, scala.xml,scala.xml.dtd, scala.xml.factory, scala.xml.parsing, scala.xml.path, scala.xml.pull, scala.xml.transform;version=&#34;${osgi.version.number}&#34;"/>
+        <attribute name="Import-Package" value="javax.xml.parsers, org.xml.sax, org.xml.sax.helpers"/>
+        <attribute name="Bundle-RequiredExecutionEnvironment" value="J2SE-1.4"/>
       </manifest>
     </jar>
     <jar destfile="${dist.current.dir}/lib/${dbc.jar.name}">
@@ -1012,7 +1066,7 @@ GENERATES A DISTRIBUTION
         </section>
       </manifest>
     </jar>
-    
+
     <!-- build source jars -->
     <jar
       destfile="${dist.current.dir}/lib/${libsrc.jar.name}">

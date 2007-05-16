@@ -123,6 +123,7 @@ class BigInt(val bigInteger: BigInteger) extends java.lang.Number {
   /** Compares this BigInt with the specified value for equality.
    */
   override def equals (that: Any): boolean = that match {
+    case that: BigInt => this equals that
     case that: java.lang.Double => this.bigInteger.doubleValue == that.doubleValue
     case that: java.lang.Float  => this.bigInteger.floatValue == that.floatValue
     case that: java.lang.Number => this equals BigInt(that.longValue)

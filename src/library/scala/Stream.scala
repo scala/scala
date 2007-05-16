@@ -189,7 +189,7 @@ trait Stream[+a] extends Seq[a] {
   /** The length of this stream */
   def length: Int = if (isEmpty) 0 else tail.length + 1
 
-  /** The stream resulting from the concatenation of thsi stream with the argument stream.
+  /** The stream resulting from the concatenation of this stream with the argument stream.
    *  @param rest   The stream that gets appended to this stream
    */
   def append[b >: a](rest: => Stream[b]): Stream[b] =

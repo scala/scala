@@ -85,7 +85,7 @@ abstract class Flatten extends InfoTransform {
     private def postTransform(tree: Tree): Tree = {
       val sym = tree.symbol
       val tree1 = tree match {
-        case ClassDef(_, _, _, _, _) if sym.isNestedClass =>
+        case ClassDef(_, _, _, _) if sym.isNestedClass =>
           liftedDefs(sym.toplevelClass.owner) += tree
           EmptyTree
         case Select(qual, name) if (sym.isStaticModule && !sym.owner.isPackageClass) =>

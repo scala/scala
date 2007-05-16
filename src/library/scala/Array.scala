@@ -188,7 +188,6 @@ object Array {
  *  @version 1.0
  */
 final class Array[A](_length: Int) extends Seq[A] {
-  import java.lang.Error
 
   /** The length of the array */
   def length: Int = throw new Error()

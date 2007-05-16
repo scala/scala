@@ -73,7 +73,7 @@ trait Namers requires Analyzer {
     }
 
     private def isTemplateContext(context: Context): boolean = context.tree match {
-      case Template(_, _) => true
+      case Template(_, _, _) => true
       case Import(_, _) => isTemplateContext(context.outer)
       case _ => false
     }
@@ -271,7 +271,7 @@ trait Namers requires Analyzer {
             val namer = new Namer(
                 context.make(tree, tree.symbol.moduleClass, tree.symbol.info.decls))
             namer.enterSyms(stats)
-          case ClassDef(mods, name, tparams, _, impl) =>
+          case ClassDef(mods, name, tparams, impl) =>
             if ((mods.flags & CASE) != 0) { // enter case factory method.
               tree.symbol = enterCaseFactorySymbol(
                   tree.pos, mods.flags & AccessFlags | METHOD | CASE, name.toTermName)
@@ -423,8 +423,7 @@ trait Namers requires Analyzer {
       vparamss.map(.map(enterValueParam))
     }
 
-    private def templateSig(templ0: Template): Type = {
-      var templ = templ0
+    private def templateSig(templ: Template): Type = {
       val clazz = context.owner
       def checkParent(tpt: Tree): Type = {
         val tp = tpt.tpe
@@ -437,33 +436,33 @@ trait Namers requires Analyzer {
           tp
         }
       }
+      def enterSelf(self: ValDef) {
+        if (!self.tpt.isEmpty) {
+          clazz.typeOfThis = selfTypeCompleter(self.tpt)
+          self.symbol = clazz.thisSym
+        } else {
+          self.tpt.tpe = NoType
+          if (self.name != nme.WILDCARD) {
+            clazz.typeOfThis = clazz.tpe
+            self.symbol = clazz.thisSym
+          } else {
+            self.symbol = clazz.newThisSym(self.pos) setInfo clazz.tpe
+          }
+        }
+        if (self.name != nme.WILDCARD) {
+          self.symbol.name = self.name
+          context.scope enter self.symbol
+        }
+      }
       val parents = typer.parentTypes(templ) map checkParent
+      enterSelf(templ.self)
       val decls = newDecls(templ, clazz)
       new Namer(context.make(templ, clazz, decls)).enterSyms(templ.body)
       ClassInfoType(parents, decls, clazz)
     }
 
-    private def classSig(tparams: List[AbsTypeDef], self: ValDef, impl: Template): Type = {
-      val clazz = context.owner
-      val tparamSyms = typer.reenterTypeParams(tparams)
-      if (!self.tpt.isEmpty) {
-        clazz.typeOfThis = selfTypeCompleter(self.tpt)
-        self.symbol = clazz.thisSym
-      } else {
-        self.tpt.tpe = NoType
-        if (self.name != nme.WILDCARD) {
-          clazz.typeOfThis = clazz.tpe
-          self.symbol = clazz.thisSym
-        } else {
-          self.symbol = clazz.newThisSym(self.pos) setInfo clazz.tpe
-        }
-      }
-      if (self.name != nme.WILDCARD) {
-        context.scope enter self.symbol
-        clazz.thisSym.name = self.name
-      }
-      parameterizedType(tparamSyms, templateSig(impl))
-    }
+    private def classSig(tparams: List[AbsTypeDef], impl: Template): Type =
+      parameterizedType(typer.reenterTypeParams(tparams), templateSig(impl))
 
     private def methodSig(tparams: List[AbsTypeDef], vparamss: List[List[ValDef]],
                           tpt: Tree, rhs: Tree): Type = {
@@ -658,12 +657,12 @@ trait Namers requires Analyzer {
       val result =
         try {
           tree match {
-            case ClassDef(_, _, tparams, self, impl) =>
-              new Namer(makeNewScope(context, tree, sym)).classSig(tparams, self, impl)
+            case ClassDef(_, _, tparams, impl) =>
+              new Namer(makeNewScope(context, tree, sym)).classSig(tparams, impl)
 
             case ModuleDef(_, _, impl) =>
               val clazz = sym.moduleClass
-              clazz.setInfo(new Namer(context.make(tree, clazz)).templateSig(impl));
+              clazz.setInfo(new Namer(makeNewScope(context, tree, clazz)).templateSig(impl))
               //clazz.typeOfThis = singleType(sym.owner.thisType, sym);
               clazz.tpe;
 

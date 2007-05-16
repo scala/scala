@@ -11,7 +11,10 @@
 
 package scala.compat
 
-
+/**
+ * This class will be removed soon. Use scala.Math instead
+ */
+@deprecated
 object Math {
   val MIN_BYTE   = System.Byte.MinValue
   val MAX_BYTE   = System.Byte.MaxValue

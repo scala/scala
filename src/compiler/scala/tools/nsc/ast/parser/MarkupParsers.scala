@@ -18,6 +18,14 @@ import scala.xml.{Text, TextBuffer}
 trait MarkupParsers {
   self: SyntaxAnalyzer =>
 
+  case object MissingEndTagException extends RuntimeException {
+    override def getMessage = "start tag was here: "
+  }
+
+  case object ConfusedAboutBracesException extends RuntimeException {
+    override def getMessage = " I encountered a '}' where I didn't expect one, maybe this tag isn't closed <"
+  }
+
   import global._
   //import posAssigner.atPos
 
@@ -156,6 +164,7 @@ trait MarkupParsers {
       val endName = xName
       if (endName != startName) {
         reportSyntaxError("expected closing tag of " + startName)
+        throw MissingEndTagException
       }
       xSpaceOpt
       xToken('>')
@@ -467,8 +476,10 @@ trait MarkupParsers {
           if (expectRBRACE) {
             if (ch == '}')
               nextch
-            else
+            else {
               reportSyntaxError("in XML content, please use '}}' to express '}'")
+              throw ConfusedAboutBracesException
+            }
           }
           exit = xCheckEmbeddedBlock ||(ch == '<') || (ch == '&')
         }
@@ -532,6 +543,11 @@ trait MarkupParsers {
       tree
     }
     catch {
+      case c @ (MissingEndTagException | ConfusedAboutBracesException) =>
+        s.syntaxError((debugLastStartElement.top._1),
+                      c.getMessage + debugLastStartElement.top._2+">")
+        EmptyTree
+
       case _:ArrayIndexOutOfBoundsException =>
         s.syntaxError((debugLastStartElement.top._1),
                       "missing end tag in XML literal for <"
@@ -554,10 +570,15 @@ trait MarkupParsers {
       popScannerState
       tree
     } catch {
+      case c @ (MissingEndTagException | ConfusedAboutBracesException) =>
+        s.syntaxError((debugLastStartElement.top._1),
+                      c.getMessage + debugLastStartElement.top._2+">")
+        EmptyTree
+
       case _:ArrayIndexOutOfBoundsException =>
         s.syntaxError((debugLastStartElement.top._1),
                       "missing end tag in XML literal for <"
-                      +debugLastStartElement.top._2+">");
+                      +debugLastStartElement.top._2+">")
         EmptyTree
     }
 

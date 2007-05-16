@@ -41,7 +41,7 @@ abstract class Pickler extends SubComponent {
         tree match {
           case PackageDef(_, stats) =>
             stats foreach pickle
-          case ClassDef(_, _, _, _, _) | ModuleDef(_, _, _) =>
+          case ClassDef(_, _, _, _) | ModuleDef(_, _, _) =>
             val sym = tree.symbol
             val pickle = new Pickle(sym.name.toTermName, sym.owner)
             add(sym, pickle)

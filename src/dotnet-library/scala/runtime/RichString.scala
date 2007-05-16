@@ -20,7 +20,7 @@ final class RichString(val self: String) extends Proxy with Seq[Char] with Order
   def compare(other: String) = self compareTo other
 
   // Seq[Char]
-  def length = self.length()
+  def length = self.length
   def elements = Iterator.fromString(self)
 
   /** Retrieve the n-th character of the string

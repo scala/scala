@@ -702,7 +702,8 @@ trait Parsers {
       }
       newLineOptWhenFollowedBy(LBRACE)
       atPos(pos) {
-        if (inToken == LBRACE && !isPattern) CompoundTypeTree(Template(ts.toList, refinement()))
+        if (inToken == LBRACE && !isPattern)
+          CompoundTypeTree(Template(ts.toList, emptyValDef, refinement()))
         else makeIntersectionTypeTree(ts.toList)
       }
     }
@@ -2058,14 +2059,18 @@ trait Parsers {
           if (mods.hasFlag(Flags.TRAIT)) (Modifiers(Flags.TRAIT), List())
           else (accessModifierOpt(), paramClauses(name, implicitClassViews, mods.hasFlag(Flags.CASE)))
         val thistpe = requiresTypeOpt()
-        val (self0, template) =
-          templateOpt(mods, name, constrMods withAnnotations constrAnnots, vparamss)
+        var template = templateOpt(mods, name, constrMods withAnnotations constrAnnots, vparamss)
+        if (!thistpe.isEmpty) {
+          if (template.self.isEmpty) {
+            template = copy.Template(
+              template, template.parents, makeSelfDef(nme.WILDCARD, thistpe), template.body)
+          } else syntaxError("`requires' cannot be combined with explicit self type", false)
+        }
         val mods1 = if (mods.hasFlag(Flags.TRAIT) &&
                         (template.body forall treeInfo.isInterfaceMember))
                       mods | Flags.INTERFACE
                     else mods
-        val self = if (thistpe.isEmpty) self0 else makeSelfDef(nme.WILDCARD, thistpe)
-        val result = ClassDef(mods1, name, tparams, self, template)
+        val result = ClassDef(mods1, name, tparams, template)
         implicitClassViews = savedViews
         result
       }
@@ -2075,14 +2080,7 @@ trait Parsers {
     def objectDef(mods: Modifiers): ModuleDef =
       atPos(inSkipToken) {
         val name = ident()
-        val (self, template0) = templateOpt(mods, name, NoMods, List())
-        val template = self match {
-          case ValDef(mods, name, tpt, EmptyTree) if (name != nme.WILDCARD) =>
-            val vd = ValDef(mods, name, tpt, This(nme.EMPTY.toTypeName)) setPos self.pos
-            Template(template0.parents, vd :: template0.body)
-          case _ =>
-            template0
-        }
+        val template = templateOpt(mods, name, NoMods, List())
         ModuleDef(mods, name, template)
       }
 
@@ -2112,7 +2110,7 @@ trait Parsers {
       newLineOptWhenFollowedBy(LBRACE)
       if (inToken == LBRACE) {
         val (self, body) = templateBody()
-        if (inToken == WITH && (self eq emptyValDef)) {
+        if (inToken == WITH && self.isEmpty) {
           val vdefs: List[ValDef] = body flatMap {
             case vdef @ ValDef(mods, name, tpt, rhs) if !(mods hasFlag Flags.DEFERRED) =>
               List(copy.ValDef(vdef, mods | Flags.PRESUPER, name, tpt, rhs))
@@ -2137,7 +2135,7 @@ trait Parsers {
     /** ClassTemplateOpt ::= extends ClassTemplate | [[extends] TemplateBody]
      *  TraitTemplateOpt ::= extends TraitTemplate | [[extends] TemplateBody]
      */
-    def templateOpt(mods: Modifiers, name: Name, constrMods: Modifiers, vparamss: List[List[ValDef]]): (ValDef, Template) = {
+    def templateOpt(mods: Modifiers, name: Name, constrMods: Modifiers, vparamss: List[List[ValDef]]): Template = {
       val pos = inCurrentPos;
       val (parents0, argss, self, body) =
         if (inToken == EXTENDS) {
@@ -2151,7 +2149,7 @@ trait Parsers {
       var parents = parents0
       if (name != nme.ScalaObject.toTypeName) parents = parents ::: List(scalaScalaObjectConstr)
       if (mods.hasFlag(Flags.CASE)) parents = parents ::: List(productConstr)
-      (self, atPos(pos) { Template(parents, constrMods, vparamss, argss, body) })
+      atPos(pos) { Template(parents, self, constrMods, vparamss, argss, body) }
     }
 
 ////////// TEMPLATES ////////////////////////////////////////////////////////////

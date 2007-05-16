@@ -51,7 +51,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
     }
 
     override def transform(tree: Tree): Tree = tree match {
-      case ClassDef(_, _, _, _, _) =>
+      case ClassDef(_, _, _, _) =>
         val decls = tree.symbol.info.decls
         for (val sym <- decls.toList) {
           if (sym.privateWithin.isClass && !sym.privateWithin.isModuleClass &&
@@ -62,7 +62,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
           }
         }
         super.transform(tree)
-      case Template(parents, body) =>
+      case Template(parents, self, body) =>
 	val ownAccDefs = new ListBuffer[Tree];
 	accDefs = (currentOwner, ownAccDefs) :: accDefs;
 
@@ -73,7 +73,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
         curTree = tree
         val body1 = atOwner(currentOwner) { transformTrees(body) }
 	accDefs = accDefs.tail;
-	copy.Template(tree, parents, ownAccDefs.toList ::: body1);
+	copy.Template(tree, parents, self, ownAccDefs.toList ::: body1);
 
       case Select(qual @ This(_), name) =>
         val sym = tree.symbol
