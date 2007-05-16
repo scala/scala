@@ -4,6 +4,7 @@
  */
 // $Id$
 
+
 package scala.tools.nsc.symtab.classfile
 
 import java.lang.{Float, Double}
@@ -272,14 +273,14 @@ abstract class Pickler extends SubComponent {
       children foreach putSymbol
     }
 
-    private def putAnnotation(sym: Symbol, attr: AnnotationInfo): unit = {
+    private def putAnnotation(sym: Symbol, attr: AnnotationInfo[Constant]): unit = {
       assert(putEntry((sym, attr)))
       putType(attr.atp)
-      for (c <- attr.args) putTreeOrConstant(c)
-      for ((name, c) <- attr.assocs) { putEntry(name); putTreeOrConstant(c) }
+      for (c <- attr.args) putConstant(c)
+      for ((name, c) <- attr.assocs) { putEntry(name); putConstant(c) }
     }
 
-    private def putAnnotation(annot: AnnotationInfo): unit =
+    private def putAnnotation(annot: AnnotationInfo[Any]): unit =
       if(putEntry(annot)) {
         val AnnotationInfo(tpe, args, assocs) = annot
         putType(tpe)
@@ -287,7 +288,7 @@ abstract class Pickler extends SubComponent {
         for ((name, rhs) <- assocs) { putEntry(name); putTreeOrConstant(rhs) }
       }
 
-    private def putTreeOrConstant(x: AnyRef) {
+    private def putTreeOrConstant(x: Any) {
       x match {
         case c:Constant => putConstant(c)
         case tree:reflect.Tree => putTree(tree)
@@ -296,7 +297,7 @@ abstract class Pickler extends SubComponent {
       }
     }
 
-    private def putAnnotations(annots: List[AnnotationInfo]): unit =
+    private def putAnnotations(annots: List[AnnotationInfo[Any]]): unit =
       annots foreach putAnnotation
 
     // Phase 2 methods: Write all entries to byte array ------------------------------
@@ -405,8 +406,8 @@ abstract class Pickler extends SubComponent {
         case (target: Symbol, attr @ AnnotationInfo(atp, args, assocs)) =>
           writeRef(target)
           writeRef(atp)
-          for (c <- args) writeRef(c)
-          for ((name, c) <- assocs) { writeRef(name); writeRef(c) }
+          for (c <- args) writeRef(c.asInstanceOf[Constant])
+          for ((name, c) <- assocs) { writeRef(name); writeRef(c.asInstanceOf[Constant]) }
           ATTRIBUTE
         case (target: Symbol, children: List[_]) =>
           writeRef(target)
@@ -433,7 +434,7 @@ abstract class Pickler extends SubComponent {
         case reflect.TypeApply(fun, args) =>
           writeNat(TYPEAPPLYtree)
           writeRef(fun)
-          writeRefs(args)
+          writeRef(args)
           REFLTREE
         case reflect.Function(params, body) =>
           writeNat(FUNCTIONtree)
@@ -595,15 +596,14 @@ abstract class Pickler extends SubComponent {
           REFLSYM
         case reflect.LabelSymbol(name) =>
           writeNat(LABELSYMBOLrsym)
-	  writeRef(name)
           REFLSYM
         case AnnotationInfo(target, args, assocs) =>
           writeRef(target)
           writeNat(args.length)
-          for (arg <- args) writeRef(arg)
-          for ((name, arg) <- assocs) {
+          for (tree <- args) writeRef(tree.asInstanceOf[reflect.Tree])
+          for ((name, tree) <- assocs) {
             writeRef(name);
-            writeRef(arg)
+            writeRef(tree.asInstanceOf[reflect.Tree])
           }
           ATTRIBTREE
 
