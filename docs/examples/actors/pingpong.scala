@@ -18,7 +18,6 @@ object pingpong extends Application {
   val ping = new Ping(100000, pong)
   ping.start
   pong.start
-  ping ! SendPing
 }
 
 class Ping(count: int, pong: Actor) extends Actor {
