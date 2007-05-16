@@ -58,16 +58,16 @@ abstract class Parsers {
 
 class Tokenizer(in: Iterator[char], delimiters: String) extends Iterator[String] {
 
-  val EOI: char = 0;
+  val EOI: char = 0
 
   def nextChar() =
-    if (in.hasNext) in.next else EOI;
+    if (in.hasNext) in.next else EOI
 
   private var ch = nextChar();
 
   def isDelimiter(ch: Char) = {
-    var i = 0;
-    while (i < delimiters.length() && delimiters.charAt(i) != ch) { i = i + 1 }
+    var i = 0
+    while (i < delimiters.length() && delimiters.charAt(i) != ch) { i += 1 }
     i < delimiters.length()
   }
 
@@ -76,7 +76,7 @@ class Tokenizer(in: Iterator[char], delimiters: String) extends Iterator[String]
   private val buf = new StringBuffer
 
   def next: String = {
-    while (ch <= ' ' && ch != EOI) nextChar();
+    while (ch <= ' ' && ch != EOI) nextChar()
     if (ch == EOI) ""
     else {
       if (isDelimiter(ch)) ch.toString()
@@ -102,7 +102,7 @@ trait TokenParsers extends Parsers {
 trait CharParsers extends Parsers {
   def any: Parser[char]
   def chr(ch: char) =
-    for (c <- any; if c == ch) yield c
+    for (c <- any if c == ch) yield c
   def chr(p: char => boolean) =
-    for (c <- any; if p(c)) yield c
+    for (c <- any if p(c)) yield c
 }

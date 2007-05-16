@@ -171,12 +171,12 @@ object maps {
 
     override def equals(that: Any): Boolean =
       that.isInstanceOf[Date] && {
-         val o = that.asInstanceOf[Date];
-         day == o.day && month == o.month && year == o.year
+        val o = that.asInstanceOf[Date];
+        day == o.day && month == o.month && year == o.year
       }
   }
 
-  def main(args: Array[String]) = {
+  def main(args: Array[String]) {
     val t = new OOBinTree[Date, String]()
     ()
   }

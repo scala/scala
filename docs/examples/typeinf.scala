@@ -32,7 +32,7 @@ case class Tycon(k: String, ts: List[Type]) extends Type {
 object typeInfer {
 
   private var n: Int = 0
-  def newTyvar(): Type = { n = n + 1 ; Tyvar("a" + n) }
+  def newTyvar(): Type = { n += 1; Tyvar("a" + n) }
 
   trait Subst extends Function1[Type, Type] {
     def lookup(x: Tyvar): Type
@@ -169,7 +169,7 @@ object typeInfer {
 
     /** Non-keyword identifiers */
     def ident: Parser[String] =
-      for (s <- id; if s != "let" && s != "in") yield s
+      for (s <- id if s != "let" && s != "in") yield s
 
     /** term = '\' ident '.' term | term1 {term1} | let ident "=" term in term */
     def term: Parser[Term] = (
@@ -181,7 +181,7 @@ object typeInfer {
         yield Lam(x, t): Term )
       |||
       ( for (
-          letid <- id; if letid == "let";
+          letid <- id if letid == "let";
           x <- ident;
           _ <- wschr('=');
           t <- term;
@@ -234,7 +234,7 @@ object typeInfer {
         "\n reason: " + msg
     }
 
-  def main(args: Array[String]): unit =
+  def main(args: Array[String]) {
     Console.println(
       if (args.length == 1) {
         val ps = new ParseString(args(0)) with MiniMLParsers
@@ -248,5 +248,6 @@ object typeInfer {
       else
         "usage: java examples.typeinf <expr-string>"
     )
+  }
 
 }

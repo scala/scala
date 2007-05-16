@@ -16,10 +16,10 @@ object sort2 {
     }
   }
 
-  def main(args: Array[String]): Unit = {
+  def main(args: Array[String]) {
     val xs = List(6, 2, 8, 5, 1)
-    Console.println(xs)
-    Console.println(sort(xs))
+    println(xs)
+    println(sort(xs))
   }
 
 }
