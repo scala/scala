@@ -17,6 +17,19 @@ package scala.runtime;
  */
 public class Comparator {
 
+    private static int CHAR = 0, BYTE = 1, SHORT = 2, INT = 3, LONG = 4, FLOAT = 5, DOUBLE = 6, OTHER = 7;
+
+    private static int typeCode(Object a) {
+        if (a instanceof Integer) return INT;
+        if (a instanceof Character) return CHAR;
+        if (a instanceof Long) return LONG;
+        if (a instanceof Double) return DOUBLE;
+        if (a instanceof Float) return FLOAT;
+        if (a instanceof Byte) return BYTE;
+        if (a instanceof Short) return SHORT;
+        return OTHER;
+    }
+
     /** A rich implementation of the equals method that overrides the default
      *  equals because Java's boxed primitives are utterly broken. This equals
      *  is inserted instead of a normal equals by the Scala compiler (in the
@@ -30,38 +43,29 @@ public class Comparator {
             return b == null;
         else if (a.equals(b))
             return true;
-        else if (a == b)
-            return true;
-
-        final Number aNum = a instanceof Number ? (Number)a : null;
-        final Character aChar = a instanceof Character ? (Character)a : null;
-        final Number bNum = b instanceof Number ? (Number)b : null;
-        final Character bChar = b instanceof Character ? (Character)b : null;
-
-        if ((aNum != null || aChar != null) && (bNum != null || bChar != null)) {
-            if (a instanceof Double || b instanceof Double) {
-                double aa = (aNum != null) ? aNum.doubleValue() : (double)aChar.charValue();
-                double bb = (bNum != null) ? bNum.doubleValue() : (double)bChar.charValue();
+        else {
+            int acode = typeCode(a);
+            int bcode = typeCode(b);
+            int maxcode = (acode < bcode) ? bcode : acode;
+            if (maxcode <= INT) {
+                int aa = (acode == CHAR) ? ((Character) a).charValue() : ((Number) a).intValue();
+                int bb = (bcode == CHAR) ? ((Character) b).charValue() : ((Number) b).intValue();
                 return aa == bb;
-            }
-            else if (a instanceof Float || b instanceof Float) {
-                float aa = (aNum != null) ? aNum.floatValue() : (float)aChar.charValue();
-                float bb = (bNum != null) ? bNum.floatValue() : (float)bChar.charValue();
+            } else if (maxcode <= LONG) {
+                long aa = (acode == CHAR) ? ((Character) a).charValue() : ((Number) a).longValue();
+                long bb = (bcode == CHAR) ? ((Character) b).charValue() : ((Number) b).longValue();
                 return aa == bb;
-            }
-            else if (a instanceof Long || b instanceof Long) {
-                long aa = (aNum != null) ? aNum.longValue() : (long)aChar.charValue();
-                long bb = (bNum != null) ? bNum.longValue() : (long)bChar.charValue();
+            } else if (maxcode <= FLOAT) {
+                float aa = (acode == CHAR) ? ((Character) a).charValue() : ((Number) a).floatValue();
+                float bb = (bcode == CHAR) ? ((Character) b).charValue() : ((Number) b).floatValue();
                 return aa == bb;
-            }
-            else {
-                int aa = (aNum != null) ? aNum.intValue() : aChar.charValue();
-                int bb = (bNum != null) ? bNum.intValue() : bChar.charValue();
+            } else if (maxcode <= DOUBLE) {
+                double aa = (acode == CHAR) ? ((Character) a).charValue() : ((Number) a).doubleValue();
+                double bb = (bcode == CHAR) ? ((Character) b).charValue() : ((Number) b).doubleValue();
                 return aa == bb;
+            } else {
+                return a == b;
             }
         }
-        else
-            return false;
     }
-
 }
