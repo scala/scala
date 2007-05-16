@@ -1242,8 +1242,9 @@ A type's symbol should never be inspected directly.
 
     override def normalize =
       if (sym.isAliasType) {
-        if (sym.info.typeParams.length == args.length || !sym.info.isComplete) // beta-reduce  -- check if the info has been loaded, if not, the arity check is meaningless
+        if (sym.info.typeParams.length == args.length) // beta-reduce  -- check if the info has been loaded, if not, the arity check is meaningless
           // Martin to Adriaan: I believe sym.info.isComplete is redundant here
+          // @M: correct: it was a remnant of a previous fix for the problem in the last else {} branch
           transform(sym.info.resultType).normalize // cycles have been checked in typeRef
         else if (isHigherKinded)
           PolyType(typeParams, transform(sym.info.resultType).normalize)
@@ -1303,7 +1304,7 @@ A type's symbol should never be inspected directly.
         if (sym == ByNameParamClass && !args.isEmpty)
           return "=> " + args(0).toString()
         if (isFunctionType(this))
-          return args.init.mkString("(", ", ", ")") + " => " + args.last
+          return normalize.typeArgs.init.mkString("(", ", ", ")") + " => " + normalize.typeArgs.last
         if (isTupleType(this))
           return args.mkString("(", ", ", if (args.length == 1) ",)" else ")")
       }
@@ -1684,6 +1685,7 @@ A type's symbol should never be inspected directly.
       case TypeRef(pre, sym, _) => typeRef(pre, sym, args)
       case PolyType(tparams, restpe) => restpe.instantiateTypeParams(tparams, args)
       case ErrorType => tycon
+      case st: SingletonType => appliedType(st.widen, args) // @M TODO: what to do? see bug1
       case _ =>
         Console.println(tycon.getClass())
         Console.println(tycon.$tag())

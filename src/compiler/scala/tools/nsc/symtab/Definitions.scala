@@ -300,7 +300,7 @@ trait Definitions {
 	    case MethodType(delegateParams, delegateReturn) =>
 	      val delegateParamsO = delegateParams.map(pt => {if (pt == definitions.AnyClass.tpe) definitions.ObjectClass.tpe else pt})
 	      if (isFunctionType(functionType))
-		functionType match {
+		functionType.normalize match {
 		  case TypeRef(_, _, args) =>
 		    if (delegateParamsO == args.dropRight(1) &&
 		        delegateReturn == args.last)
