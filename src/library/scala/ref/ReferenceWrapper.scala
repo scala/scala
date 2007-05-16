@@ -15,7 +15,11 @@ package scala.ref
  */
 trait ReferenceWrapper[+T <: AnyRef] extends Reference[T] {
   val underlying: java.lang.ref.Reference
-  def isValid = underlying.get != null
+  @deprecated def isValid = underlying.get != null
+  override def get = {
+    val ret = underlying.get.asInstanceOf[T]
+    if (ret eq null) None else Some(ret)
+  }
   def apply() = {
     val ret = underlying.get.asInstanceOf[T]
     if (ret eq null) throw new NoSuchElementException
