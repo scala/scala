@@ -4,6 +4,7 @@
  */
 // $Id$
 
+
 package scala.tools.nsc.symtab.classfile
 
 import java.lang.{Float, Double}
