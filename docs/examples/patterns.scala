@@ -29,8 +29,8 @@ object patterns {
       case None => System.out.println("no match")
     }
 
-  def main(args: Array[String]): Unit = {
-    Console.println("sum of leafs=" + sumLeaves(tree1))
+  def main(args: Array[String]) {
+    println("sum of leafs=" + sumLeaves(tree1))
     printFinds(List(Pair(3, "three"), Pair(4, "four")), 4)
   }
 }

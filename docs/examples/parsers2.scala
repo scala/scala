@@ -52,7 +52,7 @@ object parsers2 {
     }
   }
 
-  def main(args: Array[String]): unit =
+  def main(args: Array[String]) {
     Console.println(
       if (args.length == 1) {
         val ps = new ParseString(args(0)) with ListParsers
@@ -64,5 +64,6 @@ object parsers2 {
       else
         "usage: scala examples.parsers2 <expr-string>"
     )
+  }
 
 }

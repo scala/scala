@@ -79,7 +79,7 @@ object parsers1 {
   }
 
   object TestList {
-    def main(args: Array[String]): Unit =
+    def main(args: Array[String]) {
       Console.println(
         if (args.length == 1) {
           val ps = new ParseString(args(0)) with ListParsers
@@ -93,10 +93,11 @@ object parsers1 {
         else
           "usage: java examples.TestList <expr-string>"
       )
+    }
   }
 
   object TestExpr {
-    def main(args: Array[String]): unit =
+    def main(args: Array[String]) {
       Console.println(
         if (args.length == 1) {
           val ps = new ParseString(args(0)) with ExprParsers
@@ -110,9 +111,10 @@ object parsers1 {
         else
           "usage: java examples.TestExpr <expr-string>"
       )
+    }
   }
 
-  def main(args: Array[String]): Unit = {
+  def main(args: Array[String]) {
     TestList.main(Array("(a,b,(1,2))"))
     TestExpr.main(Array("2+3+(4+1)"))
   }

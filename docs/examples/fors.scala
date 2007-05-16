@@ -16,7 +16,7 @@ object fors {
     printOlderThan20(xs.elements)
 
   def printOlderThan20(xs: Iterator[Person]): Iterator[String] =
-    for (p <- xs; if p.age > 20) yield p.name
+    for (p <- xs if p.age > 20) yield p.name
 
   val persons = List(
     new Person("John", 40),
@@ -24,13 +24,13 @@ object fors {
   )
 
   def divisors(n: Int): List[Int] =
-    for (i <- List.range(1, n+1); if n % i == 0) yield i
+    for (i <- List.range(1, n+1) if n % i == 0) yield i
 
   def isPrime(n: Int) = divisors(n).length == 2
 
   def findNums(n: Int): Iterator[Pair[Int, Int]] =
-    for (i <- Iterator.range(1, n);
-         j <- Iterator.range(1, i-1);
+    for (i <- 1 until n;
+         j <- 1 until (i-1);
          if isPrime(i+j)) yield Pair(i, j)
 
   def sum(xs: List[Double]): Double =
@@ -89,24 +89,24 @@ object fors {
     if (xs.isEmpty)
       xs
     else
-      xs.head :: removeDuplicates(for (x <- xs.tail; if x != xs.head) yield x)
+      xs.head :: removeDuplicates(for (x <- xs.tail if x != xs.head) yield x)
 
-  def main(args: Array[String]) = {
-    Console.print("Persons over 20:")
-    printOlderThan20(persons) foreach { x => Console.print(" " + x) }
-    Console.println
+  def main(args: Array[String]) {
+    print("Persons over 20:")
+    printOlderThan20(persons) foreach { x => print(" " + x) }
+    println
 
-    Console.println("divisors(34) = " + divisors(34))
+    println("divisors(34) = " + divisors(34))
 
-    Console.print("findNums(15) =");
+    print("findNums(15) =");
     findNums(15) foreach { x => Console.print(" " + x); }
-    Console.println
+    println
 
     val xs = List(3.5, 5.0, 4.5)
-    Console.println("average(" + xs + ") = " + sum(xs) / xs.length)
+    println("average(" + xs + ") = " + sum(xs) / xs.length)
 
     val ys = List(2.0, 1.0, 3.0)
-    Console.println("scalProd(" + xs + ", " + ys +") = " + scalProd(xs, ys))
+    println("scalProd(" + xs + ", " + ys +") = " + scalProd(xs, ys))
   }
 
 }

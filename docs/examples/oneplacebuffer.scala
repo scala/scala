@@ -2,7 +2,7 @@ package examples
 
 object oneplacebuffer {
 
-  import scala.concurrent._;
+  import scala.concurrent._
 
   class OnePlaceBuffer {
     private val m = new MailBox() {}          // An internal mailbox
@@ -33,17 +33,17 @@ object oneplacebuffer {
     },
     delay) // in milliseconds
 
-  def main(args: Array[String]) = {
+  def main(args: Array[String]) {
     val buf = new OnePlaceBuffer
     val random = new java.util.Random()
 
-    def producer(n: int): unit = {
+    def producer(n: int) {
       Thread.sleep(random.nextInt(1000))
       buf.write(n)
       producer(n + 1)
     }
 
-    def consumer: unit = {
+    def consumer {
       Thread.sleep(random.nextInt(1000))
       val n = buf.read
       consumer

@@ -15,7 +15,7 @@ class ComputeServer(n: Int) {
   private def processor(i: Int): Unit = {
     while (true) {
       val job = openJobs.read
-      Console.println("read a job")
+      println("read a job")
       job.ret(job.task)
     }
   }
@@ -40,7 +40,7 @@ object computeserver extends Application {
   def kill(delay: Int) = new java.util.Timer().schedule(
     new java.util.TimerTask {
       override def run() = {
-        Console.println("[killed]")
+        println("[killed]")
         System.exit(0)
       }
     },
@@ -48,6 +48,6 @@ object computeserver extends Application {
 
   val server = new ComputeServer(1)
   val f = server.future(42)
-  Console.println(f())
+  println(f())
   kill(10000)
 }
