@@ -33,7 +33,7 @@ object Actor {
    *
    * @return returns the currently executing actor.
    */
-  def self: Actor = synchronized {
+  def self: Actor = {
     var a = tl.get.asInstanceOf[Actor]
     if (null eq a) {
       a = new ActorProxy(currentThread)
@@ -50,7 +50,7 @@ object Actor {
    * This permits to re-use the current thread as an actor
    * even if its <code>ActorProxy</code> has died for some reason.
    */
-  def resetProxy: unit = synchronized {
+  def resetProxy: unit = {
     val a = tl.get.asInstanceOf[Actor]
     if ((null ne a) && a.isInstanceOf[ActorProxy])
       tl.set(new ActorProxy(currentThread))
@@ -69,7 +69,7 @@ object Actor {
    * @param  body  the code block to be executed by the newly created actor
    * @return       the newly created actor. Note that it is automatically started.
    */
-  def actor(body: => Unit): Actor = synchronized {
+  def actor(body: => Unit): Actor = {
     val actor = new Actor {
       def act() = body
     }
