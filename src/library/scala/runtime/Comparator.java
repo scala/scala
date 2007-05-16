@@ -13,8 +13,8 @@ package scala.runtime;
 
 /**
  *  @author  Gilles Dubochet
- *  @version 1.1
- */
+ *  @author  Martin Odersky
+ *  @version 1.2 */
 public class Comparator {
 
     private static int CHAR = 0, BYTE = 1, SHORT = 2, INT = 3, LONG = 4, FLOAT = 5, DOUBLE = 6, OTHER = 7;
@@ -41,6 +41,8 @@ public class Comparator {
     public static boolean equals(Object a, Object b) {
         if (a == null)
             return b == null;
+        else if (b == null)
+            return false;
         else if (a.equals(b))
             return true;
         else {
@@ -63,6 +65,8 @@ public class Comparator {
                 double aa = (acode == CHAR) ? ((Character) a).charValue() : ((Number) a).doubleValue();
                 double bb = (bcode == CHAR) ? ((Character) b).charValue() : ((Number) b).doubleValue();
                 return aa == bb;
+            } else if (acode != OTHER) {
+                return b.equals(a);
             } else {
                 return a == b;
             }
