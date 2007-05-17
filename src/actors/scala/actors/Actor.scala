@@ -617,8 +617,14 @@ trait Actor extends OutputChannel[Any] {
     this
   }
 
-  def loop(body: => Unit): Nothing =
+  /**
+   * Repeatedly execute <code>body</code>.
+   *
+   * @param body the code block to be executed
+   */
+  /*def loop(body: => Unit): Nothing = {
     Actor.seq(body, loop(body))
+  }*/
 
   private[actors] var links: List[Actor] = Nil
 
