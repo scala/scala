@@ -380,8 +380,10 @@ abstract class RefChecks extends InfoTransform {
           if ((sym hasFlag PARAM) && !sym.owner.isConstructor &&
               !(tvar.isTypeParameterOrSkolem && sym.isTypeParameterOrSkolem &&
                 tvar.owner == sym.owner)) state = -state;
-          else if (!sym.owner.isClass || sym.isPrivateLocal) state = AnyVariance;
-          else if (sym.isAliasType) state = NoVariance;
+          else if (!sym.owner.isClass || sym.isPrivateLocal || sym.isProtectedLocal)
+            state = AnyVariance
+          else if (sym.isAliasType)
+            state = NoVariance
           sym = sym.owner
         }
         state

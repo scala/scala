@@ -1158,6 +1158,7 @@ trait Infer {
           val applicable = alts1 filter (alt =>
             global.typer.infer.isCompatible(pre.memberType(alt), pt))
           checkNotShadowed(tree.pos, pre, best, applicable)
+          Console.println("infer expr alt, pre = "+pre+", alts = "+alts1+alts1.map(.tpe)+", best = "+best+":"+best.tpe)
           tree.setSymbol(best).setType(pre.memberType(best))
         }
       }
