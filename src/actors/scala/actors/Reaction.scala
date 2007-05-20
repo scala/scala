@@ -72,6 +72,8 @@ private[actors] class Reaction(a: Actor,
         }
       }
     }
+    if (!a.sessions.isEmpty)
+      a.sessions = a.sessions.tail
     Actor.tl.set(saved)
   }
 

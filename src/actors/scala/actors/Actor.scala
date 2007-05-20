@@ -275,7 +275,7 @@ trait Actor extends OutputChannel[Any] {
   private[actors] var isSuspended = false
 
   private val mailbox = new MessageQueue
-  private var sessions: List[Channel[Any]] = Nil
+  private[actors] var sessions: List[Channel[Any]] = Nil
 
   private def send(msg: Any, session: Channel[Any]) = synchronized {
     tick()
