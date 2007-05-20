@@ -67,13 +67,16 @@ private[actors] class Reaction(a: Actor,
       }
       case t: Throwable => {
         // links
-        if (!a.links.isEmpty) {
-          a.exitLinked(t)
+        a.synchronized {
+          if (!a.links.isEmpty)
+            a.exitLinked(t)
         }
       }
     }
-    if (!a.sessions.isEmpty)
-      a.sessions = a.sessions.tail
+    a.synchronized {
+      if (!a.sessions.isEmpty)
+        a.sessions = a.sessions.tail
+    }
     Actor.tl.set(saved)
   }
 
