@@ -1378,15 +1378,22 @@ abstract class GenICode extends SubComponent  {
           local
       }
 
+      /** True if the equality comparison is between values that require the use of the rich equality
+        * comparator (scala.runtime.Comparator.equals). This is the case when either side of the
+        * comparison might have a run-time type subtype of java.lang.Number or java.lang.Character.
+        * When it is statically known that both sides are equal and subtypes of Number of Character,
+        * not using the rich equality is possible (their own equals method will do ok.)*/
       def mustUseAnyComparator: Boolean = {
         val lsym = l.tpe.symbol
         val rsym = r.tpe.symbol
         (lsym == definitions.ObjectClass) ||
         (rsym == definitions.ObjectClass) ||
-        (lsym isNonBottomSubClass definitions.BoxedNumberClass)||
-        (!forMSIL && (lsym isNonBottomSubClass BoxedCharacterClass)) ||
-        (rsym isNonBottomSubClass definitions.BoxedNumberClass) ||
-        (!forMSIL && (rsym isNonBottomSubClass BoxedCharacterClass))
+        (lsym != rsym) && (
+          (lsym isNonBottomSubClass definitions.BoxedNumberClass) ||
+          (!forMSIL && (lsym isNonBottomSubClass BoxedCharacterClass)) ||
+          (rsym isNonBottomSubClass definitions.BoxedNumberClass) ||
+          (!forMSIL && (rsym isNonBottomSubClass BoxedCharacterClass))
+        )
       }
 
       if (mustUseAnyComparator) {
