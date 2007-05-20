@@ -275,7 +275,7 @@ trait Actor extends OutputChannel[Any] {
   private[actors] var isSuspended = false
 
   private val mailbox = new MessageQueue
-  private var sessions: List[Channel[Any]] = Nil
+  private[actors] var sessions: List[Channel[Any]] = Nil
 
   private def send(msg: Any, session: Channel[Any]) = synchronized {
     tick()
@@ -615,15 +615,6 @@ trait Actor extends OutputChannel[Any] {
 
     throw new ExitActorException
   }
-
-  /**
-   * Repeatedly execute <code>body</code>.
-   *
-   * @param body the code block to be executed
-   */
-  /*def loop(body: => Unit): Nothing = {
-    Actor.seq(body, loop(body))
-  }*/
 
   private[actors] var links: List[Actor] = Nil
 
