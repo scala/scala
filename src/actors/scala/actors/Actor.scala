@@ -171,7 +171,7 @@ object Actor {
   }
 
   implicit def mkBody[a](body: => a) = new Body[a] {
-    def andThen[b](other: => b): Nothing = seq(body, other)
+    def andThen[b](other: => b): Nothing = self.seq(body, other)
   }
 
   /**
@@ -181,22 +181,6 @@ object Actor {
    * @param body the code block to be executed
    */
   def loop(body: => Unit): Nothing = body andThen loop(body)
-
-  /**
-   * Causes <code>self</code> to execute <code>first</code>
-   * followed by <code>next</code>.
-   *
-   * @param first the first code block to be executed
-   * @param next  the second code block to be executed
-   */
-  def seq[a, b](first: => a, next: => b): Nothing = {
-    val s = self
-    val killNext = s.kill
-    s.kill = () => { s.kill = killNext; next; s.kill() }
-    first
-    s.kill()
-    throw new ExitActorException
-  }
 
   /**
    * Links <code>self</code> to actor <code>to</code>.
@@ -617,8 +601,20 @@ trait Actor extends OutputChannel[Any] {
     this
   }
 
-  def loop(body: => Unit): Nothing =
-    Actor.seq(body, loop(body))
+  private def seq[a, b](first: => a, next: => b): Nothing = {
+    val s = Actor.self
+    val killNext = s.kill
+    s.kill = () => { s.kill = killNext; next; s.kill() }
+    first
+
+    // to avoid stack overflow: instead of directly executing,
+    // schedule task that executes s.kill()
+    scheduleActor({
+      case 'kill => Actor.self.kill()
+    }, 'kill)
+
+    throw new ExitActorException
+  }
 
   private[actors] var links: List[Actor] = Nil
 
