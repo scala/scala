@@ -14,17 +14,17 @@ package scala.testing
 
 import compat.Platform
 
-/** <code>Benchmark</code> can be used to quickly turn an existing
- *  class into a benchmark. Here is a short example:
- *
- *  <pre>
+/** <p>
+ *    <code>Benchmark</code> can be used to quickly turn an existing
+ *    class into a benchmark. Here is a short example:
+ *  </p><pre>
  *  <b>object</b> sort1 <b>extends</b> Sorter <b>with</b> Benchmark {
  *    <b>def</b> run = sort(List.range(1, 1000))
  *  }
  *  </pre>
  *  <p>
- *    The run method has to be defined by the user, who will perform
- *    the timed operation there.
+ *    The <code>run</code> method has to be defined by the user, who
+ *    will perform the timed operation there.
  *    Run the benchmark as follows:
  *  </p>
  *  <pre>
@@ -34,6 +34,8 @@ import compat.Platform
  *    This will run the benchmark 5 times and log the execution times in
  *    a file called <code>times.log</code>
  *  </p>
+ *
+ *  @author Burak Emir
  */
 trait Benchmark {
 
@@ -67,7 +69,7 @@ trait Benchmark {
    * consecutive runs, and the name of a log file where to
    * append the times.
    */
-  def main(args: Array[String]): Unit = {
+  def main(args: Array[String]) {
     if (args.length > 1) {
       val logFile = new java.io.FileWriter(args(1), true) // append, not overwrite
       if (args.length >= 3)

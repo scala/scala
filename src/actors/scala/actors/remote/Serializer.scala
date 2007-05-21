@@ -41,7 +41,7 @@ abstract class Serializer(val service: Service) {
   }
 
   @throws(classOf[IOException])
-  def writeBytes(outputStream: DataOutputStream, bytes: Array[byte]): unit = {
+  def writeBytes(outputStream: DataOutputStream, bytes: Array[byte]) {
     val length = bytes.length;
     // original length
     outputStream.writeInt(length)
@@ -50,7 +50,7 @@ abstract class Serializer(val service: Service) {
   }
 
   @throws(classOf[IOException])
-  def writeObject(outputStream: DataOutputStream, obj: AnyRef) = {
+  def writeObject(outputStream: DataOutputStream, obj: AnyRef) {
     val bytes = serialize(obj)
     writeBytes(outputStream, bytes)
   }

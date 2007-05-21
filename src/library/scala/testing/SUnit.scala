@@ -39,26 +39,31 @@ import scala.collection.mutable.ArrayBuffer
  *   Console.println(tf.toString())
  * }
  * </pre>
+ * <p>
+ *   The trait <code>TestConsoleMain</code> contains this code as
+ *   a <code>main</code> method, for convenience.
+ * </p>
  *
- * The trait TestConsoleMain contains this code as a main method, for convenience.
+ * @author Burak Emir
  */
 object SUnit {
 
-	/** convenience trait, mix it in a TestMain object and implement "suite" to get this code
+    /** convenience trait, mix it in a TestMain object and implement "suite" to get this code
      * <b>val</b> r = <b>new</b> TestResult()
      * suite.run(r)
      * <b>for</b> (<b>val</b> tf &lt;- r.failures()) {
      *   Console.println(tf.toString())
-	 */
+     */
   trait TestConsoleMain {
-	def suite: TestSuite
-    def main(args:Array[String]) {
+    def suite: TestSuite
+    def main(args: Array[String]) {
       val r = new TestResult()
       suite.run(r)
       for (tf <- r.failures())
         Console.println(tf.toString())
     }
   }
+
   /** a Test can be run with its result being collected */
   trait Test {
     def run(r: TestResult): Unit
@@ -165,21 +170,23 @@ object SUnit {
       assertNotNull("(no message)", actual)
 
     /**
-	 *  @deprecated use assertNotEq instead
-	 */
-    @deprecated def assertNotSame(msg: String, expected: => AnyRef, actual: => AnyRef): Unit =
+     *  @deprecated use assertNotEq instead
+     */
+    @deprecated
+    def assertNotSame(msg: String, expected: => AnyRef, actual: => AnyRef): Unit =
       if (expected.eq(actual)) fail(msg)
 
     /**
-	 *  @deprecated use assertNotEq instead
+     *  @deprecated use assertNotEq instead
      */
-    @deprecated def assertNotSame(expected: => AnyRef, actual: => AnyRef): Unit  =
+    @deprecated
+    def assertNotSame(expected: => AnyRef, actual: => AnyRef): Unit  =
       assertNotEq("(no message)", expected, actual)
 
     /** fail if expected eq actual */
     def assertNotEq(msg: String, expected: => AnyRef, actual: => AnyRef) {
       if (expected eq actual) fail(msg)
-	}
+    }
 
     /** fail if expected eq actual */
     def assertNotEq(expected: => AnyRef, actual: => AnyRef) {
@@ -195,14 +202,16 @@ object SUnit {
       assertNull("(no message)", actual)
 
     /**
-	 *  @deprecated use assertEq instead
-	 */
+     *  @deprecated use assertEq instead
+     */
+    @deprecated
     def assertSame(msg: String, expected: => AnyRef, actual: => AnyRef): Unit =
         if(!expected.eq(actual)) fail(msg)
 
     /**
-	 *  @deprecated use assertEq instead
-	 */
+     *  @deprecated use assertEq instead
+     */
+    @deprecated
     def assertSame(expected: => AnyRef, actual: => AnyRef): Unit  =
       assertEq("(no message)", expected, actual)
 

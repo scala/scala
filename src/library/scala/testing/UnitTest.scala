@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -11,19 +11,23 @@
 
 package scala.testing
 
-
 /**
  * Some simple methods to support unit testing with assertions
  * to contain more JUnit style assertions which use Scala's features.
- * @deprecated use SUnit instead
+ *
+ * @author Burak Emir
+ *
+ * @deprecated use <a href="SUnit.html" target="contentFrame">SUnit</a>
+ *             instead.
  */
 @deprecated
 object UnitTest {
 
   class Report(report_ok: () => Unit, report_fail: (String,String) => Unit) {
     def ok(): Unit = report_ok()
-    def fail(actual: String, expected: String): Unit =
+    def fail(actual: String, expected: String) {
       report_fail(actual, expected)
+    }
   }
 
   var report = new Report(
@@ -36,7 +40,7 @@ object UnitTest {
   /**
    *  @param r ...
    */
-  def setReporter(r: Report) = {
+  def setReporter(r: Report) {
     this.report = r
   }
 
