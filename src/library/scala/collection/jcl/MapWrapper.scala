@@ -15,7 +15,7 @@ package scala.collection.jcl;
  *  @author Sean McDirmid
  */
 trait MapWrapper[K,E] extends jcl.Map[K,E] {
-  protected def underlying : java.util.Map;
+  def underlying : java.util.Map;
   override def size = underlying.size;
   override def isEmpty = underlying.isEmpty;
   override def clear() = underlying.clear;
@@ -33,13 +33,13 @@ trait MapWrapper[K,E] extends jcl.Map[K,E] {
   case that : MapWrapper[_,_] => underlying.putAll(that.underlying);
   case _ => super.putAll(that);
   }
-  override def remove(key : K) = {
+  override def removeKey(key : K) = {
     val ret = underlying.remove(key);
     if (ret == null) None else Some(ret.asInstanceOf[E]);
   }
   override def contains(key : K) = underlying.containsKey(key);
-  override def keySet : Set[K] = new KeySet;
-  override def valueSet : MutableIterable[E] = new ValueSet;
+  override def keySet : Set.Projection[K] = new KeySet;
+  override def valueSet : MutableIterable.Projection[E] = new ValueSet;
   override def elements : MutableIterator[Tuple2[K,E]] = new IteratorWrapper;
   class IteratorWrapper extends MutableIterator[Tuple2[K,E]] {
     val underlying = MapWrapper.this.underlying.entrySet.iterator;
@@ -50,10 +50,10 @@ trait MapWrapper[K,E] extends jcl.Map[K,E] {
       Tuple2(next.getKey.asInstanceOf[K],next.getValue.asInstanceOf[E]);
     }
   }
-  class KeySet extends super.KeySet with SetWrapper[K] {
-    protected val underlying = MapWrapper.this.underlying.keySet;
+  class KeySet extends super.KeySet with SetWrapper[K] with Set.Projection[K] {
+    val underlying = MapWrapper.this.underlying.keySet;
   }
-  class ValueSet extends IterableWrapper[E] {
+  class ValueSet extends IterableWrapper[E] with MutableIterable.Projection[E] {
     def size = MapWrapper.this.size;
     val underlying = MapWrapper.this.underlying.values;
     override def has(e : E) = MapWrapper.this.underlying.containsValue(e);

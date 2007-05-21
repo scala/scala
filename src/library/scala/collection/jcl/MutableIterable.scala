@@ -20,7 +20,8 @@ package scala.collection.jcl;
 trait MutableIterable[A] extends scala.Collection[A] {
   /** @return true if t is in the collection.
    **/
-  def has(t : A ) : Boolean = elements.has(t);
+  def has(t : A ) : Boolean = elements.contains(t);
+
   /** @return true if t was removed from this collection.
    **/
   def remove(t : A ) : Boolean = elements.remove(t);
@@ -63,16 +64,40 @@ trait MutableIterable[A] extends scala.Collection[A] {
       i.next; i.remove;
     }
   }
-  trait Projection extends super.Projection {
-    override def map[B](f : A => B) : MutableIterable[B] = new Map[B](f);
+  override def projection : MutableIterable.Projection[A] = new MutableIterable.Projection[A] {
+    override def elements = MutableIterable.this.elements
+    override def size = MutableIterable.this.size
+    override def remove(t : A ) : Boolean = MutableIterable.this.remove(t)
+    override def filter(p : A => Boolean) : MutableIterable.Projection[A] = super.filter(p)
   }
-  override def projection = new Projection {}
   /** The default implementation of a map over mutable iterable collections.
    **/
-  protected class Map[B](f : A => B) extends MutableIterable[B] {
-    override def elements = MutableIterable.this.elements.map(f);
-    override def toString = elements.toList.mkString("{", ", ", "}");
-    override def size = MutableIterable.this.size;
-  }
   override def elements : MutableIterator[A];
+  protected class Map[B](f : A => B) extends MutableIterable.Projection[B] {
+    override def elements = MutableIterable.this.elements.map(f)
+    override def size = MutableIterable.this.size
+  }
+  trait Filter extends MutableIterable.Projection[A] {
+    protected def p(a : A) : Boolean
+    override def has(a : A) = if (!p(a)) false else MutableIterable.this.has(a);
+    override def remove(a : A) = {
+      if (!p(a)) throw new IllegalArgumentException;
+      MutableIterable.this.remove(a);
+    }
+    override def filter(p0 : A => Boolean) : MutableIterable.Projection[A] =
+      MutableIterable.this.projection.filter(a => p(a) && p0(a));
+    def elements = MutableIterable.this.elements.filter(p);
+    def size = size0;
+  }
 }
+
+object MutableIterable {
+  trait Projection[A] extends MutableIterable[A] with Iterable.Projection[A] {
+    override def projection = this
+    override def map[B](f : A => B) : Projection[B] = new Map[B](f);
+    override def filter(pp : A => Boolean) : Projection[A] = new Filter {
+      def p(a : A) = pp(a)
+    }
+  }
+}
+

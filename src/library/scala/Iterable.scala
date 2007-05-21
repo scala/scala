@@ -69,6 +69,24 @@ object Iterable {
   val empty = new Iterable[Nothing] {
     def elements = Iterator.empty
   }
+  /** A non-strict projection of an iterable.
+   * @author Sean McDirmid
+   */
+  trait Projection[+A] extends Iterable[A] {
+    override def projection = this
+    /** non-strict */
+    override def filter(p : A => Boolean) : Projection[A] = new Projection[A] {
+      def elements = Projection.this.elements.filter(p)
+    }
+    /** non-strict */
+    override def map[B](f: A => B) : Projection[B] = new Projection[B] {
+      def elements = Projection.this.elements.map(f)
+    }
+    /** non-strict */
+    override def flatMap[B](f: A => Iterable[B]) : Projection[B] = new Projection[B] {
+      def elements = Projection.this.elements.flatMap(a => f(a).elements)
+    }
+  }
 }
 
 
@@ -120,7 +138,7 @@ trait Iterable[+A] {
    *  @return <code>f(a<sub>0</sub>), ..., f(a<sub>n</sub>)</code>
    *          if this iterable is <code>a<sub>0</sub>, ..., an</code>.
    */
-  def map[B](f: A => B): Collection[B] = {
+  def map[B](f: A => B): Iterable[B] = {
     val buf = new ArrayBuffer[B]
     val elems = elements
     while (elems.hasNext) buf += f(elems.next)
@@ -135,7 +153,7 @@ trait Iterable[+A] {
    *  @return  <code>f(a<sub>0</sub>) ::: ... ::: f(a<sub>n</sub>)</code> if
    *           this iterable is <code>a<sub>0</sub>, ..., a<sub>n</sub></code>.
    */
-  def flatMap[B](f: A => Iterable[B]): Collection[B] = {
+  def flatMap[B](f: A => Iterable[B]): Iterable[B] = {
     val buf = new ArrayBuffer[B]
     val elems = elements
     while (elems.hasNext) f(elems.next) copyToBuffer buf
@@ -149,7 +167,7 @@ trait Iterable[+A] {
    *  @param p the predicate used to filter the list.
    *  @return the elements of this list satisfying <code>p</code>.
    */
-  def filter(p: A => Boolean): Collection[A] = {
+  def filter(p: A => Boolean): Iterable[A] = {
     val buf = new ArrayBuffer[A]
     val elems = elements
     while (elems.hasNext) { val x = elems.next; if (p(x)) buf += x }
@@ -428,53 +446,14 @@ trait Iterable[+A] {
   /** Is this collection empty? */
   def isEmpty = elements.hasNext
 
-  private class ProjectionImpl[+B](elements0 : () => Iterator[B]) extends Iterable[B] {
-    def elements = elements0();
-  }
-
-  trait Projection {
-    /** Returns all the elements of this iterable that satisfy the
-     *  predicate <code>p</code>. The order of the elements is preserved.
-     *  Unlike <code>filter</code> in <code>Iterable</code>, this API is
-     *  not strict and will terminate on infinite-sized collections.
-     *
-     *  @param p the predicate used to filter the list.
-     *  @return the elements of this list satisfying <code>p</code>.
-     */
-    def filter(p : A => Boolean) : Iterable[A] = new ProjectionImpl[A](() => {
-      Iterable.this.elements.filter(p)
-    })
-    /** Returns the iterable resulting from applying the given function
-     *  <code>f</code> to each element of this iterable.  Unlike <code>map</code>
-     *  in <code>Iterable</code>, this API is not strict and will terminate on
-     *  infinite-sized collections.
-     *
-     *  @param f function to apply to each element.
-     *  @return <code>f(a<sub>0</sub>), ..., f(a<sub>n</sub>)</code>
-     *          if this iterable is <code>a<sub>0</sub>, ..., an</code>.
-     */
-    def map[B](f: A => B) : Iterable[B] = new ProjectionImpl[B](() => {
-      Iterable.this.elements.map(f)
-    })
-    /** Applies the given function <code>f</code> to each element of
-     *  this iterable, then concatenates the results.  Unlike <code>flatMap</code>
-     *  in <code>Iterable</code>,
-     *  this API is not strict and will terminate on infinite-sized collections.
-     *
-     *  @param f the function to apply on each element.
-     *  @return  <code>f(a<sub>0</sub>) ::: ... ::: f(a<sub>n</sub>)</code> if
-     *           this iterable is <code>a<sub>0</sub>, ..., a<sub>n</sub></code>.
-     */
-    def flatMap[B](f: A => Iterable[B]) : Iterable[B] = new ProjectionImpl[B](() => {
-      Iterable.this.elements.flatMap(a => f(a).elements)
-    })
-  }
   /**
-   * returns a facade that can be used to call non-strict <code>filter</code>,
+   * returns a projection that can be used to call non-strict <code>filter</code>,
    * <code>map</code>, and <code>flatMap</code> methods that build projections
    * of the collection.
    */
-  def projection : Projection = new Projection {};
+  def projection : Iterable.Projection[A] = new Iterable.Projection[A] {
+    def elements = Iterable.this.elements
+  }
 
   /** returns true iff this collection has a bound size.
    *  Only true if this iterable is a <code>Collection</code>.
@@ -482,4 +461,5 @@ trait Iterable[+A] {
    *  unbound sizes.
    */
   final def hasDefiniteSize = this.isInstanceOf[Collection[Nothing]]
+
 }

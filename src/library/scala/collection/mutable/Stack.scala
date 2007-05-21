@@ -25,7 +25,7 @@ class Stack[A] extends MutableList[A] {
    *
    *  @return true, iff there is no element on the stack
    */
-  override def isEmpty: Boolean = (first eq null)
+  override def isEmpty: Boolean = (first0 eq null)
 
   /** Pushes a single element on top of the stack.
    *
@@ -64,8 +64,8 @@ class Stack[A] extends MutableList[A] {
    *  @return the top element
    */
   def top: A =
-    if (first eq null) throw new NoSuchElementException("stack empty")
-    else first.elem
+    if (first0 eq null) throw new NoSuchElementException("stack empty")
+    else first0.elem
 
   /** Removes the top element from the stack.
    *
@@ -73,9 +73,9 @@ class Stack[A] extends MutableList[A] {
    *  @return the top element
    */
   def pop(): A =
-    if (first ne null) {
-      val res = first.elem
-      first = first.next
+    if (first0 ne null) {
+      val res = first0.elem
+      first0 = first0.next
       len = len - 1;
       res
     } else

@@ -27,7 +27,7 @@ class Queue[A] extends MutableList[A] {
    *
    *  @return true, iff there is no element in the queue.
    */
-  override def isEmpty: Boolean = (first eq null)
+  override def isEmpty: Boolean = (first0 eq null)
 
   /** Inserts a single element at the end of the queue.
    *
@@ -64,12 +64,12 @@ class Queue[A] extends MutableList[A] {
    *  @return the first element of the queue.
    */
   def dequeue(): A =
-    if (first eq null)
+    if (first0 eq null)
       throw new NoSuchElementException("queue empty")
     else {
-      val res = first.elem
-      first = first.next
-      if (first eq null) last = null
+      val res = first0.elem
+      first0 = first0.next
+      if (first0 eq null) last0 = null
       len = len - 1
       res
     }
@@ -81,20 +81,20 @@ class Queue[A] extends MutableList[A] {
    *  @return the first element of the queue for which p yields true
    */
   def dequeueFirst(p: A => Boolean): Option[A] =
-    if (first eq null)
+    if (first0 eq null)
       None
-    else if (p(first.elem)) {
-      val res: Option[A] = Some(first.elem)
-      first = first.next
+    else if (p(first0.elem)) {
+      val res: Option[A] = Some(first0.elem)
+      first0 = first0.next
       len = len - 1
-      if (first eq null) {
-        last = null
-      } else if (first.next eq null) {
-        last = first
+      if (first0 eq null) {
+        last0 = null
+      } else if (first0.next eq null) {
+        last0 = first0
       }
       res
     } else
-      extractFirst(first, p) match {
+      extractFirst(first0, p) match {
         case None => None
         case Some(cell) => Some(cell.elem)
       }
@@ -107,21 +107,21 @@ class Queue[A] extends MutableList[A] {
    *             p yields true.
    */
   def dequeueAll(p: A => Boolean): Seq[A] = {
-    if (first eq null)
+    if (first0 eq null)
       Seq.empty
     else {
       val res = new ArrayBuffer[A]
-      while ((first ne null) && p(first.elem)) {
-        res += first.elem
-        first = first.next
+      while ((first0 ne null) && p(first0.elem)) {
+        res += first0.elem
+        first0 = first0.next
         len = len - 1
-        if (first eq null) {
-          last = null
-        } else if (first.next eq null) {
-          last = first
+        if (first0 eq null) {
+          last0 = null
+        } else if (first0.next eq null) {
+          last0 = first0
         }
       }
-      var cell: Option[LinkedList[A]] = extractFirst(first, p)
+      var cell: Option[LinkedList[A]] = extractFirst(first0, p)
       while (!cell.isEmpty) {
         res += cell.get.elem
         cell = extractFirst(cell.get, p)
@@ -143,7 +143,7 @@ class Queue[A] extends MutableList[A] {
         val res: Option[LinkedList[A]] = Some(cell.next)
         cell.next = cell.next.next
         if (cell.next eq null)
-          last = cell
+          last0 = cell
         len = len - 1
         res
       }
@@ -155,7 +155,7 @@ class Queue[A] extends MutableList[A] {
    *
    *  @return the first element.
    */
-  def front: A = first.elem
+  def front: A = first0.elem
 
   /** Removes all elements from the queue. After this operation is completed,
    *  the queue will be empty.

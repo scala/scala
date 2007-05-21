@@ -43,7 +43,7 @@ abstract class BoxedArray extends Seq[Any] {
 
   override def isDefinedAt(x: Int): Boolean = 0 <= x && x < length
 
-  def elements = new Iterator[Any] {
+  override def elements = new Iterator[Any] {
     var index = 0
     def hasNext: Boolean = index < length
     def next(): Any = { val i = index; index = i + 1; apply(i) }

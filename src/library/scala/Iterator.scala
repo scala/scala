@@ -60,13 +60,14 @@ object Iterator {
     new BufferedIterator[a] {
       private var i = start
       val end = if ((start + length) < xs.length) start else xs.length
-      def hasNext: Boolean = i < end
-      def next(): a =
+      override def hasNext: Boolean = i < end
+      def next: a =
         if (hasNext) { val x = xs(i) ; i += 1 ; x }
         else throw new NoSuchElementException("next on empty iterator")
-      def head: a =
-        if (hasNext) xs(i)
-        else throw new NoSuchElementException("head on empty iterator")
+
+      override protected def defaultPeek : a = throw new NoSuchElementException("no lookahead")
+      override def peekList(sz : Int) : Seq[a] =
+        xs.slice(i, if (i + sz > xs.length) xs.length else i + sz)
   }
 
   /**
@@ -77,9 +78,12 @@ object Iterator {
     new BufferedIterator[Char] {
       private var i = 0
       private val len = str.length()
-      def hasNext = i < len
-      def next() = { val c = str charAt i; i += 1; c }
-      def head = str charAt i
+      override def hasNext = i < len
+      def next = { val c = str charAt i; i += 1; c }
+
+      override protected def defaultPeek : Char = throw new NoSuchElementException
+      override def peekList(sz : Int) : Seq[Char] =
+        str.substring(i, if (i + sz > str.length) str.length else i + sz)
     }
 
   /**
@@ -134,16 +138,13 @@ object Iterator {
    *  @return      the iterator with values in range <code>[start;end)</code>.
    */
   def range(start: Int, end: Int, step: Int => Int): Iterator[Int] =
-    new BufferedIterator[Int] {
+    new Iterator[Int] {
       private var i = start
       def hasNext: Boolean = i < end
       def next(): Int =
         if (i < end) { val j = i; i = step(i); j }
         else throw new NoSuchElementException("next on empty iterator")
-      def head: Int =
-        if (i < end) i
-        else throw new NoSuchElementException("head on empty iterator")
-    }
+  }
 
   /** Create an iterator with elements
    *  <code>e<sub>n+1</sub> = e<sub>n</sub> + 1</code>
@@ -152,8 +153,7 @@ object Iterator {
    *  @param start the start value of the iterator
    *  @return      the iterator starting at value <code>start</code>.
    */
-  def from(start: Int): Iterator[Int] =
-    from(start, 1)
+  def from(start: Int): Iterator[Int] = from(start, 1)
 
   /** Create an iterator with elements
    * <code>e<sub>n+1</sub> = e<sub>n</sub> + step</code>
@@ -163,13 +163,7 @@ object Iterator {
    *  @param step  the increment value of the iterator
    *  @return      the iterator starting at value <code>start</code>.
    */
-  def from(start: Int, step: Int): Iterator[Int] =
-    new BufferedIterator[Int] {
-      private var i = start
-      def hasNext: Boolean = true
-      def next(): Int = { val j = i; i += step; j }
-      def head: Int = i
-    }
+  def from(start: Int, step: Int): Iterator[Int] = from(start, {x:Int => x + step})
 
   /** Create an iterator with elements
    *  <code>e<sub>n+1</sub> = step(e<sub>n</sub>)</code>
@@ -179,14 +173,11 @@ object Iterator {
    *  @param step  the increment function of the iterator
    *  @return      the iterator starting at value <code>start</code>.
    */
-  def from(start: Int, step: Int => Int): Iterator[Int] =
-    new BufferedIterator[Int] {
-      private var i = start
-      def hasNext: Boolean = true
-      def next(): Int = { val j = i; i = step(i); j }
-      def head: Int = i
-    }
-
+  def from(start: Int, step: Int => Int): Iterator[Int] = new Iterator[Int] {
+    private var i = start
+    override def hasNext: Boolean = true
+    def next: Int = { val j = i; i = step(i); j }
+  }
 }
 
 /** Iterators are data structures that allow to iterate over a sequence
@@ -278,23 +269,26 @@ trait Iterator[+A] {
       } else throw new NoSuchElementException("next on empty iterator")
   }
 
-  private def predicatedIterator(p: A => boolean, isFilter: boolean) = new BufferedIterator[A] {
-    private var hd: A = _
-    private var ahead: Boolean = false
-    private def skip: Unit =
-      while (!ahead && Iterator.this.hasNext) {
-        hd = Iterator.this.next
-        ahead = !isFilter || p(hd)
+  protected class PredicatedIterator(p : A => Boolean) extends DefaultBufferedIterator[A] {
+    protected def skip0 : Seq[A] = fill
+    protected override def fill : Seq[A] =
+      if (!Iterator.this.hasNext) return Nil
+      else {
+        val ret = Iterator.this.next;
+        if (p(ret)) return ret :: Nil;
+        return skip0
       }
-    def hasNext: Boolean = {
-      skip
-      ahead && p(hd)
-    }
-    def next(): A =
-      if (hasNext) { ahead = false; hd }
-      else throw new NoSuchElementException("next on empty iterator")
-    def head: A = { skip; hd }
   }
+  protected class TakeWhileIterator(p : A => Boolean) extends PredicatedIterator(p) {
+    private var ended = false
+    override protected def skip0 : Seq[A] = {
+      ended = true
+      Nil
+    }
+    override protected def fill : Seq[A] =
+      if (ended) Nil else super.fill
+  }
+
 
   /** Returns an iterator over all the elements of this iterator that
    *  satisfy the predicate <code>p</code>. The order of the elements
@@ -303,7 +297,7 @@ trait Iterator[+A] {
    *  @param p the predicate used to filter the iterator.
    *  @return  the elements of this iterator satisfying <code>p</code>.
    */
-  def filter(p: A => Boolean): Iterator[A] = predicatedIterator(p, true)
+  def filter(p: A => Boolean): Iterator[A] = new PredicatedIterator(p)
 
   /** Returns an iterator over the longest prefix of this iterator such that
    *  all elements of the result satisfy the predicate <code>p</code>.
@@ -312,7 +306,7 @@ trait Iterator[+A] {
    *  @param p the predicate used to filter the iterator.
    *  @return  the longest prefix of this iterator satisfying <code>p</code>.
    */
-  def takeWhile(p: A => Boolean): Iterator[A] = predicatedIterator(p, false)
+  def takeWhile(p: A => Boolean): Iterator[A] = new TakeWhileIterator(p)
 
   /** Skips longest sequence of elements of this iterator which satisfy given
    *  predicate <code>p</code>, and returns an iterator of the remaining elements.
@@ -502,18 +496,8 @@ trait Iterator[+A] {
 
   /** Returns a buffered iterator from this iterator.
    */
-  def buffered: BufferedIterator[A] = new BufferedIterator[A] {
-    private var hd: A = _
-    private var ahead: Boolean = false
-    def head: A = {
-      if (!ahead) {
-        hd = Iterator.this.next
-        ahead = true
-      }
-      hd
-    }
-    def next: A = if (ahead) { ahead = false; hd } else head
-    def hasNext: Boolean = ahead || Iterator.this.hasNext
+  def buffered: BufferedIterator[A] = new DefaultBufferedIterator[A] {
+    protected def fill = if (Iterator.this.hasNext) (Iterator.this.next) :: Nil else Nil
   }
 
   /** Returns a counted iterator from this iterator.
@@ -577,6 +561,26 @@ trait Iterator[+A] {
       i += 1
     }
   }
+  /** Fills the given array <code>xs</code> with the elements of
+   *  this sequence starting at position <code>start</code>.  Like <code>copyToArray</code>,
+   *  but designed to accomodate IO stream operations.
+   *
+   *  @param  xs    the array to fill.
+   *  @param  start the starting index.
+   *  @param  sz    the maximum number of elements to be read.
+   *  @pre          the array must be large enough to hold <code>sz</code> elements.
+   */
+  def readInto[B >: A](xs: Array[B], start : Int, sz : Int) : Unit = {
+    var i = start
+    while (hasNext && i - start < sz) {
+      xs(i) = next
+      i += 1
+    }
+  }
+  def readInto[B >: A](xs : Array[B], start : Int) : Unit = readInto(xs, start, xs.length - start)
+  def readInto[B >: A](xs : Array[B]) : Unit = readInto(xs, 0, xs.length)
+
+
 
   /** Copy all elements to a buffer
    *  @param   The buffer to which elements are copied
@@ -640,4 +644,5 @@ trait Iterator[+A] {
     }
     buf.append(end)
   }
+  override def toString = if (hasNext) "has" else "empty"
 }

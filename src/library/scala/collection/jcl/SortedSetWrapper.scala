@@ -20,11 +20,11 @@ package scala.collection.jcl;
  *  @author Sean McDirmid
  */
 trait SortedSetWrapper[A] extends SortedSet[A] with SetWrapper[A] {
-  protected def underlying : java.util.SortedSet;
+  def underlying : java.util.SortedSet;
   /** delegates to the comparator of the underlying Java sorted set */
   override def compare(a0 : A, a1 : A) = underlying.comparator.compare(a0, a1);
-  override def first = underlying.first.asInstanceOf[A];
-  override def last  = underlying.last .asInstanceOf[A];
+  override def firstKey = underlying.first.asInstanceOf[A];
+  override def lastKey  = underlying.last .asInstanceOf[A];
   override def rangeImpl(from : Option[A], until : Option[A]) : SortedSet[A] = new Range(from,until);
   protected class Range(from : Option[A], until : Option[A]) extends super.Range(from, until) with SortedSetWrapper[A] {
     val underlying = Tuple2(from,until) match {

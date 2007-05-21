@@ -10,6 +10,13 @@
 
 package scala.collection.jcl;
 
+object SortedSet {
+  trait Projection[A] extends Set.Projection[A] with SortedSet[A] {
+    override def projection = this
+    override def filter(p : A => Boolean) : Projection[A] = new Filter(p);
+  }
+}
+
 /** Analogous to a Java sorted set.
  *
  *  @author Sean McDirmid
@@ -18,7 +25,7 @@ trait SortedSet[A] extends scala.collection.SortedSet[A] with jcl.Set[A] with So
   final protected type SortedSelf = SortedSet[A];
   override def keySet = this;
   def compare(a0 : A, a1 : A) : Int;
-  override def first : A = {
+  override def firstKey : A = {
     val i = elements;
     if (i.hasNext) i.next;
     else throw new NoSuchElementException;
@@ -26,7 +33,7 @@ trait SortedSet[A] extends scala.collection.SortedSet[A] with jcl.Set[A] with So
   override def subsetOf(that : scala.collection.Set[A]) = super[SortedSet].subsetOf(that);
   override def hasAll(that : Iterable[A]) = super[Sorted].hasAll(that.elements);
 
-  override def last  : A = {
+  override def lastKey : A = {
     var last : A = null.asInstanceOf[A];
     val i = elements;
     while (i.hasNext) last = i.next;
@@ -34,23 +41,22 @@ trait SortedSet[A] extends scala.collection.SortedSet[A] with jcl.Set[A] with So
     else last;
   }
   override def rangeImpl(from : Option[A], until : Option[A]) : SortedSet[A] = new Range(from, until);
-  trait Projection extends super.Projection {
-    override def filter(p : A => Boolean) : SortedSet[A] = new Filter(p);
+  override def projection : SortedSet.Projection[A] = new SortedSet.Projection[A] {
+    override def compare(a0 : A, a1 : A) = SortedSet.this.compare(a0, a1)
+    override def add(a: A): Boolean = SortedSet.this.add(a)
+    override def elements = SortedSet.this.elements
+    override def size = SortedSet.this.size
+    override def has(a : A) : Boolean = SortedSet.this.has(a)
   }
-  override def projection : Projection = new Projection {}
 
-  protected class Filter(p : A => Boolean) extends super.Filter(p) with SortedSet[A] {
+  protected class Filter(p : A => Boolean) extends super.Filter(p) with SortedSet.Projection[A] {
     def compare(a0 : A, a1 : A) : Int = SortedSet.this.compare(a0, a1);
-    trait Projection extends super[Filter].Projection with super[SortedSet].Projection {
-      override def filter(p0 : A => Boolean) = SortedSet.this.projection.filter(k => p(k) && p0(k));
-    }
-    override def projection : Projection = new Projection {};
+    override def filter(p0 : A => Boolean) = SortedSet.this.projection.filter(k => p(k) && p0(k));
   }
-
   protected class Range(from : Option[A], until : Option[A]) extends Filter(key => {
     (from == None || (compare(from.get,key) <= 0)) &&
       (until == None || (compare(key,until.get) < 0));
-  }) with SortedSet[A] {
+  }) with SortedSet.Projection[A] {
     if (from == None && until == None) throw new IllegalArgumentException;
     if (from != None && until != None && !(SortedSet.this.compare(from.get, until.get) < 0))
       throw new IllegalArgumentException;

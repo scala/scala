@@ -14,22 +14,32 @@ package scala.collection.jcl;
  *
  *  @author Sean McDirmid
  */
-trait Buffer[A] extends MutableSeq[A] with Collection[A] with Ranged[Int,A] {
+trait Buffer[A] extends Ranged[Int,A] with MutableSeq[A] with Collection[A] {
   final protected type SortedSelf = Buffer[A];
 
-  trait MutableSeqProjection extends super[MutableSeq].Projection;
-  trait Projection extends MutableSeqProjection with super[Collection].Projection {
-    override def filter(p : A => Boolean) = super[MutableSeqProjection].filter(p);
+  override def projection : Buffer.Projection[A] = new Buffer.Projection[A] {
+    override def elements = Buffer.this.elements
+    override def length = Buffer.this.length
+    override def apply(idx : Int) = Buffer.this.apply(idx)
+    override def transform(f : A => A) = Buffer.this.transform(f)
   }
-  override def projection = new Projection {}
 
-  override def elements : BufferIterator[Int,A];
+  protected class DefaultBufferIterator extends DefaultSeqIterator with BufferIterator[Int,A] {
+    override def set(a : A) = {
+      if (index == 0) throw new NoSuchElementException
+      Buffer.this.set(index - 1, a)
+    }
+    override def add(a : A) = {
+      Buffer.this.add(index, a)
+    }
+  }
+  override def elements : BufferIterator[Int,A] = new DefaultBufferIterator
 
   /** The first index of a buffer is 0. */
-  override def first = 0;
+  override def firstKey = 0;
 
   /** The last index of a buffer is its size - 1. */
-  override def last = size - 1;
+  override def lastKey = size - 1;
 
   /** Indices are compared through subtraction. */
   final def compare(k0 : Int, k1 : Int) = k0 - k1;
@@ -120,7 +130,7 @@ trait Buffer[A] extends MutableSeq[A] with Collection[A] with Ranged[Int,A] {
         else until.get;
       } else super.length;
     }
-    def elements : BufferIterator[Int,A] = new RangeIterator;
+    override def elements : BufferIterator[Int,A] = new RangeIterator;
     class RangeIterator extends BufferIterator[Int,A] {
       val underlying = Buffer.this.elements;
       if (from != None) underlying.seek(from.get);
@@ -165,5 +175,10 @@ trait Buffer[A] extends MutableSeq[A] with Collection[A] with Ranged[Int,A] {
         else ret;
       }
     }
+  }
+}
+object Buffer {
+  trait Projection[A] extends MutableSeq.Projection[A] with Collection.Projection[A] with Buffer[A] {
+    override def projection = this
   }
 }

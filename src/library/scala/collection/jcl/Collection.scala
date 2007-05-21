@@ -12,6 +12,9 @@ package scala.collection.jcl;
 
 object Collection {
   val DEFAULT_FILTER : Any => Boolean = x => true;
+  trait Projection[A] extends Collection[A] with MutableIterable.Projection[A] {
+    override def projection = this
+  }
 }
 
 /** Analogous to a Java collection.
@@ -54,33 +57,11 @@ trait Collection[A] extends MutableIterable[A] {
    *  @param  f
    *  @return <code>true</code> if the collection is actually updated.
    */
-  def transform(f: A => A): Boolean;
-
-  trait Projection extends super.Projection {
-    override def filter(p : A => Boolean) : MutableIterable[A] = new Filter(p);
-  }
-  override def projection : Projection = new Projection {}
-
-
-  /** Base implementation of a filtered collection */
-  class Filter(p : A => Boolean) extends Collection[A] {
-    def transform(f : A => A) =
-      Collection.this.transform(a => if (p(a)) f(a) else a);
-    override def add(a : A) = {
-      if (!p(a)) throw new IllegalArgumentException;
-      Collection.this.add(a);
-    }
-    override def has(a : A) = if (!p(a)) false else Collection.this.has(a);
-    override def remove(a : A) = {
-      if (!p(a)) throw new IllegalArgumentException;
-      Collection.this.remove(a);
-    }
-    class Projection extends super.Projection {
-      override def filter(p0 : A => Boolean) : MutableIterable[A] =
-        Collection.this.projection.filter(a => p(a) && p0(a));
-    }
-    override def projection : Projection = new Projection;
-    def elements = Collection.this.elements.filter(p);
-    def size = size0;
+  def transform(f: A => A): Boolean
+  override def projection : Collection.Projection[A] = new Collection.Projection[A] {
+    override def elements = Collection.this.elements
+    override def size = Collection.this.size
+    override def add(a: A): Boolean = Collection.this.add(a)
+    override def transform(f : A => A) = Collection.this.transform(f);
   }
 }

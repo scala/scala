@@ -22,11 +22,11 @@ trait Map[K,E] extends MutableIterable[Tuple2[K,E]] with scala.collection.mutabl
   /** The values of this map as a projection, which means
       removals from the returned collection will remove the element from this map.
       @returns a projection of this map's elements.  */
-  def valueSet : MutableIterable[E] = projection.map(._2);
+  def valueSet : MutableIterable.Projection[E] = projection.map(._2);
   def put(key : K, elem : E) : Option[E];
   def putAll(that : Iterable[Tuple2[K,E]]) : Unit =
     that.foreach(p => put(p._1, p._2));
-  def remove(key : K) : Option[E] = {
+  def removeKey(key : K) : Option[E] = {
     val i = elements;
     while (!i.hasNext) {
       val result = i.next;
@@ -48,43 +48,48 @@ trait Map[K,E] extends MutableIterable[Tuple2[K,E]] with scala.collection.mutabl
   }
   override def +=(pair : Tuple2[K,E]) : Unit = put(pair._1, pair._2);
   override def -(key : K) : this.type = {
-    remove(key); this;
+    removeKey(key); this;
   }
-  override def -=(key : K) : Unit = remove(key);
+  override def remove(p : (K,E)) = get(p._1) match {
+  case Some(p._2) => this -= p._1; true
+  case _ => false;
+  }
+
+  override def -=(key : K) : Unit = removeKey(key);
   override def elements : MutableIterator[Tuple2[K,E]];
 
-  trait MutableIterableProjection extends super[MutableIterable].Projection;
-  trait Projection extends MutableIterableProjection with super[Map].Projection {
-    override def filterKeys(p : K => Boolean) : jcl.Map[K,E] = new Filter(p);
-    override def map[B](f : ((K,E)) => B) : MutableIterable[B] = super[MutableIterableProjection].map(f);
+  override def projection : Map.Projection[K,E] = new Map.Projection[K,E] {
+    override def elements = Map.this.elements
+    override def size = Map.this.size
+    override def get(k : K) = Map.this.get(k)
+    override def put(k : K, e : E) = Map.this.put(k, e)
   }
-  override def projection : Projection = new Projection {}
-
   /**
    */
-  def lense[F](f : E => F, g : F => E) : jcl.Map[K,F] = new Lense[F](f,g);
+  def lense[F](f : E => F, g : F => E) : jcl.Map.Projection[K,F] = new Lense[F](f,g);
 
-  protected class Lense[F](f : E => F, g : F => E) extends jcl.Map[K,F] {
+  protected class Lense[F](f : E => F, g : F => E) extends jcl.Map.Projection[K,F] {
     override def elements = Map.this.elements.map(k => Tuple2(k._1, f(k._2)));
-    override def remove(key : K) = Map.this.remove(key).map(f);
+    override def removeKey(key : K) = Map.this.removeKey(key).map(f);
     override def put(key : K, elem : F) = Map.this.put(key, g(elem)).map(f);
     override def get(key : K) = Map.this.get(key).map(f);
-
-    trait Projection extends super.Projection {
-      override def filterKeys(p : K => Boolean) : jcl.Map[K,F] =
-        Map.this.projection.filterKeys(p).lense(f, g);
-    }
-    override def projection = new Projection {}
-
-    override def lense[G](f0 : F => G, g0 : G => F) : jcl.Map[K,G] =
+    override def lense[G](f0 : F => G, g0 : G => F) : jcl.Map.Projection[K,G] =
       Map.this.lense[G](x => f0(f(x)), y => g(g0(y)));
     override def size = size0;
   }
-  protected class Filter(p : K => Boolean) extends jcl.Map[K,E] {
+  protected class KeySet extends Set[K] {
+    override def size = Map.this.size;
+    override def add(k : K) = Map.this.put(k, default(k)) == None;
+    override def elements = Map.this.elements.map(._1);
+    override def has(k : K) = Map.this.contains(k);
+  }
+  override def filterKeys(p : K => Boolean) : Map.Projection[K,E] = new Filter(p);
+
+  protected class Filter(p : K => Boolean) extends Map.Projection[K,E] {
     override def elements = Map.this.elements.filter(e => p(e._1));
-    override def remove(key : K) = {
+    override def removeKey(key : K) = {
       if (!p(key)) throw new IllegalArgumentException;
-      Map.this.remove(key);
+      Map.this.removeKey(key);
     }
     override def contains(key : K) = p(key) && Map.this.contains(key);
     override def put(key : K, elem : E) = {
@@ -95,17 +100,17 @@ trait Map[K,E] extends MutableIterable[Tuple2[K,E]] with scala.collection.mutabl
       if (!p(key)) None;
       else Map.this.get(key);
     }
-    class Projection extends super.Projection {
-      override def filterKeys(p0 : K => Boolean) : jcl.Map[K,E] =
-        Map.this.projection.filterKeys(e => p(e) && p0(e));
-    }
+    override def filterKeys(p0 : K => Boolean) : Map.Projection[K,E] =
+      Map.this.filterKeys(e => p(e) && p0(e));
+
     override def size = size0;
   }
-  protected class KeySet extends Set[K] {
-    override def size = Map.this.size;
-    override def add(k : K) = Map.this.put(k, default(k)) == None;
-    override def elements = Map.this.elements.map(._1);
-    override def has(k : K) = Map.this.contains(k);
-  }
+}
 
+object Map {
+  trait MutableIterableProjection[A] extends MutableIterable.Projection[A];
+  trait Projection[K,E] extends MutableIterableProjection[(K,E)] with scala.collection.Map.Projection[K,E] with Map[K,E] {
+    override def projection = this
+    override def map[B](f : ((K,E)) => B) : MutableIterable.Projection[B] = super[MutableIterableProjection].map(f);
+  }
 }

@@ -14,7 +14,8 @@ package scala.collection.jcl
  *
  *  @author Sean McDirmid
  */
-trait Set[A] extends Collection[A] with scala.collection.mutable.Set[A] {
+trait Set[A] extends scala.collection.mutable.Set[A] with Collection[A] {
+  final def contains(a : A) = has(a)
 
   /** Add will return false if "a" already exists in the set. **/
   override def add(a: A): Boolean
@@ -25,7 +26,6 @@ trait Set[A] extends Collection[A] with scala.collection.mutable.Set[A] {
   override def -(t: A) : this.type = super[Collection].-(t)
   override def retain(f: A => Boolean) = super[Collection].retain(f)
   override def isEmpty = super[Collection].isEmpty
-  override final def contains(a: A) = has(a)
   override def clear() = super.clear()
   override def subsetOf(set : scala.collection.Set[A]) = set match {
     case set : Set[_] => set.hasAll(this)
@@ -44,14 +44,26 @@ trait Set[A] extends Collection[A] with scala.collection.mutable.Set[A] {
     }
     addAll(toAdd)
   }
-  trait Projection extends super.Projection {
-    override def filter(p : A => Boolean) : Set[A] = new Filter(p);
-  }
-  override def projection : Projection = new Projection {}
-  class Filter(p : A => Boolean) extends super.Filter(p) with Set[A] {
+  class Filter(pp : A => Boolean) extends super.Filter with Set.Projection[A] {
+    override def p(a : A) = pp(a)
     override def retain(p0 : A => Boolean): Unit =
       Set.this.retain(e => !p(e) || p0(e))
-    trait Projection extends super[Filter].Projection with super[Set].Projection {}
-    override def projection : Projection = new Projection {}
+    override def add(a : A) = {
+      if (!p(a)) throw new IllegalArgumentException
+      else Set.this.add(a)
+    }
+  }
+  override def projection : Set.Projection[A] = new Set.Projection[A] {
+    override def add(a: A): Boolean = Set.this.add(a)
+    override def elements = Set.this.elements
+    override def size = Set.this.size
+    override def has(a : A) : Boolean = Set.this.has(a)
+  }
+}
+
+object Set {
+  trait Projection[A] extends Collection.Projection[A] with Set[A] {
+    override def filter(p : A => Boolean) : Projection[A] = new Filter(p);
+    override def projection = this
   }
 }

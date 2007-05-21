@@ -18,8 +18,7 @@ trait CollectionWrapper[A] extends Collection[A] with IterableWrapper[A] {
   /** Override to specify the collection being accessed through this wrapper.
    ** Collection operations are then routed through the wrapped Java collection.
    **/
-  protected def underlying : java.util.Collection;
-  private[jcl] final def underlying0 = underlying;
+  def underlying : java.util.Collection;
   override def has(a : A) = underlying.contains(a);
   override def elements : MutableIterator[A] = super.elements;
 

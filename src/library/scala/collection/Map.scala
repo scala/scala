@@ -13,6 +13,10 @@ package scala.collection
 
 import Predef._
 
+object Map {
+  trait Projection[A, +B] extends Iterable.Projection[(A,B)] with Map[A,B];
+}
+
 
 /** <p>
 *     A map is a collection that maps each key to one or zero values.
@@ -164,16 +168,27 @@ trait Map[A, +B] extends PartialFunction[A, B] with Collection[(A, B)] {
   def default(key: A): B =
     throw new NoSuchElementException("key not found: " + key)
 
-  trait Projection extends super.Projection {
-    /** filter based on keys only */
-    def filterKeys(p : A => Boolean) = filter(e => p(e._1))
-    /** map elements using existing key set */
-    def mapElements[C](f : B => C) : Map[A,C] = new Map[A,C] {
-      def elements = Map.this.elements.map(e => (e._1, f(e._2)))
-      def size = Map.this.size
-      override def contains(key : A) = Map.this.contains(key)
-      override def get(key : A) = Map.this.get(key).map(f)
-    }
+  override def projection : Map.Projection[A,B] = new Map.Projection[A,B] {
+    override def elements = Map.this.elements
+    override def size = Map.this.size
+    override def get(key : A) : Option[B] = Map.this.get(key)
   }
-  override def projection : Projection = new Projection {}
+  /** non-strict filter based on keys only */
+  def filterKeys(p : A => Boolean) : Map.Projection[A,B] = new Map.Projection[A,B] {
+    def elements = Map.this.elements.filter(x => p(x._1))
+    def size = {
+      var sz = 0
+      Map.this.foreach(x => if (p(x._1)) sz = sz + 1)
+      sz
+    }
+    override def contains(key : A) = Map.this.contains(key) && p(key)
+    override def get(key : A) = if (!p(key)) None else Map.this.get(key)
+  }
+  /** non-strict map elements using existing key set */
+  def mapElements[C](f : B => C) : Map.Projection[A,C] = new Map.Projection[A,C] {
+    def elements = Map.this.elements.map(e => (e._1, f(e._2)))
+    def size = Map.this.size
+    override def contains(key : A) = Map.this.contains(key)
+    override def get(key : A) = Map.this.get(key).map(f)
+  }
 }

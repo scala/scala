@@ -93,7 +93,7 @@ class Stack[+A] extends Seq[A] {
    *
    *  @return an iterator over all stack elements.
    */
-  def elements: Iterator[A] = new Iterator[A] {
+  override def elements: Iterator[A] = new Iterator[A] {
     var that: Stack[A] = Stack.this;
     def hasNext = !that.isEmpty;
     def next =

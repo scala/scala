@@ -18,10 +18,10 @@ trait Ranged[K, +A] extends Iterable[A] {
   //protected type SortedSelf <: Ranged[K,A];
 
   /** Returns the first key of the collection. */
-  def first: K
+  def firstKey: K
 
   /** Returns the last key of the collection. */
-  def last: K
+  def lastKey: K
 
   /** Comparison function that orders keys. */
   def compare(k0: K, k1: K): Int

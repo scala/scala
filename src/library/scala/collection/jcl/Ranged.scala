@@ -14,14 +14,8 @@ package scala.collection.jcl;
  *
  *  @author Sean McDirmid
  */
-trait Ranged[K,A] extends MutableIterable[A] with scala.collection.Ranged[K,A] {
+trait Ranged[K,A] extends scala.collection.Ranged[K,A] with MutableIterable[A] {
   protected type SortedSelf <: Ranged[K,A];
-
-  /** Returns the first key of the collection. */
-  def first: K;
-
-  /** Returns the last key of the collection. */
-  def last: K;
 
   /** Comparison function that orders keys. */
   def compare(k0: K, k1: K): Int;

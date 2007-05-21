@@ -102,7 +102,7 @@ class TreeSet[A <% Ordered[A]](val size: int, t: RedBlack[A]#Tree[Unit])
      val tree = this.tree.range(from,until)
      newSet(tree.count, tree)
    }
-   override def first = tree.first
-   override def last = tree.last
+   override def firstKey = tree.first
+   override def lastKey = tree.last
    override def compare(a0 : A, a1 : A) = a0.compare(a1)
 }

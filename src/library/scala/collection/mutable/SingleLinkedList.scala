@@ -48,7 +48,7 @@ abstract class SingleLinkedList[A, This >: Null <: SingleLinkedList[A, This]]
     else if (next eq null) None
     else next.get(n - 1)
 
-  def elements: Iterator[A] = new Iterator[A] {
+  override def elements: Iterator[A] = new Iterator[A] {
     var elems = SingleLinkedList.this
     def hasNext = (elems ne null)
     def next = {

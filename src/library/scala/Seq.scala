@@ -20,7 +20,7 @@ object Seq {
   val empty = new Seq[Nothing] {
     def length = 0
     def apply(i: Int): Nothing = throw new NoSuchElementException("empty sequence")
-    def elements = Iterator.empty
+    override def elements = Iterator.empty
   }
 
   /** This method is called in a pattern match { case Seq(...) => }.
@@ -37,7 +37,7 @@ object Seq {
    */
   def single[A](x: A) = new Seq[A] {
     def length = 1
-    def elements = Iterator.single(x)
+    override def elements = Iterator.single(x)
     override def isDefinedAt(x: Int): Boolean = (x == 0)
     def apply(i: Int) = x // caller's responsibility to check isDefinedAt
   }
@@ -59,6 +59,39 @@ object Seq {
       }
     }
 */
+  trait Projection[+A] extends Seq[A] with Iterable.Projection[A]  {
+    override def projection = this
+    override def map[B](f: A => B) : Projection[B] = new MapProjection(f)
+    protected class MapProjection[B](f : A => B) extends Projection[B] {
+      def length = Projection.this.length
+      def elements = Projection.this.elements.map(f)
+      def apply(idx : Int) = f(Projection.this.apply(idx))
+    }
+    override def flatMap[B](f: A => Iterable[B]): Projection[B] = new Projection[B] {
+      def elements = Projection.this.elements.flatMap(a => f(a).elements)
+      def length = {
+        var sz = 0
+        Projection.this.foreach(a => sz = sz + f(a).asInstanceOf[Collection[B]].size)
+        sz
+      }
+      def apply(idx : Int) : B = {
+        var jdx = 0
+        Projection.this.foreach(a => {
+          val i = f(a)
+          val length = i.asInstanceOf[Collection[B]].size
+          if (idx < jdx + length) {
+            val j = i.elements
+            while (jdx < idx) {
+              j.next; jdx += 1
+            }
+            return j.next
+          } else jdx += length
+        })
+        throw new IndexOutOfBoundsException
+      }
+    }
+    override def filter(p : A => Boolean) : Projection[A] = new Filter(p)
+  }
 }
 
 
@@ -76,6 +109,7 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Collection[A] {
    *  @return the sequence length.
    */
   def length: Int
+
   /** should always be <code>length</code> */
   def size = length
 
@@ -96,10 +130,17 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Collection[A] {
     buf
   }
 
-  /** Appends two iterable objects.
+  /** Returns the last element of this list.
    *
-   *  @param  that ..
-   *  @return      the new iterable object
+   *  @return the last element of the list.
+   *  @throws Predef.UnsupportedOperationException if the list is empty.
+   */
+  def last: A = length match {
+  case 0 => throw new Predef.NoSuchElementException
+  case n => this(n - 1)
+  }
+
+  /** Appends two iterable objects.
    */
   override def ++ [B >: A](that: Iterable[B]): Seq[B] = {
     val buf = new ArrayBuffer[B]
@@ -229,10 +270,6 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Collection[A] {
 
   /** Returns a subsequence starting from index <code>from</code>
    *  consisting of <code>len</code> elements.
-   *
-   *  @param from ..
-   *  @param len  ..
-   *  @return     ..
    */
   def slice(from: Int, len: Int): Seq[A] = this.drop(from).take(len)
 
@@ -252,7 +289,33 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Collection[A] {
     copyToArray(result, 0)
     result
   }
+  override def projection : Seq.Projection[A] = new Seq.Projection[A] {
+    def elements = Seq.this.elements
+    def length = Seq.this.length
+    def apply(idx : Int) = (Seq.this.apply(idx))
+  }
 
+  class Filter(p : A => Boolean) extends Seq.Projection[A] {
+    override def elements = Seq.this.elements.filter(p)
+    override def apply(idx : Int) : A = {
+      var jdx = 0
+      val i = Seq.this.elements
+      while (true) {
+        val a = i.next
+        if (p(a)) {
+          if (jdx == idx) return a
+          else jdx = jdx + 1
+        }
+      }
+      throw new Predef.Error
+    }
+    override def length = {
+      var sz = 0
+      val i = Seq.this.elements
+      while (i.hasNext) if (p(i.next)) sz = sz + 1
+      sz
+    }
+  }
 
 }
 

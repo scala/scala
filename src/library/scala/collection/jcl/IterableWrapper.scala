@@ -15,7 +15,7 @@ package scala.collection.jcl;
  *  @author Sean McDirmid
  */
 trait IterableWrapper[A] extends MutableIterable[A] {
-  protected def underlying: java.util.Collection;
+  def underlying: java.util.Collection;
   override def remove(a: A) = underlying.remove(a);
   override def removeAll(that: Iterable[A]) = that match {
     case that: IterableWrapper[_] => underlying.removeAll(that.underlying);

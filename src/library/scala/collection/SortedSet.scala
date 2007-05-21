@@ -18,13 +18,13 @@ trait SortedSet[A] extends Set[A] with Sorted[A, A] {
 
   override def keySet = this
 
-  override def first: A = {
+  override def firstKey: A = {
     val i = elements
     if (i.hasNext) i.next
     else throw new NoSuchElementException
   }
 
-  override def last: A = {
+  override def lastKey: A = {
     var last: A = null.asInstanceOf[A]
     val i = elements
     while (i.hasNext) last = i.next;

@@ -23,8 +23,8 @@ package scala.collection.mutable
  */
 trait MutableList[A] extends Seq[A] with PartialFunction[Int, A] {
 
-  protected var first: LinkedList[A] = null
-  protected var last: LinkedList[A] = null
+  protected var first0: LinkedList[A] = null
+  protected var last0: LinkedList[A] = null
   protected var len: Int = 0
 
   /** Returns the length of this list.
@@ -42,12 +42,12 @@ trait MutableList[A] extends Seq[A] with PartialFunction[Int, A] {
   /** Returns the <code>n</code>th element of this list or <code>None</code>
    *  if this element does not exist.
    */
-  def get(n: Int): Option[A] = first.get(n)
+  def get(n: Int): Option[A] = first0.get(n)
 
   protected def prependElem(elem: A): Unit = {
-    first = new LinkedList[A](elem, first)
+    first0 = new LinkedList[A](elem, first0)
     if (len == 0)
-      last = first
+      last0 = first0
     len = len + 1
   }
 
@@ -55,26 +55,28 @@ trait MutableList[A] extends Seq[A] with PartialFunction[Int, A] {
     if (len == 0)
       prependElem(elem)
     else {
-      last.next = new LinkedList[A](elem, null)
-      last = last.next
+      last0.next = new LinkedList[A](elem, null)
+      last0 = last0.next
       len = len + 1
     }
 
   protected def reset() {
-    first = null
-    last = null
+    first0 = null
+    last0 = null
     len = 0
   }
 
   /** Returns an iterator over all elements of this list.
    */
-  def elements: Iterator[A] =
-    if (first eq null) Nil.elements else first.elements
+  override def elements: Iterator[A] =
+    if (first0 eq null) Nil.elements else first0.elements
+
+  override def last = last0.elem
 
   /** Returns an instance of <code>scala.List</code> containing the same
    *  sequence of elements.
    */
-  override def toList: List[A] = if (first eq null) Nil else first.toList
+  override def toList: List[A] = if (first0 eq null) Nil else first0.toList
 
   override protected def stringPrefix: String = "MutableList"
 }

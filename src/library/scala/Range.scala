@@ -28,21 +28,37 @@ import Predef._
  */
 class Range(val start: Int, val end: Int, val step: Int) extends BufferedIterator[Int] {
   assert(step != 0)
+  assert(if (step > 0) end >= start else end <= start)
   private var i = start
 
-  def hasNext: Boolean = if (step > 0) i < end else i > end
+  override def hasNext: Boolean = if (step > 0) i < end else i > end
 
-  def next(): Int =
+  def next: Int =
     if (hasNext) { val j = i; i += step; j }
     else throw new NoSuchElementException("next on empty iterator")
 
-  def head: Int =
-    if (hasNext) i
-    else throw new NoSuchElementException("head on empty iterator")
+  def peekList(sz : Int) = new RandomAccessSeq[Int] {
+    def length = Math.min(sz, length0(i));
+    def apply(idx : Int) = {
+      if (idx >= length) throw new IndexOutOfBoundsException
+      i + (idx * step)
+    }
+  }
+  protected override def defaultPeek : Int = throw new NoSuchElementException
 
-  def length: Int =
-    1 + (Math.abs(start - end) - 1) / Math.abs(step)
+  private def length0(i : Int) = {
+    if (step > 0) length1(i, end, step)
+    else length1(end, i, -step)
+  }
+  private def length1(start : Int, end : Int, step : Int) = {
+    assert(start <= end && step > 0)
+    val n = (end - start) / step
+    val m = (end - start) % step
+    n + (if (m == 0) 0 else 1)
+  }
+  def length: Int = length0(start)
 
   def contains(x: Int): Boolean =
     Iterator.range(0, length) exists (i => x == start + i * step)
+
 }

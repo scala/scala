@@ -18,11 +18,15 @@ package scala.collection.mutable
  *  @author  Matthias Zenger, Burak Emir
  *  @version 1.0, 03/05/2004
  */
-trait ResizableArray[A] extends Seq[A] {
+trait ResizableArray[A] extends RandomAccessSeq[A] {
 
   protected val initialSize: Int = 16
   protected var array: Array[A] = new Array[A](initialSize)
-  protected var size0: Int = 0
+  private var size1 : Int = 0
+  protected def size0 : Int = size1
+  protected def size0_=(sz : Int) = {
+    size1 = sz
+  }
 
   //##########################################################################
   // implement/override methods of Seq[A]
@@ -32,6 +36,13 @@ trait ResizableArray[A] extends Seq[A] {
   def length: Int = size0
 
   def apply(i: Int) = array(i)
+
+  /** remove elements of this array at indices after <code>sz</code>
+   */
+  def reduceToSize(sz : Int) = {
+    if (sz > size0) throw new IllegalArgumentException
+    size0 = sz
+  }
 
   /** Fills the given array <code>xs</code> with the elements of
    *  this sequence starting at position <code>start</code>.
@@ -50,7 +61,7 @@ trait ResizableArray[A] extends Seq[A] {
 
   /** Returns a new iterator over all elements of this resizable array.
    */
-  def elements: Iterator[A] = new Iterator[A] {
+  override def elements: Iterator[A] = new Iterator[A] {
     var i = 0
     def hasNext: Boolean = i < size0
     def next(): A = { i = i + 1; array(i - 1) }

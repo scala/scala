@@ -187,7 +187,7 @@ object Array {
  *  @author Martin Odersky
  *  @version 1.0
  */
-final class Array[A](_length: Int) extends Seq[A] {
+final class Array[A](_length: Int) extends RandomAccessSeq[A] {
 
   /** The length of the array */
   def length: Int = throw new Error()
@@ -229,7 +229,7 @@ final class Array[A](_length: Int) extends Seq[A] {
 
   /** An iterator returning the elements of this array, starting from 0.
    */
-  def elements: Iterator[A] = throw new Error()
+  override def elements: Iterator[A] = throw new Error()
 
   /** @deprecated  use slice instead */
   def subArray(from: Int, end: Int): Array[A] = throw new Error()

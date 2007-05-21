@@ -198,7 +198,7 @@ trait Stream[+a] extends Seq[a] {
 
   /** An iterator returning the elements of this stream one by one.
    */
-  def elements: Iterator[a] = new Iterator[a] {
+  override def elements: Iterator[a] = new Iterator[a] {
     var current = Stream.this
     def hasNext: Boolean = !current.isEmpty
     def next: a = { val result = current.head; current = current.tail; result }
@@ -217,7 +217,7 @@ trait Stream[+a] extends Seq[a] {
    *  @return the last element of the stream.
    *  @throws Predef.NoSuchElementException if the stream is empty.
    */
-  def last: a =
+  override def last: a =
     if (isEmpty) throw new NoSuchElementException("Stream.empty.last")
     else {
       def loop(s: Stream[a]): a = {

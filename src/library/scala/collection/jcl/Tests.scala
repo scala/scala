@@ -33,7 +33,7 @@ private[jcl] object Tests {
     Console.println(fset);
     fset += "cd";
     Console.println(set);
-    set.projection.map(.length).retain(x => x == 3);
+    //set.projection.map(.length).retain(x => x == 3);
     Console.println(set);
     Console.println(rset);
     Console.println(fset);
@@ -66,9 +66,9 @@ private[jcl] object Tests {
       case e : IllegalArgumentException =>
       case _ => throw new Error;
     }
-    val mset : MutableIterable[Int] = set.projection.map(s => s.length);
-    Console.println(mset);
-    mset.retain(n => n < 5);
+    //val mset : MutableIterable[Int] = set // set.projection.map(s => s.length);
+    //Console.println(mset);
+    //mset.retain(n => n < 5);
     Console.println(set);
     val set1 = new HashSet[String] + "1" + "2" + "3";
     set ++ (set1);

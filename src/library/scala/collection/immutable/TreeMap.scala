@@ -50,8 +50,8 @@ extends RedBlack[A] with SortedMap[A, B] {
     val ntree = tree.range(from,until)
     new TreeMap[A,B](ntree.count, ntree)
   }
-  override def first = t.first
-  override def last = t.last
+  override def firstKey = t.first
+  override def lastKey = t.last
   override def compare(k0: A, k1: A): Int = k0.compare(k1)
 
 

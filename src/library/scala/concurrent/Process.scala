@@ -55,6 +55,7 @@ object Process {
 
 }
 
+@deprecated
 class Process(body: => Unit) extends Actor() {
   private var exitReason: AnyRef = null
   private var links: List[Process] = Nil

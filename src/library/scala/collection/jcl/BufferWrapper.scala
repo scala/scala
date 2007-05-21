@@ -15,13 +15,13 @@ package scala.collection.jcl;
  *  @author Sean McDirmid
  */
 trait BufferWrapper[A] extends Buffer[A] with CollectionWrapper[A] {
-  protected def underlying : java.util.List;
+  def underlying : java.util.List;
   override def elements : BufferIterator[Int,A] = new IteratorWrapper(underlying.listIterator);
   override def remove(idx : Int) = underlying.remove(idx).asInstanceOf[A];
   override def add(a : A) = underlying.add(a);
   override def add(idx : Int, a : A) = underlying.add(idx,a);
   override def addAll(idx : Int, that : Iterable[A]) = that match {
-  case that : CollectionWrapper[_] => underlying.addAll(idx, that.underlying0); {}
+  case that : CollectionWrapper[_] => underlying.addAll(idx, that.underlying); {}
   case _ => super.addAll(idx, that);
   }
   override def indexOf(a : A) = {

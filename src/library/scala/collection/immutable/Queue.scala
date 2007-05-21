@@ -55,7 +55,7 @@ class Queue[+A](elem: A*) extends Seq[A] {
 
   /** Returns the elements in the list as an iterator
    */
-  def elements: Iterator[A] = (out ::: in.reverse).elements
+  override def elements: Iterator[A] = (out ::: in.reverse).elements
 
   /** Checks if the queue is empty.
    *

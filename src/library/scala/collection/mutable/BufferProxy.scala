@@ -26,7 +26,7 @@ trait BufferProxy[A] extends Buffer[A] with Proxy {
 
   def length: Int = self.length
 
-  def elements: Iterator[A] = self.elements
+  override def elements: Iterator[A] = self.elements
 
   def apply(n: Int): A = self.apply(n)
 

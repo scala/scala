@@ -15,8 +15,8 @@ package scala.collection;
  *  @author Sean McDirmid
  */
 trait SortedMap[K,+E] extends Map[K,E] with Sorted[K,Tuple2[K,E]] {
-  override def first : K = elements.next._1;
-  override def last : K = {
+  override def firstKey : K = elements.next._1;
+  override def lastKey : K = {
     val i = elements;
     var last : K = i.next._1;
     while (i.hasNext) last = i.next._1;

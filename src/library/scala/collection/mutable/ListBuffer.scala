@@ -22,7 +22,7 @@ import Predef._
 @serializable
 final class ListBuffer[A] extends Buffer[A] {
   private var start: List[A] = Nil
-  private var last: ::[A] = _
+  private var last0: ::[A] = _
   private var exported: boolean = false
 
   /** Prepends a single element to this buffer.
@@ -33,7 +33,7 @@ final class ListBuffer[A] extends Buffer[A] {
   def +: (x: A): Buffer[A] = {
     if (exported) copy()
     val newElem = new scala.:: (x, start)
-    if (start.isEmpty) last = newElem
+    if (start.isEmpty) last0 = newElem
     start = newElem
     this
   }
@@ -45,12 +45,12 @@ final class ListBuffer[A] extends Buffer[A] {
   override def += (x: A): unit = {
     if (exported) copy()
     if (start.isEmpty) {
-      last = new scala.:: (x, Nil)
-      start = last
+      last0 = new scala.:: (x, Nil)
+      start = last0
     } else {
-      val last1 = last
-      last = new scala.:: (x, Nil)
-      last1.tl = last
+      val last1 = last0
+      last0 = new scala.:: (x, Nil)
+      last1.tl = last0
     }
   }
 
@@ -75,8 +75,8 @@ final class ListBuffer[A] extends Buffer[A] {
       while (!cursor.tail.isEmpty && cursor.tail.head != x) { cursor = cursor.tail }
       if (!cursor.tail.isEmpty) {
         val z = cursor.asInstanceOf[scala.::[A]]
-        if(z.tl == last)
-          last = z
+        if(z.tl == last0)
+          last0 = z
         z.tl = cursor.tail.tail
       }
     }
@@ -95,7 +95,7 @@ final class ListBuffer[A] extends Buffer[A] {
    */
   def prependToList(xs: List[A]): List[A] =
     if (start.isEmpty) xs
-    else { last.tl = xs; toList }
+    else { last0.tl = xs; toList }
 
   /** Clears the buffer contents.
    */
@@ -107,7 +107,7 @@ final class ListBuffer[A] extends Buffer[A] {
   /** Copy contents of this buffer */
   private def copy() = {
     var cursor = start
-    val limit = last.tail
+    val limit = last0.tail
     clear
     while (cursor ne limit) {
       this += cursor.head
@@ -146,7 +146,7 @@ final class ListBuffer[A] extends Buffer[A] {
     if (exported) copy()
     if (n == 0) {
       val newElem = new scala.:: (x, start.tail);
-      if (last eq start) last = newElem
+      if (last0 eq start) last0 = newElem
       start = newElem
     } else {
       var cursor = start;
@@ -156,7 +156,7 @@ final class ListBuffer[A] extends Buffer[A] {
         i = i + 1
       }
       val newElem = new scala.:: (x, cursor.tail.tail)
-      if (last eq cursor.tail) last = newElem
+      if (last0 eq cursor.tail) last0 = newElem
       cursor.asInstanceOf[scala.::[A]].tl = newElem
     }
   } catch {
@@ -177,7 +177,7 @@ final class ListBuffer[A] extends Buffer[A] {
     if (n == 0) {
       while (!elems.isEmpty) {
         val newElem = new scala.:: (elems.head, start)
-        if (start.isEmpty) last = newElem
+        if (start.isEmpty) last0 = newElem
         start = newElem
         elems = elems.tail
       }
@@ -190,7 +190,7 @@ final class ListBuffer[A] extends Buffer[A] {
       }
       while (!elems.isEmpty) {
         val newElem = new scala.:: (elems.head, cursor.tail)
-        if (cursor.tail.isEmpty) last = newElem
+        if (cursor.tail.isEmpty) last0 = newElem
         cursor.asInstanceOf[scala.::[A]].tl = newElem
         elems = elems.tail
       }
@@ -221,7 +221,7 @@ final class ListBuffer[A] extends Buffer[A] {
         i = i + 1
       }
       old = cursor.tail.head
-      if (last eq cursor.tail) last = cursor.asInstanceOf[scala.::[A]]
+      if (last0 eq cursor.tail) last0 = cursor.asInstanceOf[scala.::[A]]
       cursor.asInstanceOf[scala.::[A]].tl = cursor.tail.tail
     }
     old
@@ -244,7 +244,7 @@ final class ListBuffer[A] extends Buffer[A] {
    */
   override def elements = new Iterator[A] {
     var cursor: List[A] = null
-    def hasNext: Boolean = !start.isEmpty && cursor != last
+    def hasNext: Boolean = !start.isEmpty && cursor != last0
     def next(): A =
       if (!hasNext) {
         throw new NoSuchElementException("next on empty Iterator")

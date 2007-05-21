@@ -479,7 +479,7 @@ sealed abstract class List[+a] extends Seq[a] {
    *
    *  @return an iterator on the list elements.
    */
-  def elements: Iterator[a] = new Iterator[a] {
+  override def elements: Iterator[a] = new Iterator[a] {
     var these = List.this
     def hasNext: Boolean = !these.isEmpty
     def next: a =
@@ -521,7 +521,7 @@ sealed abstract class List[+a] extends Seq[a] {
    *  @return the last element of the list.
    *  @throws Predef.UnsupportedOperationException if the list is empty.
    */
-  def last: a =
+  override def last: a =
     if (isEmpty) throw new Predef.NoSuchElementException("Nil.last")
     else if (tail.isEmpty) head
     else tail.last

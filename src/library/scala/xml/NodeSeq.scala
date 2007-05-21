@@ -35,7 +35,7 @@ abstract class NodeSeq extends Seq[Node] {
   import NodeSeq.view // import view magic for NodeSeq wrappers
   def theSeq: Seq[Node]
   def length = theSeq.length
-  def elements = theSeq.elements
+  override def elements = theSeq.elements
   def apply(i: Int): Node = theSeq.apply(i)
 
   def apply(f: Node => Boolean): NodeSeq = filter(f)
