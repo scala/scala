@@ -54,6 +54,6 @@ trait RandomAccessSeq[+A] extends Seq[A] {
     def length = RandomAccessSeq.this.length + that.length
     def apply(idx : Int) =
       if (idx < RandomAccessSeq.this.length) RandomAccessSeq.this(idx)
-      else that(idx)
+      else that(idx - RandomAccessSeq.this.length)
   }
 }
