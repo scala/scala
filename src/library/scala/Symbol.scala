@@ -13,7 +13,7 @@ package scala
 
 import scala.collection.jcl
 
-private[scala] object internedSymbols extends jcl.HashMap[String, ref.WeakReference[Symbol]]
+private[scala] object internedSymbols extends jcl.WeakHashMap[Symbol, ref.WeakReference[Symbol]]
 
 /** <p>
  *    Instances of <code>Symbol</code> can be created easily with
@@ -47,10 +47,10 @@ final case class Symbol(name: String) {
    *
    *  @return the unique reference to this symbol.
    */
-  def intern: Symbol = synchronized {
-    internedSymbols.get(name).map(.get).getOrElse(None) match {
+  def intern: Symbol = internedSymbols.synchronized {
+    internedSymbols.get(this).map(.get).getOrElse(None) match {
     case Some(sym) => sym
     case _ =>
-      internedSymbols(name) = new ref.WeakReference(this); this
+      internedSymbols(this) = new ref.WeakReference(this); this
   } }
 }
