@@ -15,7 +15,7 @@ import java.io.{InputStream, Reader, InputStreamReader, BufferedReader}
 import java.io.{OutputStream, PrintStream}
 import java.text.MessageFormat
 
-import scala.util.Fluid
+import scala.util.DynamicVariable
 import Predef._
 
 
@@ -57,12 +57,12 @@ object Console {
   final val REVERSED   = "\033[7m"
   final val INVISIBLE  = "\033[8m"
 
-  private val outFluid = new Fluid[PrintStream](java.lang.System.out)
-  private val inFluid = new Fluid[BufferedReader](
+  private val outVar = new DynamicVariable[PrintStream](java.lang.System.out)
+  private val inVar = new DynamicVariable[BufferedReader](
     new BufferedReader(new InputStreamReader(java.lang.System.in)))
 
-  def out = outFluid.value
-  def in = inFluid.value
+  def out = outVar.value
+  def in = inVar.value
 
   val err = java.lang.System.err
 
@@ -70,7 +70,7 @@ object Console {
    *
    *  @param out the new output stream.
    */
-  def setOut(out: PrintStream): Unit = outFluid.value = out
+  def setOut(out: PrintStream): Unit = outVar.value = out
 
   /** Set the default output stream for the duration
    *  of execution of one thunk.
@@ -81,7 +81,7 @@ object Console {
    *  @return ...
    */
   def withOut[T](out: PrintStream)(thunk: =>T): T =
-    outFluid.withValue(out)(thunk)
+    outVar.withValue(out)(thunk)
 
   /** Set the default output stream.
    *
@@ -107,7 +107,7 @@ object Console {
    *  @param reader specifies the new input stream.
    */
   def setIn(reader: Reader): Unit = {
-    inFluid.value = new BufferedReader(reader)
+    inVar.value = new BufferedReader(reader)
   }
 
   /** Set the default input stream for the duration
@@ -118,7 +118,7 @@ object Console {
    *               the new input stream active
    */
     def withIn[T](reader: Reader)(thunk: =>T): T =
-      inFluid.withValue(new BufferedReader(reader))(thunk)
+      inVar.withValue(new BufferedReader(reader))(thunk)
 
 
   /** Set the default input stream.
