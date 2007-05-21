@@ -377,9 +377,13 @@ abstract class RefChecks extends InfoTransform {
         var state = CoVariance
         while (sym != clazz && state != AnyVariance) {
           //Console.println("flip: " + sym + " " + sym.isParameter());//DEBUG
-          if ((sym hasFlag PARAM) && !sym.owner.isConstructor) state = -state;
-          else if (!sym.owner.isClass || sym.isPrivateLocal) state = AnyVariance;
-          else if (sym.isAliasType) state = NoVariance;
+          if ((sym hasFlag PARAM) && !sym.owner.isConstructor &&
+              !(tvar.isTypeParameterOrSkolem && sym.isTypeParameterOrSkolem &&
+                tvar.owner == sym.owner)) state = -state;
+          else if (!sym.owner.isClass || sym.isPrivateLocal || sym.isProtectedLocal)
+            state = AnyVariance
+          else if (sym.isAliasType)
+            state = NoVariance
           sym = sym.owner
         }
         state

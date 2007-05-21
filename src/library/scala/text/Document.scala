@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -36,14 +36,14 @@ abstract class Document {
   def :/:(hd: String): Document = hd :: DocBreak :: this
 
   /**
-   * Format this document on WRITER and try to set line breaks so that
-   * the result fits in WIDTH columns.
+   * Format this document on <code>writer</code> and try to set line
+   * breaks so that the result fits in <code>width</code> columns.
    *
    * @param width  ...
    * @param writer ...
    */
-  def format(width: Int, writer: Writer): Unit = {
-    type FmtState = (Int,Boolean,Document)
+  def format(width: Int, writer: Writer) {
+    type FmtState = (Int, Boolean, Document)
 
     def fits(w: Int, state: List[FmtState]): boolean = state match {
       case _ if w < 0 =>
@@ -66,12 +66,12 @@ abstract class Document {
         fits(w, (i, false, d) :: z)
     }
 
-    def spaces(n: Int): Unit = {
+    def spaces(n: Int) {
       var rem = n
-      while (rem >= 16) { writer write "                "; rem = rem - 16 }
-      if (rem >= 8)     { writer write "        "; rem = rem - 8 }
-      if (rem >= 4)     { writer write "    "; rem = rem - 4 }
-      if (rem >= 2)     { writer write "  "; rem = rem - 2}
+      while (rem >= 16) { writer write "                "; rem -= 16 }
+      if (rem >= 8)     { writer write "        "; rem -= 8 }
+      if (rem >= 4)     { writer write "    "; rem -= 4 }
+      if (rem >= 2)     { writer write "  "; rem -= 2}
       if (rem == 1)     { writer write " " }
     }
 

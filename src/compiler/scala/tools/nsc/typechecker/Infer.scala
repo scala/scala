@@ -1217,6 +1217,8 @@ trait Infer {
         try {
           infer
         } catch {
+          case ex: CyclicReference =>
+            throw ex
           case ex: TypeError =>
             context.reportGeneralErrors = reportGeneralErrors
             context.implicitsEnabled = true

@@ -36,8 +36,8 @@ public class Comparator {
      *  ICode phase, method <code>genEqEqPrimitive</code>) only when either
      *  side of the comparison is a subclass of <code>AnyVal</code>, of
      *  <code>java.lang.Number</code>, of <code>java.lang.Character</code> or
-     *  is exactly <code>Any</code> or <code>AnyRef</code>.
-     */
+     *  is exactly <code>Any</code> or <code>AnyRef</code>, but when both sides
+     *  have different types. */
     public static boolean equals(Object a, Object b) {
         if (a == null)
             return b == null;

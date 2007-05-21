@@ -78,7 +78,12 @@ trait Trees {
     var tpe: Type = _
 
     def setPos(pos: Position): this.type = { rawpos = pos; this }
-    def setType(tp: Type): this.type = { /*assert(kindingIrrelevant(tp) || !kindStar || !tp.isHigherKinded, ""+tp+" should not be higher-kinded");*/ tpe = tp; this }
+    def setType(tp: Type): this.type = {
+      /*assert(kindingIrrelevant(tp) || !kindStar || !tp.isHigherKinded,
+               tp+" should not be higher-kinded");*/
+      tpe = tp
+      this
+    }
 
     def symbol: Symbol = null
     def symbol_=(sym: Symbol): unit =

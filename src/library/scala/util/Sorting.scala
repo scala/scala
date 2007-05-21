@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2006-2007, Ross Judson           **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -99,9 +99,9 @@ object Sorting {
       var i = 0
       while (i < n) {
         swap(a, b)
-        i = i + 1
-        a = a + 1
-        b = b + 1
+        i += 1
+        a += 1
+        b += 1
       }
     }
     def med3(a: Int, b: Int, c: Int) = {
@@ -118,9 +118,9 @@ object Sorting {
         var j = i
         while (j > off && x(j-1) > x(j)) {
           swap(j, j-1)
-          j = j - 1
+          j -= 1
         }
-        i = i + 1
+        i += 1
       }
     } else {
       // Choose a partition element, v
@@ -142,29 +142,29 @@ object Sorting {
       var a = off
       var b = a
       var c = off + len - 1
-      var d = c;
+      var d = c
       var done = false
       while(!done) {
         while (b <= c && x(b) <= v) {
           if (x(b) == v) {
             swap(a, b)
-            a = a + 1
+            a += 1
           }
-          b = b + 1
+          b += 1
         }
         while (c >= b && x(c) >= v) {
           if (x(c) == v) {
             swap(c, d)
-            d = d - 1
+            d -= 1
           }
-          c = c - 1
+          c -= 1
         }
         if (b > c) {
           done = true
         } else {
           swap(b, c)
-          c = c - 1
-          b = b + 1
+          c -= 1
+          b += 1
         }
       }
 
@@ -196,10 +196,10 @@ object Sorting {
       var b = _b
       var i = 0
       while (i < n) {
-        swap(a,b)
-        i = i + 1
-        a = a + 1
-        b = b + 1
+        swap(a, b)
+        i += 1
+        a += 1
+        b += 1
       }
     }
     def med3(a: Int, b: Int, c: Int) = {
@@ -216,9 +216,9 @@ object Sorting {
         var j = i
         while (j > off && x(j-1) > x(j)) {
           swap(j, j-1)
-          j = j - 1
+          j -= 1
         }
-        i = i + 1
+        i += 1
       }
     } else {
       // Choose a partition element, v
@@ -246,28 +246,28 @@ object Sorting {
         while (b <= c && x(b) <= v) {
           if (x(b) == v) {
             swap(a, b)
-            a = a + 1
+            a += 1
           }
-          b = b + 1
+          b += 1
         }
         while (c >= b && x(c) >= v) {
           if (x(c) == v) {
             swap(c, d)
-            d = d - 1
+            d -= 1
           }
-          c = c - 1
+          c -= 1
         }
         if (b > c) {
           done = true
         } else {
           swap(b, c)
-          c = c - 1
-          b = b + 1
+          c -= 1
+          b += 1
         }
       }
 
       // Swap partition elements back to middle
-      val n = off + len;
+      val n = off + len
       var s = Math.min(a-off, b-a)
       vecswap(off, b-s, s)
       s = Math.min(d-c, n-d-1)
@@ -295,9 +295,9 @@ object Sorting {
       var i = 0
       while (i < n) {
         swap(a, b)
-        i = i + 1
-        a = a + 1
-        b = b + 1
+        i += 1
+        a += 1
+        b += 1
       }
     }
     def med3(a: Int, b: Int, c: Int) =
@@ -313,10 +313,10 @@ object Sorting {
       while (i < len + off) {
         var j = i
         while (j>off && x(j-1)>x(j)) {
-          swap(j,j-1)
-          j = j - 1
+          swap(j, j-1)
+          j -= 1
         }
-        i = i + 1
+        i += 1
       }
     } else {
       // Choose a partition element, v
@@ -344,23 +344,23 @@ object Sorting {
         while (b <= c && x(b) <= v) {
           if (x(b) == v) {
             swap(a, b)
-            a = a + 1
+            a += 1
           }
-          b = b + 1
+          b += 1
         }
         while (c >= b && x(c) >= v) {
           if (x(c) == v) {
             swap(c, d)
-            d = d - 1
+            d -= 1
           }
-          c = c - 1
+          c -= 1
         }
         if (b > c) {
           done = true
         } else {
           swap(b, c)
-          c = c - 1
-          b = b + 1
+          c -= 1
+          b += 1
         }
       }
 
@@ -392,10 +392,10 @@ object Sorting {
       var b = _b
       var i = 0
       while (i < n) {
-        swap(a,b)
-        i = i + 1
-        a = a + 1
-        b = b + 1
+        swap(a, b)
+        i += 1
+        a += 1
+        b += 1
       }
     }
     def med3(a: Int, b: Int, c: Int) =
@@ -412,9 +412,9 @@ object Sorting {
         var j = i
         while (j > off && x(j-1) > x(j)) {
           swap(j, j-1)
-          j = j - 1
+          j -= 1
         }
-        i = i + 1
+        i += 1
       }
     } else {
       // Choose a partition element, v
@@ -442,23 +442,23 @@ object Sorting {
         while (b <= c && x(b) <= v) {
           if (x(b) == v) {
             swap(a, b)
-            a = a + 1
+            a += 1
           }
-          b = b + 1
+          b += 1
         }
         while (c >= b && x(c) >= v) {
           if (x(c) == v) {
             swap(c, d)
-            d = d - 1
+            d -= 1
           }
-          c = c - 1
+          c -= 1
         }
         if (b > c) {
           done = true
         } else {
           swap(b, c)
-          c = c - 1
-          b = b + 1
+          c -= 1
+          b += 1
         }
       }
 
@@ -489,17 +489,17 @@ object Sorting {
       while (k <= hi) {
         if ((t_lo <= mid) && ((t_hi > hi) || (f(a(t_lo), a(t_hi))))) {
           scratch(k) = a(t_lo)
-          t_lo = t_lo + 1
+          t_lo += 1
         } else {
           scratch(k) = a(t_hi)
-          t_hi = t_hi + 1
+          t_hi += 1
         }
-        k = k + 1
+        k += 1
       }
       k = lo
       while (k <= hi) {
         a(k) = scratch(k)
-        k = k + 1
+        k += 1
       }
     }
   }

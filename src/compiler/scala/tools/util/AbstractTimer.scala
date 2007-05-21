@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -35,19 +35,20 @@ abstract class AbstractTimer {
   def issue(message: String, duration: Long): Unit
 
   /** Starts a new timer. */
-  def start() = {
+  def start() {
     starts += currentTime
   }
 
   /** Ends the current timer. */
-  def stop(message: String): Unit = {
+  def stop(message: String) {
     val stop = currentTime
     issue(message, stop - starts.pop)
   }
 
   /** Drops the current timer. */
-  def drop(): Unit =
+  def drop() {
     starts.pop
+  }
 
     //########################################################################
 }

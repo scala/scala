@@ -239,6 +239,10 @@ trait Symbols {
     final def isPrivateLocal =
       hasFlag(PRIVATE) && hasFlag(LOCAL)
 
+    /** Is this symbol a protected local */
+    final def isProtectedLocal =
+      hasFlag(PROTECTED) && hasFlag(LOCAL)
+
     /** Does this symbol denote the primary constructor of its enclosing class? */
     final def isPrimaryConstructor =
       isConstructor && owner.primaryConstructor == this

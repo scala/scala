@@ -489,7 +489,7 @@ test_check_all() {
 test_add_file() {
     [ $# = 1 ] || abort "internal error";
     case "$1" in
-        *.scala )
+        *.scala | *.res )
             if [ ! \( -d "$1" -o -f "$1" \) ]; then
                 abort "don't know what to do with '$1'";
             fi;;

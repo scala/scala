@@ -1366,7 +1366,7 @@ trait Typers requires Analyzer {
         val member = stat.symbol
         if (context.owner.info.baseClasses.tail forall
             (bc => member.matchingSymbol(bc, context.owner.thisType) == NoSymbol)) {
-          if (!settings.Xexperimental.value)
+          if (!settings.Xexperimental.value && !member.isErroneous)
             error(member.pos, member.toString+" does not refine a member of its base type")
         } else {
           member setFlag OVERRIDE
