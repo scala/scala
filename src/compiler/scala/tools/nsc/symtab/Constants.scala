@@ -232,5 +232,4 @@ trait Constants {
   extends Constant(arrayValue) {
     override def toString() = arrayValue.mkString("Constant(", "," , ")")
   }
-
 }

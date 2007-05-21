@@ -293,12 +293,15 @@ abstract class GenMSIL extends SubComponent {
         log("Could not find pickle information for " + sym)
     }
 
-    def addAttributes(member: ICustomAttributeSetter, attributes: List[AnnotationInfo[Constant]]): Unit = {
+    def addAttributes(member: ICustomAttributeSetter, attributes: List[AnnotationInfo]): Unit = {
       return // FIXME
 
       if (settings.debug.value)
 	log("creating attributes: " + attributes + " for member : " + member)
-      for (AnnotationInfo(typ, consts, nvPairs) <- attributes /* !typ.symbol.hasFlag(Flags.JAVA) */ ) {
+      for (attr@ AnnotationInfo(typ, annArgs, nvPairs) <- attributes ;
+           if attr.isConstant)
+           /* !typ.symbol.hasFlag(Flags.JAVA) */
+      {
 //	assert(consts.length <= 1,
 //	       "too many constant arguments for attribute; "+consts.toString())
 
@@ -317,7 +320,10 @@ abstract class GenMSIL extends SubComponent {
 	// otehr way than GetConstructors()(0) to get the constructor, if there's
 	// no constructor symbol available.
 
-	val args: Array[Byte] = getAttributeArgs(consts, nvPairs)
+	val args: Array[Byte] =
+          getAttributeArgs(
+            annArgs map (.constant.get),
+            (for((n,v) <- nvPairs) yield (n, v.constant.get)))
 	member.SetCustomAttribute(constr, args)
       }
     }

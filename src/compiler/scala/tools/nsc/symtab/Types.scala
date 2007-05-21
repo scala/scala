@@ -129,7 +129,7 @@ trait Types {
     override def isComplete = tp.isComplete
     override def complete(sym: Symbol) = tp.complete(sym)
     override def load(sym: Symbol): unit = tp.load(sym)
-    override def withAttributes(attribs: List[AnnotationInfo[Any]]) = tp.withAttributes(attribs)
+    override def withAttributes(attribs: List[AnnotationInfo]) = tp.withAttributes(attribs)
     override def withoutAttributes = tp.withoutAttributes
   }
 
@@ -603,10 +603,10 @@ trait Types {
     }
 
     /** Add an attribute to this type */
-    def withAttribute(attrib: AnnotationInfo[Any]) = withAttributes(List(attrib))
+    def withAttribute(attrib: AnnotationInfo) = withAttributes(List(attrib))
 
     /** Add a number of attributes to this type */
-    def withAttributes(attribs: List[AnnotationInfo[Any]]): Type =
+    def withAttributes(attribs: List[AnnotationInfo]): Type =
       attribs match {
         case Nil => this
         case _ => AnnotatedType(attribs, this)
@@ -1445,7 +1445,7 @@ A type's symbol should never be inspected directly.
     * to the core compiler, but can be observed by type-system plugins.  The
     * core compiler does take care to propagate attributes and to save them
     * in the symbol tables of object files. */
-  case class AnnotatedType(attributes: List[AnnotationInfo[Any]], tp: Type) extends TypeProxy {
+  case class AnnotatedType(attributes: List[AnnotationInfo], tp: Type) extends TypeProxy {
     override def toString(): String = {
       val attString =
         if (attributes.isEmpty)
@@ -1458,7 +1458,7 @@ A type's symbol should never be inspected directly.
 
 
     /** Add a number of attributes to this type */
-    override def withAttributes(attribs: List[AnnotationInfo[Any]]): Type =
+    override def withAttributes(attribs: List[AnnotationInfo]): Type =
       AnnotatedType(attribs:::this.attributes, this)
 
     /** Remove any attributes from this type */

@@ -292,6 +292,19 @@ abstract class UnPickler {
       }
     }
 
+    /** Read an annotation argument.  It can be either a Constant or
+     *  a reflect.Tree.
+     */
+    private def readAnnotationArg(): AnnotationArgument = {
+      if (peekByte() == REFLTREE) {
+        val tree = readReflTree()
+        new AnnotationArgument(tree)
+      } else {
+        val const = readConstant()
+        new AnnotationArgument(const)
+      }
+    }
+
     /** Read an attribute and store in referenced symbol */
     private def readAnnotation(): AnyRef = {
       val tag = readByte()
@@ -299,12 +312,14 @@ abstract class UnPickler {
       val target = readSymbolRef()
       if (tag == ATTRIBUTE) {
         val attrType = readTypeRef()
-        val args = new ListBuffer[Constant]
-        val assocs = new ListBuffer[(Name, Constant)]
+        val args = new ListBuffer[AnnotationArgument]
+        val assocs = new ListBuffer[(Name, AnnotationArgument)]
         while (readIndex != end) {
           val argref = readNat()
-          if (isNameEntry(argref)) assocs += (at(argref, readName), readConstantRef())
-          else args += at(argref, readConstant)
+          if (isNameEntry(argref))
+            assocs += (at(argref, readName), readAnnotationArgRef)
+          else
+            args += at(argref, readAnnotationArg)
         }
         val attr = AnnotationInfo(attrType, args.toList, assocs.toList)
         target.attributes = attr :: target.attributes
@@ -497,7 +512,7 @@ abstract class UnPickler {
     }
 
     /** Read an annotation with reflect.Tree's */
-    private def readTreeAttrib(): AnnotationInfo[reflect.Tree] = {
+    private def readTreeAttrib(): AnnotationInfo = {
       val tag = readByte()
       if(tag != ATTRIBTREE)
         errorBadSignature("tree-based annotation expected (" + tag + ")")
@@ -505,11 +520,11 @@ abstract class UnPickler {
 
       val target = readTypeRef()
       val numargs = readNat()
-      val args = times(numargs, readReflTreeRef)
+      val args = times(numargs, readAnnotationArgRef)
       val assocs =
         until(end, {() =>
           val name = readNameRef()
-          val tree = readReflTreeRef()
+          val tree = readAnnotationArgRef()
           (name,tree)})
       AnnotationInfo(target, args, assocs)
     }
@@ -519,13 +534,15 @@ abstract class UnPickler {
     private def readSymbolRef(): Symbol = at(readNat(), readSymbol)
     private def readTypeRef(): Type = at(readNat(), readType)
     private def readConstantRef(): Constant = at(readNat(), readConstant)
+    private def readAnnotationArgRef(): AnnotationArgument =
+      at(readNat(), readAnnotationArg)
     private def readReflTreeRef(): reflect.Tree =
       at(readNat(), readReflTree)
     private def readReflSymbolRef(): reflect.Symbol =
       at(readNat(), readReflSymbol)
     private def readReflTypeRef(): reflect.Type =
       at(readNat(), readReflType)
-    private def readTreeAttribRef(): AnnotationInfo[reflect.Tree] =
+    private def readTreeAttribRef(): AnnotationInfo =
       at(readNat(), readTreeAttrib)
 
     private def errorBadSignature(msg: String) =

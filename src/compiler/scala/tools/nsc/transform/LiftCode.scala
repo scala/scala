@@ -64,7 +64,12 @@ abstract class LiftCode extends Transform {
       super.update(sym,rsym)
   }
 
-  class Reifier(env: ReifyEnvironment, currentOwner: reflect.Symbol) {
+
+  class Reifier(env: ReifyEnvironment, currentOwner: reflect.Symbol)
+  extends SymbolReifier
+  {
+    val symbols: global.type = global
+
 
     def reify(tree: Tree): reflect.Tree = tree match {
       case Ident(_) =>
@@ -163,72 +168,13 @@ abstract class LiftCode extends Transform {
         throw new TypeError("cannot reify tree ("+tree.getClass()+"): " + tree)
     }
 
-    private def mkGlobalSymbol(fullname: String, sym: Symbol): reflect.Symbol =
-      if (sym.isClass) reflect.Class(fullname)
-      else if (sym.isType) reflect.TypeField(fullname, reify(sym.info))
-      else if (sym.isMethod) reflect.Method(fullname, reify(sym.info))
-      else reflect.Field(fullname, reify(sym.info));
-
-    def reify(sym: Symbol): reflect.Symbol = env.get(sym) match {
-      case Some(rsym) =>
-        rsym
-      case None =>
-        if (sym.isRoot || sym.isRootPackage || sym.isEmptyPackageClass || sym.isEmptyPackage)
-          reflect.RootSymbol
-        else if (sym.owner.isTerm)
-          reflect.NoSymbol
-        else reify(sym.owner) match {
-          case reflect.NoSymbol =>
-            reflect.NoSymbol;
-          case reflect.RootSymbol =>
-            mkGlobalSymbol(sym.name.toString(), sym)
-          case reflect.Class(ownername) =>
-            mkGlobalSymbol(ownername + "." + sym.name, sym)
-          case _ =>
-            reflect.NoSymbol
-        }
-    }
-
-    var _log_reify_type_ = false
-
-    def reify(tp: Type): reflect.Type = tp match {
-      case ErrorType =>
-        if (_log_reify_type_) println("cannot handle ErrorType"); reflect.NoType
-      case WildcardType =>
-        if (_log_reify_type_) println("cannot handle WildcardType"); reflect.NoType
-      case NoType =>
-        if (_log_reify_type_) println("cannot handle NoType"); reflect.NoType
-      case NoPrefix =>
-        if (_log_reify_type_) println("cannot handle NoPrefix"); reflect.NoType
-      case ThisType(sym) =>
-        if (_log_reify_type_) println("ThisType ("+sym+")")
-        val rsym = reify(sym)
-        if (_log_reify_type_) println("reified is "+rsym+" cannot handle ThisType "+tp); reflect.NoType
-      case SingleType(pre, sym) =>
-        if (_log_reify_type_) println("cannot handle SingleType "+tp); reflect.NoType
-      case ConstantType(value) =>
-        if (_log_reify_type_) println("cannot handle ConstantType("+value+")  "+tp); reflect.NoType
-      case TypeRef(pre, sym, args) =>
-        if (_log_reify_type_) println("TypeRef! try to handle prefix")
-        val rpre = reify(pre)
-        if (_log_reify_type_) println("cannot handle TypeRef("+pre+","+sym+","+args+") == "+tp+")"); reflect.NoType
-
-      case TypeBounds(lo, hi) =>
-        if (_log_reify_type_) println("cannot handle TypeBounds "+tp); reflect.NoType
-      case RefinedType(parents, defs) =>
-        if (_log_reify_type_) println("cannot handle RefinedType "+tp); reflect.NoType
-      case ClassInfoType(parents, defs, clazz) =>
-        if (_log_reify_type_) println("cannot handle ClassInfoType "+tp); reflect.NoType
-      case MethodType(paramtypes, result) =>
-        if (_log_reify_type_) println("cannot handle MethodType "+tp); reflect.NoType
-      case PolyType(tparams, result) =>
-        if (_log_reify_type_) println("cannot handle PolyType  "+tp); reflect.NoType
-      case AnnotatedType(attribs, tp) =>
-        reify(tp)
-      case _ =>
-        reflect.NoType
-    }
-
+    override def reify(sym: Symbol): reflect.Symbol =
+      env.get(sym) match {
+	case Some(rsym) =>
+	  rsym
+	case None =>
+	  super.reify(sym)
+      }
   }
 
   type InjectEnvironment = ListMap[reflect.Symbol, Name]

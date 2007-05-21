@@ -41,7 +41,7 @@ abstract class NodePrinters {
           if (comma) buf.append(",")
           buf.append(EOL)
         }
-        def annotationInfoToString(attr: AnnotationInfo[Constant]) = {
+        def annotationInfoToString(attr: AnnotationInfo) = {
           val str = new StringBuilder
           str.append(attr.atp.toString())
           if (!attr.args.isEmpty)

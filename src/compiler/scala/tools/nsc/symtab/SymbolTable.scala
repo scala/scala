@@ -15,6 +15,7 @@ abstract class SymbolTable extends Names
                               with Constants
                               with InfoTransformers
                               with StdNames
+                              with AnnotationInfos
 {
   def settings: Settings
   def rootLoader: LazyType

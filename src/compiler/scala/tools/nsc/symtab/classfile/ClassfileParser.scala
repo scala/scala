@@ -704,10 +704,10 @@ abstract class ClassfileParser {
         val attrNameIndex = in.nextChar
         val attrType = pool.getType(attrNameIndex)
         val nargs = in.nextChar
-        val nvpairs = new ListBuffer[(Name,Constant)]
+        val nvpairs = new ListBuffer[(Name,AnnotationArgument)]
         for (i <- 0 until nargs) {
           val name = pool.getName(in.nextChar)
-          nvpairs += (name, parseTaggedConstant)
+          nvpairs += ((name, new AnnotationArgument(parseTaggedConstant)))
         }
         sym.attributes = AnnotationInfo(attrType, List(), nvpairs.toList) :: sym.attributes
       }

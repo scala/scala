@@ -110,11 +110,6 @@ trait Typers requires Analyzer {
    */
   val LHSmode       = 0x400
 
-  /** The mode <code>CONSTmode</code> is set when expressions should evaluate
-   *  to constant sused for attribute arguments.
-   */
-  val CONSTmode     = 0x800
-
   /** The mode <code>REGPATmode</code> is set when regular expression patterns
    *  are allowed.
    */
@@ -129,7 +124,7 @@ trait Typers requires Analyzer {
    */
   val HKmode        = 0x4000 // @M: could also use POLYmode | TAPPmode
 
-  private val stickyModes: int  = EXPRmode | PATTERNmode | TYPEmode | CONSTmode | ALTmode
+  private val stickyModes: int  = EXPRmode | PATTERNmode | TYPEmode | ALTmode
 
   private def funMode(mode: int) = mode & (stickyModes | SCCmode) | FUNmode | POLYmode
 
@@ -1536,21 +1531,7 @@ trait Typers requires Analyzer {
 
               if (fun.symbol == List_apply && args.isEmpty) {
                 atPos(tree.pos) { gen.mkNil setType restpe }
-              } else if ((mode & CONSTmode) != 0 &&
-                         fun.symbol.owner == definitions.ArrayModule.tpe.symbol &&
-                         fun.symbol.name == nme.apply) {
-                val elems = new Array[Constant](args2.length)
-                var i = 0;
-                for (val arg <- args2) arg match {
-                  case Literal(value) =>
-                    elems(i) = value
-                    i = i + 1
-                  case _ => errorTree(arg, "constant required")
-                }
-                val arrayConst = new ArrayConstant(elems, restpe)
-                Literal(arrayConst) setType mkConstantType(arrayConst)
-              }
-              else
+              } else
                 constfold(copy.Apply(tree, fun, args2).setType(ifPatternSkipFormals(restpe)))
             } else {
               assert((mode & PATTERNmode) == 0); // this case cannot arise for patterns
@@ -1645,26 +1626,37 @@ trait Typers requires Analyzer {
       }
     }
 
-    def getConstant(tree: Tree): Constant = tree match {
-      case Literal(value) => value
-      case arg => error(arg.pos, "attribute argument needs to be a constant; found: "+arg); Constant(null)
-    }
-
-    def typedAnnotation[T](annot: Annotation, reify: Tree => T): AnnotationInfo[T] = {
+    def typedAnnotation(annot: Annotation): AnnotationInfo = {
       var attrError: Boolean = false;
       def error(pos: Position, msg: String): Null = {
         context.error(pos, msg)
         attrError = true
         null
       }
-      typed(annot.constr, EXPRmode | CONSTmode, AnnotationClass.tpe) match {
+      def needConst(tr: Tree) {
+        error(tr.pos, "attribute argument needs to be a constant; found: "+tr)
+      }
+
+      typed(annot.constr, EXPRmode, AnnotationClass.tpe) match {
         case t @ Apply(Select(New(tpt), nme.CONSTRUCTOR), args) =>
           if (t.isErroneous) {
-            AnnotationInfo[T](ErrorType, List(), List())
+            AnnotationInfo(ErrorType, List(), List())
           }
           else {
             val annType = tpt.tpe
-            val constrArgs = args map reify
+
+	    val needsConstant =
+	      (!settings.Xplugtypes.value ||
+	       annType <:< ClassfileAnnotationClass.tpe)
+
+            def annotArg(tree: Tree): AnnotationArgument = {
+              val arg = new AnnotationArgument(liftcode.reify(tree))
+              if(needsConstant && !arg.isConstant)
+		needConst(tree)
+	      arg
+            }
+            val constrArgs = args map annotArg
+
             val attrScope = annType.decls
               .filter(sym => sym.isMethod && !sym.isConstructor && sym.hasFlag(JAVA))
             val names = new collection.mutable.HashSet[Symbol]
@@ -1681,7 +1673,10 @@ trait Typers requires Analyzer {
                   error(ntree.pos, "duplicate value for element " + name)
                 } else {
                   names -= sym
-                  (sym.name, reify(typed(rhs, EXPRmode | CONSTmode, sym.tpe.resultType)))
+                  val annArg =
+                    annotArg(
+                      typed(rhs, EXPRmode, sym.tpe.resultType))
+                  (sym.name, annArg)
                 }
               }
             }
@@ -1716,14 +1711,16 @@ trait Typers requires Analyzer {
         case _ => NoType
       }
 
-      def typedAnnotated(annot: Annotation, arg1: Tree) = {
-        def annotTypeTree(ainfo: AnnotationInfo[Any]): Tree =
+      def typedAnnotated(annot: Annotation, arg1: Tree): Tree = {
+        def annotTypeTree(ainfo: AnnotationInfo): Tree =
           TypeTree(arg1.tpe.withAttribute(ainfo)) setOriginal tree
+
         if (arg1.isType) {
-          val annotInfo = typedAnnotation(annot, liftcode.reify)
+          val annotInfo = typedAnnotation(annot)
           if (settings.Xplugtypes.value) annotTypeTree(annotInfo) else arg1
         } else {
-          val annotInfo = typedAnnotation(annot, getConstant)
+          val annotInfo = typedAnnotation(annot)
+
           arg1 match {
             case _: DefTree =>
               if (!annotInfo.atp.isError) {

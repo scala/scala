@@ -80,7 +80,7 @@ trait Symbols {
       else -1
     }
 
-    var attributes: List[AnnotationInfo[Constant]] = List()
+    var attributes: List[AnnotationInfo] = List()
 
     var privateWithin: Symbol = _
 
@@ -554,7 +554,7 @@ trait Symbols {
     def typeParams: List[Symbol] =
       if (isMonomorphicType) List() else { rawInfo.load(this); rawInfo.typeParams }
 
-    def getAttributes(clazz: Symbol): List[AnnotationInfo[Constant]] =
+    def getAttributes(clazz: Symbol): List[AnnotationInfo] =
       attributes.filter(.atp.symbol.isNonBottomSubClass(clazz))
 
     /** Reset symbol to initial state
@@ -1347,14 +1347,7 @@ trait Symbols {
     def cloneSymbolImpl(owner: Symbol): Symbol = throw new Error()
   }
 
-  case class AnnotationInfo[+T](atp: Type, args: List[T], assocs: List[(Name, T)]) {
-    override def toString: String =
-      atp +
-      (if (args.isEmpty) ""
-       else args.mkString("(", ", ", ")")) +
-      (if (assocs.isEmpty) ""
-       else (assocs map { case (x, y) => x+" = "+y } mkString ("{", ", ", "}")))
-  }
+
 
   def cloneSymbols(syms: List[Symbol]): List[Symbol] = {
     val syms1 = syms map (.cloneSymbol)

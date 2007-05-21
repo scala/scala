@@ -645,7 +645,7 @@ trait Namers requires Analyzer {
         case defn: MemberDef =>
           val ainfos = for {
             annot <- defn.mods.annotations
-            val ainfo = typer.typedAnnotation(annot, typer.getConstant)
+            val ainfo = typer.typedAnnotation(annot)
             if !ainfo.atp.isError
           } yield ainfo
           if (!ainfos.isEmpty) {

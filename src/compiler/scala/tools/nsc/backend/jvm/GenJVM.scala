@@ -151,7 +151,7 @@ abstract class GenJVM extends SubComponent {
           case AnnotationInfo(CloneableAttr, _, _)  =>
             parents = parents ::: List(CloneableClass.tpe)
           case AnnotationInfo(SerialVersionUID, value :: _, _) =>
-            serialVUID = Some(value.longValue)
+            serialVUID = Some(value.constant.get.longValue)
           case AnnotationInfo(RemoteAttr, _, _) =>
             parents = parents ::: List(RemoteInterface.tpe)
             remoteClass = true
@@ -215,7 +215,9 @@ abstract class GenJVM extends SubComponent {
       buf.putShort(0xbaba.toShort)
 
       for (val AnnotationInfo(ThrowsAttr, List(exc), _) <- excs.removeDuplicates) {
-        buf.putShort(cpool.addClass(javaName(exc.typeValue.symbol)).shortValue)
+        buf.putShort(
+	  cpool.addClass(
+	    javaName(exc.constant.get.typeValue.symbol)).shortValue)
         nattr = nattr + 1
       }
 
@@ -224,7 +226,7 @@ abstract class GenJVM extends SubComponent {
       addAttribute(jmethod, nme.ExceptionsATTR, buf)
     }
 
-    private def emitAttributes(buf: ByteBuffer, attributes: List[AnnotationInfo[Constant]]): Int = {
+    private def emitAttributes(buf: ByteBuffer, attributes: List[AnnotationInfo]): Int = {
       val cpool = jclass.getConstantPool()
 
       def emitElement(const: Constant): Unit = const.tag match {
@@ -272,11 +274,12 @@ abstract class GenJVM extends SubComponent {
       var nattr = 0
       val pos = buf.position()
 
-      // put some radom value; the actual number of annotations is determined at the end
+      // put some random value; the actual number of annotations is determined at the end
       buf.putShort(0xbaba.toShort)
 
-      for (val AnnotationInfo(typ, consts, nvPairs) <- attributes;
-           typ.symbol isNonBottomSubClass definitions.ClassfileAnnotationClass) {
+      for (attrib@AnnotationInfo(typ, consts, nvPairs) <- attributes;
+           if attrib.isConstant;
+           if typ.symbol isNonBottomSubClass definitions.ClassfileAnnotationClass) {
         nattr = nattr + 1
         val jtype = javaType(typ)
         buf.putShort(cpool.addUtf8(jtype.getSignature()).toShort)
@@ -284,11 +287,11 @@ abstract class GenJVM extends SubComponent {
         buf.putShort((consts.length + nvPairs.length).toShort)
         if (!consts.isEmpty) {
           buf.putShort(cpool.addUtf8("value").toShort)
-          emitElement(consts.head)
+          emitElement(consts.head.constant.get)
         }
         for (val (name, value) <- nvPairs) {
           buf.putShort(cpool.addUtf8(name.toString).toShort)
-          emitElement(value)
+          emitElement(value.constant.get)
         }
       }
 
@@ -297,20 +300,23 @@ abstract class GenJVM extends SubComponent {
       nattr
     }
 
-    def addAnnotations(jmember: JMember, attributes: List[AnnotationInfo[Constant]]): Unit = {
-      if (attributes.isEmpty) return
+    def addAnnotations(jmember: JMember, attributes: List[AnnotationInfo]): Unit = {
+      val toEmit = attributes.filter(.isConstant)
+
+      if (toEmit.isEmpty) return
 
       val buf: ByteBuffer = ByteBuffer.allocate(2048)
 
-      emitAttributes(buf, attributes)
+      emitAttributes(buf, toEmit)
 
       addAttribute(jmember, nme.RuntimeAnnotationATTR, buf)
     }
 
-    def addParamAnnotations(pattrss: List[List[AnnotationInfo[Constant]]]): Unit = {
-      val attributes = for (val attrs <- pattrss) yield
-        for (val attr @ AnnotationInfo(tpe, _, _) <- attrs;
-             tpe.symbol isNonBottomSubClass definitions.ClassfileAnnotationClass) yield attr;
+    def addParamAnnotations(pattrss: List[List[AnnotationInfo]]): Unit = {
+      val attributes = for (attrs <- pattrss) yield
+        for (attr @ AnnotationInfo(tpe, _, _) <- attrs;
+             if attr.isConstant;
+             if tpe.symbol isNonBottomSubClass definitions.ClassfileAnnotationClass) yield attr;
       if (attributes.forall(.isEmpty)) return;
 
       val buf: ByteBuffer = ByteBuffer.allocate(2048)
@@ -411,8 +417,8 @@ abstract class GenJVM extends SubComponent {
           (m.symbol.attributes contains AnnotationInfo(RemoteAttr, Nil, Nil))) &&
           jmethod.isPublic() && !forCLDC)
         {
-          m.symbol.attributes =
-            AnnotationInfo(ThrowsAttr, List(Constant(RemoteException)), List()) :: m.symbol.attributes;
+          val ainfo = AnnotationInfo(ThrowsAttr, List(new AnnotationArgument(Constant(RemoteException))), List())
+          m.symbol.attributes = ainfo :: m.symbol.attributes;
         }
 
       if (!jmethod.isAbstract()) {

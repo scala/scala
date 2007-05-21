@@ -245,12 +245,12 @@ trait ModelToXML extends ModelExtractor {
     </tr>
 
   def attrsFor(entity: Entity)(implicit from: Frame): NodeSeq = {
-    def attrFor(attr: AnnotationInfo[Constant]): Node = {
+    def attrFor(attr: AnnotationInfo): Node = {
       val buf = new StringBuilder
       val AnnotationInfo(tpe, args, nvPairs) = attr
       val name = link(decode(tpe.symbol))
       if (!args.isEmpty)
-        buf.append(args.map(.escapedStringValue).mkString("(", ",", ")"))
+        buf.append(args.mkString("(", ",", ")"))
       if (!nvPairs.isEmpty)
         for (((name, value), index) <- nvPairs.zipWithIndex) {
           if (index > 0)
