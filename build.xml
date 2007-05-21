@@ -1002,7 +1002,7 @@ GENERATES A DISTRIBUTION
       regexp="([^-]*)(-.*)?" select="\1"
     />
     <echo level="verbose" message="OSGi version: ${osgi.version.number}"/>
-    <jar destfile="${dist.current.dir}/lib/${comp.jar.name}" index="true">
+    <jar destfile="${dist.current.dir}/lib/${comp.jar.name}">
       <fileset dir="${strap.dir}/lib/compiler"/>
       <zipfileset src="${fjbg.jar}"/>
       <zipfileset src="${msil.jar}"/>
@@ -1031,7 +1031,7 @@ GENERATES A DISTRIBUTION
         <attribute name="Bundle-RequiredExecutionEnvironment" value="J2SE-1.4"/>
       </manifest>
     </jar>
-    <jar destfile="${dist.current.dir}/lib/${lib.jar.name}" index="true">
+    <jar destfile="${dist.current.dir}/lib/${lib.jar.name}">
       <fileset dir="${strap.dir}/lib/library"/>
       <fileset dir="${strap.dir}/lib/actors"/>
       <manifest>
@@ -1058,7 +1058,7 @@ GENERATES A DISTRIBUTION
         <attribute name="Bundle-RequiredExecutionEnvironment" value="J2SE-1.4"/>
       </manifest>
     </jar>
-    <jar destfile="${dist.current.dir}/lib/${dbc.jar.name}" index="true">
+    <jar destfile="${dist.current.dir}/lib/${dbc.jar.name}">
       <fileset dir="${strap.dir}/lib/dbc"/>
       <manifest>
         <attribute name="Signature-Version" value="${version.number}"/>
