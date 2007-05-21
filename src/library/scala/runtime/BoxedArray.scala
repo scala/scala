@@ -22,7 +22,7 @@ import compat.StringBuilder
  *  @author  Martin Odersky, Stephane Micheloud
  *  @version 1.0
  */
-abstract class BoxedArray extends Seq[Any] {
+abstract class BoxedArray extends RandomAccessSeq[Any] {
   /** The length of the array */
   def length: Int
 
