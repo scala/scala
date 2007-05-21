@@ -57,10 +57,12 @@ object myAttrs {
   class a2(x: Int) extends scala.Annotation;
   class a3(x: a1) extends scala.Annotation;
 }
+class a4(ns: Array[Int]) extends scala.ClassfileAnnotation;
 object O7 {
   class a1 extends scala.Annotation;
   class a2(x: Int) extends scala.Annotation;
   class a3(x: a1) extends scala.Annotation;
+
   final val x = new a1;
   @a1  class C1;
   @a1 @a2(77)  class C2;
@@ -71,4 +73,6 @@ object O7 {
   @myAttrs.a1 @myAttrs.a2(99)  class A2;
   @myAttrs.a1 @myAttrs.a2(99)  class A3;
   @myAttrs.a1 @myAttrs.a2(99) @myAttrs.a3(null)  class A4;
+  @a4(Array(1,2,3)) class A5;
+  @a4(Array()) class A6;
 }
