@@ -19,7 +19,7 @@ import java.lang.{InterruptedException, Runnable}
  *    return type <code>Nothing</code>.
  *  </p>
  *
- *  @version 0.9.6
+ *  @version 0.9.7
  *  @author Philipp Haller
  */
 private[actors] class ExitActorException extends Throwable
@@ -31,7 +31,7 @@ private[actors] class ExitActorException extends Throwable
  *    <code>java.lang.Runnable</code></a>.
  *  </p>
  *
- *  @version 0.9.6
+ *  @version 0.9.7
  *  @author Philipp Haller
  */
 private[actors] class Reaction(a: Actor,
@@ -72,10 +72,6 @@ private[actors] class Reaction(a: Actor,
             a.exitLinked(t)
         }
       }
-    }
-    a.synchronized {
-      if (!a.sessions.isEmpty)
-        a.sessions = a.sessions.tail
     }
     Actor.tl.set(saved)
   }
