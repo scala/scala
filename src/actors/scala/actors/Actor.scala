@@ -19,7 +19,7 @@ import scala.compat.Platform
  * <code>receive</code>, <code>react</code>, <code>reply</code>,
  * etc.
  *
- * @version 0.9.6
+ * @version 0.9.7
  * @author Philipp Haller
  */
 object Actor {
@@ -263,7 +263,7 @@ object Actor {
  *   </li>
  * </ul>
  *
- * @version 0.9.6
+ * @version 0.9.7
  * @author Philipp Haller
  */
 trait Actor extends OutputChannel[Any] {
@@ -276,12 +276,18 @@ trait Actor extends OutputChannel[Any] {
 
   private val mailbox = new MessageQueue
   private[actors] var sessions: List[Channel[Any]] = Nil
+  private var session1: Option[Channel[Any]] = None
 
   private def send(msg: Any, session: Channel[Any]) = synchronized {
     tick()
     if (waitingFor(msg)) {
       received = Some(msg)
-      sessions = session :: sessions
+
+      if (isSuspended)
+        sessions = session :: sessions
+      else
+        session1 = Some(session)
+
       waitingFor = waitingForNone
 
       if (timeoutPending) {
@@ -376,7 +382,7 @@ trait Actor extends OutputChannel[Any] {
         continuation = f
         isDetached = true
       } else {
-        sessions = qel.session :: sessions
+        session1 = Some(qel.session)
         scheduleActor(f, qel.msg)
       }
       throw new SuspendActorException
@@ -400,7 +406,7 @@ trait Actor extends OutputChannel[Any] {
         continuation = f
         isDetached = true
       } else {
-        sessions = qel.session :: sessions
+        session1 = Some(qel.session)
         scheduleActor(f, qel.msg)
       }
       throw new SuspendActorException
@@ -521,13 +527,19 @@ trait Actor extends OutputChannel[Any] {
     case x => x
   }
 
-  def sender: Actor =
-    if (sessions.isEmpty) null
-    else sessions.head.asInstanceOf[Channel[Any]].receiver
+  def sender: Actor = {
+    val s = session
+    if (null ne s) s.receiver
+    else null
+  }
 
   private[actors] def session: Channel[Any] =
-    if (sessions.isEmpty) null
-    else sessions.head.asInstanceOf[Channel[Any]]
+    if (sessions.isEmpty) {
+      session1 match {
+        case None => null
+        case Some(s) => s
+      }
+    } else sessions.head.asInstanceOf[Channel[Any]]
 
   private[actors] var continuation: PartialFunction[Any, Unit] = null
   private[actors] var timeoutPending = false
@@ -749,7 +761,7 @@ trait Actor extends OutputChannel[Any] {
  *      <b>case</b> TIMEOUT <b>=&gt;</b> ...
  *    }</pre>
  *
- *  @version 0.9.6
+ *  @version 0.9.7
  *  @author Philipp Haller
  */
 case object TIMEOUT
@@ -762,7 +774,7 @@ case class Exit(from: Actor, reason: AnyRef)
  *    executions.
  *  </p>
  *
- * @version 0.9.6
+ * @version 0.9.7
  * @author Philipp Haller
  */
 private[actors] class SuspendActorException extends Throwable {
