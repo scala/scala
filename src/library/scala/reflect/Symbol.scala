@@ -61,3 +61,17 @@ case class LabelSymbol(val name: String) extends Symbol {
   val owner = NoSymbol
   val tpe = NamedType("scala.Unit")
 }
+
+
+/* Standard pattern match:
+
+    case reflect.Class(fullname) =>
+    case reflect.Method(fullname, tpe) =>
+    case reflect.Field(fullname, tpe) =>
+    case reflect.TypeField(fullname, tpe) =>
+    case reflect.LocalValue(owner, name, tpe) =>
+    case reflect.LocalMethod(owner, name, tpe) =>
+    case reflect.NoSymbol =>
+    case reflect.RootSymbol =>
+    case reflect.LabelSymbol(name) =>
+*/
