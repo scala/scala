@@ -25,7 +25,7 @@ trait IterableWrapper[A] extends MutableIterable[A] {
     case that : IterableWrapper[_] => underlying.retainAll(that.underlying);
     case _ => super.retainAll(that);
   }
-  //override def size = underlying.size;
+  override def size = underlying.size;
   override def isEmpty = underlying.isEmpty;
   override def clear = underlying.clear;
   override def elements : MutableIterator[A] = new IteratorWrapper(underlying.iterator);

@@ -26,39 +26,30 @@ import Predef._
  *  @author  Stephane Micheloud
  *  @version 1.0, 01/05/2007
  */
-class Range(val start: Int, val end: Int, val step: Int) extends BufferedIterator[Int] {
+class Range(val start: Int, val end: Int, val step: Int) extends RandomAccessSeq.Projection[Int] {
   assert(step != 0)
   assert(if (step > 0) end >= start else end <= start)
-  private var i = start
 
-  override def hasNext: Boolean = if (step > 0) i < end else i > end
-
-  def next: Int =
-    if (hasNext) { val j = i; i += step; j }
-    else throw new NoSuchElementException("next on empty iterator")
-
-  def peekList(sz : Int) = new RandomAccessSeq[Int] {
-    def length = Math.min(sz, length0(i));
-    def apply(idx : Int) = {
-      if (idx >= length) throw new IndexOutOfBoundsException
-      i + (idx * step)
-    }
+  override def length = {
+    val base = if (start < end) end - start
+               else start - end
+    assert(base >= 0)
+    val step = if (this.step < 0) -this.step else this.step
+    assert(step >= 0)
+    base / step + (if (base % step != 0) 1 else 0)
   }
-  protected override def defaultPeek : Int = throw new NoSuchElementException
 
-  private def length0(i : Int) = {
-    if (step > 0) length1(i, end, step)
-    else length1(end, i, -step)
+  override def apply(idx : Int) = {
+    if (idx < 0 || idx >= length) throw new Predef.IndexOutOfBoundsException
+    start + (step * idx)
   }
-  private def length1(start : Int, end : Int, step : Int) = {
-    assert(start <= end && step > 0)
-    val n = (end - start) / step
-    val m = (end - start) % step
-    n + (if (m == 0) 0 else 1)
+  override protected def stringPrefix = "Range"
+
+  def contains(x : Int): Boolean = {
+    x >= start && x < end && (((x - start) % step) == 0)
   }
-  def length: Int = length0(start)
-
-  def contains(x: Int): Boolean =
-    Iterator.range(0, length) exists (i => x == start + i * step)
-
+  override def contains(elem: Any): Boolean = elem match {
+  case elem : Int => contains(elem)
+  case _ => false
+  }
 }

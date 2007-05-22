@@ -66,8 +66,10 @@ object Seq {
       def length = Projection.this.length
       def elements = Projection.this.elements.map(f)
       def apply(idx : Int) = f(Projection.this.apply(idx))
+      override def stringPrefix = Projection.this.stringPrefix + "M"
     }
     override def flatMap[B](f: A => Iterable[B]): Projection[B] = new Projection[B] {
+      override def stringPrefix = Projection.this.stringPrefix + "G"
       def elements = Projection.this.elements.flatMap(a => f(a).elements)
       def length = {
         var sz = 0
@@ -293,9 +295,11 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Collection[A] {
     def elements = Seq.this.elements
     def length = Seq.this.length
     def apply(idx : Int) = (Seq.this.apply(idx))
+    override def stringPrefix = Seq.this.stringPrefix + "P"
   }
 
   class Filter(p : A => Boolean) extends Seq.Projection[A] {
+    override def stringPrefix = Seq.this.stringPrefix + "F"
     override def elements = Seq.this.elements.filter(p)
     override def apply(idx : Int) : A = {
       var jdx = 0

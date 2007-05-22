@@ -10,6 +10,7 @@ object RandomAccessSeq {
       new Projection[A] {
         def length = Projection.this.length - n
         def apply(idx : Int) = Projection.this.apply(idx + n)
+        override def stringPrefix = Projection.this.stringPrefix + "D" + n
       }
     }
     /**  non-strict */
@@ -18,6 +19,7 @@ object RandomAccessSeq {
       else new Projection[A] {
         def length = n
         def apply(idx : Int) = Projection.this.apply(idx)
+        override def stringPrefix = Projection.this.stringPrefix + "T" + n
       }
     }
     /**  non-strict */
@@ -26,6 +28,8 @@ object RandomAccessSeq {
     override def reverse : Projection[A] = new Projection[A] {
       def length = Projection.this.length
       def apply(idx : Int) = Projection.this.apply(length - idx - 1)
+      override def stringPrefix = Projection.this.stringPrefix + "R"
+      override def reverse : Projection[A] = Projection.this
     }
   }
 }
@@ -38,6 +42,7 @@ trait RandomAccessSeq[+A] extends Seq[A] {
     def length = RandomAccessSeq.this.length
     def apply(idx : Int) = RandomAccessSeq.this.apply(idx)
     override def elements = RandomAccessSeq.this.elements
+    override def stringPrefix = RandomAccessSeq.this.stringPrefix + "P"
   }
   override def elements : Iterator[A] = new Iterator[A] {
     var idx = 0

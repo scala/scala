@@ -21,6 +21,7 @@ trait CollectionWrapper[A] extends Collection[A] with IterableWrapper[A] {
   def underlying : java.util.Collection;
   override def has(a : A) = underlying.contains(a);
   override def elements : MutableIterator[A] = super.elements;
+  override def size = underlying.size;
 
   override def hasAll(that : Iterable[A]) = that match {
   case that : CollectionWrapper[_] => underlying.containsAll(that.underlying);

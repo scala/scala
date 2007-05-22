@@ -104,15 +104,16 @@ object Iterator {
   def fromCaseClass(n: Product) = fromProduct(n)
 
   /** Create an iterator with elements
-   *  <code>e<sub>n+1</sub> = e<sub>n</sub> + 1</code>
+   *  <code>e<sub>n+1</sub> = e<sub>n</sub> +/- 1</code>
    *  where <code>e<sub>0</sub> = start</code>
    *  and <code>e<sub>i</sub> &lt; end</code>.
    *
+   *  @deprecated use <code>Int.until</code> instead.
    *  @param start the start value of the iterator
    *  @param end   the end value of the iterator
    *  @return      the iterator with values in range <code>[start;end)</code>.
    */
-  def range(start: Int, end: Int): Range =
+ @deprecated def range(start: Int, end: Int): Range =
     if (start < end) range(start, end, 1)
     else range(start, end, -1)
 
@@ -121,13 +122,13 @@ object Iterator {
    *  where <code>e<sub>0</sub> = start</code>
    *  and <code>e<sub>i</sub> &lt; end</code>.
    *
+   *  @deprecated use <code>Int.until</code> instead.
    *  @param start the start value of the iterator
    *  @param end   the end value of the iterator
    *  @param step  the increment value of the iterator (must be positive or negative)
    *  @return      the iterator with values in range <code>[start;end)</code>.
    */
-  def range(start: Int, end: Int, step: Int): Range =
-    new Range(start, end, step)
+  @deprecated def range(start: Int, end: Int, step: Int): Range = start.until(end, step)
 
   /** Create an iterator with elements
    *  <code>e<sub>n+1</sub> = step(e<sub>n</sub>)</code>

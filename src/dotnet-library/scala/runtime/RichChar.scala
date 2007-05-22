@@ -48,23 +48,20 @@ final class RichChar(x: Char) extends Proxy with Ordered[Char] {
 
   def asDigit: Int = System.Char.GetNumericValue(x).toInt
 
-  private class SequentialCharIterator(limit: Char) extends BufferedIterator[Char] {
-    private var ch = x
-    def hasNext: Boolean = ch < limit
-    def next(): Char =
-      if (hasNext) { val j = ch; ch = (ch + 1).toChar; j }
-      else throw new NoSuchElementException("next on empty iterator")
-    def head: Char =
-      if (hasNext) ch
-      else throw new NoSuchElementException("head on empty iterator")
-  }
-
   /** Create an Iterator[Char] over the characters from 'x' to 'y' - 1
    */
-  def until(y: Char): Iterator[Char] = new SequentialCharIterator(y)
+  def until(limit: Char): Iterator[Char] = new Iterator[Char] {
+    private var ch = x
+    def hasNext: Boolean = ch < limit
+    def next: Char =
+      if (hasNext) { val j = ch; ch = (ch + 1).toChar; j }
+      else throw new NoSuchElementException("next on empty iterator")
+  }
+
+  //def until(y: Char): Iterator[Char] = to(y)
 
   /** Create an Iterator[Char] over the characters from 'x' to 'y'
    */
-  def to(y: Char): Iterator[Char] = new SequentialCharIterator((y + 1).toChar)
+  def to(y: Char): Iterator[Char] = until((y + 1).toChar)
 
 }
