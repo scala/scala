@@ -17,16 +17,17 @@ object MainTokenMetric {
 
   private def tokenMetric(compiler: Global, fnames: List[String]) {
     import compiler.CompilationUnit
-    import compiler.syntaxAnalyzer.UnitScanner
     import ast.parser.Tokens.EOF
     var totale = 0
     for (source <- fnames) {
-      val s = new UnitScanner(new CompilationUnit(compiler.getSourceFile(source)))
       var i = 0
+      /*
+      import compiler.syntaxAnalyzer.UnitScanner
+      val s = new UnitScanner(new CompilationUnit(compiler.getSourceFile(source)))
       while (s.token != EOF) {
         i += 1
         s.nextToken
-      }
+      }*/
       var j = 0 ; while(j + Math.log(i) / Math.log(10) < 7) {
         j += 1
         Console.print(' ')

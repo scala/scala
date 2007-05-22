@@ -227,7 +227,7 @@ trait Contexts requires Analyzer {
       //todo: find out why we need next line
       while (baseContext.tree.isInstanceOf[Template])
         baseContext = baseContext.outer
-      val argContext = baseContext.makeNewScope(tree, owner)
+      val argContext = Contexts.this.makeNewScope(baseContext, tree, owner)
       argContext.reportGeneralErrors = this.reportGeneralErrors
       argContext.reportAmbiguousErrors = this.reportAmbiguousErrors
       def enterElems(c: Context) {

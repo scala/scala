@@ -9,7 +9,7 @@ package scala.tools.nsc.util
 import scala.tools.nsc.util.SourceFile.{LF, FF, CR, SU}
 
 class CharArrayReader(buf: Array[char], start: int, /* startline: int, startcol: int, */
-                      decodeUni: boolean, error: String => unit) {
+                      decodeUni: boolean, error: String => unit) extends Iterator[Char] {
 
   def this(buf: Array[char], decodeUni: boolean, error: String => unit) =
     this(buf, 0, /* 1, 1, */ decodeUni, error)
@@ -50,10 +50,11 @@ class CharArrayReader(buf: Array[char], start: int, /* startline: int, startcol:
 
   def last: char = if(bp > start + 2) buf(bp - 2) else ' ' // XML literals
 
-  def next: unit = {
+  def next: Char = {
     //cline = nextline
     //ccol = nextcol
-    if(!hasNext) return SU  // there is an endless stream of SU's at the end
+    if(!hasNext)
+      return SU  // there is an endless stream of SU's at the end
     oldBp = bp
     oldCh = ch;
     ch = buf(bp)
@@ -95,6 +96,7 @@ class CharArrayReader(buf: Array[char], start: int, /* startline: int, startcol:
         if (ch > ' ') onlyBlankChars = false
         // nextcol = nextcol + 1
     }
+    ch
   }
   def rewind = {
     if (oldBp == -1) throw new IllegalArgumentException

@@ -757,7 +757,7 @@ abstract class GenICode extends SubComponent  {
                   ctx1.bb.emit(MONITOR_EXIT(), tree.pos)
                   ctx1
                 }, List(
-		  // tree.tpe / fun.tpe is object, which is no longer true after this transformation
+                  // tree.tpe / fun.tpe is object, which is no longer true after this transformation
                   (NoSymbol, expectedType, exhCtx => {
                   exhCtx.bb.emit(LOAD_LOCAL(monitor))
                   exhCtx.bb.emit(MONITOR_EXIT(), tree.pos)
@@ -1538,7 +1538,7 @@ abstract class GenICode extends SubComponent  {
                                      else if (block == fail)
                                        CJUMP(succ, cont, cond, kind)
                                      else
-                                       abort("Could not find block in preds"))
+                                       abort("Could not find block in preds: " + method + " " + block + " " + pred + " " + p))
 
               case CZJUMP(succ, fail, cond, kind) =>
                 if (settings.debug.value)
@@ -1834,7 +1834,7 @@ abstract class GenICode extends SubComponent  {
       def newHandler(cls: Symbol, resultKind: TypeKind): ExceptionHandler = {
         handlerCount += 1
         val exh = new ExceptionHandler(method, "" + handlerCount, cls)
-	exh.resultKind = resultKind
+        exh.resultKind = resultKind
         method.addHandler(exh)
         handlers = exh :: handlers
         if (settings.debug.value)

@@ -22,10 +22,14 @@ object Tokens {
   final val DOUBLELIT = 5
   final val STRINGLIT = 6
   final val SYMBOLLIT = 7
+  def isLiteral(code : Int) =
+    code >= CHARLIT && code <= SYMBOLLIT
 
   /** identifiers */
   final val IDENTIFIER = 10
   final val BACKQUOTED_IDENT = 11
+  def isIdentifier(code : Int) =
+    code >= IDENTIFIER && code <= BACKQUOTED_IDENT
 
   /** keywords */
   final val IF = 20
@@ -70,6 +74,10 @@ object Tokens {
   final val MATCH = 58
   final val REQUIRES = 59
 
+  def isKeyword(code : Int) =
+    code >= IF && code <= REQUIRES
+
+
   /** special symbols */
   final val COMMA = 61
   final val SEMI = 62
@@ -87,6 +95,10 @@ object Tokens {
   final val AT = 74
   final val VIEWBOUND = 75
 
+  def isSymbol(code : Int) =
+    code >= COMMA && code <= VIEWBOUND
+
+
   /** parenthesis */
   final val LPAREN = 90
   final val RPAREN = 91
@@ -94,6 +106,9 @@ object Tokens {
   final val RBRACKET = 93
   final val LBRACE = 94
   final val RBRACE = 95
+
+  def isParen(code : Int) =
+    code >= LPAREN && code <= RBRACE
 
   /** XML mode */
   final val XMLSTART = 96
@@ -106,9 +121,10 @@ object Tokens {
   final val DOUBLE_QUOTE     = 101
   final val BACK_QUOTE       = 102
   final val MULTI_QUOTE      = 103
-  final val EMPTY_STRING     = 104
+  //final val EMPTY_STRING     = 104
   final val WHITESPACE = 105
   final val IGNORE = 106
   final val XML_SINGLEEND = 107
   final val XML_STARTEND = 108
+  final val ESCAPE = 109
 }

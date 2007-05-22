@@ -497,7 +497,7 @@ trait Scanners {
                   if (in.ch == '\"') {
                     in.next; token = MULTI_QUOTE
                   } else {
-                    token = EMPTY_STRING
+                    token = throw new Error
                   }
                   return
                 } else {

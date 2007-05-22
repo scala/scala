@@ -107,7 +107,7 @@ trait Parsers {
 
     object treeBuilder extends TreeBuilder {
       val global: Parsers.this.global.type = Parsers.this.global
-      def freshName(prefix: String): Name = Parser.this.freshName(prefix)
+      def freshName(prefix: String, pos : Position): Name = Parser.this.freshName(prefix)
     }
     import treeBuilder._
 

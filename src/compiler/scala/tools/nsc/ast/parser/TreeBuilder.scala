@@ -15,9 +15,9 @@ abstract class TreeBuilder {
   val global: Global
   import global._
   import posAssigner.atPos;
-  def freshName(prefix: String): Name
+  def freshName(prefix: String, pos : Position): Name
 
-  def freshName(): Name = freshName("x$")
+  def freshName(pos : Position): Name = freshName("x$", pos)
 
   def scalaDot(name: Name): Tree =
     Select(Ident(nme.scala_) setSymbol definitions.ScalaPackage, name)
@@ -128,7 +128,7 @@ abstract class TreeBuilder {
       if (treeInfo.isLeftAssoc(op)) {
         Apply(Select(stripParens(left), op.encode), arguments)
       } else {
-        val x = freshName();
+        val x = freshName(posAssigner.pos);
         Block(
           List(ValDef(Modifiers(SYNTHETIC), x, TypeTree(), stripParens(left))),
           Apply(Select(stripParens(right), op.encode), List(Ident(x))))
@@ -279,7 +279,7 @@ abstract class TreeBuilder {
 
     def makeBind(pat: Tree): Tree = pat match {
       case Bind(_, _) => pat
-      case _ => Bind(freshName(), pat)
+      case _ => Bind(freshName(pat.pos), pat)
     }
 
     def makeValue(pat: Tree): Tree = pat match {
@@ -373,7 +373,7 @@ abstract class TreeBuilder {
 
   /** Create visitor <x => x match cases> */
   def makeVisitor(cases: List[CaseDef], checkExhaustive: boolean, prefix: String): Tree = {
-    val x = freshName(prefix)
+    val x = freshName(prefix, posAssigner.pos)
     val sel = if (checkExhaustive) Ident(x) else makeUnchecked(Ident(x))
     Function(List(makeSyntheticParam(x)), Match(sel, cases))
   }
@@ -416,7 +416,7 @@ abstract class TreeBuilder {
         case List((vname, tpt)) =>
           List(ValDef(mods, vname, tpt, matchExpr))
         case _ =>
-          val tmp = freshName()
+          val tmp = freshName(pat1.pos)
           val firstDef = ValDef(Modifiers(PRIVATE | LOCAL | SYNTHETIC), tmp, TypeTree(), matchExpr)
           var cnt = 0
           val restDefs = for (val (vname, tpt) <- vars) yield {
@@ -438,7 +438,7 @@ abstract class TreeBuilder {
   /** Append implicit view section if for `implicitViews' if nonempty */
   def addImplicitViews(owner: Name, vparamss: List[List[ValDef]], implicitViews: List[Tree]): List[List[ValDef]] = {
     val mods = Modifiers(if (owner.isTypeName) PARAMACCESSOR | LOCAL | PRIVATE else PARAM)
-    def makeViewParam(tpt: Tree) = ValDef(mods | IMPLICIT, freshName("view$"), tpt, EmptyTree)
+    def makeViewParam(tpt: Tree) = ValDef(mods | IMPLICIT, freshName("view$", tpt.pos), tpt, EmptyTree)
     if (implicitViews.isEmpty) vparamss
     else vparamss ::: List(implicitViews map makeViewParam)
   }

@@ -1988,7 +1988,7 @@ abstract class GenMSIL extends SubComponent {
       if (parents.length > 1) {
 	if (settings.debug.value){
 	  log("interfaces:")
-	  for (i <- Iterator.range(0, interfaces.length)){
+	  for (i <- 0.until(interfaces.length)){
 	    log("  type: " + parents(i + 1).symbol + ", msil type: " + interfaces(i))
 	  }
 	}
@@ -2039,7 +2039,7 @@ abstract class GenMSIL extends SubComponent {
         if (m.symbol.isClassConstructor) {
 	  val constr =
             ownerType.DefineConstructor(attr, CallingConventions.Standard, paramTypes)
-          for (i <- Iterator.range(0, paramTypes.length)) {
+          for (i <- 0.until(paramTypes.length)) {
 	    constr.DefineParameter(i, ParameterAttributes.None, msilName(m.params(i).sym))
 	  }
 	  mapConstructor(sym, constr)
@@ -2048,7 +2048,7 @@ abstract class GenMSIL extends SubComponent {
 	  var resType = msilType(m.returnType)
 	  val method =
             ownerType.DefineMethod(getMethodName(sym), attr, resType, paramTypes)
-          for (i <- Iterator.range(0, paramTypes.length)){
+          for (i <- 0.until(paramTypes.length)){
 	    method.DefineParameter(i, ParameterAttributes.None, msilName(m.params(i).sym))
 	  }
           if (!methods.contains(sym))
@@ -2182,7 +2182,7 @@ abstract class GenMSIL extends SubComponent {
 
 	  val mirrorCode = mirrorMethod.GetILGenerator()
 	  mirrorCode.Emit(OpCodes.Ldsfld, getModuleInstanceField(sym))
-          Iterator.range(0, paramTypes.length) foreach loadArg(mirrorCode)
+          0.until(paramTypes.length) foreach loadArg(mirrorCode)
 
 	  mirrorCode.Emit(OpCodes.Call, getMethod(m))
 	  mirrorCode.Emit(OpCodes.Ret)

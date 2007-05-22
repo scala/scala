@@ -216,8 +216,8 @@ abstract class GenJVM extends SubComponent {
 
       for (val AnnotationInfo(ThrowsAttr, List(exc), _) <- excs.removeDuplicates) {
         buf.putShort(
-	  cpool.addClass(
-	    javaName(exc.constant.get.typeValue.symbol)).shortValue)
+          cpool.addClass(
+            javaName(exc.constant.get.typeValue.symbol)).shortValue)
         nattr = nattr + 1
       }
 
@@ -522,7 +522,7 @@ abstract class GenJVM extends SubComponent {
       {
         val paramJavaTypes = m.tpe.paramTypes map (t => toTypeKind(t));
         val paramNames: Array[String] = new Array[String](paramJavaTypes.length);
-        for (val i <- Iterator.range(0, paramJavaTypes.length))
+        for (val i <- 0.until(paramJavaTypes.length))
           paramNames(i) = "x_" + i
         val mirrorMethod = mirrorClass
         .addNewMethod(ACC_PUBLIC | ACC_FINAL | ACC_STATIC,
@@ -984,8 +984,8 @@ abstract class GenJVM extends SubComponent {
         if (b.lastInstruction == instr)
           endPC(b) = jcode.getPC();
 
-	//System.err.println("CRTLINE: " + instr.pos + " " +
-	//	   /* (if (instr.pos < clasz.cunit.source.content.length) clasz.cunit.source.content(instr.pos) else '*') + */ " " + crtLine);
+        //System.err.println("CRTLINE: " + instr.pos + " " +
+        //           /* (if (instr.pos < clasz.cunit.source.content.length) clasz.cunit.source.content(instr.pos) else '*') + */ " " + crtLine);
 
         if (crtPC > lastMappedPC) {
           jcode.completeLineNumber(lastMappedPC, crtPC, crtLine)

@@ -113,10 +113,10 @@ trait Trees {
     }
 
     def equalsStructure(that: Tree): Boolean = {
-      val this0 = this.asInstanceOf[Product]
-      val that0 = that.asInstanceOf[Product]
       if (this == that) return true
       if (this.getClass != that.getClass) return false
+      val this0 = this.asInstanceOf[Product]
+      val that0 = that.asInstanceOf[Product]
       assert(this0.productArity == that0.productArity)
       def equals0(thiz: Any, that: Any): Boolean = thiz match {
         case thiz: Tree =>
@@ -205,7 +205,8 @@ trait Trees {
     def mods: Modifiers
     def keyword: String = this match {
       case AliasTypeDef(_, _, _, _) => "type"
-      case ClassDef(_, _, _, _)  => "class"
+      case AbsTypeDef(_, _, _, _, _) => "type"
+      case _ : ClassDef => "class"
       case DefDef(_, _, _, _, _, _) => "def"
       case ModuleDef(_, _, _)       => "object"
       case PackageDef(_, _)         => "package"
@@ -362,7 +363,7 @@ trait Trees {
    *  @param hi
    */
   case class AbsTypeDef(mods: Modifiers, name: Name, tparams: List[AbsTypeDef], lo: Tree, hi: Tree)
-       extends DefTree {
+       extends MemberDef {
     def namePos = pos.offset.map(n => n - name.length).get(-1)
   }
 
@@ -1513,7 +1514,7 @@ trait Trees {
   }
 
   object posAssigner extends Traverser {
-    private var pos: Position = _
+    var pos: Position = _
     override def traverse(t: Tree): unit =
       if (t != EmptyTree && t.pos == NoPosition) {
         t.setPos(pos)

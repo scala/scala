@@ -37,7 +37,7 @@ trait ParallelMatching  {
   class SwitchRule(val scrutinee:Symbol, val column:List[Tree], val rest:Rep) extends MixtureRule(scrutinee,column,rest) {
     def getTransition() = {
       //here, we generate a switch tree, bodies of the switch is the corresponding [[row in rest]]
-	  //if a default case has to be handled, body is [[that row + the default row]]
+          //if a default case has to be handled, body is [[that row + the default row]]
     }
   }
   */
@@ -92,10 +92,10 @@ trait ParallelMatching  {
           However, if you uncomment them you will get a bug in genLoad:
                                        ^
    [locker] java.lang.AssertionError: assertion failed: Trying to access the this of another class: tree.symbol = class TreeBrowsers, ctx.clazz.symbol = object TreeBrowsers$TreeInfo compilation unit:TreeBrowsers.scala
-   [locker] 	at scala.Predef$.assert(Predef.scala:90)
-   [locker] 	at scala.tools.nsc.backend.icode.GenICode$ICodePhase.scala$tools$nsc$backend$icode$GenICode$ICodePhase$$genLoad(GenICode.scala:809)
-   [locker] 	at scala.tools.nsc.backend.icode.GenICode$ICodePhase.genLoadQualifier(GenICode.scala:996)
-   [locker] 	at scala.tools.nsc.backend.icode.GenICode$ICodePhase.scala$tools$nsc$backend$icode$GenICode$ICodePhase$$genLoad(GenICode.scala:785)
+   [locker]         at scala.Predef$.assert(Predef.scala:90)
+   [locker]         at scala.tools.nsc.backend.icode.GenICode$ICodePhase.scala$tools$nsc$backend$icode$GenICode$ICodePhase$$genLoad(GenICode.scala:809)
+   [locker]         at scala.tools.nsc.backend.icode.GenICode$ICodePhase.genLoadQualifier(GenICode.scala:996)
+   [locker]         at scala.tools.nsc.backend.icode.GenICode$ICodePhase.scala$tools$nsc$backend$icode$GenICode$ICodePhase$$genLoad(GenICode.scala:785)
           (pat.symbol != NoSymbol) && pat.symbol.tpe.prefix.isStable &&
           */
         //{Console.println(pat.symbol+" "+definitions.isValueType(patternType.symbol)); !definitions.isValueType(patternType.symbol)}&&
@@ -399,7 +399,7 @@ object Rep {
           for (open <- allcomb if !(row exists { r => covers(r._1, open)})) {
             sb.append("missing combination ")
             val NPAD = 15
-            def pad(s:String) = { Iterator.range(1,NPAD - s.length).foreach { x => sb.append(" ") }; sb.append(s) }
+            def pad(s:String) = { 1.until(NPAD - s.length).foreach { x => sb.append(" ") }; sb.append(s) }
             List.range(0, temp.length) foreach {
               i => open.find { case (j,sym) => j==i } match {
                 case None => pad("*")
@@ -447,7 +447,7 @@ object Rep {
     override def toString = {
       val sb   = new StringBuilder
       val NPAD = 15
-      def pad(s:String) = { Iterator.range(1,NPAD - s.length).foreach { x => sb.append(" ") }; sb.append(s) }
+      def pad(s:String) = { 1.until(NPAD - s.length).foreach { x => sb.append(" ") }; sb.append(s) }
       for (tmp <- temp) pad(tmp.name.toString)
       sb.append('\n')
       for ((r,i) <- row.zipWithIndex) {
