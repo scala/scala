@@ -31,7 +31,7 @@ object MainGenericRunner {
         ""
       else {
         val libdir = new File(new File(scalaHome), "lib")
-        if(!libdir.exists || libdir.isFile)
+        if (!libdir.exists || libdir.isFile)
           return classpath
 
         val filesInLib = libdir.listFiles
@@ -42,13 +42,13 @@ object MainGenericRunner {
         jarsInLib.mkString("", File.pathSeparator, "")
       }
 
-    if(classpath == "")
+    if (classpath == "")
       extraClassPath + File.pathSeparator + "."
     else
       classpath + File.pathSeparator + extraClassPath
   }
 
-  def main(args: Array[String]): Unit = {
+  def main(args: Array[String]) {
     def error(str: String) = Console.println(str)
     val command = new GenericRunnerCommand(args.toList, error)
     if (!command.ok) {
