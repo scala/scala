@@ -87,7 +87,7 @@ object Test {
 
   def main(args: Array[String]) {
     check_success("check_from",     check_from,     -1)
-    check_success("check_range",    check_range,    16)
+    check_success("check_range",    check_range,    11)
     check_success("check_range2",   check_range2,   26)
     check_success("check_range3",   check_range3,    3)
     check_success("check_take",     check_take,     10)
