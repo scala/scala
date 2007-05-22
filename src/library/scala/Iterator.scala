@@ -126,10 +126,7 @@ object Iterator {
    *  @param step  the increment value of the iterator (must be positive or negative)
    *  @return      the iterator with values in range <code>[start;end)</code>.
    */
- def range(start: Int, end: Int, step: Int): Range =
-   if      (start >= end && step > 0) new Range(0, 0, 1)
-   else if (start <= end && step < 0) new Range(0, 0, 1)
-   else new Range(start, end, step)
+ def range(start: Int, end: Int, step: Int): Range = new Range(start, end, step)
 
   /** Create an iterator with elements
    *  <code>e<sub>n+1</sub> = step(e<sub>n</sub>)</code>
