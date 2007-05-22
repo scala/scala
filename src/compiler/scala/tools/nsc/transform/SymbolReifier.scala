@@ -35,7 +35,7 @@ trait SymbolReifier {
     }
   }
 
-  var _log_reify_type_ = true//false
+  var _log_reify_type_ = false
 
   def reify(tp: Type): reflect.Type = tp match {
     case ErrorType =>
