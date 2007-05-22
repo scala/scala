@@ -105,6 +105,7 @@ object RichStringTest5 extends RichTest {
     Console.println("s5: " + s5.stripMargin('#'))
   }
 }
+/** xxx */
 object Test {
   def main(args: Array[String]): Unit = {
     RichCharTest1.run

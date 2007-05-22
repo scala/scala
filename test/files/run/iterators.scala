@@ -12,19 +12,11 @@ object Test {
     val it2 = Iterator.from(0, -1)
     it1.next + it2.next
   }
-
   def check_range: Int = {
     val xs1 = Iterator.range(0, 10,  2) toList;
-    val xs2 = try {
-      val r = Iterator.range(0, 10, -2) toList;
-      throw new Error("" + r)
-    } catch {
-    case e : IllegalArgumentException => Nil
-    }
+    val xs2 = Iterator.range(0, 10, -2) toList;
     val xs3 = Iterator.range(10, 0, -2) toList;
-    val xs4 =
-      Iterator.range(10, 0, 2) toList;
-
+    val xs4 = Iterator.range(10, 0,  2) toList;
     val xs5 = Iterator.range(0, 10, 11) toList;
     xs1.length + xs2.length + xs3.length + xs4.length + xs5.length
   }
