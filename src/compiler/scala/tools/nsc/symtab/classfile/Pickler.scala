@@ -289,9 +289,11 @@ abstract class Pickler extends SubComponent {
       }
 
     private def putAnnotationArg(arg: AnnotationArgument) {
-      arg.constant match {
-	case Some(c) => putConstant(c)
-	case _ => putTree(arg.tree)
+      if(putEntry(arg)) {
+        arg.constant match {
+	  case Some(c) => putConstant(c)
+	  case _ => putTree(arg.tree)
+	}
       }
     }
 
@@ -605,6 +607,12 @@ abstract class Pickler extends SubComponent {
             writeRef(arg)
           }
           ATTRIBTREE
+
+	case arg:AnnotationArgument =>
+	  arg.constant match {
+	    case Some(c) => writeBody(c)
+	    case None => writeBody(arg.tree)
+	  }
 
         case _ =>
           throw new FatalError("bad entry: " + entry + " " + entry.getClass)
