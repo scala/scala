@@ -113,8 +113,6 @@ trait AnnotationInfos {
   {
     def this(cons: Constant) = this(cons2refltree(cons))
 
-//println("tree is: " + tree)
-
     val constant: Option[Constant] = refltree2cons(tree)
 
     def isConstant = !constant.isEmpty
@@ -122,7 +120,7 @@ trait AnnotationInfos {
     override def toString: String =
       constant match {
         case Some(cons) => cons.escapedStringValue
-        case None => tree.toString
+        case None => reflect.Print(tree)
       }
   }
 
