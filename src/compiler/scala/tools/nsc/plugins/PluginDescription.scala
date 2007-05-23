@@ -13,6 +13,7 @@ abstract class PluginDescription {
    *  should have the same name.  */
   val name: String
 
+
   /** The name of the main class for the plugin */
   val classname: String
 
