@@ -24,7 +24,6 @@ install: build
 
 	install -m644 simpbuild/lib/scala-library.jar $(CURDIR)/debian/scala-library/usr/share/java/
 	install -m644 simpbuild/lib/scala-dbc.jar $(CURDIR)/debian/scala-library/usr/share/java/
-	install -m644 simpbuild/lib/scala-actors.jar $(CURDIR)/debian/scala-library/usr/share/java/
 
 	install -m644 simpbuild/lib/scala-compiler.jar $(CURDIR)/debian/scala/usr/share/java/
 	install -m755 debian/command-scripts/* $(CURDIR)/debian/scala/usr/bin/

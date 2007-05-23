@@ -1,3 +1,10 @@
+scala (2.5.0-1) unstable; urgency=low
+
+  * New upstream release
+  * Depend only on java-gcj-compat, not java-gcj-compat-dev
+
+ -- Lex Spoon <lex@debian.org>  Tue, 22 May 2007 16:51:47 +0200
+
 scala (2.4.0-1) unstable; urgency=low
 
   * New upstream version.
