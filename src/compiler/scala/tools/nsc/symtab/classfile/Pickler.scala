@@ -272,27 +272,26 @@ abstract class Pickler extends SubComponent {
       children foreach putSymbol
     }
 
-    private def putAnnotation(sym: Symbol, attr: AnnotationInfo): unit = {
-      assert(putEntry((sym, attr)))
-      putType(attr.atp)
-      for (c <- attr.args) putTreeOrConstant(c)
-      for ((name, c) <- attr.assocs) { putEntry(name); putTreeOrConstant(c) }
+    private def putAnnotation(sym: Symbol, annot: AnnotationInfo): unit = {
+      assert(putEntry((sym, annot)))
+      val AnnotationInfo(atp, args, assocs) = annot
+      putType(atp)
+      args foreach putAnnotationArg
+      for ((name, c) <- assocs) { putEntry(name); putAnnotationArg(c) }
     }
 
     private def putAnnotation(annot: AnnotationInfo): unit =
       if(putEntry(annot)) {
         val AnnotationInfo(tpe, args, assocs) = annot
         putType(tpe)
-        args foreach putTreeOrConstant
-        for ((name, rhs) <- assocs) { putEntry(name); putTreeOrConstant(rhs) }
+        args foreach putAnnotationArg
+        for ((name, rhs) <- assocs) { putEntry(name); putAnnotationArg(rhs) }
       }
 
-    private def putTreeOrConstant(x: AnyRef) {
-      x match {
-        case c:Constant => putConstant(c)
-        case tree:reflect.Tree => putTree(tree)
-        case _ =>
-          throw new FatalError("attribute neither tree nor constant: " + x)
+    private def putAnnotationArg(arg: AnnotationArgument) {
+      arg.constant match {
+	case Some(c) => putConstant(c)
+	case _ => putTree(arg.tree)
       }
     }
 
