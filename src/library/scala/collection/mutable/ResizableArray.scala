@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -10,6 +10,8 @@
 
 
 package scala.collection.mutable
+
+import Predef._
 
 /** This class is used internally to implement data structures that
  *  are based on resizable arrays.
@@ -22,11 +24,9 @@ trait ResizableArray[A] extends RandomAccessSeq[A] {
 
   protected val initialSize: Int = 16
   protected var array: Array[A] = new Array[A](initialSize)
-  private var size1 : Int = 0
-  protected def size0 : Int = size1
-  protected def size0_=(sz : Int) = {
-    size1 = sz
-  }
+  private var size1: Int = 0
+  protected def size0: Int = size1
+  protected def size0_=(sz: Int) { size1 = sz }
 
   //##########################################################################
   // implement/override methods of Seq[A]
@@ -39,7 +39,7 @@ trait ResizableArray[A] extends RandomAccessSeq[A] {
 
   /** remove elements of this array at indices after <code>sz</code>
    */
-  def reduceToSize(sz : Int) = {
+  def reduceToSize(sz: Int) {
     if (sz > size0) throw new IllegalArgumentException
     size0 = sz
   }
@@ -50,14 +50,16 @@ trait ResizableArray[A] extends RandomAccessSeq[A] {
    *  @param  xs the array to fill.
    *  @param  start starting index.
    */
-  override def copyToArray[B >: A](xs: Array[B], start: Int): Unit =
+  override def copyToArray[B >: A](xs: Array[B], start: Int) {
     Array.copy(array, 0, xs, start, size0)
+  }
 
   /** Copy all elements to a buffer
    *  @param   The buffer to which elements are copied
    */
-  override def copyToBuffer[B >: A](dest: Buffer[B]): Unit =
+  override def copyToBuffer[B >: A](dest: Buffer[B]) {
     dest.++=(array.asInstanceOf[Array[B]], 0, size0)
+  }
 
   /** Returns a new iterator over all elements of this resizable array.
    */
@@ -70,7 +72,7 @@ trait ResizableArray[A] extends RandomAccessSeq[A] {
   //##########################################################################
 
   /** ensure that the internal array has at n cells */
-  protected def ensureSize(n: Int): Unit =
+  protected def ensureSize(n: Int) {
     if (n > array.length) {
       var newsize = array.length * 2
       while (n > newsize)
@@ -79,10 +81,11 @@ trait ResizableArray[A] extends RandomAccessSeq[A] {
       Array.copy(array, 0, newar, 0, size0)
       array = newar
     }
+  }
 
   /** Swap two elements of this array.
    */
-  protected def swap(a: Int, b: Int): Unit = {
+  protected def swap(a: Int, b: Int) {
     val h = array(a)
     array(a) = array(b)
     array(b) = h
@@ -90,7 +93,7 @@ trait ResizableArray[A] extends RandomAccessSeq[A] {
 
   /** Move parts of the array.
    */
-  protected def copy(m: Int, n: Int, len: Int) =
+  protected def copy(m: Int, n: Int, len: Int) {
     Array.copy(array, m, array, n, len)
-
+  }
 }
