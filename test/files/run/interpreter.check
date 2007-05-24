@@ -22,7 +22,7 @@ scala> four: anotherint = 4
 
 scala> <console>:5: error: type mismatch;
  found   : java.lang.String("hello")
- required: $iw.$iw.anotherint
+ required: anotherint
 val bogus: anotherint = "hello"
                         ^
 
