@@ -54,7 +54,7 @@ import nsc.{InterpreterResults=>IR}
  *    properly, because rebinding at the Java level is technically difficult.
  *  </p>
  */
-class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) {
+class Interpreter(val settings: Settings, out: PrintWriter) {
   import symtab.Names
   import compiler.Traverser
   import compiler.{Tree, TermTree,
@@ -67,13 +67,7 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
 
   /** construct an interpreter that reports to Console */
   def this(settings: Settings) =
-    this(settings,
-         new ConsoleReporter(settings),
-         new PrintWriter(new ConsoleWriter, true))
-
-  /** construct an interpreter that uses the specified in and out streams */
-  def this(settings: Settings, out: PrintWriter) =
-    this(settings, new ConsoleReporter(settings, null, out), out)
+    this(settings, new PrintWriter(new ConsoleWriter, true))
 
   /** whether to print out result lines */
   private var printResults: Boolean = true
@@ -98,11 +92,15 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
 
   /** directory to save .class files to */
   val classfilePath = File.createTempFile("scalaint", "")
-  classfilePath.delete  // the file is created as a file; make it a directory
-  classfilePath.mkdirs
+  classfilePath.delete()  // the file is created as a file; make it a directory
+  classfilePath.mkdirs()
 
   /* set up the compiler's output directory */
   settings.outdir.value = classfilePath.getPath
+
+  object reporter extends ConsoleReporter(settings, null, out) {
+    override def printMessage(msg: String) = out.println(clean(msg))
+  }
 
   /** the compiler to compile expressions with */
   val compiler: Global = new Global(settings, reporter)
@@ -186,6 +184,11 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
 
     return str.substring(0, maxpr)
   }
+
+  /** Clean up a string for output */
+  private def clean(str: String) =
+    truncPrintString(Interpreter.stripWrapperGunk(str))
+
 
   /** Compute imports that allow definitions from previous
    *  requests to be visible in a new request.  Returns
@@ -414,9 +417,6 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
    *  @return     ...
    */
   def interpret(line: String): IR.Result = {
-    def clean(str: String) =
-      truncPrintString(Interpreter.stripWrapperGunk(str))
-
     // parse
     val trees = parse(line) match {
       case None => return IR.Incomplete
@@ -878,8 +878,7 @@ object Interpreter {
    *  from an interpreter output string.
    */
   def stripWrapperGunk(str: String): String = {
-    val wrapregex = "line[0-9]+\\$object(\\$\\$iw)*"
-    str.replaceAll(wrapregex+"\\.", "")
-       .replaceAll(wrapregex+"\\$", "")
+    val wrapregex = "(line[0-9]+\\$object[$.])?(\\$iw[$.])*"
+    str.replaceAll(wrapregex, "")
   }
 }
