@@ -32,6 +32,10 @@ rem We use the value of the JAVA_OPTS environment variable if defined
 set _JAVA_OPTS=%JAVA_OPTS%
 if "%_JAVA_OPTS%"=="" set _JAVA_OPTS=@javaflags@
 
+rem We use the value of the ILASM environment variable if defined
+set _ILASM=%ILASM%
+if "%_ILASM%"=="" call :find_ilasm ilasm.exe
+
 set _EXTENSION_CLASSPATH=@extclasspath@
 if "%_EXTENSION_CLASSPATH%"=="" (
   for %%f in ("%_SCALA_HOME%\lib\*") do call :add_cpath "%%f"
@@ -59,7 +63,7 @@ shift
 goto loop
 
 :exec
-set _PROPS=-Dscala.home="%_SCALA_HOME%" -Denv.classpath="%CLASSPATH%" @properties@
+set _PROPS=-Dscala.home="%_SCALA_HOME%" -Denv.classpath="%CLASSPATH%" -Dilasm.tool="%_ILASM%" @properties@
 
 rem echo %_JAVACMD% -Xbootclasspath/a:"%_BOOT_CLASSPATH%" %_JAVA_OPTS% %_PROPS% -cp "%_EXTENSION_CLASSPATH%" @class@ @toolflags@ %_ARGS%
 %_JAVACMD% -Xbootclasspath/a:"%_BOOT_CLASSPATH%" %_JAVA_OPTS% %_PROPS% -cp "%_EXTENSION_CLASSPATH%" @class@ @toolflags@ %_ARGS%
@@ -83,6 +87,10 @@ rem set _SCALA_HOME=%~dps0..
   set _BIN_DIR=
   for %%i in (%~sf0) do set _BIN_DIR=%_BIN_DIR%%%~dpsi
   set _SCALA_HOME=%_BIN_DIR%..
+goto :eof
+
+:find_ilasm
+  set _ILASM=%~$PATH:1
 goto :eof
 
 rem ##########################################################################

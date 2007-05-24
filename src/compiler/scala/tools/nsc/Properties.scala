@@ -24,6 +24,8 @@ object Properties {
     props
   }
 
+  private val isWin = System.getProperty("os.name") startsWith "Windows"
+
   /** The version number of the jar this was loaded from, or
     * "(unknown)" if it cannot be determined.
     */
@@ -45,9 +47,19 @@ object Properties {
   val scalaHome: String =
     System.getProperty("scala.home")
 
-  val cmdName: String = {
-    val isWin = System.getProperty("os.name") startsWith "Windows"
-    if (isWin) "scala.bat" else "scala"
-  }
+  val envClasspath: String =
+    System.getProperty("env.classpath")
 
+  val cmdName: String =
+    if (isWin) "scala.bat" else "scala"
+
+  val ilasmFormat: java.text.MessageFormat = {
+    val ilasm = System.getProperty("ilasm.tool", "")
+    if (ilasm == "") null
+    else
+      new java.text.MessageFormat(ilasm + (
+        if (isWin) " /quiet /exe /output={0} {1}"
+        else " --format exe --output={0} {1}"
+      ))
+  }
 }
