@@ -11,7 +11,6 @@ import java.lang.ClassLoader
 import java.io.{BufferedReader, InputStreamReader, File, FileReader, PrintWriter}
 import java.io.IOException
 
-import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
 import scala.tools.nsc.util.Position
 import nsc.{InterpreterResults=>IR}
 
@@ -75,13 +74,9 @@ class InterpreterLoop(in0: BufferedReader, out: PrintWriter) {
 
   /** Bind the settings so that evaluated code can modiy them */
   def bindSettings() {
-// TODO: The isettings should not be bound like this,
-//       because the interpreter should not be forced to
-//       use a compatible classloader.  Instead, the
-//       settings object should be compiled inside the
-//       interpreter, and InterpreterLoop should grab the
-//       settings via reflection.
     interpreter.beQuietDuring {
+      interpreter.compileString(InterpreterSettings.sourceCodeForClass)
+
       interpreter.bind(
         "settings",
         "scala.tools.nsc.InterpreterSettings",
