@@ -82,8 +82,8 @@ object List {
    *  @param elem the element composing the resulting list
    *  @return     a list composed of n elements all equal to elem
    */
-  def make[a](n: Int, elem: a): List[a] = {
-    val b = new ListBuffer[a]
+  def make[A](n: Int, elem: A): List[A] = {
+    val b = new ListBuffer[A]
     var i = 0
     while (i < n) {
       b += elem
@@ -101,8 +101,8 @@ object List {
    *  @return      the list obtained by applying the maker function to
    *               successive integers from 0 to n (exclusive).
    */
-  def tabulate[a](n: Int, maker: Int => a): List[a] = {
-    val b = new ListBuffer[a]
+  def tabulate[A](n: Int, maker: Int => A): List[A] = {
+    val b = new ListBuffer[A]
     var i = 0
     while (i < n) {
       b += maker(i)
@@ -116,15 +116,15 @@ object List {
    *  @param xss the list of lists that are to be concatenated
    *  @return    the concatenation of all the lists
    */
-  def flatten[a](xss: List[List[a]]): List[a] = concat(xss: _*)
+  def flatten[A](xss: List[List[A]]): List[A] = concat(xss: _*)
 
   /** Concatenate all the argument lists into a single list.
    *
    *  @param xss the lists that are to be concatenated
    *  @return the concatenation of all the lists
    */
-  def concat[a](xss: List[a]*): List[a] = {
-    val b = new ListBuffer[a]
+  def concat[A](xss: List[A]*): List[A] = {
+    val b = new ListBuffer[A]
     for (xs <- xss) {
       var xc = xs
       while (!xc.isEmpty) {
@@ -140,9 +140,9 @@ object List {
    *  @param xs the list of pairs to unzip
    *  @return a pair of lists: the first list in the pair contains the list
    */
-  def unzip[a,b](xs: List[(a,b)]): (List[a], List[b]) = {
-    val b1 = new ListBuffer[a]
-    val b2 = new ListBuffer[b]
+  def unzip[A,B](xs: List[(A,B)]): (List[A], List[B]) = {
+    val b1 = new ListBuffer[A]
+    val b2 = new ListBuffer[B]
     var xc = xs
     while (!xc.isEmpty) {
       b1 += xc.head._1
@@ -152,13 +152,13 @@ object List {
     (b1.toList, b2.toList)
   }
 
-  /** Converts an iterator to a list
+  /** Converts an iterator to a list.
    *
    *  @param it the iterator to convert
    *  @return   a list that contains the elements returned by successive
    *            calls to <code>it.next</code>
    */
-  def fromIterator[a](it: Iterator[a]): List[a] = it.toList;
+  def fromIterator[A](it: Iterator[A]): List[A] = it.toList
 
   /** Converts an array into a list.
    *
@@ -166,7 +166,7 @@ object List {
    *  @return    a list that contains the same elements than <code>arr</code>
    *             in the same order
    */
-  def fromArray[a](arr: Array[a]): List[a] = fromArray(arr, 0, arr.length);
+  def fromArray[A](arr: Array[A]): List[A] = fromArray(arr, 0, arr.length)
 
   /** Converts a range of an array into a list.
    *
@@ -176,8 +176,8 @@ object List {
    *  @return      a list that contains the same elements than <code>arr</code>
    *               in the same order
    */
-  def fromArray[a](arr: Array[a], start: Int, len: Int): List[a] = {
-    var res: List[a] = Nil
+  def fromArray[A](arr: Array[A], start: Int, len: Int): List[A] = {
+    var res: List[A] = Nil
     var i = start + len
     while (i > start) {
       i -= 1
@@ -194,7 +194,7 @@ object List {
    *  @return          the list of substrings
    */
   def fromString(str: String, separator: Char): List[String] = {
-    var words: List[String] = List()
+    var words: List[String] = Nil
     var pos = str.length()
     while (pos > 0) {
       val pos1 = str.lastIndexOf(separator, pos - 1)
@@ -219,7 +219,7 @@ object List {
    *  @return   the list in form of a string.
    */
   def toString(xs: List[Char]): String = {
-    val sb = new compat.StringBuilder()
+    val sb = new StringBuilder()
     var xc = xs
     while (!xc.isEmpty) {
       sb.append(xc.head)
@@ -235,8 +235,8 @@ object List {
    *  @param f  ...
    *  @return   ...
    */
-  def mapConserve[a <: AnyRef](xs: List[a])(f: a => a): List[a] = {
-    def loop(ys: List[a]): List[a] =
+  def mapConserve[A <: AnyRef](xs: List[A])(f: A => A): List[A] = {
+    def loop(ys: List[A]): List[A] =
       if (ys.isEmpty) xs
       else {
         val head0 = ys.head
@@ -247,7 +247,7 @@ object List {
           val ys1 = head1 :: mapConserve(ys.tail)(f)
           if (xs eq ys) ys1
           else {
-            val b = new ListBuffer[a]
+            val b = new ListBuffer[A]
             var xc = xs
             while (xc ne ys) {
               b += xc.head
@@ -268,8 +268,8 @@ object List {
    *          <code>[a0, ..., ak]</code>, <code>[b0, ..., bl]</code> and
    *          <code>n = min(k,l)</code>
    */
-  def map2[a,b,c](xs: List[a], ys: List[b])(f: (a, b) => c): List[c] = {
-    val b = new ListBuffer[c]
+  def map2[A,B,C](xs: List[A], ys: List[B])(f: (A, B) => C): List[C] = {
+    val b = new ListBuffer[C]
     var xc = xs
     var yc = ys
     while (!xc.isEmpty && !yc.isEmpty) {
@@ -280,16 +280,19 @@ object List {
     b.toList
   }
 
-  /** Returns the list resulting from applying the given function <code>f</code> to
-   *  corresponding elements of the argument lists.
+  /** Returns the list resulting from applying the given function
+   *  <code>f</code> to corresponding elements of the argument lists.
    *
    *  @param f function to apply to each pair of elements.
-   *  @return <code>[f(a0,b0,c0), ..., f(an,bn,cn)]</code> if the lists are
-   *          <code>[a0, ..., ak]</code>, <code>[b0, ..., bl]</code>, <code>[c0, ..., cm]</code> and
-   *          <code>n = min(k,l,m)</code>
+   *  @return  <code>[f(a<sub>0</sub>,b<sub>0</sub>,c<sub>0</sub>),
+   *           ..., f(a<sub>n</sub>,b<sub>n</sub>,c<sub>n</sub>)]</code>
+   *           if the lists are <code>[a<sub>0</sub>, ..., a<sub>k</sub>]</code>,
+   *           <code>[b<sub>0</sub>, ..., b<sub>l</sub>]</code>,
+   *           <code>[c<sub>0</sub>, ..., c<sub>m</sub>]</code> and
+   *           <code>n = min(k,l,m)</code>
    */
-  def map3[a,b,c, d](xs: List[a], ys: List[b], zs: List[c])(f: (a, b, c) => d): List[d] = {
-    val b = new ListBuffer[d]
+  def map3[A,B,C,D](xs: List[A], ys: List[B], zs: List[C])(f: (A, B, C) => D): List[D] = {
+    val b = new ListBuffer[D]
     var xc = xs
     var yc = ys
     var zc = zs
@@ -310,9 +313,9 @@ object List {
    *           ... &amp;&amp; p(a<sub>n</sub>,b<sub>n</sub>))]</code>
    *           if the lists are <code>[a<sub>0</sub>, ..., a<sub>k</sub>]</code>;
    *           <code>[b<sub>0</sub>, ..., b<sub>l</sub>]</code>
-   *          and <code>m = min(k,l)</code>
+   *           and <code>n = min(k,l)</code>
    */
-  def forall2[a,b](xs: List[a], ys: List[b])(f: (a, b) => boolean): boolean = {
+  def forall2[A,B](xs: List[A], ys: List[B])(f: (A, B) => Boolean): Boolean = {
     var xc = xs
     var yc = ys
     while (!xc.isEmpty && !yc.isEmpty) {
@@ -327,11 +330,13 @@ object List {
    *  for some corresponding elements of the argument lists.
    *
    *  @param p function to apply to each pair of elements.
-   *  @return <code>n != 0 &amp;&amp; (p(a0,b0) || ... || p(an,bn))]</code> if the lists are
-   *          <code>[a0, ..., ak]</code>, <code>[b0, ..., bl]</code> and
-   *          <code>m = min(k,l)</code>
+   *  @return  <code>n != 0 &amp;&amp; (p(a<sub>0</sub>,b<sub>0</sub>) ||
+   *           ... || p(a<sub>n</sub>,b<sub>n</sub>))]</code> if the lists are
+   *           <code>[a<sub>0</sub>, ..., a<sub>k</sub>]</code>,
+   *           <code>[b<sub>0</sub>, ..., b<sub>l</sub>]</code> and
+   *           <code>n = min(k,l)</code>
    */
-  def exists2[a,b](xs: List[a], ys: List[b])(f: (a, b) => boolean): boolean = {
+  def exists2[A,B](xs: List[A], ys: List[B])(f: (A, B) => Boolean): Boolean = {
     var xc = xs
     var yc = ys
     while (!xc.isEmpty && !yc.isEmpty) {
@@ -344,8 +349,11 @@ object List {
 
   /** Transposes a list of lists.
    *  pre: All element lists have the same length.
+   *
+   *  @param xss the list of lists
+   *  @return    the transposed list of lists
    */
-  def transpose[a](xss: List[List[a]]): List[List[a]] =
+  def transpose[A](xss: List[List[A]]): List[List[A]] =
     if (xss.head.isEmpty) List()
     else (xss map (xs => xs.head)) :: transpose(xss map (xs => xs.tail))
 
@@ -378,7 +386,7 @@ object List {
  *  @author  Martin Odersky and others
  *  @version 1.0, 16/07/2003
  */
-sealed abstract class List[+a] extends Seq[a] {
+sealed abstract class List[+A] extends Seq[A] {
 
   /** Returns true if the list does not contain any elements.
    *  @return <code>true</code>, iff the list is empty.
@@ -390,14 +398,14 @@ sealed abstract class List[+a] extends Seq[a] {
    *  @return the first element of this list.
    *  @throws Predef.NoSuchElementException if the list is empty.
    */
-  def head: a
+  def head: A
 
   /** Returns this list without its first element.
    *
    *  @return this list without its first element.
    *  @throws Predef.NoSuchElementException if the list is empty.
    */
-  def tail: List[a]
+  def tail: List[A]
 
   /** <p>
    *    Add an element <code>x</code> at the beginning of this list.
@@ -407,7 +415,7 @@ sealed abstract class List[+a] extends Seq[a] {
    *  @return  the list with <code>x</code> appended at the beginning.
    *  @ex <code>1 :: List(2, 3) = List(2, 3).::(1) = List(1, 2, 3)</code>
    */
-  def ::[b >: a] (x: b): List[b] =
+  def ::[B >: A] (x: B): List[B] =
     new scala.::(x, this)
 
   /** <p>
@@ -419,10 +427,10 @@ sealed abstract class List[+a] extends Seq[a] {
    *  @return the concatenation of the two lists.
    *  @ex <code>List(1, 2) ::: List(3, 4) = List(3, 4).:::(List(1, 2)) = List(1, 2, 3, 4)</code>
    */
-  def :::[b >: a](prefix: List[b]): List[b] =
+  def :::[B >: A](prefix: List[B]): List[B] =
     if (isEmpty) prefix
     else {
-      val b = new ListBuffer[b]
+      val b = new ListBuffer[B]
       var those = prefix
       while (!those.isEmpty) {
         b += those.head
@@ -439,7 +447,7 @@ sealed abstract class List[+a] extends Seq[a] {
    *  @param prefix the prefix to reverse and then prepend
    *  @return       the concatenation of the reversed prefix and the current list.
    */
-  def reverse_:::[b >: a](prefix: List[b]): List[b] = prefix match {
+  def reverse_:::[B >: A](prefix: List[B]): List[B] = prefix match {
     case Nil => this
     case head :: tail => (head :: this).reverse_:::(tail)
   }
@@ -479,33 +487,33 @@ sealed abstract class List[+a] extends Seq[a] {
    *
    *  @return an iterator on the list elements.
    */
-  override def elements: Iterator[a] = new Iterator[a] {
+  override def elements: Iterator[A] = new Iterator[A] {
     var these = List.this
     def hasNext: Boolean = !these.isEmpty
-    def next: a =
+    def next: A =
       if (!hasNext)
         throw new NoSuchElementException("next on empty Iterator")
       else {
         val result = these.head; these = these.tail; result
       }
-    override def toList: List[a] = these
+    override def toList: List[A] = these
   }
 
   /** Overrides the method in Iterable for efficiency.
    *
    *  @return  the list itself
    */
-  override def toList: List[a] = this
+  override def toList: List[A] = this
 
   /** Returns the list without its last element.
    *
    *  @return the list without its last element.
    *  @throws Predef.UnsupportedOperationException if the list is empty.
    */
-  def init: List[a] =
+  def init: List[A] =
     if (isEmpty) throw new UnsupportedOperationException("Nil.init")
     else {
-      val b = new ListBuffer[a]
+      val b = new ListBuffer[A]
       var elem = head
       var next = tail
       while (!next.isEmpty) {
@@ -521,7 +529,7 @@ sealed abstract class List[+a] extends Seq[a] {
    *  @return the last element of the list.
    *  @throws Predef.UnsupportedOperationException if the list is empty.
    */
-  override def last: a =
+  override def last: A =
     if (isEmpty) throw new Predef.NoSuchElementException("Nil.last")
     else if (tail.isEmpty) head
     else tail.last
@@ -532,8 +540,8 @@ sealed abstract class List[+a] extends Seq[a] {
    *  @param n the number of elements to take.
    *  @return the <code>n</code> first elements of this list.
    */
-  override def take(n: Int): List[a] = {
-    val b = new ListBuffer[a]
+  override def take(n: Int): List[A] = {
+    val b = new ListBuffer[A]
     var i = 0
     var these = this
     while (!these.isEmpty && i < n) {
@@ -550,7 +558,7 @@ sealed abstract class List[+a] extends Seq[a] {
    *  @param n the number of elements to drop.
    *  @return the list without its <code>n</code> first elements.
    */
-  override def drop(n: Int): List[a] =
+  override def drop(n: Int): List[A] =
     if (n == 0 || isEmpty) this
     else (tail drop (n-1))
 
@@ -559,8 +567,8 @@ sealed abstract class List[+a] extends Seq[a] {
    *  @param n the number of elements to take
    *  @return the suffix of length <code>n</code> of the list
    */
-  def takeRight(n: Int): List[a] = {
-    def loop(lead: List[a], lag: List[a]): List[a] = lead match {
+  def takeRight(n: Int): List[A] = {
+    def loop(lead: List[A], lag: List[A]): List[A] = lead match {
       case Nil => lag
       case _ :: tail => loop(tail, lag.tail)
     }
@@ -572,8 +580,8 @@ sealed abstract class List[+a] extends Seq[a] {
    *  @param n the number of elements to take
    *  @return the suffix of length <code>n</code> of the list
    */
-  def dropRight(n: Int): List[a] = {
-    def loop(lead: List[a], lag: List[a]): List[a] = lead match {
+  def dropRight(n: Int): List[A] = {
+    def loop(lead: List[A], lag: List[A]): List[A] = lead match {
       case Nil => Nil
       case _ :: tail => lag.head :: loop(tail, lag.tail)
     }
@@ -584,11 +592,11 @@ sealed abstract class List[+a] extends Seq[a] {
    *  created.
    *
    *  @param n the position at which to split
-   *  @return a pair of lists composed of the first <code>n</code>
-   *          elements, and the other elements.
+   *  @return  a pair of lists composed of the first <code>n</code>
+   *           elements, and the other elements.
    */
-  def splitAt(n: Int): (List[a], List[a]) = {
-    val b = new ListBuffer[a]
+  def splitAt(n: Int): (List[A], List[A]) = {
+    val b = new ListBuffer[A]
     var i = 0
     var these = this
     while (!these.isEmpty && i < n) {
@@ -606,8 +614,8 @@ sealed abstract class List[+a] extends Seq[a] {
    *  @return  the longest prefix of this list whose elements satisfy
    *           the predicate <code>p</code>.
    */
-  override def takeWhile(p: a => Boolean): List[a] = {
-    val b = new ListBuffer[a]
+  override def takeWhile(p: A => Boolean): List[A] = {
+    val b = new ListBuffer[A]
     var these = this
     while (!these.isEmpty && p(these.head)) {
       b += these.head
@@ -623,7 +631,7 @@ sealed abstract class List[+a] extends Seq[a] {
    *  @return  the longest suffix of the list whose first element
    *           does not satisfy the predicate <code>p</code>.
    */
-  override def dropWhile(p: a => Boolean): List[a] =
+  override def dropWhile(p: A => Boolean): List[A] =
     if (isEmpty || !p(head)) this
     else tail dropWhile p;
 
@@ -634,8 +642,8 @@ sealed abstract class List[+a] extends Seq[a] {
    *  @return  a pair consisting of the longest prefix of the list whose
    *           elements all satisfy <code>p</code>, and the rest of the list.
    */
-  def span(p: a => Boolean): (List[a], List[a]) = {
-    val b = new ListBuffer[a]
+  def span(p: A => Boolean): (List[A], List[A]) = {
+    val b = new ListBuffer[A]
     var these = this
     while (!these.isEmpty && p(these.head)) {
       b += these.head
@@ -646,7 +654,7 @@ sealed abstract class List[+a] extends Seq[a] {
 
   /** Like <code>span</code> but with the predicate inverted.
    */
-  def break(p: a => Boolean): (List[a], List[a]) = span { x => !p(x) }
+  def break(p: A => Boolean): (List[A], List[A]) = span { x => !p(x) }
 
   /** Returns the <code>n</code>-th element of this list. The first element
    *  (head of the list) is at position 0.
@@ -655,7 +663,7 @@ sealed abstract class List[+a] extends Seq[a] {
    *  @return  the element at position <code>n</code> in this list.
    *  @throws Predef.NoSuchElementException if the list is too short.
    */
-  def apply(n: Int): a = drop(n).head
+  def apply(n: Int): A = drop(n).head
 
   /** Returns the list resulting from applying the given function <code>f</code> to each
    *  element of this list.
@@ -663,8 +671,8 @@ sealed abstract class List[+a] extends Seq[a] {
    *  @param f function to apply to each element.
    *  @return <code>[f(a0), ..., f(an)]</code> if this list is <code>[a0, ..., an]</code>.
    */
-  final override def map[b](f: a => b): List[b] = {
-    val b = new ListBuffer[b]
+  final override def map[B](f: A => B): List[B] = {
+    val b = new ListBuffer[B]
     var these = this
     while (!these.isEmpty) {
       b += f(these.head)
@@ -680,8 +688,8 @@ sealed abstract class List[+a] extends Seq[a] {
    *  @param f the function to apply to each elements.
    *  @return  the reversed list of results.
    */
-  def reverseMap[b](f: a => b): List[b] = {
-    def loop(l: List[a], res: List[b]): List[b] = l match {
+  def reverseMap[B](f: A => B): List[B] = {
+    def loop(l: List[A], res: List[B]): List[B] = l match {
       case Nil => res
       case head :: tail => loop(tail, f(head) :: res)
     }
@@ -693,7 +701,7 @@ sealed abstract class List[+a] extends Seq[a] {
    *
    *  @param f the treatment to apply to each element.
    */
-  final override def foreach(f: a => Unit): Unit = {
+  final override def foreach(f: A => Unit) {
     var these = this
     while (!these.isEmpty) {
       f(these.head)
@@ -707,7 +715,7 @@ sealed abstract class List[+a] extends Seq[a] {
    *  @param p the predicate used to filter the list.
    *  @return the elements of this list satisfying <code>p</code>.
    */
-  final override def filter(p: a => Boolean): List[a] = {
+  final override def filter(p: A => Boolean): List[A] = {
     // return same list if all elements satisfy p
     var these = this
     while (!these.isEmpty && p(these.head)) {
@@ -715,7 +723,7 @@ sealed abstract class List[+a] extends Seq[a] {
     }
     if (these.isEmpty) this
     else {
-      val b = new ListBuffer[a]
+      val b = new ListBuffer[A]
       var these1 = this
       while (these1 ne these) {
         b += these1.head
@@ -739,7 +747,7 @@ sealed abstract class List[+a] extends Seq[a] {
    *  @param p the predicate to use to test elements
    *  @return  the list without all elements which satisfy <code>p</code>
    */
-  def remove(p: a => Boolean): List[a] = filter (x => !p(x))
+  def remove(p: A => Boolean): List[A] = filter (x => !p(x))
 
   /** Partition the list in two sub-lists according to a predicate.
    *
@@ -749,9 +757,9 @@ sealed abstract class List[+a] extends Seq[a] {
    *           The relative order of the elements in the sub-lists is the
    *           same as in the original list.
    */
-  def partition(p: a => Boolean): (List[a], List[a]) = {
-    val btrue = new ListBuffer[a]
-    val bfalse = new ListBuffer[a]
+  def partition(p: A => Boolean): (List[A], List[A]) = {
+    val btrue = new ListBuffer[A]
+    val bfalse = new ListBuffer[A]
     var these = this
     while (!these.isEmpty) {
       (if (p(these.head)) btrue else bfalse) += these.head
@@ -777,8 +785,8 @@ sealed abstract class List[+a] extends Seq[a] {
    *  @note The current implementation is inefficent for
    *    already sorted lists.
    */
-  def sort(lt : (a,a) => Boolean): List[a] = {
-    def sort_1(smaller: List[a], acc: List[a]): List[a] =
+  def sort(lt : (A,A) => Boolean): List[A] = {
+    def sort_1(smaller: List[A], acc: List[A]): List[A] =
       smaller match {
         case Nil =>
           acc
@@ -835,7 +843,7 @@ sealed abstract class List[+a] extends Seq[a] {
    *  @param p the predicate for which to count
    *  @return  the number of elements satisfying the predicate <code>p</code>.
    */
-  def count(p: a => Boolean): Int = {
+  def count(p: A => Boolean): Int = {
     var cnt = 0
     var these = this
     while (!these.isEmpty) {
@@ -852,7 +860,7 @@ sealed abstract class List[+a] extends Seq[a] {
    *  @return  <code>true</code> iff all elements of this list satisfy the
    *           predicate <code>p</code>.
    */
-  override def forall(p: a => Boolean): Boolean = {
+  override def forall(p: A => Boolean): Boolean = {
     var these = this
     while (!these.isEmpty) {
       if (!p(these.head)) return false
@@ -868,7 +876,7 @@ sealed abstract class List[+a] extends Seq[a] {
    *  @return  <code>true</code> iff there exists an element in this list that
    *           satisfies the predicate <code>p</code>.
    */
-  override def exists(p: a => Boolean): Boolean = {
+  override def exists(p: A => Boolean): Boolean = {
     var these = this
     while (!these.isEmpty) {
       if (p(these.head)) return true
@@ -884,7 +892,7 @@ sealed abstract class List[+a] extends Seq[a] {
    *  @return the first element in the list satisfying <code>p</code>,
    *  or <code>None</code> if none exists.
    */
-  override def find(p: a => Boolean): Option[a] = {
+  override def find(p: A => Boolean): Option[A] = {
     var these = this
     while (!these.isEmpty) {
       if (p(these.head)) return Some(these.head)
@@ -901,7 +909,7 @@ sealed abstract class List[+a] extends Seq[a] {
    *          a<sub>n</sub>)</code> if the list is
    *          <code>[a<sub>0</sub>, a<sub>1</sub>, ..., a<sub>n</sub>]</code>.
    */
-  override def foldLeft[b](z: b)(f: (b, a) => b): b = {
+  override def foldLeft[B](z: B)(f: (B, A) => B): B = {
     var acc = z
     var these = this
     while (!these.isEmpty) {
@@ -918,7 +926,7 @@ sealed abstract class List[+a] extends Seq[a] {
    *  @return <code>f(a<sub>0</sub>, f(a<sub>1</sub>, f(..., f(a<sub>n</sub>, z)...)))</code>
    *          if the list is <code>[a<sub>0</sub>, a1, ..., a<sub>n</sub>]</code>.
    */
-  override def foldRight[b](z: b)(f: (a, b) => b): b = this match {
+  override def foldRight[B](z: B)(f: (A, B) => B): B = this match {
     case Nil => z
     case x :: xs => f(x, xs.foldRight(z)(f))
   }
@@ -931,9 +939,9 @@ sealed abstract class List[+a] extends Seq[a] {
    *          <code>a<sub>0</sub>, a<sub>1</sub>, ..., a<sub>n</sub></code>.
    *  @throws Predef.UnsupportedOperationException if the list is empty.
    */
-  override def reduceLeft[b >: a](f: (b, b) => b): b = this match {
+  override def reduceLeft[B >: A](f: (B, B) => B): B = this match {
     case Nil => throw new UnsupportedOperationException("Nil.reduceLeft")
-    case x :: xs => ((xs: List[b]) foldLeft (x: b))(f)
+    case x :: xs => ((xs: List[B]) foldLeft (x: B))(f)
   }
 
   /** Combines the elements of this list together using the binary
@@ -946,9 +954,9 @@ sealed abstract class List[+a] extends Seq[a] {
    *
    *  @throws Predef.UnsupportedOperationException if the list is empty.
    */
-  override def reduceRight[b >: a](f: (b, b) => b): b = this match {
+  override def reduceRight[B >: A](f: (B, B) => B): B = this match {
     case Nil => throw new UnsupportedOperationException("Nil.reduceRight")
-    case x :: Nil => x: b
+    case x :: Nil => x: B
     case x :: xs => f(x, xs reduceRight f)
   }
 
@@ -959,8 +967,8 @@ sealed abstract class List[+a] extends Seq[a] {
    *  @return  <code>f(a<sub>0</sub>) ::: ... ::: f(a<sub>n</sub>)</code> if
    *           this list is <code>[a<sub>0</sub>, ..., a<sub>n</sub>]</code>.
    */
-  final override def flatMap[b](f: a => Iterable[b]): List[b] = {
-    val b = new ListBuffer[b]
+  final override def flatMap[B](f: A => Iterable[B]): List[B] = {
+    val b = new ListBuffer[B]
     var these = this
     while (!these.isEmpty) {
       var those = f(these.head).elements
@@ -974,8 +982,8 @@ sealed abstract class List[+a] extends Seq[a] {
 
   /** A list consisting of all elements of this list in reverse order.
    */
-  override def reverse: List[a] = {
-    var result: List[a] = Nil
+  override def reverse: List[A] = {
+    var result: List[A] = Nil
     var these = this
     while (!these.isEmpty) {
       result = these.head :: result
@@ -989,13 +997,13 @@ sealed abstract class List[+a] extends Seq[a] {
    *  the element at the same position in the latter.
    *  If one of the two lists is longer than the other, its remaining elements are ignored.
    *
-   *  @return     <code>List({a<sub>0</sub>,b<sub>0</sub>}, ...,
-   *              {a<sub>min(m,n)</sub>,b<sub>min(m,n)</sub>})</code> when
+   *  @return     <code>List((a<sub>0</sub>,b<sub>0</sub>), ...,
+   *              (a<sub>min(m,n)</sub>,b<sub>min(m,n)</sub>))</code> when
    *              <code>List(a<sub>0</sub>, ..., a<sub>m</sub>)
    *              zip List(b<sub>0</sub>, ..., b<sub>n</sub>)</code> is invoked.
    */
-  def zip[b](that: List[b]): List[(a,b)] = {
-    val b = new ListBuffer[(a, b)]
+  def zip[B](that: List[B]): List[(A, B)] = {
+    val b = new ListBuffer[(A, B)]
     var these = this
     var those = that
     while (!these.isEmpty && !those.isEmpty) {
@@ -1009,11 +1017,11 @@ sealed abstract class List[+a] extends Seq[a] {
   /** Returns a list that pairs each element of this list
    *  with its index, counting from 0.
    *
-   *  @return      the list <code>List({a<sub>0</sub>,0}, {a<sub>1</sub>,1}...)</code>
+   *  @return      the list <code>List((a<sub>0</sub>,0), (a<sub>1</sub>,1), ...)</code>
    *               where <code>a<sub>i</sub></code> are the elements of this list.
    */
-  def zipWithIndex = {
-    val b = new ListBuffer[(a,int)]
+  def zipWithIndex: List[(A, Int)] = {
+    val b = new ListBuffer[(A, Int)]
     var these = this
     var idx = 0
 
@@ -1038,15 +1046,15 @@ sealed abstract class List[+a] extends Seq[a] {
    *  @param thatElem element <code>thatElem</code> is used to fill up the
    *                  resulting list if <code>that</code> is shorter than
    *                  the self list
-   *  @return         <code>List({a<sub>0</sub>,b<sub>0</sub>}, ...,
-   *                  {a<sub>n</sub>,b<sub>n</sub>}, {elem,b<sub>n+1</sub>},
+   *  @return         <code>List((a<sub>0</sub>,b<sub>0</sub>), ...,
+   *                  (a<sub>n</sub>,b<sub>n</sub>), (elem,b<sub>n+1</sub>),
    *                  ..., {elem,b<sub>m</sub>})</code>
    *                  when <code>[a<sub>0</sub>, ..., a<sub>n</sub>] zip
    *                  [b<sub>0</sub>, ..., b<sub>m</sub>]</code> is
    *                  invoked where <code>m &gt; n</code>.
    */
-  def zipAll[b, c >: a, d >: b](that: List[b], thisElem: c, thatElem: d): List[(c,d)] = {
-    val b = new ListBuffer[(c, d)]
+  def zipAll[B, C >: A, D >: B](that: List[B], thisElem: C, thatElem: D): List[(C, D)] = {
+    val b = new ListBuffer[(C, D)]
     var these = this
     var those = that
     while (!these.isEmpty && !those.isEmpty) {
@@ -1072,8 +1080,8 @@ sealed abstract class List[+a] extends Seq[a] {
    *  @return     a list without doubles containing the elements of this
    *              list and those of the given list <code>that</code>.
    */
-  def union[b >: a](that: List[b]): List[b] = {
-    val b = new ListBuffer[b]
+  def union[B >: A](that: List[B]): List[B] = {
+    val b = new ListBuffer[B]
     var these = this
     while (!these.isEmpty) {
       if (!that.contains(these.head)) b += these.head
@@ -1089,8 +1097,8 @@ sealed abstract class List[+a] extends Seq[a] {
    *  @return     this list without the elements of the given list
    *              <code>that</code>.
    */
-  def diff[b >: a](that: List[b]): List[b] = {
-    val b = new ListBuffer[b]
+  def diff[B >: A](that: List[B]): List[B] = {
+    val b = new ListBuffer[B]
     var these = this
     while (!these.isEmpty) {
       if (!that.contains(these.head)) b += these.head
@@ -1106,15 +1114,15 @@ sealed abstract class List[+a] extends Seq[a] {
    *  @return     the list of elements contained both in this list and
    *              in the given list <code>that</code>.
    */
-  def intersect[b >: a](that: List[b]): List[b] = filter(x => that contains x)
+  def intersect[B >: A](that: List[B]): List[B] = filter(x => that contains x)
 
   /** Removes redundant elements from the list. Uses the method <code>==</code>
    *  to decide if two elements are identical.
    *
    *  @return the list without doubles.
    */
-  def removeDuplicates: List[a] = {
-    val b = new ListBuffer[a]
+  def removeDuplicates: List[A] = {
+    val b = new ListBuffer[A]
     var these = this
     while (!these.isEmpty) {
       if (!these.tail.contains(these.head)) b += these.head
@@ -1147,8 +1155,8 @@ case object Nil extends List[Nothing] {
  *  @version 1.0, 15/07/2003
  */
 @SerialVersionUID(0L - 8476791151983527571L)
-final case class ::[b](hd: b, private[scala] var tl: List[b]) extends List[b] {
+final case class ::[B](hd: B, private[scala] var tl: List[B]) extends List[B] {
   def head = hd
   def tail = tl
-  override def isEmpty: boolean = false
+  override def isEmpty: Boolean = false
 }
