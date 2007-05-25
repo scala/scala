@@ -59,7 +59,6 @@ trait Typers requires Analyzer {
   def newDecls(tree : Template, clazz : Symbol) = newScope
   def newTemplateScope(impl : Template, clazz : Symbol) = newScope
 
-
   // Mode constants
 
   /** The three mode <code>NOmode</code>, <code>EXPRmode</code>
@@ -134,7 +133,6 @@ trait Typers requires Analyzer {
 
   class Typer(context0: Context) {
     import context0.unit
-    def freshName(prefix : String, pos : Position, n : Int) = unit.fresh.newName(prefix)
 
     val infer = new Inferencer(context0) {
       override def isCoercible(tp: Type, pt: Type): boolean = (
@@ -178,10 +176,9 @@ trait Typers requires Analyzer {
      */
     private def inferView(pos: Position, from: Type, name: Name, tp: Type, reportAmbiguous: boolean): Tree = {
       val to = refinedType(List(WildcardType), NoSymbol)
-      // Sean: how to reuse from IDE? bad bad bad...
       val psym = (if (name.isTypeName) to.symbol.newAbstractType(pos, name)
                   else to.symbol.newValue(pos, name)) setInfo tp
-      to.decls enter psym
+      to.decls.enter(psym)
       inferView(pos, from, to, reportAmbiguous)
     }
 
@@ -190,10 +187,9 @@ trait Typers requires Analyzer {
     private var namerCache: Namer = null
     def namer = {
       if ((namerCache eq null) || namerCache.context != context)
-        namerCache = newNamer(context)
+        namerCache = new Namer(context)
       namerCache
     }
-    protected def newNamer(context : Context) = new Namer(context)
 
     private[typechecker] var context = context0
     def context1 = context
@@ -766,7 +762,7 @@ trait Typers requires Analyzer {
       else adaptToMember(qual, name, WildcardType)
 
     private def typePrimaryConstrBody(cbody: Tree, tparams: List[Symbol], enclTparams: List[Symbol], vparamss: List[List[ValDef]]): Tree = {
-      enclTparams foreach context.scope.enter
+      enclTparams foreach (sym => context.scope.enter(sym))
       namer.enterValueParams(context.owner, vparamss)
       typed(cbody)
     }
@@ -1022,7 +1018,7 @@ trait Typers requires Analyzer {
     }
     protected def enterSym(txt : Context, tree : Tree) : Context =
       if (txt eq context) namer.enterSym(tree)
-      else newNamer(txt).enterSym(tree)
+      else new Namer(txt).enterSym(tree)
 
     /**
      *  @param templ    ...
@@ -1203,7 +1199,7 @@ trait Typers requires Analyzer {
       case ldef @ LabelDef(_, _, _) =>
         if (ldef.symbol == NoSymbol)
           ldef.symbol = namer.enterInScope(
-            namer.newLabel(context.owner, ldef.pos, ldef.name) setInfo MethodType(List(), UnitClass.tpe))
+            context.owner.newLabel(ldef.pos, ldef.name) setInfo MethodType(List(), UnitClass.tpe))
       case _ =>
     }
 
@@ -1244,7 +1240,7 @@ trait Typers requires Analyzer {
     def typedBlock(block: Block, mode: int, pt: Type): Block = {
       if (context.retyping) {
         for (val stat <- block.stats) {
-          if (stat.isDef) context.scope enter (stat.symbol)
+          if (stat.isDef) context.scope.enter(stat.symbol)
         }
       }
       if (!inIDE)
@@ -1573,7 +1569,8 @@ trait Typers requires Analyzer {
           assert(unapp.exists, tree)
           val unappType = otpe.memberType(unapp)
           val argDummyType = pt // was unappArg
-          val argDummy =  namer.newValue(fun.pos, nme.SELECTOR_DUMMY, SYNTHETIC)
+          val argDummy =  context.owner.newValue(fun.pos, nme.SELECTOR_DUMMY)
+            .setFlag(SYNTHETIC)
             .setInfo(argDummyType)
           if (args.length > MaxTupleArity)
             error(fun.pos, "too many arguments for unapply pattern, maximum = "+MaxTupleArity)
@@ -1593,7 +1590,7 @@ trait Typers requires Analyzer {
             }
             val (unappFormal, freeVars) = freshArgType(unappType)
             val context1 = context.makeNewScope(context.tree, context.owner)
-            freeVars foreach context1.scope.enter
+            freeVars foreach(sym => context1.scope.enter(sym))
             val typer1 = new Typer(context1)
             arg.tpe = typer1.infer.inferTypedPattern(tree.pos, unappFormal, arg.tpe)
             //todo: replace arg with arg.asInstanceOf[inferTypedPattern(unappFormal, arg.tpe)] instead.
@@ -1746,16 +1743,16 @@ trait Typers requires Analyzer {
           if (vble == NoSymbol)
             vble =
               if (isFullyDefined(pt))
-                namer.newAliasType(tree.pos, name, 0) setInfo pt
+                context.owner.newAliasType(tree.pos, name) setInfo pt
               else
-                namer.newAbstractType(tree.pos, name, 0) setInfo
+                context.owner.newAbstractType(tree.pos, name) setInfo
                   mkTypeBounds(AllClass.tpe, AnyClass.tpe)
           if (vble.name == nme.WILDCARD.toTypeName) context.scope.enter(vble)
           else namer.enterInScope(vble)
           tree setSymbol vble setType vble.tpe
         } else {
           if (vble == NoSymbol)
-            vble = namer.newValue(tree.pos, name, 0)
+            vble = context.owner.newValue(tree.pos, name)
           if (vble.name.toTermName != nme.WILDCARD) {
 /*
           if (namesSomeIdent(vble.name))
@@ -2464,8 +2461,8 @@ trait Typers requires Analyzer {
 
         case tree @ Function(_, _) =>
           if (tree.symbol == NoSymbol)
-            tree.symbol = namer.newValue(tree.pos, nme.ANON_FUN_NAME, SYNTHETIC)
-              .setInfo(NoType)
+            tree.symbol = context.owner.newValue(tree.pos, nme.ANON_FUN_NAME)
+              .setFlag(SYNTHETIC).setInfo(NoType)
           newTyper(makeNewScope(context, tree, tree.symbol)).typedFunction(tree, mode, pt)
 
         case Assign(lhs, rhs) =>
@@ -2474,11 +2471,11 @@ trait Typers requires Analyzer {
         case If(cond, thenp, elsep) =>
           typedIf(cond, thenp, elsep)
 
-        case tree @ Match(selector, cases) =>
+        case Match(selector, cases) =>
           if (selector == EmptyTree) {
             val arity = if (isFunctionType(pt)) pt.normalize.typeArgs.length - 1 else 1
             val params = for (i <- List.range(0, arity)) yield
-              ValDef(Modifiers(PARAM | SYNTHETIC), freshName("x$", tree.pos, i), TypeTree(), EmptyTree)
+              ValDef(Modifiers(PARAM | SYNTHETIC), unit.fresh.newName("x$"), TypeTree(), EmptyTree)
             val ids = for (p <- params) yield Ident(p.name)
             val selector1 = atPos(tree.pos) { if (arity == 1) ids.head else gen.mkTuple(ids) }
             val body = copy.Match(tree, selector1, cases)
