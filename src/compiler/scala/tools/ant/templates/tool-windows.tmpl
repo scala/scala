@@ -17,11 +17,13 @@ rem - Local batch variables start with an underscore ('_')
 if "%OS%"=="Windows_NT" (
   @@setlocal
   call :set_home
+  set _ARGS=%*
 ) else (
   set _SCALA_HOME=%SCALA_HOME%
   rem The following line tests SCALA_HOME instead of _SCALA_HOME, because
   rem the above change to _SCALA_HOME is not visible within this block.
   if "%SCALA_HOME%"=="" goto error1
+  call :set_args
 )
 
 rem We use the value of the JAVACMD environment variable if defined
@@ -54,15 +56,6 @@ if "%_BOOT_CLASSPATH%"=="" (
   )
 )
 
-set _ARGS=
-:loop
-rem Argument %1 may contain quotes so we use parentheses here
-if (%1)==() goto exec
-set _ARGS=%_ARGS% %1
-shift
-goto loop
-
-:exec
 set _PROPS=-Dscala.home="%_SCALA_HOME%" -Denv.classpath="%CLASSPATH%" -Dilasm.tool="%_ILASM%" @properties@
 
 rem echo %_JAVACMD% -Xbootclasspath/a:"%_BOOT_CLASSPATH%" %_JAVA_OPTS% %_PROPS% -cp "%_EXTENSION_CLASSPATH%" @class@ @toolflags@ %_ARGS%
@@ -92,6 +85,15 @@ goto :eof
 :find_ilasm
   set _ILASM=%~$PATH:1
 goto :eof
+
+:set_args
+  set _ARGS=
+  :loop
+  rem Argument %1 may contain quotes so we use parentheses here
+  if (%1)==() goto :eof
+  set _ARGS=%_ARGS% %1
+  shift
+  goto loop
 
 rem ##########################################################################
 rem # errors
