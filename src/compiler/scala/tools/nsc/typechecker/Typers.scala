@@ -605,6 +605,13 @@ trait Typers requires Analyzer {
           setError(tree)
         }
       case _ =>
+        def applyPossible = {
+          def applyMeth = member(adaptToName(tree, nme.apply), nme.apply)
+          if ((mode & TAPPmode) != 0)
+            tree.tpe.typeParams.isEmpty && applyMeth.filter(! _.tpe.typeParams.isEmpty) != NoSymbol
+          else
+            applyMeth.filter(_.tpe.paramSectionCount > 0) != NoSymbol
+        }
         if (tree.isType) {
           if ((mode & FUNmode) != 0) {
             tree
@@ -655,9 +662,7 @@ trait Typers requires Analyzer {
         } else if ((mode & (EXPRmode | FUNmode)) == (EXPRmode | FUNmode) &&
                    !tree.tpe.isInstanceOf[MethodType] &&
                    !tree.tpe.isInstanceOf[OverloadedType] &&
-                   ((mode & TAPPmode) == 0 || tree.tpe.typeParams.isEmpty) &&
-                   member(adaptToName(tree, nme.apply), nme.apply)
-                     .filter(m => m.tpe.paramSectionCount > 0) != NoSymbol) { // (8)
+                   applyPossible) {
           assert((mode & HKmode) == 0) //@M
           val qual = adaptToName(tree, nme.apply) match {
             case id @ Ident(_) =>

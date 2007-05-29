@@ -1134,11 +1134,12 @@ trait Parsers {
         case DOT =>
           simpleExprRest(atPos(inSkipToken) { selector(stripParens(t)) }, true)
         case LBRACKET =>
-          t match {
+          val t1 = stripParens(t)
+          t1 match {
             case Ident(_) | Select(_, _) =>
-              simpleExprRest(atPos(inCurrentPos) { TypeApply(t, typeArgs(false)) }, true)
+              simpleExprRest(atPos(inCurrentPos) { TypeApply(t1, typeArgs(false)) }, true)
             case _ =>
-              t
+              t1
           }
         case LPAREN | LBRACE if (canApply) =>
           simpleExprRest(atPos(inCurrentPos) { Apply(stripParens(t), argumentExprs()) }, true)
