@@ -785,59 +785,68 @@ sealed abstract class List[+A] extends Seq[A] {
    *    List("Steve", "Tom", "John", "Bob")
    *      .sort((e1, e2) => (e1 compareTo e2) &lt; 0) =
    *    List("Bob", "John", "Steve", "Tom")</pre>
-   *  @note The current implementation is inefficent for
-   *    already sorted lists.
    */
   def sort(lt : (A,A) => Boolean): List[A] = {
-    def sort_1(smaller: List[A], acc: List[A]): List[A] =
-      smaller match {
-        case Nil =>
-          acc
-        //case List(x) =>
-        case x :: Nil =>
-          x::acc
-        //case List(x, y) =>
-        case x :: y :: Nil =>
-          if (lt(x, y)) x::(y::acc) else y::x::acc
-        //case List(x, y, z) =>
-        case x :: y :: z :: Nil =>
-          if (lt(x, y)) {
-            if (lt(y, z)) x::y::z::acc
-            else if (lt(x, z)) x::z::y::acc
-            else z::x::y::acc
-          } else if (lt(x, z)) y::x::z::acc
-          else if (lt(z, y)) z::y::x::acc
-          else y::z::x::acc
-        case hd1::hd2::hd3::tail => {
-          val List(x, y, z) = sort_1(hd1::hd2::hd3::Nil, Nil)
-          val (small, large) = tail.partition((e2) => lt(e2, y))
-          sort_1(x::small, y::sort_1(z::large, acc))
-        }
+    /** Merge two already-sorted lists */
+    def merge(l1: List[A], l2: List[A]): List[A] = {
+      val res = new ListBuffer[A]
+      var left1 = l1
+      var left2 = l2
+
+      while (!left1.isEmpty && !left2.isEmpty) {
+	if(lt(left1.head, left2.head)) {
+	  res += left1.head
+	  left1 = left1.tail
+	} else {
+	  res += left2.head
+	  left2 = left2.tail
+	}
       }
-    this match {
-      case Nil =>
-        this
-//      case List(x) =>
-      case x :: Nil =>
-        this
-//      case List(x, y) =>
-      case x::y::Nil =>
-        if (lt(x, y)) this else y::x::Nil
-//      case List(x, y, z) =>
-      case x::y::z::Nil =>
-        if (lt(x, y)) {
-          if (lt(y, z)) this
-          else if (lt(x, z)) x::z::y::Nil
-          else z::x::y::Nil
-        } else if (lt(x, z)) y::x::z::Nil
-        else if (lt(z, y)) z::y::x::Nil
-        else y::z::x::Nil
-      case hd1::hd2::hd3::tail => {
-        val List(x, y, z) = sort_1(hd1::hd2::hd3::Nil, Nil)
-        val (small,large) =  tail.partition((e2) => lt(e2, y))
-        sort_1(x::small, y::sort_1(z::large, Nil));
-      }
+
+      res ++= left1
+      res ++= left2
+
+      res.toList
     }
+
+    /** Split a list into two lists of about the same size */
+    def split(lst: List[A]) = {
+      val res1 = new ListBuffer[A]
+      val res2 = new ListBuffer[A]
+      var left = lst
+
+      while (!left.isEmpty) {
+	res1 += left.head
+	left = left.tail
+	if (!left.isEmpty) {
+	  res2 += left.head
+	  left = left.tail
+	}
+      }
+
+      (res1.toList, res2.toList)
+    }
+
+
+    /** Merge-sort the specified list */
+    def ms(lst: List[A]): List[A] =
+      lst match {
+	case Nil => lst
+	case x :: Nil => lst
+	case x :: y :: Nil =>
+	  if (lt(x,y))
+	    lst
+	  else
+	    y :: x :: Nil
+
+	case lst =>
+          val (l1, l2) = split(lst)
+          val l1s = ms(l1)
+          val l2s = ms(l2)
+          merge(l1s, l2s)
+      }
+
+    ms(this)
   }
 
 
