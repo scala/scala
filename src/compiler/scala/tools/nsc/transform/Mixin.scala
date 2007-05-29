@@ -22,6 +22,11 @@ abstract class Mixin extends InfoTransform {
   /** The phase might set the fiollowing new flags: */
   override def phaseNewFlags: long = lateMODULE | notABSTRACT
 
+  /** This map contains a binding (class -> info) if
+   *  the class with this info at phase mixinPhase has been treated for mixin composition
+   */
+  private val treatedClassInfos = collection.mutable.Map[Symbol, Type]()
+
 // --------- helper functions -----------------------------------------------
 
   /** A member of a trait is implemented statically if its implementation after the
@@ -123,8 +128,8 @@ abstract class Mixin extends InfoTransform {
    *  @param clazz ...
    */
   def addLateInterfaceMembers(clazz: Symbol): unit =
-    if (!(clazz hasFlag MIXEDIN)) {
-      clazz setFlag MIXEDIN
+    if ((treatedClassInfos get clazz) != Some(clazz.info)) {
+      treatedClassInfos(clazz) = clazz.info
       assert(phase == currentRun.mixinPhase)
 
       /** Create a new getter. Getters are never private or local. They are
@@ -174,8 +179,8 @@ abstract class Mixin extends InfoTransform {
    *      - for every module in T, add a module
    */
   def addMixedinMembers(clazz: Symbol): unit = {
-    if (!(clazz hasFlag MIXEDIN) && (clazz != ObjectClass)) {
-      clazz setFlag MIXEDIN
+    if (!(clazz hasFlag JAVA) && (treatedClassInfos get clazz) != Some(clazz.info)) {
+      treatedClassInfos(clazz) = clazz.info
 
       assert(!clazz.isTrait, clazz)
       assert(!clazz.info.parents.isEmpty, clazz)

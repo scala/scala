@@ -21,7 +21,7 @@ import scala.tools.nsc.util.Position
  *  - for every argument to a def parameter `x: => T':
  *      if argument is not a reference to a def parameter:
  *        convert argument `e' to (expansion of) `() => e'
- *  - for every repated parameter `x: T*' --> x: Seq[a].
+ *  - for every repated parameter `x: T*' --> x: Seq[T].
  *  - for every argument list that corresponds to a repeated parameter
  *       (a_1, ..., a_n) => (Seq(a_1, ..., a_n))
  *  - for every argument list that is an escaped sequence
@@ -309,7 +309,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
               else {
                 val suffix: Tree = args.last match {
                   case Typed(arg, Ident(name)) if name == nme.WILDCARD_STAR.toTypeName =>
-                    arg setType seqType(arg.tpe)
+                    arg /*setType seqType(arg.tpe)*/
                   case _ =>
                     mkArrayValue(args.drop(formals.length - 1))
                 }
