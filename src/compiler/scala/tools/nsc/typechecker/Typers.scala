@@ -1106,37 +1106,33 @@ trait Typers requires Analyzer {
         val superClazz = superConstr.symbol.owner
         if (!superClazz.hasFlag(JAVA)) {
           val superParamAccessors = superClazz.constrParamAccessors
-          if (superParamAccessors.length != superArgs.length) {
-            Console.println("" + superClazz + ":" +
-              superClazz.info.decls.toList.filter(.hasFlag(PARAMACCESSOR)))
-            assert(false, "mismatch: " + superParamAccessors +
-                          ";" + rhs + ";" + superClazz.info.decls)//debug
-          }
-          List.map2(superParamAccessors, superArgs) { (superAcc, superArg) =>
-            superArg match {
-              case Ident(name) =>
-                if (vparamss.exists(.exists(vp => vp.symbol == superArg.symbol))) {
-                  var alias = superAcc.initialize.alias
-                  if (alias == NoSymbol)
-                    alias = superAcc.getter(superAcc.owner)
-                  if (alias != NoSymbol &&
-                      superClazz.info.nonPrivateMember(alias.name) != alias)
-                    alias = NoSymbol
-                  if (alias != NoSymbol) {
-                    var ownAcc = clazz.info.decl(name).suchThat(.hasFlag(PARAMACCESSOR))
-                    if ((ownAcc hasFlag ACCESSOR) && !(ownAcc hasFlag DEFERRED))
-                      ownAcc = ownAcc.accessed
-                    if (!ownAcc.isVariable && !alias.accessed.isVariable) {
-                      if (settings.debug.value)
-                        log("" + ownAcc + " has alias "+alias + alias.locationString);//debug
-                      ownAcc.asInstanceOf[TermSymbol].setAlias(alias)
+          if (superParamAccessors.length == superArgs.length) {
+            List.map2(superParamAccessors, superArgs) { (superAcc, superArg) =>
+              superArg match {
+                case Ident(name) =>
+                  if (vparamss.exists(.exists(vp => vp.symbol == superArg.symbol))) {
+                    var alias = superAcc.initialize.alias
+                    if (alias == NoSymbol)
+                      alias = superAcc.getter(superAcc.owner)
+                    if (alias != NoSymbol &&
+                        superClazz.info.nonPrivateMember(alias.name) != alias)
+                      alias = NoSymbol
+                    if (alias != NoSymbol) {
+                      var ownAcc = clazz.info.decl(name).suchThat(.hasFlag(PARAMACCESSOR))
+                      if ((ownAcc hasFlag ACCESSOR) && !(ownAcc hasFlag DEFERRED))
+                        ownAcc = ownAcc.accessed
+                      if (!ownAcc.isVariable && !alias.accessed.isVariable) {
+                        if (settings.debug.value)
+                          log("" + ownAcc + " has alias "+alias + alias.locationString);//debug
+                        ownAcc.asInstanceOf[TermSymbol].setAlias(alias)
+                      }
                     }
                   }
-                }
-              case _ =>
+                case _ =>
+              }
+              ()
             }
           }
-          ()
         }
       }
     }

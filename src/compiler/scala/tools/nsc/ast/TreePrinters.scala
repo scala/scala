@@ -256,7 +256,7 @@ abstract class TreePrinters {
           print("new "); print(tpe)
 
         case Typed(expr, tp) =>
-          print("("); print(expr); print(") : "); print(tp)
+          print("("); print(expr); print(": "); print(tp); print(")")
 
         case TypeApply(fun, targs) =>
           print(fun); printRow(targs, "[", ", ", "]")
