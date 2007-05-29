@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -10,7 +10,6 @@
 
 
 package scala.compat
-
 
 import System.Text.{StringBuilder => StringBuffer}
 
@@ -21,6 +20,7 @@ final class StringBuilder(str: StringBuffer) {
   def this(s: String) = this(new StringBuffer(s))
 
   def charAt(i: Int): Char = str(i)
+
   def setCharAt(index: Int, c: Char): Unit = str(index) = c
 
   def append(x: Any): StringBuilder = { str.Append(x); this }
