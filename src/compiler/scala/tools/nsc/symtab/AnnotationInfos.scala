@@ -41,7 +41,7 @@ trait AnnotationInfos {
         None
     }
 
-  private object symbolReifier extends SymbolReifier {
+  private val symbolReifier = new SymbolReifier {
     val symbols: AnnotationInfos.this.type = AnnotationInfos.this
   }
 

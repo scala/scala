@@ -630,17 +630,18 @@ trait Infer {
         false
     }
 
-    /** Is type `tpe1' a strictly better alternative than type `ftpe2'?
-     *
-     *  @param tpe1 ...
-     *  @param tpe2 ...
-     *  @return     ...
+    /** Is type `tpe1' a strictly better expression alternative than type `tpe2'?
      */
-    def isStrictlyBetter(tpe1: Type, tpe2: Type) = {
+    def isStrictlyBetterExpr(tpe1: Type, tpe2: Type) = {
       def isNullary(tpe: Type) = tpe.paramSectionCount == 0 || tpe.paramTypes.isEmpty
       isNullary(tpe1) && !isNullary(tpe2) ||
-      specializes(tpe1, tpe2) && !specializes(tpe2, tpe1)
+      isStrictlyBetter(tpe1, tpe2)
     }
+
+    /** Is type `tpe1' a strictly better alternative than type `tpe2'?
+     */
+    def isStrictlyBetter(tpe1: Type, tpe2: Type) =
+      specializes(tpe1, tpe2) && !specializes(tpe2, tpe1)
 
     /** error if arguments not within bounds. */
     def checkBounds(pos: Position, pre: Type, owner: Symbol,
@@ -1132,7 +1133,7 @@ trait Infer {
             val tp2 = pre.memberType(sym2)
             (tp2 == ErrorType ||
              !global.typer.infer.isCompatible(tp2, pt) && global.typer.infer.isCompatible(tp1, pt) ||
-             isStrictlyBetter(tp1, tp2)) }
+             isStrictlyBetterExpr(tp1, tp2)) }
         val best = ((NoSymbol: Symbol) /: alts1) ((best, alt) =>
           if (improves(alt, best)) alt else best)
         val competing = alts1 dropWhile (alt => best == alt || improves(best, alt))
@@ -1176,10 +1177,9 @@ trait Infer {
         tryTwice {
           if (settings.debug.value) log("infer method alt " + tree.symbol + " with alternatives " + (alts map pre.memberType) + ", argtpes = " + argtpes + ", pt = " + pt)
           val applicable = alts filter (alt => isApplicable(undetparams, pre.memberType(alt), argtpes, pt))
-          def improves(sym1: Symbol, sym2: Symbol) = (
+          def improves(sym1: Symbol, sym2: Symbol) =
             sym2 == NoSymbol || sym2.isError ||
-            specializes(pre.memberType(sym1), pre.memberType(sym2))
-          )
+            isStrictlyBetter(pre.memberType(sym1), pre.memberType(sym2))
           val best = ((NoSymbol: Symbol) /: applicable) ((best, alt) =>
             if (improves(alt, best)) alt else best)
           val competing = applicable dropWhile (alt => best == alt || improves(best, alt))

@@ -2239,6 +2239,8 @@ trait Parsers {
      *                     |
      */
     def templateStatSeq() = {
+      val savedImplicitParams = implicitParams
+      implicitParams = List()
       var self: ValDef = emptyValDef
       val stats = new ListBuffer[Tree]
       if (isExprIntro) {
@@ -2266,6 +2268,7 @@ trait Parsers {
         if (inToken != RBRACE && inToken != EOF) acceptStatSep()
       }
       checkNoImplicitParams()
+      implicitParams = savedImplicitParams
       (self, stats.toList)
     }
 
@@ -2305,6 +2308,8 @@ trait Parsers {
         if (inToken == RBRACE || inToken == CASE)
           stats += Literal(()).setPos(inCurrentPos)
       }
+      val savedImplicitParams = implicitParams
+      implicitParams = List()
       var last = false
       while ((inToken != RBRACE) && (inToken != EOF) && (inToken != CASE) && !last) {
         if (inToken == IMPORT) {
@@ -2324,6 +2329,7 @@ trait Parsers {
         }
       }
       checkNoImplicitParams()
+      implicitParams = savedImplicitParams
       stats.toList
     }
 

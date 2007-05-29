@@ -302,6 +302,7 @@ trait StdNames {
     val receive = newTermName("receive")
     val report = newTermName("report")
     val runtime = newTermName("runtime")
+    val sameElements = newTermName("sameElements")
     val scala_ = newTermName("scala")
     val send = newTermName("send")
     val synchronized_ = newTermName("synchronized")

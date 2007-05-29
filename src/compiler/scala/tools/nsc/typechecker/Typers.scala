@@ -939,7 +939,7 @@ trait Typers requires Analyzer {
       val tparams1 = List.mapConserve(cdef.tparams)(typedAbsTypeDef)
       val impl1 = newTyper(context.make(cdef.impl, clazz, newTemplateScope(cdef.impl, clazz)))
         .typedTemplate(cdef.impl, parentTypes(cdef.impl))
-      val impl2 = addSyntheticMethods(impl1, clazz, context.unit)
+      val impl2 = addSyntheticMethods(impl1, clazz, context)
       copy.ClassDef(cdef, cdef.mods, cdef.name, tparams1, impl2)
         .setType(NoType)
     }
@@ -954,7 +954,7 @@ trait Typers requires Analyzer {
       val clazz = mdef.symbol.moduleClass
       val impl1 = newTyper(context.make(mdef.impl, clazz, newTemplateScope(mdef.impl, clazz)))
         .typedTemplate(mdef.impl, parentTypes(mdef.impl))
-      val impl2 = addSyntheticMethods(impl1, clazz, context.unit)
+      val impl2 = addSyntheticMethods(impl1, clazz, context)
 
       copy.ModuleDef(mdef, mdef.mods, mdef.name, impl2) setType NoType
     }
@@ -2854,7 +2854,7 @@ trait Typers requires Analyzer {
         def improves(info1: ImplicitInfo, info2: ImplicitInfo) =
           (info2 == NoImplicitInfo) ||
           (info1 != NoImplicitInfo) &&
-          isStrictlyBetter(info1.tpe, info2.tpe)
+          isStrictlyBetterExpr(info1.tpe, info2.tpe)
         val shadowed = new HashSet[Name](8)
         def isApplicable(info: ImplicitInfo): boolean =
           !containsError(info.tpe) &&

@@ -497,8 +497,10 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
         phase = globalPhase
         globalPhase.run
         if (settings.print contains globalPhase.name)
-          if (globalPhase.id >=  icodePhase.id) writeICode()
+          if (globalPhase.id >= icodePhase.id) writeICode()
+          else if (settings.Xshowtrees.value) nodePrinters.printAll()
           else treePrinter.printAll()
+
         if (settings.browse contains globalPhase.name) treeBrowser.browse(units)
         informTime(globalPhase.description, startTime)
         globalPhase = globalPhase.next

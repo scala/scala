@@ -24,6 +24,7 @@ class CompilerCommand(arguments: List[String], val settings: Settings,
 
   /** A message explaining usage and options */
   def usageMsg: String = {
+    // todo: print -X and -javadoc options only on demand
     val helpSyntaxColumnWidth: int =
       Iterable.max(settings.allSettings map (. helpSyntax.length()))
     def format(s: String): String = {

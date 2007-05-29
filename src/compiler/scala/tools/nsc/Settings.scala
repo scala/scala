@@ -125,6 +125,7 @@ class Settings(error: String => unit) {
   val Xdetach       = BooleanSetting("-Xdetach", "Perform detaching of remote closures")
   val Xshowcls      = StringSetting ("-Xshowcls", "class", "Show class info", "")
   val Xshowobj      = StringSetting ("-Xshowobj", "object", "Show object info", "")
+  val Xshowtrees    = BooleanSetting ("-Xshowtrees", "Show detailed trees when used in connection with -print:phase")
   val Xlinearizer   = ChoiceSetting ("-Xlinearizer", "Linearizer to use", List("normal", "dfs", "rpo", "dump"), "rpo")
   val Xgenerics     = BooleanSetting("-Xgenerics", "Use generic Java types")
   val Xprintpos     = BooleanSetting("-Xprintpos", "Print tree positions (as offsets)")

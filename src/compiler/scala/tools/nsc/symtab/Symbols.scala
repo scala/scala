@@ -677,7 +677,6 @@ trait Symbols {
     def thisType: Type = NoPrefix
 
     /** Return every accessor of a primary constructor parameter in this case class
-      * todo: limit to accessors for first constructor parameter section.
       */
     final def caseFieldAccessors: List[Symbol] =
       info.decls.toList filter (sym => !(sym hasFlag PRIVATE) && sym.hasFlag(CASEACCESSOR))

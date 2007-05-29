@@ -232,13 +232,52 @@ abstract class NodePrinters {
             traverse(tpt, level + 1, true)
             traverse(rhs, level + 1, false)
             printcln(")")
+          case PackageDef(name, stats) =>
+            println("PackageDef("+name+", ")
+            for (stat <- stats)
+              traverse(stat, level + 1, false)
+            printcln(")")
           case _ =>
-            printcln("***" + tree.getClass)
+            tree match {
+              case p: Product =>
+                if (p.productArity != 0) {
+                  println(p.productPrefix+"(")
+                  for (elem <- (0 until p.productArity) map p.productElement) {
+                    def printElem(elem: Any, level: int): unit = elem match {
+                      case t: Tree =>
+                        traverse(t, level, false)
+                      case xs: List[_] =>
+                        print("List(")
+                        for (x <- xs) printElem(x, level+1)
+                        printcln(")")
+                      case _ =>
+                        println(elem.toString)
+                    }
+                    printElem(elem, level+1)
+                  }
+                  printcln(")")
+                } else printcln(p.productPrefix)
+              case _ =>
+                printcln("***" + tree.getClass)
+            }
         }
       }
       buf setLength 0
       traverse(tree, 0, false)
       buf.toString
     }
+  }
+  def printUnit(unit: CompilationUnit) {
+    print("// Scala source: " + unit.source + "\n")
+    if (unit.body ne null) {
+      print(nodeToString(unit.body)); println()
+    } else {
+      print("<null>")
+    }
+    println()
+  }
+  def printAll() {
+    print("[[syntax trees at end of " + phase + "]]")
+    for (unit <- global.currentRun.units) printUnit(unit)
   }
 }

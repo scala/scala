@@ -37,7 +37,9 @@ trait SyntheticMethods requires Analyzer {
    *  @param unit  ...
    *  @return      ...
    */
-  def addSyntheticMethods(templ: Template, clazz: Symbol, unit: CompilationUnit): Template = {
+  def addSyntheticMethods(templ: Template, clazz: Symbol, context: Context): Template = {
+
+    val localTyper = newTyper(context)
 
     def hasImplementation(name: Name): boolean = {
       val sym = clazz.info.nonPrivateMember(name)
@@ -111,32 +113,66 @@ trait SyntheticMethods requires Analyzer {
         Apply(gen.mkAttributedRef(target), This(clazz) :: (vparamss.head map Ident))))
     }
 
+    /** The equality method for case classes and modules:
+     *   def equals(that: Any) =
+     *     (this eq that) ||
+     *     (that match {
+     *       case this.C(this.arg_1, ..., this.arg_n) => true
+     *       case _ => false
+     *     })
+     */
     def equalsMethod: Tree = {
-      val constrParamTypes = clazz.primaryConstructor.tpe.paramTypes
-      val hasVarArgs = !constrParamTypes.isEmpty && constrParamTypes.last.symbol == RepeatedParamClass
-      val target = getMember(ScalaRunTimeModule, if (hasVarArgs) nme._equalsWithVarArgs else nme._equals)
-      val paramtypes =
-        if (target.tpe.paramTypes.isEmpty) List()
-        else target.tpe.paramTypes.tail
       val method = syntheticMethod(
-       nme.equals_, 0, MethodType(paramtypes, target.tpe.resultType))
-      typed(DefDef(method, vparamss =>
-        Apply(
-          Select(
-            Apply(
-              Select(Ident(vparamss.head.head), Object_eq),
-              List(This(clazz))),
-            Boolean_or),
-          List(
-            Apply(
-              Select(
-                TypeApply(
-                  Select(Ident(vparamss.head.head), Any_isInstanceOf),
-                  List(TypeTree(clazz.tpe))),
-                Boolean_and),
-              List(
-                Apply(gen.mkAttributedRef(target),
-                      This(clazz) :: (vparamss.head map Ident))))))));
+        nme.equals_, 0, MethodType(List(AnyClass.tpe), BooleanClass.tpe))
+      localTyper.typed {
+        DefDef(
+          method,
+          { vparamss =>
+            val that = Ident(vparamss.head.head)
+            val constrParamTypes = clazz.primaryConstructor.tpe.paramTypes
+            val hasVarArgs = !constrParamTypes.isEmpty && constrParamTypes.last.symbol == RepeatedParamClass
+            if (clazz.isStatic) {
+              val target = getMember(ScalaRunTimeModule, if (hasVarArgs) nme._equalsWithVarArgs else nme._equals)
+              Apply(
+                Select(
+                  TypeApply(
+                    Select(that, Any_isInstanceOf),
+                    List(TypeTree(clazz.tpe))),
+                  Boolean_and),
+                List(
+                  Apply(gen.mkAttributedRef(target),
+                        This(clazz) :: (vparamss.head map Ident))))
+            } else {
+              val (pat, guard) = {
+                val guards = new ListBuffer[Tree]
+                val params = for ((acc, cpt) <- clazz.caseFieldAccessors zip constrParamTypes) yield {
+                  val name = context.unit.fresh.newName(acc.name+"$")
+                  val isVarArg = cpt.symbol == RepeatedParamClass
+                  guards += Apply(
+                    Select(
+                      Ident(name),
+                      if (isVarArg) nme.sameElements else nme.equals_),
+                    List(Ident(acc)))
+                  Bind(name,
+                       if (isVarArg) Star(Ident(nme.WILDCARD))
+                       else Ident(nme.WILDCARD))
+                }
+                ( Apply(Ident(clazz.name.toTermName), params),
+                  if (guards.isEmpty) EmptyTree
+                  else guards reduceLeft { (g1: Tree, g2: Tree) =>
+                    Apply(Select(g1, nme.AMPAMP), List(g2))
+                  }
+                )
+              }
+              Match(
+                that,
+                List(
+                  CaseDef(pat, guard, Literal(Constant(true))),
+                  CaseDef(Ident(nme.WILDCARD), EmptyTree, Literal(Constant(false)))))
+            }
+          }
+        )
+      }
     }
 
     def isSerializable(clazz: Symbol): Boolean =
@@ -153,8 +189,8 @@ trait SyntheticMethods requires Analyzer {
     def newAccessorMethod(tree: Tree): Tree = tree match {
       case DefDef(_, _, _, _, _, rhs) =>
         val newAcc = tree.symbol.cloneSymbol
-        newAcc.name = unit.fresh.newName("" + tree.symbol.name + "$")
-        newAcc.setFlag(SYNTHETIC).resetFlag(ACCESSOR | PARAMACCESSOR)
+        newAcc.name = context.unit.fresh.newName(tree.symbol.name + "$")
+        newAcc.setFlag(SYNTHETIC).resetFlag(ACCESSOR | PARAMACCESSOR | PRIVATE)
         newAcc.owner.info.decls enter newAcc
         val result = typed(DefDef(newAcc, vparamss => rhs.duplicate))
         log("new accessor method " + result)
@@ -163,7 +199,7 @@ trait SyntheticMethods requires Analyzer {
 
     def beanSetterOrGetter(sym: Symbol): Symbol =
       if (!sym.name(0).isLetter) {
-        unit.error(sym.pos, "attribute `BeanProperty' can be applied only to fields that start with a letter")
+        context.unit.error(sym.pos, "attribute `BeanProperty' can be applied only to fields that start with a letter")
         NoSymbol
       } else {
         var name0 = sym.name
@@ -174,7 +210,7 @@ trait SyntheticMethods requires Analyzer {
         val name1 = prefix + name0(0).toUpperCase + name0.subName(1, name0.length)
         val sym1 = clazz.info.decl(name1)
         if (sym1 != NoSymbol && sym1.tpe.paramTypes.length == arity) {
-          unit.error(sym.pos, "a definition of `"+name1+"' already exists in " + clazz)
+          context.unit.error(sym.pos, "a definition of `"+name1+"' already exists in " + clazz)
           NoSymbol
         } else {
           clazz.newMethod(sym.pos, name1)
@@ -251,7 +287,7 @@ trait SyntheticMethods requires Analyzer {
             else if (sym.isSetter)
               addBeanSetterMethod(sym)
             else if (sym.isMethod || sym.isType)
-              unit.error(sym.pos, "attribute `BeanProperty' is not applicable to " + sym)
+              context.unit.error(sym.pos, "attribute `BeanProperty' is not applicable to " + sym)
     }
     val synthetics = ts.toList
     copy.Template(

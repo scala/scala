@@ -309,7 +309,7 @@ object List {
    *  for all corresponding elements of the argument lists.
    *
    *  @param p function to apply to each pair of elements.
-   *  @return  <code>n == 0 || (p(a<sub>0</sub>,b<sub>0</sub>) &amp;&amp;
+   *  @return  <code>(p(a<sub>0</sub>,b<sub>0</sub>) &amp;&amp;
    *           ... &amp;&amp; p(a<sub>n</sub>,b<sub>n</sub>))]</code>
    *           if the lists are <code>[a<sub>0</sub>, ..., a<sub>k</sub>]</code>;
    *           <code>[b<sub>0</sub>, ..., b<sub>l</sub>]</code>
@@ -739,6 +739,9 @@ sealed abstract class List[+A] extends Seq[A] {
       b.toList
     }
   }
+
+//  final def filterMap[B](f: PartialFunction[A, B]): List[B] =
+//    this filter f.isDefinedAt map f
 
   /** Removes all elements of the list which satisfy the predicate
    *  <code>p</code>. This is like <code>filter</code> with the
