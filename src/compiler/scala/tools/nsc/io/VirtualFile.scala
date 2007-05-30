@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -7,7 +7,7 @@
 
 package scala.tools.nsc.io
 
-import java.io.{File,InputStream}
+import java.io.{File, InputStream}
 
 /** This class implements an empty abstract regular file.
  *
@@ -37,7 +37,8 @@ class VirtualFile(val name: String, _path: String) extends AbstractFile {
 
   /** Returns null. */
   final def file: File = null
-  def read : InputStream = throw new Error("not suported");
+
+  def read: InputStream = throw new Error("not suported")
 
   /** Is this abstract file a directory? */
   def isDirectory: Boolean = false

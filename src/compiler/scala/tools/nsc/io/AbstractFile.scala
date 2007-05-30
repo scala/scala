@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -7,8 +7,8 @@
 
 package scala.tools.nsc.io
 
-
-import java.io.{File,InputStream,DataInputStream}
+import java.io.{DataInputStream, File, IOException, InputStream}
+import java.net.URL
 
 object AbstractFile {
 
@@ -27,23 +27,41 @@ object AbstractFile {
   def getDirectory(path: String): AbstractFile = getDirectory(new File(path))
 
   /**
-   * if the specified File exists and is either a directory or a
+   * If the specified File exists and is either a directory or a
    * readable zip or jar archive, returns an abstract directory
-   * backed by it. Otherwise, returns null.
+   * backed by it. Otherwise, returns <code>null</code>.
    *
    * @param file ...
    * @return     ...
    */
   def getDirectory(file: File): AbstractFile = {
-    if (file.isDirectory() && file.exists()) return new PlainFile(file);
+    if (file.isDirectory() && file.exists()) return new PlainFile(file)
     if (file.isFile() && file.exists()) {
-      val path = file.getPath();
+      val path = file.getPath()
       if (path.endsWith(".jar") || path.endsWith(".zip"))
         return ZipArchive.fromFile(file);
     }
     null
   }
 
+  /**
+   * If the specified URL exists and is a readable zip or jar archive,
+   * returns an abstract directory backed by it. Otherwise, returns
+   * <code>null</code>.
+   *
+   * @param file ...
+   * @return     ...
+   */
+  def getURL(url: URL): AbstractFile =
+    if (url ne null) {
+      val path = url.getPath()
+      if (path.endsWith(".jar") || path.endsWith(".zip"))
+        ZipArchive.fromURL(url)
+      else
+        null
+    }
+    else
+      null
 }
 
 /**
@@ -72,9 +90,6 @@ object AbstractFile {
  */
 abstract class AbstractFile extends AnyRef with Iterable[AbstractFile] {
 
-  //########################################################################
-  // Public Methods
-
   /** Returns the name of this abstract file. */
   def name: String
 
@@ -91,7 +106,7 @@ abstract class AbstractFile extends AnyRef with Iterable[AbstractFile] {
   def lastModified: Long
 
   /** returns an input stream so the file can be read */
-  def read : InputStream;
+  def read: InputStream
 
   /** size of this file if it is a concrete file */
   def size: Option[Int] = None
@@ -106,17 +121,17 @@ abstract class AbstractFile extends AnyRef with Iterable[AbstractFile] {
   /** returns contents of file (if applicable) in a byte array
    *  @throws java.io.IOException
    */
-  final def toByteArray = {
+  final def toByteArray: Array[Byte] = {
     val in   = read
     var rest = size.get
-    val arr  = new Array[Byte](rest);
+    val arr  = new Array[Byte](rest)
     while (rest > 0) {
-      val res = in.read(arr, arr.length - rest, rest);
-        if (res == -1)
-          throw new java.io.IOException("read error");
-      rest = rest - res;
+      val res = in.read(arr, arr.length - rest, rest)
+      if (res == -1)
+        throw new IOException("read error")
+      rest -= res
     }
-    in.close();
+    in.close()
     arr
   }
 
@@ -124,7 +139,7 @@ abstract class AbstractFile extends AnyRef with Iterable[AbstractFile] {
   def elements: Iterator[AbstractFile]
 
   /** Returns the abstract file in this abstract directory with the specified
-   *  name. If there is no such file, returns null. The argument
+   *  name. If there is no such file, returns <code>null</code>. The argument
    *  <code>directory</code> tells whether to look for a directory or
    *  a regular file.
    *
@@ -163,5 +178,4 @@ abstract class AbstractFile extends AnyRef with Iterable[AbstractFile] {
   /** Returns the path of this abstract file. */
   override def toString() = path
 
-  //########################################################################
 }

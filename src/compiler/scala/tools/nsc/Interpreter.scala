@@ -451,7 +451,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     if (succeeded) IR.Success else IR.Error
   }
 
-  /** A counter used for numbering objects created by bind() */
+  /** A counter used for numbering objects created by <code>bind()</code>. */
   private var binderNum = 0
 
   /** Bind a specified name to a specified value.  The name may
@@ -464,7 +464,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
    */
   def bind(name: String, boundType: String, value: Any): IR.Result = {
     val binderName = "binder" + binderNum
-    binderNum = binderNum + 1
+    binderNum += 1
 
     compileString(
         "object " + binderName +
@@ -498,9 +498,9 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
    *    each command is executed because of Java's demand loading.
    *  </p>
    */
-  def close(): Unit =
+  def close() {
     Interpreter.deleteRecursively(classfilePath)
-
+  }
 
   /** A traverser that finds all mentioned identifiers, i.e. things
       that need to be imported.

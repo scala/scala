@@ -1,14 +1,11 @@
-/*     ____ ____  ____ ____  ______                                     *\
-**    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
-**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002-2006, LAMP/EPFL         **
-** /_____/\____/\___/\____/____/                                        **
-\*                                                                      */
-
+/* NSC -- new Scala compiler
+ * Copyright 2005-2007 LAMP/EPFL
+ * @author  Martin Odersky
+ */
 // $Id$
 
 
 package scala.tools.nsc.io
-
 
 import java.io.{File, FileInputStream, InputStream, IOException}
 import java.nio.{ByteBuffer, CharBuffer}

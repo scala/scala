@@ -9,7 +9,7 @@ package scala.tools.nsc
 import java.io.File
 import java.lang.System
 
-class Settings(error: String => unit) {
+class Settings(error: String => Unit) {
   def this() = this(Console.println)
 
   private var allsettings: List[Setting] = List()
@@ -119,6 +119,7 @@ class Settings(error: String => unit) {
   val inline        = BooleanSetting("-Xinline", "Perform inlining when possible")
   val XO            = BooleanSetting("-XO", "Optimize. implies -Xinline, -Xcloselim and -Xdce")
   val Xcloselim     = BooleanSetting("-Xcloselim", "Perform closure elimination")
+  val Xcodebase     = StringSetting ("-Xcodebase", "codebase", "Specify the URL containing the Scala libraries", "")
   val Xdce          = BooleanSetting("-Xdce", "Perform dead code elimination")
   val Xwarndeadcode = BooleanSetting("-Xwarndeadcode", "Emit warnings for dead code")
   val XbytecodeRead = BooleanSetting("-XbytecodeRead", "Enable bytecode reader.")
@@ -157,7 +158,8 @@ class Settings(error: String => unit) {
   val pagebottom     = StringSetting("-bottom", "pagebottom",
                                      "Include bottom text for each page",
                                      /*default*/"").dependsOn(doc)
-  val nocomment      = new BooleanSetting("-nocomment", "Suppress description and tags, generate only declarations.") {
+  val nocomment      = new BooleanSetting("-nocomment",
+                                          "Suppress description and tags, generate only declarations.") {
                          override def hiddenToIDE = true; dependsOn(doc)
                        }
   val doccharset     = StringSetting("-charset", "doccharset",

@@ -112,8 +112,8 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     if (onlyPresentation) new HashMap[Symbol,String]
     else null
   val methodArgumentNames =
-    if (onlyPresentation) new HashMap[Symbol,List[List[Symbol]]];
-    else null;
+    if (onlyPresentation) new HashMap[Symbol,List[List[Symbol]]]
+    else null
 
 // reporting -------------------------------------------------------
 
@@ -130,8 +130,10 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
   def informTime(msg: String, start: Long) =
     informProgress(msg + " in " + (currentTime - start) + "ms")
 
-  def log(msg: AnyRef): unit =
-    if (settings.logAll.value || (settings.log contains phase.name)) inform("[log " + phase + "] " + msg)
+  def log(msg: AnyRef) {
+    if (settings.logAll.value || (settings.log contains phase.name))
+      inform("[log " + phase + "] " + msg)
+  }
 
   class ErrorWithPosition(val pos: Int, val error: Throwable) extends Error
 
@@ -143,6 +145,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     case e : Error            => throw new ErrorWithPosition(pos, e)
     case e : RuntimeException => throw new ErrorWithPosition(pos, e)
   }
+
   def catchWith[T](source : SourceFile, body : => T) : T = try {
     body
   } catch {
@@ -151,7 +154,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
       throw e.error
   }
 
-  def logError(msg: String, t: Throwable): Unit = {}
+  def logError(msg: String, t: Throwable): Unit = ()
 
   def abort(msg: String) = throw new Error(msg)
 
@@ -178,12 +181,13 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
 
   val classPath0 = new ClassPath(false && onlyPresentation)
 
-  val classPath = new classPath0.Build(
-    if (forMSIL) "" else settings.classpath.value,
-    settings.sourcepath.value,
-    settings.outdir.value,
-    if (forMSIL) "" else settings.bootclasspath.value,
-    if (forMSIL) "" else settings.extdirs.value)
+  val classPath =
+    if (forMSIL)
+      new classPath0.Build(settings.sourcepath.value, settings.outdir.value)
+    else
+      new classPath0.Build(settings.classpath.value, settings.sourcepath.value,
+                           settings.outdir.value, settings.bootclasspath.value,
+                           settings.extdirs.value, settings.Xcodebase.value)
 
   if (settings.verbose.value) {
     inform("[Classpath = " + classPath+"]")
@@ -229,12 +233,12 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     phaseWithId(id) = this
     def run { currentRun.units foreach applyPhase }
 
-    def apply(unit: CompilationUnit): unit
+    def apply(unit: CompilationUnit): Unit
     private val isErased = prev.name == "erasure" || prev.erasedTypes
     override def erasedTypes: boolean = isErased
     private val isFlat = prev.name == "flatten" || prev.flatClasses
     override def flatClasses: boolean = isFlat
-    final def applyPhase(unit: CompilationUnit): unit = {
+    final def applyPhase(unit: CompilationUnit) {
       if (settings.debug.value) inform("[running phase " + name + " on " + unit + "]")
       val unit0 = currentRun.currentUnit
       currentRun.currentUnit = unit
@@ -247,7 +251,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
 
   class TerminalPhase(prev: Phase) extends GlobalPhase(prev) {
     def name = "terminal"
-    def apply(unit: CompilationUnit): unit = {}
+    def apply(unit: CompilationUnit): Unit = ()
   }
 
   object syntaxAnalyzer extends SyntaxAnalyzer {
@@ -402,14 +406,14 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
   private var runCount = 0
 
   class Run {
-    curRunId = curRunId + 1
+    curRunId += 1
     assert(curRunId > 0)
     //Console.println("starting run: " + id)
     var currentUnit: CompilationUnit = _
     curRun = this
     val firstPhase = syntaxAnalyzer.newPhase(NoPhase)
     phase = firstPhase
-    definitions.init; // needs firstPhase and phase to be defined != NoPhase,
+    definitions.init  // needs firstPhase and phase to be defined != NoPhase,
                       // that's why it is placed here.
     icodes.init
 
@@ -425,7 +429,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     def cancel { reporter.cancelled = true }
 
     // progress tracking
-    def progress(current: Int, total: Int): Unit = {}
+    def progress(current: Int, total: Int): Unit = ()
 
     private var phasec: Int = 0
     private var unitc: Int = 0
@@ -537,7 +541,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
       informTime("total", startTime)
     }
 
-    def compileLate(file: AbstractFile): unit =
+    def compileLate(file: AbstractFile) {
       if (fileset eq null) {
         val msg = "No class file for " + file +
                   " was found\n(This file cannot be loaded as a source file)"
@@ -554,15 +558,17 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
         }
         refreshProgress
       }
+    }
 
-    def compileFiles(files: List[AbstractFile]): unit =
+    def compileFiles(files: List[AbstractFile]) {
       try {
         compileSources(files map getSourceFile)
       } catch {
         case ex: IOException => error(ex.getMessage())
       }
+    }
 
-    def compile(filenames: List[String]): unit =
+    def compile(filenames: List[String]) {
       try {
         if (settings.Xscript.value && filenames.length != 1)
           error("can only compile one script at a time")
@@ -575,8 +581,9 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
       } catch {
         case ex: IOException => error(ex.getMessage())
       }
+    }
 
-    private def resetPackageClass(pclazz: Symbol): unit = {
+    private def resetPackageClass(pclazz: Symbol) {
       atPhase(firstPhase) {
         pclazz.setInfo(atPhase(typerPhase)(pclazz.info))
       }
@@ -587,7 +594,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
   def showDef(name: Name, module: boolean) {
     def getSym(name: Name, module: boolean): Symbol = {
       var i = name.length - 1
-      while (i != 0 && name(i) != '#' && name(i) != '.') i = i - 1
+      while (i != 0 && name(i) != '#' && name(i) != '.') i -= 1
       if (i == 0)
         definitions.getModule(name)
       else {
@@ -602,7 +609,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
   }
 
   /** Returns the file with the given suffix for the given class. */
-  def getFile(clazz: Symbol, suffix: String) = {
+  def getFile(clazz: Symbol, suffix: String): File = {
     val outdirname = settings.outdir.value
     var outdir = new File(if (outdirname == "") "." else outdirname)
     val filename = clazz.fullNameString('.')
@@ -616,25 +623,11 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     }
     new File(outdir, filename.substring(start) + suffix)
   }
-/*
-  private def writeSymblFile(clazz: Symbol, pickled: PickleBuffer) = {
-    val file = getFile(clazz, ".symbl")
-    try {
-      val stream = new FileOutputStream(file)
-      stream.write(pickled.bytes, 0, pickled.writeIndex)
-      stream.close()
-      informProgress("wrote " + file)
-    } catch {
-      case ex: IOException =>
-      if (settings.debug.value) ex.printStackTrace()
-      error("could not write file " + file)
-    }
-  }
-*/
+
   private def writeICode() {
     val printer = new icodes.TextPrinter(null, icodes.linearizer)
     icodes.classes.values.foreach((cls) => {
-      val suffix = if (cls.symbol.hasFlag(Flags.MODULE)) "$.icode" else ".icode"
+      val suffix = if (cls.symbol hasFlag Flags.MODULE) "$.icode" else ".icode"
       var file = getFile(cls.symbol, suffix)
 //      if (file.exists())
 //        file = new File(file.getParentFile(), file.getName() + "1")

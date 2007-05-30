@@ -11,6 +11,7 @@
 package scala.tools.nsc.util
 
 import java.io.File
+import java.net.URL
 import java.util.StringTokenizer
 
 import scala.collection.mutable.ArrayBuffer
@@ -172,16 +173,80 @@ class ClassPath(onlyPresentation: Boolean) {
 
     def root = new Context(entries.toList)
 
-    def this(classpath: String) = {
+    def this(classpath: String) {
       this()
       addFilesInPath(classpath)
     }
 
+    def this(source: String, output: String) {
+      this()
+      addDirsInPath(source, output)
+    }
+
     def this(classpath: String, source: String, output: String,
-             boot: String, extdirs: String) = {
+             boot: String, extdirs: String, codebase: String) {
       this()
       addFilesInPath(boot)
       addArchivesInExtDirPath(extdirs)
+      addDirsInPath(source, output)
+      addFilesInPath(classpath)
+      addURLsInPath(codebase)
+    }
+
+    /**
+     *  @param path  ...
+     *  @param isDir ...
+     *  @return      ...
+     */
+    def lookupPath(path: String, isDir: Boolean): AbstractFile = {
+      val ctx = root.find(path, isDir)
+      if (ctx eq null) null
+      else if (ctx.entries.isEmpty) null
+      else if (ctx.entries.head eq null) null
+      else ctx.entries.head.location
+    }
+
+    /**
+     *  @param classes ...
+     *  @param sources ...
+     */
+    def library(classes: String, sources: String) {
+      assert(classes ne null)
+      val location = AbstractFile.getDirectory(classes)
+      val sourceFile0 =
+        if (sources ne null) AbstractFile.getDirectory(sources)
+        else null
+      class Library0 extends Library(location) {
+        override def sourceFile = sourceFile0
+      }
+      entries += new Library0()
+    }
+
+    private def addFilesInPath(path: String) {
+      val strtok = new StringTokenizer(path, File.pathSeparator)
+      while (strtok.hasMoreTokens()) {
+        val file = AbstractFile.getDirectory(strtok.nextToken())
+        if (file ne null) entries += (new Library(file))
+      }
+    }
+
+    private def addArchivesInExtDirPath(path: String) {
+      val strtok = new StringTokenizer(path, File.pathSeparator)
+      while (strtok.hasMoreTokens()) {
+        val file = AbstractFile.getDirectory(strtok.nextToken())
+        if (file ne null) {
+          for (file0 <- file) {
+            val name = file0.name
+            if (name.endsWith(".jar") || name.endsWith(".zip") || file0.isDirectory) {
+              val archive = AbstractFile.getDirectory(new File(file.file, name))
+              if (archive ne null) entries += (new Library(archive))
+            }
+          }
+        }
+      }
+    }
+
+    private def addDirsInPath(source: String, output: String) {
       val clazzes = AbstractFile.getDirectory(output)
       if (clazzes eq null)
         throw new FatalError("Output location \"" + output + "\" not found")
@@ -195,58 +260,21 @@ class ClassPath(onlyPresentation: Boolean) {
         val output0 = (new Output(clazzes, sources))
         entries += output0
       }
-      addFilesInPath(classpath)
     }
 
-    /**
-     *  @param path  ...
-     *  @param isDir ...
-     *  @return      ...
-     */
-    def lookupPath(path: String, isDir: Boolean) = {
-      val ctx = root.find(path, isDir)
-      if (ctx eq null) null
-      else if (ctx.entries.isEmpty) null
-      else if (ctx.entries.head eq null) null
-      else ctx.entries.head.location
-    }
-
-    /**
-     *  @param classes ...
-     *  @param sources ...
-     */
-    def library(classes: String, sources: String) = {
-      assert(classes ne null)
-      val location = AbstractFile.getDirectory(classes)
-      val sourceFile0 =
-        if (sources ne null) AbstractFile.getDirectory(sources)
-        else null
-      class Library0 extends Library(location) {
-        override def sourceFile = sourceFile0
-      }
-      entries += new Library0()
-    }
-
-    private def addFilesInPath(path: String) = {
-      val strtok = new StringTokenizer(path, File.pathSeparator)
+    private val urlSeparator = " "
+    private def addURLsInPath(codebase: String) {
+      val strtok = new StringTokenizer(codebase, urlSeparator)
       while (strtok.hasMoreTokens()) {
-        val file = AbstractFile.getDirectory(strtok.nextToken())
-        if (file ne null) entries += (new Library(file))
-      }
-    }
-
-    private def addArchivesInExtDirPath(path: String) = {
-      val strtok = new StringTokenizer(path, File.pathSeparator)
-      while (strtok.hasMoreTokens()) {
-        val file = AbstractFile.getDirectory(strtok.nextToken())
-        if (file ne null) {
-          for (file0 <- file) {
-            val name = file0.name
-            if (name.endsWith(".jar") || name.endsWith(".zip") || file0.isDirectory) {
-              val archive = AbstractFile.getDirectory(new File(file.file, name))
-              if (archive ne null) entries += (new Library(archive))
-            }
-          }
+        try {
+          val url = new URL(strtok.nextToken())
+          val archive = AbstractFile.getURL(url)
+          if (archive ne null) entries += (new Library(archive))
+        }
+        catch {
+          case e =>
+            Console.println("error in addURLsInPath: " + e.getMessage)//debug
+            throw e
         }
       }
     }
