@@ -1,0 +1,4 @@
+annot-nonconst.scala:5: error: attribute argument needs to be a constant; found: Test.this.n
+  @Length(n) def foo = "foo"
+          ^
+one error found
