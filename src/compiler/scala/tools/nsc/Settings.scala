@@ -206,7 +206,7 @@ class Settings(error: String => Unit) {
     /** If first arg defines this setting, consume it as well as all following
      *  args needed to define the setting. If this can be done without
      *  error, set value field and return suffix of args else
-     *  issue error message and return empty.
+     *  issue error message and return the arguments unchanged.
      *  If first arg does not define this setting return args unchanged.
      */
     def tryToSet(args: List[String]): List[String]
@@ -267,7 +267,7 @@ class Settings(error: String => Unit) {
       case n :: rest if (name == n || abbreviation == n) =>
         if (rest.isEmpty) {
           error("missing argument")
-          List()
+          args
         } else {
           value = rest.head
           rest.tail
@@ -374,7 +374,7 @@ class Settings(error: String => Unit) {
         val phase = n.substring(name.length() + 1)
         if (phase == "") {
           error("missing phase")
-          List()
+          args
         } else {
           value = value ::: List(phase)
           rest

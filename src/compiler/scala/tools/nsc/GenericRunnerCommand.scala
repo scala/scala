@@ -33,7 +33,7 @@ class GenericRunnerCommand(allargs: List[String], error: String => Unit) {
         if (args eq args0)
           args = setting.tryToSet(args)
       if (args eq args0) {
-        error("unknown option: '" + args.head + "'")
+        error("bad option: '" + args.head + "'")
         ok = false
       }
     }
