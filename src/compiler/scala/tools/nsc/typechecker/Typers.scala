@@ -444,6 +444,13 @@ trait Typers requires Analyzer {
         typer1
       } else this
 
+    /** Does the context of tree `tree' require a stable type?
+     */
+    private def isStableContext(tree: Tree, mode: int, pt: Type) =
+      pt.isStable ||
+      (mode & QUALmode) != 0 && !tree.symbol.isConstant ||
+      pt.symbol.isAbstractType && pt.bounds.lo.isStable && !(tree.tpe <:< pt)
+
     /** <p>
      *    Post-process an identifier or selection node, performing the following:
      *  </p>
@@ -470,8 +477,8 @@ trait Typers requires Analyzer {
         errorTree(tree, sym+" is not a value")
       } else {
         if (sym.isStable && pre.isStable && tree.tpe.symbol != ByNameParamClass &&
-            (pt.isStable || (mode & QUALmode) != 0 && !sym.isConstant ||
-             sym.isModule && !sym.isMethod)) tree.setType(singleType(pre, sym))
+            (isStableContext(tree, mode, pt) || sym.isModule && !sym.isMethod))
+          tree.setType(singleType(pre, sym))
         else tree
       }
     }
@@ -489,8 +496,8 @@ trait Typers requires Analyzer {
         case _ => NoPrefix
       }
       if (tree.tpe.isInstanceOf[MethodType] && pre.isStable && sym.tpe.paramTypes.isEmpty &&
-          (pt.isStable || (mode & QUALmode) != 0 && !sym.isConstant || sym.isModule))
-          tree.setType(MethodType(List(), singleType(pre, sym)))
+          (isStableContext(tree, mode, pt) || sym.isModule))
+        tree.setType(MethodType(List(), singleType(pre, sym)))
       else tree
     }
 
@@ -2131,9 +2138,9 @@ trait Typers requires Analyzer {
           }
         if (clazz == NoSymbol) setError(tree)
         else {
-          val owntype = if (pt.isStable || (mode & QUALmode) != 0) selftype
-                        else selftype.singleDeref
-          tree setSymbol clazz setType owntype
+          tree setSymbol clazz setType selftype.singleDeref
+          if (isStableContext(tree, mode, pt)) tree setType selftype
+          tree
         }
       }
 
