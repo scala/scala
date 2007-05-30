@@ -851,8 +851,12 @@ trait Symbols {
     /** The case factory corresponding to this case class
      *  @pre case class is a member of some other class or package
      */
-    final def caseFactory: Symbol =
-      initialize.owner.info.decl(name.toTermName).suchThat(.isCaseFactory)
+    final def caseFactory: Symbol = {
+      var facname = name.toTermName
+      if (privateWithin.isClass && !privateWithin.isModuleClass && !hasFlag(EXPANDEDNAME))
+        facname = privateWithin.expandedName(facname)
+      initialize.owner.info.decl(facname).suchThat(.isCaseFactory)
+    }
 
     /** If this symbol is a skolem, its corresponding type parameter, otherwise this */
     def deSkolemize: Symbol = this
