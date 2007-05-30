@@ -37,12 +37,12 @@ object Stream {
      *  @param hd   The first element of the result stream
      *  @param tl   The remaining elements of the result stream
      */
-    def apply[a](hd: a, tl: => Stream[a]) = new Stream[a] {
+    def apply[A](hd: A, tl: => Stream[A]) = new Stream[A] {
       override def isEmpty = false
       def head = hd
-      private var tlVal: Stream[a] = _
+      private var tlVal: Stream[A] = _
       private var tlDefined = false
-      def tail: Stream[a] = {
+      def tail: Stream[A] = {
         if (!tlDefined) { tlVal = tl; tlDefined = true }
         tlVal
       }
@@ -52,7 +52,7 @@ object Stream {
       }
     }
 
-    def unapply[a](str: Stream[a]): Option[(a,Stream[a])] =
+    def unapply[A](str: Stream[A]): Option[(A,Stream[A])] =
       if(str.isEmpty)
         None
       else
@@ -62,21 +62,21 @@ object Stream {
   /** A stream containing all elements of a given iterator, in the order they are produced.
    *  @param it   The iterator producing the stream's elements
    */
-  def fromIterator[a](it: Iterator[a]): Stream[a] =
+  def fromIterator[A](it: Iterator[A]): Stream[A] =
     if (it.hasNext) cons(it.next, fromIterator(it)) else empty
 
   /** The concatenation of a sequence of streams
    */
-  def concat[a](xs: Iterable[Stream[a]]): Stream[a] = concat(xs.elements)
+  def concat[A](xs: Iterable[Stream[A]]): Stream[A] = concat(xs.elements)
 
   /** The concatenation of all given streams
    */
-  def concat[a](s1: Stream[a], s2: Stream[a], ss: Stream[a]*): Stream[a] =
+  def concat[A](s1: Stream[A], s2: Stream[A], ss: Stream[A]*): Stream[A] =
     s1 append s2 append concat(ss.elements)
 
   /** The concatenation of all streams returned by an iterator
    */
-  def concat[a](xs: Iterator[Stream[a]]): Stream[a] =
+  def concat[A](xs: Iterator[Stream[A]]): Stream[A] =
     if (xs.hasNext) xs.next append concat(xs)
     else empty
 
@@ -171,7 +171,7 @@ object Stream {
  * @author Martin Odersky, Matthias Zenger
  * @version 1.1 08/08/03
  */
-trait Stream[+a] extends Seq[a] {
+trait Stream[+A] extends Seq[A] {
 
   /** is this stream empty? */
   override def isEmpty: Boolean
@@ -179,12 +179,12 @@ trait Stream[+a] extends Seq[a] {
   /** The first element of this stream
    *  @throws Predef.NoSuchElementException if the stream is empty.
    */
-  def head: a
+  def head: A
 
   /** A stream consisting of the remaining elements of this stream after the first one.
    *  @throws Predef.UnsupportedOperationException if the stream is empty.
    */
-  def tail: Stream[a]
+  def tail: Stream[A]
 
   /** The length of this stream */
   def length: Int = if (isEmpty) 0 else tail.length + 1
@@ -192,22 +192,22 @@ trait Stream[+a] extends Seq[a] {
   /** The stream resulting from the concatenation of this stream with the argument stream.
    *  @param rest   The stream that gets appended to this stream
    */
-  def append[b >: a](rest: => Stream[b]): Stream[b] =
+  def append[B >: A](rest: => Stream[B]): Stream[B] =
     if (isEmpty) rest
     else Stream.cons(head, tail.append(rest))
 
   /** An iterator returning the elements of this stream one by one.
    */
-  override def elements: Iterator[a] = new Iterator[a] {
+  override def elements: Iterator[A] = new Iterator[A] {
     var current = Stream.this
     def hasNext: Boolean = !current.isEmpty
-    def next: a = { val result = current.head; current = current.tail; result }
+    def next: A = { val result = current.head; current = current.tail; result }
   }
 
   /** The stream without its last element.
    *  @throws Predef.UnsupportedOperationException if the stream is empty.
    */
-  def init: Stream[a] =
+  def init: Stream[A] =
     if (isEmpty) throw new UnsupportedOperationException("Stream.empty.init")
     else if (tail.isEmpty) Stream.empty
     else Stream.cons(head, tail.init)
@@ -217,10 +217,10 @@ trait Stream[+a] extends Seq[a] {
    *  @return the last element of the stream.
    *  @throws Predef.NoSuchElementException if the stream is empty.
    */
-  override def last: a =
+  override def last: A =
     if (isEmpty) throw new NoSuchElementException("Stream.empty.last")
     else {
-      def loop(s: Stream[a]): a = {
+      def loop(s: Stream[A]): A = {
         if (s.tail.isEmpty) s.head
         else loop(s.tail)
       }
@@ -234,7 +234,7 @@ trait Stream[+a] extends Seq[a] {
    *  @return  the element at position <code>n</code> in this stream.
    *  @throws Predef.NoSuchElementException if the stream is too short.
    */
-  def apply(n: Int) = drop(n).head
+  def apply(n: Int): A = drop(n).head
 
   /** Returns the <code>n</code> first elements of this stream, or else the whole
    *  stream, if it has less than <code>n</code> elements.
@@ -242,7 +242,7 @@ trait Stream[+a] extends Seq[a] {
    *  @param n the number of elements to take.
    *  @return the <code>n</code> first elements of this stream.
    */
-  override def take(n: Int): Stream[a] =
+  override def take(n: Int): Stream[A] =
     if (n == 0) Stream.empty
     else Stream.cons(head, tail.take(n-1))
 
@@ -252,8 +252,8 @@ trait Stream[+a] extends Seq[a] {
    *  @param n the number of elements to drop.
    *  @return the stream without its <code>n</code> first elements.
    */
-  override def drop(n: Int): Stream[a] = {
-    def loop(s: Stream[a], n: Int): Stream[a] =
+  override def drop(n: Int): Stream[A] = {
+    def loop(s: Stream[A], n: Int): Stream[A] =
       if (n == 0) s
       else loop(s.tail, n-1)
     loop(this, n)
@@ -266,7 +266,7 @@ trait Stream[+a] extends Seq[a] {
    *  @return  the longest prefix of this stream whose elements satisfy
    *           the predicate <code>p</code>.
    */
-  override def takeWhile(p: a => Boolean): Stream[a] =
+  override def takeWhile(p: A => Boolean): Stream[A] =
     if (isEmpty || !p(head)) Stream.empty
     else Stream.cons(head, tail.takeWhile(p))
 
@@ -277,8 +277,8 @@ trait Stream[+a] extends Seq[a] {
    *  @return  the longest suffix of the stream whose first element
    *           does not satisfy the predicate <code>p</code>.
    */
-  override def dropWhile(p: a => Boolean): Stream[a] = {
-    def loop(s: Stream[a]): Stream[a] =
+  override def dropWhile(p: A => Boolean): Stream[A] = {
+    def loop(s: Stream[A]): Stream[A] =
       if (s.isEmpty || !p(s.head)) s
       else loop(s.tail)
     loop(this)
@@ -290,7 +290,7 @@ trait Stream[+a] extends Seq[a] {
    *  @param f function to apply to each element.
    *  @return <code>[f(a0), ..., f(an)]</code> if this stream is <code>[a0, ..., an]</code>.
    */
-  override def map[b](f: a => b): Stream[b] =
+  override def map[B](f: A => B): Stream[B] =
     if (isEmpty) Stream.empty
     else Stream.cons(f(head), tail.map(f))
 
@@ -299,8 +299,8 @@ trait Stream[+a] extends Seq[a] {
    *
    *  @param f the treatment to apply to each element.
    */
-  override def foreach(f: a => Unit) {
-    def loop(s: Stream[a]) {
+  override def foreach(f: A => Unit) {
+    def loop(s: Stream[A]) {
       if (s.isEmpty) {}
       else { f(s.head); loop(s.tail) }
     }
@@ -313,8 +313,8 @@ trait Stream[+a] extends Seq[a] {
    *  @param p the predicate used to filter the stream.
    *  @return the elements of this stream satisfying <code>p</code>.
    */
-  override def filter(p: a => Boolean): Stream[a] = {
-    def loop(s: Stream[a]): Stream[a] =
+  override def filter(p: A => Boolean): Stream[A] = {
+    def loop(s: Stream[A]): Stream[A] =
       if (s.isEmpty) s
       else if (p(s.head)) Stream.cons(s.head, loop(s.tail))
       else loop(s.tail)
@@ -328,8 +328,8 @@ trait Stream[+a] extends Seq[a] {
    *  @return  <code>true</code> iff all elements of this stream satisfy the
    *           predicate <code>p</code>.
    */
-  override def forall(p: a => Boolean): Boolean = {
-    def loop(s: Stream[a]): Boolean = {
+  override def forall(p: A => Boolean): Boolean = {
+    def loop(s: Stream[A]): Boolean = {
       if (s.isEmpty) true
       else if (p(s.head)) loop(s.tail)
       else false
@@ -344,8 +344,8 @@ trait Stream[+a] extends Seq[a] {
    *  @return  <code>true</code> iff there exists an element in this stream that
    *           satisfies the predicate <code>p</code>.
    */
-  override def exists(p: a => Boolean): Boolean = {
-    def loop(s: Stream[a]): Boolean = {
+  override def exists(p: A => Boolean): Boolean = {
+    def loop(s: Stream[A]): Boolean = {
       if (s.isEmpty) false
       else if (p(s.head)) true
       else loop(s.tail)
@@ -361,8 +361,8 @@ trait Stream[+a] extends Seq[a] {
    *          a<sub>n</sub>)</code> if the stream is
    *          <code>[a<sub>0</sub>, a<sub>1</sub>, ..., a<sub>n</sub>]</code>.
    */
-  override def foldLeft[b](z: b)(f: (b, a) => b): b = {
-    def loop(s: Stream[a], z: b): b =
+  override def foldLeft[B](z: B)(f: (B, A) => B): B = {
+    def loop(s: Stream[A], z: B): B =
       if (s.isEmpty) z
       else loop(s.tail, f(z, s.head))
     loop(this, z)
@@ -375,7 +375,7 @@ trait Stream[+a] extends Seq[a] {
    *  @return <code>f(a<sub>0</sub>, f(a<sub>1</sub>, f(..., f(a<sub>n</sub>, z)...)))</code>
    *          if the stream is <code>[a<sub>0</sub>, a1, ..., a<sub>n</sub>]</code>.
    */
-  override def foldRight[b](z: b)(f: (a, b) => b): b =
+  override def foldRight[B](z: B)(f: (A, B) => B): B =
     if (isEmpty) z
     else f(head, tail.foldRight(z)(f))
 
@@ -386,14 +386,14 @@ trait Stream[+a] extends Seq[a] {
    *  @return  <code>f(a<sub>0</sub>) ::: ... ::: f(a<sub>n</sub>)</code> if
    *           this stream is <code>[a<sub>0</sub>, ..., a<sub>n</sub>]</code>.
    */
-  override def flatMap[b](f: a => Iterable[b]): Stream[b] =
+  override def flatMap[B](f: A => Iterable[B]): Stream[B] =
     if (isEmpty) Stream.empty
     else Stream.fromIterator(f(head).elements).append(tail.flatMap(f))
 
   /** A stream consisting of all elements of this stream in reverse order.
    */
-  override def reverse: Stream[a] =
-    foldLeft(Stream.empty: Stream[a])((xs, x) => Stream.cons(x, xs))
+  override def reverse: Stream[A] =
+    foldLeft(Stream.empty: Stream[A])((xs, x) => Stream.cons(x, xs))
 
   /** Fills the given array <code>xs</code> with the elements of
    *  this stream starting at position <code>start</code>.
@@ -402,8 +402,8 @@ trait Stream[+a] extends Seq[a] {
    *  @param  start starting index.
    *  @pre    the array must be large enough to hold all elements.
    */
-  override def copyToArray[b >: a](xs: Array[b], start: Int) {
-    def loop(s: Stream[a], start: Int) {
+  override def copyToArray[B >: A](xs: Array[B], start: Int) {
+    def loop(s: Stream[A], start: Int) {
       if (!xs.isEmpty) { xs(start) = s.head; loop(s.tail, start + 1) }
     }
     loop(this, start)
@@ -419,7 +419,7 @@ trait Stream[+a] extends Seq[a] {
    *              <code>Stream(a<sub>0</sub>, ..., a<sub>m</sub>)
    *              zip Stream(b<sub>0</sub>, ..., b<sub>n</sub>)</code> is invoked.
    */
-  def zip[b](that: Stream[b]): Stream[Tuple2[a, b]] =
+  def zip[B](that: Stream[B]): Stream[Tuple2[A, B]] =
     if (this.isEmpty || that.isEmpty) Stream.empty
     else Stream.cons(Tuple2(this.head, that.head), this.tail.zip(that.tail))
 
@@ -430,7 +430,7 @@ trait Stream[+a] extends Seq[a] {
    *  @return      the stream <code>Stream({a<sub>0</sub>,0}, {a<sub>0</sub>,1},...)</code>
    *               where <code>a<sub>i</sub></code> are the elements of this stream.
    */
-  def zipWithIndex: Stream[Tuple2[a, Int]] =
+  def zipWithIndex: Stream[Tuple2[A, Int]] =
     zip(Stream.from(0))
 
   /** Prints elements of this stream one by one, separated by commas */
@@ -440,7 +440,7 @@ trait Stream[+a] extends Seq[a] {
    *  @param sep   The separator string printed between consecutive elements.
    */
   def print(sep: String) {
-    def loop(s: Stream[a]) {
+    def loop(s: Stream[A]) {
       if (s.isEmpty) Console.println("Stream.empty")
       else { Console.print(s.head); Console.print(sep); loop(s.tail) }
     }
