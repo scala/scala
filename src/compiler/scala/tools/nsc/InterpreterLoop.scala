@@ -14,8 +14,10 @@ import java.io.IOException
 import scala.tools.nsc.util.Position
 import nsc.{InterpreterResults=>IR}
 
-/** The main loop of the command-line interface to the
- *  <a href="http://scala-lang.org/" target="_top">Scala</a> interpreter.
+/** The
+ *  <a href="http://scala-lang.org/" target="_top">Scala</a>
+ *  interactive shell.  It provides a read-eval-print loop around
+ *  the Interpreter class.
  *  After instantiation, clients should call the <code>main()</code> method.
  *
  *  @author  Lex Spoon
@@ -87,7 +89,7 @@ class InterpreterLoop(in0: BufferedReader, out: PrintWriter) {
 
   /** print a friendly help message */
   def printHelp {
-    out.println("This is an interpreter for Scala.")
+    out.println("This is a Scala shell.")
     out.println("Type in expressions to have them evaluated.")
     out.println("Type :help to repeat this message.")
     out.println("Type :load followed by a filename to load a Scala file.")
@@ -97,7 +99,7 @@ class InterpreterLoop(in0: BufferedReader, out: PrintWriter) {
 
   /** Print a welcome message */
   def printWelcome {
-    out.println("This is an interpreter for Scala.")
+    out.println("This is a Scala shell.")
     out.println("Type in expressions to have them evaluated.")
     out.println("Type :help for more information.")
   }
