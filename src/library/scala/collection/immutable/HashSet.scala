@@ -23,7 +23,7 @@ object HashSet {
 
   /** The canonical factory for this type
    */
-  def apply[A, B](elems: A*) = empty[A] ++ elems
+  def apply[A](elems: A*) = empty[A] ++ elems
 }
 
 /** This class implements immutable sets using a hash table.
