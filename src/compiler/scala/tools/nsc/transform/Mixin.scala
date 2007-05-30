@@ -41,7 +41,7 @@ abstract class Mixin extends InfoTransform {
    */
   private def isImplementedStatically(sym: Symbol) =
     sym.owner.isImplClass && sym.isMethod &&
-    (!sym.isModule || sym.hasFlag(PRIVATE)) &&
+    (!sym.isModule || sym.hasFlag(PRIVATE | LIFTED)) &&
     !(sym hasFlag (ACCESSOR | SUPERACCESSOR))
 
   /** A member of a trait is static only if it belongs only to the

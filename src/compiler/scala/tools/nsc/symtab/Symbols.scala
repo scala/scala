@@ -262,11 +262,11 @@ trait Symbols {
       isTrait && (!hasFlag(INTERFACE) || hasFlag(lateINTERFACE)) && !isImplClass
 
     /** Is this a symbol which exists only in the implementation class, not in its trait? */
-    final def isImplOnly: boolean = (
+    final def isImplOnly: boolean =
       hasFlag(PRIVATE) ||
       (owner.isImplClass || owner.isTrait) &&
-      (hasFlag(notPRIVATE | LIFTED) && !hasFlag(ACCESSOR | SUPERACCESSOR | MODULE) || isConstructor)
-    )
+      ((hasFlag(notPRIVATE | LIFTED) && !hasFlag(ACCESSOR | SUPERACCESSOR | MODULE) || isConstructor) ||
+       (hasFlag(LIFTED) && isModule && isMethod))
 
     /** Is this symbol a module variable ? */
     final def isModuleVar: boolean = isVariable && hasFlag(MODULEVAR)
