@@ -649,7 +649,7 @@ trait Infer {
       //@M validate variances & bounds of targs wrt variances & bounds of tparams
       //@M TODO: better place to check this?
       //@M TODO: errors for getters & setters are reported separately
-      val kindErrors = checkKindBounds(tparams, targs)
+      val kindErrors = checkKindBounds(tparams, targs, pre, owner)
 
       if(!kindErrors.isEmpty)
         error(pos,
@@ -693,9 +693,11 @@ trait Infer {
      *  e.g. class Iterable[t, m[+x <: t]] --> the application Iterable[Int, List] is okay, since
      *       List's type parameter is also covariant and its bounds are weaker than <: Int
      */
-    def checkKindBounds(tparams: List[Symbol], targs: List[Type]): List[String] = {
+    def checkKindBounds(tparams: List[Symbol], targs: List[Type], pre: Type, owner: Symbol): List[String] = {
+      def transform(tp: Type, clazz: Symbol): Type = tp.asSeenFrom(pre, clazz) // instantiate type params that come from outside the abstract type we're currently checking
+
       // check that the type parameters <arg>hkargs</arg> to a higher-kinded type conform to the expected params <arg>hkparams</arg>
-      def checkKindBoundsHK(hkargs: List[Symbol], hkparams: List[Symbol]): (List[(Symbol, Symbol)], List[(Symbol, Symbol)]) = {
+      def checkKindBoundsHK(hkargs: List[Symbol], hkparams: List[Symbol], paramowner: Symbol): (List[(Symbol, Symbol)], List[(Symbol, Symbol)]) = {
         val _varianceMismatches = new ListBuffer[(Symbol, Symbol)]
         val _stricterBounds = new ListBuffer[(Symbol, Symbol)]
         def varianceMismatch(a: Symbol, p: Symbol): unit = _varianceMismatches += (a, p)
@@ -712,10 +714,10 @@ trait Infer {
             // substSym(hkparams, hkargs) --> these types are going to be compared as types of kind *
             //    --> their arguments use different symbols, but are conceptually the same
             //        (could also replace the types by polytypes, but can't just strip the symbols, as ordering is lost then)
-            if (!(hkparam.info.instantiateTypeParams(tparams, targs).bounds.substSym(hkparams, hkargs) <:< hkarg.info.bounds))
+            if (!(transform(hkparam.info.instantiateTypeParams(tparams, targs).bounds.substSym(hkparams, hkargs), paramowner) <:< transform(hkarg.info.bounds, owner)))
               stricterBound(hkarg, hkparam)
           } else {
-            val (vm, sb) = checkKindBoundsHK(hkarg.typeParams, hkparam.typeParams)
+            val (vm, sb) = checkKindBoundsHK(hkarg.typeParams, hkparam.typeParams, paramowner)
             varianceMismatches(vm)
             stricterBounds(sb)
           }
@@ -739,7 +741,7 @@ trait Infer {
 
       val errors = new ListBuffer[String]
       (tparams zip targs).foreach{ case (tparam, targ) if(targ.isHigherKinded) =>
-        val (varianceMismatches, stricterBounds) = checkKindBoundsHK(targ.typeParams, tparam.typeParams)
+        val (varianceMismatches, stricterBounds) = checkKindBoundsHK(targ.typeParams, tparam.typeParams, tparam.owner)
 
         if (!(varianceMismatches.isEmpty && stricterBounds.isEmpty)){
           errors += (targ+"'s type parameters do not match "+tparam+"'s expected parameters: "+

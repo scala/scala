@@ -206,7 +206,7 @@ abstract class RefChecks extends InfoTransform {
 
             // check overriding (abstract type --> abstract type or abstract type --> concrete type member (a type alias))
             // making an abstract type member concrete is like passing a type argument
-            val kindErrors = typer.infer.checkKindBounds(List(other), List(memberTp)) // (1.7.2)
+            val kindErrors = typer.infer.checkKindBounds(List(other), List(memberTp), self, member.owner) // (1.7.2)
 
             if(!kindErrors.isEmpty)
               unit.error(member.pos,
@@ -217,7 +217,7 @@ abstract class RefChecks extends InfoTransform {
             // check a type alias's RHS corresponds to its declaration
             // this overlaps somewhat with validateVariance
             if(member.isAliasType) {
-              val kindErrors = typer.infer.checkKindBounds(List(member), List(memberTp.normalize))
+              val kindErrors = typer.infer.checkKindBounds(List(member), List(memberTp.normalize), self, member.owner)
 
               if(!kindErrors.isEmpty)
                 unit.error(member.pos,
