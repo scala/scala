@@ -3,7 +3,7 @@ bug900.scala:4: error: type mismatch;
  required: AnyRef
 Note that implicit conversions are not applicable because they are ambiguous:
  both method any2stringadd in object Predef of type (Any)scala.runtime.StringAdd
- and method any2ArrowAssoc in object Predef of type [a](a)ArrowAssoc[a]
+ and method any2ArrowAssoc in object Predef of type [A](A)ArrowAssoc[A]
  are possible conversion functions from Foo.this.x.type to AnyRef
         def break(): x.type
                      ^

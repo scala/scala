@@ -22,7 +22,7 @@ import java.lang.Integer.toHexString
 import scala.collection.immutable.{Map, ListMap}
 import scala.collection.mutable.{ListBuffer, ArrayBuffer}
 import scala.tools.nsc.io.AbstractFile
-import scala.tools.nsc.util.{Position,NoPosition}
+import scala.tools.nsc.util.{FreshNameCreator, Position, NoPosition}
 
 
 /** This abstract class implements a class file parser.
@@ -49,7 +49,7 @@ abstract class ClassfileParser {
   protected var hasMeta: boolean = _        // does class file contain jaco meta attribute?s
   protected var busy: boolean = false       // lock to detect recursive reads
   protected var classTParams = Map[Name,Symbol]()
-  protected val fresh = new scala.tools.nsc.util.FreshNameCreator
+  protected val fresh = new FreshNameCreator
 
   private object metaParser extends MetaParser {
     val global: ClassfileParser.this.global.type = ClassfileParser.this.global
@@ -59,9 +59,9 @@ abstract class ClassfileParser {
     val global: ClassfileParser.this.global.type = ClassfileParser.this.global
   }
 
-  def parse(file: AbstractFile, root: Symbol): unit = {
+  def parse(file: AbstractFile, root: Symbol) {
     def handleError(e: Exception) = {
-      if (settings.debug.value) e.printStackTrace();//debug
+      if (settings.debug.value) e.printStackTrace() //debug
       throw new IOException("class file '" + in.file + "' is broken\n(" + {
         if (e.getMessage() != null) e.getMessage()
         else e.getClass.toString
@@ -70,10 +70,12 @@ abstract class ClassfileParser {
     assert(!busy)
     busy = true
     root match {
-      case cs : ClassSymbol => cs.classFile = file;
-      case ms : ModuleSymbol => ms.moduleClass.asInstanceOf[ClassSymbol].classFile = file;
+      case cs: ClassSymbol =>
+        cs.classFile = file
+      case ms: ModuleSymbol =>
+        ms.moduleClass.asInstanceOf[ClassSymbol].classFile = file
       case _ =>
-        Console.println("Skipping class: " + root + ": " + root.getClass);
+        Console.println("Skipping class: " + root + ": " + root.getClass)
     }
 
     this.in = new AbstractFileReader(file)
@@ -99,7 +101,7 @@ abstract class ClassfileParser {
 
   protected def statics: Symbol = staticModule.moduleClass
 
-  private def parseHeader: unit = {
+  private def parseHeader {
     val magic = in.nextInt
     if (magic != JAVA_MAGIC)
       throw new IOException("class file '" + in.file + "' "
@@ -121,7 +123,8 @@ abstract class ClassfileParser {
     private val len = in.nextChar
     private val starts = new Array[int](len)
     private val values = new Array[AnyRef](len)
-    private val internalized = new Array[Name](len);
+    private val internalized = new Array[Name](len)
+
     { var i = 1
       while (i < starts.length) {
         starts(i) = in.bp
@@ -242,6 +245,7 @@ abstract class ClassfileParser {
       }
       p
     }
+
     /** Return the type of a class constant entry. Since
      *  arrays are considered to be class types, they might
      *  appear as entries in 'newarray' or 'cast' opcodes.
@@ -308,11 +312,11 @@ abstract class ClassfileParser {
     }
 
     /** Throws an exception signaling a bad constant index. */
-    private def errorBadIndex(index: int) =
+    private def errorBadIndex(index: Int) =
       throw new RuntimeException("bad constant pool index: " + index + " at pos: " + in.bp)
 
     /** Throws an exception signaling a bad tag at given address. */
-    private def errorBadTag(start: int) =
+    private def errorBadTag(start: Int) =
       throw new RuntimeException("bad constant pool tag " + in.buf(start) + " at byte " + start)
   }
 
@@ -323,10 +327,10 @@ abstract class ClassfileParser {
       if (!global.phase.erasedTypes && tp.symbol == definitions.ObjectClass) definitions.AnyClass.tpe
       else tp
     def paramsigs2types: List[Type] =
-      if (name(index) == ')') { index = index + 1; List() }
+      if (name(index) == ')') { index += 1; List() }
       else objToAny(sig2type) :: paramsigs2types
     def sig2type: Type = {
-      val tag = name(index); index = index + 1
+      val tag = name(index); index += 1
       tag match {
         case BYTE_TAG   => definitions.ByteClass.tpe
         case CHAR_TAG   => definitions.CharClass.tpe
@@ -339,12 +343,12 @@ abstract class ClassfileParser {
         case BOOL_TAG   => definitions.BooleanClass.tpe
         case 'L' =>
           val start = index
-          while (name(index) != ';') { index = index + 1 }
+          while (name(index) != ';') index += 1
           val end = index
-          index = index + 1
+          index += 1
           classNameToSymbol(name.subName(start, end)).tpe
         case ARRAY_TAG =>
-          while ('0' <= name(index) && name(index) <= '9') index = index + 1
+          while ('0' <= name(index) && name(index) <= '9') index += 1
           appliedType(definitions.ArrayClass.tpe, List(sig2type))
         case '(' =>
           JavaMethodType(paramsigs2types, sig2type)
@@ -363,7 +367,7 @@ abstract class ClassfileParser {
 
   var sawPrivateConstructor = false
 
-  def parseClass(): unit = {
+  def parseClass() {
     val jflags = in.nextChar
     val isAnnotation = (jflags & JAVA_ACC_ANNOTATION) != 0
     var sflags = transFlags(jflags)
@@ -756,13 +760,13 @@ abstract class ClassfileParser {
     }
   }
 
-  protected def getOwner(flags: int): Symbol =
+  protected def getOwner(flags: Int): Symbol =
     if ((flags & JAVA_ACC_STATIC) != 0) statics else clazz
 
-  protected def getScope(flags: int): Scope =
+  protected def getScope(flags: Int): Scope =
     if ((flags & JAVA_ACC_STATIC) != 0) staticDefs else instanceDefs
 
-  protected def transFlags(flags: int): long = {
+  protected def transFlags(flags: Int): Long = {
     var res = 0l
     if ((flags & JAVA_ACC_PRIVATE) != 0)
       res = res | PRIVATE
@@ -782,7 +786,8 @@ abstract class ClassfileParser {
     res | JAVA
   }
 
-  private def setPrivateWithin(sym: Symbol, jflags: int): unit =
+  private def setPrivateWithin(sym: Symbol, jflags: Int) {
     if ((jflags & (JAVA_ACC_PRIVATE | JAVA_ACC_PROTECTED | JAVA_ACC_PUBLIC)) == 0)
       sym.privateWithin = sym.toplevelClass.owner
+  }
 }

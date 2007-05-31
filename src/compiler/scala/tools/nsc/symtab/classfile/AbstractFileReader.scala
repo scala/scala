@@ -1,21 +1,22 @@
-/*     ____ ____  ____ ____  ______                                     *\
-**    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
-**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002-2006, LAMP/EPFL         **
-** /_____/\____/\___/\____/____/                                        **
-\*                                                                      */
-
+/* NSC -- new Scala compiler
+ * Copyright 2005-2007 LAMP/EPFL
+ * @author  Martin Odersky
+ */
 // $Id$
 
 
 package scala.tools.nsc.symtab.classfile
 
-import scala.tools.nsc.io.{AbstractFile, PlainFile, ZipArchive}
-
 import java.lang.Float.intBitsToFloat
 import java.lang.Double.longBitsToDouble
-import java.io.{File, FileInputStream, IOException}
 
-/** this class reads files byte per byte. Only used by ClassFileParser
+import scala.tools.nsc.io.AbstractFile
+
+/**
+ * This class reads files byte per byte. Only used by ClassFileParser
+ *
+ * @author Philippe Altherr
+ * @version 1.0, 23/03/2004
  */
 class AbstractFileReader(val file: AbstractFile) {
 
@@ -29,10 +30,12 @@ class AbstractFileReader(val file: AbstractFile) {
 
   /** return byte at offset 'pos'
    */
-  def byteAt(pos: Int): Byte = return buf(pos)
+  @throws(classOf[IndexOutOfBoundsException])
+  def byteAt(pos: Int): Byte = buf(pos)
 
   /** read a byte
    */
+  @throws(classOf[IndexOutOfBoundsException])
   def nextByte: Byte = {
     val b = buf(bp)
     bp = bp + 1
@@ -85,6 +88,6 @@ class AbstractFileReader(val file: AbstractFile) {
 
   /** skip next 'n' bytes
    */
-  def skip(n: Int): Unit = bp = bp + n
+  def skip(n: Int) { bp += n }
 
 }

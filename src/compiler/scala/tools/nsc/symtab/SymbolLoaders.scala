@@ -10,8 +10,8 @@ import compat.Platform.currentTime
 import java.io.{File, IOException}
 import scala.collection.mutable.{HashMap, HashSet}
 import scala.tools.nsc.io.AbstractFile
-import scala.tools.nsc.util.{ClassPath, NameTransformer, Position, NoPosition}
-import classfile.{ClassfileParser, SymblfileParser}
+import scala.tools.nsc.util.{Position, NoPosition}
+import classfile.ClassfileParser
 import Flags._
 import ch.epfl.lamp.compiler.msil.{Type => MSILType, Attribute => MSILAttribute}
 
@@ -26,6 +26,7 @@ abstract class SymbolLoaders {
 
   /** A lazy type that completes itself by calling parameter doComplete.
    *  Any linked modules/classes or module classes are also initialized.
+   *
    *  @param doComplete    The type completion procedure to be run.
    *                       It takes symbol to compkete as parameter and returns
    *                       name of file loaded for completion as a result.
@@ -40,16 +41,11 @@ abstract class SymbolLoaders {
     protected def kindString: String
 
     private var ok = false
-/*
-    private def setSource(sym: Symbol, sourceFile0: AbstractFile): unit = sym match {
-      case clazz: ClassSymbol => if (sourceFile0 ne null) clazz.sourceFile = sourceFile0;
-      case _ => if (sourceFile0 ne null) if (false) System.err.println("YYY: " + sym + " " + sourceFile0);
-    }
-*/
-    def sourceFile : AbstractFile = null
-    protected def sourceString : String
 
-    override def complete(root: Symbol): unit = {
+    def sourceFile: AbstractFile = null
+    protected def sourceString: String
+
+    override def complete(root: Symbol) {
       try {
         val start = currentTime
         val currentphase = phase
@@ -63,7 +59,7 @@ abstract class SymbolLoaders {
       } catch {
         case ex: IOException =>
           ok = false
-          if (settings.debug.value) ex.printStackTrace();
+          if (settings.debug.value) ex.printStackTrace()
           val msg = ex.getMessage()
           error(
             if (msg eq null) "i/o error while loading " + root.name
@@ -73,9 +69,9 @@ abstract class SymbolLoaders {
       if (!root.isPackageClass) initRoot(root.linkedSym)
     }
 
-    override def load(root: Symbol): unit = complete(root)
+    override def load(root: Symbol) { complete(root) }
 
-    private def initRoot(root: Symbol): unit = {
+    private def initRoot(root: Symbol) {
       if (root.rawInfo == this) {
         def markAbsent(sym: Symbol) =
           if (sym != NoSymbol) sym.setInfo(if (ok) NoType else ErrorType);
@@ -96,11 +92,11 @@ abstract class SymbolLoaders {
     protected def newPackageLoader(dir: global.classPath0.Context): PackageLoader =
       new PackageLoader(dir)
 
-    protected def checkSource(name: String, source: AbstractFile): Boolean = true;
+    protected def checkSource(name: String, source: AbstractFile): Boolean = true
 
     protected var root: Symbol = _
 
-    def enterPackage(name: String, completer: SymbolLoader): unit = {
+    def enterPackage(name: String, completer: SymbolLoader) {
       val pkg = root.newPackage(NoPosition, newTermName(name))
       pkg.moduleClass.setInfo(completer)
       pkg.setInfo(pkg.moduleClass.tpe)
@@ -129,7 +125,7 @@ abstract class SymbolLoaders {
       clazz
     }
 
-    protected def doComplete(root: Symbol): unit = {
+    protected def doComplete(root: Symbol) {
       assert(root.isPackageClass, root)
       this.root = root
       val scope = newScope
@@ -199,21 +195,20 @@ abstract class SymbolLoaders {
 
     override protected def kindString: String = "namespace " + namespace
 
-    override protected def sourceString = "";
+    override protected def sourceString = ""
 
     override def newPackageLoader(dir: global.classPath0.Context): PackageLoader =
-      new NamespaceLoader(dir);
+      new NamespaceLoader(dir)
 
-    val types = new HashMap[String,MSILType]();
+    val types = new HashMap[String,MSILType]()
 
-    val namespaces = new HashSet[String]();
+    val namespaces = new HashSet[String]()
 
-    def namespace: String = if (root.isRoot) "" else root.fullNameString;
+    def namespace: String = if (root.isRoot) "" else root.fullNameString
 
     // TODO: Add check whether the source is newer than the assembly
-    override protected def checkSource(name: String, source: AbstractFile): Boolean = {
+    override protected def checkSource(name: String, source: AbstractFile): Boolean =
       !types.contains(name)
-    }
 
     override protected def doComplete(root: Symbol) {
       clrTypes.collectMembers(root, types, namespaces)
@@ -261,7 +256,7 @@ abstract class SymbolLoaders {
       val global: SymbolLoaders.this.global.type = SymbolLoaders.this.global
       override def sourcePath = sourcePath0 /* could be null */
     }
-    protected def doComplete(root: Symbol): unit = {
+    protected def doComplete(root: Symbol) {
       classfileParser.parse(classFile, root)
       if (sourceFile ne null) root match {
         case clazz : ClassSymbol => clazz.sourceFile = sourceFile
@@ -285,7 +280,7 @@ abstract class SymbolLoaders {
   }
 
   object moduleClassLoader extends SymbolLoader {
-    protected def doComplete(root: Symbol): unit = root.sourceModule.initialize
+    protected def doComplete(root: Symbol) { root.sourceModule.initialize }
     protected def kindString: String = ""
     protected def sourceString = ""
   }

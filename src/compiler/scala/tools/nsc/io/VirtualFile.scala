@@ -38,7 +38,7 @@ class VirtualFile(val name: String, _path: String) extends AbstractFile {
   /** Returns null. */
   final def file: File = null
 
-  def read: InputStream = throw new Error("not suported")
+  def input: InputStream = throw new Error("not supported")
 
   /** Is this abstract file a directory? */
   def isDirectory: Boolean = false

@@ -108,7 +108,7 @@ final class ZipArchive(file: File, val archive: ZipFile) extends PlainFile(file)
   private def load() {
     this.root = new DirEntry("<root>", "/")
     // A path to DirEntry map
-    val dirs: Map[String,DirEntry] = new HashMap()
+    val dirs: Map[String, DirEntry] = new HashMap()
     dirs.update("/", root)
     val entries = archive.entries()
     while (entries.hasMoreElements()) {
@@ -169,12 +169,12 @@ final class ZipArchive(file: File, val archive: ZipFile) extends PlainFile(file)
                 extends Entry(name, path)
   {
 
-    val entries: Map[String,Entry] = new HashMap()
+    val entries: Map[String, Entry] = new HashMap()
 
     var entry: ZipEntry = _
 
     override def isDirectory = true
-    override def read = throw new Error("cannot read directories")
+    override def input = throw new Error("cannot read directories")
 
     override def lastModified: Long =
       if (entry ne null) entry.getTime() else super.lastModified
@@ -196,7 +196,7 @@ final class ZipArchive(file: File, val archive: ZipFile) extends PlainFile(file)
         extends Entry(name, path) {
     def archive = ZipArchive.this.archive
     override def lastModified: Long = entry.getTime()
-    override def read = archive.getInputStream(entry)
+    override def input = archive.getInputStream(entry)
     override def size = Some(entry.getSize().toInt)
   }
 }
@@ -225,7 +225,7 @@ final class URLZipArchive(url: URL) extends AbstractFile {
     try { url.openConnection().getLastModified() }
     catch { case _ => 0 }
 
-  def read: InputStream = url.openStream()
+  def input: InputStream = url.openStream()
 
   override def elements: Iterator[AbstractFile] = {
     if (root eq null) load()
@@ -238,11 +238,21 @@ final class URLZipArchive(url: URL) extends AbstractFile {
   }
 
   private def load() {
+    def getEntryInputStream(in: InputStream): InputStream = {
+      val buf = new scala.collection.mutable.ArrayBuffer[Byte]
+      val data = new Array[Byte](1024)
+      var n = in.read(data)
+      while (n > 0) {
+        buf.++=(data, 0, n)
+        n = in.read(data)
+      }
+      new java.io.ByteArrayInputStream(buf.toArray)
+    }
     this.root = new DirEntry("<root>", "/")
     // A path to DirEntry map
     val dirs: Map[String, DirEntry] = new HashMap()
     dirs.update("/", root)
-    val zis = new ZipInputStream(read)
+    val zis = new ZipInputStream(input)
     var entry = zis.getNextEntry()
     while (entry ne null) {
       val path = entry.getName()
@@ -258,11 +268,12 @@ final class URLZipArchive(url: URL) extends AbstractFile {
         val home = if (index < 0) "/"  else path.substring(0, index + 1)
         val parent: DirEntry = getDir(dirs, home)
         assert(!parent.entries.contains(path), this.toString() + " - " + path)
-        parent.entries.update(name, new FileEntry(name, path, zis))
+        val in = getEntryInputStream(zis)
+        parent.entries.update(name, new FileEntry(name, path, entry, in))
       }
+      zis.closeEntry()
       entry = zis.getNextEntry()
     }
-    zis.close
   }
 
   private def getDir(dirs: Map[String, DirEntry], path: String): DirEntry =
@@ -294,7 +305,7 @@ final class URLZipArchive(url: URL) extends AbstractFile {
     var entry: ZipEntry = _
 
     override def isDirectory = true
-    override def read = throw new Error("cannot read directories");
+    override def input = throw new Error("cannot read directories")
 
     override def lastModified: Long =
       if (entry ne null) entry.getTime() else super.lastModified
@@ -308,10 +319,11 @@ final class URLZipArchive(url: URL) extends AbstractFile {
       }
   }
 
-  final class FileEntry(name: String, path: String, val zis: ZipInputStream)
-  extends Entry(name, path) {
-    override def lastModified: Long = 0
-    override def read = zis
-    override def size = Some(0)
+  final class FileEntry(name: String, path: String,
+                        val entry: ZipEntry, val in: InputStream)
+        extends Entry(name, path) {
+    override def lastModified: Long = entry.getTime()
+    override def input = in
+    override def size = Some(entry.getSize().toInt)
   }
 }

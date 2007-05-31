@@ -7,9 +7,15 @@
 
 package scala.tools.nsc.io
 
-import java.io.{DataInputStream, File, IOException, InputStream}
+import java.io.{File, IOException, InputStream}
 import java.net.URL
 
+import scala.collection.mutable.ArrayBuffer
+
+/**
+ * @author Philippe Altherr
+ * @version 1.0, 23/03/2004
+ */
 object AbstractFile {
 
   /** Returns "getFile(new File(path))". */
@@ -96,7 +102,7 @@ abstract class AbstractFile extends AnyRef with Iterable[AbstractFile] {
   /** Returns the path of this abstract file. */
   def path: String
 
-  /** Returns the underlying File if any and null otherwise. */
+  /** Returns the underlying File if any and <code>null</code> otherwise. */
   def file: File
 
   /** Is this abstract file a directory? */
@@ -106,25 +112,28 @@ abstract class AbstractFile extends AnyRef with Iterable[AbstractFile] {
   def lastModified: Long
 
   /** returns an input stream so the file can be read */
-  def read: InputStream
+  def input: InputStream
 
-  /** size of this file if it is a concrete file */
+  /** size of this file if it is a concrete file. */
   def size: Option[Int] = None
 
   /** returns contents of file (if applicable) in a byte array.
-   *  warning: use Global.getSourceFile() to use the proper
-   *  encoding when converting to the char array
+   *  warning: use <code>Global.getSourceFile()</code> to use the proper
+   *  encoding when converting to the char array .
+   *
    *  @throws java.io.IOException
    */
   final def toCharArray = new String(toByteArray).toCharArray
 
-  /** returns contents of file (if applicable) in a byte array
+  /** returns contents of file (if applicable) in a byte array.
+   *
    *  @throws java.io.IOException
    */
+  @throws(classOf[IOException])
   final def toByteArray: Array[Byte] = {
-    val in   = read
+    val in = input
     var rest = size.get
-    val arr  = new Array[Byte](rest)
+    val arr = new Array[Byte](rest)
     while (rest > 0) {
       val res = in.read(arr, arr.length - rest, rest)
       if (res == -1)

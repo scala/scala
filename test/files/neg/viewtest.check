@@ -5,7 +5,7 @@ viewtest.scala:43: error: type mismatch;
                                             ^
 viewtest.scala:104: error: ambiguous implicit values:
  both method view4 in object O of type [a](a)a
- and method identity in object Predef of type [a](a)a
+ and method identity in object Predef of type [A](A)A
  match expected type (test.Str) => test.Ordered[test.Str]
         t = t insert Str(s)
               ^
