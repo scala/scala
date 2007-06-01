@@ -862,7 +862,7 @@ trait Types {
           while (j < clSize) {
             closureCache(j) match {
               case RefinedType(parents, decls) =>
-                assert(decls.isEmpty)
+                if (!decls.isEmpty) assert(false, "computing closure of "+this+":"+this.isInstanceOf[RefinedType])
                 //Console.println("compute closure of "+this+" => glb("+parents+")")
                 closureCache(j) = mergePrefixAndArgs(parents, -1, maxClosureDepth(parents) + LubGlbMargin) match {
                   case Some(tp0) => tp0
@@ -1213,7 +1213,9 @@ A type's symbol should never be inspected directly.
     override def typeOfThis = transform(sym.typeOfThis)
 
     override def narrow =
-      if (sym.isModuleClass) transform(sym.thisType) else super.narrow
+      if (sym.isModuleClass) transform(sym.thisType)
+      else if (sym.isAliasType) normalize.narrow
+      else super.narrow
 
     override def prefix: Type = if (sym.isAliasType) normalize.prefix else pre
 

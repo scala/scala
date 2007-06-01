@@ -1603,7 +1603,7 @@ trait Typers requires Analyzer {
             arg.tpe = typer1.infer.inferTypedPattern(tree.pos, unappFormal, arg.tpe)
             //todo: replace arg with arg.asInstanceOf[inferTypedPattern(unappFormal, arg.tpe)] instead.
           }
-
+          // Console.println("unapply "+fun.tpe)
           val fun1untyped = atPos(fun.pos) {
             Apply(
               Select(
@@ -2611,8 +2611,12 @@ trait Typers requires Analyzer {
           tree setType ref1.tpe.resultType
 
         case SelectFromTypeTree(qual, selector) =>
-          val sel = typedSelect(typedType(qual), selector)
-          tree setSymbol sel.symbol setType typedSelect(typedType(qual), selector).tpe
+/* maybe need to do this:
+          val res = typedSelect(typedType(qual), selector)
+          tree setType res.tpe setSymbol res.symbol
+          res
+*/
+          typedSelect(typedType(qual), selector)
 
         case CompoundTypeTree(templ) =>
           typedCompoundTypeTree(templ)
