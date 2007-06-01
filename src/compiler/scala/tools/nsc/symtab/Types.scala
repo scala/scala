@@ -2176,11 +2176,16 @@ A type's symbol should never be inspected directly.
         sym
       } else {
         var rebind0 = pre.findMember(sym.name, BRIDGE, 0, true)
+        if (rebind0 == NoSymbol && (sym hasFlag EXPANDEDNAME)) {
+          // problem is that symbols with expanded names might be in the wrong hash bucket
+          // in a previous scope. We account for that by re-creating the hash as a last attempt.
+          sym.owner.info.decls.createHash()
+          rebind0 = pre.findMember(sym.name, BRIDGE, 0, true)
+        }
+        if (rebind0 == NoSymbol) { assert(false, ""+pre+"."+sym+" does no longer exist, phase = "+phase) }
         /** The two symbols have the same fully qualified name */
         def corresponds(sym1: Symbol, sym2: Symbol): boolean =
           sym1.name == sym2.name && (sym1.isPackageClass || corresponds(sym1.owner, sym2.owner))
-        assert(sym != NoSymbol)
-        if (rebind0 == NoSymbol) assert(false, ""+pre+"."+sym+" does no longer exist, phase = "+phase)
         if (!corresponds(sym.owner, rebind0.owner)) {
           if (settings.debug.value) Console.println("ADAPT1 pre = "+pre+", sym = "+sym+sym.locationString+", rebind = "+rebind0+rebind0.locationString)
           val bcs = pre.baseClasses.dropWhile(bc => !corresponds(bc, sym.owner));

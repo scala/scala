@@ -86,7 +86,7 @@ trait Scopes {
      */
     private val MIN_HASH = 8
 
-    if (size >= MIN_HASH) createHash
+    if (size >= MIN_HASH) createHash()
 
     def this() = this(null: ScopeEntry)
 
@@ -138,7 +138,7 @@ trait Scopes {
         elems.tail = hashtable(i)
         hashtable(i) = elems
       } else if (size >= MIN_HASH) {
-        createHash
+        createHash()
       }
     }
 
@@ -157,7 +157,7 @@ trait Scopes {
       enter(sym)
     }
 
-    private def createHash: unit = {
+    def createHash(): unit = {
       hashtable = new Array[ScopeEntry](HASHSIZE)
       enterInHash(elems)
     }
