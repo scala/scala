@@ -48,6 +48,10 @@ object Main extends AnyRef with EvalLoop {
     else {
       try {
         object compiler extends Global(command.settings, reporter)
+        if (reporter.hasErrors) {
+          reporter.flush()
+          return
+        }
         if (command.settings.resident.value)
           resident(compiler)
         else if (command.files.isEmpty)

@@ -497,9 +497,13 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
    *    class files for this instance.  This cannot safely be done after
    *    each command is executed because of Java's demand loading.
    *  </p>
+   *  <p>
+   *    Also, this flushes the reporter's output.
+   *  </p>
    */
   def close() {
     Interpreter.deleteRecursively(classfilePath)
+    reporter.flush()
   }
 
   /** A traverser that finds all mentioned identifiers, i.e. things

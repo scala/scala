@@ -32,6 +32,9 @@ abstract class Reporter {
   var cancelled: Boolean = false
   def hasErrors: Boolean = ERROR.count != 0 || cancelled
 
+  /** Flush all output */
+  def flush() { }
+
   protected def info0(pos: Position, msg: String, severity: Severity, force: Boolean): Unit
 
   def    info(pos: Position, msg: String, force: Boolean): Unit = info0(pos, msg,    INFO, force)

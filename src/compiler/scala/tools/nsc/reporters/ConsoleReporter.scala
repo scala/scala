@@ -122,4 +122,5 @@ class ConsoleReporter(val settings: Settings, reader: BufferedReader, writer: Pr
     }
   }
 
+  override def flush() { writer.flush() }
 }
