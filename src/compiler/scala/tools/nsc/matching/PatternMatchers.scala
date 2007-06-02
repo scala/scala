@@ -200,7 +200,7 @@ trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes with P
 
         case CantHandleGuard   => // fall back (actually already fell back before)
         case e =>
-
+          //throw e
           if (settings.debug.value) {
             e.printStackTrace()
             Console.println("****")

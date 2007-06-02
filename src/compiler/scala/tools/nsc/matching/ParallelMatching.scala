@@ -147,10 +147,14 @@ trait ParallelMatching  {
             val (opats,osubst,og,ob) = rest.row(j)
             val subst1 = vs map { v => (v,casted) }
 
-            //Console.println("getTransition, vs = "+vs)
-            //Console.println("getTransition, subst1 = "+subst1)
-            //Console.println("getTransition, osubst:::subst1 = "+(osubst:::subst1))
-
+          //debug
+          /*
+            if(!vs.isEmpty) Console.println("getTransition, vs = "+vs)
+            if(!subst1.isEmpty) {
+              Console.println("getTransition, subst1 = "+subst1)
+              Console.println("getTransition, osubst:::subst1 = "+(osubst:::subst1))
+            }
+          */
           // def doSubst(vs:List[Symbol], exp:Tree) = { new TreeSymSubstituter(vs,vs map {x=> casted}).traverse(exp); exp }
 
           // don't substitute eagerly here, problems with bodies that can be reached with several routes
@@ -169,10 +173,13 @@ trait ParallelMatching  {
       // fails      => transition to translate(remaining)
 
       val nmatrixFail: Option[Rep] = {
-        val ntemps   = rest.temp:::List(scrutinee) // important: preserve order on temps (bug #1163)
+        val ntemps   = scrutinee :: rest.temp // important: preserve order on temps (bug #1163)
+        // not rest.temp ::: scrutinee??
+        //Console.println("nmatrixfail ntemps:"+ntemps)
         val ntriples = remaining map {
           case (j, pat) => val r = rest.row(j);  (pat :: r._1, r._2, r._3, r._4)
         }
+        //Console.println("nmatrixfail triples:"+ntriples)
         if(ntriples.isEmpty) None else Some(Rep(ntemps, ntriples) setParent this)
       }
       if(!nmatrixFail.isEmpty) {
@@ -186,31 +193,43 @@ trait ParallelMatching  {
   }
 
   def repToTree(rep:Rep, typed:Tree => Tree, handleOuter: Tree => Tree)(implicit theOwner: Symbol, failTree: Tree, bodies: collection.mutable.Map[Tree,(Tree,Tree, Symbol)]): Tree = {
-    //Console.println("repToTree")
     rep.applyRule match {
       case VariableRule(subst, EmptyTree, b) => bodies.get(b) match {
         case Some(EmptyTree, b, theLabel) =>
           //Console.println("H E L L O"+subst+" "+b)
-          val body  = Apply(Ident(theLabel), subst.map { p => Ident(p._2) })
+
+          val args = b match {
+            case Block(_, LabelDef(_, origs, _)) =>
+              //this does not work subst.map { p => Ident(p._2) }
+
+              // recover the order of the idents that is expected for the labeldef
+              // the order can be garbled, when default patterns are used... #bug 1163
+
+              origs.map { p => Ident(subst.find { q => q._1 == p.symbol }.get._2) } // wrong!
+          }
+          val body  = Apply(Ident(theLabel), args)
           return body
 
         case None    =>
-          //DEBUG("--- variable \n new  ! subst = "+subst)
-        val theLabel = theOwner.newLabel(b.pos, "body"+b.hashCode).setInfo(
-          new MethodType(subst map { case (v,_) => v.tpe}, b.tpe)
-        )
-        // make new value parameter for each vsym in subst
-        val vdefs    = subst map {
-          case (v,t) => ValDef(v, {
-            v.setFlag(symtab.Flags.TRANS_FLAG);
-            if(v.tpe =:= t.tpe) typed{Ident(t)} else typed{gen.mkAsInstanceOf(Ident(t),v.tpe)}
-          })
-        }
+          //Console.println("--- variable \n new  ! subst = "+subst)
+          val theLabel = theOwner.newLabel(b.pos, "body"+b.hashCode).setInfo(
+            new MethodType(subst map { case (v,_) => v.tpe}, b.tpe)
+          )
+          // make new value parameter for each vsym in subst
+          val vdefs    = subst map {
+            case (v,t) => ValDef(v, {
+              v.setFlag(symtab.Flags.TRANS_FLAG);
+              if(t.tpe <:< v.tpe) typed{Ident(t)} else
+                if(v.tpe <:< t.tpe) typed{gen.mkAsInstanceOf(Ident(t),v.tpe)} // refinement
+                else {
+                  //Console.println("internal error, types don't match: pattern variable "+v+":"+v.tpe+" temp "+t+":"+t.tpe)
+                  error("internal error, types don't match: pattern variable "+v+":"+v.tpe+" temp "+t+":"+t.tpe)
+                  typed{gen.mkAsInstanceOf(Ident(t),v.tpe)} // refinement
+                }
+            })
+          }
         // this weird thing should only be done for shared states.
-        val dom = subst.map(._1)
-        //val tss = new TreeSymSubstituter(dom,pdefsyms)
         var nbody: Tree = b
-        //tss.traverse(nbody)
         val vrefs = vdefs.map { p:ValDef => Ident(p.symbol) }
         nbody  = Block(vdefs:::List(Apply(Ident(theLabel), vrefs)), LabelDef(theLabel, subst.map(._1), nbody))
         bodies(b) = (EmptyTree, nbody, theLabel)
@@ -225,24 +244,10 @@ trait ParallelMatching  {
         var cond = typed { condition(casted.tpe, mm.scrutinee) }
         if(needsOuterTest(casted.tpe, mm.scrutinee.tpe)) // @todo merrge into def condition
           cond = addOuterCondition(cond, casted.tpe, typed{Ident(mm.scrutinee)}, handleOuter)
+
         val succ = repToTree(srep, typed, handleOuter)
-        val fail = if(frep.isEmpty) {
-          /*
-          if (true || casted.tpe.symbol.hasFlag(symtab.Flags.SEALED)) {
-            cunit.warning(casted.pos, "match not exhaustive! ");
-            var rep1 = rep
-            var mr,last : MixtureRule   = null
-            while((rep1 ne null) && {mr = rep1.mixtureParent; mr ne null}) {
-              Console.println("casted "+casted+" !?:"+mr.scrutinee+" ? "+mr.column.head.tpe)
-              Console.println(mr.isExhaustive)
-              rep1 = mr.parent
-              last = mr
-            }
-          }
-          Console.println("BASTA")
-          */
-          failTree
-        } else repToTree(frep.get, typed, handleOuter)
+
+        val fail = if(frep.isEmpty) failTree else repToTree(frep.get, typed, handleOuter)
 
         // dig out case field accessors that were buried in (***)
         val cfa  = casted.caseFieldAccessors
@@ -408,8 +413,11 @@ object Rep {
       case Nil            => ErrorRule
       case (pats,subst,g,b)::xs =>
         if(pats forall isDefaultPattern) {
-          val subst1 = pats.zip(temp) flatMap { case (p,tmp) => val (vs,_) = strip(p); vs.zipAll(Nil,null,tmp)}
-          //DEBUG("applyRule! subst1="+subst1)
+          val subst1 = pats.zip(temp) flatMap {
+            case (p,tmp) =>
+              val (vs,_) = strip(p);
+              vs.zipAll(Nil,null,tmp) // == vs map { (v,tmp) }
+          }
           VariableRule (subst:::subst1, g, b)
         } else {
           val i = pats findIndexOf {x => !isDefaultPattern(x)}
@@ -464,7 +472,10 @@ object Rep {
 //  case Typed(nme.WILDCARD,_) => pattern.tpe <:< scrutinee.tpe
   }
 
-  /** returns all variables that are binding the given pattern */
+  /** returns all variables that are binding the given pattern
+   *  @param   x a pattern
+   *  @return  vs variables bound, p pattern proper
+   */
   def strip(x:Tree): (List[Symbol], Tree) = x match {
     case b @ Bind(_,pat) => val (vs,p) = strip(pat); (b.symbol :: vs,p)
     case z               => (Nil,z)
