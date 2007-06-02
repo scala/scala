@@ -143,12 +143,13 @@ trait ParallelMatching  {
         ntemps = ntemps ::: rest.temp
         val ntriples = subtests map {
           case (j,pats) =>
-            val (vs,_) = strip(column(j));
-            val (opats,osubst,og,ob) = rest.row(j);
+            val (vs,_) = strip(column(j))
+            val (opats,osubst,og,ob) = rest.row(j)
             val subst1 = vs map { v => (v,casted) }
 
-            //DEBUG("getTransition, vs = "+vs)
-            //DEBUG("getTransition, subst1 = "+subst1)
+            //Console.println("getTransition, vs = "+vs)
+            //Console.println("getTransition, subst1 = "+subst1)
+            //Console.println("getTransition, osubst:::subst1 = "+(osubst:::subst1))
 
           // def doSubst(vs:List[Symbol], exp:Tree) = { new TreeSymSubstituter(vs,vs map {x=> casted}).traverse(exp); exp }
 
@@ -168,7 +169,7 @@ trait ParallelMatching  {
       // fails      => transition to translate(remaining)
 
       val nmatrixFail: Option[Rep] = {
-        val ntemps   = scrutinee::rest.temp
+        val ntemps   = rest.temp:::List(scrutinee) // important: preserve order on temps (bug #1163)
         val ntriples = remaining map {
           case (j, pat) => val r = rest.row(j);  (pat :: r._1, r._2, r._3, r._4)
         }
@@ -189,30 +190,22 @@ trait ParallelMatching  {
     rep.applyRule match {
       case VariableRule(subst, EmptyTree, b) => bodies.get(b) match {
         case Some(EmptyTree, b, theLabel) =>
-          //DEBUG("H E L L O"+subst+" "+b)
-          // (**) approach 2
+          //Console.println("H E L L O"+subst+" "+b)
           val body  = Apply(Ident(theLabel), subst.map { p => Ident(p._2) })
-          //DEBUG("W O RL D"+body)
           return body
 
-        // (*) approach 1
-          //DEBUG("--- variable \n JUMP ! subst = "+subst)
-          val vdefs = subst map {
-            case (v,t) => ValDef(v, {v.setFlag(symtab.Flags.TRANS_FLAG);
-                                     if(v.tpe <:< t.tpe) typed{gen.mkAsInstanceOf(Ident(t),v.tpe)} /*refinement*/ else typed{Ident(t)}})
-          }
-        // @todo! transfer variables/subst
-          Apply(Ident(theLabel), List())
         case None    =>
           //DEBUG("--- variable \n new  ! subst = "+subst)
-        val theLabel = theOwner.newLabel(b.pos, "body"+b.hashCode).setInfo(new MethodType(subst map { case (v,_) => v.tpe}, b.tpe))
+        val theLabel = theOwner.newLabel(b.pos, "body"+b.hashCode).setInfo(
+          new MethodType(subst map { case (v,_) => v.tpe}, b.tpe)
+        )
         // make new value parameter for each vsym in subst
-        // (**) approach 2
-        //val pdefsyms = subst map { case (v,tmp) => theLabel.newValueParameter(v.pos, v.name+"_!") . setInfo (v.tpe). setFlag(symtab.Flags.MUTABLE) }
-        //DEBUG("subst of "+b.hashCode+"! in case VariableRule (new) "+subst)
-        //DEBUG("b itself is "+b)
-        val vdefs    = subst map { case (v,t) => ValDef(v, {v.setFlag(symtab.Flags.TRANS_FLAG);
-                                                            if(v.tpe =:= t.tpe) typed{Ident(t)} else typed{gen.mkAsInstanceOf(Ident(t),v.tpe)}}) }
+        val vdefs    = subst map {
+          case (v,t) => ValDef(v, {
+            v.setFlag(symtab.Flags.TRANS_FLAG);
+            if(v.tpe =:= t.tpe) typed{Ident(t)} else typed{gen.mkAsInstanceOf(Ident(t),v.tpe)}
+          })
+        }
         // this weird thing should only be done for shared states.
         val dom = subst.map(._1)
         //val tss = new TreeSymSubstituter(dom,pdefsyms)
@@ -220,20 +213,6 @@ trait ParallelMatching  {
         //tss.traverse(nbody)
         val vrefs = vdefs.map { p:ValDef => Ident(p.symbol) }
         nbody  = Block(vdefs:::List(Apply(Ident(theLabel), vrefs)), LabelDef(theLabel, subst.map(._1), nbody))
-        /*
-        val body  = LabelDef(theLabel, List(), b.duplicate)
-        // (*) approach 1
-        val (dom,cod) = List.unzip(subst map {
-          case (v,t) => (v,{if(v.tpe =:= t.tpe) typed{Ident(t)} else typed{gen.mkAsInstanceOf(Ident(t),v.tpe)}})})
-        val tss = new TreeSubstituter(dom,cod)
-        val nbody = tss.transform(body)
-        //@todo
-        // instead of substitution, use valdefs
-        // val vdefs = subst map {
-        //   case (v,t) => ValDef(v, {if(v.tpe <:< t.tpe) typed{gen.mkAsInstanceOf(Ident(t),v.tpe)} /*refinement*/ else typed{Ident(t)}})
-        //}
-
-      */
         bodies(b) = (EmptyTree, nbody, theLabel)
         nbody
       }
