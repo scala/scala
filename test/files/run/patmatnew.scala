@@ -97,6 +97,12 @@ object Test extends TestConsoleMain {
       }
     }
 
+    // also: this one from fannkuch
+    //def flips(l: List[int]): int = (l: @unchecked) match {
+    //  case 1 :: ls => 0
+    //  case n :: ls => flips((l take n reverse) ::: (l drop n)) + 1
+    //}
+
     def runTest() =  assertEquals("both", (Var("x"),Var("y")), f)
   }
 

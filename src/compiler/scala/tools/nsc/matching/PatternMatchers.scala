@@ -1207,13 +1207,29 @@ print()
               //ignore ;
           }
 
-          val succ = squeezedBlock(List(typed {ValDef(casted,
-                                               if(isSubType(selector.tpe,ntpe)) selector.duplicate else typed(gen.mkAsInstanceOf(selector.duplicate, ntpe, true)))}),
-                                   toTree(node.and))
+          val cast_untyped = gen.mkAsInstanceOf(selector.duplicate, ntpe, true)
+          val vdef_untyped = ValDef(casted,
+                                    if(isSubType(selector.tpe,ntpe))
+                                      selector.duplicate
+                                    else
+                                      cast_untyped)
+          try {
+
+            val vdef = typed { vdef_untyped }
+            val succ = squeezedBlock(List(vdef),toTree(node.and))
             val fail = toTree(node.or, selector.duplicate)
 
             return myIf(cond, succ, fail)
-
+          } catch {
+            case e:TypeError =>
+              Console.println("while typing vdef_untyped = "+vdef_untyped);
+              Console.println("casted.tpe = "+casted.tpe);
+              Console.println("(a) selector.tpe       = "+selector.tpe);
+              Console.println("(b) pattern type(ntpe) = "+ntpe);
+              Console.println("isSubType(a, b) = "+isSubType(selector.tpe,ntpe))
+              Console.println("cast.type = "+(typed {cast_untyped}).tpe)
+              throw e
+          }
           case SequencePat(casted, len) =>
             val ntpe = node.tpe
 
