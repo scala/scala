@@ -92,6 +92,9 @@ trait Parsers {
     private def stringVal = inName.toString
     private def inNextTokenCode = in.next.token
 
+    /** whether a non-continuable error has been seen */
+    private var nonContinuableError = false
+
     /** the markup parser */
     def xmlp = {
       if (xmlp0 == null)
@@ -178,6 +181,7 @@ trait Parsers {
         skip()
         in.skipping = false
       }
+      nonContinuableError = true
     }
 
     def syntaxErrorMigrate(msg: String) =
@@ -190,7 +194,11 @@ trait Parsers {
       }
 
     def incompleteInputError(pos: ScanPosition, msg: String) {
-      if (pos != in.errpos) {
+      if (pos == in.errpos) return
+
+      if (nonContinuableError)
+	syntaxError(pos, msg, false)
+      else {
         in.incompleteInputError(pos, msg)
         in.errpos = pos
       }

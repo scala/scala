@@ -75,6 +75,13 @@ val x20 = 1
 
 val two = one + x5
 
+
+// interior syntax errors should *not* go into multi-line input mode.
+// both of the following should abort immediately:
+def x => y => z
+[1,2,3]
+
+
 </code>.text
 
 
