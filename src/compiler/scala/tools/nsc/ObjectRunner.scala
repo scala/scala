@@ -7,10 +7,9 @@
 
 package scala.tools.nsc
 
-import java.io.File
 import java.lang.{Class, ClassNotFoundException, NoSuchMethodException}
-import java.lang.reflect.{Method,Modifier}
-import java.net.URLClassLoader
+import java.lang.reflect.{Method, Modifier}
+import java.net.{URL, URLClassLoader}
 
 /** An object that runs another object specified by name.
  *
@@ -25,15 +24,18 @@ object ObjectRunner {
    *  @param objectName ...
    *  @return           ...
    */
-  def findClass(classpath: List[String], objectName: String)
+  private def findClass(classpath: List[URL], objectName: String)
   : Option[Class] =
   {
-    val classpathURLs = classpath.map(s => new File(s).toURL).toArray
-    val mainLoader = new URLClassLoader(classpathURLs, null)
     try {
+      val mainLoader = new URLClassLoader(classpath.toArray, null)
       Some(Class.forName(objectName, true, mainLoader))
     } catch {
-      case _:ClassNotFoundException => None
+      case e: SecurityException =>
+        Console.println(e.getMessage)
+        None
+      case _: ClassNotFoundException =>
+        None
     }
   }
 
@@ -42,10 +44,10 @@ object ObjectRunner {
    *
    *  @param classpath  ...
    *  @param objectName ...
-   *  @return           ...
+   *  @return           <code>true</code> iff ...
    */
-  def classExists(classpath: List[String], objectName: String) =
-    !(findClass(classpath, objectName).isEmpty)
+  def classExists(classpath: List[URL], objectName: String): Boolean =
+    !findClass(classpath, objectName).isEmpty
 
   /** Run a given object, specified by name, using a
    *  specified classpath and argument list.
@@ -58,20 +60,16 @@ object ObjectRunner {
    *  @throws NoSuchMethodError         ...
    *  @throws InvocationTargetException ...
    */
-  def run(
-      classpath: List[String],
-      objectName: String,
-      arguments: Seq[String]): Unit =
-  {
-      val clsToRun = findClass(classpath, objectName) match {
-        case Some(cls) => cls
-        case None => throw new ClassNotFoundException(objectName)
-      }
+  def run(classpath: List[URL], objectName: String, arguments: Seq[String]) {
+    val clsToRun = findClass(classpath, objectName) match {
+      case Some(cls) => cls
+      case None => throw new ClassNotFoundException(objectName)
+    }
 
-      val method = clsToRun.getMethod("main", List(classOf[Array[String]]).toArray)
-      if ((method.getModifiers & Modifier.STATIC) == 0)
-        throw new NoSuchMethodException(objectName + ".main is not static")
+    val method = clsToRun.getMethod("main", List(classOf[Array[String]]).toArray)
+    if ((method.getModifiers & Modifier.STATIC) == 0)
+      throw new NoSuchMethodException(objectName + ".main is not static")
 
-      method.invoke(null, List(arguments.toArray).toArray)
+    method.invoke(null, List(arguments.toArray).toArray)
   }
 }

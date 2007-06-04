@@ -10,6 +10,7 @@ package scala.tools.nsc
 import java.io.File
 import java.lang.{ClassNotFoundException, NoSuchMethodException}
 import java.lang.reflect.InvocationTargetException
+import java.net.{MalformedURLException, URL}
 
 /** An object that runs Scala code.  It has three possible
   * sources for the code to run: pre-compiled code, a script file,
@@ -76,16 +77,62 @@ object MainGenericRunner {
       return
     }
 
-    def paths(str: String) = str.split(File.pathSeparator).toList
-    def listJars(dirs: String): List[String] =
+    def paths0(str: String): List[String] =
+      str.split(File.pathSeparator).toList
+
+    def fileToURL(f: File): Option[URL] =
+      try {
+        Some(f.toURL)
+      }
+      catch {
+        case e: MalformedURLException =>
+        Console.println(e)
+        None
+      }
+
+    def paths(str: String): List[URL] =
       for (
-        val libdir <- (paths(dirs) map { s => new File(s) }); libdir.exists; !libdir.isFile;
-        val jar <- libdir.listFiles; jar.isFile; jar.getName.endsWith(".jar")
-      ) yield jar.toString
-    val classpath: List[String] =
+        file <- paths0(str) map (new File(_)) if file.exists;
+        val url = fileToURL(file); if !url.isEmpty
+      ) yield url.get
+
+    def jars(dirs: String): List[URL] =
+      for (
+        libdir <- paths0(dirs) map (new File(_)) if libdir.isDirectory;
+        jarfile <- libdir.listFiles if jarfile.isFile && jarfile.getName.endsWith(".jar");
+        val url = fileToURL(jarfile); if !url.isEmpty
+      ) yield url.get
+
+    def specToURL(spec: String): Option[URL] =
+      try {
+        Some(new URL(spec))
+      }
+      catch {
+        case e: MalformedURLException =>
+        Console.println(e)
+        None
+      }
+
+    def urls(specs: String): List[URL] = {
+      val urls = for (
+        spec <- specs.split(" ").toList;
+        val url = specToURL(spec); if !url.isEmpty
+      ) yield url.get
+      if (!urls.isEmpty && (System.getSecurityManager == null)) {
+        // Here we require a security manager to be present !
+        // Security permissions are defined in a user-defined
+        // file to be specified in the environment variable
+        // JAVA_OPTS="-Djava.security.policy=scala.policy"
+        System.setSecurityManager(new SecurityManager())
+      }
+      urls
+    }
+
+    val classpath: List[URL] =
       paths(settings.bootclasspath.value) :::
       paths(settings.classpath.value) :::
-      listJars(settings.extdirs.value)
+      jars(settings.extdirs.value) :::
+      urls(settings.Xcodebase.value)
 
     command.thingToRun match {
       case None =>
@@ -113,7 +160,12 @@ object MainGenericRunner {
               e.getCause.printStackTrace
           }
         } else {
-          ScriptRunner.runScript(settings, thingToRun, command.arguments)
+          try {
+            ScriptRunner.runScript(settings, thingToRun, command.arguments)
+          } catch {
+            case e: SecurityException =>
+              Console.println(e)
+          }
         }
     }
   }
