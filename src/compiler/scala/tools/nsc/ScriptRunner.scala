@@ -9,6 +9,7 @@ package scala.tools.nsc
 import java.io.{BufferedReader, File, FileInputStream, FileOutputStream,
                 FileReader, InputStreamReader, PrintWriter}
 import java.lang.reflect.InvocationTargetException
+import java.net.URL
 import java.util.jar.{JarEntry, JarOutputStream}
 
 import scala.tools.nsc.io.PlainFile
@@ -65,7 +66,7 @@ object ScriptRunner {
       val jar = new JarOutputStream(jarFileStream)
       val buf = new Array[byte](10240)
 
-      def addFromDir(dir: File, prefix: String): Unit = {
+      def addFromDir(dir: File, prefix: String) {
         for (entry <- dir.listFiles) {
           if (entry.isFile) {
             jar.putNextEntry(new JarEntry(prefix + entry.getName))
@@ -293,21 +294,32 @@ object ScriptRunner {
   def runScript(
       settings: GenericRunnerSettings,
       scriptFile: String,
-      scriptArgs: List[String]): Unit =
+      scriptArgs: List[String])
   {
     val f = new File(scriptFile)
-    if (!f.exists || f.isDirectory) {
-      scala.Console.println("no such file: " + scriptFile)
+    if (!f.isFile) {
+      Console.println("no such file: " + scriptFile)
       return
     }
 
     withCompiledScript(settings, scriptFile)(compiledLocation => {
-      def pparts(path: String) = path.split(File.pathSeparator).toList
+      def paths0(str: String): List[String] =
+        str.split(File.pathSeparator).toList
 
-      val classpath =
-        pparts(settings.bootclasspath.value) :::
-        List(compiledLocation) :::
-        pparts(settings.classpath.value)
+      def fileToURL(f: File): Option[URL] =
+        try { Some(f.toURL) }
+        catch { case e => Console.println(e); None }
+
+      def paths(str: String): List[URL] =
+        for (
+         file <- paths0(str) map (new File(_)) if file.exists;
+          val url = fileToURL(file); if !url.isEmpty
+        ) yield url.get
+
+      val classpath: List[URL] =
+        paths(settings.bootclasspath.value) :::
+        paths(compiledLocation) :::
+        paths(settings.classpath.value)
 
       try {
         ObjectRunner.run(

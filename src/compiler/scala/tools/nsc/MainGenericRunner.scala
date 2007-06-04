@@ -10,7 +10,7 @@ package scala.tools.nsc
 import java.io.File
 import java.lang.{ClassNotFoundException, NoSuchMethodException}
 import java.lang.reflect.InvocationTargetException
-import java.net.{MalformedURLException, URL}
+import java.net.URL
 
 /** An object that runs Scala code.  It has three possible
   * sources for the code to run: pre-compiled code, a script file,
@@ -81,14 +81,8 @@ object MainGenericRunner {
       str.split(File.pathSeparator).toList
 
     def fileToURL(f: File): Option[URL] =
-      try {
-        Some(f.toURL)
-      }
-      catch {
-        case e: MalformedURLException =>
-        Console.println(e)
-        None
-      }
+      try { Some(f.toURL) }
+      catch { case e => Console.println(e); None }
 
     def paths(str: String): List[URL] =
       for (
@@ -104,14 +98,8 @@ object MainGenericRunner {
       ) yield url.get
 
     def specToURL(spec: String): Option[URL] =
-      try {
-        Some(new URL(spec))
-      }
-      catch {
-        case e: MalformedURLException =>
-        Console.println(e)
-        None
-      }
+      try { Some(new URL(spec)) }
+      catch { case e => Console.println(e); None }
 
     def urls(specs: String): List[URL] = {
       val urls = for (
