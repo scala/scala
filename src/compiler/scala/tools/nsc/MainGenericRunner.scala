@@ -102,10 +102,12 @@ object MainGenericRunner {
       catch { case e => Console.println(e); None }
 
     def urls(specs: String): List[URL] = {
-      val urls = for (
-        spec <- specs.split(" ").toList;
-        val url = specToURL(spec); if !url.isEmpty
-      ) yield url.get
+      val urls =
+        if (specs == null || specs.length == 0) Nil
+        else for (
+          spec <- specs.split(" ").toList;
+          val url = specToURL(spec); if !url.isEmpty
+        ) yield url.get
       if (!urls.isEmpty && (System.getSecurityManager == null)) {
         // Here we require a security manager to be present !
         // Security permissions are defined in a user-defined
