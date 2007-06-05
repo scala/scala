@@ -94,17 +94,17 @@ object Futures {
       val reaction: PartialFunction[Any, unit] = new PartialFunction[Any, unit] {
         def isDefinedAt(msg: Any) = msg match {
           case TIMEOUT => true
-          case _ => partFuns exists (.isDefinedAt(msg))
+          case _ => partFuns exists (_ isDefinedAt msg)
         }
         def apply(msg: Any): unit = msg match {
           case TIMEOUT => // do nothing
           case _ => {
-            val pfOpt = partFuns find (.isDefinedAt(msg))
+            val pfOpt = partFuns find (_ isDefinedAt msg)
             val pf = pfOpt.get // succeeds always
             val Pair(idx, subres) = pf(msg)
             resultsMap(idx) = Some(subres)
 
-            val partFunsRest = partFuns filter (.!=(pf))
+            val partFunsRest = partFuns filter (_ != pf)
             // wait on rest of partial functions
             if (partFunsRest.length > 0)
               awaitWith(partFunsRest)

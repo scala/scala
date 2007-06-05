@@ -199,7 +199,7 @@ abstract class TypeParser {
 	    || adder.IsFamilyAndAssembly))
 	{
 	  assert(adder.ReturnType == clrTypes.VOID);
-	  assert(adder.GetParameters().map(.ParameterType).toList == List(event.EventHandlerType));
+	  assert(adder.GetParameters().map(_.ParameterType).toList == List(event.EventHandlerType));
 	  val name = encode("+=");
 	  val flags = translateAttributes(adder);
 	  val mtype: Type = methodType(adder, adder.ReturnType);
@@ -210,7 +210,7 @@ abstract class TypeParser {
 	    || remover.IsFamilyAndAssembly))
 	{
 	  assert(remover.ReturnType == clrTypes.VOID);
-	  assert(remover.GetParameters().map(.ParameterType).toList == List(event.EventHandlerType));
+	  assert(remover.GetParameters().map(_.ParameterType).toList == List(event.EventHandlerType));
 	  val name = encode("-=");
 	  val flags = translateAttributes(remover);
 	  val mtype: Type = methodType(remover, remover.ReturnType);
@@ -301,7 +301,7 @@ abstract class TypeParser {
   private def createDelegateView(typ: MSILType) = {
     val invoke: MethodInfo = typ.GetMember("Invoke")(0).asInstanceOf[MethodInfo];
     val invokeRetType: Type = getCLRType(invoke.ReturnType);
-    val invokeParamTypes: List[Type] =invoke.GetParameters().map(.ParameterType).map(getCLSType).toList;
+    val invokeParamTypes: List[Type] =invoke.GetParameters().map(_.ParameterType).map(getCLSType).toList;
     val funType: Type = definitions.functionType(invokeParamTypes, invokeRetType);
 
     val typClrType: Type = getCLRType(typ);
@@ -355,7 +355,7 @@ abstract class TypeParser {
 
   /** Return a method type for the given method. */
   private def methodType(method: MethodBase, rettype: Type): Type =
-    methodType(method.GetParameters().map(.ParameterType), rettype);
+    methodType(method.GetParameters().map(_.ParameterType), rettype);
 
   /** Return a method type for the provided argument types and return type. */
   private def methodType(argtypes: Array[MSILType], rettype: Type): Type = {

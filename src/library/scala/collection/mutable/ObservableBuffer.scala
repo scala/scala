@@ -22,11 +22,11 @@ package scala.collection.mutable
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
-trait ObservableBuffer[A, This <: ObservableBuffer[A, This]] requires This
+trait ObservableBuffer[A, This <: ObservableBuffer[A, This]]
       extends Buffer[A]
       with Publisher[Message[(Location, A)]
       with Undoable, This]
-{
+{ self: This =>
 
   abstract override def +(element: A): Buffer[A] = {
     super.+(element)

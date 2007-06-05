@@ -5,6 +5,8 @@ class C {
   def get:Foo = new Foo();
 }
 
+
+
 object Test  {
   def main(args:Array[String]) = {
     val c = new C().get;

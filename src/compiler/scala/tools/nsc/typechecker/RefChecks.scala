@@ -425,6 +425,8 @@ abstract class RefChecks extends InfoTransform {
           validateVariance(result, variance)
         case PolyType(tparams, result) =>
           validateVariance(result, variance)
+        case ExistentialType(tparams, result) =>
+          validateVariance(result, variance)
         case AnnotatedType(attribs, tp) =>
           validateVariance(tp, variance)
       }
@@ -678,7 +680,7 @@ abstract class RefChecks extends InfoTransform {
             unit.deprecationWarning(
               tree.pos,
               symbol.toString + " overrides concrete, non-deprecated symbol(s):" +
-              concrOvers.map(.fullNameString).mkString("    ", ", ", ""))
+              concrOvers.map(_.fullNameString).mkString("    ", ", ", ""))
         }
       }
 
@@ -721,7 +723,7 @@ abstract class RefChecks extends InfoTransform {
           } traverse tree.tpe
 
         case TypeApply(fn, args) =>
-          checkBounds(NoPrefix, NoSymbol, fn.tpe.typeParams, args map (.tpe))
+          checkBounds(NoPrefix, NoSymbol, fn.tpe.typeParams, args map (_.tpe))
           if (sym.isSourceMethod && sym.hasFlag(CASE)) result = toConstructor(tree.pos, tree.tpe)
 
         case Apply(

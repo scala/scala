@@ -196,6 +196,7 @@ object PickleFormat {
     final val LABELSYMBOLrsym = 9
 
   final val DEBRUIJNINDEXtpe = 47
+  final val EXISTENTIALtpe = 48
 
   final val firstSymTag = NONEsym
   final val lastSymTag = VALsym

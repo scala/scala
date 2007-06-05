@@ -1,4 +1,4 @@
-trait Ops requires MyCodes {
+trait Ops { self: MyCodes =>
   abstract class Instru
   object opcodes {
     case class SWITCH(i:Int) extends Instru
@@ -6,7 +6,7 @@ trait Ops requires MyCodes {
   }
 }
 
-trait Blox requires MyCodes {
+trait Blox { self: MyCodes =>
   import opcodes._
   class Basick {
     var foo: Instru = null

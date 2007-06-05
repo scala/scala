@@ -300,7 +300,7 @@ abstract class TreeBuilder {
                 ValFrom(pos, pat, makeCombination(nme.filter, rhs, pat.duplicate, test)) :: rest,
                 body)
       case ValFrom(pos, pat, rhs) :: rest =>
-        val valeqs = rest.take(definitions.MaxTupleArity - 1).takeWhile(.isInstanceOf[ValEq]);
+        val valeqs = rest.take(definitions.MaxTupleArity - 1).takeWhile(_.isInstanceOf[ValEq]);
         assert(!valeqs.isEmpty)
         val rest1 = rest.drop(valeqs.length)
         val pats = valeqs map { case ValEq(_, pat, _) => pat }
@@ -408,7 +408,7 @@ abstract class TreeBuilder {
       val matchExpr = atPos(pat1.pos){
         Match(
           makeUnchecked(rhs),
-          List(CaseDef(pat1, EmptyTree, makeTupleTerm(vars map (._1) map Ident, true))))
+          List(CaseDef(pat1, EmptyTree, makeTupleTerm(vars map (_._1) map Ident, true))))
       }
       vars match {
         case List() =>

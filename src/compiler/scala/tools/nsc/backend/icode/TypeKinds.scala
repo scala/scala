@@ -25,7 +25,7 @@ package scala.tools.nsc.backend.icode
 
 import scala.collection.mutable.{Map, HashMap}
 
-trait TypeKinds requires ICodes {
+trait TypeKinds { self: ICodes =>
   import global._
 
   /** This class represents a type kind. Type kinds

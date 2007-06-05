@@ -30,7 +30,7 @@ import scala.tools.nsc.util.{Position,NoPosition};
   case IS_INSTANCE(tpe) =>
   case CHECK_CAST(tpe) =>
   case SWITCH(tags, labels) =>
-  case JUMP(where) =>
+  case JUMP(whereto) =>
   case CJUMP(success, failure, cond, kind) =>
   case CZJUMP(success, failure, cond, kind) =>
   case RETURN(kind) =>
@@ -51,7 +51,7 @@ import scala.tools.nsc.util.{Position,NoPosition};
  * erased types of Scala and references Symbols to refer named entities
  * in the source files.
  */
-trait Opcodes requires ICodes {
+trait Opcodes { self: ICodes =>
   import global.{Symbol, NoSymbol, Type, Name, Constant};
 
   /** This class represents an instruction of the intermediate code.
@@ -420,9 +420,9 @@ trait Opcodes requires ICodes {
      * Stack: ...
      *    ->: ...
      */
-    case class JUMP(where: BasicBlock) extends Instruction {
+    case class JUMP(whereto: BasicBlock) extends Instruction {
       /** Returns a string representation of this instruction */
-      override def toString(): String ="JUMP "+where.label;
+      override def toString(): String ="JUMP "+whereto.label;
 
       override def consumed = 0;
       override def produced = 0;

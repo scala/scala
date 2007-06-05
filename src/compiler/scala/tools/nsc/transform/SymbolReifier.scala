@@ -84,6 +84,7 @@ trait SymbolReifier {
 	tparams.map(reify),
 	boundss,
 	reify(result))
+      //todo: treat ExistentialType
     case AnnotatedType(attribs, tp) =>
       reify(tp)
     case _ =>
@@ -141,6 +142,7 @@ trait SymbolReifier {
 	MethodType(formals.map(unreify), unreify(restpe))
       case reflect.PolyType(typeParams, typeBounds, resultType) =>
 	PolyType(typeParams.map(unreify), unreify(resultType))
+      //todo: treat ExistentialType
       case _ => NoType
     }
 

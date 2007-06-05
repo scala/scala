@@ -14,7 +14,7 @@ import scala.tools.nsc.util.{Position,NoPosition}
  *  @author  Martin Odersky
  *  @version 1.0
  */
-trait Contexts requires Analyzer {
+trait Contexts { self: Analyzer =>
   import global._
 
   val NoContext = new Context {
@@ -470,7 +470,7 @@ trait Contexts requires Analyzer {
 
     /** Is name imported explicitly, not via wildcard? */
     def isExplicitImport(name: Name): boolean =
-      tree.selectors exists (._2.==(name.toTermName))
+      tree.selectors exists (_._2 == name.toTermName)
 
     /** The symbol with name <code>name</code> imported from import clause
      *  <code>tree</code>.

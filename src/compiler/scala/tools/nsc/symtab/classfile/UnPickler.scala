@@ -254,6 +254,9 @@ abstract class UnPickler {
         case POLYtpe =>
           val restpe = readTypeRef()
           PolyType(until(end, readSymbolRef), restpe)
+        case EXISTENTIALtpe =>
+          val restpe = readTypeRef()
+          ExistentialType(until(end, readSymbolRef), restpe)
         case ANNOTATEDtpe =>
           val tp = readTypeRef()
           val attribs = until(end, readTreeAttribRef)

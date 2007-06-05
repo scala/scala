@@ -14,7 +14,7 @@ import symtab.Flags._
  *  @author  Martin Odersky
  *  @version 1.0
  */
-trait EtaExpansion requires Analyzer {
+trait EtaExpansion { self: Analyzer =>
 
   import global._
   import posAssigner.atPos

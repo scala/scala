@@ -124,20 +124,6 @@ trait Infer {
       }
   }
 
-  /** Do type arguments <code>targs</code> conform to formal parameters
-   *  <code>tparams</code>?
-   *
-   *  @param tparams ...
-   *  @param targs   ...
-   *  @return        ...
-   */
-  private def isWithinBounds(pre: Type, owner: Symbol, tparams: List[Symbol], targs: List[Type]): boolean = {
-    val bounds = tparams map { tparam =>
-      tparam.info.asSeenFrom(pre, owner).instantiateTypeParams(tparams, targs).bounds
-    }
-    !(List.map2(bounds, targs)((bound, targ) => bound containsType targ) contains false)
-  }
-
   /** Solve constraint collected in types <code>tvars</code>.
    *
    *  @param tvars      All type variables to be instantiated.
@@ -147,55 +133,10 @@ trait Infer {
    *  @param upper      When <code>true</code> search for max solution else min.
    *  @throws NoInstance
    */
-  private def solve(tvars: List[TypeVar], tparams: List[Symbol],
-                    variances: List[int], upper: boolean): List[Type] = {
-    val config = tvars zip (tparams zip variances)
-
-    def solveOne(tvar: TypeVar, tparam: Symbol, variance: int): unit = {
-      if (tvar.constr.inst == NoType) {
-        val up = if (variance != CONTRAVARIANT) upper else !upper
-        tvar.constr.inst = null
-        val bound: Type = if (up) tparam.info.bounds.hi else tparam.info.bounds.lo
-        // Console.println("solveOne0 "+tvar+" "+config+" "+bound);//DEBUG
-        var cyclic = bound contains tparam
-        for ((tvar2, (tparam2, variance2)) <- config) {
-          if (tparam2 != tparam &&
-              ((bound contains tparam2) ||
-               up && (tparam2.info.bounds.lo =:= tparam.tpe) ||  //@M TODO: might be affected by change to tpe in Symbol
-               !up && (tparam2.info.bounds.hi =:= tparam.tpe))) {  //@M TODO: might be affected by change to tpe in Symbol
-            if (tvar2.constr.inst eq null) cyclic = true
-            solveOne(tvar2, tparam2, variance2)
-          }
-        }
-        if (!cyclic) {
-          if (up) {
-            if (bound.symbol != AnyClass) {
-              tvar.constr.hibounds =
-                bound.instantiateTypeParams(tparams, tvars) :: tvar.constr.hibounds
-            }
-            for (tparam2 <- tparams)
-              if (tparam2.info.bounds.lo =:= tparam.tpe)  //@M TODO: might be affected by change to tpe in Symbol
-                tvar.constr.hibounds =
-                  tparam2.tpe.instantiateTypeParams(tparams, tvars) :: tvar.constr.hibounds
-          } else {
-            if (bound.symbol != AllClass && bound.symbol != tparam) {
-              tvar.constr.lobounds =
-                bound.instantiateTypeParams(tparams, tvars) :: tvar.constr.lobounds
-            }
-            for (tparam2 <- tparams)
-              if (tparam2.info.bounds.hi =:= tparam.tpe)  //@M TODO: might be affected by change to tpe in Symbol
-                tvar.constr.lobounds =
-                  tparam2.tpe.instantiateTypeParams(tparams, tvars) :: tvar.constr.lobounds
-          }
-        }
-        tvar.constr.inst = NoType // necessary because hibounds/lobounds may contain tvar
-        //Console.println("solving "+tvar+" "+up+" "+(if (up) (tvar.constr.hibounds) else tvar.constr.lobounds))//DEBUG
-        tvar.constr.inst = if (up) glb(tvar.constr.hibounds) else lub(tvar.constr.lobounds)
-        assertNonCyclic(tvar)//debug
-      }
-    }
-    for ((tvar, (tparam, variance)) <- config)
-      solveOne(tvar, tparam, variance)
+  private def solvedTypes(tvars: List[TypeVar], tparams: List[Symbol],
+                          variances: List[int], upper: boolean): List[Type] = {
+    solve(tvars, tparams, variances, upper)
+    for (val tvar <- tvars) assert(tvar.constr.inst != tvar, tvar.origin)
     tvars map instantiate
   }
 
@@ -445,7 +386,7 @@ trait Infer {
       val tvars = tparams map freshVar
       if (isCompatible(restpe.instantiateTypeParams(tparams, tvars), pt)) {
         try {
-          solve(tvars, tparams, tparams map varianceInType(restpe), false)
+          solvedTypes(tvars, tparams, tparams map varianceInType(restpe), false)
         } catch {
           case ex: NoInstance => null
         }
@@ -550,7 +491,7 @@ trait Infer {
         }
         ()
       }
-      val targs = solve(tvars, tparams, tparams map varianceInTypes(formals), false)
+      val targs = solvedTypes(tvars, tparams, tparams map varianceInTypes(formals), false)
       List.map2(tparams, targs) {(tparam, targ) =>
         if (targ.symbol == AllClass && (varianceInType(restpe)(tparam) & COVARIANT) == 0) {
           uninstantiated += tparam
@@ -657,11 +598,11 @@ trait Infer {
           " do not conform to the expected kinds of the type parameters "+ tparams.mkString("(", ",", ")") + tparams.head.locationString+ "." +
           kindErrors.toList.mkString("\n", ", ", ""))
       else if (!isWithinBounds(pre, owner, tparams, targs)) {
-        if (!(targs exists (.isErroneous)) && !(tparams exists (.isErroneous))) {
+        if (!(targs exists (_.isErroneous)) && !(tparams exists (_.isErroneous))) {
           error(pos,
                 prefix + "type arguments " + targs.mkString("[", ",", "]") +
                 " do not conform to " + tparams.head.owner + "'s type parameter bounds " +
-                (tparams map (.defString)).mkString("[", ",", "]"))
+                (tparams map (_.defString)).mkString("[", ",", "]"))
         }
         if (settings.explaintypes.value) {
           val bounds = tparams map (tp => tp.info.instantiateTypeParams(tparams, targs).bounds)
@@ -816,7 +757,7 @@ trait Infer {
       case MethodType(formals0, _) =>
         try {
           val formals = formalTypes(formals0, args.length)
-          val argtpes = actualTypes(args map (.tpe.deconst), formals.length)
+          val argtpes = actualTypes(args map (_.tpe.deconst), formals.length)
           val restpe = fn.tpe.resultType(argtpes)
           val uninstantiated = new ListBuffer[Symbol]
           val targs = methTypeArgs(undetparams, formals, restpe, argtpes, pt, uninstantiated)
@@ -833,7 +774,7 @@ trait Infer {
               "no type parameters for " +
               applyErrorMsg(
                 fn, " exist so that it can be applied to arguments ",
-                args map (.tpe.widen), WildcardType) +
+                args map (_.tpe.widen), WildcardType) +
               "\n --- because ---\n" + ex.getMessage())
             List()
         }
@@ -891,7 +832,7 @@ trait Infer {
        */
       def computeArgs =
         try {
-          val targs = solve(tvars, undetparams, undetparams map varianceInType(restpe), true)
+          val targs = solvedTypes(tvars, undetparams, undetparams map varianceInType(restpe), true)
           checkBounds(tree.pos, NoPrefix, NoSymbol, undetparams, targs, "inferred ")
           new TreeTypeSubstituter(undetparams, targs).traverse(tree)
         } catch {
@@ -933,7 +874,7 @@ trait Infer {
           tvar.constr.inst != NoType &&
           isFullyDefined(tvar.constr.inst) &&
           (tparam.info.bounds containsType tvar.constr.inst)) {
-        context.nextEnclosing(.tree.isInstanceOf[CaseDef]).pushTypeBounds(tparam)
+        context.nextEnclosing(_.tree.isInstanceOf[CaseDef]).pushTypeBounds(tparam)
         tparam setInfo tvar.constr.inst
         tparam resetFlag DEFERRED
         if (settings.debug.value) log("new alias of " + tparam + " = " + tparam.info)
@@ -947,7 +888,7 @@ trait Infer {
         if (!(lo <:< hi)) {
           if (settings.debug.value) log("inconsistent: "+tparam+" "+lo+" "+hi)
         } else if (!((lo <:< tparam.info.bounds.lo) && (tparam.info.bounds.hi <:< hi))) {
-          context.nextEnclosing(.tree.isInstanceOf[CaseDef]).pushTypeBounds(tparam)
+          context.nextEnclosing(_.tree.isInstanceOf[CaseDef]).pushTypeBounds(tparam)
           tparam setInfo mkTypeBounds(lo, hi)
           if (settings.debug.value) log("new bounds of " + tparam + " = " + tparam.info)
         } else {
@@ -1192,7 +1133,7 @@ trait Infer {
               inferMethodAlternative(tree, undetparams, argtpes, WildcardType)
             }
           } else if (!competing.isEmpty) {
-            if (!(argtpes exists (.isErroneous)) && !pt.isErroneous)
+            if (!(argtpes exists (_.isErroneous)) && !pt.isErroneous)
               context.ambiguousError(tree.pos, pre, best, competing.head,
                                      "argument types " + argtpes.mkString("(", ",", ")") +
                                      (if (pt == WildcardType) "" else " and expected result type " + pt))
@@ -1252,7 +1193,7 @@ trait Infer {
         if (sym0.hasFlag(OVERLOADED)) {
           val sym = sym0 filter { alt => isWithinBounds(pre, alt.owner, alt.typeParams, argtypes) }
           if (sym == NoSymbol) {
-            if (!(argtypes exists (.isErroneous))) {
+            if (!(argtypes exists (_.isErroneous))) {
               error(
                 tree.pos,
                 "type arguments " + argtypes.mkString("[", ",", "]") +
@@ -1264,7 +1205,7 @@ trait Infer {
           if (sym.hasFlag(OVERLOADED)) {
             val tparams = new AsSeenFromMap(pre, sym.alternatives.head.owner).mapOver(
               sym.alternatives.head.typeParams)
-            val bounds = tparams map (.tpe)  //@M TODO: might be affected by change to tpe in Symbol
+            val bounds = tparams map (_.tpe)  //@M TODO: might be affected by change to tpe in Symbol
             val tpe =
               PolyType(tparams,
                        OverloadedType(AntiPolyType(pre, bounds), sym.alternatives))

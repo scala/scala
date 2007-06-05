@@ -109,7 +109,7 @@ abstract class Pickler extends SubComponent {
           putType(sym.typeOfThis);
         putSymbol(sym.alias)
         if (!sym.children.isEmpty) {
-          val (locals, globals) = sym.children.toList.partition(.isLocalClass)
+          val (locals, globals) = sym.children.toList.partition(_.isLocalClass)
           val children =
             if (locals.isEmpty) globals
             else {
@@ -157,6 +157,8 @@ abstract class Pickler extends SubComponent {
         case MethodType(formals, restpe) =>
           putType(restpe); putTypes(formals)
         case PolyType(tparams, restpe) =>
+          putType(restpe); putSymbols(tparams)
+        case ExistentialType(tparams, restpe) =>
           putType(restpe); putSymbols(tparams)
         case AnnotatedType(attribs, tp) =>
           putType(tp); putAnnotations(attribs)
@@ -389,6 +391,8 @@ abstract class Pickler extends SubComponent {
           else METHODtpe
         case PolyType(tparams, restpe) =>
           writeRef(restpe); writeRefs(tparams); POLYtpe
+        case ExistentialType(tparams, restpe) =>
+          writeRef(restpe); writeRefs(tparams); EXISTENTIALtpe
         case DeBruijnIndex(l, i) =>
           writeNat(l); writeNat(i); DEBRUIJNINDEXtpe
         case c @ Constant(_) =>

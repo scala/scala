@@ -59,11 +59,11 @@ trait AnnotationInfos {
 
     val mems = trees.map(refltree2cons)
 
-    if(mems.exists(.isEmpty))
+    if(mems.exists(_.isEmpty))
       None
     else
       Some(new ArrayConstant(
-	mems.map(.get).toArray,
+	mems.map(_.get).toArray,
 	symbolReifier.unreify(arrayType)))
   }
 
@@ -141,7 +141,7 @@ trait AnnotationInfos {
 
     /** Check whether all arguments and assocations are constants */
     def isConstant =
-      ((args forall (.isConstant)) &&
-       (assocs map (._2) forall (.isConstant)))
+      ((args forall (_.isConstant)) &&
+       (assocs map (_._2) forall (_.isConstant)))
   }
 }

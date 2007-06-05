@@ -175,7 +175,7 @@ abstract class CopyPropagation {
 
       init {
         worklist += m.code.startBlock
-        worklist ++= (m.exh map (.startBlock))
+        worklist ++= (m.exh map (_.startBlock))
         m.code.blocks.foreach { b =>
           in(b)  = lattice.bottom
           out(b) = lattice.bottom
@@ -340,7 +340,7 @@ abstract class CopyPropagation {
         case SWITCH(tags, labels) =>
           out.stack = out.stack.drop(1)
 
-        case JUMP(where) =>
+        case JUMP(whereto) =>
           ()
 
         case CJUMP(success, failure, cond, kind) =>
@@ -467,7 +467,7 @@ abstract class CopyPropagation {
       // this relies on having the same order in paramAccessors and
       // the arguments on the stack. It should be the same!
       for (val (p, i) <- paramAccessors.zipWithIndex) {
-//        assert(p.tpe == ctor.tpe.paramTypes(i), "In: " + ctor.fullNameString + " having: " + (paramAccessors map (.tpe))+ " vs. " + ctor.tpe.paramTypes)
+//        assert(p.tpe == ctor.tpe.paramTypes(i), "In: " + ctor.fullNameString + " having: " + (paramAccessors map (_.tpe))+ " vs. " + ctor.tpe.paramTypes)
 	if (p.tpe == ctor.tpe.paramTypes(i))
 	  bindings += p -> values.head;
         values = values.tail;

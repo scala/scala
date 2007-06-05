@@ -1,5 +1,5 @@
 class B {}
-class A requires B {
+class A { self: B =>
     def m(): B = {
         this
     }

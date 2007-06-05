@@ -275,7 +275,7 @@ object BytePickle {
     share(wrap((a:Array[byte]) => UTF8Codec.decode(a, 0, a.length), (s:String) => UTF8Codec.encode(s), bytearray));
 
   def bytearray: SPU[Array[byte]] = {
-    wrap((l:List[byte]) => l.toArray, .toList, list(byte))
+    wrap((l:List[byte]) => l.toArray, (_.toList), list(byte))
   }
 
   def bool: SPU[boolean] = {

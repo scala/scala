@@ -21,11 +21,11 @@ package scala.collection.mutable
  *  @author  Martin Odersky
  *  @version 2.0, 31/12/2006
  */
-trait ObservableMap[A, B, This <: ObservableMap[A, B, This]] requires This
+trait ObservableMap[A, B, This <: ObservableMap[A, B, This]]
       extends Map[A, B]
       with Publisher[Message[(A, B)]
       with Undoable, This]
-{
+{ self: This =>
 
   abstract override def update(key: A, value: B): Unit = get(key) match {
     case None =>

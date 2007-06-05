@@ -58,7 +58,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
    *  </ul>
    */
   val erasure = new TypeMap {
-    def apply(tp: Type): Type = { //val tp = tp0.normalize MARTIN: I don't think this is needed?
+    def apply(tp: Type): Type = {
       tp match {
         case ConstantType(_) =>
           tp
@@ -76,6 +76,8 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
             typeRef(apply(if (sym.owner.isClass) sym.owner.tpe else pre), sym, List())
           else apply(sym.info)
         case PolyType(tparams, restpe) =>
+          apply(restpe)
+        case ExistentialType(tparams, restpe) =>
           apply(restpe)
         case MethodType(formals, restpe) =>
           MethodType(
@@ -108,7 +110,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
   private def removeDoubleObject(tps: List[Type]): List[Type] = tps match {
     case List() => List()
     case tp :: tps1 =>
-      if (tp.symbol == ObjectClass) tp :: tps1.filter(.symbol.!=(ObjectClass))
+      if (tp.symbol == ObjectClass) tp :: tps1.filter(_.symbol != ObjectClass)
       else tp :: removeDoubleObject(tps1)
   }
 

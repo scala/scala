@@ -40,7 +40,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
     private var accDefs: List[(Symbol, ListBuffer[Tree])] = List()
 
     private def accDefBuf(clazz: Symbol) =
-      accDefs.dropWhile(._1.!=(clazz)).head._2
+      accDefs.dropWhile(_._1 != clazz).head._2
 
     private def transformArgs(args: List[Tree], formals: List[Type]) = {
       if (!formals.isEmpty && formals.last.symbol == definitions.ByNameParamClass)
@@ -106,7 +106,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
         if (tree.isTerm && mix == nme.EMPTY.toTypeName &&
             (clazz.isTrait || clazz != currentOwner.enclClass || !validCurrentOwner)) {
           val supername = nme.superName(sym.name)
-          var superAcc = clazz.info.decl(supername).suchThat(.alias.==(sym))
+          var superAcc = clazz.info.decl(supername).suchThat(_.alias == sym)
           if (superAcc == NoSymbol) {
             if (settings.debug.value) log("add super acc " + sym + sym.locationString + " to `" + clazz);//debug
             superAcc =

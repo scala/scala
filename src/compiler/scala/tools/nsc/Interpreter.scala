@@ -845,7 +845,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     def importsWildcard =
       trees.exists {
         case Import(_, selectors) =>
-          selectors.map(._1).contains(nme.USCOREkw)
+          selectors.map(_._1).contains(nme.USCOREkw)
         case _ => false
       }
 

@@ -711,6 +711,10 @@ sealed abstract class List[+A] extends Seq[A] {
 
   /** Returns all the elements of this list that satisfy the
    *  predicate <code>p</code>. The order of the elements is preserved.
+   *  It is guarenteed that the receiver list itself is returned iff all its
+   *  elements satisfy the predicate `p'. Hence the following equality is valid:
+   *
+   *  (xs filter p) eq xs  ==  xs forall p
    *
    *  @param p the predicate used to filter the list.
    *  @return the elements of this list satisfying <code>p</code>.

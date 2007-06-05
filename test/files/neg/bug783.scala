@@ -6,7 +6,7 @@ object Main extends Application {
       Console.println("outer: " + Global.this);
     }
   }
-  trait Contexts requires Analyzer {
+  trait Contexts { self: Analyzer =>
     val xxx : global.Template = {
       assert(globalInit0 != null);
       globalInit0.Template(10, 20);

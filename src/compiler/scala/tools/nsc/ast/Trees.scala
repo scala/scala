@@ -348,7 +348,7 @@ trait Trees {
 
   def DefDef(sym: Symbol, mods: Modifiers, rhs: List[List[Symbol]] => Tree): DefDef = {
     val vparamss = syntheticParams(sym, sym.tpe)
-    DefDef(sym, mods, vparamss map (.map(ValDef)), rhs(vparamss))
+    DefDef(sym, mods, vparamss map (_.map(ValDef)), rhs(vparamss))
   }
 
   def DefDef(sym: Symbol, rhs: List[List[Symbol]] => Tree): DefDef =
@@ -460,13 +460,13 @@ trait Trees {
   def Template(parents: List[Tree], self: ValDef, constrMods: Modifiers, vparamss: List[List[ValDef]], argss: List[List[Tree]], body: List[Tree]): Template = {
     /** Add constructor to template */
     var vparamss1 =
-      vparamss map (.map (vd => {
+      vparamss map (vps => vps.map { vd =>
         val ret = ValDef(Modifiers(vd.mods.flags & IMPLICIT | PARAM) withAnnotations vd.mods.annotations,
             vd.name, vd.tpt.duplicate, EmptyTree).setPos(vd.pos)
         if (inIDE && vd.symbol != NoSymbol)
           ret.symbol = vd.symbol
         ret
-       }))
+       })
     val (vdefs, rest) = body span treeInfo.isPreSuper
     val (lvdefs, gvdefs) = List.unzip {
       vdefs map {
@@ -728,6 +728,9 @@ trait Trees {
   case class WildcardTypeTree(lo: Tree, hi: Tree)
        extends TypTree
 
+  case class ExistentialTypeTree(tpt: Tree, whereClauses: List[Tree])
+       extends TypTree
+
 /* A standard pattern match
   case EmptyTree =>
   case PackageDef(name, stats) =>
@@ -818,6 +821,8 @@ trait Trees {
     // tpt[args]
   case WildcardTypeTree(lo, hi) =>                                (eliminated by uncurry)
     // todo: get rid of that!
+  case ExistentialTypeTree(tpt, whereClauses) =>
+
 */
 
   abstract class TreeCopier {
@@ -865,6 +870,7 @@ trait Trees {
     def CompoundTypeTree(tree: Tree, templ: Template): CompoundTypeTree
     def AppliedTypeTree(tree: Tree, tpt: Tree, args: List[Tree]): AppliedTypeTree
     def WildcardTypeTree(tree: Tree, lo: Tree, hi: Tree): WildcardTypeTree
+    def ExistentialTypeTree(tree: Tree, tpt: Tree, whereClauses: List[Tree]): ExistentialTypeTree
   }
 
   class StrictTreeCopier extends TreeCopier {
@@ -956,6 +962,8 @@ trait Trees {
       new AppliedTypeTree(tpt, args).copyAttrs(tree)
     def WildcardTypeTree(tree: Tree, lo: Tree, hi: Tree) =
       new WildcardTypeTree(lo, hi).copyAttrs(tree)
+    def ExistentialTypeTree(tree: Tree, tpt: Tree, whereClauses: List[Tree]) =
+      new ExistentialTypeTree(tpt, whereClauses).copyAttrs(tree)
   }
 
   class LazyTreeCopier(copy: TreeCopier) extends TreeCopier {
@@ -1180,6 +1188,11 @@ trait Trees {
       if (lo0 == lo) && (hi0 == hi) => t
       case _ => copy.WildcardTypeTree(tree, lo, hi)
     }
+    def ExistentialTypeTree(tree: Tree, tpt: Tree, whereClauses: List[Tree]) = tree match {
+      case t @ ExistentialTypeTree(tpt0, whereClauses0)
+      if (tpt0 == tpt) && (whereClauses0 == whereClauses) => t
+      case _ => copy.ExistentialTypeTree(tree, tpt, whereClauses)
+    }
   }
 
   abstract class Transformer {
@@ -1296,6 +1309,8 @@ trait Trees {
         copy.AppliedTypeTree(tree, transform(tpt), transformTrees(args))
       case WildcardTypeTree(lo, hi) =>
         copy.WildcardTypeTree(tree, transform(lo), transform(hi))
+      case ExistentialTypeTree(tpt, whereClauses) =>
+        copy.ExistentialTypeTree(tree, transform(tpt), transformTrees(whereClauses))
     }
 
     def transformTrees(trees: List[Tree]): List[Tree] =
@@ -1440,6 +1455,8 @@ trait Trees {
         traverse(tpt); traverseTrees(args)
       case WildcardTypeTree(lo, hi) =>
         traverse(lo); traverse(hi)
+      case ExistentialTypeTree(tpt, whereClauses) =>
+        traverse(tpt); traverseTrees(whereClauses)
     }
 
     def traverseTrees(trees: List[Tree]): unit =

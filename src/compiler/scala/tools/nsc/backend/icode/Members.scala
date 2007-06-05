@@ -15,7 +15,7 @@ import scala.{Symbol => scala_Symbol};
 
 import scala.tools.nsc.symtab.Flags;
 
-trait Members requires ICodes {
+trait Members { self: ICodes =>
   import global._;
 
   /**

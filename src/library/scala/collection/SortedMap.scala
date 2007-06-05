@@ -32,7 +32,7 @@ trait SortedMap[K,+E] extends Map[K,E] with Sorted[K,Tuple2[K,E]] {
   protected class DefaultKeySet extends SortedSet[K] {
     def size = SortedMap.this.size
     def contains(key : K) = SortedMap.this.contains(key)
-    def elements = SortedMap.this.elements.map(._1)
+    def elements = SortedMap.this.elements.map(_._1)
     def compare(k0 : K, k1 : K) = SortedMap.this.compare(k0, k1);
     override def rangeImpl(from : Option[K], until : Option[K]) : SortedSet[K] = {
       val map = SortedMap.this.rangeImpl(from,until);

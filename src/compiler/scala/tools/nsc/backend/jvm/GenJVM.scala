@@ -301,7 +301,7 @@ abstract class GenJVM extends SubComponent {
     }
 
     def addAnnotations(jmember: JMember, attributes: List[AnnotationInfo]): Unit = {
-      val toEmit = attributes.filter(.isConstant)
+      val toEmit = attributes.filter(_.isConstant)
 
       if (toEmit.isEmpty) return
 
@@ -317,7 +317,7 @@ abstract class GenJVM extends SubComponent {
         for (attr @ AnnotationInfo(tpe, _, _) <- attrs;
              if attr.isConstant;
              if tpe.symbol isNonBottomSubClass definitions.ClassfileAnnotationClass) yield attr;
-      if (attributes.forall(.isEmpty)) return;
+      if (attributes.forall(_.isEmpty)) return;
 
       val buf: ByteBuffer = ByteBuffer.allocate(2048)
 
@@ -407,8 +407,8 @@ abstract class GenJVM extends SubComponent {
       jmethod = jclass.addNewMethod(flags,
                                     javaName(m.symbol),
                                     resTpe,
-                                    javaTypes(m.params map (.kind)),
-                                    javaNames(m.params map (.sym)));
+                                    javaTypes(m.params map (_.kind)),
+                                    javaNames(m.params map (_.sym)));
 
       if (m.symbol.hasFlag(Flags.BRIDGE))
         jmethod.addAttribute(fjbgContext.JOtherAttribute(jclass, jmethod, "Bridge",
@@ -455,7 +455,7 @@ abstract class GenJVM extends SubComponent {
 
       addExceptionsAttribute(m.symbol)
       addAnnotations(jmethod, m.symbol.attributes)
-      addParamAnnotations(m.params.map(.sym.attributes))
+      addParamAnnotations(m.params.map(_.sym.attributes))
     }
 
     def isClosureApply(sym: Symbol): Boolean = {
@@ -850,9 +850,9 @@ abstract class GenJVM extends SubComponent {
                              labels(branches.last),
                              MIN_SWITCH_DENSITY);
 
-          case JUMP(where) =>
-            if (nextBlock != where)
-              jcode.emitGOTO_maybe_W(labels(where), false); // default to short jumps
+          case JUMP(whereto) =>
+            if (nextBlock != whereto)
+              jcode.emitGOTO_maybe_W(labels(whereto), false); // default to short jumps
 
           case CJUMP(success, failure, cond, kind) =>
             kind match {

@@ -37,7 +37,7 @@ abstract class DocDriver extends ModelFrames with ModelToXML {
 
     def g(pkg: Package, clazz: ClassOrObject) {
       allClasses(pkg) += clazz;
-      clazz.decls.map(._2).foreach {
+      clazz.decls.map(_._2).foreach {
         case clazz : ClassOrObject => g(pkg, clazz)
         case _ =>
       }
@@ -71,7 +71,7 @@ abstract class DocDriver extends ModelFrames with ModelToXML {
       object organized extends jcl.LinkedHashMap[(List[String],Boolean),List[ClassOrObject]] {
         override def default(key : (List[String],Boolean)) = Nil;
         classes.foreach(cls => {
-          val path = cls.path.map(.name);
+          val path = cls.path.map(_.name);
           this((path,cls.isInstanceOf[Clazz])) = cls :: this((path,cls.isInstanceOf[Clazz]));
         });
       }
@@ -81,8 +81,8 @@ abstract class DocDriver extends ModelFrames with ModelToXML {
       def navLabel = null; // "root-page"
       // override protected def navSuffix = ".html";
       override def optional(cls : ClassOrObject) : NodeSeq = {
-        val path = cls.path.map(.name);
-        val key = (cls.path.map(.name), cls.isInstanceOf[Clazz]);
+        val path = cls.path.map(_.name);
+        val key = (cls.path.map(_.name), cls.isInstanceOf[Clazz]);
         assert(!organized(key).isEmpty);
         (if (!organized(key).tail.isEmpty) Text(" (" +{
           //Console.println("CONFLICT: " + path + " " + organized(key));
@@ -157,7 +157,7 @@ abstract class DocDriver extends ModelFrames with ModelToXML {
       <dl>
       <dt style="margin:10px 0 0 20px;"><b>Direct Known Subclasses:</b></dt>
       <dd>{symbols.mkXML("",", ","")(cls => {
-        aref(urlFor(cls.sym), cls.path.map(.name).mkString("",".",""));
+        aref(urlFor(cls.sym), cls.path.map(_.name).mkString("",".",""));
       })}</dd>
       </dl><hr/>;
     case None =>

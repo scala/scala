@@ -95,7 +95,7 @@ class FastScalac extends Scalac {
         trim(
           List(settings.log) map (s => if (s.value.isEmpty) "" else s.name + ":" + s.value))
 
-      val args = (cmdOptions ::: (sourceFiles map (.toString()))).toArray
+      val args = (cmdOptions ::: (sourceFiles map (_.toString))).toArray
       try {
         nsc.CompileClient.main0(args)
       } catch {

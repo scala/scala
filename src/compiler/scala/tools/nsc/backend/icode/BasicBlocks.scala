@@ -380,7 +380,7 @@ trait BasicBlocks {
     // TODO: Take care of exception handlers!
     def successors : List[BasicBlock] = if (isEmpty) Nil else {
       var res = lastInstruction match {
-        case JUMP (where) => List(where)
+        case JUMP (whereto) => List(whereto)
         case CJUMP(success, failure, _, _) => success :: failure :: Nil
         case CZJUMP(success, failure, _, _) => success :: failure :: Nil
         case SWITCH(_,labels) => labels
@@ -404,7 +404,7 @@ trait BasicBlocks {
      *  in different code 'chunks' than the rest of the method.
      */
     def predecessors: List[BasicBlock] = {
-      preds = code.blocks.elements.filter (.successors.contains(this)).toList
+      preds = code.blocks.elements.filter (_.successors.contains(this)).toList
       preds
     }
 

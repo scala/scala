@@ -72,7 +72,8 @@ object Tokens {
   final val WHILE = 56
   final val RETURN = 57
   final val MATCH = 58
-  final val REQUIRES = 59
+  final val FORSOME = 59
+  final val REQUIRES = 60
 
   def isKeyword(code : Int) =
     code >= IF && code <= REQUIRES

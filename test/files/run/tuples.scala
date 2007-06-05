@@ -13,9 +13,9 @@ object Test extends Application {
 
    def params = (2, "xxx", 3.14159)  // (*****)
 
-   tupled(&func)(params) // call the function with all the params at once
+   tupled(func _)(params) // call the function with all the params at once
    func(2, "xxx", 3.14159) // the same call
-   (&func).apply(2, "xxx", 3.14159) // the same call
+   (func _).apply(2, "xxx", 3.14159) // the same call
 
    // Composing a tuple
    def t = (1, "Hello", false)

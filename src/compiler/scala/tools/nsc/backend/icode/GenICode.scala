@@ -197,7 +197,7 @@ abstract class GenICode extends SubComponent  {
     private def genLoad(tree: Tree, ctx: Context, expectedType: TypeKind): Context = {
       var generatedType = expectedType
       if (settings.debug.value)
-        log("at line: " + (tree.pos).line.map(.toString).get(tree.pos.toString))
+        log("at line: " + (tree.pos).line.map(_.toString).get(tree.pos.toString))
 
       /**
        * Generate code for primitive arithmetic operations.
@@ -387,7 +387,7 @@ abstract class GenICode extends SubComponent  {
               label.patch(ctx.method.code)
 
             case None =>
-              ctx1.labels += tree.symbol -> (new Label(tree.symbol) anchor ctx1.bb setParams (params map (.symbol)));
+              ctx1.labels += tree.symbol -> (new Label(tree.symbol) anchor ctx1.bb setParams (params map (_.symbol)));
               ctx.method.addLocals(params map (p => new Local(p.symbol, toTypeKind(p.symbol.info), false)));
               if (settings.debug.value)
                 log("Adding label " + tree.symbol);
@@ -1231,7 +1231,7 @@ abstract class GenICode extends SubComponent  {
 
           case LabelDef(name, params, rhs) =>
             if (!ctx.labels.contains(tree.symbol)) {
-              ctx.labels += tree.symbol -> (new Label(tree.symbol) setParams(params map (.symbol)));
+              ctx.labels += tree.symbol -> (new Label(tree.symbol) setParams(params map (_.symbol)));
               ctx.method.addLocals(params map (p => new Local(p.symbol, toTypeKind(p.symbol.info), false)));
             }
             super.traverse(rhs)
@@ -1574,8 +1574,8 @@ abstract class GenICode extends SubComponent  {
             log("Removing block: " + block)
             method.code.removeBlock(block)
             for (e <- method.exh) {
-              e.covered = e.covered filter (.!=(block))
-              e.blocks  = e.blocks filter (.!=(block))
+              e.covered = e.covered filter (_ != block)
+              e.blocks  = e.blocks filter (_ != block)
               if (e.startBlock eq block)
                 e setStartBlock cont;
             }
@@ -1654,7 +1654,7 @@ abstract class GenICode extends SubComponent  {
             val tree = copy.LabelDef(t, name1, params, transform(rhs))
             tree.symbol = labels(t.symbol)
 
-            ctx.labels += tree.symbol -> (new Label(tree.symbol) setParams(params map (.symbol)));
+            ctx.labels += tree.symbol -> (new Label(tree.symbol) setParams(params map (_.symbol)));
             ctx.method.addLocals(params map (p => new Local(p.symbol, toTypeKind(p.symbol.info), false)));
 
             tree
@@ -1962,7 +1962,7 @@ abstract class GenICode extends SubComponent  {
         }
 
         val map = substMap
-        code traverse (.subst(map))
+        code traverse (_.subst(map))
       }
 
       /**
@@ -2019,7 +2019,7 @@ abstract class GenICode extends SubComponent  {
         label.addCallingInstruction(this);
     }
 
-    case class PJUMP(where: Label) extends PseudoJUMP(where)
+    case class PJUMP(whereto: Label) extends PseudoJUMP(whereto)
 
     case class PCJUMP(success: Label, failure: Label, cond: TestOp, kind: TypeKind)
     extends PseudoJUMP(success) {

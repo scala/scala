@@ -26,7 +26,7 @@ import scala.collection.mutable.ListBuffer
  *    </li>
  *  </ul>
  */
-trait SyntheticMethods requires Analyzer {
+trait SyntheticMethods { self: Analyzer =>
   import global._                  // the global environment
   import definitions._             // standard classes and methods
   import typer.{typed}             // methods to type trees
@@ -80,7 +80,7 @@ trait SyntheticMethods requires Analyzer {
     }
 
     def productElementMethod(accs: List[Symbol]): Tree = {
-      //val retTpe = lub(accs map (.tpe.resultType))
+      //val retTpe = lub(accs map (_.tpe.resultType))
       val method = syntheticMethod(nme.productElement, FINAL, MethodType(List(IntClass.tpe), AnyClass.tpe/*retTpe*/))
       typed(DefDef(method, vparamss => Match(Ident(vparamss.head.head), {
 	(for ((sym,i) <- accs.zipWithIndex) yield {

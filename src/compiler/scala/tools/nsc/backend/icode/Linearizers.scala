@@ -10,7 +10,7 @@ package scala.tools.nsc.backend.icode;
 import scala.tools.nsc.ast._;
 import scala.collection.mutable.{Stack, HashSet};
 
-trait Linearizers requires ICodes {
+trait Linearizers { self: ICodes =>
   import opcodes._;
 
   abstract class Linearizer {
@@ -38,7 +38,7 @@ trait Linearizers requires ICodes {
       blocks = Nil;
 
       run {
-        worklist ++= (m.exh map (.startBlock));
+        worklist ++= (m.exh map (_.startBlock));
         worklist.push(b);
       }
 
@@ -62,8 +62,8 @@ trait Linearizers requires ICodes {
       if (b.size > 0) {
         add(b);
         b.lastInstruction match {
-          case JUMP(where) =>
-            add(where);
+          case JUMP(whereto) =>
+            add(whereto);
           case CJUMP(success, failure, _, _) =>
             add(success);
             add(failure);
@@ -154,7 +154,7 @@ trait Linearizers requires ICodes {
       if (m.code.startBlock.predecessors eq Nil)
         blocks
       else
-        m.code.startBlock :: (blocks.remove(.==(m.code.startBlock)))
+        m.code.startBlock :: (blocks.remove(_ == m.code.startBlock))
     }
 
     def linearizeAt(m: IMethod, start: BasicBlock): List[BasicBlock] = {

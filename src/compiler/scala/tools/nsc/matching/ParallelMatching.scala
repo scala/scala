@@ -52,7 +52,7 @@ trait ParallelMatching  {
 
     val isExhaustive = !scrutinee.tpe.symbol.hasFlag(symtab.Flags.SEALED) || {
       //DEBUG("check exha for column "+column)
-      val tpes = column.map (.tpe.symbol)
+      val tpes = column.map (_.tpe.symbol)
       scrutinee.tpe.symbol.children.forall { sym => tpes.contains(sym) }
     }
 
@@ -231,7 +231,7 @@ trait ParallelMatching  {
         // this weird thing should only be done for shared states.
         var nbody: Tree = b
         val vrefs = vdefs.map { p:ValDef => Ident(p.symbol) }
-        nbody  = Block(vdefs:::List(Apply(Ident(theLabel), vrefs)), LabelDef(theLabel, subst.map(._1), nbody))
+        nbody  = Block(vdefs:::List(Apply(Ident(theLabel), vrefs)), LabelDef(theLabel, subst.map(_._1), nbody))
         bodies(b) = (EmptyTree, nbody, theLabel)
         nbody
       }

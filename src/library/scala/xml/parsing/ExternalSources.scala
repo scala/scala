@@ -15,7 +15,7 @@ import compat.StringBuilder
 import scala.io.Source;
 import java.net.URL;
 
-trait ExternalSources requires (ExternalSources with MarkupParser with MarkupHandler)  {
+trait ExternalSources { self: ExternalSources with MarkupParser with MarkupHandler =>
 
   private def externalSourceFromURL(url:URL): Source = {
     import java.io.{BufferedReader, InputStreamReader};

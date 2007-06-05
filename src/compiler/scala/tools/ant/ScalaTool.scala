@@ -51,7 +51,7 @@ class ScalaTool extends MatchingTask {
   abstract class PermissibleValue {
     val values: List[String]
     def isPermissible(value: String): Boolean =
-      (value == "") || values.exists(.startsWith(value))
+      (value == "") || values.exists(_.startsWith(value))
   }
 
   /** Defines valid values for the platforms property. */
@@ -222,7 +222,7 @@ class ScalaTool extends MatchingTask {
       * @returns The file as a file. */
     private def getFile: File =
       if (file.isEmpty) error("Member 'file' is empty.")
-      else getProject().resolveFile(file.get.toString())
+      else getProject().resolveFile(file.get.toString)
 
     /** Gets the value of the bootclasspath attribute in a Scala-friendly form.
       * @returns The boot class path as a list of files. */
@@ -232,7 +232,7 @@ class ScalaTool extends MatchingTask {
     /** Gets the value of the bootclasspath attribute in a Scala-friendly form.
       * @returns The boot class path as a list of files. */
     private def getWinBootClasspath: String =
-      bootclasspath.map(.replace('/', '\\')).
+      bootclasspath.map(_.replace('/', '\\')).
                 mkString("", ";", "")
 
     /** Gets the value of the classpath attribute in a Scala-friendly form.
@@ -243,7 +243,7 @@ class ScalaTool extends MatchingTask {
     /** Gets the value of the classpath attribute in a Scala-friendly form.
       * @returns The class path as a list of files. */
     private def getWinExtClasspath: String =
-      extclasspath.map(.replace('/', '\\')).
+      extclasspath.map(_.replace('/', '\\')).
                 mkString("", ";", "")
 
     /** Gets the value of the classpath attribute in a Scala-friendly form.
@@ -289,15 +289,15 @@ class ScalaTool extends MatchingTask {
             token.append(char)
             char = chars.next
           }
-          if (tokens.contains(token.toString()))
-            builder.append(tokens(token.toString()))
-          else if (token.toString() == "")
+          if (tokens.contains(token.toString))
+            builder.append(tokens(token.toString))
+          else if (token.toString == "")
             builder.append('@')
           else
-            builder.append("@" + token.toString() + "@")
+            builder.append("@" + token.toString + "@")
         } else builder.append(char)
       }
-      builder.toString()
+      builder.toString
     }
 
     private def writeFile(file: File, content: String) =

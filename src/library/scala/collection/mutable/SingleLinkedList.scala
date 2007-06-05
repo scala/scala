@@ -20,9 +20,8 @@ package scala.collection.mutable
  *  @version 1.0, 08/07/2003
  */
 abstract class SingleLinkedList[A, This >: Null <: SingleLinkedList[A, This]]
-         requires This
          extends AnyRef with Seq[A]
-{
+{ self: This =>
 
   var elem: A
 

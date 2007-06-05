@@ -121,7 +121,7 @@ abstract class TypeFlowAnalysis {
 
       init {
         worklist += m.code.startBlock
-        worklist ++= (m.exh map (.startBlock))
+        worklist ++= (m.exh map (_.startBlock))
         m.code.blocks.foreach { b =>
           in(b)  = typeFlowLattice.bottom
           out(b) = typeFlowLattice.bottom
@@ -289,7 +289,7 @@ abstract class TypeFlowAnalysis {
         case SWITCH(tags, labels) =>
           stack.pop
 
-        case JUMP(where) =>
+        case JUMP(whereto) =>
           ()
 
         case CJUMP(success, failure, cond, kind) =>

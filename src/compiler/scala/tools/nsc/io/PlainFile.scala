@@ -59,7 +59,7 @@ class PlainFile(val file: File) extends AbstractFile {
     val names: Array[String] = file.list()
     if ((names eq null) || names.length == 0) Iterator.empty
     else Iterator.fromArray(names).map { name: String => new File(file, name) }
-      .filter(.exists()).map(file => new PlainFile(file))
+      .filter(_.exists).map(file => new PlainFile(file))
   }
 
   /**

@@ -76,7 +76,7 @@ class Scaladoc extends MatchingTask {
   abstract class PermissibleValue {
     val values: List[String]
     def isPermissible(value: String): Boolean =
-      (value == "") || values.exists(.startsWith(value))
+      (value == "") || values.exists(_.startsWith(value))
   }
 
   /** Defines valid values for the <code>deprecation</code> and
@@ -372,7 +372,7 @@ class Scaladoc extends MatchingTask {
    */
   private def getDestination: File =
     if (destination.isEmpty) error("Member 'destination' is empty.")
-    else existing(getProject().resolveFile(destination.get.toString()))
+    else existing(getProject().resolveFile(destination.get.toString))
 
   /** Gets the value of the <code>sourcepath</code> attribute in a
    *  Scala-friendly form.
@@ -439,7 +439,7 @@ class Scaladoc extends MatchingTask {
    */
   private def existing(file: File): File = {
     if (!file.exists())
-      log("Element '" + file.toString() + "' does not exist.",
+      log("Element '" + file.toString + "' does not exist.",
           Project.MSG_WARN)
     file
   }
@@ -500,7 +500,7 @@ class Scaladoc extends MatchingTask {
             log(
               "Documenting " + list.length + " source file" +
               (if (list.length > 1) "s" else "") +
-              (" to " + getDestination.toString())
+              (" to " + getDestination.toString)
             )
           else
             log("No files selected for documentation", Project.MSG_VERBOSE)
@@ -508,7 +508,7 @@ class Scaladoc extends MatchingTask {
           list
         }
       } yield {
-        log(originFile.toString(), Project.MSG_DEBUG)
+        log(originFile.toString, Project.MSG_DEBUG)
         nameToFile(originDir)(originFile)
       }
 
@@ -549,7 +549,7 @@ class Scaladoc extends MatchingTask {
     log("Scaladoc params = '" + addParams + "'", Project.MSG_DEBUG)
     var args =
       if (addParams.trim() == "") Nil
-      else List.fromArray(addParams.trim().split(" ")).map(.trim())
+      else List.fromArray(addParams.trim().split(" ")).map(_.trim())
     while (!args.isEmpty) {
       val argsBuf = args
       if (args.head startsWith "-") {
@@ -571,7 +571,7 @@ class Scaladoc extends MatchingTask {
     val compiler = new Global(commandSettings, reporter)
     try {
       val run = new compiler.Run
-      run.compile(sourceFiles.map (.toString()))
+      run.compile(sourceFiles.map (_.toString))
       object generator extends DocDriver {
         val global: compiler.type = compiler
         def settings = commandSettings

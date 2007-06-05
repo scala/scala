@@ -159,9 +159,9 @@ abstract class TailCalls extends Transform
             log("  Considering " + name + " for tailcalls")
             tree.symbol.tpe match {
               case PolyType(tpes, restpe) =>
-                newCtx.tparams = tparams map (.symbol)
+                newCtx.tparams = tparams map (_.symbol)
                 newCtx.label.setInfo(
-                  restpe.substSym(tpes, tparams map (.symbol)))
+                  restpe.substSym(tpes, tparams map (_.symbol)))
               case _ => ()
             }
 
@@ -172,7 +172,7 @@ abstract class TailCalls extends Transform
               newRHS =
                   typed(atPos(tree.pos)(
                     LabelDef(newCtx.label,
-                             List.flatten(vparams) map (.symbol),
+                             List.flatten(vparams) map (_.symbol),
                              newRHS)));
               copy.DefDef(tree, mods, name, tparams, vparams, tpt, newRHS);
             } else
@@ -239,7 +239,7 @@ abstract class TailCalls extends Transform
         case Apply(tapply @ TypeApply(fun, targs), vargs) =>
           if ( ctx.currentMethod.isFinal &&
                ctx.tailPos &&
-               isSameTypes(ctx.tparams, targs map (.tpe.symbol)) &&
+               isSameTypes(ctx.tparams, targs map (_.tpe.symbol)) &&
                isRecursiveCall(fun))
                  rewriteTailCall(fun, transformTrees(vargs, mkContext(ctx, false)))
                else

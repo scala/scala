@@ -127,6 +127,11 @@ trait Parsers {
      */
     var implicitParams: List[ValDef] = Nil
 
+    /** The wildcards introduced by `_' in the current type.
+     *  Parameters appear in reverse order
+     */
+    var wildcards: List[AbsTypeDef] = Nil
+
     /** this is the general parse method
      */
     def parse(): Tree = {
@@ -618,12 +623,10 @@ trait Parsers {
     /** RequiresTypedOpt ::= [requires AnnotType]
     */
     def requiresTypeOpt(): Tree =
-      if (inToken == COLON | inToken == REQUIRES) {
-        if (inToken == COLON)
-          warning("`:' has been deprecated; use `requires' instead")
+      if (inToken == REQUIRES) {
+        warning("`requires T' has been deprecated; use `{ self: T => ...'  instead")
         inNextToken; annotType(false)
-      }
-      else TypeTree()
+      } else TypeTree()
 
     /** Types ::= Type {`,' Type}
      *  ArgTypePats ::=  ArgTypePat {`,' ArgTypePat}
@@ -645,32 +648,63 @@ trait Parsers {
     private final val LeftOp = 1    // left associative
     private final val RightOp = 2   // right associative
 
-    /** Type ::= InfixType [`=>' Type]
-     *         | `(' [`=>' Type] `)' `=>' Type
-     *  XXX: Hook for IDE.
+    /** GlobalType ::= Type
+     */
+    def globalTyp(): Tree = {
+      val savedWildcards = wildcards
+      wildcards = List()
+      var t = typ()
+      if (!wildcards.isEmpty) t = ExistentialTypeTree(t, wildcards)
+      wildcards = savedWildcards
+      t
+    }
+
+    /** Type  ::= Type1 [where `{' {WhereClause} `}']
      */
     def typ(): Tree = {
+      val t = typ1()
+      if (inToken == FORSOME) {
+        atPos(inSkipToken) {
+          val whereClauses = refinement()
+          for (wc <- whereClauses) {
+            wc match {
+              case AbsTypeDef(_, _, _, _, _) | ValDef(_, _, _, EmptyTree) =>
+                ;
+              case _ =>
+                syntaxError(wc.pos, "not a legal where clause", false)
+            }
+          }
+          ExistentialTypeTree(t, whereClauses)
+        }
+      } else t
+    }
+
+    /** Type1 ::= InfixType [`=>' Type1]
+     *          | `(' [`=>' Type] `)' `=>' Type1
+     *  XXX: Hook for IDE.
+     */
+    def typ1(): Tree = {
       val t =
         if (inToken == LPAREN) {
           val pos = inSkipToken
           if (inToken == RPAREN) {
             inNextToken
-            atPos(accept(ARROW)) { makeFunctionTypeTree(List(), typ()) }
+            atPos(accept(ARROW)) { makeFunctionTypeTree(List(), typ1()) }
           } else if (inToken == ARROW) {
             inNextToken
-            val t0 = typ()
+            val t0 = typ1()
             accept(RPAREN)
-            atPos(accept(ARROW)) { makeByNameFunctionTypeTree(t0, typ()) }
+            atPos(accept(ARROW)) { makeByNameFunctionTypeTree(t0, typ1()) }
           } else {
             val ts = types(false)
             accept(RPAREN)
-            if (inToken == ARROW) atPos(inSkipToken) { makeFunctionTypeTree(ts, typ()) }
+            if (inToken == ARROW) atPos(inSkipToken) { makeFunctionTypeTree(ts, typ1()) }
             else infixTypeRest(pos, makeTupleType(ts, true), false, FirstOp)
           }
         } else {
           infixType(false, FirstOp)
         }
-      if (inToken == ARROW) atPos(inSkipToken) { makeFunctionTypeTree(List(t), typ()) }
+      if (inToken == ARROW) atPos(inSkipToken) { makeFunctionTypeTree(List(t), typ1()) }
       else t
     }
 
@@ -856,8 +890,8 @@ trait Parsers {
      *               | Expr1
      *  ResultExpr ::= (Bindings | Id `:' CompoundType) `=>' Block
      *               | Expr1
-     *  Expr1      ::= if `(' Expr `)' {nl} Expr [semi] else Expr]
-     *               | try `{' block `}' [catch `{' caseClauses `}'] [finally Expr]
+     *  Expr1      ::= if `(' Expr `)' {nl} Expr [[semi] else Expr]
+     *               | try `{' Block `}' [catch `{' CaseClauses `}'] [finally Expr]
      *               | while `(' Expr `)' {nl} Expr
      *               | do Expr [semi] while `(' Expr `)'
      *               | for (`(' Enumerators `)' | '{' Enumerators '}') {nl} [yield] Expr
@@ -865,10 +899,8 @@ trait Parsers {
      *               | return [Expr]
      *               | [SimpleExpr `.'] Id `=' Expr
      *               | SimpleExpr1 ArgumentExprs `=' Expr
-     *               | `.' SimpleExpr
      *               | PostfixExpr Ascription
      *               | PostfixExpr match `{' CaseClauses `}'
-     *               | `.' Id {`.' Id | TypeArgs | ArgumentExprs}
      *  Bindings   ::= `(' [Binding {`,' Binding}] `)'
      *  Binding    ::= Id [`:' Type]
      *  Ascription ::= `:' CompoundType
@@ -956,7 +988,7 @@ trait Parsers {
             Throw(expr())
           }
         case DOT =>
-          //todo: deprecate
+          warning("`.f' has been deprecated; use `_.f'  instead")
           atPos(inSkipToken) {
             if (isIdent) {
               makeDotClosure(stripParens(simpleExpr()))
@@ -1066,6 +1098,7 @@ trait Parsers {
         val name = unaryOp()
         atPos(pos) { Select(stripParens(simpleExpr()), name) }
       } else if (isIdent && inName == AMP) {
+        warning("`&f' has been deprecated; use `f _' instead")
         val pos = inCurrentPos
         val name = ident()
         atPos(pos) { Typed(stripParens(simpleExpr()), Function(List(), EmptyTree)) }
@@ -1218,7 +1251,7 @@ trait Parsers {
      *                |  val Pattern1 `=' Expr
      */
     def enumerators(): List[Enumerator] = {
-      val newStyle = inToken != VAL
+      val newStyle = inToken != VAL // todo: deprecate old style
       val enums = new ListBuffer[Enumerator]
       generator(enums, false)
       while (isStatSep) {
@@ -1940,7 +1973,7 @@ trait Parsers {
       atPos(inSkipToken) {
         if (inToken == THIS) {
           inNextToken
-          val vparamss = paramClauses(nme.CONSTRUCTOR, implicitClassViews map (.duplicate), false)
+          val vparamss = paramClauses(nme.CONSTRUCTOR, implicitClassViews map (_.duplicate), false)
           newLineOptWhenFollowedBy(LBRACE)
           val rhs = if (inToken == LBRACE) constrBlock(vparamss)
                     else { accept(EQUALS); constrExpr(vparamss) }

@@ -76,7 +76,7 @@ abstract class Inliners extends SubComponent {
        val a = new analysis.MethodTFA(callee)
 
        /* The exception handlers that are active at the current block. */
-       val activeHandlers = caller.exh.filter(.covered.contains(block))
+       val activeHandlers = caller.exh.filter(_.covered.contains(block))
 
        /* Map 'original' blocks to the ones inlined in the caller. */
        val inlinedBlock: Map[BasicBlock, BasicBlock] = new HashMap
@@ -106,7 +106,7 @@ abstract class Inliners extends SubComponent {
        /** Add a new block in the current context. */
        def newBlock = {
          val b = caller.code.newBlock
-         activeHandlers.foreach (.addCoveredBlock(b))
+         activeHandlers.foreach (_.addCoveredBlock(b))
          if (retVal ne null) b.varsInScope += retVal
          b.varsInScope += inlinedThis
          b.varsInScope ++= varsInScope
@@ -147,8 +147,8 @@ abstract class Inliners extends SubComponent {
            case THIS(clasz) =>
              LOAD_LOCAL(inlinedThis);
 
-           case JUMP(where) =>
-             JUMP(inlinedBlock(where));
+           case JUMP(whereto) =>
+             JUMP(inlinedBlock(whereto));
 
            case CJUMP(success, failure, cond, kind) =>
              CJUMP(inlinedBlock(success), inlinedBlock(failure), cond, kind);
@@ -422,7 +422,7 @@ abstract class Inliners extends SubComponent {
 
       if (stack.length > (1 + callee.symbol.info.paramTypes.length) &&
           callee.exh != Nil) {
-//          (callee.exh exists (.covered.contains(callee.code.startBlock)))) {
+//          (callee.exh exists (_.covered.contains(callee.code.startBlock)))) {
         if (settings.debug.value) log("method " + callee.symbol + " is used on a non-empty stack with finalizer.");
         false
       } else

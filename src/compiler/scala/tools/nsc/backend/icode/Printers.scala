@@ -12,8 +12,8 @@ import java.io.PrintWriter;
 import scala.tools.nsc.util.Position;
 import scala.tools.nsc.symtab.Flags;
 
-trait Printers requires ICodes {
-//  val global: Global;
+trait Printers { self: ICodes =>
+  //  val global: Global;
   import global._;
   import global.icodes.opcodes._;
   import global.icodes._;

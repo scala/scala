@@ -325,7 +325,7 @@ abstract class GenMSIL extends SubComponent {
 
         val args: Array[Byte] =
           getAttributeArgs(
-            annArgs map (.constant.get),
+            annArgs map (_.constant.get),
             (for((n,v) <- nvPairs) yield (n, v.constant.get)))
         member.SetCustomAttribute(constr, args)
       }
@@ -715,7 +715,7 @@ abstract class GenMSIL extends SubComponent {
         cb.basicBlocks = bb :: cb.basicBlocks
       }
       override def close() {
-        blocks.foreach(.close)
+        blocks.foreach(_.close)
         blocks = blocks.reverse
         closed = true
       }
@@ -790,7 +790,7 @@ abstract class GenMSIL extends SubComponent {
       }
       override def close() {
         tryBlock.close
-        catchBlocks.foreach(.close)
+        catchBlocks.foreach(_.close)
         catchBlocks = catchBlocks.reverse
         finallyBlock.close
         closed = true
@@ -920,8 +920,8 @@ abstract class GenMSIL extends SubComponent {
 
               def replaceOutJumps(blocks: List[BasicBlock], leaving: List[(BasicBlock, List[BasicBlock])], exh: ExceptionHandler): (List[BasicBlock], Option[BasicBlock]) = {
                 def replaceJump(block: BasicBlock, from: BasicBlock, to: BasicBlock) = block.lastInstruction match {
-                  case JUMP(where) =>
-                    //assert(from == where)
+                  case JUMP(whereto) =>
+                    //assert(from == whereto)
                   block.replaceInstruction(block.lastInstruction, JUMP(to))
                   case CJUMP(success, failure, cond, kind) =>
                     if (from == success)
@@ -1522,9 +1522,9 @@ abstract class GenMSIL extends SubComponent {
               mcode.Emit(OpCodes.Br, defaultTarget)
 
 
-          case JUMP(where) =>
-            if (nextBlock != where && !omitJumpBlocks.contains(currentBlock))
-              mcode.Emit(OpCodes.Br, labels(where))
+          case JUMP(whereto) =>
+            if (nextBlock != whereto && !omitJumpBlocks.contains(currentBlock))
+              mcode.Emit(OpCodes.Br, labels(whereto))
 
 
           case CJUMP(success, failure, cond, kind) =>

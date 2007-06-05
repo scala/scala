@@ -193,7 +193,8 @@ abstract class TreeInfo {
   def mayBeTypePat(tree: Tree): boolean = tree match {
     case CompoundTypeTree(Template(tps, _, List())) => tps exists mayBeTypePat
     case Annotated(_, tp) => mayBeTypePat(tp)
-    case AppliedTypeTree(constr, args) => mayBeTypePat(constr) || args.exists(.isInstanceOf[Bind])
+    case AppliedTypeTree(constr, args) =>
+      mayBeTypePat(constr) || args.exists(_.isInstanceOf[Bind])
     case SelectFromTypeTree(tp, _) => mayBeTypePat(tp)
     case _ => false
   }

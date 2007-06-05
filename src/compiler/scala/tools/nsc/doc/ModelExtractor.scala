@@ -208,7 +208,7 @@ trait ModelExtractor {
 
   trait ClassOrObject extends Entity {
     def path : List[ClassOrObject] = this :: Nil;
-    override def listName = path.map(.name).mkString("",".","");
+    override def listName = path.map(_.name).mkString("",".","");
 
     object freshParents extends jcl.LinkedHashSet[Type] {
       this addAll sym.tpe.parents;
@@ -286,7 +286,7 @@ trait ModelExtractor {
       override def typeParams = sym.tpe.typeParams.map(TypeParam);
       override def params = methodArgumentNames.get(sym) match {
         case Some(argss) if argss.length > 1 || (!argss.isEmpty && !argss(0).isEmpty) =>
-          argss.map(.map(Param));
+          argss.map(_.map(Param));
         case _ =>
           var i = 0
           val ret = for (tpe <- sym.tpe.paramTypes) yield {
@@ -371,8 +371,8 @@ trait ModelExtractor {
   val Constructors = new Category("Additional Constructor")(e => e.isConstructor && !e.isPrimaryConstructor) {
     // override def plural = "Additional Constructors";
   }
-  val Objects = Category("Object")(.isModule);
-  val Classes = new Category("Class")(.isClass) {
+  val Objects = Category("Object")(_.isModule);
+  val Classes = new Category("Class")(_.isClass) {
     override def plural = "Classes";
   }
   val Values = new Category("Value")(e => (e.isValue) && e.hasFlag(symtab.Flags.ACCESSOR)) {

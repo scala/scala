@@ -113,7 +113,7 @@ trait Map[A, +B] extends PartialFunction[A, B] with Collection[(A, B)] {
   def keySet: Set[A] = new Set[A] {
     def size = Map.this.size
     def contains(key : A) = Map.this.contains(key)
-    def elements = Map.this.elements.map(._1)
+    def elements = Map.this.elements.map(_._1)
   }
 
   /** Creates an iterator for a contained values.

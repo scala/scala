@@ -48,7 +48,7 @@ final case class Symbol(name: String) {
    *  @return the unique reference to this symbol.
    */
   def intern: Symbol = internedSymbols.synchronized {
-    internedSymbols.get(this).map(.get).getOrElse(None) match {
+    internedSymbols.get(this).map(_.get).getOrElse(None) match {
     case Some(sym) => sym
     case _ =>
       internedSymbols(this) = new ref.WeakReference(this); this

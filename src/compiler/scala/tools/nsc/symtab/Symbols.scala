@@ -555,7 +555,7 @@ trait Symbols {
       if (isMonomorphicType) List() else { rawInfo.load(this); rawInfo.typeParams }
 
     def getAttributes(clazz: Symbol): List[AnnotationInfo] =
-      attributes.filter(.atp.symbol.isNonBottomSubClass(clazz))
+      attributes.filter(_.atp.symbol.isNonBottomSubClass(clazz))
 
     /** Reset symbol to initial state
      */
@@ -841,12 +841,12 @@ trait Symbols {
      */
     final def getter(base: Symbol): Symbol = {
       val getterName = if (isSetter) nme.setterToGetter(name) else nme.getterName(name)
-      base.info.decl(getterName) filter (.hasFlag(ACCESSOR))
+      base.info.decl(getterName) filter (_.hasFlag(ACCESSOR))
     }
 
     /** The setter of this value or getter definition, or NoSymbol if none exists */
     final def setter(base: Symbol): Symbol =
-      base.info.decl(nme.getterToSetter(nme.getterName(name))) filter (.hasFlag(ACCESSOR))
+      base.info.decl(nme.getterToSetter(nme.getterName(name))) filter (_.hasFlag(ACCESSOR))
 
     /** The case factory corresponding to this case class
      *  @pre case class is a member of some other class or package
@@ -855,7 +855,7 @@ trait Symbols {
       var facname = name.toTermName
       if (privateWithin.isClass && !privateWithin.isModuleClass && !hasFlag(EXPANDEDNAME))
         facname = privateWithin.expandedName(facname)
-      initialize.owner.info.decl(facname).suchThat(.isCaseFactory)
+      initialize.owner.info.decl(facname).suchThat(_.isCaseFactory)
     }
 
     /** If this symbol is a skolem, its corresponding type parameter, otherwise this */
@@ -1008,7 +1008,7 @@ trait Symbols {
     final def infoString(tp: Type): String = {
       def typeParamsString: String = tp match {
         case PolyType(tparams, _) if (tparams.length != 0) =>
-          (tparams map (.defString)).mkString("[", ",", "]")
+          (tparams map (_.defString)).mkString("[", ",", "]")
         case _ =>
           ""
       }
@@ -1164,7 +1164,7 @@ trait Symbols {
           if (isInitialized) tpePeriod = currentPeriod
           tpeCache = NoType
           val targs = if (phase.erasedTypes && this != ArrayClass) List()
-          else unsafeTypeParams map (.typeConstructor) //@M! use typeConstructor to generate dummy type arguments,
+          else unsafeTypeParams map (_.typeConstructor) //@M! use typeConstructor to generate dummy type arguments,
           // sym.tpe should not be called on a symbol that's supposed to be a higher-kinded type
           // memberType should be used instead, that's why it uses tpeHK and not tpe
           tpeCache = typeRef(if (isTypeParameterOrSkolem) NoPrefix else owner.thisType, this, targs)
@@ -1353,13 +1353,13 @@ trait Symbols {
 
 
   def cloneSymbols(syms: List[Symbol]): List[Symbol] = {
-    val syms1 = syms map (.cloneSymbol)
+    val syms1 = syms map (_.cloneSymbol)
     for (sym1 <- syms1) sym1.setInfo(sym1.info.substSym(syms, syms1))
     syms1
   }
 
   def cloneSymbols(syms: List[Symbol], owner: Symbol): List[Symbol] = {
-    val syms1 = syms map (.cloneSymbol(owner))
+    val syms1 = syms map (_.cloneSymbol(owner))
     for (sym1 <- syms1) sym1.setInfo(sym1.info.substSym(syms, syms1))
     syms1
   }

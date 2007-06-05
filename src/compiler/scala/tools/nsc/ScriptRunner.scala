@@ -174,7 +174,7 @@ object ScriptRunner {
       setting.value = CompileClient.absFileNames(setting.value)
 
     val compSettingNames =
-      (new Settings(error)).allSettings.map(.name)
+      (new Settings(error)).allSettings.map(_.name)
 
     val compSettings =
       settings.allSettings.filter(stg =>
@@ -235,7 +235,7 @@ object ScriptRunner {
         val reporter = new ConsoleReporter(settings)
         val compiler = new Global(settings, reporter)
         val cr = new compiler.Run
-        cr.compileSources(List(wrappedScript(scriptFile, &compiler.getSourceFile)))
+        cr.compileSources(List(wrappedScript(scriptFile, compiler.getSourceFile _)))
         (compiledPath, !reporter.hasErrors)
       } else {
         val compok = compileWithDaemon(settings, scriptFile)

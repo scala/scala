@@ -9,7 +9,7 @@ package scala.tools.nsc.backend.icode;
 
 import java.io.PrintWriter;
 
-trait Primitives requires ICodes {
+trait Primitives { self: ICodes =>
 
   /** This class represents a primitive operation. */
   class Primitive {

@@ -11,6 +11,6 @@ object Test extends Application {
     if (a != null) f(a) else null;
 
   val bob : Bob = null;
-  val bar = ifn(bob)(.bar);
+  val bar = ifn(bob)(_.bar);
   assert(bar == null);
 }

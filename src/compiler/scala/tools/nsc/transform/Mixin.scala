@@ -452,7 +452,7 @@ abstract class Mixin extends InfoTransform {
        *  <code>newDefs</code>.
        */
       def add(stats: List[Tree], newDefs: List[Tree]) = {
-        val newSyms = newDefs map (.symbol)
+        val newSyms = newDefs map (_.symbol)
         def isNotDuplicate(tree: Tree) = tree match {
           case DefDef(_, _, _, _, _, _) =>
             val sym = tree.symbol;

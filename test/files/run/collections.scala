@@ -54,10 +54,10 @@ object Test extends Application {
     var s = s0
     s = s + (2 -> 2)
     s = s + (3 -> 3, 4000 -> 4000, 10000 -> 10000)
-    Console.println("test1: "+sum(s map (._2)))
+    Console.println("test1: "+sum(s map (_._2)))
     time {
       s = s ++ (List.range(0, iters) map (x => x * 2 -> x * 2))
-      Console.println("test2: "+sum(s map (._2))+", iters = "+iters)
+      Console.println("test2: "+sum(s map (_._2))+", iters = "+iters)
     }
     time {
       var x = 0
@@ -89,10 +89,10 @@ object Test extends Application {
     var s = s0
     s = s + (2 -> 2)
     s = s + (3 -> 3, 4000 -> 4000, 10000 -> 10000)
-    Console.println("test1: "+sum(s map (._2)))
+    Console.println("test1: "+sum(s map (_._2)))
     time {
       s = s ++ (List.range(0, iters) map (x => x * 2 -> x * 2))
-      Console.println("test2: "+sum(s map (._2))+", iters = "+iters)
+      Console.println("test2: "+sum(s map (_._2))+", iters = "+iters)
     }
     time {
       var x = 0

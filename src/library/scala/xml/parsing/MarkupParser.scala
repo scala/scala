@@ -28,7 +28,7 @@ import scala.xml.dtd._
  * @author  Burak Emir
  * @version 1.0
  */
-trait MarkupParser requires (MarkupParser with MarkupHandler) extends AnyRef with TokenTests {
+trait MarkupParser extends AnyRef with TokenTests { self:  MarkupParser with MarkupHandler =>
 
   val input: Source
 
@@ -407,7 +407,7 @@ trait MarkupParser requires (MarkupParser with MarkupHandler) extends AnyRef wit
    * see [66]
    */
   def xCharRef(ch: () => Char, nextch: () => Unit): String = {
-    Utility.parseCharRef(ch, nextch, &reportSyntaxError)
+    Utility.parseCharRef(ch, nextch, reportSyntaxError _)
     /*
     val hex  = (ch() == 'x') && { nextch(); true };
     val base = if (hex) 16 else 10;

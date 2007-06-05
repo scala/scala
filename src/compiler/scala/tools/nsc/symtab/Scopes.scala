@@ -266,7 +266,7 @@ trait Scopes {
       if (!(toList forall p)) newScope(toList filter p) else this
 
     def mkString(start: String, sep: String, end: String) =
-      toList.map(.defString).mkString(start, sep, end)
+      toList.map(_.defString).mkString(start, sep, end)
 
     override def toString(): String = mkString("{\n  ", ";\n  ", "\n}")
 

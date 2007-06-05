@@ -319,7 +319,7 @@ abstract class LambdaLift extends InfoTransform {
         tree match {
           case DefDef(mods, name, tparams, List(vparams), tpt, rhs) =>
             sym.updateInfo(
-              lifted(MethodType(sym.info.paramTypes ::: (ps map (.tpe)), sym.info.resultType)));
+              lifted(MethodType(sym.info.paramTypes ::: (ps map (_.tpe)), sym.info.resultType)));
             copy.DefDef(tree, mods, name, tparams, List(vparams ::: freeParams), tpt, rhs)
           case ClassDef(mods, name, tparams, impl @ Template(parents, self, body)) =>
             copy.ClassDef(tree, mods, name, tparams,

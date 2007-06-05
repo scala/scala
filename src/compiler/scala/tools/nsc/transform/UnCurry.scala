@@ -381,13 +381,13 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
         case Apply(Select(Block(List(), Function(vparams, body)), nme.apply), args) =>
           // perform beta-reduction; this helps keep view applications small
           withNeedLift(true) {
-            mainTransform(new TreeSubstituter(vparams map (.symbol), args).transform(body))
+            mainTransform(new TreeSubstituter(vparams map (_.symbol), args).transform(body))
           }
 
         case Apply(Select(Function(vparams, body), nme.apply), args) =>
           // perform beta-reduction; this helps keep view applications small
           withNeedLift(true) {
-            mainTransform(new TreeSubstituter(vparams map (.symbol), args).transform(body))
+            mainTransform(new TreeSubstituter(vparams map (_.symbol), args).transform(body))
           }
 
         case UnApply(fn, args) =>

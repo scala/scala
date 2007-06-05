@@ -15,7 +15,7 @@ import symtab.Flags._
  *  @author Martin Odersky
  *  @version 1.0
  */
-trait Namers requires Analyzer {
+trait Namers { self: Analyzer =>
   import global._
   import definitions._
 
@@ -209,12 +209,12 @@ trait Namers requires Analyzer {
     }
 
     def newTypeSkolems(tparams: List[Symbol]): List[Symbol] = {
-      val tskolems = tparams map (.newTypeSkolem)
+      val tskolems = tparams map (_.newTypeSkolem)
       val ltp = new LazyType {
         override def complete(sym: Symbol): unit =
           sym setInfo sym.deSkolemize.info.substSym(tparams, tskolems) //@M the info of a skolem is the skolemized info of the actual type parameter of the skolem
       }
-      tskolems foreach (.setInfo(ltp))
+      tskolems foreach (_.setInfo(ltp))
       tskolems
     }
 
@@ -222,7 +222,7 @@ trait Namers requires Analyzer {
      * (a skolem is a representation of a bound variable when viewed outside its scope)
      */
     def skolemize(tparams: List[AbsTypeDef]): unit = {
-      val tskolems = newTypeSkolems(tparams map (.symbol))
+      val tskolems = newTypeSkolems(tparams map (_.symbol))
       for ((tparam, tskolem) <- tparams zip tskolems) tparam.symbol = tskolem
     }
 
@@ -235,7 +235,7 @@ trait Namers requires Analyzer {
     /** A class representing a lazy type with known type parameters.
      */
     class LazyPolyType(tparams: List[Tree], restp: Type, owner: Tree, ownerSym: Symbol, ctx: Context) extends LazyType { //@M
-      override val typeParams: List[Symbol]= tparams map (.symbol) //@M
+      override val typeParams: List[Symbol]= tparams map (_.symbol) //@M
       override def complete(sym: Symbol): unit = {
         if(ownerSym.isAbstractType) //@M an abstract type's type parameters are entered
           new Namer(ctx.makeNewScope(owner, ownerSym)).enterSyms(tparams) //@M
@@ -420,7 +420,7 @@ trait Namers requires Analyzer {
         enterInScope(param.symbol)
         param.symbol
       } else param.symbol
-      vparamss.map(.map(enterValueParam))
+      vparamss.map(_.map(enterValueParam))
     }
 
     private def templateSig(templ: Template): Type = {
@@ -473,7 +473,7 @@ trait Namers requires Analyzer {
       if (tpt.isEmpty && meth.name == nme.CONSTRUCTOR) tpt.tpe = context.enclClass.owner.tpe
 
       if (onlyPresentation)
-        methodArgumentNames(meth) = vparamss.map(.map(.symbol));
+        methodArgumentNames(meth) = vparamss.map(_.map(_.symbol));
 
       def convertToDeBruijn(vparams: List[Symbol], level: int): TypeMap = new TypeMap {
         def apply(tp: Type) = {
@@ -534,7 +534,7 @@ trait Namers requires Analyzer {
           sym != NoSymbol && (site.memberType(sym) matches thisMethodType(resultPt)))
 
       // fill in result type and parameter types from overridden symbol if there is a unique one.
-      if (meth.owner.isClass && (tpt.isEmpty || vparamss.exists(.exists(.tpt.isEmpty)))) {
+      if (meth.owner.isClass && (tpt.isEmpty || vparamss.exists(_.exists(_.tpt.isEmpty)))) {
         // try to complete from matching definition in base type
         for (vparams <- vparamss; vparam <- vparams)
           if (vparam.tpt.isEmpty) vparam.symbol setInfo WildcardType
@@ -570,7 +570,7 @@ trait Namers requires Analyzer {
       }
       // Add a () parameter section if this overrides dome method with () parameters.
       if (meth.owner.isClass && vparamss.isEmpty && overriddenSymbol.alternatives.exists(
-        .info.isInstanceOf[MethodType])) {
+        _.info.isInstanceOf[MethodType])) {
         vparamSymss = List(List())
       }
       for (vparams <- vparamss; vparam <- vparams if vparam.tpt.isEmpty) {
@@ -580,7 +580,7 @@ trait Namers requires Analyzer {
 
       thisMethodType(
         if (tpt.isEmpty) {
-          val pt = resultPt.substSym(tparamSyms, tparams map (.symbol))
+          val pt = resultPt.substSym(tparamSyms, tparams map (_.symbol))
           tpt.tpe = deconstIfNotFinal(meth, typer.computeType(rhs, pt))
           tpt.tpe
         } else typer.typedType(tpt).tpe)

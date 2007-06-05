@@ -22,7 +22,7 @@ trait Map[K,E] extends MutableIterable[Tuple2[K,E]] with scala.collection.mutabl
   /** The values of this map as a projection, which means
       removals from the returned collection will remove the element from this map.
       @returns a projection of this map's elements.  */
-  def valueSet : MutableIterable.Projection[E] = projection.map(._2);
+  def valueSet : MutableIterable.Projection[E] = projection.map(_._2);
   def put(key : K, elem : E) : Option[E];
   def putAll(that : Iterable[Tuple2[K,E]]) : Unit =
     that.foreach(p => put(p._1, p._2));
@@ -41,7 +41,7 @@ trait Map[K,E] extends MutableIterable[Tuple2[K,E]] with scala.collection.mutabl
   case Some(e) if e == pair._2 => true;
   case _ => false;
   }
-  override def get(key : K) = elements.find(p => p._1 == key).map(._2);
+  override def get(key : K) = elements.find(p => p._1 == key).map(_._2);
   override def update(key : K, e : E) : Unit = put(key,e);
   override def +(pair : Tuple2[K,E]) : this.type = {
     put(pair._1,pair._2); this;
@@ -80,7 +80,7 @@ trait Map[K,E] extends MutableIterable[Tuple2[K,E]] with scala.collection.mutabl
   protected class KeySet extends Set[K] {
     override def size = Map.this.size;
     override def add(k : K) = Map.this.put(k, default(k)) == None;
-    override def elements = Map.this.elements.map(._1);
+    override def elements = Map.this.elements.map(_._1);
     override def has(k : K) = Map.this.contains(k);
   }
   override def filterKeys(p : K => Boolean) : Map.Projection[K,E] = new Filter(p);

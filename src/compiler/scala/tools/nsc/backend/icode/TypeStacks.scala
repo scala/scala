@@ -12,7 +12,7 @@ package scala.tools.nsc.backend.icode
  *  @author  Iulian Dragos
  *  @version 1.0
  */
-trait TypeStacks requires ICodes {
+trait TypeStacks { self: ICodes =>
   import opcodes._
   import global.{Symbol, Type, definitions}
 

@@ -29,11 +29,11 @@ private[jcl] object Tests {
     rset + "bad";
     Console.println(rset);
     Console.println(set);
-    val fset : SortedSet[String] = rset.projection.filter(.endsWith("d"));
+    val fset : SortedSet[String] = rset.projection.filter(_.endsWith("d"));
     Console.println(fset);
     fset += "cd";
     Console.println(set);
-    //set.projection.map(.length).retain(x => x == 3);
+    //set.projection.map(_.length).retain(x => x == 3);
     Console.println(set);
     Console.println(rset);
     Console.println(fset);

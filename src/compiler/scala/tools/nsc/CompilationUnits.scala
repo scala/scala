@@ -10,7 +10,7 @@ import scala.tools.nsc.util.{FreshNameCreator,OffsetPosition,Position,SourceFile
 import scala.tools.nsc.io.AbstractFile
 import scala.collection.mutable.HashSet
 
-trait CompilationUnits requires Global {
+trait CompilationUnits { self: Global =>
 
   /** One unit of compilation that has been submitted to the compiler.
     * It typically corresponds to a single file of source code.  It includes

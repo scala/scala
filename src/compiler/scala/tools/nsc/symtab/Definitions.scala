@@ -35,6 +35,7 @@ trait Definitions {
 
     var AllRefClass: Symbol = _
     var AllClass: Symbol = _
+    var SingletonClass: Symbol = _
 
     var ClassClass: Symbol = _
     var StringClass: Symbol = _
@@ -392,7 +393,7 @@ trait Definitions {
         j = fullname.pos('.', i)
       }
       val result =
-        if (module) sym.info.member(fullname.subName(i, j)).suchThat(.hasFlag(MODULE))
+        if (module) sym.info.member(fullname.subName(i, j)).suchThat(_ hasFlag MODULE)
         else sym.info.member(fullname.subName(i, j).toTypeName)
       if (result == NoSymbol) {
         if (settings.debug.value)
@@ -749,6 +750,9 @@ trait Definitions {
         .setFlag(ABSTRACT | TRAIT | FINAL)
 
       AllClass = newClass(ScalaPackageClass, nme.Nothing, anyparam)
+        .setFlag(ABSTRACT | TRAIT | FINAL)
+
+      SingletonClass = newClass(RootClass, "<singleton>", anyparam)
         .setFlag(ABSTRACT | TRAIT | FINAL)
 
       StringClass = getClass(if (forMSIL) "System.String" else "java.lang.String")

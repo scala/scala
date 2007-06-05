@@ -10,10 +10,7 @@ package scala.tools.nsc.matching
  *
  *  @author Burak Emir
  */
-trait TransMatcher requires transform.ExplicitOuter /*extends transform.Transform
-with PatternNodes
-with CodeFactory
-with PatternMatchers */ {
+trait TransMatcher { self: transform.ExplicitOuter =>
 
   import global._
   import definitions._

@@ -9,7 +9,7 @@ package scala.tools.nsc.matching
 import compat.StringBuilder
 import scala.tools.nsc.util.{Position, NoPosition}
 
-trait PatternNodes requires transform.ExplicitOuter {
+trait PatternNodes { self: transform.ExplicitOuter =>
 
   import global._
 

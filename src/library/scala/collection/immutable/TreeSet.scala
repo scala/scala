@@ -83,9 +83,9 @@ class TreeSet[A <% Ordered[A]](val size: int, t: RedBlack[A]#Tree[Unit])
    *
    *  @return the new iterator
    */
-  def elements: Iterator[A] = tree.elements.elements map (._1)
+  def elements: Iterator[A] = tree.elements.elements map (_._1)
 
-  def elementsSlow = tree.elementsSlow map (._1)
+  def elementsSlow = tree.elementsSlow map (_._1)
 
   override def foreach(f : A => Unit) : Unit =
     tree.visit[Unit](())((unit0,y,unit1) => Tuple2(true, f(y)))

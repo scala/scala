@@ -14,7 +14,7 @@ class Outer {
     val outer = Outer.this;
   }
 
-  trait M1 requires X {
+  trait M1 { self: X =>
     Console.println(global.x);
     Console.println(outer.global.x);
   }

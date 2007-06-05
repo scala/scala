@@ -209,13 +209,13 @@ abstract class ClassfileParser {
         } else {
           val owner = if (static) ownerTpe.symbol.linkedClassOfClass else ownerTpe.symbol
 //          println("\t" + owner.info.member(name).tpe.widen + " =:= " + tpe)
-          f = owner.info.member(name).suchThat(.tpe.widen.=:=(tpe))
+          f = owner.info.member(name).suchThat(_.tpe.widen =:= tpe)
           if (f == NoSymbol)
-            f = owner.info.member(newTermName(name.toString + nme.LOCAL_SUFFIX)).suchThat(.tpe.=:=(tpe))
+            f = owner.info.member(newTermName(name.toString + nme.LOCAL_SUFFIX)).suchThat(_.tpe =:= tpe)
           if (f == NoSymbol) {
             // if it's an impl class, try to find it's static member inside the class
             assert(ownerTpe.symbol.isImplClass, "Not an implementation class: " + owner + " couldn't find " + name + ": " + tpe + " inside: \n" + ownerTpe.members);
-            f = ownerTpe.member(name).suchThat(.tpe.=:=(tpe))
+            f = ownerTpe.member(name).suchThat(_.tpe =:= tpe)
 //            println("\townerTpe.decls: " + ownerTpe.decls)
 //            println("Looking for: " + name + ": " + tpe + " inside: " + ownerTpe.symbol + "\n\tand found: " + ownerTpe.members)
           }

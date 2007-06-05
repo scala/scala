@@ -56,7 +56,7 @@ abstract class LiftCode extends Transform {
         case Some(tgt) => tgt
       }
     def hasAllTargets: Boolean =
-      targets.elements.map(._2).forall {
+      targets.elements.map(_._2).forall {
         case Some(_) => true
         case None => false
       }
@@ -100,7 +100,7 @@ abstract class LiftCode extends Transform {
         reflect.Apply(reify(fun), args map reify)
 
       case TypeApply(fun, args) =>
-        reflect.TypeApply(reify(fun), args map (.tpe) map reify)
+        reflect.TypeApply(reify(fun), args map (_.tpe) map reify)
 
       case Function(vparams, body) =>
         var env1 = env
@@ -109,7 +109,7 @@ abstract class LiftCode extends Transform {
             currentOwner, vparam.symbol.name.toString(), reify(vparam.symbol.tpe));
           env1.update(vparam.symbol, local);
         }
-        reflect.Function(vparams map (.symbol) map env1,
+        reflect.Function(vparams map (_.symbol) map env1,
                          new Reifier(env1, currentOwner).reify(body))
       case This(_) =>
         reflect.This(reify(tree.symbol))

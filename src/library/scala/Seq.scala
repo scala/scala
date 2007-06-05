@@ -268,7 +268,7 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Collection[A] {
    *  @return     <code>true</code> iff there is an element of this sequence
    *              which is equal (w.r.t. <code>==</code>) to <code>elem</code>.
    */
-  def contains(elem: Any): Boolean = exists (.==(elem))
+  def contains(elem: Any): Boolean = exists (_ == elem)
 
   /** Returns a subsequence starting from index <code>from</code>
    *  consisting of <code>len</code> elements.

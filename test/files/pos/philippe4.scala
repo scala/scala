@@ -1,3 +1,3 @@
-trait Foo[t <: Foo[t]] requires t {
+trait Foo[t <: Foo[t]] { self: t =>
   def foo(that: t): Boolean;
 }

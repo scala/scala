@@ -15,8 +15,7 @@ object CI {
    trait TreeDisplayFinal extends TreeDisplay with TreeDisplayExp {
    	type TreeNode <: ITreeNode with ITreeNodeExp;
    }
-   abstract class SimpleTreeDisplay requires TreeDisplayFinal extends
-TreeDisplay {
+   abstract class SimpleTreeDisplay extends TreeDisplay { self: TreeDisplayFinal =>
      def display() = { this.getRoot().display(); }
    }
 }

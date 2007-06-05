@@ -120,6 +120,7 @@ trait Scanners {
       enterKeyword(nme.FINALkw, FINAL)
       enterKeyword(nme.FINALLYkw, FINALLY)
       enterKeyword(nme.FORkw, FOR)
+      enterKeyword(nme.FORSOMEkw, FORSOME)
       enterKeyword(nme.IFkw, IF)
       enterKeyword(nme.IMPLICITkw, IMPLICIT)
       enterKeyword(nme.IMPORTkw, IMPORT)
@@ -675,7 +676,7 @@ trait Scanners {
     }
 
     def inFirstOfStat(token: int) = token match {
-      case EOF | CASE | CATCH | ELSE | EXTENDS | FINALLY | MATCH | REQUIRES | WITH | YIELD |
+      case EOF | CASE | CATCH | ELSE | EXTENDS | FINALLY | FORSOME | MATCH | REQUIRES | WITH | YIELD |
            COMMA | SEMI | NEWLINE | NEWLINES | DOT | USCORE | COLON | EQUALS | ARROW |
            LARROW | SUBTYPE | VIEWBOUND | SUPERTYPE | HASH | // todo: add LBRACKET
            RPAREN | RBRACKET | RBRACE =>

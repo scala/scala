@@ -6,11 +6,11 @@
 //############################################################################
 
 object checker {
-  def check(where: String, what: String, value: Any): Unit = {
-    Console.print("In " + where + ", " + what + ".toString() returns ");
+  def check(location: String, what: String, value: Any): Unit = {
+    Console.print("In " + location + ", " + what + ".toString() returns ");
     Console.flush;
     val string: String = if (value == null) "null" else value.toString();
-    val test = if (string == where) "ok" else "KO";
+    val test = if (string == location) "ok" else "KO";
     Console.println(string + " -> " + test);
     Console.flush;
   }

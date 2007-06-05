@@ -260,7 +260,7 @@ abstract class DeadCodeElimination extends SubComponent {
     } else {
       val stack = rdef.in(bb)._2
       assert(stack.length >= m, "entry stack is too small, expected: " + m + " found: " + stack)
-      stack.take(m) flatMap (.toList)
+      stack.take(m) flatMap (_.toList)
     }
 
     /** Is 'sym' a side-effecting method? TODO: proper analysis.  */

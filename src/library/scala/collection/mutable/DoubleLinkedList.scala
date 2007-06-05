@@ -21,9 +21,8 @@ package scala.collection.mutable
  *  @version 1.0, 08/07/2003
  */
 abstract class DoubleLinkedList[A, This >: Null <: DoubleLinkedList[A, This]]
-         requires This
          extends SingleLinkedList[A, This]
-{
+{ self: This =>
 
   var prev: This
 

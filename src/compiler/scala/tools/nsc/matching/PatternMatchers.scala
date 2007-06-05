@@ -13,7 +13,7 @@ import scala.tools.nsc.util.{Position, NoPosition}
  *  @author Burak Emir
  *  @version 1.0
  */
-trait PatternMatchers requires (transform.ExplicitOuter with PatternNodes with ParallelMatching) {
+trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with ParallelMatching =>
   import global._
   import typer.typed
   import symtab.Flags

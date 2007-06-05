@@ -36,7 +36,7 @@ abstract class Constructors extends Transform {
           case ddef @ DefDef(_, _, _, List(vparams), _, rhs @ Block(_, Literal(_))) =>
             if (ddef.symbol.isPrimaryConstructor) {
               constr = ddef
-              constrParams = vparams map (.symbol)
+              constrParams = vparams map (_.symbol)
               constrBody = rhs
             }
           case _ =>

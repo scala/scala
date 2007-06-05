@@ -74,7 +74,7 @@ class Scalac extends MatchingTask {
   abstract class PermissibleValue {
     val values: List[String]
     def isPermissible(value: String): Boolean =
-      (value == "") || values.exists(.startsWith(value))
+      (value == "") || values.exists(_.startsWith(value))
   }
 
   /** Defines valid values for the logging property. */
@@ -352,7 +352,7 @@ class Scalac extends MatchingTask {
    *  @return The destination as a file. */
   private def getDestination: File =
     if (destination.isEmpty) error("Member 'destination' is empty.")
-    else existing(getProject().resolveFile(destination.get.toString()))
+    else existing(getProject().resolveFile(destination.get.toString))
 
   /** Gets the value of the <code>sourcepath</code> attribute in a
    *  Scala-friendly form.
@@ -406,7 +406,7 @@ class Scalac extends MatchingTask {
    *  @return     The same file. */
   private def existing(file: File): File = {
     if (!file.exists())
-      log("Element '" + file.toString() + "' does not exist.",
+      log("Element '" + file.toString + "' does not exist.",
           Project.MSG_WARN)
     file
   }
@@ -468,13 +468,13 @@ class Scalac extends MatchingTask {
                 (if (list.length > 1) "s: " else ": "),
                 ", ",
                 " "
-              ) + "to " + getDestination.toString()
+              ) + "to " + getDestination.toString
             )
           else if (list.length > 0)
             log(
               "Compiling " + list.length + " source file" +
               (if (list.length > 1) "s" else "") +
-              (" to " + getDestination.toString())
+              (" to " + getDestination.toString)
             )
           else
             log("No files selected for compilation", Project.MSG_VERBOSE)
@@ -483,7 +483,7 @@ class Scalac extends MatchingTask {
         }
       }
       yield {
-        log(originFile.toString(), Project.MSG_DEBUG)
+        log(originFile.toString, Project.MSG_DEBUG)
         nameToFile(originDir)(originFile)
       }
 
@@ -520,7 +520,7 @@ class Scalac extends MatchingTask {
     log("Scalac params = '" + addParams + "'", Project.MSG_DEBUG)
     var args =
       if (addParams.trim() == "") Nil
-      else List.fromArray(addParams.trim().split(" ")).map(.trim())
+      else List.fromArray(addParams.trim().split(" ")).map(_.trim())
     while (!args.isEmpty) {
       val argsBuf = args
       if (args.head startsWith "-") {
@@ -542,7 +542,7 @@ class Scalac extends MatchingTask {
     // Compiles the actual code
     val compiler = new Global(settings, reporter)
     try {
-      (new compiler.Run).compile(sourceFiles.map (.toString()))
+      (new compiler.Run).compile(sourceFiles.map (_.toString))
      }
      catch {
       case exception: Throwable if (exception.getMessage ne null) =>

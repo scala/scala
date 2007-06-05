@@ -479,9 +479,9 @@ abstract class Checkers {
             checkBool(labels forall (b => code.blocks contains b),
                       "Switch target cannot be found in code.")
 
-          case JUMP(where) =>
-            checkBool(code.blocks contains where,
-                      "Jump to non-existant block " + where)
+          case JUMP(whereto) =>
+            checkBool(code.blocks contains whereto,
+                      "Jump to non-existant block " + whereto)
 
           case CJUMP(success, failure, cond, kind) =>
             checkBool(code.blocks contains success,

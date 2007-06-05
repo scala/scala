@@ -84,7 +84,7 @@ package p {
 
           Console.println("meth3 = " + meth3.getClass);
 
-          val inc = &meth2(1);
+          val inc = meth2(1)_;
           Console.println("100 = " + inc("10"));
 
           getA.x;
@@ -111,7 +111,7 @@ package p {
           Console.println("meth1(1) = " + meth1(1));
           Console.println("meth2(1)(1) = " + meth2(1)("1"));
 
-          val inc = &meth2(1);
+          val inc = meth2(1)_;
           Console.println("100 = " + inc("10"));
 
           getA.x;

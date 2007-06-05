@@ -26,10 +26,10 @@ class CompilerCommand(arguments: List[String], val settings: Settings,
   def usageMsg: String = {
     // todo: print -X and -javadoc options only on demand
     val helpSyntaxColumnWidth: int =
-      Iterable.max(settings.allSettings map (. helpSyntax.length()))
+      Iterable.max(settings.allSettings map (_.helpSyntax.length))
     def format(s: String): String = {
       val buf = new StringBuilder(s)
-      var i = s.length()
+      var i = s.length
       while (i < helpSyntaxColumnWidth) { buf.append(' '); i += 1 }
       buf.toString()
     }
