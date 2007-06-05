@@ -166,9 +166,8 @@ trait Map[A, B] extends AnyRef
   def getOrElseUpdate(key: A, default: =>B): B =
     get(key) match {
       case Some(v) => v
-      case None => this(key) = default; default
+      case None => val d = default; this(key) = d; d
     }
-
 
   /** This function transforms all the values of mappings contained
    *  in this map with function <code>f</code>.
