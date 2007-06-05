@@ -131,6 +131,19 @@ abstract class NodePrinters {
               println("  )")
             }
             printcln(")")
+          case ApplyDynamic(fun, args) =>
+            println("ApplyDynamic(" + nodeinfo(tree))
+            traverse(fun, level + 1, true)
+            if (args.isEmpty)
+              println("  List() // no argument")
+            else {
+              val n = args.length
+              println("  List( // " + n + " argument(s)")
+              for (i <- 0 until n)
+                traverse(args(i), level + 2, i < n-1)
+              println("  )")
+            }
+            printcln(")")
           case Block(stats, expr) =>
             println("Block(")
             if (stats.isEmpty)

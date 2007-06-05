@@ -1217,13 +1217,8 @@ trait Typers { self: Analyzer =>
     def anonymousClassRefinement(clazz: Symbol): Type = {
       val tp = refinedType(clazz.info.parents, clazz.owner)
       val thistp = tp.symbol.thisType
-      def canBeInRefinement(sym: Symbol) =
-        settings.Xexperimental.value ||
-        tp.nonPrivateMember(sym.name).filter { other =>
-          !other.isTerm || (thistp.memberType(other) matches thistp.memberType(sym))
-        } != NoSymbol
       for (val sym <- clazz.info.decls.toList) {
-        if (sym.isPublic && !sym.isClass && !sym.isConstructor && canBeInRefinement(sym))
+        if (sym.isPublic && !sym.isClass && !sym.isConstructor)
           addMember(thistp, tp, sym)
       }
       tp
@@ -1359,11 +1354,8 @@ trait Typers { self: Analyzer =>
       val stats1 = typedStats(stats, NoSymbol)
       for (val stat <- stats1; stat.isDef) {
         val member = stat.symbol
-        if (context.owner.info.baseClasses.tail forall
-            (bc => member.matchingSymbol(bc, context.owner.thisType) == NoSymbol)) {
-          if (!settings.Xexperimental.value && !member.isErroneous)
-            error(member.pos, member.toString+" does not refine a member of its base type")
-        } else {
+        if (!(context.owner.info.baseClasses.tail forall
+            (bc => member.matchingSymbol(bc, context.owner.thisType) == NoSymbol))) {
           member setFlag OVERRIDE
         }
       }

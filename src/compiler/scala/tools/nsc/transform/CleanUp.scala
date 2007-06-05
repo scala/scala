@@ -89,7 +89,210 @@ abstract class CleanUp extends Transform {
         unit.body = transform(unit.body)
       }
 
+    /** A value class is defined to be only Java-compatible values: unit is
+      * not part of it, as opposed to isValueClass in definitions. scala.Int is
+      * a value class, java.lang.Integer is not. */
+    def isValueClass(sym: Symbol) = boxedClass contains sym
+
     override def transform(tree: Tree): Tree = tree match {
+
+      /* Transforms dynamic calls (i.e. calls to methods that are undefined
+       * in the erased type space) to -- dynamically -- unsafe calls using
+       * reflection. This is used for structural sub-typing of refinement
+       * types.
+       * For 'a.f(b)' it will generate something like:
+       * 'a.getClass().
+       * '  getMethod("f", Array(classOf[b.type])).
+       * '  invoke(a, Array(b))
+       * plus all the necessary casting/boxing/etc. machinery required
+       * for type-compatibility (see fixResult and fixParams).
+       *
+       * USAGE CONTRACT:
+       * There are a number of assumptions made on the way a dynamic apply
+       * is used. Assumptions relative to type are handled by the erasure
+       * phase.
+       * - The applied arguments are compatible with AnyRef, which means
+       *   that an argument tree typed as AnyVal has already been extended
+       *   with the necessary boxing calls. This implies that passed
+       *   arguments might not be strictly compatible with the method's
+       *   parameter types (a boxed integeer while int is expected).
+       * - The expected return type is an AnyRef, even when the method's
+       *   return type is an AnyVal. This means that the tree containing the
+       *   call has already been extended with the necessary unboxing calls
+       *   (or keeps the boxed type).
+       * - The type-checker has prevented dynamic applies on methods which
+       *   parameter's erased types are not statically known at the call site.
+       *   This is necessary to allow dispatching the call to the correct
+       *   method (dispatching on paramters is static in Scala). In practice,
+       *   this limitation only arises when the called method is defined as a
+       *   refinement, where the refinement defines a parameter based on a
+       *   type variable. */
+      case ad@ApplyDynamic(qual, params) =>
+        assert(ad.symbol.isPublic)
+
+        /* Transforms the result of a reflective call (always an AnyRef) to
+         * the actual result value (an AnyRef too). The transformation
+         * depends on the method's static return type.
+         * - for units (void), the reflective call will return null: a new
+         *   boxed unit is generated.
+         * - for arrays, the reflective call will return an unboxed array:
+         *   the resulting array is boxed.
+         * - otherwise, the value is simply casted to the expected type. This
+         *   is enough even for value (int et al.) values as the result of
+         *   a dynamic call will box them as a side-effect. */
+        def fixResult(resType: Type)(tree: Tree): Tree =
+          localTyper.typed {
+            if (resType.symbol == UnitClass)
+              Block (
+                List(tree),
+                gen.mkAttributedRef(BoxedUnit_UNIT)
+              )
+            else {
+              val sym = currentOwner.newValue(tree.pos, newTermName(unit.fresh.newName)) setInfo ObjectClass.tpe
+              Block(
+                List(ValDef(sym, tree)),
+                If(
+                  Apply(Select(Literal(Constant(null)), Any_==), List(gen.mkAttributedRef(sym))),
+                  Literal(Constant(null)),
+                  if (resType.symbol == ArrayClass)
+                    Apply(
+                      Select(
+                        gen.mkAttributedRef(ScalaRunTimeModule),
+                        ScalaRunTimeModule.tpe.member(nme.boxArray)
+                      ),
+                      List(gen.mkAttributedRef(sym))
+                    )
+                  else
+                    gen.mkAttributedCast(gen.mkAttributedRef(sym), resType)
+                )
+              )
+            }
+          }
+
+        /* Transforms the parameters of a dynamic apply (always AnyRefs) to
+         * something compatible with reclective calls. The transformation depends
+         * on the method's static parameter types.
+         * - for (unboxed) arrays, the (non-null) value is tested for its erased
+         *   type. If it is a boxed array, the array is unboxed. If it is an
+         *   unboxed array, it is left alone. */
+        def fixParams(params: List[Tree], paramTypes: List[Type]): List[Tree] =
+          (params zip paramTypes) map { case (param, paramType) =>
+            localTyper.typed {
+              if (paramType.symbol == ArrayClass) {
+                val sym = currentOwner.newValue(tree.pos, newTermName(unit.fresh.newName)) setInfo ObjectClass.tpe
+                val arrayType = {
+                  assert(paramType.typeArgs.length == 1)
+                  paramType.typeArgs(0).normalize
+                }
+                Block(
+                  List(ValDef(sym, param)),
+                  If(
+                    Apply(Select(Literal(Constant(null)), Any_==), List(gen.mkAttributedRef(sym))),
+                    Literal(Constant(null)),
+                    If(
+                      Apply(
+                        TypeApply(
+                          gen.mkAttributedSelect(gen.mkAttributedRef(sym), definitions.Object_isInstanceOf),
+                          List(TypeTree(BoxedArrayClass.tpe.normalize))
+                        ),
+                        List()
+                      ),
+                      Apply(
+                        Select(gen.mkAttributedCast(gen.mkAttributedRef(sym), BoxedArrayClass.tpe), getMember(BoxedArrayClass, nme.unbox)),
+                        List(Literal(Constant(arrayType)))
+                      ),
+                      gen.mkAttributedRef(sym)
+                    )
+                  )
+                )
+              }
+              else
+                param
+            }
+          }
+
+        /* Transforms a list of types into a list of trees representing these types
+         * as java.lang.Class instances. */
+        def paramTypeClasses(paramTypes: List[Type]): List[Tree] =
+          paramTypes map { pt => Literal(Constant(pt)) }
+
+        /* This creates the tree that does the reflective call (see general comment
+         * on the apply-dynamic tree for its format). This tree is simply composed
+         * of three succesive calls, first to getClass on the callee, then to
+         * getMethod on the class, then to invoke on the method.
+         * - getMethod needs an array of classes for choosing one amongst many
+         *   overloaded versions of the method. This is provided by paramTypeClasses
+         *   and must be done on the static type as Scala's dispatching is static on
+         *   the parameters.
+         * - invoke needs an array of AnyRefs that are the method's arguments. The
+         *   erasure phase guarantees that any parameter passed to a dynamic apply
+         *   is compatible (through boxing). Boxed ints et al. is what invoke expects
+         *   when the applied method expects ints, hence no change needed there.
+         *   On the other hand, arrays must be dealt with as they must be entered
+         *   unboxed in the parameter array of invoke. fixParams is responsible for
+         *   that.
+         * - in the end, the result of invoke must be fixed, again to deal with arrays.
+         *   This is provided by fixResult. fixResult will cast the invocation's result
+         *   to the method's return type, which is generally ok, except when this type
+         *   is a value type (int et al.) in which case it must cast to the boxed version
+         *   because invoke only returns object and erasure made sure the result is
+         *   expected to be an AnyRef. */
+        val t: Tree = ad.symbol.tpe match {
+          case MethodType(paramTypes, resType) =>
+            assert(params.length == paramTypes.length)
+            atPos(tree.pos)(localTyper.typed {
+              fixResult(if (isValueClass(resType.symbol)) boxedClass(resType.symbol).tpe else resType) {
+                Apply(
+                  Select(
+                    Apply(
+                      Select(
+                        Apply(Select(qual, ObjectClass.tpe.member(nme.getClass_)), Nil),
+                        ClassClass.tpe.member(nme.getMethod_)
+                      ),
+                      List(
+                        Literal(Constant(ad.symbol.name.toString)),
+                        ArrayValue(TypeTree(ClassClass.tpe), paramTypeClasses(paramTypes))
+                      )
+                    ),
+                    MethodClass.tpe.member(nme.invoke_)
+                  ),
+                  List(
+                    transform(qual),
+                    ArrayValue(TypeTree(ObjectClass.tpe), fixParams(params, paramTypes))
+                  )
+                )
+              }
+            })
+        }
+
+        /* For testing purposes, the dynamic application's condition
+         * can be printed-out in great detail. Remove? */
+        if (settings.debug.value) {
+          Console.println(
+            "Dynamically applying '" + qual + "." + ad.symbol.name +
+            "(" + params.map(_.toString).mkString(", ") + ")' with"
+          )
+          ad.symbol.tpe match {
+            case MethodType(paramTypes, resType) =>
+              Console.println(
+                "  - declared parameters' types: " +
+                (paramTypes.map(_.toString)).mkString("'",", ","'"))
+              Console.println(
+                "  - passed arguments' types:    " +
+                (params.map(_.toString)).mkString("'",", ","'"))
+              Console.println(
+                "  - result type:                '" +
+                resType.toString + "'")
+          }
+          Console.println("  - resulting code:    '" + t + "'")
+        }
+
+        /* We return the dynamic call tree, after making sure no other
+         * clean-up transformation are to be applied on it. */
+        transform(t)
+
+      /* end of dynamic call transformer. */
+
       case Template(parents, self, body) =>
         classConstantMeth.clear
         newDefs.clear
