@@ -70,7 +70,7 @@ if $cygwin; then
     BOOT_CLASSPATH=`cygpath --path --$format "$BOOT_CLASSPATH"`
 fi
 
-ILASM=`which ilasm`
+ILASM=`which ilasm 2>/dev/null`
 [ -x "$ILASM" ] || ILASM=""
 
 ${JAVACMD:=java} ${JAVA_OPTS:=@javaflags@} -Xbootclasspath/a:"$BOOT_CLASSPATH" -cp "$EXTENSION_CLASSPATH" -Dscala.home="$SCALA_HOME" -Denv.classpath="$CLASSPATH" -Dilasm.tool="$ILASM" @properties@ @class@ @toolflags@ "$@@"
