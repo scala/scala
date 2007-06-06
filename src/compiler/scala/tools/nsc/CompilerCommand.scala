@@ -41,8 +41,8 @@ class CompilerCommand(arguments: List[String], val settings: Settings,
       .map(setting =>
            format(setting.helpSyntax) + "  " + setting.helpDescription)
       .mkString("Usage: " + cmdName + " <options | source files>\n" +
-                "where possible standard options include:\n",
-                "\n",
+                "where possible standard options include:\n  ",
+                "\n  ",
                 "\n")
   }
 
@@ -54,8 +54,8 @@ class CompilerCommand(arguments: List[String], val settings: Settings,
               (settings.doc.value == setting.isDocOption))
       .map(setting =>
            format(setting.helpSyntax) + "  " + setting.helpDescription)
-      .mkString("Possible non-standard options include:\n",
-                "\n",
+      .mkString("Possible non-standard options include:\n  ",
+                "\n  ",
                 "\n")
   }
 
