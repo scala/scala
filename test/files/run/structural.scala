@@ -86,7 +86,7 @@ object Test extends Application {
     Console.println("16. " + r.m(Array("one", "two")))
     Console.println("17. " + r.n(Array(t1, t2)))
     Console.println("18. " + (r.o(0) + 1))
-    Console.println("19. " + r.p(0).hashCode())
+    Console.println("19. " + (r.p(0).hashCode() > 0))
     Console.println("20. " + r.q(0))
     Console.println("21. " + r.r(0))
     Console.println("22. " + r.m(r.s))

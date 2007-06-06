@@ -292,22 +292,25 @@ abstract class CleanUp extends Transform {
 
       /* end of dynamic call transformer. */
 
-      case Template(parents, self, body) if (settings.target.value != "jvm-1.5" && !forMSIL) => //what is that?
-        classConstantMeth.clear
-        newDefs.clear
+      case Template(parents, self, body) =>
         localTyper = typer.atOwner(tree, currentOwner)
-        val body1 = transformTrees(body)
-        copy.Template(tree, parents, self, newDefs.toList ::: body1)
-      case Literal(c) if (c.tag == ClassTag) && (settings.target.value != "jvm-1.5" && !forMSIL) => //what is that?
+        if (settings.target.value != "jvm-1.5" && !forMSIL) {
+          classConstantMeth.clear
+          newDefs.clear
+          val body1 = transformTrees(body)
+          copy.Template(tree, parents, self, newDefs.toList ::: body1)
+        } else super.transform(tree)
+      case Literal(c) if (c.tag == ClassTag) =>
         val tpe = c.typeValue
         atPos(tree.pos) {
           localTyper.typed {
             if (isValueClass(tpe.symbol))
               Select(gen.mkAttributedRef(javaBoxClassModule(tpe.symbol)), "TYPE")
-            else
+            else if (settings.target.value != "jvm-1.5" && !forMSIL)
               Apply(
                 gen.mkAttributedRef(classConstantMethod(tree.pos, signature(tpe))),
                 List())
+            else tree
           }
         }
       case _ =>
