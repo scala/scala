@@ -85,9 +85,7 @@ abstract class CleanUp extends Transform {
     }
 
     override def transformUnit(unit: CompilationUnit) =
-      if (settings.target.value != "jvm-1.5" && !forMSIL) {
-        unit.body = transform(unit.body)
-      }
+      unit.body = transform(unit.body)
 
     /** A value class is defined to be only Java-compatible values: unit is
       * not part of it, as opposed to isValueClass in definitions. scala.Int is
@@ -129,6 +127,7 @@ abstract class CleanUp extends Transform {
        *   type variable. */
       case ad@ApplyDynamic(qual, params) =>
         assert(ad.symbol.isPublic)
+        val thisTyper = typer.atOwner(tree, currentOwner)
 
         /* Transforms the result of a reflective call (always an AnyRef) to
          * the actual result value (an AnyRef too). The transformation
@@ -141,7 +140,7 @@ abstract class CleanUp extends Transform {
          *   is enough even for value (int et al.) values as the result of
          *   a dynamic call will box them as a side-effect. */
         def fixResult(resType: Type)(tree: Tree): Tree =
-          localTyper.typed {
+          thisTyper.typed {
             if (resType.symbol == UnitClass)
               Block (
                 List(tree),
@@ -177,7 +176,7 @@ abstract class CleanUp extends Transform {
          *   unboxed array, it is left alone. */
         def fixParams(params: List[Tree], paramTypes: List[Type]): List[Tree] =
           (params zip paramTypes) map { case (param, paramType) =>
-            localTyper.typed {
+            thisTyper.typed {
               if (paramType.symbol == ArrayClass) {
                 val sym = currentOwner.newValue(tree.pos, newTermName(unit.fresh.newName)) setInfo ObjectClass.tpe
                 val arrayType = {
@@ -240,7 +239,7 @@ abstract class CleanUp extends Transform {
         val t: Tree = ad.symbol.tpe match {
           case MethodType(paramTypes, resType) =>
             assert(params.length == paramTypes.length)
-            atPos(tree.pos)(localTyper.typed {
+            atPos(tree.pos)(thisTyper.typed {
               fixResult(if (isValueClass(resType.symbol)) boxedClass(resType.symbol).tpe else resType) {
                 Apply(
                   Select(
@@ -293,13 +292,13 @@ abstract class CleanUp extends Transform {
 
       /* end of dynamic call transformer. */
 
-      case Template(parents, self, body) =>
+      case Template(parents, self, body) if (settings.target.value != "jvm-1.5" && !forMSIL) => //what is that?
         classConstantMeth.clear
         newDefs.clear
         localTyper = typer.atOwner(tree, currentOwner)
         val body1 = transformTrees(body)
         copy.Template(tree, parents, self, newDefs.toList ::: body1)
-      case Literal(c) if (c.tag == ClassTag) =>
+      case Literal(c) if (c.tag == ClassTag) && (settings.target.value != "jvm-1.5" && !forMSIL) => //what is that?
         val tpe = c.typeValue
         atPos(tree.pos) {
           localTyper.typed {

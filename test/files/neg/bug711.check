@@ -1,4 +1,0 @@
-bug711.scala:11: error: method sayHey does not refine a member of its base type
-    def sayHey: Unit
-    ^
-one error found
