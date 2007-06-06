@@ -51,12 +51,13 @@ class InterpreterLoop(in0: BufferedReader, out: PrintWriter) {
     replayCommandsRev = cmd :: replayCommandsRev
 
   /** Close the interpreter, if there is one, and set
-    * interpreter to null. */
-  def closeInterpreter =
+    * interpreter to <code>null</code>. */
+  def closeInterpreter() {
     if (interpreter ne null) {
       interpreter.close
       interpreter = null
     }
+  }
 
   /* As soon as the Eclipse plugin no longer needs it, delete uglinessxxx,
    * parentClassLoader0, and the parentClassLoader method in Interpreter
@@ -66,11 +67,11 @@ class InterpreterLoop(in0: BufferedReader, out: PrintWriter) {
 
   /** Create a new interpreter.  Close the old one, if there
     * is one. */
-  def createInterpreter = {
-    closeInterpreter
+  def createInterpreter() {
+    //closeInterpreter()
 
     interpreter = new Interpreter(settings, out) {
-      override protected def parentClassLoader = parentClassLoader0;
+      override protected def parentClassLoader = parentClassLoader0
     }
   }
 
@@ -89,9 +90,7 @@ class InterpreterLoop(in0: BufferedReader, out: PrintWriter) {
 
   /** print a friendly help message */
   def printHelp {
-    out.println("This is a Scala shell.")
-    out.println("Type in expressions to have them evaluated.")
-    out.println("Type :help to repeat this message.")
+    printWelcome
     out.println("Type :load followed by a filename to load a Scala file.")
     out.println("Type :replay to reset execution and replay all previous commands.")
     out.println("Type :quit to exit the interpreter.")
@@ -168,8 +167,8 @@ class InterpreterLoop(in0: BufferedReader, out: PrintWriter) {
 
   /** create a new interpreter and replay all commands so far */
   def replay() {
-    closeInterpreter
-    createInterpreter
+    closeInterpreter()
+    createInterpreter()
     for (cmd <- replayCommands) {
       out.println("Replaying: " + cmd)
       command(cmd)
@@ -252,7 +251,7 @@ class InterpreterLoop(in0: BufferedReader, out: PrintWriter) {
   }
 
 
-  def main(settings: Settings) = {
+  def main(settings: Settings) {
     this.settings = settings
 
     uglinessxxx =
@@ -261,25 +260,26 @@ class InterpreterLoop(in0: BufferedReader, out: PrintWriter) {
                          map(s => new File(s).toURL),
 		 classOf[InterpreterLoop].getClassLoader)
 
-    createInterpreter
+    createInterpreter()
 
     try {
       printWelcome
       repl
     } finally {
-      closeInterpreter
+      closeInterpreter()
     }
   }
 
   /** process command-line arguments and do as they request */
   def main(args: Array[String]) {
-    def error1(msg: String): Unit = out.println("scala: " + msg)
+    def error1(msg: String) { out.println("scala: " + msg) }
     val command = new InterpreterCommand(List.fromArray(args), error1)
 
-    if (!command.ok || command.settings.help.value) {
+    if (!command.ok || command.settings.help.value || command.settings.Xhelp.value) {
       // either the command line is wrong, or the user
       // explicitly requested a help listing
-      out.println(command.usageMsg)
+      if (command.settings.help.value) out.println(command.usageMsg)
+      if (command.settings.Xhelp.value) out.println(command.xusageMsg)
       out.flush
     }
     else

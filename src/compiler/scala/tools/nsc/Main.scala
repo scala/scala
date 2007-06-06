@@ -30,12 +30,13 @@ object Main extends AnyRef with EvalLoop {
   /* needed ?? */
   //def errors() = reporter.errors
 
-  def resident(compiler: Global): unit =
+  def resident(compiler: Global) {
     loop { line =>
       val args = List.fromString(line, ' ')
       val command = new CompilerCommand(args, new Settings(error), error, true)
       (new compiler.Run) compile command.files
     }
+  }
 
   def process(args: Array[String]) {
     val settings = new Settings(error)
@@ -43,9 +44,10 @@ object Main extends AnyRef with EvalLoop {
     val command = new CompilerCommand(List.fromArray(args), settings, error, false)
     if (command.settings.version.value)
       reporter.info(null, versionMsg, true)
-    else if (command.settings.help.value)
-      reporter.info(null, command.usageMsg, true)
-    else {
+    else if (command.settings.help.value || command.settings.Xhelp.value) {
+      if (command.settings.help.value) reporter.info(null, command.usageMsg, true)
+      if (command.settings.Xhelp.value) reporter.info(null, command.xusageMsg, true)
+    } else {
       try {
         object compiler extends Global(command.settings, reporter)
         if (reporter.hasErrors) {

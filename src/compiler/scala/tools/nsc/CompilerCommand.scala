@@ -9,7 +9,7 @@ package scala.tools.nsc
 
 /** A class representing command line info for scalac */
 class CompilerCommand(arguments: List[String], val settings: Settings,
-                      error: String => unit, interactive: boolean) {
+                      error: String => Unit, interactive: Boolean) {
 
   private var fs: List[String] = List()
 
@@ -22,24 +22,40 @@ class CompilerCommand(arguments: List[String], val settings: Settings,
   /** The file extension of files that the compiler can process */
   val fileEnding = ".scala"
 
+  private val helpSyntaxColumnWidth: Int =
+    Iterable.max(settings.allSettings map (_.helpSyntax.length))
+
+  private def format(s: String): String = {
+    val buf = new StringBuilder(s)
+    var i = s.length
+    while (i < helpSyntaxColumnWidth) { buf.append(' '); i += 1 }
+    buf.toString()
+  }
+
   /** A message explaining usage and options */
   def usageMsg: String = {
-    // todo: print -X and -javadoc options only on demand
-    val helpSyntaxColumnWidth: int =
-      Iterable.max(settings.allSettings map (_.helpSyntax.length))
-    def format(s: String): String = {
-      val buf = new StringBuilder(s)
-      var i = s.length
-      while (i < helpSyntaxColumnWidth) { buf.append(' '); i += 1 }
-      buf.toString()
-    }
     settings.allSettings
+      .filter(setting =>
+              setting.isStandard &&
+              (settings.doc.value == setting.isDocOption))
       .map(setting =>
            format(setting.helpSyntax) + "  " + setting.helpDescription)
-      .mkString(
-                "Usage: " + cmdName + " <options | source files>\n" +
-                "where possible options include: \n  ",
-                "\n  ",
+      .mkString("Usage: " + cmdName + " <options | source files>\n" +
+                "where possible standard options include:\n",
+                "\n",
+                "\n")
+  }
+
+  /** A message explaining usage and options */
+  def xusageMsg: String = {
+    settings.allSettings
+      .filter(setting =>
+              !setting.isStandard &&
+              (settings.doc.value == setting.isDocOption))
+      .map(setting =>
+           format(setting.helpSyntax) + "  " + setting.helpDescription)
+      .mkString("Possible non-standard options include:\n",
+                "\n",
                 "\n")
   }
 

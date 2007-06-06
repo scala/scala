@@ -117,6 +117,9 @@ class Settings(error: String => Unit) {
 //  val showPhases    = BooleanSetting("-showphases", "Print a synopsis of compiler phases")
 
   val inline        = BooleanSetting("-Xinline", "Perform inlining when possible")
+
+  /** non-standard options */
+  val Xhelp         = new BooleanSetting("-X", "Print a synopsis of non-standard options") { override def hiddenToIDE = true }
   val XO            = BooleanSetting("-XO", "Optimize. implies -Xinline, -Xcloselim and -Xdce")
   val Xcloselim     = BooleanSetting("-Xcloselim", "Perform closure elimination")
   val Xcodebase     = StringSetting ("-Xcodebase", "codebase", "Specify the URL containing the Scala libraries", "")
@@ -232,6 +235,11 @@ class Settings(error: String => Unit) {
     protected[Settings] var dependency: Option[(Setting, String)] = None
     def dependsOn(s: Setting, value: String): this.type = { dependency = Some((s, value)); this }
     def dependsOn(s: Setting): this.type = dependsOn(s, "")
+
+    def isStandard: Boolean =
+      !(name startsWith "-X") || (name eq "-X")
+    def isDocOption: Boolean =
+      !dependency.isEmpty && dependency.get._1 == doc
 
     // initialization
     allsettings = this :: allsettings

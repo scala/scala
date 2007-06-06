@@ -91,7 +91,7 @@ object CompileClient {
     }
     val socket = if (serverAdr == "") CompileSocket.getOrCreateSocket(vmArgs, !shutdown)
                  else CompileSocket.getSocket(serverAdr)
-    if(shutdown && (socket==null)) {
+    if (shutdown && (socket==null)) {
       Console.println("[No compilation server running.]")
       return 0
     }

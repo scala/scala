@@ -67,7 +67,7 @@ object CompileServer extends SocketServer {
 
   var reporter: ConsoleReporter = _
 
-  def session(): unit = {
+  def session() {
     System.out.println("New session" +
                        ", total memory = "+ runtime.totalMemory() +
                        ", max memory = " + runtime.maxMemory() +
@@ -90,9 +90,10 @@ object CompileServer extends SocketServer {
           compiler = null
           return
         }
-        def error(msg: String): unit =
+        def error(msg: String) {
           reporter.error(/*new Position*/ FakePos("fsc"),
                          msg + "\n  fsc -help  gives more information")
+        }
         val command = new CompilerCommand(args, new Settings(error), error, false) {
           override val cmdName = "fsc"
           settings.disable(settings.prompt)
@@ -106,13 +107,15 @@ object CompileServer extends SocketServer {
 
         reporter = new ConsoleReporter(command.settings, in, out) {
           // disable prompts, so that compile server cannot block
-          override def displayPrompt = {}
+          override def displayPrompt = ()
         }
 
         if (command.settings.version.value)
           reporter.info(null, versionMsg, true)
-        else if (command.settings.help.value)
-          reporter.info(null, command.usageMsg, true)
+        else if (command.settings.help.value || command.settings.Xhelp.value) {
+          if (command.settings.help.value) reporter.info(null, command.usageMsg, true)
+          if (command.settings.Xhelp.value) reporter.info(null, command.xusageMsg, true)
+        }
         else if (command.files.isEmpty)
           reporter.info(null, command.usageMsg, true)
         else {
@@ -153,17 +156,18 @@ object CompileServer extends SocketServer {
   }
 
   /** A directory holding redirected output */
-  val redirectDir = new File(CompileSocket.tmpDir, "output-redirects")
+  private val redirectDir = new File(CompileSocket.tmpDir, "output-redirects")
   redirectDir.mkdirs
 
-  def redirect(setter: PrintStream => unit, filename: String): unit =
+  private def redirect(setter: PrintStream => unit, filename: String) {
     setter(
       new PrintStream(
         new BufferedOutputStream(
           new FileOutputStream(
             new File(redirectDir, filename)))))
+  }
 
-  def main(args: Array[String]): unit = {
+  def main(args: Array[String]) {
     redirect(System.setOut, "scala-compile-server-out.log")
     redirect(System.setErr, "scala-compile-server-err.log")
     System.err.println("...starting server on socket "+port+"...")

@@ -115,7 +115,7 @@ object CompileSocket {
     vmCommand + vmArgs + " " + serverClass
 
   /** Start a new server; returns true iff it succeeds */
-  private def startNewServer(vmArgs: String): unit = {
+  private def startNewServer(vmArgs: String) {
     val cmd = serverCommand(vmArgs)
     info("[Executed command: " + cmd + "]")
     try {
@@ -130,10 +130,10 @@ object CompileSocket {
   }
 
   /** The port identification file */
-  def portFile(port: int) = new File(portsDir, port.toString())
+  def portFile(port: Int) = new File(portsDir, port.toString())
 
   /** Poll for a server port number; return -1 if none exists yet */
-  private def pollPort(): int = {
+  private def pollPort(): Int = {
     val hits = portsDir.listFiles()
     if (hits.length == 0) -1
     else
@@ -152,7 +152,7 @@ object CompileSocket {
   /** Get the port number to which a scala compile server is connected;
    *  If no server is running yet, then create one.
    */
-  def getPort(vmArgs: String): int = {
+  def getPort(vmArgs: String): Int = {
     var attempts = 0
     var port = pollPort()
 
@@ -170,7 +170,7 @@ object CompileSocket {
   }
 
   /** Set the port number to which a scala compile server is connected */
-  def setPort(port: int): unit =
+  def setPort(port: Int) {
     try {
       val f = new PrintWriter(new FileOutputStream(portFile(port)))
       f.println(new java.util.Random().nextInt.toString)
@@ -180,15 +180,16 @@ object CompileSocket {
         fatal("Cannot create file: " +
               portFile(port).getAbsolutePath())
     }
+  }
 
   /** Delete the port number to which a scala compile server was connected */
-  def deletePort(port: int): unit = portFile(port).delete()
+  def deletePort(port: Int) { portFile(port).delete() }
 
   /** Get a socket connected to a daemon.  If create is true, then
     * create a new daemon if necessary.  Returns null if the connection
     * cannot be established.
     */
-  def getOrCreateSocket(vmArgs: String, create: boolean): Socket = {
+  def getOrCreateSocket(vmArgs: String, create: Boolean): Socket = {
     val nAttempts = 49  // try for about 5 seconds
     def getsock(attempts: int): Socket =
       if (attempts == 0) {
