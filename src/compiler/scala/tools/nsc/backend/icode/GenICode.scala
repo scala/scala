@@ -121,9 +121,9 @@ abstract class GenICode extends SubComponent  {
             case Return(_) => ()
             case EmptyTree =>
               error("Concrete method has no definition: " + tree)
-            case _ => if (ctx1.bb.isEmpty)
+            case _ => /*if (ctx1.bb.isEmpty)
               ctx1.bb.emit(RETURN(m.returnType), rhs.pos)
-            else
+            else*/
               ctx1.bb.emit(RETURN(m.returnType))
           }
           ctx1.bb.close
@@ -449,7 +449,10 @@ abstract class GenICode extends SubComponent  {
 
           thenCtx.bb.emit(JUMP(contCtx.bb))
           thenCtx.bb.close
-          elseCtx.bb.emit(JUMP(contCtx.bb))
+          if (elsep == EmptyTree)
+            elseCtx.bb.emit(JUMP(contCtx.bb), tree.pos)
+          else
+            elseCtx.bb.emit(JUMP(contCtx.bb))
           elseCtx.bb.close
 
           contCtx
@@ -958,7 +961,8 @@ abstract class GenICode extends SubComponent  {
           afterCtx
 
         case EmptyTree =>
-          ctx.bb.emit(getZeroOf(expectedType))
+          if (expectedType != UNIT)
+            ctx.bb.emit(getZeroOf(expectedType))
           ctx
 
         case _ =>
