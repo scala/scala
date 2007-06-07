@@ -44,29 +44,42 @@ object Main extends AnyRef with EvalLoop {
     val command = new CompilerCommand(List.fromArray(args), settings, error, false)
     if (command.settings.version.value)
       reporter.info(null, versionMsg, true)
-    else if (command.settings.help.value || command.settings.Xhelp.value) {
-      if (command.settings.help.value) reporter.info(null, command.usageMsg, true)
-      if (command.settings.Xhelp.value) reporter.info(null, command.xusageMsg, true)
-    } else {
+    else {
       try {
         object compiler extends Global(command.settings, reporter)
         if (reporter.hasErrors) {
           reporter.flush()
           return
         }
-        if (command.settings.resident.value)
-          resident(compiler)
-        else if (command.files.isEmpty)
-          reporter.info(null, command.usageMsg, true)
+
+        if (command.settings.help.value || command.settings.Xhelp.value) {
+          if (command.settings.help.value) {
+  	    reporter.info(null, command.usageMsg, true)
+	    reporter.info(null, compiler.pluginOptionsHelp, true)
+          }
+          if (command.settings.Xhelp.value)
+	    reporter.info(null, command.xusageMsg, true)
+        } else if (command.settings.showPlugins.value)
+	  reporter.info(null, compiler.pluginDescriptions, true)
+        else if (command.settings.showPhases.value)
+	  reporter.info(null, compiler.phaseDescriptions, true)
         else {
-          val run = new compiler.Run
-          run compile command.files
-          if (command.settings.doc.value) {
-            object generator extends DocGenerator {
-              val global: compiler.type = compiler
-              def settings = command.settings
+          if (command.settings.resident.value)
+            resident(compiler)
+          else if (command.files.isEmpty) {
+  	    reporter.info(null, command.usageMsg, true)
+	    reporter.info(null, compiler.pluginOptionsHelp, true)
+          } else {
+            val run = new compiler.Run
+            run compile command.files
+            if (command.settings.doc.value) {
+              object generator extends DocGenerator {
+                val global: compiler.type = compiler
+                def settings = command.settings
+              }
+              generator.process(run.units)
             }
-            generator.process(run.units)
+	    reporter.printSummary()
           }
         }
       } catch {
@@ -75,7 +88,6 @@ object Main extends AnyRef with EvalLoop {
             ex.printStackTrace();
         reporter.error(null, "fatal error: " + msg)
       }
-      reporter.printSummary()
     }
   }
 

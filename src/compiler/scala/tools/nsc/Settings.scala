@@ -83,6 +83,12 @@ class Settings(error: String => Unit) {
   val sourcepath    = StringSetting ("-sourcepath", "path", "Specify where to find input source files", "")
   val bootclasspath = StringSetting ("-bootclasspath", "path", "Override location of bootstrap class files", bootclasspathDefault)
   val extdirs       = StringSetting ("-extdirs", "dirs", "Override location of installed extensions", extdirsDefault)
+  val plugin        = MultiStringSetting("-plugin", "file", "Load a plugin from a file")
+  val disable       = MultiStringSetting("-disable", "plugin", "Disable a plugin")
+  val require       = MultiStringSetting("-require", "plugin", "Abort unless a plugin is available")
+  val pluginOptions = new MultiStringSetting("-P", "plugin:opt", "Pass an option to a plugin") {
+    override def helpSyntax = "-P:<plugin>:<opt>"
+  }
   val outdir        = StringSetting ("-d", "directory", "Specify where to place generated class files", ".")
   val encoding      = new StringSetting ("-encoding", "encoding", "Specify character encoding used by source files", encodingDefault) { override def hiddenToIDE = false }
   val target        = ChoiceSetting ("-target", "Specify which backend to use", List("jvm-1.5", "jvm-1.4", "msil", "cldc"), "jvm-1.4")
@@ -114,7 +120,8 @@ class Settings(error: String => Unit) {
   val version       = new BooleanSetting("-version", "Print product version and exit") { override def hiddenToIDE = true }
   val help          = new BooleanSetting("-help", "Print a synopsis of standard options") { override def hiddenToIDE = true }
   val nouescape     = new BooleanSetting("-nouescape", "disables handling of \\u unicode escapes")
-//  val showPhases    = BooleanSetting("-showphases", "Print a synopsis of compiler phases")
+  val showPhases    = BooleanSetting("-showphases", "Print a synopsis of compiler phases")
+  val showPlugins   = BooleanSetting("-showplugins", "Print a synopsis of loaded plugins")
 
   val inline        = BooleanSetting("-Xinline", "Perform inlining when possible")
 
@@ -288,6 +295,36 @@ class Settings(error: String => Unit) {
     def unparse: List[String] =
       if (value == default) Nil else List(name, value)
   }
+
+  /** A setting that accumulates all strings supplied to it */
+  case class MultiStringSetting(name: String, arg: String, descr: String)
+  extends Setting(descr) {
+    override def hiddenToIDE = true
+    protected var v: List[String] = Nil
+    def value = v
+    def appendToValue(str: String) { v = v ::: List(str) }
+
+    protected val nameColon = name + ":"
+    def tryToSet(args: List[String]): List[String] = args match {
+      case arg :: rest if (arg.startsWith(nameColon)) =>
+	val toadd = arg.substring(nameColon.length())
+        if (toadd.length == 0) {
+	  error("empty argument to " + nameColon)
+	  args
+	} else {
+	  appendToValue(toadd)
+	  rest
+	}
+      case _ => args
+    }
+
+    override def helpSyntax = name + ":<" + arg + ">"
+
+    def unparse: List[String] =
+      for (opt <- value)
+	yield nameColon+opt
+  }
+
 
   /** A setting represented by a string in a given set of <code>choices</code>,
    *  (<code>default</code> unless set).

@@ -263,6 +263,9 @@ class InterpreterLoop(in0: BufferedReader, out: PrintWriter) {
     createInterpreter()
 
     try {
+      if (interpreter.reporter.hasErrors) {
+        return // it is broken on startup; go ahead and exit
+	}
       printWelcome
       repl
     } finally {

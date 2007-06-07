@@ -19,6 +19,7 @@ import scala.collection.mutable.{HashSet, HashMap, ListBuffer}
 import symtab._
 import symtab.classfile.{PickleBuffer, Pickler, ICodeReader}
 import util.Statistics
+import plugins.Plugins
 import ast._
 import ast.parser._
 import typechecker._
@@ -34,6 +35,7 @@ import backend.icode.analysis._
 class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
                                                              with Trees
                                                              with CompilationUnits
+                                                             with Plugins
 {
   // alternate constructors ------------------------------------------
   def this(reporter: Reporter) =
@@ -367,7 +369,10 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
   object typer extends analyzer.Typer(
     analyzer.NoContext.make(EmptyTree, Global.this.definitions.RootClass, newScope))
 
-  def phaseDescriptors: List[SubComponent] = List(
+  /** The built-in components.  The full list of components, including
+   *  plugins, is computed in the Plugins trait.
+   */
+  protected def builtInPhaseDescriptors: List[SubComponent] = List(
     analyzer.namerFactory: SubComponent, // note: types are there because otherwise
     analyzer.typerFactory: SubComponent, // consistency check after refchecks would fail.
     superAccessors,  // add super accessors
@@ -392,6 +397,24 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     deadCode,           // optimization: get rid of dead cpde
     if (forMSIL) genMSIL else genJVM, // generate .class files
     sampleTransform)
+
+
+  private var phasesCache: Option[List[SubComponent]] = None
+
+  def phaseDescriptors = {
+    if (phasesCache.isEmpty)
+      phasesCache = Some(computePhaseDescriptors)
+    phasesCache.get
+  }
+
+  /** A description of the phases that will run */
+  def phaseDescriptions: String = {
+    val messages =
+      for (phase <- phaseDescriptors)
+	yield phase.phaseName //todo: + " - " + phase.description
+    messages.mkString("\n")
+  }
+
 
   protected def insertBefore(c: SubComponent, cs: List[SubComponent], before: SubComponent): List[SubComponent] = cs match {
     case List() => List(c)
@@ -649,4 +672,8 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
   def onlyPresentation = settings.doc.value
   // used to disable caching in lampion IDE.
   def inIDE = false
+
+
+  // force some initialization
+  new Run
 }
