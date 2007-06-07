@@ -1,7 +1,18 @@
+/* NSC -- new Scala compiler
+ * Copyright 2007-2008 LAMP/EPFL
+ * @author Lex Spoon
+ */
+// $Id$
+
 package scala.tools.nsc.plugins
+
 import java.io.File
 
-/** Support for run-time loading of compiler plugins */
+/** Support for run-time loading of compiler plugins.
+ *
+ *  @author Lex Spoon
+ *  @version 1.0, 2007-5-21
+ */
 trait Plugins { self: Global =>
 
   /** Load all available plugin.  Skips plugins that
@@ -28,7 +39,7 @@ trait Plugins { self: Global =>
       plugins match {
 	case Nil => Nil
 	case plug :: rest =>
-	  val plugPhaseNames = Set.empty ++ plug.components.map(.phaseName)
+	  val plugPhaseNames = Set.empty ++ plug.components.map(_.phaseName)
 	  def withoutPlug = pick(rest, plugNames, plugPhaseNames)
 	  def withPlug =
 	    (plug ::
@@ -64,7 +75,7 @@ trait Plugins { self: Global =>
     val plugs =
     pick(initPlugins,
 	 Set.empty,
-	 Set.empty ++ builtInPhaseDescriptors.map(.phaseName))
+	 Set.empty ++ builtInPhaseDescriptors.map(_.phaseName))
 
     for (req <- settings.require.value; if !plugs.exists(p => p.name==req))
       error("Missing required plugin: " + req)
@@ -124,7 +135,7 @@ trait Plugins { self: Global =>
     }
 
     var descriptors = builtInPhaseDescriptors
-    var plugsLeft = plugins.flatMap(.components)
+    var plugsLeft = plugins.flatMap(_.components)
 
     // Insert all the plugins, one by one.  Note that
     // plugins are allowed to depend on each other, thus

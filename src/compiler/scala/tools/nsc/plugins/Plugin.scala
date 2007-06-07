@@ -1,18 +1,32 @@
+/* NSC -- new Scala compiler
+ * Copyright 2007-2008 LAMP/EPFL
+ * @author Lex Spoon
+ */
+// $Id$
+
 package scala.tools.nsc.plugins
+
 import java.io.File
+import java.net.URLClassLoader
 import java.util.jar.JarFile
 import java.util.zip.ZipException
-import scala.xml.XML
-import java.net.URLClassLoader
+
 import scala.collection.mutable
 import mutable.ListBuffer
+import scala.xml.XML
 
-/** Information about a plugin loaded from a jar file.
- *
- *  The concrete subclass must have a one-argument constructor
- *  that accepts an instance of Global.
- *
+/** <p>
+ *    Information about a plugin loaded from a jar file.
+ *  </p>
+ *  <p>
+ *    The concrete subclass must have a one-argument constructor
+ *    that accepts an instance of <code>Global</code>.
+ *  </p><pre>
  *    (val global: Global)
+ *  </pre>
+ *
+ *  @author Lex Spoon
+ *  @version 1.0, 2007-5-21
  */
 abstract class Plugin {
   /** The name of this plugin */
@@ -30,29 +44,33 @@ abstract class Plugin {
 
   /** Handle any plugin-specific options.  The -P:plugname: part
    *  will not be present. */
-  def processOptions(options: List[String], error: String=>Unit) {
+  def processOptions(options: List[String], error: String => Unit) {
     if (!options.isEmpty)
       error("Error: " + name + " has no options")
   }
 
   /** A description of this plugin's options, suitable as a response
    *  to the -help command-line option.  Conventionally, the
-   *  options should be listed with the -P:plugname: part included.
+   *  options should be listed with the <code>-P:plugname:</code>
+   *  part included.
    */
   val optionsHelp: Option[String] = None
 }
 
+/** ...
+ *
+ *  @author Lex Spoon
+ *  @version 1.0, 2007-5-21
+ */
 object Plugin {
   /** Create a class loader with the specified file plus
    *  the loader that loaded the Scala compiler.
    */
   private def loaderFor(jarfiles: Seq[File]): ClassLoader = {
     val compilerLoader = classOf[Plugin].getClassLoader
-    val jarurls = jarfiles.map(.toURL).toArray
+    val jarurls = jarfiles.map(_.toURL).toArray
     new URLClassLoader(jarurls, compilerLoader)
   }
-
-
 
   /** Try to load a plugin description from the specified
    *  file, returning None if it does not work. */
@@ -78,14 +96,11 @@ object Plugin {
     }
   }
 
-
-
   /** Loads a plugin class from the named jar file.  Returns None
    *  if the jar file has no plugin in it or if the plugin
-   *  is badly formed. */
-  def loadFrom(jarfile: File,
-	       loader: ClassLoader): Option[Class]  =
-  {
+   *  is badly formed.
+   */
+  def loadFrom(jarfile: File, loader: ClassLoader): Option[Class] = {
     val pluginInfo = loadDescription(jarfile).get
 
     try {
@@ -98,12 +113,11 @@ object Plugin {
     }
   }
 
-
-
-  /** Load all plugins found in the argument list, bot hin
-   *  the jar files explicitly listed, and in the jar files in
-   *  the directories specified.  Skips all plugins in `ignoring'.
-   *  A single classloader is created and used to load all of them.  */
+  /** Load all plugins found in the argument list, both in the
+   *  jar files explicitly listed, and in the jar files in the
+   *  directories specified. Skips all plugins in <code>ignoring</code>.
+   *  A single classloader is created and used to load all of them.
+   */
   def loadAllFrom(jars: List[File],
 		  dirs: List[File],
 		  ignoring: List[String]): List[Class] =
@@ -125,8 +139,6 @@ object Plugin {
     val loader = loaderFor(alljars.toList)
     alljars.toList.map(f => loadFrom(f,loader)).flatMap(x => x)
   }
-
-
 
   /** Instantiate a plugin class, given the class and
    *  the compiler it is to be used in.

@@ -1,11 +1,12 @@
-/* NSC -- new scala compiler
- * Copyright 2005 LAMP/EPFL
+/* NSC -- new Scala compiler
+ * Copyright 2007-2008 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
-package scala.tools.nsc;
+
+package scala.tools.nsc
 
 object NoPhase extends Phase(null) {
-  def name = "<no phase>";
-  def run: unit = throw new Error("NoPhase.run");
+  def name = "<no phase>"
+  def run { throw new Error("NoPhase.run") }
 }

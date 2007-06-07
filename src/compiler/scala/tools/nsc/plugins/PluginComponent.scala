@@ -1,9 +1,15 @@
+/* NSC -- new Scala compiler
+ * Copyright 2007-2008 LAMP/EPFL
+ * @author Lex Spoon
+ */
+// $Id$
+
 package scala.tools.nsc.plugins
 
 /** A component that is part of a Plugin.
  *
- * @version 1.0
- * @author Lex Spoon, 2007/5/29
+ * @author Lex Spoon
+ * @version 1.0, 2007/5/29
  */
 abstract class PluginComponent extends SubComponent {
   /** the phase this plugin wants to run after */
