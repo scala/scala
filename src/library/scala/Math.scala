@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2002-2007, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -17,55 +17,55 @@ package scala
  */
 object Math {
 
-  /** The smalles possible value for scala.Byte. */
+  /** The smallest possible value for <a href="Byte.html" target="_self">scala.Byte</a>. */
   val MIN_BYTE   = java.lang.Byte.MIN_VALUE
-  /** The greatest possible value for scala.Byte. */
+  /** The greatest possible value for <a href="Byte.html" target="_self">scala.Byte</a>. */
   val MAX_BYTE   = java.lang.Byte.MAX_VALUE
 
-  /** The smalles possible value for scala.Short. */
+  /** The smallest possible value for <a href="Short.html" target="_self">scala.Short</a>. */
   val MIN_SHORT  = java.lang.Short.MIN_VALUE
-  /** The greatest possible value for scala.Short. */
+  /** The greatest possible value for <a href="Short.html" target="_self">scala.Short</a>. */
   val MAX_SHORT  = java.lang.Short.MAX_VALUE
 
-  /** The smalles possible value for scala.Char. */
+  /** The smallest possible value for <a href="Char.html" target="_self">scala.Char</a>. */
   val MIN_CHAR   = java.lang.Character.MIN_VALUE
-  /** The greatest possible value for scala.Char. */
+  /** The greatest possible value for <a href="Char.html" target="_self">scala.Char</a>. */
   val MAX_CHAR   = java.lang.Character.MAX_VALUE
 
-  /** The smalles possible value for scala.Int. */
+  /** The smallest possible value for <a href="Int.html" target="_self">scala.Int</a>. */
   val MIN_INT    = java.lang.Integer.MIN_VALUE
-  /** The greatest possible value for scala.Int. */
+  /** The greatest possible value for <a href="Int.html" target="_self">scala.Int</a>. */
   val MAX_INT    = java.lang.Integer.MAX_VALUE
 
-  /** The smalles possible value for scala.Long. */
+  /** The smallest possible value for <a href="Long.html" target="_self">scala.Long</a>. */
   val MIN_LONG   = java.lang.Long.MIN_VALUE
-  /** The greatest possible value for scala.Long. */
+  /** The greatest possible value for <a href="Long.html" target="_self">scala.Long</a>. */
   val MAX_LONG   = java.lang.Long.MAX_VALUE
 
-  /** The smalles possible value for scala.Float. */
+  /** The smallest possible value for <a href="Float.html" target="_self">scala.Float</a>. */
   val MIN_FLOAT  = -java.lang.Float.MAX_VALUE
-  /** The smalles difference between two values of scala.Float. */
+  /** The smallest difference between two values of <a href="Float.html" target="_self">scala.Float</a>. */
   val EPS_FLOAT  = java.lang.Float.MIN_VALUE
-  /** The greatest possible value for scala.Float. */
+  /** The greatest possible value for <a href="Float.html" target="_self">scala.Float</a>. */
   val MAX_FLOAT  = java.lang.Float.MAX_VALUE
-  /** A value of type scala.Float that represents no number. */
+  /** A value of type <a href="Float.html" target="_self">scala.Float</a> that represents no number. */
   val NaN_FLOAT  = java.lang.Float.NaN
-  /** Negative infinity of type scala.Float*/
+  /** Negative infinity of type <a href="Float.html" target="_self">scala.Float</a>. */
   val NEG_INF_FLOAT = java.lang.Float.NEGATIVE_INFINITY
-  /** Positive infinity of type scala.Float*/
+  /** Positive infinity of type <a href="Float.html" target="_self">scala.Float</a>. */
   val POS_INF_FLOAT = java.lang.Float.POSITIVE_INFINITY
 
-  /** The smalles possible value for scala.Double. */
+  /** The smallest possible value for <a href="Double.html" target="_self">scala.Double</a>. */
   val MIN_DOUBLE = -java.lang.Double.MAX_VALUE
-  /** The smalles difference between two values of scala.Double. */
+  /** The smallest difference between two values of <a href="Double.html" target="_self">scala.Double</a>. */
   val EPS_DOUBLE = java.lang.Double.MIN_VALUE
-  /** The greatest possible value for scala.Double. */
+  /** The greatest possible value for <a href="Double.html" target="_self">scala.Double</a>. */
   val MAX_DOUBLE = java.lang.Double.MAX_VALUE
-  /** A value of type scala.Double that represents no number. */
+  /** A value of type <a href="Double.html" target="_self">scala.Double</a> that represents no number. */
   val NaN_DOUBLE = java.lang.Double.NaN
-  /** Negative infinity of type scala.Double*/
+  /** Negative infinity of type <a href="Double.html" target="_self">scala.Double</a>. */
   val NEG_INF_DOUBLE = java.lang.Double.NEGATIVE_INFINITY
-  /** Positive infinity of type scala.Double*/
+  /** Positive infinity of type <a href="Double.html" target="_self">scala.Double</a>. */
   val POS_INF_DOUBLE = java.lang.Double.POSITIVE_INFINITY
 
   /** The <code>double</code> value that is closer than any other to
