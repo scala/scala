@@ -238,7 +238,7 @@ trait MarkupParser extends AnyRef with TokenTests { self:  MarkupParser with Mar
   //var xEmbeddedBlock = false;
 
   /** this method assign the next character to ch and advances in input */
-  def nextch: Unit = {
+  def nextch {
     if (curInput.hasNext) {
       ch = curInput.next
       pos = curInput.pos
@@ -949,7 +949,7 @@ trait MarkupParser extends AnyRef with TokenTests { self:  MarkupParser with Mar
   /**  "rec-xml/#ExtSubset" pe references may not occur within markup
    declarations
    */
-  def intSubset(): Unit = {
+  def intSubset() {
     //Console.println("(DEBUG) intSubset()")
     xSpace
     while (']' != ch)
@@ -958,7 +958,7 @@ trait MarkupParser extends AnyRef with TokenTests { self:  MarkupParser with Mar
 
   /** &lt;! element := ELEMENT
    */
-  def elementDecl(): Unit = {
+  def elementDecl() {
     xToken("EMENT")
     xSpace
     val n = xName
@@ -1077,7 +1077,7 @@ trait MarkupParser extends AnyRef with TokenTests { self:  MarkupParser with Mar
 
   /** 'N' notationDecl ::= "OTATION"
    */
-  def notationDecl(): Unit = {
+  def notationDecl() {
     xToken("OTATION")
     xSpace
     val notat = xName
@@ -1109,7 +1109,7 @@ trait MarkupParser extends AnyRef with TokenTests { self:  MarkupParser with Mar
   /**
    * report a syntax error
    */
-  def reportSyntaxError(pos: int, str: String): Unit = {
+  def reportSyntaxError(pos: Int, str: String) {
     curInput.reportError(pos, str)
     //error("MarkupParser::synerr") // DEBUG
   }
@@ -1119,10 +1119,11 @@ trait MarkupParser extends AnyRef with TokenTests { self:  MarkupParser with Mar
   /**
    * report a syntax error
    */
-  def reportValidationError(pos: int, str: String): Unit =
+  def reportValidationError(pos: Int, str: String) {
     curInput.reportError(pos, str)
+  }
 
-  def push(entityName:String) = {
+  def push(entityName: String) {
     //Console.println("BEFORE PUSHING  "+ch)
     //Console.println("BEFORE PUSHING  "+pos)
     //Console.print("[PUSHING "+entityName+"]")
@@ -1140,7 +1141,7 @@ trait MarkupParser extends AnyRef with TokenTests { self:  MarkupParser with Mar
   }
   */
 
-  def pushExternal(systemId:String) = {
+  def pushExternal(systemId: String) {
     //Console.print("BEFORE PUSH, curInput = $"+curInput.descr)
     //Console.println(" stack = "+inpStack.map { x => "$"+x.descr })
 
@@ -1156,7 +1157,7 @@ trait MarkupParser extends AnyRef with TokenTests { self:  MarkupParser with Mar
     nextch
   }
 
-  def pop() = {
+  def pop() {
     curInput = inpStack.head
     inpStack = inpStack.tail
     ch = curInput.ch
@@ -1170,7 +1171,7 @@ trait MarkupParser extends AnyRef with TokenTests { self:  MarkupParser with Mar
    *  see spec 3.3.3
    *  precond: cbuf empty
    */
-  def normalizeAttributeValue(attval: String) = {
+  def normalizeAttributeValue(attval: String): String = {
     val s: Seq[Char] = attval
     val it = s.elements
     while(it.hasNext) {
@@ -1201,7 +1202,8 @@ trait MarkupParser extends AnyRef with TokenTests { self:  MarkupParser with Mar
                 cbuf.append(';')
             }
         }
-        case c => cbuf.append(c)
+        case c =>
+          cbuf.append(c)
       }
     }
     val name = cbuf.toString()

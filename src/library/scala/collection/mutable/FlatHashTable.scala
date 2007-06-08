@@ -1,8 +1,12 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2007 LAMP/EPFL
- * @author  Martin Odersky
- */
-// $Id: HashSet.scala 9235 2006-11-13 14:59:18 +0000 (Mon, 13 Nov 2006) mihaylov $
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+// $Id: $
 
 package scala.collection.mutable
 
@@ -72,7 +76,7 @@ trait FlatHashTable[A] {
 
   def removeEntry(elem: A) {
     if (tableDebug) checkConsistent()
-    def precedes(i: int, j: int) = {
+    def precedes(i: Int, j: Int) = {
       val d = table.length >> 1
       if (i <= j) j - i < d
       else i - j > d
@@ -106,11 +110,11 @@ trait FlatHashTable[A] {
   def elements = new Iterator[A] {
     private var i = 0
     def hasNext: Boolean = {
-      while (i < table.length && (null == table(i))) i = i + 1;
+      while (i < table.length && (null == table(i))) i += 1;
       i < table.length
     }
     def next(): A =
-      if (hasNext) { i = i + 1; table(i - 1).asInstanceOf[A] }
+      if (hasNext) { i += 1; table(i - 1).asInstanceOf[A] }
       else Iterator.empty.next
   }
 

@@ -38,7 +38,7 @@ class UnbalancedTreeMap[A <% Ordered[A], +B] extends Map[A, B] {
 
   def size: Int = 0
 
-  override def isEmpty: boolean = true
+  override def isEmpty: Boolean = true
 
   protected def add [B1 >: B](key: A, value: B1) = new Node(key, value, this, this)
   protected def findValue (key: A): UnbalancedTreeMap[A, B] = this
@@ -55,12 +55,12 @@ class UnbalancedTreeMap[A <% Ordered[A], +B] extends Map[A, B] {
    *  @param value ...
    *  @return ...
    */
-  def update [B1 >: B](key: A, value: B1) = add(key, value)
+  def update[B1 >: B](key: A, value: B1) = add(key, value)
 
   /** A new TreeMap with the entry added is returned,
    *  assuming that key is <em>not</em> in the TreeMap.
    */
-  def insert [B1 >: B](key: A, value: B1) = add(key, value)
+  def insert[B1 >: B](key: A, value: B1) = add(key, value)
 
   def - (key:A): UnbalancedTreeMap[A, B] = this
 

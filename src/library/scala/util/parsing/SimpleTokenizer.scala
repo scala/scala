@@ -16,31 +16,31 @@ package scala.util.parsing
  *  @author  Burak Emir
  *  @version 1.0
  */
-class SimpleTokenizer(in: Iterator[char], delimiters: String) extends Iterator[String] {
+class SimpleTokenizer(in: Iterator[Char], delimiters: String) extends Iterator[String] {
 
-  private def max(x: int, y: char): int = if (x > y) x else y
+  private def max(x: Int, y: Char): Int = if (x > y) x else y
 
   val tracing = false
 
-  private def delimArray: Array[boolean] = {
+  private def delimArray: Array[Boolean] = {
     val ds = List.fromString(delimiters)
-    val da = new Array[boolean]((0 /: ds)(max) + 1)
+    val da = new Array[Boolean]((0 /: ds)(max) + 1)
     for (ch <- ds) { da(ch) = true }
     da
   }
 
   private val isdelim = delimArray
-  private def isDelimiter(ch: int) = ch >= 0 && ch < isdelim.length && isdelim(ch)
+  private def isDelimiter(ch: Int) = ch >= 0 && ch < isdelim.length && isdelim(ch)
 
   private val EOI = -1
 
-  private def nextChar(): int = if (in.hasNext) in.next else EOI
+  private def nextChar(): Int = if (in.hasNext) in.next else EOI
 
-  private var ch: int = nextChar
+  private var ch: Int = nextChar
 
   private val buf = new StringBuilder()
 
-  def hasNext: boolean = ch != EOI
+  def hasNext: Boolean = ch != EOI
 
   def next(): String = {
     while (ch <= ' ' && ch != EOI) ch = nextChar()
@@ -48,10 +48,10 @@ class SimpleTokenizer(in: Iterator[char], delimiters: String) extends Iterator[S
     else {
       buf.setLength(0)
       if (isDelimiter(ch)) {
-        buf append ch.asInstanceOf[char]; ch = nextChar()
+        buf append ch.asInstanceOf[Char]; ch = nextChar()
       } else {
         while (ch > ' ' && ch != EOI && !isDelimiter(ch)) {
-          buf append ch.asInstanceOf[char]
+          buf append ch.asInstanceOf[Char]
           ch = nextChar()
         }
       }

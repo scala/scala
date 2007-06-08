@@ -227,8 +227,8 @@ private case class ITree[A <% Ordered[A],B](t: GBTree[A,B])
  *  <a href="Tree.html" target="contentFrame"><code>Tree</code></a>.
  */
 private case class INode[A <% Ordered[A],B](t1: GBTree[A,B],
-                                            height: int,
-                                            size: int)
+                                            height: Int,
+                                            size: Int)
              extends InsertTree[A,B] {
   def insertLeft(key: A, value: B, bigger: GBTree[A,B]) =
     balance_p(GBNode(key, value, t1, bigger), bigger);
@@ -271,7 +271,7 @@ protected abstract class GBTree[A <% Ordered[A],B] extends AnyRef {
   def delete(key: A): aNode
   def merge(t: aNode): aNode
   def takeSmallest: (A,B,aNode)
-  def balance(s: int): GBTree[A,B]
+  def balance(s: Int): GBTree[A,B]
 }
 
 private case class GBLeaf[A <% Ordered[A],B]() extends GBTree[A,B] {
@@ -292,7 +292,7 @@ private case class GBLeaf[A <% Ordered[A],B]() extends GBTree[A,B] {
   def takeSmallest: (A,B, GBTree[A,B]) =
     throw new NoSuchElementException("takeSmallest on empty tree")
   def delete(_key: A) = throw new NoSuchElementException("Delete on empty tree.")
-  def balance(s: int) = this
+  def balance(s: Int) = this
   override def hashCode() = 0
 }
 
@@ -334,7 +334,7 @@ private case class GBNode[A <% Ordered[A],B](key: A,
     else
       GBNode(newKey, newValue, smaller, bigger)
 
-  def insert(newKey: A, newValue: B, s: int): anInsertTree = {
+  def insert(newKey: A, newValue: B, s: Int): anInsertTree = {
     if (newKey < key)
       smaller.insert(newKey, newValue, s / 2).insertLeft(key, value, bigger)
     else if (newKey > key)
@@ -378,10 +378,10 @@ private case class GBNode[A <% Ordered[A],B](key: A,
    *  @param s ...
    *  @return  ...
    */
-  def balance(s: int): GBTree[A,B] =
+  def balance(s: Int): GBTree[A,B] =
     balance_list(toList(scala.Nil), s)
 
-  protected def balance_list(list: List[(A,B)], s: int): GBTree[A,B] = {
+  protected def balance_list(list: List[(A,B)], s: Int): GBTree[A,B] = {
     val empty = GBLeaf[A,B]();
     def bal(list: List[(A,B)], s: Int): (aNode, List[(A,B)]) = {
       if (s > 1) {

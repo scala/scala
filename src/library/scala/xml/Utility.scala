@@ -22,10 +22,12 @@ import collection.mutable.{Set, HashSet}
 object Utility extends AnyRef with parsing.TokenTests {
 
 
-  /** trims an element - call this method, when you know that it is an element (and not a text node)
-   *    so you know that it will not be trimmed away. With this assumption, the function can
-   *    return a Node, rather than a Seq[Node]. If you don't know, call trimProper and account for
-   *    the fact that you may get back an empty sequence of nodes
+  /** trims an element - call this method, when you know that it is an
+   *  element (and not a text node) so you know that it will not be trimmed
+   *  away. With this assumption, the function can return a <code>Node</code>,
+   *  rather than a <code>Seq[Node]</code>. If you don't know, call
+   *  <code>trimProper</code> and account for the fact that you may get back
+   *  an empty sequence of nodes.
    *
    *  precondition: node is not a text node (it might be trimmed)
    */
@@ -474,7 +476,7 @@ object Utility extends AnyRef with parsing.TokenTests {
       }
       nextch()
     }
-    i.asInstanceOf[char].toString()
+    i.asInstanceOf[Char].toString()
   }
 
 }

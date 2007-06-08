@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -20,27 +20,27 @@ import java.io.{IOException, EOFException}
  *  @author  Burak Emir
  *  @version 1.0
  */
-class CharInputStreamIterator(in: InputStream) extends Iterator[char] {
+class CharInputStreamIterator(in: InputStream) extends Iterator[Char] {
 
-  private var ch: int = _
+  private var ch: Int = _
   private var chSet = false
   private var error: IOException = null
 
-  private def lookahead(): unit = try {
+  private def lookahead(): Unit = try {
     ch = in.read(); chSet = ch >= 0
   } catch {
     case ex: EOFException => ch = -1
     case ex: IOException => ch = 1; error = ex
   }
 
-  def hasNext: boolean = {
+  def hasNext: Boolean = {
     if (!chSet) lookahead
     chSet
   }
 
-  def next(): char = {
+  def next(): Char = {
     if (!chSet) lookahead
     chSet = false
-    ch.asInstanceOf[char]
+    ch.asInstanceOf[Char]
   }
 }

@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -22,7 +22,7 @@ object jolib {
 
   type Pattern = List[Signal]
 
-  type Rule = PartialFunction[List[Any], unit]
+  type Rule = PartialFunction[List[Any], Unit]
 
   /////////////////// JOIN DEFINITION /////////////////////////
 
@@ -55,7 +55,7 @@ object jolib {
   abstract class Signal(join: Join) {
     type C
     val queue = new collection.mutable.Queue[C]
-    def tryReduction(x: C): unit = {
+    def tryReduction(x: C) {
       val continuation = join synchronized {
         queue.enqueue(x)
         join.tryMatch
@@ -65,12 +65,12 @@ object jolib {
   }
 
   abstract class Asynchr(join: Join) extends Signal(join) {
-    def apply(x: C): unit = tryReduction(x)
+    def apply(x: C): Unit = tryReduction(x)
   }
 
-  abstract class Synchr[a](join: Join) extends Signal(join) {
-    type C <: SyncVar[a]
-    def apply(x: C): a = {
+  abstract class Synchr[A](join: Join) extends Signal(join) {
+    type C <: SyncVar[A]
+    def apply(x: C): A = {
       tryReduction(x)
       x.get
     }

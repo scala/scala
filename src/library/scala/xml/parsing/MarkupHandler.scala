@@ -59,7 +59,7 @@ abstract class MarkupHandler extends AnyRef with Logged {
 
  //def checkChildren(pos:int, pre: String, label:String,ns:NodeSeq): Unit = {}
 
-  def endDTD(n: String): Unit = {}
+  def endDTD(n: String): Unit = ()
 
   /** callback method invoked by MarkupParser after start-tag of element.
    *
@@ -68,7 +68,7 @@ abstract class MarkupHandler extends AnyRef with Logged {
    *  @param label    the local name
    *  @param attrs    the attributes (metadata)
    */
-  def elemStart(pos: int, pre: String, label: String, attrs: MetaData, scope: NamespaceBinding): Unit = {}
+  def elemStart(pos: Int, pre: String, label: String, attrs: MetaData, scope: NamespaceBinding): Unit = ()
 
   /** callback method invoked by MarkupParser after end-tag of element.
    *
@@ -77,7 +77,7 @@ abstract class MarkupHandler extends AnyRef with Logged {
    *  @param label    the local name
    *  @param attrs    the attributes (metadata)
    */
-  def elemEnd(pos: int, pre: String, label: String): Unit = {}
+  def elemEnd(pos: Int, pre: String, label: String): Unit = ()
 
   /** callback method invoked by MarkupParser after parsing an elementm,
    *  between the elemStart and elemEnd callbacks
@@ -89,7 +89,7 @@ abstract class MarkupHandler extends AnyRef with Logged {
    *  @param args     the children of this element
    *  @return         ...
    */
-  def elem(pos: int, pre: String, label: String, attrs: MetaData, scope: NamespaceBinding, args: NodeSeq): NodeSeq
+  def elem(pos: Int, pre: String, label: String, attrs: MetaData, scope: NamespaceBinding, args: NodeSeq): NodeSeq
 
   /** callback method invoked by MarkupParser after parsing PI.
    *
@@ -119,11 +119,11 @@ abstract class MarkupHandler extends AnyRef with Logged {
 
   // DTD handler methods
 
-  def elemDecl(n: String, cmstr: String): Unit = {}
+  def elemDecl(n: String, cmstr: String): Unit = ()
 
-  def attListDecl(name: String, attList: List[AttrDecl]): Unit = {}
+  def attListDecl(name: String, attList: List[AttrDecl]): Unit = ()
 
-  def parameterEntityDecl(name: String, edef: EntityDef): Unit = {
+  def parameterEntityDecl(name: String, edef: EntityDef) {
     //log("parameterEntityDecl("+name+","+edef+")");
     edef match {
       case _:ExtDef if !isValidating =>
@@ -148,11 +148,9 @@ abstract class MarkupHandler extends AnyRef with Logged {
   def unparsedEntityDecl(name: String, extID: ExternalID, notat: String): Unit =
     {}
 
-  def notationDecl(notat: String, extID: ExternalID): Unit =
-    {}
+  def notationDecl(notat: String, extID: ExternalID): Unit = ()
 
-  def peReference(name: String): Unit =
-    decls = PEReference( name ) :: decls
+  def peReference(name: String) { decls = PEReference(name) :: decls }
 
   /** report a syntax error */
   def reportSyntaxError(pos: Int, str: String): Unit

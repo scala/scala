@@ -16,7 +16,6 @@ package scala
  *  @version 1.0
  *
  *  @see class Responder
- *  @since revision 6897 (will be 2.1.1)
  */
 object Responder {
 
@@ -26,8 +25,8 @@ object Responder {
    *  @param x ...
    *  @return ...
    */
-  def constant[a](x: a) = new Responder[a] {
-    def respond(k: a => unit) = k(x)
+  def constant[A](x: A) = new Responder[A] {
+    def respond(k: A => Unit) = k(x)
   }
 
   /** Executes <code>x</code> and returns <code>true</code>, useful
@@ -36,20 +35,20 @@ object Responder {
    *  @param x ...
    *  @return ...
    */
-  def exec[a](x: => unit): boolean = { x; true  }
+  def exec[A](x: => Unit): Boolean = { x; true }
 
   /** runs a responder, returning an optional result
   */
-  def run[a](r: Responder[a]): Option[a] = {
-    var result: Option[a] = None
+  def run[A](r: Responder[A]): Option[A] = {
+    var result: Option[A] = None
     r.foreach(x => result = Some(x))
     result
   }
 
-  def loop[a](r: Responder[unit]): Responder[Nothing] =
+  def loop[A](r: Responder[Unit]): Responder[Nothing] =
     for (_ <- r; val y <- loop(r)) yield y
 
-  def loopWhile[a](cond: => boolean)(r: Responder[unit]): Responder[unit] =
+  def loopWhile[A](cond: => Boolean)(r: Responder[Unit]): Responder[Unit] =
     if (cond) for (_ <- r; val y <- loopWhile(cond)(r)) yield y
     else constant(())
 
@@ -63,28 +62,29 @@ object Responder {
  *
  *  @author Burak Emir
  *  @version 1.0
- *
- *  @since revision 6897 (will be 2.1.1)
  */
-abstract class Responder[+a] {
+abstract class Responder[+A] {
 
-  def respond(k: a => unit): unit
+  def respond(k: A => Unit): Unit
 
-  def foreach(k: a => unit): unit = respond(k)
+  def foreach(k: A => Unit) { respond(k) }
 
-  def map[b](f: a => b) = new Responder[b] {
-    def respond(k: b => unit): unit =
+  def map[B](f: A => B) = new Responder[B] {
+    def respond(k: B => Unit) {
       Responder.this.respond(x => k(f(x)))
+    }
   }
 
-  def flatMap[b](f: a => Responder[b]) = new Responder[b] {
-    def respond(k: b => unit): unit =
+  def flatMap[B](f: A => Responder[B]) = new Responder[B] {
+    def respond(k: B => Unit) {
       Responder.this.respond(x => f(x).respond(k))
+    }
   }
 
-  def filter(p: a => boolean) = new Responder[a] {
-    def respond(k: a => unit): unit =
+  def filter(p: A => Boolean) = new Responder[A] {
+    def respond(k: A => Unit) {
       Responder.this.respond(x => if (p(x)) k(x) else ())
+    }
   }
 }
 

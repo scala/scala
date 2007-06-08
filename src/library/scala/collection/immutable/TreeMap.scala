@@ -37,7 +37,7 @@ object TreeMap {
  *  @version 1.1, 03/05/2004
  */
 @serializable
-class TreeMap[A <% Ordered[A], +B](val size: int, t: RedBlack[A]#Tree[B])
+class TreeMap[A <% Ordered[A], +B](val size: Int, t: RedBlack[A]#Tree[B])
 extends RedBlack[A] with SortedMap[A, B] {
 
   def isSmaller(x: A, y: A) = x < y
@@ -57,7 +57,7 @@ extends RedBlack[A] with SortedMap[A, B] {
 
 
 
-  private def newMap[B](s: int, t: RedBlack[A]#Tree[B]) = new TreeMap[A, B](s, t)
+  private def newMap[B](s: Int, t: RedBlack[A]#Tree[B]) = new TreeMap[A, B](s, t)
 
   /** A factory to create empty maps of the same type of keys.
    */

@@ -40,15 +40,15 @@ object pilib {
    * <code>spawn &lt; p<sub>1</sub> | ... | p<sub>n</sub> &gt;</code>
    */
   abstract class Spawn {
-    def <(p: => unit): Spawn
-    def |(p: => unit): Spawn
-    def > : unit
+    def <(p: => Unit): Spawn
+    def |(p: => Unit): Spawn
+    def > : Unit
   }
   val spawn = new Spawn {
   //object spawn extends Spawn { // BUG !
-    def <(p: => unit): Spawn = { scala.concurrent.ops.spawn(p); this }
-    def |(p: => unit): Spawn = { scala.concurrent.ops.spawn(p); this }
-    def > : unit = ()
+    def <(p: => Unit): Spawn = { scala.concurrent.ops.spawn(p); this }
+    def |(p: => Unit): Spawn = { scala.concurrent.ops.spawn(p); this }
+    def > : Unit = ()
   }
 
   /////////////////////////// GUARDED PROCESSES //////////////////////////
@@ -66,10 +66,10 @@ object pilib {
    *  @param v         transmitted value
    *  @param c         continuation
    */
-  case class UGP(n: UChan, polarity: boolean, v: Any, c: Any => Any)
+  case class UGP(n: UChan, polarity: Boolean, v: Any, c: Any => Any)
 
   /** Typed guarded process. */
-  class GP[a](n: UChan, polarity: boolean, v: Any, c: Any => a) {
+  class GP[a](n: UChan, polarity: Boolean, v: Any, c: Any => a) {
     val untyped = UGP(n, polarity, v, c)
   }
 
@@ -79,46 +79,46 @@ object pilib {
    * Name on which one can emit, receive or that can be emitted or received
    * during a communication.
    */
-  class Chan[a] extends UChan with Function1[a, Product[a]] {
+  class Chan[A] extends UChan with Function1[A, Product[A]] {
 
-    var defaultValue: a = _
-
-    /** Creates an input guarded process. */
-    def input[b](c: a => b) =
-      new GP(this, true, (), x => c(x.asInstanceOf[a]))
+    var defaultValue: A = _
 
     /** Creates an input guarded process. */
-    def output[b](v: a, c: () => b) =
+    def input[B](c: A => B) =
+      new GP(this, true, (), x => c(x.asInstanceOf[A]))
+
+    /** Creates an input guarded process. */
+    def output[B](v: A, c: () => B) =
       new GP(this, false, v, x => c())
 
     /** Blocking read. */
     def read = {
-      var res: a = defaultValue
+      var res: A = defaultValue
       choice ( input(x => res = x) )
       res
     }
 
     /** Blocking write. */
-    def write(x: a) =
+    def write(x: A) =
       choice ( output(x, () => ()) )
 
     /** Syntactic sugar for input. */
-    def *[b](f: a => b) =
-      input(f);
+    def *[B](f: A => B) =
+      input(f)
 
     /** Syntactic sugar for output. */
-    def apply(v: a) =
+    def apply(v: A) =
       new Product(this, v)
 
     /** Attach a function to be evaluated at each communication event
      *  on this channel. Replace previous attached function.
      */
-    def attach(f: a => unit) =
-      log = x => f(x.asInstanceOf[a])
+    def attach(f: A => Unit) =
+      log = x => f(x.asInstanceOf[A])
   }
 
-  class Product[a](c: Chan[a], v: a) {
-    def *[b](f: => b) = c.output(v, () => f)
+  class Product[A](c: Chan[A], v: A) {
+    def *[B](f: => B) = c.output(v, () => f)
   }
 
   /////////////////////// SUM OF GUARDED PROCESSES ///////////////////////
@@ -159,7 +159,7 @@ object pilib {
    *  @param gs2 ...
    *  @return    ...
    */
-  private def matches(gs1: List[UGP], gs2: List[UGP]): Option[(() => unit, () => Any, () => Any)] =
+  private def matches(gs1: List[UGP], gs2: List[UGP]): Option[(() => Unit, () => Any, () => Any)] =
     (gs1, gs2) match {
       case (Nil, _) => None
       case (_, Nil) => None
@@ -198,10 +198,10 @@ object pilib {
    *  @param s ...
    *  @return  ...
    */
-  def choice[a](s: GP[a]*): a = {
-    val sum = Sum(s.toList map { x => x.untyped })
+  def choice[A](s: GP[A]*): A = {
+    val sum = Sum(s.toList map { _.untyped })
     synchronized { sums = compare(sum, sums) }
-    (sum.continue).asInstanceOf[a]
+    (sum.continue).asInstanceOf[A]
   }
 
 }

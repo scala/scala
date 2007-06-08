@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -23,19 +23,19 @@ class MailBox extends AnyRef with ListQueueCreator {
 
   private abstract class PreReceiver {
     var msg: Message = null
-    def isDefinedAt(msg: Message): boolean
+    def isDefinedAt(msg: Message): Boolean
   }
 
-  private class Receiver[a](receiver: PartialFunction[Message, a]) extends PreReceiver {
+  private class Receiver[A](receiver: PartialFunction[Message, A]) extends PreReceiver {
 
     def isDefinedAt(msg: Message) = receiver.isDefinedAt(msg)
 
-    def receive(): a = synchronized {
+    def receive(): A = synchronized {
       while (msg eq null) wait()
       receiver(msg)
     }
 
-    def receiveWithin(msec: long): a = synchronized {
+    def receiveWithin(msec: Long): A = synchronized {
       if (msg eq null) wait(msec)
       receiver(if (msg ne null) msg else TIMEOUT)
     }
@@ -55,7 +55,7 @@ class MailBox extends AnyRef with ListQueueCreator {
   * If yes, the message is extracted and associated with the receiver.
   * Otherwise the receiver is appended to the list of pending receivers.
   */
-  private def scanSentMsgs[a](receiver: Receiver[a]): unit = synchronized {
+  private def scanSentMsgs[A](receiver: Receiver[A]): Unit = synchronized {
     messageQueue.extractFirst(sent, msg => receiver.isDefinedAt(msg)) match {
       case None => receivers = receiverQueue.append(receivers, receiver)
       case Some((msg, withoutMsg)) => {
@@ -70,7 +70,7 @@ class MailBox extends AnyRef with ListQueueCreator {
   * message. If yes, the receiver is notified. Otherwise the message
   * is appended to the linked list of sent messages.
   */
-  def send(msg: Message): unit = synchronized {
+  def send(msg: Message): Unit = synchronized {
     receiverQueue.extractFirst(receivers, r => r.isDefinedAt(msg)) match {
       case None => sent = messageQueue.append(sent, msg)
       case Some((receiver, withoutReceiver)) => {
@@ -85,7 +85,7 @@ class MailBox extends AnyRef with ListQueueCreator {
   * Block until there is a message in the mailbox for which the processor
   * <code>f</code> is defined.
   */
-  def receive[a](f: PartialFunction[Message, a]): a = {
+  def receive[A](f: PartialFunction[Message, A]): A = {
     val r = new Receiver(f)
     scanSentMsgs(r)
     r.receive()
@@ -95,7 +95,7 @@ class MailBox extends AnyRef with ListQueueCreator {
   * Block until there is a message in the mailbox for which the processor
   * <code>f</code> is defined or the timeout is over.
   */
-  def receiveWithin[a](msec: long)(f: PartialFunction[Message, a]): a = {
+  def receiveWithin[A](msec: Long)(f: PartialFunction[Message, A]): A = {
     val r = new Receiver(f)
     scanSentMsgs(r)
     r.receiveWithin(msec)
@@ -108,24 +108,24 @@ class MailBox extends AnyRef with ListQueueCreator {
 /**
 * Module for dealing with queues.
 */
-trait QueueModule[a] {
+trait QueueModule[A] {
   /** Type of queues. */
-  type t
+  type T
   /** Create an empty queue. */
-  def make: t
+  def make: T
   /** Append an element to a queue. */
-  def append(l: t, x: a): t
+  def append(l: T, x: A): T
   /** Extract an element satisfying a predicate from a queue. */
-  def extractFirst(l: t, p: a => boolean): Option[(a, t)]
+  def extractFirst(l: T, p: A => Boolean): Option[(A, T)]
 }
 
 /** Inefficient but simple queue module creator. */
 trait ListQueueCreator {
-  def queueCreate[a]: QueueModule[a] = new QueueModule[a] {
-    type t = List[a]
-    def make: t = Nil
-    def append(l: t, x: a): t = l ::: x :: Nil
-    def extractFirst(l: t, p: a => boolean): Option[(a, t)] =
+  def queueCreate[A]: QueueModule[A] = new QueueModule[A] {
+    type T = List[A]
+    def make: T = Nil
+    def append(l: T, x: A): T = l ::: x :: Nil
+    def extractFirst(l: T, p: A => Boolean): Option[(A, T)] =
       l match {
         case Nil => None
         case head :: tail =>
@@ -143,18 +143,18 @@ trait ListQueueCreator {
 /** Efficient queue module creator based on linked lists. */
 trait LinkedListQueueCreator {
   import scala.collection.mutable.LinkedList
-  def queueCreate[a >: Null <: AnyRef]: QueueModule[a] = new QueueModule[a] {
-    type t = (LinkedList[a], LinkedList[a]) // fst = the list, snd = last elem
-    def make: t = {
-      val l = new LinkedList[a](null, null)
+  def queueCreate[A >: Null <: AnyRef]: QueueModule[A] = new QueueModule[A] {
+    type T = (LinkedList[A], LinkedList[A]) // fst = the list, snd = last elem
+    def make: T = {
+      val l = new LinkedList[A](null, null)
       (l, l)
     }
-    def append(l: t, x: a): t = {
+    def append(l: T, x: A): T = {
       val atTail = new LinkedList(x, null)
       l._2 append atTail;
       (l._1, atTail)
     }
-    def extractFirst(l: t, p: a => boolean): Option[(a, t)] = {
+    def extractFirst(l: T, p: A => Boolean): Option[(A, T)] = {
       var xs = l._1
       var xs1 = xs.next
       while ((xs1 ne null) && !p(xs1.elem)) {

@@ -12,19 +12,19 @@ package scala.collection.immutable
 @serializable
 abstract class RedBlack[A] {
 
-  def isSmaller(x: A, y: A): boolean
+  def isSmaller(x: A, y: A): Boolean
 
   private def blacken[B](t: Tree[B]): Tree[B] = t match {
     case RedTree(k, v, l, r) => BlackTree(k, v, l, r)
     case t => t
   }
-  private def mkTree[B](isBlack: boolean, k: A, v: B, l: Tree[B], r: Tree[B]) =
+  private def mkTree[B](isBlack: Boolean, k: A, v: B, l: Tree[B], r: Tree[B]) =
     if (isBlack) BlackTree(k, v, l, r) else RedTree(k, v, l, r)
 
   @serializable
   abstract class Tree[+B] {
-    def isEmpty: boolean
-    def isBlack: boolean
+    def isEmpty: Boolean
+    def isBlack: Boolean
     def lookup(x: A): Tree[B]
     def update[B1 >: B](k: A, v: B1): Tree[B1] = blacken(upd(k, v))
     def delete(k: A): Tree[B] = del(k)
@@ -52,7 +52,7 @@ abstract class RedBlack[A] {
       else if (isSmaller(key, k)) right.lookup(k)
       else this
     def upd[B1 >: B](k: A, v: B1): Tree[B1] = {
-      def balanceLeft(isBlack: boolean, z: A, zv: B, l: Tree[B1], d: Tree[B1]) = l match {
+      def balanceLeft(isBlack: Boolean, z: A, zv: B, l: Tree[B1], d: Tree[B1]) = l match {
         case RedTree(y, yv, RedTree(x, xv, a, b), c) =>
           RedTree(y, yv, BlackTree(x, xv, a, b), BlackTree(z, zv, c, d))
         case RedTree(x, xv, a, RedTree(y, yv, b, c)) =>
@@ -60,7 +60,7 @@ abstract class RedBlack[A] {
         case _ =>
           mkTree(isBlack, z, zv, l, d)
       }
-      def balanceRight(isBlack: boolean, x: A, xv: B, a: Tree[B1], r: Tree[B1]) = r match {
+      def balanceRight(isBlack: Boolean, x: A, xv: B, a: Tree[B1], r: Tree[B1]) = r match {
         case RedTree(z, zv, RedTree(y, yv, b, c), d) =>
           RedTree(y, yv, BlackTree(x, xv, a, b), BlackTree(z, zv, c, d))
         case RedTree(y, yv, b, RedTree(z, zv, c, d)) =>

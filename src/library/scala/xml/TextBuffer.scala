@@ -27,7 +27,7 @@ class TextBuffer {
   var ws = true
 
   def appendSpace         = if(!ws) { ws = true;  sb.append(' ') } else {}
-  def appendChar(c: char) =         { ws = false; sb.append( c ) }
+  def appendChar(c: Char) =         { ws = false; sb.append( c ) }
 
   /** Appends this string to the text buffer, trimming whitespaces as needed.
    *

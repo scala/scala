@@ -94,7 +94,7 @@ abstract class WordBerrySethi extends BaseBerrySethi {
 
 
   /** called at the leaves of the regexp */
-  protected def seenLabel(r: RegExp, i: Int, label: _labelT): Unit = {
+  protected def seenLabel(r: RegExp, i: Int, label: _labelT) {
     //Console.println("seenLabel (1)");
     //this.posMap.update(r, i)
     this.labelAt = this.labelAt.update(i, label)
@@ -119,7 +119,7 @@ abstract class WordBerrySethi extends BaseBerrySethi {
   }
 
 
-  protected def makeTransition(src: Int, dest: Int, label: _labelT ): Unit = {
+  protected def makeTransition(src: Int, dest: Int, label: _labelT ) {
     //@ifdef compiler if( label == Wildcard )
     //@ifdef compiler   defaultq.update(src, dest::defaultq( src ))
     //@ifdef compiler else
@@ -148,7 +148,7 @@ abstract class WordBerrySethi extends BaseBerrySethi {
     this.initials = emptySet + 0
   }
 
-  protected def initializeAutom(): Unit = {
+  protected def initializeAutom() {
     finals   = immutable.TreeMap.empty[Int, Int] // final states
     deltaq   = new Array[mutable.HashMap[_labelT, List[Int]]](pos) // delta
     defaultq = new Array[List[Int]](pos) // default transitions

@@ -40,7 +40,7 @@ class HashMap[A, B] extends Map[A,B] with mutable.HashTable[A] {
   protected var later: HashMap[A, B] = null
   protected var oldKey: A = _
   protected var oldValue: Option[B] = _
-  protected var deltaSize: int = _
+  protected var deltaSize: Int = _
 
   def empty[C]: Map[A, C] = new EmptyMap[A, C]
 
@@ -49,7 +49,7 @@ class HashMap[A, B] extends Map[A,B] with mutable.HashTable[A] {
     var cnt = 0
     while (m.later != null) {
       if (key == m.oldKey) return m.oldValue
-      cnt = cnt + 1
+      cnt += 1
       m = m.later
     }
     if (cnt > logLimit) makeCopy(m)
@@ -82,13 +82,13 @@ class HashMap[A, B] extends Map[A,B] with mutable.HashTable[A] {
     }
   }
 
-  override def size: int = synchronized {
+  override def size: Int = synchronized {
     var m = this
     var cnt = 0
     var s = tableSize
     while (m.later != null) {
       s = s - m.deltaSize
-      cnt = cnt + 1
+      cnt += 1
       m = m.later
     }
     if (cnt > logLimit) makeCopy(m)
@@ -103,9 +103,9 @@ class HashMap[A, B] extends Map[A,B] with mutable.HashTable[A] {
   private def getValue(e: Entry) =
     e.value.asInstanceOf[B]
 
-  private def logLimit: int = Math.sqrt(table.length.toDouble).toInt
+  private def logLimit: Int = Math.sqrt(table.length.toDouble).toInt
 
-  private def markUpdated(key: A, ov: Option[B], delta: int) {
+  private def markUpdated(key: A, ov: Option[B], delta: Int) {
     val lv = loadFactor
     later = new HashMap[A, B] {
       override def initialSize = 0
@@ -142,7 +142,7 @@ class HashMap[A, B] extends Map[A,B] with mutable.HashTable[A] {
     var i = 0
     while (i < s) {
       table(i) = copy(ltable(i))
-      i = i + 1
+      i += 1
     }
     tableSize = last.tableSize
     threshold = last.threshold

@@ -25,10 +25,9 @@ case class DocCons(hd: Document, tl: Document) extends Document
  * A basic pretty-printing library, based on Lindig's strict version
  * of Wadler's adaptation of Hughes' pretty-printer.
  *
- * @version 1.0
  * @author Michel Schinz
+ * @version 1.0
  */
-
 abstract class Document {
   def ::(hd: Document): Document = DocCons(hd, this)
   def ::(hd: String): Document = DocCons(DocText(hd), this)
@@ -45,7 +44,7 @@ abstract class Document {
   def format(width: Int, writer: Writer) {
     type FmtState = (Int, Boolean, Document)
 
-    def fits(w: Int, state: List[FmtState]): boolean = state match {
+    def fits(w: Int, state: List[FmtState]): Boolean = state match {
       case _ if w < 0 =>
         false
       case List() =>

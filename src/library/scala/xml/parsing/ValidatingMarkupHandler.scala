@@ -26,7 +26,7 @@ abstract class ValidatingMarkupHandler extends MarkupHandler with Logged {
 
   final override val isValidating = true
 
-  override def log(msg:String) = {}
+  override def log(msg: String) {}
 
   /*
   override def checkChildren(pos: Int, pre: String, label:String,ns:NodeSeq): Unit = {
@@ -43,7 +43,7 @@ abstract class ValidatingMarkupHandler extends MarkupHandler with Logged {
   override def endDTD(n:String) = {
     rootLabel = n
   }
-  override def elemStart(pos: int, pre: String, label: String, attrs: MetaData, scope:NamespaceBinding): Unit = {
+  override def elemStart(pos: Int, pre: String, label: String, attrs: MetaData, scope:NamespaceBinding) {
 
     def advanceDFA(dm:DFAContentModel) = {
       val trans = dm.dfa.delta(qCurrent)
@@ -55,20 +55,20 @@ abstract class ValidatingMarkupHandler extends MarkupHandler with Logged {
         }
     }
     // advance in current automaton
-    log("[qCurrent = "+qCurrent+" visiting "+label+"]");
+    log("[qCurrent = "+qCurrent+" visiting "+label+"]")
 
     if (qCurrent == -1) { // root
       log("  checking root")
       if (label != rootLabel)
-        reportValidationError(pos, "this element should be "+rootLabel);
+        reportValidationError(pos, "this element should be "+rootLabel)
     } else {
-      log("  checking node");
+      log("  checking node")
       declCurrent.contentModel match {
         case ANY =>
         case EMPTY =>
-          reportValidationError(pos, "DTD says, no elems, no text allowed here");
+          reportValidationError(pos, "DTD says, no elems, no text allowed here")
         case PCDATA =>
-          reportValidationError(pos, "DTD says, no elements allowed here");
+          reportValidationError(pos, "DTD says, no elements allowed here")
         case m @ MIXED(r) =>
           advanceDFA(m)
         case e @ ELEMENTS(r) =>
@@ -84,7 +84,7 @@ abstract class ValidatingMarkupHandler extends MarkupHandler with Logged {
     log("  done  now")
   }
 
-  override def elemEnd(pos: int, pre: String, label: String): Unit = {
+  override def elemEnd(pos: Int, pre: String, label: String) {
     log("  elemEnd")
     qCurrent = qStack.head
     qStack   = qStack.tail
@@ -94,23 +94,27 @@ abstract class ValidatingMarkupHandler extends MarkupHandler with Logged {
     log("    declCurrent now" + declCurrent)
   }
 
-  final override def elemDecl(name: String, cmstr: String): Unit =
-    decls = ElemDecl( name,  ContentModel.parse(cmstr)) :: decls;
-
-  final override def attListDecl(name: String, attList: List[AttrDecl]): Unit =
-    decls = AttListDecl( name, attList) :: decls;
-
-  final override def unparsedEntityDecl(name: String, extID: ExternalID, notat: String): Unit = {
-    decls =  UnparsedEntityDecl( name, extID, notat) :: decls;
+  final override def elemDecl(name: String, cmstr: String) {
+    decls = ElemDecl(name, ContentModel.parse(cmstr)) :: decls
   }
 
-  final override def notationDecl(notat: String, extID: ExternalID): Unit =
-    decls = NotationDecl( notat, extID) :: decls;
+  final override def attListDecl(name: String, attList: List[AttrDecl]) {
+    decls = AttListDecl(name, attList) :: decls
+  }
 
-  final override def peReference(name: String): Unit =
-    decls = PEReference( name ) :: decls;
+  final override def unparsedEntityDecl(name: String, extID: ExternalID, notat: String) {
+    decls = UnparsedEntityDecl(name, extID, notat) :: decls
+  }
+
+  final override def notationDecl(notat: String, extID: ExternalID) {
+    decls = NotationDecl(notat, extID) :: decls;
+  }
+
+  final override def peReference(name: String) {
+    decls = PEReference(name) :: decls
+  }
 
   /** report a syntax error */
-  def reportValidationError(pos: Int, str: String): Unit;
+  def reportValidationError(pos: Int, str: String): Unit
 
 }

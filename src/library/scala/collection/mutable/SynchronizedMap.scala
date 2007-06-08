@@ -135,7 +135,7 @@ trait SynchronizedMap[A, B] extends Map[A, B] {
     super.equals(that)
   }
 
-  override def hashCode(): int = synchronized {
+  override def hashCode(): Int = synchronized {
     super.hashCode()
   }
 

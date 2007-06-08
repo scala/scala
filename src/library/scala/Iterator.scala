@@ -346,7 +346,7 @@ trait Iterator[+A] {
    *               {a<sub>1</sub>,1}...</code> where <code>a<sub>i</sub></code>
    *               are the elements from this iterator.
    */
-  def zipWithIndex = new Iterator[(A, int)] {
+  def zipWithIndex = new Iterator[(A, Int)] {
     var idx = 0
     def hasNext = Iterator.this.hasNext
     def next = {
@@ -361,7 +361,7 @@ trait Iterator[+A] {
    *
    *  @param  f   a function that is applied to every element.
    */
-  def foreach(f: A => Unit): Unit = while (hasNext) f(next)
+  def foreach(f: A => Unit) { while (hasNext) f(next) }
 
   /** Apply a predicate <code>p</code> to all elements of this
    *  iterable object and return <code>true</code> iff the predicate yields

@@ -54,14 +54,14 @@ class XMLEventReader extends Iterator[XMLEvent] {
   var continue: Boolean = true
 
   def myresume = synchronized {
-    while(continue) {
+    while (continue) {
       wait()
     }
     continue = true
     notifyAll
   }
   def getAndClearEvent: XMLEvent = synchronized {
-    while(xmlEvent eq null) {
+    while (xmlEvent eq null) {
       wait()
     }
     val r = xmlEvent
@@ -96,15 +96,15 @@ class XMLEventReader extends Iterator[XMLEvent] {
     val preserveWS = true
     val input = XMLEventReader.this.getSource
 
-    override def elemStart(pos:int, pre: String, label: String, attrs: MetaData, scope: NamespaceBinding) {
+    override def elemStart(pos: Int, pre: String, label: String, attrs: MetaData, scope: NamespaceBinding) {
       setEvent(ElemStart(pre, label, attrs, scope)); doNotify
     }
 
-    override def elemEnd(pos: int, pre: String, label: String) {
+    override def elemEnd(pos: Int, pre: String, label: String) {
       setEvent(ElemEnd(pre, label)); doNotify
     }
 
-    final def elem(pos: int, pre: String, label: String, attrs: MetaData, pscope: NamespaceBinding, nodes: NodeSeq): NodeSeq =
+    final def elem(pos: Int, pre: String, label: String, attrs: MetaData, pscope: NamespaceBinding, nodes: NodeSeq): NodeSeq =
       NodeSeq.Empty
 
     def procInstr(pos: Int, target: String, txt: String): NodeSeq = {

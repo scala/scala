@@ -23,7 +23,7 @@ import Predef._
 final class ListBuffer[A] extends Buffer[A] {
   private var start: List[A] = Nil
   private var last0: ::[A] = _
-  private var exported: boolean = false
+  private var exported: Boolean = false
 
   /** Prepends a single element to this buffer.
    *
@@ -42,7 +42,7 @@ final class ListBuffer[A] extends Buffer[A] {
    *
    *  @param x  the element to append.
    */
-  override def += (x: A): unit = {
+  override def += (x: A) {
     if (exported) copy()
     if (start.isEmpty) {
       last0 = new scala.:: (x, Nil)
@@ -66,7 +66,7 @@ final class ListBuffer[A] extends Buffer[A] {
    *
    *  @param x  the element to remove.
    */
-  override def -= (x: A): unit = {
+  override def -= (x: A) {
     if (exported) copy()
     if (start.isEmpty) {}
     else if (start.head == x) start = start.tail
@@ -75,7 +75,7 @@ final class ListBuffer[A] extends Buffer[A] {
       while (!cursor.tail.isEmpty && cursor.tail.head != x) { cursor = cursor.tail }
       if (!cursor.tail.isEmpty) {
         val z = cursor.asInstanceOf[scala.::[A]]
-        if(z.tl == last0)
+        if (z.tl == last0)
           last0 = z
         z.tl = cursor.tail.tail
       }
@@ -99,13 +99,13 @@ final class ListBuffer[A] extends Buffer[A] {
 
   /** Clears the buffer contents.
    */
-  def clear(): unit = {
+  def clear() {
     start = Nil
     exported = false
   }
 
   /** Copy contents of this buffer */
-  private def copy() = {
+  private def copy() {
     var cursor = start
     val limit = last0.tail
     clear
@@ -119,7 +119,7 @@ final class ListBuffer[A] extends Buffer[A] {
    *
    *  @return the length of this buffer.
    */
-  def length: int = start.length
+  def length: Int = start.length
 
   /** Returns the n-th element of this list. This method
    *  yields an error if the element does not exist.
@@ -142,25 +142,27 @@ final class ListBuffer[A] extends Buffer[A] {
    *  @param x  the new element.
    *  @throws Predef.IndexOutOfBoundsException if <code>n</code> is out of bounds.
    */
-  def update(n: Int, x: A): unit = try {
-    if (exported) copy()
-    if (n == 0) {
-      val newElem = new scala.:: (x, start.tail);
-      if (last0 eq start) last0 = newElem
-      start = newElem
-    } else {
-      var cursor = start;
-      var i = 1;
-      while (i < n) {
-        cursor = cursor.tail
-        i = i + 1
+  def update(n: Int, x: A) {
+    try {
+      if (exported) copy()
+      if (n == 0) {
+        val newElem = new scala.:: (x, start.tail);
+        if (last0 eq start) last0 = newElem
+        start = newElem
+      } else {
+        var cursor = start
+        var i = 1
+        while (i < n) {
+          cursor = cursor.tail
+          i += 1
+        }
+        val newElem = new scala.:: (x, cursor.tail.tail)
+        if (last0 eq cursor.tail) last0 = newElem
+        cursor.asInstanceOf[scala.::[A]].tl = newElem
       }
-      val newElem = new scala.:: (x, cursor.tail.tail)
-      if (last0 eq cursor.tail) last0 = newElem
-      cursor.asInstanceOf[scala.::[A]].tl = newElem
+    } catch {
+      case ex: Exception => throw new IndexOutOfBoundsException(n.toString())
     }
-  } catch {
-    case ex: Exception => throw new IndexOutOfBoundsException(n.toString())
   }
 
   /** Inserts new elements at the index <code>n</code>. Opposed to method
@@ -171,35 +173,36 @@ final class ListBuffer[A] extends Buffer[A] {
    *  @param  iter  the iterable object providing all elements to insert.
    *  @throws Predef.IndexOutOfBoundsException if <code>n</code> is out of bounds.
    */
-  def insertAll(n: Int, iter: Iterable[A]): unit = try {
-    if (exported) copy()
-    var elems = iter.elements.toList.reverse
-    if (n == 0) {
-      while (!elems.isEmpty) {
-        val newElem = new scala.:: (elems.head, start)
-        if (start.isEmpty) last0 = newElem
-        start = newElem
-        elems = elems.tail
+  def insertAll(n: Int, iter: Iterable[A]) {
+    try {
+      if (exported) copy()
+      var elems = iter.elements.toList.reverse
+      if (n == 0) {
+        while (!elems.isEmpty) {
+          val newElem = new scala.:: (elems.head, start)
+          if (start.isEmpty) last0 = newElem
+          start = newElem
+          elems = elems.tail
+        }
+      } else {
+        var cursor = start
+        var i = 1
+        while (i < n) {
+          cursor = cursor.tail
+          i += 1
+        }
+        while (!elems.isEmpty) {
+          val newElem = new scala.:: (elems.head, cursor.tail)
+          if (cursor.tail.isEmpty) last0 = newElem
+          cursor.asInstanceOf[scala.::[A]].tl = newElem
+          elems = elems.tail
+        }
       }
-    } else {
-      var cursor = start
-      var i = 1
-      while (i < n) {
-        cursor = cursor.tail
-        i = i + 1
-      }
-      while (!elems.isEmpty) {
-        val newElem = new scala.:: (elems.head, cursor.tail)
-        if (cursor.tail.isEmpty) last0 = newElem
-        cursor.asInstanceOf[scala.::[A]].tl = newElem
-        elems = elems.tail
-      }
+    } catch {
+      case ex: Exception =>
+        throw new IndexOutOfBoundsException(n.toString())
     }
-  } catch {
-    case ex: Exception =>
-      throw new IndexOutOfBoundsException(n.toString())
   }
-
 
   /** Removes the element on a given index position.
    *
@@ -218,7 +221,7 @@ final class ListBuffer[A] extends Buffer[A] {
       var i = 1
       while (i < n) {
         cursor = cursor.tail
-        i = i + 1
+        i += 1
       }
       old = cursor.tail.head
       if (last0 eq cursor.tail) last0 = cursor.asInstanceOf[scala.::[A]]

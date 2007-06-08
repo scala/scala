@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -12,7 +12,9 @@
 package scala.io
 
 
-import java.io.{File, FileInputStream, InputStream, PrintStream}
+import java.io.{BufferedInputStream, File, FileInputStream, InputStream,
+                PrintStream}
+import java.net.{URI, URL}
 
 import compat.StringBuilder
 
@@ -96,13 +98,13 @@ object Source {
 
   /** creates Source from file with given file: URI
    */
-  def fromFile(uri: java.net.URI): Source =
+  def fromFile(uri: URI): Source =
     fromFile(new File(uri))
 
   /** creates Source from file, using default character encoding, setting its
    *  description to filename.
    */
-  def fromFile(file: java.io.File): Source = {
+  def fromFile(file: File): Source = {
     val arr: Array[Byte] = new Array[Byte](file.length().asInstanceOf[Int])
     val is = new FileInputStream(file)
     is.read(arr)
@@ -117,7 +119,7 @@ object Source {
    *  @param enc  ...
    *  @return     ...
    */
-  def fromFile(file: java.io.File, enc: String): Source = {
+  def fromFile(file: File, enc: String): Source = {
     val arr: Array[Byte] = new Array[Byte](file.length().asInstanceOf[Int])
     val is = new FileInputStream(file)
     is.read(arr)
@@ -141,19 +143,19 @@ object Source {
    *  @return     ...
    */
   def fromURL(s: String): Source =
-    fromURL(new java.net.URL(s))
+    fromURL(new URL(s))
 
   /**
    *  @param url  ...
    *  @return     ...
    */
-  def fromURL(url: java.net.URL): Source = {
+  def fromURL(url: URL): Source = {
     val it = new Iterator[Char] {
       var data: Int = _
       def hasNext = {data != -1}
-      def next = {val x = data.asInstanceOf[char]; data = bufIn.read(); x}
+      def next = {val x = data.asInstanceOf[Char]; data = bufIn.read(); x}
       val in = url.openStream()
-      val bufIn = new java.io.BufferedInputStream(in)
+      val bufIn = new BufferedInputStream(in)
       data = bufIn.read()
     }
     val s = new Source {
@@ -175,11 +177,11 @@ object Source {
   def fromInputStream(istream: InputStream, enc: String, maxlen: Option[Int]): Source = {
     val BUFSIZE = 1024
     val limit = maxlen match { case Some(i) => i; case None => 0 }
-    val bi = new java.io.BufferedInputStream(istream, BUFSIZE)
+    val bi = new BufferedInputStream(istream, BUFSIZE)
     val bytes = new collection.mutable.ArrayBuffer[Byte]()
     var b = 0
     var i = 0
-    while( {b = bi.read; i = i + 1; b} != -1 && (limit <= 0 || i < limit)) {
+    while( {b = bi.read; i += 1; b} != -1 && (limit <= 0 || i < limit)) {
       bytes += b.toByte;
     }
     if(limit <= 0) bi.close
@@ -251,7 +253,7 @@ abstract class Source extends Iterator[Char] {
 
     while (it.hasNext && i < (line-1))
       if ('\n' == it.next)
-        i = i + 1;
+        i += 1;
 
     if (!it.hasNext) // this should not happen
       throw new IllegalArgumentException(
@@ -299,11 +301,11 @@ abstract class Source extends Iterator[Char] {
     ch match {
       case '\n' =>
         ccol = 1
-        cline = cline + 1
+        cline += 1
       case '\t' =>
-        ccol = ccol + tabinc
+        ccol += tabinc
       case _ =>
-        ccol = ccol + 1
+        ccol += 1
     }
     ch
   }
@@ -313,8 +315,9 @@ abstract class Source extends Iterator[Char] {
    *  @param pos ...
    *  @param msg the error message to report
    */
-  def reportError(pos: Int, msg: String): Unit =
+  def reportError(pos: Int, msg: String) {
     reportError(pos, msg, java.lang.System.out)
+  }
 
   /** Reports an error message to the output stream <code>out</code>.
    *
@@ -322,7 +325,7 @@ abstract class Source extends Iterator[Char] {
    *  @param msg the error message to report
    *  @param out ...
    */
-  def reportError(pos: Int, msg: String, out: PrintStream): Unit = {
+  def reportError(pos: Int, msg: String, out: PrintStream) {
     nerrors = nerrors + 1
     report(pos, msg, out)
   }
@@ -332,7 +335,7 @@ abstract class Source extends Iterator[Char] {
    *  @param msg the error message to report
    *  @param out ...
    */
-  def report(pos: Int, msg: String, out: PrintStream): Unit = {
+  def report(pos: Int, msg: String, out: PrintStream) {
     val buf = new StringBuilder
     val line = Position.line(pos)
     val col = Position.column(pos)
@@ -341,7 +344,7 @@ abstract class Source extends Iterator[Char] {
     var i = 1
     while (i < col) {
       buf.append(' ')
-      i = i + 1
+      i += 1
     }
     buf.append('^')
     out.println(buf.toString)
@@ -352,15 +355,16 @@ abstract class Source extends Iterator[Char] {
    *  @param pos ...
    *  @param msg the warning message to report
    */
-  def reportWarning(pos: Int, msg: String): Unit =
+  def reportWarning(pos: Int, msg: String) {
     reportWarning(pos, msg, java.lang.System.out)
+  }
 
   /**
    *  @param pos ...
    *  @param msg the warning message to report
    *  @param out ...
    */
-  def reportWarning(pos: Int, msg: String, out: PrintStream): Unit = {
+  def reportWarning(pos: Int, msg: String, out: PrintStream) {
     nwarnings = nwarnings + 1
     report(pos, "warning! " + msg, out)
   }

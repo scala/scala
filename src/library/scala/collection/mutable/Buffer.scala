@@ -52,14 +52,14 @@ trait Buffer[A] extends AnyRef
    *
    *  @param iter  the iterator.
    */
-  def ++=(iter: Iterator[A]): Unit = iter foreach +=
+  def ++=(iter: Iterator[A]) { iter foreach += }
 
   /** Appends a number of elements provided by an iterable object
    *  via its <code>elements</code> method.
    *
    *  @param iter  the iterable object.
    */
-  def ++=(iter: Iterable[A]): Unit = ++=(iter.elements)
+  def ++=(iter: Iterable[A]) { ++=(iter.elements) }
 
   /** Appends a number of elements in an array
    *
@@ -67,12 +67,12 @@ trait Buffer[A] extends AnyRef
    *  @param start  the first element to append
    *  @param len    the number of elements to append
    */
-  def ++=(src: Array[A], start: int, len: int): Unit = {
+  def ++=(src: Array[A], start: Int, len: Int) {
     var i = start
     val end = i + len
     while (i < end) {
       this += src(i)
-      i = i + 1
+      i += 1
     }
   }
 
@@ -110,7 +110,7 @@ trait Buffer[A] extends AnyRef
    *
    *  @param x  the element to remove.
    */
-  def -= (x: A): Unit = {
+  def -= (x: A) {
     val i = indexOf(x)
     if(i != -1) remove(i)
   }
@@ -119,20 +119,20 @@ trait Buffer[A] extends AnyRef
    *
    *  @param elems  the elements to append.
    */
-  def append(elems: A*): Unit = this ++= elems
+  def append(elems: A*) { this ++= elems }
 
   /** Appends a number of elements provided by an iterable object
    *  via its <code>elements</code> method.
    *
    *  @param iter  the iterable object.
    */
-  def appendAll(iter: Iterable[A]): Unit = this ++= iter
+  def appendAll(iter: Iterable[A]) { this ++= iter }
 
   /** Prepend an element to this list.
    *
    *  @param elem  the element to prepend.
    */
-  def prepend(elems: A*): Unit = elems ++: this
+  def prepend(elems: A*) { elems ++: this }
 
   /** Prepends a number of elements provided by an iterable object
    *  via its <code>elements</code> method. The identity of the
@@ -140,7 +140,7 @@ trait Buffer[A] extends AnyRef
    *
    *  @param iter  the iterable object.
    */
-  def prependAll(iter: Iterable[A]): Unit = iter ++: this
+  def prependAll(iter: Iterable[A]) { iter ++: this }
 
   /** Inserts new elements at the index <code>n</code>. Opposed to method
    *  <code>update</code>, this method will not replace an element with a
@@ -149,7 +149,7 @@ trait Buffer[A] extends AnyRef
    *  @param n      the index where a new element will be inserted.
    *  @param elems  the new elements to insert.
    */
-  def insert(n: Int, elems: A*): Unit = insertAll(n, elems)
+  def insert(n: Int, elems: A*) { insertAll(n, elems) }
 
   /** Inserts new elements at the index <code>n</code>. Opposed to method
    *  <code>update</code>, this method will not replace an element with a
@@ -179,9 +179,9 @@ trait Buffer[A] extends AnyRef
    *  @param n  the number of elements to remove from the beginning
    *            of this buffer.
    */
-  def trimStart(n: Int): Unit = {
+  def trimStart(n: Int) {
     var i = n
-    while (i > 0) { remove(0); i = i - 1 }
+    while (i > 0) { remove(0); i -= 1 }
   }
 
   /** Removes the last <code>n</code> elements.
@@ -189,9 +189,9 @@ trait Buffer[A] extends AnyRef
    *  @param n  the number of elements to remove from the end
    *            of this buffer.
    */
-  def trimEnd(n: Int): Unit = {
+  def trimEnd(n: Int) {
     var i = n
-    while (i > 0) { remove(length - 1); i = i - 1 }
+    while (i > 0) { remove(length - 1); i -= 1 }
   }
 
   /** Clears the buffer contents.
@@ -202,28 +202,30 @@ trait Buffer[A] extends AnyRef
    *
    *  @param cmd  the message to send.
    */
-  def <<(cmd: Message[(Location, A)]): Unit = cmd match {
-    case Include((l, elem)) => l match {
-      case Start => prepend(elem)
-      case End => append(elem)
-      case Index(n) => insert(n, elem)
+  def <<(cmd: Message[(Location, A)]) {
+    cmd match {
+      case Include((l, elem)) => l match {
+        case Start => prepend(elem)
+        case End => append(elem)
+        case Index(n) => insert(n, elem)
+        case _ => throw new UnsupportedOperationException("message " + cmd + " not understood")
+      }
+      case Update((l, elem)) => l match {
+        case Start => update(0, elem)
+        case End => update(length - 1, elem)
+        case Index(n) => update(n, elem)
+        case _ => throw new UnsupportedOperationException("message " + cmd + " not understood")
+      }
+      case Remove((l, _)) => l match {
+        case Start => remove(0)
+        case End => remove(length - 1)
+        case Index(n) => remove(n)
+        case _ => throw new UnsupportedOperationException("message " + cmd + " not understood")
+      }
+      case Reset() => clear
+      case s: Script[_] => s.elements foreach <<
       case _ => throw new UnsupportedOperationException("message " + cmd + " not understood")
     }
-    case Update((l, elem)) => l match {
-      case Start => update(0, elem)
-      case End => update(length - 1, elem)
-      case Index(n) => update(n, elem)
-      case _ => throw new UnsupportedOperationException("message " + cmd + " not understood")
-    }
-    case Remove((l, _)) => l match {
-      case Start => remove(0)
-      case End => remove(length - 1)
-      case Index(n) => remove(n)
-      case _ => throw new UnsupportedOperationException("message " + cmd + " not understood")
-    }
-    case Reset() => clear
-    case s: Script[_] => s.elements foreach <<
-    case _ => throw new UnsupportedOperationException("message " + cmd + " not understood")
   }
 
   /** Return a clone of this buffer.

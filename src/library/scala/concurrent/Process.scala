@@ -34,10 +34,10 @@ object Process {
   def send(p: Process, msg: MailBox#Message) =
     p.send(msg)
 
-  def receive[a](f: PartialFunction[MailBox#Message, a]): a =
+  def receive[A](f: PartialFunction[MailBox#Message, A]): A =
     self.receive(f)
 
-  def receiveWithin[a](msec: long)(f: PartialFunction[MailBox#Message, a]): a =
+  def receiveWithin[A](msec: Long)(f: PartialFunction[MailBox#Message, A]): A =
     self.receiveWithin(msec)(f)
 
   /**

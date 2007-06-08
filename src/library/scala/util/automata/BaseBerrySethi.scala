@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -35,7 +35,7 @@ abstract class BaseBerrySethi {
 
   protected var finalTag: Int = _
 
-  protected var finals: immutable.TreeMap[int,int] = _      // final states
+  protected var finals: immutable.TreeMap[Int, Int] = _     // final states
 
   // constants --------------------------
 
@@ -48,9 +48,11 @@ abstract class BaseBerrySethi {
       val it = x.rs.elements                       // union
       while (it.hasNext) { tmp = tmp incl compFirst(it.next) }
       tmp
-    case Eps => emptySet
+    case Eps =>
+      emptySet
     //case x:Letter => emptySet + posMap(x);  // singleton set
-    case x:Meta => compFirst(x.r)
+    case x:Meta =>
+      compFirst(x.r)
     case x:Sequ =>
       var tmp = emptySet;
       val it = x.rs.elements;                       // union

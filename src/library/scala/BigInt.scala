@@ -50,12 +50,12 @@ object BigInt {
   /** Translates a byte array containing the two's-complement binary
    *  representation of a BigInt into a BigInt.
    */
-  def apply(x: Array[byte]): BigInt =
+  def apply(x: Array[Byte]): BigInt =
     new BigInt(new BigInteger(x))
 
   /** Translates the sign-magnitude representation of a BigInt into a BigInt.
    */
-  def apply(signum: Int, magnitude: Array[byte]): BigInt =
+  def apply(signum: Int, magnitude: Array[Byte]): BigInt =
     new BigInt(new BigInteger(signum, magnitude))
 
   /** Constructs a randomly generated positive BigInt that is probably prime,
@@ -106,7 +106,7 @@ object BigInt {
    */
   implicit def bigInt2ordered(x: BigInt): Ordered[BigInt] = new Ordered[BigInt] with Proxy {
     def self: Any = x;
-    def compare (y: BigInt): int = x.bigInteger.compareTo(y.bigInteger)
+    def compare (y: BigInt): Int = x.bigInteger.compareTo(y.bigInteger)
   }
 }
 
@@ -122,7 +122,7 @@ class BigInt(val bigInteger: BigInteger) extends java.lang.Number {
 
   /** Compares this BigInt with the specified value for equality.
    */
-  override def equals (that: Any): boolean = that match {
+  override def equals (that: Any): Boolean = that match {
     case that: BigInt => this equals that
     case that: java.lang.Double => this.bigInteger.doubleValue == that.doubleValue
     case that: java.lang.Float  => this.bigInteger.floatValue == that.floatValue
@@ -133,28 +133,28 @@ class BigInt(val bigInteger: BigInteger) extends java.lang.Number {
 
   /** Compares this BigInt with the specified BigInt for equality.
    */
-  def equals (that: BigInt): boolean =
+  def equals (that: BigInt): Boolean =
     this.bigInteger.compareTo(that.bigInteger) == 0
 
   /** Compares this BigInt with the specified BigInt
    */
-  def compare (that: BigInt): int = this.bigInteger.compareTo(that.bigInteger)
+  def compare (that: BigInt): Int = this.bigInteger.compareTo(that.bigInteger)
 
   /** Less-than-or-equals comparison of BigInts
    */
-  def <= (that: BigInt): boolean = this.bigInteger.compareTo(that.bigInteger) <= 0
+  def <= (that: BigInt): Boolean = this.bigInteger.compareTo(that.bigInteger) <= 0
 
   /** Greater-than-or-equals comparison of BigInts
    */
-  def >= (that: BigInt): boolean = this.bigInteger.compareTo(that.bigInteger) >= 0
+  def >= (that: BigInt): Boolean = this.bigInteger.compareTo(that.bigInteger) >= 0
 
   /** Less-than of BigInts
    */
-  def <  (that: BigInt): boolean = this.bigInteger.compareTo(that.bigInteger) <  0
+  def <  (that: BigInt): Boolean = this.bigInteger.compareTo(that.bigInteger) <  0
 
   /** Greater-than comparison of BigInts
    */
-  def >  (that: BigInt): boolean = this.bigInteger.compareTo(that.bigInteger) > 0
+  def >  (that: BigInt): Boolean = this.bigInteger.compareTo(that.bigInteger) > 0
 
   /** Addition of BigInts
    */
@@ -276,17 +276,17 @@ class BigInt(val bigInteger: BigInteger) extends java.lang.Number {
   /** Returns the index of the rightmost (lowest-order) one bit in this BigInt
    * (the number of zero bits to the right of the rightmost one bit).
    */
-  def lowestSetBit: int         = this.bigInteger.getLowestSetBit()
+  def lowestSetBit: Int         = this.bigInteger.getLowestSetBit()
 
   /** Returns the number of bits in the minimal two's-complement representation of this BigInt,
    *  excluding a sign bit.
    */
-  def bitLength: int            = this.bigInteger.bitLength()
+  def bitLength: Int            = this.bigInteger.bitLength()
 
   /** Returns the number of bits in the two's complement representation of this BigInt
    *  that differ from its sign bit.
    */
-  def bitCount: int             = this.bigInteger.bitCount()
+  def bitCount: Int             = this.bigInteger.bitCount()
 
   /** Returns true if this BigInt is probably prime, false if it's definitely composite.
    *  @param certainty  a measure of the uncertainty that the caller is willing to tolerate:

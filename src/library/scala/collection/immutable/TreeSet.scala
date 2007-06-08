@@ -37,7 +37,7 @@ object TreeSet {
  */
 
 @serializable
-class TreeSet[A <% Ordered[A]](val size: int, t: RedBlack[A]#Tree[Unit])
+class TreeSet[A <% Ordered[A]](val size: Int, t: RedBlack[A]#Tree[Unit])
   extends RedBlack[A] with SortedSet[A] {
 
   def isSmaller(x: A, y: A) = x < y
@@ -46,7 +46,7 @@ class TreeSet[A <% Ordered[A]](val size: int, t: RedBlack[A]#Tree[Unit])
 
   protected val tree: RedBlack[A]#Tree[Unit] = if (size == 0) Empty else t
 
-  private def newSet(s: int, t: RedBlack[A]#Tree[Unit]) = new TreeSet[A](s, t)
+  private def newSet(s: Int, t: RedBlack[A]#Tree[Unit]) = new TreeSet[A](s, t)
 
   /** A factory to create empty maps of the same type of keys.
    */
@@ -87,22 +87,25 @@ class TreeSet[A <% Ordered[A]](val size: int, t: RedBlack[A]#Tree[Unit])
 
   def elementsSlow = tree.elementsSlow map (_._1)
 
-  override def foreach(f : A => Unit) : Unit =
-    tree.visit[Unit](())((unit0,y,unit1) => Tuple2(true, f(y)))
-  override def forall(f : A => Boolean) : Boolean =
-    tree.visit[Boolean](true)((input,a,unit) => f(a) match {
-    case ret if input => Tuple2(ret,ret)
-    })._2
-  override def exists(f : A => Boolean) : Boolean =
-    tree.visit[Boolean](false)((input,a,unit) => f(a) match {
-    case ret if !input => Tuple2(!ret,ret)
+  override def foreach(f: A => Unit) {
+    tree.visit[Unit](())((unit0, y, unit1) => Tuple2(true, f(y)))
+  }
+
+  override def forall(f: A => Boolean): Boolean =
+    tree.visit[Boolean](true)((input, a, unit) => f(a) match {
+    case ret if input => Tuple2(ret, ret)
     })._2
 
-   override def rangeImpl(from: Option[A], until: Option[A]) : TreeSet[A] = {
-     val tree = this.tree.range(from,until)
+  override def exists(f: A => Boolean): Boolean =
+    tree.visit[Boolean](false)((input, a, unit) => f(a) match {
+    case ret if !input => Tuple2(!ret, ret)
+    })._2
+
+   override def rangeImpl(from: Option[A], until: Option[A]): TreeSet[A] = {
+     val tree = this.tree.range(from, until)
      newSet(tree.count, tree)
    }
    override def firstKey = tree.first
    override def lastKey = tree.last
-   override def compare(a0 : A, a1 : A) = a0.compare(a1)
+   override def compare(a0: A, a1: A) = a0.compare(a1)
 }
