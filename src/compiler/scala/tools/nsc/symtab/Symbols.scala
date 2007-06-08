@@ -986,13 +986,14 @@ trait Symbols {
 
     /** If settings.uniqid is set, the symbol's id, else "" */
     final def idString: String =
-      if (settings.uniqid.value) "#" + id else ""
+      if (settings.uniqid.value) "#"+id else ""
 
     /** String representation, including symbol's kind
      *  e.g., "class Foo", "method Bar".
      */
     override def toString(): String =
-      compose(List(kindString, if (isClassConstructor) owner.nameString else nameString))
+      compose(List(kindString,
+                   if (isClassConstructor) owner.simpleName.decode+idString else nameString))
 
     /** String representation of location. */
     final def locationString: String =
