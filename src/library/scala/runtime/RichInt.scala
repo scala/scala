@@ -16,14 +16,16 @@ final class RichInt(start: Int) extends Proxy with Ordered[Int] {
   def self: Any = start
 
   // Ordered[Int]
-  def compare (that: Int): Int = if (start < that) -1 else if (start > that) 1 else 0
+  def compare(that: Int): Int = if (start < that) -1 else if (start > that) 1 else 0
 
   /** See <code>Iterator.range</code>. */
   def until(end: Int): Range = Iterator.range(start, end)
+
   /** See <code>Iterator.range</code>. */
-  def until(end : Int, step : Int) : Range = Iterator.range(start, end, step)
+  def until(end: Int, step: Int): Range = Iterator.range(start, end, step)
+
   /** like <code>until</code>, but includes the last index */
-  def to(end : Int) = until(end + 1)
+  def to(end: Int) = until(end + 1)
 
   def min(that: Int): Int = if (start < that) start else that
   def max(that: Int): Int = if (start > that) start else that

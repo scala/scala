@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -18,6 +18,6 @@ final class RichShort(x: Short) extends Proxy with Ordered[Short] {
   def self: Any = x
 
   // Ordered[Short].compare
-  def compare (y: Short): Int = if (x < y) -1 else if (x > y) 1 else 0
+  def compare(y: Short): Int = if (x < y) -1 else if (x > y) 1 else 0
 
 }
