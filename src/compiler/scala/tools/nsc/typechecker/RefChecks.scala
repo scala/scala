@@ -692,6 +692,11 @@ abstract class RefChecks extends InfoTransform {
           validateVariance(sym, sym.info, CoVariance)
           validateVariance(sym, sym.typeOfThis, CoVariance)
 
+        case DefDef(mods, name, tparams, vparams, tpt, EmptyTree) if tree.symbol.hasAttribute(definitions.NativeAttr.tpe) =>
+          tree.symbol.resetFlag(DEFERRED)
+          result = transform(copy.DefDef(tree, mods, name, tparams, vparams, tpt,
+                typed(Apply(gen.mkAttributedRef(definitions.Predef_error), List(Literal("native method stub"))))))
+
         case DefDef(_, _, _, _, _, _) =>
           validateVariance(sym, sym.tpe, CoVariance) //@M TODO: might be affected by change in tpe --> can't use tree.tpe though
           checkDeprecatedOvers()

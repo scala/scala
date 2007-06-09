@@ -259,6 +259,7 @@ trait StdNames {
     val equals_ = newTermName("equals")
     val _equals = newTermName("_equals")
     val _equalsWithVarArgs = newTermName("_equalsWithVarArgs")
+    val error = newTermName("error")
     val ex = newTermName("ex")
     val fail = newTermName("fail")
     val false_ = newTermName("false")

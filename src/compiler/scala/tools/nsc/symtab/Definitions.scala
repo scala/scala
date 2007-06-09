@@ -99,6 +99,7 @@ trait Definitions {
     var PredefModule: Symbol = _
       def Predef_classOf = getMember(PredefModule, nme.classOf)
       def Predef_identity = getMember(PredefModule, nme.identity)
+      def Predef_error    = getMember(PredefModule, nme.error)
     var ConsoleModule: Symbol = _
     var MatchErrorClass: Symbol = _
     //var MatchErrorModule: Symbol = _
@@ -369,6 +370,7 @@ trait Definitions {
     var DeprecatedAttr: Symbol = _
     var BeanPropertyAttr: Symbol = _
     var AnnotationDefaultAttr: Symbol = _
+    var NativeAttr: Symbol = _
 
     def getModule(fullname: Name): Symbol = getModuleOrClass(fullname, true)
 
@@ -937,6 +939,7 @@ trait Definitions {
       SerializableAttr = getClass("scala.serializable")
       BeanPropertyAttr = if (forCLDC || forMSIL) null else getClass("scala.reflect.BeanProperty")
       DeprecatedAttr = getClass("scala.deprecated")
+      NativeAttr     = getClass("scala.native")
 
       SyntheticClasses = new HashSet[Symbol]
       SyntheticClasses ++= List(

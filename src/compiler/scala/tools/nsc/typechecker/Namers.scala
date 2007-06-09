@@ -741,7 +741,7 @@ trait Namers { self: Analyzer =>
      *   - `abstract' modifier only for classes
      *   - `override' modifier never for classes
      *   - `def' modifier never for parameters of case classes
-     *   - declarations only in mixins or abstract classes
+     *   - declarations only in mixins or abstract classes (when not @native)
      */
     def validate(sym: Symbol): unit = {
       def checkNoConflict(flag1: int, flag2: int): unit =
@@ -769,12 +769,14 @@ trait Namers { self: Analyzer =>
           sym.isValueParameter && sym.owner.isClass && sym.owner.hasFlag(CASE))
         context.error(sym.pos, "pass-by-name arguments not allowed for case class parameters");
       if ((sym.flags & DEFERRED) != 0) {
-        if (!sym.isValueParameter && !sym.isTypeParameterOrSkolem &&
-            !context.tree.isInstanceOf[ExistentialTypeTree] &&
-            (!sym.owner.isClass || sym.owner.isModuleClass || sym.owner.isAnonymousClass)) {
-          context.error(sym.pos,
-            "only classes can have declared but undefined members" + varNotice(sym))
+        if (sym.hasAttribute(definitions.NativeAttr.tpe))
           sym.resetFlag(DEFERRED)
+        else if (!sym.isValueParameter && !sym.isTypeParameterOrSkolem &&
+          !context.tree.isInstanceOf[ExistentialTypeTree] &&
+          (!sym.owner.isClass || sym.owner.isModuleClass || sym.owner.isAnonymousClass)) {
+            context.error(sym.pos,
+              "only classes can have declared but undefined members" + varNotice(sym))
+            sym.resetFlag(DEFERRED)
         }
       }
       checkNoConflict(DEFERRED, PRIVATE)

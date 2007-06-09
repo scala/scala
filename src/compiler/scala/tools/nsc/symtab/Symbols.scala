@@ -81,6 +81,11 @@ trait Symbols {
     }
 
     var attributes: List[AnnotationInfo] = List()
+    def hasAttribute(Tpe: Type): Boolean =
+      attributes.exists {
+        case AnnotationInfo(Tpe, _, _) => true
+        case _ => false
+    }
 
     var privateWithin: Symbol = _
 

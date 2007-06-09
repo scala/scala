@@ -109,8 +109,10 @@ abstract class GenICode extends SubComponent  {
 
         var ctx1 = ctx.enterMethod(m, tree.asInstanceOf[DefDef])
         addMethodParams(ctx1, vparamss)
+        val NativeAttr = atPhase(currentRun.typerPhase)(definitions.getClass("scala.native").tpe)
+        m.native = m.symbol.hasAttribute(NativeAttr)
 
-        if (!m.isDeferred) {
+        if (!m.isDeferred && !m.native) {
           ctx1 = genLoad(rhs, ctx1, m.returnType);
 
           // reverse the order of the local variables, to match the source-order
