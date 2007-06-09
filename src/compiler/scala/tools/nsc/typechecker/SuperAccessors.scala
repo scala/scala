@@ -38,16 +38,35 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
   class SuperAccTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
     private var validCurrentOwner = true
     private var accDefs: List[(Symbol, ListBuffer[Tree])] = List()
+    private val typer = analyzer.newTyper(analyzer.rootContext(unit))
 
     private def accDefBuf(clazz: Symbol) =
       accDefs.dropWhile(_._1 != clazz).head._2
-
+/*
     private def transformArgs(args: List[Tree], formals: List[Type]) = {
       if (!formals.isEmpty && formals.last.symbol == definitions.ByNameParamClass)
         ((args take (formals.length - 1) map transform) :::
          withInvalidOwner { args drop (formals.length - 1) map transform })
       else
         args map transform
+    }
+*/
+    private def transformArgs(args: List[Tree], formals: List[Type]) =
+      List.map2(args, formals){ (arg, formal) =>
+        if (formal.symbol == definitions.ByNameParamClass)
+          withInvalidOwner { checkPackedConforms(transform(arg), formal.typeArgs.head) }
+        else transform(arg)
+      } :::
+      (args drop formals.length map transform)
+
+    private def checkPackedConforms(tree: Tree, pt: Type): Tree = {
+      if (tree.tpe exists (_.symbol.isExistentialSkolem)) {
+        val packed = typer.typed(Pack(tree) setPos tree.pos)
+        println("packed: "+packed+":"+packed.tpe+", pt = "+pt)
+        if (!(packed.tpe <:< pt))
+          typer.infer.typeError(tree.pos, packed.tpe, pt)
+      }
+      tree
     }
 
     override def transform(tree: Tree): Tree = tree match {
@@ -301,7 +320,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
         if (host.thisSym != host) {
           if (host.thisSym.tpe.symbol.hasFlag(JAVA) || currentOwner.enclClass.isTrait)
             unit.error(pos, "Implementation restriction: " + currentOwner.enclClass + " accesses protected "
-                            + sym + " from 'required' " + host.thisSym.tpe)
+                            + sym + " from self type " + host.thisSym.tpe)
           false
         } else res
       } else res

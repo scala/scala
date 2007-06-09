@@ -860,6 +860,13 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
             //Console.println("checking no dble defs " + tree)//DEBUG
             checkNoDoubleDefs(tree.symbol.owner)
             copy.Template(tree, parents, emptyValDef, addBridges(body, currentOwner))
+
+          case Pack(expr) =>
+            expr
+
+          case Unpack(expr) =>
+            expr
+
           case _ =>
             tree
         }

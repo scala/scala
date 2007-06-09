@@ -11,6 +11,7 @@ import java.io.{PrintWriter, StringWriter}
 import scala.tools.nsc.symtab.Flags
 import scala.tools.nsc.symtab.Flags._
 import scala.tools.nsc.util.{HashSet, Position, NoPosition, SourceFile}
+import scala.collection.mutable.ListBuffer
 
 
 trait Trees {
@@ -97,6 +98,16 @@ trait Trees {
     def isEmpty = false
 
     def isErroneous = (tpe ne null) && tpe.isErroneous
+
+    /** Apply `f' to each subtree */
+    def foreach(f: Tree => Unit): Unit = new ForeachTraverser(f).traverse(this)
+
+    /** Find all subtrees matching predicate `p' */
+    def filter(f: Tree => Boolean): List[Tree] = {
+      val ft = new FilterTraverser(f)
+      ft.traverse(this)
+      ft.hits.toList
+    }
 
     override def toString(): String = {
       val buffer = new StringWriter()
@@ -585,6 +596,14 @@ trait Trees {
   case class Throw(expr: Tree)
        extends TermTree
 
+  /** Pack skolemized type, yielding existential */
+  case class Pack(expr: Tree)
+       extends TermTree
+
+  /** Unpack existential, yielding skolemized type */
+  case class Unpack(expr: Tree)
+       extends TermTree
+
   /** Object instantiation
    *  One should always use factory method below to build a user level new.
    *
@@ -787,6 +806,10 @@ trait Trees {
     // try block catch { catches } finally finalizer where catches: List[CaseDef]
   case Throw(expr) =>
     // throw expr
+  case Pack(expr) =>                                              (eliminated by erasure)
+    // internal: pack existential type
+  case Unpack(expr) =>                                            (eliminated by erasure)
+    // internal: unpack existential type
   case New(tpt) =>
     // new tpt   always in the context: new tpt.<init>[targs](args)
   case Typed(expr, tpt) =>                                        (eliminated by erasure)
@@ -853,6 +876,8 @@ trait Trees {
     def Return(tree: Tree, expr: Tree): Return
     def Try(tree: Tree, block: Tree, catches: List[CaseDef], finalizer: Tree): Try
     def Throw(tree: Tree, expr: Tree): Throw
+    def Pack(tree: Tree, expr: Tree): Pack
+    def Unpack(tree: Tree, expr: Tree): Unpack
     def New(tree: Tree, tpt: Tree): New
     def Typed(tree: Tree, expr: Tree, tpt: Tree): Typed
     def TypeApply(tree: Tree, fun: Tree, args: List[Tree]): TypeApply
@@ -928,6 +953,10 @@ trait Trees {
       new Try(block, catches, finalizer).copyAttrs(tree)
     def Throw(tree: Tree, expr: Tree) =
       new Throw(expr).copyAttrs(tree)
+    def Pack(tree: Tree, expr: Tree) =
+      new Pack(expr).copyAttrs(tree)
+    def Unpack(tree: Tree, expr: Tree) =
+      new Unpack(expr).copyAttrs(tree)
     def New(tree: Tree, tpt: Tree) =
       new New(tpt).copyAttrs(tree)
     def Typed(tree: Tree, expr: Tree, tpt: Tree) =
@@ -1104,6 +1133,16 @@ trait Trees {
       if expr0 == expr => t
       case _ => copy.Throw(tree, expr)
     }
+    def Pack(tree: Tree, expr: Tree) = tree match {
+      case t @ Pack(expr0)
+      if expr0 == expr => t
+      case _ => copy.Pack(tree, expr)
+    }
+    def Unpack(tree: Tree, expr: Tree) = tree match {
+      case t @ Unpack(expr0)
+      if expr0 == expr => t
+      case _ => copy.Unpack(tree, expr)
+    }
     def New(tree: Tree, tpt: Tree) = tree match {
       case t @ New(tpt0)
       if tpt0 == tpt => t
@@ -1275,6 +1314,10 @@ trait Trees {
         copy.Try(tree, transform(block), transformCaseDefs(catches), transform(finalizer))
       case Throw(expr) =>
         copy.Throw(tree, transform(expr))
+      case Pack(expr) =>
+        copy.Pack(tree, transform(expr))
+      case Unpack(expr) =>
+        copy.Unpack(tree, transform(expr))
       case New(tpt) =>
         copy.New(tree, transform(tpt))
       case Typed(expr, tpt) =>
@@ -1423,6 +1466,10 @@ trait Trees {
         traverse(block); traverseTrees(catches); traverse(finalizer)
       case Throw(expr) =>
         traverse(expr)
+      case Pack(expr) =>
+        traverse(expr)
+      case Unpack(expr) =>
+        traverse(expr)
       case New(tpt) =>
         traverse(tpt)
       case Typed(expr, tpt) =>
@@ -1542,6 +1589,15 @@ trait Trees {
       traverse(tree)
       tree
     }
+  }
+
+  class ForeachTraverser(f: Tree => Unit) extends Traverser {
+    override def traverse(t: Tree) = f(t)
+  }
+
+  class FilterTraverser(p: Tree => Boolean) extends Traverser {
+    val hits = new ListBuffer[Tree]
+    override def traverse(t: Tree) = if (p(t)) hits += t
   }
 
   object resetPos extends Traverser {

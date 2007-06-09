@@ -115,9 +115,6 @@ trait Symbols {
     }
     final def newThisSym(pos: Position) =
       newValue(pos, nme.this_).setFlag(SYNTHETIC)
-    final def newThisSkolem: Symbol =
-      new ThisSkolem(owner, pos, name, this)
-        .setFlag(SYNTHETIC | FINAL)
     final def newImport(pos: Position) =
       newValue(pos, nme.IMPORT)
     final def newOverloaded(pre: Type, alternatives: List[Symbol]): Symbol =
@@ -196,14 +193,18 @@ trait Symbols {
     final def isStaticModule = isModule && isStatic && !isMethod
     final def isPackage = isModule && hasFlag(PACKAGE)
     final def isThisSym = isTerm && owner.thisSym == this
-    final def isThisSkolem = isTerm && deSkolemize != this
     final def isMonomorphicType = isType && hasFlag(MONOMORPHIC)
     final def isError = hasFlag(IS_ERROR)
     final def isErroneous = isError || isInitialized && tpe.isErroneous
     final def isTrait = isClass & hasFlag(TRAIT)
+    final def isSkolem                = deSkolemize != this
     final def isTypeParameterOrSkolem = isType && hasFlag(PARAM)
-    final def isTypeParameter         = isTypeParameterOrSkolem && deSkolemize == this
-    final def isClassLocalToConstructor = isClass && hasFlag(INCONSTRUCTOR)
+    final def isTypeParameter         = isTypeParameterOrSkolem && !isSkolem
+    final def isTypeSkolem            = isTypeParameterOrSkolem && isSkolem
+    final def isExistential           = isType && hasFlag(EXISTENTIAL)
+    final def isExistentialQuantified = isExistential && !isSkolem
+    final def isExistentialSkolem     = isExistential && isSkolem
+        final def isClassLocalToConstructor = isClass && hasFlag(INCONSTRUCTOR)
     final def isAnonymousClass = isClass && (originalName startsWith nme.ANON_CLASS_NAME)
       // startsWith necessary because name may grow when lifted and also because of anonymous function classes
     final def isRefinementClass = isClass && name == nme.REFINE_CLASS_NAME.toTypeName; // no lifting for refinement classes
@@ -1129,17 +1130,6 @@ trait Symbols {
     }
   }
 
-  /** A class for type parameters viewed from inside their scopes */
-  class ThisSkolem(initOwner: Symbol, initPos: Position,
-                   initName: Name, clazz: Symbol)
-  extends TermSymbol(initOwner, initPos, initName) {
-    override def deSkolemize = clazz
-    override def cloneSymbolImpl(owner: Symbol): Symbol = {
-      throw new Error("should not clone a this skolem")
-    }
-    override def nameString: String = clazz.name.toString() + ".this"
-  }
-
   /** A class of type symbols. Alias and abstract types are direct instances
    *  of this class. Classes are instances of a subclass.
    */
@@ -1168,7 +1158,8 @@ trait Symbols {
           else unsafeTypeParams map (_.typeConstructor) //@M! use typeConstructor to generate dummy type arguments,
           // sym.tpe should not be called on a symbol that's supposed to be a higher-kinded type
           // memberType should be used instead, that's why it uses tpeHK and not tpe
-          tpeCache = typeRef(if (isTypeParameterOrSkolem) NoPrefix else owner.thisType, this, targs)
+          tpeCache = typeRef(if (hasFlag(PARAM | EXISTENTIAL)) NoPrefix else owner.thisType,
+                             this, targs)
         }
       }
       assert(tpeCache ne null/*, "" + this + " " + phase*/)//debug
@@ -1177,7 +1168,8 @@ trait Symbols {
 
     override def typeConstructor: Type = {
       if ((tyconCache eq null) || tyconRunId != currentRunId) {
-        tyconCache = typeRef(if (isTypeParameter) NoPrefix else owner.thisType, this, List())
+        tyconCache = typeRef(if (hasFlag(PARAM | EXISTENTIAL)) NoPrefix else owner.thisType,
+                             this, List())
         tyconRunId = currentRunId
       }
       assert(tyconCache ne null)

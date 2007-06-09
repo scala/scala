@@ -66,6 +66,7 @@ object Flags extends Enumeration {
                                           // local value has been lifted out to class level
                                           // todo: make LIFTED = latePRIVATE?
   final val MIXEDIN       = 0x800000000L  // term member has been mixed in
+  final val EXISTENTIAL   = 0x800000000L  // type is an existential parameter or skolem
 
   final val EXPANDEDNAME  = 0x1000000000L // name has been expanded with class suffix
   final val IMPLCLASS     = 0x2000000000L // symbol is an implementation class

@@ -338,21 +338,15 @@ trait Typers { self: Analyzer =>
         this.owner = owner
         this.scope = scope
         hiddenSymbols = List()
-        apply(tree.tpe)
-        if (hiddenSymbols.isEmpty) tree
+        val tp1 = apply(tree.tpe)
+        if (hiddenSymbols.isEmpty) tree setType tp1
         else if (hiddenSymbols exists (_.isErroneous)) setError(tree)
         else if (isFullyDefined(pt)) tree setType pt //todo: eliminate
-        else if (tree.tpe.symbol.isAnonymousClass) // todo: eliminate
-          check(owner, scope, pt, tree setType anonymousClassRefinement(tree.tpe.symbol))
-        else if (owner == NoSymbol) { // locals
-          val (tparams, tp1) = existentialTransform(hiddenSymbols.reverse, tree.tpe)
-//          Console.println("original type: "+tree.tpe)
-//          Console.println("exist params : "+tparams)
-//          Console.println("replaced type: "+tp1)
-          tree setType existentialAbstraction(tparams, tp1)
-//          Console.println("abstracted type: "+tree.tpe)
-//          tree
-        } else { // privates
+        else if (tp1.symbol.isAnonymousClass) // todo: eliminate
+          check(owner, scope, pt, tree setType anonymousClassRefinement(tp1.symbol))
+        else if (owner == NoSymbol)
+          tree setType packSymbols(hiddenSymbols.reverse, tp1)
+        else { // privates
           val badSymbol = hiddenSymbols.head
           error(tree.pos,
                 (if (badSymbol hasFlag PRIVATE) "private " else "") + badSymbol +
@@ -386,12 +380,21 @@ trait Typers { self: Analyzer =>
             }
           }
         }
-        t match {
-          case TypeRef(_, sym, _) => checkNoEscape(sym)
-          case SingleType(_, sym) => checkNoEscape(sym)
-          case _ =>
-        }
-        mapOver(t)
+        mapOver(
+          t match {
+            case TypeRef(_, sym, args) =>
+              checkNoEscape(sym)
+              if (!hiddenSymbols.isEmpty && hiddenSymbols.head == sym &&
+                  sym.isAliasType && sym.typeParams.length == args.length) {
+                hiddenSymbols = hiddenSymbols.tail
+                t.normalize
+              } else t
+            case SingleType(_, sym) =>
+              checkNoEscape(sym)
+              t
+            case _ =>
+              t
+          })
       }
     }
 
@@ -1253,7 +1256,8 @@ trait Typers { self: Analyzer =>
       val expr1 = typed(block.expr, mode & ~(FUNmode | QUALmode), pt)
       val block1 = copy.Block(block, stats1, expr1)
         .setType(if (treeInfo.isPureExpr(block)) expr1.tpe else expr1.tpe.deconst)
-      checkNoEscaping.locals(context.scope, pt, block1)
+      //checkNoEscaping.locals(context.scope, pt, block1)
+      block1
     }
 
     /**
@@ -1279,7 +1283,7 @@ trait Typers { self: Analyzer =>
               }
             }
       }
-      body1 = checkNoEscaping.locals(context.scope, pt, body1)
+//    body1 = checkNoEscaping.locals(context.scope, pt, body1)
       copy.CaseDef(cdef, pat1, guard1, body1) setType body1.tpe
     }
 
@@ -1340,15 +1344,15 @@ trait Typers { self: Analyzer =>
         if (inIDE) // HACK to process arguments types in IDE.
           typedFunctionIDE(fun, context);
         val vparams = List.mapConserve(fun.vparams)(typedValDef)
-        for (vparam <- vparams) {
-          checkNoEscaping.locals(context.scope, WildcardType, vparam.tpt); ()
-        }
-        val body = checkNoEscaping.locals(context.scope, respt, typed(fun.body, respt))
+//        for (val vparam <- vparams) {
+//          checkNoEscaping.locals(context.scope, WildcardType, vparam.tpt); ()
+//        }
+        var body = pack(typed(fun.body, respt), fun.symbol)
         val formals = vparamSyms map (_.tpe)
         val restpe = body.tpe.deconst
         val funtpe = typeRef(clazz.tpe.prefix, clazz, formals ::: List(restpe))
-        val fun1 = copy.Function(fun, vparams, checkNoEscaping.locals(context.scope, restpe, body))
-          .setType(funtpe)
+//        body = checkNoEscaping.locals(context.scope, restpe, body)
+        val fun1 = copy.Function(fun, vparams, body).setType(funtpe)
         if (codeExpected) {
           val liftPoint = Apply(Select(Ident(CodeModule), nme.lift_), List(fun1))
           typed(atPos(fun.pos)(liftPoint))
@@ -1709,21 +1713,77 @@ trait Typers { self: Analyzer =>
      */
     protected def existentialTransform(rawSyms: List[Symbol], tp: Type) = {
       val typeParams = rawSyms map { sym =>
-        if (sym.isType) sym.cloneSymbol
-        else sym.owner.newAbstractType(sym.pos, newTermName(sym.name+".Type"))//todo: change to .type
-          .setInfo(mkTypeBounds(AllClass.tpe, sym.tpe))
+        val (name, bound) =
+          if (sym.isClass)
+            (sym.name,
+             mkTypeBounds(AllClass.tpe, anonymousClassRefinement(sym)))
+          else if (sym.isAbstractType)
+            (sym.name,
+             sym.info)
+          else if (sym.isTerm)
+            (newTypeName(sym.name+".type"),
+             mkTypeBounds(AllClass.tpe, intersectionType(List(sym.tpe, SingletonClass.tpe))))
+          else
+            throw new Error("unexpected alias type: "+sym)
+        sym.owner.newAbstractType(sym.pos, name) setFlag EXISTENTIAL setInfo bound
       }
       val typeParamTypes = typeParams map (_.tpe)
       for (tparam <- typeParams) tparam.setInfo(tparam.info.subst(rawSyms, typeParamTypes))
       (typeParams, tp.subst(rawSyms, typeParamTypes))
     }
 
+    /** Compute an existential type from raw hidden symbols `syms' and type `tp'
+     */
+    def packSymbols(hidden: List[Symbol], tp: Type) =
+      if (hidden.isEmpty) tp
+      else {
+//          Console.println("original type: "+tp)
+//          Console.println("hidden symbols: "+hidden)
+        val (tparams, tp1) = existentialTransform(hidden, tp)
+//          Console.println("tparams: "+tparams+", result: "+tp1)
+        val res = existentialAbstraction(tparams, tp1)
+//          Console.println("final result: "+res)
+        res
+      }
+
+    protected def pack(tree: Tree, owner: Symbol): Tree = {
+      def isAnonymousFunction(sym: Symbol) =
+        (sym hasFlag SYNTHETIC) && (sym.name == nme.ANON_FUN_NAME)
+      def isVisibleParameter(sym: Symbol) =
+        (sym hasFlag PARAM) && (sym.owner == owner) && (sym.isType || !isAnonymousFunction(owner))
+      object collectLocals extends TypeMap {
+        var symbols: List[Symbol] = List()
+        def apply(tp: Type) = {
+          tp match {
+            case TypeRef(_, _, _) | SingleType(_, _) =>
+              val sym = tp.symbol
+              if (sym hasFlag PACKAGE) tp
+              else {
+                var o = sym.owner
+                while (o != owner && !(o hasFlag PACKAGE)) o = o.owner
+                if (o == owner && !isVisibleParameter(sym) && !(symbols contains sym))
+                  symbols = sym :: symbols
+                mapOver(tp)
+              }
+            case _ =>
+              mapOver(tp)
+          }
+        }
+      }
+      collectLocals(tree.tpe)
+      val hidden = collectLocals.symbols.reverse
+      if (hidden.isEmpty) tree
+      else Pack(tree) setType packSymbols(hidden, tree.tpe)
+    }
+
     protected def typedExistentialTypeTree(tree: ExistentialTypeTree): Tree = {
-      namer.enterSyms(tree.whereClauses)
-      val whereClauses1 = typedStats(tree.whereClauses, NoSymbol)
+      for (val wc <- tree.whereClauses)
+        if (wc.symbol == NoSymbol) { namer.enterSym(wc); wc.symbol setFlag EXISTENTIAL }
+        else context.scope enter wc.symbol
+      val whereClauses1 = typedStats(tree.whereClauses, context.owner)
       val tpt1 = typedType(tree.tpt)
       val (typeParams, tpe) = existentialTransform(tree.whereClauses map (_.symbol), tpt1.tpe)
-      copy.ExistentialTypeTree(tree, tpt1, whereClauses1).setType(ExistentialType(typeParams, tpe))
+      TypeTree(ExistentialType(typeParams, tpe)) setOriginal tree
     }
 
     /**
@@ -1838,7 +1898,10 @@ trait Typers { self: Analyzer =>
           val rhs1 = typed(rhs, lhs1.tpe)
           copy.Assign(tree, lhs1, checkDead(rhs1)) setType UnitClass.tpe
         } else {
-          if (!lhs1.tpe.isError) error(tree.pos, "assignment to non-variable ")
+          if (!lhs1.tpe.isError) {
+            println(lhs1+" = "+rhs)
+            error(tree.pos, "assignment to non-variable ")
+          }
           setError(tree)
         }
       }
@@ -2533,6 +2596,19 @@ trait Typers { self: Analyzer =>
           val expr1 = typed(expr, ThrowableClass.tpe)
           copy.Throw(tree, expr1) setType AllClass.tpe
 
+        case Pack(expr) =>
+          val expr1 = typed1(expr, mode, pt)
+          val skolems = new ListBuffer[Symbol]
+          for (val unpacked @ Unpack(expr) <- expr filter (_.isInstanceOf[Unpack])) {
+            skolems ++= (unpacked.tpe.exskolems diff expr.tpe.exskolems)
+          }
+          val packed = packSymbols(skolems.toList.removeDuplicates, expr.tpe)
+          copy.Pack(tree, expr1) setType packed
+
+        case Unpack(expr) =>
+          val expr1 = typed1(expr, mode, pt)
+          copy.Unpack(tree, expr1) setType expr1.tpe.skolemizeExistential(context.owner)
+
         case New(tpt: Tree) =>
           typedNew(tpt)
 
@@ -2681,11 +2757,20 @@ trait Typers { self: Analyzer =>
           if (tree.hasSymbol) tree.symbol = NoSymbol
         }
         //Console.println("typing "+tree+", "+context.undetparams);//DEBUG
-        val tree1 = if (tree.tpe ne null) tree else typed1(tree, mode, pt)
+        def dropExistential(tp: Type) = tp match {
+          case ExistentialType(tparams, tpe) =>
+            if (settings.debug.value) println("drop ex "+tree+" "+tp)
+            tpe.subst(tparams, tparams map (x => WildcardType))
+          case _ => tp
+        }
+        var tree1 = if (tree.tpe ne null) tree else typed1(tree, mode, dropExistential(pt))
         //Console.println("typed "+tree1+":"+tree1.tpe+", "+context.undetparams);//DEBUG
-
+        if ((mode & (EXPRmode | LHSmode)) == EXPRmode && tree1.tpe.isInstanceOf[ExistentialType])
+          tree1 = Unpack(tree1) setPos tree1.pos setType tree1.tpe.skolemizeExistential(context.owner)
+        //Console.println("skolemized "+tree1+":"+tree1.tpe);//DEBUG
         val result = if (tree1.isEmpty) tree1 else adapt(tree1, mode, pt)
         //Console.println("adapted "+tree1+":"+tree1.tpe+" to "+pt+", "+context.undetparams);//DEBUG
+//      if ((mode & TYPEmode) != 0) println("type: "+tree1+" has type "+tree1.tpe)
         result
       } catch {
         case ex: TypeError =>
@@ -2765,7 +2850,7 @@ trait Typers { self: Analyzer =>
     }
 
     def computeType(tree: Tree, pt: Type): Type = {
-      val tree1 = typed(tree, pt)
+      val tree1 = pack(typed(tree, pt), context.owner)
       transformed(tree) = tree1
       tree1.tpe
     }

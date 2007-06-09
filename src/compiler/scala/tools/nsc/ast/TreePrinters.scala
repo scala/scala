@@ -252,6 +252,12 @@ abstract class TreePrinters {
         case Throw(expr) =>
           print("throw "); print(expr)
 
+        case Pack(expr) =>
+          print("pack("); print(expr); print(")")
+
+        case Unpack(expr) =>
+          print("unpack("); print(expr); print(")")
+
         case New(tpe) =>
           print("new "); print(tpe)
 
@@ -326,6 +332,10 @@ abstract class TreePrinters {
 
         case WildcardTypeTree(lo, hi) =>
           print("_ "); printOpt(" >: ", lo); printOpt(" <: ", hi)
+
+        case ExistentialTypeTree(tpt, whereClauses) =>
+          print(tpt);
+          printColumn(whereClauses, " for_some { ", ";", "}")
 
         case tree =>
           print("<unknown tree of class "+tree.getClass+">")

@@ -26,13 +26,9 @@ trait Namers { self: Analyzer =>
    */
   class DeSkolemizeMap(tparams: List[Symbol]) extends TypeMap {
     def apply(tp: Type): Type = tp match {
-      case TypeRef(pre, sym, args) =>
-        val tparam = sym.deSkolemize
-        mapOver(
-          if (tparam == sym || !(tparams contains tparam)) tp
-          else rawTypeRef(NoPrefix, tparam, args))
-      case SingleType(pre, sym) if (sym.isThisSkolem) =>
-        mkThisType(sym.deSkolemize)
+      case TypeRef(pre, sym, args)
+      if (sym.isTypeSkolem && (tparams contains sym.deSkolemize)) =>
+        mapOver(rawTypeRef(NoPrefix, sym.deSkolemize, args))
       case PolyType(tparams1, restpe) =>
         new DeSkolemizeMap(tparams1 ::: tparams).mapOver(tp)
       case ClassInfoType(parents, decls, clazz) =>
@@ -774,6 +770,7 @@ trait Namers { self: Analyzer =>
         context.error(sym.pos, "pass-by-name arguments not allowed for case class parameters");
       if ((sym.flags & DEFERRED) != 0) {
         if (!sym.isValueParameter && !sym.isTypeParameterOrSkolem &&
+            !context.tree.isInstanceOf[ExistentialTypeTree] &&
             (!sym.owner.isClass || sym.owner.isModuleClass || sym.owner.isAnonymousClass)) {
           context.error(sym.pos,
             "only classes can have declared but undefined members" + varNotice(sym))

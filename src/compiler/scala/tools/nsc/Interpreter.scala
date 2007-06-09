@@ -720,7 +720,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
             case rawType => rawType
           }
 
-          map + name -> cleanedType.toString
+          map + name -> compiler.atPhase(objRun.typerPhase.next) { cleanedType.toString }
         })
       }
 

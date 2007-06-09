@@ -185,6 +185,7 @@ abstract class NodePrinters {
                 traverse(tparams(i), level + 2, i < n-1)
               println("  ),")
             }
+            println(tpt+",")
             traverse(rhs, level + 1, false)
             printcln(")")
           case EmptyTree =>
