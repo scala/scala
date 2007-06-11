@@ -645,6 +645,7 @@ MSIL
       <include name="scala/Product*.scala"/>
       <include name="scala/cloneable.scala"/>
       <include name="scala/deprecated.scala"/>
+      <include name="scala/native.scala"/>
       <include name="scala/serializable.scala"/>
       <include name="scala/transient.scala"/>
       <include name="scala/runtime/*.scala"/>
