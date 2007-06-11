@@ -939,7 +939,7 @@ trait Definitions {
       SerializableAttr = getClass("scala.serializable")
       BeanPropertyAttr = if (forCLDC || forMSIL) null else getClass("scala.reflect.BeanProperty")
       DeprecatedAttr = getClass("scala.deprecated")
-      NativeAttr     = getClass("scala.native")
+      NativeAttr = if (forMSIL) null else getClass("scala.native")
 
       SyntheticClasses = new HashSet[Symbol]
       SyntheticClasses ++= List(

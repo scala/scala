@@ -635,21 +635,43 @@ MSIL
   <target name="msil" depends="setup.quick, msil.sources">
     <quick srcdir="${msil.dir}/src" usepredefs="no" target="msil"
            assemname="${msil.dir}/predef" assemrefs="${lib.dir}">
-      <include name="scala/Predef.scala" />
-      <include name="scala/Console.scala" />
-      <include name="scala/Application.scala" />
-      <include name="scala/ByNameFunction.scala" />
-      <include name="scala/*Annotation.scala" />
-      <include name="scala/Function*.scala" />
-      <include name="scala/Tuple*.scala" />
-      <include name="scala/Product*.scala" />
-      <include name="scala/deprecated.scala" />
-      <include name="scala/serializable.scala" />
-      <include name="scala/transient.scala" />
-      <include name="scala/cloneable.scala" />
-      <include name="scala/transient.scala" />
-      <include name="scala/runtime/*.scala" />
+      <include name="scala/Predef.scala"/>
+      <include name="scala/Console.scala"/>
+      <include name="scala/Application.scala"/>
+      <include name="scala/ByNameFunction.scala"/>
+      <include name="scala/*Annotation.scala"/>
+      <include name="scala/Function*.scala"/>
+      <include name="scala/Tuple*.scala"/>
+      <include name="scala/Product*.scala"/>
+      <include name="scala/cloneable.scala"/>
+      <include name="scala/deprecated.scala"/>
+      <include name="scala/serializable.scala"/>
+      <include name="scala/transient.scala"/>
+      <include name="scala/runtime/*.scala"/>
     </quick>
+    <property name="ilasm.infile" value="${msil.dir}/predef.msil"/>
+    <property name="ilasm.outfile" value="${msil.dir}/predef.dll"/>
+    <if><isset property="os.win"/>
+      <then>
+        <property
+          name="ilasm.args"
+          value="/quiet /dll /output=${ilasm.outfile} ${ilasm.infile}"
+        />
+      </then>
+      <else>
+        <property
+          name="ilasm.args"
+          value="/dll /output:${ilasm.outfile} ${ilasm.infile}"
+        />
+      </else>
+    </if>
+    <exec
+      executable="ilasm" vmlauncher="no">
+      <!--
+      errorproperty="ilasm.err" outputproperty="ilasm.out">
+      -->
+      <arg line="${ilasm.args}"/>
+    </exec>
   </target>
 
 <!-- ===========================================================================
