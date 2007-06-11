@@ -134,7 +134,7 @@ trait MarkupParsers {
         nextch
       }
       val str = cbuf.toString()
-      cbuf.setLength(0)
+      cbuf.length = 0
       // @todo: normalize attribute value
       // well-formedness constraint
       if (str.indexOf('<') != -1) {
@@ -188,7 +188,7 @@ trait MarkupParsers {
         if (ch==']' &&
            { sb.append(ch); nextch; ch == ']' } &&
            { sb.append(ch); nextch; ch == '>' }) {
-          sb.setLength(sb.length() - 2)
+          sb.length = sb.length - 2
           nextch
           return handle.charData(pos1, sb.toString())
         } else
@@ -217,7 +217,7 @@ trait MarkupParsers {
            { sb.append(ch); nextch; ch == 'e' } &&
            { sb.append(ch); nextch; ch == 'd' } &&
            { sb.append(ch); nextch; ch == '>' }) {
-          sb.setLength(sb.length - "</xml:unparsed".length)
+          sb.length = sb.length - "</xml:unparsed".length
           nextch
           return handle.unparsed(pos1, sb.toString())
         } else sb.append(ch)
@@ -264,7 +264,7 @@ trait MarkupParsers {
       xToken('-')
       while (true) {
         if (ch=='-'  && { sb.append(ch); nextch; ch == '-' }) {
-          sb.setLength(sb.length() - 1)
+          sb.length = sb.length - 1
           nextch
           xToken('>')
           return handle.comment(pos, sb.toString())
@@ -416,10 +416,10 @@ trait MarkupParsers {
       } while (xml.Parsing.isNameChar(ch))
       if (':' == cbuf.charAt(cbuf.length-1)) {
         reportSyntaxError( "name cannot end in ':'" )
-        cbuf.setLength(cbuf.length-1)
+        cbuf.length = cbuf.length - 1
       }
       val n = cbuf.toString().intern()
-      cbuf.setLength(0)
+      cbuf.length = 0
       n
     }
 
@@ -445,7 +445,7 @@ trait MarkupParsers {
         xSpace
         while (true) {
           if (ch == '?' && { sb.append(ch); nextch; ch == '>' }) {
-            sb.setLength(sb.length() - 1)
+            sb.length = sb.length - 1
             nextch
             return handle.procInstr(tmppos, n.toString(), sb.toString())
           } else
@@ -484,7 +484,7 @@ trait MarkupParsers {
           exit = xCheckEmbeddedBlock ||(ch == '<') || (ch == '&')
         }
         val str = cbuf.toString()
-        cbuf.setLength(0)
+        cbuf.length = 0
         str
       //}
     }

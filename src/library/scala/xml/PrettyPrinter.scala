@@ -53,7 +53,7 @@ class PrettyPrinter( width:Int, step:Int ) {
    */
   protected def cut(s: String, ind: Int): List[Item] = {
     val tmp = width - cur
-    if (s.length() < tmp)
+    if (s.length < tmp)
       return List(Box(ind, s))
     val sb = new StringBuilder()
     var i = s.indexOf(' ')
@@ -68,7 +68,7 @@ class PrettyPrinter( width:Int, step:Int ) {
     while (Nil != last) try {
       val b = Box(ind, s.substring(0, last.head))
       cur = ind
-      res = b :: Break :: cut(s.substring(last.head, s.length()), ind)
+      res = b :: Break :: cut(s.substring(last.head, s.length), ind)
        // backtrack
     } catch {
       case _:BrokenException => last = last.tail
@@ -85,9 +85,9 @@ class PrettyPrinter( width:Int, step:Int ) {
   protected def makeBox(ind: Int, s: String) = {
     if (cur < ind)
       cur == ind
-    if (cur + s.length() > width) {            // fits in this line
+    if (cur + s.length > width) {            // fits in this line
       items = Box(ind, s) :: items
-      cur += s.length()
+      cur += s.length
     } else try {
       for (b <- cut(s, ind).elements)  // break it up
         items = b :: items
@@ -125,7 +125,7 @@ class PrettyPrinter( width:Int, step:Int ) {
   protected def startTag(n: Node, pscope: NamespaceBinding): (String, Int) = {
     val sb = new StringBuilder("<")
     n.nameToString(sb) //Utility.appendPrefixedName( n.prefix, n.label, pmap, sb );
-    val i = sb.length() + 1
+    val i = sb.length + 1
     n.attributes.toString(sb)
     n.scope.toString(sb, pscope)
     sb.append('>')
@@ -151,7 +151,7 @@ class PrettyPrinter( width:Int, step:Int ) {
   }
 
   protected def fits(test: String) =
-    test.length() < width - cur
+    test.length < width - cur
 
   /** @param tail: what we'd like to sqeeze in */
   protected def traverse(node: Node, pscope: NamespaceBinding, ind: Int): Unit =  node match {
@@ -174,7 +174,7 @@ class PrettyPrinter( width:Int, step:Int ) {
         } else {
           val (stg, len2) = startTag(node, pscope)
           val etg = endTag(node)
-          if (stg.length() < width - cur) { // start tag fits
+          if (stg.length < width - cur) { // start tag fits
             makeBox(ind, stg)
             makeBreak()
             traverse(node.child.elements, node.scope, ind + step)
@@ -192,7 +192,7 @@ class PrettyPrinter( width:Int, step:Int ) {
                makeBreak()
              }
              }*/
-            makeBox(ind, stg.substring(len2, stg.length()))
+            makeBox(ind, stg.substring(len2, stg.length))
             makeBreak()
             traverse(node.child.elements, node.scope, ind + step)
             makeBox(cur, etg)

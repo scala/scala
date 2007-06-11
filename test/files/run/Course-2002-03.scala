@@ -238,7 +238,7 @@ object M8 {
       val buffer: StringBuilder = new StringBuilder();
       buffer.append('[');
       foreach(i => {
-        if (buffer.length() > 1) {buffer.append(','); ()}; // !!! ; ()
+        if (buffer.length > 1) {buffer.append(','); ()}; // !!! ; ()
         buffer.append(i);
         ()});
       buffer.append(']');

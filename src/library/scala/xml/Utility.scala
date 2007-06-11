@@ -348,10 +348,10 @@ object Utility extends AnyRef with parsing.TokenTests {
   def getName(s: String, index: Int): String = {
     var i = index;
     val sb = new StringBuilder();
-    if (i < s.length()) {
+    if (i < s.length) {
       var c = s.charAt(i);
       if (isNameStart(s.charAt(i)))
-        while (i < s.length() && { c = s.charAt(i); isNameChar(c)}) {
+        while (i < s.length && { c = s.charAt(i); isNameChar(c)}) {
           sb.append(c)
           i = i + 1
         }
@@ -368,7 +368,7 @@ object Utility extends AnyRef with parsing.TokenTests {
    */
   def checkAttributeValue(value: String): String = {
     var i = 0
-    while (i < value.length()) {
+    while (i < value.length) {
       value.charAt(i) match {
         case '<' =>
           return "< not allowed in attribute value";
@@ -376,8 +376,8 @@ object Utility extends AnyRef with parsing.TokenTests {
           val n = getName(value, i+1)
           if (n eq null)
             return "malformed entity reference in attribute value ["+value+"]";
-          i = i + n.length() + 1
-          if (i >= value.length() || value.charAt(i) != ';')
+          i = i + n.length + 1
+          if (i >= value.length || value.charAt(i) != ';')
             return "malformed entity reference in attribute value ["+value+"]";
         case _   =>
       }
@@ -420,7 +420,7 @@ object Utility extends AnyRef with parsing.TokenTests {
               rfb.setLength(0)
               unescape(ref,sb) match {
                 case null =>
-                  if (sb.length() > 0) {          // flush buffer
+                  if (sb.length > 0) {          // flush buffer
                     nb += Text(sb.toString())
                     sb.setLength(0)
                   }
@@ -432,7 +432,7 @@ object Utility extends AnyRef with parsing.TokenTests {
           sb.append(x)
       }
     }
-    if (sb.length() > 0) { // flush buffer
+    if (sb.length > 0) { // flush buffer
       val x = Text(sb.toString())
       if (nb.length == 0)
         return x

@@ -45,12 +45,12 @@ class TextBuffer {
    *  @return the text without whitespaces.
    */
   def toText: Seq[Text] = {
-    var len = sb.length() /* invariant */
+    var len = sb.length /* invariant */
     if (len == 0) return Nil
 
     if (Utility.isSpace(sb.charAt(len - 1))) {
       len -= 1
-      sb.setLength(len)
+      sb.length = len
     }
     if (len == 0) return Nil
 

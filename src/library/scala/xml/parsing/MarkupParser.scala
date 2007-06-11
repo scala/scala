@@ -216,7 +216,7 @@ trait MarkupParser extends AnyRef with TokenTests { self:  MarkupParser with Mar
       case _:EntityRef => // todo: fix entities, shouldn't be "special"
         reportSyntaxError("no entity references alllowed here");
       case s:SpecialNode =>
-        if (s.toString().trim().length() > 0) //non-empty text nodes not allowed
+        if (s.toString().trim().length > 0) //non-empty text nodes not allowed
           elemCount = elemCount + 2;
       case m:Node =>
         elemCount = elemCount + 1;
@@ -289,11 +289,11 @@ trait MarkupParser extends AnyRef with TokenTests { self:  MarkupParser with Mar
 
       Utility.prefix(qname) match {
         case Some("xmlns") =>
-          val prefix = qname.substring(6 /*xmlns:*/ , qname.length());
+          val prefix = qname.substring(6 /*xmlns:*/ , qname.length);
           scope = new NamespaceBinding(prefix, value, scope);
 
         case Some(prefix)       =>
-          val key = qname.substring(prefix.length()+1, qname.length());
+          val key = qname.substring(prefix.length+1, qname.length);
           aMap = new PrefixedAttribute(prefix, key, value, aMap);
 
         case _             =>
@@ -328,7 +328,7 @@ trait MarkupParser extends AnyRef with TokenTests { self:  MarkupParser with Mar
     }
     nextch
     val str = cbuf.toString()
-    cbuf.setLength(0)
+    cbuf.length = 0
 
     // well-formedness constraint
     normalizeAttributeValue(str)
@@ -347,7 +347,7 @@ trait MarkupParser extends AnyRef with TokenTests { self:  MarkupParser with Mar
     }
     nextch
     val str = cbuf.toString()
-    cbuf.setLength(0)
+    cbuf.length = 0
     str
   }
 
@@ -392,7 +392,7 @@ trait MarkupParser extends AnyRef with TokenTests { self:  MarkupParser with Mar
       if (ch==']'  &&
          { sb.append(ch); nextch; ch == ']' } &&
          { sb.append(ch); nextch; ch == '>' } ) {
-        sb.setLength(sb.length() - 2);
+        sb.length = sb.length - 2
         nextch;
         return handle.text( pos1, sb.toString() );
       } else sb.append( ch );
@@ -443,7 +443,7 @@ trait MarkupParser extends AnyRef with TokenTests { self:  MarkupParser with Mar
     xToken('-')
     while (true) {
       if (ch == '-'  && { sb.append(ch); nextch; ch == '-' }) {
-        sb.setLength(sb.length() - 1)
+        sb.length = sb.length - 1
         nextch
         xToken('>')
         return handle.comment(pos, sb.toString())
@@ -666,7 +666,7 @@ trait MarkupParser extends AnyRef with TokenTests { self:  MarkupParser with Mar
     val pos = this.pos
     val Tuple3(qname, aMap, scope) = xTag(pscope)
     val Tuple2(pre, local) = Utility.prefix(qname) match {
-      case Some(p) => (p,qname.substring(p.length()+1, qname.length()))
+      case Some(p) => (p,qname.substring(p.length+1, qname.length))
       case _       => (null,qname)
     }
     val ts = {
@@ -702,7 +702,7 @@ trait MarkupParser extends AnyRef with TokenTests { self:  MarkupParser with Mar
         nextch
       }
       val n = cbuf.toString().intern()
-      cbuf.setLength(0)
+      cbuf.length = 0
       n
     } else {
       reportSyntaxError("name expected")
@@ -732,7 +732,7 @@ trait MarkupParser extends AnyRef with TokenTests { self:  MarkupParser with Mar
       xSpace
       while (true) {
         if (ch == '?' && { sb.append( ch ); nextch; ch == '>' }) {
-          sb.setLength(sb.length() - 1);
+          sb.length = sb.length - 1;
           nextch;
           return handle.procInstr(tmppos, n.toString(), sb.toString());
         } else
@@ -768,7 +768,7 @@ trait MarkupParser extends AnyRef with TokenTests { self:  MarkupParser with Mar
         exit = eof || /*{ nextch; xCheckEmbeddedBlock }||*/( ch == '<' ) || ( ch == '&' );
       }
       val str = cbuf.toString();
-      cbuf.setLength(0);
+      cbuf.length = 0;
       str
     /*}*/
   }
@@ -788,7 +788,7 @@ trait MarkupParser extends AnyRef with TokenTests { self:  MarkupParser with Mar
     }
     nextch
     val str = cbuf.toString()
-    cbuf.setLength(0)
+    cbuf.length = 0
     str
   }
 
@@ -808,7 +808,7 @@ trait MarkupParser extends AnyRef with TokenTests { self:  MarkupParser with Mar
     }
     nextch
     val str = cbuf.toString()
-    cbuf.setLength(0)
+    cbuf.length = 0
     str
   }
 
@@ -971,7 +971,7 @@ trait MarkupParser extends AnyRef with TokenTests { self:  MarkupParser with Mar
     //Console.println("END["+ch+"]")
     nextch
     val cmstr = cbuf.toString()
-    cbuf.setLength(0)
+    cbuf.length = 0
     handle.elemDecl(n, cmstr)
   }
 
@@ -996,7 +996,7 @@ trait MarkupParser extends AnyRef with TokenTests { self:  MarkupParser with Mar
         nextch;
       }
       val atpe = cbuf.toString()
-      cbuf.setLength(0)
+      cbuf.length = 0
       //Console.println("attr type: "+atpe);
       ch match {
         case '\'' | '"' =>
@@ -1020,7 +1020,7 @@ trait MarkupParser extends AnyRef with TokenTests { self:  MarkupParser with Mar
       xSpaceOpt
 
       attList = AttrDecl(aname, atpe, defdecl) :: attList
-      cbuf.setLength(0)
+      cbuf.length = 0
     }
     nextch
     handle.attListDecl(n, attList.reverse)
@@ -1207,7 +1207,7 @@ trait MarkupParser extends AnyRef with TokenTests { self:  MarkupParser with Mar
       }
     }
     val name = cbuf.toString()
-    cbuf.setLength(0)
+    cbuf.length = 0
     name
   }
 

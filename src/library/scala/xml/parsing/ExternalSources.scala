@@ -41,7 +41,7 @@ trait ExternalSources { self: ExternalSources with MarkupParser with MarkupHandl
 
       def newIter = new Iterator[Char] {
         var i = -1;
-        private val len = str.length()-1;
+        private val len = str.length-1;
         def hasNext = i < len;
         def next = {
           i = i + 1;
@@ -68,7 +68,7 @@ trait ExternalSources { self: ExternalSources with MarkupParser with MarkupHandl
     var fileStr = input.descr;
 
     if(input.descr.startsWith("file:")) {
-      fileStr = input.descr.substring(5, input.descr.length());
+      fileStr = input.descr.substring(5, input.descr.length);
     } else
     fileStr = fileStr.substring(0,
                                 fileStr.lastIndexOf(java.io.File.separator)+1);
