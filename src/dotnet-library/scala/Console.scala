@@ -12,9 +12,11 @@
 package scala
 
 
-import Predef._
-import scala.util.Fluid
 import System.IO.{TextReader,TextWriter}
+
+import scala.util.DynamicVariable
+import Predef._
+
 
 /** The <code>Console</code> object implements functionality for
  *  printing Scala values on the terminal. There are also functions
@@ -54,17 +56,17 @@ object Console {
   final val REVERSED   = "\033[7m"
   final val INVISIBLE  = "\033[8m"
 
-  private val outFluid = new Fluid[TextWriter](System.Console.Out)
-  private val inFluid  = new Fluid[TextReader](System.Console.In)
+  private val outVar = new DynamicVariable[TextWriter](System.Console.Out)
+  private val inVar  = new DynamicVariable[TextReader](System.Console.In)
 
-  def out = outFluid.value
-  def in  = inFluid.value
+  def out = outVar.value
+  def in = inVar.value
 
   /** Set the default output stream.
    *
    *  @param out the new output stream.
    */
-  def setOut(out: TextWriter): Unit = outFluid.value = out
+  def setOut(out: TextWriter): Unit = outVar.value = out
 
   /** Set the default output stream for the duration
    *  of execution of one thunk.
@@ -74,14 +76,15 @@ object Console {
    *               the new output stream active
    */
   def withOut[T](out: TextWriter)(thunk: =>T): T =
-    outFluid.withValue(out)(thunk)
+    outVar.withValue(out)(thunk)
+
 
   /** Set the default input stream.
    *
    *  @param reader specifies the new input stream.
    */
   def setIn(reader: TextReader): Unit = {
-    inFluid.value = reader
+    inVar.value = reader
   }
 
   /** Set the default input stream for the duration
@@ -92,8 +95,7 @@ object Console {
    *               the new input stream active
    */
   def withIn[T](reader: TextReader)(thunk: =>T): T =
-    inFluid.withValue(reader)(thunk)
-
+    inVar.withValue(reader)(thunk)
 
   /** Print an object on the terminal.
    *

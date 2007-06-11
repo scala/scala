@@ -11,9 +11,6 @@
 
 package scala
 
-//import scala.collection.jcl
-
-//private[scala] object internedSymbols extends jcl.HashMap[String, ref.WeakReference[Symbol]]
 
 /** <p>
  *    Instances of <code>Symbol</code> can be created easily with
@@ -48,11 +45,5 @@ final case class Symbol(name: String) {
    *  @return the unique reference to this symbol.
    */
   def intern: Symbol = this
-
-//   def intern: Symbol = synchronized { internedSymbols get name match {
-//     case Some(sym) if sym.isValid => sym.apply
-//     case _ =>
-//       internedSymbols(name) = new ref.WeakReference(this); this
-//   } }
 
 }

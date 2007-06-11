@@ -21,7 +21,7 @@ final class RichString(val self: String) extends Proxy with Seq[Char] with Order
 
   // Seq[Char]
   def length = self.length
-  def elements = Iterator.fromString(self)
+  override def elements = Iterator.fromString(self)
 
   /** Retrieve the n-th character of the string
    *

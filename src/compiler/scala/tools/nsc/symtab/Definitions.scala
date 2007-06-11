@@ -761,7 +761,7 @@ trait Definitions {
       StringClass = getClass(if (forMSIL) "System.String" else "java.lang.String")
 
       ClassClass = getClass(if (forMSIL) "System.Type" else "java.lang.Class")
-      MethodClass = getClass("java.lang.reflect.Method")
+      MethodClass = if (forMSIL) null else getClass("java.lang.reflect.Method")
       ThrowableClass = getClass(if (forMSIL) "System.Exception" else "java.lang.Throwable")
       NullPointerExceptionClass = getClass(if (forMSIL) "System.NullReferenceException"
                                            else "java.lang.NullPointerException")

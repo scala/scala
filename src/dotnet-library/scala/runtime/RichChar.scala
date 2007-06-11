@@ -11,6 +11,7 @@
 
 package scala.runtime
 
+
 import Predef.NoSuchElementException
 
 /** <p>
@@ -30,11 +31,14 @@ import Predef.NoSuchElementException
  *  </p>
  */
 final class RichChar(x: Char) extends Proxy with Ordered[Char] {
+
   // Proxy.self
   def self: Any = x
 
   // Ordered[Char].compare
   def compare (y: Char): Int = if (x < y) -1 else if (x > y) 1 else 0
+
+  def asDigit: Int = System.Char.GetNumericValue(x).toInt
 
   def isControl: Boolean = System.Char.IsControl(x)
   def isDigit: Boolean = System.Char.IsDigit(x)
@@ -43,10 +47,9 @@ final class RichChar(x: Char) extends Proxy with Ordered[Char] {
   def isLowerCase: Boolean = System.Char.IsLower(x)
   def isUpperCase: Boolean = System.Char.IsUpper(x)
   def isWhitespace: Boolean = System.Char.IsWhiteSpace(x)
+
   def toLowerCase: Char = System.Char.ToLower(x)
   def toUpperCase: Char = System.Char.ToUpper(x)
-
-  def asDigit: Int = System.Char.GetNumericValue(x).toInt
 
   /** Create an Iterator[Char] over the characters from 'x' to 'y' - 1
    */

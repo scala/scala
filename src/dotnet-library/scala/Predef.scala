@@ -18,34 +18,35 @@ package scala
  */
 object Predef {
 
-  // classOf dummy -------------------------------------------------
+  // classOf dummy ------------------------------------------------------
 
   /** Return the runtime representation of a class type. */
   def classOf[T]: Class = null
 
-  // aliases -------------------------------------------------------
+  // aliases ------------------------------------------------------------
 
-  type byte = scala.Byte
-  type short = scala.Short
-  type char = scala.Char
-  type int = scala.Int
-  type long = scala.Long
-  type float = scala.Float
-  type double = scala.Double
+  type byte    = scala.Byte
+  type short   = scala.Short
+  type char    = scala.Char
+  type int     = scala.Int
+  type long    = scala.Long
+  type float   = scala.Float
+  type double  = scala.Double
   type boolean = scala.Boolean
-  type unit = scala.Unit
+  type unit    = scala.Unit
 
-  type All = Nothing
+  type All    = Nothing
   type AllRef = Null
 
-  type String = System.String
+  type String        = System.String
   type StringBuilder = compat.StringBuilder
-  type Class = System.Type
-  type Runnable = scala.runtime.Runnable
+  type Class         = System.Type
+  type Runnable      = scala.runtime.Runnable
 
   type Throwable = System.Exception
   type Exception = System.Exception
-  type Error = System.Exception
+  type Error     = System.Exception
+
   type RuntimeException = System.Exception
   type NullPointerException = System.NullReferenceException
   type ClassCastException = System.InvalidCastException
@@ -56,18 +57,17 @@ object Predef {
   type NoSuchElementException = System.InvalidOperationException
   //type NumberFormatException = java.lang.NumberFormatException
 
-  // --- Miscelleaneous -----------------------------------------------
+  // miscelleaneous -----------------------------------------------------
 
   //val $scope = scala.xml.TopScope
 
-  type Function[-a,+b] = Function1[a,b]
+  type Function[-A, +B] = Function1[A, B]
 
-  type Map[a, b] = collection.immutable.Map[a, b]
-  type Set[a] = collection.immutable.Set[a]
+  type Map[A, B] = collection.immutable.Map[A, B]
+  type Set[A] = collection.immutable.Set[A]
 
   val Map = collection.immutable.Map
   val Set = collection.immutable.Set
-
 
   // errors and asserts -------------------------------------------------
 
@@ -100,36 +100,36 @@ object Predef {
       throw new Error("assumption failed: " + message)
   }
 
-  // --- Tupling ----------------------------------------------
+  // tupling ------------------------------------------------------------
 
-  type Pair[+a, +b] = Tuple2[a, b]
+  type Pair[+A, +B] = Tuple2[A, B]
   object Pair {
-    def apply[a, b](x: a, y: b) = Tuple2(x, y)
-    def unapply[a, b](x: Tuple2[a, b]): Option[Tuple2[a, b]] = Some(x)
+    def apply[A, B](x: A, y: B) = Tuple2(x, y)
+    def unapply[A, B](x: Tuple2[A, B]): Option[Tuple2[A, B]] = Some(x)
   }
 
-  type Triple[+a, +b, +c] = Tuple3[a, b, c]
+  type Triple[+A, +B, +C] = Tuple3[A, B, C]
   object Triple {
-    def apply[a, b, c](x: a, y: b, z: c) = Tuple3(x, y, z)
-    def unapply[a, b, c](x: Tuple3[a, b, c]): Option[Tuple3[a, b, c]] = Some(x)
+    def apply[A, B, C](x: A, y: B, z: C) = Tuple3(x, y, z)
+    def unapply[A, B, C](x: Tuple3[A, B, C]): Option[Tuple3[A, B, C]] = Some(x)
   }
 
-  class ArrowAssoc[a](x: a) {
-    def -> [b](y: b): Tuple2[a, b] = Tuple2(x, y)
+  class ArrowAssoc[A](x: A) {
+    def -> [B](y: B): Tuple2[A, B] = Tuple2(x, y)
   }
-  implicit def any2ArrowAssoc[a](x: a): ArrowAssoc[a] = new ArrowAssoc(x)
+  implicit def any2ArrowAssoc[A](x: A): ArrowAssoc[A] = new ArrowAssoc(x)
 
-  def Tuple[a1](x1: a1) = Tuple1(x1)
-  def Tuple[a1, a2](x1: a1, x2: a2) = Tuple2(x1, x2)
-  def Tuple[a1, a2, a3](x1: a1, x2: a2, x3: a3) = Tuple3(x1, x2, x3)
-  def Tuple[a1, a2, a3, a4](x1: a1, x2: a2, x3: a3, x4: a4) = Tuple4(x1, x2, x3, x4)
-  def Tuple[a1, a2, a3, a4, a5](x1: a1, x2: a2, x3: a3, x4: a4, x5: a5) = Tuple5(x1, x2, x3, x4, x5)
-  def Tuple[a1, a2, a3, a4, a5, a6](x1: a1, x2: a2, x3: a3, x4: a4, x5: a5, x6: a6) = Tuple6(x1, x2, x3, x4, x5, x6)
-  def Tuple[a1, a2, a3, a4, a5, a6, a7](x1: a1, x2: a2, x3: a3, x4: a4, x5: a5, x6: a6, x7: a7) = Tuple7(x1, x2, x3, x4, x5, x6, x7)
-  def Tuple[a1, a2, a3, a4, a5, a6, a7, a8](x1: a1, x2: a2, x3: a3, x4: a4, x5: a5, x6: a6, x7: a7, x8: a8) = Tuple8(x1, x2, x3, x4, x5, x6, x7, x8)
-  def Tuple[a1, a2, a3, a4, a5, a6, a7, a8, a9](x1: a1, x2: a2, x3: a3, x4: a4, x5: a5, x6: a6, x7: a7, x8: a8, x9: a9) = Tuple9(x1, x2, x3, x4, x5, x6, x7, x8, x9)
+  def Tuple[A1](x1: A1) = Tuple1(x1)
+  def Tuple[A1, A2](x1: A1, x2: A2) = Tuple2(x1, x2)
+  def Tuple[A1, A2, A3](x1: A1, x2: A2, x3: A3) = Tuple3(x1, x2, x3)
+  def Tuple[A1, A2, A3, A4](x1: A1, x2: A2, x3: A3, x4: A4) = Tuple4(x1, x2, x3, x4)
+  def Tuple[A1, A2, A3, A4, A5](x1: A1, x2: A2, x3: A3, x4: A4, x5: A5) = Tuple5(x1, x2, x3, x4, x5)
+  def Tuple[A1, A2, A3, A4, A5, A6](x1: A1, x2: A2, x3: A3, x4: A4, x5: A5, x6: A6) = Tuple6(x1, x2, x3, x4, x5, x6)
+  def Tuple[A1, A2, A3, A4, A5, A6, A7](x1: A1, x2: A2, x3: A3, x4: A4, x5: A5, x6: A6, x7: A7) = Tuple7(x1, x2, x3, x4, x5, x6, x7)
+  def Tuple[A1, A2, A3, A4, A5, A6, A7, A8](x1: A1, x2: A2, x3: A3, x4: A4, x5: A5, x6: A6, x7: A7, x8: A8) = Tuple8(x1, x2, x3, x4, x5, x6, x7, x8)
+  def Tuple[A1, A2, A3, A4, A5, A6, A7, A8, A9](x1: A1, x2: A2, x3: A3, x4: A4, x5: A5, x6: A6, x7: A7, x8: A8, x9: A9) = Tuple9(x1, x2, x3, x4, x5, x6, x7, x8, x9)
 
-  // printing and reading ----------------------------------------------
+  // printing and reading -----------------------------------------------
 
   def print(x: Any) = Console.print(x)
   def println() = Console.println()
@@ -152,19 +152,19 @@ object Predef {
   //def readf2(format: String) = Console.readf2(format)
   //def readf3(format: String) = Console.readf3(format)
 
-  // views -------------------------------------------------------------
+  // views --------------------------------------------------------------
 
-  implicit def identity[a](x: a): a = x
+  implicit def identity[A](x: A): A = x
 
-  implicit def byteWrapper(x: byte)     = new runtime.RichByte(x)
-  implicit def shortWrapper(x: short)   = new runtime.RichShort(x)
-  implicit def intWrapper(x: int)       = new runtime.RichInt(x)
-  implicit def charWrapper(c: char)     = new runtime.RichChar(c)
-  implicit def longWrapper(x: long)     = new runtime.RichLong(x)
-  implicit def floatWrapper(x: float)   = new runtime.RichFloat(x)
-  implicit def doubleWrapper(x: double) = new runtime.RichDouble(x)
+  implicit def byteWrapper(x: Byte)     = new runtime.RichByte(x)
+  implicit def shortWrapper(x: Short)   = new runtime.RichShort(x)
+  implicit def intWrapper(x: Int)       = new runtime.RichInt(x)
+  implicit def charWrapper(c: Char)     = new runtime.RichChar(c)
+  implicit def longWrapper(x: Long)     = new runtime.RichLong(x)
+  implicit def floatWrapper(x: Float)   = new runtime.RichFloat(x)
+  implicit def doubleWrapper(x: Double) = new runtime.RichDouble(x)
 
-  implicit def booleanWrapper(x: boolean)  = new runtime.RichBoolean(x)
+  implicit def booleanWrapper(x: Boolean)  = new runtime.RichBoolean(x)
 
   implicit def stringWrapper(x: String) = new runtime.RichString(x)
 
@@ -178,15 +178,15 @@ object Predef {
   implicit def getClassWrapper(obj: AnyRef) = new GetClassWrapper(obj)
   implicit def classWrapper(clazz: Class): runtime.RichClass = new runtime.RichClass(clazz)
 
-  implicit def unit2ordered(x: unit): Ordered[unit] = new Ordered[unit] with Proxy {
+  implicit def unit2ordered(x: Unit): Ordered[Unit] = new Ordered[Unit] with Proxy {
     def self: Any = x
-    def compare (y: unit): int = 0
+    def compare(y: Unit): Int = 0
   }
 
-  implicit def iterable2ordered[a <% Ordered[a]](xs: Iterable[a]): Ordered[Iterable[a]] =
-    new Ordered[Iterable[a]] with Proxy {
+  implicit def iterable2ordered[A <% Ordered[A]](xs: Iterable[A]): Ordered[Iterable[A]] =
+    new Ordered[Iterable[A]] with Proxy {
       val self = xs
-      def compare (that: Iterable[a]) = {
+      def compare(that: Iterable[A]): Int = {
         var res = 0
         val these = xs.elements
         val those = that.elements
@@ -196,110 +196,110 @@ object Predef {
       }
     }
 
-  implicit def tuple22ordered[a1 <% Ordered[a1], a2 <% Ordered[a2]](x: Tuple2[a1, a2]): Ordered[Tuple2[a1, a2]] =
-    new Ordered[Tuple2[a1, a2]] with Proxy {
+  implicit def tuple22ordered[A1 <% Ordered[A1], A2 <% Ordered[A2]](x: Tuple2[A1, A2]): Ordered[Tuple2[A1, A2]] =
+    new Ordered[Tuple2[A1, A2]] with Proxy {
       val self = x
-      def compare (y: Tuple2[a1, a2]): Int = {
+      def compare(y: Tuple2[A1, A2]): Int = {
         val res = x._1 compare y._1
         if (res == 0) x._2 compare y._2
         else res
       }
     }
 
-  implicit def tuple32ordered[a1 <% Ordered[a1], a2 <% Ordered[a2], a3 <% Ordered[a3]](x: Tuple3[a1, a2, a3]): Ordered[Tuple3[a1, a2, a3]] =
-    new Ordered[Tuple3[a1, a2, a3]] with Proxy {
+  implicit def tuple32ordered[A1 <% Ordered[A1], A2 <% Ordered[A2], A3 <% Ordered[A3]](x: Tuple3[A1, A2, A3]): Ordered[Tuple3[A1, A2, A3]] =
+    new Ordered[Tuple3[A1, A2, A3]] with Proxy {
       val self = x
-      def compare (y: Tuple3[a1, a2, a3]): Int = {
+      def compare(y: Tuple3[A1, A2, A3]): Int = {
         val res = x._1 compare y._1
         if (res == 0) Tuple2(x._2, x._3) compare Tuple2(y._2, y._3)
         else res
       }
     }
 
-  implicit def tuple42ordered[a1 <% Ordered[a1], a2 <% Ordered[a2], a3 <% Ordered[a3], a4 <% Ordered[a4]](x: Tuple4[a1, a2, a3, a4]): Ordered[Tuple4[a1, a2, a3, a4]] =
-    new Ordered[Tuple4[a1, a2, a3, a4]] with Proxy {
+  implicit def tuple42ordered[A1 <% Ordered[A1], A2 <% Ordered[A2], A3 <% Ordered[A3], A4 <% Ordered[A4]](x: Tuple4[A1, A2, A3, A4]): Ordered[Tuple4[A1, A2, A3, A4]] =
+    new Ordered[Tuple4[A1, A2, A3, A4]] with Proxy {
       val self = x
-      def compare (y: Tuple4[a1, a2, a3, a4]): Int = {
+      def compare(y: Tuple4[A1, A2, A3, A4]): Int = {
         val res = x._1 compare y._1
         if (res == 0) Tuple3(x._2, x._3, x._4) compare Tuple3(y._2, y._3, y._4)
         else res
       }
     }
 
-  implicit def tuple52ordered[a1 <% Ordered[a1], a2 <% Ordered[a2], a3 <% Ordered[a3], a4 <% Ordered[a4], a5 <% Ordered[a5]](x: Tuple5[a1, a2, a3, a4, a5]): Ordered[Tuple5[a1, a2, a3, a4, a5]] =
-    new Ordered[Tuple5[a1, a2, a3, a4, a5]] with Proxy {
+  implicit def tuple52ordered[A1 <% Ordered[A1], A2 <% Ordered[A2], A3 <% Ordered[A3], A4 <% Ordered[A4], A5 <% Ordered[A5]](x: Tuple5[A1, A2, A3, A4, A5]): Ordered[Tuple5[A1, A2, A3, A4, A5]] =
+    new Ordered[Tuple5[A1, A2, A3, A4, A5]] with Proxy {
       val self = x
-      def compare (y: Tuple5[a1, a2, a3, a4, a5]): Int = {
+      def compare(y: Tuple5[A1, A2, A3, A4, A5]): Int = {
         val res = x._1 compare y._1
         if (res == 0) Tuple4(x._2, x._3, x._4, x._5) compare Tuple4(y._2, y._3, y._4, y._5)
         else res
       }
     }
 
-  implicit def tuple62ordered[a1 <% Ordered[a1], a2 <% Ordered[a2], a3 <% Ordered[a3], a4 <% Ordered[a4], a5 <% Ordered[a5], a6 <% Ordered[a6]](x: Tuple6[a1, a2, a3, a4, a5, a6]): Ordered[Tuple6[a1, a2, a3, a4, a5, a6]] =
-    new Ordered[Tuple6[a1, a2, a3, a4, a5, a6]] with Proxy {
+  implicit def tuple62ordered[A1 <% Ordered[A1], A2 <% Ordered[A2], A3 <% Ordered[A3], A4 <% Ordered[A4], A5 <% Ordered[A5], A6 <% Ordered[A6]](x: Tuple6[A1, A2, A3, A4, A5, A6]): Ordered[Tuple6[A1, A2, A3, A4, A5, A6]] =
+    new Ordered[Tuple6[A1, A2, A3, A4, A5, A6]] with Proxy {
       val self = x
-      def compare (y: Tuple6[a1, a2, a3, a4, a5, a6]): Int = {
+      def compare(y: Tuple6[A1, A2, A3, A4, A5, A6]): Int = {
         val res = x._1 compare y._1
         if (res == 0) Tuple5(x._2, x._3, x._4, x._5, x._6) compare Tuple5(y._2, y._3, y._4, y._5, y._6)
         else res
       }
     }
 
-  implicit def tuple72ordered[a1 <% Ordered[a1], a2 <% Ordered[a2], a3 <% Ordered[a3], a4 <% Ordered[a4], a5 <% Ordered[a5], a6 <% Ordered[a6], a7 <% Ordered[a7]](x: Tuple7[a1, a2, a3, a4, a5, a6, a7]): Ordered[Tuple7[a1, a2, a3, a4, a5, a6, a7]] =
-    new Ordered[Tuple7[a1, a2, a3, a4, a5, a6, a7]] with Proxy {
+  implicit def tuple72ordered[A1 <% Ordered[A1], A2 <% Ordered[A2], A3 <% Ordered[A3], A4 <% Ordered[A4], A5 <% Ordered[A5], A6 <% Ordered[A6], A7 <% Ordered[A7]](x: Tuple7[A1, A2, A3, A4, A5, A6, A7]): Ordered[Tuple7[A1, A2, A3, A4, A5, A6, A7]] =
+    new Ordered[Tuple7[A1, A2, A3, A4, A5, A6, A7]] with Proxy {
       val self = x
-      def compare (y: Tuple7[a1, a2, a3, a4, a5, a6, a7]): Int = {
+      def compare(y: Tuple7[A1, A2, A3, A4, A5, A6, A7]): Int = {
         val res = x._1 compare y._1
         if (res == 0) Tuple6(x._2, x._3, x._4, x._5, x._6, x._7) compare Tuple6(y._2, y._3, y._4, y._5, y._6, y._7)
         else res
       }
     }
 
-  implicit def tuple82ordered[a1 <% Ordered[a1], a2 <% Ordered[a2], a3 <% Ordered[a3], a4 <% Ordered[a4], a5 <% Ordered[a5], a6 <% Ordered[a6], a7 <% Ordered[a7], a8 <% Ordered[a8]](x: Tuple8[a1, a2, a3, a4, a5, a6, a7, a8]): Ordered[Tuple8[a1, a2, a3, a4, a5, a6, a7, a8]] =
-    new Ordered[Tuple8[a1, a2, a3, a4, a5, a6, a7, a8]] with Proxy {
+  implicit def tuple82ordered[A1 <% Ordered[A1], A2 <% Ordered[A2], A3 <% Ordered[A3], A4 <% Ordered[A4], A5 <% Ordered[A5], A6 <% Ordered[A6], A7 <% Ordered[A7], A8 <% Ordered[A8]](x: Tuple8[A1, A2, A3, A4, A5, A6, A7, A8]): Ordered[Tuple8[A1, A2, A3, A4, A5, A6, A7, A8]] =
+    new Ordered[Tuple8[A1, A2, A3, A4, A5, A6, A7, A8]] with Proxy {
       val self = x
-      def compare (y: Tuple8[a1, a2, a3, a4, a5, a6, a7, a8]): Int = {
+      def compare(y: Tuple8[A1, A2, A3, A4, A5, A6, A7, A8]): Int = {
         val res = x._1 compare y._1
         if (res == 0) Tuple7(x._2, x._3, x._4, x._5, x._6, x._7, x._8) compare Tuple7(y._2, y._3, y._4, y._5, y._6, y._7, y._8)
         else res
       }
     }
 
-  implicit def tuple92ordered[a1 <% Ordered[a1], a2 <% Ordered[a2], a3 <% Ordered[a3], a4 <% Ordered[a4], a5 <% Ordered[a5], a6 <% Ordered[a6], a7 <% Ordered[a7], a8 <% Ordered[a8], a9 <% Ordered[a9]](x: Tuple9[a1, a2, a3, a4, a5, a6, a7, a8, a9]): Ordered[Tuple9[a1, a2, a3, a4, a5, a6, a7, a8, a9]] =
-    new Ordered[Tuple9[a1, a2, a3, a4, a5, a6, a7, a8, a9]] with Proxy {
+  implicit def tuple92ordered[A1 <% Ordered[A1], A2 <% Ordered[A2], A3 <% Ordered[A3], A4 <% Ordered[A4], A5 <% Ordered[A5], A6 <% Ordered[A6], A7 <% Ordered[A7], A8 <% Ordered[A8], A9 <% Ordered[A9]](x: Tuple9[A1, A2, A3, A4, A5, A6, A7, A8, A9]): Ordered[Tuple9[A1, A2, A3, A4, A5, A6, A7, A8, A9]] =
+    new Ordered[Tuple9[A1, A2, A3, A4, A5, A6, A7, A8, A9]] with Proxy {
       val self = x
-      def compare (y: Tuple9[a1, a2, a3, a4, a5, a6, a7, a8, a9]): Int = {
+      def compare(y: Tuple9[A1, A2, A3, A4, A5, A6, A7, A8, A9]): Int = {
         val res = x._1 compare y._1
         if (res == 0) Tuple8(x._2, x._3, x._4, x._5, x._6, x._7, x._8, x._9) compare Tuple8(y._2, y._3, y._4, y._5, y._6, y._7, y._8, y._9)
         else res
       }
     }
 
-  implicit def byte2short(x: byte): short = x.toShort
-  implicit def byte2int(x: byte): int = x.toInt
-  implicit def byte2long(x: byte): long = x.toLong
-  implicit def byte2float(x: byte): float = x.toFloat
-  implicit def byte2double(x: byte): double = x.toDouble
+  implicit def byte2short(x: Byte): Short = x.toShort
+  implicit def byte2int(x: Byte): Int = x.toInt
+  implicit def byte2long(x: Byte): Long = x.toLong
+  implicit def byte2float(x: Byte): Float = x.toFloat
+  implicit def byte2double(x: Byte): Double = x.toDouble
 
-  implicit def short2int(x: short): int = x.toInt
-  implicit def short2long(x: short): long = x.toLong
-  implicit def short2float(x: short): float = x.toFloat
-  implicit def short2double(x: short): double = x.toDouble
+  implicit def short2int(x: Short): Int = x.toInt
+  implicit def short2long(x: Short): Long = x.toLong
+  implicit def short2float(x: Short): Float = x.toFloat
+  implicit def short2double(x: Short): Double = x.toDouble
 
-  implicit def char2int(x: char): int = x.toInt
-  implicit def char2long(x: char): long = x.toLong
-  implicit def char2float(x: char): float = x.toFloat
-  implicit def char2double(x: char): double = x.toDouble
+  implicit def char2int(x: Char): Int = x.toInt
+  implicit def char2long(x: Char): Long = x.toLong
+  implicit def char2float(x: Char): Float = x.toFloat
+  implicit def char2double(x: Char): Double = x.toDouble
 
-  implicit def int2long(x: int): long = x.toLong
-  implicit def int2float(x: int): float = x.toFloat
-  implicit def int2double(x: int): double = x.toDouble
+  implicit def int2long(x: Int): Long = x.toLong
+  implicit def int2float(x: Int): Float = x.toFloat
+  implicit def int2double(x: Int): Double = x.toDouble
 
-  implicit def long2float(x: long): float = x.toFloat
-  implicit def long2double(x: long): double = x.toDouble
+  implicit def long2float(x: Long): Float = x.toFloat
+  implicit def long2double(x: Long): Double = x.toDouble
 
-  implicit def float2double(x: float): double = x.toDouble
+  implicit def float2double(x: Float): Double = x.toDouble
 
   def currentThread = System.Threading.Thread.CurrentThread
 

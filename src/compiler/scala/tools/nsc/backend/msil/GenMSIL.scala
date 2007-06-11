@@ -458,18 +458,18 @@ abstract class GenMSIL extends SubComponent {
         log("output file name: " + filename)
       try {
         massembly.Save(filename)
-        val fm = Properties.ilasmFormat
-        if (fm != null) {
-          val exeName = new File(outDir, assemName + ".exe").getPath()
-          val cmd = fm.format(Array(/*output*/exeName, /*input*/filename))
-          try {
-            Runtime.getRuntime().exec(cmd)
-          } catch {
-            case ex: java.io.IOException =>
-              Console.println("Cannot run command: " + cmd)
-              exit(1)
-          }
-        }
+//         val fm = Properties.ilasmFormat
+//         if (fm != null) {
+//           val exeName = new File(outDir, assemName + ".exe").getPath()
+//           val cmd = fm.format(Array(/*output*/exeName, /*input*/filename))
+//           try {
+//             Runtime.getRuntime().exec(cmd)
+//           } catch {
+//             case ex: java.io.IOException =>
+//               Console.println("Cannot run command: " + cmd)
+//               exit(1)
+//           }
+//         }
       } catch {
         case _: Error => abort("Could not save file " + filename)
       }

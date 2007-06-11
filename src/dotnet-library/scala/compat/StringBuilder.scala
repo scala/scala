@@ -11,49 +11,61 @@
 
 package scala.compat
 
+
 import System.Text.{StringBuilder => StringBuffer}
 
-final class StringBuilder(str: StringBuffer) {
+
+/**  Consult the documentation of java.lang.StringBuffer for more details
+ */
+final class StringBuilder(val self: StringBuffer) extends (Int => Char) with Proxy {
 
   def this() =          this(new StringBuffer())
   def this(n: Int) =    this(new StringBuffer(n))
   def this(s: String) = this(new StringBuffer(s))
 
-  def charAt(i: Int): Char = str(i)
+  def length: Int = self.Length
+  def length_=(n: Int) { self.Length = n }
+  def setLength(n: Int) { self.Length = n }
 
-  def setCharAt(index: Int, c: Char): Unit = str(index) = c
+  def capacity: Int = self.Capacity
+  def capacity_=(n: Int) { self.Capacity = n }
+  def ensureCapacity(n: Int) { self.Capacity = n }
 
-  def append(x: Any): StringBuilder = { str.Append(x); this }
-  def append(x: Boolean): StringBuilder = { str.Append(x); this }
-  def append(x: Byte):    StringBuilder = { str.Append(x); this }
-  def append(x: Short):   StringBuilder = { str.Append(x); this }
-  def append(x: Char):    StringBuilder = { str.Append(x); this }
-  def append(x: Int):     StringBuilder = { str.Append(x); this }
-  def append(x: Long):    StringBuilder = { str.Append(x); this }
-  def append(x: Float):   StringBuilder = { str.Append(x); this }
-  def append(x: Double):  StringBuilder = { str.Append(x); this }
-  def append(x: String):  StringBuilder = { str.Append(x); this }
-  def append(x: Array[Char]): StringBuilder = { str.Append(x); this }
+  def charAt(i: Int): Char = self(i)
+  def apply(i: Int): Char = self(i)
+
+  def setCharAt(i: Int, c: Char) { self(i) = c }
+  def update(i: Int, c: Char) { self(i) = c }
+
+  def substring(i: Int): String = self.ToString(i, length)
+  def substring(i: Int, j: Int): String = self.ToString(i, j)
+
+  def append(x: Any): StringBuilder = { self.Append(x); this }
+  def append(x: Boolean): StringBuilder = { self.Append(x); this }
+//   def append(x: Byte):    StringBuilder = { self.Append(x); this }
+  def append(x: Short):   StringBuilder = { self.Append(x); this }
+  def append(x: Char):    StringBuilder = { self.Append(x); this }
+  def append(x: Int):     StringBuilder = { self.Append(x); this }
+  def append(x: Long):    StringBuilder = { self.Append(x); this }
+  def append(x: Float):   StringBuilder = { self.Append(x); this }
+  def append(x: Double):  StringBuilder = { self.Append(x); this }
+  def append(x: String):  StringBuilder = { self.Append(x); this }
+  def append(x: Array[Char]): StringBuilder = { self.Append(x); this }
   def append(x: Array[Char], start: Int, length: Int): StringBuilder =
-    { str.Append(x, start, length); this }
+    { self.Append(x, start, length); this }
 
-  def insert(at: Int, x: Any):     StringBuilder = { str.Insert(at, x); this }
-  def insert(at: Int, x: Boolean): StringBuilder = { str.Insert(at, x); this }
-  def insert(at: Int, x: Byte):    StringBuilder = { str.Insert(at, x); this }
-  def insert(at: Int, x: Short):   StringBuilder = { str.Insert(at, x); this }
-  def insert(at: Int, x: Char):    StringBuilder = { str.Insert(at, x); this }
-  def insert(at: Int, x: Int):     StringBuilder = { str.Insert(at, x); this }
-  def insert(at: Int, x: Long):    StringBuilder = { str.Insert(at, x); this }
-  def insert(at: Int, x: Float):   StringBuilder = { str.Insert(at, x); this }
-  def insert(at: Int, x: Double):  StringBuilder = { str.Insert(at, x); this }
-  def insert(at: Int, x: String):  StringBuilder = { str.Insert(at, x); this }
-  def insert(at: Int, x: Array[Char]):  StringBuilder = { str.Insert(at, x); this }
+  def insert(at: Int, x: Any):     StringBuilder = { self.Insert(at, x); this }
+  def insert(at: Int, x: Boolean): StringBuilder = { self.Insert(at, x); this }
+//   def insert(at: Int, x: Byte):    StringBuilder = { self.Insert(at, x); this }
+  def insert(at: Int, x: Short):   StringBuilder = { self.Insert(at, x); this }
+  def insert(at: Int, x: Char):    StringBuilder = { self.Insert(at, x); this }
+  def insert(at: Int, x: Int):     StringBuilder = { self.Insert(at, x); this }
+  def insert(at: Int, x: Long):    StringBuilder = { self.Insert(at, x); this }
+  def insert(at: Int, x: Float):   StringBuilder = { self.Insert(at, x); this }
+  def insert(at: Int, x: Double):  StringBuilder = { self.Insert(at, x); this }
+  def insert(at: Int, x: String):  StringBuilder = { self.Insert(at, x); this }
+  def insert(at: Int, x: Array[Char]):  StringBuilder = { self.Insert(at, x); this }
   def insert(at: Int, x: Array[Char], start: Int, length: Int): StringBuilder =
-    { str.Insert(at, x, start, length); this }
+    { self.Insert(at, x, start, length); this }
 
-  def length(): Int = str.Length
-
-  def setLength(i: Int) = str.Capacity = i
-
-  override def toString() = str.toString()
 }
