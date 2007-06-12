@@ -90,6 +90,7 @@ class Settings(error: String => Unit) {
     override def helpSyntax = "-P:<plugin>:<opt>"
   }
   val outdir        = StringSetting ("-d", "directory", "Specify where to place generated class files", ".")
+  val script        = new StringSetting("-script", "object", "compile as a script, wrapping the code into object.main()", "") { override def hiddenToIDE = true }
   val encoding      = new StringSetting ("-encoding", "encoding", "Specify character encoding used by source files", encodingDefault) { override def hiddenToIDE = false }
   val target        = ChoiceSetting ("-target", "Specify which backend to use", List("jvm-1.5", "jvm-1.4", "msil", "cldc"), "jvm-1.4")
   val checknull     = BooleanSetting("-checknull", "Emit warning on selection of nullable reference")
@@ -140,7 +141,6 @@ class Settings(error: String => Unit) {
   val Xlinearizer   = ChoiceSetting ("-Xlinearizer", "Linearizer to use", List("normal", "dfs", "rpo", "dump"), "rpo")
   val Xgenerics     = BooleanSetting("-Xgenerics", "Use generic Java types")
   val Xprintpos     = BooleanSetting("-Xprintpos", "Print tree positions (as offsets)")
-  val Xscript       = new BooleanSetting("-Xscript", "compile script file") { override def hiddenToIDE = true }
   val Xexperimental = BooleanSetting("-Xexperimental", "enable experimental extensions")
   val Xplugtypes    = BooleanSetting("-Xplugtypes", "process annotations on types")
   //Xplugtypes.value = true // just while experimenting

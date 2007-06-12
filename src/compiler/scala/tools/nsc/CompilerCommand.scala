@@ -80,7 +80,7 @@ class CompilerCommand(arguments: List[String], val settings: Settings,
         } else
           ok = settings.checkDependencies
       }
-    } else if (settings.Xscript.value || args.head.endsWith(fileEnding)) {
+    } else if ((settings.script.value != "") || args.head.endsWith(fileEnding)) {
       fs = args.head :: fs
       args = args.tail
     } else if (args.head.length == 0) {//quick fix

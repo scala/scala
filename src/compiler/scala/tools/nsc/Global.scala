@@ -593,11 +593,12 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
 
     def compile(filenames: List[String]) {
       try {
-        if (settings.Xscript.value && filenames.length != 1)
+        val scriptMain = settings.script.value
+        if (scriptMain != "" && filenames.length != 1)
           error("can only compile one script at a time")
         val sources = filenames map (
-          if (settings.Xscript.value)
-            (x => ScriptRunner.wrappedScript(x, getSourceFile _))
+          if (scriptMain != "")
+            (x => ScriptRunner.wrappedScript(scriptMain, x, getSourceFile _))
           else
             getSourceFile)
         compileSources(sources)
