@@ -23,6 +23,11 @@ import compat.Platform
 
 import scala.collection.mutable.HashMap
 
+/* Object TcpService.
+ *
+ * @version 0.9.8
+ * @author Philipp Haller
+ */
 object TcpService {
   val random = new java.util.Random(Platform.currentTime)
 
@@ -46,6 +51,11 @@ object TcpService {
   }
 }
 
+/* Class TcpService.
+ *
+ * @version 0.9.8
+ * @author Philipp Haller
+ */
 class TcpService(port: Int) extends Thread with Service {
   val serializer: JavaSerializer = new JavaSerializer(this)
 

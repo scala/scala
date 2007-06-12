@@ -71,6 +71,18 @@ object RemoteActor {
     kernel.register(name, a)
   }
 
+  private def selfKernel = kernels.get(Actor.self) match {
+    case None =>
+      // establish remotely accessible
+      // return path (sender)
+      val serv = new TcpService(TcpService.generatePort)
+      serv.start()
+      kernels += Actor.self -> serv.kernel
+      serv.kernel
+    case Some(k) =>
+      k
+  }
+
   /**
    * Returns (a proxy for) the actor registered under
    * <code>name</code> on <code>node</code>.
@@ -80,19 +92,17 @@ object RemoteActor {
       def act() {}
       override def !(msg: Any): Unit = msg match {
         case a: AnyRef =>
-          // establish remotely accessible
-          // return path (sender)
-          val kernel = kernels.get(Actor.self) match {
-            case None =>
-              val serv = new TcpService(TcpService.generatePort)
-              serv.start()
-              kernels += Actor.self -> serv.kernel
-              serv.kernel
-            case Some(k) =>
-              k
+          selfKernel.send(node, sym, a)
+        case other =>
+          error("Cannot send non-AnyRef value remotely.")
+      }
+      override def !?(msg: Any): Any = msg match {
+        case a: AnyRef =>
+          val replyChannel = Actor.self.freshReply()
+          selfKernel.syncSend(node, sym, a)
+          replyChannel.receive {
+            case x => x
           }
-          kernel.send(node, sym, a)
-
         case other =>
           error("Cannot send non-AnyRef value remotely.")
       }
