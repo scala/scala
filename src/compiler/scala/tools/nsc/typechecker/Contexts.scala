@@ -8,6 +8,7 @@ package scala.tools.nsc.typechecker
 
 import symtab.Flags._
 import scala.tools.nsc.util.{Position,NoPosition}
+import scala.collection.mutable.ListBuffer
 
 /** This trait ...
  *
@@ -31,6 +32,26 @@ trait Contexts { self: Analyzer =>
     global.definitions.RootClass.info.decls)
   }
 
+  /** List of objects and packages to import from in
+   *  a root context.  This list is sensitive to the
+   *  compiler settings.
+   */
+  protected def rootImports(unit: CompilationUnit, tree: Tree)
+  :List[Symbol] =
+  {
+    import definitions._
+    val imps = new ListBuffer[Symbol]
+    if (!settings.noimports.value) {
+      assert(isDefinitionsInitialized)
+      imps += JavaLangPackage
+      assert(ScalaPackage ne null, "Scala package is null")
+      imps += ScalaPackage
+      if (!(settings.nopredefs.value || treeInfo.containsLeadingPredefImport(List(unit.body))))
+        imps += PredefModule
+    }
+    imps.toList
+  }
+
   def rootContext(unit: CompilationUnit): Context =
     rootContext(unit, EmptyTree, false)
 
@@ -46,14 +67,8 @@ trait Contexts { self: Analyzer =>
         .setType(NoType))
       sc.depth = sc.depth + 1
     }
-    if (!settings.noimports.value) {
-      assert(isDefinitionsInitialized)
-      addImport(JavaLangPackage)
-      assert(ScalaPackage ne null, "Scala package is null")
-      addImport(ScalaPackage)
-      if (!(settings.nopredefs.value || treeInfo.containsLeadingPredefImport(List(unit.body))))
-        addImport(PredefModule)
-    }
+    for (imp <- rootImports(unit, tree))
+      addImport(imp)
     val c = sc.make(unit, tree, sc.owner, sc.scope, sc.imports)
     c.reportAmbiguousErrors = !erasedTypes
     c.reportGeneralErrors = !erasedTypes
