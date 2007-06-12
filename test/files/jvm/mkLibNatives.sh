@@ -9,7 +9,7 @@
 # variables
 
 # set any value to enable debugging output
-debug=1
+debug=
 
 cygwin=false;
 darwin=false;
@@ -27,7 +27,7 @@ LIB_NAME=libnatives
 if [ -z "${JAVA_HOME}" ]; then
   echo "environment variable JAVA_HOME is undefined."
   exit
-elif [ $cygwin ]; then
+elif $cygwin; then
   echo "Cygwin not supported (use 'mkLibNatives.bat')."
   exit
 fi
@@ -44,11 +44,11 @@ LNK_OPTIONS="-shared -Wl,-soname,${LIB_NAME}"
 ##############################################################################
 # commands
 
-[ "$debug" ] && echo ${JAVAH} ${JAVAH_OPTIONS} ${CLASS_NAME}
+[ $debug ] && echo ${JAVAH} ${JAVAH_OPTIONS} ${CLASS_NAME}
 ${JAVAH} ${JAVAH_OPTIONS} ${CLASS_NAME}
 
-[ "$debug" ] && echo ${CC} ${CC_OPTIONS} ${CC_INCLUDES} -o ${OBJ_NAME}.o natives.c
+[ $debug ] && echo ${CC} ${CC_OPTIONS} ${CC_INCLUDES} -o ${OBJ_NAME}.o natives.c
 ${CC} ${CC_OPTIONS} ${CC_INCLUDES} -o ${OBJ_NAME}.o natives.c
 
-[ "$debug" ] && echo ${CC} -shared -Wl,-soname,${LIB_NAME} -o ${LIB_NAME}.so ${OBJ_NAME}.o
+[ $debug ] && echo ${CC} -shared -Wl,-soname,${LIB_NAME} -o ${LIB_NAME}.so ${OBJ_NAME}.o
 ${CC} ${LNK_OPTIONS} -o ${LIB_NAME}.so ${OBJ_NAME}.o
