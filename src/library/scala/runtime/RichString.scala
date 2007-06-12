@@ -14,7 +14,7 @@ package scala.runtime
 
 import Predef._
 
-final class RichString(val self: String) extends Proxy with Seq[Char] with Ordered[String] {
+final class RichString(val self: String) extends Seq[Char] with Ordered[String] with Proxy {
 
   // Ordered[String]
   def compare(other: String) = self compareTo other
