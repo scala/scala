@@ -21,6 +21,8 @@ import java.net.{InetAddress, ServerSocket, Socket, UnknownHostException}
 
 import compat.Platform
 
+import scala.collection.mutable.HashMap
+
 object TcpService {
   val random = new java.util.Random(Platform.currentTime)
 
@@ -50,13 +52,45 @@ class TcpService(port: Int) extends Thread with Service {
   private val internalNode = new Node(InetAddress.getLocalHost().getHostAddress(), port)
   def node: Node = internalNode
 
+  private val pendingSends = new HashMap[Node, List[Array[byte]]]
+
   def send(node: Node, data: Array[byte]): unit = synchronized {
+
+    def bufferMsg(t: Throwable) = {
+      // buffer message, so that it can be re-sent
+      // when remote net kernel comes up
+      pendingSends.get(node) match {
+        case None =>
+          pendingSends += node -> (data :: Nil)
+        case Some(msgs) =>
+          pendingSends += node -> (data :: msgs)
+      }
+    }
+
     // retrieve worker thread (if any) that already has connection
     getConnection(node) match {
       case None =>
         // we are not connected, yet
-        val newWorker = connect(node)
-        newWorker transmit data
+        try {
+          val newWorker = connect(node)
+          newWorker transmit data
+
+          // any pending sends?
+          pendingSends.get(node) match {
+            case None =>
+              // do nothing
+            case Some(msgs) =>
+              msgs foreach {newWorker transmit _}
+              pendingSends -= node
+          }
+        } catch {
+          case uhe: UnknownHostException =>
+            bufferMsg(uhe)
+          case ioe: IOException =>
+            bufferMsg(ioe)
+          case se: SecurityException =>
+            // do nothing
+        }
       case Some(worker) =>
         worker transmit data
     }
