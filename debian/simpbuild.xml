@@ -461,7 +461,7 @@
       destdir="${api.lib.dir}"
       sourcepath=""
       windowtitle="Scala Library Documentation"
-      documenttitle="&lt;div&gt;Scala 2v${version.number}&lt;/div&gt;"
+      doctitle="&lt;div&gt;Scala ${version.number}&lt;br/&gt;API Specification&lt;/div&gt;"
     >
       <classpath>
         <pathelement location="${build.jar.dir}/${lib.jar.name}"/>
