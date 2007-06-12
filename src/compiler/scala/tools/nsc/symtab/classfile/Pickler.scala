@@ -536,7 +536,7 @@ abstract class Pickler extends SubComponent {
         case reflect.AppliedType(tpe, args) =>
           writeNat(APPLIEDrtpe)
           writeRef(tpe)
-          writeRef(args)
+          writeRefs(args)
           REFLTYPE
         case reflect.TypeBounds(lo, hi) =>
           writeNat(TYPEBOUNDSrtpe)
