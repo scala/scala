@@ -29,7 +29,7 @@ install: build
 	install -m755 debian/command-scripts/* $(CURDIR)/debian/scala/usr/bin/
 
 	dh_installdocs -A
-	dh_installman -pscala simpbuild/manual/man1/*.1
+	dh_installman -pscala simpbuild/manual/man1/*.1 -Xsimpbuild/manual/man1/scalap.1
 	dh_installchangelogs  -A
 	dh_compress -A
 	dh_fixperms -A
