@@ -102,8 +102,13 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     override def printMessage(msg: String) = out.println(clean(msg))
   }
 
+  /** Instantiate a compiler.  Subclasses can override this to
+   *  change the compiler class used by this interpreter. */
+  protected def newCompiler(settings: Settings, reporter: Reporter)
+    = new Global(settings, reporter)
+
   /** the compiler to compile expressions with */
-  val compiler: Global = new Global(settings, reporter)
+  val compiler: Global = newCompiler(settings, reporter)
 
   /** the compiler's classpath, as URL's */
   val compilerClasspath: List[URL] =
