@@ -12,6 +12,12 @@ class GenericRunnerCommand(allargs: List[String], error: String => Unit) {
   def this(allargs: List[String]) =
     this(allargs, str => Console.println("Error: " + str))
 
+  /** name of the command */
+  val cmdName = "scala"
+
+  /** name of the associated compiler command */
+  val compCmdName = "scalac"
+
   /** Settings specified by this command */
   val settings = new GenericRunnerSettings(error)
 
@@ -46,12 +52,12 @@ class GenericRunnerCommand(allargs: List[String], error: String => Unit) {
   parseArguments
 
   val usageMessage = {
-    "scala [ <option> ]... [<torun> <arguments>]\n" +
+    cmdName + " [ <option> ]... [<torun> <arguments>]\n" +
     "\n" +
-    "All options to scalac are allowed.  See scalac -help.\n" +
+    "All options to "+compCmdName+" are allowed.  See "+compCmdName+" -help.\n" +
     "\n" +
     "<torun>, if present, is an object or script file to run.\n" +
-    "If no <torun> is present, run an interactive interpreter.\n" +
+    "If no <torun> is present, run an interactive shell.\n" +
     "\n" +
     "Option -howtorun allows explicitly specifying how to run <torun>:\n" +
     "    script: it is a script file\n" +
