@@ -430,6 +430,18 @@ class Scalac extends MatchingTask {
   private def error(message: String): Nothing =
     throw new BuildException(message, getLocation())
 
+
+/*============================================================================*\
+**                      Hooks for variants of Scala                           **
+\*============================================================================*/
+
+  protected val sourceEnding = ".scala"
+  protected def newSettings(error: String=>Unit): Settings =
+    new Settings(error)
+  protected def newGlobal(settings: Settings, reporter: Reporter) =
+    new Global(settings, reporter)
+
+
 /*============================================================================*\
 **                           The big execute method                           **
 \*============================================================================*/
@@ -445,7 +457,7 @@ class Scalac extends MatchingTask {
 
     val mapper = new GlobPatternMapper()
     mapper.setTo("*.class")
-    mapper.setFrom("*.scala")
+    mapper.setFrom("*" + sourceEnding)
 
     // Scans source directories to build up a compile lists.
     // If force is false, only files were the .class file in destination is
@@ -489,7 +501,7 @@ class Scalac extends MatchingTask {
 
     // Builds-up the compilation settings for Scalac with the existing Ant
     // parameters.
-    val settings = new Settings(error)
+    val settings = newSettings(error)
     settings.outdir.value = asString(destination.get)
     if (!classpath.isEmpty)
       settings.classpath.value = asString(getClasspath)
@@ -540,7 +552,7 @@ class Scalac extends MatchingTask {
     val reporter = new ConsoleReporter(settings)
 
     // Compiles the actual code
-    val compiler = new Global(settings, reporter)
+    val compiler = newGlobal(settings, reporter)
     try {
       (new compiler.Run).compile(sourceFiles.map (_.toString))
      }
