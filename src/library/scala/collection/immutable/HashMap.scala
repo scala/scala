@@ -103,7 +103,7 @@ class HashMap[A, B] extends Map[A,B] with mutable.HashTable[A] {
   private def getValue(e: Entry) =
     e.value.asInstanceOf[B]
 
-  private def logLimit: Int = Math.sqrt(table.length.toDouble).toInt
+  private def logLimit: Int = Math.sqrt(table.length).toInt
 
   private def markUpdated(key: A, ov: Option[B], delta: Int) {
     val lv = loadFactor

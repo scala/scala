@@ -37,7 +37,7 @@ object Set {
  *  @version 1.1, 09/05/2004
  */
 @cloneable
-trait Set[A] extends collection.Set[A] with Scriptable[Message[A]] {
+trait Set[A] extends collection.Set[A] with Scriptable[Message[A]] with CloneableCollection {
 
   /** This method allows one to add or remove an element <code>elem</code>
    *  from this set depending on the value of parameter <code>included</code>.

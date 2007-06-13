@@ -14,9 +14,10 @@ import Predef._
 
 trait FlatHashTable[A] {
 
-  /** The load factor for the hash table; must be < 0.5f
+  /** The load factor for the hash table; must be < 500 (0.5)
    */
-  protected def loadFactor: Float = 0.45f
+  protected def loadFactor: Int = 450
+  protected final def loadFactorDenum = 1000
 
   /** The initial size of the hash table.
    */
@@ -151,8 +152,8 @@ trait FlatHashTable[A] {
 
   private def newThreshold(size: Int) = {
     val lf = loadFactor
-    assert(lf < 0.5f, "loadFactor too large; must be < 0.5")
-    (size * lf).asInstanceOf[Int]
+    assert(lf < (loadFactorDenum / 2), "loadFactor too large; must be < 0.5")
+    (size.toLong * lf / loadFactorDenum ).toInt
   }
 
   protected def clear() {

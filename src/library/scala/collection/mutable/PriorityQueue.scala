@@ -23,7 +23,7 @@ package scala.collection.mutable
  */
 
 @serializable @cloneable
-class PriorityQueue[A <% Ordered[A]] extends ResizableArray[A] {
+class PriorityQueue[A <% Ordered[A]] extends ResizableArray[A] with CloneableCollection {
   size0 = size0 + 1 // we do not use array(0)
 
   protected def fixUp(as: Array[A], m: Int): Unit = {

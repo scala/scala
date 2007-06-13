@@ -89,7 +89,7 @@ class HashSet[A] extends Set[A] with mutable.FlatHashTable[A] {
     super.elements
   }
 
-  private def logLimit: Int = Math.sqrt(table.length.toDouble).toInt
+  private def logLimit: Int = Math.sqrt(table.length).toInt
 
   private def markUpdated(elem: A, del: Boolean) {
     val lv = loadFactor

@@ -42,6 +42,7 @@ object Map {
 trait Map[A, B] extends AnyRef
       with collection.Map[A, B]
       with Scriptable[Message[(A, B)]]
+      with CloneableCollection
 {
   /** This method allows one to add a new mapping from <code>key</code>
    *  to <code>value</code> to the map. If the map already contains a

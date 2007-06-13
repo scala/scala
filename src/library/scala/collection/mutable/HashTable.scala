@@ -32,9 +32,10 @@ trait HashTable[A] extends AnyRef {
 
   protected type Entry >: Null <: HashEntry[A, Entry]
 
-  /** The load factor for the hash table.
+  /** The load factor for the hash table (in 0.001 step).
    */
-  protected def loadFactor: Float = 0.75f
+  protected def loadFactor: Int = 750 // corresponds to 75%
+  protected final val loadFactorDenum = 1000;
 
   /** The initial size of the hash table.
    */
@@ -125,7 +126,7 @@ trait HashTable[A] extends AnyRef {
   }
 
   private def newThreshold(size: Int) =
-    (size * loadFactor).asInstanceOf[Int]
+    ((size.toLong * loadFactor)/loadFactorDenum).toInt
 
   private def resize(newSize: Int) = {
     val oldTable = table

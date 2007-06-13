@@ -26,6 +26,7 @@ import Predef._
 trait Buffer[A] extends AnyRef
       with Seq[A]
       with Scriptable[Message[(Location, A)]]
+      with CloneableCollection
 {
 
   /** Append a single element to this buffer.
