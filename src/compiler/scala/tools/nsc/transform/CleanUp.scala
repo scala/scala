@@ -24,6 +24,8 @@ abstract class CleanUp extends Transform {
 
   class CleanUpTransformer(unit: CompilationUnit) extends Transformer {
 
+    private val MethodClass = if (forCLDC || forMSIL) null
+                              else definitions.getClass("java.lang.reflect.Method")
     private val newDefs = new ListBuffer[Tree]
     private val classConstantMeth = new HashMap[String, Symbol]
 
@@ -32,15 +34,17 @@ abstract class CleanUp extends Transform {
     private val javaBoxClassModule = new HashMap[Symbol, Symbol]
 
     if (!forMSIL) {
-      javaBoxClassModule(UnitClass)    = getModule("java.lang.Void")
       javaBoxClassModule(BooleanClass) = getModule("java.lang.Boolean")
       javaBoxClassModule(ByteClass)    = getModule("java.lang.Byte")
       javaBoxClassModule(ShortClass)   = getModule("java.lang.Short")
       javaBoxClassModule(IntClass)     = getModule("java.lang.Integer")
       javaBoxClassModule(CharClass)    = getModule("java.lang.Character")
       javaBoxClassModule(LongClass)    = getModule("java.lang.Long")
-      javaBoxClassModule(FloatClass)   = getModule("java.lang.Float")
-      javaBoxClassModule(DoubleClass)  = getModule("java.lang.Double")
+      if (!forCLDC) {
+        javaBoxClassModule(FloatClass)   = getModule("java.lang.Float")
+        javaBoxClassModule(DoubleClass)  = getModule("java.lang.Double")
+        javaBoxClassModule(UnitClass)    = getModule("java.lang.Void")
+      }
     }
 
     private var localTyper: analyzer.Typer = null;
@@ -305,7 +309,7 @@ abstract class CleanUp extends Transform {
         val tpe = c.typeValue
         atPos(tree.pos) {
           localTyper.typed {
-            if (isValueClass(tpe.symbol))
+            if (isValueClass(tpe.symbol) && !forCLDC)
               Select(gen.mkAttributedRef(javaBoxClassModule(tpe.symbol)), "TYPE")
             else if (settings.target.value != "jvm-1.5")
               Apply(

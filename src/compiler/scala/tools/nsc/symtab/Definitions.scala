@@ -38,7 +38,6 @@ trait Definitions {
     var SingletonClass: Symbol = _
 
     var ClassClass: Symbol = _
-    var MethodClass: Symbol = _
     var StringClass: Symbol = _
     var ThrowableClass: Symbol = _
     var NullPointerExceptionClass: Symbol = _
@@ -50,7 +49,6 @@ trait Definitions {
     // Symbol -> (Symbol, Type): scalaCaller -> (scalaMethodSym, DelegateType)
     // var Delegate_scalaCallerInfos: HashMap[Symbol, (Symbol, Type)] = _
     var Delegate_scalaCallerTargets: HashMap[Symbol, Symbol] = _
-    var SyntheticClasses: HashSet[Symbol] = _
 
     // the scala value classes
     var UnitClass: Symbol = _
@@ -660,19 +658,21 @@ trait Definitions {
       addModuleMethod(LongClass,  "MinValue",  java.lang.Long.MIN_VALUE)
       addModuleMethod(LongClass,  "MaxValue",  java.lang.Long.MAX_VALUE)
 
-      addModuleMethod(FloatClass, "MinValue", -java.lang.Float.MAX_VALUE)
-      addModuleMethod(FloatClass, "MaxValue",  java.lang.Float.MAX_VALUE)
-      addModuleMethod(FloatClass, "Epsilon",   java.lang.Float.MIN_VALUE)
-      addModuleMethod(FloatClass, "NaN",       java.lang.Float.NaN)
-      addModuleMethod(FloatClass, "PositiveInfinity", java.lang.Float.POSITIVE_INFINITY)
-      addModuleMethod(FloatClass, "NegativeInfinity", java.lang.Float.NEGATIVE_INFINITY)
+      if (!forCLDC) {
+        addModuleMethod(FloatClass, "MinValue", -java.lang.Float.MAX_VALUE)
+        addModuleMethod(FloatClass, "MaxValue",  java.lang.Float.MAX_VALUE)
+        addModuleMethod(FloatClass, "Epsilon",   java.lang.Float.MIN_VALUE)
+        addModuleMethod(FloatClass, "NaN",       java.lang.Float.NaN)
+        addModuleMethod(FloatClass, "PositiveInfinity", java.lang.Float.POSITIVE_INFINITY)
+        addModuleMethod(FloatClass, "NegativeInfinity", java.lang.Float.NEGATIVE_INFINITY)
 
-      addModuleMethod(DoubleClass, "MinValue", -java.lang.Double.MAX_VALUE)
-      addModuleMethod(DoubleClass, "MaxValue",  java.lang.Double.MAX_VALUE)
-      addModuleMethod(DoubleClass, "Epsilon",   java.lang.Double.MIN_VALUE)
-      addModuleMethod(DoubleClass, "NaN",       java.lang.Double.NaN)
-      addModuleMethod(DoubleClass, "PositiveInfinity", java.lang.Double.POSITIVE_INFINITY)
-      addModuleMethod(DoubleClass, "NegativeInfinity", java.lang.Double.NEGATIVE_INFINITY)
+        addModuleMethod(DoubleClass, "MinValue", -java.lang.Double.MAX_VALUE)
+        addModuleMethod(DoubleClass, "MaxValue",  java.lang.Double.MAX_VALUE)
+        addModuleMethod(DoubleClass, "Epsilon",   java.lang.Double.MIN_VALUE)
+        addModuleMethod(DoubleClass, "NaN",       java.lang.Double.NaN)
+        addModuleMethod(DoubleClass, "PositiveInfinity", java.lang.Double.POSITIVE_INFINITY)
+        addModuleMethod(DoubleClass, "NegativeInfinity", java.lang.Double.NEGATIVE_INFINITY)
+      }
     }
 
     /** Is symbol a value class? */
@@ -761,7 +761,6 @@ trait Definitions {
       StringClass = getClass(if (forMSIL) "System.String" else "java.lang.String")
 
       ClassClass = getClass(if (forMSIL) "System.Type" else "java.lang.Class")
-      MethodClass = if (forMSIL) null else getClass("java.lang.reflect.Method")
       ThrowableClass = getClass(if (forMSIL) "System.Exception" else "java.lang.Throwable")
       NullPointerExceptionClass = getClass(if (forMSIL) "System.NullReferenceException"
                                            else "java.lang.NullPointerException")
@@ -878,7 +877,7 @@ trait Definitions {
 
       PatternWildcard = NoSymbol.newValue(NoPosition, "_").setInfo(AllClass.typeConstructor)
 
-      BoxedNumberClass = if (forMSIL)  getClass("System.IConvertible")
+      BoxedNumberClass = if (forCLDC) null else if (forMSIL)  getClass("System.IConvertible")
                          else getClass("java.lang.Number")
       BoxedArrayClass = getClass("scala.runtime.BoxedArray")
       BoxedAnyArrayClass = getClass("scala.runtime.BoxedAnyArray")
@@ -940,13 +939,6 @@ trait Definitions {
       BeanPropertyAttr = if (forCLDC || forMSIL) null else getClass("scala.reflect.BeanProperty")
       DeprecatedAttr = getClass("scala.deprecated")
       NativeAttr = getClass("scala.native")
-
-      SyntheticClasses = new HashSet[Symbol]
-      SyntheticClasses ++= List(
-        AllClass, AllRefClass, AnyClass, AnyRefClass, AnyValClass,
-        //value classes
-        BooleanClass, ByteClass, CharClass, DoubleClass, FloatClass,
-        IntClass, LongClass, ShortClass, UnitClass)
     }
 
     var nbScalaCallers: Int = 0

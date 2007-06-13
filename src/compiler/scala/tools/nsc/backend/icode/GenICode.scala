@@ -1390,16 +1390,22 @@ abstract class GenICode extends SubComponent  {
         * When it is statically known that both sides are equal and subtypes of Number of Character,
         * not using the rich equality is possible (their own equals method will do ok.)*/
       def mustUseAnyComparator: Boolean = {
+        def isBoxed(sym: Symbol): Boolean =
+          if (forCLDC) {
+            (sym isNonBottomSubClass definitions.ByteClass) ||
+            (sym isNonBottomSubClass definitions.ShortClass) ||
+            (sym isNonBottomSubClass definitions.CharClass) ||
+            (sym isNonBottomSubClass definitions.IntClass) ||
+            (sym isNonBottomSubClass definitions.LongClass)
+          }
+          else ((sym isNonBottomSubClass definitions.BoxedNumberClass) ||
+            (!forMSIL && (sym isNonBottomSubClass BoxedCharacterClass)))
+
         val lsym = l.tpe.symbol
         val rsym = r.tpe.symbol
         (lsym == definitions.ObjectClass) ||
         (rsym == definitions.ObjectClass) ||
-        (lsym != rsym) && (
-          (lsym isNonBottomSubClass definitions.BoxedNumberClass) ||
-          (!forMSIL && (lsym isNonBottomSubClass BoxedCharacterClass)) ||
-          (rsym isNonBottomSubClass definitions.BoxedNumberClass) ||
-          (!forMSIL && (rsym isNonBottomSubClass BoxedCharacterClass))
-        )
+        (lsym != rsym) && (isBoxed(lsym) || isBoxed(rsym))
       }
 
       if (mustUseAnyComparator) {

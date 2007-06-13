@@ -20,6 +20,18 @@ trait ModelFrames extends ModelExtractor {
   import DocUtil._
   def settings: Settings
 
+  val SyntheticClasses = new scala.collection.mutable.HashSet[global.Symbol];
+  {
+    import global.definitions._
+    SyntheticClasses ++= List(
+      AllClass, AllRefClass, AnyClass, AnyRefClass, AnyValClass,
+      //value classes
+      BooleanClass, ByteClass, CharClass, IntClass, LongClass, ShortClass, UnitClass)
+
+    if (!global.forCLDC)
+      SyntheticClasses ++= List(FloatClass, DoubleClass)
+  }
+
   val outdir      = settings.outdir.value
   val windowTitle = settings.windowtitle.value
   val docTitle    = load(settings.doctitle.value)
@@ -287,7 +299,7 @@ trait ModelFrames extends ModelExtractor {
       </div><hr/>
       <div class="source">
         {
-          if (global.definitions.SyntheticClasses contains clazz.sym)
+          if (SyntheticClasses contains clazz.sym)
             Text("[Source: none]")
           else {
             val name = owner.fullNameString('/') + (if (owner.isPackage) "/" + clazz.name else "")
