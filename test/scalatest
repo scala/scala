@@ -304,7 +304,7 @@ test_run_msil() {
         * )
             ilasm /output:"$os_dstbase".$EXE "$os_dstbase".$MSIL \
                 > /dev/null &&
-            env MONO_PATH="$PREFIX/lib" mono "$dstbase.$EXE" "msil";;
+            env MONO_PATH="$PREFIX/build/msil:$PREFIX/lib" mono "$dstbase.$EXE" "msil";;
     esac &&
     rm -f "$dstbase".$EXE &&
     rm -f "$dstbase".$MSIL;
