@@ -25,18 +25,18 @@ import java.net.ServerSocket
  */
 abstract class SocketServer {
 
-  def shutDown: boolean
-  def session(): unit
+  def shutDown: Boolean
+  def session()
 
   var out: PrintWriter = _
   var in: BufferedReader = _
 
-  def fatal(msg: String) = {
+  def fatal(msg: String): Nothing = {
     System.err.println(msg)
     exit(1)
   }
 
-  val port: int = try {
+  val port: Int = try {
     val s = new ServerSocket(0) // a port of 0 creates a socket on any free port.
     val p = s.getLocalPort()
     s.close()

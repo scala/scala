@@ -127,10 +127,11 @@ class SourceFile(val file: AbstractFile, _content: Array[Char]) {
     buf.toString()
   }
 
-  private def normalize(input : Array[char]): Array[char] =
-    if (input.length > 0 && input(input.length - 1) == SU) input
+  private def normalize(input : Array[Char]): Array[Char] =
+    if (input.length > 0 && input(input.length - 1) == SU)
+      input
     else {
-      val content = new Array[char](input.length + 1)
+      val content = new Array[Char](input.length + 1)
       Array.copy(input, 0, content, 0, input.length)
       content(input.length) = SU
       content

@@ -1,60 +1,62 @@
 /* NSC -- new scala compiler
- * Copyright 2005 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
-package scala.tools.nsc.typechecker;
 
-import symtab.Flags._;
+package scala.tools.nsc.typechecker
+
+import symtab.Flags._
 
 /** Variances form a lattice, 0 <= COVARIANT <= Variances, 0 <= CONTRAVARIANT <= VARIANCES
  */
 trait Variances {
 
-  val global: Global;
-  import global._;
+  val global: Global
+  import global._
 
   /** Convert variance to string */
-  private def varianceString(variance: int): String =
+  private def varianceString(variance: Int): String =
     if (variance == COVARIANT) "covariant"
     else if (variance == CONTRAVARIANT) "contravariant"
-    else "invariant";
+    else "invariant"
 
   /** Flip between covariant and contravariant */
-  private def flip(v: int): int = {
-    if (v == COVARIANT) CONTRAVARIANT;
-    else if (v == CONTRAVARIANT) COVARIANT;
+  private def flip(v: Int): Int = {
+    if (v == COVARIANT) CONTRAVARIANT
+    else if (v == CONTRAVARIANT) COVARIANT
     else v
   }
 
-  private def compose(v1: int, v2: int) =
+  private def compose(v1: Int, v2: Int) =
     if (v1 == 0) 0
     else if (v1 == CONTRAVARIANT) flip(v2)
     else v2;
 
   /** Map everything below VARIANCES to 0 */
-  private def cut(v: int): int =
-    if (v == VARIANCES) v else 0;
+  private def cut(v: Int): Int =
+    if (v == VARIANCES) v else 0
 
   /** Compute variance of type parameter `tparam' in types of all symbols `sym'. */
-  def varianceInSyms(syms: List[Symbol])(tparam: Symbol): int =
-    (VARIANCES /: syms) ((v, sym) => v & varianceInSym(sym)(tparam));
+  def varianceInSyms(syms: List[Symbol])(tparam: Symbol): Int =
+    (VARIANCES /: syms) ((v, sym) => v & varianceInSym(sym)(tparam))
 
   /** Compute variance of type parameter `tparam' in type of symbol `sym'. */
-  def varianceInSym(sym: Symbol)(tparam: Symbol): int =
+  def varianceInSym(sym: Symbol)(tparam: Symbol): Int =
     if (sym.isAliasType) cut(varianceInType(sym.info)(tparam))
-    else varianceInType(sym.info)(tparam);
+    else varianceInType(sym.info)(tparam)
 
   /** Compute variance of type parameter `tparam' in all types `tps'. */
-  def varianceInTypes(tps: List[Type])(tparam: Symbol): int =
-    (VARIANCES /: tps) ((v, tp) => v & varianceInType(tp)(tparam));
+  def varianceInTypes(tps: List[Type])(tparam: Symbol): Int =
+    (VARIANCES /: tps) ((v, tp) => v & varianceInType(tp)(tparam))
 
   /** Compute variance of type parameter `tparam' in all type arguments
-   *  `tps' which correspond to formal type parameters `tparams1'. */
-  def varianceInArgs(tps: List[Type], tparams1: List[Symbol])(tparam: Symbol): int = {
-    var v: int = VARIANCES;
-    for (val (tp, tparam1) <- tps zip tparams1) {
-      val v1 = varianceInType(tp)(tparam);
+   *  <code>tps</code> which correspond to formal type parameters `tparams1'.
+   */
+  def varianceInArgs(tps: List[Type], tparams1: List[Symbol])(tparam: Symbol): Int = {
+    var v: Int = VARIANCES;
+    for ((tp, tparam1) <- tps zip tparams1) {
+      val v1 = varianceInType(tp)(tparam)
       v = v & (if (tparam1.isCovariant) v1
 	       else if (tparam1.isContravariant) flip(v1)
 	       else cut(v1))
@@ -62,8 +64,8 @@ trait Variances {
     v
   }
 
-  /** Compute variance of type parameter `tparam' in type `tp'. */
-  def varianceInType(tp: Type)(tparam: Symbol): int = tp match {
+  /** Compute variance of type parameter <code>tparam</code> in type <code>tp</code>. */
+  def varianceInType(tp: Type)(tparam: Symbol): Int = tp match {
     case ErrorType | WildcardType | NoType | NoPrefix | ThisType(_) | ConstantType(_) =>
       VARIANCES
     case SingleType(pre, sym) =>

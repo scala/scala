@@ -6,10 +6,10 @@
 
 package scala.tools.nsc.util
 
+import java.io.{File, FileInputStream, PrintStream, IOException}
 import java.lang.Integer.toHexString
 import java.lang.Float.intBitsToFloat
 import java.lang.Double.longBitsToDouble
-import java.io.{File, FileInputStream, PrintStream, IOException}
 
 import symtab.{Flags, Names}
 import symtab.classfile.{PickleBuffer, PickleFormat}
@@ -18,7 +18,7 @@ object ShowPickled extends Names {
 
   import PickleFormat._
 
-  def tag2string(tag: int): String = tag match {
+  def tag2string(tag: Int): String = tag match {
     case TERMname       => "TERMname"
     case TYPEname       => "TYPEname"
     case NONEsym        => "NONEsym"
@@ -66,7 +66,7 @@ object ShowPickled extends Names {
     out.println("Version " + buf.readNat() + "." + buf.readNat())
     val index = buf.createIndex
 
-    def printNameRef() = {
+    def printNameRef() {
       val x = buf.readNat()
       val savedIndex = buf.readIndex
       buf.readIndex = index(x)
@@ -81,7 +81,7 @@ object ShowPickled extends Names {
     def printTypeRef() = printNat()
     def printConstantRef() = printNat()
 
-    def printSymInfo() = {
+    def printSymInfo() {
       printNameRef()
       printSymbolRef()
       val flags = buf.readNat()
@@ -90,7 +90,7 @@ object ShowPickled extends Names {
       printTypeRef()
     }
 
-    def printEntry(i: int): unit = {
+    def printEntry(i: Int) {
       buf.readIndex = index(i)
       out.print(i + "," + buf.readIndex + ": ")
       val tag = buf.readByte()
@@ -138,17 +138,17 @@ object ShowPickled extends Names {
         case LITERALboolean =>
           out.print(if (buf.readLong(len) == 0) " false" else " true")
         case LITERALbyte    =>
-          out.print(" " + buf.readLong(len).asInstanceOf[byte])
+          out.print(" " + buf.readLong(len).asInstanceOf[Byte])
         case LITERALshort   =>
-          out.print(" " + buf.readLong(len).asInstanceOf[short])
+          out.print(" " + buf.readLong(len).asInstanceOf[Short])
         case LITERALchar    =>
-          out.print(" " + buf.readLong(len).asInstanceOf[char])
+          out.print(" " + buf.readLong(len).asInstanceOf[Char])
         case LITERALint     =>
-          out.print(" " + buf.readLong(len).asInstanceOf[int])
+          out.print(" " + buf.readLong(len).asInstanceOf[Int])
         case LITERALlong    =>
           out.print(" " + buf.readLong(len))
         case LITERALfloat   =>
-          out.print(" " + intBitsToFloat(buf.readLong(len).asInstanceOf[int]))
+          out.print(" " + intBitsToFloat(buf.readLong(len).asInstanceOf[Int]))
         case LITERALdouble  =>
           out.print(" " + longBitsToDouble(buf.readLong(len)))
         case LITERALstring  =>
@@ -172,11 +172,11 @@ object ShowPickled extends Names {
     for (i <- 0 until index.length) printEntry(i)
   }
 
-  def main(args: Array[String]): unit = {
+  def main(args: Array[String]) {
     val file = new File(args(0))
     try {
       val stream = new FileInputStream(file)
-      val data = new Array[byte](stream.available())
+      val data = new Array[Byte](stream.available())
       stream.read(data)
       val pickle = new PickleBuffer(data, 0, data.length)
       printFile(pickle, Console.out)

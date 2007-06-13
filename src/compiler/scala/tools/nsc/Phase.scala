@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -10,14 +10,14 @@ import symtab.Flags
 
 abstract class Phase(val prev: Phase) {
 
-  type Id = int
+  type Id = Int
 
   val id: Id = if (prev eq null) 0 else prev.id + 1
 
-  def newFlags: long = 0l
-  private var fmask: long =
+  def newFlags: Long = 0l
+  private var fmask: Long =
     if (prev eq null) Flags.InitialFlags else prev.flagMask | newFlags
-  def flagMask: long = fmask
+  def flagMask: Long = fmask
 
   private var nx: Phase = this
   if (prev ne null) prev.nx = this
@@ -26,9 +26,9 @@ abstract class Phase(val prev: Phase) {
 
   def name: String
   def description: String = name
-  def erasedTypes: boolean = false
-  def flatClasses: boolean = false
-  def run: unit
+  def erasedTypes: Boolean = false
+  def flatClasses: Boolean = false
+  def run: Unit
 
   override def toString() = name
 }

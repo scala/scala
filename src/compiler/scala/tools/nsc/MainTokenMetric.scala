@@ -40,7 +40,7 @@ object MainTokenMetric {
     Console.println(totale.toString()+" total")
   }
 
-  def process(args: Array[String]): unit = {
+  def process(args: Array[String]) {
     val settings = new Settings(error)
     reporter = new ConsoleReporter(settings)
     val command = new CompilerCommand(List.fromArray(args), settings, error, false)

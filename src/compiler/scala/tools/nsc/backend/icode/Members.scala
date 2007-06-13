@@ -1,22 +1,22 @@
 /* NSC -- new scala compiler
- * Copyright 2005 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author  Martin Odersky
  */
 
 // $Id$
 
-package scala.tools.nsc.backend.icode;
+package scala.tools.nsc.backend.icode
 
-import java.io.PrintWriter;
+import java.io.PrintWriter
 
-import scala.collection.mutable.HashMap;
-import scala.collection.mutable.{Set, HashSet, ListBuffer};
-import scala.{Symbol => scala_Symbol};
+import scala.collection.mutable.HashMap
+import scala.collection.mutable.{Set, HashSet, ListBuffer}
+import scala.{Symbol => scala_Symbol}
 
-import scala.tools.nsc.symtab.Flags;
+import scala.tools.nsc.symtab.Flags
 
 trait Members { self: ICodes =>
-  import global._;
+  import global._
 
   /**
    * This class represents the intermediate code of a method or
@@ -28,17 +28,17 @@ trait Members { self: ICodes =>
     val blocks: ListBuffer[BasicBlock] = new ListBuffer
 
     /** The start block of the method */
-    var startBlock: BasicBlock = null;
+    var startBlock: BasicBlock = null
 
     /** The stack produced by this method */
-    var producedStack: TypeStack = null;
+    var producedStack: TypeStack = null
 
-    private var currentLabel: int = 0;
+    private var currentLabel: Int = 0
 
     // Constructor code
     startBlock = newBlock;
 
-    def removeBlock(b: BasicBlock) = {
+    def removeBlock(b: BasicBlock) {
       if (settings.debug.value) {
         assert(blocks.forall(p => !(p.successors.contains(b))),
                "Removing block that is still referenced in method code " + b + "preds: " + b.predecessors);
@@ -81,7 +81,7 @@ trait Members { self: ICodes =>
       val visited : HashMap[BasicBlock, Boolean] = new HashMap;
       visited ++= blocks.elements.map(x => (x, false));
 
-      var blockToVisit : List[BasicBlock] = startBlock::Nil;
+      var blockToVisit: List[BasicBlock] = List(startBlock)
 
       while (!blockToVisit.isEmpty) {
         blockToVisit match {
@@ -118,9 +118,9 @@ trait Members { self: ICodes =>
 
   /** Represent a class in ICode */
   class IClass(val symbol: Symbol) {
-    var fields: List[IField] = Nil;
-    var methods: List[IMethod] = Nil;
-    var cunit: CompilationUnit = _;
+    var fields: List[IField] = Nil
+    var methods: List[IMethod] = Nil
+    var cunit: CompilationUnit = _
 
     def addField(f: IField): this.type = {
       fields = f :: fields;
@@ -219,7 +219,7 @@ trait Members { self: ICodes =>
     def isStatic: Boolean =
       symbol.hasFlag(Flags.STATIC) || symbol.hasFlag(Flags.STATICMEMBER) || symbol.owner.isImplClass;
 
-    override def toString() = symbol.fullNameString;
+    override def toString() = symbol.fullNameString
 
     import opcodes._
     def checkLocals: Unit = if (code ne null) {
@@ -276,14 +276,14 @@ trait Members { self: ICodes =>
 
     def dump = {
       val printer = new TextPrinter(new PrintWriter(Console.out, true),
-                                    new DumpLinearizer);
-      printer.printMethod(this);
+                                    new DumpLinearizer)
+      printer.printMethod(this)
     }
   }
 
   /** Represent local variables and parameters */
   class Local(val sym: Symbol, val kind: TypeKind, val arg: Boolean) {
-    var index: Int = -1;
+    var index: Int = -1
 
     /** Starting PC for this local's visbility range. */
     var start: Int = _
@@ -299,6 +299,6 @@ trait Members { self: ICodes =>
       other.asInstanceOf[Local].sym == this.sym
     );
 
-    override def toString(): String = sym.toString();
+    override def toString(): String = sym.toString()
   }
 }

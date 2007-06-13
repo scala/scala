@@ -191,7 +191,7 @@ object CompileSocket {
     */
   def getOrCreateSocket(vmArgs: String, create: Boolean): Socket = {
     val nAttempts = 49  // try for about 5 seconds
-    def getsock(attempts: int): Socket =
+    def getsock(attempts: Int): Socket =
       if (attempts == 0) {
         error("Unable to establish connection to compilation daemon")
         null
@@ -240,7 +240,7 @@ object CompileSocket {
     }
   }
 
-  def getSocket(hostName: String, port: int): Socket =
+  def getSocket(hostName: String, port: Int): Socket =
     try {
       new Socket(hostName, port)
     } catch {
@@ -249,7 +249,7 @@ object CompileSocket {
               hostName + ":" + port + "; exiting")
     }
 
-  def getPassword(port: int): String = {
+  def getPassword(port: Int): String = {
     val f = new BufferedReader(new FileReader(portFile(port)))
     val result = f.readLine()
     f.close()

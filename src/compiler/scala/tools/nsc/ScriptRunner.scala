@@ -73,7 +73,7 @@ object ScriptRunner {
     try {
       val jarFileStream = new FileOutputStream(jarFile)
       val jar = new JarOutputStream(jarFileStream)
-      val buf = new Array[byte](10240)
+      val buf = new Array[Byte](10240)
 
       def addFromDir(dir: File, prefix: String) {
         for (entry <- dir.listFiles) {

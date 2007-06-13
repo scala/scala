@@ -50,7 +50,7 @@ object Actor {
    * This permits to re-use the current thread as an actor
    * even if its <code>ActorProxy</code> has died for some reason.
    */
-  def resetProxy: unit = {
+  def resetProxy {
     val a = tl.get.asInstanceOf[Actor]
     if ((null ne a) && a.isInstanceOf[ActorProxy])
       tl.set(new ActorProxy(currentThread))
@@ -91,7 +91,7 @@ object Actor {
    * @param  f a partial function specifying patterns and actions
    * @return   the result of processing the received message
    */
-  def receive[a](f: PartialFunction[Any, a]): a =
+  def receive[A](f: PartialFunction[Any, A]): A =
     self.receive(f)
 
   /**
@@ -133,7 +133,7 @@ object Actor {
    * @param  f    a partial function specifying patterns and actions
    * @return      this function never returns
    */
-  def reactWithin(msec: long)(f: PartialFunction[Any, Unit]): Nothing =
+  def reactWithin(msec: Long)(f: PartialFunction[Any, Unit]): Nothing =
     self.reactWithin(msec)(f)
 
   def eventloop(f: PartialFunction[Any, Unit]): Nothing =
@@ -141,9 +141,9 @@ object Actor {
 
   private class RecursiveProxyHandler(a: Actor, f: PartialFunction[Any, Unit])
           extends PartialFunction[Any, Unit] {
-    def isDefinedAt(m: Any): boolean =
+    def isDefinedAt(m: Any): Boolean =
       true // events are immediately removed from the mailbox
-    def apply(m: Any): Unit = {
+    def apply(m: Any) {
       if (f.isDefinedAt(m)) f(m)
       self.react(this)
     }
@@ -237,7 +237,7 @@ object Actor {
    */
   def exit(): Nothing = self.exit()
 
-  def continue: unit = self.kill()
+  def continue: Unit = self.kill()
 }
 
 /**
@@ -271,7 +271,7 @@ trait Actor extends OutputChannel[Any] {
   private var received: Option[Any] = None
 
   private[actors] val waitingForNone = (m: Any) => false
-  private[actors] var waitingFor: Any => boolean = waitingForNone
+  private[actors] var waitingFor: Any => Boolean = waitingForNone
   private[actors] var isSuspended = false
 
   private val mailbox = new MessageQueue
@@ -326,7 +326,7 @@ trait Actor extends OutputChannel[Any] {
     result
   }
 
-  def receiveWithin[R](msec: long)(f: PartialFunction[Any, R]): R = {
+  def receiveWithin[R](msec: Long)(f: PartialFunction[Any, R]): R = {
     assert(Actor.self == this, "receive from channel belonging to other actor")
     if (shouldExit) exit() // links
     this.synchronized {
@@ -389,7 +389,7 @@ trait Actor extends OutputChannel[Any] {
     }
   }
 
-  def reactWithin(msec: long)(f: PartialFunction[Any, Unit]): Nothing = {
+  def reactWithin(msec: Long)(f: PartialFunction[Any, Unit]): Nothing = {
     assert(Actor.self == this, "react on channel belonging to other actor")
     if (shouldExit) exit() // links
     Scheduler.pendReaction
@@ -424,7 +424,7 @@ trait Actor extends OutputChannel[Any] {
   /**
    * Sends <code>msg</code> to this actor (asynchronous).
    */
-  def !(msg: Any): Unit = {
+  def !(msg: Any) {
     send(msg, Actor.self.getReplyChannel)
   }
 
@@ -452,7 +452,7 @@ trait Actor extends OutputChannel[Any] {
    * Otherwise, returns <code>Some(value)</code> where
    * <code>value</code> is the reply value.
    */
-  def !?(msec: long, msg: Any): Option[Any] = {
+  def !?(msec: Long, msg: Any): Option[Any] = {
     val replyChannel = Actor.self.freshReply()
     this ! msg
     replyChannel.receiveWithin(msec) {
@@ -491,10 +491,10 @@ trait Actor extends OutputChannel[Any] {
    * <code>f</code>. This also allows to recover a more
    * precise type for the reply value.
    */
-  def !![a](msg: Any, f: PartialFunction[Any, a]): Future[a] = {
+  def !![A](msg: Any, f: PartialFunction[Any, A]): Future[A] = {
     val ftch = new Channel[Any](Actor.self)
     send(msg, ftch)
-    new Future[a](ftch) {
+    new Future[A](ftch) {
       def apply() =
         if (isSet) value.get
         else ch.receive {
@@ -576,7 +576,7 @@ trait Actor extends OutputChannel[Any] {
     if (shouldExit) exit()
   }
 
-  def suspendActorFor(msec: long) {
+  def suspendActorFor(msec: Long) {
     val ts = Platform.currentTime
     var waittime = msec
     var fromExc = false

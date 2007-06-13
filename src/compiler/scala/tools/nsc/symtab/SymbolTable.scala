@@ -1,8 +1,9 @@
 /* NSC -- new scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
+
 package scala.tools.nsc.symtab
 
 import util._
@@ -19,25 +20,26 @@ abstract class SymbolTable extends Names
 {
   def settings: Settings
   def rootLoader: LazyType
-  def log(msg: AnyRef): unit
+  def log(msg: AnyRef)
 
   /** Are we compiling for the J2ME CLDC platform? */
   def forCLDC: Boolean
 
   /** Are we compiling for .NET*/
   def forMSIL: Boolean
+
   /** are we in a lampion presentation compiler? then disable caching. */
-  def inIDE : Boolean;
+  def inIDE : Boolean
 
   /** A period is an ordinal number for a phase in a run.
    *  Phases in later runs have higher periods than phases in earlier runs.
    *  Later phases have higher periods than earlier phases in the same run.
    */
-  type Period = int
+  type Period = Int
   final val NoPeriod = 0
 
   /** An ordinal number for compiler runs. First run has number 1. */
-  type RunId = int
+  type RunId = Int
   final val NoRunId = 0
 
   private var ph: Phase = NoPhase
@@ -45,7 +47,7 @@ abstract class SymbolTable extends Names
 
   final def phase: Phase = ph
 
-  final def phase_=(p: Phase): unit = {
+  final def phase_=(p: Phase) {
     //System.out.println("setting phase to " + p)
     assert((p ne null) && p != NoPhase)
     ph = p

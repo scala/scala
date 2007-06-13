@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -11,7 +11,7 @@ package scala.tools.nsc.util
  *  @author Martin Odersky
  *  @version 1.0
  */
-class TreeSet[T >: Null <: AnyRef](less: (T, T) => boolean) extends Set[T] {
+class TreeSet[T >: Null <: AnyRef](less: (T, T) => Boolean) extends Set[T] {
 
   private class Tree(val elem: T) {
     var l: Tree = null
@@ -30,7 +30,7 @@ class TreeSet[T >: Null <: AnyRef](less: (T, T) => boolean) extends Set[T] {
     find(tree)
   }
 
-  def addEntry(x: T): unit = {
+  def addEntry(x: T) {
     def add(t: Tree): Tree = {
       if (t eq null) new Tree(x)
       else if (less(x, t.elem)) { t.l = add(t.l); t }

@@ -237,9 +237,9 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
 
     def apply(unit: CompilationUnit): Unit
     private val isErased = prev.name == "erasure" || prev.erasedTypes
-    override def erasedTypes: boolean = isErased
+    override def erasedTypes: Boolean = isErased
     private val isFlat = prev.name == "flatten" || prev.flatClasses
-    override def flatClasses: boolean = isFlat
+    override def flatClasses: Boolean = isFlat
     final def applyPhase(unit: CompilationUnit) {
       if (settings.debug.value) inform("[running phase " + name + " on " + unit + "]")
       val unit0 = currentRun.currentUnit
@@ -441,8 +441,8 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     icodes.init
 
     /** Deprecation warnings occurred */
-    var deprecationWarnings: boolean = false
-    var uncheckedWarnings: boolean = false
+    var deprecationWarnings: Boolean = false
+    var uncheckedWarnings: Boolean = false
 
     private var p: Phase = firstPhase
 
@@ -456,12 +456,12 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
 
     private var phasec: Int = 0
     private var unitc: Int = 0
-    def advancePhase: Unit = {
+    def advancePhase {
       unitc = 0
       phasec += 1
       refreshProgress
     }
-    def advanceUnit: Unit = {
+    def advanceUnit {
       unitc += 1
       refreshProgress
     }
@@ -506,7 +506,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     val symData = new HashMap[Symbol, PickleBuffer]
 
     /** does this run compile given class, module, or case factory? */
-    def compiles(sym: Symbol): boolean =
+    def compiles(sym: Symbol): Boolean =
       if (sym == NoSymbol) false
       else if (symSource.isDefinedAt(sym)) true
       else if (!sym.owner.isPackageClass) compiles(sym.toplevelClass)
@@ -615,8 +615,8 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     }
   } // class Run
 
-  def showDef(name: Name, module: boolean) {
-    def getSym(name: Name, module: boolean): Symbol = {
+  def showDef(name: Name, module: Boolean) {
+    def getSym(name: Name, module: Boolean): Symbol = {
       var i = name.length - 1
       while (i != 0 && name(i) != '#' && name(i) != '.') i -= 1
       if (i == 0)

@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -7,6 +7,7 @@
 package scala.tools.nsc.symtab.classfile
 
 import java.util.{StringTokenizer, NoSuchElementException}
+
 import scala.collection.mutable.ListBuffer
 import scala.tools.nsc.util.{Position,NoPosition}
 
@@ -21,7 +22,7 @@ abstract class MetaParser{
   private var token: String = _
   private var locals: Scope = null
 
-  def parse(meta: String, sym: Symbol, symtype: Type): unit = {
+  def parse(meta: String, sym: Symbol, symtype: Type) {
     //System.out.println("parse meta for " + sym + ":" + meta + ", locals = " + locals);//DEBUG
     this.scanner = new StringTokenizer(meta, "()[], \t<;", true)
     this.owner = sym
@@ -34,12 +35,13 @@ abstract class MetaParser{
     else owner.setInfo(symtype);
   }
 
-  protected def nextToken(): unit =
+  protected def nextToken() {
     try {
       do { token = scanner.nextToken().trim() } while (token.length() == 0)
     } catch {
       case ex: NoSuchElementException => token = ""
     }
+  }
 
   protected def parseType(): Type = {
     val str = token
@@ -65,7 +67,7 @@ abstract class MetaParser{
       if (token == "+") { nextToken(); Flags.COVARIANT }
       else if (token == "-") { nextToken(); Flags.CONTRAVARIANT }
       else 0;
-    assert(token.startsWith("?"));
+    assert(token startsWith "?", token)
     val sym = owner.newTypeParameter(NoPosition, newTypeName(token)).setFlag(vflag)
     nextToken()
     val lo =
@@ -105,14 +107,14 @@ abstract class MetaParser{
     tps.toList
   }
 
-  protected def parseClass(): unit = {
+  protected def parseClass() {
     locals = newScope
     def parse(): Type = {
-      nextToken();
+      nextToken()
       if (token == "[") {
         PolyType(parseTypeParams(), parse())
       } else if (token == "extends") {
-        val tps = new ListBuffer[Type];
+        val tps = new ListBuffer[Type]
         do {
           nextToken(); tps += parseType()
         } while (token == "with");
@@ -126,9 +128,9 @@ abstract class MetaParser{
     assert(token == ";")
   }
 
-  protected def parseMethod(): unit = {
+  protected def parseMethod() {
     val globals = locals
-    locals = if (locals eq null) newScope else newScope(locals);
+    locals = if (locals eq null) newScope else newScope(locals)
     def parse(): Type = {
       nextToken();
       if (token == "[") PolyType(parseTypeParams(), parse())
@@ -140,13 +142,13 @@ abstract class MetaParser{
     assert(token == ";")
   }
 
-  protected def parseField(): unit = {
+  protected def parseField() {
     nextToken()
     owner.setInfo(parseType())
     assert(token == ";")
   }
 
-  protected def parseConstr(): unit = {
+  protected def parseConstr() {
     def parse(): Type = {
       nextToken()
       if (token == "(") MethodType(parseParams(), parse())

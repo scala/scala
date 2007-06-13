@@ -88,7 +88,7 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
    * @param  f    a partial function with message patterns and actions
    * @return      result of processing the received value
    */
-  def receiveWithin[R](msec: long)(f: PartialFunction[Any, R]): R = {
+  def receiveWithin[R](msec: Long)(f: PartialFunction[Any, R]): R = {
     val C = this.asInstanceOf[Channel[Any]]
     receiver.receiveWithin(msec) {
       case C ! msg if (f.isDefinedAt(msg)) => f(msg)
@@ -121,7 +121,7 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
    * @param  msec the time span before timeout
    * @param  f    a partial function with message patterns and actions
    */
-  def reactWithin(msec: long)(f: PartialFunction[Any, Unit]): Nothing = {
+  def reactWithin(msec: Long)(f: PartialFunction[Any, Unit]): Nothing = {
     val C = this.asInstanceOf[Channel[Any]]
     receiver.reactWithin(msec) {
       case C ! msg if (f.isDefinedAt(msg)) => f(msg)
@@ -153,7 +153,7 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
    * @return      <code>None</code> in case of timeout, otherwise
    *              <code>Some(x)</code> where <code>x</code> is the reply
    */
-  def !?(msec: long, msg: Msg): Option[Any] = {
+  def !?(msec: Long, msg: Msg): Option[Any] = {
     val replyChannel = Actor.self.freshReply()
     receiver ! scala.actors.!(this, msg)
     replyChannel.receiveWithin(msec) {

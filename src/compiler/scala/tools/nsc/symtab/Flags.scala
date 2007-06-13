@@ -83,18 +83,18 @@ object Flags extends Enumeration {
   final val AntiShift     = 52L
 
   // late flags (set by a transformer phase)
-  final val latePRIVATE   = (PRIVATE: long) << LateShift
-  final val lateDEFERRED  = (DEFERRED: long) << LateShift
-  final val lateINTERFACE = (INTERFACE: long) << LateShift
-  final val lateMODULE    = (MODULE: long) << LateShift
-  final val lateFINAL     = (FINAL: long) << LateShift
-  final val lateMETHOD    = (METHOD: long) << LateShift
-  final val notPRIVATE    = (PRIVATE: long) << AntiShift
-  final val notDEFERRED   = (DEFERRED: long) << AntiShift
-  final val notPROTECTED  = (PROTECTED: long) << AntiShift
-  final val notABSTRACT   = (ABSTRACT: long) << AntiShift
-  final val notOVERRIDE   = (OVERRIDE: long) << AntiShift
-  final val notMETHOD     = (METHOD: long) << AntiShift
+  final val latePRIVATE   = (PRIVATE: Long) << LateShift
+  final val lateDEFERRED  = (DEFERRED: Long) << LateShift
+  final val lateINTERFACE = (INTERFACE: Long) << LateShift
+  final val lateMODULE    = (MODULE: Long) << LateShift
+  final val lateFINAL     = (FINAL: Long) << LateShift
+  final val lateMETHOD    = (METHOD: Long) << LateShift
+  final val notPRIVATE    = (PRIVATE: Long) << AntiShift
+  final val notDEFERRED   = (DEFERRED: Long) << AntiShift
+  final val notPROTECTED  = (PROTECTED: Long) << AntiShift
+  final val notABSTRACT   = (ABSTRACT: Long) << AntiShift
+  final val notOVERRIDE   = (OVERRIDE: Long) << AntiShift
+  final val notMETHOD     = (METHOD: Long) << AntiShift
 
   final val STATICMODULE  = lateMODULE
   final val STATICMEMBER  = notOVERRIDE
@@ -129,10 +129,10 @@ object Flags extends Enumeration {
   private def listToString(ss: List[String]): String =
     ss.filter("" !=).mkString("", " ", "")
 
-  def flagsToString(flags: long): String =
+  def flagsToString(flags: Long): String =
     listToString(for (i <- List.range(0, 63)) yield flagToString(flags & (1L << i)))
 
-  def flagsToString(flags: long, privateWithin: String): String = {
+  def flagsToString(flags: Long, privateWithin: String): String = {
     var f = flags
     val pw =
       if (privateWithin == "") {
@@ -154,7 +154,7 @@ object Flags extends Enumeration {
     listToString(List(flagsToString(f), pw))
   }
 
-  private def flagToString(flag: long): String = {
+  private def flagToString(flag: Long): String = {
     if (flag == IS_ERROR) "<is-error>"
     else if (flag == OVERLOADED  ) "<overloaded>"
     else if (flag == LIFTED      ) "<lifted>"
@@ -163,7 +163,7 @@ object Flags extends Enumeration {
     else if (flag == IMPLCLASS   ) "<implclass/presuper>"
     else if (flag == TRANS_FLAG  ) "<trans-flag>"
     else if (flag == LOCKED      ) "<locked>"
-    else flag.asInstanceOf[int] match {
+    else flag.asInstanceOf[Int] match {
       case IMPLICIT      => "implicit"
       case FINAL         => "final"
       case PRIVATE       => "private"
@@ -206,7 +206,7 @@ object Flags extends Enumeration {
     }
   }
 
-  class Flag(mods: int) {
+  class Flag(mods: Int) {
     def isPrivate   = (mods & PRIVATE  ) != 0
     def isProtected = (mods & PROTECTED) != 0
     def isVariable  = (mods &   MUTABLE) != 0

@@ -29,23 +29,23 @@ class TickedScheduler extends Thread with IScheduler {
   // Worker threads
   private val workers: Buffer[WorkerThread] = new ArrayBuffer[WorkerThread]
   private val idle = new Queue[WorkerThread]
-  private val ticks = new HashMap[WorkerThread, long]
+  private val ticks = new HashMap[WorkerThread, Long]
 
   private var terminating = false
 
   private var lastActivity = Platform.currentTime
 
   private var pendingReactions = 0
-  def pendReaction: unit = synchronized {
+  def pendReaction: Unit = synchronized {
     pendingReactions += 1
   }
-  def unPendReaction: unit = synchronized {
+  def unPendReaction: Unit = synchronized {
     pendingReactions -= 1
   }
 
   def printActorDump {}
 
-  def start(task: Reaction): unit = synchronized {
+  def start(task: Reaction): Unit = synchronized {
     pendingReactions += 1
     execute(task)
   }
@@ -61,17 +61,18 @@ class TickedScheduler extends Thread with IScheduler {
     worker.start()
   }
 
-  def onLockup(handler: () => unit) =
+  def onLockup(handler: () => Unit) {
     lockupHandler = handler
+  }
 
-  def onLockup(millis: int)(handler: () => unit) = {
+  def onLockup(millis: Int)(handler: () => Unit) {
     //LOCKUP_CHECK_FREQ = millis / CHECK_FREQ
     lockupHandler = handler
   }
 
-  private var lockupHandler: () => unit = null
+  private var lockupHandler: () => Unit = null
 
-  override def run(): unit = {
+  override def run() {
     try {
       while (!terminating) {
         this.synchronized {
@@ -123,7 +124,7 @@ class TickedScheduler extends Thread with IScheduler {
   /**
    *  @param item the task to be executed.
    */
-  def execute(item: Reaction): unit = synchronized {
+  def execute(item: Reaction): Unit = synchronized {
     if (!terminating) {
       if (idle.length > 0) {
         val wt = idle.dequeue
@@ -164,7 +165,7 @@ class TickedScheduler extends Thread with IScheduler {
 
   /** Shuts down all idle worker threads.
    */
-  def shutdown(): unit = synchronized {
+  def shutdown(): Unit = synchronized {
     terminating = true
     val idleThreads = idle.elements
     while (idleThreads.hasNext) {

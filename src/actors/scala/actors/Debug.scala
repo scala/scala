@@ -17,7 +17,7 @@ object Debug {
   private var lev = 2
 
   def level = lev
-  def level_= (lev: int) = { this.lev = lev }
+  def level_= (lev: Int) = { this.lev = lev }
 
   def info(s: String) =
     if (lev > 2) System.out.println("Info: " + s)
@@ -33,7 +33,7 @@ class Debug(tag: String) {
   private var lev = 2
 
   def level = lev
-  def level_= (lev: int) = { this.lev = lev }
+  def level_= (lev: Int) = { this.lev = lev }
 
   def info(s: String) =
     if (lev > 2) System.out.println(tag + " (info): " + s)

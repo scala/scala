@@ -12,36 +12,36 @@ package scala.tools.nsc.symtab.classfile
  *  @param from The first index where defined data are found
  *  @param to   The first index where new data can be written
  */
-class PickleBuffer(data: Array[byte], from: int, to: int) {
+class PickleBuffer(data: Array[Byte], from: Int, to: Int) {
 
   var bytes = data
   var readIndex = from
   var writeIndex = to
 
   /** Double bytes array */
-  private def dble: unit = {
-    val bytes1 = new Array[byte](bytes.length * 2)
+  private def dble() {
+    val bytes1 = new Array[Byte](bytes.length * 2)
     Array.copy(bytes, 0, bytes1, 0, writeIndex)
     bytes = bytes1
   }
 
-  def ensureCapacity(capacity: int) =
-    while (bytes.length < writeIndex + capacity) dble
+  def ensureCapacity(capacity: Int) =
+    while (bytes.length < writeIndex + capacity) dble()
 
   // -- Basic output routines --------------------------------------------
 
   /** Write a byte of data */
-  def writeByte(b: int) {
-    if (writeIndex == bytes.length) dble
-    bytes(writeIndex) = b.asInstanceOf[byte]
+  def writeByte(b: Int) {
+    if (writeIndex == bytes.length) dble()
+    bytes(writeIndex) = b.asInstanceOf[Byte]
     writeIndex += 1
   }
 
   /** Write a natural number in big endian format, base 128.
    *  All but the last digits have bit 0x80 set.
    */
-  def writeNat(x: int) {
-    def writeNatPrefix(x: int): unit = {
+  def writeNat(x: Int) {
+    def writeNatPrefix(x: Int) {
       val y = x >>> 7
       if (y != 0) writeNatPrefix(y)
       writeByte((x & 0x7f) | 0x80)
@@ -57,15 +57,15 @@ class PickleBuffer(data: Array[byte], from: int, to: int) {
    *  @param pos ...
    *  @param x   ...
    */
-  def patchNat(pos: int, x: int) {
-    def patchNatPrefix(x: int) {
+  def patchNat(pos: Int, x: Int) {
+    def patchNatPrefix(x: Int) {
       writeByte(0)
       Array.copy(bytes, pos, bytes, pos+1, writeIndex - (pos+1))
-      bytes(pos) = ((x & 0x7f) | 0x80).asInstanceOf[byte]
+      bytes(pos) = ((x & 0x7f) | 0x80).asInstanceOf[Byte]
       val y = x >>> 7
       if (y != 0) patchNatPrefix(y)
     }
-    bytes(pos) = (x & 0x7f).asInstanceOf[byte]
+    bytes(pos) = (x & 0x7f).asInstanceOf[Byte]
     val y = x >>> 7
     if (y != 0) patchNatPrefix(y)
   }
@@ -74,7 +74,7 @@ class PickleBuffer(data: Array[byte], from: int, to: int) {
    *
    *  @param x The long number to be written.
    */
-  def writeLong(x: long) {
+  def writeLong(x: Long) {
     val y = x >> 8
     val z = x & 0xff
     if (-y != (z >> 7)) writeLong(y)
@@ -84,16 +84,16 @@ class PickleBuffer(data: Array[byte], from: int, to: int) {
   // -- Basic input routines --------------------------------------------
 
   /** Peek at the current byte without moving the read index */
-  def peekByte(): int = bytes(readIndex)
+  def peekByte(): Int = bytes(readIndex)
 
   /** Read a byte */
-  def readByte(): int = {
+  def readByte(): Int = {
     val x = bytes(readIndex); readIndex += 1; x
   }
 
   /** Read a natural number in big endian format, base 128.
    *  All but the last digits have bit 0x80 set.*/
-  def readNat(): int = {
+  def readNat(): Int = {
     var b = 0
     var x = 0
     do {
@@ -104,7 +104,7 @@ class PickleBuffer(data: Array[byte], from: int, to: int) {
   }
 
   /** Read a long number in signed big endian format, base 256. */
-  def readLong(len: int): long = {
+  def readLong(len: Int): Long = {
     var x = 0L
     var i = 0
     while (i < len) {
@@ -123,21 +123,21 @@ class PickleBuffer(data: Array[byte], from: int, to: int) {
    *  @param op  ...
    *  @return    ...
    */
-  def until[T](end: int, op: () => T): List[T] =
+  def until[T](end: Int, op: () => T): List[T] =
     if (readIndex == end) List() else op() :: until(end, op);
 
   /** Perform operation <code>op</code> the number of
    *  times specified.  Concatenate the results into a list.
    */
-  def times[T](n: int, op: ()=>T): List[T] =
+  def times[T](n: Int, op: ()=>T): List[T] =
     if (n == 0) List() else op() :: times(n-1, op)
 
   /** Create an index.
    *
    *  @return ...
    */
-  def createIndex: Array[int] = {
-    val index = new Array[int](readNat())
+  def createIndex: Array[Int] = {
+    val index = new Array[Int](readNat())
     for (i <- 0 until index.length) {
       index(i) = readIndex
       readByte()

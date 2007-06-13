@@ -26,7 +26,7 @@ package scala.actors
  */
 abstract class Future[T](val ch: InputChannel[Any]) extends Function0[T] {
   protected var value: Option[T] = None
-  def isSet: boolean
+  def isSet: Boolean
 }
 
 /**
@@ -47,7 +47,7 @@ object Futures {
     a !! (Eval, { case any => any.asInstanceOf[T] })
   }
 
-  def alarm(t: long) = future {
+  def alarm(t: Long) = future {
     Actor.reactWithin(t) {
       case TIMEOUT => {}
     }
@@ -70,27 +70,27 @@ object Futures {
    *   Note that some of the futures might already have been awaited.
    * </p>
    */
-  def awaitAll(timeout: long, fts: Future[Any]*): List[Option[Any]] = {
+  def awaitAll(timeout: Long, fts: Future[Any]*): List[Option[Any]] = {
     var resultsMap: collection.mutable.Map[Int, Option[Any]] = new collection.mutable.HashMap[Int, Option[Any]]
 
     var cnt = 0
     val mappedFts = fts.map(ft =>
       Pair({cnt+=1; cnt-1}, ft))
 
-    val unsetFts = mappedFts.filter((p: Pair[int, Future[Any]]) => {
+    val unsetFts = mappedFts.filter((p: Pair[Int, Future[Any]]) => {
       if (p._2.isSet) { resultsMap(p._1) = Some(p._2()); false }
       else { resultsMap(p._1) = None; true }
     })
 
-    val partFuns = unsetFts.map((p: Pair[int, Future[Any]]) => {
+    val partFuns = unsetFts.map((p: Pair[Int, Future[Any]]) => {
       val FutCh = p._2.ch
-      val singleCase: PartialFunction[Any, Pair[int, Any]] = {
+      val singleCase: PartialFunction[Any, Pair[Int, Any]] = {
         case FutCh ! any => Pair(p._1, any)
       }
       singleCase
     })
 
-    def awaitWith(partFuns: Seq[PartialFunction[Any, Pair[int, Any]]]) {
+    def awaitWith(partFuns: Seq[PartialFunction[Any, Pair[Int, Any]]]) {
       val reaction: PartialFunction[Any, unit] = new PartialFunction[Any, unit] {
         def isDefinedAt(msg: Any) = msg match {
           case TIMEOUT => true

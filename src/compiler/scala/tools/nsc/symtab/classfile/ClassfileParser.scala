@@ -45,9 +45,9 @@ abstract class ClassfileParser {
   protected var instanceDefs: Scope = _     // the scope of all instance definitions
   protected var staticDefs: Scope = _       // the scope of all static definitions
   protected var pool: ConstantPool = _      // the classfile's constant pool
-  protected var isScala: boolean = _        // does class file describe a scala class?
-  protected var hasMeta: boolean = _        // does class file contain jaco meta attribute?s
-  protected var busy: boolean = false       // lock to detect recursive reads
+  protected var isScala: Boolean = _        // does class file describe a scala class?
+  protected var hasMeta: Boolean = _        // does class file contain jaco meta attribute?s
+  protected var busy: Boolean = false       // lock to detect recursive reads
   protected var classTParams = Map[Name,Symbol]()
   protected val fresh = new FreshNameCreator
 
@@ -121,7 +121,7 @@ abstract class ClassfileParser {
 
   class ConstantPool {
     private val len = in.nextChar
-    private val starts = new Array[int](len)
+    private val starts = new Array[Int](len)
     private val values = new Array[AnyRef](len)
     private val internalized = new Array[Name](len)
 
@@ -146,7 +146,7 @@ abstract class ClassfileParser {
       }
     }
 
-    def getName(index: int): Name = {
+    def getName(index: Int): Name = {
       if (index <= 0 || len <= index) errorBadIndex(index)
       var name = values(index).asInstanceOf[Name]
       if (name eq null) {
@@ -158,7 +158,7 @@ abstract class ClassfileParser {
       name
     }
 
-    def getExternalName(index: int): Name = {
+    def getExternalName(index: Int): Name = {
       if (index <= 0 || len <= index) errorBadIndex(index)
       if (internalized(index) eq null) {
         internalized(index) = getName(index).replace('/', '.')
@@ -166,7 +166,7 @@ abstract class ClassfileParser {
       internalized(index)
     }
 
-    def getClassSymbol(index: int): Symbol = {
+    def getClassSymbol(index: Int): Symbol = {
       if (index <= 0 || len <= index) errorBadIndex(index)
       var c = values(index).asInstanceOf[Symbol]
       if (c eq null) {
@@ -275,13 +275,13 @@ abstract class ClassfileParser {
       c
     }
 
-    def getType(index: int): Type =
+    def getType(index: Int): Type =
       sigToType(getExternalName(index))
 
-    def getSuperClass(index: int): Symbol =
+    def getSuperClass(index: Int): Symbol =
       if (index == 0) definitions.AnyClass else getClassSymbol(index)
 
-    def getConstant(index: int): Constant = {
+    def getConstant(index: Int): Constant = {
       if (index <= 0 || len <= index) errorBadIndex(index)
       var value = values(index)
       if (value eq null) {

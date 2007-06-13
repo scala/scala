@@ -347,7 +347,7 @@ trait Namers { self: Analyzer =>
 // --- Lazy Type Assignment --------------------------------------------------
 
     def typeCompleter(tree: Tree) = new TypeCompleter(tree) {
-      override def complete(sym: Symbol): unit = {
+      override def complete(sym: Symbol) {
         if (settings.debug.value) log("defining " + sym);
         val tp = typeSig(tree)
         sym.setInfo(tp)
@@ -361,13 +361,13 @@ trait Namers { self: Analyzer =>
     }
 
     def moduleClassTypeCompleter(tree: Tree) = new TypeCompleter(tree) {
-      override def complete(sym: Symbol): unit = {
+      override def complete(sym: Symbol) {
         tree.symbol.info // sets moduleClass info as a side effect.
       }
     }
 
     def getterTypeCompleter(tree: Tree) = new TypeCompleter(tree) {
-      override def complete(sym: Symbol): unit = {
+      override def complete(sym: Symbol) {
         if (settings.debug.value) log("defining " + sym);
         sym.setInfo(PolyType(List(), typeSig(tree)))
         if (settings.debug.value) log("defined " + sym);
@@ -376,7 +376,7 @@ trait Namers { self: Analyzer =>
     }
 
     def setterTypeCompleter(tree: Tree) = new TypeCompleter(tree) {
-      override def complete(sym: Symbol): unit = {
+      override def complete(sym: Symbol) {
         if (settings.debug.value) log("defining " + sym);
         sym.setInfo(MethodType(List(typeSig(tree)), UnitClass.tpe))
         if (settings.debug.value) log("defined " + sym);
@@ -385,13 +385,13 @@ trait Namers { self: Analyzer =>
     }
 
     def selfTypeCompleter(tree: Tree) = new TypeCompleter(tree) {
-      override def complete(sym: Symbol): unit = {
+      override def complete(sym: Symbol) {
         sym.setInfo(typer.typedType(tree).tpe)
       }
     }
 
     def caseFactoryCompleter(tree: Tree) = new TypeCompleter(tree) {
-      override def complete(sym: Symbol): unit = {
+      override def complete(sym: Symbol) {
         val clazz = tree.symbol
         var tpe = clazz.primaryConstructor.tpe
         val tparams = clazz.typeParams
@@ -471,7 +471,7 @@ trait Namers { self: Analyzer =>
       if (onlyPresentation)
         methodArgumentNames(meth) = vparamss.map(_.map(_.symbol));
 
-      def convertToDeBruijn(vparams: List[Symbol], level: int): TypeMap = new TypeMap {
+      def convertToDeBruijn(vparams: List[Symbol], level: Int): TypeMap = new TypeMap {
         def apply(tp: Type) = {
           tp match {
             case SingleType(_, sym) =>
@@ -836,7 +836,7 @@ trait Namers { self: Analyzer =>
    *  This is used for error messages, where we want to speak in terms
    *  of the actual declaration or definition, not in terms of the generated setters
    *  and getters */
-  def underlying(member: Symbol) : Symbol =
+  def underlying(member: Symbol): Symbol =
     if (member hasFlag ACCESSOR) {
       if (member hasFlag DEFERRED) {
         val getter = if (member.isSetter) member.getter(member.owner) else member

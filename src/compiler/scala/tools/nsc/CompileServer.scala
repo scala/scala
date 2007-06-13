@@ -29,11 +29,11 @@ object CompileServer extends SocketServer {
 
   val MaxCharge = 0.8
 
-  var shutDown: boolean = false
+  var shutDown: Boolean = false
 
   private var compiler: Global = null
-  private var inSession: boolean = false
-  private var progress: boolean = false
+  private var inSession: Boolean = false
+  private var progress: Boolean = false
 
   private def settingsAreCompatible(s1: Settings, s2: Settings) =
     s1.encoding.value == s2.encoding.value &&
@@ -43,13 +43,13 @@ object CompileServer extends SocketServer {
     s1.bootclasspath.value == s2.bootclasspath.value &&
     s1.extdirs.value == s2.extdirs.value
 
-  private def exit(code: int): Nothing = {
+  private def exit(code: Int): Nothing = {
     System.err.close()
     System.out.close()
     Predef.exit(code)
   }
 
-  private def spawnWatchDog(): unit = spawn {
+  private def spawnWatchDog(): Unit = spawn {
     while (true) {
       Thread.sleep(10000)
       if (!CompileSocket.portFile(port).exists() && !inSession) {
@@ -159,7 +159,7 @@ object CompileServer extends SocketServer {
   private val redirectDir = new File(CompileSocket.tmpDir, "output-redirects")
   redirectDir.mkdirs
 
-  private def redirect(setter: PrintStream => unit, filename: String) {
+  private def redirect(setter: PrintStream => Unit, filename: String) {
     setter(
       new PrintStream(
         new BufferedOutputStream(

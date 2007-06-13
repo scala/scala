@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author Martin Odersky
  */
 // $Id$
@@ -24,7 +24,7 @@ abstract class AddInterfaces extends InfoTransform {
    *    such traits.
    *  </p>
    */
-  override def phaseNewFlags: long = lateDEFERRED | lateINTERFACE
+  override def phaseNewFlags: Long = lateDEFERRED | lateINTERFACE
 
   /** Type reference after erasure; to be defined in subclass
    *  <code>Erasure</code>.
@@ -55,7 +55,7 @@ abstract class AddInterfaces extends InfoTransform {
 
   /** Is given trait member symbol a member of the trait's interface
    *  after this transform is performed? */
-  private def isInterfaceMember(sym: Symbol): boolean = {
+  private def isInterfaceMember(sym: Symbol): Boolean = {
     sym.isType ||
     { sym.info; // to set lateMETHOD flag if necessary
       sym.isMethod && !(sym hasFlag (PRIVATE | BRIDGE | LABEL)) &&
@@ -64,7 +64,7 @@ abstract class AddInterfaces extends InfoTransform {
   }
 
   /** Does symbol need an implementation method? */
-  private def needsImplMethod(sym: Symbol): boolean =
+  private def needsImplMethod(sym: Symbol): Boolean =
     sym.isMethod && isInterfaceMember(sym) &&
     (!(sym hasFlag (DEFERRED | SUPERACCESSOR)) || (sym hasFlag lateDEFERRED))
 
@@ -151,7 +151,7 @@ abstract class AddInterfaces extends InfoTransform {
       decls
     }
 
-    override def complete(sym: Symbol): unit = {
+    override def complete(sym: Symbol) {
       def implType(tp: Type): Type = tp match {
         case ClassInfoType(parents, decls, _) =>
           assert(phase == implClassPhase, sym)
@@ -165,7 +165,7 @@ abstract class AddInterfaces extends InfoTransform {
       sym.setInfo(implType(atPhase(currentRun.erasurePhase)(iface.info)))
     }
 
-    override def load(clazz: Symbol): unit = complete(clazz)
+    override def load(clazz: Symbol) { complete(clazz) }
   }
 
   /** If type <code>tp</code> refers to a non-interface trait, return a
@@ -213,7 +213,7 @@ abstract class AddInterfaces extends InfoTransform {
 
   private class ChangeOwnerAndReturnTraverser(oldowner: Symbol, newowner: Symbol)
           extends ChangeOwnerTraverser(oldowner, newowner) {
-    override def traverse(tree: Tree): unit = {
+    override def traverse(tree: Tree) {
       tree match {
         case Return(expr) =>
           if (tree.symbol == oldowner) tree.symbol = newowner
@@ -349,7 +349,7 @@ abstract class AddInterfaces extends InfoTransform {
 }
 /*
     val ensureNoEscapes = new TypeTraverser {
-      def ensureNoEscape(sym: Symbol): unit = {
+      def ensureNoEscape(sym: Symbol) {
         if (sym.hasFlag(PRIVATE)) {
           var o = currentOwner;
           while (o != NoSymbol && o != sym.owner && !o.isLocal && !o.hasFlag(PRIVATE))

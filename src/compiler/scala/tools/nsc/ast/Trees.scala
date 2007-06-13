@@ -20,7 +20,7 @@ trait Trees {
 
   var nodeCount = 0
 
-  case class Modifiers(flags: long, privateWithin: Name, annotations: List[Annotation]) {
+  case class Modifiers(flags: Long, privateWithin: Name, annotations: List[Annotation]) {
     def isCovariant     = hasFlag(COVARIANT    )
     def isContravariant = hasFlag(CONTRAVARIANT)
     def isPrivate   = hasFlag(PRIVATE  )
@@ -37,18 +37,18 @@ trait Trees {
     def isTrait     = hasFlag(TRAIT    )
     def isImplicit  = hasFlag(IMPLICIT )
     def isPublic    = !isPrivate && !isProtected
-    def hasFlag(flag: long) = (flag & flags) != 0
-    def & (flag: long): Modifiers = {
+    def hasFlag(flag: Long) = (flag & flags) != 0
+    def & (flag: Long): Modifiers = {
       val flags1 = flags & flag
       if (flags1 == flags) this
       else Modifiers(flags1, privateWithin, annotations)
     }
-    def &~ (flag: long): Modifiers = {
+    def &~ (flag: Long): Modifiers = {
       val flags1 = flags & (~flag)
       if (flags1 == flags) this
       else Modifiers(flags1, privateWithin, annotations)
     }
-    def | (flag: long): Modifiers = {
+    def | (flag: Long): Modifiers = {
       val flags1 = flags | flag
       if (flags1 == flags) this
       else Modifiers(flags1, privateWithin, annotations)
@@ -58,8 +58,8 @@ trait Trees {
       else Modifiers(flags, privateWithin, annotations ::: annots)
   }
 
-  def Modifiers(flags: long, privateWithin: Name): Modifiers = Modifiers(flags, privateWithin, List())
-  def Modifiers(flags: long): Modifiers = Modifiers(flags, nme.EMPTY.toTypeName)
+  def Modifiers(flags: Long, privateWithin: Name): Modifiers = Modifiers(flags, privateWithin, List())
+  def Modifiers(flags: Long): Modifiers = Modifiers(flags, nme.EMPTY.toTypeName)
 
   val NoMods = Modifiers(0)
 
@@ -224,7 +224,7 @@ trait Trees {
       case ValDef(mods, _, _, _)    => if (mods.isVariable) "var" else "val"
       case _ => ""
     }
-    final def hasFlag(mask: long): boolean = (mods.flags & mask) != 0
+    final def hasFlag(mask: Long): Boolean = (mods.flags & mask) != 0
   }
 
   /** Package clause */

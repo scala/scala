@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -22,7 +22,7 @@ trait Scopes {
      */
     var next: ScopeEntry = null
 
-    override def hashCode(): int = sym.name.start
+    override def hashCode(): Int = sym.name.start
     override def toString(): String = sym.toString()
   }
 
@@ -61,8 +61,8 @@ trait Scopes {
 
     /** hook for IDE
      */
-    protected def enter0(sym : Symbol) : Unit = {}
-    private[Scopes] def enter00(sym : Symbol) = enter0(sym);
+    protected def enter0(sym: Symbol) {}
+    private[Scopes] def enter00(sym: Symbol) = enter0(sym)
 
     /** The number of times this scope is neted in another
      */
@@ -114,10 +114,10 @@ trait Scopes {
     }
 
     /** is the scope empty? */
-    def isEmpty: boolean = elems eq null
+    def isEmpty: Boolean = elems eq null
 
     /** the number of entries in this scope */
-    def size: int = {
+    def size: Int = {
       var s = 0
       var e = elems
       while (e ne null) {
@@ -152,29 +152,30 @@ trait Scopes {
      *
      *  @param sym ...
      */
-    def enterUnique(sym: Symbol): unit = {
+    def enterUnique(sym: Symbol) {
       assert(lookup(sym.name) == NoSymbol)
       enter(sym)
     }
 
-    def createHash(): unit = {
+    def createHash() {
       hashtable = new Array[ScopeEntry](HASHSIZE)
       enterInHash(elems)
     }
 
-    private def enterInHash(e: ScopeEntry): unit =
+    private def enterInHash(e: ScopeEntry) {
       if (e ne null) {
         enterInHash(e.next)
         val i = e.sym.name.start & HASHMASK
         e.tail = hashtable(i)
         hashtable(i) = e
       }
+    }
 
     /** remove entry
      *
      *  @param e ...
      */
-    def unlink(e: ScopeEntry): unit = {
+    def unlink(e: ScopeEntry) {
       if (elems == e) {
         elems = e.next
       } else {
@@ -195,7 +196,7 @@ trait Scopes {
     }
 
     /** remove symbol */
-    def unlink(sym: Symbol): unit = {
+    def unlink(sym: Symbol) {
       var e = lookupEntry(sym.name)
       while (e ne null) {
         if (e.sym == sym) unlink(e);
@@ -262,7 +263,7 @@ trait Scopes {
      */
     def elements: Iterator[Symbol] = toList.elements
 
-    def filter(p: Symbol => boolean): Scope =
+    def filter(p: Symbol => Boolean): Scope =
       if (!(toList forall p)) newScope(toList filter p) else this
 
     def mkString(start: String, sep: String, end: String) =

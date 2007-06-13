@@ -22,7 +22,7 @@ import java.net.UnknownHostException
  */
 class SocketConnection(hostname: String, port: Int) {
 
-  def this(port: int) = this(InetAddress.getLocalHost().getHostName(), port)
+  def this(port: Int) = this(InetAddress.getLocalHost().getHostName(), port)
 
   private var socket: Socket = _
   var out: PrintWriter = _

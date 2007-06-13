@@ -187,8 +187,8 @@ class Settings(error: String => Unit) {
     allsettings = allsettings filter (s !=)
   }
 
-  def checkDependencies: boolean = {
-    def hasValue(s: Setting, value: String): boolean = s match {
+  def checkDependencies: Boolean = {
+    def hasValue(s: Setting, value: String): Boolean = s match {
       case bs: BooleanSetting => bs.value
       case ss: StringSetting  => ss.value == value
       case cs: ChoiceSetting  => cs.value == value
@@ -236,7 +236,7 @@ class Settings(error: String => Unit) {
       */
     def hiddenToIDE: Boolean = false
 
-    protected var setByUser: boolean = false
+    protected var setByUser: Boolean = false
     def isDefault: Boolean = !setByUser
 
     protected[Settings] var dependency: Option[(Setting, String)] = None
@@ -254,10 +254,10 @@ class Settings(error: String => Unit) {
 
   /** A setting represented by a boolean flag (false, unless set) */
   case class BooleanSetting(name: String, descr: String) extends Setting(descr) {
-    protected var v: boolean = false
+    protected var v: Boolean = false
 
-    def value: boolean = this.v
-    def value_=(s: boolean) { setByUser = true; this.v = s }
+    def value: Boolean = this.v
+    def value_=(s: Boolean) { setByUser = true; this.v = s }
 
     def tryToSet(args: List[String]): List[String] = args match {
       case n :: rest if (n == name) => value = true; rest
@@ -429,7 +429,7 @@ class Settings(error: String => Unit) {
 
     override def helpSyntax = name + ":<phase>"
 
-    def contains(phasename: String): boolean =
+    def contains(phasename: String): Boolean =
       value exists (str => phasename startsWith str)
 
     def unparse: List[String] =

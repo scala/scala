@@ -257,7 +257,7 @@ abstract class NodePrinters {
                 if (p.productArity != 0) {
                   println(p.productPrefix+"(")
                   for (elem <- (0 until p.productArity) map p.productElement) {
-                    def printElem(elem: Any, level: int): unit = elem match {
+                    def printElem(elem: Any, level: Int): Unit = elem match {
                       case t: Tree =>
                         traverse(t, level, false)
                       case xs: List[_] =>
@@ -281,6 +281,7 @@ abstract class NodePrinters {
       buf.toString
     }
   }
+
   def printUnit(unit: CompilationUnit) {
     print("// Scala source: " + unit.source + "\n")
     if (unit.body ne null) {
@@ -290,6 +291,7 @@ abstract class NodePrinters {
     }
     println()
   }
+
   def printAll() {
     print("[[syntax trees at end of " + phase + "]]")
     for (unit <- global.currentRun.units) printUnit(unit)

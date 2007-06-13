@@ -23,9 +23,10 @@ object Main extends AnyRef with EvalLoop {
 
   var reporter: ConsoleReporter = _
 
-  def error(msg: String): unit =
+  def error(msg: String) {
     reporter.error(/*new Position */FakePos("scalac"),
                    msg + "\n  scalac -help  gives more information")
+  }
 
   /* needed ?? */
   //def errors() = reporter.errors

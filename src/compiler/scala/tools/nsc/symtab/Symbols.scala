@@ -40,7 +40,7 @@ trait Symbols {
 
     var rawowner = initOwner
     var rawname = initName
-    var rawflags: long = 0
+    var rawflags: Long = 0
     private var rawpos = initPos
     val id = { ids += 1; ids }
 
@@ -238,7 +238,7 @@ trait Symbols {
       isTerm && !hasFlag(MUTABLE) && (!hasFlag(METHOD | BYNAMEPARAM) || hasFlag(STABLE))
 
     /** Is this symbol a public */
-    final def isPublic: boolean =
+    final def isPublic: Boolean =
       !hasFlag(PRIVATE | PROTECTED) && privateWithin == NoSymbol
 
     /** Is this symbol a private local */
@@ -258,49 +258,49 @@ trait Symbols {
       isMethod && hasFlag(CASE)
 
     /** Is this symbol an implementation class for a mixin? */
-    final def isImplClass: boolean = isClass && hasFlag(IMPLCLASS)
+    final def isImplClass: Boolean = isClass && hasFlag(IMPLCLASS)
 
     /** Is thhis symbol early initialized */
-    final def isEarly: boolean = isTerm && hasFlag(PRESUPER)
+    final def isEarly: Boolean = isTerm && hasFlag(PRESUPER)
 
     /** Is this symbol a trait which needs an implementation class? */
-    final def needsImplClass: boolean =
+    final def needsImplClass: Boolean =
       isTrait && (!hasFlag(INTERFACE) || hasFlag(lateINTERFACE)) && !isImplClass
 
     /** Is this a symbol which exists only in the implementation class, not in its trait? */
-    final def isImplOnly: boolean =
+    final def isImplOnly: Boolean =
       hasFlag(PRIVATE) ||
       (owner.isImplClass || owner.isTrait) &&
       ((hasFlag(notPRIVATE | LIFTED) && !hasFlag(ACCESSOR | SUPERACCESSOR | MODULE) || isConstructor) ||
        (hasFlag(LIFTED) && isModule && isMethod))
 
     /** Is this symbol a module variable ? */
-    final def isModuleVar: boolean = isVariable && hasFlag(MODULEVAR)
+    final def isModuleVar: Boolean = isVariable && hasFlag(MODULEVAR)
 
     /** Is this symbol static (i.e. with no outer instance)? */
-    final def isStatic: boolean =
+    final def isStatic: Boolean =
       hasFlag(STATIC) || isRoot || owner.isStaticOwner
 
     /** Does this symbol denote a class that defines static symbols? */
-    final def isStaticOwner: boolean =
+    final def isStaticOwner: Boolean =
       isPackageClass || isModuleClass && isStatic
 
     /** Is this symbol final?*/
-    final def isFinal: boolean = (
+    final def isFinal: Boolean = (
       hasFlag(FINAL) ||
       isTerm && (
         hasFlag(PRIVATE) || isLocal || owner.isClass && owner.hasFlag(FINAL | MODULE))
     )
 
     /** Is this symbol a sealed class?*/
-    final def isSealed: boolean =
+    final def isSealed: Boolean =
       isClass && (hasFlag(SEALED) || isUnboxedClass(this))
 
     /** Is this symbol locally defined? I.e. not accessed from outside `this' instance */
-    final def isLocal: boolean = owner.isTerm
+    final def isLocal: Boolean = owner.isTerm
 
     /** Is this symbol a constant? */
-    final def isConstant: boolean =
+    final def isConstant: Boolean =
       isStable && (tpe match {
         case ConstantType(_) => true
         case PolyType(_, ConstantType(_)) => true
@@ -309,7 +309,7 @@ trait Symbols {
       })
 
     /** Is this class nested in another class or module (not a package)? */
-    final def isNestedClass: boolean =
+    final def isNestedClass: Boolean =
       isClass && !isRoot && !owner.isPackageClass
 
     /** Is this class locally defined?
@@ -318,7 +318,7 @@ trait Symbols {
      *   - its owner is a value
      *   - it is defined within a local class
      */
-    final def isLocalClass: boolean =
+    final def isLocalClass: Boolean =
       isClass && (isAnonymousClass || isRefinementClass || isLocal ||
                   !owner.isPackageClass && owner.isLocalClass)
 
@@ -330,7 +330,7 @@ trait Symbols {
      *  @param base ...
      *  @return     ...
      */
-    final def isIncompleteIn(base: Symbol): boolean = (
+    final def isIncompleteIn(base: Symbol): Boolean = (
       (this hasFlag DEFERRED) ||
       (this hasFlag ABSOVERRIDE) && {
         val supersym = superSymbol(base)
@@ -338,15 +338,15 @@ trait Symbols {
       }
     )
 
-    final def exists: boolean =
+    final def exists: Boolean =
       this != NoSymbol && (!owner.isPackageClass || { rawInfo.load(this); rawInfo != NoType })
 
-    final def isInitialized: boolean =
+    final def isInitialized: Boolean =
       validTo != NoPeriod
 
-    final def isCovariant: boolean = isType && hasFlag(COVARIANT)
+    final def isCovariant: Boolean = isType && hasFlag(COVARIANT)
 
-    final def isContravariant: boolean = isType && hasFlag(CONTRAVARIANT)
+    final def isContravariant: Boolean = isType && hasFlag(CONTRAVARIANT)
 
     /** The variance of this symbol as an integer */
     final def variance: int =
@@ -357,29 +357,29 @@ trait Symbols {
 // Flags, owner, and name attributes --------------------------------------------------------------
 
     def owner: Symbol = rawowner
-    final def owner_=(owner: Symbol): unit = { rawowner = owner }
+    final def owner_=(owner: Symbol) { rawowner = owner }
 
     def ownerChain: List[Symbol] = this :: owner.ownerChain
 
     def name: Name = rawname
 
-    final def name_=(name: Name): unit = { rawname = name }
+    final def name_=(name: Name) { rawname = name }
 
     /** If this symbol has an expanded name, its original name, otherwise its name itself.
      *  @see expandName
      */
     def originalName = nme.originalName(name)
 
-    final def flags: long = {
+    final def flags: Long = {
       val fs = rawflags & phase.flagMask
       (fs | ((fs & LateFlags) >>> LateShift)) & ~(fs >>> AntiShift)
     }
-    final def flags_=(fs: long) = rawflags = fs
-    final def setFlag(mask: long): this.type = { rawflags = rawflags | mask; this }
-    final def resetFlag(mask: long): this.type = { rawflags = rawflags & ~mask; this }
-    final def getFlag(mask: long): long = flags & mask
-    final def hasFlag(mask: long): boolean = (flags & mask) != 0
-    final def resetFlags: unit = { rawflags = rawflags & TopLevelCreationFlags }
+    final def flags_=(fs: Long) = rawflags = fs
+    final def setFlag(mask: Long): this.type = { rawflags = rawflags | mask; this }
+    final def resetFlag(mask: Long): this.type = { rawflags = rawflags & ~mask; this }
+    final def getFlag(mask: Long): Long = flags & mask
+    final def hasFlag(mask: Long): Boolean = (flags & mask) != 0
+    final def resetFlags { rawflags = rawflags & TopLevelCreationFlags }
 
     /** The class up to which this symbol is accessible,
      *  or NoSymbol if it is public or not a class member
@@ -533,7 +533,7 @@ trait Symbols {
     }
 
     /** Was symbol's type updated during given phase? */
-    final def isUpdatedAt(pid: Phase#Id): boolean = {
+    final def isUpdatedAt(pid: Phase#Id): Boolean = {
       var infos = this.infos
       while ((infos ne null) && phaseId(infos.validFrom) != pid + 1) infos = infos.prev
       infos ne null
@@ -565,7 +565,7 @@ trait Symbols {
 
     /** Reset symbol to initial state
      */
-    def reset(completer: Type): unit = {
+    def reset(completer: Type) {
       resetFlags
       infos = null
       validTo = NoPeriod
@@ -579,7 +579,7 @@ trait Symbols {
      *  inheritance graph (i.e. subclass.isLess(superclass) always holds).
      *  the ordering is given by: (isType, -|closure| for type symbols, id)
      */
-    final def isLess(that: Symbol): boolean = {
+    final def isLess(that: Symbol): Boolean = {
       def closureLength(sym: Symbol) =
         if (sym.isAbstractType) 1 + sym.info.bounds.hi.closure.length
         else sym.info.closure.length
@@ -595,15 +595,15 @@ trait Symbols {
      *  (this isNestedIn that) holds iff this symbol is defined within
      *  a class or method defining that symbol
      */
-    final def isNestedIn(that: Symbol): boolean =
+    final def isNestedIn(that: Symbol): Boolean =
       owner == that || owner != NoSymbol && (owner isNestedIn that)
 
     /** Is this class symbol a subclass of that symbol? */
-    final def isNonBottomSubClass(that: Symbol): boolean =
+    final def isNonBottomSubClass(that: Symbol): Boolean =
       this == that || this.isError || that.isError ||
       info.closurePos(that) >= 0
 
-    final def isSubClass(that: Symbol): boolean = {
+    final def isSubClass(that: Symbol): Boolean = {
       isNonBottomSubClass(that) ||
       this == AllClass ||
       this == AllRefClass &&
@@ -617,7 +617,7 @@ trait Symbols {
       if (hasFlag(OVERLOADED)) info.asInstanceOf[OverloadedType].alternatives
       else List(this)
 
-    def filter(cond: Symbol => boolean): Symbol =
+    def filter(cond: Symbol => Boolean): Symbol =
       if (hasFlag(OVERLOADED)) {
         //assert(info.isInstanceOf[OverloadedType], "" + this + ":" + info);//DEBUG
         val alts = alternatives
@@ -629,7 +629,7 @@ trait Symbols {
       } else if (cond(this)) this
       else NoSymbol
 
-    def suchThat(cond: Symbol => boolean): Symbol = {
+    def suchThat(cond: Symbol => Boolean): Symbol = {
       val result = filter(cond)
       assert(!(result hasFlag OVERLOADED), result.alternatives)
       result
@@ -674,7 +674,7 @@ trait Symbols {
     def typeOfThis = thisSym.tpe
 
     /** Sets the type of `this' in a class */
-    def typeOfThis_=(tp: Type): unit =
+    def typeOfThis_=(tp: Type): Unit =
       throw new Error("typeOfThis cannot be set for " + this)
 
     /** If symbol is a class, the type <code>this.type</code> in this class,
@@ -870,7 +870,7 @@ trait Symbols {
     /** Remove private modifier from symbol `sym's definition. If `sym' is a
      *  term symbol rename it by expanding its name to avoid name clashes
      */
-    final def makeNotPrivate(base: Symbol): unit =
+    final def makeNotPrivate(base: Symbol) {
       if (this hasFlag PRIVATE) {
         setFlag(notPRIVATE)
         if (!hasFlag(DEFERRED) && isTerm) setFlag(lateFINAL)
@@ -879,11 +879,12 @@ trait Symbols {
           if (isModule) moduleClass.makeNotPrivate(base)
         }
       }
+    }
 
     /** change name by appending $$<fully-qualified-name-of-class `base'>
      *  Do the same for any accessed symbols or setters/getters
      */
-    def expandName(base: Symbol): unit =
+    def expandName(base: Symbol) {
       if (this.isTerm && this != NoSymbol && !hasFlag(EXPANDEDNAME)) {
         setFlag(EXPANDEDNAME)
         if (hasFlag(ACCESSOR) && !hasFlag(DEFERRED)) {
@@ -895,6 +896,7 @@ trait Symbols {
         name = base.expandedName(name)
         if (isType) name = name.toTypeName
       }
+    }
 
     /** The expanded name of `name' relative to this class as base
      */
@@ -905,7 +907,7 @@ trait Symbols {
     def sourceFile: AbstractFile =
       (if (isModule) moduleClass else toplevelClass).sourceFile
 
-    def sourceFile_=(f: AbstractFile): unit =
+    def sourceFile_=(f: AbstractFile): Unit =
       throw new Error("sourceFile_= inapplicable for " + this)
 
     def isFromClassFile: Boolean =
@@ -923,7 +925,7 @@ trait Symbols {
 // ToString -------------------------------------------------------------------
 
     /** A tag which (in the ideal case) uniquely identifies class symbols */
-    final def tag: int = fullNameString.hashCode()
+    final def tag: Int = fullNameString.hashCode()
 
     /** The simple name of this Symbol */
     final def simpleName: Name = name
@@ -977,7 +979,7 @@ trait Symbols {
      *  Never translates expansions of operators back to operator symbol.
      *  Never adds id.
      */
-    final def fullNameString(separator: char): String = {
+    final def fullNameString(separator: Char): String = {
       assert(owner != NoSymbol, this)
       var str =
         if (owner.isRoot ||
@@ -1191,7 +1193,7 @@ trait Symbols {
       this
     }
 
-    override def reset(completer: Type): unit = {
+    override def reset(completer: Type) {
       super.reset(completer)
       tpePeriod = NoPeriod
       tyconRunId = NoRunId
@@ -1227,7 +1229,7 @@ trait Symbols {
     private var source: AbstractFile = null
     override def sourceFile =
       if (owner.isPackageClass) source else super.sourceFile
-    override def sourceFile_=(f: AbstractFile): unit = {
+    override def sourceFile_=(f: AbstractFile) {
       //System.err.println("set source file of " + this + ": " + f);
       source = f
     }
@@ -1238,12 +1240,12 @@ trait Symbols {
     }
     private var thissym: Symbol = this
 
-    override def isClass: boolean = true
+    override def isClass: Boolean = true
     override def isTypeMember = false
     override def isAbstractType = false
     override def isAliasType = false
 
-    override def reset(completer: Type): unit = {
+    override def reset(completer: Type) {
       super.reset(completer)
       thissym = this
     }
@@ -1285,8 +1287,9 @@ trait Symbols {
       else thissym.tpe
 
     /** Sets the self type of the class */
-    override def typeOfThis_=(tp: Type): unit =
+    override def typeOfThis_=(tp: Type) {
       thissym = newThisSym(pos).setInfo(tp)
+    }
 
     override def cloneSymbolImpl(owner: Symbol): Symbol = {
       assert(!isModuleClass)
@@ -1321,7 +1324,7 @@ trait Symbols {
       setSourceModule(module)
     }
     override def sourceModule = module
-    def setSourceModule(module: Symbol): unit = this.module = module
+    def setSourceModule(module: Symbol) { this.module = module }
   }
 
   /** An object repreesenting a missing symbol */
@@ -1342,7 +1345,7 @@ trait Symbols {
     override def sourceFile: AbstractFile = null
     override def ownerChain: List[Symbol] = List()
     override def alternatives: List[Symbol] = List()
-    override def reset(completer: Type): unit = {}
+    override def reset(completer: Type) {}
     override def info: Type = NoType
     override def rawInfo: Type = NoType
     def cloneSymbolImpl(owner: Symbol): Symbol = throw new Error()

@@ -44,19 +44,19 @@ class FJTaskScheduler2 extends Thread with IScheduler {
 
   private var pendingReactions = 0
 
-  def pendReaction: unit = synchronized {
-    pendingReactions = pendingReactions + 1
+  def pendReaction: Unit = synchronized {
+    pendingReactions += 1
   }
 
-  def unPendReaction: unit = synchronized {
-    pendingReactions = pendingReactions - 1
+  def unPendReaction: Unit = synchronized {
+    pendingReactions -= 1
   }
 
   def getPendingCount = synchronized {
     pendingReactions
   }
 
-  def setPendingCount(cnt: int) = synchronized {
+  def setPendingCount(cnt: Int) = synchronized {
     pendingReactions = cnt
   }
 
@@ -66,17 +66,17 @@ class FJTaskScheduler2 extends Thread with IScheduler {
   private val TICK_FREQ = 50
   private val CHECK_FREQ = 100
 
-  def onLockup(handler: () => unit) =
+  def onLockup(handler: () => Unit) =
     lockupHandler = handler
 
-  def onLockup(millis: int)(handler: () => unit) = {
+  def onLockup(millis: Int)(handler: () => Unit) = {
     //LOCKUP_CHECK_FREQ = millis / CHECK_FREQ
     lockupHandler = handler
   }
 
-  private var lockupHandler: () => unit = null
+  private var lockupHandler: () => Unit = null
 
-  override def run(): unit = {
+  override def run() {
     try {
       while (!terminating) {
         this.synchronized {
@@ -153,7 +153,7 @@ class FJTaskScheduler2 extends Thread with IScheduler {
 
   /** Shuts down all idle worker threads.
    */
-  def shutdown(): unit = synchronized {
+  def shutdown(): Unit = synchronized {
     terminating = true
     // terminate timer thread
     TimerThread.shutdown()

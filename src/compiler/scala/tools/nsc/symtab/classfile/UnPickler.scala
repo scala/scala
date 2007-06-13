@@ -29,17 +29,19 @@ abstract class UnPickler {
    *  @param bytes    bytearray from which we unpickle
    *  @param filename filename associated with bytearray, only used for error messages
    */
-  def unpickle(bytes: Array[byte], offset: int, classRoot: Symbol, moduleRoot: Symbol, filename: String): unit = try {
-    new UnPickle(bytes, offset, classRoot, moduleRoot)
-  } catch {
-    case ex: IOException =>
-      throw ex
-    case ex: Throwable =>
-      if (settings.debug.value) ex.printStackTrace()
-      throw new RuntimeException("error reading Scala signature of "+filename+": "+ex.getMessage())
+  def unpickle(bytes: Array[Byte], offset: Int, classRoot: Symbol, moduleRoot: Symbol, filename: String) {
+    try {
+      new UnPickle(bytes, offset, classRoot, moduleRoot)
+    } catch {
+      case ex: IOException =>
+        throw ex
+      case ex: Throwable =>
+        if (settings.debug.value) ex.printStackTrace()
+        throw new RuntimeException("error reading Scala signature of "+filename+": "+ex.getMessage())
+    }
   }
 
-  private class UnPickle(bytes: Array[byte], offset: int, classRoot: Symbol, moduleRoot: Symbol) extends PickleBuffer(bytes, offset, -1) {
+  private class UnPickle(bytes: Array[Byte], offset: Int, classRoot: Symbol, moduleRoot: Symbol) extends PickleBuffer(bytes, offset, -1) {
     if (settings.debug.value) global.log("unpickle " + classRoot + " and " + moduleRoot)
     checkVersion()
     private val index = createIndex
@@ -70,26 +72,26 @@ abstract class UnPickler {
     }
 
     /** Does entry represent an (internal) symbol */
-    private def isSymbolEntry(i: int): boolean = {
+    private def isSymbolEntry(i: Int): boolean = {
       val tag = bytes(index(i)) % PosOffset
       (firstSymTag <= tag && tag <= lastSymTag &&
        (tag != CLASSsym || !isRefinementSymbolEntry(i)))
     }
 
     /** Does entry represent an (internal or external) symbol */
-    private def isSymbolRef(i: int): boolean = {
+    private def isSymbolRef(i: Int): Boolean = {
       val tag = bytes(index(i)) % PosOffset
       (firstSymTag <= tag && tag <= lastExtSymTag)
     }
 
     /** Does entry represent a name? */
-    private def isNameEntry(i: int): boolean = {
+    private def isNameEntry(i: Int): Boolean = {
       val tag = bytes(index(i))
       tag == TERMname || tag == TYPEname
     }
 
     /** Does entry represent a symbol attribute? */
-    private def isAnnotationEntry(i: int): boolean = {
+    private def isAnnotationEntry(i: Int): Boolean = {
       val tag = bytes(index(i))
       tag == ATTRIBUTE || tag == CHILDREN
     }
@@ -97,7 +99,7 @@ abstract class UnPickler {
     /** Does entry represent a refinement symbol?
      *  pre: Entry is a class symbol
      */
-    private def isRefinementSymbolEntry(i: int): boolean = {
+    private def isRefinementSymbolEntry(i: Int): Boolean = {
       val savedIndex = readIndex
       readIndex = index(i)
       val tag = readByte()
@@ -109,9 +111,11 @@ abstract class UnPickler {
       result
     }
 
-    /** If entry at `i' is undefined, define it by performing operation `op' with
-     *  readIndex at start of i'th entry. Restore readIndex afterwards. */
-    private def at[T <: AnyRef](i: int, op: () => T): T = {
+    /** If entry at <code>i</code> is undefined, define it by performing
+     *  operation <code>op</code> with <code>readIndex at start of i'th
+     *  entry. Restore <code>readIndex</code> afterwards.
+     */
+    private def at[T <: AnyRef](i: Int, op: () => T): T = {
       var r = entries(i)
       if (r eq null) {
         val savedIndex = readIndex
@@ -281,12 +285,12 @@ abstract class UnPickler {
       tag match {
         case LITERALunit    => Constant(())
         case LITERALboolean => Constant(if (readLong(len) == 0) false else true)
-        case LITERALbyte    => Constant(readLong(len).asInstanceOf[byte])
-        case LITERALshort   => Constant(readLong(len).asInstanceOf[short])
-        case LITERALchar    => Constant(readLong(len).asInstanceOf[char])
-        case LITERALint     => Constant(readLong(len).asInstanceOf[int])
+        case LITERALbyte    => Constant(readLong(len).asInstanceOf[Byte])
+        case LITERALshort   => Constant(readLong(len).asInstanceOf[Short])
+        case LITERALchar    => Constant(readLong(len).asInstanceOf[Char])
+        case LITERALint     => Constant(readLong(len).asInstanceOf[Int])
         case LITERALlong    => Constant(readLong(len))
-        case LITERALfloat   => Constant(Float.intBitsToFloat(readLong(len).asInstanceOf[int]))
+        case LITERALfloat   => Constant(Float.intBitsToFloat(readLong(len).asInstanceOf[Int]))
         case LITERALdouble  => Constant(Double.longBitsToDouble(readLong(len)))
         case LITERALstring  => Constant(readNameRef().toString())
         case LITERALnull    => Constant(null)
@@ -551,17 +555,17 @@ abstract class UnPickler {
     private def errorBadSignature(msg: String) =
       throw new RuntimeException("malformed Scala signature of " + classRoot.name + " at " + readIndex + "; " + msg)
 
-    private class LazyTypeRef(i: int) extends LazyType {
+    private class LazyTypeRef(i: Int) extends LazyType {
       private val definedAtRunId = currentRunId
       override def complete(sym: Symbol) {
         val tp = at(i, readType)
         sym setInfo tp
         if (currentRunId != definedAtRunId) sym.setInfo(adaptToNewRunMap(tp))
       }
-      override def load(sym: Symbol): unit = complete(sym)
+      override def load(sym: Symbol) { complete(sym) }
     }
 
-    private class LazyTypeRefAndAlias(i: int, j: int) extends LazyTypeRef(i) {
+    private class LazyTypeRefAndAlias(i: Int, j: Int) extends LazyTypeRef(i) {
       override def complete(sym: Symbol) {
         super.complete(sym)
         var alias = at(j, readSymbol)

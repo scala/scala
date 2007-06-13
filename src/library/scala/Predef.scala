@@ -35,8 +35,8 @@ object Predef {
   type boolean = scala.Boolean
   type unit    = scala.Unit
 
-  type All    = Nothing
-  type AllRef = Null
+  @deprecated type All    = Nothing
+  @deprecated type AllRef = Null
 
   type String        = java.lang.String
   type StringBuilder = compat.StringBuilder

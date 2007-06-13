@@ -58,7 +58,7 @@ abstract class Constructors extends Transform {
         ps.head
       }
 
-      var thisRefSeen: boolean = false
+      var thisRefSeen: Boolean = false
 
       val intoConstructorTransformer = new Transformer {
         override def transform(tree: Tree): Tree = tree match {

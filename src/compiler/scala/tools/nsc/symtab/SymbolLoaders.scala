@@ -35,7 +35,7 @@ abstract class SymbolLoaders {
   abstract class SymbolLoader extends LazyType {
 
     /** Load source or class file for `root', return */
-    protected def doComplete(root: Symbol): unit
+    protected def doComplete(root: Symbol): Unit
 
     /** The kind of file that's processed by this loader */
     protected def kindString: String
@@ -132,7 +132,7 @@ abstract class SymbolLoaders {
       root.setInfo(new PackageClassInfoType(scope, root))
 
       /** Is the given name a valid input file base name? */
-      def isValid(name: String): boolean =
+      def isValid(name: String): Boolean =
         name.length() > 0 && !name.endsWith("$class") && (settings.XbytecodeRead.value ||
           (name.indexOf("$anon") == -1));
 
@@ -273,7 +273,7 @@ abstract class SymbolLoaders {
   }
 */
   class SourcefileLoader(override val sourceFile: AbstractFile) extends SymbolLoader {
-    protected def doComplete(root: Symbol): unit =
+    protected def doComplete(root: Symbol): Unit =
       global.currentRun.compileLate(sourceFile)
     protected def kindString: String = "source file"
     protected def sourceString = sourceFile.toString()

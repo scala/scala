@@ -10,12 +10,12 @@ object NameTransformer {
   private val nops = 128
   private val ncodes = 26 * 26
 
-  private class OpCodes(val op: char, val code: String, val next: OpCodes)
+  private class OpCodes(val op: Char, val code: String, val next: OpCodes)
 
   private val op2code = new Array[String](nops)
   private val code2op = new Array[OpCodes](ncodes)
 
-  private def enterOp(op: char, code: String) = {
+  private def enterOp(op: Char, code: String) = {
     op2code(op) = code
     val c = (code.charAt(1) - 'a') * 26 + code.charAt(2) - 'a'
     code2op(c) = new OpCodes(op, code, code2op(c))

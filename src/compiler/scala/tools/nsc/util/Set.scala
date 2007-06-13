@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -12,11 +12,11 @@ abstract class Set[T <: AnyRef] {
 
   def findEntry(x: T): T
 
-  def addEntry(x: T): unit
+  def addEntry(x: T): Unit
 
   def elements: Iterator[T]
 
-  def contains(x: T): boolean =
+  def contains(x: T): Boolean =
     findEntry(x) ne null
 
   def toList = elements.toList

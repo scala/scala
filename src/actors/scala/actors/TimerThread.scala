@@ -28,10 +28,10 @@ import scala.compat.Platform
 
 object TimerThread {
 
-  private case class WakedActor(actor: Actor, f: PartialFunction[Any, Unit], time: long)
+  private case class WakedActor(actor: Actor, f: PartialFunction[Any, Unit], time: Long)
                extends Ordered[WakedActor] {
     var valid = true
-    def compare(that: WakedActor): int = -(this.time compare that.time)
+    def compare(that: WakedActor): Int = -(this.time compare that.time)
   }
 
   private var queue = new PriorityQueue[WakedActor]
@@ -84,7 +84,7 @@ object TimerThread {
   }
 
   def requestTimeout(a: Actor, f: PartialFunction[Any, Unit],
-                     waitMillis: long): unit = timerThread.synchronized {
+                     waitMillis: Long): Unit = timerThread.synchronized {
     val wakeTime = now + waitMillis
     if (waitMillis <= 0) {
       a ! TIMEOUT
@@ -117,8 +117,8 @@ object TimerThread {
     }
   }
 
-  private def dequeueLateAndGetSleepTime: long = {
-    val FOREVER: long = 0
+  private def dequeueLateAndGetSleepTime: Long = {
+    val FOREVER: Long = 0
     var waitingList: List[WakedActor] = Nil
 
     while (!queue.isEmpty) {
@@ -134,7 +134,7 @@ object TimerThread {
 
     // empty queue => sleep forever
     lateList = waitingList
-    return FOREVER
+    FOREVER
   }
 
   private def now = Platform.currentTime

@@ -45,7 +45,7 @@ class MessageQueue {
     }
   }
 
-  def extractFirst(p: Any => boolean): MessageQueueElement = {
+  def extractFirst(p: Any => Boolean): MessageQueueElement = {
     if (null eq last) null
     else {
       // test first element

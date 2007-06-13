@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -26,7 +26,7 @@ class Names {
 
   /** memory to store all names sequentially
    */
-  var chrs: Array[char] = new Array[char](NAME_SIZE)
+  var chrs: Array[Char] = new Array[Char](NAME_SIZE)
   private var nc = 0
 
   /** hashtable for finding term names quickly
@@ -39,7 +39,7 @@ class Names {
 
   /** the hashcode of a name
    */
-  private def hashValue(cs: Array[char], offset: int, len: int): int =
+  private def hashValue(cs: Array[Char], offset: Int, len: Int): Int =
     if (len > 0)
       (len * (41 * 41 * 41) +
        cs(offset) * (41 * 41) +
@@ -56,7 +56,7 @@ class Names {
    *  @param len    ...
    *  @return       ...
    */
-  private def equals(index: int, cs: Array[char], offset: int, len: int): boolean = {
+  private def equals(index: Int, cs: Array[Char], offset: Int, len: Int): Boolean = {
     var i = 0
     while ((i < len) && (chrs(index + i) == cs(offset + i)))
       i = i + 1;
@@ -65,18 +65,18 @@ class Names {
 
   /** enter characters into chrs array
    */
-  private def enterChars(cs: Array[char], offset: int, len: int): unit = {
+  private def enterChars(cs: Array[Char], offset: Int, len: Int): unit = {
     var i = 0
     while (i < len) {
       if (nc + i == chrs.length) {
-        val newchrs = new Array[char](chrs.length * 2)
+        val newchrs = new Array[Char](chrs.length * 2)
         Array.copy(chrs, 0, newchrs, 0, chrs.length)
         chrs = newchrs
       }
       chrs(nc + i) = cs(offset + i)
-      i = i + 1
+      i += 1
     }
-    if (len == 0) nc = nc + 1
+    if (len == 0) nc += 1
     else nc = nc + len
   }
 
@@ -87,9 +87,9 @@ class Names {
    *  @param len    ...
    *  @return       the created term name
    */
-  def newTermName(cs: Array[char], offset: int, len: int): Name = {
-    val h = hashValue(cs, offset, len) & HASH_MASK;
-    var n = termHashtable(h);
+  def newTermName(cs: Array[Char], offset: Int, len: Int): Name = {
+    val h = hashValue(cs, offset, len) & HASH_MASK
+    var n = termHashtable(h)
     while ((n ne null) && (n.length != len || !equals(n.start, cs, offset, len)))
       n = n.next;
     if (n eq null) {
@@ -111,8 +111,8 @@ class Names {
    *  @param len    ...
    *  @return       the created term name
    */
-  def newTermName(bs: Array[byte], offset: int, len: int): Name = {
-    val cs = new Array[char](bs.length)
+  def newTermName(bs: Array[Byte], offset: Int, len: Int): Name = {
+    val cs = new Array[Char](bs.length)
     val nchrs = UTF8Codec.decode(bs, offset, cs, 0, len)
     newTermName(cs, 0, nchrs)
   }
@@ -124,7 +124,7 @@ class Names {
    *  @param len    ...
    *  @return       the created type name
    */
-  def newTypeName(cs: Array[char], offset: int, len: int): Name =
+  def newTypeName(cs: Array[Char], offset: Int, len: Int): Name =
     newTermName(cs, offset, len).toTypeName
 
   /** create a type name from string
@@ -139,21 +139,21 @@ class Names {
    *  @param len    ...
    *  @return       the create type name
    */
-  def newTypeName(bs: Array[byte], offset: int, len: int): Name =
+  def newTypeName(bs: Array[Byte], offset: Int, len: Int): Name =
     newTermName(bs, offset, len).toTypeName
 
 
-  def nameChars: Array[char] = chrs
+  def nameChars: Array[Char] = chrs
 
   implicit def view(s: String): Name = newTermName(s)
 
 // Classes ----------------------------------------------------------------------
 
   /** The name class. */
-  abstract class Name(index: int, len: int) extends Function1[int, char] {
+  abstract class Name(index: Int, len: Int) extends Function1[Int, Char] {
 
     /** Index into name table */
-    def start: int = index
+    def start: Int = index
 
     /** next name in the same hash bucket
      */
@@ -161,12 +161,12 @@ class Names {
 
     /** return the length of this name
      */
-    final def length: int = len
+    final def length: Int = len
 
     final def isEmpty = length == 0
 
-    def isTermName: boolean
-    def isTypeName: boolean
+    def isTermName: Boolean
+    def isTypeName: Boolean
     def toTermName: Name
     def toTypeName: Name
 
@@ -177,13 +177,13 @@ class Names {
      *  @param cs     ...
      *  @param offset ...
      */
-    final def copyChars(cs: Array[char], offset: int) =
+    final def copyChars(cs: Array[Char], offset: Int) =
       Array.copy(chrs, index, cs, offset, len)
 
     /** return the ascii representation of this name
      */
     final def toChars = {
-      val cs = new Array[char](len)
+      val cs = new Array[Char](len)
       copyChars(cs, 0)
       cs
     }
@@ -197,22 +197,22 @@ class Names {
      *  Array must have enough remaining space for all bytes
      *  (i.e. maximally 3*length bytes).
      */
-    final def copyUTF8(bs: Array[byte], offset: int): int =
+    final def copyUTF8(bs: Array[Byte], offset: Int): Int =
       UTF8Codec.encode(chrs, index, bs, offset, len)
 
     /** return the hash value of this name
      */
-    final override def hashCode(): int = index
+    final override def hashCode(): Int = index
 
-    /** return the i'th char of this name
+    /** return the i'th Char of this name
      */
-    final def apply(i: int): char = chrs(index + i)
+    final def apply(i: Int): Char = chrs(index + i)
 
     /** return the index of first occurrence of char c in this name, length if not found */
-    final def pos(c: char): int = pos(c, 0)
+    final def pos(c: Char): Int = pos(c, 0)
 
     /** return the index of first occurrence of char c in this name, length if not found */
-    final def pos(s: String): int = pos(s, 0)
+    final def pos(s: String): Int = pos(s, 0)
 
     /** return the index of the first occurrence of character <code>c</code> in
      *  this name from <code>start</code>, length if not found.
@@ -221,9 +221,9 @@ class Names {
      *  @param start ...
      *  @return      the index of the first occurrence of <code>c</code>
      */
-    final def pos(c: char, start: int): int = {
+    final def pos(c: Char, start: Int): Int = {
       var i = start
-      while (i < len && chrs(index + i) != c) i = i + 1
+      while (i < len && chrs(index + i) != c) i += 1
       i
     }
 
@@ -234,12 +234,12 @@ class Names {
      *  @param start ...
      *  @return      the index of the first occurrence of <code>s</code>
      */
-    final def pos(s: String, start: int): int = {
+    final def pos(s: String, start: Int): Int = {
       var i = pos(s.charAt(0), start)
       while (i + s.length() <= len) {
         var j = 1
         while (s.charAt(j) == chrs(index + i + j)) {
-          j = j + 1
+          j += 1
           if (j == s.length()) return i
         }
         i = pos(s.charAt(0), i + 1)
@@ -253,9 +253,9 @@ class Names {
      *  @param c the character
      *  @return  the index of the last occurrence of <code>c</code>
      */
-    final def lastPos(c: char): int = lastPos(c, len - 1)
+    final def lastPos(c: Char): Int = lastPos(c, len - 1)
 
-    final def lastPos(s: String): int = lastPos(s, len - s.length())
+    final def lastPos(s: String): Int = lastPos(s, len - s.length())
 
     /** return the index of the last occurrence of char <code>c</code> in this
      *  name from <code>start</code>, <code>-1</code> if not found.
@@ -264,9 +264,9 @@ class Names {
      *  @param start ...
      *  @return      the index of the last occurrence of <code>c</code>
      */
-    final def lastPos(c: char, start: int): int = {
+    final def lastPos(c: Char, start: Int): Int = {
       var i = start
-      while (i >= 0 && chrs(index + i) != c) i = i - 1
+      while (i >= 0 && chrs(index + i) != c) i -= 1
       i
     }
 
@@ -277,12 +277,12 @@ class Names {
      *  @param start ...
      *  @return      the index of the last occurrence of <code>s</code>
      */
-    final def lastPos(s: String, start: int): int = {
+    final def lastPos(s: String, start: Int): Int = {
       var i = lastPos(s.charAt(0), start)
       while (i >= 0) {
         var j = 1;
         while (s.charAt(j) == chrs(index + i + j)) {
-          j = j + 1;
+          j += 1
           if (j == s.length()) return i;
         }
         i = lastPos(s.charAt(0), i - 1)
@@ -292,29 +292,29 @@ class Names {
 
     /** does this name start with prefix?
      */
-    final def startsWith(prefix: Name): boolean = startsWith(prefix, 0)
+    final def startsWith(prefix: Name): Boolean = startsWith(prefix, 0)
 
     /** does this name start with prefix at given start index?
      */
-    final def startsWith(prefix: Name, start: int): boolean = {
+    final def startsWith(prefix: Name, start: Int): Boolean = {
       var i = 0
       while (i < prefix.length && start + i < len &&
              chrs(index + start + i) == chrs(prefix.start + i))
-        i = i + 1;
+        i += 1;
       i == prefix.length
     }
 
     /** does this name end with suffix?
      */
-    final def endsWith(suffix: Name): boolean = endsWith(suffix, len)
+    final def endsWith(suffix: Name): Boolean = endsWith(suffix, len)
 
     /** does this name end with suffix just before given end index?
      */
-    final def endsWith(suffix: Name, end: int): boolean = {
+    final def endsWith(suffix: Name, end: Int): Boolean = {
       var i = 1
       while (i <= suffix.length && i <= end &&
              chrs(index + end - i) == chrs(suffix.start + suffix.length - i))
-        i = i + 1;
+        i += 1;
       i > suffix.length
     }
 
@@ -324,7 +324,7 @@ class Names {
      *  @param to   ...
      *  @return     ...
      */
-    def subName(from: int, to: int): Name
+    def subName(from: Int, to: Int): Name
 
     /** Replace all occurrences of <code>from</code> by </code>to</code> in
      *  name; result is always a term name.
@@ -333,13 +333,13 @@ class Names {
      *  @param to   ...
      *  @return     ...
      */
-    def replace(from: char, to: char): Name = {
-      val cs = new Array[char](len)
+    def replace(from: Char, to: Char): Name = {
+      val cs = new Array[Char](len)
       var i = 0
       while (i < len) {
         val ch = this(i)
         cs(i) = if (ch == from) to else ch
-        i = i + 1
+        i += 1
       }
       newTermName(cs, 0, len)
     }
@@ -361,11 +361,11 @@ class Names {
       (if (nameDebug && isTypeName) "!" else ""))//debug
   }
 
-  private class TermName(index: int, len: int, hash: int) extends Name(index, len) {
+  private class TermName(index: Int, len: Int, hash: Int) extends Name(index, len) {
     next = termHashtable(hash)
     termHashtable(hash) = this
-    def isTermName: boolean = true
-    def isTypeName: boolean = false
+    def isTermName: Boolean = true
+    def isTypeName: Boolean = false
     def toTermName: Name = this
     def toTypeName = {
       val h = hashValue(chrs, index, len) & HASH_MASK
@@ -376,15 +376,15 @@ class Names {
         n = new TypeName(index, len, h);
       n
     }
-    def subName(from: int, to: int): Name =
+    def subName(from: Int, to: Int): Name =
       newTermName(chrs, start + from, to - from)
   }
 
-  private class TypeName(index: int, len: int, hash: int) extends Name(index, len) {
+  private class TypeName(index: Int, len: Int, hash: Int) extends Name(index, len) {
     next = typeHashtable(hash)
     typeHashtable(hash) = this
-    def isTermName: boolean = false
-    def isTypeName: boolean = true
+    def isTermName: Boolean = false
+    def isTypeName: Boolean = true
     def toTermName: Name = {
       val h = hashValue(chrs, index, len) & HASH_MASK
       var n = termHashtable(h)
@@ -395,7 +395,7 @@ class Names {
       n
     }
     def toTypeName: Name = this
-    def subName(from: int, to: int): Name =
+    def subName(from: Int, to: Int): Name =
       newTypeName(chrs, start + from, to - from)
   }
 }

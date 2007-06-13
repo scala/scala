@@ -11,19 +11,20 @@ class ListBuffer[T] extends Iterator[T] {
   private var first = new LinkedList[T]
   private var limit = first
 
-  def +=(x: T): unit = {
+  def +=(x: T) {
     limit.elem = x
     limit.next = new LinkedList[T]
     limit = limit.next
   }
 
-  def ++=(xs: Iterable[T]): unit =
+  def ++=(xs: Iterable[T]) {
     for (x <- xs.elements) +=(x)
+  }
 
   def +(x: T): ListBuffer[T] = { +=(x); this }
   def ++(xs: Iterable[T]): ListBuffer[T] = { ++=(xs); this }
 
-  def hasNext: boolean =
+  def hasNext: Boolean =
     first != limit
 
   def next: T = {
@@ -36,7 +37,7 @@ class ListBuffer[T] extends Iterator[T] {
   def elements: Iterator[T] = new Iterator[T] {
     var first = ListBuffer.this.first
 
-    def hasNext: boolean =
+    def hasNext: Boolean =
       first != limit
 
     def next: T = {
@@ -47,7 +48,7 @@ class ListBuffer[T] extends Iterator[T] {
     }
   }
 
-  def clear: unit = { first = limit }
+  def clear { first = limit }
 
   /** override for efficiency */
   override def toList: List[T] = {

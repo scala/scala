@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2005-2007, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -41,13 +41,13 @@ object Scheduler {
   var tasks: LinkedQueue = null
   var pendingCount = 0
 
-  def snapshot(): unit = synchronized {
+  def snapshot(): Unit = synchronized {
     tasks = sched.snapshot()
     pendingCount = sched.asInstanceOf[FJTaskScheduler2].getPendingCount
     sched.shutdown()
   }
 
-  def restart(): unit = synchronized {
+  def restart(): Unit = synchronized {
     sched = {
       var s: IScheduler = new FJTaskScheduler2
       s.asInstanceOf[FJTaskScheduler2].setPendingCount(pendingCount)
@@ -76,13 +76,13 @@ object Scheduler {
 
   def tick(a: Actor) = sched.tick(a)
   def terminated(a: Actor) = sched.terminated(a)
-  def pendReaction: unit = sched.pendReaction
-  def unPendReaction: unit = sched.unPendReaction
+  def pendReaction: Unit = sched.pendReaction
+  def unPendReaction: Unit = sched.unPendReaction
 
   def shutdown() = sched.shutdown()
 
-  def onLockup(handler: () => unit) = sched.onLockup(handler)
-  def onLockup(millis: int)(handler: () => unit) = sched.onLockup(millis)(handler)
+  def onLockup(handler: () => Unit) = sched.onLockup(handler)
+  def onLockup(millis: int)(handler: () => Unit) = sched.onLockup(millis)(handler)
   def printActorDump = sched.printActorDump
 }
 
@@ -95,27 +95,27 @@ object Scheduler {
  * @author Philipp Haller
  */
 trait IScheduler {
-  def start(): unit
+  def start(): Unit
 
-  def start(task: Reaction): unit
-  def execute(task: Reaction): unit
-  def execute(task: FJTask): unit
+  def start(task: Reaction): Unit
+  def execute(task: Reaction): Unit
+  def execute(task: FJTask): Unit
 
   def getTask(worker: WorkerThread): Runnable
-  def tick(a: Actor): unit
-  def terminated(a: Actor): unit
-  def pendReaction: unit
-  def unPendReaction: unit
+  def tick(a: Actor): Unit
+  def terminated(a: Actor): Unit
+  def pendReaction: Unit
+  def unPendReaction: Unit
 
   def snapshot(): LinkedQueue
-  def shutdown(): unit
+  def shutdown(): Unit
 
-  def onLockup(handler: () => unit): unit
-  def onLockup(millis: int)(handler: () => unit): unit
-  def printActorDump: unit
+  def onLockup(handler: () => Unit): Unit
+  def onLockup(millis: int)(handler: () => Unit): Unit
+  def printActorDump: Unit
 
   val QUIT_TASK = new Reaction(null) {
-    override def run(): unit = {}
+    override def run(): Unit = {}
     override def toString() = "QUIT_TASK"
   }
 }
@@ -147,17 +147,17 @@ class SingleThreadedScheduler extends IScheduler {
   }
 
   def getTask(worker: WorkerThread): Runnable = null
-  def tick(a: Actor): Unit = {}
-  def terminated(a: Actor): unit = {}
-  def pendReaction: unit = {}
-  def unPendReaction: unit = {}
+  def tick(a: Actor) {}
+  def terminated(a: Actor) {}
+  def pendReaction {}
+  def unPendReaction {}
 
-  def shutdown(): Unit = {}
+  def shutdown() {}
   def snapshot(): LinkedQueue = { null }
 
-  def onLockup(handler: () => unit): unit = {}
-  def onLockup(millis: int)(handler: () => unit): unit = {}
-  def printActorDump: unit = {}
+  def onLockup(handler: () => Unit) {}
+  def onLockup(millis: Int)(handler: () => Unit) {}
+  def printActorDump {}
 }
 
 
@@ -237,7 +237,7 @@ class WorkerThread(sched: IScheduler) extends Thread {
     notify()
   }
 
-  override def run(): unit =
+  override def run(): Unit =
     try {
       while (running) {
         if (task ne null) {
