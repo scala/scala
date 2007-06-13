@@ -84,13 +84,15 @@ object Math {
   def atan(x: Double): Double = System.Math.Atan(x)
 
   def toRadians(x: Double): Double = x * Pi / 180.0
+
   def toDegrees(x: Double): Double = x * 180.0 / Pi
 
   def exp(x: Double): Double = System.Math.Exp(x)
   def log(x: Double): Double = System.Math.Log(x)
   def sqrt(x: Double): Double = System.Math.Sqrt(x)
-
+  def sqrt(x: Int): Int = System.Math.Sqrt(x.toDouble).toInt
   def IEEEremainder(x: Double, y: Double): Double = System.Math.IEEERemainder(x, y)
+
   def ceil(x: Double): Double = System.Math.Ceiling(x)
   def floor(x: Double): Double = System.Math.Floor(x)
 
