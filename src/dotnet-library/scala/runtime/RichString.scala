@@ -135,6 +135,8 @@ final class RichString(val self: String) extends Seq[Char] with Ordered[String] 
 
   def split(separator: Char): Array[String] = self.Split(Array(separator))
 
+  def split(separators: Array[Char]): Array[String] = self.Split(separators)
+
   def toByte: Byte = System.Byte.Parse(self)
   def toShort: Short = System.Int16.Parse(self)
   def toInt: Int = System.Int32.Parse(self)

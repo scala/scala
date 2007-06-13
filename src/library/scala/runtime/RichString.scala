@@ -112,10 +112,10 @@ final class RichString(val self: String) extends Seq[Char] with Ordered[String] 
    *  </blockquote>
    */
   def stripMargin(marginChar: Char): String = {
-    val buf = new scala.compat.StringBuilder()
+    val buf = new StringBuilder()
     for (line <- linesWithSeparators) {
       val len = line.length
-      var index = 0;
+      var index = 0
       while (index < len && line.charAt(index) <= ' ') index += 1
       buf append
         (if (index < len && line.charAt(index) == marginChar) line.substring(index + 1) else line)
@@ -133,7 +133,19 @@ final class RichString(val self: String) extends Seq[Char] with Ordered[String] 
    */
   def stripMargin: String = stripMargin('|')
 
-  def split(separator: Char): Array[String] = self.split(separator.toString())
+  private def escape(ch: Char): String = ch match {
+    case '.' | '$' | '^' | '\\' => "\\" + ch
+    case _ => "" + ch
+  }
+
+  @throws(classOf[java.util.regex.PatternSyntaxException])
+  def split(separator: Char): Array[String] = self.split(escape(separator))
+
+  @throws(classOf[java.util.regex.PatternSyntaxException])
+  def split(separators: Array[Char]): Array[String] = {
+    val re = separators.foldLeft("[")(_+_) + "]"
+    self.split(re)
+  }
 
   def toByte: Byte = java.lang.Byte.parseByte(self)
   def toShort: Short = java.lang.Short.parseShort(self)

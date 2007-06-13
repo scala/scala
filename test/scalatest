@@ -275,9 +275,7 @@ test_run_jvm() {
 # Test the disassemblers.
 test_run_dis() {
     argsfile="$srcbase".args;
-    if [ ! -f "$argsfile" ]; then
-        argsfile=/dev/null;
-    fi;
+    [ ! -f "$argsfile" ] && argsfile=/dev/null;
     rm -rf "$dstbase".obj &&
     mkdir -p "$dstbase".obj &&
     $SCALAC -d "$os_dstbase".obj "$@" "$os_srcbase".scala &&
@@ -297,14 +295,15 @@ test_run_msil() {
         -sourcepath "$PREFIX/build/msil/src" "$os_srcbase".scala &&
     case "$UNAME" in
         CYGWIN* )
-            ilasm /qui /nol /out="$os_dstbase".$EXE "$os_dstbase".$MSIL \
+            $ILASM /qui /nol /out="$os_dstbase".$EXE "$os_dstbase".$MSIL \
                 > /dev/null &&
 #             peverify /il "$os_dstbase".EXE > /dev/null &&
             "$dstbase".$EXE_SUFFIX "msil";;
         * )
-            ilasm /output:"$os_dstbase".$EXE "$os_dstbase".$MSIL \
+            $ILASM /output:"$os_dstbase".$EXE "$os_dstbase".$MSIL \
                 > /dev/null &&
-            env MONO_PATH="$PREFIX/build/msil:$PREFIX/lib" mono "$dstbase.$EXE" "msil";;
+            monopath=`get_os_pathlist $PREFIX/build/msil:$PREFIX/lib` &&
+            env MONO_PATH="$monopath" $MONO "$dstbase.$EXE" "msil";;
     esac &&
     rm -f "$dstbase".$EXE &&
     rm -f "$dstbase".$MSIL;
@@ -375,19 +374,12 @@ test_check_test() {
 
     # compute flags file
     flagsfile="$srcbase".flags;
-    if [ ! -f "$flagsfile" ]; then
-        flagsfile=/dev/null;
-    fi;
+    [ ! -f "$flagsfile" ] && flagsfile=/dev/null;
 
     # compute check file
     checkfile="$srcbase"-$kind.check;
-    if [ ! -f "$checkfile" ]; then
-        checkfile="$srcbase".check;
-    fi;
-    if [ ! -f "$checkfile" ]; then
-        checkfile=/dev/null;
-    fi;
-
+    [ ! -f "$checkfile" ] && checkfile="$srcbase".check;
+    [ ! -f "$checkfile" ] && checkfile=/dev/null;
 
     # compute log file
     logfile="$dstbase".log;
@@ -424,15 +416,9 @@ test_check_test() {
     else
         FAILURE_COUNT=`echo "$FAILURE_COUNT+1" | bc`;
         test_print_failure;
-        if [ ! -f "$logfile" ]; then
-            logfile=/dev/null;
-        fi;
-        if [ "$SHOWLOG" = "true" ]; then
-            cat "$logfile";
-        fi;
-        if [ "$SHOWDIFF" = "true" ]; then
-            $DIFF "$logfile" "$checkfile";
-        fi;
+        [ ! -f "$logfile" ] && logfile=/dev/null;
+        [ "$SHOWLOG" = "true" ] && cat "$logfile";
+        [ "$SHOWDIFF" = "true" ] && $DIFF "$logfile" "$checkfile";
     fi;
 }
 
@@ -457,9 +443,7 @@ test_check_kind() {
         [ -z "$file" ] && continue;
         test_check_file "$file";
     done
-    if [ -z "$header" ]; then
-        echo "";
-    fi;
+    [ -z "$header" ] && echo "";
 }
 
 # Checks everything.
@@ -739,6 +723,8 @@ fi;
 SCALAC="$SCALAC_CMD $SCALAC_OPTS";
 SCALAP="scalap";
 ANT="ant";
+ILASM="ilasm";
+MONO="mono";
 
 if [ -n "$OBJDIR" ]; then
     if [ -d "$OBJDIR" ] || mkdir -p "$OBJDIR"; then
@@ -759,7 +745,7 @@ scala_version=`${SCALAC_CMD} -version 2>&1`
 printf_outline "Scala version is    : $scala_version\\n";
 [ -n "$SCALAC_OPTS" ] && printf_outline "Scalac options are  : $SCALAC_OPTS\\n";
 
-javacmd=`which $JAVACMD`;
+javacmd=`which $JAVACMD 2>/dev/null`;
 bin_dir=`test_get_location $javacmd`;
 printf_outline "Java binaries in    : $bin_dir\\n";
 if [ "$GIJ" = "true" ]; then

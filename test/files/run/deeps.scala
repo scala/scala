@@ -42,9 +42,9 @@ object Test extends Application {
   }
 
   def testEquals4 {
-    println("boo:and:foo".split(":") == "boo:and:foo".split(":"))
-    println("boo:and:foo".split(":") equals "boo:and:foo".split(":"))
-    println("boo:and:foo".split(":") deepEquals "boo:and:foo".split(":"))
+    println("boo:and:foo".split(':') == "boo:and:foo".split(':'))
+    println("boo:and:foo".split(':') equals "boo:and:foo".split(':'))
+    println("boo:and:foo".split(':') deepEquals "boo:and:foo".split(':'))
 
     val xs = new java.util.ArrayList(); xs.add("a")
     val ys = new java.util.ArrayList(); ys.add("a")
@@ -96,7 +96,7 @@ object Test extends Application {
   }
 
   def testToString3 {
-    println("boo:and:foo".split(":").deepToString)
+    println("boo:and:foo".split(':').deepToString)
 
     val xs = new java.util.ArrayList(); xs.add("a")
     println(xs.toArray.deepToString)
