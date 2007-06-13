@@ -700,7 +700,7 @@ trait Definitions {
         if (sym.owner.isPackageClass) sym.fullNameString('.')
         else flatNameString(sym.owner, separator) + "$" + sym.simpleName;
       def signature1(etp: Type): String = {
-        if (etp.symbol == ArrayClass) "[" + signature1(erasure(etp.typeArgs.head))
+        if (etp.symbol == ArrayClass) "[" + signature1(erasure(etp.normalize.typeArgs.head))
         else if (isValueClass(etp.symbol)) abbrvTag(etp.symbol).toString()
         else "L" + flatNameString(etp.symbol, '/') + ";"
       }
