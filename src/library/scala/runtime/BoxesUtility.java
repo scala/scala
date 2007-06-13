@@ -119,64 +119,50 @@ public class BoxesUtility {
     public static char unboxToChar(Object c) {
         if (c == null)
             return 0;
-        else if (c instanceof Character)
-            return ((Character)c).charValue();
         else
-            return ((char)((Number)c).intValue());
+            return ((Character)c).charValue();
     }
 
     public static byte unboxToByte(Object b) {
         if (b == null)
             return 0;
-        else if (b instanceof Number)
-            return ((Number)b).byteValue();
         else
-            return ((byte)((Character)b).charValue());
+            return ((Byte)b).byteValue();
     }
 
     public static short unboxToShort(Object s) {
         if (s == null)
             return 0;
-        else if (s instanceof Number)
-            return ((Number)s).shortValue();
         else
-            return ((short)((Character)s).charValue());
+            return ((Short)s).shortValue();
     }
 
     public static int unboxToInt(Object i) {
         if (i == null)
             return 0;
-        else if (i instanceof Number)
-            return ((Number)i).intValue();
         else
-            return ((int)((Character)i).charValue());
+            return ((Integer)i).intValue();
     }
 
     public static long unboxToLong(Object l) {
         if (l == null)
             return 0;
-        else if (l instanceof Number)
-            return ((Number)l).longValue();
         else
-            return ((long)((Character)l).charValue());
+            return ((Long)l).longValue();
     }
 
     public static float unboxToFloat(Object f) {
         if (f == null)
             return 0.0f;
-        else if (f instanceof Number)
-            return ((Number)f).floatValue();
         else
-            return ((float)((Character)f).charValue());
+            return ((Float)f).floatValue();
     }
 
     public static double unboxToDouble(Object d) {
         if (d == null)
             return 0.0;
-        else if (d instanceof Number)
-            return ((Number)d).doubleValue();
         else
-            return ((double)((Character)d).charValue());
+            return ((Double)d).doubleValue();
     }
 
 }

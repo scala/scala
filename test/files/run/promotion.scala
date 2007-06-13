@@ -1,6 +1,6 @@
 
 /** Test that unboxing and promotion (from int to double) work together.
- *  Was bug 891.
+ *  Was bug 819.
  */
 object Test {
 
