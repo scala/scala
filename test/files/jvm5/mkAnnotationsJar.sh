@@ -1,8 +1,29 @@
 #!/bin/sh
 
+##############################################################################
+# Author  : Nikolay Mihaylov
+# Revision: $Id$
+##############################################################################
+
+##############################################################################
+# variables
+
 OBJDIR=./classes
 
+if [ -z "${JAVA_HOME}" ]; then
+  echo "environment variable JAVA_HOME is undefined."
+  exit
+fi
+
+JAVAC=${JAVA_HOME}/bin/javac
+JAVAC_OPTIONS="-source 1.5"
+
+JAR=${JAVA_HOME}/bin/jar
+
+##############################################################################
+# commands
+
 mkdir -p ${OBJDIR}
-javac -d ${OBJDIR} -source 1.5 SourceAnnotation.java
-jar cf ../lib/annotations.jar -C ${OBJDIR} .
+${JAVAC} ${JAVAC_OPTIONS} -d ${OBJDIR} SourceAnnotation.java
+${JAR} cf ../lib/annotations.jar -C ${OBJDIR} .
 rm -rf ${OBJDIR}
