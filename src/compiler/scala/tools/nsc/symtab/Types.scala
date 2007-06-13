@@ -2352,12 +2352,14 @@ A type's symbol should never be inspected directly.
         sym
       } else {
         var rebind0 = pre.findMember(sym.name, BRIDGE, 0, true)
+/*
         if (rebind0 == NoSymbol && (sym hasFlag EXPANDEDNAME)) {
           // problem is that symbols with expanded names might be in the wrong hash bucket
           // in a previous scope. We account for that by re-creating the hash as a last attempt.
           sym.owner.info.decls.createHash()
           rebind0 = pre.findMember(sym.name, BRIDGE, 0, true)
         }
+*/
         if (rebind0 == NoSymbol) { assert(false, ""+pre+"."+sym+" does no longer exist, phase = "+phase) }
         /** The two symbols have the same fully qualified name */
         def corresponds(sym1: Symbol, sym2: Symbol): Boolean =

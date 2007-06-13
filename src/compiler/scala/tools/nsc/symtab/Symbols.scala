@@ -363,7 +363,18 @@ trait Symbols {
 
     def name: Name = rawname
 
-    final def name_=(name: Name) { rawname = name }
+    final def name_=(name: Name) {
+      if (name != rawname) {
+        if (owner.isClass) {
+          var ifs = owner.infos
+          while (ifs != null) {
+            ifs.info.decls.rehash(this, name)
+            ifs = ifs.prev
+          }
+        }
+        rawname = name
+      }
+    }
 
     /** If this symbol has an expanded name, its original name, otherwise its name itself.
      *  @see expandName

@@ -157,7 +157,7 @@ trait Scopes {
       enter(sym)
     }
 
-    def createHash() {
+    private def createHash(): unit = {
       hashtable = new Array[ScopeEntry](HASHSIZE)
       enterInHash(elems)
     }
@@ -170,6 +170,30 @@ trait Scopes {
         hashtable(i) = e
       }
     }
+
+    def rehash(sym: Symbol, newname: Name): unit =
+      if (hashtable ne null) {
+        val index = sym.name.start & HASHMASK
+        var e1 = hashtable(index)
+        var e: ScopeEntry = null
+        if (e1 != null) {
+          if (e1.sym == sym) {
+            hashtable(index) = e1.tail
+            e = e1
+          } else {
+            while (e1.tail != null && e1.tail.sym != sym) e1 = e1.tail
+            if (e1.tail != null) {
+              e = e1.tail
+              e1.tail = e.tail
+            }
+          }
+        }
+        if (e != null) {
+          val newindex = newname.start & HASHMASK
+          e.tail = hashtable(newindex)
+          hashtable(newindex) = e
+        }
+      }
 
     /** remove entry
      *
@@ -184,9 +208,10 @@ trait Scopes {
         e1.next = e.next
       }
       if (hashtable ne null) {
-        var e1 = hashtable(e.sym.name.start & HASHMASK)
+        val index = e.sym.name.start & HASHMASK
+        var e1 = hashtable(index)
         if (e1 == e) {
-          hashtable(e.sym.name.start & HASHMASK) = e.tail
+          hashtable(index) = e.tail
         } else {
           while (e1.tail != e) e1 = e1.tail;
           e1.tail = e.tail
