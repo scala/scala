@@ -289,7 +289,7 @@ MSIL="msil"
 EXE="exe"
 # Tests the .NET backend.
 test_run_msil() {
-    assemblies=`get_os_pathlist $PREFIX/lib/predef.dll:$PREFIX/lib/scalaruntime.dll:$PREFIX/lib/mscorlib.dll`;
+    assemblies=`get_os_pathlist $PREFIX/build/msil/predef.dll:$PREFIX/lib/scalaruntime.dll:$PREFIX/lib/mscorlib.dll`;
     rm -f "$dstbase".$MSIL &&
     rm -f "$dstbase".$EXE &&
 
