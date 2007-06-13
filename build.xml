@@ -51,6 +51,7 @@ PROPERTIES
   <property name="api-comp.dir" value="${build.dir}/api-compiler"/>
   <property name="tooldocs.dir" value="${build.dir}/tooldocs"/>
   <property name="examples.dir" value="${build.dir}/examples"/>
+  <property name="cldc.dir" value="${build.dir}/cldc"/>
   <property name="msil.dir" value="${build.dir}/msil"/>
   <!--  Sets location and structure of the distribution -->
   <property name="dist.dir" value="${basedir}/dists"/>
@@ -607,6 +608,110 @@ BUILD QUICK-TEST LAYER
   <target name="test.quick" depends="build">
     <echo level="info"
       message="Ant test bench is not available yet."/>
+  </target>
+
+<!-- ===========================================================================
+CLDC
+============================================================================ -->
+  <property name="cldc.name" value="cldcapi10.jar"/>
+  <property name="cldc.jar" value="${lib.dir}/${cldc.name}"/>
+
+  <target name="cldc.sources"
+          description="Create the source directory for the J2ME (CLDC) library"
+  >
+    <mkdir dir="${cldc.dir}/src"/>
+
+    <copy todir="${cldc.dir}/src">
+      <fileset dir="${src.dir}/library" includes="**/*.scala, **/*.java">
+        <not>
+          <present targetdir="${src.dir}/cldc-library"/>
+        </not>
+        <exclude name="**/jcl/**"/>
+        <exclude name="**/ref/**"/>
+        <exclude name="**/compat/**"/>
+        <exclude name="**/concurrent/**"/>
+        <exclude name="**/runtime/RichFloat.scala"/>
+        <exclude name="**/runtime/RichDouble.scala"/>
+        <exclude name="**/util/**"/>
+        <exclude name="**/xml/**"/>
+      </fileset>
+    </copy>
+
+    <copy todir="${cldc.dir}/src">
+      <fileset dir="${src.dir}/cldc-library">
+        <include name="**/*.scala"/>
+        <include name="**/*.java"/>
+      </fileset>
+    </copy>
+
+  </target>
+
+  <target name="cldclib"
+    depends="setup.quick, cldc.sources"
+    description="Builds the Scala library for J2ME (CLDC)"
+  >
+    <javac
+      srcdir="${cldc.dir}/src"
+      destdir="${cldc.dir}"
+      source="1.1"
+      target="1.1"
+      deprecation="${jc.deprecation}"
+    >
+      <bootclasspath>
+        <pathelement location="${cldc.jar}"/>
+      </bootclasspath>
+      <include name="**/*.java"/>
+      <exclude name="scala/runtime/FloatRef.java"/>
+      <exclude name="scala/runtime/DoubleRef.java"/>
+    </javac>
+
+    <quick
+      srcdir="${cldc.dir}/src"
+      destdir="${cldc.dir}"
+      usepredefs="no"
+      addparams="${nsc.params}"
+      target="cldc"
+      scalacdebugging="${nsc.log-files}"
+    >
+      <bootclasspath>
+        <pathelement location="${cldc.jar}"/>
+      </bootclasspath>
+      <classpath>
+        <pathelement location="${cldc.dir}"/>
+      </classpath>
+      <include name="scala/Predef.scala"/>
+    </quick>
+    <quick
+      srcdir="${cldc.dir}/src"
+      destdir="${cldc.dir}"
+      target="cldc"
+      addparams="${nsc.params}"
+      scalacdebugging="${nsc.log-files}"
+    >
+      <bootclasspath>
+        <pathelement location="${cldc.jar}"/>
+      </bootclasspath>
+      <classpath>
+        <pathelement location="${cldc.dir}"/>
+      </classpath>
+      <include name="**/*.scala"/>
+      <exclude name="scala/Predef.scala"/>
+      <exclude name="scala/BigInt.scala"/>
+      <exclude name="scala/collection/mutable/JavaMapAdaptor.scala"/>
+      <exclude name="scala/collection/mutable/JavaSetAdaptor.scala"/>
+      <exclude name="scala/collection/mutable/LinkedHashSet.scala"/>
+      <exclude name="scala/util/Fluid.scala"/>
+      <exclude name="scala/runtime/BoxedFloatArray.scala"/>
+      <exclude name="scala/runtime/BoxedDoubleArray.scala"/>
+      <exclude name="scala/io/**"/>
+      <exclude name="scala/mobile/**"/>
+      <exclude name="scala/reflect/**"/>
+      <exclude name="scala/text/**"/>
+      <exclude name="scala/testing/**"/>
+      <exclude name="scala/xml/**"/>
+      <excludesfile name="${nsc.excludes}" if="excludes.avail"/>
+    </quick>
+
   </target>
 
 <!-- ===========================================================================
@@ -1296,6 +1401,10 @@ CLEAN
 
   <target name="clean.msil" depends="ant-init" description="Removes all MSIL build products">
     <remove dir="${msil.dir}"/>
+  </target>
+
+  <target name="clean.cldc" depends="ant-init" description="Removes all CLDC build products">
+    <remove dir="${cldc.dir}"/>
   </target>
 
   <target name="clean.all" depends="ant-init"
