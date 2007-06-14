@@ -764,7 +764,7 @@ scala_version=`${SCALAC_CMD} -version 2>&1`
 printf_outline "Scala version is    : $scala_version\\n";
 [ -n "$SCALAC_OPTS" ] && printf_outline "Scalac options are  : $SCALAC_OPTS\\n";
 
-if [ $TEST_TYPE == "msil" ]; then
+if [ $TEST_TYPE = "msil" ]; then
     ilasm_version=`$ILASM --version 2>&1`;
     printf_outline "ILasm version is    : $ilasm_version\\n";
     mono_version=`$MONO --version | head -1`;
@@ -780,7 +780,7 @@ else
     fi;
     printf_outline "Java runtime is     : $jvm_version\\n";
     [ -n "$JAVA_OPTS" ] && printf_outline "Java options are    : $JAVA_OPTS\\n";
-    if [ "$TEST_TYPE" == "ant" ]; then
+    if [ "$TEST_TYPE" = "ant" ]; then
         ant_version=`$ANT -version`;
         printf_outline "Ant version is      : $ant_version\\n";
     fi
