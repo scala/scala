@@ -722,9 +722,28 @@ else
 fi;
 SCALAC="$SCALAC_CMD $SCALAC_OPTS";
 SCALAP="scalap";
-ANT="ant";
-ILASM="ilasm";
-MONO="mono";
+
+if [ -z "$ANT" ]; then
+    if [ -d "$ANT_HOME" ]; then
+        ANT="$ANT_HOME/bin/ant";
+    else
+        ANT="ant";
+    fi
+fi
+if [ -z "$ILASM" ]; then
+    if [ -d "$MONO_HOME" ]; then
+        ILASM="$MONO_HOME/bin/ilasm";
+    else
+        ILASM="ilasm";
+    fi
+fi
+if [ -z "$MONO" ]; then
+    if [ -d "$MONO_HOME" ]; then
+        MONO="$MONO_HOME/bin/mono";
+    else
+        MONO="mono";
+    fi
+fi
 
 if [ -n "$OBJDIR" ]; then
     if [ -d "$OBJDIR" ] || mkdir -p "$OBJDIR"; then
@@ -745,16 +764,27 @@ scala_version=`${SCALAC_CMD} -version 2>&1`
 printf_outline "Scala version is    : $scala_version\\n";
 [ -n "$SCALAC_OPTS" ] && printf_outline "Scalac options are  : $SCALAC_OPTS\\n";
 
-javacmd=`which $JAVACMD 2>/dev/null`;
-bin_dir=`test_get_location $javacmd`;
-printf_outline "Java binaries in    : $bin_dir\\n";
-if [ "$GIJ" = "true" ]; then
-    jvm_version=`$JAVACMD -version 2>&1 | head -2 | tail -1`
+if [ $TEST_TYPE == "msil" ]; then
+    ilasm_version=`$ILASM --version 2>&1`;
+    printf_outline "ILasm version is    : $ilasm_version\\n";
+    mono_version=`$MONO --version | head -1`;
+    printf_outline "Mono version is     : $mono_version\\n";
 else
-    jvm_version=`$JAVACMD -version 2>&1 | head -3 | tail -1`
-fi;
-printf_outline "Java runtime is     : $jvm_version\\n";
-[ -n "$JAVA_OPTS" ] && printf_outline "Java options are    : $JAVA_OPTS\\n";
+    javacmd=`which $JAVACMD 2>/dev/null`;
+    bin_dir=`test_get_location $javacmd`;
+    printf_outline "Java binaries in    : $bin_dir\\n";
+    if [ "$GIJ" = "true" ]; then
+        jvm_version=`$JAVACMD -version 2>&1 | head -2 | tail -1`
+    else
+        jvm_version=`$JAVACMD -version 2>&1 | head -3 | tail -1`
+    fi;
+    printf_outline "Java runtime is     : $jvm_version\\n";
+    [ -n "$JAVA_OPTS" ] && printf_outline "Java options are    : $JAVA_OPTS\\n";
+    if [ "$TEST_TYPE" == "ant" ]; then
+        ant_version=`$ANT -version`;
+        printf_outline "Ant version is      : $ant_version\\n";
+    fi
+fi
 printf_outline "\\n";
 
 test_check_all;
