@@ -12,7 +12,7 @@
 package scala
 
 import java.io.{BufferedReader, InputStream, InputStreamReader,
-                OutputStream, Reader}
+                OutputStream, PrintStream, Reader}
 import java.text.MessageFormat
 
 import scala.util.DynamicVariable
@@ -70,7 +70,7 @@ object Console {
    *
    *  @param out the new output stream.
    */
-  def setOut(out: PrintStream): Unit = outVar.value = out
+  def setOut(out: PrintStream) { outVar.value = out }
 
   /** Set the default output stream for the duration
    *  of execution of one thunk.
@@ -149,7 +149,7 @@ object Console {
    *  output (i.e. output not terminated by a new line character) has
    *  to be made visible on the terminal.
    */
-  def flush(): Unit = out.flush()
+  def flush() { out.flush() }
 
   /** Print a new line character on the terminal.
    */
@@ -179,7 +179,7 @@ object Console {
    *  @param args the parameters used to instantiate the format.
    *  @throws java.lang.IllegalArgumentException
    */
-  def printf(text: String, args: Any*): Unit = format(text, args: _*)
+  def printf(text: String, args: Any*) { format(text, args: _*) }
 
   /**
    *  @see <a href="#printf(java.lang.String,scala.Any*)"
