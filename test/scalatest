@@ -720,6 +720,10 @@ if [ "$USEFSC" = "true" ]; then
 else
     SCALAC_CMD="${BIN_DIR}scalac";
 fi;
+if [ ! -x "$SCALAC_CMD" ]; then
+    printf_failure "Missing command \"$SCALAC_CMD\"; run 'ant <target>'.\\n";
+    exit 1;
+fi;
 SCALAC="$SCALAC_CMD $SCALAC_OPTS";
 SCALAP="scalap";
 
@@ -729,21 +733,21 @@ if [ -z "$ANT" ]; then
     else
         ANT="ant";
     fi
-fi
+fi;
 if [ -z "$ILASM" ]; then
     if [ -d "$MONO_HOME" ]; then
         ILASM="$MONO_HOME/bin/ilasm";
     else
         ILASM="ilasm";
     fi
-fi
+fi;
 if [ -z "$MONO" ]; then
     if [ -d "$MONO_HOME" ]; then
         MONO="$MONO_HOME/bin/mono";
     else
         MONO="mono";
     fi
-fi
+fi;
 
 if [ -n "$OBJDIR" ]; then
     if [ -d "$OBJDIR" ] || mkdir -p "$OBJDIR"; then
@@ -751,7 +755,7 @@ if [ -n "$OBJDIR" ]; then
     else
         abort "could not create directory '$OBJDIR'";
     fi
-fi
+fi;
 
 printf_outline "Source directory is : $SRCDIR\\n";
 bin_dir=$BIN_DIR
@@ -769,6 +773,12 @@ if [ $TEST_TYPE = "msil" ]; then
     printf_outline "ILasm version is    : $ilasm_version\\n";
     mono_version=`$MONO --version | head -1`;
     printf_outline "Mono version is     : $mono_version\\n";
+    if [ -f "$PREFIX/build/msil/predef.dll" ]; then
+        printf_outline "DLL library is      : $PREFIX/build/msil/predef.dll\\n";
+    else
+        printf_failure "Missing library \"$PREFIX/build/msil/predef.dll\"; run 'ant msil'.\\n";
+        exit 1;
+    fi
 else
     javacmd=`which $JAVACMD 2>/dev/null`;
     bin_dir=`test_get_location $javacmd`;
@@ -784,7 +794,7 @@ else
         ant_version=`$ANT -version`;
         printf_outline "Ant version is      : $ant_version\\n";
     fi
-fi
+fi;
 printf_outline "\\n";
 
 test_check_all;
