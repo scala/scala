@@ -24,7 +24,7 @@ object Properties {
     props
   }
 
-  private val isWin = System.getProperty("os.name") startsWith "Windows"
+  val isWin = System.getProperty("os.name") startsWith "Windows"
 
   /** The version number of the jar this was loaded from, or
     * "(unknown)" if it cannot be determined.
