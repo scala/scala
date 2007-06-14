@@ -13,28 +13,32 @@ import java.io.{BufferedReader, FileReader}
 import java.util.regex.Pattern
 import java.net._
 
-object CompileSocket {
+/** This class manages sockets for the fsc offline compiler.  */
+class CompileSocket {
+  protected def compileClient: StandardCompileClient = CompileClient //todo: lazy val
 
   /** The prefix of the port identification file, which is followed
    *  by the port number.
    */
-  private val dirName = "scalac-compile-server-port"
+  protected def dirName = "scalac-compile-server-port" //todo: lazy val
 
-  /** The vm-part of the command to start a new scala compile server */
-  private val vmCommand =
+  protected def cmdName = Properties.cmdName //todo: lazy val
+
+  /** The vm part of the command to start a new scala compile server */
+  protected val vmCommand =
     Properties.scalaHome match {
       case null =>
-        Properties.cmdName
+        cmdName
       case dirname =>
-        val trial = new File(new File(dirname, "bin"), Properties.cmdName)
+        val trial = new File(new File(dirname, "bin"), cmdName)
         if (trial.canRead)
           trial.getPath
         else
-          Properties.cmdName
+          cmdName
     }
 
   /** The class name of the scala compile server */
-  private val serverClass = "scala.tools.nsc.CompileServer"
+  protected val serverClass = "scala.tools.nsc.CompileServer"
 
   /** A regular expression for checking compiler output for errors */
   val errorRegex = ".*errors? found.*"
@@ -42,15 +46,15 @@ object CompileSocket {
   /** A Pattern object for checking compiler output for errors */
   val errorPattern = Pattern.compile(errorRegex)
 
-  private def error(msg: String) = System.err.println(msg)
+  protected def error(msg: String) = System.err.println(msg)
 
-  private def fatal(msg: String) = {
+  protected def fatal(msg: String) = {
     error(msg)
     exit(1)
   }
 
-  private def info(msg: String) =
-    if (CompileClient.verbose) System.out.println(msg)
+  protected def info(msg: String) =
+    if (compileClient.verbose) System.out.println(msg)
 
   /** A temporary directory to use */
   val tmpDir = {
@@ -256,3 +260,6 @@ object CompileSocket {
     result
   }
 }
+
+
+object CompileSocket extends CompileSocket

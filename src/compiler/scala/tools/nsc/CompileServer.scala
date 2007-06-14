@@ -15,13 +15,16 @@ import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
 import scala.tools.nsc.util.FakePos //Position
 import scala.tools.util.SocketServer
 
-/** The main class for NSC, a compiler for the programming
- *  language Scala.
+/**
+ *  The server part of the fsc offline compiler.  It awaits compilation
+ *  commands and executes them.  It caches a compiler instance so
+ *  that it can respond more quickly.
  *
  *  @author Martin Odersky
  *  @version 1.0
  */
-object CompileServer extends SocketServer {
+class StandardCompileServer extends SocketServer {
+  def compileSocket: CompileSocket = CompileSocket // todo: make this a lazy val
 
   val versionMsg = "Fast Scala compiler " +
     Properties.versionString + " -- " +
@@ -52,7 +55,7 @@ object CompileServer extends SocketServer {
   private def spawnWatchDog(): Unit = spawn {
     while (true) {
       Thread.sleep(10000)
-      if (!CompileSocket.portFile(port).exists() && !inSession) {
+      if (!compileSocket.portFile(port).exists() && !inSession) {
         progress = false
         spawn {
           Thread.sleep(10000)
@@ -67,12 +70,28 @@ object CompileServer extends SocketServer {
 
   var reporter: ConsoleReporter = _
 
+
+  /** Create a new compiler instance */
+  def newGlobal(settings: Settings, reporter: Reporter) =
+    new Global(settings, reporter) {
+      override def inform(msg: String) = out.println(msg)
+    }
+
+
+  protected def newOfflineCompilerCommand(
+    arguments: List[String],
+    settings: Settings,
+    error: String => Unit,
+    interactive: Boolean)
+  = new OfflineCompilerCommand(arguments, settings, error, interactive)
+
   def session() {
     System.out.println("New session" +
                        ", total memory = "+ runtime.totalMemory() +
                        ", max memory = " + runtime.maxMemory() +
                        ", free memory = " + runtime.freeMemory)
-    val password = CompileSocket.getPassword(port)
+    System.out.flush()
+    val password = compileSocket.getPassword(port)
     val guessedPassword = in.readLine()
     val input = in.readLine()
     if ((input ne null) && password == guessedPassword) {
@@ -81,12 +100,12 @@ object CompileServer extends SocketServer {
         progress = true
         val args = input.split("\0").toList
         if (args contains "-shutdown") {
-          out.println("[Scala compile server exited]")
+          out.println("[Compile server exited]")
           shutDown = true
           return
         }
         if (args contains "-reset") {
-          out.println("[Scala compile server was reset]")
+          out.println("[Compile server was reset]")
           compiler = null
           return
         }
@@ -94,16 +113,7 @@ object CompileServer extends SocketServer {
           reporter.error(/*new Position*/ FakePos("fsc"),
                          msg + "\n  fsc -help  gives more information")
         }
-        val command = new CompilerCommand(args, new Settings(error), error, false) {
-          override val cmdName = "fsc"
-          settings.disable(settings.prompt)
-          settings.disable(settings.resident)
-          new settings.BooleanSetting("-reset", "Reset compile server caches")
-          new settings.BooleanSetting("-shutdown", "Shutdown compile server")
-          new settings.StringSetting("-server", "hostname:portnumber",
-                                     "Specify compile server socket", "")
-          new settings.BooleanSetting("-J<flag>", "Pass <flag> directly to runtime system")
-        }
+        val command = newOfflineCompilerCommand(args, new Settings(error), error, false)
 
         reporter = new ConsoleReporter(command.settings, in, out) {
           // disable prompts, so that compile server cannot block
@@ -125,10 +135,8 @@ object CompileServer extends SocketServer {
               compiler.reporter = reporter
             } else {
               if (args contains "-verbose")
-                out.println("[Starting new Scala compile server instance]")
-              compiler = new Global(command.settings, reporter) {
-                override def inform(msg: String) = out.println(msg)
-              }
+                out.println("[Starting new compile server instance]")
+              compiler = newGlobal(command.settings, reporter)
             }
             val c = compiler
             val run = new c.Run
@@ -156,7 +164,7 @@ object CompileServer extends SocketServer {
   }
 
   /** A directory holding redirected output */
-  private val redirectDir = new File(CompileSocket.tmpDir, "output-redirects")
+  private val redirectDir = new File(compileSocket.tmpDir, "output-redirects")
   redirectDir.mkdirs
 
   private def redirect(setter: PrintStream => Unit, filename: String) {
@@ -173,9 +181,12 @@ object CompileServer extends SocketServer {
     System.err.println("...starting server on socket "+port+"...")
     System.err.flush()
     spawnWatchDog()
-    CompileSocket.setPort(port)
+    compileSocket.setPort(port)
     run()
-    CompileSocket.deletePort(port)
+    compileSocket.deletePort(port)
     exit(0)
   }
 }
+
+
+object CompileServer extends StandardCompileServer

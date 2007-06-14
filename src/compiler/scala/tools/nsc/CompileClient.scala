@@ -10,10 +10,12 @@ import java.io.{BufferedReader, File, InputStreamReader, PrintWriter}
 
 import scala.tools.util.StringOps
 
-/** The main class for NSC, a compiler for the programming
- *  language Scala.
+/** The client part of the fsc offline compiler.  Instead of compiling
+ *  things itself, it send requests to a CompileServer.
  */
-object CompileClient {
+class StandardCompileClient {
+  def compileSocket: CompileSocket = CompileSocket  // todo: should be lazy val
+
   val versionMsg = "Fast Scala Compiler " +
     Properties.versionString + " -- " +
     Properties.copyrightString
@@ -34,13 +36,15 @@ object CompileClient {
     pathsList.map(absFileName).mkString("", sep, "")
   }
 
-  private def normalize(args: Array[String]): (String, String) = {
+  val fileEnding = ".scala"
+
+  protected def normalize(args: Array[String]): (String, String) = {
     var i = 0
     val vmArgs = new StringBuilder
     var serverAdr = ""
     while (i < args.length) {
       val arg = args(i)
-      if (arg endsWith ".scala") {
+      if (arg endsWith fileEnding) {
         args(i) = absFileName(arg)
       } else if (arg startsWith "-J") {
         //see http://java.sun.com/j2se/1.5.0/docs/tooldocs/solaris/javac.html#J
@@ -89,20 +93,20 @@ object CompileClient {
       Console.println("[Server arguments: " + args.mkString("", " ", "]"))
       Console.println("[VM arguments: " + vmArgs + "]")
     }
-    val socket = if (serverAdr == "") CompileSocket.getOrCreateSocket(vmArgs, !shutdown)
-                 else CompileSocket.getSocket(serverAdr)
+    val socket = if (serverAdr == "") compileSocket.getOrCreateSocket(vmArgs, !shutdown)
+                 else compileSocket.getSocket(serverAdr)
     if (shutdown && (socket==null)) {
       Console.println("[No compilation server running.]")
       return 0
     }
     val out = new PrintWriter(socket.getOutputStream(), true)
     val in = new BufferedReader(new InputStreamReader(socket.getInputStream()))
-    out.println(CompileSocket.getPassword(socket.getPort()))
+    out.println(compileSocket.getPassword(socket.getPort()))
     out.println(args.mkString("", "\0", ""))
     var sawerror = false
     var fromServer = in.readLine()
     while (fromServer ne null) {
-      if (CompileSocket.errorPattern.matcher(fromServer).matches)
+      if (compileSocket.errorPattern.matcher(fromServer).matches)
         sawerror = true
       Console.println(fromServer)
       fromServer = in.readLine()
@@ -119,3 +123,6 @@ object CompileClient {
     exit(status)
   }
 }
+
+
+object CompileClient extends StandardCompileClient

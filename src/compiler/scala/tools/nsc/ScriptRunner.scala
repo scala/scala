@@ -13,7 +13,7 @@ import java.net.URL
 import java.util.jar.{JarEntry, JarOutputStream}
 
 import scala.tools.nsc.io.PlainFile
-import scala.tools.nsc.reporters.ConsoleReporter
+import scala.tools.nsc.reporters.{Reporter,ConsoleReporter}
 import scala.tools.nsc.util.{CompoundSourceFile, SourceFile, SourceFileFragment}
 
 /** An object that runs Scala code in script files.
@@ -42,7 +42,11 @@ import scala.tools.nsc.util.{CompoundSourceFile, SourceFile, SourceFileFragment}
  *  @todo    It would be better if error output went to stderr instead
  *           of stdout...
  */
-object ScriptRunner {
+class ScriptRunner {
+  protected def compileClient: StandardCompileClient = CompileClient //todo: lazy val
+  protected def compileSocket: CompileSocket = CompileSocket //todo: make lazy val
+
+
   /** Default name to use for the wrapped script */
   val defaultScriptMain = "Main"
 
@@ -194,14 +198,14 @@ object ScriptRunner {
       settings: GenericRunnerSettings,
       scriptFileIn: String): Boolean =
   {
-    val scriptFile = CompileClient.absFileName(scriptFileIn)
+    val scriptFile = compileClient.absFileName(scriptFileIn)
     for (setting:settings.StringSetting <- List(
             settings.classpath,
             settings.sourcepath,
             settings.bootclasspath,
             settings.extdirs,
             settings.outdir))
-      setting.value = CompileClient.absFileNames(setting.value)
+      setting.value = compileClient.absFileNames(setting.value)
 
     val compSettingNames =
       (new Settings(error)).allSettings.map(_.name)
@@ -218,11 +222,11 @@ object ScriptRunner {
       (coreCompArgs :::
         List("-script", scriptMain(settings), scriptFile))
 
-    val socket = CompileSocket.getOrCreateSocket("")
+    val socket = compileSocket.getOrCreateSocket("")
     val out = new PrintWriter(socket.getOutputStream(), true)
     val in = new BufferedReader(new InputStreamReader(socket.getInputStream()))
 
-    out.println(CompileSocket.getPassword(socket.getPort))
+    out.println(compileSocket.getPassword(socket.getPort))
     out.println(compArgs.mkString("", "\0", ""))
 
     var compok = true
@@ -230,7 +234,7 @@ object ScriptRunner {
     var fromServer = in.readLine()
     while (fromServer ne null) {
       Console.println(fromServer)
-      if (CompileSocket.errorPattern.matcher(fromServer).matches)
+      if (compileSocket.errorPattern.matcher(fromServer).matches)
         compok = false
 
       fromServer = in.readLine()
@@ -241,6 +245,9 @@ object ScriptRunner {
 
     compok
   }
+
+  protected def newGlobal(settings: Settings, reporter: Reporter) =
+    new Global(settings, reporter)
 
   /** Compile a script and then run the specified closure with
     * a classpath for the compiled script.
@@ -265,7 +272,7 @@ object ScriptRunner {
 
       if (settings.nocompdaemon.value) {
         val reporter = new ConsoleReporter(settings)
-        val compiler = new Global(settings, reporter)
+        val compiler = newGlobal(settings, reporter)
         val cr = new compiler.Run
 	val wrapped =
 	  wrappedScript(
@@ -370,3 +377,6 @@ object ScriptRunner {
     })
   }
 }
+
+
+object ScriptRunner extends ScriptRunner
