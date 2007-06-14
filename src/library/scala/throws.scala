@@ -17,8 +17,8 @@ package scala
  *  </p><pre>
  *    <b>class</b> Reader(fname: String) {
  *      <b>private val</b> in =
- *        <b>new</b> BufferedReader(<b>new</b> <a class="java_io_FileReader" href="" target="_top">FileReader</a>(fname))
- *      @throws(classOf[<a class="java_io_IOException" href="" target="_top">IOException</a>])
+ *        <b>new</b> BufferedReader(<b>new</b> <a class="java/io/FileReader" href="" target="_top">FileReader</a>(fname))
+ *      @throws(classOf[<a class="java/io/IOException" href="" target="_top">IOException</a>])
  *      <b>def</b> read() = in.read()
  *    }</pre>
  *

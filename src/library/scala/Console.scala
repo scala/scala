@@ -11,8 +11,8 @@
 
 package scala
 
-import java.io.{InputStream, Reader, InputStreamReader, BufferedReader}
-import java.io.{OutputStream, PrintStream}
+import java.io.{BufferedReader, InputStream, InputStreamReader,
+                OutputStream, Reader}
 import java.text.MessageFormat
 
 import scala.util.DynamicVariable
@@ -170,9 +170,9 @@ object Console {
    *    <code>text</code>. The arguments that are inserted into specific
    *    locations in <code>text</code> are provided with parameter
    *    <code>args</code>. See class <a href="" target="contentFrame"
-   *    class="java_text_MessageFormat"><code>java.text.MessageFormat</code></a>
+   *    class="java/text/MessageFormat"><code>java.text.MessageFormat</code></a>
    *    for a full specification of the <a href="#syntax" target="contentFrame"
-   *    class="java_util_Formatter">format syntax</a>.
+   *    class="java/util/Formatter">format syntax</a>.
    *  </p>
    *
    *  @param text the format of the text to print out.
@@ -300,39 +300,39 @@ object Console {
     var res: List[Any] = Nil
     while (i >= 0) {
       res = (a(i) match {
-        case x: java.lang.Boolean => x.booleanValue()
-        case x: java.lang.Byte => x.byteValue()
-        case x: java.lang.Short => x.shortValue()
+        case x: java.lang.Boolean   => x.booleanValue()
+        case x: java.lang.Byte      => x.byteValue()
+        case x: java.lang.Short     => x.shortValue()
         case x: java.lang.Character => x.charValue()
-        case x: java.lang.Integer => x.intValue()
-        case x: java.lang.Long => x.longValue()
-        case x: java.lang.Float => x.floatValue()
-        case x: java.lang.Double => x.doubleValue()
+        case x: java.lang.Integer   => x.intValue()
+        case x: java.lang.Long      => x.longValue()
+        case x: java.lang.Float     => x.floatValue()
+        case x: java.lang.Double    => x.doubleValue()
         case x => x
       }) :: res;
-      i = i - 1
+      i -= 1
     }
     res
   }
 
   private def textParams(s: Seq[Any]): Array[AnyRef] = {
-    val res = new Array[AnyRef](s.length);
-    var i: Int = 0;
-    val iter = s.elements;
+    val res = new Array[AnyRef](s.length)
+    var i: Int = 0
+    val iter = s.elements
     while (iter.hasNext) {
       res(i) = iter.next match {
         case x: Boolean => new java.lang.Boolean(x)
-        case x: Byte => new java.lang.Byte(x)
-        case x: Short => new java.lang.Short(x)
-        case x: Char => new java.lang.Character(x)
-        case x: Int => new java.lang.Integer(x)
-        case x: Long => new java.lang.Long(x)
-        case x: Float => new java.lang.Float(x)
-        case x: Double => new java.lang.Double(x)
-        case x: Unit => "()"
-        case x: AnyRef => x
+        case x: Byte    => new java.lang.Byte(x)
+        case x: Short   => new java.lang.Short(x)
+        case x: Char    => new java.lang.Character(x)
+        case x: Int     => new java.lang.Integer(x)
+        case x: Long    => new java.lang.Long(x)
+        case x: Float   => new java.lang.Float(x)
+        case x: Double  => new java.lang.Double(x)
+        case x: Unit    => "()"
+        case x: AnyRef  => x
       }
-      i = i + 1
+      i += 1
     }
     res
   }
