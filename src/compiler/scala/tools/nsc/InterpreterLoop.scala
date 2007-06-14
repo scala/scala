@@ -103,6 +103,9 @@ class InterpreterLoop(in0: BufferedReader, out: PrintWriter) {
     out.println("Type :help for more information.")
   }
 
+  /** Prompt to print when awaiting input */
+  val prompt = "scala> "
+
   /** The main read-eval-print loop for the interpreter.  It calls
    *  <code>command()</code> for each line of input, and stops when
    *  <code>command()</code> returns <code>false</code>.
@@ -111,7 +114,8 @@ class InterpreterLoop(in0: BufferedReader, out: PrintWriter) {
     var first = true
     while (true) {
       if (interactive) {
-        out.print("\nscala> ")
+        out.print("\n")
+	out.print(prompt)
         out.flush
       }
       if (first) {
