@@ -192,7 +192,8 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
                            settings.extdirs.value, settings.Xcodebase.value)
 
   if (settings.verbose.value) {
-    inform("[Classpath = " + classPath+"]")
+    inform("[Classpath = " + classPath + "]")
+    inform("[AssemRefs = " + settings.assemrefs.value + "]")
   }
 
   def getSourceFile(f: AbstractFile): SourceFile =
