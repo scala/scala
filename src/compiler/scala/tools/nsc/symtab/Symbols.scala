@@ -43,6 +43,7 @@ trait Symbols {
     var rawflags: Long = 0
     private var rawpos = initPos
     val id = { ids += 1; ids }
+//    assert(id != 6935, initName)
 
     var validTo: Period = NoPeriod
 
@@ -176,7 +177,8 @@ trait Symbols {
     def isClass  = false         //to be overridden
     def isTypeMember = false     //to be overridden
     def isAliasType = false      //to be overridden
-    def isAbstractType = false     //to be overridden
+    def isAbstractType = false   //to be overridden
+    def isSkolem = false         //to be overridden
 
     final def isValue = isTerm && !(isModule && hasFlag(PACKAGE | JAVA))
     final def isVariable  = isTerm && hasFlag(MUTABLE) && !isMethod
@@ -202,14 +204,13 @@ trait Symbols {
     final def isError = hasFlag(IS_ERROR)
     final def isErroneous = isError || isInitialized && tpe.isErroneous
     final def isTrait = isClass & hasFlag(TRAIT)
-    final def isSkolem                = deSkolemize != this
     final def isTypeParameterOrSkolem = isType && hasFlag(PARAM)
+    final def isTypeSkolem            = isSkolem && hasFlag(PARAM)
     final def isTypeParameter         = isTypeParameterOrSkolem && !isSkolem
-    final def isTypeSkolem            = isTypeParameterOrSkolem && isSkolem
     final def isExistential           = isType && hasFlag(EXISTENTIAL)
+    final def isExistentialSkolem     = isSkolem && hasFlag(EXISTENTIAL)
     final def isExistentialQuantified = isExistential && !isSkolem
-    final def isExistentialSkolem     = isExistential && isSkolem
-        final def isClassLocalToConstructor = isClass && hasFlag(INCONSTRUCTOR)
+    final def isClassLocalToConstructor = isClass && hasFlag(INCONSTRUCTOR)
     final def isAnonymousClass = isClass && (originalName startsWith nme.ANON_CLASS_NAME)
       // startsWith necessary because name may grow when lifted and also because of anonymous function classes
     final def isRefinementClass = isClass && name == nme.REFINE_CLASS_NAME.toTypeName; // no lifting for refinement classes
@@ -343,6 +344,19 @@ trait Symbols {
 
     final def isInitialized: Boolean =
       validTo != NoPeriod
+
+    final def isStableClass: Boolean = {
+      def hasNoAbstractTypeMember(clazz: Symbol): Boolean =
+        (clazz hasFlag STABLE) || {
+          var e = clazz.info.decls.elems
+          while ((e ne null) && !(e.sym.isAbstractType && info.member(e.sym.name) == e.sym))
+            e = e.next
+          e == null
+        }
+      def checkStable() =
+        (info.baseClasses forall hasNoAbstractTypeMember) && { setFlag(STABLE); true }
+      isClass && (hasFlag(STABLE) || checkStable())
+    }
 
     final def isCovariant: Boolean = isType && hasFlag(COVARIANT)
 
@@ -875,8 +889,13 @@ trait Symbols {
       initialize.owner.info.decl(facname).suchThat(_.isCaseFactory)
     }
 
-    /** If this symbol is a skolem, its corresponding type parameter, otherwise this */
+    /** If this symbol is a type parameter skolem (not an existential skolem!)
+     *  its corresponding type parameter, otherwise this */
     def deSkolemize: Symbol = this
+
+    /** If this symbol is an existential skolem the location (a Tree or null)
+     *  where it was unpacked. Resulttype is AnyRef because trees are not visible here. */
+    def unpackLocation: AnyRef = null
 
     /** Remove private modifier from symbol `sym's definition. If `sym' is a
      *  term symbol rename it by expanding its name to avoid name clashes
@@ -1218,9 +1237,14 @@ trait Symbols {
 
   /** A class for type parameters viewed from inside their scopes */
   class TypeSkolem(initOwner: Symbol, initPos: Position,
-                   initName: Name, typeParam: Symbol)
+                   initName: Name, origin: AnyRef)
   extends TypeSymbol(initOwner, initPos, initName) {
-    override def deSkolemize = typeParam
+    override def isSkolem = true
+    override def deSkolemize = origin match {
+      case s: Symbol => s
+      case _ => this
+    }
+    override def unpackLocation = origin
     override def typeParams = info.typeParams //@M! (not deSkolemize.typeParams!!), also can't leave superclass definition: use info, not rawInfo
     override def cloneSymbolImpl(owner: Symbol): Symbol = {
       throw new Error("should not clone a type skolem")

@@ -92,7 +92,8 @@ trait Types {
   trait TypeProxy extends Type {
     val tp: Type
 
-    private def maybeRewrap(newtp: Type) = if (newtp eq tp) this else newtp
+    protected def maybeRewrap(newtp: Type) = if (newtp eq tp) this else rewrap(newtp)
+    protected def rewrap(newtp: Type): Type = this
 
     // the following are all operations in class Type that are overridden in some subclass
     // Important to keep this up-to-date when new operations are added!
@@ -121,7 +122,8 @@ trait Types {
     override def notNull = maybeRewrap(tp.notNull)
     override def instantiateTypeParams(formals: List[Symbol], actuals: List[Type]) =
       tp.instantiateTypeParams(formals, actuals)
-    override def skolemizeExistential(owner: Symbol) = tp.skolemizeExistential(owner)
+    override def skolemizeExistential(owner: Symbol, origin: AnyRef) =
+      tp.skolemizeExistential(owner, origin)
     override def normalize = maybeRewrap(tp.normalize)
     override def decls = tp.decls
     override def baseType(clazz: Symbol) = tp.baseType(clazz)
@@ -241,7 +243,7 @@ trait Types {
      */
     def instantiateTypeParams(formals: List[Symbol], actuals: List[Type]): Type = this.subst(formals, actuals)
 
-    def skolemizeExistential(owner: Symbol) = this
+    def skolemizeExistential(owner: Symbol, origin: AnyRef): Type = this
 
     /** Reduce to beta eta-long normal form. Expands type aliases and converts higher-kinded TypeRef's to PolyTypes. @M */
     def normalize = this // @MAT
@@ -317,7 +319,9 @@ trait Types {
      */
     def asSeenFrom(pre: Type, clazz: Symbol): Type =
       if (!isTrivial && (!phase.erasedTypes || pre.symbol == ArrayClass)) {
-        new AsSeenFromMap(pre, clazz) apply this
+        val m = new AsSeenFromMap(pre, clazz)
+        val tp = m apply this
+        existentialAbstraction(m.capturedParams, tp)
       } else this
 
     /** The info of `sym', seen as a member of this type.
@@ -345,7 +349,7 @@ trait Types {
           }
 */
         case tp =>
-          //Console.println("" + this + ".memberType(" + sym +":" + sym.tpe +")" + sym.ownerChain);//DEBUG
+          //Console.println("" + this + ".memberType(" + sym +":" + sym.tpe +")" + sym.ownerChain);//debug
           tp.asSeenFrom(this, sym.owner)
       }
     }
@@ -371,20 +375,20 @@ trait Types {
     def substSuper(from: Type, to: Type): Type =
       new SubstSuperMap(from, to) apply this
 
-    def exskolems: List[Symbol] =
-      this filter (_.symbol.isExistentialSkolem) map (_.symbol)
-
     /** Returns all parts of this type which satisfy predicate `p' */
     def filter(p: Type => Boolean): List[Type] = {
       new FilterTraverser(p).traverse(this).hits.toList
     }
 
-    /** Returns optionally first type (in a preorder traverser) which satisfies predicate `p',
+    /** Returns optionally first type (in a preorder traversal) which satisfies predicate `p',
      *  or None if none exists.
      */
     def find(p: Type => Boolean): Option[Type] = {
       new FindTraverser(p).traverse(this).result
     }
+
+    /** Apply `f' to each part of this type */
+    def foreach(f: Type => Unit): Unit = new ForEachTraverser(f).traverse(this)
 
     /** Is there part of this type which satisfies predicate `p'? */
     def exists(p: Type => Boolean): Boolean = !find(p).isEmpty
@@ -1402,23 +1406,6 @@ A type's symbol should never be inspected directly.
 
   class JavaMethodType(pts: List[Type], rt: Type) extends MethodType(pts, rt)
 
-  /** A class containing the commonalities of existential and universal types */
-  abstract class QuantifiedType extends Type {
-    def quantified: Type
-    override def paramSectionCount: Int = quantified.paramSectionCount
-    override def paramTypes: List[Type] = quantified.paramTypes
-    override def parents: List[Type] = quantified.parents
-    override def decls: Scope = quantified.decls
-    override def symbol: Symbol = quantified.symbol
-    override def prefix: Type = quantified.prefix
-    override def closure: Array[Type] = quantified.closure
-    override def closureDepth: Int = quantified.closureDepth
-    override def baseClasses: List[Symbol] = quantified.baseClasses
-    override def baseType(clazz: Symbol): Type = quantified.baseType(clazz)
-    override def narrow: Type = quantified.narrow
-    // override def isNullable: Boolean = quantified.isNullable;
-  }
-
   /** A class representing a polymorphic type or, if tparams.length == 0,
    *  a parameterless method type.
    *  (@M: note that polymorphic nullary methods have non-empty tparams,
@@ -1427,9 +1414,19 @@ A type's symbol should never be inspected directly.
    *   could use PolyType instead of TypeRef with empty args)
    */
   case class PolyType(override val typeParams: List[Symbol], override val resultType: Type)
-       extends QuantifiedType {
+       extends Type {
 
-    def quantified = resultType
+    override def paramSectionCount: Int = resultType.paramSectionCount
+    override def paramTypes: List[Type] = resultType.paramTypes
+    override def parents: List[Type] = resultType.parents
+    override def decls: Scope = resultType.decls
+    override def symbol: Symbol = resultType.symbol
+    override def prefix: Type = resultType.prefix
+    override def closure: Array[Type] = resultType.closure
+    override def closureDepth: Int = resultType.closureDepth
+    override def baseClasses: List[Symbol] = resultType.baseClasses
+    override def baseType(clazz: Symbol): Type = resultType.baseType(clazz)
+    override def narrow: Type = resultType.narrow
 
     override def finalResultType: Type = resultType.finalResultType
 
@@ -1454,15 +1451,32 @@ A type's symbol should never be inspected directly.
   }
 
   case class ExistentialType(override val typeParams: List[Symbol],
-                             val quantified: Type) extends QuantifiedType {
-    override def bounds: TypeBounds =
-      TypeBounds(ExistentialType(typeParams, quantified.bounds.lo),
-                 ExistentialType(typeParams, quantified.bounds.hi))
+                             val quantified: Type) extends TypeProxy
+  {
+    val tp = quantified
+    override protected def rewrap(newtp: Type) = existentialAbstraction(typeParams, newtp)
 
-    override def skolemizeExistential(owner: Symbol) = {
-      val skolems = if (owner == NoSymbol) cloneSymbols(typeParams)
-                    else cloneSymbols(typeParams, owner)
-      for (skolem <- skolems) skolem resetFlag PARAM setFlag EXISTENTIAL
+    override def bounds = TypeBounds(maybeRewrap(tp.bounds.lo), maybeRewrap(tp.bounds.hi))
+    override def parents = tp.parents map maybeRewrap
+    override def prefix = maybeRewrap(tp.prefix)
+    override def typeArgs = tp.typeArgs map maybeRewrap
+    override def paramTypes = tp.paramTypes map maybeRewrap
+    override def instantiateTypeParams(formals: List[Symbol], actuals: List[Type]) =
+      maybeRewrap(tp.instantiateTypeParams(formals, actuals))
+    override def baseType(clazz: Symbol) = maybeRewrap(tp.baseType(clazz))
+    override def closure = tp.closure map maybeRewrap
+
+    override def skolemizeExistential(owner: Symbol, origin: AnyRef) = {
+      def mkSkolem(tparam: Symbol) =
+        new TypeSkolem(
+          if (owner == NoSymbol) tparam.owner else owner,
+          tparam.pos, tparam.name, origin)
+        .setInfo(tparam.info)
+        .setFlag(tparam.flags | EXISTENTIAL)
+        .resetFlag(PARAM)
+      val skolems = typeParams map mkSkolem
+      for (skolem <- skolems)
+        skolem setInfo skolem.info.substSym(typeParams, skolems)
       quantified.substSym(typeParams, skolems)
     }
 
@@ -1684,7 +1698,8 @@ A type's symbol should never be inspected directly.
       if (pre1 ne pre) {
         if (sym1.isAbstractType) sym1 = rebind(pre1, sym1)
         typeRef(pre1, sym1, args)
-      } else if (checkMalformedSwitch && sym1.isAbstractType && !pre.isStable && !pre.isError) {
+      } else if (checkMalformedSwitch && !pre.isStable && !pre.isError &&
+                 (sym1.isAbstractType /* || !pre.widen.symbol.isStableClass*/)) {
         throw new MalformedType(pre, sym1.nameString)
       } else if (sym1.isClass && pre.isInstanceOf[CompoundType]) {
         // sharpen prefix so that it is maximal and still contains the class.
@@ -2047,6 +2062,7 @@ A type's symbol should never be inspected directly.
 
   /** A map to compute the asSeenFrom method  */
   class AsSeenFromMap(pre: Type, clazz: Symbol) extends TypeMap {
+    var capturedParams: List[Symbol] = List()
     /** Return pre.baseType(clazz), or if that's NoType and clazz is a refinement, pre itself.
      *  See bug397.scala for an example where the second alternative is needed.
      *  The problem is that when forming the closure of an abstract type,
@@ -2106,6 +2122,9 @@ A type's symbol should never be inspected directly.
                         basesym.typeParams.map(_.name).mkString("[",",","]")+
                         " gets applied to arguments "+baseargs.mkString("(",",",")")+", phase = "+phase)
                     instParam(basesym.typeParams, baseargs);
+                  case ExistentialType(tparams, qtpe) =>
+                    capturedParams = capturedParams union tparams
+                    toInstance(qtpe, clazz)
                   case _ =>
                     throwError
                 }
@@ -2163,7 +2182,8 @@ A type's symbol should never be inspected directly.
           assert(!(tparams exists (from contains)))
           tp
         case ExistentialType(tparams, restp) =>
-          assert(!(tparams exists (from contains)))
+          if (tparams exists (from contains))
+            assert(false, "["+from.mkString(",")+":="+to.mkString(",")+"]"+tp)
           tp
         case _ =>
           tp
@@ -2278,6 +2298,14 @@ A type's symbol should never be inspected directly.
     val hits = new ListBuffer[Type]
     def traverse(tp: Type): FilterTraverser = {
       if (p(tp)) hits += tp
+      mapOver(tp)
+      this
+    }
+  }
+
+  class ForEachTraverser(f: Type => Unit) extends TypeTraverser {
+    def traverse(tp: Type): TypeTraverser = {
+      f(tp)
       mapOver(tp)
       this
     }
@@ -2617,7 +2645,6 @@ A type's symbol should never be inspected directly.
     } else {
       isSubType0(tp1, tp2)
     }
-
   } finally {
     stc = stc - 1
   }
@@ -2723,8 +2750,6 @@ A type's symbol should never be inspected directly.
         (parents2 forall (tp2 => tp1 <:< tp2 || tp2.symbol == NotNullClass && tp1.isNotNull)) &&
         (ref2.toList forall tp1.specializes) &&
         (!parents2.exists(_.symbol.isAbstractType) || tp1.symbol != AllRefClass)
-      case (RefinedType(parents1, ref1), _) =>
-        parents1 exists (_ <:< tp2)
       case (_, ExistentialType(tparams2, res2)) =>
         val tvars = tparams2 map (tparam => new TypeVar(tparam.tpe, new TypeConstraint))
         val ires2 = res2.instantiateTypeParams(tparams2, tvars)
@@ -2732,8 +2757,10 @@ A type's symbol should never be inspected directly.
           solve(tvars, tparams2, tparams2 map (x => 0), false)
           isWithinBounds(NoPrefix, NoSymbol, tparams2, tvars map (_.constr.inst))
         }
+      case (RefinedType(parents1, ref1), _) =>
+        parents1 exists (_ <:< tp2)
       case (ExistentialType(_, _), _) =>
-        tp1.skolemizeExistential(NoSymbol) <:< tp2
+        tp1.skolemizeExistential(NoSymbol, null) <:< tp2
 
       /* todo: replace following with
       case (ThisType(_), _)

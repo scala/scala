@@ -373,29 +373,6 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
             sym setFlag notPROTECTED
           super.transform(tree)
 
-        case Pack(expr) =>
-          super.transform(expr)
-
-        case Unpack(expr) =>
-          super.transform(expr setType tree.tpe)
-               // Martin to Lex: it seems we need to eliminate unpacks already here,
-               // rather than in erasure, which would be more logical, because
-               // otherwise Unpacks survive to later phases when run in the interpreter.
-               // Why is this? Does the interpreter skip erasure in some circumstances?
-               // Here's the example that fails when we remove the clause here":
-               //
-               // scala
-               // scala> case class Cell[T](x: T)
-               // scala> var x: Cell[T] for_some { type T } = new Cell(1)
-               // scala> x = new Cell("abc")
-               // (failure in genicode which complains about:
-               // Exception in thread "main" java.lang.Error: Unexpected tree in genLoad: unpack({
-               //  line2$object$$iw$$iw.x_=(new line1$object$$iw$$iw$Cell("abc"));
-               //  line2$object$$iw$$iw.x()
-               // })
-               //
-               // If I run the same with nsc (see existentials.scala), it works.
-
         case Apply(sel @ Select(qual, name), args)
           if (name == nme.CONSTRUCTOR && isInner(sel.symbol.owner)) =>
             val outerVal = atPos(tree.pos) {

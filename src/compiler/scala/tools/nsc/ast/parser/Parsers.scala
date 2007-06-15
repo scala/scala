@@ -659,7 +659,10 @@ trait Parsers {
       t
     }
 
-    /** Type  ::= Type1 [where `{' {WhereClause} `}']
+    /** Type  ::= Type1 [for_some `{' WhereClause {semi WhereClause}} `}']
+     *  WhereClause ::= type TypeDcl
+     *                | val  ValDcl
+     *                |
      */
     def typ(): Tree = {
       val t = typ1()
@@ -2211,7 +2214,7 @@ trait Parsers {
         templateBody()
       } else {
         if (inToken == LPAREN)
-          syntaxError((if (traitParentSeen) "parents of traits" else "traits")+
+          syntaxError((if (traitParentSeen) "parents of traits" else "traits or objects")+
                       " may not have parameters", true)
         (emptyValDef, List())
       }

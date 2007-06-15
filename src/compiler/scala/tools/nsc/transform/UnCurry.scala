@@ -21,7 +21,7 @@ import scala.tools.nsc.util.Position
  *  - for every argument to a def parameter `x: => T':
  *      if argument is not a reference to a def parameter:
  *        convert argument `e' to (expansion of) `() => e'
- *  - for every repated parameter `x: T*' --> x: Seq[T].
+ *  - for every repeated parameter `x: T*' --> x: Seq[T].
  *  - for every argument list that corresponds to a repeated parameter
  *       (a_1, ..., a_n) => (Seq(a_1, ..., a_n))
  *  - for every argument list that is an escaped sequence
@@ -52,6 +52,8 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
     def apply(tp0: Type): Type = {val tp=expandAlias(tp0); tp match {
       case MethodType(formals, MethodType(formals1, restpe)) =>
         apply(MethodType(formals ::: formals1, restpe))
+      case MethodType(formals, ExistentialType(tparams, restpe)) =>
+        apply(ExistentialType(tparams, MethodType(formals, restpe)))
       case mt: ImplicitMethodType =>
         apply(MethodType(mt.paramTypes, mt.resultType))
       case PolyType(List(), restpe) =>

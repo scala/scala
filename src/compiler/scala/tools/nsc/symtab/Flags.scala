@@ -46,6 +46,7 @@ object Flags extends Enumeration {
   final val SYNTHETIC     = 0x00200000    // symbol is compiler-generated
   final val STABLE        = 0x00400000    // functions that are assumed to be stable
                                           // (typically, access methods for valdefs)
+                                          // or classes that do not contain abstract types.
   final val STATIC        = 0x00800000    // static field, method or class
 
   final val CASEACCESSOR  = 0x01000000    // symbol is a case parameter (or its accessor)
@@ -158,9 +159,9 @@ object Flags extends Enumeration {
     if (flag == IS_ERROR) "<is-error>"
     else if (flag == OVERLOADED  ) "<overloaded>"
     else if (flag == LIFTED      ) "<lifted>"
-    else if (flag == MIXEDIN     ) "<mixedin>"
+    else if (flag == MIXEDIN     ) "<mixedin/existential>"
     else if (flag == EXPANDEDNAME) "<expandedname>"
-    else if (flag == IMPLCLASS   ) "<implclass/presuper>"
+    else if (flag == IMPLCLASS   ) "<presuper/implclass>"
     else if (flag == TRANS_FLAG  ) "<trans-flag>"
     else if (flag == LOCKED      ) "<locked>"
     else flag.asInstanceOf[Int] match {

@@ -476,11 +476,20 @@ trait Typers { self: Analyzer =>
       } else if ((mode & (EXPRmode | QUALmode)) == EXPRmode && !sym.isValue) { // (2)
         errorTree(tree, sym+" is not a value")
       } else {
+        skolemizeIfExistential(tree, mode)
         if (sym.isStable && pre.isStable && tree.tpe.symbol != ByNameParamClass &&
             (isStableContext(tree, mode, pt) || sym.isModule && !sym.isMethod))
           tree.setType(singleType(pre, sym))
         else tree
       }
+    }
+
+    private def skolemizeIfExistential(tree: Tree, mode: int): Tree = {
+      if ((mode & (EXPRmode | LHSmode)) == EXPRmode && tree.tpe.isInstanceOf[ExistentialType]) {
+        tree setType tree.tpe.skolemizeExistential(context.owner, tree)
+//        Console.println("skolemized "+tree+":"+tree.tpe);//DEBUG
+      }
+      tree
     }
 
     /**
@@ -729,7 +738,10 @@ trait Typers { self: Analyzer =>
                 }
               }
             }
-            if (settings.debug.value) log("error tree = "+tree)
+            if (settings.debug.value) {
+              log("error tree = "+tree)
+              if (settings.explaintypes.value) explainTypes(tree.tpe, pt)
+            }
             typeErrorTree(tree, tree.tpe, pt)
           }
         }
@@ -1347,9 +1359,9 @@ trait Typers { self: Analyzer =>
 //        for (val vparam <- vparams) {
 //          checkNoEscaping.locals(context.scope, WildcardType, vparam.tpt); ()
 //        }
-        var body = pack(typed(fun.body, respt), fun.symbol)
+        var body = typed(fun.body, respt)
         val formals = vparamSyms map (_.tpe)
-        val restpe = body.tpe.deconst
+        val restpe = packedType(body, fun.symbol).deconst
         val funtpe = typeRef(clazz.tpe.prefix, clazz, formals ::: List(restpe))
 //        body = checkNoEscaping.locals(context.scope, restpe, body)
         val fun1 = copy.Function(fun, vparams, body).setType(funtpe)
@@ -1746,34 +1758,35 @@ trait Typers { self: Analyzer =>
         res
       }
 
-    protected def pack(tree: Tree, owner: Symbol): Tree = {
+    def packedType(tree: Tree, owner: Symbol): Type = {
+      def defines(tree: Tree, sym: Symbol) =
+        sym.isExistentialSkolem && sym.unpackLocation == tree ||
+        tree.isDef && tree.symbol == sym
       def isAnonymousFunction(sym: Symbol) =
         (sym hasFlag SYNTHETIC) && (sym.name == nme.ANON_FUN_NAME)
       def isVisibleParameter(sym: Symbol) =
         (sym hasFlag PARAM) && (sym.owner == owner) && (sym.isType || !isAnonymousFunction(owner))
-      object collectLocals extends TypeMap {
-        var symbols: List[Symbol] = List()
-        def apply(tp: Type) = {
-          tp match {
-            case TypeRef(_, _, _) | SingleType(_, _) =>
-              val sym = tp.symbol
-              if (sym hasFlag PACKAGE) tp
-              else {
-                var o = sym.owner
-                while (o != owner && !(o hasFlag PACKAGE)) o = o.owner
-                if (o == owner && !isVisibleParameter(sym) && !(symbols contains sym))
-                  symbols = sym :: symbols
-                mapOver(tp)
-              }
-            case _ =>
-              mapOver(tp)
-          }
+      def containsDef(owner: Symbol, sym: Symbol): Boolean =
+        (!(sym hasFlag PACKAGE)) && {
+          var o = sym.owner
+          while (o != owner && o != NoSymbol && !(o hasFlag PACKAGE)) o = o.owner
+          o == owner && !isVisibleParameter(sym)
         }
+      def isLocal(sym: Symbol): Boolean =
+        if (owner == NoSymbol) tree exists (defines(_, sym))
+        else containsDef(owner, sym)
+      var localSyms = collection.immutable.Set[Symbol]()
+      var boundSyms = collection.immutable.Set[Symbol]()
+      for (t <- tree.tpe) {
+        t match {
+          case ExistentialType(tparams, _) => boundSyms ++= tparams
+          case _ =>
+        }
+        val sym = t.symbol
+        if (sym != NoSymbol && !(localSyms contains sym) && !(boundSyms contains sym) && isLocal(sym))
+          localSyms += sym
       }
-      collectLocals(tree.tpe)
-      val hidden = collectLocals.symbols.reverse
-      if (hidden.isEmpty) tree
-      else Pack(tree) setType packSymbols(hidden, tree.tpe)
+      packSymbols(localSyms.toList, tree.tpe)
     }
 
     protected def typedExistentialTypeTree(tree: ExistentialTypeTree): Tree = {
@@ -1954,7 +1967,7 @@ trait Typers { self: Analyzer =>
         copy.New(tree, tpt1).setType(tpt1.tpe)
       }
 
-      def typedEta(expr1: Tree) = expr1.tpe match {
+      def typedEta(expr1: Tree): Tree = expr1.tpe match {
         case TypeRef(_, sym, _) if (sym == ByNameParamClass) =>
           val expr2 = Function(List(), expr1)
           new ChangeOwnerTraverser(context.owner, expr2.symbol).traverse(expr2)
@@ -1989,7 +2002,7 @@ trait Typers { self: Analyzer =>
         case ErrorType =>
           expr1
         case _ =>
-          errorTree(expr1, "`&' must be applied to method; cannot be applied to " + expr1.tpe)
+          errorTree(expr1, "_ must follow method; cannot follow " + expr1.tpe)
       }
 
       def typedWildcardStar(expr1: Tree, tpt: Tree) = expr1.tpe.baseType(SeqClass) match {
@@ -2596,19 +2609,6 @@ trait Typers { self: Analyzer =>
           val expr1 = typed(expr, ThrowableClass.tpe)
           copy.Throw(tree, expr1) setType AllClass.tpe
 
-        case Pack(expr) =>
-          val expr1 = typed1(expr, mode, pt)
-          val skolems = new ListBuffer[Symbol]
-          for (val unpacked @ Unpack(expr) <- expr filter (_.isInstanceOf[Unpack])) {
-            skolems ++= (unpacked.tpe.exskolems diff expr.tpe.exskolems)
-          }
-          val packed = packSymbols(skolems.toList.removeDuplicates, expr.tpe)
-          copy.Pack(tree, expr1) setType packed
-
-        case Unpack(expr) =>
-          val expr1 = typed1(expr, mode, pt)
-          copy.Unpack(tree, expr1) setType expr1.tpe.skolemizeExistential(context.owner)
-
         case New(tpt: Tree) =>
           typedNew(tpt)
 
@@ -2625,7 +2625,7 @@ trait Typers { self: Analyzer =>
             if ((mode & PATTERNmode) != 0) inferTypedPattern(tpt1.pos, tpt1.tpe, widen(pt))
             else tpt1.tpe
           //Console.println(typed pattern: "+tree+":"+", tp = "+tpt1.tpe+", pt = "+pt+" ==> "+owntype)//DEBUG
-          copy.Typed(tree, expr1, tpt1) setType owntype
+          skolemizeIfExistential(copy.Typed(tree, expr1, tpt1) setType owntype, mode)
 
         case TypeApply(fun, args) =>
           // @M: kind-arity checking is done here and in adapt, full kind-checking is in checkKindBounds (in Infer)
@@ -2661,13 +2661,13 @@ trait Typers { self: Analyzer =>
                       }
 
           //@M TODO: context.undetparams = undets_fun ?
-          typedTypeApply(fun1, args1)
+          skolemizeIfExistential(typedTypeApply(fun1, args1), mode)
 
         case Apply(Block(stats, expr), args) =>
           typed1(atPos(tree.pos)(Block(stats, Apply(expr, args))), mode, pt)
 
         case Apply(fun, args) =>
-          typedApply(fun, args)
+          skolemizeIfExistential(typedApply(fun, args), mode)
 
         case ApplyDynamic(qual, args) =>
           val qual1 = typed(qual, AnyRefClass.tpe)
@@ -2765,9 +2765,6 @@ trait Typers { self: Analyzer =>
         }
         var tree1 = if (tree.tpe ne null) tree else typed1(tree, mode, dropExistential(pt))
         //Console.println("typed "+tree1+":"+tree1.tpe+", "+context.undetparams);//DEBUG
-        if ((mode & (EXPRmode | LHSmode)) == EXPRmode && tree1.tpe.isInstanceOf[ExistentialType])
-          tree1 = Unpack(tree1) setPos tree1.pos setType tree1.tpe.skolemizeExistential(context.owner)
-        //Console.println("skolemized "+tree1+":"+tree1.tpe);//DEBUG
         val result = if (tree1.isEmpty) tree1 else adapt(tree1, mode, pt)
         //Console.println("adapted "+tree1+":"+tree1.tpe+" to "+pt+", "+context.undetparams);//DEBUG
 //      if ((mode & TYPEmode) != 0) println("type: "+tree1+" has type "+tree1.tpe)
@@ -2850,9 +2847,9 @@ trait Typers { self: Analyzer =>
     }
 
     def computeType(tree: Tree, pt: Type): Type = {
-      val tree1 = pack(typed(tree, pt), context.owner)
+      val tree1 = typed(tree, pt)
       transformed(tree) = tree1
-      tree1.tpe
+      packedType(tree1, context.owner)
     }
 
     def transformedOrTyped(tree: Tree, pt: Type): Tree = transformed.get(tree) match {
