@@ -64,6 +64,11 @@ trait Benchmark {
       stopTime - startTime
     }
 
+  /** a string that is written at the beginning of the output line
+   *   that contains the timings. By default, this is the class name.
+   */
+  def prefix: String = getClass().getName()
+
   /**
    * The entry point. It takes two arguments: the number of
    * consecutive runs, and the name of a log file where to
@@ -74,7 +79,7 @@ trait Benchmark {
       val logFile = new java.io.FileWriter(args(1), true) // append, not overwrite
       if (args.length >= 3)
          multiplier = args(2).toInt
-      logFile.write(getClass().getName())
+      logFile.write(prefix)
       for (t <- runBenchmark(args(0).toInt))
         logFile.write("\t\t" + t)
 
