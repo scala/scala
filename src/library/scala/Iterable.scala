@@ -444,7 +444,7 @@ trait Iterable[+A] {
 
 
   /** Is this collection empty? */
-  def isEmpty = elements.hasNext
+  def isEmpty = !elements.hasNext
 
   /**
    * returns a projection that can be used to call non-strict <code>filter</code>,
