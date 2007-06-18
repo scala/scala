@@ -240,7 +240,7 @@ final class Array[A](_length: Int) extends RandomAccessSeq[A] {
    *  @param from   The index of the first element of the slice
    *  @param end    The index of the element following the slice
    *  @throws IndexOutOfBoundsException if <code>from &lt; 0</code>
-   *          or <code>length &lt; from + len<code>
+   *          or <code>length &lt; end<code>
    */
   override def slice(from: Int, end: Int): Array[A] = throw new Error()
 
