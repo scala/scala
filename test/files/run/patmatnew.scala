@@ -22,9 +22,9 @@ object Test extends TestConsoleMain {
       new Test717,
       new TestGuards,
       new TestStream,
+      new Test903,
       new Test1163_Order
     )
-
 
   class Foo(j:Int) {
     case class Bar(i:Int)
@@ -122,8 +122,52 @@ object Test extends TestConsoleMain {
       trait NodeImpl;
       trait IfImpl;
       private def coerceIf(node : Node) = node match {
-	case node : IfImpl => node; // var node is of type Node with IfImpl!
-	case _ => null;
+        case node : IfImpl => node; // var node is of type Node with IfImpl!
+        case _ => null;
+      }
+    }
+  }
+
+
+  class Person(_name : String, _father : Person) {
+    def name = _name
+    def father = _father
+  }
+
+  object PersonFather {
+    def unapply(p : Person) : Option[Person]  =
+      if (p.father == null)
+        None
+      else
+  	    Some(p.father)
+  }
+
+  class Test903 extends TestCase("bug903") {
+
+  override def runTest = {
+    val p1 = new Person("p1",null)
+    val p2 = new Person("p2",p1)
+    assertEquals((p2.name, p1.name), p2 match {
+      case aPerson@PersonFather(f) => (aPerson.name,f.name)
+      case _ => "No father"
+    })
+  }
+  }
+
+
+  object Foo1 {
+    class Bar1(val x : String)
+    def p(b : Bar1) = Console.println(b.x)
+
+    def unapply(s : String) : Option[Bar1] =
+      Some(new Bar1(s))
+  }
+
+  object bug881 extends TestCase("881") {
+    override def runTest = {
+      "baz" match {
+        case Foo1(x) =>
+          Foo1.p(x)
       }
     }
   }
@@ -178,5 +222,6 @@ object Test extends TestConsoleMain {
   def lala() = 42 match {
     case FooBar => true
   }
+
 }
 

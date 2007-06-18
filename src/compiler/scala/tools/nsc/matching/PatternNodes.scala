@@ -339,13 +339,14 @@ trait PatternNodes { self: transform.ExplicitOuter =>
     }
     var isSubHeader = false;
 
-    // returns true if this header node has a catch all case
+    /* returns true if this header node has a catch all case
 
     def catchesAll: Boolean = {
       //Console.println(this.print("  catchesAll %%%%", new StringBuilder()).toString)
       val p = findLast
       (p.isDefaultPat && p.and.isUnguardedBody)
     }
+    */
 
     // executes an action for every or branch
     def forEachBranch(f: PatternNode => Unit) { if(or ne null) or.forEachAlternative(f) }

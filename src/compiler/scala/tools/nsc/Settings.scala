@@ -144,7 +144,10 @@ class Settings(error: String => Unit) {
   val Xexperimental = BooleanSetting("-Xexperimental", "enable experimental extensions")
   val Xplugtypes    = BooleanSetting("-Xplugtypes", "process annotations on types")
   //Xplugtypes.value = true // just while experimenting
-  val Xkilloption   = BooleanSetting("-Xkilloption", "optimizes option types")
+
+  // for benchmarking purposes
+  val Xmatchalgo     = ChoiceSetting("-Xmatchalgo", "which match algorithm to use", List("both","par","incr"),
+                                     /*default*/"both")
 
   /** scaladoc specific options */
   val windowtitle    = StringSetting("-windowtitle", "windowtitle",

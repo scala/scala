@@ -122,32 +122,28 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
     /** enters a sequence of cases into the pattern matcher */
     def construct(cases: List[Tree]): Unit = {
       nPatterns = nPatterns + 1
-      try {
-      object hasUnapply extends Traverser {
-        override def traverse(x:Tree) = {
-          //Console.println("pat:'"+x+"' / "+x.getClass)
-          x match {
-            case _:ArrayValue => throw CantHandleSeq
-            case _:UnApply    => throw CantHandleUnapply
-            case Ident(n) if n!= nme.WILDCARD =>
-              //DEBUG("I can't handle IDENT pattern:"+x)
-              //DEBUG("x.tpe.symbols:"+x.tpe.symbol)
-              throw CantHandleIdent
-            case p:Select =>
-            //case p:Select =>
-            //  //DEBUG("I can't handle SELECT pattern:"+p)
-            //  //DEBUG("p.tpe.symbols:"+p.tpe.symbol)
-            //throw CantHandleUnapply
-            case p@Apply(_,_) if !p.tpe.symbol.hasFlag(symtab.Flags.CASE) =>
-              //DEBUG("I can't handle APPLY pattern:"+p)
-              //DEBUG("p.tpe.symbols:"+p.tpe.symbol)
-              throw CantHandleApply
 
-            //case p@Apply(_,_) if !p.tpe.symbol.hasFlag(symtab.Flags.CASE) => throw CantHandleUnapply //@todo
-            case _ => super.traverse(x)
+      if(global.settings.Xmatchalgo.value != "incr")
+        try {
+          constructParallel(cases)
+          return
+        } catch {
+          case e =>
+            if(global.settings.Xmatchalgo.value == "par")
+              throw e
+          if (settings.debug.value) {
+            e.printStackTrace()
+            Console.println("****")
+            Console.println("**** falling back, cause " + e.getMessage)
+            Console.println("****")
+            for (CaseDef(pat,guard,_) <- cases)
+              Console.println(pat.toString)
           }
         }
-      }
+      constructIncremental(cases)
+    }
+
+    def constructParallel(cases: List[Tree]) {
       cases foreach { case CaseDef(pat,_,_) => hasUnapply.traverse(pat) }
       if(cases.forall{case CaseDef(_,x,_) => x == EmptyTree})  {
         val irep = initRep(selector, cases, doCheckExhaustive)
@@ -174,44 +170,58 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
           cunit.error(b.pos, "unreachable code")
         }
 
-        object resetTrav extends Traverser {
-          override def traverse(x:Tree): unit = x match {
-            case vd @ ValDef(_,_,_,_)=>
-              vd.symbol.resetFlag(symtab.Flags.CAPTURED)
-              if(vd.symbol.hasFlag(symtab.Flags.TRANS_FLAG)) {
-                vd.symbol.resetFlag(symtab.Flags.TRANS_FLAG)
-                vd.symbol.resetFlag(symtab.Flags.MUTABLE)
-              }
-            case _ =>
-              super.traverse(x)
-          }
-        }
         resetTrav.traverse(dfatree)
 
         //constructParallel(cases) // ZZZ
         nParallel = nParallel + 1
-        return
-      } else throw CantHandleGuard
-      } catch {
-        case e: CantHandle => // fall back
-            //DEBUG("****")
-            //DEBUG("**** falling back, "+e.getClass)
-            //DEBUG("****")
-
-        case CantHandleGuard   => // fall back (actually already fell back before)
-        case e =>
-          //throw e
-          if (settings.debug.value) {
-            e.printStackTrace()
-            Console.println("****")
-            Console.println("**** falling back, cause " + e.getMessage)
-            Console.println("****")
-            for (CaseDef(pat,guard,_) <- cases)
-              Console.println(pat.toString)
-          }
+      } else {
+        throw CantHandleGuard
       }
+    }
+
+    /** constructs match-translation incrementally */
+    private def constructIncremental(cases:List[Tree]) {
       doCheckExhaustive = false
       cases foreach enter
+    }
+
+    object resetTrav extends Traverser {
+      override def traverse(x:Tree): unit = x match {
+        case vd @ ValDef(_,_,_,_)=>
+          vd.symbol.resetFlag(symtab.Flags.CAPTURED)
+          if(vd.symbol.hasFlag(symtab.Flags.TRANS_FLAG)) {
+            vd.symbol.resetFlag(symtab.Flags.TRANS_FLAG)
+            vd.symbol.resetFlag(symtab.Flags.MUTABLE)
+          }
+        case _ =>
+          super.traverse(x)
+      }
+    }
+
+    object hasUnapply extends Traverser {
+      override def traverse(x:Tree) = {
+        //Console.println("pat:'"+x+"' / "+x.getClass)
+        x match {
+          case _:ArrayValue => throw CantHandleSeq
+          case _:UnApply    => throw CantHandleUnapply
+          case Ident(n) if n!= nme.WILDCARD =>
+            //DEBUG("I can't handle IDENT pattern:"+x)
+            //DEBUG("x.tpe.symbols:"+x.tpe.symbol)
+            throw CantHandleIdent
+          case p:Select =>
+            //case p:Select =>
+            //  //DEBUG("I can't handle SELECT pattern:"+p)
+            //  //DEBUG("p.tpe.symbols:"+p.tpe.symbol)
+            //throw CantHandleUnapply
+            case p@Apply(_,_) if !p.tpe.symbol.hasFlag(symtab.Flags.CASE) =>
+              //DEBUG("I can't handle APPLY pattern:"+p)
+              //DEBUG("p.tpe.symbols:"+p.tpe.symbol)
+              throw CantHandleApply
+
+          //case p@Apply(_,_) if !p.tpe.symbol.hasFlag(symtab.Flags.CASE) => throw CantHandleUnapply //@todo
+          case _ => super.traverse(x)
+        }
+      }
     }
 
     /** enter a single case into the pattern matcher */
@@ -295,7 +305,6 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
        node
 
       case t @ UnApply(fn, args)  =>
-        doCheckExhaustive = false // just seeing unapply pattern disables exhaustiveness check for whole match
         pUnapplyPat(tree.pos, fn)
 
       case t @ Apply(fn, args) =>             // pattern with args
@@ -895,7 +904,6 @@ print()
     var res: Tree = Literal(Constant(false)); //.setInfo(defs.BooleanClass);
     var lastSelector: Tree = null
     var carryCovered: SymSet = emptySymbolSet
-    val oldDoCheckExhaustive = doCheckExhaustive
     while (node ne null)
     node match {
 
@@ -906,31 +914,11 @@ print()
         if(selector != lastSelector) {
           carryCovered = emptySymbolSet;
         }
-        doCheckExhaustive = doCheckExhaustive && !_h.catchesAll // nice global variable here
-        //Console.print("doCheckExhaustive? "+doCheckExhaustive+ " ")
         //Console.println(" catches all?"+_h.catchesAll)
       //Console.println("sel:"+selector+" last"+lastSelector+" - "+(selector == lastSelector))
         val next = _h.next;
         //res = And(mkNegate(res), toTree(node.or, selector));
         val (doOptimize, coveredCases, remainingCases) = _h.optimize1()
-        if(!remainingCases.isEmpty && doCheckExhaustive) {
-          carryCovered = carryCovered ++ coveredCases // ??
-          if(next != null && next.or.and.isUnguardedBody) {
-            // ignore, default case
-          } else if(next ne null) {
-            // ignore, more headers to come
-            // Console.println(next.print("", new StringBuilder()).toString())
-          } else if(! _h.isSubHeader) { // don't check twice (AlternativePat creates subheaders)
-            val realRemainingCases = remainingCases -- carryCovered
-            //Console.println("remain "+remainingCases+" carry covered "+ carryCovered + "real "+realRemainingCases)
-            if(!realRemainingCases.isEmpty) {
-              val word = if(realRemainingCases.size > 1) "cases " else "case "
-              cunit.warning(node.pos, "does not cover "+word+realRemainingCases.elements.mkString("{",",","}"))
-              //Console.println("full"); print()
-              //Console.println(_h.print("", new StringBuilder()).toString())
-            }
-          }
-        }
         if (doOptimize)
           res = Or(res, toOptTree(node.or, selector));
         else
@@ -975,7 +963,6 @@ print()
         case _ =>
           scala.Predef.error("error in toTree");
     }
-    doCheckExhaustive = oldDoCheckExhaustive
     return res
   }
 
