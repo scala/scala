@@ -738,7 +738,7 @@ MSIL
 
   </target>
 
-  <target name="msil.dll" depends="setup.quick, msil.sources">
+  <target name="msil.libraries" depends="setup.quick, msil.sources">
     <quick srcdir="${msil.dir}/src" usepredefs="no" target="msil"
            assemname="${msil.dir}/predef" assemrefs="${lib.dir}">
       <include name="scala/Predef.scala"/>
@@ -781,7 +781,7 @@ MSIL
     </exec>
   </target>
 
-  <target name="msil" depends="msil.dll">
+  <target name="msil" depends="msil.libraries">
     <copy todir="${quick.dir}/bin">
       <fileset
         dir="${mono.dir}/bin"
@@ -793,6 +793,8 @@ MSIL
         <filter token="NAME" value="Scala code runner"/>
       </filterset>
     </copy>
+    <chmod perm="ugo+rx"
+      dir="${quick.dir}/bin" includes="*.bat,*.net"/>
     <if><isset property="os.win"/>
       <then>
         <copy todir="${quick.dir}/lib">
