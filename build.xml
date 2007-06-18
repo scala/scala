@@ -785,7 +785,7 @@ MSIL
     <copy todir="${quick.dir}/bin">
       <fileset
         dir="${mono.dir}/bin"
-        includes="*.bat,*.net"
+        includes="*-net*"
       />
       <filterset>
         <filter token="VERSION" value="${version.number}"/>
@@ -794,7 +794,7 @@ MSIL
       </filterset>
     </copy>
     <chmod perm="ugo+rx"
-      dir="${quick.dir}/bin" includes="*.bat,*.net"/>
+      dir="${quick.dir}/bin" includes="*-net*"/>
     <if><isset property="os.win"/>
       <then>
         <copy todir="${quick.dir}/lib">
