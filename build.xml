@@ -1295,7 +1295,7 @@ GENERATES A DISTRIBUTION
   </target>
 
   <target name="build.dist"
-    depends="binaries,docs,docs.manual"
+    depends="binaries,docs,docs.manual,msil"
     description="Creates the latest Scala distribution">
   <!-- Copy the API, examples and man -->
     <copy todir="${dist.current.dir}/doc/scala">
@@ -1323,7 +1323,7 @@ GENERATES A DISTRIBUTION
 
   <!-- Create the SBaz packages -->
   <target name="build.sbaz" depends="build.dist">
-    <property name="sbaz.universe" value="http://scala.epfl.ch/downloads/packages"/>
+    <property name="sbaz.universe" value="http://www.scala-lang.org/downloads/packages"/>
     <mkdir dir="${dist.dir}"/>
   <!-- Create the Scala library package -->
     <quicksbaz
@@ -1373,6 +1373,18 @@ GENERATES A DISTRIBUTION
       <miscset
         dir="${basedir}/test"
         includes="files/**/*.args,files/**/*.check,files/**/*.jar,files/**/*.java,files/**/*.scala,files/cli/**/*.check.*,files/shootout/*.javaopts,files/shootout/*.runner,files/shootout/*.txt"/>
+    </quicksbaz>
+  <!-- Creates the MSIL package -->
+    <quicksbaz
+      file="${dist.dir}/scala-msil-${version.number}.sbp"
+      adfile="${dist.dir}/scala-msil-${version.number}.advert"
+      name="scala-msil"
+      version="${version.number}"
+      desc="The Scala MSIL package contains everything needed to use Scala on .NET."
+      depends="scala-library,scala-devel"
+      link="${sbaz.universe}/scala-msil-${version.number}.sbp">
+      <binset dir="${quick.dir}/bin" includes="scala*net*"/>
+      <libset dir="${quick.dir}/lib" includes="*.dll"/>
     </quicksbaz>
   </target>
 
