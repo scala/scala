@@ -152,6 +152,29 @@ class ScriptRunner {
       (Some(fullname.substring(0,idx)), fullname.substring(idx+1))
   }
 
+  /** Code that is added to the beginning of a script file to make
+   *  it a complete Scala compilation unit.
+   */
+  protected def preambleCode(objectName: String) =  {
+    val (maybePack, objName) = splitObjectName(objectName)
+
+    val packageDecl =
+      maybePack match {
+	case Some(pack) => "package " + pack + "\n"
+	case None => ""
+      }
+
+    (packageDecl +
+     "object " + objName + " {\n" +
+     "  def main(argv: Array[String]): Unit = {\n" +
+     "  val args = argv;\n")
+  }
+
+  /** Code that is added to the end of a script file to make
+   *  it a complete Scala compilation unit.
+   */
+  val endCode = "\n} }\n"
+
 
   /** Wrap a script file into a runnable object named
    *  <code>scala.scripting.Main</code>.
@@ -161,20 +184,9 @@ class ScriptRunner {
     filename: String,
     getSourceFile: PlainFile => SourceFile): SourceFile =
   {
-    val (maybePack, objName) = splitObjectName(objectName)
-
-    val packageDecl =
-      maybePack match {
-	case Some(pack) => "package " + pack + "\n"
-	case None => ""
-      }
-
     val preamble =
       new SourceFile("<script preamble>",
-          (packageDecl +
-          "object " + objName + " {\n" +
-          "  def main(argv: Array[String]): Unit = {\n" +
-          "  val args = argv;\n").toCharArray)
+		     preambleCode(objectName).toCharArray)
 
     val middle = {
       val f = new File(filename)
@@ -183,7 +195,8 @@ class ScriptRunner {
           headerLength(filename),
           f.length.asInstanceOf[Int])
     }
-    val end = new SourceFile("<script trailer>", "\n} }\n".toCharArray)
+
+    val end = new SourceFile("<script trailer>", endCode.toCharArray)
 
     new CompoundSourceFile(preamble, middle, end)
   }
