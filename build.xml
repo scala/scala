@@ -53,6 +53,7 @@ PROPERTIES
   <property name="examples.dir" value="${build.dir}/examples"/>
   <property name="cldc.dir" value="${build.dir}/cldc"/>
   <property name="msil.dir" value="${build.dir}/msil"/>
+  <property name="mono.dir" value="${src.dir}/mono"/>
   <!--  Sets location and structure of the distribution -->
   <property name="dist.dir" value="${basedir}/dists"/>
   <property name="lib.jar.name" value="scala-library.jar"/>
@@ -737,7 +738,7 @@ MSIL
 
   </target>
 
-  <target name="msil" depends="setup.quick, msil.sources">
+  <target name="msil.dll" depends="setup.quick, msil.sources">
     <quick srcdir="${msil.dir}/src" usepredefs="no" target="msil"
            assemname="${msil.dir}/predef" assemrefs="${lib.dir}">
       <include name="scala/Predef.scala"/>
@@ -780,6 +781,42 @@ MSIL
     </exec>
   </target>
 
+  <target name="msil" depends="msil.dll">
+    <copy todir="${quick.dir}/bin">
+      <fileset
+        dir="${mono.dir}/bin"
+        includes="*.bat,*.net"
+      />
+      <filterset>
+        <filter token="VERSION" value="${version.number}"/>
+        <filter token="COPYRIGHT" value="${copyright.string}"/>
+        <filter token="NAME" value="Scala code runner"/>
+      </filterset>
+    </copy>
+    <if><isset property="os.win"/>
+      <then>
+        <copy todir="${quick.dir}/lib">
+          <fileset dir="${msil.dir}" includes="*.dll"/>
+          <fileset dir="${lib.dir}" includes="*.dll"/>
+        </copy>
+      </then>
+      <else>
+        <symlink
+          link="${quick.dir}/lib/predef.dll"
+          resource="${msil.dir}/predef.dll"
+          overwrite="yes" failonerror="no"/>
+        <symlink
+          link="${quick.dir}/lib/scalaruntime.dll"
+          resource="${lib.dir}/scalaruntime.dll"
+          overwrite="yes" failonerror="no"/>
+        <symlink
+          link="${quick.dir}/lib/mscorlib.dll"
+          resource="${lib.dir}/mscorlib.dll"
+          overwrite="yes" failonerror="no"/>
+      </else>
+    </if>
+  </target>
+  
 <!-- ===========================================================================
 TEST
 ============================================================================ -->

@@ -1,9 +1,9 @@
-@@echo off
+@echo off
 
 rem ##########################################################################
-rem # @name@ @version@
+rem # @NAME@ @VERSION@
 rem ##########################################################################
-rem # @copyright@
+rem # @COPYRIGHT@
 rem #
 rem # This is free software; see the distribution for copying conditions.
 rem # There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A
@@ -15,7 +15,7 @@ rem - System/user environment variables start with a letter
 rem - Local batch variables start with an underscore ('_')
 
 if "%OS%"=="Windows_NT" (
-  @@setlocal
+  @setlocal
   call :set_home
   set _ARGS=%*
 ) else (
@@ -26,48 +26,27 @@ if "%OS%"=="Windows_NT" (
   call :set_args
 )
 
-rem We use the value of the JAVACMD environment variable if defined
-set _JAVACMD=%JAVACMD%
-if "%_JAVACMD%"=="" set _JAVACMD=java
-
-rem We use the value of the JAVA_OPTS environment variable if defined
-set _JAVA_OPTS=%JAVA_OPTS%
-if "%_JAVA_OPTS%"=="" set _JAVA_OPTS=@javaflags@
-
-set _EXTENSION_CLASSPATH=@extclasspath@
-if "%_EXTENSION_CLASSPATH%"=="" (
-  for %%f in ("%_SCALA_HOME%\lib\*") do call :add_cpath "%%f"
-  if "%OS%"=="Windows_NT" (
-    for /d %%f in ("%_SCALA_HOME%\lib\*") do call :add_cpath "%%f"
+rem We use the value of the MONO environment variable if defined
+set _MONO=%MONO%
+if "%_MONO%"=="" (
+  if exist "%MONO_HOME%"\nul (
+    set _MONO=%MONO_HOME%\bin\mono.exe
+  ) else (
+    call :find_mono mono.exe
   )
 )
 
-set _BOOT_CLASSPATH=@bootclasspath@
-if "%_BOOT_CLASSPATH%"=="" (
-  if exist "%_SCALA_HOME%\lib\scala-library.jar" (
-    set _BOOT_CLASSPATH=%_SCALA_HOME%\lib\scala-library.jar
-  )
-  if exist "%_SCALA_HOME%\lib\library" (
-    set _BOOT_CLASSPATH=%_SCALA_HOME%\lib\library
-  )
+set _MSIL_LIBPATH=%_SCALA_HOME%\lib
+if not "%MONO_PATH%"=="" (
+  set _MSIL_LIBPATH=%_MSIL_LIBPATH%;%MONO_PATH%
 )
 
-set _PROPS=-Dscala.home="%_SCALA_HOME%" -Denv.classpath="%CLASSPATH%" @properties@
-
-rem echo %_JAVACMD% -Xbootclasspath/a:"%_BOOT_CLASSPATH%" %_JAVA_OPTS% %_PROPS% -cp "%_EXTENSION_CLASSPATH%" @class@ @toolflags@ %_ARGS%
-%_JAVACMD% -Xbootclasspath/a:"%_BOOT_CLASSPATH%" %_JAVA_OPTS% %_PROPS% -cp "%_EXTENSION_CLASSPATH%" @class@ @toolflags@ %_ARGS%
+set MONO_PATH=%_MSIL_LIBPATH%
+%_MONO% %_ARGS%
 goto end
 
 rem ##########################################################################
 rem # subroutines
-
-:add_cpath
-  if "%_EXTENSION_CLASSPATH%"=="" (
-    set _EXTENSION_CLASSPATH=%~1
-  ) else (
-    set _EXTENSION_CLASSPATH=%_EXTENSION_CLASSPATH%;%~1
-  )
-goto :eof
 
 rem Variable "%~dps0" works on WinXP SP2 or newer
 rem (see http://support.microsoft.com/?kbid=833431)
@@ -76,6 +55,10 @@ rem set _SCALA_HOME=%~dps0..
   set _BIN_DIR=
   for %%i in (%~sf0) do set _BIN_DIR=%_BIN_DIR%%%~dpsi
   set _SCALA_HOME=%_BIN_DIR%..
+goto :eof
+
+:find_mono
+  set _MONO=%~$PATH:1
 goto :eof
 
 :set_args
@@ -95,4 +78,4 @@ echo ERROR: environment variable SCALA_HOME is undefined. It should point to you
 goto end
 
 :end
-if "%OS%"=="Windows_NT" @@endlocal
+if "%OS%"=="Windows_NT" @endlocal

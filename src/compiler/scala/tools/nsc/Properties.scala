@@ -53,13 +53,6 @@ object Properties {
   val cmdName: String =
     if (isWin) "scala.bat" else "scala"
 
-  val ilasmFormat: java.text.MessageFormat = {
-    val ilasm = System.getProperty("ilasm.tool", "")
-    if (ilasm == "") null
-    else
-      new java.text.MessageFormat(ilasm + (
-        if (isWin) " /quiet /exe /output={0} {1}"
-        else " --format exe --output={0} {1}"
-      ))
-  }
+  val msilILasm: String =
+    System.getProperty("msil.ilasm", "")
 }

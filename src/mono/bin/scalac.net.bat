@@ -1,9 +1,9 @@
-@@echo off
+@echo off
 
 rem ##########################################################################
-rem # @name@ @version@
+rem # @NAME@ @VERSION@
 rem ##########################################################################
-rem # @copyright@
+rem # @COPYRIGHT@
 rem #
 rem # This is free software; see the distribution for copying conditions.
 rem # There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A
@@ -15,7 +15,7 @@ rem - System/user environment variables start with a letter
 rem - Local batch variables start with an underscore ('_')
 
 if "%OS%"=="Windows_NT" (
-  @@setlocal
+  @setlocal
   call :set_home
   set _ARGS=%*
 ) else (
@@ -32,9 +32,19 @@ if "%_JAVACMD%"=="" set _JAVACMD=java
 
 rem We use the value of the JAVA_OPTS environment variable if defined
 set _JAVA_OPTS=%JAVA_OPTS%
-if "%_JAVA_OPTS%"=="" set _JAVA_OPTS=@javaflags@
+if "%_JAVA_OPTS%"=="" set _JAVA_OPTS=-Xmx256M -Xms16M
 
-set _EXTENSION_CLASSPATH=@extclasspath@
+rem We use the value of the ILASM environment variable if defined
+set _ILASM=%ILASM%
+if "%_ILASM%"=="" (
+  if exist "%MONO_HOME%"\nul (
+    set _ILASM=%MONO_HOME%\bin\ilasm.bat
+  ) else (
+    call :find_ilasm ilasm.bat
+  )
+)
+
+set _EXTENSION_CLASSPATH=
 if "%_EXTENSION_CLASSPATH%"=="" (
   for %%f in ("%_SCALA_HOME%\lib\*") do call :add_cpath "%%f"
   if "%OS%"=="Windows_NT" (
@@ -42,20 +52,24 @@ if "%_EXTENSION_CLASSPATH%"=="" (
   )
 )
 
-set _BOOT_CLASSPATH=@bootclasspath@
+set _BOOT_CLASSPATH=
 if "%_BOOT_CLASSPATH%"=="" (
   if exist "%_SCALA_HOME%\lib\scala-library.jar" (
     set _BOOT_CLASSPATH=%_SCALA_HOME%\lib\scala-library.jar
   )
-  if exist "%_SCALA_HOME%\lib\library" (
+  if exist "%_SCALA_HOME%\lib\library"\nul (
     set _BOOT_CLASSPATH=%_SCALA_HOME%\lib\library
   )
 )
 
-set _PROPS=-Dscala.home="%_SCALA_HOME%" -Denv.classpath="%CLASSPATH%" @properties@
+set _MSIL_LIBPATH=%_SCALA_HOME%\lib\predef.dll;%_SCALA_HOME%\lib\scalaruntime.dll;%_SCALA_HOME%\lib\mscorlib.dll
+if not "%MONO_PATH%"=="" (
+  set _MSIL_LIBPATH=%_MSIL_LIBPATH%;%MONO_PATH%
+)
 
-rem echo %_JAVACMD% -Xbootclasspath/a:"%_BOOT_CLASSPATH%" %_JAVA_OPTS% %_PROPS% -cp "%_EXTENSION_CLASSPATH%" @class@ @toolflags@ %_ARGS%
-%_JAVACMD% -Xbootclasspath/a:"%_BOOT_CLASSPATH%" %_JAVA_OPTS% %_PROPS% -cp "%_EXTENSION_CLASSPATH%" @class@ @toolflags@ %_ARGS%
+set _PROPS=-Dscala.home="%_SCALA_HOME%" -Denv.classpath="%CLASSPATH%" -Dmsil.libpath="%_MSIL_LIBPATH%" -Dmsil.ilasm="%_ILASM%" 
+
+%_JAVACMD% -Xbootclasspath/a:"%_BOOT_CLASSPATH%" %_JAVA_OPTS% %_PROPS% -cp "%_EXTENSION_CLASSPATH%" scala.tools.nsc.Main -target:msil %_ARGS%
 goto end
 
 rem ##########################################################################
@@ -78,6 +92,10 @@ rem set _SCALA_HOME=%~dps0..
   set _SCALA_HOME=%_BIN_DIR%..
 goto :eof
 
+:find_ilasm
+  set _ILASM=%~$PATH:1
+goto :eof
+
 :set_args
   set _ARGS=
   :loop
@@ -95,4 +113,4 @@ echo ERROR: environment variable SCALA_HOME is undefined. It should point to you
 goto end
 
 :end
-if "%OS%"=="Windows_NT" @@endlocal
+if "%OS%"=="Windows_NT" @endlocal

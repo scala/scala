@@ -455,21 +455,22 @@ abstract class GenMSIL extends SubComponent {
       createTypes()
       val filename = new File(outDir, assemName + ".msil").getPath()
       if (settings.debug.value)
-        log("output file name: " + filename)
+        log("Output file name: " + filename)
       try {
         massembly.Save(filename)
-//         val fm = Properties.ilasmFormat
-//         if (fm != null) {
-//           val exeName = new File(outDir, assemName + ".exe").getPath()
-//           val cmd = fm.format(Array(/*output*/exeName, /*input*/filename))
-//           try {
-//             Runtime.getRuntime().exec(cmd)
-//           } catch {
-//             case ex: java.io.IOException =>
-//               Console.println("Cannot run command: " + cmd)
-//               exit(1)
-//           }
-//         }
+        val ilasm = Properties.msilILasm
+        if (ilasm != "") {
+          val cmd = ilasm + " " + filename
+          if (settings.debug.value)
+            log("Executing command: " + cmd)
+          try {
+            Runtime.getRuntime().exec(cmd)
+          } catch {
+            case _ =>
+              Console.println("Cannot run command: " + cmd)
+              exit(1)
+          }
+        }
       } catch {
         case _: Error => abort("Could not save file " + filename)
       }
@@ -1288,7 +1289,7 @@ abstract class GenMSIL extends SubComponent {
 
           case LOAD_MODULE(module) =>
             if (settings.debug.value)
-              log("genearting LOAD_MODULE for: " + showsym(module))
+              log("Generating LOAD_MODULE for: " + showsym(module))
             mcode.Emit(OpCodes.Ldsfld, getModuleInstanceField(module))
 
           case STORE_ARRAY_ITEM(kind) =>

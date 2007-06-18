@@ -6,6 +6,8 @@
 
 package scala.tools.nsc
 
+import java.io.File
+
 import scala.tools.nsc.doc.{DocDriver => DocGenerator}
 import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
 import scala.tools.nsc.util.FakePos //{Position}
@@ -46,6 +48,12 @@ object Main extends AnyRef with EvalLoop {
     if (command.settings.version.value)
       reporter.info(null, versionMsg, true)
     else {
+      if (command.settings.target.value == "msil") {
+        val libpath = System.getProperty("msil.libpath")
+        if (libpath != null)
+          command.settings.assemrefs.value =
+            command.settings.assemrefs.value + File.pathSeparator + libpath
+      }
       try {
         object compiler extends Global(command.settings, reporter)
         if (reporter.hasErrors) {
