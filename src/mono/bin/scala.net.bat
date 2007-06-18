@@ -29,7 +29,7 @@ if "%OS%"=="Windows_NT" (
 rem We use the value of the MONO environment variable if defined
 set _MONO=%MONO%
 if "%_MONO%"=="" (
-  if exist "%MONO_HOME%"\nul (
+  if exist "%MONO_HOME%" (
     set _MONO=%MONO_HOME%\bin\mono.exe
   ) else (
     call :find_mono mono.exe

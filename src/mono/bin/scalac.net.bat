@@ -37,7 +37,7 @@ if "%_JAVA_OPTS%"=="" set _JAVA_OPTS=-Xmx256M -Xms16M
 rem We use the value of the ILASM environment variable if defined
 set _ILASM=%ILASM%
 if "%_ILASM%"=="" (
-  if exist "%MONO_HOME%"\nul (
+  if exist "%MONO_HOME%" (
     set _ILASM=%MONO_HOME%\bin\ilasm.bat
   ) else (
     call :find_ilasm ilasm.bat
@@ -57,7 +57,7 @@ if "%_BOOT_CLASSPATH%"=="" (
   if exist "%_SCALA_HOME%\lib\scala-library.jar" (
     set _BOOT_CLASSPATH=%_SCALA_HOME%\lib\scala-library.jar
   )
-  if exist "%_SCALA_HOME%\lib\library"\nul (
+  if exist "%_SCALA_HOME%\lib\library" (
     set _BOOT_CLASSPATH=%_SCALA_HOME%\lib\library
   )
 )
