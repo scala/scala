@@ -21,7 +21,8 @@ object Main extends AnyRef with EvalLoop {
   val versionMsg = "Scala compiler " +
     Properties.versionString + " -- " +
     Properties.copyrightString
-  val prompt = "\nnsc> "
+
+  val prompt = Properties.residentPromptString
 
   var reporter: ConsoleReporter = _
 

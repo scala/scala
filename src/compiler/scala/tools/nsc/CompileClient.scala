@@ -36,7 +36,7 @@ class StandardCompileClient {
     pathsList.map(absFileName).mkString("", sep, "")
   }
 
-  val fileEnding = ".scala"
+  val fileEnding = Properties.fileEndingString
 
   protected def normalize(args: Array[String]): (String, String) = {
     var i = 0
@@ -57,7 +57,7 @@ class StandardCompileClient {
       } else if (arg == "-shutdown") {
         shutdown = true
       }
-      i = i + 1
+      i += 1
       if (i < args.length) {
         if (arg == "-classpath" ||
             arg == "-sourcepath" ||
@@ -65,7 +65,7 @@ class StandardCompileClient {
             arg == "-extdirs" ||
             arg == "-d") {
           args(i) = absFileNames(args(i))
-          i = i + 1
+          i += 1
         } else if (arg == "-server") {
           serverAdr = args(i)
           args(i-1) = ""

@@ -264,12 +264,15 @@ test_run_jvm() {
     fi
     rm -rf "$dstbase".obj &&
     mkdir -p "$dstbase".obj &&
-    env JAVACMD="$JAVACMD" JAVA_OPTS="$javaopts" $SCALAC -d "$os_dstbase".obj -cp "$JVM_EXT_CLASSPATH" "$@" "$os_srcbase".scala &&
+    env JAVACMD="$JAVACMD" JAVA_OPTS="$javaopts" $SCALAC -d "$os_dstbase".obj \
+        -cp "$JVM_EXT_CLASSPATH" "$@" "$os_srcbase".scala &&
     libpath=`get_os_pathlist "$dstdir"` &&
     scala_javaopts=`echo -Djava.library.path=$libpath` &&
     scala_lib=`get_os_filename "$SCALA_LIB"` &&
-    classpath=`get_os_pathlist "$os_dstbase".obj:$CLASSPATH` &&
-    env JAVA_OPTS="$scala_javaopts" $SCALA -Djavacmd="$JAVACMD" -Dscalatest.output=$os_dstbase.obj -Dscalatest.lib=$scala_lib -classpath $classpath:$JVM_EXT_CLASSPATH Test "jvm" &&
+    classpath=`get_os_pathlist "$os_dstbase".obj:$SCALA_COMP:$CLASSPATH` &&
+    env JAVA_OPTS="$scala_javaopts" $SCALA -Djavacmd="$JAVACMD" \
+        -Dscalatest.output=$os_dstbase.obj -Dscalatest.lib=$scala_lib \
+        -classpath $classpath:$JVM_EXT_CLASSPATH Test "jvm" &&
     rm -rf "$dstbase".obj;
 }
 
@@ -595,18 +598,22 @@ FILES_SHOOTOUT="";
 
 QUICK="$PREFIX/build/quick/bin"
 QUICK_LIB="$PREFIX/build/quick/lib/library"
+QUICK_COMP="$PREFIX/build/quick/lib/compiler"
 
 JVM_EXT_CLASSPATH=`get_ext_classpath $TESTROOT/files/lib`
 
 if [ -d "$PREFIX/dists" ]; then
     LATEST="$PREFIX/dists/latest/bin";
     LATEST_LIB="$PREFIX/dists/latest/lib/scala-library.jar";
+    LATEST_COMP="$PREFIX/dists/latest/lib/scala-compiler.jar";
 elif [ -d "$PREFIX/build" ]; then
     LATEST="$QUICK";
     LATEST_LIB=$QUICK_LIB
+    LATEST_COMP=$QUICK_COMP
 elif [ -d "$PREFIX/bin" ]; then
     LATEST="$PREFIX/bin";
     LATEST_LIB="$PREFIX/lib/scala-library.jar"
+    LATEST_COMP="$PREFIX/lib/scala-compiler.jar"
 else
     abort "Scala binaries could not be found";
 fi;
@@ -614,6 +621,7 @@ BIN_DIR="$LATEST/"  # BIN_DIR should have a trailing / when needed, so that
                     # it can also be set to the empty string
 
 SCALA_LIB="$LATEST_LIB";
+SCALA_COMP="$LATEST_COMP";
 
 [ -x "$JAVACMD" ] || JAVACMD=java;
 [ -n "$JAVA_OPTS" ] || JAVA_OPTS="-Xmx256M -Xms16M";
@@ -645,7 +653,7 @@ while [ $# -gt 0 ]; do
         --script     ) TEST_TYPE="script"; shift 1;;
         --ant        ) TEST_TYPE="ant"; shift 1;;
         --shootout   ) TEST_TYPE="shootout"; shift 1;;
-        --quick      ) BIN_DIR="$QUICK/"; SCALA_LIB=$QUICK_LIB; shift 1;;
+        --quick      ) BIN_DIR="$QUICK/"; SCALA_LIB=$QUICK_LIB; SCALA_COMP=$QUICK_COMP; shift 1;;
         --installed  ) BIN_DIR=""; shift 1;;
         --no-run     ) NORUN="true"; shift 1;;
         --show-log   ) SHOWLOG="true"; shift 1;;

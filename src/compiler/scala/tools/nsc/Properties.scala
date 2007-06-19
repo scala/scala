@@ -31,7 +31,7 @@ object Properties {
     */
   val versionString: String = {
     val defaultString = "(unknown)"
-    "version " + props.getProperty("version.number")
+    "version " + props.getProperty("version.number", defaultString)
   }
 
   val copyrightString: String = {
@@ -42,6 +42,21 @@ object Properties {
   val encodingString: String = {
     val defaultString = "ISO-8859-1"
     props.getProperty("file.encoding", defaultString)
+  }
+
+  val fileEndingString: String = {
+    val defaultString = ".scala"
+    props.getProperty("file.ending", defaultString)
+  }
+
+  val residentPromptString: String = {
+    val defaultString = "\nnsc> "
+    props.getProperty("resident.prompt", defaultString)
+  }
+
+  val shellPromptString: String = {
+    val defaultString = "\nscala> "
+    props.getProperty("shell.prompt", defaultString)
   }
 
   val scalaHome: String =

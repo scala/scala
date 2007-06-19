@@ -104,7 +104,7 @@ class InterpreterLoop(in0: BufferedReader, out: PrintWriter) {
   }
 
   /** Prompt to print when awaiting input */
-  val prompt = "scala> "
+  val prompt = Properties.shellPromptString
 
   /** The main read-eval-print loop for the interpreter.  It calls
    *  <code>command()</code> for each line of input, and stops when
@@ -114,7 +114,6 @@ class InterpreterLoop(in0: BufferedReader, out: PrintWriter) {
     var first = true
     while (true) {
       if (interactive) {
-        out.print("\n")
 	out.print(prompt)
         out.flush
       }

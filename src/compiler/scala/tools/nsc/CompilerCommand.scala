@@ -20,7 +20,7 @@ class CompilerCommand(arguments: List[String], val settings: Settings,
   val cmdName = "scalac"
 
   /** The file extension of files that the compiler can process */
-  def fileEnding = ".scala" //todo: lazy val
+  def fileEnding = Properties.fileEndingString //todo: lazy val
 
   private val helpSyntaxColumnWidth: Int =
     Iterable.max(settings.allSettings map (_.helpSyntax.length))
