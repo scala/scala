@@ -34,16 +34,6 @@ rem We use the value of the JAVA_OPTS environment variable if defined
 set _JAVA_OPTS=%JAVA_OPTS%
 if "%_JAVA_OPTS%"=="" set _JAVA_OPTS=-Xmx256M -Xms16M
 
-rem We use the value of the ILASM environment variable if defined
-set _ILASM=%ILASM%
-if "%_ILASM%"=="" (
-  if exist "%MONO_HOME%" (
-    set _ILASM=%MONO_HOME%\bin\ilasm.bat
-  ) else (
-    call :find_ilasm ilasm.bat
-  )
-)
-
 set _EXTENSION_CLASSPATH=
 if "%_EXTENSION_CLASSPATH%"=="" (
   for %%f in ("%_SCALA_HOME%\lib\*") do call :add_cpath "%%f"
@@ -59,6 +49,16 @@ if "%_BOOT_CLASSPATH%"=="" (
   )
   if exist "%_SCALA_HOME%\lib\library" (
     set _BOOT_CLASSPATH=%_SCALA_HOME%\lib\library
+  )
+)
+
+rem We use the value of the ILASM environment variable if defined
+set _ILASM=%ILASM%
+if "%_ILASM%"=="" (
+  if exist "%MONO_HOME%" (
+    set _ILASM=%MONO_HOME%\bin\ilasm.bat
+  ) else (
+    call :find_ilasm ilasm.bat
   )
 )
 

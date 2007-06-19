@@ -785,12 +785,23 @@ MSIL
     <copy todir="${quick.dir}/bin">
       <fileset
         dir="${mono.dir}/bin"
-        includes="*-net*"
+        includes="scala-net*"
       />
       <filterset>
         <filter token="VERSION" value="${version.number}"/>
         <filter token="COPYRIGHT" value="${copyright.string}"/>
         <filter token="NAME" value="Scala code runner"/>
+      </filterset>
+    </copy>
+    <copy todir="${quick.dir}/bin">
+      <fileset
+        dir="${mono.dir}/bin"
+        includes="scalac-net*"
+      />
+      <filterset>
+        <filter token="VERSION" value="${version.number}"/>
+        <filter token="COPYRIGHT" value="${copyright.string}"/>
+        <filter token="NAME" value="Scala compiler"/>
       </filterset>
     </copy>
     <chmod perm="ugo+rx"
