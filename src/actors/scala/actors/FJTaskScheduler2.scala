@@ -123,15 +123,11 @@ class FJTaskScheduler2 extends Thread with IScheduler {
   /**
    *  @param item the task to be executed.
    */
-  def execute(task: Reaction) {
+  def execute(task: Runnable) {
     executor.execute(task)
   }
 
-  def execute(task: FJTask) {
-    executor.execute(task)
-  }
-
-  def start(task: Reaction) {
+  def start(task: Runnable) {
     this.synchronized {
       pendingReactions = pendingReactions + 1
     }

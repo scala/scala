@@ -24,7 +24,7 @@ import scala.compat.Platform
  * @author Philipp Haller
  */
 class TickedScheduler extends Thread with IScheduler {
-  private val tasks = new Queue[Reaction]
+  private val tasks = new Queue[Runnable]
 
   // Worker threads
   private val workers: Buffer[WorkerThread] = new ArrayBuffer[WorkerThread]
@@ -45,7 +45,7 @@ class TickedScheduler extends Thread with IScheduler {
 
   def printActorDump {}
 
-  def start(task: Reaction): Unit = synchronized {
+  def start(task: Runnable): Unit = synchronized {
     pendingReactions += 1
     execute(task)
   }
@@ -124,7 +124,7 @@ class TickedScheduler extends Thread with IScheduler {
   /**
    *  @param item the task to be executed.
    */
-  def execute(item: Reaction): Unit = synchronized {
+  def execute(item: Runnable): Unit = synchronized {
     if (!terminating) {
       if (idle.length > 0) {
         val wt = idle.dequeue
@@ -134,8 +134,6 @@ class TickedScheduler extends Thread with IScheduler {
         tasks += item
     }
   }
-
-  def execute(task: FJTask) { }
 
   def snapshot(): LinkedQueue = null
 

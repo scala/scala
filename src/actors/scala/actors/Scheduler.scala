@@ -61,8 +61,9 @@ object Scheduler {
     tasks = null
   }
 
-  def start(task: Reaction) = sched.start(task)
-  def execute(task: Reaction) = {
+  def start(task: Runnable) = sched.start(task)
+
+  def execute(task: Runnable) = {
     val t = currentThread
     if (t.isInstanceOf[FJTaskRunner]) {
       val tr = t.asInstanceOf[FJTaskRunner]
@@ -97,9 +98,8 @@ object Scheduler {
 trait IScheduler {
   def start(): Unit
 
-  def start(task: Reaction): Unit
-  def execute(task: Reaction): Unit
-  def execute(task: FJTask): Unit
+  def start(task: Runnable): Unit
+  def execute(task: Runnable): Unit
 
   def getTask(worker: WorkerThread): Runnable
   def tick(a: Actor): Unit
@@ -131,17 +131,12 @@ trait IScheduler {
 class SingleThreadedScheduler extends IScheduler {
   def start() {}
 
-  def start(task: Reaction) {
+  def start(task: Runnable) {
     // execute task immediately on same thread
     task.run()
   }
 
-  def execute(task: Reaction) {
-    // execute task immediately on same thread
-    task.run()
-  }
-
-  def execute(task: FJTask) {
+  def execute(task: Runnable) {
     // execute task immediately on same thread
     task.run()
   }

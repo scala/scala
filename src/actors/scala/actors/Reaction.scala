@@ -31,15 +31,13 @@ private[actors] class ExitActorException extends Throwable
  *    <code>java.lang.Runnable</code></a>.
  *  </p>
  *
- *  @version 0.9.7
+ *  @version 0.9.8
  *  @author Philipp Haller
  */
 private[actors] class Reaction(a: Actor,
                                f: PartialFunction[Any, Unit],
                                msg: Any) extends Runnable {
   def this(a: Actor) = this(a, null, null)
-
-  def actor = a
 
   def run() {
     val saved = Actor.tl.get.asInstanceOf[Actor]
