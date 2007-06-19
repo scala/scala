@@ -76,40 +76,56 @@ trait ParallelMatching  {
       case _: UnApply                                                         => throw CantHandleUnapply
       case pat                                                                => /*//DEBUG("dummy patterns for "+pat+" of class "+pat.getClass);*/dummies
     }
+
+    def objectPattern(pat:Tree): Boolean = try {
+      (pat.symbol ne null) &&
+      (pat.symbol != NoSymbol) &&
+      pat.symbol.tpe.prefix.isStable &&
+      patternType =:= singleType(pat.symbol.tpe.prefix, pat.symbol)
+    } catch {
+      case e =>
+        Console.println("object pattern test throws "+e.getMessage())
+        if(global.settings.debug.value)
+          System.exit(-1);
+        throw e
+    }
+
       // more specific patterns, subpatterns, remaining patterns
     private var sr = column.zipWithIndex.foldLeft (moreSpecific,subsumed,remaining) {
       (p,patAndIndex) =>
         val (ms,ss,rs) = p
         val (pat,j)    = patAndIndex
-      //Console.println("pat.tpe = "+pat.tpe)
-      //Console.println("patternType = "+patternType)
+/*
+      Console.println("pat = "+pat)
+      Console.println("current pat is wild? = "+isDefault(pat))
+      Console.println("current pat.symbol = "+pat.symbol+", pat.tpe "+pat.tpe)
+      Console.println("patternType = "+patternType)
+      Console.println("(current)pat.tpe <:< patternType = "+(pat.tpe <:< patternType))
+      Console.println("patternType <:< (current)pat.tpe = "+(patternType <:< pat.tpe))
+      Console.println("(current)pat.tpe =:= patternType = "+(pat.tpe <:< patternType))
+*/
       pat match {
         case Literal(Constant(null)) if !(patternType =:= pat.tpe) => //special case for constant null pattern
+          //Console.println("[1")
           (ms,ss,(j,pat)::rs)
-        case _ if (pat.symbol ne null) && /*
-          Martin: the following causes a lot of Error's in rebind/singletonType
-          these errors are masked by including the two tests below.
-          However, if you uncomment them you will get a bug in genLoad:
-                                       ^
-   [locker] java.lang.AssertionError: assertion failed: Trying to access the this of another class: tree.symbol = class TreeBrowsers, ctx.clazz.symbol = object TreeBrowsers$TreeInfo compilation unit:TreeBrowsers.scala
-   [locker]         at scala.Predef$.assert(Predef.scala:90)
-   [locker]         at scala.tools.nsc.backend.icode.GenICode$ICodePhase.scala$tools$nsc$backend$icode$GenICode$ICodePhase$$genLoad(GenICode.scala:809)
-   [locker]         at scala.tools.nsc.backend.icode.GenICode$ICodePhase.genLoadQualifier(GenICode.scala:996)
-   [locker]         at scala.tools.nsc.backend.icode.GenICode$ICodePhase.scala$tools$nsc$backend$icode$GenICode$ICodePhase$$genLoad(GenICode.scala:785)
-          (pat.symbol != NoSymbol) && pat.symbol.tpe.prefix.isStable &&
-          */
-        //{Console.println(pat.symbol+" "+definitions.isValueType(patternType.symbol)); !definitions.isValueType(patternType.symbol)}&&
-        // try patternType.prefix?
-         (patternType =:= singleType(pat.symbol.tpe.prefix, pat.symbol)) =>
-          (EmptyTree::ms, (j,dummies)::ss, rs);                                                 // matching an object
-        case _ if (pat.tpe <:< patternType) =>
-          ({if(pat.tpe =:= patternType) EmptyTree else pat}::ms, (j,subpatterns(pat))::ss, rs); // subsumed (same or more specific) pattern;
+        case _ if objectPattern(pat) =>
+          //Console.println("[2")
+          (EmptyTree::ms, (j,dummies)::ss, rs);                                 // matching an object
+
+        case _ if (pat.tpe <:< patternType) && !isDefaultPattern(pat) =>
+          //Console.println("current pattern is same or *more* specific")
+          ({if(pat.tpe =:= patternType) EmptyTree else pat}::ms, (j,subpatterns(pat))::ss, rs);
+
         case _ if (patternType <:< pat.tpe) || isDefaultPattern(pat) =>
-          (EmptyTree::ms, (j,dummies)::ss, (j,pat)::rs);                                        // subsuming (matched *and* remaining pattern)
+          //Console.println("current pattern is *more general*")
+          (EmptyTree::ms, (j,dummies)::ss, (j,pat)::rs);                        // subsuming (matched *and* remaining pattern)
+
         case _ =>
+          //Console.println("current pattern tests something else")
           (ms,ss,(j,pat)::rs)
       }
     }
+
     this.moreSpecific = sr._1.reverse
     this.subsumed     = sr._2.reverse
     this.remaining    = sr._3.reverse
@@ -148,33 +164,21 @@ trait ParallelMatching  {
             val subst1 = vs map { v => (v,casted) }
 
           //debug
-          /*
-            if(!vs.isEmpty) Console.println("getTransition, vs = "+vs)
-            if(!subst1.isEmpty) {
-              Console.println("getTransition, subst1 = "+subst1)
-              Console.println("getTransition, osubst:::subst1 = "+(osubst:::subst1))
-            }
-          */
-          // def doSubst(vs:List[Symbol], exp:Tree) = { new TreeSymSubstituter(vs,vs map {x=> casted}).traverse(exp); exp }
 
-          // don't substitute eagerly here, problems with bodies that can be reached with several routes
-          // problems would disappear if we didn't aim for sharing code and &^% duplicate would correctly duplicate definitions (alloc new symbols)
+          // don't substitute eagerly here, problems with bodies that can
+          //   be reached with several routes... impossible to find one-fits-all ordering.
 
-            (pats ::: opats, osubst ::: subst1, og, ob) // don't duplicate body/guard, get "defined twice" error cause hashing breaks
+            (pats ::: opats, osubst ::: subst1, og, ob)
+
+          // BTW duplicating body/guard, gets you "defined twice" error cause hashing breaks
         }
         Rep(ntemps, ntriples) setParent this
       }
-      //DEBUG("nmatrix for type "+patternType)
-      //DEBUG(nmatrix.toString)
-
-      // and then more or this... Console.println(nmatrix.applyRule)
-      // CONTINUE HERE: epsilon transitions, which ensure that transitions are tested in the right order.
 
       // fails      => transition to translate(remaining)
 
       val nmatrixFail: Option[Rep] = {
-        val ntemps   = scrutinee :: rest.temp // important: preserve order on temps (bug #1163)
-        // not rest.temp ::: scrutinee??
+        val ntemps   = scrutinee :: rest.temp
         //Console.println("nmatrixfail ntemps:"+ntemps)
         val ntriples = remaining map {
           case (j, pat) => val r = rest.row(j);  (pat :: r._1, r._2, r._3, r._4)
@@ -228,12 +232,13 @@ trait ParallelMatching  {
                 }
             })
           }
-        // this weird thing should only be done for shared states.
-        var nbody: Tree = b
-        val vrefs = vdefs.map { p:ValDef => Ident(p.symbol) }
-        nbody  = Block(vdefs:::List(Apply(Ident(theLabel), vrefs)), LabelDef(theLabel, subst.map(_._1), nbody))
-        bodies(b) = (EmptyTree, nbody, theLabel)
-        nbody
+          // this seems weird, but is necessary for sharing bodies. maybe could be spared if we know that a body
+          // is not shared.
+          var nbody: Tree = b
+          val vrefs = vdefs.map { p:ValDef => Ident(p.symbol) }
+          nbody  = squeezedBlock(vdefs:::List(Apply(Ident(theLabel), vrefs)), LabelDef(theLabel, subst.map(_._1), nbody))
+          bodies(b) = (EmptyTree, nbody, theLabel)
+          nbody
       }
       case VariableRule(subst,g,b) =>
         throw CantHandleGuard
@@ -241,7 +246,7 @@ trait ParallelMatching  {
         val (casted,srep,frep) = mm.getTransition
         //DEBUG("--- mixture \n succ \n"+srep.toString+"\n fail\n"+frep.toString)
         //val cond = typed{gen.mkIsInstanceOf(Ident(mm.scrutinee), casted.tpe)}
-        var cond = typed { condition(casted.tpe, mm.scrutinee) }
+        var cond = handleOuter(typed { condition(casted.tpe, mm.scrutinee) })
         if(needsOuterTest(casted.tpe, mm.scrutinee.tpe)) // @todo merrge into def condition
           cond = addOuterCondition(cond, casted.tpe, typed{Ident(mm.scrutinee)}, handleOuter)
 
@@ -402,13 +407,7 @@ object Rep {
     var mixtureParent: MixtureRule = null
 
     def setParent(mr:MixtureRule): this.type = { mixtureParent = mr; this }
-    //assert(temp.length == exhaustivenessChecked.length)
-    /*
-    def prepend(temp1:List[Symbol], row2:List[List[Tree]]) = {
-      assert(row.length == row2.length)
-      Rep(temp1 ::: temp, row.zip(row2) map { case ((pats,g,b),pats2) => (pats2:::pats,g,b) })
-    }
-    */
+
     def applyRule: RuleApplication = row match {
       case Nil            => ErrorRule
       case (pats,subst,g,b)::xs =>
@@ -423,11 +422,13 @@ object Rep {
           val i = pats findIndexOf {x => !isDefaultPattern(x)}
 
           val column = row map { case (pats,subst,g,b) => pats(i) }
-          //val ex = exhaustivenessChecked(i)
+
           val restTemp =                                     temp.take(i) ::: temp.drop(i+1)
           val restRows = row map { case (pats,subst,g,b) => (pats.take(i) ::: pats.drop(i+1),subst,g,b) }
-          //val restEx   =                    exhaustivenessChecked.take(i) ::: exhaustivenessChecked.drop(i+1)
-          MixtureRule(temp(i), column, Rep(restTemp,restRows/*,restEx*/)) setParent this
+
+          val r = MixtureRule(temp(i), column, Rep(restTemp,restRows)) setParent this
+          //Console.println(r)
+          r
         }
     }
     // a fancy toString method for debugging
@@ -447,6 +448,8 @@ object Rep {
     }
   }
 
+  /** creates initial clause matrix
+   */
   def initRep(selector:Tree, cases:List[Tree], checkExhaustive: Boolean)(implicit theOwner: Symbol) = {
     val root = newVar(selector.pos, selector.tpe)
     // communicate whether exhaustiveness-checking is enabled via some flag
@@ -455,10 +458,8 @@ object Rep {
     val row  = cases map { case CaseDef(pat,g,b) => (List(pat),List(),g,b) }
     Rep(List(root), row)
   }
-  /** this tree node is used several times in the parallel algo and will never be needed for matching, so it is reused */
-   val Ident_WILDCARD = Ident(nme.WILDCARD) setType definitions.AnyClass.tpe
 
-  val NoSymbol_Ident_WILDCARD = (NoSymbol, EmptyTree);
+  /** this tree node is used several times in the parallel algo and will never be needed for matching, so it is reused */
 
   // ----------------------------------   helper functions that extract information from patterns, symbols, types
 
@@ -483,82 +484,9 @@ object Rep {
 
   // ----------------------------------   functions used in internal data structure of the algorithm (matrix)
 
-  /** an entry ((x,m),y) hints at a case field access "val y = x.m" (@see tempValdef). we can recover the parent (@see getParent)
-   */
-//  type TempMap = collection.mutable.Map[(Symbol,Symbol),Symbol]
-
-  /** returns the temp which is the "parent" of the given temp */
-/*
-  def getParent(sym:Symbol)(implicit memo: TempMap): Option[((Symbol, Symbol), Symbol)] = memo.elements.find { x => x._2 == sym }
-
-  def getChild(pos: PositionType, scrutineeSymbol:Symbol, theCaseFieldAccessor:Symbol)(implicit memo: TempMap, theOwner: Symbol) = {
-    val p = (scrutineeSymbol,theCaseFieldAccessor)
-    memo.get (p) match {
-      case Some(v) => v
-      case None    =>  val v = newVar(pos, scrutineeSymbol.tpe.memberType(theCaseFieldAccessor).resultType);  memo.update(p, v); v
-    }
-  }
-
-  def tempValDef1(tmpsym:Symbol)(implicit memo: TempMap): Option[Tree] =
-    getParent(tmpsym) match {
-      case Some((par,meth),_) => Some(ValDef(tmpsym, Select(Ident(par),meth)))
-      case None               => None //assert(scrut == root.casted); Block(List(ValDef(scrut, selector)), theTest)
-    }
-*/
-  /** same as tempValDef, but with a default (typically root=selector)
-  def tempValDef(tmpsym:Symbol, default: Tree)(implicit memo: TempMap): Tree =  // overloading+implicit+tuple == bug
-    getParent(tmpsym) match {
-      case Some((par,meth),_) => ValDef(tmpsym, Select(Ident(par),meth))
-      case None               => ValDef(tmpsym, default)
-    }
-*/
-
-  /** an entry ((x,T),y) hints at a case field access "val y = x.asInstanceOf[T]" (@see caseValdef).
-  type CastMap = collection.mutable.Map[(Symbol,Type),Symbol]
-
-  def getCasted(oldScrutineeSymbol: Symbol, patternType: Type)(implicit castMap: CastMap, theOwner: Symbol) = {
-    val p = (oldScrutineeSymbol, patternType)
-    castMap.get (p) match {
-      case Some(v) => v
-      case None    => val v = newVar(oldScrutineeSymbol.pos, patternType); castMap.update(p,v); v
-    }
-  }
-
-  def castValDef(oldScrutinee: Symbol, tpe:Type)(implicit castMap: CastMap): Tree  = {
-    val newScrutinee = castMap.get((oldScrutinee, tpe)).get
-    ValDef(newScrutinee, gen.mkAsInstanceOf(Ident(oldScrutinee), tpe))
-  }
-*/
-  /** creates a new entry for casting, and replaces the scrutinee in give patterns
-  def doCast(scrutineeSymbol:Symbol, pattern:Tree)(implicit castMap: CastMap, theOwner: Symbol) = {
-    val patternType = pattern.tpe
-    val newScrutinee = getCasted(scrutineeSymbol, patternType)
-    (newScrutinee, pattern)
-  }
-*/
-  // access to children for matched constructor patterns
-
-  /** for a case pattern, returns subpatterns, otherwise a sequence of dummy wildcard patterns
-   *  @param x tuple2 where _1 is the temp containing the scrutinee, _2 is the pattern
-  def childPats(x:(Symbol,Tree), len:Int)(implicit memo: TempMap, theOwner: Symbol) = {
-    def childPatsOfPattern(p:Tree): List[(Symbol,Tree)] = p match {
-      case Bind(_, p)  => childPatsOfPattern(p)
-
-      // for case patterns, get children... condition necessary since e.g. pattern 'nme.CONSTRUCTOR' is also an Apply(fn,())
-      case app @ Apply(fn, patargs) if app.tpe.symbol.hasFlag(symtab.Flags.CASE) =>
-        val patternSymbol   = app.tpe.symbol
-        val scrutineeSymbol = x._1
-        assert(  patternSymbol.caseFieldAccessors.length == len)
-        assert(scrutineeSymbol.tpe.symbol.tpe =:= patternSymbol.tpe)
-        patternSymbol.caseFieldAccessors.map( { z => getChild(app.pos, scrutineeSymbol, z) }).zip(patargs)
-      case _                   =>
-        List.range(0,len) map { x => NoSymbol_Ident_WILDCARD } //(NoSymbol, Ident_WILDCARD)
-    }
-    childPatsOfPattern(x._2)
-  }
-*/
 
   // ----------------------------------   helper functions that generate symbols, trees for type tests, pattern tests
+  // (shared by both algorithms, cough)
 
   def newVar(pos: Position, name: Name, tpe: Type)(implicit theOwner: Symbol): Symbol = {
     if(tpe eq null) assert(tpe ne null, "newVar("+name+", null)")
