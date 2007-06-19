@@ -12,8 +12,17 @@ trait Counter[T] {
    def newCounter: T
    def get(i: T): Int
    def inc(i: T): T
- }
+}
 
+case class C[T](x: T)
+
+object LUB {
+  def x = C(1)
+  def y = C("abc")
+  var coinflip: boolean = _
+  def z = if (coinflip) x else y
+  def zz: C[_1] for_some { type _1 >: Int with java.lang.String } = z
+}
  object Test extends Application {
 
    def foo(x : Counter[T] { def name : String } for_some { type T }) = x match {

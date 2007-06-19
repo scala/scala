@@ -248,20 +248,17 @@ trait Infer {
         }
       }
 
-      val patches = {
-        val syms1 = typeRefs.collect(tp1)
-        val syms2 = typeRefs.collect(tp2)
-        for {
-          sym1 <- syms1
-          sym2 <- syms2
-          if sym1 != sym2 && sym1.toString == sym2.toString
-        } yield {
-          val name = sym1.name
-          explainName(sym1)
-          explainName(sym2)
-          if (sym1.owner == sym2.owner) sym2.name = newTypeName("(some other)"+sym2.name)
-          (sym1, sym2, name)
-        }
+      val patches = new ListBuffer[(Symbol, Symbol, Name)]
+      for {
+        t1 @ TypeRef(_, sym1, _) <- tp1
+        t2 @ TypeRef(_, sym2, _) <- tp2
+        if sym1 != sym2 && t1.toString == t2.toString
+      } {
+        val name = sym1.name
+        explainName(sym1)
+        explainName(sym2)
+        if (sym1.owner == sym2.owner) sym2.name = newTypeName("(some other)"+sym2.name)
+        patches += (sym1, sym2, name)
       }
 
       val result = op
