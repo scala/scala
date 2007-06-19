@@ -259,8 +259,7 @@ abstract class LiftCode extends Transform {
 // case ClassDef(mods, name, tparams, impl) =>
 // case ValDef(mods, name, tpt, rhs) =>
 // case DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
-// case AbsTypeDef(mods, name, tparams, lo, hi) =>
-// case AliasTypeDef(mods, name, tparams, rhs) =>
+// case TypeDef(mods, name, tparams, rhs) =>
 // case LabelDef(name, params, rhs) =>
 // case Template(parents, self, body) =>
 // case Block(stats, expr) =>

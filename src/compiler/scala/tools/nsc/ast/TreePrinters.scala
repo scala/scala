@@ -50,7 +50,7 @@ abstract class TreePrinters {
 
     def printRow(ts: List[Tree], sep: String): unit = printRow(ts, "", sep, "")
 
-    def printTypeParams(ts: List[AbsTypeDef]): unit =
+    def printTypeParams(ts: List[TypeDef]): unit =
       if (!ts.isEmpty) {
         print("["); printSeq(ts){printParam}{print(", ")}; print("]")
       }
@@ -66,9 +66,9 @@ abstract class TreePrinters {
       case ValDef(mods, name, tp, rhs) =>
         printAnnotations(tree)
         print(symName(tree, name)); printOpt(": ", tp)
-      case AbsTypeDef(mods, name, tparams, lo, hi) =>
+      case TypeDef(mods, name, tparams, rhs) =>
         print(symName(tree, name))
-        printTypeParams(tparams); printOpt(" >: ", lo); printOpt(" <: ", hi)
+        printTypeParams(tparams); print(rhs)
     }
 
     def printBlock(tree: Tree): unit = tree match {
@@ -156,13 +156,14 @@ abstract class TreePrinters {
           printTypeParams(tparams); vparamss foreach printValueParams
           printOpt(": ", tp); printOpt(" = ", rhs)
 
-        case AbsTypeDef(mods, name, _, lo, hi) =>
-          printModifiers(tree, mods); print("type "); printParam(tree)
-
-        case AliasTypeDef(mods, name, tparams, rhs) =>
-          printAnnotations(tree)
-          printModifiers(tree, mods); print("type " + symName(tree, name))
-          printTypeParams(tparams); printOpt(" = ", rhs)
+        case TypeDef(mods, name, tparams, rhs) =>
+          if (mods hasFlag (PARAM | DEFERRED)) {
+            printModifiers(tree, mods); print("type "); printParam(tree)
+          } else {
+            printAnnotations(tree)
+            printModifiers(tree, mods); print("type " + symName(tree, name))
+            printTypeParams(tparams); printOpt(" = ", rhs)
+          }
 
         case LabelDef(name, params, rhs) =>
           print(symName(tree, name)); printRow(params, "(", ",", ")"); printBlock(rhs)
@@ -324,8 +325,8 @@ abstract class TreePrinters {
         case AppliedTypeTree(tp, args) =>
           print(tp); printRow(args, "[", ", ", "]")
 
-        case WildcardTypeTree(lo, hi) =>
-          print("_ "); printOpt(" >: ", lo); printOpt(" <: ", hi)
+        case TypeBoundsTree(lo, hi) =>
+          printOpt(" >: ", lo); printOpt(" <: ", hi)
 
         case ExistentialTypeTree(tpt, whereClauses) =>
           print(tpt);
@@ -342,14 +343,13 @@ abstract class TreePrinters {
     def print(tree: Tree): unit = {
       if (settings.Xprintpos.value) print("[" + tree.pos + "]")
       printRaw(
-        if (tree.isDef && tree.symbol != NoSymbol) {
+        if (tree.isDef && tree.symbol != NoSymbol && tree.symbol.isInitialized) {
           tree match {
-            case ClassDef(_, _, _, impl) => ClassDef(tree.symbol, impl)
-            case ModuleDef(_, _, impl)      => ModuleDef(tree.symbol, impl)
-//            case ValDef(_, _, _, rhs)       => ValDef(tree.symbol, rhs)
+            case ClassDef(_, _, _, impl)           => ClassDef(tree.symbol, impl)
+            case ModuleDef(_, _, impl)             => ModuleDef(tree.symbol, impl)
+            case ValDef(_, _, _, rhs)              => ValDef(tree.symbol, rhs)
             case DefDef(_, _, _, vparamss, _, rhs) => DefDef(tree.symbol, vparamss, rhs)
-            case AbsTypeDef(_, _, _, _, _)     => AbsTypeDef(tree.symbol)
-            case AliasTypeDef(_, _, _, rhs) => AliasTypeDef(tree.symbol, rhs)
+            case TypeDef(_, _, _, rhs)             => TypeDef(tree.symbol, rhs)
             case _ => tree
           }
         } else tree)

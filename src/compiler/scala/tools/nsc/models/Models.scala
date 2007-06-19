@@ -119,10 +119,12 @@ abstract class Models {
           case _ =>
         }
         ret = ret + " : " + textFor(vdef.tpt)
+/* Martin to Sean: Please check whether this can be dropped or does it need to be adapted?
       case atd: AbsTypeDef =>
         ret = ret + "[" + (for (val tparam <- atd.tparams) yield textFor(tparam)) + "]" +
                      ((if(atd.hi ne null) " <: " + textFor(atd.hi) else "") +
                      (if(atd.lo ne null) " >: " + textFor(atd.lo) else ""));
+*/
       case _ =>
         ret = ret + tree.toString()
     }
@@ -302,7 +304,7 @@ abstract class Models {
         (acceptPrivate || !tree.asInstanceOf[ValOrDefDef].mods.isPrivate)
        /* && !tree.asInstanceOf[ValOrDefDef].mods.isPrivate */
        /* && !tree.asInstanceOf[ValOrDefDef].mods.isAccessor */) ||
-      tree.isInstanceOf[AliasTypeDef])
+      treeInfo.isAliasTypeDef(tree))
 
     override def member(tree: Tree, members: List[Tree]): Tree = {
       val tree0 = if (tree.isInstanceOf[DefDef]) {
@@ -358,15 +360,9 @@ abstract class Models {
     override def replacedBy(tree0: Tree): Boolean =
       super.replacedBy(tree0) && tree0.isInstanceOf[ModuleDef]
   }
-  class AliasTypeMod(parent0: Composite) extends MemberMod(parent0) {
-    def treey = tree.asInstanceOf[AliasTypeDef];
-    override def replacedBy(tree0 : Tree) : Boolean = (super.replacedBy(tree0) && tree0.isInstanceOf[AliasTypeDef]);
-  }
-
-  class AbsTypeMod(parent0: Composite) extends HasTree(parent0) {
-    def treey = tree.asInstanceOf[AbsTypeDef]
-    override def replacedBy(tree0: Tree): Boolean =
-      super.replacedBy(tree0) && tree0.isInstanceOf[AbsTypeDef]
+  class TypeMod(parent0: Composite) extends MemberMod(parent0) {
+    def treey = tree.asInstanceOf[TypeDef];
+    override def replacedBy(tree0 : Tree) : Boolean = (super.replacedBy(tree0) && tree0.isInstanceOf[TypeDef]);
   }
   def SourceMod(original: CompilationUnit) = new SourceMod(original)
 
@@ -420,8 +416,7 @@ abstract class Models {
     case _: DefDef       => new DefMod(parent)
     case _: ClassDef     => new ClassMod(parent)
     case _: ModuleDef    => new ObjectMod(parent)
-    case _: AliasTypeDef => new AliasTypeMod(parent)
-    case _: AbsTypeDef   => new AbsTypeMod(parent)
+    case _: TypeDef      => new TypeMod(parent)
     case _: Import       => new ImportMod(parent)
   }
 

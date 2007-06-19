@@ -269,11 +269,8 @@ abstract class TreeBrowsers {
       case DefDef(mods, name, tparams, vparams, tpe, rhs) =>
         ("DefDef", name)
 
-      case AbsTypeDef(mods, name, tparams, rhs, lobound) =>
-        ("AbsTypeDef", name)
-
-      case AliasTypeDef(mods, name, tparams, rhs) =>
-        ("AliasTypeDef", name)
+      case TypeDef(mods, name, tparams, rhs) =>
+        ("TypeDef", name)
 
       case Import(expr, selectors) =>
         ("Import", EMPTY)
@@ -365,6 +362,9 @@ abstract class TreeBrowsers {
       case AppliedTypeTree(tpe, args) =>
         ("AppliedType", EMPTY)
 
+      case TypeBoundsTree(lo, hi) =>
+        ("TypeBoundsTree", EMPTY)
+
       case Try(block, catcher, finalizer) =>
         ("Try", EMPTY)
 
@@ -411,14 +411,8 @@ abstract class TreeBrowsers {
         tpe :: rhs :: children
       }
 
-      case AbsTypeDef(mods, name, tparams, rhs, lobound) =>
-        rhs :: lobound :: tparams // @M: was List(rhs, lobound)
-
-      case AliasTypeDef(mods, name, tparams, rhs) => {
-        var children: List[Tree] = List()
-        children = tparams ::: children
-        rhs :: children
-      }
+      case TypeDef(mods, name, tparams, rhs) =>
+        rhs :: tparams // @M: was List(rhs, lobound)
 
       case Import(expr, selectors) => {
         var children: List[Tree] = List(expr)
@@ -511,6 +505,9 @@ abstract class TreeBrowsers {
 
       case AppliedTypeTree(tpe, args) =>
         tpe :: args
+
+      case TypeBoundsTree(lo, hi) =>
+        List(lo, hi)
 
       case Try(block, catches, finalizer) =>
         block :: catches ::: List(finalizer)

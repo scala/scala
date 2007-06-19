@@ -394,6 +394,7 @@ abstract class ClassfileParser {
     if (!isScala) {
       clazz.setFlag(sflags)
       setPrivateWithin(clazz, jflags)
+      setPrivateWithin(staticModule, jflags)
       if (!hasMeta) {
         clazz.setInfo(classInfo)
       }

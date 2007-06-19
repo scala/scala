@@ -1456,6 +1456,7 @@ A type's symbol should never be inspected directly.
     val tp = quantified
     override protected def rewrap(newtp: Type) = existentialAbstraction(typeParams, newtp)
 
+    override def isStable: Boolean = false
     override def bounds = TypeBounds(maybeRewrap(tp.bounds.lo), maybeRewrap(tp.bounds.hi))
     override def parents = tp.parents map maybeRewrap
     override def prefix = maybeRewrap(tp.prefix)
@@ -2469,6 +2470,12 @@ A type's symbol should never be inspected directly.
 
   import Math.max
 
+  private var nextid = 0
+  private def freshTypeName() = {
+    nextid += 1
+    newTypeName("_"+nextid)
+  }
+
   /** The maximum depth of all types in the closures of each of the types `tps' */
   final def maxClosureDepth(tps: Seq[Type]): Int = {
     var d = 0
@@ -3288,6 +3295,7 @@ A type's symbol should never be inspected directly.
       val pres = tps map (_.prefix)
       val pre = if (variance == 1) lub(pres, depth) else glb(pres, depth)
       val argss = tps map (_.typeArgs)
+      val capturedParams = new ListBuffer[Symbol]
       val args = List.map2(sym.typeParams, List.transpose(argss)) {
         (tparam, as) =>
           if (depth == 0)
@@ -3299,12 +3307,21 @@ A type's symbol should never be inspected directly.
             else if (tparam.variance == -variance) glb(as, depth-1)
             else {
               val l = lub(as, depth-1)
-              if (l <:< glb(as, depth-1)) l else NoType
+              val g = glb(as, depth-1)
+              if (l <:< g) l
+              else {
+                val qvar =
+                  commonOwner(as).newAbstractType(NoPosition, freshTypeName())
+                  .setInfo(TypeBounds(g, l))
+                  .setFlag(EXISTENTIAL)
+                capturedParams += qvar
+                qvar.tpe
+              }
             }
       }
       try {
         if (args contains NoType) None
-        else Some(typeRef(pre, sym, args))
+        else Some(existentialAbstraction(capturedParams.toList, typeRef(pre, sym, args)))
       } catch {
         case ex: MalformedType => None
       }

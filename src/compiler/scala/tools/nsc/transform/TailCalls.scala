@@ -195,8 +195,6 @@ abstract class TailCalls extends Transform
           res
 
         case ValDef(mods, name, tpt, rhs) => super.transform(tree)
-        case AbsTypeDef(mods, name, tparams, lo, hi) => tree //  (eliminated by erasure)
-        case AliasTypeDef(mods, name, tparams, rhs) => tree // (eliminated by erasure)
         case LabelDef(name, params, rhs) => super.transform(tree)
 
         case Template(parents, self, body) =>

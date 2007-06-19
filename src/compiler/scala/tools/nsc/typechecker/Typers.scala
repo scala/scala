@@ -403,7 +403,7 @@ trait Typers { self: Analyzer =>
         context.scope enter vparam.symbol
     }
 
-    def reenterTypeParams(tparams: List[AbsTypeDef]): List[Symbol] =
+    def reenterTypeParams(tparams: List[TypeDef]): List[Symbol] =
       for (tparam <- tparams) yield {
         context.scope enter tparam.symbol
         tparam.symbol.deSkolemize
@@ -476,20 +476,11 @@ trait Typers { self: Analyzer =>
       } else if ((mode & (EXPRmode | QUALmode)) == EXPRmode && !sym.isValue) { // (2)
         errorTree(tree, sym+" is not a value")
       } else {
-        skolemizeIfExistential(tree, mode)
         if (sym.isStable && pre.isStable && tree.tpe.symbol != ByNameParamClass &&
             (isStableContext(tree, mode, pt) || sym.isModule && !sym.isMethod))
           tree.setType(singleType(pre, sym))
         else tree
       }
-    }
-
-    private def skolemizeIfExistential(tree: Tree, mode: int): Tree = {
-      if ((mode & (EXPRmode | LHSmode)) == EXPRmode && tree.tpe.isInstanceOf[ExistentialType]) {
-        tree setType tree.tpe.skolemizeExistential(context.owner, tree)
-//        Console.println("skolemized "+tree+":"+tree.tpe);//DEBUG
-      }
-      tree
     }
 
     /**
@@ -960,7 +951,7 @@ trait Typers { self: Analyzer =>
 //      attributes(cdef)
       val clazz = cdef.symbol
       reenterTypeParams(cdef.tparams)
-      val tparams1 = List.mapConserve(cdef.tparams)(typedAbsTypeDef)
+      val tparams1 = List.mapConserve(cdef.tparams)(typedTypeDef)
       val impl1 = newTyper(context.make(cdef.impl, clazz, newTemplateScope(cdef.impl, clazz)))
         .typedTemplate(cdef.impl, parentTypes(cdef.impl))
       val impl2 = addSyntheticMethods(impl1, clazz, context)
@@ -1165,7 +1156,7 @@ trait Typers { self: Analyzer =>
       val meth = ddef.symbol
       reenterTypeParams(ddef.tparams)
       reenterValueParams(ddef.vparamss)
-      val tparams1 = List.mapConserve(ddef.tparams)(typedAbsTypeDef)
+      val tparams1 = List.mapConserve(ddef.tparams)(typedTypeDef)
       val vparamss1 = List.mapConserve(ddef.vparamss)(vparams1 =>
         List.mapConserve(vparams1)(typedValDef))
       var tpt1 = checkNoEscaping.privates(meth, typedType(ddef.tpt))
@@ -1196,24 +1187,18 @@ trait Typers { self: Analyzer =>
       copy.DefDef(ddef, ddef.mods, ddef.name, tparams1, vparamss1, tpt1, rhs1) setType NoType
     }
 
-    def typedAbsTypeDef(tdef: AbsTypeDef): AbsTypeDef = {
+    def typedTypeDef(tdef: TypeDef): TypeDef = {
       reenterTypeParams(tdef.tparams) // @M!
-      val tparams1 = List.mapConserve(tdef.tparams)(typedAbsTypeDef) // @M!
-      val lo1 = checkNoEscaping.privates(tdef.symbol, typedType(tdef.lo))
-      val hi1 = checkNoEscaping.privates(tdef.symbol, typedType(tdef.hi))
-      checkNonCyclic(tdef.symbol)
-      if (!(lo1.tpe <:< hi1.tpe))
-        error(tdef.pos,
-              "lower bound "+lo1.tpe+" does not conform to upper bound "+hi1.tpe)
-      copy.AbsTypeDef(tdef, tdef.mods, tdef.name, tparams1, lo1, hi1) setType NoType
-    }
-
-    def typedAliasTypeDef(tdef: AliasTypeDef): AliasTypeDef = {
-      reenterTypeParams(tdef.tparams)
-      val tparams1 = List.mapConserve(tdef.tparams)(typedAbsTypeDef)
+      val tparams1 = List.mapConserve(tdef.tparams)(typedTypeDef) // @M!
       val rhs1 = checkNoEscaping.privates(tdef.symbol, typedType(tdef.rhs))
       checkNonCyclic(tdef.symbol)
-      copy.AliasTypeDef(tdef, tdef.mods, tdef.name, tparams1, rhs1) setType NoType
+      rhs1.tpe match {
+        case TypeBounds(lo1, hi1) =>
+          if (!(lo1 <:< hi1))
+            error(tdef.pos, "lower bound "+lo1+" does not conform to upper bound "+hi1)
+        case _ =>
+      }
+      copy.TypeDef(tdef, tdef.mods, tdef.name, tparams1, rhs1) setType NoType
     }
 
     private def enterLabelDef(stat: Tree) {
@@ -2508,7 +2493,7 @@ trait Typers { self: Analyzer =>
       val sym: Symbol = tree.symbol
       if (sym ne null) sym.initialize
       //if (settings.debug.value && tree.isDef) log("typing definition of "+sym);//DEBUG
-      tree match {
+      val result = tree match {
         case PackageDef(name, stats) =>
           val stats1 = newTyper(context.make(tree, sym.moduleClass, sym.info.decls))
             .typedStats(stats, NoSymbol)
@@ -2526,11 +2511,8 @@ trait Typers { self: Analyzer =>
         case ddef @ DefDef(_, _, _, _, _, _) =>
           newTyper(makeNewScope(context, tree, sym)).typedDefDef(ddef)
 
-        case tdef @ AbsTypeDef(_, _, _, _, _) =>
-          newTyper(makeNewScope(context, tree, sym)).typedAbsTypeDef(tdef)
-
-        case tdef @ AliasTypeDef(_, _, _, _) =>
-          newTyper(makeNewScope(context, tree, sym)).typedAliasTypeDef(tdef)
+        case tdef @ TypeDef(_, _, _, _) =>
+          newTyper(makeNewScope(context, tree, sym)).typedTypeDef(tdef)
 
         case ldef @ LabelDef(_, _, _) =>
           labelTyper(ldef).typedLabelDef(ldef)
@@ -2625,7 +2607,7 @@ trait Typers { self: Analyzer =>
             if ((mode & PATTERNmode) != 0) inferTypedPattern(tpt1.pos, tpt1.tpe, widen(pt))
             else tpt1.tpe
           //Console.println(typed pattern: "+tree+":"+", tp = "+tpt1.tpe+", pt = "+pt+" ==> "+owntype)//DEBUG
-          skolemizeIfExistential(copy.Typed(tree, expr1, tpt1) setType owntype, mode)
+          copy.Typed(tree, expr1, tpt1) setType owntype
 
         case TypeApply(fun, args) =>
           // @M: kind-arity checking is done here and in adapt, full kind-checking is in checkKindBounds (in Infer)
@@ -2661,13 +2643,13 @@ trait Typers { self: Analyzer =>
                       }
 
           //@M TODO: context.undetparams = undets_fun ?
-          skolemizeIfExistential(typedTypeApply(fun1, args1), mode)
+          typedTypeApply(fun1, args1)
 
         case Apply(Block(stats, expr), args) =>
           typed1(atPos(tree.pos)(Block(stats, Apply(expr, args))), mode, pt)
 
         case Apply(fun, args) =>
-          skolemizeIfExistential(typedApply(fun, args), mode)
+          typedApply(fun, args)
 
         case ApplyDynamic(qual, args) =>
           val qual1 = typed(qual, AnyRefClass.tpe)
@@ -2724,8 +2706,10 @@ trait Typers { self: Analyzer =>
         case AppliedTypeTree(tpt, args) =>
           typedAppliedTypeTree(tpt, args)
 
-        case WildcardTypeTree(lo, hi) =>
-          tree setType mkTypeBounds(typedType(lo).tpe, typedType(hi).tpe)
+        case TypeBoundsTree(lo, hi) =>
+          val lo1 = typedType(lo)
+          val hi1 = typedType(hi)
+          copy.TypeBoundsTree(tree, lo1, hi1) setType mkTypeBounds(lo1.tpe, hi1.tpe)
 
         case etpt @ ExistentialTypeTree(_, _) =>
           newTyper(makeNewScope(context, tree, context.owner)).typedExistentialTypeTree(etpt)
@@ -2739,6 +2723,10 @@ trait Typers { self: Analyzer =>
         case _ =>
           throw new Error("unexpected tree: " + tree.getClass + "\n" + tree)//debug
       }
+      if ((mode & (EXPRmode | LHSmode)) == EXPRmode && result.tpe.isInstanceOf[ExistentialType])
+        result setType result.tpe.skolemizeExistential(context.owner, result)
+      else
+        result
     }
 
     /**

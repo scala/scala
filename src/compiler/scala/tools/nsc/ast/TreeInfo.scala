@@ -36,8 +36,7 @@ abstract class TreeInfo {
   def isDeclaration(tree: Tree): boolean = tree match {
     case DefDef(_, _, _, _, _, EmptyTree)
        | ValDef(_, _, _, EmptyTree)
-       | AbsTypeDef(_, _, _, _, _)
-       | AliasTypeDef(_, _, _, _) => true
+       | TypeDef(_, _, _, _) => true
     case _ => false
   }
 
@@ -46,8 +45,7 @@ abstract class TreeInfo {
   def isInterfaceMember(tree: Tree): boolean = tree match {
     case EmptyTree                     => true
     case Import(_, _)                  => true
-    case AbsTypeDef(_, _, _, _, _)        => true
-    case AliasTypeDef(_, _, _, _)      => true
+    case TypeDef(_, _, _, _)           => true
     case DefDef(mods, _, _, _, _, __)  => mods.hasFlag(DEFERRED)
     case ValDef(mods, _, _, _)         => mods.hasFlag(DEFERRED)
     case DocDef(_, definition)         => isInterfaceMember(definition)
@@ -59,8 +57,7 @@ abstract class TreeInfo {
   def isPureDef(tree: Tree): boolean = tree match {
     case EmptyTree
        | ClassDef(_, _, _, _)
-       | AbsTypeDef(_, _, _, _, _)
-       | AliasTypeDef(_, _, _, _)
+       | TypeDef(_, _, _, _)
        | Import(_, _)
        | DefDef(_, _, _, _, _, _) =>
       true
@@ -283,5 +280,16 @@ abstract class TreeInfo {
       containsLeadingPredefImport(defs1)
     case _ =>
       false
+  }
+
+  def isAbsTypeDef(tree: Tree) = tree match {
+    case TypeDef(_, _, _, TypeBoundsTree(_, _)) => true
+    case TypeDef(_, _, _, rhs) => rhs.tpe.isInstanceOf[TypeBounds]
+    case _ => false
+  }
+
+  def isAliasTypeDef(tree: Tree) = tree match {
+    case TypeDef(_, _, _, _) => !isAbsTypeDef(tree)
+    case _ => false
   }
 }

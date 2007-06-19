@@ -227,9 +227,8 @@ trait Trees {
   abstract class MemberDef extends DefTree {
     def mods: Modifiers
     def keyword: String = this match {
-      case AliasTypeDef(_, _, _, _) => "type"
-      case AbsTypeDef(_, _, _, _, _) => "type"
-      case _ : ClassDef => "class"
+      case TypeDef(_, _, _, _)      => "type"
+      case ClassDef(_, _, _, _)     => "class"
       case DefDef(_, _, _, _, _, _) => "def"
       case ModuleDef(_, _, _)       => "object"
       case PackageDef(_, _)         => "package"
@@ -253,7 +252,7 @@ trait Trees {
   }
 
   /** Class definition */
-  case class ClassDef(mods: Modifiers, name: Name, tparams: List[AbsTypeDef], impl: Template)
+  case class ClassDef(mods: Modifiers, name: Name, tparams: List[TypeDef], impl: Template)
        extends ImplDef
 
   /**
@@ -265,7 +264,7 @@ trait Trees {
     posAssigner.atPos(sym.pos) {
       ClassDef(Modifiers(sym.flags),
                sym.name,
-               sym.typeParams map AbsTypeDef,
+               sym.typeParams map TypeDef,
                impl) setSymbol sym
     }
 
@@ -346,7 +345,7 @@ trait Trees {
    *  @param tpt
    *  @param rhs
    */
-  case class DefDef(mods: Modifiers, name: Name, tparams: List[AbsTypeDef],
+  case class DefDef(mods: Modifiers, name: Name, tparams: List[TypeDef],
                     vparamss: List[List[ValDef]], tpt: Tree, rhs: Tree)
        extends ValOrDefDef {
     assert(tpt.isType)
@@ -360,7 +359,7 @@ trait Trees {
       assert(sym != NoSymbol)
       DefDef(Modifiers(sym.flags),
              sym.name,
-             sym.typeParams map AbsTypeDef,
+             sym.typeParams map TypeDef,
              vparamss,
              TypeTree(sym.tpe.finalResultType),
              rhs) setSymbol sym
@@ -377,39 +376,21 @@ trait Trees {
   def DefDef(sym: Symbol, rhs: List[List[Symbol]] => Tree): DefDef =
     DefDef(sym, Modifiers(sym.flags), rhs)
 
-  /** Abstract type or type parameter
-   *
-   *  @param mods
-   *  @param name
-   *  @param tparams
-   *  @param lo
-   *  @param hi
-   */
-  case class AbsTypeDef(mods: Modifiers, name: Name, tparams: List[AbsTypeDef], lo: Tree, hi: Tree)
+  /** Abstract type, type parameter, or type alias */
+  case class TypeDef(mods: Modifiers, name: Name, tparams: List[TypeDef], rhs: Tree)
        extends MemberDef {
     def namePos = pos.offset.map(n => n - name.length).get(-1)
   }
 
-  def AbsTypeDef(sym: Symbol): AbsTypeDef =
+  /** A TypeDef node which defines given `sym' with given tight hand side `rhs'. */
+  def TypeDef(sym: Symbol, rhs: Tree): TypeDef =
     posAssigner.atPos(sym.pos) {
-      AbsTypeDef(Modifiers(sym.flags), sym.name, sym.typeParams map AbsTypeDef,
-                 TypeTree(sym.info.bounds.lo), TypeTree(sym.info.bounds.hi))
+      TypeDef(Modifiers(sym.flags), sym.name, sym.typeParams map TypeDef, rhs)
     }
 
-  /** Type alias
-   *
-   *  @param mods
-   *  @param name
-   *  @param tparams
-   *  @param rhs
-   */
-  case class AliasTypeDef(mods: Modifiers, name: Name, tparams: List[AbsTypeDef], rhs: Tree)
-       extends MemberDef
-
-  def AliasTypeDef(sym: Symbol, rhs: Tree): AliasTypeDef =
-    posAssigner.atPos(sym.pos) {
-      AliasTypeDef(Modifiers(sym.flags), sym.name, sym.typeParams map AbsTypeDef, rhs)
-    }
+  /** A TypeDef node which defines abstract type or type parameter for given `sym' */
+  def TypeDef(sym: Symbol): TypeDef =
+    TypeDef(sym, TypeBoundsTree(TypeTree(sym.info.bounds.lo), TypeTree(sym.info.bounds.hi)))
 
   /** <p>
    *    Labelled expression - the symbols in the array (must be Idents!)
@@ -748,7 +729,7 @@ trait Trees {
     override def symbol_=(sym: Symbol): unit = { tpt.symbol = sym }
   }
 
-  case class WildcardTypeTree(lo: Tree, hi: Tree)
+  case class TypeBoundsTree(lo: Tree, hi: Tree)
        extends TypTree
 
   case class ExistentialTypeTree(tpt: Tree, whereClauses: List[Tree])
@@ -766,9 +747,7 @@ trait Trees {
      // mods val name: tpt = rhs
   case DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
      // mods def name[tparams](vparams): tpt = rhs
-  case AbsTypeDef(mods, name, tparams, lo, hi) =>                 (eliminated by erasure)
-     // mods type name[tparams] >: lo <: hi
-  case AliasTypeDef(mods, name, tparams, rhs) =>                  (eliminated by erasure)
+  case TypeDef(mods, name, tparams, rhs) =>                       (eliminated by erasure)
      // mods type name[tparams] = rhs
   case LabelDef(name, params, rhs) =>
      // used for tailcalls and like
@@ -842,20 +821,19 @@ trait Trees {
     // parent1 with ... with parentN { refinement }
   case AppliedTypeTree(tpt, args) =>                              (eliminated by uncurry)
     // tpt[args]
-  case WildcardTypeTree(lo, hi) =>                                (eliminated by uncurry)
-    // todo: get rid of that!
+  case TypeBoundsTree(lo, hi) =>                                (eliminated by uncurry)
+    // >: lo <: hi
   case ExistentialTypeTree(tpt, whereClauses) =>
 
 */
 
   abstract class TreeCopier {
-    def ClassDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[AbsTypeDef], impl: Template): ClassDef
+    def ClassDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[TypeDef], impl: Template): ClassDef
     def PackageDef(tree: Tree, name: Name, stats: List[Tree]): PackageDef
     def ModuleDef(tree: Tree, mods: Modifiers, name: Name, impl: Template): ModuleDef
     def ValDef(tree: Tree, mods: Modifiers, name: Name, tpt: Tree, rhs: Tree): ValDef
-    def DefDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[AbsTypeDef], vparamss: List[List[ValDef]], tpt: Tree, rhs: Tree): DefDef
-    def AbsTypeDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[AbsTypeDef], lo: Tree, hi: Tree): AbsTypeDef
-    def AliasTypeDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[AbsTypeDef], rhs: Tree): AliasTypeDef
+    def DefDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[TypeDef], vparamss: List[List[ValDef]], tpt: Tree, rhs: Tree): DefDef
+    def TypeDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[TypeDef], rhs: Tree): TypeDef
     def LabelDef(tree: Tree, name: Name, params: List[Ident], rhs: Tree): LabelDef
     def Import(tree: Tree, expr: Tree, selectors: List[(Name, Name)]): Import
     def Annotation(tree: Tree, constr: Tree, elements: List[Tree]): Annotation
@@ -892,12 +870,12 @@ trait Trees {
     def SelectFromTypeTree(tree: Tree, qualifier: Tree, selector: Name): SelectFromTypeTree
     def CompoundTypeTree(tree: Tree, templ: Template): CompoundTypeTree
     def AppliedTypeTree(tree: Tree, tpt: Tree, args: List[Tree]): AppliedTypeTree
-    def WildcardTypeTree(tree: Tree, lo: Tree, hi: Tree): WildcardTypeTree
+    def TypeBoundsTree(tree: Tree, lo: Tree, hi: Tree): TypeBoundsTree
     def ExistentialTypeTree(tree: Tree, tpt: Tree, whereClauses: List[Tree]): ExistentialTypeTree
   }
 
   class StrictTreeCopier extends TreeCopier {
-    def ClassDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[AbsTypeDef], impl: Template) =
+    def ClassDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[TypeDef], impl: Template) =
       new ClassDef(mods, name, tparams, impl).copyAttrs(tree);
     def PackageDef(tree: Tree, name: Name, stats: List[Tree]) =
       new PackageDef(name, stats).copyAttrs(tree)
@@ -905,12 +883,10 @@ trait Trees {
       new ModuleDef(mods, name, impl).copyAttrs(tree)
     def ValDef(tree: Tree, mods: Modifiers, name: Name, tpt: Tree, rhs: Tree) =
       new ValDef(mods, name, tpt, rhs).copyAttrs(tree)
-    def DefDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[AbsTypeDef], vparamss: List[List[ValDef]], tpt: Tree, rhs: Tree) =
+    def DefDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[TypeDef], vparamss: List[List[ValDef]], tpt: Tree, rhs: Tree) =
       new DefDef(mods, name, tparams, vparamss, tpt, rhs).copyAttrs(tree)
-    def AbsTypeDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[AbsTypeDef], lo: Tree, hi: Tree) =
-      new AbsTypeDef(mods, name, tparams, lo, hi).copyAttrs(tree)
-    def AliasTypeDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[AbsTypeDef], rhs: Tree) =
-      new AliasTypeDef(mods, name, tparams, rhs).copyAttrs(tree)
+    def TypeDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[TypeDef], rhs: Tree) =
+      new TypeDef(mods, name, tparams, rhs).copyAttrs(tree)
     def LabelDef(tree: Tree, name: Name, params: List[Ident], rhs: Tree) =
       new LabelDef(name, params, rhs).copyAttrs(tree)
     def Import(tree: Tree, expr: Tree, selectors: List[(Name, Name)]) =
@@ -983,15 +959,15 @@ trait Trees {
       new CompoundTypeTree(templ).copyAttrs(tree)
     def AppliedTypeTree(tree: Tree, tpt: Tree, args: List[Tree]) =
       new AppliedTypeTree(tpt, args).copyAttrs(tree)
-    def WildcardTypeTree(tree: Tree, lo: Tree, hi: Tree) =
-      new WildcardTypeTree(lo, hi).copyAttrs(tree)
+    def TypeBoundsTree(tree: Tree, lo: Tree, hi: Tree) =
+      new TypeBoundsTree(lo, hi).copyAttrs(tree)
     def ExistentialTypeTree(tree: Tree, tpt: Tree, whereClauses: List[Tree]) =
       new ExistentialTypeTree(tpt, whereClauses).copyAttrs(tree)
   }
 
   class LazyTreeCopier(copy: TreeCopier) extends TreeCopier {
     def this() = this(new StrictTreeCopier)
-    def ClassDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[AbsTypeDef], impl: Template) = tree match {
+    def ClassDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[TypeDef], impl: Template) = tree match {
       case t @ ClassDef(mods0, name0, tparams0, impl0)
       if (mods0 == mods && (name0 == name) && (tparams0 == tparams) && (impl0 == impl)) => t
       case _ => copy.ClassDef(tree, mods, name, tparams, impl)
@@ -1011,21 +987,16 @@ trait Trees {
       if (mods0 == mods) && (name0 == name) && (tpt0 == tpt) && (rhs0 == rhs) => t
       case _ => copy.ValDef(tree, mods, name, tpt, rhs)
     }
-    def DefDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[AbsTypeDef], vparamss: List[List[ValDef]], tpt: Tree, rhs: Tree) = tree match {
+    def DefDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[TypeDef], vparamss: List[List[ValDef]], tpt: Tree, rhs: Tree) = tree match {
       case t @ DefDef(mods0, name0, tparams0, vparamss0, tpt0, rhs0)
       if (mods0 == mods) && (name0 == name) && (tparams0 == tparams) &&
          (vparamss0 == vparamss) && (tpt0 == tpt) && (rhs == rhs0) => t
       case _ => copy.DefDef(tree, mods, name, tparams, vparamss, tpt, rhs)
     }
-    def AbsTypeDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[AbsTypeDef], lo: Tree, hi: Tree) = tree match {
-      case t @ AbsTypeDef(mods0, name0, tparams0, lo0, hi0)
-      if (mods0 == mods) && (name0 == name) && (tparams0 == tparams) && (lo0 == lo) && (hi0 == hi) => t
-      case _ => copy.AbsTypeDef(tree, mods, name, tparams, lo, hi)
-    }
-    def AliasTypeDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[AbsTypeDef], rhs: Tree) = tree match {
-      case t @ AliasTypeDef(mods0, name0, tparams0, rhs0)
+    def TypeDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[TypeDef], rhs: Tree) = tree match {
+      case t @ TypeDef(mods0, name0, tparams0, rhs0)
       if (mods0 == mods) && (name0 == name) && (tparams0 == tparams) && (rhs0 == rhs) => t
-      case _ => copy.AliasTypeDef(tree, mods, name, tparams, rhs)
+      case _ => copy.TypeDef(tree, mods, name, tparams, rhs)
     }
     def LabelDef(tree: Tree, name: Name, params: List[Ident], rhs: Tree) = tree match {
       case t @ LabelDef(name0, params0, rhs0)
@@ -1206,10 +1177,10 @@ trait Trees {
       if (tpt0 == tpt) && (args0 == args) => t
       case _ => copy.AppliedTypeTree(tree, tpt, args)
     }
-    def WildcardTypeTree(tree: Tree, lo: Tree, hi: Tree) = tree match {
-      case t @ WildcardTypeTree(lo0, hi0)
+    def TypeBoundsTree(tree: Tree, lo: Tree, hi: Tree) = tree match {
+      case t @ TypeBoundsTree(lo0, hi0)
       if (lo0 == lo) && (hi0 == hi) => t
-      case _ => copy.WildcardTypeTree(tree, lo, hi)
+      case _ => copy.TypeBoundsTree(tree, lo, hi)
     }
     def ExistentialTypeTree(tree: Tree, tpt: Tree, whereClauses: List[Tree]) = tree match {
       case t @ ExistentialTypeTree(tpt0, whereClauses0)
@@ -1233,7 +1204,7 @@ trait Trees {
         }
       case ClassDef(mods, name, tparams, impl) =>
         atOwner(tree.symbol) {
-          copy.ClassDef(tree, mods, name, transformAbsTypeDefs(tparams), transformTemplate(impl))
+          copy.ClassDef(tree, mods, name, transformTypeDefs(tparams), transformTemplate(impl))
         }
       case ModuleDef(mods, name, impl) =>
         atOwner(tree.symbol.moduleClass) {
@@ -1246,15 +1217,11 @@ trait Trees {
       case DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
         atOwner(tree.symbol) {
           copy.DefDef(
-            tree, mods, name, transformAbsTypeDefs(tparams), transformValDefss(vparamss), transform(tpt), transform(rhs))
+            tree, mods, name, transformTypeDefs(tparams), transformValDefss(vparamss), transform(tpt), transform(rhs))
         }
-      case AbsTypeDef(mods, name, tparams, lo, hi) =>
+      case TypeDef(mods, name, tparams, rhs) =>
         atOwner(tree.symbol) {
-          copy.AbsTypeDef(tree, mods, name, transformAbsTypeDefs(tparams), transform(lo), transform(hi))
-        }
-      case AliasTypeDef(mods, name, tparams, rhs) =>
-        atOwner(tree.symbol) {
-          copy.AliasTypeDef(tree, mods, name, transformAbsTypeDefs(tparams), transform(rhs))
+          copy.TypeDef(tree, mods, name, transformTypeDefs(tparams), transform(rhs))
         }
       case LabelDef(name, params, rhs) =>
         copy.LabelDef(tree, name, transformIdents(params), transform(rhs)) //bq: Martin, once, atOwner(...) works, also change `LamdaLifter.proxy'
@@ -1330,8 +1297,8 @@ trait Trees {
         copy.CompoundTypeTree(tree, transformTemplate(templ))
       case AppliedTypeTree(tpt, args) =>
         copy.AppliedTypeTree(tree, transform(tpt), transformTrees(args))
-      case WildcardTypeTree(lo, hi) =>
-        copy.WildcardTypeTree(tree, transform(lo), transform(hi))
+      case TypeBoundsTree(lo, hi) =>
+        copy.TypeBoundsTree(tree, transform(lo), transform(hi))
       case ExistentialTypeTree(tpt, whereClauses) =>
         copy.ExistentialTypeTree(tree, transform(tpt), transformTrees(whereClauses))
     }
@@ -1340,8 +1307,8 @@ trait Trees {
         List.mapConserve(trees)(transform)
     def transformTemplate(tree: Template): Template =
       transform(tree: Tree).asInstanceOf[Template]
-    def transformAbsTypeDefs(trees: List[AbsTypeDef]): List[AbsTypeDef] =
-      List.mapConserve(trees)(tree => transform(tree).asInstanceOf[AbsTypeDef])
+    def transformTypeDefs(trees: List[TypeDef]): List[TypeDef] =
+      List.mapConserve(trees)(tree => transform(tree).asInstanceOf[TypeDef])
     def transformValDef(tree: ValDef): ValDef =
       if (tree.isEmpty) tree else transform(tree).asInstanceOf[ValDef]
     def transformValDefs(trees: List[ValDef]): List[ValDef] =
@@ -1392,11 +1359,7 @@ trait Trees {
         atOwner(tree.symbol) {
           traverseTrees(tparams); traverseTreess(vparamss); traverse(tpt); traverse(rhs)
         }
-      case AbsTypeDef(mods, name, tparams, lo, hi) =>
-        atOwner(tree.symbol) {
-          traverseTrees(tparams); traverse(lo); traverse(hi)
-        }
-      case AliasTypeDef(mods, name, tparams, rhs) =>
+      case TypeDef(mods, name, tparams, rhs) =>
         atOwner(tree.symbol) {
           traverseTrees(tparams); traverse(rhs)
         }
@@ -1476,7 +1439,7 @@ trait Trees {
         traverse(templ)
       case AppliedTypeTree(tpt, args) =>
         traverse(tpt); traverseTrees(args)
-      case WildcardTypeTree(lo, hi) =>
+      case TypeBoundsTree(lo, hi) =>
         traverse(lo); traverse(hi)
       case ExistentialTypeTree(tpt, whereClauses) =>
         traverse(tpt); traverseTrees(whereClauses)

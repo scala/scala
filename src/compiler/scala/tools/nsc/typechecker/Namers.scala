@@ -217,7 +217,7 @@ trait Namers { self: Analyzer =>
     /** Replace type parameters with their TypeSkolems, which can later be deskolemized to the original type param
      * (a skolem is a representation of a bound variable when viewed outside its scope)
      */
-    def skolemize(tparams: List[AbsTypeDef]): unit = {
+    def skolemize(tparams: List[TypeDef]): unit = {
       val tskolems = newTypeSkolems(tparams map (_.symbol))
       for ((tparam, tskolem) <- tparams zip tskolems) tparam.symbol = tskolem
     }
@@ -241,12 +241,12 @@ trait Namers { self: Analyzer =>
 
     def enterSym(tree: Tree): Context = {
 
-      def finishWith(tparams: List[AbsTypeDef]): unit = {
+      def finishWith(tparams: List[TypeDef]) {
         val sym = tree.symbol
         if (settings.debug.value) log("entered " + sym + " in " + context.owner + ", scope-id = " + context.scope.hashCode());
         var ltype: LazyType = namerOf(sym).typeCompleter(tree)
         if (!tparams.isEmpty) {
-          //@M! AbsTypeDef's type params are handled differently
+          //@M! TypeDef's type params are handled differently
           //@M e.g., in [A[x <: B], B], A and B are entered first as both are in scope in the definition of x
           //@M x is only in scope in `A[x <: B]'
           if(!sym.isAbstractType) //@M
@@ -322,14 +322,11 @@ trait Namers { self: Analyzer =>
               .setFlag(mods.flags)
             setPrivateWithin(tree, tree.symbol, mods)
             finishWith(tparams)
-          case AbsTypeDef(mods, name, tparams, _, _) =>
-            tree.symbol = enterInScope(owner.newAbstractType(tree.pos, name))
-              .setFlag(mods.flags)
-            setPrivateWithin(tree, tree.symbol, mods)
-            finishWith(tparams)
-          case AliasTypeDef(mods, name, tparams, _) =>
-            tree.symbol = enterInScope(owner.newAliasType(tree.pos, name))
-              .setFlag(mods.flags)
+          case TypeDef(mods, name, tparams, _) =>
+            var flags: Long = mods.flags
+            if ((flags & PARAM) != 0) flags |= DEFERRED
+            tree.symbol = enterInScope(new TypeSymbol(owner, tree.pos, name))
+              .setFlag(flags)
             setPrivateWithin(tree, tree.symbol, mods)
             finishWith(tparams)
           case DocDef(_, defn) =>
@@ -457,10 +454,10 @@ trait Namers { self: Analyzer =>
       ClassInfoType(parents, decls, clazz)
     }
 
-    private def classSig(tparams: List[AbsTypeDef], impl: Template): Type =
+    private def classSig(tparams: List[TypeDef], impl: Template): Type =
       parameterizedType(typer.reenterTypeParams(tparams), templateSig(impl))
 
-    private def methodSig(tparams: List[AbsTypeDef], vparamss: List[List[ValDef]],
+    private def methodSig(tparams: List[TypeDef], vparamss: List[List[ValDef]],
                           tpt: Tree, rhs: Tree): Type = {
       val meth = context.owner
 
@@ -620,20 +617,16 @@ trait Namers { self: Analyzer =>
     }
 
     //@M! an abstract type definition (abstract type member/type parameter) may take type parameters, which are in scope in its bounds
-    private def abstractTypeSig(tree: Tree, tpsym: Symbol, tparams: List[AbsTypeDef], lo: Tree, hi: Tree) = {
+    private def typeDefSig(tpsym: Symbol, tparams: List[TypeDef], rhs: Tree) = {
       val tparamSyms = typer.reenterTypeParams(tparams) //@M make tparams available in scope (just for this abstypedef)
-
-      var lt = typer.typedType(lo).tpe
-      if (lt.isError) lt = AllClass.tpe
-
-      var ht = typer.typedType(hi).tpe
-      if (ht.isError) ht = AnyClass.tpe
-
-      parameterizedType(tparamSyms,  mkTypeBounds(lt, ht)) //@M
+      var tp = typer.typedType(rhs).tpe
+      tp match {
+        case TypeBounds(lt, rt) if (lt.isError || rt.isError) =>
+          tp = TypeBounds(AllClass.tpe, AnyClass.tpe)
+        case _ =>
+      }
+      parameterizedType(tparamSyms, tp) //@M
     }
-
-    private def aliasTypeSig(tpsym: Symbol, tparams: List[AbsTypeDef], rhs: Tree): Type =
-      parameterizedType(typer.reenterTypeParams(tparams), typer.typedType(rhs).tpe);
 
     def typeSig(tree: Tree): Type = {
       val sym: Symbol = tree.symbol
@@ -680,11 +673,8 @@ trait Namers { self: Analyzer =>
                 }
               } else typer1.typedType(tpt).tpe
 
-            case tree @ AliasTypeDef(_, _, tparams, rhs) =>
-              new Namer(makeNewScope(context, tree, sym)).aliasTypeSig(sym, tparams, rhs)
-
-            case AbsTypeDef(_, _, tparams, lo, hi) =>
-              new Namer(makeNewScope(context, tree, sym)).abstractTypeSig(tree, sym, tparams, lo, hi) //@M!
+            case TypeDef(_, _, tparams, rhs) =>
+              new Namer(makeNewScope(context, tree, sym)).typeDefSig(sym, tparams, rhs) //@M!
 
             case Import(expr, selectors) =>
               val expr1 = typer.typedQualifier(expr)

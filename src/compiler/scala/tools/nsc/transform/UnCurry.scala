@@ -368,7 +368,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
                       transform(expr));
                 }
                 copy.DefDef(
-                  tree, mods, name, transformAbsTypeDefs(tparams),
+                  tree, mods, name, transformTypeDefs(tparams),
                   transformValDefss(vparamss), transform(tpt), rhs1)
               }
             } else {

@@ -130,7 +130,7 @@ trait Parsers {
     /** The wildcards introduced by `_' in the current type.
      *  Parameters appear in reverse order
      */
-    var wildcards: List[AbsTypeDef] = Nil
+    var wildcards: List[TypeDef] = Nil
 
     /** this is the general parse method
      */
@@ -671,7 +671,7 @@ trait Parsers {
           val whereClauses = refinement()
           for (wc <- whereClauses) {
             wc match {
-              case AbsTypeDef(_, _, _, _, _) | ValDef(_, _, _, EmptyTree) =>
+              case TypeDef(_, _, _, TypeBoundsTree(_, _)) | ValDef(_, _, _, EmptyTree) =>
                 ;
               case _ =>
                 syntaxError(wc.pos, "not a legal where clause", false)
@@ -775,6 +775,14 @@ trait Parsers {
           val ts = types(isPattern)
           accept(RPAREN)
           atPos(pos) { makeTupleType(ts, true) }
+/*
+        } else if (inToken == USCORE) {
+          val pname = freshName("_$").toTypeName
+          val pos = inSkipToken
+          val param = makeSyntheticTypeParam(pname) setPos pos
+          implicitTypeParams = param :: implicitTypeParams
+          t = atPos(pos) { Ident(pname) }
+*/
         } else {
           val r = path(false, true)
           val x = r match {
@@ -1735,8 +1743,8 @@ trait Parsers {
      *  FunTypeParamClause    ::= `[' TypeParam {`,' TypeParam} `]']
      *  TypeParam             ::= Id TypeParamClauseOpt TypeBounds [<% Type]
      */
-    def typeParamClauseOpt(owner: Name, implicitViewBuf: ListBuffer[Tree]): List[AbsTypeDef] = {
-      def typeParam(): AbsTypeDef = {
+    def typeParamClauseOpt(owner: Name, implicitViewBuf: ListBuffer[Tree]): List[TypeDef] = {
+      def typeParam(): TypeDef = {
         var mods = Modifiers(Flags.PARAM)
         if (owner.isTypeName && isIdent) {
           if (inName == PLUS) {
@@ -1749,20 +1757,20 @@ trait Parsers {
         }
         val pos = inCurrentPos
         val pname =
-          if (inToken == USCORE) { // @M! also allow underscore
+          (if (inToken == USCORE) { // @M! also allow underscore
             inNextToken
             nme.WILDCARD
-          } else ident()
+          } else ident()).toTypeName
 
-        val tparams = typeParamClauseOpt(pname.toTypeName, null) // @M TODO null --> no higher-order view bounds for now
-        val param = atPos(pos) { typeBounds(mods, pname, tparams) }
+        val tparams = typeParamClauseOpt(pname, null) // @M TODO null --> no higher-order view bounds for now
+        val param = atPos(pos) { TypeDef(mods, pname, tparams, typeBounds()) }
         if (inToken == VIEWBOUND && (implicitViewBuf ne null))
           implicitViewBuf += atPos(inSkipToken) {
-            makeFunctionTypeTree(List(Ident(pname.toTypeName)), typ())
+            makeFunctionTypeTree(List(Ident(pname)), typ())
           }
         param
       }
-      val params = new ListBuffer[AbsTypeDef]
+      val params = new ListBuffer[TypeDef]
       newLineOptWhenFollowedBy(LBRACKET)
       if (inToken == LBRACKET) {
         inNextToken
@@ -1778,10 +1786,10 @@ trait Parsers {
 
     /** TypeBounds ::= [`>:' Type] [`<:' Type]
      */
-    def typeBounds(mods: Modifiers, name: Name, tparams: List[AbsTypeDef]): AbsTypeDef =
-      AbsTypeDef(mods, name.toTypeName, tparams, // @M: an abstract type may have type parameters
-                 bound(SUPERTYPE, nme.Nothing),
-                 bound(SUBTYPE, nme.Any))
+    def typeBounds(): TypeBoundsTree =
+      TypeBoundsTree(
+        bound(SUPERTYPE, nme.Nothing),
+        bound(SUBTYPE, nme.Any))
 
     def bound(tok: int, default: Name): Tree =
       if (inToken == tok) { inNextToken; typ() }
@@ -2052,9 +2060,9 @@ trait Parsers {
         inToken match {
           case EQUALS =>
             inNextToken
-            AliasTypeDef(mods, name, tparams, typ())
+            TypeDef(mods, name, tparams, typ())
           case SUPERTYPE | SUBTYPE | SEMI | NEWLINE | NEWLINES | COMMA | RBRACE =>
-            typeBounds(mods | Flags.DEFERRED, name, tparams)
+            TypeDef(mods | Flags.DEFERRED, name, tparams, typeBounds())
           case _ =>
             syntaxErrorOrIncomplete("`=', `>:', or `<:' expected", true)
             EmptyTree

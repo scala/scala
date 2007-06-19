@@ -757,7 +757,9 @@ trait Symbols {
 
     /** The top-level class containing this symbol */
     def toplevelClass: Symbol =
-      if (isClass && owner.isPackageClass) this else owner.toplevelClass
+      if (owner.isPackageClass) {
+        if (isClass) this else moduleClass
+      } else owner.toplevelClass
 
     /** The class with the same name in the same package as this module or
      *  case class factory

@@ -752,9 +752,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
             copy.ClassDef(tree, mods, name, List(), impl)
           case DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
             copy.DefDef(tree, mods, name, List(), vparamss, tpt, rhs)
-          case AbsTypeDef(_, _, _, _, _) =>
-            EmptyTree
-          case AliasTypeDef(_, _, _, _) =>
+          case TypeDef(_, _, _, _) =>
             EmptyTree
           case TypeApply(fun, args) if (fun.symbol.owner != AnyClass &&
                                         fun.symbol != Object_asInstanceOf &&

@@ -396,7 +396,9 @@ class SemanticTokens(val compiler: Global) {
         doLog = false;
       }
     };
-
+/*
+  Martin to Sean: I don't understand why AbsTypeDef is different from AliasTypeDef.
+  Why is the order reversed? Why two buildDefs for tree.symbol vs one for AliasTypeDef?
       case tree: AbsTypeDef =>
         //Console.err.println("ABS: " + tree.symbol + " " + unit.source.dbg(tree.namePos) + " " + tree.pos.dbgString);
         buildDef(tree.symbol, tree.namePos)
@@ -404,6 +406,7 @@ class SemanticTokens(val compiler: Global) {
         build(tree.tparams); //@M
         build(tree.lo)
         build(tree.hi)
+*/
       case tree: Bind =>
         buildDef(tree.symbol, tree.pos.offset.get(-1))
         build(tree.body)
@@ -472,10 +475,10 @@ class SemanticTokens(val compiler: Global) {
         //Console.err.println("THIS: " + tree.symbol + " " + tree.qual + " " + tree.pos.dbgString + " " + tree.tpe);
         if (tree.symbol ne null) buildUse(tree.symbol, tree.pos.offset.get(-1), tree.tpe);
         //Thread.dumpStack();
-      case tree : AliasTypeDef =>
+      case tree : TypeDef =>
         //Console.err.println("ALIAS: " + tree);
         build(tree.rhs); build(tree.tparams); buildDef(tree.symbol, tree.pos.offset.get(-1));
-          case tree : DocDef     => build(tree.definition);
+      case tree : DocDef     => build(tree.definition);
       case tree: Import => build(tree.expr)
       case tree: AppliedTypeTree => ;
       case tree: Annotated => ;

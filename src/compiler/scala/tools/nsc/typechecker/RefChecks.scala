@@ -705,10 +705,7 @@ abstract class RefChecks extends InfoTransform {
           validateVariance(sym, sym.tpe, if (sym.isVariable) NoVariance else CoVariance) //@M TODO: might be affected by change in tpe --> can't use tree.tpe though
           checkDeprecatedOvers()
 
-        case AbsTypeDef(_, _, _, _, _) =>
-          validateVariance(sym, sym.info, CoVariance)
-
-        case AliasTypeDef(_, _, _, _) =>
+        case TypeDef(_, _, _, _) =>
           validateVariance(sym, sym.info, CoVariance)
 
         case Template(_, _, _) =>

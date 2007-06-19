@@ -59,7 +59,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   import compiler.Traverser
   import compiler.{Tree, TermTree,
                    ValOrDefDef, ValDef, DefDef, Assign,
-                   ClassDef, ModuleDef, Ident, Select, AliasTypeDef,
+                   ClassDef, ModuleDef, Ident, Select, TypeDef,
                    Import, MemberDef}
   import compiler.CompilationUnit
   import compiler.{Symbol,Name,Type}
@@ -399,12 +399,12 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
         new ExprReq(line, lineName)
       case List(_:ModuleDef) => new ModuleReq(line, lineName)
       case List(_:ClassDef) => new ClassReq(line, lineName)
-      case List(_:AliasTypeDef) => new TypeAliasReq(line, lineName)
+      case List(t:TypeDef) if compiler.treeInfo.isAliasTypeDef(t) =>
+        new TypeAliasReq(line, lineName)
       case List(_:Import) => new ImportReq(line, lineName)
-      case _ => {
+      case _ =>
         reporter.error(null, "That kind of statement combination is not supported by the interpreter.")
         null
-      }
     }
 
   /** <p>
@@ -587,7 +587,8 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
 
     /** list of type aliases defined */
     val typeNames =
-      for (AliasTypeDef(mods, name, _, _) <- trees if mods.isPublic)
+      for (t @ TypeDef(mods, name, _, _) <- trees
+           if mods.isPublic && compiler.treeInfo.isAliasTypeDef(t))
         yield name
 
     /** all (public) names defined by these statements */
@@ -829,7 +830,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   private class TypeAliasReq(line: String, lineName: String)
   extends Request(line, lineName) {
     def newTypeName = trees match {
-      case List(AliasTypeDef(_, name, _, _)) => name
+      case List(TypeDef(_, name, _, _)) => name
     }
 
     override def resultExtractionCode(code: PrintWriter): Unit = {
