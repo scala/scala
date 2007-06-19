@@ -127,14 +127,14 @@ object Plugin {
     alljars ++= jars
 
     for {
-      dir <- dirs
-      entries = dir.listFiles.toList
-      sorted = entries.sort((f1,f2)=>f1.getName <= f2.getName)
-      ent <- sorted
-      if ent.toString.toLowerCase.endsWith(".jar")
-      pdesc <- loadDescription(ent)
+      dir <- dirs if dir.isDirectory
+      entries = dir.listFiles
+      if entries ne null
+      entry <- entries.toList.sort((f1, f2) => f1.getName <= f2.getName)
+      if entry.toString.toLowerCase endsWith ".jar"
+      pdesc <- loadDescription(entry)
       if !(ignoring contains pdesc.name)
-    } alljars += ent
+    } alljars += entry
 
     val loader = loaderFor(alljars.toList)
     alljars.toList.map(f => loadFrom(f,loader)).flatMap(x => x)
