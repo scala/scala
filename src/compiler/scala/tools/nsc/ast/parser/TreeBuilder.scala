@@ -211,6 +211,9 @@ abstract class TreeBuilder {
   def makeSyntheticParam(pname: Name) =
     ValDef(Modifiers(PARAM | SYNTHETIC), pname, TypeTree(), EmptyTree)
 
+  def makeSyntheticTypeParam(pname: Name, bounds: Tree) =
+    TypeDef(Modifiers(DEFERRED | SYNTHETIC), pname, List(), bounds)
+
   abstract class Enumerator
   case class ValFrom(pos: Position, pat: Tree, rhs: Tree) extends Enumerator
   case class ValEq(pos: Position, pat: Tree, rhs: Tree) extends Enumerator

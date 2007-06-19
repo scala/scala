@@ -1482,7 +1482,7 @@ A type's symbol should never be inspected directly.
     }
 
     override def toString: String =
-      quantified+(typeParams map tparamToString mkString(" for_some { ", "; ", " }"))
+      quantified+(typeParams map tparamToString mkString(" forSome { ", "; ", " }"))
 
     private def tparamToString(tparam: Symbol) = {
       val tname = tparam.name.toString

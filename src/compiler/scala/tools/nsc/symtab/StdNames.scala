@@ -26,7 +26,7 @@ trait StdNames {
     val FINALkw = newTermName("final")
     val FINALLYkw = newTermName("finally")
     val FORkw = newTermName("for")
-    val FORSOMEkw = newTermName("for_some")
+    val FORSOMEkw = newTermName("forSome")
     val IFkw = newTermName("if")
     val IMPLICITkw = newTermName("implicit")
     val IMPORTkw = newTermName("import")

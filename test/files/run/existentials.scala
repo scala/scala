@@ -1,9 +1,19 @@
 class Foo {
   class Line {
     case class Cell[T](var x: T)
-    def f[T](x: Any): Cell[t1] for_some { type t1 } = x match { case y: Cell[t] => y }
+    def f[T](x: Any): Cell[t1] forSome { type t1 } = x match { case y: Cell[t] => y }
 
-    var x: Cell[T] for_some { type T } = new Cell(1)
+    var x: Cell[T] forSome { type T } = new Cell(1)
+    println({ x = new Cell("abc"); x })
+  }
+}
+
+class FooW {
+  class Line {
+    case class Cell[T](var x: T)
+    def f[T](x: Any): Cell[ _ ] = x match { case y: Cell[t] => y }
+
+    var x: Cell[_] = new Cell(1)
     println({ x = new Cell("abc"); x })
   }
 }
@@ -21,18 +31,31 @@ object LUB {
   def y = C("abc")
   var coinflip: boolean = _
   def z = if (coinflip) x else y
-  def zz: C[_1] for_some { type _1 >: Int with java.lang.String } = z
+  def zz: C[_1] forSome { type _1 >: Int with java.lang.String } = z
+  def zzs: C[_ >: Int with java.lang.String] = z
 }
- object Test extends Application {
 
-   def foo(x : Counter[T] { def name : String } for_some { type T }) = x match {
+object Test extends Application {
+
+   def foo(x : Counter[T] { def name : String } forSome { type T }) = x match {
      case ctr: Counter[t] =>
        val c = ctr.newCounter
        println(ctr.name+" "+ctr.get(ctr.inc(ctr.inc(c))))
      case _ =>
    }
 
-   var ex: Counter[T] for_some { type T } = _
+   def fooW(x : Counter[_] { def name : String }) = x match {
+     case ctr: Counter[t] =>
+       val c = ctr.newCounter
+       println(ctr.name+" "+ctr.get(ctr.inc(ctr.inc(c))))
+     case _ =>
+   }
+
+   var ex: Counter[T] forSome { type T } = _
+   ex = ci
+   ex = cf
+
+   var exW: Counter[_] = _
    ex = ci
    ex = cf
 
@@ -52,6 +75,10 @@ object LUB {
 
    foo(ci)
    foo(cf)
+   fooW(ci)
+   fooW(cf)
    val foo = new Foo
    new foo.Line
+   val fooW = new FooW
+   new fooW.Line
 }

@@ -330,7 +330,7 @@ abstract class TreePrinters {
 
         case ExistentialTypeTree(tpt, whereClauses) =>
           print(tpt);
-          printColumn(whereClauses, " for_some { ", ";", "}")
+          printColumn(whereClauses, " forSome { ", ";", "}")
 
         case tree =>
           print("<unknown tree of class "+tree.getClass+">")

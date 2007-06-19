@@ -122,16 +122,6 @@ trait Parsers {
     /** The implicit view parameters of the surrounding class */
     var implicitClassViews: List[Tree] = Nil
 
-    /** The implicit parameters introduced by `_' in the current expression.
-     *  Parameters appear in reverse order
-     */
-    var implicitParams: List[ValDef] = Nil
-
-    /** The wildcards introduced by `_' in the current type.
-     *  Parameters appear in reverse order
-     */
-    var wildcards: List[TypeDef] = Nil
-
     /** this is the general parse method
      */
     def parse(): Tree = {
@@ -140,6 +130,52 @@ trait Parsers {
       t
     }
 
+/////////// PLACEHOLDERS ///////////////////////////////////////////////////////
+
+    /** The implicit parameters introduced by `_' in the current expression.
+     *  Parameters appear in reverse order
+     */
+    var placeholderParams: List[ValDef] = Nil
+
+    /** The placeholderTypes introduced by `_' in the current type.
+     *  Parameters appear in reverse order
+     */
+    var placeholderTypes: List[TypeDef] = Nil
+
+    def checkNoEscapingPlaceholders[T](op: => T): T = {
+      val savedPlaceholderParams = placeholderParams
+      val savedPlaceholderTypes = placeholderTypes
+      placeholderParams = List()
+      placeholderTypes = List()
+
+      val res = op
+
+      placeholderParams match {
+        case vd :: _ =>
+          syntaxError(vd.pos, "unbound placeholder parameter", false)
+          placeholderParams = List()
+        case _ =>
+      }
+      placeholderTypes match {
+        case td :: _ =>
+          syntaxError(td.pos, "unbound wildcard type", false)
+          placeholderTypes = List()
+        case _ =>
+      }
+      placeholderParams = savedPlaceholderParams
+      placeholderTypes = savedPlaceholderTypes
+
+      res
+    }
+
+    def placeholderTypeBoundary(op: => Tree): Tree = {
+      val savedPlaceholderTypes = placeholderTypes
+      placeholderTypes = List()
+      var t = op
+      if (!placeholderTypes.isEmpty) t = ExistentialTypeTree(t, placeholderTypes.reverse)
+      placeholderTypes = savedPlaceholderTypes
+      t
+    }
 
 /////// ERROR HANDLING //////////////////////////////////////////////////////
 
@@ -418,13 +454,6 @@ trait Parsers {
         syntaxError(
           pos, "left- and right-associative operators with same precedence may not be mixed", false)
 
-    def checkNoImplicitParams() = implicitParams match {
-      case vd :: _ =>
-        syntaxError(vd.pos, "unbound wildcard parameter", false)
-        implicitParams = List()
-      case _ =>
-    }
-
     def reduceStack(isExpr: boolean, base: List[OpInfo], top0: Tree, prec: int, leftAssoc: boolean): Tree = {
       var top = top0
       if (opstack != base && precedence(opstack.head.operator) == prec)
@@ -617,7 +646,7 @@ trait Parsers {
     /** TypedOpt ::= [`:' Type]
     */
     def typedOpt(): Tree =
-      if (inToken == COLON) { inNextToken; typ() }
+      if (inToken == COLON) { inNextToken; placeholderTypeBoundary(typ()) }
       else TypeTree()
 
     /** RequiresTypedOpt ::= [requires AnnotType]
@@ -625,7 +654,7 @@ trait Parsers {
     def requiresTypeOpt(): Tree =
       if (inToken == REQUIRES) {
         warning("`requires T' has been deprecated; use `{ self: T => ...'  instead")
-        inNextToken; annotType(false)
+        inNextToken; placeholderTypeBoundary(annotType(false))
       } else TypeTree()
 
     /** Types ::= Type {`,' Type}
@@ -648,18 +677,7 @@ trait Parsers {
     private final val LeftOp = 1    // left associative
     private final val RightOp = 2   // right associative
 
-    /** GlobalType ::= Type
-     */
-    def globalTyp(): Tree = {
-      val savedWildcards = wildcards
-      wildcards = List()
-      var t = typ()
-      if (!wildcards.isEmpty) t = ExistentialTypeTree(t, wildcards)
-      wildcards = savedWildcards
-      t
-    }
-
-    /** Type  ::= Type1 [for_some `{' WhereClause {semi WhereClause}} `}']
+    /** Type  ::= Type1 [forSome `{' WhereClause {semi WhereClause}} `}']
      *  WhereClause ::= type TypeDcl
      *                | val  ValDcl
      *                |
@@ -755,10 +773,11 @@ trait Parsers {
 
     /** AnnotType        ::=  Annotations SimpleType
      *  SimpleType       ::=  SimpleType TypeArgs
-     *                     |   SimpleType `#' Id
-     *                     |   StableId
-     *                     |   Path `.' type
-     *                     |   `(' Types [`,'] `)'
+     *                     |  SimpleType `#' Id
+     *                     |  StableId
+     *                     |  Path `.' type
+     *                     |  `(' Types [`,'] `)'
+     *                     |  `_' TypeBounds
      * AnnotTypePat      ::=  Annotations SimpleTypePat
      * SimpleTypePat     ::=  SimpleTypePat1 [TypePatArgs]
      * SimpleTypePat1    ::=  SimpleTypePat1 "#" Id
@@ -775,22 +794,17 @@ trait Parsers {
           val ts = types(isPattern)
           accept(RPAREN)
           atPos(pos) { makeTupleType(ts, true) }
-/*
-        } else if (inToken == USCORE) {
+        } else if (inToken == USCORE && !isPattern) {
           val pname = freshName("_$").toTypeName
-          val pos = inSkipToken
-          val param = makeSyntheticTypeParam(pname) setPos pos
-          implicitTypeParams = param :: implicitTypeParams
-          t = atPos(pos) { Ident(pname) }
-*/
+          val param = atPos(inSkipToken) { makeSyntheticTypeParam(pname, typeBounds()) }
+          placeholderTypes = param :: placeholderTypes
+          atPos(pos) { Ident(pname) }
         } else {
           val r = path(false, true)
-          val x = r match {
+          r match {
             case SingletonTypeTree(_) => r
             case _ => convertToTypeId(r)
           }
-          // System.err.println("SIMPLE_TYPE: " + r.pos + " " + r + " => " + x.pos + " " + x)
-          x
         }
 
       // scan for # and []
@@ -923,13 +937,13 @@ trait Parsers {
     /** XXX: Hook for IDE */
     def expr(location: int): Tree = {
       def isWildcard(t: Tree): boolean = t match {
-        case Ident(name1) if !implicitParams.isEmpty && name1 == implicitParams.head.name => true
+        case Ident(name1) if !placeholderParams.isEmpty && name1 == placeholderParams.head.name => true
         case Typed(t1, _) => isWildcard(t1)
         case Annotated(t1, _) => isWildcard(t1)
         case _ => false
       }
-      var savedImplicitParams = implicitParams
-      implicitParams = List()
+      var savedPlaceholderParams = placeholderParams
+      placeholderParams = List()
       var res = inToken match {
         case IF =>
           val pos = inSkipToken
@@ -1032,11 +1046,12 @@ trait Parsers {
               }
             } else if (annots.isEmpty || isTypeIntro) {
               t = atPos(pos) {
-                val tpt = if (location != Local) compoundType(false) else typ()
+                val tpt = placeholderTypeBoundary(
+                  if (location != Local) compoundType(false) else typ())
                 if (isWildcard(t))
-                  (implicitParams: @unchecked) match {
+                  (placeholderParams: @unchecked) match {
                     case (vd @ ValDef(mods, name, _, _)) :: rest =>
-                      implicitParams = copy.ValDef(vd, mods, name, tpt.duplicate, EmptyTree) :: rest
+                      placeholderParams = copy.ValDef(vd, mods, name, tpt.duplicate, EmptyTree) :: rest
                   }
                 // this does not correspond to syntax, but is necessary to
                 // accept closures. We might restrict closures to be between {...} only!
@@ -1060,10 +1075,10 @@ trait Parsers {
           }
           stripParens(t)
       }
-      if (!implicitParams.isEmpty)
-        if (isWildcard(res)) savedImplicitParams = implicitParams ::: savedImplicitParams
-        else res = Function(implicitParams.reverse, res)
-      implicitParams = savedImplicitParams
+      if (!placeholderParams.isEmpty)
+        if (isWildcard(res)) savedPlaceholderParams = placeholderParams ::: savedPlaceholderParams
+        else res = Function(placeholderParams.reverse, res)
+      placeholderParams = savedPlaceholderParams
       res
     }
 
@@ -1152,7 +1167,7 @@ trait Parsers {
           val pname = freshName("x$")
           val pos = inSkipToken
           val param = makeSyntheticParam(pname) setPos pos
-          implicitParams = param :: implicitParams
+          placeholderParams = param :: placeholderParams
           t = atPos(pos) { Ident(pname) }
         case LPAREN =>
           val pos = inSkipToken
@@ -1340,7 +1355,7 @@ trait Parsers {
         val p = pattern2(seqOK)
         p match {
           case Ident(name) if (treeInfo.isVarPattern(p) && inToken == COLON) =>
-            atPos(inSkipToken) { Typed(p, compoundType(true)) }
+            atPos(inSkipToken) { Typed(p, placeholderTypeBoundary(compoundType(true))) }
           case _ =>
             p
         }
@@ -1723,10 +1738,10 @@ trait Parsers {
       if (inToken == ARROW)
         atPos(inSkipToken) {
           AppliedTypeTree(
-              scalaDot(nme.BYNAME_PARAM_CLASS_NAME.toTypeName), List(typ()))
+              scalaDot(nme.BYNAME_PARAM_CLASS_NAME.toTypeName), List(placeholderTypeBoundary(typ())))
         }
       else {
-        val t = typ()
+        val t = placeholderTypeBoundary(typ())
         if (isIdent && inName == STAR) {
           inNextToken
           atPos(t.pos) {
@@ -1766,7 +1781,7 @@ trait Parsers {
         val param = atPos(pos) { TypeDef(mods, pname, tparams, typeBounds()) }
         if (inToken == VIEWBOUND && (implicitViewBuf ne null))
           implicitViewBuf += atPos(inSkipToken) {
-            makeFunctionTypeTree(List(Ident(pname)), typ())
+            makeFunctionTypeTree(List(Ident(pname)), placeholderTypeBoundary(typ()))
           }
         param
       }
@@ -1792,7 +1807,7 @@ trait Parsers {
         bound(SUBTYPE, nme.Any))
 
     def bound(tok: int, default: Name): Tree =
-      if (inToken == tok) { inNextToken; typ() }
+      if (inToken == tok) { inNextToken; placeholderTypeBoundary(typ()) }
       else scalaDot(default.toTypeName)
 
 //////// DEFS ////////////////////////////////////////////////////////////////
@@ -2060,7 +2075,7 @@ trait Parsers {
         inToken match {
           case EQUALS =>
             inNextToken
-            TypeDef(mods, name, tparams, typ())
+            TypeDef(mods, name, tparams, placeholderTypeBoundary(typ()))
           case SUPERTYPE | SUBTYPE | SEMI | NEWLINE | NEWLINES | COMMA | RBRACE =>
             TypeDef(mods | Flags.DEFERRED, name, tparams, typeBounds())
           case _ =>
@@ -2142,14 +2157,14 @@ trait Parsers {
      *  TraitParents       ::= AnnotType {with AnnotType}
      */
     def templateParents(isTrait: boolean): (List[Tree], List[List[Tree]]) = {
-      val parents = new ListBuffer[Tree] + annotType(false)
+      val parents = new ListBuffer[Tree] + placeholderTypeBoundary(annotType(false))
       val argss = new ListBuffer[List[Tree]]
       if (inToken == LPAREN && !isTrait)
         do { argss += argumentExprs() } while (inToken == LPAREN)
       else argss += List()
       while (inToken == WITH) {
         inNextToken
-        parents += annotType(false)
+        parents += placeholderTypeBoundary(annotType(false))
       }
       (parents.toList, argss.toList)
     }
@@ -2291,9 +2306,7 @@ trait Parsers {
      *                     | super ArgumentExprs {ArgumentExprs}
      *                     |
      */
-    def templateStatSeq() = {
-      val savedImplicitParams = implicitParams
-      implicitParams = List()
+    def templateStatSeq() = checkNoEscapingPlaceholders {
       var self: ValDef = emptyValDef
       val stats = new ListBuffer[Tree]
       if (isExprIntro) {
@@ -2320,8 +2333,6 @@ trait Parsers {
         }
         if (inToken != RBRACE && inToken != EOF) acceptStatSep()
       }
-      checkNoImplicitParams()
-      implicitParams = savedImplicitParams
       (self, stats.toList)
     }
 
@@ -2330,7 +2341,7 @@ trait Parsers {
      *                     | type TypeDef
      *                     |
      */
-    def refineStatSeq(): List[Tree] = {
+    def refineStatSeq(): List[Tree] = checkNoEscapingPlaceholders {
       val stats = new ListBuffer[Tree]
       while (inToken != RBRACE && inToken != EOF) {
         if (isDclIntro) {
@@ -2350,7 +2361,7 @@ trait Parsers {
      *                 | Expr1
      *                 |
      */
-    def blockStatSeq(stats: ListBuffer[Tree]): List[Tree] = {
+    def blockStatSeq(stats: ListBuffer[Tree]): List[Tree] = checkNoEscapingPlaceholders {
       def localDef(mods: Modifiers) = {
         if (!(mods hasFlag ~Flags.IMPLICIT)) stats ++= defOrDcl(mods)
         else stats += tmplDefHooked(mods)
@@ -2361,8 +2372,6 @@ trait Parsers {
         if (inToken == RBRACE || inToken == CASE)
           stats += Literal(()).setPos(inCurrentPos)
       }
-      val savedImplicitParams = implicitParams
-      implicitParams = List()
       var last = false
       while ((inToken != RBRACE) && (inToken != EOF) && (inToken != CASE) && !last) {
         if (inToken == IMPORT) {
@@ -2381,8 +2390,6 @@ trait Parsers {
           syntaxErrorOrIncomplete("illegal start of statement", true)
         }
       }
-      checkNoImplicitParams()
-      implicitParams = savedImplicitParams
       stats.toList
     }
 
@@ -2411,7 +2418,8 @@ trait Parsers {
         } else {
           ts ++= topStatSeq()
         }
-        assert(implicitParams.isEmpty)
+        assert(placeholderParams.isEmpty)
+        assert(placeholderTypes.isEmpty)
         val stats = ts.toList
         stats match {
           case List(stat @ PackageDef(_, _)) => stat
