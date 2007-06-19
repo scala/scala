@@ -1,5 +1,6 @@
 import scala.tools.nsc._
-import java.io.{BufferedReader, StringReader, PrintWriter}
+import java.io.{BufferedReader, StringReader, PrintWriter,
+                Writer, OutputStreamWriter}
 
 object Test {
   val testCodeString = <code>
@@ -85,9 +86,37 @@ def x => y => z
 </code>.text
 
 
+  /** A writer that skips the first line of text.  The first
+   *  line of interpreter output is skipped because it includes
+   *  a version number. */
+  class Skip1Writer(writer: Writer) extends Writer {
+    var seenNL = false
+
+    def write(cbuf: Array[Char], off: Int, len: Int) {
+      if (seenNL)
+	writer.write(cbuf, off, len)
+      else {
+	val slice = cbuf.slice(off, off+len)
+	val i = slice.indexOf('\n')
+	if (i >= 0) {
+	  seenNL = true
+	  writer.write(slice, i+1, slice.length-(i+1))
+	} else {
+	  // skip it
+	}
+      }
+    }
+
+    def close() { writer.close() }
+    def flush() { writer.flush() }
+  }
+
+
   def main(args: Array[String]) {
     val input = new BufferedReader(new StringReader(testCodeString))
-    val repl = new InterpreterLoop(input, new PrintWriter(Console.out))
+    val output = new PrintWriter(
+      new Skip1Writer(new OutputStreamWriter(Console.out)))
+    val repl = new InterpreterLoop(input, output)
     repl.main(new Settings)
     println()
   }
