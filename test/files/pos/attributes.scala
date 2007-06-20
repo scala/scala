@@ -75,4 +75,6 @@ object O7 {
   @myAttrs.a1 @myAttrs.a2(99) @myAttrs.a3(null)  class A4;
   @a4(Array(1,2,3)) class A5;
   @a4(Array()) class A6;
+
+  val zero = 0 : @myAttrs.a1
 }
