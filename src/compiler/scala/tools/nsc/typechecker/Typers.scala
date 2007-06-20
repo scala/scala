@@ -625,17 +625,22 @@ trait Typers { self: Analyzer =>
           } else if (tree.hasSymbol && !tree.symbol.typeParams.isEmpty && (mode & HKmode) == 0) { // (7)
             // @M When not typing a higher-kinded type ((mode & HKmode) == 0), types must be of kind *,
             // and thus parameterised types must be applied to their type arguments
+            // @M TODO: why do kind-* tree's have symbols, while higher-kinded ones don't?
             errorTree(tree, tree.symbol+" takes type parameters")
             tree setType tree.tpe
-          } else if (tree.hasSymbol && ((mode & HKmode) != 0) && // (7.1) @M: check kind-arity
-                     tree.symbol.typeParams.length != pt.typeParams.length &&
-                     !(tree.symbol==AnyClass || tree.symbol==AllClass || pt == WildcardType )) {
+          } else if ( // (7.1) @M: check kind-arity
+                    // @M: removed check for tree.hasSymbol and replace tree.symbol by tree.tpe.symbol (TypeTree's must also be checked here, and they don't directly have a symbol)
+                     ((mode & HKmode) != 0) &&
+                    // @M: don't check tree.tpe.symbol.typeParams. check tree.tpe.typeParams!!!
+                    // (e.g., m[Int] --> tree.tpe.symbol.typeParams.length == 1, tree.tpe.typeParams.length == 0!)
+                     tree.tpe.typeParams.length != pt.typeParams.length &&
+                     !(tree.tpe.symbol==AnyClass || tree.tpe.symbol==AllClass || pt == WildcardType )) {
               // Check that the actual kind arity (tree.symbol.typeParams.length) conforms to the expected
               // kind-arity (pt.typeParams.length). Full checks are done in checkKindBounds in Infer.
               // Note that we treat Any and Nothing as kind-polymorphic.
               // We can't perform this check when typing type arguments to an overloaded method before the overload is resolved
               // (or in the case of an error type) -- this is indicated by pt == WildcardType (see case TypeApply in typed1).
-              errorTree(tree, tree.symbol+" takes "+reporter.countElementsAsString(tree.symbol.typeParams.length, "type parameter")+
+              errorTree(tree, tree.tpe+" takes "+reporter.countElementsAsString(tree.tpe.typeParams.length, "type parameter")+
                               ", expected: "+reporter.countAsString(pt.typeParams.length))
               tree setType tree.tpe
           } else tree match { // (6)
