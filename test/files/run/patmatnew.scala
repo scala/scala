@@ -23,6 +23,7 @@ object Test extends TestConsoleMain {
       new TestGuards,
       new TestStream,
       new Test903,
+      new Test1093,
       new Test1163_Order
     )
 
@@ -41,7 +42,20 @@ object Test extends TestConsoleMain {
         case 1 => 1
         case _ => 0
       })
-  }
+      assertEquals("s2boxed", 1, (1:Any) match {
+        case 1 => 1
+        case _ => 0
+      })
+      assertEquals("s3", 1, ("hello") match {
+        case s:String => 1
+        case _        => 0
+      })
+      val xyz: (int, String, boolean) = (1, "abc", true);
+      assertEquals("s4", 1, xyz._1 match {
+        case 1 => 1
+        case _ => 0
+      })
+    }
   }
   class Test717 extends TestCase("#717 test path of case classes") {
     val foo1 = new Foo(1)
@@ -97,11 +111,10 @@ object Test extends TestConsoleMain {
       }
     }
 
-    // also: this one from fannkuch
-    //def flips(l: List[int]): int = (l: @unchecked) match {
-    //  case 1 :: ls => 0
-    //  case n :: ls => flips((l take n reverse) ::: (l drop n)) + 1
-    //}
+    def flips(l: List[int]): int = (l: @unchecked) match {
+      case 1 :: ls => 0
+      case n :: ls => flips((l take n reverse) ::: (l drop n)) + 1
+    }
 
     def runTest() =  assertEquals("both", (Var("x"),Var("y")), f)
   }
@@ -140,6 +153,16 @@ object Test extends TestConsoleMain {
         None
       else
   	    Some(p.father)
+  }
+
+  class Test1093 extends TestCase("bug1093") {
+    override def runTest {
+      val x = Some(3) match {
+        case Some(1 | 2) => 1
+        case Some(3) => 2
+      }
+      assertEquals("ok", 2, x)
+    }
   }
 
   class Test903 extends TestCase("bug903") {
