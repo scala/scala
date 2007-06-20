@@ -758,9 +758,6 @@ print()
     var tag: int = tag1
     var body: Tree = body1
     var next: TagBodyPair = next1
-
-    def length(): Int =
-      if (null == next) 1 else (next.length() + 1)
   }
 
   protected def defaultBody(patNode1: PatternNode, otherwise: Tree ): Tree = {
@@ -858,28 +855,22 @@ print()
       patNode = patNode.nextH()
     }
 
-    var n = mappings.length()
     var nCases: List[CaseDef] = Nil
     while (mappings ne null) {
       nCases = CaseDef(Literal(mappings.tag),
                        mappings.body) :: nCases;
       mappings = mappings.next;
     }
-    /*
-    val tags = new Array[Int](n);
-    val bodies = new Array[Tree](n);
-    n = 0;
-    while (mappings ne null) {
-      tags(n) = mappings.tag;
-      bodies(n) = mappings.body;
-      n = n + 1;
-      mappings = mappings.next;
-    }
-    return Switch(selector, tags, bodies, defaultBody1, resultType);
-    */
-    nCases = CaseDef(Ident(nme.WILDCARD), squeezedBlock(List(ValDef(root.casted, selector)),defaultBody1)) :: nCases;
-    Match(selector, nCases)
+
+    // ERASURE-PROBLEM this was how it was before, perfectly equivalent code
+    // nCases = CaseDef(Ident(nme.WILDCARD),Block(List(ValDef(root.casted, selector.duplicate)),defaultBody1)) :: nCases;
+    // Match(selector, nCases)
+
+    // changed to
+    nCases = CaseDef(Ident(nme.WILDCARD),defaultBody1) :: nCases;
+    Block(List(ValDef(root.casted, selector)),Match(Ident(root.casted), nCases))
   }
+
 
 
     var exit: Symbol = null
@@ -971,8 +962,8 @@ print()
       var node: PatternNode = node1
       var next: TagNodePair = next1
 
-      def length(): Int =
-        if (null == next) 1 else (next.length() + 1)
+      //def length(): Int =
+      //  if (null == next) 1 else (next.length() + 1)
     }
 
     final private def inheritsFromSealed(tpe:Type): Boolean = {
@@ -1024,31 +1015,7 @@ print()
         case _ =>
           scala.Predef.error("errare humanum est")
       }
-      var n = cases.length()
-      /*
-      val tags = new Array[int](n);
-      val bodies = new Array[Tree](n);
-      n = 0;
-      while (null != cases) {
-        tags(n) = cases.tag;
-        bodies(n) = toTree(cases.node, selector);
-        n = n + 1;
-        cases = cases.next;
-      }
-      */
 
-
-      /*
-      return
-      Switch(
-        Apply(
-          Select(selector.duplicate, defs.ScalaObjectClass_tag),
-          List()),
-        tags,
-        bodies,
-        { if (defaultCase eq null) Literal(false) else toTree(defaultCase.and) },
-                        defs.boolean_TYPE());
-                        */
       var nCases: List[CaseDef] = Nil
       while (cases ne null) {
         if(inheritsFromSealed(cases.node.tpe)) {

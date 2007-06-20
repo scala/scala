@@ -25,12 +25,22 @@ trait ParallelMatching  {
   case class ErrorRule extends RuleApplication
   case class VariableRule(subst:List[Pair[Symbol,Symbol]], guard: Tree, body: Tree) extends RuleApplication
 
-  def MixtureRule(scrutinee:Symbol, column:List[Tree], rest:Rep): MixtureRule = {
-    if((scrutinee.tpe =:= definitions.IntClass.tpe) && (column forall {case Literal(c) => true case _ => false})) {
-      throw CantOptimize
-      //@todo: add SwitchRule, a special case of MixtureRule
+  def MixtureRule(scrutinee:Symbol, column:List[Tree], rest:Rep): RuleApplication = {
+    def isSimpleIntSwitch: Boolean = {
+      (isSameType(scrutinee.tpe.widen, definitions.IntClass.tpe)) && {
+        var xs = column
+        while(!xs.isEmpty) { // forall
+          val h = xs.head
+          if(h.isInstanceOf[Literal] || isDefaultPattern(h)) { xs = xs.tail } else return false
+        }
+        return true
+      }}
+    def containsUnapply = column exists { _.isInstanceOf[UnApply] }
+
+    if(isSimpleIntSwitch) {
+      new MixLiterals(scrutinee, column, rest)
     } else {
-      new MixtureRule(scrutinee, column, rest)
+      new MixTypes(scrutinee, column, rest)
     }
   }
   /*
@@ -41,10 +51,92 @@ trait ParallelMatching  {
     }
   }
   */
-  class MixtureRule(val scrutinee:Symbol, val column:List[Tree], val rest:Rep) extends RuleApplication {
 
-    var parent: Rep = null
-    def setParent(rep:Rep) = { parent = rep; this }
+  /** this rule gets translated to a switch. all defaults/same literals are collected
+   */
+  class MixLiterals(val scrutinee:Symbol, val column:List[Tree], val rest:Rep) extends RuleApplication {
+
+    var defaults: List[Int]    = Nil
+    var defaultV: List[Symbol] = Nil
+    // sorted e.g. case _ => 1,5,7
+
+    private def insertDefault(tag: Int,vs:List[Symbol]) {
+      def ins(xs:List[Int]):List[Int] = xs match {
+        case y::ys if y > tag => y::ins(ys)
+        case _                => tag :: Nil
+      }
+      defaultV = defaultV:::vs
+      defaults  = ins(defaults)
+    }
+
+    class TagIndexPair(val tag:Int, val index: Int, val next: TagIndexPair) {}
+    // e.g. (1,1) (1,3) (42,2) for column {case ..1.. => ;; case ..42..=> ;; case ..1.. => }
+
+    private def insertTagIndexPair(tag: Int, index: Int) {
+      def ins(current: TagIndexPair): TagIndexPair = {
+        if (current eq null)
+          new TagIndexPair(tag, index, null)
+        else if (tag > current.tag) // maintain relative order
+          new TagIndexPair(current.tag, current.index, ins(current.next))
+        else
+          new TagIndexPair(tag, index, current)
+      }
+      tagIndexPairs = ins(tagIndexPairs)
+    }
+
+    var tagIndexPairs: TagIndexPair = null
+
+    {
+      var xs = column
+      var i = 0;
+      while(!xs.isEmpty) { // forall
+        xs.head match {
+          case Literal(Constant(c:Int))  => insertTagIndexPair(c,i)
+          case Literal(Constant(c:Char)) => insertTagIndexPair(c.toInt,i)
+          case p if isDefaultPattern(p)  => insertDefault(i,strip(p)._1)
+        }
+        i = i + 1
+        xs = xs.tail
+      }
+    }
+    def tagIndicesToReps = {
+
+      var trs:List[(Int,Rep)] = Nil
+      while(tagIndexPairs ne null) { // collect all with same tag
+        val tag = tagIndexPairs.tag
+        var tagRows = rest.row(tagIndexPairs.index)::Nil
+        tagIndexPairs = tagIndexPairs.next
+        while((tagIndexPairs ne null) && tagIndexPairs.tag == tag) {
+          tagRows = rest.row(tagIndexPairs.index)::tagRows
+          tagIndexPairs = tagIndexPairs.next
+        }
+        trs = (tag, Rep(rest.temp, tagRows)) :: trs
+      }
+      trs
+    }
+    def defaultsToRep = {
+      var drows:List[(List[Tree], List[(Symbol,Symbol)], Tree, Tree)] = Nil
+      while(defaults ne Nil) {
+        drows = rest.row(defaults.head) :: drows
+        defaults = defaults.tail
+      }
+      Rep(rest.temp, drows)
+    }
+    def getTransition(implicit theOwner: Symbol): (List[(Int,Rep)],List[Symbol],Option[Rep]) =
+      (tagIndicesToReps, defaultV, {if(!defaults.isEmpty) Some(defaultsToRep) else None})
+  }
+
+  class MixUnapply(val scrutinee:Symbol, val column:List[Tree], val rest:Rep) extends RuleApplication {
+
+  }
+
+  /** this rule handles a column of type tests (and also tests for literals)
+   */
+  class MixTypes(val scrutinee:Symbol, val column:List[Tree], val rest:Rep) extends RuleApplication {
+
+    //var parent: Rep = null
+    //def setParent(rep:Rep) = { parent = rep; this }
+
     var casted: Symbol = null
     var moreSpecific:   List[Tree]        = Nil
     var subsumed:  List[(Int,List[Tree])] = Nil // row index and subpatterns
@@ -56,11 +148,9 @@ trait ParallelMatching  {
       scrutinee.tpe.symbol.children.forall { sym => tpes.contains(sym) }
     }
 
-    //DEBUG("Mixture, is exhaustive? "+isExhaustive)
-    //if(!isExhaustive)
-    //  cunit.warning(column.head.pos, "match is not exhaustive, I think (first approx)")
     private val patternType     = column.head match {
-      case p@(_:Ident | _:Select) => singleType(p.symbol.tpe.prefix, p.symbol)  //ConstantType(p.tpe.singleton)
+      case p @ (_:Ident | _:Select) =>
+        singleType(p.symbol.tpe.prefix, p.symbol)  //ConstantType(p.tpe.singleton)
       //case p@Apply(_,_) if !p.tpe.symbol.hasFlag(symtab.Flags.CASE) => ConstantType(new NamedConstant(p))
       case _ => column.head.tpe
     }
@@ -131,9 +221,10 @@ trait ParallelMatching  {
     this.remaining    = sr._3.reverse
     sr = null
     override def toString = {
-      "MixtureRule("+scrutinee+":"+scrutinee.tpe+") {\n  moreSpecific:"+moreSpecific+"\n  subsumed:"+subsumed+"\n  remaining"+remaining+"\n}"
+      "MixTypes("+scrutinee+":"+scrutinee.tpe+") {\n  moreSpecific:"+moreSpecific+"\n  subsumed:"+subsumed+"\n  remaining"+remaining+"\n}"
     }
 
+    /** returns casted symbol, success matrix and optionally fail matrix for type test on the top of this column */
     def getTransition(implicit theOwner: Symbol): (Symbol, Rep, Option[Rep]) = {
       //DEBUG("*** getTransition! of "+this.toString)
       // the following works for type tests... what fudge is necessary for value comparisons?
@@ -172,7 +263,7 @@ trait ParallelMatching  {
 
           // BTW duplicating body/guard, gets you "defined twice" error cause hashing breaks
         }
-        Rep(ntemps, ntriples) setParent this
+        Rep(ntemps, ntriples) /*setParent this*/
       }
 
       // fails      => transition to translate(remaining)
@@ -184,7 +275,7 @@ trait ParallelMatching  {
           case (j, pat) => val r = rest.row(j);  (pat :: r._1, r._2, r._3, r._4)
         }
         //Console.println("nmatrixfail triples:"+ntriples)
-        if(ntriples.isEmpty) None else Some(Rep(ntemps, ntriples) setParent this)
+        if(ntriples.isEmpty) None else Some(Rep(ntemps, ntriples) /*setParent this*/)
       }
       if(!nmatrixFail.isEmpty) {
         //DEBUG("nmatrix for failing type test "+patternType)
@@ -196,53 +287,54 @@ trait ParallelMatching  {
     } // end getTransitions
   }
 
+  /** converts given rep to a tree - performs recursive call to translation in the process to get sub reps
+   */
   def repToTree(rep:Rep, typed:Tree => Tree, handleOuter: Tree => Tree)(implicit theOwner: Symbol, failTree: Tree, bodies: collection.mutable.Map[Tree,(Tree,Tree, Symbol)]): Tree = {
     rep.applyRule match {
       case VariableRule(subst, EmptyTree, b) => bodies.get(b) match {
-        case Some(EmptyTree, b, theLabel) =>
-          //Console.println("H E L L O"+subst+" "+b)
 
-          val args = b match {
-            case Block(_, LabelDef(_, origs, _)) =>
-              //this does not work subst.map { p => Ident(p._2) }
+        case Some(EmptyTree, b, theLabel) =>           //Console.println("H E L L O"+subst+" "+b)
 
-              // recover the order of the idents that is expected for the labeldef
+          // recover the order of the idents that is expected for the labeldef
+          val args = b match { case Block(_, LabelDef(_, origs, _)) =>
+            origs.map { p => Ident(subst.find { q => q._1 == p.symbol }.get._2) } // wrong!
+          }   // using this instead would not work: subst.map { p => Ident(p._2) }
               // the order can be garbled, when default patterns are used... #bug 1163
 
-              origs.map { p => Ident(subst.find { q => q._1 == p.symbol }.get._2) } // wrong!
-          }
           val body  = Apply(Ident(theLabel), args)
           return body
 
         case None    =>
-          //Console.println("--- variable \n new  ! subst = "+subst)
-          val theLabel = theOwner.newLabel(b.pos, "body"+b.hashCode).setInfo(
-            new MethodType(subst map { case (v,_) => v.tpe}, b.tpe)
-          )
+          var argtpes   = subst map { case (v,_) => v.tpe }
+          val theLabel  = targetLabel(theOwner, b.pos, "body"+b.hashCode, argtpes, b.tpe)
           // make new value parameter for each vsym in subst
-          val vdefs    = subst map {
-            case (v,t) => ValDef(v, {
-              v.setFlag(symtab.Flags.TRANS_FLAG);
-              if(t.tpe <:< v.tpe) typed{Ident(t)} else
-                if(v.tpe <:< t.tpe) typed{gen.mkAsInstanceOf(Ident(t),v.tpe)} // refinement
-                else {
-                  //Console.println("internal error, types don't match: pattern variable "+v+":"+v.tpe+" temp "+t+":"+t.tpe)
-                  error("internal error, types don't match: pattern variable "+v+":"+v.tpe+" temp "+t+":"+t.tpe)
-                  typed{gen.mkAsInstanceOf(Ident(t),v.tpe)} // refinement
-                }
-            })
-          }
-          // this seems weird, but is necessary for sharing bodies. maybe could be spared if we know that a body
-          // is not shared.
+          val vdefs     = targetParams(subst)
+
+          // this seems weird, but is necessary for sharing bodies. unnecessary for bodies that are not shared
           var nbody: Tree = b
           val vrefs = vdefs.map { p:ValDef => Ident(p.symbol) }
-          nbody  = squeezedBlock(vdefs:::List(Apply(Ident(theLabel), vrefs)), LabelDef(theLabel, subst.map(_._1), nbody))
+          nbody  = Block(vdefs:::List(Apply(Ident(theLabel), vrefs)), LabelDef(theLabel, subst.map(_._1), nbody))
           bodies(b) = (EmptyTree, nbody, theLabel)
           nbody
       }
       case VariableRule(subst,g,b) =>
         throw CantHandleGuard
-      case mm:MixtureRule =>
+
+      case ml:MixLiterals=>
+        val (branches, defaultV, default) = ml.getTransition // tag body pairs
+
+        val cases = branches map { case (tag, rep) => CaseDef(Literal(tag), EmptyTree, repToTree(rep,typed,handleOuter)) }
+        var ndefault = if(default.isEmpty) failTree else repToTree(default.get,typed,handleOuter)
+        if(!defaultV.isEmpty) {
+          var to:List[Symbol]  = Nil
+          var i = 0; while(i < defaultV.length) { i = i + 1; to = ml.scrutinee::to }
+          val tss = new TreeSymSubstituter(defaultV, to)
+          tss.traverse( ndefault )
+        }
+        val defCase = CaseDef(Ident(nme.WILDCARD), EmptyTree, ndefault)
+        Match(Ident(ml.scrutinee), cases:::defCase::Nil)
+
+      case mm:MixTypes =>
         val (casted,srep,frep) = mm.getTransition
         //DEBUG("--- mixture \n succ \n"+srep.toString+"\n fail\n"+frep.toString)
         //val cond = typed{gen.mkIsInstanceOf(Ident(mm.scrutinee), casted.tpe)}
@@ -273,7 +365,7 @@ trait ParallelMatching  {
         case Literal(Constant(false)) => elsep
         case _ => If(cond, thenp, elsep)
       }
-        typed { makeIf(cond, squeezedBlock(vdefs,succ), fail) }
+        typed { makeIf(cond, Block(vdefs,succ), fail) }
     }
   }
 
@@ -404,9 +496,9 @@ object Rep {
     } // end init
 
     // if this was the *fail* branch, the Rep preceding this Rep
-    var mixtureParent: MixtureRule = null
+    //var mixtureParent: MixTypes = null
 
-    def setParent(mr:MixtureRule): this.type = { mixtureParent = mr; this }
+    //def setParent(mr:MixTypes): this.type = { mixtureParent = mr; this }
 
     def applyRule: RuleApplication = row match {
       case Nil            => ErrorRule
@@ -426,7 +518,7 @@ object Rep {
           val restTemp =                                     temp.take(i) ::: temp.drop(i+1)
           val restRows = row map { case (pats,subst,g,b) => (pats.take(i) ::: pats.drop(i+1),subst,g,b) }
 
-          val r = MixtureRule(temp(i), column, Rep(restTemp,restRows)) setParent this
+          val r = MixtureRule(temp(i), column, Rep(restTemp,restRows))
           //Console.println(r)
           r
         }

@@ -8,7 +8,10 @@ package scala.tools.nsc.matching
 
 import scala.tools.nsc.util.Position
 
-trait CodeFactory { self: transform.ExplicitOuter =>
+/** contains many helper methods that build trees...some of these currently unused, since were for regexp matching
+ */
+trait CodeFactory {
+  self: transform.ExplicitOuter =>
 
   import global._
 
@@ -16,6 +19,22 @@ trait CodeFactory { self: transform.ExplicitOuter =>
   import typer.typed               // methods to type trees
   import posAssigner.atPos         // for filling in tree positions
 
+
+  def targetLabel(owner: Symbol, pos: Position, name:String, argtpes:List[Type], resultTpe: Type) =
+    owner.newLabel(pos, name).setInfo(new MethodType(argtpes, resultTpe))
+
+  def targetParams(subst:List[Pair[Symbol,Symbol]]) = subst map {
+    case (v,t) => ValDef(v, {
+      v.setFlag(symtab.Flags.TRANS_FLAG);
+      if(t.tpe <:< v.tpe) typed{Ident(t)}
+      else if(v.tpe <:< t.tpe) typed{gen.mkAsInstanceOf(Ident(t),v.tpe)} // refinement
+      else {
+        //Console.println("internal error, types don't match: pattern variable "+v+":"+v.tpe+" temp "+t+":"+t.tpe)
+        error("internal error, types don't match: pattern variable "+v+":"+v.tpe+" temp "+t+":"+t.tpe)
+        typed{gen.mkAsInstanceOf(Ident(t),v.tpe)} // refinement
+      }
+    })
+  }
 
   /** returns  `List[ Tuple2[ scala.Int, <elemType> ] ]' */
   def SeqTraceType(elemType: Type): Type =
@@ -235,6 +254,9 @@ trait CodeFactory { self: transform.ExplicitOuter =>
     var nstatic = 0
 
   def squeezedBlock(vds:List[Tree], exp:Tree)(implicit theOwner: Symbol): Tree = {
+    Block(vds,exp)
+  }
+  def squeezedBlock1(vds:List[Tree], exp:Tree)(implicit theOwner: Symbol): Tree = {
     val tpe = exp.tpe
     class RefTraverser(sym:Symbol) extends Traverser {
       var nref = 0
