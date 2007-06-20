@@ -705,9 +705,10 @@ trait Trees {
   def TypeTree(tp: Type): TypeTree = TypeTree() setType tp
   // def TypeTree(tp: Type, tree : Tree): TypeTree = TypeTree(tree) setType tp
 
-  /** A tree that has anP attribute attached to it */
+  /** A tree that has an attribute attached to it */
   case class Annotated(annot: Annotation, arg: Tree) extends Tree {
     override def isType = arg.isType
+    override def isTerm = arg.isTerm
   }
 
   /** Singleton type, eliminated by RefCheck */
