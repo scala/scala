@@ -61,7 +61,18 @@ object sbaz extends Command {
           "Output messages about what the " & MBold(command) & " tool is doing"),
         Definition(
           CmdOption("version"),
-          "Display the version information"))),
+          "Display the version information"),
+
+        Definition(
+	  CmdOption("-univ") & Argument("name"),
+	  "Operate on the named remote universe, selected from those " &
+          "in the local managed directory's universe. Affects "&
+          "the "&MBold("share")&" and "&MBold("retract")&" commands."),
+
+        Definition(
+          CmdOption("-univ-url") & Argument("url"),
+          "Operate on the universe at the specified URL.  Affects "&
+          "the "&MBold("share")&" and "&MBold("retract")&" commands."))),
 
     Section("Available Commands",
       DefinitionList(
