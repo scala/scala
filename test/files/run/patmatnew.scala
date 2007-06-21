@@ -19,6 +19,7 @@ object Test extends TestConsoleMain {
 
   def suite = new TestSuite(
       new TestSimpleIntSwitch,
+      new SimpleUnapply,
       new Test717,
       new TestGuards,
       new TestStream,
@@ -29,6 +30,13 @@ object Test extends TestConsoleMain {
 
   class Foo(j:Int) {
     case class Bar(i:Int)
+  }
+  class SimpleUnapply extends TestCase("simpleUnapply") {
+    override def runTest() { // from sortedmap, old version
+      List((1,2)).head match {
+        case kv @ Pair(key, _) => kv.toString + " " + key.toString
+      }
+    }
   }
   class TestSimpleIntSwitch extends TestCase("SimpleIntSwitch") {
     override def runTest() = {

@@ -22,6 +22,7 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
   object CantHandleSeq     extends CantHandle
   object CantHandleUnapply extends CantHandle
   object CantHandleApply   extends CantHandle
+  object InternalError extends CantHandle
   object CantHandleIdent   extends CantHandle
   object CantHandleGuard   extends CantHandle
   object CantOptimize      extends CantHandle
@@ -131,6 +132,12 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
           constructParallel(cases)
           return
         } catch {
+          case _:OutOfMemoryError =>
+            cunit.error(cases.head.pos, "internal error (out of memory in parallel match algorithm")
+            throw FatalError("died in parallel match algorithm" )
+          case _:MatchError =>
+            cunit.error(cases.head.pos, "internal error (match error in parallel match algorithm")
+            throw FatalError("died in parallel match algorithm" )
           case e =>
             if(global.settings.Xmatchalgo.value == "par")
               throw e

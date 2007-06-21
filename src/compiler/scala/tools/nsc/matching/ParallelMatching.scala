@@ -37,7 +37,8 @@ trait ParallelMatching  {
       }}
     // an unapply for which we don't need a type test
     def isUnapplyHead: Boolean = {
-      column.head match {
+      def isUnapply(x:Tree): Boolean = x match {
+        case Bind(_,p) => isUnapply(p)
         case UnApply(Apply(fn,_),arg) => fn.tpe match {
           case MethodType(List(argtpe),_) =>
             //Console.println("scrutinee.tpe"+scrutinee.tpe)
@@ -53,16 +54,26 @@ trait ParallelMatching  {
           //Console.println("is something else"+x+" "+x.getClass)
           false
       }
+      isUnapply(column.head)
     }
     //def containsUnapply = column exists { _.isInstanceOf[UnApply] }
-    //Console.println("intswitch? "+scrutinee.tpe.widen+" . "+column)
-    if(isSimpleIntSwitch)
-     return new MixLiterals(scrutinee, column, rest)
-
+    if(settings.debug.value) {
+      Console.println("///")
+      Console.println("MixtureRule("+scrutinee+","+column+", rep = ")
+      Console.println(rest)
+      Console.println(")///")
+    }
+    if(isSimpleIntSwitch) {
+      if(settings.debug.value) { Console.println("MixLiteral") }
+      return new MixLiterals(scrutinee, column, rest)
+    }
     //Console.println("isUnapplyHead")
-    if(isUnapplyHead)
+    if(isUnapplyHead) {
+      if(settings.debug.value) { Console.println("MixUnapply") }
       return new MixUnapply(scrutinee, column, rest)
+    }
 
+    if(settings.debug.value) { Console.println("MixTypes") }
     return new MixTypes(scrutinee, column, rest) // todo: handle type tests in unapply
   }
 
@@ -142,16 +153,21 @@ trait ParallelMatching  {
 
   class MixUnapply(val scrutinee:Symbol, val column:List[Tree], val rest:Rep) extends RuleApplication {
 
+    private def bindToScrutinee(x:Symbol) = typer.typed(ValDef(x,Ident(scrutinee)))
+
+    val (_, unapp) = strip(column.head)
     /** returns the (un)apply and two continuations */
+    var rootvdefs:List[Tree] = Nil // later, via bindToScrutinee
+
     def getTransition(implicit theOwner: Symbol): (Tree, List[Tree], Rep, Option[Rep]) = {
-      column.head match {
+      unapp match {
         case ua @ UnApply(app @ Apply(fn, _), args) =>
           val ures = newVar(ua.pos, app.tpe)
           val n    = args.length
           val uacall = typer.typed { ValDef(ures, Apply(fn, List(Ident(scrutinee)))) }
           //Console.println("uacall:"+uacall)
 
-          val nrowsOther = column.tail.zip(rest.row.tail) flatMap { case (pat,(ps,subst,g,b)) => pat match {
+          val nrowsOther = column.tail.zip(rest.row.tail) flatMap { case (pat,(ps,subst,g,b)) => strip(pat)._2 match {
             case UnApply(Apply(fn1,_),args) if fn.symbol==fn1.symbol => Nil
             case p                                                   => List((p::ps, subst, g, b))
           }}
@@ -160,20 +176,26 @@ trait ParallelMatching  {
           n match {
             case 0  => //special case for unapply(), app.tpe is boolean
               val ntemps = rest.temp
-              val nrows  = column.zip(rest.row) map { case (pat,(ps,subst,g,b)) => pat match {
-                case UnApply(Apply(fn1,_),args) if fn.symbol==fn1.symbol => (EmptyTree::ps, subst, g, b)
-                case p                                                   => (p::ps,         subst, g, b)
+              val nrows  = column.zip(rest.row) map { case (pat,(ps,subst,g,b)) => strip(pat) match {
+                case (pvars,UnApply(Apply(fn1,_),args)) if fn.symbol==fn1.symbol =>
+                  rootvdefs = (pvars map bindToScrutinee) ::: rootvdefs
+                  (EmptyTree::ps, subst, g, b)
+                case (_, p)                                                      =>
+                  (p::ps,         subst, g, b)
               }}
-              (uacall, List(), Rep(ntemps, nrows), nrepFail)
+              (uacall, rootvdefs, Rep(ntemps, nrows), nrepFail)
 
             case  1 => //special case for unapply(p), app.tpe is Option[T]
               val vsym = newVar(ua.pos, app.tpe.typeArgs(0))
               val ntemps = vsym :: scrutinee :: rest.temp
-              val nrows = column.zip(rest.row) map { case (pat,(ps,subst,g,b)) => pat match {
-                case UnApply(Apply(fn1,_),args) if fn.symbol==fn1.symbol => (args(0)  ::Ident(nme.WILDCARD)::ps, subst, g, b)
-                case p                                                   => (Ident(nme.WILDCARD)  :: p     ::ps, subst, g, b)
+              val nrows = column.zip(rest.row) map { case (pat,(ps,subst,g,b)) => strip(pat) match {
+                case (pvars,UnApply(Apply(fn1,_),args)) if fn.symbol==fn1.symbol =>
+                  rootvdefs = (pvars map bindToScrutinee) ::: rootvdefs
+                  (args(0)  ::Ident(nme.WILDCARD)::ps, subst, g, b)
+                case (_, p)                                                      =>
+                  (Ident(nme.WILDCARD)  :: p     ::ps, subst, g, b)
               }}
-              (uacall, List( typer.typed { ValDef(vsym, Select(Ident(ures), nme.get) )}), Rep(ntemps, nrows), nrepFail)
+              (uacall, rootvdefs:::List( typer.typed { ValDef(vsym, Select(Ident(ures), nme.get) )}), Rep(ntemps, nrows), nrepFail)
 
             case _ => // app.tpe is Option[? <: ProductN[T1,...,Tn]]
               val uresGet = newVar(ua.pos, app.tpe.typeArgs(0))
@@ -194,11 +216,14 @@ trait ParallelMatching  {
                 dummies = Ident(nme.WILDCARD)::dummies
               }
               val ntemps  = vsyms.reverse ::: scrutinee :: rest.temp
-              val nrows = column.zip(rest.row) map { case (pat,(ps,subst,g,b)) => pat match {
-                case UnApply(Apply(fn1,_),args) if fn.symbol==fn1.symbol =>(   args:::Ident(nme.WILDCARD)::ps, subst, g, b)
-                case p                                                   =>(dummies:::         p         ::ps, subst, g, b)
+              val nrows = column.zip(rest.row) map { case (pat,(ps,subst,g,b)) => strip(pat) match {
+                case (pvars, UnApply(Apply(fn1,_),args)) if fn.symbol==fn1.symbol =>
+                  rootvdefs = (pvars map bindToScrutinee) ::: rootvdefs
+                  (   args:::Ident(nme.WILDCARD)::ps, subst, g, b)
+                case (_, p)                                                       =>
+                  (dummies:::         pat       ::ps, subst, g, b)
               }}
-              (uacall, vdefs.reverse, Rep(ntemps, nrows), nrepFail)
+              (uacall, rootvdefs:::vdefs.reverse, Rep(ntemps, nrows), nrepFail)
           }}
     }
   }
@@ -270,6 +295,12 @@ trait ParallelMatching  {
 
         sr = pat match {
 
+          case a:Alternative =>
+            if(settings.debug.value) {
+              Console.println("this may not happen, alternatives should be preprocessed away")
+              System.exit(-1)
+            }
+            throw InternalError
           case Literal(Constant(null)) if !(patternType =:= pat.tpe) => //special case for constant null pattern
             //Console.println("[1")
             (ms,ss,(j,pat)::rs);
@@ -481,6 +512,7 @@ trait ParallelMatching  {
 
       case mu:MixUnapply =>
         val (uacall,vdefs,srep,frep) = mu.getTransition
+        //Console.println("getTransition"+(uacall,vdefs,srep,frep))
         val succ = repToTree(srep, typed, handleOuter)
         val fail = if(frep.isEmpty) failTree else repToTree(frep.get, typed, handleOuter)
         val cond = typed { Not(Select(Ident(uacall.symbol),nme.isEmpty)) }
@@ -502,7 +534,7 @@ object Rep {
 
   /** the injection here handles alternatives and unapply type tests */
   def apply(temp:List[Symbol], row1:List[(List[Tree], List[(Symbol,Symbol)], Tree, Tree)]): Rep = {
-    var i = -1
+    var unchanged: Boolean = true
     val row = row1 flatMap {
       xx =>
         def isAlternative(p: Tree): Boolean = p match {
@@ -520,13 +552,15 @@ object Rep {
         val (opatso,subst,g,b) = xx
         var opats = opatso
         var pats:List[Tree] = Nil
+        var indexOfAlternative = -1
         var j = 0; while(opats ne Nil) {
           opats.head match {
-            case p if isAlternative(p) && j == -1 =>
-              i = j
+            case p if isAlternative(p) && indexOfAlternative == -1 =>
+              indexOfAlternative = j
+              unchanged = false
               pats = p :: pats
 
-            case typat @ Typed(p,tpt) =>
+            case typat @ Typed(p:UnApply,tpt) =>
               pats = (if (tpt.tpe <:< temp(j).tpe) p else typat)::pats
 
             case ua @ UnApply(Apply(fn,_),arg)             => fn.tpe match {
@@ -541,16 +575,16 @@ object Rep {
         }
         pats = pats.reverse
         //i = pats findIndexOf isAlternative
-        if(i == -1)
+        if(indexOfAlternative == -1)
           List((pats,subst,g,b))
         else {
-          val prefix:List[Tree] = pats.take(i)
-          val alts  = getAlternativeBranches(pats(i))
-          val suffix:List[Tree] = pats.drop(i+1)
+          val prefix = pats.take( indexOfAlternative )
+          val alts   = getAlternativeBranches(pats( indexOfAlternative ))
+          val suffix = pats.drop(indexOfAlternative + 1)
           alts map { p => (prefix ::: p :: suffix, subst, g, b) }
         }
     }
-    if(i == -1) {
+    if(unchanged) {
       val ri = RepImpl(temp,row).init
       //Console.println("ri = "+ri)
       ri
