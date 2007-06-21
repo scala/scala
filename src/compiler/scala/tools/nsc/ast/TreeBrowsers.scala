@@ -376,6 +376,10 @@ abstract class TreeBrowsers {
 
       case Star(t) =>
         ("Star", EMPTY)
+
+      case UnApply(fn, args) =>
+        ("Unapply", EMPTY)
+
     }
 
     /** Return a list of children for the given tree node */
@@ -520,6 +524,9 @@ abstract class TreeBrowsers {
 
       case Star(t) =>
         List(t)
+
+      case UnApply(fn,args) =>
+        fn::args
     }
 
     /** Return a textual representation of this t's symbol */

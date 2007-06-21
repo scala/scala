@@ -123,6 +123,9 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
     def construct(cases: List[Tree]): Unit = {
       nPatterns = nPatterns + 1
 
+      if (settings.debug.value) {
+        Console.println(cases.mkString("construct{{{","\n","}}}"))
+      }
       if(global.settings.Xmatchalgo.value != "incr")
         try {
           constructParallel(cases)
@@ -134,7 +137,7 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
           if (settings.debug.value) {
             e.printStackTrace()
             Console.println("****")
-            Console.println("**** falling back, cause " + e.getMessage)
+            Console.println("**** falling back, cause " + e.toString +"/msg "+ e.getMessage)
             Console.println("****")
             for (CaseDef(pat,guard,_) <- cases)
               Console.println(pat.toString)
@@ -203,7 +206,8 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
         //Console.println("pat:'"+x+"' / "+x.getClass)
         x match {
           case _:ArrayValue => throw CantHandleSeq
-          case _:UnApply    => throw CantHandleUnapply
+          case UnApply(fn,args)    => //throw CantHandleUnapply // EXPR
+            traverseTrees(args)
           case Ident(n) if n!= nme.WILDCARD =>
             //DEBUG("I can't handle IDENT pattern:"+x)
             //DEBUG("x.tpe.symbols:"+x.tpe.symbol)
@@ -213,9 +217,11 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
             //  //DEBUG("I can't handle SELECT pattern:"+p)
             //  //DEBUG("p.tpe.symbols:"+p.tpe.symbol)
             //throw CantHandleUnapply
-            case p@Apply(_,_) if !p.tpe.symbol.hasFlag(symtab.Flags.CASE) =>
-              //DEBUG("I can't handle APPLY pattern:"+p)
-              //DEBUG("p.tpe.symbols:"+p.tpe.symbol)
+            case p@Apply(fn,args) if !p.tpe.symbol.hasFlag(symtab.Flags.CASE) =>
+              //Console.println("I can't handle APPLY pattern:"+p)
+              //Console.println("fn:"+fn)
+              //Console.println("args:"+args)
+              //Console.println("p.tpe.symbols:"+p.tpe.symbol)
               throw CantHandleApply
 
           //case p@Apply(_,_) if !p.tpe.symbol.hasFlag(symtab.Flags.CASE) => throw CantHandleUnapply //@todo

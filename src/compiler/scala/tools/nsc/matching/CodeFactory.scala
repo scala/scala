@@ -80,6 +80,12 @@ trait CodeFactory {
     result
   }
 
+  def makeIf(cond:Tree, thenp:Tree, elsep:Tree) = cond match {
+    case Literal(Constant(true)) => thenp
+    case Literal(Constant(false)) => elsep
+    case _ => If(cond, thenp, elsep)
+  }
+
   /** returns code `<seqObj>.elements' */
   def newIterator(seqObj: Tree): Tree =
     Apply(Select(seqObj, newTermName("elements")), List())
