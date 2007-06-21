@@ -83,15 +83,15 @@ trait ParallelMatching  {
 
     var defaults: List[Int]    = Nil
     var defaultV: List[Symbol] = Nil
-    // sorted e.g. case _ => 1,5,7
 
+    // sorted e.g. case _ => 1,5,7
     private def insertDefault(tag: Int,vs:List[Symbol]) {
       def ins(xs:List[Int]):List[Int] = xs match {
         case y::ys if y > tag => y::ins(ys)
-        case _                => tag :: Nil
+        case ys               => tag :: ys
       }
       defaultV = defaultV:::vs
-      defaults  = ins(defaults)
+      defaults = ins(defaults)
     }
 
     class TagIndexPair(val tag:Int, val index: Int, val next: TagIndexPair) {}
@@ -111,14 +111,19 @@ trait ParallelMatching  {
 
     var tagIndexPairs: TagIndexPair = null
 
+    private def sanity(pos:Position,pvars:List[Symbol]) {
+      if(!pvars.isEmpty) cunit.error(pos, "nonsensical variable binding")
+    }
+
     {
       var xs = column
       var i = 0;
       while(!xs.isEmpty) { // forall
-        xs.head match {
-          case Literal(Constant(c:Int))  => insertTagIndexPair(c,i)
-          case Literal(Constant(c:Char)) => insertTagIndexPair(c.toInt,i)
-          case p if isDefaultPattern(p)  => insertDefault(i,strip(p)._1)
+        val (pvars,p) = strip(xs.head)
+        p match {
+          case Literal(Constant(c:Int))  => sanity(p.pos, pvars); insertTagIndexPair(c,i)
+          case Literal(Constant(c:Char)) => sanity(p.pos, pvars); insertTagIndexPair(c.toInt,i)
+          case p  if isDefaultPattern(p) => insertDefault(i,pvars)
         }
         i = i + 1
         xs = xs.tail
@@ -135,7 +140,12 @@ trait ParallelMatching  {
           tagRows = rest.row(tagIndexPairs.index)::tagRows
           tagIndexPairs = tagIndexPairs.next
         }
-        trs = (tag, Rep(rest.temp, tagRows)) :: trs
+        var tagRowsD:List[(List[Tree], List[(Symbol,Symbol)], Tree, Tree)] = Nil
+        var ds = defaults; while(ds ne Nil) {
+          tagRowsD = rest.row(ds.head) :: tagRowsD
+          ds = ds.tail
+        }
+        trs = (tag, Rep(rest.temp, tagRows ::: tagRowsD)) :: trs
       }
       trs
     }
@@ -442,7 +452,8 @@ trait ParallelMatching  {
       case VariableRule(subst, EmptyTree, b) => bodies.get(b) match {
 
         case Some(EmptyTree, b, theLabel) =>           //Console.println("H E L L O"+subst+" "+b)
-
+          if(b.isInstanceOf[Literal])
+            return b
           // recover the order of the idents that is expected for the labeldef
           val args = b match { case Block(_, LabelDef(_, origs, _)) =>
             origs.map { p => Ident(subst.find { q => q._1 == p.symbol }.get._2) } // wrong!
@@ -453,12 +464,16 @@ trait ParallelMatching  {
           return body
 
         case None    =>
+          if(b.isInstanceOf[Literal]) {
+            bodies(b) = (EmptyTree, b, null) // unreachable code is detected via missing hash entries
+            return b
+          }
+          // this seems weird, but is necessary for sharing bodies. unnecessary for bodies that are not shared
           var argtpes   = subst map { case (v,_) => v.tpe }
           val theLabel  = targetLabel(theOwner, b.pos, "body"+b.hashCode, argtpes, b.tpe)
           // make new value parameter for each vsym in subst
           val vdefs     = targetParams(subst)
 
-          // this seems weird, but is necessary for sharing bodies. unnecessary for bodies that are not shared
           var nbody: Tree = b
           val vrefs = vdefs.map { p:ValDef => Ident(p.symbol) }
           nbody  = Block(vdefs:::List(Apply(Ident(theLabel), vrefs)), LabelDef(theLabel, subst.map(_._1), nbody))
@@ -468,19 +483,29 @@ trait ParallelMatching  {
       case VariableRule(subst,g,b) =>
         throw CantHandleGuard
 
-      case ml:MixLiterals=>
+      case ml: MixLiterals =>
         val (branches, defaultV, default) = ml.getTransition // tag body pairs
-
+        if(settings.debug.value) {
+          Console.println("[[mix literal transition: branches \n"+(branches.mkString("","\n","")))
+          Console.println("defaults:"+defaultV)
+          Console.println(default)
+          Console.println("]]")
+        }
         val cases = branches map { case (tag, rep) => CaseDef(Literal(tag), EmptyTree, repToTree(rep,typed,handleOuter)) }
-        var ndefault = if(default.isEmpty) failTree else repToTree(default.get,typed,handleOuter)
+        var ndefault = if(default.isEmpty) failTree else repToTree(default.get, typed, handleOuter)
         if(!defaultV.isEmpty) {
           var to:List[Symbol]  = Nil
           var i = 0; while(i < defaultV.length) { i = i + 1; to = ml.scrutinee::to }
           val tss = new TreeSymSubstituter(defaultV, to)
           tss.traverse( ndefault )
         }
-        val defCase = CaseDef(Ident(nme.WILDCARD), EmptyTree, ndefault)
-        Match(Ident(ml.scrutinee), cases:::defCase::Nil)
+        if(cases.length == 1) {
+          val CaseDef(lit,_,body) = cases.head
+          makeIf(Equals(Ident(ml.scrutinee),lit), body, ndefault)
+        } else {
+          val defCase = CaseDef(Ident(nme.WILDCARD), EmptyTree, ndefault)
+          Match(Ident(ml.scrutinee), cases :::  defCase :: Nil)
+        }
 
       case mm:MixTypes =>
         val (casted,srep,frep) = mm.getTransition
@@ -510,7 +535,7 @@ trait ParallelMatching  {
         vdefs = typed { ValDef(casted, gen.mkAsInstanceOf(typed{Ident(mm.scrutinee)}, casted.tpe))} :: vdefs
         typed { makeIf(cond, Block(vdefs,succ), fail) }
 
-      case mu:MixUnapply =>
+      case mu: MixUnapply =>
         val (uacall,vdefs,srep,frep) = mu.getTransition
         //Console.println("getTransition"+(uacall,vdefs,srep,frep))
         val succ = repToTree(srep, typed, handleOuter)
@@ -708,7 +733,7 @@ object Rep {
       for (tmp <- temp) pad(tmp.name.toString)
       sb.append('\n')
       for ((r,i) <- row.zipWithIndex) {
-        for (c <- r._1 ::: List(r._2, r._3)) {
+        for (c <- r._1 ::: List(r._2, r._3, r._4)) {
           pad(c.toString)
         }
         sb.append('\n')

@@ -175,8 +175,9 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
           val CaseDef(_,_,b) = cases(i)
           //DEBUG("*** damn, unreachable!")
           //Console.println("damn, unreachable!")
-          //for (b <- bodies)
-          //  Console.println(b)
+          if(settings.debug.value) {
+            Console.println("bodies:"+bodies.mkString("","\n",""))
+          }
           cunit.error(b.pos, "unreachable code")
         }
 

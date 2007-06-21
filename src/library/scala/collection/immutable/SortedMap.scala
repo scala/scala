@@ -25,13 +25,13 @@ trait SortedMap[A,+B] extends Map[A,B] with collection.SortedMap[A,B] {
 
   override def transform[C](f: (A, B) => C): SortedMap[A, C] = {
     var res = empty[C]
-    foreach { case Pair(key, value) => res = res.update(key, f(key, value)) }
+    foreach { case (key, value) => res = res.update(key, f(key, value)) }
     res
   }
   override def filter(p: Pair[A, B] => Boolean): SortedMap[A, B] = {
     var res = this
     foreach {
-      case kv @ Pair(key, _) => if (!p(kv)) { res = res - key }
+      case kv @ (key, _) => if (!p(kv)) { res = res - key }
     }
     res
   }
