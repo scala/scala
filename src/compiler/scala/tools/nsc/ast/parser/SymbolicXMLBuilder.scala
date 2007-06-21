@@ -102,7 +102,7 @@ abstract class SymbolicXMLBuilder(make: TreeBuilder, p: Parsers # Parser, preser
    *  @todo map:       a map of attributes !!!
    */
 
-  protected def mkXML(pos: Position, isPattern: boolean, pre: Tree, label: Tree, attrs: /*Array[*/Tree/*]*/ , scope:Tree, children: mutable.Buffer[Tree]): Tree = {
+  protected def mkXML(pos: Position, isPattern: Boolean, pre: Tree, label: Tree, attrs: /*Array[*/Tree/*]*/ , scope:Tree, children: mutable.Buffer[Tree]): Tree = {
     if (isPattern) {
       convertToTextPat(children)
       atPos (pos) { //@todo maybe matching on attributes, scope?

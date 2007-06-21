@@ -128,9 +128,9 @@ trait Trees {
       buffer.toString()
     }
 
-    override def hashCode(): int = super.hashCode()
+    override def hashCode(): Int = super.hashCode()
 
-    override def equals(that: Any): boolean = that match {
+    override def equals(that: Any): Boolean = that match {
       case t: Tree => this eq t
       case _ => false
     }
@@ -441,7 +441,7 @@ trait Trees {
   case class DocDef(comment: String, definition: Tree)
        extends Tree {
     override def symbol: Symbol = definition.symbol
-    override def symbol_=(sym: Symbol): unit = { definition.symbol = sym }
+    override def symbol_=(sym: Symbol) { definition.symbol = sym }
   }
 
   /** Instantiation template
@@ -624,14 +624,14 @@ trait Trees {
   case class TypeApply(fun: Tree, args: List[Tree])
        extends GenericApply {
     override def symbol: Symbol = fun.symbol
-    override def symbol_=(sym: Symbol): unit = { fun.symbol = sym }
+    override def symbol_=(sym: Symbol) { fun.symbol = sym }
   }
 
   /** Value application */
   case class Apply(fun: Tree, args: List[Tree])
        extends GenericApply {
     override def symbol: Symbol = fun.symbol
-    override def symbol_=(sym: Symbol): unit = { fun.symbol = sym }
+    override def symbol_=(sym: Symbol) { fun.symbol = sym }
   }
 
   /** Dynamic value application.
@@ -727,7 +727,7 @@ trait Trees {
   case class AppliedTypeTree(tpt: Tree, args: List[Tree])
        extends TypTree {
     override def symbol: Symbol = tpt.symbol
-    override def symbol_=(sym: Symbol): unit = { tpt.symbol = sym }
+    override def symbol_=(sym: Symbol) { tpt.symbol = sym }
   }
 
   case class TypeBoundsTree(lo: Tree, hi: Tree)
@@ -1324,7 +1324,7 @@ trait Trees {
       List.mapConserve(stats)(stat =>
         if (exprOwner != currentOwner && stat.isTerm) atOwner(exprOwner)(transform(stat))
         else transform(stat)) filter (EmptyTree !=)
-    def transformUnit(unit: CompilationUnit): unit = { unit.body = transform(unit.body) }
+    def transformUnit(unit: CompilationUnit) { unit.body = transform(unit.body) }
 
     def atOwner[A](owner: Symbol)(trans: => A): A = {
       val prevOwner = currentOwner
@@ -1337,7 +1337,7 @@ trait Trees {
 
   class Traverser {
     protected var currentOwner: Symbol = definitions.RootClass
-    def traverse(tree: Tree): unit = tree match {
+    def traverse(tree: Tree): Unit = tree match {
       case EmptyTree =>
         ;
       case PackageDef(name, stats) =>
@@ -1446,17 +1446,20 @@ trait Trees {
         traverse(tpt); traverseTrees(whereClauses)
     }
 
-    def traverseTrees(trees: List[Tree]): unit =
+    def traverseTrees(trees: List[Tree]) {
       trees foreach traverse
-    def traverseTreess(treess: List[List[Tree]]): unit =
+    }
+    def traverseTreess(treess: List[List[Tree]]) {
       treess foreach traverseTrees
-    def traverseStats(stats: List[Tree], exprOwner: Symbol): unit =
+    }
+    def traverseStats(stats: List[Tree], exprOwner: Symbol) {
       stats foreach (stat =>
         if (exprOwner != currentOwner && stat.isTerm) atOwner(exprOwner)(traverse(stat))
         else traverse(stat))
+    }
     def apply[T <: Tree](tree: T): T = { traverse(tree); tree }
 
-    def atOwner(owner: Symbol)(traverse: => unit): unit = {
+    def atOwner(owner: Symbol)(traverse: => Unit) {
       val prevOwner = currentOwner
       currentOwner = owner
       traverse
@@ -1479,7 +1482,7 @@ trait Trees {
 
   class TreeTypeSubstituter(from: List[Symbol], to: List[Type]) extends Traverser {
     val typeSubst = new SubstTypeMap(from, to)
-    override def traverse(tree: Tree): unit = {
+    override def traverse(tree: Tree) {
       if (tree.tpe ne null) tree.tpe = typeSubst(tree.tpe)
       super.traverse(tree)
     }
@@ -1488,8 +1491,8 @@ trait Trees {
 
   class TreeSymSubstituter(from: List[Symbol], to: List[Symbol]) extends Traverser {
     val symSubst = new SubstSymMap(from, to)
-    override def traverse(tree: Tree): unit = {
-      def subst(from: List[Symbol], to: List[Symbol]): unit = {
+    override def traverse(tree: Tree) {
+      def subst(from: List[Symbol], to: List[Symbol]) {
         if (!from.isEmpty)
           if (tree.symbol == from.head) tree setSymbol to.head
           else subst(from.tail, to.tail)
@@ -1502,7 +1505,7 @@ trait Trees {
   }
 
   class ChangeOwnerTraverser(val oldowner: Symbol, val newowner: Symbol) extends Traverser {
-    override def traverse(tree: Tree): unit = {
+    override def traverse(tree: Tree) {
       if ((tree.isDef || tree.isInstanceOf[Function]) &&
           tree.symbol != NoSymbol && tree.symbol.owner == oldowner)
         tree.symbol.owner = newowner;
@@ -1519,11 +1522,12 @@ trait Trees {
 
   object posAssigner extends Traverser {
     var pos: Position = _
-    override def traverse(t: Tree): unit =
+    override def traverse(t: Tree) {
       if (t != EmptyTree && t.pos == NoPosition) {
         t.setPos(pos)
         super.traverse(t)
       }
+    }
     def atPos[T <: Tree](pos: Position)(tree: T): T = {
       this.pos = pos
       traverse(tree)
@@ -1532,7 +1536,7 @@ trait Trees {
   }
 
   class ForeachTraverser(f: Tree => Unit) extends Traverser {
-    override def traverse(t: Tree) = {
+    override def traverse(t: Tree) {
       f(t)
       super.traverse(t)
     }
@@ -1540,7 +1544,7 @@ trait Trees {
 
   class FilterTraverser(p: Tree => Boolean) extends Traverser {
     val hits = new ListBuffer[Tree]
-    override def traverse(t: Tree) = {
+    override def traverse(t: Tree) {
       if (p(t)) hits += t
       super.traverse(t)
     }
@@ -1548,15 +1552,16 @@ trait Trees {
 
   class FindTraverser(p: Tree => Boolean) extends Traverser {
     var result: Option[Tree] = None
-    override def traverse(t: Tree) =
+    override def traverse(t: Tree) {
       if (result.isEmpty) {
         if (p(t)) result = Some(t)
         super.traverse(t)
       }
+    }
   }
 
   object resetPos extends Traverser {
-    override def traverse(t: Tree): unit = {
+    override def traverse(t: Tree) {
       if (t != EmptyTree) t.setPos(NoPosition)
       super.traverse(t)
     }
@@ -1569,7 +1574,7 @@ trait Trees {
    */
   object resetAttrs extends Traverser {
     private val erasedSyms = new HashSet[Symbol](8)
-    override def traverse(tree: Tree): unit = tree match {
+    override def traverse(tree: Tree): Unit = tree match {
       case EmptyTree | TypeTree() =>
         ;
       case Template(parents, self, body) =>

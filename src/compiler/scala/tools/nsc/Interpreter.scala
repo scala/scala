@@ -512,14 +512,17 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   }
 
   /** A traverser that finds all mentioned identifiers, i.e. things
-      that need to be imported.
-      It might return extra names.  */
+   *  that need to be imported.
+   *  It might return extra names.
+   */
   private class ImportVarsTraverser(definedVars: List[Name]) extends Traverser {
     val importVars = new HashSet[Name]()
 
-    override def traverse(ast: Tree): unit = ast match {
-      case Ident(name) => importVars += name
-      case _ => super.traverse(ast)
+    override def traverse(ast: Tree) {
+      ast match {
+        case Ident(name) => importVars += name
+        case _ => super.traverse(ast)
+      }
     }
   }
 
@@ -544,10 +547,11 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     /** A computed variable name, if one is needed */
     def varName =
       varNameCache match {
-      case None =>
+        case None =>
           varNameCache = Some(newVarName)
           varNameCache.get
-      case Some(name) => name
+        case Some(name) =>
+          name
     }
 
     /** list of methods defined */
@@ -614,8 +618,6 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     /** Code to append to objectName to access anything that
      *  the request binds.  */
     val accessPath = myImportsCode._3
-
-
 
     /** the line of code to compute */
     def toCompute = line
@@ -815,7 +817,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     def keyword: String =
       if(classdef.mods.isTrait) "trait" else "class"
 
-    override def resultExtractionCode(code: PrintWriter): Unit = {
+    override def resultExtractionCode(code: PrintWriter) {
       super.resultExtractionCode(code)
       code.print(
           " + \"defined " +
@@ -833,7 +835,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
       case List(TypeDef(_, name, _, _)) => name
     }
 
-    override def resultExtractionCode(code: PrintWriter): Unit = {
+    override def resultExtractionCode(code: PrintWriter) {
       super.resultExtractionCode(code)
       code.println(" + \"defined type alias " + newTypeName + "\\n\"")
     }
@@ -843,7 +845,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   private class ImportReq(line: String, lineName: String)
   extends Request(line, lineName) {
     override val boundNames = Nil
-    override def resultExtractionCode(code: PrintWriter): Unit = {
+    override def resultExtractionCode(code: PrintWriter) {
       code.println("+ \"" + trees.head.toString + "\\n\"")
     }
 
@@ -873,14 +875,16 @@ object Interpreter {
 
   /** Delete a directory tree recursively.  Use with care!
    */
-  def deleteRecursively(path: File): Unit = {
+  def deleteRecursively(path: File) {
     path match  {
-      case _ if !path.exists => {}
+      case _ if !path.exists =>
+        ()
       case _ if path.isDirectory =>
         for (p <- path.listFiles)
           deleteRecursively(p)
         path.delete
-      case _ => path.delete
+      case _ =>
+        path.delete
     }
   }
 

@@ -363,7 +363,7 @@ trait Symbols {
     final def isContravariant: Boolean = isType && hasFlag(CONTRAVARIANT)
 
     /** The variance of this symbol as an integer */
-    final def variance: int =
+    final def variance: Int =
       if (isCovariant) 1
       else if (isContravariant) -1
       else 0

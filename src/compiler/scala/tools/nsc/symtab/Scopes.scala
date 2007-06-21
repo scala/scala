@@ -121,7 +121,7 @@ trait Scopes {
       var s = 0
       var e = elems
       while (e ne null) {
-        s = s + 1
+        s += 1
         e = e.next
       }
       s
@@ -131,7 +131,7 @@ trait Scopes {
      *
      *  @param e ...
      */
-    def enter(e: ScopeEntry): unit = {
+    def enter(e: ScopeEntry) {
       elemsCache = null
       if (hashtable ne null) {
         val i = e.sym.name.start & HASHMASK
@@ -146,7 +146,7 @@ trait Scopes {
      *
      *  @param sym ...
      */
-    def enter(sym: Symbol): unit = enter(newScopeEntry(sym, this))
+    def enter(sym: Symbol) { enter(newScopeEntry(sym, this)) }
 
     /** enter a symbol, asserting that no symbol with same name exists in scope
      *

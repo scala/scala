@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author Martin Odersky
  */
 // $Id$
@@ -19,7 +19,7 @@ abstract class SubComponent {
   val phaseName: String
 
   /** New flags defined by the phase which are not valid before */
-  def phaseNewFlags: long = 0
+  def phaseNewFlags: Long = 0
 
   /** The phase factory */
   def newPhase(prev: Phase): Phase

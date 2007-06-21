@@ -1,21 +1,21 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
 
 package scala.tools.nsc.ast.parser
-import scala.tools.nsc.util.Position
 
 import symtab.Flags._
 import scala.collection.mutable.ListBuffer
+import scala.tools.nsc.util.Position
 
 abstract class TreeBuilder {
 
   val global: Global
   import global._
   import posAssigner.atPos;
-  def freshName(prefix: String, pos : Position): Name
+  def freshName(prefix: String, pos: Position): Name
 
   def freshName(pos : Position): Name = freshName("x$", pos)
 
@@ -59,7 +59,7 @@ abstract class TreeBuilder {
   private object getvarTraverser extends Traverser {
     val buf = new ListBuffer[(Name, Tree)]
     def init: Traverser = { buf.clear; this }
-    override def traverse(tree: Tree): unit = tree match {
+    override def traverse(tree: Tree): Unit = tree match {
       case Bind(name, Typed(tree1, tpt)) =>
         if ((name != nme.WILDCARD) && (buf.elements forall (name !=)))
           buf += (name, if (treeInfo.mayBeTypePat(tpt)) TypeTree() else tpt)
@@ -81,18 +81,18 @@ abstract class TreeBuilder {
     getvarTraverser.buf.toList
   }
 
-  private def makeTuple(trees: List[Tree], isType: boolean): Tree = {
+  private def makeTuple(trees: List[Tree], isType: Boolean): Tree = {
     val tupString = "Tuple" + trees.length
     Apply(scalaDot(if (isType) newTypeName(tupString) else newTermName(tupString)), trees)
   }
 
-  def makeTupleTerm(trees: List[Tree], flattenUnary: boolean): Tree = trees match {
+  def makeTupleTerm(trees: List[Tree], flattenUnary: Boolean): Tree = trees match {
     case List() => Literal(())
     case List(tree) if flattenUnary => tree
     case _ => makeTuple(trees, false)
   }
 
-  def makeTupleType(trees: List[Tree], flattenUnary: boolean): Tree = trees match {
+  def makeTupleType(trees: List[Tree], flattenUnary: Boolean): Tree = trees match {
     case List() => scalaUnitConstr
     case List(tree) if flattenUnary => tree
     case _ => AppliedTypeTree(scalaDot(newTypeName("Tuple" + trees.length)), trees)
@@ -119,7 +119,7 @@ abstract class TreeBuilder {
   }
 
   /** Create tree representing (unencoded) binary operation expression or pattern. */
-  def makeBinop(isExpr: boolean, left: Tree, op: Name, right: Tree): Tree = {
+  def makeBinop(isExpr: Boolean, left: Tree, op: Name, right: Tree): Tree = {
     val arguments = right match {
       case Parens(args) => args
       case _ => List(right)
@@ -184,7 +184,7 @@ abstract class TreeBuilder {
     else Block(stats.init, stats.last)
 
   /** Create tree for for-comprehension generator &lt;val pat0 &lt;- rhs0&gt; */
-  def makeGenerator(pos: Position, pat: Tree, valeq: boolean, rhs: Tree): Enumerator = {
+  def makeGenerator(pos: Position, pat: Tree, valeq: Boolean, rhs: Tree): Enumerator = {
     val pat1 = patvarTransformer.transform(pat);
     val rhs1 =
       if (valeq) rhs
@@ -368,14 +368,14 @@ abstract class TreeBuilder {
     makeAlternative(List(p, Sequence(List())))
 
   /** Create visitor <x => x match cases> */
-  def makeVisitor(cases: List[CaseDef], checkExhaustive: boolean): Tree =
+  def makeVisitor(cases: List[CaseDef], checkExhaustive: Boolean): Tree =
     makeVisitor(cases, checkExhaustive, "x$")
 
   private def makeUnchecked(expr: Tree): Tree =
     Annotated(Annotation(New(scalaDot(definitions.UncheckedClass.name), List(List())), List()), expr)
 
   /** Create visitor <x => x match cases> */
-  def makeVisitor(cases: List[CaseDef], checkExhaustive: boolean, prefix: String): Tree = {
+  def makeVisitor(cases: List[CaseDef], checkExhaustive: Boolean, prefix: String): Tree = {
     val x = freshName(prefix, posAssigner.pos)
     val sel = if (checkExhaustive) Ident(x) else makeUnchecked(Ident(x))
     Function(List(makeSyntheticParam(x)), Match(sel, cases))

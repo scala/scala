@@ -261,7 +261,7 @@ trait Definitions {
         productType({val es = elems; if(useWildCards) elems map { x => WildcardType} else elems})
      */
 
-    def unapplyReturnTypeExpected(argsLength: int) = argsLength match {
+    def unapplyReturnTypeExpected(argsLength: Int) = argsLength match {
       case 0 => BooleanClass.tpe
       case 1 => optionType(WildcardType)
       case n => optionType(productType(List.range(0,n).map (arg => WildcardType)))
@@ -290,7 +290,7 @@ trait Definitions {
           false
       }
 
-    def isCorrespondingDelegate(delegateType: Type, functionType: Type): boolean = {
+    def isCorrespondingDelegate(delegateType: Type, functionType: Type): Boolean = {
       var isCD: Boolean = false
       if (DelegateClass != null && delegateType != null &&
 	  isSubType(delegateType, DelegateClass.tpe))
@@ -384,7 +384,7 @@ trait Definitions {
       result
     }
 
-    private def getModuleOrClass(fullname: Name, module: boolean): Symbol = {
+    private def getModuleOrClass(fullname: Name, module: Boolean): Symbol = {
       var sym = RootClass
       var i = 0
       var j = fullname.pos('.', i)
@@ -445,7 +445,7 @@ trait Definitions {
     private def newParameterlessMethod(owner: Symbol, name: Name, restpe: Type) =
       newMethod(owner, name).setInfo(PolyType(List(),restpe))
 
-    private def newTypeParam(owner: Symbol, index: int): Symbol =
+    private def newTypeParam(owner: Symbol, index: Int): Symbol =
       owner.newTypeParameter(NoPosition, "T" + index)
         .setInfo(mkTypeBounds(AllClass.typeConstructor, AnyClass.typeConstructor))
 
@@ -476,9 +476,9 @@ trait Definitions {
     }
 
     val refClass = new HashMap[Symbol, Symbol]
-    private val abbrvTag = new HashMap[Symbol, char]
+    private val abbrvTag = new HashMap[Symbol, Char]
 
-    private def newValueClass(name: Name, tag: char): Symbol = {
+    private def newValueClass(name: Name, tag: Char): Symbol = {
       val boxedName =
         if (!forMSIL) "java.lang." + (name match {
           case nme.Boolean => "Boolean"
@@ -643,7 +643,7 @@ trait Definitions {
         initValueClass(FloatClass,  false)
         initValueClass(DoubleClass, false)
       }
-      def addModuleMethod(clazz: Symbol, name: Name, value: Any): Unit = {
+      def addModuleMethod(clazz: Symbol, name: Name, value: Any) {
         val owner = clazz.linkedClassOfClass
         newParameterlessMethod(owner, name, mkConstantType(Constant(value)))
       }
@@ -676,18 +676,18 @@ trait Definitions {
     }
 
     /** Is symbol a value class? */
-    def isValueClass(sym: Symbol): boolean =
+    def isValueClass(sym: Symbol): Boolean =
       (sym eq UnitClass) || (boxedClass contains sym)
 
     /** Is symbol a value class? */
-    def isNumericValueClass(sym: Symbol): boolean =
+    def isNumericValueClass(sym: Symbol): Boolean =
       (sym ne BooleanClass) && (boxedClass contains sym)
 
     def isValueType(sym: Symbol) =
       isValueClass(sym) || unboxMethod.contains(sym)
 
     /** Is symbol a value or array class? */
-    def isUnboxedClass(sym: Symbol): boolean =
+    def isUnboxedClass(sym: Symbol): Boolean =
       isValueType(sym) || sym == ArrayClass
 
     def signature(tp: Type): String = {
@@ -696,7 +696,7 @@ trait Definitions {
         case RefinedType(parents, _) => erasure(parents.head)
         case _ => tp
       }
-      def flatNameString(sym: Symbol, separator: char): String =
+      def flatNameString(sym: Symbol, separator: Char): String =
         if (sym.owner.isPackageClass) sym.fullNameString('.')
         else flatNameString(sym.owner, separator) + "$" + sym.simpleName;
       def signature1(etp: Type): String = {

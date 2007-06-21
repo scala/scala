@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -79,7 +79,7 @@ trait StdNames {
     val INTERPRETER_IMPORT_WRAPPER = "$iw"
 
     def LOCAL(clazz: Symbol) = newTermName(LOCALDUMMY_PREFIX_STRING + clazz.name+">")
-    def TUPLE_FIELD(index: int) = newTermName(TUPLE_FIELD_PREFIX_STRING + index)
+    def TUPLE_FIELD(index: Int) = newTermName(TUPLE_FIELD_PREFIX_STRING + index)
 
     val LOCAL_SUFFIX = newTermName(" ")
     val SETTER_SUFFIX = encode("_=")
@@ -101,10 +101,10 @@ trait StdNames {
      *  @see Symbol.expandedName
      */
     def originalName(name: Name): Name = {
-      var i = name.length;
-      while (i >= 2 && !(name(i - 1) == '$' && name(i - 2) == '$')) i = i - 1;
+      var i = name.length
+      while (i >= 2 && !(name(i - 1) == '$' && name(i - 2) == '$')) i -= 1
       if (i >= 2) {
-        while (i >= 3 && name(i - 3) == '$') i = i - 1;
+        while (i >= 3 && name(i - 3) == '$') i -= 1
         name.subName(i, name.length)
       } else name
     }
@@ -131,7 +131,7 @@ trait StdNames {
     def getterName(name: Name): Name =
       if (isLocalName(name)) localToGetter(name) else name;
 
-    def isImplClassName(name: Name): boolean =
+    def isImplClassName(name: Name): Boolean =
       name endsWith IMPL_CLASS_SUFFIX;
 
     def implClassName(name: Name): Name =

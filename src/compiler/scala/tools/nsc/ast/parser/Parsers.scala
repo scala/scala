@@ -99,7 +99,8 @@ trait Parsers {
     def xmlp = {
       if (xmlp0 == null)
         xmlp0 = this match {
-          case in: UnitParser => new MarkupParser(in, true)
+          case in: UnitParser =>
+            new MarkupParser(in, true)
           case _ =>
             Console.println("Cannot create XML PARSER " + in)
             null
@@ -208,11 +209,13 @@ trait Parsers {
       }
     }
 
-    def syntaxError(msg: String, skipIt: boolean): unit =
+    def syntaxError(msg: String, skipIt: Boolean) {
       syntaxError(inCurrentPos, msg, skipIt)
-    def syntaxError(pos : ScanPosition, msg : String) = in.error(pos, msg)
-
-    def syntaxError(pos: ScanPosition, msg: String, skipIt: boolean): Unit = {
+    }
+    def syntaxError(pos: ScanPosition, msg: String) {
+      in.error(pos, msg)
+    }
+    def syntaxError(pos: ScanPosition, msg: String, skipIt: Boolean) {
       if (pos != in.errpos) {
         syntaxError(pos, msg)
         in.errpos = pos
@@ -245,8 +248,9 @@ trait Parsers {
       }
     }
 
-    def incompleteInputError(msg: String): Unit =
+    def incompleteInputError(msg: String) {
       incompleteInputError(inCurrentPos, msg)  // inCurrentPos should be at the EOF
+    }
 
     def syntaxErrorOrIncomplete(msg: String, skipIt: Boolean) {
       if (inToken == EOF)
@@ -294,9 +298,10 @@ trait Parsers {
     /** semi = nl {nl} | `;'
      *  nl  = `\n' // where allowed
      */
-    def acceptStatSep(): Unit =
+    def acceptStatSep() {
       if (inToken == NEWLINE || inToken == NEWLINES) inNextToken
       else accept(SEMI)
+    }
 
     def errorTypeTree = TypeTree().setType(ErrorType).setPos((inCurrentPos))
     def errorTermTree = Literal(Constant(null)).setPos((inCurrentPos))
@@ -327,7 +332,7 @@ trait Parsers {
 
     def isIdent = inToken == IDENTIFIER || inToken == BACKQUOTED_IDENT
 
-    def isExprIntroToken(token: int): Boolean = token match {
+    def isExprIntroToken(token: Int): Boolean = token match {
       case CHARLIT | INTLIT | LONGLIT | FLOATLIT | DOUBLELIT |
            STRINGLIT | SYMBOLLIT | TRUE | FALSE | NULL | IDENTIFIER | BACKQUOTED_IDENT |
            THIS | SUPER | IF | FOR | NEW | USCORE | TRY | WHILE |
@@ -424,7 +429,7 @@ trait Parsers {
     case class OpInfo(operand: Tree, operator: Name, pos: ScanPosition)
     var opstack: List[OpInfo] = Nil
 
-    def precedence(operator: Name): int =
+    def precedence(operator: Name): Int =
       if (operator eq nme.ERROR) -1
       else {
         val firstCh = operator(0)
@@ -445,16 +450,16 @@ trait Parsers {
           }
       }
 
-    def checkSize(kind: String, size: int, max: int) {
+    def checkSize(kind: String, size: Int, max: Int) {
       if (size > max) syntaxError("too many "+kind+", maximum = "+max, false)
     }
 
-    def checkAssoc(pos: ScanPosition, op: Name, leftAssoc: boolean) =
+    def checkAssoc(pos: ScanPosition, op: Name, leftAssoc: Boolean) =
       if (treeInfo.isLeftAssoc(op) != leftAssoc)
         syntaxError(
           pos, "left- and right-associative operators with same precedence may not be mixed", false)
 
-    def reduceStack(isExpr: boolean, base: List[OpInfo], top0: Tree, prec: int, leftAssoc: boolean): Tree = {
+    def reduceStack(isExpr: Boolean, base: List[OpInfo], top0: Tree, prec: Int, leftAssoc: Boolean): Tree = {
       var top = top0
       if (opstack != base && precedence(opstack.head.operator) == prec)
         checkAssoc(opstack.head.pos, opstack.head.operator, leftAssoc)
@@ -504,7 +509,7 @@ trait Parsers {
      *              |  [Ident `.'] this
      *  AnnotType ::= Path [`.' type]
      */
-    def path(thisOK: boolean, typeOK: boolean): Tree = {
+    def path(thisOK: Boolean, typeOK: Boolean): Tree = {
       var t: Tree = null
       if (inToken == THIS) {
         t = atPos(inSkipToken) { This(nme.EMPTY.toTypeName) }
@@ -544,7 +549,7 @@ trait Parsers {
       t
     }
 
-    def selectors(t: Tree, typeOK: boolean, pos : ScanPosition): Tree =
+    def selectors(t: Tree, typeOK: Boolean, pos : ScanPosition): Tree =
       if (typeOK && inToken == TYPE) {
         inNextToken
         atPos(pos) { SingletonTypeTree(t) }
@@ -586,7 +591,7 @@ trait Parsers {
     *                  | null
     */
 
-    def literal(isPattern: boolean, isNegated: boolean): Tree = {
+    def literal(isPattern: Boolean, isNegated: Boolean): Tree = {
       def litToTree() = atPos(inCurrentPos) {
         Literal(
           inToken match {
@@ -619,24 +624,26 @@ trait Parsers {
       }
     }
 
-    def newLineOpt(): unit =
+    def newLineOpt() {
       if (inToken == NEWLINE) {
         if (settings.migrate.value) in.newNewLine = false
         inNextToken
       }
+    }
 
-    def newLinesOpt(): unit =
+    def newLinesOpt() {
       if (inToken == NEWLINE || inToken == NEWLINES) {
         if (settings.migrate.value) in.newNewLine = false
         inNextToken
       }
+    }
 
-    def newLineOptWhenFollowedBy(token: int) {
+    def newLineOptWhenFollowedBy(token: Int) {
       // note: next is defined here because current == NEWLINE
       if (inToken == NEWLINE && inNextTokenCode == token) newLineOpt()
     }
 
-    def newLineOptWhenFollowing(p: int => boolean) {
+    def newLineOptWhenFollowing(p: Int => Boolean) {
       // note: next is defined here because current == NEWLINE
       if (inToken == NEWLINE && p(inNextTokenCode)) newLineOpt()
     }
@@ -662,7 +669,7 @@ trait Parsers {
      *
      *  (also eats trailing comma if it finds one)
      */
-    def types(isPattern: boolean): List[Tree] = {
+    def types(isPattern: Boolean): List[Tree] = {
       val ts = new ListBuffer[Tree] + argType(isPattern)
       while (inToken == COMMA) {
         inNextToken
@@ -732,10 +739,10 @@ trait Parsers {
     /** InfixType ::= CompoundType {id [nl] CompoundType}
      *  TypePat ::= CompoundTypePat {id [nl] CompoundTypePat
      */
-    def infixType(isPattern: boolean, mode: int): Tree =
+    def infixType(isPattern: Boolean, mode: Int): Tree =
       infixTypeRest(inCurrentPos, annotType(isPattern), isPattern, mode)
 
-    def infixTypeRest(pos: ScanPosition, t0: Tree, isPattern: boolean, mode: int): Tree = {
+    def infixTypeRest(pos: ScanPosition, t0: Tree, isPattern: Boolean, mode: Int): Tree = {
       val t = compoundTypeRest(pos, t0, isPattern)
       if (isIdent && inName != nme.STAR) {
         val opPos = inCurrentPos
@@ -755,10 +762,10 @@ trait Parsers {
     /** CompoundType ::= AnnotType {with AnnotType} [Refinement]
      *  CompoundTypePat ::= AnnotTypePat {with AnnotTypePat}
      */
-    def compoundType(isPattern: boolean): Tree =
+    def compoundType(isPattern: Boolean): Tree =
       compoundTypeRest(inCurrentPos, annotType(isPattern), isPattern)
 
-    def compoundTypeRest(pos: ScanPosition, t: Tree, isPattern: boolean): Tree = {
+    def compoundTypeRest(pos: ScanPosition, t: Tree, isPattern: Boolean): Tree = {
       var ts = new ListBuffer[Tree] + t
       while (inToken == WITH) {
         inNextToken; ts += annotType(isPattern)
@@ -785,7 +792,7 @@ trait Parsers {
      *                     |   Path `.' type
      *                     |   `(' ArgTypePats [`,'] `)'
      */
-    def annotType(isPattern: boolean): Tree = {
+    def annotType(isPattern: Boolean): Tree = {
       val annots = annotations()
       val pos = inCurrentPos
       var t: Tree =
@@ -826,7 +833,7 @@ trait Parsers {
     /** TypeArgs    ::= `[' ArgType {`,' ArgType} `]'
      *  TypePatArgs ::= '[' ArgTypePat {`,' ArgTypePat} `]'
      */
-    def typeArgs(isPattern: boolean): List[Tree] = {
+    def typeArgs(isPattern: Boolean): List[Tree] = {
       accept(LBRACKET)
       val ts = types(isPattern)
       accept(RBRACKET)
@@ -838,7 +845,7 @@ trait Parsers {
      *                  |  `_'
      *                  |  Type            // for array elements only!
      */
-    def argType(isPattern: boolean): Tree =
+    def argType(isPattern: Boolean): Tree =
       if (isPattern) {
         if (inToken == USCORE)
           atPos(inSkipToken) { Bind(nme.WILDCARD.toTypeName, EmptyTree) }
@@ -935,8 +942,8 @@ trait Parsers {
     def expr(): Tree = expr(Local)
 
     /** XXX: Hook for IDE */
-    def expr(location: int): Tree = {
-      def isWildcard(t: Tree): boolean = t match {
+    def expr(location: Int): Tree = {
+      def isWildcard(t: Tree): Boolean = t match {
         case Ident(name1) if !placeholderParams.isEmpty && name1 == placeholderParams.head.name => true
         case Typed(t1, _) => isWildcard(t1)
         case Annotated(t1, _) => isWildcard(t1)
@@ -1195,7 +1202,8 @@ trait Parsers {
       }
       simpleExprRest(t, canApply)
     }
-    def simpleExprRest(t: Tree, canApply: boolean): Tree = {
+
+    def simpleExprRest(t: Tree, canApply: Boolean): Tree = {
       if (canApply) newLineOptWhenFollowedBy(LBRACE)
       inToken match {
         case DOT =>
@@ -1295,7 +1303,7 @@ trait Parsers {
 
     /** Generator ::= val Pattern1 `<-' Expr [Guard]
      */
-    def generator(enums: ListBuffer[Enumerator], eqOK: boolean) {
+    def generator(enums: ListBuffer[Enumerator], eqOK: Boolean) {
       val pos = inCurrentPos;
       if (inToken == VAL) inNextToken
       val pat = pattern1(false)
@@ -1314,7 +1322,7 @@ trait Parsers {
      *
      *  (also eats trailing comma if it finds one)
      */
-    def patterns(seqOK: boolean): List[Tree] = {
+    def patterns(seqOK: Boolean): List[Tree] = {
       val ts = new ListBuffer[Tree] + pattern(seqOK)
       while (inToken == COMMA) {
         inNextToken;
@@ -1327,7 +1335,7 @@ trait Parsers {
     /**   Pattern  ::=  Pattern1 { `|' Pattern1 }
      *    SeqPattern ::= SeqPattern1 { `|' SeqPattern1 }
      */
-    def pattern(seqOK: boolean): Tree = {
+    def pattern(seqOK: Boolean): Tree = {
       val pos = inCurrentPos
       val t = pattern1(seqOK)
       if (isIdent && inName == BAR) {
@@ -1348,7 +1356,7 @@ trait Parsers {
      *                 |  `_' `:' TypePat
      *                 |  [SeqPattern2]
      */
-    def pattern1(seqOK: boolean): Tree = {
+    def pattern1(seqOK: Boolean): Tree = {
       //if (false && /*disabled, no regexp matching*/ seqOK && !isExprIntro) {
         //atPos(inCurrentPos) { Sequence(List()) }
       //} else {
@@ -1367,7 +1375,7 @@ trait Parsers {
      *   SeqPattern2 ::=  varid [ @ SeqPattern3 ]
      *                |   SeqPattern3
      */
-    def pattern2(seqOK: boolean): Tree = {
+    def pattern2(seqOK: Boolean): Tree = {
       val p = pattern3(seqOK)
       if (inToken == AT) {
         p match {
@@ -1391,7 +1399,7 @@ trait Parsers {
      *   SeqPattern3 ::= SeqSimplePattern [ '*' | '?' | '+' ]
      *                |  SeqSimplePattern {Id [nl] SeqSimplePattern}
      */
-    def pattern3(seqOK: boolean): Tree = {
+    def pattern3(seqOK: Boolean): Tree = {
       val base = opstack
       var top = simplePattern(seqOK)
       if (seqOK && isIdent) {
@@ -1429,7 +1437,7 @@ trait Parsers {
      *
      * XXX: Hook for IDE
      */
-    def simplePattern(seqOK: boolean): Tree = inToken match {
+    def simplePattern(seqOK: Boolean): Tree = inToken match {
       case IDENTIFIER | BACKQUOTED_IDENT | THIS =>
         var t = stableId()
         inToken match {
@@ -1491,7 +1499,7 @@ trait Parsers {
       else
         mods
 
-    private def addMod(mods: Modifiers, mod: long): Modifiers = {
+    private def addMod(mods: Modifiers, mod: Long): Modifiers = {
       if (mods hasFlag mod) syntaxError(inCurrentPos, "repeated modifier", false)
       inNextToken
       mods | mod
@@ -1653,7 +1661,7 @@ trait Parsers {
      *  ClassParams       ::= ClassParam {`,' ClassParam}
      *  ClassParam        ::= Annotations  [{Modifier} (`val' | `var')] Id [`:' ParamType]
      */
-    def paramClauses(owner: Name, implicitViews: List[Tree], ofCaseClass: boolean): List[List[ValDef]] = {
+    def paramClauses(owner: Name, implicitViews: List[Tree], ofCaseClass: Boolean): List[List[ValDef]] = {
       var implicitmod = 0
       var caseParam = ofCaseClass
       def param(): ValDef = {
@@ -1806,7 +1814,7 @@ trait Parsers {
         bound(SUPERTYPE, nme.Nothing),
         bound(SUBTYPE, nme.Any))
 
-    def bound(tok: int, default: Name): Tree =
+    def bound(tok: Int, default: Name): Tree =
       if (inToken == tok) { inNextToken; placeholderTypeBoundary(typ()) }
       else scalaDot(default.toTypeName)
 
@@ -1882,7 +1890,7 @@ trait Parsers {
 
     /** ImportSelector ::= Id [`=>' Id | `=>' `_']
      */
-    def importSelector(names: ListBuffer[(Name, Name)]): boolean =
+    def importSelector(names: ListBuffer[(Name, Name)]): Boolean =
       if (inToken == USCORE) {
         inNextToken; names += (nme.WILDCARD, null); true
       } else {
@@ -2156,7 +2164,7 @@ trait Parsers {
     /** ClassParents       ::= AnnotType {`(' [Exprs [`,']] `)'} {with AnnotType}
      *  TraitParents       ::= AnnotType {with AnnotType}
      */
-    def templateParents(isTrait: boolean): (List[Tree], List[List[Tree]]) = {
+    def templateParents(isTrait: Boolean): (List[Tree], List[List[Tree]]) = {
       val parents = new ListBuffer[Tree] + placeholderTypeBoundary(annotType(false))
       val argss = new ListBuffer[List[Tree]]
       if (inToken == LPAREN && !isTrait)
@@ -2174,7 +2182,7 @@ trait Parsers {
      *  EarlyDefs     ::= `{' [EarlyDef {semi EarlyDef}] `}'
      *  EarlyDef      ::= Annotations Modifiers PatDef
      */
-    def template(isTrait: boolean): (List[Tree], List[List[Tree]], ValDef, List[Tree]) = {
+    def template(isTrait: Boolean): (List[Tree], List[List[Tree]], ValDef, List[Tree]) = {
       newLineOptWhenFollowedBy(LBRACE)
       if (inToken == LBRACE) {
         val (self, body) = templateBody()
@@ -2231,7 +2239,7 @@ trait Parsers {
       if (stats.isEmpty) (self, List(EmptyTree)) else result
     }
 
-    def templateBodyOpt(traitParentSeen: boolean): (ValDef, List[Tree]) = {
+    def templateBodyOpt(traitParentSeen: Boolean): (ValDef, List[Tree]) = {
       newLineOptWhenFollowedBy(LBRACE)
       if (inToken == LBRACE) {
         templateBody()

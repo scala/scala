@@ -114,7 +114,7 @@ class InterpreterLoop(in0: BufferedReader, out: PrintWriter) {
     var first = true
     while (true) {
       if (interactive) {
-	out.print(prompt)
+        out.print(prompt)
         out.flush
       }
       if (first) {

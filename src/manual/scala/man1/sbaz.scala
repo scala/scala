@@ -64,8 +64,8 @@ object sbaz extends Command {
           "Display the version information"),
 
         Definition(
-	  CmdOption("-univ") & Argument("name"),
-	  "Operate on the named remote universe, selected from those " &
+          CmdOption("-univ") & Argument("name"),
+          "Operate on the named remote universe, selected from those " &
           "in the local managed directory's universe. Affects "&
           "the "&MBold("share")&" and "&MBold("retract")&" commands."),
 
@@ -164,9 +164,9 @@ object sbaz extends Command {
         "Update the list of available packages.",
         CmdLine(MBold("update"))),
       Definition(
-        "Upload package description for " & Mono("scala-devel-2.1.8") &
+        "Upload package description for " & Mono("scala-devel-2.5.1") &
         " to the universe",
-        CmdLine(MBold("share") & " scala-devel-2.1.8.advert"))))
+        CmdLine(MBold("share") & " scala-devel-2.5.1.advert"))))
 
   val exitStatus = Section("EXIT STATUS",
 

@@ -1,12 +1,11 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
 
 package scala.tools.nsc.typechecker
 
-import scala.tools.nsc.reporters.AbstractReporter
 import scala.tools.nsc.symtab.Flags._
 import scala.tools.nsc.util.{Position, NoPosition}
 
@@ -16,12 +15,12 @@ abstract class TreeCheckers extends Analyzer {
 
   val tpeOfTree = new scala.collection.mutable.HashMap[Tree, Type]
 
-  def checkTrees: unit = {
+  def checkTrees {
     Console.println("[consistency check at start of phase " + phase + "]")
-    for (val unit <- currentRun.units) check(unit)
+    for (unit <- currentRun.units) check(unit)
   }
 
-  def check(unit: CompilationUnit): unit = {
+  def check(unit: CompilationUnit) {
     val context = rootContext(unit)
     context.checking = true
     tpeOfTree.clear
@@ -67,7 +66,7 @@ abstract class TreeCheckers extends Analyzer {
     }
 
     object precheck extends Traverser {
-      override def traverse(tree: Tree): unit =
+      override def traverse(tree: Tree) {
         try {
           tree match {
             case DefDef(_, _, _, _, _, _) =>
@@ -121,10 +120,11 @@ abstract class TreeCheckers extends Analyzer {
               Console.println("exception when traversing " + tree);
             throw(ex)
         }
+      }
     }
 
     object postcheck extends Traverser {
-      override def traverse(tree: Tree): unit =
+      override def traverse(tree: Tree) {
         try {
           tree match {
             case EmptyTree | TypeTree() =>
@@ -146,6 +146,7 @@ abstract class TreeCheckers extends Analyzer {
               Console.println("exception when traversing " + tree);
             throw(ex)
         }
+      }
     }
   }
 }

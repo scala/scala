@@ -29,7 +29,7 @@ trait MarkupParsers {
   import global._
   //import posAssigner.atPos
 
-  class MarkupParser(p: UnitParser, presWS: boolean) /*with scala.xml.parsing.MarkupParser[Tree,Tree] */{
+  class MarkupParser(p: UnitParser, presWS: Boolean) /*with scala.xml.parsing.MarkupParser[Tree,Tree] */{
 
     import Tokens.{EMPTY, LBRACE, RBRACE}
 
@@ -54,7 +54,7 @@ trait MarkupParsers {
     /*[Duplicate]*/ protected val cbuf = new StringBuilder()
 
     /** append Unicode character to name buffer*/
-    /*[Duplicate]*/ protected def putChar(c: char) = cbuf.append(c)
+    /*[Duplicate]*/ protected def putChar(c: Char) = cbuf.append(c)
 
     /*[Duplicate]*/ var xEmbeddedBlock = false
 
@@ -128,7 +128,7 @@ trait MarkupParsers {
     /** attribute value, terminated by either ' or ". value may not contain <.
      *  @param endch either ' or "
      */
-    /*[Duplicate]*/ def xAttributeValue(endCh: char): String = {
+    /*[Duplicate]*/ def xAttributeValue(endCh: Char): String = {
       while (ch != endCh) {
         putChar(ch)
         nextch
@@ -251,7 +251,7 @@ trait MarkupParsers {
         }
         nextch
       }
-      new String(Array(i.asInstanceOf[char]))
+      new String(Array(i.asInstanceOf[Char]))
     }
 
     /** Comment ::= '<!--' ((Char - '-') | ('-' (Char - '-')))* '-->'
@@ -280,7 +280,7 @@ trait MarkupParsers {
      *  @param txt ...
      */
     /*[Duplicate]*/ def appendText(pos: Position, ts: mutable.Buffer[Tree],
-                                   txt: String): Unit =
+                                   txt: String) {
       if (!preserveWS) {
         for (t <- TextBuffer.fromString(txt).toText) {
           ts.append(handle.text(pos, t.text))
@@ -288,6 +288,7 @@ trait MarkupParsers {
       }
       else
         ts.append( handle.text(pos, txt))
+    }
 
     /** adds entity/character to to ts as side-effect
      *  @precond ch == '&amp;'
