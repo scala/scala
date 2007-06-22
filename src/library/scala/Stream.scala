@@ -11,7 +11,7 @@
 
 package scala
 
-
+import Predef._
 import compat.StringBuilder
 
 /**
