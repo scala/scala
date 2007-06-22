@@ -146,8 +146,11 @@ class Settings(error: String => Unit) {
   //Xplugtypes.value = true // just while experimenting
 
   // for benchmarking purposes
-  val Xmatchalgo     = ChoiceSetting("-Xmatchalgo", "which match algorithm to use", List("both","par","incr"),
+  val Xmatchalgo    = ChoiceSetting("-Xmatchalgo", "which match algorithm to use", List("both","par","incr"),
                                      /*default*/"both")
+
+  val Xsqueeze      = ChoiceSetting("-Xsqueeze", "if on, creates compact code in matching", List("on","on","off"),
+                                     /*default*/"off")
 
   /** scaladoc specific options */
   val windowtitle    = StringSetting("-windowtitle", "windowtitle",

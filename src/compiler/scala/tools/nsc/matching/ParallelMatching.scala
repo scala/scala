@@ -447,15 +447,15 @@ trait ParallelMatching  {
 
   /** converts given rep to a tree - performs recursive call to translation in the process to get sub reps
    */
-  def repToTree(rep:Rep, typed:Tree => Tree, handleOuter: Tree => Tree)(implicit theOwner: Symbol, failTree: Tree, bodies: collection.mutable.Map[Tree,(Tree,Tree, Symbol)]): Tree = {
+  def repToTree(rep:Rep, typed:Tree => Tree, handleOuter: Tree => Tree)(implicit theOwner: Symbol, failTree: Tree, bodies: collection.mutable.Map[Tree,(Tree, Tree, Symbol)]): Tree = {
     rep.applyRule match {
       case VariableRule(subst, EmptyTree, b) => bodies.get(b) match {
 
-        case Some(EmptyTree, b, theLabel) =>           //Console.println("H E L L O"+subst+" "+b)
+        case Some(EmptyTree, nb, theLabel) =>           //Console.println("H E L L O"+subst+" "+b)
           if(b.isInstanceOf[Literal])
             return b
           // recover the order of the idents that is expected for the labeldef
-          val args = b match { case Block(_, LabelDef(_, origs, _)) =>
+          val args = nb match { case Block(_, LabelDef(_, origs, _)) =>
             origs.map { p => Ident(subst.find { q => q._1 == p.symbol }.get._2) } // wrong!
           }   // using this instead would not work: subst.map { p => Ident(p._2) }
               // the order can be garbled, when default patterns are used... #bug 1163
@@ -476,7 +476,7 @@ trait ParallelMatching  {
 
           var nbody: Tree = b
           val vrefs = vdefs.map { p:ValDef => Ident(p.symbol) }
-          nbody  = Block(vdefs:::List(Apply(Ident(theLabel), vrefs)), LabelDef(theLabel, subst.map(_._1), nbody))
+          nbody  = squeezedBlock(vdefs:::List(Apply(Ident(theLabel), vrefs)), LabelDef(theLabel, subst.map(_._1), nbody))
           bodies(b) = (EmptyTree, nbody, theLabel)
           nbody
       }
@@ -533,7 +533,7 @@ trait ParallelMatching  {
         }
 
         vdefs = typed { ValDef(casted, gen.mkAsInstanceOf(typed{Ident(mm.scrutinee)}, casted.tpe))} :: vdefs
-        typed { makeIf(cond, Block(vdefs,succ), fail) }
+        typed { makeIf(cond, squeezedBlock(vdefs,succ), fail) }
 
       case mu: MixUnapply =>
         val (uacall,vdefs,srep,frep) = mu.getTransition
@@ -541,7 +541,7 @@ trait ParallelMatching  {
         val succ = repToTree(srep, typed, handleOuter)
         val fail = if(frep.isEmpty) failTree else repToTree(frep.get, typed, handleOuter)
         val cond = typed { Not(Select(Ident(uacall.symbol),nme.isEmpty)) }
-        typed { Block(List(uacall), makeIf(cond,Block(vdefs,succ),fail)) }
+        typed { squeezedBlock(List(uacall), makeIf(cond,squeezedBlock(vdefs,succ),fail)) }
     }
   }
 
@@ -569,7 +569,7 @@ object Rep {
         }
         def getAlternativeBranches(p:Tree): List[Tree] = {
           def get_BIND(pctx:Tree => Tree, p:Tree):List[Tree] = p match {
-            case b @ Bind(n,p)       => get_BIND({ x:Tree => pctx(copy.Bind(b, n, x) setType x.tpe) }, p)
+            case b @ Bind(n,p)   => get_BIND({ x:Tree => pctx(copy.Bind(b, n, x) setType x.tpe) }, p)
             case Alternative(ps) => ps map pctx
           }
           get_BIND({x=>x}, p)

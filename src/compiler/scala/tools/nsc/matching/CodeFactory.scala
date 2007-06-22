@@ -259,9 +259,12 @@ trait CodeFactory {
     var nsubstituted = 0
     var nstatic = 0
 
-  def squeezedBlock(vds:List[Tree], exp:Tree)(implicit theOwner: Symbol): Tree = {
-    Block(vds,exp)
-  }
+  def squeezedBlock(vds:List[Tree], exp:Tree)(implicit theOwner: Symbol): Tree =
+    if(settings.Xsqueeze.value == "on")
+      squeezedBlock1(vds, exp)
+    else
+      Block(vds,exp)
+
   def squeezedBlock1(vds:List[Tree], exp:Tree)(implicit theOwner: Symbol): Tree = {
     val tpe = exp.tpe
     class RefTraverser(sym:Symbol) extends Traverser {

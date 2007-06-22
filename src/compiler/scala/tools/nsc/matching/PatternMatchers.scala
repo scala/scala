@@ -154,41 +154,44 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
     }
 
     def constructParallel(cases: List[Tree]) {
-      cases foreach { case CaseDef(pat,_,_) => hasUnapply.traverse(pat) }
-      if(cases.forall{case CaseDef(_,x,_) => x == EmptyTree})  {
-        val irep = initRep(selector, cases, doCheckExhaustive)
-        val root = irep.temp.head
-
-        implicit val fail: Tree = ThrowMatchError(selector.pos, Ident(root))
-        val vdef = typed{ValDef(root, selector)}
-
-        implicit val memo       = new collection.mutable.HashMap[(Symbol,Symbol),Symbol]
-        implicit val theCastMap = new collection.mutable.HashMap[(Symbol,Type),Symbol]
-        implicit val bodies     = new collection.mutable.HashMap[Tree, (Tree,Tree,Symbol)]
-        val mch  = typed{repToTree(irep, typed, handleOuter)}
-        dfatree = typed{squeezedBlock(List(vdef), mch)}
-
-        //DEBUG("**** finished\n"+dfatree.toString)
-
-        val i = cases.findIndexOf { case CaseDef(_,_,b) => bodies.get(b).isEmpty}
-        if(i != -1) {
-          val CaseDef(_,_,b) = cases(i)
-          //DEBUG("*** damn, unreachable!")
-          //Console.println("damn, unreachable!")
-          if(settings.debug.value) {
-            Console.println("bodies:"+bodies.mkString("","\n",""))
-          }
-          cunit.error(b.pos, "unreachable code")
-        }
-
-        resetTrav.traverse(dfatree)
-
-        //constructParallel(cases) // ZZZ
-        nParallel = nParallel + 1
-      } else {
-        throw CantHandleGuard
+      var cases1 = cases; while(cases1 ne Nil) {
+        val c = cases1.head.asInstanceOf[CaseDef]
+        if(c.guard != EmptyTree)
+          throw CantHandleGuard
+        hasUnapply.traverse(c.pat)
+        cases1 = cases1.tail
       }
+
+      val irep = initRep(selector, cases, doCheckExhaustive)
+      val root = irep.temp.head
+
+      implicit val fail: Tree = ThrowMatchError(selector.pos, Ident(root))
+      val vdef = typed{ValDef(root, selector)}
+
+      implicit val memo       = new collection.mutable.HashMap[(Symbol,Symbol),Symbol]
+      implicit val theCastMap = new collection.mutable.HashMap[(Symbol,Type),Symbol]
+      implicit val bodies     = new collection.mutable.HashMap[Tree, (Tree,Tree,Symbol)]
+      val mch  = typed{repToTree(irep, typed, handleOuter)}
+
+      dfatree = typed{squeezedBlock(List(vdef), mch)}
+
+      //DEBUG("**** finished\n"+dfatree.toString)
+
+      val i = cases.findIndexOf { case CaseDef(_,_,b) => bodies.get(b).isEmpty}
+      if(i != -1) {
+        val CaseDef(_,_,b) = cases(i)
+        if(settings.debug.value) {
+          Console.println("bodies:"+bodies.mkString("","\n",""))
+        }
+        cunit.error(b.pos, "unreachable code")
+      }
+
+      resetTrav.traverse(dfatree)
+
+      //constructParallel(cases) // ZZZ
+      nParallel = nParallel + 1
     }
+
 
     /** constructs match-translation incrementally */
     private def constructIncremental(cases:List[Tree]) {
@@ -882,7 +885,7 @@ print()
 
     // changed to
     nCases = CaseDef(Ident(nme.WILDCARD),defaultBody1) :: nCases;
-    Block(List(ValDef(root.casted, selector)),Match(Ident(root.casted), nCases))
+    squeezedBlock(List(ValDef(root.casted, selector)),Match(Ident(root.casted), nCases))
   }
 
 
@@ -952,7 +955,7 @@ print()
             squeezedBlock(
               List(
                 ValDef(temp, body(i)),
-                Apply(Ident(exit), List(Ident(temp)) )
+                Apply(Ident(exit), List(Ident(temp).setType(temp.tpe)) )
               ),
               Literal(Constant(true))
             ); // forward jump
@@ -1250,7 +1253,7 @@ print()
 
             bindings = ValDef(casted, treeAsSeq.duplicate) :: bindings
 
-            val succ = Block(bindings, toTree(node.and))
+            val succ = squeezedBlock(bindings, toTree(node.and))
             val fail = toTree(node.or, selector.duplicate)
 
             return Or(And(cond, succ), fail);
