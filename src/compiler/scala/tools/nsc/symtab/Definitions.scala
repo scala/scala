@@ -755,7 +755,7 @@ trait Definitions {
       AllClass = newClass(ScalaPackageClass, nme.Nothing, anyparam)
         .setFlag(ABSTRACT | TRAIT | FINAL)
 
-      SingletonClass = newClass(RootClass, "<singleton>", anyparam)
+      SingletonClass = newClass(ScalaPackageClass, nme.Singleton, anyparam)
         .setFlag(ABSTRACT | TRAIT | FINAL)
 
       StringClass = getClass(if (forMSIL) "System.String" else "java.lang.String")

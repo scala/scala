@@ -222,6 +222,7 @@ trait StdNames {
     val ScalaRunTime = newTermName("ScalaRunTime")
     val Seq = newTermName("Seq")
     val Short = newTermName("Short")
+    val Singleton = newTermName("Singleton")
     val Some = newTermName("Some")
     val SourceFile = newTermName("SourceFile")
     val String = newTermName("String")

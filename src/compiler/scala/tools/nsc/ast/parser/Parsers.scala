@@ -665,8 +665,6 @@ trait Parsers {
       } else TypeTree()
 
     /** Types ::= Type {`,' Type}
-     *  ArgTypePats ::=  ArgTypePat {`,' ArgTypePat}
-     *
      *  (also eats trailing comma if it finds one)
      */
     def types(isPattern: Boolean): List[Tree] = {
@@ -684,14 +682,39 @@ trait Parsers {
     private final val LeftOp = 1    // left associative
     private final val RightOp = 2   // right associative
 
-    /** Type  ::= Type1 [forSome `{' WhereClause {semi WhereClause}} `}']
-     *  WhereClause ::= type TypeDcl
-     *                | val  ValDcl
-     *                |
+    /** Type ::= InfixType `=>' Type
+     *         | `(' [`=>' Type] `)' `=>' Type
+     *         | InfixType [ExistentialClause]
+     *  ExistentialClause ::= forSome `{' ExistentialDcl {semi ExistentialDcl}} `}'
+     *  ExistentialDcl    ::= type TypeDcl | val ValDcl
+     *  XXX: Hook for IDE.
      */
     def typ(): Tree = {
-      val t = typ1()
-      if (inToken == FORSOME) {
+      val t =
+        if (inToken == LPAREN) {
+          val pos = inSkipToken
+          if (inToken == RPAREN) {
+            inNextToken
+            atPos(accept(ARROW)) { makeFunctionTypeTree(List(), typ()) }
+          } else if (inToken == ARROW) {
+            inNextToken
+            val t0 = typ()
+            accept(RPAREN)
+            atPos(accept(ARROW)) { makeByNameFunctionTypeTree(t0, typ()) }
+          } else {
+            val ts = types(false)
+            accept(RPAREN)
+            if (inToken == ARROW) atPos(inSkipToken) { makeFunctionTypeTree(ts, typ()) }
+            else infixTypeRest(pos, annotTypeRest(pos, false, makeTupleType(ts, true)), false, FirstOp)
+          }
+        } else {
+          infixType(false, FirstOp)
+        }
+      if (inToken == ARROW)
+        atPos(inSkipToken) {
+          makeFunctionTypeTree(List(t), typ())
+        }
+      else if (inToken == FORSOME)
         atPos(inSkipToken) {
           val whereClauses = refinement()
           for (wc <- whereClauses) {
@@ -704,40 +727,10 @@ trait Parsers {
           }
           ExistentialTypeTree(t, whereClauses)
         }
-      } else t
-    }
-
-    /** Type1 ::= InfixType [`=>' Type1]
-     *          | `(' [`=>' Type] `)' `=>' Type1
-     *  XXX: Hook for IDE.
-     */
-    def typ1(): Tree = {
-      val t =
-        if (inToken == LPAREN) {
-          val pos = inSkipToken
-          if (inToken == RPAREN) {
-            inNextToken
-            atPos(accept(ARROW)) { makeFunctionTypeTree(List(), typ1()) }
-          } else if (inToken == ARROW) {
-            inNextToken
-            val t0 = typ1()
-            accept(RPAREN)
-            atPos(accept(ARROW)) { makeByNameFunctionTypeTree(t0, typ1()) }
-          } else {
-            val ts = types(false)
-            accept(RPAREN)
-            if (inToken == ARROW) atPos(inSkipToken) { makeFunctionTypeTree(ts, typ1()) }
-            else infixTypeRest(pos, makeTupleType(ts, true), false, FirstOp)
-          }
-        } else {
-          infixType(false, FirstOp)
-        }
-      if (inToken == ARROW) atPos(inSkipToken) { makeFunctionTypeTree(List(t), typ1()) }
       else t
     }
 
     /** InfixType ::= CompoundType {id [nl] CompoundType}
-     *  TypePat ::= CompoundTypePat {id [nl] CompoundTypePat
      */
     def infixType(isPattern: Boolean, mode: Int): Tree =
       infixTypeRest(inCurrentPos, annotType(isPattern), isPattern, mode)
@@ -760,7 +753,6 @@ trait Parsers {
     }
 
     /** CompoundType ::= AnnotType {with AnnotType} [Refinement]
-     *  CompoundTypePat ::= AnnotTypePat {with AnnotTypePat}
      */
     def compoundType(isPattern: Boolean): Tree =
       compoundTypeRest(inCurrentPos, annotType(isPattern), isPattern)
@@ -784,54 +776,49 @@ trait Parsers {
      *                     |  StableId
      *                     |  Path `.' type
      *                     |  `(' Types [`,'] `)'
-     *                     |  `_' TypeBounds
-     * AnnotTypePat      ::=  Annotations SimpleTypePat
-     * SimpleTypePat     ::=  SimpleTypePat1 [TypePatArgs]
-     * SimpleTypePat1    ::=  SimpleTypePat1 "#" Id
-     *                     |   StableId
-     *                     |   Path `.' type
-     *                     |   `(' ArgTypePats [`,'] `)'
+     *                     |  WildcardType
      */
     def annotType(isPattern: Boolean): Tree = {
       val annots = annotations()
       val pos = inCurrentPos
-      var t: Tree =
+
+      val t: Tree = annotTypeRest(pos, isPattern,
         if (inToken == LPAREN) {
           inNextToken
           val ts = types(isPattern)
           accept(RPAREN)
           atPos(pos) { makeTupleType(ts, true) }
-        } else if (inToken == USCORE && !isPattern) {
-          val pname = freshName("_$").toTypeName
-          val param = atPos(inSkipToken) { makeSyntheticTypeParam(pname, typeBounds()) }
-          placeholderTypes = param :: placeholderTypes
-          atPos(pos) { Ident(pname) }
+        } else if (inToken == USCORE) {
+          wildcardType(in.skipToken)
         } else {
           val r = path(false, true)
           r match {
             case SingletonTypeTree(_) => r
             case _ => convertToTypeId(r)
           }
-        }
-
-      // scan for # and []
-      var done = false
-      while (!done) {
-        if (inToken == HASH) {
-          t = atPos(inSkipToken) {
-            SelectFromTypeTree(t, ident().toTypeName)
-          }
-        } else if (inToken == LBRACKET) {
-          t = atPos(pos) { AppliedTypeTree(t, typeArgs(isPattern)) }
-          if (isPattern) done=true
-        } else
-          done=true
-      }
+        })
       (t /: annots) (makeAnnotated)
     }
 
+    def annotTypeRest(pos: ScanPosition, isPattern: boolean, t: Tree): Tree =
+      if (inToken == HASH)
+        annotTypeRest(pos, isPattern, atPos(inSkipToken) { SelectFromTypeTree(t, ident().toTypeName) })
+      else if (inToken == LBRACKET)
+        annotTypeRest(pos, isPattern, atPos(pos) { AppliedTypeTree(t, typeArgs(isPattern)) })
+      else
+        t
+
+    /** WildcardType ::= `_' TypeBounds
+     */
+    def wildcardType(pos: ScanPosition) = {
+      val pname = freshName("_$").toTypeName
+      val param = atPos(pos) { makeSyntheticTypeParam(pname, typeBounds()) }
+      placeholderTypes = param :: placeholderTypes
+      Ident(pname) setPos pos
+    }
+
     /** TypeArgs    ::= `[' ArgType {`,' ArgType} `]'
-     *  TypePatArgs ::= '[' ArgTypePat {`,' ArgTypePat} `]'
+     *  TypePatArgs ::= `[' TypePatArg {`,' TypePatArg} `]'
      */
     def typeArgs(isPattern: Boolean): List[Tree] = {
       accept(LBRACKET)
@@ -841,16 +828,18 @@ trait Parsers {
     }
 
     /** ArgType       ::=  Type
-     *  ArgTypePat    ::=  varid
-     *                  |  `_'
-     *                  |  Type            // for array elements only!
+     *  TypePatArg    ::=  `_'
+     *                 |   varid
      */
     def argType(isPattern: Boolean): Tree =
       if (isPattern) {
         if (inToken == USCORE)
-          atPos(inSkipToken) { Bind(nme.WILDCARD.toTypeName, EmptyTree) }
+          if (inToken == SUBTYPE || inToken == SUPERTYPE) wildcardType(inSkipToken)
+          else atPos(inSkipToken) { Bind(nme.WILDCARD.toTypeName, EmptyTree) }
         else if (inToken == IDENTIFIER && treeInfo.isVariableName(inName.toTypeName))
-          atPos(inCurrentPos) { Bind(ident().toTypeName, EmptyTree) }
+          atPos(inCurrentPos) {
+            Bind(ident().toTypeName, EmptyTree)
+          }
         else {
           typ()
         }

@@ -1468,13 +1468,14 @@ A type's symbol should never be inspected directly.
     override def closure = tp.closure map maybeRewrap
 
     override def skolemizeExistential(owner: Symbol, origin: AnyRef) = {
-      def mkSkolem(tparam: Symbol) =
-        new TypeSkolem(
+      def mkSkolem(tparam: Symbol): Symbol = {
+        val skolem = new TypeSkolem(
           if (owner == NoSymbol) tparam.owner else owner,
           tparam.pos, tparam.name, origin)
-        .setInfo(tparam.info)
-        .setFlag(tparam.flags | EXISTENTIAL)
-        .resetFlag(PARAM)
+        skolem.setInfo(tparam.info.cloneInfo(skolem))
+              .setFlag(tparam.flags | EXISTENTIAL)
+              .resetFlag(PARAM)
+      }
       val skolems = typeParams map mkSkolem
       for (skolem <- skolems)
         skolem setInfo skolem.info.substSym(typeParams, skolems)

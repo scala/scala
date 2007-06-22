@@ -1714,11 +1714,12 @@ trait Typers { self: Analyzer =>
      *  and in the returned type itself.
      */
     protected def existentialTransform(rawSyms: List[Symbol], tp: Type) = {
-      val typeParams = rawSyms map { sym =>
+      val typeParams: List[Symbol] = rawSyms map { sym =>
         val (name, bound) =
           if (sym.isClass)
             (sym.name,
-             mkTypeBounds(AllClass.tpe, anonymousClassRefinement(sym)))
+             parameterizedType(
+               sym.typeParams, mkTypeBounds(AllClass.tpe, anonymousClassRefinement(sym))))
           else if (sym.isAbstractType)
             (sym.name,
              sym.info)
@@ -1727,7 +1728,8 @@ trait Typers { self: Analyzer =>
              mkTypeBounds(AllClass.tpe, intersectionType(List(sym.tpe, SingletonClass.tpe))))
           else
             throw new Error("unexpected alias type: "+sym)
-        sym.owner.newAbstractType(sym.pos, name) setFlag EXISTENTIAL setInfo bound
+        val quantified: Symbol = sym.owner.newAbstractType(sym.pos, name)
+        quantified setFlag EXISTENTIAL setInfo bound.cloneInfo(quantified)
       }
       val typeParamTypes = typeParams map (_.tpe)
       for (tparam <- typeParams) tparam.setInfo(tparam.info.subst(rawSyms, typeParamTypes))
