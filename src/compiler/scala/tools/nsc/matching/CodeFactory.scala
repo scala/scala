@@ -20,6 +20,8 @@ trait CodeFactory {
   import posAssigner.atPos         // for filling in tree positions
 
 
+  def mk_(tpe:Type) = Ident(nme.WILDCARD) setType tpe
+
   def targetLabel(owner: Symbol, pos: Position, name:String, argtpes:List[Type], resultTpe: Type) =
     owner.newLabel(pos, name).setInfo(new MethodType(argtpes, resultTpe))
 
@@ -260,7 +262,7 @@ trait CodeFactory {
     var nstatic = 0
 
   def squeezedBlock(vds:List[Tree], exp:Tree)(implicit theOwner: Symbol): Tree =
-    if(settings.Xsqueeze.value == "on")
+    if(settings_squeeze)
       squeezedBlock1(vds, exp)
     else
       Block(vds,exp)

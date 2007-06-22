@@ -150,7 +150,7 @@ class Settings(error: String => Unit) {
                                      /*default*/"both")
 
   val Xsqueeze      = ChoiceSetting("-Xsqueeze", "if on, creates compact code in matching", List("on","on","off"),
-                                     /*default*/"off")
+                                     /*default*/"on")
 
   /** scaladoc specific options */
   val windowtitle    = StringSetting("-windowtitle", "windowtitle",

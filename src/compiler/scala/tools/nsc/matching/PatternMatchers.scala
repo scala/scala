@@ -31,7 +31,7 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
   var nPatterns = 0
   var nParallel = 0
 
-  class PatternMatcher {
+  class PatternMatcher() {
 
     protected var optimize = true
 
@@ -60,7 +60,7 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
       this.doCheckExhaustive = doCheckExhaustive
       this.selector = selector
       this.handleOuter = handleOuter
-      if(settings.debug.value) {
+      if(settings_debug) {
         Console.println("****")
         Console.println("**** initalize, selector = "+selector+" selector.tpe = "+selector.tpe)
         Console.println("****    doCheckExhaustive == "+doCheckExhaustive)
@@ -124,41 +124,46 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
     def construct(cases: List[Tree]): Unit = {
       nPatterns = nPatterns + 1
 
-      if (settings.debug.value) {
+      if (settings_debug) {
         Console.println(cases.mkString("construct{{{","\n","}}}"))
       }
-      if(global.settings.Xmatchalgo.value != "incr")
-        try {
-          constructParallel(cases)
-          return
-        } catch {
+
+      if(settings_useParallel) {
+        constructParallel(cases) match {
+          case null => // ignore
+            return
+
           case _:OutOfMemoryError =>
             cunit.error(cases.head.pos, "internal error (out of memory in parallel match algorithm")
             throw FatalError("died in parallel match algorithm" )
+
           case _:MatchError =>
             cunit.error(cases.head.pos, "internal error (match error in parallel match algorithm")
             throw FatalError("died in parallel match algorithm" )
+
           case e =>
-            if(global.settings.Xmatchalgo.value == "par")
+            if(!settings_useIncr)
               throw e
-          if (settings.debug.value) {
-            e.printStackTrace()
-            Console.println("****")
-            Console.println("**** falling back, cause " + e.toString +"/msg "+ e.getMessage)
-            Console.println("****")
-            for (CaseDef(pat,guard,_) <- cases)
-              Console.println(pat.toString)
-          }
+            if (settings_debug) {
+              e.printStackTrace()
+              Console.println("****")
+              Console.println("**** falling back, cause " + e.toString +"/msg "+ e.getMessage)
+              Console.println("****")
+              for (CaseDef(pat,guard,_) <- cases)
+                Console.println(pat.toString)
+            }
         }
+      }
+
       constructIncremental(cases)
     }
 
-    def constructParallel(cases: List[Tree]) {
+    def constructParallel(cases: List[Tree]): Throwable = {
       var cases1 = cases; while(cases1 ne Nil) {
         val c = cases1.head.asInstanceOf[CaseDef]
-        if(c.guard != EmptyTree)
-          throw CantHandleGuard
-        hasUnapply.traverse(c.pat)
+        if(c.guard != EmptyTree) return CantHandleGuard
+        //hasUnapply.traverse(c.pat)
+        val e = isImplemented(c.pat); if(e ne null) return e
         cases1 = cases1.tail
       }
 
@@ -171,27 +176,35 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
       implicit val memo       = new collection.mutable.HashMap[(Symbol,Symbol),Symbol]
       implicit val theCastMap = new collection.mutable.HashMap[(Symbol,Type),Symbol]
       implicit val bodies     = new collection.mutable.HashMap[Tree, (Tree,Tree,Symbol)]
-      val mch  = typed{repToTree(irep, typed, handleOuter)}
 
-      dfatree = typed{squeezedBlock(List(vdef), mch)}
+      try {
+        val mch  = typed{repToTree(irep, typed, handleOuter)}
+        dfatree = typed{squeezedBlock(List(vdef), mch)}
 
-      //DEBUG("**** finished\n"+dfatree.toString)
+        //DEBUG("**** finished\n"+dfatree.toString)
 
-      val i = cases.findIndexOf { case CaseDef(_,_,b) => bodies.get(b).isEmpty}
-      if(i != -1) {
-        val CaseDef(_,_,b) = cases(i)
-        if(settings.debug.value) {
-          Console.println("bodies:"+bodies.mkString("","\n",""))
+        val i = cases.findIndexOf { case CaseDef(_,_,b) => bodies.get(b).isEmpty}
+        if(i != -1) {
+          val CaseDef(_,_,b) = cases(i)
+          if(settings_debug) {
+            Console.println("bodies:"+bodies.mkString("","\n",""))
+          }
+          cunit.error(b.pos, "unreachable code")
         }
-        cunit.error(b.pos, "unreachable code")
+
+        resetTrav.traverse(dfatree)
+
+        //constructParallel(cases) // ZZZ
+        nParallel = nParallel + 1
+        return null
+      } catch {
+        case e => return e // fallback
+
+        // non-fallback:
+        //case e: CantHandle => return e
+        //case e => throw e
       }
-
-      resetTrav.traverse(dfatree)
-
-      //constructParallel(cases) // ZZZ
-      nParallel = nParallel + 1
     }
-
 
     /** constructs match-translation incrementally */
     private def constructIncremental(cases:List[Tree]) {
@@ -212,6 +225,34 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
       }
     }
 
+    def isImplemented(xs:List[Tree]): CantHandle =
+      if(xs eq Nil) null else {
+        val e = isImplemented(xs.head)
+        if(e ne null) e else isImplemented(xs.tail)
+      }
+
+    def isImplemented(x:Tree): CantHandle = {
+      //Console.println("isImplemented? "+x)
+      x match {
+        case p@Apply(fn,xs) =>
+          //Console.println(p.tpe.symbol) // case class Bar
+          //Console.println(fn.symbol) // val foo = Bar {...} // fn is foo(), p.tpe is Bar
+          //if(!p.tpe.symbol.hasFlag(symtab.Flags.CASE)) CantHandleApply else isImplemented(xs)
+          if(!fn.tpe.symbol.hasFlag(symtab.Flags.CASE)) CantHandleApply else isImplemented(xs)
+        case Ident(n)           => if(n!= nme.WILDCARD) CantHandleIdent else null
+        case _:ArrayValue       => CantHandleSeq
+        case UnApply(fn,xs)     => isImplemented(xs)
+        case Bind(n, p)         => isImplemented(p)
+        case Alternative(xs)    => isImplemented(xs)
+        case p:Literal          => null
+        case p:Select           => null
+        case p:Typed            => null
+        //case Star(t)         =>can't happen/ excluded by Transmatcher:isregular
+        //case Sequence(trees) =>can't happen/ only appear below ArrayValue
+      }
+    }
+
+    /*
     object hasUnapply extends Traverser {
       override def traverse(x:Tree) = {
         //Console.println("pat:'"+x+"' / "+x.getClass)
@@ -239,7 +280,8 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
           case _ => super.traverse(x)
         }
       }
-    }
+      }
+*/
 
     /** enter a single case into the pattern matcher */
     protected def enter(caseDef: Tree): Unit = caseDef match {
@@ -510,8 +552,7 @@ print()
    *
    *  invariant: ( curHeader == (Header)target.and ) holds
    */
-  protected def enter1(pat: Tree, index: Int, target: PatternNode,
-                       casted: Symbol, env: CaseEnv): PatternNode = {
+  protected def enter1(pat: Tree, index: Int, target: PatternNode, casted: Symbol, env: CaseEnv): PatternNode = {
 
                          // special case List()
     pat match {

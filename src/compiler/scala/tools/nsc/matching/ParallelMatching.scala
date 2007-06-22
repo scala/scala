@@ -161,7 +161,15 @@ trait ParallelMatching  {
       (tagIndicesToReps, defaultV, {if(!defaults.isEmpty) Some(defaultsToRep) else None})
   }
 
+  // mixture rule for unapply pattern
   class MixUnapply(val scrutinee:Symbol, val column:List[Tree], val rest:Rep) extends RuleApplication {
+
+    def newVarCapture(pos:Position,tpe:Type)(implicit theOwner:Symbol) = {
+      val v = newVar(pos,tpe)
+      if(scrutinee.hasFlag(symtab.Flags.CAPTURED))
+        v.setFlag(symtab.Flags.CAPTURED)
+      v
+    }
 
     private def bindToScrutinee(x:Symbol) = typer.typed(ValDef(x,Ident(scrutinee)))
 
@@ -172,7 +180,7 @@ trait ParallelMatching  {
     def getTransition(implicit theOwner: Symbol): (Tree, List[Tree], Rep, Option[Rep]) = {
       unapp match {
         case ua @ UnApply(app @ Apply(fn, _), args) =>
-          val ures = newVar(ua.pos, app.tpe)
+          val ures = newVarCapture(ua.pos, app.tpe)
           val n    = args.length
           val uacall = typer.typed { ValDef(ures, Apply(fn, List(Ident(scrutinee)))) }
           //Console.println("uacall:"+uacall)
@@ -185,30 +193,31 @@ trait ParallelMatching  {
         //Console.println("active = "+column.head+" / nrepFail = "+nrepFail)
           n match {
             case 0  => //special case for unapply(), app.tpe is boolean
-              val ntemps = rest.temp
+              val ntemps = scrutinee :: rest.temp
               val nrows  = column.zip(rest.row) map { case (pat,(ps,subst,g,b)) => strip(pat) match {
                 case (pvars,UnApply(Apply(fn1,_),args)) if fn.symbol==fn1.symbol =>
                   rootvdefs = (pvars map bindToScrutinee) ::: rootvdefs
                   (EmptyTree::ps, subst, g, b)
                 case (_, p)                                                      =>
-                  (p::ps,         subst, g, b)
+                  (     p   ::ps,         subst, g, b)
               }}
               (uacall, rootvdefs, Rep(ntemps, nrows), nrepFail)
 
             case  1 => //special case for unapply(p), app.tpe is Option[T]
-              val vsym = newVar(ua.pos, app.tpe.typeArgs(0))
+              val vtpe = app.tpe.typeArgs(0)
+              val vsym = newVarCapture(ua.pos, vtpe)
               val ntemps = vsym :: scrutinee :: rest.temp
               val nrows = column.zip(rest.row) map { case (pat,(ps,subst,g,b)) => strip(pat) match {
                 case (pvars,UnApply(Apply(fn1,_),args)) if fn.symbol==fn1.symbol =>
                   rootvdefs = (pvars map bindToScrutinee) ::: rootvdefs
-                  (args(0)  ::Ident(nme.WILDCARD)::ps, subst, g, b)
+                  (args(0)   :: EmptyTree :: ps, subst, g, b)
                 case (_, p)                                                      =>
-                  (Ident(nme.WILDCARD)  :: p     ::ps, subst, g, b)
+                  (EmptyTree :: p     ::ps, subst, g, b)
               }}
               (uacall, rootvdefs:::List( typer.typed { ValDef(vsym, Select(Ident(ures), nme.get) )}), Rep(ntemps, nrows), nrepFail)
 
             case _ => // app.tpe is Option[? <: ProductN[T1,...,Tn]]
-              val uresGet = newVar(ua.pos, app.tpe.typeArgs(0))
+              val uresGet = newVarCapture(ua.pos, app.tpe.typeArgs(0))
               var vdefs = ValDef(uresGet, Select(Ident(ures), nme.get))::Nil
               var ts = definitions.getProductArgs(uresGet.tpe).get
               var i = 1;
@@ -216,22 +225,24 @@ trait ParallelMatching  {
               var vsyms:List[Symbol] = Nil
               var dummies:List[Tree] = Nil
               while(ts ne Nil) {
-                val vchild = newVar(ua.pos, ts.head)
+                val vtpe = ts.head
+                val vchild = newVarCapture(ua.pos, vtpe)
                 val accSym = definitions.productProj(uresGet, i)
                 val rhs = typer.typed(Apply(Select(Ident(uresGet), accSym), List())) // nsc !
                 vdefs = ValDef(vchild, rhs)::vdefs
-                vsyms = vchild :: vsyms
+                vsyms   =  vchild  :: vsyms
+                dummies = EmptyTree::dummies
                 ts = ts.tail
                 i = i + 1
-                dummies = Ident(nme.WILDCARD)::dummies
               }
-              val ntemps  = vsyms.reverse ::: scrutinee :: rest.temp
+              val ntemps  =  vsyms.reverse ::: scrutinee :: rest.temp
+              dummies     = dummies.reverse
               val nrows = column.zip(rest.row) map { case (pat,(ps,subst,g,b)) => strip(pat) match {
                 case (pvars, UnApply(Apply(fn1,_),args)) if fn.symbol==fn1.symbol =>
                   rootvdefs = (pvars map bindToScrutinee) ::: rootvdefs
-                  (   args:::Ident(nme.WILDCARD)::ps, subst, g, b)
+                  (   args::: EmptyTree ::ps, subst, g, b)
                 case (_, p)                                                       =>
-                  (dummies:::         pat       ::ps, subst, g, b)
+                  (dummies:::         pat      ::ps, subst, g, b)
               }}
               (uacall, rootvdefs:::vdefs.reverse, Rep(ntemps, nrows), nrepFail)
           }}
@@ -251,7 +262,7 @@ trait ParallelMatching  {
 
     val isExhaustive = !scrutinee.tpe.symbol.hasFlag(symtab.Flags.SEALED) || {
       //DEBUG("check exha for column "+column)
-      val tpes = column.map (_.tpe.symbol)
+      val tpes = column.map {x => /*Console.println("--x:"+x+":"+x.tpe); */ x.tpe.symbol}
       scrutinee.tpe.symbol.children.forall { sym => tpes.contains(sym) }
     }
 
@@ -503,7 +514,7 @@ trait ParallelMatching  {
           val CaseDef(lit,_,body) = cases.head
           makeIf(Equals(Ident(ml.scrutinee),lit), body, ndefault)
         } else {
-          val defCase = CaseDef(Ident(nme.WILDCARD), EmptyTree, ndefault)
+          val defCase = CaseDef(mk_(definitions.IntClass.tpe), EmptyTree, ndefault)
           Match(Ident(ml.scrutinee), cases :::  defCase :: Nil)
         }
 
@@ -540,7 +551,10 @@ trait ParallelMatching  {
         //Console.println("getTransition"+(uacall,vdefs,srep,frep))
         val succ = repToTree(srep, typed, handleOuter)
         val fail = if(frep.isEmpty) failTree else repToTree(frep.get, typed, handleOuter)
-        val cond = typed { Not(Select(Ident(uacall.symbol),nme.isEmpty)) }
+        val cond = if(uacall.symbol.tpe =:= definitions.BooleanClass.tpe)
+          Ident(uacall.symbol)
+                   else
+          typed { Not(Select(Ident(uacall.symbol),nme.isEmpty)) }
         typed { squeezedBlock(List(uacall), makeIf(cond,squeezedBlock(vdefs,succ),fail)) }
     }
   }

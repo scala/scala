@@ -17,20 +17,18 @@ trait TransMatcher { self: transform.ExplicitOuter =>
   import posAssigner.atPos
   import typer.typed
   import symtab.Flags
-/*
-  val phaseName = "transmatcher"
 
-  protected def newTransformer(unit: global.CompilationUnit): global.Transformer = {
-    new TransMatch
-  }
-*/
   var cunit: CompilationUnit = _
 
   def fresh = cunit.fresh
 
-  //var currentOwner: Symbol = _
-
   var resultType: Type = _
+
+  // cache these
+  final val settings_debug       = settings.debug.value
+  final val settings_squeeze     = settings.Xmatchalgo.value != "incr"
+  final val settings_useParallel = settings.Xmatchalgo.value != "incr"
+  final val settings_useIncr     = settings.Xmatchalgo.value != "par"
 
   def containsBinding(pat: Tree): Boolean = {
     var generatedVars = false
