@@ -217,7 +217,7 @@ object M5 {
 
 object M6 {
 
-  def zipFun[a,b](xs:List[a], ys:List[b]):List[Pair[a,b]] = Pair(xs,ys) match {
+  def zipFun[a,b](xs:List[a], ys:List[b]):List[Pair[a,b]] = (Pair(xs,ys): @unchecked) match {
     // !!! case Pair(List(), _), Pair(_, List()) => List()
     case Pair(x :: xs1, y :: ys1) => Pair(x, y) :: zipFun(xs1, ys1)
   }
