@@ -234,12 +234,11 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
     def isImplemented(x:Tree): CantHandle = {
       //Console.println("isImplemented? "+x)
       x match {
-        case p@Apply(fn,xs) =>
-          //Console.println(p.tpe.symbol) // case class Bar
-          //Console.println(fn.symbol) // val foo = Bar {...} // fn is foo(), p.tpe is Bar
-          //if(!p.tpe.symbol.hasFlag(symtab.Flags.CASE)) CantHandleApply else isImplemented(xs)
-          if(!fn.tpe.symbol.hasFlag(symtab.Flags.CASE)) CantHandleApply else isImplemented(xs)
-        case Ident(n)           => if(n!= nme.WILDCARD) CantHandleIdent else null
+        case app @ Apply(fn,xs) =>
+          if(!app.tpe.symbol.hasFlag(symtab.Flags.CASE) /*|| (fn.symbol ne null)*/) CantHandleApply else {
+            isImplemented(xs)
+          }
+        case p @ Ident(n)           => null // if(n!= nme.WILDCARD && p.symbol.) CantHandleIdent else null
         case _:ArrayValue       => CantHandleSeq
         case UnApply(fn,xs)     => isImplemented(xs)
         case Bind(n, p)         => isImplemented(p)
