@@ -74,15 +74,35 @@ object Test4 {
   class Foo2
   @SourceAnnotation("http://bloodsuckers.com")
   class Foo3
+  class Foo4 {
+    @SourceAnnotation("file:///dev/null")
+    val x = 1
+    @SourceAnnotation("file:///dev/zero")
+    def bar: Int = 0
+  }
   def run {
-    def printSourceAnnotation(a: Any) {
-      val ann = a.asInstanceOf[SourceAnnotation]
-      Console.println("@test.SourceAnnotation(mails=" + ann.mails.deepMkString("{", ",", "}") +
-                      ", value=" + ann.value + ")")
+    import java.lang.annotation.Annotation
+    import java.lang.reflect.AnnotatedElement
+    def printSourceAnnotations(target: AnnotatedElement) {
+      //print SourceAnnotation in a predefined way to insure
+      // against difference in the JVMs (e.g. Sun's vs IBM's)
+      def printSourceAnnotation(a: Annotation) {
+        val ann = a.asInstanceOf[SourceAnnotation]
+        Console.println("@test.SourceAnnotation(mails=" + ann.mails.deepMkString("{", ",", "}") +
+                        ", value=" + ann.value + ")")
+      }
+      val anns = target.getAnnotations()
+      anns foreach printSourceAnnotation
+      if (anns.length > 0) {
+        Console.println(target)
+        Console.println
+      }
     }
-    classOf[Foo1].getAnnotations foreach printSourceAnnotation
-    classOf[Foo2].getAnnotations foreach printSourceAnnotation
-    classOf[Foo3].getAnnotations foreach printSourceAnnotation
+    printSourceAnnotations(classOf[Foo1])
+    printSourceAnnotations(classOf[Foo2])
+    printSourceAnnotations(classOf[Foo3])
+    classOf[Foo4].getDeclaredFields  foreach printSourceAnnotations
+    classOf[Foo4].getDeclaredMethods foreach printSourceAnnotations
   }
 }
 

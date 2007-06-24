@@ -2,7 +2,22 @@ class java.rmi.RemoteException
 class java.io.IOException
 @java.lang.Deprecated()
 @test.SourceAnnotation(mails={scala@lists.epfl.ch,scala-lounge@lists.epfl.ch}, value=http://scala-lang.org)
+class Test4$Foo1
+
 @test.SourceAnnotation(mails={you@bloodsuckers.com}, value=http://bloodsuckers.com)
+class Test4$Foo2
+
 @test.SourceAnnotation(mails={bill.gates@bloodsuckers.com}, value=http://bloodsuckers.com)
+class Test4$Foo3
+
+@test.SourceAnnotation(mails={bill.gates@bloodsuckers.com}, value=file:///dev/null)
+private int Test4$Foo4.x
+
+@test.SourceAnnotation(mails={bill.gates@bloodsuckers.com}, value=file:///dev/null)
+public int Test4$Foo4.x()
+
+@test.SourceAnnotation(mails={bill.gates@bloodsuckers.com}, value=file:///dev/zero)
+public int Test4$Foo4.bar()
+
 0
 99
