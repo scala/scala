@@ -77,13 +77,15 @@ abstract class NodePrinters {
           if (infolevel == InfoLevel.Quiet) ""
           else {
             val buf = new StringBuilder(" // sym=" + tree.symbol)
-            if (infolevel > InfoLevel.Quiet && tree.symbol != null)
-              buf.append(", sym.tpe=" + tree.symbol.tpe)
-            if (tree.hasSymbol)
+            if (tree.hasSymbol) {
               if (tree.symbol.isPrimaryConstructor)
                 buf.append(", isPrimaryConstructor")
               else if (tree.symbol.isConstructor)
                 buf.append(", isConstructor")
+              if (tree.symbol != NoSymbol)
+                buf.append(", sym.owner=" + tree.symbol.owner)
+              buf.append(", sym.tpe=" + tree.symbol.tpe)
+            }
             buf.append(", tpe=" + tree.tpe)
             if (tree.tpe != null) {
               val sym = tree.tpe.symbol
