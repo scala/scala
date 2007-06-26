@@ -726,7 +726,7 @@ if [ "$TEST_ALL" = "true" ]; then
 fi;
 
 SCALA="${BIN_DIR}scala";
-SCALAC_OPTS:="-deprecation -encoding iso-8859-1";
+[ -z "$SCALAC_OPTS" ] && SCALAC_OPTS="-deprecation -encoding iso-8859-1";
 if [ "$USEFSC" = "true" ]; then
     SCALAC_CMD="${BIN_DIR}fsc";
 else
