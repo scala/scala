@@ -5,7 +5,7 @@ object Test1 {
   }
   def run {
     val method = classOf[Foo].getMethod("foo", Array())
-    method.getExceptionTypes foreach Console.println
+    method.getExceptionTypes foreach println
   }
 }
 
@@ -19,7 +19,7 @@ object Test2 {
   }
   def run {
     val method = classOf[Reader].getMethod("read", Array())
-    method.getExceptionTypes foreach Console.println
+    method.getExceptionTypes foreach println
   }
 }
 
@@ -43,7 +43,7 @@ object Test3 {
   def run {
     val method = classOf[Foo].getMethod("foo", Array())
     val annotation = method.getAnnotation(classOf[Deprecated])
-    Console.println(annotation)
+    println(annotation)
   }
 }
 
@@ -88,14 +88,14 @@ object Test4 {
       // against difference in the JVMs (e.g. Sun's vs IBM's)
       def printSourceAnnotation(a: Annotation) {
         val ann = a.asInstanceOf[SourceAnnotation]
-        Console.println("@test.SourceAnnotation(mails=" + ann.mails.deepMkString("{", ",", "}") +
-                        ", value=" + ann.value + ")")
+        println("@test.SourceAnnotation(mails=" + ann.mails.deepMkString("{", ",", "}") +
+                ", value=" + ann.value + ")")
       }
       val anns = target.getAnnotations()
       anns foreach printSourceAnnotation
       if (anns.length > 0) {
-        Console.println(target)
-        Console.println
+        println(target)
+        println
       }
     }
     printSourceAnnotations(classOf[Foo1])
@@ -123,14 +123,14 @@ object Test5 {
   }
   def run {
     val count = new Count
-    Console.println(count.get)
+    println(count.get)
     count.set(99)
-    Console.println(count.get)
+    println(count.get)
   }
 }
 
 object Test {
-  def main(args: Array[String]): Unit = {
+  def main(args: Array[String]) {
     Test1.run
     Test2.run
     Test3.run     // requires the use of -target:jvm-1.5

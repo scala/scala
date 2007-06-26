@@ -13,11 +13,11 @@ class Test4$Foo3
 @test.SourceAnnotation(mails={bill.gates@bloodsuckers.com}, value=file:///dev/null)
 private int Test4$Foo4.x
 
-@test.SourceAnnotation(mails={bill.gates@bloodsuckers.com}, value=file:///dev/null)
-public int Test4$Foo4.x()
-
 @test.SourceAnnotation(mails={bill.gates@bloodsuckers.com}, value=file:///dev/zero)
 public int Test4$Foo4.bar()
+
+@test.SourceAnnotation(mails={bill.gates@bloodsuckers.com}, value=file:///dev/null)
+public int Test4$Foo4.x()
 
 0
 99
