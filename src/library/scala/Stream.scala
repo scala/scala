@@ -404,7 +404,7 @@ trait Stream[+A] extends Seq[A] {
    */
   override def copyToArray[B >: A](xs: Array[B], start: Int) {
     def loop(s: Stream[A], start: Int) {
-      if (!xs.isEmpty) { xs(start) = s.head; loop(s.tail, start + 1) }
+      if (!s.isEmpty) { xs(start) = s.head; loop(s.tail, start + 1) }
     }
     loop(this, start)
   }
