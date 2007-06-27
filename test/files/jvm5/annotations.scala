@@ -77,9 +77,21 @@ object Test4 {
   class Foo4 {
     @SourceAnnotation("file:///dev/null")
     val x = 1
+  }
+  class Foo5 {
     @SourceAnnotation("file:///dev/zero")
     def bar: Int = 0
   }
+  class Foo6 @SourceAnnotation("primary constructor")(s: String) {
+    // to guarantee that primary constructor annotations
+    // are not applied to secondary constructors
+    def this() = this("")
+  }
+  class Foo7(s: String) {
+    @SourceAnnotation("secondary constructor")
+    def this() = this("")
+  }
+  class Foo8(@SourceAnnotation("constructor val") val n: Int) {}
   def run {
     import java.lang.annotation.Annotation
     import java.lang.reflect.AnnotatedElement
@@ -103,6 +115,11 @@ object Test4 {
     printSourceAnnotations(classOf[Foo3])
     classOf[Foo4].getDeclaredFields  foreach printSourceAnnotations
     classOf[Foo4].getDeclaredMethods foreach printSourceAnnotations
+    classOf[Foo5].getDeclaredMethods foreach printSourceAnnotations
+    classOf[Foo6].getDeclaredConstructors foreach printSourceAnnotations
+    classOf[Foo7].getDeclaredConstructors foreach printSourceAnnotations
+    classOf[Foo8].getDeclaredFields  foreach printSourceAnnotations
+    classOf[Foo8].getDeclaredMethods foreach printSourceAnnotations
   }
 }
 
