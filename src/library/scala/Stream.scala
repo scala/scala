@@ -160,7 +160,7 @@ object Stream {
  *     Stream.cons(n, from(n + 1))
  *
  *   <b>def</b> sieve(s: Stream[Int]): Stream[Int] =
- *     Stream.cons(s.head, sieve(s.tail filter { x => x % s.head != 0 }))
+ *     Stream.cons(s.head, sieve(s.tail filter { _ % s.head != 0 }))
  *
  *   <b>def</b> primes = sieve(from(2))
  *
