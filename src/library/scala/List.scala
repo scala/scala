@@ -559,7 +559,7 @@ sealed abstract class List[+A] extends Seq[A] {
    *  @return the list without its <code>n</code> first elements.
    */
   override def drop(n: Int): List[A] =
-    if (n == 0 || isEmpty) this
+    if (isEmpty || n <= 0) this
     else (tail drop (n-1))
 
   /** Returns the rightmost <code>n</code> elements from this list.
@@ -633,7 +633,7 @@ sealed abstract class List[+A] extends Seq[A] {
    */
   override def dropWhile(p: A => Boolean): List[A] =
     if (isEmpty || !p(head)) this
-    else tail dropWhile p;
+    else tail dropWhile p
 
   /** Returns the longest prefix of the list whose elements all satisfy
    *  the given predicate, and the rest of the list.
