@@ -243,7 +243,7 @@ trait Stream[+A] extends Seq[A] {
    *  @return the <code>n</code> first elements of this stream.
    */
   override def take(n: Int): Stream[A] =
-    if (n == 0) Stream.empty
+    if (isEmpty || n <= 0) Stream.empty
     else Stream.cons(head, tail.take(n-1))
 
   /** Returns the stream without its <code>n</code> first elements.
@@ -254,7 +254,7 @@ trait Stream[+A] extends Seq[A] {
    */
   override def drop(n: Int): Stream[A] = {
     def loop(s: Stream[A], n: Int): Stream[A] =
-      if (n == 0) s
+      if (s.isEmpty || n <= 0) s
       else loop(s.tail, n-1)
     loop(this, n)
   }
