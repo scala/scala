@@ -310,12 +310,12 @@ trait Parsers {
 /////// TOKEN CLASSES //////////////////////////////////////////////////////
 
     def isModifier: Boolean = inToken match {
-      case ABSTRACT | FINAL | SEALED | PRIVATE | PROTECTED | OVERRIDE | IMPLICIT => true
+      case ABSTRACT | FINAL | SEALED | PRIVATE | PROTECTED | OVERRIDE | IMPLICIT | LAZY => true
       case _ => false
     }
 
     def isLocalModifier: Boolean = inToken match {
-      case ABSTRACT | FINAL | SEALED | IMPLICIT => true
+      case ABSTRACT | FINAL | SEALED | IMPLICIT | LAZY => true
       case _ => false
     }
 
@@ -1540,6 +1540,8 @@ trait Parsers {
           loop(addMod(mods, Flags.OVERRIDE))
         case IMPLICIT =>
           loop(addMod(mods, Flags.IMPLICIT))
+        case LAZY =>
+          loop(addMod(mods, Flags.LAZY))
         case _ =>
           mods
       }
@@ -1547,7 +1549,7 @@ trait Parsers {
     }
 
     /** LocalModifiers ::= {LocalModifier}
-     *  LocalModifier  ::= abstract | final | sealed | implicit
+     *  LocalModifier  ::= abstract | final | sealed | implicit | lazy
      */
     def localModifiers(): Modifiers = {
       def loop(mods: Modifiers): Modifiers = inToken match {
@@ -1559,6 +1561,8 @@ trait Parsers {
           loop(addMod(mods, Flags.SEALED))
         case IMPLICIT =>
           loop(addMod(mods, Flags.IMPLICIT))
+        case LAZY =>
+          loop(addMod(mods, Flags.LAZY))
         case _ =>
           mods
       }
@@ -1659,6 +1663,7 @@ trait Parsers {
           var mods = Modifiers(Flags.PARAM)
           if (owner.isTypeName) {
             mods = modifiers() | Flags.PARAMACCESSOR
+            if (mods.hasFlag(Flags.LAZY)) syntaxError("lazy modifier not allowed here. Use call-by-name parameters instead", false)
             if (inToken == VAL) {
               inNextToken
             } else if (inToken == VAR) {
@@ -1906,7 +1911,9 @@ trait Parsers {
      *           | type [nl] TypeDcl
      * XXX: Hook for IDE.
      */
-    def defOrDcl(mods: Modifiers): List[Tree] =
+    def defOrDcl(mods: Modifiers): List[Tree] = {
+      if ((mods.hasFlag(Flags.LAZY)) && in.token != VAL)
+        syntaxError("lazy not allowed here. Only vals can be lazy", false)
       inToken match {
         case VAL =>
           patDefOrDcl(mods)
@@ -1921,6 +1928,7 @@ trait Parsers {
         case _ =>
           List(tmplDef(mods))
       }
+    }
 
     /** PatDef ::= Pattern2 {`,' Pattern2} [`:' Type] `=' Expr
      *  ValDcl ::= Id {`,' Id} `:' Type
@@ -1951,6 +1959,7 @@ trait Parsers {
         if (rhs == EmptyTree) {
           trees match {
             case List(ValDef(_, _, _, EmptyTree)) =>
+              if (mods.hasFlag(Flags.LAZY)) syntaxError(p.pos, "lazy values may not be abstract", false)
             case _ => syntaxError(p.pos, "pattern definition may not be abstract", false)
           }
         }
@@ -2088,20 +2097,23 @@ trait Parsers {
      *            |  [case] object ObjectDef
      *            |  trait TraitDef
      */
-    def tmplDef(mods: Modifiers): Tree = inToken match {
-      case TRAIT =>
-        classDef(mods | Flags.TRAIT | Flags.ABSTRACT)
-      case CLASS =>
-        classDef(mods)
-      case CASECLASS =>
-        classDef(mods | Flags.CASE)
-      case OBJECT =>
-        objectDef(mods)
-      case CASEOBJECT =>
-        objectDef(mods | Flags.CASE)
-      case _ =>
-        syntaxErrorOrIncomplete("expected start of definition", true)
-        EmptyTree
+    def tmplDef(mods: Modifiers): Tree = {
+      if (mods.hasFlag(Flags.LAZY)) syntaxError("classes cannot be lazy", false)
+      inToken match {
+        case TRAIT =>
+          classDef(mods | Flags.TRAIT | Flags.ABSTRACT)
+        case CLASS =>
+          classDef(mods)
+        case CASECLASS =>
+          classDef(mods | Flags.CASE)
+        case OBJECT =>
+          objectDef(mods)
+        case CASEOBJECT =>
+          objectDef(mods | Flags.CASE)
+        case _ =>
+          syntaxErrorOrIncomplete("expected start of definition", true)
+          EmptyTree
+      }
     }
 
     /** ClassDef ::= Id [TypeParamClause] Annotations
@@ -2353,14 +2365,14 @@ trait Parsers {
 
     /** BlockStatSeq ::= { BlockStat semi } [ResultExpr]
      *  BlockStat    ::= Import
-     *                 | [implicit] Def
+     *                 | [implicit] [lazy] Def
      *                 | LocalModifiers TmplDef
      *                 | Expr1
      *                 |
      */
     def blockStatSeq(stats: ListBuffer[Tree]): List[Tree] = checkNoEscapingPlaceholders {
       def localDef(mods: Modifiers) = {
-        if (!(mods hasFlag ~Flags.IMPLICIT)) stats ++= defOrDcl(mods)
+        if (!(mods hasFlag ~(Flags.IMPLICIT | Flags.LAZY))) stats ++= defOrDcl(mods)
         else stats += tmplDefHooked(mods)
         if (inToken == RBRACE || inToken == CASE)
           syntaxError("block must end in result expression, not in definition", false)

@@ -60,6 +60,10 @@ trait Definitions {
     var ShortClass: Symbol = _
     var CharClass: Symbol = _
     var IntClass: Symbol = _
+      def Int_Or  = definitions.getMember(definitions.IntClass, nme.OR)
+      def Int_And = definitions.getMember(definitions.IntClass, nme.AND)
+      def Int_==  = definitions.getMember(definitions.IntClass, nme.EQEQ)
+
     var LongClass: Symbol = _
     var FloatClass: Symbol = _
     var DoubleClass: Symbol = _
@@ -369,6 +373,8 @@ trait Definitions {
     var BeanPropertyAttr: Symbol = _
     var AnnotationDefaultAttr: Symbol = _
     var NativeAttr: Symbol = _
+    var VolatileAttr: Symbol = _
+
 
     def getModule(fullname: Name): Symbol = getModuleOrClass(fullname, true)
 
@@ -939,6 +945,7 @@ trait Definitions {
       BeanPropertyAttr = if (forCLDC || forMSIL) null else getClass("scala.reflect.BeanProperty")
       DeprecatedAttr = getClass("scala.deprecated")
       NativeAttr = getClass("scala.native")
+      VolatileAttr = getClass("scala.volatile")
     }
 
     var nbScalaCallers: Int = 0

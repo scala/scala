@@ -566,6 +566,11 @@ abstract class RefChecks extends InfoTransform {
       stats1
     }
 
+    /** Implements lazy value accessors:
+     *    - for lazy fields inside traits, the rhs is the initializer itself
+     *    - for all other lazy values z the accessor is a block of this form:
+     *      { z = <rhs>; z } where z can be an identifier or a field.
+     */
     def transformStat(tree: Tree, index: int): List[Tree] = tree match {
       case ModuleDef(mods, name, impl) =>
         val sym = tree.symbol
@@ -622,11 +627,27 @@ abstract class RefChecks extends InfoTransform {
 
       case ValDef(_, _, _, _) =>
         val tree1 = transform(tree); // important to do before forward reference check
-        if (tree.symbol.isLocal && index <= currentLevel.maxindex) {
-          if (settings.debug.value) Console.println(currentLevel.refsym);
-          unit.error(currentLevel.refpos, "forward reference extends over definition of " + tree.symbol);
+        val ValDef(_, _, _, rhs) = tree1
+        if (tree.symbol.hasFlag(LAZY)) {
+          assert(tree.symbol.isTerm, tree.symbol)
+          val vsym = tree.symbol
+          val lazyDefSym = vsym.lazyAccessor
+          assert(lazyDefSym != NoSymbol, vsym)
+          val lazyDef = atPos(tree.pos)(
+              DefDef(lazyDefSym, vparamss =>
+                if (tree.symbol.owner.isTrait) rhs // for traits, this is further tranformed in mixins
+                else Block(List(
+                       Assign(gen.mkAttributedRef(vsym), rhs)),
+                       gen.mkAttributedRef(vsym))))
+          log("Made lazy def: " + lazyDef)
+          typed(ValDef(vsym, EmptyTree)) :: typed(lazyDef) :: Nil
+        } else {
+          if (tree.symbol.isLocal && index <= currentLevel.maxindex && !tree.symbol.hasFlag(LAZY)) {
+            if (settings.debug.value) Console.println(currentLevel.refsym);
+            unit.error(currentLevel.refpos, "forward reference extends over definition of " + tree.symbol);
+          }
+          List(tree1)
         }
-        List(tree1)
 
       case Import(_, _) =>
         List()

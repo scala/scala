@@ -30,6 +30,7 @@ trait StdNames {
     val IFkw = newTermName("if")
     val IMPLICITkw = newTermName("implicit")
     val IMPORTkw = newTermName("import")
+    val LAZYkw = newTermName("lazy")
     val MATCHkw = newTermName("match")
     val MIXINkw = newTermName("mixin")
     val NEWkw = newTermName("new")
@@ -150,6 +151,9 @@ trait StdNames {
 
     /** The name of a setter for protected symbols. Used for inherited Java fields. */
     def protSetterName(name: Name): Name = newTermName("protected$set" + name)
+
+    /** The name of bitmaps for initialized lazy vals. */
+    def bitmapName(n: Int): Name = newTermName("bitmap$" + n)
 
     val ERROR = newTermName("<error>")
     val ERRORtype = newTypeName("<error>")

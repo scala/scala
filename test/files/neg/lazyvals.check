@@ -1,0 +1,25 @@
+lazyvals.scala:6: error: lazy values may not be abstract
+  lazy val t: Int
+           ^
+lazyvals.scala:9: error: lazy not allowed here. Only vals can be lazy
+  lazy var p: Int = 100
+       ^
+lazyvals.scala:12: error: lazy not allowed here. Only vals can be lazy
+  lazy def q: Double = 0.0
+       ^
+lazyvals.scala:15: error: '=' expected but ';' found.
+    lazy val t;
+              ^
+lazyvals.scala:20: error: lazy not allowed here. Only vals can be lazy
+  lazy trait T {}
+       ^
+lazyvals.scala:21: error: lazy not allowed here. Only vals can be lazy
+  lazy class C {}
+       ^
+lazyvals.scala:22: error: lazy not allowed here. Only vals can be lazy
+  lazy object O {}
+       ^
+lazyvals.scala:25: error: lazy modifier not allowed here. Use call-by-name parameters instead
+  class A(lazy val obj: Object) {}
+               ^
+8 errors found

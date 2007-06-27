@@ -308,6 +308,11 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     val global: Global.this.type = Global.this
   }
 
+  object lazyVals extends LazyVals {
+    val global: Global.this.type = Global.this
+    final val FLAGS_PER_WORD = 32
+  }
+
   object lambdaLift extends LambdaLift {
     val global: Global.this.type = Global.this
   }
@@ -388,6 +393,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     explicitOuter,   // replace C.this by explicit outer pointers, eliminate pattern matching
 //    checkDefined,
     erasure,         // erase generic types to Java 1.4 types, add interfaces for traits
+    lazyVals,
     lambdaLift,      // move nested functions to top level
 //    detach,
     constructors,    // move field definitions into constructors

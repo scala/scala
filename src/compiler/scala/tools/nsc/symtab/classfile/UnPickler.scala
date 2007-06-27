@@ -205,7 +205,7 @@ abstract class UnPickler {
             case _ =>
               errorBadSignature("bad symbol tag: " + tag)
           }
-          sym.setFlag(flags)
+          sym.setFlag(flags.toLong & PickledFlags)
           sym.privateWithin = privateWithin
           if (readIndex != end) assert(sym hasFlag (SUPERACCESSOR | PARAMACCESSOR))
           if (sym hasFlag SUPERACCESSOR) assert(readIndex != end)

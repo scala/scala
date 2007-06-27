@@ -1,4 +1,4 @@
-object lazy {
+object forceDelay {
   class Susp[+A](lazyValue: => A) extends Function0[A] {
     private var func: () => Any = () => lazyValue
     private var value: Any = null
@@ -21,7 +21,7 @@ object lazy {
 }
 
 object Test {
-  import lazy._
+  import forceDelay._
 
   def main(args: Array[String]) = {
     val s: Susp[Int] = delay { Console.println("evaluating..."); 3 }

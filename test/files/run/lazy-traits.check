@@ -1,0 +1,154 @@
+Cls test:
+<forced z1>
+z1 = lazy z1
+z1 = lazy z1
+z1 = lazy z1
+Cls2 test:
+<forced z1>
+<forced z2>
+z1 = lazy z1 z2 = lazy z2
+z1 = lazy z1 z2 = lazy z2
+z1 = lazy z1 z2 = lazy z2
+Cls with B test:
+<forced z1>
+<forced zb1>
+<forced zc1>
+z1 = lazy z1 zb1 = lazy zb1 zc1 = lazy zc1
+z1 = lazy z1 zb1 = lazy zb1 zc1 = lazy zc1
+z1 = lazy z1 zb1 = lazy zb1 zc1 = lazy zc1
+OverflownLazyFields with A test:
+<forced zc00>
+<forced zc01>
+<forced zc02>
+<forced zc03>
+<forced zc04>
+<forced zc05>
+<forced zc06>
+<forced zc07>
+<forced zc08>
+<forced zc09>
+<forced zc10>
+<forced zc11>
+<forced zc12>
+<forced zc13>
+<forced zc14>
+<forced zc15>
+<forced zc16>
+<forced zc17>
+<forced zc18>
+<forced zc19>
+<forced zc20>
+<forced zc21>
+<forced zc22>
+<forced zc23>
+<forced zc24>
+<forced zc25>
+<forced zc26>
+<forced zc27>
+<forced zc28>
+<forced zc29>
+<forced zc30>
+<forced zc31>
+<forced z1>
+
+zc00 = lazy zc00
+zc01 = lazy zc01
+zc02 = lazy zc02
+zc03 = lazy zc03
+zc04 = lazy zc04
+zc05 = lazy zc05
+zc06 = lazy zc06
+zc07 = lazy zc07
+zc08 = lazy zc08
+zc09 = lazy zc09
+zc10 = lazy zc10
+zc11 = lazy zc11
+zc12 = lazy zc12
+zc13 = lazy zc13
+zc14 = lazy zc14
+zc15 = lazy zc15
+zc16 = lazy zc16
+zc17 = lazy zc17
+zc18 = lazy zc18
+zc19 = lazy zc19
+zc20 = lazy zc20
+zc21 = lazy zc21
+zc22 = lazy zc22
+zc23 = lazy zc23
+zc24 = lazy zc24
+zc25 = lazy zc25
+zc26 = lazy zc26
+zc27 = lazy zc27
+zc28 = lazy zc28
+zc29 = lazy zc29
+zc30 = lazy zc30
+zc31 = lazy zc31
+z1 = lazy z1
+
+zc00 = lazy zc00
+zc01 = lazy zc01
+zc02 = lazy zc02
+zc03 = lazy zc03
+zc04 = lazy zc04
+zc05 = lazy zc05
+zc06 = lazy zc06
+zc07 = lazy zc07
+zc08 = lazy zc08
+zc09 = lazy zc09
+zc10 = lazy zc10
+zc11 = lazy zc11
+zc12 = lazy zc12
+zc13 = lazy zc13
+zc14 = lazy zc14
+zc15 = lazy zc15
+zc16 = lazy zc16
+zc17 = lazy zc17
+zc18 = lazy zc18
+zc19 = lazy zc19
+zc20 = lazy zc20
+zc21 = lazy zc21
+zc22 = lazy zc22
+zc23 = lazy zc23
+zc24 = lazy zc24
+zc25 = lazy zc25
+zc26 = lazy zc26
+zc27 = lazy zc27
+zc28 = lazy zc28
+zc29 = lazy zc29
+zc30 = lazy zc30
+zc31 = lazy zc31
+z1 = lazy z1
+
+zc00 = lazy zc00
+zc01 = lazy zc01
+zc02 = lazy zc02
+zc03 = lazy zc03
+zc04 = lazy zc04
+zc05 = lazy zc05
+zc06 = lazy zc06
+zc07 = lazy zc07
+zc08 = lazy zc08
+zc09 = lazy zc09
+zc10 = lazy zc10
+zc11 = lazy zc11
+zc12 = lazy zc12
+zc13 = lazy zc13
+zc14 = lazy zc14
+zc15 = lazy zc15
+zc16 = lazy zc16
+zc17 = lazy zc17
+zc18 = lazy zc18
+zc19 = lazy zc19
+zc20 = lazy zc20
+zc21 = lazy zc21
+zc22 = lazy zc22
+zc23 = lazy zc23
+zc24 = lazy zc24
+zc25 = lazy zc25
+zc26 = lazy zc26
+zc27 = lazy zc27
+zc28 = lazy zc28
+zc29 = lazy zc29
+zc30 = lazy zc30
+zc31 = lazy zc31
+z1 = lazy z1

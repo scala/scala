@@ -124,6 +124,7 @@ trait Scanners {
       enterKeyword(nme.IFkw, IF)
       enterKeyword(nme.IMPLICITkw, IMPLICIT)
       enterKeyword(nme.IMPORTkw, IMPORT)
+      enterKeyword(nme.LAZYkw, LAZY)
       enterKeyword(nme.MATCHkw, MATCH)
       enterKeyword(nme.NEWkw, NEW)
       enterKeyword(nme.NULLkw, NULL)

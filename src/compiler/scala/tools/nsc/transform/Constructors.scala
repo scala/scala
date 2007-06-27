@@ -154,7 +154,7 @@ abstract class Constructors extends Transform {
           if (stat.symbol.tpe.isInstanceOf[ConstantType])
             assert(stat.symbol.getter(stat.symbol.owner) != NoSymbol, stat)
           else {
-            if (rhs != EmptyTree) {
+            if (rhs != EmptyTree && !stat.symbol.hasFlag(LAZY)) {
               val rhs1 = intoConstructor(stat.symbol, rhs);
               (if (canBeMoved(stat)) constrPrefixBuf else constrStatBuf) += mkAssign(
                 stat.symbol, rhs1)

@@ -106,7 +106,7 @@ trait Namers { self: Analyzer =>
         sym.name.toString() + " is already defined as " +
         (if (sym.hasFlag(CASE)) "case class " + sym.name else sym.toString()))
 
-    def enterInScope(sym: Symbol): Symbol = {
+    def enterInScope[A <: Symbol](sym: A): A = {
       // allow for overloaded methods
       if (!(sym.isSourceMethod && sym.owner.isClass && !sym.owner.isPackageClass)) {
         val prev = context.scope.lookupEntry(sym.name);
@@ -284,8 +284,9 @@ trait Namers { self: Analyzer =>
             tree.symbol.moduleClass.setInfo(namerOf(tree.symbol).moduleClassTypeCompleter(tree))
             finish
           case ValDef(mods, name, tp, rhs) =>
-            if (context.owner.isClass && (mods.flags & (PRIVATE | LOCAL)) != (PRIVATE | LOCAL)) {
-              val accflags = ACCESSOR |
+            if (context.owner.isClass && (mods.flags & (PRIVATE | LOCAL)) != (PRIVATE | LOCAL)
+                || (mods.flags & LAZY) != 0) {
+              val accflags: Long = ACCESSOR |
                 (if ((mods.flags & MUTABLE) != 0) mods.flags & ~MUTABLE & ~PRESUPER
                  else mods.flags & ~PRESUPER | STABLE)
               val getter = owner.newMethod(tree.pos, name).setFlag(accflags)
@@ -301,10 +302,18 @@ trait Namers { self: Analyzer =>
               }
               tree.symbol =
                 if ((mods.flags & DEFERRED) == 0) {
-                  val value =
-                    enterInScope(owner.newValue(tree.pos, nme.getterToLocal(name)))
-                                  .setFlag(mods.flags & FieldFlags | PRIVATE | LOCAL)
+                  val vsym =
+                    if (!context.owner.isClass) {
+                      assert((mods.flags & LAZY) != 0) // if not a field, it has to be a lazy val
+                      owner.newValue(tree.pos, name + "$lzy" ).setFlag(mods.flags | MUTABLE)
+                    } else {
+                      owner.newValue(tree.pos, nme.getterToLocal(name))
+                        .setFlag(mods.flags & FieldFlags | PRIVATE | LOCAL | (if ((mods.flags & LAZY) != 0) MUTABLE else 0))
+                    }
+                  val value = enterInScope(vsym)
                   value.setInfo(namerOf(value).typeCompleter(tree))
+                  if ((mods.flags & LAZY) != 0)
+                    value.setLazyAccessor(getter)
                   value
                 } else getter;
             } else {
@@ -345,7 +354,7 @@ trait Namers { self: Analyzer =>
 
     def typeCompleter(tree: Tree) = new TypeCompleter(tree) {
       override def complete(sym: Symbol) {
-        if (settings.debug.value) log("defining " + sym);
+        if (settings.debug.value) log("defining " + sym + Flags.flagsToString(sym.flags));
         val tp = typeSig(tree)
         sym.setInfo(tp)
         if ((sym.isAliasType || sym.isAbstractType) && !(sym hasFlag PARAM) &&
@@ -741,7 +750,7 @@ trait Namers { self: Analyzer =>
               "abstract member may not have " + Flags.flagsToString(flag2) + " modifier";
             else
               "illegal combination of modifiers: " +
-              Flags.flagsToString(flag1) + " and " + Flags.flagsToString(flag2));
+              Flags.flagsToString(flag1) + " and " + Flags.flagsToString(flag2) + " for: " + sym + Flags.flagsToString(sym.rawflags));
       if (sym.hasFlag(IMPLICIT) && !sym.isTerm)
         context.error(sym.pos, "`implicit' modifier can be used only for values, variables and methods")
       if (sym.hasFlag(IMPLICIT) && sym.owner.isPackageClass)

@@ -1,0 +1,10 @@
+forced <z1>
+lazy val in scrutinee: ok
+forced <z1>
+lazy val in case: ok
+lazy val in case: forced <z1>
+ok
+lazy val in if condition: forced <z1>
+ok
+lazy val in pattern: forced LazyField
+ok

@@ -738,6 +738,9 @@ trait Symbols {
      *  is an alias, NoSymbol for all others */
     def alias: Symbol = NoSymbol
 
+    /** For a lazy value, it's lazy accessor. NoSymbol for all others */
+    def lazyAccessor: Symbol = NoSymbol
+
     /** For an outer accessor: The class from which the outer originates.
      *  For all other symbols: NoSymbol
      */
@@ -1138,6 +1141,17 @@ trait Symbols {
       assert(hasFlag(MODULE))
       referenced = clazz
       this
+    }
+
+    def setLazyAccessor(sym: Symbol): TermSymbol = {
+      assert(hasFlag(LAZY) && referenced == NoSymbol, this)
+      referenced = sym
+      this
+    }
+
+    override def lazyAccessor: Symbol = {
+      assert(hasFlag(LAZY), this)
+      referenced
     }
   }
 

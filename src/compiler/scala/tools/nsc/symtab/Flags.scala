@@ -60,6 +60,7 @@ object Flags extends Enumeration {
                                           // for parameters: is a val parameter
   final val MODULEVAR     = 0x40000000    // for term symbols: is the variable caching a module value
   final val MONOMORPHIC   = 0x40000000    // for type symbols: does not have type parameters
+  final val LAZY          = 0x80000000L   // symbol is a lazy val. can't have MUTABLE unless transformed by typer
 
   final val IS_ERROR      = 0x100000000L  // symbol is an error symbol
   final val OVERLOADED    = 0x200000000L  // symbol is overloaded
@@ -103,29 +104,29 @@ object Flags extends Enumeration {
 
   // masks
   /** This flags can be set when class or module symbol is first created. */
-  final val TopLevelCreationFlags =
+  final val TopLevelCreationFlags: Long =
     MODULE | PACKAGE | FINAL | JAVA
 
   /** These modifiers can be set explicitly in source programs. */
-  final val ExplicitFlags =
+  final val ExplicitFlags: Long =
     PRIVATE | PROTECTED | ABSTRACT | FINAL | SEALED |
-    OVERRIDE | CASE | IMPLICIT | ABSOVERRIDE
+    OVERRIDE | CASE | IMPLICIT | ABSOVERRIDE | LAZY
 
   /** These modifiers appear in TreePrinter output. */
-  final val PrintableFlags =
+  final val PrintableFlags: Long =
     ExplicitFlags | LOCAL | SYNTHETIC | STABLE | CASEACCESSOR |
     ACCESSOR | SUPERACCESSOR | PARAMACCESSOR | BRIDGE | STATIC
 
-  final val FieldFlags =
-    MUTABLE | CASEACCESSOR | PARAMACCESSOR | STATIC | FINAL | PRESUPER
+  final val FieldFlags: Long =
+    MUTABLE | CASEACCESSOR | PARAMACCESSOR | STATIC | FINAL | PRESUPER | LAZY
 
-  final val AccessFlags   = PRIVATE | PROTECTED
+  final val AccessFlags: Long   = PRIVATE | PROTECTED
   final val VARIANCES     = COVARIANT | CONTRAVARIANT
-  final val ConstrFlags   = JAVA
-  final val PickledFlags  = 0xFFFFFFFF
+  final val ConstrFlags: Long   = JAVA
+  final val PickledFlags: Long  = 0xFFFFFFFFL
 
   /** Module flags inherited by their module-class */
-  final val ModuleToClassFlags = AccessFlags | PACKAGE | CASE
+  final val ModuleToClassFlags: Long = AccessFlags | PACKAGE | CASE
 
   private def listToString(ss: List[String]): String =
     ss.filter("" !=).mkString("", " ", "")
@@ -164,6 +165,7 @@ object Flags extends Enumeration {
     else if (flag == IMPLCLASS   ) "<presuper/implclass>"
     else if (flag == TRANS_FLAG  ) "<trans-flag>"
     else if (flag == LOCKED      ) "<locked>"
+    else if (flag == LAZY        ) "lazy"
     else flag.asInstanceOf[Int] match {
       case IMPLICIT      => "implicit"
       case FINAL         => "final"
@@ -207,13 +209,13 @@ object Flags extends Enumeration {
     }
   }
 
-  class Flag(mods: Int) {
+  class Flag(mods: Long) {
     def isPrivate   = (mods & PRIVATE  ) != 0
     def isProtected = (mods & PROTECTED) != 0
     def isVariable  = (mods &   MUTABLE) != 0
     def isPublic    = !isPrivate && !isProtected
   }
-  case class FlagEnum(mask: Int) extends Val(maskToBit(mask), flagToString(mask))
+  case class FlagEnum(mask: Long) extends Val(maskToBit(mask), flagToString(mask))
 
   val Implicit      = FlagEnum(IMPLICIT)
   val Final         = FlagEnum(FINAL)

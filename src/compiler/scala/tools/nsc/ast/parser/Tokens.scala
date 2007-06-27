@@ -74,27 +74,28 @@ object Tokens {
   final val MATCH = 58
   final val FORSOME = 59
   final val REQUIRES = 60
+  final val LAZY = 61
 
   def isKeyword(code : Int) =
-    code >= IF && code <= REQUIRES
+    code >= IF && code <= LAZY
 
 
   /** special symbols */
-  final val COMMA = 61
-  final val SEMI = 62
-  final val DOT = 63
-  final val USCORE = 64
-  final val COLON = 65
-  final val EQUALS = 66
-  final val LARROW = 67
-  final val ARROW = 68
-  final val NEWLINE = 69
-  final val NEWLINES = 70
-  final val SUBTYPE = 71
-  final val SUPERTYPE = 72
-  final val HASH = 73
-  final val AT = 74
-  final val VIEWBOUND = 75
+  final val COMMA = 70
+  final val SEMI = 71
+  final val DOT = 72
+  final val USCORE = 73
+  final val COLON = 74
+  final val EQUALS = 75
+  final val LARROW = 76
+  final val ARROW = 77
+  final val NEWLINE = 78
+  final val NEWLINES = 79
+  final val SUBTYPE = 80
+  final val SUPERTYPE = 81
+  final val HASH = 82
+  final val AT = 83
+  final val VIEWBOUND = 84
 
   def isSymbol(code : Int) =
     code >= COMMA && code <= VIEWBOUND

@@ -985,7 +985,9 @@ trait Typers { self: Analyzer =>
      */
     def addGetterSetter(stat: Tree): List[Tree] = stat match {
       case ValDef(mods, name, tpt, rhs)
-      if (mods.flags & (PRIVATE | LOCAL)) != (PRIVATE | LOCAL) && !stat.symbol.isModuleVar =>
+        if (mods.flags & (PRIVATE | LOCAL)) != (PRIVATE | LOCAL)
+          && !stat.symbol.isModuleVar
+          && !stat.symbol.hasFlag(LAZY) =>
         val vdef = copy.ValDef(stat, mods | PRIVATE | LOCAL, nme.getterToLocal(name), tpt, rhs)
         val value = vdef.symbol
         val getter = if ((mods hasFlag DEFERRED) || inIDE) value else value.getter(value.owner)

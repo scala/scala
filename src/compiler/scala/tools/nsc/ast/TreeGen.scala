@@ -223,6 +223,10 @@ abstract class TreeGen {
   def mkRuntimeCall(meth: Name, args: List[Tree]): Tree =
     Apply(Select(mkAttributedRef(ScalaRunTimeModule), meth), args)
 
+  /** Make a synchronized block on 'monitor'. */
+  def mkSynchronized(monitor: Tree, body: Tree): Tree =
+    Apply(Select(monitor, definitions.Object_synchronized), List(body))
+
   def evalOnce(expr: Tree, owner: Symbol, unit: CompilationUnit)(within: (() => Tree) => Tree): Tree =
     if (treeInfo.isPureExpr(expr)) {
       within(() => expr);

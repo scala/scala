@@ -10,6 +10,7 @@ import symtab._
 import Flags._
 import scala.collection.mutable.ListBuffer
 import scala.tools.nsc.util.{Position,NoPosition}
+import scala.collection.mutable.HashMap
 
 abstract class Mixin extends InfoTransform {
   import global._
@@ -37,12 +38,13 @@ abstract class Mixin extends InfoTransform {
    *     (private modules, on the other hand, are implemented statically, but their
    *      module variable is not. all such private modules are lifted, because
    *      non-lifted private modules have been eliminated in ExplicitOuter)
-   *   - field accessors and superaccessors
+   *   - field accessors and superaccessors, except for lazy value accessors which become initializer
+   *     methods in the impl class (because they can have arbitrary initializers)
    */
   private def isImplementedStatically(sym: Symbol) =
     sym.owner.isImplClass && sym.isMethod &&
-    (!sym.isModule || sym.hasFlag(PRIVATE | LIFTED)) &&
-    !(sym hasFlag (ACCESSOR | SUPERACCESSOR))
+    (!sym.isModule || sym.hasFlag(PRIVATE)) &&
+    (!(sym hasFlag (ACCESSOR | SUPERACCESSOR)) || sym.hasFlag(LAZY))
 
   /** A member of a trait is static only if it belongs only to the
    *  implementation class, not the interface, and it is implemented
@@ -124,6 +126,7 @@ abstract class Mixin extends InfoTransform {
    *  class to its interface unless they are already present. This is done
    *  only once per class. The mixedin flag is used to remember whether late
    *  members have been added to an interface.
+   *    - lazy fields don't get a setter.
    *
    *  @param clazz ...
    */
@@ -158,7 +161,7 @@ abstract class Mixin extends InfoTransform {
           }
           val getter = member.getter(clazz)
           if (getter == NoSymbol) addMember(clazz, newGetter(member))
-          if (!member.tpe.isInstanceOf[ConstantType]) {
+          if (!member.tpe.isInstanceOf[ConstantType] && !member.hasFlag(LAZY)) {
             val setter = member.setter(clazz)
             if (setter == NoSymbol) addMember(clazz, newSetter(member))
           }
@@ -166,6 +169,9 @@ abstract class Mixin extends InfoTransform {
       }
       if (settings.debug.value) log("new defs of " + clazz + " = " + clazz.info.decls);
     }
+
+  /** Map a lazy, mixedin field accessor to it's trait member accessor */
+  val initializer = new HashMap[Symbol, Symbol]
 
   /** Add all members to be mixed in into a (non-trait-) class
    *  These are:
@@ -208,7 +214,10 @@ abstract class Mixin extends InfoTransform {
         }
       }
 
-      /** Mix in members of trait mixinClass into class clazz */
+      /** Mix in members of trait mixinClass into class clazz. Also,
+       *  for each lazy field in mixinClass, add a link from its mixed in member to it's
+       *  initializer method inside the implclass.
+       */
       def mixinTraitMembers(mixinClass: Symbol): unit = {
         // For all members of a trait's interface do:
         for (val member <- mixinClass.info.decls.toList) {
@@ -220,6 +229,11 @@ abstract class Mixin extends InfoTransform {
               member.cloneSymbol(clazz)
                 setPos clazz.pos
                 setFlag FINAL resetFlag (DEFERRED | lateDEFERRED))
+            if (member.hasFlag(LAZY)) {
+              var init = implClass(mixinClass).info.decl(member.name)
+              assert(init != NoSymbol, "Could not find initializer for " + member.name)
+              initializer(member1) = init
+            }
             if (!member.isSetter)
               member.tpe match {
                 case MethodType(List(), ConstantType(_)) =>
@@ -229,7 +243,7 @@ abstract class Mixin extends InfoTransform {
                   // otherwise mixin a field as well
                   addMember(clazz,
                             clazz.newValue(member.pos, nme.getterToLocal(member.name))
-                            setFlag (LOCAL | PRIVATE | member.getFlag(MUTABLE))
+                            setFlag (LOCAL | PRIVATE | member.getFlag(MUTABLE | LAZY))
                             setInfo member.tpe.resultType)
               }
           } else if (member hasFlag SUPERACCESSOR) { // mixin super accessors
@@ -412,6 +426,7 @@ abstract class Mixin extends InfoTransform {
      *    - for a non-trait class:
      *       - A field for every in a mixin class
      *       - Setters and getters for such fields
+     *           - getters for mixed in lazy fields are completed
      *       - module variables and module creators for every module in a mixin class
      *         (except if module is lifted -- in this case the module variable
      *          is local to some function, and the creator method is static.)
@@ -422,6 +437,7 @@ abstract class Mixin extends InfoTransform {
      */
     private def addNewDefs(clazz: Symbol, stats: List[Tree]): List[Tree] = {
       val newDefs = new ListBuffer[Tree]
+      var offset: Int = 0
 
       /** Attribute given tree and anchor at given position */
       def attributedDef(pos: Position, tree: Tree): Tree = {
@@ -489,7 +505,92 @@ abstract class Mixin extends InfoTransform {
           stat
       }
 
+      import lazyVals._
+
+      /** return a 'lazified' version of rhs.
+       *  @param clazz The class symbol
+       *  @param init The tree which initializes the field ( f = <rhs> )
+       *  @param fieldSym The symbol of this lazy field
+       *  @param offset The offset of this field in the flags bitmap
+       *
+       *  The result will be a tree of the form
+       *  {
+       *    if ((bitmap$n & MASK) == 0) {
+       *       synhronized(this) {
+       *         if ((bitmap$n & MASK) == 0) {
+       *           synhronized(this) {
+       *             init // l$ = <rhs>
+       *           }
+       *           bitmap$n = bimap$n | MASK
+       *         }}}
+       *    l$
+       *  }
+       *  where bitmap$n is an int value acting as a bitmap of initialized values. It is
+       *  the 'n' is (offset / 32), the MASK is (1 << (offset % 32)).
+       */
+      def mkLazyDef(clazz: Symbol, init: Tree, fieldSym: Symbol, offset: Int): Tree = {
+
+        /** Return the bitmap field for 'offset', create one if not inheriting it already. */
+        def bitmapFor(offset: Int): Symbol = {
+          var sym = clazz.info.member(nme.bitmapName(offset / FLAGS_PER_WORD))
+          assert(!sym.hasFlag(OVERLOADED))
+          if (sym == NoSymbol) {
+            sym = clazz.newVariable(clazz.pos, nme.bitmapName(offset / FLAGS_PER_WORD))
+                         .setInfo(definitions.IntClass.tpe)
+                         .setFlag(PROTECTED)
+            atPhase(currentRun.typerPhase) {
+              sym.attributes = AnnotationInfo(definitions.VolatileAttr.tpe, List(), List()) :: sym.attributes
+            }
+            clazz.info.decls.enter(sym)
+            addDef(clazz.pos, ValDef(sym, Literal(Constant(0))))
+          }
+          sym
+        }
+        val bitmapSym = bitmapFor(offset)
+
+        def mkSetFlag(bmp: Symbol, mask: Tree): Tree =
+          Assign(Select(This(clazz), bmp),
+            Apply(Select(Select(This(clazz), bmp), Int_Or), List(mask)))
+
+        def mkTest(mask: Tree): Tree =
+          Apply(Select(Apply(Select(Select(This(clazz), bitmapSym), Int_And), List(mask)),
+                Int_==), List(Literal(Constant(0))))
+
+        val mask = Literal(Constant(1 << (offset % FLAGS_PER_WORD)))
+        val result =
+          If(mkTest(mask),
+             gen.mkSynchronized(gen.mkAttributedThis(clazz),
+               If(mkTest(mask),
+                  Block(List(gen.mkSynchronized(gen.mkAttributedThis(clazz), init),
+                        mkSetFlag(bitmapSym, mask)),
+                        Literal(Constant(()))),
+                 EmptyTree)),
+             EmptyTree)
+        localTyper.typed(Block(List(result), Select(This(clazz), fieldSym)))
+      }
+
+      /** Complete lazy field accessors. Applies only to classes, for it's own (non inherited) lazy fields. */
+      def lazifyOwnFields(clazz: Symbol, stats: List[Tree]): List[Tree] = {
+        var offset = clazz.info.findMember(nme.ANYNAME, METHOD, LAZY, false).alternatives.filter(_.owner != clazz).length
+        val stats1 = for (stat <- stats; sym = stat.symbol) yield stat match {
+          case DefDef(mods, name, tp, vp, tpt, rhs)
+            if sym.hasFlag(LAZY) && rhs != EmptyTree && !clazz.isImplClass =>
+              val Block(List(assignment), res) = rhs
+              val rhs1 = mkLazyDef(clazz, assignment, res.symbol, offset)
+              offset += 1
+              copy.DefDef(stat, mods, name, tp, vp, tpt, rhs1)
+          case _ => stat
+        }
+	stats1
+      }
+
+
+      // the number of inherited lazy fields that are not mixed in
+      offset = (clazz.info.findMember(nme.ANYNAME, METHOD, LAZY, false)
+                .alternatives filter { f => f.owner != clazz || !f.hasFlag(MIXEDIN)}).length
       // begin addNewDefs
+      var stats1 = lazifyOwnFields(clazz, stats)
+
       // for all symbols `sym' in the class definition, which are mixed in:
       for (val sym <- clazz.info.decls.toList) {
         if (sym hasFlag MIXEDIN) {
@@ -504,7 +605,18 @@ abstract class Mixin extends InfoTransform {
               addDefDef(sym, vparams => {
                 val accessedRef = sym.tpe match {
                   case MethodType(List(), ConstantType(c)) => Literal(c)
-                  case _ => Select(This(clazz), sym.accessed)
+                  case _ =>
+                    // if it is a mixed-in lazy value, complete the accessor
+                    if (sym.hasFlag(LAZY) && sym.isGetter) {
+                      val assign =
+                        Assign(gen.mkAttributedRef(sym.accessed),
+                            Apply(staticRef(initializer(sym)), gen.mkAttributedThis(clazz) :: Nil))
+
+                      val rhs1 = mkLazyDef(clazz, assign, sym.accessed, offset)
+                      offset += 1
+                      rhs1
+                    } else
+                      Select(This(clazz), sym.accessed)
                 }
                 if (sym.isSetter) Assign(accessedRef, Ident(vparams.head))
                 else gen.mkCheckInit(accessedRef)
@@ -529,7 +641,7 @@ abstract class Mixin extends InfoTransform {
           }
         }
       }
-      var stats1 = add(stats, newDefs.toList)
+      stats1 = add(stats1, newDefs.toList)
       if (!clazz.isTrait) stats1 = stats1 map completeSuperAccessor
       stats1
     }
