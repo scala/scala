@@ -1035,8 +1035,11 @@ trait Symbols {
      *  e.g., "class Foo", "method Bar".
      */
     override def toString(): String =
-      compose(List(kindString,
-                   if (isClassConstructor) owner.simpleName.decode+idString else nameString))
+      if (isValueParameter && owner.isSetter)
+        "parameter of setter "+owner.nameString
+      else
+        compose(List(kindString,
+                     if (isClassConstructor) owner.simpleName.decode+idString else nameString))
 
     /** String representation of location. */
     final def locationString: String =
@@ -1061,12 +1064,14 @@ trait Symbols {
       else if (isAliasType)
         typeParamsString + " = " + tp.resultType
       else if (isAbstractType)
-        tp match {
-          case TypeBounds(lo, hi) =>
-            (if (lo.symbol == AllClass) "" else " >: " + lo) +
-            (if (hi.symbol == AnyClass) "" else " <: " + hi)
-          case _ =>
-            "<: " + tp
+        typeParamsString + {
+          tp.resultType match {
+            case TypeBounds(lo, hi) =>
+              (if (lo.symbol == AllClass) "" else " >: " + lo) +
+              (if (hi.symbol == AnyClass) "" else " <: " + hi)
+            case rtp =>
+              "<: " + rtp
+          }
         }
       else if (isModule)
         moduleClass.infoString(tp)

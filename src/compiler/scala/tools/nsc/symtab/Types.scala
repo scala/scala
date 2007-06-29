@@ -2762,7 +2762,9 @@ A type's symbol should never be inspected directly.
         val tvars = tparams2 map (tparam => new TypeVar(tparam.tpe, new TypeConstraint))
         val ires2 = res2.instantiateTypeParams(tparams2, tvars)
         (tp1 <:< ires2) && {
+//          println("solve: "+tparams2)
           solve(tvars, tparams2, tparams2 map (x => 0), false)
+//          println("check bounds: "+tparams2+" aginst "+(tvars map (_.constr.inst)))
           isWithinBounds(NoPrefix, NoSymbol, tparams2, tvars map (_.constr.inst))
         }
       case (RefinedType(parents1, ref1), _) =>
