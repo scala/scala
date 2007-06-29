@@ -1,4 +1,10 @@
-variances.scala:2: error: covariant type A occurs in contravariant position in type Vector[A] of value x
+variances.scala:4: error: covariant type A occurs in contravariant position in type test.Vector[A] of value x
   def append(x: Vector[A]): Vector[A] 
              ^
-one error found
+variances.scala:14: error: covariant type A occurs in contravariant position in type A of value a
+    private[this] def setA(a : A) = this.a = a 
+                           ^
+variances.scala:16: error: covariant type A occurs in invariant position in type test.C[A] with ScalaObject{def this(): object Foo.this.Baz} of object Baz
+    object Baz extends C[A]
+    ^
+three errors found

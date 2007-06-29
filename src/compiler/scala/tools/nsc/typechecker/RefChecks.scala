@@ -7,7 +7,7 @@
 package scala.tools.nsc.typechecker
 
 import symtab.Flags._
-import collection.mutable.HashMap
+import collection.mutable.{HashSet, HashMap}
 import transform.InfoTransform
 import scala.tools.nsc.util.{Position, NoPosition}
 
@@ -358,88 +358,105 @@ abstract class RefChecks extends InfoTransform {
     private val CoVariance = 1
     private val AnyVariance = 2
 
-    /** Check variance of type variables in this type.
-     *
-     *  @param base     ...
-     *  @param all      ...
-     *  @param variance ...
-     */
-    private def validateVariance(base: Symbol, all: Type, variance: int): unit = {
+    private val escapedPrivateLocals = new HashSet[Symbol]
 
-      def varianceString(variance: int): String =
-        if (variance == 1) "covariant"
-        else if (variance == -1) "contravariant"
-        else "invariant";
+    val varianceValidator = new Traverser {
 
-      def relativeVariance(tvar: Symbol): int = {
-        val clazz = tvar.owner
-        var sym = base
-        var state = CoVariance
-        while (sym != clazz && state != AnyVariance) {
-          //Console.println("flip: " + sym + " " + sym.isParameter());//DEBUG
-          if ((sym hasFlag PARAM) && !sym.owner.isConstructor &&
-              !(tvar.isTypeParameterOrSkolem && sym.isTypeParameterOrSkolem &&
-                tvar.owner == sym.owner)) state = -state;
-          else if (!sym.owner.isClass || sym.isPrivateLocal || sym.isProtectedLocal)
-            state = AnyVariance
-          else if (sym.isAliasType)
-            state = NoVariance
-          sym = sym.owner
-        }
-        state
-      }
+      private def validateVariance(base: Symbol) {
 
-      def validateVariance(tp: Type, variance: int): unit = tp match {
-        case ErrorType => ;
-        case WildcardType => ;
-        case NoType => ;
-        case NoPrefix => ;
-        case ThisType(_) => ;
-        case ConstantType(_) => ;
-        case DeBruijnIndex(_, _) => ;
-        case SingleType(pre, sym) =>
-          validateVariance(pre, variance)
-        case TypeRef(pre, sym, args) =>
-          if (sym.variance != NoVariance) {
-            val v = relativeVariance(sym);
-            if (v != AnyVariance && sym.variance != v * variance) {
-              //Console.println("relativeVariance(" + base + "," + sym + ") = " + v);//DEBUG
-              unit.error(base.pos,
-                         varianceString(sym.variance) + " " + sym +
-                         " occurs in " + varianceString(v * variance) +
-                         " position in type " + all + " of " + base);
-            }
+        def varianceString(variance: int): String =
+          if (variance == 1) "covariant"
+          else if (variance == -1) "contravariant"
+          else "invariant";
+
+        def relativeVariance(tvar: Symbol): int = {
+          val clazz = tvar.owner
+          var sym = base
+          var state = CoVariance
+          while (sym != clazz && state != AnyVariance) {
+            //Console.println("flip: " + sym + " " + sym.isParameter());//DEBUG
+            if ((sym hasFlag PARAM) && !sym.owner.isConstructor && !sym.owner.isCaseFactory &&
+                !(tvar.isTypeParameterOrSkolem && sym.isTypeParameterOrSkolem &&
+                  tvar.owner == sym.owner)) state = -state;
+            else if (!sym.owner.isClass ||
+                     ((sym.isPrivateLocal || sym.isProtectedLocal) && !(escapedPrivateLocals contains sym)))
+              state = AnyVariance
+            else if (sym.isAliasType)
+              state = NoVariance
+            sym = sym.owner
           }
-          validateVariance(pre, variance)
-          validateVarianceArgs(args, variance, sym.typeParams) //@M for higher-kinded typeref, args.isEmpty
-          // However, these args respect variances by construction anyway
-          // -- the interesting case is in type application, see checkKindBounds in Infer
-        case ClassInfoType(parents, decls, symbol) =>
-          validateVariances(parents, variance)
-        case RefinedType(parents, decls) =>
-          validateVariances(parents, variance)
-        case TypeBounds(lo, hi) =>
-          validateVariance(lo, -variance)
-          validateVariance(hi, variance)
-        case MethodType(formals, result) =>
-          validateVariance(result, variance)
-        case PolyType(tparams, result) =>
-          validateVariance(result, variance)
-        case ExistentialType(tparams, result) =>
-          validateVariance(result, variance)
-        case AnnotatedType(attribs, tp) =>
-          validateVariance(tp, variance)
-      }
-
-      def validateVariances(tps: List[Type], variance: int): unit =
-        tps foreach (tp => validateVariance(tp, variance))
-
-      def validateVarianceArgs(tps: List[Type], variance: int, tparams: List[Symbol]): unit =
-        (tps zip tparams) foreach {
-          case (tp, tparam) => validateVariance(tp, variance * tparam.variance)
+          state
         }
 
-      validateVariance(all, variance)
+        def validateVariance(tp: Type, variance: int): unit = tp match {
+          case ErrorType => ;
+          case WildcardType => ;
+          case NoType => ;
+          case NoPrefix => ;
+          case ThisType(_) => ;
+          case ConstantType(_) => ;
+          case DeBruijnIndex(_, _) => ;
+          case SingleType(pre, sym) =>
+            validateVariance(pre, variance)
+          case TypeRef(pre, sym, args) =>
+            if (sym.variance != NoVariance) {
+              val v = relativeVariance(sym);
+              if (v != AnyVariance && sym.variance != v * variance) {
+                //Console.println("relativeVariance(" + base + "," + sym + ") = " + v);//DEBUG
+                unit.error(base.pos,
+                           varianceString(sym.variance) + " " + sym +
+                           " occurs in " + varianceString(v * variance) +
+                           " position in type " + base.info + " of " + base);
+              }
+            }
+            validateVariance(pre, variance)
+            validateVarianceArgs(args, variance, sym.typeParams) //@M for higher-kinded typeref, args.isEmpty
+            // However, these args respect variances by construction anyway
+            // -- the interesting case is in type application, see checkKindBounds in Infer
+          case ClassInfoType(parents, decls, symbol) =>
+            validateVariances(parents, variance)
+          case RefinedType(parents, decls) =>
+            validateVariances(parents, variance)
+          case TypeBounds(lo, hi) =>
+            validateVariance(lo, -variance)
+            validateVariance(hi, variance)
+          case MethodType(formals, result) =>
+            validateVariance(result, variance)
+          case PolyType(tparams, result) =>
+            validateVariance(result, variance)
+          case ExistentialType(tparams, result) =>
+            validateVariance(result, variance)
+          case AnnotatedType(attribs, tp) =>
+            validateVariance(tp, variance)
+        }
+
+        def validateVariances(tps: List[Type], variance: int): unit =
+          tps foreach (tp => validateVariance(tp, variance))
+
+        def validateVarianceArgs(tps: List[Type], variance: int, tparams: List[Symbol]): unit =
+          (tps zip tparams) foreach {
+            case (tp, tparam) => validateVariance(tp, variance * tparam.variance)
+          }
+
+        validateVariance(base.info, CoVariance)
+      }
+
+      override def traverse(tree: Tree): Unit = {
+        tree match {
+          case ClassDef(_, _, _, _) | TypeDef(_, _, _, _) =>
+            validateVariance(tree.symbol)
+            super.traverse(tree)
+          // ModuleDefs need not be considered because they have been eliminated already
+          case ValDef(_, _, _, _) =>
+            validateVariance(tree.symbol)
+          case DefDef(_, _, tparams, vparamss, tpt, rhs) =>
+            validateVariance(tree.symbol)
+            traverseTrees(tparams); traverseTreess(vparamss)
+          case Template(_, _, _) =>
+            super.traverse(tree)
+          case _ =>
+        }
+      }
     }
 
 // Forward reference checking ---------------------------------------------------
@@ -709,25 +726,16 @@ abstract class RefChecks extends InfoTransform {
       val sym = tree.symbol
       var result = tree
       tree match {
-        case ClassDef(mods, name, tparams, impl) =>
-          validateVariance(sym, sym.info, CoVariance)
-          validateVariance(sym, sym.typeOfThis, CoVariance)
-
         case DefDef(mods, name, tparams, vparams, tpt, EmptyTree) if tree.symbol.hasAttribute(definitions.NativeAttr.tpe) =>
           tree.symbol.resetFlag(DEFERRED)
           result = transform(copy.DefDef(tree, mods, name, tparams, vparams, tpt,
                 typed(Apply(gen.mkAttributedRef(definitions.Predef_error), List(Literal("native method stub"))))))
 
         case DefDef(_, _, _, _, _, _) =>
-          validateVariance(sym, sym.tpe, CoVariance) //@M TODO: might be affected by change in tpe --> can't use tree.tpe though
           checkDeprecatedOvers()
 
         case ValDef(_, _, _, _) =>
-          validateVariance(sym, sym.tpe, if (sym.isVariable) NoVariance else CoVariance) //@M TODO: might be affected by change in tpe --> can't use tree.tpe though
           checkDeprecatedOvers()
-
-        case TypeDef(_, _, _, _) =>
-          validateVariance(sym, sym.info, CoVariance)
 
         case Template(_, _, _) =>
           localTyper = localTyper.atOwner(tree, currentOwner)
@@ -781,6 +789,15 @@ abstract class RefChecks extends InfoTransform {
           }
 
         case Select(qual, name) =>
+          if (currentClass != sym.owner && (sym hasFlag LOCAL)) {
+            var o = currentClass
+            var hidden = false
+            while (!hidden && o != sym.owner && o != sym.owner.moduleClass && !o.isPackage) {
+              hidden = o.isTerm || o.isPrivateLocal
+              o = o.owner
+            }
+            if (!hidden) escapedPrivateLocals += sym
+          }
           if (sym.isSourceMethod && sym.hasFlag(CASE))
             result = toConstructor(tree.pos, tree.tpe)
           else qual match {
@@ -793,6 +810,13 @@ abstract class RefChecks extends InfoTransform {
         case _ =>
       }
       result = super.transform(result)
+      result match {
+        case ClassDef(_, _, _, _)
+           | TypeDef(_, _, _, _) =>
+          if (result.symbol.isLocal || result.symbol.owner.isPackageClass)
+            varianceValidator.traverse(result)
+        case _ =>
+      }
       localTyper = savedLocalTyper
       result
     } catch {
