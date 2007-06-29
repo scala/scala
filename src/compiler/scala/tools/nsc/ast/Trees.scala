@@ -195,7 +195,7 @@ trait Trees {
 
 // ----- auxiliary objects and methods ------------------------------
 
-  private val duplicator = new Transformer {
+  private lazy val duplicator = new Transformer {
     override val copy = new StrictTreeCopier
   }
 

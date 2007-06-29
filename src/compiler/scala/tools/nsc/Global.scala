@@ -184,9 +184,9 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     new SourceReader(charset.newDecoder())
   }
 
-  val classPath0 = new ClassPath(false && onlyPresentation)
+  lazy val classPath0 = new ClassPath(false && onlyPresentation)
 
-  val classPath =
+  lazy val classPath =
     if (forMSIL)
       new classPath0.Build(settings.sourcepath.value, settings.outdir.value)
     else

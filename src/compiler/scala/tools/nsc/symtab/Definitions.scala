@@ -17,34 +17,47 @@ trait Definitions {
     def isDefinitionsInitialized = isInitialized
 
     // root packages and classes
-    var RootPackage: Symbol = _
-    var RootClass: Symbol = _
-    var EmptyPackage: Symbol = _
-    var EmptyPackageClass: Symbol = _
+    lazy val RootPackage: Symbol = NoSymbol.newValue(NoPosition, nme.ROOTPKG)
+          .setFlag(FINAL | MODULE | PACKAGE | JAVA)
+          .setInfo(PolyType(List(), RootClass.tpe))
+    lazy val RootClass: Symbol = {
+      NoSymbol.newClass(NoPosition, nme.ROOT.toTypeName)
+        .setFlag(FINAL | MODULE | PACKAGE | JAVA).setInfo(rootLoader)
+    }
+    lazy val EmptyPackage: Symbol = RootClass.newPackage(NoPosition, nme.EMPTY_PACKAGE_NAME).setFlag(FINAL)
+
+    lazy val EmptyPackageClass: Symbol = EmptyPackage.moduleClass
+
     var emptypackagescope: Scope = null //debug
 
-    var JavaLangPackage: Symbol = _
-    var ScalaPackage: Symbol = _
-    var ScalaPackageClass: Symbol = _
+    lazy val JavaLangPackage: Symbol = getModule(if (forMSIL) "System" else "java.lang")
+    lazy val ScalaPackage: Symbol = getModule("scala")
+    lazy val ScalaPackageClass: Symbol = ScalaPackage.tpe.symbol
 
     var AnyClass: Symbol = _
     var AnyValClass: Symbol = _
-    var ObjectClass: Symbol = _
-
     var AnyRefClass: Symbol = _
+    lazy val ObjectClass: Symbol = getClass(if (forMSIL) "System.Object" else "java.lang.Object")
+
+    lazy val anyrefparam = List(AnyRefClass.typeConstructor)
 
     var AllRefClass: Symbol = _
     var AllClass: Symbol = _
     var SingletonClass: Symbol = _
 
-    var ClassClass: Symbol = _
-    var StringClass: Symbol = _
-    var ThrowableClass: Symbol = _
-    var NullPointerExceptionClass: Symbol = _
-    var NonLocalReturnExceptionClass: Symbol = _
+    lazy val ClassClass: Symbol = getClass(if (forMSIL) "System.Type" else "java.lang.Class")
+    lazy val StringClass: Symbol = getClass(if (forMSIL) "System.String" else "java.lang.String")
+    lazy val ThrowableClass: Symbol = getClass(if (forMSIL) "System.Exception" else "java.lang.Throwable")
+    lazy val NullPointerExceptionClass: Symbol =
+      getClass(if (forMSIL) "System.NullReferenceException"
+               else "java.lang.NullPointerException")
+    lazy val NonLocalReturnExceptionClass: Symbol =
+      getClass("scala.runtime.NonLocalReturnException")
 
-    var ValueTypeClass: Symbol = _ // System.ValueType
-    var DelegateClass: Symbol = _ // System.MulticastDelegate
+    // System.ValueType
+    lazy val ValueTypeClass: Symbol = if (forMSIL) getClass("System.ValueType") else null
+    // System.MulticastDelegate
+    lazy val DelegateClass: Symbol = if (forMSIL) getClass("System.MulticastDelegate") else null
     var Delegate_scalaCallers: List[Symbol] = List()
     // Symbol -> (Symbol, Type): scalaCaller -> (scalaMethodSym, DelegateType)
     // var Delegate_scalaCallerInfos: HashMap[Symbol, (Symbol, Type)] = _
@@ -69,54 +82,56 @@ trait Definitions {
     var DoubleClass: Symbol = _
 
     // the scala reference classes
-    var ScalaObjectClass: Symbol = _
+    lazy val ScalaObjectClass: Symbol = getClass("scala.ScalaObject")
       def ScalaObjectClass_tag = getMember(ScalaObjectClass, nme.tag)
-    var AnnotationClass: Symbol = _
-    var ClassfileAnnotationClass: Symbol = _
-    var StaticAnnotationClass: Symbol = _
+    lazy val AnnotationClass: Symbol = getClass("scala.Annotation")
+    lazy val ClassfileAnnotationClass: Symbol = getClass("scala.ClassfileAnnotation")
+    lazy val StaticAnnotationClass: Symbol = getClass("scala.StaticAnnotation")
     //var ChannelClass: Symbol = _
     //  def Channel_send = getMember(ChannelClass, nme.send)
     //  def Channel_receive = getMember(ChannelClass, nme.receive)
     //var RemoteRefClass: Symbol = _
     var CodeClass: Symbol = _
     var CodeModule: Symbol = _
-    var PartialFunctionClass: Symbol = _
-    var ByNameFunctionClass: Symbol = _
-    var IterableClass: Symbol = _
+    lazy val PartialFunctionClass: Symbol = getClass("scala.PartialFunction")
+    lazy val ByNameFunctionClass: Symbol = getClass("scala.ByNameFunction")
+    lazy val IterableClass: Symbol = getClass("scala.Iterable")
       def Iterable_next = getMember(IterableClass, nme.next)
       def Iterable_hasNext = getMember(IterableClass, nme.hasNext)
-    var IteratorClass: Symbol = _
-    var SeqClass: Symbol = _
+    lazy val IteratorClass: Symbol = getClass("scala.Iterator")
+    lazy val SeqClass: Symbol = getClass("scala.Seq")
       def Seq_length = getMember(SeqClass, nme.length)
-    var ListClass: Symbol = _
+    lazy val ListClass: Symbol = getClass("scala.List")
       def List_isEmpty = getMember(ListClass, nme.isEmpty)
       def List_head = getMember(ListClass, nme.head)
       def List_tail = getMember(ListClass, nme.tail)
-    var ListModule: Symbol = _
+    lazy val ListModule: Symbol = getModule("scala.List")
       def List_apply = getMember(ListModule, nme.apply)
-    var ArrayClass: Symbol = _
+    lazy val ArrayClass: Symbol = getClass("scala.Array")
       def Array_apply = getMember(ArrayClass, nme.apply)
-    var ArrayModule: Symbol = _
-    var SerializableClass: Symbol = _
-    var PredefModule: Symbol = _
+    lazy val ArrayModule: Symbol = getModule("scala.Array")
+    lazy val SerializableClass: Symbol = if (forMSIL || forCLDC) null else getClass("java.io.Serializable")
+    lazy val PredefModule: Symbol = getModule("scala.Predef")
       def Predef_classOf = getMember(PredefModule, nme.classOf)
       def Predef_identity = getMember(PredefModule, nme.identity)
       def Predef_error    = getMember(PredefModule, nme.error)
-    var ConsoleModule: Symbol = _
-    var MatchErrorClass: Symbol = _
+    lazy val ConsoleModule: Symbol = getModule("scala.Console")
+    lazy val MatchErrorClass: Symbol = getClass("scala.MatchError")
     //var MatchErrorModule: Symbol = _
     //  def MatchError_fail = getMember(MatchErrorModule, nme.fail)
     //  def MatchError_report = getMember(MatchErrorModule, nme.report)
-    var IndexOutOfBoundsExceptionClass: Symbol = _
-    var ScalaRunTimeModule: Symbol = _
+    lazy val IndexOutOfBoundsExceptionClass: Symbol =
+        getClass(if (forMSIL) "System.IndexOutOfRangeException"
+                 else "java.lang.IndexOutOfBoundsException")
+    lazy val ScalaRunTimeModule: Symbol = getModule("scala.runtime.ScalaRunTime")
       def SeqFactory = getMember(ScalaRunTimeModule, nme.Seq);
       def checkDefinedMethod = getMember(ScalaRunTimeModule, "checkDefined")
       def isArrayMethod = getMember(ScalaRunTimeModule, "isArray")
-    var NotNullClass: Symbol = _
+    lazy val NotNullClass: Symbol = getClass("scala.NotNull")
     var RepeatedParamClass: Symbol = _
     var ByNameParamClass: Symbol = _
     //var UnsealedClass: Symbol = _
-    var UncheckedClass: Symbol = _
+    lazy val UncheckedClass: Symbol = getClass("scala.unchecked")
 
     val MaxTupleArity = 22
     val TupleClass: Array[Symbol] = new Array(MaxTupleArity + 1)
@@ -133,7 +148,7 @@ trait Definitions {
           typeRef(sym.typeConstructor.prefix, sym, elems)
         } else NoType;
 
-    var ProductRootClass: Symbol = _
+    lazy val ProductRootClass: Symbol = getClass("scala.Product")
       def Product_productArity = getMember(ProductRootClass, nme.productArity)
       def Product_productElement = getMember(ProductRootClass, nme.productElement)
       def Product_productPrefix = getMember(ProductRootClass, nme.productPrefix)
@@ -164,12 +179,10 @@ trait Definitions {
         case _       => None
       }
 
-    var OptionClass: Symbol = _
+    lazy val OptionClass: Symbol = getClass("scala.Option")
 
-    private var SomeClass_ : Symbol = null
-    def SomeClass: Symbol = { if(SomeClass_ eq null) SomeClass_ = getClass("scala.Some"); SomeClass_ }
-    private var NoneClass_ : Symbol = null
-    def NoneClass: Symbol = { if(NoneClass_ eq null) SomeClass_ = getModule("scala.None"); NoneClass_ }
+    lazy val SomeClass : Symbol = getClass("scala.Some")
+    lazy val NoneClass : Symbol = getModule("scala.None")
 
     def isOptionType(tp: Type) = tp.normalize match {
       case TypeRef(_, sym, List(_)) if sym == OptionClass => true
@@ -358,23 +371,23 @@ trait Definitions {
     var PatternWildcard: Symbol = _
 
     // boxed classes
-    var BoxedArrayClass: Symbol = _
-    var BoxedAnyArrayClass: Symbol = _
-    var BoxedObjectArrayClass: Symbol = _
-    var BoxedUnitClass: Symbol = _
-    var BoxedNumberClass: Symbol = _
-    var BoxedUnitModule: Symbol = _
+    lazy val BoxedArrayClass = getClass("scala.runtime.BoxedArray")
+    lazy val BoxedAnyArrayClass = getClass("scala.runtime.BoxedAnyArray")
+    lazy val BoxedObjectArrayClass = getClass("scala.runtime.BoxedObjectArray")
+    lazy val BoxedUnitClass = getClass("scala.runtime.BoxedUnit")
+    lazy val BoxedNumberClass = if (forMSIL)  getClass("System.IConvertible")
+                           else getClass("java.lang.Number")
+    lazy val BoxedUnitModule = getModule("scala.runtime.BoxedUnit")
       def BoxedUnit_UNIT = getMember(BoxedUnitModule, "UNIT")
-    var ObjectRefClass: Symbol = _
+    lazy val ObjectRefClass = getClass("scala.runtime.ObjectRef")
 
     // special attributes
-    var SerializableAttr: Symbol = _
-    var DeprecatedAttr: Symbol = _
-    var BeanPropertyAttr: Symbol = _
+    lazy val SerializableAttr: Symbol = getClass("scala.serializable")
+    lazy val DeprecatedAttr: Symbol = getClass("scala.deprecated")
+    lazy val BeanPropertyAttr: Symbol = if (forCLDC || forMSIL) null else getClass("scala.reflect.BeanProperty")
     var AnnotationDefaultAttr: Symbol = _
-    var NativeAttr: Symbol = _
-    var VolatileAttr: Symbol = _
-
+    lazy val NativeAttr: Symbol = getClass("scala.native")
+    lazy val VolatileAttr: Symbol = getClass("scala.volatile")
 
     def getModule(fullname: Name): Symbol = getModuleOrClass(fullname, true)
 
@@ -720,40 +733,19 @@ trait Definitions {
     def init {
       if (isInitialized) return
       isInitialized = true
-      RootClass =
-        NoSymbol.newClass(NoPosition, nme.ROOT.toTypeName)
-          .setFlag(FINAL | MODULE | PACKAGE | JAVA).setInfo(rootLoader)
-      RootPackage = NoSymbol.newValue(NoPosition, nme.ROOTPKG)
-          .setFlag(FINAL | MODULE | PACKAGE | JAVA)
-          .setInfo(PolyType(List(), RootClass.tpe))
 
-      EmptyPackage =
-        RootClass.newPackage(NoPosition, nme.EMPTY_PACKAGE_NAME).setFlag(FINAL)
-      EmptyPackageClass = EmptyPackage.moduleClass
       EmptyPackageClass.setInfo(ClassInfoType(List(), newScope, EmptyPackageClass))
-
       EmptyPackage.setInfo(EmptyPackageClass.tpe)
       RootClass.info.decls.enter(EmptyPackage)
       RootClass.info.decls.enter(RootPackage)
 
-      JavaLangPackage = getModule(if (forMSIL) "System" else "java.lang")
-      ScalaPackage = getModule("scala")
-      assert(ScalaPackage ne null, "Scala package is null")
-      ScalaPackageClass = ScalaPackage.tpe.symbol
-
       AnyClass = newClass(ScalaPackageClass, nme.Any, List()).setFlag(ABSTRACT)
-
       val anyparam = List(AnyClass.typeConstructor)
 
       AnyValClass = newClass(ScalaPackageClass, nme.AnyVal, anyparam)
         .setFlag(FINAL | SEALED)
-
-      ObjectClass = getClass(if (forMSIL) "System.Object" else "java.lang.Object")
-
       AnyRefClass =
         newAlias(ScalaPackageClass, nme.AnyRef, ObjectClass.typeConstructor)
-
-      val anyrefparam = List(AnyRefClass.typeConstructor)
 
       AllRefClass = newClass(ScalaPackageClass, nme.Null, anyrefparam)
         .setFlag(ABSTRACT | TRAIT | FINAL)
@@ -763,17 +755,6 @@ trait Definitions {
 
       SingletonClass = newClass(ScalaPackageClass, nme.Singleton, anyparam)
         .setFlag(ABSTRACT | TRAIT | FINAL)
-
-      StringClass = getClass(if (forMSIL) "System.String" else "java.lang.String")
-
-      ClassClass = getClass(if (forMSIL) "System.Type" else "java.lang.Class")
-      ThrowableClass = getClass(if (forMSIL) "System.Exception" else "java.lang.Throwable")
-      NullPointerExceptionClass = getClass(if (forMSIL) "System.NullReferenceException"
-                                           else "java.lang.NullPointerException")
-      NonLocalReturnExceptionClass = getClass("scala.runtime.NonLocalReturnException")
-
-      ValueTypeClass = if (forMSIL) getClass("System.ValueType") else null
-      DelegateClass = if (forMSIL) getClass("System.MulticastDelegate") else null
 
       UnitClass =
         newClass(ScalaPackageClass, nme.Unit, List(AnyValClass.typeConstructor))
@@ -791,45 +772,20 @@ trait Definitions {
       }
 
       // the scala reference classes
-      ScalaObjectClass = getClass("scala.ScalaObject")
-      AnnotationClass = getClass("scala.Annotation")
-      ClassfileAnnotationClass = getClass("scala.ClassfileAnnotation")
-      StaticAnnotationClass = getClass("scala.StaticAnnotation")
       //ChannelClass = getClass("scala.distributed.Channel")
       //RemoteRefClass = getClass("scala.distributed.RemoteRef")
       if (!forCLDC && ! forMSIL) {
         CodeClass = getClass("scala.reflect.Code")
         CodeModule = getModule("scala.reflect.Code")
       }
-      PartialFunctionClass = getClass("scala.PartialFunction")
-      ByNameFunctionClass = getClass("scala.ByNameFunction")
-      IterableClass = getClass("scala.Iterable")
-      IteratorClass = getClass("scala.Iterator")
-      SeqClass = getClass("scala.Seq")
-      ListClass = getClass("scala.List")
-      ListModule = getModule("scala.List")
-      ArrayClass = getClass("scala.Array")
-      ArrayModule = getModule("scala.Array")
-      SerializableClass = if (forMSIL || forCLDC) null else getClass("java.io.Serializable")
-      PredefModule = getModule("scala.Predef")
-      ConsoleModule = getModule("scala.Console")
-      MatchErrorClass = getClass("scala.MatchError")
-      //MatchErrorModule = getModule("scala.MatchError")
-      IndexOutOfBoundsExceptionClass =
-        getClass(if (forMSIL) "System.IndexOutOfRangeException"
-                 else "java.lang.IndexOutOfBoundsException")
-      ScalaRunTimeModule = getModule("scala.runtime.ScalaRunTime")
-      NotNullClass = getClass("scala.NotNull")
       RepeatedParamClass = newCovariantPolyClass(
         ScalaPackageClass, nme.REPEATED_PARAM_CLASS_NAME,
         tparam => typeRef(SeqClass.typeConstructor.prefix, SeqClass, List(tparam.typeConstructor)))
       ByNameParamClass = newCovariantPolyClass(
         ScalaPackageClass, nme.BYNAME_PARAM_CLASS_NAME, tparam => AnyClass.typeConstructor)
+
       /* <unapply> */
       //UnsealedClass = getClass("scala.unsealed") //todo: remove once 2.4 is out.
-      UncheckedClass = getClass("scala.unchecked")
-      OptionClass = getClass("scala.Option")
-      ProductRootClass = getClass("scala.Product")
 
       for (i <- 1 to MaxTupleArity) {
         TupleClass(i)   = getClass(  "scala.Tuple" + i)
@@ -842,7 +798,6 @@ trait Definitions {
         FunctionClass(i) = getClass("scala.Function" + i)
       }
       initValueClasses
-
       val booltype = BooleanClass.typeConstructor
 
       // members of class scala.Any
@@ -882,15 +837,6 @@ trait Definitions {
         StringClass, "+", anyparam, StringClass.typeConstructor) setFlag FINAL
 
       PatternWildcard = NoSymbol.newValue(NoPosition, "_").setInfo(AllClass.typeConstructor)
-
-      BoxedNumberClass = if (forCLDC) null else if (forMSIL)  getClass("System.IConvertible")
-                         else getClass("java.lang.Number")
-      BoxedArrayClass = getClass("scala.runtime.BoxedArray")
-      BoxedAnyArrayClass = getClass("scala.runtime.BoxedAnyArray")
-      BoxedObjectArrayClass = getClass("scala.runtime.BoxedObjectArray")
-      BoxedUnitClass = getClass("scala.runtime.BoxedUnit")
-      BoxedUnitModule = getModule("scala.runtime.BoxedUnit")
-      ObjectRefClass = getClass("scala.runtime.ObjectRef")
 
       if (forMSIL) {
         val intType = IntClass.typeConstructor;
@@ -941,11 +887,6 @@ trait Definitions {
       AnnotationDefaultAttr = newClass(RootClass,
                                        nme.AnnotationDefaultATTR,
                                        List(AnnotationClass.typeConstructor))
-      SerializableAttr = getClass("scala.serializable")
-      BeanPropertyAttr = if (forCLDC || forMSIL) null else getClass("scala.reflect.BeanProperty")
-      DeprecatedAttr = getClass("scala.deprecated")
-      NativeAttr = getClass("scala.native")
-      VolatileAttr = getClass("scala.volatile")
     }
 
     var nbScalaCallers: Int = 0
