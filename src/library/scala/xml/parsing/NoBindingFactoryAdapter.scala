@@ -49,6 +49,11 @@ class NoBindingFactoryAdapter extends FactoryAdapter with NodeFactory[Elem] {
   def createText( text:String ) =
     Text( text );
 
+  /** create a processing instruction
+  */
+  def createProcInstr(target: String, data: String) =
+    makeProcInstr(target, data)
+
   /** loads an XML document, returning a Symbol node.
   */
   override def loadXML( source:InputSource ):Elem =

@@ -64,6 +64,10 @@ abstract class FactoryAdapter extends DefaultHandler() {
    */
   def createText(text: String): Text // abstract
 
+  /** creates a new processing instruction node.
+  */
+  def createProcInstr(target: String, data: String): Seq[ProcInstr]
+
   //
   // ContentHandler methods
   //
@@ -206,6 +210,13 @@ abstract class FactoryAdapter extends DefaultHandler() {
       if (curTag ne null) nodeContainsText(curTag) // root level
       else false
   } // endElement(String,String,String)
+
+  /** Processing instruction.
+  */
+  override def processingInstruction(target: String, data: String) {
+    for (pi <- createProcInstr(target, data))
+      hStack.push(pi)
+  }
 
   //
   // ErrorHandler methods
