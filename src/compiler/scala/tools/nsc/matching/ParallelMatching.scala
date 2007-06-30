@@ -169,7 +169,7 @@ trait ParallelMatching  {
     def newVarCapture(pos:Position,tpe:Type)(implicit theOwner:Symbol) = {
       val v = newVar(pos,tpe)
       if(scrutinee.hasFlag(symtab.Flags.CAPTURED))
-        v.setFlag(symtab.Flags.CAPTURED)
+        v.setFlag(symtab.Flags.CAPTURED) // propagate "unchecked"
       v
     }
 
@@ -655,25 +655,20 @@ object Rep {
       case (sym,i) =>
         //Console.println("sym! "+sym+" mutable? "+sym.hasFlag(symtab.Flags.MUTABLE)+" captured? "+sym.hasFlag(symtab.Flags.CAPTURED))
         if (sym.hasFlag(symtab.Flags.MUTABLE) &&  // indicates that have not yet checked exhaustivity
-            !sym.hasFlag(symtab.Flags.CAPTURED) &&  // indicates presence of catch-all at higher level
+            !sym.hasFlag(symtab.Flags.CAPTURED) &&  // indicates @unchecked
             sym.tpe.symbol.hasFlag(symtab.Flags.SEALED)) {
 
               sym.resetFlag(symtab.Flags.MUTABLE)
-              if(row.exists { case (pats,_,_,_) => isDefaultPattern(pats(i)) })
-                sym.setFlag(symtab.Flags.CAPTURED) // mark presence of catch-all
-              else {
-                sealedCols = i::sealedCols
-                // this should enumerate all cases... however, also the superclass is taken if it is not abstract
-                def checkExCoverage(tpesym:Symbol): SymSet =
-                  if(!tpesym.hasFlag(symtab.Flags.SEALED)) emptySymbolSet else
-                    tpesym.children.flatMap { x =>
-                      val z = checkExCoverage(x)
-                                             if(x.hasFlag(symtab.Flags.ABSTRACT)) z else z + x
-                                           }
-
-                val cases = checkExCoverage(sym.tpe.symbol)
-                sealedComb = cases::sealedComb
-              }
+              sealedCols = i::sealedCols
+              // this should enumerate all cases... however, also the superclass is taken if it is not abstract
+              def candidates(tpesym: Symbol): SymSet =
+                if(!tpesym.hasFlag(symtab.Flags.SEALED)) emptySymbolSet else
+                  tpesym.children.flatMap { x =>
+                    val z = candidates(x)
+                    if(x.hasFlag(symtab.Flags.ABSTRACT)) z else z + x
+                  }
+              val cases = candidates(sym.tpe.symbol)
+              sealedComb = cases::sealedComb
             }
       }
 
@@ -695,13 +690,18 @@ object Rep {
          *  @param pats pattern vector
          *  @param comb pairs of (column index, type symbol)
          */
-        def covers(pats: List[Tree], comb:List[(Int,Symbol)]) = {
-          comb forall { case (i,sym) => val p = pats(i);
-                       val symtpe = if(sym.hasFlag(symtab.Flags.MODULE)) {
-                         singleType(sym.tpe.prefix, sym.linkedModuleOfClass) // e.g. None, Nil
-                       } else sym.tpe
-                       p.tpe.symbol == sym || symtpe <:< p.tpe }
-        }
+        def covers(pats: List[Tree], comb:List[(Int,Symbol)]) =
+          comb forall {
+            case (i,sym) =>
+              val p = pats(i);
+              isDefaultPattern(p) || {
+                val symtpe = if(sym.hasFlag(symtab.Flags.MODULE)) {
+                  singleType(sym.tpe.prefix, sym.linkedModuleOfClass) // e.g. None, Nil
+                } else sym.tpe
+                p.tpe.symbol == sym || symtpe <:< p.tpe
+              }
+          }
+
         val coversAll = allcomb forall { combination => row exists { r => covers(r._1, combination)}}
         //Console.println("all combinations covered? "+coversAll)
         if(!coversAll) {
@@ -722,6 +722,7 @@ object Rep {
           cunit.warning(temp.head.pos, sb.toString)
         }
       }
+      if(settings_debug) Console.println("init done, rep = "+this.toString)
       return this
     } // end init
 

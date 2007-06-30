@@ -62,7 +62,7 @@ class Squarer(square: Quantity, root: Quantity) extends Constraint {
 }
 
 class Eq(a: Quantity, b: Quantity) extends Constraint {
-  def newValue = Pair(a.getValue, b.getValue) match {
+  def newValue = (Pair(a.getValue, b.getValue): @unchecked) match {
     case Pair(Some(x), _      ) => b.setValue(x, this);
     case Pair(_      , Some(y)) => a.setValue(y, this);
   }
