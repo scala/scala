@@ -189,7 +189,7 @@ trait ParallelMatching  {
 
           val nrowsOther = column.tail.zip(rest.row.tail) flatMap { case (pat,(ps,subst,g,b)) => strip(pat)._2 match {
             case UnApply(Apply(fn1,_),args) if fn.symbol==fn1.symbol => Nil
-            case p                                                   => List((p::ps, subst, g, b))
+            case p                                                   => List((pat::ps, subst, g, b))
           }}
           val nrepFail = if(nrowsOther.isEmpty) None else Some(Rep(scrutinee::rest.temp, nrowsOther))
         //Console.println("active = "+column.head+" / nrepFail = "+nrepFail)
@@ -201,7 +201,7 @@ trait ParallelMatching  {
                   rootvdefs = (pvars map bindToScrutinee) ::: rootvdefs
                   (EmptyTree::ps, subst, g, b)
                 case (_, p)                                                      =>
-                  (     p   ::ps,         subst, g, b)
+                  (     pat   ::ps,         subst, g, b)
               }}
               (uacall, rootvdefs, Rep(ntemps, nrows), nrepFail)
 
@@ -214,7 +214,7 @@ trait ParallelMatching  {
                   rootvdefs = (pvars map bindToScrutinee) ::: rootvdefs
                   (args(0)   :: EmptyTree :: ps, subst, g, b)
                 case (_, p)                                                      =>
-                  (EmptyTree :: p     ::ps, subst, g, b)
+                  (EmptyTree ::  pat      ::ps, subst, g, b)
               }}
               (uacall, rootvdefs:::List( typer.typed { ValDef(vsym, Select(Ident(ures), nme.get) )}), Rep(ntemps, nrows), nrepFail)
 
