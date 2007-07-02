@@ -2754,10 +2754,12 @@ trait Typers { self: Analyzer =>
           if (tree.hasSymbol) tree.symbol = NoSymbol
         }
         //Console.println("typing "+tree+", "+context.undetparams);//DEBUG
-        def dropExistential(tp: Type) = tp match {
+        def dropExistential(tp: Type): Type = tp match {
           case ExistentialType(tparams, tpe) =>
             if (settings.debug.value) println("drop ex "+tree+" "+tp)
             tpe.subst(tparams, tparams map (x => WildcardType))
+          case TypeRef(_, sym, _)if sym.isAliasType =>
+            dropExistential(tp.normalize)
           case _ => tp
         }
         var tree1 = if (tree.tpe ne null) tree else typed1(tree, mode, dropExistential(pt))
