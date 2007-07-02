@@ -67,8 +67,26 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
       tree
     }
 
+    /** Check that a class and its companion object to not both define
+     *  a class or module with same name
+     */
+    private def checkCompanionNameClashes(sym: Symbol) =
+      if (!sym.owner.isModuleClass) {
+        val linked = sym.owner.linkedClassOfClass
+        if (linked != NoSymbol) {
+          var other = linked.info.decl(sym.name.toTypeName).filter(_.isClass)
+          if (other == NoSymbol)
+            other = linked.info.decl(sym.name.toTermName).filter(_.isModule)
+          if (other != NoSymbol)
+            unit.error(sym.pos, "name clash: "+sym.owner+" defines "+sym+
+                       "\nand its companion "+sym.owner.linkedModuleOfClass+" also defines "+
+                       other)
+        }
+      }
+
     override def transform(tree: Tree): Tree = tree match {
       case ClassDef(_, _, _, _) =>
+        checkCompanionNameClashes(tree.symbol)
         val decls = tree.symbol.info.decls
         for (val sym <- decls.toList) {
           if (sym.privateWithin.isClass && !sym.privateWithin.isModuleClass &&
@@ -78,6 +96,9 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
             decls.enter(sym)
           }
         }
+        super.transform(tree)
+      case ModuleDef(_, _, _) =>
+        checkCompanionNameClashes(tree.symbol)
         super.transform(tree)
       case Template(parents, self, body) =>
 	val ownAccDefs = new ListBuffer[Tree];

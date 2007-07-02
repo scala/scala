@@ -791,7 +791,7 @@ trait Symbols {
       else NoSymbol
 
     /** For a module class its linked class, for a plain class
-     *  the module class of itys linked module.
+     *  the module class of its linked module.
      */
     final def linkedClassOfClass: Symbol =
       if (isModuleClass) linkedClassOfModule else linkedModuleOfClass.moduleClass
