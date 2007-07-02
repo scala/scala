@@ -35,6 +35,21 @@ object LUB {
   def zzs: C[_ >: Int with java.lang.String] = z
 }
 
+object Bug1189 {
+  case class Cell[T](x: T)
+  type U = Cell[T1] forSome { type T1 }
+  def f(x: Any): U = x match { case y: Cell[_] => y }
+
+  var x: U = Cell(1)
+  println(x)
+
+  println(f(x))
+
+  x = Cell("abc")
+  println(x)
+  println(f(x))
+}
+
 object Test extends Application {
 
    def foo(x : Counter[T] { def name : String } forSome { type T }) = x match {
