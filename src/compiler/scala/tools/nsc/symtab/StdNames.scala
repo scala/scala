@@ -76,7 +76,7 @@ trait StdNames {
 
     val INTERPRETER_WRAPPER_SUFFIX = "$object"
     val INTERPRETER_LINE_PREFIX = "line"
-    val INTERPRETER_VAR_PREFIX = "unnamed"
+    val INTERPRETER_VAR_PREFIX = "res"
     val INTERPRETER_IMPORT_WRAPPER = "$iw"
 
     def LOCAL(clazz: Symbol) = newTermName(LOCALDUMMY_PREFIX_STRING + clazz.name+">")

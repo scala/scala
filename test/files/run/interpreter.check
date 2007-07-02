@@ -3,7 +3,7 @@ Type :help for more information.
 
 scala> 
 scala> 
-scala> unnamed0: Int = 7
+scala> res0: Int = 7
 
 scala>      |      |      |      | gcd: (int,int)int
 
