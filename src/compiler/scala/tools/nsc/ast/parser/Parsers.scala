@@ -383,7 +383,7 @@ trait Parsers {
         tree match {
           case Ident(name) =>
             ValDef(Modifiers(Flags.PARAM), name, TypeTree(), EmptyTree)
-          case Typed(Ident(name), tpe) =>
+          case Typed(Ident(name), tpe) if (tpe.isType) =>
             ValDef(Modifiers(Flags.PARAM), name, tpe, EmptyTree)
           case _ =>
             syntaxError(tree.pos, "not a legal formal parameter", false)
