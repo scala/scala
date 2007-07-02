@@ -619,6 +619,10 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
      *  the request binds.  */
     val accessPath = myImportsCode._3
 
+
+    /** Code to access a variable with the specified name */
+    def fullPath(vname: String) = objectName + accessPath + "." + vname
+
     /** the line of code to compute */
     def toCompute = line
 
@@ -780,8 +784,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     /** Print out lhs instead of the generated varName */
     override def resultExtractionCode(code: PrintWriter) {
       code.print(" + \"" + lhs + ": " + typeOf(compiler.encode(varName)) +
-                 " = \" + " + objectName + accessPath +
-                 "." + varName + " + \"\\n\"")
+                 " = \" + " + fullPath(varName) + " + \"\\n\"")
     }
   }
 
@@ -789,6 +792,12 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   private class ExprReq(line: String, lineName: String)
   extends Request(line, lineName) {
     override val needsVarName = true
+
+    /** Skip the printout if the expression has type Unit */
+    override def resultExtractionCode(code: PrintWriter) {
+      if (typeOf(compiler.encode(varName)) != "Unit")
+	super.resultExtractionCode(code)
+    }
   }
 
   /** A module definition */
