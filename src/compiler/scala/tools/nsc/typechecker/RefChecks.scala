@@ -179,7 +179,7 @@ abstract class RefChecks extends InfoTransform {
         } else if ((other hasFlag ABSOVERRIDE) && other.isIncompleteIn(clazz) && !(member hasFlag ABSOVERRIDE)) {
           overrideError("needs `abstract override' modifiers")
         } else if ((member hasFlag (OVERRIDE | ABSOVERRIDE)) &&
-                   (other hasFlag ACCESSOR) && other.accessed.isVariable) {
+                   (other hasFlag ACCESSOR) && other.accessed.isVariable && !other.accessed.hasFlag(LAZY)) {
           overrideError("cannot override a mutable variable")
         } else if (other.isStable && !member.isStable) { // (1.4)
           overrideError("needs to be an immutable value")

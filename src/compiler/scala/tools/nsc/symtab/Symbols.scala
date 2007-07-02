@@ -989,6 +989,7 @@ trait Symbols {
       else if (isTrait) "trait"
       else if (isClass) "class"
       else if (isType) "type"
+      else if (isTerm && hasFlag(LAZY)) "lazy value"
       else if (isVariable) "variable"
       else if (isPackage) "package"
       else if (isModule) "object"
