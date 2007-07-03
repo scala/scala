@@ -181,7 +181,16 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
           error("unsupported charset '" + settings.encoding.value + "'")
           stdCharset
       }
-    new SourceReader(charset.newDecoder())
+    try {
+      val clazz = Class.forName(settings.sourceReader.value)
+      val ccon  = clazz.getConstructor(Array[Class](classOf[java.nio.charset.CharsetDecoder]))
+      ccon.newInstance(Array[AnyRef] (charset.newDecoder())).asInstanceOf[SourceReader];
+      //new SourceReader(charset.newDecoder())
+    } catch {
+      case e =>
+        error("exception while trying to instantiate source reader \""+settings.sourceReader.value+"\" ");
+        new SourceReader(charset.newDecoder())
+    }
   }
 
   lazy val classPath0 = new ClassPath(false && onlyPresentation)

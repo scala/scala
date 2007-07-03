@@ -123,7 +123,7 @@ class Settings(error: String => Unit) {
   val nouescape     = new BooleanSetting("-nouescape", "disables handling of \\u unicode escapes")
   val showPhases    = BooleanSetting("-showphases", "Print a synopsis of compiler phases")
   val showPlugins   = BooleanSetting("-showplugins", "Print a synopsis of loaded plugins")
-
+  val sourceReader  = StringSetting ("-sourceReader", "classname", " for reading sources", "scala.tools.nsc.io.SourceReader")
   val inline        = BooleanSetting("-Xinline", "Perform inlining when possible")
 
   /** non-standard options */
