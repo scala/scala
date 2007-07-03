@@ -205,12 +205,22 @@ abstract class TreeInfo {
 
   /** Is this pattern node a catch-all or type-test pattern? */
   def isCatchCase(cdef: CaseDef) = cdef match {
-    case CaseDef(Typed(Ident(nme.WILDCARD), tpt), EmptyTree, _) => isSimple(tpt.tpe)
-    case CaseDef(Bind(_, Typed(Ident(nme.WILDCARD), tpt)), EmptyTree, _) => isSimple(tpt.tpe)
-    case _ => isDefaultCase(cdef)
+    case CaseDef(Typed(Ident(nme.WILDCARD), tpt), EmptyTree, _) =>
+      isSimpleThrowable(tpt.tpe)
+    case CaseDef(Bind(_, Typed(Ident(nme.WILDCARD), tpt)), EmptyTree, _) =>
+      isSimpleThrowable(tpt.tpe)
+    case _ =>
+      isDefaultCase(cdef)
   }
 
-  private def isSimple(tp: Type): boolean = true
+  private def isSimpleThrowable(tp: Type): boolean = tp match {
+    case TypeRef(pre, sym, args) =>
+      (pre == NoPrefix || pre.widen.symbol.isStatic) &&
+      (sym isNonBottomSubClass definitions.ThrowableClass)
+    case _ =>
+      false
+  }
+
   /* If we have run-time types, and these are used for pattern matching,
      we should replace this  by something like:
 

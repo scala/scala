@@ -1185,6 +1185,7 @@ trait Types {
     private var closureDepthCache: Int = _
 
     override def isStable: Boolean = {
+      sym == SingletonClass ||
       sym.isAbstractType && (sym.info.bounds.hi.symbol isSubClass SingletonClass)
     }
 
@@ -2233,6 +2234,18 @@ A type's symbol should never be inspected directly.
 
   class SubstSuperMap(from: Type, to: Type) extends TypeMap {
     def apply(tp: Type): Type = if (tp eq from) to else mapOver(tp)
+  }
+
+  class SubstWildcardMap(from: List[Symbol]) extends TypeMap {
+    def apply(tp: Type): Type = try {
+      tp match {
+        case TypeRef(_, sym, _) if (from contains sym) => WildcardType
+        case _ => mapOver(tp)
+      }
+    } catch {
+      case ex: MalformedType =>
+        WildcardType
+    }
   }
 
   class InstantiateDeBruijnMap(actuals: List[Type]) extends TypeMap {

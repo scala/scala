@@ -660,7 +660,7 @@ trait Parsers {
     */
     def requiresTypeOpt(): Tree =
       if (inToken == REQUIRES) {
-        warning("`requires T' has been deprecated; use `{ self: T => ...'  instead")
+        in.deprecationWarning(in.pos, "`requires T' has been deprecated; use `{ self: T => ...'  instead")
         inNextToken; placeholderTypeBoundary(annotType(false))
       } else TypeTree()
 
@@ -671,8 +671,12 @@ trait Parsers {
       val ts = new ListBuffer[Tree] + argType(isPattern)
       while (inToken == COMMA) {
         inNextToken
-        if (inToken == RPAREN) return List(makeTupleType(ts.toList, false))
-        ts += argType(isPattern)
+        if (inToken == RPAREN) {
+          in.deprecationWarning(in.pos, "Trailing commas have been deprecated")
+          return ts.toList
+        } else {
+          ts += argType(isPattern)
+        }
       }
       ts.toList
     }
@@ -897,8 +901,12 @@ trait Parsers {
       val ts = new ListBuffer[Tree] + expr()
       while (inToken == COMMA) {
         inNextToken;
-        if (inToken == RPAREN) return List(makeTupleTerm(ts.toList, false))
-        ts += expr()
+        if (inToken == RPAREN) {
+          in.deprecationWarning(in.pos, "Trailing commas have been deprecated")
+          return ts.toList
+        } else {
+          ts += expr()
+        }
       }
       ts.toList
     }
@@ -1009,7 +1017,7 @@ trait Parsers {
             Throw(expr())
           }
         case DOT =>
-          warning("`.f' has been deprecated; use `_.f'  instead")
+          in.deprecationWarning(in.pos, "`.f' has been deprecated; use `_.f'  instead")
           atPos(inSkipToken) {
             if (isIdent) {
               makeDotClosure(stripParens(simpleExpr()))
@@ -1120,7 +1128,7 @@ trait Parsers {
         val name = unaryOp()
         atPos(pos) { Select(stripParens(simpleExpr()), name) }
       } else if (isIdent && inName == AMP) {
-        warning("`&f' has been deprecated; use `f _' instead")
+        in.deprecationWarning(in.pos, "`&f' has been deprecated; use `f _' instead")
         val pos = inCurrentPos
         val name = ident()
         atPos(pos) { Typed(stripParens(simpleExpr()), Function(List(), EmptyTree)) }
@@ -1315,8 +1323,12 @@ trait Parsers {
       val ts = new ListBuffer[Tree] + pattern(seqOK)
       while (inToken == COMMA) {
         inNextToken;
-        if (inToken == RPAREN) return List(makeTupleTerm(ts.toList, false))
-        ts += pattern(seqOK)
+        if (inToken == RPAREN) {
+          in.deprecationWarning(in.pos, "Trailing commas have been deprecated")
+          return ts.toList
+        } else {
+          ts += pattern(seqOK)
+        }
       }
       ts.toList
     }
@@ -2035,7 +2047,7 @@ trait Parsers {
      *                    |  ConstrBlock
      */
     def constrExpr(vparamss: List[List[ValDef]]): Tree =
-      if (inToken == LBRACE) constrBlock(vparamss) else Block(List(selfInvocation(vparamss)), Literal())
+      if (inToken == LBRACE) constrBlock(vparamss) else Block(List(selfInvocation(vparamss)), Literal(()))
 
     /** SelfInvocation  ::= this ArgumentExprs {ArgumentExprs}
      */

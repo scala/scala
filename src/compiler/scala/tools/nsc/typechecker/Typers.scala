@@ -2757,7 +2757,7 @@ trait Typers { self: Analyzer =>
         def dropExistential(tp: Type): Type = tp match {
           case ExistentialType(tparams, tpe) =>
             if (settings.debug.value) println("drop ex "+tree+" "+tp)
-            tpe.subst(tparams, tparams map (x => WildcardType))
+            new SubstWildcardMap(tparams).apply(tp)
           case TypeRef(_, sym, _)if sym.isAliasType =>
             dropExistential(tp.normalize)
           case _ => tp
