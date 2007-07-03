@@ -4,6 +4,15 @@ import java.io.{File, FileInputStream, InputStream, IOException}
 import java.net.{ContentHandler, ContentHandlerFactory, URL, URLConnection}
 import java.nio.charset.CharsetDecoder
 
+/**
+ *  This class downloads the "code" field of a bug report of aladdin's bugtracking module
+ *  and compiles it.
+ *
+ *  For instance, you can call the compiler with an argument "bug1023.scala"
+ *  This file must exists locally, and contain a bug identifier, like "#1023".
+ *  The AladdinReader will establish an HTTP connection and download bug #1023 - the file
+ *  contents will be replaced by what is found in the bugtracking database.
+ */
 class AladdinReader(decoder: CharsetDecoder) extends SourceReader(decoder) {
 
   final val ALADDIN_URL = "http://scala-webapps.epfl.ch/bugtracking/bugs/json/"
