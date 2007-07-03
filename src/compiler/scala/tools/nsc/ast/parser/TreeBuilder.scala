@@ -420,7 +420,7 @@ abstract class TreeBuilder {
           List(ValDef(mods, vname, tpt, matchExpr))
         case _ =>
           val tmp = freshName(pat1.pos)
-          val firstDef = ValDef(Modifiers(PRIVATE | LOCAL | SYNTHETIC), tmp, TypeTree(), matchExpr)
+          val firstDef = ValDef(Modifiers(PRIVATE | LOCAL | SYNTHETIC | (mods.flags & LAZY)), tmp, TypeTree(), matchExpr)
           var cnt = 0
           val restDefs = for (val (vname, tpt) <- vars) yield {
             cnt = cnt + 1

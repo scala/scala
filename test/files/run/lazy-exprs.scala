@@ -68,12 +68,23 @@ object TestExpressions {
     }
   }
 
+  lazy val (x, y) = ({print("x"); "x"}, {print("y"); "y"})
+  def testPatLazyVal {
+    println("lazy val with patterns:")
+    print("x and y: ")
+    println("(" + x + ", " + y + ")")
+    lazy val (x1, y1) = ({print("x1"); "x1"}, {print("y1"); "y1"})
+    print("x1 and y1: ")
+    println("(" + x1 + ", " + y1 + ")")
+  }
+
   def test {
     patmatchScrut
     patmatchCase
     patmatchPat
     ifcond
     testPatMatchField
+    testPatLazyVal
   }
 }
 
