@@ -35,12 +35,26 @@ class AladdinReader(decoder: CharsetDecoder) extends SourceReader(decoder) {
       }
       while(src.next != ':') {}
       while(src.next != '\"') {}
-      val sb = new StringBuilder()
+      val sb = new collection.mutable.ArrayBuffer[Char]()
       var c = ' '
-      while(c != '\"' && src.hasNext) { /*Console.print("["+c+"]"); */sb.append(c); c = src.next;}
+      state = 0
+      while(c != '\"' && src.hasNext) { (state,c) match {
+        case (0,'\\') => state = 1; case (0, _) => sb+=(c);
+        case (1, 'u') => state = 2; case (1, c) => sb+='\\'; sb+=c; state = 0
+        case (2, '0') => state = 3; case (2, c) => sb+='\\'; sb+='u'; sb+=c; state = 0
+        case (3, '0') => state = 4; case (3, c) => sb+='\\'; sb+='u'; sb+='0'; sb+=(c); state = 0
+        case (4, '2') => state = 5;
+        case (5, '2') => sb+='"'; state = 0
+        case (4, '5') => state = 6;
+        case (6, 'c') => sb+='\\'; state = 0
+        case (4,  c)  => sb+='\\'; sb+='u'; sb+='0'; sb+='0';  sb+=(c); state = 0
+        case (5,  c)  => sb+='\\'; sb+='u'; sb+='0'; sb+='0'; sb+='2'; sb+=(c); state = 0
+        case (6,  c)  => sb+='\\'; sb+='u'; sb+='0'; sb+='0'; sb+='5'; sb+=(c); state = 0
+        /*Console.print("["+c+"]"); */
+         }; c = src.next; }
       is.close
       //Console.println("!!"+sb.toString+"!!") // DEBUG if you want to see what you are downloading
-      sb.toString.replace("\\u0022","\"").replace("\\uu005c","\\").toCharArray
+      sb.toArray
     }
   }
 
