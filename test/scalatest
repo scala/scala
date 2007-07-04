@@ -626,7 +626,7 @@ SCALA_COMP="$LATEST_COMP";
 [ -x "$JAVACMD" ] || JAVACMD=java;
 [ -n "$JAVA_OPTS" ] || JAVA_OPTS="-Xmx256M -Xms16M";
 case `$JAVACMD \-version 2>&1 | xargs` in
-    *1.5.*IBM* ) JAVA5="true"; IBM_J9="true"; JAVA_OPTS="$JAVA_OPTS -Xss512K";;
+    *1.5.*IBM* ) JAVA5="true"; IBM_J9="true"; JAVA_OPTS="$JAVA_OPTS -Xss1M";;
     *1.[5-7].* ) JAVA5="true";;
     *1.4.*GNU* ) JAVA5="false"; GIJ="true"; JAVA_OPTS="--mx256m --ms16m";;
              * ) JAVA5="false";;
