@@ -1083,7 +1083,7 @@ sealed abstract class List[+A] extends Seq[A] {
       these = these.tail
     }
     while (!those.isEmpty) {
-      (thisElem, those.head)
+      b += (thisElem, those.head)
       those = those.tail
     }
     b.toList
