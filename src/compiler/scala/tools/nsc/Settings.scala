@@ -52,10 +52,10 @@ class Settings(error: String => Unit) {
     val scalaHome = Properties.scalaHome
     if (scalaHome ne null) {
       val guessJar = new File(new File(new File(scalaHome), "lib"), "scala-library.jar")
-      if (guessJar.exists()) guessJar.getPath()
+      if (guessJar.isFile()) guessJar.getPath()
       else {
         val guessDir = new File(new File(new File(scalaHome), "lib"), "library")
-        if (guessDir.exists()) guessDir.getPath() else null
+        if (guessDir.isDirectory()) guessDir.getPath() else null
       }
     } else null
   }
@@ -64,7 +64,7 @@ class Settings(error: String => Unit) {
     val scalaHome = Properties.scalaHome
     if (scalaHome ne null) {
       val guess = new File(new File(scalaHome), "lib")
-      if (guess.exists()) guess.getPath else null
+      if (guess.isDirectory()) guess.getPath else null
     } else null
   }
 
@@ -93,7 +93,6 @@ class Settings(error: String => Unit) {
   val script        = new StringSetting("-script", "object", "compile as a script, wrapping the code into object.main()", "") { override def hiddenToIDE = true }
   val encoding      = new StringSetting ("-encoding", "encoding", "Specify character encoding used by source files", encodingDefault) { override def hiddenToIDE = false }
   val target        = ChoiceSetting ("-target", "Specify which backend to use", List("jvm-1.5", "jvm-1.4", "msil", "cldc"), "jvm-1.4")
-  val checknull     = BooleanSetting("-checknull", "Emit warning on selection of nullable reference")
   val migrate       = BooleanSetting("-migrate", "Assist in migrating from Scala version 1.0")
   val assemname     = StringSetting ("-o", "file", "Name of the output assembly (only relevant with -target:msil)", "").dependsOn(target, "msil")
   val assemrefs     = StringSetting ("-r", "path", "List of assemblies referenced by the program (only relevant with -target:msil)", ".").dependsOn(target, "msil")
@@ -129,6 +128,7 @@ class Settings(error: String => Unit) {
   /** non-standard options */
   val Xhelp         = new BooleanSetting("-X", "Print a synopsis of non-standard options") { override def hiddenToIDE = true }
   val XO            = BooleanSetting("-XO", "Optimize. implies -Xinline, -Xcloselim and -Xdce")
+  val Xchecknull    = BooleanSetting("-Xchecknull", "Emit warning on selection of nullable reference")
   val Xcloselim     = BooleanSetting("-Xcloselim", "Perform closure elimination")
   val Xcodebase     = StringSetting ("-Xcodebase", "codebase", "Specify the URL containing the Scala libraries", "")
   val Xdce          = BooleanSetting("-Xdce", "Perform dead code elimination")

@@ -159,7 +159,7 @@ abstract class TreeGen {
   def mkCheckInit(tree: Tree): Tree = {
     var tpe = tree.tpe
     if (tpe == null && tree.hasSymbol) tpe = tree.symbol.tpe
-    if (!global.phase.erasedTypes && settings.checknull.value &&
+    if (!global.phase.erasedTypes && settings.Xchecknull.value &&
         tpe <:< NotNullClass.tpe && !tpe.isNotNull)
       mkRuntimeCall(nme.checkInitialized, List(tree))
     else

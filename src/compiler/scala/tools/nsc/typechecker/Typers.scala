@@ -52,12 +52,12 @@ trait Typers { self: Analyzer =>
       super.traverse(tree)
     }
   }
-  def makeNewScope(txt : Context, tree : Tree, sym : Symbol) =
+  def makeNewScope(txt: Context, tree: Tree, sym: Symbol) =
     txt.makeNewScope(tree, sym)
 
-  def newDecls(tree : CompoundTypeTree) = newScope
-  def newDecls(tree : Template, clazz : Symbol) = newScope
-  def newTemplateScope(impl : Template, clazz : Symbol) = newScope
+  def newDecls(tree: CompoundTypeTree) = newScope
+  def newDecls(tree: Template, clazz: Symbol) = newScope
+  def newTemplateScope(impl: Template, clazz: Symbol) = newScope
 
   // Mode constants
 
@@ -2289,7 +2289,7 @@ trait Typers { self: Analyzer =>
           }
           val result = stabilize(checkAccessible(tree1, sym, qual.tpe, qual), qual.tpe, mode, pt)
           if (sym.isCaseFactory && !phase.erasedTypes) checkStable(qual)
-          if (!global.phase.erasedTypes && settings.checknull.value &&
+          if (!global.phase.erasedTypes && settings.Xchecknull.value &&
               !sym.isConstructor &&
               !(qual.tpe <:< NotNullClass.tpe) && !qual.tpe.isNotNull)
             unit.warning(tree.pos, "potential null pointer dereference: "+tree)
