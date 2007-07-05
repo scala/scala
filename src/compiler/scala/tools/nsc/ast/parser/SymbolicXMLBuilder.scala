@@ -54,6 +54,8 @@ abstract class SymbolicXMLBuilder(make: TreeBuilder, p: Parsers # Parser, preser
   def _Text                = global.newTypeName("Text")
   def __Text               = global.newTermName("Text")
   def _EntityRef           = global.newTypeName("EntityRef")
+
+  final def _buf = global.newTermName("$buf")
   final def _md = global.newTermName("$md")
   final def _scope = global.newTermName("$scope")
   final def _tmpscope = global.newTermName("$tmpscope")
@@ -212,18 +214,25 @@ abstract class SymbolicXMLBuilder(make: TreeBuilder, p: Parsers # Parser, preser
     case _ => false
   }
 
+  // could optimize if args.length == 0, args.length == 1 AND args(0) is <: Node.
   def makeXMLseq(pos: Position, args:mutable.Buffer[Tree] ) = {
-    var _buffer = New( _scala_xml_NodeBuffer, List(Nil))
+    //var _buffer = New( _scala_xml_NodeBuffer, List(Nil))
+
+    var as:List[Tree] = ValDef(NoMods, _buf, TypeTree(), New( _scala_xml_NodeBuffer, List(Nil)))::Nil
     val it = args.elements
     while (it.hasNext) {
       val t = it.next
       if (!isEmptyText(t)) {
-        _buffer = Apply(Select(_buffer, _plus), List(t))
+        //_buffer = Apply(Select(_buffer, _plus), List(t))
+        as = Apply(Select(Ident(_buf), _plus), List(t))::as
       }
     }
-    atPos(pos) { Select(_buffer, _toList) }
-  }
+    //atPos(pos) { Select(_buffer, _toList) }
 
+    atPos(pos) {
+      Block(as.reverse, Ident(_buf))
+    }
+  }
   /** returns Some(prefix) if pre:name, None otherwise */
   def getPrefix(name: String): Option[String] = {
     val i = name.indexOf(':')
