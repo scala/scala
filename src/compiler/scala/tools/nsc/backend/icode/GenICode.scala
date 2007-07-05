@@ -485,20 +485,40 @@ abstract class GenICode extends SubComponent  {
 
         case Try(block, catches, finalizer) =>
           val kind = toTypeKind(tree.tpe)
+          var tmp: Local = null
+          val guardResult = kind != UNIT && mayCleanStack(finalizer)
+          if (guardResult) {
+            tmp = ctx.method.addLocal(
+                new Local(ctx.method.symbol.newVariable(tree.pos, unit.fresh.newName("tmp")).setInfo(tree.tpe).setFlag(Flags.SYNTHETIC),
+                          kind, false))
+          }
+
           var handlers = for (CaseDef(pat, _, body) <- catches.reverse)
             yield pat match {
               case Typed(Ident(nme.WILDCARD), tpt) => (tpt.tpe.symbol, kind, {
                 ctx: Context =>
                   ctx.bb.emit(DROP(REFERENCE(tpt.tpe.symbol)));
                   val ctx1 = genLoad(body, ctx, kind);
-                  genLoad(finalizer, ctx1, UNIT);
+                  if (guardResult) {
+                    ctx1.bb.emit(STORE_LOCAL(tmp))
+                    val ctx2 = genLoad(finalizer, ctx1, UNIT)
+                    ctx2.bb.emit(LOAD_LOCAL(tmp))
+                    ctx2
+                  } else
+                    genLoad(finalizer, ctx1, UNIT);
                 })
 
               case Ident(nme.WILDCARD) => (definitions.ThrowableClass, kind, {
                 ctx: Context =>
                   ctx.bb.emit(DROP(REFERENCE(definitions.ThrowableClass)))
                   val ctx1 = genLoad(body, ctx, kind)
-                  genLoad(finalizer, ctx1, UNIT)
+                  if (guardResult) {
+                    ctx1.bb.emit(STORE_LOCAL(tmp))
+                    val ctx2 = genLoad(finalizer, ctx1, UNIT)
+                    ctx2.bb.emit(LOAD_LOCAL(tmp))
+                    ctx2
+                  } else
+                    genLoad(finalizer, ctx1, UNIT)
                 })
 
               case Bind(name, _) =>
@@ -510,7 +530,13 @@ abstract class GenICode extends SubComponent  {
                       ctx.bb.emit(LOAD_EXCEPTION(), pat.pos)
                     ctx.bb.emit(STORE_LOCAL(exception), pat.pos);
                     val ctx1 = genLoad(body, ctx, kind);
-                    genLoad(finalizer, ctx1, UNIT);
+                    if (guardResult) {
+                      ctx1.bb.emit(STORE_LOCAL(tmp))
+                      val ctx2 = genLoad(finalizer, ctx1, UNIT)
+                      ctx2.bb.emit(LOAD_LOCAL(tmp))
+                      ctx2
+                    } else
+                      genLoad(finalizer, ctx1, UNIT);
                 })
             }
 
@@ -539,12 +565,10 @@ abstract class GenICode extends SubComponent  {
             bodyCtx => {
               generatedType = kind; //toTypeKind(block.tpe);
               val ctx1 = genLoad(block, bodyCtx, generatedType);
-              if (kind != UNIT && mayCleanStack(finalizer)) {
+              if (guardResult) {
                 val tmp = ctx1.method.addLocal(
                     new Local(ctx.method.symbol.newVariable(tree.pos, unit.fresh.newName("tmp")).setInfo(tree.tpe).setFlag(Flags.SYNTHETIC),
                               kind, false))
-                if (settings.Xdce.value)
-                  ctx.bb.emit(LOAD_EXCEPTION())
                 ctx1.bb.emit(STORE_LOCAL(tmp))
                 val ctx2 = genLoad(duppedFinalizer, ctx1, UNIT)
                 ctx2.bb.emit(LOAD_LOCAL(tmp))
