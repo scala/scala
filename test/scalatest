@@ -269,7 +269,7 @@ test_run_jvm() {
     libpath=`get_os_pathlist "$dstdir"` &&
     scala_javaopts=`echo -Djava.library.path=$libpath` &&
     scala_lib=`get_os_filename "$SCALA_LIB"` &&
-    classpath=`get_os_pathlist "$os_dstbase".obj:$SCALA_COMP:$CLASSPATH` &&
+    classpath=`get_os_pathlist "$os_dstbase".obj:$CLASSPATH` &&
     env JAVA_OPTS="$scala_javaopts" $SCALA -Djavacmd="$JAVACMD" \
         -Dscalatest.output=$os_dstbase.obj -Dscalatest.lib=$scala_lib \
         -classpath $classpath:$JVM_EXT_CLASSPATH Test "jvm" &&
@@ -599,6 +599,7 @@ FILES_SHOOTOUT="";
 QUICK="$PREFIX/build/quick/bin"
 QUICK_LIB="$PREFIX/build/quick/lib/library"
 QUICK_COMP="$PREFIX/build/quick/lib/compiler"
+QUICK_ACT="$PREFIX/build/quick/lib/actors"
 
 JVM_EXT_CLASSPATH=`get_ext_classpath $TESTROOT/files/lib`
 
@@ -610,6 +611,7 @@ elif [ -d "$PREFIX/build" ]; then
     LATEST="$QUICK";
     LATEST_LIB=$QUICK_LIB
     LATEST_COMP=$QUICK_COMP
+    LATEST_ACT=$QUICK_ACT
 elif [ -d "$PREFIX/bin" ]; then
     LATEST="$PREFIX/bin";
     LATEST_LIB="$PREFIX/lib/scala-library.jar"
@@ -622,11 +624,13 @@ BIN_DIR="$LATEST/"  # BIN_DIR should have a trailing / when needed, so that
 
 SCALA_LIB="$LATEST_LIB";
 SCALA_COMP="$LATEST_COMP";
+SCALA_ACT="$LATEST_ACT";
 
 [ -x "$JAVACMD" ] || JAVACMD=java;
 [ -n "$JAVA_OPTS" ] || JAVA_OPTS="-Xmx256M -Xms16M";
 case `$JAVACMD \-version 2>&1 | xargs` in
-    *1.5.*IBM* ) JAVA5="true"; IBM_J9="true"; JAVA_OPTS="$JAVA_OPTS -Xss1M";;
+    *1.5.*IBM* ) JAVA5="true"; IBM_J9="true"; JAVA_OPTS="$JAVA_OPTS -Xss2M";;
+    *1.6.*IBM* ) JAVA5="true"; IBM_J9="true";;
     *1.[5-7].* ) JAVA5="true";;
     *1.4.*GNU* ) JAVA5="false"; GIJ="true"; JAVA_OPTS="--mx256m --ms16m";;
              * ) JAVA5="false";;
@@ -653,7 +657,8 @@ while [ $# -gt 0 ]; do
         --script     ) TEST_TYPE="script"; shift 1;;
         --ant        ) TEST_TYPE="ant"; shift 1;;
         --shootout   ) TEST_TYPE="shootout"; shift 1;;
-        --quick      ) BIN_DIR="$QUICK/"; SCALA_LIB=$QUICK_LIB; SCALA_COMP=$QUICK_COMP; shift 1;;
+        --quick      ) BIN_DIR="$QUICK/"; SCALA_LIB=$QUICK_LIB;
+                       SCALA_COMP=$QUICK_COMP; SCALA_ACT=$QUICK_ACT; shift 1;;
         --installed  ) BIN_DIR=""; shift 1;;
         --no-run     ) NORUN="true"; shift 1;;
         --show-log   ) SHOWLOG="true"; shift 1;;
@@ -738,6 +743,8 @@ if [ ! -x "$SCALAC_CMD" ]; then
 fi;
 SCALAC="$SCALAC_CMD $SCALAC_OPTS";
 SCALAP="scalap";
+
+CLASSPATH=$SCALA_COMP:$SCALA_ACT
 
 if [ -z "$ANT" ]; then
     if [ -d "$ANT_HOME" ]; then
