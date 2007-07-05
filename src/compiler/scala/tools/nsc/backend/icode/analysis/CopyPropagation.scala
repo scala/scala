@@ -20,7 +20,7 @@ abstract class CopyPropagation {
   import global._
   import icodes._
 
-  /** Locations can be local variables. */
+  /** Locations can be local variables and fields. */
   abstract sealed class Location;
   case class LocalVar(l: Local) extends Location
   case class Field(r: Record, sym: Symbol) extends Location
@@ -34,6 +34,7 @@ abstract class CopyPropagation {
     override def isRecord = true
   }
   case class Deref(l: Location) extends Value;
+  case class Boxed(l: Location) extends Value;
   case object Unknown extends Value
   object AllRecords extends Record(NoSymbol, new HashMap[Symbol, Value])
 
@@ -58,7 +59,10 @@ abstract class CopyPropagation {
           }
         }
 
-      /* Return the binding for the given local (another local) */
+      /* Return an alias for the given local. It returns the last
+       * local in the chain of aliased locals. Cycles are not allowed
+       * to exist (by construction).
+       */
       def getAlias(l: Local): Local = {
         var target = l
         var stop = false
@@ -72,7 +76,7 @@ abstract class CopyPropagation {
         target
       }
 
-      /* Return the binding for the given local. */
+      /* Return the value bound to the given local. */
       def getBinding(l: Local): Value = {
         var target = l
         var stop = false
@@ -88,8 +92,6 @@ abstract class CopyPropagation {
         }
         value
       }
-
-
 
       /* Return the binding for the given field of the given record */
       def getBinding(r: Record, f: Symbol): Value = {
@@ -309,10 +311,20 @@ abstract class CopyPropagation {
         }
 
         case BOX(tpe) =>
-          out.stack = Unknown :: out.stack.drop(1)
+          val top = out.stack.head
+          top match {
+            case Deref(loc) =>
+              out.stack = Boxed(loc) :: out.stack.tail
+            case _ =>
+              out.stack = Unknown :: out.stack.drop(1)
+          }
 
         case UNBOX(tpe) =>
-          out.stack = Unknown :: out.stack.drop(1)
+          val top = out.stack.head
+          top match {
+            case Boxed(loc) => Deref(loc) :: out.stack.tail
+            case _          => out.stack = Unknown :: out.stack.drop(1)
+          }
 
         case NEW(kind) =>
           val v1 =
@@ -390,6 +402,7 @@ abstract class CopyPropagation {
         r.bindings retain { (loc, value) =>
           value match {
             case Deref(loc1) if (loc1 == target) => false
+            case Boxed(loc1) if (loc1 == target)  => false
             case _ => true
           }
         }
@@ -399,12 +412,14 @@ abstract class CopyPropagation {
       s.stack = s.stack map { v => v match {
         case Record(_, bindings) =>
           cleanRecord(v.asInstanceOf[Record])
+        case Boxed(loc1) if (loc1 == target) => Unknown
         case _ => v
       }}
 
       s.bindings retain { (loc, value) =>
         (value match {
           case Deref(loc1) if (loc1 == target) => false
+          case Boxed(loc1) if (loc1 == target) => false
           case Record(_, _) =>
             cleanRecord(value.asInstanceOf[Record]);
             true
@@ -450,6 +465,7 @@ abstract class CopyPropagation {
       state.bindings retain {(loc, value) =>
         value match {
           case Deref(Field(_, _)) => false
+          case Boxed(Field(_, _)) => false
           case _ => true
         }
       }

@@ -321,7 +321,7 @@ abstract class Inliners extends SubComponent {
                       classes(receiver).lookupMethod(concreteMethod) match {
                         case Some(inc) =>
                           if (inc.symbol != m.symbol
-                              && (inlinedMethods(inc.symbol) < 2)
+                              //&& (inlinedMethods(inc.symbol) < 2)
                               && (inc.code ne null)
                               && shouldInline(m, inc)
                               && (inc.code.blocks.length <= MAX_INLINE_SIZE)
@@ -341,7 +341,8 @@ abstract class Inliners extends SubComponent {
                                   + "\n\t(inlinedMethods(inc.symbol) < 2): " + (inlinedMethods(inc.symbol) < 2)
                                   + "\n\tinc.code ne null: " + (inc.code ne null)
                                   + "\n\tinc.code.blocks.length < MAX_INLINE_SIZE: " + (inc.code.blocks.length < MAX_INLINE_SIZE) + "(" + inc.code.blocks.length + ")"
-                                  + "\n\tisSafeToInline(m, inc, info._2): " + isSafeToInline(m, inc, info._2));
+                                  + "\n\tisSafeToInline(m, inc, info._2): " + isSafeToInline(m, inc, info._2)
+                                  + "\n\tshouldInline heuristics: " + shouldInline(m, inc));
                           }
                         case None =>
                           ();
@@ -453,15 +454,22 @@ abstract class Inliners extends SubComponent {
    */
   def shouldInline(caller: IMethod, callee: IMethod): Boolean = {
      if (caller.symbol.hasFlag(Flags.BRIDGE)) return false;
-
+     if (settings.debug.value)
+       log("shouldInline: " + caller + " with " + callee)
      var score = 0
      if (callee.code.blocks.length <= SMALL_METHOD_SIZE) score = score + 1
      if (caller.code.blocks.length <= SMALL_METHOD_SIZE
-         && (caller.code.blocks.length + callee.code.blocks.length) < SMALL_METHOD_SIZE)
+         && ((caller.code.blocks.length + callee.code.blocks.length) > SMALL_METHOD_SIZE)) {
        score = score - 1
+       if (settings.debug.value)
+         log("shouldInline: score decreased to " + score + " because small " + caller + " would become large")
+     }
 
-     if (callee.symbol.tpe.paramTypes.exists(definitions.isFunctionType))
+     if (callee.symbol.tpe.paramTypes.exists(t => definitions.FunctionClass.contains(t.symbol))) {
+       if (settings.debug.value)
+         log("increased score to: " + score)
        score = score + 2
+     }
      if (isClosureClass(callee.symbol.owner))
        score = score + 2
 

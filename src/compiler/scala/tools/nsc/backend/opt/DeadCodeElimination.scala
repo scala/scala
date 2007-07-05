@@ -36,12 +36,14 @@ abstract class DeadCodeElimination extends SubComponent {
         dce.analyzeClass(c)
   }
 
+  /** closures that are instantiated at least once, after dead code elimination */
+  val liveClosures: mutable.Set[Symbol] = new mutable.HashSet()
+
   /** Remove dead code.
    */
   class DeadCode {
 
     def analyzeClass(cls: IClass): Unit = {
-      liveClosures.clear
       cls.methods.foreach { m =>
         this.method = m
 //        analyzeMethod(m);
@@ -62,9 +64,6 @@ abstract class DeadCodeElimination extends SubComponent {
 
     /** what local variables have been accessed at least once? */
     var accessedLocals: List[Local] = Nil
-
-    /** closures that are instantiated at least once, after dead code elimination */
-    val liveClosures: mutable.Set[Symbol] = new mutable.HashSet()
 
     /** the current method. */
     var method: IMethod = _
@@ -134,9 +133,9 @@ abstract class DeadCodeElimination extends SubComponent {
             case nw @ NEW(REFERENCE(sym)) =>
               assert(nw.init ne null, "null new.init at: " + bb + ": " + idx + "(" + instr + ")")
               worklist += findInstruction(bb, nw.init)
-              if (inliner.isClosureClass(sym))
+              if (inliner.isClosureClass(sym)) {
                 liveClosures += sym
-
+              }
             case LOAD_EXCEPTION() =>
               ()
 
@@ -176,9 +175,6 @@ abstract class DeadCodeElimination extends SubComponent {
             i match {
               case NEW(REFERENCE(sym)) =>
                 log("skipped object creation: " + sym + "inside " + m)
-                if (inliner.isClosureClass(sym) && !liveClosures(sym)) {
-                  icodes.classes -= sym
-                }
               case _ => ()
             }
             if (settings.debug.value) log("Skipped: bb_" + bb + ": " + idx + "( " + i + ")")

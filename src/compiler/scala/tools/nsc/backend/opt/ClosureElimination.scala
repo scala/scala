@@ -67,6 +67,9 @@ abstract class ClosureElimination extends SubComponent {
         case (LOAD_LOCAL(_), DROP(_)) =>
           Some(Nil)
 
+        case (BOX(t1), UNBOX(t2)) if (t1 == t2) =>
+          Some(Nil)
+
         case (LOAD_FIELD(sym, isStatic), DROP(_)) =>
         	if (isStatic)
             Some(Nil)
@@ -141,6 +144,21 @@ abstract class ClosureElimination extends SubComponent {
                   }
 
                 case _ => ();
+              }
+
+            case UNBOX(_) =>
+              info.stack match {
+                case Deref(LocalVar(loc1)) :: _ if (info.bindings.isDefinedAt(LocalVar(loc1))) =>
+                  val value = info.getBinding(loc1)
+                  value match {
+                    case Boxed(LocalVar(loc2)) =>
+                      bb.replaceInstruction(i, DROP(icodes.AnyRefReference) :: valueToInstruction(info.getBinding(loc2)) :: Nil)
+                      log("replaced " + i + " with " + info.getBinding(loc2))
+                    case _ =>
+                      ()
+                  }
+                case _ =>
+                  ()
               }
 
             case _ => ();

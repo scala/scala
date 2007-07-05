@@ -41,6 +41,9 @@ abstract class GenJVM extends SubComponent {
 
     override def run: Unit = {
       if (settings.debug.value) inform("[running phase " + name + " on icode]")
+      if (settings.Xdce.value)
+        icodes.classes.retain { (sym: Symbol, cls: IClass) => !inliner.isClosureClass(sym) || deadCode.liveClosures(sym) }
+
       classes.values foreach codeGenerator.genClass
     }
 
