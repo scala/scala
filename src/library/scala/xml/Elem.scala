@@ -16,7 +16,7 @@ object Elem {
   def apply(prefix: String,label: String, attributes: MetaData, scope: NamespaceBinding, child: Node*) =
     new Elem(prefix,label,attributes,scope,child:_*)
 
-  def unapplySeq(n:Node) = if(n.isInstanceOf[SpecialNode]) None else
+  def unapplySeq(n:Node) = if(n.isInstanceOf[SpecialNode]||n.isInstanceOf[Group]) None else
     Some(Tuple5(n.prefix,n.label,n.attributes,n.scope,n.child))
 
 
