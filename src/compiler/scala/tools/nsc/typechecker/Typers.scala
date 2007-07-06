@@ -1620,9 +1620,13 @@ trait Typers { self: Analyzer =>
             if (formals1.length == args.length) {
               val args1 = typedArgs(args, mode, formals0, formals1)
               if (!isFullyDefined(pt)) assert(false, tree+" ==> "+UnApply(fun1, args1)+", pt = "+pt)
-              // restore old type (this will never work, but just pass typechecking)
+              // <pending-change>
+              //   this would be a better choice (from #1196), but fails due to (broken?) refinements
+              // val itype =  refinedType(List(pt, arg.tpe), context.owner)
+              // </pending-change>
+              // restore old type (arg is a dummy tree, just needs to pass typechecking)
               arg.tpe = oldArgType
-              UnApply(fun1, args1) setPos tree.pos setType pt
+              UnApply(fun1, args1) setPos tree.pos setType pt // itype //pt
             } else {
               errorTree(tree, "wrong number of arguments for "+treeSymTypeMsg(fun))
             }
