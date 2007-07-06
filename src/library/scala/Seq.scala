@@ -28,7 +28,7 @@ object Seq {
    *  @param x the selector value
    *  @return  sequence wrapped in an option, if this is a Seq, otherwise none
    */
-  def unapplySeq[A](x: Seq[A]): Option[Seq[A]] = Some(x)
+  def unapplySeq[A](x: Seq[A]): Some[Seq[A]] = Some(x)
 
   /** Builds a singleton sequence.
    *

@@ -31,7 +31,7 @@ object List {
 
   /** for unapply matching
    */
-  def unapplySeq[A](x: List[A]): Option[List[A]] = Some(x)
+  def unapplySeq[A](x: List[A]): Some[List[A]] = Some(x)
 
   /** Create a sorted list of all integers in a range.
    *
