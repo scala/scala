@@ -338,8 +338,9 @@ trait ParallelMatching  {
         //Console.println("patternType <:< (current)pat.tpe = "+(patternType <:< pat.tpe))
         //Console.println("(current)pat.tpe =:= patternType = "+(pat.tpe <:< patternType))
 
-        sr = pat match {
-
+        sr = strip(pat)._2 match {
+          case _: Bind =>
+            throw new FatalError("internal error, no bind allowed here ")
           case a:Alternative =>
             if(settings_debug) {
               Console.println("this may not happen, alternatives should be preprocessed away")
@@ -407,18 +408,26 @@ trait ParallelMatching  {
         } else Nil // (***)
         var subtests = subsumed
 
+//var moreSpecificIndices:Option[List[Int]] = None
+
         //Console.println("subtests BEFORE "+subtests)
         if(moreSpecific.exists { x => x != EmptyTree }) {
+          //moreSpecificIndices = Some(Nil)
           ntemps   = casted::ntemps                                                                            // (***)
-          subtests = moreSpecific.zip(subsumed) map { case (mspat, (j,pats)) => (j,mspat::pats) }
+          subtests = moreSpecific.zip(subsumed) map {
+            case (mspat, (j,pats)) =>
+              //moreSpecificIndices = Some(j::moreSpecificIndices)
+              (j,mspat::pats)
+          }
           //Console.println("MOS "+subtests)
         }
         ntemps = ntemps ::: rest.temp
         val ntriples = subtests map {
           case (j,pats) =>
-            val (vs,_) = strip(column(j))
+            val (vs,thePat) = strip(column(j))
             val (opats,osubst,og,ob) = rest.row(j)
-            val subst1 = vs map { v => (v,casted) }
+            val subst1 = //if(!moreSpecificIndices.isEmpty && moreSpecificIndices.contains(j)) Nil /*morespecific?*/ else
+              vs map { v => (v,casted) }
           //Console.println("j = "+j)
           //Console.println("pats:"+pats)
           //Console.println("opats:"+pats)
