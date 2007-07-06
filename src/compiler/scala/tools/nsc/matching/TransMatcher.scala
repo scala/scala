@@ -246,10 +246,14 @@ trait TransMatcher { self: transform.ExplicitOuter =>
         case Typed(_, _) =>
           pat
 
+        case This(_) => // Sean's feature request #1134, compiled incorrectly
+          val stpe = mkThisType(pat.tpe.symbol)
+          Typed(Ident(nme.WILDCARD) setType stpe, TypeTree(stpe))
+
         //case _ =>
         //  Console.println(pat);
         //  Console.println(pat.getClass());
-        //  scala.Predef.error"( what is this ? ")
+        //  scala.Predef.error(" what is this ? ")
       }
 
       var res: List[CaseDef] = Nil
