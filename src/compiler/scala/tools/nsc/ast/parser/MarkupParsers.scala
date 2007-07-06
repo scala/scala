@@ -7,7 +7,7 @@
 package scala.tools.nsc.ast.parser
 
 import scala.collection.mutable
-import scala.tools.nsc.util.Position
+import scala.tools.nsc.util.{Position,SourceFile}
 import scala.xml.{Text, TextBuffer}
 
 /** This trait ...
@@ -608,7 +608,7 @@ trait MarkupParsers {
     //var ch: Char = _;
 
     /** this method assign the next character to ch and advances in input */
-    def nextch { s.in.next; /*s.xNext;*/ ch = s.in.ch ; pos = s.in.cpos }
+    def nextch { s.in.next; /*s.xNext;*/ ch = s.in.ch ; if(ch == SourceFile.SU) throw new FatalError("reached end of buffer"); pos = s.in.cpos }
 
     //def lookahead = { s.xLookahead }
     var scannerState: List[List[Int]] = Nil
