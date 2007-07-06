@@ -1,19 +1,21 @@
 /* NSC -- new scala compiler
- * Copyright 2005 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author  Martin Odersky
  */
 
 // $Id$
 
-package scala.tools.nsc.backend.icode;
+package scala.tools.nsc.backend.icode
 
 import java.io.PrintWriter
 
-import scala.tools.nsc.symtab._;
-import scala.collection.mutable.HashMap;
-import analysis.{Liveness, ReachingDefinitions};
+import scala.collection.mutable.HashMap
+import scala.tools.nsc.symtab._
+import analysis.{Liveness, ReachingDefinitions}
 
 /** Glue together ICode parts.
+ *
+ *  @author Iulian Dragos
  */
 abstract class ICodes extends AnyRef
                                  with Members
@@ -26,38 +28,38 @@ abstract class ICodes extends AnyRef
                                  with Linearizers
                                  with Printers
 {
-  val global: Global;
+  val global: Global
 
   /** The ICode representation of classes */
-  var classes: HashMap[global.Symbol, IClass] = new HashMap();
+  var classes: HashMap[global.Symbol, IClass] = new HashMap()
 
   /** The ICode linearizer. */
   val linearizer: Linearizer =
     if (global.settings.Xlinearizer.value == "rpo")
-      new ReversePostOrderLinearizer();
+      new ReversePostOrderLinearizer()
     else if (global.settings.Xlinearizer.value == "dfs")
-      new DepthFirstLinerizer();
+      new DepthFirstLinerizer()
     else if (global.settings.Xlinearizer.value == "normal")
       new NormalLinearizer();
     else if (global.settings.Xlinearizer.value == "dump")
-      new DumpLinearizer();
+      new DumpLinearizer()
     else
-      global.abort("Unknown linearizer: " + global.settings.Xlinearizer.value);
+      global.abort("Unknown linearizer: " + global.settings.Xlinearizer.value)
 
   /** Print all classes and basic blocks. Used for debugging. */
-  def dump: Unit = {
+  def dump {
     val printer = new TextPrinter(new PrintWriter(Console.out, true),
-                                  new DumpLinearizer);
+                                  new DumpLinearizer)
 
-    classes.values foreach { c => printer.printClass(c); }
+    classes.values foreach { c => printer.printClass(c) }
   }
 
   object liveness extends Liveness {
-    val global: ICodes.this.global.type = ICodes.this.global;
+    val global: ICodes.this.global.type = ICodes.this.global
   }
 
   object reachingDefinitions extends ReachingDefinitions {
-    val global: ICodes.this.global.type = ICodes.this.global;
+    val global: ICodes.this.global.type = ICodes.this.global
   }
 
   var AnyRefReference: TypeKind = _
@@ -74,9 +76,9 @@ abstract class ICodes extends AnyRef
 
   /** A phase which works on icode. */
   abstract class ICodePhase(prev: Phase) extends global.GlobalPhase(prev) {
-    override def erasedTypes = true;
+    override def erasedTypes = true
 
-    override def apply(unit: global.CompilationUnit): Unit = {
+    override def apply(unit: global.CompilationUnit) {
       unit.icode foreach { c => apply(c) }
     }
 
