@@ -38,7 +38,7 @@ trait ParallelMatching  {
       def isUnapply(x:Tree): Boolean = x match {
         case Bind(_,p) => isUnapply(p)
         case UnApply(Apply(fn,_),arg) => fn.tpe match {
-          case MethodType(List(argtpe),_) =>
+          case MethodType(List(argtpe,_*),_) =>
             //Console.println("scrutinee.tpe"+scrutinee.tpe)
             //Console.println("argtpe"+argtpe)
             val r = scrutinee.tpe <:< argtpe
@@ -54,6 +54,17 @@ trait ParallelMatching  {
       }
       isUnapply(column.head)
     }
+    def isFlatCases(col:List[Tree]): Boolean = (col eq Nil) || {
+      strip(col.head)._2 match {
+        case a @ Apply(fn,_) =>
+          ((a.tpe.symbol.flags & symtab.Flags.CASE) != 0) && isFlatCases(col.tail)
+        case Typed(_,tpt) =>
+          (  (tpt.symbol.flags & symtab.Flags.CASE) != 0) && isFlatCases(col.tail)
+        case p =>
+          Console.println(p)
+          false
+      }
+    }
     //def containsUnapply = column exists { _.isInstanceOf[UnApply] }
     if(settings_debug) {
       Console.println("/// MixtureRule("+scrutinee.name+":"+scrutinee.tpe+","+column+", rep = ")
@@ -64,6 +75,9 @@ trait ParallelMatching  {
       if(settings_debug) { Console.println("MixLiteral") }
       return new MixLiterals(scrutinee, column, rest)
     }
+    //if(isFlatCases(column)) {
+    //  Console.println("flat cases!"+column)
+    //}
     //Console.println("isUnapplyHead")
     if(isUnapplyHead) {
       if(settings_debug) { Console.println("MixUnapply") }
@@ -181,15 +195,15 @@ trait ParallelMatching  {
 
     def getTransition(implicit theOwner: Symbol): (Tree, List[Tree], Rep, Option[Rep]) = {
       unapp match {
-        case ua @ UnApply(app @ Apply(fn, _), args) =>
+        case ua @ UnApply(app @ Apply(fn, appargs), args) =>
           val ures = newVarCapture(ua.pos, app.tpe)
           val n    = args.length
-          val uacall = typer.typed { ValDef(ures, Apply(fn, List(Ident(scrutinee)))) }
+          val uacall = typer.typed { ValDef(ures, Apply(fn, Ident(scrutinee) :: appargs.tail)) }
           //Console.println("uacall:"+uacall)
 
           val nrowsOther = column.tail.zip(rest.row.tail) flatMap { case (pat,(ps,subst,g,b)) => strip(pat)._2 match {
-            case UnApply(Apply(fn1,_),args) if fn.symbol==fn1.symbol => Nil
-            case p                                                   => List((pat::ps, subst, g, b))
+            case UnApply(app @ Apply(fn1,_),args) if fn.symbol==fn1.symbol => Nil
+            case p                                                         => List((pat::ps, subst, g, b))
           }}
           val nrepFail = if(nrowsOther.isEmpty) None else Some(Rep(scrutinee::rest.temp, nrowsOther))
         //Console.println("active = "+column.head+" / nrepFail = "+nrepFail)
@@ -542,10 +556,10 @@ trait ParallelMatching  {
         //Console.println("getTransition"+(uacall,vdefs,srep,frep))
         val succ = repToTree(srep, typed, handleOuter)
         val fail = if(frep.isEmpty) failTree else repToTree(frep.get, typed, handleOuter)
-        val cond = if(uacall.symbol.tpe =:= definitions.BooleanClass.tpe)
+        val cond = if(uacall.symbol eq definitions.BooleanClass)
           Ident(uacall.symbol)
                    else
-          typed { Not(Select(Ident(uacall.symbol),nme.isEmpty)) }
+                     emptynessCheck(uacall.symbol)
         typed { squeezedBlock(List(uacall), makeIf(cond,squeezedBlock(vdefs,succ),fail)) }
     }
   }
@@ -612,8 +626,9 @@ object Rep {
                   pats = q::pats
                 } else
                   pats = o::pats
-            case ua @ UnApply(Apply(fn,_),arg)             => fn.tpe match {
-              case MethodType(List(argtpe),_) =>
+            case ua @ UnApply(Apply(fn,_),arg)             =>
+              fn.tpe match {
+              case MethodType(List(argtpe,_*),_) =>
                 pats = (if (temp(j).tpe <:< argtpe) ua else Typed(ua,TypeTree(argtpe)).setType(argtpe))::pats
               }
             case p =>

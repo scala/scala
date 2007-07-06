@@ -1165,7 +1165,7 @@ print()
              val fntpe = fn.tpe
              val v = newVar(fn.pos, fntpe)
              var __opt_get__    = typed(Select(Ident(v),nme.get))
-             var __opt_nonemp__ = Not(Select(Ident(v), nme.isEmpty))
+             var __opt_nonemp__ = emptynessCheck(v)
 
              Or(And(checkType,
                        squeezedBlock(

@@ -82,6 +82,13 @@ trait CodeFactory {
     result
   }
 
+  def emptynessCheck(vsym: Symbol) = {
+    if(vsym.tpe.symbol == definitions.SomeClass)  // is Some[_]
+      Literal(Constant(true))
+    else                                          // is Option[_]
+      Not(Select(Ident(vsym), nme.isEmpty))
+  }
+
   def makeIf(cond:Tree, thenp:Tree, elsep:Tree) = cond match {
     case Literal(Constant(true)) => thenp
     case Literal(Constant(false)) => elsep

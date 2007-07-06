@@ -28,6 +28,9 @@ object FaaPrecise {
 object FaaPreciseSome {
   def unapply(x: Bar) = Some(x.name)  // return type Some[String]
 }
+object VarFoo {
+  def unapply(a : Int)(implicit b : Int) : Option[Int] = Some(a + b)
+}
 object Foo extends TestCase("Foo") with Assert {
   def unapply(x: Any): Option[Product2[Int, String]] = x match {
     case y: Bar => Some(Tuple(y.size, y.name))
@@ -55,6 +58,10 @@ object Foo extends TestCase("Foo") with Assert {
     assertEquals(doMatch3(b),"medium")
     assertEquals(doMatch4(b),"medium")
     assertEquals(doMatch5(b),"medium")
+    implicit val bc: Int = 3
+    assertEquals(4 match {
+      case VarFoo(x) => x
+    }, 7)
   }
 }
 
@@ -79,11 +86,18 @@ object Mas extends TestCase("Mas") with Assert {
 }
 
 object LisSeqArr extends TestCase("LisSeqArr") with Assert {
+//  def foo[A](x:List[A]) {}
   def runTest {
     assertEquals((List(1,2,3): Any) match { case   List(x,y,_*) => (x,y)}, (1,2))
     assertEquals((List(1,2,3): Any) match { case    Seq(x,y,_*) => (x,y)}, (1,2))
     assertEquals((Array(1,2,3): Any) match { case   Seq(x,y,_*) => (x,y)}, (1,2))
     //assertEquals((Array(1,2,3): Any) match { case Array(x,y,_*) => {x,y}}, {1,2})
+
+    // just compile, feature request #1196
+//    (List(1,2,3): Any) match {
+//      case a @ List(x,y,_*) => foo(a)
+//    }
+
   }
 }
 
