@@ -646,12 +646,12 @@ trait ParallelMatching  {
 
         // make first case a default case.
         if(mc.scrutinee.tpe.symbol.hasFlag(symtab.Flags.SEALED) && defaultV.isEmpty) {
-          ndefault = cases.head.body
+          ndefault = genBody(Nil, cases.head.body)
           cases = cases.tail
         }
 
         if(cases.length == 0) {
-          genBody(Nil, ndefault)
+          ndefault
         } else if(cases.length == 1) {
           val CaseDef(lit,_,body) = cases.head
           makeIf(Equals(Select(Ident(mc.scrutinee),nme.tag),lit), body, ndefault) // *
