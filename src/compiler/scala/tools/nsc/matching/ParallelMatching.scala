@@ -54,14 +54,26 @@ trait ParallelMatching  {
       }
       isUnapply(column.head)
     }
+
+    // true if pattern type is direct subtype of scrutinee (can't use just <:< cause have to take variance into account)
+    def directSubtype(ptpe:Type) =
+      (ptpe.parents.exists { x => ((x.symbol eq scrutinee.tpe.symbol) && (x <:< scrutinee.tpe))});
+
+    // true if each pattern type is case and direct subtype of scrutinee
     def isFlatCases(col:List[Tree]): Boolean = (col eq Nil) || {
       strip(col.head)._2 match {
         case a @ Apply(fn,_) =>
-          ((a.tpe.symbol.flags & symtab.Flags.CASE) != 0) && isFlatCases(col.tail)
-        case Typed(_,tpt) =>
-          (  (tpt.symbol.flags & symtab.Flags.CASE) != 0) && isFlatCases(col.tail)
+          ((a.tpe.symbol.flags & symtab.Flags.CASE) != 0) && directSubtype( a.tpe ) && isFlatCases(col.tail)
+        case t @ Typed(_,tpt) =>
+          (  (tpt.symbol.flags & symtab.Flags.CASE) != 0) && directSubtype( t.tpe ) && isFlatCases(col.tail)
+        case Ident(nme.WILDCARD) =>
+          true // treat col.tail specially?
+        case i @ Ident(n) => // n ne nme.WILDCARD
+          (  (i.symbol.flags & symtab.Flags.CASE) != 0) && directSubtype( i.tpe ) && isFlatCases(col.tail)
+        case s @ Select(_,_) => // i.e. scala.Nil
+          (  (s.symbol.flags & symtab.Flags.CASE) != 0) && directSubtype( s.tpe ) && isFlatCases(col.tail)
         case p =>
-          Console.println(p)
+          Console.println(p.getClass)
           false
       }
     }
@@ -75,9 +87,14 @@ trait ParallelMatching  {
       if(settings_debug) { Console.println("MixLiteral") }
       return new MixLiterals(scrutinee, column, rest)
     }
-    //if(isFlatCases(column)) {
-    //  Console.println("flat cases!"+column)
-    //}
+    /*
+    if(isFlatCases(column)) {
+      Console.println("flat cases!"+column)
+      Console.println(scrutinee.tpe.symbol.children)
+      Console.println(scrutinee.tpe.member(nme.tag))
+      Console.println(column.map { x => x.tpe.symbol.tag })
+    }
+    */
     //Console.println("isUnapplyHead")
     if(isUnapplyHead) {
       if(settings_debug) { Console.println("MixUnapply") }
