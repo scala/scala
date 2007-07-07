@@ -17,6 +17,12 @@ import scala.testing.SUnit._
 
 object Test extends TestConsoleMain {
 
+  //just compilation
+  def zipFun[a,b](xs:List[a], ys:List[b]):List[Pair[a,b]] = (Pair(xs,ys): @unchecked) match {
+    // !!! case Pair(List(), _), Pair(_, List()) => List()
+    case Pair(x :: xs1, y :: ys1) => Pair(x, y) :: zipFun(xs1, ys1)
+  }
+
   def suite = new TestSuite(
       new TestSimpleIntSwitch,
       new SimpleUnapply,
