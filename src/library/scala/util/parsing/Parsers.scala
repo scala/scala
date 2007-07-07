@@ -17,6 +17,7 @@ package scala.util.parsing
  *
  *  @author  Burak Emir
  *  @version 1.0
+ *  @deprecated use scala.util.parsing.combinator.Parsers instead
  */
 abstract class Parsers {
 

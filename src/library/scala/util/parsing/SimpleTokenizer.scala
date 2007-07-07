@@ -15,6 +15,7 @@ package scala.util.parsing
  *
  *  @author  Burak Emir
  *  @version 1.0
+ *  @deprecated use scala.util.parsing.combinator.lexical.StdLexical instead
  */
 class SimpleTokenizer(in: Iterator[Char], delimiters: String) extends Iterator[String] {
 

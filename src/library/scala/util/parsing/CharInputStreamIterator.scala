@@ -19,6 +19,7 @@ import java.io.{IOException, EOFException}
  *
  *  @author  Burak Emir
  *  @version 1.0
+ *  @deprecated use classes from scala.util.parsing.input instead
  */
 class CharInputStreamIterator(in: InputStream) extends Iterator[Char] {
 
