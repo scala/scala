@@ -87,7 +87,7 @@ trait ParallelMatching  {
       if(settings_debug) { Console.println("MixLiteral") }
       return new MixLiterals(scrutinee, column, rest)
     }
-    if((column.length > 1) && isFlatCases(column)) {
+    if(false && (column.length > 1) && isFlatCases(column)) {
       if(settings_debug) {
         Console.println("flat cases!"+column)
         Console.println(scrutinee.tpe.symbol.children)
