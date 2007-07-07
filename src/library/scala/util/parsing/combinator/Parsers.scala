@@ -308,7 +308,7 @@ trait Parsers {
      *<p> `p into fq' (with `fq' typically `{x => q}') first applies `p', and then, if `p' successfully
      *    returned result `r', applies `fq(r)' to the rest of the input. </p>
      *
-     *<p> From: G. Hutton. Higher-order functions for parsing. J. Funct. Program., 2(3):323Ð343, 1992. </p>
+     *<p> From: G. Hutton. Higher-order functions for parsing. J. Funct. Program., 2(3):323--343, 1992. </p>
      *
      * @param fq a function that, given the result from this parser, returns the second parser to be applied
      * @return a parser that succeeds if this parser succeeds (with result `x') and if then `fq(x)' succeeds
@@ -763,7 +763,7 @@ trait Parsers {
   /** A parser generator that, roughly, generalises the rep1sep generator so that `q', which parses the separator,
    * produces a left-associative function that combines the elements it separates.
    *
-   * <p> From: J. Fokker. Functional parsers. In J. Jeuring and E. Meijer, editors, Advanced Functional Programming, volume 925 of Lecture Notes in Computer Science, pages 1Ð23. Springer, 1995.</p>
+   * <p> From: J. Fokker. Functional parsers. In J. Jeuring and E. Meijer, editors, Advanced Functional Programming, volume 925 of Lecture Notes in Computer Science, pages 1--23. Springer, 1995.</p>
    *
    * @param p a parser that parses the elements
    * @param q a parser that parses the token(s) separating the elements, yielding a left-associative function that
