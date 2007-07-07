@@ -87,7 +87,7 @@ trait ParallelMatching  {
       if(settings_debug) { Console.println("MixLiteral") }
       return new MixLiterals(scrutinee, column, rest)
     }
-    if(false && (column.length > 1) && isFlatCases(column)) {
+    if((column.length > 1) && isFlatCases(column)) {
       if(settings_debug) {
         Console.println("flat cases!"+column)
         Console.println(scrutinee.tpe.symbol.children)
@@ -1053,7 +1053,8 @@ object Rep {
       else
         Equals(scrutineeTree, Literal(value))             // constant
     } else if(scrutineeTree.tpe <:< tpe && tpe <:< definitions.AnyRefClass.tpe) {
-      if(scrutineeTree.symbol.hasFlag(symtab.Flags.SYNTHETIC)) Literal(Constant(true)) else NotNull(scrutineeTree)
+      //if(scrutineeTree.symbol.hasFlag(symtab.Flags.SYNTHETIC)) Literal(Constant(true)) else
+      NotNull(scrutineeTree)
     } else if(tpe.prefix.symbol.isTerm && tpe.symbol.linkedModuleOfClass != NoSymbol) { // object
       //Console.println("iT"+tpe.prefix.symbol.isTerm)
       //Console.println("lmoc"+tpe.symbol.linkedModuleOfClass)
