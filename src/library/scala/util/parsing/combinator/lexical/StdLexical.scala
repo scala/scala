@@ -68,7 +68,8 @@ class StdLexical extends Lexical with StdTokens {
     // there is another delimiter that is a prefix of D
       def parseDelim(s: String): Parser[Token] = accept(s.toList) ^^ Keyword(s)
 
-      val d = delimiters.toArray
+      val d = new Array[String](delimiters.size)
+      delimiters.copyToArray(d,0)
       scala.util.Sorting.quickSort(d)
       _delim = d.toList.reverse.map(parseDelim).reduceRight[Parser[Token]](_ | _) // no offence :-)
     }
