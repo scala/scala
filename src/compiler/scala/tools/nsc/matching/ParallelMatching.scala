@@ -78,29 +78,30 @@ trait ParallelMatching  {
       }
     }
     //def containsUnapply = column exists { _.isInstanceOf[UnApply] }
+    /*
     if(settings_debug) {
       Console.println("/// MixtureRule("+scrutinee.name+":"+scrutinee.tpe+","+column+", rep = ")
       Console.println(rest)
       Console.println(")///")
     }
+    */
     if(isSimpleIntSwitch) {
-      if(settings_debug) { Console.println("MixLiteral") }
+      //if(settings_debug) { Console.println("MixLiteral") }
       return new MixLiterals(scrutinee, column, rest)
     }
-    if(false && (column.length > 1) && isFlatCases(column)) {
-      if(settings_debug) {
-        Console.println("flat cases!"+column)
-        Console.println(scrutinee.tpe.symbol.children)
-        Console.println(scrutinee.tpe.member(nme.tag))
-        Console.println(column.map { x => x.tpe.symbol.tag })
-      }
-      return new MixCases(scrutinee, column, rest)
-      /*if(scrutinee.tpe.symbol.hasFlag(symtab.Flags.SEALED))
-               new MixCasesSealed(scrutinee, column, rest)
-             else
-             new MixCases(scrutinee, column, rest) */
-
+    /*
+     if((column.length > 1) && isFlatCases(column)) {
+       if(settings_debug) {
+         Console.println("flat cases!"+column)
+         Console.println(scrutinee.tpe.symbol.children)
+         Console.println(scrutinee.tpe.member(nme.tag))
+         Console.println(column.map { x => x.tpe.symbol.tag })
+       }
+       return new MixCases(scrutinee, column, rest)
+       // if(scrutinee.tpe.symbol.hasFlag(symtab.Flags.SEALED)) new MixCasesSealed(scrutinee, column, rest)
+       // else new MixCases(scrutinee, column, rest)
     }
+    */
     //Console.println("isUnapplyHead")
     if(isUnapplyHead) {
       if(settings_debug) { Console.println("MixUnapply") }
@@ -136,8 +137,9 @@ trait ParallelMatching  {
 
     var tagIndexPairs: TagIndexPair = null
 
-    protected def grabTemps: List[Symbol]
-    protected def grabRow(index:Int): (List[Tree], List[(Symbol,Symbol)], Tree, Tree)
+    protected def grabTemps: List[Symbol] = rest.temp
+    protected def grabRow(index:Int): (List[Tree], List[(Symbol,Symbol)], Tree, Tree) = rest.row(tagIndexPairs.index)
+
 
     /** inserts row indices using in to list of tagindexpairs*/
     protected def tagIndicesToReps = {
@@ -214,8 +216,8 @@ trait ParallelMatching  {
       }
     }
 
-    def grabTemps = scrutinee::rest.temp
-    def grabRow(index:Int) = rest.row(tagIndexPairs.index) match {
+    override def grabTemps = scrutinee::rest.temp
+    override def grabRow(index:Int) = rest.row(tagIndexPairs.index) match {
       case (pats,s,g,b) => (column(tagIndexPairs.index)::pats,s,g,b)
   }
 
@@ -266,9 +268,6 @@ trait ParallelMatching  {
         xs = xs.tail
       }
     }
-
-    def grabTemps = rest.temp
-    def grabRow(index:Int) = rest.row(tagIndexPairs.index)
 
   }
 
