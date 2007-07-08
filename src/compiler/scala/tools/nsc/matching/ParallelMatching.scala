@@ -117,32 +117,43 @@ trait ParallelMatching  {
 
     def rest:Rep
 
-    class TagIndexPair(val tag:Int, val index: Int, val next: TagIndexPair) {
-      def find(tag:Int): Int = if(this.tag == tag) index else next.find(tag) // assumes argument can always be found
-    }
     // e.g. (1,1) (1,3) (42,2) for column {case ..1.. => ;; case ..42..=> ;; case ..1.. => }
 
-    var defaults: List[Int]    = Nil
-    var defaultV: List[Symbol] = Nil
+    protected var defaults: List[Int]    = Nil
+    var defaultV: collection.immutable.Set[Symbol] = emptySymbolSet
 
-    // sorted e.g. case _ => 1,5,7
-    protected def insertDefault(tag: Int,vs:List[Symbol]) {
+    var theDefaultRows: List[Row] = null
+    def getDefaultRows: List[Row] = {
+      if(theDefaultRows ne null)
+        return theDefaultRows
+      var res:List[Row] = Nil
+      var ds = defaults; while(ds ne Nil) {
+        res = grabRow(ds.head) :: res
+        ds = ds.tail
+      }
+      theDefaultRows = res
+      res
+    }
+
+    // sorted e.g. case _ => 7,5,1
+    protected def insertDefault(tag: Int,vs:Set[Symbol]) {
       def ins(xs:List[Int]):List[Int] = xs match {
         case y::ys if y > tag => y::ins(ys)
         case ys               => tag :: ys
       }
-      defaultV = defaultV:::vs
+      defaultV = defaultV ++ vs
       defaults = ins(defaults)
     }
+    protected def haveDefault: Boolean = !defaults.isEmpty
 
     var tagIndexPairs: TagIndexPair = null
 
     protected def grabTemps: List[Symbol] = rest.temp
-    protected def grabRow(index:Int): (List[Tree], List[(Symbol,Symbol)], Tree, Tree) = rest.row(tagIndexPairs.index)
-
+    protected def grabRow(index:Int): Row = rest.row(index)
 
     /** inserts row indices using in to list of tagindexpairs*/
     protected def tagIndicesToReps = {
+      val defaultRows = getDefaultRows
       var trs:List[(Int,Rep)] = Nil
       var old = tagIndexPairs
       while(tagIndexPairs ne null) { // collect all with same tag
@@ -153,36 +164,18 @@ trait ParallelMatching  {
           tagRows = this.grabRow(tagIndexPairs.index)::tagRows
           tagIndexPairs = tagIndexPairs.next
         }
-        var tagRowsD:List[(List[Tree], List[(Symbol,Symbol)], Tree, Tree)] = Nil
-        var ds = defaults; while(ds ne Nil) {
-          tagRowsD = rest.row(ds.head) :: tagRowsD
-          ds = ds.tail
-        }
-        trs = (tag, Rep(this.grabTemps, tagRows ::: tagRowsD)) :: trs
+        trs = (tag, Rep(this.grabTemps, tagRows ::: defaultRows)) :: trs
       }
       tagIndexPairs = old
       trs
     }
 
     protected def defaultsToRep = {
-      var drows:List[(List[Tree], List[(Symbol,Symbol)], Tree, Tree)] = Nil
-      while(defaults ne Nil) {
-        drows = rest.row(defaults.head) :: drows
-        defaults = defaults.tail
-      }
-      Rep(rest.temp, drows)
+      Rep(rest.temp, getDefaultRows)
     }
 
     protected def insertTagIndexPair(tag: Int, index: Int) {
-      def ins(current: TagIndexPair): TagIndexPair = {
-        if (current eq null)
-          new TagIndexPair(tag, index, null)
-        else if (tag > current.tag) // maintain relative order
-          new TagIndexPair(current.tag, current.index, ins(current.next))
-        else
-          new TagIndexPair(tag, index, current)
-      }
-      tagIndexPairs = ins(tagIndexPairs)
+      tagIndexPairs = TagIndexPair.insert(tagIndexPairs, tag, index)
     }
 
     /** returns
@@ -190,8 +183,8 @@ trait ParallelMatching  {
      *  @return variables bound to default continuation,
      *  @return optionally, a default continuation,
      **/
-    def getTransition(implicit theOwner: Symbol): (List[(Int,Rep)],List[Symbol],Option[Rep]) =
-      (tagIndicesToReps, defaultV, {if(!defaults.isEmpty) Some(defaultsToRep) else None})
+    def getTransition(implicit theOwner: Symbol): (List[(Int,Rep)],Set[Symbol],Option[Rep]) =
+      (tagIndicesToReps, defaultV, {if(haveDefault) Some(defaultsToRep) else None})
   }
 
   /**
@@ -205,7 +198,7 @@ trait ParallelMatching  {
     {
       var xs = column
       var i  = 0
-      while(!xs.isEmpty) { // forall
+      while(xs ne Nil) { // forall
         val (pvars,p) = strip(xs.head)
         if(isDefaultPattern(p))
           insertDefault(i,pvars)
@@ -218,7 +211,7 @@ trait ParallelMatching  {
 
     override def grabTemps = scrutinee::rest.temp
     override def grabRow(index:Int) = rest.row(tagIndexPairs.index) match {
-      case (pats,s,g,b) => (column(tagIndexPairs.index)::pats,s,g,b)
+      case Row(pats,s,g,b) => Row(column(tagIndexPairs.index)::pats,s,g,b)
   }
 
     /*{
@@ -250,14 +243,47 @@ trait ParallelMatching  {
   **/
   class MixLiterals(val scrutinee:Symbol, val column:List[Tree], val rest:Rep) extends CaseRuleApplication {
 
-    private def sanity(pos:Position,pvars:List[Symbol]) {
+    private var defaultIndexSet: Set64 = if(column.length < 64) new Set64 else null
+
+    override def insertDefault(tag: Int, vs: Set[Symbol]): Unit =
+      if(defaultIndexSet eq null)
+        super.insertDefault(tag,vs)
+      else {
+        defaultIndexSet |= tag
+        defaultV = defaultV ++ vs
+      }
+
+    protected override def haveDefault: Boolean =
+      ((defaultIndexSet eq null) && super.haveDefault) | (defaultIndexSet.underlying != 0)
+
+    override def getDefaultRows: List[Row] = {
+      if(theDefaultRows ne null)
+        return theDefaultRows
+
+      if(defaultIndexSet eq null)
+        super.getDefaultRows
+      else {
+        var ix = 63
+        var res:List[Row] = Nil
+        while((ix >= 0) && !defaultIndexSet.contains(ix)) { ix = ix - 1 }
+        while(ix >= 0) {
+          res = grabRow(ix) :: res
+          ix = ix - 1
+          while((ix >= 0) && !defaultIndexSet.contains(ix)) { ix = ix - 1 }
+        }
+        theDefaultRows = res
+        res
+      }
+    }
+
+    private def sanity(pos:Position,pvars:Set[Symbol]) {
       if(!pvars.isEmpty) cunit.error(pos, "nonsensical variable binding")
     }
 
     {
       var xs = column
       var i  = 0;
-      while(!xs.isEmpty) { // forall
+      while(xs ne Nil) { // forall
         val (pvars,p) = strip(xs.head)
         p match {
           case Literal(Constant(c:Int))  => sanity(p.pos, pvars); insertTagIndexPair(c,i)
@@ -297,21 +323,21 @@ trait ParallelMatching  {
           val uacall = typer.typed { ValDef(ures, Apply(fn, Ident(scrutinee) :: appargs.tail)) }
           //Console.println("uacall:"+uacall)
 
-          val nrowsOther = column.tail.zip(rest.row.tail) flatMap { case (pat,(ps,subst,g,b)) => strip(pat)._2 match {
+          val nrowsOther = column.tail.zip(rest.row.tail) flatMap { case (pat, Row(ps,subst,g,b)) => strip(pat)._2 match {
             case UnApply(app @ Apply(fn1,_),args) if fn.symbol==fn1.symbol => Nil
-            case p                                                         => List((pat::ps, subst, g, b))
+            case p                                                         => List(Row(pat::ps, subst, g, b))
           }}
           val nrepFail = if(nrowsOther.isEmpty) None else Some(Rep(scrutinee::rest.temp, nrowsOther))
         //Console.println("active = "+column.head+" / nrepFail = "+nrepFail)
           n match {
             case 0  => //special case for unapply(), app.tpe is boolean
               val ntemps = scrutinee :: rest.temp
-              val nrows  = column.zip(rest.row) map { case (pat,(ps,subst,g,b)) => strip(pat) match {
+              val nrows  = column.zip(rest.row) map { case (pat, Row(ps,subst,g,b)) => strip(pat) match {
                 case (pvars,UnApply(Apply(fn1,_),args)) if fn.symbol==fn1.symbol =>
-                  rootvdefs = (pvars map bindToScrutinee) ::: rootvdefs
-                  (EmptyTree::ps, subst, g, b)
+                  rootvdefs = (pvars.toList map bindToScrutinee) ::: rootvdefs
+                  Row(EmptyTree::ps, subst, g, b)
                 case (_, p)                                                      =>
-                  (     pat   ::ps,         subst, g, b)
+                  Row(     pat   ::ps,         subst, g, b)
               }}
               (uacall, rootvdefs, Rep(ntemps, nrows), nrepFail)
 
@@ -319,12 +345,12 @@ trait ParallelMatching  {
               val vtpe = app.tpe.typeArgs(0)
               val vsym = newVarCapture(ua.pos, vtpe)
               val ntemps = vsym :: scrutinee :: rest.temp
-              val nrows = column.zip(rest.row) map { case (pat,(ps,subst,g,b)) => strip(pat) match {
+              val nrows = column.zip(rest.row) map { case (pat, Row(ps,subst,g,b)) => strip(pat) match {
                 case (pvars,UnApply(Apply(fn1,_),args)) if fn.symbol==fn1.symbol =>
-                  rootvdefs = (pvars map bindToScrutinee) ::: rootvdefs
-                  (args(0)   :: EmptyTree :: ps, subst, g, b)
+                  rootvdefs = (pvars.toList map bindToScrutinee) ::: rootvdefs
+                  Row(args(0)   :: EmptyTree :: ps, subst, g, b)
                 case (_, p)                                                      =>
-                  (EmptyTree ::  pat      ::ps, subst, g, b)
+                  Row(EmptyTree ::  pat      ::ps, subst, g, b)
               }}
               (uacall, rootvdefs:::List( typer.typed { ValDef(vsym, Select(Ident(ures), nme.get) )}), Rep(ntemps, nrows), nrepFail)
 
@@ -349,12 +375,12 @@ trait ParallelMatching  {
               }
               val ntemps  =  vsyms.reverse ::: scrutinee :: rest.temp
               dummies     = dummies.reverse
-              val nrows = column.zip(rest.row) map { case (pat,(ps,subst,g,b)) => strip(pat) match {
+              val nrows = column.zip(rest.row) map { case (pat,Row(ps,subst,g,b)) => strip(pat) match {
                 case (pvars, UnApply(Apply(fn1,_),args)) if fn.symbol==fn1.symbol =>
-                  rootvdefs = (pvars map bindToScrutinee) ::: rootvdefs
-                  (   args::: EmptyTree ::ps, subst, g, b)
+                  rootvdefs = (pvars.toList map bindToScrutinee) ::: rootvdefs
+                  Row(   args::: EmptyTree ::ps, subst, g, b)
                 case (_, p)                                                       =>
-                  (dummies:::         pat      ::ps, subst, g, b)
+                  Row(dummies:::         pat      ::ps, subst, g, b)
               }}
               (uacall, rootvdefs:::vdefs.reverse, Rep(ntemps, nrows), nrepFail)
           }}
@@ -521,9 +547,9 @@ trait ParallelMatching  {
         val ntriples = subtests map {
           case (j,pats) =>
             val (vs,thePat) = strip(column(j))
-            val (opats,osubst,og,ob) = rest.row(j)
+            val Row(opats,osubst,og,ob) = rest.row(j)
             val subst1 = //if(!moreSpecificIndices.isEmpty && moreSpecificIndices.contains(j)) Nil /*morespecific?*/ else
-              vs map { v => (v,casted) }
+              vs.toList map { v => (v,casted) }
           //Console.println("j = "+j)
           //Console.println("pats:"+pats)
           //Console.println("opats:"+pats)
@@ -532,7 +558,7 @@ trait ParallelMatching  {
           // don't substitute eagerly here, problems with bodies that can
           //   be reached with several routes... impossible to find one-fits-all ordering.
 
-            (pats ::: opats, osubst ::: subst1, og, ob)
+            Row(pats ::: opats, osubst ::: subst1, og, ob)
 
           // BTW duplicating body/guard, gets you "defined twice" error cause hashing breaks
         }
@@ -548,7 +574,7 @@ trait ParallelMatching  {
         val ntemps   = scrutinee :: rest.temp
         //Console.println("nmatrixfail ntemps:"+ntemps)
         val ntriples = remaining map {
-          case (j, pat) => val r = rest.row(j);  (pat :: r._1, r._2, r._3, r._4)
+          case (j, pat) => val r = rest.row(j);  Row(pat :: r.pat, r.subst, r.guard, r.body)
         }
         //Console.println("nmatrixfail triples:"+ntriples)
         if(ntriples.isEmpty) None else Some(Rep(ntemps, ntriples) /*setParent this*/)
@@ -636,12 +662,8 @@ trait ParallelMatching  {
                       } else repToTree(rep, typed, handleOuter)
                     }
                   )}
-        if(!defaultV.isEmpty) {
-          var to:List[Symbol]  = Nil
-          var i = 0; while(i < defaultV.length) { i = i + 1; to = mc.scrutinee::to }
-          val tss = new TreeSymSubstituter(defaultV, to)
-          tss.traverse( ndefault )
-        }
+
+        renamingBind(defaultV, mc.scrutinee, ndefault) // each v in defaultV gets bound to scrutinee
 
         // make first case a default case.
         if(mc.scrutinee.tpe.symbol.hasFlag(symtab.Flags.SEALED) && defaultV.isEmpty) {
@@ -669,12 +691,9 @@ trait ParallelMatching  {
         }
         val cases = branches map { case (tag, rep) => CaseDef(Literal(tag), EmptyTree, repToTree(rep,typed,handleOuter)) }
         var ndefault = if(default.isEmpty) failTree else repToTree(default.get, typed, handleOuter)
-        if(!defaultV.isEmpty) {
-          var to:List[Symbol]  = Nil
-          var i = 0; while(i < defaultV.length) { i = i + 1; to = ml.scrutinee::to }
-          val tss = new TreeSymSubstituter(defaultV, to)
-          tss.traverse( ndefault )
-        }
+
+        renamingBind(defaultV, ml.scrutinee, ndefault) // each v in defaultV gets bound to scrutinee
+
         if(cases.length == 1) {
           val CaseDef(lit,_,body) = cases.head
           makeIf(Equals(Ident(ml.scrutinee),lit), body, ndefault)
@@ -729,20 +748,21 @@ trait ParallelMatching  {
     }
   }
 
+  case class Row(pat:List[Tree], subst:List[(Symbol,Symbol)], guard:Tree, body:Tree)
+
 object Rep {
-  type RepType = Product2[List[Symbol], List[(List[Tree], List[(Symbol,Symbol)], Tree, Tree)]]
+  type RepType = Product2[List[Symbol], List[Row]]
   def unapply(x:Rep):Option[RepType] =
     if(x.isInstanceOf[RepImpl]) Some(x.asInstanceOf[RepImpl]) else None
 
-  private
-  case class RepImpl(val temp:List[Symbol], val row:List[(List[Tree], List[(Symbol,Symbol)], Tree, Tree)]) extends Rep with RepType {
-    assert(row.forall { case (pats,subst,g,b) => temp.length == pats.length });
+  private case class RepImpl(val temp:List[Symbol], val row:List[Row]) extends Rep with RepType {
+    assert(row.forall { case Row(pats,subst,g,b) => temp.length == pats.length });
     def _1 = temp
     def _2 = row
   }
 
   /** the injection here handles alternatives and unapply type tests */
-  def apply(temp:List[Symbol], row1:List[(List[Tree], List[(Symbol,Symbol)], Tree, Tree)]): Rep = {
+  def apply(temp:List[Symbol], row1:List[Row]): Rep = {
     var unchanged: Boolean = true
     val row = row1 flatMap {
       xx =>
@@ -758,7 +778,7 @@ object Rep {
           }
           get_BIND({x=>x}, p)
         }
-        val (opatso,subst,g,b) = xx
+        val Row(opatso,subst,g,b) = xx
         var opats = opatso
         var pats:List[Tree] = Nil
         var indexOfAlternative = -1
@@ -805,12 +825,12 @@ object Rep {
         pats = pats.reverse
         //i = pats findIndexOf isAlternative
         if(indexOfAlternative == -1)
-          List((pats,subst,g,b))
+          List(Row(pats,subst,g,b))
         else {
           val prefix = pats.take( indexOfAlternative )
           val alts   = getAlternativeBranches(pats( indexOfAlternative ))
           val suffix = pats.drop(indexOfAlternative + 1)
-          alts map { p => (prefix ::: p :: suffix, subst, g, b) }
+          alts map { p => Row(prefix ::: p :: suffix, subst, g, b) }
         }
     }
     if(unchanged) {
@@ -824,7 +844,7 @@ object Rep {
 
   abstract class Rep {
     val temp:List[Symbol]
-    val row:List[(List[Tree], List[(Symbol,Symbol)], Tree, Tree)]
+    val row:List[Row] // (List[Tree], List[(Symbol,Symbol)], Tree, Tree)
 
     var sealedCols = List[Int]()
     var sealedComb = List[Set[Symbol]]()
@@ -882,12 +902,12 @@ object Rep {
               }
           }
 
-        val coversAll = allcomb forall { combination => row exists { r => covers(r._1, combination)}}
+        val coversAll = allcomb forall { combination => row exists { r => covers(r.pat, combination)}}
         //Console.println("all combinations covered? "+coversAll)
         if(!coversAll) {
           val sb = new StringBuilder()
           sb.append("match is not exhaustive!\n")
-          for (open <- allcomb if !(row exists { r => covers(r._1, open)})) {
+          for (open <- allcomb if !(row exists { r => covers(r.pat, open)})) {
             sb.append("missing combination ")
             val NPAD = 15
             def pad(s:String) = { 1.until(NPAD - s.length).foreach { x => sb.append(" ") }; sb.append(s) }
@@ -913,21 +933,21 @@ object Rep {
 
     def applyRule: RuleApplication = row match {
       case Nil            => ErrorRule
-      case (pats,subst,g,b)::xs =>
+      case Row(pats,subst,g,b)::xs =>
         if(pats forall isDefaultPattern) {
           val subst1 = pats.zip(temp) flatMap {
             case (p,tmp) =>
               val (vs,_) = strip(p);
-              vs.zipAll(Nil,null,tmp) // == vs map { (v,tmp) }
+              vs.toList.zipAll(Nil,null,tmp) // == vs map { (v,tmp) }
           }
           VariableRule (subst:::subst1, g, b)
         } else {
           val i = pats findIndexOf {x => !isDefaultPattern(x)}
 
-          val column = row map { case (pats,subst,g,b) => pats(i) }
+          val column = row map { case Row(pats,subst,g,b) => pats(i) }
 
-          val restTemp =                                     temp.take(i) ::: temp.drop(i+1)
-          val restRows = row map { case (pats,subst,g,b) => (pats.take(i) ::: pats.drop(i+1),subst,g,b) }
+          val restTemp =                                           temp.take(i) ::: temp.drop(i+1)
+          val restRows = row map { case Row(pats,subst,g,b) => Row(pats.take(i) ::: pats.drop(i+1),subst,g,b) }
 
           val r = MixtureRule(temp(i), column, Rep(restTemp,restRows))
           //Console.println(r)
@@ -942,7 +962,7 @@ object Rep {
       for (tmp <- temp) pad(tmp.name.toString)
       sb.append('\n')
       for ((r,i) <- row.zipWithIndex) {
-        for (c <- r._1 ::: List(r._2, r._3, r._4)) {
+        for (c <- r.pat ::: List(r.subst, r.guard, r.body)) {
           pad(c.toString)
         }
         sb.append('\n')
@@ -958,7 +978,7 @@ object Rep {
     // communicate whether exhaustiveness-checking is enabled via some flag
     if(!checkExhaustive)
       root.setFlag(symtab.Flags.CAPTURED)
-    val row  = cases map { case CaseDef(pat,g,b) => (List(pat),List(),g,b) }
+    val row  = cases map { case CaseDef(pat,g,b) => Row(List(pat), Nil, g, b) }
     Rep(List(root), row)
   }
 
@@ -980,9 +1000,9 @@ object Rep {
    *  @param   x a pattern
    *  @return  vs variables bound, p pattern proper
    */
-  def strip(x:Tree): (List[Symbol], Tree) = x match {
-    case b @ Bind(_,pat) => val (vs,p) = strip(pat); (b.symbol :: vs,p)
-    case z               => (Nil,z)
+  def strip(x:Tree): (Set[Symbol], Tree) = x match {
+    case b @ Bind(_,pat) => val (vs,p) = strip(pat); (vs + b.symbol, p)
+    case z               => (emptySymbolSet,z)
   }
 
   // ----------------------------------   functions used in internal data structure of the algorithm (matrix)

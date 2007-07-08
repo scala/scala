@@ -82,6 +82,19 @@ trait CodeFactory {
     result
   }
 
+  def renamingBind(defaultv: Set[Symbol], scrut: Symbol, ndefault: Tree) = {
+    if(!defaultv.isEmpty) {
+      var dv:List[Symbol] = Nil
+      var to:List[Symbol] = Nil
+      val it = defaultv.elements; while(it.hasNext) {
+        dv = it.next :: dv
+        to = scrut   :: to
+      }
+      val tss = new TreeSymSubstituter(dv, to)
+      tss.traverse( ndefault )
+    }
+  }
+
   def emptynessCheck(vsym: Symbol) = {
     if(vsym.tpe.symbol == definitions.SomeClass)  // is Some[_]
       Literal(Constant(true))
