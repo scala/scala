@@ -17,7 +17,7 @@ import scala.collection.mutable.Map
 
 /** This trait provides the core Scrap-Your-Boilerplate abstractions as well as implementations for common datatypes.
  *
- * Based on Ralph Lämmel's SYB papers
+ * Based on Ralph Laemmel's SYB papers
  *
  * @author Adriaan Moors
  */
