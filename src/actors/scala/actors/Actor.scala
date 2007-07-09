@@ -519,9 +519,9 @@ trait Actor extends OutputChannel[Any] {
     sender ! msg
   }
 
-  //private var rc = new Channel[Any](this)
-  //def getReplyChannel = rc
-  //def freshReply() = { rc = new Channel[Any]; rc }
+  private var rc = new Channel[Any](this)
+  def getReplyChannel = rc
+  def freshReply() = { rc = new Channel[Any]; rc }
 
   /**
    * Receives the next message from this actor's mailbox.
