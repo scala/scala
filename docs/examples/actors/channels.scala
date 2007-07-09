@@ -13,8 +13,8 @@ object channels extends Application {
     b ! Msg(Ch1, Ch2)
 
     react {
-      case Ch1 ! x => Console.println("received on int channel: "+x)
-      case Ch2 ! y => Console.println("received on String channel: "+y)
+      case x => Console.println("received on int channel: "+x)
+      //case y => Console.println("received on String channel: "+y)
     }
   }
 

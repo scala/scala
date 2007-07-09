@@ -2,6 +2,7 @@ package examples.actors
 
 import java.util.Date
 import scala.actors._
+import scala.actors.Actor._
 
 /** A simple demonstrator program implementing an online auction service
  *  The example uses the actor abstraction defined in the API of
