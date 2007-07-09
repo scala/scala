@@ -6,12 +6,11 @@
 
 package scala.tools.nsc
 
-import java.lang.System
-import java.lang.ClassLoader
+import java.lang.{ClassLoader, System}
 import java.io.{BufferedReader, InputStreamReader, File, FileReader, PrintWriter}
 import java.io.IOException
 
-import scala.tools.nsc.util.Position
+import scala.tools.nsc.util.{ClassPath, Position}
 import nsc.{InterpreterResults=>IR}
 
 /** The
@@ -259,8 +258,8 @@ class InterpreterLoop(in0: BufferedReader, out: PrintWriter) {
 
     uglinessxxx =
       new java.net.URLClassLoader(
-                 settings.classpath.value.split(File.pathSeparator).
-                         map(s => new File(s).toURL),
+                 ClassPath.expandPath(settings.classpath.value).
+                         map(s => new File(s).toURL).toArray,
 		 classOf[InterpreterLoop].getClassLoader)
 
     createInterpreter()

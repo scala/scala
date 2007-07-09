@@ -1,10 +1,7 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
+/* NSC -- new Scala compiler
+ * Copyright 2006-2007 LAMP/EPFL
+ * @author  Martin Odersky
+ */
 
 // $Id$
 
@@ -16,6 +13,50 @@ import java.util.StringTokenizer
 
 import scala.collection.mutable.ArrayBuffer
 import scala.tools.nsc.io.AbstractFile
+
+/** <p>
+ *    This module provides star expansion of '-classpath' option arguments.
+ *  </p>
+ *
+ *  @author Stepan Koltsov
+ */
+object ClassPath {
+  /** Expand single path entry */
+  private def expandStar(pattern: String): List[String] = {
+    def nameMatchesStar(name: String) = name.toLowerCase().endsWith(".jar")
+
+    /** Get all jars in directory */
+    def lsJars(f: File) = {
+      val list = f.listFiles()
+      if (list eq null) Nil
+      else list.filter(f => f.isFile() && nameMatchesStar(f.getName())).map(_.getPath()).toList
+    }
+
+    val suffix = File.separator + "*"
+
+    if (pattern == "*") lsJars(new File("."))
+    else if (pattern endsWith suffix) lsJars(new File(pattern.substring(0, pattern.length - suffix.length)))
+    else pattern :: Nil
+  }
+
+  /** Split path using platform-dependent path separator */
+  def splitPath(path: String): List[String] = {
+    val strtok = new StringTokenizer(path, File.pathSeparator)
+    val buf = new ListBuffer[String]
+    while (strtok.hasMoreTokens()) {
+      buf + strtok.nextToken()
+    }
+    buf.toList
+  }
+
+  /** Expand path with expanding stars */
+  def expandPath(path: String): List[String] = splitPath(path).flatMap(expandStar(_))
+
+  def expandPath(path: String, expandStar: Boolean): List[String] =
+    if (expandStar) expandPath(path)
+    else splitPath(path)
+
+}
 
 /** <p>
  *    Richer classpath abstraction than files.
@@ -223,17 +264,15 @@ class ClassPath(onlyPresentation: Boolean) {
     }
 
     private def addFilesInPath(path: String) {
-      val strtok = new StringTokenizer(path, File.pathSeparator)
-      while (strtok.hasMoreTokens()) {
-        val file = AbstractFile.getDirectory(strtok.nextToken())
+      for (fileName <- ClassPath.expandPath(path)) {
+        val file = AbstractFile.getDirectory(fileName)
         if (file ne null) entries += (new Library(file))
       }
     }
 
     private def addArchivesInExtDirPath(path: String) {
-      val strtok = new StringTokenizer(path, File.pathSeparator)
-      while (strtok.hasMoreTokens()) {
-        val file = AbstractFile.getDirectory(strtok.nextToken())
+      for (fileName <- ClassPath.expandPath(path)) {
+        val file = AbstractFile.getDirectory(fileName)
         if (file ne null) {
           for (file0 <- file) {
             val name = file0.name

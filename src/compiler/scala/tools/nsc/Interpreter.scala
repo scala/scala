@@ -17,7 +17,7 @@ import scala.collection.mutable.{ListBuffer, HashSet, ArrayBuffer}
 import io.PlainFile
 import reporters.{ConsoleReporter, Reporter}
 import symtab.Flags
-import util.SourceFile
+import util.{ClassPath, SourceFile}
 import nsc.{InterpreterResults=>IR}
 
 /** <p>
@@ -112,7 +112,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
 
   /** the compiler's classpath, as URL's */
   val compilerClasspath: List[URL] =
-    compiler.settings.classpath.value.split(File.pathSeparator).toList.
+    ClassPath.expandPath(compiler.settings.classpath.value).
       map(s => new File(s).toURL)
 
   /** class loader used to load compiled code */

@@ -14,7 +14,7 @@ import java.util.jar.{JarEntry, JarOutputStream}
 
 import scala.tools.nsc.io.PlainFile
 import scala.tools.nsc.reporters.{Reporter,ConsoleReporter}
-import scala.tools.nsc.util.{CompoundSourceFile, SourceFile, SourceFileFragment}
+import scala.tools.nsc.util.{ClassPath, CompoundSourceFile, SourceFile, SourceFileFragment}
 
 /** An object that runs Scala code in script files.
  *
@@ -360,23 +360,20 @@ class ScriptRunner {
     }
 
     withCompiledScript(settings, scriptFile)(compiledLocation => {
-      def paths0(str: String): List[String] =
-        str.split(File.pathSeparator).toList
-
       def fileToURL(f: File): Option[URL] =
         try { Some(f.toURL) }
         catch { case e => Console.println(e); None }
 
-      def paths(str: String): List[URL] =
+      def paths(str: String, expandStar: Boolean): List[URL] =
         for (
-         file <- paths0(str) map (new File(_)) if file.exists;
+         file <- ClassPath.expandPath(str, expandStar) map (new File(_)) if file.exists;
           val url = fileToURL(file); if !url.isEmpty
         ) yield url.get
 
       val classpath: List[URL] =
-        paths(settings.bootclasspath.value) :::
-        paths(compiledLocation) :::
-        paths(settings.classpath.value)
+        paths(settings.bootclasspath.value, true) :::
+        paths(compiledLocation, false) :::
+        paths(settings.classpath.value, true)
 
       try {
         ObjectRunner.run(
