@@ -278,15 +278,22 @@ trait Actor extends OutputChannel[Any] {
   private var sessions: List[OutputChannel[Any]] = Nil
   private var session1: Option[OutputChannel[Any]] = None
 
-  private[actors] def send(msg: Any, session: OutputChannel[Any]) = synchronized {
+  /**
+   * Sends <code>msg</code> to this actor (asynchronous) supplying
+   * explicit reply destination.
+   *
+   * @param  msg      the message to send
+   * @param  replyTo  the reply destination
+   */
+  def send(msg: Any, replyTo: OutputChannel[Any]) = synchronized {
     tick()
     if (waitingFor(msg)) {
       received = Some(msg)
 
       if (isSuspended)
-        sessions = session :: sessions
+        sessions = replyTo :: sessions
       else
-        session1 = Some(session)
+        session1 = Some(replyTo)
 
       waitingFor = waitingForNone
 
@@ -297,13 +304,19 @@ trait Actor extends OutputChannel[Any] {
 
       if (isSuspended)
         resumeActor()
-      else // continuation != null
+      else // assert continuation != null
         Scheduler.execute(new Reaction(this, continuation, msg))
     } else {
-      mailbox.append(msg, session)
+      mailbox.append(msg, replyTo)
     }
   }
 
+  /**
+   * Receives a message from this actor's mailbox.
+   *
+   * @param  f    a partial function with message patterns and actions
+   * @return      result of processing the received value
+   */
   def receive[R](f: PartialFunction[Any, R]): R = {
     assert(Actor.self == this, "receive from channel belonging to other actor")
     if (shouldExit) exit() // links
@@ -326,6 +339,14 @@ trait Actor extends OutputChannel[Any] {
     result
   }
 
+  /**
+   * Receives a message from this actor's mailbox within a certain
+   * time span.
+   *
+   * @param  msec the time span before timeout
+   * @param  f    a partial function with message patterns and actions
+   * @return      result of processing the received value
+   */
   def receiveWithin[R](msec: Long)(f: PartialFunction[Any, R]): R = {
     assert(Actor.self == this, "receive from channel belonging to other actor")
     if (shouldExit) exit() // links
@@ -370,6 +391,14 @@ trait Actor extends OutputChannel[Any] {
     result
   }
 
+  /**
+   * Receives a message from this actor's mailbox.
+   * <p>
+   * This method never returns. Therefore, the rest of the computation
+   * has to be contained in the actions of the partial function.
+   *
+   * @param  f    a partial function with message patterns and actions
+   */
   def react(f: PartialFunction[Any, Unit]): Nothing = {
     assert(Actor.self == this, "react on channel belonging to other actor")
     if (shouldExit) exit() // links
@@ -389,6 +418,16 @@ trait Actor extends OutputChannel[Any] {
     }
   }
 
+  /**
+   * Receives a message from this actor's mailbox within a certain
+   * time span.
+   * <p>
+   * This method never returns. Therefore, the rest of the computation
+   * has to be contained in the actions of the partial function.
+   *
+   * @param  msec the time span before timeout
+   * @param  f    a partial function with message patterns and actions
+   */
   def reactWithin(msec: Long)(f: PartialFunction[Any, Unit]): Nothing = {
     assert(Actor.self == this, "react on channel belonging to other actor")
     if (shouldExit) exit() // links
@@ -438,6 +477,9 @@ trait Actor extends OutputChannel[Any] {
   /**
    * Sends <code>msg</code> to this actor and awaits reply
    * (synchronous).
+   *
+   * @param  msg the message to be sent
+   * @return     the reply
    */
   def !?(msg: Any): Any = {
     val replyCh = Actor.self.freshReplyChannel
@@ -450,9 +492,11 @@ trait Actor extends OutputChannel[Any] {
   /**
    * Sends <code>msg</code> to this actor and awaits reply
    * (synchronous) within <code>msec</code> milliseconds.
-   * When the timeout occurs, <code>None</code> is returned.
-   * Otherwise, returns <code>Some(value)</code> where
-   * <code>value</code> is the reply value.
+   *
+   * @param  msec the time span before timeout
+   * @param  msg  the message to be sent
+   * @return      <code>None</code> in case of timeout, otherwise
+   *              <code>Some(x)</code> where <code>x</code> is the reply
    */
   def !?(msec: Long, msg: Any): Option[Any] = {
     val replyCh = Actor.self.freshReplyChannel

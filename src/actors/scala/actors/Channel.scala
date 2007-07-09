@@ -81,6 +81,13 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
   }
 
   /**
+   * Receives the next message from this <code>Channel</code>.
+   */
+  def ? : Any = receive {
+    case x => x
+  }
+
+  /**
    * Receives a message from this <code>Channel</code> within a certain
    * time span.
    *
