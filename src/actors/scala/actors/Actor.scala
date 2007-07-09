@@ -270,12 +270,12 @@ trait Actor extends OutputChannel[Any] {
 
   private var received: Option[Any] = None
 
-  private[actors] val waitingForNone = (m: Any) => false
-  private[actors] var waitingFor: Any => Boolean = waitingForNone
-  private[actors] var isSuspended = false
+  private val waitingForNone = (m: Any) => false
+  private var waitingFor: Any => Boolean = waitingForNone
+  private var isSuspended = false
 
   private val mailbox = new MessageQueue
-  private[actors] var sessions: List[OutputChannel[Any]] = Nil
+  private var sessions: List[OutputChannel[Any]] = Nil
   private var session1: Option[OutputChannel[Any]] = None
 
   private[actors] def send(msg: Any, session: OutputChannel[Any]) = synchronized {
@@ -297,8 +297,8 @@ trait Actor extends OutputChannel[Any] {
 
       if (isSuspended)
         resumeActor()
-      else
-        scheduleActor(null, msg)
+      else // continuation != null
+        Scheduler.execute(new Reaction(this, continuation, msg))
     } else {
       mailbox.append(msg, session)
     }
@@ -440,7 +440,7 @@ trait Actor extends OutputChannel[Any] {
    * (synchronous).
    */
   def !?(msg: Any): Any = {
-    val replyCh = new Channel[Any](Actor.self)
+    val replyCh = Actor.self.freshReplyChannel
     send(msg, replyCh)
     replyCh.receive {
       case x => x
@@ -455,7 +455,7 @@ trait Actor extends OutputChannel[Any] {
    * <code>value</code> is the reply value.
    */
   def !?(msec: Long, msg: Any): Option[Any] = {
-    val replyCh = new Channel[Any](Actor.self)
+    val replyCh = Actor.self.freshReplyChannel
     send(msg, replyCh)
     replyCh.receiveWithin(msec) {
       case TIMEOUT => None
@@ -519,9 +519,9 @@ trait Actor extends OutputChannel[Any] {
     sender ! msg
   }
 
-  private var rc = new Channel[Any](this)
-  def getReplyChannel = rc
-  def freshReply() = { rc = new Channel[Any]; rc }
+  private var rc: Channel[Any] = null
+  private[actors] def replyChannel = rc
+  private[actors] def freshReplyChannel = { rc = new Channel[Any](this); rc }
 
   /**
    * Receives the next message from this actor's mailbox.
@@ -530,29 +530,22 @@ trait Actor extends OutputChannel[Any] {
     case x => x
   }
 
-/*
-  def sender: Actor = {
-    val s = session
-    if (null ne s) s.receiver
-    else null
-  }
-*/
-
   def sender: OutputChannel[Any] =
     if (sessions.isEmpty) {
       session1 match {
         case None => null
         case Some(s) => s
       }
-    } else sessions.head//.asInstanceOf[OutputChannel[Any]]
+    } else sessions.head
 
-  private[actors] var continuation: PartialFunction[Any, Unit] = null
-  private[actors] var timeoutPending = false
+  private var continuation: PartialFunction[Any, Unit] = null
+  private var timeoutPending = false
+  // accessed in Reaction
   private[actors] var isDetached = false
-  private[actors] var isWaiting = false
+  private var isWaiting = false
 
   // guarded by lock of this
-  private[actors] def scheduleActor(f: PartialFunction[Any, Unit], msg: Any) =
+  private def scheduleActor(f: PartialFunction[Any, Unit], msg: Any) =
     if ((f eq null) && (continuation eq null)) {
       // do nothing (timeout is handled instead)
     }
@@ -563,12 +556,12 @@ trait Actor extends OutputChannel[Any] {
       Scheduler execute task
     }
 
-  private[actors] def tick(): Unit =
+  private def tick(): Unit =
     Scheduler tick this
 
   private[actors] var kill: () => unit = () => {}
 
-  def suspendActor() {
+  private def suspendActor() {
     isWaiting = true
     while(isWaiting) {
       try {
@@ -581,7 +574,7 @@ trait Actor extends OutputChannel[Any] {
     if (shouldExit) exit()
   }
 
-  def suspendActorFor(msec: Long) {
+  private def suspendActorFor(msec: Long) {
     val ts = Platform.currentTime
     var waittime = msec
     var fromExc = false
@@ -605,7 +598,7 @@ trait Actor extends OutputChannel[Any] {
     if (shouldExit) exit()
   }
 
-  def resumeActor() {
+  private def resumeActor() {
     isWaiting = false
     notify()
   }
@@ -742,9 +735,8 @@ trait Actor extends OutputChannel[Any] {
         exitReason = reason
         if (isSuspended)
           resumeActor()
-        else if (isDetached) {
+        else if (isDetached)
           scheduleActor(null, null)
-        }
       }
   }
 

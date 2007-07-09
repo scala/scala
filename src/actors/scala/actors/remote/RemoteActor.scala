@@ -98,9 +98,9 @@ object RemoteActor {
       }
       override def !?(msg: Any): Any = msg match {
         case a: AnyRef =>
-          val replyChannel = Actor.self.freshReply()
+          val replyCh = Actor.self.freshReplyChannel
           selfKernel.syncSend(node, sym, a)
-          replyChannel.receive {
+          replyCh.receive {
             case x => x
           }
         case other =>

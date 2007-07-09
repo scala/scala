@@ -114,7 +114,7 @@ class NetKernel(service: Service) {
             val msg = service.serializer.deserialize(data)
             val senderProxy = new Actor {
               def act() = {
-                a.getReplyChannel ! msg
+                a.replyChannel ! msg
               }
             }
             senderProxy.start(); {}
