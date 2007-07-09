@@ -10,7 +10,7 @@ package scala.actors
  */
 class MessageQueueElement {
   var msg: Any = _
-  var session: Channel[Any] = null
+  var session: OutputChannel[Any] = null
   var next: MessageQueueElement = null
 }
 
@@ -28,7 +28,7 @@ class MessageQueue {
   // last == null iff list empty
   var last: MessageQueueElement = null
 
-  def append(msg: Any, session: Channel[Any]) = {
+  def append(msg: Any, session: OutputChannel[Any]) = {
     if (null eq last) { // list empty
       val el = new MessageQueueElement
       el.msg = msg

@@ -28,7 +28,7 @@ package scala.actors
  * @version 0.9.6
  * @author Philipp Haller
  */
-case class ! [a](ch: InputChannel[a], msg: a)
+case class ! [a](ch: Channel[a], msg: a)
 
 /**
  * This class provides a means for typed communication among
@@ -137,9 +137,9 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
    * @return     the reply
    */
   def !?(msg: Msg): Any = {
-    val replyChannel = Actor.self.freshReply()
-    receiver ! scala.actors.!(this, msg)
-    replyChannel.receive {
+    val replyCh = new Channel[Any](Actor.self)
+    receiver.send(scala.actors.!(this, msg), replyCh)
+    replyCh.receive {
       case x => x
     }
   }
@@ -154,9 +154,9 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
    *              <code>Some(x)</code> where <code>x</code> is the reply
    */
   def !?(msec: Long, msg: Msg): Option[Any] = {
-    val replyChannel = Actor.self.freshReply()
-    receiver ! scala.actors.!(this, msg)
-    replyChannel.receiveWithin(msec) {
+    val replyCh = new Channel[Any](Actor.self)
+    receiver.send(scala.actors.!(this, msg), replyCh)
+    replyCh.receiveWithin(msec) {
       case TIMEOUT => None
       case x => Some(x)
     }

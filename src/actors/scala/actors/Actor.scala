@@ -152,7 +152,7 @@ object Actor {
   /**
    * Returns the actor which sent the last received message.
    */
-  def sender: Actor = self.sender
+  def sender: OutputChannel[Any] = self.sender
 
   /**
    * Send <code>msg</code> to the actor waiting in a call to
@@ -275,10 +275,10 @@ trait Actor extends OutputChannel[Any] {
   private[actors] var isSuspended = false
 
   private val mailbox = new MessageQueue
-  private[actors] var sessions: List[Channel[Any]] = Nil
-  private var session1: Option[Channel[Any]] = None
+  private[actors] var sessions: List[OutputChannel[Any]] = Nil
+  private var session1: Option[OutputChannel[Any]] = None
 
-  private def send(msg: Any, session: Channel[Any]) = synchronized {
+  private[actors] def send(msg: Any, session: OutputChannel[Any]) = synchronized {
     tick()
     if (waitingFor(msg)) {
       received = Some(msg)
@@ -425,22 +425,24 @@ trait Actor extends OutputChannel[Any] {
    * Sends <code>msg</code> to this actor (asynchronous).
    */
   def !(msg: Any) {
-    send(msg, Actor.self.getReplyChannel)
+    send(msg, Actor.self)
   }
 
   /**
    * Forwards <code>msg</code> to this actor (asynchronous).
    */
-  def forward(msg: Any): Unit = send(msg, Actor.sender.getReplyChannel)
+  def forward(msg: Any) {
+    send(msg, Actor.sender)
+  }
 
   /**
    * Sends <code>msg</code> to this actor and awaits reply
    * (synchronous).
    */
   def !?(msg: Any): Any = {
-    val replyChannel = Actor.self.freshReply()
-    this ! msg
-    replyChannel.receive {
+    val replyCh = new Channel[Any](Actor.self)
+    send(msg, replyCh)
+    replyCh.receive {
       case x => x
     }
   }
@@ -453,9 +455,9 @@ trait Actor extends OutputChannel[Any] {
    * <code>value</code> is the reply value.
    */
   def !?(msec: Long, msg: Any): Option[Any] = {
-    val replyChannel = Actor.self.freshReply()
-    this ! msg
-    replyChannel.receiveWithin(msec) {
+    val replyCh = new Channel[Any](Actor.self)
+    send(msg, replyCh)
+    replyCh.receiveWithin(msec) {
       case TIMEOUT => None
       case x => Some(x)
     }
@@ -511,14 +513,15 @@ trait Actor extends OutputChannel[Any] {
   }
 
   /**
-   * Replies with <code>msg</code> to the sender waiting in
-   * a synchronous send.
+   * Replies with <code>msg</code> to the sender.
    */
-  def reply(msg: Any): Unit = session ! msg
+  def reply(msg: Any) {
+    sender ! msg
+  }
 
-  private var rc = new Channel[Any](this)
-  def getReplyChannel = rc
-  def freshReply() = { rc = new Channel[Any]; rc }
+  //private var rc = new Channel[Any](this)
+  //def getReplyChannel = rc
+  //def freshReply() = { rc = new Channel[Any]; rc }
 
   /**
    * Receives the next message from this actor's mailbox.
@@ -527,19 +530,21 @@ trait Actor extends OutputChannel[Any] {
     case x => x
   }
 
+/*
   def sender: Actor = {
     val s = session
     if (null ne s) s.receiver
     else null
   }
+*/
 
-  private[actors] def session: Channel[Any] =
+  def sender: OutputChannel[Any] =
     if (sessions.isEmpty) {
       session1 match {
         case None => null
         case Some(s) => s
       }
-    } else sessions.head.asInstanceOf[Channel[Any]]
+    } else sessions.head//.asInstanceOf[OutputChannel[Any]]
 
   private[actors] var continuation: PartialFunction[Any, Unit] = null
   private[actors] var timeoutPending = false
