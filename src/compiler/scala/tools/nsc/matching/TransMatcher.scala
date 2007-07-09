@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author Burak Emir
  */
 // $Id$
@@ -15,7 +15,6 @@ trait TransMatcher { self: transform.ExplicitOuter =>
   import global._
   import definitions._
   import posAssigner.atPos
-  import typer.typed
   import symtab.Flags
 
   var cunit: CompilationUnit = _
@@ -33,10 +32,11 @@ trait TransMatcher { self: transform.ExplicitOuter =>
   def containsBinding(pat: Tree): Boolean = {
     var generatedVars = false
 
-    def handleVariableSymbol(sym: Symbol): Unit  =
+    def handleVariableSymbol(sym: Symbol) {
       if (sym.name.toString().indexOf("$") == -1) {
         generatedVars = true // .add(sym)
       }
+    }
 
     def isVariableName(name: Name): Boolean =
       (treeInfo.isVariableName(name)) && (name != nme.USCOREkw)
@@ -44,7 +44,7 @@ trait TransMatcher { self: transform.ExplicitOuter =>
     def isVariableSymbol(sym: Symbol): Boolean =
       (sym ne null) && (!sym.isPrimaryConstructor)
 
-    def traverse(tree: Tree): Unit = {
+    def traverse(tree: Tree) {
       tree match {
         case x @ Ident(name) =>
           if (x.symbol != definitions.PatternWildcard)
@@ -88,7 +88,7 @@ trait TransMatcher { self: transform.ExplicitOuter =>
    *     (( tree.args.length == 1 ) && tree.args(0).isInstanceOf[Sequence])
    *     but fails
    */
-  protected def isSeqApply( tree: Apply  ): Boolean =  {
+  protected def isSeqApply(tree: Apply): Boolean = {
    // Console.print("isSeqApply? "+tree.toString());
    // val res =
 	tree match {
@@ -277,7 +277,8 @@ trait TransMatcher { self: transform.ExplicitOuter =>
 
     /** handles all translation of pattern matching
      */
-    def handlePattern(sel: Tree, ocases: List[CaseDef], doCheckExhaustive: Boolean, owner:Symbol, handleOuter:Tree=>Tree): Tree = {
+    def handlePattern(sel: Tree, ocases: List[CaseDef], doCheckExhaustive: Boolean,
+                      owner: Symbol, handleOuter: Tree => Tree): Tree = {
       // TEMPORARY
       //new NewMatcher().toIR(sel, ocases)
       //

@@ -1,3 +1,9 @@
+/* NSC -- new Scala compiler
+ * Copyright 2006-2007 LAMP/EPFL
+ * @author Burak Emir
+ */
+// $Id$
+
 package scala.tools.nsc.matching
 
 object TagIndexPair {
@@ -13,8 +19,10 @@ object TagIndexPair {
 }
 
 /** sorted, null-terminated list of (int,int) pairs */
-class TagIndexPair(val tag:Int, val index: Int, val next: TagIndexPair) {
+class TagIndexPair(val tag: Int, val index: Int, val next: TagIndexPair) {
 
-  def find(tag:Int): Int = if(this.tag == tag) index else next.find(tag) // assumes argument can always be found
+  def find(tag: Int): Int =
+    if (this.tag == tag) index
+    else next.find(tag) // assumes argument can always be found
 
 }
