@@ -19,7 +19,7 @@ import java.lang.{InterruptedException, Runnable}
  *    return type <code>Nothing</code>.
  *  </p>
  *
- *  @version 0.9.7
+ *  @version 0.9.8
  *  @author Philipp Haller
  */
 private[actors] class ExitActorException extends Throwable

@@ -22,7 +22,7 @@ import scala.compat.Platform
  * Note that the library deletes non-received <code>TIMEOUT</code> message if a
  * message is received before the time-out occurs.
  *
- * @version 0.9.6
+ * @version 0.9.8
  * @author Sebastien Noir, Philipp Haller
  */
 

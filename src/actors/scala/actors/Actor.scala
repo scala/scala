@@ -19,7 +19,7 @@ import scala.compat.Platform
  * <code>receive</code>, <code>react</code>, <code>reply</code>,
  * etc.
  *
- * @version 0.9.7
+ * @version 0.9.8
  * @author Philipp Haller
  */
 object Actor {
@@ -263,7 +263,7 @@ object Actor {
  *   </li>
  * </ul>
  *
- * @version 0.9.7
+ * @version 0.9.8
  * @author Philipp Haller
  */
 trait Actor extends OutputChannel[Any] {
@@ -802,7 +802,7 @@ trait Actor extends OutputChannel[Any] {
  *      <b>case</b> TIMEOUT <b>=&gt;</b> ...
  *    }</pre>
  *
- *  @version 0.9.7
+ *  @version 0.9.8
  *  @author Philipp Haller
  */
 case object TIMEOUT
@@ -815,7 +815,7 @@ case class Exit(from: Actor, reason: AnyRef)
  *    executions.
  *  </p>
  *
- * @version 0.9.7
+ * @version 0.9.8
  * @author Philipp Haller
  */
 private[actors] class SuspendActorException extends Throwable {

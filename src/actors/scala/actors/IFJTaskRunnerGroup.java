@@ -4,7 +4,7 @@ package scala.actors;
 /**
  * IFJTaskRunnerGroup
  *
- * @version 0.9.6
+ * @version 0.9.8
  * @author Philipp Haller
  */
 interface IFJTaskRunnerGroup {

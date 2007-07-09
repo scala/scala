@@ -17,7 +17,8 @@ case class SyncSend(senderName: Symbol, receiver: Symbol, data: Array[Byte])
 case class Reply(senderName: Symbol, receiver: Symbol, data: Array[Byte])
 
 /**
- *  @author Philipp Haller
+ * @version 0.9.8
+ * @author Philipp Haller
  */
 class NetKernel(service: Service) {
 

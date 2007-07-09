@@ -38,7 +38,8 @@ package scala.actors.remote
  *  }
  *  </pre>
  *
- *  @author Philipp Haller
+ * @version 0.9.8
+ * @author Philipp Haller
  */
 object RemoteActor {
 

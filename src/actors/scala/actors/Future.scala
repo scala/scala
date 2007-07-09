@@ -22,7 +22,7 @@ package scala.actors
  * </p>
  *
  * @author Philipp Haller
- * @version 0.9.6
+ * @version 0.9.8
  */
 abstract class Future[T](val ch: InputChannel[Any]) extends Function0[T] {
   protected var value: Option[T] = None
@@ -32,7 +32,7 @@ abstract class Future[T](val ch: InputChannel[Any]) extends Function0[T] {
 /**
  * The <code>Futures</code> object contains methods that operate on Futures.
  *
- * @version 0.9.6
+ * @version 0.9.8
  * @author Philipp Haller
  */
 object Futures {

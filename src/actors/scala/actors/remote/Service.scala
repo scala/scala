@@ -11,7 +11,8 @@
 package scala.actors.remote
 
 /**
- *  @author Philipp Haller
+ * @version 0.9.8
+ * @author Philipp Haller
  */
 trait Service {
   val kernel = new NetKernel(this)
