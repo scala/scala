@@ -15,7 +15,7 @@ import scala.collection.mutable.HashMap
 
 /** This object mainly shows how a JSON parser may be instantiated.
  *
- *  @author Derek Chen-Becker <java@chen-becker.org>
+ *  @author Derek Chen-Becker <"java"+@+"chen-becker"+"."+"org">
  */
 object JSON extends Parser {
 

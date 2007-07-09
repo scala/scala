@@ -17,7 +17,7 @@ import scala.util.parsing.combinator.lexical._
 import scala.util.parsing.input.CharArrayReader.EofCh
 
 /**
- *  @author Derek Chen-Becker <java@chen-becker.org>
+ *  @author Derek Chen-Becker <"java"+@+"chen-becker"+"."+"org">
  */
 class Lexer extends StdLexical with ImplicitConversions {
 

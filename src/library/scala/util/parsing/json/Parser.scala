@@ -16,7 +16,7 @@ import scala.util.parsing.combinator.syntactical._
 import scala.util.parsing.combinator.lexical._
 
 /**
- *  @author Derek Chen-Becker <java@chen-becker.org>
+ *  @author Derek Chen-Becker <"java"+@+"chen-becker"+"."+"org">
  */
 class Parser extends StdTokenParsers with ImplicitConversions {
   // Fill in abstract defs
