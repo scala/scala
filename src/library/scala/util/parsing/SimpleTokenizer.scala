@@ -15,8 +15,12 @@ package scala.util.parsing
  *
  *  @author  Burak Emir
  *  @version 1.0
- *  @deprecated use scala.util.parsing.combinator.lexical.StdLexical instead
+ *
+ *  @deprecated use <a target="contentFrame" href="combinator/lexical/StdLexical.html">
+ *              <code>scala.util.parsing.combinator.lexical.StdLexical</code></a>
+ *              instead.
  */
+@deprecated
 class SimpleTokenizer(in: Iterator[Char], delimiters: String) extends Iterator[String] {
 
   private def max(x: Int, y: Char): Int = if (x > y) x else y
@@ -26,7 +30,7 @@ class SimpleTokenizer(in: Iterator[Char], delimiters: String) extends Iterator[S
   private def delimArray: Array[Boolean] = {
     val ds = List.fromString(delimiters)
     val da = new Array[Boolean]((0 /: ds)(max) + 1)
-    for (ch <- ds) { da(ch) = true }
+    for (ch <- ds) da(ch) = true
     da
   }
 
@@ -47,7 +51,7 @@ class SimpleTokenizer(in: Iterator[Char], delimiters: String) extends Iterator[S
     while (ch <= ' ' && ch != EOI) ch = nextChar()
     if (ch == EOI) ""
     else {
-      buf.setLength(0)
+      buf setLength 0
       if (isDelimiter(ch)) {
         buf append ch.asInstanceOf[Char]; ch = nextChar()
       } else {

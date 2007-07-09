@@ -17,8 +17,12 @@ package scala.util.parsing
  *
  *  @author  Burak Emir
  *  @version 1.0
- *  @deprecated use scala.util.parsing.combinator.Parsers instead
+ *
+ *  @deprecated use <a target="contentFrame" href="combinator/Parsers.html">
+ *              <code>scala.util.parsing.combinator.Parsers</code></a>
+ *              instead.
  */
+@deprecated
 abstract class Parsers {
 
   type inputType
