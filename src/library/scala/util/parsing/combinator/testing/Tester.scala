@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2006-2007, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -11,11 +11,20 @@ package scala.util.parsing.combinator.testing
 import scala.util.parsing.combinator.lexical.Lexical
 import scala.util.parsing.combinator.syntactical.TokenParsers
 
-/** Facilitates testing a given parser on various input strings.
- *<p>
- * Example use:, val syntactic = new MyParsers
- * and val parser = syntactic.term (if MyParsers extends TokenParsers with a parser called
- * `term')</p>
+/** <p>
+ *    Facilitates testing a given parser on various input strings.
+ *  </p>
+ *  <p>
+ *    Example use:
+ *  </p><pre>
+ *    <b>val</b> syntactic = <b>new</b> MyParsers</pre>
+ *  <p>
+ *    and
+ *  </p><pre>
+ *    <b>val</b> parser = syntactic.term</pre>
+ *  <p>
+ *    (if MyParsers extends TokenParsers with a parser called `term')
+ *  </p>
  *
  * @author Martin Odersky, Adriaan Moors
  */
@@ -25,8 +34,9 @@ abstract class Tester {
   val parser: syntactic.Parser[Any]
 
 
-  /** Scans a String (using a `syntactic.lexical.Scanner'), parses it using `phrase(parser)', and
-   * prints the input and the parsed result to the console.
+  /** Scans a String (using a `syntactic.lexical.Scanner'), parses it
+   *  using <code>phrase(parser)</code>, and  prints the input and the
+   *  parsed result to the console.
    */
   def test(in: String) {
     Console.println("\nin : "+in)

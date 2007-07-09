@@ -1,31 +1,37 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2006-2007, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
+
+// $Id$
+
 
 package scala.util.parsing.combinator.lexical
 
 import scala.util.parsing.syntax._
 import scala.util.parsing.input._
 
-/** This component provides core functionality for lexical parsers.
- *<p>
- * See its subclasses {@see Lexical} and -- most interestingly {@see StdLexical},
- * for more functionality.</p>
+/** <p>
+ *    This component provides core functionality for lexical parsers.
+ *  </p>
+ *  <p>
+ *    See its subclasses {@see Lexical} and -- most interestingly {@see StdLexical},
+ *    for more functionality.
+ *  </p>
  *
- * @requires token      a parser that produces a token (from a stream of characters)
- * @requires whitespace a unit-parser for white-space
- * @provides Scanner    essentially a parser that parses a stream of characters to produce `Token's,
- *                      which are typically passed to a syntactical parser (which operates on
- *                      `Token's, not on individual characters)
+ *  @requires token      a parser that produces a token (from a stream of characters)
+ *  @requires whitespace a unit-parser for white-space
+ *  @provides Scanner    essentially a parser that parses a stream of characters to produce `Token's,
+ *                       which are typically passed to a syntactical parser (which operates on
+ *                       `Token's, not on individual characters)
  *
- * @author Martin Odersky, Adriaan Moors
+ *  @author Martin Odersky, Adriaan Moors
  */
 trait Scanners extends Parsers with Tokens {
-  type Elem = char
+  type Elem = Char
 
   /** a parser that produces a token (from a stream of characters) */
   def token: Parser[Token]
@@ -33,12 +39,16 @@ trait Scanners extends Parsers with Tokens {
   /** a parser for white-space -- its result will be discarded */
   def whitespace: Parser[Any]
 
-  /** `Scanner' is essentially(*) a parser that produces `Token's from a stream of characters.
-   * The tokens it produces are typically passed to parsers in `TokenParsers'.
-   *
-   * Note: (*) `Scanner' is really a `Reader' of `Token's
+  /** <p>
+   *    <code>Scanner</code> is essentially(*) a parser that produces `Token's
+   *    from a stream of characters. The tokens it produces are typically passed
+   *    to parsers in <code>TokenParsers</code>.
+   *  </p>
+   *  <p>
+   *   Note: (*) <code>Scanner</code> is really a `Reader' of `Token's
+   *  </p>
    */
-  class Scanner(in: Reader[char]) extends Reader[Token] {
+  class Scanner(in: Reader[Char]) extends Reader[Token] {
     /** Convenience constructor (makes a character reader out of the given string) */
     def this(in: String) = this(new CharArrayReader(in.toCharArray()))
     private val Triple(tok, rest1, rest2) = whitespace(in) match {

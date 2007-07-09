@@ -1,10 +1,13 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2006-2007, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
+
+// $Id$
+
 
 package scala.util.parsing.combinator.lexical
 
@@ -12,16 +15,20 @@ import scala.util.parsing.syntax._
 import scala.util.parsing.input.CharArrayReader.EofCh
 import collection.mutable.HashSet
 
-/** This component provides a standard lexical parser for a simple, Scala-like language.
- * It parses keywords and identifiers, numeric literals (integers), strings, and delimiters.
- *<p>
- * To distinguish between identifiers and keywords, it uses a set of reserved identifiers:
- * every string contained in `reserved' is returned as a keyword token. (Note that "=>" is hard-coded
- * as a keyword.)
- * Additionally, the kinds of delimiters can be specified by the `delimiters' set.</p>
- *<p>
- * Usually this component is used to break character-based input into bigger tokens, which are then
- * passed to a token-parser {@see TokenParsers}.</p>
+/** <p>
+ *    This component provides a standard lexical parser for a simple, Scala-like language.
+ *    It parses keywords and identifiers, numeric literals (integers), strings, and delimiters.
+ *  </p>
+ *  <p>
+ *    To distinguish between identifiers and keywords, it uses a set of reserved identifiers:
+ *    every string contained in `reserved' is returned as a keyword token.
+ *    (Note that "=>" is hard-coded as a keyword.)
+ *    Additionally, the kinds of delimiters can be specified by the `delimiters' set.
+ *  </p>
+ *  <p>
+ *    Usually this component is used to break character-based input into bigger tokens,
+ *    which are then passed to a token-parser {@see TokenParsers}.
+ *  </p>
  *
  * @author Martin Odersky, Iulian Dragos, Adriaan Moors
  */
@@ -77,7 +84,7 @@ class StdLexical extends Lexical with StdTokens {
     _delim
   }
 
-  private def lift[T](f: String => T)(xs: List[char]): T = f(xs.mkString("", "", ""))
+  private def lift[T](f: String => T)(xs: List[Char]): T = f(xs.mkString("", "", ""))
 
-  private def lift2[T](f: String => T)(p: ~[char, List[char]]): T = lift(f)(p._1 :: p._2)
+  private def lift2[T](f: String => T)(p: ~[Char, List[Char]]): T = lift(f)(p._1 :: p._2)
 }
