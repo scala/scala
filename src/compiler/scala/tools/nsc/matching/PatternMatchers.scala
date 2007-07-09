@@ -18,11 +18,11 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
   import typer.typed
   import symtab.Flags
 
-  abstract class CantHandle extends Exception
+  abstract class CantHandle // extends Exception
   object CantHandleSeq     extends CantHandle
   object CantHandleUnapply extends CantHandle
   object CantHandleApply   extends CantHandle
-  object InternalError extends CantHandle
+  object InternalError     extends CantHandle
   object CantHandleIdent   extends CantHandle
   object CantHandleGuard   extends CantHandle
   object CantOptimize      extends CantHandle
@@ -143,11 +143,10 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
 
           case e =>
             if(!settings_useIncr)
-              throw e
+              throw new RuntimeException(e.toString)
             if (settings_debug) {
-              e.printStackTrace()
               Console.println("****")
-              Console.println("**** falling back, cause " + e.toString +"/msg "+ e.getMessage)
+              Console.println("**** falling back, cause " + e.toString )
               Console.println("****")
               for (CaseDef(pat,guard,_) <- cases)
                 Console.println(pat.toString)
@@ -158,7 +157,7 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
       constructIncremental(cases)
     }
 
-    def constructParallel(cases: List[Tree]): Throwable = {
+    def constructParallel(cases: List[Tree]): Any = {
       var cases1 = cases; while(cases1 ne Nil) {
         val c = cases1.head.asInstanceOf[CaseDef]
         if(c.guard != EmptyTree) return CantHandleGuard
@@ -236,7 +235,15 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
       x match {
         case app @ Apply(fn,xs) =>
           if(!app.tpe.symbol.hasFlag(symtab.Flags.CASE) /*|| (fn.symbol ne null)*/) CantHandleApply else {
-            isImplemented(xs)
+          /*if(!app.tpe.symbol.hasFlag(symtab.Flags.CASE)) {
+            Console.print("what is this?"+x)
+            if(fn.symbol eq null) {
+              Console.println("it's fn doesn't even have a symbol?!")
+            } else {
+              Console.println("it's fn symbol is "+fn.symbol)
+            }
+          }*/
+          isImplemented(xs)
           }
         case p @ Ident(n)           => null // if(n!= nme.WILDCARD && p.symbol.) CantHandleIdent else null
         case _:ArrayValue       => CantHandleSeq
@@ -1134,10 +1141,10 @@ print()
           case DefaultPat() =>
             return toTree(node.and);
 
-          case UnapplyPat(casted, Apply(fn1, _)) if casted.tpe.symbol == defs.BooleanClass => // special case
+          case UnapplyPat(casted, Apply(fn1, appargs)) if casted.tpe.symbol == defs.BooleanClass => // special case
             var useSelector = selector
             val checkType = fn1.tpe match {
-              case MethodType(List(argtpe),_) =>
+              case MethodType(List(argtpe,_*),_) =>
                 if(isSubType(selector.tpe, argtpe))
                   Literal(Constant(true))
                 else {
@@ -1146,15 +1153,15 @@ print()
                  }
             }
             Or(And(checkType,
-             And(Apply(handleOuter(fn1),List(useSelector)), // test
+             And(Apply(handleOuter(fn1),useSelector::appargs.tail), // test
                  toTree(node.and))
              ),
              toTree(node.or, selector.duplicate))
 
-          case UnapplyPat(casted, fn @ Apply(fn1, _)) =>
+          case UnapplyPat(casted, fn @ Apply(fn1, appargs)) =>
              var useSelector = selector
              val checkType = fn1.tpe match {
-               case MethodType(List(argtpe),_) =>
+               case MethodType(List(argtpe,_*),_) =>
                  if(isSubType(selector.tpe, argtpe))
                    Literal(Constant(true))
                  else {
@@ -1169,7 +1176,7 @@ print()
 
              Or(And(checkType,
                        squeezedBlock(
-                         List(ValDef(v,Apply(handleOuter(fn1),List(useSelector)))),
+                         List(ValDef(v,Apply(handleOuter(fn1), useSelector::appargs.tail))),
                          And(__opt_nonemp__,
                            squeezedBlock(List(ValDef(casted, __opt_get__)),toTree(node.and))))
                 ),

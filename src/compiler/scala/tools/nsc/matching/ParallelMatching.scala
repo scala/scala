@@ -61,7 +61,7 @@ trait ParallelMatching  {
 
     // true if each pattern type is case and direct subtype of scrutinee
     def isFlatCases(col:List[Tree]): Boolean = (col eq Nil) || {
-      strip(col.head)._2 match {
+      strip2(col.head) match {
         case a @ Apply(fn,_) =>
           ((a.tpe.symbol.flags & symtab.Flags.CASE) != 0) && directSubtype( a.tpe ) && isFlatCases(col.tail)
         case t @ Typed(_,tpt) =>
@@ -199,9 +199,9 @@ trait ParallelMatching  {
       var xs = column
       var i  = 0
       while(xs ne Nil) { // forall
-        val (pvars,p) = strip(xs.head)
+        val p = strip2(xs.head)
         if(isDefaultPattern(p))
-          insertDefault(i,pvars)
+          insertDefault(i,strip1(xs.head))
         else
           insertTagIndexPair(p.tpe.symbol.tag, i)
         i = i + 1
@@ -311,7 +311,7 @@ trait ParallelMatching  {
 
     private def bindToScrutinee(x:Symbol) = typer.typed(ValDef(x,Ident(scrutinee)))
 
-    val (_, unapp) = strip(column.head)
+    val unapp = strip2(column.head)
     /** returns the (un)apply and two continuations */
     var rootvdefs:List[Tree] = Nil // later, via bindToScrutinee
 
@@ -323,7 +323,7 @@ trait ParallelMatching  {
           val uacall = typer.typed { ValDef(ures, Apply(fn, Ident(scrutinee) :: appargs.tail)) }
           //Console.println("uacall:"+uacall)
 
-          val nrowsOther = column.tail.zip(rest.row.tail) flatMap { case (pat, Row(ps,subst,g,b)) => strip(pat)._2 match {
+          val nrowsOther = column.tail.zip(rest.row.tail) flatMap { case (pat, Row(ps,subst,g,b)) => strip2(pat) match {
             case UnApply(app @ Apply(fn1,_),args) if fn.symbol==fn1.symbol => Nil
             case p                                                         => List(Row(pat::ps, subst, g, b))
           }}
@@ -332,11 +332,11 @@ trait ParallelMatching  {
           n match {
             case 0  => //special case for unapply(), app.tpe is boolean
               val ntemps = scrutinee :: rest.temp
-              val nrows  = column.zip(rest.row) map { case (pat, Row(ps,subst,g,b)) => strip(pat) match {
-                case (pvars,UnApply(Apply(fn1,_),args)) if fn.symbol==fn1.symbol =>
-                  rootvdefs = (pvars.toList map bindToScrutinee) ::: rootvdefs
+              val nrows  = column.zip(rest.row) map { case (pat, Row(ps,subst,g,b)) => strip2(pat) match {
+                case UnApply(Apply(fn1,_),args) if (fn.symbol == fn1.symbol) =>
+                  rootvdefs = (strip1(pat).toList map bindToScrutinee) ::: rootvdefs
                   Row(EmptyTree::ps, subst, g, b)
-                case (_, p)                                                      =>
+                case _                                                     =>
                   Row(     pat   ::ps,         subst, g, b)
               }}
               (uacall, rootvdefs, Rep(ntemps, nrows), nrepFail)
@@ -345,12 +345,12 @@ trait ParallelMatching  {
               val vtpe = app.tpe.typeArgs(0)
               val vsym = newVarCapture(ua.pos, vtpe)
               val ntemps = vsym :: scrutinee :: rest.temp
-              val nrows = column.zip(rest.row) map { case (pat, Row(ps,subst,g,b)) => strip(pat) match {
-                case (pvars,UnApply(Apply(fn1,_),args)) if fn.symbol==fn1.symbol =>
-                  rootvdefs = (pvars.toList map bindToScrutinee) ::: rootvdefs
+              val nrows = column.zip(rest.row) map { case (pat, Row(ps,subst,g,b)) => strip2(pat) match {
+                case UnApply(Apply(fn1,_),args) if (fn.symbol == fn1.symbol) =>
+                  rootvdefs = (strip1(pat).toList map bindToScrutinee) ::: rootvdefs
                   Row(args(0)   :: EmptyTree :: ps, subst, g, b)
-                case (_, p)                                                      =>
-                  Row(EmptyTree ::  pat      ::ps, subst, g, b)
+                case _                                                           =>
+                  Row(EmptyTree ::  pat      :: ps, subst, g, b)
               }}
               (uacall, rootvdefs:::List( typer.typed { ValDef(vsym, Select(Ident(ures), nme.get) )}), Rep(ntemps, nrows), nrepFail)
 
@@ -375,12 +375,12 @@ trait ParallelMatching  {
               }
               val ntemps  =  vsyms.reverse ::: scrutinee :: rest.temp
               dummies     = dummies.reverse
-              val nrows = column.zip(rest.row) map { case (pat,Row(ps,subst,g,b)) => strip(pat) match {
-                case (pvars, UnApply(Apply(fn1,_),args)) if fn.symbol==fn1.symbol =>
-                  rootvdefs = (pvars.toList map bindToScrutinee) ::: rootvdefs
+              val nrows = column.zip(rest.row) map { case (pat,Row(ps,subst,g,b)) => strip2(pat) match {
+                case UnApply(Apply(fn1,_),args) if (fn.symbol == fn1.symbol) =>
+                  rootvdefs = (strip1(pat).toList map bindToScrutinee) ::: rootvdefs
                   Row(   args::: EmptyTree ::ps, subst, g, b)
-                case (_, p)                                                       =>
-                  Row(dummies:::         pat      ::ps, subst, g, b)
+                case _                                                       =>
+                  Row(dummies:::     pat   ::ps, subst, g, b)
               }}
               (uacall, rootvdefs:::vdefs.reverse, Rep(ntemps, nrows), nrepFail)
           }}
@@ -460,15 +460,10 @@ trait ParallelMatching  {
         //Console.println("patternType <:< (current)pat.tpe = "+(patternType <:< pat.tpe))
         //Console.println("(current)pat.tpe =:= patternType = "+(pat.tpe <:< patternType))
 
-        sr = strip(pat)._2 match {
-          case _: Bind =>
-            throw new FatalError("internal error, no bind allowed here ")
-          case a:Alternative =>
-            if(settings_debug) {
-              Console.println("this may not happen, alternatives should be preprocessed away")
-              System.exit(-1)
-            }
-            throw InternalError
+        sr = strip2(pat) match {
+          // case _: Bind       => // cannot happen, using strip2
+          // case a:Alternative => // cannot happen, alternatives should be preprocessed away
+
           case Literal(Constant(null)) if !(patternType =:= pat.tpe) => //special case for constant null pattern
             //Console.println("[1")
             (ms,ss,(j,pat)::rs);
@@ -631,7 +626,8 @@ trait ParallelMatching  {
         genBody(subst,b)
 
       case VariableRule(subst,g,b) =>
-        throw CantHandleGuard
+        assert(false) // throw CantHandleGuard
+        null
 
 
       case mc: MixCases =>
@@ -652,7 +648,7 @@ trait ParallelMatching  {
                     {
                       val pat  = mc.column(mc.tagIndexPairs.find(tag));
                       val ptpe = pat.tpe
-                      if(mc.scrutinee.tpe.symbol.hasFlag(symtab.Flags.SEALED) && strip(pat)._2.isInstanceOf[Apply]) {
+                      if(mc.scrutinee.tpe.symbol.hasFlag(symtab.Flags.SEALED) && strip2(pat).isInstanceOf[Apply]) {
                         //cast
                         val vtmp = newVar(pat.pos, ptpe)
                         squeezedBlock(
@@ -709,7 +705,7 @@ trait ParallelMatching  {
         //Console.println("casted.tpe="+casted.tpe)
         val condUntyped = condition(casted.tpe, mm.scrutinee)
         //Console.println("condUntyped:" + condUntyped)
-        var cond = handleOuter(typed { condUntyped })
+        var cond = handleOuter(typed { condUntyped }) // this thing throws exceptions in some obscure situations
         if(needsOuterTest(casted.tpe, mm.scrutinee.tpe)) // @todo merrge into def condition
           cond = addOuterCondition(cond, casted.tpe, typed{Ident(mm.scrutinee)}, handleOuter)
 
@@ -736,11 +732,11 @@ trait ParallelMatching  {
         typed { makeIf(cond, squeezedBlock(vdefs,succ), fail) }
 
       case mu: MixUnapply =>
-        val (uacall,vdefs,srep,frep) = mu.getTransition
+        val (uacall/*:ValDef*/ , vdefs,srep,frep) = mu.getTransition // uacall is a Valdef
         //Console.println("getTransition"+(uacall,vdefs,srep,frep))
         val succ = repToTree(srep, typed, handleOuter)
         val fail = if(frep.isEmpty) failTree else repToTree(frep.get, typed, handleOuter)
-        val cond = if(uacall.symbol eq definitions.BooleanClass)
+        val cond = if(uacall.symbol.tpe.symbol eq definitions.BooleanClass)
           Ident(uacall.symbol)
                    else
                      emptynessCheck(uacall.symbol)
@@ -811,11 +807,23 @@ object Rep {
                   pats = q::pats
                 } else
                   pats = o::pats
+
             case ua @ UnApply(Apply(fn,_),arg)             =>
               fn.tpe match {
               case MethodType(List(argtpe,_*),_) =>
                 pats = (if (temp(j).tpe <:< argtpe) ua else Typed(ua,TypeTree(argtpe)).setType(argtpe))::pats
               }
+
+            /** something too tricky is going on if the outer types don't match
+             */
+            case o @ Apply(app, List()) if !o.tpe.symbol.hasFlag(symtab.Flags.CASE) =>
+              //Console.println(o)
+              //val stpe = singleType(NoPrefix, o.symbol)
+              val stpe = if(o.tpe.symbol.isModule) singleType(o.tpe.prefix, o.symbol) else mkThisType(o.symbol)
+              val p    = Ident(nme.WILDCARD) setType stpe
+              val q    = Typed(p, TypeTree(stpe)) setType stpe
+              pats = q::pats
+
             case p =>
               pats = p :: pats
           }
@@ -937,8 +945,7 @@ object Rep {
         if(pats forall isDefaultPattern) {
           val subst1 = pats.zip(temp) flatMap {
             case (p,tmp) =>
-              val (vs,_) = strip(p);
-              vs.toList.zipAll(Nil,null,tmp) // == vs map { (v,tmp) }
+              strip1(p).toList.zipAll(Nil,null,tmp) // == vars map { (v,tmp) }
           }
           VariableRule (subst:::subst1, g, b)
         } else {
@@ -1005,6 +1012,15 @@ object Rep {
     case z               => (emptySymbolSet,z)
   }
 
+  def strip1(x:Tree): Set[Symbol] = x match { // same as strip(x)._1
+    case b @ Bind(_,pat) => strip1(pat) + b.symbol
+    case z               => emptySymbolSet
+  }
+  def strip2(x:Tree): Tree = x match {        // same as strip(x)._2
+    case     Bind(_,pat) => strip2(pat)
+    case z               => z
+  }
+
   // ----------------------------------   functions used in internal data structure of the algorithm (matrix)
 
 
@@ -1026,7 +1042,7 @@ object Rep {
    */
   def condition(tpe: Type, scrut: Symbol): Tree = {
     val res = condition1(tpe, scrut)
-    if(settings_debug)
+    if(true && settings_debug)
       Console.println("condition, tpe = "+tpe+", scrut.tpe = "+scrut.tpe+", res = "+res)
     res
   }
