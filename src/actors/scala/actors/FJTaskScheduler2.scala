@@ -98,6 +98,8 @@ class FJTaskScheduler2 extends Thread with IScheduler {
               if (pendingReactions <= 0) {
                 // if all worker threads idle terminate
                 if (executor.getActiveCount() == 0) {
+                  Debug.info(this+": initiating shutdown...")
+
                   // Note that we don't have to shutdown
                   // the FJTaskRunnerGroup since there is
                   // no separate thread associated with it,
