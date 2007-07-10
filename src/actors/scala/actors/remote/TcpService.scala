@@ -13,10 +13,7 @@ package scala.actors.remote
 
 
 import java.lang.{Thread, SecurityException}
-
-import java.io.{BufferedReader, DataInputStream, DataOutputStream,
-                IOException, InputStreamReader, OutputStreamWriter,
-                PrintWriter}
+import java.io.{DataInputStream, DataOutputStream, IOException}
 import java.net.{InetAddress, ServerSocket, Socket, UnknownHostException}
 
 import compat.Platform
@@ -106,19 +103,28 @@ class TcpService(port: Int) extends Thread with Service {
     }
   }
 
-  override def run(): Unit =
+  override def run() {
     try {
       val socket = new ServerSocket(port)
       while (true) {
+        Debug.info(this+": waiting for new connection...")
         val nextClient = socket.accept()
         val worker = new TcpServiceWorker(this, nextClient)
+        Debug.info("Started new "+worker)
         worker.readNode
         worker.start()
       }
     } catch {
-      case ioe: IOException => // do nothing
-      case sec: SecurityException => // do nothing
+      case ioe: IOException =>
+        Debug.info(this+": caught "+ioe)
+      case sec: SecurityException =>
+        Debug.info(this+": caught "+sec)
+      case e: Exception =>
+        Debug.info(this+": caught "+e)
+    } finally {
+      Debug.info(this+": shutting down...")
     }
+  }
 
   // connection management
 
@@ -182,9 +188,6 @@ class TcpServiceWorker(parent: TcpService, so: Socket) extends Thread {
   val datain = new DataInputStream(in)
   val dataout = new DataOutputStream(out)
 
-  val reader = new BufferedReader(new InputStreamReader(in))
-  val writer = new PrintWriter(new OutputStreamWriter(out))
-
   var connectedNode: Node = _
 
   def sendNode(n: Node) = {
@@ -193,7 +196,6 @@ class TcpServiceWorker(parent: TcpService, so: Socket) extends Thread {
   }
 
   def readNode = {
-    //val node = parent.serializer.deserialize(reader)
     val node = parent.serializer.readObject(datain)
     node match {
       case n: Node => {
@@ -204,6 +206,7 @@ class TcpServiceWorker(parent: TcpService, so: Socket) extends Thread {
   }
 
   def transmit(data: Array[byte]): Unit = synchronized {
+    Debug.info(this+": transmitting data...")
     dataout.writeInt(data.length)
     dataout.write(data)
     dataout.flush()
@@ -219,19 +222,18 @@ class TcpServiceWorker(parent: TcpService, so: Socket) extends Thread {
   override def run() {
     try {
       while (running) {
-        if (in.available() > 0) {
-          //val msg = parent.serializer.deserialize(reader);
-          val msg = parent.serializer.readObject(datain);
-          parent.kernel.processMsg(connectedNode, msg)
-        }
+        val msg = parent.serializer.readObject(datain);
+        parent.kernel.processMsg(connectedNode, msg)
       }
     }
     catch {
       case ioe: IOException =>
+        Debug.info(this+": caught "+ioe)
         parent nodeDown connectedNode
       case e: Exception =>
-        // catch-all
+        Debug.info(this+": caught "+e)
         parent nodeDown connectedNode
     }
+    Debug.info(this+": shutting down...")
   }
 }
