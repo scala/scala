@@ -17,6 +17,42 @@ package scala.io
  */
 object UTF8Codec {
 
+  final val UNI_REPLACEMENT_CHAR: Int = 0x0000FFFD
+  /** convert a codepoint to utf-8 bytes
+   * @author buraq
+   * @param ch codepoint
+   */
+  def encode(ch1: Int): Array[Byte] = {
+    var ch = ch1
+    val byteMask = 0xBF;
+    val byteMark = 0x80;
+    var bytesToWrite = 0
+    val firstByteMark = List[Byte](0x00.asInstanceOf[Byte], 0x00.asInstanceOf[Byte], 0xC0.asInstanceOf[Byte], 0xE0.asInstanceOf[Byte], 0xF0.asInstanceOf[Byte], 0xF8.asInstanceOf[Byte], 0xFC.asInstanceOf[Byte])
+
+    if      (ch < 0x80)        { bytesToWrite = 1 }
+    else if (ch < 0x800)       { bytesToWrite = 2 }
+    else if (ch < 0x10000)     { bytesToWrite = 3 }
+    else if (ch <= 0x0010FFFF) { bytesToWrite = 4 }
+    else return encode(UNI_REPLACEMENT_CHAR)
+
+    val res = new Array[Byte](bytesToWrite)
+
+    var bw = bytesToWrite
+    if(bw>=4) {
+      res(3) = ((ch | byteMark) & byteMask).asInstanceOf[Byte]; ch = ch >> 6; bw = bw - 1
+    }
+    if(bw>=3) {
+      res(2) = ((ch | byteMark) & byteMask).asInstanceOf[Byte]; ch = ch >> 6; bw = bw - 1
+    }
+    if(bw>=2) {
+      res(1) = ((ch | byteMark) & byteMask).asInstanceOf[Byte]; ch = ch >> 6; bw = bw - 1
+    }
+    if(bw>=1) {
+      res(0) = (ch | firstByteMark(bytesToWrite)).asInstanceOf[Byte]
+    }
+    return res
+  }
+
   def encode(src: Array[Char], from: Int, dst: Array[Byte], to: Int, len: Int): Int = {
     var i = from
     var j = to

@@ -75,10 +75,10 @@ class Lexer extends StdLexical with ImplicitConversions {
   val hexDigits = Set[Char]() ++ "0123456789abcdefABCDEF".toArray
   def hexDigit = elem("hex digit", hexDigits.contains(_))
 
-  def unicodeBlock = hexDigit ~ hexDigit ~ hexDigit ~ hexDigit ^^ {
-    case a ~ b ~ c ~ d =>
-      new String(Character.toChars(Integer.parseInt(List(a,b,c,d).mkString(""),16)))
-  }
+ def unicodeBlock = hexDigit ~ hexDigit ~ hexDigit ~ hexDigit ^^ {
+   case a ~ b ~ c ~ d =>
+     new String(io.UTF8Codec.encode(Integer.parseInt(List(a,b,c,d).mkString(""),16)))
+ }
 
   private def lift[T](f: String => T)(xs: List[Any]): T = f(xs.mkString(""))
 }
