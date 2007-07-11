@@ -3114,8 +3114,8 @@ A type's symbol should never be inspected directly.
   /** The least upper bound wrt &lt;:&lt; of a list of types */
   def lub(ts: List[Type], depth: Int): Type = {
     def lub0(ts0: List[Type]): Type = {
-      if (elimSub(ts0 map (_.deconst)) != elimSub(ts0))
-        println("DIFF for lub of "+ts+", with deconst = "+elimSub(ts0 map (_.deconst))+", without = "+elimSub(ts0))
+      //if (elimSub(ts0 map (_.deconst)) != elimSub(ts0))
+      //  println("DIFF for lub of "+ts+", with deconst = "+elimSub(ts0 map (_.deconst))+", without = "+elimSub(ts0))
 
       elimSub(ts0/* map (_.deconst) */) match {
       case List() => AllClass.tpe

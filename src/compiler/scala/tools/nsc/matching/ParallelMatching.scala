@@ -25,7 +25,8 @@ trait ParallelMatching  {
 
   def MixtureRule(scrutinee:Symbol, column:List[Tree], rest:Rep): RuleApplication = {
     def isSimpleIntSwitch: Boolean = {
-      (isSameType(scrutinee.tpe.widen, definitions.IntClass.tpe)) && {
+      (isSameType(scrutinee.tpe.widen, definitions.IntClass.tpe)||
+       isSameType(scrutinee.tpe.widen, definitions.CharClass.tpe)) && {
         var xs = column
         while(!xs.isEmpty) { // forall
           val h = xs.head
@@ -708,7 +709,9 @@ trait ParallelMatching  {
           makeIf(Equals(Ident(ml.scrutinee),lit), body, ndefault)
         } else {
           val defCase = CaseDef(mk_(definitions.IntClass.tpe), EmptyTree, ndefault)
-          val selector = Ident(ml.scrutinee)
+          var selector:Tree = Ident(ml.scrutinee)
+          if(isSameType(ml.scrutinee.tpe.widen, definitions.CharClass.tpe))
+            selector = gen.mkAsInstanceOf(selector, definitions.IntClass.tpe)
           Match(selector, cases :::  defCase :: Nil)
         }
 
@@ -921,9 +924,12 @@ object Rep {
                 val symtpe = if(sym.hasFlag(symtab.Flags.MODULE)) {
                   singleType(sym.tpe.prefix, sym.linkedModuleOfClass) // e.g. None, Nil
                 } else sym.tpe
-                p.tpe.symbol == sym || symtpe <:< p.tpe
+                //Console.print("covers: sym="+sym+" symtpe="+symtpe+" p="+p+", p.tpe="+p.tpe+" ?")
+                (p.tpe.symbol == sym) || (symtpe <:< p.tpe) ||
+                /* outer, see scala.util.parsing.combinator.lexical.Scanner */
+                (p.tpe.prefix.memberType(sym) <:< p.tpe)
               }
-            //Console.println("covers: sym="+sym+" p="+p+", p.tpe="+p.tpe+" ?"+res)
+            //Console.println(res)
             res
           }
 
