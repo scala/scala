@@ -12,15 +12,21 @@ object channels extends Application {
 
     b ! Msg(Ch1, Ch2)
 
+    val ICh1 = Ch1.asInstanceOf[InputChannel[int]]
+    val ICh2 = Ch2.asInstanceOf[InputChannel[String]]
+
     react {
-      case Ch1 ! x => Console.println("received on int channel: "+x)
-      case Ch2 ! y => Console.println("received on String channel: "+y)
+      case ICh1 ! (x: Int) =>
+        val r = x + 21
+        println("result: "+r)
+      case ICh2 ! y =>
+        println("received: "+y)
     }
   }
 
   val b = actor {
     react {
-      case Msg(ch1, ch2) => ch1 ! 42
+      case Msg(ch1, ch2) => ch1 ! 21
     }
   }
 }
