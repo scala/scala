@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -16,7 +16,7 @@ import java.lang.Thread
 
 /** The object <code>ops</code> ...
  *
- *  @author  Martin Odersky
+ *  @author  Martin Odersky, Stepan Koltsov
  *  @version 1.0, 12/03/2003
  */
 object ops {
@@ -33,9 +33,9 @@ object ops {
    *  @param p ...
    *  @return  ...
    */
-  def future[a](p: => a): () => a = {
-    val result = new SyncVar[a]
-    spawn { result set p }
+  def future[A](p: => A): () => A = {
+    val result = new SyncVar[A]
+    spawn { result setWithCatch p }
     () => result.get
   }
 
@@ -44,9 +44,9 @@ object ops {
    *  @param yp ...
    *  @return   ...
    */
-  def par[a, b](xp: => a, yp: => b): (a, b) = {
-    val y = new SyncVar[b]
-    spawn { y set yp }
+  def par[A, B](xp: => A, yp: => B): (A, B) = {
+    val y = new SyncVar[B]
+    spawn { y setWithCatch yp }
     (xp, y.get)
   }
 
@@ -55,7 +55,7 @@ object ops {
    *  @param end   ...
    *  @param p     ...
    */
-  def replicate(start: Int, end: Int)(p: Int => Unit): Unit = {
+  def replicate(start: Int, end: Int)(p: Int => Unit) {
     if (start == end)
       ()
     else if (start + 1 == end)
