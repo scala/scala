@@ -32,11 +32,11 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
    *    <li>For a type-bounds structure, the erasure of its upper bound.</li>
    *    <li>For every other singleton type, the erasure of its supertype.</li>
    *    <li>
-   *      For a typeref <code>scala.Array[T]</code> where <code>T</code> is
+   *      For a typeref <code>scala.Array+[T]</code> where <code>T</code> is
    *      an abstract type, <code>scala.runtime.BoxedArray</code>.
    *    </li>
    *    <li>
-   *   - For a typeref scala.Array[T] where T is not an abstract type, scala.Array[|T|].
+   *   - For a typeref scala.Array+[T] where T is not an abstract type, scala.Array+[|T|].
    *   - For a typeref scala.Any or scala.AnyVal, java.lang.Object.
    *   - For a typeref scala.Unit, scala.runtime.BoxedUnit.
    *   - For a typeref P.C[Ts] where C refers to a class, |P|.C.
@@ -65,11 +65,15 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
         case st: SubType =>
           apply(st.supertype)
         case TypeRef(pre, sym, args) =>
+          def isGeneric(tp: Type): Boolean = tp match {
+            case TypeRef(pre, sym, args) =>
+              sym.isAbstractType || sym == ArrayClass && args.length == 1 && isGeneric(args.head)
+            case _ =>
+              false
+          }
           if (sym == ArrayClass)
-            args.head match {
-              case TypeRef(_, tvar, _) if (tvar.isAbstractType) => erasedTypeRef(BoxedArrayClass)
-              case _ => typeRef(apply(pre), sym, args map this)
-            }
+            if (isGeneric(tp)) erasedTypeRef(BoxedArrayClass)
+            else typeRef(apply(pre), sym, args map this)
           else if (sym == AnyClass || sym == AnyValClass) erasedTypeRef(ObjectClass)
           else if (sym == UnitClass) erasedTypeRef(BoxedUnitClass)
           else if (sym.isClass)
