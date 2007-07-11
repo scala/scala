@@ -911,7 +911,10 @@ abstract class GenICode extends SubComponent  {
         case Literal(value) =>
           if (value.tag != UnitTag)
             ctx.bb.emit(CONSTANT(value), tree.pos);
-          generatedType = toTypeKind(value.tpe)
+          if (value.tag == NullTag)
+            generatedType = expectedType
+          else
+            generatedType = toTypeKind(value.tpe)
           ctx
 
         case Block(stats, expr) =>

@@ -8,7 +8,7 @@
 package scala.tools.nsc.backend.icode;
 
 import scala.tools.nsc.ast._;
-import scala.collection.mutable.{Stack, HashSet};
+import scala.collection.mutable.{Stack, HashSet, BitSet};
 
 trait Linearizers { self: ICodes =>
   import opcodes._;
@@ -141,10 +141,12 @@ trait Linearizers { self: ICodes =>
   class ReversePostOrderLinearizer extends Linearizer {
     var blocks: List[BasicBlock] = Nil;
     var visited: HashSet[BasicBlock] = new HashSet;
+    val added: BitSet = new BitSet
 
     def linearize(m: IMethod): List[BasicBlock] = {
       blocks = Nil;
       visited.clear;
+      added.clear;
 
       m.exh foreach (b => rpo(b.startBlock));
       rpo(m.code.startBlock);
@@ -160,6 +162,8 @@ trait Linearizers { self: ICodes =>
     def linearizeAt(m: IMethod, start: BasicBlock): List[BasicBlock] = {
       blocks = Nil
       visited.clear
+      added.clear
+
       rpo(start)
       blocks
     }
@@ -177,8 +181,10 @@ trait Linearizers { self: ICodes =>
      * @return Returns true if the block was added.
      */
     def add(b: BasicBlock) =
-      if (!blocks.contains(b))
+      if (!added(b.label)) {
+        added += b.label
         blocks = b :: blocks;
+      }
   }
 
   /** A 'dump' of the blocks in this method, which does not

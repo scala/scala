@@ -381,8 +381,8 @@ trait BasicBlocks {
     def successors : List[BasicBlock] = if (isEmpty) Nil else {
       var res = lastInstruction match {
         case JUMP (whereto) => List(whereto)
-        case CJUMP(success, failure, _, _) => success :: failure :: Nil
-        case CZJUMP(success, failure, _, _) => success :: failure :: Nil
+        case CJUMP(success, failure, _, _) => failure :: success :: Nil
+        case CZJUMP(success, failure, _, _) => failure :: success :: Nil
         case SWITCH(_,labels) => labels
         case RETURN(_) => Nil
         case THROW() => Nil
