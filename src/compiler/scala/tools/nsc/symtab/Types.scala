@@ -3081,11 +3081,20 @@ A type's symbol should never be inspected directly.
 
   /** Eliminate from list of types all elements which are a subtype
    *  of some other element of the list. */
-  private def elimSub(ts: List[Type]): List[Type] =  ts match {
-    case List() => List()
-    case t :: ts1 =>
-      val rest = ts1 filter (t1 => !(t1 <:< t));
-      if (rest exists (t1 => t <:< t1)) rest else t :: rest
+  private def elimSub(ts: List[Type]): List[Type] = {
+    def elimSub0(ts: List[Type]): List[Type] = ts match {
+      case List() => List()
+      case t :: ts1 =>
+        val rest = elimSub0(ts1 filter (t1 => !(t1 <:< t)))
+        if (rest exists (t1 => t <:< t1)) rest else t :: rest
+    }
+    val ts0 = elimSub0(ts)
+    if (ts0.length <= 1) ts0
+    else {
+      val ts1 = List.mapConserve(ts0)(_.singleDeref)
+      if (ts1 eq ts0) ts0
+      else elimSub(ts1)
+    }
   }
 
   private def stripExistentials(ts: List[Type]): (List[Type], List[Symbol]) = {
@@ -3104,7 +3113,11 @@ A type's symbol should never be inspected directly.
 
   /** The least upper bound wrt &lt;:&lt; of a list of types */
   def lub(ts: List[Type], depth: Int): Type = {
-    def lub0(ts0: List[Type]): Type = elimSub(ts0 map (_.deconst)) match {
+    def lub0(ts0: List[Type]): Type = {
+      if (elimSub(ts0 map (_.deconst)) != elimSub(ts0))
+        println("DIFF for lub of "+ts+", with deconst = "+elimSub(ts0 map (_.deconst))+", without = "+elimSub(ts0))
+
+      elimSub(ts0/* map (_.deconst) */) match {
       case List() => AllClass.tpe
       case List(t) => t
       case ts @ PolyType(tparams, _) :: _ =>
@@ -3173,7 +3186,7 @@ A type's symbol should never be inspected directly.
             if (lubRefined.decls.isEmpty) lubBase else lubRefined
           }
         existentialAbstraction(tparams, lubType)
-    }
+    }}
 //    if (settings.debug.value) {
 //      log(indent + "lub of " + ts + " at depth "+depth)//debug
 //      indent = indent + "  "
