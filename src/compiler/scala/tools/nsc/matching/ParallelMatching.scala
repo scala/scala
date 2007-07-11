@@ -586,11 +586,28 @@ trait ParallelMatching  {
 
 
   def genBody(subst: List[Pair[Symbol,Symbol]], b:Tree)(implicit theOwner: Symbol, bodies: collection.mutable.Map[Tree,(Tree, Tree, Symbol)]): Tree = {
-    bodies.get(b) match {
+    if(b.isInstanceOf[Literal]) { // small trees
+      bodies(b) = null // placeholder, for unreachable-code-detection
+      return b.duplicate
+    } else if (b.isInstanceOf[Throw]) {
+      bodies(b) = null // placeholder, for unreachable-code-detection
+      val (from,to) = List.unzip(subst)
+      val b2 = b.duplicate
+      new TreeSymSubstituter(from,to).traverse(b2)
+      return b2
+    } else if (b.isInstanceOf[Ident]) {
+      bodies(b) = null // placeholder, for unreachable-code-detection
+      val bsym = b.symbol
+      var su = subst
+      while(su ne Nil) {
+        val sh = su.head
+        if(sh._1 eq bsym) return Ident(sh._2) setType sh._2.tpe
+        su = su.tail
+      }
+      return b.duplicate
+    } else bodies.get(b) match {
 
       case Some(EmptyTree, nb, theLabel) =>           //Console.println("H E L L O"+subst+" "+b)
-        if(b.isInstanceOf[Literal])
-          return b
         // recover the order of the idents that is expected for the labeldef
         val args = nb match { case Block(_, LabelDef(_, origs, _)) =>
           origs.map { p => Ident(subst.find { q => q._1 == p.symbol }.get._2) } // wrong!
@@ -601,10 +618,6 @@ trait ParallelMatching  {
         return body
 
       case None    =>
-        if(b.isInstanceOf[Literal]) {
-          bodies(b) = (EmptyTree, b, null) // unreachable code is detected via missing hash entries
-            return b
-        }
       // this seems weird, but is necessary for sharing bodies. unnecessary for bodies that are not shared
       var argtpes   = subst map { case (v,_) => v.tpe }
       val theLabel  = targetLabel(theOwner, b.pos, "body"+b.hashCode, argtpes, b.tpe)
@@ -678,15 +691,15 @@ trait ParallelMatching  {
         }
 
       case ml: MixLiterals =>
-        val (branches, defaultV, default) = ml.getTransition // tag body pairs
+        val (branches, defaultV, defaultRepOpt) = ml.getTransition // tag body pairs
         if(settings_debug) {
           Console.println("[[mix literal transition: branches \n"+(branches.mkString("","\n","")))
           Console.println("defaults:"+defaultV)
-          Console.println(default)
+          Console.println(defaultRepOpt)
           Console.println("]]")
         }
         val cases = branches map { case (tag, rep) => CaseDef(Literal(tag), EmptyTree, repToTree(rep,typed,handleOuter)) }
-        var ndefault = if(default.isEmpty) failTree else repToTree(default.get, typed, handleOuter)
+        var ndefault = if(defaultRepOpt.isEmpty) failTree else repToTree(defaultRepOpt.get, typed, handleOuter)
 
         renamingBind(defaultV, ml.scrutinee, ndefault) // each v in defaultV gets bound to scrutinee
 
@@ -695,7 +708,8 @@ trait ParallelMatching  {
           makeIf(Equals(Ident(ml.scrutinee),lit), body, ndefault)
         } else {
           val defCase = CaseDef(mk_(definitions.IntClass.tpe), EmptyTree, ndefault)
-          Match(Ident(ml.scrutinee), cases :::  defCase :: Nil)
+          val selector = Ident(ml.scrutinee)
+          Match(selector, cases :::  defCase :: Nil)
         }
 
       case mm:MixTypes =>
@@ -901,13 +915,16 @@ object Rep {
         def covers(pats: List[Tree], comb:List[(Int,Symbol)]) =
           comb forall {
             case (i,sym) =>
-              val p = pats(i);
+              val p = strip2(pats(i));
+            val res =
               isDefaultPattern(p) || {
                 val symtpe = if(sym.hasFlag(symtab.Flags.MODULE)) {
                   singleType(sym.tpe.prefix, sym.linkedModuleOfClass) // e.g. None, Nil
                 } else sym.tpe
                 p.tpe.symbol == sym || symtpe <:< p.tpe
               }
+            //Console.println("covers: sym="+sym+" p="+p+", p.tpe="+p.tpe+" ?"+res)
+            res
           }
 
         val coversAll = allcomb forall { combination => row exists { r => covers(r.pat, combination)}}

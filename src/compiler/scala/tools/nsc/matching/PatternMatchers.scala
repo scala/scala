@@ -134,11 +134,12 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
             return
 
           case _:OutOfMemoryError =>
-            cunit.error(cases.head.pos, "internal error (out of memory in parallel match algorithm")
+            cunit.error(cases.head.pos, "internal error (out of memory in parallel match algorithm)")
             throw FatalError("died in parallel match algorithm" )
 
-          case _:MatchError =>
-            cunit.error(cases.head.pos, "internal error (match error in parallel match algorithm")
+          case e:MatchError =>
+            cunit.error(cases.head.pos, "internal error (match error in parallel match algorithm)"+e.getMessage)
+          e.printStackTrace()
             throw FatalError("died in parallel match algorithm" )
 
           case e =>
