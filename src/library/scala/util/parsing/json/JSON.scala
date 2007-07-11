@@ -32,20 +32,21 @@ object JSON extends Parser {
 
   def resolveType(input: Any): Any =
     input match {
-      case jo: List[(String,Any)] =>
+      case jo: List[_] =>
         /*println("Resolving object")*/
         val objMap = new HashMap[String, Any]()
 
-        jo.foreach {
-          case (key, value) =>
+        if(jo.forall {
+          case (key: String, value) =>
             objMap.update(key, resolveType(value))
+            true
+          case _ => false
+        }) objMap
+        else {
+          /*println("Resolving array"); */
+          jo.toArray
         }
 
-          objMap
-
-      case ja: List[Any] =>
-        /*println("Resolving array"); */
-        ja.toArray
       case _ @ elem =>
         /*println("Resolving element"); */
         elem

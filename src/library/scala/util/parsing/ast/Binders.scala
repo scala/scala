@@ -10,7 +10,7 @@ package scala.util.parsing.ast
 
 import scala.collection.mutable.Map
 
-//DISCLAIMER: this code is not well-tested -- consider it beta-quality!
+//DISCLAIMER: this code is highly experimental!
 
   // TODO: avoid clashes when substituting
   // TODO: check binders in the same scope are distinct

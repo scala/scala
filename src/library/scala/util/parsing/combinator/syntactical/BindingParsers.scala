@@ -13,7 +13,7 @@ package scala.util.parsing.combinator.syntactical
 
 import scala.util.parsing.ast._
 
-// DISCLAIMER: this code is not well-tested -- consider it beta-quality!
+//DISCLAIMER: this code is highly experimental!
 
 /** <p>
  *    This component augments the generic parsers with support for variable binding.
@@ -124,7 +124,7 @@ trait BindingParsers extends Parsers with Binders {
    *          wrapping its result in a `BoundElement'
    */
   def bound[bt <: NameElement](boundElementParser: Parser[bt]) =
-    boundElementParser ^? ({case x: bt if !findScope(x).isEmpty => BoundElement(x, findScope(x).get)}, (x: bt) => """Unbound variable `"""+x+"""'""")
+    boundElementParser ^? ({case x: NameElement if !findScope(x).isEmpty => BoundElement(x, findScope(x).get)}, (x: bt) => """Unbound variable `"""+x+"""'""")
 
 
   private var binderEnv: BinderEnv = EmptyBinderEnv
