@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2006-2007, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -15,9 +15,14 @@ import scala.collection.mutable.Map
   // TODO: avoid clashes when substituting
   // TODO: check binders in the same scope are distinct
 
-/** This trait provides the core Scrap-Your-Boilerplate abstractions as well as implementations for common datatypes.
- *
- * Based on Ralph Laemmel's SYB papers
+/** <p>
+ *    This trait provides the core Scrap-Your-Boilerplate abstractions as
+ *    well as implementations for common datatypes.
+ *  </p>
+ *  <p>
+ *    Based on Ralph Laemmel's <a target="_top"
+ *    href="http://homepages.cwi.nl/~ralf/publications.html">SYB papers</a>.
+ *  </p>
  *
  * @author Adriaan Moors
  */
@@ -29,32 +34,43 @@ trait Mappable {
   we can't require that the type is preserved precisely: a Name may map to e.g., a MethodCall
   */
 
-
-  trait Mappable[t] {
+  trait Mappable[T] {
     // one-layer traversal
-    def gmap(f: Mapper): t
+    def gmap(f: Mapper): T
     //  everywhere f x = f (gmapT (everywhere f) x)
-    def everywhere(f: Mapper)(implicit c: t => Mappable[t]): t = f(gmap(new Mapper{ def apply[t  <% Mappable[t]](x :t): t = x.everywhere(f)}))
+    def everywhere(f: Mapper)(implicit c: T => Mappable[T]): T =
+      f(gmap(new Mapper { def apply[T <% Mappable[T]](x: T): T = x.everywhere(f)}))
   }
 
-  implicit def StringIsMappable(s: String): Mappable[String] = new Mappable[String] {
-    def gmap(f: Mapper): String = f(s)
-  }
-  implicit def ListIsMappable[t <% Mappable[t]](xs: List[t]): Mappable[List[t]] = new Mappable[List[t]] {
-    def gmap(f: Mapper): List[t] = (for(val x <- xs) yield f(x)).toList
-  }
-  implicit def OptionIsMappable[t <% Mappable[t]](xs: Option[t]): Mappable[Option[t]] = new Mappable[Option[t]] {
-    def gmap(f: Mapper): Option[t] = (for(val x <- xs) yield f(x))
-  }
+  implicit def StringIsMappable(s: String): Mappable[String] =
+    new Mappable[String] {
+      def gmap(f: Mapper): String = f(s)
+    }
+
+  implicit def ListIsMappable[t <% Mappable[t]](xs: List[t]): Mappable[List[t]] =
+    new Mappable[List[t]] {
+      def gmap(f: Mapper): List[t] = (for(val x <- xs) yield f(x)).toList
+    }
+
+  implicit def OptionIsMappable[t <% Mappable[t]](xs: Option[t]): Mappable[Option[t]] =
+    new Mappable[Option[t]] {
+      def gmap(f: Mapper): Option[t] = (for(val x <- xs) yield f(x))
+    }
 }
 
-/** This component provides functionality for enforcing variable binding during parse-time.
- *
- * When parsing simple languages, like Featherweight Scala, these parser combinators will fully enforce
- * the binding discipline. When names are allowed to be left unqualified, these mechanisms would have
- * to be complemented by an extra phase that resolves names that couldn't be resolved using the naive
- * binding rules. (Maybe some machinery to model `implicit' binders (e.g., `this' and imported qualifiers)
- *                 and selection on a binder will suffice?)
+/** <p>
+ *    This component provides functionality for enforcing variable binding
+ *    during parse-time.
+ *  </p>
+ *  <p>
+ *   When parsing simple languages, like Featherweight Scala, these parser
+ *   combinators will fully enforce the binding discipline. When names are
+ *   allowed to be left unqualified, these mechanisms would have to be
+ *   complemented by an extra phase that resolves names that couldn't be
+ *   resolved using the naive binding rules. (Maybe some machinery to
+ *   model `implicit' binders (e.g., `this' and imported qualifiers)
+ *   and selection on a binder will suffice?)
+ * </p>
  *
  * @author Adriaan Moors
  */
@@ -160,8 +176,8 @@ trait Binders extends AbstractSyntax with Mappable {
         the binding in the returned scope also does, and thus the check that all variables are bound is deferred until this scope is left  **/
     def nested: Scope[binderType] = this // TODO
 
-    def onEnter = {}
-    def onLeft = {}
+    def onEnter {}
+    def onLeft {}
   }
 
 
@@ -275,7 +291,7 @@ trait Binders extends AbstractSyntax with Mappable {
   def UserNameElementIsMappable[t <: NameElement](self: t): Mappable[t]
 
   object UnderBinder {
-    def apply[binderType  <: NameElement, elementT <% Mappable[elementT]](scope: Scope[binderType], element: elementT) = new UnderBinder(scope, element)
+    def apply[binderType <: NameElement, elementT <% Mappable[elementT]](scope: Scope[binderType], element: elementT) = new UnderBinder(scope, element)
     def unit[bt <: NameElement, elementT <% Mappable[elementT]](x: elementT) = UnderBinder(new Scope[bt](), x)
   }
 
@@ -312,8 +328,9 @@ trait Binders extends AbstractSyntax with Mappable {
         else BinderEnv.this.apply(w)
     }
   }
+
   object EmptyBinderEnv extends BinderEnv {
-    def apply[a <: NameElement](v: a): Option[Scope[a]] = None
+    def apply[A <: NameElement](v: A): Option[Scope[A]] = None
   }
 
   /** Returns a given result, but executes the supplied closure before returning.
@@ -324,8 +341,15 @@ trait Binders extends AbstractSyntax with Mappable {
    * @param result the result to be returned
    * @param block  code to be executed, purely for its side-effects
    */
-  trait ReturnAndDo[t]{def andDo(block: =>unit):t} // gotta love Smalltalk syntax :-)
-  def return_[t](result: t):ReturnAndDo[t] = new ReturnAndDo[t]{val r=result; def andDo(block: =>unit):t = {block; r}}
+  trait ReturnAndDo[T]{
+    def andDo(block: => Unit): T
+  } // gotta love Smalltalk syntax :-)
+
+  def return_[T](result: T): ReturnAndDo[T] =
+    new ReturnAndDo[T] {
+      val r = result
+      def andDo(block: => Unit): T = {block; r}
+    }
 
   private object _Binder {
     private var currentId = 0

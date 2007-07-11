@@ -1,10 +1,12 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2006-2007, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
+
+// $Id$
 
 package scala.util.parsing.combinator
 
@@ -14,28 +16,41 @@ import scala.collection.mutable.{Map=>MutableMap}
 // TODO: better error handling (labelling like parsec's <?>)
 // TODO: memoisation (like packrat parsers?)
 
-/** `Parsers' is a component that <i>provides</i> generic parser combinators.
+/** <p>
+ *    <code>Parsers</code> is a component that <i>provides</i> generic
+ *    parser combinators.
+ *  </p>
+ *  <p>
+ *    It <i>requires</i> the type of the elements these parsers should parse
+ *    (each parser is polymorphic in the type of result it produces).
+ *  </p>
+ *  <p>
+ *    There are two aspects to the result of a parser: (1) success or failure,
+ *    and (2) the result. A <code>Parser[T]</code> provides both kinds of
+ *    information, but a <code>UnitParser</code> only signals success/failure.
+ *    When composing a `UnitParser' with a normal <code>Parser</code>, the
+ *    <code>UnitParser</code> only contributes to whether the combined parser
+ *    is successful (i.e., its result is discarded).
+ *  </p>
+ *  <p>
+ *    The term ``parser combinator'' refers to the fact that these parsers
+ *    are constructed from primitive parsers and composition operators, such
+ *    as sequencing, alternation, optionality, repetition, lifting, and so on.
+ *  </p>
+ *  <p>
+ *    A ``primitive parser'' is a parser that accepts or rejects a single
+ *    piece of input, based on a certain criterion, such as whether the
+ *    input...
+ *  </p><ul>
+ *    <li> is equal to some given object, </li>
+ *    <li> satisfies a certain predicate, </li>
+ *    <li> is in the domain of a given partial function,.... </li>
+ *  </ul>
+ *  <p>
+ *    Even more primitive parsers always produce the same result, irrespective
+ *    of the input.
+ *  </p>
  *
- * It <i>requires</i> the type of the elements these parsers should parse
- * (each parser is polymorphic in the type of result it produces).
- *<p>
- * There are two aspects to the result of a parser: (1) success or failure, and (2) the result.
- * A `Parser[T]' provides both kinds of information, but a `UnitParser' only signals success/failure.
- * When composing a `UnitParser' with a normal `Parser', the `UnitParser' only contributes to whether
- * the combined parser is successful (i.e., its result is discarded).</p>
- *<p>
- * The term ``parser combinator'' refers to the fact that these parsers are constructed from primitive
- * parsers and composition operators, such as sequencing, alternation, optionality, repetition,
- * lifting, and so on.</p>
- *<p>
- * A ``primitive parser'' is a parser that accepts or rejects a single piece of input,
- * based on a certain criterion, such as whether the input... <ul>
- *  <li> is equal to some given object, </li>
- *  <li> satisfies a certain predicate, </li>
- *  <li> is in the domain of a given partial function,.... </li></ul></p>
- *
- *<p> Even more primitive parsers always produce the same result, irrespective of the input.  </p>
- *<p>
  * @requires Elem the type of elements the provided parsers consume
  *              (When consuming invidual characters, a parser is typically called a ``scanner'',
  *               which produces ``tokens'' that are consumed by what is normally called a ``parser''.
@@ -61,8 +76,9 @@ trait Parsers {
   type Input = Reader[Elem]
 
   /** A base class for parser results.
-   *  A result is either successful or not (failure may be fatal, i.e., an Error, or not, i.e., a Failure)
-   *  On success, provides a result of type `T'.
+   *  A result is either successful or not (failure may be fatal, i.e.,
+   *  an Error, or not, i.e., a Failure)
+   *  On success, provides a result of type <code>T</code>.
    */
   sealed abstract class ParseResult[+T] {
     /** Functional composition of ParseResults
@@ -360,15 +376,15 @@ trait Parsers {
     def ? = opt(this)
   }
 
-  /** The root class of special parsers returning the trivial result `unit'
-   *  These compose differently from normal parsers in that the `unit'
+  /** The root class of special parsers returning the trivial result <code>Unit</code>
+   *  These compose differently from normal parsers in that the <code>Unit</code>
    *  result in a sequential or function composition is dropped.
    */
-  abstract class UnitParser extends (Input => ParseResult[unit]) {
+  abstract class UnitParser extends (Input => ParseResult[Unit]) {
 
     /** An unspecified method that defines the behaviour of this parser.
      */
-    def apply(in: Input): ParseResult[unit]
+    def apply(in: Input): ParseResult[Unit]
 
     /** A parser combinator for sequential composition
      *
@@ -394,7 +410,7 @@ trait Parsers {
      * @return a `UnitParser' that fails if either `p' or `q' fails.
      */
     def ~ [A <% UnitParser](q: => A): UnitParser = new UnitParser {
-      def apply(in: Input): ParseResult[unit] = seq(UnitParser.this, q)((x, y) => y)(in)
+      def apply(in: Input): ParseResult[Unit] = seq(UnitParser.this, q)((x, y) => y)(in)
       override def toString = "~"
     }
 
@@ -513,7 +529,7 @@ trait Parsers {
 
 	/*trait ElemFun
   case class EFCons(hd: Elem => ElemFun, tl: ElemFun) extends ElemFun
-  case class EFNil(res: boolean) extends ElemFun*/
+  case class EFNil(res: Boolean) extends ElemFun*/
 
 
   /** A parser matching input elements that satisfy a given predicate
@@ -524,7 +540,7 @@ trait Parsers {
    * @param  p      A predicate that determines which elements match.
    * @return
    */
-  def elem(kind: String, p: Elem => boolean) = new Parser[Elem] {
+  def elem(kind: String, p: Elem => Boolean) = new Parser[Elem] {
     def apply(in: Input) =
       if (p(in.first)) Success(in.first, in.rest)
       else Failure(kind+" expected", in)
@@ -829,12 +845,12 @@ trait Parsers {
     }
   }
 
-  /** `positioned' decorates a unit-parser so that it returns the start position of the input it
-   *  consumed.
+  /** <code>positioned</code> decorates a unit-parser so that it returns the
+   *  start position of the input it consumed.
    *
-   * @param p a `UnitParser'.
-   * @return A parser that has the same behaviour as `p', but which returns the start position of the
-   *         input it consumed.
+   *  @param p a `UnitParser'.
+   *  @return  A parser that has the same behaviour as `p', but which returns
+   *           the start position of the input it consumed.
    */
   def positioned(p: UnitParser) = new Parser[Position] {
     def apply(in: Input) = p(in) match {
@@ -861,7 +877,7 @@ trait Parsers {
       def apply(in: Input): ParseResult[U] = seq(UnitOnceParser.this, commit(q))((x, y) => y)(in)
     }
     override def ~ [A <% UnitParser](q: => A): UnitParser = new UnitOnceParser {
-      def apply(in: Input): ParseResult[unit] = seq(UnitOnceParser.this, commit(q))((x, y) => y)(in)
+      def apply(in: Input): ParseResult[Unit] = seq(UnitOnceParser.this, commit(q))((x, y) => y)(in)
     }
   }
 }

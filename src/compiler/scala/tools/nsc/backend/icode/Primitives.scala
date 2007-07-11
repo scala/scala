@@ -1,5 +1,5 @@
 /* NSC -- new scala compiler
- * Copyright 2005 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -19,33 +19,33 @@ trait Primitives { self: ICodes =>
   // type : (type) => type
   // range: type <- { BOOL, Ix, Ux, Rx }
   // jvm  : {i, l, f, d}neg
-  case class Negation(kind: TypeKind) extends Primitive;
+  case class Negation(kind: TypeKind) extends Primitive
 
   // type : zero ? (type) => BOOL : (type,type) => BOOL
   // range: type <- { BOOL, Ix, Ux, Rx, REF }
   // jvm  : if{eq, ne, lt, ge, le, gt}, if{null, nonnull}
   //        if_icmp{eq, ne, lt, ge, le, gt}, if_acmp{eq,ne}
-  case class Test(op: TestOp, kind: TypeKind,  zero: boolean)  extends Primitive;
+  case class Test(op: TestOp, kind: TypeKind,  zero: Boolean)  extends Primitive
 
   // type : (type,type) => I4
   // range: type <- { Ix, Ux, Rx }
   // jvm  : lcmp, {f, d}cmp{l, g}
-  case class Comparison(op: ComparisonOp, kind: TypeKind) extends Primitive;
+  case class Comparison(op: ComparisonOp, kind: TypeKind) extends Primitive
 
   // type : (type,type) => type
   // range: type <- { Ix, Ux, Rx }
   // jvm  : {i, l, f, d}{add, sub, mul, div, rem}
-  case class Arithmetic(op: ArithmeticOp, kind: TypeKind) extends Primitive;
+  case class Arithmetic(op: ArithmeticOp, kind: TypeKind) extends Primitive
 
   // type : (type,type) => type
   // range: type <- { BOOL, Ix, Ux }
   // jvm  : {i, l}{and, or, xor}
-  case class Logical(op: LogicalOp, kind: TypeKind) extends Primitive;
+  case class Logical(op: LogicalOp, kind: TypeKind) extends Primitive
 
   // type : (type,I4) => type
   // range: type <- { Ix, Ux }
   // jvm  : {i, l}{shl, ushl, shr}
-  case class Shift(op: ShiftOp, kind: TypeKind) extends Primitive;
+  case class Shift(op: ShiftOp, kind: TypeKind) extends Primitive
 
   // type : (src) => dst
   // range: src,dst <- { Ix, Ux, Rx }
@@ -60,38 +60,38 @@ trait Primitives { self: ICodes =>
   // type : (buf,el) => buf
   // range: lf,rg <- { BOOL, Ix, Ux, Rx, REF, STR }
   // jvm  : It should call the appropiate 'append' method on StringBuffer
-  case class StringConcat(el: TypeKind) extends Primitive;
+  case class StringConcat(el: TypeKind) extends Primitive
 
   /** Signals the beginning of a series of concatenations.
    *  On the JVM platform, it should create a new StringBuffer
    */
-  case object StartConcat extends Primitive;
+  case object StartConcat extends Primitive
 
   /**
    * type: (buf) => STR
    * jvm : It should turn the StringBuffer into a String.
    */
-  case object EndConcat extends Primitive;
+  case object EndConcat extends Primitive
 
   /** Pretty printer for primitives */
   class PrimitivePrinter(out: PrintWriter) {
 
     def print(s: String): PrimitivePrinter = {
-      out.print(s);
+      out.print(s)
       this
     }
 
-    def print(o: AnyRef): PrimitivePrinter = print(o.toString());
+    def print(o: AnyRef): PrimitivePrinter = print(o.toString())
 
     def printPrimitive(prim: Primitive) = prim match {
       case Negation(kind) =>
-        print("!");
+        print("!")
 
       case Test(op, kind, zero) =>
-        print(op).print(kind);
+        print(op).print(kind)
 
       case Comparison(op, kind) =>
-        print(op).print("(").print(kind);
+        print(op).print("(").print(kind)
 
     }
   }
@@ -101,21 +101,21 @@ trait Primitives { self: ICodes =>
 
     /** Returns a string representation of this operation. */
     override def toString(): String = this match {
-      case CMPL => "CMPL";
-      case CMP  => "CMP";
-      case CMPG => "CMPG";
-      case _ => throw new RuntimeException("ComparisonOp unknown case");
+      case CMPL => "CMPL"
+      case CMP  => "CMP"
+      case CMPG => "CMPG"
+      case _ => throw new RuntimeException("ComparisonOp unknown case")
     }
   }
 
   /** A comparison operation with -1 default for NaNs */
-  case object CMPL extends ComparisonOp;
+  case object CMPL extends ComparisonOp
 
   /** A comparison operation with no default for NaNs */
-  case object CMP extends ComparisonOp;
+  case object CMP extends ComparisonOp
 
     /** A comparison operation with +1 default for NaNs */
-  case object CMPG extends ComparisonOp;
+  case object CMPG extends ComparisonOp
 
 
   /** This class represents a test operation. */
@@ -123,117 +123,117 @@ trait Primitives { self: ICodes =>
 
     /** Returns the negation of this operation. */
     def negate(): TestOp = this match {
-        case EQ => NE;
-        case NE => EQ;
-        case LT => GE;
-        case GE => LT;
-        case LE => GT;
-        case GT => LE;
-        case _  => throw new RuntimeException("TestOp unknown case");
+        case EQ => NE
+        case NE => EQ
+        case LT => GE
+        case GE => LT
+        case LE => GT
+        case GT => LE
+        case _  => throw new RuntimeException("TestOp unknown case")
     }
 
     /** Returns a string representation of this operation. */
     override def toString(): String = this match {
-        case EQ =>  "EQ";
-        case NE =>  "NE";
-        case LT =>  "LT";
-        case GE =>  "GE";
-        case LE =>  "LE";
-        case GT =>  "GT";
-        case _  => throw new RuntimeException("TestOp unknown case");
+        case EQ =>  "EQ"
+        case NE =>  "NE"
+        case LT =>  "LT"
+        case GE =>  "GE"
+        case LE =>  "LE"
+        case GT =>  "GT"
+        case _  => throw new RuntimeException("TestOp unknown case")
     }
   }
   /** An equality test */
-  case object EQ extends TestOp;
+  case object EQ extends TestOp
 
   /** A non-equality test */
-  case object NE extends TestOp;
+  case object NE extends TestOp
 
   /** A less-than test */
-  case object LT extends TestOp;
+  case object LT extends TestOp
 
   /** A greater-than-or-equal test */
-  case object GE extends TestOp;
+  case object GE extends TestOp
 
   /** A less-than-or-equal test */
-  case object LE extends TestOp;
+  case object LE extends TestOp
 
   /** A greater-than test */
-  case object GT extends TestOp;
+  case object GT extends TestOp
 
   /** This class represents an arithmetic operation. */
   class ArithmeticOp {
 
     /** Returns a string representation of this operation. */
     override def toString(): String = this match {
-        case ADD => "ADD";
-        case SUB => "SUB";
-        case MUL => "MUL";
-        case DIV => "DIV";
-        case REM => "REM";
-        case NOT => "NOT";
-        case _   => throw new RuntimeException("ArithmeticOp unknown case");
+      case ADD => "ADD"
+      case SUB => "SUB"
+      case MUL => "MUL"
+      case DIV => "DIV"
+      case REM => "REM"
+      case NOT => "NOT"
+      case _   => throw new RuntimeException("ArithmeticOp unknown case")
     }
   }
 
   /** An arithmetic addition operation */
-  case object ADD extends ArithmeticOp;
+  case object ADD extends ArithmeticOp
 
   /** An arithmetic subtraction operation */
-  case object SUB extends ArithmeticOp;
+  case object SUB extends ArithmeticOp
 
   /** An arithmetic multiplication operation */
-  case object MUL extends ArithmeticOp;
+  case object MUL extends ArithmeticOp
 
   /** An arithmetic division operation */
-  case object DIV extends ArithmeticOp;
+  case object DIV extends ArithmeticOp
 
   /** An arithmetic remainder operation */
-  case object REM extends ArithmeticOp;
+  case object REM extends ArithmeticOp
 
   /** Bitwise negation. */
-  case object NOT extends ArithmeticOp;
+  case object NOT extends ArithmeticOp
 
   /** This class represents a shift operation. */
   class ShiftOp {
 
     /** Returns a string representation of this operation. */
     override def toString(): String = this match {
-        case LSL =>  "LSL";
-        case ASR =>  "ASR";
-        case LSR =>  "LSR";
-        case _  => throw new RuntimeException("ShitOp unknown case");
+      case LSL =>  "LSL"
+      case ASR =>  "ASR"
+      case LSR =>  "LSR"
+      case _  => throw new RuntimeException("ShitOp unknown case")
     }
   }
 
   /** A logical shift to the left */
-  case object LSL extends ShiftOp;
+  case object LSL extends ShiftOp
 
   /** An arithmetic shift to the right */
-  case object ASR extends ShiftOp;
+  case object ASR extends ShiftOp
 
   /** A logical shift to the right */
-  case object LSR extends ShiftOp;
+  case object LSR extends ShiftOp
 
   /** This class represents a logical operation. */
   class LogicalOp {
 
     /** Returns a string representation of this operation. */
     override def toString(): String = this match {
-        case AND => return "AND";
-        case OR  => return "OR";
-        case XOR => return "XOR";
-        case _  => throw new RuntimeException("LogicalOp unknown case");
+      case AND => return "AND"
+      case OR  => return "OR"
+      case XOR => return "XOR"
+      case _  => throw new RuntimeException("LogicalOp unknown case")
     }
   }
 
   /** A bitwise AND operation */
-  case object AND extends LogicalOp;
+  case object AND extends LogicalOp
 
   /** A bitwise OR operation */
-  case object OR extends LogicalOp;
+  case object OR extends LogicalOp
 
   /** A bitwise XOR operation */
-  case object XOR extends LogicalOp;
+  case object XOR extends LogicalOp
 }
 

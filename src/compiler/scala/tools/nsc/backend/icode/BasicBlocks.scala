@@ -21,7 +21,7 @@ trait BasicBlocks {
    *  either executed all, or none. No jumps
    *  to/from the "middle" of the basic block are allowed.
    */
-  class BasicBlock (theLabel: int, val method: IMethod)
+  class BasicBlock (theLabel: Int, val method: IMethod)
         extends AnyRef
         with ProgramPoint[BasicBlock] {
 
@@ -53,7 +53,7 @@ trait BasicBlocks {
 
     private var _lastInstruction: Instruction = null
 
-    private var closed: boolean = false
+    private var closed: Boolean = false
 
     private var instrs: Array[Instruction] = _
     private var touched = false
@@ -94,7 +94,7 @@ trait BasicBlocks {
 //    override def hashCode() = label;
 
     /** Apply a function to all the instructions of the block. */
-    def traverse(f: Instruction => unit) = {
+    def traverse(f: Instruction => Unit) = {
       if (!closed) {
         dump
         global.abort("Traversing an open block!: " + label)
@@ -416,9 +416,9 @@ trait BasicBlocks {
     override def hashCode = label
 
     // Instead of it, rather use a printer
-    def print() : unit = print(java.lang.System.out)
+    def print() { print(java.lang.System.out) }
 
-    def print(out: java.io.PrintStream) : unit = {
+    def print(out: java.io.PrintStream) {
       out.println("block #"+label+" :")
       toList.foreach(i => out.println("  " + i))
       out.print("Successors: ")

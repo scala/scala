@@ -1,10 +1,12 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2006-2007, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
+
+// $Id$
 
 package scala.util.parsing.input
 
@@ -27,15 +29,16 @@ object CharArrayReader {
  *
  * @author Martin Odersky, Adriaan Moors
  */
-class CharArrayReader(source: Array[char], index: int, line: int, column: int) extends Reader[char] {
+class CharArrayReader(source: Array[Char], index: Int, line: Int, column: Int) extends Reader[Char] {
   import CharArrayReader._
 
-  /** Construct a `CharArrayReader' with its first element at `source(0)' and position `(1,1)'
+  /** Construct a <code>CharArrayReader</code> with its first element at
+   *  <code>source(0)</code> and position <code>(1,1)</code>.
    */
-  def this(source: Array[char]) = this(source, 0, 1, 1)
+  def this(source: Array[Char]) = this(source, 0, 1, 1)
 
   private var i = index
-  if (i + 1 < source.length && source(i) == CR && source(i + 1) == '\n') i = i + 1
+  if (i + 1 < source.length && source(i) == CR && source(i + 1) == '\n') i += 1
 
   // see `first' in `Reader'
   def first = if (i == source.length) EofCh else source(i)

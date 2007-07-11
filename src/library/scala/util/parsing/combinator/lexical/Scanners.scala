@@ -18,15 +18,16 @@ import scala.util.parsing.input._
  *    This component provides core functionality for lexical parsers.
  *  </p>
  *  <p>
- *    See its subclasses {@see Lexical} and -- most interestingly {@see StdLexical},
- *    for more functionality.
+ *    See its subclasses {@see Lexical} and -- most interestingly
+ *    {@see StdLexical}, for more functionality.
  *  </p>
  *
  *  @requires token      a parser that produces a token (from a stream of characters)
  *  @requires whitespace a unit-parser for white-space
- *  @provides Scanner    essentially a parser that parses a stream of characters to produce `Token's,
- *                       which are typically passed to a syntactical parser (which operates on
- *                       `Token's, not on individual characters)
+ *  @provides Scanner    essentially a parser that parses a stream of characters
+ *                       to produce `Token's, which are typically passed to a
+ *                       syntactical parser (which operates on `Token's, not on
+ *                       individual characters).
  *
  *  @author Martin Odersky, Adriaan Moors
  */
@@ -41,8 +42,8 @@ trait Scanners extends Parsers with Tokens {
 
   /** <p>
    *    <code>Scanner</code> is essentially(*) a parser that produces `Token's
-   *    from a stream of characters. The tokens it produces are typically passed
-   *    to parsers in <code>TokenParsers</code>.
+   *    from a stream of characters. The tokens it produces are typically
+   *    passed to parsers in <code>TokenParsers</code>.
    *  </p>
    *  <p>
    *   Note: (*) <code>Scanner</code> is really a `Reader' of `Token's
@@ -59,7 +60,7 @@ trait Scanners extends Parsers with Tokens {
         }
       case ns: NoSuccess => Triple(errorToken(ns.msg), ns.next, skip(ns.next))
     }
-    private def skip(in: Reader[char]) = if (in.atEnd) in else in.rest
+    private def skip(in: Reader[Char]) = if (in.atEnd) in else in.rest
 
     def first = tok
     def rest = new Scanner(rest2)

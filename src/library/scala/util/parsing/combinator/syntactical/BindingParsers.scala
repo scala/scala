@@ -15,32 +15,52 @@ import scala.util.parsing.ast._
 
 // DISCLAIMER: this code is not well-tested -- consider it beta-quality!
 
-/** This component augments the generic parsers with support for variable binding.
- *
- * Use `bind' to decorate a parser that parses a binder (e.g., the name of a local variable or
- * an argument name in a list of formal arguments): besides the parser, it requires a fresh
- * `Binder' object, which serves as a container for one or more binders with the same scope.
- * The result of the parser is added to the binder's elements. Note that semantic equality (`equals')
- * is used to link a binder to its bound occurrences (along with its scope, of course).
- *
- * For example, here's how you'd write a parser (`p') for a let construct (assuming b: Binder[Name]):
- *   "val" ~! bind(name, b) ~ ":" ~ typeP ~ "=" ~ term ~ "in" ~ in(term, b),
- *
- * This can be read as ``The parser that matches `val' (and then does not back-track anymore),
- * a name -- which represents a binder we'll call `b' -- a colon, a type, an equals sign, a term,
- * the keyword `in' and finally a term where `b' is in scope.''
- *
- * The result of this parser is a nested tuple of depth 3, containing a Type, a Term and
- * an UnderBinder[Name, Term]. Note that the binder itself is discarded (the UnderBinder keeps track of it).
- *
- * `newScope' makes an empty scope so that you can use `into' to pass it to a function that makes a parser
- * whose bound variables end up in this scope:
- *  In our example, it would be used like this (with `b' free in `p'): <pre>newScope[Name] into { b => p }</pre>
- *
- * Finally, `bound(p)' constructs a parser that checks that the result of `p' is bound by some binder `b'
- * (i.e., `b' has an element which `equals' the result of `p') in the current scope (as delineated by
- * `in(scopeP, b)', where `p' is called during `scopeP'). If scoping is indeed respected, `bound(p)'
- * wraps the result of `p' in a `BoundElement'.
+/** <p>
+ *    This component augments the generic parsers with support for variable binding.
+ *  </p>
+ *  <p>
+ *    Use <code>bind</code> to decorate a parser that parses a binder (e.g.,
+ *    the name of a local variable or an argument name in a list of formal
+ *    arguments): besides the parser, it requires a fresh <code>Binder</code>
+ *    object, which serves as a container for one or more binders with the same
+ *    scope. The result of the parser is added to the binder's elements. Note
+ *    that semantic equality (<code>equals</code>) is used to link a binder to
+ *    its bound occurrences (along with its scope, of course).
+ *  </p>
+ *  <p>
+ *    For example, here's how you'd write a parser (<code>p</code>) for a let
+ *    construct (assuming <code>b: Binder[Name]</code>):
+ *  </p><pre>
+ *   "val" ~! bind(name, b) ~ ":" ~ typeP ~ "=" ~ term ~ "in" ~ in(term, b),</pre>
+ *  <p>
+ *    This can be read as ``The parser that matches <code>val</code> (and then
+ *    does not back-track anymore), a name -- which represents a binder we'll
+ *    call <code>b</code> -- a colon, a type, an equals sign, a term, the
+ *    keyword <code>in</code> and finally a term where `b' is in scope.''
+ *  </p>
+ *  <p>
+ *    The result of this parser is a nested tuple of depth 3, containing a
+ *    Type, a <code>Term</code> and an <code>UnderBinder[Name, Term]</code>.
+ *    Note that the binder itself is discarded (the <code>UnderBinder</code>
+ *    keeps track of it).
+ *  </p>
+ *  <p>
+ *    <code>newScope</code> makes an empty scope so that you can use
+ *    <code>into</code> to pass it to a function that makes a parser
+ *    whose bound variables end up in this scope:
+ *    In our example, it would be used like this (with <code>b</code> free
+ *    in <code>p</code>):
+ *  </p><pre>
+ *    newScope[Name] into { b => p }</pre>
+ *  <p>
+ *    Finally, <code>bound(p)</code> constructs a parser that checks that the
+ *    result of <code>p</code> is bound by some binder <code>b</code> (i.e.,
+ *    <code>b</code> has an element which <code>equals</code> the result of
+ *    <code>p</code>) in the current scope (as delineated by
+ *    <code>in(scopeP, b)</code>, where <code>p</code> is called during
+ *    `scopeP'). If scoping is indeed respected, <code>bound(p)</code>
+ *    wraps the result of <code>p</code> in a <code>BoundElement</code>.
+ *  </p>
  *
  * @author Adriaan Moors
  */
@@ -51,9 +71,9 @@ trait BindingParsers extends Parsers with Binders {
    * <pre>newScope[Name] into { b =>
    *    "val" ~! bind(name, b) ~ ":" ~ typeP ~ "=" ~ term ~ "in" ~ in(term, b)}</pre>
    */
-  def newScope[t <: NameElement] = success(new Scope[t])
+  def newScope[T <: NameElement] = success(new Scope[T])
 
-  def nested[t <: NameElement](s: Scope[t]) = success(s.nested)
+  def nested[T <: NameElement](s: Scope[T]) = success(s.nested)
 
   // TODO: make `bind' and `in' methods of Scope?
 
@@ -69,15 +89,20 @@ trait BindingParsers extends Parsers with Binders {
    *          added to `scope' and not returned.
    */
   def bind[bt <: NameElement](binderParser: Parser[bt], scope: Scope[bt]) = new UnitParser {
-    def apply(in: Input): ParseResult[unit] = {
+    def apply(in: Input): ParseResult[Unit] = {
       binderParser(in).map(x => scope.addBinder(x))
     }
   }
 
-  /** Parse something that is in the scope of the given binders.
-   *
-   * During the execution of `scopeParser', the binders in `binder' are active:
-   * see `bound' for more information. The result of the decorated parser is wrapped in an `UnderBinder'
+  /** <p>
+   *    Parse something that is in the scope of the given binders.
+   *  </p>
+   *  <p>
+   *    During the execution of <code>scopeParser</code>, the binders in
+   *    <code>binder</code> are active: see <code>bound</code> for more
+   *    information. The result of the decorated parser is wrapped in an
+   *    <code>UnderBinder</code>.
+   *  </p>
    *
    * @param scopeParser the parser that parses something that is in the scope of `binder'
    * @param binder      a container of binders, typically populated by `bind'

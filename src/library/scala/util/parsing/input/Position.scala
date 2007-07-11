@@ -1,38 +1,44 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2006-2007, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
 
 package scala.util.parsing.input
 
-/** `Position' is the base class for objects describing a position in a ``document''.
- *<p>
- * It provides functionality for: <ul>
- *  <li> generating a visual representation of this position (`longString');
- *  <li> comparing two positions (`<').
- * </ul></p>
- *<p>
- * To use this class for a concrete kind of ``document'', implement the `lineContents' method.</p>
+/** <p>
+ *    <code>Position</code> is the base class for objects describing a
+ *    position in a ``document''.
+ *  </p>
+ *  <p>
+ *    It provides functionality for:
+ *  </p><ul>
+ *    <li> generating a visual representation of this position (`longString');
+ *    <li> comparing two positions (`<').
+ *  </ul>
+ *  <p>
+ *    To use this class for a concrete kind of ``document'', implement the
+ *    <code>lineContents</code> method.
+ *  </p>
  *
  * @author Martin Odersky, Adriaan Moors
  */
 trait Position {
 
   /** The line number referred to by the position; line numbers start at 1 */
-  def line: int
+  def line: Int
 
   /** The column number referred to by the position; column numbers start at 1 */
-  def column: int
+  def column: Int
 
   /** The contents of the line numbered `lnum' (must not contain a new-line character).
    *
    * @param lnum a 1-based integer index into the `document'
    * @return the line at `lnum' (not including a newline)
    */
-  protected def lineContents(lnum: int): String
+  protected def lineContents(lnum: Int): String
 
   /** Returns a string representation of the `Position', of the form `line.column' */
   override def toString = ""+line+"."+column

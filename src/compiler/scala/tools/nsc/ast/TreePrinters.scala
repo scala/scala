@@ -25,7 +25,7 @@ abstract class TreePrinters {
     def indent = indentMargin += indentStep
     def undent = indentMargin -= indentStep
 
-    def println = {
+    def println {
       out.println()
       while (indentMargin > indentString.length())
         indentString += indentString
@@ -33,49 +33,56 @@ abstract class TreePrinters {
         out.write(indentString, 0, indentMargin)
     }
 
-    def printSeq[a](ls: List[a])(printelem: a => unit)(printsep: => unit): unit = ls match {
-      case List() =>
-      case List(x) => printelem(x)
-      case x :: rest => printelem(x); printsep; printSeq(rest)(printelem)(printsep)
+    def printSeq[a](ls: List[a])(printelem: a => Unit)(printsep: => Unit) {
+      ls match {
+        case List() =>
+        case List(x) => printelem(x)
+        case x :: rest => printelem(x); printsep; printSeq(rest)(printelem)(printsep)
+      }
     }
 
-    def printColumn(ts: List[Tree], start: String, sep: String, end: String): unit = {
+    def printColumn(ts: List[Tree], start: String, sep: String, end: String) {
       print(start); indent; println
       printSeq(ts){print}{print(sep); println}; undent; println; print(end)
     }
 
-    def printRow(ts: List[Tree], start: String, sep: String, end: String): unit = {
+    def printRow(ts: List[Tree], start: String, sep: String, end: String) {
       print(start); printSeq(ts){print}{print(sep)}; print(end)
     }
 
-    def printRow(ts: List[Tree], sep: String): unit = printRow(ts, "", sep, "")
+    def printRow(ts: List[Tree], sep: String) { printRow(ts, "", sep, "") }
 
-    def printTypeParams(ts: List[TypeDef]): unit =
+    def printTypeParams(ts: List[TypeDef]) {
       if (!ts.isEmpty) {
         print("["); printSeq(ts){printParam}{print(", ")}; print("]")
       }
+    }
 
-    def printValueParams(ts: List[ValDef]): unit = {
+    def printValueParams(ts: List[ValDef]) {
       print("(")
       if (!ts.isEmpty) printFlags(ts.head.mods.flags & IMPLICIT, "")
       printSeq(ts){printParam}{print(", ")}
       print(")")
     }
 
-    def printParam(tree: Tree): unit = tree match {
-      case ValDef(mods, name, tp, rhs) =>
-        printAnnotations(tree)
-        print(symName(tree, name)); printOpt(": ", tp)
-      case TypeDef(mods, name, tparams, rhs) =>
-        print(symName(tree, name))
-        printTypeParams(tparams); print(rhs)
+    def printParam(tree: Tree) {
+      tree match {
+        case ValDef(mods, name, tp, rhs) =>
+          printAnnotations(tree)
+          print(symName(tree, name)); printOpt(": ", tp)
+        case TypeDef(mods, name, tparams, rhs) =>
+          print(symName(tree, name))
+          printTypeParams(tparams); print(rhs)
+      }
     }
 
-    def printBlock(tree: Tree): unit = tree match {
-      case Block(_, _) =>
-        print(tree)
-      case _ =>
-        printColumn(List(tree), "{", ";", "}")
+    def printBlock(tree: Tree) {
+      tree match {
+        case Block(_, _) =>
+          print(tree)
+        case _ =>
+          printColumn(List(tree), "{", ";", "}")
+      }
     }
 
     def symName(tree: Tree, name: Name): String =
@@ -84,10 +91,11 @@ abstract class TreePrinters {
          tree.symbol.nameString)
       } else name.toString();
 
-    def printOpt(prefix: String, tree: Tree): unit =
+    def printOpt(prefix: String, tree: Tree) {
       if (!tree.isEmpty) { print(prefix); print(tree) }
+    }
 
-    def printModifiers(tree: Tree, mods: Modifiers): unit = {
+    def printModifiers(tree: Tree, mods: Modifiers) {
       if (tree.symbol == NoSymbol)
         printFlags(mods.flags, mods.privateWithin.toString)
       else if (tree.symbol.privateWithin == NoSymbol ||
@@ -97,7 +105,7 @@ abstract class TreePrinters {
         printFlags(tree.symbol.flags, tree.symbol.privateWithin.name.toString)
     }
 
-    def printFlags(flags: long, privateWithin: String): unit = {
+    def printFlags(flags: long, privateWithin: String) {
       var mask: long = if (settings.debug.value) -1L else PrintableFlags
       val s = flagsToString(flags & mask, privateWithin.toString)
       if (s.length() != 0) print(s + " ")
@@ -114,10 +122,10 @@ abstract class TreePrinters {
       }
     }
 
-    def print(str: String): unit = out.print(str)
-    def print(name: Name): unit = print(name.toString())
+    def print(str: String) { out.print(str) }
+    def print(name: Name) { print(name.toString()) }
 
-    def printRaw(tree: Tree): unit = {
+    def printRaw(tree: Tree) {
       tree match {
         case EmptyTree =>
           print("<empty>")
@@ -340,7 +348,7 @@ abstract class TreePrinters {
       }
     }
 
-    def print(tree: Tree): unit = {
+    def print(tree: Tree) {
       if (settings.Xprintpos.value) print("[" + tree.pos + "]")
       printRaw(
         if (tree.isDef && tree.symbol != NoSymbol && tree.symbol.isInitialized) {
@@ -381,9 +389,9 @@ abstract class TreePrinters {
       * output stream.
       */
     object ConsoleWriter extends Writer {
-      override def write(str: String): unit = Console.print(str)
+      override def write(str: String) { Console.print(str) }
 
-      def write(cbuf: Array[char], off: int, len: int) {
+      def write(cbuf: Array[Char], off: Int, len: Int) {
         val str = new String(cbuf, off, len)
         write(str)
       }

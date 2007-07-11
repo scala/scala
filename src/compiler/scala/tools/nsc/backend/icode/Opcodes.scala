@@ -1,15 +1,15 @@
-/* NSC -- new scala compiler
- * Copyright 2005 LAMP/EPFL
+/* NSC -- new Scala compiler
+ * Copyright 2005-2007 LAMP/EPFL
  * @author  Martin Odersky
  */
 
 // $Id$
 
 
-package scala.tools.nsc.backend.icode;
+package scala.tools.nsc.backend.icode
 
-import scala.tools.nsc.ast._;
-import scala.tools.nsc.util.{Position,NoPosition};
+import scala.tools.nsc.ast._
+import scala.tools.nsc.util.{Position,NoPosition}
 
 /*
   A pattern match
@@ -60,22 +60,22 @@ trait Opcodes { self: ICodes =>
   abstract class Instruction {
 
     /** This abstract method returns the number of used elements on the stack */
-    def consumed : Int = 0;
+    def consumed : Int = 0
 
     /** This abstract method returns the number of produced elements on the stack */
-    def produced : Int = 0;
+    def produced : Int = 0
 
     /** This instruction consumes these types from the top of the stack. */
-    def consumedTypes: List[TypeKind] = Nil;
+    def consumedTypes: List[TypeKind] = Nil
 
     /** This instruction produces these types on top of the stack. */
-    def producedTypes: List[TypeKind] = Nil;
+    def producedTypes: List[TypeKind] = Nil
 
     /** This method returns the difference of size of the stack when the instruction is used */
-    def difference = produced-consumed;
+    def difference = produced-consumed
 
     /** The corresponding position in the source file */
-    var pos: Position = NoPosition;
+    var pos: Position = NoPosition
 
     /** Used by dead code elimination. */
     var useful: Boolean = false
@@ -89,26 +89,26 @@ trait Opcodes { self: ICodes =>
      */
     case class THIS(clasz: Symbol) extends Instruction {
       /** Returns a string representation of this constant */
-      override def toString(): String = "THIS";
+      override def toString(): String = "THIS"
 
-      override def consumed = 0;
-      override def produced = 1;
+      override def consumed = 0
+      override def produced = 1
 
-      override def producedTypes = List(REFERENCE(clasz));
+      override def producedTypes = List(REFERENCE(clasz))
     }
 
     /** Loads a constant on the stack.
      * Stack: ...
      *    ->: ...:constant
      */
-    case class CONSTANT(constant: Constant) extends Instruction{
+    case class CONSTANT(constant: Constant) extends Instruction {
       /** Returns a string representation of this constant */
-      override def toString(): String = "CONSTANT ("+constant.toString()+")";
+      override def toString(): String = "CONSTANT ("+constant.toString()+")"
 
-      override def consumed = 0;
-      override def produced = 1;
+      override def consumed = 0
+      override def produced = 1
 
-      override def producedTypes = List(toTypeKind(constant.tpe));
+      override def producedTypes = List(toTypeKind(constant.tpe))
     }
 
     /** Loads an element of an array. The array and the index should
@@ -118,13 +118,13 @@ trait Opcodes { self: ICodes =>
      */
     case class LOAD_ARRAY_ITEM(kind: TypeKind) extends Instruction {
       /** Returns a string representation of this instruction */
-      override def toString(): String = "LOAD_ARRAY_ITEM (" + kind + ")";
+      override def toString(): String = "LOAD_ARRAY_ITEM (" + kind + ")"
 
-      override def consumed = 2;
-      override def produced = 1;
+      override def consumed = 2
+      override def produced = 1
 
-      override def consumedTypes = List(ARRAY(kind), INT);
-      override def producedTypes = List(kind);
+      override def consumedTypes = List(ARRAY(kind), INT)
+      override def producedTypes = List(kind)
     }
 
     /** Load a local variable on the stack. It can be a method argument.
@@ -133,12 +133,12 @@ trait Opcodes { self: ICodes =>
      */
     case class LOAD_LOCAL(local: Local) extends Instruction {
       /** Returns a string representation of this instruction */
-      override def toString(): String = "LOAD_LOCAL "+local.toString(); //+isArgument?" (argument)":"";
+      override def toString(): String = "LOAD_LOCAL "+local.toString()  //+isArgument?" (argument)":"";
 
-      override def consumed = 0;
-      override def produced = 1;
+      override def consumed = 0
+      override def produced = 1
 
-      override def producedTypes = List(local.kind);
+      override def producedTypes = List(local.kind)
     }
 
     /** Load a field on the stack. The object to which it refers should be
@@ -146,13 +146,13 @@ trait Opcodes { self: ICodes =>
      * Stack: ...:ref       (assuming isStatic = false)
      *    ->: ...:value
      */
-    case class LOAD_FIELD(field: Symbol, isStatic: boolean) extends Instruction {
+    case class LOAD_FIELD(field: Symbol, isStatic: Boolean) extends Instruction {
       /** Returns a string representation of this instruction */
       override def toString(): String =
         "LOAD_FIELD " + (if (isStatic) field.fullNameString else field.toString());
 
-      override def consumed = if(isStatic) 0 else 1;
-      override def produced = 1;
+      override def consumed = if (isStatic) 0 else 1
+      override def produced = 1
 
       override def consumedTypes = if (isStatic) Nil else List(REFERENCE(field.owner));
       override def producedTypes = List(toTypeKind(field.tpe));
@@ -163,12 +163,12 @@ trait Opcodes { self: ICodes =>
              "Invalid module symbol");
       /** Returns a string representation of this instruction */
       override def toString(): String =
-        "LOAD_MODULE " + module.toString();
+        "LOAD_MODULE " + module.toString()
 
-      override def consumed = 0;
-      override def produced = 1;
+      override def consumed = 0
+      override def produced = 1
 
-      override def producedTypes = List(REFERENCE(module));
+      override def producedTypes = List(REFERENCE(module))
     }
 
     /** Store a value into an array at a specified index.
@@ -177,12 +177,12 @@ trait Opcodes { self: ICodes =>
      */
     case class STORE_ARRAY_ITEM(kind: TypeKind) extends Instruction {
       /** Returns a string representation of this instruction */
-      override def toString(): String = "STORE_ARRAY_ITEM (" + kind + ")";
+      override def toString(): String = "STORE_ARRAY_ITEM (" + kind + ")"
 
-      override def consumed = 3;
-      override def produced = 0;
+      override def consumed = 3
+      override def produced = 0
 
-      override def consumedTypes = List(ARRAY(kind), INT, kind);
+      override def consumedTypes = List(ARRAY(kind), INT, kind)
     }
 
     /** Store a value into a local variable. It can be an argument.
@@ -193,17 +193,17 @@ trait Opcodes { self: ICodes =>
       /** Returns a string representation of this instruction */
       override def toString(): String = "STORE_LOCAL "+local.toString(); //+isArgument?" (argument)":"";
 
-      override def consumed = 1;
-      override def produced = 0;
+      override def consumed = 1
+      override def produced = 0
 
-      override def consumedTypes = List(local.kind);
+      override def consumedTypes = List(local.kind)
     }
 
     /** Store a value into a field.
      * Stack: ...:ref:value   (assuming isStatic=false)
      *    ->: ...
      */
-    case class STORE_FIELD(field: Symbol, isStatic: boolean) extends Instruction {
+    case class STORE_FIELD(field: Symbol, isStatic: Boolean) extends Instruction {
       /** Returns a string representation of this instruction */
       override def toString(): String =
         "STORE_FIELD "+field.toString() + (if (isStatic) " (static)" else " (dynamic)");
@@ -224,54 +224,54 @@ trait Opcodes { self: ICodes =>
      */
     case class CALL_PRIMITIVE(primitive: Primitive) extends Instruction {
       /** Returns a string representation of this instruction */
-      override def toString(): String ="CALL_PRIMITIVE "+primitive.toString();
+      override def toString(): String ="CALL_PRIMITIVE "+primitive.toString()
 
       override def consumed = primitive match {
-        case Negation(_) => 1;
-        case Test(_,_,true) => 1;
-        case Test(_,_,false) => 2;
-        case Comparison(_,_) => 2;
-        case Arithmetic(NOT,_) => 1;
-        case Arithmetic(_,_) => 2;
-        case Logical(_,_) => 2;
-        case Shift(_,_) => 2;
-        case Conversion(_,_) => 1;
-        case ArrayLength(_) => 1;
-        case StringConcat(_) => 2;
-        case StartConcat => 0;
-        case EndConcat => 1;
+        case Negation(_)       => 1
+        case Test(_,_, true)   => 1
+        case Test(_,_, false)  => 2
+        case Comparison(_,_)   => 2
+        case Arithmetic(NOT,_) => 1
+        case Arithmetic(_,_)   => 2
+        case Logical(_,_)      => 2
+        case Shift(_,_)        => 2
+        case Conversion(_,_)   => 1
+        case ArrayLength(_)    => 1
+        case StringConcat(_)   => 2
+        case StartConcat       => 0
+        case EndConcat         => 1
       }
-      override def produced = 1;
+      override def produced = 1
 
       override def consumedTypes = primitive match {
-        case Negation(kind) => List(kind);
-        case Test(_, kind, true) => List(kind);
-        case Test(_, kind, false) => List(kind, kind);
-        case Comparison(_, kind) => List(kind, kind);
-        case Arithmetic(NOT, kind) => List(kind);
-        case Arithmetic(_, kind) => List(kind, kind);
-        case Logical(_, kind) => List(kind, kind);
-        case Shift(_, kind) => List(kind, INT);
-        case Conversion(from, _) => List(from);
-        case ArrayLength(kind) => List(ARRAY(kind));
-        case StringConcat(kind) => List(ConcatClass, kind);
-        case StartConcat => Nil;
-        case EndConcat => List(ConcatClass);
+        case Negation(kind)        => List(kind)
+        case Test(_, kind, true)   => List(kind)
+        case Test(_, kind, false)  => List(kind, kind)
+        case Comparison(_, kind)   => List(kind, kind)
+        case Arithmetic(NOT, kind) => List(kind)
+        case Arithmetic(_, kind)   => List(kind, kind)
+        case Logical(_, kind)      => List(kind, kind)
+        case Shift(_, kind)        => List(kind, INT)
+        case Conversion(from, _)   => List(from)
+        case ArrayLength(kind)     => List(ARRAY(kind))
+        case StringConcat(kind)    => List(ConcatClass, kind)
+        case StartConcat           => Nil
+        case EndConcat             => List(ConcatClass)
       }
 
       override def producedTypes = primitive match {
-        case Negation(kind) => List(kind);
-        case Test(_, _, true) => List(BOOL);
-        case Test(_, _, false) => List(BOOL);
-        case Comparison(_, _) => List(INT);
-        case Arithmetic(_, kind) => List(kind);
-        case Logical(_, kind) => List(kind);
-        case Shift(_, kind) => List(kind);
-        case Conversion(_, to) => List(to);
-        case ArrayLength(_) => List(INT);
-        case StringConcat(_) => List(ConcatClass);
-        case StartConcat => List(ConcatClass);
-        case EndConcat => List(REFERENCE(global.definitions.StringClass));
+        case Negation(kind)      => List(kind)
+        case Test(_, _, true)    => List(BOOL)
+        case Test(_, _, false)   => List(BOOL)
+        case Comparison(_, _)    => List(INT)
+        case Arithmetic(_, kind) => List(kind)
+        case Logical(_, kind)    => List(kind)
+        case Shift(_, kind)      => List(kind)
+        case Conversion(_, to)   => List(to)
+        case ArrayLength(_)      => List(INT)
+        case StringConcat(_)     => List(ConcatClass)
+        case StartConcat         => List(ConcatClass)
+        case EndConcat           => List(REFERENCE(global.definitions.StringClass))
       }
    }
 
@@ -379,11 +379,11 @@ trait Opcodes { self: ICodes =>
      */
     case class IS_INSTANCE(typ: TypeKind) extends Instruction {
       /** Returns a string representation of this instruction */
-      override def toString(): String ="IS_INSTANCE "+typ.toString();
+      override def toString(): String ="IS_INSTANCE "+typ.toString()
 
-      override def consumed = 1;
+      override def consumed = 1
       override def consumedTypes = AnyRefReference :: Nil
-      override def produced = 1;
+      override def produced = 1
     }
 
     /** This class represents a CHECK_CAST instruction
@@ -392,10 +392,10 @@ trait Opcodes { self: ICodes =>
      */
     case class CHECK_CAST(typ: TypeKind) extends Instruction {
       /** Returns a string representation of this instruction */
-      override def toString(): String ="CHECK_CAST "+typ.toString();
+      override def toString(): String ="CHECK_CAST "+typ.toString()
 
-      override def consumed = 1;
-      override def produced = 1;
+      override def consumed = 1
+      override def produced = 1
       override val consumedTypes = List(AnyRefReference)
       override def producedTypes = List(typ)
     }
@@ -410,10 +410,10 @@ trait Opcodes { self: ICodes =>
      */
     case class SWITCH(tags: List[List[Int]], labels: List[BasicBlock]) extends Instruction {
       /** Returns a string representation of this instruction */
-      override def toString(): String ="SWITCH ...";
+      override def toString(): String ="SWITCH ..."
 
-      override def consumed = 1;
-      override def produced = 0;
+      override def consumed = 1
+      override def produced = 0
     }
 
     /** This class represents a JUMP instruction
@@ -422,10 +422,10 @@ trait Opcodes { self: ICodes =>
      */
     case class JUMP(whereto: BasicBlock) extends Instruction {
       /** Returns a string representation of this instruction */
-      override def toString(): String ="JUMP "+whereto.label;
+      override def toString(): String ="JUMP "+whereto.label
 
-      override def consumed = 0;
-      override def produced = 0;
+      override def consumed = 0
+      override def produced = 0
     }
 
     /** This class represents a CJUMP instruction
@@ -445,8 +445,8 @@ trait Opcodes { self: ICodes =>
         cond.toString()+" ? "+successBlock.label+" : "+failureBlock.label
       );
 
-      override def consumed = 2;
-      override def produced = 0;
+      override def consumed = 2
+      override def produced = 0
     }
 
     /** This class represents a CZJUMP instruction
@@ -464,8 +464,8 @@ trait Opcodes { self: ICodes =>
         cond.toString()+" ? "+successBlock.label+" : "+failureBlock.label
       );
 
-      override def consumed = 1;
-      override def produced = 0;
+      override def consumed = 1
+      override def produced = 0
     }
 
 
@@ -475,10 +475,10 @@ trait Opcodes { self: ICodes =>
      */
     case class RETURN(kind: TypeKind) extends Instruction {
       /** Returns a string representation of this instruction */
-      override def toString(): String ="RETURN (" + kind + ")";
+      override def toString(): String ="RETURN (" + kind + ")"
 
-      override def consumed = if(kind == UNIT) 0 else 1;
-      override def produced = 0;
+      override def consumed = if (kind == UNIT) 0 else 1
+      override def produced = 0
     }
 
     /** This class represents a THROW instruction
@@ -487,10 +487,10 @@ trait Opcodes { self: ICodes =>
      */
     case class THROW() extends Instruction {
       /** Returns a string representation of this instruction */
-      override def toString(): String ="THROW";
+      override def toString(): String ="THROW"
 
-      override def consumed = 1;
-      override def produced = 0;
+      override def consumed = 1
+      override def produced = 0
     }
 
     /** This class represents a DROP instruction
@@ -499,10 +499,10 @@ trait Opcodes { self: ICodes =>
      */
     case class DROP (typ: TypeKind) extends Instruction {
       /** Returns a string representation of this instruction */
-      override def toString(): String ="DROP "+typ.toString();
+      override def toString(): String ="DROP "+typ.toString()
 
-      override def consumed = 1;
-      override def produced = 0;
+      override def consumed = 1
+      override def produced = 0
     }
 
     /** This class represents a DUP instruction
@@ -511,10 +511,10 @@ trait Opcodes { self: ICodes =>
      */
     case class DUP (typ: TypeKind) extends Instruction {
       /** Returns a string representation of this instruction */
-      override def toString(): String ="DUP";
+      override def toString(): String ="DUP"
 
-      override def consumed = 1;
-      override def produced = 2;
+      override def consumed = 1
+      override def produced = 2
     }
 
     /** This class represents a MONITOR_ENTER instruction
@@ -524,10 +524,10 @@ trait Opcodes { self: ICodes =>
     case class MONITOR_ENTER() extends Instruction {
 
       /** Returns a string representation of this instruction */
-      override def toString(): String ="MONITOR_ENTER";
+      override def toString(): String ="MONITOR_ENTER"
 
-      override def consumed = 1;
-      override def produced = 0;
+      override def consumed = 1
+      override def produced = 0
     }
 
     /** This class represents a MONITOR_EXIT instruction
@@ -580,14 +580,14 @@ trait Opcodes { self: ICodes =>
 
       /** Is this a dynamic method call? */
       def isDynamic: Boolean = this match {
-        case Dynamic =>  true;
-        case _       => false;
+        case Dynamic =>  true
+        case _       => false
       }
 
       /** Is this a static method call? */
       def isStatic: Boolean = this match {
-        case Static(_) => true;
-        case _ =>  false;
+        case Static(_) => true
+        case _ =>  false
       }
 
       def isSuper: Boolean = this match {
@@ -597,31 +597,31 @@ trait Opcodes { self: ICodes =>
 
       /** Is this an instance method call? */
       def hasInstance: Boolean = this match {
-        case Dynamic => true;
-        case Static(onInstance) => onInstance;
-        case SuperCall(_) => true;
-        case _ => false;
+        case Dynamic => true
+        case Static(onInstance) => onInstance
+        case SuperCall(_) => true
+        case _ => false
       }
 
       /** Returns a string representation of this style. */
       override def toString(): String = this match {
-        case Dynamic =>  "dynamic";
-        case Static(false) => "static-class";
-        case Static(true) =>  "static-instance";
-        case SuperCall(mix) => "super(" + mix + ")";
+        case Dynamic =>  "dynamic"
+        case Static(false) => "static-class"
+        case Static(true) =>  "static-instance"
+        case SuperCall(mix) => "super(" + mix + ")"
       }
     }
 
-    case object Dynamic extends InvokeStyle;
+    case object Dynamic extends InvokeStyle
 
     /**
      * Special invoke. Static(true) is used for calls to private
      * members.
      */
-    case class Static(onInstance: Boolean) extends InvokeStyle;
+    case class Static(onInstance: Boolean) extends InvokeStyle
 
     /** Call through super[mix]. */
-    case class SuperCall(mix: Name) extends InvokeStyle;
+    case class SuperCall(mix: Name) extends InvokeStyle
 
   }
 }
