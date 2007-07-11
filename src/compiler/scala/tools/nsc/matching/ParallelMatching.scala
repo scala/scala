@@ -25,8 +25,8 @@ trait ParallelMatching  {
 
   def MixtureRule(scrutinee:Symbol, column:List[Tree], rest:Rep): RuleApplication = {
     def isSimpleIntSwitch: Boolean = {
-      (isSameType(scrutinee.tpe.widen, definitions.IntClass.tpe)||
-       isSameType(scrutinee.tpe.widen, definitions.CharClass.tpe)) && {
+      (isSameType(scrutinee.tpe.widen, definitions.IntClass.tpe)/*||
+       isSameType(scrutinee.tpe.widen, definitions.CharClass.tpe)*/) && {
         var xs = column
         while(!xs.isEmpty) { // forall
           val h = xs.head
