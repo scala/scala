@@ -213,7 +213,7 @@ abstract class TreeGen {
     DefDef(accessor, vparamss =>
       mkCached(mvar,
         New(TypeTree(mvar.tpe),
-            List(for (pt <- mvar.tpe.symbol.primaryConstructor.info.paramTypes)
+            List(for (pt <- mvar.tpe.typeSymbol.primaryConstructor.info.paramTypes)
                  yield This(accessor.owner.enclClass)))))
 
   // def m: T;

@@ -88,7 +88,8 @@ abstract class NodePrinters {
             }
             buf.append(", tpe=" + tree.tpe)
             if (tree.tpe != null) {
-              val sym = tree.tpe.symbol
+              var sym = tree.tpe.termSymbol
+              if (sym == NoSymbol) sym = tree.tpe.typeSymbol
               buf.append(", tpe.sym=" + sym)
               if (sym != NoSymbol) {
                 buf.append(", tpe.sym.owner=" + sym.owner)
@@ -208,7 +209,7 @@ abstract class NodePrinters {
             printcln("Super(\"" + qual + "\", \"" + mix + "\")" + nodeinfo2(tree))
           case Template(parents, self, body) =>
             println("Template(" + nodeinfo(tree))
-            println("  " + parents.map(p => p.tpe.symbol) + ", // parents")
+            println("  " + parents.map(p => p.tpe.typeSymbol) + ", // parents")
             if (body.isEmpty)
               println("  List() // no body")
             else {

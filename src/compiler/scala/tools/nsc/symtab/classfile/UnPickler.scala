@@ -189,7 +189,7 @@ abstract class UnPickler {
                   else owner.newClass(pos, name)
               if (readIndex != end) sym.typeOfThis = new LazyTypeRef(readNat())
             case MODULEsym =>
-              val clazz = at(inforef, readType).symbol
+              val clazz = at(inforef, readType).typeSymbol
               sym =
                 if (name == moduleRoot.name && owner == moduleRoot.owner) moduleRoot
                 else {
@@ -245,7 +245,10 @@ abstract class UnPickler {
           val dcls = symScope(clazz)
           new RefinedType(ps, dcls) { override def symbol = clazz }
 */
-          new RefinedType(until(end, readTypeRef), symScope(clazz)) { override def symbol = clazz }
+          new RefinedType(until(end, readTypeRef), symScope(clazz)) {
+            @deprecated override def symbol = clazz
+            override def typeSymbol = clazz
+          }
         case CLASSINFOtpe =>
           val clazz = readSymbolRef()
           ClassInfoType(until(end, readTypeRef), symScope(clazz), clazz)

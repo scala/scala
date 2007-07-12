@@ -53,14 +53,14 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
 */
     private def transformArgs(args: List[Tree], formals: List[Type]) =
       List.map2(args, formals){ (arg, formal) =>
-        if (formal.symbol == definitions.ByNameParamClass)
+        if (formal.typeSymbol == definitions.ByNameParamClass)
           withInvalidOwner { checkPackedConforms(transform(arg), formal.typeArgs.head) }
         else transform(arg)
       } :::
       (args drop formals.length map transform)
 
     private def checkPackedConforms(tree: Tree, pt: Type): Tree = {
-      if (tree.tpe exists (_.symbol.isExistentialSkolem)) {
+      if (tree.tpe exists (_.typeSymbol.isExistentialSkolem)) {
         val packed = typer.packedType(tree, NoSymbol)
         if (!(packed <:< pt)) typer.infer.typeError(tree.pos, packed, pt)
       }
@@ -262,7 +262,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
      */
     private def makeArg(v: Symbol, obj: Symbol, expectedTpe: Type): Tree = {
       val res = Ident(v)
-      val sym = obj.tpe.symbol
+      val sym = obj.tpe.typeSymbol
       var ownerClass: Symbol = NoSymbol
 
       val isDependentType = expectedTpe match {
@@ -337,7 +337,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
       if (res) {
         val host = hostForAccessorOf(sym, currentOwner.enclClass)
         if (host.thisSym != host) {
-          if (host.thisSym.tpe.symbol.hasFlag(JAVA) || currentOwner.enclClass.isTrait)
+          if (host.thisSym.tpe.typeSymbol.hasFlag(JAVA) || currentOwner.enclClass.isTrait)
             unit.error(pos, "Implementation restriction: " + currentOwner.enclClass + " accesses protected "
                             + sym + " from self type " + host.thisSym.tpe)
           false

@@ -152,7 +152,7 @@ abstract class LambdaLift extends InfoTransform {
           if (settings.debug.value) log("" + sym + " is free in " + owner);
           if (sym.isVariable && !(sym hasFlag CAPTURED)) {
             sym setFlag CAPTURED
-            val symClass = sym.tpe.symbol;
+            val symClass = sym.tpe.typeSymbol;
             atPhase(phase.next) {
               sym updateInfo (
                 if (isValueClass(symClass)) refClass(symClass).tpe else ObjectRefClass.tpe)
@@ -385,7 +385,7 @@ abstract class LambdaLift extends InfoTransform {
             atPos(tree.pos) {
               val tp = tree.tpe
               val elemTree = typed { Select(tree1 setType sym.tpe, nme.elem) }
-              if (elemTree.tpe.symbol != tp.symbol) gen.mkAttributedCast(elemTree, tp) else elemTree
+              if (elemTree.tpe.typeSymbol != tp.typeSymbol) gen.mkAttributedCast(elemTree, tp) else elemTree
             }
           else tree1
         case _ =>

@@ -92,7 +92,7 @@ trait TransMatcher { self: transform.ExplicitOuter =>
    // Console.print("isSeqApply? "+tree.toString());
    // val res =
 	tree match {
-	  case Apply(_, List(ArrayValue(_,_))) => (tree.tpe.symbol.flags & Flags.CASE) == 0
+	  case Apply(_, List(ArrayValue(_,_))) => (tree.tpe.typeSymbol.flags & Flags.CASE) == 0
 	  case _ => false;
 	}
 	//Console.println(res);
@@ -247,7 +247,7 @@ trait TransMatcher { self: transform.ExplicitOuter =>
           pat
 
         case This(_) => // Sean's feature request #1134, compiled incorrectly
-          val stpe = mkThisType(pat.tpe.symbol)
+          val stpe = mkThisType(pat.tpe.typeSymbol)
           Typed(Ident(nme.WILDCARD) setType stpe, TypeTree(stpe))
 
         //case _ =>

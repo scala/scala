@@ -374,9 +374,9 @@ trait Namers { self: Analyzer =>
 
     def getterTypeCompleter(tree: Tree) = new TypeCompleter(tree) {
       override def complete(sym: Symbol) {
-        if (settings.debug.value) log("defining " + sym);
+        if (settings.debug.value) log("defining " + sym)
         sym.setInfo(PolyType(List(), typeSig(tree)))
-        if (settings.debug.value) log("defined " + sym);
+        if (settings.debug.value) log("defined " + sym)
         validate(sym)
       }
     }
@@ -406,12 +406,27 @@ trait Namers { self: Analyzer =>
       }
     }
 
-    private def deconstIfNotFinal(sym: Symbol, tpe: Type): Type =
+    private def widenIfNotFinal(sym: Symbol, tpe: Type): Type = {
+      val getter =
+        if (sym.isValue && sym.owner.isClass && (sym hasFlag PRIVATE))
+          sym.getter(sym.owner)
+        else sym
+      def isHidden(tp: Type): Boolean = tp match {
+        case SingleType(pre, sym) =>
+          (sym isLessAccessibleThan getter) || isHidden(pre)
+        case ThisType(sym) =>
+          sym isLessAccessibleThan getter
+        case p: TypeProxy =>
+          isHidden(p.tp)
+        case _ =>
+          false
+      }
       if (sym.isVariable ||
-          !(sym hasFlag FINAL) ||
-          sym.isMethod && !(sym hasFlag ACCESSOR)) tpe.deconst
-      else tpe;
-
+          sym.isMethod && !(sym hasFlag ACCESSOR) ||
+          isHidden(tpe)) tpe.widen
+      else if (!(sym hasFlag FINAL)) tpe.deconst
+      else tpe
+    }
 
     def enterValueParams(owner: Symbol, vparamss: List[List[ValDef]]): List[List[Symbol]] = {
       def enterValueParam(param: ValDef): Symbol = if (doEnterValueParams) {
@@ -429,8 +444,8 @@ trait Namers { self: Analyzer =>
       val clazz = context.owner
       def checkParent(tpt: Tree): Type = {
         val tp = tpt.tpe
-        if (tp.symbol == context.owner) {
-          context.error(tpt.pos, ""+tp.symbol+" inherits itself")
+        if (tp.typeSymbol == context.owner) {
+          context.error(tpt.pos, ""+tp.typeSymbol+" inherits itself")
           AnyRefClass.tpe
         } else if (tp.isError) {
           AnyRefClass.tpe
@@ -481,11 +496,14 @@ trait Namers { self: Analyzer =>
         def apply(tp: Type) = {
           tp match {
             case SingleType(_, sym) =>
-              if (settings.Xexperimental.value && sym.owner == meth && (vparams contains sym)) {
+              if (sym.owner == meth && (vparams contains sym)) {
+/*
                 if (sym hasFlag IMPLICIT) {
                   context.error(sym.pos, "illegal type dependence on implicit parameter")
                   ErrorType
-                } else DeBruijnIndex(level, vparams indexOf sym)
+                } else
+*/
+                DeBruijnIndex(level, vparams indexOf sym)
               } else tp
             case MethodType(formals, restpe) =>
               val formals1 = List.mapConserve(formals)(this)
@@ -502,8 +520,7 @@ trait Namers { self: Analyzer =>
         def traverse(tp: Type) = {
           tp match {
             case SingleType(_, sym) =>
-              if (settings.Xexperimental.value && sym.owner == meth &&
-                  (vparamSymss exists (_ contains sym)))
+              if (sym.owner == meth && (vparamSymss exists (_ contains sym)))
                 context.error(
                   sym.pos,
                   "illegal dependent method type: parameter appears in the type "+
@@ -583,7 +600,7 @@ trait Namers { self: Analyzer =>
       thisMethodType(
         if (tpt.isEmpty) {
           val pt = resultPt.substSym(tparamSyms, tparams map (_.symbol))
-          tpt.tpe = deconstIfNotFinal(meth, typer.computeType(rhs, pt))
+          tpt.tpe = widenIfNotFinal(meth, typer.computeType(rhs, pt))
           tpt.tpe
         } else typer.typedType(tpt).tpe)
      }
@@ -676,7 +693,7 @@ trait Namers { self: Analyzer =>
                   context.error(tpt.pos, "missing parameter type");
                   ErrorType
                 } else {
-                  tpt.tpe = deconstIfNotFinal(sym,
+                  tpt.tpe = widenIfNotFinal(sym,
                     newTyper(typer1.context.make(vdef, sym)).computeType(rhs, WildcardType))
                   tpt.tpe
                 }
@@ -764,7 +781,7 @@ trait Namers { self: Analyzer =>
         context.error(sym.pos, "`override' modifier not allowed for constructors")
       if (sym.hasFlag(ABSOVERRIDE) && !sym.owner.isTrait)
         context.error(sym.pos, "`abstract override' modifier only allowed for members of traits")
-      if (sym.info.symbol == FunctionClass(0) &&
+      if (sym.info.typeSymbol == FunctionClass(0) &&
           sym.isValueParameter && sym.owner.isClass && sym.owner.hasFlag(CASE))
         context.error(sym.pos, "pass-by-name arguments not allowed for case class parameters");
       if ((sym.flags & DEFERRED) != 0) {

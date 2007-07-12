@@ -1,10 +1,10 @@
-bug997.scala:7: error: wrong number of arguments for object Foo of type Foo.type
+bug997.scala:7: error: wrong number of arguments for object Foo of type object Foo
 "x" match { case Foo(a) => Console.println(a) }
                     ^
 bug997.scala:7: error: not found: value a
 "x" match { case Foo(a) => Console.println(a) }
                                            ^
-bug997.scala:13: error: wrong number of arguments for object Foo of type Foo.type
+bug997.scala:13: error: wrong number of arguments for object Foo of type object Foo
 "x" match { case Foo(a, b, c) => Console.println((a,b,c)) }
                     ^
 bug997.scala:13: error: not found: value a

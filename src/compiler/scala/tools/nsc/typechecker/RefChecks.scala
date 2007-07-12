@@ -150,13 +150,13 @@ abstract class RefChecks extends InfoTransform {
                 return;
               }
           if (clazz.info.parents exists (parent =>
-            (parent.symbol isSubClass other.owner) && (parent.symbol isSubClass member.owner) &&
+            (parent.typeSymbol isSubClass other.owner) && (parent.typeSymbol isSubClass member.owner) &&
             ((member hasFlag DEFERRED) || !(other hasFlag DEFERRED)))) {
               //Console.println(infoString(member) + " shadows2 " + infoString(other) + " in " + clazz);//DEBUG
                 return;
             }
           if (clazz.info.parents forall (parent =>
-            (parent.symbol isSubClass other.owner) == (parent.symbol isSubClass member.owner))) {
+            (parent.typeSymbol isSubClass other.owner) == (parent.typeSymbol isSubClass member.owner))) {
               //Console.println(infoString(member) + " shadows " + infoString(other) + " in " + clazz);//DEBUG
               return;
             }
@@ -167,8 +167,8 @@ abstract class RefChecks extends InfoTransform {
         }
         val mb = member.accessBoundary(member.owner)
         val ob = other.accessBoundary(member.owner)
-        if (mb != NoSymbol &&
-            (ob == NoSymbol ||
+        if (mb != RootClass && mb != NoSymbol && // todo: change
+            (ob == RootClass || ob == NoSymbol ||
              mb != ob && !(ob.ownerChain contains mb) ||
              (other hasFlag PROTECTED) && !(member hasFlag PROTECTED))) {
           overrideAccessError()
@@ -274,8 +274,8 @@ abstract class RefChecks extends InfoTransform {
             }
           }
           val parents = bc.info.parents
-          if (!parents.isEmpty && parents.head.symbol.hasFlag(ABSTRACT))
-            checkNoAbstractDecls(parents.head.symbol)
+          if (!parents.isEmpty && parents.head.typeSymbol.hasFlag(ABSTRACT))
+            checkNoAbstractDecls(parents.head.typeSymbol)
         }
         if (!(clazz hasFlag ABSTRACT)) checkNoAbstractDecls(clazz)
       }
@@ -322,7 +322,7 @@ abstract class RefChecks extends InfoTransform {
       }
 
       def validateType(tp: Type, includeSuper: boolean): unit = {
-        val baseClass = tp.symbol
+        val baseClass = tp.typeSymbol
         if (baseClass.isClass) {
           val index = clazz.info.closurePos(baseClass)
           if (index >= 0) {
@@ -523,9 +523,9 @@ abstract class RefChecks extends InfoTransform {
         name match {
           case nme.EQ | nme.NE | nme.LT | nme.GT | nme.LE | nme.GE =>
             def underlyingClass(tp: Type): Symbol = {
-              var sym = tp.widen.symbol
+              var sym = tp.widen.typeSymbol
               while (sym.isAbstractType)
-                sym = sym.info.bounds.hi.widen.symbol
+                sym = sym.info.bounds.hi.widen.typeSymbol
               sym
             }
             val formal = underlyingClass(fn.tpe.paramTypes.head)
@@ -536,7 +536,7 @@ abstract class RefChecks extends InfoTransform {
                            (alwaysEqual == (name == nme.EQ || name == nme.LE || name == nme.GE)))
             def nonSensible(pre: String, alwaysEqual: boolean) =
               nonSensibleWarning(pre+"values of types "+normalizeAll(qual.tpe.widen)+" and "+normalizeAll(args.head.tpe.widen),
-                                 alwaysEqual) // @MAT normalize for consistency in error message, otherwise part is normalized due to use of `symbol', but the rest isn't
+                                 alwaysEqual) // @MAT normalize for consistency in error message, otherwise part is normalized due to use of `typeSymbol', but the rest isn't
             def hasObjectEquals = receiver.info.member(nme.equals_) == Object_equals
             if (formal == UnitClass && actual == UnitClass)
               nonSensible("", true)
@@ -563,10 +563,10 @@ abstract class RefChecks extends InfoTransform {
     /* Convert a reference to a case factory of type `tpe' to a new of the class it produces. */
     def toConstructor(pos: Position, tpe: Type): Tree = {
       var rtpe = tpe.finalResultType
-      assert(rtpe.symbol hasFlag CASE, tpe);
+      assert(rtpe.typeSymbol hasFlag CASE, tpe);
       localTyper.typedOperator {
         atPos(pos) {
-          Select(New(TypeTree(rtpe)), rtpe.symbol.primaryConstructor)
+          Select(New(TypeTree(rtpe)), rtpe.typeSymbol.primaryConstructor)
         }
       }
     }
@@ -625,7 +625,7 @@ abstract class RefChecks extends InfoTransform {
         } else {
           def mkArgument(vparam: Symbol) = {
             val id = Ident(vparam)
-            if (vparam.tpe.symbol == RepeatedParamClass) Typed(id, Ident(nme.WILDCARD_STAR.toTypeName))
+            if (vparam.tpe.typeSymbol == RepeatedParamClass) Typed(id, Ident(nme.WILDCARD_STAR.toTypeName))
             else id
           }
           val caseFactoryDef =
@@ -686,8 +686,8 @@ abstract class RefChecks extends InfoTransform {
       def isIrrefutable(pat: Tree, seltpe: Type): boolean = {
         val result = pat match {
           case Apply(_, args) =>
-            val clazz = pat.tpe.symbol;
-            clazz == seltpe.symbol &&
+            val clazz = pat.tpe.typeSymbol;
+            clazz == seltpe.typeSymbol &&
             clazz.isClass && (clazz hasFlag CASE) &&
             List.forall2(
               args,
@@ -779,7 +779,7 @@ abstract class RefChecks extends InfoTransform {
           }
 
         case New(tpt) =>
-          enterReference(tree.pos, tpt.tpe.symbol)
+          enterReference(tree.pos, tpt.tpe.typeSymbol)
 
         case Ident(name) =>
           if (sym.isSourceMethod && sym.hasFlag(CASE))

@@ -166,8 +166,8 @@ trait Constants {
      *  @return   ...
      */
     def convertTo(pt: Type): Constant = {
-      val target = pt.symbol
-      if (target == tpe.symbol)
+      val target = pt.typeSymbol
+      if (target == tpe.typeSymbol)
         this
       else if (target == ByteClass && ByteTag <= tag && tag <= IntTag &&
           -128 <= intValue && intValue <= 127)

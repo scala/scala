@@ -40,9 +40,9 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
   /** Does given <code>clazz</code> define an outer field? */
   def hasOuterField(clazz: Symbol) = {
     def hasSameOuter(parent: Type) =
-      parent.symbol.isClass &&
+      parent.typeSymbol.isClass &&
       clazz.owner.isClass &&
-      clazz.owner == parent.symbol.owner &&
+      clazz.owner == parent.typeSymbol.owner &&
       parent.prefix =:= clazz.owner.thisType
     isInner(clazz) && !clazz.isTrait &&
     (clazz.info.parents.isEmpty || !hasSameOuter(clazz.info.parents.head))
@@ -167,7 +167,7 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
      *  The result is typed but not positioned.
      */
     private def outerSelect(base: Tree): Tree =
-      localTyper.typed(Apply(Select(base, outerAccessor(base.tpe.symbol)), List()))
+      localTyper.typed(Apply(Select(base, outerAccessor(base.tpe.typeSymbol)), List()))
 
     /** The path
      *  <blockquote><pre>`base'.$outer$$C1 ... .$outer$$Cn</pre></blockquote>
@@ -367,7 +367,7 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
         case Select(qual, name) =>
           if (currentClass != sym.owner/* && currentClass != sym.moduleClass*/) // (3)
             sym.makeNotPrivate(sym.owner)
-          val qsym = qual.tpe.widen.symbol
+          val qsym = qual.tpe.widen.typeSymbol
           if ((sym hasFlag PROTECTED) && //(4)
               (qsym.isTrait || !(qual.isInstanceOf[Super] || (qsym isSubClass currentClass))))
             sym setFlag notPROTECTED
@@ -413,7 +413,7 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
 
           var checkExhaustive = true
           def isUnsealedAnnotation(tpe: Type) = tpe match {
-            case AnnotatedType(List(AnnotationInfo(atp, _, _)), _) if atp.symbol == UncheckedClass =>
+            case AnnotatedType(List(AnnotationInfo(atp, _, _)), _) if atp.typeSymbol == UncheckedClass =>
               true
             case _ =>
               false

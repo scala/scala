@@ -237,7 +237,7 @@ abstract class TailCalls extends Transform
         case Apply(tapply @ TypeApply(fun, targs), vargs) =>
           if ( ctx.currentMethod.isFinal &&
                ctx.tailPos &&
-               isSameTypes(ctx.tparams, targs map (_.tpe.symbol)) &&
+               isSameTypes(ctx.tparams, targs map (_.tpe.typeSymbol)) &&
                isRecursiveCall(fun))
                  rewriteTailCall(fun, transformTrees(vargs, mkContext(ctx, false)))
                else

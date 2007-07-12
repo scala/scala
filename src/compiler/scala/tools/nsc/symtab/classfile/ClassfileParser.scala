@@ -207,17 +207,17 @@ abstract class ClassfileParser {
           //assert(name.endsWith("$"), "Not a module class: " + name)
           f = definitions.getModule(name.subName(0, name.length - 1))
         } else {
-          val owner = if (static) ownerTpe.symbol.linkedClassOfClass else ownerTpe.symbol
+          val owner = if (static) ownerTpe.typeSymbol.linkedClassOfClass else ownerTpe.typeSymbol
 //          println("\t" + owner.info.member(name).tpe.widen + " =:= " + tpe)
           f = owner.info.member(name).suchThat(_.tpe.widen =:= tpe)
           if (f == NoSymbol)
             f = owner.info.member(newTermName(name.toString + nme.LOCAL_SUFFIX)).suchThat(_.tpe =:= tpe)
           if (f == NoSymbol) {
             // if it's an impl class, try to find it's static member inside the class
-            assert(ownerTpe.symbol.isImplClass, "Not an implementation class: " + owner + " couldn't find " + name + ": " + tpe + " inside: \n" + ownerTpe.members);
+            assert(ownerTpe.typeSymbol.isImplClass, "Not an implementation class: " + owner + " couldn't find " + name + ": " + tpe + " inside: \n" + ownerTpe.members);
             f = ownerTpe.member(name).suchThat(_.tpe =:= tpe)
 //            println("\townerTpe.decls: " + ownerTpe.decls)
-//            println("Looking for: " + name + ": " + tpe + " inside: " + ownerTpe.symbol + "\n\tand found: " + ownerTpe.members)
+//            println("Looking for: " + name + ": " + tpe + " inside: " + ownerTpe.typeSymbol + "\n\tand found: " + ownerTpe.members)
           }
         }
         assert(f != NoSymbol, "could not find " + name + ": " + tpe + "inside: \n" + ownerTpe.members)
@@ -237,7 +237,7 @@ abstract class ClassfileParser {
         if (name == nme.CONSTRUCTOR)
           tpe match {
             case MethodType(formals, restpe) =>
-              assert(restpe.symbol == definitions.UnitClass)
+              assert(restpe.typeSymbol == definitions.UnitClass)
               tpe = MethodType(formals, ownerTpe)
           }
 
@@ -324,7 +324,7 @@ abstract class ClassfileParser {
     var index = 0
     val end = name.length
     def objToAny(tp: Type): Type =
-      if (!global.phase.erasedTypes && tp.symbol == definitions.ObjectClass) definitions.AnyClass.tpe
+      if (!global.phase.erasedTypes && tp.typeSymbol == definitions.ObjectClass) definitions.AnyClass.tpe
       else tp
     def paramsigs2types: List[Type] =
       if (name(index) == ')') { index += 1; List() }
@@ -469,7 +469,7 @@ abstract class ClassfileParser {
         if (name == nme.CONSTRUCTOR)
           info match {
             case MethodType(formals, restpe) =>
-              assert(restpe.symbol == definitions.UnitClass)
+              assert(restpe.typeSymbol == definitions.UnitClass)
               info = MethodType(formals, clazz.tpe)
           }
         val sym = getOwner(jflags)
@@ -495,7 +495,7 @@ abstract class ClassfileParser {
     val end = sig.length
     val newTParams = new ListBuffer[Symbol]()
     def objToAny(tp: Type): Type =
-      if (tp.symbol == definitions.ObjectClass) definitions.AnyClass.tpe
+      if (tp.typeSymbol == definitions.ObjectClass) definitions.AnyClass.tpe
       else tp
     def subName(isDelimiter: Char => Boolean): Name = {
       val start = index
@@ -610,7 +610,7 @@ abstract class ClassfileParser {
 
   def parseAttributes(sym: Symbol, symtype: Type) {
     def convertTo(c: Constant, pt: Type): Constant = {
-      if (pt.symbol == definitions.BooleanClass && c.tag == IntTag)
+      if (pt.typeSymbol == definitions.BooleanClass && c.tag == IntTag)
         Constant(c.value != 0)
       else
         c convertTo pt
@@ -693,7 +693,7 @@ abstract class ClassfileParser {
         case ENUM_TAG   =>
           val t = pool.getType(index)
           val n = pool.getName(in.nextChar)
-          val s = t.symbol.linkedModuleOfClass.info.decls.lookup(n)
+          val s = t.typeSymbol.linkedModuleOfClass.info.decls.lookup(n)
           //assert (s != NoSymbol, "while processing " + in.file + ": " + t + "." + n + ": " + t.decls)
           assert(s != NoSymbol, t) // avoid string concatenation!
           Constant(s)

@@ -59,15 +59,15 @@ trait ParallelMatching  {
 
     // true if pattern type is direct subtype of scrutinee (can't use just <:< cause have to take variance into account)
     def directSubtype(ptpe:Type) =
-      (ptpe.parents.exists { x => ((x.symbol eq scrutinee.tpe.symbol) && (x <:< scrutinee.tpe))});
+      (ptpe.parents.exists { x => ((x.typeSymbol eq scrutinee.tpe.typeSymbol) && (x <:< scrutinee.tpe))});
 
     // true if each pattern type is case and direct subtype of scrutinee
     def isFlatCases(col:List[Tree]): Boolean = (col eq Nil) || {
       strip2(col.head) match {
         case a @ Apply(fn,_) =>
-          ((a.tpe.symbol.flags & symtab.Flags.CASE) != 0) && directSubtype( a.tpe ) && isFlatCases(col.tail)
+          ((a.tpe.typeSymbol.flags & symtab.Flags.CASE) != 0) && directSubtype( a.tpe ) && isFlatCases(col.tail)
         case t @ Typed(_,tpt) =>
-          (  (tpt.tpe.symbol.flags & symtab.Flags.CASE) != 0) && directSubtype( t.tpe ) && isFlatCases(col.tail)
+          (  (tpt.tpe.typeSymbol.flags & symtab.Flags.CASE) != 0) && directSubtype( t.tpe ) && isFlatCases(col.tail)
         case Ident(nme.WILDCARD) =>
            isFlatCases(col.tail) // treat col.tail specially?
         case i @ Ident(n) => // n ne nme.WILDCARD
@@ -205,7 +205,7 @@ trait ParallelMatching  {
         if(isDefaultPattern(p))
           insertDefault(i,strip1(xs.head))
         else
-          insertTagIndexPair(p.tpe.symbol.tag, i)
+          insertTagIndexPair(p.tpe.typeSymbol.tag, i)
         i = i + 1
         xs = xs.tail
       }
@@ -399,10 +399,10 @@ trait ParallelMatching  {
     var subsumed:  List[(Int,List[Tree])] = Nil // row index and subpatterns
     var remaining: List[(Int,Tree)]       = Nil // row index and pattern
 
-    val isExhaustive = !scrutinee.tpe.symbol.hasFlag(symtab.Flags.SEALED) || {
+    val isExhaustive = !scrutinee.tpe.typeSymbol.hasFlag(symtab.Flags.SEALED) || {
       //DEBUG("check exha for column "+column)
-      val tpes = column.map {x => /*Console.println("--x:"+x+":"+x.tpe); */ x.tpe.symbol}
-      scrutinee.tpe.symbol.children.forall { sym => tpes.contains(sym) }
+      val tpes = column.map {x => /*Console.println("--x:"+x+":"+x.tpe); */ x.tpe.typeSymbol}
+      scrutinee.tpe.typeSymbol.children.forall { sym => tpes.contains(sym) }
     }
 
     private val patternType     = column.head match {
@@ -411,8 +411,8 @@ trait ParallelMatching  {
       //case p@Apply(_,_) if !p.tpe.symbol.hasFlag(symtab.Flags.CASE) => ConstantType(new NamedConstant(p))
       case _ => column.head.tpe
     }
-    private val isCaseHead = patternType.symbol.hasFlag(symtab.Flags.CASE)
-    private val dummies = if(!isCaseHead) Nil else patternType.symbol.caseFieldAccessors.map { x => EmptyTree }
+    private val isCaseHead = patternType.typeSymbol.hasFlag(symtab.Flags.CASE)
+    private val dummies = if(!isCaseHead) Nil else patternType.typeSymbol.caseFieldAccessors.map { x => EmptyTree }
 
     //Console.println("isCaseHead = "+isCaseHead)
     //Console.println("dummies = "+dummies)
@@ -423,7 +423,7 @@ trait ParallelMatching  {
       pat match {
         case Bind(_,p)                                                          =>
           subpatterns(p)
-        case app @ Apply(fn, pats) if app.tpe.symbol.hasFlag(symtab.Flags.CASE) && (fn.symbol eq null)=>
+        case app @ Apply(fn, pats) if app.tpe.typeSymbol.hasFlag(symtab.Flags.CASE) && (fn.symbol eq null)=>
           pats
         case Apply(fn,xs) => assert((xs.isEmpty) && (fn.symbol ne null)); dummies // named constant
         case _: UnApply                                                         =>
@@ -518,7 +518,7 @@ trait ParallelMatching  {
       val nmatrix = {
         //Console.println("casted:"+casted)
         //Console.println("casted.case:"+casted.tpe.symbol.hasFlag(symtab.Flags.CASE))
-        var ntemps   = if(casted.tpe.symbol.hasFlag(symtab.Flags.CASE)) casted.caseFieldAccessors map {
+        var ntemps   = if(casted.tpe.typeSymbol.hasFlag(symtab.Flags.CASE)) casted.caseFieldAccessors map {
           meth =>
             val ctemp = newVar(scrutinee.pos, casted.tpe.memberType(meth).resultType)
             if(scrutinee.hasFlag(symtab.Flags.CAPTURED))
@@ -663,7 +663,7 @@ trait ParallelMatching  {
                     {
                       val pat  = mc.column(mc.tagIndexPairs.find(tag));
                       val ptpe = pat.tpe
-                      if(mc.scrutinee.tpe.symbol.hasFlag(symtab.Flags.SEALED) && strip2(pat).isInstanceOf[Apply]) {
+                      if(mc.scrutinee.tpe.typeSymbol.hasFlag(symtab.Flags.SEALED) && strip2(pat).isInstanceOf[Apply]) {
                         //cast
                         val vtmp = newVar(pat.pos, ptpe)
                         squeezedBlock(
@@ -677,7 +677,7 @@ trait ParallelMatching  {
         renamingBind(defaultV, mc.scrutinee, ndefault) // each v in defaultV gets bound to scrutinee
 
         // make first case a default case.
-        if(mc.scrutinee.tpe.symbol.hasFlag(symtab.Flags.SEALED) && defaultV.isEmpty) {
+        if(mc.scrutinee.tpe.typeSymbol.hasFlag(symtab.Flags.SEALED) && defaultV.isEmpty) {
           ndefault = genBody(Nil, cases.head.body)
           cases = cases.tail
         }
@@ -754,7 +754,7 @@ trait ParallelMatching  {
         //Console.println("getTransition"+(uacall,vdefs,srep,frep))
         val succ = repToTree(srep, handleOuter)
         val fail = if(frep.isEmpty) failTree else repToTree(frep.get, handleOuter)
-        val cond = if(uacall.symbol.tpe.symbol eq definitions.BooleanClass)
+        val cond = if(uacall.symbol.tpe.typeSymbol eq definitions.BooleanClass)
           typed{ Ident(uacall.symbol) }
                    else
                      emptynessCheck(uacall.symbol)

@@ -121,7 +121,7 @@ abstract class Pickler extends SubComponent {
             putChildren(sym, children.sort((x, y) => x isLess y))
           }
           for (attr <- sym.attributes.reverse) {
-            if (attr.atp.symbol isNonBottomSubClass definitions.StaticAnnotationClass)
+            if (attr.atp.typeSymbol isNonBottomSubClass definitions.StaticAnnotationClass)
               putAnnotation(sym, attr)
           }
         } else if (sym != NoSymbol) {
@@ -153,7 +153,7 @@ abstract class Pickler extends SubComponent {
         case TypeBounds(lo, hi) =>
           putType(lo); putType(hi)
         case RefinedType(parents, decls) =>
-          putSymbol(tp.symbol); putTypes(parents); putSymbols(decls.toList)
+          putSymbol(tp.typeSymbol); putTypes(parents); putSymbols(decls.toList)
         case ClassInfoType(parents, decls, clazz) =>
           putSymbol(clazz); putTypes(parents); putSymbols(decls.toList)
         case MethodType(formals, restpe) =>
@@ -387,7 +387,7 @@ abstract class Pickler extends SubComponent {
         case TypeBounds(lo, hi) =>
           writeRef(lo); writeRef(hi); TYPEBOUNDStpe
         case tp @ RefinedType(parents, decls) =>
-          writeRef(tp.symbol); writeRefs(parents); REFINEDtpe
+          writeRef(tp.typeSymbol); writeRefs(parents); REFINEDtpe
         case ClassInfoType(parents, decls, clazz) =>
           writeRef(clazz); writeRefs(parents); CLASSINFOtpe
         case MethodType(formals, restpe) =>

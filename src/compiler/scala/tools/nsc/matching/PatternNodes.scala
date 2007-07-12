@@ -259,7 +259,7 @@ trait PatternNodes { self: transform.ExplicitOuter =>
           else
             sb
         case ConstrPat(casted) =>
-          val s = ("-- " + patNode.tpe.symbol.name +
+          val s = ("-- " + patNode.tpe.typeSymbol.name +
                    "(" + patNode.tpe + ", " + casted + ") -> ")
           val nindent = newIndent(s)
           sb.append(nindent + s).append('\n')
@@ -267,7 +267,7 @@ trait PatternNodes { self: transform.ExplicitOuter =>
           cont
 
         case SequencePat( casted, plen ) =>
-          val s = ("-- " + patNode.tpe.symbol.name + "(" +
+          val s = ("-- " + patNode.tpe.typeSymbol.name + "(" +
                    patNode.tpe +
                    ", " + casted + ", " + plen + ") -> ")
           val nindent = newIndent(s)
@@ -276,7 +276,7 @@ trait PatternNodes { self: transform.ExplicitOuter =>
           cont
 
         case RightIgnoringSequencePat( casted, castedRest, plen ) =>
-          val s = ("-- ri " + patNode.tpe.symbol.name + "(" +
+          val s = ("-- ri " + patNode.tpe.typeSymbol.name + "(" +
                    patNode.tpe +
                    ", " + casted + ", " + plen + ") -> ")
           val nindent = newIndent(s)
@@ -383,17 +383,17 @@ trait PatternNodes { self: transform.ExplicitOuter =>
       //Console.println("optimize1("+selType+","+alternatives1+")")
       var res = true
       var coveredCases: SymSet  = emptySymbolSet
-      var remainingCases        = checkExCoverage(selType.symbol)
+      var remainingCases        = checkExCoverage(selType.typeSymbol)
       var cases = 0;
 
       def traverse(alts:PatternNode) {
         //Console.println("traverse, alts="+alts)
         alts match {
           case ConstrPat(_) =>
-            //Console.print("ConstPat! of"+alts.tpe.symbol)
-            if (alts.tpe.symbol.hasFlag(Flags.CASE)) {
-              coveredCases   = coveredCases + alts.tpe.symbol
-              remainingCases = remainingCases - alts.tpe.symbol
+            //Console.print("ConstPat! of"+alts.tpe.typeSymbol)
+            if (alts.tpe.typeSymbol.hasFlag(Flags.CASE)) {
+              coveredCases   = coveredCases + alts.tpe.typeSymbol
+              remainingCases = remainingCases - alts.tpe.typeSymbol
               cases = cases + 1
             } else {
               val covered = remainingCases.filter { x =>
@@ -410,11 +410,11 @@ trait PatternNodes { self: transform.ExplicitOuter =>
             }
 
           // Nil is also a "constructor pattern" somehow
-          case VariablePat(tree) if (tree.tpe.symbol.hasFlag(Flags.MODULE)) => // Nil
-            coveredCases   = coveredCases + tree.tpe.symbol
-            remainingCases = remainingCases - tree.tpe.symbol
+          case VariablePat(tree) if (tree.tpe.typeSymbol.hasFlag(Flags.MODULE)) => // Nil
+            coveredCases   = coveredCases + tree.tpe.typeSymbol
+            remainingCases = remainingCases - tree.tpe.typeSymbol
             cases = cases + 1
-            res = res && tree.tpe.symbol.hasFlag(Flags.CASE)
+            res = res && tree.tpe.typeSymbol.hasFlag(Flags.CASE)
           case DefaultPat() =>
             if(andIsUnguardedBody(alts) || alts.and.isInstanceOf[Header]) {
               coveredCases   = emptySymbolSet

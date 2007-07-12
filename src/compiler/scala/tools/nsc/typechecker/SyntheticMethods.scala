@@ -130,7 +130,7 @@ trait SyntheticMethods { self: Analyzer =>
           { vparamss =>
             val that = Ident(vparamss.head.head)
             val constrParamTypes = clazz.primaryConstructor.tpe.paramTypes
-            val hasVarArgs = !constrParamTypes.isEmpty && constrParamTypes.last.symbol == RepeatedParamClass
+            val hasVarArgs = !constrParamTypes.isEmpty && constrParamTypes.last.typeSymbol == RepeatedParamClass
             if (clazz.isStatic) {
               val target = getMember(ScalaRunTimeModule, if (hasVarArgs) nme._equalsWithVarArgs else nme._equals)
               Apply(
@@ -147,7 +147,7 @@ trait SyntheticMethods { self: Analyzer =>
                 val guards = new ListBuffer[Tree]
                 val params = for ((acc, cpt) <- clazz.caseFieldAccessors zip constrParamTypes) yield {
                   val name = context.unit.fresh.newName(acc.name+"$")
-                  val isVarArg = cpt.symbol == RepeatedParamClass
+                  val isVarArg = cpt.typeSymbol == RepeatedParamClass
                   guards += Apply(
                     Select(
                       Ident(name),

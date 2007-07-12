@@ -648,7 +648,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
       }
     }
     val sym = getSym(name, module)
-    inform("" + sym.name + ":" +(if (module) sym.tpe.symbol.info else sym.info))
+    inform("" + sym.name + ":" +(if (module) sym.tpe.typeSymbol.info else sym.info))
   }
 
   /** Returns the file with the given suffix for the given class. */

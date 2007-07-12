@@ -81,7 +81,7 @@ abstract class OverridingPairs {
     { for (val i <- List.range(0, size))
         subParents(i) = new BitSet(size);
       for (val p <- parents) {
-        val pIndex = index(p.symbol)
+        val pIndex = index(p.typeSymbol)
         for (val bc <- p.baseClasses) include(subParents(index(bc)), pIndex)
       }
     }

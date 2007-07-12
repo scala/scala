@@ -465,7 +465,7 @@ abstract class Inliners extends SubComponent {
          log("shouldInline: score decreased to " + score + " because small " + caller + " would become large")
      }
 
-     if (callee.symbol.tpe.paramTypes.exists(t => definitions.FunctionClass.contains(t.symbol))) {
+     if (callee.symbol.tpe.paramTypes.exists(t => definitions.FunctionClass.contains(t.typeSymbol))) {
        if (settings.debug.value)
          log("increased score to: " + score)
        score = score + 2

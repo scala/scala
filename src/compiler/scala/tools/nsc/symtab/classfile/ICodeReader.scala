@@ -106,7 +106,7 @@ abstract class ICodeReader extends ClassfileParser {
     if (name == nme.CONSTRUCTOR)
       tpe match {
         case MethodType(formals, restpe) =>
-          assert(restpe.symbol == definitions.UnitClass)
+          assert(restpe.typeSymbol == definitions.UnitClass)
           tpe = MethodType(formals, getOwner(jflags).tpe)
       }
 

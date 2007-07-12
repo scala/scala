@@ -193,7 +193,7 @@ abstract class AddInterfaces extends InfoTransform {
       val parents1 =
         if (parents.isEmpty) List()
         else {
-          assert(!parents.head.symbol.isTrait, clazz)
+          assert(!parents.head.typeSymbol.isTrait, clazz)
           if (clazz.isTrait) erasedTypeRef(ObjectClass) :: parents.tail
           else parents
         }

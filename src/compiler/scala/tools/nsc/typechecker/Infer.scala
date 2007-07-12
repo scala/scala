@@ -31,7 +31,7 @@ trait Infer {
     assert(tvar.constr.inst != tvar, tvar.origin)
 
   def isVarArgs(formals: List[Type]) =
-    !formals.isEmpty && (formals.last.symbol == RepeatedParamClass)
+    !formals.isEmpty && (formals.last.typeSymbol == RepeatedParamClass)
 
   /** The formal parameter types corresponding to <code>formals</code>.
    *  If <code>formals</code> has a repeated last parameter, a list of
@@ -360,7 +360,7 @@ trait Infer {
     }
 
     def isWeaklyCompatible(tp: Type, pt: Type): boolean =
-      pt.symbol == UnitClass || isCompatible(tp, pt)
+      pt.typeSymbol == UnitClass || isCompatible(tp, pt)
 
     def isCoercible(tp: Type, pt: Type): boolean = false
 
@@ -490,12 +490,13 @@ trait Infer {
       }
       val targs = solvedTypes(tvars, tparams, tparams map varianceInTypes(formals), false)
       List.map2(tparams, targs) {(tparam, targ) =>
-        if (targ.symbol == AllClass && (varianceInType(restpe)(tparam) & COVARIANT) == 0) {
+        if (targ.typeSymbol == AllClass && (varianceInType(restpe)(tparam) & COVARIANT) == 0) {
           uninstantiated += tparam
           tparam.tpe  //@M TODO: might be affected by change to tpe in Symbol
-        } else targ}
+        } else targ.widen
+      }
+//    println("meth type args "+", tparams = "+tparams+", formals = "+formals+", restpe = "+restpe+", argtpes = "+argtpes+", underlying = "+(argtpes map (_.widen))+", pt = "+pt+", uninstantiated = "+uninstantiated.toList+", result = "+res) //DEBUG
     }
-
 
     /** Is there an instantiation of free type variables <code>undetparams</code>
      *  such that function type <code>ftpe</code> is applicable to
@@ -796,8 +797,8 @@ trait Infer {
             tparam.variance != 0 || arg1 =:= arg2
           } contains false)
       }
-      if (tp1.symbol.isClass && tp1.symbol.hasFlag(FINAL))
-        tp1 <:< tp2 || isNumericValueClass(tp1.symbol) && isNumericValueClass(tp2.symbol)
+      if (tp1.typeSymbol.isClass && tp1.typeSymbol.hasFlag(FINAL))
+        tp1 <:< tp2 || isNumericValueClass(tp1.typeSymbol) && isNumericValueClass(tp2.typeSymbol)
       else tp1.baseClasses forall (bc =>
         tp2.closurePos(bc) < 0 || isConsistent(tp1.baseType(bc), tp2.baseType(bc)))
     }
@@ -866,7 +867,7 @@ trait Infer {
     }
 
     def instantiateTypeVar(tvar: TypeVar) = {
-      val tparam = tvar.origin.symbol
+      val tparam = tvar.origin.typeSymbol
       if (false &&
           tvar.constr.inst != NoType &&
           isFullyDefined(tvar.constr.inst) &&
@@ -1040,7 +1041,7 @@ trait Infer {
     }
 
     def checkDead(tree: Tree): Tree = {
-      if (settings.Xwarndeadcode.value && tree.tpe.symbol == AllClass)
+      if (settings.Xwarndeadcode.value && tree.tpe.typeSymbol == AllClass)
         context.warning (tree.pos, "dead code following this construct")
       tree
     }

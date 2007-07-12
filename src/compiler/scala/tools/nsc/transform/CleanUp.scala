@@ -145,7 +145,7 @@ abstract class CleanUp extends Transform {
          *   a dynamic call will box them as a side-effect. */
         def fixResult(resType: Type)(tree: Tree): Tree =
           thisTyper.typed {
-            if (resType.symbol == UnitClass)
+            if (resType.typeSymbol == UnitClass)
               Block (
                 List(tree),
                 gen.mkAttributedRef(BoxedUnit_UNIT)
@@ -157,7 +157,7 @@ abstract class CleanUp extends Transform {
                 If(
                   Apply(Select(Literal(Constant(null)), Any_==), List(gen.mkAttributedRef(sym))),
                   Literal(Constant(null)),
-                  if (resType.symbol == ArrayClass)
+                  if (resType.typeSymbol == ArrayClass)
                     Apply(
                       Select(
                         gen.mkAttributedRef(ScalaRunTimeModule),
@@ -181,7 +181,7 @@ abstract class CleanUp extends Transform {
         def fixParams(params: List[Tree], paramTypes: List[Type]): List[Tree] =
           (params zip paramTypes) map { case (param, paramType) =>
             thisTyper.typed {
-              if (paramType.symbol == ArrayClass) {
+              if (paramType.typeSymbol == ArrayClass) {
                 val sym = currentOwner.newValue(tree.pos, newTermName(unit.fresh.newName)) setInfo ObjectClass.tpe
                 val arrayType = {
                   assert(paramType.typeArgs.length == 1)
@@ -244,7 +244,7 @@ abstract class CleanUp extends Transform {
           case MethodType(paramTypes, resType) =>
             assert(params.length == paramTypes.length)
             atPos(tree.pos)(thisTyper.typed {
-              fixResult(if (isValueClass(resType.symbol)) boxedClass(resType.symbol).tpe else resType) {
+              fixResult(if (isValueClass(resType.typeSymbol)) boxedClass(resType.typeSymbol).tpe else resType) {
                 Apply(
                   Select(
                     Apply(
@@ -309,8 +309,8 @@ abstract class CleanUp extends Transform {
         val tpe = c.typeValue
         atPos(tree.pos) {
           localTyper.typed {
-            if (isValueClass(tpe.symbol) && !forCLDC)
-              Select(gen.mkAttributedRef(javaBoxClassModule(tpe.symbol)), "TYPE")
+            if (isValueClass(tpe.typeSymbol) && !forCLDC)
+              Select(gen.mkAttributedRef(javaBoxClassModule(tpe.typeSymbol)), "TYPE")
             else if (settings.target.value != "jvm-1.5")
               Apply(
                 gen.mkAttributedRef(classConstantMethod(tree.pos, signature(tpe))),

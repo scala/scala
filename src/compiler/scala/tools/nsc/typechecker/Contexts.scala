@@ -382,7 +382,7 @@ trait Contexts { self: Analyzer =>
 
       (pre == NoPrefix) || {
         val ab = sym.accessBoundary(sym.owner)
-        ((ab == NoSymbol)
+        ((ab.isTerm || ab == definitions.RootClass)
          ||
          (accessWithin(ab) || accessWithin(ab.linkedClassOfClass)) &&
          (!sym.hasFlag(LOCAL) ||
@@ -391,8 +391,8 @@ trait Contexts { self: Analyzer =>
          ||
          (sym hasFlag PROTECTED) &&
          (superAccess ||
-          (pre.widen.symbol.isNonBottomSubClass(sym.owner) &&
-           (isSubClassOfEnclosing(pre.widen.symbol) || phase.erasedTypes))))
+          (pre.widen.typeSymbol.isNonBottomSubClass(sym.owner) &&
+           (isSubClassOfEnclosing(pre.widen.typeSymbol) || phase.erasedTypes))))
         // note: phase.erasedTypes disables last test, because fater addinterfaces
         // implementation classes are not in the superclass chain. If we enable the
         // test, bug780 fails.

@@ -65,7 +65,7 @@ abstract class Mixin extends InfoTransform {
    *  maps all other types to themselves.
    */
   private def toInterface(tp: Type): Type =
-    atPhase(currentRun.mixinPhase)(tp.symbol.toInterface).tpe
+    atPhase(currentRun.mixinPhase)(tp.typeSymbol.toInterface).tpe
 
   /** Maps all parts of this type that refer to implementation classes to
    *  their corresponding interfaces.
@@ -377,7 +377,7 @@ abstract class Mixin extends InfoTransform {
             EmptyTree
           }
         case Apply(tapp @ TypeApply(fn, List(arg)), List()) =>
-          if (arg.tpe.symbol.isImplClass) {
+          if (arg.tpe.typeSymbol.isImplClass) {
             val ifacetpe = toInterface(arg.tpe)
             arg.tpe = ifacetpe
             tapp.tpe = MethodType(List(), ifacetpe)
@@ -666,7 +666,7 @@ abstract class Mixin extends InfoTransform {
 
       // change every node type that refers to an implementation class to its
       // corresponding interface, unless the node's symbol is an implementation class.
-      if (tree.tpe.symbol.isImplClass &&
+      if (tree.tpe.typeSymbol.isImplClass &&
           ((tree.symbol eq null) || !tree.symbol.isImplClass))
         tree.tpe = toInterface(tree.tpe);
 

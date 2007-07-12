@@ -303,8 +303,8 @@ abstract class TreePrinters {
           print(
             if (tree.tpe eq null)
               "<type ?>"
-            else if ((tree.tpe.symbol ne null) && tree.tpe.symbol.isAnonymousClass)
-              tree.tpe.symbol.toString()
+            else if ((tree.tpe.typeSymbol ne null) && tree.tpe.typeSymbol.isAnonymousClass)
+              tree.tpe.typeSymbol.toString()
             else
               tree.tpe.toString()
           )

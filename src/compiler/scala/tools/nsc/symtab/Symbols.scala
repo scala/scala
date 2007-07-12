@@ -225,7 +225,7 @@ trait Symbols {
     final def isScalaPackageClass = isPackageClass && name == nme.scala_.toTypeName // not printed as a prefix
 
     def isDeprecated =
-      attributes exists (attr => attr.atp.symbol == DeprecatedAttr)
+      attributes exists (attr => attr.atp.typeSymbol == DeprecatedAttr)
 
     /** Does this symbol denote a wrapper object of the interpreter or its class? */
     final def isInterpreterWrapper =
@@ -406,14 +406,25 @@ trait Symbols {
     final def hasFlag(mask: Long): Boolean = (flags & mask) != 0
     final def resetFlags { rawflags = rawflags & TopLevelCreationFlags }
 
-    /** The class up to which this symbol is accessible,
-     *  or NoSymbol if it is public or not a class member
+    /** The class or term up to which this symbol is accessible,
+     *  or RootClass if it is public
      */
-    final def accessBoundary(base: Symbol): Symbol = {
-      if (hasFlag(PRIVATE)) owner
+    def accessBoundary(base: Symbol): Symbol = {
+      if (hasFlag(PRIVATE) || owner.isTerm) owner
       else if (privateWithin != NoSymbol && !phase.erasedTypes) privateWithin
       else if (hasFlag(PROTECTED)) base
-      else NoSymbol
+      else RootClass
+    }
+
+    def isLessAccessibleThan(other: Symbol): Boolean = {
+      val tb = this.accessBoundary(owner)
+      val ob1 = other.accessBoundary(owner)
+      val ob2 = ob1.linkedClassOfClass
+      var o = tb
+      while (o != NoSymbol && o != ob1 && o != ob2) {
+        o = o.owner
+      }
+      o != NoSymbol && o != tb
     }
 
 // Info and Type -------------------------------------------------------------------
@@ -586,7 +597,7 @@ trait Symbols {
       if (isMonomorphicType) List() else { rawInfo.load(this); rawInfo.typeParams }
 
     def getAttributes(clazz: Symbol): List[AnnotationInfo] =
-      attributes.filter(_.atp.symbol.isNonBottomSubClass(clazz))
+      attributes.filter(_.atp.typeSymbol.isNonBottomSubClass(clazz))
 
     /** Reset symbol to initial state
      */
@@ -747,7 +758,7 @@ trait Symbols {
     def outerSource: Symbol = NoSymbol
 
     /** The superclass of this class */
-    def superClass: Symbol = if (info.parents.isEmpty) NoSymbol else info.parents.head.symbol
+    def superClass: Symbol = if (info.parents.isEmpty) NoSymbol else info.parents.head.typeSymbol
 
     /** The directly or indirectly inherited mixins of this class
      *  except for mixin classes inherited by the superclass. Mixin classes appear
@@ -808,7 +819,7 @@ trait Symbols {
         val result =
           if (phase.next.erasedTypes) {
             assert(!tpe.parents.isEmpty, this)
-            tpe.parents.last.symbol
+            tpe.parents.last.typeSymbol
           } else {
             owner.info.decl(nme.interfaceName(name))
           }
@@ -1068,8 +1079,8 @@ trait Symbols {
         typeParamsString + {
           tp.resultType match {
             case TypeBounds(lo, hi) =>
-              (if (lo.symbol == AllClass) "" else " >: " + lo) +
-              (if (hi.symbol == AnyClass) "" else " <: " + hi)
+              (if (lo.typeSymbol == AllClass) "" else " >: " + lo) +
+              (if (hi.typeSymbol == AnyClass) "" else " <: " + hi)
             case rtp =>
               "<: " + rtp
           }
@@ -1405,10 +1416,9 @@ trait Symbols {
     override def reset(completer: Type) {}
     override def info: Type = NoType
     override def rawInfo: Type = NoType
+    override def accessBoundary(base: Symbol): Symbol = RootClass
     def cloneSymbolImpl(owner: Symbol): Symbol = throw new Error()
   }
-
-
 
   def cloneSymbols(syms: List[Symbol]): List[Symbol] = {
     val syms1 = syms map (_.cloneSymbol)

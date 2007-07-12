@@ -252,6 +252,46 @@ final class Array[A](_length: Int) extends RandomAccessSeq[A] {
    */
   override def filter(p: A => Boolean): Array[A] = throw new Error()
 
+  /** Returns an array consisting only over the first <code>n</code>
+   *  elements of this array, or else the whole array, if it has less
+   *  than <code>n</code> elements.
+   *
+   *  @param n the number of elements to take
+   *  @return  the new array
+   */
+  override def take(n: Int): Array[A] = throw new Error()
+
+  /** Returns this array without its <code>n</code> first elements
+   *  If this array has less than <code>n</code> elements, the empty
+   *  array is returned.
+   *
+   *  @param n the number of elements to drop
+   *  @return  the new array
+   */
+  override def drop(n: Int): Array[A] =throw new Error()
+
+  /** Returns the longest prefix of this array whose elements satisfy
+   *  the predicate <code>p</code>.
+   *
+   *  @param p the test predicate.
+   *  @return  the longest prefix of this array whose elements satisfy
+   *           the predicate <code>p</code>.
+   */
+  override def takeWhile(p: A => Boolean): Array[A] = throw new Error()
+
+  /** Returns the longest suffix of this array whose first element
+   *  does not satisfy the predicate <code>p</code>.
+   *
+   *  @param p the test predicate.
+   *  @return  the longest suffix of the array whose first element
+   *           does not satisfy the predicate <code>p</code>.
+   */
+  override def dropWhile(p: A => Boolean): Array[A] = throw new Error()
+
+  /** A array consisting of all elements of this array in reverse order.
+   */
+  override def reverse: Array[A] = throw new Error()
+
   /** Returns an array consisting of all elements of this array followed
    *  by all elements of the argument iterable.
    */
@@ -294,8 +334,11 @@ final class Array[A](_length: Int) extends RandomAccessSeq[A] {
    */
   def zipWithIndex: Array[Tuple2[A,Int]] = throw new Error()
 
+  /** Returns an array that contains all indices of this array */
+  def indices: Array[Int] = throw new Error()
+
   /**
-   *  @return a deep string representation of this sequence.
+   *  @return a deep string representation of this array.
    */
   def deepToString(): String = throw new Error()
 

@@ -32,7 +32,7 @@ trait Definitions {
 
     lazy val JavaLangPackage: Symbol = getModule(if (forMSIL) "System" else "java.lang")
     lazy val ScalaPackage: Symbol = getModule("scala")
-    lazy val ScalaPackageClass: Symbol = ScalaPackage.tpe.symbol
+    lazy val ScalaPackageClass: Symbol = ScalaPackage.tpe.typeSymbol
 
     var AnyClass: Symbol = _
     var AnyValClass: Symbol = _
@@ -216,7 +216,7 @@ trait Definitions {
     /** returns type list for return type of the extraction */
     def unapplyTypeList(ufn: Symbol, ufntpe: Type) = {
       assert(ufn.isMethod)
-      //Console.println("utl "+ufntpe+" "+ufntpe.symbol)
+      //Console.println("utl "+ufntpe+" "+ufntpe.typeSymbol)
       ufn.name match {
         case nme.unapply    => unapplyTypeListFromReturnType(ufntpe)
         case nme.unapplySeq => unapplyTypeListFromReturnTypeSeq(ufntpe)
@@ -234,7 +234,7 @@ trait Definitions {
       val B = BooleanClass
       val O = OptionClass
       val S = SomeClass
-      tp.symbol match { // unapplySeqResultToMethodSig
+      tp.typeSymbol match { // unapplySeqResultToMethodSig
         case  B => Nil
         case  O | S =>
           val prod = tp.typeArgs.head
@@ -242,7 +242,7 @@ trait Definitions {
             case Some(all @ (x1::x2::xs)) => all       // n >= 2
             case _                        => prod::Nil // special n == 0 ||  n == 1
           }
-        case _ => throw new IllegalArgumentException(tp.symbol + " in not in {boolean, option, some}")
+        case _ => throw new IllegalArgumentException(tp.typeSymbol + " in not in {boolean, option, some}")
       }
     }
 
@@ -253,7 +253,7 @@ trait Definitions {
      */
     def unapplyTypeListFromReturnTypeSeq(tp1: Type): List[Type] = {
       val tp = unapplyUnwrap(tp1)
-      val   O = OptionClass; val S = SomeClass; tp.symbol match {
+      val   O = OptionClass; val S = SomeClass; tp.typeSymbol match {
       case  O                  | S =>
         val ts = unapplyTypeListFromReturnType(tp1)
         val last1 = ts.last.baseType(SeqClass) match {
@@ -261,7 +261,7 @@ trait Definitions {
           case _ => throw new IllegalArgumentException("last not seq")
         }
         ts.init ::: List(last1)
-        case _ => throw new IllegalArgumentException(tp.symbol + " in not in {option, some}")
+        case _ => throw new IllegalArgumentException(tp.typeSymbol + " in not in {option, some}")
       }
     }
 
@@ -475,7 +475,7 @@ trait Definitions {
 
     def isUnbox(m: Symbol) = m.name == nme.unbox && {
       m.tpe match {
-        case MethodType(_, restpe) => (unboxMethod get restpe.symbol) match {
+        case MethodType(_, restpe) => (unboxMethod get restpe.typeSymbol) match {
           case Some(`m`) => true
           case _ => false
         }
@@ -486,7 +486,7 @@ trait Definitions {
     /** Test whether a method symbol is that of a boxing method. */
     def isBox(m: Symbol) = (boxMethod.values contains m) && {
       m.tpe match {
-        case MethodType(List(argtpe), _) => (boxMethod get argtpe.symbol) match {
+        case MethodType(List(argtpe), _) => (boxMethod get argtpe.typeSymbol) match {
           case Some(`m`) => true
           case _ => false
         }
@@ -719,13 +719,13 @@ trait Definitions {
         if (sym.owner.isPackageClass) sym.fullNameString('.')
         else flatNameString(sym.owner, separator) + "$" + sym.simpleName;
       def signature1(etp: Type): String = {
-        if (etp.symbol == ArrayClass) "[" + signature1(erasure(etp.normalize.typeArgs.head))
-        else if (isValueClass(etp.symbol)) abbrvTag(etp.symbol).toString()
-        else "L" + flatNameString(etp.symbol, '/') + ";"
+        if (etp.typeSymbol == ArrayClass) "[" + signature1(erasure(etp.normalize.typeArgs.head))
+        else if (isValueClass(etp.typeSymbol)) abbrvTag(etp.typeSymbol).toString()
+        else "L" + flatNameString(etp.typeSymbol, '/') + ";"
       }
       val etp = erasure(tp)
-      if (etp.symbol == ArrayClass) signature1(etp)
-      else flatNameString(etp.symbol, '.')
+      if (etp.typeSymbol == ArrayClass) signature1(etp)
+      else flatNameString(etp.typeSymbol, '.')
     }
 
     private var isInitialized = false

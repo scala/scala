@@ -215,7 +215,7 @@ abstract class TreeInfo {
 
   private def isSimpleThrowable(tp: Type): boolean = tp match {
     case TypeRef(pre, sym, args) =>
-      (pre == NoPrefix || pre.widen.symbol.isStatic) &&
+      (pre == NoPrefix || pre.widen.typeSymbol.isStatic) &&
       (sym isNonBottomSubClass definitions.ThrowableClass)
     case _ =>
       false

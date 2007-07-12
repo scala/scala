@@ -1,0 +1,4 @@
+bug1181.scala:9: error: not a legal formal parameter
+     _ => buildMap(map.update(keyList.head, valueList.head), keyList.tail, valueList.tail)
+     ^
+one error found

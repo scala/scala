@@ -33,7 +33,7 @@ abstract class Flatten extends InfoTransform {
 
   private val flattened = new TypeMap {
     def apply(tp: Type): Type = tp match {
-      case TypeRef(pre, sym, args) if (pre.symbol.isClass && !pre.symbol.isPackageClass) =>
+      case TypeRef(pre, sym, args) if (pre.typeSymbol.isClass && !pre.typeSymbol.isPackageClass) =>
         assert(args.isEmpty)
         typeRef(sym.toplevelClass.owner.thisType, sym, args)
       case ClassInfoType(parents, decls, clazz) =>

@@ -294,7 +294,7 @@ class SemanticTokens(val compiler: Global) {
         def buildT( tree : Tree, tpe : Type) : Unit = if (tree.pos != NoPosition) tpe match {
           case tpe0 : TypeRef => tree match {
             case apt : AppliedTypeTree =>
-              buildUse(tpe.symbol, apt.tpt.pos.offset.get(-1), tpe0);
+              buildUse(tpe.typeSymbol, apt.tpt.pos.offset.get(-1), tpe0);
           //Console.err.println("APT: " + treex + " vs. " + treex.original);
           //Console.err.println("APT: " + treex.pos + " vs. " + treex.original.pos + " " + unit.source.dbg(treex.original.pos));
               //Console.err.println("APT: " + apt.tpt + " sym0=" + apt.tpt.symbol + " sym1=" + tpe0.sym + " apt.args=" + apt.args + " tpe0.args=" + tpe0.args);
@@ -306,7 +306,7 @@ class SemanticTokens(val compiler: Global) {
             if (false) Console.err.println("BUILD_SELECT: " + select + " @ " + tpe0 + " SYM=" + select.symbol + " " + (select.pos).dbgString);
               try {
                 // build(select);
-            buildUse(tpe0.symbol, selectPos(select), tpe0);
+            buildUse(tpe0.typeSymbol, selectPos(select), tpe0);
             //Console.err.println("QUALIFIER: " + select.qualifier + " " + unit.source.dbg(select.qualifier.pos) + " " + tpe0.prefix + " " + tpe0.prefix.getClass() + " " + tpe0.prefix.getClass().getSuperclass() +" " + tpe0.prefix.widen + " " + tpe0.prefix.toLongString);
                         buildT(select.qualifier, tpe0.prefix);
           } catch {
@@ -318,18 +318,18 @@ class SemanticTokens(val compiler: Global) {
           if (tpt.symbol ne null) {
             Console.err.println("SYM0 " + tpt.symbol + " " + (tpt.pos).dbgString);
             buildUse(tpt.symbol, tpt.pos.offset.get(-1), tpe0);
-          } else if (tpe0.symbol ne null) {
+          } else if (tpe0.typeSymbol ne null) {
             //Console.err.println("TYPE_SYM1 " + tpe0.symbol + " " + unit.source.dbg(tpt.pos));
-            buildUse(tpe0.symbol, tpt.pos.offset.get(-1), tpe0);
+            buildUse(tpe0.typeSymbol, tpt.pos.offset.get(-1), tpe0);
           } else {
-            Console.err.println("UNKNOWN TPT0: " + (tpt.pos).dbgString + " tpt=" + tpt + " " + tpt.symbol + " tpe0="+ tpe0 + " " + tpe0.symbol + " tpe0.args=" + tpe0.args);
+            Console.err.println("UNKNOWN TPT0: " + (tpt.pos).dbgString + " tpt=" + tpt + " " + tpt.symbol + " tpe0="+ tpe0 + " " + tpe0.typeSymbol + " tpe0.args=" + tpe0.args);
           }
             case sft : SelectFromTypeTree =>
               build(sft.qualifier); // XXX: broken
                 if (false) Console.err.println("SFTT: " + sft + " sym=" + sft.symbol + " selector=" + sft.selector + " qual=" + sft.qualifier + " qual.sym=" +
                           sft.qualifier.symbol +
                           " qual.pos=" + (sft.qualifier.pos).dbgString + " symbol=" + sft.symbol + " type=" + tpe0 +
-                          " type.sym=" + tpe0.symbol);
+                          " type.sym=" + tpe0.typeSymbol);
             case _ => Console.err.println("UNKNOWN TPT2: " + tree + " vs. " + tpe0 + " " + tree.getClass() + " " + (tree.pos).dbgString);
           }
           case tpe0 : MethodType => tree match {
@@ -365,17 +365,17 @@ class SemanticTokens(val compiler: Global) {
         case _ =>
           if (false) Console.err.println("UNKNOWN TPE10: " + tpe0 + " " + tree + " " + tree.getClass() + " " + (tree.pos).dbgString);
           }
-          case tpe0 : SingleType => tree match {
-        case ident  : Ident  => buildUse(tpe0.sym, ident.pos.offset.get(-1), tpe0);
-        case select : Select =>
-        buildUse(tpe0.symbol, selectPos(select), tpe0);
-        //Console.err.println("QUALIFIER-0: " + select.qualifier + " " + unit.source.dbg(select.qualifier.pos) + " " + tpe0.prefix + " " + tpe0.prefix.getClass() + " " + tpe0.prefix.getClass().getSuperclass() +" " + tpe0.prefix.widen + " " + tpe0.prefix.toLongString);
-        buildT(select.qualifier, tpe0.prefix);
+        case tpe0 : SingleType => tree match {
+          case ident  : Ident  => buildUse(tpe0.sym, ident.pos.offset.get(-1), tpe0);
+          case select : Select =>
+            buildUse(tpe0.termSymbol, selectPos(select), tpe0);
+            //Console.err.println("QUALIFIER-0: " + select.qualifier + " " + unit.source.dbg(select.qualifier.pos) + " " + tpe0.prefix + " " + tpe0.prefix.getClass() + " " + tpe0.prefix.getClass().getSuperclass() +" " + tpe0.prefix.widen + " " + tpe0.prefix.toLongString);
+            buildT(select.qualifier, tpe0.prefix);
 
-        case _ =>
-          if (false) Console.err.println("UNKNOWN TPE8: " + tree + " " + (tree.pos).dbgString + " TPE=" + tpe0 + " PRE=" + tpe0.pre + " SYM=" + tpe0.sym);
+          case _ =>
+            if (false) Console.err.println("UNKNOWN TPE8: " + tree + " " + (tree.pos).dbgString + " TPE=" + tpe0 + " PRE=" + tpe0.pre + " SYM=" + tpe0.sym);
 
-          }
+        }
       case ctype : ConstantType =>
         if (false) Console.err.println("UNKNOWN CONSTANT_TYPE: " + tree + " " + ctype + " " + (tree.pos).dbgString);
 

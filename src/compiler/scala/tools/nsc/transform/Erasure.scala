@@ -86,7 +86,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
         case MethodType(formals, restpe) =>
           MethodType(
             formals map apply,
-            if (restpe.symbol == UnitClass) erasedTypeRef(UnitClass) else apply(restpe))
+            if (restpe.typeSymbol == UnitClass) erasedTypeRef(UnitClass) else apply(restpe))
         case RefinedType(parents, decls) =>
           if (parents.isEmpty) erasedTypeRef(ObjectClass)
           else apply(parents.head)
@@ -114,7 +114,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
   private def removeDoubleObject(tps: List[Type]): List[Type] = tps match {
     case List() => List()
     case tp :: tps1 =>
-      if (tp.symbol == ObjectClass) tp :: tps1.filter(_.symbol != ObjectClass)
+      if (tp.typeSymbol == ObjectClass) tp :: tps1.filter(_.typeSymbol != ObjectClass)
       else tp :: removeDoubleObject(tps1)
   }
 
@@ -192,17 +192,17 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
       case _ =>
         typed {
           atPos(tree.pos) {
-            val sym = tree.tpe.symbol;
+            val sym = tree.tpe.typeSymbol;
             if (sym == UnitClass) {
               if (treeInfo.isPureExpr(tree)) gen.mkAttributedRef(BoxedUnit_UNIT)
               else Block(List(tree), gen.mkAttributedRef(BoxedUnit_UNIT))
             } else if (sym == ArrayClass) {
-              val elemClass = tree.tpe.typeArgs.head.symbol;
+              val elemClass = tree.tpe.typeArgs.head.typeSymbol;
               val boxedClass = if (isValueClass(elemClass)) boxedArrayClass(elemClass)
                                else BoxedObjectArrayClass;
               Apply(Select(New(TypeTree(boxedClass.tpe)), nme.CONSTRUCTOR), List(tree))
             } else {
-              Apply(gen.mkAttributedRef(boxMethod(tree.tpe.symbol)), List(tree)).
+              Apply(gen.mkAttributedRef(boxMethod(tree.tpe.typeSymbol)), List(tree)).
                 setPos(tree.pos) setType ObjectClass.tpe
             }
           }
@@ -235,17 +235,17 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
       case _ =>
         typed {
           atPos(tree.pos) {
-            if (pt.symbol == UnitClass) {
+            if (pt.typeSymbol == UnitClass) {
               if (treeInfo.isPureExpr(tree)) Literal(())
               else Block(List(tree), Literal(()))
             }
-            else if (pt.symbol == ArrayClass) {
+            else if (pt.typeSymbol == ArrayClass) {
               val tree1 = adaptToType(tree, BoxedArrayClass.tpe)
               gen.mkRuntimeCall(nme.arrayValue, List(tree1, Literal(pt.typeArgs.head)))
             }
             else {
               atPos(tree.pos) {
-                Apply(gen.mkAttributedRef(unboxMethod(pt.symbol)), List(tree)) setType pt
+                Apply(gen.mkAttributedRef(unboxMethod(pt.typeSymbol)), List(tree)) setType pt
               }
             }
           }
@@ -274,8 +274,8 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
     private def cast(tree: Tree, pt: Type): Tree = {
       assert(pt eq pt.normalize)
 
-      if (tree.tpe.symbol == ObjectClass) {
-        if (pt.symbol == ArrayClass)
+      if (tree.tpe.typeSymbol == ObjectClass) {
+        if (pt.typeSymbol == ArrayClass)
           typed {
             atPos(tree.pos) {
               gen.evalOnce(tree, context.owner, context.unit) { x =>
@@ -292,7 +292,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
               }
             }
           }
-        else if (pt.symbol isNonBottomSubClass BoxedArrayClass)
+        else if (pt.typeSymbol isNonBottomSubClass BoxedArrayClass)
           typed {
             atPos(tree.pos) {
               gen.evalOnce(tree, context.owner, context.unit) { x =>
@@ -309,7 +309,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
               }
             }
           }
-        else if (isSeqClass(pt.symbol))
+        else if (isSeqClass(pt.typeSymbol))
           typed {
             atPos(tree.pos) {
               gen.evalOnce(tree, context.owner, context.unit) { x =>
@@ -354,14 +354,14 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
         log("adapting " + tree + ":" + tree.tpe + " : " +  tree.tpe.parents + " to " + pt)//debug
       if (tree.tpe <:< pt)
         tree
-      else if (isUnboxedClass(tree.tpe.symbol) && !isUnboxedClass(pt.symbol))
+      else if (isUnboxedClass(tree.tpe.typeSymbol) && !isUnboxedClass(pt.typeSymbol))
         adaptToType(box(tree), pt)
       else if (tree.tpe.isInstanceOf[MethodType] && tree.tpe.paramTypes.isEmpty) {
         if (!tree.symbol.isStable) assert(false, "adapt "+tree+":"+tree.tpe+" to "+pt)
         adaptToType(Apply(tree, List()) setPos tree.pos setType tree.tpe.resultType, pt)
       } else if (pt <:< tree.tpe)
         cast(tree, pt)
-      else if (isUnboxedClass(pt.symbol) && !isUnboxedClass(tree.tpe.symbol))
+      else if (isUnboxedClass(pt.typeSymbol) && !isUnboxedClass(tree.tpe.typeSymbol))
         adaptToType(unbox(tree, pt), pt)
       else
         cast(tree, pt)
@@ -426,7 +426,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
     private def adaptMember(tree: Tree): Tree = {
       //Console.println("adaptMember: " + tree);
       tree match {
-        case Apply(Select(New(tpt), name), args) if (tpt.tpe.symbol == BoxedArrayClass) =>
+        case Apply(Select(New(tpt), name), args) if (tpt.tpe.typeSymbol == BoxedArrayClass) =>
           assert(name == nme.CONSTRUCTOR);
           atPos(tree.pos) {
             Typed(Apply(Select(New(TypeTree(BoxedAnyArrayClass.tpe)), name), args), tpt)
@@ -434,8 +434,8 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
         case Apply(TypeApply(sel @ Select(qual, name), List(targ)), List())
         if ((tree.symbol == Any_asInstanceOf || tree.symbol == Any_asInstanceOfErased)) =>
           val qual1 = typedQualifier(qual)
-          val qualClass = qual1.tpe.symbol
-          val targClass = targ.tpe.symbol
+          val qualClass = qual1.tpe.typeSymbol
+          val targClass = targ.tpe.typeSymbol
           if (isNumericValueClass(qualClass) && isNumericValueClass(targClass))
             // convert numeric type casts
             atPos(tree.pos)(Apply(Select(qual1, "to" + targClass.name), List()))
@@ -457,20 +457,20 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
             adaptMember(atPos(tree.pos)(Select(qual, getMember(ObjectClass, name))))
           else {
             var qual1 = typedQualifier(qual);
-            if ((isValueType(qual1.tpe.symbol) && !isUnboxedValueMember(tree.symbol)) ||
-                (qual1.tpe.symbol == ArrayClass && !isUnboxedArrayMember(tree.symbol)))
+            if ((isValueType(qual1.tpe.typeSymbol) && !isUnboxedValueMember(tree.symbol)) ||
+                (qual1.tpe.typeSymbol == ArrayClass && !isUnboxedArrayMember(tree.symbol)))
               qual1 = box(qual1);
-            else if (!isValueType(qual1.tpe.symbol) && isUnboxedValueMember(tree.symbol))
+            else if (!isValueType(qual1.tpe.typeSymbol) && isUnboxedValueMember(tree.symbol))
               qual1 = unbox(qual1, tree.symbol.owner.tpe)
-            else if (tree.symbol.owner == ArrayClass && qual1.tpe.symbol == ObjectClass)
+            else if (tree.symbol.owner == ArrayClass && qual1.tpe.typeSymbol == ObjectClass)
               qual1 = cast(qual1, BoxedArrayClass.tpe)
 
-            if (isUnboxedClass(tree.symbol.owner) && !isUnboxedClass(qual1.tpe.symbol))
+            if (isUnboxedClass(tree.symbol.owner) && !isUnboxedClass(qual1.tpe.typeSymbol))
               tree.symbol = NoSymbol
             else if (qual1.tpe.isInstanceOf[MethodType] && qual1.tpe.paramTypes.isEmpty) {
               assert(qual1.symbol.isStable, qual1.symbol);
               qual1 = Apply(qual1, List()) setPos qual1.pos setType qual1.tpe.resultType;
-            } else if (!(qual1.isInstanceOf[Super] || (qual1.tpe.symbol isSubClass tree.symbol.owner)))
+            } else if (!(qual1.isInstanceOf[Super] || (qual1.tpe.typeSymbol isSubClass tree.symbol.owner)))
               qual1 = cast(qual1, tree.symbol.owner.tpe);
             copy.Select(tree, qual1, name)
           }
@@ -764,11 +764,11 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
             // leave all other type tests/type casts, remove all other type applications
             fun
           case Apply(fn, args) =>
-            def isGenericArray(tpe: Type): boolean = erasure(tpe).symbol == BoxedArrayClass
+            def isGenericArray(tpe: Type): boolean = erasure(tpe).typeSymbol == BoxedArrayClass
             if (fn.hasSymbol &&
                 fn.symbol.name == nme.arraycopy &&
                 fn.symbol.owner.name == nme.System.toTypeName &&
-                fn.symbol.owner.owner == JavaLangPackage.tpe.symbol &&
+                fn.symbol.owner.owner == JavaLangPackage.tpe.typeSymbol &&
                 args.length == 5 &&
                 (isGenericArray(args(0).tpe) || isGenericArray(args(2).tpe)))
               unit.warning(tree.pos,
@@ -805,7 +805,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
                         }
                       }
                     case _ =>
-                      if (isSeqClass(targ.tpe.symbol)) {
+                      if (isSeqClass(targ.tpe.typeSymbol)) {
                         atPos(tree.pos) {
                           gen.evalOnce(qual, currentOwner, unit) { q =>
                             gen.mkOr(

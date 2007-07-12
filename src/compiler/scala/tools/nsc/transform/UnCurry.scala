@@ -60,7 +60,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
         apply(MethodType(List(), restpe))
       case PolyType(tparams, restpe) =>
         PolyType(tparams, apply(MethodType(List(), restpe)))
-      case TypeRef(pre, sym, List(arg1, arg2)) if (arg1.symbol == ByNameParamClass) =>
+      case TypeRef(pre, sym, List(arg1, arg2)) if (arg1.typeSymbol == ByNameParamClass) =>
         assert(sym == FunctionClass(1))
         apply(typeRef(pre, definitions.ByNameFunctionClass, List(expandAlias(arg1.typeArgs(0)), arg2)))
       case TypeRef(pre, sym, List(arg)) if (sym == ByNameParamClass) =>
@@ -115,7 +115,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
      */
     def isByNameRef(tree: Tree): boolean =
       tree.isTerm && tree.hasSymbol &&
-      tree.symbol.tpe.symbol == ByNameParamClass &&
+      tree.symbol.tpe.typeSymbol == ByNameParamClass &&
       !byNameArgs.contains(tree)
 
     /** Uncurry a type of a tree node.
@@ -267,7 +267,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
         var members = List(
           DefDef(Modifiers(FINAL), nme.apply, List(), List(fun.vparams), TypeTree(restpe), fun.body)
             setSymbol applyMethod);
-        if (fun.tpe.symbol == PartialFunctionClass) {
+        if (fun.tpe.typeSymbol == PartialFunctionClass) {
           val isDefinedAtMethod = anonClass.newMethod(fun.pos, nme.isDefinedAt)
             .setFlag(FINAL).setInfo(MethodType(formals, BooleanClass.tpe))
           anonClass.info.decls enter isDefinedAtMethod
@@ -323,7 +323,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
             case _ => args
           }
         List.map2(formals, args1) { (formal, arg) =>
-          if (formal.symbol != ByNameParamClass) {
+          if (formal.typeSymbol != ByNameParamClass) {
             arg
           } else if (isByNameRef(arg)) {
             byNameArgs.addEntry(arg)
@@ -518,7 +518,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
           applyUnary(tree);
         case Select(qual, name) =>
           /* Function1.apply to ByNameFunction.apply if qualifier is a ByNameFunction */
-          if (qual.tpe.symbol == ByNameFunctionClass) {
+          if (qual.tpe.typeSymbol == ByNameFunctionClass) {
             assert(tree.symbol.name == nme.apply && tree.symbol.owner == FunctionClass(1), tree.symbol)
             tree.symbol = getMember(ByNameFunctionClass, nme.apply)
           }
