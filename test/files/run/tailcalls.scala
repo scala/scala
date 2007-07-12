@@ -194,6 +194,27 @@ class TailCall[S](s: S) {
 
 }
 
+class FancyTailCalls {
+
+  def tcTryLocal(x: Int, v: Int): Int = {
+    try {
+      def loop(n: Int): Int = {
+        if (n == 0) v else loop(n - 1)
+      }
+      loop(x)
+    } finally {}
+  }
+
+  final def tcTryCatch(x: Int, v: Int): Int =
+    try {
+      if (x == 0) v
+      else throw new RuntimeException("")
+    } catch {
+      case _: RuntimeException =>
+        tcTryCatch(x - 1, v)
+    }
+
+}
 
 class NonTailCall {
   final def f1(n: Int): Int = try {
@@ -348,6 +369,10 @@ object Test {
 
     check_success_b("TailCall.b1", TailCall.b1(max), true);
     check_success_b("TailCall.b2", TailCall.b2(max), true);
+
+    val FancyTailCalls = new FancyTailCalls;
+    check_success("FancyTailCalls.tcTryLocal",   FancyTailCalls.tcTryLocal(max, max), max)
+    check_success("FancyTailCalls.tcTryCatch",   FancyTailCalls.tcTryCatch(max, max), max)
   }
 }
 

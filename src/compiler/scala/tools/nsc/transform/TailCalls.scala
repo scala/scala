@@ -227,8 +227,12 @@ abstract class TailCalls extends Transform
 
         case Return(expr) => super.transform(tree)
         case Try(block, catches, finalizer) =>
-          if (finalizer == EmptyTree) super.transform(tree)
-          else tree
+          if (finalizer == EmptyTree)
+            super.transform(tree)
+          else
+            copy.Try(tree, transform(block, mkContext(ctx, false)), // recursive calls are not in tail position if there is non-empty finally clause
+                           transformTrees(catches, ctx).asInstanceOf[List[CaseDef]],
+                           transform(finalizer, ctx))
 
         case Throw(expr) => super.transform(tree)
         case New(tpt) => super.transform(tree)

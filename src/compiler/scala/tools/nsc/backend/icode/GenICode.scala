@@ -47,9 +47,6 @@ abstract class GenICode extends SubComponent  {
     val Comparator_equals = definitions.getMember(definitions.getModule("scala.runtime.Comparator"),
                                                  nme.equals_)
 
-    /** Tree transformer that makes fresh label defs. */
-    val duplicator = new DuplicateLabels
-
     ///////////////////////////////////////////////////////////
 
     override def run: Unit = {
@@ -558,7 +555,7 @@ abstract class GenICode extends SubComponent  {
               ctx1
             }) :: handlers;
 
-          val duppedFinalizer = duplicator(ctx, finalizer)
+          val duppedFinalizer = (new DuplicateLabels(ctx.labels.keySet))(ctx, finalizer)
           if (settings.debug.value)
             log("Duplicated finalizer: " + duppedFinalizer)
           ctx.Try(
@@ -1666,7 +1663,7 @@ abstract class GenICode extends SubComponent  {
      *  All LabelDefs are entered into the context label map, since it makes no sense
      *  to delay it any more: they will be used at some point.
      */
-    class DuplicateLabels extends Transformer {
+    class DuplicateLabels(boundLabels: collection.Set[Symbol]) extends Transformer {
       val labels: Map[Symbol, Symbol] = new HashMap
       var method: Symbol = _
       var ctx: Context = _
@@ -1679,7 +1676,7 @@ abstract class GenICode extends SubComponent  {
 
       override def transform(t: Tree): Tree = {
         t match {
-          case t @ Apply(fun, args) if t.symbol.isLabel =>
+          case t @ Apply(fun, args) if (t.symbol.isLabel && !boundLabels(t.symbol)) =>
             if (!labels.isDefinedAt(t.symbol)) {
               val oldLabel = t.symbol
               val sym = method.newLabel(oldLabel.pos, unit.fresh.newName(oldLabel.name.toString))
