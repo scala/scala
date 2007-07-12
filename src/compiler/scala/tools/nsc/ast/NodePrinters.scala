@@ -2,7 +2,7 @@
  * Copyright 2005-2007 LAMP/EPFL
  * @author  Martin Odersky
  */
-// $Id: $
+// $Id$
 
 package scala.tools.nsc.ast
 
@@ -186,6 +186,20 @@ abstract class NodePrinters {
               println("  List( // " + n + " type parameter(s)")
               for (i <- 0 until n)
                 traverse(tparams(i), level + 2, i < n-1)
+              println("  ),")
+            }
+            if (vparamss.isEmpty)
+              println("  List(List()), // no parameter")
+            else {
+              val n = vparamss.length
+              println("  List(")
+              for (i <- 0 until n) {
+                val m = vparamss(i).length
+                println("    List( // " + m + " parameter(s)")
+                for (j <- 0 until m)
+                  traverse(vparamss(i)(j), level + 3, j < m-1)
+                println("    )")
+              }
               println("  ),")
             }
             println(tpt+",")

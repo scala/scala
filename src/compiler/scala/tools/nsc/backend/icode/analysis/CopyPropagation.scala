@@ -10,10 +10,11 @@ package scala.tools.nsc.backend.icode.analysis
 import scala.collection.mutable.{Map, HashMap}
 import scala.tools.nsc.symtab.Flags.DEFERRED
 
-/**
- * A modified copy-propagation like analysis. It
+/** A modified copy-propagation like analysis. It
  *  is augmented with a record-like value which is used
  *  to represent closures.
+ *
+ *  @author Iulian Dragos
  */
 abstract class CopyPropagation {
   val global: Global
@@ -33,8 +34,8 @@ abstract class CopyPropagation {
   case class Record(cls: Symbol, bindings: Map[Symbol, Value]) extends Value {
     override def isRecord = true
   }
-  case class Deref(l: Location) extends Value;
-  case class Boxed(l: Location) extends Value;
+  case class Deref(l: Location) extends Value
+  case class Boxed(l: Location) extends Value
   case object Unknown extends Value
   object AllRecords extends Record(NoSymbol, new HashMap[Symbol, Value])
 
@@ -159,7 +160,7 @@ abstract class CopyPropagation {
         */
         val commonPairs = a.bindings.toList intersect (b.bindings.toList)
         val resBindings = new HashMap[Location, Value]
-        for (val Pair(k, v) <- commonPairs)
+        for ((k, v) <- commonPairs)
           resBindings += k -> v;
         new State(resBindings, resStack)
       }
@@ -172,7 +173,7 @@ abstract class CopyPropagation {
 
     var method: IMethod = _
 
-    def init(m: IMethod): Unit = {
+    def init(m: IMethod) {
       this.method = m
 
       init {
@@ -193,7 +194,7 @@ abstract class CopyPropagation {
       }
     }
 
-    override def run: Unit = {
+    override def run {
       forwardAnalysis(blockTransfer)
       if (settings.debug.value) {
         linearizer.linearize(method).foreach(b => if (b != method.code.startBlock)
@@ -293,8 +294,8 @@ abstract class CopyPropagation {
               if (method.isPrimaryConstructor/* && isClosureClass(method.owner)*/) {
                 obj match {
                   case Record(_, bindings) =>
-                    for (val v <- out.stack.take(method.info.paramTypes.length + 1);
-                         v ne obj) {
+                    for (v <- out.stack.take(method.info.paramTypes.length + 1)
+                         if v ne obj) {
                        bindings ++= getBindingsForPrimaryCtor(in, method);
                     }
                   case _ => ()
@@ -397,7 +398,7 @@ abstract class CopyPropagation {
      *  and bindings. It is called when a new assignment destroys
      *  previous copy-relations.
      */
-    final def cleanReferencesTo(s: copyLattice.State, target: Location): Unit = {
+    final def cleanReferencesTo(s: copyLattice.State, target: Location) {
       def cleanRecord(r: Record): Record = {
         r.bindings retain { (loc, value) =>
           value match {
@@ -455,7 +456,7 @@ abstract class CopyPropagation {
      *
      *  @param state ...
      */
-    final def invalidateRecords(state: copyLattice.State): Unit = {
+    final def invalidateRecords(state: copyLattice.State) {
       state.stack = state.stack map { v => v match {
         case Record(cls, bindings) =>
           Record(cls, new HashMap[Symbol, Value])
@@ -482,7 +483,7 @@ abstract class CopyPropagation {
 
       // this relies on having the same order in paramAccessors and
       // the arguments on the stack. It should be the same!
-      for (val (p, i) <- paramAccessors.zipWithIndex) {
+      for ((p, i) <- paramAccessors.zipWithIndex) {
 //        assert(p.tpe == ctor.tpe.paramTypes(i), "In: " + ctor.fullNameString + " having: " + (paramAccessors map (_.tpe))+ " vs. " + ctor.tpe.paramTypes)
 	if (p.tpe == ctor.tpe.paramTypes(i))
 	  bindings += p -> values.head;
@@ -514,7 +515,7 @@ abstract class CopyPropagation {
 
     final override def toString(): String = {
       var res = ""
-      for (val b <- this.method.code.blocks.toList)
+      for (b <- this.method.code.blocks.toList)
         res = (res + "\nIN(" + b.label + "):\t Bindings: " + in(b).bindings +
                "\nIN(" + b.label +"):\t Stack: " + in(b).stack) + "\n";
       res

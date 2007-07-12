@@ -2,7 +2,7 @@
  * Copyright 2005-2007 LAMP/EPFL
  * @author  Martin Odersky
  */
-// $Id: TreePrinters.scala 9925 2007-02-07 18:30:46 +0000 (Wed, 07 Feb 2007) odersky $
+// $Id$
 
 package scala.tools.nsc.ast
 
@@ -105,8 +105,8 @@ abstract class TreePrinters {
         printFlags(tree.symbol.flags, tree.symbol.privateWithin.name.toString)
     }
 
-    def printFlags(flags: long, privateWithin: String) {
-      var mask: long = if (settings.debug.value) -1L else PrintableFlags
+    def printFlags(flags: Long, privateWithin: String) {
+      var mask: Long = if (settings.debug.value) -1L else PrintableFlags
       val s = flagsToString(flags & mask, privateWithin.toString)
       if (s.length() != 0) print(s + " ")
     }

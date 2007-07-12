@@ -205,7 +205,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
 
   if (settings.verbose.value) {
     inform("[Classpath = " + classPath + "]")
-    inform("[AssemRefs = " + settings.assemrefs.value + "]")
+    if (forMSIL) inform("[AssemRefs = " + settings.assemrefs.value + "]")
   }
 
   def getSourceFile(f: AbstractFile): SourceFile =
@@ -266,7 +266,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
 
   class TerminalPhase(prev: Phase) extends GlobalPhase(prev) {
     def name = "terminal"
-    def apply(unit: CompilationUnit): Unit = ()
+    def apply(unit: CompilationUnit) {}
   }
 
   object syntaxAnalyzer extends SyntaxAnalyzer {
@@ -471,7 +471,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     def cancel { reporter.cancelled = true }
 
     // progress tracking
-    def progress(current: Int, total: Int): Unit = ()
+    def progress(current: Int, total: Int) {}
 
     private var phasec: Int = 0
     private var unitc: Int = 0

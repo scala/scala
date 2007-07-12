@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -28,7 +28,7 @@ class Signatures(val compiler: Compiler) {
 
   def asString0(sigs: List[Signature]): String = {
     var ret = ""
-    for (val sig <- sort(sigs)) ret = ret + sig.asString
+    for (sig <- sort(sigs)) ret = ret + sig.asString
     ret
   }
 
@@ -37,7 +37,7 @@ class Signatures(val compiler: Compiler) {
 
   def signature(trees: List[Tree]): List[Signature] = {
     var ret : List[Signature] = Nil
-    for (val tree <- trees) ret = signature(tree, ret)
+    for (tree <- trees) ret = signature(tree, ret)
     ret
   }
 
@@ -70,7 +70,7 @@ class Signatures(val compiler: Compiler) {
             case ddef : DefDef =>
               val tparams = new Signature("$$tparams", signature(ddef.tparams))
               var vparamss : List[Signature] = Nil
-              for (val list <- ddef.vparamss)
+              for (list <- ddef.vparamss)
                 vparamss = signature(list) ::: vparamss
               new Signature("$$ret", ret) :: tparams :: vparamss
             case _ =>

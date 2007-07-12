@@ -9,7 +9,7 @@ package scala.tools.nsc.backend.icode.analysis
 
 import scala.collection.mutable.{Map, HashMap}
 
-/** A data-flow analysis on types, that works on ICode.
+/** A data-flow analysis on types, that works on <code>ICode</code>.
  *
  *  @author Iulian Dragos
  */
@@ -61,8 +61,8 @@ abstract class TypeFlowAnalysis {
   /** A map which returns the bottom type for unfound elements */
   class VarBinding extends  HashMap[icodes.Local, icodes.TypeKind] {
     override def get(l: icodes.Local) = super.get(l) match {
-      case Some(t) => Some(t);
-      case None    => Some(typeLattice.bottom);
+      case Some(t) => Some(t)
+      case None    => Some(typeLattice.bottom)
     }
 
     def this(o: VarBinding) = {
@@ -76,7 +76,7 @@ abstract class TypeFlowAnalysis {
    */
   object typeFlowLattice extends CompleteLattice {
     import icodes._
-    type Elem = Pair[VarBinding, icodes.TypeStack]
+    type Elem = (VarBinding, icodes.TypeStack)
 
     override val top    = new Pair(new VarBinding, typeStackLattice.top) {
       override def equals(that: Any) = (this eq that.asInstanceOf[AnyRef])
@@ -86,22 +86,22 @@ abstract class TypeFlowAnalysis {
     }
 
     def lub2(a: Elem, b: Elem) = {
-      val Pair(env1, s1) = a
-      val Pair(env2, s2) = b
+      val (env1, s1) = a
+      val (env2, s2) = b
 
       val resultingLocals = new VarBinding
 
-      for (val binding1 <- env1.elements) {
+      for (binding1 <- env1.elements) {
         val tp2 = env2(binding1._1)
         resultingLocals += binding1._1 -> typeLattice.lub2(binding1._2, tp2)
       }
 
-      for (val binding2 <- env2.elements; resultingLocals(binding2._1) eq typeLattice.bottom) {
+      for (binding2 <- env2.elements if resultingLocals(binding2._1) eq typeLattice.bottom) {
         val tp1 = env1(binding2._1)
         resultingLocals += binding2._1 -> typeLattice.lub2(binding2._2, tp1)
       }
 
-      Pair(resultingLocals, typeStackLattice.lub2(a._2, b._2))
+      (resultingLocals, typeStackLattice.lub2(a._2, b._2))
     }
   }
 
@@ -116,7 +116,7 @@ abstract class TypeFlowAnalysis {
     var method: IMethod = _
 
     /** Initialize the in/out maps for the analysis of the given method. */
-    def init(m: icodes.IMethod): Unit = {
+    def init(m: icodes.IMethod) {
       this.method = m
 
       init {
@@ -132,7 +132,7 @@ abstract class TypeFlowAnalysis {
       }
     }
 
-    def this(m: icodes.IMethod) = {
+    def this(m: icodes.IMethod) {
       this()
       init(m)
     }

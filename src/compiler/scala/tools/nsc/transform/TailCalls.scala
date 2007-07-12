@@ -32,12 +32,12 @@ abstract class TailCalls extends Transform
 
   /** The phase defined by this transform */
   class Phase(prev: scala.tools.nsc.Phase) extends StdPhase(prev) {
-    def apply(unit: global.CompilationUnit): unit =
+    def apply(unit: global.CompilationUnit) {
       if (!(settings.debuginfo.value == "notc")) {
         newTransformer(unit).transformUnit(unit);
       }
+    }
   }
-
 
   /**
    * A Tail Call Transformer

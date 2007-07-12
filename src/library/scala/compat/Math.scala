@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -9,10 +9,10 @@
 // $Id$
 
 
-package scala.compat;
+package scala.compat
 
 /**
- * This class will be removed soon. Use scala.Math instead
+ * This class will be removed soon. Use <code>scala.Math</code> instead.
  */
 @deprecated
 object Math {

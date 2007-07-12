@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author Martin Odersky
  */
 // $Id$
@@ -26,7 +26,7 @@ abstract class Transform extends SubComponent {
 
   /** The phase defined by this transform */
   class Phase(prev: scala.tools.nsc.Phase) extends StdPhase(prev) {
-    def apply(unit: global.CompilationUnit): unit = {
+    def apply(unit: global.CompilationUnit) {
       newTransformer(unit).transformUnit(unit)
     }
   }

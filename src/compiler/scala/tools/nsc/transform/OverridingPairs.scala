@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author Martin Odersky
  */
 // $Id$
@@ -24,34 +24,35 @@ abstract class OverridingPairs {
 
     private val self = base.thisType
 
-    protected def exclude(sym: Symbol): boolean = sym.isConstructor || sym.isPrivateLocal
+    protected def exclude(sym: Symbol): Boolean = sym.isConstructor || sym.isPrivateLocal
 
     protected def parents: List[Type] = base.info.parents
 
-    protected def matches(sym1: Symbol, sym2: Symbol): boolean =
+    protected def matches(sym1: Symbol, sym2: Symbol): Boolean =
       sym1.isType || (self.memberType(sym1) matches self.memberType(sym2))
 
-    private type BitSet = Array[int]
+    private type BitSet = Array[Int]
 
-    private def newBitSet(size: int): BitSet = new Array((size + 31) >> 5)
+    private def newBitSet(size: Int): BitSet = new Array((size + 31) >> 5)
 
-    private def include(bs: BitSet, n: int): unit = {
+    private def include(bs: BitSet, n: Int) {
       val nshifted = n >> 5
       val nmask = 1 << (n & 31)
       bs(nshifted) = bs(nshifted) | nmask
     }
 
     private def intersectionContainsElementLeq(bs1: BitSet, bs2: BitSet,
-                                               n: int): boolean =
+                                               n: Int): Boolean =
     {
-      val nshifted = n >> 5;
+      val nshifted = n >> 5
       val nmask = 1 << (n & 31);
       ((List.range(0, nshifted) exists (i => (bs1(i) & bs2(i)) != 0)) ||
        ((bs1(nshifted) & bs2(nshifted) & (nmask | nmask - 1)) != 0))
     }
 
-    private val decls = newScope;
-    { def fillDecls(bcs: List[Symbol], deferredflag: int): unit =
+    private val decls = newScope
+
+    { def fillDecls(bcs: List[Symbol], deferredflag: Int) {
         if (!bcs.isEmpty) {
           fillDecls(bcs.tail, deferredflag)
           var e = bcs.head.info.decls.elems;
@@ -61,6 +62,7 @@ abstract class OverridingPairs {
             e = e.next
           }
         }
+      }
       fillDecls(base.info.baseClasses, DEFERRED)
       fillDecls(base.info.baseClasses, 0)
     }
@@ -69,20 +71,20 @@ abstract class OverridingPairs {
 
     private val index = new HashMap[Symbol, int]
 
-    { var i = 0;
-      for (val bc <- base.info.baseClasses) {
+    { var i = 0
+      for (bc <- base.info.baseClasses) {
         index(bc) = i
-        i = i + 1
+        i += 1
       }
     }
 
     private val subParents = new Array[BitSet](size)
 
-    { for (val i <- List.range(0, size))
+    { for (i <- List.range(0, size))
         subParents(i) = new BitSet(size);
-      for (val p <- parents) {
+      for (p <- parents) {
         val pIndex = index(p.typeSymbol)
-        for (val bc <- p.baseClasses) include(subParents(index(bc)), pIndex)
+        for (bc <- p.baseClasses) include(subParents(index(bc)), pIndex)
       }
     }
 
@@ -104,7 +106,7 @@ abstract class OverridingPairs {
     var overridden: Symbol = _
 
     //@M: note that next is called once during object initialisation
-    def hasNext: boolean = curEntry ne null
+    def hasNext: Boolean = curEntry ne null
 
     def next: unit =
       if (curEntry ne null) {

@@ -59,13 +59,13 @@ class Names {
   private def equals(index: Int, cs: Array[Char], offset: Int, len: Int): Boolean = {
     var i = 0
     while ((i < len) && (chrs(index + i) == cs(offset + i)))
-      i = i + 1;
+      i += 1;
     i == len
   }
 
   /** enter characters into chrs array
    */
-  private def enterChars(cs: Array[Char], offset: Int, len: Int): unit = {
+  private def enterChars(cs: Array[Char], offset: Int, len: Int) {
     var i = 0
     while (i < len) {
       if (nc + i == chrs.length) {
@@ -182,7 +182,7 @@ class Names {
 
     /** return the ascii representation of this name
      */
-    final def toChars = {
+    final def toChars: Array[Char] = {
       val cs = new Array[Char](len)
       copyChars(cs, 0)
       cs

@@ -88,7 +88,7 @@ trait Scanners {
   trait ScannerConfiguration {
 //  Keywords -----------------------------------------------------------------
     /** Keyword array; maps from name indices to tokens */
-    private var key: Array[byte] = _
+    private var key: Array[Byte] = _
     private var maxKey = 0
     private var tokenName = new Array[Name](128)
 
@@ -97,7 +97,7 @@ trait Scanners {
 
       // Enter keywords
 
-      def enterKeyword(n: Name, tokenId: int) {
+      def enterKeyword(n: Name, tokenId: Int) {
         while (tokenId >= tokenName.length) {
           val newTokName = new Array[Name](tokenName.length * 2)
           Array.copy(tokenName, 0, newTokName, 0, newTokName.length)
@@ -161,22 +161,22 @@ trait Scanners {
       enterKeyword(nme.ATkw, AT)
 
       // Build keyword array
-      key = new Array[byte](maxKey + 1)
+      key = new Array[Byte](maxKey + 1)
       for (i <- 0 to maxKey)
         key(i) = IDENTIFIER
       for (j <- 0 until tokenCount)
         if (tokenName(j) ne null)
-          key(tokenName(j).start) = j.asInstanceOf[byte]
+          key(tokenName(j).start) = j.asInstanceOf[Byte]
 
     }
 //Token representation -----------------------------------------------------
 
   /** Convert name to token */
-  def name2token(name: Name): int =
+  def name2token(name: Name): Int =
     if (name.start <= maxKey) key(name.start) else IDENTIFIER
 
   /** Returns the string representation of given token. */
-  def token2string(token: int): String = token match {
+  def token2string(token: Int): String = token match {
     case IDENTIFIER | BACKQUOTED_IDENT =>
       "identifier"/* + \""+name+"\""*/
     case CHARLIT =>
@@ -242,7 +242,6 @@ trait Scanners {
    *  @version    1.1
    */
   abstract class Scanner extends AbstractScanner with TokenData {
-    import java.lang.{Integer, Long, Float, Double, Character} // MAX_VALUE, valueOf
     override def intVal = super.intVal
     override def floatVal = super.floatVal
     override var errpos: Int = NoPos
@@ -255,7 +254,7 @@ trait Scanners {
 
     /** append Unicode character to "lit" buffer
     */
-    protected def putChar(c: char): unit = cbuf.append(c)
+    protected def putChar(c: Char) { cbuf.append(c) }
 
     /** Clear buffer and set name */
     private def setName {
@@ -273,15 +272,14 @@ trait Scanners {
       ret
     }
 
-
     /** Process comments and strings in scanner */
     protected def matchInScanner = true
 
-
     /** add the given character to the documentation buffer
      */
-    protected def putDocChar(c: char): unit =
+    protected def putDocChar(c: Char) {
       if (docBuffer ne null) docBuffer.append(c)
+    }
 
     private class TokenData0 extends TokenData
 
@@ -290,10 +288,9 @@ trait Scanners {
     val next : TokenData = new TokenData0
     val prev : TokenData = new TokenData0
 
-
     /** a stack which indicates whether line-ends can be statement separators
      */
-    var sepRegions: List[int] = List()
+    var sepRegions: List[Int] = List()
 
     /** A new line was inserted where in version 1.0 it would not be.
      *  Only significant if settings.migrate.value is set
@@ -393,7 +390,7 @@ trait Scanners {
 
     /** read next token
      */
-    private def fetchToken(): unit = {
+    private def fetchToken() {
       if (token == EOF) return
       lastPos = in.cpos - 1 // Position.encode(in.cline, in.ccol)
       //var index = bp
@@ -634,7 +631,7 @@ trait Scanners {
       }
     }
 
-    private def skipComment(): boolean = {
+    private def skipComment(): Boolean = {
       assert(matchInScanner)
       if (in.ch == '/') {
         do {
@@ -676,17 +673,17 @@ trait Scanners {
       }
     }
 
-    def inFirstOfStat(token: int) = token match {
-      case EOF | CASE | CATCH | ELSE | EXTENDS | FINALLY | FORSOME | MATCH | REQUIRES | WITH | YIELD |
-           COMMA | SEMI | NEWLINE | NEWLINES | DOT | USCORE | COLON | EQUALS | ARROW |
-           LARROW | SUBTYPE | VIEWBOUND | SUPERTYPE | HASH | // todo: add LBRACKET
-           RPAREN | RBRACKET | RBRACE =>
+    def inFirstOfStat(token: Int) = token match {
+      case EOF | CASE | CATCH | ELSE | EXTENDS | FINALLY | FORSOME | MATCH |
+           REQUIRES | WITH | YIELD | COMMA | SEMI | NEWLINE | NEWLINES | DOT |
+           USCORE | COLON | EQUALS | ARROW | LARROW | SUBTYPE | VIEWBOUND |
+           SUPERTYPE | HASH | RPAREN | RBRACKET | RBRACE => // todo: add LBRACKET
         false
       case _ =>
         true
     }
 
-    def inLastOfStat(token: int) = token match {
+    def inLastOfStat(token: Int) = token match {
       case CHARLIT | INTLIT | LONGLIT | FLOATLIT | DOUBLELIT | STRINGLIT | SYMBOLLIT |
            IDENTIFIER | BACKQUOTED_IDENT | THIS | NULL | TRUE | FALSE | RETURN | USCORE |
            TYPE | XMLSTART | RPAREN | RBRACKET | RBRACE =>
@@ -697,25 +694,25 @@ trait Scanners {
 
 // Identifiers ---------------------------------------------------------------
 
-    def isIdentStart(c: char): boolean = (
+    def isIdentStart(c: Char): Boolean = (
       ('A' <= c && c <= 'Z') ||
       ('a' <= c && c <= 'a') ||
       (c == '_') || (c == '$') ||
       Character.isUnicodeIdentifierStart(c)
     )
 
-    def isIdentPart(c: char) = (
+    def isIdentPart(c: Char) = (
       isIdentStart(c) ||
       ('0' <= c && c <= '9') ||
       Character.isUnicodeIdentifierPart(c)
     )
 
-    def isSpecial(c: char) = {
+    def isSpecial(c: Char) = {
       val chtp = Character.getType(c)
       chtp == Character.MATH_SYMBOL || chtp == Character.OTHER_SYMBOL
     }
 
-    private def getIdentRest: unit =
+    private def getIdentRest {
       while (true) {
         in.ch match {
           case 'A' | 'B' | 'C' | 'D' | 'E' |
@@ -754,8 +751,9 @@ trait Scanners {
             }
         }
       }
+    }
 
-    private def getOperatorRest: unit =
+    private def getOperatorRest {
       while (true) {
         in.ch match {
           case '~' | '!' | '@' | '#' | '%' |
@@ -787,8 +785,9 @@ trait Scanners {
             }
         }
       }
+    }
 
-    private def getIdentOrOperatorRest: unit =
+    private def getIdentOrOperatorRest {
       if (isIdentPart(in.ch))
         getIdentRest
       else in.ch match {
@@ -804,8 +803,9 @@ trait Scanners {
             token = configuration.name2token(name)
           }
       }
+    }
 
-    private def getStringLit(delimiter: char, litType: int): Unit = {
+    private def getStringLit(delimiter: Char, litType: Int) {
       assert(matchInScanner)
       //assert((litType==STRINGLIT) || (litType==IDENTIFIER))
       while (in.ch != delimiter && (in.isUnicode || in.ch != CR && in.ch != LF && in.ch != SU)) {
@@ -821,7 +821,7 @@ trait Scanners {
       }
     }
 
-    private def getMultiLineStringLit: Unit = {
+    private def getMultiLineStringLit {
       assert(matchInScanner)
       if (in.ch == '\"') {
         in.next
@@ -857,8 +857,8 @@ trait Scanners {
       if (in.ch == '\\') {
         in.next
         if ('0' <= in.ch && in.ch <= '7') {
-          val leadch: char = in.ch
-          var oct: int = in.digit2int(in.ch, 8)
+          val leadch: Char = in.ch
+          var oct: Int = in.digit2int(in.ch, 8)
           in.next
           if ('0' <= in.ch && in.ch <= '7') {
             oct = oct * 8 + in.digit2int(in.ch, 8)
@@ -868,7 +868,7 @@ trait Scanners {
               in.next
             }
           }
-          putChar(oct.asInstanceOf[char])
+          putChar(oct.asInstanceOf[Char])
         } else {
           in.ch match {
             case 'b'  => putChar('\b')
@@ -893,7 +893,7 @@ trait Scanners {
     /** read fractional part and exponent of floating point number
      *  if one is present.
      */
-    protected def getFraction = {
+    protected def getFraction {
       token = DOUBLELIT
       while ('0' <= in.ch && in.ch <= '9') {
         putChar(in.ch)
@@ -933,14 +933,14 @@ trait Scanners {
 
     /** convert name to long value
      */
-    def intVal(negated: boolean): long = {
+    def intVal(negated: Boolean): Long = {
       if (token == CHARLIT && !negated) {
         if (name.length > 0) name(0) else 0
       } else {
-        var value: long = 0
+        var value: Long = 0
         val divider = if (base == 10) 1 else 2
-        val limit: long =
-          if (token == LONGLIT) Long.MAX_VALUE else Integer.MAX_VALUE
+        val limit: Long =
+          if (token == LONGLIT) Math.MAX_LONG else Math.MAX_INT
         var i = 0
         val len = name.length
         while (i < len) {
@@ -966,11 +966,11 @@ trait Scanners {
 
     /** convert name, base to double value
     */
-    def floatVal(negated: boolean): double = {
-      val limit: double =
-        if (token == DOUBLELIT) Double.MAX_VALUE else Float.MAX_VALUE
+    def floatVal(negated: Boolean): Double = {
+      val limit: Double =
+        if (token == DOUBLELIT) Math.MAX_DOUBLE else Math.MAX_FLOAT
       try {
-        val value: double = Double.valueOf(name.toString()).doubleValue()
+        val value: Double = java.lang.Double.valueOf(name.toString()).doubleValue()
         if (value > limit)
           syntaxError("floating point number too large")
         if (negated) -value else value
@@ -1029,7 +1029,7 @@ trait Scanners {
 
     /** generate an error at the given position
     */
-    def syntaxError(pos: int, msg: String): unit = {
+    def syntaxError(pos: Int, msg: String) {
       error(pos, msg)
       token = ERROR
       errpos = pos
@@ -1037,10 +1037,10 @@ trait Scanners {
 
     /** generate an error at the current token position
     */
-    def syntaxError(msg: String): unit = syntaxError(pos, msg)
+    def syntaxError(msg: String) { syntaxError(pos, msg) }
 
     /** signal an error where the input ended in the middle of a token */
-    def incompleteInputError(msg: String): unit = {
+    def incompleteInputError(msg: String) {
       incompleteInputError(pos, msg)
       token = EOF
       errpos = pos
@@ -1075,7 +1075,7 @@ trait Scanners {
 
     /** INIT: read lookahead character and token.
      */
-    def init = {
+    def init {
       in.next
       nextToken
     }

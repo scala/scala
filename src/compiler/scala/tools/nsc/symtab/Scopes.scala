@@ -157,7 +157,7 @@ trait Scopes {
       enter(sym)
     }
 
-    private def createHash(): unit = {
+    private def createHash() {
       hashtable = new Array[ScopeEntry](HASHSIZE)
       enterInHash(elems)
     }
@@ -171,7 +171,7 @@ trait Scopes {
       }
     }
 
-    def rehash(sym: Symbol, newname: Name): unit =
+    def rehash(sym: Symbol, newname: Name) {
       if (hashtable ne null) {
         val index = sym.name.start & HASHMASK
         var e1 = hashtable(index)
@@ -194,6 +194,7 @@ trait Scopes {
           hashtable(newindex) = e
         }
       }
+    }
 
     /** remove entry
      *
@@ -304,8 +305,9 @@ trait Scopes {
   /** The empty scope (immutable).
    */
   object EmptyScope extends Scope {
-    override def enter(e: ScopeEntry): unit =
+    override def enter(e: ScopeEntry) {
       throw new Error("EmptyScope.enter")
+    }
   }
 
   /** The error scope.

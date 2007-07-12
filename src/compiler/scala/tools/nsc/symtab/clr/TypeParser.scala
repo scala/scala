@@ -4,42 +4,45 @@
 
 // $Id$
 
-package scala.tools.nsc.symtab.clr;
+package scala.tools.nsc.symtab.clr
 
-import scala.tools.nsc.util.{Position,NoPosition};
-import classfile.UnPickler;
-import ch.epfl.lamp.compiler.msil.{Type => MSILType, Attribute => MSILAttribute, _};
+import java.io.IOException
 
-import scala.collection.mutable.{HashMap, HashSet};
-import java.io.IOException;
+import ch.epfl.lamp.compiler.msil.{Type => MSILType, Attribute => MSILAttribute, _}
 
+import scala.collection.mutable.{HashMap, HashSet}
+import scala.tools.nsc.util.{Position, NoPosition}
+import classfile.UnPickler
+
+/**
+ *  @author Nikolay Mihaylov
+ */
 abstract class TypeParser {
 
-  val global: Global;
+  val global: Global
 
-  import global._;
-  import loaders.clrTypes;
+  import global._
+  import loaders.clrTypes
 
   //##########################################################################
 
-  private var clazz: Symbol = _;
-  private var instanceDefs: Scope = _; // was members
-  private var staticModule: Symbol = _; // was staticsClass
-  private var staticDefs: Scope = _; // was statics
+  private var clazz: Symbol = _
+  private var instanceDefs: Scope = _   // was members
+  private var staticModule: Symbol = _  // was staticsClass
+  private var staticDefs: Scope = _     // was statics
 
   protected def statics: Symbol = staticModule.moduleClass
 
-  protected var busy: boolean = false       // lock to detect recursive reads
+  protected var busy: Boolean = false       // lock to detect recursive reads
 
   private object unpickler extends UnPickler {
     val global: TypeParser.this.global.type = TypeParser.this.global
   }
 
-
-  def parse(typ: MSILType, root: Symbol): Unit = {
+  def parse(typ: MSILType, root: Symbol) {
 
     def handleError(e: Exception) = {
-      if (settings.debug.value) e.printStackTrace(); //debug
+      if (settings.debug.value) e.printStackTrace()  //debug
       throw new IOException("type '" + typ.FullName + "' is broken\n(" + e.getMessage() + ")")
     }
     assert(!busy)
@@ -61,10 +64,10 @@ abstract class TypeParser {
     busy = false
   }
 
-  private def parseClass(typ: MSILType): Unit = {
+  private def parseClass(typ: MSILType) {
 
-    clrTypes.types(clazz) = typ;
-    clrTypes.sym2type(typ) = clazz;
+    clrTypes.types(clazz) = typ
+    clrTypes.sym2type(typ) = clazz
 
     if (typ.IsDefined(clrTypes.SCALA_SYMTAB_ATTR, false)) {
       val attrs = typ.GetCustomAttributes(clrTypes.SCALA_SYMTAB_ATTR, false);
@@ -80,32 +83,32 @@ abstract class TypeParser {
         assert (moduleInstance != null, mClass);
         clrTypes.fields(statics) = moduleInstance;
       }
-      return;
+      return
     }
-    val flags = translateAttributes(typ);
-    val ifaces: Array[MSILType] = typ.getInterfaces();
+    val flags = translateAttributes(typ)
+    val ifaces: Array[MSILType] = typ.getInterfaces()
     val superType = if (typ.BaseType() != null) getCLRType(typ.BaseType())
                     else  if (typ.IsInterface()) definitions.ObjectClass.tpe
                     else definitions.AnyClass.tpe; // this is System.Object
-    val parents = superType :: ifaces.map(getCLRType).toList;
-    instanceDefs = newScope;
-    staticDefs = newScope;
+    val parents = superType :: ifaces.map(getCLRType).toList
+    instanceDefs = newScope
+    staticDefs = newScope
 
-    val classInfo = ClassInfoType(parents, instanceDefs, clazz);
-    val staticInfo = ClassInfoType(List(), staticDefs, statics);
+    val classInfo = ClassInfoType(parents, instanceDefs, clazz)
+    val staticInfo = ClassInfoType(List(), staticDefs, statics)
 
-    clazz.setFlag(flags);
-    clazz.setInfo(classInfo);
-    statics.setFlag(Flags.JAVA);
-    statics.setInfo(staticInfo);
-    staticModule.setFlag(Flags.JAVA);
-    staticModule.setInfo(statics.tpe);
+    clazz.setFlag(flags)
+    clazz.setInfo(classInfo)
+    statics.setFlag(Flags.JAVA)
+    statics.setInfo(staticInfo)
+    staticModule.setFlag(Flags.JAVA)
+    staticModule.setInfo(statics.tpe)
 
     // import nested types
-    for (val ntype <- typ.getNestedTypes(); (!(ntype.IsNestedPrivate
-				              || ntype.IsNestedAssembly
-				              || ntype.IsNestedFamANDAssem)
-				            || ntype.IsInterface) )
+    for (ntype <- typ.getNestedTypes() if !(ntype.IsNestedPrivate
+				            || ntype.IsNestedAssembly
+				            || ntype.IsNestedFamANDAssem)
+				          || ntype.IsInterface)
       {
 	val loader = new loaders.MSILTypeLoader(ntype)
 	val nclazz = statics.newClass(NoPosition, ntype.Name.toTypeName)
@@ -115,12 +118,12 @@ abstract class TypeParser {
 	staticDefs.enter(nclazz)
 	staticDefs.enter(nmodule)
 
-	assert(nclazz.linkedModuleOfClass == nmodule, nmodule);
-	assert(nmodule.linkedClassOfModule == nclazz, nclazz);
+	assert(nclazz.linkedModuleOfClass == nmodule, nmodule)
+	assert(nmodule.linkedClassOfModule == nclazz, nclazz)
       }
 
-    val fields = typ.getFields();
-    for (val field <- fields; !(field.IsPrivate() || field.IsAssembly() || field.IsFamilyAndAssembly)) {
+    val fields = typ.getFields()
+    for (field <- fields if !(field.IsPrivate() || field.IsAssembly() || field.IsFamilyAndAssembly)) {
       val flags = translateAttributes(field);
       val name = newTermName(field.Name);
       val fieldType =
@@ -134,7 +137,7 @@ abstract class TypeParser {
       clrTypes.fields(sym) = field;
     }
 
-    for (val constr <- typ.getConstructors(); !constr.IsStatic() && !constr.IsPrivate() &&
+    for (constr <- typ.getConstructors() if !constr.IsStatic() && !constr.IsPrivate() &&
          !constr.IsAssembly() && !constr.IsFamilyAndAssembly())
       createMethod(constr);
 
@@ -142,7 +145,7 @@ abstract class TypeParser {
     val methodsSet = new HashSet[MethodInfo]();
     methodsSet ++= typ.getMethods();
 
-    for (val prop <- typ.getProperties) {
+    for (prop <- typ.getProperties) {
       val propType: Type = getCLSType(prop.PropertyType);
       if (propType != null) {
 	val getter: MethodInfo = prop.GetGetMethod(true);
@@ -189,7 +192,7 @@ abstract class TypeParser {
       }
     }
 
-/*    for (val event <- typ.GetEvents) {
+/*    for (event <- typ.GetEvents) {
       // adding += and -= methods to add delegates to an event.
       // raising the event ist not possible from outside the class (this is so
       // generally in .net world)
@@ -219,15 +222,14 @@ abstract class TypeParser {
 	}
     } */
 
-    for (val method <- methodsSet.elements)
+    for (method <- methodsSet.elements)
       if (!method.IsPrivate() && !method.IsAssembly() && !method.IsFamilyAndAssembly())
         createMethod(method);
 
-
     // Create methods and views for delegate support
     if (clrTypes.isDelegateType(typ)) {
-      createDelegateView(typ);
-      createDelegateChainers(typ);
+      createDelegateView(typ)
+      createDelegateChainers(typ)
     }
 
     // create the box/unbox methods for value types
@@ -249,15 +251,15 @@ abstract class TypeParser {
       val ENUM_CMP_NAMES = List(nme.EQ, nme.NE, nme.LT, nme.LE, nme.GT, nme.GE);
       val ENUM_BIT_LOG_NAMES = List(nme.OR, nme.AND, nme.XOR);
 
-      val flags = Flags.JAVA | Flags.FINAL;
-      for (val cmpName <- ENUM_CMP_NAMES) {
+      val flags = Flags.JAVA | Flags.FINAL
+      for (cmpName <- ENUM_CMP_NAMES) {
 	val enumCmpType: Type = JavaMethodType(List(clazz.tpe), definitions.BooleanClass.tpe);
 	val enumCmp: Symbol = clazz.newMethod(NoPosition, cmpName);
 	enumCmp.setFlag(flags).setInfo(enumCmpType)
 	instanceDefs.enter(enumCmp);
       }
 
-      for (val bitLogName <- ENUM_BIT_LOG_NAMES) {
+      for (bitLogName <- ENUM_BIT_LOG_NAMES) {
 	val enumBitLogType = JavaMethodType(List(clazz.tpe), classInfo);
 	val enumBitLog = clazz.newMethod(NoPosition, bitLogName);
 	enumBitLog.setFlag(flags).setInfo(enumBitLogType);
@@ -267,7 +269,7 @@ abstract class TypeParser {
 
   } // parseClass
 
-  private def createMethod(method: MethodBase): Unit = {
+  private def createMethod(method: MethodBase) {
     val rettype = if (method.IsConstructor()) clazz.tpe
                   else getCLSType(method.asInstanceOf[MethodInfo].ReturnType);
     if (rettype == null) return;
@@ -320,8 +322,8 @@ abstract class TypeParser {
   }
 
   private def createDelegateChainers(typ: MSILType) = {
-    val flags: Long = Flags.JAVA | Flags.FINAL;
-    val args: Array[MSILType] = Array(typ);
+    val flags: Long = Flags.JAVA | Flags.FINAL
+    val args: Array[MSILType] = Array(typ)
 
     var s = createMethod(encode("+="), flags, args, clrTypes.VOID, clrTypes.DELEGATE_COMBINE, false);
     s = createMethod(encode("-="), flags, args, clrTypes.VOID, clrTypes.DELEGATE_REMOVE, false);
