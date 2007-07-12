@@ -177,7 +177,6 @@ trait Linearizers { self: ICodes =>
 
     /**
      * Prepend b to the list, if not already scheduled.
-     * TODO: use better test than linear search
      * @return Returns true if the block was added.
      */
     def add(b: BasicBlock) =
