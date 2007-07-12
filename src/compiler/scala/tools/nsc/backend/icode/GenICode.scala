@@ -909,12 +909,20 @@ abstract class GenICode extends SubComponent  {
           ctx
 
         case Literal(value) =>
-          if (value.tag != UnitTag)
-            ctx.bb.emit(CONSTANT(value), tree.pos);
-          if (value.tag == NullTag)
-            generatedType = expectedType
-          else
-            generatedType = toTypeKind(value.tpe)
+          if (value.tag != UnitTag) (value.tag, expectedType) match {
+            case (IntTag, LONG) =>
+              ctx.bb.emit(CONSTANT(Constant(value.longValue)), tree.pos);
+              generatedType = LONG
+            case (FloatTag, DOUBLE) =>
+              ctx.bb.emit(CONSTANT(Constant(value.doubleValue)), tree.pos);
+              generatedType = DOUBLE
+            case (NullTag, _) =>
+              ctx.bb.emit(CONSTANT(value), tree.pos);
+              generatedType = expectedType
+            case _ =>
+              ctx.bb.emit(CONSTANT(value), tree.pos);
+              generatedType = toTypeKind(value.tpe)
+          }
           ctx
 
         case Block(stats, expr) =>
