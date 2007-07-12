@@ -476,7 +476,7 @@ object Utility extends AnyRef with parsing.TokenTests {
       }
       nextch()
     }
-    new String(io.UTF8Codec.encode(i))
+    new String(io.UTF8Codec.encode(i),"utf8")
   }
 
 }
