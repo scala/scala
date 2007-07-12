@@ -6,12 +6,11 @@
 import java.lang.System
 
 object EqualityTest {
-  def check[A, B](x: A, y: B): Unit = {
-    System.out.println("x = " + x)
-    System.out.println("y = " + y)
-    System.out.println(
-      "x equals y: " + (x equals y) + " - y equals x: " + (y equals x));
-    System.out.println()
+  def check[A, B](x: A, y: B) {
+    println("x = " + x)
+    println("y = " + y)
+    println("x equals y: " + (x equals y) + " - y equals x: " + (y equals x))
+    println()
   }
 }
 
@@ -38,14 +37,17 @@ object Serialize {
 
 @serializable
 object Test1_scala {
+
   private def arrayToString[A](arr: Array[A]): String =
-    List.fromArray(arr).mkString("Array[",",","]");
+    List.fromArray(arr).mkString("Array[",",","]")
+
   private def arrayEquals[A, B](a1: Array[A], a2: Array[B]) =
      (a1.length == a2.length) &&
-     (Iterator.range(0, a1.length) forall { i => a1(i) == a2(i) });
-  val x1 = Nil;
-  val x2 = None;
-  val x3 = Array(1, 2, 3);
+     (Iterator.range(0, a1.length) forall { i => a1(i) == a2(i) })
+
+  val x1 = Nil
+  val x2 = None
+  val x3 = Array(1, 2, 3)
   val x4 = { x: Int => 2 * x }
 
   try {
@@ -54,27 +56,27 @@ object Test1_scala {
     val y3: Array[Int]         = Serialize.read(Serialize.write(x3))
     val y4: Function[Int, Int] = Serialize.read(Serialize.write(x4))
 
-    System.out.println("x1 = " + x1)
-    System.out.println("y1 = " + y1)
-    System.out.println("x1 eq y1: " + (x1 eq y1) + " - y1 eq x1: " + (y1 eq x1))
-    System.out.println()
-    System.out.println("x2 = " + x2)
-    System.out.println("y2 = " + y2)
-    System.out.println("x2 eq y2: " + (x2 eq y2) + " - y2 eq x2: " + (y2 eq x2))
-    System.out.println()
-    System.out.println("x3 = " + arrayToString(x3))
-    System.out.println("y3 = " + arrayToString(y3))
-    System.out.println("arrayEquals(x3, y3): " + arrayEquals(x3, y3))
-    System.out.println()
-    System.out.println("x4 = <na>")
-    System.out.println("y4 = <na>")
-    System.out.println("x4(2): " + x4(2) + " - y4(2): " + y4(2))
-    System.out.println()
+    println("x1 = " + x1)
+    println("y1 = " + y1)
+    println("x1 eq y1: " + (x1 eq y1) + " - y1 eq x1: " + (y1 eq x1))
+    println()
+    println("x2 = " + x2)
+    println("y2 = " + y2)
+    println("x2 eq y2: " + (x2 eq y2) + " - y2 eq x2: " + (y2 eq x2))
+    println()
+    println("x3 = " + arrayToString(x3))
+    println("y3 = " + arrayToString(y3))
+    println("arrayEquals(x3, y3): " + arrayEquals(x3, y3))
+    println()
+    println("x4 = <na>")
+    println("y4 = <na>")
+    println("x4(2): " + x4(2) + " - y4(2): " + y4(2))
+    println()
   }
   catch {
     case e: Exception =>
       e.printStackTrace()
-      System.out.println("Error in Test1_scala: " + e)
+      println("Error in Test1_scala: " + e)
   }
 }
 
@@ -95,12 +97,12 @@ object Test2_immutable {
   val x2 = new ListMap[String, Int]
     .incl(Pair("buffers", 20))
     .incl(Pair("layers", 2))
-    .incl(Pair("title", 3));
+    .incl(Pair("title", 3))
 
   val x3 = {
     val bs = new collection.mutable.BitSet()
-    bs += 2; bs += 3;
-    bs.toImmutable;
+    bs += 2; bs += 3
+    bs.toImmutable
   }
 
   val x4 = new ListSet[Int]().incl(3).incl(5)
@@ -134,7 +136,7 @@ object Test2_immutable {
   }
   catch {
     case e: Exception =>
-      System.out.println("Error in Test2_immutable: " + e)
+      println("Error in Test2_immutable: " + e)
       throw e
   }
 }
@@ -201,7 +203,7 @@ object Test3_mutable {
   }
   catch {
     case e: Exception =>
-      System.out.println("Error in Test3_mutable: " + e)
+      println("Error in Test3_mutable: " + e)
   }
 }
 
@@ -252,7 +254,7 @@ object Test4_xml {
   }
   catch {
     case e: Exception =>
-      System.out.println("Error in Test4_xml: " + e)
+      println("Error in Test4_xml: " + e)
   }
 }
 
@@ -289,7 +291,7 @@ object Test5 {
   }
   catch {
     case e: Exception =>
-      System.out.println("Error in Test5: " + e)
+      println("Error in Test5: " + e)
   }
 }
 
@@ -304,7 +306,7 @@ object Test6 {
   }
   @serializable
   object paul extends Person("Paul") {
-    val x = 4; //  bill; => StackOverflowException !!!
+    val x = 4  //  bill; => StackOverflowException !!!
   }
   val x1 = new Person("John")
   val x2 = bill
@@ -321,7 +323,7 @@ object Test6 {
   }
   catch {
     case e: Exception =>
-      System.out.println("Error in Test6: " + e)
+      println("Error in Test6: " + e)
   }
 }
 

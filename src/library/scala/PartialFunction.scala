@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -9,7 +9,7 @@
 // $Id$
 
 
-package scala;
+package scala
 
 
 /** A partial function of type <code>PartialFunction[A, B]</code> is a
@@ -27,7 +27,7 @@ trait PartialFunction[-A, +B] extends AnyRef with (A => B) {
    *  @param  x   the value to test
    *  @return true, iff <code>x</code> is in the domain of this function.
    */
-  def isDefinedAt(x: A): Boolean;
+  def isDefinedAt(x: A): Boolean
 
   def orElse[A1 <: A, B1 >: B](that: PartialFunction[A1, B1]) : PartialFunction[A1, B1] =
     new PartialFunction[A1, B1] {
