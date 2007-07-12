@@ -639,6 +639,9 @@ trait Types {
       }
     }
 
+    /** Return the attributes on this type */
+    val attributes: List[AnnotationInfo] = Nil
+
     /** Add an attribute to this type */
     def withAttribute(attrib: AnnotationInfo) = withAttributes(List(attrib))
 
@@ -1566,7 +1569,7 @@ A type's typeSymbol should never be inspected directly.
     * to the core compiler, but can be observed by type-system plugins.  The
     * core compiler does take care to propagate attributes and to save them
     * in the symbol tables of object files. */
-  case class AnnotatedType(attributes: List[AnnotationInfo], tp: Type) extends TypeProxy {
+  case class AnnotatedType(override val attributes: List[AnnotationInfo], tp: Type) extends TypeProxy {
 
     override protected def rewrap(tp: Type) = AnnotatedType(attributes, tp)
 
@@ -1588,7 +1591,8 @@ A type's typeSymbol should never be inspected directly.
     /** Remove any attributes from this type */
     override def withoutAttributes = tp.withoutAttributes
 
-    /** Martin to Lex: I don't understand what the following 2 methods do? */
+    /** Drop the annotations on the bounds, unless but the low and high bounds are
+     *  exactly tp. */
     override def bounds: TypeBounds = {
        val oftp = tp.bounds
        oftp match {
@@ -1596,9 +1600,12 @@ A type's typeSymbol should never be inspected directly.
          case _ => oftp
        }
     }
+
+    /** Return the closure of tp, dropping the annotations, unless the closure of tp
+      * is precisely tp itself. */
     override def closure: Array[Type] = {
        val oftp = tp.closure
-       if ((oftp.length == 1 &&) (oftp(0) eq this))
+       if ((oftp.length == 1 &&) (oftp(0) eq tp))
          Array(this)
        else
          oftp
