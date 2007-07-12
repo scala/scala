@@ -20,12 +20,14 @@ trait CodeFactory {
   import posAssigner.atPos         // for filling in tree positions
 
 
-  def mk_(tpe:Type) = Ident(nme.WILDCARD) setType tpe
+  final def typedValDef(x:Symbol, rhs:Tree) = typed{ValDef(x, typed{rhs})}
 
-  def targetLabel(owner: Symbol, pos: Position, name:String, argtpes:List[Type], resultTpe: Type) =
+  final def mk_(tpe:Type) = Ident(nme.WILDCARD) setType tpe
+
+  final def targetLabel(owner: Symbol, pos: Position, name:String, argtpes:List[Type], resultTpe: Type) =
     owner.newLabel(pos, name).setInfo(new MethodType(argtpes, resultTpe))
 
-  def targetParams(subst:List[Pair[Symbol,Symbol]]) = subst map {
+  final def targetParams(subst:List[Pair[Symbol,Symbol]]) = subst map {
     case (v,t) => ValDef(v, {
       v.setFlag(symtab.Flags.TRANS_FLAG);
       if(t.tpe <:< v.tpe) typed{Ident(t)}
@@ -39,23 +41,23 @@ trait CodeFactory {
   }
 
   /** returns  `List[ Tuple2[ scala.Int, <elemType> ] ]' */
-  def SeqTraceType(elemType: Type): Type =
+  final def SeqTraceType(elemType: Type): Type =
     appliedType(definitions.ListClass.typeConstructor,
                 List(pairType(definitions.IntClass.info,
                               elemType)))
 
-  def pairType(left: Type, right: Type) =
+  final def pairType(left: Type, right: Type) =
     appliedType(definitions.TupleClass(2).typeConstructor,
                 List(left,right))
 
   /**  returns `Iterator[ elemType ]' */
-  def _seqIterType(elemType: Type): Type =
+  final def _seqIterType(elemType: Type): Type =
     appliedType(definitions.IteratorClass.typeConstructor,
                 List(elemType))
 
   /** returns A for T <: Sequence[ A ]
    */
-  def getElemType_Sequence(tpe: Type): Type = {
+  final def getElemType_Sequence(tpe: Type): Type = {
     //System.err.println("getElemType_Sequence("+tpe.widen()+")")
     val tpe1 = tpe.widen.baseType(definitions.SeqClass)
 
@@ -69,7 +71,7 @@ trait CodeFactory {
 
   /** a faked switch statement
    */
-  def Switch(condition: Array[Tree], body: Array[Tree], defaultBody: Tree): Tree = {
+  final def Switch(condition: Array[Tree], body: Array[Tree], defaultBody: Tree): Tree = {
     //assert condition != null:"cond is null";
     //assert body != null:"body is null";
     //assert defaultBody != null:"defaultBody is null";
@@ -82,7 +84,7 @@ trait CodeFactory {
     result
   }
 
-  def renamingBind(defaultv: Set[Symbol], scrut: Symbol, ndefault: Tree) = {
+  final def renamingBind(defaultv: Set[Symbol], scrut: Symbol, ndefault: Tree) = {
     if(!defaultv.isEmpty) {
       var dv:List[Symbol] = Nil
       var to:List[Symbol] = Nil
@@ -95,44 +97,44 @@ trait CodeFactory {
     }
   }
 
-  def emptynessCheck(vsym: Symbol) = {
+  final def emptynessCheck(vsym: Symbol) = {
     if(vsym.tpe.symbol == definitions.SomeClass)  // is Some[_]
       Literal(Constant(true))
     else                                          // is Option[_]
       Not(Select(Ident(vsym), nme.isEmpty))
   }
 
-  def makeIf(cond:Tree, thenp:Tree, elsep:Tree) = cond match {
+  final def makeIf(cond:Tree, thenp:Tree, elsep:Tree) = cond match {
     case Literal(Constant(true)) => thenp
     case Literal(Constant(false)) => elsep
     case _ => If(cond, thenp, elsep)
   }
 
   /** returns code `<seqObj>.elements' */
-  def newIterator(seqObj: Tree): Tree =
+  final def newIterator(seqObj: Tree): Tree =
     Apply(Select(seqObj, newTermName("elements")), List())
 
   /** `it.next()'     */
-  def _next(iter: Tree) =
+  final def _next(iter: Tree) =
     Apply(Select(iter, definitions.Iterator_next), List())
 
   /** `it.hasNext()'  */
-  def _hasNext(iter: Tree) =
+  final def _hasNext(iter: Tree) =
     Apply(Select(iter, definitions.Iterator_hasNext), List())
 
   /** `!it.hasCur()'  */
-  def _not_hasNext(iter: Tree) =
+  final def _not_hasNext(iter: Tree) =
     Apply(Select(_hasNext(iter), definitions.Boolean_not), List())
 
   /** `trace.isEmpty' */
-  def isEmpty( iter: Tree  ):  Tree =
+  final def isEmpty( iter: Tree  ):  Tree =
     Apply(Select(iter, definitions.List_isEmpty), List())
 
   /** `arg.head' */
-  def SeqList_head(arg: Tree) =
+  final def SeqList_head(arg: Tree) =
     Apply(Select(arg, definitions.List_head), List())
 
-  def Negate(tree: Tree) = tree match {
+  final def Negate(tree: Tree) = tree match {
     case Literal(Constant(value:Boolean))=>
       Literal(Constant(!value))
     case _ =>
@@ -140,12 +142,12 @@ trait CodeFactory {
   }
 
   /** for tree of sequence type, returns tree that drops first i elements */
-  def seqDrop(sel:Tree, i: Int) = if(i == 0) sel else
+  final def seqDrop(sel:Tree, i: Int) = if(i == 0) sel else
     Apply(Select(Select(sel, "toList"), "drop"),
           List(Literal(Constant(i))))
 
   /** for tree of sequence type, returns boolean tree that has length i */
-  def seqHasLength(sel: Tree, ntpe: Type, i: Int) =
+  final def seqHasLength(sel: Tree, ntpe: Type, i: Int) =
     typed(
       Equals(
         Apply(Select(sel, ntpe.member(nme.length)), List()),
@@ -155,13 +157,13 @@ trait CodeFactory {
 
   /** for tree of sequence type sel, returns boolean tree testing that length >= i
    */
-  def seqLongerThan(sel:Tree, tpe:Type, i:Int) =
+  final def seqLongerThan(sel:Tree, tpe:Type, i:Int) =
     GreaterThanOrEquals(
       typed(Apply(Select(sel, tpe.member(nme.length)), List())),
       typed(Literal(Constant(i))))
       //defs.Seq_length instead of tpe.member ?
 
-  def Not(arg:Tree) = arg match {
+  final def Not(arg:Tree) = arg match {
     case Literal(Constant(true))  => Literal(Constant(false))
     case Literal(Constant(false)) => Literal(Constant(true))
     case t                        => Select(arg, definitions.Boolean_not)
@@ -178,7 +180,7 @@ trait CodeFactory {
       }
   }
 
-  /*protected*/ def Or(left: Tree, right: Tree): Tree = {
+  /*protected*/final def Or(left: Tree, right: Tree): Tree = {
     left match {
 /*
       case If(cond: Tree, thenp: Tree, Literal(Constant(false))) =>  // little opt, frequent special case
@@ -247,16 +249,16 @@ trait CodeFactory {
     fun;
   }
 */
-  def Equals(left: Tree, right: Tree): Tree =
+  final def Equals(left: Tree, right: Tree): Tree =
     Apply(Select(left, nme.EQEQ), List(right))
 
-  def Eq(left: Tree, right: Tree): Tree =
+  final def Eq(left: Tree, right: Tree): Tree =
     Apply(Select(left, nme.eq), List(right))
 
-  def GreaterThanOrEquals(left: Tree, right: Tree): Tree =
+  final def GreaterThanOrEquals(left: Tree, right: Tree): Tree =
     Apply(Select(left, nme.GE), List(right))
 
-  def ThrowMatchError(pos: Position, obj: Tree) =
+  final def ThrowMatchError(pos: Position, obj: Tree) =
     atPos(pos) {
       Throw(
         New(
@@ -266,12 +268,12 @@ trait CodeFactory {
           ))))
     }
 
-  def NotNull(tree:Tree) =
+  final def NotNull(tree:Tree) =
     typed {
       Apply(Select(tree, nme.ne), List(Literal(Constant(null))))
     }
 
-  def IsNull(tree:Tree) =
+  final def IsNull(tree:Tree) =
     typed {
       Apply(Select(tree, nme.eq), List(Literal(Constant(null))))
     }
@@ -281,13 +283,13 @@ trait CodeFactory {
     var nsubstituted = 0
     var nstatic = 0
 
-  def squeezedBlock(vds:List[Tree], exp:Tree)(implicit theOwner: Symbol): Tree =
+  final def squeezedBlock(vds:List[Tree], exp:Tree)(implicit theOwner: Symbol): Tree =
     if(settings_squeeze)
       squeezedBlock1(vds, exp)
     else
       Block(vds,exp)
 
-  def squeezedBlock1(vds:List[Tree], exp:Tree)(implicit theOwner: Symbol): Tree = {
+  final def squeezedBlock1(vds:List[Tree], exp:Tree)(implicit theOwner: Symbol): Tree = {
     val tpe = exp.tpe
     class RefTraverser(sym:Symbol) extends Traverser {
       var nref = 0

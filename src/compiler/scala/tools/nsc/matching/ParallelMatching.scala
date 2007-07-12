@@ -16,6 +16,7 @@ trait ParallelMatching  {
   self: transform.ExplicitOuter with PatternMatchers with CodeFactory =>
 
   import global._
+  import typer.typed
 
   // ----------------------------------   data
 
@@ -310,18 +311,18 @@ trait ParallelMatching  {
       v
     }
 
-    private def bindToScrutinee(x:Symbol) = typer.typed(ValDef(x,Ident(scrutinee)))
+    private def bindToScrutinee(x:Symbol) = typedValDef(x,Ident(scrutinee))
 
     val unapp = strip2(column.head)
     /** returns the (un)apply and two continuations */
     var rootvdefs:List[Tree] = Nil // later, via bindToScrutinee
 
-    def getTransition(implicit theOwner: Symbol): (Tree, List[Tree], Rep, Option[Rep]) = {
+    final def getTransition(implicit theOwner: Symbol): (Tree, List[Tree], Rep, Option[Rep]) = {
       unapp match {
         case ua @ UnApply(app @ Apply(fn, appargs), args) =>
           val ures = newVarCapture(ua.pos, app.tpe)
           val n    = args.length
-          val uacall = typer.typed { ValDef(ures, Apply(fn, Ident(scrutinee) :: appargs.tail)) }
+          val uacall = ValDef(ures, Apply(fn, Ident(scrutinee) :: appargs.tail))
           //Console.println("uacall:"+uacall)
 
           val nrowsOther = column.tail.zip(rest.row.tail) flatMap { case (pat, Row(ps,subst,g,b)) => strip2(pat) match {
@@ -353,11 +354,11 @@ trait ParallelMatching  {
                 case _                                                           =>
                   Row(EmptyTree ::  pat      :: ps, subst, g, b)
               }}
-              (uacall, rootvdefs:::List( typer.typed { ValDef(vsym, Select(Ident(ures), nme.get) )}), Rep(ntemps, nrows), nrepFail)
+              (uacall, rootvdefs:::List( typedValDef(vsym, Select(Ident(ures), nme.get))), Rep(ntemps, nrows), nrepFail)
 
             case _ => // app.tpe is Option[? <: ProductN[T1,...,Tn]]
               val uresGet = newVarCapture(ua.pos, app.tpe.typeArgs(0))
-              var vdefs = ValDef(uresGet, Select(Ident(ures), nme.get))::Nil
+              var vdefs = typedValDef(uresGet, Select(Ident(ures), nme.get))::Nil
               var ts = definitions.getProductArgs(uresGet.tpe).get
               var i = 1;
               //Console.println("typeargs"+ts)
@@ -367,8 +368,8 @@ trait ParallelMatching  {
                 val vtpe = ts.head
                 val vchild = newVarCapture(ua.pos, vtpe)
                 val accSym = definitions.productProj(uresGet, i)
-                val rhs = typer.typed(Apply(Select(Ident(uresGet), accSym), List())) // nsc !
-                vdefs = ValDef(vchild, rhs)::vdefs
+                val rhs = typed(Apply(Select(Ident(uresGet), accSym), List())) // nsc !
+                vdefs = typedValDef(vchild, rhs)::vdefs
                 vsyms   =  vchild  :: vsyms
                 dummies = EmptyTree::dummies
                 ts = ts.tail
@@ -435,7 +436,7 @@ trait ParallelMatching  {
     }
 
     /** returns true if pattern tests an object */
-    def objectPattern(pat:Tree): Boolean = try {
+    final def objectPattern(pat:Tree): Boolean = try {
       (pat.symbol ne null) &&
       (pat.symbol != NoSymbol) &&
       pat.symbol.tpe.prefix.isStable &&
@@ -506,7 +507,7 @@ trait ParallelMatching  {
     }
 
     /** returns casted symbol, success matrix and optionally fail matrix for type test on the top of this column */
-    def getTransition(implicit theOwner: Symbol): (Symbol, Rep, Option[Rep]) = {
+    final def getTransition(implicit theOwner: Symbol): (Symbol, Rep, Option[Rep]) = {
       //DEBUG("*** getTransition! of "+this.toString)
       // the following works for type tests... what fudge is necessary for value comparisons?
       // type test
@@ -586,26 +587,26 @@ trait ParallelMatching  {
   }
 
 
-  def genBody(subst: List[Pair[Symbol,Symbol]], b:Tree)(implicit theOwner: Symbol, bodies: collection.mutable.Map[Tree,(Tree, Tree, Symbol)]): Tree = {
+  final def genBody(subst: List[Pair[Symbol,Symbol]], b:Tree)(implicit theOwner: Symbol, bodies: collection.mutable.Map[Tree,(Tree, Tree, Symbol)]): Tree = {
     if(b.isInstanceOf[Literal]) { // small trees
       bodies(b) = null // placeholder, for unreachable-code-detection
-      return b.duplicate
+      return typed{ b.duplicate }
     } else if (b.isInstanceOf[Throw]) {
       bodies(b) = null // placeholder, for unreachable-code-detection
       val (from,to) = List.unzip(subst)
       val b2 = b.duplicate
       new TreeSymSubstituter(from,to).traverse(b2)
-      return b2
+      return typed{ b2 }
     } else if (b.isInstanceOf[Ident]) {
       bodies(b) = null // placeholder, for unreachable-code-detection
       val bsym = b.symbol
       var su = subst
       while(su ne Nil) {
         val sh = su.head
-        if(sh._1 eq bsym) return Ident(sh._2) setType sh._2.tpe
+        if(sh._1 eq bsym) return typed{ Ident(sh._2) }
         su = su.tail
       }
-      return b.duplicate
+      return typed{ b.duplicate }
     } else bodies.get(b) match {
 
       case Some(EmptyTree, nb, theLabel) =>           //Console.println("H E L L O"+subst+" "+b)
@@ -634,7 +635,7 @@ trait ParallelMatching  {
   }
   /** converts given rep to a tree - performs recursive call to translation in the process to get sub reps
    */
-  def repToTree(rep:Rep, typed:Tree => Tree, handleOuter: Tree => Tree)(implicit theOwner: Symbol, failTree: Tree, bodies: collection.mutable.Map[Tree,(Tree, Tree, Symbol)]): Tree = {
+  final def repToTree(rep:Rep, handleOuter: Tree => Tree)(implicit theOwner: Symbol, failTree: Tree, bodies: collection.mutable.Map[Tree,(Tree, Tree, Symbol)]): Tree = {
     rep.applyRule match {
       case VariableRule(subst, EmptyTree, b) =>
         genBody(subst,b)
@@ -653,7 +654,7 @@ trait ParallelMatching  {
           Console.println("]]")
         }
 
-        var ndefault = if(default.isEmpty) failTree else repToTree(default.get, typed, handleOuter)
+        var ndefault = if(default.isEmpty) failTree else repToTree(default.get, handleOuter)
 
         var cases = branches map {
           case (tag, rep) =>
@@ -666,10 +667,10 @@ trait ParallelMatching  {
                         //cast
                         val vtmp = newVar(pat.pos, ptpe)
                         squeezedBlock(
-                          List(ValDef(vtmp, gen.mkAsInstanceOf(Ident(mc.scrutinee),ptpe))),
-                          repToTree(Rep(vtmp::rep.temp.tail, rep.row),typed,handleOuter)
+                          List(typedValDef(vtmp, gen.mkAsInstanceOf(Ident(mc.scrutinee),ptpe))),
+                          repToTree(Rep(vtmp::rep.temp.tail, rep.row),handleOuter)
                         )
-                      } else repToTree(rep, typed, handleOuter)
+                      } else repToTree(rep, handleOuter)
                     }
                   )}
 
@@ -699,8 +700,8 @@ trait ParallelMatching  {
           Console.println(defaultRepOpt)
           Console.println("]]")
         }
-        val cases = branches map { case (tag, rep) => CaseDef(Literal(tag), EmptyTree, repToTree(rep,typed,handleOuter)) }
-        var ndefault = if(defaultRepOpt.isEmpty) failTree else repToTree(defaultRepOpt.get, typed, handleOuter)
+        val cases = branches map { case (tag, rep) => CaseDef(Literal(tag), EmptyTree, repToTree(rep, handleOuter)) }
+        var ndefault = if(defaultRepOpt.isEmpty) failTree else repToTree(defaultRepOpt.get, handleOuter)
 
         renamingBind(defaultV, ml.scrutinee, ndefault) // each v in defaultV gets bound to scrutinee
 
@@ -726,9 +727,9 @@ trait ParallelMatching  {
         if(needsOuterTest(casted.tpe, mm.scrutinee.tpe)) // @todo merrge into def condition
           cond = addOuterCondition(cond, casted.tpe, typed{Ident(mm.scrutinee)}, handleOuter)
 
-        val succ = repToTree(srep, typed, handleOuter)
+        val succ = repToTree(srep, handleOuter)
 
-        val fail = if(frep.isEmpty) failTree else repToTree(frep.get, typed, handleOuter)
+        val fail = if(frep.isEmpty) failTree else repToTree(frep.get, handleOuter)
 
         // dig out case field accessors that were buried in (***)
         val cfa  = casted.caseFieldAccessors
@@ -740,21 +741,21 @@ trait ParallelMatching  {
         var vdefs     = caseTemps map {
           case (tmp,meth) =>
             val typedAccess = typed { Apply(Select(typed{Ident(casted)}, meth),List()) }
-            typed { ValDef(tmp, typedAccess) }
+            typedValDef(tmp, typedAccess)
         }
 
         if(casted ne mm.scrutinee) {
-          vdefs = typed { ValDef(casted, gen.mkAsInstanceOf(typed{Ident(mm.scrutinee)}, casted.tpe))} :: vdefs
+          vdefs = ValDef(casted, gen.mkAsInstanceOf(typed{Ident(mm.scrutinee)}, casted.tpe)) :: vdefs
         }
         typed { makeIf(cond, squeezedBlock(vdefs,succ), fail) }
 
       case mu: MixUnapply =>
         val (uacall/*:ValDef*/ , vdefs,srep,frep) = mu.getTransition // uacall is a Valdef
         //Console.println("getTransition"+(uacall,vdefs,srep,frep))
-        val succ = repToTree(srep, typed, handleOuter)
-        val fail = if(frep.isEmpty) failTree else repToTree(frep.get, typed, handleOuter)
+        val succ = repToTree(srep, handleOuter)
+        val fail = if(frep.isEmpty) failTree else repToTree(frep.get, handleOuter)
         val cond = if(uacall.symbol.tpe.symbol eq definitions.BooleanClass)
-          Ident(uacall.symbol)
+          typed{ Ident(uacall.symbol) }
                    else
                      emptynessCheck(uacall.symbol)
         typed { squeezedBlock(List(uacall), makeIf(cond,squeezedBlock(vdefs,succ),fail)) }
@@ -765,7 +766,7 @@ trait ParallelMatching  {
 
 object Rep {
   type RepType = Product2[List[Symbol], List[Row]]
-  def unapply(x:Rep):Option[RepType] =
+  final def unapply(x:Rep):Option[RepType] =
     if(x.isInstanceOf[RepImpl]) Some(x.asInstanceOf[RepImpl]) else None
 
   private case class RepImpl(val temp:List[Symbol], val row:List[Row]) extends Rep with RepType {
@@ -775,7 +776,7 @@ object Rep {
   }
 
   /** the injection here handles alternatives and unapply type tests */
-  def apply(temp:List[Symbol], row1:List[Row]): Rep = {
+  final def apply(temp:List[Symbol], row1:List[Row]): Rep = {
     var unchanged: Boolean = true
     val row = row1 flatMap {
       xx =>
@@ -875,7 +876,7 @@ object Rep {
     var sealedComb = List[Set[Symbol]]()
     //Console.println(" the matrix "+this.toString)
 
-    def init: this.type = {
+    final def init: this.type = {
       temp.zipWithIndex.foreach {
       case (sym,i) =>
         //Console.println("sym! "+sym+" mutable? "+sym.hasFlag(symtab.Flags.MUTABLE)+" captured? "+sym.hasFlag(symtab.Flags.CAPTURED))
@@ -962,7 +963,7 @@ object Rep {
 
     //def setParent(mr:MixTypes): this.type = { mixtureParent = mr; this }
 
-    def applyRule: RuleApplication = row match {
+    final def applyRule: RuleApplication = row match {
       case Nil            => ErrorRule
       case Row(pats,subst,g,b)::xs =>
         if(pats forall isDefaultPattern) {
@@ -985,7 +986,7 @@ object Rep {
         }
     }
     // a fancy toString method for debugging
-    override def toString = {
+    override final def toString = {
       val sb   = new StringBuilder
       val NPAD = 15
       def pad(s:String) = { 1.until(NPAD - s.length).foreach { x => sb.append(" ") }; sb.append(s) }
@@ -1003,7 +1004,7 @@ object Rep {
 
   /** creates initial clause matrix
    */
-  def initRep(selector:Tree, cases:List[Tree], checkExhaustive: Boolean)(implicit theOwner: Symbol) = {
+  final def initRep(selector:Tree, cases:List[Tree], checkExhaustive: Boolean)(implicit theOwner: Symbol) = {
     val root = newVar(selector.pos, selector.tpe)
     // communicate whether exhaustiveness-checking is enabled via some flag
     if(!checkExhaustive)
@@ -1017,7 +1018,7 @@ object Rep {
   // ----------------------------------   helper functions that extract information from patterns, symbols, types
 
   /** returns if pattern can be considered a no-op test ??for expected type?? */
-  def isDefaultPattern(pattern:Tree): Boolean = pattern match {
+  final def isDefaultPattern(pattern:Tree): Boolean = pattern match {
     case Bind(_, p)            => isDefaultPattern(p)
     case EmptyTree             => true // dummy
     case Ident(nme.WILDCARD)   => true
@@ -1030,16 +1031,16 @@ object Rep {
    *  @param   x a pattern
    *  @return  vs variables bound, p pattern proper
    */
-  def strip(x:Tree): (Set[Symbol], Tree) = x match {
+  final def strip(x:Tree): (Set[Symbol], Tree) = x match {
     case b @ Bind(_,pat) => val (vs,p) = strip(pat); (vs + b.symbol, p)
     case z               => (emptySymbolSet,z)
   }
 
-  def strip1(x:Tree): Set[Symbol] = x match { // same as strip(x)._1
+  final def strip1(x:Tree): Set[Symbol] = x match { // same as strip(x)._1
     case b @ Bind(_,pat) => strip1(pat) + b.symbol
     case z               => emptySymbolSet
   }
-  def strip2(x:Tree): Tree = x match {        // same as strip(x)._2
+  final def strip2(x:Tree): Tree = x match {        // same as strip(x)._2
     case     Bind(_,pat) => strip2(pat)
     case z               => z
   }
@@ -1050,7 +1051,7 @@ object Rep {
   // ----------------------------------   helper functions that generate symbols, trees for type tests, pattern tests
   // (shared by both algorithms, cough)
 
-  def newVar(pos: Position, name: Name, tpe: Type)(implicit theOwner: Symbol): Symbol = {
+  final def newVar(pos: Position, name: Name, tpe: Type)(implicit theOwner: Symbol): Symbol = {
     if(tpe eq null) assert(tpe ne null, "newVar("+name+", null)")
     val sym = theOwner.newVariable(pos, name) // careful: pos has special meaning
     sym.setFlag(symtab.Flags.TRANS_FLAG)
@@ -1058,23 +1059,23 @@ object Rep {
     sym
   }
 
-  def newVar(pos: Position, tpe: Type)(implicit theOwner: Symbol): Symbol =
+  final def newVar(pos: Position, tpe: Type)(implicit theOwner: Symbol): Symbol =
     newVar(pos, cunit.fresh.newName("temp"), tpe).setFlag(symtab.Flags.SYNTHETIC)
 
   /** returns the condition in "if(cond) k1 else k2"
    */
-  def condition(tpe: Type, scrut: Symbol): Tree = {
+  final def condition(tpe: Type, scrut: Symbol): Tree = {
     val res = condition1(tpe, scrut)
     if(true && settings_debug)
       Console.println("condition, tpe = "+tpe+", scrut.tpe = "+scrut.tpe+", res = "+res)
     res
   }
-  def condition1(tpe: Type, scrut: Symbol): Tree = {
+  final def condition1(tpe: Type, scrut: Symbol): Tree = {
     assert (scrut ne NoSymbol)
     condition(tpe, Ident(scrut) . setType (scrut.tpe) . setSymbol (scrut))
   }
 
-  def condition(tpe: Type, scrutineeTree: Tree): Tree = {
+  final def condition(tpe: Type, scrutineeTree: Tree): Tree = {
     assert(tpe ne NoType)
     assert(scrutineeTree.tpe ne NoType)
     //Console.println("tpe = "+tpe+" prefix="+tpe.prefix)
@@ -1098,7 +1099,7 @@ object Rep {
           if(tpe.prefix ne NoPrefix) gen.mkIsInstanceOf(scrutineeTree, tpe)
           else Equals(gen.mkAttributedRef(tpe.symbol), scrutineeTree)
         //Console.println(" = "+x)
-        typer.typed { x }
+        typed { x }
       }
     } else if (tpe.isInstanceOf[ConstantType]) {
       val value = tpe.asInstanceOf[ConstantType].value
@@ -1124,7 +1125,7 @@ object Rep {
       gen.mkIsInstanceOf(scrutineeTree, tpe)
   }
 
-  def needsOuterTest(tpe2test:Type, scrutinee:Type) = tpe2test.normalize match {
+  final def needsOuterTest(tpe2test:Type, scrutinee:Type) = tpe2test.normalize match {
     case TypeRef(prefix,_,_) =>
       prefix.symbol.isTerm &&
     !prefix.symbol.isPackage &&
@@ -1135,7 +1136,7 @@ object Rep {
   /** returns a result if both are TypeRefs, returns Some(true) if left and right are statically known to have
    *  the same outer, i.e. if their prefixes are the same
    */
-  def outerAlwaysEqual(left: Type, right: Type): Option[Boolean] = (left.normalize,right.normalize) match {
+  final def outerAlwaysEqual(left: Type, right: Type): Option[Boolean] = (left.normalize,right.normalize) match {
     case (TypeRef(lprefix, _,_), TypeRef(rprefix,_,_)) =>
       if(!(lprefix =:= rprefix)) {
         //DEBUG("DEBUG(outerAlwaysEqual) Some(f) for"+(left,right))
@@ -1145,7 +1146,7 @@ object Rep {
   }
 
   /** adds a test comparing the dynamic outer to the static outer */
-  def addOuterCondition(cond:Tree, tpe2test: Type, scrutinee: Tree, handleOuter: Tree=>Tree) = {
+  final def addOuterCondition(cond:Tree, tpe2test: Type, scrutinee: Tree, handleOuter: Tree=>Tree) = {
     val TypeRef(prefix,_,_) = tpe2test
     var theRef = gen.mkAttributedRef(prefix.prefix, prefix.symbol)
 

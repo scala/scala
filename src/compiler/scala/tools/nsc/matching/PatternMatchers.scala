@@ -133,6 +133,10 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
           case null => // ignore
             return
 
+          case _:AbstractMethodError =>
+            cunit.error(cases.head.pos, "please recompile matcher component (explicitouter,patternmattcher, parallelmatching,codefactory)")
+            throw FatalError("died in parallel match algorithm" )
+
           case _:OutOfMemoryError =>
             cunit.error(cases.head.pos, "internal error (out of memory in parallel match algorithm)")
             throw FatalError("died in parallel match algorithm" )
@@ -178,7 +182,7 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
       implicit val bodies     = new collection.mutable.HashMap[Tree, (Tree,Tree,Symbol)]
 
       try {
-        val mch  = typed{repToTree(irep, typed, handleOuter)}
+        val mch  = typed{repToTree(irep, handleOuter)}
         dfatree = typed{squeezedBlock(List(vdef), mch)}
 
         //DEBUG("**** finished\n"+dfatree.toString)
@@ -864,7 +868,7 @@ print()
       root.and.or match {
         case ConstantPat(value) =>
           return squeezedBlock(
-            List(ValDef(root.casted, selector)),
+            List(typedValDef(root.casted, selector)),
             If(Equals(Ident(root.casted), Literal(value)),
                (root.and.or.and).bodyToTree(),
                defaultBody(root.and, matchError))
@@ -933,7 +937,7 @@ print()
 
     // changed to
     nCases = CaseDef(Ident(nme.WILDCARD),defaultBody1) :: nCases;
-    squeezedBlock(List(ValDef(root.casted, selector)),Match(Ident(root.casted), nCases))
+    squeezedBlock(List(typedValDef(root.casted, selector)),Match(Ident(root.casted), nCases))
   }
 
 
@@ -946,7 +950,7 @@ print()
     val result = exit.newValueParameter(root.pos, "result").setInfo( resultType );
     squeezedBlock(
       List(
-        ValDef(root.casted, selector),
+        typedValDef(root.casted, selector),
         typed { toTree(root.and) },
         ThrowMatchError(selector.pos,  Ident(root.casted))) ,
       LabelDef(exit, List(result), Ident(result)))
@@ -1002,7 +1006,7 @@ print()
           var res0: Tree =
             squeezedBlock(
               List(
-                ValDef(temp, body(i)),
+                typedValDef(temp, body(i)),
                 Apply(Ident(exit), List(Ident(temp).setType(temp.tpe)) )
               ),
               Literal(Constant(true))
@@ -1177,9 +1181,9 @@ print()
 
              Or(And(checkType,
                        squeezedBlock(
-                         List(ValDef(v,Apply(handleOuter(fn1), useSelector::appargs.tail))),
+                         List(typedValDef(v,Apply(handleOuter(fn1), useSelector::appargs.tail))),
                          And(__opt_nonemp__,
-                           squeezedBlock(List(ValDef(casted, __opt_get__)),toTree(node.and))))
+                           squeezedBlock(List(typedValDef(casted, __opt_get__)),toTree(node.and))))
                 ),
               toTree(node.or, selector.duplicate))
 
@@ -1227,7 +1231,7 @@ print()
           }
 
           val cast_untyped = gen.mkAsInstanceOf(selector.duplicate, ntpe, true)
-          val vdef_untyped = ValDef(casted,
+          val vdef_untyped = typedValDef(casted,
                                     if(isSubType(selector.tpe,ntpe))
                                       selector.duplicate
                                     else
@@ -1265,7 +1269,7 @@ print()
                 selector.duplicate
 
             val succ: Tree = squeezedBlock(
-              List(ValDef(casted, treeAsSeq)),
+              List(typedValDef(casted, treeAsSeq)),
               toTree(node.and))
 
             val fail = toTree(node.or, selector.duplicate)
@@ -1295,11 +1299,11 @@ print()
 
             var bindings =
               if(castedRest ne null)
-                List(ValDef(castedRest, seqDrop(treeAsSeq.duplicate, minlen)))
+                List(typedValDef(castedRest, seqDrop(treeAsSeq.duplicate, minlen)))
               else
                 List()
 
-            bindings = ValDef(casted, treeAsSeq.duplicate) :: bindings
+            bindings = typedValDef(casted, treeAsSeq.duplicate) :: bindings
 
             val succ = squeezedBlock(bindings, toTree(node.and))
             val fail = toTree(node.or, selector.duplicate)
