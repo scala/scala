@@ -243,7 +243,7 @@ class InterpreterLoop(in0: BufferedReader, out: PrintWriter) {
       case IR.Error => None
       case IR.Incomplete =>
         if (interactive && code.endsWith("\n\n")) {
-          out.println("Two blank lines seen.  Aborting this expression.")
+          out.println("You typed two blank lines.  Starting a new command.")
           None
         } else {
           if (interactive) {
