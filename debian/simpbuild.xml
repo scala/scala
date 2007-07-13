@@ -61,9 +61,6 @@
   <!-- Location of structure of the distribution properties -->
   <property name="dist.sbaz.dir" value="${build.dir}/sbaz"/>
   <property name="dist.name" value="scala"/>
-  <property name="lib.jar.name" value="${dist.name}-library.jar"/>
-  <property name="lib-dbc.jar.name" value="${dist.name}-dbc.jar"/>
-  <property name="comp.jar.name" value="${dist.name}-compiler.jar"/>
 
   <property name="libsrc.jar.name" value="${dist.name}-library-src.jar"/>
   <property name="dbcsrc.jar.name" value="${dist.name}-dbc-src.jar"/>
@@ -163,7 +160,7 @@
   <property file="${topdir}/build.number"/>
   <property
     name="version.number"
-    value="${version.major}.${version.minor}.${version.patch}"
+    value="${version.major}.${version.minor}.${version.patch}${version.suffix}"
   />
   <echo level="verbose" message="version.number=${version.number}"/>
 
@@ -176,11 +173,6 @@
   <taskdef
     name="scalatool"
     classname="scala.tools.ant.ScalaTool"
-    classpathref="starr.classpath"
-  />
-  <taskdef
-    name="scaladoc"
-    classname="scala.tools.ant.Scaladoc"
     classpathref="starr.classpath"
   />
   <taskdef
@@ -241,7 +233,6 @@
         <pathelement location="${build.lib.dir}"/> <!-- XXX ??? -->
       </classpath>
       <include name="scala/Predef.scala"/>
-      <include name="scala/runtime/ScalaRunTime.scala"/>
     </scalac>
     <scalac
       srcdir="${src.lib.dir}"
@@ -253,7 +244,6 @@
       </classpath>
       <include name="**/*.scala"/>
       <exclude name="scala/Predef.scala"/>
-      <exclude name="scala/runtime/ScalaRunTime.scala"/>
       <exclude name="scala/dbc/**"/>
     </scalac>
 
@@ -321,9 +311,11 @@
       message="copyright.string=${copyright.string}${line.separator}"
       append="true"
     />
-    <jar destfile="${build.jar.dir}/${comp.jar.name}">
+    <jar destfile="${build.jar.dir}/scala-compiler.jar">
       <fileset dir="${build.comp.dir}"/>
       <zipfileset src="${fjbg.jar}"/>
+      <zipfileset src="${msil.jar}"/>
+
       <fileset dir="${src.lib.dir}">
         <include name="**/*.tmpl"/>
         <include name="**/*.xml"/>
@@ -341,7 +333,7 @@
         <attribute name="Signature-Version" value="${version.number}"/>
         <attribute name="Built-By" value="${user.name}"/>
         <attribute name="Main-Class" value="scala.tools.nsc.Main"/>
-        <attribute name="Class-Path" value="${lib.jar.name}"/>
+        <attribute name="Class-Path" value="scala-library.jar"/>
         <section name="scala/tools/nsc">
           <attribute name="Extension-Name" value="scala.tools.nsc"/>
           <attribute name="Specification-Title" value="Scala Compiler"/>
@@ -363,7 +355,7 @@
       message="copyright.string=${copyright.string}${line.separator}"
       append="true"
     />
-    <jar destfile="${build.jar.dir}/${lib.jar.name}">
+    <jar destfile="${build.jar.dir}/scala-library.jar">
       <fileset dir="${build.lib.dir}"/>
       <fileset dir="${build.actors.dir}"/>
       <manifest>
@@ -381,12 +373,12 @@
         </section>
       </manifest>
     </jar>
-    <jar destfile="${build.jar.dir}/${lib-dbc.jar.name}">
+    <jar destfile="${build.jar.dir}/scala-dbc.jar">
       <fileset dir="${build.dbc.dir}"/>
       <manifest>
         <attribute name="Signature-Version" value="${version.number}"/>
         <attribute name="Built-By" value="${user.name}"/>
-        <attribute name="Class-Path" value="${lib.jar.name}"/>
+        <attribute name="Class-Path" value="scala-library.jar"/>
         <section name="scala/dbc">
           <attribute name="Extension-Name" value="scala.dbc"/>
           <attribute name="Specification-Title" value="Scala DBC Library"/>
@@ -454,19 +446,38 @@
     />
   </target>
 
-  <target name="docs.lib">
+  <target name="docs.lib" depends="build">
+    <taskdef
+      name="scaladoc"
+      classname="scala.tools.ant.Scaladoc">
+      <classpath>
+        <pathelement location="${build.jar.dir}/scala-library.jar"/>
+        <pathelement location="${build.jar.dir}/scala-compiler.jar"/>
+        <pathelement location="${fjbg.jar}"/>
+        <pathelement location="${msil.jar}"/>
+
+      </classpath>
+    </taskdef>
+  
+
     <mkdir dir="${api.lib.dir}"/>
     <scaladoc
       srcdir="${src.dir}"
       destdir="${api.lib.dir}"
       sourcepath=""
+      deprecation="yes" unchecked="yes"
       windowtitle="Scala Library Documentation"
       doctitle="&lt;div&gt;Scala ${version.number}&lt;br/&gt;API Specification&lt;/div&gt;"
     >
       <classpath>
-        <pathelement location="${build.jar.dir}/${lib.jar.name}"/>
+        <!-- note: must use non-jarred source directories here or
+             scaladoc can crash -->
+        <pathelement location="${build.lib.dir}"/>
+        <pathelement location="${build.actors.dir}"/>
+        <pathelement location="${build.dbc.dir}"/>
       </classpath>
       <include name="dbc/**/*.scala"/>
+      <include name="actors/**/*.scala"/>
       <include name="library/**/*.scala"/>
     </scaladoc>
   </target>
@@ -496,7 +507,7 @@
 
   <target name="docs" depends="docs.lib, docs.manual"/>
 
-  <target name="dist" depends="build,docs">
+  <target name="dist" depends="build">
     <!-- Create the SBaz packages -->
     <mkdir dir="${dist.sbaz.dir}"/>
     <!-- Create the Scala library package -->
@@ -508,8 +519,8 @@
       desc="The Scala library. This is the minimal requirement to run any Scala program."
       link="${sbaz.universe}/${sbaz.lib.name}-${version.number}.sbp"
     >
-      <libset dir="${build.jar.dir}" includes="${lib.jar.name}"/>
-      <libset dir="${build.jar.dir}" includes="${lib-dbc.jar.name}"/>
+      <libset dir="${build.jar.dir}" includes="scala-library.jar"/>
+      <libset dir="${build.jar.dir}" includes="scala-dbc.jar"/>
       <srcset dir="${build.jar.dir}" includes="${libsrc.jar.name}"/>
       <srcset dir="${build.jar.dir}" includes="${dbcsrc.jar.name}"/>
     </sbaz>
@@ -524,7 +535,7 @@
       link="${sbaz.universe}/${sbaz.dev.name}-${version.number}.sbp"
     >
       <binset dir="${build.bin.dir}" includes="**"/>
-      <libset dir="${build.jar.dir}" includes="${comp.jar.name}"/>
+      <libset dir="${build.jar.dir}" includes="scala-compiler.jar"/>
       <manset dir="${tooldocs.dir}" includes="man1/*.1"/>
       <docset dir="${docs.dir}" includes="README,LICENSE"/>
       <docset dir="${api.lib.pdir}" includes="scala/**"/>
@@ -541,7 +552,9 @@
       depends="${sbaz.lib.name},${sbaz.dev.name}"
       link="${sbaz.universe}/${sbaz.scala.name}-${version.number}.sbp"
     />
-    <!-- Creates the Scala test package -->
+  </target>
+
+  <target name="dist.tests">
     <sbaz
       file="${dist.sbaz.dir}/${sbaz.test.name}-${version.number}.sbp"
       adfile="${dist.sbaz.dir}/${sbaz.test.name}-${version.number}.advert"
@@ -561,15 +574,12 @@
     </sbaz>
   </target>
 
-  <target name="install" depends="dist">
+  <target name="install" depends="dist,docs">
     <exec executable="sbaz">
       <arg line="-v install -f ${dist.sbaz.dir}/${sbaz.lib.name}-${version.number}.sbp"/>
     </exec>
     <exec executable="sbaz">
       <arg line="-v install -f ${dist.sbaz.dir}/${sbaz.dev.name}-${version.number}.sbp"/>
-    </exec>
-    <exec executable="sbaz">
-      <arg line="-v install -f ${dist.sbaz.dir}/${sbaz.test.name}-${version.number}.sbp"/>
     </exec>
     <exec executable="sbaz">
       <arg line="-v install -f ${dist.sbaz.dir}/${sbaz.scala.name}-${version.number}.sbp"/>
