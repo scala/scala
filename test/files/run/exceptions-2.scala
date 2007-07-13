@@ -115,8 +115,7 @@ object Test {
 
   def withValue1: Unit = {
     val x = try {
-      var y = 10
-      y
+      10
     } finally {
       Console.println("Oh, oh");
     };
