@@ -53,8 +53,11 @@ class CharArrayReader(buf: Array[Char], start: Int, /* startline: Int, startcol:
   def next: Char = {
     //cline = nextline
     //ccol = nextcol
-    if(!hasNext)
-      return SU  // there is an endless stream of SU's at the end
+    if(!hasNext) {
+      // there is an endless stream of SU's at the end
+      ch = SU
+      return SU
+    }
     oldBp = bp
     oldCh = ch
     ch = buf(bp)
