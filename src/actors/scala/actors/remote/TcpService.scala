@@ -46,6 +46,8 @@ object TcpService {
     }
     portnum
   }
+
+  var BufSize: int = 65536
 }
 
 /* Class TcpService.
@@ -61,6 +63,11 @@ class TcpService(port: Int) extends Thread with Service {
 
   private val pendingSends = new HashMap[Node, List[Array[byte]]]
 
+  /**
+   * Sends a byte array to another node on the network.
+   * If the node is not yet up, up to <code>TcpService.BufSize</code>
+   * messages are buffered.
+   */
   def send(node: Node, data: Array[byte]): unit = synchronized {
 
     def bufferMsg(t: Throwable) = {
@@ -69,7 +76,7 @@ class TcpService(port: Int) extends Thread with Service {
       pendingSends.get(node) match {
         case None =>
           pendingSends += node -> (data :: Nil)
-        case Some(msgs) =>
+        case Some(msgs) if msgs.length < TcpService.BufSize =>
           pendingSends += node -> (data :: msgs)
       }
     }
