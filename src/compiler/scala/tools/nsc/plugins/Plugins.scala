@@ -161,6 +161,9 @@ trait Plugins { self: Global =>
 
   /** Summary of the options for all loaded plugins */
   def pluginOptionsHelp: String = {
+    new Run // force some initialization
+            // todo: it should not really be necessary....
+
     val buf = new StringBuffer
     for (plug <- plugins; help <- plug.optionsHelp) {
       buf append ("Options for plugin " + plug.name + ":\n")

@@ -692,8 +692,4 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
   def onlyPresentation = settings.doc.value
   // used to disable caching in lampion IDE.
   def inIDE = false
-
-
-  // force some initialization
-  new Run
 }
