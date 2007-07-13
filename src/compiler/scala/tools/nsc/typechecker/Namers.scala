@@ -416,8 +416,8 @@ trait Namers { self: Analyzer =>
           (sym isLessAccessibleThan getter) || isHidden(pre)
         case ThisType(sym) =>
           sym isLessAccessibleThan getter
-        case p: TypeProxy =>
-          isHidden(p.tp)
+        case p: SimpleTypeProxy =>
+          isHidden(p.underlying)
         case _ =>
           false
       }

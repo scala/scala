@@ -2279,7 +2279,7 @@ trait Typers { self: Analyzer =>
           }
         if (clazz == NoSymbol) setError(tree)
         else {
-          tree setSymbol clazz setType selftype.singleDeref
+          tree setSymbol clazz setType selftype.underlying
           if (isStableContext(tree, mode, pt)) tree setType selftype
           tree
         }
