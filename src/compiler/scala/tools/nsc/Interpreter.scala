@@ -136,6 +136,13 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
       new URLClassLoader((classfilePath.toURL :: compilerClasspath).toArray,
                           parentClassLoader)
 
+  /** Set the current Java "context" class loader to this
+    * interpreter's class loader */
+  def setContextClassLoader() {
+    Thread.currentThread.setContextClassLoader(classLoader)
+  }
+
+
   /** XXX Let's get rid of this.  I believe the Eclipse plugin is
     * the only user of it, so this should be doable.  */
   protected def parentClassLoader: ClassLoader = null
@@ -422,6 +429,9 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
    *  @return     ...
    */
   def interpret(line: String): IR.Result = {
+    if (prevRequests.isEmpty)
+      new compiler.Run // initialize the compiler
+
     // parse
     val trees = parse(line) match {
       case None => return IR.Incomplete
