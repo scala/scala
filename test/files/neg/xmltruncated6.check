@@ -1,0 +1,7 @@
+xmltruncated6.scala:2: error: ';' expected but eof found.
+  val stuff = <a>{ "no closing brace"
+                                     ^
+xmltruncated6.scala:3: error: Input ended while parsing XML
+
+^
+two errors found
