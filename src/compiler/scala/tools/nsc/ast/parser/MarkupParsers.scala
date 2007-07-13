@@ -9,6 +9,7 @@ package scala.tools.nsc.ast.parser
 import scala.collection.mutable
 import scala.tools.nsc.util.{Position,SourceFile}
 import scala.xml.{Text, TextBuffer}
+import SourceFile.{SU,LF}
 
 /** This trait ...
  *
@@ -24,6 +25,10 @@ trait MarkupParsers {
 
   case object ConfusedAboutBracesException extends RuntimeException {
     override def getMessage = " I encountered a '}' where I didn't expect one, maybe this tag isn't closed <"
+  }
+
+  case object TruncatedXML extends RuntimeException {
+    override def getMessage = "input ended while parsing XML"
   }
 
   import global._
@@ -64,6 +69,8 @@ trait MarkupParsers {
      */
     /*[Duplicate]*/ def xToken(that: Char) {
       if (ch == that) nextch
+      else if (ch == SU)
+	throw TruncatedXML
       else reportSyntaxError("'" + that + "' expected instead of '" + ch + "'")
     }
 
@@ -108,6 +115,8 @@ trait MarkupParsers {
           case '{'  =>
             nextch
             xEmbeddedExpr
+	  case SU =>
+	    throw TruncatedXML
           case _ =>
             reportSyntaxError("' or \" delimited attribute value" +
                               " or '{' scala-expr '}' expected" )
@@ -130,6 +139,8 @@ trait MarkupParsers {
      */
     /*[Duplicate]*/ def xAttributeValue(endCh: Char): String = {
       while (ch != endCh) {
+	if (ch == SU)
+	  throw TruncatedXML
         putChar(ch)
         nextch
       }
@@ -191,7 +202,9 @@ trait MarkupParsers {
           sb.length = sb.length - 2
           nextch
           return handle.charData(pos1, sb.toString())
-        } else
+        } else if (ch == SU)
+	  throw TruncatedXML
+        else
           sb.append(ch)
         nextch
       }
@@ -220,6 +233,8 @@ trait MarkupParsers {
           sb.length = sb.length - "</xml:unparsed".length
           nextch
           return handle.unparsed(pos1, sb.toString())
+        } else if (ch == SU) {
+	  throw TruncatedXML
         } else sb.append(ch)
         nextch
       }
@@ -246,8 +261,10 @@ trait MarkupParsers {
                            +"Did you mean to write &#x ?");
             else
               i = i * base + ch.asDigit
+	  case SU =>
+	    throw TruncatedXML
           case _ =>
-            reportSyntaxError("character '"+ch+" not allowed in char ref\n")
+            reportSyntaxError("character '"+ch+"' not allowed in char ref")
         }
         nextch
       }
@@ -268,7 +285,9 @@ trait MarkupParsers {
           nextch
           xToken('>')
           return handle.comment(pos, sb.toString())
-        } else sb.append(ch)
+        } else if (ch == SU) {
+	  throw TruncatedXML
+	} else sb.append(ch)
         nextch
       }
       Predef.error("this cannot happen")
@@ -362,6 +381,8 @@ trait MarkupParsers {
               content_BRACE(tmppos, ts)
             case '&' => // EntityRef or CharRef
               content_AMP(ts)
+	    case SU =>
+	      exit = true
             case _ =>  // text content
               appendText(tmppos, ts, xText)
               // here xEmbeddedBlock might be true
@@ -407,7 +428,9 @@ trait MarkupParsers {
      *  post-condition: name does neither start, nor end in ':'
      */
     /*[Duplicate]*/   def xName: String = {
-      if ( !xml.Parsing.isNameStart(ch)) {
+      if (ch == SU) {
+	throw TruncatedXML
+      } else if ( !xml.Parsing.isNameStart(ch)) {
         reportSyntaxError("name expected, but char '"+ch+"' cannot start a name")
         return ""
       }
@@ -433,6 +456,8 @@ trait MarkupParsers {
     /** scan [3] S ::= (#x20 | #x9 | #xD | #xA)+ */
     /*[Duplicate]*/ def xSpace =
       if (xml.Parsing.isSpace(ch)) { nextch; xSpaceOpt }
+      else if (ch == SU)
+	throw TruncatedXML
       else reportSyntaxError("whitespace expected")
 
     /** '<?' ProcInstr ::= Name [S ({Char} - ({Char}'>?' {Char})]'?>'
@@ -469,7 +494,7 @@ trait MarkupParsers {
       //  return ""
       //} else {
         var exit = false
-        while (!exit) {
+        while (!exit && (ch!=SU)) {
           putChar(ch)
           val expectRBRACE = ch == '}'
           // TODO check for "}}"
@@ -544,13 +569,18 @@ trait MarkupParsers {
       tree
     }
     catch {
+      case c @ TruncatedXML =>
+        s.incompleteInputError(s.in.cpos-1, c.getMessage)
+        s.nextToken
+        EmptyTree
+
       case c @ (MissingEndTagException | ConfusedAboutBracesException) =>
-        s.syntaxError((debugLastStartElement.top._1),
+        p.syntaxError((debugLastStartElement.top._1),
                       c.getMessage + debugLastStartElement.top._2+">")
         EmptyTree
 
       case _:ArrayIndexOutOfBoundsException =>
-        s.syntaxError((debugLastStartElement.top._1),
+        p.syntaxError((debugLastStartElement.top._1),
                       "missing end tag in XML literal for <"
                       +debugLastStartElement.top._2+">");
         EmptyTree
@@ -571,13 +601,18 @@ trait MarkupParsers {
       popScannerState
       tree
     } catch {
+      case c @ TruncatedXML =>
+        s.incompleteInputError(s.in.cpos-1, c.getMessage)
+        s.nextToken
+        EmptyTree
+
       case c @ (MissingEndTagException | ConfusedAboutBracesException) =>
-        s.syntaxError((debugLastStartElement.top._1),
+        p.syntaxError((debugLastStartElement.top._1),
                       c.getMessage + debugLastStartElement.top._2+">")
         EmptyTree
 
       case _:ArrayIndexOutOfBoundsException =>
-        s.syntaxError((debugLastStartElement.top._1),
+        p.syntaxError((debugLastStartElement.top._1),
                       "missing end tag in XML literal for <"
                       +debugLastStartElement.top._2+">")
         EmptyTree
@@ -586,6 +621,8 @@ trait MarkupParsers {
     def xEmbeddedExpr: Tree = {
       sync
       val b = p.block() //p.expr(true,false);
+      if (s.in.ch == SU)
+	throw TruncatedXML
       if (/*s.*/token != RBRACE) {
         reportSyntaxError(" expected end of Scala block")
       }
@@ -598,6 +635,8 @@ trait MarkupParsers {
     def xScalaPatterns: List[Tree] = {
       sync
       val b = p.patterns(true)
+      if (s.in.ch == SU)
+	throw TruncatedXML
       if (/*s.*/token != RBRACE) {
         reportSyntaxError(" expected end of Scala patterns")
       }
@@ -608,7 +647,7 @@ trait MarkupParsers {
     //var ch: Char = _;
 
     /** this method assign the next character to ch and advances in input */
-    def nextch { s.in.next; /*s.xNext;*/ ch = s.in.ch ; if(ch == SourceFile.SU) p.incompleteInputError("reached end of buffer"); pos = s.in.cpos }
+    def nextch { s.in.next; /*s.xNext;*/ ch = s.in.ch ; pos = s.in.cpos }
 
     //def lookahead = { s.xLookahead }
     var scannerState: List[List[Int]] = Nil
@@ -629,7 +668,7 @@ trait MarkupParsers {
     }
 
     def reportSyntaxError(str: String) = {
-      s.syntaxError(pos-1, "in XML literal: " + str)
+      p.syntaxError(pos-1, "in XML literal: " + str)
       nextch
     }
 
@@ -676,6 +715,10 @@ trait MarkupParsers {
               }
               // postcond: xEmbeddedBlock = false;
               if (xEmbeddedBlock) Predef.error("problem with embedded block"); // assert
+
+            case SU =>
+              throw TruncatedXML
+
             case _ => // teMaxt
               appendText(pos2, ts, xText)
               // here  xEmbeddedBlock might be true;
