@@ -83,6 +83,18 @@ def x => y => z
 [1,2,3]
 
 
+// multi-line XML
+&lt;a>
+&lt;b
+  c="c"
+  d="dd"
+/>&lt;/a>
+
+(1 +   // give up early by typing two blank lines
+
+
+
+
 </code>.text
 
 
