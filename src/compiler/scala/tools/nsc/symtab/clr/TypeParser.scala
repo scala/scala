@@ -434,7 +434,7 @@ abstract class TypeParser {
   // java.lang.Number to get the value (if a number, not for boolean, character)
   // see ch.epfl.lamp.compiler.msil.util.PEStream.java
   def getConstant(constType: Type, value: Object): Constant = {
-    val typeClass = constType.symbol
+    val typeClass = constType.typeSymbol
     if (typeClass == definitions.BooleanClass)
       Constant(value.asInstanceOf[java.lang.Boolean].booleanValue)
     else if (typeClass == definitions.ByteClass)

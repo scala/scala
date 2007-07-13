@@ -303,17 +303,17 @@ abstract class GenMSIL extends SubComponent {
         log("creating attributes: " + attributes + " for member : " + member)
       for (attr@ AnnotationInfo(typ, annArgs, nvPairs) <- attributes ;
            if attr.isConstant)
-           /* !typ.symbol.hasFlag(Flags.JAVA) */
+           /* !typ.typeSymbol.hasFlag(Flags.JAVA) */
       {
 //        assert(consts.length <= 1,
 //               "too many constant arguments for attribute; "+consts.toString())
 
         // Problem / TODO having the symbol of the attribute type would be nicer
-        // (i hope that type.symbol is the same as the one in types2create)
+        // (i hope that type.typeSymbol is the same as the one in types2create)
         // AND: this will crash if the attribute Type is already compiled (-> not a typeBuilder)
         // when this is solved, types2create will be the same as icodes.classes, thus superfluous
-        val attrType: TypeBuilder = getType(typ.symbol).asInstanceOf[TypeBuilder]
-//        val attrType: MsilType = getType(typ.symbol)
+        val attrType: TypeBuilder = getType(typ.typeSymbol).asInstanceOf[TypeBuilder]
+//        val attrType: MsilType = getType(typ.typeSymbol)
 
         // Problem / TODO: i have no idea which constructor is used. This
         // information should be available in AnnotationInfo.
@@ -1918,7 +1918,7 @@ abstract class GenMSIL extends SubComponent {
           if (sym.tpe.paramTypes.length == 1) {
             toTypeKind(sym.tpe.paramTypes(0)) match {
               case ARRAY(elem) =>
-                if (elem.toType.symbol == definitions.StringClass){
+                if (elem.toType.typeSymbol == definitions.StringClass){
                   return true
                 }
               case _ => ()
@@ -1982,7 +1982,7 @@ abstract class GenMSIL extends SubComponent {
 
     def createTypeBuilder(iclass: IClass) {
       def getMsilType(tpe: Type): MsilType = {
-        val sym = tpe.symbol
+        val sym = tpe.typeSymbol
         types.get(sym) match {
           case Some(mtype) => mtype
           case None => createTypeBuilder(classes(sym)); types(sym)
@@ -1999,14 +1999,14 @@ abstract class GenMSIL extends SubComponent {
 
       val superType = if (isInterface(sym)) null else getMsilType(parents.head)
       if (settings.debug.value)
-        log("super type: " + parents(0).symbol + ", msil type: " + superType)
+        log("super type: " + parents(0).typeSymbol + ", msil type: " + superType)
 
       val interfaces: Array[MsilType] = parents.tail.map(getMsilType).toArray
       if (parents.length > 1) {
         if (settings.debug.value){
           log("interfaces:")
           for (i <- 0.until(interfaces.length)){
-            log("  type: " + parents(i + 1).symbol + ", msil type: " + interfaces(i))
+            log("  type: " + parents(i + 1).typeSymbol + ", msil type: " + interfaces(i))
           }
         }
       }

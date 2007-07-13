@@ -66,7 +66,7 @@ object Console {
    *
    *  @param out the new output stream.
    */
-  def setOut(out: TextWriter): Unit = outVar.value = out
+  def setOut(out: TextWriter) { outVar.value = out }
 
   /** Set the default output stream for the duration
    *  of execution of one thunk.
@@ -109,7 +109,7 @@ object Console {
    *  output (i.e. output not terminated by a new line character) has
    *  to be made visible on the terminal.
    */
-  def flush(): Unit = out.Flush()
+  def flush() { out.Flush() }
 
   /** Print a new line character on the terminal.
    */
@@ -130,16 +130,16 @@ object Console {
    *    <code>text</code>. The arguments that are inserted into specific
    *    locations in <code>text</code> are provided with parameter
    *    <code>args</code>. See class <a href="" target="contentFrame"
-   *    class="java_text_MessageFormat"><code>java.text.MessageFormat</code></a>
+   *    class="java/text/MessageFormat"><code>java.text.MessageFormat</code></a>
    *    for a full specification of the <a href="#syntax" target="contentFrame"
-   *    class="java_util_Formatter">format syntax</a>.
+   *    class="java/util/Formatter">format syntax</a>.
    *  </p>
    *
    *  @param text the format of the text to print out.
    *  @param args the parameters used to instantiate the format.
    *  @throws java.lang.IllegalArgumentException
    */
-  def printf(text: String, args: Any*): Unit = format(text, args: _*)
+  def printf(text: String, args: Any*) { format(text, args: _*) }
 
   /**
    *  @see <a href="#printf(java.lang.String,scala.Any*)"
