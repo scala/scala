@@ -16,8 +16,7 @@ import scala.tools.nsc.util.{HashSet, Position, Set, NoPosition}
 import symtab.Flags._
 import util.HashSet
 
-/** This trait provides methods to create symbols and to enter them into
- *  scopes.
+/** This trait provides methods to assign types to trees.
  *
  *  @author  Martin Odersky
  *  @version 1.0
