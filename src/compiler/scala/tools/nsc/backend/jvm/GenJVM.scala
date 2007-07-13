@@ -165,13 +165,13 @@ abstract class GenJVM extends SubComponent {
 
       if (parents.length > 1) {
         ifaces = new Array[String](parents.length - 1)
-        parents.drop(1).map((s) => javaName(s.symbol)).copyToArray(ifaces, 0)
+        parents.drop(1).map((s) => javaName(s.typeSymbol)).copyToArray(ifaces, 0)
         ()
       }
 
       jclass = fjbgContext.JClass(javaFlags(c.symbol),
                                   name,
-                                  javaName(parents(0).symbol),
+                                  javaName(parents(0).typeSymbol),
                                   ifaces,
                                   c.cunit.source.toString)
 
@@ -220,7 +220,7 @@ abstract class GenJVM extends SubComponent {
       for (val AnnotationInfo(ThrowsAttr, List(exc), _) <- excs.removeDuplicates) {
         buf.putShort(
           cpool.addClass(
-            javaName(exc.constant.get.typeValue.symbol)).shortValue)
+            javaName(exc.constant.get.typeValue.typeSymbol)).shortValue)
         nattr = nattr + 1
       }
 
@@ -282,7 +282,7 @@ abstract class GenJVM extends SubComponent {
 
       for (attrib@AnnotationInfo(typ, consts, nvPairs) <- attributes;
            if attrib.isConstant;
-           if typ.symbol isNonBottomSubClass definitions.ClassfileAnnotationClass) {
+           if typ.typeSymbol isNonBottomSubClass definitions.ClassfileAnnotationClass) {
         nattr = nattr + 1
         val jtype = javaType(typ)
         buf.putShort(cpool.addUtf8(jtype.getSignature()).toShort)
@@ -319,7 +319,7 @@ abstract class GenJVM extends SubComponent {
       val attributes = for (attrs <- pattrss) yield
         for (attr @ AnnotationInfo(tpe, _, _) <- attrs;
              if attr.isConstant;
-             if tpe.symbol isNonBottomSubClass definitions.ClassfileAnnotationClass) yield attr;
+             if tpe.typeSymbol isNonBottomSubClass definitions.ClassfileAnnotationClass) yield attr;
       if (attributes.forall(_.isEmpty)) return;
 
       val buf: ByteBuffer = ByteBuffer.allocate(2048)
@@ -804,13 +804,13 @@ abstract class GenJVM extends SubComponent {
             }
 
           case BOX(kind) =>
-            val boxedType = definitions.boxedClass(kind.toType.symbol)
+            val boxedType = definitions.boxedClass(kind.toType.typeSymbol)
             val mtype = new JMethodType(javaType(boxedType), Array(javaType(kind)))
             jcode.emitINVOKESTATIC(BoxesUtility, "boxTo" + boxedType.nameString, mtype)
 
           case UNBOX(kind) =>
             val mtype = new JMethodType(javaType(kind), Array(JObjectType.JAVA_LANG_OBJECT))
-            jcode.emitINVOKESTATIC(BoxesUtility, "unboxTo" + kind.toType.symbol.nameString, mtype)
+            jcode.emitINVOKESTATIC(BoxesUtility, "unboxTo" + kind.toType.typeSymbol.nameString, mtype)
 
           case NEW(REFERENCE(cls)) =>
             val className = javaName(cls)

@@ -93,7 +93,7 @@ trait TypeKinds { self: ICodes =>
   def lub(a: TypeKind, b: TypeKind): TypeKind = {
     def lub0(t1: Type, t2: Type): Type = {
       val lubTpe = global.lub(t1 :: t2 :: Nil)
-      assert(lubTpe.symbol.isClass,
+      assert(lubTpe.typeSymbol.isClass,
              "Least upper bound of " + t1 + " and " + t2 + " is not a class: " + lubTpe)
       lubTpe
     }

@@ -492,9 +492,9 @@ abstract class GenICode extends SubComponent  {
 
           var handlers = for (CaseDef(pat, _, body) <- catches.reverse)
             yield pat match {
-              case Typed(Ident(nme.WILDCARD), tpt) => (tpt.tpe.symbol, kind, {
+              case Typed(Ident(nme.WILDCARD), tpt) => (tpt.tpe.typeSymbol, kind, {
                 ctx: Context =>
-                  ctx.bb.emit(DROP(REFERENCE(tpt.tpe.symbol)));
+                  ctx.bb.emit(DROP(REFERENCE(tpt.tpe.typeSymbol)));
                   val ctx1 = genLoad(body, ctx, kind);
                   if (guardResult) {
                     ctx1.bb.emit(STORE_LOCAL(tmp))
@@ -521,7 +521,7 @@ abstract class GenICode extends SubComponent  {
               case Bind(name, _) =>
                 val exception = ctx.method.addLocal(new Local(pat.symbol, toTypeKind(pat.symbol.tpe), false))
 
-                (pat.symbol.tpe.symbol, kind, {
+                (pat.symbol.tpe.typeSymbol, kind, {
                   ctx: Context =>
                     if (settings.Xdce.value)
                       ctx.bb.emit(LOAD_EXCEPTION(), pat.pos)
@@ -619,7 +619,7 @@ abstract class GenICode extends SubComponent  {
             assert(false) /* Erasure should have added an unboxing operation to prevent that. */
           }
           else if (r.isValueType)
-            ctx.bb.emit(IS_INSTANCE(REFERENCE(definitions.boxedClass(r.toType.symbol))))
+            ctx.bb.emit(IS_INSTANCE(REFERENCE(definitions.boxedClass(r.toType.typeSymbol))))
           else
             genCast(l, r, ctx1, cast);
 
@@ -822,8 +822,8 @@ abstract class GenICode extends SubComponent  {
 
             val hostClass = fun match {
               case Select(qualifier, _)
-              if (qualifier.tpe.symbol != definitions.ArrayClass) =>
-                qualifier.tpe.symbol
+              if (qualifier.tpe.typeSymbol != definitions.ArrayClass) =>
+                qualifier.tpe.typeSymbol
               case _ => sym.owner
             }
             if (settings.debug.value && hostClass != sym.owner)
@@ -1433,8 +1433,8 @@ abstract class GenICode extends SubComponent  {
           else ((sym isNonBottomSubClass definitions.BoxedNumberClass) ||
             (!forMSIL && (sym isNonBottomSubClass BoxedCharacterClass)))
 
-        val lsym = l.tpe.symbol
-        val rsym = r.tpe.symbol
+        val lsym = l.tpe.typeSymbol
+        val rsym = r.tpe.typeSymbol
         (lsym == definitions.ObjectClass) ||
         (rsym == definitions.ObjectClass) ||
         (lsym != rsym) && (isBoxed(lsym) || isBoxed(rsym))
