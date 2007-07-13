@@ -20,7 +20,7 @@ import nsc.{InterpreterResults=>IR}
  *  After instantiation, clients should call the <code>main()</code> method.
  *
  *  @author  Lex Spoon
- *  @version 1.0
+ *  @version 1.1
  */
 class InterpreterLoop(in0: BufferedReader, out: PrintWriter) {
   def this() = this(new BufferedReader(new InputStreamReader(System.in)),
@@ -33,6 +33,10 @@ class InterpreterLoop(in0: BufferedReader, out: PrintWriter) {
     * is reading from a file.
     */
   var interactive = true
+
+  /** The context class loader at the time this object was created */
+  protected val originalClassLoader =
+    Thread.currentThread.getContextClassLoader
 
   var settings: Settings = _ // set by main()
   var interpreter: Interpreter = null // set by createInterpreter()
@@ -55,6 +59,7 @@ class InterpreterLoop(in0: BufferedReader, out: PrintWriter) {
     if (interpreter ne null) {
       interpreter.close
       interpreter = null
+      Thread.currentThread.setContextClassLoader(originalClassLoader)
     }
   }
 
@@ -72,6 +77,7 @@ class InterpreterLoop(in0: BufferedReader, out: PrintWriter) {
     interpreter = new Interpreter(settings, out) {
       override protected def parentClassLoader = parentClassLoader0
     }
+    interpreter.setContextClassLoader()
   }
 
   /** Bind the settings so that evaluated code can modiy them */
@@ -96,10 +102,11 @@ class InterpreterLoop(in0: BufferedReader, out: PrintWriter) {
   }
 
   /** Print a welcome message */
-  def printWelcome {
+  def printWelcome() {
     out.println("Welcome to Scala version " + Properties.versionString + ".")
     out.println("Type in expressions to have them evaluated.")
     out.println("Type :help for more information.")
+    out.flush()
   }
 
   /** Prompt to print when awaiting input */
@@ -267,9 +274,9 @@ class InterpreterLoop(in0: BufferedReader, out: PrintWriter) {
     try {
       if (interpreter.reporter.hasErrors) {
         return // it is broken on startup; go ahead and exit
-	}
-      printWelcome
-      repl
+      }
+      printWelcome()
+      repl()
     } finally {
       closeInterpreter()
     }

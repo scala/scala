@@ -14,22 +14,19 @@ import java.net.{URL, URLClassLoader}
 /** An object that runs another object specified by name.
  *
  *  @author  Lex Spoon
- *  @version 1.0, 15/06/2006
+ *  @version 1.1, 2007/7/13
  */
 object ObjectRunner {
+  /** Create a class loader for the specified class path */
+  private def makeClassLoader(classpath: List[URL]) =
+    new URLClassLoader(classpath.toArray, null)
 
-  /** Look up a class with a given class path.
-   *
-   *  @param classpath  ...
-   *  @param objectName ...
-   *  @return           ...
-   */
-  private def findClass(classpath: List[URL], objectName: String)
+  /** Look up a class with a given class path. */
+  private def findClass(loader: ClassLoader, objectName: String)
   : Option[Class] =
   {
     try {
-      val mainLoader = new URLClassLoader(classpath.toArray, null)
-      Some(Class.forName(objectName, true, mainLoader))
+      Some(Class.forName(objectName, true, loader))
     } catch {
       case e: SecurityException =>
         Console.println(e.getMessage)
@@ -40,28 +37,32 @@ object ObjectRunner {
   }
 
   /** Check whether a class with the specified name
-   *  exists on the specified class path.
-   *
-   *  @param classpath  ...
-   *  @param objectName ...
-   *  @return           <code>true</code> iff ...
-   */
+   *  exists on the specified class path. */
   def classExists(classpath: List[URL], objectName: String): Boolean =
-    !findClass(classpath, objectName).isEmpty
+    !findClass(makeClassLoader(classpath), objectName).isEmpty
+
+  /** Set the Java context class loader while executing an action */
+  def withContextClassLoader[T](loader: ClassLoader)(action: =>T): T = {
+    val oldLoader = Thread.currentThread.getContextClassLoader
+    try {
+      Thread.currentThread.setContextClassLoader(loader)
+      action
+    } finally {
+      Thread.currentThread.setContextClassLoader(oldLoader)
+    }
+  }
+
 
   /** Run a given object, specified by name, using a
    *  specified classpath and argument list.
    *
-   *  @param classpath  ...
-   *  @param objectName ...
-   *  @param arguments  ...
-   *
-   *  @throws ClassNotFoundException    ...
-   *  @throws NoSuchMethodError         ...
-   *  @throws InvocationTargetException ...
+   *  @throws ClassNotFoundException
+   *  @throws NoSuchMethodError
+   *  @throws InvocationTargetException
    */
   def run(classpath: List[URL], objectName: String, arguments: Seq[String]) {
-    val clsToRun = findClass(classpath, objectName) match {
+    val loader = makeClassLoader(classpath)
+    val clsToRun = findClass(loader, objectName) match {
       case Some(cls) => cls
       case None => throw new ClassNotFoundException(objectName)
     }
@@ -70,6 +71,8 @@ object ObjectRunner {
     if ((method.getModifiers & Modifier.STATIC) == 0)
       throw new NoSuchMethodException(objectName + ".main is not static")
 
-    method.invoke(null, List(arguments.toArray).toArray)
+    withContextClassLoader(loader) {
+      method.invoke(null, List(arguments.toArray).toArray)
+    }
   }
 }
