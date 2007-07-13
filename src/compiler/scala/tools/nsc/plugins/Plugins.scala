@@ -146,7 +146,7 @@ trait Plugins { self: Global =>
 	descriptors.exists(d => d.phaseName == plug.runsAfter))
       nextPlug match {
 	case None =>
-	  error("Failed to load plugin phases")
+	  error("Failed to load some plugin phases:")
 	  for (plug <- plugsLeft)
 	    error (plug.phaseName + " depends on " + plug.runsAfter)
 	  return descriptors
