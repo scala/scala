@@ -105,6 +105,9 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
       if (sym.owner.isTrait && ((sym hasFlag SUPERACCESSOR) || sym.isModule)) { // 5
         sym.makeNotPrivate(sym.owner)
       }
+      // moved form the term transformer
+      if (sym.owner.isTrait && (sym hasFlag (ACCESSOR | SUPERACCESSOR)))
+        sym.makeNotPrivate(sym.owner); //(2)
       if (sym.owner.isTrait && (sym hasFlag PROTECTED)) sym setFlag notPROTECTED // 6
       if (sym.isClassConstructor && isInner(sym.owner)) // 1
         MethodType(sym.owner.outerClass.thisType :: formals, restpe)
@@ -354,11 +357,8 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
                   } else vparamss
                 super.transform(copy.DefDef(tree, mods, name, tparams, vparamss1, tpt, rhs))
             }
-          } else { //todo: see whether we can move this to transformInfo
-            if (sym.owner.isTrait && (sym hasFlag (ACCESSOR | SUPERACCESSOR)))
-              sym.makeNotPrivate(sym.owner); //(2)
+          } else
             super.transform(tree)
-          }
 
         case This(qual) =>
           if (sym == currentClass || (sym hasFlag MODULE) && sym.isStatic) tree
