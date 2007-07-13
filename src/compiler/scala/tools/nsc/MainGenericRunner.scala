@@ -54,12 +54,15 @@ object MainGenericRunner {
   def main(args: Array[String]) {
     def error(str: String) = Console.println(str)
     val command = new GenericRunnerCommand(args.toList, error)
-    if (!command.ok) {
-      Console.println(command.usageMessage)
-      return ()
-    }
 
     val settings = command.settings
+    def sampleCompiler = new Global(settings)
+
+    if (!command.ok) {
+      println(command.usageMsg)
+      println(sampleCompiler.pluginOptionsHelp)
+      return
+    }
 
     settings.classpath.value =
       addClasspathExtras(settings.classpath.value)
@@ -74,12 +77,19 @@ object MainGenericRunner {
       return
     }
 
-    if (settings.help.value || !command.ok) {
-      println(command.usageMessage)
+
+    if (settings.help.value ||settings.Xhelp.value) {
+      if (command.settings.help.value) {
+	println(command.usageMsg)
+	println(sampleCompiler.pluginOptionsHelp)
+      }
+
+      if (settings.Xhelp.value)
+	println(command.xusageMsg)
+
       return
     }
 
-    def sampleCompiler = new Global(settings)
 
     if (settings.showPhases.value) {
       println(sampleCompiler.phaseDescriptions)

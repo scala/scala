@@ -59,35 +59,44 @@ class CompilerCommand(arguments: List[String], val settings: Settings,
                 "\n")
   }
 
-  // initialization
-  var args = arguments
+
+  /** Whether the command was processed okay */
   var ok = true
 
-  while (!args.isEmpty && ok) {
-    if (args.head startsWith "-") {
-      if (interactive) {
-        error("no options can be given in interactive mode")
-        ok = false
-      } else {
-        val args0 = args
-        for (setting <- settings.allSettings)
-          if (args eq args0)
-            args = setting.tryToSet(args)
+  /** Process the arguments and update the settings accordingly.
+      This method is called only once, during initialization.  */
+  protected def processArguments() {
+    // initialization
+    var args = arguments
 
-        if (args eq args0) {
-          error("bad option: '" + args.head + "'")
+    while (!args.isEmpty && ok) {
+      if (args.head startsWith "-") {
+	if (interactive) {
+          error("no options can be given in interactive mode")
           ok = false
-        } else
-          ok = settings.checkDependencies
+        } else {
+          val args0 = args
+          for (setting <- settings.allSettings)
+            if (args eq args0)
+              args = setting.tryToSet(args)
+
+          if (args eq args0) {
+            error("bad option: '" + args.head + "'")
+            ok = false
+          } else
+            ok = settings.checkDependencies
+        }
+      } else if ((settings.script.value != "") || args.head.endsWith(fileEnding)) {
+        fs = args.head :: fs
+        args = args.tail
+      } else if (args.head.length == 0) {//quick fix
+        args = args.tail
+      } else {
+        error("don't know what to do with " + args.head)
+        ok = false
       }
-    } else if ((settings.script.value != "") || args.head.endsWith(fileEnding)) {
-      fs = args.head :: fs
-      args = args.tail
-    } else if (args.head.length == 0) {//quick fix
-      args = args.tail
-    } else {
-      error("don't know what to do with " + args.head)
-      ok = false
     }
   }
+
+  processArguments()
 }

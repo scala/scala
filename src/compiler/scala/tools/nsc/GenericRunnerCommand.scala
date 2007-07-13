@@ -8,21 +8,21 @@
 package scala.tools.nsc
 
 /** A command for ScriptRunner */
-class GenericRunnerCommand(allargs: List[String], error: String => Unit) {
+class GenericRunnerCommand(
+  allargs: List[String],
+  override val settings: GenericRunnerSettings,
+  error: String => Unit)
+extends CompilerCommand(allargs, settings, error, false)
+{
+  def this(allargs: List[String], error: String=>Unit) =
+    this(allargs, new GenericRunnerSettings(error), error)
+
   def this(allargs: List[String]) =
     this(allargs, str => Console.println("Error: " + str))
 
-  /** name of the command */
-  val cmdName = "scala"
 
   /** name of the associated compiler command */
   val compCmdName = "scalac"
-
-  /** Settings specified by this command */
-  val settings = new GenericRunnerSettings(error)
-
-  /** Whether the command was parsed correctly */
-  var ok = true
 
   /** What to run.  If it is None, then the interpreter should be started */
   var thingToRun: Option[String] = None
@@ -30,7 +30,7 @@ class GenericRunnerCommand(allargs: List[String], error: String => Unit) {
   /** Arguments to pass to the object or script to run */
   var arguments: List[String] = Nil
 
-  private def parseArguments: Unit = {
+  override protected def processArguments() {
     var args = allargs
 
     while (!args.isEmpty && ok && args.head.startsWith("-")) {
@@ -49,9 +49,8 @@ class GenericRunnerCommand(allargs: List[String], error: String => Unit) {
       arguments = args.tail
     }
   }
-  parseArguments
 
-  val usageMessage = {
+  override def usageMsg = {
     cmdName + " [ <option> ]... [<torun> <arguments>]\n" +
     "\n" +
     "All options to "+compCmdName+" are allowed.  See "+compCmdName+" -help.\n" +
