@@ -392,7 +392,9 @@ trait Namers { self: Analyzer =>
 
     def selfTypeCompleter(tree: Tree) = new TypeCompleter(tree) {
       override def complete(sym: Symbol) {
-        sym.setInfo(typer.typedType(tree).tpe)
+        var selftpe = glb(List(typer.typedType(tree).tpe, sym.owner.tpe))
+//      println("completing self of "+sym.owner+": "+selftpe)
+        sym.setInfo(selftpe)
       }
     }
 

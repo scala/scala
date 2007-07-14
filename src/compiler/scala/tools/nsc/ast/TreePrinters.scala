@@ -204,7 +204,9 @@ abstract class TreePrinters {
             if (self.name != nme.WILDCARD) {
               print(" { "); print(self.name); printOpt(": ", self.tpt); print(" => ")
             } else if (!self.tpt.isEmpty) {
-              print(" _ : "); print(self.tpt); print(" => ")
+              print(" { _ : "); print(self.tpt); print(" => ")
+            } else {
+              print(" {")
             }
             printColumn(body, "", ";", "}")
           }
