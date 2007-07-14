@@ -392,7 +392,9 @@ trait Namers { self: Analyzer =>
 
     def selfTypeCompleter(tree: Tree) = new TypeCompleter(tree) {
       override def complete(sym: Symbol) {
-        var selftpe = glb(List(typer.typedType(tree).tpe, sym.owner.tpe))
+        var selftpe = typer.typedType(tree).tpe
+        if (!(selftpe.typeSymbol isNonBottomSubClass sym.owner))
+          selftpe = intersectionType(List(selftpe, sym.owner.tpe))
 //      println("completing self of "+sym.owner+": "+selftpe)
         sym.setInfo(selftpe)
       }
