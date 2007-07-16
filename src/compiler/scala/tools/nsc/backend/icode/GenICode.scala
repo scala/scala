@@ -845,6 +845,7 @@ abstract class GenICode extends SubComponent  {
           if (tree.symbol.isModuleClass && tree.symbol != ctx.clazz.symbol) {
             if (settings.debug.value)
               log("LOAD_MODULE from 'This': " + tree.symbol);
+            assert(!tree.symbol.isPackageClass, "Cannot use package as value: " + tree)
             ctx.bb.emit(LOAD_MODULE(tree.symbol), tree.pos)
             generatedType = REFERENCE(tree.symbol)
           } else {
@@ -863,6 +864,7 @@ abstract class GenICode extends SubComponent  {
                  " at: " + (tree.pos))
           if (settings.debug.value)
             log("LOAD_MODULE from Select(<emptypackage>): " + tree.symbol);
+          assert(!tree.symbol.isPackageClass, "Cannot use package as value: " + tree)
           ctx.bb.emit(LOAD_MODULE(tree.symbol), tree.pos)
           ctx
 
@@ -873,6 +875,7 @@ abstract class GenICode extends SubComponent  {
           if (sym.isModule) {
             if (settings.debug.value)
               log("LOAD_MODULE from Select(qualifier, selector): " + sym);
+            assert(!tree.symbol.isPackageClass, "Cannot use package as value: " + tree)
             ctx.bb.emit(LOAD_MODULE(sym), tree.pos);
             ctx
           } else if (isStaticSymbol(sym)) {
@@ -889,6 +892,7 @@ abstract class GenICode extends SubComponent  {
             if (tree.symbol.isModule) {
               if (settings.debug.value)
                 log("LOAD_MODULE from Ident(name): " + tree.symbol);
+              assert(!tree.symbol.isPackageClass, "Cannot use package as value: " + tree)
               ctx.bb.emit(LOAD_MODULE(tree.symbol), tree.pos)
               generatedType = toTypeKind(tree.symbol.info)
             } else {
