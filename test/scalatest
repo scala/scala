@@ -816,13 +816,19 @@ else
 fi;
 printf_outline "\\n";
 
+START_SECONDS=`date +%s`;
 test_check_all;
+END_SECONDS=`date +%s`;
 
 TOTAL_COUNT=`echo "$FAILURE_COUNT+$SUCCESS_COUNT" | bc`;
+
+ELAPSED_SECONDS=`expr $END_SECONDS - $START_SECONDS`;
+ELAPSED_TIME=`date --date="1970-01-01 $ELAPSED_SECONDS sec" +%T`;
+
 if [ $FAILURE_COUNT -eq 0 ]; then
-    printf_success "All of $TOTAL_COUNT tests were successful\\n";
+    printf_success "All of $TOTAL_COUNT tests were successful (elapsed time: $ELAPSED_TIME)\\n";
 else
-    printf_failure "$FAILURE_COUNT of $TOTAL_COUNT tests failed\\n";
+    printf_failure "$FAILURE_COUNT of $TOTAL_COUNT tests failed (elapsed time: $ELAPSED_TIME)\\n";
 fi;
 
 if [ $FAILURE_COUNT -eq "$ERRORS" ]; then
