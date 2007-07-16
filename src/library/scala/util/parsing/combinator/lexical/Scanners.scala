@@ -57,8 +57,15 @@ trait Scanners extends Parsers with Tokens {
         token(in1) match {
           case Success(tok, in2) => Triple(tok, in1, in2)
           case ns: NoSuccess => Triple(errorToken(ns.msg), ns.next, skip(ns.next))
+          case Failure(_, in2) => error("internal error")
+          case Error(_, in2) => error("internal error")
         }
-      case ns: NoSuccess => Triple(errorToken(ns.msg), ns.next, skip(ns.next))
+      case ns: NoSuccess =>
+        Triple(errorToken(ns.msg), ns.next, skip(ns.next))
+      case Failure(_, in1) =>
+        error("internal error")
+      case Error(_, in1) =>
+        error("internal error")
     }
     private def skip(in: Reader[Char]) = if (in.atEnd) in else in.rest
 

@@ -95,12 +95,12 @@ trait ParallelMatching  {
      if((column.length > 1) && isFlatCases(column)) {
        if(settings_debug) {
          Console.println("flat cases!"+column)
-         Console.println(scrutinee.tpe.symbol.children)
+         Console.println(scrutinee.tpe.typeSymbol.children)
          Console.println(scrutinee.tpe.member(nme.tag))
-         Console.println(column.map { x => x.tpe.symbol.tag })
+         Console.println(column.map { x => x.tpe.typeSymbol.tag })
        }
        return new MixCases(scrutinee, column, rest)
-       // if(scrutinee.tpe.symbol.hasFlag(symtab.Flags.SEALED)) new MixCasesSealed(scrutinee, column, rest)
+       // if(scrutinee.tpe.typeSymbol.hasFlag(symtab.Flags.SEALED)) new MixCasesSealed(scrutinee, column, rest)
        // else new MixCases(scrutinee, column, rest)
     }
     */
@@ -408,7 +408,7 @@ trait ParallelMatching  {
     private val patternType     = column.head match {
       case p @ (_:Ident | _:Select) =>
         singleType(p.symbol.tpe.prefix, p.symbol)  //ConstantType(p.tpe.singleton)
-      //case p@Apply(_,_) if !p.tpe.symbol.hasFlag(symtab.Flags.CASE) => ConstantType(new NamedConstant(p))
+      //case p@Apply(_,_) if !p.tpe.typeSymbol.hasFlag(symtab.Flags.CASE) => ConstantType(new NamedConstant(p))
       case _ => column.head.tpe
     }
     private val isCaseHead = patternType.typeSymbol.hasFlag(symtab.Flags.CASE)
@@ -517,7 +517,7 @@ trait ParallelMatching  {
       // succeeding => transition to translate(subsumed) (taking into account more specific)
       val nmatrix = {
         //Console.println("casted:"+casted)
-        //Console.println("casted.case:"+casted.tpe.symbol.hasFlag(symtab.Flags.CASE))
+        //Console.println("casted.case:"+casted.tpe.typeSymbol.hasFlag(symtab.Flags.CASE))
         var ntemps   = if(casted.tpe.typeSymbol.hasFlag(symtab.Flags.CASE)) casted.caseFieldAccessors map {
           meth =>
             val ctemp = newVar(scrutinee.pos, casted.tpe.memberType(meth).resultType)
@@ -647,7 +647,7 @@ trait ParallelMatching  {
 
       case mc: MixCases =>
         val (branches, defaultV, default) = mc.getTransition // tag body pairs
-        if(settings_debug) {
+        if (settings_debug) {
           Console.println("[[mix cases transition: branches \n"+(branches.mkString("","\n","")))
           Console.println("defaults:"+defaultV)
           Console.println(default)
@@ -807,7 +807,7 @@ object Rep {
               pats = (if (tpt.tpe <:< temp(j).tpe) p else typat)::pats
 
             case o @ Ident(n) =>
-                if(n != nme.WILDCARD) {
+                if (n != nme.WILDCARD) {
                   //Console.println("/'''''''''''' 1"+o.tpe)
                   //Console.println("/'''''''''''' 2"+o.symbol)
                   //Console.println("/'''''''''''' 3"+o.symbol.tpe)
@@ -815,42 +815,44 @@ object Rep {
                   //Console.println("/'''''''''''' 5"+o.symbol.tpe.prefix.isStable)
 
                   val stpe =
-                    if(o.tpe.symbol.isModule)
+                    if (o.tpe.typeSymbol.isModule)
                       singleType(o.tpe.prefix, o.symbol)
                     else
                       singleType(NoPrefix, o.symbol)
 
-                  val p    = Ident(nme.WILDCARD) setType stpe
-                  val q    = Typed(p, TypeTree(stpe)) setType stpe
+                  val p = Ident(nme.WILDCARD) setType stpe
+                  val q = Typed(p, TypeTree(stpe)) setType stpe
                   pats = q::pats
                 } else
                   pats = o::pats
 
-            case ua @ UnApply(Apply(fn,_),arg)             =>
+            case ua @ UnApply(Apply(fn, _), arg) =>
               fn.tpe match {
-              case MethodType(List(argtpe,_*),_) =>
-                pats = (if (temp(j).tpe <:< argtpe) ua else Typed(ua,TypeTree(argtpe)).setType(argtpe))::pats
+                case MethodType(List(argtpe,_*),_) =>
+                  pats = (if (temp(j).tpe <:< argtpe) ua else Typed(ua,TypeTree(argtpe)).setType(argtpe))::pats
               }
 
             /** something too tricky is going on if the outer types don't match
              */
-            case o @ Apply(app, List()) if !o.tpe.symbol.hasFlag(symtab.Flags.CASE) =>
+            case o @ Apply(app, List()) if !o.tpe.typeSymbol.hasFlag(symtab.Flags.CASE) =>
               //Console.println(o)
               //val stpe = singleType(NoPrefix, o.symbol)
-              val stpe = if(o.tpe.symbol.isModule) singleType(o.tpe.prefix, o.symbol) else mkThisType(o.symbol)
-              val p    = Ident(nme.WILDCARD) setType stpe
-              val q    = Typed(p, TypeTree(stpe)) setType stpe
+              val stpe =
+                if (o.tpe.typeSymbol.isModule) singleType(o.tpe.prefix, o.symbol)
+                else mkThisType(o.symbol)
+              val p = Ident(nme.WILDCARD) setType stpe
+              val q = Typed(p, TypeTree(stpe)) setType stpe
               pats = q::pats
 
             case p =>
               pats = p :: pats
           }
           opats = opats.tail
-          j = j + 1
+          j += 1
         }
         pats = pats.reverse
         //i = pats findIndexOf isAlternative
-        if(indexOfAlternative == -1)
+        if (indexOfAlternative == -1)
           List(Row(pats,subst,g,b))
         else {
           val prefix = pats.take( indexOfAlternative )
@@ -859,7 +861,7 @@ object Rep {
           alts map { p => Row(prefix ::: p :: suffix, subst, g, b) }
         }
     }
-    if(unchanged) {
+    if (unchanged) {
       val ri = RepImpl(temp,row).init
       //Console.println("ri = "+ri)
       ri
@@ -882,7 +884,7 @@ object Rep {
         //Console.println("sym! "+sym+" mutable? "+sym.hasFlag(symtab.Flags.MUTABLE)+" captured? "+sym.hasFlag(symtab.Flags.CAPTURED))
         if (sym.hasFlag(symtab.Flags.MUTABLE) &&  // indicates that have not yet checked exhaustivity
             !sym.hasFlag(symtab.Flags.CAPTURED) &&  // indicates @unchecked
-            sym.tpe.symbol.hasFlag(symtab.Flags.SEALED)) {
+            sym.tpe.typeSymbol.hasFlag(symtab.Flags.SEALED)) {
 
               sym.resetFlag(symtab.Flags.MUTABLE)
               sealedCols = i::sealedCols
@@ -893,7 +895,7 @@ object Rep {
                     val z = candidates(x)
                     if(x.hasFlag(symtab.Flags.ABSTRACT)) z else z + x
                   }
-              val cases = candidates(sym.tpe.symbol)
+              val cases = candidates(sym.tpe.typeSymbol)
               sealedComb = cases::sealedComb
             }
       }
@@ -901,8 +903,8 @@ object Rep {
       //  computes cartesian product, keeps indices available
       def combine(colcom: List[(Int,Set[Symbol])]): List[List[(Int,Symbol)]] = colcom match {
         case Nil => Nil
-        case (i,syms)::Nil  => syms.toList.map { sym => List((i,sym)) }
-        case (i,syms)::cs   => for (s <- syms.toList; rest <- combine(cs)) yield (i,s) :: rest
+        case (i,syms)::Nil => syms.toList.map { sym => List((i,sym)) }
+        case (i,syms)::cs  => for (s <- syms.toList; rest <- combine(cs)) yield (i,s) :: rest
       }
 
       if(!sealedCols.isEmpty) {
@@ -926,7 +928,7 @@ object Rep {
                   singleType(sym.tpe.prefix, sym.linkedModuleOfClass) // e.g. None, Nil
                 } else sym.tpe
                 //Console.print("covers: sym="+sym+" symtpe="+symtpe+" p="+p+", p.tpe="+p.tpe+" ?")
-                (p.tpe.symbol == sym) || (symtpe <:< p.tpe) ||
+                (p.tpe.typeSymbol == sym) || (symtpe <:< p.tpe) ||
                 /* outer, see scala.util.parsing.combinator.lexical.Scanner */
                 (p.tpe.prefix.memberType(sym) <:< p.tpe)
               }
@@ -964,7 +966,8 @@ object Rep {
     //def setParent(mr:MixTypes): this.type = { mixtureParent = mr; this }
 
     final def applyRule: RuleApplication = row match {
-      case Nil            => ErrorRule
+      case Nil =>
+        ErrorRule
       case Row(pats,subst,g,b)::xs =>
         if(pats forall isDefaultPattern) {
           val subst1 = pats.zip(temp) flatMap {
@@ -1004,10 +1007,10 @@ object Rep {
 
   /** creates initial clause matrix
    */
-  final def initRep(selector:Tree, cases:List[Tree], checkExhaustive: Boolean)(implicit theOwner: Symbol) = {
+  final def initRep(selector: Tree, cases: List[Tree], checkExhaustive: Boolean)(implicit theOwner: Symbol) = {
     val root = newVar(selector.pos, selector.tpe)
     // communicate whether exhaustiveness-checking is enabled via some flag
-    if(!checkExhaustive)
+    if (!checkExhaustive)
       root.setFlag(symtab.Flags.CAPTURED)
     val row  = cases map { case CaseDef(pat,g,b) => Row(List(pat), Nil, g, b) }
     Rep(List(root), row)
@@ -1031,9 +1034,9 @@ object Rep {
    *  @param   x a pattern
    *  @return  vs variables bound, p pattern proper
    */
-  final def strip(x:Tree): (Set[Symbol], Tree) = x match {
-    case b @ Bind(_,pat) => val (vs,p) = strip(pat); (vs + b.symbol, p)
-    case z               => (emptySymbolSet,z)
+  final def strip(x: Tree): (Set[Symbol], Tree) = x match {
+    case b @ Bind(_,pat) => val (vs, p) = strip(pat); (vs + b.symbol, p)
+    case z               => (emptySymbolSet, z)
   }
 
   final def strip1(x:Tree): Set[Symbol] = x match { // same as strip(x)._1
@@ -1054,25 +1057,25 @@ object Rep {
   final def newVar(pos: Position, name: Name, tpe: Type)(implicit theOwner: Symbol): Symbol = {
     if(tpe eq null) assert(tpe ne null, "newVar("+name+", null)")
     val sym = theOwner.newVariable(pos, name) // careful: pos has special meaning
-    sym.setFlag(symtab.Flags.TRANS_FLAG)
-    sym.setInfo(tpe)
+    sym setFlag symtab.Flags.TRANS_FLAG
+    sym setInfo tpe
     sym
   }
 
   final def newVar(pos: Position, tpe: Type)(implicit theOwner: Symbol): Symbol =
-    newVar(pos, cunit.fresh.newName("temp"), tpe).setFlag(symtab.Flags.SYNTHETIC)
+    newVar(pos, cunit.fresh.newName("temp"), tpe) setFlag symtab.Flags.SYNTHETIC
 
   /** returns the condition in "if(cond) k1 else k2"
    */
   final def condition(tpe: Type, scrut: Symbol): Tree = {
     val res = condition1(tpe, scrut)
-    if(true && settings_debug)
+    if (settings_debug)
       Console.println("condition, tpe = "+tpe+", scrut.tpe = "+scrut.tpe+", res = "+res)
     res
   }
   final def condition1(tpe: Type, scrut: Symbol): Tree = {
-    assert (scrut ne NoSymbol)
-    condition(tpe, Ident(scrut) . setType (scrut.tpe) . setSymbol (scrut))
+    assert(scrut ne NoSymbol)
+    condition(tpe, Ident(scrut) setType scrut.tpe setSymbol scrut)
   }
 
   final def condition(tpe: Type, scrutineeTree: Tree): Tree = {
@@ -1081,23 +1084,23 @@ object Rep {
     //Console.println("tpe = "+tpe+" prefix="+tpe.prefix)
     //Console.println("singletontype?"+tpe.isInstanceOf[SingletonType])
     //Console.println("constanttype? "+tpe.isInstanceOf[ConstantType])
-    //Console.println("value         "+tpe.symbol.isValue)
-    //Console.println("module        "+tpe.symbol.isModule)
+    //Console.println("value         "+tpe.typeSymbol.isValue)
+    //Console.println("module        "+tpe.typeSymbol.isModule)
     if (tpe.isInstanceOf[SingletonType] && !tpe.isInstanceOf[ConstantType]) {
 
-      if(tpe.symbol.isModule) {// object
+      if (tpe.typeSymbol.isModule) {// object
         if (scrutineeTree.tpe <:< definitions.AnyRefClass.tpe)
-          Eq(gen.mkAttributedRef(tpe.symbol), scrutineeTree)             // object
+          Eq(gen.mkAttributedRef(tpe.typeSymbol), scrutineeTree)             // object
         else
-          Equals(gen.mkAttributedRef(tpe.symbol), scrutineeTree)             // object
+          Equals(gen.mkAttributedRef(tpe.typeSymbol), scrutineeTree)             // object
       } else {
         //Console.print("111 ??")
         //Console.println("tpe stable         "+tpe.isStable)
         //Console.println("tpe prefix stable  "+tpe.prefix.isStable)
-        //val x = Equals(Apply(gen.mkAttributedRef(tpe.symbol), List()), scrutineeTree)
+        //val x = Equals(Apply(gen.mkAttributedRef(tpe.typeSymbol), List()), scrutineeTree)
         val x =
           if(tpe.prefix ne NoPrefix) gen.mkIsInstanceOf(scrutineeTree, tpe)
-          else Equals(gen.mkAttributedRef(tpe.symbol), scrutineeTree)
+          else Equals(gen.mkAttributedRef(tpe.typeSymbol), scrutineeTree)
         //Console.println(" = "+x)
         typed { x }
       }
@@ -1111,51 +1114,54 @@ object Rep {
         Eq(scrutineeTree, Literal(value))             // constant
       else
         Equals(scrutineeTree, Literal(value))             // constant
-    } else if(scrutineeTree.tpe <:< tpe && tpe <:< definitions.AnyRefClass.tpe) {
+    } else if (scrutineeTree.tpe <:< tpe && tpe <:< definitions.AnyRefClass.tpe) {
       //if(scrutineeTree.symbol.hasFlag(symtab.Flags.SYNTHETIC)) Literal(Constant(true)) else
       NotNull(scrutineeTree)
-    } else if(tpe.prefix.symbol.isTerm && tpe.symbol.linkedModuleOfClass != NoSymbol) { // object
+    } else if(tpe.prefix.typeSymbol.isTerm && tpe.typeSymbol.linkedModuleOfClass != NoSymbol) { // object
       //Console.println("iT"+tpe.prefix.symbol.isTerm)
-      //Console.println("lmoc"+tpe.symbol.linkedModuleOfClass)
-      Eq(gen.mkAttributedRef(tpe.prefix, tpe.symbol.linkedModuleOfClass), scrutineeTree)
+      //Console.println("lmoc"+tpe.typeSymbol.linkedModuleOfClass)
+      Eq(gen.mkAttributedRef(tpe.prefix, tpe.typeSymbol.linkedModuleOfClass), scrutineeTree)
     } else
       //Console.println(tpe.prefix.symbol.isTerm)
-      //Console.println(tpe.symbol)
-      //Console.println(tpe.symbol.linkedModuleOfClass)
+      //Console.println(tpe.typeSymbol)
+      //Console.println(tpe.typeSymbol.linkedModuleOfClass)
       gen.mkIsInstanceOf(scrutineeTree, tpe)
   }
 
-  final def needsOuterTest(tpe2test:Type, scrutinee:Type) = tpe2test.normalize match {
+  final def needsOuterTest(tpe2test: Type, scrutinee: Type) = tpe2test.normalize match {
     case TypeRef(prefix,_,_) =>
-      prefix.symbol.isTerm &&
-    !prefix.symbol.isPackage &&
-      outerAlwaysEqual(tpe2test,scrutinee) == Some(false)
-    case _ => false
+      prefix.typeSymbol.isTerm &&
+      !prefix.typeSymbol.isPackage &&
+      outerAlwaysEqual(tpe2test, scrutinee) == Some(false)
+    case _ =>
+     false
   }
 
   /** returns a result if both are TypeRefs, returns Some(true) if left and right are statically known to have
    *  the same outer, i.e. if their prefixes are the same
    */
-  final def outerAlwaysEqual(left: Type, right: Type): Option[Boolean] = (left.normalize,right.normalize) match {
-    case (TypeRef(lprefix, _,_), TypeRef(rprefix,_,_)) =>
-      if(!(lprefix =:= rprefix)) {
-        //DEBUG("DEBUG(outerAlwaysEqual) Some(f) for"+(left,right))
-      }
-      Some(lprefix =:= rprefix)
-    case _                                             => None
-  }
+  final def outerAlwaysEqual(left: Type, right: Type): Option[Boolean] =
+    (left.normalize, right.normalize) match {
+      case (TypeRef(lprefix, _, _), TypeRef(rprefix, _, _)) =>
+        //if(!(lprefix =:= rprefix)) {
+          //DEBUG("DEBUG(outerAlwaysEqual) Some(f) for"+(left,right))
+        //}
+        Some(lprefix =:= rprefix)
+      case _ =>
+        None
+    }
 
   /** adds a test comparing the dynamic outer to the static outer */
   final def addOuterCondition(cond:Tree, tpe2test: Type, scrutinee: Tree, handleOuter: Tree=>Tree) = {
     val TypeRef(prefix,_,_) = tpe2test
-    var theRef = gen.mkAttributedRef(prefix.prefix, prefix.symbol)
+    var theRef = gen.mkAttributedRef(prefix.prefix, prefix.typeSymbol)
 
     // needs explicitouter treatment
     theRef = handleOuter(theRef)
 
-    val outerAcc = outerAccessor(tpe2test.symbol)
+    val outerAcc = outerAccessor(tpe2test.typeSymbol)
     if (outerAcc == NoSymbol) {
-      if (settings_debug) cunit.warning(scrutinee.pos, "no outer acc for "+tpe2test.symbol)
+      if (settings_debug) cunit.warning(scrutinee.pos, "no outer acc for "+tpe2test.typeSymbol)
       cond
     } else
       And(cond,

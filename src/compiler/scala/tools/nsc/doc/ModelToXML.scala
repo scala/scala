@@ -37,27 +37,28 @@ trait ModelToXML extends ModelExtractor {
       if (definitions.isFunctionType(tpe)) {
         val (args,r) = tpe.normalize.typeArgs.splitAt(tpe.normalize.typeArgs.length - 1);
         args.mkXML("(", ", ", ")")(link) ++ Text(" => ") ++ link(r.head);
-      } else if (tpe.symbol == definitions.RepeatedParamClass) {
-        assert(tpe.typeArgs.length == 1);
-        link(tpe.typeArgs(0)) ++ Text("*");
-      } else if (tpe.symbol == definitions.ByNameParamClass) {
-        assert(tpe.typeArgs.length == 1);
-        Text("=> ") ++ link(tpe.typeArgs(0));
-      } else if (tpe.symbol.name.toString.startsWith("Tuple") &&
-                 tpe.symbol.owner.name == nme.scala_.toTypeName) {
-        tpe.typeArgs.mkXML("(", ", ", ")")(link);
-      } else link(decode(tpe.symbol)) ++ tpe.typeArgs.surround("[", "]")(link);
+      } else if (tpe.typeSymbol == definitions.RepeatedParamClass) {
+        assert(tpe.typeArgs.length == 1)
+        link(tpe.typeArgs(0)) ++ Text("*")
+      } else if (tpe.typeSymbol == definitions.ByNameParamClass) {
+        assert(tpe.typeArgs.length == 1)
+        Text("=> ") ++ link(tpe.typeArgs(0))
+      } else if (tpe.typeSymbol.name.toString.startsWith("Tuple") &&
+                 tpe.typeSymbol.owner.name == nme.scala_.toTypeName) {
+        tpe.typeArgs.mkXML("(", ", ", ")")(link)
+      } else
+        link(decode(tpe.typeSymbol)) ++ tpe.typeArgs.surround("[", "]")(link)
     } else tpe match {
       case PolyType(tparams,result) =>
-        link(result) ++ tparams.surround("[", "]")(link);
+        link(result) ++ tparams.surround("[", "]")(link)
       case RefinedType(parents,_) =>
         val parents1 =
           if ((parents.length > 1) &&
-              (parents.head.symbol eq definitions.ObjectClass)) parents.tail;
+              (parents.head.typeSymbol eq definitions.ObjectClass)) parents.tail;
           else parents;
        parents1.mkXML(Text(""), <code> with </code>, Text(""))(link);
      case _ =>
-       link(decode(tpe.symbol))
+       link(decode(tpe.typeSymbol))
     }
   }
 
@@ -248,7 +249,7 @@ trait ModelToXML extends ModelExtractor {
     def attrFor(attr: AnnotationInfo): Node = {
       val buf = new StringBuilder
       val AnnotationInfo(tpe, args, nvPairs) = attr
-      val name = link(decode(tpe.symbol))
+      val name = link(decode(tpe.typeSymbol))
       if (!args.isEmpty)
         buf.append(args.mkString("(", ",", ")"))
       if (!nvPairs.isEmpty)

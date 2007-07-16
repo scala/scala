@@ -58,7 +58,7 @@ abstract class DocDriver extends ModelFrames with ModelToXML {
 
     for (p <- allClasses; d <- p._2) {
       symbols += d.sym
-      for (pp <- d.sym.tpe.parents) subClasses(pp.symbol) += d
+      for (pp <- d.sym.tpe.parents) subClasses(pp.typeSymbol) += d
     }
     additions0.init
     copyResources
@@ -220,39 +220,45 @@ abstract class DocDriver extends ModelFrames with ModelToXML {
     }
     return false;
   }
+
   def aref(href: String, label: String)(implicit frame: Frame) =
     frame.aref(href, "_self", label)
 
   protected def anchor(entity: Symbol)(implicit frame: Frame): NodeSeq =
     <a name={Text(frame.docName(entity))}></a>
 
-  object symbols extends jcl.LinkedHashSet[Symbol];
-  object allClasses extends jcl.LinkedHashMap[Package,jcl.LinkedHashSet[ClassOrObject]] {
-    override def default(pkg : Package) : jcl.LinkedHashSet[ClassOrObject] = {
-      object ret extends jcl.LinkedHashSet[ClassOrObject];
-      this(pkg) = ret; ret;
+  object symbols extends jcl.LinkedHashSet[Symbol]
+
+  object allClasses extends jcl.LinkedHashMap[Package, jcl.LinkedHashSet[ClassOrObject]] {
+    override def default(pkg: Package): jcl.LinkedHashSet[ClassOrObject] = {
+      object ret extends jcl.LinkedHashSet[ClassOrObject]
+      this(pkg) = ret
+      ret
     }
   }
-  object subClasses extends jcl.LinkedHashMap[Symbol,jcl.LinkedHashSet[ClassOrObject]] {
-    override def default(key : Symbol) = {
-      val ret = new jcl.LinkedHashSet[ClassOrObject];
-      this(key) = ret; ret;
+
+  object subClasses extends jcl.LinkedHashMap[Symbol, jcl.LinkedHashSet[ClassOrObject]] {
+    override def default(key: Symbol) = {
+      val ret = new jcl.LinkedHashSet[ClassOrObject]
+      this(key) = ret
+      ret
     }
   }
-  override def rootFor(sym : Symbol) : String = {
-    assert(sym != NoSymbol);
-    if (sym.toplevelClass == NoSymbol) return super.rootFor(sym);
-    if (symbols.contains(sym.toplevelClass)) return super.rootFor(sym);
-    val clazz = sym.toplevelClass.asInstanceOf[ClassSymbol];
+
+  override def rootFor(sym: Symbol): String = {
+    assert(sym != NoSymbol)
+    if (sym.toplevelClass == NoSymbol) return super.rootFor(sym)
+    if (symbols.contains(sym.toplevelClass)) return super.rootFor(sym)
+    val clazz = sym.toplevelClass.asInstanceOf[ClassSymbol]
     import scala.tools.nsc.io._;
     clazz.classFile match {
       case file : ZipArchive#FileEntry =>
-        val key = keyFor(file.archive);
+        val key = keyFor(file.archive)
         if (key != null && roots.contains(key)) {
-          return roots(key) + '/';
+          return roots(key) + '/'
         }
-      case _ => ;
+      case _ =>
     }
-    return super.rootFor(sym);
+    super.rootFor(sym)
   }
 }

@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author Burak Emir
  */
 // $Id$
@@ -8,7 +8,10 @@ package scala.tools.nsc.matching
 
 import scala.tools.nsc.util.Position
 
-/** contains many helper methods that build trees...some of these currently unused, since were for regexp matching
+/** contains many helper methods that build trees...some of these currently
+ *  unused, since were for regexp matching.
+ *
+ *  @author Burak Emir
  */
 trait CodeFactory {
   self: transform.ExplicitOuter =>
@@ -79,32 +82,32 @@ trait CodeFactory {
     var i = condition.length - 1
     while (i >= 0) {
       result = If(condition(i), body(i), result)
-      i = i - 1
+      i -= 1
     }
     result
   }
 
   final def renamingBind(defaultv: Set[Symbol], scrut: Symbol, ndefault: Tree) = {
-    if(!defaultv.isEmpty) {
-      var dv:List[Symbol] = Nil
-      var to:List[Symbol] = Nil
+    if (!defaultv.isEmpty) {
+      var dv: List[Symbol] = Nil
+      var to: List[Symbol] = Nil
       val it = defaultv.elements; while(it.hasNext) {
         dv = it.next :: dv
         to = scrut   :: to
       }
       val tss = new TreeSymSubstituter(dv, to)
-      tss.traverse( ndefault )
+      tss.traverse(ndefault)
     }
   }
 
   final def emptynessCheck(vsym: Symbol) = {
-    if(vsym.tpe.symbol == definitions.SomeClass)  // is Some[_]
+    if (vsym.tpe.typeSymbol == definitions.SomeClass)  // is Some[_]
       Literal(Constant(true))
     else                                          // is Option[_]
       Not(Select(Ident(vsym), nme.isEmpty))
   }
 
-  final def makeIf(cond:Tree, thenp:Tree, elsep:Tree) = cond match {
+  final def makeIf(cond: Tree, thenp: Tree, elsep: Tree) = cond match {
     case Literal(Constant(true)) => thenp
     case Literal(Constant(false)) => elsep
     case _ => If(cond, thenp, elsep)
@@ -142,7 +145,7 @@ trait CodeFactory {
   }
 
   /** for tree of sequence type, returns tree that drops first i elements */
-  final def seqDrop(sel:Tree, i: Int) = if(i == 0) sel else
+  final def seqDrop(sel:Tree, i: Int) = if (i == 0) sel else
     Apply(Select(Select(sel, "toList"), "drop"),
           List(Literal(Constant(i))))
 
@@ -283,31 +286,34 @@ trait CodeFactory {
     var nsubstituted = 0
     var nstatic = 0
 
-  final def squeezedBlock(vds:List[Tree], exp:Tree)(implicit theOwner: Symbol): Tree =
-    if(settings_squeeze)
+  final def squeezedBlock(vds: List[Tree], exp: Tree)(implicit theOwner: Symbol): Tree =
+    if (settings_squeeze)
       squeezedBlock1(vds, exp)
     else
       Block(vds,exp)
 
-  final def squeezedBlock1(vds:List[Tree], exp:Tree)(implicit theOwner: Symbol): Tree = {
+  final def squeezedBlock1(vds: List[Tree], exp: Tree)(implicit theOwner: Symbol): Tree = {
     val tpe = exp.tpe
-    class RefTraverser(sym:Symbol) extends Traverser {
+
+    class RefTraverser(sym: Symbol) extends Traverser {
       var nref = 0
       var nsafeRef = 0
       override def traverse(tree: Tree) = tree match {
         case t:Ident if t.symbol == sym =>
-          nref = nref + 1
+          nref += 1
           if(sym.owner == currentOwner)  { // oldOwner should match currentOwner
-            nsafeRef = nsafeRef + 1
+            nsafeRef += 1
           } /*else if(nref == 1) {
             Console.println("sym owner: "+sym.owner+" but currentOwner = "+currentOwner)
           }*/
-        case t if nref > 1 => // abort, no story to tell
-
-        case t       => super . traverse (t)
+        case t if nref > 1 =>
+          // abort, no story to tell
+        case t =>
+          super.traverse(t)
       }
     }
-    class Subst(sym:Symbol,rhs:Tree) extends Transformer {
+
+    class Subst(sym: Symbol, rhs: Tree) extends Transformer {
       var stop = false
       override def transform(tree: Tree) = tree match {
         case t:Ident if t.symbol == sym =>
@@ -315,28 +321,28 @@ trait CodeFactory {
           rhs
         case t if stop =>
           t
-        case t       =>
-          super . transform (t)
+        case t =>
+          super.transform(t)
       }
     }
     vds match {
-      case Nil   => exp
-
+      case Nil =>
+        exp
       case (vd:ValDef) :: rest =>
         // recurse
         val exp1 = squeezedBlock(rest, exp)
 
         //Console.println("squeezedBlock for valdef "+vd)
-        val sym  = vd.symbol
-        val rt   = new RefTraverser(sym)
+        val sym = vd.symbol
+        val rt = new RefTraverser(sym)
         rt.atOwner (theOwner) (rt.traverse(exp1))
         rt.nref match {
           case 0 =>
             nremoved = nremoved + 1
             exp1
           case 1 if rt.nsafeRef == 1 =>
-            nsubstituted = nsubstituted + 1
-            new Subst(sym, vd.rhs).transform( exp1 )
+            nsubstituted += 1
+            new Subst(sym, vd.rhs).transform(exp1)
           case _ =>
             exp1 match {
               case Block(vds2, exp2) => Block(vd::vds2, exp2)

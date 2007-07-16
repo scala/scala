@@ -60,7 +60,7 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
       this.doCheckExhaustive = doCheckExhaustive
       this.selector = selector
       this.handleOuter = handleOuter
-      if(settings_debug) {
+      if (settings_debug) {
         Console.println("****")
         Console.println("**** initalize, selector = "+selector+" selector.tpe = "+selector.tpe)
         Console.println("****    doCheckExhaustive == "+doCheckExhaustive)
@@ -239,18 +239,20 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
       //Console.println("isImplemented? "+x)
       x match {
         case app @ Apply(fn,xs) =>
-          if(!app.tpe.symbol.hasFlag(symtab.Flags.CASE) /*|| (fn.symbol ne null)*/) CantHandleApply else {
-          /*if(!app.tpe.symbol.hasFlag(symtab.Flags.CASE)) {
-            Console.print("what is this?"+x)
-            if(fn.symbol eq null) {
-              Console.println("it's fn doesn't even have a symbol?!")
-            } else {
-              Console.println("it's fn symbol is "+fn.symbol)
-            }
-          }*/
-          isImplemented(xs)
+          if(!app.tpe.typeSymbol.hasFlag(symtab.Flags.CASE) /*|| (fn.symbol ne null)*/)
+            CantHandleApply
+          else {
+            /*if(!app.tpe.symbol.hasFlag(symtab.Flags.CASE)) {
+              Console.print("what is this?"+x)
+              if(fn.symbol eq null) {
+                Console.println("it's fn doesn't even have a symbol?!")
+              } else {
+                Console.println("it's fn symbol is "+fn.symbol)
+              }
+            }*/
+            isImplemented(xs)
           }
-        case p @ Ident(n)           => null // if(n!= nme.WILDCARD && p.symbol.) CantHandleIdent else null
+        case p @ Ident(n)       => null // if(n!= nme.WILDCARD && p.symbol.) CantHandleIdent else null
         case _:ArrayValue       => CantHandleSeq
         case UnApply(fn,xs)     => isImplemented(xs)
         case Bind(n, p)         => isImplemented(p)
@@ -349,12 +351,12 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
     //Console.println("tree.tpe "+tree.tpe);
     //Console.println("tree.getClass() "+tree.getClass());
     val t = tree match {
-      case Bind(name, Typed(Ident( nme.WILDCARD ), tpe)) => // x@_:Type
+      case Bind(name, Typed(Ident(nme.WILDCARD), tpe)) => // x@_:Type
         // @note: safest! typer does not always use tpe.tpe, e.g. in the case of refinement type tests
         val tpe2test = tree.symbol.tpe
         // @note: if (isSubType(header.tpe, tpe2test)) then this will be translated to isNull test
         val node = pConstrPat(tree.pos, tpe2test)
-        env.newBoundVar( tree.symbol, tpe2test, typed(Ident( node.casted )));
+        env.newBoundVar(tree.symbol, tpe2test, typed(Ident(node.casted)));
         node
 
       case Bind(name, Ident(nme.WILDCARD)) => // x @ _
@@ -387,7 +389,7 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
                 if(isRightIgnoring(av)) {
                   //Console.println(av.toString()+" IS RIGHTIGNORING");
                   val castedRest = ts.last match {
-                    case b:Bind => b.symbol;
+                    case b:Bind => b.symbol
                     case _      => null
                   }
                   pRightIgnoringSequencePat(tree.pos, tree.tpe, castedRest, ts.length-1);
@@ -516,13 +518,13 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
     } else {
       //Console.println("NOT FIRSTPOS");
       //Console.println("newHeader :: ");
-      if(!casted.tpe.symbol.hasFlag(Flags.CASE)) {
+      if (!casted.tpe.typeSymbol.hasFlag(Flags.CASE)) {
 
         //Console.println("NOT CASE");
         //Console.println("getProductArgs? "+defs.getProductArgs(casted.tpe));
         defs.getProductArgs(casted.tpe) match  {
           case Some(targs) =>
-            val accSym = defs.productProj(casted.tpe.symbol, index+1)
+            val accSym = defs.productProj(casted.tpe.typeSymbol, index+1)
             val accTree = typed(Apply(Select(ident, accSym), List())) // nsc !
             return pHeader(pos, accTree.tpe, accTree)
           case None =>
@@ -541,8 +543,8 @@ print()
 
       //Console.println("CASE");
 
-      val caseAccs = casted.tpe.symbol.caseFieldAccessors;
-      if (caseAccs.length <= index) Console.println("selecting " + index + " in case fields of " + casted.tpe.symbol + "=" + casted.tpe.symbol.caseFieldAccessors);//debug
+      val caseAccs = casted.tpe.typeSymbol.caseFieldAccessors;
+      if (caseAccs.length <= index) Console.println("selecting " + index + " in case fields of " + casted.tpe.typeSymbol + "=" + casted.tpe.typeSymbol.caseFieldAccessors);//debug
       val ts = caseAccs(index);
       val accTree = typed(Apply(Select(ident, ts), List()))
       val accType = accTree.tpe
@@ -624,8 +626,8 @@ print()
 /* first try at exhaust improvement
          selectorMap.update((casted, curHeader.selector.symbol),
            selectorMap.get(casted, curHeader.selector.symbol) match {
-            case Some(xs) =>  pat.tpe.symbol::xs
-            case _ => pat.tpe.symbol::Nil
+            case Some(xs) =>  pat.tpe.typeSymbol::xs
+            case _ => pat.tpe.typeSymbol::Nil
           })
 */
           if (bodycond ne null) target.and = bodycond(target.and) // restores body with the guards
@@ -709,7 +711,7 @@ print()
     protected def nCaseComponents(tree: Tree): int = {
       tree match {
         case Apply(fn, _) =>
-          val tpe = tree.tpe.symbol.primaryConstructor.tpe
+          val tpe = tree.tpe.typeSymbol.primaryConstructor.tpe
           //Console.println("~~~ " + tree.type() + ", " + tree.type().symbol.primaryConstructor());
           tpe match {
             // I'm not sure if this is a good idea, but obviously, currently all case classes
@@ -1070,15 +1072,15 @@ print()
       while (node ne null)
       node match {
         case ConstrPat(casted) =>
-          cases = insertNode(node.tpe.symbol.tag, node, cases)
+          cases = insertNode(node.tpe.typeSymbol.tag, node, cases)
           node = node.or
 
         case DefaultPat() =>
           defaultCase = node
           node = node.or
 
-        case VariablePat(tree) if node.tpe.symbol.hasFlag(Flags.CASE) =>
-          cases = insertNode(node.tpe.symbol.tag, node, cases)
+        case VariablePat(tree) if node.tpe.typeSymbol hasFlag Flags.CASE =>
+          cases = insertNode(node.tpe.typeSymbol.tag, node, cases)
           node = node.or
 
         case _ =>
@@ -1146,7 +1148,7 @@ print()
           case DefaultPat() =>
             return toTree(node.and);
 
-          case UnapplyPat(casted, Apply(fn1, appargs)) if casted.tpe.symbol == defs.BooleanClass => // special case
+          case UnapplyPat(casted, Apply(fn1, appargs)) if casted.tpe.typeSymbol == defs.BooleanClass => // special case
             var useSelector = selector
             val checkType = fn1.tpe match {
               case MethodType(List(argtpe,_*),_) =>
@@ -1218,7 +1220,7 @@ print()
                 // needs explicitouter treatment
                 theRef = handleOuter(theRef)
 
-                val outerAcc = outerAccessor(casted.tpe.symbol)
+                val outerAcc = outerAccessor(casted.tpe.typeSymbol)
 
                 if(outerAcc != NoSymbol) { // some guys don't have outers
                   cond = And(cond,
@@ -1288,13 +1290,13 @@ print()
                 Literal(Constant(true))
 
             val treeAsSeq =
-              if(!isSubType(selector.tpe,ntpe))
+              if (!isSubType(selector.tpe,ntpe))
                 typed(gen.mkAsInstanceOf(selector.duplicate, ntpe, true))
               else
                 selector.duplicate
 
             val cond =
-              if(minlen == 0) tpetest
+              if (minlen == 0) tpetest
               else And(tpetest, seqLongerThan(treeAsSeq, ntpe, minlen))
 
             var bindings =
@@ -1320,11 +1322,11 @@ print()
 
           case VariablePat(tree) =>
             // objects are compared by eq, not ==
-            val cmp = if(tree.tpe.symbol.isModuleClass && selector.tpe <:< defs.AnyRefClass.tpe)
+            val cmp = if (tree.tpe.typeSymbol.isModuleClass && selector.tpe <:< defs.AnyRefClass.tpe)
                         Eq(selector.duplicate, tree)
                       else
                         Equals(selector.duplicate, tree)
-            return myIf( cmp,
+            return myIf(cmp,
                       toTree(node.and),
                       toTree(node.or, selector.duplicate));
 
@@ -1333,7 +1335,7 @@ print()
                       toTree(node.and),
                       toTree(node.or, selector.duplicate));
           case _ =>
-            scala.Predef.error("cannot handle pattern:"+node);
+            scala.Predef.error("cannot handle pattern:"+node)
         }
     }
   }

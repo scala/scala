@@ -19,7 +19,7 @@ trait ModelExtractor {
   val global: Global
   import global._
 
-  def assert(b : Boolean) {
+  def assert(b: Boolean) {
     if (!b)
       throw new Error;
   }
@@ -108,7 +108,7 @@ trait ModelExtractor {
             sym.privateWithin.nameString;
           else null;
         });
-        def f(flag : Int, str : String) =
+        def f(flag: Int, str: String) =
           if (sym.hasFlag(flag)) string = string + " " + str;
 
         f(Flags.IMPLICIT, "implicit");
@@ -120,22 +120,21 @@ trait ModelExtractor {
         if (!sym.isTrait) f(Flags.DEFERRED, "abstract");
         string.trim;
     }
-    def listName = name;
-    def name = sym.nameString;
-    def fullName(sep : Char) = sym.fullNameString(sep);
-    def kind : String;
-    def header = {
-    }
-    def typeParams : List[TypeParam] = Nil
+    def listName = name
+    def name = sym.nameString
+    def fullName(sep: Char) = sym.fullNameString(sep)
+    def kind: String
+    def header { }
+    def typeParams: List[TypeParam] = Nil
     def params: List[List[Param]] = Nil
     def resultType: Option[Type] = None
     def parents: Iterable[Type] = Nil
     def lo: Option[Type] = sym.info match {
-      case TypeBounds(lo,hi) if decode(lo.symbol) != definitions.AllClass => Some(lo);
-      case _ => None;
+      case TypeBounds(lo,hi) if decode(lo.typeSymbol) != definitions.AllClass => Some(lo)
+      case _ => None
     }
     def hi : Option[Type] = sym.info match {
-      case TypeBounds(lo,hi) if decode(hi.symbol) != definitions.AnyClass => Some(hi)
+      case TypeBounds(lo,hi) if decode(hi.typeSymbol) != definitions.AnyClass => Some(hi)
       case _ => None
     }
     def variance = {
@@ -154,7 +153,7 @@ trait ModelExtractor {
   }
 
   class ConstructorParam(sym: Symbol) extends Param(sym) {
-    override protected def accessQualified(core : String, qual : String) = core match {
+    override protected def accessQualified(core: String, qual: String) = core match {
       case "public" => "val"
       case "protected" => super.accessQualified(core,qual) + " val"
       case "private" if qual == "this" => ""
@@ -203,7 +202,7 @@ trait ModelExtractor {
       pA = pA.tail;
       pB = pB.tail;
     }
-    return 0;
+    0
   }
 
   trait ClassOrObject extends Entity {
@@ -218,7 +217,7 @@ trait ModelExtractor {
       sym.constrParamAccessors.foreach(arg => {
         val str = symtab.Flags.flagsToString(arg.flags);
         assert(arg.hasFlag(symtab.Flags.PRIVATE) && arg.hasFlag(symtab.Flags.LOCAL));
-        val argName = arg.name.toString.trim;
+        val argName = arg.name.toString.trim
         val actual = sym.tpe.decls.elements.find(e => {
           val eName = e.name.toString.trim;
           argName == eName && {
@@ -238,41 +237,40 @@ trait ModelExtractor {
         }
       });
     }
-    def members0(f : Symbol => Boolean) = decls.projection.filterKeys(f).valueSet;
-    def members(c : Category) : Iterable[Member] = members0(c.f);
-    object inherited extends jcl.LinkedHashMap[Symbol,List[Member]]() {
-      override def default(tpe : Symbol) = Nil;
-      {
-        for (m <- sym.tpe.members if !sym.tpe.decls.elements.contains(m) &&
+    def members0(f: Symbol => Boolean) = decls.projection.filterKeys(f).valueSet
+    def members(c: Category): Iterable[Member] = members0(c.f)
+    object inherited extends jcl.LinkedHashMap[Symbol, List[Member]]() {
+      override def default(tpe: Symbol) = Nil
+      for (m <- sym.tpe.members if !sym.tpe.decls.elements.contains(m) &&
           (Values.f(m) || Methods.f(m))) {
-          val o = m.overridingSymbol(sym)
-          if ((o == NoSymbol)) {
-            val parent = decode(m.enclClass)
-            val mo = Member(m)
-            if (!mo.isEmpty) {
-              this(parent) = mo.get :: this(parent);
-            }
+        val o = m.overridingSymbol(sym)
+        if (o == NoSymbol) {
+          val parent = decode(m.enclClass)
+          val mo = Member(m)
+          if (!mo.isEmpty) {
+            this(parent) = mo.get :: this(parent);
           }
         }
       }
     }
-    override def parents = freshParents;
-    abstract class Member(sym : Symbol) extends Entity(sym) {
-      private def overriding = sym.allOverriddenSymbols;
+    override def parents = freshParents
+    abstract class Member(sym: Symbol) extends Entity(sym) {
+      private def overriding = sym.allOverriddenSymbols
       override def comment = super.comment match {
-      case ret @ Some(comment) => ret;
+      case ret @ Some(comment) =>
+        ret
       case None =>
-        val o = overriding.find(comments.contains);
-        o.map(comments.apply);
+        val o = overriding.find(comments.contains)
+        o.map(comments.apply)
       }
     }
     abstract class ValDef(sym: Symbol) extends Member(sym) {
-      override def resultType = Some(resultType0);
+      override def resultType = Some(resultType0)
       protected def resultType0: Type
       override def overridden: Iterable[Symbol] = {
-        var ret : jcl.LinkedHashSet[Symbol] = null;
+        var ret: jcl.LinkedHashSet[Symbol] = null
         for (parent <- ClassOrObject.this.parents) {
-          val sym0 = sym.overriddenSymbol(parent.symbol);
+          val sym0 = sym.overriddenSymbol(parent.typeSymbol)
           if (sym0 != NoSymbol) {
             if (ret == null) ret = new jcl.LinkedHashSet[Symbol];
             ret += sym0;
