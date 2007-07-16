@@ -233,8 +233,6 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     if (forMSIL) new loaders.NamespaceLoader(classPath.root)
     else new loaders.PackageLoader(classPath.root /* getRoot() */)
 
-  val migrateMsg = "migration problem when moving from Scala version 1.0 to version 2.0:\n"
-
 // Phases ------------------------------------------------------------
 
   var globalPhase: Phase = NoPhase
@@ -546,6 +544,8 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
           if (globalPhase.id >= icodePhase.id) writeICode()
           else if (settings.Xshowtrees.value) nodePrinters.printAll()
           else treePrinter.printAll()
+        if (settings.printLate.value && globalPhase.name == "cleanup")
+          treePrinter.printAll()
 
         if (settings.browse contains globalPhase.name) treeBrowser.browse(units)
         informTime(globalPhase.description, startTime)

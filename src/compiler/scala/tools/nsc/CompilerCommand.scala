@@ -50,11 +50,24 @@ class CompilerCommand(arguments: List[String], val settings: Settings,
   def xusageMsg: String = {
     settings.allSettings
       .filter(setting =>
-              !setting.isStandard &&
+              setting.isAdvanced &&
               (settings.doc.value == setting.isDocOption))
       .map(setting =>
            format(setting.helpSyntax) + "  " + setting.helpDescription)
-      .mkString("Possible non-standard options include:\n  ",
+      .mkString("Possible advanced options include:\n  ",
+                "\n  ",
+                "\n")
+  }
+
+  /** A message explaining usage and options */
+  def yusageMsg: String = {
+    settings.allSettings
+      .filter(setting =>
+              setting.isPrivate &&
+              (settings.doc.value == setting.isDocOption))
+      .map(setting =>
+           format(setting.helpSyntax) + "  " + setting.helpDescription)
+      .mkString("Possible private options include:\n  ",
                 "\n  ",
                 "\n")
   }

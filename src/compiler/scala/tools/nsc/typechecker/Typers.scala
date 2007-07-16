@@ -924,9 +924,7 @@ trait Typers { self: Analyzer =>
                 error(parent.pos, "illegal inheritance; super"+superclazz+
                       "\n is not a subclass of the super"+ps.head.typeSymbol+
                       "\n of the mixin " + psym);
-            } else if (settings.migrate.value) {
-              error(parent.pos, migrateMsg+psym+" needs to be a declared as a trait")
-            }else {
+            } else {
               error(parent.pos, psym+" needs to be a trait be mixed in")
             }
           } else if (psym hasFlag FINAL) {

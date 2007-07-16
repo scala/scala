@@ -77,10 +77,6 @@ trait Scanners {
     def intVal: Long = intVal(false)
     def floatVal: Double = floatVal(false)
     //def token2string(token : Int) : String = configuration.token2string(token)
-    /* disabled in presentation compiler */
-    var newNewLine: Boolean
-    /* disabled in presentation compiler */
-    var skipping: Boolean
     /** return recent scala doc, if any */
     def flushDoc: String
   }
@@ -292,16 +288,6 @@ trait Scanners {
      */
     var sepRegions: List[Int] = List()
 
-    /** A new line was inserted where in version 1.0 it would not be.
-     *  Only significant if settings.migrate.value is set
-     */
-    var newNewLine = false
-
-    /** Parser is currently skipping ahead because of an error.
-     *  Only significant if settings.migrate.value is set
-     */
-    var skipping = false
-
 // Get next token ------------------------------------------------------------
 
     /** read next token and return last position
@@ -329,12 +315,6 @@ trait Scanners {
       } else if (token == RBRACKET || token == RPAREN || token == ARROW) {
         if (!sepRegions.isEmpty && sepRegions.head == token)
           sepRegions = sepRegions.tail
-      }
-
-      if (newNewLine && !skipping) {
-        warning(pos, migrateMsg + "new line will start a new statement here;\n"
-                     + "to suppress it, enclose expression in parentheses (...)")
-        newNewLine = false
       }
 
       val lastToken = token
@@ -377,7 +357,6 @@ trait Scanners {
           (sepRegions.isEmpty || sepRegions.head == RBRACE)) {
         next copyFrom this
         pos = in.lineStartPos
-        if (settings.migrate.value) newNewLine = lastToken != RBRACE && token != EOF;
         token = if (in.lastBlankLinePos > lastPos) NEWLINES else NEWLINE
       }
     }

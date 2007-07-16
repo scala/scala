@@ -114,9 +114,6 @@ object scalac extends Command {
             "msil,cldc") & ").",
             "The default value is " & Mono("\"jvm-1.4\"") & ".")),
         Definition(
-          CmdOption("migrate"),
-          "Assist in migrating from Scala version 1.0."),
-        Definition(
           CmdOption("o", Argument("file")),
           "Name of the output assembly (only relevant with -target:msil)"),
         Definition(

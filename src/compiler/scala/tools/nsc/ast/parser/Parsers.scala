@@ -181,7 +181,6 @@ trait Parsers {
 /////// ERROR HANDLING //////////////////////////////////////////////////////
 
     private def skip() {
-      //System.out.println("<skipping> " + in.configuration.token2string(inToken))//DEBUG
       var nparens = 0
       var nbraces = 0
       while (true) {
@@ -221,15 +220,10 @@ trait Parsers {
         in.errpos = pos
       }
       if (skipIt) {
-        in.skipping = true
         skip()
-        in.skipping = false
       }
       syntaxErrorSeen = true
     }
-
-    def syntaxErrorMigrate(msg: String) =
-      syntaxError(inCurrentPos, migrateMsg + msg, false)
 
     def warning(msg: String) =
       if (inCurrentPos != in.errpos) {
@@ -493,15 +487,11 @@ trait Parsers {
         inNextToken
         name
       } else {
-        if (settings.migrate.value && inToken == MATCH || inToken == REQUIRES || inToken == IMPLICIT)
-          syntaxErrorMigrate(""+in+" is now a reserved word; cannot be used as identifier")
         accept(IDENTIFIER)
         nme.ERROR
       }
 
     def selector(t: Tree) = {
-      if (inToken == MATCH && settings.migrate.value)
-        syntaxErrorMigrate("Period should be omitted before `match'")
       Select(t, ident())
     }
 
@@ -625,17 +615,12 @@ trait Parsers {
     }
 
     def newLineOpt() {
-      if (inToken == NEWLINE) {
-        if (settings.migrate.value) in.newNewLine = false
-        inNextToken
-      }
+      if (inToken == NEWLINE) inNextToken
     }
 
     def newLinesOpt() {
-      if (inToken == NEWLINE || inToken == NEWLINES) {
-        if (settings.migrate.value) in.newNewLine = false
+      if (inToken == NEWLINE || inToken == NEWLINES)
         inNextToken
-      }
     }
 
     def newLineOptWhenFollowedBy(token: Int) {
@@ -1188,12 +1173,6 @@ trait Parsers {
           }
           canApply = false
         case _ =>
-          if (settings.migrate.value) {
-            if (inToken == MATCH)
-              syntaxErrorMigrate("`match' must be preceded by a selector expression")
-            else if (inToken == REQUIRES || inToken == IMPLICIT)
-              syntaxErrorMigrate(""+in+" is now a reserved word; cannot be used as identifier")
-          }
           syntaxErrorOrIncomplete("illegal start of simple expression", true)
           t = errorTermTree
       }
@@ -1476,9 +1455,6 @@ trait Parsers {
         assert(xmlp != null)
         xmlp.xLiteralPattern
       case _ =>
-        if (settings.migrate.value &&
-            inToken == MATCH || inToken == REQUIRES || inToken == IMPLICIT)
-          syntaxErrorMigrate(""+in+" is now a reserved word; cannot be used as identifier")
         syntaxErrorOrIncomplete("illegal start of simple pattern", true)
         errorPatternTree
     }
