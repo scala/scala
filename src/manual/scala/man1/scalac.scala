@@ -67,11 +67,16 @@ object scalac extends Command {
           CmdOption("nowarn"),
           "Generate no warnings"),
         Definition(
-          CmdOption("noassert"),
-          "Generate no assertions and assumptions"),
-        Definition(
           CmdOption("verbose"),
           "Output messages about what the compiler is doing"),
+        Definition(
+          CmdOption("deprecation"),
+          SeqPara(
+            "Indicate whether source should be compiled with deprecation " &
+            "information; defaults to " & Mono("off") & " (" &
+            "accepted values are: " & Mono("on") & ", " & Mono("off") &
+            ", " & Mono("yes") & " and " & Mono("no") & ")",
+            "Available since Scala version 2.2.1")),
         Definition(
           CmdOption("classpath", Argument("path")),
           SeqPara(
@@ -114,100 +119,13 @@ object scalac extends Command {
             "msil,cldc") & ").",
             "The default value is " & Mono("\"jvm-1.4\"") & ".")),
         Definition(
-          CmdOption("o", Argument("file")),
-          "Name of the output assembly (only relevant with -target:msil)"),
+          CmdOption("print"),
+          "Print program with all Scala-specific features removed"
+        ),
         Definition(
-          CmdOption("r", Argument("path")),
-          "List of assemblies referenced by the program (only relevant with -target:msil)"),
-        Definition(
-          CmdOption("deprecation"),
-          SeqPara(
-            "Indicate whether source should be compiled with deprecation " &
-            "information; defaults to " & Mono("off") & " (" &
-            "accepted values are: " & Mono("on") & ", " & Mono("off") &
-            ", " & Mono("yes") & " and " & Mono("no") & ")",
-            "Available since Scala version 2.2.1")),
-        Definition(
-          CmdOption("unchecked"),
-          SeqPara(
-            "Enable detailed unchecked warnings",
-            "Non variable type-arguments in type patterns are unchecked " &
-            "since they are eliminated by erasure",
-            "Available since Scala version 2.3.0")),
-        Definition(
-          CmdOption("resident"),
-          "Compiler stays resident, files to compile are read from standard " &
-          "input."),
-        Definition(
-          CmdOption("version"),
-          "Print product version and exit."),
-        Definition(
-          /*CmdOption("?") & "| " &*/ CmdOption("help"),
-          "Print a synopsis of standard options."),
-        Definition(
-          CmdOption("nouescape"),
-          "Disable handling of " & BSlash & "u unicode escapes"))),
-
-    Section("Non-Standard Options",
-      DefinitionList(
-        Definition(
-          CmdOption("Xinline"),
-          "Perform inlining when possible."),
-        Definition(
-          CmdOption("Xcloselim"),
-          "Perform closure elimination."),
-        Definition(
-          CmdOption("Xdce"),
-          "Perform dead code elimination"),
-        Definition(
-          CmdOption("XbytecodeRead"),
-          "Enable bytecode reader."),
-        Definition(
-          CmdOption("Xshowcls", Argument("class")),
-          "Show class info."),
-        Definition(
-          CmdOption("Xshowobj", Argument("object")),
-          "Show object info."),
-        Definition(
-          CmdOption("Xshowicode"),
-          "Print the generated ICode."),
-        Definition(
-          CmdOption("Xlinearizer:", Argument("Xlinearizer")),
-          SeqPara(
-            "Linearizer to use (" & Mono("dfs,dump,normal,rpo") & ").",
-            "The default value is " & Mono("\"rpo\"") & ".")),
-        Definition(
-          CmdOption("Xgenerics"),
-          "Use generic Java types."),
-        Definition(
-          CmdOption("Xprintpos"),
-          "Print tree positions (as offsets)"),
-        Definition(
-          CmdOption("Xscript"),
-          "Compile script file"),
-        Definition(
-          CmdOption("Xexperimental"),
-          "enable experimental extensions"),
-        Definition(
-          CmdOption("Xplugtypes"),
-          "Parse but ignore annotations in more locations"),
-        Definition(
-          CmdOption("Xkilloption"),
-          "Optimizes option types"),
-        Definition(
-          CmdOption("XprintOuterMatches"),
-          "Prints outer-checks caused by pattern matching")
-      )
-    ),
-
-    Section("Debug Options",
-      DefinitionList(
-        Definition(
-          CmdOption("debug"),
-          "Output debugging messages."),
-        Definition(
-          CmdOption("statistics"),
-          "Print compiler statistics."),
+          CmdOption("optimise"),
+          "Generates faster bytecode by applying optimisations to the program"
+        ),
         Definition(
           CmdOption("explaintypes"),
           "Explain type errors in more detail."),
@@ -215,43 +133,87 @@ object scalac extends Command {
           CmdOption("uniqid"),
           "Print identifiers with unique names (debugging option)."),
         Definition(
-          CmdOption("printtypes"),
-          "Print tree types (debugging option)."),
+          CmdOption("version"),
+          "Print product version and exit."),
         Definition(
-          CmdOption("prompt"),
-          "Display a prompt after each error (debugging option)."),
+          /*CmdOption("?") & "| " &*/ CmdOption("help"),
+          "Print a synopsis of standard options."))),
+
+    Section("Advanced Options",
+      DefinitionList(
         Definition(
-          CmdOption("noimports"),
-          "Compile without any implicit imports."),
+          CmdOption("Xassem", Argument("file")),
+          "Name of the output assembly (only relevant with -target:msil)"),
         Definition(
-          CmdOption("nopredefs"),
-          "Compile without any implicit predefined values."),
+          CmdOption("Xassem-path", Argument("path")),
+          "List of assemblies referenced by the program (only relevant with -target:msil)"),
         Definition(
-          CmdOption("skip:", Argument("phases")),
-          "Skip " & Argument("phases") & " (see below)."),
+          CmdOption("Xcheck-null"),
+          "Emit warning on selection of nullable reference"),
         Definition(
-          CmdOption("check:", Argument("phases")),
-          "Check the tree after " & Argument("phases") & " (see below)."),
+          CmdOption("Xdebug"),
+          "Output debugging messages."),
+        Definition(
+          CmdOption("Xdisable-assertions"),
+          "Generate no assertions and assumptions"),
+        Definition(
+          CmdOption("Xexperimental"),
+          "enable experimental extensions"),
+        Definition(
+          CmdOption("Xno-uescape"),
+          "Disable handling of " & BSlash & "u unicode escapes"),
+        Definition(
+          CmdOption("Xplug-types"),
+          "Parse but ignore annotations in more locations"),
+        Definition(
+          CmdOption("Xplugin:", Argument("file")),
+          "Load a plugin from a file"),
+        Definition(
+          CmdOption("Xplugin-disable:", Argument("plugin")),
+          "Disable a plugin"),
+        Definition(
+          CmdOption("Xplugin-list"),
+          "Print a synopsis of loaded plugins"),
+        Definition(
+          CmdOption("Xplugin-opt:", Argument("plugin:opt")),
+          "Pass an option to a plugin"),
+        Definition(
+          CmdOption("Xplugin-require:", Argument("plugin")),
+          "Abort unless a plugin is available"),
         Definition(
           CmdOption("print:", Argument("phases")),
           "Print out program after " & Argument("phases") & " (see below)."),
         Definition(
-          CmdOption("printer:", Argument("printer")),
+          CmdOption("Xprint-pos"),
+          "Print tree positions (as offsets)"),
+        Definition(
+          CmdOption("Xprint-types"),
+          "Print tree types (debugging option)."),
+        Definition(
+          CmdOption("Xresident"),
+          "Compiler stays resident, files to compile are read from standard " &
+          "input."),
+        Definition(
+          CmdOption("Xshow-class", Argument("class")),
+          "Show class info."),
+        Definition(
+          CmdOption("Xshow-object", Argument("object")),
+          "Show object info."),
+        Definition(
+          CmdOption("Xshow-phases"),
+          "Print a synopsis of compiler phases."),
+        Definition(
+          CmdOption("Xsource-reader", Argument("classname")),
+          "Specify a custom method for reading source files."),
+        Definition(
+          CmdOption("Xunchecked"),
           SeqPara(
-            "Printer to use (" & Mono("text,html") & ").",
-            "The default value is " & Mono("\"text\"") & ".")),
-        Definition(
-          CmdOption("print-file", Argument("file")),
-          "Specify file in which to print trees."),
-        Definition(
-          CmdOption("graph:", Argument("phases")),
-          "Graph the program after " & Argument("phases") & " (see below)."),
-        Definition(
-          CmdOption("stop:", Argument("phases")),
-          "Stop after first phase in " & Argument("phases") & " (see below)."),
-        Definition(
-          CmdOption("log:", Argument("phases")),
-          "Log operations in " & Argument("phases") & " (see below)."))),
+            "Enable detailed unchecked warnings",
+            "Non variable type-arguments in type patterns are unchecked " &
+            "since they are eliminated by erasure",
+            "Available since Scala version 2.3.0")),
+      )
+    ),
 
     Section("Compilation Phases",
       DefinitionList(
@@ -384,7 +346,7 @@ object scalac extends Command {
   def manpage = new Document {
     title = command
     date = lastModified // e.g. "June 8, 2006"
-    author = "Stephane Micheloud"
+    author = "Stephane Micheloud & LAMP"
     version = "0.4"
     sections = List(
       name,
