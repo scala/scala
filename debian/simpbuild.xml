@@ -43,6 +43,7 @@
 
   <property name="fjbg.jar" value="${lib.dir}/fjbg.jar"/>
   <property name="msil.jar" value="${lib.dir}/msil.jar"/>
+  <property name="jline.jar" value="${lib.dir}/jline.jar"/>
   <property name="ant.jar" value="${ant.home}/lib/ant.jar"/>
 
 
@@ -128,12 +129,23 @@
     </not></condition>
   </fail>
 
+  <echo level="verbose" message="jline.jar=${jline.jar}"/>
+  <fail message="JLine library in 'lib/' is not available">
+    <condition><not>
+      <available
+        classname="jline.ConsoleReader"
+        classpath="${jline.jar}"
+      />
+    </not></condition>
+  </fail>
+
   <path id="starr.classpath">
     <pathelement location="${fjbg.jar}"/>
     <pathelement location="${msil.jar}"/>
     <pathelement location="${ant.jar}"/>
     <pathelement location="${starr.lib.jar}"/>
     <pathelement location="${starr.comp.jar}"/>
+    <pathelement location="${jline.jar}"/>
   </path>
 
   <property name="os.type" value="UNIX"/>

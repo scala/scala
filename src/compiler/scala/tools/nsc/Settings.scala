@@ -97,6 +97,7 @@ class Settings(error: String => Unit) {
   val debug         = BooleanSetting    ("-Xdebug", "Output debugging messages").hideToIDE
   val noassertions  = BooleanSetting    ("-Xdisable-assertions", "Generate no assertions and assumptions")
   val Xexperimental = BooleanSetting    ("-Xexperimental", "Enable experimental extensions")
+  val Xnojline      = new BooleanSetting("-Xnojline", "Do not use JLine for editing").hideToIDE
   val nouescape     = BooleanSetting    ("-Xno-uescape", "Disables handling of \\u unicode escapes")
   val Xplugtypes    = BooleanSetting    ("-Xplug-types", "Process annotations on types")
   val plugin        = MultiStringSetting("-Xplugin", "file", "Load a plugin from a file")

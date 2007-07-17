@@ -12,6 +12,7 @@ import java.io.IOException
 
 import scala.tools.nsc.util.{ClassPath, Position}
 import nsc.{InterpreterResults=>IR}
+import nsc.interpreter._
 
 /** The
  *  <a href="http://scala-lang.org/" target="_top">Scala</a>
@@ -19,20 +20,22 @@ import nsc.{InterpreterResults=>IR}
  *  the Interpreter class.
  *  After instantiation, clients should call the <code>main()</code> method.
  *
+ *  <p>If no in0 is specified, then input will come from the console, and
+ *  the class will attempt to provide input editing feature such as
+ *  input history.
+ *
+ *  @author Moez A. Abdel-Gawad
  *  @author  Lex Spoon
- *  @version 1.1
+ *  @version 1.2
  */
-class InterpreterLoop(in0: BufferedReader, out: PrintWriter) {
-  def this() = this(new BufferedReader(new InputStreamReader(System.in)),
-                    new PrintWriter(System.out))
+class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
+  def this(in0: BufferedReader, out: PrintWriter) =
+    this(Some(in0), out)
+
+  def this() = this(None, new PrintWriter(Console.out))
 
   /** The input stream from which interpreter commands come */
-  var in = in0
-
-  /** Whether the interpreter is interactive (like normal), or instead
-    * is reading from a file.
-    */
-  var interactive = true
+  var in: InteractiveReader = _  //set by main()
 
   /** The context class loader at the time this object was created */
   protected val originalClassLoader =
@@ -103,7 +106,7 @@ class InterpreterLoop(in0: BufferedReader, out: PrintWriter) {
 
   /** Print a welcome message */
   def printWelcome() {
-    out.println("Welcome to Scala version " + Properties.versionString + ".")
+    out.println("Welcome to Scala " + Properties.versionString + ".")
     out.println("Type in expressions to have them evaluated.")
     out.println("Type :help for more information.")
     out.flush()
@@ -119,22 +122,26 @@ class InterpreterLoop(in0: BufferedReader, out: PrintWriter) {
   def repl() {
     var first = true
     while (true) {
-      if (interactive) {
-        out.print(prompt)
-        out.flush
-      }
-      if (first) {
-        /* For some reason, the first interpreted command always takes
-         * a second or two.  So, wait until the welcome message
-         * has been printed before calling bindSettings.  That way,
-         * the user can read the welcome message while this
-         * command executes.
-         */
-        bindSettings()
-        first = false
+      out.flush()
+
+      val line =
+	if (first) {
+          /* For some reason, the first interpreted command always takes
+           * a second or two.  So, wait until the welcome message
+           * has been printed before calling bindSettings.  That way,
+           * the user can read the welcome message while this
+           * command executes.
+           */
+          val futLine = scala.concurrent.ops.future(in.readLine(prompt))
+
+          bindSettings()
+          first = false
+
+	  futLine()
+      } else {
+	in.readLine(prompt)
       }
 
-      var line = in.readLine()
       if (line eq null)
         return ()  // assumes null means EOF
 
@@ -160,16 +167,14 @@ class InterpreterLoop(in0: BufferedReader, out: PrintWriter) {
         return
     }
     val oldIn = in
-    val oldInteractive = interactive
     try {
-      in = new BufferedReader(fileIn)
-      interactive = false
+      val inFile = new BufferedReader(fileIn)
+      in = new SimpleReader(inFile, out, false)
       out.println("Loading " + filename + "...")
       out.flush
       repl
     } finally {
       in = oldIn
-      interactive = oldInteractive
       fileIn.close
     }
   }
@@ -242,15 +247,11 @@ class InterpreterLoop(in0: BufferedReader, out: PrintWriter) {
       case IR.Success => Some(code)
       case IR.Error => None
       case IR.Incomplete =>
-        if (interactive && code.endsWith("\n\n")) {
+        if (in.interactive && code.endsWith("\n\n")) {
           out.println("You typed two blank lines.  Starting a new command.")
           None
         } else {
-          if (interactive) {
-            out.print("     | ")
-            out.flush
-          }
-          val nextLine = in.readLine
+          val nextLine = in.readLine("     | ")
           if (nextLine == null)
             None  // end of file
           else
@@ -260,8 +261,21 @@ class InterpreterLoop(in0: BufferedReader, out: PrintWriter) {
   }
 
 
+
   def main(settings: Settings) {
     this.settings = settings
+
+    in =
+      in0 match {
+	case Some(in0) => new SimpleReader(in0, out, true)
+
+	case None =>
+	  if (settings.Xnojline.value)
+	    new SimpleReader()
+	  else
+	    InteractiveReader.createDefault()
+      }
+
 
     uglinessxxx =
       new java.net.URLClassLoader(

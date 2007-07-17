@@ -53,6 +53,9 @@ import nsc.{InterpreterResults=>IR}
  *    The main weakness is that redefining classes and methods is not handled
  *    properly, because rebinding at the Java level is technically difficult.
  *  </p>
+ *
+ * @author Moez A. Abdel-Gawad
+ * @author Lex Spoon
  */
 class Interpreter(val settings: Settings, out: PrintWriter) {
   import symtab.Names

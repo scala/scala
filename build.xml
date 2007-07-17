@@ -41,7 +41,9 @@ PROPERTIES
   <property name="fjbg.jar" value="${lib.dir}/fjbg.jar"/>
   <property name="msil.jar" value="${lib.dir}/msil.jar"/>
   <property name="ant.jar" value="${ant.home}/lib/ant.jar"/>
+  <property name="jline.jar" value="${lib.dir}/jline.jar"/>
   <property name="ant-contrib.jar" value="${lib.dir}/ant-contrib.jar"/>
+
   <!-- Sets location of build folders -->
   <property name="build.dir" value="${basedir}/build"/>
   <property name="locker.dir" value="${build.dir}/locker"/>
@@ -181,6 +183,7 @@ SETUP
       <pathelement location="${fjbg.jar}"/>
       <pathelement location="${msil.jar}"/>
       <pathelement location="${ant.jar}"/>
+      <pathelement location="${jline.jar}"/>
     </path>
   <!-- Creating boot-level tasks -->
     <taskdef
@@ -298,6 +301,15 @@ BUILD SUPPORT MACROS
             resource="${msil.jar}" overwrite="yes" failonerror="no"/>
         </else></if>
       </then></if>
+      <if><not><available file="@{build.dir}/lib/jline.jar"/></not><then>
+        <if><isset property="os.win"/><then>
+          <copy file="${jline.jar}" tofile="@{build.dir}/lib/jline.jar"/>
+        </then><else>
+          <symlink
+            link="@{build.dir}/lib/jline.jar"
+            resource="${jline.jar}" overwrite="yes" failonerror="no"/>
+        </else></if>
+      </then></if>
     </sequential>
   </macrodef>
 
@@ -372,6 +384,7 @@ BUILD LOCAL REFERENCE (LOCKER) LAYER
         <pathelement location="${fjbg.jar}"/>
         <pathelement location="${msil.jar}"/>
         <pathelement location="${ant.jar}"/>
+        <pathelement location="${jline.jar}"/>
       </classpath>
       <include name="**/*.scala"/>
       <excludesfile name="${nsc.excludes.file}" if="excludes.avail"/>
@@ -539,6 +552,7 @@ BUILD QUICK-TEST LAYER
         <pathelement location="${fjbg.jar}"/>
         <pathelement location="${msil.jar}"/>
         <pathelement location="${ant.jar}"/>
+        <pathelement location="${jline.jar}"/>
       </classpath>
       <include name="**/*.scala"/>
       <excludesfile name="${nsc.excludes.file}" if="excludes.avail"/>
@@ -922,6 +936,7 @@ TEST
         <pathelement location="${fjbg.jar}"/>
         <pathelement location="${msil.jar}"/>
         <pathelement location="${ant.jar}"/>
+        <pathelement location="${jline.jar}"/>
       </classpath>
       <include name="**/*.scala"/>
       <excludesfile name="${nsc.excludes.file}" if="excludes.avail"/>
@@ -1059,6 +1074,7 @@ DOCUMENTATION
         <pathelement location="${fjbg.jar}"/>
         <pathelement location="${msil.jar}"/>
         <pathelement location="${ant.jar}"/>
+        <pathelement location="${jline.jar}"/>
       </classpath>
       <include name="**/*.scala"/>
       <excludesfile name="${nsc.excludes.file}" if="excludes.avail"/>
