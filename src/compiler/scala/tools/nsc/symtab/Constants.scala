@@ -199,7 +199,7 @@ trait Constants {
     def escapedStringValue: String = {
       def escape(text: String): String = {
         val buf = new StringBuilder
-        for (c <- Iterator.fromString(text))
+        for (c <- text.elements)
           if (c.isControl)
             buf.append("\\0" + toOctalString(c.asInstanceOf[Int]))
           else
@@ -228,7 +228,7 @@ trait Constants {
   }
 
   class ArrayConstant(override val arrayValue: Array[Constant],
-                   override val tpe: Type)
+                      override val tpe: Type)
   extends Constant(arrayValue) {
     override def toString() = arrayValue.mkString("Constant(", "," , ")")
   }

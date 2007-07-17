@@ -15,7 +15,8 @@ package scala.compat
 import System.Text.{StringBuilder => StringBuffer}
 
 
-/**  Consult the documentation of java.lang.StringBuffer for more details
+/** Consult the documentation of <code>java.lang.StringBuffer</code>
+ *  for more details.
  */
 final class StringBuilder(val self: StringBuffer) extends (Int => Char) with Proxy {
 
@@ -33,6 +34,7 @@ final class StringBuilder(val self: StringBuffer) extends (Int => Char) with Pro
 
   def charAt(i: Int): Char = self(i)
   def apply(i: Int): Char = self(i)
+  def deleteCharAt(index: Int) = self.Remote(index, 1)
 
   def setCharAt(i: Int, c: Char) { self(i) = c }
   def update(i: Int, c: Char) { self(i) = c }

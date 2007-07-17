@@ -83,7 +83,7 @@ object Utility extends AnyRef with parsing.TokenTests {
    * @return     ...
    */
   final def escape(text: String, s: StringBuilder): StringBuilder = {
-    for (c <- Iterator.fromString(text)) c match {
+    for (c <- text.elements) c match {
       case '<' => s.append("&lt;")
       case '>' => s.append("&gt;")
       case '&' => s.append("&amp;")
@@ -134,7 +134,7 @@ object Utility extends AnyRef with parsing.TokenTests {
    * @param n   ...
    * @param set ...
    */
-  def collectNamespaces(n: Node, set: Set[String]): Unit = {
+  def collectNamespaces(n: Node, set: Set[String]) {
     if (n.typeTag$ >= 0) {
       set += n.namespace
       for (a <- n.attributes) a match {
@@ -183,7 +183,7 @@ object Utility extends AnyRef with parsing.TokenTests {
    * @param sb           stringbuffer to append to
    * @param stripComment if true, strip comments
    */
-  def toXML(x: Node, pscope: NamespaceBinding, sb: StringBuilder, stripComment: Boolean): Unit = {
+  def toXML(x: Node, pscope: NamespaceBinding, sb: StringBuilder, stripComment: Boolean) {
     x match {
 
       case c: Comment if !stripComment =>
@@ -216,7 +216,7 @@ object Utility extends AnyRef with parsing.TokenTests {
    * @param stripComment ...
    */
   def sequenceToXML(children: Seq[Node], pscope: NamespaceBinding,
-                    sb: StringBuilder, stripComment: Boolean): Unit = {
+                    sb: StringBuilder, stripComment: Boolean) {
     if (children.isEmpty)
       return
     else if (children forall { y => y.isInstanceOf[Atom[Any]] && !y.isInstanceOf[Text] }) { // add space
@@ -331,7 +331,7 @@ object Utility extends AnyRef with parsing.TokenTests {
    * @param sb ...
    * @return   ...
    */
-  def appendEscapedQuoted(s: String, sb: StringBuilder) = {
+  def appendEscapedQuoted(s: String, sb: StringBuilder): StringBuilder = {
     sb.append('"')
     for (c <- s) c match {
       case '"' => sb.append('\\'); sb.append('"')
