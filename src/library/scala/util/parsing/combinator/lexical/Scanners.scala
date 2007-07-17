@@ -31,8 +31,12 @@ import scala.util.parsing.input._
  *
  *  @author Martin Odersky, Adriaan Moors
  */
-trait Scanners extends Parsers with Tokens {
+trait Scanners extends Parsers {
   type Elem = Char
+  type Token
+
+  /** This token is produced by a scanner {@see Scanner} when scanning failed. */
+  def errorToken(msg: String): Token
 
   /** a parser that produces a token (from a stream of characters) */
   def token: Parser[Token]
@@ -52,17 +56,16 @@ trait Scanners extends Parsers with Tokens {
   class Scanner(in: Reader[Char]) extends Reader[Token] {
     /** Convenience constructor (makes a character reader out of the given string) */
     def this(in: String) = this(new CharArrayReader(in.toCharArray()))
-    private val Triple(tok, rest1, rest2) = whitespace(in) match {
+    private val (tok, rest1, rest2) = whitespace(in) match {
       case Success(_, in1) =>
         token(in1) match {
-          case Success(tok, in2) => Triple(tok, in1, in2)
-          case ns: NoSuccess => Triple(errorToken(ns.msg), ns.next, skip(ns.next))
+          case Success(tok, in2) => (tok, in1, in2)
+          case ns: NoSuccess => (errorToken(ns.msg), ns.next, skip(ns.next))
           case Failure(_, in2) => error("internal error")
           case Error(_, in2) => error("internal error")
         }
-      case ns: NoSuccess =>
-        Triple(errorToken(ns.msg), ns.next, skip(ns.next))
-      case Failure(_, in1) =>
+      case ns: NoSuccess => (errorToken(ns.msg), ns.next, skip(ns.next))
+      case Failure(_, in1) => // TODO: remove these two cases (@M to BQ: why are they here?)
         error("internal error")
       case Error(_, in1) =>
         error("internal error")
