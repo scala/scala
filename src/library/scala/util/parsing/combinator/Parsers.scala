@@ -104,7 +104,7 @@ trait Parsers {
 
     val next: Input
 
-    val succesful: Boolean
+    val successful: Boolean
   }
 
   /** The success case of ParseResult: contains the result and the remaining input.
@@ -123,13 +123,13 @@ trait Parsers {
     /** The toString method of a Success */
     override def toString = "parsed: "+result
 
-    val succesful = true
+    val successful = true
   }
 
   /** A common super-class for unsuccessful parse results
    */
   sealed abstract class NoSuccess(val msg: String, override val next: Input) extends ParseResult[Nothing] { // when we don't care about the difference between Failure and Error
-    val succesful = false
+    val successful = false
   }
 
   /** The failure case of ParseResult: contains an error-message and the remaining input.
@@ -709,7 +709,7 @@ trait Parsers {
 
       var res = p(in)
 
-      while(res.succesful) {
+      while(res.successful) {
         xs += res.get
         in = res.next
         res = p(in)
