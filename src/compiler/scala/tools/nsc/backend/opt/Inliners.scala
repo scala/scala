@@ -321,7 +321,7 @@ abstract class Inliners extends SubComponent {
                       classes(receiver).lookupMethod(concreteMethod) match {
                         case Some(inc) =>
                           if (inc.symbol != m.symbol
-                              //&& (inlinedMethods(inc.symbol) < 2)
+                              && (inlinedMethods(inc.symbol) < 2)
                               && (inc.code ne null)
                               && shouldInline(m, inc)
                               && (inc.code.blocks.length <= MAX_INLINE_SIZE)
