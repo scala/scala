@@ -392,7 +392,7 @@ trait Definitions {
     def getClass(fullname: Name): Symbol = getModuleOrClass(fullname, false)
 
     def getMember(owner: Symbol, name: Name): Symbol = {
-      if (owner == null) return null
+      if (owner == NoSymbol) return NoSymbol
       val result = owner.info.nonPrivateMember(name)
       if (result == NoSymbol) {
         Console.println(owner.infosString)
@@ -403,7 +403,7 @@ trait Definitions {
     }
 
     private def getModuleOrClass(fullname: Name, module: Boolean): Symbol = {
-      if (fullname == nme.NOSYMBOL) return null
+      if (fullname == nme.NOSYMBOL) return NoSymbol
       var sym = RootClass
       var i = 0
       var j = fullname.pos('.', i)
