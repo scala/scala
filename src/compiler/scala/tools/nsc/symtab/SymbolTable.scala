@@ -176,7 +176,7 @@ abstract class SymbolTable extends Names
     final val Code          = nme.NOSYMBOL
   }
 
-  val sn = // symbol names
+  val sn: SymbolNames =
     if (forMSIL) new MSILNames
     else if (forCLDC) new CLDCNames
     else new J2SENames
