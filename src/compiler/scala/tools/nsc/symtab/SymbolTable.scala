@@ -97,4 +97,88 @@ abstract class SymbolTable extends Names
   /** The phase which has given index as identifier */
   val phaseWithId: Array[Phase]
 
+  abstract class SymbolNames {
+    val JavaLang     : Name
+    val Object       : Name
+    val Class        : Name
+    val String       : Name
+    val Throwable    : Name
+    val NPException  : Name // NullPointerException
+    val NLRException : Name = newTermName("scala.runtime.NonLocalReturnException")
+    val ValueType    : Name
+    val Serializable : Name
+    val BeanProperty : Name
+    val Delegate     : Name
+    val IOOBException: Name // IndexOutOfBoundsException
+    val Code         : Name
+    val BoxedNumber  : Name
+
+    import scala.collection.mutable.HashMap
+    val Boxed = new HashMap[Name, Name]
+  }
+
+  private abstract class JavaNames extends SymbolNames {
+    final val JavaLang      = newTermName("java.lang")
+    final val Object        = newTermName("java.lang.Object")
+    final val Class         = newTermName("java.lang.Class")
+    final val String        = newTermName("java.lang.String")
+    final val Throwable     = newTermName("java.lang.Throwable")
+    final val NPException   = newTermName("java.lang.NullPointerException")
+    final val ValueType     = nme.NOSYMBOL
+    final val Delegate      = nme.NOSYMBOL
+    final val IOOBException = newTermName("java.lang.IndexOutOfBoundsException")
+    final val BoxedNumber   = newTermName("java.lang.Number")
+
+    Boxed += nme.Boolean -> newTermName("java.lang.Boolean")
+    Boxed += nme.Byte    -> newTermName("java.lang.Byte")
+    Boxed += nme.Char    -> newTermName("java.lang.Character")
+    Boxed += nme.Short   -> newTermName("java.lang.Short")
+    Boxed += nme.Int     -> newTermName("java.lang.Integer")
+    Boxed += nme.Long    -> newTermName("java.lang.Long")
+    Boxed += nme.Float   -> newTermName("java.lang.Float")
+    Boxed += nme.Double  -> newTermName("java.lang.Double")
+  }
+
+  private class MSILNames extends SymbolNames {
+    final val JavaLang      = newTermName("System")
+    final val Object        = newTermName("System.Object")
+    final val Class         = newTermName("System.Type")
+    final val String        = newTermName("System.String")
+    final val Throwable     = newTermName("System.Exception")
+    final val NPException   = newTermName("System.NullReferenceException")
+    final val ValueType     = newTermName("System.ValueType")
+    final val Serializable  = nme.NOSYMBOL
+    final val BeanProperty  = nme.NOSYMBOL
+    final val Delegate      = newTermName("System.MulticastDelegate")
+    final val IOOBException = newTermName("System.IndexOutOfRangeException")
+    final val Code          = nme.NOSYMBOL
+    final val BoxedNumber   = newTermName("System.IConvertible")
+
+    Boxed += nme.Boolean -> newTermName("System.Boolean")
+    Boxed += nme.Byte    -> newTermName("System.Byte")
+    Boxed += nme.Char    -> newTermName("System.Char")
+    Boxed += nme.Short   -> newTermName("System.Int16")
+    Boxed += nme.Int     -> newTermName("System.Int32")
+    Boxed += nme.Long    -> newTermName("System.Int64")
+    Boxed += nme.Float   -> newTermName("System.Single")
+    Boxed += nme.Double  -> newTermName("System.Double")
+  }
+
+  private class J2SENames extends JavaNames {
+    final val Serializable  = newTermName("java.io.Serializable")
+    final val BeanProperty  = newTermName("scala.reflect.BeanProperty")
+    final val Code          = newTermName("scala.reflect.Code")
+  }
+
+  private class CLDCNames extends JavaNames {
+    final val Serializable  = nme.NOSYMBOL
+    final val BeanProperty  = nme.NOSYMBOL
+    final val Code          = nme.NOSYMBOL
+  }
+
+  val sn = // symbol names
+    if (forMSIL) new MSILNames
+    else if (forCLDC) new CLDCNames
+    else new J2SENames
+
 }

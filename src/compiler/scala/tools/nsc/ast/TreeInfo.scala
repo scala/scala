@@ -19,10 +19,10 @@ abstract class TreeInfo {
   val global: Global
   import global._
 
-  def isTerm(tree: Tree): boolean = tree.isTerm
-  def isType(tree: Tree): boolean = tree.isType
+  def isTerm(tree: Tree): Boolean = tree.isTerm
+  def isType(tree: Tree): Boolean = tree.isType
 
-  def isOwnerDefinition(tree: Tree): boolean = tree match {
+  def isOwnerDefinition(tree: Tree): Boolean = tree match {
     case PackageDef(_, _)
        | ClassDef(_, _, _, _)
        | ModuleDef(_, _, _)
@@ -31,9 +31,9 @@ abstract class TreeInfo {
     case _ => false
   }
 
-  def isDefinition(tree: Tree): boolean = tree.isDef
+  def isDefinition(tree: Tree): Boolean = tree.isDef
 
-  def isDeclaration(tree: Tree): boolean = tree match {
+  def isDeclaration(tree: Tree): Boolean = tree match {
     case DefDef(_, _, _, _, _, EmptyTree)
        | ValDef(_, _, _, EmptyTree)
        | TypeDef(_, _, _, _) => true
@@ -42,7 +42,7 @@ abstract class TreeInfo {
 
   /** Is tree legal as a member definition of an interface?
    */
-  def isInterfaceMember(tree: Tree): boolean = tree match {
+  def isInterfaceMember(tree: Tree): Boolean = tree match {
     case EmptyTree                     => true
     case Import(_, _)                  => true
     case TypeDef(_, _, _, _)           => true
@@ -54,7 +54,7 @@ abstract class TreeInfo {
 
   /** Is tree a pure (i.e. non-side-effecting) definition?
    */
-  def isPureDef(tree: Tree): boolean = tree match {
+  def isPureDef(tree: Tree): Boolean = tree match {
     case EmptyTree
        | ClassDef(_, _, _, _)
        | TypeDef(_, _, _, _)
@@ -71,7 +71,7 @@ abstract class TreeInfo {
 
   /** Is tree a stable and pure expression?
    */
-  def isPureExpr(tree: Tree): boolean = tree match {
+  def isPureExpr(tree: Tree): Boolean = tree match {
     case EmptyTree
        | This(_)
        | Super(_, _)
@@ -114,18 +114,18 @@ abstract class TreeInfo {
 
   /** Is tree a self constructor call?
    */
-  def isSelfConstrCall(tree: Tree): boolean = methPart(tree) match {
+  def isSelfConstrCall(tree: Tree): Boolean = methPart(tree) match {
     case Ident(nme.CONSTRUCTOR)
        | Select(This(_), nme.CONSTRUCTOR) => true
     case _ => false
   }
 
-  def isSuperConstrCall(tree: Tree): boolean = methPart(tree) match {
+  def isSuperConstrCall(tree: Tree): Boolean = methPart(tree) match {
     case Select(Super(_, _), nme.CONSTRUCTOR) => true
     case _ => false
   }
 
-  def isSelfOrSuperConstrCall(tree: Tree): boolean = methPart(tree) match {
+  def isSelfOrSuperConstrCall(tree: Tree): Boolean = methPart(tree) match {
     case Ident(nme.CONSTRUCTOR)
        | Select(This(_), nme.CONSTRUCTOR)
        | Select(Super(_, _), nme.CONSTRUCTOR) => true
@@ -133,7 +133,7 @@ abstract class TreeInfo {
   }
 
   /** Is tree a variable pattern */
-  def isVarPattern(pat: Tree): boolean = pat match {
+  def isVarPattern(pat: Tree): Boolean = pat match {
     case Ident(name) => isVariableName(name) && !pat.isInstanceOf[BackQuotedIdent]
     case _ => false
   }
@@ -155,9 +155,8 @@ abstract class TreeInfo {
     case _ => false
   }
 
-
   /** Is name a left-associative operator? */
-  def isLeftAssoc(operator: Name): boolean =
+  def isLeftAssoc(operator: Name): Boolean =
     operator.length > 0 && operator(operator.length - 1) != ':'
 
   private val reserved = new HashSet[Name]
@@ -175,19 +174,19 @@ abstract class TreeInfo {
   reserved addEntry newTypeName("unit")
 
   /** Is name a variable name? */
-  def isVariableName(name: Name): boolean = {
+  def isVariableName(name: Name): Boolean = {
     val first = name(0)
     (('a' <= first && first <= 'z') || first == '_') && !(reserved contains name)
   }
 
   /** Is tree a this node which belongs to `enclClass'? */
-  def isSelf(tree: Tree, enclClass: Symbol): boolean = tree match {
+  def isSelf(tree: Tree, enclClass: Symbol): Boolean = tree match {
     case This(_) => tree.symbol == enclClass
     case _ => false
   }
 
   /** can this type be a type pattern */
-  def mayBeTypePat(tree: Tree): boolean = tree match {
+  def mayBeTypePat(tree: Tree): Boolean = tree match {
     case CompoundTypeTree(Template(tps, _, List())) => tps exists mayBeTypePat
     case Annotated(_, tp) => mayBeTypePat(tp)
     case AppliedTypeTree(constr, args) =>
@@ -213,7 +212,7 @@ abstract class TreeInfo {
       isDefaultCase(cdef)
   }
 
-  private def isSimpleThrowable(tp: Type): boolean = tp match {
+  private def isSimpleThrowable(tp: Type): Boolean = tp match {
     case TypeRef(pre, sym, args) =>
       (pre == NoPrefix || pre.widen.typeSymbol.isStatic) &&
       (sym isNonBottomSubClass definitions.ThrowableClass)
@@ -235,7 +234,7 @@ abstract class TreeInfo {
 */
 
   /** Is this pattern node a sequence-valued pattern? */
-  def isSequenceValued(tree: Tree): boolean = tree match {
+  def isSequenceValued(tree: Tree): Boolean = tree match {
     case Bind(_, body) => isSequenceValued(body)
     case Sequence(_) => true
     case ArrayValue(_, _) => true
@@ -247,7 +246,7 @@ abstract class TreeInfo {
   /** is this pattern of the form S(...) where S is a subclass of Seq
    *  and S is not a case class?  The pattern might be wrapped in binds or alternatives.
    */
-  def isSequencePattern(tree: Tree): boolean = tree match {
+  def isSequencePattern(tree: Tree): Boolean = tree match {
     case Apply(fn, _) =>
       (fn.symbol ne null) &&
       !fn.symbol.hasFlag(CASE) &&
@@ -277,9 +276,10 @@ abstract class TreeInfo {
       EmptyTree
   }
 
-  /** Top-level definition sequence contains a leading import of Predef or scala.Predef
+  /** Top-level definition sequence contains a leading import of
+   *  <code>Predef</code> or <code>scala.Predef</code>.
    */
-  def containsLeadingPredefImport(defs: List[Tree]): boolean = defs match {
+  def containsLeadingPredefImport(defs: List[Tree]): Boolean = defs match {
     case List(PackageDef(_, defs1)) =>
       containsLeadingPredefImport(defs1)
     case Import(Ident(nme.Predef), _) :: _ =>
