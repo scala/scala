@@ -183,7 +183,7 @@ trait Iterable[+A] {
    *           the predicate <code>p</code>.
    */
   def takeWhile(p: A => Boolean): Collection[A] =
-    new ArrayBuffer[A] ++ elements.takeWhile(p)
+    (new ArrayBuffer[A] ++ elements.takeWhile(p))
 
   /** Returns the longest suffix of this iterable whose first element
    *  does not satisfy the predicate <code>p</code>.
@@ -194,28 +194,30 @@ trait Iterable[+A] {
    *           does not satisfy the predicate <code>p</code>.
    */
   def dropWhile(p: A => Boolean): Collection[A] =
-    new ArrayBuffer[A] ++ elements.dropWhile(p)
+    (new ArrayBuffer[A] ++ elements.dropWhile(p))
 
   /** Returns an iterable consisting only over the first <code>n</code>
    *  elements of this iterable, or else the whole iterable, if it has less
    *  than <code>n</code> elements.
    *
+   *  @deprecated API doesn't make sense for non-ordered collections
    *  @param n the number of elements to take
    *  @return  the new iterable
    */
-  def take(n: Int): Collection[A] =
-    new ArrayBuffer[A] ++ elements.take(n)
+  @deprecated def take(n: Int): Collection[A] =
+    (new ArrayBuffer[A] ++ elements.take(n))
 
   /** Returns this iterable without its <code>n</code> first elements
    *  If this iterable has less than <code>n</code> elements, the empty
    *  iterable is returned.
    *
    *  @note Will not terminate for infinite-sized collections.
+   *  @deprecated API doesn't make sense for non-ordered collections
    *  @param n the number of elements to drop
    *  @return  the new iterable
    */
-  def drop(n: Int): Collection[A] =
-    new ArrayBuffer[A] ++ elements.drop(n)
+  @deprecated def drop(n: Int): Collection[A] =
+    (new ArrayBuffer[A] ++ elements.drop(n))
 
   /** Apply a function <code>f</code> to all elements of this
    *  iterable object.
@@ -415,6 +417,16 @@ trait Iterable[+A] {
    *  @return a string representation of this iterable object.
    */
   def mkString(sep: String): String = this.mkString("", sep, "")
+
+  /** Converts a collection into a flat <code>String</code> by each element's toString method.
+   *  @note Will not terminate for infinite-sized collections.
+   */
+  def mkString = {
+    val buf = new StringBuilder
+    foreach(buf append _.toString)
+    buf.toString
+  }
+
 
 
   /** Write all elements of this string into given string builder.

@@ -44,10 +44,34 @@ trait Buffer[A] extends Ranged[Int,A] with MutableSeq[A] with Collection[A] {
   /** Indices are compared through subtraction. */
   final def compare(k0 : Int, k1 : Int) = k0 - k1;
 
-  /** Removes the element at index "idx" */
+  /** Removes the element at index <code>idx</code> */
   def remove(idx : Int) = {
     val i = elements;
     val ret = i.seek(idx); i.remove; ret;
+  }
+  /** Removes N elements from index <code>idx</code> */
+  def remove(idx : Int, length : Int) = {
+    val i = elements
+    i.seek(idx)
+    for (j <- 0.until(length)) i.remove
+  }
+  /** replaces */
+  def replace(from : Int, length : Int, added : Seq[A]) = {
+    val min = if (length < added.length) length else added.length
+    val i = added.elements
+    var j = 0
+    while (j < length && i.hasNext) {
+      set(from + j, i.next); j = j + 1
+    }
+    assert(j == min)
+    if (i.hasNext) {
+      val slice = added.drop(length)
+      assert(!slice.isEmpty)
+      addAll(from + min, slice)
+    } else if (j < length) {
+      assert(length > min)
+      remove(from + min, length - min)
+    }
   }
 
   /** Replaces the element at index "idx" with "a."
@@ -176,6 +200,10 @@ trait Buffer[A] extends Ranged[Int,A] with MutableSeq[A] with Collection[A] {
       }
     }
   }
+  def replace(startOffset : Int, length : Int, added : Iterable[A]) : Unit = {
+
+  }
+
 }
 object Buffer {
   trait Projection[A] extends MutableSeq.Projection[A] with Collection.Projection[A] with Buffer[A] {

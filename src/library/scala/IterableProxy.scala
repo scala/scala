@@ -33,8 +33,8 @@ trait IterableProxy[+A] extends Iterable[A] with Proxy {
   override def filter(p: A => Boolean): Iterable[A] = self filter p
   override def takeWhile(p: A => Boolean): Collection[A] = self takeWhile p
   override def dropWhile(p: A => Boolean): Collection[A] = self dropWhile p
-  override def take(n: Int): Collection[A] = self take n
-  override def drop(n: Int): Collection[A] = self drop n
+  @deprecated override def take(n: Int): Collection[A] = self take n
+  @deprecated override def drop(n: Int): Collection[A] = self drop n
   override def foreach(f: A => Unit): Unit = self foreach f
   override def forall(p: A => Boolean): Boolean = self forall p
   override def exists(p: A => Boolean): Boolean = self exists p

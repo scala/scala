@@ -152,19 +152,6 @@ abstract class BitSet extends Set[Int] {
        arraycopy(this.arr, 0, newarr, 0, length)
      newarr
    }
-  /**
-   * @return a copy of the array underlying this bitset
-   *
-   * @deprecated This method does not currently implement behavior specified in Iterable.toArray.
-   *             This method will implement the Iterbale.toArray behavior in a future release.
-   *             Please use <code>underlying</code> to get previous <code>toArray</code> behavior.
-   */
-  @deprecated override def toArray[B >: Int]: Array[B] = {
-     val ret0 = underlying
-     val ret1 = new Array[B](ret0.length)
-     for (i <- 0.until(ret0.length))
-       ret1(i) = (ret0(i) : Any).asInstanceOf[B]
-     ret1
-  }
+
   protected override def stringPrefix = "Set"
 }

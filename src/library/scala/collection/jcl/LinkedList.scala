@@ -16,7 +16,7 @@ package scala.collection.jcl;
  *
  *  @author Sean McDirmid
  */
-class LinkedList[A](override val underlying : java.util.LinkedList) extends CollectionWrapper[A] with BufferWrapper[A]  {
+class LinkedList[A](override val underlying : java.util.LinkedList) extends BufferWrapper[A]  {
   def this() = this(new java.util.LinkedList);
   override def elements = super[BufferWrapper].elements;
   override def add(idx : Int, a : A) =

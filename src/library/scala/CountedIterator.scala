@@ -20,4 +20,12 @@ trait CountedIterator[+A] extends Iterator[A] {
   /** counts the elements in this iterator; counts start at 0
    */
   def count: Int
+
+  override def counted : this.type = this
+  override def buffered: BufferedIterator[A] with CountedIterator[A] = new BufferedIterator.Default[A] with CountedIterator[A] {
+    protected def fill = if (CountedIterator.this.hasNext) (CountedIterator.this.next) :: Nil else Nil
+    override def count = CountedIterator.this.count - peekList(0).length
+    override def counted : this.type = this
+    override def buffered : this.type = this
+  }
 }

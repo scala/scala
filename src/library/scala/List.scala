@@ -209,9 +209,10 @@ object List {
    *
    *  @param str the string to convert.
    *  @return    the string as a list of characters.
+   *  @deprecated use <code>str.toList</code> instead
    */
-  def fromString(str: String): List[Char] =
-    Iterator.fromString(str).toList
+  @deprecated def fromString(str: String): List[Char] =
+    str.toList
 
   /** Returns the given list of characters as a string.
    *
@@ -549,8 +550,12 @@ sealed abstract class List[+A] extends Seq[A] {
       b += these.head
       these = these.tail
     }
-    b.toList
+    if (these.isEmpty) this
+    else b.toList
   }
+
+
+  override def slice(from : Int, until : Int) : List[A] = drop(from).take(until - from)
 
   /** Returns the list without its <code>n</code> first elements.
    *  If this list has less than <code>n</code> elements, the empty list is returned.
@@ -1122,6 +1127,13 @@ sealed abstract class List[+A] extends Seq[A] {
     }
     b.toList
   }
+
+  def flatten[B](implicit f : A => Iterable[B]) : List[B] = {
+    val buf = new ListBuffer[B]
+    foreach(f(_).foreach(buf += _))
+    buf.toList
+  }
+
 
   /** Computes the intersection between this list and the given list
    *  <code>that</code>.

@@ -14,21 +14,38 @@ package scala.runtime
 
 import Predef._
 
-final class RichString(val self: String) extends Seq[Char] with Ordered[String] with Proxy {
+final class RichString(val self: String) extends Proxy with RandomAccessSeq[Char] with Ordered[String] {
+  override def apply(n: Int) = self charAt n
+  override def length = self.length
+  override def toString = self
+  override def mkString = self
+  override def slice(from : Int, until : Int) : RichString = {
+    val from0 = if (from < 0) 0 else from
+    val until0 = if (from >= until || from >= self.length) return new RichString("")
+                 else if (until > self.length) self.length else until
+    new RichString(self.substring(from0, until0))
+  }
 
-  // Ordered[String]
-  def compare(other: String) = self compareTo other
+  override def take(until : Int) : RichString = slice(0, until)
+  override def drop(from : Int)  : RichString = slice(from, self.length)
+  override def startsWith[B](that : Seq[B]) = that match {
+  case that : RichString => self startsWith that.self
+  case that => super.startsWith(that)
+  }
+  override def endsWith[B](that : Seq[B]) = that match {
+  case that : RichString => self endsWith that.self
+  case that => super.endsWith(that)
+  }
+  override def indexOf[B](that : Seq[B]) = that match {
+  case that : RichString => self indexOf that.self
+  case that => super.indexOf(that)
+  }
+  override def containsSlice[B](that : Seq[B]) = that match {
+  case that : RichString => self contains that.self
+  case that => super.containsSlice(that)
+  }
 
-  // Seq[Char]
-  def length = self.length
-  override def elements = Iterator.fromString(self)
-
-  /** Retrieve the n-th character of the string
-   *
-   *  @param   index into the string
-   *  @return  the character at position <code>index</code>.
-   */
-  def apply(n: Int) = self charAt n
+  override def compare(other: String) = self compareTo other
 
   private final val LF: Char = 0x0A
   private final val FF: Char = 0x0C

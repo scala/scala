@@ -92,7 +92,7 @@ trait Set[A] extends (A => Boolean) with Collection[A] {
     (0 /: this)((hash, e) => hash + e.hashCode())
 
 
-  @deprecated override def toArray[B >: A]: Array[B] = {
+  override def toArray[B >: A]: Array[B] = {
     val result = new Array[B](size)
     copyToArray(result, 0)
     result

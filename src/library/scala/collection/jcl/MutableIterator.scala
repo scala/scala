@@ -26,7 +26,7 @@ trait MutableIterator[A] extends Iterator[A] {
 
   override def map[B](f: A => B) : MutableIterator[B] = new Map(f);
   /** A type-safe version of contains.
-   **/
+b   **/
   def has(a: A) = exists(b => a == a);
 
   /** Finds and removes the first instance of "a" through the iterator.
@@ -68,6 +68,7 @@ trait MutableIterator[A] extends Iterator[A] {
       if (hasNext) Some(peekNext) else None;
     }
     class Filter(p : A => Boolean) extends MutableIterator[A] {
+      // XXX: broken
       private[jcl] def peekNext = Buffered.this.seekNext(p) match {
       case Some(result) => result;
       case None => throw new NoSuchElementException;

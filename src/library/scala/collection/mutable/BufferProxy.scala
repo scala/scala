@@ -44,6 +44,8 @@ trait BufferProxy[A] extends Buffer[A] with Proxy {
    */
   def +=(elem: A): Unit = self.+=(elem)
 
+  override def readOnly = self.readOnly
+
   /** Appends a number of elements provided by an iterable object
    *  via its <code>elements</code> method. The identity of the
    *  buffer is returned.

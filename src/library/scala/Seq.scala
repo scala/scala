@@ -17,7 +17,7 @@ import collection.mutable.ArrayBuffer
 object Seq {
 
   /** The empty sequence */
-  val empty = new Seq[Nothing] {
+  val empty : Seq[Nothing] = new RandomAccessSeq[Nothing] {
     def length = 0
     def apply(i: Int): Nothing = throw new NoSuchElementException("empty sequence")
     override def elements = Iterator.empty
@@ -30,17 +30,20 @@ object Seq {
    */
   def unapplySeq[A](x: Seq[A]): Some[Seq[A]] = Some(x)
 
+  case class singleton[A](value : A) extends RandomAccessSeq[A] {
+    override def length = 1
+    override def isDefinedAt(idx : Int) : Boolean = idx == 0
+    override def apply(idx : Int) = idx match {
+    case 0 => value
+    case _ => throw new Predef.IndexOutOfBoundsException
+    }
+  }
+
   /** Builds a singleton sequence.
    *
-   *  @param x ...
-   *  @return  ...
+   * @deprecated use <code>singleton</code> instead.
    */
-  def single[A](x: A) = new Seq[A] {
-    def length = 1
-    override def elements = Iterator.single(x)
-    override def isDefinedAt(x: Int): Boolean = (x == 0)
-    def apply(i: Int) = x // caller's responsibility to check isDefinedAt
-  }
+  @deprecated def single[A](x: A) = singleton(x)
 /*
   implicit def view[A <% Ordered[A]](xs: Seq[A]): Ordered[Seq[A]] =
     new Ordered[Seq[A]] with Proxy {
@@ -129,7 +132,7 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Collection[A] {
     val buf = new ArrayBuffer[B]
     this copyToBuffer buf
     that copyToBuffer buf
-    buf
+    buf.readOnly
   }
 
   /** Returns the last element of this list.
@@ -141,6 +144,15 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Collection[A] {
   case 0 => throw new Predef.NoSuchElementException
   case n => this(n - 1)
   }
+  /** Returns as an option the last element of this list or None if list is empty.
+   *
+   */
+  def lastOption : Option[A] = length match {
+  case 0 => None
+  case n => Some(this(n-1))
+  }
+  def headOption : Option[A] = if (isEmpty) None else Some(apply(0))
+
 
   /** Appends two iterable objects.
    */
@@ -148,7 +160,7 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Collection[A] {
     val buf = new ArrayBuffer[B]
     this copyToBuffer buf
     that copyToBuffer buf
-    buf
+    buf.readOnly
   }
 
   /** Is this partial function defined for the index <code>x</code>?
@@ -191,7 +203,7 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Collection[A] {
     val buf = new ArrayBuffer[B]
     val elems = elements
     while (elems.hasNext) buf += f(elems.next)
-    buf
+    buf.readOnly
   }
 
   /** Applies the given function <code>f</code> to each element of
@@ -205,7 +217,7 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Collection[A] {
     val buf = new ArrayBuffer[B]
     val elems = elements
     while (elems.hasNext) f(elems.next) copyToBuffer buf
-    buf
+    buf.readOnly
   }
 
   /** Returns all the elements of this sequence that satisfy the
@@ -218,21 +230,70 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Collection[A] {
 
   /** Returns a sequence consisting only over the first <code>n</code>
    *  elements of this sequence, or else the whole sequence, if it has less
-   *  than <code>n</code> elements.
+   *  than <code>n</code> elements. (non-strict)
    *
    *  @param n the number of elements to take
-   *  @return  the new sequence
+   *  @return a possibly projected sequence
    */
-  override def take(n: Int): Seq[A] = super.take(n).asInstanceOf[Seq[A]]
+  override def take(n: Int): Seq[A] = {
+    var m = 0
+    val result = new scala.collection.mutable.ListBuffer[A]
+    val i = elements
+    while (m < n && i.hasNext) {
+      result += i.next; m = m + 1
+    }
+    result.toList
+  }
+
+  /*
+    new Seq.Projection[A] {
+     def length = {
+       val sz = Seq.this.length
+       if (n <= sz) n else sz
+     }
+     def apply(idx : Int) =
+       if (idx >= n) throw new Predef.IndexOutOfBoundsException
+       else (Seq.this.apply(n))
+     override def stringPrefix = Seq.this.stringPrefix + "T" + n
+  }
+  */
 
   /** Returns this sequence without its <code>n</code> first elements
    *  If this sequence has less than <code>n</code> elements, the empty
-   *  sequence is returned.
+   *  sequence is returned. (non-strict)
    *
    *  @param n the number of elements to drop
    *  @return  the new sequence
    */
-  override def drop(n: Int): Seq[A] = super.drop(n).asInstanceOf[Seq[A]]
+  override def drop(n: Int): Seq[A] = {
+    var m = 0
+    val result = new scala.collection.mutable.ListBuffer[A]
+    val i = elements
+    while (m < n && i.hasNext) {
+      i.next; m = m + 1
+    }
+    while (i.hasNext) result += i.next
+    result.toList
+  }
+
+   /** A sub-sequence of <code>len</code> elements
+    *  starting at index <code>from</code> (non-strict)
+    *
+    *  @param from   The index of the first element of the slice
+    *  @param until    The index of the element following the slice
+    *  @throws IndexOutOfBoundsException if <code>from &lt; 0</code>
+    *          or <code>length &lt; from + len<code>
+    */
+  def slice(from : Int, until : Int) : Seq[A] = drop(from).take(until - from)
+
+    /*new Seq.Projection[A] {
+     def length = {
+       val sz = Seq.this.length
+       if (n <= sz) sz - n else sz
+     }
+     def apply(idx : Int) = (Seq.this.apply(idx + n))
+     override def stringPrefix = Seq.this.stringPrefix + "D" + n
+  }*/
 
   /** Returns the longest prefix of this sequence whose elements satisfy
    *  the predicate <code>p</code>.
@@ -272,16 +333,12 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Collection[A] {
 
   /** Returns a subsequence starting from index <code>from</code>
    *  consisting of <code>len</code> elements.
-   */
-  def slice(from: Int, len: Int): Seq[A] = this.drop(from).take(len)
-
-  /** Returns a subsequence starting from index <code>from</code>
-   *  consisting of <code>len</code> elements.
    *
    *  @deprecated use <code>slice</code> instead
    */
   @deprecated
   def subseq(from: Int, end: Int): Seq[A] = slice(from, end - from)
+
 
 
   /** Converts this sequence to a fresh Array with <code>length</code> elements.
@@ -297,6 +354,56 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Collection[A] {
     def apply(idx : Int) = (Seq.this.apply(idx))
     override def stringPrefix = Seq.this.stringPrefix + "P"
   }
+  def equalsWith[B](that : Seq[B])(f : (A,B) => Boolean) : Boolean = {
+    if (size != that.size) return false
+    val i = elements
+    val j = that.elements
+    while (i.hasNext) if (!f(i.next, j.next)) return false
+    return true
+  }
+  /** @returns true if this sequence start with that sequences
+   *  @see String.startsWith
+   */
+  def startsWith[B](that : Seq[B]) : Boolean = {
+    val i = elements
+    val j = that.elements
+    var result = true
+    while (j.hasNext && i.hasNext && result)
+      result = i.next == j.next
+    result && !j.hasNext
+  }
+  /** @returns true if this sequence end with that sequence
+   *  @see String.endsWith
+   */
+  def endsWith[B](that : Seq[B]) : Boolean = {
+    val length = this.length
+    val j = that.elements
+    var i = 0
+    var result = true
+    while (result && i < length && j.hasNext)
+      result = apply(length - i - 1) == j.next
+    result && !j.hasNext
+  }
+  /** @returns -1 if <code>that</code> not contained in this, otherwise the index where <code>that</code> is contained
+   *  @see String.indexOf
+   */
+  def indexOf[B](that : Seq[B]) : Int = {
+    val i = this.elements.counted
+    var j = that.elements
+    var idx = 0
+    while (i.hasNext && j.hasNext) {
+      if (i.next != j.next) {
+        j = that.elements
+        idx = -1
+      } else if (idx == -1) {
+        idx = i.count - 1
+      }
+    }
+    idx
+  }
+   /** Is <code>that</code> a slice in this?
+    */
+  def containsSlice[B](that : Seq[B]) : Boolean = indexOf(that) != -1
 
   class Filter(p : A => Boolean) extends Seq.Projection[A] {
     override def stringPrefix = Seq.this.stringPrefix + "F"

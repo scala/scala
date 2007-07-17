@@ -77,7 +77,7 @@ object Source {
    *  @return  ...
    */
   def fromString(s: String): Source = {
-    val it = Iterator.fromString(s)
+    val it = s.elements
     new Source {
       def reset() = fromString(s)
       val iter = it

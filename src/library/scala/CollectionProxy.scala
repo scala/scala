@@ -26,7 +26,7 @@ trait CollectionProxy[+A] extends Collection[A] with IterableProxy[A] {
 
   def self: Collection[A]
   override def size = self.size
-  @deprecated override def toArray[B >: A] : Array[B] = self.toArray
+  override def toArray[B >: A] : Array[B] = self.toArray
 /*
   override def elements: Iterator[A] = self.elements
   override def map[B](f: A => B): Collection[B] = self map f

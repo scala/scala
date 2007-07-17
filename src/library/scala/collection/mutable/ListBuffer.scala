@@ -38,6 +38,8 @@ final class ListBuffer[A] extends Buffer[A] {
     this
   }
 
+
+
   /** Appends a single element to this buffer.
    *
    *  @param x  the element to append.
@@ -88,6 +90,8 @@ final class ListBuffer[A] extends Buffer[A] {
     exported = !start.isEmpty
     start
   }
+  /** expose the underlying list but do not mark it as exported */
+  override def readOnly : List[A] = start
 
   /** Prepends the elements of this buffer to a given list
    *
@@ -120,6 +124,9 @@ final class ListBuffer[A] extends Buffer[A] {
    *  @return the length of this buffer.
    */
   def length: Int = start.length
+
+  // will be faster since this is a list
+  override def isEmpty = start.isEmpty
 
   /** Returns the n-th element of this list. This method
    *  yields an error if the element does not exist.

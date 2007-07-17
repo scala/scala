@@ -28,10 +28,8 @@ trait Collection[+A] extends Iterable[A] {
     */
   def size : Int
   /** Converts this iterable to a fresh Array with elements.
-    *
-    * @deprecated This method is broken for BitSet. BitSet.toArray will be updated to new behavior in a future release.
     */
-  @deprecated def toArray[B >: A]: Array[B] = toList.toArray
+  def toArray[B >: A]: Array[B] = toList.toArray
 
   override def toString = mkString(stringPrefix + "(", ", ", ")")
 
@@ -45,11 +43,5 @@ trait Collection[+A] extends Iterable[A] {
     if (idx2 != -1) string = string.substring(0, idx2)
     string
   }
-  def equalWith[B](that : Collection[B], f : (A,B) => Boolean) : Boolean = {
-    if (size != that.size) return false
-    val i = elements
-    val j = that.elements
-    while (i.hasNext) if (!f(i.next, j.next)) return false
-    return true
-  }
 }
+

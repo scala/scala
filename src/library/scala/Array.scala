@@ -244,6 +244,7 @@ final class Array[A](_length: Int) extends RandomAccessSeq[A] {
    */
   override def slice(from: Int, end: Int): Array[A] = throw new Error()
 
+
   /** Returns an array consisting of all elements of this array that satisfy the
    *  predicate <code>p</code>. The order of the elements is preserved.
    *

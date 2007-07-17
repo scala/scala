@@ -31,7 +31,7 @@ class Scanner extends Tokens with parsing.TokenTests {
   final def initScanner(s: String) {
     //Console.println("[scanner init on \""+s+"\"]");
     value = ""
-    it = Iterator.fromString(s)
+    it = (s).elements
     token = 1+END
     next
     nextToken

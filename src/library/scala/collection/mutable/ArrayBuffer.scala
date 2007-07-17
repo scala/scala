@@ -21,7 +21,7 @@ import Predef._
  *  @version 1.0, 15/03/2004
  */
 @serializable
-class ArrayBuffer[A] extends Buffer[A] with ResizableArray[A] {
+class ArrayBuffer[A] extends RandomAccessSeq.Mutable[A] with Buffer[A] with ResizableArray[A] {
   /** Appends a single element to this buffer and returns
    *  the identity of the buffer.
    *

@@ -171,7 +171,7 @@ object Stream {
  * @author Martin Odersky, Matthias Zenger
  * @version 1.1 08/08/03
  */
-trait Stream[+A] extends Seq[A] {
+trait Stream[+A] extends Seq.Projection[A] {
 
   /** is this stream empty? */
   override def isEmpty: Boolean

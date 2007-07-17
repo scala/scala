@@ -27,28 +27,11 @@ import Predef._
  *  @author  Stephane Micheloud
  *  @version 1.0, 01/05/2007
  */
-class Range(val start: Int, val end: Int, val step: Int) extends BufferedIterator[Int] {
+class Range(val start: Int, val end: Int, val step: Int) extends RandomAccessSeq.Projection[Int] {
   if (step == 0) throw new Predef.IllegalArgumentException
-  private var jdx = 0
 
   /** create a new range with the start and end values of this range and a new <code>step</code> */
   def by(step : Int) = new Range(start, end, step)
-
-  override def peekList(sz : Int) : Seq[Int] = return new RandomAccessSeq.Projection[Int] {
-    def length = Range.this.length - jdx
-    def apply(idx : Int) = Range.this.apply(jdx + idx)
-  }
-  override def hasNext = if (step == 0) true else jdx < length
-  override def next = {
-    val ret = apply(jdx)
-    jdx = jdx + 1
-    ret
-  }
-  def seqOfRange = new RandomAccessSeq.Projection[Int] {
-    def length = Range.this.length
-    def apply(idx : Int) = Range.this.apply(idx)
-  }
-
 
   def length : Int = {
     if (this.step == 0) throw new Predef.UnsupportedOperationException
@@ -70,6 +53,4 @@ class Range(val start: Int, val end: Int, val step: Int) extends BufferedIterato
   def contains(x : Int): Boolean =
     x >= start && x < end && (((x - start) % step) == 0)
 
-  /** a <code>Iterator.contains</code>, not a <code>Seq.contains</code>! */
-  override def contains(elem: Any): Boolean = super.contains(elem)
 }

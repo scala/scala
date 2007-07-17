@@ -76,6 +76,9 @@ trait Buffer[A] extends AnyRef
       i += 1
     }
   }
+  /** return a read only alias of this buffer
+   */
+  def readOnly : Seq[A]
 
   /** Appends a number of elements provided by an iterable object
    *  via its <code>elements</code> method. The identity of the
@@ -246,4 +249,5 @@ trait Buffer[A] extends AnyRef
   /** Defines the prefix of the string representation.
    */
   override protected def stringPrefix: String = "Buffer"
+
 }

@@ -37,7 +37,7 @@ trait MutableSeq[A] extends Seq[A] with MutableIterable[A]  {
     }
     def remove = throw new UnsupportedOperationException
   }
-  override def elements : SeqIterator[Int,A] = new DefaultSeqIterator;
+  override def elements : SeqIterator[Int,A] = new DefaultSeqIterator
 
   override def isEmpty = super[MutableIterable].isEmpty;
 

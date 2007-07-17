@@ -20,7 +20,7 @@ trait MapWrapper[K,E] extends jcl.Map[K,E] {
   override def isEmpty = underlying.isEmpty;
   override def clear() = underlying.clear;
   override def put(key : K, elem : E) = {
-    if (elem == null) throw new IllegalArgumentException;
+    //if (elem == null) throw new IllegalArgumentException;
     val ret = underlying.put(key,elem);
     if (ret == null) None else Some(ret.asInstanceOf[E]);
   }

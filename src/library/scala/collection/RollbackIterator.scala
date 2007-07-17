@@ -5,7 +5,7 @@ import scala.collection.mutable.{ArrayBuffer}
  *
  *  @author  Sean McDirmid
  */
-class RollbackIterator[+A](underlying : Iterator[A]) extends DefaultBufferedIterator[A] {
+class RollbackIterator[+A](underlying : Iterator[A]) extends BufferedIterator.Default[A] {
   private[this] var rollback : ArrayBuffer[A] = null
   protected def fill : Seq[A] = if (underlying.hasNext) underlying.next :: Nil else Nil
 
@@ -61,10 +61,9 @@ class RollbackIterator[+A](underlying : Iterator[A]) extends DefaultBufferedIter
   def read(f : => Unit) : Boolean = remember[Boolean]{
     f; seq => !seq.isEmpty
   }
-
   /** if elements of <code>seq</code> will be iterated over next in this iterator,
    *  returns true and iterates over these elements
    */
-  def readIfStartsWith(seq : Seq[Any]) : Boolean =
+  override def readIfStartsWith(seq : Seq[Any]) : Boolean =
     !tryRead{if (seq.forall(a => hasNext && next == a)) Some(()) else None}.isEmpty
 }

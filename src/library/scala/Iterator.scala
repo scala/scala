@@ -46,8 +46,9 @@ object Iterator {
   /**
    *  @param xs the array of elements
    *  @return   the iterator on <code>xs</code>.
+   *  @deprecated replaced by RandomAccessSeq.elements and slice
    */
-  def fromArray[a](xs: Array[a]): Iterator[a] =
+  @deprecated def fromArray[a](xs: Array[a]): Iterator[a] =
     fromArray(xs, 0, xs.length)
 
   /**
@@ -55,9 +56,10 @@ object Iterator {
    *  @param start  ...
    *  @param length ...
    *  @return       ...
+   *  @deprecated replaced by RandomAccessSeq.elements and slice
    */
-  def fromArray[a](xs: Array[a], start: Int, length: Int): Iterator[a] =
-    new BufferedIterator[a] {
+  @deprecated def fromArray[a](xs: Array[a], start: Int, length: Int): Iterator[a] =
+    new BufferedIterator.Advanced[a] {
       private var i = start
       val end = if ((start + length) < xs.length) start else xs.length
       override def hasNext: Boolean = i < end
@@ -73,9 +75,10 @@ object Iterator {
   /**
    *  @param str the given string
    *  @return    the iterator on <code>str</code>
+   *  @deprecated replaced by <code>str.elements</code>
    */
-  def fromString(str: String): Iterator[Char] =
-    new BufferedIterator[Char] {
+  @deprecated def fromString(str: String): Iterator[Char] =
+    new BufferedIterator.Advanced[Char] {
       private var i = 0
       private val len = str.length()
       override def hasNext = i < len
@@ -199,6 +202,7 @@ trait Iterator[+A] {
    */
   def next(): A
 
+
   /** Returns a new iterator that iterates only over the first <code>n</code>
    *  elements.
    *
@@ -270,7 +274,7 @@ trait Iterator[+A] {
       } else throw new NoSuchElementException("next on empty iterator")
   }
 
-  protected class PredicatedIterator(p : A => Boolean) extends DefaultBufferedIterator[A] {
+  protected class PredicatedIterator(p : A => Boolean) extends BufferedIterator.Default[A] {
     protected def skip0 : Seq[A] = fill
     protected override def fill : Seq[A] =
       if (!Iterator.this.hasNext) return Nil
@@ -497,7 +501,7 @@ trait Iterator[+A] {
 
   /** Returns a buffered iterator from this iterator.
    */
-  def buffered: BufferedIterator[A] = new DefaultBufferedIterator[A] {
+  def buffered: BufferedIterator[A] = new BufferedIterator.Default[A] {
     protected def fill = if (Iterator.this.hasNext) (Iterator.this.next) :: Nil else Nil
   }
 
