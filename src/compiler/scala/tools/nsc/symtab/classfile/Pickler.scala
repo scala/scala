@@ -106,7 +106,7 @@ abstract class Pickler extends SubComponent {
           putSymbol(sym.owner)
           putSymbol(sym.privateWithin)
           putType(sym.info)
-          if (sym.thisSym.tpe != sym.tpe)
+          if (sym.thisSym.tpeHK != sym.tpeHK)
             putType(sym.typeOfThis);
           putSymbol(sym.alias)
           if (!sym.children.isEmpty) {
