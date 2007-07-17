@@ -121,7 +121,7 @@ trait Parsers {
     def get: T = result
 
     /** The toString method of a Success */
-    override def toString = "parsed: "+result
+    override def toString = "["+next.pos+"] parsed: "+result
 
     val successful = true
   }
@@ -130,6 +130,11 @@ trait Parsers {
    */
   sealed abstract class NoSuccess(val msg: String, override val next: Input) extends ParseResult[Nothing] { // when we don't care about the difference between Failure and Error
     val successful = false
+
+    def map[U](f: Nothing => U) = this
+    def mapPartial[U](f: PartialFunction[Nothing, U], error: Nothing => String): ParseResult[U] = this
+
+    def get: Nothing = error("No result when parsing failed")
   }
 
   /** The failure case of ParseResult: contains an error-message and the remaining input.
@@ -139,11 +144,6 @@ trait Parsers {
    *  @param next   The parser's unconsumed input at the point where the failure occurred.
    */
   case class Failure(override val msg: String, override val next: Input) extends NoSuccess(msg, next) {
-    def map[U](f: Nothing => U) = this
-    def mapPartial[U](f: PartialFunction[Nothing, U], error: Nothing => String): ParseResult[U] = this
-
-    def get: Nothing = error("No result when parsing failed")
-
     /** The toString method of a Failure yields an error message */
     override def toString = "["+next.pos+"] failure: "+msg+"\n\n"+next.pos.longString
   }
@@ -155,12 +155,7 @@ trait Parsers {
    *  @param next   The parser's unconsumed input at the point where the error occurred.
    */
   case class Error(override val msg: String, override val next: Input) extends NoSuccess(msg, next) {
-    def map[U](f: Nothing => U) = this
-    def mapPartial[U](f: PartialFunction[Nothing, U], error: Nothing => String): ParseResult[U] = this
-
-    def get: Nothing = error("No result when parsing failed")
-
-      /** The toString method of a Failure yields an error message */
+    /** The toString method of an Error yields an error message */
     override def toString = "["+next.pos+"] error: "+msg+"\n\n"+next.pos.longString
   }
 
@@ -487,13 +482,14 @@ trait Parsers {
   */
   private def seq[T, U, V](p: => Input => ParseResult[T], q: => Input => ParseResult[U])
                           (compose: (T, U) => V)
-                          (in: Input): ParseResult[V] = p(in) match {
-    case Success(x, next1) => q(next1) match {
-        case Success(y, next2) => Success(compose(x, y), next2)
-        case ns: NoSuccess => ns
-      }
-    case ns: NoSuccess => ns
-  }
+                          (in: Input): ParseResult[V]
+    = p(in) match {
+      case Success(x, next1) => q(next1) match {
+          case Success(y, next2) => Success(compose(x, y), next2)
+          case ns: NoSuccess => ns
+        }
+      case ns: NoSuccess => ns
+    }
 
   /** Wrap a parser so that its failures become errors (the | combinator will give up as soon as
    *  it encounters an error, on failure it simply tries the next alternative)
@@ -658,6 +654,16 @@ trait Parsers {
     def apply(in: Input) = p(in) map {(x) => ()}
   }
 
+
+  def log[T](p: Parser[T])(name: String): Parser[T] = new Parser[T] {
+    def apply(in: Input) = {println("trying "+name+" at "+in.pos); val r = p(in); println(name+" --> "+r); r }
+  }
+
+  def log[Q <% UnitParser](p: Q)(name: String): UnitParser = new UnitParser {
+    def apply(in: Input) = {println("trying "+name+" at "+in.pos); val r = p(in); println(name+" --> "+r); r }
+  }
+
+
   /** A parser generator for repetitions.
    *
    * <p> rep(p)   repeatedly uses `p' to parse the input until `p' fails (the result is a List
@@ -702,7 +708,8 @@ trait Parsers {
    * @return A parser that returns a list of results produced by repeatedly applying `p' to the input
    *        (and that only succeeds if `p' matches at least once).
    */
-  def rep1[T](p: Parser[T]): Parser[List[T]] = new Parser[List[T]] {
+  def rep1[T](p: Parser[T]): Parser[List[T]] = p ~ rep(p) ^^ { case ~(x, xs) => x :: xs }
+  /* new Parser[List[T]] {
     def apply(in0: Input) = {
       val xs = new scala.collection.mutable.ListBuffer[T]
       var in = in0
@@ -716,10 +723,9 @@ trait Parsers {
       }
 
       if (!xs.isEmpty) Success(xs.toList, res.next)
-      else Failure("TODO", res.next)
+      else Failure("TODO", TODO)
     }
-  }
-  //  p ~ rep(p) ^^ { case ~(x, xs) => x :: xs }
+  }*/
 
   /** A parser generator for a specified number of repetitions.
    *
