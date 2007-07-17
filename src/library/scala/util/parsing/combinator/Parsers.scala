@@ -99,8 +99,13 @@ trait Parsers {
      */
     def mapPartial[U](f: PartialFunction[T, U], error: T => String): ParseResult[U]
 
+    def isEmpty = !successful
+
     /** Returns the embedded result */
     def get: T
+
+    def getOrElse[B >: T](default: => B): B =
+        if (isEmpty) default else this.get
 
     val next: Input
 
