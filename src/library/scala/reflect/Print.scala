@@ -43,7 +43,7 @@ object Print extends Function1[Any, String] {
     case reflect.Function(params, body) =>
       params.map(Print).mkString("(", ", ", ")") + " => " + Print(body)
     case reflect.This(sym) =>
-      Print(sym)
+      Print(sym)+".this"
     case reflect.Block(stats, expr) =>
       (stats ::: List(expr)).map(Print).mkString("{\n", ";\n", "\n}")
     case reflect.New(tpt) =>

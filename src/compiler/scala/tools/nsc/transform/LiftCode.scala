@@ -13,7 +13,8 @@ import scala.collection.immutable.ListMap
 import scala.collection.mutable.{HashMap, ListBuffer}
 import scala.tools.nsc.util.{FreshNameCreator, TreeSet}
 
-/** This abstract class ...
+/** Translate expressions of the form reflect.Code.lift(exp)
+ *  to the lifted "reflect trees" representation of exp.
  *
  *  @author Gilles Dubochet
  *  @version 1.0
@@ -33,8 +34,8 @@ abstract class LiftCode extends Transform {
 
   class AddRefFields(unit: CompilationUnit) extends Transformer {
     override def transform(tree: Tree): Tree = tree match {
-      case Apply(TypeApply(Select(x@Ident(_), nme.lift_), _), List(tree))
-      if x.symbol == CodeModule =>
+      case Apply(lift, List(tree))
+      if lift.symbol == Code_lift =>
         typed(atPos(tree.pos)(codify(tree)))
       case _ =>
         super.transform(tree)
@@ -111,6 +112,11 @@ abstract class LiftCode extends Transform {
         }
         reflect.Function(vparams map (_.symbol) map env1,
                          new Reifier(env1, currentOwner).reify(body))
+      case tree@This(_) if tree.symbol.isModule =>
+        // there is no reflect node for a module's this, so
+        // represent it as a selection of the module
+	reify(typed(
+	  Select(This(tree.symbol.owner), tree.symbol.name)))
       case This(_) =>
         reflect.This(reify(tree.symbol))
       case Block(stats, expr) =>

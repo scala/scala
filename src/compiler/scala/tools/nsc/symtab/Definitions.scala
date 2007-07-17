@@ -93,6 +93,7 @@ trait Definitions {
     //var RemoteRefClass: Symbol = _
     var CodeClass: Symbol = _
     var CodeModule: Symbol = _
+      def Code_lift = getMember(CodeModule, nme.lift_)
     lazy val PartialFunctionClass: Symbol = getClass("scala.PartialFunction")
     lazy val ByNameFunctionClass: Symbol = getClass("scala.ByNameFunction")
     lazy val IterableClass: Symbol = getClass("scala.Iterable")
