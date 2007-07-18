@@ -57,11 +57,11 @@ class MailBox extends AnyRef with ListQueueCreator {
   */
   private def scanSentMsgs[A](receiver: Receiver[A]): Unit = synchronized {
     messageQueue.extractFirst(sent, msg => receiver.isDefinedAt(msg)) match {
-      case None => receivers = receiverQueue.append(receivers, receiver)
-      case Some((msg, withoutMsg)) => {
+      case None =>
+        receivers = receiverQueue.append(receivers, receiver)
+      case Some((msg, withoutMsg)) =>
         sent = withoutMsg
         receiver.msg = msg
-      }
     }
   }
 
@@ -72,12 +72,12 @@ class MailBox extends AnyRef with ListQueueCreator {
   */
   def send(msg: Message): Unit = synchronized {
     receiverQueue.extractFirst(receivers, r => r.isDefinedAt(msg)) match {
-      case None => sent = messageQueue.append(sent, msg)
-      case Some((receiver, withoutReceiver)) => {
+      case None =>
+        sent = messageQueue.append(sent, msg)
+      case Some((receiver, withoutReceiver)) =>
         receivers = withoutReceiver
         receiver.msg = msg
         receiver synchronized { receiver.notify() }
-      }
     }
   }
 
