@@ -238,7 +238,7 @@ trait Parsers {
      * @return a `Parser' that -- on success -- returns the result of `p'.
      *         The resulting parser fails if either `p' or `q' fails, this failure is fatal.
      */
-    def ~! [Q <% UnitParser](q: Q): Parser[T] = new Parser[T] with OnceParser[T] {
+    def ~! [Q <% UnitParser](q: => Q): Parser[T] = new Parser[T] with OnceParser[T] {
       def apply(in: Input) = seq(Parser.this, commit(q))((x, y) => x)(in)
       override def toString = "~!"
     }
@@ -352,14 +352,14 @@ trait Parsers {
      *
      * @return repsep(this, sep)
      */
-    def *[Q <% UnitParser](sep: Q) = repsep(this, sep)
+    def *[Q <% UnitParser](sep: => Q) = repsep(this, sep)
 
     /** Returns a parser that repeatedly parses what this parser parses, interleaved with the `sep' parser.
      * The `sep' parser specifies how the results parsed by this parser should be combined.
      *
      * @return chainl1(this, sep)
      */
-    def *[U >: T](sep: Parser[(U, U) => U]) = chainl1(this, sep)
+    def *[U >: T](sep: => Parser[(U, U) => U]) = chainl1(this, sep)
 
     // TODO: improve precedence? a ~ b*(",") = a ~ (b*(","))  should be true
 
@@ -655,16 +655,16 @@ trait Parsers {
   * @param p The parser whose result is to be discarded
   * @return A parser that always succeeds, with the empty result
   */
-  implicit def discard[T](p: Parser[T]) = new UnitParser {
+  implicit def discard[T](p: => Parser[T]) = new UnitParser {
     def apply(in: Input) = p(in) map {(x) => ()}
   }
 
 
-  def log[T](p: Parser[T])(name: String): Parser[T] = new Parser[T] {
+  def log[T](p: => Parser[T])(name: String): Parser[T] = new Parser[T] {
     def apply(in: Input) = {println("trying "+name+" at "+in.pos); val r = p(in); println(name+" --> "+r); r }
   }
 
-  def log[Q <% UnitParser](p: Q)(name: String): UnitParser = new UnitParser {
+  def log[Q <% UnitParser](p: => Q)(name: String): UnitParser = new UnitParser {
     def apply(in: Input) = {println("trying "+name+" at "+in.pos); val r = p(in); println(name+" --> "+r); r }
   }
 
@@ -677,7 +677,7 @@ trait Parsers {
    * @param p a `Parser' that is to be applied successively to the input
    * @return A parser that returns a list of results produced by repeatedly applying `p' to the input.
    */
-  def rep[T](p: Parser[T]): Parser[List[T]] = rep1(p) | success(List())
+  def rep[T](p: => Parser[T]): Parser[List[T]] = rep1(p) | success(List())
 
   /** A parser generator for repetitions.
    *
@@ -686,7 +686,7 @@ trait Parsers {
    * @param p a `Parser' that is to be applied successively to the input
    * @return A parser that repeatedly applies `p' to the input.
    */
-  def rep[Q <% UnitParser](p: Q): UnitParser = rep1(p) | success
+  def rep[Q <% UnitParser](p: => Q): UnitParser = rep1(p) | success
 
   /** A parser generator for interleaved repetitions.
    *
@@ -701,7 +701,7 @@ trait Parsers {
    * @return A parser that returns a list of results produced by repeatedly applying `p' (interleaved
    *         with `q') to the input.
    */
-  def repsep[T, Q <% UnitParser](p: Parser[T], q: Q): Parser[List[T]] =
+  def repsep[T, Q <% UnitParser](p: => Parser[T], q: => Q): Parser[List[T]] =
     rep1sep(p, q) | success(List())
 
   /** A parser generator for non-empty repetitions.
@@ -713,7 +713,7 @@ trait Parsers {
    * @return A parser that returns a list of results produced by repeatedly applying `p' to the input
    *        (and that only succeeds if `p' matches at least once).
    */
-  def rep1[T](p: Parser[T]): Parser[List[T]] = rep1(p, p)
+  def rep1[T](p: => Parser[T]): Parser[List[T]] = rep1(p, p)
 
   /** A parser generator for non-empty repetitions.
    *
@@ -726,7 +726,7 @@ trait Parsers {
    * @return A parser that returns a list of results produced by first applying `f' and then
    *         repeatedly `p' to the input (it only succeeds if `f' matches).
    */
-  def rep1[T](first: Parser[T], p: Parser[T]): Parser[List[T]] = first ~ rep(p) ^^ { case ~(x, xs) => x :: xs }
+  def rep1[T](first: => Parser[T], p: => Parser[T]): Parser[List[T]] = first ~ rep(p) ^^ { case ~(x, xs) => x :: xs }
 
   /* new Parser[List[T]] {
     def apply(in0: Input) = {
@@ -756,7 +756,7 @@ trait Parsers {
    * @return A parser that returns a list of results produced by repeatedly applying `p' to the input
    *        (and that only succeeds if `p' matches exactly `n' times).
    */
-  def repN[T](n: Int, p: Parser[T]): Parser[List[T]] =
+  def repN[T](n: Int, p: => Parser[T]): Parser[List[T]] =
     if(n==0) success(Nil) else p ~ repN(n-1, p) ^^ { case ~(x, xs) => x :: xs }
 
   /** A parser generator for non-empty repetitions.
@@ -768,7 +768,7 @@ trait Parsers {
    * @return A unitparser that repeatedly applies `p' to the input
    *        (and that only succeeds if `p' matches at least once).
    */
-  def rep1[Q <% UnitParser](p: Q): UnitParser =
+  def rep1[Q <% UnitParser](p: => Q): UnitParser =
     p ~ rep(p)
 
   /** A parser generator for a specified number of repetitions.
@@ -780,7 +780,7 @@ trait Parsers {
    * @return A unitparser that repeatedly applies `p' to the input
    *        (and that only succeeds if `p' matches at exactly `n' times).
    */
-  def repN[Q <% UnitParser](n: Int, p: Q): UnitParser =
+  def repN[Q <% UnitParser](n: Int, p: => Q): UnitParser =
     if(n==0) success else p ~ repN(n-1, p)
 
   /** A parser generator for non-empty repetitions.
@@ -796,10 +796,10 @@ trait Parsers {
    * @return A parser that returns a list of results produced by repeatedly applying `p' to the input
    *        (and that only succeeds if `p' matches at least once).
    */
-  def rep1sep[T, Q <% UnitParser](first: Parser[T], p: Parser[T], q: Q): Parser[List[T]] =
+  def rep1sep[T, Q <% UnitParser](first: => Parser[T], p: => Parser[T], q: => Q): Parser[List[T]] =
     first ~ rep(q ~ p) ^^ { case x ~ y => x :: y }
 
-  def rep1sep[T, Q <% UnitParser](p: Parser[T], q: Q): Parser[List[T]] = rep1sep(p, p, q)
+  def rep1sep[T, Q <% UnitParser](p: => Parser[T], q: => Q): Parser[List[T]] = rep1sep(p, p, q)
 
   /** A parser generator that, roughly, generalises the rep1sep generator so that `q', which parses the separator,
    * produces a left-associative function that combines the elements it separates.
@@ -810,7 +810,7 @@ trait Parsers {
    * @param q a parser that parses the token(s) separating the elements, yielding a left-associative function that
    *          combines two elements into one
    */
-  def chainl1[T](p: Parser[T], q: Parser[(T, T) => T]): Parser[T] =
+  def chainl1[T](p: => Parser[T], q: => Parser[(T, T) => T]): Parser[T] =
     p ~ rep(q ~ p) ^^ {case x ~ xs => xs.foldLeft(x)((a, f_b) => f_b._1(a, f_b._2))}  // ((a, {f, b}) => f(a, b))
 
   /** A parser generator that, roughly, generalises the rep1sep generator so that `q', which parses the separator,
@@ -821,7 +821,7 @@ trait Parsers {
    * @param q a parser that parses the token(s) separating the elements, yielding a left-associative function that
    *          combines two elements into one
    */
-  def chainl1[T, U](first: Parser[T], p: Parser[U], q: Parser[(T, U) => T]): Parser[T] =
+  def chainl1[T, U](first: => Parser[T], p: => Parser[U], q: => Parser[(T, U) => T]): Parser[T] =
     first ~ rep(q ~ p) ^^ {case x ~ xs => xs.foldLeft(x)((a, f_b) => f_b._1(a, f_b._2))}  // ((a, {f, b}) => f(a, b))
 
   /** A parser generator that generalises the rep1sep generator so that `q', which parses the separator,
@@ -848,13 +848,13 @@ trait Parsers {
    * @return a `Parser' that always succeeds: either with the result provided by `p' or
    *         with the empty result
    */
-  def opt[T](p: Parser[T]): Parser[Option[T]] =
+  def opt[T](p: => Parser[T]): Parser[Option[T]] =
     p ^^ (x => Some(x)) | success(None)
 
 
   /** Turns a unit-parser into a boolean-parser that denotes whether the unit-parser succeeded.
    */
-  def opt[Q <% UnitParser](q: Q): Parser[Boolean] = q ^^ true | success(false)
+  def opt[Q <% UnitParser](q: => Q): Parser[Boolean] = q ^^ true | success(false)
 
 
   /** `positioned' decorates a parser's result with the start position of the input it consumed.
@@ -863,7 +863,7 @@ trait Parsers {
    * @return A parser that has the same behaviour as `p', but which marks its result with the
    *         start position of the input it consumed, if it didn't already have a position.
    */
-  def positioned[T <: Positional](p: Parser[T]): Parser[T] = new Parser[T] {
+  def positioned[T <: Positional](p: => Parser[T]): Parser[T] = new Parser[T] {
     def apply(in: Input) = p(in) match {
       case Success(t, in1) => Success(if (t.pos == NoPosition) t setPos in.pos else t, in1)
       case ns: NoSuccess => ns
@@ -877,7 +877,7 @@ trait Parsers {
    *  @return  A parser that has the same behaviour as `p', but which returns
    *           the start position of the input it consumed.
    */
-  def positioned(p: UnitParser) = new Parser[Position] {
+  def positioned[Q <% UnitParser](p: => Q) = new Parser[Position] {
     def apply(in: Input) = p(in) match {
       case Success(_, in1) => Success(in.pos, in1)
       case ns: NoSuccess => ns
