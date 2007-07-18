@@ -1160,6 +1160,24 @@ sealed abstract class List[+A] extends Seq[A] {
   }
 
   override protected def stringPrefix = "List"
+  override def projection = toStream
+  override def toStream : Stream[A] = new Stream.Definite[A] {
+    override def force : List[A] = List.this
+    override def isEmpty = List.this.isEmpty
+    override def head = List.this.head
+    override def tail = List.this.tail.toStream
+    protected def addDefinedElems(buf: StringBuilder, prefix: String): StringBuilder = if (!isEmpty) {
+      var prefix0 = prefix
+      var buf1 = buf.append(prefix0).append(head)
+      prefix0 = ", "
+      var tail0 = tail
+      while (!tail0.isEmpty) {
+        buf1 = buf.append(prefix0).append(tail0.head)
+        tail0 = tail0.tail
+      }
+      buf1
+    } else buf
+  }
 
 }
 

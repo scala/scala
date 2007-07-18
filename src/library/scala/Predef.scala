@@ -35,7 +35,9 @@ object Predef {
   type boolean = scala.Boolean
   type unit    = scala.Unit
 
+  /** @deprecated use <code>Nothing</code> instead */
   @deprecated type All = Nothing
+  /** @deprecated use <code>Null</code> instead */
   @deprecated type AllRef = Null
   /** @deprecated use <code>Int</code> instead */
   @deprecated type Integer = java.lang.Integer

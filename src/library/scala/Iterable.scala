@@ -74,6 +74,9 @@ object Iterable {
    */
   trait Projection[+A] extends Iterable[A] {
     override def projection = this
+    /** convert to a copied strict collection */
+    def force : Iterable[A] = toList
+
     /** non-strict */
     override def filter(p : A => Boolean) : Projection[A] = new Projection[A] {
       def elements = Projection.this.elements.filter(p)
@@ -85,6 +88,16 @@ object Iterable {
     /** non-strict */
     override def flatMap[B](f: A => Iterable[B]) : Projection[B] = new Projection[B] {
       def elements = Projection.this.elements.flatMap(a => f(a).elements)
+    }
+    /** non-strict */
+    override def takeWhile(p: A => Boolean): Projection[A] = new Projection[A] {
+      def elements = Projection.this.elements.takeWhile(p)
+    }
+    /** The projection resulting from the concatenation of this projection with the <code>rest</code> projection.
+     *  @param rest   The projection that gets appended to this projection
+     */
+    def append[B >: A](rest : => Iterable[B]): Projection[B] = new Projection[B] {
+      def elements = Projection.this.elements ++ rest.elements
     }
   }
 }
@@ -182,7 +195,7 @@ trait Iterable[+A] {
    *  @return  the longest prefix of this iterable whose elements satisfy
    *           the predicate <code>p</code>.
    */
-  def takeWhile(p: A => Boolean): Collection[A] =
+  def takeWhile(p: A => Boolean): Iterable[A] =
     (new ArrayBuffer[A] ++ elements.takeWhile(p))
 
   /** Returns the longest suffix of this iterable whose first element
@@ -200,7 +213,7 @@ trait Iterable[+A] {
    *  elements of this iterable, or else the whole iterable, if it has less
    *  than <code>n</code> elements.
    *
-   *  @deprecated API doesn't make sense for non-ordered collections
+   *  @deprecated API does not make sense for non-ordered collections
    *  @param n the number of elements to take
    *  @return  the new iterable
    */
@@ -212,7 +225,7 @@ trait Iterable[+A] {
    *  iterable is returned.
    *
    *  @note Will not terminate for infinite-sized collections.
-   *  @deprecated API doesn't make sense for non-ordered collections
+   *  @deprecated API does not make sense for non-ordered collections
    *  @param n the number of elements to drop
    *  @return  the new iterable
    */
@@ -250,7 +263,7 @@ trait Iterable[+A] {
   /** Find and return the first element of the iterable object satisfying a
    *  predicate, if any.
    *
-   *  @note Will not terminate for infinite-sized collections.
+   *  @note may not terminate for infinite-sized collections.
    *  @param p the predicate
    *  @return the first element in the iterable object satisfying <code>p</code>,
    *  or <code>None</code> if none exists.
@@ -259,7 +272,7 @@ trait Iterable[+A] {
 
   /** Returns index of the first element satisying a predicate, or -1.
    *
-   *  @note Will not terminate for infinite-sized collections.
+   *  @note may not terminate for infinite-sized collections.
    *  @param  p the predicate
    *  @return   the index of the first element satisfying <code>p</code>,
    *            or -1 if such an element does not exist
@@ -278,7 +291,7 @@ trait Iterable[+A] {
   /** Returns the index of the first occurence of the specified
    *  object in this iterable object.
    *
-   *  @note May not terminate for infinite-sized collections.
+   *  @note may not terminate for infinite-sized collections.
    *  @param  elem  element to search for.
    *  @return the index in this sequence of the first occurence of the
    *          specified element, or -1 if the sequence does not contain
@@ -365,7 +378,7 @@ trait Iterable[+A] {
 
   /** Checks if the other iterable object contains the same elements.
    *
-   *  @note Will not terminate for infinite-sized collections.
+   *  @note will not terminate for infinite-sized collections.
    *  @param that  the other iterable object
    *  @return true, iff both iterable objects contain the same elements.
    */
@@ -387,6 +400,7 @@ trait Iterable[+A] {
 
   /**
    *  Create a stream which contains all the elements of this iterable object.
+   *  @note consider using <code>projection</code> for lazy behavior.
    */
   def toStream: Stream[A] = Stream.fromIterator(elements)
 
@@ -469,13 +483,13 @@ trait Iterable[+A] {
    */
   def projection : Iterable.Projection[A] = new Iterable.Projection[A] {
     def elements = Iterable.this.elements
+    override def force = Iterable.this
   }
 
   /** returns true iff this collection has a bound size.
-   *  Only true if this iterable is a <code>Collection</code>.
    *  Many APIs in this trait will not work on collections of
    *  unbound sizes.
    */
-  final def hasDefiniteSize = this.isInstanceOf[Collection[Nothing]]
+  def hasDefiniteSize = true
 
 }

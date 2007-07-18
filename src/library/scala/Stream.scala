@@ -23,8 +23,14 @@ import compat.StringBuilder
  */
 object Stream {
 
+   /** a stream with a definite size */
+   trait Definite[+A] extends Stream[A] with Function0[Stream[A]] {
+     override def hasDefiniteSize = true
+     override def apply = this
+   }
+
   /** The empty stream */
-  val empty: Stream[Nothing] = new Stream[Nothing] {
+  val empty: Stream[Nothing] = new Definite[Nothing] {
     override def isEmpty = true
     def head: Nothing = throw new NoSuchElementException("head of empty stream")
     def tail: Stream[Nothing] = throw new UnsupportedOperationException("tail of empty stream")
@@ -38,12 +44,13 @@ object Stream {
      *  @param tl   The remaining elements of the result stream
      */
     def apply[A](hd: A, tl: => Stream[A]) = new Stream[A] {
+      override def hasDefiniteSize = if (tlDefined) tlVal.hasDefiniteSize else super.hasDefiniteSize
       override def isEmpty = false
       def head = hd
       private var tlVal: Stream[A] = _
-      private var tlDefined = false
+      private def tlDefined = tlVal ne null
       def tail: Stream[A] = {
-        if (!tlDefined) { tlVal = tl; tlDefined = true }
+        if (!tlDefined) { tlVal = tl }
         tlVal
       }
       protected def addDefinedElems(buf: StringBuilder, prefix: String): StringBuilder = {
@@ -176,6 +183,8 @@ trait Stream[+A] extends Seq.Projection[A] {
   /** is this stream empty? */
   override def isEmpty: Boolean
 
+  override def force : List[A] = toList
+
   /** The first element of this stream
    *  @throws Predef.NoSuchElementException if the stream is empty.
    */
@@ -187,14 +196,16 @@ trait Stream[+A] extends Seq.Projection[A] {
   def tail: Stream[A]
 
   /** The length of this stream */
-  def length: Int = if (isEmpty) 0 else tail.length + 1
+  override def length: Int = if (isEmpty) 0 else tail.length + 1
+  override def hasDefiniteSize = false
+
 
   /** The stream resulting from the concatenation of this stream with the argument stream.
    *  @param rest   The stream that gets appended to this stream
    */
-  def append[B >: A](rest: => Stream[B]): Stream[B] =
-    if (isEmpty) rest
-    else Stream.cons(head, tail.append(rest))
+  override def append[B >: A](rest: => Iterable[B]): Stream[B] =
+    if (isEmpty) rest.toStream else Stream.cons(head, tail.append(rest))
+
 
   /** An iterator returning the elements of this stream one by one.
    */
@@ -234,7 +245,7 @@ trait Stream[+A] extends Seq.Projection[A] {
    *  @return  the element at position <code>n</code> in this stream.
    *  @throws Predef.NoSuchElementException if the stream is too short.
    */
-  def apply(n: Int): A = drop(n).head
+  override def apply(n: Int): A = drop(n).head
 
   /** Returns the <code>n</code> first elements of this stream, or else the whole
    *  stream, if it has less than <code>n</code> elements.
@@ -258,6 +269,7 @@ trait Stream[+A] extends Seq.Projection[A] {
       else loop(s.tail, n-1)
     loop(this, n)
   }
+
 
   /** Returns the longest prefix of this stream whose elements satisfy
    *  the predicate <code>p</code>.
@@ -388,7 +400,10 @@ trait Stream[+A] extends Seq.Projection[A] {
    */
   override def flatMap[B](f: A => Iterable[B]): Stream[B] =
     if (isEmpty) Stream.empty
-    else Stream.fromIterator(f(head).elements).append(tail.flatMap(f))
+    else (f(head)).toStream append tail.flatMap(f)
+
+  override def toStream = this
+
 
   /** A stream consisting of all elements of this stream in reverse order.
    */

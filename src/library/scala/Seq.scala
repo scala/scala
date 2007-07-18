@@ -64,6 +64,8 @@ object Seq {
 */
   trait Projection[+A] extends Seq[A] with Iterable.Projection[A]  {
     override def projection = this
+    override def force : Seq[A] = toList
+
     override def map[B](f: A => B) : Projection[B] = new MapProjection(f)
     protected class MapProjection[B](f : A => B) extends Projection[B] {
       def length = Projection.this.length
@@ -95,7 +97,46 @@ object Seq {
         throw new IndexOutOfBoundsException
       }
     }
-    override def filter(p : A => Boolean) : Projection[A] = new Filter(p)
+    override def append[B >: A](that: => Iterable[B]) : Projection[B] = that match {
+    case that : Seq[b] => new Projection[B] {
+        def length = Projection.this.length + that.length
+        def elements : Iterator[B] = Projection.this.elements ++ (that.elements:Iterator[B])
+        def apply(idx : Int) =
+          if (idx < Projection.this.length) Projection.this(idx)
+          else that(idx - Projection.this.length)
+      }
+    case that => (this ++ that).projection // sucks but no other option.
+    }
+
+    protected abstract class ComputeSize[B] extends Projection[B] {
+      def apply(idx : Int) : B = {
+        var sz = 0
+        val i = elements
+        while (i.hasNext) {
+          val ret = i.next
+          if (sz == idx) return ret
+          sz += 1
+        }
+        throw new Predef.IndexOutOfBoundsException
+      }
+      override def length = {
+        val i = elements
+        var sz = 0
+        while (i.hasNext) {
+          sz += 1
+          i.next
+        }
+        sz
+      }
+    }
+    override def takeWhile(p: A => Boolean): Projection[A] = new ComputeSize[A] {
+      override def stringPrefix = Projection.this.stringPrefix + "TW"
+      override def elements = Projection.this.elements.takeWhile(p)
+    }
+    override def filter(p : A => Boolean) : Projection[A] = new ComputeSize[A] {
+      override def stringPrefix = Projection.this.stringPrefix + "F"
+      override def elements = Projection.this.elements.filter(p)
+    }
   }
 }
 
@@ -151,6 +192,9 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Collection[A] {
   case 0 => None
   case n => Some(this(n-1))
   }
+  /** Returns as an option the first element of this list or None if list is empty.
+   *
+   */
   def headOption : Option[A] = if (isEmpty) None else Some(apply(0))
 
 
@@ -245,18 +289,6 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Collection[A] {
     result.toList
   }
 
-  /*
-    new Seq.Projection[A] {
-     def length = {
-       val sz = Seq.this.length
-       if (n <= sz) n else sz
-     }
-     def apply(idx : Int) =
-       if (idx >= n) throw new Predef.IndexOutOfBoundsException
-       else (Seq.this.apply(n))
-     override def stringPrefix = Seq.this.stringPrefix + "T" + n
-  }
-  */
 
   /** Returns this sequence without its <code>n</code> first elements
    *  If this sequence has less than <code>n</code> elements, the empty
@@ -266,8 +298,9 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Collection[A] {
    *  @return  the new sequence
    */
   override def drop(n: Int): Seq[A] = {
+    import scala.collection.mutable.ListBuffer
     var m = 0
-    val result = new scala.collection.mutable.ListBuffer[A]
+    val result = new ListBuffer[A]
     val i = elements
     while (m < n && i.hasNext) {
       i.next; m = m + 1
@@ -285,15 +318,6 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Collection[A] {
     *          or <code>length &lt; from + len<code>
     */
   def slice(from : Int, until : Int) : Seq[A] = drop(from).take(until - from)
-
-    /*new Seq.Projection[A] {
-     def length = {
-       val sz = Seq.this.length
-       if (n <= sz) sz - n else sz
-     }
-     def apply(idx : Int) = (Seq.this.apply(idx + n))
-     override def stringPrefix = Seq.this.stringPrefix + "D" + n
-  }*/
 
   /** Returns the longest prefix of this sequence whose elements satisfy
    *  the predicate <code>p</code>.
@@ -349,6 +373,7 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Collection[A] {
     result
   }
   override def projection : Seq.Projection[A] = new Seq.Projection[A] {
+    override def force : Seq[A] = Seq.this
     def elements = Seq.this.elements
     def length = Seq.this.length
     def apply(idx : Int) = (Seq.this.apply(idx))
@@ -404,29 +429,5 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Collection[A] {
    /** Is <code>that</code> a slice in this?
     */
   def containsSlice[B](that : Seq[B]) : Boolean = indexOf(that) != -1
-
-  class Filter(p : A => Boolean) extends Seq.Projection[A] {
-    override def stringPrefix = Seq.this.stringPrefix + "F"
-    override def elements = Seq.this.elements.filter(p)
-    override def apply(idx : Int) : A = {
-      var jdx = 0
-      val i = Seq.this.elements
-      while (true) {
-        val a = i.next
-        if (p(a)) {
-          if (jdx == idx) return a
-          else jdx = jdx + 1
-        }
-      }
-      throw new Predef.Error
-    }
-    override def length = {
-      var sz = 0
-      val i = Seq.this.elements
-      while (i.hasNext) if (p(i.next)) sz = sz + 1
-      sz
-    }
-  }
-
 }
 

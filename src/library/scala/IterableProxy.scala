@@ -31,7 +31,7 @@ trait IterableProxy[+A] extends Iterable[A] with Proxy {
   override def map[B](f: A => B): Iterable[B] = self map f
   override def flatMap[B](f: A => Iterable[B]): Iterable[B] = self flatMap f
   override def filter(p: A => Boolean): Iterable[A] = self filter p
-  override def takeWhile(p: A => Boolean): Collection[A] = self takeWhile p
+  override def takeWhile(p: A => Boolean): Iterable[A] = self takeWhile p
   override def dropWhile(p: A => Boolean): Collection[A] = self dropWhile p
   @deprecated override def take(n: Int): Collection[A] = self take n
   @deprecated override def drop(n: Int): Collection[A] = self drop n

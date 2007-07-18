@@ -187,7 +187,7 @@ object Array {
  *  @author Martin Odersky
  *  @version 1.0
  */
-final class Array[A](_length: Int) extends RandomAccessSeq[A] {
+final class Array[A](_length: Int) extends RandomAccessSeq.Mutable[A] {
 
   /** The length of the array */
   def length: Int = throw new Error()
@@ -225,7 +225,7 @@ final class Array[A](_length: Int) extends RandomAccessSeq[A] {
    *  @throws ArrayIndexOutOfBoundsException if <code>i < 0</code> or
    *          <code>length <= i</code>
    */
-  def update(i: Int, x: A): Unit = throw new Error()
+  override def update(i: Int, x: A): Unit = throw new Error()
 
   /** An iterator returning the elements of this array, starting from 0.
    */

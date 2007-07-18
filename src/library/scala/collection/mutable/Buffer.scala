@@ -89,6 +89,13 @@ trait Buffer[A] extends AnyRef
    */
   def ++(iter: Iterable[A]): Buffer[A] = { this ++= iter; this }
 
+  override def ++[B >: A](that : Iterable[B]) : Seq[B] = {
+    val buf = new ArrayBuffer[B]
+    this copyToBuffer buf
+    that copyToBuffer buf
+    buf
+  }
+
   /** Appends a number of elements provided by an iterator
    *  via its <code>elements</code> method. The identity of the
    *  buffer is returned.

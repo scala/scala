@@ -13,7 +13,7 @@ package scala.runtime
 
 
 import Predef._
-import scala.collection.mutable.Buffer
+import scala.collection.mutable.{Buffer,ArrayBuffer}
 
 final class RichStringBuilder(val self : StringBuilder) extends RandomAccessSeq.Mutable[Char] with Proxy with Buffer[Char] {
   override def length = self.length
@@ -26,7 +26,13 @@ final class RichStringBuilder(val self : StringBuilder) extends RandomAccessSeq.
   case str : Array[Char] => self append str
   case iter => super.++=(iter)
   }
-  override def ++(iter: Iterable[Char]): this.type = { this ++= iter; this }
+  override def ++(iter: Iterable[Char]): RichStringBuilder = { this ++= iter; this }
+  override def ++[B >: Char](that : Iterable[B]) : RandomAccessSeq[B] = {
+    val buf = new ArrayBuffer[B]
+    this copyToBuffer buf
+    that copyToBuffer buf
+    buf
+  }
 
 
   override def insertAll(idx: Int, iter: Iterable[Char]): Unit = iter match {
