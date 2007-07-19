@@ -27,6 +27,7 @@ object Stream {
    trait Definite[+A] extends Stream[A] with Function0[Stream[A]] {
      override def hasDefiniteSize = true
      override def apply = this
+     override def toString = super[Stream].toString
    }
 
   /** The empty stream */
@@ -463,7 +464,7 @@ trait Stream[+A] extends Seq.Projection[A] {
   }
 
   /** Converts stream to string */
-  override def toString() =
+  override def toString =
     "Stream(" + addDefinedElems(new StringBuilder(), "") + ")"
 
   /** Write all elements of this string into given string builder */
