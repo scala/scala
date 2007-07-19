@@ -69,7 +69,7 @@ abstract class BasicTransformer extends Function1[Node,Node] {
    */
   def transform(it: Iterator[Node], nb: NodeBuffer): Seq[Node] = {
     while (it.hasNext)
-      nb ++ transform(it.next);
+      nb ++= transform(it.next);
     freeze(nb)
   }
 
@@ -92,7 +92,7 @@ abstract class BasicTransformer extends Function1[Node,Node] {
     } catch {
       case NeedsCopy(n2) =>
         val nb = buffer(i, ns)
-        nb ++ n2
+        nb ++= (n2:Iterable[xml.Node])
         transform(it, nb)
     }
   }
