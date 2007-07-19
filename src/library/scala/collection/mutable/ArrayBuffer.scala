@@ -42,6 +42,13 @@ class ArrayBuffer[A] extends RandomAccessSeq.Mutable[A] with Buffer[A] with Resi
    */
   override def ++=(iter: Iterable[A]) { iter copyToBuffer this }
 
+  override def ++[B >: A](that: Iterable[B]) : ArrayBuffer[B] = {
+    val buf = new ArrayBuffer[B]
+    this copyToBuffer buf
+    that copyToBuffer buf
+    buf
+  }
+
   /** Appends a number of elements in an array
    *
    *  @param src    the array
