@@ -34,7 +34,7 @@ trait MarkupParsers {
   import global._
   //import posAssigner.atPos
 
-  class MarkupParser(p: Parser, presWS: boolean) /*with scala.xml.parsing.MarkupParser[Tree,Tree] */{
+  class MarkupParser(p: UnitParser, presWS: Boolean) /*with scala.xml.parsing.MarkupParser[Tree,Tree] */{
 
     import Tokens.{EMPTY, LBRACE, RBRACE}
 
@@ -70,7 +70,7 @@ trait MarkupParsers {
     /*[Duplicate]*/ def xToken(that: Char) {
       if (ch == that) nextch
       else if (ch == SU)
-	throw TruncatedXML
+        throw TruncatedXML
       else reportSyntaxError("'" + that + "' expected instead of '" + ch + "'")
     }
 
@@ -115,8 +115,8 @@ trait MarkupParsers {
           case '{'  =>
             nextch
             xEmbeddedExpr
-	  case SU =>
-	    throw TruncatedXML
+          case SU =>
+            throw TruncatedXML
           case _ =>
             reportSyntaxError("' or \" delimited attribute value" +
                               " or '{' scala-expr '}' expected" )
@@ -139,8 +139,8 @@ trait MarkupParsers {
      */
     /*[Duplicate]*/ def xAttributeValue(endCh: Char): String = {
       while (ch != endCh) {
-	if (ch == SU)
-	  throw TruncatedXML
+        if (ch == SU)
+          throw TruncatedXML
         putChar(ch)
         nextch
       }
@@ -203,7 +203,7 @@ trait MarkupParsers {
           nextch
           return handle.charData(pos1, sb.toString())
         } else if (ch == SU)
-	  throw TruncatedXML
+          throw TruncatedXML
         else
           sb.append(ch)
         nextch
@@ -234,7 +234,7 @@ trait MarkupParsers {
           nextch
           return handle.unparsed(pos1, sb.toString())
         } else if (ch == SU) {
-	  throw TruncatedXML
+          throw TruncatedXML
         } else sb.append(ch)
         nextch
       }
@@ -261,8 +261,8 @@ trait MarkupParsers {
                            +"Did you mean to write &#x ?");
             else
               i = i * base + ch.asDigit
-	  case SU =>
-	    throw TruncatedXML
+          case SU =>
+            throw TruncatedXML
           case _ =>
             reportSyntaxError("character '"+ch+"' not allowed in char ref")
         }
@@ -286,8 +286,8 @@ trait MarkupParsers {
           xToken('>')
           return handle.comment(pos, sb.toString())
         } else if (ch == SU) {
-	  throw TruncatedXML
-	} else sb.append(ch)
+          throw TruncatedXML
+        } else sb.append(ch)
         nextch
       }
       Predef.error("this cannot happen")
@@ -381,8 +381,8 @@ trait MarkupParsers {
               content_BRACE(tmppos, ts)
             case '&' => // EntityRef or CharRef
               content_AMP(ts)
-	    case SU =>
-	      exit = true
+            case SU =>
+              exit = true
             case _ =>  // text content
               appendText(tmppos, ts, xText)
               // here xEmbeddedBlock might be true
@@ -429,7 +429,7 @@ trait MarkupParsers {
      */
     /*[Duplicate]*/   def xName: String = {
       if (ch == SU) {
-	throw TruncatedXML
+        throw TruncatedXML
       } else if ( !xml.Parsing.isNameStart(ch)) {
         reportSyntaxError("name expected, but char '"+ch+"' cannot start a name")
         return ""
@@ -457,7 +457,7 @@ trait MarkupParsers {
     /*[Duplicate]*/ def xSpace =
       if (xml.Parsing.isSpace(ch)) { nextch; xSpaceOpt }
       else if (ch == SU)
-	throw TruncatedXML
+        throw TruncatedXML
       else reportSyntaxError("whitespace expected")
 
     /** '<?' ProcInstr ::= Name [S ({Char} - ({Char}'>?' {Char})]'?>'
@@ -622,7 +622,7 @@ trait MarkupParsers {
       sync
       val b = p.block() //p.expr(true,false);
       if (s.in.ch == SU)
-	throw TruncatedXML
+        throw TruncatedXML
       if (/*s.*/token != RBRACE) {
         reportSyntaxError(" expected end of Scala block")
       }
@@ -636,7 +636,7 @@ trait MarkupParsers {
       sync
       val b = p.patterns(true)
       if (s.in.ch == SU)
-	throw TruncatedXML
+        throw TruncatedXML
       if (/*s.*/token != RBRACE) {
         reportSyntaxError(" expected end of Scala patterns")
       }
