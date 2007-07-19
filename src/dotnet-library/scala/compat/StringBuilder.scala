@@ -34,7 +34,7 @@ final class StringBuilder(val self: StringBuffer) extends (Int => Char) with Pro
 
   def charAt(i: Int): Char = self(i)
   def apply(i: Int): Char = self(i)
-  def deleteCharAt(index: Int) = self.Remote(index, 1)
+  def deleteCharAt(index: Int) = self.Remove(index, 1)
 
   def setCharAt(i: Int, c: Char) { self(i) = c }
   def update(i: Int, c: Char) { self(i) = c }

@@ -35,7 +35,9 @@ object Predef {
   type boolean = scala.Boolean
   type unit    = scala.Unit
 
-  @deprecated type All    = Nothing
+  /** @deprecated use <code>Nothing</code> instead */
+  @deprecated type All = Nothing
+  /** @deprecated use <code>Null</code> instead */
   @deprecated type AllRef = Null
 
   type String        = System.String
@@ -167,6 +169,7 @@ object Predef {
   implicit def booleanWrapper(x: Boolean)  = new runtime.RichBoolean(x)
 
   implicit def stringWrapper(x: String) = new runtime.RichString(x)
+  //implicit def stringBuilderWrapper(x : StringBuilder) = new runtime.RichStringBuilder(x)
 
   implicit def any2stringadd(x: Any) = new runtime.StringAdd(x)
 

@@ -11,6 +11,9 @@
 
 package scala
 
+
+import Predef._
+
 /** Buffered iterators are iterators which allow to inspect the next
  *  element without discarding it.
  *

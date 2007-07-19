@@ -769,6 +769,7 @@ MSIL
       <include name="scala/serializable.scala"/>
       <include name="scala/transient.scala"/>
       <include name="scala/runtime/*.scala"/>
+      <exclude name="scala/runtime/RichStringBuilder.scala"/>
     </quick>
     <property name="ilasm.infile" value="${msil.dir}/predef.msil"/>
     <property name="ilasm.outfile" value="${msil.dir}/predef.dll"/>
