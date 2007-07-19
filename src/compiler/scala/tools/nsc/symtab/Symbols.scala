@@ -82,9 +82,11 @@ trait Symbols {
     }
 
     var attributes: List[AnnotationInfo] = List()
-    def hasAttribute(Tpe: Type): Boolean =
+
+    /** Does this symbol have an attribute of the given class? */
+    def hasAttribute(cls: Symbol): Boolean =
       attributes.exists {
-        case AnnotationInfo(Tpe, _, _) => true
+        case AnnotationInfo(tp, _, _) if tp.typeSymbol == cls => true
         case _ => false
     }
 

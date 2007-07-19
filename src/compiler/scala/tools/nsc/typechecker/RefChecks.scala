@@ -727,7 +727,7 @@ abstract class RefChecks extends InfoTransform {
       val sym = tree.symbol
       var result = tree
       tree match {
-        case DefDef(mods, name, tparams, vparams, tpt, EmptyTree) if tree.symbol.hasAttribute(definitions.NativeAttr.tpe) =>
+        case DefDef(mods, name, tparams, vparams, tpt, EmptyTree) if tree.symbol.hasAttribute(definitions.NativeAttr) =>
           tree.symbol.resetFlag(DEFERRED)
           result = transform(copy.DefDef(tree, mods, name, tparams, vparams, tpt,
                 typed(Apply(gen.mkAttributedRef(definitions.Predef_error), List(Literal("native method stub"))))))

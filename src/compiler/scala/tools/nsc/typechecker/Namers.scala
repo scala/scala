@@ -789,7 +789,7 @@ trait Namers { self: Analyzer =>
           sym.isValueParameter && sym.owner.isClass && sym.owner.hasFlag(CASE))
         context.error(sym.pos, "pass-by-name arguments not allowed for case class parameters");
       if ((sym.flags & DEFERRED) != 0) {
-        if (sym.hasAttribute(definitions.NativeAttr.tpe))
+        if (sym.hasAttribute(definitions.NativeAttr))
           sym.resetFlag(DEFERRED)
         else if (!sym.isValueParameter && !sym.isTypeParameterOrSkolem &&
           !context.tree.isInstanceOf[ExistentialTypeTree] &&

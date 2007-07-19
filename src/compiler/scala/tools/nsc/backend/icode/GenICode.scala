@@ -47,8 +47,6 @@ abstract class GenICode extends SubComponent  {
     val Comparator_equals = definitions.getMember(definitions.getModule("scala.runtime.Comparator"),
                                                  nme.equals_)
 
-    ///////////////////////////////////////////////////////////
-
     override def run: Unit = {
       scalaPrimitives.init
       classes.clear
@@ -106,8 +104,7 @@ abstract class GenICode extends SubComponent  {
 
         var ctx1 = ctx.enterMethod(m, tree.asInstanceOf[DefDef])
         addMethodParams(ctx1, vparamss)
-        val NativeAttr = atPhase(currentRun.typerPhase)(definitions.getClass("scala.native").tpe)
-        m.native = m.symbol.hasAttribute(NativeAttr)
+        m.native = m.symbol.hasAttribute(definitions.NativeAttr)
 
         if (!m.isDeferred && !m.native) {
           ctx1 = genLoad(rhs, ctx1, m.returnType);
@@ -691,6 +688,20 @@ abstract class GenICode extends SubComponent  {
           val nativeKind = toTypeKind(expr.tpe)
           ctx1.bb.emit(BOX(nativeKind), expr.pos)
           generatedType = toTypeKind(fun.symbol.tpe.resultType)
+          if (settings.Xdce.value) {
+            // we store this boxed value to a local, even if not really needed.
+            // boxing optimization might use it, and dead code elimination will
+            // take care of unnecessary stores
+            var loc1 = new Local(ctx.method.symbol.newVariable(
+                tree.pos,
+                unit.fresh.newName("boxed"))
+                  .setInfo(definitions.ObjectClass.tpe)
+                  .setFlag(Flags.SYNTHETIC),
+                ANY_REF_CLASS, false)
+            loc1 = ctx.method.addLocal(loc1)
+            ctx1.bb.emit(DUP(ANY_REF_CLASS))
+            ctx1.bb.emit(STORE_LOCAL(loc1))
+          }
           ctx1
 
         case Apply(fun @ _, List(expr)) if (definitions.isUnbox(fun.symbol)) =>

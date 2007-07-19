@@ -29,13 +29,11 @@ abstract class Inliners extends SubComponent {
   /** The Inlining phase.
    */
   class InliningPhase(prev: Phase) extends ICodePhase(prev) {
-
     def name = phaseName
     val inliner = new Inliner
 
     override def apply(c: IClass): Unit =
       inliner.analyzeClass(c)
-
   }
 
   /**
@@ -57,6 +55,9 @@ abstract class Inliners extends SubComponent {
         fresh(s) = 1
         s + "0"
     }
+
+    lazy val ScalaInlineAttr   = definitions.getClass("scala.inline")
+    lazy val ScalaNoInlineAttr = definitions.getClass("scala.noinline")
 
     /** Inline the 'callee' method inside the 'caller' in the given
      *  basic block, at the given instruction (which has to be a CALL_METHOD).
@@ -262,12 +263,6 @@ abstract class Inliners extends SubComponent {
        assert(pending.isEmpty, "Pending NEW elements: " + pending)
      }
 
-    val InlineAttr = if (settings.inline.value) try {
-      global.definitions.getClass("scala.inline").tpe
-    } catch {
-      case e: FatalError => null
-    } else null;
-
     def analyzeClass(cls: IClass): Unit = if (settings.inline.value) {
       if (settings.debug.value)
       	log("Analyzing " + cls);
@@ -316,15 +311,13 @@ abstract class Inliners extends SubComponent {
 
                     if (   classes.contains(receiver)
                         && (isClosureClass(receiver)
-                            || concreteMethod.isFinal
-                            || msym.attributes.exists(a => a.atp == InlineAttr))) {
+                            || concreteMethod.isFinal)) {
                       classes(receiver).lookupMethod(concreteMethod) match {
                         case Some(inc) =>
                           if (inc.symbol != m.symbol
                               && (inlinedMethods(inc.symbol) < 2)
                               && (inc.code ne null)
                               && shouldInline(m, inc)
-                              && (inc.code.blocks.length <= MAX_INLINE_SIZE)
                               && isSafeToInline(m, inc, info._2)) {
                             retry = true;
                             if (!isClosureClass(receiver)) // only count non-closures
@@ -423,56 +416,59 @@ abstract class Inliners extends SubComponent {
 
       if (stack.length > (1 + callee.symbol.info.paramTypes.length) &&
           callee.exh != Nil) {
-//          (callee.exh exists (_.covered.contains(callee.code.startBlock)))) {
         if (settings.debug.value) log("method " + callee.symbol + " is used on a non-empty stack with finalizer.");
         false
       } else
         true
     }
 
+    /** small method size (in blocks) */
+    val SMALL_METHOD_SIZE = 4
+
+    /** Decide whether to inline or not. Heuristics:
+     *   - it's bad to make the caller larger (> SMALL_METHOD_SIZE)
+     *        if it was small
+     *   - it's bad to inline large methods
+     *   - it's good to inline higher order functions
+     *   - it's good to inline closures functions.
+     *   - it's bad (useless) to inline inside bridge methods
+     */
+    def shouldInline(caller: IMethod, callee: IMethod): Boolean = {
+       if (caller.symbol.hasFlag(Flags.BRIDGE)) return false;
+       if (callee.symbol.hasAttribute(ScalaNoInlineAttr)) return false
+       if (callee.symbol.hasAttribute(ScalaInlineAttr)) return true
+       if (settings.debug.value)
+         log("shouldInline: " + caller + " with " + callee)
+       var score = 0
+       if (callee.code.blocks.length <= SMALL_METHOD_SIZE) score = score + 1
+       if (caller.code.blocks.length <= SMALL_METHOD_SIZE
+           && ((caller.code.blocks.length + callee.code.blocks.length) > SMALL_METHOD_SIZE)) {
+         score = score - 1
+         if (settings.debug.value)
+           log("shouldInline: score decreased to " + score + " because small " + caller + " would become large")
+       }
+       if (callee.code.blocks.length > MAX_INLINE_SIZE)
+         score -= 1
+
+       if (callee.symbol.tpe.paramTypes.exists(t => definitions.FunctionClass.contains(t.typeSymbol))) {
+         if (settings.debug.value)
+           log("increased score to: " + score)
+         score = score + 2
+       }
+       if (isClosureClass(callee.symbol.owner))
+         score = score + 2
+
+       score > 0
+     }
   } /* class Inliner */
 
+  /** Is the given class a subtype of a function trait? */
   def isClosureClass(cls: Symbol): Boolean = {
-    val res =
-      cls.isFinal &&
-      cls.tpe.parents.exists { t =>
-        val TypeRef(_, sym, _) = t;
-        definitions.FunctionClass exists sym.==
-      }
+    val res = cls.isFinal &&
+        cls.tpe.parents.exists { t =>
+          val TypeRef(_, sym, _) = t;
+          definitions.FunctionClass exists sym.==
+        }
     res
   }
-
-  /** small method size (in blocks) */
-  val SMALL_METHOD_SIZE = 4
-
-  /** Decide whether to inline or not. Heuristics:
-   *   - it's bad to make the caller larger (> SMALL_METHOD_SIZE)
-   *        if it was small
-   *   - it's good to inline higher order functions
-   *   - it's good to inline closures functions.
-   *   - it's bad (useless) to inline inside bridge methods
-   */
-  def shouldInline(caller: IMethod, callee: IMethod): Boolean = {
-     if (caller.symbol.hasFlag(Flags.BRIDGE)) return false;
-     if (settings.debug.value)
-       log("shouldInline: " + caller + " with " + callee)
-     var score = 0
-     if (callee.code.blocks.length <= SMALL_METHOD_SIZE) score = score + 1
-     if (caller.code.blocks.length <= SMALL_METHOD_SIZE
-         && ((caller.code.blocks.length + callee.code.blocks.length) > SMALL_METHOD_SIZE)) {
-       score = score - 1
-       if (settings.debug.value)
-         log("shouldInline: score decreased to " + score + " because small " + caller + " would become large")
-     }
-
-     if (callee.symbol.tpe.paramTypes.exists(t => definitions.FunctionClass.contains(t.typeSymbol))) {
-       if (settings.debug.value)
-         log("increased score to: " + score)
-       score = score + 2
-     }
-     if (isClosureClass(callee.symbol.owner))
-       score = score + 2
-
-     score > 0
-   }
 } /* class Inliners */

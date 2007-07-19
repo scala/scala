@@ -65,17 +65,14 @@ abstract class GenJVM extends SubComponent {
     val stringBufferType = new JObjectType(StringBufferClass)
     val toStringType = new JMethodType(JObjectType.JAVA_LANG_STRING, JType.EMPTY_ARRAY)
 
-    def attributeType(name: String) =
-      atPhase(currentRun.typerPhase)(definitions.getClass(name).tpe)
-
     // Scala attributes
-    val SerializableAttr = atPhase(currentRun.typerPhase)(definitions.SerializableAttr.tpe)
-    val SerialVersionUID = attributeType("scala.SerialVersionUID")
-    val CloneableAttr    = attributeType("scala.cloneable")
-    val TransientAtt     = attributeType("scala.transient")
-    val VolatileAttr     = attributeType("scala.volatile")
-    val RemoteAttr       = attributeType("scala.remote")
-    val ThrowsAttr       = attributeType("scala.throws")
+    val SerializableAttr = definitions.SerializableAttr
+    val SerialVersionUID = definitions.getClass("scala.SerialVersionUID")
+    val CloneableAttr    = definitions.getClass("scala.cloneable")
+    val TransientAtt     = definitions.getClass("scala.transient")
+    val VolatileAttr     = definitions.getClass("scala.volatile")
+    val RemoteAttr       = definitions.getClass("scala.remote")
+    val ThrowsAttr       = definitions.getClass("scala.throws")
 
     val CloneableClass   =
       if (forCLDC) null else definitions.getClass("java.lang.Cloneable")
@@ -149,13 +146,13 @@ abstract class GenJVM extends SubComponent {
 
       if (!forCLDC)
         for (val attr <- c.symbol.attributes) attr match {
-          case AnnotationInfo(SerializableAttr, _, _) =>
+          case AnnotationInfo(tp, _, _) if tp.typeSymbol == SerializableAttr =>
             parents = parents ::: List(definitions.SerializableClass.tpe)
-          case AnnotationInfo(CloneableAttr, _, _)  =>
+          case AnnotationInfo(tp, _, _) if tp.typeSymbol == CloneableAttr =>
             parents = parents ::: List(CloneableClass.tpe)
-          case AnnotationInfo(SerialVersionUID, value :: _, _) =>
+          case AnnotationInfo(tp, value :: _, _) if tp.typeSymbol == SerialVersionUID =>
             serialVUID = Some(value.constant.get.longValue)
-          case AnnotationInfo(RemoteAttr, _, _) =>
+          case AnnotationInfo(tp, _, _) if tp.typeSymbol == RemoteAttr =>
             parents = parents ::: List(RemoteInterface.tpe)
             remoteClass = true
           case _ => ()
@@ -204,7 +201,7 @@ abstract class GenJVM extends SubComponent {
 
     def addExceptionsAttribute(sym: Symbol): Unit = {
       val (excs, others) = sym.attributes.partition((a => a match {
-        case AnnotationInfo(ThrowsAttr, _, _) => true
+        case AnnotationInfo(tp, _, _) if tp.typeSymbol == ThrowsAttr => true
         case _ => false
       }))
       if (excs isEmpty) return;
@@ -217,7 +214,7 @@ abstract class GenJVM extends SubComponent {
       // put some radom value; the actual number is determined at the end
       buf.putShort(0xbaba.toShort)
 
-      for (val AnnotationInfo(ThrowsAttr, List(exc), _) <- excs.removeDuplicates) {
+      for (val AnnotationInfo(tp, List(exc), _) <- excs.removeDuplicates; tp.typeSymbol == ThrowsAttr) {
         buf.putShort(
           cpool.addClass(
             javaName(exc.constant.get.typeValue.typeSymbol)).shortValue)
@@ -379,9 +376,9 @@ abstract class GenJVM extends SubComponent {
       var attributes = 0
 
       f.symbol.attributes foreach { a => a match {
-        case AnnotationInfo(TransientAtt, _, _) =>
+        case AnnotationInfo(tp, _, _) if tp.typeSymbol == TransientAtt =>
           attributes = attributes | JAccessFlags.ACC_TRANSIENT
-        case AnnotationInfo(VolatileAttr, _, _) =>
+        case AnnotationInfo(tp, _, _) if tp.typeSymbol == VolatileAttr =>
           attributes = attributes | JAccessFlags.ACC_VOLATILE
         case _ => ();
       }}
@@ -420,11 +417,9 @@ abstract class GenJVM extends SubComponent {
       if (m.symbol.hasFlag(Flags.BRIDGE))
         jmethod.addAttribute(fjbgContext.JOtherAttribute(jclass, jmethod, "Bridge",
                                                          new Array[Byte](0)))
-      if ((remoteClass ||
-          (m.symbol.attributes contains AnnotationInfo(RemoteAttr, Nil, Nil))) &&
-          jmethod.isPublic() && !forCLDC)
-        {
-          val ainfo = AnnotationInfo(ThrowsAttr, List(new AnnotationArgument(Constant(RemoteException))), List())
+      if (remoteClass ||
+          (m.symbol.hasAttribute(RemoteAttr) && jmethod.isPublic() && !forCLDC)) {
+          val ainfo = AnnotationInfo(ThrowsAttr.tpe, List(new AnnotationArgument(Constant(RemoteException))), List())
           m.symbol.attributes = ainfo :: m.symbol.attributes;
         }
 
