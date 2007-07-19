@@ -34,7 +34,7 @@ trait MarkupParsers {
   import global._
   //import posAssigner.atPos
 
-  class MarkupParser(p: UnitParser, presWS: Boolean) /*with scala.xml.parsing.MarkupParser[Tree,Tree] */{
+  class MarkupParser(p: Parser, presWS: boolean) /*with scala.xml.parsing.MarkupParser[Tree,Tree] */{
 
     import Tokens.{EMPTY, LBRACE, RBRACE}
 
@@ -698,7 +698,7 @@ trait MarkupParsers {
       while (! exit) {
         val pos2 = pos
         if (xEmbeddedBlock) {
-          ts ++ xScalaPatterns
+          ts ++= xScalaPatterns
         } else
           ch match {
             case '<' => // tag
@@ -711,7 +711,7 @@ trait MarkupParsers {
             case '{' => // embedded Scala patterns
               while (ch == '{') {
                 s.in.next
-                ts ++ xScalaPatterns
+                ts ++= xScalaPatterns
               }
               // postcond: xEmbeddedBlock = false;
               if (xEmbeddedBlock) Predef.error("problem with embedded block"); // assert
