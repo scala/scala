@@ -1,0 +1,5 @@
+tcpoly_override.scala:9: error: The kind of type T does not conform to the expected kind of type T[_] in trait A.
+C.this.T's type parameters do not match type T's expected parameters: type T (in class C) has no type parameters, but type T (in trait A) has one
+ type T = B // This compiles well (@M: ... but it shouldn't)
+      ^
+one error found

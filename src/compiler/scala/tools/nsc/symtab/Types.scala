@@ -103,7 +103,9 @@ trait Types {
     override def isErroneous = underlying.isErroneous
     override def isStable: Boolean = underlying.isStable
     override def termSymbol = underlying.termSymbol
+    override def termSymbolDirect = underlying.termSymbolDirect
     override def typeSymbol = underlying.typeSymbol
+    override def typeSymbolDirect = underlying.typeSymbolDirect
     @deprecated override def symbol = underlying.symbol
     override def widen = underlying.widen
     override def typeOfThis = underlying.typeOfThis
@@ -185,6 +187,14 @@ trait Types {
       * Note that the symbol of the normalized type is returned (@see normalize)
       */
     def typeSymbol: Symbol = NoSymbol
+
+    /** The term symbol *directly* associated with the type
+      */
+    def termSymbolDirect: Symbol = termSymbol
+
+    /** The type symbol *directly* associated with the type
+      */
+    def typeSymbolDirect: Symbol = typeSymbol
 
     /** The base type underlying a type proxy,
      *  identity on all other types */
@@ -1250,6 +1260,8 @@ trait Types {
 
     override def typeSymbol = if (sym.isAliasType) normalize.typeSymbol else sym
     override def termSymbol = if (sym.isAliasType) normalize.termSymbol else super.termSymbol
+    override def typeSymbolDirect = sym
+    override def termSymbolDirect = super.termSymbol
     @deprecated override def symbol = if (sym.isAliasType) normalize.symbol else sym
 
 /* @MAT
