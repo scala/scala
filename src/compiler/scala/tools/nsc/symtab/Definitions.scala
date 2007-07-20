@@ -114,6 +114,10 @@ trait Definitions {
     lazy val SerializableClass: Symbol = getClass(sn.Serializable)
     lazy val PredefModule: Symbol = getModule("scala.Predef")
       def Predef_classOf = getMember(PredefModule, nme.classOf)
+      def Predef_classOfType(classType: Type): Type =
+        if (settings.Xgenerics.value && !phase.erasedTypes)
+          appliedType(ClassClass.tpe, List(classType))
+        else ClassClass.tpe
       def Predef_identity = getMember(PredefModule, nme.identity)
       def Predef_error    = getMember(PredefModule, nme.error)
     lazy val ConsoleModule: Symbol = getModule("scala.Console")

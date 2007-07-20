@@ -1833,6 +1833,7 @@ trait Typers { self: Analyzer =>
       val whereClauses1 = typedStats(tree.whereClauses, context.owner)
       val tpt1 = typedType(tree.tpt)
       val (typeParams, tpe) = existentialTransform(tree.whereClauses map (_.symbol), tpt1.tpe)
+      //println(tpe + ": " + tpe.getClass )
       TypeTree(ExistentialType(typeParams, tpe)) setOriginal tree
     }
 
@@ -2070,7 +2071,7 @@ trait Typers { self: Analyzer =>
             if (fun.symbol == Predef_classOf) {
               if (!targs.head.typeSymbol.isClass || targs.head.typeSymbol.isRefinementClass)
                 error(args.head.pos, "class type required");
-              Literal(Constant(targs.head)) setPos tree.pos setType ClassClass.tpe
+              Literal(Constant(targs.head)) setPos tree.pos setType Predef_classOfType(targs.head)
               // @M: targs.head.normalize is not necessary --> toTypeKind eventually normalizes the type
             } else {
               val resultpe0 = restpe.instantiateTypeParams(tparams, targs)

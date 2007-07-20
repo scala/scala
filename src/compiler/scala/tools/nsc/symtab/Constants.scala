@@ -65,7 +65,7 @@ trait Constants {
       case DoubleTag  => DoubleClass.tpe
       case StringTag  => StringClass.tpe
       case NullTag    => AllRefClass.tpe
-      case ClassTag   => ClassClass.tpe
+      case ClassTag   => Predef_classOfType(value.asInstanceOf[Type])
       case EnumTag    => symbolValue.owner.linkedClassOfClass.tpe
     }
 
