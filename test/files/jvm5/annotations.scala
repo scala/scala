@@ -125,6 +125,7 @@ object Test4 {
 
 object Test5 {
   import scala.reflect.BeanProperty
+  import java.lang.Integer
   class Count {
     // we use "Integer" instead of "Int" because of Java reflection
     @BeanProperty
