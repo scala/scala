@@ -1321,22 +1321,23 @@ A type's typeSymbol should never be inspected directly.
     private def argsMaybeDummy = if (isHigherKinded) higherKindedArgs else args
 
     override def normalize =
-      if (sym.isAliasType) {
-        if (sym.info.typeParams.length == args.length) // beta-reduce  -- check if the info has been loaded, if not, the arity check is meaningless
-          // Martin to Adriaan: I believe sym.info.isComplete is redundant here
-          // @M: correct: it was a remnant of a previous fix for the problem in the last else {} branch
-          transform(sym.info.resultType).normalize // cycles have been checked in typeRef
-        else if (isHigherKinded)
-          PolyType(typeParams, transform(sym.info.resultType).normalize)
-        else {
-          //log("Error: normalizing "+sym.rawname+" with mismatch between type params "+sym.info.typeParams+" and args "+args)
-          //this
+      if (sym.isAliasType) { // beta-reduce
+        if (!isHigherKinded /*degenerate case, see comments below*/ ||
+            sym.info.typeParams.length == args.length) {
+          //transform(sym.info.resultType).normalize // cycles have been checked in typeRef
+          val xform=transform(sym.info.resultType)
+          if(xform eq this) xform else xform.normalize // @M TODO: why is this necessary?
+        }/* else if (!isHigherKinded) { // sym.info.typeParams.length != args.length
+          log("Error: normalizing "+sym.rawname+" with mismatch between type params "+sym.info.typeParams+" and args "+args)
           transform(sym.info.resultType).normalize // technically wrong, but returning `this' is even worse (cycle!)
           // only happens when compiling `val x: Class' with -Xgenerics,
           // when `type Class = java.lang.Class' has already been compiled (without -Xgenerics)
-        }
-      } else if (isHigherKinded) {
-        PolyType(typeParams, typeRef(pre, sym, higherKindedArgs)) // @M TODO: transform?
+        }*/ else PolyType(typeParams, transform(sym.info.resultType).normalize)
+        // @M TODO: should not use PolyType, as that's the type of a polymorphic value -- we really want a type *function*
+      } else if (isHigherKinded) { // eta-expand
+        // @M TODO: should not use PolyType, as that's the type of a polymorphic value -- we really want a type *function*
+        // @M TODO: transform?
+        PolyType(typeParams, typeRef(pre, sym, higherKindedArgs))
       } else super.normalize // @M TODO: transform?
 
     override def decls: Scope = {
@@ -1456,8 +1457,10 @@ A type's typeSymbol should never be inspected directly.
    *  a parameterless method type.
    *  (@M: note that polymorphic nullary methods have non-empty tparams,
    *   e.g., isInstanceOf or def makeList[T] = new List[T].
-   *   Ideally, there would be a NullaryMethodType, so that higher-kinded types
-   *   could use PolyType instead of TypeRef with empty args)
+   *   Ideally, there would be a NullaryMethodType, but since the only polymorphic values are methods, it's not that problematic.
+   *   More pressingly, we should add a TypeFunction type for anonymous type constructors -- for now, PolyType is used in:
+   *     - normalize: for eta-expansion of type aliases
+   *     - abstractTypeSig )
    */
   case class PolyType(override val typeParams: List[Symbol], override val resultType: Type)
        extends Type {
