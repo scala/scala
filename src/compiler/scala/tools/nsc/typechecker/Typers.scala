@@ -2070,7 +2070,7 @@ trait Typers { self: Analyzer =>
             if (fun.symbol == Predef_classOf) {
               if (!targs.head.typeSymbol.isClass || targs.head.typeSymbol.isRefinementClass)
                 error(args.head.pos, "class type required");
-              Literal(Constant(targs.head)) setPos tree.pos setType ClassClass.tpe
+              Literal(Constant(targs.head.normalize)) setPos tree.pos setType ClassClass.tpe
             } else {
               val resultpe0 = restpe.instantiateTypeParams(tparams, targs)
               //@M TODO -- probably ok
