@@ -264,8 +264,8 @@ test_run_jvm() {
     fi
     rm -rf "$dstbase".obj &&
     mkdir -p "$dstbase".obj &&
-    env JAVACMD="$JAVACMD" JAVA_OPTS="$javaopts" $SCALAC -d "$os_dstbase".obj \
-        -cp "$JVM_EXT_CLASSPATH" "$@" "$os_srcbase".scala &&
+    (cd "$srcdir" && env JAVACMD="$JAVACMD" JAVA_OPTS="$javaopts" $SCALAC -d "$os_dstbase".obj \
+        -cp "$JVM_EXT_CLASSPATH" "$@" "$testname".scala ) &&
     libpath=`get_os_pathlist "$dstdir"` &&
     scala_javaopts=`echo -Djava.library.path=$libpath` &&
     scala_lib=`get_os_filename "$SCALA_LIB"` &&
