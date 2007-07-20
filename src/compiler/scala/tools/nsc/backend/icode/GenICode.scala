@@ -976,7 +976,7 @@ abstract class GenICode extends SubComponent  {
           var ctx1 = genLoad(selector, ctx, INT)
           val afterCtx = ctx1.newBlock
           var caseCtx: Context  = null
-          val kind = toTypeKind(tree.tpe)
+          generatedType = toTypeKind(tree.tpe)
 
           var targets: List[BasicBlock] = Nil
           var tags: List[Int] = Nil
@@ -988,7 +988,7 @@ abstract class GenICode extends SubComponent  {
               val tmpCtx = ctx1.newBlock
               targets = tmpCtx.bb :: targets
 
-              caseCtx = genLoad(body, tmpCtx , kind)
+              caseCtx = genLoad(body, tmpCtx , generatedType)
               caseCtx.bb.emit(JUMP(afterCtx.bb), caze.pos)
               caseCtx.bb.close
 
@@ -996,7 +996,7 @@ abstract class GenICode extends SubComponent  {
               val tmpCtx = ctx1.newBlock
               default = tmpCtx.bb
 
-              caseCtx = genLoad(body, tmpCtx , kind)
+              caseCtx = genLoad(body, tmpCtx , generatedType)
               caseCtx.bb.emit(JUMP(afterCtx.bb), caze.pos)
               caseCtx.bb.close
 
