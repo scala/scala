@@ -125,8 +125,8 @@ object Test4 {
 
 object Test5 {
   import scala.reflect.BeanProperty
-// no need to import java.lang.Integer, Predef.Integer is simply an alias for it
-// classOf[Integer] now properly resolves to classOf[java.lang.Integer]
+  import java.lang.Integer
+
   class Count {
     // we use "Integer" instead of "Int" because of Java reflection
     @BeanProperty
@@ -135,7 +135,7 @@ object Test5 {
     private val getter =
       getClass().getMethod("getCount", Array[java.lang.Class]())
     private val setter =
-      getClass().getMethod("setCount", Array[java.lang.Class](classOf[Integer]))
+      getClass().getMethod("setCount", Array(classOf[Integer]))
 
     def get = getter.invoke(this, Array()).asInstanceOf[Integer].intValue
     def set(n: Int) = setter.invoke(this, Array(new Integer(n)))

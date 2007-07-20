@@ -1,16 +1,3 @@
-annotations.scala:133: warning: type Integer in object Predef is deprecated
-    private var count: Integer = 0
-                       ^
-annotations.scala:138: warning: type Integer in object Predef is deprecated
-      getClass().getMethod("setCount", Array[java.lang.Class](classOf[Integer]))
-                                                                      ^
-annotations.scala:140: warning: type Integer in object Predef is deprecated
-    def get = getter.invoke(this, Array()).asInstanceOf[Integer].intValue
-                                                        ^
-annotations.scala:141: warning: type Integer in object Predef is deprecated
-    def set(n: Int) = setter.invoke(this, Array(new Integer(n)))
-                                                    ^
-four warnings found
 class java.rmi.RemoteException
 class java.io.IOException
 @java.lang.Deprecated()
