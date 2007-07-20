@@ -380,7 +380,7 @@ trait TypeKinds { self: ICodes =>
 
 
   /** Return the TypeKind of the given type */
-  def toTypeKind(t: Type): TypeKind = t match {
+  def toTypeKind(t: Type): TypeKind = t.normalize match {
     case ThisType(sym) => REFERENCE(sym)
 
     case SingleType(pre, sym) =>
