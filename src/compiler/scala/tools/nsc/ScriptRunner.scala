@@ -233,7 +233,7 @@ class ScriptRunner {
 
     val compArgs =
       (coreCompArgs :::
-        List("-script", scriptMain(settings), scriptFile))
+        List("-Xscript", scriptMain(settings), scriptFile))
 
     val socket = compileSocket.getOrCreateSocket("")
     val out = new PrintWriter(socket.getOutputStream(), true)
