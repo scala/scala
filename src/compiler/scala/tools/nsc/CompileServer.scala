@@ -98,7 +98,7 @@ class StandardCompileServer extends SocketServer {
       try {
         inSession = true
         progress = true
-        val args = input.split("\0").toList
+        val args = input.split("\0",-1).toList
         if (args contains "-shutdown") {
           out.println("[Compile server exited]")
           shutDown = true
@@ -110,8 +110,8 @@ class StandardCompileServer extends SocketServer {
           return
         }
         def error(msg: String) {
-          reporter.error(/*new Position*/ FakePos("fsc"),
-                         msg + "\n  fsc -help  gives more information")
+          out.println(/*new Position*/ FakePos("fsc"),
+                      msg + "\n  fsc -help  gives more information")
         }
         val command = newOfflineCompilerCommand(args, new Settings(error), error, false)
 
