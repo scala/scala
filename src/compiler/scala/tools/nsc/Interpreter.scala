@@ -634,7 +634,11 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
 
 
     /** Code to access a variable with the specified name */
-    def fullPath(vname: String) = objectName + accessPath + "." + vname
+    def fullPath(vname: String): String =
+      objectName + accessPath + "." + vname
+
+    /** Code to access a variable with the specified name */
+    def fullPath(vname: Name): String = fullPath(vname.toString)
 
     /** the line of code to compute */
     def toCompute = line
@@ -681,9 +685,10 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
 
     def resultExtractionCode(code: PrintWriter): Unit =
       for (vname <- valAndVarNames) {
-        code.print(" + \"" + vname + ": " + typeOf(vname) +
-                   " = \" + " + objectName + accessPath +
-                   "." + vname + " + \"\\n\"")
+        code.print(" + \"" + vname + ": " + typeOf(vname) + " = \" + " +
+                   " (if(" + fullPath(vname) + ".toString.contains('\\n')) " +
+                   " \"\\n\" else \"\") + " +
+                   fullPath(vname) + " + \"\\n\"")
       }
 
     /** Compile the object file.  Returns whether the compilation succeeded.
