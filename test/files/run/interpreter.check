@@ -151,7 +151,8 @@ scala> <console>:1: error: identifier expected but integer literal found.
 scala> 
 scala> 
 scala> 
-scala>      |      |      |      | res2: scala.xml.Elem = <a>
+scala>      |      |      |      | res2: scala.xml.Elem = 
+<a>
 <b d="dd" c="c"></b></a>
 
 scala> 
