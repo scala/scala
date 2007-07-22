@@ -77,9 +77,12 @@ class CompileSocket {
       Some(fulldir)
     }
 
-    /** Test if file f is a writable directory */
-    def isDirWritable(f: File): Boolean =
+    /** Try to create directory f, and then see if it can
+     *  be written into. */
+    def isDirWritable(f: File): Boolean = {
+      f.mkdirs()
       f.isDirectory && f.canWrite
+    }
 
     val potentials =
       for {
