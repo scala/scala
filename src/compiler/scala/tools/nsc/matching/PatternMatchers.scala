@@ -1089,7 +1089,7 @@ print()
 
       var nCases: List[CaseDef] = Nil
       while (cases ne null) {
-        if(inheritsFromSealed(cases.node.tpe)) {
+        if (inheritsFromSealed(cases.node.tpe)) {
           val t = toTree_refined(cases.node, selector, true)
           //Console.println("optimize this"+t+" from this "+cases.node)
           nCases = CaseDef(Literal(Constant(cases.tag)),
@@ -1122,7 +1122,7 @@ print()
     def myIf(cond: Tree, thenp: Tree, elsep: Tree) =
       Or(And(cond, thenp), elsep)
 
-    protected def toTree(node: PatternNode, selector:Tree): Tree = {
+    protected def toTree(node: PatternNode, selector: Tree): Tree = {
       val t = toTree_refined(node, selector, false)
       try {
         //Console.println("type-checking "+t)
@@ -1137,16 +1137,16 @@ print()
       }
     }
 
-    protected def toTree_refined(node: PatternNode, selector:Tree, ignoreSelectorType: Boolean): Tree = {
+    protected def toTree_refined(node: PatternNode, selector: Tree, ignoreSelectorType: Boolean): Tree = {
       //Console.println("pm.toTree("+node+","+selector+") selector.tpe = "+selector.tpe+")")
       if (selector.tpe eq null)
         scala.Predef.error("cannot go on due to internal error (type attribute set to null)")
       if (node eq null)
-        return Literal(Constant(false));
+        return Literal(Constant(false))
       else
         node match {
           case DefaultPat() =>
-            return toTree(node.and);
+            return toTree(node.and)
 
           case UnapplyPat(casted, Apply(fn1, appargs)) if casted.tpe.typeSymbol == defs.BooleanClass => // special case
             var useSelector = selector
@@ -1234,7 +1234,7 @@ print()
 
           val cast_untyped = gen.mkAsInstanceOf(selector.duplicate, ntpe, true)
           val vdef_untyped = typedValDef(casted,
-                                    if(isSubType(selector.tpe,ntpe))
+                                    if (isSubType(selector.tpe,ntpe))
                                       selector.duplicate
                                     else
                                       cast_untyped)
@@ -1284,7 +1284,7 @@ print()
             val ntpe = node.tpe
 
             val tpetest =
-              if(!isSubType(selector.tpe,ntpe))
+              if (!isSubType(selector.tpe,ntpe))
                 gen.mkIsInstanceOf(selector.duplicate, ntpe);
               else
                 Literal(Constant(true))
@@ -1300,7 +1300,7 @@ print()
               else And(tpetest, seqLongerThan(treeAsSeq, ntpe, minlen))
 
             var bindings =
-              if(castedRest ne null)
+              if (castedRest ne null)
                 List(typedValDef(castedRest, seqDrop(treeAsSeq.duplicate, minlen)))
               else
                 List()
