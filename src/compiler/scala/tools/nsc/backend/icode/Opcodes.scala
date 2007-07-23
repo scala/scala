@@ -26,7 +26,7 @@ import scala.tools.nsc.util.{Position,NoPosition}
   case CALL_PRIMITIVE(primitive) =>
   case CALL_METHOD(method, style) =>
   case NEW(kind) =>
-  case CREATE_ARRAY(elem) =>
+  case CREATE_ARRAY(elem, dims) =>
   case IS_INSTANCE(tpe) =>
   case CHECK_CAST(tpe) =>
   case SWITCH(tags, labels) =>
@@ -361,15 +361,15 @@ trait Opcodes { self: ICodes =>
 
 
     /** This class represents a CREATE_ARRAY instruction
-     * Stack: ...:size(int)
+     * Stack: ...:size_1:size_2:..:size_n
      *    ->: ...:arrayref
      */
-    case class CREATE_ARRAY(elem: TypeKind) extends Instruction {
+    case class CREATE_ARRAY(elem: TypeKind, dims: Int) extends Instruction {
       /** Returns a string representation of this instruction */
-      override def toString(): String ="CREATE_ARRAY "+elem.toString();
+      override def toString(): String ="CREATE_ARRAY "+elem.toString() + " x " + dims;
 
-      override def consumed = 1;
-      override def consumedTypes = INT :: Nil
+      override def consumed = dims;
+      override def consumedTypes = List.make(dims, INT)
       override def produced = 1;
     }
 

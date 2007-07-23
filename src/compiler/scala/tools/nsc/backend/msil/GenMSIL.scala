@@ -1473,7 +1473,10 @@ abstract class GenMSIL extends SubComponent {
             ignoreNextDup = true
 
           // works also for arrays and reference-types
-          case CREATE_ARRAY(elem) => mcode.Emit(OpCodes.Newarr, msilType(elem))
+          case CREATE_ARRAY(elem, dims) =>
+            // TODO: handle multi dimensional arrays
+            assert(dims == 1, "Can't handle multi dimensional arrays")
+            mcode.Emit(OpCodes.Newarr, msilType(elem))
 
           // works for arrays and reference-types
           case IS_INSTANCE(tpe) =>

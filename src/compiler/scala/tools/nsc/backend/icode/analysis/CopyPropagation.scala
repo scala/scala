@@ -341,8 +341,8 @@ abstract class CopyPropagation {
             }
           out.stack = v1 :: out.stack
 
-        case CREATE_ARRAY(elem) =>
-          out.stack = Unknown :: out.stack.drop(1)
+        case CREATE_ARRAY(elem, dims) =>
+          out.stack = Unknown :: out.stack.drop(dims)
 
         case IS_INSTANCE(tpe) =>
           out.stack = Unknown :: out.stack.drop(1)

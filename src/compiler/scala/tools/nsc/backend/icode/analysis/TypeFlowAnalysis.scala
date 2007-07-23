@@ -274,8 +274,8 @@ abstract class TypeFlowAnalysis {
         case NEW(kind) =>
           stack.push(kind)
 
-        case CREATE_ARRAY(elem) =>
-          stack.pop
+        case CREATE_ARRAY(elem, dims) =>
+          stack.pop(dims)
           stack.push(ARRAY(elem))
 
         case IS_INSTANCE(tpe) =>

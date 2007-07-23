@@ -653,16 +653,20 @@ abstract class GenICode extends SubComponent  {
           assert(ctor.isClassConstructor,
                  "'new' call to non-constructor: " + ctor.name)
 
-          generatedType = toTypeKind(tpt.tpe)
+          generatedType = toTypeKind(fun.tpe.resultType)
           assert(generatedType.isReferenceType || generatedType.isArrayType,
                  "Non reference type cannot be instantiated: " + generatedType)
 
           var ctx1 = ctx
 
           generatedType match {
-            case ARRAY(elem) =>
+            case arr @ ARRAY(elem) =>
               ctx1 = genLoadArguments(args, ctor.info.paramTypes, ctx)
-              ctx1.bb.emit(CREATE_ARRAY(elem), tree.pos)
+              val dims = arr.dimensions
+              var elemKind = arr.elementKind
+              if (args.length != dims)
+                for (i <- args.length until dims) elemKind = ARRAY(elemKind)
+              ctx1.bb.emit(CREATE_ARRAY(elemKind, args.length), tree.pos)
 
             case rt @ REFERENCE(cls) =>
               assert(ctor.owner == cls,
@@ -958,7 +962,7 @@ abstract class GenICode extends SubComponent  {
           generatedType = ARRAY(elmKind)
 
           ctx1.bb.emit(CONSTANT(new Constant(elems.length)), tree.pos)
-          ctx1.bb.emit(CREATE_ARRAY(elmKind))
+          ctx1.bb.emit(CREATE_ARRAY(elmKind, 1))
           // inline array literals
           var i = 0
           while (i < elems.length) {

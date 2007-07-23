@@ -451,9 +451,9 @@ abstract class Checkers {
                 error("NEW call to non-reference type: " + kind)
             }
 
-          case CREATE_ARRAY(elem) =>
-            checkStack(1)
-            checkType(stack.pop, INT)
+          case CREATE_ARRAY(elem, dims) =>
+            checkStack(dims)
+            stack.pop(dims) foreach (checkType(_, INT))
             stack.push(ARRAY(elem))
 
           case IS_INSTANCE(tpe) =>

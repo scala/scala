@@ -490,11 +490,11 @@ abstract class ICodeReader extends ClassfileParser {
             case T_LONG    => LONG
           }
           size += 1
-          code.emit(CREATE_ARRAY(kind))
+          code.emit(CREATE_ARRAY(kind, 1))
 
         case JVM.anewarray     =>
           val tpe = pool.getClassOrArrayType(in.nextChar); size += 2
-          code.emit(CREATE_ARRAY(toTypeKind(tpe)))
+          code.emit(CREATE_ARRAY(toTypeKind(tpe), 1))
 
         case JVM.arraylength   => code.emit(CALL_PRIMITIVE(ArrayLength(OBJECT))); // the kind does not matter
         case JVM.athrow        => code.emit(THROW());
@@ -531,8 +531,8 @@ abstract class ICodeReader extends ClassfileParser {
           size += 3
           val tpe = toTypeKind(pool.getClassOrArrayType(in.nextChar))
           val dim = in.nextByte
-          assert(dim == 1, "Cannot handle multidimensional arrays yet.")
-          code.emit(CREATE_ARRAY(tpe))
+//          assert(dim == 1, "Cannot handle multidimensional arrays yet.")
+          code.emit(CREATE_ARRAY(tpe, dim))
 
         case JVM.ifnull    => code.emit(LCZJUMP(parseJumpTarget, pc + size, EQ, OBJECT))
         case JVM.ifnonnull => code.emit(LCZJUMP(parseJumpTarget, pc + size, NE, OBJECT))

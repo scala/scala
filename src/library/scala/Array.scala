@@ -189,6 +189,54 @@ object Array {
  */
 final class Array[A](_length: Int) extends RandomAccessSeq.Mutable[A] {
 
+   /** Multidimensional array creation */
+   def this(dim1: Int, dim2: Int) = {
+     this(dim1);
+     throw new Error()
+   }
+
+   /** Multidimensional array creation */
+   def this(dim1: Int, dim2: Int, dim3: Int) = {
+     this(dim1);
+     throw new Error()
+   }
+
+   /** Multidimensional array creation */
+   def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int) = {
+     this(dim1);
+     throw new Error()
+   }
+
+   /** Multidimensional array creation */
+   def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int, dim5: Int) = {
+     this(dim1);
+     throw new Error()
+   }
+
+   /** Multidimensional array creation */
+   def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int, dim5: Int, dim6: Int) = {
+     this(dim1);
+     throw new Error()
+   }
+
+   /** Multidimensional array creation */
+   def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int, dim5: Int, dim6: Int, dim7: Int) = {
+     this(dim1);
+     throw new Error()
+   }
+
+   /** Multidimensional array creation */
+   def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int, dim5: Int, dim6: Int, dim7: Int, dim8: Int) = {
+     this(dim1);
+     throw new Error()
+   }
+
+   /** Multidimensional array creation */
+   def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int, dim5: Int, dim6: Int, dim7: Int, dim8: Int, dim9: Int) = {
+     this(dim1);
+     throw new Error()
+   }
+
   /** The length of the array */
   def length: Int = throw new Error()
 

@@ -60,12 +60,16 @@ trait TypeStacks { self: ICodes =>
     def pop3: (TypeKind, TypeKind, TypeKind) = (pop, pop, pop)
 
     /** Drop the first n elements of the stack. */
-    def pop(n: Int): Unit = types = types.drop(n)
+    def pop(n: Int): List[TypeKind] = {
+      val prefix = types.take(n)
+      types = types.drop(n)
+      prefix
+    }
 
     /**
      * A TypeStack aggress with another one if they have the same
      * length and each type kind agrees position-wise. Two
-     * types agree if they are subtypes of one another.
+     * types agree if one is a subtype of the other.
      */
     def agreesWith(other: TypeStack): Boolean =
       (types.length == other.types.length) &&

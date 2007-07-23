@@ -811,12 +811,14 @@ abstract class GenJVM extends SubComponent {
             val className = javaName(cls)
             jcode.emitNEW(className)
 
-          case CREATE_ARRAY(elem) => elem match {
+          case CREATE_ARRAY(elem, 1) => elem match {
             case REFERENCE(_) | ARRAY(_) =>
               jcode.emitANEWARRAY(javaType(elem).asInstanceOf[JReferenceType])
             case _ =>
               jcode.emitNEWARRAY(javaType(elem))
           }
+          case CREATE_ARRAY(elem, dims) =>
+            jcode.emitMULTIANEWARRAY(javaType(ArrayN(elem, dims)).asInstanceOf[JReferenceType], dims)
 
           case IS_INSTANCE(tpe) =>
             tpe match {

@@ -82,6 +82,9 @@ trait TypeKinds { self: ICodes =>
       case DOUBLE | LONG => true
       case _ => false
     }
+
+    /** The number of dimensions for array types. */
+    def dimensions: Int = 0
   }
 
   /**
@@ -272,11 +275,27 @@ trait TypeKinds { self: ICodes =>
 //       "VALUE(" + cls.fullNameString + ")";
 //   }
 
+  def ArrayN(elem: TypeKind, dims: Int): ARRAY = {
+    assert(dims > 0)
+    if (dims == 1)
+      ARRAY(elem)
+    else
+      ARRAY(ArrayN(elem, dims - 1))
+  }
+
   final case class ARRAY(val elem: TypeKind) extends TypeKind {
     override def toString(): String =
       "ARRAY[" + elem + "]"
 
     override def isArrayType = true
+
+    override def dimensions: Int = 1 + elem.dimensions
+
+    /** The ultimate element type of this array. */
+    def elementKind: TypeKind = elem match {
+      case a @ ARRAY(e1) => a.elementKind
+      case k => k
+    }
 
     /**
      * Approximate `lub'. The common type of two references is
