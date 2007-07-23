@@ -61,6 +61,7 @@ abstract class RefChecks extends InfoTransform {
   class RefCheckTransformer(unit: CompilationUnit) extends Transformer {
 
     var localTyper: analyzer.Typer = typer;
+    var currentApplication: Tree = EmptyTree
 
 // Override checking ------------------------------------------------------------
 
@@ -729,7 +730,17 @@ abstract class RefChecks extends InfoTransform {
         }
       }
 
+      def isRepeatedParamArg(tree: Tree) = currentApplication match {
+        case Apply(fn, args) =>
+          !args.isEmpty && (args.last eq tree) &&
+          fn.tpe.paramTypes.length == args.length &&
+          fn.tpe.paramTypes.last.typeSymbol == RepeatedParamClass
+        case _ =>
+          false
+      }
+
       val savedLocalTyper = localTyper
+      val savedCurrentApplication = currentApplication
       val sym = tree.symbol
       var result = tree
       tree match {
@@ -775,6 +786,7 @@ abstract class RefChecks extends InfoTransform {
 
         case Apply(fn, args) =>
           checkSensible(tree.pos, fn, args)
+          currentApplication = tree
 
         case If(cond, thenpart, elsepart) =>
           cond.tpe match {
@@ -786,6 +798,11 @@ abstract class RefChecks extends InfoTransform {
 
         case New(tpt) =>
           enterReference(tree.pos, tpt.tpe.typeSymbol)
+
+        case Typed(expr, tpt @ Ident(name)) if (name == nme.WILDCARD_STAR.toTypeName) =>
+          if (!isRepeatedParamArg(tree))
+            unit.error(tree.pos, "no `: _*' annotation allowed here\n"+
+              "(such annotations are only allowed in arguments to *-parameters)")
 
         case Ident(name) =>
           if (sym.isSourceMethod && sym.hasFlag(CASE))
@@ -825,6 +842,7 @@ abstract class RefChecks extends InfoTransform {
         case _ =>
       }
       localTyper = savedLocalTyper
+      currentApplication = savedCurrentApplication
       result
     } catch {
       case ex: TypeError =>

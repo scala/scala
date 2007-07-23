@@ -16,12 +16,6 @@ package scala.collection.immutable
 object TreeSet {
 
   /** The empty set of this type
-   *  @deprecated   use <code>empty</code> instead
-   */
-  @deprecated
-  def Empty[A <% Ordered[A]] = empty[A]
-
-  /** The empty set of this type
    */
   def empty[A <% Ordered[A]] = new TreeSet[A]
 

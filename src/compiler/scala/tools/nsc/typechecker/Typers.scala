@@ -253,6 +253,12 @@ trait Typers { self: Analyzer =>
           )
         case SingleType(pre, sym) =>
           checkNotLocked(sym)
+/*
+        case TypeBounds(lo, hi) =>
+          var ok = true
+          for (t <- lo) ok = ok & checkNonCyclic(pos, t)
+          ok
+*/
         case st: SubType =>
           checkNonCyclic(pos, st.supertype)
         case ct: CompoundType =>
@@ -296,12 +302,10 @@ trait Typers { self: Analyzer =>
       }
     }
 
-    def checkRegPatOK(pos: Position, mode: Int) {
-      if ((mode & REGPATmode) == 0) {
+    def checkRegPatOK(pos: Position, mode: Int) =
+      if ((mode & REGPATmode) == 0)
         error(pos, "no regular expression pattern allowed here\n"+
               "(regular expression patterns are only allowed in arguments to *-parameters)")
-      }
-    }
 
     /** Check that type of given tree does not contain local or private
      *  components.
@@ -342,7 +346,7 @@ trait Typers { self: Analyzer =>
         else if (hiddenSymbols exists (_.isErroneous)) setError(tree)
         else if (isFullyDefined(pt)) tree setType pt //todo: eliminate
         else if (tp1.typeSymbol.isAnonymousClass) // todo: eliminate
-          check(owner, scope, pt, tree setType anonymousClassRefinement(tp1.typeSymbol))
+          check(owner, scope, pt, tree setType classBound(tp1.typeSymbol))
         else if (owner == NoSymbol)
           tree setType packSymbols(hiddenSymbols.reverse, tp1)
         else { // privates
@@ -1249,11 +1253,7 @@ trait Typers { self: Analyzer =>
       copy.LabelDef(ldef, ldef.name, ldef.params, rhs1) setType restpe
     }
 
-    /**
-     *  @param clazz ...
-     *  @return      ...
-     */
-    def anonymousClassRefinement(clazz: Symbol): Type = {
+    def classBound(clazz: Symbol): Type = {
       val tp = refinedType(clazz.info.parents, clazz.owner)
       val thistp = tp.typeSymbol.thisType
       for (sym <- clazz.info.decls.toList) {
@@ -1460,17 +1460,7 @@ trait Typers { self: Analyzer =>
       List.mapConserve(args)(arg => typedArg(arg, mode, 0, WildcardType))
 
     def typedArgs(args: List[Tree], mode: Int, originalFormals: List[Type], adaptedFormals: List[Type]) = {
-      val varargs = isVarArgs(originalFormals)
-      if (!args.isEmpty)
-        args.last match {
-          case Typed(expr, Ident(name)) if (name == nme.WILDCARD_STAR.toTypeName) =>
-            if (!varargs)
-              error(args.last.pos, "_*-argument does not correspond to *-parameter")
-            else if (originalFormals.length != adaptedFormals.length)
-              error(args.last.pos, "_*-argument may not appear after other arguments matching a *-parameter")
-          case _ =>
-        }
-      if (varargs && (mode & PATTERNmode) != 0) {
+      if (isVarArgs(originalFormals)) {
         val nonVarCount = originalFormals.length - 1
         val prefix =
           List.map2(args take nonVarCount, adaptedFormals take nonVarCount) ((arg, formal) =>
@@ -1528,7 +1518,8 @@ trait Typers { self: Analyzer =>
               case ex => errorTree(tree, "wrong number of arguments for "+treeSymTypeMsg(fun))
             }
           } else if (formals.length != args1.length) {
-            errorTree(tree, "wrong number of arguments for "+treeSymTypeMsg(fun))
+            if (mt.isErroneous) setError(tree)
+            else errorTree(tree, "wrong number of arguments for "+treeSymTypeMsg(fun))
           } else {
             val tparams = context.undetparams
             context.undetparams = List()
@@ -1737,7 +1728,7 @@ trait Typers { self: Analyzer =>
     protected def existentialBound(sym: Symbol): Type =
       if (sym.isClass)
          parameterizedType(
-           sym.typeParams, mkTypeBounds(AllClass.tpe, anonymousClassRefinement(sym)))
+           sym.typeParams, mkTypeBounds(AllClass.tpe, classBound(sym)))
       else if (sym.isAbstractType)
          sym.info
       else if (sym.isTerm)
@@ -1772,7 +1763,7 @@ trait Typers { self: Analyzer =>
 
     /** Compute an existential type from raw hidden symbols `syms' and type `tp'
      */
-    def packSymbols(hidden: List[Symbol], tp: Type) =
+    def packSymbols(hidden: List[Symbol], tp: Type): Type =
       if (hidden.isEmpty) tp
       else {
 //          Console.println("original type: "+tp)
@@ -1784,14 +1775,22 @@ trait Typers { self: Analyzer =>
         res
       }
 
+    class SymInstance(val sym: Symbol, val tp: Type) {
+      override def equals(other: Any): Boolean = other match {
+        case that: SymInstance =>
+          this.sym == that.sym && this.tp =:= that.tp
+        case _ =>
+          false
+      }
+      override def hashCode: Int = sym.hashCode * 41 + tp.hashCode
+    }
+
     def packedType(tree: Tree, owner: Symbol): Type = {
       def defines(tree: Tree, sym: Symbol) =
         sym.isExistentialSkolem && sym.unpackLocation == tree ||
         tree.isDef && tree.symbol == sym
-      def isAnonymousFunction(sym: Symbol) =
-        (sym hasFlag SYNTHETIC) && (sym.name == nme.ANON_FUN_NAME)
       def isVisibleParameter(sym: Symbol) =
-        (sym hasFlag PARAM) && (sym.owner == owner) && (sym.isType || !isAnonymousFunction(owner))
+        (sym hasFlag PARAM) && (sym.owner == owner) && (sym.isType || !owner.isAnonymousFunction)
       def containsDef(owner: Symbol, sym: Symbol): Boolean =
         (!(sym hasFlag PACKAGE)) && {
           var o = sym.owner
@@ -1800,30 +1799,63 @@ trait Typers { self: Analyzer =>
         }
       var localSyms = collection.immutable.Set[Symbol]()
       var boundSyms = collection.immutable.Set[Symbol]()
+      var localInstances = collection.immutable.Map[SymInstance, Symbol]()
+      // add all local symbols of `tp' to `localSyms'
+      // expanding higher-kinded types into individual copies for esach instance.
       def addLocals(tp: Type) {
         def isLocal(sym: Symbol): Boolean =
           if (owner == NoSymbol) tree exists (defines(_, sym))
           else containsDef(owner, sym)
-        def addIfLocal(sym: Symbol) {
-          if (sym != NoSymbol &&
-              !sym.isRefinementClass &&
-              !(localSyms contains sym) && !(boundSyms contains sym) &&
-              isLocal(sym)) {
-                localSyms += sym
-                addLocals(existentialBound(sym))
+        def addIfLocal(sym: Symbol, tp: Type) {
+          if (sym != NoSymbol && !sym.isRefinementClass && isLocal(sym) &&
+              !(localSyms contains sym) && !(boundSyms contains sym) ) {
+            if (sym.typeParams.isEmpty) {
+              localSyms += sym
+              addLocals(existentialBound(sym))
+            } else if (tp.typeArgs.isEmpty) {
+              unit.error(tree.pos,
+                "implementation restriction: can't existentially abstract over higher-kinded type" + tp)
+            } else {
+              val inst = new SymInstance(sym, tp)
+              if (!(localInstances contains inst)) {
+                val bound = existentialBound(sym) match {
+                  case PolyType(tparams, restpe) =>
+                    restpe.subst(tparams, tp.typeArgs)
+                  case t =>
+                    t
+                }
+                val local = sym.owner.newAbstractType(
+                  sym.pos, unit.fresh.newName(sym.name.toString))
+                    .setFlag(sym.flags)
+                    .setInfo(bound)
+                localInstances += (inst -> local)
+                addLocals(bound)
               }
+            }
+          }
         }
         for (t <- tp) {
           t match {
-            case ExistentialType(tparams, _) => boundSyms ++= tparams
+            case ExistentialType(tparams, _) =>
+              boundSyms ++= tparams
             case _ =>
           }
-          addIfLocal(t.termSymbol)
-          addIfLocal(t.typeSymbol)
+          addIfLocal(t.termSymbol, t)
+          addIfLocal(t.typeSymbol, t)
+        }
+      }
+      val substLocals = new TypeMap {
+        def apply(t: Type): Type = t match {
+          case TypeRef(_, sym, args) if (sym.isLocal && args.length > 0) =>
+            localInstances.get(new SymInstance(sym, t)) match {
+              case Some(local) => typeRef(NoPrefix, local, List())
+              case None => mapOver(t)
+            }
+          case _ => mapOver(t)
         }
       }
       addLocals(tree.tpe)
-      packSymbols(localSyms.toList, tree.tpe)
+      packSymbols(localSyms.toList ::: localInstances.values.toList, substLocals(tree.tpe))
     }
 
     protected def typedExistentialTypeTree(tree: ExistentialTypeTree): Tree = {
@@ -2043,14 +2075,6 @@ trait Typers { self: Analyzer =>
           errorTree(expr1, "_ must follow method; cannot follow " + expr1.tpe)
       }
 
-      def typedWildcardStar(expr1: Tree, tpt: Tree) = expr1.tpe.baseType(SeqClass) match {
-        case TypeRef(_, _, List(elemtp)) =>
-          copy.Typed(tree, expr1, tpt setType elemtp) setType elemtp
-        case _ =>
-          //todo: do this: errorTree(tree, "`: _*' annotation only legal for method arguments")
-          setError(tree)
-      }
-
       def typedTypeApply(fun: Tree, args: List[Tree]): Tree = fun.tpe match {
         case OverloadedType(pre, alts) =>
           inferPolyAlternatives(fun, args map (_.tpe))
@@ -2074,11 +2098,14 @@ trait Typers { self: Analyzer =>
               Literal(Constant(targs.head)) setPos tree.pos setType Predef_classOfType(targs.head)
               // @M: targs.head.normalize is not necessary --> toTypeKind eventually normalizes the type
             } else {
+              if (phase.id <= currentRun.typerPhase.id &&
+                  fun.symbol == Any_isInstanceOf && !targs.isEmpty)
+                checkCheckable(tree.pos, targs.head, "")
               val resultpe0 = restpe.instantiateTypeParams(tparams, targs)
               //@M TODO -- probably ok
               //@M example why asSeenFrom is necessary: class Foo[a] { def foo[m[x]]: m[a] } (new Foo[Int]).foo[List] : List[Int]
               //@M however, asSeenFrom widens a singleton type, thus cannot use it for those types
-              val resultpe = if(resultpe0.isInstanceOf[SingletonType]) resultpe0 else resultpe0.asSeenFrom(prefixType(fun), fun.symbol.owner)
+              val resultpe = if (resultpe0.isInstanceOf[SingletonType]) resultpe0 else resultpe0.asSeenFrom(prefixType(fun), fun.symbol.owner)
               copy.TypeApply(tree, fun, args) setType resultpe
             }
           } else {
@@ -2394,6 +2421,10 @@ trait Typers { self: Analyzer =>
           var defEntry: ScopeEntry = null // the scope entry of defSym, if defined in a local scope
 
           var cx = context
+          if ((mode & PATTERNmode) != 0)
+            // ignore current variable scope in patterns to enforce linearity
+            cx = cx.outer
+
           while (defSym == NoSymbol && cx != NoContext) {
             pre = cx.enclClass.prefix
             defEntry = cx.scope.lookupEntry(name)
@@ -2602,6 +2633,11 @@ trait Typers { self: Analyzer =>
         case Bind(name, body) =>
           typedBind(name, body)
 
+        case UnApply(fun, args) =>
+          val fun1 = typed(fun)
+          val args1 = List.mapConserve(args)(typedPattern(_, WildcardType))
+          copy.UnApply(tree, fun1, args1) setType pt
+
         case ArrayValue(elemtpt, elems) =>
           typedArrayValue(elemtpt, elems)
 
@@ -2654,7 +2690,13 @@ trait Typers { self: Analyzer =>
           typedEta(checkDead(typed1(expr, mode, pt)))
 
         case Typed(expr, tpt @ Ident(name)) if (name == nme.WILDCARD_STAR.toTypeName) =>
-          typedWildcardStar(typed(expr, mode & stickyModes, seqType(pt)), tpt)
+          val expr1 = typed(expr, mode & stickyModes, seqType(pt))
+          expr1.tpe.baseType(SeqClass) match {
+            case TypeRef(_, _, List(elemtp)) =>
+              copy.Typed(tree, expr1, tpt setType elemtp) setType elemtp
+            case _ =>
+              setError(tree)
+          }
 
         case Typed(expr, tpt) =>
           val tpt1 = typedType(tpt)

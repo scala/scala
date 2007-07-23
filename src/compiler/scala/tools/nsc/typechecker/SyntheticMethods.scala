@@ -37,9 +37,10 @@ trait SyntheticMethods { self: Analyzer =>
    *  @param unit  ...
    *  @return      ...
    */
-  def addSyntheticMethods(templ: Template, clazz: Symbol, context: Context): Template = {
+  def addSyntheticMethods(templ: Template, clazz: Symbol, context: Context): Template = try {
 
-    val localTyper = newTyper(context)
+    val localContext = if (reporter.hasErrors) context.makeSilent(false) else context
+    val localTyper = newTyper(localContext)
 
     def hasImplementation(name: Name): Boolean = {
       val sym = clazz.info.nonPrivateMember(name)
@@ -124,14 +125,14 @@ trait SyntheticMethods { self: Analyzer =>
     def equalsMethod: Tree = {
       val method = syntheticMethod(
         nme.equals_, 0, MethodType(List(AnyClass.tpe), BooleanClass.tpe))
-      localTyper.typed {
+      val methodDef =
         DefDef(
           method,
           { vparamss =>
             val that = Ident(vparamss.head.head)
             val constrParamTypes = clazz.primaryConstructor.tpe.paramTypes
             val hasVarArgs = !constrParamTypes.isEmpty && constrParamTypes.last.typeSymbol == RepeatedParamClass
-            if (clazz.isStatic) {
+            if (false && clazz.isStatic) {
               val target = getMember(ScalaRunTimeModule, if (hasVarArgs) nme._equalsWithVarArgs else nme._equals)
               Apply(
                 Select(
@@ -172,7 +173,7 @@ trait SyntheticMethods { self: Analyzer =>
             }
           }
         )
-      }
+      localTyper.typed(methodDef)
     }
 
     def isSerializable(clazz: Symbol): Boolean =
@@ -243,51 +244,55 @@ trait SyntheticMethods { self: Analyzer =>
       !sym.hasFlag(PRIVATE | PROTECTED) && sym.privateWithin == NoSymbol
 
     if (!phase.erasedTypes) {
+      try {
+        if (clazz hasFlag CASE) {
+          // case classes are implicitly declared serializable
+          clazz.attributes = AnnotationInfo(SerializableAttr.tpe, List(), List()) :: clazz.attributes
 
-      if (clazz hasFlag CASE) {
-        // case classes are implicitly declared serializable
-        clazz.attributes = AnnotationInfo(SerializableAttr.tpe, List(), List()) :: clazz.attributes
-
-        for (stat <- templ.body) {
-          if (stat.isDef && stat.symbol.isMethod && stat.symbol.hasFlag(CASEACCESSOR) && !isPublic(stat.symbol)) {
-            ts += newAccessorMethod(stat)
-            stat.symbol.resetFlag(CASEACCESSOR)
+          for (stat <- templ.body) {
+            if (stat.isDef && stat.symbol.isMethod && stat.symbol.hasFlag(CASEACCESSOR) && !isPublic(stat.symbol)) {
+              ts += newAccessorMethod(stat)
+              stat.symbol.resetFlag(CASEACCESSOR)
+            }
           }
+
+          if (clazz.info.nonPrivateDecl(nme.tag) == NoSymbol) ts += tagMethod
+          if (clazz.isModuleClass) {
+            if (!hasOverridingImplementation(Object_toString)) ts += moduleToStringMethod
+          } else {
+            if (!hasOverridingImplementation(Object_hashCode)) ts += forwardingMethod(nme.hashCode_)
+            if (!hasOverridingImplementation(Object_toString)) ts += forwardingMethod(nme.toString_)
+            if (!hasOverridingImplementation(Object_equals)) ts += equalsMethod
+          }
+
+          if (!hasOverridingImplementation(Product_productPrefix)) ts += productPrefixMethod
+          val accessors = clazz.caseFieldAccessors
+          if (!hasOverridingImplementation(Product_productArity))
+            ts += productArityMethod(accessors.length)
+          if (!hasOverridingImplementation(Product_productElement))
+            ts += productElementMethod(accessors)
         }
 
-        if (clazz.info.nonPrivateDecl(nme.tag) == NoSymbol) ts += tagMethod
-        if (clazz.isModuleClass) {
-          if (!hasOverridingImplementation(Object_toString)) ts += moduleToStringMethod
-        } else {
-          if (!hasOverridingImplementation(Object_hashCode)) ts += forwardingMethod(nme.hashCode_)
-          if (!hasOverridingImplementation(Object_toString)) ts += forwardingMethod(nme.toString_)
-          if (!hasOverridingImplementation(Object_equals)) ts += equalsMethod
+        if (clazz.isModuleClass && isSerializable(clazz)) {
+          // If you serialize a singleton and then deserialize it twice,
+          // you will have two instances of your singleton, unless you implement
+          // the readResolve() method (see http://www.javaworld.com/javaworld/
+          // jw-04-2003/jw-0425-designpatterns_p.html)
+          if (!hasImplementation(nme.readResolve)) ts += readResolveMethod
         }
-
-        if (!hasOverridingImplementation(Product_productPrefix)) ts += productPrefixMethod
-	val accessors = clazz.caseFieldAccessors
-	if (!hasOverridingImplementation(Product_productArity))
-	  ts += productArityMethod(accessors.length)
-	if (!hasOverridingImplementation(Product_productElement))
-	  ts += productElementMethod(accessors)
+        if (!forCLDC && !forMSIL)
+          for (sym <- clazz.info.decls.toList)
+            if (!sym.getAttributes(BeanPropertyAttr).isEmpty)
+              if (sym.isGetter)
+                addBeanGetterMethod(sym)
+              else if (sym.isSetter)
+                addBeanSetterMethod(sym)
+              else if (sym.isMethod || sym.isType)
+                context.unit.error(sym.pos, "attribute `BeanProperty' is not applicable to " + sym)
+      } catch {
+        case ex: TypeError =>
+          if (!reporter.hasErrors) throw ex
       }
-
-      if (clazz.isModuleClass && isSerializable(clazz)) {
-        // If you serialize a singleton and then deserialize it twice,
-        // you will have two instances of your singleton, unless you implement
-        // the readResolve() method (see http://www.javaworld.com/javaworld/
-        // jw-04-2003/jw-0425-designpatterns_p.html)
-        if (!hasImplementation(nme.readResolve)) ts += readResolveMethod
-      }
-      if (!forCLDC && !forMSIL)
-        for (sym <- clazz.info.decls.toList)
-          if (!sym.getAttributes(BeanPropertyAttr).isEmpty)
-            if (sym.isGetter)
-              addBeanGetterMethod(sym)
-            else if (sym.isSetter)
-              addBeanSetterMethod(sym)
-            else if (sym.isMethod || sym.isType)
-              context.unit.error(sym.pos, "attribute `BeanProperty' is not applicable to " + sym)
     }
     val synthetics = ts.toList
     copy.Template(

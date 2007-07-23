@@ -574,6 +574,11 @@ trait Infer {
      */
     def isStrictlyBetterExpr(tpe1: Type, tpe2: Type) = {
       def isNullary(tpe: Type) = tpe.paramSectionCount == 0 || tpe.paramTypes.isEmpty
+      def isMethod(tpe: Type) = tpe match {
+        case MethodType(_, _) | PolyType(_, _) => true
+        case _ => false
+      }
+      isMethod(tpe2) && !isMethod(tpe1) ||
       isNullary(tpe1) && !isNullary(tpe2) ||
       isStrictlyBetter(tpe1, tpe2)
     }
@@ -850,7 +855,8 @@ trait Infer {
       def computeArgs =
         try {
           val targs = solvedTypes(tvars, undetparams, undetparams map varianceInType(restpe), true)
-          checkBounds(tree.pos, NoPrefix, NoSymbol, undetparams, targs, "inferred ")
+//          checkBounds(tree.pos, NoPrefix, NoSymbol, undetparams, targs, "inferred ")
+//          no checkBounds here. If we enable it, test bug602 fails.
           new TreeTypeSubstituter(undetparams, targs).traverse(tree)
         } catch {
           case ex: NoInstance =>
@@ -914,44 +920,51 @@ trait Infer {
       }
     }
 
-    def checkCheckable(pos: Position, tp: Type) {
-      def patternWarning(tp: Type, prefix: String) =
-        context.unit.uncheckedWarning(pos, prefix+tp+" in type pattern is unchecked since it is eliminated by erasure")
-      def isLocalBinding(sym: Symbol) =
-        sym.isAbstractType &&
-        (sym.name == nme.WILDCARD.toTypeName || {
-          val e = context.scope.lookupEntry(sym.name)
-          (e ne null) && e.sym == sym && e.owner == context.scope
-        })
-      tp match {
-        case SingleType(pre, _) =>
-          checkCheckable(pos, pre)
-        case TypeRef(pre, sym, args) =>
-          if (sym.isAbstractType)
-            patternWarning(tp, "abstract type ")
-          else if (sym == AllClass || sym == AllRefClass)
-            error(pos, "this type cannot be used in a type pattern")
-          else
-            for (arg <- args) {
-              if (sym == ArrayClass) checkCheckable(pos, arg)
-              else arg match {
-                case TypeRef(_, sym, _) if isLocalBinding(sym) =>
-                  ;
-                case _ =>
-                  patternWarning(arg, "non variable type-argument ")
-              }
-            }
-          checkCheckable(pos, pre)
-        case RefinedType(parents, decls) =>
-          if (decls.isEmpty) for (p <- parents) checkCheckable(pos, p)
-          else patternWarning(tp, "refinement ")
-        case ThisType(_) =>
-          ;
-        case NoPrefix =>
-          ;
-        case _ =>
-          patternWarning(tp, "type ")
+    def checkCheckable(pos: Position, tp: Type, kind: String) {
+      def patternWarning(tp: Type, prefix: String) = {
+        context.unit.uncheckedWarning(pos, prefix+tp+" in type"+kind+" is unchecked since it is eliminated by erasure")
       }
+      def check(tp: Type, bound: List[Symbol]) {
+        def isLocalBinding(sym: Symbol) =
+          sym.isAbstractType &&
+          ((bound contains sym) ||
+           sym.name == nme.WILDCARD.toTypeName || {
+            val e = context.scope.lookupEntry(sym.name)
+            (e ne null) && e.sym == sym && e.owner == context.scope
+          })
+        tp match {
+          case SingleType(pre, _) =>
+            check(pre, bound)
+          case TypeRef(pre, sym, args) =>
+            if (sym.isAbstractType)
+              patternWarning(tp, "abstract type ")
+            else if (sym == AllClass || sym == AllRefClass)
+              error(pos, "this type cannot be used in a type pattern")
+            else
+              for (arg <- args) {
+                if (sym == ArrayClass) check(arg, bound)
+                else arg match {
+                  case TypeRef(_, sym, _) if isLocalBinding(sym) =>
+                    ;
+                  case _ =>
+                    patternWarning(arg, "non variable type-argument ")
+                }
+              }
+            check(pre, bound)
+          case RefinedType(parents, decls) =>
+            if (decls.isEmpty) for (p <- parents) check(p, bound)
+            else patternWarning(tp, "refinement ")
+          case ExistentialType(quantified, tp1) =>
+            check(tp1, bound ::: quantified)
+          case ThisType(_) =>
+            ;
+          case NoPrefix =>
+            ;
+          case _ =>
+            patternWarning(tp, "type ")
+        }
+      }
+      check(tp, List())
     }
 
     /** Type intersection of simple type <code>tp1</code> with general
@@ -972,7 +985,7 @@ trait Infer {
     }
 
     def inferTypedPattern(pos: Position, pattp: Type, pt: Type): Type = {
-      checkCheckable(pos, pattp)
+      checkCheckable(pos, pattp, " pattern")
       if (!(pattp <:< pt)) {
         val tpparams = freeTypeParamsOfTerms.collect(pattp)
         if (settings.debug.value) log("free type params (1) = " + tpparams)

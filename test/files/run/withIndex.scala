@@ -9,7 +9,12 @@ object Test {
     Console.println(lst.zipWithIndex.toList)
     Console.println(itr.zipWithIndex.toList)
     Console.println(str.zipWithIndex.toList)
-    assert(ary.zipWithIndex.isInstanceOf[Array[Pair[String,Int]]])
+    assert {
+      ary.zipWithIndex match {
+        case _: Array[Pair[String,Int]] => true
+        case _ => false
+      }
+    }
 
     val emptyArray = new Array[String](0)
     val emptyList: List[String] = Nil

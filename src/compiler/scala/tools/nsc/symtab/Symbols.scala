@@ -215,6 +215,7 @@ trait Symbols {
     final def isClassLocalToConstructor = isClass && hasFlag(INCONSTRUCTOR)
     final def isAnonymousClass = isClass && (originalName startsWith nme.ANON_CLASS_NAME)
       // startsWith necessary because name may grow when lifted and also because of anonymous function classes
+    def isAnonymousFunction = hasFlag(SYNTHETIC) && (originalName startsWith nme.ANON_FUN_NAME)
     final def isRefinementClass = isClass && name == nme.REFINE_CLASS_NAME.toTypeName; // no lifting for refinement classes
     final def isModuleClass = isClass && hasFlag(MODULE)
     final def isPackageClass = isClass && hasFlag(PACKAGE)
@@ -585,7 +586,7 @@ trait Symbols {
     def typeConstructor: Type =
       throw new Error("typeConstructor inapplicable for " + this)
 
-    def tpeHK =  if(isType) typeConstructor else tpe // @M! used in memberType
+    def tpeHK = if (isType) typeConstructor else tpe // @M! used in memberType
 
     /** The type parameters of this symbol */
     def unsafeTypeParams: List[Symbol] =

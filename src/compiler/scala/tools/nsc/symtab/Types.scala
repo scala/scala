@@ -1957,7 +1957,7 @@ A type's typeSymbol should never be inspected directly.
 
     override def toString =
       lobounds.mkString("[ _>:(", ",", ") ") +
-      hibounds.mkString("| _<:(", ",", ") | _= ") + inst
+      hibounds.mkString("| _<:(", ",", ") ] _= ") + inst
   }
 
   /** A prototype for mapping a function over all possible types
@@ -2166,15 +2166,15 @@ A type's typeSymbol should never be inspected directly.
           def toInstance(pre: Type, clazz: Symbol): Type =
             if ((pre eq NoType) || (pre eq NoPrefix) || !clazz.isClass) mapOver(tp) //@M! see test pos/tcpoly_return_overriding.scala why mapOver is necessary
             else {
-              val symclazz = sym.owner;
               def throwError =
-                throw new Error("" + tp + " in " + symclazz +
+                throw new Error("" + tp + sym.locationString +
                                 " cannot be instantiated from " + pre.widen);
               def instParam(ps: List[Symbol], as: List[Type]): Type =
                 if (ps.isEmpty) throwError
                 else if (sym eq ps.head)  // @M! don't just replace the whole thing, might be followed by type application
                   appliedType(as.head, List.mapConserve(args)(this)) // @M: was as.head
                 else instParam(ps.tail, as.tail);
+              val symclazz = sym.owner
               if (symclazz == clazz && (pre.widen.typeSymbol isNonBottomSubClass symclazz))
                 pre.baseType(symclazz) match {
                   case TypeRef(_, basesym, baseargs) =>
@@ -2609,6 +2609,17 @@ A type's typeSymbol should never be inspected directly.
    *  @return    true, iff `tp1' and `tp2' denote
    *             equivalent types.
    */
+  var si = 0
+  def isSameType0(tp1: Type, tp2: Type): Boolean = {
+    for (i <- 0 until si) print(" ");
+    println(tp1+" =:= "+tp2)
+    si += 1
+    if (si > 10) throw new Error()
+    val res = isSameType0(tp1, tp2)
+    si -= 1
+    res
+  }
+
   def isSameType(tp1: Type, tp2: Type): Boolean = {
     (tp1, tp2) match {
       case (ErrorType, _) => true
@@ -2777,7 +2788,7 @@ A type's typeSymbol should never be inspected directly.
           (phase.erasedTypes || pre1 <:< pre2) &&
           (sym2 == AnyClass || isSubArgs(args1, args2, sym1.typeParams)) //@M: Any is kind-polymorphic
          ||
-          sym1.isAbstractType && !(tp1 =:= tp1.bounds.hi) && (tp1.bounds.hi <:< tp2)
+         sym1.isAbstractType && !(tp1 =:= tp1.bounds.hi) && (tp1.bounds.hi <:< tp2)
          ||
           sym2.isAbstractType && !(tp2 =:= tp2.bounds.lo) && (tp1 <:< tp2.bounds.lo)
          ||

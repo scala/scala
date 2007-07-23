@@ -235,8 +235,9 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
      *  to:
      *
      *    class $anon() extends Object() with PartialFunction[T, R] with ScalaObject {
-     *      def apply(x: T): R = body;
-     *      def isDefinedAt(x: T): boolean = x match {
+     *      def apply(x: T): R = (x: @unchecked) match {
+     *        { case P_i if G_i => E_i }_i=1..n
+     *      def isDefinedAt(x: T): boolean = (x: @unchecked) match {
      *        case P_1 if G_1 => true
      *        ...
      *        case P_n if G_n => true
@@ -264,29 +265,43 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
         anonClass.info.decls enter applyMethod;
         for (vparam <- fun.vparams) vparam.symbol.owner = applyMethod;
         new ChangeOwnerTraverser(fun.symbol, applyMethod).traverse(fun.body);
-        var members = List(
-          DefDef(Modifiers(FINAL), nme.apply, List(), List(fun.vparams), TypeTree(restpe), fun.body)
-            setSymbol applyMethod);
-        if (fun.tpe.typeSymbol == PartialFunctionClass) {
-          val isDefinedAtMethod = anonClass.newMethod(fun.pos, nme.isDefinedAt)
-            .setFlag(FINAL).setInfo(MethodType(formals, BooleanClass.tpe))
-          anonClass.info.decls enter isDefinedAtMethod
-          def idbody(idparam: Symbol) = fun.body match {
-            case Match(_, cases) =>
-              val substParam = new TreeSymSubstituter(List(fun.vparams.head.symbol), List(idparam));
-              def transformCase(cdef: CaseDef): CaseDef =
-                substParam(
-                  resetAttrs(
-                    CaseDef(cdef.pat.duplicate, cdef.guard.duplicate, Literal(true))))
-              if (cases exists treeInfo.isDefaultCase) Literal(true)
-              else
-                Match(
-                  Ident(idparam),
-                  (cases map transformCase) :::
-                     List(CaseDef(Ident(nme.WILDCARD), EmptyTree, Literal(false))))
-          }
-          members = DefDef(isDefinedAtMethod, vparamss => idbody(vparamss.head.head)) :: members;
+        def applyMethodDef(body: Tree) =
+          DefDef(Modifiers(FINAL), nme.apply, List(), List(fun.vparams), TypeTree(restpe), body)
+            .setSymbol(applyMethod)
+        def mkUnchecked(tree: Tree) = tree match {
+          case Match(selector, cases) =>
+            atPos(tree.pos) {
+              Match(
+                Annotated(Annotation(New(TypeTree(UncheckedClass.tpe), List(List())), List()), selector),
+                cases)
+            }
+          case _ =>
+            tree
         }
+        val members =
+          if (fun.tpe.typeSymbol == PartialFunctionClass) {
+            val isDefinedAtMethod = anonClass.newMethod(fun.pos, nme.isDefinedAt)
+              .setFlag(FINAL).setInfo(MethodType(formals, BooleanClass.tpe))
+            anonClass.info.decls enter isDefinedAtMethod
+            def idbody(idparam: Symbol) = fun.body match {
+              case Match(_, cases) =>
+                val substParam = new TreeSymSubstituter(List(fun.vparams.head.symbol), List(idparam));
+                def transformCase(cdef: CaseDef): CaseDef =
+                  substParam(
+                    resetAttrs(
+                      CaseDef(cdef.pat.duplicate, cdef.guard.duplicate, Literal(true))))
+                if (cases exists treeInfo.isDefaultCase) Literal(true)
+                else
+                  Match(
+                    Ident(idparam),
+                    (cases map transformCase) :::
+                      List(CaseDef(Ident(nme.WILDCARD), EmptyTree, Literal(false))))
+            }
+            List(applyMethodDef(mkUnchecked(fun.body)),
+                 DefDef(isDefinedAtMethod, vparamss => mkUnchecked(idbody(vparamss.head.head))))
+          } else {
+            List(applyMethodDef(fun.body))
+          }
         localTyper.typed {
           atPos(fun.pos) {
             Block(

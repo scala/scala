@@ -722,7 +722,10 @@ trait Parsers {
     /** InfixType ::= CompoundType {id [nl] CompoundType}
      */
     def infixType(isPattern: Boolean, mode: Int): Tree =
-      infixTypeRest(inCurrentPos, annotType(isPattern), isPattern, mode)
+      infixTypeRest(inCurrentPos, infixTypeFirst(isPattern), isPattern, mode)
+
+    def infixTypeFirst(isPattern: boolean) =
+      if (inToken == LBRACE) scalaAnyRefConstr else annotType(isPattern)
 
     def infixTypeRest(pos: ScanPosition, t0: Tree, isPattern: Boolean, mode: Int): Tree = {
       val t = compoundTypeRest(pos, t0, isPattern)
@@ -742,9 +745,10 @@ trait Parsers {
     }
 
     /** CompoundType ::= AnnotType {with AnnotType} [Refinement]
+     *                |  Refinement
      */
     def compoundType(isPattern: Boolean): Tree =
-      compoundTypeRest(inCurrentPos, annotType(isPattern), isPattern)
+      compoundTypeRest(inCurrentPos, infixTypeFirst(isPattern), isPattern)
 
     def compoundTypeRest(pos: ScanPosition, t: Tree, isPattern: Boolean): Tree = {
       var ts = new ListBuffer[Tree] + t
@@ -1129,7 +1133,7 @@ trait Parsers {
       }
     }
 
-    /* SimpleExpr    ::= new ClassTemplate
+    /* SimpleExpr    ::= new (ClassTemplate | TemplateBody)
      *                |  BlockExpr
      *                |  SimpleExpr1 [`_']
      * SimpleExpr1   ::= literal

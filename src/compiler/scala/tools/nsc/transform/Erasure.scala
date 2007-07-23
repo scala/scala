@@ -793,7 +793,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
                         List(TypeTree(tp) setPos targ.pos)) setPos fn.pos,
                       List()) setPos tree.pos
                   targ.tpe match {
-                    case SingleType(pre, sym) =>
+                    case SingleType(_, _) | ThisType(_) | SuperType(_, _) =>
                       val cmpOp = if (targ.tpe <:< AnyValClass.tpe) Any_equals else Object_eq
                       atPos(tree.pos) {
                         Apply(Select(qual, cmpOp), List(gen.mkAttributedQualifier(targ.tpe)))

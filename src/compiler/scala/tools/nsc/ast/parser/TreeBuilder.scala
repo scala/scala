@@ -140,7 +140,9 @@ abstract class TreeBuilder {
 
   /** Create tree representing an object creation <new parents { stats }> */
   def makeNew(parents: List[Tree], self: ValDef, stats: List[Tree], argss: List[List[Tree]]): Tree =
-    if (parents.tail.isEmpty && stats.isEmpty)
+    if (parents.isEmpty)
+      makeNew(List(scalaAnyRefConstr), self, stats, argss)
+    else if (parents.tail.isEmpty && stats.isEmpty)
       New(parents.head, argss)
     else {
       val x = nme.ANON_CLASS_NAME.toTypeName
