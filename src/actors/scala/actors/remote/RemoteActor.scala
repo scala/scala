@@ -49,7 +49,7 @@ object RemoteActor {
    * Makes <code>self</code> remotely accessible on TCP port
    * <code>port</code>.
    */
-  def alive(port: int): unit = synchronized {
+  def alive(port: int): Unit = synchronized {
     val serv = new TcpService(port)
     serv.start()
     kernels += Actor.self -> serv.kernel
@@ -59,7 +59,7 @@ object RemoteActor {
    * Registers <code>a</code> under <code>name</code> on this
    * node.
    */
-  def register(name: Symbol, a: Actor): unit = synchronized {
+  def register(name: Symbol, a: Actor): Unit = synchronized {
     val kernel = kernels.get(Actor.self) match {
       case None =>
         val serv = new TcpService(TcpService.generatePort)

@@ -40,7 +40,7 @@ trait Infer {
    *  @param formals ...
    *  @param nargs ...
    */
-  def formalTypes(formals: List[Type], nargs: int): List[Type] = {
+  def formalTypes(formals: List[Type], nargs: Int): List[Type] = {
     val formals1 = formals map {
       case TypeRef(_, sym, List(arg)) if (sym == ByNameParamClass) => arg
       case formal => formal
@@ -51,12 +51,12 @@ trait Infer {
     } else formals1
   }
 
-  def actualTypes(actuals: List[Type], nformals: int): List[Type] =
+  def actualTypes(actuals: List[Type], nformals: Int): List[Type] =
     if (nformals == 1 && actuals.length != 1)
       List(if (actuals.length == 0) UnitClass.tpe else tupleType(actuals))
     else actuals
 
-  def actualArgs(pos: Position, actuals: List[Tree], nformals: int): List[Tree] =
+  def actualArgs(pos: Position, actuals: List[Tree], nformals: Int): List[Tree] =
     if (nformals == 1 && actuals.length != 1) List(atPos(pos)(gen.mkTuple(actuals))) else actuals
 
   /** A fresh type varable with given type parameter as origin.
@@ -103,7 +103,7 @@ trait Infer {
    *  @param tp ...
    *  @return   ...
    */
-  def isFullyDefined(tp: Type): boolean = tp match {
+  def isFullyDefined(tp: Type): Boolean = tp match {
     case WildcardType | NoType =>
       false
     case NoPrefix | ThisType(_) | ConstantType(_) =>
@@ -134,7 +134,7 @@ trait Infer {
    *  @throws NoInstance
    */
   private def solvedTypes(tvars: List[TypeVar], tparams: List[Symbol],
-                          variances: List[int], upper: boolean): List[Type] = {
+                          variances: List[Int], upper: Boolean): List[Type] = {
     solve(tvars, tparams, variances, upper)
     for (val tvar <- tvars) assert(tvar.constr.inst != tvar, tvar.origin)
     tvars map instantiate
@@ -214,8 +214,9 @@ trait Infer {
         "\n possible cause: missing arguments for method or constructor"
        else "")
 
-    def error(pos: Position, msg: String): unit =
+    def error(pos: Position, msg: String) {
       context.error(pos, msg)
+    }
 
     def errorTree(tree: Tree, msg: String): Tree = {
       if (!tree.isErroneous) error(tree.pos, msg)
@@ -322,7 +323,7 @@ trait Infer {
         }
       }
 
-    def isPlausiblyCompatible(tp: Type, pt: Type): boolean = tp match {
+    def isPlausiblyCompatible(tp: Type, pt: Type): Boolean = tp match {
       case PolyType(_, restpe) =>
         isPlausiblyCompatible(restpe, pt)
       case MethodType(formals, _) =>
@@ -342,7 +343,7 @@ trait Infer {
         true
     }
 
-    def isPlausiblySubType(tp1: Type, tp2: Type): boolean = tp1.normalize match {
+    def isPlausiblySubType(tp1: Type, tp2: Type): Boolean = tp1.normalize match {
       case TypeRef(_, sym1, _) =>
         !sym1.isClass || {
           tp2.normalize match {
@@ -354,17 +355,17 @@ trait Infer {
         true
     }
 
-    def isCompatible(tp: Type, pt: Type): boolean = {
+    def isCompatible(tp: Type, pt: Type): Boolean = {
       val tp1 = normalize(tp)
       (tp1 <:< pt) || isCoercible(tp, pt)
     }
 
-    def isWeaklyCompatible(tp: Type, pt: Type): boolean =
+    def isWeaklyCompatible(tp: Type, pt: Type): Boolean =
       pt.typeSymbol == UnitClass || isCompatible(tp, pt)
 
-    def isCoercible(tp: Type, pt: Type): boolean = false
+    def isCoercible(tp: Type, pt: Type): Boolean = false
 
-    def isCompatible(tps: List[Type], pts: List[Type]): boolean =
+    def isCompatible(tps: List[Type], pts: List[Type]): Boolean =
       List.map2(tps, pts)((tp, pt) => isCompatible(tp, pt)) forall (x => x)
 
     /* -- Type instantiation------------------------------------------------ */
@@ -409,7 +410,7 @@ trait Infer {
                       pt: Type): List[Type] = {
       /** Map type variable to its instance, or, if `variance' is covariant/contravariant,
        *  to its upper/lower bound */
-      def instantiateToBound(tvar: TypeVar, variance: int): Type = try {
+      def instantiateToBound(tvar: TypeVar, variance: Int): Type = try {
         //Console.println("instantiate "+tvar+tvar.constr+" variance = "+variance);//DEBUG
         if (tvar.constr.inst != NoType) {
           instantiate(tvar.constr.inst)
@@ -509,7 +510,7 @@ trait Infer {
      *  @return            ...
      */
     def isApplicable(undetparams: List[Symbol], ftpe: Type,
-                     argtpes0: List[Type], pt: Type): boolean =
+                     argtpes0: List[Type], pt: Type): Boolean =
       ftpe match {
         case MethodType(formals0, _) =>
           val formals = formalTypes(formals0, argtpes0.length)
@@ -538,7 +539,7 @@ trait Infer {
           false
       }
 
-    def isApplicableSafe(undetparams: List[Symbol], ftpe: Type, argtpes0: List[Type], pt: Type): boolean = {
+    def isApplicableSafe(undetparams: List[Symbol], ftpe: Type, argtpes0: List[Type], pt: Type): Boolean = {
       val reportAmbiguousErrors = context.reportAmbiguousErrors
       context.reportAmbiguousErrors = false
       try {
@@ -558,7 +559,7 @@ trait Infer {
      *  @param ftpe2 ...
      *  @return      ...
      */
-    def specializes(ftpe1: Type, ftpe2: Type): boolean = ftpe1 match {
+    def specializes(ftpe1: Type, ftpe2: Type): Boolean = ftpe1 match {
       case MethodType(formals, _) =>
         isApplicable(List(), ftpe2, formals, WildcardType)
       case PolyType(tparams, MethodType(formals, _)) =>
@@ -615,7 +616,7 @@ trait Infer {
      *
      * If <arg>sym2</arg> is invariant, <arg>sym1</arg>'s variance is irrelevant. Otherwise they must be equal.
      */
-    def variancesMatch(sym1: Symbol, sym2: Symbol): boolean = (sym2.variance==0 || sym1.variance==sym2.variance)
+    def variancesMatch(sym1: Symbol, sym2: Symbol): Boolean = (sym2.variance==0 || sym1.variance==sym2.variance)
 
     /** Check well-kindedness of type application (assumes arities are already checked) -- @M
      *
@@ -647,11 +648,11 @@ trait Infer {
           val _arityMismatches = new ListBuffer[(Symbol, Symbol)]
           val _varianceMismatches = new ListBuffer[(Symbol, Symbol)]
           val _stricterBounds = new ListBuffer[(Symbol, Symbol)]
-          def varianceMismatch(a: Symbol, p: Symbol): unit = _varianceMismatches += (a, p)
-          def stricterBound(a: Symbol, p: Symbol): unit = _stricterBounds += (a, p)
-          def arityMismatches(as: Iterable[(Symbol, Symbol)]): unit = _arityMismatches ++= as
-          def varianceMismatches(as: Iterable[(Symbol, Symbol)]): unit = _varianceMismatches ++= as
-          def stricterBounds(as: Iterable[(Symbol, Symbol)]): unit = _stricterBounds ++= as
+          def varianceMismatch(a: Symbol, p: Symbol) { _varianceMismatches += (a, p) }
+          def stricterBound(a: Symbol, p: Symbol) { _stricterBounds += (a, p) }
+          def arityMismatches(as: Iterable[(Symbol, Symbol)]) { _arityMismatches ++= as }
+          def varianceMismatches(as: Iterable[(Symbol, Symbol)]) { _varianceMismatches ++= as }
+          def stricterBounds(as: Iterable[(Symbol, Symbol)]) { _stricterBounds ++= as }
 
           for ((hkarg, hkparam) <- hkargs zip hkparams) {
             if (hkparam.typeParams.isEmpty) { // base-case: kind *
@@ -723,7 +724,7 @@ trait Infer {
      *  attempts fail, an error is produced.
      */
     def inferArgumentInstance(tree: Tree, undetparams: List[Symbol],
-                              strictPt: Type, lenientPt: Type): unit = {
+                              strictPt: Type, lenientPt: Type) {
       var targs = exprTypeArgs(undetparams, tree.tpe, strictPt)
       if (targs eq null) targs = exprTypeArgs(undetparams, tree.tpe, lenientPt)
       substExpr(tree, undetparams, targs, lenientPt)
@@ -736,8 +737,9 @@ trait Infer {
      *  @param undetparams ...
      *  @param pt ...
      */
-    def inferExprInstance(tree: Tree, undetparams: List[Symbol], pt: Type): unit =
+    def inferExprInstance(tree: Tree, undetparams: List[Symbol], pt: Type) {
       substExpr(tree, undetparams, exprTypeArgs(undetparams, tree.tpe, pt), pt)
+    }
 
     /** Substitite free type variables `undetparams' of polymorphic argument
      *  expression <code>tree</code> to `targs', Error if `targs' is null
@@ -803,8 +805,8 @@ trait Infer {
      *        bt1 and bt2 have the same prefix, and
      *        any correspondiong non-variant type arguments of bt1 and bt2 are the same
      */
-    def isPopulated(tp1: Type, tp2: Type): boolean = {
-      def isConsistent(tp1: Type, tp2: Type): boolean = (tp1, tp2) match {
+    def isPopulated(tp1: Type, tp2: Type): Boolean = {
+      def isConsistent(tp1: Type, tp2: Type): Boolean = (tp1, tp2) match {
         case (TypeRef(pre1, sym1, args1), TypeRef(pre2, sym2, args2)) =>
           assert(sym1 == sym2)
           pre1 =:= pre2 &&
@@ -839,7 +841,7 @@ trait Infer {
      *  @param undetparams ...
      *  @param pt          ...
      */
-    def inferConstructorInstance(tree: Tree, undetparams: List[Symbol], pt: Type): unit = {
+    def inferConstructorInstance(tree: Tree, undetparams: List[Symbol], pt: Type) {
       var restpe = tree.tpe.finalResultType
       var tvars = undetparams map freshVar
 
@@ -912,7 +914,7 @@ trait Infer {
       }
     }
 
-    def checkCheckable(pos: Position, tp: Type): unit = {
+    def checkCheckable(pos: Position, tp: Type) {
       def patternWarning(tp: Type, prefix: String) =
         context.unit.uncheckedWarning(pos, prefix+tp+" in type pattern is unchecked since it is eliminated by erasure")
       def isLocalBinding(sym: Symbol) =
@@ -1015,7 +1017,7 @@ trait Infer {
 
     abstract class SymCollector extends TypeTraverser {
       private var result: List[Symbol] = _
-      protected def includeCondition(sym: Symbol): boolean
+      protected def includeCondition(sym: Symbol): Boolean
 
       override def traverse(tp: Type): TypeTraverser = {
         tp.normalize match {
@@ -1049,12 +1051,12 @@ trait Infer {
     /** A traverser to collect type parameters referred to in a type
      */
     object freeTypeParamsOfTerms extends SymCollector {
-      protected def includeCondition(sym: Symbol): boolean =
+      protected def includeCondition(sym: Symbol): Boolean =
         sym.isAbstractType && sym.owner.isTerm
     }
 
     object typeRefs extends SymCollector {
-      protected def includeCondition(sym: Symbol): boolean = true
+      protected def includeCondition(sym: Symbol): Boolean = true
     }
 
     def checkDead(tree: Tree): Tree = {
@@ -1081,11 +1083,11 @@ trait Infer {
      *  If several alternatives match `pt', take parameterless one.
      *  If no alternative matches `pt', take the parameterless one anyway.
      */
-    def inferExprAlternative(tree: Tree, pt: Type): unit = tree.tpe match {
+    def inferExprAlternative(tree: Tree, pt: Type): Unit = tree.tpe match {
       case OverloadedType(pre, alts) => tryTwice {
         var alts1 = alts filter (alt => isCompatible(pre.memberType(alt), pt))
         if (alts1.isEmpty) alts1 = alts
-        def improves(sym1: Symbol, sym2: Symbol): boolean =
+        def improves(sym1: Symbol, sym2: Symbol): Boolean =
           sym2 == NoSymbol ||
           { val tp1 = pre.memberType(sym1)
             val tp2 = pre.memberType(sym2)
@@ -1130,7 +1132,7 @@ trait Infer {
      *  with pt = WildcardType.
      *  Otherwise, if there is no best alternative, error.
      */
-    def inferMethodAlternative(tree: Tree, undetparams: List[Symbol], argtpes: List[Type], pt: Type): unit = tree.tpe match {
+    def inferMethodAlternative(tree: Tree, undetparams: List[Symbol], argtpes: List[Type], pt: Type): Unit = tree.tpe match {
       case OverloadedType(pre, alts) =>
         tryTwice {
           if (settings.debug.value) log("infer method alt " + tree.symbol + " with alternatives " + (alts map pre.memberType) + ", argtpes = " + argtpes + ", pt = " + pt)
@@ -1167,7 +1169,7 @@ trait Infer {
      *
      *  @param infer ...
      */
-    def tryTwice(infer: => unit): unit = {
+    def tryTwice(infer: => Unit) {
       if (context.implicitsEnabled) {
         val reportGeneralErrors = context.reportGeneralErrors
         context.reportGeneralErrors = false
@@ -1194,7 +1196,7 @@ trait Infer {
      *  @param tree ...
      *  @param nparams ...
      */
-    def inferPolyAlternatives(tree: Tree, argtypes: List[Type]): unit = tree.tpe match {
+    def inferPolyAlternatives(tree: Tree, argtypes: List[Type]): Unit = tree.tpe match {
       case OverloadedType(pre, alts) =>
         val sym0 = tree.symbol filter { alt => alt.typeParams.length == argtypes.length }
         if (sym0 == NoSymbol) {

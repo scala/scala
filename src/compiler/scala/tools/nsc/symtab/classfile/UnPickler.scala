@@ -72,7 +72,7 @@ abstract class UnPickler {
     }
 
     /** Does entry represent an (internal) symbol */
-    private def isSymbolEntry(i: Int): boolean = {
+    private def isSymbolEntry(i: Int): Boolean = {
       val tag = bytes(index(i)) % PosOffset
       (firstSymTag <= tag && tag <= lastSymTag &&
        (tag != CLASSsym || !isRefinementSymbolEntry(i)))

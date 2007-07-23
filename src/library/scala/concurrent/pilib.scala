@@ -18,10 +18,10 @@ package scala.concurrent
  *    example, the definition of a two-place buffer using the <code>pilib</code>
  *    library looks like:
  *  </p><pre>
- *  <b>def</b> Buffer[a](put: Chan[a], get: Chan[a]): unit = {
- *    <b>def</b> B0: unit = choice ( put * { x => B1(x) } );
- *    <b>def</b> B1(x: a): unit = choice ( get(x) * B0, put * { y => B2(x, y) } )
- *    <b>def</b> B2(x: a, y: a): unit = choice ( get(x) * B1(y) )
+ *  <b>def</b> Buffer[a](put: Chan[a], get: Chan[a]) {
+ *    <b>def</b> B0 { choice ( put * { x => B1(x) } ) }
+ *    <b>def</b> B1(x: a) { choice ( get(x) * B0, put * { y => B2(x, y) } ) }
+ *    <b>def</b> B2(x: a, y: a) { choice ( get(x) * B1(y) ) }
  *    B0
  *  }
  *  </pre>

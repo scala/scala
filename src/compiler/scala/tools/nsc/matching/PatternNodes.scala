@@ -1,14 +1,16 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author Burak Emir
  */
 // $Id$
 
 package scala.tools.nsc.matching
 
-import compat.StringBuilder
 import scala.tools.nsc.util.{Position, NoPosition}
 
+/**
+ *  @author Burak Emir
+ */
 trait PatternNodes { self: transform.ExplicitOuter =>
 
   import global._
@@ -17,9 +19,11 @@ trait PatternNodes { self: transform.ExplicitOuter =>
 
   /** returns the child patterns of a pattern
    */
-  protected def patternArgs(tree: Tree): List[Tree] = { //Console.println("patternArgs "+tree.toString())
+  protected def patternArgs(tree: Tree): List[Tree] = {
+    //Console.println("patternArgs "+tree.toString())
     /*val res = */ tree match {
-      case Bind(_, pat)           => patternArgs(pat)
+      case Bind(_, pat) =>
+        patternArgs(pat)
 
       case a @ Apply(_, List(av @ ArrayValue(_, ts))) if isSeqApply(a) && isRightIgnoring(av) =>
         ts.reverse.drop(1).reverse
@@ -27,16 +31,20 @@ trait PatternNodes { self: transform.ExplicitOuter =>
       case a @ Apply(_, List(av @ ArrayValue(_, ts))) if isSeqApply(a) =>
         ts
 
-      case a @ Apply(_, args)     => args
+      case a @ Apply(_, args) =>
+        args
 
-      case a @ UnApply(_, args)   => args
+      case a @ UnApply(_, args) =>
+        args
 
       case av @ ArrayValue(_, ts) if isRightIgnoring(av) =>
         ts.reverse.drop(1).reverse
 
-      case av @ ArrayValue(_, ts) => ts
+      case av @ ArrayValue(_, ts) =>
+        ts
 
-      case _                      => List()
+      case _ =>
+        List()
     }
     //Console.println("patternArgs returns "+res.toString()) ; res
   }
@@ -55,7 +63,7 @@ trait PatternNodes { self: transform.ExplicitOuter =>
 
     def forEachAlternative(f: PatternNode => Unit) { // only for header?
       var z = this;
-      while(z ne null) {
+      while (z ne null) {
         f(z)
         z = z.or
       }
@@ -79,7 +87,10 @@ trait PatternNodes { self: transform.ExplicitOuter =>
         null
     }
 
-    def set(p:(Position,Type)): this.type = { /*assert(tpe ne null); */ this.pos = p._1; this.tpe = p._2; this }
+    def set(p:(Position,Type)): this.type = {
+      /*assert(tpe ne null); */
+      this.pos = p._1; this.tpe = p._2; this
+    }
 
     def dup(): PatternNode = {
       var res: PatternNode = this match {
@@ -128,7 +139,7 @@ trait PatternNodes { self: transform.ExplicitOuter =>
       case _ => null
     }
 
-    def isDefaultPat(): boolean = this match {
+    def isDefaultPat(): Boolean = this match {
       case DefaultPat() => true
       case _ => false
     }
@@ -137,7 +148,7 @@ trait PatternNodes { self: transform.ExplicitOuter =>
      *  p and q are equal (constructor | sequence) type tests, or
      *  "q matches" => "p matches"
      */
-    def isSameAs(q: PatternNode): boolean = this match {
+    def isSameAs(q: PatternNode): Boolean = this match {
       case ConstrPat(_) =>
         q match {
           case ConstrPat(_) =>
@@ -237,7 +248,7 @@ trait PatternNodes { self: transform.ExplicitOuter =>
           sb.setCharAt(indent.length() - 1, ' ')
         var i = 0; while (i < s.length()) {
           sb.append(' ')
-          i = i + 1
+          i += 1
         }
         sb.toString()
       }
@@ -333,11 +344,11 @@ trait PatternNodes { self: transform.ExplicitOuter =>
     }
 
     def findLastSection: Header = {
-      var h: Header = this;
+      var h: Header = this
       while(h.next != null) { h = h.next }
       h
     }
-    var isSubHeader = false;
+    var isSubHeader = false
 
     /* returns true if this header node has a catch all case
 
@@ -384,7 +395,7 @@ trait PatternNodes { self: transform.ExplicitOuter =>
       var res = true
       var coveredCases: SymSet  = emptySymbolSet
       var remainingCases        = checkExCoverage(selType.typeSymbol)
-      var cases = 0;
+      var cases = 0
 
       def traverse(alts:PatternNode) {
         //Console.println("traverse, alts="+alts)
@@ -480,7 +491,7 @@ trait PatternNodes { self: transform.ExplicitOuter =>
   case class ConstantPat(value: Any /*AConstant*/) extends PatternNode
   case class VariablePat(tree: Tree) extends PatternNode
   case class AltPat(subheader: Header) extends PatternNode
-  case class SequencePat(override val casted: Symbol, len: int) extends PatternNode // only used in PatternMatcher
+  case class SequencePat(override val casted: Symbol, len: Int) extends PatternNode // only used in PatternMatcher
 
   case class RightIgnoringSequencePat(override val casted: Symbol, castedRest: Symbol, minlen: int) extends PatternNode //PM
 
@@ -492,17 +503,17 @@ trait PatternNodes { self: transform.ExplicitOuter =>
     private var boundVars: Array[ValDef] = new Array[ValDef](4)
     private var numVars = 0
 
-    def substitute(oldSym: Symbol, newInit: Tree): Unit = {
+    def substitute(oldSym: Symbol, newInit: Tree) {
       var i = 0; while (i < numVars) {
         if (boundVars(i).rhs.symbol == oldSym) {
           boundVars(i) = ValDef(boundVars(i).symbol, newInit)
           return
         }
-        i = i + 1
+        i += 1
       }
     }
 
-    def newBoundVar(sym: Symbol, tpe: Type, init: Tree): Unit = {
+    def newBoundVar(sym: Symbol, tpe: Type, init: Tree) {
       //if(sym == Symbol.NoSymbol ) {
       //  scala.Predef.Error("can't add variable with NoSymbol");
       //}
@@ -515,7 +526,7 @@ trait PatternNodes { self: transform.ExplicitOuter =>
       }
       sym.setInfo(tpe)
       this.boundVars(numVars) = ValDef(sym, init.duplicate)
-      numVars = numVars + 1
+      numVars += 1
     }
 
     def getBoundVars(): Array[ValDef] = {
@@ -535,7 +546,7 @@ trait PatternNodes { self: transform.ExplicitOuter =>
 	    !isSameType(boundVars(i).tpe, env.boundVars(i).tpe) ||
 	    (boundVars(i).rhs != env.boundVars(i).rhs))
 	  return false
-        i = i + 1
+        i += 1
       }
       true
     }

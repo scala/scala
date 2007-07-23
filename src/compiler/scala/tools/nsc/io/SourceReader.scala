@@ -58,11 +58,13 @@ class SourceReader(decoder: CharsetDecoder) {
    */
   def read(file: AbstractFile): Array[Char] = {
     file match {
-      case p:PlainFile => read(p.file)                                                     // bq: (!!!)
+      case p:PlainFile =>
+        read(p.file)                                                     // bq: (!!!)
       case z:ZipArchive#FileEntry =>
         val c = Channels.newChannel(z.getArchive.getInputStream(z.entry))
         read(c)
-      case _ => throw new IOException(file.toString()+" is neither plain file nor ZipArchive#FileEntry")
+      case _ =>
+        throw new IOException(file.toString()+" is neither plain file nor ZipArchive#FileEntry")
     }
     /*
     val decoder: CharsetDecoder = this.decoder.reset();
@@ -119,7 +121,7 @@ object SourceReader {
    * chunk of the input file.
    */
   def decode(decoder: CharsetDecoder, bytes: ByteBuffer, chars: CharBuffer,
-             endOfInput: boolean): CharBuffer =
+             endOfInput: Boolean): CharBuffer =
   {
     val result: CoderResult = decoder.decode(bytes, chars, endOfInput)
     if (result.isUnderflow()) {

@@ -69,7 +69,7 @@ abstract class OverridingPairs {
 
     private val size = base.info.baseClasses.length
 
-    private val index = new HashMap[Symbol, int]
+    private val index = new HashMap[Symbol, Int]
 
     { var i = 0
       for (bc <- base.info.baseClasses) {
@@ -108,7 +108,7 @@ abstract class OverridingPairs {
     //@M: note that next is called once during object initialisation
     def hasNext: Boolean = curEntry ne null
 
-    def next: unit =
+    def next {
       if (curEntry ne null) {
         overriding = curEntry.sym
         if (nextEntry ne null) {
@@ -133,6 +133,7 @@ abstract class OverridingPairs {
           next
         }
       }
+    }
 
     next //@M: ATTN! this method gets called during construction!
   }

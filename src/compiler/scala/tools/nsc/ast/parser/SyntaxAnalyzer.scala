@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author Martin Odersky
  */
 // $Id$
@@ -15,7 +15,7 @@ abstract class SyntaxAnalyzer extends SubComponent with Parsers with MarkupParse
   def newPhase(prev: Phase): StdPhase = new ParserPhase(prev)
 
   class ParserPhase(prev: scala.tools.nsc.Phase) extends StdPhase(prev) {
-    def apply(unit: global.CompilationUnit): unit = {
+    def apply(unit: global.CompilationUnit) {
       global.informProgress("parsing " + unit)
       unit.body = new UnitParser(unit).parse()
     }

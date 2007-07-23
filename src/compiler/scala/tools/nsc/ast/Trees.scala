@@ -87,8 +87,9 @@ trait Trees {
     }
 
     def symbol: Symbol = null
-    def symbol_=(sym: Symbol): unit =
+    def symbol_=(sym: Symbol) {
       throw new Error("symbol_= inapplicable for " + this)
+    }
     def setSymbol(sym: Symbol): this.type = { symbol = sym; this }
 
     def hasSymbol = false

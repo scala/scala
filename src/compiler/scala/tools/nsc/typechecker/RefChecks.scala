@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -46,7 +46,7 @@ abstract class RefChecks extends InfoTransform {
 
   /** the following two members override abstract members in Transform */
   val phaseName: String = "refchecks"
-  override def phaseNewFlags: long = lateMETHOD
+  override def phaseNewFlags: Long = lateMETHOD
 
   def newTransformer(unit: CompilationUnit): RefCheckTransformer =
     new RefCheckTransformer(unit)
@@ -88,7 +88,7 @@ abstract class RefChecks extends InfoTransform {
      *  4. Check that every member with an `override' modifier
      *     overrides some other member.
      */
-    private def checkAllOverrides(clazz: Symbol): unit = {
+    private def checkAllOverrides(clazz: Symbol) {
 
       val self = clazz.thisType
 
@@ -103,7 +103,7 @@ abstract class RefChecks extends InfoTransform {
                 else "")))
       }
 
-      def overridesType(tp1: Type, tp2: Type): boolean = (tp1.normalize, tp2.normalize) match {
+      def overridesType(tp1: Type, tp2: Type): Boolean = (tp1.normalize, tp2.normalize) match {
         case (MethodType(List(), rtp1), PolyType(List(), rtp2)) =>
           rtp1 <:< rtp2
         case (PolyType(List(), rtp1), MethodType(List(), rtp2)) =>
@@ -117,22 +117,23 @@ abstract class RefChecks extends InfoTransform {
       /** Check that all conditions for overriding <code>other</code> by
        *  <code>member</code> are met.
        */
-      def checkOverride(clazz: Symbol, member: Symbol, other: Symbol): unit = {
+      def checkOverride(clazz: Symbol, member: Symbol, other: Symbol) {
         val pos = if (member.owner == clazz) member.pos else clazz.pos
 
-        def overrideError(msg: String): unit =
+        def overrideError(msg: String) {
           if (other.tpe != ErrorType && member.tpe != ErrorType)
             unit.error(pos, "error overriding " + infoString(other) +
                        ";\n " + infoString(member) + " " + msg);
+        }
 
-        def overrideTypeError(): unit = {
+        def overrideTypeError() {
           if (other.tpe != ErrorType && member.tpe != ErrorType) {
             overrideError("has incompatible type "+analyzer.underlying(member).tpe.normalize);
             explainTypes(member.tpe, other.tpe);
           }
         }
 
-        def overrideAccessError(): unit = {
+        def overrideAccessError() {
           val pwString = if (other.privateWithin == NoSymbol) ""
                          else other.privateWithin.name.toString
           val otherAccess = flagsToString(other getFlag (PRIVATE | PROTECTED), pwString)
@@ -242,7 +243,7 @@ abstract class RefChecks extends InfoTransform {
       }
       // 2. Check that only abstract classes have deferred members
       if (clazz.isClass && !clazz.isTrait) {
-        def abstractClassError(mustBeMixin: boolean, msg: String): unit = {
+        def abstractClassError(mustBeMixin: Boolean, msg: String) {
           unit.error(clazz.pos,
             (if (clazz.isAnonymousClass || clazz.isModuleClass) "object creation impossible"
              else if (mustBeMixin) clazz.toString() + " needs to be a mixin"
@@ -310,18 +311,18 @@ abstract class RefChecks extends InfoTransform {
      *    </li>
      *  </ol>
      */
-    private def validateBaseTypes(clazz: Symbol): unit = {
+    private def validateBaseTypes(clazz: Symbol) {
       val seenTypes = new Array[Type](clazz.info.closure.length)
       var seenCaseClass = if (clazz hasFlag CASE) clazz else NoSymbol
 
-      def validateTypes(tps: List[Type], includeSuper: boolean): unit = {
+      def validateTypes(tps: List[Type], includeSuper: Boolean) {
         if (!tps.isEmpty) {
           for (val tp <- tps.tail.reverse) validateType(tp, false);
           if (includeSuper) validateType(tps.head, true);
         }
       }
 
-      def validateType(tp: Type, includeSuper: boolean): unit = {
+      def validateType(tp: Type, includeSuper: Boolean) {
         val baseClass = tp.typeSymbol
         if (baseClass.isClass) {
           val index = clazz.info.closurePos(baseClass)
@@ -364,12 +365,12 @@ abstract class RefChecks extends InfoTransform {
 
       private def validateVariance(base: Symbol) {
 
-        def varianceString(variance: int): String =
+        def varianceString(variance: Int): String =
           if (variance == 1) "covariant"
           else if (variance == -1) "contravariant"
           else "invariant";
 
-        def relativeVariance(tvar: Symbol): int = {
+        def relativeVariance(tvar: Symbol): Int = {
           val clazz = tvar.owner
           var sym = base
           var state = CoVariance
@@ -388,7 +389,7 @@ abstract class RefChecks extends InfoTransform {
           state
         }
 
-        def validateVariance(tp: Type, variance: int): unit = tp match {
+        def validateVariance(tp: Type, variance: Int): Unit = tp match {
           case ErrorType => ;
           case WildcardType => ;
           case NoType => ;
@@ -430,18 +431,20 @@ abstract class RefChecks extends InfoTransform {
             validateVariance(tp, variance)
         }
 
-        def validateVariances(tps: List[Type], variance: int): unit =
+        def validateVariances(tps: List[Type], variance: Int) {
           tps foreach (tp => validateVariance(tp, variance))
+        }
 
-        def validateVarianceArgs(tps: List[Type], variance: int, tparams: List[Symbol]): unit =
+        def validateVarianceArgs(tps: List[Type], variance: Int, tparams: List[Symbol]) {
           (tps zip tparams) foreach {
             case (tp, tparam) => validateVariance(tp, variance * tparam.variance)
           }
+        }
 
         validateVariance(base.info, CoVariance)
       }
 
-      override def traverse(tree: Tree): Unit = {
+      override def traverse(tree: Tree) {
         tree match {
           case ClassDef(_, _, _, _) | TypeDef(_, _, _, _) =>
             validateVariance(tree.symbol)
@@ -463,7 +466,7 @@ abstract class RefChecks extends InfoTransform {
 
     class LevelInfo(val outer: LevelInfo) {
       val scope: Scope = if (outer eq null) newScope else newScope(outer.scope)
-      var maxindex: int = Math.MIN_INT
+      var maxindex: Int = Math.MIN_INT
       var refpos: Position = _
       var refsym: Symbol = _
     }
@@ -471,13 +474,15 @@ abstract class RefChecks extends InfoTransform {
     private var currentLevel: LevelInfo = null
     private val symIndex = new HashMap[Symbol, int]
 
-    private def pushLevel(): unit =
+    private def pushLevel() {
       currentLevel = new LevelInfo(currentLevel)
+    }
 
-    private def popLevel(): unit =
+    private def popLevel() {
       currentLevel = currentLevel.outer
+    }
 
-    private def enterSyms(stats: List[Tree]): unit = {
+    private def enterSyms(stats: List[Tree]) {
       var index = -1
       for (val stat <- stats) {
         index = index + 1;
@@ -493,7 +498,7 @@ abstract class RefChecks extends InfoTransform {
       }
     }
 
-    private def enterReference(pos: Position, sym: Symbol): unit =
+    private def enterReference(pos: Position, sym: Symbol) {
       if (sym.isLocal) {
         val e = currentLevel.scope.lookupEntry(sym.name)
         if ((e ne null) && sym == e.sym) {
@@ -507,6 +512,7 @@ abstract class RefChecks extends InfoTransform {
           }
         }
       }
+    }
 
 // Comparison checking -------------------------------------------------------
     object normalizeAll extends TypeMap {
@@ -531,10 +537,10 @@ abstract class RefChecks extends InfoTransform {
             val formal = underlyingClass(fn.tpe.paramTypes.head)
             val actual = underlyingClass(args.head.tpe)
             val receiver = underlyingClass(qual.tpe)
-            def nonSensibleWarning(what: String, alwaysEqual: boolean) =
+            def nonSensibleWarning(what: String, alwaysEqual: Boolean) =
               unit.warning(pos, "comparing "+what+" using `"+name.decode+"' will always yield "+
                            (alwaysEqual == (name == nme.EQ || name == nme.LE || name == nme.GE)))
-            def nonSensible(pre: String, alwaysEqual: boolean) =
+            def nonSensible(pre: String, alwaysEqual: Boolean) =
               nonSensibleWarning(pre+"values of types "+normalizeAll(qual.tpe.widen)+" and "+normalizeAll(args.head.tpe.widen),
                                  alwaysEqual) // @MAT normalize for consistency in error message, otherwise part is normalized due to use of `typeSymbol', but the rest isn't
             def hasObjectEquals = receiver.info.member(nme.equals_) == Object_equals
@@ -578,7 +584,7 @@ abstract class RefChecks extends InfoTransform {
       pushLevel()
       enterSyms(stats)
       var index = -1
-      val stats1 = stats flatMap { stat => index = index + 1; transformStat(stat, index) }
+      val stats1 = stats flatMap { stat => index += 1; transformStat(stat, index) }
       popLevel()
       stats1
     }
@@ -588,7 +594,7 @@ abstract class RefChecks extends InfoTransform {
      *    - for all other lazy values z the accessor is a block of this form:
      *      { z = <rhs>; z } where z can be an identifier or a field.
      */
-    def transformStat(tree: Tree, index: int): List[Tree] = tree match {
+    def transformStat(tree: Tree, index: Int): List[Tree] = tree match {
       case ModuleDef(mods, name, impl) =>
         val sym = tree.symbol
         val cdef = ClassDef(mods | MODULE, name, List(), impl)
@@ -677,13 +683,13 @@ abstract class RefChecks extends InfoTransform {
     override def transform(tree: Tree): Tree = try {
 
       /* Check whether argument types conform to bounds of type parameters */
-      def checkBounds(pre: Type, owner: Symbol, tparams: List[Symbol], argtps: List[Type]): unit = try {
+      def checkBounds(pre: Type, owner: Symbol, tparams: List[Symbol], argtps: List[Type]): Unit = try {
         typer.infer.checkBounds(tree.pos, pre, owner, tparams, argtps, "");
       } catch {
         case ex: TypeError => unit.error(tree.pos, ex.getMessage());
       }
 
-      def isIrrefutable(pat: Tree, seltpe: Type): boolean = {
+      def isIrrefutable(pat: Tree, seltpe: Type): Boolean = {
         val result = pat match {
           case Apply(_, args) =>
             val clazz = pat.tpe.typeSymbol;

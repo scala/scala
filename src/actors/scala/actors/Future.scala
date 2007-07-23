@@ -91,12 +91,12 @@ object Futures {
     })
 
     def awaitWith(partFuns: Seq[PartialFunction[Any, Pair[Int, Any]]]) {
-      val reaction: PartialFunction[Any, unit] = new PartialFunction[Any, unit] {
+      val reaction: PartialFunction[Any, Unit] = new PartialFunction[Any, Unit] {
         def isDefinedAt(msg: Any) = msg match {
           case TIMEOUT => true
           case _ => partFuns exists (_ isDefinedAt msg)
         }
-        def apply(msg: Any): unit = msg match {
+        def apply(msg: Any): Unit = msg match {
           case TIMEOUT => // do nothing
           case _ => {
             val pfOpt = partFuns find (_ isDefinedAt msg)

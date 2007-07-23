@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author
  */
 // $Id$
@@ -57,7 +57,7 @@ abstract class LambdaLift extends InfoTransform {
     private val renamable = newSymSet
 
     /** A flag to indicate whether new free variables have been found */
-    private var changedFreeVars: boolean = _
+    private var changedFreeVars: Boolean = _
 
     /** Buffers for lifted out classes and methods */
     private val liftedDefs = new HashMap[Symbol, ListBuffer[Tree]]
@@ -138,7 +138,7 @@ abstract class LambdaLift extends InfoTransform {
      *    }
      *  }
      */
-    private def markFree(sym: Symbol, owner: Symbol): boolean = {
+    private def markFree(sym: Symbol, owner: Symbol): Boolean = {
       if (settings.debug.value)
         log("mark " + sym + " of " + sym.owner + " free in " + owner)
       if (owner == enclMethOrClass(sym.owner)) true
@@ -163,7 +163,7 @@ abstract class LambdaLift extends InfoTransform {
       }
     }
 
-    private def markCalled(sym: Symbol, owner: Symbol): unit = {
+    private def markCalled(sym: Symbol, owner: Symbol) {
       if (settings.debug.value)
         log("mark " + sym + " of " + sym.owner + " called by " + owner);
       symSet(called, owner) addEntry sym
@@ -188,7 +188,7 @@ abstract class LambdaLift extends InfoTransform {
 
     /** The traverse function */
     private val freeVarTraverser = new Traverser {
-      override def traverse(tree: Tree): unit = {
+      override def traverse(tree: Tree) {
        try { //debug
         val sym = tree.symbol;
         tree match {
@@ -232,28 +232,28 @@ abstract class LambdaLift extends InfoTransform {
      *  value/variable/let that are free in some function or class, and to
      *  all class/function symbols that are owned by some function.
      */
-    private def computeFreeVars: unit = {
+    private def computeFreeVars {
       freeVarTraverser.traverse(unit.body)
 
       do {
         changedFreeVars = false
-        for (val caller <- called.keys;
-             val callee <- called(caller).elements;
-             val fv <- freeVars(callee))
+        for (caller <- called.keys;
+             callee <- called(caller).elements;
+             fv <- freeVars(callee))
           markFree(fv, caller)
       } while (changedFreeVars);
 
-      for (val sym <- renamable.elements) {
+      for (sym <- renamable.elements) {
         sym.name = unit.fresh.newName(sym.name.toString() + "$")
         if (settings.debug.value) log("renamed: " + sym.name)
       }
 
       atPhase(phase.next) {
-        for (val owner <- free.keys) {
+        for (owner <- free.keys) {
           if (settings.debug.value)
             log("free(" + owner + owner.locationString + ") = " + free(owner).elements.toList);
           proxies(owner) =
-            for (val fv <- free(owner).elements.toList) yield {
+            for (fv <- free(owner).elements.toList) yield {
               val proxy = owner.newValue(owner.pos, fv.name)
                 .setFlag(if (owner.isClass) PARAMACCESSOR | PRIVATE | LOCAL else PARAM)
                 .setFlag(SYNTHETIC)
@@ -411,7 +411,7 @@ abstract class LambdaLift extends InfoTransform {
       super.transformStats(stats, exprOwner) map addLifted
     }
 
-    override def transformUnit(unit: CompilationUnit): unit = {
+    override def transformUnit(unit: CompilationUnit) {
       computeFreeVars
       atPhase(phase.next)(super.transformUnit(unit))
       assert(liftedDefs.size == 0, liftedDefs.keys.toList)

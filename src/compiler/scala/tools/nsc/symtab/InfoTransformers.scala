@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -17,7 +17,7 @@ trait InfoTransformers {
     val changesBaseClasses: Boolean
     def transform(sym: Symbol, tpe: Type): Type
 
-    def insert(that: InfoTransformer): unit = {
+    def insert(that: InfoTransformer) {
       assert(this.pid != that.pid)
       if (that.pid < this.pid) {
         prev insert that

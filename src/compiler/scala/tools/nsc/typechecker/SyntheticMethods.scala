@@ -41,12 +41,12 @@ trait SyntheticMethods { self: Analyzer =>
 
     val localTyper = newTyper(context)
 
-    def hasImplementation(name: Name): boolean = {
+    def hasImplementation(name: Name): Boolean = {
       val sym = clazz.info.nonPrivateMember(name)
       sym.isTerm && !(sym hasFlag DEFERRED)
     }
 
-    def hasOverridingImplementation(meth: Symbol): boolean = {
+    def hasOverridingImplementation(meth: Symbol): Boolean = {
       val sym = clazz.info.nonPrivateMember(meth.name)
       sym.alternatives exists { sym =>
         sym != meth && !(sym hasFlag DEFERRED) &&

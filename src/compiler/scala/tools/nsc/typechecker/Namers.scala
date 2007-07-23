@@ -52,7 +52,7 @@ trait Namers { self: Analyzer =>
       sym
     }
 
-    def updatePosFlags(sym: Symbol, pos: Position, flags: long): Symbol = {
+    def updatePosFlags(sym: Symbol, pos: Position, flags: Long): Symbol = {
       if (settings.debug.value) log("overwriting " + sym)
       val lockedFlag = sym.flags & LOCKED
       sym.reset(NoType)
@@ -68,7 +68,7 @@ trait Namers { self: Analyzer =>
       sym
     }
 
-    private def isTemplateContext(context: Context): boolean = context.tree match {
+    private def isTemplateContext(context: Context): Boolean = context.tree match {
       case Template(_, _, _) => true
       case Import(_, _) => isTemplateContext(context.outer)
       case _ => false
@@ -101,10 +101,11 @@ trait Namers { self: Analyzer =>
         innerNamer
     }
 
-    private def doubleDefError(pos: Position, sym: Symbol): unit =
+    private def doubleDefError(pos: Position, sym: Symbol) {
       context.error(pos,
         sym.name.toString() + " is already defined as " +
         (if (sym.hasFlag(CASE)) "case class " + sym.name else sym.toString()))
+    }
 
     def enterInScope[A <: Symbol](sym: A): A = {
       // allow for overloaded methods
@@ -207,8 +208,9 @@ trait Namers { self: Analyzer =>
     def newTypeSkolems(tparams: List[Symbol]): List[Symbol] = {
       val tskolems = tparams map (_.newTypeSkolem)
       val ltp = new LazyType {
-        override def complete(sym: Symbol): unit =
+        override def complete(sym: Symbol) {
           sym setInfo sym.deSkolemize.info.substSym(tparams, tskolems) //@M the info of a skolem is the skolemized info of the actual type parameter of the skolem
+        }
       }
       tskolems foreach (_.setInfo(ltp))
       tskolems
@@ -217,7 +219,7 @@ trait Namers { self: Analyzer =>
     /** Replace type parameters with their TypeSkolems, which can later be deskolemized to the original type param
      * (a skolem is a representation of a bound variable when viewed outside its scope)
      */
-    def skolemize(tparams: List[TypeDef]): unit = {
+    def skolemize(tparams: List[TypeDef]) {
       val tskolems = newTypeSkolems(tparams map (_.symbol))
       for ((tparam, tskolem) <- tparams zip tskolems) tparam.symbol = tskolem
     }
@@ -232,7 +234,7 @@ trait Namers { self: Analyzer =>
      */
     class LazyPolyType(tparams: List[Tree], restp: Type, owner: Tree, ownerSym: Symbol, ctx: Context) extends LazyType { //@M
       override val typeParams: List[Symbol]= tparams map (_.symbol) //@M
-      override def complete(sym: Symbol): unit = {
+      override def complete(sym: Symbol) {
         if(ownerSym.isAbstractType) //@M an abstract type's type parameters are entered
           new Namer(ctx.makeNewScope(owner, ownerSym)).enterSyms(tparams) //@M
         restp.complete(sym)
@@ -710,7 +712,7 @@ trait Namers { self: Analyzer =>
               val expr1 = typer.typedQualifier(expr)
               val base = expr1.tpe
               typer.checkStable(expr1)
-              def checkNotRedundant(pos: Position, from: Name, to: Name): boolean = {
+              def checkNotRedundant(pos: Position, from: Name, to: Name): Boolean = {
                 if (!tree.symbol.hasFlag(SYNTHETIC) &&
                     !((expr1.symbol ne null) && expr1.symbol.isInterpreterWrapper) &&
                     base.member(from) != NoSymbol) {
@@ -729,7 +731,7 @@ trait Namers { self: Analyzer =>
                 }
                 true
               }
-              def checkSelectors(selectors: List[(Name, Name)]): unit = selectors match {
+              def checkSelectors(selectors: List[(Name, Name)]): Unit = selectors match {
                 case (from, to) :: rest =>
                   if (from != nme.WILDCARD && base != ErrorType) {
                     if (base.member(from) == NoSymbol && base.member(from.toTypeName) == NoSymbol)
@@ -763,15 +765,17 @@ trait Namers { self: Analyzer =>
      *   - `def' modifier never for parameters of case classes
      *   - declarations only in mixins or abstract classes (when not @native)
      */
-    def validate(sym: Symbol): unit = {
-      def checkNoConflict(flag1: int, flag2: int): unit =
+    def validate(sym: Symbol) {
+      def checkNoConflict(flag1: Int, flag2: Int) {
         if (sym.hasFlag(flag1) && sym.hasFlag(flag2))
           context.error(sym.pos,
             if (flag1 == DEFERRED)
               "abstract member may not have " + Flags.flagsToString(flag2) + " modifier";
             else
               "illegal combination of modifiers: " +
-              Flags.flagsToString(flag1) + " and " + Flags.flagsToString(flag2) + " for: " + sym + Flags.flagsToString(sym.rawflags));
+              Flags.flagsToString(flag1) + " and " + Flags.flagsToString(flag2) +
+              " for: " + sym + Flags.flagsToString(sym.rawflags));
+      }
       if (sym.hasFlag(IMPLICIT) && !sym.isTerm)
         context.error(sym.pos, "`implicit' modifier can be used only for values, variables and methods")
       if (sym.hasFlag(IMPLICIT) && sym.owner.isPackageClass)
@@ -871,7 +875,7 @@ trait Namers { self: Analyzer =>
 
   /** An explanatory note to be added to error messages
    *  when there's a problem with abstract var defs */
-  def varNotice(sym: Symbol) =
+  def varNotice(sym: Symbol): String =
     if (underlying(sym).isVariable)
       "\n(Note that variables need to be initialized to be defined)"
     else ""

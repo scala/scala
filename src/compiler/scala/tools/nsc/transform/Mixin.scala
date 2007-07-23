@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author Martin Odersky
  */
 // $Id$
@@ -21,7 +21,7 @@ abstract class Mixin extends InfoTransform {
   val phaseName: String = "mixin"
 
   /** The phase might set the fiollowing new flags: */
-  override def phaseNewFlags: long = lateMODULE | notABSTRACT
+  override def phaseNewFlags: Long = lateMODULE | notABSTRACT
 
   /** This map contains a binding (class -> info) if
    *  the class with this info at phase mixinPhase has been treated for mixin composition
@@ -130,7 +130,7 @@ abstract class Mixin extends InfoTransform {
    *
    *  @param clazz ...
    */
-  def addLateInterfaceMembers(clazz: Symbol): unit =
+  def addLateInterfaceMembers(clazz: Symbol) {
     if ((treatedClassInfos get clazz) != Some(clazz.info)) {
       treatedClassInfos(clazz) = clazz.info
       assert(phase == currentRun.mixinPhase)
@@ -169,6 +169,7 @@ abstract class Mixin extends InfoTransform {
       }
       if (settings.debug.value) log("new defs of " + clazz + " = " + clazz.info.decls);
     }
+  }
 
   /** Map a lazy, mixedin field accessor to it's trait member accessor */
   val initializer = new HashMap[Symbol, Symbol]
@@ -184,7 +185,7 @@ abstract class Mixin extends InfoTransform {
    *      - for every super accessor in T, add an implementation of that accessor
    *      - for every module in T, add a module
    */
-  def addMixedinMembers(clazz: Symbol): unit = {
+  def addMixedinMembers(clazz: Symbol) {
     if (!(clazz hasFlag JAVA) && (treatedClassInfos get clazz) != Some(clazz.info)) {
       treatedClassInfos(clazz) = clazz.info
 
@@ -197,7 +198,7 @@ abstract class Mixin extends InfoTransform {
       //Console.println("adding members of " + clazz.info.baseClasses.tail.takeWhile(superclazz !=) + " to " + clazz);//DEBUG
 
       /** Mix in members of implementation class mixinClass into class clazz */
-      def mixinImplClassMembers(impl: Symbol, iface: Symbol): unit = {
+      def mixinImplClassMembers(impl: Symbol, iface: Symbol) {
         assert (impl.isImplClass)
         for (val member <- impl.info.decls.toList) {
           if (isForwarded(member)) {
@@ -218,7 +219,7 @@ abstract class Mixin extends InfoTransform {
        *  for each lazy field in mixinClass, add a link from its mixed in member to it's
        *  initializer method inside the implclass.
        */
-      def mixinTraitMembers(mixinClass: Symbol): unit = {
+      def mixinTraitMembers(mixinClass: Symbol) {
         // For all members of a trait's interface do:
         for (val member <- mixinClass.info.decls.toList) {
           if ((member hasFlag ACCESSOR) &&
@@ -451,8 +452,9 @@ abstract class Mixin extends InfoTransform {
         if (sym.pos == NoPosition) clazz.pos else sym.pos
 
       /** Add tree at given position as new definition */
-      def addDef(pos: Position, tree: Tree): unit =
+      def addDef(pos: Position, tree: Tree) {
         newDefs += attributedDef(pos, tree)
+      }
 
       /** Add new method definition.
        *
@@ -460,8 +462,9 @@ abstract class Mixin extends InfoTransform {
        *  @param rhs   A function that maps formal parameters to the method's
        *               right-hand side
        */
-      def addDefDef(sym: Symbol, rhs: List[Symbol] => Tree): unit =
+      def addDefDef(sym: Symbol, rhs: List[Symbol] => Tree) {
         addDef(position(sym), DefDef(sym, vparamss => rhs(vparamss.head)))
+      }
 
       /** Add `newdefs' to `stats', removing any abstract method definitions
        *  in <code>stats</code> that are matched by some symbol defined in

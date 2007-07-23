@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author Martin Odersky
  */
 // $Id$
@@ -451,16 +451,15 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
 	    null
 	  }
         case _ =>
-	      val x = super.transform(tree)
+          val x = super.transform(tree)
 
-	      if(x.tpe eq null) x else {
-            x setType transformInfo(currentOwner, x.tpe)
-          }
+          if (x.tpe eq null) x
+          else x setType transformInfo(currentOwner, x.tpe)
       }
     }
 
     /** The transformation method for whole compilation units */
-    override def transformUnit(unit: CompilationUnit): unit = {
+    override def transformUnit(unit: CompilationUnit) {
       cunit = unit
       atPhase(phase.next) { super.transformUnit(unit) }
     }

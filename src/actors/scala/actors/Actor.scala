@@ -603,11 +603,11 @@ trait Actor extends OutputChannel[Any] {
   private def tick(): Unit =
     Scheduler tick this
 
-  private[actors] var kill: () => unit = () => {}
+  private[actors] var kill: () => Unit = () => {}
 
   private def suspendActor() {
     isWaiting = true
-    while(isWaiting) {
+    while (isWaiting) {
       try {
         wait()
       } catch {
@@ -623,7 +623,7 @@ trait Actor extends OutputChannel[Any] {
     var waittime = msec
     var fromExc = false
     isWaiting = true
-    while(isWaiting) {
+    while (isWaiting) {
       try {
         fromExc = false
         wait(waittime)

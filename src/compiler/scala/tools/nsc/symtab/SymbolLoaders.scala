@@ -6,14 +6,16 @@
 
 package scala.tools.nsc.symtab
 
-import compat.Platform.currentTime
 import java.io.{File, IOException}
+
+import ch.epfl.lamp.compiler.msil.{Type => MSILType, Attribute => MSILAttribute}
+
 import scala.collection.mutable.{HashMap, HashSet}
+import scala.compat.Platform.currentTime
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.util.{Position, NoPosition}
 import classfile.ClassfileParser
 import Flags._
-import ch.epfl.lamp.compiler.msil.{Type => MSILType, Attribute => MSILAttribute}
 
 /** This class ...
  *
@@ -200,7 +202,7 @@ abstract class SymbolLoaders {
     override def newPackageLoader(dir: global.classPath0.Context): PackageLoader =
       new NamespaceLoader(dir)
 
-    val types = new HashMap[String,MSILType]()
+    val types = new HashMap[String, MSILType]()
 
     val namespaces = new HashSet[String]()
 
@@ -268,7 +270,7 @@ abstract class SymbolLoaders {
   }
 /*
   class SymblfileLoader(file: AbstractFile) extends SymbolLoader(file) {
-    protected def doComplete(root: Symbol): unit = symblfileParser.parse(file, root);
+    protected def doComplete(root: Symbol) { symblfileParser.parse(file, root) }
     protected def kindString: String = "symbl file";
   }
 */

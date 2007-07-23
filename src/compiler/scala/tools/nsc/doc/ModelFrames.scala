@@ -363,7 +363,7 @@ trait ModelFrames extends ModelExtractor {
       val pos = path lastIndexOf System.getProperty("file.separator", "/")
       if (pos != -1) path.substring(pos + 1) else path
     }
-    def copyResource(name: String, isFile: boolean) = try {
+    def copyResource(name: String, isFile: Boolean) = try {
       val (in, outfile) =
         if (isFile)
           (new FileInputStream(name), basename(name))
@@ -372,7 +372,7 @@ trait ModelFrames extends ModelExtractor {
           (loader.getResourceAsStream("scala/tools/nsc/doc/" + name), name)
         }
       val out = new FileOutputStream(new File(outdir + File.separator + outfile))
-      val buf = new Array[byte](1024)
+      val buf = new Array[Byte](1024)
       var len = 0
       while (len != -1) {
         out.write(buf, 0, len)

@@ -789,7 +789,7 @@ trait Parsers {
       (t /: annots) (makeAnnotated)
     }
 
-    def annotTypeRest(pos: ScanPosition, isPattern: boolean, t: Tree): Tree =
+    def annotTypeRest(pos: ScanPosition, isPattern: Boolean, t: Tree): Tree =
       if (inToken == HASH)
         annotTypeRest(pos, isPattern, atPos(inSkipToken) { SelectFromTypeTree(t, ident().toTypeName) })
       else if (inToken == LBRACKET)

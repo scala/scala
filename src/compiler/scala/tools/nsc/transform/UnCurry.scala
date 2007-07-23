@@ -113,7 +113,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
      * x.apply()? Note that this is not the case if `x' is used as an argument to another
      * call by name parameter.
      */
-    def isByNameRef(tree: Tree): boolean =
+    def isByNameRef(tree: Tree): Boolean =
       tree.isTerm && tree.hasSymbol &&
       tree.symbol.tpe.typeSymbol == ByNameParamClass &&
       !byNameArgs.contains(tree)
@@ -350,7 +350,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
         t
       }
 
-      def withInConstructorFlag(inConstructorFlag: long)(f: => Tree): Tree = {
+      def withInConstructorFlag(inConstructorFlag: Long)(f: => Tree): Tree = {
         val savedInConstructorFlag = this.inConstructorFlag
         this.inConstructorFlag = inConstructorFlag
         val t = f

@@ -42,7 +42,7 @@ abstract class TreeCheckers extends Analyzer {
 
     import infer._
 
-    override def typed(tree: Tree, mode: int, pt: Type): Tree = {
+    override def typed(tree: Tree, mode: Int, pt: Type): Tree = {
       tree match {
         case EmptyTree | TypeTree() =>
           ;

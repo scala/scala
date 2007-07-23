@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author Martin Odersky
  */
 // $Id$
@@ -551,10 +551,10 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
      *    </li>
      *  </ul>
      */
-    private def checkNoDoubleDefs(root: Symbol): unit = {
-      def doubleDefError(sym1: Symbol, sym2: Symbol): unit = {
-        val tpe1 = atPhase(currentRun.refchecksPhase.next)(root.thisType.memberType(sym1));
-        val tpe2 = atPhase(currentRun.refchecksPhase.next)(root.thisType.memberType(sym2));
+    private def checkNoDoubleDefs(root: Symbol) {
+      def doubleDefError(sym1: Symbol, sym2: Symbol) {
+        val tpe1 = atPhase(currentRun.refchecksPhase.next)(root.thisType.memberType(sym1))
+        val tpe2 = atPhase(currentRun.refchecksPhase.next)(root.thisType.memberType(sym2))
         unit.error(
           if (sym1.owner == root) sym1.pos else root.pos,
           (if (sym1.owner == sym2.owner) "double definition:\n"
@@ -583,9 +583,9 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
       }
 
       val opc = new overridingPairs.Cursor(root) {
-        override def exclude(sym: Symbol): boolean =
+        override def exclude(sym: Symbol): Boolean =
           !sym.isTerm || (sym hasFlag (PRIVATE | BRIDGE)) || super.exclude(sym)
-        override def matches(sym1: Symbol, sym2: Symbol): boolean =
+        override def matches(sym1: Symbol, sym2: Symbol): Boolean =
           atPhase(phase.next)(sym1.tpe =:= sym2.tpe)
       }
       while (opc.hasNext) {
@@ -647,7 +647,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
       val opc = atPhase(currentRun.explicitOuterPhase) {
         new overridingPairs.Cursor(owner) {
           override def parents: List[Type] = List(owner.info.parents.head)
-          override def exclude(sym: Symbol): boolean =
+          override def exclude(sym: Symbol): Boolean =
             !sym.isMethod || (sym hasFlag (PRIVATE | BRIDGE)) || super.exclude(sym)
         }
       }
@@ -764,7 +764,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
             // leave all other type tests/type casts, remove all other type applications
             fun
           case Apply(fn, args) =>
-            def isGenericArray(tpe: Type): boolean = erasure(tpe).typeSymbol == BoxedArrayClass
+            def isGenericArray(tpe: Type): Boolean = erasure(tpe).typeSymbol == BoxedArrayClass
             if (fn.hasSymbol &&
                 fn.symbol.name == nme.arraycopy &&
                 fn.symbol.owner.name == nme.System.toTypeName &&

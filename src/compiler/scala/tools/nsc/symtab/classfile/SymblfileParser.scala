@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -24,7 +24,7 @@ abstract class SymblfileParser {
     val global: SymblfileParser.this.global.type = SymblfileParser.this.global
   }
 
-  def parse(file: AbstractFile, root: Symbol): unit = {
+  def parse(file: AbstractFile, root: Symbol) {
     assert(current eq null, current)
     current = file
     val bytes  = new AbstractFileReader(file).buf

@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -20,7 +20,7 @@ trait Contexts { self: Analyzer =>
 
   val NoContext = new Context {
     override def implicitss: List[List[ImplicitInfo]] = List()
-    outer = this;
+    outer = this
   }
   NoContext.enclClass = NoContext
   NoContext.enclMethod = NoContext
@@ -58,7 +58,7 @@ trait Contexts { self: Analyzer =>
   def rootContext(unit: CompilationUnit, tree: Tree, erasedTypes: boolean): Context = {
     import definitions._
     var sc = startContext
-    def addImport(pkg: Symbol): unit = {
+    def addImport(pkg: Symbol) {
       assert(pkg ne null)
       val qual = gen.mkAttributedStableRef(pkg)
       sc = sc.makeNewImport(
@@ -76,7 +76,7 @@ trait Contexts { self: Analyzer =>
     c
   }
 
-  def resetContexts: unit = {
+  def resetContexts {
     var sc = startContext
     while (sc != NoContext) {
       sc.tree match {
@@ -95,10 +95,10 @@ trait Contexts { self: Analyzer =>
     var enclClass: Context = _              // The next outer context whose tree is a
                                             // template or package definition
     var enclMethod: Context = _             // The next outer context whose tree is a method
-    var variance: int = _                   // Variance relative to enclosing class
+    var variance: Int = _                   // Variance relative to enclosing class
     private var _undetparams: List[Symbol] = List() // Undetermined type parameters,
                                                     // not inherited to child contexts
-    var depth: int = 0
+    var depth: Int = 0
     var imports: List[ImportInfo] = List()
 
     var prefix: Type = NoPrefix
@@ -118,9 +118,9 @@ trait Contexts { self: Analyzer =>
       case NoContext => false
       case that : Context =>
         val a0 = if (tree eq null) tree == that.tree else tree equalsStructure that.tree;
-        val a1 = owner == that.owner;
-        val a2 = scope == that.scope;
-        val a3 = outer == that.outer;
+        val a1 = owner == that.owner
+        val a2 = scope == that.scope
+        val a3 = outer == that.outer
         val a4 = {
           if (enclClass eq this) {
             that.enclClass eq that;
@@ -135,18 +135,18 @@ trait Contexts { self: Analyzer =>
         val a7 = _undetparams == that._undetparams;
         val a8 = depth == that.depth;
         val a9 = if (imports.length != that.imports.length) false else
-          (for (val x <- imports.zip(that.imports)) yield
+          (for (x <- imports.zip(that.imports)) yield
               (x._1.tree equalsStructure x._2.tree) && x._1.depth == x._2.depth).
             foldLeft(true)((x,y) => x && y);
 
-        val a10 = prefix == that.prefix;
-        val a11 = inConstructorSuffix == that.inConstructorSuffix;
-        val a12 = implicitsEnabled == that.implicitsEnabled;
-        val a13 = checking == that.checking;
-        val a14 = retyping == that.retyping;
-        val a15 = savedTypeBounds == that.savedTypeBounds;
+        val a10 = prefix == that.prefix
+        val a11 = inConstructorSuffix == that.inConstructorSuffix
+        val a12 = implicitsEnabled == that.implicitsEnabled
+        val a13 = checking == that.checking
+        val a14 = retyping == that.retyping
+        val a15 = savedTypeBounds == that.savedTypeBounds
         a0 && a1 && a2 && a3 && a4 && a5 && a6 && a7 && a8 && a9 && a10 && a11 && a12 && a13 && a14 && a15
-      case _ => false;
+      case _ => false
     }
 
 
@@ -224,14 +224,14 @@ trait Contexts { self: Analyzer =>
     def make(tree: Tree): Context =
       make(tree, owner)
 
-    def makeSilent(reportAmbiguousErrors: boolean): Context = {
+    def makeSilent(reportAmbiguousErrors: Boolean): Context = {
       val c = make(tree)
       c.reportGeneralErrors = false
       c.reportAmbiguousErrors = reportAmbiguousErrors
       c
     }
 
-    def makeImplicit(reportAmbiguousErrors: boolean) = {
+    def makeImplicit(reportAmbiguousErrors: Boolean) = {
       val c = makeSilent(reportAmbiguousErrors)
       c.implicitsEnabled = false
       c
@@ -295,7 +295,7 @@ trait Contexts { self: Analyzer =>
      *  @param rest ...
      */
     def ambiguousError(pos: Position, pre: Type, sym1: Symbol,
-                       sym2: Symbol, rest: String): unit = {
+                       sym2: Symbol, rest: String) {
       val msg =
         ("ambiguous reference to overloaded definition,\n" +
          "both " + sym1 + sym1.locationString + " of type " + pre.memberType(sym1) +
@@ -313,14 +313,14 @@ trait Contexts { self: Analyzer =>
       c
     }
 
-    def isLocal(): boolean = tree match {
+    def isLocal(): Boolean = tree match {
       case Block(_,_) => true
       case PackageDef(_, _) => false
       case EmptyTree => false
       case _ => outer.isLocal()
     }
 
-    def nextEnclosing(p: Context => boolean): Context =
+    def nextEnclosing(p: Context => Boolean): Context =
       if (this == NoContext || p(this)) this else outer.nextEnclosing(p)
 
     override def toString(): String = {
@@ -361,7 +361,7 @@ trait Contexts { self: Analyzer =>
     def isAccessible(sym: Symbol, pre: Type, superAccess: boolean): boolean = {
 
       /** Are we inside definition of `owner'? */
-      def accessWithin(owner: Symbol): boolean = {
+      def accessWithin(owner: Symbol): Boolean = {
         var c = this
         while (c != NoContext && c.owner != owner) {
           if (c.outer eq null) assert(false, "accessWithin(" + owner + ") " + c);//debug
@@ -372,10 +372,10 @@ trait Contexts { self: Analyzer =>
       }
 
       /** Is `clazz' a subclass of an enclosing class? */
-      def isSubClassOfEnclosing(clazz: Symbol): boolean =
+      def isSubClassOfEnclosing(clazz: Symbol): Boolean =
         enclosingSuperClassContext(clazz) != NoContext
 
-      def isSubThisType(pre: Type, clazz: Symbol): boolean = pre match {
+      def isSubThisType(pre: Type, clazz: Symbol): Boolean = pre match {
         case ThisType(pclazz) => pclazz isNonBottomSubClass clazz
         case _ => false
       }
@@ -399,13 +399,13 @@ trait Contexts { self: Analyzer =>
       }
     }
 
-    def pushTypeBounds(sym: Symbol): unit = {
+    def pushTypeBounds(sym: Symbol) {
       savedTypeBounds = (sym, sym.info) :: savedTypeBounds
     }
 
     def restoreTypeBounds(tp: Type): Type = {
       var current = tp
-      for (val (sym, info) <- savedTypeBounds) {
+      for ((sym, info) <- savedTypeBounds) {
         if (settings.debug.value) log("resetting " + sym + " to " + info);
         sym.info match {
           case TypeBounds(lo, hi) if (hi <:< lo && lo <:< hi) =>
@@ -423,7 +423,7 @@ trait Contexts { self: Analyzer =>
     private var implicitsRunId = NoRunId
 
     private def collectImplicits(syms: List[Symbol], pre: Type): List[ImplicitInfo] =
-      for (val sym <- syms; sym.hasFlag(IMPLICIT) && isAccessible(sym, pre, false))
+      for (sym <- syms if sym.hasFlag(IMPLICIT) && isAccessible(sym, pre, false))
       yield new ImplicitInfo(sym.name, pre, sym)
 
     private def collectImplicitImports(imp: ImportInfo): List[ImplicitInfo] = {
@@ -475,7 +475,7 @@ trait Contexts { self: Analyzer =>
     }
   }
 
-  class ImportInfo(val tree: Import, val depth: int) {
+  class ImportInfo(val tree: Import, val depth: Int) {
 
     /** The prefix expression */
     def qual: Tree = tree.symbol.info match {
@@ -484,7 +484,7 @@ trait Contexts { self: Analyzer =>
     }
 
     /** Is name imported explicitly, not via wildcard? */
-    def isExplicitImport(name: Name): boolean =
+    def isExplicitImport(name: Name): Boolean =
       tree.selectors exists (_._2 == name.toTermName)
 
     /** The symbol with name <code>name</code> imported from import clause

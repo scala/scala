@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author Martin Odersky
  */
 // $Id$
@@ -18,7 +18,7 @@ abstract class Flatten extends InfoTransform {
   /** the following two members override abstract members in Transform */
   val phaseName: String = "flatten"
 
-  private def liftClass(sym: Symbol): unit =
+  private def liftClass(sym: Symbol) {
     if (!(sym hasFlag LIFTED)) {
       sym setFlag LIFTED
       atPhase(phase.next) {
@@ -30,6 +30,7 @@ abstract class Flatten extends InfoTransform {
         scope enter sym
       }
     }
+  }
 
   private val flattened = new TypeMap {
     def apply(tp: Type): Type = tp match {

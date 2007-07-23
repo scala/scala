@@ -302,7 +302,7 @@ trait Definitions {
           val sym = FunctionClass(formals.length)
           typeRef(sym.typeConstructor.prefix, sym, formals ::: List(restpe))
         } else NoType;
-      def isFunctionType(tp: Type): boolean = tp.normalize match {
+      def isFunctionType(tp: Type): Boolean = tp.normalize match {
         case TypeRef(_, sym, args) =>
           (args.length > 0) && (args.length - 1 <= MaxFunctionArity) &&
           (sym == FunctionClass(args.length - 1))
