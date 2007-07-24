@@ -259,7 +259,7 @@ abstract class ClassfileParser {
         if (in.buf(start) != CONSTANT_CLASS) errorBadTag(start)
         val name = getExternalName(in.getChar(start + 1))
         if (name(0) == ARRAY_TAG) {
-          c = sigToType(name)
+          c = sigToType(null, name)
           values(index) = c
         } else {
           val sym = if (name.endsWith("$")) definitions.getModule(name.subName(0, name.length - 1))
@@ -276,7 +276,7 @@ abstract class ClassfileParser {
     }
 
     def getType(index: Int): Type =
-      sigToType(getExternalName(index))
+      sigToType(null, getExternalName(index))
 
     def getSuperClass(index: Int): Symbol =
       if (index == 0) definitions.AnyClass else getClassSymbol(index)
@@ -320,57 +320,6 @@ abstract class ClassfileParser {
       throw new RuntimeException("bad constant pool tag " + in.buf(start) + " at byte " + start)
   }
 
-  def sigToType(name: Name): Type = {
-    var index = 0
-    val end = name.length
-    def objToAny(tp: Type): Type =
-      if (!global.phase.erasedTypes && tp.typeSymbol == definitions.ObjectClass) definitions.AnyClass.tpe
-      else tp
-    def paramsigs2types: List[Type] =
-      if (name(index) == ')') { index += 1; List() }
-      else objToAny(sig2type) :: paramsigs2types
-    def sig2type: Type = {
-      val tag = name(index); index += 1
-      tag match {
-        case BYTE_TAG   => definitions.ByteClass.tpe
-        case CHAR_TAG   => definitions.CharClass.tpe
-        case DOUBLE_TAG => definitions.DoubleClass.tpe
-        case FLOAT_TAG  => definitions.FloatClass.tpe
-        case INT_TAG    => definitions.IntClass.tpe
-        case LONG_TAG   => definitions.LongClass.tpe
-        case SHORT_TAG  => definitions.ShortClass.tpe
-        case VOID_TAG   => definitions.UnitClass.tpe
-        case BOOL_TAG   => definitions.BooleanClass.tpe
-        case 'L' =>
-          val start = index
-          while (name(index) != ';') index += 1
-          val end = index
-          index += 1
-          //classNameToSymbol(name.subName(start, end)).tpe
-          val className = name.subName(start, end)
-          val classSym = classNameToSymbol(className)
-          if (!settings.Xgenerics.value || classSym.isMonomorphicType) classSym.tpe
-          else {
-            //rawTypes = true
-            val eparams = for (tparam <- classSym.unsafeTypeParams) yield {
-              val newSym = clazz.newAbstractType(NoPosition, fresh.newName)
-              newSym.setInfo(tparam.info.bounds) setFlag EXISTENTIAL
-            }
-            val t = appliedType(classSym.typeConstructor, eparams.map(_.tpe))
-            val res = existentialAbstraction(eparams, t)
-            if (settings.verbose.value)
-              println("raw type " + classSym + " -> " + res)
-            res
-          }
-        case ARRAY_TAG =>
-          while ('0' <= name(index) && name(index) <= '9') index += 1
-          appliedType(definitions.ArrayClass.tpe, List(sig2type))
-        case '(' =>
-          JavaMethodType(paramsigs2types, sig2type)
-      }
-    }
-    sig2type
-  }
 
   /** Return the class symbol of the given name. */
   def classNameToSymbol(name: Name): Symbol =
@@ -496,15 +445,7 @@ abstract class ClassfileParser {
     }
   }
 
-  // returns the generic type represented by the signature
-  private def polySigToType(sym: Symbol, sig: Name): Type =
-    try { polySigToType0(sym, sig) }
-    catch {
-      case e: Throwable =>
-        Console.err.println("" + sym + " - " + sig)
-        throw e
-    }
-  private def polySigToType0(sym: Symbol, sig: Name): Type = {
+  private def sigToType(sym: Symbol, sig: Name): Type = {
     var index = 0
     val end = sig.length
     val newTParams = new ListBuffer[Symbol]()
@@ -537,6 +478,7 @@ abstract class ClassfileParser {
           val classSym = classNameToSymbol(subName(c => ((c == ';') || (c == '<'))))
           val existentials = new ListBuffer[Symbol]()
           val tpe: Type = if (sig(index) == '<') {
+            assert(sym != null)
             accept('<')
             val xs = new ListBuffer[Type]()
             while (sig(index) != '>') {
@@ -589,7 +531,7 @@ abstract class ClassfileParser {
             paramtypes += objToAny(sig2type(tparams))
           }
           index += 1
-          val restype = if (sym.isConstructor) {
+          val restype = if (sym != null && sym.isConstructor) {
             accept('V')
             clazz.tpe
           } else
@@ -604,6 +546,7 @@ abstract class ClassfileParser {
 
     var tparams = classTParams
     if (sig(index) == '<') {
+      assert(sym != null)
       index += 1
       while (sig(index) != '>') {
         val tpname = subName(':'.==).toTypeName
@@ -651,7 +594,7 @@ abstract class ClassfileParser {
         case nme.SignatureATTR =>
           if (global.settings.Xgenerics.value) {
             val sig = pool.getExternalName(in.nextChar)
-            val newType = polySigToType(sym, sig)
+            val newType = sigToType(sym, sig)
             sym.setInfo(newType)
             if (settings.debug.value)
               global.inform("" + sym + "; signatire = " + sig + " type = " + newType)
