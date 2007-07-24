@@ -115,7 +115,7 @@ trait Definitions {
     lazy val PredefModule: Symbol = getModule("scala.Predef")
       def Predef_classOf = getMember(PredefModule, nme.classOf)
       def Predef_classOfType(classType: Type): Type =
-        if (settings.Xgenerics.value && !phase.erasedTypes)
+        if (!ClassClass.unsafeTypeParams.isEmpty && !phase.erasedTypes)
           appliedType(ClassClass.tpe, List(classType))
         else ClassClass.tpe
       def Predef_identity = getMember(PredefModule, nme.identity)
