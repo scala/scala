@@ -21,6 +21,7 @@ abstract class TreeCheckers extends Analyzer {
   }
 
   def check(unit: CompilationUnit) {
+    informProgress("checking "+unit)
     val context = rootContext(unit)
     context.checking = true
     tpeOfTree.clear

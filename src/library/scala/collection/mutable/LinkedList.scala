@@ -22,9 +22,10 @@ class LinkedList[A](var elem: A, var next: LinkedList[A])
   extends SingleLinkedList[A, LinkedList[A]]
 {
 
-  override def equals(obj: Any): Boolean =
-    obj.isInstanceOf[LinkedList[A]] &&
-    toList.equals((obj.asInstanceOf[LinkedList[A]]).toList)
+  override def equals(obj: Any): Boolean = obj match {
+    case that: LinkedList[_] => this.toList equals that.toList
+    case _ => false
+  }
 
   override protected def stringPrefix: String = "LinkedList"
 }

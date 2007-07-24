@@ -1302,7 +1302,7 @@ trait Typers { self: Analyzer =>
       var body1: Tree = typed(cdef.body, pt)
       if (!context.savedTypeBounds.isEmpty) {
         body1.tpe = context.restoreTypeBounds(body1.tpe)
-        if (isFullyDefined(pt))
+        if (isFullyDefined(pt) && !(body1.tpe <:< pt))
         // the following is a hack to make the pattern matcher work !!! (still needed?)
           body1 =
             typed {

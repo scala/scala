@@ -219,7 +219,10 @@ object Utility extends AnyRef with parsing.TokenTests {
                     sb: StringBuilder, stripComment: Boolean) {
     if (children.isEmpty)
       return
-    else if (children forall { y => y.isInstanceOf[Atom[Any]] && !y.isInstanceOf[Text] }) { // add space
+    else if (children forall {
+      case y: Atom[_] => !y.isInstanceOf[Text]
+      case _ => false
+    }) { // add space
       val it = children.elements
       val f = it.next
       toXML(f, f.scope, sb, stripComment)

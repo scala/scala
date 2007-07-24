@@ -107,12 +107,14 @@ class Stack[A] extends MutableList[A] with CloneableCollection {
    *
    *  @return true, iff both stacks contain the same sequence of elements.
    */
-  override def equals(that: Any): Boolean =
-    that.isInstanceOf[Stack[A]] &&
-    { val other = that.asInstanceOf[Stack[A]];
-      elements.zip(other.elements).forall {
+  override def equals(obj: Any): Boolean = obj match {
+    case that: Stack[_] =>
+      (this.elements zip that.elements) forall {
         case (thiselem, thatelem) => thiselem == thatelem
-      }}
+      }
+    case _ =>
+      false
+  }
 
   /** The hashCode method always yields an error, since it is not
    *  safe to use mutable stacks as keys in hash tables.

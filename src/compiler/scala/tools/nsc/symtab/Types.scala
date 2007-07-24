@@ -1389,8 +1389,10 @@ A type's typeSymbol should never be inspected directly.
         if (isTupleType(this))
           return args.mkString("(", ", ", if (args.length == 1) ",)" else ")")
       }
-      val str = (pre.prefixString + sym.nameString +
+      var str = (pre.prefixString + sym.nameString +
                  (if (args.isEmpty) "" else args.mkString("[", ",", "]")))
+      //if (sym.nameString startsWith "moduleType")
+      //  str += ("_in_"+sym.ownerChain)
       if (sym.isPackageClass)
         packagePrefix + str
       else if (sym.isModuleClass)
@@ -1574,8 +1576,9 @@ A type's typeSymbol should never be inspected directly.
   /** A class representing a type variable
    *  Not used after phase `typer'.
    */
-  case class TypeVar(origin: Type, constr: TypeConstraint) extends Type {
+  case class TypeVar(origin: Type, constr0: TypeConstraint) extends Type {
     //constr.self = this //DEBUG
+    var constr = constr0
     override def typeSymbol = origin.typeSymbol
     @deprecated override def symbol = origin.symbol
     override def toString: String =
@@ -1941,14 +1944,12 @@ A type's typeSymbol should never be inspected directly.
     var lobounds: List[Type] = lo
     var hibounds: List[Type] = hi
     var inst: Type = NoType
-/* debug
-    private var _inst: Type = NoType
-    def inst = _inst
-    def inst_=(tp: Type) {
-      assert(tp == null || !(tp containsTp self), tp)
-      _inst = tp
+
+    def duplicate = {
+      val tc = new TypeConstraint(lo, hi)
+      tc.inst = inst
+      tc
     }
-*/
 
     def instantiate(tp: Type): Boolean =
       if (lobounds.forall(_ <:< tp) && hibounds.forall(tp <:< _)) {
@@ -2602,6 +2603,12 @@ A type's typeSymbol should never be inspected directly.
     }
   }
 
+  var undoLog: List[(TypeVar, TypeConstraint)] = List()
+
+  def snapShot(tv: TypeVar) {
+    undoLog = (tv, tv.constr.duplicate) :: undoLog
+  }
+
   /** Do `tp1' and `tp2' denote equivalent types?
    *
    *  @param tp1 ...
@@ -2687,12 +2694,12 @@ A type's typeSymbol should never be inspected directly.
         bounds containsType tp2
       case (_, BoundedWildcardType(bounds)) =>
         bounds containsType tp1
-      case (TypeVar(_, constr1), _) =>
+      case (tv1 @ TypeVar(_, constr1), _) =>
         if (constr1.inst != NoType) constr1.inst =:= tp2
-        else constr1 instantiate (wildcardToTypeVarMap(tp2))
-      case (_, TypeVar(_, constr2)) =>
+        else { snapShot(tv1); constr1 instantiate wildcardToTypeVarMap(tp2) }
+      case (_, tv2 @ TypeVar(_, constr2)) =>
         if (constr2.inst != NoType) tp1 =:= constr2.inst
-        else constr2 instantiate (wildcardToTypeVarMap(tp1))
+        else { snapShot(tv2); constr2 instantiate wildcardToTypeVarMap(tp1) }
       case (AnnotatedType(_,atp), _) =>
         isSameType(atp, tp2)
       case (_, AnnotatedType(_,atp)) =>
@@ -2725,26 +2732,57 @@ A type's typeSymbol should never be inspected directly.
 
   def isSubType(tp1: Type, tp2: Type): Boolean = try {
     stc = stc + 1
-    if (stc >= LogPendingSubTypesThreshold) {
-      val p = new SubTypePair(tp1, tp2)
-      if (pendingSubTypes contains p)
-        false
-      else
-        try {
-          pendingSubTypes += p
-          isSubType0(tp1, tp2)
-        } finally {
-          pendingSubTypes -= p
-        }
-    } else {
-      isSubType0(tp1, tp2)
+    val lastUndoLog = undoLog
+    val result =
+      if (stc >= LogPendingSubTypesThreshold) {
+        val p = new SubTypePair(tp1, tp2)
+        if (pendingSubTypes contains p)
+          false
+        else
+          try {
+            pendingSubTypes += p
+            isSubType0(tp1, tp2)
+          } finally {
+            pendingSubTypes -= p
+          }
+      } else {
+        isSubType0(tp1, tp2)
+      }
+    if (!result) {
+      while (undoLog ne lastUndoLog) {
+        val (tv, constr) = undoLog.head
+        undoLog = undoLog.tail
+        tv.constr = constr
+      }
     }
+    result
   } finally {
     stc = stc - 1
+    if (stc == 0) undoLog = List()
   }
 
   /** hook for IDE */
   protected def trackTypeIDE(sym : Symbol) : Boolean = true;
+
+  def isTypeVar(tp: Type): Boolean = tp match {
+    case SingleType(pre, sym) =>
+      !(sym hasFlag PACKAGE) && isTypeVar(pre)
+    case TypeVar(_, constr) =>
+      constr.inst == NoType || isTypeVar(constr.inst)
+    case _ =>
+      false
+  }
+
+  def instTypeVar(tp: Type): Type = tp match {
+    case TypeRef(pre, sym, args) =>
+      typeRef(instTypeVar(pre), sym, args)
+    case SingleType(pre, sym) =>
+      singleType(instTypeVar(pre), sym)
+    case TypeVar(_, constr) =>
+      instTypeVar(constr.inst)
+    case _ =>
+      tp
+  }
 
   /** Does type `tp1' conform to `tp2'?
    *
@@ -2785,8 +2823,16 @@ A type's typeSymbol should never be inspected directly.
           isSubArgs(tps1.tail, tps2.tail, tparams.tail)
         );
         (sym1 == sym2 &&
-          (phase.erasedTypes || pre1 <:< pre2) &&
-          (sym2 == AnyClass || isSubArgs(args1, args2, sym1.typeParams)) //@M: Any is kind-polymorphic
+         (phase.erasedTypes || pre1 <:< pre2) &&
+         (sym2 == AnyClass || isSubArgs(args1, args2, sym1.typeParams)) //@M: Any is kind-polymorphic
+/*
+         ||
+         sym1.name == sym2.name &&
+//       (sym1.owner isSubClass sym2.owner) &&
+         (isTypeVar(pre1) || isTypeVar(pre2)) &&
+         pre1 =:= pre2 &&
+         instTypeVar(tp1) <:< instTypeVar(tp2)
+*/
          ||
          sym1.isAbstractType && !(tp1 =:= tp1.bounds.hi) && (tp1.bounds.hi <:< tp2)
          ||
@@ -2816,12 +2862,12 @@ A type's typeSymbol should never be inspected directly.
         bounds.lo <:< tp2
       case (_, BoundedWildcardType(bounds)) =>
         tp1 <:< bounds.hi
-      case (_, TypeVar(_, constr2)) =>
+      case (_, tv2 @ TypeVar(_, constr2)) =>
         if (constr2.inst != NoType) tp1 <:< constr2.inst
-        else { constr2.lobounds = tp1 :: constr2.lobounds; true }
-      case (TypeVar(_, constr1), _) =>
+        else { snapShot(tv2); constr2.lobounds = tp1 :: constr2.lobounds; true }
+      case (tv1 @ TypeVar(_, constr1), _) =>
         if (constr1.inst != NoType) constr1.inst <:< tp2
-        else { constr1.hibounds = tp2 :: constr1.hibounds; true }
+        else { snapShot(tv1); constr1.hibounds = tp2 :: constr1.hibounds; true }
       case (AnnotatedType(_,atp1), _) =>
         atp1 <:< tp2
       case (_, AnnotatedType(_,atp2)) =>
@@ -2848,9 +2894,9 @@ A type's typeSymbol should never be inspected directly.
         val tvars = tparams2 map (tparam => new TypeVar(tparam.tpe, new TypeConstraint))
         val ires2 = res2.instantiateTypeParams(tparams2, tvars)
         (tp1 <:< ires2) && {
-//          println("solve: "+tparams2)
+          //println("solve: "+tparams2)
           solve(tvars, tparams2, tparams2 map (x => 0), false)
-//          println("check bounds: "+tparams2+" aginst "+(tvars map (_.constr.inst)))
+          //println("check bounds: "+tparams2+" aginst "+(tvars map (_.constr.inst)))
           isWithinBounds(NoPrefix, NoSymbol, tparams2, tvars map (_.constr.inst))
         }
       case (RefinedType(parents1, ref1), _) =>

@@ -153,12 +153,14 @@ class PriorityQueue[A <% Ordered[A]] extends ResizableArray[A] with CloneableCol
    *
    *  @return true, iff both queues contain the same sequence of elements.
    */
-  override def equals(that: Any): Boolean =
-    that.isInstanceOf[PriorityQueue[A]] &&
-    { val other = that.asInstanceOf[PriorityQueue[A]]
-      elements.zip(other.elements).forall {
+  override def equals(obj: Any): Boolean = obj match {
+    case that: PriorityQueue[_] =>
+      (this.elements zip that.elements) forall {
         case (thiselem, thatelem) => thiselem == thatelem
-    }}
+      }
+    case _ =>
+      false
+  }
 
   /** The hashCode method always yields an error, since it is not
    *  safe to use mutable queues as keys in hash tables.

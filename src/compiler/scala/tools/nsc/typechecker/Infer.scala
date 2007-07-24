@@ -490,13 +490,15 @@ trait Infer {
         ()
       }
       val targs = solvedTypes(tvars, tparams, tparams map varianceInTypes(formals), false)
+//      val res =
       List.map2(tparams, targs) {(tparam, targ) =>
         if (targ.typeSymbol == AllClass && (varianceInType(restpe)(tparam) & COVARIANT) == 0) {
           uninstantiated += tparam
           tparam.tpe  //@M TODO: might be affected by change to tpe in Symbol
         } else targ.widen
       }
-//    println("meth type args "+", tparams = "+tparams+", formals = "+formals+", restpe = "+restpe+", argtpes = "+argtpes+", underlying = "+(argtpes map (_.widen))+", pt = "+pt+", uninstantiated = "+uninstantiated.toList+", result = "+res) //DEBUG
+//      println("meth type args "+", tparams = "+tparams+", formals = "+formals+", restpe = "+restpe+", argtpes = "+argtpes+", underlying = "+(argtpes map (_.widen))+", pt = "+pt+", uninstantiated = "+uninstantiated.toList+", result = "+res) //DEBUG
+//      res
     }
 
     /** Is there an instantiation of free type variables <code>undetparams</code>

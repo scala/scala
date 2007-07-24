@@ -106,8 +106,10 @@ class Stack[+A] extends Seq[A] {
    *  @return true, iff the two stacks are equal; i.e. they contain the
    *          same elements in the same order.
    */
-  override def equals(obj: Any): Boolean =
-    obj.isInstanceOf[Stack[A]] && sameElements(obj.asInstanceOf[Stack[A]])
+  override def equals(obj: Any): Boolean = obj match {
+    case that: Stack[_] => this sameElements that
+    case _ => false
+  }
 
   /** Returns the hash code for this stack.
    *

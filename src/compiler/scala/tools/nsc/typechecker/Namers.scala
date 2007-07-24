@@ -358,6 +358,18 @@ trait Namers { self: Analyzer =>
       override def complete(sym: Symbol) {
         if (settings.debug.value) log("defining " + sym + Flags.flagsToString(sym.flags));
         val tp = typeSig(tree)
+        // check that
+        tp match {
+          case TypeBounds(lo, hi) =>
+            // check that lower bound is not an F-bound
+            for (val t <- lo) {
+              t match {
+                case TypeRef(_, sym, _) => sym.initialize
+                case _ =>
+              }
+            }
+          case _ =>
+        }
         sym.setInfo(tp)
         if ((sym.isAliasType || sym.isAbstractType) && !(sym hasFlag PARAM) &&
             !typer.checkNonCyclic(tree.pos, tp))

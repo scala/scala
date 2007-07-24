@@ -86,12 +86,13 @@ class ListSet[A] extends AnyRef with Set[A] {
   /** Compares two sets for equality.
    *   Two set are equal iff they contain the same elements.
    */
-  override def equals(obj: Any): Boolean =
-    if (obj.isInstanceOf[scala.collection.Set[A]]) {
+  override def equals(obj: Any): Boolean = obj match {
+    case _: scala.collection.Set[_] =>
       val that = obj.asInstanceOf[scala.collection.Set[A]]
-      if (size != that.size) false else toList.forall(that.contains)
-    } else
+      (size == that.size) && (toList forall that.contains)
+    case _ =>
       false
+  }
 
   /**
    *  @throws Predef.NoSuchElementException

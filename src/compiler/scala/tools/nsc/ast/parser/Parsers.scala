@@ -1159,7 +1159,7 @@ trait Parsers {
         case USCORE =>
           val pname = freshName("x$")
           val pos = inSkipToken
-          val param = makeSyntheticParam(pname) setPos pos
+          val param = atPos(pos){ makeSyntheticParam(pname) }
           placeholderParams = param :: placeholderParams
           t = atPos(pos) { Ident(pname) }
         case LPAREN =>

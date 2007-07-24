@@ -13,18 +13,20 @@ package scala.reflect
 
 object Print extends Function1[Any, String] {
 
-  def apply(any: Any): String =
-    if (any.isInstanceOf[Code[Any]])
-      apply(any.asInstanceOf[Code[Any]])
-    else if (any.isInstanceOf[Tree])
-      apply(any.asInstanceOf[Tree])
-    else if (any.isInstanceOf[Symbol])
-      apply(any.asInstanceOf[Symbol])
-    else if (any.isInstanceOf[Type])
-      apply(any.asInstanceOf[Type])
-    else "UnknownAny"
+  def apply(any: Any): String = any match {
+    case x: Code[_] =>
+      apply(x)
+    case x: Tree =>
+      apply(x)
+    case x: Symbol =>
+      apply(x)
+    case x: Type =>
+      apply(x)
+    case _ =>
+      "UnknownAny"
+  }
 
-  def apply(code: Code[Any]): String =
+  def apply[A](code: Code[A]): String =
     Print(code.tree)
 
   def apply(tree: Tree): String = tree match {
