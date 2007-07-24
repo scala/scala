@@ -236,6 +236,9 @@ class ScriptRunner {
         List("-Xscript", scriptMain(settings), scriptFile))
 
     val socket = compileSocket.getOrCreateSocket("")
+    if (socket eq null)
+      return false
+
     val out = new PrintWriter(socket.getOutputStream(), true)
     val in = new BufferedReader(new InputStreamReader(socket.getInputStream()))
 
