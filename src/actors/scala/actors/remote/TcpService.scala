@@ -16,8 +16,6 @@ import java.lang.{Thread, SecurityException}
 import java.io.{DataInputStream, DataOutputStream, IOException}
 import java.net.{InetAddress, ServerSocket, Socket, UnknownHostException}
 
-import compat.Platform
-
 import scala.collection.mutable.HashMap
 
 /* Object TcpService.
@@ -26,9 +24,9 @@ import scala.collection.mutable.HashMap
  * @author Philipp Haller
  */
 object TcpService {
-  val random = new java.util.Random(Platform.currentTime)
+  val random = new Random
 
-  def generatePort: int = {
+  def generatePort: Int = {
     var portnum = 0
     try {
       portnum = 8000 + random.nextInt(500)
@@ -47,7 +45,7 @@ object TcpService {
     portnum
   }
 
-  var BufSize: int = 65536
+  var BufSize: Int = 65536
 }
 
 /* Class TcpService.
@@ -61,14 +59,14 @@ class TcpService(port: Int) extends Thread with Service {
   private val internalNode = new Node(InetAddress.getLocalHost().getHostAddress(), port)
   def node: Node = internalNode
 
-  private val pendingSends = new HashMap[Node, List[Array[byte]]]
+  private val pendingSends = new HashMap[Node, List[Array[Byte]]]
 
   /**
    * Sends a byte array to another node on the network.
    * If the node is not yet up, up to <code>TcpService.BufSize</code>
    * messages are buffered.
    */
-  def send(node: Node, data: Array[byte]): Unit = synchronized {
+  def send(node: Node, data: Array[Byte]): Unit = synchronized {
 
     def bufferMsg(t: Throwable) = {
       // buffer message, so that it can be re-sent
@@ -171,7 +169,7 @@ class TcpService(port: Int) extends Thread with Service {
     }
   }
 
-  def isReachable(node: Node): boolean =
+  def isReachable(node: Node): Boolean =
     if (isConnected(node)) true
     else try {
       connect(node)
@@ -212,7 +210,7 @@ class TcpServiceWorker(parent: TcpService, so: Socket) extends Thread {
     }
   }
 
-  def transmit(data: Array[byte]): Unit = synchronized {
+  def transmit(data: Array[Byte]): Unit = synchronized {
     Debug.info(this+": transmitting data...")
     dataout.writeInt(data.length)
     dataout.write(data)

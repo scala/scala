@@ -11,7 +11,6 @@
 package scala
 
 import java.math.BigInteger
-import java.util.Random
 
 /**
  *  @author  Martin Odersky
@@ -62,7 +61,7 @@ object BigInt {
    *  with the specified bitLength.
    */
   def apply(bitlength: Int, certaInty: Int, rnd: Random): BigInt =
-    new BigInt(new BigInteger(bitlength, certaInty, rnd))
+    new BigInt(new BigInteger(bitlength, certaInty, rnd.self))
 
   /** Constructs a randomly generated BigInt, uniformly distributed over the
    *  range 0 to (2 ^ numBits - 1), inclusive.
@@ -72,7 +71,7 @@ object BigInt {
    *  @return        ...
    */
   def apply(numbits: Int, rnd: Random): BigInt =
-    new BigInt(new BigInteger(numbits, rnd))
+    new BigInt(new BigInteger(numbits, rnd.self))
 
   /** Translates the decimal String representation of a BigInt into a BigInt.
    */
@@ -92,7 +91,7 @@ object BigInt {
   /** Returns a positive BigInt that is probably prime, with the specified bitLength.
    */
   def probablePrime(bitLength: Int, rnd: Random): BigInt =
-    new BigInt(BigInteger.probablePrime(bitLength, rnd))
+    new BigInt(BigInteger.probablePrime(bitLength, rnd.self))
 
   /** Implicit conversion from <code>int</code> to <code>BigInt</code>.
    */

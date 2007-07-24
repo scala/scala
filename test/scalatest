@@ -295,7 +295,7 @@ test_run_msil() {
     rm -f "$dstbase".$MSIL &&
     rm -f "$dstbase".$EXE &&
 
-    $SCALAC -nowarn -target:msil -o "$os_dstbase" -r $assemblies "$@" \
+    $SCALAC -nowarn -target:msil -Xassem "$os_dstbase" -Xassem-path $assemblies "$@" \
         -sourcepath "$PREFIX/build/msil/src" "$os_srcbase".scala &&
     case "$UNAME" in
         CYGWIN* )
