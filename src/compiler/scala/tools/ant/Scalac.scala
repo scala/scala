@@ -149,6 +149,8 @@ class Scalac extends MatchingTask {
    *  in case of failure. */
   private var scalacDebugging: Boolean = false
 
+  private var generics: Option[Boolean] = None
+
 /*============================================================================*\
 **                             Properties setters                             **
 \*============================================================================*/
@@ -328,6 +330,9 @@ class Scalac extends MatchingTask {
 
   def setAssemrefs(input: String): Unit =
     assemrefs = Some(input)
+
+  def setGenerics(input: Boolean): Unit =
+    generics = Some(input)
 
 /*============================================================================*\
 **                             Properties getters                             **
@@ -528,6 +533,7 @@ class Scalac extends MatchingTask {
 
     if (!assemname.isEmpty) settings.assemname.value = assemname.get
     if (!assemrefs.isEmpty) settings.assemrefs.value = assemrefs.get
+    if (!generics.isEmpty) settings.Xgenerics.value = generics.get
 
     log("Scalac params = '" + addParams + "'", Project.MSG_DEBUG)
     var args =
