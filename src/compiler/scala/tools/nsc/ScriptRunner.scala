@@ -284,6 +284,10 @@ class ScriptRunner {
       compiledPath.delete  // the file is created as a file; make it a directory
       compiledPath.mkdirs
 
+      // delete the directory after the user code has finished
+      Runtime.getRuntime.addShutdownHook(new Thread {
+	override def run { deleteRecursively(compiledPath) }})
+
       settings.outdir.value = compiledPath.getPath
 
       if (settings.nocompdaemon.value) {
@@ -316,31 +320,24 @@ class ScriptRunner {
         // The pre-compiled jar is old.  Recompile the script.
         jarFile.delete
         val (compiledPath, compok) = compile
-        try {
-          if (compok) {
-            tryMakeJar(jarFile, compiledPath)
-            if (jarOK) {
-              deleteRecursively(compiledPath)
-              handler(jarFile.getAbsolutePath)
-            } else {
-              // run from the interpreter's temporary
-              // directory
-              handler(compiledPath.getPath)
-            }
+
+        if (compok) {
+          tryMakeJar(jarFile, compiledPath)
+          if (jarOK) {
+            deleteRecursively(compiledPath)  // may as well do it now
+            handler(jarFile.getAbsolutePath)
+          } else {
+            // jar failed; run directly from the class files
+            handler(compiledPath.getPath)
           }
-        } finally {
-          deleteRecursively(compiledPath)
         }
       }
     } else {
-      // don't use the cache; just run from the interpreter's temporary directory
+      // don't use a cache jar at all--just use the class files
       val (compiledPath, compok) = compile
-      try {
-        if (compok)
-          handler(compiledPath.getPath)
-      } finally {
-        deleteRecursively(compiledPath)
-      }
+
+      if (compok)
+        handler(compiledPath.getPath)
     }
   }
 
