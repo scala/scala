@@ -1,0 +1,4 @@
+bug1241.scala:5: error: AnyRef{def hello(): Unit} does not have a constructor
+  val x4 = new T { def hello() { println("4") } }        // error!
+               ^
+one error found

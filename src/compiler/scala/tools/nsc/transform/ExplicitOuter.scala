@@ -169,8 +169,10 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
     /** Select and apply outer accessor from 'base'
      *  The result is typed but not positioned.
      */
-    private def outerSelect(base: Tree): Tree =
-      localTyper.typed(Apply(Select(base, outerAccessor(base.tpe.typeSymbol)), List()))
+    private def outerSelect(base: Tree): Tree = {
+      val path = Apply(Select(base, outerAccessor(base.tpe.typeSymbol.toInterface)), List())
+      localTyper.typed(path)
+    }
 
     /** The path
      *  <blockquote><pre>`base'.$outer$$C1 ... .$outer$$Cn</pre></blockquote>
