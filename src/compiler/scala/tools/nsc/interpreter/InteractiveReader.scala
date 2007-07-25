@@ -20,7 +20,7 @@ object InteractiveReader {
    *  SimpleReader. */
   def createDefault(): InteractiveReader = {
     try {
-      new JlineReader
+      new JLineReader
     } catch {
       case e =>
         //out.println("jline is not available: " + e) //debug

@@ -9,7 +9,7 @@ package scala.tools.nsc.interpreter
 import java.io.File
 
 /** Reads from the console using JLine */
-class JlineReader extends InteractiveReader {
+class JLineReader extends InteractiveReader {
   val consoleReader = {
     val history = try {
       new jline.History(new File(System.getProperty("user.home"), ".scala_history"))
