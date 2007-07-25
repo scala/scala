@@ -31,7 +31,7 @@ trait ParallelMatching  {
 
   sealed trait RuleApplication
   case class ErrorRule extends RuleApplication
-  case class VariableRule(subst:List[Pair[Symbol,Symbol]], guard: Tree, body: Tree) extends RuleApplication
+  case class VariableRule(subst:List[Pair[Symbol,Symbol]], guard: Tree, body: Tree, guardedRest:Rep) extends RuleApplication
 
   def MixtureRule(scrutinee:Symbol, column:List[Tree], rest:Rep): RuleApplication = {
     def isSimpleIntSwitch: Boolean = {
@@ -433,7 +433,7 @@ trait ParallelMatching  {
           subpatterns(p)
         case app @ Apply(fn, pats) if isCaseClass(app.tpe) && (fn.symbol eq null)=>
           if(isCaseHead) pats else dummies
-        case Apply(fn,xs) => assert((xs.isEmpty) && (fn.symbol ne null)); dummies // named constant
+        case Apply(fn,xs) => assert((xs.isEmpty) && (fn.symbol ne null), "strange Apply"); dummies // named constant
         case _: UnApply                                                         =>
           dummies
         case pat                                                                =>
@@ -595,6 +595,21 @@ trait ParallelMatching  {
   }
 
 
+  final def genBody(subst: List[Pair[Symbol,Symbol]], guard:Tree, origbody:Tree, rest:Tree)(implicit theOwner: Symbol, bodies: collection.mutable.Map[Tree,(Tree, Tree, Symbol)]): Tree = {
+    bodies(origbody) = null      // placeholder, for unreachable-code-detection
+    val vdefs = targetParams(subst)
+	val typedThen = origbody//typed{origbody.duplicate}
+	//Console.println("typedThen = "+typedThen);
+	val typedElse = rest//typed{rest}
+	//Console.println("typedElse = "+typedElse);
+    val untypedIf = If(guard, typedThen, typedElse)
+	//Console.println("typedIf   = "+typedIf);
+	//val typedBlock = typed{ squeezedBlock(vdefs, typedIf) }
+	//Console.println("typedBlock= "+typedBlock);
+	//typedBlock
+	atPhase(phase.prev) { typed { Block(vdefs, untypedIf) }}
+  }
+
   final def genBody(subst: List[Pair[Symbol,Symbol]], origbody:Tree)(implicit theOwner: Symbol, bodies: collection.mutable.Map[Tree,(Tree, Tree, Symbol)]): Tree = {
     origbody match {
       case _: Literal =>             // small trees
@@ -614,7 +629,7 @@ trait ParallelMatching  {
         var su = subst               // lookup symbol in pattern variables
         while(su ne Nil) {
           val sh = su.head;
-          if(sh._1 eq bsym) return typed{ Ident(sh._2) }
+          if(sh._1 eq bsym) return { Ident(sh._2) setType origbody.symbol.tpe }
           su = su.tail
         }
       val res =  typed{ origbody.duplicate }
@@ -636,7 +651,7 @@ trait ParallelMatching  {
             val body  = Apply(Ident(theLabel), args)
             return typed{body}
 
-          case None    =>
+          case Some(null) | None    =>
             // sharing bodies
             var argtpes   = subst map { case (v,_) => v.tpe }
             val theLabel  = targetLabel(theOwner, origbody.pos, "body"+origbody.hashCode, argtpes, origbody.tpe)
@@ -660,13 +675,12 @@ trait ParallelMatching  {
    */
   final def repToTree(rep:Rep, handleOuter: Tree => Tree)(implicit theOwner: Symbol, failTree: Tree, bodies: collection.mutable.Map[Tree,(Tree, Tree, Symbol)]): Tree = {
     rep.applyRule match {
-      case VariableRule(subst, EmptyTree, b) =>
+      case ErrorRule() => failTree
+      case VariableRule(subst, EmptyTree, b, _) =>
         genBody(subst,b)
 
-      case VariableRule(subst,g,b) =>
-        assert(false) // throw CantHandleGuard
-        null
-
+      case VariableRule(subst,g,b,restRep) =>
+        genBody(subst,g,b,repToTree(restRep, handleOuter))
 
       case mc: MixCases =>
         val (branches, defaultV, default) = mc.getTransition // tag body pairs
@@ -686,7 +700,7 @@ trait ParallelMatching  {
                     {
                       val pat  = mc.column(mc.tagIndexPairs.find(tag));
                       val ptpe = pat.tpe
-                      if(mc.scrutinee.tpe./*?type?*/symbol.hasFlag(symtab.Flags.SEALED) && strip2(pat).isInstanceOf[Apply]) {
+                      if(mc.scrutinee.tpe.typeSymbol.hasFlag(symtab.Flags.SEALED) && strip2(pat).isInstanceOf[Apply]) {
                         //cast
                         val vtmp = newVar(pat.pos, ptpe)
                         squeezedBlock(
@@ -700,7 +714,7 @@ trait ParallelMatching  {
         renamingBind(defaultV, mc.scrutinee, ndefault) // each v in defaultV gets bound to scrutinee
 
         // make first case a default case.
-        if(mc.scrutinee.tpe./*?type?*/symbol.hasFlag(symtab.Flags.SEALED) && defaultV.isEmpty) {
+        if(mc.scrutinee.tpe.typeSymbol.hasFlag(symtab.Flags.SEALED) && defaultV.isEmpty) {
           ndefault = genBody(Nil, cases.head.body)
           cases = cases.tail
         }
@@ -912,7 +926,7 @@ object Rep {
         //Console.println("sym! "+sym+" mutable? "+sym.hasFlag(symtab.Flags.MUTABLE)+" captured? "+sym.hasFlag(symtab.Flags.CAPTURED))
         if (sym.hasFlag(symtab.Flags.MUTABLE) &&  // indicates that have not yet checked exhaustivity
             !sym.hasFlag(symtab.Flags.CAPTURED) &&  // indicates @unchecked
-            sym.tpe./*?type?*/symbol.hasFlag(symtab.Flags.SEALED)) {
+            sym.tpe.typeSymbol.hasFlag(symtab.Flags.SEALED)) {
 
               sym.resetFlag(symtab.Flags.MUTABLE)
               sealedCols = i::sealedCols
@@ -1002,7 +1016,7 @@ object Rep {
             case (p,tmp) =>
               strip1(p).toList.zipAll(Nil,null,tmp) // == vars map { (v,tmp) }
           }
-          VariableRule (subst:::subst1, g, b)
+          VariableRule (subst:::subst1, g, b, Rep(temp, xs))
         } else {
           val i = pats findIndexOf {x => !isDefaultPattern(x)}
 

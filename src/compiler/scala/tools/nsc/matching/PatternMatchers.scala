@@ -165,7 +165,7 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
     def constructParallel(cases: List[Tree]): Any = {
       var cases1 = cases; while(cases1 ne Nil) {
         val c = cases1.head.asInstanceOf[CaseDef]
-        if(c.guard != EmptyTree) return CantHandleGuard
+        //if(c.guard != EmptyTree) return CantHandleGuard // TEST
         //hasUnapply.traverse(c.pat)
         val e = isImplemented(c.pat); if(e ne null) return e
         cases1 = cases1.tail
