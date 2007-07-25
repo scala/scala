@@ -679,9 +679,8 @@ trait Typers { self: Analyzer =>
           }
         } else if ((mode & (PATTERNmode | FUNmode)) == (PATTERNmode | FUNmode)) { // (5)
           val constr = tree.symbol.filter(_.isCaseFactory)
-          if (constr != NoSymbol) {
-            val clazz = constr.tpe.finalResultType.typeSymbol
-            assert(clazz hasFlag CASE, tree)
+          val clazz = constr.tpe.finalResultType.typeSymbol
+          if ((constr != NoSymbol) && (clazz hasFlag CASE)) {
             val prefix = tree.tpe.finalResultType.prefix
             val tree1 = TypeTree(clazz.primaryConstructor.tpe.asSeenFrom(prefix, clazz.owner)) setOriginal tree
             try {
@@ -1809,12 +1808,24 @@ trait Typers { self: Analyzer =>
       var localSyms = collection.immutable.Set[Symbol]()
       var boundSyms = collection.immutable.Set[Symbol]()
       var localInstances = collection.immutable.Map[SymInstance, Symbol]()
+      def isLocal(sym: Symbol): Boolean =
+        if (sym == NoSymbol) false
+        else if (owner == NoSymbol) tree exists (defines(_, sym))
+        else containsDef(owner, sym)
+      def containsLocal(tp: Type): Boolean =
+        tp exists (t => isLocal(t.typeSymbol) || isLocal(t.termSymbol))
+      val normalizeLocals = new TypeMap {
+        def apply(tp: Type): Type = tp match {
+          case TypeRef(pre, sym, args) =>
+            if (sym.isAliasType && containsLocal(tp)) apply(tp.normalize)
+            else mapOver(tp)
+          case _ =>
+            mapOver(tp)
+        }
+      }
       // add all local symbols of `tp' to `localSyms'
       // expanding higher-kinded types into individual copies for esach instance.
       def addLocals(tp: Type) {
-        def isLocal(sym: Symbol): Boolean =
-          if (owner == NoSymbol) tree exists (defines(_, sym))
-          else containsDef(owner, sym)
         def addIfLocal(sym: Symbol, tp: Type) {
           if (sym != NoSymbol && !sym.isRefinementClass && isLocal(sym) &&
               !(localSyms contains sym) && !(boundSyms contains sym) ) {
@@ -1863,8 +1874,9 @@ trait Typers { self: Analyzer =>
           case _ => mapOver(t)
         }
       }
-      addLocals(tree.tpe)
-      packSymbols(localSyms.toList ::: localInstances.values.toList, substLocals(tree.tpe))
+      val normalizedTpe = normalizeLocals(tree.tpe)
+      addLocals(normalizedTpe)
+      packSymbols(localSyms.toList ::: localInstances.values.toList, substLocals(normalizedTpe))
     }
 
     protected def typedExistentialTypeTree(tree: ExistentialTypeTree): Tree = {

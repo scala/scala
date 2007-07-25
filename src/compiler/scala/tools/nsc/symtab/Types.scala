@@ -243,6 +243,13 @@ trait Types {
     /** For a typeref or single-type, the prefix of the normalized type (@see normalize). NoType for all other types. */
     def prefix: Type = NoType
 
+    /** A chain of all typeref or singletype prefixes of this type, longest first */
+    def prefixChain: List[Type] = this match {
+      case TypeRef(pre, _, _) => pre :: pre.prefixChain
+      case SingleType(pre, _) => pre :: pre.prefixChain
+      case _ => List()
+    }
+
     /** For a typeref, its arguments. The empty list for all other types */
     def typeArgs: List[Type] = List()
 
@@ -1322,7 +1329,9 @@ A type's typeSymbol should never be inspected directly.
       else if (sym.isAliasType) normalize.narrow
       else super.narrow
 
-    override def prefix: Type = if (sym.isAliasType) normalize.prefix else pre
+    override def prefix: Type =
+      if (sym.isAliasType) normalize.prefix
+      else pre
 
     override def typeArgs: List[Type] = args
 
@@ -1419,6 +1428,10 @@ A type's typeSymbol should never be inspected directly.
           return normalize.typeArgs.init.mkString("(", ", ", ")") + " => " + normalize.typeArgs.last
         if (isTupleType(this))
           return args.mkString("(", ", ", if (args.length == 1) ",)" else ")")
+        if (sym.isAliasType && (prefixChain exists (_.termSymbol hasFlag SYNTHETIC))) {
+          val normed = normalize;
+          if (normed ne this) return normed.toString
+        }
       }
       var str = (pre.prefixString + sym.nameString +
                  (if (args.isEmpty) "" else args.mkString("[", ",", "]")))
@@ -1539,10 +1552,10 @@ A type's typeSymbol should never be inspected directly.
     override def kind = "PolyType"
   }
 
-  case class ExistentialType(override val typeParams: List[Symbol],
+  case class ExistentialType(quantified: List[Symbol],
                              override val underlying: Type) extends RewrappingTypeProxy
   {
-    override protected def rewrap(newtp: Type) = existentialAbstraction(typeParams, newtp)
+    override protected def rewrap(newtp: Type) = existentialAbstraction(quantified, newtp)
 
     override def isStable: Boolean = false
     override def bounds = TypeBounds(maybeRewrap(underlying.bounds.lo), maybeRewrap(underlying.bounds.hi))
@@ -1564,14 +1577,17 @@ A type's typeSymbol should never be inspected directly.
               .setFlag(tparam.flags | EXISTENTIAL)
               .resetFlag(PARAM)
       }
-      val skolems = typeParams map mkSkolem
+      val skolems = quantified map mkSkolem
       for (skolem <- skolems)
-        skolem setInfo skolem.info.substSym(typeParams, skolems)
-      underlying.substSym(typeParams, skolems)
+        skolem setInfo skolem.info.substSym(quantified, skolems)
+      underlying.substSym(quantified, skolems)
     }
 
-    override def toString: String =
-      underlying+(typeParams map tparamToString mkString(" forSome { ", "; ", " }"))
+    override def toString: String = {
+      val str =
+        underlying+(quantified map tparamToString mkString(" forSome { ", "; ", " }"))
+      if (settings.explaintypes.value) "("+str+")" else str
+    }
 
     private def tparamToString(tparam: Symbol) = {
       val tname = tparam.name.toString
@@ -1582,8 +1598,8 @@ A type's typeSymbol should never be inspected directly.
     }
 
     override def cloneInfo(owner: Symbol) = {
-      val tparams = cloneSymbols(typeParams, owner)
-      ExistentialType(tparams, underlying.substSym(typeParams, tparams))
+      val tparams = cloneSymbols(quantified, owner)
+      ExistentialType(tparams, underlying.substSym(quantified, tparams))
     }
 
     override def kind = "ExistentialType"
@@ -3279,15 +3295,15 @@ A type's typeSymbol should never be inspected directly.
   }
 
   private def stripExistentials(ts: List[Type]): (List[Type], List[Symbol]) = {
-    val typeParams = ts flatMap {
-      case ExistentialType(tparams, res) => tparams
+    val quantified = ts flatMap {
+      case ExistentialType(qs, _) => qs
       case t => List()
     }
     val strippedTypes = List.mapConserve(ts) {
-      case ExistentialType(tparams, res) => res
+      case ExistentialType(_, res) => res
       case t => t
     }
-    (strippedTypes, typeParams)
+    (strippedTypes, quantified)
   }
 
   def lub(ts: List[Type]): Type = lub(ts, maxClosureDepth(ts) + LubGlbMargin)

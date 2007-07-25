@@ -52,8 +52,9 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
     def apply(tp0: Type): Type = {val tp=expandAlias(tp0); tp match {
       case MethodType(formals, MethodType(formals1, restpe)) =>
         apply(MethodType(formals ::: formals1, restpe))
-      case MethodType(formals, ExistentialType(tparams, restpe)) =>
-        apply(ExistentialType(tparams, MethodType(formals, restpe)))
+      case MethodType(formals, ExistentialType(tparams, restpe @ MethodType(_, _))) =>
+        assert(false, "unexpected curried method types with intervening exitential")
+        tp0
       case mt: ImplicitMethodType =>
         apply(MethodType(mt.paramTypes, mt.resultType))
       case PolyType(List(), restpe) =>
