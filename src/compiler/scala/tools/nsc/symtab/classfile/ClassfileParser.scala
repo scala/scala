@@ -75,7 +75,7 @@ abstract class ClassfileParser {
       case ms: ModuleSymbol =>
         ms.moduleClass.asInstanceOf[ClassSymbol].classFile = file
       case _ =>
-        Console.println("Skipping class: " + root + ": " + root.getClass)
+        println("Skipping class: " + root + ": " + root.getClass)
     }
 
     this.in = new AbstractFileReader(file)
@@ -516,7 +516,7 @@ abstract class ClassfileParser {
             }
             val t = appliedType(classSym.typeConstructor, eparams.map(_.tpe))
             val res = existentialAbstraction(eparams, t)
-            if (settings.verbose.value) println("raw type " + classSym + " -> " + res)
+            if (settings.debug.value) println("raw type " + classSym + " -> " + res)
             res
           }
           accept(';')
@@ -536,7 +536,7 @@ abstract class ClassfileParser {
             clazz.tpe
           } else
             sig2type(tparams)
-          MethodType(paramtypes.toList, restype)
+          JavaMethodType(paramtypes.toList, restype)
         case 'T' =>
           val n = subName(';'.==).toTypeName
           index += 1
@@ -614,7 +614,7 @@ abstract class ClassfileParser {
           val c = pool.getConstant(in.nextChar)
           val c1 = convertTo(c, symtype)
           if (c1 ne null) sym.setInfo(mkConstantType(c1))
-          else Console.println("failure to convert " + c + " to " + symtype); //debug
+          else println("failure to convert " + c + " to " + symtype); //debug
         case nme.InnerClassesATTR =>
           if (!isScala) parseInnerClasses() else in.skip(attrLen)
         case nme.ScalaSignatureATTR =>
