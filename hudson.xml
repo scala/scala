@@ -18,7 +18,7 @@
 
   <target name="test_neg" depends="build">
     <exec executable="test/scalatest" vmlauncher="no">
-      <arg value="--quick --neg"/>
+      <arg line="--quick --neg"/>
     </exec>
   </target>
 
