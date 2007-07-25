@@ -1449,12 +1449,6 @@ GENERATES A DISTRIBUTION
     />
   </target>
 
-  <target name="hudson" depends="build">
-    <exec executable="test/scalatest" vmlauncher="no">
-      <arg value="--quick --pos"/>
-    </exec>
-  </target>
-
 <!-- ===========================================================================
 CLEAN
 ============================================================================ -->
