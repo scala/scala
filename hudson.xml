@@ -12,7 +12,7 @@
 
   <target name="test_pos" depends="build">
     <exec executable="test/scalatest" vmlauncher="no">
-      <arg value="--quick --pos"/>
+      <arg line="--quick --pos"/>
     </exec>
   </target>
 
