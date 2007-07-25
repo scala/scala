@@ -1451,7 +1451,7 @@ GENERATES A DISTRIBUTION
 
   <target name="hudson" depends="build">
     <exec executable="test/scalatest" vmlauncher="no">
-      <arg value="--quick"/>
+      <arg value="--quick --pos"/>
     </exec>
   </target>
 

@@ -25,7 +25,7 @@ class Random(self0: System.Random) {
   def this(seed: Int) = this(new System.Random(seed))
 
   /** Creates a new random number generator. */
-  def this() = this(Math.abs(System.Environment.TickCount))
+  def this() = this(new System.Random(System.Environment.TickCount))
 
   /** Returns the next pseudorandom, uniformly distributed boolean value
    *  from this random number generator's sequence.

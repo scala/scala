@@ -26,7 +26,7 @@ object Platform {
    *  @param destPos ..
    *  @param length  ..
    */
-  def arraycopy(src: AnyRef, srcPos: Int, dest: AnyRef, destPos: Int, length: Int): Unit = {
+  def arraycopy(src: AnyRef, srcPos: Int, dest: AnyRef, destPos: Int, length: Int) {
     if (!src.isInstanceOf[System.Array]) throw new Exception("src for arraycopy is not an Array; use scala.Array.copy for boxed arrays");
     if (!dest.isInstanceOf[System.Array]) throw new Exception("dest for arraycopy is not an Array; use scala.Array.copy for boxed arrays");
     System.Array.Copy(src.asInstanceOf[System.Array], srcPos, dest.asInstanceOf[System.Array], destPos, length)
@@ -40,9 +40,11 @@ object Platform {
    *  @return          ..
    */
   def createArray(elemClass: Class, length: Int): AnyRef =
-    System.Array.CreateInstance(elemClass, length);
+    System.Array.CreateInstance(elemClass, length)
 
-  def arrayclear(arr: Array[Int]): Unit = System.Array.Clear(arr.asInstanceOf[System.Array], 0, arr.length)
+  def arrayclear(arr: Array[Int]) {
+    System.Array.Clear(arr.asInstanceOf[System.Array], 0, arr.length)
+  }
 
   def getClassForName(name: String): Class = System.Type.GetType(name)
 
@@ -50,7 +52,7 @@ object Platform {
 
   def currentTime: Long = 0L
 
-  def collectGarbage: Unit = System.GC.Collect()
+  def collectGarbage { System.GC.Collect() }
 
 }
 
