@@ -1275,6 +1275,10 @@ trait Symbols {
   class TypeSkolem(initOwner: Symbol, initPos: Position,
                    initName: Name, origin: AnyRef)
   extends TypeSymbol(initOwner, initPos, initName) {
+
+    /** The skolemizatuon level in place when the skolem was constructed */
+    val level = skolemizationLevel
+
     override def isSkolem = true
     override def deSkolemize = origin match {
       case s: Symbol => s
@@ -1286,7 +1290,7 @@ trait Symbols {
       throw new Error("should not clone a type skolem")
     }
     override def nameString: String =
-      if (settings.debug.value) (super.nameString + "&")
+      if (settings.debug.value) (super.nameString + "&" + level)
       else super.nameString
   }
 

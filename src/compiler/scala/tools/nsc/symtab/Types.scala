@@ -77,7 +77,16 @@ trait Types {
   private final val LubGlbMargin = 0
   private final val LogPendingSubTypesThreshold = 50
 
-  val emptyTypeArray = new Array[Type](0)
+  /** The current skolemization level, needed for the algorithms
+   *  in isSameType, isSubType that do constraint solving under a prefix
+   */
+  var skolemizationLevel = 0
+
+  /** A log of type variable with their original constraints. Used in order
+   *  to undo constraints in the case of isSubType/isSameType failure.
+   */
+  type UndoLog = List[(TypeVar, TypeConstraint)]
+  var undoLog: UndoLog = List()
 
   /** A map from lists to compound types that have the given list as parents.
    *  This is used to avoid duplication in the computation of closure and baseClasses.
@@ -1577,13 +1586,19 @@ A type's typeSymbol should never be inspected directly.
    *  Not used after phase `typer'.
    */
   case class TypeVar(origin: Type, constr0: TypeConstraint) extends Type {
-    //constr.self = this //DEBUG
+
+    /** The constraint associated with the variable */
     var constr = constr0
+
+    /** The variable's skolemizatuon level */
+    val level = skolemizationLevel
+
     override def typeSymbol = origin.typeSymbol
     @deprecated override def symbol = origin.symbol
     override def toString: String =
       if (constr.inst eq null) "<null " + origin + ">"
-      else if (constr.inst eq NoType) "?*" + origin
+      else if (constr.inst eq NoType)
+        "?"+(if (settings.explaintypes.value) level else "")+origin
       else constr.inst.toString;
     override def isStable = origin.isStable
   }
@@ -2603,31 +2618,55 @@ A type's typeSymbol should never be inspected directly.
     }
   }
 
-  var undoLog: List[(TypeVar, TypeConstraint)] = List()
-
-  def snapShot(tv: TypeVar) {
-    undoLog = (tv, tv.constr.duplicate) :: undoLog
+  /** Can variable `tv' be related in a constraint to type `tp'?
+   *  This is not the case if `tp' contains type skolems whose
+   *  skolemization level is higher than the level of `tv'.
+   */
+  private def isRelatable(tv: TypeVar, tp: Type): Boolean = {
+    var ok = true
+    for (t <- tp) {
+      t.typeSymbol match {
+        case ts: TypeSkolem => if (ts.level > tv.level) ok = false
+        case _ =>
+      }
+    }
+    if (ok) undoLog = (tv, tv.constr.duplicate) :: undoLog
+    ok
   }
+
+  /** Undo all changes to constraints to type variables upto `limit'
+   */
+  private def undoTo(limit: UndoLog) {
+    while (undoLog ne limit) {
+      val (tv, constr) = undoLog.head
+      undoLog = undoLog.tail
+      tv.constr = constr
+    }
+  }
+
+  private var sametypeRecursions: Int = 0
+
+  private def isUnifiable(pre1: Type, pre2: Type) =
+    (beginsWithTypeVar(pre1) || beginsWithTypeVar(pre2)) && (pre1 =:= pre2)
+
+  private def equalSymsAndPrefixes(sym1: Symbol, pre1: Type, sym2: Symbol, pre2: Type): Boolean =
+    if (sym1 == sym2) phase.erasedTypes || pre1 =:= pre2
+    else (sym1.name == sym2.name) && isUnifiable(pre1, pre2)
 
   /** Do `tp1' and `tp2' denote equivalent types?
-   *
-   *  @param tp1 ...
-   *  @param tp2 ...
-   *  @return    true, iff `tp1' and `tp2' denote
-   *             equivalent types.
    */
-  var si = 0
-  def isSameType0(tp1: Type, tp2: Type): Boolean = {
-    for (i <- 0 until si) print(" ");
-    println(tp1+" =:= "+tp2)
-    si += 1
-    if (si > 10) throw new Error()
-    val res = isSameType0(tp1, tp2)
-    si -= 1
-    res
+  def isSameType(tp1: Type, tp2: Type): Boolean = try {
+    sametypeRecursions += 1
+    val lastUndoLog = undoLog
+    val result = isSameType0(tp1, tp2)
+    if (!result) undoTo(lastUndoLog)
+    result
+  } finally {
+    sametypeRecursions -= 1
+    if (sametypeRecursions == 0) undoLog = List()
   }
 
-  def isSameType(tp1: Type, tp2: Type): Boolean = {
+  private def isSameType0(tp1: Type, tp2: Type): Boolean = {
     (tp1, tp2) match {
       case (ErrorType, _) => true
       case (WildcardType, _) => true
@@ -2643,7 +2682,7 @@ A type's typeSymbol should never be inspected directly.
       if (sym1 == sym2) =>
         true
       case (SingleType(pre1, sym1), SingleType(pre2, sym2))
-      if ((sym1 == sym2) && (pre1 =:= pre2)) =>
+      if equalSymsAndPrefixes(sym1, pre1, sym2, pre2) =>
         true
 /*
       case (SingleType(pre1, sym1), ThisType(sym2))
@@ -2660,10 +2699,10 @@ A type's typeSymbol should never be inspected directly.
       case (ConstantType(value1), ConstantType(value2)) =>
         value1 == value2
       case (TypeRef(pre1, sym1, args1), TypeRef(pre2, sym2, args2)) =>
-        sym1 == sym2 && (phase.erasedTypes || pre1 =:= pre2) &&
-          // @M! normalize reduces higher-kinded case to PolyType's
-        ((tp1.isHigherKinded && tp2.isHigherKinded && tp1.normalize =:= tp2.normalize)
-         || isSameTypes(args1, args2))
+        equalSymsAndPrefixes(sym1, pre1, sym2, pre2) &&
+        ((tp1.isHigherKinded && tp2.isHigherKinded && tp1.normalize =:= tp2.normalize) ||
+         isSameTypes(args1, args2))
+         // @M! normalize reduces higher-kinded case to PolyType's
       case (RefinedType(parents1, ref1), RefinedType(parents2, ref2)) =>
         def isSubScope(s1: Scope, s2: Scope): Boolean = s2.toList.forall {
           sym2 =>
@@ -2696,10 +2735,10 @@ A type's typeSymbol should never be inspected directly.
         bounds containsType tp1
       case (tv1 @ TypeVar(_, constr1), _) =>
         if (constr1.inst != NoType) constr1.inst =:= tp2
-        else { snapShot(tv1); constr1 instantiate wildcardToTypeVarMap(tp2) }
+        else isRelatable(tv1, tp2) && (constr1 instantiate wildcardToTypeVarMap(tp2))
       case (_, tv2 @ TypeVar(_, constr2)) =>
         if (constr2.inst != NoType) tp1 =:= constr2.inst
-        else { snapShot(tv2); constr2 instantiate wildcardToTypeVarMap(tp1) }
+        else isRelatable(tv2, tp1) && (constr2 instantiate wildcardToTypeVarMap(tp1))
       case (AnnotatedType(_,atp), _) =>
         isSameType(atp, tp2)
       case (_, AnnotatedType(_,atp)) =>
@@ -2727,14 +2766,14 @@ A type's typeSymbol should never be inspected directly.
     tps1.length == tps2.length &&
     List.forall2(tps1, tps2)((tp1, tp2) => tp1 =:= tp2)
 
-  var stc: Int = 0
+  private var subtypeRecursions: Int = 0
   private var pendingSubTypes = new collection.mutable.HashSet[SubTypePair]
 
   def isSubType(tp1: Type, tp2: Type): Boolean = try {
-    stc = stc + 1
+    subtypeRecursions += 1
     val lastUndoLog = undoLog
     val result =
-      if (stc >= LogPendingSubTypesThreshold) {
+      if (subtypeRecursions >= LogPendingSubTypesThreshold) {
         val p = new SubTypePair(tp1, tp2)
         if (pendingSubTypes contains p)
           false
@@ -2748,27 +2787,22 @@ A type's typeSymbol should never be inspected directly.
       } else {
         isSubType0(tp1, tp2)
       }
-    if (!result) {
-      while (undoLog ne lastUndoLog) {
-        val (tv, constr) = undoLog.head
-        undoLog = undoLog.tail
-        tv.constr = constr
-      }
-    }
+    if (!result) undoTo(lastUndoLog)
     result
   } finally {
-    stc = stc - 1
-    if (stc == 0) undoLog = List()
+    subtypeRecursions -= 1
+    if (subtypeRecursions == 0) undoLog = List()
   }
 
   /** hook for IDE */
   protected def trackTypeIDE(sym : Symbol) : Boolean = true;
 
-  def isTypeVar(tp: Type): Boolean = tp match {
+  /** Does this type have a prefix that begins with a type variable */
+  def beginsWithTypeVar(tp: Type): Boolean = tp match {
     case SingleType(pre, sym) =>
-      !(sym hasFlag PACKAGE) && isTypeVar(pre)
+      !(sym hasFlag PACKAGE) && beginsWithTypeVar(pre)
     case TypeVar(_, constr) =>
-      constr.inst == NoType || isTypeVar(constr.inst)
+      constr.inst == NoType || beginsWithTypeVar(constr.inst)
     case _ =>
       false
   }
@@ -2785,12 +2819,8 @@ A type's typeSymbol should never be inspected directly.
   }
 
   /** Does type `tp1' conform to `tp2'?
-   *
-   *  @param tp1 ...
-   *  @param tp2 ...
-   *  @return    ...
    */
-  def isSubType0(tp1: Type, tp2: Type): Boolean = {
+  private def isSubType0(tp1: Type, tp2: Type): Boolean = {
     (tp1, tp2) match {
       case (ErrorType, _)    => true
       case (WildcardType, _) => true
@@ -2822,21 +2852,13 @@ A type's typeSymbol should never be inspected directly.
           (tparams.head.isContravariant || (tps1.head <:< tps2.head)) &&
           isSubArgs(tps1.tail, tps2.tail, tparams.tail)
         );
-        (sym1 == sym2 &&
-         (phase.erasedTypes || pre1 <:< pre2) &&
+        ((if (sym1 == sym2) phase.erasedTypes || pre1 <:< pre2
+          else (sym1.name == sym2.name) && isUnifiable(pre1, pre2)) &&
          (sym2 == AnyClass || isSubArgs(args1, args2, sym1.typeParams)) //@M: Any is kind-polymorphic
-/*
-         ||
-         sym1.name == sym2.name &&
-//       (sym1.owner isSubClass sym2.owner) &&
-         (isTypeVar(pre1) || isTypeVar(pre2)) &&
-         pre1 =:= pre2 &&
-         instTypeVar(tp1) <:< instTypeVar(tp2)
-*/
          ||
          sym1.isAbstractType && !(tp1 =:= tp1.bounds.hi) && (tp1.bounds.hi <:< tp2)
          ||
-          sym2.isAbstractType && !(tp2 =:= tp2.bounds.lo) && (tp1 <:< tp2.bounds.lo)
+         sym2.isAbstractType && !(tp2 =:= tp2.bounds.lo) && (tp1 <:< tp2.bounds.lo)
          ||
          sym2.isClass &&
          ({ val base = tp1 baseType sym2; !(base eq tp1) && (base <:< tp2) })
@@ -2864,10 +2886,10 @@ A type's typeSymbol should never be inspected directly.
         tp1 <:< bounds.hi
       case (_, tv2 @ TypeVar(_, constr2)) =>
         if (constr2.inst != NoType) tp1 <:< constr2.inst
-        else { snapShot(tv2); constr2.lobounds = tp1 :: constr2.lobounds; true }
+        else isRelatable(tv2, tp1) && { constr2.lobounds = tp1 :: constr2.lobounds; true }
       case (tv1 @ TypeVar(_, constr1), _) =>
         if (constr1.inst != NoType) constr1.inst <:< tp2
-        else { snapShot(tv1); constr1.hibounds = tp2 :: constr1.hibounds; true }
+        else isRelatable(tv1, tp2) && { constr1.hibounds = tp2 :: constr1.hibounds; true }
       case (AnnotatedType(_,atp1), _) =>
         atp1 <:< tp2
       case (_, AnnotatedType(_,atp2)) =>
@@ -2890,6 +2912,13 @@ A type's typeSymbol should never be inspected directly.
         (parents2 forall (tp2 => tp1 <:< tp2 || tp2.typeSymbol == NotNullClass && tp1.isNotNull)) &&
         (ref2.toList forall tp1.specializes) &&
         (!parents2.exists(_.typeSymbol.isAbstractType) || tp1.typeSymbol != AllRefClass)
+      case (ExistentialType(_, _), _) =>
+        try {
+          skolemizationLevel += 1
+          tp1.skolemizeExistential(NoSymbol, null) <:< tp2
+        } finally {
+          skolemizationLevel -= 1
+        }
       case (_, ExistentialType(tparams2, res2)) =>
         val tvars = tparams2 map (tparam => new TypeVar(tparam.tpe, new TypeConstraint))
         val ires2 = res2.instantiateTypeParams(tparams2, tvars)
@@ -2901,8 +2930,6 @@ A type's typeSymbol should never be inspected directly.
         }
       case (RefinedType(parents1, ref1), _) =>
         parents1 exists (_ <:< tp2)
-      case (ExistentialType(_, _), _) =>
-        tp1.skolemizeExistential(NoSymbol, null) <:< tp2
 
       /* todo: replace following with
       case (ThisType(_), _)
