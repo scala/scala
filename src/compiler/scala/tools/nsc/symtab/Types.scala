@@ -682,6 +682,9 @@ trait Types {
 
     /** Remove any attributes from this type */
     def withoutAttributes = this
+
+    /** The kind of this type; used for debugging */
+    def kind: String = "unknown type of class "+getClass()
   }
 
 // Subclasses ------------------------------------------------------------
@@ -711,6 +714,7 @@ trait Types {
     override def notNull = this
     override def deconst: Type = underlying //todo: needed?
     override def toString: String = underlying.toString + " with NotNull"
+    override def kind = "NotNullType"
   }
 
   /** A base class for types that represent a single value
@@ -753,16 +757,19 @@ trait Types {
     override def toString: String = "<error>"
     override def narrow: Type = this
     // override def isNullable: Boolean = true
+    override def kind = "ErrorType"
   }
 
   /** An object representing an unknown type */
   case object WildcardType extends Type {
     override def toString: String = "?"
     // override def isNullable: Boolean = true
+    override def kind = "WildcardType"
   }
 
   case class BoundedWildcardType(override val bounds: TypeBounds) extends Type {
     override def toString: String = "?" + bounds
+    override def kind = "BoundedWildcardType"
   }
 
   /** An object representing a non-existing type */
@@ -770,6 +777,7 @@ trait Types {
     override def isTrivial: Boolean = true
     override def toString: String = "<notype>"
     // override def isNullable: Boolean = true
+    override def kind = "NoType"
   }
 
   /** An object representing a non-existing prefix */
@@ -779,6 +787,7 @@ trait Types {
     override def prefixString = ""
     override def toString: String = "<noprefix>"
     // override def isNullable: Boolean = true
+    override def kind = "NoPrefixType"
   }
 
   /** A class for this-types of the form <sym>.this.type
@@ -801,12 +810,14 @@ trait Types {
       else if (sym.isEmptyPackageClass) "<empty>"
       else super.toString
     override def narrow: Type = this
+    override def kind = "ThisType"
   }
 
   case class DeBruijnIndex(level: Int, paramId: Int) extends Type {
     override def isTrivial = true
     override def isStable = true
     override def toString = "<param "+level+"."+paramId+">"
+    override def kind = "DeBruijnIndex"
   }
 
   /** A class for singleton types of the form &lt;prefix&gt;.&lt;sym.name&gt;.type.
@@ -848,6 +859,7 @@ trait Types {
     override def prefixString: String =
       if ((sym.isEmptyPackage || sym.isInterpreterWrapper || sym.isPredefModule || sym.isScalaPackage) && !settings.debug.value) ""
       else pre.prefixString + sym.nameString + "."
+    override def kind = "SingleType"
   }
 
   case class SuperType(thistpe: Type, supertpe: Type) extends SingletonType {
@@ -862,6 +874,7 @@ trait Types {
         thistpe.prefixString.substring(0, thistpe.prefixString.length() - 5) + "super."
       else thistpe.prefixString;
     override def narrow: Type = thistpe.narrow
+    override def kind = "SuperType"
   }
 
   /** A class for the bounds of abstract types and type parameters
@@ -873,6 +886,7 @@ trait Types {
     def containsType(that: Type) = that <:< this || lo <:< that && that <:< hi;
     // override def isNullable: Boolean = AllRefClass.tpe <:< lo;
     override def toString = ">: " + lo + " <: " + hi
+    override def kind = "TypeBoundsType"
   }
 
   /** A common base class for intersection types and class types
@@ -1053,7 +1067,9 @@ trait Types {
    *  one should always use `refinedType' for creation.
    */
   case class RefinedType(override val parents: List[Type],
-                         override val decls: Scope) extends CompoundType
+                         override val decls: Scope) extends CompoundType {
+    override def kind = "RefinedType"
+  }
 
   /** A class representing a class info
    */
@@ -1191,6 +1207,7 @@ trait Types {
     // symbol != AllClass && (symbol isSubClass ObjectClass) && !(symbol isSubClass NonNullClass);
 
     // override def isNonNull: Boolean = symbol == NonNullClass || super.isNonNull;
+    override def kind = "ClassInfoType"
   }
 
   class PackageClassInfoType(decls: Scope, clazz: Symbol)
@@ -1210,6 +1227,7 @@ trait Types {
       underlying.toString + "(" + value.escapedStringValue + ")"
     // override def isNullable: Boolean = value.value eq null
     // override def isNonNull: Boolean = value.value ne null
+    override def kind = "ConstantType"
   }
 
   /** A class for named types of the form
@@ -1347,7 +1365,11 @@ A type's typeSymbol should never be inspected directly.
         // @M TODO: should not use PolyType, as that's the type of a polymorphic value -- we really want a type *function*
         // @M TODO: transform?
         PolyType(typeParams, typeRef(pre, sym, higherKindedArgs))
-      } else super.normalize // @M TODO: transform?
+      } else if (sym.isRefinementClass) {
+        sym.info
+      } else {
+        super.normalize
+      }
 
     override def decls: Scope = {
       sym.info match {
@@ -1425,6 +1447,8 @@ A type's typeSymbol should never be inspected directly.
         sym.name.toString.substring(0, sym.name.length - 4)
       else
         super.prefixString
+
+      override def kind = "TypeRef"
   }
 
   /** A class representing a method type with parameters.
@@ -1456,6 +1480,7 @@ A type's typeSymbol should never be inspected directly.
     override def toString: String =
       if (resultType.isDependent) dependentToString(0)
       else paramTypes.mkString(paramPrefix, ",", ")") + resultType
+    override def kind = "MethodType"
   }
 
   class ImplicitMethodType(pts: List[Type], rt: Type) extends MethodType(pts, rt) {
@@ -1510,6 +1535,8 @@ A type's typeSymbol should never be inspected directly.
       val tparams = cloneSymbols(typeParams, owner)
       PolyType(tparams, resultType.substSym(typeParams, tparams))
     }
+
+    override def kind = "PolyType"
   }
 
   case class ExistentialType(override val typeParams: List[Symbol],
@@ -1558,6 +1585,8 @@ A type's typeSymbol should never be inspected directly.
       val tparams = cloneSymbols(typeParams, owner)
       ExistentialType(tparams, underlying.substSym(typeParams, tparams))
     }
+
+    override def kind = "ExistentialType"
   }
 
   /** A class containing the alternatives and type prefix of an overloaded symbol.
@@ -1567,6 +1596,7 @@ A type's typeSymbol should never be inspected directly.
     override def prefix: Type = pre
     override def toString =
       (alternatives map pre.memberType).mkString("", " <and> ", "")
+    override def kind = "OverloadedType"
   }
 
   /** A class remembering a type instantiation for some a set of overloaded
@@ -1580,6 +1610,7 @@ A type's typeSymbol should never be inspected directly.
       case PolyType(tparams, restp) => restp.subst(tparams, targs)
       case ErrorType => ErrorType
     }
+    override def kind = "AntiPolyType"
   }
 
   /** A class representing a type variable
@@ -1601,6 +1632,7 @@ A type's typeSymbol should never be inspected directly.
         "?"+(if (settings.explaintypes.value) level else "")+origin
       else constr.inst.toString;
     override def isStable = origin.isStable
+    override def kind = "TypeVar"
   }
 
   /** A type carrying some attributes.  The attributes have no significance
@@ -1649,6 +1681,8 @@ A type's typeSymbol should never be inspected directly.
        else
          oftp
      }
+
+    override def kind = "AnnotatedType"
   }
 
   /** A class representing an as-yet unevaluated type.
@@ -1657,6 +1691,7 @@ A type's typeSymbol should never be inspected directly.
     override def isComplete: Boolean = false
     override def complete(sym: Symbol)
     override def toString = "<?>"
+    override def kind = "LazyType"
   }
 
 // Creators ---------------------------------------------------------------

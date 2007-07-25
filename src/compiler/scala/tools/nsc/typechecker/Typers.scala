@@ -2938,9 +2938,11 @@ trait Typers { self: Analyzer =>
     /** Types a type constructor tree used in a new or supertype */
     def typedTypeConstructor(tree: Tree): Tree = {
       val result = typed(tree, TYPEmode | FUNmode, WildcardType)
-      if (!phase.erasedTypes && result.tpe.isInstanceOf[TypeRef] && !result.tpe.prefix.isStable)
-        error(tree.pos, result.tpe.prefix+" is not a legal prefix for a constructor")
-      result setType(result.tpe) // @M: normalization is done during erasure
+      val restpe = result.tpe.normalize
+      if (!phase.erasedTypes && restpe.isInstanceOf[TypeRef] && !restpe.prefix.isStable) {
+        error(tree.pos, restpe.prefix+" is not a legal prefix for a constructor")
+      }
+      result setType restpe // @M: normalization is done during erasure
     }
 
     def computeType(tree: Tree, pt: Type): Type = {

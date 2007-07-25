@@ -516,7 +516,7 @@ abstract class ClassfileParser {
             }
             val t = appliedType(classSym.typeConstructor, eparams.map(_.tpe))
             val res = existentialAbstraction(eparams, t)
-            if (settings.debug.value) println("raw type " + classSym + " -> " + res)
+            if (settings.debug.value && settings.verbose.value) println("raw type " + classSym + " -> " + res)
             res
           }
           accept(';')
