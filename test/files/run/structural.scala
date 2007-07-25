@@ -1,4 +1,4 @@
-object Test extends Application {
+object test1 {
 
   val o1 = new Object { override def toString = "ohone" }
   val o2 = new Object { override def toString = "ohtwo" }
@@ -66,51 +66,49 @@ object Test extends Application {
     val y: Tata
   }
 
-  def l (r: rt) = {
-
-    Console.println(" 1. " + r.c)
-    Console.println(" 2. " + r.a + 1)
-    Console.println(" 3. " + r.d(o1))
-    Console.println(" 4. " + r.e(t1))
-    Console.println(" 5. " + (r.f(4) + 1))
-    Console.println(" 6. " + r.f(4) + 1)
-    Console.println(" 7. " + r.f(r.a))
-    Console.println(" 8. " + r.v)
+  def l (r: rt) {
+    println(" 1. " + r.c)
+    println(" 2. " + r.a + 1)
+    println(" 3. " + r.d(o1))
+    println(" 4. " + r.e(t1))
+    println(" 5. " + (r.f(4) + 1))
+    println(" 6. " + r.f(4) + 1)
+    println(" 7. " + r.f(r.a))
+    println(" 8. " + r.v)
     r.v = r.v + 1
-    Console.println("10. " + r.v)
-    Console.println("11. " + r.h(()))
-    Console.println("12. " + r.i(Array(1, 2, 3)))
-    Console.println("13. " + r.j(Array(o1, o2)))
-    Console.println("14. " + r.k(Array('1', '2')))
-    Console.println("15. " + r.l(Array((), ())))
-    Console.println("16. " + r.m(Array("one", "two")))
-    Console.println("17. " + r.n(Array(t1, t2)))
-    Console.println("18. " + (r.o(0) + 1))
-    Console.println("19. " + (r.p(0).hashCode() > 0))
-    Console.println("20. " + r.q(0))
-    Console.println("21. " + r.r(0))
-    Console.println("22. " + r.m(r.s))
-    Console.println("23. " + r.t(0).tatMe)
-    Console.println("24. " + r.u[Int](_+1,0))
-    Console.println("25. " + r.y)
-    Console.println("26. " + r.e(null))
-
+    println("10. " + r.v)
+    println("11. " + r.h(()))
+    println("12. " + r.i(Array(1, 2, 3)))
+    println("13. " + r.j(Array(o1, o2)))
+    println("14. " + r.k(Array('1', '2')))
+    println("15. " + r.l(Array((), ())))
+    println("16. " + r.m(Array("one", "two")))
+    println("17. " + r.n(Array(t1, t2)))
+    println("18. " + (r.o(0) + 1))
+    println("19. " + (r.p(0).hashCode() > 0))
+    println("20. " + r.q(0))
+    println("21. " + r.r(0))
+    println("22. " + r.m(r.s))
+    println("23. " + r.t(0).tatMe)
+    println("24. " + r.u[Int](_+1,0))
+    println("25. " + r.y)
+    println("26. " + r.e(null))
   }
 
   /*def ma[T](r: Object{def e(x: T): T; val x: T}) {
-    Console.println("30. " + r.e(r.x)) // static error
+    println("30. " + r.e(r.x)) // static error
   }*/
 
-  def mb(r: Object{def e[T](x: T): T}) {
-    Console.println("31. " + r.e[Int](4)) // while this is ok
+  def mb(r: Object { def e[T](x: T): T }) {
+    println("31. " + r.e[Int](4)) // while this is ok
   }
 
-  def m1(r: Object{def z(x: Tata): Unit}) {
-    Console.println("32. " + r.z(new Titi)) // while this is ok
+  def m1(r: Object { def z(x: Tata): Unit }) {
+    println("32. " + r.z(new Titi)) // while this is ok
   }
 
-  def m2[T](r: Object{def e(x: Tata): T; val x: Tata}) {
-    Console.println("33. " + r.e(r.x)) // and this too
+  def m2[T](r: Object { def e(x: Tata): T; val x: Tata }) {
+    println("33. " + r.e(r.x)) // and this too
   }
 
   class Rec3[T] {
@@ -118,7 +116,7 @@ object Test extends Application {
   }
 
   def m3[T](r: Rec3[T], x: T) {
-    Console.println("33. " + r.e(x)) // and this too
+    println("33. " + r.e(x)) // and this too
   }
 
   Rec.g(11)
@@ -128,4 +126,31 @@ object Test extends Application {
   this.m1(Rec)
   this.m2[Tata](Rec)
   this.m3[Tata](new Rec3[Tata], t1)
+}
+
+object test2 {
+  class C extends { def f() { println("1") } }
+  val x1 = new C
+  x1.f()
+
+  abstract class D extends { def f() }
+  val x2 = new D { def f() { println("2") } }
+  x2.f()
+
+  val x3 = new { def f() { println("3") } }
+  def run(x: { def f() }) { x.f() }
+  run(x3)
+
+  type T = { def f() }
+  val x4 = new AnyRef { def f() { println("4") } } // ok!
+  //val x4 = new T { def f() { println("4") } }        // error! (bug #1241)
+  x4.f()
+
+  val x5: T = new { def f() { println("5") } }
+  x5.f()
+}
+
+object Test extends Application {
+  test1
+  test2
 }
