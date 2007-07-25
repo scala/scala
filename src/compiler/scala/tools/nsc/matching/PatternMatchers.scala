@@ -199,7 +199,7 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
         resetTrav.traverse(dfatree)
 
         //constructParallel(cases) // ZZZ
-        nParallel = nParallel + 1
+        nParallel += 1
         return null
       } catch {
         case e => return e // fallback
@@ -502,9 +502,6 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
         enter1(pat, index, target, casted, env)
     }
 
-    type SelectorMap = collection.mutable.HashMap[(Symbol,Symbol),List[Symbol]]
-    val selectorMap = new SelectorMap
-
   private def newHeader(pos: Position, casted: Symbol, index: Int): Header = {
     //Console.println("newHeader(pos,"+casted+" (has CASE flag? "+casted.tpe.symbol.hasFlag(Flags.CASE)+") of type "+casted.tpe+" with pos "+casted.pos+"(equals FIRSTPOS? "+(casted.pos == Position.FIRSTPOS)+"),"+index+")");
     val ident = typed(Ident(casted))
@@ -524,7 +521,7 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
         //Console.println("getProductArgs? "+defs.getProductArgs(casted.tpe));
         defs.getProductArgs(casted.tpe) match  {
           case Some(targs) =>
-            val accSym = defs.productProj(casted.tpe./*?type?*/symbol, index+1)
+            val accSym = defs.productProj(casted.tpe.typeSymbol, index+1)
             val accTree = typed(Apply(Select(ident, accSym), List())) // nsc !
             return pHeader(pos, accTree.tpe, accTree)
           case None =>
@@ -543,8 +540,8 @@ print()
 
       //Console.println("CASE");
 
-      val caseAccs = casted.tpe./*?type?*/symbol.caseFieldAccessors;
-      if (caseAccs.length <= index) Console.println("selecting " + index + " in case fields of " + casted.tpe./*?type?*/symbol + "=" + casted.tpe./*?type?*/symbol.caseFieldAccessors);//debug
+      val caseAccs = casted.tpe.typeSymbol.caseFieldAccessors;
+      if (caseAccs.length <= index) Console.println("selecting " + index + " in case fields of " + casted.tpe.typeSymbol + "=" + caseAccs);//debug
       val ts = caseAccs(index);
       val accTree = typed(Apply(Select(ident, ts), List()))
       val accType = accTree.tpe
@@ -623,13 +620,6 @@ print()
           target.and = curHeader; // (*)
 
           //Console.println("curHeader : "+curHeader)
-/* first try at exhaust improvement
-         selectorMap.update((casted, curHeader.selector.symbol),
-           selectorMap.get(casted, curHeader.selector.symbol) match {
-            case Some(xs) =>  pat.tpe./*?type?*/symbol::xs
-            case _ => pat.tpe./*?type?*/symbol::Nil
-          })
-*/
           if (bodycond ne null) target.and = bodycond(target.and) // restores body with the guards
 
           curHeader.or = patternNode(pat, curHeader, env)
@@ -711,7 +701,7 @@ print()
     protected def nCaseComponents(tree: Tree): int = {
       tree match {
         case Apply(fn, _) =>
-          val tpe = tree.tpe./*?type?*/symbol.primaryConstructor.tpe
+          val tpe = tree.tpe.typeSymbol.primaryConstructor.tpe
           //Console.println("~~~ " + tree.type() + ", " + tree.type().symbol.primaryConstructor());
           tpe match {
             // I'm not sure if this is a good idea, but obviously, currently all case classes
@@ -1148,7 +1138,7 @@ print()
           case DefaultPat() =>
             return toTree(node.and);
 
-          case UnapplyPat(casted, Apply(fn1, appargs)) if casted.tpe./*?type?*/symbol == defs.BooleanClass => // special case
+          case UnapplyPat(casted, Apply(fn1, appargs)) if casted.tpe.typeSymbol == defs.BooleanClass => // special case
             var useSelector = selector
             val checkType = fn1.tpe match {
               case MethodType(List(argtpe,_*),_) =>
@@ -1211,25 +1201,10 @@ print()
           // compare outer instance for patterns like foo1.Bar foo2.Bar if not statically known to match
           casted.tpe match {
             case TypeRef(prefix,_,_) if needsOuterTest(casted.tpe, selector.tpe) =>
-
                 //@attention, deep typer bug: if we omit "typed" here, we crash when typing the tree that contains this fragment
                 cond = typed{ addOuterCondition(cond, casted.tpe, selector.duplicate, handleOuter) }
-            /*
-                var theRef = gen.mkAttributedRef(prefix.prefix, prefix.symbol)
 
-                // needs explicitouter treatment
-                theRef = handleOuter(theRef)
-
-                val outerAcc = outerAccessor(casted.tpe./*?type?*/symbol)
-
-                if(outerAcc != NoSymbol) { // some guys don't have outers
-                  cond = And(cond,
-                             Eq(Apply(Select(
-                               typed(gen.mkAsInstanceOf(selector.duplicate, ntpe, true)), outerAcc),List()), theRef))
-                }
-                */
-            case _ =>
-              //ignore ;
+            case _ => //ignore ;
           }
 
           val cast_untyped = gen.mkAsInstanceOf(selector.duplicate, ntpe, true)

@@ -62,6 +62,8 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
       tp match {
         case ConstantType(_) =>
           tp
+        case NotNullType(tp) => // BQ to Martin: this used to be below st:SubType and unreachable, moved up
+          apply(tp)
         case st: SubType =>
           apply(st.supertype)
         case TypeRef(pre, sym, args) =>
@@ -96,8 +98,6 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
             else if (clazz == ArrayClass) List(erasedTypeRef(ObjectClass))
             else removeDoubleObject(parents map this),
             decls, clazz)
-        case NotNullType(tp) =>
-          apply(tp)
         case _ =>
           mapOver(tp)
       }

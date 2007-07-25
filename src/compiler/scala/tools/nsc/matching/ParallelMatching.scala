@@ -13,15 +13,19 @@ import scala.tools.nsc.util.Position
  *  @author Burak Emir
  */
 trait ParallelMatching  {
-  self: transform.ExplicitOuter with PatternMatchers with CodeFactory =>
+  self: transform.ExplicitOuter with PatternMatchers with PatternNodes with CodeFactory =>
 
   import global._
   import typer.typed
+  import symtab.Flags
 
-  def isCaseClass(tpe: Type) = tpe match {
-    case TypeRef(_, sym, _) => sym.hasFlag(symtab.Flags.CASE)
-    case _ => false
-  }
+  // problem: this works for types, but sometimes term symbol have case flag, see isFlatCases
+  def isCaseClass(tpe: Type) = //before: tpe.symbol.hasFlag(Flags.CASE)
+    tpe match {
+      case TypeRef(_, sym, _) =>
+        sym.hasFlag(symtab.Flags.CASE)
+      case _ => false
+    }
 
   // ----------------------------------   data
 
@@ -64,21 +68,21 @@ trait ParallelMatching  {
 
     // true if pattern type is direct subtype of scrutinee (can't use just <:< cause have to take variance into account)
     def directSubtype(ptpe:Type) =
-      (ptpe.parents.exists { x => ((x./*?type?*/symbol eq scrutinee.tpe./*?type?*/symbol) && (x <:< scrutinee.tpe))});
+      (ptpe.parents.exists { x => ((x.typeSymbol eq scrutinee.tpe.typeSymbol) && (x <:< scrutinee.tpe))});
 
     // true if each pattern type is case and direct subtype of scrutinee
     def isFlatCases(col:List[Tree]): Boolean = (col eq Nil) || {
       strip2(col.head) match {
         case a @ Apply(fn,_) =>
-          ((a.tpe./*?type?*/symbol.flags & symtab.Flags.CASE) != 0) && directSubtype( a.tpe ) && isFlatCases(col.tail)
+          isCaseClass(a.tpe) && directSubtype( a.tpe ) && isFlatCases(col.tail)
         case t @ Typed(_,tpt) =>
-          (  (tpt.tpe./*?type?*/symbol.flags & symtab.Flags.CASE) != 0) && directSubtype( t.tpe ) && isFlatCases(col.tail)
+          isCaseClass(tpt.tpe) && directSubtype( t.tpe ) && isFlatCases(col.tail)
         case Ident(nme.WILDCARD) =>
            isFlatCases(col.tail) // treat col.tail specially?
         case i @ Ident(n) => // n ne nme.WILDCARD
-          (  (i.symbol.flags & symtab.Flags.CASE) != 0) && directSubtype( i.tpe ) && isFlatCases(col.tail)
+          (  (i.symbol.flags & Flags.CASE) != 0) && directSubtype( i.tpe ) && isFlatCases(col.tail)
         case s @ Select(_,_) => // i.e. scala.Nil
-          (  (s.symbol.flags & symtab.Flags.CASE) != 0) && directSubtype( s.tpe ) && isFlatCases(col.tail)
+          (  (s.symbol.flags & Flags.CASE) != 0) && directSubtype( s.tpe ) && isFlatCases(col.tail)
         case p =>
           //Console.println(p.getClass)
           false
@@ -211,7 +215,7 @@ trait ParallelMatching  {
           insertDefault(i,strip1(xs.head))
         else
           insertTagIndexPair(p.tpe./*?type?*/symbol.tag, i)
-        i = i + 1
+        i += 1
         xs = xs.tail
       }
     }
@@ -261,7 +265,7 @@ trait ParallelMatching  {
       }
 
     protected override def haveDefault: Boolean =
-      ((defaultIndexSet eq null) && super.haveDefault) | (defaultIndexSet.underlying != 0)
+      if(defaultIndexSet eq null) super.haveDefault else (defaultIndexSet.underlying != 0)
 
     override def getDefaultRows: List[Row] = {
       if(theDefaultRows ne null)
@@ -291,13 +295,12 @@ trait ParallelMatching  {
       var xs = column
       var i  = 0;
       while(xs ne Nil) { // forall
-        val (pvars,p) = strip(xs.head)
-        p match {
-          case Literal(Constant(c:Int))  => sanity(p.pos, pvars); insertTagIndexPair(c,i)
-          case Literal(Constant(c:Char)) => sanity(p.pos, pvars); insertTagIndexPair(c.toInt,i)
-          case p  if isDefaultPattern(p) => insertDefault(i,pvars)
+        strip(xs.head) match {
+          case (pvars, p @ Literal(Constant(c:Int)))  => sanity(p.pos, pvars); insertTagIndexPair(c,i)
+          case (pvars, p @ Literal(Constant(c:Char))) => sanity(p.pos, pvars); insertTagIndexPair(c.toInt,i)
+          case (pvars, p )     if isDefaultPattern(p) => insertDefault(i,pvars)
         }
-        i = i + 1
+        i += 1
         xs = xs.tail
       }
     }
@@ -378,7 +381,7 @@ trait ParallelMatching  {
                 vsyms   =  vchild  :: vsyms
                 dummies = EmptyTree::dummies
                 ts = ts.tail
-                i = i + 1
+                i += 1
               }
               val ntemps  =  vsyms.reverse ::: scrutinee :: rest.temp
               dummies     = dummies.reverse
@@ -404,7 +407,7 @@ trait ParallelMatching  {
     var subsumed:  List[(Int,List[Tree])] = Nil // row index and subpatterns
     var remaining: List[(Int,Tree)]       = Nil // row index and pattern
 
-    val isExhaustive = !scrutinee.tpe./*?type?*/symbol.hasFlag(symtab.Flags.SEALED) || {
+    val isExhaustive = !scrutinee.tpe.typeSymbol.hasFlag(symtab.Flags.SEALED) || {
       //DEBUG("check exha for column "+column)
       val tpes = column.map {x => /*Console.println("--x:"+x+":"+x.tpe); */ x.tpe./*?type?*/symbol}
       scrutinee.tpe./*?type?*/symbol.children.forall { sym => tpes.contains(sym) }
@@ -416,7 +419,7 @@ trait ParallelMatching  {
       //case p@Apply(_,_) if !p.tpe./*?type?*/symbol.hasFlag(symtab.Flags.CASE) => ConstantType(new NamedConstant(p))
       case _ => column.head.tpe
     }
-    private val isCaseHead = patternType./*?type?*/symbol.hasFlag(symtab.Flags.CASE)
+    private val isCaseHead = isCaseClass(patternType)
     private val dummies = if(!isCaseHead) Nil else patternType./*?type?*/symbol.caseFieldAccessors.map { x => EmptyTree }
 
     //Console.println("isCaseHead = "+isCaseHead)
@@ -428,8 +431,8 @@ trait ParallelMatching  {
       pat match {
         case Bind(_,p)                                                          =>
           subpatterns(p)
-        case app @ Apply(fn, pats) if app.tpe./*?type?*/symbol.hasFlag(symtab.Flags.CASE) && (fn.symbol eq null)=>
-          pats
+        case app @ Apply(fn, pats) if isCaseClass(app.tpe) && (fn.symbol eq null)=>
+          if(isCaseHead) pats else dummies
         case Apply(fn,xs) => assert((xs.isEmpty) && (fn.symbol ne null)); dummies // named constant
         case _: UnApply                                                         =>
           dummies
@@ -498,7 +501,7 @@ trait ParallelMatching  {
             //Console.println("current pattern tests something else")
             (ms,ss,(j,pat)::rs)
         }
-        j = j + 1
+        j += 1
         pats = pats.tail
       }
       this.moreSpecific = sr._1.reverse
@@ -523,7 +526,7 @@ trait ParallelMatching  {
       val nmatrix = {
         //Console.println("casted:"+casted)
         //Console.println("casted.case:"+casted.tpe./*?type?*/symbol.hasFlag(symtab.Flags.CASE))
-        var ntemps   = if(casted.tpe./*?type?*/symbol.hasFlag(symtab.Flags.CASE)) casted.caseFieldAccessors map {
+        var ntemps  = if(isCaseClass(casted.tpe)) casted.caseFieldAccessors map {
           meth =>
             val ctemp = newVar(scrutinee.pos, casted.tpe.memberType(meth).resultType)
             if(scrutinee.hasFlag(symtab.Flags.CAPTURED))
@@ -543,7 +546,7 @@ trait ParallelMatching  {
               //moreSpecificIndices = Some(j::moreSpecificIndices)
               (j,mspat::pats)
           }
-          //Console.println("MOS "+subtests)
+         //Console.println("more specific, subtests "+subtests)
         }
         ntemps = ntemps ::: rest.temp
         val ntriples = subtests map {
@@ -566,7 +569,7 @@ trait ParallelMatching  {
         }
         if(settings_debug) {
           Console.println("ntemps   = "+ntemps.mkString("[["," , ","]]"))
-          Console.println("ntriples = "+ntriples.mkString("[["," , ","]]"))
+          Console.println("ntriples = "+ntriples.mkString("[[\n","\n, ","\n]]"))
         }
         Rep(ntemps, ntriples) /*setParent this*/
       }
@@ -592,52 +595,67 @@ trait ParallelMatching  {
   }
 
 
-  final def genBody(subst: List[Pair[Symbol,Symbol]], b:Tree)(implicit theOwner: Symbol, bodies: collection.mutable.Map[Tree,(Tree, Tree, Symbol)]): Tree = {
-    if(b.isInstanceOf[Literal]) { // small trees
-      bodies(b) = null // placeholder, for unreachable-code-detection
-      return typed{ b.duplicate }
-    } else if (b.isInstanceOf[Throw]) {
-      bodies(b) = null // placeholder, for unreachable-code-detection
-      val (from,to) = List.unzip(subst)
-      val b2 = b.duplicate
-      new TreeSymSubstituter(from,to).traverse(b2)
-      return typed{ b2 }
-    } else if (b.isInstanceOf[Ident]) {
-      bodies(b) = null // placeholder, for unreachable-code-detection
-      val bsym = b.symbol
-      var su = subst
-      while(su ne Nil) {
-        val sh = su.head
-        if(sh._1 eq bsym) return typed{ Ident(sh._2) }
-        su = su.tail
-      }
-      return typed{ b.duplicate }
-    } else bodies.get(b) match {
+  final def genBody(subst: List[Pair[Symbol,Symbol]], origbody:Tree)(implicit theOwner: Symbol, bodies: collection.mutable.Map[Tree,(Tree, Tree, Symbol)]): Tree = {
+    origbody match {
+      case _: Literal =>             // small trees
+        bodies(origbody) = null      // placeholder, for unreachable-code-detection
+      val res = typed{ origbody.duplicate }
+        return res
+      case _: Throw =>
+        bodies(origbody) = null      // placeholder, for unreachable-code-detection
+        val (from,to) = List.unzip(subst)
+        val b2 = origbody.duplicate
+        new TreeSymSubstituter(from,to).traverse(b2)
+      val res = typed{ b2 }
+        return res
+      case _:Ident =>
+        bodies(origbody) = null      // placeholder, for unreachable-code-detection
+        val bsym = origbody.symbol
+        var su = subst               // lookup symbol in pattern variables
+        while(su ne Nil) {
+          val sh = su.head;
+          if(sh._1 eq bsym) return typed{ Ident(sh._2) }
+          su = su.tail
+        }
+      val res =  typed{ origbody.duplicate }
+        return res
 
-      case Some(EmptyTree, nb, theLabel) =>           //Console.println("H E L L O"+subst+" "+b)
-        // recover the order of the idents that is expected for the labeldef
-        val args = nb match { case Block(_, LabelDef(_, origs, _)) =>
-          origs.map { p => Ident(subst.find { q => q._1 == p.symbol }.get._2) } // wrong!
-                           }   // using this instead would not work: subst.map { p => Ident(p._2) }
-      // the order can be garbled, when default patterns are used... #bug 1163
+      case _ =>
+        bodies.get(origbody) match {
 
-        val body  = Apply(Ident(theLabel), args)
-        return body
+          case Some(EmptyTree, nb, theLabel) =>           //Console.println("H E L L O"+subst+" "+b)
+            // recover the order of the idents that is expected for the labeldef
+            val args = (nb: @unchecked) match {
+              case LabelDef(_, Nil, _) =>
+                // nothing to do
+                Nil
+              case Block(_, LabelDef(_, origs, _)) =>
+                origs.map { p => typed{Ident(subst.find { q => q._1 == p.symbol }.get._2)}} // wrong!
+            }   // using this instead would not work: subst.map { p => Ident(p._2) }
+          // the order can be garbled, when default patterns are used... #bug 1163
+            val body  = Apply(Ident(theLabel), args)
+            return typed{body}
 
-      case None    =>
-      // this seems weird, but is necessary for sharing bodies. unnecessary for bodies that are not shared
-      var argtpes   = subst map { case (v,_) => v.tpe }
-      val theLabel  = targetLabel(theOwner, b.pos, "body"+b.hashCode, argtpes, b.tpe)
-      // make new value parameter for each vsym in subst
-      val vdefs     = targetParams(subst)
+          case None    =>
+            // sharing bodies
+            var argtpes   = subst map { case (v,_) => v.tpe }
+            val theLabel  = targetLabel(theOwner, origbody.pos, "body"+origbody.hashCode, argtpes, origbody.tpe)
+            // make new value parameter for each vsym in subst
 
-      var nbody: Tree = b
-      val vrefs = vdefs.map { p:ValDef => Ident(p.symbol) }
-      nbody  = squeezedBlock(vdefs:::List(Apply(Ident(theLabel), vrefs)), LabelDef(theLabel, subst.map(_._1), nbody))
-      bodies(b) = (EmptyTree, nbody, theLabel)
-      nbody
+            var nbody: Tree = if(subst.isEmpty)
+                                LabelDef(theLabel, Nil, origbody)
+                              else {
+                                val vdefs = targetParams(subst)
+                                val vrefs = vdefs.map { p:ValDef => Ident(p.symbol) }
+                                squeezedBlock(vdefs:::List(Apply(Ident(theLabel), vrefs)),
+                                              LabelDef(theLabel, subst.map(_._1), origbody))
+                              }
+            bodies(origbody) = (EmptyTree, nbody, theLabel)
+            return nbody
+        }
     }
   }
+
   /** converts given rep to a tree - performs recursive call to translation in the process to get sub reps
    */
   final def repToTree(rep:Rep, handleOuter: Tree => Tree)(implicit theOwner: Symbol, failTree: Tree, bodies: collection.mutable.Map[Tree,(Tree, Tree, Symbol)]): Tree = {
@@ -759,7 +777,7 @@ trait ParallelMatching  {
         //Console.println("getTransition"+(uacall,vdefs,srep,frep))
         val succ = repToTree(srep, handleOuter)
         val fail = if(frep.isEmpty) failTree else repToTree(frep.get, handleOuter)
-        val cond = if(uacall.symbol.tpe./*?type?*/symbol eq definitions.BooleanClass)
+        val cond = if(uacall.symbol.tpe.typeSymbol eq definitions.BooleanClass)
           typed{ Ident(uacall.symbol) }
                    else
                      emptynessCheck(uacall.symbol)
@@ -775,7 +793,10 @@ object Rep {
     if(x.isInstanceOf[RepImpl]) Some(x.asInstanceOf[RepImpl]) else None
 
   private case class RepImpl(val temp:List[Symbol], val row:List[Row]) extends Rep with RepType {
-    assert(row.forall { case Row(pats,subst,g,b) => temp.length == pats.length });
+    (row.find { case Row(pats,subst,g,b) => temp.length != pats.length }) match {
+      case Some(row) => assert(false, "temp == "+temp+" row.pats == "+row.pat);
+      case _ =>
+    }
     def _1 = temp
     def _2 = row
   }
@@ -820,7 +841,7 @@ object Rep {
                   //Console.println("/'''''''''''' 5"+o.symbol.tpe.prefix.isStable)
 
                   val stpe =
-                    if (o.tpe./*?term?*/symbol.isModule)
+                    if (o.tpe./*term?*/symbol.isModule)
                       singleType(o.tpe.prefix, o.symbol)
                     else
                       singleType(NoPrefix, o.symbol)
@@ -840,6 +861,8 @@ object Rep {
             /** something too tricky is going on if the outer types don't match
              */
             case o @ Apply(app, List()) if !isCaseClass(o.tpe) =>
+              System.out.println("this should not happen (experimental code)")
+              throw new RuntimeException("non-case apply encountered in parallelmatching")
               //Console.println(o)
               //val stpe = singleType(NoPrefix, o.symbol)
               val stpe =
@@ -900,7 +923,7 @@ object Rep {
                     val z = candidates(x)
                     if(x.hasFlag(symtab.Flags.ABSTRACT)) z else z + x
                   }
-              val cases = candidates(sym.tpe./*?type?*/symbol)
+              val cases = candidates(sym.tpe.typeSymbol)
               sealedComb = cases::sealedComb
             }
       }
@@ -933,7 +956,7 @@ object Rep {
                   singleType(sym.tpe.prefix, sym.linkedModuleOfClass) // e.g. None, Nil
                 } else sym.tpe
                 //Console.print("covers: sym="+sym+" symtpe="+symtpe+" p="+p+", p.tpe="+p.tpe+" ?")
-                (p.tpe./*?type?*/symbol == sym) || (symtpe <:< p.tpe) ||
+                (p.tpe.typeSymbol == sym) || (symtpe <:< p.tpe) ||
                 /* outer, see scala.util.parsing.combinator.lexical.Scanner */
                 (p.tpe.prefix.memberType(sym) <:< p.tpe)
               }
@@ -1035,29 +1058,7 @@ object Rep {
 //  case Typed(nme.WILDCARD,_) => pattern.tpe <:< scrutinee.tpe
   }
 
-  /** returns all variables that are binding the given pattern
-   *  @param   x a pattern
-   *  @return  vs variables bound, p pattern proper
-   */
-  final def strip(x: Tree): (Set[Symbol], Tree) = x match {
-    case b @ Bind(_,pat) => val (vs, p) = strip(pat); (vs + b.symbol, p)
-    case z               => (emptySymbolSet, z)
-  }
-
-  final def strip1(x:Tree): Set[Symbol] = x match { // same as strip(x)._1
-    case b @ Bind(_,pat) => strip1(pat) + b.symbol
-    case z               => emptySymbolSet
-  }
-  final def strip2(x:Tree): Tree = x match {        // same as strip(x)._2
-    case     Bind(_,pat) => strip2(pat)
-    case z               => z
-  }
-
-  // ----------------------------------   functions used in internal data structure of the algorithm (matrix)
-
-
   // ----------------------------------   helper functions that generate symbols, trees for type tests, pattern tests
-  // (shared by both algorithms, cough)
 
   final def newVar(pos: Position, name: Name, tpe: Type)(implicit theOwner: Symbol): Symbol = {
     if(tpe eq null) assert(tpe ne null, "newVar("+name+", null)")
@@ -1093,11 +1094,11 @@ object Rep {
     //Console.println("module        "+tpe./*?term?*/symbol.isModule)
     if (tpe.isInstanceOf[SingletonType] && !tpe.isInstanceOf[ConstantType]) {
 
-      if (tpe./*?term?*/symbol.isModule) {// object
+      if (tpe.termSymbol.isModule) {// object
         if (scrutineeTree.tpe <:< definitions.AnyRefClass.tpe)
-          Eq(gen.mkAttributedRef(tpe./*?term?*/symbol), scrutineeTree)             // object
+          Eq(gen.mkAttributedRef(tpe.termSymbol), scrutineeTree)             // object
         else
-          Equals(gen.mkAttributedRef(tpe./*?term?*/symbol), scrutineeTree)             // object
+          Equals(gen.mkAttributedRef(tpe.termSymbol), scrutineeTree)         // object
       } else {
         //Console.print("111 ??")
         //Console.println("tpe stable         "+tpe.isStable)
@@ -1105,7 +1106,7 @@ object Rep {
         //val x = Equals(Apply(gen.mkAttributedRef(tpe./*?term?*/symbol), List()), scrutineeTree)
         val x =
           if(tpe.prefix ne NoPrefix) gen.mkIsInstanceOf(scrutineeTree, tpe)
-          else Equals(gen.mkAttributedRef(tpe./*?term?*/symbol), scrutineeTree)
+          else Equals(gen.mkAttributedRef(tpe.termSymbol), scrutineeTree)
         //Console.println(" = "+x)
         typed { x }
       }
@@ -1135,8 +1136,8 @@ object Rep {
 
   final def needsOuterTest(tpe2test: Type, scrutinee: Type) = tpe2test.normalize match {
     case TypeRef(prefix,_,_) =>
-      prefix./*?term?*/symbol.isTerm &&
-      !prefix./*?term?*/symbol.isPackage &&
+      prefix.termSymbol.isTerm &&
+      !prefix.termSymbol.isPackage &&
       outerAlwaysEqual(tpe2test, scrutinee) == Some(false)
     case _ =>
      false
@@ -1159,14 +1160,14 @@ object Rep {
   /** adds a test comparing the dynamic outer to the static outer */
   final def addOuterCondition(cond:Tree, tpe2test: Type, scrutinee: Tree, handleOuter: Tree=>Tree) = {
     val TypeRef(prefix,_,_) = tpe2test
-    var theRef = gen.mkAttributedRef(prefix.prefix, prefix./*?term?*/symbol)
+    var theRef = gen.mkAttributedRef(prefix.prefix, prefix.termSymbol)
 
     // needs explicitouter treatment
     theRef = handleOuter(theRef)
 
-    val outerAcc = outerAccessor(tpe2test./*?type?*/symbol)
+    val outerAcc = outerAccessor(tpe2test.typeSymbol)
     if (outerAcc == NoSymbol) {
-      if (settings_debug) cunit.warning(scrutinee.pos, "no outer acc for "+tpe2test./*?type?*/symbol)
+      if (settings_debug) cunit.warning(scrutinee.pos, "no outer acc for "+tpe2test.typeSymbol)
       cond
     } else
       And(cond,

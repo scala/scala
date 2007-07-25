@@ -15,6 +15,26 @@ trait PatternNodes { self: transform.ExplicitOuter =>
 
   import global._
 
+  /** returns all variables that are binding the given pattern
+   *  @param   x a pattern
+   *  @return  vs variables bound, p pattern proper
+   */
+  final def strip(x: Tree): (Set[Symbol], Tree) = x match {
+    case b @ Bind(_,pat) => val (vs, p) = strip(pat); (vs + b.symbol, p)
+    case z               => (emptySymbolSet,z)
+  }
+
+  final def strip1(x: Tree): Set[Symbol] = x match { // same as strip(x)._1
+    case b @ Bind(_,pat) => strip1(pat) + b.symbol
+    case z               => emptySymbolSet
+  }
+  final def strip2(x: Tree): Tree = x match {        // same as strip(x)._2
+    case     Bind(_,pat) => strip2(pat)
+    case z               => z
+  }
+
+  //
+
   type SymSet = collection.immutable.Set[Symbol]
 
   /** returns the child patterns of a pattern
