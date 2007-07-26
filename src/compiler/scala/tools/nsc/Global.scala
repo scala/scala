@@ -572,10 +572,10 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
       } else {
         //assert(symData.isEmpty || !settings.stop.value.isEmpty || !settings.skip.value.isEmpty, symData)
         if (deprecationWarnings) {
-          warning("there were deprecation warnings; re-run with -deprecation for details")
+          warning("there were deprecation warnings; re-run with " + settings.deprecation.name + " for details")
         }
         if (uncheckedWarnings) {
-          warning("there were unchecked warnings; re-run with -unchecked for details")
+          warning("there were unchecked warnings; re-run with " + settings.unchecked.name + " for details")
         }
       }
       for ((sym, file) <- symSource.elements) resetPackageClass(sym.owner)
