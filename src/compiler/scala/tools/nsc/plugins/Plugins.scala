@@ -15,21 +15,36 @@ import java.io.File
  */
 trait Plugins { self: Global =>
 
-  /** Load all available plugin.  Skips plugins that
-   *  either have the same name as another one, or which
-   *  define a phase name that another one does.
-   */
-  protected def loadPlugins: List[Plugin] = {
-    // load all the plugins
+  /** Load a rough list of the plugins.  For speed, it
+   *  does not instantiate a compiler run.  Therefore it cannot
+   *  test for same-named phases or other problems that are
+   *  filtered from the final list of plugins. */
+  protected def loadRoughPluginsList(): List[Plugin] = {
     val jars = settings.plugin.value.map(new File(_))
     val dirs =
       for (name <- settings.extdirs.value.split(File.pathSeparator).toList)
 	yield new File(name)
 
-    val initPlugins =
-      for (plugClass <- Plugin.loadAllFrom(jars, dirs, settings.disable.value))
-	yield Plugin.instantiate(plugClass, this)
+    for (plugClass <- Plugin.loadAllFrom(jars, dirs, settings.disable.value))
+    yield Plugin.instantiate(plugClass, this)
+  }
 
+  private var roughPluginsListCache: Option[List[Plugin]] = None
+
+  protected def roughPluginsList: List[Plugin] =
+    roughPluginsListCache match {
+      case Some(list) => list
+      case None =>
+	roughPluginsListCache = Some(loadRoughPluginsList)
+        roughPluginsListCache.get
+    }
+
+
+  /** Load all available plugins.  Skips plugins that
+   *  either have the same name as another one, or which
+   *  define a phase name that another one does.
+   */
+  protected def loadPlugins(): List[Plugin] = {
     // remove any with conflicting names or subcomponent names
     def pick(
       plugins: List[Plugin],
@@ -73,7 +88,7 @@ trait Plugins { self: Global =>
     }
 
     val plugs =
-    pick(initPlugins,
+    pick(roughPluginsList,
 	 Set.empty,
 	 Set.empty ++ builtInPhaseDescriptors.map(_.phaseName))
 
@@ -161,11 +176,8 @@ trait Plugins { self: Global =>
 
   /** Summary of the options for all loaded plugins */
   def pluginOptionsHelp: String = {
-    new Run // force some initialization
-            // todo: it should not really be necessary....
-
     val buf = new StringBuffer
-    for (plug <- plugins; help <- plug.optionsHelp) {
+    for (plug <- roughPluginsList; help <- plug.optionsHelp) {
       buf append ("Options for plugin " + plug.name + ":\n")
       buf append help
       buf append "\n"
