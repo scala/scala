@@ -1362,6 +1362,7 @@ A type's typeSymbol should never be inspected directly.
             sym.info.typeParams.length == args.length) {
           //transform(sym.info.resultType).normalize // cycles have been checked in typeRef
           val xform=transform(sym.info.resultType)
+          assert(xform ne this, this)
           if(xform eq this) xform else xform.normalize // @M TODO: why is this necessary?
         }/* else if (!isHigherKinded) { // sym.info.typeParams.length != args.length
           log("Error: normalizing "+sym.rawname+" with mismatch between type params "+sym.info.typeParams+" and args "+args)
@@ -1810,19 +1811,33 @@ A type's typeSymbol should never be inspected directly.
   def mkConstantType(value: Constant): ConstantType =
     unique(new ConstantType(value) with UniqueType)
 
-  /** The canonical creator for typerefs */
+  /** The canonical creator for typerefs
+   *  todo: see how we can clean this up a bit
+   */
   def typeRef(pre: Type, sym: Symbol, args: List[Type]): Type = {
     var sym1 = if (sym.isAbstractType) rebind(pre, sym) else sym
     def transform(tp: Type): Type =
       tp.resultType.asSeenFrom(pre, sym1.owner).instantiateTypeParams(sym1.typeParams, args)
-
     if (sym1.isAliasType && sym1.info.typeParams.length == args.length) {
       // note: we require that object is initialized,
       // that's why we use info.typeParams instead of typeParams.
       if (sym1.hasFlag(LOCKED))
         throw new TypeError("illegal cyclic reference involving " + sym1)
       sym1.setFlag(LOCKED)
-      val result = transform(sym1.info)
+      //println("locking "+sym1+sym1.locationString+"/"+sym1.isAliasType+"/"+sym1.ownerChain)
+      def follow(tp: Type): Unit = transform(tp) match {
+        case tp2 @ TypeRef(_, sym2, _) =>
+          if (sym2.isAliasType) {
+            if (sym2.hasFlag(LOCKED))
+              throw new TypeError("illegal cyclic reference involving " + sym2)
+            sym2.setFlag(LOCKED)
+            follow(sym2.info)
+            sym2.resetFlag(LOCKED)
+          }
+        case _ =>
+      }
+      follow(sym1.info)
+      //println("unlocking "+sym1)
       sym1.resetFlag(LOCKED)
       //result // @M: original version -- this would expand the type alias immediately
       rawTypeRef(pre, sym1, args) //@MAT -- don't expand type alias, but still check there are no cycles
