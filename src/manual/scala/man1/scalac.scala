@@ -78,6 +78,13 @@ object scalac extends Command {
             ", " & Mono("yes") & " and " & Mono("no") & ")",
             "Available since Scala version 2.2.1")),
         Definition(
+          CmdOption("unchecked"),
+          SeqPara(
+            "Enable detailed unchecked warnings",
+            "Non variable type-arguments in type patterns are unchecked " &
+            "since they are eliminated by erasure",
+            "Available since Scala version 2.3.0")),
+        Definition(
           CmdOption("classpath", Argument("path")),
           SeqPara(
             "Specify where to find user class files (on Unix-based systems " &
@@ -204,14 +211,7 @@ object scalac extends Command {
           "Print a synopsis of compiler phases."),
         Definition(
           CmdOption("Xsource-reader", Argument("classname")),
-          "Specify a custom method for reading source files."),
-        Definition(
-          CmdOption("Xunchecked"),
-          SeqPara(
-            "Enable detailed unchecked warnings",
-            "Non variable type-arguments in type patterns are unchecked " &
-            "since they are eliminated by erasure",
-            "Available since Scala version 2.3.0")),
+          "Specify a custom method for reading source files.")
       )
     ),
 

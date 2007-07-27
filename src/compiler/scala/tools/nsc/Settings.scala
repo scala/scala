@@ -76,6 +76,7 @@ class Settings(error: String => Unit) {
   val nowarnings    = BooleanSetting    ("-nowarn", "Generate no warnings")
   val verbose       = BooleanSetting    ("-verbose", "Output messages about what the compiler is doing")
   val deprecation   = BooleanSetting    ("-deprecation", "Output source locations where deprecated APIs are used")
+  val unchecked     = BooleanSetting    ("-unchecked", "Enable detailed unchecked warnings")
   val classpath     = new StringSetting ("-classpath", "path", "Specify where to find user class files", classpathDefault) { override val abbreviation = "-cp" }
   val sourcepath    = StringSetting     ("-sourcepath", "path", "Specify where to find input source files", "")
   val bootclasspath = StringSetting     ("-bootclasspath", "path", "Override location of bootstrap class files", bootclasspathDefault)
@@ -113,7 +114,6 @@ class Settings(error: String => Unit) {
   val Xshowobj      = StringSetting     ("-Xshow-object", "object", "Show object info", "")
   val showPhases    = BooleanSetting    ("-Xshow-phases", "Print a synopsis of compiler phases")
   val sourceReader  = StringSetting     ("-Xsource-reader", "classname", "Specify a custom method for reading source files", "scala.tools.nsc.io.SourceReader")
-  val unchecked     = BooleanSetting    ("-Xunchecked", "Enable detailed unchecked warnings")
 
   val Yhelp         = BooleanSetting    ("-Y", "Print a synopsis of private options").hideToIDE
   val browse        = PhasesSetting     ("-Ybrowse", "Browse the abstract syntax tree after")
