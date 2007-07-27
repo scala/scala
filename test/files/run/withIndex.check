@@ -1,4 +1,4 @@
-warning: there were unchecked warnings; re-run with -Xunchecked for details
+warning: there were unchecked warnings; re-run with -unchecked for details
 one warning found
 List((a,0), (b,1), (c,2))
 List((a,0), (b,1), (c,2))
