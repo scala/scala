@@ -821,24 +821,8 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
               }
             else {
               def doDynamic(fn: Tree, qual: Tree): Tree = {
-                if (fn.symbol.owner.isRefinementClass && fn.symbol.allOverriddenSymbols.isEmpty) {
-                  /* a dynamic apply can only be done when all parameters are statically known
-                   * (i.e. no type parameters in refinement) so that static dispatch can be done
-                   * properly. See phase cleanup for more about that. */
-                  def testParams(tpe: Type): Unit = tpe match {
-                    case MethodType(paramTypes, resType) =>
-                      paramTypes map { t => t match {
-                          case TypeRef(NoPrefix, sym, Nil) if sym.isAbstractType && sym.owner != fn.symbol =>
-                            unit.error(fn.pos,"Parameter is defined as type variable "+sym.name.toString+" in a refinement.")
-                          case _ =>
-                        }
-                      }
-                    case PolyType(tp, res) => testParams(res)
-                  }
-                  testParams(fn.symbol.tpe)
-
+                if (fn.symbol.owner.isRefinementClass && fn.symbol.allOverriddenSymbols.isEmpty)
                   ApplyDynamic(qual, args) setSymbol fn.symbol setPos tree.pos
-                }
                 else tree
               }
               fn match {

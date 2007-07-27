@@ -1182,6 +1182,12 @@ trait Typers { self: Analyzer =>
       }
     }
 
+    private def checkStructuralCondition(refinement: Symbol, vparam: ValDef) {
+      val tp = vparam.symbol.tpe
+      if (tp.typeSymbol.isAbstractType && !(tp.typeSymbol.ownerChain contains refinement))
+        error(vparam.tpt.pos,"Parameter type in structural refinement may not refer to abstract type defined outside that same refinement")
+    }
+
     /**
      *  @param ddef ...
      *  @return     ...
@@ -1218,6 +1224,11 @@ trait Typers { self: Analyzer =>
           phase.id <= currentRun.typerPhase.id && !reporter.hasErrors)
         computeParamAliases(meth.owner, vparamss1, rhs1)
       if (tpt1.tpe.typeSymbol != AllClass && !context.returnsSeen) rhs1 = checkDead(rhs1)
+
+      if (meth.owner.isRefinementClass && meth.allOverriddenSymbols.isEmpty)
+        for (vparams <- ddef.vparamss; vparam <- vparams)
+          checkStructuralCondition(meth.owner, vparam)
+
       copy.DefDef(ddef, ddef.mods, ddef.name, tparams1, vparamss1, tpt1, rhs1) setType NoType
     }
 
