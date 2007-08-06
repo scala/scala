@@ -670,7 +670,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
             val bridge = other.cloneSymbolImpl(owner)
               .setPos(owner.pos)
               .setFlag(member.flags | BRIDGE)
-              .resetFlag(ACCESSOR | DEFERRED | lateDEFERRED)
+              .resetFlag(ACCESSOR | DEFERRED | LAZY | lateDEFERRED)
               .setInfo(otpe);
             bridgeTarget(bridge) = member
             atPhase(phase.next) { owner.info.decls.enter(bridge) }
