@@ -129,6 +129,7 @@ trait ParallelMatching  {
 
   abstract class CaseRuleApplication extends RuleApplication {
 
+    def column: List[Tree]
     def rest:Rep
 
     // e.g. (1,1) (1,3) (42,2) for column {case ..1.. => ;; case ..42..=> ;; case ..1.. => }
@@ -165,7 +166,8 @@ trait ParallelMatching  {
     protected def grabTemps: List[Symbol] = rest.temp
     protected def grabRow(index:Int): Row = rest.row(index) match {
       case r @ Row(pats,s,g,b) => if(defaultV.isEmpty) r else {
-        val nbindings = s:::defaultV.toList.map { v => (v,scrutinee) }
+        val vs = strip1(column(index))  // get vars
+        val nbindings = s:::vs.toList.map { v => (v,scrutinee) }
         Row(pats, nbindings, g, b)
       }
     }
@@ -231,7 +233,7 @@ trait ParallelMatching  {
     override def grabTemps = scrutinee::rest.temp
     override def grabRow(index:Int) = rest.row(tagIndexPairs.index) match {
       case Row(pats,s,g,b) =>
-        val nbindings = s ::: defaultV.toList.map { v => (v,scrutinee) }
+        val nbindings = s ::: strip1(column(index)).toList.map { v => (v,scrutinee) }
         Row(column(tagIndexPairs.index)::pats, nbindings, g, b)
   }
 
@@ -654,7 +656,19 @@ trait ParallelMatching  {
                 // nothing to do
                 Nil
               case Block(_, LabelDef(_, origs, _)) =>
-                origs.map { p => typed{Ident(subst.find { q => q._1 == p.symbol }.get._2)}} // wrong!
+                //`origs.map { p => typed{Ident(subst.find { q => q._1 == p.symbol }.get._2)}}'
+                val res = new collection.mutable.ListBuffer[Tree]
+                var origparams:List[Ident] = origs
+                while(origparams ne Nil) {
+                  val p = origparams.head
+                  val foundsym:Symbol = subst.find { q => q._1 == p.symbol } match {
+                    case Some(sympair) => sympair._2
+                    case None          => error("did not find sym"+p.symbol); null
+                  }
+                  res += typed{Ident(foundsym)}
+                  origparams = origparams.tail
+                }
+              res.toList
             }   // using this instead would not work: subst.map { p => Ident(p._2) }
           // the order can be garbled, when default patterns are used... #bug 1163
             val body  = Apply(Ident(theLabel), args)
