@@ -981,13 +981,14 @@ trait Typers { self: Analyzer =>
      */
     def typedClassDef(cdef: ClassDef): Tree = {
 //      attributes(cdef)
+      val typedMods = typedModifiers(cdef.mods)
       val clazz = cdef.symbol
       reenterTypeParams(cdef.tparams)
       val tparams1 = List.mapConserve(cdef.tparams)(typedTypeDef)
       val impl1 = newTyper(context.make(cdef.impl, clazz, newTemplateScope(cdef.impl, clazz)))
         .typedTemplate(cdef.impl, parentTypes(cdef.impl))
       val impl2 = addSyntheticMethods(impl1, clazz, context)
-      copy.ClassDef(cdef, cdef.mods, cdef.name, tparams1, impl2)
+      copy.ClassDef(cdef, typedMods, cdef.name, tparams1, impl2)
         .setType(NoType)
     }
 
@@ -998,12 +999,13 @@ trait Typers { self: Analyzer =>
     def typedModuleDef(mdef: ModuleDef): Tree = {
       //Console.println("sourcefile of " + mdef.symbol + "=" + mdef.symbol.sourceFile)
 //      attributes(mdef)
+      val typedMods = typedModifiers(mdef.mods)
       val clazz = mdef.symbol.moduleClass
       val impl1 = newTyper(context.make(mdef.impl, clazz, newTemplateScope(mdef.impl, clazz)))
         .typedTemplate(mdef.impl, parentTypes(mdef.impl))
       val impl2 = addSyntheticMethods(impl1, clazz, context)
 
-      copy.ModuleDef(mdef, mdef.mods, mdef.name, impl2) setType NoType
+      copy.ModuleDef(mdef, typedMods, mdef.name, impl2) setType NoType
     }
 
     /**
@@ -1102,6 +1104,13 @@ trait Typers { self: Analyzer =>
       copy.Template(templ, parents1, self1, body1) setType clazz.tpe
     }
 
+    /** Type check the annotations within a set of modifiers.  */
+    def typedModifiers(mods: Modifiers): Modifiers = {
+      val Modifiers(flags, privateWithin, annotations) = mods
+      val typedAnnots = annotations.map(typed(_).asInstanceOf[Annotation])
+      Modifiers(flags, privateWithin, typedAnnots)
+    }
+
     /**
      *  @param vdef ...
      *  @return     ...
@@ -1110,7 +1119,9 @@ trait Typers { self: Analyzer =>
 //      attributes(vdef)
       val sym = vdef.symbol
       val typer1 = constrTyperIf(sym.hasFlag(PARAM) && sym.owner.isConstructor)
-      var tpt1 = checkNoEscaping.privates(sym, typer1.typedType(vdef.tpt))
+      val typedMods = typedModifiers(vdef.mods)
+
+      val tpt1 = checkNoEscaping.privates(sym, typer1.typedType(vdef.tpt))
       checkNonCyclic(vdef, tpt1)
       val rhs1 =
         if (vdef.rhs.isEmpty) {
@@ -1120,7 +1131,7 @@ trait Typers { self: Analyzer =>
         } else {
           newTyper(typer1.context.make(vdef, sym)).transformedOrTyped(vdef.rhs, tpt1.tpe)
         }
-      copy.ValDef(vdef, vdef.mods, vdef.name, tpt1, checkDead(rhs1)) setType NoType
+      copy.ValDef(vdef, typedMods, vdef.name, tpt1, checkDead(rhs1)) setType NoType
     }
 
     /** Enter all aliases of local parameter accessors.
@@ -1208,6 +1219,7 @@ trait Typers { self: Analyzer =>
       }
       checkNonCyclic(ddef, tpt1)
       ddef.tpt.setType(tpt1.tpe)
+      val typedMods = typedModifiers(ddef.mods)
       var rhs1 =
         if (ddef.name == nme.CONSTRUCTOR) {
           if (!meth.isPrimaryConstructor &&
@@ -1229,12 +1241,13 @@ trait Typers { self: Analyzer =>
         for (vparams <- ddef.vparamss; vparam <- vparams)
           checkStructuralCondition(meth.owner, vparam)
 
-      copy.DefDef(ddef, ddef.mods, ddef.name, tparams1, vparamss1, tpt1, rhs1) setType NoType
+      copy.DefDef(ddef, typedMods, ddef.name, tparams1, vparamss1, tpt1, rhs1) setType NoType
     }
 
     def typedTypeDef(tdef: TypeDef): TypeDef = {
       reenterTypeParams(tdef.tparams) // @M!
       val tparams1 = List.mapConserve(tdef.tparams)(typedTypeDef) // @M!
+      val typedMods = typedModifiers(tdef.mods)
       val rhs1 = checkNoEscaping.privates(tdef.symbol, typedType(tdef.rhs))
       checkNonCyclic(tdef.symbol)
       rhs1.tpe match {
@@ -1243,7 +1256,7 @@ trait Typers { self: Analyzer =>
             error(tdef.pos, "lower bound "+lo1+" does not conform to upper bound "+hi1)
         case _ =>
       }
-      copy.TypeDef(tdef, tdef.mods, tdef.name, tparams1, rhs1) setType NoType
+      copy.TypeDef(tdef, typedMods, tdef.name, tparams1, rhs1) setType NoType
     }
 
     private def enterLabelDef(stat: Tree) {
@@ -2640,6 +2653,12 @@ trait Typers { self: Analyzer =>
           val ret = typed(defn, mode, pt)
           if (comments ne null) comments(defn.symbol) = comment
           ret
+
+	case Annotation(constr, elements) =>
+	  val typedConstr = typed(constr, mode, WildcardType)
+	  val typedElems = elements.map(typed(_, mode, WildcardType))
+          (copy.Annotation(tree, typedConstr, typedElems)
+	    setType typedConstr.tpe)
 
         case Annotated(annot, arg) =>
           typedAnnotated(annot, typed(arg, mode, pt))
