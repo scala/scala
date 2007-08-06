@@ -22,7 +22,7 @@ trait Plugins { self: Global =>
   protected def loadRoughPluginsList(): List[Plugin] = {
     val jars = settings.plugin.value.map(new File(_))
     val dirs =
-      for (name <- settings.extdirs.value.split(File.pathSeparator).toList)
+      for (name <- settings.pluginsDir.value.split(File.pathSeparator).toList)
 	yield new File(name)
 
     for (plugClass <- Plugin.loadAllFrom(jars, dirs, settings.disable.value))
