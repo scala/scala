@@ -755,7 +755,7 @@ trait Trees {
      // used for tailcalls and like
   case Import(expr, selectors) =>                                 (eliminated by typecheck)
      // import expr.{selectors}
-  case Annotation(constr, elements) =>                            (eliminated by typecheck)
+  case Annotation(constr, elements) =>
      // @constr(elements) where constr = tp(args), elements = { val x1 = c1, ..., val xn = cn }
   case DocDef(comment, definition) =>                             (eliminated by typecheck)
      // /** comment */ definition
@@ -1338,7 +1338,7 @@ trait Trees {
 
   class Traverser {
     protected var currentOwner: Symbol = definitions.RootClass
-    def traverse(tree: Tree): Unit = tree match {
+    def traverse(tree: Tree): Unit =  tree match {
       case EmptyTree =>
         ;
       case PackageDef(name, stats) =>
@@ -1347,23 +1347,23 @@ trait Trees {
         }
       case ClassDef(mods, name, tparams, impl) =>
         atOwner(tree.symbol) {
-          traverseTrees(tparams); traverse(impl)
+          traverseTrees(mods.annotations); traverseTrees(tparams); traverse(impl)
         }
       case ModuleDef(mods, name, impl) =>
         atOwner(tree.symbol.moduleClass) {
-          traverse(impl)
+          traverseTrees(mods.annotations); traverse(impl)
         }
       case ValDef(mods, name, tpt, rhs) =>
         atOwner(tree.symbol) {
-          traverse(tpt); traverse(rhs)
+          traverseTrees(mods.annotations); traverse(tpt); traverse(rhs)
         }
       case DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
         atOwner(tree.symbol) {
-          traverseTrees(tparams); traverseTreess(vparamss); traverse(tpt); traverse(rhs)
+          traverseTrees(mods.annotations); traverseTrees(tparams); traverseTreess(vparamss); traverse(tpt); traverse(rhs)
         }
       case TypeDef(mods, name, tparams, rhs) =>
         atOwner(tree.symbol) {
-          traverseTrees(tparams); traverse(rhs)
+          traverseTrees(mods.annotations); traverseTrees(tparams); traverse(rhs)
         }
       case LabelDef(name, params, rhs) =>
         traverseTrees(params); traverse(rhs)

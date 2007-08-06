@@ -1728,12 +1728,12 @@ trait Typers { self: Analyzer =>
               names.retain(sym => sym.name != nme.value)
             }
             val nvPairs = annot.elements map {
-              case Assign(ntree @ Ident(name), rhs) => {
+              case vd @ ValDef(_, name, _, rhs) => {
                 val sym = attrScope.lookup(name);
                 if (sym == NoSymbol) {
-                  error(ntree.pos, "unknown attribute element name: " + name)
+                  error(vd.pos, "unknown attribute element name: " + name)
                 } else if (!names.contains(sym)) {
-                  error(ntree.pos, "duplicate value for element " + name)
+                  error(vd.pos, "duplicate value for element " + name)
                 } else {
                   names -= sym
                   val annArg =

@@ -763,7 +763,7 @@ trait Parsers {
       }
     }
 
-    /** AnnotType        ::=  Annotations SimpleType
+    /** AnnotType        ::=  Annotations SimpleType Annotations
      *  SimpleType       ::=  SimpleType TypeArgs
      *                     |  SimpleType `#' Id
      *                     |  StableId
@@ -772,7 +772,7 @@ trait Parsers {
      *                     |  WildcardType
      */
     def annotType(isPattern: Boolean): Tree = {
-      val annots = annotations()
+      val annots1 = annotations()  // Q: deprecate annotations here?
       val pos = inCurrentPos
 
       val t: Tree = annotTypeRest(pos, isPattern,
@@ -790,6 +790,9 @@ trait Parsers {
             case _ => convertToTypeId(r)
           }
         })
+
+      val annots2 = annotations()
+      val annots = annots1 ::: annots2
       (t /: annots) (makeAnnotated)
     }
 
@@ -1609,11 +1612,12 @@ trait Parsers {
      */
     def annotation(): Annotation = {
       def nameValuePair(): Tree = {
-        accept(VAL)
         var pos = inCurrentPos
-        val aname = atPos(pos) { Ident(ident()) }
+        accept(VAL)
+        val aname = ident()
         accept(EQUALS)
-        atPos(pos) { Assign(aname, stripParens(prefixExpr())) }
+        val rhs = stripParens(prefixExpr())
+        atPos(pos) { ValDef(NoMods, aname, TypeTree(), rhs) }
       }
       val pos = inCurrentPos
       var t: Tree = convertToTypeId(stableId())
