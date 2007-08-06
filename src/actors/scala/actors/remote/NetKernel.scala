@@ -11,10 +11,15 @@
 package scala.actors.remote
 
 import scala.collection.mutable.{HashMap, HashSet}
+import scala.actors.Actor.loop
 
 case class NamedSend(senderName: Symbol, receiver: Symbol, data: Array[Byte])
 case class SyncSend(senderName: Symbol, receiver: Symbol, data: Array[Byte])
 case class Reply(senderName: Symbol, receiver: Symbol, data: Array[Byte])
+
+case class SendTo(a: Actor, msg: Any)
+case class SyncSendTo(a: Actor, msg: Any, receiver: Symbol)
+case class ReplyTo(a: Actor, msg: Any)
 
 /**
  * @version 0.9.8
@@ -71,23 +76,31 @@ class NetKernel(service: Service) {
     namedSyncSend(node, senderName, name, msg)
   }
 
+  def createProxy(node: Node, sym: Symbol): Actor = {
+    val p = new Proxy(node, sym, this)
+    proxies += Pair(node, sym) -> p
+    p
+  }
+
+  val proxies = new HashMap[(Node, Symbol), Actor]
+
+  def getOrCreateProxy(senderNode: Node, senderName: Symbol): Actor = synchronized {
+    proxies.get((senderNode, senderName)) match {
+      case Some(senderProxy) => senderProxy
+      case None => createProxy(senderNode, senderName)
+    }
+  }
+
   def processMsg(senderNode: Node, msg: AnyRef): Unit = synchronized {
     msg match {
       case NamedSend(senderName, receiver, data) =>
         actors.get(receiver) match {
           case Some(a) =>
             val msg = service.serializer.deserialize(data)
-            val senderProxy = new Actor {
-              def act() = { a ! msg }
-              override def !(msg: Any) {
-                msg match {
-                  case refmsg: AnyRef =>
-                    // node, senderName, receiver, msg
-                    namedSend(senderNode, receiver, senderName, refmsg)
-                }
-              }
-            }
-            senderProxy.start(); {}
+
+            val senderProxy = getOrCreateProxy(senderNode, senderName)
+            senderProxy.send(SendTo(a, msg), null)
+
           case None =>
             // message is lost
         }
@@ -95,17 +108,10 @@ class NetKernel(service: Service) {
         actors.get(receiver) match {
           case Some(a) =>
             val msg = service.serializer.deserialize(data)
-            val senderProxy = new Actor {
-              def act() = {
-                val res = a !? msg
-                res match {
-                  case refmsg: AnyRef =>
-                    // node, senderName, receiver, msg
-                    sendReply(senderNode, receiver, senderName, refmsg)
-                }
-              }
-            }
-            senderProxy.start(); {}
+
+            val senderProxy = getOrCreateProxy(senderNode, senderName)
+            senderProxy.send(SyncSendTo(a, msg, receiver), null)
+
           case None =>
             // message is lost
         }
@@ -113,15 +119,62 @@ class NetKernel(service: Service) {
         actors.get(receiver) match {
           case Some(a) =>
             val msg = service.serializer.deserialize(data)
-            val senderProxy = new Actor {
-              def act() = {
-                a.replyChannel ! msg
-              }
-            }
-            senderProxy.start(); {}
+
+            val senderProxy = getOrCreateProxy(senderNode, senderName)
+            senderProxy.send(ReplyTo(a, msg), null)
+
           case None =>
             // message is lost
         }
     }
+  }
+}
+
+class Proxy(node: Node, name: Symbol, kernel: NetKernel) extends Actor {
+  start()
+
+  override def act() {
+    loop {
+      react {
+        case SendTo(a, msg) =>
+          a ! msg
+
+        case SyncSendTo(a, msg, receiver) =>
+          val replyCh = new Channel[Any](this)
+          a.send(msg, replyCh)
+          val res = replyCh.receive {
+            case x => x
+          }
+
+          res match {
+            case refmsg: AnyRef =>
+              kernel.sendReply(node, receiver, name, refmsg)
+          }
+
+        case ReplyTo(a, msg) =>
+          a.replyChannel ! msg
+      }
+    }
+  }
+
+  override def !(msg: Any): Unit = msg match {
+    case ch ! m =>
+      // do not send remotely
+      this.send(msg, Actor.self.replyChannel)
+    case a: AnyRef =>
+      kernel.send(node, name, a)
+    case other =>
+      error("Cannot send non-AnyRef value remotely.")
+  }
+
+  override def !?(msg: Any): Any = msg match {
+    case a: AnyRef =>
+      val replyCh = Actor.self.freshReplyChannel
+      kernel.syncSend(node, name, a)
+      replyCh.receive {
+        case x => x
+      }
+    case other =>
+      error("Cannot send non-AnyRef value remotely.")
   }
 }

@@ -89,25 +89,7 @@ object RemoteActor {
    * <code>name</code> on <code>node</code>.
    */
   def select(node: Node, sym: Symbol): Actor =
-    new Actor {
-      def act() {}
-      override def !(msg: Any): Unit = msg match {
-        case a: AnyRef =>
-          selfKernel.send(node, sym, a)
-        case other =>
-          error("Cannot send non-AnyRef value remotely.")
-      }
-      override def !?(msg: Any): Any = msg match {
-        case a: AnyRef =>
-          val replyCh = Actor.self.freshReplyChannel
-          selfKernel.syncSend(node, sym, a)
-          replyCh.receive {
-            case x => x
-          }
-        case other =>
-          error("Cannot send non-AnyRef value remotely.")
-      }
-    }
+    selfKernel.getOrCreateProxy(node, sym)
 }
 
 
