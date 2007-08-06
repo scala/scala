@@ -224,7 +224,7 @@ trait ParallelMatching  {
         if(isDefaultPattern(p))
           insertDefault(i,strip1(xs.head))
         else
-          insertTagIndexPair(p.tpe./*?type?*/symbol.tag, i)
+          insertTagIndexPair( getCaseTag(p.tpe), i)
         i += 1
         xs = xs.tail
       }
@@ -235,17 +235,7 @@ trait ParallelMatching  {
       case Row(pats,s,g,b) =>
         val nbindings = s ::: strip1(column(index)).toList.map { v => (v,scrutinee) }
         Row(column(tagIndexPairs.index)::pats, nbindings, g, b)
-  }
-
-    /*{
-      var trs = tagIndexPairs
-      while(trs ne null) {
-        Console.println((trs.tag,trs.index))
-        trs = trs.next
-      }
-    }*/
-    //System.exit(-1)
-
+    }
 
   }
 

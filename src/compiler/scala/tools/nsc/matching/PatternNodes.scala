@@ -33,8 +33,10 @@ trait PatternNodes { self: transform.ExplicitOuter =>
     case z               => z
   }
 
-  //
+  //  this method obtains tag method in a defensive way
+  def getCaseTag(x:Type): Int = { x.typeSymbol.tag }
 
+  //
   type SymSet = collection.immutable.Set[Symbol]
 
   /** returns the child patterns of a pattern

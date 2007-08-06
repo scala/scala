@@ -1062,7 +1062,7 @@ print()
       while (node ne null)
       node match {
         case ConstrPat(casted) =>
-          cases = insertNode(node.tpe./*?type?*/symbol.tag, node, cases)
+          cases = insertNode(getCaseTag(node.tpe) , node, cases)
           node = node.or
 
         case DefaultPat() =>
@@ -1070,7 +1070,7 @@ print()
           node = node.or
 
         case VariablePat(tree) if node.tpe./*?type?*/symbol hasFlag Flags.CASE =>
-          cases = insertNode(node.tpe./*?type?*/symbol.tag, node, cases)
+          cases = insertNode(getCaseTag(node.tpe), node, cases)
           node = node.or
 
         case _ =>
