@@ -426,6 +426,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
 
   /** A description of the phases that will run */
   def phaseDescriptions: String = {
+    new Run // force some initialization
     val messages =
       for (phase <- phaseDescriptors)
 	yield phase.phaseName //todo: + " - " + phase.description
