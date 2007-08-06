@@ -202,7 +202,14 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
         nParallel += 1
         return null
       } catch {
-        case e => return e // fallback
+        case e =>
+          /*
+          Console.println("!!!unit: "+cunit)
+          Console.println("!!!selector.pos: "+selector.pos)
+          cunit.warning(selector.pos, "going gaga here")
+          Console.println("!!!problem: "+e.getMessage)
+          */
+		 return e // fallback
 
         // non-fallback:
         //case e: CantHandle => return e

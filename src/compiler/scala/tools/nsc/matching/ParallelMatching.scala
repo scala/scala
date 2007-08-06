@@ -85,8 +85,10 @@ trait ParallelMatching  {
         case Ident(nme.WILDCARD) =>
            isFlatCases(col.tail) // treat col.tail specially?
         case i @ Ident(n) => // n ne nme.WILDCARD
+          assert(false)
           (  (i.symbol.flags & Flags.CASE) != 0) && directSubtype( i.tpe ) && isFlatCases(col.tail)
         case s @ Select(_,_) => // i.e. scala.Nil
+          assert(false)
           (  (s.symbol.flags & Flags.CASE) != 0) && directSubtype( s.tpe ) && isFlatCases(col.tail)
         case p =>
           //Console.println(p.getClass)
@@ -860,16 +862,20 @@ object Rep {
 
             case o @ Ident(n) =>
                 if (n != nme.WILDCARD) {
-                  //Console.println("/'''''''''''' 1"+o.tpe)
-                  //Console.println("/'''''''''''' 2"+o.symbol)
-                  //Console.println("/'''''''''''' 3"+o.symbol.tpe)
-                  //Console.println("/'''''''''''' 4"+o.symbol.tpe.prefix)
-                  //Console.println("/'''''''''''' 5"+o.symbol.tpe.prefix.isStable)
+                  /*
+                  Console.println("/'''''''''''' 1"+o.tpe)
+                  Console.println("/'''''''''''' 2"+o.symbol)
+                  Console.println("/'''''''''''' 3"+o.symbol.tpe)
+                  Console.println("/'''''''''''' 4"+o.symbol.tpe.prefix)
+                  Console.println("/'''''''''''' 5"+o.symbol.tpe.prefix.isStable)
 
+                  Console.println("/'''''''''''' 6"+(o.symbol.tpe.typeSymbol hasFlag (Flags.CASE)))
+                  Console.println("/'''''''''''' 7"+(o.symbol.tpe.termSymbol.hasFlag (Flags.CASE)))
+                  */
                   val stpe =
-                    if (o.tpe./*term?*/symbol.isModule)
-                      singleType(o.tpe.prefix, o.symbol)
-                    else
+                    if (o.tpe.termSymbol.isModule) {
+					  singleType(o.tpe.prefix, o.symbol)
+                    } else
                       singleType(NoPrefix, o.symbol)
 
                   val p = Ident(nme.WILDCARD) setType stpe

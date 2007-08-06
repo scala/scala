@@ -133,7 +133,7 @@ class ElementValidator() extends Function1[Node,Boolean] {
         var res = false;
         val jt = branches.elements;
         while(jt.hasNext && !res)
-          jt.next match {
+          jt.next match { // !!! check for match translation problem
             case ContentModel.Letter(ElemName(Key)) => res = true;
             case _                                  =>
           }
