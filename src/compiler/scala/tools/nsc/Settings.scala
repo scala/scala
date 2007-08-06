@@ -40,6 +40,16 @@ class Settings(error: String => Unit) {
         guessedScalaExtDirs),
       "")
 
+  private val pluginsDirDefault =
+    if (Properties.scalaHome == null)
+      ""
+    else
+      new File(
+	new File(
+	  new File(Properties.scalaHome, "misc"),
+	  "scala-devel"),
+	"plugins").getAbsolutePath
+
   private def alternatePath(p1: String, p2: => String) =
     if (p1 ne null) p1 else p2
 
@@ -47,6 +57,7 @@ class Settings(error: String => Unit) {
      if ((p1 ne null) && (p2 ne null)) p1 + File.pathSeparator + p2
      else if (p1 ne null) p1
      else p2
+
 
   private def guessedScalaBootClassPath = {
     val scalaHome = Properties.scalaHome
@@ -103,8 +114,9 @@ class Settings(error: String => Unit) {
   val plugin        = MultiStringSetting("-Xplugin", "file", "Load a plugin from a file")
   val disable       = MultiStringSetting("-Xplugin-disable", "plugin", "Disable a plugin")
   val showPlugins   = BooleanSetting    ("-Xplugin-list", "Print a synopsis of loaded plugins")
-  val pluginOptions = new MultiStringSetting("-Xplugin-opt", "plugin:opt", "Pass an option to a plugin") { override def helpSyntax = "-Xplugin-opt:<plugin>:<opt>" }
+  val pluginOptions = new MultiStringSetting("-P", "plugin:opt", "Pass an option to a plugin") { override def helpSyntax = "-P:<plugin>:<opt>" }
   val require       = MultiStringSetting("-Xplugin-require", "plugin", "Abort unless a plugin is available")
+  val pluginsDir    = StringSetting     ("-Xpluginsdir", "path", "Location to find compiler plugins", pluginsDirDefault)
   val print         = PhasesSetting     ("-Xprint", "Print out program after")
   val Xprintpos     = BooleanSetting    ("-Xprint-pos", "Print tree positions (as offsets)")
   val printtypes    = BooleanSetting    ("-Xprint-types", "Print tree types (debugging option)").hideToIDE
@@ -227,12 +239,11 @@ class Settings(error: String => Unit) {
     def dependsOn(s: Setting, value: String): this.type = { dependency = Some((s, value)); this }
     def dependsOn(s: Setting): this.type = dependsOn(s, "")
 
-    def isStandard: Boolean =
-      (!(name startsWith "-X") && !(name startsWith "-Y")) || (name eq "-X")
+    def isStandard: Boolean = !isAdvanced && !isPrivate
     def isAdvanced: Boolean =
       (name startsWith "-X") && !(name eq "-X")
     def isPrivate: Boolean =
-      (name startsWith "-Y") && !(name eq "-Y")
+      (name == "-P") || ((name startsWith "-Y") && !(name eq "-Y"))
     def isDocOption: Boolean =
       !dependency.isEmpty && dependency.get._1 == doc
 
