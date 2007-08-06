@@ -29,10 +29,15 @@ trait ParallelMatching  {
 
   // ----------------------------------   data
 
-  sealed trait RuleApplication
-  case class ErrorRule extends RuleApplication
-  case class VariableRule(subst:List[Pair[Symbol,Symbol]], guard: Tree, body: Tree, guardedRest:Rep) extends RuleApplication
-
+  sealed trait RuleApplication {
+    def scrutinee:Symbol
+  }
+  case class ErrorRule extends RuleApplication {
+    def scrutinee:Symbol = throw new RuntimeException("this never happens")
+  }
+  case class VariableRule(subst:List[Pair[Symbol,Symbol]], guard: Tree, body: Tree, guardedRest:Rep) extends RuleApplication {
+    def scrutinee:Symbol = throw new RuntimeException("this never happens")
+  }
   def MixtureRule(scrutinee:Symbol, column:List[Tree], rest:Rep): RuleApplication = {
     def isSimpleIntSwitch: Boolean = {
       (isSameType(scrutinee.tpe.widen, definitions.IntClass.tpe)/*||
@@ -97,22 +102,20 @@ trait ParallelMatching  {
     }
     */
     if(isSimpleIntSwitch) {
-      //if(settings_debug) { Console.println("MixLiteral") }
+      if(settings_debug) { Console.println("MixLiteral") }
       return new MixLiterals(scrutinee, column, rest)
     }
-    /*
-     if((column.length > 1) && isFlatCases(column)) {
+     if(settings_casetags && (column.length > 1) && isFlatCases(column)) {
        if(settings_debug) {
          Console.println("flat cases!"+column)
-         Console.println(scrutinee.tpe./*?type?*/symbol.children)
+         Console.println(scrutinee.tpe.typeSymbol.children)
          Console.println(scrutinee.tpe.member(nme.tag))
-         Console.println(column.map { x => x.tpe./*?type?*/symbol.tag })
+         //Console.println(column.map { x => x.tpe./*?type?*/symbol.tag })
        }
        return new MixCases(scrutinee, column, rest)
        // if(scrutinee.tpe./*?type?*/symbol.hasFlag(symtab.Flags.SEALED)) new MixCasesSealed(scrutinee, column, rest)
        // else new MixCases(scrutinee, column, rest)
     }
-    */
     //Console.println("isUnapplyHead")
     if(isUnapplyHead) {
       if(settings_debug) { Console.println("MixUnapply") }
@@ -160,7 +163,12 @@ trait ParallelMatching  {
     var tagIndexPairs: TagIndexPair = null
 
     protected def grabTemps: List[Symbol] = rest.temp
-    protected def grabRow(index:Int): Row = rest.row(index)
+    protected def grabRow(index:Int): Row = rest.row(index) match {
+      case r @ Row(pats,s,g,b) => if(defaultV.isEmpty) r else {
+        val nbindings = s:::defaultV.toList.map { v => (v,scrutinee) }
+        Row(pats, nbindings, g, b)
+      }
+    }
 
     /** inserts row indices using in to list of tagindexpairs*/
     protected def tagIndicesToReps = {
@@ -222,7 +230,9 @@ trait ParallelMatching  {
 
     override def grabTemps = scrutinee::rest.temp
     override def grabRow(index:Int) = rest.row(tagIndexPairs.index) match {
-      case Row(pats,s,g,b) => Row(column(tagIndexPairs.index)::pats,s,g,b)
+      case Row(pats,s,g,b) =>
+        val nbindings = s ::: defaultV.toList.map { v => (v,scrutinee) }
+        Row(column(tagIndexPairs.index)::pats, nbindings, g, b)
   }
 
     /*{
@@ -495,7 +505,7 @@ trait ParallelMatching  {
 
           case _ if (patternType <:< pat.tpe) || isDefaultPattern(pat) =>
             //Console.println("current pattern is *more general*")
-            (EmptyTree::ms, (j,dummies)::ss, (j,pat)::rs);                        // subsuming (matched *and* remaining pattern)
+            (EmptyTree::ms, (j, dummies)::ss, (j,pat)::rs);                        // subsuming (matched *and* remaining pattern)
 
           case _ =>
             //Console.println("current pattern tests something else")
@@ -516,7 +526,7 @@ trait ParallelMatching  {
 
     /** returns casted symbol, success matrix and optionally fail matrix for type test on the top of this column */
     final def getTransition(implicit theOwner: Symbol): (Symbol, Rep, Option[Rep]) = {
-      //DEBUG("*** getTransition! of "+this.toString)
+      //Console.println("*** getTransition! of "+this.toString)
       // the following works for type tests... what fudge is necessary for value comparisons?
       // type test
       casted = if(scrutinee.tpe =:= patternType) scrutinee else newVar(scrutinee.pos, patternType)
@@ -559,7 +569,6 @@ trait ParallelMatching  {
           //Console.println("pats:"+pats)
           //Console.println("opats:"+pats)
           //debug
-
           // don't substitute eagerly here, problems with bodies that can
           //   be reached with several routes... impossible to find one-fits-all ordering.
 
@@ -621,7 +630,7 @@ trait ParallelMatching  {
         val (from,to) = List.unzip(subst)
         val b2 = origbody.duplicate
         new TreeSymSubstituter(from,to).traverse(b2)
-      val res = typed{ b2 }
+        val res = typed{ b2 }
         return res
       case _:Ident =>
         bodies(origbody) = null      // placeholder, for unreachable-code-detection
@@ -741,7 +750,6 @@ trait ParallelMatching  {
         var ndefault = if(defaultRepOpt.isEmpty) failTree else repToTree(defaultRepOpt.get, handleOuter)
 
         renamingBind(defaultV, ml.scrutinee, ndefault) // each v in defaultV gets bound to scrutinee
-
         if(cases.length == 1) {
           val CaseDef(lit,_,body) = cases.head
           makeIf(Equals(Ident(ml.scrutinee),lit), body, ndefault)
@@ -755,7 +763,7 @@ trait ParallelMatching  {
 
       case mm:MixTypes =>
         val (casted,srep,frep) = mm.getTransition
-        //DEBUG("--- mixture \n succ \n"+srep.toString+"\n fail\n"+frep.toString)
+        //Console.println("--- mixture \n succ \n"+srep.toString+"\n fail\n"+frep.toString)
         //val cond = typed{gen.mkIsInstanceOf(Ident(mm.scrutinee), casted.tpe)}
         //Console.println("casted.tpe="+casted.tpe)
         val condUntyped = condition(casted.tpe, mm.scrutinee)

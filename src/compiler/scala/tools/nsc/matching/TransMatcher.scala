@@ -28,6 +28,7 @@ trait TransMatcher { self: transform.ExplicitOuter =>
   final val settings_squeeze     = settings.Xmatchalgo.value != "incr"
   final val settings_useParallel = settings.Xmatchalgo.value != "incr"
   final val settings_useIncr     = settings.Xmatchalgo.value != "par"
+  final val settings_casetags    = settings.Xcasetags.value == "on"
 
   def containsBinding(pat: Tree): Boolean = {
     var generatedVars = false

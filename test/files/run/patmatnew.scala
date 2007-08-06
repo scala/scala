@@ -192,6 +192,13 @@ object Test extends TestConsoleMain {
   }
 
 
+  object Test1253  { // compile-only
+    def foo(t : (Int, String)) = t match {
+      case (1, "") => throw new Exception
+      case (r, _) => throw new Exception(r.toString)
+    }
+  }
+
   object Foo1 {
     class Bar1(val x : String)
     def p(b : Bar1) = Console.println(b.x)

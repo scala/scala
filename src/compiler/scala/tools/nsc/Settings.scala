@@ -141,6 +141,9 @@ class Settings(error: String => Unit) {
   val stop          = PhasesSetting     ("-Ystop", "Stop after phase")
   val Xwarndeadcode = BooleanSetting    ("-Ywarn-dead-code", "Emit warnings for dead code")
 
+  val Xcasetags     = ChoiceSetting("-Ycasetags", "test integer tags for case classes", List("on","off"),
+                                     /*default*/"off")
+
   /** scaladoc specific options */
   val pagebottom     = StringSetting    ("-bottom", "pagebottom", "Include bottom text for each page", "").dependsOn(doc)
   val doccharset     = StringSetting    ("-charset", "doccharset", "Charset for cross-platform viewing of generated documentation.", "").dependsOn(doc)
