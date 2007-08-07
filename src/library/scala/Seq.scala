@@ -412,19 +412,21 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Collection[A] {
   /** @returns -1 if <code>that</code> not contained in this, otherwise the index where <code>that</code> is contained
    *  @see String.indexOf
    */
-  def indexOf[B](that : Seq[B]) : Int = {
-    val i = this.elements.counted
-    var j = that.elements
+  def indexOf[B >: A](that : Seq[B]) : Int = {
+    val i = this.elements
     var idx = 0
+    var j = that.elements
+    var jdx = -1
     while (i.hasNext && j.hasNext) {
+      idx = idx + 1
       if (i.next != j.next) {
         j = that.elements
-        idx = -1
-      } else if (idx == -1) {
-        idx = i.count - 1
+        jdx = -1
+      } else if (jdx == -1) {
+        jdx = idx - 1
       }
     }
-    idx
+    jdx
   }
    /** Is <code>that</code> a slice in this?
     */
