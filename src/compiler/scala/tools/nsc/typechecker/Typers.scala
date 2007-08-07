@@ -1654,11 +1654,25 @@ trait Typers { self: Analyzer =>
             arg.tpe = typer1.infer.inferTypedPattern(tree.pos, unappFormal, arg.tpe)
             //todo: replace arg with arg.asInstanceOf[inferTypedPattern(unappFormal, arg.tpe)] instead.
           }
-          // Console.println("unapply "+fun.tpe)
+          val funPrefix = fun.tpe.prefix match {
+            case tt @ ThisType(sym) =>
+              //Console.println(" sym="+sym+" "+" .isPackageClass="+sym.isPackageClass+" .isModuleClass="+sym.isModuleClass);
+              //Console.println(" funsymown="+fun.symbol.owner+" .isClass+"+fun.symbol.owner.isClass);
+              //Console.println(" contains?"+sym.tpe.decls.lookup(fun.symbol.name));
+              if(sym != fun.symbol.owner && sym.isPackageClass /*(1)*/ ) { // (1) see 'files/pos/unapplyVal.scala'
+                if(fun.symbol.owner.isClass) {
+                  mkThisType(fun.symbol.owner)
+                } else {
+                  NoPrefix                                                 // see 'files/run/unapplyComplex.scala'
+                }
+              } else tt
+            case st @ SingleType(pre, sym) => st
+            case xx                        => xx // cannot happen?
+          }
           val fun1untyped = atPos(fun.pos) {
             Apply(
               Select(
-                gen.mkAttributedRef(fun.tpe.prefix, fun.symbol) setType null,
+                gen.mkAttributedRef(funPrefix, fun.symbol) setType null,
                 // setType null is necessary so that ref will be stabilized; see bug 881
                 unapp),
               List(arg))
