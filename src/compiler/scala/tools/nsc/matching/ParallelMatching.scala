@@ -424,7 +424,7 @@ trait ParallelMatching  {
       case _ => column.head.tpe
     }
     private val isCaseHead = isCaseClass(patternType)
-    private val dummies = if(!isCaseHead) Nil else patternType./*?type?*/symbol.caseFieldAccessors.map { x => EmptyTree }
+    private val dummies = if(!isCaseHead) Nil else patternType.typeSymbol.caseFieldAccessors.map { x => EmptyTree }
 
     //Console.println("isCaseHead = "+isCaseHead)
     //Console.println("dummies = "+dummies)
@@ -1169,10 +1169,10 @@ object Rep {
     } else if (scrutineeTree.tpe <:< tpe && tpe <:< definitions.AnyRefClass.tpe) {
       //if(scrutineeTree.symbol.hasFlag(symtab.Flags.SYNTHETIC)) Literal(Constant(true)) else
       NotNull(scrutineeTree)
-    } else if(tpe.prefix./*?term?*/symbol.isTerm && tpe./*?type?*/symbol.linkedModuleOfClass != NoSymbol) { // object
+    } else if(tpe.termSymbol.isModule) { // object
       //Console.println("iT"+tpe.prefix.symbol.isTerm)
       //Console.println("lmoc"+tpe./*?type?*/symbol.linkedModuleOfClass)
-      Eq(gen.mkAttributedRef(tpe.prefix, tpe./*?type?*/symbol.linkedModuleOfClass), scrutineeTree)
+      Eq(gen.mkAttributedRef(tpe.prefix, tpe.termSymbol), scrutineeTree)
     } else
       //Console.println(tpe.prefix.symbol.isTerm)
       //Console.println(tpe./*?type?*/symbol)

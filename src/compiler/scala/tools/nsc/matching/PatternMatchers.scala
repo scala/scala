@@ -1304,7 +1304,7 @@ print()
 
           case VariablePat(tree) =>
             // objects are compared by eq, not ==
-            val cmp = if (tree.tpe./*?type?*/symbol.isModuleClass && selector.tpe <:< defs.AnyRefClass.tpe)
+            val cmp = if (tree.tpe.termSymbol.isModule && selector.tpe <:< defs.AnyRefClass.tpe)
                         Eq(selector.duplicate, tree)
                       else
                         Equals(selector.duplicate, tree)
