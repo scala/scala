@@ -1169,10 +1169,6 @@ object Rep {
     } else if (scrutineeTree.tpe <:< tpe && tpe <:< definitions.AnyRefClass.tpe) {
       //if(scrutineeTree.symbol.hasFlag(symtab.Flags.SYNTHETIC)) Literal(Constant(true)) else
       NotNull(scrutineeTree)
-    } else if(tpe.termSymbol.isModule) { // object
-      //Console.println("iT"+tpe.prefix.symbol.isTerm)
-      //Console.println("lmoc"+tpe./*?type?*/symbol.linkedModuleOfClass)
-      Eq(gen.mkAttributedRef(tpe.prefix, tpe.termSymbol), scrutineeTree)
     } else
       //Console.println(tpe.prefix.symbol.isTerm)
       //Console.println(tpe./*?type?*/symbol)

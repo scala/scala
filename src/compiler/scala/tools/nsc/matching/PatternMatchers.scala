@@ -1076,7 +1076,7 @@ print()
           defaultCase = node
           node = node.or
 
-        case VariablePat(tree) if node.tpe./*?type?*/symbol hasFlag Flags.CASE =>
+        case VariablePat(tree) if node.tpe.typeSymbol hasFlag Flags.CASE =>
           cases = insertNode(getCaseTag(node.tpe), node, cases)
           node = node.or
 
