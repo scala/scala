@@ -413,8 +413,8 @@ trait ParallelMatching  {
 
     val isExhaustive = !scrutinee.tpe.typeSymbol.hasFlag(symtab.Flags.SEALED) || {
       //DEBUG("check exha for column "+column)
-      val tpes = column.map {x => /*Console.println("--x:"+x+":"+x.tpe); */ x.tpe./*?type?*/symbol}
-      scrutinee.tpe./*?type?*/symbol.children.forall { sym => tpes.contains(sym) }
+      val tpes = column.map {x => /*Console.println("--x:"+x+":"+x.tpe); */ x.tpe.typeSymbol}
+      scrutinee.tpe.typeSymbol.children.forall { sym => tpes.contains(sym) }
     }
 
     private val patternType     = column.head match {
