@@ -128,7 +128,7 @@ trait Plugins { self: Global =>
   /** A description of all the plugins that are loaded */
   def pluginDescriptions: String = {
     val messages =
-      for (plugin <- plugins)
+      for (plugin <- roughPluginsList)
 	yield plugin.name + " - " + plugin.description
     messages.mkString("\n")
   }
