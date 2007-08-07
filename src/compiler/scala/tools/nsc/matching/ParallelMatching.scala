@@ -874,15 +874,26 @@ object Rep {
                   */
                   val stpe =
                     if (o.tpe.termSymbol.isModule) {
-					  singleType(o.tpe.prefix, o.symbol)
-                    } else
-                      singleType(NoPrefix, o.symbol)
-
+		      singleType(o.tpe.prefix, o.symbol)
+                    } else {
+                      singleType(NoPrefix, o.symbol) // equals-check
+                    }
                   val p = Ident(nme.WILDCARD) setType stpe
                   val q = Typed(p, TypeTree(stpe)) setType stpe
                   pats = q::pats
                 } else
                   pats = o::pats
+
+            case o @ Select(_,_) =>
+               val stpe =
+                 if (o.tpe.termSymbol.isModule) {
+		   singleType(o.tpe.prefix, o.symbol)
+                 } else {
+                   singleType(NoPrefix, o.symbol) // equals-check
+                 }
+              val p = Ident(nme.WILDCARD) setType stpe
+              val q = Typed(p, TypeTree(stpe)) setType stpe
+              pats = q::pats
 
             case ua @ UnApply(Apply(fn, _), arg) =>
               fn.tpe match {
@@ -898,8 +909,10 @@ object Rep {
               //Console.println(o)
               //val stpe = singleType(NoPrefix, o.symbol)
               val stpe =
-                if (o.tpe./*?term?*/symbol.isModule) singleType(o.tpe.prefix, o.symbol)
-                else mkThisType(o.symbol)
+                if (o.tpe.termSymbol.isModule) singleType(o.tpe.prefix, o.symbol)
+                else {
+                  singleType(NoPrefix, o.symbol) // equals-check
+                }
               val p = Ident(nme.WILDCARD) setType stpe
               val q = Typed(p, TypeTree(stpe)) setType stpe
               pats = q::pats
@@ -1133,6 +1146,7 @@ object Rep {
           Equals(gen.mkAttributedRef(tpe.termSymbol), scrutineeTree)         // object
       } else {
         //Console.print("111 ??")
+        //Console.println("tpe.prefix         "+tpe.prefix)
         //Console.println("tpe stable         "+tpe.isStable)
         //Console.println("tpe prefix stable  "+tpe.prefix.isStable)
         //val x = Equals(Apply(gen.mkAttributedRef(tpe./*?term?*/symbol), List()), scrutineeTree)
