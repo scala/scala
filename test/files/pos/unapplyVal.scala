@@ -16,3 +16,22 @@ class Buffer {
     }
   }
 }
+
+
+object unapplyJoins extends Application { // bug #1257
+
+  class Sync {
+    def apply(): Int = 42
+    def unapply(scrut: Any): Boolean = false
+  }
+
+  class Buffer {
+    object Get extends Sync
+
+    val jp: PartialFunction[Any, Any] = {
+      case Get() =>
+    }
+  }
+
+  println((new Buffer).jp.isDefinedAt(42))
+}

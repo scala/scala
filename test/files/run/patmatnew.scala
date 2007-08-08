@@ -199,6 +199,16 @@ object Test extends TestConsoleMain {
     }
   }
 
+  object Foo1258 {
+    case object baz
+    def foo(bar : AnyRef) = {
+      val Baz = baz
+      bar match {
+        case Baz => ()
+      }
+    }
+  }
+
   object Foo1 {
     class Bar1(val x : String)
     def p(b : Bar1) = Console.println(b.x)

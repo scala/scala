@@ -809,7 +809,7 @@ trait ParallelMatching  {
           typed{ Ident(uacall.symbol) }
                    else
                      emptynessCheck(uacall.symbol)
-        typed { squeezedBlock(List(uacall), makeIf(cond,squeezedBlock(vdefs,succ),fail)) }
+        typed { squeezedBlock(List(handleOuter(uacall)), makeIf(cond,squeezedBlock(vdefs,succ),fail)) }
     }
   }
 
@@ -860,37 +860,47 @@ object Rep {
             case typat @ Typed(p:UnApply,tpt) =>
               pats = (if (tpt.tpe <:< temp(j).tpe) p else typat)::pats
 
-            case o @ Ident(n) =>
-                if (n != nme.WILDCARD) {
-                  /*
-                  Console.println("/'''''''''''' 1"+o.tpe)
-                  Console.println("/'''''''''''' 2"+o.symbol)
-                  Console.println("/'''''''''''' 3"+o.symbol.tpe)
-                  Console.println("/'''''''''''' 4"+o.symbol.tpe.prefix)
-                  Console.println("/'''''''''''' 5"+o.symbol.tpe.prefix.isStable)
+            case o @ Ident(n) if n != nme.WILDCARD =>
+              /*
+               Console.println("/'''''''''''' 1"+o.tpe)
+               Console.println("/'''''''''''' 2"+o.symbol)
+               Console.println("/'''''''''''' 3"+o.symbol.tpe)
+               Console.println("/'''''''''''' 4"+o.symbol.tpe.prefix)
+               Console.println("/'''''''''''' 5"+o.symbol.tpe.prefix.isStable)
 
-                  Console.println("/'''''''''''' 6"+(o.symbol.tpe.typeSymbol hasFlag (Flags.CASE)))
-                  Console.println("/'''''''''''' 7"+(o.symbol.tpe.termSymbol.hasFlag (Flags.CASE)))
-                  */
-                  val stpe =
-                    if (o.tpe.termSymbol.isModule) {
-		      singleType(o.tpe.prefix, o.symbol)
-                    } else {
-                      singleType(NoPrefix, o.symbol) // equals-check
-                    }
-                  val p = Ident(nme.WILDCARD) setType stpe
-                  val q = Typed(p, TypeTree(stpe)) setType stpe
-                  pats = q::pats
-                } else
-                  pats = o::pats
+               Console.println("/'''''''''''' 6"+(o.symbol.tpe.typeSymbol hasFlag (Flags.CASE)))
+               Console.println("/'''''''''''' 7"+(o.symbol.tpe.termSymbol.hasFlag (Flags.CASE)))
+               */
+              val stpe =
+                if (!o.symbol.isValue) {
+		          singleType(o.tpe.prefix, o.symbol)
+                } else {
+                  singleType(NoPrefix, o.symbol) // equals-check
+                }
+              val p = Ident(nme.WILDCARD) setType stpe
+              val q = Typed(p, TypeTree(stpe)) setType stpe
+              pats = q::pats
+
+            case o @ Ident(nme.WILDCARD) =>
+              pats = o::pats
 
             case o @ Select(_,_) =>
-               val stpe =
-                 if (o.tpe.termSymbol.isModule) {
-		   singleType(o.tpe.prefix, o.symbol)
-                 } else {
-                   singleType(NoPrefix, o.symbol) // equals-check
-                 }
+              /*
+               Console.println("!/'''''''''''' 1"+o.tpe)
+               Console.println("!/'''''''''''' 2"+o.symbol)
+               Console.println("!/'''''''''''' 3"+o.symbol.tpe)
+               Console.println("!'''''''''''' 4"+o.symbol.tpe.prefix)
+               Console.println("!/'''''''''''' 5"+o.symbol.tpe.prefix.isStable)
+
+               Console.println("!/'''''''''''' 6"+(o.symbol.tpe.typeSymbol hasFlag (Flags.CASE)))
+               Console.println("!/'''''''''''' 7"+(o.symbol.tpe.termSymbol.hasFlag (Flags.CASE)))
+               */
+              val stpe =
+                if (!o.symbol.isValue) {
+		          singleType(o.tpe.prefix, o.symbol)
+                } else {
+                  singleType(NoPrefix, o.symbol) // equals-check
+                }
               val p = Ident(nme.WILDCARD) setType stpe
               val q = Typed(p, TypeTree(stpe)) setType stpe
               pats = q::pats
