@@ -14,7 +14,7 @@ import scala.tools.nsc.util.Position
  *  @author Burak Emir
  */
 trait CodeFactory {
-  self: transform.ExplicitOuter =>
+  self: transform.ExplicitOuter with PatternNodes =>
 
   import global._
 
@@ -23,16 +23,16 @@ trait CodeFactory {
   import posAssigner.atPos         // for filling in tree positions
 
 
-  final def typedValDef(x:Symbol, rhs:Tree) = typed{ValDef(x, typed{rhs})}
+  final def typedValDef(x:Symbol, rhs:Tree) = typed{ValDef(x, typed(rhs,x.tpe))}
 
   final def mk_(tpe:Type) = Ident(nme.WILDCARD) setType tpe
 
   final def targetLabel(owner: Symbol, pos: Position, name:String, argtpes:List[Type], resultTpe: Type) =
     owner.newLabel(pos, name).setInfo(new MethodType(argtpes, resultTpe))
 
-  final def targetParams(subst:List[Pair[Symbol,Symbol]]) = subst map {
-    case (v,t) => ValDef(v, {
-      v.setFlag(symtab.Flags.TRANS_FLAG);
+  final def targetParams(subst:Binding):List[ValDef] = if(subst eq NoBinding) Nil else subst match {
+    case Binding(v,t,n) => ValDef(v, {
+      //v.setFlag(symtab.Flags.TRANS_FLAG);
       if(t.tpe <:< v.tpe) typed{Ident(t)}
       else if(v.tpe <:< t.tpe) typed{gen.mkAsInstanceOf(Ident(t),v.tpe)} // refinement
       else {
@@ -40,7 +40,7 @@ trait CodeFactory {
         error("internal error, types don't match: pattern variable "+v+":"+v.tpe+" temp "+t+":"+t.tpe)
         typed{gen.mkAsInstanceOf(Ident(t),v.tpe)} // refinement
       }
-    })
+    })::targetParams(n)
   }
 
   /** returns  `List[ Tuple2[ scala.Int, <elemType> ] ]' */
@@ -299,13 +299,23 @@ trait CodeFactory {
       var nref = 0
       var nsafeRef = 0
       override def traverse(tree: Tree) = tree match {
-        case t:Ident if t.symbol == sym =>
+        case t:Ident if t.symbol eq sym =>
           nref += 1
           if(sym.owner == currentOwner)  { // oldOwner should match currentOwner
             nsafeRef += 1
           } /*else if(nref == 1) {
             Console.println("sym owner: "+sym.owner+" but currentOwner = "+currentOwner)
           }*/
+        case LabelDef(_,args,rhs) =>
+          var args1 = args; while(args1 ne Nil) {
+            if(args1.head.symbol eq sym) {
+              nref += 2   // will abort traversal, cannot substitute this one
+              args1 = Nil // break
+            } else {
+              args1 = args1.tail
+            }
+          }
+          traverse(rhs)
         case t if nref > 1 =>
           // abort, no story to tell
         case t =>

@@ -15,6 +15,8 @@ trait PatternNodes { self: transform.ExplicitOuter =>
 
   import global._
 
+  // --- misc methods
+
   /** returns all variables that are binding the given pattern
    *  @param   x a pattern
    *  @return  vs variables bound, p pattern proper
@@ -34,8 +36,59 @@ trait PatternNodes { self: transform.ExplicitOuter =>
   }
 
   //  this method obtains tag method in a defensive way
-  def getCaseTag(x:Type): Int = { x.typeSymbol.tag }
+  final def getCaseTag(x:Type): Int = { x.typeSymbol.tag }
 
+  case class FinalState(label:Symbol,body:Tree)
+  // misc methods END ---
+
+  final def definedVars(args:List[Tree]): SymSet = {
+    var vs = emptySymbolSet
+    var xs = args; while(xs ne Nil) {vs = vs ++ definedVars(xs.head); xs = xs.tail };
+    vs
+  }
+
+  final def definedVars(x:Tree): SymSet = x match {
+    case Alternative(bs) => definedVars(bs)
+    case Apply(_, args)  => definedVars(args)
+    case b @ Bind(_,p)   => definedVars(p) + b.symbol
+    case Ident(_)        => emptySymbolSet
+    case Literal(_)      => emptySymbolSet
+    case Select(_,_)     => emptySymbolSet
+    case Typed(p,_)      => definedVars(p)
+    case UnApply(_,args) => definedVars(args)
+  }
+
+  // insert in sorted list, larger items first
+  final def insertSorted(tag: Int, xs:List[Int]):List[Int] = xs match {
+    case y::ys if y > tag => y::insertSorted(tag, ys)
+    case ys               => tag :: ys
+  }
+
+  // find taag in sorted list
+  final def findSorted(Tag: Int, xs:List[Int]): Boolean = xs match {
+    case Tag::_             => true
+    case   y::ys if y > Tag => findSorted(Tag,ys)
+    case _                  => false
+  }
+
+  /** pvar: the symbol of the pattern variable
+   *  temp: the temp variable that holds the actual value
+   *  next: next binding
+   */
+  case class Binding(pvar:Symbol, temp:Symbol, next: Binding) {
+    final def :::(bs:List[(Symbol,Symbol)]): Binding = bs match {
+      case (v,tmp)::bs => Binding(v, tmp, bs ::: this);
+      case Nil         => this
+    }
+    def apply(v:Symbol): Ident = {
+      //Console.println(this.toString()+" apply ("+v+"), eq?"+(v eq pvar))
+      if(v eq pvar) {Ident(temp).setType(v.tpe)} else next(v)
+    }
+  }
+  object NoBinding extends Binding(null,null,null) {
+    override def apply(v:Symbol) = null // not found, means bound elsewhere (x @ unapply-call)
+    override def toString = "."
+  }
   //
   type SymSet = collection.immutable.Set[Symbol]
 

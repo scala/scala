@@ -125,7 +125,7 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
       nPatterns = nPatterns + 1
 
       if (settings_debug) {
-        Console.println(cases.mkString("construct{{{","\n","}}}"))
+        Console.println(cases.mkString("construct{{{\n","\n","\n}}}"))
       }
 
       if(settings_useParallel) {
@@ -135,6 +135,11 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
 
           case _:AbstractMethodError =>
             cunit.error(cases.head.pos, "please recompile matcher component (explicitouter,patternmattcher, parallelmatching,codefactory)")
+            throw FatalError("died in parallel match algorithm" )
+
+          case n:NullPointerException =>
+            cunit.error(cases.head.pos, "internal error (null pointer exception)")
+            n.printStackTrace()
             throw FatalError("died in parallel match algorithm" )
 
           case _:OutOfMemoryError =>
@@ -177,25 +182,22 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
       implicit val fail: Tree = ThrowMatchError(selector.pos, Ident(root))
       val vdef = typed{ValDef(root, selector)}
 
-      implicit val memo       = new collection.mutable.HashMap[(Symbol,Symbol),Symbol]
-      implicit val theCastMap = new collection.mutable.HashMap[(Symbol,Type),Symbol]
-      implicit val bodies     = new collection.mutable.HashMap[Tree, (Tree,Tree,Symbol)]
+      //implicit val memo       = new collection.mutable.HashMap[(Symbol,Symbol),Symbol]
+      //implicit val theCastMap = new collection.mutable.HashMap[(Symbol,Type),Symbol]
 
       try {
         val mch  = typed{repToTree(irep, handleOuter)}
         dfatree = typed{squeezedBlock(List(vdef), mch)}
 
         //DEBUG("**** finished\n"+dfatree.toString)
-
-        val i = cases.findIndexOf { case CaseDef(_,_,b) => bodies.get(b).isEmpty}
-        if(i != -1) {
-          val CaseDef(_,_,b) = cases(i)
-          if(settings_debug) {
-            Console.println("bodies:"+bodies.mkString("","\n",""))
+        var bx = 0; var cs = cases; while(cs ne Nil) {
+          if(!Rep.isReached(bx)) {
+            cunit.error(cs.head.asInstanceOf[CaseDef].body.pos, "unreachable code")
           }
-          cunit.error(b.pos, "unreachable code")
+          cs = cs.tail
+          bx += 1
         }
-
+        dfatree = Rep.cleanup(dfatree)
         resetTrav.traverse(dfatree)
 
         //constructParallel(cases) // ZZZ
@@ -209,6 +211,7 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
           cunit.warning(selector.pos, "going gaga here")
           Console.println("!!!problem: "+e.getMessage)
           */
+          Rep.cleanup()
 		 return e // fallback
 
         // non-fallback:

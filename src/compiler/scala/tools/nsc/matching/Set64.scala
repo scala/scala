@@ -14,10 +14,10 @@ class Set64  {
 
   var underlying: Long = 0
 
-  def contains(value: Int) = (underlying & (1L << value)) != 0
+  final def contains(value: Int) = (underlying & (1L << value)) != 0
 
 //  def |=(  set: IntSet64)  { underlying = underlying | set.underlying   }
-  def |=(value: Int)     { underlying = underlying | (1L << value)    }
+  final def |=(value: Int)     { underlying = underlying | (1L << value)    }
 //  def &~=(value: Value)    { underlying = underlying & (~(1L << value)  }
 //  def &=(set: Set64)       { underlying = underlying & set.underlying)  }
 

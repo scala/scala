@@ -1041,7 +1041,7 @@ abstract class GenICode extends SubComponent  {
           case _ =>
             assert(from != UNIT, "Can't convert from UNIT to " + to +
                  tree + " at: " + (tree.pos));
-            assert(!from.isReferenceType && !to.isReferenceType, "type error: can't convert from " + from + " to " + to)
+            assert(!from.isReferenceType && !to.isReferenceType, "type error: can't convert from " + from + " to " + to +" in unit "+this.unit)
             ctx.bb.emit(CALL_PRIMITIVE(Conversion(from, to)), tree.pos);
         }
       } else if (from == SCALA_ALL) {
