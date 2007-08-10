@@ -770,13 +770,13 @@ object Rep {
     def _2 = row
   }
 
-  var vss: List[SymSet] = _
+  var vss: List[SymList] = _
   var labels:  Array[Symbol] = new Array[Symbol](4)
   var targets: List[Tree] = _
   var reached64: Set64 = _
   var reached: List[Int] = Nil
 
-  final def apply(temp:List[Symbol], row:List[Row], targets: List[Tree], vss:List[SymSet]): Rep = {
+  final def apply(temp:List[Symbol], row:List[Row], targets: List[Tree], vss:List[SymList]): Rep = {
     this.targets   = targets
     if(targets.length > labels.length)
       this.labels    = new Array[Symbol](targets.length)
@@ -1149,7 +1149,7 @@ object Rep {
       root.setFlag(symtab.Flags.CAPTURED)
     var bx = 0;
     val targets = new ListBuffer[Tree]
-    val vss = new ListBuffer[SymSet]
+    val vss = new ListBuffer[SymList]
     val row = new ListBuffer[Row]
 
     var cs = cases; while (cs ne Nil) cs.head match {  // stash away pvars and bodies for later

@@ -41,21 +41,24 @@ trait PatternNodes { self: transform.ExplicitOuter =>
   case class FinalState(label:Symbol,body:Tree)
   // misc methods END ---
 
-  final def definedVars(args:List[Tree]): SymSet = {
-    var vs = emptySymbolSet
-    var xs = args; while(xs ne Nil) {vs = vs ++ definedVars(xs.head); xs = xs.tail };
-    vs
-  }
 
-  final def definedVars(x:Tree): SymSet = x match {
-    case Alternative(bs) => definedVars(bs)
-    case Apply(_, args)  => definedVars(args)
-    case b @ Bind(_,p)   => definedVars(p) + b.symbol
-    case Ident(_)        => emptySymbolSet
-    case Literal(_)      => emptySymbolSet
-    case Select(_,_)     => emptySymbolSet
-    case Typed(p,_)      => definedVars(p)
-    case UnApply(_,args) => definedVars(args)
+  final def definedVars(x:Tree): SymList = {
+    var vs = new collection.mutable.ListBuffer[Symbol]
+    def definedVars1(x:Tree): Unit = x match {
+      case Alternative(bs) => definedVars2(bs)
+      case Apply(_, args)  => definedVars2(args)
+      case b @ Bind(_,p)   => vs += b.symbol; definedVars1(p)
+      case Ident(_)        => ;
+      case Literal(_)      => ;
+      case Select(_,_)     => ;
+      case Typed(p,_)      => definedVars1(p)
+      case UnApply(_,args) => definedVars2(args)
+    }
+    def definedVars2(args:List[Tree]): Unit = {
+      var xs = args; while(xs ne Nil) { definedVars1(xs.head); xs = xs.tail };
+    }
+    definedVars1(x);
+    vs.toList
   }
 
   // insert in sorted list, larger items first
@@ -90,7 +93,8 @@ trait PatternNodes { self: transform.ExplicitOuter =>
     override def toString = "."
   }
   //
-  type SymSet = collection.immutable.Set[Symbol]
+  type SymSet  = collection.immutable.Set[Symbol]
+  type SymList = List[Symbol]
 
   /** returns the child patterns of a pattern
    */
