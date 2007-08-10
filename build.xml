@@ -70,7 +70,8 @@ PROPERTIES
   <property name="fsc.exec.name" value="fsc"/>
   <property name="comp.prop.name" value="compiler.properties"/>
   <property name="lib.prop.name" value="library.properties"/>
-
+  <!-- if available, faster stability checking -->
+  <property name="stability.tool" value="/home/linuxsoft/apps/stability/stability"/>
 <!-- ===========================================================================
 ANT INITIALISATION
 ============================================================================ -->
@@ -1173,7 +1174,7 @@ GENERATES A DISTRIBUTION
   </target>
 
   <target name="dist"
-    depends="build.clean, test, build.dist"
+    depends="clean.build, test, build.dist"
     description="Creates a (stability-)tested, complete Scala distribution *from scratch*"/>
 
   <target name="pack"
