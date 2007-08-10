@@ -849,8 +849,8 @@ MSIL
 TEST
 ============================================================================ -->
 
-  <target name="test" depends="clean.build, test.stability, test.strap"
-    description="Tests the build for stability (rebuilds everything)"/>
+  <target name="test" depends="test.stability, test.strap"
+    description="Tests the build for stability"/>
 
   <!-- Build the bootstrap layer -->
   <target name="build.strap" depends="setup.quick">
@@ -1008,6 +1008,13 @@ TEST
 
   <!-- Compares quick and test level -->
   <target name="test.stability" depends="build.strap">
+    <if><available file="${stability.tool}"/>
+    <then>                      <!-- use stability tool for fast checking -->
+      <exec executable="${stability.tool}" failonerror="true">
+        <arg value="${quick.dir}"/>
+        <arg value="${strap.dir}"/>
+      </exec>
+    </then><else>               <!-- check stability the slow way -->
     <checksum totalproperty="quick.md5">
       <fileset dir="${quick.dir}/lib">
         <include name="library/**"/>
@@ -1032,6 +1039,7 @@ TEST
       </not></condition>
     </fail>
     <echo level="info" message="Build ${version.number} is stable."/>
+    </else></if>
   </target>
 
   <target name="test.strap" depends="build.strap">
@@ -1165,15 +1173,14 @@ GENERATES A DISTRIBUTION
   </target>
 
   <target name="dist"
-    depends="build.dist"
-    description="Creates a complete Scala distribution"/>
+    depends="build.clean, test, build.dist"
+    description="Creates a (stability-)tested, complete Scala distribution *from scratch*"/>
 
   <target name="pack"
     depends="build.archive, build.sbaz"
     description="Packs a distribution for SBaz and ZIP/TAR"/>
 
   <target name="binaries"
-    depends="test"
     description="Creates a binary Scala distribution">
     <property name="dist.current.dir"
               value="${dist.dir}/scala-${version.number}"/>
