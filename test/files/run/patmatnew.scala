@@ -31,7 +31,8 @@ object Test extends TestConsoleMain {
       new TestStream,
       new Test903,
       new Test1093,
-      new Test1163_Order
+      new Test1163_Order,
+      new TestUnbox
     )
 
   class Foo(j:Int) {
@@ -131,6 +132,17 @@ object Test extends TestConsoleMain {
     }
 
     def runTest() =  assertEquals("both", (Var("x"),Var("y")), f)
+  }
+
+  class TestUnbox extends TestCase("unbox") {
+    override def runTest() {
+      val xyz: (int, String, boolean) = (1, "abc", true)
+      xyz._1 match {
+        case 1 => "OK"
+        case 2 => assert(false); "KO"
+        case 3 => assert(false); "KO"
+      }
+    }
   }
 
   class Test806_818 { // #806, #811 compile only -- type of bind

@@ -32,6 +32,12 @@ trait ParallelMatching  {
       case _ => false
     }
 
+  def isEqualsPattern(tpe: Type) =
+    tpe match {
+      case TypeRef(_, sym, _) => sym eq definitions.EqualsPatternClass
+      case _                  => false
+    }
+
   // ----------------------------------   data
 
   sealed trait RuleApplication {
@@ -111,6 +117,11 @@ trait ParallelMatching  {
       Console.println(")///")
     }
     */
+    if(isEqualsPattern(column.head.tpe)) {
+      if(settings_debug) { Console.println("\n%%% MixEquals") }
+      return new MixEquals(scrutinee, column, rest)
+    }
+
     if(isSimpleIntSwitch) {
       if(settings_debug) { Console.println("\n%%% MixLiterals") }
       return new MixLiterals(scrutinee, column, rest)
@@ -405,6 +416,28 @@ trait ParallelMatching  {
     }
   }
 
+  class MixEquals(val scrutinee:Symbol, val column:List[Tree], val rest:Rep) extends RuleApplication {
+    final def getTransition(implicit theOwner: Symbol): (Tree, Rep, Rep) = {
+      val nmatrix = rest
+      val vlue = column.head.tpe match {
+        case TypeRef(_,_,List(SingleType(pre,sym))) =>
+          gen.mkAttributedRef(pre,sym)
+      }
+      var fcol  = column.tail
+      var frow  = rest.row.tail
+      val nfailrow = new ListBuffer[Row]
+      while(fcol ne Nil) {
+        val p = fcol.head
+        frow.head match {
+          case Row(pats,binds,g,bx) => nfailrow += Row(p::pats,binds,g,bx)
+        }
+        fcol = fcol.tail
+        frow = frow.tail
+      }
+      val nfail  = Rep(scrutinee::rest.temp, nfailrow.toList)
+      return (typed{ Equals(Ident(scrutinee) setType scrutinee.tpe, vlue) }, rest, nfail)
+    }
+  }
   /**
    *   mixture rule for type tests
   **/
@@ -711,6 +744,29 @@ trait ParallelMatching  {
           Match(selector, cases :::  defCase :: Nil)
         }
 
+      case me:MixEquals =>
+        val (cond,srep,frep) = me.getTransition
+        val cond2 = try{
+          typed { handleOuter(cond) }
+        } catch {
+          case e =>
+            Console.println("failed to type-check cond2")
+            Console.println("cond: "+cond)
+            Console.println("cond2: "+handleOuter(cond))
+            throw e
+        }
+
+        val succ = repToTree(srep, handleOuter)
+        val fail = repToTree(frep, handleOuter)
+        try {
+          typed{ If(cond2, succ, fail) }
+        } catch {
+          case e =>
+            Console.println("failed to type-check If")
+            Console.println("cond2: "+cond2)
+            throw e
+        }
+
       case mm:MixTypes =>
         val (casted,srep,frep) = mm.getTransition
         //Console.println("--- mixture \n succ \n"+srep.toString+"\n fail\n"+frep.toString)
@@ -840,12 +896,17 @@ object Rep {
         }
       }
       val body  = targets(bx)
-      val label = theOwner.newLabel(body.pos, "body%"+bx).setInfo(new MethodType(argts.toList, body.tpe/*resultType*/))
+      val label = theOwner.newLabel(body.pos, "body%"+bx).setInfo(new MethodType(argts.toList, resultType/*body.tpe*/))
       //Console.println("label.tpe"+label.tpe)
+
       labels(bx) = label
+
+      if(body.isInstanceOf[Throw]) {
+        return squeezedBlock(vdefs.reverse, body.duplicate setType resultType)
+      }
       //Console.println("- !isReached returning LabelDef "+label)
       //Console.println("- !      and vdefs "+vdefs)
-      return Block(vdefs, LabelDef(label, vrev.reverse, body))
+      return Block(vdefs, LabelDef(label, vrev.reverse, body setType resultType))
     }
 
     //Console.println("-  isReached before, jump to "+labels(bx))
@@ -871,6 +932,19 @@ object Rep {
           }
         }
     }
+    if(targets(bx).isInstanceOf[Throw]) {
+      val vdefs = new ListBuffer[Tree]
+      val it = vss(bx).elements; while(it.hasNext) {
+        val v = it.next
+        val substv = subst(v)
+        if(substv ne null) {// might be bound elsewhere ( see `x @ unapply' )
+          vdefs  += typedValDef(v, substv)
+        }
+      }
+      return squeezedBlock(vdefs.toList, targets(bx).duplicate setType resultType)
+    }
+
+
     return Apply(Ident(label),args.toList)
   }
 
@@ -960,22 +1034,31 @@ object Rep {
 
             /** something too tricky is going on if the outer types don't match
              */
-            case o @ Apply(app, List()) if !isCaseClass(o.tpe) =>
-              System.out.println("this should not happen (experimental code)")
-              throw new RuntimeException("non-case apply encountered in parallelmatching")
-              //Console.println(o)
-              //val stpe = singleType(NoPrefix, o.symbol)
-              val stpe =
-                if (o.tpe.termSymbol.isModule) singleType(o.tpe.prefix, o.symbol)
-                else {
-                  singleType(NoPrefix, o.symbol) // equals-check
-                }
-              val p = Ident(nme.WILDCARD) setType stpe
-              val q = Typed(p, TypeTree(stpe)) setType stpe
+            case o @ Apply(fn, List()) if !isCaseClass(o.tpe) =>
+              val stpe = fn match {
+                case Select(path,sym) =>
+                  if (o.tpe.termSymbol.isModule) singleType(o.tpe.prefix, o.symbol)
+                  else path.tpe match {
+                    case ThisType(sym) =>
+                      singleType(path.tpe, o.symbol)
+                    case _ =>
+                      singleType(singleType(path.tpe.prefix, path.symbol), o.symbol)
+                  }
+                case Ident(_) => // lazy val
+                  singleType(NoPrefix, o.symbol)
+              }
+              //Console.println("encoding in singleType:"+stpe)
+
+              val ttst = typeRef(definitions.ScalaPackageClass.tpe, definitions.EqualsPatternClass, List(stpe))
+
+              //Console.println("here's the result: "+ttst)
+
+              val p = Ident(nme.WILDCARD) setType ttst
+              val q = Typed(p, TypeTree(stpe)) setType ttst
               pats = q::pats
 
-            case o @ Apply(app, Nil) => //  no args case class pattern
-              assert(isCaseClass(o.tpe))
+            case o @ Apply(fn, Nil) => //  no args case class pattern
+              assert(isCaseClass(o.tpe), o.toString)
               val q = Typed(EmptyTree, TypeTree(o.tpe)) setType o.tpe
               pats = q :: pats
 

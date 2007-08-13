@@ -176,6 +176,7 @@ trait StdNames {
     val ROOTPKG = newTermName("_root_")
     val REPEATED_PARAM_CLASS_NAME = newTermName("<repeated>")
     val BYNAME_PARAM_CLASS_NAME = newTermName("<byname>")
+    val EQUALS_PATTERN_NAME = newTermName("<equals>")
     val SELF = newTermName("$this")
 
     val CONSTRUCTOR = newTermName("<init>")

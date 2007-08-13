@@ -249,9 +249,16 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
       //Console.println("isImplemented? "+x)
       x match {
         case app @ Apply(fn,xs) =>
-          if(!isCaseClass(app.tpe) /*|| (fn.symbol ne null)*/)
-            CantHandleApply
-          else {
+          if(!isCaseClass(app.tpe)) { /*|| (fn.symbol ne null)*/
+             //Console.println(app)
+             //Console.println(app.tpe)
+             //Console.println(app.symbol)
+             //Console.println(fn.symbol)
+             if(!xs.isEmpty) {
+               return CantHandleApply // System.exit(-1); // this should never happen
+             }
+             null
+          } else {
             /*if(!app.tpe.symbol.hasFlag(symtab.Flags.CASE)) {
               Console.print("what is this?"+x)
               if(fn.symbol eq null) {
