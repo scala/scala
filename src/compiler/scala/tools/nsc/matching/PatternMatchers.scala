@@ -204,19 +204,19 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
         nParallel += 1
         return null
       } catch {
-        case e =>
+        //case e =>
           /*
           Console.println("!!!unit: "+cunit)
           Console.println("!!!selector.pos: "+selector.pos)
           cunit.warning(selector.pos, "going gaga here")
           Console.println("!!!problem: "+e.getMessage)
           */
-          Rep.cleanup()
-		 return e // fallback
+          //Rep.cleanup()
+	//	 return e // fallback
 
-        // non-fallback:
-        //case e: CantHandle => return e
-        //case e => throw e
+         //non-fallback:
+        case e: CantHandle => Rep.cleanup(); return e
+        case e => throw e
       }
     }
 

@@ -25,7 +25,10 @@ trait ParallelMatching  {
   def isCaseClass(tpe: Type) =
     tpe match {
       case TypeRef(_, sym, _) =>
-        sym.hasFlag(symtab.Flags.CASE)
+        if(!sym.isAliasType)
+          sym.hasFlag(symtab.Flags.CASE)
+        else
+          tpe.normalize.typeSymbol.hasFlag(symtab.Flags.CASE)
       case _ => false
     }
 
@@ -442,6 +445,7 @@ trait ParallelMatching  {
         case _: UnApply                                                         =>
           dummies
         case pat                                                                =>
+          //Console.println("[class="+pat.getClass()+"]")
           dummies
       }
       //Console.println(x)
