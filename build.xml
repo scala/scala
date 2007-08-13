@@ -1182,7 +1182,7 @@ GENERATES A DISTRIBUTION
     description="Packs a distribution for SBaz and ZIP/TAR"/>
 
   <target name="binaries"
-    depends="setup"
+    depends="setup, build.strap"
     description="Creates a binary Scala distribution">
     <property name="dist.current.dir"
               value="${dist.dir}/scala-${version.number}"/>
