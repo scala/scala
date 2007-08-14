@@ -17,6 +17,16 @@ trait PatternNodes { self: transform.ExplicitOuter =>
 
   // --- misc methods
 
+  /** returns if pattern can be considered a no-op test ??for expected type?? */
+  final def isDefaultPattern(pattern:Tree): Boolean = pattern match {
+    case Bind(_, p)            => isDefaultPattern(p)
+    case EmptyTree             => true // dummy
+    case Ident(nme.WILDCARD)   => true
+    case _                     => false
+// -- what about the following? still have to test "ne null" :/
+//  case Typed(nme.WILDCARD,_) => pattern.tpe <:< scrutinee.tpe
+  }
+
   final def DBG(x:String) { if(settings_debug) Console.println(x) }
 
   /** returns all variables that are binding the given pattern
@@ -98,10 +108,6 @@ trait PatternNodes { self: transform.ExplicitOuter =>
    *  next: next binding
    */
   case class Binding(pvar:Symbol, temp:Symbol, next: Binding) {
-    final def :::(bs:List[(Symbol,Symbol)]): Binding = bs match {
-      case (v,tmp)::bs => Binding(v, tmp, bs ::: this);
-      case Nil         => this
-    }
     def add(vs:Iterator[Symbol], temp:Symbol): Binding = {
       var b = this; while(vs.hasNext){
         b = Binding(vs.next, temp, b)

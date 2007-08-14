@@ -166,7 +166,7 @@ trait ParallelMatching  {
     protected def grabRow(index:Int): Row = rest.row(index) match {
       case r @ Row(pats, s, g, bx) => if(defaultV.isEmpty) r else {
         val vs = strip1(column(index))  // get vars
-        val nbindings = vs.toList.map { v => (v,scrutinee) } ::: s
+        val nbindings = s.add(vs.elements,scrutinee)
         Row(pats, nbindings, g, bx)
       }
     }
@@ -226,7 +226,7 @@ trait ParallelMatching  {
     override def grabTemps = scrutinee::rest.temp
     override def grabRow(index:Int) = rest.row(tagIndexPairs.index) match {
       case Row(pats, s, g, bx) =>
-        val nbindings = (strip1(column(index)).toList.map { v => (v,scrutinee) }) ::: s
+        val nbindings = s.add(strip1(column(index)).elements, scrutinee)
         Row(column(tagIndexPairs.index)::pats, nbindings, g, bx)
     }
 
@@ -578,7 +578,7 @@ trait ParallelMatching  {
         val pat = pats.head
 
         //Console.println("pat = "+pat+" (class "+pat.getClass+")of type "+pat.tpe)
-        //Console.println("current pat is wild? = "+isDefault(pat))
+        //Console.println("current pat is wild? = "+isDefaultPattern(pat))
         //Console.println("current pat.symbol = "+pat.symbol+", pat.tpe "+pat.tpe)
         //Console.println("patternType = "+patternType)
         //Console.println("(current)pat.tpe <:< patternType = "+(pat.tpe <:< patternType))
@@ -659,11 +659,11 @@ trait ParallelMatching  {
           case (j,pats) =>
             val (vs,thePat) = strip(column(j))
             val Row(opats, osubst, og, bx) = rest.row(j)
-            val subst1 = vs.toList map { v => (v,casted) }
-            Row(pats ::: opats, subst1 ::: osubst, og, bx)
+            val nsubst = osubst.add(vs.elements, casted)
+            Row(pats ::: opats, nsubst, og, bx)
         }
-        DBG("ntemps   = "+ntemps.mkString("[["," , ","]]"))
-        DBG("ntriples = "+ntriples.mkString("[[\n","\n, ","\n]]"))
+        //DBG("ntemps   = "+ntemps.mkString("[["," , ","]]"))
+        //DBG("ntriples = "+ntriples.mkString("[[\n","\n, ","\n]]"))
         Rep(ntemps, ntriples) /*setParent this*/
       }
       // fails      => transition to translate(remaining)
@@ -1173,17 +1173,6 @@ object Rep {
     //res
   }
 
-  // ----------------------------------   helper functions that extract information from patterns, symbols, types
-
-  /** returns if pattern can be considered a no-op test ??for expected type?? */
-  final def isDefaultPattern(pattern:Tree): Boolean = pattern match {
-    case Bind(_, p)            => isDefaultPattern(p)
-    case EmptyTree             => true // dummy
-    case Ident(nme.WILDCARD)   => true
-    case _                     => false
-// -- what about the following? still have to test "ne null" :/
-//  case Typed(nme.WILDCARD,_) => pattern.tpe <:< scrutinee.tpe
-  }
 
   // ----------------------------------   helper functions that generate symbols, trees for type tests, pattern tests
 
