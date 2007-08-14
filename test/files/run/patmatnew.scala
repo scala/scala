@@ -289,5 +289,49 @@ object Test extends TestConsoleMain {
     case FooBar => true
   }
 
+  object Bug1270  { // unapply13
+
+    class Sync {
+      def apply(x: Int): Int = 42
+      def unapply(scrut: Any): Option[Int] = None
+    }
+
+    class Buffer {
+      object Get extends Sync
+
+      var ps: PartialFunction[Any, Any] = {
+        case Get(y) if y > 4 => // y gets a wildcard type for some reason?! hack
+      }
+    }
+
+    println((new Buffer).ps.isDefinedAt(42))
+  }
+
+  object Bug1261 {
+    sealed trait Elem
+    case class Foo extends Elem
+    case class Bar extends Elem
+    trait Row extends Elem
+    object Row {
+      def unapply(r: Row) = true
+
+      def f(elem: Elem) {
+        elem match {
+          case Bar() => ;
+          case Row() => ;
+          case Foo() => ; // used to give ERROR (unreachable code)
+        }}}
+  }
+
+  object Feature1196 {
+    def f(l: List[Int]) { }
+
+    val l: Seq[Int] = List(1, 2, 3)
+
+    l match {
+      case x @ List(1, _) => f(x) // x needs to get better type List[int] here
+    }
+  }
+
 }
 
