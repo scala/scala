@@ -38,7 +38,7 @@ package scala.actors.remote
  *  }
  *  </pre>
  *
- * @version 0.9.8
+ * @version 0.9.9
  * @author Philipp Haller
  */
 object RemoteActor {
@@ -50,8 +50,7 @@ object RemoteActor {
    * <code>port</code>.
    */
   def alive(port: int): Unit = synchronized {
-    val serv = new TcpService(port)
-    serv.start()
+    val serv = TcpService(port)
     kernels += Actor.self -> serv.kernel
   }
 
