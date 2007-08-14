@@ -22,65 +22,27 @@ trait ParallelMatching  {
   import typer.typed
   import symtab.Flags
 
-  def isCaseClass(tpe: Type) =
-    tpe match {
-      case TypeRef(_, sym, _) =>
-        if(!sym.isAliasType)
-          sym.hasFlag(symtab.Flags.CASE)
-        else
-          tpe.normalize.typeSymbol.hasFlag(symtab.Flags.CASE)
-      case _ => false
-    }
-
-  def isEqualsPattern(tpe: Type) =
-    tpe match {
-      case TypeRef(_, sym, _) => sym eq definitions.EqualsPatternClass
-      case _                  => false
-    }
-
-  // ----------------------------------   data
-
-  sealed trait RuleApplication {
-    def scrutinee:Symbol
-  }
-  case class ErrorRule extends RuleApplication {
-    def scrutinee:Symbol = throw new RuntimeException("this never happens")
-  }
-  case class VariableRule(subst:Binding, guard: Tree, guardedRest:Rep, bx: Int) extends RuleApplication {
-    def scrutinee:Symbol = throw new RuntimeException("this never happens")
-  }
-
   /** here, we distinguish which rewrite rule to apply
    */
   def MixtureRule(scrutinee:Symbol, column:List[Tree], rest:Rep): RuleApplication = {
     def isSimpleIntSwitch: Boolean = {
       (isSameType(scrutinee.tpe.widen, definitions.IntClass.tpe)/*||
        isSameType(scrutinee.tpe.widen, definitions.CharClass.tpe)*/) && {
-        var xs = column
-        while(!xs.isEmpty) { // forall
+        var xs = column; while(!xs.isEmpty) { // forall
           val h = xs.head
           if(h.isInstanceOf[Literal] || isDefaultPattern(h)) { xs = xs.tail } else return false
         }
-        return true
-      }}
+         return true
+       }}
     // an unapply for which we don't need a type test
     def isUnapplyHead: Boolean = {
       def isUnapply(x:Tree): Boolean = x match {
         case Bind(_,p) => isUnapply(p)
         case UnApply(Apply(fn,_),arg) => fn.tpe match {
-          case MethodType(List(argtpe,_*),_) =>
-            //Console.println("scrutinee.tpe "+scrutinee.tpe)
-            //Console.println("argtpe "+argtpe)
-            val r = scrutinee.tpe <:< argtpe
-            //Console.println("<: ???"+r)
-          r
-          case _                          =>
-            //Console.println("wrong tpe")
-            false
+          case MethodType(List(argtpe,_*),_) =>     scrutinee.tpe <:< argtpe
+          case _ => /* Console.println("wrong tpe, needs type test"); */ false
         }
-        case x =>
-          //Console.println("is something else"+x+" "+x.getClass)
-          false
+        case x => /*Console.println("is something else"+x+" "+x.getClass) */ false
       }
       isUnapply(column.head)
     }
@@ -109,43 +71,63 @@ trait ParallelMatching  {
           false
       }
     }
-    //def containsUnapply = column exists { _.isInstanceOf[UnApply] }
     /*
-    if(settings_debug) {
-      Console.println("/// MixtureRule("+scrutinee.name+":"+scrutinee.tpe+","+column+", rep = ")
-      Console.println(rest)
-      Console.println(")///")
-    }
-    */
-    if(isEqualsPattern(column.head.tpe)) {
-      if(settings_debug) { Console.println("\n%%% MixEquals") }
+     DBG("/// MixtureRule("+scrutinee.name+":"+scrutinee.tpe+","+column+", rep = ")
+     DBG(rest)
+     DBG(")///")
+     */
+    if(isEqualsPattern(column.head.tpe)) { DBG("\n%%% MixEquals");
       return new MixEquals(scrutinee, column, rest)
     }
-
-    if(isSimpleIntSwitch) {
-      if(settings_debug) { Console.println("\n%%% MixLiterals") }
+    if(column.head.isInstanceOf[ArrayValue]) { DBG("\n%%% MixArrayValue");
+      Console.println("STOP"); System.exit(-1); // EXPERIMENTAL
+      //return new MixArrayValue(scrutinee, column, rest)
+    }
+    if(isSimpleIntSwitch) { DBG("\n%%% MixLiterals")
       return new MixLiterals(scrutinee, column, rest)
     }
      if(settings_casetags && (column.length > 1) && isFlatCases(column)) {
-       if(settings_debug) {
-         Console.println("flat cases!"+column)
-         Console.println(scrutinee.tpe.typeSymbol.children)
-         Console.println(scrutinee.tpe.member(nme.tag))
-         //Console.println(column.map { x => x.tpe./*?type?*/symbol.tag })
-       }
-      if(settings_debug) { Console.println("\n%%% MixCases") }
+       DBG("flat cases!"+column+"\n"+scrutinee.tpe.typeSymbol.children+"\n"+scrutinee.tpe.member(nme.tag))
+       DBG("\n%%% MixCases")
        return new MixCases(scrutinee, column, rest)
        // if(scrutinee.tpe./*?type?*/symbol.hasFlag(symtab.Flags.SEALED)) new MixCasesSealed(scrutinee, column, rest)
        // else new MixCases(scrutinee, column, rest)
     }
-    //Console.println("isUnapplyHead")
-    if(isUnapplyHead) {
-      if(settings_debug) { Console.println("\n%%% MixUnapply") }
+    if(isUnapplyHead) { DBG("\n%%% MixUnapply")
       return new MixUnapply(scrutinee, column, rest)
     }
 
-    if(settings_debug) { Console.println("\n%%% MixTypes") }
+    DBG("\n%%% MixTypes")
     return new MixTypes(scrutinee, column, rest) // todo: handle type tests in unapply
+  } /* def MixtureRule(scrutinee:Symbol, column:List[Tree], rest:Rep): RuleApplication */
+
+  // ----------------------------------   data
+
+  sealed trait RuleApplication {
+    def scrutinee:Symbol
+    /** translate outcome of the rule application into code (possible involving recursive application of rewriting) */
+    def tree(implicit handleOuter: Tree=>Tree, theOwner: Symbol, failTree: Tree): Tree
+  }
+
+  case class ErrorRule extends RuleApplication {
+    def scrutinee:Symbol = throw new RuntimeException("this never happens")
+    final def tree(implicit handleOuter: Tree=>Tree, theOwner: Symbol, failTree: Tree) = failTree
+  }
+
+  case class VariableRule(subst:Binding, guard: Tree, guardedRest:Rep, bx: Int) extends RuleApplication {
+    def scrutinee:Symbol = throw new RuntimeException("this never happens")
+    final def tree(implicit handleOuter: Tree=>Tree, theOwner: Symbol, failTree: Tree): Tree = {
+      val body = typed { Rep.requestBody(bx, subst) }
+      if(guard eq EmptyTree)
+        return body
+
+      val vdefs = targetParams(subst)
+      val typedElse = repToTree(guardedRest, handleOuter)
+      val untypedIf = makeIf(guard, body, typedElse)
+      val r = atPhase(phase.prev) { typed { squeezedBlock(vdefs, untypedIf) }}
+      //Console.println("genBody-guard:"+r)
+      r
+    } /* def tree(implicit handleOuter: Tree=>Tree, theOwner: Symbol, failTree: Tree) */
   }
 
 
@@ -208,13 +190,9 @@ trait ParallelMatching  {
       trs
     }
 
-    protected def defaultsToRep = {
-      Rep(rest.temp, getDefaultRows)
-    }
+    protected def defaultsToRep = Rep(rest.temp, getDefaultRows)
 
-    protected def insertTagIndexPair(tag: Int, index: Int) {
-      tagIndexPairs = TagIndexPair.insert(tagIndexPairs, tag, index)
-    }
+    protected def insertTagIndexPair(tag: Int, index: Int) { tagIndexPairs = TagIndexPair.insert(tagIndexPairs, tag, index) }
 
     /** returns
      *  @return list of continuations,
@@ -223,7 +201,7 @@ trait ParallelMatching  {
      **/
     def getTransition(implicit theOwner: Symbol): (List[(Int,Rep)],Set[Symbol],Option[Rep]) =
       (tagIndicesToReps, defaultV, {if(haveDefault) Some(defaultsToRep) else None})
-  }
+  } /* CaseRuleApplication */
 
   /**
    *  mixture rule for flat case class (using tags)
@@ -234,9 +212,7 @@ trait ParallelMatching  {
 
     /** insert row indices using in to list of tagindexpairs */
     {
-      var xs = column
-      var i  = 0
-      while(xs ne Nil) { // forall
+      var xs = column; var i  = 0; while(xs ne Nil) { // forall
         val p = strip2(xs.head)
         if(isDefaultPattern(p))
           insertDefault(i,strip1(xs.head))
@@ -254,7 +230,46 @@ trait ParallelMatching  {
         Row(column(tagIndexPairs.index)::pats, nbindings, g, bx)
     }
 
-  }
+    final def tree(implicit handleOuter: Tree=>Tree, theOwner: Symbol, failTree: Tree) = {
+      val (branches, defaultV, default) = getTransition // tag body pairs
+      DBG("[[mix cases transition: branches \n"+(branches.mkString("","\n","")+"\ndefaults:"+defaultV+" "+default+"]]"))
+
+      var ndefault = if(default.isEmpty) failTree else repToTree(default.get, handleOuter)
+      var cases = branches map {
+        case (tag, rep) =>
+          CaseDef(Literal(tag),
+                  EmptyTree,
+                  {
+                    val pat  = this.column(this.tagIndexPairs.find(tag));
+                    val ptpe = pat.tpe
+                    if(this.scrutinee.tpe.typeSymbol.hasFlag(symtab.Flags.SEALED) && strip2(pat).isInstanceOf[Apply]) {
+                      //cast
+                      val vtmp = newVar(pat.pos, ptpe)
+                      squeezedBlock(
+                        List(typedValDef(vtmp, gen.mkAsInstanceOf(Ident(this.scrutinee),ptpe))),
+                        repToTree(Rep(vtmp::rep.temp.tail, rep.row),handleOuter)
+                      )
+                    } else repToTree(rep, handleOuter)
+                  }
+                )}
+
+      renamingBind(defaultV, this.scrutinee, ndefault) // each v in defaultV gets bound to scrutinee
+
+      // make first case a default case.
+      if(this.scrutinee.tpe.typeSymbol.hasFlag(symtab.Flags.SEALED) && defaultV.isEmpty) {
+        ndefault = cases.head.body
+        cases = cases.tail
+      }
+
+      cases.length match {
+        case 0 => ndefault
+        case 1 => val CaseDef(lit,_,body) = cases.head
+                  makeIf(Equals(Select(Ident(this.scrutinee),nme.tag),lit), body, ndefault)
+        case _ => val defCase = CaseDef(mk_(definitions.IntClass.tpe), EmptyTree, ndefault)
+                  Match(Select(Ident(this.scrutinee),nme.tag), cases :::  defCase :: Nil)
+      }
+    } /* def tree(implicit handleOuter: Tree=>Tree, theOwner: Symbol, failTree: Tree) */
+  } /* MixCases */
 
   /**
    *  mixture rule for flat case class (using tags)
@@ -276,8 +291,7 @@ trait ParallelMatching  {
     private var defaultIndexSet: Set64 = if(column.length < 64) new Set64 else null
 
     override def insertDefault(tag: Int, vs: Set[Symbol]): Unit =
-      if(defaultIndexSet eq null)
-        super.insertDefault(tag,vs)
+      if(defaultIndexSet eq null) super.insertDefault(tag,vs)
       else {
         defaultIndexSet |= tag
         defaultV = defaultV ++ vs
@@ -324,7 +338,25 @@ trait ParallelMatching  {
       }
     }
 
-  }
+    final def tree(implicit handleOuter: Tree=>Tree, theOwner: Symbol, failTree: Tree) = {
+      val (branches, defaultV, defaultRepOpt) = this.getTransition // tag body pairs
+      DBG("[[mix literal transition: branches \n"+(branches.mkString("","\n",""))+"\ndefaults:"+defaultV+"\n"+defaultRepOpt+"\n]]")
+      val cases = branches map { case (tag, rep) => CaseDef(Literal(tag), EmptyTree, repToTree(rep, handleOuter)) }
+      var ndefault = if(defaultRepOpt.isEmpty) failTree else repToTree(defaultRepOpt.get, handleOuter)
+
+      renamingBind(defaultV, this.scrutinee, ndefault) // each v in defaultV gets bound to scrutinee
+      if(cases.length == 1) {
+        val CaseDef(lit,_,body) = cases.head
+        makeIf(Equals(Ident(this.scrutinee),lit), body, ndefault)
+      } else {
+        val defCase = CaseDef(mk_(definitions.IntClass.tpe), EmptyTree, ndefault)
+        var selector:Tree = Ident(this.scrutinee)
+        if(isSameType(this.scrutinee.tpe.widen, definitions.CharClass.tpe))
+          selector = gen.mkAsInstanceOf(selector, definitions.IntClass.tpe)
+        Match(selector, cases :::  defCase :: Nil)
+      }
+    } /* def tree(implicit handleOuter: Tree=>Tree, theOwner: Symbol, failTree: Tree) */
+  } /* MixLiterals */
 
   /**
    * mixture rule for unapply pattern
@@ -413,8 +445,21 @@ trait ParallelMatching  {
               }}
               (uacall, rootvdefs:::vdefs.reverse, Rep(ntemps, nrows), nrepFail)
           }}
-    }
-  }
+    } /* def getTransition(...) */
+
+    final def tree(implicit handleOuter: Tree=>Tree, theOwner: Symbol, failTree: Tree) = {
+      val (uacall/*:ValDef*/ , vdefs,srep,frep) = this.getTransition // uacall is a Valdef
+      //Console.println("getTransition"+(uacall,vdefs,srep,frep))
+      val succ = repToTree(srep, handleOuter)
+      val fail = if(frep.isEmpty) failTree else repToTree(frep.get, handleOuter)
+      val cond =
+        if(uacall.symbol.tpe.typeSymbol eq definitions.BooleanClass)
+          typed{ Ident(uacall.symbol) }
+        else
+          emptynessCheck(uacall.symbol)
+      typed { squeezedBlock(List(handleOuter(uacall)), makeIf(cond,squeezedBlock(vdefs,succ),fail)) }
+    } /* def tree(implicit handleOuter: Tree=>Tree, theOwner: Symbol, failTree: Tree) */
+  } /* MixUnapply */
 
   class MixEquals(val scrutinee:Symbol, val column:List[Tree], val rest:Rep) extends RuleApplication {
     final def getTransition(implicit theOwner: Symbol): (Tree, Rep, Rep) = {
@@ -437,7 +482,33 @@ trait ParallelMatching  {
       val nfail  = Rep(scrutinee::rest.temp, nfailrow.toList)
       return (typed{ Equals(Ident(scrutinee) setType scrutinee.tpe, vlue) }, rest, nfail)
     }
-  }
+
+    final def tree(implicit handleOuter: Tree=>Tree, theOwner: Symbol, failTree: Tree) = {
+      handleOuter(Ident("GAGA"))
+      val (cond,srep,frep) = this.getTransition
+      val cond2 = try{
+        typed { handleOuter(cond) }
+      } catch {
+        case e =>
+          Console.println("failed to type-check cond2")
+          Console.println("cond: "+cond)
+          Console.println("cond2: "+handleOuter(cond))
+        throw e
+      }
+
+      val succ = repToTree(srep, handleOuter)
+      val fail = repToTree(frep, handleOuter)
+      try {
+        typed{ If(cond2, succ, fail) }
+      } catch {
+        case e =>
+          Console.println("failed to type-check If")
+        Console.println("cond2: "+cond2)
+        throw e
+      }
+    } /* def tree(implicit handleOuter: Tree=>Tree, theOwner: Symbol, failTree: Tree) */
+  } /* MixEquals */
+
   /**
    *   mixture rule for type tests
   **/
@@ -568,8 +639,6 @@ trait ParallelMatching  {
         casted.setFlag(symtab.Flags.CAPTURED)
       // succeeding => transition to translate(subsumed) (taking into account more specific)
       val nmatrix = {
-        //Console.println("casted:"+casted)
-        //Console.println("casted.case:"+casted.tpe./*?type?*/symbol.hasFlag(symtab.Flags.CASE))
         var ntemps  = if(isCaseClass(casted.tpe)) casted.caseFieldAccessors map {
           meth =>
             val ctemp = newVar(scrutinee.pos, casted.tpe.memberType(meth).resultType)
@@ -579,238 +648,88 @@ trait ParallelMatching  {
         } else Nil // (***)
         var subtests = subsumed
 
-//var moreSpecificIndices:Option[List[Int]] = None
-
-        //Console.println("subtests BEFORE "+subtests)
         if(moreSpecific.exists { x => x != EmptyTree }) {
-          //moreSpecificIndices = Some(Nil)
           ntemps   = casted::ntemps                                                                            // (***)
           subtests = moreSpecific.zip(subsumed) map {
-            case (mspat, (j,pats)) =>
-              //moreSpecificIndices = Some(j::moreSpecificIndices)
-              (j,mspat::pats)
+            case (mspat, (j,pats)) => (j,mspat::pats)
           }
-         //Console.println("more specific, subtests "+subtests)
         }
         ntemps = ntemps ::: rest.temp
         val ntriples = subtests map {
           case (j,pats) =>
             val (vs,thePat) = strip(column(j))
             val Row(opats, osubst, og, bx) = rest.row(j)
-            val subst1 = //if(!moreSpecificIndices.isEmpty && moreSpecificIndices.contains(j)) Nil /*morespecific?*/ else
-              vs.toList map { v => (v,casted) }
-          //Console.println("j = "+j)
-          //Console.println("pats:"+pats)
-          //Console.println("opats:"+pats)
-          //debug
-          // don't substitute eagerly here, problems with bodies that can
-          //   be reached with several routes... impossible to find one-fits-all ordering.
-
+            val subst1 = vs.toList map { v => (v,casted) }
             Row(pats ::: opats, subst1 ::: osubst, og, bx)
-
-          // BTW duplicating body/guard, gets you "defined twice" error cause hashing breaks
         }
-        if(settings_debug) {
-          Console.println("ntemps   = "+ntemps.mkString("[["," , ","]]"))
-          Console.println("ntriples = "+ntriples.mkString("[[\n","\n, ","\n]]"))
-        }
+        DBG("ntemps   = "+ntemps.mkString("[["," , ","]]"))
+        DBG("ntriples = "+ntriples.mkString("[[\n","\n, ","\n]]"))
         Rep(ntemps, ntriples) /*setParent this*/
       }
       // fails      => transition to translate(remaining)
 
       val nmatrixFail: Option[Rep] = {
         val ntemps   = scrutinee :: rest.temp
-        //Console.println("nmatrixfail ntemps:"+ntemps)
         val ntriples = remaining map {
           case (j, pat) => val r = rest.row(j);  Row(pat :: r.pat, r.subst, r.guard, r.bx)
         }
-        //Console.println("nmatrixfail triples:"+ntriples)
-        if(ntriples.isEmpty) None else Some(Rep(ntemps, ntriples) /*setParent this*/)
-      }
-      if(!nmatrixFail.isEmpty) {
-        //DEBUG("nmatrix for failing type test "+patternType)
-        //DEBUG(nmatrixFail.get.toString)
-      } else {
-        //DEBUG("pattern type "+patternType+" cannot fail for "+scrutinee)
+        if(ntriples.isEmpty) None else Some(Rep(ntemps, ntriples))
       }
       (casted, nmatrix, nmatrixFail)
-    } // end getTransitions
-  }
+    } /* getTransition(implicit theOwner: Symbol): (Symbol, Rep, Option[Rep]) */
 
+    final def tree(implicit handleOuter: Tree=>Tree, theOwner: Symbol, failTree: Tree) = {
+      val (casted,srep,frep) = this.getTransition
+      val condUntyped = condition(casted.tpe, this.scrutinee)
+      var cond = handleOuter(typed { condUntyped }) // <- throws exceptions in some situations?
+      if(needsOuterTest(casted.tpe, this.scrutinee.tpe)) // @todo merge into def condition
+        cond = addOuterCondition(cond, casted.tpe, typed{Ident(this.scrutinee)}, handleOuter)
 
-  final def genBody(subst: Binding, guard:Tree, rest:Tree, bx:Int)(implicit theOwner: Symbol): Tree = {
-    //Rep.markReached(bx) // for unreachable-code-detection
+      val succ = repToTree(srep, handleOuter)
 
-    val rbody = typed { Rep.requestBody( bx, subst ) }
-    val vdefs = targetParams(subst)
+      val fail = if(frep.isEmpty) failTree else repToTree(frep.get, handleOuter)
 
-    val typedThen = rbody // origbody//typed{origbody.duplicate}
+      // dig out case field accessors that were buried in (***)
+      val cfa  = casted.caseFieldAccessors
+      val caseTemps = (if(!srep.temp.isEmpty && srep.temp.head == casted) srep.temp.tail else srep.temp).zip(cfa)
 
-    //Console.println("typedThen = "+typedThen);
-    val typedElse = rest//typed{rest}
-    //Console.println("typedElse = "+typedElse);
-    val untypedIf = makeIf(guard, typedThen, typedElse)
-      //Console.println("typedIf   = "+typedIf);
-      //val typedBlock = typed{ squeezedBlock(vdefs, typedIf) }
-      //Console.println("typedBlock= "+typedBlock);
-      //typedBlock
-    val r = atPhase(phase.prev) { typed { squeezedBlock(vdefs, untypedIf) }}
-    //Console.println("genBody-guard:"+r)
-    r
-  }
+      //DEBUG("case temps"+caseTemps.toString)
+      var vdefs     = caseTemps map {
+        case (tmp,meth) =>
+          val typedAccess = typed { Apply(Select(typed{Ident(casted)}, meth),List()) }
+        typedValDef(tmp, typedAccess)
+      }
 
-  final def genBody(subst: Binding, bx:Int)(implicit theOwner: Symbol): Tree = {
-    typed{ Rep.requestBody(bx, subst) }
-  }
+      if(casted ne this.scrutinee) {
+        vdefs = ValDef(casted, gen.mkAsInstanceOf(typed{Ident(this.scrutinee)}, casted.tpe)) :: vdefs
+      }
+      typed { makeIf(cond, squeezedBlock(vdefs,succ), fail) }
+    } /* def tree(implicit handleOuter: Tree=>Tree, theOwner: Symbol, failTree: Tree) */
+  } /* class MixTypes */
 
   /** converts given rep to a tree - performs recursive call to translation in the process to get sub reps
    */
   final def repToTree(rep:Rep, handleOuter: Tree => Tree)(implicit theOwner: Symbol, failTree: Tree): Tree = {
+    implicit val HandleOuter = handleOuter
+    rep.applyRule.tree
+    /*
     rep.applyRule match {
-      case ErrorRule() => failTree
-      case VariableRule(subst, EmptyTree, _, bx) =>
-        genBody(subst, bx)
+      case r : ErrorRule    => r.tree
 
-      case VariableRule(subst, g, restRep, bx) =>
-        genBody(subst, g, repToTree(restRep, handleOuter),bx)
+      case vr: VariableRule => vr.tree
 
-      case mc: MixCases =>
-        val (branches, defaultV, default) = mc.getTransition // tag body pairs
-        if (settings_debug) {
-          Console.println("[[mix cases transition: branches \n"+(branches.mkString("","\n","")))
-          Console.println("defaults:"+defaultV)
-          Console.println(default)
-          Console.println("]]")
-        }
+      case mc: MixCases     => mc.tree
 
-        var ndefault = if(default.isEmpty) failTree else repToTree(default.get, handleOuter)
+      case ml: MixLiterals  => ml.tree
 
-        var cases = branches map {
-          case (tag, rep) =>
-            CaseDef(Literal(tag),
-                    EmptyTree,
-                    {
-                      val pat  = mc.column(mc.tagIndexPairs.find(tag));
-                      val ptpe = pat.tpe
-                      if(mc.scrutinee.tpe.typeSymbol.hasFlag(symtab.Flags.SEALED) && strip2(pat).isInstanceOf[Apply]) {
-                        //cast
-                        val vtmp = newVar(pat.pos, ptpe)
-                        squeezedBlock(
-                          List(typedValDef(vtmp, gen.mkAsInstanceOf(Ident(mc.scrutinee),ptpe))),
-                          repToTree(Rep(vtmp::rep.temp.tail, rep.row),handleOuter)
-                        )
-                      } else repToTree(rep, handleOuter)
-                    }
-                  )}
+      case me: MixEquals    => me.tree
 
-        renamingBind(defaultV, mc.scrutinee, ndefault) // each v in defaultV gets bound to scrutinee
+      case mm: MixTypes     => mm.tree
 
-        // make first case a default case.
-        if(mc.scrutinee.tpe.typeSymbol.hasFlag(symtab.Flags.SEALED) && defaultV.isEmpty) {
-          ndefault = cases.head.body
-          cases = cases.tail
-        }
+      case mu: MixUnapply   => mu.tree
 
-        if(cases.length == 0) {
-          ndefault
-        } else if(cases.length == 1) {
-          val CaseDef(lit,_,body) = cases.head
-          makeIf(Equals(Select(Ident(mc.scrutinee),nme.tag),lit), body, ndefault) // *
-        } else {
-          val defCase = CaseDef(mk_(definitions.IntClass.tpe), EmptyTree, ndefault)
-          Match(Select(Ident(mc.scrutinee),nme.tag), cases :::  defCase :: Nil) // *
-        }
-
-      case ml: MixLiterals =>
-        val (branches, defaultV, defaultRepOpt) = ml.getTransition // tag body pairs
-        if(settings_debug) {
-          Console.println("[[mix literal transition: branches \n"+(branches.mkString("","\n","")))
-          Console.println("defaults:"+defaultV)
-          Console.println(defaultRepOpt)
-          Console.println("]]")
-        }
-        val cases = branches map { case (tag, rep) => CaseDef(Literal(tag), EmptyTree, repToTree(rep, handleOuter)) }
-        var ndefault = if(defaultRepOpt.isEmpty) failTree else repToTree(defaultRepOpt.get, handleOuter)
-
-        renamingBind(defaultV, ml.scrutinee, ndefault) // each v in defaultV gets bound to scrutinee
-        if(cases.length == 1) {
-          val CaseDef(lit,_,body) = cases.head
-          makeIf(Equals(Ident(ml.scrutinee),lit), body, ndefault)
-        } else {
-          val defCase = CaseDef(mk_(definitions.IntClass.tpe), EmptyTree, ndefault)
-          var selector:Tree = Ident(ml.scrutinee)
-          if(isSameType(ml.scrutinee.tpe.widen, definitions.CharClass.tpe))
-            selector = gen.mkAsInstanceOf(selector, definitions.IntClass.tpe)
-          Match(selector, cases :::  defCase :: Nil)
-        }
-
-      case me:MixEquals =>
-        val (cond,srep,frep) = me.getTransition
-        val cond2 = try{
-          typed { handleOuter(cond) }
-        } catch {
-          case e =>
-            Console.println("failed to type-check cond2")
-            Console.println("cond: "+cond)
-            Console.println("cond2: "+handleOuter(cond))
-            throw e
-        }
-
-        val succ = repToTree(srep, handleOuter)
-        val fail = repToTree(frep, handleOuter)
-        try {
-          typed{ If(cond2, succ, fail) }
-        } catch {
-          case e =>
-            Console.println("failed to type-check If")
-            Console.println("cond2: "+cond2)
-            throw e
-        }
-
-      case mm:MixTypes =>
-        val (casted,srep,frep) = mm.getTransition
-        //Console.println("--- mixture \n succ \n"+srep.toString+"\n fail\n"+frep.toString)
-        //val cond = typed{gen.mkIsInstanceOf(Ident(mm.scrutinee), casted.tpe)}
-        //Console.println("casted.tpe="+casted.tpe)
-        val condUntyped = condition(casted.tpe, mm.scrutinee)
-        //Console.println("condUntyped:" + condUntyped)
-        var cond = handleOuter(typed { condUntyped }) // this thing throws exceptions in some obscure situations
-        if(needsOuterTest(casted.tpe, mm.scrutinee.tpe)) // @todo merrge into def condition
-          cond = addOuterCondition(cond, casted.tpe, typed{Ident(mm.scrutinee)}, handleOuter)
-
-        val succ = repToTree(srep, handleOuter)
-
-        val fail = if(frep.isEmpty) failTree else repToTree(frep.get, handleOuter)
-
-        // dig out case field accessors that were buried in (***)
-        val cfa  = casted.caseFieldAccessors
-        //DEBUG("case field accessors, casted = "+casted.toString)
-        //DEBUG("case field accessors, the things themselves = "+cfa.toString)
-        val caseTemps = (if(!srep.temp.isEmpty && srep.temp.head == casted) srep.temp.tail else srep.temp).zip(cfa)
-
-        //DEBUG("case temps"+caseTemps.toString)
-        var vdefs     = caseTemps map {
-          case (tmp,meth) =>
-            val typedAccess = typed { Apply(Select(typed{Ident(casted)}, meth),List()) }
-            typedValDef(tmp, typedAccess)
-        }
-
-        if(casted ne mm.scrutinee) {
-          vdefs = ValDef(casted, gen.mkAsInstanceOf(typed{Ident(mm.scrutinee)}, casted.tpe)) :: vdefs
-        }
-        typed { makeIf(cond, squeezedBlock(vdefs,succ), fail) }
-
-      case mu: MixUnapply =>
-        val (uacall/*:ValDef*/ , vdefs,srep,frep) = mu.getTransition // uacall is a Valdef
-        //Console.println("getTransition"+(uacall,vdefs,srep,frep))
-        val succ = repToTree(srep, handleOuter)
-        val fail = if(frep.isEmpty) failTree else repToTree(frep.get, handleOuter)
-        val cond = if(uacall.symbol.tpe.typeSymbol eq definitions.BooleanClass)
-          typed{ Ident(uacall.symbol) }
-                   else
-                     emptynessCheck(uacall.symbol)
-        typed { squeezedBlock(List(handleOuter(uacall)), makeIf(cond,squeezedBlock(vdefs,succ),fail)) }
     }
+    */
   }
 
   /** subst: the bindings so far */
@@ -1062,6 +981,10 @@ object Rep {
               val q = Typed(EmptyTree, TypeTree(o.tpe)) setType o.tpe
               pats = q :: pats
 
+            case p @ ArrayValue(_,xs) =>
+              Console.println("hello from array val!")
+              pats = p :: pats
+
             case p =>
               pats = p :: pats
           }
@@ -1178,37 +1101,34 @@ object Rep {
       }
       //if(settings_debug) Console.println("init done, rep = "+this.toString)
       return this
-    } // end init
+    } /* def init */
 
-/*
-    final def applyRule: RuleApplication = {
-      Console.println("entering applyRule!")
-      val res = applyRule1
-      Console.println("leaving applyRule!")
-      res
-    }
-*/
     final def applyRule: RuleApplication = row match {
       case Nil =>
         ErrorRule
       case Row(pats, subst, g, bx)::xs =>
-        if(pats forall isDefaultPattern) {
-          val subst1 = pats.zip(temp) flatMap {
-            case (p,tmp) =>
-              strip1(p).toList.zipAll(Nil,null,tmp) // == vars map { (v,tmp) }
+        var px = 0; var rpats = pats; var bnd = subst; var temps = temp; while((bnd ne null) && (rpats ne Nil)) {
+          val (vs,p) = strip(rpats.head);
+          if(!isDefaultPattern(p)) { /*break*/ bnd = null; } else {
+            bnd = bnd.add(vs.elements,temps.head)
+            rpats = rpats.tail
+            temps = temps.tail
+            px += 1 // pattern index
           }
-          VariableRule (subst1 ::: subst, g, Rep(temp, xs), bx)
-        } else {
-          val i = pats findIndexOf {x => !isDefaultPattern(x)}
-
-          val column = row map { case Row(pats,_,_,_) => pats(i) }
-
-          val restTemp =                                           temp.take(i) ::: temp.drop(i+1)
-          val restRows = row map { case Row(pats, subst, g, bx) => Row(pats.take(i) ::: pats.drop(i+1), subst, g, bx) }
-
-          MixtureRule(temp(i), column, Rep(restTemp,restRows))
         }
-    } // applyRule
+        if(bnd ne null) {    // all default patterns
+          val rest = if(g eq EmptyTree) null else Rep(temp, xs)
+          return VariableRule (bnd, g, rest, bx)
+        }
+
+        // cut out column px that contains the non-default pattern
+        // assert(px == pats findIndexOf {x => !isDefaultPattern(x)})
+        val column   = rpats.head :: (row.tail map { case Row(pats,_,_,_) => pats(px) })
+        // assert(column == row map { case Row(pats,_,_,_) => pats(px) })
+        val restTemp =                                               temp.take(px) ::: temp.drop(px+1)
+        val restRows = row map { case Row(pats, subst, g, bx) => Row(pats.take(px) ::: pats.drop(px+1), subst, g, bx) }
+        return MixtureRule(temps.head, column, Rep(restTemp,restRows))
+    } /* applyRule */
 
       // a fancy toString method for debugging
     override final def toString = {
@@ -1224,8 +1144,8 @@ object Rep {
         sb.append('\n')
       }
       sb.toString
-    }
-  }
+    } /* def toString */
+  } /* class Rep */
 
   /** creates initial clause matrix
    */

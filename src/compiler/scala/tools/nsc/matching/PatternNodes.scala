@@ -17,6 +17,8 @@ trait PatternNodes { self: transform.ExplicitOuter =>
 
   // --- misc methods
 
+  final def DBG(x:String) { if(settings_debug) Console.println(x) }
+
   /** returns all variables that are binding the given pattern
    *  @param   x a pattern
    *  @return  vs variables bound, p pattern proper
@@ -35,24 +37,41 @@ trait PatternNodes { self: transform.ExplicitOuter =>
     case z               => z
   }
 
+  final def isCaseClass(tpe: Type): Boolean =
+    tpe match {
+      case TypeRef(_, sym, _) =>
+        if(!sym.isAliasType)
+          sym.hasFlag(symtab.Flags.CASE)
+        else
+          tpe.normalize.typeSymbol.hasFlag(symtab.Flags.CASE)
+      case _ => false
+    }
+
+  final def isEqualsPattern(tpe: Type): Boolean =
+    tpe match {
+      case TypeRef(_, sym, _) => sym eq definitions.EqualsPatternClass
+      case _                  => false
+    }
+
+
   //  this method obtains tag method in a defensive way
   final def getCaseTag(x:Type): Int = { x.typeSymbol.tag }
-
-  case class FinalState(label:Symbol,body:Tree)
-  // misc methods END ---
-
 
   final def definedVars(x:Tree): SymList = {
     var vs = new collection.mutable.ListBuffer[Symbol]
     def definedVars1(x:Tree): Unit = x match {
-      case Alternative(bs) => definedVars2(bs)
+      case Alternative(bs) => ; // must not have any variables
       case Apply(_, args)  => definedVars2(args)
       case b @ Bind(_,p)   => vs += b.symbol; definedVars1(p)
       case Ident(_)        => ;
       case Literal(_)      => ;
       case Select(_,_)     => ;
-      case Typed(p,_)      => definedVars1(p)
+      case Typed(p,_)      => ; // definedVars1(p) //shouldn't have, because x @ (_:T)
       case UnApply(_,args) => definedVars2(args)
+
+      // regexp specific
+      case ArrayValue(_,xs)=> definedVars2(xs)
+      case Star(p)         => ; // must not have variables
     }
     def definedVars2(args:List[Tree]): Unit = {
       var xs = args; while(xs ne Nil) { definedVars1(xs.head); xs = xs.tail };
@@ -83,6 +102,12 @@ trait PatternNodes { self: transform.ExplicitOuter =>
       case (v,tmp)::bs => Binding(v, tmp, bs ::: this);
       case Nil         => this
     }
+    def add(vs:Iterator[Symbol], temp:Symbol): Binding = {
+      var b = this; while(vs.hasNext){
+        b = Binding(vs.next, temp, b)
+      }
+      return b
+    }
     def apply(v:Symbol): Ident = {
       //Console.println(this.toString()+" apply ("+v+"), eq?"+(v eq pvar))
       if(v eq pvar) {Ident(temp).setType(v.tpe)} else next(v)
@@ -92,7 +117,9 @@ trait PatternNodes { self: transform.ExplicitOuter =>
     override def apply(v:Symbol) = null // not found, means bound elsewhere (x @ unapply-call)
     override def toString = "."
   }
-  //
+
+  // misc methods END ---
+
   type SymSet  = collection.immutable.Set[Symbol]
   type SymList = List[Symbol]
 

@@ -270,14 +270,19 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
             isImplemented(xs)
           }
         case p @ Ident(n)       => null // if(n!= nme.WILDCARD && p.symbol.) CantHandleIdent else null
-        case _:ArrayValue       => CantHandleSeq
         case UnApply(fn,xs)     => isImplemented(xs)
         case Bind(n, p)         => isImplemented(p)
         case Alternative(xs)    => isImplemented(xs)
         case p:Literal          => null
         case p:Select           => null
         case p:Typed            => null
-        //case Star(t)         =>can't happen/ excluded by Transmatcher:isregular
+
+
+        case ArrayValue(_,xs)   => CantHandleSeq
+
+        //@todo
+        //case ArrayValue(_,xs)   => isImplemented(xs) //CantHandleSeq // DEBUG
+        //case Star(t)            => isImplemented(t) //can't happen/ excluded by Transmatcher:isregular
         //case Sequence(trees) =>can't happen/ only appear below ArrayValue
       }
     }
