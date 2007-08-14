@@ -291,7 +291,7 @@ MSIL="msil"
 EXE="exe"
 # Tests the .NET backend.
 test_run_msil() {
-    assemblies=`get_os_pathlist $PREFIX/build/msil/predef.dll:$PREFIX/lib/scalaruntime.dll:$PREFIX/lib/mscorlib.dll`;
+    assemblies=`get_os_pathlist $LATEST_ASSEM`;
     rm -f "$dstbase".$MSIL &&
     rm -f "$dstbase".$EXE &&
 
@@ -607,15 +607,21 @@ if [ -d "$PREFIX/dists" ]; then
     LATEST="$PREFIX/dists/latest/bin";
     LATEST_LIB="$PREFIX/dists/latest/lib/scala-library.jar";
     LATEST_COMP="$PREFIX/dists/latest/lib/scala-compiler.jar";
+    LATEST_PREDEF="$PREFIX/dists/latest/lib/predef.dll";
+    LATEST_ASSEM="$LATEST_PREDEF;$PREFIX/lib/scalaruntime.dll:$PREFIX/lib/mscorlib.dll";
 elif [ -d "$PREFIX/build" ]; then
     LATEST="$QUICK";
     LATEST_LIB=$QUICK_LIB
     LATEST_COMP=$QUICK_COMP
     LATEST_ACT=$QUICK_ACT
+    LATEST_PREDEF="$PREFIX/build/quick/lib/predef.dll";
+    LATEST_ASSEM="$LATEST_PREDEF:$PREFIX/build/quick/lib/scalaruntime.dll:$PREFIX/build/quick/lib/mscorlib.dll";
 elif [ -d "$PREFIX/bin" ]; then
     LATEST="$PREFIX/bin";
-    LATEST_LIB="$PREFIX/lib/scala-library.jar"
-    LATEST_COMP="$PREFIX/lib/scala-compiler.jar"
+    LATEST_LIB="$PREFIX/lib/scala-library.jar";
+    LATEST_COMP="$PREFIX/lib/scala-compiler.jar";
+    LATEST_PREDEF="$PREFIX/lib/predef.dll";
+    LATEST_ASSEM="$LATEST_PREDEF:$PREFIX/lib/scalaruntime.dll:$PREFIX/lib/mscorlib.dll";
 else
     abort "Scala binaries could not be found";
 fi;
@@ -792,10 +798,10 @@ if [ $TEST_TYPE = "msil" ]; then
     printf_outline "ILasm version is    : $ilasm_version\\n";
     mono_version=`$MONO --version | head -1`;
     printf_outline "Mono version is     : $mono_version\\n";
-    if [ -f "$PREFIX/build/msil/predef.dll" ]; then
-        printf_outline "DLL library is      : $PREFIX/build/msil/predef.dll\\n";
+    if [ -f "$LATEST_PREDEF" ]; then
+        printf_outline "DLL library is      : $LATEST_PREDEF\\n";
     else
-        printf_failure "Missing library \"$PREFIX/build/msil/predef.dll\"; run 'ant msil'.\\n";
+        printf_failure "Missing library \"predef.dll\"; run 'ant msil'.\\n";
         exit 1;
     fi
 else

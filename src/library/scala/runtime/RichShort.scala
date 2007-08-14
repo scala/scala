@@ -12,12 +12,12 @@
 package scala.runtime
 
 
-final class RichShort(x: Short) extends Proxy with Ordered[Short] {
+final class RichShort(start: Short) extends Proxy with Ordered[Short] {
 
   // Proxy.self
-  def self: Any = x
+  def self: Any = start
 
   // Ordered[Short].compare
-  def compare(y: Short): Int = if (x < y) -1 else if (x > y) 1 else 0
+  def compare(that: Short): Int = if (start < that) -1 else if (start > that) 1 else 0
 
 }
