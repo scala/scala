@@ -23,7 +23,13 @@ trait CodeFactory {
   import posAssigner.atPos         // for filling in tree positions
 
 
-  final def typedValDef(x:Symbol, rhs:Tree) = typed{ValDef(x, typed(rhs,x.tpe))}
+  final def typedValDef(x:Symbol, rhs:Tree) = {
+    //Console.println("1"+x.tpe)
+    x.tpe match {
+      case WildcardType => rhs.setType(null); val rhs1 = typed(rhs); x setInfo rhs1.tpe; typed{ValDef(x, rhs)}
+      case _ => typed{ValDef(x, typed(rhs, x.tpe))}
+    }
+  }
 
   final def mk_(tpe:Type) = Ident(nme.WILDCARD) setType tpe
 
@@ -81,7 +87,7 @@ trait CodeFactory {
     var result = defaultBody
     var i = condition.length - 1
     while (i >= 0) {
-      result = If(condition(i), body(i), result)
+      result = makeIf(condition(i), body(i), result)
       i -= 1
     }
     result
@@ -107,9 +113,10 @@ trait CodeFactory {
       Not(Select(Ident(vsym), nme.isEmpty))
   }
 
-  final def makeIf(cond: Tree, thenp: Tree, elsep: Tree) = cond match {
-    case Literal(Constant(true)) => thenp
-    case Literal(Constant(false)) => elsep
+  final def makeIf(cond: Tree, thenp: Tree, elsep: Tree) = (cond,thenp,elsep) match {
+    case (Literal(Constant(true)),  _, _) => thenp
+    case (Literal(Constant(false)), _, _) => elsep
+    case (_, Literal(Constant(true)), Literal(Constant(false))) => cond
     case _ => If(cond, thenp, elsep)
   }
 

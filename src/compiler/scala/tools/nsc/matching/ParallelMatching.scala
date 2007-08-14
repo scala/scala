@@ -499,7 +499,7 @@ trait ParallelMatching  {
       val succ = repToTree(srep, handleOuter)
       val fail = repToTree(frep, handleOuter)
       try {
-        typed{ If(cond2, succ, fail) }
+        typed{ makeIf(cond2, succ, fail) }
       } catch {
         case e =>
           Console.println("failed to type-check If")
@@ -815,17 +815,19 @@ object Rep {
         }
       }
       val body  = targets(bx)
-      val label = theOwner.newLabel(body.pos, "body%"+bx).setInfo(new MethodType(argts.toList, resultType/*body.tpe*/))
+      // bug: typer is not able to digest a body of type Nothing being assigned result type Unit
+      val tpe = if(body.tpe.typeSymbol eq definitions.AllClass) body.tpe else resultType
+      val label = theOwner.newLabel(body.pos, "body%"+bx).setInfo(new MethodType(argts.toList, tpe))
       //Console.println("label.tpe"+label.tpe)
 
       labels(bx) = label
 
-      if(body.isInstanceOf[Throw]) {
-        return squeezedBlock(vdefs.reverse, body.duplicate setType resultType)
+      if(body.isInstanceOf[Throw] || body.isInstanceOf[Literal]) {
+        return squeezedBlock(vdefs.reverse, body.duplicate setType tpe)
       }
       //Console.println("- !isReached returning LabelDef "+label)
       //Console.println("- !      and vdefs "+vdefs)
-      return Block(vdefs, LabelDef(label, vrev.reverse, body setType resultType))
+      return squeezedBlock(vdefs, LabelDef(label, vrev.reverse, body setType tpe))
     }
 
     //Console.println("-  isReached before, jump to "+labels(bx))
@@ -851,7 +853,8 @@ object Rep {
           }
         }
     }
-    if(targets(bx).isInstanceOf[Throw]) {
+    val body = targets(bx)
+    if(body.isInstanceOf[Throw] || body.isInstanceOf[Literal]) {
       val vdefs = new ListBuffer[Tree]
       val it = vss(bx).elements; while(it.hasNext) {
         val v = it.next
@@ -860,7 +863,7 @@ object Rep {
           vdefs  += typedValDef(v, substv)
         }
       }
-      return squeezedBlock(vdefs.toList, targets(bx).duplicate setType resultType)
+      return squeezedBlock(vdefs.toList, body.duplicate setType resultType)
     }
 
 

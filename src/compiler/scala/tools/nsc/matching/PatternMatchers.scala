@@ -133,6 +133,11 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
           case null => // ignore
             return
 
+          case a:AssertionError =>
+            cunit.error(cases.head.pos, "assertion failed while compiling this case")
+            a.printStackTrace()
+            throw FatalError("died in parallel match algorithm" )
+
           case _:AbstractMethodError =>
             cunit.error(cases.head.pos, "please recompile matcher component (explicitouter,patternmattcher, parallelmatching,codefactory)")
             throw FatalError("died in parallel match algorithm" )
@@ -255,6 +260,7 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
              //Console.println(app.symbol)
              //Console.println(fn.symbol)
              if(!xs.isEmpty) {
+               assert(false)
                return CantHandleApply // System.exit(-1); // this should never happen
              }
              null
