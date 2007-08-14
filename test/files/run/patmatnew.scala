@@ -322,7 +322,7 @@ object Test extends TestConsoleMain {
           case Foo() => ; // used to give ERROR (unreachable code)
         }}}
   }
-
+/*
   object Feature1196 {
     def f(l: List[Int]) { }
 
@@ -332,6 +332,7 @@ object Test extends TestConsoleMain {
       case x @ List(1, _) => f(x) // x needs to get better type List[int] here
     }
   }
+*/
 
 }
 
