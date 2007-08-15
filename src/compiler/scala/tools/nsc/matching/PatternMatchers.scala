@@ -287,9 +287,9 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
         case ArrayValue(_,xs)   => CantHandleSeq
 
         //@todo
-        //case ArrayValue(_,xs)   => isImplemented(xs) //CantHandleSeq // DEBUG
+        //case av @ ArrayValue(_,xs)   => if(isRightIgnoring(av)) CantHandleSeq else null // DEBUG
         //case Star(t)            => isImplemented(t) //can't happen/ excluded by Transmatcher:isregular
-        //case Sequence(trees) =>can't happen/ only appear below ArrayValue
+        //case Sequence(trees)    =>can't happen/ only appear below ArrayValue
       }
     }
 

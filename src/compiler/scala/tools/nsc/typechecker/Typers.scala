@@ -1659,7 +1659,7 @@ trait Typers { self: Analyzer =>
               //Console.println(" sym="+sym+" "+" .isPackageClass="+sym.isPackageClass+" .isModuleClass="+sym.isModuleClass);
               //Console.println(" funsymown="+fun.symbol.owner+" .isClass+"+fun.symbol.owner.isClass);
               //Console.println(" contains?"+sym.tpe.decls.lookup(fun.symbol.name));
-              if(sym != fun.symbol.owner && sym.isPackageClass /*(1)*/ ) { // (1) see 'files/pos/unapplyVal.scala'
+              if(sym != fun.symbol.owner && (sym.isPackageClass||sym.isModuleClass) /*(1)*/ ) { // (1) see 'files/pos/unapplyVal.scala'
                 if(fun.symbol.owner.isClass) {
                   mkThisType(fun.symbol.owner)
                 } else {

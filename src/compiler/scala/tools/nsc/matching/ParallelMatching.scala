@@ -23,11 +23,13 @@ trait ParallelMatching  {
   import symtab.Flags
 
   /** here, we distinguish which rewrite rule to apply
+   *  @pre column does not contain alternatives (ensured by initRep)
    */
   def MixtureRule(scrutinee:Symbol, column:List[Tree], rest:Rep): RuleApplication = {
-    def isSimpleIntSwitch: Boolean = {
-      (isSameType(scrutinee.tpe.widen, definitions.IntClass.tpe)/*||
-       isSameType(scrutinee.tpe.widen, definitions.CharClass.tpe)*/) && {
+
+    def isSimpleSwitch: Boolean = {
+      (isSameType(scrutinee.tpe.widen, definitions.IntClass.tpe)||
+       isSameType(scrutinee.tpe.widen, definitions.CharClass.tpe)) && {
         var xs = column; while(!xs.isEmpty) { // forall
           val h = xs.head
           if(h.isInstanceOf[Literal] || isDefaultPattern(h)) { xs = xs.tail } else return false
@@ -78,14 +80,16 @@ trait ParallelMatching  {
      */
     if(isEqualsPattern(column.head.tpe)) { DBG("\n%%% MixEquals");
       return new MixEquals(scrutinee, column, rest)
-    }
+	}
+    // the next condition is never true, @see isImplemented/CantHandleSeq
     if(column.head.isInstanceOf[ArrayValue]) { DBG("\n%%% MixArrayValue");
       Console.println("STOP"); System.exit(-1); // EXPERIMENTAL
-      //return new MixArrayValue(scrutinee, column, rest)
+      //return new MixSequence(scrutinee, column, rest)
     }
-    if(isSimpleIntSwitch) { DBG("\n%%% MixLiterals")
+    if(isSimpleSwitch) { DBG("\n%%% MixLiterals")
       return new MixLiterals(scrutinee, column, rest)
     }
+
      if(settings_casetags && (column.length > 1) && isFlatCases(column)) {
        DBG("flat cases!"+column+"\n"+scrutinee.tpe.typeSymbol.children+"\n"+scrutinee.tpe.member(nme.tag))
        DBG("\n%%% MixCases")
@@ -105,6 +109,23 @@ trait ParallelMatching  {
 
   sealed trait RuleApplication {
     def scrutinee:Symbol
+
+    // used in MixEquals and MixSequence
+    final protected def repWithoutHead(col:List[Tree],rest:Rep): Rep = {
+      var fcol  = col.tail
+      var frow  = rest.row.tail
+      val nfailrow = new ListBuffer[Row]
+      while(fcol ne Nil) {
+        val p = fcol.head
+        frow.head match {
+          case Row(pats,binds,g,bx) => nfailrow += Row(p::pats,binds,g,bx)
+        }
+        fcol = fcol.tail
+        frow = frow.tail
+      }
+      Rep(scrutinee::rest.temp, nfailrow.toList)
+    }
+
     /** translate outcome of the rule application into code (possible involving recursive application of rewriting) */
     def tree(implicit handleOuter: Tree=>Tree, theOwner: Symbol, failTree: Tree): Tree
   }
@@ -230,7 +251,7 @@ trait ParallelMatching  {
         Row(column(tagIndexPairs.index)::pats, nbindings, g, bx)
     }
 
-    final def tree(implicit handleOuter: Tree=>Tree, theOwner: Symbol, failTree: Tree) = {
+    final def tree(implicit handleOuter: Tree=>Tree, theOwner: Symbol, failTree: Tree): Tree = {
       val (branches, defaultV, default) = getTransition // tag body pairs
       DBG("[[mix cases transition: branches \n"+(branches.mkString("","\n","")+"\ndefaults:"+defaultV+" "+default+"]]"))
 
@@ -338,7 +359,7 @@ trait ParallelMatching  {
       }
     }
 
-    final def tree(implicit handleOuter: Tree=>Tree, theOwner: Symbol, failTree: Tree) = {
+    final def tree(implicit handleOuter: Tree=>Tree, theOwner: Symbol, failTree: Tree): Tree = {
       val (branches, defaultV, defaultRepOpt) = this.getTransition // tag body pairs
       DBG("[[mix literal transition: branches \n"+(branches.mkString("","\n",""))+"\ndefaults:"+defaultV+"\n"+defaultRepOpt+"\n]]")
       val cases = branches map { case (tag, rep) => CaseDef(Literal(tag), EmptyTree, repToTree(rep, handleOuter)) }
@@ -350,10 +371,19 @@ trait ParallelMatching  {
         makeIf(Equals(Ident(this.scrutinee),lit), body, ndefault)
       } else {
         val defCase = CaseDef(mk_(definitions.IntClass.tpe), EmptyTree, ndefault)
-        var selector:Tree = Ident(this.scrutinee)
-        if(isSameType(this.scrutinee.tpe.widen, definitions.CharClass.tpe))
-          selector = gen.mkAsInstanceOf(selector, definitions.IntClass.tpe)
-        Match(selector, cases :::  defCase :: Nil)
+
+
+        if(isSameType(this.scrutinee.tpe.widen, definitions.CharClass.tpe)) {
+          val zz = newVar(this.scrutinee.pos, this.scrutinee.tpe)
+          // the valdef is a workaround for a bug in boxing -- Utility.parseCharRef contains an instance
+          //  where erasure forgets the char to int conversion and emits Int.unbox in the scrutinee position
+          //  of the match. This then fails at runtime, because it encounters a boxed Character, not boxedq Int
+          return Block(
+            List(typedValDef(zz, Ident(this.scrutinee))),
+            Match(gen.mkAsInstanceOf(Ident(zz), definitions.IntClass.tpe), cases :::  defCase :: Nil)
+          )
+        }
+        return Match(Ident(this.scrutinee), cases :::  defCase :: Nil)
       }
     } /* def tree(implicit handleOuter: Tree=>Tree, theOwner: Symbol, failTree: Tree) */
   } /* MixLiterals */
@@ -461,25 +491,87 @@ trait ParallelMatching  {
     } /* def tree(implicit handleOuter: Tree=>Tree, theOwner: Symbol, failTree: Tree) */
   } /* MixUnapply */
 
+  /** handle sequence pattern and ArrayValue
+  class MixSequence(val scrutinee:Symbol, val column:List[Tree], val rest:Rep) extends RuleApplication {
+    // context (to be used in IF), success and failure Rep
+    final def getTransition(implicit theOwner: Symbol): (Tree => Tree => Tree, Rep, Rep) = {
+
+      assert(isSubType(scrutinee.tpe, column.head.tpe), "problem "+scrutinee.tpe+" not <: "+column.head.tpe)
+
+      val treeAsSeq =
+        if(!isSubType(scrutinee.tpe, column.head.tpe))
+          typed(gen.mkAsInstanceOf(gen.mkAttributedRef(scrutinee), column.head.tpe, true))
+        else
+          gen.mkAttributedRef(scrutinee)
+
+      val failRep = repWithoutHead(column,rest)
+
+      column.head match {
+        case av @ ArrayValue(_, xs) =>
+
+          var childpats = new ListBuffer[Tree]
+          var bindings  = new ListBuffer[Tree]
+          var vs        = new ListBuffer[Symbol]
+          var ix = 0
+
+        // if is right ignoring, don't want last one
+          var ys = if(isRightIgnoring(av)) xs.take(xs.length-1) else xs; while(ys ne Nil) {
+            val p = ys.head
+            childpats += p
+            val temp = newVar(p.pos, p.tpe)
+            Console.println("new temp:"+temp+":"+temp.tpe)
+            Console.println("seqelem:"+seqElement(treeAsSeq.duplicate, ix))
+            vs += temp
+            bindings += typedValDef(temp, seqElement(treeAsSeq.duplicate, ix))
+            ix += 1
+            ys = ys.tail
+          }
+
+          val childpatList = childpats.toList
+          val nrows = rest.row.map {
+            case Row(pats,subst,g,b) => Row(childpatList ::: pats,subst,g,b)
+          }
+          val succRep = Rep( vs.toList ::: rest.temp, nrows)
+
+          if(isRightIgnoring(av)) { // contains a _* at the end
+            val minlen = xs.length-1;
+
+              //typedValDef(casted, treeAsSeq.duplicate) :: bindings
+
+              val tempTail = newVar(xs.last.pos, xs.last.tpe)
+              bindings += typedValDef(tempTail, seqDrop(treeAsSeq.duplicate, minlen))
+
+            val cond = seqLongerThan(treeAsSeq.duplicate, column.head.tpe, minlen)
+
+            return ({thenp:Tree => {elsep:Tree =>
+              makeIf(cond, squeezedBlock(bindings.toList, thenp), elsep)
+                                  }}, succRep, failRep)
+          }
+
+          // fixed length
+          val cond = seqHasLength(treeAsSeq.duplicate, column.head.tpe, xs.length)
+          return ({thenp:Tree => {elsep:Tree => makeIf(cond, thenp, elsep)}}, succRep, failRep)
+      }
+    }
+
+    final def tree(implicit handleOuter: Tree=>Tree, theOwner: Symbol, failTree: Tree) = {
+      val (cx,srep,frep) = this.getTransition
+      val succ = repToTree(srep, handleOuter)
+      val fail = repToTree(frep, handleOuter)
+      cx(succ)(fail)
+    }
+
+  }
+  */
   class MixEquals(val scrutinee:Symbol, val column:List[Tree], val rest:Rep) extends RuleApplication {
+    /** condition (to be used in IF), success and failure Rep */
     final def getTransition(implicit theOwner: Symbol): (Tree, Rep, Rep) = {
       val nmatrix = rest
       val vlue = column.head.tpe match {
         case TypeRef(_,_,List(SingleType(pre,sym))) =>
           gen.mkAttributedRef(pre,sym)
       }
-      var fcol  = column.tail
-      var frow  = rest.row.tail
-      val nfailrow = new ListBuffer[Row]
-      while(fcol ne Nil) {
-        val p = fcol.head
-        frow.head match {
-          case Row(pats,binds,g,bx) => nfailrow += Row(p::pats,binds,g,bx)
-        }
-        fcol = fcol.tail
-        frow = frow.tail
-      }
-      val nfail  = Rep(scrutinee::rest.temp, nfailrow.toList)
+      val nfail = repWithoutHead(column,rest)
       return (typed{ Equals(Ident(scrutinee) setType scrutinee.tpe, vlue) }, rest, nfail)
     }
 

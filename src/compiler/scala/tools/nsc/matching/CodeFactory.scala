@@ -152,9 +152,13 @@ trait CodeFactory {
   }
 
   /** for tree of sequence type, returns tree that drops first i elements */
-  final def seqDrop(sel:Tree, i: Int) = if (i == 0) sel else
-    Apply(Select(Select(sel, "toList"), "drop"),
-          List(Literal(Constant(i))))
+  final def seqDrop(sel:Tree, ix: Int) = if (ix == 0) sel else
+    Apply(Select(Select(sel, nme.toList), nme.drop),
+          List(Literal(Constant(ix))))
+
+  /** for tree of sequence type, returns tree that drops first i elements */
+  final def seqElement(sel:Tree, ix: Int) = if (ix == 0) sel else
+    Apply(Select(sel, sel.tpe.member(nme.apply)), List(Literal(Constant(ix))))
 
   /** for tree of sequence type, returns boolean tree that has length i */
   final def seqHasLength(sel: Tree, ntpe: Type, i: Int) =
@@ -353,6 +357,7 @@ trait CodeFactory {
         val sym = vd.symbol
         val rt = new RefTraverser(sym)
         rt.atOwner (theOwner) (rt.traverse(exp1))
+      //Console.println("hello, ref count = "+rt.nref+"/"+rt.nsafeRef)
         rt.nref match {
           case 0 =>
             nremoved = nremoved + 1
