@@ -194,7 +194,7 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
     * (1) whether to keep running, (2) the line to record for replay,
     * if any. */
   def command(line: String): (Boolean, Option[String]) = {
-    def withFile(command: String)(action: String => Unit): Unit = {
+    def withFile(command: String)(action: String => Unit) {
       val spaceIdx = command.indexOf(' ')
       if (spaceIdx <= 0) {
         out.println("That command requires a filename to be specified.")
@@ -241,8 +241,7 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
     * read, go ahead and interpret it.  Return the full string
     * to be recorded for replay, if any.
     */
-  def interpretStartingWith(code: String): Option[String] =
-  {
+  def interpretStartingWith(code: String): Option[String] = {
     interpreter.interpret(code) match {
       case IR.Success => Some(code)
       case IR.Error => None
@@ -260,22 +259,22 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
     }
   }
 
-
-
   def main(settings: Settings) {
     this.settings = settings
 
     in =
       in0 match {
-	case Some(in0) => new SimpleReader(in0, out, true)
+	case Some(in0) =>
+	  new SimpleReader(in0, out, true)
 
 	case None =>
-	  if (settings.Xnojline.value)
+	  val emacsShell = System.getProperty("env.emacs", "") != ""
+	  //println("emacsShell="+emacsShell) //debug
+	  if (settings.Xnojline.value || emacsShell)
 	    new SimpleReader()
 	  else
 	    InteractiveReader.createDefault()
       }
-
 
     uglinessxxx =
       new java.net.URLClassLoader(
