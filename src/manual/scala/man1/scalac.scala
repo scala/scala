@@ -188,7 +188,7 @@ object scalac extends Command {
           CmdOption("Xplugin-require:", Argument("plugin")),
           "Abort unless a plugin is available"),
         Definition(
-          CmdOption("print:", Argument("phases")),
+          CmdOption("Xprint:", Argument("phases")),
           "Print out program after " & Argument("phases") & " (see below)."),
         Definition(
           CmdOption("Xprint-pos"),
