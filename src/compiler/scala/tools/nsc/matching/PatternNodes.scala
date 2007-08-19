@@ -17,6 +17,16 @@ trait PatternNodes { self: transform.ExplicitOuter =>
 
   // --- misc methods
 
+  /* equality checks for named constant patterns like "Foo()" are encoded as "_:<equals>[Foo().type]"
+   * and later compiled to "if(Foo() == scrutinee) ...". This method extracts type information from
+   * such an encoded type, which is used in optimization. If the argument is not an encoded equals
+   *  test, it is returned as is.
+   */
+  def patternType_wrtEquals(pattpe:Type) = pattpe match {
+    case TypeRef(_,sym,arg::Nil) if sym eq definitions.EqualsPatternClass =>
+      arg
+    case x => x
+  }
   /** returns if pattern can be considered a no-op test ??for expected type?? */
   final def isDefaultPattern(pattern:Tree): Boolean = pattern match {
     case Bind(_, p)            => isDefaultPattern(p)

@@ -28,6 +28,7 @@ object Test extends TestConsoleMain {
       new SimpleUnapply,
       new Test717,
       new TestGuards,
+      TestEqualsPatternOpt,
       new TestStream,
       new Test903,
       new Test1093,
@@ -98,6 +99,17 @@ object Test extends TestConsoleMain {
         case Beez(x) if x == 2 => false
       }
       assertTrue("ok", ret);
+    }
+  }
+
+  object TestEqualsPatternOpt extends TestCase("test EqualsPatternClass in combination with MixTypes opt, bug #1276") {
+    val NoContext = new Object
+    override def runTest {
+      assertEquals(1,((NoContext:Any) match {
+        case that : AnyRef if this eq that => 0
+        case NoContext => 1
+        case _ => 2
+      }))
     }
   }
 

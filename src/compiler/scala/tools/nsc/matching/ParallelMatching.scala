@@ -617,14 +617,14 @@ trait ParallelMatching  {
       scrutinee.tpe.typeSymbol.children.forall { sym => tpes.contains(sym) }
     }
 
-    private val patternType     = column.head match {
+    private val headPatternType     = column.head match {
       case p @ (_:Ident | _:Select) =>
         singleType(p.symbol.tpe.prefix, p.symbol)  //ConstantType(p.tpe.singleton)
       //case p@Apply(_,_) if !p.tpe./*?type?*/symbol.hasFlag(symtab.Flags.CASE) => ConstantType(new NamedConstant(p))
       case _ => column.head.tpe
     }
-    private val isCaseHead = isCaseClass(patternType)
-    private val dummies = if(!isCaseHead) Nil else patternType.typeSymbol.caseFieldAccessors.map { x => EmptyTree }
+    private val isCaseHead = isCaseClass(headPatternType)
+    private val dummies = if(!isCaseHead) Nil else headPatternType.typeSymbol.caseFieldAccessors.map { x => EmptyTree }
 
     //Console.println("isCaseHead = "+isCaseHead)
     //Console.println("dummies = "+dummies)
@@ -653,7 +653,7 @@ trait ParallelMatching  {
       (pat.symbol ne null) &&
       (pat.symbol != NoSymbol) &&
       pat.symbol.tpe.prefix.isStable &&
-      patternType =:= singleType(pat.symbol.tpe.prefix, pat.symbol)
+      headPatternType =:= singleType(pat.symbol.tpe.prefix, pat.symbol)
     } catch {
       case e =>
         Console.println("object pattern test throws "+e.getMessage())
@@ -672,35 +672,35 @@ trait ParallelMatching  {
         //Console.println("pat = "+pat+" (class "+pat.getClass+")of type "+pat.tpe)
         //Console.println("current pat is wild? = "+isDefaultPattern(pat))
         //Console.println("current pat.symbol = "+pat.symbol+", pat.tpe "+pat.tpe)
-        //Console.println("patternType = "+patternType)
-        //Console.println("(current)pat.tpe <:< patternType = "+(pat.tpe <:< patternType))
-        //Console.println("patternType <:< (current)pat.tpe = "+(patternType <:< pat.tpe))
-        //Console.println("(current)pat.tpe =:= patternType = "+(pat.tpe <:< patternType))
+        //Console.println("headPatternType = "+headPatternType)
+        //Console.println("(current)pat.tpe <:< headPatternType = "+(pat.tpe <:< headPatternType))
+        //Console.println("headPatternType <:< (current)pat.tpe = "+(headPatternType <:< pat.tpe))
+        //Console.println("(current)pat.tpe =:= headPatternType = "+(pat.tpe <:< headPatternType))
 
         sr = strip2(pat) match {
           // case _: Bind       => // cannot happen, using strip2
           // case a:Alternative => // cannot happen, alternatives should be preprocessed away
 
-          case Literal(Constant(null)) if !(patternType =:= pat.tpe) => //special case for constant null pattern
+          case Literal(Constant(null)) if !(headPatternType =:= pat.tpe) => //special case for constant null pattern
             //Console.println("[1")
             (ms,ss,(j,pat)::rs);
           case _ if objectPattern(pat) =>
             //Console.println("[2")
             (EmptyTree::ms, (j,dummies)::ss, rs);                                 // matching an object
 
-          case Typed(p:UnApply,_) if (pat.tpe <:< patternType) =>
+          case Typed(p:UnApply,_) if (pat.tpe /*is never <equals>*/ <:< headPatternType) =>
             //Console.println("unapply arg is same or *more* specific")
             (p::ms, (j, dummies)::ss, rs);
 
-          case q @ Typed(pp,_) if (pat.tpe <:< patternType) =>
+          case q @ Typed(pp,_) if (patternType_wrtEquals(pat.tpe) <:< headPatternType) =>
             //Console.println("current pattern is same or *more* specific")
-            ({if(pat.tpe =:= patternType) EmptyTree else q}::ms, (j, dummies)::ss, rs);
+            ({if(pat.tpe =:= headPatternType /*never true for <equals>*/) EmptyTree else q}::ms, (j, dummies)::ss, rs);
 
-          case qq if (pat.tpe <:< patternType) && !isDefaultPattern(pat) =>
+          case qq if (patternType_wrtEquals(pat.tpe) <:< headPatternType) && !isDefaultPattern(pat) =>
             //Console.println("current pattern is same or *more* specific")
-            ({if(pat.tpe =:= patternType) EmptyTree else pat}::ms, (j,subpatterns(pat))::ss, rs);
+            ({if(pat.tpe =:= headPatternType /*never true for <equals>*/) EmptyTree else pat}::ms, (j,subpatterns(pat))::ss, rs);
 
-          case _ if (patternType <:< pat.tpe) || isDefaultPattern(pat) =>
+          case _ if (headPatternType <:< pat.tpe /*never true for <equals>*/) || isDefaultPattern(pat) =>
             //Console.println("current pattern is *more general*")
             (EmptyTree::ms, (j, dummies)::ss, (j,pat)::rs);                        // subsuming (matched *and* remaining pattern)
 
@@ -726,7 +726,7 @@ trait ParallelMatching  {
       //Console.println("*** getTransition! of "+this.toString)
       // the following works for type tests... what fudge is necessary for value comparisons?
       // type test
-      casted = if(scrutinee.tpe =:= patternType) scrutinee else newVar(scrutinee.pos, patternType)
+      casted = if(scrutinee.tpe =:= headPatternType) scrutinee else newVar(scrutinee.pos, headPatternType)
       if(scrutinee.hasFlag(symtab.Flags.CAPTURED))
         casted.setFlag(symtab.Flags.CAPTURED)
       // succeeding => transition to translate(subsumed) (taking into account more specific)
@@ -767,6 +767,7 @@ trait ParallelMatching  {
         }
         if(ntriples.isEmpty) None else Some(Rep(ntemps, ntriples))
       }
+      //DBG("nmatrixFail = \n\n"+nmatrixFail)
       (casted, nmatrix, nmatrixFail)
     } /* getTransition(implicit theOwner: Symbol): (Symbol, Rep, Option[Rep]) */
 
