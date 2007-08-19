@@ -82,10 +82,10 @@ trait ParallelMatching  {
       return new MixEquals(scrutinee, column, rest)
 	}
     // the next condition is never true, @see isImplemented/CantHandleSeq
-    if(column.head.isInstanceOf[ArrayValue]) { DBG("\n%%% MixArrayValue");
-      Console.println("STOP"); System.exit(-1); // EXPERIMENTAL
+    //if(column.head.isInstanceOf[ArrayValue]) { DBG("\n%%% MixArrayValue");
+    //  Console.println("STOP"); System.exit(-1); // EXPERIMENTAL
       //return new MixSequence(scrutinee, column, rest)
-    }
+    //}
     if(isSimpleSwitch) { DBG("\n%%% MixLiterals")
       return new MixLiterals(scrutinee, column, rest)
     }
@@ -657,8 +657,8 @@ trait ParallelMatching  {
     } catch {
       case e =>
         Console.println("object pattern test throws "+e.getMessage())
-        if(settings_debug)
-          System.exit(-1);
+        //if(settings_debug)
+        //  System.exit(-1);
         throw e
     }
     //Console.println("scrutinee == "+scrutinee+":"+scrutinee.tpe)
@@ -936,12 +936,14 @@ object Rep {
       case MethodType(fmls,_) =>
         if (fmls.length != args.length) { // sanity check
           cunit.error(targets(bx).pos, "consistency problem ! "+fmls)
-          System.exit(-1)
+          //System.exit(-1)
+          throw FatalError("consistency problem")
         }
         for((f,a) <- fmls.zip(args.toList)) {
           if(!(a.tpe <:< f)) {
             cunit.error(targets(bx).pos, "consistency problem ! "+a.tpe+" "+f)
-            System.exit(-1)
+            //System.exit(-1)
+            throw FatalError("consistency problem")
           }
         }
     }
