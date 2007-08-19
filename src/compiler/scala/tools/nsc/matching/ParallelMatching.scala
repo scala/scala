@@ -144,7 +144,8 @@ trait ParallelMatching  {
 
       val vdefs = targetParams(subst)
       val typedElse = repToTree(guardedRest, handleOuter)
-      val untypedIf = makeIf(guard, body, typedElse)
+      //Console.println("typedElse:"+typedElse)
+      val untypedIf = If(guard, body, typedElse)
       val r = atPhase(phase.prev) { typed { squeezedBlock(vdefs, untypedIf) }}
       //Console.println("genBody-guard:"+r)
       r
@@ -285,7 +286,7 @@ trait ParallelMatching  {
       cases.length match {
         case 0 => ndefault
         case 1 => val CaseDef(lit,_,body) = cases.head
-                  makeIf(Equals(Select(Ident(this.scrutinee),nme.tag),lit), body, ndefault)
+                  If(Equals(Select(Ident(this.scrutinee),nme.tag),lit), body, ndefault)
         case _ => val defCase = CaseDef(mk_(definitions.IntClass.tpe), EmptyTree, ndefault)
                   Match(Select(Ident(this.scrutinee),nme.tag), cases :::  defCase :: Nil)
       }
@@ -368,7 +369,7 @@ trait ParallelMatching  {
       renamingBind(defaultV, this.scrutinee, ndefault) // each v in defaultV gets bound to scrutinee
       if(cases.length == 1) {
         val CaseDef(lit,_,body) = cases.head
-        makeIf(Equals(Ident(this.scrutinee),lit), body, ndefault)
+        If(Equals(Ident(this.scrutinee),lit), body, ndefault)
       } else {
         val defCase = CaseDef(mk_(definitions.IntClass.tpe), EmptyTree, ndefault)
 
@@ -487,7 +488,7 @@ trait ParallelMatching  {
           typed{ Ident(uacall.symbol) }
         else
           emptynessCheck(uacall.symbol)
-      typed { squeezedBlock(List(handleOuter(uacall)), makeIf(cond,squeezedBlock(vdefs,succ),fail)) }
+      typed { squeezedBlock(List(handleOuter(uacall)), If(cond,squeezedBlock(vdefs,succ),fail)) }
     } /* def tree(implicit handleOuter: Tree=>Tree, theOwner: Symbol, failTree: Tree) */
   } /* MixUnapply */
 
@@ -544,13 +545,13 @@ trait ParallelMatching  {
             val cond = seqLongerThan(treeAsSeq.duplicate, column.head.tpe, minlen)
 
             return ({thenp:Tree => {elsep:Tree =>
-              makeIf(cond, squeezedBlock(bindings.toList, thenp), elsep)
+              If(cond, squeezedBlock(bindings.toList, thenp), elsep)
                                   }}, succRep, failRep)
           }
 
           // fixed length
           val cond = seqHasLength(treeAsSeq.duplicate, column.head.tpe, xs.length)
-          return ({thenp:Tree => {elsep:Tree => makeIf(cond, thenp, elsep)}}, succRep, failRep)
+          return ({thenp:Tree => {elsep:Tree => If(cond, thenp, elsep)}}, succRep, failRep)
       }
     }
 
@@ -591,7 +592,7 @@ trait ParallelMatching  {
       val succ = repToTree(srep, handleOuter)
       val fail = repToTree(frep, handleOuter)
       try {
-        typed{ makeIf(cond2, succ, fail) }
+        typed{ If(cond2, succ, fail) }
       } catch {
         case e =>
           Console.println("failed to type-check If")
@@ -796,7 +797,7 @@ trait ParallelMatching  {
       if(casted ne this.scrutinee) {
         vdefs = ValDef(casted, gen.mkAsInstanceOf(typed{Ident(this.scrutinee)}, casted.tpe)) :: vdefs
       }
-      typed { makeIf(cond, squeezedBlock(vdefs,succ), fail) }
+      typed { If(cond, squeezedBlock(vdefs,succ), fail) }
     } /* def tree(implicit handleOuter: Tree=>Tree, theOwner: Symbol, failTree: Tree) */
   } /* class MixTypes */
 
@@ -849,11 +850,14 @@ object Rep {
   var reached: List[Int] = Nil
 
   final def apply(temp:List[Symbol], row:List[Row], targets: List[Tree], vss:List[SymList]): Rep = {
+    // ensured that labels(i) eq null for all i, cleanup() has to be called after translation
     this.targets   = targets
     if(targets.length > labels.length)
       this.labels    = new Array[Symbol](targets.length)
     this.vss       = vss
     this.reached64 = if(targets.length < 64) new Set64 else null
+    //Console.println("targets: "+targets)
+    //Console.print("labels: "); {for(s<-labels) Console.print({if(s ne null) {s} else "_"}+",")}
     return apply(temp, row)
   }
 
@@ -862,10 +866,30 @@ object Rep {
       override def transform(tree:Tree): Tree = tree match {
         case blck @ Block(vdefs, ld @ LabelDef(name,params,body)) =>
           val bx = labelIndex(ld.symbol)
-          if((bx >= 0) && !isReachedTwice(bx))
-            squeezedBlock(vdefs,body)
+          if((bx >= 0) && !isReachedTwice(bx)) {
+            //Console.println("removing labeldef! ")
+            //Console.println("ld.symbol = "+ld.symbol)
+            //Console.println("bx = "+bx)
+            //Console.println("rtwice? "+isReachedTwice(bx))
+            //Console.println("reached = "+reached)
+             squeezedBlock(vdefs,body)
+           }
           else
             blck
+
+        //case If(Literal(Constant(true)),  thenp, elsep) =>
+        //  Console.println("1 short IF affecting "+elsep); thenp
+        //case If(Literal(Constant(false)), thenp, elsep) =>
+        //  Console.println("2 short IF affecting "+thenp); elsep
+        case If(cond, Literal(Constant(true)), Literal(Constant(false))) =>
+          super.transform(cond)
+        case If(cond1, If(cond2, thenp, elsep1), elsep2) if (elsep1 equalsStructure elsep2) =>
+          //Console.println("3 short IF affecting "+elsep2);
+          super.transform(If(And(cond1,cond2), thenp, elsep1))
+        case If(cond1, If(cond2, thenp, Apply(jmp,List())), ld:LabelDef) if (jmp.symbol eq ld.symbol) =>
+          //Console.println("4 short IF affecting "+ld)
+          super.transform(If(And(cond1,cond2), thenp, ld))
+
         case t => super.transform(t)
       }
     }
@@ -893,7 +917,7 @@ object Rep {
    *  the function takes care of binding
    */
   final def requestBody(bx:Int, subst:Binding)(implicit theOwner: Symbol): Tree = {
-    //Console.println("requestbody("+bx+", "+subst+")")
+    //Console.print("requestbody("+bx+", "+subst+") isReached(bx)?"+isReached(bx)+" labels:"); {for(s<-labels) Console.print({if(s ne null) {s} else "_"}+",")}
     if(!isReached(bx)) { // first time this bx is requested
       val argts = new ListBuffer[Type] // types of
       var vrev: List[Symbol] = Nil

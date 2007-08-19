@@ -78,20 +78,6 @@ trait CodeFactory {
 
   // --------- these are new
 
-  /** a faked switch statement
-   */
-  final def Switch(condition: Array[Tree], body: Array[Tree], defaultBody: Tree): Tree = {
-    //assert condition != null:"cond is null";
-    //assert body != null:"body is null";
-    //assert defaultBody != null:"defaultBody is null";
-    var result = defaultBody
-    var i = condition.length - 1
-    while (i >= 0) {
-      result = makeIf(condition(i), body(i), result)
-      i -= 1
-    }
-    result
-  }
 
   final def renamingBind(defaultv: Set[Symbol], scrut: Symbol, ndefault: Tree) = {
     if (!defaultv.isEmpty) {
@@ -111,13 +97,6 @@ trait CodeFactory {
       Literal(Constant(true))
     else                                          // is Option[_]
       Not(Select(Ident(vsym), nme.isEmpty))
-  }
-
-  final def makeIf(cond: Tree, thenp: Tree, elsep: Tree) = (cond,thenp,elsep) match {
-    case (Literal(Constant(true)),  _, _) => thenp
-    case (Literal(Constant(false)), _, _) => elsep
-    case (_, Literal(Constant(true)), Literal(Constant(false))) => cond
-    case _ => If(cond, thenp, elsep)
   }
 
   /** returns code `<seqObj>.elements' */
