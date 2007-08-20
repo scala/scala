@@ -1568,12 +1568,19 @@ trait Trees {
     }
   }
 
+
+  /** resets symbol and tpe fields in a tree, @see ResetAttrsTraverse
+   */
+  def resetAttrs[A<:Tree](x:A):A = {new ResetAttrsTraverser().traverse(x); x}
+
   /** A traverser which resets symbol and tpe fields of all nodes in a given tree
    *  except for (1) TypeTree nodes, whose <code>.tpe</code> field is kept and
-   *  (2) is a <code>.symbol</code> field refers to a symbol which is defined
+   *  (2) if a <code>.symbol</code> field refers to a symbol which is defined
    *  outside the tree, it is also kept.
+   *
+   *  (bq:) This traverser has mutable state and should be discarded after use
    */
-  object resetAttrs extends Traverser {
+  class ResetAttrsTraverser extends Traverser {
     private val erasedSyms = new HashSet[Symbol](8)
     override def traverse(tree: Tree): Unit = tree match {
       case EmptyTree | TypeTree() =>
