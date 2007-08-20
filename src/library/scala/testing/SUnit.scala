@@ -36,7 +36,7 @@ import scala.collection.mutable.ArrayBuffer
  * <b>val</b> r = <b>new</b> TestResult()
  * suite.run(r)
  * <b>for</b> (tf &lt;- r.failures()) {
- *   Console.println(tf.toString())
+ *   println(tf.toString())
  * }
  * </pre>
  * <p>
@@ -48,19 +48,23 @@ import scala.collection.mutable.ArrayBuffer
  */
 object SUnit {
 
-    /** convenience trait, mix it in a TestMain object and implement "suite" to get this code
-     * <b>val</b> r = <b>new</b> TestResult()
-     * suite.run(r)
-     * <b>for</b> (<b>val</b> tf &lt;- r.failures()) {
-     *   Console.println(tf.toString())
-     */
+  /** <p>
+   *    Convenience trait, mix it in a <code>TestMain</code> object and
+   *    implement "suite" to get this code.
+   *  </p><pre>
+   *  <b>val</b> r = <b>new</b> TestResult()
+   *  suite.run(r)
+   *  <b>for</b> (<b>val</b> tf &lt;- r.failures()) {
+   *    println(tf.toString())
+   *  </pre>
+   */
   trait TestConsoleMain {
     def suite: TestSuite
     def main(args: Array[String]) {
       val r = new TestResult()
       suite.run(r)
       for (tf <- r.failures())
-        Console.println(tf.toString())
+        println(tf.toString())
     }
   }
 
@@ -78,12 +82,13 @@ object SUnit {
 
     protected def runTest(): Unit
 
-    def run(r: TestResult): Unit =
+    def run(r: TestResult) {
       try {
         runTest()
       } catch {
         case t:Throwable => r.addFailure(this, t)
       }
+    }
 
     def setUp() = {}
 
@@ -122,7 +127,7 @@ object SUnit {
 
   /** The class <code>TestSuite</code> runs a composite of test cases.
    */
-  class TestSuite(tests:Test*) extends Test {
+  class TestSuite(tests: Test*) extends Test {
 
     def this(names: Seq[String], constr: String => Test) =
       this((names map constr):_*)
@@ -134,8 +139,9 @@ object SUnit {
     def addTest(t: Test) =
       buf += t
 
-    def run(r: TestResult): Unit =
+    def run(r: TestResult) {
       for (t <- buf) t.run(r)
+    }
   }
 
   /** an AssertFailed is thrown for a failed assertion */
@@ -146,24 +152,29 @@ object SUnit {
   /** this class defined useful assert methods */
   trait Assert {
     /** fails if expected != actual */
-    def assertEquals[A](msg: String, expected: A, actual: => A): Unit =
+    def assertEquals[A](msg: String, expected: A, actual: => A) {
       if (expected != actual) fail(msg)
+    }
 
     /** fails if expected != actual */
-    def assertEquals[A](expected: A, actual: => A): Unit  =
+    def assertEquals[A](expected: A, actual: => A) {
       assertEquals("(no message)", expected, actual)
+    }
 
     /** succeeds if actual is false */
-    def assertFalse(msg: String, actual: => Boolean): Unit =
+    def assertFalse(msg: String, actual: => Boolean) {
       assertEquals(msg, false, actual)
+    }
 
     /** succeeds if actual is false */
-    def assertFalse(actual: => Boolean): Unit =
+    def assertFalse(actual: => Boolean) {
       assertFalse("(no message)", actual)
+    }
 
     /** fails if null eq actual */
-    def assertNotNull(msg:String, actual: => AnyRef): Unit =
+    def assertNotNull(msg:String, actual: => AnyRef) {
       if (null eq actual) fail(msg)
+    }
 
     /** fails if null eq actual */
     def assertNotNull(actual: => AnyRef): Unit  =
@@ -173,15 +184,17 @@ object SUnit {
      *  @deprecated use assertNotEq instead
      */
     @deprecated
-    def assertNotSame(msg: String, expected: => AnyRef, actual: => AnyRef): Unit =
-      if (expected.eq(actual)) fail(msg)
+    def assertNotSame(msg: String, expected: => AnyRef, actual: => AnyRef) {
+      if (expected eq actual) fail(msg)
+    }
 
     /**
      *  @deprecated use assertNotEq instead
      */
     @deprecated
-    def assertNotSame(expected: => AnyRef, actual: => AnyRef): Unit  =
+    def assertNotSame(expected: => AnyRef, actual: => AnyRef) {
       assertNotEq("(no message)", expected, actual)
+    }
 
     /** fail if expected eq actual */
     def assertNotEq(msg: String, expected: => AnyRef, actual: => AnyRef) {
@@ -194,46 +207,55 @@ object SUnit {
     }
 
     /** fails if actual ne null */
-    def assertNull(msg: String, actual: => AnyRef): Unit =
+    def assertNull(msg: String, actual: => AnyRef) {
       if (null ne actual) fail(msg)
+    }
 
     /** fails if actual ne null */
-    def assertNull(actual: => AnyRef): Unit =
+    def assertNull(actual: => AnyRef) {
       assertNull("(no message)", actual)
+    }
 
     /**
      *  @deprecated use assertEq instead
      */
     @deprecated
-    def assertSame(msg: String, expected: => AnyRef, actual: => AnyRef): Unit =
-        if(!expected.eq(actual)) fail(msg)
+    def assertSame(msg: String, expected: => AnyRef, actual: => AnyRef) {
+      if (expected ne actual) fail(msg)
+    }
 
     /**
      *  @deprecated use assertEq instead
      */
     @deprecated
-    def assertSame(expected: => AnyRef, actual: => AnyRef): Unit  =
+    def assertSame(expected: => AnyRef, actual: => AnyRef) {
       assertEq("(no message)", expected, actual)
+    }
 
     /** fails if expected ne actual */
-    def assertEq(msg: String, expected: => AnyRef, actual: => AnyRef): Unit =
-        if(expected ne actual) fail(msg)
+    def assertEq(msg: String, expected: => AnyRef, actual: => AnyRef) {
+      if (expected ne actual) fail(msg)
+    }
 
     /** fails if expected ne actual */
-    def assertEq(expected: => AnyRef, actual: => AnyRef): Unit =
+    def assertEq(expected: => AnyRef, actual: => AnyRef) {
       assertEq("(no message)", expected, actual)
+    }
 
     /** succeeds if actual == true */
-    def assertTrue(msg: String, actual: => Boolean): Unit =
+    def assertTrue(msg: String, actual: => Boolean) {
       assertEquals(msg, true, actual)
+    }
 
     /** succeeds if actual == true */
-    def assertTrue(actual: => Boolean): Unit  =
+    def assertTrue(actual: => Boolean) {
       assertTrue("(no message)", actual)
+    }
 
     /** throws <code>AssertFailed</code> with given message <code>msg</code>.
      */
-    def fail(msg: String): Unit =
+    def fail(msg: String) {
       throw new AssertFailed(msg)
+    }
   }
 }

@@ -33,7 +33,7 @@ object UnitTest {
   var report = new Report(
     { () => Console.println("passed ok") },
     { (actual: String, expected: String) =>
-        Console.print("failed! we got")
+        Console.print("failed! we got ")
         Console.print( "\""+ actual +"\"" )
         Console.println(" but expected \"" + expected + "\"") })
 
@@ -48,43 +48,47 @@ object UnitTest {
    *  @param actual   ...
    *  @param expected ...
    */
-  def assertSameElements[a](actual: Seq[a], expected: Seq[a]): Unit =
+  def assertSameElements[A](actual: Seq[A], expected: Seq[A]) {
     if (actual.sameElements(expected))
       report.ok
     else
       report.fail(actual.toString, expected.toString)
+  }
 
   /**
    *  @param actual   ...
    *  @param expected ...
    */
-  def assertEquals[a](actual: a, expected: a): Unit =
+  def assertEquals[A](actual: A, expected: A) {
     if (actual == expected)
       report.ok
     else
       report.fail(actual.toString(), expected.toString())
+  }
 
-  def assertTrue(actual: Boolean): Unit = assertEquals(actual, true)
-  def assertFalse(actual: Boolean): Unit = assertEquals(actual, false)
+  def assertTrue(actual: Boolean) { assertEquals(actual, true) }
+  def assertFalse(actual: Boolean) { assertEquals(actual, false) }
 
-  def assertNull(actual: AnyRef): Unit =
-   if (actual eq null)
-     report.ok
+  def assertNull(actual: AnyRef) {
+    if (actual eq null)
+      report.ok
     else
       report.fail(actual.toString, "null")
+  }
 
-  def assertNonNull(actual: AnyRef): Unit =
-   if (actual ne null)
-     report.ok
+  def assertNonNull(actual: AnyRef) {
+    if (actual ne null)
+      report.ok
     else
       report.fail(actual.toString, "null")
+  }
 
-
-  def assertNotEquals[a]( actual: a, expected: a): Unit =
+  def assertNotEquals[A](actual: A, expected: A) {
     if (actual != expected)
       report.ok
     else
       report.fail(actual.toString(), "x != "+expected.toString())
+  }
 
   //def test[a](def doit: a, expected: a): Unit = assertEquals(doit, expected)
 
