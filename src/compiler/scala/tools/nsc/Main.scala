@@ -8,7 +8,7 @@ package scala.tools.nsc
 
 import java.io.File
 
-import scala.tools.nsc.doc.{DocDriver => DocGenerator}
+import scala.tools.nsc.doc.DocDriver
 import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
 import scala.tools.nsc.util.FakePos //{Position}
 
@@ -85,11 +85,11 @@ object Main extends AnyRef with EvalLoop {
             val run = new compiler.Run
             run compile command.files
             if (command.settings.doc.value) {
-              object generator extends DocGenerator {
+              object generator extends DocDriver {
                 val global: compiler.type = compiler
                 def settings = command.settings
               }
-              generator.process(run.units)
+              generator process run.units
             }
             reporter.printSummary()
           }
