@@ -133,6 +133,7 @@ trait SyntheticMethods { self: Analyzer =>
             val constrParamTypes = clazz.primaryConstructor.tpe.paramTypes
             val hasVarArgs = !constrParamTypes.isEmpty && constrParamTypes.last.typeSymbol == RepeatedParamClass
             if (false && clazz.isStatic) {
+              // todo: elim
               val target = getMember(ScalaRunTimeModule, if (hasVarArgs) nme._equalsWithVarArgs else nme._equals)
               Apply(
                 Select(
@@ -152,7 +153,7 @@ trait SyntheticMethods { self: Analyzer =>
                   guards += Apply(
                     Select(
                       Ident(name),
-                      if (isVarArg) nme.sameElements else nme.equals_),
+                      if (isVarArg) nme.sameElements else nme.EQEQ),
                     List(Ident(acc)))
                   Bind(name,
                        if (isVarArg) Star(Ident(nme.WILDCARD))

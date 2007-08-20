@@ -533,11 +533,10 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
           assert(name != nme.WILDCARD_STAR.toTypeName)
           applyUnary(tree);
         case Select(qual, name) =>
-          /* Function1.apply to ByNameFunction.apply if qualifier is a ByNameFunction */
-          if (qual.tpe.typeSymbol == ByNameFunctionClass) {
-            assert(tree.symbol.name == nme.apply && tree.symbol.owner == FunctionClass(1), tree.symbol)
-            tree.symbol = getMember(ByNameFunctionClass, nme.apply)
-          }
+          // translate members of Function1 to members of ByNameFunction
+          // if qualifier is a ByNameFunction
+          if (qual.tpe.typeSymbol == ByNameFunctionClass && tree.symbol.owner == FunctionClass(1))
+            tree.symbol = getMember(ByNameFunctionClass, tree.symbol.name)
           applyUnary(tree)
         case TypeApply(_, _) =>
           applyUnary(tree)

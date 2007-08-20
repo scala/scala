@@ -436,10 +436,13 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
           val qual1 = typedQualifier(qual)
           val qualClass = qual1.tpe.typeSymbol
           val targClass = targ.tpe.typeSymbol
+/*
           if (isNumericValueClass(qualClass) && isNumericValueClass(targClass))
             // convert numeric type casts
             atPos(tree.pos)(Apply(Select(qual1, "to" + targClass.name), List()))
-          else if (isValueType(targClass) ||
+          else
+*/
+          if (isValueType(targClass) ||
                    (targClass == ArrayClass && (qualClass isNonBottomSubClass BoxedArrayClass)))
             unbox(qual1, targ.tpe)
           else if (targClass == ArrayClass && qualClass == ObjectClass || isSeqClass(targClass))
@@ -555,17 +558,18 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
       def doubleDefError(sym1: Symbol, sym2: Symbol) {
         val tpe1 = atPhase(currentRun.refchecksPhase.next)(root.thisType.memberType(sym1))
         val tpe2 = atPhase(currentRun.refchecksPhase.next)(root.thisType.memberType(sym2))
-        unit.error(
-          if (sym1.owner == root) sym1.pos else root.pos,
-          (if (sym1.owner == sym2.owner) "double definition:\n"
-           else if (sym1.owner == root) "name clash between defined and inherited member:\n"
-           else "name clash between inherited members:\n") +
-          sym1 + ":" + tpe1 +
-            (if (sym1.owner == root) "" else sym1.locationString) + " and\n" +
-          sym2 + ":" + tpe2 +
-            (if (sym2.owner == root) " at line " + (sym2.pos).line.get else sym2.locationString) +
-          "\nhave same type" +
-          (if (tpe1 =:= tpe2) "" else " after erasure: " + atPhase(phase.next)(sym1.tpe)))
+        if (!tpe1.isErroneous && !tpe2.isErroneous)
+          unit.error(
+            if (sym1.owner == root) sym1.pos else root.pos,
+            (if (sym1.owner == sym2.owner) "double definition:\n"
+             else if (sym1.owner == root) "name clash between defined and inherited member:\n"
+             else "name clash between inherited members:\n") +
+            sym1 + ":" + tpe1 +
+              (if (sym1.owner == root) "" else sym1.locationString) + " and\n" +
+            sym2 + ":" + tpe2 +
+              (if (sym2.owner == root) " at line " + (sym2.pos).line.get else sym2.locationString) +
+            "\nhave same type" +
+            (if (tpe1 =:= tpe2) "" else " after erasure: " + atPhase(phase.next)(sym1.tpe)))
         sym1.setInfo(ErrorType)
       }
 
@@ -777,9 +781,17 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
             if (fn.symbol == Any_asInstanceOf || fn.symbol == Any_asInstanceOfErased)
               fn match {
                 case TypeApply(Select(qual, _), List(targ)) =>
-                  assert(qual.tpe ne null, tree)
-                  if (qual.tpe <:< targ.tpe) atPos(tree.pos) { Typed(qual, TypeTree(qual.tpe)) }
-                  else tree
+                  if (qual.tpe <:< targ.tpe) {
+                    atPos(tree.pos) { Typed(qual, TypeTree(targ.tpe)) }
+                  } else if (isNumericValueClass(qual.tpe.typeSymbol) &&
+                             isNumericValueClass(targ.tpe.typeSymbol)) {
+                    // convert numeric type casts
+                    val cname = newTermName("to" + targ.tpe.typeSymbol.name)
+                    val csym = qual.tpe.member(cname)
+                    assert(csym != NoSymbol)
+                    atPos(tree.pos) { Apply(Select(qual, csym), List()) }
+                  } else
+                    tree
               }
               // todo: get rid of instanceOfErased
               // todo: also handle the case where the singleton type is buried in a compound

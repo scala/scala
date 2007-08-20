@@ -603,6 +603,12 @@ trait Typers { self: Analyzer =>
       case TypeRef(_, sym, List(arg))
       if ((mode & EXPRmode) != 0 && sym == ByNameParamClass) => // (2)
         adapt(tree setType arg, mode, pt)
+      case tr @ TypeRef(_, sym, _)
+      if sym.isAliasType && tr.normalize.isInstanceOf[ExistentialType] &&
+        ((mode & (EXPRmode | LHSmode)) == EXPRmode) =>
+        adapt(tree setType tr.normalize.skolemizeExistential(context.owner, tree), mode, pt)
+      case et @ ExistentialType(_, _) if ((mode & (EXPRmode | LHSmode)) == EXPRmode) =>
+        adapt(tree setType et.skolemizeExistential(context.owner, tree), mode, pt)
       case PolyType(tparams, restpe) if ((mode & (TAPPmode | PATTERNmode)) == 0) => // (3)
         assert((mode & HKmode) == 0) //@M
         val tparams1 = cloneSymbols(tparams)
@@ -1874,7 +1880,7 @@ trait Typers { self: Analyzer =>
         }
       }
       // add all local symbols of `tp' to `localSyms'
-      // expanding higher-kinded types into individual copies for esach instance.
+      // expanding higher-kinded types into individual copies for each instance.
       def addLocals(tp: Type) {
         def addIfLocal(sym: Symbol, tp: Type) {
           if (sym != NoSymbol && !sym.isRefinementClass && isLocal(sym) &&
@@ -2651,7 +2657,7 @@ trait Typers { self: Analyzer =>
       val sym: Symbol = tree.symbol
       if (sym ne null) sym.initialize
       //if (settings.debug.value && tree.isDef) log("typing definition of "+sym);//DEBUG
-      val result = tree match {
+      tree match {
         case PackageDef(name, stats) =>
           val stats1 = newTyper(context.make(tree, sym.moduleClass, sym.info.decls))
             .typedStats(stats, NoSymbol)
@@ -2898,10 +2904,6 @@ trait Typers { self: Analyzer =>
         case _ =>
           throw new Error("unexpected tree: " + tree.getClass + "\n" + tree)//debug
       }
-      if ((mode & (EXPRmode | LHSmode)) == EXPRmode && result.tpe.isInstanceOf[ExistentialType])
-        result setType result.tpe.skolemizeExistential(context.owner, result)
-      else
-        result
     }
 
     /**
@@ -2924,8 +2926,10 @@ trait Typers { self: Analyzer =>
           case ExistentialType(tparams, tpe) =>
             if (settings.debug.value) println("drop ex "+tree+" "+tp)
             new SubstWildcardMap(tparams).apply(tp)
-          case TypeRef(_, sym, _)if sym.isAliasType =>
-            dropExistential(tp.normalize)
+          case TypeRef(_, sym, _) if sym.isAliasType =>
+            val tp0 = tp.normalize
+            val tp1 = dropExistential(tp0)
+            if (tp1 eq tp0) tp else tp1
           case _ => tp
         }
         var tree1 = if (tree.tpe ne null) tree else typed1(tree, mode, dropExistential(pt))
