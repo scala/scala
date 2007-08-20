@@ -255,11 +255,11 @@ object SUnit {
 
     /** throws <code>AssertFailed</code> with given message <code>msg</code>.
      */
-    private def fail(msg: String) {
+    def fail(msg: String) {
       throw new AssertFailed(msg)
     }
 
-    private def fail[A](msg: String, expected: A, actual: => A) {
+    def fail[A](msg: String, expected: A, actual: => A) {
       throw new AssertFailed(msg +
                               ", expected: " + expected +
                               ", actual: " + actual)
