@@ -95,6 +95,17 @@ trait Types {
    */
   var intersectionWitness = new HashMap[List[Type], Type]
 
+  // @M toString that is safe during debugging (does not normalize, ...)
+  def debugString(tp: Type): String = tp match {
+    case TypeRef(pre, sym, args) => "TypeRef"+(debugString(pre), sym, args map debugString)
+    case ThisType(sym) => "ThisType("+sym+")"
+    case SingleType(pre, sym) => "SingleType"+(debugString(pre), sym)
+    case RefinedType(parents, defs) => "RefinedType"+(parents map debugString, defs.toList)
+    case ClassInfoType(parents, defs, clazz) =>  "ClassInfoType"+(parents map debugString, defs.toList, clazz)
+    case PolyType(tparams, result) => "PolyType"+(tparams, debugString(result))
+    case _ => ""
+  }
+
   /** A proxy for a type (identified by field `underlying') that forwards most
    *  operations to it (for exceptions, see WrappingProxy, which forwards even more operations.
    *  every operation that is overridden for some kind of types should be forwarded.
@@ -1358,22 +1369,16 @@ A type's typeSymbol should never be inspected directly.
 
     override def normalize =
       if (sym.isAliasType) { // beta-reduce
-        if (!isHigherKinded /*degenerate case, see comments below*/ ||
-            sym.info.typeParams.length == args.length) {
-          //transform(sym.info.resultType).normalize // cycles have been checked in typeRef
-          val xform=transform(sym.info.resultType)
+        if (sym.info.typeParams.length == args.length || !isHigherKinded) {
+/* !isHigherKinded && sym.info.typeParams.length != args.length only happens when compiling e.g.,
+  `val x: Class' with -Xgenerics, while `type Class = java.lang.Class' had already been compiled without -Xgenerics */
+          val xform = transform(sym.info.resultType)
           assert(xform ne this, this)
-          if(xform eq this) xform else xform.normalize // @M TODO: why is this necessary?
-        }/* else if (!isHigherKinded) { // sym.info.typeParams.length != args.length
-          log("Error: normalizing "+sym.rawname+" with mismatch between type params "+sym.info.typeParams+" and args "+args)
-          transform(sym.info.resultType).normalize // technically wrong, but returning `this' is even worse (cycle!)
-          // only happens when compiling `val x: Class' with -Xgenerics,
-          // when `type Class = java.lang.Class' has already been compiled (without -Xgenerics)
-        }*/ else PolyType(typeParams, transform(sym.info.resultType).normalize)
+          xform.normalize // cycles have been checked in typeRef
+        } else  PolyType(typeParams, transform(sym.info.resultType).normalize)  // eta-expand
         // @M TODO: should not use PolyType, as that's the type of a polymorphic value -- we really want a type *function*
-      } else if (isHigherKinded) { // eta-expand
+      } else if (isHigherKinded) {
         // @M TODO: should not use PolyType, as that's the type of a polymorphic value -- we really want a type *function*
-        // @M TODO: transform?
         PolyType(typeParams, typeRef(pre, sym, higherKindedArgs))
       } else if (sym.isRefinementClass) {
         sym.info
@@ -1824,23 +1829,10 @@ A type's typeSymbol should never be inspected directly.
       if (sym1.hasFlag(LOCKED))
         throw new TypeError("illegal cyclic reference involving " + sym1)
       sym1.setFlag(LOCKED)
-      //println("locking "+sym1+sym1.locationString+"/"+sym1.isAliasType+"/"+sym1.ownerChain)
-      def follow(tp: Type): Unit = transform(tp) match {
-        case tp2 @ TypeRef(_, sym2, _) =>
-          if (sym2.isAliasType) {
-            if (sym2.hasFlag(LOCKED))
-              throw new TypeError("illegal cyclic reference involving " + sym2)
-            sym2.setFlag(LOCKED)
-            follow(sym2.info)
-            sym2.resetFlag(LOCKED)
-          }
-        case _ =>
-      }
-      follow(sym1.info)
-      //println("unlocking "+sym1)
+        transform(sym1.info) // check there are no cycles
       sym1.resetFlag(LOCKED)
-      //result // @M: original version -- this would expand the type alias immediately
-      rawTypeRef(pre, sym1, args) //@MAT -- don't expand type alias, but still check there are no cycles
+
+      rawTypeRef(pre, sym1, args) // don't expand type alias (cycles checked above)
     } else {
       val pre1 = removeSuper(pre, sym1)
       if (pre1 ne pre) {
@@ -2182,14 +2174,16 @@ A type's typeSymbol should never be inspected directly.
     }
 
     /** Map this function over given list of symbols */
-    def mapOver(syms: List[Symbol]): List[Symbol] = {
-      val infos = syms map (_.info)
-      val infos1 = List.mapConserve(infos)(this)
-      if (infos1 eq infos) syms
-      else {
-        val syms1 = syms map (_.cloneSymbol)
-        List.map2(syms1, infos1) {
-          ((sym1, info1) => sym1.setInfo(info1.substSym(syms, syms1)))
+    def mapOver(origSyms: List[Symbol]): List[Symbol] = {
+      val origInfos = origSyms map (_.info)
+      val newInfos = List.mapConserve(origInfos)(this)
+      if (newInfos eq origInfos) origSyms // short path in case nothing changes due to map
+      else { // map is not the identity --> do cloning properly
+        val clonedSyms = origSyms map (_.cloneSymbol)
+        val clonedInfos = clonedSyms map (_.info)
+        val transformedInfos = List.mapConserve(clonedInfos)(this)
+        List.map2(clonedSyms, transformedInfos) {
+          ((newSym, newInfo) => newSym.setInfo(newInfo))
         }
       }
     }
@@ -2703,7 +2697,7 @@ A type's typeSymbol should never be inspected directly.
   /** Undo all changes to constraints to type variables upto `limit'
    */
   private def undoTo(limit: UndoLog) {
-    while (undoLog ne limit) {
+    while ((undoLog ne limit) && !undoLog.isEmpty) { // @M added `&& !undoLog.isEmpty`
       val (tv, constr) = undoLog.head
       undoLog = undoLog.tail
       tv.constr = constr

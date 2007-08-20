@@ -1,9 +1,15 @@
-object Test {
-  def id[T](f: T => T): T = error("bla")
+// both styles of abstraction should behave the same
+// related to 1210 because that bug broke the OO version below
+trait OO {
+  abstract class Test { self =>
+    type T
 
-  abstract class M[Settings] {
-  	type selfType = M[Settings]
+    val v: Test {type T = self.T} = self.v.v
+  }
+}
 
-    val v: selfType = id[M.this.selfType](x => x.v)
+trait FP {
+  abstract class Test[T] {
+    val v: Test[T] = v.v
   }
 }
