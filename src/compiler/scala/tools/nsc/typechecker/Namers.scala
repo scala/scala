@@ -115,7 +115,8 @@ trait Namers { self: Analyzer =>
             (!prev.sym.isSourceMethod ||
              nme.isSetterName(sym.name) ||
              sym.owner.isPackageClass) &&
-             !(sym.owner.isTypeParameter && sym.name.length==1 && sym.name(0)=='_')) { //@M: allow repeated use of `_' for higher-order type params
+             !((sym.owner.isTypeParameter || sym.owner.isAbstractType)
+               && sym.name.length==1 && sym.name(0)=='_')) { //@M: allow repeated use of `_' for higher-order type params
            doubleDefError(sym.pos, prev.sym)
            sym setInfo ErrorType
         } else context.scope enter sym
@@ -235,7 +236,7 @@ trait Namers { self: Analyzer =>
     class LazyPolyType(tparams: List[Tree], restp: Type, owner: Tree, ownerSym: Symbol, ctx: Context) extends LazyType { //@M
       override val typeParams: List[Symbol]= tparams map (_.symbol) //@M
       override def complete(sym: Symbol) {
-        if(ownerSym.isAbstractType) //@M an abstract type's type parameters are entered
+        if(ownerSym.isAbstractType) //@M an abstract type's type parameters are entered -- TODO: change to isTypeMember ?
           new Namer(ctx.makeNewScope(owner, ownerSym)).enterSyms(tparams) //@M
         restp.complete(sym)
       }
@@ -251,7 +252,7 @@ trait Namers { self: Analyzer =>
           //@M! TypeDef's type params are handled differently
           //@M e.g., in [A[x <: B], B], A and B are entered first as both are in scope in the definition of x
           //@M x is only in scope in `A[x <: B]'
-          if(!sym.isAbstractType) //@M
+          if(!sym.isAbstractType) //@M TODO: change to isTypeMember ?
             new Namer(context.makeNewScope(tree, sym)).enterSyms(tparams)
           ltype = new LazyPolyType(tparams, ltype, tree, sym, context) //@M
           if (sym.isTerm) skolemize(tparams)
@@ -665,11 +666,10 @@ trait Namers { self: Analyzer =>
     //@M! an abstract type definition (abstract type member/type parameter) may take type parameters, which are in scope in its bounds
     private def typeDefSig(tpsym: Symbol, tparams: List[TypeDef], rhs: Tree) = {
       val tparamSyms = typer.reenterTypeParams(tparams) //@M make tparams available in scope (just for this abstypedef)
-      var tp = typer.typedType(rhs).tpe
-      tp match {
+      val tp = typer.typedType(rhs).tpe match {
         case TypeBounds(lt, rt) if (lt.isError || rt.isError) =>
-          tp = TypeBounds(AllClass.tpe, AnyClass.tpe)
-        case _ =>
+          TypeBounds(AllClass.tpe, AnyClass.tpe)
+        case tp => tp
       }
       parameterizedType(tparamSyms, tp) //@M
     }
