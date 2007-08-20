@@ -151,9 +151,10 @@ object SUnit {
 
   /** this class defined useful assert methods */
   trait Assert {
+
     /** fails if expected != actual */
     def assertEquals[A](msg: String, expected: A, actual: => A) {
-      if (expected != actual) fail(msg)
+      if (expected != actual) fail(msg, expected, actual)
     }
 
     /** fails if expected != actual */
@@ -172,7 +173,7 @@ object SUnit {
     }
 
     /** fails if null eq actual */
-    def assertNotNull(msg:String, actual: => AnyRef) {
+    def assertNotNull(msg: String, actual: => AnyRef) {
       if (null eq actual) fail(msg)
     }
 
@@ -254,8 +255,14 @@ object SUnit {
 
     /** throws <code>AssertFailed</code> with given message <code>msg</code>.
      */
-    def fail(msg: String) {
+    private def fail(msg: String) {
       throw new AssertFailed(msg)
+    }
+
+    private def fail[A](msg: String, expected: A, actual: => A) {
+      throw new AssertFailed(msg +
+                              ", expected: " + expected +
+                              ", actual: " + actual)
     }
   }
 }
