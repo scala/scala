@@ -75,7 +75,7 @@ trait ParallelMatching  {
     }
     /*
      DBG("/// MixtureRule("+scrutinee.name+":"+scrutinee.tpe+","+column+", rep = ")
-     DBG(rest)
+     DBG(rest.toString)
      DBG(")///")
      */
     if(isEqualsPattern(column.head.tpe)) { DBG("\n%%% MixEquals");
@@ -572,12 +572,14 @@ trait ParallelMatching  {
         case TypeRef(_,_,List(SingleType(pre,sym))) =>
           gen.mkAttributedRef(pre,sym)
       }
+      val nsuccFst = rest.row.head match { case Row(pats,bnd,g,b) => Row(EmptyTree::pats,bnd,g,b) }
+      val nsuccRow = nsuccFst :: (column.tail.zip(rest.row.tail) map { case (p, Row(pats,bnd,g,b)) => Row(p::pats,bnd,g,b) })
+      val nsucc = Rep(scrutinee :: rest.temp, nsuccRow)
       val nfail = repWithoutHead(column,rest)
-      return (typed{ Equals(Ident(scrutinee) setType scrutinee.tpe, vlue) }, rest, nfail)
+      return (typed{ Equals(Ident(scrutinee) setType scrutinee.tpe, vlue) }, nsucc, nfail)
     }
 
     final def tree(implicit handleOuter: Tree=>Tree, theOwner: Symbol, failTree: Tree) = {
-      handleOuter(Ident("GAGA"))
       val (cond,srep,frep) = this.getTransition
       val cond2 = try{
         typed { handleOuter(cond) }

@@ -26,6 +26,7 @@ object Test extends TestConsoleMain {
   def suite = new TestSuite(
       new TestSimpleIntSwitch,
       new SimpleUnapply,
+      SeqUnapply,
       new Test717,
       new TestGuards,
       TestEqualsPatternOpt,
@@ -44,8 +45,26 @@ object Test extends TestConsoleMain {
       List((1,2)).head match {
         case kv @ Pair(key, _) => kv.toString + " " + key.toString
       }
+
+
     }
   }
+
+  object SeqUnapply extends TestCase("seqUnapply") {
+    case class SFB(i:int,xs:List[Int])
+    override def runTest() {
+      List(1,2) match {
+        case List(1) => assert(false, "wrong case")
+        case List(1,2,xs @ _*) => assert(xs.isEmpty, "not empty")
+        case Nil => assert(false, "wrong case")
+      }
+      SFB(1,List(1)) match {
+        case SFB(_,List(x)) => assert(x==1)
+        case SFB(_,_) => assert(false)
+      }
+    }
+  }
+
   class TestSimpleIntSwitch extends TestCase("SimpleIntSwitch") {
     override def runTest() = {
       assertEquals("s1", 1, 1 match {
@@ -279,12 +298,6 @@ object Test extends TestConsoleMain {
     case _ => 4
   }
 
-  def i = List(1,2) match {
-    case List(1) =>
-    case List(1,2,xs @ _*) =>
-    case Nil =>
-  }
-
   def j = (List[Int](), List[Int](1)) match {
     case (Nil, _) => 'a'
     case (_, Nil) => 'b'
@@ -345,6 +358,32 @@ object Test extends TestConsoleMain {
     }
   }
 */
+  object TestIfOpt { //compile-only "test EqualsPatternClass in combination with MixTypes opt, bug #1278"
+     trait Token {
+       val offset : Int
+       def matching : Option[Token]
+     }
+    def go(tok : Token) = tok.matching match {
+      case Some(other) if true => Some(other)
+      case _ if true => tok.matching match {
+        case Some(other) => Some(other)
+        case _ => None
+      }
+    }
+  }
+
+  object Go { // bug #1277 compile-only
+    trait Core { def next : Position = null }
+    trait Dir
+    val NEXT = new Dir{}
+
+    trait Position extends Core
+
+    (null:Core,null:Dir) match {
+      case (_, NEXT) if true => false // no matter whether NEXT test succeed, cannot throw column because of guard
+      case (at2:Position,dir) => true
+    }
+  }
 
 }
 
