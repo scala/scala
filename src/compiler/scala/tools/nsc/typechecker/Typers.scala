@@ -701,7 +701,7 @@ trait Typers { self: Analyzer =>
             }
             tree1
           } else {
-            val extractor = tree.symbol.filter(sym => definitions.unapplyMember(sym.tpe).exists)
+            val extractor = tree.symbol.filter(sym => unapplyMember(sym.tpe).exists)
             if (extractor != NoSymbol) {
               tree setSymbol extractor
             } else {
@@ -1577,7 +1577,7 @@ trait Typers { self: Analyzer =>
               if (forMSIL) {
                 fun match {
                   case Select(qual, name) =>
-                   if (isSubType(qual.tpe, definitions.DelegateClass.tpe)
+                   if (isSubType(qual.tpe, DelegateClass.tpe)
                       && (name == encode("+=") || name == encode("-=")))
                      {
                        val n = if (name == encode("+=")) nme.PLUS else nme.MINUS
@@ -1631,8 +1631,8 @@ trait Typers { self: Analyzer =>
           setError(copy.Apply(tree, fun, args))
         /* --- begin unapply  --- */
 
-        case otpe if (mode & PATTERNmode) != 0 && definitions.unapplyMember(otpe).exists =>
-          val unapp = definitions.unapplyMember(otpe)
+        case otpe if (mode & PATTERNmode) != 0 && unapplyMember(otpe).exists =>
+          val unapp = unapplyMember(otpe)
           assert(unapp.exists, tree)
           val unappType = otpe.memberType(unapp)
           val argDummyType = pt // was unappArg
@@ -2134,7 +2134,7 @@ trait Typers { self: Analyzer =>
             case Select(qual, name) if (forMSIL &&
                                         pt != WildcardType &&
                                         pt != ErrorType &&
-                                        isSubType(pt, definitions.DelegateClass.tpe)) =>
+                                        isSubType(pt, DelegateClass.tpe)) =>
               val scalaCaller = newScalaCaller(pt);
               addScalaCallerInfo(scalaCaller, expr1.symbol)
               val n: Name = scalaCaller.name

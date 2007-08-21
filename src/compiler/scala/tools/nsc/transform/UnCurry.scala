@@ -421,7 +421,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
             if (fn.symbol.name == nme.unapply)
               args
             else if (fn.symbol.name == nme.unapplySeq)
-              transformArgs(tree.pos, args, definitions.unapplyTypeListFromReturnTypeSeq(fn.tpe))
+              transformArgs(tree.pos, args, analyzer.unapplyTypeListFromReturnTypeSeq(fn.tpe))
             else { assert(false,"internal error: UnApply node has wrong symbol"); null })
           copy.UnApply(tree, fn1, args1)
 
