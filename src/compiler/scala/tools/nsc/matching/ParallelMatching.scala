@@ -11,7 +11,15 @@ import collection.mutable.ListBuffer
 
 /** Translation of Match Expressions
  *
+ *  `p': pattern
  *  `bx': body index
+ *
+ *   internal representation is (temp:List[Symbol], row:List[Row])
+ *
+ *         tmp1      tmp_n
+ *    Row( p_11  ...  p_1n   g_1  b_1 ) + subst
+ *
+ *    Row( p_m1  ...  p_mn   g_m  b_m ) + subst
  *
  *  @author Burak Emir
  */
@@ -25,7 +33,7 @@ trait ParallelMatching  {
   /** here, we distinguish which rewrite rule to apply
    *  @pre column does not contain alternatives (ensured by initRep)
    */
-  def MixtureRule(scrutinee:Symbol, column:List[Tree], rest:Rep): RuleApplication = {
+  def MixtureRule(scrutinee:Symbol, column:List[Tree], rest:Rep)(implicit rep:RepFactory): RuleApplication = {
 
     def isSimpleSwitch: Boolean = {
       (isSameType(scrutinee.tpe.widen, definitions.IntClass.tpe)||
@@ -82,10 +90,10 @@ trait ParallelMatching  {
       return new MixEquals(scrutinee, column, rest)
 	}
     // the next condition is never true, @see isImplemented/CantHandleSeq
-    //if(column.head.isInstanceOf[ArrayValue]) { DBG("\n%%% MixArrayValue");
-    //  Console.println("STOP"); System.exit(-1); // EXPERIMENTAL
+    if(column.head.isInstanceOf[ArrayValue]) { DBG("\n%%% MixSequence");
+      throw new FatalError("not implemented yet");
       //return new MixSequence(scrutinee, column, rest)
-    //}
+    }
     if(isSimpleSwitch) { DBG("\n%%% MixLiterals")
       return new MixLiterals(scrutinee, column, rest)
     }
@@ -107,11 +115,11 @@ trait ParallelMatching  {
 
   // ----------------------------------   data
 
-  sealed trait RuleApplication {
+  sealed abstract class RuleApplication(rep:RepFactory) {
     def scrutinee:Symbol
 
     // used in MixEquals and MixSequence
-    final protected def repWithoutHead(col:List[Tree],rest:Rep): Rep = {
+    final protected def repWithoutHead(col:List[Tree],rest:Rep)(implicit theOwner:Symbol): Rep = {
       var fcol  = col.tail
       var frow  = rest.row.tail
       val nfailrow = new ListBuffer[Row]
@@ -123,37 +131,52 @@ trait ParallelMatching  {
         fcol = fcol.tail
         frow = frow.tail
       }
-      Rep(scrutinee::rest.temp, nfailrow.toList)
+      rep.make(scrutinee::rest.temp, nfailrow.toList)
     }
 
     /** translate outcome of the rule application into code (possible involving recursive application of rewriting) */
-    def tree(implicit handleOuter: Tree=>Tree, theOwner: Symbol, failTree: Tree): Tree
+    def tree(implicit handleOuter: HandleOuter, localTyper: LocalTyper, theOwner: Symbol, failTree: Tree): Tree
   }
 
-  case class ErrorRule extends RuleApplication {
+  case class ErrorRule(implicit rep:RepFactory) extends RuleApplication(rep) {
     def scrutinee:Symbol = throw new RuntimeException("this never happens")
-    final def tree(implicit handleOuter: Tree=>Tree, theOwner: Symbol, failTree: Tree) = failTree
+    final def tree(implicit handleOuter: HandleOuter, localTyper: LocalTyper, theOwner: Symbol, failTree: Tree) = failTree
   }
 
-  case class VariableRule(subst:Binding, guard: Tree, guardedRest:Rep, bx: Int) extends RuleApplication {
+  /**  {case ... if guard => bx} else {guardedRest} */
+  case class VariableRule(subst:Binding, guard: Tree, guardedRest:Rep, bx: Int)(implicit rep:RepFactory) extends RuleApplication(rep) {
     def scrutinee:Symbol = throw new RuntimeException("this never happens")
-    final def tree(implicit handleOuter: Tree=>Tree, theOwner: Symbol, failTree: Tree): Tree = {
-      val body = typed { Rep.requestBody(bx, subst) }
+    final def tree(implicit handleOuter: HandleOuter, localTyper: LocalTyper, theOwner: Symbol, failTree: Tree): Tree = {
+      val body = typed { rep.requestBody(bx, subst) }
       if(guard eq EmptyTree)
         return body
-
+      //Console.println("guard in variable rule"+guard)
       val vdefs = targetParams(subst)
-      val typedElse = repToTree(guardedRest, handleOuter)
-      //Console.println("typedElse:"+typedElse)
-      val untypedIf = If(guard, body, typedElse)
-      val r = atPhase(phase.prev) { typed { squeezedBlock(vdefs, untypedIf) }}
-      //Console.println("genBody-guard:"+r)
+      val typedElse = repToTree(guardedRest, handleOuter,localTyper)
+
+      // crucial: use local typer, it has the the context needed to enter new class symbols
+      val otyper = localTyper//typer.atOwner(theOwner)
+      val resetGuard  = resetAttrs(guard.duplicate)
+      val typedGuard0 = atPhase(phase.prev) {otyper.typed{ resetGuard }}
+      val typedGuard  = handleOuter(typedGuard0)
+      val typedIf = typed{If(typedGuard, body, typedElse)}
+
+          val r = try {
+            typer.typed { squeezedBlock(vdefs, typedIf) }/*} */
+          } catch {
+            case e => e.printStackTrace();
+              throw new FatalError(e.getMessage());
+            null
+          }
+      //Console.println("genBody-guard PRE:"+r)
+      //val r2 = handleOuter(r)
+      //Console.println("genBody-guard POST:"+r2)
       r
-    } /* def tree(implicit handleOuter: Tree=>Tree, theOwner: Symbol, failTree: Tree) */
+    } /* def tree(implicit handleOuter: HandleOuter, theOwner: Symbol, failTree: Tree) */
   }
 
 
-  abstract class CaseRuleApplication extends RuleApplication {
+  abstract class CaseRuleApplication(rep:RepFactory) extends RuleApplication(rep) {
 
     def column: List[Tree]
     def rest:Rep
@@ -194,7 +217,7 @@ trait ParallelMatching  {
     }
 
     /** inserts row indices using in to list of tagindexpairs*/
-    protected def tagIndicesToReps = {
+    protected def tagIndicesToReps(implicit theOwner: Symbol) = {
       val defaultRows = getDefaultRows
       var trs:List[(Int,Rep)] = Nil
       var old = tagIndexPairs
@@ -206,13 +229,13 @@ trait ParallelMatching  {
           tagRows = this.grabRow(tagIndexPairs.index)::tagRows
           tagIndexPairs = tagIndexPairs.next
         }
-        trs = (tag, Rep(this.grabTemps, tagRows ::: defaultRows)) :: trs
+        trs = (tag, rep.make(this.grabTemps, tagRows ::: defaultRows)) :: trs
       }
       tagIndexPairs = old
       trs
     }
 
-    protected def defaultsToRep = Rep(rest.temp, getDefaultRows)
+    protected def defaultsToRep(implicit theOwner: Symbol) = rep.make(rest.temp, getDefaultRows)
 
     protected def insertTagIndexPair(tag: Int, index: Int) { tagIndexPairs = TagIndexPair.insert(tagIndexPairs, tag, index) }
 
@@ -230,7 +253,7 @@ trait ParallelMatching  {
    *
    *  this rule gets translated to a switch of _.$tag()
   **/
-  class MixCases(val scrutinee:Symbol, val column:List[Tree], val rest:Rep) extends CaseRuleApplication {
+  class MixCases(val scrutinee:Symbol, val column:List[Tree], val rest:Rep)(implicit rep:RepFactory) extends CaseRuleApplication(rep) {
 
     /** insert row indices using in to list of tagindexpairs */
     {
@@ -252,13 +275,13 @@ trait ParallelMatching  {
         Row(column(tagIndexPairs.index)::pats, nbindings, g, bx)
     }
 
-    final def tree(implicit handleOuter: Tree=>Tree, theOwner: Symbol, failTree: Tree): Tree = {
+    final def tree(implicit handleOuter: HandleOuter, localTyper: LocalTyper, theOwner: Symbol, failTree: Tree): Tree = {
       val (branches, defaultV, default) = getTransition // tag body pairs
       DBG("[[mix cases transition: branches \n"+(branches.mkString("","\n","")+"\ndefaults:"+defaultV+" "+default+"]]"))
 
-      var ndefault = if(default.isEmpty) failTree else repToTree(default.get, handleOuter)
+      var ndefault = if(default.isEmpty) failTree else repToTree(default.get, handleOuter,localTyper)
       var cases = branches map {
-        case (tag, rep) =>
+        case (tag, r) =>
           CaseDef(Literal(tag),
                   EmptyTree,
                   {
@@ -268,10 +291,10 @@ trait ParallelMatching  {
                       //cast
                       val vtmp = newVar(pat.pos, ptpe)
                       squeezedBlock(
-                        List(typedValDef(vtmp, gen.mkAsInstanceOf(Ident(this.scrutinee),ptpe))),
-                        repToTree(Rep(vtmp::rep.temp.tail, rep.row),handleOuter)
+                        List(typedValDef(vtmp, gen.mkAsInstanceOf(Ident(this.scrutinee), ptpe))),
+                        repToTree(rep.make(vtmp :: r.temp.tail, r.row),handleOuter,localTyper)
                       )
-                    } else repToTree(rep, handleOuter)
+                    } else repToTree(r, handleOuter,localTyper)
                   }
                 )}
 
@@ -290,7 +313,7 @@ trait ParallelMatching  {
         case _ => val defCase = CaseDef(mk_(definitions.IntClass.tpe), EmptyTree, ndefault)
                   Match(Select(Ident(this.scrutinee),nme.tag), cases :::  defCase :: Nil)
       }
-    } /* def tree(implicit handleOuter: Tree=>Tree, theOwner: Symbol, failTree: Tree) */
+    } /* def tree(implicit handleOuter: HandleOuter, theOwner: Symbol, failTree: Tree) */
   } /* MixCases */
 
   /**
@@ -308,7 +331,7 @@ trait ParallelMatching  {
    *
    *  this rule gets translated to a switch. all defaults/same literals are collected
   **/
-  class MixLiterals(val scrutinee:Symbol, val column:List[Tree], val rest:Rep) extends CaseRuleApplication {
+  class MixLiterals(val scrutinee:Symbol, val column:List[Tree], val rest:Rep)(implicit rep:RepFactory) extends CaseRuleApplication(rep) {
 
     private var defaultIndexSet: Set64 = if(column.length < 64) new Set64 else null
 
@@ -346,7 +369,7 @@ trait ParallelMatching  {
       if(!pvars.isEmpty) cunit.error(pos, "nonsensical variable binding")
     }
 
-    {
+    /*block*/{
       var xs = column
       var i  = 0;
       while(xs ne Nil) { // forall
@@ -358,13 +381,13 @@ trait ParallelMatching  {
         i += 1
         xs = xs.tail
       }
-    }
+    }/*end block*/
 
-    final def tree(implicit handleOuter: Tree=>Tree, theOwner: Symbol, failTree: Tree): Tree = {
+    final def tree(implicit handleOuter: HandleOuter, localTyper: LocalTyper, theOwner: Symbol, failTree: Tree): Tree = {
       val (branches, defaultV, defaultRepOpt) = this.getTransition // tag body pairs
       DBG("[[mix literal transition: branches \n"+(branches.mkString("","\n",""))+"\ndefaults:"+defaultV+"\n"+defaultRepOpt+"\n]]")
-      val cases = branches map { case (tag, rep) => CaseDef(Literal(tag), EmptyTree, repToTree(rep, handleOuter)) }
-      var ndefault = if(defaultRepOpt.isEmpty) failTree else repToTree(defaultRepOpt.get, handleOuter)
+      val cases = branches map { case (tag, rep) => CaseDef(Literal(tag), EmptyTree, repToTree(rep, handleOuter,localTyper)) }
+      var ndefault = if(defaultRepOpt.isEmpty) failTree else repToTree(defaultRepOpt.get, handleOuter,localTyper)
 
       renamingBind(defaultV, this.scrutinee, ndefault) // each v in defaultV gets bound to scrutinee
       if(cases.length == 1) {
@@ -386,18 +409,18 @@ trait ParallelMatching  {
         }
         return Match(Ident(this.scrutinee), cases :::  defCase :: Nil)
       }
-    } /* def tree(implicit handleOuter: Tree=>Tree, theOwner: Symbol, failTree: Tree) */
+    } /* def tree(implicit handleOuter: HandleOuter, theOwner: Symbol, failTree: Tree) */
   } /* MixLiterals */
 
   /**
    * mixture rule for unapply pattern
    */
-  class MixUnapply(val scrutinee:Symbol, val column:List[Tree], val rest:Rep) extends RuleApplication {
+  class MixUnapply(val scrutinee:Symbol, val column:List[Tree], val rest:Rep)(implicit rep:RepFactory) extends RuleApplication(rep) {
 
     def newVarCapture(pos:Position,tpe:Type)(implicit theOwner:Symbol) = {
       val v = newVar(pos,tpe)
-      if(scrutinee.hasFlag(symtab.Flags.CAPTURED))
-        v.setFlag(symtab.Flags.CAPTURED) // propagate "unchecked"
+      if(scrutinee.hasFlag(symtab.Flags.TRANS_FLAG))
+        v.setFlag(symtab.Flags.TRANS_FLAG) // propagate "unchecked"
       v
     }
 
@@ -419,7 +442,7 @@ trait ParallelMatching  {
             case UnApply(app @ Apply(fn1,_),args) if fn.symbol==fn1.symbol => Nil
             case p                                                         => List(Row(pat::ps, subst, g, bx))
           }}
-          val nrepFail = if(nrowsOther.isEmpty) None else Some(Rep(scrutinee::rest.temp, nrowsOther))
+          val nrepFail = if(nrowsOther.isEmpty) None else Some(rep.make(scrutinee::rest.temp, nrowsOther))
           //Console.println("active = "+column.head+" / nrepFail = "+nrepFail)
           n match {
             case 0  => //special case for unapply(), app.tpe is boolean
@@ -431,7 +454,7 @@ trait ParallelMatching  {
                 case _                                                     =>
                   Row(     pat ::ps, subst, g, bx)
               }}
-              (uacall, rootvdefs, Rep(ntemps, nrows), nrepFail)
+              (uacall, rootvdefs, rep.make(ntemps, nrows), nrepFail)
 
             case  1 => //special case for unapply(p), app.tpe is Option[T]
               val vtpe = app.tpe.typeArgs(0)
@@ -444,7 +467,7 @@ trait ParallelMatching  {
                 case _                                                           =>
                   Row(EmptyTree ::  pat      :: ps, subst, g, bx)
               }}
-              (uacall, rootvdefs:::List( typedValDef(vsym, Select(Ident(ures), nme.get))), Rep(ntemps, nrows), nrepFail)
+              (uacall, rootvdefs:::List( typedValDef(vsym, Select(Ident(ures), nme.get))), rep.make(ntemps, nrows), nrepFail)
 
             case _ => // app.tpe is Option[? <: ProductN[T1,...,Tn]]
               val uresGet = newVarCapture(ua.pos, app.tpe.typeArgs(0))
@@ -474,22 +497,22 @@ trait ParallelMatching  {
                 case _                                                       =>
                   Row(dummies:::     pat   ::ps, subst, g, bx)
               }}
-              (uacall, rootvdefs:::vdefs.reverse, Rep(ntemps, nrows), nrepFail)
+              (uacall, rootvdefs:::vdefs.reverse, rep.make(ntemps, nrows), nrepFail)
           }}
     } /* def getTransition(...) */
 
-    final def tree(implicit handleOuter: Tree=>Tree, theOwner: Symbol, failTree: Tree) = {
+    final def tree(implicit handleOuter: HandleOuter, localTyper: LocalTyper, theOwner: Symbol, failTree: Tree) = {
       val (uacall/*:ValDef*/ , vdefs,srep,frep) = this.getTransition // uacall is a Valdef
       //Console.println("getTransition"+(uacall,vdefs,srep,frep))
-      val succ = repToTree(srep, handleOuter)
-      val fail = if(frep.isEmpty) failTree else repToTree(frep.get, handleOuter)
+      val succ = repToTree(srep, handleOuter,localTyper)
+      val fail = if(frep.isEmpty) failTree else repToTree(frep.get, handleOuter,localTyper)
       val cond =
         if(uacall.symbol.tpe.typeSymbol eq definitions.BooleanClass)
           typed{ Ident(uacall.symbol) }
         else
           emptynessCheck(uacall.symbol)
       typed { squeezedBlock(List(handleOuter(uacall)), If(cond,squeezedBlock(vdefs,succ),fail)) }
-    } /* def tree(implicit handleOuter: Tree=>Tree, theOwner: Symbol, failTree: Tree) */
+    } /* def tree(implicit handleOuter: HandleOuter, theOwner: Symbol, failTree: Tree) */
   } /* MixUnapply */
 
   /** handle sequence pattern and ArrayValue
@@ -532,7 +555,7 @@ trait ParallelMatching  {
           val nrows = rest.row.map {
             case Row(pats,subst,g,b) => Row(childpatList ::: pats,subst,g,b)
           }
-          val succRep = Rep( vs.toList ::: rest.temp, nrows)
+          val succRep = rep.make( vs.toList ::: rest.temp, nrows)
 
           if(isRightIgnoring(av)) { // contains a _* at the end
             val minlen = xs.length-1;
@@ -555,7 +578,7 @@ trait ParallelMatching  {
       }
     }
 
-    final def tree(implicit handleOuter: Tree=>Tree, theOwner: Symbol, failTree: Tree) = {
+    final def tree(implicit handleOuter: HandleOuter, theOwner: Symbol, failTree: Tree) = {
       val (cx,srep,frep) = this.getTransition
       val succ = repToTree(srep, handleOuter)
       val fail = repToTree(frep, handleOuter)
@@ -564,23 +587,25 @@ trait ParallelMatching  {
 
   }
   */
-  class MixEquals(val scrutinee:Symbol, val column:List[Tree], val rest:Rep) extends RuleApplication {
+  // @todo: equals test for same constant
+  class MixEquals(val scrutinee:Symbol, val column:List[Tree], val rest:Rep)(implicit rep:RepFactory) extends RuleApplication(rep) {
     /** condition (to be used in IF), success and failure Rep */
     final def getTransition(implicit theOwner: Symbol): (Tree, Rep, Rep) = {
       val nmatrix = rest
-      val vlue = column.head.tpe match {
+      val vlue = (column.head.tpe: @unchecked) match {
         case TypeRef(_,_,List(SingleType(pre,sym))) =>
           gen.mkAttributedRef(pre,sym)
       }
       val nsuccFst = rest.row.head match { case Row(pats,bnd,g,b) => Row(EmptyTree::pats,bnd,g,b) }
       val nsuccRow = nsuccFst :: (column.tail.zip(rest.row.tail) map { case (p, Row(pats,bnd,g,b)) => Row(p::pats,bnd,g,b) })
-      val nsucc = Rep(scrutinee :: rest.temp, nsuccRow)
+      val nsucc = rep.make(scrutinee :: rest.temp, nsuccRow)
       val nfail = repWithoutHead(column,rest)
       return (typed{ Equals(Ident(scrutinee) setType scrutinee.tpe, vlue) }, nsucc, nfail)
     }
 
-    final def tree(implicit handleOuter: Tree=>Tree, theOwner: Symbol, failTree: Tree) = {
+    final def tree(implicit handleOuter: HandleOuter, localTyper: LocalTyper, theOwner: Symbol, failTree: Tree) = {
       val (cond,srep,frep) = this.getTransition
+      //Console.println("MixEquals::tree -- cond "+cond)
       val cond2 = try{
         typed { handleOuter(cond) }
       } catch {
@@ -591,8 +616,8 @@ trait ParallelMatching  {
         throw e
       }
 
-      val succ = repToTree(srep, handleOuter)
-      val fail = repToTree(frep, handleOuter)
+      val succ = repToTree(srep, handleOuter,localTyper)
+      val fail = repToTree(frep, handleOuter,localTyper)
       try {
         typed{ If(cond2, succ, fail) }
       } catch {
@@ -601,13 +626,13 @@ trait ParallelMatching  {
         Console.println("cond2: "+cond2)
         throw e
       }
-    } /* def tree(implicit handleOuter: Tree=>Tree, theOwner: Symbol, failTree: Tree) */
+    } /* def tree(implicit handleOuter: HandleOuter, theOwner: Symbol, failTree: Tree) */
   } /* MixEquals */
 
   /**
    *   mixture rule for type tests
   **/
-  class MixTypes(val scrutinee:Symbol, val column:List[Tree], val rest:Rep) extends RuleApplication {
+  class MixTypes(val scrutinee:Symbol, val column:List[Tree], val rest:Rep)(implicit rep:RepFactory) extends RuleApplication(rep) {
 
     var casted: Symbol = null
     var moreSpecific:   List[Tree]        = Nil
@@ -622,13 +647,14 @@ trait ParallelMatching  {
 
     private val headPatternType     = column.head match {
       case p @ (_:Ident | _:Select) =>
-        singleType(p.symbol.tpe.prefix, p.symbol)  //ConstantType(p.tpe.singleton)
+        singleType(p.symbol.tpe.prefix, p.symbol) //should be singleton object
       //case p@Apply(_,_) if !p.tpe./*?type?*/symbol.hasFlag(symtab.Flags.CASE) => ConstantType(new NamedConstant(p))
       case _ => column.head.tpe
     }
     private val isCaseHead = isCaseClass(headPatternType)
-    private val dummies = if(!isCaseHead) Nil else headPatternType.typeSymbol.caseFieldAccessors.map { x => EmptyTree }
+    private val dummies = if(!isCaseHead) Nil else getDummies(headPatternType.typeSymbol.caseFieldAccessors.length)
 
+    //Console.println("headPatternType "+headPatternType)
     //Console.println("isCaseHead = "+isCaseHead)
     //Console.println("dummies = "+dummies)
 
@@ -666,7 +692,7 @@ trait ParallelMatching  {
     }
     //Console.println("scrutinee == "+scrutinee+":"+scrutinee.tpe)
     //Console.println("column.head == "+column.head);
-    {
+    /*init block*/ {
       var sr = (moreSpecific,subsumed,remaining)
       var j = 0; var pats = column; while(pats ne Nil) {
         val (ms,ss,rs) = sr // more specific, more general(subsuming current), remaining patterns
@@ -718,7 +744,7 @@ trait ParallelMatching  {
       this.subsumed     = sr._2.reverse
       this.remaining    = sr._3.reverse
       sr = null
-    }
+    } /* init block */
 
     override def toString = {
       "MixTypes("+scrutinee+":"+scrutinee.tpe+") {\n  moreSpecific:"+moreSpecific+"\n  subsumed:"+subsumed+"\n  remaining"+remaining+"\n}"
@@ -730,15 +756,15 @@ trait ParallelMatching  {
       // the following works for type tests... what fudge is necessary for value comparisons?
       // type test
       casted = if(scrutinee.tpe =:= headPatternType) scrutinee else newVar(scrutinee.pos, headPatternType)
-      if(scrutinee.hasFlag(symtab.Flags.CAPTURED))
-        casted.setFlag(symtab.Flags.CAPTURED)
+      if(scrutinee.hasFlag(symtab.Flags.TRANS_FLAG))
+        casted.setFlag(symtab.Flags.TRANS_FLAG)
       // succeeding => transition to translate(subsumed) (taking into account more specific)
       val nmatrix = {
         var ntemps  = if(isCaseClass(casted.tpe)) casted.caseFieldAccessors map {
           meth =>
             val ctemp = newVar(scrutinee.pos, casted.tpe.memberType(meth).resultType)
-            if(scrutinee.hasFlag(symtab.Flags.CAPTURED))
-              ctemp.setFlag(symtab.Flags.CAPTURED)
+            if(scrutinee.hasFlag(symtab.Flags.TRANS_FLAG))
+              ctemp.setFlag(symtab.Flags.TRANS_FLAG)
             ctemp
         } else Nil // (***)
         var subtests = subsumed
@@ -759,7 +785,7 @@ trait ParallelMatching  {
         }
         //DBG("ntemps   = "+ntemps.mkString("[["," , ","]]"))
         //DBG("ntriples = "+ntriples.mkString("[[\n","\n, ","\n]]"))
-        Rep(ntemps, ntriples) /*setParent this*/
+        rep.make(ntemps, ntriples) /*setParent this*/
       }
       // fails      => transition to translate(remaining)
 
@@ -768,46 +794,58 @@ trait ParallelMatching  {
         val ntriples = remaining map {
           case (j, pat) => val r = rest.row(j);  Row(pat :: r.pat, r.subst, r.guard, r.bx)
         }
-        if(ntriples.isEmpty) None else Some(Rep(ntemps, ntriples))
+        if(ntriples.isEmpty) None else Some(rep.make(ntemps, ntriples))
       }
       //DBG("nmatrixFail = \n\n"+nmatrixFail)
       (casted, nmatrix, nmatrixFail)
     } /* getTransition(implicit theOwner: Symbol): (Symbol, Rep, Option[Rep]) */
 
-    final def tree(implicit handleOuter: Tree=>Tree, theOwner: Symbol, failTree: Tree) = {
+    final def tree(implicit handleOuter: HandleOuter, localTyper: LocalTyper, theOwner: Symbol, failTree: Tree) = {
       val (casted,srep,frep) = this.getTransition
       val condUntyped = condition(casted.tpe, this.scrutinee)
       var cond = handleOuter(typed { condUntyped }) // <- throws exceptions in some situations?
       if(needsOuterTest(casted.tpe, this.scrutinee.tpe)) // @todo merge into def condition
         cond = addOuterCondition(cond, casted.tpe, typed{Ident(this.scrutinee)}, handleOuter)
+      val succ = repToTree(srep, handleOuter, localTyper)
 
-      val succ = repToTree(srep, handleOuter)
-
-      val fail = if(frep.isEmpty) failTree else repToTree(frep.get, handleOuter)
+      val fail = if(frep.isEmpty) failTree else repToTree(frep.get, handleOuter,localTyper)
 
       // dig out case field accessors that were buried in (***)
-      val cfa  = casted.caseFieldAccessors
+      //Console.println("casted:"+casted+":  "+casted.tpe)
+      val cfa  = if(isCaseHead) casted.caseFieldAccessors else Nil
+      //Console.println("cfa's:"+cfa.toString)
+
       val caseTemps = (if(!srep.temp.isEmpty && srep.temp.head == casted) srep.temp.tail else srep.temp).zip(cfa)
 
-      //DEBUG("case temps"+caseTemps.toString)
+      //Console.println("case temps"+caseTemps.toString)
+      try{
       var vdefs     = caseTemps map {
-        case (tmp,meth) =>
-          val typedAccess = typed { Apply(Select(typed{Ident(casted)}, meth),List()) }
-        typedValDef(tmp, typedAccess)
+        case (tmp,accessorMethod) =>
+          //Console.println("tmp: "+tmp+":"+tmp.tpe)
+          //Console.println("accessorMethod: "+accessorMethod+":"+accessorMethod.tpe)
+          val untypedAccess = Apply(Select(typed{Ident(casted)}, accessorMethod),List())
+          val typedAccess = typed { untypedAccess }
+          //Console.println("ParallelMatching-- MixTypes "+typedAccess)
+          typedValDef(tmp, typedAccess)
       }
 
       if(casted ne this.scrutinee) {
         vdefs = ValDef(casted, gen.mkAsInstanceOf(typed{Ident(this.scrutinee)}, casted.tpe)) :: vdefs
       }
       typed { If(cond, squeezedBlock(vdefs,succ), fail) }
-    } /* def tree(implicit handleOuter: Tree=>Tree, theOwner: Symbol, failTree: Tree) */
+      } catch {
+        case e =>
+          throw new FatalError("EXCEPTION:"+e.getMessage())
+      }
+    } /* def tree(implicit handleOuter: HandleOuter, theOwner: Symbol, failTree: Tree) */
   } /* class MixTypes */
 
   /** converts given rep to a tree - performs recursive call to translation in the process to get sub reps
    */
-  final def repToTree(rep:Rep, handleOuter: Tree => Tree)(implicit theOwner: Symbol, failTree: Tree): Tree = {
+  final def repToTree(r: Rep, handleOuter: HandleOuter, localTyper: LocalTyper)(implicit theOwner: Symbol, failTree: Tree, rep: RepFactory): Tree = {
     implicit val HandleOuter = handleOuter
-    rep.applyRule.tree
+    implicit val LocalTyper = localTyper
+    r.applyRule.tree
     /*
     rep.applyRule match {
       case r : ErrorRule    => r.tree
@@ -831,12 +869,13 @@ trait ParallelMatching  {
   /** subst: the bindings so far */
   case class Row(pat:List[Tree], subst:Binding, guard:Tree, bx:Int)
 
-object Rep {
-  type RepType = Product2[List[Symbol], List[Row]]
-  final def unapply(x:Rep):Option[RepType] =
-    if(x.isInstanceOf[RepImpl]) Some(x.asInstanceOf[RepImpl]) else None
-
-  private case class RepImpl(val temp:List[Symbol], val row:List[Row]) extends Rep with RepType {
+  object Rep {
+    type RepType = Product2[List[Symbol], List[Row]]
+    final def unapply(x:Rep)(implicit rep:RepFactory):Option[RepType] =
+      if(x.isInstanceOf[rep.RepImpl]) Some(x.asInstanceOf[RepType]) else None
+  }
+  class RepFactory {
+  case class RepImpl(val temp:List[Symbol], val row:List[Row]) extends Rep with Rep.RepType {
     (row.find { case Row(pats, _, _, _) => temp.length != pats.length }) match {
       case Some(row) => assert(false, "temp == "+temp+" row.pats == "+row.pat);
       case _ =>
@@ -850,8 +889,9 @@ object Rep {
   var targets: List[Tree] = _
   var reached64: Set64 = _
   var reached: List[Int] = Nil
+  var shortCuts: List[Symbol] = Nil;
 
-  final def apply(temp:List[Symbol], row:List[Row], targets: List[Tree], vss:List[SymList]): Rep = {
+  final def make(temp:List[Symbol], row:List[Row], targets: List[Tree], vss:List[SymList])(implicit theOwner: Symbol): Rep = {
     // ensured that labels(i) eq null for all i, cleanup() has to be called after translation
     this.targets   = targets
     if(targets.length > labels.length)
@@ -860,7 +900,13 @@ object Rep {
     this.reached64 = if(targets.length < 64) new Set64 else null
     //Console.println("targets: "+targets)
     //Console.print("labels: "); {for(s<-labels) Console.print({if(s ne null) {s} else "_"}+",")}
-    return apply(temp, row)
+    return make(temp, row)
+  }
+
+  final def shortCut(theLabel:Symbol): Int = {
+    //Console.println("adds shortcut:"+theLabel)
+    this.shortCuts = shortCuts:::theLabel::Nil;
+    return -shortCuts.length
   }
 
   final def cleanup(tree: Tree)(implicit theOwner: Symbol): Tree = {
@@ -903,11 +949,12 @@ object Rep {
     var i = targets.length;
     while (i>0) { i-=1; labels(i) = null; };
     reached = Nil
+    shortCuts = Nil
   }
   final def isReached(bx:Int)   = { /*Console.println("isReached("+bx+")"); */labels(bx) ne null }
   final def markReachedTwice(bx:Int) = if(reached64 ne null) { reached64 |= bx } else { reached = insertSorted(bx, reached) }
-  /** @pre labelIndex(bx) != -1 */
-  final def isReachedTwice(bx:Int) = if(reached64 ne null) { reached64 contains bx } else { findSorted(bx,reached) }
+  /** @pre bx < 0 || labelIndex(bx) != -1 */
+  final def isReachedTwice(bx:Int) = (bx < 0) || (if(reached64 ne null) { reached64 contains bx } else { findSorted(bx,reached) })
 
   /* @returns bx such that labels(bx) eq label, -1 if no such bx exists */
   final def labelIndex(label:Symbol): Int = {
@@ -919,6 +966,16 @@ object Rep {
    *  the function takes care of binding
    */
   final def requestBody(bx:Int, subst:Binding)(implicit theOwner: Symbol): Tree = {
+    if(bx < 0) {// is shortcut
+      //Console.println("requestBody ("+bx+") gets shortcut "+(shortCuts.length-bx)+ " all:"+shortCuts);
+      val jlabel = shortCuts(-bx-1)
+      //Console.println("is "+jlabel);
+      val jump = Apply(Ident(jlabel) setType jlabel.tpe, Nil)
+      //Console.println(jump)
+      //val jumpT = typed{ jump }
+      //Console.println(jumpT)
+      return jump
+    }
     //Console.print("requestbody("+bx+", "+subst+") isReached(bx)?"+isReached(bx)+" labels:"); {for(s<-labels) Console.print({if(s ne null) {s} else "_"}+",")}
     if(!isReached(bx)) { // first time this bx is requested
       val argts = new ListBuffer[Type] // types of
@@ -937,8 +994,6 @@ object Rep {
       // bug: typer is not able to digest a body of type Nothing being assigned result type Unit
       val tpe = if(body.tpe.typeSymbol eq definitions.AllClass) body.tpe else resultType
       val label = theOwner.newLabel(body.pos, "body%"+bx).setInfo(new MethodType(argts.toList, tpe))
-      //Console.println("label.tpe"+label.tpe)
-
       labels(bx) = label
 
       if(body.isInstanceOf[Throw] || body.isInstanceOf[Literal]) {
@@ -962,7 +1017,7 @@ object Rep {
     label.tpe match {
       case MethodType(fmls,_) =>
         if (fmls.length != args.length) { // sanity check
-          cunit.error(targets(bx).pos, "consistency problem ! "+fmls)
+          cunit.error(targets(bx).pos, "consistency problem in target generation ! I have args "+args+" and need to jump to a label with fmls "+fmls)
           //System.exit(-1)
           throw FatalError("consistency problem")
         }
@@ -992,7 +1047,7 @@ object Rep {
   }
 
   /** the injection here handles alternatives and unapply type tests */
-  final def apply(temp:List[Symbol], row1:List[Row]): Rep = {
+  final def make(temp:List[Symbol], row1:List[Row])(implicit theOwner: Symbol): Rep = {
     //if(temp.isEmpty && row1.length > 1) return apply(Nil, row1.head::Nil) // small standalone optimization, we won't need other rows (check guard?)
     var unchanged: Boolean = true
     val row = row1 flatMap {
@@ -1035,40 +1090,47 @@ object Rep {
                Console.println("/'''''''''''' 6"+(o.symbol.tpe.typeSymbol hasFlag (Flags.CASE)))
                Console.println("/'''''''''''' 7"+(o.symbol.tpe.termSymbol.hasFlag (Flags.CASE)))
                */
-              val stpe =
+              val tpe =
                 if (!o.symbol.isValue) {
-		          singleType(o.tpe.prefix, o.symbol)
+                  singleType(o.tpe.prefix, o.symbol)
                 } else {
+                  DBG("o.tpe              "+o.symbol.tpe)
+                  DBG("o.tpe              "+o.symbol.tpe.isStable)
+                  DBG("p.prefix           "+o.symbol.tpe.prefix)
                   singleType(NoPrefix, o.symbol) // equals-check
+                  // call the above `stpe'. Then we could also return
+                  // `typeRef(definitions.ScalaPackageClass.tpe, definitions.EqualsPatternClass, List(stpe))'
+                  // and force an equality check. However, exhaustivity checking would not work anymore.
+                  // so first, extend exhaustivity check to equalspattern
                 }
-              val p = Ident(nme.WILDCARD) setType stpe
-              val q = Typed(p, TypeTree(stpe)) setType stpe
+              val p = Ident(nme.WILDCARD) setType tpe
+              val q = Typed(p, TypeTree(tpe)) setType tpe
               pats = q::pats
 
             case o @ Ident(nme.WILDCARD) =>
               pats = o::pats
 
-            case o @ Select(_,_) =>
-              /*
-               Console.println("!/'''''''''''' 1"+o.tpe)
-               Console.println("!/'''''''''''' 2"+o.symbol)
-               Console.println("!/'''''''''''' 3"+o.symbol.tpe)
-               Console.println("!'''''''''''' 4"+o.symbol.tpe.prefix)
-               Console.println("!/'''''''''''' 5"+o.symbol.tpe.prefix.isStable)
-
-               Console.println("!/'''''''''''' 6"+(o.symbol.tpe.typeSymbol hasFlag (Flags.CASE)))
-               Console.println("!/'''''''''''' 7"+(o.symbol.tpe.termSymbol.hasFlag (Flags.CASE)))
-               */
+            case o @ Select(stor,_) =>
               val stpe =
                 if (!o.symbol.isValue) {
-		          singleType(o.tpe.prefix, o.symbol)
+                  singleType(o.tpe.prefix, o.symbol)
                 } else {
+                  DBG("stor.tpe              "+stor.tpe)
+                  DBG("stor.symbol           "+stor.symbol)
+                  DBG("stor.symbol.tpe       "+stor.symbol.tpe)
                   singleType(NoPrefix, o.symbol) // equals-check
                 }
               val p = Ident(nme.WILDCARD) setType stpe
               val q = Typed(p, TypeTree(stpe)) setType stpe
               pats = q::pats
 
+            case UnApply(Apply(TypeApply(sel @ Select(stor, nme.unapplySeq),List(tptArg)),_),ArrayValue(_,xs)::Nil) if(stor.symbol eq definitions.ListModule) =>
+              //@pre: is not right-ignoring (no star pattern)
+              // no exhaustivity check, please
+              temp(j).setFlag(symtab.Flags.TRANS_FLAG)
+              val listType = typeRef(mkThisType(definitions.ScalaPackage), definitions.ListClass, List(tptArg.tpe))
+              val nmlzdPat = normalizedListPattern(xs, tptArg.tpe)
+              pats = nmlzdPat :: pats
             case ua @ UnApply(Apply(fn, _), arg) =>
               fn.tpe match {
                 case MethodType(List(argtpe,_*),_) =>
@@ -1078,17 +1140,39 @@ object Rep {
             /** something too tricky is going on if the outer types don't match
              */
             case o @ Apply(fn, List()) if !isCaseClass(o.tpe) =>
-              val stpe = fn match {
+              DBG("o.tpe   "+o.tpe)
+              DBG("fn is   ")
+              //Console.println("o.symbol is a module?  "+o.symbol+" "+o.symbol.isModule)
+              //Console.println("o.tpe.termSymbol is a module?  "+o.tpe.termSymbol+" "+o.tpe.termSymbol.isModule)
+              val stpe: Type = fn match {
+                case _ if (o.symbol.isModule) =>
+                  DBG("o.symbol is module!  "+o.symbol)
+                  DBG(nodeToString(fn))
+                  singleType(o.tpe.prefix, o.symbol)
+                case _ if (o.tpe.termSymbol.isModule) =>
+                  //Console.println("o.tpe.termSymbol is a module!  "+sym)
+                  singleType(o.tpe.prefix, o.symbol)
                 case Select(path,sym) =>
-                  if (o.tpe.termSymbol.isModule) singleType(o.tpe.prefix, o.symbol)
-                  else path.tpe match {
+                  DBG("path    "+path);
+                  DBG("sym     "+sym);
+                  path.tpe match {
                     case ThisType(sym) =>
                       singleType(path.tpe, o.symbol)
-                    case _ =>
-                      singleType(singleType(path.tpe.prefix, path.symbol), o.symbol)
+
+                    case _ => // e.g. `case Some(p._2)' in scala.collection.jcl.Map
+                      singleType(singleType(path.tpe.prefix, path.symbol) , o.symbol)  // old
+
                   }
-                case Ident(_) => // lazy val
-                  singleType(NoPrefix, o.symbol)
+                case o @ Ident(_) => // lazy val
+                  DBG("sym     "+o.symbol)
+                  DBG("sym.isValue     "+o.symbol.isValue)
+                  //singleType(NoPrefix, o.symbol)                                  // before
+                if (!o.symbol.isValue) {
+		  singleType(o.tpe.prefix, o.symbol)
+                } else {
+                  singleType(NoPrefix, o.symbol) // equals-check
+                }
+
               }
               //Console.println("encoding in singleType:"+stpe)
 
@@ -1106,7 +1190,7 @@ object Rep {
               pats = q :: pats
 
             case p @ ArrayValue(_,xs) =>
-              Console.println("hello from array val!")
+          	  assert(false) // inactive, @see PatternMatchers::isImplemented
               pats = p :: pats
 
             case p =>
@@ -1132,7 +1216,7 @@ object Rep {
       ri
     } else {
       //Console.println("Rep.apply / recursive ")
-      Rep(temp,row) // recursive call
+      this.make(temp,row) // recursive call
     }
   }
 }
@@ -1150,7 +1234,7 @@ object Rep {
       case (sym,i) =>
         //Console.println("sym! "+sym+" mutable? "+sym.hasFlag(symtab.Flags.MUTABLE)+" captured? "+sym.hasFlag(symtab.Flags.CAPTURED))
         if (sym.hasFlag(symtab.Flags.MUTABLE) &&  // indicates that have not yet checked exhaustivity
-            !sym.hasFlag(symtab.Flags.CAPTURED) &&  // indicates @unchecked
+            !sym.hasFlag(symtab.Flags.TRANS_FLAG) &&  // indicates @unchecked
             sym.tpe.typeSymbol.hasFlag(symtab.Flags.SEALED)) {
 
               sym.resetFlag(symtab.Flags.MUTABLE)
@@ -1189,8 +1273,9 @@ object Rep {
           comb forall {
             case (i,sym) =>
               val p = strip2(pats(i));
+            //Console.println("covers? "+p+" "+sym);
             val res =
-              isDefaultPattern(p) || {
+              isDefaultPattern(p) || p.isInstanceOf[UnApply] || p.isInstanceOf[ArrayValue] || {
                 val symtpe = if(sym.hasFlag(symtab.Flags.MODULE)) {
                   singleType(sym.tpe.prefix, sym.linkedModuleOfClass) // e.g. None, Nil
                 } else sym.tpe
@@ -1227,7 +1312,13 @@ object Rep {
       return this
     } /* def init */
 
-    final def applyRule: RuleApplication = row match {
+
+    /*   internal representation is (temp:List[Symbol], row:List[Row])
+     *
+     *         tmp1       tmp_m
+     */
+
+    final def applyRule(implicit theOwner: Symbol, rep: RepFactory): RuleApplication = row match {
       case Nil =>
         ErrorRule
       case Row(pats, subst, g, bx)::xs =>
@@ -1240,10 +1331,15 @@ object Rep {
             px += 1 // pattern index
           }
         }
+        /*    Row(   _   ...   _     g_1  b_1 ) :: rows     it's all default patterns
+         */
         if(bnd ne null) {    // all default patterns
-          val rest = if(g eq EmptyTree) null else Rep(temp, xs)
+          val rest = if(g eq EmptyTree) null else rep.make(temp, xs)
           return VariableRule (bnd, g, rest, bx)
         }
+
+      /*    Row( _  ... _ p_1i  ...  p_1n   g_m  b_m ) :: rows
+       */
 
         // cut out column px that contains the non-default pattern
         // assert(px == pats findIndexOf {x => !isDefaultPattern(x)})
@@ -1251,7 +1347,7 @@ object Rep {
         // assert(column == row map { case Row(pats,_,_,_) => pats(px) })
         val restTemp =                                               temp.take(px) ::: temp.drop(px+1)
         val restRows = row map { case Row(pats, subst, g, bx) => Row(pats.take(px) ::: pats.drop(px+1), subst, g, bx) }
-        return MixtureRule(temps.head, column, Rep(restTemp,restRows))
+        return MixtureRule(temps.head, column, rep.make(restTemp,restRows))
     } /* applyRule */
 
       // a fancy toString method for debugging
@@ -1273,11 +1369,11 @@ object Rep {
 
   /** creates initial clause matrix
    */
-  final def initRep(selector: Tree, cases: List[Tree], checkExhaustive: Boolean)(implicit theOwner: Symbol) = {
+  final def initRep(selector: Tree, cases: List[Tree], checkExhaustive: Boolean, rep:RepFactory)(implicit theOwner: Symbol) = {
     val root = newVar(selector.pos, selector.tpe)
     // communicate whether exhaustiveness-checking is enabled via some flag
     if (!checkExhaustive)
-      root.setFlag(symtab.Flags.CAPTURED)
+      root.setFlag(symtab.Flags.TRANS_FLAG)
     var bx = 0;
     val targets = new ListBuffer[Tree]
     val vss = new ListBuffer[SymList]
@@ -1292,7 +1388,7 @@ object Rep {
         cs = cs.tail
     }
     //Console.println("leaving initRep")
-    /*val res = */Rep(List(root), row.toList, targets.toList, vss.toList)
+    /*val res = */rep.make(List(root), row.toList, targets.toList, vss.toList)
     //Console.println("left initRep")
     //res
   }
@@ -1303,7 +1399,6 @@ object Rep {
   final def newVar(pos: Position, name: Name, tpe: Type)(implicit theOwner: Symbol): Symbol = {
     if(tpe eq null) assert(tpe ne null, "newVar("+name+", null)")
     val sym = theOwner.newVariable(pos, name) // careful: pos has special meaning
-    sym setFlag symtab.Flags.TRANS_FLAG // should eventually be used for avoiding non-null checks?
     sym setInfo tpe
     sym
   }
@@ -1315,8 +1410,8 @@ object Rep {
    */
   final def condition(tpe: Type, scrut: Symbol): Tree = {
     val res = condition1(tpe, scrut)
-    if (settings_debug)
-      Console.println("condition, tpe = "+tpe+", scrut.tpe = "+scrut.tpe+", res = "+res)
+    //if (settings_debug)
+    //  Console.println("condition, tpe = "+tpe+", scrut.tpe = "+scrut.tpe+", res = "+res)
     res
   }
   final def condition1(tpe: Type, scrut: Symbol): Tree = {
@@ -1395,8 +1490,10 @@ object Rep {
     }
 
   /** adds a test comparing the dynamic outer to the static outer */
-  final def addOuterCondition(cond:Tree, tpe2test: Type, scrutinee: Tree, handleOuter: Tree=>Tree) = {
+  final def addOuterCondition(cond:Tree, tpe2test: Type, scrutinee: Tree, handleOuter: HandleOuter) = {
     val TypeRef(prefix,_,_) = tpe2test
+    //Console.println("addOuterCondition: "+prefix)
+    assert(prefix ne NoPrefix)
     var theRef = gen.mkAttributedRef(prefix.prefix, prefix.termSymbol)
 
     // needs explicitouter treatment

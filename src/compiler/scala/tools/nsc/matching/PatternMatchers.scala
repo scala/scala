@@ -53,13 +53,16 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
 
     import global.{ definitions => defs }
 
-    var handleOuter: Tree=>Tree = _
+    var handleOuter: HandleOuter = _
 
-    def initialize(selector: Tree, doCheckExhaustive: Boolean, owner: Symbol, handleOuter:Tree=>Tree): Unit = {
+    var localTyper: LocalTyper = _
+
+    def initialize(selector: Tree, doCheckExhaustive: Boolean, owner: Symbol, _handleOuter:Tree=>Tree, _localTyper:Tree=>Tree): Unit = {
       this.owner = owner
       this.doCheckExhaustive = doCheckExhaustive
       this.selector = selector
-      this.handleOuter = handleOuter
+      this.handleOuter = new HandleOuter( _handleOuter )
+      this.localTyper = new LocalTyper( _localTyper )
       if (settings_debug) {
         Console.println("****")
         Console.println("**** initalize, selector = "+selector+" selector.tpe = "+selector.tpe)
@@ -177,32 +180,30 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
         val c = cases1.head.asInstanceOf[CaseDef]
         //if(c.guard != EmptyTree) return CantHandleGuard // TEST
         //hasUnapply.traverse(c.pat)
-        val e = isImplemented(c.pat); if(e ne null) return e
+        val e = isImplemented(c.pat, c.guard); if(e ne null) return e
         cases1 = cases1.tail
       }
 
-      val irep = initRep(selector, cases, doCheckExhaustive)
-      val root = irep.temp.head
-
-      implicit val fail: Tree = ThrowMatchError(selector.pos, Ident(root))
-      val vdef = typed{ValDef(root, selector)}
-
-      //implicit val memo       = new collection.mutable.HashMap[(Symbol,Symbol),Symbol]
-      //implicit val theCastMap = new collection.mutable.HashMap[(Symbol,Type),Symbol]
-
+      implicit val rep = new RepFactory()
       try {
-        val mch  = typed{repToTree(irep, handleOuter)}
+        val irep = initRep(selector, cases, doCheckExhaustive, rep)
+        val root = irep.temp.head
+
+        implicit val fail: Tree = ThrowMatchError(selector.pos, Ident(root))
+        val vdef = typed{ValDef(root, selector)}
+
+        val mch  = typed{repToTree(irep, handleOuter, localTyper)}
         dfatree = typed{squeezedBlock(List(vdef), mch)}
 
         //DEBUG("**** finished\n"+dfatree.toString)
         var bx = 0; var cs = cases; while(cs ne Nil) {
-          if(!Rep.isReached(bx)) {
+          if(!rep.isReached(bx)) {
             cunit.error(cs.head.asInstanceOf[CaseDef].body.pos, "unreachable code")
           }
           cs = cs.tail
           bx += 1
         }
-        dfatree = Rep.cleanup(dfatree)
+        dfatree = rep.cleanup(dfatree)
         resetTrav.traverse(dfatree)
 
         //constructParallel(cases) // ZZZ
@@ -220,7 +221,7 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
 	//	 return e // fallback
 
          //non-fallback:
-        case e: CantHandle => Rep.cleanup(); return e
+        case e: CantHandle => rep.cleanup(); return e
         case e => throw e
       }
     }
@@ -234,27 +235,26 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
     object resetTrav extends Traverser {
       override def traverse(x:Tree): unit = x match {
         case vd @ ValDef(_,_,_,_)=>
-          vd.symbol.resetFlag(symtab.Flags.CAPTURED)
           if(vd.symbol.hasFlag(symtab.Flags.TRANS_FLAG)) {
             vd.symbol.resetFlag(symtab.Flags.TRANS_FLAG)
-            vd.symbol.resetFlag(symtab.Flags.MUTABLE)
+            //vd.symbol.resetFlag(symtab.Flags.MUTABLE)
           }
         case _ =>
           super.traverse(x)
       }
     }
 
-    def isImplemented(xs:List[Tree]): CantHandle =
+    def isImplemented(xs:List[Tree], guard:Tree): CantHandle =
       if(xs eq Nil) null else {
-        val e = isImplemented(xs.head)
-        if(e ne null) e else isImplemented(xs.tail)
+        val e = isImplemented(xs.head, guard)
+        if(e ne null) e else isImplemented(xs.tail, guard)
       }
 
-    def isImplemented(x:Tree): CantHandle = {
+    def isImplemented(x:Tree,guard:Tree): CantHandle = {
       //Console.println("isImplemented? "+x)
       x match {
         case app @ Apply(fn,xs) =>
-          if(!isCaseClass(app.tpe)) { /*|| (fn.symbol ne null)*/
+          if(!isCaseClass(app.tpe)) { //|| (fn.symbol ne null)
              //Console.println(app)
              //Console.println(app.tpe)
              //Console.println(app.symbol)
@@ -265,64 +265,44 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
              }
              null
           } else {
-            /*if(!app.tpe.symbol.hasFlag(symtab.Flags.CASE)) {
-              Console.print("what is this?"+x)
-              if(fn.symbol eq null) {
-                Console.println("it's fn doesn't even have a symbol?!")
-              } else {
-                Console.println("it's fn symbol is "+fn.symbol)
-              }
-            }*/
-            isImplemented(xs)
+            isImplemented(xs, guard)
           }
         case p @ Ident(n)       => null // if(n!= nme.WILDCARD && p.symbol.) CantHandleIdent else null
-        case UnApply(fn,xs)     => isImplemented(xs)
-        case Bind(n, p)         => isImplemented(p)
-        case Alternative(xs)    => isImplemented(xs)
+
+        //case UnApply(fn,xs)     => isImplemented(xs, guard)
+        case UnApply(fn,xs)     =>
+          fn match {
+            // List.unapply<...>(xs)
+            case Apply(TypeApply(sel @ Select(stor, nme.unapplySeq),_),_) if(stor.symbol eq definitions.ListModule) =>
+              (xs: @unchecked) match {
+                case ArrayValue(_,ys)::Nil => return {if(guard eq EmptyTree) isImplemented(ys, guard) else CantHandleSeq }
+              }
+
+            // ignore other unapplySeq occurrences, since will run into ArrayValue
+            case _ =>
+              return isImplemented(xs, guard)
+          }
+
+        case Bind(n, p)         => isImplemented(p , guard)
+        case Alternative(xs)    => isImplemented(xs, guard)
         case p:Literal          => null
         case p:Select           => null
         case p:Typed            => null
 
-
+        // ArrayValue nodes can also appear in repeated parameter positions of case classes (e.g. xml.Elem)
         case ArrayValue(_,xs)   => CantHandleSeq
 
         //@todo
-        //case av @ ArrayValue(_,xs)   => if(isRightIgnoring(av)) CantHandleSeq else null // DEBUG
-        //case Star(t)            => isImplemented(t) //can't happen/ excluded by Transmatcher:isregular
+        //case av @ ArrayValue(_,xs)   =>
+          //Console.println("is Impl(av), typesym = "+av.tpe.typeSymbol+" of List?"+av.tpe.typeSymbol eq definitions.ListClass);
+
+        //if(guard.isEmpty) isImplemented(xs, guard) else CantHandleSeq ; // null;
+          //Console.println("PM:"+av+" isRI?"+isRightIgnoring(av))
+          //if(isRightIgnoring(av)) CantHandleSeq else null // DEBUG
+        case Star(t)            => CantHandleSeq //isImplemented(t) //can't happen/ excluded by Transmatcher:isregular
         //case Sequence(trees)    =>can't happen/ only appear below ArrayValue
       }
     }
-
-    /*
-    object hasUnapply extends Traverser {
-      override def traverse(x:Tree) = {
-        //Console.println("pat:'"+x+"' / "+x.getClass)
-        x match {
-          case _:ArrayValue => throw CantHandleSeq
-          case UnApply(fn,args)    => //throw CantHandleUnapply // EXPR
-            traverseTrees(args)
-          case Ident(n) if n!= nme.WILDCARD =>
-            //DEBUG("I can't handle IDENT pattern:"+x)
-            //DEBUG("x.tpe.symbols:"+x.tpe.symbol)
-            throw CantHandleIdent
-          case p:Select =>
-            //case p:Select =>
-            //  //DEBUG("I can't handle SELECT pattern:"+p)
-            //  //DEBUG("p.tpe.symbols:"+p.tpe.symbol)
-            //throw CantHandleUnapply
-            case p@Apply(fn,args) if !p.tpe.symbol.hasFlag(symtab.Flags.CASE) =>
-              //Console.println("I can't handle APPLY pattern:"+p)
-              //Console.println("fn:"+fn)
-              //Console.println("args:"+args)
-              //Console.println("p.tpe.symbols:"+p.tpe.symbol)
-              throw CantHandleApply
-
-          //case p@Apply(_,_) if !p.tpe.symbol.hasFlag(symtab.Flags.CASE) => throw CantHandleUnapply //@todo
-          case _ => super.traverse(x)
-        }
-      }
-      }
-*/
 
     /** enter a single case into the pattern matcher */
     protected def enter(caseDef: Tree): Unit = caseDef match {
@@ -1033,7 +1013,7 @@ print()
             ); // forward jump
 
           if (guard(i) != EmptyTree)
-            res0 = And(guard(i), res0);
+            res0 = And(handleOuter(guard(i)), res0);
           res = Or(squeezedBlock(ts.toList, res0), res)
           i = i - 1
         }

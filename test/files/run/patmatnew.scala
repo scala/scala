@@ -385,5 +385,14 @@ object Test extends TestConsoleMain {
     }
   }
 
+  trait Outer { // bug #1282 compile-only
+    object No
+    trait File {
+      (null:AnyRef) match {
+        case No => false
+      }
+    }
+  }
+
 }
 
