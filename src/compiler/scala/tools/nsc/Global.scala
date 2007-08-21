@@ -61,6 +61,11 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     val global: Global.this.type = Global.this
   }
   val treePrinter = treePrinters.create()
+  def printTree(tree: Tree, writer: PrintWriter) {
+    val printer = treePrinters.create(writer)
+    printer.print(tree)
+    printer.flush
+  }
 
   object treeBrowsers extends TreeBrowsers {
     val global: Global.this.type = Global.this
@@ -111,7 +116,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     val global: Global.this.type = Global.this
   }
 
-  val copy = new LazyTreeCopier()
+//  val copy = new LazyTreeCopier()
 
   val comments =
     if (onlyPresentation) new HashMap[Symbol,String]
