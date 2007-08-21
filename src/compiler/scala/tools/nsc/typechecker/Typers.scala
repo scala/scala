@@ -1661,6 +1661,7 @@ trait Typers { self: Analyzer =>
             val typer1 = new Typer(context1)
             arg.tpe = typer1.infer.inferTypedPattern(tree.pos, unappFormal, arg.tpe)
             //todo: replace arg with arg.asInstanceOf[inferTypedPattern(unappFormal, arg.tpe)] instead.
+            argDummy.setInfo(arg.tpe) // bq: this line fixed #1281. w.r.t. comment ^^^, maybe good enough?
           }
           val funPrefix = fun.tpe.prefix match {
             case tt @ ThisType(sym) =>

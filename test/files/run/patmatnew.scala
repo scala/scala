@@ -394,5 +394,27 @@ object Test extends TestConsoleMain {
     }
   }
 
+  object cast2 { // #1281
+
+    class Sync {
+      def unapplySeq(scrut: Int): Option[Seq[Int]] = {
+        println("unapplySeq: "+scrut)
+        if (scrut == 42) Some(List(1, 2))
+        else None
+      }
+    }
+
+    class Buffer {
+      val Get = new Sync
+
+      val jp: PartialFunction[Any, Any] = {
+        case Get(xs) => println(xs) // the argDummy <unapply-selector> should have proper arg.tpe (Int in this case)
+      }
+    }
+
+    println((new Buffer).jp.isDefinedAt(40))
+    println((new Buffer).jp.isDefinedAt(42))
+  }
+
 }
 
