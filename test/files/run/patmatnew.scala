@@ -27,6 +27,7 @@ object Test extends TestConsoleMain {
       new TestSimpleIntSwitch,
       new SimpleUnapply,
       SeqUnapply,
+      applyFromJcl,
       new Test717,
       new TestGuards,
       TestEqualsPatternOpt,
@@ -62,6 +63,16 @@ object Test extends TestConsoleMain {
         case SFB(_,List(x)) => assert(x==1)
         case SFB(_,_) => assert(false)
       }
+    }
+  }
+
+  object applyFromJcl extends TestCase("applyFromJcl") {
+    override def runTest {
+      val p = (1,2)
+        Some(2) match {
+          case Some(p._2) =>         ;
+          case _ => assert(false) ;
+        }
     }
   }
 
@@ -414,6 +425,17 @@ object Test extends TestConsoleMain {
 
     println((new Buffer).jp.isDefinedAt(40))
     println((new Buffer).jp.isDefinedAt(42))
+  }
+
+  object lk { // compile only
+    val z:PartialFunction[Any,Any] = {
+      case x::xs if xs.forall { y => y.hashCode() > 0 } => 1
+    }
+
+    val s:PartialFunction[Any,Any] = {
+      case List(x) if List(x).forall { g => g.hashCode() > 0 } => 1
+    }
+
   }
 
 }

@@ -275,7 +275,7 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
             // List.unapply<...>(xs)
             case Apply(TypeApply(sel @ Select(stor, nme.unapplySeq),_),_) if(stor.symbol eq definitions.ListModule) =>
               (xs: @unchecked) match {
-                case ArrayValue(_,ys)::Nil => return {if(guard eq EmptyTree) isImplemented(ys, guard) else CantHandleSeq }
+                case ArrayValue(_,ys)::Nil => isImplemented(ys, guard) //return {if(guard eq EmptyTree) isImplemented(ys, guard) else CantHandleSeq }
               }
 
             // ignore other unapplySeq occurrences, since will run into ArrayValue
