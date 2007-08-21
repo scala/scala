@@ -76,6 +76,7 @@ trait Types {
 
   private final val LubGlbMargin = 0
   private final val LogPendingSubTypesThreshold = 50
+  private final val LogPendingBaseTypesThreshold = 50
 
   /** The current skolemization level, needed for the algorithms
    *  in isSameType, isSubType that do constraint solving under a prefix
@@ -103,6 +104,8 @@ trait Types {
     case RefinedType(parents, defs) => "RefinedType"+(parents map debugString, defs.toList)
     case ClassInfoType(parents, defs, clazz) =>  "ClassInfoType"+(parents map debugString, defs.toList, clazz)
     case PolyType(tparams, result) => "PolyType"+(tparams, debugString(result))
+    case TypeBounds(lo, hi) => "TypeBounds "+debugString(lo)+","+debugString(hi)
+    case TypeVar(origin, constr) => "TypeVar "+origin+","+constr
     case _ => ""
   }
 
@@ -1398,7 +1401,23 @@ A type's typeSymbol should never be inspected directly.
     override def baseType(clazz: Symbol): Type =
       if (sym == clazz) this
       else if (sym.isClass) transform(sym.info.baseType(clazz))
-      else relativeInfo.baseType(clazz) // @M! use relativeInfo instead of pre.memberInfo(sym)
+      else
+        try {
+          basetypeRecursions += 1
+          if (basetypeRecursions < LogPendingBaseTypesThreshold)
+            relativeInfo.baseType(clazz)
+          else if (pendingBaseTypes contains this)
+            if (clazz == AnyClass) clazz.tpe else NoType
+          else
+            try {
+              pendingBaseTypes += this
+              relativeInfo.baseType(clazz)
+            } finally {
+              pendingBaseTypes -= this
+            }
+        } finally {
+          basetypeRecursions -= 1
+        }
 
     override def closure: Array[Type] = {
       val period = closurePeriod
@@ -1905,10 +1924,7 @@ A type's typeSymbol should never be inspected directly.
       case PolyType(tparams, restpe) => restpe.instantiateTypeParams(tparams, args)
       case ErrorType => tycon
       case st: SingletonType => appliedType(st.widen, args) // @M TODO: what to do? see bug1
-      case _ =>
-        Console.println(tycon.getClass())
-        Console.println(tycon.$tag())
-        throw new Error()
+      case _ => throw new Error(debugString(tycon))
     }
 
   /** A creator for type parameterizations
@@ -2698,7 +2714,8 @@ A type's typeSymbol should never be inspected directly.
   /** Undo all changes to constraints to type variables upto `limit'
    */
   private def undoTo(limit: UndoLog) {
-    while ((undoLog ne limit) && !undoLog.isEmpty) { // @M added `&& !undoLog.isEmpty`
+    while (undoLog ne limit)/* && !undoLog.isEmpty*/ { // @M added `&& !undoLog.isEmpty`
+                    // Martin: I don't think the addition is necessary?
       val (tv, constr) = undoLog.head
       undoLog = undoLog.tail
       tv.constr = constr
@@ -2722,6 +2739,17 @@ A type's typeSymbol should never be inspected directly.
     val result = isSameType0(tp1, tp2)
     if (!result) undoTo(lastUndoLog)
     result
+  } finally {
+    sametypeRecursions -= 1
+    if (sametypeRecursions == 0) undoLog = List()
+  }
+
+  def isDifferentType(tp1: Type, tp2: Type): Boolean = try {
+    sametypeRecursions += 1
+    val lastUndoLog = undoLog
+    val result = isSameType0(tp1, tp2)
+    undoTo(lastUndoLog)
+    !result
   } finally {
     sametypeRecursions -= 1
     if (sametypeRecursions == 0) undoLog = List()
@@ -2829,6 +2857,8 @@ A type's typeSymbol should never be inspected directly.
 
   private var subtypeRecursions: Int = 0
   private var pendingSubTypes = new collection.mutable.HashSet[SubTypePair]
+  private var basetypeRecursions: Int = 0
+  private var pendingBaseTypes = new collection.mutable.HashSet[Type]
 
   def isSubType(tp1: Type, tp2: Type): Boolean = try {
     subtypeRecursions += 1
@@ -2917,9 +2947,9 @@ A type's typeSymbol should never be inspected directly.
           else (sym1.name == sym2.name) && isUnifiable(pre1, pre2)) &&
          (sym2 == AnyClass || isSubArgs(args1, args2, sym1.typeParams)) //@M: Any is kind-polymorphic
          ||
-         sym1.isAbstractType && !(tp1 =:= tp1.bounds.hi) && (tp1.bounds.hi <:< tp2)
+         sym1.isAbstractType && isDifferentType(tp1, tp1.bounds.hi) && (tp1.bounds.hi <:< tp2)
          ||
-         sym2.isAbstractType && !(tp2 =:= tp2.bounds.lo) && (tp1 <:< tp2.bounds.lo)
+         sym2.isAbstractType && isDifferentType(tp2, tp2.bounds.lo) && (tp1 <:< tp2.bounds.lo)
          ||
          sym2.isClass &&
          ({ val base = tp1 baseType sym2; !(base eq tp1) && (base <:< tp2) })
@@ -2962,7 +2992,7 @@ A type's typeSymbol should never be inspected directly.
          || // @M! normalize reduces higher-kinded case to PolyType's
          (tp1.isHigherKinded && tp2.isHigherKinded) && isSubType0(tp1.normalize, tp2.normalize))
       case (_, TypeRef(pre2, sym2, args2))
-      if (sym2.isAbstractType && !(tp2 =:= tp2.bounds.lo) && (tp1 <:< tp2.bounds.lo) &&
+      if (sym2.isAbstractType && isDifferentType(tp2, tp2.bounds.lo) && (tp1 <:< tp2.bounds.lo) &&
             (if (!inIDE) true else trackTypeIDE(sym2)) ||
           sym2 == NotNullClass && tp1.isNotNull) =>
         true

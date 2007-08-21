@@ -291,10 +291,12 @@ trait Typers { self: Analyzer =>
     def checkParamsConvertible(pos: Position, tpe: Type) {
       tpe match {
         case MethodType(formals, restpe) =>
+          /*
           if (formals.exists(_.typeSymbol == ByNameParamClass) && formals.length != 1)
             error(pos, "methods with `=>'-parameter can be converted to function values only if they take no other parameters")
           if (formals exists (_.typeSymbol == RepeatedParamClass))
             error(pos, "methods with `*'-parameters cannot be converted to function values");
+          */
           if (restpe.isDependent)
             error(pos, "method with dependent type "+tpe+" cannot be converted to function value");
           checkParamsConvertible(pos, restpe)

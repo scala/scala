@@ -652,15 +652,15 @@ trait Parsers {
     /** Types ::= Type {`,' Type}
      *  (also eats trailing comma if it finds one)
      */
-    def types(isPattern: Boolean, isTypeApply: Boolean): List[Tree] = {
-      val ts = new ListBuffer[Tree] + argType(isPattern, isTypeApply)
+    def types(isPattern: Boolean, isTypeApply: Boolean, isFuncArg: Boolean): List[Tree] = {
+      val ts = new ListBuffer[Tree] + argType(isPattern, isTypeApply, isFuncArg)
       while (inToken == COMMA) {
         inNextToken
         if (inToken == RPAREN) {
           in.deprecationWarning(in.pos, "Trailing commas have been deprecated")
           return ts.toList
         } else {
-          ts += argType(isPattern, isTypeApply)
+          ts += argType(isPattern, isTypeApply, isFuncArg)
         }
       }
       ts.toList
@@ -685,13 +685,15 @@ trait Parsers {
           if (inToken == RPAREN) {
             inNextToken
             atPos(accept(ARROW)) { makeFunctionTypeTree(List(), typ()) }
+          /* Not more used
           } else if (inToken == ARROW) {
             inNextToken
             val t0 = typ()
             accept(RPAREN)
             atPos(accept(ARROW)) { makeByNameFunctionTypeTree(t0, typ()) }
+          */
           } else {
-            val ts = types(false, false)
+            val ts = types(false, false, true)
             accept(RPAREN)
             if (inToken == ARROW) atPos(inSkipToken) { makeFunctionTypeTree(ts, typ()) }
             else infixTypeRest(pos, annotTypeRest(pos, false, makeTupleType(ts, true)), false, InfixMode.FirstOp)
@@ -779,7 +781,7 @@ trait Parsers {
       val t: Tree = annotTypeRest(pos, isPattern,
         if (inToken == LPAREN) {
           inNextToken
-          val ts = types(isPattern, false)
+          val ts = types(isPattern, false, false)
           accept(RPAREN)
           atPos(pos) { makeTupleType(ts, true) }
         } else if (inToken == USCORE) {
@@ -818,14 +820,14 @@ trait Parsers {
      */
     def typeArgs(isPattern: Boolean, isTypeApply: Boolean): List[Tree] = {
       accept(LBRACKET)
-      val ts = types(isPattern, isTypeApply)
+      val ts = types(isPattern, isTypeApply, false)
       accept(RBRACKET)
       ts
     }
 
     /** ArgType       ::=  Type
      */
-    def argType(isPattern: Boolean, isTypeApply: Boolean): Tree =
+    def argType(isPattern: Boolean, isTypeApply: Boolean, isFuncArg: Boolean): Tree =
       if (isPattern) {
         if (inToken == USCORE)
           if (inToken == SUBTYPE || inToken == SUPERTYPE) wildcardType(inSkipToken)
@@ -836,6 +838,23 @@ trait Parsers {
           }
         else {
           typ()
+        }
+      } else if (isFuncArg) {
+        // copy-paste (with change) from def paramType
+        if (inToken == ARROW)
+          atPos(inSkipToken) {
+            AppliedTypeTree(
+                scalaDot(nme.BYNAME_PARAM_CLASS_NAME.toTypeName), List(typ()))
+          }
+        else {
+          val t = typ()
+          if (isIdent && inName == STAR) {
+            inNextToken
+            atPos(t.pos) {
+              AppliedTypeTree(
+                scalaDot(nme.REPEATED_PARAM_CLASS_NAME.toTypeName), List(t))
+            }
+          } else t
         }
       } else if (isTypeApply) {
         placeholderTypeBoundary(typ())

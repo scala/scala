@@ -61,9 +61,11 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
         apply(MethodType(List(), restpe))
       case PolyType(tparams, restpe) =>
         PolyType(tparams, apply(MethodType(List(), restpe)))
+      /*
       case TypeRef(pre, sym, List(arg1, arg2)) if (arg1.typeSymbol == ByNameParamClass) =>
         assert(sym == FunctionClass(1))
         apply(typeRef(pre, definitions.ByNameFunctionClass, List(expandAlias(arg1.typeArgs(0)), arg2)))
+      */
       case TypeRef(pre, sym, List(arg)) if (sym == ByNameParamClass) =>
         apply(functionType(List(), arg))
       case TypeRef(pre, sym, args) if (sym == RepeatedParamClass) =>
@@ -533,10 +535,13 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
           assert(name != nme.WILDCARD_STAR.toTypeName)
           applyUnary(tree);
         case Select(qual, name) =>
-          // translate members of Function1 to members of ByNameFunction
-          // if qualifier is a ByNameFunction
-          if (qual.tpe.typeSymbol == ByNameFunctionClass && tree.symbol.owner == FunctionClass(1))
-            tree.symbol = getMember(ByNameFunctionClass, tree.symbol.name)
+          /* Function1.apply to ByNameFunction.apply if qualifier is a ByNameFunction */
+          /*
+          if (qual.tpe.typeSymbol == ByNameFunctionClass) {
+            assert(tree.symbol.name == nme.apply && tree.symbol.owner == FunctionClass(1), tree.symbol)
+            tree.symbol = getMember(ByNameFunctionClass, nme.apply)
+          }
+          */
           applyUnary(tree)
         case TypeApply(_, _) =>
           applyUnary(tree)
