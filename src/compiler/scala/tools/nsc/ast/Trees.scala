@@ -302,7 +302,7 @@ trait Trees {
    */
   def ModuleDef(sym: Symbol, impl: Template): ModuleDef =
     posAssigner.atPos(sym.pos) {
-      ModuleDef(Modifiers(sym.flags), sym.name, impl)
+      ModuleDef(Modifiers(sym.flags), sym.name, impl) setSymbol sym
     }
 
   abstract class ValOrDefDef extends MemberDef {
@@ -386,7 +386,7 @@ trait Trees {
   /** A TypeDef node which defines given `sym' with given tight hand side `rhs'. */
   def TypeDef(sym: Symbol, rhs: Tree): TypeDef =
     posAssigner.atPos(sym.pos) {
-      TypeDef(Modifiers(sym.flags), sym.name, sym.typeParams map TypeDef, rhs)
+      TypeDef(Modifiers(sym.flags), sym.name, sym.typeParams map TypeDef, rhs) setSymbol sym
     }
 
   /** A TypeDef node which defines abstract type or type parameter for given `sym' */
