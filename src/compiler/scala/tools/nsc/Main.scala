@@ -86,7 +86,7 @@ object Main extends AnyRef with EvalLoop {
             run compile command.files
             if (command.settings.doc.value) {
               object generator extends DocDriver {
-                val global: compiler.type = compiler
+                lazy val global: compiler.type = compiler
                 def settings = command.settings
               }
               generator process run.units
