@@ -188,10 +188,10 @@ abstract class NodePrinters {
                 traverse(tparams(i), level + 2, i < n-1)
               println("  ),")
             }
-            if (vparamss.isEmpty)
+            val n = vparamss.length
+            if (n == 1 && vparamss(0).isEmpty)
               println("  List(List()), // no parameter")
             else {
-              val n = vparamss.length
               println("  List(")
               for (i <- 0 until n) {
                 val m = vparamss(i).length
@@ -202,7 +202,7 @@ abstract class NodePrinters {
               }
               println("  ),")
             }
-            println(tpt+",")
+            println("  " + tpt + ",")
             traverse(rhs, level + 1, false)
             printcln(")")
           case EmptyTree =>
