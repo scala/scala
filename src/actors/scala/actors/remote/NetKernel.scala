@@ -93,18 +93,29 @@ class NetKernel(service: Service) {
 
   def processMsg(senderNode: Node, msg: AnyRef): Unit = synchronized {
     msg match {
-      case NamedSend(senderName, receiver, data) =>
+      case cmd@NamedSend(senderName, receiver, data) =>
+        Debug.info(this+": processing "+cmd)
         actors.get(receiver) match {
           case Some(a) =>
-            val msg = service.serializer.deserialize(data)
+            try {
+              Debug.info(this+": receiver is "+a)
+              val msg = service.serializer.deserialize(data)
+              Debug.info(this+": deserialized msg is "+msg)
 
-            val senderProxy = getOrCreateProxy(senderNode, senderName)
-            senderProxy.send(SendTo(a, msg), null)
+              val senderProxy = getOrCreateProxy(senderNode, senderName)
+              Debug.info(this+": created "+senderProxy)
+              senderProxy.send(SendTo(a, msg), null)
+            } catch {
+              case e: Exception =>
+                Debug.error(this+": caught "+e)
+            }
 
           case None =>
             // message is lost
+            Debug.info(this+": lost message")
         }
-      case SyncSend(senderName, receiver, data) =>
+      case cmd@SyncSend(senderName, receiver, data) =>
+        Debug.info(this+": processing "+cmd)
         actors.get(receiver) match {
           case Some(a) =>
             val msg = service.serializer.deserialize(data)
@@ -115,7 +126,8 @@ class NetKernel(service: Service) {
           case None =>
             // message is lost
         }
-      case Reply(senderName, receiver, data) =>
+      case cmd@Reply(senderName, receiver, data) =>
+        Debug.info(this+": processing "+cmd)
         actors.get(receiver) match {
           case Some(a) =>
             val msg = service.serializer.deserialize(data)
@@ -134,12 +146,15 @@ class Proxy(node: Node, name: Symbol, kernel: NetKernel) extends Actor {
   start()
 
   override def act() {
+    Debug.info(this+": waiting to process commands")
     loop {
       react {
-        case SendTo(a, msg) =>
+        case cmd@SendTo(a, msg) =>
+          Debug.info(this+": processing "+cmd)
           a ! msg
 
-        case SyncSendTo(a, msg, receiver) =>
+        case cmd@SyncSendTo(a, msg, receiver) =>
+          Debug.info(this+": processing "+cmd)
           val replyCh = new Channel[Any](this)
           a.send(msg, replyCh)
           val res = replyCh.receive {
@@ -151,7 +166,8 @@ class Proxy(node: Node, name: Symbol, kernel: NetKernel) extends Actor {
               kernel.sendReply(node, receiver, name, refmsg)
           }
 
-        case ReplyTo(a, msg) =>
+        case cmd@ReplyTo(a, msg) =>
+          Debug.info(this+": processing "+cmd)
           a.replyChannel ! msg
       }
     }
