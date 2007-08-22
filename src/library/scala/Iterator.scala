@@ -282,8 +282,8 @@ trait Iterator[+A] {
   }
 
   protected class PredicatedIterator(p : A => Boolean) extends BufferedIterator.Default[A] {
-    protected def skip0 : Seq[A] = fill
-    protected override def fill : Seq[A] =
+    protected def skip0 : Seq[A] = fill(1)
+    protected override def fill(sz : Int) : Seq[A] =
       if (!Iterator.this.hasNext) return Nil
       else {
         val ret = Iterator.this.next;
@@ -297,8 +297,8 @@ trait Iterator[+A] {
       ended = true
       Nil
     }
-    override protected def fill : Seq[A] =
-      if (ended) Nil else super.fill
+    override protected def fill(sz : Int) : Seq[A] =
+      if (ended) Nil else super.fill(sz)
   }
 
 
@@ -509,7 +509,7 @@ trait Iterator[+A] {
   /** Returns a buffered iterator from this iterator.
    */
   def buffered: BufferedIterator[A] = new BufferedIterator.Default[A] {
-    protected def fill = if (Iterator.this.hasNext) (Iterator.this.next) :: Nil else Nil
+    protected def fill(sz : Int) = if (Iterator.this.hasNext) (Iterator.this.next) :: Nil else Nil
   }
 
   /** Returns a counted iterator from this iterator.

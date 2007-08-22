@@ -72,11 +72,34 @@ trait Set[A] extends (A => Boolean) with Collection[A] {
    */
   def subsetOf(that: Set[A]): Boolean = forall(that.contains)
 
+  /** set intersection */
+  def *(that : Set[A]) : Set[A] = {
+     val min = Math.min(size, that.size)
+     val buf = new Array[A](min)
+     var count = 0
+     val i = elements
+     while (i.hasNext) {
+       val a = i.next
+       if (that.contains(a)) {
+         buf(count) = a
+         count += 1
+       }
+     }
+     if (count == size) this
+     else if (count == that.size) that
+     else {
+       import scala.collection.jcl.LinkedHashSet
+       val ret = new LinkedHashSet[A]
+       ret ++= buf.projection.take(count)
+       ret.readOnly
+     }
+  }
   /** Compares this set with another object and returns true, iff the
    *  other object is also a set which contains the same elements as
    *  this set.
    *
    *  @param that the other object
+   *  @note not necessarily run-time type safe.
    *  @return     <code>true</code> iff this set and the other set
    *              contain the same elements.
    */
@@ -87,10 +110,8 @@ trait Set[A] extends (A => Boolean) with Collection[A] {
       false
   }
 
-  /** hashcode for this set */
   override def hashCode() =
     (0 /: this)((hash, e) => hash + e.hashCode())
-
 
   override def toArray[B >: A]: Array[B] = {
     val result = new Array[B](size)

@@ -15,7 +15,7 @@ package scala.collection.mutable
  *  @author Sean McDirmid
  *  @version 1.0
  */
-class LinkedHashSet[A](private val set0 : java.util.LinkedHashSet) extends Set[A] {
+@deprecated class LinkedHashSet[A](private val set0 : java.util.LinkedHashSet) extends Set[A] {
 
   def this() = this(new java.util.LinkedHashSet)
 

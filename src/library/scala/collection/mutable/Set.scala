@@ -207,26 +207,9 @@ trait Set[A] extends collection.Set[A] with Scriptable[Message[A]] with Cloneabl
 
   /** Return a read-only projection of this set */
   def readOnly : scala.collection.Set[A] = new scala.collection.Set[A] {
-    /** used to trigger version checking in JCL and hopefully the mutable collections */
-    override val hashCode = Set.this.hashCode
-    private def check =
-      if (false && hashCode != Set.this.hashCode)
-        throw new ConcurrentModificationException
-
-    def contains(item : A) = {
-      check
-      Set.this.contains(item)
-    }
-    override def toString = {
-      "read-only-" + Set.this.toString
-    }
-    override def size = {
-      check
-      Set.this.size
-    }
-    override def elements = {
-      check
-      Set.this.elements
-    }
+    def contains(item : A) = Set.this.contains(item)
+    override def toString = "read-only-" + Set.this.toString
+    override def size = Set.this.size
+    override def elements = Set.this.elements
   }
 }

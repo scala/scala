@@ -57,11 +57,12 @@ final class BoxedDoubleArray(val value: Array[Double]) extends BoxedArray {
     }
     new BoxedDoubleArray(result)
   }
-
+/*
   final override def slice(start: Int, end: Int): BoxedArray = {
     val (s, len) = slice0(start, end)
     val result = new Array[Double](len)
     Array.copy(value, s, result, 0, len)
     new BoxedDoubleArray(result)
   }
+*/
 }
