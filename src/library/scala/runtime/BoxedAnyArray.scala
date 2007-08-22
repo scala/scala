@@ -18,6 +18,8 @@ import compat.Platform
 /**
  * Arrays created by <code>new Array[T](length)</code> where <code>T</code>
  * is a type variable.
+ *
+ * @author Martin Odersky
  */
 @serializable
 final class BoxedAnyArray(val length: Int) extends BoxedArray {
@@ -93,7 +95,7 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
         var i = 0
         while (i < length) {
           newvalue(i) = Int.unbox(boxed(i))
-          i = i + 1
+          i += 1
         }
         unboxed = newvalue
       } else if (elemClass eq classOf[Double]) {
@@ -101,7 +103,7 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
         var i = 0
         while (i < length) {
           newvalue(i) = Double.unbox(boxed(i))
-          i = i + 1
+          i += 1
         }
         unboxed = newvalue;
       } else if (elemClass eq classOf[Float]) {
@@ -109,7 +111,7 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
         var i = 0
         while (i < length) {
           newvalue(i) = Float.unbox(boxed(i))
-          i = i + 1
+          i += 1
         }
         unboxed = newvalue;
       } else if (elemClass eq classOf[Long]) {
@@ -117,7 +119,7 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
         var i = 0
         while (i < length) {
           newvalue(i) = Long.unbox(boxed(i))
-          i = i + 1
+          i += 1
         }
         unboxed = newvalue;
       } else if (elemClass eq classOf[Char]) {
@@ -125,7 +127,7 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
         var i = 0
         while (i < length) {
           newvalue(i) = Char.unbox(boxed(i))
-          i = i + 1
+          i += 1
         }
         unboxed = newvalue
       } else if (elemClass eq classOf[Byte]) {
@@ -133,7 +135,7 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
         var i = 0
         while (i < length) {
           newvalue(i) = Byte.unbox(boxed(i))
-          i = i + 1
+          i += 1
         }
         unboxed = newvalue;
       } else if (elemClass eq classOf[Short]) {
@@ -141,7 +143,7 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
         var i = 0
         while (i < length) {
           newvalue(i) = Short.unbox(boxed(i))
-          i = i + 1
+          i += 1
         }
         unboxed = newvalue;
       } else if (elemClass eq classOf[Boolean]) {
@@ -149,15 +151,15 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
         var i = 0
         while (i < length) {
           newvalue(i) = Boolean.unbox(boxed(i))
-          i = i + 1
+          i += 1
         }
         unboxed = newvalue;
       } else if (elemClass == boxed.getClass().getComponentType()) {
         // todo: replace with ScalaRunTime.AnyRef.class
         unboxed = boxed
       } else {
-        unboxed = Platform.createArray(elemClass, length);
-        Platform.arraycopy(boxed, 0, unboxed, 0, length);
+        unboxed = Platform.createArray(elemClass, length)
+        Platform.arraycopy(boxed, 0, unboxed, 0, length)
       }
       boxed = null
     }
@@ -219,12 +221,12 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
           other
       }
 
-  override def copyFrom(src: AnyRef, from: Int, to: Int, len: Int): Unit = {
+  override def copyFrom(src: AnyRef, from: Int, to: Int, len: Int) {
     val src1 = adapt(src)
     Array.copy(src1, from, if (unboxed ne null) unboxed else boxed, to, len)
   }
 
-  override def copyTo(from: Int, dest: AnyRef, to: Int, len: Int): Unit = {
+  override def copyTo(from: Int, dest: AnyRef, to: Int, len: Int) {
     var dest1 = adapt(dest)
     Array.copy(if (unboxed ne null) unboxed else boxed, from, dest1, to, len)
   }
@@ -240,23 +242,23 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
     var len = 0
     var i = 0
     while (i < length) {
-      if (p(this(i))) { include(i) = true; len = len + 1 }
-      i = i + 1
+      if (p(this(i))) { include(i) = true; len += 1 }
+      i += 1
     }
     val result = new BoxedAnyArray(len)
     len = 0
     i = 0
     while (len < result.length) {
-      if (include(i)) { result(len) = this(i); len = len + 1 }
-      i = i + 1
+      if (include(i)) { result(len) = this(i); len += 1 }
+      i += 1
     }
     result
   }
 
   final override def slice(start: Int, end: Int): BoxedArray = {
-    val len = end - start
+    val (s, len) = slice0(start, end)
     val result = new BoxedAnyArray(len)
-    Array.copy(this, start, result, 0, len)
+    Array.copy(this, s, result, 0, len)
     result
   }
 

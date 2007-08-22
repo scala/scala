@@ -21,7 +21,7 @@ final class BoxedIntArray(val value: Array[Int]) extends BoxedArray {
 
   def apply(index: Int): Any = Int.box(value(index))
 
-  def update(index: Int, elem: Any): Unit = {
+  def update(index: Int, elem: Any) {
     value(index) = Int.unbox(elem.asInstanceOf[AnyRef])
   }
 
@@ -45,23 +45,21 @@ final class BoxedIntArray(val value: Array[Int]) extends BoxedArray {
     var len = 0
     var i = 0
     while (i < value.length) {
-      if (p(value(i))) { include(i) = true; len = len + 1 }
-      i = i + 1
+      if (p(value(i))) { include(i) = true; len += 1 }
+      i += 1
     }
     val result = new Array[Int](len)
     len = 0
     i = 0
     while (len < result.length) {
-      if (include(i)) { result(len) = value(i); len = len + 1 }
-      i = i + 1
+      if (include(i)) { result(len) = value(i); len += 1 }
+      i += 1
     }
     new BoxedIntArray(result)
   }
 
   final override def slice(start: Int, end: Int): BoxedArray = {
-    var s = start max 0
-    var e = end min value.length
-    var len = e - s
+    val (s, len) = slice0(start, end)
     val result = new Array[Int](len)
     Array.copy(value, s, result, 0, len)
     new BoxedIntArray(result)

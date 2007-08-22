@@ -554,8 +554,17 @@ sealed abstract class List[+A] extends Seq[A] {
     else b.toList
   }
 
-
-  override def slice(from : Int, until : Int) : List[A] = drop(from).take(until - from)
+  /** Returns the list with elements belonging to the given index range.
+   *
+   *  @param start the start position of the list slice.
+   *  @param end   the end position (exclusive) of the list slice.
+   *  @return the list with elements belonging to the given index range.
+   */
+  override def slice(start: Int, end: Int): List[A] = {
+    val s = start max 0
+    val e = end min this.length
+    drop(s) take (e - s)
+  }
 
   /** Returns the list without its <code>n</code> first elements.
    *  If this list has less than <code>n</code> elements, the empty list is returned.

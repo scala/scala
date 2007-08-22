@@ -21,7 +21,7 @@ final class BoxedByteArray(val value: Array[Byte]) extends BoxedArray {
 
   def apply(index: Int): Any = Byte.box(value(index))
 
-  def update(index: Int, elem: Any): Unit = {
+  def update(index: Int, elem: Any) {
     value(index) = Byte.unbox(elem.asInstanceOf[AnyRef])
   }
 
@@ -45,23 +45,23 @@ final class BoxedByteArray(val value: Array[Byte]) extends BoxedArray {
     var len = 0
     var i = 0
     while (i < value.length) {
-      if (p(value(i))) { include(i) = true; len = len + 1 }
-      i = i + 1
+      if (p(value(i))) { include(i) = true; len += 1 }
+      i += 1
     }
     val result = new Array[Byte](len)
     len = 0
     i = 0
     while (len < result.length) {
-      if (include(i)) { result(len) = value(i); len = len + 1 }
-      i = i + 1
+      if (include(i)) { result(len) = value(i); len += 1 }
+      i += 1
     }
     new BoxedByteArray(result)
   }
 
   final override def slice(start: Int, end: Int): BoxedArray = {
-    val len = end - start
+    val (s, len) = slice0(start, end)
     val result = new Array[Byte](len)
-    Array.copy(value, start, result, 0, len)
+    Array.copy(value, s, result, 0, len)
     new BoxedByteArray(result)
   }
 }
