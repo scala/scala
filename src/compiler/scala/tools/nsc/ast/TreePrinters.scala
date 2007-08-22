@@ -12,15 +12,15 @@ import symtab.Flags._
 
 abstract class TreePrinters {
 
-  val global: Global
-  import global._
+  val trees: Trees
+  import trees._
 
   class TreePrinter(out: PrintWriter) {
     protected var indentMargin = 0
     protected val indentStep = 2
     protected var indentString = "                                        " // 40
 
-    def flush = out.flush()
+    def flush() = out.flush()
 
     def indent = indentMargin += indentStep
     def undent = indentMargin -= indentStep
@@ -345,7 +345,7 @@ abstract class TreePrinters {
         case tree =>
           print("<unknown tree of class "+tree.getClass+">")
       }
-      if (global.settings.printtypes.value && tree.isTerm && !tree.isEmpty) {
+      if (settings.printtypes.value && tree.isTerm && !tree.isEmpty) {
         print("{"); print(if (tree.tpe eq null) "<null>" else tree.tpe.toString()); print("}")
       }
     }
@@ -373,13 +373,6 @@ abstract class TreePrinters {
         print("<null>")
       }
       println; flush
-    }
-
-    def printAll() {
-      print("[[syntax trees at end of " + phase + "]]")
-      atPhase(phase.next) {
-        for (unit <- global.currentRun.units) print(unit)
-      }
     }
   }
 

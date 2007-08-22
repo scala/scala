@@ -15,7 +15,7 @@ trait CompilationUnits { self: Global =>
   /** One unit of compilation that has been submitted to the compiler.
     * It typically corresponds to a single file of source code.  It includes
     * error-reporting hooks.  */
-  class CompilationUnit(val source: SourceFile) extends TreeBody {
+  class CompilationUnit(val source: SourceFile) extends CompilationUnitTrait {
 
     /** the fresh name creator */
     var fresh = new FreshNameCreator

@@ -14,36 +14,37 @@ import scala.tools.nsc.util.{HashSet, Position, NoPosition, SourceFile}
 import scala.collection.mutable.ListBuffer
 
 
-trait Trees {
-  self: SymbolTable =>
+abstract class Trees extends SymbolTable {
   //statistics
 
   var nodeCount = 0
 
-  /** print tree into buffer */
-  def printTree(tree: Tree, writer: PrintWriter)
-
-  trait TreeBody {
+  trait CompilationUnitTrait {
     var body: Tree
+    val source: SourceFile
   }
 
-  type CompilationUnit <: TreeBody
-
-  val copy = new LazyTreeCopier()
+  type CompilationUnit <: CompilationUnitTrait
 
   // sub-components --------------------------------------------------
 
-/*
+  object treePrinters extends TreePrinters {
+    val trees: Trees.this.type = Trees.this
+  }
+  val treePrinter = treePrinters.create()
+
+  object treeInfo extends TreeInfo {
+    val trees: Trees.this.type = Trees.this
+  }
+
+  val copy = new LazyTreeCopier()
+
   object treeBrowsers extends TreeBrowsers {
-    val global: Global.this.type = Global.this
+    val trees: Trees.this.type = Trees.this
   }
   val treeBrowser = treeBrowsers.create()
 
-  object treeInfo extends TreeInfo {
-    val global: Global.this.type = Global.this
-  }
-*/
-  // -------------------------------------------------------------------
+  // modifiers --------------------------------------------------------
 
   case class Modifiers(flags: Long, privateWithin: Name, annotations: List[Annotation]) {
     def isCovariant     = hasFlag(COVARIANT    )
@@ -87,29 +88,6 @@ trait Trees {
   def Modifiers(flags: Long): Modifiers = Modifiers(flags, nme.EMPTY.toTypeName)
 
   val NoMods = Modifiers(0)
-
-  //todo: cleanup
-  def isPreSuper(tree: Tree) = tree match {
-    case ValDef(mods, _, _, _) => mods hasFlag PRESUPER
-    case _ => false
-  }
-
-  /** Is tree legal as a member definition of an interface?
-  //todo: cleanup
-   */
-  def isInterfaceMember(tree: Tree): Boolean = tree match {
-    case EmptyTree                     => true
-    case Import(_, _)                  => true
-    case TypeDef(_, _, _, _)           => true
-    case DefDef(mods, _, _, _, _, __)  => mods.hasFlag(DEFERRED)
-    case ValDef(mods, _, _, _)         => mods.hasFlag(DEFERRED)
-    case DocDef(_, definition)         => isInterfaceMember(definition)
-    case _ => false
-  }
-
-
-
-
 
   // @M helper method for asserts that check consistency in kinding
   //def kindingIrrelevant(tp: Type) = (tp eq null) || phase.name == "erasure" || phase.erasedTypes
@@ -172,8 +150,10 @@ trait Trees {
 
     override def toString(): String = {
       val buffer = new StringWriter()
-      printTree(this, new PrintWriter(buffer))
-      buffer.toString()
+      val printer = treePrinters.create(new PrintWriter(buffer))
+      printer.print(this)
+      printer.flush()
+      buffer.toString
     }
 
     override def hashCode(): Int = super.hashCode()
@@ -519,7 +499,7 @@ trait Trees {
           ret.symbol = vd.symbol
         ret
        })
-    val (vdefs, rest) = body span /*treeInfo.*/isPreSuper
+    val (vdefs, rest) = body span treeInfo.isPreSuper
     val (lvdefs, gvdefs) = List.unzip {
       vdefs map {
         case vdef @ ValDef(mods, name, tpt, rhs) =>
@@ -529,7 +509,7 @@ trait Trees {
     }
     val constrs =
       if (constrMods hasFlag TRAIT) {
-        if (body forall /*treeInfo.*/isInterfaceMember) List()
+        if (body forall treeInfo.isInterfaceMember) List()
         else List(
           DefDef(NoMods, nme.MIXIN_CONSTRUCTOR, List(), List(List()), TypeTree(), Block(lvdefs, Literal(()))))
       } else {

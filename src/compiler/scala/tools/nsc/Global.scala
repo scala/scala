@@ -32,8 +32,7 @@ import backend.msil.GenMSIL
 import backend.opt.{Inliners, ClosureElimination, DeadCodeElimination}
 import backend.icode.analysis._
 
-class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
-                                                             with Trees
+class Global(var settings: Settings, var reporter: Reporter) extends Trees
                                                              with CompilationUnits
                                                              with Plugins
 {
@@ -56,25 +55,6 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     infolevel = InfoLevel.Verbose
   }
   val nodeToString = nodePrinters.nodeToString
-
-  object treePrinters extends TreePrinters {
-    val global: Global.this.type = Global.this
-  }
-  val treePrinter = treePrinters.create()
-  def printTree(tree: Tree, writer: PrintWriter) {
-    val printer = treePrinters.create(writer)
-    printer.print(tree)
-    printer.flush
-  }
-
-  object treeBrowsers extends TreeBrowsers {
-    val global: Global.this.type = Global.this
-  }
-  val treeBrowser = treeBrowsers.create()
-
-  object treeInfo extends TreeInfo {
-    val global: Global.this.type = Global.this
-  }
 
   object gen extends TreeGen {
     val global: Global.this.type = Global.this
@@ -549,9 +529,9 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
         if (settings.print contains globalPhase.name)
           if (globalPhase.id >= icodePhase.id) writeICode()
           else if (settings.Xshowtrees.value) nodePrinters.printAll()
-          else treePrinter.printAll()
+          else printAllUnits()
         if (settings.printLate.value && globalPhase.name == "cleanup")
-          treePrinter.printAll()
+          printAllUnits()
 
         if (settings.browse contains globalPhase.name) treeBrowser.browse(units)
         informTime(globalPhase.description, startTime)
@@ -639,6 +619,14 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
       if (!pclazz.isRoot) resetPackageClass(pclazz.owner)
     }
   } // class Run
+
+
+  def printAllUnits() {
+    print("[[syntax trees at end of " + phase + "]]")
+    atPhase(phase.next) {
+      for (unit <- currentRun.units) treePrinter.print(unit)
+    }
+  }
 
   def showDef(name: Name, module: Boolean) {
     def getSym(name: Name, module: Boolean): Symbol = {

@@ -16,8 +16,8 @@ import util.HashSet
  */
 abstract class TreeInfo {
 
-  val global: Global
-  import global._
+  val trees: Trees
+  import trees._
 
   def isTerm(tree: Tree): Boolean = tree.isTerm
   def isType(tree: Tree): Boolean = tree.isType
