@@ -1153,7 +1153,7 @@ print()
                 if(isSubType(selector.tpe, argtpe))
                   Literal(Constant(true))
                 else {
-                  useSelector = gen.mkAsInstanceOf(selector, argtpe)
+                  useSelector = gen.mkAsInstanceOf(selector.duplicate, argtpe)
                   gen.mkIsInstanceOf(selector.duplicate, argtpe)
                  }
             }
@@ -1170,7 +1170,7 @@ print()
                  if(isSubType(selector.tpe, argtpe))
                    Literal(Constant(true))
                  else {
-                   useSelector = gen.mkAsInstanceOf(selector, argtpe)
+                   useSelector = gen.mkAsInstanceOf(selector.duplicate, argtpe)
                    gen.mkIsInstanceOf(selector.duplicate, argtpe)
                  }
              }

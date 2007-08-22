@@ -435,7 +435,7 @@ trait ParallelMatching  {
         case ua @ UnApply(app @ Apply(fn, appargs), args) =>
           val ures = newVarCapture(ua.pos, app.tpe)
           val n    = args.length
-          val uacall = ValDef(ures, Apply(fn, mkIdent(scrutinee) :: appargs.tail))
+          val uacall = typedValDef(ures, Apply(fn, mkIdent(scrutinee) :: appargs.tail))
           //Console.println("uacall:"+uacall)
 
           val nrowsOther = column.tail.zip(rest.row.tail) flatMap { case (pat, Row(ps, subst, g, bx)) => strip2(pat) match {
@@ -524,9 +524,9 @@ trait ParallelMatching  {
 
       val treeAsSeq =
         if(!isSubType(scrutinee.tpe, column.head.tpe))
-          typed(gen.mkAsInstanceOf(gen.mkAttributedRef(scrutinee), column.head.tpe, true))
+          typed(gen.mkAsInstanceOf(mkIdent(scrutinee), column.head.tpe, true))
         else
-          gen.mkAttributedRef(scrutinee)
+          mkIdent(scrutinee)
 
       val failRep = repWithoutHead(column,rest)
 
@@ -596,6 +596,7 @@ trait ParallelMatching  {
         case TypeRef(_,_,List(SingleType(pre,sym))) =>
           gen.mkAttributedRef(pre,sym)
       }
+      assert(vlue.tpe ne null)
       val nsuccFst = rest.row.head match { case Row(pats,bnd,g,b) => Row(EmptyTree::pats,bnd,g,b) }
       val nsuccRow = nsuccFst :: (column.tail.zip(rest.row.tail) map { case (p, Row(pats,bnd,g,b)) => Row(p::pats,bnd,g,b) })
       val nsucc = rep.make(scrutinee :: rest.temp, nsuccRow)

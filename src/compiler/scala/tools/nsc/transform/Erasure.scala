@@ -781,9 +781,6 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
             if (fn.symbol == Any_asInstanceOf || fn.symbol == Any_asInstanceOfErased)
               fn match {
                 case TypeApply(Select(qual, _), List(targ)) =>
-                  //bq: if (qual.tpe eq null), it was surely an Ident constructed with Ident(sym)
-				  //if((qual eq null) || (targ eq null) || (qual.tpe eq null) || (targ.tpe eq null))
-                  //  Console.println("qual: "+qual+" targ "+targ+" qual.tpe"+{if(qual eq null) "n.a. " else qual.tpe}+(if(qual.tpe eq null) "((but qual.symbol.tpe is "+qual.symbol.tpe+"))" else "")+ " targ.tpe "+{if(targ eq null) "n.a." else targ.tpe}+" Erasure: "+nodeToString(tree)) // DEBUG
                   if (qual.tpe <:< targ.tpe) {
                     atPos(tree.pos) { Typed(qual, TypeTree(targ.tpe)) }
                   } else if (isNumericValueClass(qual.tpe.typeSymbol) &&
