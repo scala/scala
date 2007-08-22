@@ -50,6 +50,18 @@ trait PatternNodes { self: transform.ExplicitOuter =>
       }
       Apply(TypeTree(consType),List(x,normalizedListPattern(xs,tptArg))).setType(resType)
   }
+
+  object Apply_Value {
+    def unapply(x:Apply) = if ((x.symbol ne null) && (x.args eq Nil)) Some(x.tpe.prefix, x.symbol) else None
+  }
+
+  object Apply_CaseClass_NoArgs {
+    def unapply(x:Apply) = if ((x.symbol eq null) && (x.args eq Nil)) Some(x.tpe) else None
+  }
+  object Apply_CaseClass_WithArgs {
+    def unapply(x:Apply) = if (x.symbol eq null) true else false
+  }
+
 /*
   object ArrayValueFixed {
     def unapply(x:Tree):Option[List[Tree]] = x match {

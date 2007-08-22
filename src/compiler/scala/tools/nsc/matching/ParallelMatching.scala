@@ -1177,7 +1177,7 @@ trait ParallelMatching  {
               }
               //Console.println("encoding in singleType:"+stpe)
 
-              val ttst = typeRef(definitions.ScalaPackageClass.tpe, definitions.EqualsPatternClass, List(stpe))
+              val ttst = typeRef(NoPrefix, definitions.EqualsPatternClass, List(stpe))
 
               //Console.println("here's the result: "+ttst)
 
@@ -1185,15 +1185,22 @@ trait ParallelMatching  {
               val q = Typed(p, TypeTree(stpe)) setType ttst
               pats = q::pats
 
-            case o @ Apply(fn, Nil) => //  no args case class pattern
-              assert(isCaseClass(o.tpe), o.toString)
-              val q = Typed(EmptyTree, TypeTree(o.tpe)) setType o.tpe
+            case Apply_Value(pre, sym) =>
+              val tpe = typeRef(NoPrefix, definitions.EqualsPatternClass, singleType(pre, sym)::Nil)
+              val q = Typed(EmptyTree, TypeTree(tpe)) setType tpe
               pats = q :: pats
+
+            case Apply_CaseClass_NoArgs(tpe) =>    //  no-args case class pattern
+              val q = Typed(EmptyTree, TypeTree(tpe)) setType tpe
+              pats = q :: pats
+
+            case o @ Apply_CaseClass_WithArgs() => //  case class pattern with args
+              pats = o :: pats
 
             case p @ ArrayValue(_,xs) =>
           	  assert(false) // inactive, @see PatternMatchers::isImplemented
-              pats = p :: pats
 
+            // it would be nice to get rid of the default case, but then have to treat Bind(_,_)
             case p =>
               pats = p :: pats
           }
@@ -1277,13 +1284,14 @@ trait ParallelMatching  {
             //Console.println("covers? "+p+" "+sym);
             val res =
               isDefaultPattern(p) || p.isInstanceOf[UnApply] || p.isInstanceOf[ArrayValue] || {
+                val ptpe = patternType_wrtEquals(p.tpe)
                 val symtpe = if(sym.hasFlag(symtab.Flags.MODULE)) {
                   singleType(sym.tpe.prefix, sym.linkedModuleOfClass) // e.g. None, Nil
                 } else sym.tpe
                 //Console.print("covers: sym="+sym+" symtpe="+symtpe+" p="+p+", p.tpe="+p.tpe+" ?")
-                (p.tpe.typeSymbol == sym) || (symtpe <:< p.tpe) ||
+                (ptpe.typeSymbol == sym) || (symtpe <:< ptpe) ||
                 /* outer, see scala.util.parsing.combinator.lexical.Scanner */
-                (p.tpe.prefix.memberType(sym) <:< p.tpe)
+                (ptpe.prefix.memberType(sym) <:< ptpe)
               }
             //Console.println(res)
             res
@@ -1411,8 +1419,7 @@ trait ParallelMatching  {
    */
   final def condition(tpe: Type, scrut: Symbol): Tree = {
     val res = condition1(tpe, scrut)
-    //if (settings_debug)
-    //  Console.println("condition, tpe = "+tpe+", scrut.tpe = "+scrut.tpe+", res = "+res)
+    DBG("condition, tpe = "+tpe+", scrut.tpe = "+scrut.tpe+", res = "+res)
     res
   }
   final def condition1(tpe: Type, scrut: Symbol): Tree = {
@@ -1426,8 +1433,6 @@ trait ParallelMatching  {
     //Console.println("tpe = "+tpe+" prefix="+tpe.prefix)
     //Console.println("singletontype?"+tpe.isInstanceOf[SingletonType])
     //Console.println("constanttype? "+tpe.isInstanceOf[ConstantType])
-    //Console.println("value         "+tpe./*?term?*/symbol.isValue)
-    //Console.println("module        "+tpe./*?term?*/symbol.isModule)
     if (tpe.isInstanceOf[SingletonType] && !tpe.isInstanceOf[ConstantType]) {
 
       if (tpe.termSymbol.isModule) {// object
