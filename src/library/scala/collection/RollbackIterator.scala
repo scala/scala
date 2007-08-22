@@ -7,7 +7,7 @@ import scala.collection.mutable.{ArrayBuffer}
  */
 class RollbackIterator[+A](underlying : Iterator[A]) extends BufferedIterator.Default[A] {
   private[this] var rollback : ArrayBuffer[A] = null
-  protected def fill : Seq[A] = if (underlying.hasNext) underlying.next :: Nil else Nil
+  protected def fill(sz : Int) : Seq[A] = if (underlying.hasNext) underlying.next :: Nil else Nil
 
   override def next : A = {
     val ret = super.next

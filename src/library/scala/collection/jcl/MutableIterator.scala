@@ -71,10 +71,10 @@ b   **/
       // XXX: broken
       private[jcl] def peekNext = Buffered.this.seekNext(p) match {
       case Some(result) => result;
-      case None => throw new NoSuchElementException;
+      case None => throw new Predef.NoSuchElementException;
       }
       override def next = {
-        val ret = peekNext; val ret0 = Buffered.this.next; assert(ret == ret0); ret;
+        val ret = peekNext; val ret0 = Buffered.this.next; Predef.assert(ret == ret0); ret;
       }
       override def hasNext : Boolean = seekNext(p) != None;
       override def remove : Unit = Buffered.this.remove;
@@ -93,7 +93,7 @@ b   **/
       val ret = peekNext; head = null.asInstanceOf[A]; ret;
     }
     override def remove = {
-      if (head != null) throw new NoSuchElementException;
+      if (head != null) throw new Predef.NoSuchElementException;
       underlying.remove;
     }
     override def toString = "buffered[" + underlying + "]";

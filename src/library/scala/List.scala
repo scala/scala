@@ -1210,8 +1210,32 @@ case object Nil extends List[Nothing] {
  *  @version 1.0, 15/07/2003
  */
 @SerialVersionUID(0L - 8476791151983527571L)
-final case class ::[B](hd: B, private[scala] var tl: List[B]) extends List[B] {
-  def head = hd
-  def tail = tl
+final case class ::[B](private[scala] var hd: B, private[scala] var tl: List[B]) extends List[B] {
+  /* XXX: making hd a class-private var crashes the compiler. */
+  def head : B = hd
+  def tail : List[B] = tl
   override def isEmpty: Boolean = false
+
+  import java.io._
+
+  private def writeObject(out : ObjectOutputStream) = {
+    val i = elements
+    while (i.hasNext) out.writeObject(i.next)
+    out.writeObject(ListSerializeEnd)
+  }
+  private def readObject(in : ObjectInputStream) : Unit = {
+    hd = in.readObject.asInstanceOf[B]
+    assert(hd != ListSerializeEnd)
+    var current : ::[B] = this
+    while (true) in.readObject match {
+    case ListSerializeEnd => current.tl = Nil; return
+    case a : Any =>
+      val list : ::[B] = new ::(a.asInstanceOf[B], Nil)
+      current.tl = list
+      current = list
+    }
+  }
 }
+/** Only used for list serialization */
+@SerialVersionUID(0L - 8476791151975527571L)
+private[scala] case object ListSerializeEnd

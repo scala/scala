@@ -126,20 +126,10 @@ abstract class BoxedArray extends RandomAccessSeq.Mutable[Any] {
   /** Returns an array that contains all indices of this array */
   def indices: Array[Int] = Array.range(0, length)
 
-  override def slice(start: Int, end: Int): BoxedArray = throw new Error("internal: slice")
-
-  /** Calculate start position and length in source array to
-   *  be passed to the array copy operation.
-   */
-  protected def slice0(start: Int, end: Int): (Int, Int) = {
-    val s = start max 0
-    val e = end min this.length
-    if (s > e) (0, 0) else (s, e - s)
-  }
-
-  override def take(n: Int) = slice(0, n)
-
-  override def drop(n: Int) = slice(n, length)
+  // use implementation in RandomAccessSeq
+  //override def slice(start: Int, end: Int): BoxedArray = throw new Error("internal: slice")
+  //override def take(n: Int) = slice(0, n)
+  //override def drop(n: Int) = slice(n, length)
 
   override def takeWhile(p: Any => Boolean) = {
     val c = length + 1

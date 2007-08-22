@@ -28,4 +28,9 @@ trait ReferenceWrapper[+T <: AnyRef] extends Reference[T] {
   def clear = underlying.clear
   def enqueue = underlying.enqueue
   def isEnqueued = underlying.isEnqueued
+  override def hashCode = underlying.hashCode
+  override def equals(that : Any) = that match {
+  case that : ReferenceWrapper[_] => get equals that.get
+  case that => super.equals(that)
+  }
 }
