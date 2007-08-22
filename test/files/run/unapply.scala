@@ -115,3 +115,19 @@ object StreamFoo extends TestCase("unapply for Streams") with Assert {
     assertEquals(sum(str), 6)
   }
 }
+
+object Test1256 extends TestCase("1256") {
+  class Sync {
+    def unapply(scrut: Any): Boolean = false
+  }
+
+  class Buffer {
+    val Get = new Sync
+
+    val jp: PartialFunction[Any, Any] = {
+      case Get() =>
+    }
+  }
+
+  override def runTest { assertFalse((new Buffer).jp.isDefinedAt(42)) }
+}

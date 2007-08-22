@@ -176,6 +176,7 @@ trait StdNames {
     val ROOTPKG = newTermName("_root_")
     val REPEATED_PARAM_CLASS_NAME = newTermName("<repeated>")
     val BYNAME_PARAM_CLASS_NAME = newTermName("<byname>")
+    val EQUALS_PATTERN_NAME = newTermName("<equals>")
     val SELF = newTermName("$this")
 
     val CONSTRUCTOR = newTermName("<init>")
@@ -257,6 +258,7 @@ trait StdNames {
     val classOf = newTermName("classOf")
     val coerce = newTermName("coerce")
     val defaultValue = newTermName("defaultValue")
+    val drop = newTermName("drop")
     val dummy = newTermName("$dummy")
     val elem = newTermName("elem")
     val elements = newTermName("elements")
@@ -314,6 +316,7 @@ trait StdNames {
     val send = newTermName("send")
     val synchronized_ = newTermName("synchronized")
     val tail = newTermName("tail")
+    val toList = newTermName("toList")
     val toString_ = newTermName("toString")
     val that = newTermName("that")
     val that1 = newTermName("that1")

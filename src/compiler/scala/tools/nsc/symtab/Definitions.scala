@@ -95,7 +95,9 @@ trait Definitions {
     var CodeModule: Symbol = _
       def Code_lift = getMember(CodeModule, nme.lift_)
     lazy val PartialFunctionClass: Symbol = getClass("scala.PartialFunction")
+    /*
     lazy val ByNameFunctionClass: Symbol = getClass("scala.ByNameFunction")
+    */
     lazy val IterableClass: Symbol = getClass("scala.Iterable")
       def Iterable_next = getMember(IterableClass, nme.next)
       def Iterable_hasNext = getMember(IterableClass, nme.hasNext)
@@ -135,6 +137,8 @@ trait Definitions {
     var ByNameParamClass: Symbol = _
     //var UnsealedClass: Symbol = _
     lazy val UncheckedClass: Symbol = getClass("scala.unchecked")
+
+    var EqualsPatternClass: Symbol = _
 
     val MaxTupleArity = 22
     val TupleClass: Array[Symbol] = new Array(MaxTupleArity + 1)
@@ -216,83 +220,6 @@ trait Definitions {
       case tpe                            => tpe
     }).normalize
 
-    /** returns type list for return type of the extraction */
-    def unapplyTypeList(ufn: Symbol, ufntpe: Type) = {
-      assert(ufn.isMethod)
-      //Console.println("utl "+ufntpe+" "+ufntpe.typeSymbol)
-      ufn.name match {
-        case nme.unapply    => unapplyTypeListFromReturnType(ufntpe)
-        case nme.unapplySeq => unapplyTypeListFromReturnTypeSeq(ufntpe)
-        case _ => throw new IllegalArgumentException("expected function symbol of extraction")
-      }
-    }
-    /** (the inverse of unapplyReturnTypeSeq)
-     *  for type Boolean, returns Nil
-     *  for type Option[T] or Some[T]:
-     *   - returns T0...Tn if n>0 and T <: Product[T0...Tn]]
-     *   - returns T otherwise
-     */
-    def unapplyTypeListFromReturnType(tp1: Type): List[Type] =  { // rename: unapplyTypeListFromReturnType
-      val tp = unapplyUnwrap(tp1)
-      val B = BooleanClass
-      val O = OptionClass
-      val S = SomeClass
-      tp.typeSymbol match { // unapplySeqResultToMethodSig
-        case  B => Nil
-        case  O | S =>
-          val prod = tp.typeArgs.head
-          getProductArgs(prod)  match {
-            case Some(all @ (x1::x2::xs)) => all       // n >= 2
-            case _                        => prod::Nil // special n == 0 ||  n == 1
-          }
-        case _ => throw new IllegalArgumentException(tp.typeSymbol + " in not in {boolean, option, some}")
-      }
-    }
-
-    /** let type be the result type of the (possibly polymorphic) unapply method
-     *  for type Option[T] or Some[T]
-     *  -returns T0...Tn-1,Tn* if n>0 and T <: Product[T0...Tn-1,Seq[Tn]]],
-     *  -returns R* if T = Seq[R]
-     */
-    def unapplyTypeListFromReturnTypeSeq(tp1: Type): List[Type] = {
-      val tp = unapplyUnwrap(tp1)
-      val   O = OptionClass; val S = SomeClass; tp.typeSymbol match {
-      case  O                  | S =>
-        val ts = unapplyTypeListFromReturnType(tp1)
-        val last1 = ts.last.baseType(SeqClass) match {
-          case TypeRef(pre, seqClass, args) => typeRef(pre, RepeatedParamClass, args)
-          case _ => throw new IllegalArgumentException("last not seq")
-        }
-        ts.init ::: List(last1)
-        case _ => throw new IllegalArgumentException(tp.typeSymbol + " in not in {option, some}")
-      }
-    }
-
-    /** returns type of the unapply method returning T_0...T_n
-     *  for n == 0, boolean
-     *  for n == 1, Some[T0]
-     *  else Some[Product[Ti]]
-    def unapplyReturnType(elems: List[Type], useWildCards: Boolean) =
-      if (elems.isEmpty)
-        BooleanClass.tpe
-      else if (elems.length == 1)
-        optionType(if(useWildCards) WildcardType else elems(0))
-      else
-        productType({val es = elems; if(useWildCards) elems map { x => WildcardType} else elems})
-     */
-
-    def unapplyReturnTypeExpected(argsLength: Int) = argsLength match {
-      case 0 => BooleanClass.tpe
-      case 1 => optionType(WildcardType)
-      case n => optionType(productType(List.range(0,n).map (arg => WildcardType)))
-    }
-
-    /** returns unapply or unapplySeq if available */
-    def unapplyMember(tp: Type): Symbol = {
-      var unapp = tp.member(nme.unapply)
-      if (unapp == NoSymbol) unapp = tp.member(nme.unapplySeq)
-      unapp
-    }
     /* </unapply> */
     val MaxFunctionArity = 9
     val FunctionClass: Array[Symbol] = new Array(MaxFunctionArity + 1)
@@ -762,6 +689,15 @@ trait Definitions {
         tparam => typeRef(SeqClass.typeConstructor.prefix, SeqClass, List(tparam.typeConstructor)))
       ByNameParamClass = newCovariantPolyClass(
         ScalaPackageClass, nme.BYNAME_PARAM_CLASS_NAME, tparam => AnyClass.typeConstructor)
+
+      EqualsPatternClass = newClass(ScalaPackageClass, nme.EQUALS_PATTERN_NAME, List());
+      {
+        val tparam = newTypeParam(EqualsPatternClass, 0);
+        EqualsPatternClass.setInfo(
+          PolyType(
+            List(tparam),
+            ClassInfoType(List(AnyClass.typeConstructor), newScope, EqualsPatternClass)))
+      }
 
       /* <unapply> */
       //UnsealedClass = getClass("scala.unsealed") //todo: remove once 2.4 is out.

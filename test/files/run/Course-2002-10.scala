@@ -3,7 +3,7 @@
 //############################################################################
 // $Id$
 
-import compat.Math.{PI, log}
+import Math.{Pi, log}
 
 object M0 {
 
@@ -74,9 +74,9 @@ object M1 {
       i = i + 1;
     }
     Console.print("pi    = ");
-    Console.print(str(PI) + ", ");
-    Console.print(str(PI) + ", ");
-    Console.print(str(PI) + "\n");
+    Console.print(str(Pi) + ", ");
+    Console.print(str(Pi) + ", ");
+    Console.print(str(Pi) + "\n");
     Console.println;
     i = 0;
     while (i < 10) {

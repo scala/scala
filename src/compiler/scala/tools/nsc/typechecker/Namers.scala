@@ -115,7 +115,8 @@ trait Namers { self: Analyzer =>
             (!prev.sym.isSourceMethod ||
              nme.isSetterName(sym.name) ||
              sym.owner.isPackageClass) &&
-             !(sym.owner.isTypeParameter && sym.name.length==1 && sym.name(0)=='_')) { //@M: allow repeated use of `_' for higher-order type params
+             !((sym.owner.isTypeParameter || sym.owner.isAbstractType)
+               && sym.name.length==1 && sym.name(0)=='_')) { //@M: allow repeated use of `_' for higher-order type params
            doubleDefError(sym.pos, prev.sym)
            sym setInfo ErrorType
         } else context.scope enter sym
@@ -235,7 +236,7 @@ trait Namers { self: Analyzer =>
     class LazyPolyType(tparams: List[Tree], restp: Type, owner: Tree, ownerSym: Symbol, ctx: Context) extends LazyType { //@M
       override val typeParams: List[Symbol]= tparams map (_.symbol) //@M
       override def complete(sym: Symbol) {
-        if(ownerSym.isAbstractType) //@M an abstract type's type parameters are entered
+        if(ownerSym.isAbstractType) //@M an abstract type's type parameters are entered -- TODO: change to isTypeMember ?
           new Namer(ctx.makeNewScope(owner, ownerSym)).enterSyms(tparams) //@M
         restp.complete(sym)
       }
@@ -251,7 +252,7 @@ trait Namers { self: Analyzer =>
           //@M! TypeDef's type params are handled differently
           //@M e.g., in [A[x <: B], B], A and B are entered first as both are in scope in the definition of x
           //@M x is only in scope in `A[x <: B]'
-          if(!sym.isAbstractType) //@M
+          if(!sym.isAbstractType) //@M TODO: change to isTypeMember ?
             new Namer(context.makeNewScope(tree, sym)).enterSyms(tparams)
           ltype = new LazyPolyType(tparams, ltype, tree, sym, context) //@M
           if (sym.isTerm) skolemize(tparams)
@@ -408,7 +409,7 @@ trait Namers { self: Analyzer =>
       override def complete(sym: Symbol) {
         var selftpe = typer.typedType(tree).tpe
         if (!(selftpe.typeSymbol isNonBottomSubClass sym.owner))
-          selftpe = intersectionType(List(selftpe, sym.owner.tpe))
+          selftpe = intersectionType(List(sym.owner.tpe, selftpe))
 //      println("completing self of "+sym.owner+": "+selftpe)
         sym.setInfo(selftpe)
       }
@@ -514,7 +515,7 @@ trait Namers { self: Analyzer =>
         def apply(tp: Type) = {
           tp match {
             case SingleType(_, sym) =>
-              if (sym.owner == meth && (vparams contains sym)) {
+              if (settings.Xexperimental.value && sym.owner == meth && (vparams contains sym)) {
 /*
                 if (sym hasFlag IMPLICIT) {
                   context.error(sym.pos, "illegal type dependence on implicit parameter")
@@ -541,8 +542,10 @@ trait Namers { self: Analyzer =>
               if (sym.owner == meth && (vparamSymss exists (_ contains sym)))
                 context.error(
                   sym.pos,
-                  "illegal dependent method type: parameter appears in the type "+
-                  "of another parameter in the same section or an earlier one")
+                  "illegal dependent method type"+
+                  (if (settings.Xexperimental.value)
+                     ": parameter appears in the type of another parameter in the same section or an earlier one"
+                   else ""))
             case _ =>
               mapOver(tp)
           }
@@ -663,13 +666,29 @@ trait Namers { self: Analyzer =>
     //@M! an abstract type definition (abstract type member/type parameter) may take type parameters, which are in scope in its bounds
     private def typeDefSig(tpsym: Symbol, tparams: List[TypeDef], rhs: Tree) = {
       val tparamSyms = typer.reenterTypeParams(tparams) //@M make tparams available in scope (just for this abstypedef)
-      var tp = typer.typedType(rhs).tpe
-      tp match {
+      val tp = typer.typedType(rhs).tpe match {
         case TypeBounds(lt, rt) if (lt.isError || rt.isError) =>
-          tp = TypeBounds(AllClass.tpe, AnyClass.tpe)
-        case _ =>
+          TypeBounds(AllClass.tpe, AnyClass.tpe)
+        case tp => tp
       }
-      parameterizedType(tparamSyms, tp) //@M
+
+      def verifyOverriding(other: Symbol): Boolean = {
+        if(other.unsafeTypeParams.length != tparamSyms.length) {
+          context.error(tpsym.pos,
+              "The kind of "+tpsym.keyString+" "+tpsym.varianceString + tpsym.nameString+
+              " does not conform to the expected kind of " + other.defString + other.locationString + ".")
+          false
+        } else true
+      }
+
+      // @M: make sure overriding in refinements respects rudimentary kinding
+      // have to do this early, as otherwise we might get crashes: (see neg/bug1275.scala)
+      //   suppose some parameterized type member is overridden by a type member w/o params,
+      //   then appliedType will be called on a type that does not expect type args --> crash
+      if (tpsym.owner.isRefinementClass &&  // only needed in refinements
+          !tpsym.allOverriddenSymbols.forall{verifyOverriding(_)})
+	      ErrorType
+      else parameterizedType(tparamSyms, tp)
     }
 
     def typeSig(tree: Tree): Type = {

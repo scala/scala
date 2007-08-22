@@ -29,7 +29,7 @@ abstract class DocDriver extends ModelFrames with ModelToXML {
         case _ =>
       }
     }
-    def init: Unit = {}
+    def init {}
   }
 
   def process(units: Iterator[CompilationUnit]) {
@@ -78,11 +78,11 @@ abstract class DocDriver extends ModelFrames with ModelToXML {
 
       def title = "List of all classes and objects"
       def path = "all-classes"
-      def navLabel = null; // "root-page"
+      def navLabel = null  // "root-page"
       // override protected def navSuffix = ".html";
-      override def optional(cls : ClassOrObject) : NodeSeq = {
-        val path = cls.path.map(_.name);
-        val key = (cls.path.map(_.name), cls.isInstanceOf[Clazz]);
+      override def optional(cls: ClassOrObject): NodeSeq = {
+        val path = cls.path.map(_.name)
+        val key = (cls.path.map(_.name), cls.isInstanceOf[Clazz])
         assert(!organized(key).isEmpty);
         (if (!organized(key).tail.isEmpty) Text(" (" +{
           //Console.println("CONFLICT: " + path + " " + organized(key));
@@ -195,12 +195,12 @@ abstract class DocDriver extends ModelFrames with ModelToXML {
   roots("scala-library") = "http://www.scala-lang.org/docu/files/api";
 
   private def keyFor(file: ZipFile): String = {
-    var name = file.getName;
-    var idx = name.lastIndexOf(java.io.File.pathSeparator);
-    if (idx == -1) idx = name.lastIndexOf('/');
-    if (idx != -1) name = name.substring(idx + 1);
-    if (name.endsWith(".jar")) return name.substring(0, name.length - (".jar").length);
-    else return null;
+    var name = file.getName
+    var idx = name.lastIndexOf(java.io.File.pathSeparator)
+    if (idx == -1) idx = name.lastIndexOf('/')
+    if (idx != -1) name = name.substring(idx + 1)
+    if (name endsWith ".jar") name.substring(0, name.length - (".jar").length)
+    else null
   }
 
   // <code>{Text(string + " - ")}</code>;
@@ -218,7 +218,7 @@ abstract class DocDriver extends ModelFrames with ModelToXML {
       case null =>
       case _ =>
     }
-    return false;
+    false
   }
 
   def aref(href: String, label: String)(implicit frame: Frame) =

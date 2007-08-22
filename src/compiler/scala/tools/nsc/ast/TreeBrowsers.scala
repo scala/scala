@@ -27,8 +27,8 @@ import symtab.Flags._
  */
 abstract class TreeBrowsers {
 
-  val global: Global
-  import global._
+  val trees: Trees
+  import trees._
   import nme.EMPTY
 
   def create(): SwingBrowser = new SwingBrowser();
@@ -49,8 +49,6 @@ abstract class TreeBrowsers {
   class SwingBrowser {
 
     def browse(t: Tree): Unit = {
-      val phase: Phase = globalPhase
-
       val tm = new ASTTreeModel(t)
 
       val frame = new BrowserFrame()
@@ -68,7 +66,6 @@ abstract class TreeBrowsers {
 
     /** print the whole program */
     def browse(units: List[CompilationUnit]): Unit = {
-      val phase: Phase = globalPhase
       var unitList: List[UnitTree] = Nil
 
       for (i <- units)
@@ -663,7 +660,7 @@ abstract class TreeBrowsers {
         )
 
       case _ =>
-        abort("Unknown case: " + t.toString())
+        throw new Error("Unknown case: " + t.toString())
     }
   }
 

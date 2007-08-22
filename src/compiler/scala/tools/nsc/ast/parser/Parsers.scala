@@ -652,24 +652,24 @@ trait Parsers {
     /** Types ::= Type {`,' Type}
      *  (also eats trailing comma if it finds one)
      */
-    def types(isPattern: Boolean): List[Tree] = {
-      val ts = new ListBuffer[Tree] + argType(isPattern)
+    def types(isPattern: Boolean, isTypeApply: Boolean, isFuncArg: Boolean): List[Tree] = {
+      val ts = new ListBuffer[Tree] + argType(isPattern, isTypeApply, isFuncArg)
       while (inToken == COMMA) {
         inNextToken
         if (inToken == RPAREN) {
           in.deprecationWarning(in.pos, "Trailing commas have been deprecated")
           return ts.toList
         } else {
-          ts += argType(isPattern)
+          ts += argType(isPattern, isTypeApply, isFuncArg)
         }
       }
       ts.toList
     }
 
     /** modes for infix types */
-    private final val FirstOp = 0   // first operand
-    private final val LeftOp = 1    // left associative
-    private final val RightOp = 2   // right associative
+    object InfixMode extends Enumeration {
+      val FirstOp, LeftOp, RightOp = Value
+    }
 
     /** Type ::= InfixType `=>' Type
      *         | `(' [`=>' Type] `)' `=>' Type
@@ -685,19 +685,21 @@ trait Parsers {
           if (inToken == RPAREN) {
             inNextToken
             atPos(accept(ARROW)) { makeFunctionTypeTree(List(), typ()) }
+          /* Not more used
           } else if (inToken == ARROW) {
             inNextToken
             val t0 = typ()
             accept(RPAREN)
             atPos(accept(ARROW)) { makeByNameFunctionTypeTree(t0, typ()) }
+          */
           } else {
-            val ts = types(false)
+            val ts = types(false, false, true)
             accept(RPAREN)
             if (inToken == ARROW) atPos(inSkipToken) { makeFunctionTypeTree(ts, typ()) }
-            else infixTypeRest(pos, annotTypeRest(pos, false, makeTupleType(ts, true)), false, FirstOp)
+            else infixTypeRest(pos, annotTypeRest(pos, false, makeTupleType(ts, true)), false, InfixMode.FirstOp)
           }
         } else {
-          infixType(false, FirstOp)
+          infixType(false, InfixMode.FirstOp)
         }
       if (inToken == ARROW)
         atPos(inSkipToken) {
@@ -721,26 +723,26 @@ trait Parsers {
 
     /** InfixType ::= CompoundType {id [nl] CompoundType}
      */
-    def infixType(isPattern: Boolean, mode: Int): Tree =
+    def infixType(isPattern: Boolean, mode: InfixMode.Value): Tree =
       infixTypeRest(inCurrentPos, infixTypeFirst(isPattern), isPattern, mode)
 
-    def infixTypeFirst(isPattern: boolean) =
+    def infixTypeFirst(isPattern: Boolean) =
       if (inToken == LBRACE) scalaAnyRefConstr else annotType(isPattern)
 
-    def infixTypeRest(pos: ScanPosition, t0: Tree, isPattern: Boolean, mode: Int): Tree = {
+    def infixTypeRest(pos: ScanPosition, t0: Tree, isPattern: Boolean, mode: InfixMode.Value): Tree = {
       val t = compoundTypeRest(pos, t0, isPattern)
       if (isIdent && inName != nme.STAR) {
         val opPos = inCurrentPos
         val leftAssoc = treeInfo.isLeftAssoc(inName)
-        if (mode == LeftOp) checkAssoc(opPos, inName, true)
-        else if (mode == RightOp) checkAssoc(opPos, inName, false)
+        if (mode == InfixMode.LeftOp) checkAssoc(opPos, inName, true)
+        else if (mode == InfixMode.RightOp) checkAssoc(opPos, inName, false)
         val op = ident()
         newLineOptWhenFollowing(isTypeIntroToken)
         def mkOp(t1: Tree) = atPos(opPos) { AppliedTypeTree(Ident(op.toTypeName), List(t, t1)) }
         if (leftAssoc)
-          infixTypeRest(inCurrentPos, mkOp(compoundType(isPattern)), isPattern, LeftOp)
+          infixTypeRest(inCurrentPos, mkOp(compoundType(isPattern)), isPattern, InfixMode.LeftOp)
         else
-          mkOp(infixType(isPattern, RightOp))
+          mkOp(infixType(isPattern, InfixMode.RightOp))
       } else t
     }
 
@@ -757,13 +759,14 @@ trait Parsers {
       }
       newLineOptWhenFollowedBy(LBRACE)
       atPos(pos) {
-        if (inToken == LBRACE && !isPattern)
+        if (inToken == LBRACE)
           CompoundTypeTree(Template(ts.toList, emptyValDef, refinement()))
-        else makeIntersectionTypeTree(ts.toList)
+        else
+          makeIntersectionTypeTree(ts.toList)
       }
     }
 
-    /** AnnotType        ::=  Annotations SimpleType
+    /** AnnotType        ::=  Annotations SimpleType Annotations
      *  SimpleType       ::=  SimpleType TypeArgs
      *                     |  SimpleType `#' Id
      *                     |  StableId
@@ -772,13 +775,13 @@ trait Parsers {
      *                     |  WildcardType
      */
     def annotType(isPattern: Boolean): Tree = {
-      val annots = annotations()
+      val annots1 = annotations()  // Q: deprecate annotations here?
       val pos = inCurrentPos
 
       val t: Tree = annotTypeRest(pos, isPattern,
         if (inToken == LPAREN) {
           inNextToken
-          val ts = types(isPattern)
+          val ts = types(isPattern, false, false)
           accept(RPAREN)
           atPos(pos) { makeTupleType(ts, true) }
         } else if (inToken == USCORE) {
@@ -790,6 +793,9 @@ trait Parsers {
             case _ => convertToTypeId(r)
           }
         })
+
+      val annots2 = annotations()
+      val annots = annots1 ::: annots2
       (t /: annots) (makeAnnotated)
     }
 
@@ -797,7 +803,7 @@ trait Parsers {
       if (inToken == HASH)
         annotTypeRest(pos, isPattern, atPos(inSkipToken) { SelectFromTypeTree(t, ident().toTypeName) })
       else if (inToken == LBRACKET)
-        annotTypeRest(pos, isPattern, atPos(pos) { AppliedTypeTree(t, typeArgs(isPattern)) })
+        annotTypeRest(pos, isPattern, atPos(pos) { AppliedTypeTree(t, typeArgs(isPattern, false)) })
       else
         t
 
@@ -811,20 +817,17 @@ trait Parsers {
     }
 
     /** TypeArgs    ::= `[' ArgType {`,' ArgType} `]'
-     *  TypePatArgs ::= `[' TypePatArg {`,' TypePatArg} `]'
      */
-    def typeArgs(isPattern: Boolean): List[Tree] = {
+    def typeArgs(isPattern: Boolean, isTypeApply: Boolean): List[Tree] = {
       accept(LBRACKET)
-      val ts = types(isPattern)
+      val ts = types(isPattern, isTypeApply, false)
       accept(RBRACKET)
       ts
     }
 
     /** ArgType       ::=  Type
-     *  TypePatArg    ::=  `_'
-     *                 |   varid
      */
-    def argType(isPattern: Boolean): Tree =
+    def argType(isPattern: Boolean, isTypeApply: Boolean, isFuncArg: Boolean): Tree =
       if (isPattern) {
         if (inToken == USCORE)
           if (inToken == SUBTYPE || inToken == SUPERTYPE) wildcardType(inSkipToken)
@@ -836,7 +839,28 @@ trait Parsers {
         else {
           typ()
         }
-      } else typ()
+      } else if (isFuncArg) {
+        // copy-paste (with change) from def paramType
+        if (inToken == ARROW)
+          atPos(inSkipToken) {
+            AppliedTypeTree(
+                scalaDot(nme.BYNAME_PARAM_CLASS_NAME.toTypeName), List(typ()))
+          }
+        else {
+          val t = typ()
+          if (isIdent && inName == STAR) {
+            inNextToken
+            atPos(t.pos) {
+              AppliedTypeTree(
+                scalaDot(nme.REPEATED_PARAM_CLASS_NAME.toTypeName), List(t))
+            }
+          } else t
+        }
+      } else if (isTypeApply) {
+        placeholderTypeBoundary(typ())
+      } else {
+        typ()
+      }
 
 //////// EXPRESSIONS ////////////////////////////////////////////////////////
 
@@ -1192,7 +1216,7 @@ trait Parsers {
           val t1 = stripParens(t)
           t1 match {
             case Ident(_) | Select(_, _) =>
-              simpleExprRest(atPos(inCurrentPos) { TypeApply(t1, typeArgs(false)) }, true)
+              simpleExprRest(atPos(inCurrentPos) { TypeApply(t1, typeArgs(false, true)) }, true)
             case _ =>
               t1
           }
@@ -1409,14 +1433,14 @@ trait Parsers {
      *                    |  `_'
      *                    |  literal
      *                    |  XmlPattern
-     *                    |  StableId  [TypePatArgs] [`(' [SeqPatterns [`,']] `)']
+     *                    |  StableId  [TypeArgs] [`(' [SeqPatterns [`,']] `)']
      *                    |  `(' [Patterns [`,']] `)'
      *  SimpleSeqPattern ::= varid
      *                    |  `_'
      *                    |  literal
      *                    |  XmlPattern
      *                    |  `<' xLiteralPattern
-     *                    |  StableId [TypePatArgs] [`(' [SeqPatterns [`,']] `)']
+     *                    |  StableId [TypeArgs] [`(' [SeqPatterns [`,']] `)']
      *                    |  `(' [SeqPatterns [`,']] `)'
      *
      * XXX: Hook for IDE
@@ -1436,7 +1460,7 @@ trait Parsers {
 /* not yet
         if (inToken == LBRACKET)
           atPos(inCurrentPos) {
-            val ts = typeArgs(true)
+            val ts = typeArgs(true, false)
             accept(LPAREN)
             val ps = if (inToken == RPAREN) List() else patterns(true, false)
             accept(RPAREN)
@@ -1609,16 +1633,17 @@ trait Parsers {
      */
     def annotation(): Annotation = {
       def nameValuePair(): Tree = {
-        accept(VAL)
         var pos = inCurrentPos
-        val aname = atPos(pos) { Ident(ident()) }
+        accept(VAL)
+        val aname = ident()
         accept(EQUALS)
-        atPos(pos) { Assign(aname, stripParens(prefixExpr())) }
+        val rhs = stripParens(prefixExpr())
+        atPos(pos) { ValDef(NoMods, aname, TypeTree(), rhs) }
       }
       val pos = inCurrentPos
       var t: Tree = convertToTypeId(stableId())
       if (inToken == LBRACKET)
-        t = atPos(inCurrentPos)(AppliedTypeTree(t, typeArgs(false)))
+        t = atPos(inCurrentPos)(AppliedTypeTree(t, typeArgs(false, false)))
       val args = if (inToken == LPAREN) argumentExprs() else List()
       newLineOptWhenFollowedBy(LBRACE)
       val nameValuePairs: List[Tree] = if (inToken == LBRACE) {

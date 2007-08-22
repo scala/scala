@@ -309,7 +309,7 @@ object Predef {
   implicit def long2Long(x: Long) = new java.lang.Long(x)
   implicit def float2Float(x: Float) = new java.lang.Float(x)
   implicit def double2Double(x: Double) = new java.lang.Double(x)
-  implicit def boolean2Boolean(x: Boolean) = new java.lang.Boolean(x)
+  implicit def boolean2Boolean(x: Boolean) = java.lang.Boolean.valueOf(x)
 
   def currentThread = java.lang.Thread.currentThread()
 

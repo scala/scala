@@ -235,51 +235,52 @@ class NonTailCall {
 // Test code
 
 object Test {
-  def check_success(name: String, closure: => Int, expected: Int): Unit = {
-    Console.print("test " + name);
+  def check_success(name: String, closure: => Int, expected: Int) {
+    print("test " + name)
     try {
-      val actual: Int = closure;
+      val actual: Int = closure
       if (actual == expected) {
-        Console.print(" was successful");
+        print(" was successful")
       } else {
-        Console.print(" failed: expected "+ expected +", found "+ actual);
+        print(" failed: expected "+ expected +", found "+ actual)
       }
     } catch {
       case exception: Throwable => {
-        Console.print(" raised exception " + exception);
+        print(" raised exception " + exception)
       }
     }
-    Console.println;
+    println
   }
 
-  def check_success_b(name: String, closure: => Boolean, expected: Boolean): Unit = {
-    Console.print("test " + name);
+  def check_success_b(name: String, closure: => Boolean, expected: Boolean) {
+    print("test " + name)
     try {
-      val actual: Boolean = closure;
+      val actual: Boolean = closure
       if (actual == expected) {
-        Console.print(" was successful");
+        print(" was successful")
       } else {
-        Console.print(" failed: expected "+ expected +", found "+ actual);
+        print(" failed: expected "+ expected +", found "+ actual)
       }
     } catch {
       case exception: Throwable => {
         Console.print(" raised exception " + exception);
       }
     }
-    Console.println;
+    println
   }
 
-  def check_overflow(name: String, closure: => Int): Unit = {
-    Console.print("test " + name);
+  def check_overflow(name: String, closure: => Int) {
+    print("test " + name)
     try {
       val actual: Int = closure;
     } catch {
-      case exception: compat.Platform.StackOverflowError => Console.println(" was successful");
+      case exception: compat.Platform.StackOverflowError =>
+        println(" was successful")
       case exception: Throwable => {
-        Console.print(" raised exception " + exception);
+        print(" raised exception " + exception)
       }
     }
-    Console.println;
+    println
   }
 
   def calibrate: Int = {
@@ -289,86 +290,86 @@ object Test {
     while (!stop) {
       try {
         calibrator.f(n, n);
-        if (n >= compat.Math.MAX_INT / 2) error("calibration failure");
+        if (n >= Math.MAX_INT / 2) error("calibration failure");
         n = 2 * n;
       } catch {
         case exception: compat.Platform.StackOverflowError => stop = true
       }
     }
-    4 * n;
+    4 * n
   }
 
-  def main(args: Array[String]): Unit = {
+  def main(args: Array[String]) {
     // compute min and max iteration number
     val min = 16;
     val max = calibrate;
 
     // test tail calls in different contexts
-    val Final     = new Final();
-    val Class     = new Class();
-    val SubClass  = new SubClass();
-    val Sealed    = new Sealed();
-    val SubSealed = new SubSealed();
-    check_success("Object   .f", Object   .f(max, max), 0);
-    check_success("Final    .f", Final    .f(max, max), 0);
-    check_success("Class    .f", Class    .f(max, max), 0);
-    check_success("SubClass .f", SubClass .f(max, max), max);
-    check_success("Sealed   .f", Sealed   .f(max, max), 0);
-    check_success("SubSealed.f", SubSealed.f(max, max), max);
-    Console.println;
+    val Final     = new Final()
+    val Class     = new Class()
+    val SubClass  = new SubClass()
+    val Sealed    = new Sealed()
+    val SubSealed = new SubSealed()
+    check_success("Object   .f", Object   .f(max, max), 0)
+    check_success("Final    .f", Final    .f(max, max), 0)
+    check_success("Class    .f", Class    .f(max, max), 0)
+    check_success("SubClass .f", SubClass .f(max, max), max)
+    check_success("Sealed   .f", Sealed   .f(max, max), 0)
+    check_success("SubSealed.f", SubSealed.f(max, max), max)
+    println
 
     // test tail calls in nested classes/objects
-    val c: C = new C;
-    check_success("O      .f", O      .f(max, max), 0);
-    check_success("c      .f", c      .f(max, max), 0);
-    check_success("O.O    .f", O.O    .f(max, max), 0);
-    check_success("O.c    .f", O.c    .f(max, max), 0);
-    check_success("c.O    .f", c.O    .f(max, max), 0);
-    check_success("c.c    .f", c.c    .f(max, max), 0);
-    check_success("O.O.O  .f", O.O.O  .f(max, max), 0);
-    check_success("O.O.c  .f", O.O.c  .f(max, max), 0);
-    check_success("O.c.O  .f", O.c.O  .f(max, max), 0);
-    check_success("O.c.c  .f", O.c.c  .f(max, max), 0);
-    check_success("c.O.O  .f", c.O.O  .f(max, max), 0);
-    check_success("c.O.c  .f", c.O.c  .f(max, max), 0);
-    check_success("c.c.O  .f", c.c.O  .f(max, max), 0);
-    check_success("c.c.c  .f", c.c.c  .f(max, max), 0);
-    check_success("O.O.O.O.f", O.O.O.O.f(max, max), 0);
-    check_success("O.O.O.c.f", O.O.O.c.f(max, max), 0);
-    check_success("O.O.c.O.f", O.O.c.O.f(max, max), 0);
-    check_success("O.O.c.c.f", O.O.c.c.f(max, max), 0);
-    check_success("O.c.O.O.f", O.c.O.O.f(max, max), 0);
-    check_success("O.c.O.c.f", O.c.O.c.f(max, max), 0);
-    check_success("O.c.c.O.f", O.c.c.O.f(max, max), 0);
-    check_success("O.c.c.c.f", O.c.c.c.f(max, max), 0);
-    check_success("c.O.O.O.f", c.O.O.O.f(max, max), 0);
-    check_success("c.O.O.c.f", c.O.O.c.f(max, max), 0);
-    check_success("c.O.c.O.f", c.O.c.O.f(max, max), 0);
-    check_success("c.O.c.c.f", c.O.c.c.f(max, max), 0);
-    check_success("c.c.O.O.f", c.c.O.O.f(max, max), 0);
-    check_success("c.c.O.c.f", c.c.O.c.f(max, max), 0);
-    check_success("c.c.c.O.f", c.c.c.O.f(max, max), 0);
-    check_success("c.c.c.c.f", c.c.c.c.f(max, max), 0);
-    Console.println;
+    val c: C = new C
+    check_success("O      .f", O      .f(max, max), 0)
+    check_success("c      .f", c      .f(max, max), 0)
+    check_success("O.O    .f", O.O    .f(max, max), 0)
+    check_success("O.c    .f", O.c    .f(max, max), 0)
+    check_success("c.O    .f", c.O    .f(max, max), 0)
+    check_success("c.c    .f", c.c    .f(max, max), 0)
+    check_success("O.O.O  .f", O.O.O  .f(max, max), 0)
+    check_success("O.O.c  .f", O.O.c  .f(max, max), 0)
+    check_success("O.c.O  .f", O.c.O  .f(max, max), 0)
+    check_success("O.c.c  .f", O.c.c  .f(max, max), 0)
+    check_success("c.O.O  .f", c.O.O  .f(max, max), 0)
+    check_success("c.O.c  .f", c.O.c  .f(max, max), 0)
+    check_success("c.c.O  .f", c.c.O  .f(max, max), 0)
+    check_success("c.c.c  .f", c.c.c  .f(max, max), 0)
+    check_success("O.O.O.O.f", O.O.O.O.f(max, max), 0)
+    check_success("O.O.O.c.f", O.O.O.c.f(max, max), 0)
+    check_success("O.O.c.O.f", O.O.c.O.f(max, max), 0)
+    check_success("O.O.c.c.f", O.O.c.c.f(max, max), 0)
+    check_success("O.c.O.O.f", O.c.O.O.f(max, max), 0)
+    check_success("O.c.O.c.f", O.c.O.c.f(max, max), 0)
+    check_success("O.c.c.O.f", O.c.c.O.f(max, max), 0)
+    check_success("O.c.c.c.f", O.c.c.c.f(max, max), 0)
+    check_success("c.O.O.O.f", c.O.O.O.f(max, max), 0)
+    check_success("c.O.O.c.f", c.O.O.c.f(max, max), 0)
+    check_success("c.O.c.O.f", c.O.c.O.f(max, max), 0)
+    check_success("c.O.c.c.f", c.O.c.c.f(max, max), 0)
+    check_success("c.c.O.O.f", c.c.O.O.f(max, max), 0)
+    check_success("c.c.O.c.f", c.c.O.c.f(max, max), 0)
+    check_success("c.c.c.O.f", c.c.c.O.f(max, max), 0)
+    check_success("c.c.c.c.f", c.c.c.c.f(max, max), 0)
+    println
 
     // test tail calls with different signatures
-    val TailCall = new TailCall("S");
-    check_success("TailCall.f1", TailCall.f1(max, max     ), 0);
-    check_success("TailCall.f2", TailCall.f2(max, max     ), 0);
-    check_success("TailCall.f3", TailCall.f3(max, max, Nil), 0);
-    check_success("TailCall.f4", TailCall.f4(max, max     ), 0);
-    check_success("TailCall.g1", TailCall.g1(max, max     ), 0);
-    check_success("TailCall.g2", TailCall.g2(max, max     ), 0);
-    check_success("TailCall.g3", TailCall.g3(max, max, Nil), 0);
-    check_success("TailCall.h1", TailCall.h1(max, max     ), 0);
-    Console.println;
+    val TailCall = new TailCall("S")
+    check_success("TailCall.f1", TailCall.f1(max, max     ), 0)
+    check_success("TailCall.f2", TailCall.f2(max, max     ), 0)
+    check_success("TailCall.f3", TailCall.f3(max, max, Nil), 0)
+    check_success("TailCall.f4", TailCall.f4(max, max     ), 0)
+    check_success("TailCall.g1", TailCall.g1(max, max     ), 0)
+    check_success("TailCall.g2", TailCall.g2(max, max     ), 0)
+    check_success("TailCall.g3", TailCall.g3(max, max, Nil), 0)
+    check_success("TailCall.h1", TailCall.h1(max, max     ), 0)
+    println
 
-    val NonTailCall = new NonTailCall;
+    val NonTailCall = new NonTailCall
     check_success("NonTailCall.f1", NonTailCall.f1(2), 0)
     check_overflow("NonTailCall.f2", NonTailCall.f2(max))
 
-    check_success_b("TailCall.b1", TailCall.b1(max), true);
-    check_success_b("TailCall.b2", TailCall.b2(max), true);
+    check_success_b("TailCall.b1", TailCall.b1(max), true)
+    check_success_b("TailCall.b2", TailCall.b2(max), true)
 
     val FancyTailCalls = new FancyTailCalls;
     check_success("FancyTailCalls.tcTryLocal",   FancyTailCalls.tcTryLocal(max, max), max)

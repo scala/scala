@@ -28,10 +28,10 @@ object fors {
 
   def isPrime(n: Int) = divisors(n).length == 2
 
-  def findNums(n: Int): Iterator[Pair[Int, Int]] =
+  def findNums(n: Int): Iterable[(Int, Int)] =
     for (i <- 1 until n;
          j <- 1 until (i-1);
-         if isPrime(i+j)) yield Pair(i, j)
+         if isPrime(i+j)) yield (i, j)
 
   def sum(xs: List[Double]): Double =
     xs.foldLeft(0.0) { (x, y) => x + y }
@@ -99,7 +99,7 @@ object fors {
     println("divisors(34) = " + divisors(34))
 
     print("findNums(15) =");
-    findNums(15) foreach { x => Console.print(" " + x); }
+    findNums(15) foreach { x => print(" " + x); }
     println
 
     val xs = List(3.5, 5.0, 4.5)

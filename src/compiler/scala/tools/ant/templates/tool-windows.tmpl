@@ -52,7 +52,7 @@ if "%_BOOT_CLASSPATH%"=="" (
   )
 )
 
-set _PROPS=-Dscala.home="%_SCALA_HOME%" -Denv.classpath="%CLASSPATH%" @properties@
+set _PROPS=-Dscala.home="%_SCALA_HOME%" -Denv.classpath="%CLASSPATH%" -Denv.emacs="%EMACS%" @properties@
 
 rem echo %_JAVACMD% -Xbootclasspath/a:"%_BOOT_CLASSPATH%" %_JAVA_OPTS% %_PROPS% -cp "%_EXTENSION_CLASSPATH%" @class@ @toolflags@ %_ARGS%
 %_JAVACMD% -Xbootclasspath/a:"%_BOOT_CLASSPATH%" %_JAVA_OPTS% %_PROPS% -cp "%_EXTENSION_CLASSPATH%" @class@ @toolflags@ %_ARGS%

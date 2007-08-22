@@ -101,7 +101,7 @@ object Test {
 
   var checks: Int = 0;
 
-  def check(test0: Boolean, actual: Any, expected: Any): Unit = {
+  def check(test0: Boolean, actual: Any, expected: Any) {
     val test1: Boolean = actual == expected;
     if (!test0 || !test1) {
       val s0 = if (test0) "ok" else "KO";
@@ -110,30 +110,30 @@ object Test {
       val s3 = expected.toString();
       error(s0 + " - " + s1 + ": " + s2 + " != " + s3);
     }
-    checks = checks + 1;
+    checks += 1
   }
 
-  def check_Ta[T <: Any    ](xs: Array[T], l: Int, x0: T, c: Check[T]): Unit ={
+  def check_Ta[T <: Any    ](xs: Array[T], l: Int, x0: T, c: Check[T]) {
     check(xs.length == l, xs.length, l);
     check(xs(0) == x0, xs(0), x0);
     c(xs);
   }
 
-  def check_Tv[T <: AnyVal ](xs: Array[T], l: Int, x0: T, c: Check[T]): Unit ={
-    check(xs.length == l, xs.length, l);
-    check(xs(0) == x0, xs(0), x0);
-    check_Ta(xs, l, x0, c);
-    c(xs);
-  }
-
-  def check_Tr[T <: AnyRef ](xs: Array[T], l: Int, x0: T, c: Check[T]): Unit ={
+  def check_Tv[T <: AnyVal ](xs: Array[T], l: Int, x0: T, c: Check[T]) {
     check(xs.length == l, xs.length, l);
     check(xs(0) == x0, xs(0), x0);
     check_Ta(xs, l, x0, c);
     c(xs);
   }
 
-  def check_To[T <: Object ](xs: Array[T], l: Int, x0: T, c: Check[T]): Unit ={
+  def check_Tr[T <: AnyRef ](xs: Array[T], l: Int, x0: T, c: Check[T]) {
+    check(xs.length == l, xs.length, l);
+    check(xs(0) == x0, xs(0), x0);
+    check_Ta(xs, l, x0, c);
+    c(xs);
+  }
+
+  def check_To[T <: Object ](xs: Array[T], l: Int, x0: T, c: Check[T]) {
     check(xs.length == l, xs.length, l);
     check(xs(0) == x0, xs(0), x0);
     check_Ta(xs, l, x0, c);
@@ -141,7 +141,7 @@ object Test {
     c(xs);
   }
 
-  def check_Tm[T <: Map    ](xs: Array[T], l: Int, x0: T, c: Check[T]): Unit ={
+  def check_Tm[T <: Map    ](xs: Array[T], l: Int, x0: T, c: Check[T]) {
     check(xs.length == l, xs.length, l);
     check(xs(0) == x0, xs(0), x0);
     check_Ta(xs, l, x0, c);
@@ -150,7 +150,7 @@ object Test {
     c(xs);
   }
 
-  def check_Tn[T <: Strings](xs: Array[T], l: Int, x0: T, c: Check[T]): Unit ={
+  def check_Tn[T <: Strings](xs: Array[T], l: Int, x0: T, c: Check[T]) {
     check(xs.length == l, xs.length, l);
     check(xs(0) == x0, xs(0), x0);
     check_Ta(xs, l, x0, c);
@@ -162,7 +162,7 @@ object Test {
   //##########################################################################
   // Values
 
-  import compat.Math._;
+  import Math._
 
   val u0: Unit    = ();
   val u1: Unit    = ();
@@ -863,47 +863,47 @@ object Test {
 
     //######################################################################
 
-    check_Ta(uarray, 2, u0, ucheck);
-    check_Ta(zarray, 2, z0, zcheck);
-    check_Ta(barray, 3, b0, bcheck);
-    check_Ta(sarray, 3, s0, scheck);
-    check_Ta(carray, 3, c0, ccheck);
-    check_Ta(iarray, 3, i0, icheck);
-    check_Ta(larray, 3, l0, lcheck);
-    check_Ta(farray, 3, f0, fcheck);
-    check_Ta(darray, 3, d0, dcheck);
-    check_Ta(rarray, 6, r0, rcheck);
-    check_Ta(oarray, 6, o0, ocheck);
-    check_Ta(marray, 3, m0, mcheck);
-    check_Ta(narray, 3, n0, ncheck);
+    check_Ta(uarray, 2, u0, ucheck)
+    check_Ta(zarray, 2, z0, zcheck)
+    check_Ta(barray, 3, b0, bcheck)
+    check_Ta(sarray, 3, s0, scheck)
+    check_Ta(carray, 3, c0, ccheck)
+    check_Ta(iarray, 3, i0, icheck)
+    check_Ta(larray, 3, l0, lcheck)
+    check_Ta(farray, 3, f0, fcheck)
+    check_Ta(darray, 3, d0, dcheck)
+    check_Ta(rarray, 6, r0, rcheck)
+    check_Ta(oarray, 6, o0, ocheck)
+    check_Ta(marray, 3, m0, mcheck)
+    check_Ta(narray, 3, n0, ncheck)
 
-    check_Tv(uarray, 2, u0, ucheck);
-    check_Tv(zarray, 2, z0, zcheck);
-    check_Tv(barray, 3, b0, bcheck);
-    check_Tv(sarray, 3, s0, scheck);
-    check_Tv(carray, 3, c0, ccheck);
-    check_Tv(iarray, 3, i0, icheck);
-    check_Tv(larray, 3, l0, lcheck);
-    check_Tv(farray, 3, f0, fcheck);
-    check_Tv(darray, 3, d0, dcheck);
+    check_Tv(uarray, 2, u0, ucheck)
+    check_Tv(zarray, 2, z0, zcheck)
+    check_Tv(barray, 3, b0, bcheck)
+    check_Tv(sarray, 3, s0, scheck)
+    check_Tv(carray, 3, c0, ccheck)
+    check_Tv(iarray, 3, i0, icheck)
+    check_Tv(larray, 3, l0, lcheck)
+    check_Tv(farray, 3, f0, fcheck)
+    check_Tv(darray, 3, d0, dcheck)
 
-    check_Tr(rarray, 6, r0, rcheck);
-    check_Tr(oarray, 6, o0, ocheck);
-    check_Tr(marray, 3, m0, mcheck);
-    check_Tr(narray, 3, n0, ncheck);
+    check_Tr(rarray, 6, r0, rcheck)
+    check_Tr(oarray, 6, o0, ocheck)
+    check_Tr(marray, 3, m0, mcheck)
+    check_Tr(narray, 3, n0, ncheck)
 
-    check_To(rarray, 6, r0, rcheck);
-    check_To(oarray, 6, o0, ocheck);
-    check_To(marray, 3, m0, mcheck);
-    check_To(narray, 3, n0, ncheck);
+    check_To(rarray, 6, r0, rcheck)
+    check_To(oarray, 6, o0, ocheck)
+    check_To(marray, 3, m0, mcheck)
+    check_To(narray, 3, n0, ncheck)
 
-    check_Tm(marray, 3, m0, mcheck);
+    check_Tm(marray, 3, m0, mcheck)
 
-    check_Tn(narray, 3, n0, ncheck);
+    check_Tn(narray, 3, n0, ncheck)
 
     //######################################################################
 
-    Console.println("checks: " + checks);
+    println("checks: " + checks)
 
     //######################################################################
   }

@@ -43,7 +43,7 @@ object ContentModel extends WordExp {
       while (it.hasNext) traverse(it.next)
     }
     def traverse(r: RegExp) {
-      r match {
+      r match { // !!! check for match translation problem
         case Letter(ElemName(name)) => s += name
         case Star(  x @ _  ) => traverse( x ) // bug if x@_*
         case Sequ( xs @ _* ) => traverse1(xs)
@@ -83,7 +83,7 @@ object ContentModel extends WordExp {
       c.toString(sb)
   }
 
-  def toString(r: RegExp, sb:StringBuilder): StringBuilder = r match {
+  def toString(r: RegExp, sb:StringBuilder): StringBuilder = r match {  // !!! check for match translation problem
     case Eps =>
       sb
     case Sequ(rs @ _*) =>

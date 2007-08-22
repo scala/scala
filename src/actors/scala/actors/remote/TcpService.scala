@@ -20,11 +20,22 @@ import scala.collection.mutable.HashMap
 
 /* Object TcpService.
  *
- * @version 0.9.8
+ * @version 0.9.9
  * @author Philipp Haller
  */
 object TcpService {
-  val random = new Random
+  private val random = new Random
+  private val ports = new HashMap[Int, TcpService]
+
+  def apply(port: Int): TcpService =
+    ports.get(port) match {
+      case Some(service) => service
+      case None =>
+        val service = new TcpService(port)
+        ports += port -> service
+        service.start()
+        service
+    }
 
   def generatePort: Int = {
     var portnum = 0

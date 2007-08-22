@@ -46,7 +46,8 @@ trait Scopes {
    */
   def newScope(initElems: ScopeEntry): Scope = new NormalScope(initElems)
   final def newScope: Scope = newScope(null: ScopeEntry)
-  final def newScope(base: Scope) : Scope = newScope(base.elems)
+  //final def newScope(base: Scope) : Scope = newScope(base.elems)
+  final def newScope(base: Scope) : Scope = if(base eq null) newScope else newScope(base.elems)
   final def newScope(decls: List[Symbol]) : Scope = {
     val ret = newScope
     decls.foreach(d => ret.enter(d))

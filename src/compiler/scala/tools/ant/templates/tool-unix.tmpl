@@ -70,4 +70,4 @@ if $cygwin; then
     BOOT_CLASSPATH=`cygpath --path --$format "$BOOT_CLASSPATH"`
 fi
 
-${JAVACMD:=java} ${JAVA_OPTS:=@javaflags@} -Xbootclasspath/a:"$BOOT_CLASSPATH" -cp "$EXTENSION_CLASSPATH" -Dscala.home="$SCALA_HOME" -Denv.classpath="$CLASSPATH" @properties@ @class@ @toolflags@ "$@@"
+${JAVACMD:=java} ${JAVA_OPTS:=@javaflags@} -Xbootclasspath/a:"$BOOT_CLASSPATH" -cp "$EXTENSION_CLASSPATH" -Dscala.home="$SCALA_HOME" -Denv.classpath="$CLASSPATH" -Denv.emacs="$EMACS" @properties@ @class@ @toolflags@ "$@@"

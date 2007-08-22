@@ -940,6 +940,8 @@ trait Infer {
           case TypeRef(pre, sym, args) =>
             if (sym.isAbstractType)
               patternWarning(tp, "abstract type ")
+            else if (sym.isAliasType)
+              check(tp.normalize, bound)
             else if (sym == AllClass || sym == AllRefClass)
               error(pos, "this type cannot be used in a type pattern")
             else

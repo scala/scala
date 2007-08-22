@@ -80,7 +80,11 @@ trait EtaExpansion { self: Analyzer =>
           ValDef(Modifiers(SYNTHETIC | PARAM), freshName(), TypeTree()
             .setType(formal), EmptyTree))
         val args = params map (param => Ident(param.name))
-        atPos(tree.pos)(Function(params, expand(Apply(tree, args), restpe)))
+        val applyArgs =
+          if (isVarArgs(formals)) args.init ::: Typed(args.last, Ident(nme.WILDCARD_STAR.toTypeName)) :: Nil
+          else args
+        atPos(tree.pos)(Function(params, expand(Apply(tree, applyArgs), restpe)))
+        //atPos(tree.pos)(Function(params, expand(Apply(tree, args), restpe)))
       case _ =>
         tree
     }

@@ -3,7 +3,6 @@
 //############################################################################
 // $Id$
 
-import scala.compat.StringBuilder;
 
 object M0 {
   class Rational(x: Int, y: Int) {
@@ -274,7 +273,7 @@ object M8 {
       new NonEmpty(f(elem), lset, rset)
     }
 
-    def foreach(f: Int => Unit): Unit = {
+    def foreach(f: Int => Unit) {
       left.foreach(f);
       f(elem);
       right.foreach(f);
@@ -376,7 +375,7 @@ object M9 {
 //############################################################################
 
 object Test {
-  def main(args: Array[String]): Unit = {
+  def main(args: Array[String]) {
     M0;
     M1;
     M2;

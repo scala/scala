@@ -26,12 +26,17 @@ object Test extends TestConsoleMain {
   def suite = new TestSuite(
       new TestSimpleIntSwitch,
       new SimpleUnapply,
+      SeqUnapply,
+      applyFromJcl,
       new Test717,
       new TestGuards,
+      TestEqualsPatternOpt,
       new TestStream,
       new Test903,
       new Test1093,
-      new Test1163_Order
+      new Test1163_Order,
+      new TestUnbox,
+      ClassDefInGuard
     )
 
   class Foo(j:Int) {
@@ -42,8 +47,36 @@ object Test extends TestConsoleMain {
       List((1,2)).head match {
         case kv @ Pair(key, _) => kv.toString + " " + key.toString
       }
+
+
     }
   }
+
+  object SeqUnapply extends TestCase("seqUnapply") {
+    case class SFB(i:int,xs:List[Int])
+    override def runTest() {
+      List(1,2) match {
+        case List(1) => assert(false, "wrong case")
+        case List(1,2,xs @ _*) => assert(xs.isEmpty, "not empty")
+        case Nil => assert(false, "wrong case")
+      }
+      SFB(1,List(1)) match {
+        case SFB(_,List(x)) => assert(x==1)
+        case SFB(_,_) => assert(false)
+      }
+    }
+  }
+
+  object applyFromJcl extends TestCase("applyFromJcl") {
+    override def runTest {
+      val p = (1,2)
+        Some(2) match {
+          case Some(p._2) =>         ;
+          case _ => assert(false) ;
+        }
+    }
+  }
+
   class TestSimpleIntSwitch extends TestCase("SimpleIntSwitch") {
     override def runTest() = {
       assertEquals("s1", 1, 1 match {
@@ -100,6 +133,17 @@ object Test extends TestConsoleMain {
     }
   }
 
+  object TestEqualsPatternOpt extends TestCase("test EqualsPatternClass in combination with MixTypes opt, bug #1276") {
+    val NoContext = new Object
+    override def runTest {
+      assertEquals(1,((NoContext:Any) match {
+        case that : AnyRef if this eq that => 0
+        case NoContext => 1
+        case _ => 2
+      }))
+    }
+  }
+
   class TestStream extends TestCase("unapply for Streams") {
     def sum(stream: Stream[int]): int =
       stream match {
@@ -131,6 +175,17 @@ object Test extends TestConsoleMain {
     }
 
     def runTest() =  assertEquals("both", (Var("x"),Var("y")), f)
+  }
+
+  class TestUnbox extends TestCase("unbox") {
+    override def runTest() {
+      val xyz: (int, String, boolean) = (1, "abc", true)
+      xyz._1 match {
+        case 1 => "OK"
+        case 2 => assert(false); "KO"
+        case 3 => assert(false); "KO"
+      }
+    }
   }
 
   class Test806_818 { // #806, #811 compile only -- type of bind
@@ -192,6 +247,23 @@ object Test extends TestConsoleMain {
   }
 
 
+  object Test1253  { // compile-only
+    def foo(t : (Int, String)) = t match {
+      case (1, "") => throw new Exception
+      case (r, _) => throw new Exception(r.toString)
+    }
+  }
+
+  object Foo1258 {
+    case object baz
+    def foo(bar : AnyRef) = {
+      val Baz = baz
+      bar match {
+        case Baz => ()
+      }
+    }
+  }
+
   object Foo1 {
     class Bar1(val x : String)
     def p(b : Bar1) = Console.println(b.x)
@@ -238,12 +310,6 @@ object Test extends TestConsoleMain {
     case _ => 4
   }
 
-  def i = List(1,2) match {
-    case List(1) =>
-    case List(1,2,xs @ _*) =>
-    case Nil =>
-  }
-
   def j = (List[Int](), List[Int](1)) match {
     case (Nil, _) => 'a'
     case (_, Nil) => 'b'
@@ -258,6 +324,126 @@ object Test extends TestConsoleMain {
   val FooBar = 42
   def lala() = 42 match {
     case FooBar => true
+  }
+
+  object Bug1270  { // unapply13
+
+    class Sync {
+      def apply(x: Int): Int = 42
+      def unapply(scrut: Any): Option[Int] = None
+    }
+
+    class Buffer {
+      object Get extends Sync
+
+      var ps: PartialFunction[Any, Any] = {
+        case Get(y) if y > 4 => // y gets a wildcard type for some reason?! hack
+      }
+    }
+
+    println((new Buffer).ps.isDefinedAt(42))
+  }
+
+  object Bug1261 {
+    sealed trait Elem
+    case class Foo extends Elem
+    case class Bar extends Elem
+    trait Row extends Elem
+    object Row {
+      def unapply(r: Row) = true
+
+      def f(elem: Elem) {
+        elem match {
+          case Bar() => ;
+          case Row() => ;
+          case Foo() => ; // used to give ERROR (unreachable code)
+        }}}
+  }
+/*
+  object Feature1196 {
+    def f(l: List[Int]) { }
+
+    val l: Seq[Int] = List(1, 2, 3)
+
+    l match {
+      case x @ List(1, _) => f(x) // x needs to get better type List[int] here
+    }
+  }
+*/
+  object TestIfOpt { //compile-only "test EqualsPatternClass in combination with MixTypes opt, bug #1278"
+     trait Token {
+       val offset : Int
+       def matching : Option[Token]
+     }
+    def go(tok : Token) = tok.matching match {
+      case Some(other) if true => Some(other)
+      case _ if true => tok.matching match {
+        case Some(other) => Some(other)
+        case _ => None
+      }
+    }
+  }
+
+  object Go { // bug #1277 compile-only
+    trait Core { def next : Position = null }
+    trait Dir
+    val NEXT = new Dir{}
+
+    trait Position extends Core
+
+    (null:Core,null:Dir) match {
+      case (_, NEXT) if true => false // no matter whether NEXT test succeed, cannot throw column because of guard
+      case (at2:Position,dir) => true
+    }
+  }
+
+  trait Outer { // bug #1282 compile-only
+    object No
+    trait File {
+      (null:AnyRef) match {
+        case No => false
+      }
+    }
+  }
+
+  object cast2 { // #1281
+
+    class Sync {
+      def unapplySeq(scrut: Int): Option[Seq[Int]] = {
+        println("unapplySeq: "+scrut)
+        if (scrut == 42) Some(List(1, 2))
+        else None
+      }
+    }
+
+    class Buffer {
+      val Get = new Sync
+
+      val jp: PartialFunction[Any, Any] = {
+        case Get(xs) => println(xs) // the argDummy <unapply-selector> should have proper arg.tpe (Int in this case)
+      }
+    }
+
+    println((new Buffer).jp.isDefinedAt(40))
+    println((new Buffer).jp.isDefinedAt(42))
+  }
+
+  object ClassDefInGuard extends TestCase("classdef in guard") { // compile-and-load only
+    val z:PartialFunction[Any,Any] = {
+      case x::xs if xs.forall { y => y.hashCode() > 0 } => 1
+    }
+
+    override def runTest {
+    val s:PartialFunction[Any,Any] = {
+      case List(4::xs)                => 1
+      case List(5::xs)                => 1
+      case _                if false                               =>
+      case List(3::xs) if List(3:Any).forall { g => g.hashCode() > 0 } => 1
+    }
+      z.isDefinedAt(42)
+      s.isDefinedAt(42)
+      // just load the thing, to see if the classes are found
+    }
   }
 
 }

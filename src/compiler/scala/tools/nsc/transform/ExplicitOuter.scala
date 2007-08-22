@@ -410,8 +410,11 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
 		  */
 
           var nselector = transform(selector)
-          assert(nselector.tpe =:= selector.tpe)
-          val ncases = transformCaseDefs(cases)
+          //assert(nselector.tpe =:= selector.tpe)
+          //val ncases = transformCaseDefs(cases)
+          val ncases = cases map {
+            case CaseDef(p,g,b) => CaseDef(transform(p),g,transform(b))
+          }
 
           var checkExhaustive = true
           def isUncheckedAnnotation(tpe: Type) = tpe match {
@@ -432,7 +435,7 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
           //Console.println("TransMatcher selector.tpe ="+selector.tpe+")")
           //Console.println("TransMatcher resultType ="+resultType+")")
 
-          val t_untyped = handlePattern(nselector, ncases, checkExhaustive, currentOwner, transform)
+          val t_untyped = handlePattern(nselector, ncases, checkExhaustive, currentOwner, transform, {x:Tree => localTyper.typed(x)})
 	  try {
             //Console.println("t_untyped "+t_untyped.toString())
             val t = atPos(tree.pos) { localTyper.typed(t_untyped, resultType) }
@@ -467,5 +470,3 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
     }
   }
 }
-
-

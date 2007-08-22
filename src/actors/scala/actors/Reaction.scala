@@ -34,7 +34,7 @@ private[actors] class ExitActorException extends Throwable
  *  @version 0.9.8
  *  @author Philipp Haller
  */
-private[actors] class Reaction(a: Actor,
+/*private[actors]*/ class Reaction(a: Actor,
                                f: PartialFunction[Any, Unit],
                                msg: Any) extends Runnable {
   def this(a: Actor) = this(a, null, null)

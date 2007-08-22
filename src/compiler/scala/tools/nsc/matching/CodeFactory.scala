@@ -14,7 +14,7 @@ import scala.tools.nsc.util.Position
  *  @author Burak Emir
  */
 trait CodeFactory {
-  self: transform.ExplicitOuter =>
+  self: transform.ExplicitOuter with PatternNodes =>
 
   import global._
 
@@ -22,25 +22,32 @@ trait CodeFactory {
   import typer.typed               // methods to type trees
   import posAssigner.atPos         // for filling in tree positions
 
+  final def mkIdent(sym:Symbol) = Ident(sym) setType sym.tpe
 
-  final def typedValDef(x:Symbol, rhs:Tree) = typed{ValDef(x, typed{rhs})}
+  final def typedValDef(x:Symbol, rhs:Tree) = {
+    //Console.println("1"+x.tpe)
+    x.tpe match {
+      case WildcardType => rhs.setType(null); val rhs1 = typed(rhs); x setInfo rhs1.tpe; typed{ValDef(x, rhs)}
+      case _ => typed{ValDef(x, typed(rhs, x.tpe))}
+    }
+  }
 
   final def mk_(tpe:Type) = Ident(nme.WILDCARD) setType tpe
 
   final def targetLabel(owner: Symbol, pos: Position, name:String, argtpes:List[Type], resultTpe: Type) =
     owner.newLabel(pos, name).setInfo(new MethodType(argtpes, resultTpe))
 
-  final def targetParams(subst:List[Pair[Symbol,Symbol]]) = subst map {
-    case (v,t) => ValDef(v, {
-      v.setFlag(symtab.Flags.TRANS_FLAG);
-      if(t.tpe <:< v.tpe) typed{Ident(t)}
-      else if(v.tpe <:< t.tpe) typed{gen.mkAsInstanceOf(Ident(t),v.tpe)} // refinement
+  final def targetParams(subst:Binding):List[ValDef] = if(subst eq NoBinding) Nil else subst match {
+    case Binding(v,t,n) => ValDef(v, {
+      //v.setFlag(symtab.Flags.TRANS_FLAG);
+      if(t.tpe <:< v.tpe) mkIdent(t)
+      else if(v.tpe <:< t.tpe) typed{gen.mkAsInstanceOf(mkIdent(t),v.tpe)} // refinement
       else {
         //Console.println("internal error, types don't match: pattern variable "+v+":"+v.tpe+" temp "+t+":"+t.tpe)
         error("internal error, types don't match: pattern variable "+v+":"+v.tpe+" temp "+t+":"+t.tpe)
-        typed{gen.mkAsInstanceOf(Ident(t),v.tpe)} // refinement
+        typed{gen.mkAsInstanceOf(mkIdent(t), v.tpe)} // refinement
       }
-    })
+    })::targetParams(n)
   }
 
   /** returns  `List[ Tuple2[ scala.Int, <elemType> ] ]' */
@@ -72,20 +79,6 @@ trait CodeFactory {
 
   // --------- these are new
 
-  /** a faked switch statement
-   */
-  final def Switch(condition: Array[Tree], body: Array[Tree], defaultBody: Tree): Tree = {
-    //assert condition != null:"cond is null";
-    //assert body != null:"body is null";
-    //assert defaultBody != null:"defaultBody is null";
-    var result = defaultBody
-    var i = condition.length - 1
-    while (i >= 0) {
-      result = If(condition(i), body(i), result)
-      i -= 1
-    }
-    result
-  }
 
   final def renamingBind(defaultv: Set[Symbol], scrut: Symbol, ndefault: Tree) = {
     if (!defaultv.isEmpty) {
@@ -104,13 +97,7 @@ trait CodeFactory {
     if (vsym.tpe.typeSymbol == definitions.SomeClass)  // is Some[_]
       Literal(Constant(true))
     else                                          // is Option[_]
-      Not(Select(Ident(vsym), nme.isEmpty))
-  }
-
-  final def makeIf(cond: Tree, thenp: Tree, elsep: Tree) = cond match {
-    case Literal(Constant(true)) => thenp
-    case Literal(Constant(false)) => elsep
-    case _ => If(cond, thenp, elsep)
+      Not(Select(mkIdent(vsym), nme.isEmpty))
   }
 
   /** returns code `<seqObj>.elements' */
@@ -145,9 +132,13 @@ trait CodeFactory {
   }
 
   /** for tree of sequence type, returns tree that drops first i elements */
-  final def seqDrop(sel:Tree, i: Int) = if (i == 0) sel else
-    Apply(Select(Select(sel, "toList"), "drop"),
-          List(Literal(Constant(i))))
+  final def seqDrop(sel:Tree, ix: Int) = if (ix == 0) sel else
+    typed { Apply(Select(Select(sel, nme.toList), nme.drop),
+                  List(Literal(Constant(ix)))) }
+
+  /** for tree of sequence type, returns tree that drops first i elements */
+  final def seqElement(sel:Tree, ix: Int) =
+    typed { Apply(Select(sel, sel.tpe.member(nme.apply)), List(Literal(Constant(ix)))) }
 
   /** for tree of sequence type, returns boolean tree that has length i */
   final def seqHasLength(sel: Tree, ntpe: Type, i: Int) =
@@ -299,13 +290,23 @@ trait CodeFactory {
       var nref = 0
       var nsafeRef = 0
       override def traverse(tree: Tree) = tree match {
-        case t:Ident if t.symbol == sym =>
+        case t:Ident if t.symbol eq sym =>
           nref += 1
           if(sym.owner == currentOwner)  { // oldOwner should match currentOwner
             nsafeRef += 1
           } /*else if(nref == 1) {
             Console.println("sym owner: "+sym.owner+" but currentOwner = "+currentOwner)
           }*/
+        case LabelDef(_,args,rhs) =>
+          var args1 = args; while(args1 ne Nil) {
+            if(args1.head.symbol eq sym) {
+              nref += 2   // will abort traversal, cannot substitute this one
+              args1 = Nil // break
+            } else {
+              args1 = args1.tail
+            }
+          }
+          traverse(rhs)
         case t if nref > 1 =>
           // abort, no story to tell
         case t =>
@@ -336,6 +337,7 @@ trait CodeFactory {
         val sym = vd.symbol
         val rt = new RefTraverser(sym)
         rt.atOwner (theOwner) (rt.traverse(exp1))
+      //Console.println("hello, ref count = "+rt.nref+"/"+rt.nsafeRef)
         rt.nref match {
           case 0 =>
             nremoved = nremoved + 1

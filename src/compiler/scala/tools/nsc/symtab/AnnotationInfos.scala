@@ -1,16 +1,23 @@
+/* NSC -- new Scala compiler
+ * Copyright 2007-2008 LAMP/EPFL
+ * @author  Martin Odersky
+ */
+// $Id$
+
 package scala.tools.nsc.symtab
+
 import scala.tools.nsc.transform.SymbolReifier
 import util._
 
 /** AnnotationInfo and its helpers */
 trait AnnotationInfos {
-  self : SymbolTable =>
-
+  self: SymbolTable =>
 
   /** Convert a reflect tree to a Constant, if possible */
   private def refltree2cons(tree: reflect.Tree): Option[Constant] =
     tree match {
-      case reflect.Literal(v) => Some(Constant(v))
+      case reflect.Literal(v) =>
+        Some(Constant(v))
 
       case reflect.Apply(
         reflect.TypeApply(
@@ -59,7 +66,7 @@ trait AnnotationInfos {
 
     val mems = trees.map(refltree2cons)
 
-    if(mems.exists(_.isEmpty))
+    if (mems.exists(_.isEmpty))
       None
     else
       Some(new ArrayConstant(
@@ -89,7 +96,7 @@ trait AnnotationInfos {
         // The following two gigantic trees were found by printing
         // out what the reifier makes.  If the reifier changes, they
         // should be updated.
-        if(symbolReifier.unreify(elemType) <:< definitions.AnyValClass.tpe)
+        if (symbolReifier.unreify(elemType) <:< definitions.AnyValClass.tpe)
           Apply(Select(Select(Ident(Field("scala",PrefixedType(reflect.ThisType(RootSymbol),Class("scala")))),Field("scala.Array",PrefixedType(reflect.ThisType(Class("scala")),Class("scala.Array")))),Method("scala.Array.apply",reflect.MethodType(List(AppliedType(PrefixedType(reflect.ThisType(Class("scala")),Class("scala.<repeated>")),List(PrefixedType(reflect.ThisType(Class("scala")),Class("scala.Int"))))),AppliedType(PrefixedType(reflect.ThisType(Class("scala")),Class("scala.Array")),
           List(elemType))))), elemTrees)
 
@@ -109,8 +116,7 @@ trait AnnotationInfos {
   /** An argument to an annotation.  It includes a parse tree,
    *  and it includes a compile-time constant for the tree if possible.
    */
-  class AnnotationArgument(val tree: reflect.Tree)
-  {
+  class AnnotationArgument(val tree: reflect.Tree) {
     def this(cons: Constant) = this(cons2refltree(cons))
 
     val constant: Option[Constant] = refltree2cons(tree)

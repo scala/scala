@@ -8,7 +8,9 @@
 
 // $Id$
 
+
 package scala.runtime
+
 
 final class RichInt(start: Int) extends Proxy with Ordered[Int] {
 

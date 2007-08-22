@@ -8,17 +8,43 @@ package scala.tools.nsc.ast
 
 import java.io.{PrintWriter, StringWriter}
 
-import scala.tools.nsc.symtab.Flags
+import scala.tools.nsc.symtab.{Flags, SymbolTable}
 import scala.tools.nsc.symtab.Flags._
 import scala.tools.nsc.util.{HashSet, Position, NoPosition, SourceFile}
 import scala.collection.mutable.ListBuffer
 
 
-trait Trees {
-  self: Global =>
+abstract class Trees extends SymbolTable {
   //statistics
 
   var nodeCount = 0
+
+  trait CompilationUnitTrait {
+    var body: Tree
+    val source: SourceFile
+  }
+
+  type CompilationUnit <: CompilationUnitTrait
+
+  // sub-components --------------------------------------------------
+
+  object treePrinters extends TreePrinters {
+    val trees: Trees.this.type = Trees.this
+  }
+  val treePrinter = treePrinters.create()
+
+  object treeInfo extends TreeInfo {
+    val trees: Trees.this.type = Trees.this
+  }
+
+  val copy = new LazyTreeCopier()
+
+  object treeBrowsers extends TreeBrowsers {
+    val trees: Trees.this.type = Trees.this
+  }
+  val treeBrowser = treeBrowsers.create()
+
+  // modifiers --------------------------------------------------------
 
   case class Modifiers(flags: Long, privateWithin: Name, annotations: List[Annotation]) {
     def isCovariant     = hasFlag(COVARIANT    )
@@ -125,8 +151,9 @@ trait Trees {
     override def toString(): String = {
       val buffer = new StringWriter()
       val printer = treePrinters.create(new PrintWriter(buffer))
-      printer.print(this); printer.flush
-      buffer.toString()
+      printer.print(this)
+      printer.flush()
+      buffer.toString
     }
 
     override def hashCode(): Int = super.hashCode()
@@ -302,7 +329,7 @@ trait Trees {
    */
   def ModuleDef(sym: Symbol, impl: Template): ModuleDef =
     posAssigner.atPos(sym.pos) {
-      ModuleDef(Modifiers(sym.flags), sym.name, impl)
+      ModuleDef(Modifiers(sym.flags), sym.name, impl) setSymbol sym
     }
 
   abstract class ValOrDefDef extends MemberDef {
@@ -386,7 +413,7 @@ trait Trees {
   /** A TypeDef node which defines given `sym' with given tight hand side `rhs'. */
   def TypeDef(sym: Symbol, rhs: Tree): TypeDef =
     posAssigner.atPos(sym.pos) {
-      TypeDef(Modifiers(sym.flags), sym.name, sym.typeParams map TypeDef, rhs)
+      TypeDef(Modifiers(sym.flags), sym.name, sym.typeParams map TypeDef, rhs) setSymbol sym
     }
 
   /** A TypeDef node which defines abstract type or type parameter for given `sym' */
@@ -755,7 +782,7 @@ trait Trees {
      // used for tailcalls and like
   case Import(expr, selectors) =>                                 (eliminated by typecheck)
      // import expr.{selectors}
-  case Annotation(constr, elements) =>                            (eliminated by typecheck)
+  case Annotation(constr, elements) =>
      // @constr(elements) where constr = tp(args), elements = { val x1 = c1, ..., val xn = cn }
   case DocDef(comment, definition) =>                             (eliminated by typecheck)
      // /** comment */ definition
@@ -1338,7 +1365,7 @@ trait Trees {
 
   class Traverser {
     protected var currentOwner: Symbol = definitions.RootClass
-    def traverse(tree: Tree): Unit = tree match {
+    def traverse(tree: Tree): Unit =  tree match {
       case EmptyTree =>
         ;
       case PackageDef(name, stats) =>
@@ -1347,23 +1374,23 @@ trait Trees {
         }
       case ClassDef(mods, name, tparams, impl) =>
         atOwner(tree.symbol) {
-          traverseTrees(tparams); traverse(impl)
+          traverseTrees(mods.annotations); traverseTrees(tparams); traverse(impl)
         }
       case ModuleDef(mods, name, impl) =>
         atOwner(tree.symbol.moduleClass) {
-          traverse(impl)
+          traverseTrees(mods.annotations); traverse(impl)
         }
       case ValDef(mods, name, tpt, rhs) =>
         atOwner(tree.symbol) {
-          traverse(tpt); traverse(rhs)
+          traverseTrees(mods.annotations); traverse(tpt); traverse(rhs)
         }
       case DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
         atOwner(tree.symbol) {
-          traverseTrees(tparams); traverseTreess(vparamss); traverse(tpt); traverse(rhs)
+          traverseTrees(mods.annotations); traverseTrees(tparams); traverseTreess(vparamss); traverse(tpt); traverse(rhs)
         }
       case TypeDef(mods, name, tparams, rhs) =>
         atOwner(tree.symbol) {
-          traverseTrees(tparams); traverse(rhs)
+          traverseTrees(mods.annotations); traverseTrees(tparams); traverse(rhs)
         }
       case LabelDef(name, params, rhs) =>
         traverseTrees(params); traverse(rhs)
@@ -1568,12 +1595,19 @@ trait Trees {
     }
   }
 
+
+  /** resets symbol and tpe fields in a tree, @see ResetAttrsTraverse
+   */
+  def resetAttrs[A<:Tree](x:A):A = {new ResetAttrsTraverser().traverse(x); x}
+
   /** A traverser which resets symbol and tpe fields of all nodes in a given tree
    *  except for (1) TypeTree nodes, whose <code>.tpe</code> field is kept and
-   *  (2) is a <code>.symbol</code> field refers to a symbol which is defined
+   *  (2) if a <code>.symbol</code> field refers to a symbol which is defined
    *  outside the tree, it is also kept.
+   *
+   *  (bq:) This traverser has mutable state and should be discarded after use
    */
-  object resetAttrs extends Traverser {
+  class ResetAttrsTraverser extends Traverser {
     private val erasedSyms = new HashSet[Symbol](8)
     override def traverse(tree: Tree): Unit = tree match {
       case EmptyTree | TypeTree() =>
