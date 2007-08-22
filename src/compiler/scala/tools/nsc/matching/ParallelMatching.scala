@@ -291,7 +291,7 @@ trait ParallelMatching  {
                       //cast
                       val vtmp = newVar(pat.pos, ptpe)
                       squeezedBlock(
-                        List(typedValDef(vtmp, gen.mkAsInstanceOf(Ident(this.scrutinee), ptpe))),
+                        List(typedValDef(vtmp, gen.mkAsInstanceOf(mkIdent(this.scrutinee), ptpe))),
                         repToTree(rep.make(vtmp :: r.temp.tail, r.row),handleOuter,localTyper)
                       )
                     } else repToTree(r, handleOuter,localTyper)
@@ -309,9 +309,9 @@ trait ParallelMatching  {
       cases.length match {
         case 0 => ndefault
         case 1 => val CaseDef(lit,_,body) = cases.head
-                  If(Equals(Select(Ident(this.scrutinee),nme.tag),lit), body, ndefault)
+                  If(Equals(Select(mkIdent(this.scrutinee),nme.tag),lit), body, ndefault)
         case _ => val defCase = CaseDef(mk_(definitions.IntClass.tpe), EmptyTree, ndefault)
-                  Match(Select(Ident(this.scrutinee),nme.tag), cases :::  defCase :: Nil)
+                  Match(Select(mkIdent(this.scrutinee),nme.tag), cases :::  defCase :: Nil)
       }
     } /* def tree(implicit handleOuter: HandleOuter, theOwner: Symbol, failTree: Tree) */
   } /* MixCases */
@@ -392,7 +392,7 @@ trait ParallelMatching  {
       renamingBind(defaultV, this.scrutinee, ndefault) // each v in defaultV gets bound to scrutinee
       if(cases.length == 1) {
         val CaseDef(lit,_,body) = cases.head
-        If(Equals(Ident(this.scrutinee),lit), body, ndefault)
+        If(Equals(mkIdent(this.scrutinee),lit), body, ndefault)
       } else {
         val defCase = CaseDef(mk_(definitions.IntClass.tpe), EmptyTree, ndefault)
 
@@ -403,11 +403,11 @@ trait ParallelMatching  {
           //  where erasure forgets the char to int conversion and emits Int.unbox in the scrutinee position
           //  of the match. This then fails at runtime, because it encounters a boxed Character, not boxedq Int
           return Block(
-            List(typedValDef(zz, Ident(this.scrutinee))),
-            Match(gen.mkAsInstanceOf(Ident(zz), definitions.IntClass.tpe), cases :::  defCase :: Nil)
+            List(typedValDef(zz, mkIdent(this.scrutinee))),
+            Match(gen.mkAsInstanceOf(mkIdent(zz), definitions.IntClass.tpe), cases :::  defCase :: Nil)
           )
         }
-        return Match(Ident(this.scrutinee), cases :::  defCase :: Nil)
+        return Match(mkIdent(this.scrutinee), cases :::  defCase :: Nil)
       }
     } /* def tree(implicit handleOuter: HandleOuter, theOwner: Symbol, failTree: Tree) */
   } /* MixLiterals */
@@ -424,7 +424,7 @@ trait ParallelMatching  {
       v
     }
 
-    private def bindToScrutinee(x:Symbol) = typedValDef(x,Ident(scrutinee))
+    private def bindToScrutinee(x:Symbol) = typedValDef(x,mkIdent(scrutinee))
 
     val unapp = strip2(column.head)
     /** returns the (un)apply and two continuations */
@@ -435,7 +435,7 @@ trait ParallelMatching  {
         case ua @ UnApply(app @ Apply(fn, appargs), args) =>
           val ures = newVarCapture(ua.pos, app.tpe)
           val n    = args.length
-          val uacall = ValDef(ures, Apply(fn, Ident(scrutinee) :: appargs.tail))
+          val uacall = ValDef(ures, Apply(fn, mkIdent(scrutinee) :: appargs.tail))
           //Console.println("uacall:"+uacall)
 
           val nrowsOther = column.tail.zip(rest.row.tail) flatMap { case (pat, Row(ps, subst, g, bx)) => strip2(pat) match {
@@ -467,11 +467,11 @@ trait ParallelMatching  {
                 case _                                                           =>
                   Row(EmptyTree ::  pat      :: ps, subst, g, bx)
               }}
-              (uacall, rootvdefs:::List( typedValDef(vsym, Select(Ident(ures), nme.get))), rep.make(ntemps, nrows), nrepFail)
+              (uacall, rootvdefs:::List( typedValDef(vsym, Select(mkIdent(ures), nme.get))), rep.make(ntemps, nrows), nrepFail)
 
             case _ => // app.tpe is Option[? <: ProductN[T1,...,Tn]]
               val uresGet = newVarCapture(ua.pos, app.tpe.typeArgs(0))
-              var vdefs = typedValDef(uresGet, Select(Ident(ures), nme.get))::Nil
+              var vdefs = typedValDef(uresGet, Select(mkIdent(ures), nme.get))::Nil
               var ts = definitions.getProductArgs(uresGet.tpe).get
               var i = 1;
               //Console.println("typeargs"+ts)
@@ -481,7 +481,7 @@ trait ParallelMatching  {
                 val vtpe = ts.head
                 val vchild = newVarCapture(ua.pos, vtpe)
                 val accSym = definitions.productProj(uresGet, i)
-                val rhs = typed(Apply(Select(Ident(uresGet), accSym), List())) // nsc !
+                val rhs = typed(Apply(Select(mkIdent(uresGet), accSym), List())) // nsc !
                 vdefs = typedValDef(vchild, rhs)::vdefs
                 vsyms   =  vchild  :: vsyms
                 dummies = EmptyTree::dummies
@@ -508,7 +508,7 @@ trait ParallelMatching  {
       val fail = if(frep.isEmpty) failTree else repToTree(frep.get, handleOuter,localTyper)
       val cond =
         if(uacall.symbol.tpe.typeSymbol eq definitions.BooleanClass)
-          typed{ Ident(uacall.symbol) }
+          typed{ mkIdent(uacall.symbol) }
         else
           emptynessCheck(uacall.symbol)
       typed { squeezedBlock(List(handleOuter(uacall)), If(cond,squeezedBlock(vdefs,succ),fail)) }
@@ -600,7 +600,7 @@ trait ParallelMatching  {
       val nsuccRow = nsuccFst :: (column.tail.zip(rest.row.tail) map { case (p, Row(pats,bnd,g,b)) => Row(p::pats,bnd,g,b) })
       val nsucc = rep.make(scrutinee :: rest.temp, nsuccRow)
       val nfail = repWithoutHead(column,rest)
-      return (typed{ Equals(Ident(scrutinee) setType scrutinee.tpe, vlue) }, nsucc, nfail)
+      return (typed{ Equals(mkIdent(scrutinee) setType scrutinee.tpe, vlue) }, nsucc, nfail)
     }
 
     final def tree(implicit handleOuter: HandleOuter, localTyper: LocalTyper, theOwner: Symbol, failTree: Tree) = {
@@ -805,7 +805,7 @@ trait ParallelMatching  {
       val condUntyped = condition(casted.tpe, this.scrutinee)
       var cond = handleOuter(typed { condUntyped }) // <- throws exceptions in some situations?
       if(needsOuterTest(casted.tpe, this.scrutinee.tpe)) // @todo merge into def condition
-        cond = addOuterCondition(cond, casted.tpe, typed{Ident(this.scrutinee)}, handleOuter)
+        cond = addOuterCondition(cond, casted.tpe, mkIdent(this.scrutinee), handleOuter)
       val succ = repToTree(srep, handleOuter, localTyper)
 
       val fail = if(frep.isEmpty) failTree else repToTree(frep.get, handleOuter,localTyper)
@@ -823,14 +823,14 @@ trait ParallelMatching  {
         case (tmp,accessorMethod) =>
           //Console.println("tmp: "+tmp+":"+tmp.tpe)
           //Console.println("accessorMethod: "+accessorMethod+":"+accessorMethod.tpe)
-          val untypedAccess = Apply(Select(typed{Ident(casted)}, accessorMethod),List())
+          val untypedAccess = Apply(Select(mkIdent(casted), accessorMethod),List())
           val typedAccess = typed { untypedAccess }
           //Console.println("ParallelMatching-- MixTypes "+typedAccess)
           typedValDef(tmp, typedAccess)
       }
 
       if(casted ne this.scrutinee) {
-        vdefs = ValDef(casted, gen.mkAsInstanceOf(typed{Ident(this.scrutinee)}, casted.tpe)) :: vdefs
+        vdefs = ValDef(casted, gen.mkAsInstanceOf(mkIdent(this.scrutinee), casted.tpe)) :: vdefs
       }
       typed { If(cond, squeezedBlock(vdefs,succ), fail) }
       } catch {
@@ -970,7 +970,7 @@ trait ParallelMatching  {
       //Console.println("requestBody ("+bx+") gets shortcut "+(shortCuts.length-bx)+ " all:"+shortCuts);
       val jlabel = shortCuts(-bx-1)
       //Console.println("is "+jlabel);
-      val jump = Apply(Ident(jlabel) setType jlabel.tpe, Nil)
+      val jump = Apply(mkIdent(jlabel), Nil)
       //Console.println(jump)
       //val jumpT = typed{ jump }
       //Console.println(jumpT)
@@ -1043,7 +1043,7 @@ trait ParallelMatching  {
     }
 
 
-    return Apply(Ident(label),args.toList)
+    return Apply(mkIdent(label),args.toList)
   }
 
   /** the injection here handles alternatives and unapply type tests */
@@ -1416,7 +1416,7 @@ trait ParallelMatching  {
   }
   final def condition1(tpe: Type, scrut: Symbol): Tree = {
     assert(scrut ne NoSymbol)
-    condition(tpe, Ident(scrut) setType scrut.tpe setSymbol scrut)
+    condition(tpe, mkIdent(scrut))
   }
 
   final def condition(tpe: Type, scrutineeTree: Tree): Tree = {

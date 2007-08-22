@@ -35,7 +35,8 @@ object Test extends TestConsoleMain {
       new Test903,
       new Test1093,
       new Test1163_Order,
-      new TestUnbox
+      new TestUnbox,
+      ClassDefInGuard
     )
 
   class Foo(j:Int) {
@@ -427,15 +428,22 @@ object Test extends TestConsoleMain {
     println((new Buffer).jp.isDefinedAt(42))
   }
 
-  object lk { // compile only
+  object ClassDefInGuard extends TestCase("classdef in guard") { // compile-and-load only
     val z:PartialFunction[Any,Any] = {
       case x::xs if xs.forall { y => y.hashCode() > 0 } => 1
     }
 
+    override def runTest {
     val s:PartialFunction[Any,Any] = {
-      case List(x) if List(x).forall { g => g.hashCode() > 0 } => 1
+      case List(4::xs)                => 1
+      case List(5::xs)                => 1
+      case _                if false                               =>
+      case List(3::xs) if List(3:Any).forall { g => g.hashCode() > 0 } => 1
     }
-
+      z.isDefinedAt(42)
+      s.isDefinedAt(42)
+      // just load the thing, to see if the classes are found
+    }
   }
 
 }

@@ -189,7 +189,7 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
         val irep = initRep(selector, cases, doCheckExhaustive, rep)
         val root = irep.temp.head
 
-        implicit val fail: Tree = ThrowMatchError(selector.pos, Ident(root))
+        implicit val fail: Tree = ThrowMatchError(selector.pos, mkIdent(root))
         val vdef = typed{ValDef(root, selector)}
 
         val mch  = typed{repToTree(irep, handleOuter, localTyper)}
@@ -275,7 +275,7 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
             // List.unapply<...>(xs)
             case Apply(TypeApply(sel @ Select(stor, nme.unapplySeq),_),_) if(stor.symbol eq definitions.ListModule) =>
               (xs: @unchecked) match {
-                case ArrayValue(_,ys)::Nil => isImplemented(ys, guard) //return {if(guard eq EmptyTree) isImplemented(ys, guard) else CantHandleSeq }
+                case ArrayValue(_,ys)::Nil => isImplemented(ys, guard)  //return {if(guard eq EmptyTree) isImplemented(ys, guard) else CantHandleSeq }
               }
 
             // ignore other unapplySeq occurrences, since will run into ArrayValue
@@ -364,7 +364,7 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
         val tpe2test = tree.symbol.tpe
         // @note: if (isSubType(header.tpe, tpe2test)) then this will be translated to isNull test
         val node = pConstrPat(tree.pos, tpe2test)
-        env.newBoundVar(tree.symbol, tpe2test, typed(Ident(node.casted)));
+        env.newBoundVar(tree.symbol, tpe2test, mkIdent(node.casted));
         node
 
       case Bind(name, Ident(nme.WILDCARD)) => // x @ _
@@ -378,7 +378,7 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
         if ((env ne null) && (tree.symbol != defs.PatternWildcard)) {
           val theValue = node.symbol2bind match {
             case NoSymbol => header.selector
-            case x        => Ident(x) setType x.tpe
+            case x        => mkIdent(x)
           }
           env.newBoundVar(tree.symbol, tree.tpe, theValue)
         }
@@ -433,7 +433,7 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
             case ConstrPat(casted) =>
               env.newBoundVar(t.expr.symbol,
                               tpe.tpe,
-                              Ident( casted ).setType(casted.tpe));
+                              mkIdent( casted ));
           }
         node
 
@@ -512,7 +512,7 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
 
   private def newHeader(pos: Position, casted: Symbol, index: Int): Header = {
     //Console.println("newHeader(pos,"+casted+" (has CASE flag? "+casted.tpe.symbol.hasFlag(Flags.CASE)+") of type "+casted.tpe+" with pos "+casted.pos+"(equals FIRSTPOS? "+(casted.pos == Position.FIRSTPOS)+"),"+index+")");
-    val ident = typed(Ident(casted))
+    val ident = mkIdent(casted)
     if (casted.pos == NoPosition) { // load the result of casted(i)
       //Console.println("FIRSTPOS");
       val t = typed(
@@ -618,7 +618,7 @@ print()
         case u @ UnapplyPat(_,_) if u.returnsOne =>
           //Console.println("u.returnsOne!"+u+ " casted:"+casted+" u.casted"+u.casted)
           assert(index==0)
-          curHeader = pHeader(pat.pos, casted.tpe, Ident(casted) setType casted.tpe)
+          curHeader = pHeader(pat.pos, casted.tpe, mkIdent(casted))
           target.and = curHeader
           curHeader.or = patternNode(pat, curHeader, env)
           enter(patArgs, curHeader.or, casted, env)
@@ -648,7 +648,7 @@ print()
           patNode.casted match {
             case NoSymbol => ;
             case ocasted =>
-              env.substitute(ocasted, typed(Ident(next.casted)));
+              env.substitute(ocasted, mkIdent(next.casted));
           }
           return enter(patArgs, next, casted, env);
         } else if (next.isDefaultPat() ||           // default case reached, or
@@ -859,7 +859,7 @@ print()
       case _ => ncases = ncases + 1
     }
 
-    val matchError = ThrowMatchError(selector.pos, Ident(root.casted))
+    val matchError = ThrowMatchError(selector.pos, mkIdent(root.casted))
     // without a case, we return a match error if there is no default case
     if (ncases == 0)
       return defaultBody(root.and, matchError);
@@ -869,7 +869,7 @@ print()
         case ConstantPat(value) =>
           return squeezedBlock(
             List(typedValDef(root.casted, selector)),
-            If(Equals(Ident(root.casted), Literal(value)),
+            If(Equals(mkIdent(root.casted), Literal(value)),
                (root.and.or.and).bodyToTree(),
                defaultBody(root.and, matchError))
           )
@@ -937,7 +937,7 @@ print()
 
     // changed to
     nCases = CaseDef(Ident(nme.WILDCARD),defaultBody1) :: nCases;
-    squeezedBlock(List(typedValDef(root.casted, selector)),Match(Ident(root.casted), nCases))
+    squeezedBlock(List(typedValDef(root.casted, selector)),Match(mkIdent(root.casted), nCases))
   }
 
 
@@ -952,8 +952,8 @@ print()
       List(
         typedValDef(root.casted, selector),
         typed { toTree(root.and) },
-        ThrowMatchError(selector.pos,  Ident(root.casted))) ,
-      LabelDef(exit, List(result), Ident(result)))
+        ThrowMatchError(selector.pos,  mkIdent(root.casted))) ,
+      LabelDef(exit, List(result), mkIdent(result)))
   }
 
 
@@ -1007,7 +1007,7 @@ print()
             squeezedBlock(
               List(
                 typedValDef(temp, body(i)),
-                Apply(Ident(exit), List(Ident(temp).setType(temp.tpe)) )
+                Apply(mkIdent(exit), List(mkIdent(temp)) )
               ),
               Literal(Constant(true))
             ); // forward jump
@@ -1176,7 +1176,7 @@ print()
              }
              val fntpe = fn.tpe
              val v = newVar(fn.pos, fntpe)
-             var __opt_get__    = typed(Select(Ident(v),nme.get))
+             var __opt_get__    = typed(Select(mkIdent(v),nme.get))
              var __opt_nonemp__ = emptynessCheck(v)
 
              Or(And(checkType,

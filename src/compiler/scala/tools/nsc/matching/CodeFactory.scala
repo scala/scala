@@ -22,6 +22,7 @@ trait CodeFactory {
   import typer.typed               // methods to type trees
   import posAssigner.atPos         // for filling in tree positions
 
+  final def mkIdent(sym:Symbol) = Ident(sym) setType sym.tpe
 
   final def typedValDef(x:Symbol, rhs:Tree) = {
     //Console.println("1"+x.tpe)
@@ -39,12 +40,12 @@ trait CodeFactory {
   final def targetParams(subst:Binding):List[ValDef] = if(subst eq NoBinding) Nil else subst match {
     case Binding(v,t,n) => ValDef(v, {
       //v.setFlag(symtab.Flags.TRANS_FLAG);
-      if(t.tpe <:< v.tpe) typed{Ident(t)}
-      else if(v.tpe <:< t.tpe) typed{gen.mkAsInstanceOf(Ident(t),v.tpe)} // refinement
+      if(t.tpe <:< v.tpe) mkIdent(t)
+      else if(v.tpe <:< t.tpe) typed{gen.mkAsInstanceOf(mkIdent(t),v.tpe)} // refinement
       else {
         //Console.println("internal error, types don't match: pattern variable "+v+":"+v.tpe+" temp "+t+":"+t.tpe)
         error("internal error, types don't match: pattern variable "+v+":"+v.tpe+" temp "+t+":"+t.tpe)
-        typed{gen.mkAsInstanceOf(Ident(t),v.tpe)} // refinement
+        typed{gen.mkAsInstanceOf(mkIdent(t), v.tpe)} // refinement
       }
     })::targetParams(n)
   }
@@ -96,7 +97,7 @@ trait CodeFactory {
     if (vsym.tpe.typeSymbol == definitions.SomeClass)  // is Some[_]
       Literal(Constant(true))
     else                                          // is Option[_]
-      Not(Select(Ident(vsym), nme.isEmpty))
+      Not(Select(mkIdent(vsym), nme.isEmpty))
   }
 
   /** returns code `<seqObj>.elements' */

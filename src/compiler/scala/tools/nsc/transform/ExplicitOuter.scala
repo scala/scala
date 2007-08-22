@@ -470,5 +470,3 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
     }
   }
 }
-
-
