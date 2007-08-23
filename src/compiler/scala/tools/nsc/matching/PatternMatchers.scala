@@ -53,16 +53,13 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
 
     import global.{ definitions => defs }
 
-    var handleOuter: HandleOuter = _
+    var handleOuter: Tree => Tree = _
 
-    var localTyper: LocalTyper = _
-
-    def initialize(selector: Tree, doCheckExhaustive: Boolean, owner: Symbol, _handleOuter:Tree=>Tree, _localTyper:Tree=>Tree): Unit = {
+    def initialize(selector: Tree, doCheckExhaustive: Boolean, owner: Symbol, _handleOuter:Tree=>Tree ): Unit = {
       this.owner = owner
       this.doCheckExhaustive = doCheckExhaustive
       this.selector = selector
-      this.handleOuter = new HandleOuter( _handleOuter )
-      this.localTyper = new LocalTyper( _localTyper )
+      this.handleOuter = _handleOuter
       if (settings_debug) {
         Console.println("****")
         Console.println("**** initalize, selector = "+selector+" selector.tpe = "+selector.tpe)
@@ -184,7 +181,7 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
         cases1 = cases1.tail
       }
 
-      implicit val rep = new RepFactory()
+      implicit val rep = new RepFactory(handleOuter)
       try {
         val irep = initRep(selector, cases, doCheckExhaustive, rep)
         val root = irep.temp.head
@@ -192,7 +189,7 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
         implicit val fail: Tree = ThrowMatchError(selector.pos, mkIdent(root))
         val vdef = typed{ValDef(root, selector)}
 
-        val mch  = typed{repToTree(irep, handleOuter, localTyper)}
+        val mch  = typed{repToTree(irep)}
         dfatree = typed{squeezedBlock(List(vdef), mch)}
 
         //DEBUG("**** finished\n"+dfatree.toString)
@@ -267,7 +264,7 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
           } else {
             isImplemented(xs, guard)
           }
-        case p @ Ident(n)       => if(guard eq EmptyTree) null else CantHandleGuard
+        case p @ Ident(n)       => null //if(guard eq EmptyTree) null else CantHandleGuard
 
         //case UnApply(fn,xs)     => isImplemented(xs, guard)
         case UnApply(fn,xs)     =>
@@ -275,7 +272,7 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
             // List.unapply<...>(xs)
             case Apply(TypeApply(sel @ Select(stor, nme.unapplySeq),_),_) if(stor.symbol eq definitions.ListModule) =>
               (xs: @unchecked) match {
-                case ArrayValue(_,ys)::Nil => return {if(guard eq EmptyTree) isImplemented(ys, guard) else CantHandleGuard }
+                case ArrayValue(_,ys)::Nil => isImplemented(ys, guard) // return {if(guard eq EmptyTree) isImplemented(ys, guard) else CantHandleGuard }
               }
 
             // ignore other unapplySeq occurrences, since will run into ArrayValue
@@ -286,8 +283,8 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
         case Bind(n, p)         => isImplemented(p , guard)
         case Alternative(xs)    => isImplemented(xs, guard)
         case p:Literal          => null
-        case p:Select           => if(guard eq EmptyTree) null else CantHandleGuard
-        case p:Typed            => if(guard eq EmptyTree) null else CantHandleGuard
+        case p:Select           => null // if(guard eq EmptyTree) null else CantHandleGuard
+        case p:Typed            => null // if(guard eq EmptyTree) null else CantHandleGuard
 
         // ArrayValue nodes can also appear in repeated parameter positions of case classes (e.g. xml.Elem)
         case ArrayValue(_,xs)   => CantHandleSeq
@@ -947,13 +944,12 @@ print()
      */
   private def generalSwitchToTree(): Tree = {
     this.exit = owner.newLabel(root.pos, "exit").setInfo(new MethodType(List(resultType), resultType));
-    //val result = exit.newValueParameter(root.pos, "result").setInfo( resultType );
     val result = owner.newVariable(root.pos, "result").setInfo( resultType );
     squeezedBlock(
       List(
         typedValDef(root.casted, selector),
-        typedValDef(result, EmptyTree /* defaultValue(result.tpe) */),
-       typed { toTree(root.and) },
+        typedValDef(result, EmptyTree),
+        typed { toTree(root.and) },
         ThrowMatchError(selector.pos,  mkIdent(root.casted))) ,
       LabelDef(exit, List(result), mkIdent(result)))
   }
@@ -1014,8 +1010,9 @@ print()
               Literal(Constant(true))
             ); // forward jump
 
-          if (guard(i) != EmptyTree)
-            res0 = And(handleOuter(guard(i)), res0);
+          if (guard(i) != EmptyTree) { // no need for handleout
+            res0 = And(guard(i), res0);
+          }
           res = Or(squeezedBlock(ts.toList, res0), res)
           i = i - 1
         }

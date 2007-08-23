@@ -1334,7 +1334,8 @@ trait Symbols {
     override def name: Name =
       if (phase.flatClasses && rawowner != NoSymbol && !rawowner.isPackageClass) {
         if (flatname == nme.EMPTY) {
-          //assert(rawowner.isClass) //bqe: this assert prevents duplication of classdefs (e.g Interpreter.scala)
+          if(!rawowner.isClass) { Console.print("warning, is not a class, actually: "+rawowner.name.toString)}
+          //assert(rawowner.isClass) //bq: assert here shadows more important messages
           flatname = newTypeName(rawowner.name.toString() + "$" + rawname)
         }
         flatname

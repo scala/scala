@@ -37,8 +37,13 @@ trait PatternNodes { self: transform.ExplicitOuter =>
     case n => EmptyTree::getDummies(i-1)
   }
 
+  def makeBind(vs:SymList, pat:Tree): Tree =
+    if(vs eq Nil) pat else Bind(vs.head, makeBind(vs.tail, pat)) setType pat.tpe
+
   def normalizedListPattern(pats:List[Tree], tptArg:Type): Tree = pats match {
     case Nil   => gen.mkAttributedRef(definitions.NilModule)
+    case sp::xs if strip2(sp).isInstanceOf[Star] =>
+      makeBind(definedVars(sp), Ident(nme.WILDCARD) setType sp.tpe)
     case x::xs =>
       var resType: Type = null;
       val consType: Type = definitions.ConsClass.primaryConstructor.tpe match {
@@ -172,9 +177,6 @@ trait PatternNodes { self: transform.ExplicitOuter =>
     case   y::ys if y > Tag => findSorted(Tag,ys)
     case _                  => false
   }
-
-  final case class HandleOuter(transform:Tree=>Tree) { def apply(x:Tree) = transform(x) }
-  final case class LocalTyper(typed:Tree=>Tree)      { def apply(x:Tree) = typed(x)     }
 
   /** pvar: the symbol of the pattern variable
    *  temp: the temp variable that holds the actual value

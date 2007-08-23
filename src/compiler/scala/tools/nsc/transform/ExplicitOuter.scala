@@ -389,7 +389,7 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
             }
             super.transform(copy.Apply(tree, sel, outerVal :: args))
 
-        case Match(selector, cases) => // <----- transmatch hook
+        case mch @ Match(selector, cases) => // <----- transmatch hook
           val tid = if (settings.debug.value) {
             val q = unit.fresh.newName("tidmark")
             Console.println("transforming patmat with tidmark "+q+" ncases = "+cases.length)
@@ -412,8 +412,39 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
           var nselector = transform(selector)
           //assert(nselector.tpe =:= selector.tpe)
           //val ncases = transformCaseDefs(cases)
-          val ncases = cases map {
-            case CaseDef(p,g,b) => CaseDef(transform(p),g,transform(b))
+
+        def makeGuardDef(vs:SymList, guard:Tree) = {
+          import symtab.Flags._
+          val gdname = cunit.fresh.newName("gd")
+          val fmls = new ListBuffer[Type]
+          val method = currentOwner.newMethod(mch.pos, gdname) setFlag (SYNTHETIC)
+          var vs1 = vs; while (vs1 ne Nil) {
+            fmls += vs1.head.tpe
+            vs1 = vs1.tail
+          }
+          val tpe    = new MethodType(fmls.toList, definitions.BooleanClass.tpe)
+          method setInfo tpe
+          localTyper.
+          typed { DefDef(method,
+                         {vparamss =>
+                           new ChangeOwnerTraverser(currentOwner, method).traverse(guard);
+                           new TreeSymSubstituter(vs, vparamss.head).traverse(guard);guard})}
+        }
+
+          val nguard = new ListBuffer[Tree]
+          val ncases = new ListBuffer[CaseDef]
+          var cs = cases; while (cs ne Nil) {
+            cs.head match {
+              case CaseDef(p,EmptyTree,b) =>
+                ncases += CaseDef(transform(p), EmptyTree, transform(b))
+              case CaseDef(p, guard, b) =>
+                val vs       = definedVars(p)
+                val guardDef = makeGuardDef(vs, guard)
+                nguard += transform(guardDef)
+                val gdcall = localTyper.typed{Apply(Ident(guardDef.symbol),vs.map {Ident(_)})}
+                ncases += CaseDef(transform(p), gdcall, transform(b))
+            }
+            cs = cs.tail
           }
 
           var checkExhaustive = true
@@ -435,7 +466,7 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
           //Console.println("TransMatcher selector.tpe ="+selector.tpe+")")
           //Console.println("TransMatcher resultType ="+resultType+")")
 
-          val t_untyped = handlePattern(nselector, ncases, checkExhaustive, currentOwner, transform, {x:Tree => localTyper.typed(x)})
+          val t_untyped = handlePattern(nselector, ncases.toList, checkExhaustive, currentOwner, transform)
 	  try {
             //Console.println("t_untyped "+t_untyped.toString())
             val t = atPos(tree.pos) { localTyper.typed(t_untyped, resultType) }
@@ -446,7 +477,8 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
             //Console.println("t typed "+t.toString())
             if (settings.debug.value)
               Console.println("finished translation of " + tid)
-            t
+
+            if(nguard.isEmpty) {t} else Block(nguard.toList, t) setType t.tpe
 	  } catch {
 	    case e =>
 	      e.printStackTrace()
