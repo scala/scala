@@ -947,11 +947,13 @@ print()
      */
   private def generalSwitchToTree(): Tree = {
     this.exit = owner.newLabel(root.pos, "exit").setInfo(new MethodType(List(resultType), resultType));
-    val result = exit.newValueParameter(root.pos, "result").setInfo( resultType );
+    //val result = exit.newValueParameter(root.pos, "result").setInfo( resultType );
+    val result = owner.newVariable(root.pos, "result").setInfo( resultType );
     squeezedBlock(
       List(
         typedValDef(root.casted, selector),
-        typed { toTree(root.and) },
+        typedValDef(result, EmptyTree /* defaultValue(result.tpe) */),
+       typed { toTree(root.and) },
         ThrowMatchError(selector.pos,  mkIdent(root.casted))) ,
       LabelDef(exit, List(result), mkIdent(result)))
   }
