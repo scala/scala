@@ -443,6 +443,10 @@ object Test extends TestConsoleMain {
       z.isDefinedAt(42)
       s.isDefinedAt(42)
       // just load the thing, to see if the classes are found
+
+      (None:Option[Boolean]) match {
+        case x if x.map(x => x).isEmpty =>
+      }
     }
   }
 
