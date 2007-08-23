@@ -42,6 +42,8 @@ abstract class LazyVals extends Transform {
     /** Perform the following transformations:
      *  - for a lazy accessor inside a method, make it check the initialization bitmap
      *  - for all methods, add enough int vars to allow one flag per lazy local value
+     *  - remove ACCESSOR flags: accessors in traits are not statically implemented,
+     *    but moved to the host class. local lazy values should be statically implemented.
      */
     override def transform(tree: Tree): Tree = {
        val sym = tree.symbol
@@ -51,7 +53,7 @@ abstract class LazyVals extends Transform {
             val idx = lazyVals(sym.enclMethod)
             val rhs1 = mkLazyDef(sym.enclMethod, super.transform(rhs), idx)
             lazyVals(sym.owner) = idx + 1
-            sym.resetFlag(LAZY)
+            sym.resetFlag(LAZY | ACCESSOR)
             rhs1
           } else
             super.transform(rhs)
