@@ -35,7 +35,8 @@ import compat.Platform
  *    a file called <code>times.log</code>
  *  </p>
  *
- *  @author Burak Emir
+ *  @author  Iulian Dragos
+ *  @version 1.0, 21/10/2004
  */
 trait Benchmark {
 
@@ -86,8 +87,8 @@ trait Benchmark {
       logFile.write(Platform.EOL)
       logFile.flush()
     } else {
-      Console.println("Usage: scala benchmarks.program <runs> <logfile>")
-      Console.println("   or: scala benchmarks.program <runs> <logfile> <multiplier>")
+      println("Usage: scala benchmarks.program <runs> <logfile>")
+      println("   or: scala benchmarks.program <runs> <logfile> <multiplier>")
     }
   }
 }
