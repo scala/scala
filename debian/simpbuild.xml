@@ -519,7 +519,7 @@
 
   <target name="docs" depends="docs.lib, docs.manual"/>
 
-  <target name="dist" depends="build">
+  <target name="dist" depends="build, docs">
     <!-- Create the SBaz packages -->
     <mkdir dir="${dist.sbaz.dir}"/>
     <!-- Create the Scala library package -->
@@ -586,7 +586,7 @@
     </sbaz>
   </target>
 
-  <target name="install" depends="dist,docs">
+  <target name="install" depends="dist">
     <exec executable="sbaz">
       <arg line="-v install -f ${dist.sbaz.dir}/${sbaz.lib.name}-${version.number}.sbp"/>
     </exec>
