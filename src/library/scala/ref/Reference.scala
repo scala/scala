@@ -11,8 +11,7 @@
 package scala.ref
 
 /**
- * @see <code>java.lang.ref.Reference</code>
- * @author Sean McDirmid
+ *  @author Sean McDirmid
  */
 trait Reference[+T <: AnyRef] extends Function0[T] {
   @deprecated def isValid: Boolean

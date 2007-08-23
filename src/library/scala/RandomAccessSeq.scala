@@ -83,7 +83,7 @@ object RandomAccessSeq {
   }
 }
 
-/** Sequences that support O(1) element access and O(1) length computation.
+/** Sequences that support O(1) element access
  *  @author Sean McDirmid
  */
 trait RandomAccessSeq[+A] extends Seq[A] {
@@ -118,9 +118,6 @@ trait RandomAccessSeq[+A] extends Seq[A] {
       def length = until - from
       def apply(idx : Int) = if (idx < 0 || idx >= length) throw new Predef.IndexOutOfBoundsException
                              else RandomAccessSeq.this.apply(from + idx)
-      override def slice(from0 : Int, until0 : Int) = // minimize the object chain.
-        if (from + until0 > until) RandomAccessSeq.this.slice(from + from0, until)
-        else RandomAccessSeq.this.slice(from + from0, from + until0)
     }
   }
   override def reverse : Seq[A] = new RandomAccessSeq.Projection[A] {

@@ -290,7 +290,7 @@ final class Array[A](_length: Int) extends RandomAccessSeq.Mutable[A] {
    *  @throws IndexOutOfBoundsException if <code>from &lt; 0</code>
    *          or <code>length &lt; end<code>
    */
-  //override def slice(from: Int, end: Int): Array[A] = throw new Error()
+  override def slice(from: Int, end: Int): Array[A] = throw new Error()
 
 
   /** Returns an array consisting of all elements of this array that satisfy the
@@ -308,7 +308,7 @@ final class Array[A](_length: Int) extends RandomAccessSeq.Mutable[A] {
    *  @param n the number of elements to take
    *  @return  the new array
    */
-  //override def take(n: Int): Array[A] = throw new Error()
+  override def take(n: Int): Array[A] = throw new Error()
 
   /** Returns this array without its <code>n</code> first elements
    *  If this array has less than <code>n</code> elements, the empty
@@ -317,7 +317,7 @@ final class Array[A](_length: Int) extends RandomAccessSeq.Mutable[A] {
    *  @param n the number of elements to drop
    *  @return  the new array
    */
-  //override def drop(n: Int): Array[A] =throw new Error()
+  override def drop(n: Int): Array[A] =throw new Error()
 
   /** Returns the longest prefix of this array whose elements satisfy
    *  the predicate <code>p</code>.
@@ -339,7 +339,7 @@ final class Array[A](_length: Int) extends RandomAccessSeq.Mutable[A] {
 
   /** A array consisting of all elements of this array in reverse order.
    */
-  //override def reverse: Array[A] = throw new Error()
+  override def reverse: Array[A] = throw new Error()
 
   /** Returns an array consisting of all elements of this array followed
    *  by all elements of the argument iterable.

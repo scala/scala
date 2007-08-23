@@ -49,7 +49,7 @@ trait BufferedIterator[+A] extends Iterator[A] {
     read
   }
   def advanced : BufferedIterator.Advanced[A] = new BufferedIterator.Default[A] {
-    protected def fill(sz : Int) : Seq[A] = if (BufferedIterator.this.hasNext) (BufferedIterator.this.next) :: Nil else Nil
+    protected def fill : Seq[A] = if (BufferedIterator.this.hasNext) (BufferedIterator.this.next) :: Nil else Nil
   }
 }
 
@@ -154,8 +154,8 @@ object BufferedIterator {
     override protected def defaultPeek : A = throw new Predef.NoSuchElementException
     override def hasNext = !lookahead.isEmpty || super.hasNext
 
-    /** used to fill lookahead buffer. <code>sz</code> can be used by implementations as a heauristic to determine how many elements are desired */
-    protected def fill(sz : Int) : Seq[A]
+    /** used to fill lookahead buffer */
+    protected def fill : Seq[A]
 
     private[BufferedIterator] def forget : List[A] = {
       val ret = lookahead.toList
@@ -167,7 +167,7 @@ object BufferedIterator {
       if (sz == 0) return lookahead.readOnly
       else if (sz == 1) {
         if (!lookahead.isEmpty) return lookahead.readOnly
-        fill(sz) match {
+        fill match {
         case Seq.singleton(x) => lookahead += x
         case next => lookahead ++= next
         }
@@ -175,7 +175,7 @@ object BufferedIterator {
       }
       var sz0 = lookahead.length
       while (sz0 < sz) {
-        val next = fill(sz - sz0)
+        val next = fill
         if (next.isEmpty) return lookahead.readOnly
         sz0 += next.length
         lookahead ++= next

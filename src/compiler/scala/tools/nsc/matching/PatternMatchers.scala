@@ -267,7 +267,7 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
           } else {
             isImplemented(xs, guard)
           }
-        case p @ Ident(n)       => null // if(n!= nme.WILDCARD && p.symbol.) CantHandleIdent else null
+        case p @ Ident(n)       => if(guard eq EmptyTree) null else CantHandleGuard
 
         //case UnApply(fn,xs)     => isImplemented(xs, guard)
         case UnApply(fn,xs)     =>
@@ -275,7 +275,7 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
             // List.unapply<...>(xs)
             case Apply(TypeApply(sel @ Select(stor, nme.unapplySeq),_),_) if(stor.symbol eq definitions.ListModule) =>
               (xs: @unchecked) match {
-                case ArrayValue(_,ys)::Nil => return {if(guard eq EmptyTree) isImplemented(ys, guard) else CantHandleSeq }
+                case ArrayValue(_,ys)::Nil => return {if(guard eq EmptyTree) isImplemented(ys, guard) else CantHandleGuard }
               }
 
             // ignore other unapplySeq occurrences, since will run into ArrayValue
@@ -286,8 +286,8 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
         case Bind(n, p)         => isImplemented(p , guard)
         case Alternative(xs)    => isImplemented(xs, guard)
         case p:Literal          => null
-        case p:Select           => null
-        case p:Typed            => null
+        case p:Select           => if(guard eq EmptyTree) null else CantHandleGuard
+        case p:Typed            => if(guard eq EmptyTree) null else CantHandleGuard
 
         // ArrayValue nodes can also appear in repeated parameter positions of case classes (e.g. xml.Elem)
         case ArrayValue(_,xs)   => CantHandleSeq
