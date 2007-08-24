@@ -2721,8 +2721,19 @@ trait Typers { self: Analyzer =>
 
         case UnApply(fun, args) =>
           val fun1 = typed(fun)
-          val args1 = List.mapConserve(args)(typedPattern(_, WildcardType))
-          copy.UnApply(tree, fun1, args1) setType pt
+          var tpes = fun.symbol.name match {
+            case nme.unapply    => unapplyTypeListFromReturnType   (fun.tpe)
+            case nme.unapplySeq => unapplyTypeListFromReturnTypeSeq(fun.tpe)
+          }
+          var as = args; while(as ne Nil) { // bq: typing a pattern never changes the tree
+            typedPattern(as.head, tpes.head match {
+              case TypeRef(_,sym,targs) if sym eq definitions.RepeatedParamClass => targs.head
+              case tpe                                                           => tpe
+            })
+            as = as.tail; tpes = tpes.tail
+          }
+          //val args1 = List.mapConserve(args)(typedPattern(_, WildcardType))
+          copy.UnApply(tree, fun1, args) setType pt
 
         case ArrayValue(elemtpt, elems) =>
           typedArrayValue(elemtpt, elems)

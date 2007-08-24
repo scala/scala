@@ -258,7 +258,7 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
              //Console.println(fn.symbol)
              if(!xs.isEmpty) {
                assert(false)
-               return CantHandleApply // System.exit(-1); // this should never happen
+               return CantHandleApply // this should never happen
              }
              null
           } else {
@@ -1126,10 +1126,7 @@ print()
         typed { t } // //DEBUG
       } catch {
         case e =>
-
           Console.println("failed with "+e.getMessage()+" on: "+t)
-          //System.exit(-1)
-          //null
         t
       }
     }

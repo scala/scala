@@ -434,6 +434,9 @@ trait TypeKinds { self: ICodes =>
     case AnnotatedType(attribs, tp) =>
       toTypeKind(tp)
 
+    //case WildcardType => // bq: useful hack when wildcard types come here
+    //  REFERENCE(definitions.ObjectClass)
+
     case _ =>
       abort("Unknown type: " + t)
   }
