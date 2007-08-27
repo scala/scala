@@ -129,8 +129,7 @@ abstract class RefChecks extends InfoTransform {
 
         def overrideTypeError() {
           if (other.tpe != ErrorType && member.tpe != ErrorType) {
-            overrideError("has incompatible type "+analyzer.underlying(member).tpe.normalize);
-            explainTypes(member.tpe, other.tpe);
+            overrideError("has incompatible type "+analyzer.underlying(member).tpe.normalize)
           }
         }
 
@@ -229,7 +228,8 @@ abstract class RefChecks extends InfoTransform {
             }
           } else if (other.isTerm) {
             if (!overridesType(self.memberInfo(member), self.memberInfo(other))) { // 8
-              overrideTypeError();
+              overrideTypeError()
+              explainTypes(self.memberInfo(member), self.memberInfo(other))
             }
           }
         }
