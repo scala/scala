@@ -49,7 +49,8 @@ import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
  *    <li>addparams,</li>
  *    <li>scalacdebugging,</li>
  *    <li>deprecation,</li>
- *    <li>unchecked.</li>
+ *    <li>unchecked,</li>
+ *    <li>failonerror.</li>
  *  </ul>
  *  <p>
  *    It also takes the following parameters as nested elements:
@@ -61,7 +62,9 @@ import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
  *    <li>bootclasspath,</li>
  *    <li>extdirs.</li>
  * </ul>
- * @author Gilles Dubochet, Stephane Micheloud */
+ *
+ * @author Gilles Dubochet, Stephane Micheloud
+ */
 class Scalac extends MatchingTask {
 
   /** The unique Ant file utilities instance to use in this task. */
@@ -139,6 +142,8 @@ class Scalac extends MatchingTask {
   private var deprecation: Option[Boolean] = None
   /** Instruct the compiler to generate unchecked information. */
   private var unchecked: Option[Boolean] = None
+  /** Indicates whether compilation errors will fail the build; defaults to true. */
+  private var failonerror: Boolean = true
 
   // Name of the output assembly (only relevant with -target:msil)
   private var assemname: Option[String] = None
@@ -157,9 +162,10 @@ class Scalac extends MatchingTask {
 
   /** Sets the srcdir attribute. Used by Ant.
    *  @param input The value of <code>origin</code>. */
-  def setSrcdir(input: Path) =
+  def setSrcdir(input: Path) {
     if (origin.isEmpty) origin = Some(input)
     else origin.get.append(input)
+  }
 
   /** Sets the <code>origin</code> as a nested src Ant parameter.
    *  @return An origin path to be configured. */
@@ -175,14 +181,14 @@ class Scalac extends MatchingTask {
 
   /** Sets the <code>destdir</code> attribute. Used by Ant.
    *  @param input The value of <code>destination</code>. */
-  def setDestdir(input: File) =
-      destination = Some(input)
+  def setDestdir(input: File) { destination = Some(input) }
 
   /** Sets the <code>classpath</code> attribute. Used by Ant.
    *  @param input The value of <code>classpath</code>. */
-  def setClasspath(input: Path) =
+  def setClasspath(input: Path) {
     if (classpath.isEmpty) classpath = Some(input)
     else classpath.get.append(input)
+  }
 
   /** Sets the <code>classpath</code> as a nested classpath Ant parameter.
    *  @return A class path to be configured. */
@@ -193,14 +199,16 @@ class Scalac extends MatchingTask {
 
   /** Sets the <code>classpath</code> as an external reference Ant parameter.
    *  @param input A reference to a class path. */
-  def setClasspathref(input: Reference) =
+  def setClasspathref(input: Reference) {
     createClasspath().setRefid(input)
+  }
 
   /** Sets the <code>sourcepath</code> attribute. Used by Ant.
    *  @param input The value of <code>sourcepath</code>. */
-  def setSourcepath(input: Path) =
+  def setSourcepath(input: Path) {
     if (sourcepath.isEmpty) sourcepath = Some(input)
     else sourcepath.get.append(input)
+  }
 
   /** Sets the <code>sourcepath</code> as a nested sourcepath Ant parameter.
    *  @return A source path to be configured. */
@@ -211,15 +219,17 @@ class Scalac extends MatchingTask {
 
   /** Sets the <code>sourcepath</code> as an external reference Ant parameter.
    *  @param input A reference to a source path. */
-  def setSourcepathref(input: Reference) =
+  def setSourcepathref(input: Reference) {
     createSourcepath().setRefid(input)
+  }
 
   /** Sets the boot classpath attribute. Used by Ant.
    *
    *  @param input The value of <code>bootclasspath</code>. */
-  def setBootclasspath(input: Path) =
+  def setBootclasspath(input: Path) {
     if (bootclasspath.isEmpty) bootclasspath = Some(input)
     else bootclasspath.get.append(input)
+  }
 
   /** Sets the <code>bootclasspath</code> as a nested sourcepath Ant
    *  parameter.
@@ -266,18 +276,18 @@ class Scalac extends MatchingTask {
 
   /** Sets the <code>force</code> attribute. Used by Ant.
    *  @param input The value for <code>force</code>. */
-  def setForce(input: Boolean): Unit =
-    force = input
+  def setForce(input: Boolean) { force = input }
 
   /** Sets the logging level attribute. Used by Ant.
    *  @param input The value for <code>logging</code>. */
-  def setLogging(input: String) =
+  def setLogging(input: String) {
     if (LoggingLevel.isPermissible(input)) logging = Some(input)
     else error("Logging level '" + input + "' does not exist.")
+  }
 
   /** Sets the <code>logphase</code> attribute. Used by Ant.
    *  @param input The value for <code>logPhase</code>. */
-  def setLogPhase(input: String) = {
+  def setLogPhase(input: String) {
     logPhase = List.fromArray(input.split(",")).flatMap { s: String =>
       val st = s.trim()
       if (CompilerPhase.isPermissible(st))
@@ -291,48 +301,47 @@ class Scalac extends MatchingTask {
 
   /** Sets the <code>usepredefs</code> attribute. Used by Ant.
    *  @param input The value for <code>usepredefs</code>. */
-  def setUsepredefs(input: Boolean): Unit =
-    usepredefs = Some(input)
+  def setUsepredefs(input: Boolean) { usepredefs = Some(input) }
 
   /** Set the <code>debug</code> info attribute.
    *  @param input The value for <code>debug</code>. */
-  def setDebuginfo(input: String): Unit =
-    debugInfo = Some(input)
+  def setDebuginfo(input: String) { debugInfo = Some(input) }
 
   /** Set the <code>addparams</code> info attribute.
    *  @param input The value for <code>addparams</code>. */
-  def setAddparams(input: String): Unit =
-    addParams = input
+  def setAddparams(input: String) { addParams = input }
 
   /** Set the <code>deprecation</code> info attribute.
    *  @param input One of the flags <code>yes/no</code> or <code>on/off</code>. */
-  def setDeprecation(input: String): Unit =
+  def setDeprecation(input: String) {
     if (Flag.isPermissible(input))
       deprecation = Some("yes" == input || "on" == input)
     else
       error("Unknown deprecation flag '" + input + "'")
+  }
 
   /** Set the <code>unchecked</code> info attribute.
    *  @param input One of the flags <code>yes/no</code> or <code>on/off</code>. */
-  def setUnchecked(input: String): Unit =
+  def setUnchecked(input: String) {
     if (Flag.isPermissible(input))
       unchecked = Some("yes" == input || "on" == input)
     else
       error("Unknown unchecked flag '" + input + "'")
+  }
+
+  /** Sets the <code>force</code> attribute. Used by Ant.
+   *  @param input The value for <code>force</code>. */
+  def setFailonerror(input: Boolean) { failonerror = input }
 
   /** Set the <code>scalacdebugging</code> info attribute.
    *  @param input The specified flag */
-  def setScalacdebugging(input: Boolean): Unit =
-    scalacDebugging = input
+  def setScalacdebugging(input: Boolean) { scalacDebugging = input }
 
-  def setAssemname(input: String): Unit =
-    assemname = Some(input)
+  def setAssemname(input: String) { assemname = Some(input) }
 
-  def setAssemrefs(input: String): Unit =
-    assemrefs = Some(input)
+  def setAssemrefs(input: String) { assemrefs = Some(input) }
 
-  def setGenerics(input: Boolean): Unit =
-    generics = Some(input)
+  def setGenerics(input: Boolean) { generics = Some(input) }
 
 /*============================================================================*\
 **                             Properties getters                             **
@@ -452,7 +461,7 @@ class Scalac extends MatchingTask {
 \*============================================================================*/
 
   /** Initializes settings and source files */
-  protected def initialize: Pair[Settings, List[File]] = {
+  protected def initialize: (Settings, List[File]) = {
     // Tests if all mandatory attributes are set and valid.
     if (origin.isEmpty) error("Attribute 'srcdir' is not set.")
     if (getOrigin.isEmpty) error("Attribute 'srcdir' is not set.")
@@ -549,12 +558,12 @@ class Scalac extends MatchingTask {
       if (argsBuf eq args)
         error("Parameter '" + args.head + "' is not recognised by Scalac.")
     }
-    Pair(settings, sourceFiles)
+    (settings, sourceFiles)
   }
 
   /** Performs the compilation. */
   override def execute() = {
-    val Pair(settings, sourceFiles) = initialize
+    val (settings, sourceFiles) = initialize
     val reporter = new ConsoleReporter(settings)
 
     // Compiles the actual code
@@ -573,12 +582,14 @@ class Scalac extends MatchingTask {
               "(no error message provided); see the error output for details.")
     }
     reporter.printSummary()
-    if (reporter.hasErrors)
-      error(
-          "Compile failed with " +
-          reporter.ERROR.count + " error" +
-          (if (reporter.ERROR.count > 1) "s" else "") +
-          "; see the compiler error output for details.")
+    if (reporter.hasErrors) {
+      val msg =
+        "Compile failed with " +
+        reporter.ERROR.count + " error" +
+        (if (reporter.ERROR.count > 1) "s" else "") +
+        "; see the compiler error output for details."
+      if (failonerror) error(msg) else log(msg)
+    }
     else if (reporter.WARNING.count > 0)
       log(
           "Compile suceeded with " +
