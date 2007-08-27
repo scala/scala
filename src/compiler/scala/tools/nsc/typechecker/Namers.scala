@@ -425,7 +425,7 @@ trait Namers { self: Analyzer =>
       }
     }
 
-    private def widenIfNotFinal(sym: Symbol, tpe: Type): Type = {
+    private def widenIfNotFinal(sym: Symbol, tpe: Type, pt: Type): Type = {
       val getter =
         if (sym.isValue && sym.owner.isClass && (sym hasFlag PRIVATE))
           sym.getter(sym.owner)
@@ -440,10 +440,12 @@ trait Namers { self: Analyzer =>
         case _ =>
           false
       }
-      if (sym.isVariable ||
-          sym.isMethod && !(sym hasFlag ACCESSOR) ||
-          isHidden(tpe)) tpe.widen
-      else if (!(sym hasFlag FINAL)) tpe.deconst
+      val tpe1 = tpe.deconst
+      val tpe2 = tpe1.widen
+      if ((sym.isVariable || sym.isMethod && !(sym hasFlag ACCESSOR)))
+        if (tpe2 <:< pt) tpe2 else tpe1
+      else if (isHidden(tpe)) tpe2
+      else if (!(sym hasFlag FINAL)) tpe1
       else tpe
     }
 
@@ -621,7 +623,7 @@ trait Namers { self: Analyzer =>
       thisMethodType(
         if (tpt.isEmpty) {
           val pt = resultPt.substSym(tparamSyms, tparams map (_.symbol))
-          tpt.tpe = widenIfNotFinal(meth, typer.computeType(rhs, pt))
+          tpt.tpe = widenIfNotFinal(meth, typer.computeType(rhs, pt), pt)
           tpt.tpe
         } else typer.typedType(tpt).tpe)
      }
@@ -730,8 +732,10 @@ trait Namers { self: Analyzer =>
                   context.error(tpt.pos, "missing parameter type");
                   ErrorType
                 } else {
-                  tpt.tpe = widenIfNotFinal(sym,
-                    newTyper(typer1.context.make(vdef, sym)).computeType(rhs, WildcardType))
+                  tpt.tpe = widenIfNotFinal(
+                    sym,
+                    newTyper(typer1.context.make(vdef, sym)).computeType(rhs, WildcardType),
+                    WildcardType)
                   tpt.tpe
                 }
               } else typer1.typedType(tpt).tpe
