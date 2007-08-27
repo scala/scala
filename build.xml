@@ -755,7 +755,8 @@ MSIL
 
   <target name="msil.libraries" depends="setup.quick, msil.sources">
     <quick srcdir="${msil.dir}/src" usepredefs="no" target="msil"
-           assemname="${msil.dir}/predef" assemrefs="${lib.dir}">
+           assemname="${msil.dir}/predef" assemrefs="${lib.dir}"
+           failonerror="false">
       <include name="scala/Predef.scala"/>
       <include name="scala/Console.scala"/>
       <include name="scala/Application.scala"/>
