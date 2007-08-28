@@ -690,8 +690,6 @@ abstract class GenICode extends SubComponent  {
             log("BOX : " + fun.symbol.fullNameString);
           val ctx1 = genLoad(expr, ctx, toTypeKind(expr.tpe))
           val nativeKind = toTypeKind(expr.tpe)
-          ctx1.bb.emit(BOX(nativeKind), expr.pos)
-          generatedType = toTypeKind(fun.symbol.tpe.resultType)
           if (settings.Xdce.value) {
             // we store this boxed value to a local, even if not really needed.
             // boxing optimization might use it, and dead code elimination will
@@ -699,13 +697,15 @@ abstract class GenICode extends SubComponent  {
             var loc1 = new Local(ctx.method.symbol.newVariable(
                 tree.pos,
                 unit.fresh.newName("boxed"))
-                  .setInfo(definitions.ObjectClass.tpe)
+                  .setInfo(expr.tpe)
                   .setFlag(Flags.SYNTHETIC),
-                ANY_REF_CLASS, false)
+                nativeKind, false)
             loc1 = ctx.method.addLocal(loc1)
-            ctx1.bb.emit(DUP(ANY_REF_CLASS))
             ctx1.bb.emit(STORE_LOCAL(loc1))
+            ctx1.bb.emit(LOAD_LOCAL(loc1))
           }
+          ctx1.bb.emit(BOX(nativeKind), expr.pos)
+          generatedType = toTypeKind(fun.symbol.tpe.resultType)
           ctx1
 
         case Apply(fun @ _, List(expr)) if (definitions.isUnbox(fun.symbol)) =>
