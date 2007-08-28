@@ -119,6 +119,10 @@ trait SynchronizedMap[A, B] extends Map[A, B] {
     super.clear
   }
 
+  override def getOrElseUpdate(key: A, default: => B): B = synchronized {
+    super.getOrElseUpdate(key, default)
+  }
+
   override def transform(f: (A, B) => B): Unit = synchronized {
     super.transform(f)
   }
