@@ -300,9 +300,13 @@ abstract class Inliners extends SubComponent {
                     }
                     var concreteMethod = msym;
                     if (receiver != msym.owner && receiver != NoSymbol) {
-                      concreteMethod = msym.overridingSymbol(receiver);
                       if (settings.debug.value)
                         log("" + i + " has actual receiver: " + receiver);
+                    }
+                    if (!concreteMethod.isFinal && receiver.isFinal) {
+                      concreteMethod = lookupImpl(concreteMethod, receiver)
+                      if (settings.debug.value)
+                        log("\tlooked up method: " + concreteMethod.fullNameString)
                     }
                     if (settings.debug.value)
                       log("Treating " + i
@@ -311,7 +315,8 @@ abstract class Inliners extends SubComponent {
 
                     if (   classes.contains(receiver)
                         && (isClosureClass(receiver)
-                            || concreteMethod.isFinal)) {
+                            || concreteMethod.isFinal
+                            || receiver.isFinal)) {
                       classes(receiver).lookupMethod(concreteMethod) match {
                         case Some(inc) =>
                           if (inc.symbol != m.symbol
@@ -420,6 +425,20 @@ abstract class Inliners extends SubComponent {
         false
       } else
         true
+    }
+
+    private def lookupImpl(meth: Symbol, clazz: Symbol): Symbol = {
+//      println("\t\tlooking up " + meth + " in " + clazz.fullNameString + " meth.owner = " + meth.owner)
+      if (meth.owner == clazz) meth
+      else {
+        val implementingMethod = meth.overridingSymbol(clazz)
+        if (implementingMethod != NoSymbol)
+          implementingMethod
+        else if (meth.owner.isTrait)
+          meth
+        else
+          lookupImpl(meth, clazz.tpe.parents(0).typeSymbol)
+      }
     }
 
     /** small method size (in blocks) */

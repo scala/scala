@@ -49,10 +49,11 @@ abstract class ICodeReader extends ClassfileParser {
     val entry = classPath.root.find(name, false)
     if (entry ne null) {
       classFile = entry.classFile
-      if (cls.isModule && !cls.hasFlag(JAVA))
-        sym = cls.linkedClassOfModule
+//      if (isScalaModule)
+        //sym = cls.linkedClassOfModule
       assert(classFile ne null, "No classfile for " + cls)
 
+      println("sym = " + sym)
 //    for (s <- cls.info.members)
 //      Console.println("" + s + ": " + s.tpe)
       this.instanceCode = new IClass(sym)
@@ -69,7 +70,6 @@ abstract class ICodeReader extends ClassfileParser {
    */
   override def getOwner(jflags: Int): Symbol = {
     if (isScalaModule) {
-      println("a scala module: " + this.staticModule)
       this.staticModule
     } else super.getOwner(jflags)
   }
@@ -149,8 +149,8 @@ abstract class ICodeReader extends ClassfileParser {
     }
   }
 
-  override def classNameToSymbol(name: Name) =
-    if (name == nothingName)
+  override def classNameToSymbol(name: Name) = {
+    val sym = if (name == nothingName)
       definitions.AllClass
     else if (name == nullName)
       definitions.AllRefClass
@@ -158,6 +158,11 @@ abstract class ICodeReader extends ClassfileParser {
       definitions.getModule(name.subName(0, name.length - 1))
     else
       definitions.getClass(name)
+    if (sym.isModule)
+      sym.moduleClass
+    else
+      sym
+  }
 
 
   var maxStack: Int = _
@@ -547,7 +552,7 @@ abstract class ICodeReader extends ClassfileParser {
     // add parameters
     var idx = if (method.isStatic) 0 else 1
     for (t <- method.symbol.tpe.paramTypes) {
-      this.method.addParam(code.freshLocal(idx, toTypeKind(t), true))
+      this.method.addParam(code.enterParam(idx, toTypeKind(t)))
       idx += 1
     }
 
@@ -650,6 +655,10 @@ abstract class ICodeReader extends ClassfileParser {
             bb.close
 
           case RETURN(_) =>
+            bb.emit(instr)
+            bb.close
+
+          case THROW() =>
             bb.emit(instr)
             bb.close
 
@@ -860,7 +869,7 @@ abstract class ICodeReader extends ClassfileParser {
 
       locals.get(idx) match {
         case Some(ls) =>
-          val l = ls find { loc => loc._2 == kind }
+          val l = ls find { loc => loc._2 <:< kind }
           l match {
             case Some((loc, _)) => loc
             case None =>
@@ -873,6 +882,7 @@ abstract class ICodeReader extends ClassfileParser {
         case None =>
           checkValidIndex
           val l = freshLocal(idx, kind, false)
+          log("Added new local for idx " + idx + ": " + kind)
           locals += idx -> List((l, kind))
           l
       }
@@ -882,20 +892,29 @@ abstract class ICodeReader extends ClassfileParser {
 
     /** Return a fresh Local variable for the given index.
      */
-    def freshLocal(idx: Int, kind: TypeKind, isArg: Boolean) = {
+    private def freshLocal(idx: Int, kind: TypeKind, isArg: Boolean) = {
       val sym = method.symbol.newVariable(NoPosition, "loc" + idx).setInfo(kind.toType);
       val l = new Local(sym, kind, isArg)
       method.addLocal(l)
       l
     }
 
-    var count = 0;
+    private var count = 0;
 
     /** Invent a new local, with a new index value outside the range of
      *  the original method. */
     def freshLocal(kind: TypeKind): Local = {
       count = count + 1
       freshLocal(maxLocals + count, kind, false)
+    }
+
+    /** add a method param with the given index. */
+    def enterParam(idx: Int, kind: TypeKind) = {
+      val sym = method.symbol.newVariable(NoPosition, "par" + idx).setInfo(kind.toType);
+      val l = new Local(sym, kind, true)
+      assert(!locals.isDefinedAt(idx))
+      locals += idx -> List((l, kind))
+      l
     }
 
     /** Base class for branch instructions that take addresses. */

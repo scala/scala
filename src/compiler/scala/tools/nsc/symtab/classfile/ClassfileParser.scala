@@ -69,7 +69,7 @@ abstract class ClassfileParser {
     }
     assert(!busy)
     busy = true
-    root match {
+    /*root match {
       case cs: ClassSymbol =>
         cs.classFile = file
       case ms: ModuleSymbol =>
@@ -77,7 +77,7 @@ abstract class ClassfileParser {
       case _ =>
         println("Skipping class: " + root + ": " + root.getClass)
     }
-
+*/
     this.in = new AbstractFileReader(file)
     if (root.isModule) {
       this.clazz = root.linkedClassOfModule
@@ -327,7 +327,6 @@ abstract class ClassfileParser {
       definitions.getMember(definitions.EmptyPackageClass, name.toTypeName)
     else
       definitions.getClass(name)
-
 
   var sawPrivateConstructor = false
 

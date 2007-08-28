@@ -72,7 +72,14 @@ trait TypeKinds { self: ICodes =>
     def maxType(other: TypeKind): TypeKind
 
     /** Simple subtyping check */
-    def <:<(other: TypeKind): Boolean = (this == other)
+    def <:<(other: TypeKind): Boolean = this match {
+      case BOOL | BYTE | SHORT | CHAR =>
+        other match {
+          case INT | LONG => true
+          case _ => false
+        }
+      case _ => this eq other
+    }
 
     override def equals(other: Any): Boolean =
       this eq other.asInstanceOf[AnyRef]
@@ -312,7 +319,8 @@ trait TypeKinds { self: ICodes =>
           abort("Uncomparbale type kinds: ARRAY with " + other)
       }
 
-    /** Checks subtyping relationship. */
+    /** Array subtyping is covariant, as in Java. Necessary for checking
+     *  code that interacts with Java. */
     override def <:<(other: TypeKind): Boolean =
       other match {
         case ARRAY(elem2) =>

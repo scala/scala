@@ -10,7 +10,19 @@ package scala.tools.nsc.backend.icode.analysis
 /** A complete lattice.
  */
 trait CompleteLattice {
-  type Elem
+  type Elem <: AbstractState[A, B] forSome {type A; type B;}
+
+  /** Abstract states for icode. Pairs stack and local variable state
+   *  Equality is structural, except for the <code>bottom</code> value.
+   */
+  abstract class AbstractState[+A, +B](val stack: A, val vars: B) {
+    override def equals(other: Any): Boolean = other match {
+      case that: AbstractState[_, _] =>
+        if ((that eq bottom) || (this eq bottom)) this eq that
+        else (stack == that.stack && vars == that.vars)
+      case _ => false
+    }
+  }
 
   /** Return the least upper bound of <code>a</code> and <code>b</code> */
   def lub2(a: Elem, b: Elem): Elem
