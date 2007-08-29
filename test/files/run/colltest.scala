@@ -46,5 +46,5 @@ class TestSet(s0: Set[int], s1: Set[int]) {
   Console.println("succeeded for "+Iterations+" iterations.")
 }
 object Test extends Application {
-  new TestSet(HashSet.empty, new LinkedHashSet)
+  new TestSet(HashSet.empty, new scala.collection.jcl.LinkedHashSet)
 }

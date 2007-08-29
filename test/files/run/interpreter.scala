@@ -112,7 +112,7 @@ def x => y => z
 	val i = slice.indexOf('\n')
 	if (i >= 0) {
 	  seenNL = true
-	  writer.write(slice, i+1, slice.length-(i+1))
+	  writer.write(slice.force, i+1, slice.length-(i+1))
 	} else {
 	  // skip it
 	}
