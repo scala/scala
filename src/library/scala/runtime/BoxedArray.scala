@@ -195,8 +195,4 @@ abstract class BoxedArray extends Array.Array0[Any] {
     protected def newArray[B >: Any](length : Int, elements : Iterator[Any]) =
       BoxedArray.this.newArray(length, elements).asInstanceOf[Array[B]]
   }
-  override def slice(from : Int, until : Int) = projection.slice(from,until)
-  override def take(until : Int) = projection.take(until)
-  override def drop(from : Int) = projection.drop(from)
-  override def reverse = projection.reverse
 }

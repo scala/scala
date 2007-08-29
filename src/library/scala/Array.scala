@@ -204,6 +204,10 @@ object Array {
    }
    trait Array0[A] extends RandomAccessSeq.Mutable[A] {
      override def projection : Projection[A] = throw new Error
+     override def slice(from : Int, until : Int) : Projection[A] = projection.slice(from, until)
+     override def take(until : Int) : Projection[A] = projection.take(until)
+     override def drop(from : Int) : Projection[A] = projection.drop(from)
+     override def reverse = projection.reverse
    }
 }
 
