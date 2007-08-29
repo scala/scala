@@ -2119,11 +2119,11 @@ trait Typers { self: Analyzer =>
 
       def typedEta(expr1: Tree): Tree = expr1.tpe match {
         case TypeRef(_, sym, _) if (sym == ByNameParamClass) =>
-          val expr2 = Function(List(), expr1)
+          val expr2 = Function(List(), expr1) setPos expr1.pos
           new ChangeOwnerTraverser(context.owner, expr2.symbol).traverse(expr2)
           typed1(expr2, mode, pt)
         case PolyType(List(), restpe) =>
-          val expr2 = Function(List(), expr1)
+          val expr2 = Function(List(), expr1) setPos expr1.pos
           new ChangeOwnerTraverser(context.owner, expr2.symbol).traverse(expr2)
           typed1(expr2, mode, pt)
         case PolyType(_, MethodType(formals, _)) =>
@@ -2721,8 +2721,19 @@ trait Typers { self: Analyzer =>
 
         case UnApply(fun, args) =>
           val fun1 = typed(fun)
-          val args1 = List.mapConserve(args)(typedPattern(_, WildcardType))
-          copy.UnApply(tree, fun1, args1) setType pt
+          var tpes = fun.symbol.name match {
+            case nme.unapply    => unapplyTypeListFromReturnType   (fun.tpe)
+            case nme.unapplySeq => unapplyTypeListFromReturnTypeSeq(fun.tpe)
+          }
+          var as = args; while(as ne Nil) { // bq: typing a pattern never changes the tree
+            typedPattern(as.head, tpes.head match {
+              case TypeRef(_,sym,targs) if sym eq definitions.RepeatedParamClass => targs.head
+              case tpe                                                           => tpe
+            })
+            as = as.tail; tpes = tpes.tail
+          }
+          //val args1 = List.mapConserve(args)(typedPattern(_, WildcardType))
+          copy.UnApply(tree, fun1, args) setType pt
 
         case ArrayValue(elemtpt, elems) =>
           typedArrayValue(elemtpt, elems)

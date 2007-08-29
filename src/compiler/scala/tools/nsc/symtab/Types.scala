@@ -384,8 +384,9 @@ trait Types {
 
     /** The info of `sym', seen as a member of this type.
      */
-    def memberInfo(sym: Symbol): Type =
+    def memberInfo(sym: Symbol): Type = {
       sym.info.asSeenFrom(this, sym.owner)
+    }
 
     /** The type of `sym', seen as a member of this type. */
     def memberType(sym: Symbol): Type = {
@@ -2257,18 +2258,20 @@ A type's typeSymbol should never be inspected directly.
           }
         case TypeRef(prefix, sym, args) if (sym.isTypeParameter) =>
           def toInstance(pre: Type, clazz: Symbol): Type =
-            if ((pre eq NoType) || (pre eq NoPrefix) || !clazz.isClass) mapOver(tp) //@M! see test pos/tcpoly_return_overriding.scala why mapOver is necessary
+            if ((pre eq NoType) || (pre eq NoPrefix) || !clazz.isClass) mapOver(tp)
+            //@M! see test pos/tcpoly_return_overriding.scala why mapOver is necessary
             else {
               def throwError =
                 throw new Error("" + tp + sym.locationString +
                                 " cannot be instantiated from " + pre.widen);
               def instParam(ps: List[Symbol], as: List[Type]): Type =
                 if (ps.isEmpty) throwError
-                else if (sym eq ps.head)  // @M! don't just replace the whole thing, might be followed by type application
+                else if (sym eq ps.head)
+                  // @M! don't just replace the whole thing, might be followed by type application
                   appliedType(as.head, List.mapConserve(args)(this)) // @M: was as.head
                 else instParam(ps.tail, as.tail);
               val symclazz = sym.owner
-              if (symclazz == clazz && (pre.widen.typeSymbol isNonBottomSubClass symclazz))
+              if (symclazz == clazz && (pre.widen.typeSymbol isNonBottomSubClass symclazz)) {
                 pre.baseType(symclazz) match {
                   case TypeRef(_, basesym, baseargs) =>
                     //Console.println("instantiating " + sym + " from " + basesym + " with " + basesym.typeParams + " and " + baseargs+", pre = "+pre+", symclazz = "+symclazz);//DEBUG
@@ -2285,7 +2288,7 @@ A type's typeSymbol should never be inspected directly.
                   case _ =>
                     throwError
                 }
-              else toInstance(base(pre, clazz).prefix, clazz.owner)
+              } else toInstance(base(pre, clazz).prefix, clazz.owner)
             }
           toInstance(pre, clazz)
         case _ =>
@@ -2722,7 +2725,7 @@ A type's typeSymbol should never be inspected directly.
     }
   }
 
-  private var sametypeRecursions: Int = 0
+  private var subsametypeRecursions: Int = 0
 
   private def isUnifiable(pre1: Type, pre2: Type) =
     (beginsWithTypeVar(pre1) || beginsWithTypeVar(pre2)) && (pre1 =:= pre2)
@@ -2734,25 +2737,25 @@ A type's typeSymbol should never be inspected directly.
   /** Do `tp1' and `tp2' denote equivalent types?
    */
   def isSameType(tp1: Type, tp2: Type): Boolean = try {
-    sametypeRecursions += 1
+    subsametypeRecursions += 1
     val lastUndoLog = undoLog
     val result = isSameType0(tp1, tp2)
     if (!result) undoTo(lastUndoLog)
     result
   } finally {
-    sametypeRecursions -= 1
-    if (sametypeRecursions == 0) undoLog = List()
+    subsametypeRecursions -= 1
+    if (subsametypeRecursions == 0) undoLog = List()
   }
 
   def isDifferentType(tp1: Type, tp2: Type): Boolean = try {
-    sametypeRecursions += 1
+    subsametypeRecursions += 1
     val lastUndoLog = undoLog
     val result = isSameType0(tp1, tp2)
     undoTo(lastUndoLog)
     !result
   } finally {
-    sametypeRecursions -= 1
-    if (sametypeRecursions == 0) undoLog = List()
+    subsametypeRecursions -= 1
+    if (subsametypeRecursions == 0) undoLog = List()
   }
 
   private def isSameType0(tp1: Type, tp2: Type): Boolean = {
@@ -2855,16 +2858,15 @@ A type's typeSymbol should never be inspected directly.
     tps1.length == tps2.length &&
     List.forall2(tps1, tps2)((tp1, tp2) => tp1 =:= tp2)
 
-  private var subtypeRecursions: Int = 0
   private var pendingSubTypes = new collection.mutable.HashSet[SubTypePair]
   private var basetypeRecursions: Int = 0
   private var pendingBaseTypes = new collection.mutable.HashSet[Type]
 
   def isSubType(tp1: Type, tp2: Type): Boolean = try {
-    subtypeRecursions += 1
+    subsametypeRecursions += 1
     val lastUndoLog = undoLog
     val result =
-      if (subtypeRecursions >= LogPendingSubTypesThreshold) {
+      if (subsametypeRecursions >= LogPendingSubTypesThreshold) {
         val p = new SubTypePair(tp1, tp2)
         if (pendingSubTypes contains p)
           false
@@ -2881,8 +2883,8 @@ A type's typeSymbol should never be inspected directly.
     if (!result) undoTo(lastUndoLog)
     result
   } finally {
-    subtypeRecursions -= 1
-    if (subtypeRecursions == 0) undoLog = List()
+    subsametypeRecursions -= 1
+    if (subsametypeRecursions == 0) undoLog = List()
   }
 
   /** hook for IDE */

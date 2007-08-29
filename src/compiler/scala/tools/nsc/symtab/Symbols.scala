@@ -478,6 +478,12 @@ trait Symbols {
     def setInfo(info: Type): this.type = {
       assert(info ne null)
       infos = TypeHistory(currentPeriod, info, null)
+      info match {
+        case TypeBounds(lo, hi) =>
+          println("set "+this+" to "+info)
+          assert(hi.typeSymbol != this)
+        case _ =>
+      }
       if (info.isComplete) {
         rawflags = rawflags & ~LOCKED
         validTo = currentPeriod
@@ -493,6 +499,7 @@ trait Symbols {
       assert(phaseId(infos.validFrom) <= phase.id)
       if (phaseId(infos.validFrom) == phase.id) infos = infos.prev
       infos = TypeHistory(currentPeriod, info, infos)
+      println("updating "+this+" with "+info)//debug
       this
     }
 
@@ -1334,7 +1341,7 @@ trait Symbols {
     override def name: Name =
       if (phase.flatClasses && rawowner != NoSymbol && !rawowner.isPackageClass) {
         if (flatname == nme.EMPTY) {
-          //assert(rawowner.isClass) //bqe: this assert prevents duplication of classdefs (e.g Interpreter.scala)
+          assert(rawowner.isClass)
           flatname = newTypeName(rawowner.name.toString() + "$" + rawname)
         }
         flatname
