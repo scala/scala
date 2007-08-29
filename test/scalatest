@@ -151,7 +151,7 @@ get_ext_classpath() {
 # Prints the scalatest usage.
 test_print_usage() {
     [ $# = 0 ] || abort "internal error";
-    echo "Usage: $0 [OPTION]..."
+    echo "Usage: $0 [OPTION]... [FILE]..."
 }
 
 # Prints the scalatest help.
@@ -184,6 +184,8 @@ test_print_help() {
     echo "--objdir=<dir>  specify where to place generated files";
     echo "--help, -?      display this help and exit";
     echo "--version       output version information and exit";
+    echo "";
+    echo "Report bugs to <scala@listes.epfl.ch>";
 }
 
 # Prints the scalatest version.
