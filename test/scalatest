@@ -151,7 +151,7 @@ get_ext_classpath() {
 # Prints the scalatest usage.
 test_print_usage() {
     [ $# = 0 ] || abort "internal error";
-    echo "Usage: $0 [OPTION]... [FILE]..."
+    echo "Usage: `basename $0` [OPTION]... [FILE]..."
 }
 
 # Prints the scalatest help.
