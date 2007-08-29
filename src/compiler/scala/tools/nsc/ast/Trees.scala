@@ -39,11 +39,6 @@ abstract class Trees extends SymbolTable {
 
   val copy = new LazyTreeCopier()
 
-  object treeBrowsers extends TreeBrowsers {
-    val trees: Trees.this.type = Trees.this
-  }
-  val treeBrowser = treeBrowsers.create()
-
   // modifiers --------------------------------------------------------
 
   case class Modifiers(flags: Long, privateWithin: Name, annotations: List[Annotation]) {
