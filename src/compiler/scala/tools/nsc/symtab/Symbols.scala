@@ -43,7 +43,6 @@ trait Symbols {
     var rawflags: Long = 0
     private var rawpos = initPos
     val id = { ids += 1; ids }
-//    assert(id != 6935, initName)
 
     var validTo: Period = NoPeriod
 
@@ -682,7 +681,7 @@ trait Symbols {
 
     /** A clone of this symbol, but with given owner */
     final def cloneSymbol(owner: Symbol): Symbol =
-      cloneSymbolImpl(owner).setInfo(info.cloneInfo(owner)).setFlag(this.rawflags)
+      cloneSymbolImpl(owner).setInfo(info.cloneInfo(this)).setFlag(this.rawflags)
 
     /** Internal method to clone a symbol's implementation without flags or type
      */

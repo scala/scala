@@ -2119,11 +2119,11 @@ trait Typers { self: Analyzer =>
 
       def typedEta(expr1: Tree): Tree = expr1.tpe match {
         case TypeRef(_, sym, _) if (sym == ByNameParamClass) =>
-          val expr2 = Function(List(), expr1)
+          val expr2 = Function(List(), expr1) setPos expr1.pos
           new ChangeOwnerTraverser(context.owner, expr2.symbol).traverse(expr2)
           typed1(expr2, mode, pt)
         case PolyType(List(), restpe) =>
-          val expr2 = Function(List(), expr1)
+          val expr2 = Function(List(), expr1) setPos expr1.pos
           new ChangeOwnerTraverser(context.owner, expr2.symbol).traverse(expr2)
           typed1(expr2, mode, pt)
         case PolyType(_, MethodType(formals, _)) =>
