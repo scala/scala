@@ -108,11 +108,11 @@ def x => y => z
       if (seenNL)
 	writer.write(cbuf, off, len)
       else {
-	val slice = cbuf.slice(off, off+len)
+	val slice : Array[Char] = cbuf.slice(off, off+len)
 	val i = slice.indexOf('\n')
 	if (i >= 0) {
 	  seenNL = true
-	  writer.write(slice.force, i+1, slice.length-(i+1))
+	  writer.write(slice, i+1, slice.length-(i+1))
 	} else {
 	  // skip it
 	}
