@@ -2601,7 +2601,7 @@ trait Typers { self: Analyzer =>
           }
         }
         if (defSym.owner.isPackageClass) pre = defSym.owner.thisType
-        if (defSym.isThisSym) typed1(This(defSym.owner), mode, pt)
+        if (defSym.isThisSym) typed1(This(defSym.owner) setPos tree.pos, mode, pt)
         else {
           val tree1 = if (qual == EmptyTree) tree
                       else atPos(tree.pos)(Select(qual, name))
@@ -2946,10 +2946,11 @@ trait Typers { self: Analyzer =>
             if (tp1 eq tp0) tp else tp1
           case _ => tp
         }
+//      Console.println("typing "+tree+" at "+tree.pos);//DEBUG
         var tree1 = if (tree.tpe ne null) tree else typed1(tree, mode, dropExistential(pt))
-        //Console.println("typed "+tree1+":"+tree1.tpe+", "+context.undetparams);//DEBUG
+//      Console.println("typed "+tree1+":"+tree1.tpe+", "+context.undetparams);//DEBUG
         val result = if (tree1.isEmpty) tree1 else adapt(tree1, mode, pt)
-        //Console.println("adapted "+tree1+":"+tree1.tpe+" to "+pt+", "+context.undetparams);//DEBUG
+//      Console.println("adapted "+tree1+":"+tree1.tpe+" to "+pt+", "+context.undetparams);//DEBUG
 //      if ((mode & TYPEmode) != 0) println("type: "+tree1+" has type "+tree1.tpe)
         result
       } catch {

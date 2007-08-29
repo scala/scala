@@ -804,31 +804,6 @@ trait Infer {
         }
     }
 
-    /** Is intersection of given types populated? That is,
-     *  for all types tp1, tp2 in intersection
-     *    for all common base classes bc of tp1 and tp2
-     *      let bt1, bt2 be the base types of tp1, tp2 relative to class bc
-     *      Then:
-     *        bt1 and bt2 have the same prefix, and
-     *        any correspondiong non-variant type arguments of bt1 and bt2 are the same
-     */
-    def isPopulated(tp1: Type, tp2: Type): Boolean = {
-      def isConsistent(tp1: Type, tp2: Type): Boolean = (tp1, tp2) match {
-        case (TypeRef(pre1, sym1, args1), TypeRef(pre2, sym2, args2)) =>
-          assert(sym1 == sym2)
-          pre1 =:= pre2 &&
-          !(List.map3(args1, args2, sym1.typeParams) {
-            (arg1, arg2, tparam) =>
-              //if (tparam.variance == 0 && !(arg1 =:= arg2)) Console.println("inconsistent: "+arg1+"!="+arg2)//DEBUG
-            tparam.variance != 0 || arg1 =:= arg2
-          } contains false)
-      }
-      if (tp1.typeSymbol.isClass && tp1.typeSymbol.hasFlag(FINAL))
-        tp1 <:< tp2 || isNumericValueClass(tp1.typeSymbol) && isNumericValueClass(tp2.typeSymbol)
-      else tp1.baseClasses forall (bc =>
-        tp2.closurePos(bc) < 0 || isConsistent(tp1.baseType(bc), tp2.baseType(bc)))
-    }
-
     /** Type with all top-level occurrences of abstract types replaced by their bounds */
     def widen(tp: Type): Type = tp match { // @M don't normalize here (compiler loops on pos/bug1090.scala )
       case TypeRef(_, sym, _) if sym.isAbstractType =>
