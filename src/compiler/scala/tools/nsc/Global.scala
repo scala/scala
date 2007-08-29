@@ -96,6 +96,12 @@ class Global(var settings: Settings, var reporter: Reporter) extends Trees
     val global: Global.this.type = Global.this
   }
 
+  object treeBrowsers extends TreeBrowsers {
+    val global: Global.this.type = Global.this
+  }
+  val treeBrowser = treeBrowsers.create()
+
+
 //  val copy = new LazyTreeCopier()
 
   val comments =
