@@ -311,6 +311,9 @@ object Predef {
   implicit def double2Double(x: Double) = new java.lang.Double(x)
   implicit def boolean2Boolean(x: Boolean) = java.lang.Boolean.valueOf(x)
 
+  /** any array projection can be automatically converted into an array */
+  implicit def forceArrayProjection[A](x : Array.Projection[A]) : Array[A] = x.force
+
   def currentThread = java.lang.Thread.currentThread()
 
 }

@@ -57,12 +57,9 @@ final class BoxedLongArray(val value: Array[Long]) extends BoxedArray {
     }
     new BoxedLongArray(result)
   }
-/*
-  final override def slice(start: Int, end: Int): BoxedArray = {
-    val (s, len) = slice0(start, end)
-    val result = new Array[Long](len)
-    Array.copy(value, s, result, 0, len)
+  override protected def newArray(length : Int, elements : Iterator[Any]) = {
+    val result = new Array[Long](length)
+    elements.map(_.asInstanceOf[Long]).copyToArray(result, 0)
     new BoxedLongArray(result)
   }
-*/
 }

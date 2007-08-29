@@ -22,7 +22,7 @@ import compat.StringBuilder
  *  @author  Martin Odersky, Stephane Micheloud
  *  @version 1.0
  */
-abstract class BoxedArray extends RandomAccessSeq.Mutable[Any] {
+abstract class BoxedArray extends Array.Array0[Any] {
   /** The length of the array */
   def length: Int
 
@@ -126,11 +126,6 @@ abstract class BoxedArray extends RandomAccessSeq.Mutable[Any] {
   /** Returns an array that contains all indices of this array */
   def indices: Array[Int] = Array.range(0, length)
 
-  // use implementation in RandomAccessSeq
-  //override def slice(start: Int, end: Int): BoxedArray = throw new Error("internal: slice")
-  //override def take(n: Int) = slice(0, n)
-  //override def drop(n: Int) = slice(n, length)
-
   override def takeWhile(p: Any => Boolean) = {
     val c = length + 1
     take((findIndexOf(!p(_)) + c) % c)
@@ -140,11 +135,6 @@ abstract class BoxedArray extends RandomAccessSeq.Mutable[Any] {
     drop((findIndexOf(!p(_)) + c) % c)
   }
 
-/*
-  /** A array consisting of all elements of this array in reverse order.
-   */
-  def reverse: Array[A] = super.reverse.toArray
-*/
   final def deepToString() = deepMkString(stringPrefix + "(", ",", ")")
 
   final def deepMkString(start: String, sep: String, end: String): String = {
@@ -194,6 +184,19 @@ abstract class BoxedArray extends RandomAccessSeq.Mutable[Any] {
         false
     }
   }
-
   override final def stringPrefix: String = "Array"
+
+  protected def newArray(length : Int, elements : Iterator[Any]) : BoxedArray
+  override def projection : scala.Array.Projection[Any] = new scala.Array.Projection[Any] {
+    def update(idx : Int, what : Any) : Unit = BoxedArray.this.update(idx, what)
+    def length = BoxedArray.this.length
+    def apply(idx : Int) = BoxedArray.this.apply(idx)
+    override def stringPrefix = "ArrayP"
+    protected def newArray[B >: Any](length : Int, elements : Iterator[Any]) =
+      BoxedArray.this.newArray(length, elements).asInstanceOf[Array[B]]
+  }
+  override def slice(from : Int, until : Int) = projection.slice(from,until)
+  override def take(until : Int) = projection.take(until)
+  override def drop(from : Int) = projection.drop(from)
+  override def reverse = projection.reverse
 }

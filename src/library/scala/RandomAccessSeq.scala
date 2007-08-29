@@ -20,6 +20,35 @@ object RandomAccessSeq {
       }
     }
   }
+  private[scala] trait Slice[+A] extends Projection[A] {
+    protected def from  : Int
+    protected def until : Int
+    protected def underlying : RandomAccessSeq[A]
+    def length = {
+      val length0 = underlying.length
+      if (from >= until || from >= length0) 0
+      else (if (until >= length0) length0 else until) - (if (from < 0) 0 else from)
+    }
+    def apply(idx : Int) = if (idx < 0 || idx >= length) throw new Predef.IndexOutOfBoundsException
+                           else underlying.apply((if (from < 0) 0 else from) + idx)
+    override def slice(from0 : Int, until0 : Int) = {
+      val from = if (this.from < 0) 0 else this.from
+      underlying.slice(from + from0, from + until0)
+    }
+  }
+  private[scala] trait Patch[+A] extends Projection[A] {
+    protected def original : RandomAccessSeq[A]
+    protected def patch : RandomAccessSeq[A]
+    protected def from : Int
+    protected def replaced : Int
+    def length = original.length + patch.length - replaced
+    def apply(idx : Int) =
+      if (idx < from) original.apply(idx)
+      else if (idx < from + patch.length) patch.apply(idx - from)
+      else original.apply(idx - patch.length + replaced)
+    override def stringPrefix = "patch"
+  }
+
   /** A random access sequence that supports update (e.g., an array) */
   trait Mutable[A] extends RandomAccessSeq[A] {
     /** <p>
@@ -51,22 +80,12 @@ object RandomAccessSeq {
       def apply(idx : Int) = Mutable.this.apply(idx)
       override def stringPrefix = Mutable.this.stringPrefix + "RO"
     }
-    override def drop( from: Int): Mutable[A] = slice(from, length)
-    override def take(until: Int): Mutable[A] = slice(0, until)
-    override def slice(from : Int, until : Int) : Mutable[A] = {
-      if (from == 0 && until >= length) return projection
-      else if (from >= until) new MutableProjection[A] {
-        def length = 0
-        def apply(idx : Int) = throw new Predef.IndexOutOfBoundsException
-        def update(idx : Int, what : A) = throw new Predef.IndexOutOfBoundsException
-      } else new MutableProjection[A] {
-        def length = until - from
-        def apply(idx : Int) = if (idx < 0 || idx >= length) throw new Predef.IndexOutOfBoundsException
-                               else Mutable.this.apply(from + idx)
-        def update(idx : Int, what : A) =
-          if (idx < 0 || idx >= length) throw new Predef.IndexOutOfBoundsException
-          else Mutable.this.update(from + idx, what)
-      }
+    override def drop( from: Int): MutableProjection[A] = slice(from, length)
+    override def take(until: Int): MutableProjection[A] = slice(0, until)
+    override def slice(from0 : Int, until0 : Int) : MutableProjection[A] = new MutableSlice[A] {
+      def from = from0
+      def until = until0
+      def underlying = Mutable.this
     }
     override def reverse : Mutable[A] = new MutableProjection[A] {
       def update(idx : Int, what : A) : Unit = Mutable.this.update(length - idx - 1, what)
@@ -77,9 +96,20 @@ object RandomAccessSeq {
     }
   }
   trait MutableProjection[A] extends Projection[A] with Mutable[A] {
-    // XXX: must copy.
     override def force : Mutable[A] = toArray
     override def projection : MutableProjection[A] = this
+  }
+  private[scala] trait MutableSlice[A] extends MutableProjection[A] with Slice[A] {
+    protected def underlying : Mutable[A]
+    override def slice(from0 : Int, until0 : Int) = {
+      val from = (if (this.from < 0) 0 else this.from)
+      underlying.slice(from + from0, from + until0)
+    }
+    override def update(idx : Int, what : A) : Unit = {
+      val from = (if (this.from < 0) 0 else this.from)
+      if (idx < 0 || idx >= length) throw new Predef.IndexOutOfBoundsException
+      else underlying.update(from + idx, what)
+    }
   }
 }
 
@@ -109,19 +139,10 @@ trait RandomAccessSeq[+A] extends Seq[A] {
   }
   override def drop( from: Int): RandomAccessSeq[A] = slice(from, length)
   override def take(until: Int): RandomAccessSeq[A] = slice(0, until)
-  override def slice(from : Int, until : Int) : RandomAccessSeq[A] = {
-    if (from == 0 && until >= length) return projection
-    else if (from >= until) new RandomAccessSeq.Projection[A] {
-      def length = 0
-      def apply(idx : Int) = throw new Predef.IndexOutOfBoundsException
-    } else new RandomAccessSeq.Projection[A] {
-      def length = until - from
-      def apply(idx : Int) = if (idx < 0 || idx >= length) throw new Predef.IndexOutOfBoundsException
-                             else RandomAccessSeq.this.apply(from + idx)
-      override def slice(from0 : Int, until0 : Int) = // minimize the object chain.
-        if (from + until0 > until) RandomAccessSeq.this.slice(from + from0, until)
-        else RandomAccessSeq.this.slice(from + from0, from + until0)
-    }
+  override def slice(from0 : Int, until0 : Int) : RandomAccessSeq[A] = new RandomAccessSeq.Slice[A] {
+    def from = from0
+    def until = until0
+    def underlying = RandomAccessSeq.this
   }
   override def reverse : Seq[A] = new RandomAccessSeq.Projection[A] {
     def length = RandomAccessSeq.this.length
@@ -129,6 +150,18 @@ trait RandomAccessSeq[+A] extends Seq[A] {
     override def stringPrefix = RandomAccessSeq.this.stringPrefix + "R"
     override def reverse : RandomAccessSeq.Projection[A] = RandomAccessSeq.this.projection
   }
+
+  /** insert segment <code>patch</code> into this sequence at <code>from</code>
+   *  replacing  <code>replaced</code> elements. The result is a projection.
+   */
+  def patch[B >: A](from0 : Int, patch0 : RandomAccessSeq[B], replaced0 : Int) : RandomAccessSeq.Projection[B] = new RandomAccessSeq.Patch[B] {
+    override def original = RandomAccessSeq.this
+    override def from = from0
+    override def patch = patch0
+    override def replaced = replaced0
+    override def stringPrefix = RandomAccessSeq.this.stringPrefix + "P"
+  }
+
   override def ++[B >: A](that : Iterable[B]) : RandomAccessSeq[B] = that match {
   case that : RandomAccessSeq[b] =>
     val ret = new Array[B](length + that.length)

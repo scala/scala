@@ -57,12 +57,11 @@ final class BoxedIntArray(val value: Array[Int]) extends BoxedArray {
     }
     new BoxedIntArray(result)
   }
-/* use implementation in RandomAccessSeq
-  final override def slice(start: Int, end: Int): BoxedArray = {
-    val (s, len) = slice0(start, end)
-    val result = new Array[Int](len)
-    Array.copy(value, s, result, 0, len)
+  override protected def newArray(length : Int, elements : Iterator[Any]) = {
+    val result = new Array[Int](length)
+    elements.map(_.asInstanceOf[Int]).copyToArray(result, 0)
     new BoxedIntArray(result)
   }
-*/
+
+
 }
