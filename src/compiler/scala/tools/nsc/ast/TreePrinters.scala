@@ -125,6 +125,9 @@ abstract class TreePrinters {
     def print(str: String) { out.print(str) }
     def print(name: Name) { print(name.toString()) }
 
+    private var currentOwner: Symbol = NoSymbol
+    private var selectorType: Type = NoType
+
     def printRaw(tree: Tree) {
       tree match {
         case EmptyTree =>
@@ -199,6 +202,8 @@ abstract class TreePrinters {
                   mkString("{", ",", "}"))
 
         case Template(parents, self, body) =>
+          val currentOwner1 = currentOwner
+          currentOwner = tree.symbol.owner
           printRow(parents, " with ")
           if (!body.isEmpty) {
             if (self.name != nme.WILDCARD) {
@@ -210,15 +215,27 @@ abstract class TreePrinters {
             }
             printColumn(body, "", ";", "}")
           }
+          currentOwner = currentOwner1
 
         case Block(stats, expr) =>
           printColumn(stats ::: List(expr), "{", ";", "}")
 
         case Match(selector, cases) =>
+          val selectorType1 = selectorType
+          selectorType = selector.tpe
           print(selector); printColumn(cases, " match {", "", "}")
+          selectorType = selectorType1
 
         case CaseDef(pat, guard, body) =>
-          print("case "); print(pat); printOpt(" if ", guard)
+          print("case ");
+          val patConstr(pat: Tree): Tree = pat match {
+            case Apply(fn, args) => patConstrType(fn)
+            case _ => pat
+          }
+          print("needs outer "+patConstr(pat).tpe.finalResultType+" wrt "+selectorType)
+          if (typer.infer.needsOuterType(
+            patConstr(pat).tpe.finalResultType, selectorType, currentOwner)) print("???")
+          print(pat); printOpt(" if ", guard)
           print(" => "); print(body)
 
         case Sequence(trees) =>

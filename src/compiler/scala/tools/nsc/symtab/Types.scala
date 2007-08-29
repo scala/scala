@@ -2714,6 +2714,69 @@ A type's typeSymbol should never be inspected directly.
     ok
   }
 
+  /** Is intersection of given types populated? That is,
+   *  for all types tp1, tp2 in intersection
+   *    for all common base classes bc of tp1 and tp2
+   *      let bt1, bt2 be the base types of tp1, tp2 relative to class bc
+   *      Then:
+   *        bt1 and bt2 have the same prefix, and
+   *        any correspondiong non-variant type arguments of bt1 and bt2 are the same
+   */
+  def isPopulated(tp1: Type, tp2: Type): Boolean = {
+    def isConsistent(tp1: Type, tp2: Type): Boolean = (tp1, tp2) match {
+      case (TypeRef(pre1, sym1, args1), TypeRef(pre2, sym2, args2)) =>
+        assert(sym1 == sym2)
+        pre1 =:= pre2 &&
+        !(List.map3(args1, args2, sym1.typeParams) {
+          (arg1, arg2, tparam) =>
+            //if (tparam.variance == 0 && !(arg1 =:= arg2)) Console.println("inconsistent: "+arg1+"!="+arg2)//DEBUG
+          tparam.variance != 0 || arg1 =:= arg2
+        } contains false)
+    }
+    if (tp1.typeSymbol.isClass && tp1.typeSymbol.hasFlag(FINAL))
+      tp1 <:< tp2 || isNumericValueClass(tp1.typeSymbol) && isNumericValueClass(tp2.typeSymbol)
+    else tp1.baseClasses forall (bc =>
+      tp2.closurePos(bc) < 0 || isConsistent(tp1.baseType(bc), tp2.baseType(bc)))
+  }
+
+  /** Does a pattern of type `patType' need an outer test when executed against
+   *  selector type `selType' in context defined by `currentOwner'?
+   */
+  def needsOuterTest(patType: Type, selType: Type, currentOwner: Symbol) = {
+    def createDummyClone(pre: Type): Type = {
+      val dummy = currentOwner.enclClass.newValue(NoPosition, nme.ANYNAME).setInfo(pre.widen)
+      singleType(ThisType(currentOwner.enclClass), dummy)
+    }
+    def maybeCreateDummyClone(pre: Type, sym: Symbol): Type = pre match {
+      case SingleType(pre1, sym1) =>
+        if (sym1.isModule && sym1.isStatic) {
+          NoType
+        } else if (sym1.isModule && sym.owner == sym1.moduleClass) {
+          val pre2 = maybeCreateDummyClone(pre1, sym1)
+          if (pre2 eq NoType) pre2
+          else singleType(pre2, sym1)
+        } else {
+          createDummyClone(pre)
+        }
+      case ThisType(clazz) =>
+        if (clazz.isModuleClass)
+          maybeCreateDummyClone(clazz.typeOfThis, sym)
+        else if (sym.owner == clazz && (sym.hasFlag(PRIVATE) || sym.privateWithin == clazz))
+          NoType
+        else
+          createDummyClone(pre)
+      case _ =>
+        NoType
+    }
+    patType match {
+      case TypeRef(pre, sym, args) =>
+        val pre1 = maybeCreateDummyClone(pre, sym)
+        (pre1 ne NoType) && isPopulated(typeRef(pre1, sym, args), selType)
+      case _ =>
+        false
+    }
+  }
+
   /** Undo all changes to constraints to type variables upto `limit'
    */
   private def undoTo(limit: UndoLog) {
