@@ -232,9 +232,9 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
     object resetTrav extends Traverser {
       override def traverse(x:Tree): unit = x match {
         case vd @ ValDef(_,_,_,_)=>
-          if(vd.symbol.hasFlag(symtab.Flags.TRANS_FLAG)) {
+          if(vd.symbol.hasFlag(symtab.Flags.SYNTHETIC))  {
             vd.symbol.resetFlag(symtab.Flags.TRANS_FLAG)
-            //vd.symbol.resetFlag(symtab.Flags.MUTABLE)
+            vd.symbol.resetFlag(symtab.Flags.MUTABLE)
           }
         case _ =>
           super.traverse(x)
