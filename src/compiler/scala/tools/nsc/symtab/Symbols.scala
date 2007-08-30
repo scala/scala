@@ -43,6 +43,7 @@ trait Symbols {
     var rawflags: Long = 0
     private var rawpos = initPos
     val id = { ids += 1; ids }
+//    assert(id != 4699, initName+"/"+initOwner)
 
     var validTo: Period = NoPeriod
 
@@ -1333,8 +1334,7 @@ trait Symbols {
     override def name: Name =
       if (phase.flatClasses && rawowner != NoSymbol && !rawowner.isPackageClass) {
         if (flatname == nme.EMPTY) {
-          if(!rawowner.isClass) { Console.print("warning, is not a class, actually: "+rawowner.name.toString)}
-          //assert(rawowner.isClass) //bq: assert here shadows more important messages
+          assert(rawowner.isClass)
           flatname = newTypeName(rawowner.name.toString() + "$" + rawname)
         }
         flatname
