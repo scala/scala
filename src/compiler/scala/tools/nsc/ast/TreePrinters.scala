@@ -15,6 +15,8 @@ abstract class TreePrinters {
   val trees: Trees
   import trees._
 
+  final val showOuterTests = false
+
   class TreePrinter(out: PrintWriter) {
     protected var indentMargin = 0
     protected val indentStep = 2
@@ -203,7 +205,7 @@ abstract class TreePrinters {
 
         case Template(parents, self, body) =>
           val currentOwner1 = currentOwner
-          currentOwner = tree.symbol.owner
+          if (tree.symbol != NoSymbol) currentOwner = tree.symbol.owner
           printRow(parents, " with ")
           if (!body.isEmpty) {
             if (self.name != nme.WILDCARD) {
@@ -228,13 +230,14 @@ abstract class TreePrinters {
 
         case CaseDef(pat, guard, body) =>
           print("case ");
-          val patConstr(pat: Tree): Tree = pat match {
-            case Apply(fn, args) => patConstrType(fn)
+          def patConstr(pat: Tree): Tree = pat match {
+            case Apply(fn, args) => patConstr(fn)
             case _ => pat
           }
-          print("needs outer "+patConstr(pat).tpe.finalResultType+" wrt "+selectorType)
-          if (typer.infer.needsOuterType(
-            patConstr(pat).tpe.finalResultType, selectorType, currentOwner)) print("???")
+          if (showOuterTests &&
+              needsOuterTest(
+                patConstr(pat).tpe.finalResultType, selectorType, currentOwner))
+            print("???")
           print(pat); printOpt(" if ", guard)
           print(" => "); print(body)
 
