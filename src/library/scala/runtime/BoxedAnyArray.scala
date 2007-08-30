@@ -154,11 +154,21 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
           i += 1
         }
         unboxed = newvalue;
-      } else if (elemClass == boxed.getClass().getComponentType()) {
+      } else if (elemClass == classOf[AnyRef]) {
         // todo: replace with ScalaRunTime.AnyRef.class
         unboxed = boxed
       } else {
         unboxed = Platform.createArray(elemClass, length)
+        if (elemClass.isArray) {
+          var i = 0
+          while (i < length) {
+            boxed(i) match {
+              case ba: BoxedArray => boxed(i) = ba.unbox(elemClass.getComponentType())
+              case _ =>
+            }
+            i += 1
+          }
+        }
         Platform.arraycopy(boxed, 0, unboxed, 0, length)
       }
       boxed = null
