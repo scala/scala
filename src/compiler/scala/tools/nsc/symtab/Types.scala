@@ -236,7 +236,7 @@ trait Types {
      */
     def typeOfThis: Type = typeSymbol.typeOfThis
 
-    /** Map to a this type which is a subtype of this type.
+    /** Map to a singleton type which is a subtype of this type.
      */
     def narrow: Type =
       if (phase.erasedTypes) this
@@ -384,9 +384,8 @@ trait Types {
 
     /** The info of `sym', seen as a member of this type.
      */
-    def memberInfo(sym: Symbol): Type = {
+    def memberInfo(sym: Symbol): Type =
       sym.info.asSeenFrom(this, sym.owner)
-    }
 
     /** The type of `sym', seen as a member of this type. */
     def memberType(sym: Symbol): Type = {
@@ -863,6 +862,7 @@ trait Types {
       }
       underlyingCache
     }
+/*
     override def narrow: Type = {
       if (phase.erasedTypes) this
       else {
@@ -874,6 +874,8 @@ trait Types {
         thissym.thisType
       }
     }
+*/
+    override def narrow: Type = this
 
     override def termSymbol = sym
     @deprecated override def symbol = sym
@@ -1339,8 +1341,14 @@ A type's typeSymbol should never be inspected directly.
 
     override def typeOfThis = transform(sym.typeOfThis)
 
+/*
     override def narrow =
       if (sym.isModuleClass) transform(sym.thisType)
+      else if (sym.isAliasType) normalize.narrow
+      else super.narrow
+*/
+    override def narrow =
+      if (sym.isModuleClass) singleType(pre, sym.sourceModule)
       else if (sym.isAliasType) normalize.narrow
       else super.narrow
 
@@ -3481,7 +3489,11 @@ A type's typeSymbol should never be inspected directly.
                   case ex: NoCommonType =>
                 }
             }
-            if (lubRefined.decls.isEmpty) lubBase else lubRefined
+            if (lubRefined.decls.isEmpty) lubBase
+            else {
+//            println("refined lub of "+ts+"/"+narrowts+" is "+lubRefined+", baseclasses = "+(ts map (_.closure) map (_.toList)))
+              lubRefined
+            }
           }
         existentialAbstraction(tparams, lubType)
     }

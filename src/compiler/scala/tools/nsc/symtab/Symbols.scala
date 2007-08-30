@@ -43,7 +43,7 @@ trait Symbols {
     var rawflags: Long = 0
     private var rawpos = initPos
     val id = { ids += 1; ids }
-//    assert(id != 6935, initName)
+//    assert(id != 4699, initName+"/"+initOwner)
 
     var validTo: Period = NoPeriod
 
@@ -478,12 +478,6 @@ trait Symbols {
     def setInfo(info: Type): this.type = {
       assert(info ne null)
       infos = TypeHistory(currentPeriod, info, null)
-      info match {
-        case TypeBounds(lo, hi) =>
-          println("set "+this+" to "+info)
-          assert(hi.typeSymbol != this)
-        case _ =>
-      }
       if (info.isComplete) {
         rawflags = rawflags & ~LOCKED
         validTo = currentPeriod
@@ -499,7 +493,6 @@ trait Symbols {
       assert(phaseId(infos.validFrom) <= phase.id)
       if (phaseId(infos.validFrom) == phase.id) infos = infos.prev
       infos = TypeHistory(currentPeriod, info, infos)
-      println("updating "+this+" with "+info)//debug
       this
     }
 
@@ -689,7 +682,7 @@ trait Symbols {
 
     /** A clone of this symbol, but with given owner */
     final def cloneSymbol(owner: Symbol): Symbol =
-      cloneSymbolImpl(owner).setInfo(info.cloneInfo(owner)).setFlag(this.rawflags)
+      cloneSymbolImpl(owner).setInfo(info.cloneInfo(this)).setFlag(this.rawflags)
 
     /** Internal method to clone a symbol's implementation without flags or type
      */
