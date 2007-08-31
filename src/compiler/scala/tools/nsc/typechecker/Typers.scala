@@ -16,6 +16,8 @@ import scala.tools.nsc.util.{HashSet, Position, Set, NoPosition}
 import symtab.Flags._
 import util.HashSet
 
+// Suggestion check whether we can do without priminng scopes with symbols of outer scopes,
+// like the IDE does.
 /** This trait provides methods to assign types to trees.
  *
  *  @author  Martin Odersky
