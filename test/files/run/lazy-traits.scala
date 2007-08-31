@@ -117,6 +117,18 @@ trait PrivateLazy {
 class InheritPrivateLazy extends AnyRef with PrivateLazy {}
 
 
+/** Test successful compilation (see ticket #39) */
+package x.y {
+
+  trait Trait {
+    lazy val v = 1
+  }
+
+  class OuterClass {
+    object InnerObject extends Trait
+  }
+}
+
 object Test extends Application {
 
   def test(name: String, v: A) {
