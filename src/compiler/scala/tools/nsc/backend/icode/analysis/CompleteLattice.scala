@@ -10,7 +10,21 @@ package scala.tools.nsc.backend.icode.analysis
 /** A complete lattice.
  */
 trait CompleteLattice {
-  type Elem
+  type Elem <: AnyRef
+
+  /** Hold together local variable and stack state. The
+   *  equals method uses reference equality for top and bottom,
+   *  and structural equality for other values.
+   */
+  case class IState[V, S](val vars: V, val stack: S) {
+    override def equals(other: Any): Boolean = other match {
+      case that: IState[_, _] =>
+        if ((this eq bottom) || (that eq bottom)) this eq that
+        else if ((this eq top) || (that eq top)) this eq that
+        else (stack == that.stack && vars == that.vars)
+      case _ => false
+    }
+  }
 
   /** Return the least upper bound of <code>a</code> and <code>b</code> */
   def lub2(a: Elem, b: Elem): Elem

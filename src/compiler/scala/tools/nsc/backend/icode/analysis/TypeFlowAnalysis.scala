@@ -76,18 +76,14 @@ abstract class TypeFlowAnalysis {
    */
   object typeFlowLattice extends CompleteLattice {
     import icodes._
-    type Elem = (VarBinding, icodes.TypeStack)
+    type Elem = IState[VarBinding, icodes.TypeStack]
 
-    override val top    = new Pair(new VarBinding, typeStackLattice.top) {
-      override def equals(that: Any) = (this eq that.asInstanceOf[AnyRef])
-    }
-    override val bottom = new Pair(new VarBinding, typeStackLattice.bottom) {
-      override def equals(that: Any) = (this eq that.asInstanceOf[AnyRef])
-    }
+    override val top    = new Elem(new VarBinding, typeStackLattice.top)
+    override val bottom = new Elem(new VarBinding, typeStackLattice.bottom)
 
     def lub2(a: Elem, b: Elem) = {
-      val (env1, s1) = a
-      val (env2, s2) = b
+      val IState(env1, s1) = a
+      val IState(env2, s2) = b
 
       val resultingLocals = new VarBinding
 
@@ -101,7 +97,7 @@ abstract class TypeFlowAnalysis {
         resultingLocals += binding2._1 -> typeLattice.lub2(binding2._2, tp1)
       }
 
-      (resultingLocals, typeStackLattice.lub2(a._2, b._2))
+      IState(resultingLocals, typeStackLattice.lub2(a.stack, b.stack))
     }
   }
 
@@ -127,7 +123,7 @@ abstract class TypeFlowAnalysis {
           out(b) = typeFlowLattice.bottom
         }
         m.exh foreach { e =>
-          in(e.startBlock) = Pair(in(e.startBlock)._1, typeStackLattice.exceptionHandlerStack)
+          in(e.startBlock) = lattice.IState(in(e.startBlock).vars, typeStackLattice.exceptionHandlerStack)
         }
       }
     }
@@ -152,9 +148,9 @@ abstract class TypeFlowAnalysis {
 
     /** Abstract interpretation for one instruction. */
     def interpret(in: typeFlowLattice.Elem, i: Instruction): typeFlowLattice.Elem = {
-      val out = Pair(new VarBinding(in._1), new TypeStack(in._2))
-      val bindings = out._1
-      val stack = out._2
+      val out = lattice.IState(new VarBinding(in.vars), new TypeStack(in.stack))
+      val bindings = out.vars
+      val stack = out.stack
 
 //      if (settings.debug.value) {
 //        Console.println("Stack: " + stack);

@@ -8,7 +8,7 @@
 package scala.tools.nsc.backend.icode.analysis
 
 import compat.StringBuilder
-import scala.collection.mutable.{HashMap, Map}
+import scala.collection.jcl.{HashMap, Map}
 import scala.collection.immutable.{Set, ListSet, HashSet}
 
 /** Compute reaching definitions. We are only interested in reaching
@@ -26,15 +26,13 @@ abstract class ReachingDefinitions {
    */
   object rdefLattice extends CompleteLattice {
     type Definition = (Local, BasicBlock, Int)
-    type Elem = (Set[Definition], Stack)
+    type Elem = IState[Set[Definition], Stack]
     type StackPos = Set[(BasicBlock, Int)]
     type Stack = List[StackPos]
 
-    val top: Elem = (new ListSet[Definition]() {
-      override def equals(that: Any): Boolean = this eq that.asInstanceOf[AnyRef]
-    }, Nil)
+    val top: Elem = IState(new ListSet[Definition](), Nil)
 
-    val bottom: Elem = (new ListSet[Definition]() {
+    val bottom: Elem = IState(new ListSet[Definition]() {
       override def equals(that: Any): Boolean = this eq that.asInstanceOf[AnyRef]
       override def toString = "<bottom>"
     }, Nil)
@@ -44,13 +42,13 @@ abstract class ReachingDefinitions {
       if (bottom == a) b
       else if (bottom == b) a
       else {
-        val locals = a._1 incl b._1
-        val stack = if (a._2 == Nil)
-          b._2
-        else if (b._2 == Nil) a._2
-        else List.map2(a._2, b._2) (_ incl _)
+        val locals = a.vars incl b.vars
+        val stack = if (a.stack == Nil)
+          b.stack
+        else if (b.stack == Nil) a.stack
+        else List.map2(a.stack, b.stack) (_ incl _)
 
-        val res = (locals, stack)
+        val res = IState(locals, stack)
 
 //        Console.println("\tlub2: " + a + ", " + b)
 //        Console.println("\tis: " + res)
@@ -96,7 +94,7 @@ abstract class ReachingDefinitions {
           out(b) = lattice.bottom
         }
         m.exh foreach { e =>
-          in(e.startBlock) = (new ListSet[Definition], List(new ListSet[(BasicBlock, Int)]))
+          in(e.startBlock) = lattice.IState(new ListSet[Definition], List(new ListSet[(BasicBlock, Int)]))
         }
 
       }
@@ -149,11 +147,15 @@ abstract class ReachingDefinitions {
       if (settings.debug.value) {
         linearizer.linearize(method).foreach(b => if (b != method.code.startBlock)
           assert(lattice.bottom != in(b),
-            "Block " + b + " in " + this.method + " has input equal to bottom -- not visited?"));
+            "Block " + b + " in " + this.method + " has input equal to bottom -- not visited? " + in(b)
+                 + ": bot: " + lattice.bottom
+                 + "\nin(b) == bottom: " + (in(b) == lattice.bottom)
+                 + "\nbottom == in(b): " + (lattice.bottom == in(b))));
       }
     }
 
     import opcodes._
+    import lattice.IState
     def updateReachingDefinition(b: BasicBlock, idx: Int, rd: Set[Definition]): Set[Definition] = {
       val STORE_LOCAL(local) = b(idx)
       var tmp = local
@@ -161,15 +163,15 @@ abstract class ReachingDefinitions {
     }
 
     private def blockTransfer(b: BasicBlock, in: lattice.Elem): lattice.Elem = {
-      var locals: Set[Definition] = (in._1 filter { case (l, _, _) => !kill(b)(l) }) incl gen(b)
-      if (locals eq lattice.bottom._1) locals = new ListSet[Definition]
-      (locals, outStack(b) ::: in._2.drop(drops(b)))
+      var locals: Set[Definition] = (in.vars filter { case (l, _, _) => !kill(b)(l) }) incl gen(b)
+      if (locals eq lattice.bottom.vars) locals = new ListSet[Definition]
+      IState(locals, outStack(b) ::: in.stack.drop(drops(b)))
     }
 
     /** Return the reaching definitions corresponding to the point after idx. */
     def interpret(b: BasicBlock, idx: Int, in: lattice.Elem): Elem = {
-      var locals = in._1
-      var stack  = in._2
+      var locals = in.vars
+      var stack  = in.stack
       val instr = b(idx)
       instr match {
         case STORE_LOCAL(l1) =>
@@ -187,7 +189,7 @@ abstract class ReachingDefinitions {
         prod = prod - 1
       }
 
-      (locals, stack)
+      IState(locals, stack)
     }
 
     override def toString: String = {
