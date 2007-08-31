@@ -564,7 +564,7 @@ abstract class Mixin extends InfoTransform {
           If(mkTest(mask),
              gen.mkSynchronized(gen.mkAttributedThis(clazz),
                If(mkTest(mask),
-                  Block(List(gen.mkSynchronized(gen.mkAttributedThis(clazz), init),
+                  Block(List(init,
                         mkSetFlag(bitmapSym, mask)),
                         Literal(Constant(()))),
                  EmptyTree)),
@@ -612,7 +612,7 @@ abstract class Mixin extends InfoTransform {
                     // if it is a mixed-in lazy value, complete the accessor
                     if (sym.hasFlag(LAZY) && sym.isGetter) {
                       val assign =
-                        Assign(gen.mkAttributedRef(sym.accessed),
+                        Assign(Select(This(sym.accessed.owner), sym.accessed) /*gen.mkAttributedRef(sym.accessed)*/,
                             Apply(staticRef(initializer(sym)), gen.mkAttributedThis(clazz) :: Nil))
 
                       val rhs1 = mkLazyDef(clazz, assign, sym.accessed, offset)
