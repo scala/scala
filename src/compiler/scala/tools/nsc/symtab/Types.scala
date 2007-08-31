@@ -1637,6 +1637,15 @@ A type's typeSymbol should never be inspected directly.
     }
 
     override def kind = "ExistentialType"
+
+    def withTypeVars(op: Type => Boolean): Boolean = {
+      val tvars = quantified map (tparam => new TypeVar(tparam.tpe, new TypeConstraint))
+      val underlying1 = underlying.instantiateTypeParams(quantified, tvars)
+      op(underlying1) && {
+        solve(tvars, quantified, quantified map (x => 0), false)
+        isWithinBounds(NoPrefix, NoSymbol, quantified, tvars map (_.constr.inst))
+      }
+    }
   }
 
   /** A class containing the alternatives and type prefix of an overloaded symbol.
@@ -2740,6 +2749,10 @@ A type's typeSymbol should never be inspected directly.
             //if (tparam.variance == 0 && !(arg1 =:= arg2)) Console.println("inconsistent: "+arg1+"!="+arg2)//DEBUG
           tparam.variance != 0 || arg1 =:= arg2
         } contains false)
+      case (et: ExistentialType, _) =>
+        et.withTypeVars(isConsistent(_, tp2))
+      case (_, et: ExistentialType) =>
+        et.withTypeVars(isConsistent(tp1, _))
     }
     if (tp1.typeSymbol.isClass && tp1.typeSymbol.hasFlag(FINAL))
       tp1 <:< tp2 || isNumericValueClass(tp1.typeSymbol) && isNumericValueClass(tp2.typeSymbol)
@@ -3083,15 +3096,8 @@ A type's typeSymbol should never be inspected directly.
         } finally {
           skolemizationLevel -= 1
         }
-      case (_, ExistentialType(tparams2, res2)) =>
-        val tvars = tparams2 map (tparam => new TypeVar(tparam.tpe, new TypeConstraint))
-        val ires2 = res2.instantiateTypeParams(tparams2, tvars)
-        (tp1 <:< ires2) && {
-          //println("solve: "+tparams2)
-          solve(tvars, tparams2, tparams2 map (x => 0), false)
-          //println("check bounds: "+tparams2+" aginst "+(tvars map (_.constr.inst)))
-          isWithinBounds(NoPrefix, NoSymbol, tparams2, tvars map (_.constr.inst))
-        }
+      case (_, et: ExistentialType) =>
+        et.withTypeVars(tp1 <:< _)
       case (RefinedType(parents1, ref1), _) =>
         parents1 exists (_ <:< tp2)
 
