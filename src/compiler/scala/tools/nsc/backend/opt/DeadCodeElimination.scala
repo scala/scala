@@ -96,7 +96,7 @@ abstract class DeadCodeElimination extends SubComponent {
         for (Pair(i, idx) <- bb.toList.zipWithIndex) {
           i match {
             case LOAD_LOCAL(l) =>
-              defs = defs + ((bb, idx)) -> rd._1
+              defs = defs + ((bb, idx)) -> rd.vars
 //              Console.println(i + ": " + (bb, idx) + " rd: " + rd + " and having: " + defs)
             case RETURN(_) | JUMP(_) | CJUMP(_, _, _, _) | CZJUMP(_, _, _, _) | STORE_FIELD(_, _) |
                  DROP(_) | THROW()   | STORE_ARRAY_ITEM(_) | SCOPE_ENTER(_) | SCOPE_EXIT(_) |
@@ -253,7 +253,7 @@ abstract class DeadCodeElimination extends SubComponent {
       }
 
       if (n > 0) {
-        val stack = rdef.in(bb)._2
+        val stack = rdef.in(bb).stack
         assert(stack.length >= n, "entry stack is too small, expected: " + n + " found: " + stack)
         stack.drop(d).take(n) foreach { defs =>
           res = defs.toList ::: res
@@ -261,7 +261,7 @@ abstract class DeadCodeElimination extends SubComponent {
       }
       res
     } else {
-      val stack = rdef.in(bb)._2
+      val stack = rdef.in(bb).stack
       assert(stack.length >= m, "entry stack is too small, expected: " + m + " found: " + stack)
       stack.take(m) flatMap (_.toList)
     }

@@ -481,6 +481,7 @@ abstract class CopyPropagation {
       var values = in.stack.take(1 + ctor.info.paramTypes.length).reverse.drop(1);
       val bindings = new HashMap[Symbol, Value];
 
+      if (settings.debug.value) log("getBindings for: " + ctor)
       // this relies on having the same order in paramAccessors and
       // the arguments on the stack. It should be the same!
       for ((p, i) <- paramAccessors.zipWithIndex) {
@@ -490,6 +491,7 @@ abstract class CopyPropagation {
         values = values.tail;
       }
 
+      if (settings.debug.value) log("\t" + bindings)
       bindings
     }
 

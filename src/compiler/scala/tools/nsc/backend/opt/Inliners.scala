@@ -236,13 +236,13 @@ abstract class Inliners extends SubComponent {
            i match {
              case RETURN(kind) => kind match {
                  case UNIT =>
-                   if (!info._2.types.isEmpty) {
-                     info._2.types foreach { t => inlinedBlock(bb).emit(DROP(t), targetPos); }
+                   if (!info.stack.types.isEmpty) {
+                     info.stack.types foreach { t => inlinedBlock(bb).emit(DROP(t), targetPos); }
                    }
                  case _ =>
-                   if (info._2.length > 1) {
+                   if (info.stack.length > 1) {
                      inlinedBlock(bb).emit(STORE_LOCAL(retVal), targetPos);
-                     info._2.types.drop(1) foreach { t => inlinedBlock(bb).emit(DROP(t), targetPos); }
+                     info.stack.types.drop(1) foreach { t => inlinedBlock(bb).emit(DROP(t), targetPos); }
                      inlinedBlock(bb).emit(LOAD_LOCAL(retVal), targetPos);
                    }
                }
@@ -294,7 +294,7 @@ abstract class Inliners extends SubComponent {
               if (!retry) {
                 i match {
                   case CALL_METHOD(msym, Dynamic) =>
-                    val receiver = info._2.types.drop(msym.info.paramTypes.length).head match {
+                    val receiver = info.stack.types.drop(msym.info.paramTypes.length).head match {
                       case REFERENCE(s) => s;
                       case _ => NoSymbol;
                     }
@@ -323,7 +323,7 @@ abstract class Inliners extends SubComponent {
                               && (inlinedMethods(inc.symbol) < 2)
                               && (inc.code ne null)
                               && shouldInline(m, inc)
-                              && isSafeToInline(m, inc, info._2)) {
+                              && isSafeToInline(m, inc, info.stack)) {
                             retry = true;
                             if (!isClosureClass(receiver)) // only count non-closures
                                 count = count + 1;
@@ -339,7 +339,7 @@ abstract class Inliners extends SubComponent {
                                   + "\n\t(inlinedMethods(inc.symbol) < 2): " + (inlinedMethods(inc.symbol) < 2)
                                   + "\n\tinc.code ne null: " + (inc.code ne null)
                                   + "\n\tinc.code.blocks.length < MAX_INLINE_SIZE: " + (inc.code.blocks.length < MAX_INLINE_SIZE) + "(" + inc.code.blocks.length + ")"
-                                  + "\n\tisSafeToInline(m, inc, info._2): " + isSafeToInline(m, inc, info._2)
+                                  + "\n\tisSafeToInline(m, inc, info.stack): " + isSafeToInline(m, inc, info.stack)
                                   + "\n\tshouldInline heuristics: " + shouldInline(m, inc));
                           }
                         case None =>
@@ -428,8 +428,10 @@ abstract class Inliners extends SubComponent {
     }
 
     private def lookupImpl(meth: Symbol, clazz: Symbol): Symbol = {
-//      println("\t\tlooking up " + meth + " in " + clazz.fullNameString + " meth.owner = " + meth.owner)
-      if (meth.owner == clazz) meth
+      //println("\t\tlooking up " + meth + " in " + clazz.fullNameString + " meth.owner = " + meth.owner)
+      if (meth.owner == clazz
+          || clazz == definitions.AllRefClass
+          || clazz == definitions.AllClass) meth
       else {
         val implementingMethod = meth.overridingSymbol(clazz)
         if (implementingMethod != NoSymbol)

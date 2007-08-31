@@ -675,22 +675,24 @@ abstract class ICodeReader extends ClassfileParser {
 
       val tfa = new analysis.MethodTFA() {
         import analysis._
+        import analysis.typeFlowLattice.IState
+
         /** Abstract interpretation for one instruction. */
         override def interpret(in: typeFlowLattice.Elem, i: Instruction): typeFlowLattice.Elem = {
-          var out = (new VarBinding(in._1), new TypeStack(in._2));
-          val bindings = out._1;
-          val stack = out._2;
+          var out = IState(new VarBinding(in.vars), new TypeStack(in.stack));
+          val bindings = out.vars;
+          val stack = out.stack;
           import stack.push
           i match {
             case DUP_X1 =>
               val (one, two) = stack.pop2
               push(one); push(two); push(one);
-              out = (bindings, stack)
+              out = IState(bindings, stack)
 
             case DUP_X2 =>
               val (one, two, three) = stack.pop3
               push(one); push(three); push(two); push(one);
-              out = (bindings, stack)
+              out = IState(bindings, stack)
 
             case DUP2_X1 =>
               val (one, two) = stack.pop2
@@ -700,7 +702,7 @@ abstract class ICodeReader extends ClassfileParser {
                 val three = stack.pop
                 push(two); push(one); push(three); push(two); push(one);
               }
-              out = (bindings, stack)
+              out = IState(bindings, stack)
 
             case DUP2_X2 =>
               val (one, two) = stack.pop2
@@ -719,7 +721,7 @@ abstract class ICodeReader extends ClassfileParser {
                   push(two); push(one); push(four); push(one); push(three); push(two); push(one);
                 }
               }
-              out = (bindings, stack)
+              out = IState(bindings, stack)
 
             case _ =>
               out = super.interpret(in, i)
@@ -736,9 +738,9 @@ abstract class ICodeReader extends ClassfileParser {
         for (i <- bb.toList) {
           i match {
             case DUP_X1 =>
-              val one = info._2.types(0)
-              val two = info._2.types(1)
-              assert(!one.isWideType, "DUP_X1 expects values of size 1 on top of stack " + info._2);
+              val one = info.stack.types(0)
+              val two = info.stack.types(1)
+              assert(!one.isWideType, "DUP_X1 expects values of size 1 on top of stack " + info.stack);
               val tmp1 = freshLocal(one);
               val tmp2 = freshLocal(two);
               bb.replaceInstruction(i, List(STORE_LOCAL(tmp1),
@@ -748,9 +750,9 @@ abstract class ICodeReader extends ClassfileParser {
                   LOAD_LOCAL(tmp1)));
 
             case DUP_X2 =>
-              val one = info._2.types(0)
-              val two = info._2.types(1)
-              assert (!one.isWideType, "DUP_X2 expects values of size 1 on top of stack " + info._2);
+              val one = info.stack.types(0)
+              val two = info.stack.types(1)
+              assert (!one.isWideType, "DUP_X2 expects values of size 1 on top of stack " + info.stack);
               val tmp1 = freshLocal(one);
               val tmp2 = freshLocal(two);
               if (two.isWideType)
@@ -760,7 +762,7 @@ abstract class ICodeReader extends ClassfileParser {
                   LOAD_LOCAL(tmp2),
                   LOAD_LOCAL(tmp1)));
               else {
-                val tmp3 = freshLocal(info._2.types(2));
+                val tmp3 = freshLocal(info.stack.types(2));
                 bb.replaceInstruction(i, List(STORE_LOCAL(tmp1),
                   STORE_LOCAL(tmp2),
                   STORE_LOCAL(tmp3),
@@ -771,8 +773,8 @@ abstract class ICodeReader extends ClassfileParser {
               }
 
             case DUP2_X1 =>
-              val one = info._2.types(0)
-              val two = info._2.types(1)
+              val one = info.stack.types(0)
+              val two = info.stack.types(1)
               val tmp1 = freshLocal(one);
               val tmp2 = freshLocal(two);
               if (one.isWideType) {
@@ -783,7 +785,7 @@ abstract class ICodeReader extends ClassfileParser {
                   LOAD_LOCAL(tmp2),
                   LOAD_LOCAL(tmp1)));
               } else {
-                val tmp3 = freshLocal(info._2.types(2));
+                val tmp3 = freshLocal(info.stack.types(2));
                 bb.replaceInstruction(i, List(STORE_LOCAL(tmp1),
                   STORE_LOCAL(tmp2),
                   STORE_LOCAL(tmp3),
@@ -794,8 +796,8 @@ abstract class ICodeReader extends ClassfileParser {
               }
 
             case DUP2_X2 =>
-              val one = info._2.types(0)
-              val two = info._2.types(1)
+              val one = info.stack.types(0)
+              val two = info.stack.types(1)
               val tmp1 = freshLocal(one);
               val tmp2 = freshLocal(two);
               if (one.isWideType && two.isWideType) {
@@ -805,7 +807,7 @@ abstract class ICodeReader extends ClassfileParser {
                   LOAD_LOCAL(tmp2),
                   LOAD_LOCAL(tmp1)));
               } else if (one.isWideType) {
-                val three = info._2.types(2)
+                val three = info.stack.types(2)
                 assert(!two.isWideType && !three.isWideType, "Impossible")
                 val tmp3 = freshLocal(three);
                 bb.replaceInstruction(i, List(STORE_LOCAL(tmp1),
@@ -816,7 +818,7 @@ abstract class ICodeReader extends ClassfileParser {
                   LOAD_LOCAL(tmp2),
                   LOAD_LOCAL(tmp1)));
               } else {
-                val three = info._2.types(2)
+                val three = info.stack.types(2)
                 val tmp3 = freshLocal(three);
                 if (three.isWideType) {
                   bb.replaceInstruction(i, List(STORE_LOCAL(tmp1),
@@ -828,7 +830,7 @@ abstract class ICodeReader extends ClassfileParser {
                       LOAD_LOCAL(tmp2),
                       LOAD_LOCAL(tmp1)));
                 } else {
-                  val four = info._2.types(3)
+                  val four = info.stack.types(3)
                   val tmp4 = freshLocal(three);
                   assert(!four.isWideType, "Impossible")
                   bb.replaceInstruction(i, List(STORE_LOCAL(tmp1),
