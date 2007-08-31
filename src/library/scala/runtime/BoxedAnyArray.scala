@@ -264,13 +264,11 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
     }
     result
   }
-  override protected def newArray(length : Int, elements : Iterator[Any]) = {
-    val result = new BoxedAnyArray(length)
-    var i = 0
-    while (elements.hasNext) {
-      result(i) = elements.next
-      i += 1
-    }
+
+  final override def slice(start: Int, end: Int): BoxedArray = {
+    val (s, len) = slice0(start, end)
+    val result = new BoxedAnyArray(len)
+    Array.copy(this, s, result, 0, len)
     result
   }
 }
