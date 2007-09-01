@@ -42,7 +42,8 @@ object Test extends TestConsoleMain {
       Bug1093,
       Bug1094,
       ClassDefInGuard,
-      Ticket_2
+      Ticket2,
+      Ticket37
     )
 
   class Foo(j:Int) {
@@ -578,7 +579,7 @@ object Test extends TestConsoleMain {
     }
   }
 
-  object Ticket_2 extends TestCase("#2") { override def runTest {
+  object Ticket2 extends TestCase("#2") { override def runTest {
     val o1 = new Outer_2; val o2 = new Outer_2; val x: Any = o1.Foo(1, 2); val y: Any = o2.Foo(1, 2)
     assertFalse("equals test returns true (but should not)", x equals y)
     assertTrue("match enters wrong case", x match {
@@ -587,6 +588,14 @@ object Test extends TestConsoleMain {
       case _ => false
     })
   }}
+
+  // #37
+
+  object Ticket37 extends TestCase("#37") {
+    def foo() {}
+    val (a,b):(int,int) = { foo(); (2,3) }
+    override def runTest { assertEquals(this.a, 2) }
+  }
 
 }
 

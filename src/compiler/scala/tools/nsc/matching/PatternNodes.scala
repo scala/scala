@@ -172,7 +172,7 @@ trait PatternNodes { self: transform.ExplicitOuter =>
       case Ident(_)        => ;
       case Literal(_)      => ;
       case Select(_,_)     => ;
-      case Typed(p,_)      => ; // definedVars1(p) //shouldn't have, because x @ (_:T)
+      case Typed(p,_)      => definedVars1(p) //otherwise x @ (_:T)
       case UnApply(_,args) => definedVars2(args)
 
       // regexp specific

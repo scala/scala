@@ -732,11 +732,11 @@ trait ParallelMatching  {
             (p::ms, (j, dummies)::ss, rs);
 
           case q @ Typed(pp,_) if (patternType_wrtEquals(pat.tpe) <:< headPatternType) =>
-            //Console.println("current pattern is same or *more* specific")
-            ({if(pat.tpe =:= headPatternType /*never true for <equals>*/) EmptyTree else q}::ms, (j, dummies)::ss, rs);
+            //Console.println("current pattern [Typed] is same or *more* specific")
+            ({if(pat.tpe =:= headPatternType /*never true for <equals>*/) pp/*EmptyTree*/ else q}::ms, (j, dummies)::ss, rs);
 
           case qq if (patternType_wrtEquals(pat.tpe) <:< headPatternType) && !isDefaultPattern(pat) =>
-            //Console.println("current pattern is same or *more* specific")
+            //Console.println("current pattern [ ... ] is same or *more* specific")
             ({if(pat.tpe =:= headPatternType /*never true for <equals>*/) EmptyTree else pat}::ms, (j,subpatterns(pat))::ss, rs);
 
           case _ if (headPatternType <:< pat.tpe /*never true for <equals>*/) || isDefaultPattern(pat) =>
@@ -770,7 +770,7 @@ trait ParallelMatching  {
         casted.setFlag(symtab.Flags.TRANS_FLAG)
       // succeeding => transition to translate(subsumed) (taking into account more specific)
       val nmatrix = {
-        var ntemps  = if(isCaseClass(casted.tpe)) casted.caseFieldAccessors map {
+        var ntemps  = if(isCaseHead /*for annontated type,  isCaseHead == false but isClass(casted.tpe) == true*/) casted.caseFieldAccessors map {
           meth =>
             val ctemp = newVar(scrutinee.pos, casted.tpe.memberType(meth).resultType)
             if(scrutinee.hasFlag(symtab.Flags.TRANS_FLAG))
@@ -854,24 +854,15 @@ trait ParallelMatching  {
    */
   final def repToTree(r: Rep)(implicit theOwner: Symbol, failTree: Tree, rep: RepFactory): Tree = {
     r.applyRule.tree
-    /*
-    rep.applyRule match {
-      case r : ErrorRule    => r.tree
-
-      case vr: VariableRule => vr.tree
-
-      case mc: MixCases     => mc.tree
-
-      case ml: MixLiterals  => ml.tree
-
-      case me: MixEquals    => me.tree
-
-      case mm: MixTypes     => mm.tree
-
-      case mu: MixUnapply   => mu.tree
-
-    }
-    */
+    /*r.applyRule match {
+      case r : ErrorRule    => Console.println("R1"); r.tree
+      case vr: VariableRule => Console.println("R2"); vr.tree
+      case mc: MixCases     => Console.println("R3"); mc.tree
+      case ml: MixLiterals  => Console.println("R4"); ml.tree
+      case me: MixEquals    => Console.println("R5"); me.tree
+      case mm: MixTypes     => Console.println("R6"); mm.tree
+      case mu: MixUnapply   => Console.println("R7"); mu.tree
+    }*/
   }
 
   /** subst: the bindings so far */
@@ -907,6 +898,7 @@ trait ParallelMatching  {
     this.vss       = vss
     this.reached64 = if(targets.length < 64) new Set64 else null
     //Console.println("targets: "+targets)
+    //Console.println("vss: "+vss)
     //Console.print("labels: "); {for(s<-labels) Console.print({if(s ne null) {s} else "_"}+",")}
     return make(temp, row)
   }
@@ -989,8 +981,10 @@ trait ParallelMatching  {
       val argts = new ListBuffer[Type] // types of
       var vrev: List[Symbol] = Nil
       var vdefs:List[Tree] = Nil
+      //Console.println("vss = "+vss(bx))
       val it = vss(bx).elements; while(it.hasNext) {
         val v = it.next
+        //Console.println("v = "+v)
         val substv = subst(v)
         if(substv ne null) {// might be bound elsewhere ( see `x @ unapply' )
           vrev   = v :: vrev
@@ -1079,7 +1073,16 @@ trait ParallelMatching  {
           //Console.println("opats.head = "+opats.head.getClass)
           val (vars,strippedPat) = strip(opat)
           val vs = vars.toList
-          strippedPat match {
+          def handle(prepat:Tree): Unit = prepat match {
+
+            /* annotations do not make sense on pattern
+            case Typed(p, tpt) if prepat.tpe.isInstanceOf[AnnotatedType] =>
+              Console.println("HELLO")
+              Console.println("p ="+p)
+              Console.println("p.tpe ="+p.tpe)
+              opat = makeBind(vs,p)
+              handle(p)
+              */
             case p @ Alternative(ps) =>
               if(indexOfAlternative == -1) {
                 unchanged = false
@@ -1216,6 +1219,8 @@ trait ParallelMatching  {
               assert(false) // inactive, @see PatternMatchers::isImplemented
 
           }
+          handle(strippedPat)
+          //Console.println("!!added "+pats.head+":"+pats.head.tpe)
           opats = opats.tail
           j += 1
         }
@@ -1402,6 +1407,8 @@ trait ParallelMatching  {
 
     var cs = cases; while (cs ne Nil) cs.head match {  // stash away pvars and bodies for later
       case CaseDef(pat,g,b) =>
+        //Console.println("pat::"+pat)
+        //Console.println("dv ::"+definedVars(pat))
         vss     += definedVars(pat)
         targets += b
         row     += Row(List(pat), NoBinding, g, bx)
