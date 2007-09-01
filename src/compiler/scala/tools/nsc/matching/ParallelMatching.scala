@@ -814,7 +814,7 @@ trait ParallelMatching  {
       val (casted,srep,frep) = this.getTransition
       val condUntyped = condition(casted.tpe, this.scrutinee)
       var cond = rep.handleOuter(typed { condUntyped }) // <- throws exceptions in some situations?
-      if(needsOuterTest(casted.tpe, this.scrutinee.tpe)) // @todo merge into def condition
+      if(needsOuterTest(casted.tpe, this.scrutinee.tpe, theOwner)) // @todo merge into def condition
         cond = addOuterCondition(cond, casted.tpe, mkIdent(this.scrutinee), rep.handleOuter)
       val succ = repToTree(srep)
 
@@ -1484,35 +1484,16 @@ trait ParallelMatching  {
       gen.mkIsInstanceOf(scrutineeTree, tpe)
   }
 
-  final def needsOuterTest(tpe2test: Type, scrutinee: Type) = tpe2test.normalize match {
-    case TypeRef(prefix,_,_) =>
-      prefix.termSymbol.isTerm &&
-      !prefix.termSymbol.isPackage &&
-      outerAlwaysEqual(tpe2test, scrutinee) == Some(false)
-    case _ =>
-     false
-  }
-
-  /** returns a result if both are TypeRefs, returns Some(true) if left and right are statically known to have
-   *  the same outer, i.e. if their prefixes are the same
-   */
-  final def outerAlwaysEqual(left: Type, right: Type): Option[Boolean] =
-    (left.normalize, right.normalize) match {
-      case (TypeRef(lprefix, _, _), TypeRef(rprefix, _, _)) =>
-        //if(!(lprefix =:= rprefix)) {
-          //DEBUG("DEBUG(outerAlwaysEqual) Some(f) for"+(left,right))
-        //}
-        Some(lprefix =:= rprefix)
-      case _ =>
-        None
-    }
-
   /** adds a test comparing the dynamic outer to the static outer */
   final def addOuterCondition(cond:Tree, tpe2test: Type, scrutinee: Tree, handleOuter: Tree=>Tree) = {
     val TypeRef(prefix,_,_) = tpe2test
     //Console.println("addOuterCondition: "+prefix)
     assert(prefix ne NoPrefix)
-    var theRef = gen.mkAttributedRef(prefix.prefix, prefix.termSymbol)
+    var theRef = prefix match {
+      case ThisType(clazz) => gen.mkAttributedThis(clazz)
+      case _               => gen.mkAttributedRef(prefix.prefix, prefix.termSymbol)
+    }
+
 
     // needs explicitouter treatment
     theRef = handleOuter(theRef)

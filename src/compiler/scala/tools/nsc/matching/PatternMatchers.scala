@@ -1204,7 +1204,7 @@ print()
 
           // compare outer instance for patterns like foo1.Bar foo2.Bar if not statically known to match
           casted.tpe match {
-            case TypeRef(prefix,_,_) if needsOuterTest(casted.tpe, selector.tpe) =>
+            case TypeRef(prefix,_,_) if needsOuterTest(casted.tpe, selector.tpe, owner) =>
                 //@attention, deep typer bug: if we omit "typed" here, we crash when typing the tree that contains this fragment
                 cond = typed{ addOuterCondition(cond, casted.tpe, selector.duplicate, handleOuter) }
 
