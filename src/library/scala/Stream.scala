@@ -196,6 +196,15 @@ trait Stream[+A] extends Seq.Projection[A] {
 
   /** The length of this stream */
   override def length: Int = if (isEmpty) 0 else tail.length + 1
+
+  /** returns length - l without calling length
+   */
+  override def lengthCompare(l: Int) = {
+    if (isEmpty) 0 - l
+    else if (l <= 0) 1
+    else tail.lengthCompare(l - 1)
+  }
+
   override def hasDefiniteSize = false
 
 
