@@ -35,7 +35,7 @@ import compat.Platform
  *    a file called <code>times.log</code>
  *  </p>
  *
- *  @author Burak Emir
+ *  @author Iulian Dragos, Burak Emir
  */
 trait Benchmark {
 
@@ -74,7 +74,7 @@ trait Benchmark {
    *  and an optional argument multiplier (mult).
    *  (n) is the number of consecutive runs, (name) the name
    *  of a log file where to append the times.
-   *  if (mult) is present, the benchmark is repeated (mult)
+   *  if (mult) is present, the same thing is repeated (mult)
    *  times.
    */
   def main(args: Array[String]) {
