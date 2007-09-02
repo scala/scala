@@ -2,7 +2,7 @@
  * Copyright 2005-2006 LAMP/EPFL
  * @author  Martin Odersky
  */
-// $Id: EtaExpansion.scala 12607 2007-08-21 14:04:16Z odersky $
+// $Id$
 
 package scala.tools.nsc.typechecker
 
