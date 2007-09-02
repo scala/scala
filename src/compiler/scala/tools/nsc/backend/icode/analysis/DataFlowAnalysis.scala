@@ -7,7 +7,7 @@
 
 package scala.tools.nsc.backend.icode.analysis
 
-import scala.collection.mutable.{Map, HashMap, Set, HashSet, LinkedHashSet}
+import scala.collection.jcl.{Map, HashMap, Set, HashSet, LinkedHashSet}
 
 /** A generic framework for data flow analysis.
  */
@@ -18,8 +18,8 @@ trait DataFlowAnalysis[L <: CompleteLattice] {
 
   val worklist: Set[P] = new LinkedHashSet
 
-  val in:  Map[P, lattice.Elem] = new collection.jcl.HashMap
-  val out: Map[P, lattice.Elem] = new collection.jcl.HashMap
+  val in:  Map[P, lattice.Elem] = new HashMap
+  val out: Map[P, lattice.Elem] = new HashMap
   val visited: HashSet[P] = new HashSet
 
   /* Implement this function to initialize the worklist.  */
