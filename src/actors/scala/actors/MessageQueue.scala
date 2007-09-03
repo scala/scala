@@ -8,6 +8,7 @@ package scala.actors
  * @version 0.9.8
  * @author Philipp Haller
  */
+@serializable
 class MessageQueueElement {
   var msg: Any = _
   var session: OutputChannel[Any] = null
@@ -23,6 +24,7 @@ class MessageQueueElement {
  * @version 0.9.8
  * @author Philipp Haller
  */
+@serializable
 class MessageQueue {
   var first: MessageQueueElement = null
   // last == null iff list empty
