@@ -742,6 +742,7 @@ MSIL
         <not>
           <present targetdir="${src.dir}/dotnet-library"/>
         </not>
+        <exclude name="scala/collection/jcl/**/*.scala"/>
       </fileset>
     </copy>
 
