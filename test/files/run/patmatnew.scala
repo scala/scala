@@ -33,10 +33,17 @@ object Test extends TestConsoleMain {
       TestEqualsPatternOpt,
       new TestStream,
       new Test903,
-      new Test1093,
       new Test1163_Order,
       new TestUnbox,
-      ClassDefInGuard
+      Bug457,
+      Bug508,
+      Bug789,
+      Bug995,
+      Bug1093,
+      Bug1094,
+      ClassDefInGuard,
+      Ticket2,
+      Ticket37
     )
 
   class Foo(j:Int) {
@@ -222,16 +229,6 @@ object Test extends TestConsoleMain {
         None
       else
   	    Some(p.father)
-  }
-
-  class Test1093 extends TestCase("bug1093") {
-    override def runTest {
-      val x = Some(3) match {
-        case Some(1 | 2) => 1
-        case Some(3) => 2
-      }
-      assertEquals("ok", 2, x)
-    }
   }
 
   class Test903 extends TestCase("bug903") {
@@ -450,5 +447,156 @@ object Test extends TestConsoleMain {
     }
   }
 
+  // bug#457
+
+  object Bug457 extends TestCase("Bug457") {
+    def method1() = {
+      val x = "Hello, world"; val y = 100;
+      y match {
+        case _: Int if (x match { case t => t.trim().length() > 0 }) => false;
+        case _ => true;
+      }}
+
+    def method2(): scala.Boolean = {
+      val x: String = "Hello, world"; val y: scala.Int = 100; {
+        var temp1: scala.Int = y;
+        var result: scala.Boolean = false;
+        if (
+          {
+            var result1: scala.Boolean = true;
+            if (y == 100)
+              result1
+            else
+              throw new MatchError("crazybox.scala, line 11")
+          } && (y > 90)
+        )
+          result
+            else
+              throw new MatchError("crazybox.scala, line 9")
+      }}
+
+    override def runTest {
+      method1();
+      method2();
+    }
+  }
+
+  // bug#508
+
+  object Bug508 extends TestCase("aladdin #508") {
+    case class Operator(x: Int);
+    val EQ = new Operator(2);
+
+    def analyze(x: Pair[Operator, Int]) = x match {
+      case Pair(EQ, 0) => "0"
+      case Pair(EQ, 1) => "1"
+      case Pair(EQ, 2) => "2"
+    }
+    override def runTest {
+      val x = Pair(EQ, 0);
+      assertEquals("0", analyze(x)); // should print "0"
+      val y = Pair(EQ, 1);
+      assertEquals("1", analyze(y)); // should print "1"
+      val z = Pair(EQ, 2);
+      assertEquals("2", analyze(z)); // should print "2"
+    }
+  }
+
+  // bug#789
+
+  object Bug789 extends TestCase("aladdin #789") { // don't do this at home
+
+    trait Impl
+
+    trait SizeImpl extends Impl { def size = 42 }
+
+    trait ColorImpl extends Impl { def color = "red" }
+
+    type Both = SizeImpl with ColorImpl
+
+    def info(x:Impl) = x match {
+      case x:Both      => "size  "+x.size+" color "+x.color // you wish
+      case x:SizeImpl  => "!size "+x.size
+      case x:ColorImpl => "color "+x.color
+      case _           => "n.a."
+    }
+
+    def info2(x:Impl) = x match {
+      case x:SizeImpl with ColorImpl  => "size  "+x.size+" color "+x.color // you wish
+      case x:SizeImpl  => "!size "+x.size
+      case x:ColorImpl => "color "+x.color
+      case _           => "n.a."
+    }
+
+    override def runTest {
+      // make up some class that has a size
+      class MyNode extends SizeImpl
+      assertEquals("!size 42", info(new MyNode))
+      assertEquals("!size 42", info2(new MyNode))
+    }
+  }
+
+  // bug#995
+
+  object Bug995 extends TestCase("aladdin #995") {
+    def foo(v: Any): String = v match {
+      case s: Seq[_] => "Seq" // see hack in object Seq.unapplySeq
+      //case a: AnyRef if runtime.ScalaRunTime.isArray(a) => "Array"
+      case _ => v.toString
+    }
+    override def runTest { assertEquals("Seq", foo(Array(0))) }
+  }
+
+  // bug#1093 (contribution #460)
+
+  object Bug1093 extends TestCase("aladdin #1093") {
+    override def runTest {assertTrue(Some(3) match {
+      case Some(1 | 2) => false
+      case Some(3) => true
+    })}
+  }
+
+  // bug#1094 (contribution #461)
+
+  object Bug1094 extends TestCase("aladdin #1094") {
+    def foo(ps: String*) = "Foo"
+    case class X(p: String, ps: String*)
+    def bar =
+      X("a", "b") match {
+        case X(p, ps @ _*) => foo(ps : _*)
+      }
+    override def runTest { assertEquals("Foo", bar) }
+  }
+
+  // #2
+
+  class Outer_2 {
+    case class Foo(x: int, y: int) {
+      override def equals(other: Any) = other match {
+        case Outer_2.this.Foo(`x`, `y`) => true
+        case _ => false
+      }
+    }
+  }
+
+  object Ticket2 extends TestCase("#2") { override def runTest {
+    val o1 = new Outer_2; val o2 = new Outer_2; val x: Any = o1.Foo(1, 2); val y: Any = o2.Foo(1, 2)
+    assertFalse("equals test returns true (but should not)", x equals y)
+    assertTrue("match enters wrong case", x match {
+      case o2.Foo(x, y) => false;
+      case o1.Foo(x, y) => true
+      case _ => false
+    })
+  }}
+
+  // #37
+
+  object Ticket37 extends TestCase("#37") {
+    def foo() {}
+    val (a,b):(int,int) = { foo(); (2,3) }
+    override def runTest { assertEquals(this.a, 2) }
+  }
+
 }
+
 

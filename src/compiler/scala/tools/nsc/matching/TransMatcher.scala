@@ -223,7 +223,7 @@ trait TransMatcher { self: transform.ExplicitOuter with PatternNodes with CodeFa
   /** handles all translation of pattern matching
      */
     def handlePattern(sel: Tree, ocases: List[CaseDef], doCheckExhaustive: Boolean,
-                      owner: Symbol, handleOuter: Tree => Tree, localTyper: Tree => Tree): Tree = {
+                      owner: Symbol, handleOuter: Tree => Tree): Tree = {
       // TEMPORARY
       //new NewMatcher().toIR(sel, ocases)
       //
@@ -239,7 +239,7 @@ trait TransMatcher { self: transform.ExplicitOuter with PatternNodes with CodeFa
         EmptyTree
       } else {
         val pm = new PatternMatcher()
-        pm.initialize(sel, doCheckExhaustive, owner,handleOuter, localTyper)
+        pm.initialize(sel, doCheckExhaustive, owner, handleOuter)
         pm.construct(cases)
         //if (global.log()) {
         //  global.log("internal pattern matching structure");

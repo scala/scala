@@ -144,8 +144,8 @@ trait CodeFactory {
   final def seqHasLength(sel: Tree, ntpe: Type, i: Int) =
     typed(
       Equals(
-        Apply(Select(sel, ntpe.member(nme.length)), List()),
-        Literal(Constant(i))
+        Apply(Select(sel, ntpe.member(nme.lengthCompare)), List(Literal(Constant(i)))),
+        Literal(Constant(0))
       )
     )/*defs.Seq_length ?*/
 
@@ -153,8 +153,8 @@ trait CodeFactory {
    */
   final def seqLongerThan(sel:Tree, tpe:Type, i:Int) =
     GreaterThanOrEquals(
-      typed(Apply(Select(sel, tpe.member(nme.length)), List())),
-      typed(Literal(Constant(i))))
+      typed(Apply(Select(sel, tpe.member(nme.lengthCompare)), List(Literal(Constant(i))))),
+      typed(Literal(Constant(0))))
       //defs.Seq_length instead of tpe.member ?
 
   final def Not(arg:Tree) = arg match {

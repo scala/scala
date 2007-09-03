@@ -35,7 +35,7 @@ import compat.Platform
  *    a file called <code>times.log</code>
  *  </p>
  *
- *  @author Burak Emir
+ *  @author Iulian Dragos, Burak Emir
  */
 trait Benchmark {
 
@@ -70,9 +70,12 @@ trait Benchmark {
   def prefix: String = getClass().getName()
 
   /**
-   * The entry point. It takes two arguments: the number of
-   * consecutive runs, and the name of a log file where to
-   * append the times.
+   * The entry point. It takes two arguments (n), (name)
+   *  and an optional argument multiplier (mult).
+   *  (n) is the number of consecutive runs, (name) the name
+   *  of a log file where to append the times.
+   *  if (mult) is present, the same thing is repeated (mult)
+   *  times.
    */
   def main(args: Array[String]) {
     if (args.length > 1) {

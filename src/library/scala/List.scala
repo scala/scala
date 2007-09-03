@@ -401,6 +401,15 @@ sealed abstract class List[+A] extends Seq[A] {
    */
   def head: A
 
+
+  /** returns length - l, without calling length
+   */
+  override def lengthCompare(l: Int) = {
+    if (isEmpty) 0 - l
+    else if (l <= 0) 1
+    else tail.lengthCompare(l - 1)
+  }
+
   /** Returns this list without its first element.
    *
    *  @return this list without its first element.

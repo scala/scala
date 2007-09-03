@@ -116,6 +116,13 @@ trait PrivateLazy {
 /** Test successful compilation. */
 class InheritPrivateLazy extends AnyRef with PrivateLazy {}
 
+/** Test successful compilation, see bug #1287. */
+trait LocalLazyVal {
+  def foo = {
+    lazy val next = 10 + 1
+    next
+  }
+}
 
 /** Test successful compilation (see ticket #39) */
 package x.y {

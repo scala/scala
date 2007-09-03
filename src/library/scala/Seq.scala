@@ -156,6 +156,11 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Collection[A] {
    */
   def length: Int
 
+  /** Returns length - l. This method is used by matching streams against right-ignoring (...,_*) patterns.
+   *  Lazy sequences should override this method if length forces evaluation of the stream.
+   */
+  def lengthCompare(l: Int): Int = length - l
+
   /** should always be <code>length</code> */
   def size = length
 

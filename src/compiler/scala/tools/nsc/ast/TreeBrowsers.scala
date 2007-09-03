@@ -27,8 +27,8 @@ import symtab.Flags._
  */
 abstract class TreeBrowsers {
 
-  val trees: Trees
-  import trees._
+  val global: Global
+  import global._
   import nme.EMPTY
 
   def create(): SwingBrowser = new SwingBrowser();
@@ -293,6 +293,9 @@ abstract class TreeBrowsers {
       case Bind(name, rhs) =>
         ("Bind", name)
 
+      case UnApply(fun, args) =>
+        ("UnApply", EMPTY)
+
       case Match(selector, cases) =>
         ("Visitor", EMPTY)
 
@@ -347,6 +350,9 @@ abstract class TreeBrowsers {
       case Annotated(annot, arg) =>
         ("Annotated", EMPTY)
 
+      case Annotation(constr, elements) =>
+        ("Annotation", EMPTY)
+
       case SingletonTypeTree(ref) =>
         ("SingletonType", EMPTY)
 
@@ -362,6 +368,9 @@ abstract class TreeBrowsers {
       case TypeBoundsTree(lo, hi) =>
         ("TypeBoundsTree", EMPTY)
 
+      case ExistentialTypeTree(tpt, whereClauses) =>
+        ("ExistentialTypeTree", EMPTY)
+
       case Try(block, catcher, finalizer) =>
         ("Try", EMPTY)
 
@@ -373,10 +382,6 @@ abstract class TreeBrowsers {
 
       case Star(t) =>
         ("Star", EMPTY)
-
-      case UnApply(fn, args) =>
-        ("Unapply", EMPTY)
-
     }
 
     /** Return a list of children for the given tree node */
@@ -441,6 +446,9 @@ abstract class TreeBrowsers {
       case Bind(name, rhs) =>
         List(rhs)
 
+      case UnApply(fun, args) =>
+        fun :: args
+
       case Match(selector, cases) =>
         selector :: cases
 
@@ -495,6 +503,9 @@ abstract class TreeBrowsers {
       case Annotated(annot, arg) =>
         annot.constr :: annot.elements ::: List(arg)
 
+      case Annotation(constr, elements) =>
+        constr :: elements
+
       case SingletonTypeTree(ref) =>
         List(ref)
 
@@ -510,6 +521,9 @@ abstract class TreeBrowsers {
       case TypeBoundsTree(lo, hi) =>
         List(lo, hi)
 
+      case ExistentialTypeTree(tpt, whereClauses) =>
+        tpt :: whereClauses
+
       case Try(block, catches, finalizer) =>
         block :: catches ::: List(finalizer)
 
@@ -521,9 +535,6 @@ abstract class TreeBrowsers {
 
       case Star(t) =>
         List(t)
-
-      case UnApply(fn,args) =>
-        fn::args
     }
 
     /** Return a textual representation of this t's symbol */
@@ -658,6 +669,15 @@ abstract class TreeBrowsers {
                         attribs.mkString("[", ",", "]") :/:
                         "," :/: toDocument(tp) :: ")")
         )
+
+      case ExistentialType(tparams, result) =>
+        Document.group(
+            Document.nest(4, "ExistentialType(" :/:
+                Document.group("(" :/: symsToDocument(tparams) :/: "), ") :/:
+                toDocument(result) :: ")"))
+
+      case global.analyzer.ImportType(expr) =>
+        "ImportType(" + expr.toString + ")"
 
       case _ =>
         throw new Error("Unknown case: " + t.toString())

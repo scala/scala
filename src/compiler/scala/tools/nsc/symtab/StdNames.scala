@@ -292,6 +292,7 @@ trait StdNames {
     val java = newTermName("java")
     val lang = newTermName("lang")
     val length = newTermName("length")
+    val lengthCompare = newTermName("lengthCompare")
     val lift_ = newTermName("lift")
     val map = newTermName("map")
     val n = newTermName("n")
