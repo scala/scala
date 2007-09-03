@@ -766,7 +766,7 @@ trait Parsers {
       }
     }
 
-    /** AnnotType        ::=  Annotations SimpleType Annotations
+    /** AnnotType        ::=  SimpleType Annotations
      *  SimpleType       ::=  SimpleType TypeArgs
      *                     |  SimpleType `#' Id
      *                     |  StableId
@@ -775,7 +775,13 @@ trait Parsers {
      *                     |  WildcardType
      */
     def annotType(isPattern: Boolean): Tree = {
-      val annots1 = annotations()  // Q: deprecate annotations here?
+      val annots1 = annotations()
+      if (!annots1.isEmpty)
+	in.deprecationWarning(
+	  annots1.head.pos,
+	  "Type annotations should now follow the type")
+        // deprecated on August 13, 2007
+
       val pos = inCurrentPos
 
       val t: Tree = annotTypeRest(pos, isPattern,
