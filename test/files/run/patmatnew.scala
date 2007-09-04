@@ -44,7 +44,8 @@ object Test extends TestConsoleMain {
       ClassDefInGuard,
       Ticket2,
       Ticket11,
-      Ticket37
+      Ticket37,
+      Ticket44
     )
 
   class Foo(j:Int) {
@@ -626,6 +627,25 @@ object Test extends TestConsoleMain {
     def foo() {}
     val (a,b):(int,int) = { foo(); (2,3) }
     override def runTest { assertEquals(this.a, 2) }
+  }
+
+  // #44
+
+  trait _X {
+    case class _Foo();
+    object _Bar {
+      def unapply(foo: _Foo):Boolean = true;
+    }
+  }
+  object Y extends _X {
+    val foo = _Foo()
+    foo match {
+      case _Bar() =>
+      case _      => assert(false)
+    }
+  }
+  object Ticket44 extends TestCase("#44") {
+    override def runTest { assert(Y.toString ne null) /*instantiate Y*/ }
   }
 
 }
