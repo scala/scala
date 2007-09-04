@@ -256,10 +256,10 @@ object Actor {
  *     Philipp Haller and Martin Odersky, <i>Proc. JMLC 2006</i>, and
  *   </li>
  *   <li>
- *     <a href="http://www.scala-lang.org/docu/files/haller07actorsunify.pdf">
+ *     <a href="http://lamp.epfl.ch/~phaller/doc/haller07coord.pdf">
  *     <span style="font-weight:bold; white-space:nowrap;">Actors that
  *     Unify Threads and Events</span></a>,<br/>
- *     Philipp Haller and Martin Odersky, <i>LAMP-REPORT-2007-001, EPFL</i>.
+ *     Philipp Haller and Martin Odersky, <i>Proc. COORDINATION 2007</i>.
  *   </li>
  * </ul>
  *

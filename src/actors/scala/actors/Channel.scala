@@ -40,7 +40,7 @@ case class ! [a](ch: Channel[a], msg: a)
  */
 class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
 
-  private var recv: Actor = {
+  private[actors] var recv: Actor = {
     // basically Actor.self, but can be null
     Actor.tl.get.asInstanceOf[Actor]
   }
