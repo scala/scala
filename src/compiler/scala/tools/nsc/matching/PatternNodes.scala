@@ -88,6 +88,14 @@ trait PatternNodes { self: transform.ExplicitOuter =>
     def unapply(x:Apply) = if (x.symbol eq null) true else false
   }
 
+  object __UnApply {
+    def unapply(x:Tree) = strip(x) match {
+      case (vs, UnApply(Apply(fn, _), args)) =>
+        val argtpe = fn.tpe.asInstanceOf[MethodType].paramTypes.head
+        Some(Tuple3(vs,argtpe,args))
+      case _                      => None
+    }
+  }
 /*
   object ArrayValueFixed {
     def unapply(x:Tree):Option[List[Tree]] = x match {
