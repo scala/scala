@@ -3207,6 +3207,8 @@ trait Typers { self: Analyzer =>
               getParts(tp.widen, s)
             case RefinedType(ps, _) =>
               for (p <- ps) getParts(p, s)
+            case AnnotatedType(_, t) =>
+	      getParts(t, s)
             case _ =>
           }
         }
