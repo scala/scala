@@ -2388,7 +2388,7 @@ trait Parsers {
 
     /** BlockStatSeq ::= { BlockStat semi } [ResultExpr]
      *  BlockStat    ::= Import
-     *                 | [implicit] [lazy] Def
+     *                 | Annotations [implicit] [lazy] Def
      *                 | LocalModifiers TmplDef
      *                 | Expr1
      *                 |
@@ -2414,7 +2414,10 @@ trait Parsers {
           if (inToken != RBRACE && inToken != CASE) acceptStatSep()
         } else if (isDefIntro) {
           localDef(NoMods)
-        } else if (isLocalModifier) {
+        } else if (isLocalModifier || inToken == AT) {
+          val annots = annotations()
+          localDef(modifiers() withAnnotations annots)
+        } else if (!isStatSep) {
           localDef(localModifiers())
         } else if (isStatSep) {
           inNextToken
