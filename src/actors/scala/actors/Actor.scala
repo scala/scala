@@ -266,6 +266,7 @@ object Actor {
  * @version 0.9.9
  * @author Philipp Haller
  */
+@serializable
 trait Actor extends OutputChannel[Any] {
 
   private var received: Option[Any] = None

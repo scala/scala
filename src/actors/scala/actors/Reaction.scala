@@ -56,7 +56,8 @@ private[actors] class ExitActorException extends Throwable
           a.kill(); a.exit()
         }
       } catch {
-        case _: ExitActorException =>
+        case eae: ExitActorException =>
+          Debug.info(a+": caught "+eae)
       }
     }
     catch {
@@ -64,6 +65,7 @@ private[actors] class ExitActorException extends Throwable
         // do nothing (continuation is already saved)
       }
       case t: Throwable => {
+        Debug.info(a+": caught "+t)
         // links
         a.synchronized {
           if (!a.links.isEmpty)

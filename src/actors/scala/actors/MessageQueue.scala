@@ -14,7 +14,7 @@ package scala.actors
  * This class is used by our efficient message queue
  * implementation.
  *
- * @version 0.9.8
+ * @version 0.9.9
  * @author Philipp Haller
  */
 @serializable
