@@ -43,6 +43,7 @@ object Test extends TestConsoleMain {
       Bug1094,
       ClassDefInGuard,
       Ticket2,
+      Ticket11,
       Ticket37
     )
 
@@ -588,6 +589,36 @@ object Test extends TestConsoleMain {
       case _ => false
     })
   }}
+
+// #11
+
+  class MyException1 extends Exception
+
+  // Commenting out the following line and uncommenting the second line
+  // will cause the test to succeed.
+  trait SpecialException extends MyException1
+  // trait SpecialException
+
+  class MyException2 extends MyException1 with SpecialException
+
+  object Ticket11 extends TestCase("#11") {
+    override def runTest {
+      Array[Throwable](new Exception("abc"),
+                       new MyException1,
+                       new MyException2).foreach { e =>
+                         try {
+                           throw e
+                         } catch {
+                           case e : SpecialException => {
+                             assume(e.isInstanceOf[SpecialException])
+                           }
+                           case e => {
+                             assume(e.isInstanceOf[Throwable])
+                           }
+                         }
+                                                }
+    }
+  }
 
   // #37
 
