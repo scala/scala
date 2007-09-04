@@ -81,7 +81,7 @@ trait Set[A] extends (A => Boolean) with Collection[A] {
    *              contain the same elements.
    */
   override def equals(that: Any): Boolean = that match {
-    case other: Set[A] =>
+    case other: Set[_] =>
       this.size == other.size && subsetOf(other.asInstanceOf[Set[A]])
     case _ =>
       false
