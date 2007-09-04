@@ -263,7 +263,7 @@ object Actor {
  *   </li>
  * </ul>
  *
- * @version 0.9.8
+ * @version 0.9.9
  * @author Philipp Haller
  */
 trait Actor extends OutputChannel[Any] {
@@ -581,6 +581,8 @@ trait Actor extends OutputChannel[Any] {
         case Some(s) => s
       }
     } else sessions.head
+
+  def receiver: Actor = this
 
   private var continuation: PartialFunction[Any, Unit] = null
   private var timeoutPending = false
