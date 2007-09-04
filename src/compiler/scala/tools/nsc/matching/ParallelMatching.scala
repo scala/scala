@@ -44,17 +44,11 @@ trait ParallelMatching  {
         }
          return true
        }}
+
     // an unapply for which we don't need a type test
-    def isUnapplyHead: Boolean = {
-      def isUnapply(x:Tree): Boolean = x match {
-        case Bind(_,p) => isUnapply(p)
-        case UnApply(Apply(fn,_),arg) => fn.tpe match {
-          case MethodType(List(argtpe,_*),_) =>     scrutinee.tpe <:< argtpe
-          case _ => /* Console.println("wrong tpe, needs type test"); */ false
-        }
-        case x => /*Console.println("is something else"+x+" "+x.getClass) */ false
-      }
-      isUnapply(column.head)
+    def isUnapplyHead(): Boolean = column.head match {
+      case __UnApply(_,argtpe,_) => scrutinee.tpe <:< argtpe
+      case _                   => false
     }
 
     // true if pattern type is direct subtype of scrutinee (can't use just <:< cause have to take variance into account)
@@ -82,34 +76,35 @@ trait ParallelMatching  {
       }
     }
     /*
-     DBG("/// MixtureRule("+scrutinee.name+":"+scrutinee.tpe+","+column+", rep = ")
-     DBG(rest.toString)
-     DBG(")///")
+     //DBG("/// MixtureRule("+scrutinee.name+":"+scrutinee.tpe+","+column+", rep = ")
+     //DBG(rest.toString)
+     //DBG(")///")
      */
-    if(isEqualsPattern(column.head.tpe)) { DBG("\n%%% MixEquals");
+    if(isEqualsPattern(column.head.tpe)) { //DBG("\n%%% MixEquals");
       return new MixEquals(scrutinee, column, rest)
     }
     // the next condition is never true, @see isImplemented/CantHandleSeq
-    if(column.head.isInstanceOf[ArrayValue]) { DBG("\n%%% MixSequence");
+    if(column.head.isInstanceOf[ArrayValue]) { //DBG("\n%%% MixSequence");
       throw new FatalError("not implemented yet");
       //return new MixSequence(scrutinee, column, rest)
     }
-    if(isSimpleSwitch) { DBG("\n%%% MixLiterals")
+    if(isSimpleSwitch) { //DBG("\n%%% MixLiterals")
       return new MixLiterals(scrutinee, column, rest)
     }
 
-     if(settings_casetags && (column.length > 1) && isFlatCases(column)) {
-       DBG("flat cases!"+column+"\n"+scrutinee.tpe.typeSymbol.children+"\n"+scrutinee.tpe.member(nme.tag))
-       DBG("\n%%% MixCases")
-       return new MixCases(scrutinee, column, rest)
-       // if(scrutinee.tpe./*?type?*/symbol.hasFlag(symtab.Flags.SEALED)) new MixCasesSealed(scrutinee, column, rest)
-       // else new MixCases(scrutinee, column, rest)
+    if(settings_casetags && (column.length > 1) && isFlatCases(column)) {
+      //DBG("flat cases!"+column+"\n"+scrutinee.tpe.typeSymbol.children+"\n"+scrutinee.tpe.member(nme.tag))
+      //DBG("\n%%% MixCases")
+      return new MixCases(scrutinee, column, rest)
+      // if(scrutinee.tpe./*?type?*/symbol.hasFlag(symtab.Flags.SEALED)) new MixCasesSealed(scrutinee, column, rest)
+      // else new MixCases(scrutinee, column, rest)
     }
-    if(isUnapplyHead) { DBG("\n%%% MixUnapply")
+    //Console.println("isUnapplyHead = "+isUnapplyHead())
+    if(isUnapplyHead()) { //DBG("\n%%% MixUnapply")
       return new MixUnapply(scrutinee, column, rest)
     }
 
-    DBG("\n%%% MixTypes")
+    //DBG("\n%%% MixTypes")
     return new MixTypes(scrutinee, column, rest) // todo: handle type tests in unapply
   } /* def MixtureRule(scrutinee:Symbol, column:List[Tree], rest:Rep): RuleApplication */
 
@@ -260,7 +255,7 @@ trait ParallelMatching  {
 
     final def tree(implicit theOwner: Symbol, failTree: Tree): Tree = {
       val (branches, defaultV, default) = getTransition // tag body pairs
-      DBG("[[mix cases transition: branches \n"+(branches.mkString("","\n","")+"\ndefaults:"+defaultV+" "+default+"]]"))
+      //DBG("[[mix cases transition: branches \n"+(branches.mkString("","\n","")+"\ndefaults:"+defaultV+" "+default+"]]"))
 
       var ndefault = if(default.isEmpty) failTree else repToTree(default.get)
       var cases = branches map {
@@ -390,7 +385,7 @@ trait ParallelMatching  {
 
     final def tree(implicit theOwner: Symbol, failTree: Tree): Tree = {
       val (branches, defaultV, defaultRepOpt) = this.getTransition // tag body pairs
-      DBG("[[mix literal transition: branches \n"+(branches.mkString("","\n",""))+"\ndefaults:"+defaultV+"\n"+defaultRepOpt+"\n]]")
+      //DBG("[[mix literal transition: branches \n"+(branches.mkString("","\n",""))+"\ndefaults:"+defaultV+"\n"+defaultRepOpt+"\n]]")
       val cases = branches map {
         case (tag, r) =>
           CaseDef(Literal(tag), EmptyTree, repToTree(rep.make(r.temp, r.row map { case Row(pat,bnd,g,bx) => Row(pat,bindVars(tag,bnd),g,bx) })))
@@ -405,17 +400,10 @@ trait ParallelMatching  {
         val defCase = CaseDef(mk_(definitions.IntClass.tpe), EmptyTree, ndefault)
 
 
-        if(isSameType(this.scrutinee.tpe.widen, definitions.CharClass.tpe)) {
-          val zz = newVar(this.scrutinee.pos, this.scrutinee.tpe)
-          // the valdef is a workaround for a bug in boxing -- Utility.parseCharRef contains an instance
-          //  where erasure forgets the char to int conversion and emits Int.unbox in the scrutinee position
-          //  of the match. This then fails at runtime, because it encounters a boxed Character, not boxedq Int
-          return Block(
-            List(typedValDef(zz, mkIdent(this.scrutinee))),
-            Match(gen.mkAsInstanceOf(mkIdent(zz), definitions.IntClass.tpe), cases :::  defCase :: Nil)
-          )
-        }
-        return Match(mkIdent(this.scrutinee), cases :::  defCase :: Nil)
+        return if(isSameType(this.scrutinee.tpe.widen, definitions.CharClass.tpe))
+                  Match(Select(mkIdent(this.scrutinee), nme.toInt), cases :::  defCase :: Nil)
+               else
+                  Match(mkIdent(this.scrutinee), cases :::  defCase :: Nil)
       }
     } /* def tree(implicit theOwner: Symbol, failTree: Tree) */
   } /* MixLiterals */
@@ -605,7 +593,8 @@ trait ParallelMatching  {
           gen.mkAttributedRef(pre,sym)
       }
       assert(vlue.tpe ne null)
-      val nsuccFst = rest.row.head match { case Row(pats,bnd,g,b) => Row(EmptyTree::pats,bnd,g,b) }
+      val vs = strip1(column.head)
+      val nsuccFst = rest.row.head match { case Row(pats,bnd,g,b) => Row(EmptyTree::pats, bnd.add(vs.elements, scrutinee),g,b) }
       //val nsuccRow = nsuccFst :: (column.tail.zip(rest.row.tail) map { case (p, Row(pats,bnd,g,b)) => Row(p::pats,bnd,g,b) })
       val fLabel = theOwner.newLabel(scrutinee.pos, cunit.fresh.newName("failCont%")) // warning, untyped
       val sx     = rep.shortCut(fLabel) // register shortcut
@@ -623,8 +612,8 @@ trait ParallelMatching  {
       val (cond, srep, fLabel, frep) = this.getTransition
       //Console.println("MixEquals::tree -- cond "+cond)
       val cond2 = typed { rep.handleOuter(cond) }
-      DBG("MixEquals, srep = "+srep)
-      DBG("MixEquals, frep = "+frep)
+      //DBG("MixEquals, srep = "+srep)
+      //DBG("MixEquals, frep = "+frep)
       val fail = typed { repToTree(frep) }
       fLabel setInfo (new MethodType(Nil, fail.tpe))
       val succ = repToTree(srep)
@@ -655,12 +644,14 @@ trait ParallelMatching  {
       scrutinee.tpe.typeSymbol.children.forall { sym => tpes.contains(sym) }
     }
 
-    private val headPatternType     = column.head match {
+    private val headPatternType     = strip2(column.head) match {
       case p @ (_:Ident | _:Select) =>
         singleType(p.symbol.tpe.prefix, p.symbol) //should be singleton object
       //case p@Apply(_,_) if !p.tpe./*?type?*/symbol.hasFlag(symtab.Flags.CASE) => ConstantType(new NamedConstant(p))
-      case _ => column.head.tpe
+      case __UnApply(_,argtpe,_) => argtpe
+      case _         => column.head.tpe
     }
+
     private val isCaseHead = isCaseClass(headPatternType)
     private val dummies = if(!isCaseHead) Nil else getDummies(headPatternType.typeSymbol.caseFieldAccessors.length)
 
@@ -707,7 +698,8 @@ trait ParallelMatching  {
       var j = 0; var pats = column; while(pats ne Nil) {
         val (ms,ss,rs) = sr // more specific, more general(subsuming current), remaining patterns
         val pat = pats.head
-
+        val strippedPattern = strip2(pat)
+        val patternType = strippedPattern.tpe
         //Console.println("pat = "+pat+" (class "+pat.getClass+")of type "+pat.tpe)
         //Console.println("current pat is wild? = "+isDefaultPattern(pat))
         //Console.println("current pat.symbol = "+pat.symbol+", pat.tpe "+pat.tpe)
@@ -716,30 +708,34 @@ trait ParallelMatching  {
         //Console.println("headPatternType <:< (current)pat.tpe = "+(headPatternType <:< pat.tpe))
         //Console.println("(current)pat.tpe =:= headPatternType = "+(pat.tpe <:< headPatternType))
 
-        sr = strip2(pat) match {
+        sr = strippedPattern match {
           // case _: Bind       => // cannot happen, using strip2
           // case a:Alternative => // cannot happen, alternatives should be preprocessed away
 
-          case Literal(Constant(null)) if !(headPatternType =:= pat.tpe) => //special case for constant null pattern
+          case Literal(Constant(null)) if !(headPatternType =:= patternType) => //special case for constant null pattern
             //Console.println("[1")
             (ms,ss,(j,pat)::rs);
           case _ if objectPattern(pat) =>
             //Console.println("[2")
             (EmptyTree::ms, (j,dummies)::ss, rs);                                 // matching an object
 
-          case Typed(p:UnApply,_) if (pat.tpe /*is never <equals>*/ <:< headPatternType) =>
+          case Typed(/*p @ __UnApply(_,_,_)*/ p, _) if (strip2(p).isInstanceOf[UnApply] && (patternType /*is never <equals>*/ <:< headPatternType)) =>
             //Console.println("unapply arg is same or *more* specific")
             (p::ms, (j, dummies)::ss, rs);
 
-          case q @ Typed(pp,_) if (patternType_wrtEquals(pat.tpe) <:< headPatternType) =>
+          case q @ Typed(pp,_) if (patternType_wrtEquals(patternType) <:< headPatternType) =>
             //Console.println("current pattern [Typed] is same or *more* specific")
             ({if(pat.tpe =:= headPatternType /*never true for <equals>*/) pp/*EmptyTree*/ else q}::ms, (j, dummies)::ss, rs);
 
-          case qq if (patternType_wrtEquals(pat.tpe) <:< headPatternType) && !isDefaultPattern(pat) =>
+          case z:UnApply =>
+            //Console.println("current pattern tests something else")
+            (ms,ss,(j,pat)::rs)
+
+          case qq if (patternType_wrtEquals(patternType) <:< headPatternType) && !isDefaultPattern(pat) =>
             //Console.println("current pattern [ ... ] is same or *more* specific")
             ({if(pat.tpe =:= headPatternType /*never true for <equals>*/) EmptyTree else pat}::ms, (j,subpatterns(pat))::ss, rs);
 
-          case _ if (headPatternType <:< pat.tpe /*never true for <equals>*/) || isDefaultPattern(pat) =>
+          case _ if (headPatternType <:< patternType /*never true for <equals>*/) || isDefaultPattern(pat) =>
             //Console.println("current pattern is *more general*")
             (EmptyTree::ms, (j, dummies)::ss, (j,pat)::rs);                        // subsuming (matched *and* remaining pattern)
 
@@ -793,8 +789,8 @@ trait ParallelMatching  {
             val nsubst = osubst.add(vs.elements, casted)
             Row(pats ::: opats, nsubst, og, bx)
         }
-        DBG("ntemps   = "+ntemps.mkString("[["," , ","]]"))
-        DBG("ntriples = "+ntriples.mkString("[[\n","\n, ","\n]]"))
+        //DBG("ntemps   = "+ntemps.mkString("[["," , ","]]"))
+        //DBG("ntriples = "+ntriples.mkString("[[\n","\n, ","\n]]"))
         rep.make(ntemps, ntriples) /*setParent this*/
       }
       // fails      => transition to translate(remaining)
@@ -806,7 +802,7 @@ trait ParallelMatching  {
         }
         if(ntriples.isEmpty) None else Some(rep.make(ntemps, ntriples))
       }
-      DBG("nmatrixFail = \n\n"+nmatrixFail)
+      //DBG("nmatrixFail = \n\n"+nmatrixFail)
       (casted, nmatrix, nmatrixFail)
     } /* getTransition(implicit theOwner: Symbol): (Symbol, Rep, Option[Rep]) */
 
@@ -976,7 +972,8 @@ trait ParallelMatching  {
       //Console.println(jumpT)
       return jump
     }
-    //Console.print("requestbody("+bx+", "+subst+") isReached(bx)?"+isReached(bx)+" labels:"); {for(s<-labels) Console.print({if(s ne null) {s} else "_"}+",")}
+    //DBG("requestbody("+bx+", "+subst+") isReached(bx)?"+isReached(bx)+" labels:"); // {for(s<-labels) Console.print({if(s ne null) {s} else "_"}+",")}
+    //DBG("vss(bx) = "+vss(bx))
     if(!isReached(bx)) { // first time this bx is requested
       val argts = new ListBuffer[Type] // types of
       var vrev: List[Symbol] = Nil
@@ -1070,7 +1067,7 @@ trait ParallelMatching  {
         var indexOfAlternative = -1
         var j = 0; while(opats ne Nil) {
           var opat = opats.head // original pattern
-          //Console.println("opats.head = "+opats.head.getClass)
+          //DBG("opat = "+opat)
           val (vars,strippedPat) = strip(opat)
           val vs = vars.toList
           def handle(prepat:Tree): Unit = prepat match {
@@ -1089,9 +1086,6 @@ trait ParallelMatching  {
                 indexOfAlternative = j
               }
               pats = opat :: pats
-
-            case _ if !vs.isEmpty =>
-              pats = opat :: pats // strange but true: Bind node is deferred
 
             case typat @ Typed(p:UnApply,tpt) =>
               pats = (if (temp(j).tpe <:< tpt.tpe) p else typat)::pats // what about the null-check?
@@ -1114,9 +1108,9 @@ trait ParallelMatching  {
                 if (!o.symbol.isValue) {
                   singleType(o.tpe.prefix, o.symbol)
                 } else {
-                  DBG("o.tpe              "+o.symbol.tpe)
-                  DBG("o.tpe              "+o.symbol.tpe.isStable)
-                  DBG("p.prefix           "+o.symbol.tpe.prefix)
+                  //DBG("o.tpe              "+o.symbol.tpe)
+                  //DBG("o.tpe              "+o.symbol.tpe.isStable)
+                  //DBG("p.prefix           "+o.symbol.tpe.prefix)
                   singleType(NoPrefix, o.symbol) // equals-check
                   // call the above `stpe'. Then we could also return
                   // `typeRef(definitions.ScalaPackageClass.tpe, definitions.EqualsPatternClass, List(stpe))'
@@ -1133,9 +1127,9 @@ trait ParallelMatching  {
                 if (!o.symbol.isValue) {
                   singleType(o.tpe.prefix, o.symbol)
                 } else {
-                  DBG("stor.tpe              "+stor.tpe)
-                  DBG("stor.symbol           "+stor.symbol)
-                  DBG("stor.symbol.tpe       "+stor.symbol.tpe)
+                  //DBG("stor.tpe              "+stor.tpe)
+                  //DBG("stor.symbol           "+stor.symbol)
+                  //DBG("stor.symbol.tpe       "+stor.symbol.tpe)
                   singleType(NoPrefix, o.symbol) // equals-check
                 }
               val p = Ident(nme.WILDCARD) setType stpe
@@ -1149,7 +1143,14 @@ trait ParallelMatching  {
               val listType = typeRef(mkThisType(definitions.ScalaPackage), definitions.ListClass, List(tptArg.tpe))
               val nmlzdPat = normalizedListPattern(xs, tptArg.tpe)
               pats = makeBind(vs, nmlzdPat) :: pats
-            case ua @ UnApply(Apply(fn, _), arg) =>
+
+            //case /* ua @ */ __UnApply(_,argtpe,_) =>
+            //  val ua = prepat
+            //  val npat = (if (temp(j).tpe <:< argtpe) ua else Typed(ua,TypeTree(argtpe)).setType(argtpe))
+            //  pats = (makeBind(vs, npat) setType argtpe)::pats
+
+
+            case ua @ UnApply(Apply(fn, _), _) =>
               fn.tpe match {
                 case MethodType(List(argtpe,_*),_) =>
                   val npat = (if (temp(j).tpe <:< argtpe) ua else Typed(ua,TypeTree(argtpe)).setType(argtpe))
@@ -1159,21 +1160,21 @@ trait ParallelMatching  {
             /** something too tricky is going on if the outer types don't match
              */
             case o @ Apply(fn, List()) if !isCaseClass(o.tpe) =>
-              DBG("o.tpe   "+o.tpe)
-              DBG("fn is   ")
+              //DBG("o.tpe   "+o.tpe)
+              //DBG("fn is   ")
               //Console.println("o.symbol is a module?  "+o.symbol+" "+o.symbol.isModule)
               //Console.println("o.tpe.termSymbol is a module?  "+o.tpe.termSymbol+" "+o.tpe.termSymbol.isModule)
               val stpe: Type = fn match {
                 case _ if (o.symbol.isModule) =>
-                  DBG("o.symbol is module!  "+o.symbol)
-                  DBG(nodeToString(fn))
+                  //DBG("o.symbol is module!  "+o.symbol)
+                  //DBG(nodeToString(fn))
                   singleType(o.tpe.prefix, o.symbol)
                 case _ if (o.tpe.termSymbol.isModule) =>
                   //Console.println("o.tpe.termSymbol is a module!  "+sym)
                   singleType(o.tpe.prefix, o.symbol)
                 case Select(path,sym) =>
-                  DBG("path    "+path);
-                  DBG("sym     "+sym);
+                  //DBG("path    "+path);
+                  //DBG("sym     "+sym);
                   path.tpe match {
                     case ThisType(sym) =>
                       singleType(path.tpe, o.symbol)
@@ -1183,8 +1184,8 @@ trait ParallelMatching  {
 
                   }
                 case o @ Ident(_) => // lazy val
-                  DBG("sym     "+o.symbol)
-                  DBG("sym.isValue     "+o.symbol.isValue)
+                  //DBG("sym     "+o.symbol)
+                  //DBG("sym.isValue     "+o.symbol.isValue)
                   //singleType(NoPrefix, o.symbol)                                  // before
                 if (!o.symbol.isValue) {
 		  singleType(o.tpe.prefix, o.symbol)
@@ -1438,7 +1439,7 @@ trait ParallelMatching  {
    */
   final def condition(tpe: Type, scrut: Symbol): Tree = {
     val res = condition1(tpe, scrut)
-    DBG("condition, tpe = "+tpe+", scrut.tpe = "+scrut.tpe+", res = "+res)
+    //DBG("condition, tpe = "+tpe+", scrut.tpe = "+scrut.tpe+", res = "+res)
     res
   }
   final def condition1(tpe: Type, scrut: Symbol): Tree = {
