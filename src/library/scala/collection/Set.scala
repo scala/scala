@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -81,7 +81,7 @@ trait Set[A] extends (A => Boolean) with Collection[A] {
    *              contain the same elements.
    */
   override def equals(that: Any): Boolean = that match {
-    case other: Set[a] =>
+    case other: Set[A] =>
       this.size == other.size && subsetOf(other.asInstanceOf[Set[A]])
     case _ =>
       false
