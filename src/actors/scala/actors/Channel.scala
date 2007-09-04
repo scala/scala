@@ -35,19 +35,21 @@ case class ! [a](ch: Channel[a], msg: a)
  * actors. Only the actor creating an instance of a
  * <code>Channel</code> may receive from it.
  *
- * @version 0.9.8
+ * @version 0.9.9
  * @author Philipp Haller
  */
 class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
 
-  private[actors] var receiver: Actor = synchronized {
+  private[actors] var recv: Actor = {
     // basically Actor.self, but can be null
     Actor.tl.get.asInstanceOf[Actor]
   }
 
+  def receiver: Actor = recv
+
   private[actors] def this(recv: Actor) = {
     this()
-    receiver = recv
+    this.recv = recv
   }
 
   /**
@@ -56,7 +58,7 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
    * @param  msg the message to be sent
    */
   def !(msg: Msg) {
-    receiver ! scala.actors.!(this, msg)
+    recv ! scala.actors.!(this, msg)
   }
 
   /**
@@ -64,7 +66,7 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
    * last sender as sender instead of <code>self</code>.
    */
   def forward(msg: Msg) {
-    receiver forward scala.actors.!(this, msg)
+    recv forward scala.actors.!(this, msg)
   }
 
   /**
@@ -75,7 +77,7 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
    */
   def receive[R](f: PartialFunction[Msg, R]): R = {
     val C = this.asInstanceOf[Channel[Any]]
-    receiver.receive {
+    recv.receive {
       case C ! msg if (f.isDefinedAt(msg.asInstanceOf[Msg])) => f(msg.asInstanceOf[Msg])
     }
   }
@@ -97,7 +99,7 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
    */
   def receiveWithin[R](msec: Long)(f: PartialFunction[Any, R]): R = {
     val C = this.asInstanceOf[Channel[Any]]
-    receiver.receiveWithin(msec) {
+    recv.receiveWithin(msec) {
       case C ! msg if (f.isDefinedAt(msg)) => f(msg)
       case TIMEOUT => f(TIMEOUT)
     }
@@ -113,7 +115,7 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
    */
   def react(f: PartialFunction[Msg, Unit]): Nothing = {
     val C = this.asInstanceOf[Channel[Any]]
-    receiver.react {
+    recv.react {
       case C ! msg if (f.isDefinedAt(msg.asInstanceOf[Msg])) => f(msg.asInstanceOf[Msg])
     }
   }
@@ -130,7 +132,7 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
    */
   def reactWithin(msec: Long)(f: PartialFunction[Any, Unit]): Nothing = {
     val C = this.asInstanceOf[Channel[Any]]
-    receiver.reactWithin(msec) {
+    recv.reactWithin(msec) {
       case C ! msg if (f.isDefinedAt(msg)) => f(msg)
       case TIMEOUT => f(TIMEOUT)
     }
@@ -145,7 +147,7 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
    */
   def !?(msg: Msg): Any = {
     val replyCh = Actor.self.freshReplyChannel
-    receiver.send(scala.actors.!(this, msg), replyCh)
+    recv.send(scala.actors.!(this, msg), replyCh)
     replyCh.receive {
       case x => x
     }
@@ -162,7 +164,7 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
    */
   def !?(msec: Long, msg: Msg): Option[Any] = {
     val replyCh = Actor.self.freshReplyChannel
-    receiver.send(scala.actors.!(this, msg), replyCh)
+    recv.send(scala.actors.!(this, msg), replyCh)
     replyCh.receiveWithin(msec) {
       case TIMEOUT => None
       case x => Some(x)

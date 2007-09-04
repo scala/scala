@@ -14,7 +14,7 @@ package scala.actors
  * The <code>OutputChannel</code> trait provides a common interface
  * for all channels to which values can be sent.
  *
- * @version 0.9.8
+ * @version 0.9.9
  * @author Philipp Haller
  */
 trait OutputChannel[Msg] {
@@ -30,4 +30,10 @@ trait OutputChannel[Msg] {
    * <code>OutputChannel</code> (asynchronous).
    */
   def forward(msg: Msg): Unit
+
+  /**
+   * Returns the <code>Actor</code> that is
+   * receiving from this <code>OutputChannel</code>.
+   */
+  def receiver: Actor
 }

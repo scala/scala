@@ -1,3 +1,12 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2005-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+// $Id$
 
 package scala.actors
 
@@ -5,9 +14,10 @@ package scala.actors
  * This class is used by our efficient message queue
  * implementation.
  *
- * @version 0.9.8
+ * @version 0.9.9
  * @author Philipp Haller
  */
+@serializable
 class MessageQueueElement {
   var msg: Any = _
   var session: OutputChannel[Any] = null
@@ -23,6 +33,7 @@ class MessageQueueElement {
  * @version 0.9.8
  * @author Philipp Haller
  */
+@serializable
 class MessageQueue {
   var first: MessageQueueElement = null
   // last == null iff list empty
