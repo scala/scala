@@ -1665,19 +1665,16 @@ trait Typers { self: Analyzer =>
             //todo: replace arg with arg.asInstanceOf[inferTypedPattern(unappFormal, arg.tpe)] instead.
             argDummy.setInfo(arg.tpe) // bq: this line fixed #1281. w.r.t. comment ^^^, maybe good enough?
           }
-          val funPrefix = fun.tpe.prefix match {
+          val funPrefix = if (fun.symbol.owner.isMethod) NoPrefix else fun.tpe.prefix match {
             case tt @ ThisType(sym) =>
-              //Console.println(" sym="+sym+" "+" .isPackageClass="+sym.isPackageClass+" .isModuleClass="+sym.isModuleClass);
-              //Console.println(" funsymown="+fun.symbol.owner+" .isClass+"+fun.symbol.owner.isClass);
-              //Console.println(" contains?"+sym.tpe.decls.lookup(fun.symbol.name));
-              if(sym != fun.symbol.owner && (sym.isPackageClass||sym.isModuleClass) /*(1)*/ ) { // (1) see 'files/pos/unapplyVal.scala'
-                if(fun.symbol.owner.isClass) {
-                  mkThisType(fun.symbol.owner)
-                } else {
-                  NoPrefix                                                 // see 'files/run/unapplyComplex.scala'
-                }
-              } else tt
-            case st @ SingleType(pre, sym) => st
+              if((sym eq fun.symbol.owner)|| !sym.isPackageClass) {
+                tt
+              } else {
+                mkThisType(fun.symbol.owner) // see 'files/pos/unapplyVal.scala'
+              }
+
+            case st @ SingleType(pre, sym) =>
+              st
             case xx                        => xx // cannot happen?
           }
           val fun1untyped = atPos(fun.pos) {
