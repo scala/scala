@@ -7,7 +7,7 @@ object message {
     val n = try { Integer.parseInt(args(0)) }
     catch {
       case _ =>
-        scala.Console.println("Usage: examples.actors.Message <n>")
+        println("Usage: examples.actors.message <n>")
         Predef.exit
     }
     val nActors = 500
@@ -18,11 +18,11 @@ object message {
       react {
         case value: int =>
           val j = value + 1; val nsum = sum + j
-          if (next == null && nsum >= finalSum)
-            Console.println(nsum)
+          if (next == null && nsum >= n * j)
+            println(nsum)
           else {
             if (next != null) next ! j
-            beh(next, nsum)
+            if (nsum < n * j) beh(next, nsum)
           }
       }
 
