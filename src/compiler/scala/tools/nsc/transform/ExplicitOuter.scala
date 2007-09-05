@@ -200,7 +200,7 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
           case DefDef(_, _, _, vparamss, _, _) =>
             if (tree.symbol.isClassConstructor && isInner(tree.symbol.owner)) {
               outerParam = vparamss.head.head.symbol
-              assert(outerParam.name == nme.OUTER)
+              assert(outerParam.name startsWith nme.OUTER, outerParam.name)
             }
           case _ =>
         }
