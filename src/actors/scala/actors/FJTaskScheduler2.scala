@@ -11,10 +11,12 @@ import scala.collection.mutable.{ArrayBuffer, Buffer, HashMap, Queue, Stack, Has
 /**
  * FJTaskScheduler2
  *
- * @version 0.9.8
+ * @version 0.9.9
  * @author Philipp Haller
  */
-class FJTaskScheduler2 extends Thread with IScheduler {
+class FJTaskScheduler2(core: Int, max: Int) extends Thread with IScheduler {
+  // as long as this thread runs, JVM should not exit
+  setDaemon(false)
 
   val printStats = false
   //val printStats = true
@@ -24,11 +26,11 @@ class FJTaskScheduler2 extends Thread with IScheduler {
 
   val initCoreSize =
     if (null ne coreProp) Integer.parseInt(coreProp)
-    else 4
+    else core
 
   val maxSize =
     if (null ne maxProp) Integer.parseInt(maxProp)
-    else 256
+    else max
 
   private var coreSize = initCoreSize
 
@@ -130,9 +132,7 @@ class FJTaskScheduler2 extends Thread with IScheduler {
   }
 
   def start(task: Runnable) {
-    this.synchronized {
-      pendingReactions = pendingReactions + 1
-    }
+    pendReaction
     executor.execute(task)
   }
 

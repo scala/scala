@@ -28,7 +28,7 @@ import scala.collection.mutable.{ArrayBuffer, Buffer, HashMap, Queue, Stack, Has
 object Scheduler {
   private var sched: IScheduler =
     {
-      var s: IScheduler = new FJTaskScheduler2
+      var s: IScheduler = new FJTaskScheduler2(4, 256)
       s.start()
       s
     }
@@ -36,6 +36,7 @@ object Scheduler {
   def impl = sched
   def impl_= (scheduler: IScheduler) = {
     sched = scheduler
+    sched.start()
   }
 
   var tasks: LinkedQueue = null
@@ -49,7 +50,7 @@ object Scheduler {
 
   def restart(): Unit = synchronized {
     sched = {
-      var s: IScheduler = new FJTaskScheduler2
+      var s: IScheduler = new FJTaskScheduler2(4, 256)
       s.asInstanceOf[FJTaskScheduler2].setPendingCount(pendingCount)
       s.start()
       s
@@ -125,20 +126,35 @@ trait IScheduler {
  * This scheduler executes the tasks of an actor on a single
  * thread (the current thread).
  *
- * @version 0.9.8
+ * @version 0.9.9
  * @author Philipp Haller
  */
 class SingleThreadedScheduler extends IScheduler {
   def start() {}
 
+  val taskQ = new scala.collection.mutable.Queue[Runnable]
+
   def start(task: Runnable) {
     // execute task immediately on same thread
     task.run()
+    while (taskQ.length > 0) {
+      val nextTask = taskQ.dequeue
+      nextTask.run()
+    }
   }
 
   def execute(task: Runnable) {
-    // execute task immediately on same thread
-    task.run()
+    if (Actor.tl.get.isInstanceOf[ActorProxy]) {
+      // execute task immediately on same thread
+      task.run()
+      while (taskQ.length > 0) {
+        val nextTask = taskQ.dequeue
+        nextTask.run()
+      }
+    } else {
+      // queue task for later execution
+      taskQ += task
+    }
   }
 
   def getTask(worker: WorkerThread): Runnable = null
