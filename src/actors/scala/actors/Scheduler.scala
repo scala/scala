@@ -28,7 +28,7 @@ import scala.collection.mutable.{ArrayBuffer, Buffer, HashMap, Queue, Stack, Has
 object Scheduler {
   private var sched: IScheduler =
     {
-      var s: IScheduler = new FJTaskScheduler2(4, 256)
+      var s: IScheduler = new FJTaskScheduler2
       s.start()
       s
     }
@@ -50,7 +50,7 @@ object Scheduler {
 
   def restart(): Unit = synchronized {
     sched = {
-      var s: IScheduler = new FJTaskScheduler2(4, 256)
+      var s: IScheduler = new FJTaskScheduler2
       s.asInstanceOf[FJTaskScheduler2].setPendingCount(pendingCount)
       s.start()
       s

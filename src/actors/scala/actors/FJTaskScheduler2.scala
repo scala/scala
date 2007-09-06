@@ -14,7 +14,7 @@ import scala.collection.mutable.{ArrayBuffer, Buffer, HashMap, Queue, Stack, Has
  * @version 0.9.9
  * @author Philipp Haller
  */
-class FJTaskScheduler2(core: Int, max: Int) extends Thread with IScheduler {
+class FJTaskScheduler2 extends Thread with IScheduler {
   // as long as this thread runs, JVM should not exit
   setDaemon(false)
 
@@ -26,11 +26,11 @@ class FJTaskScheduler2(core: Int, max: Int) extends Thread with IScheduler {
 
   val initCoreSize =
     if (null ne coreProp) Integer.parseInt(coreProp)
-    else core
+    else 4
 
   val maxSize =
     if (null ne maxProp) Integer.parseInt(maxProp)
-    else max
+    else 256
 
   private var coreSize = initCoreSize
 
