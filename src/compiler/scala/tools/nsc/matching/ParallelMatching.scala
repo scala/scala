@@ -422,10 +422,11 @@ trait ParallelMatching  {
 
     private def bindToScrutinee(x:Symbol) = typedValDef(x,mkIdent(scrutinee))
 
-    val unapp = strip2(column.head)
-    /** returns the (un)apply and two continuations */
-    var rootvdefs:List[Tree] = Nil // later, via bindToScrutinee
+    val (vs,unapp) = strip(column.head)
+    //DBG("\n\n?? vs = "+vs)
+    //DBG("?? unapp = "+unapp)
 
+    /** returns (unapply-call, success-rep, optional fail-rep*/
     final def getTransition(implicit theOwner: Symbol): (Tree, List[Tree], Rep, Option[Rep]) = {
       unapp match {
         case ua @ UnApply(app @ Apply(fn, appargs), args) =>
@@ -436,7 +437,7 @@ trait ParallelMatching  {
 
           val nrowsOther = column.tail.zip(rest.row.tail) flatMap { case (pat, Row(ps, subst, g, bx)) => strip2(pat) match {
             case UnApply(app @ Apply(fn1,_),args) if fn.symbol==fn1.symbol => Nil
-            case p                                                         => List(Row(pat::ps, subst, g, bx))
+            case _                                                         => List(Row(pat::ps, subst, g, bx))
           }}
           val nrepFail = if(nrowsOther.isEmpty) None else Some(rep.make(scrutinee::rest.temp, nrowsOther))
           //Console.println("active = "+column.head+" / nrepFail = "+nrepFail)
@@ -445,12 +446,12 @@ trait ParallelMatching  {
               val ntemps = scrutinee :: rest.temp
               val nrows  = column.zip(rest.row) map { case (pat, Row(ps, subst, g, bx)) => strip2(pat) match {
                 case UnApply(Apply(fn1,_),args) if (fn.symbol == fn1.symbol) =>
-                  rootvdefs = (strip1(pat).toList map bindToScrutinee) ::: rootvdefs
-                  Row(EmptyTree::ps, subst, g, bx)
+                  val nsubst = subst.add(strip1(pat).elements, scrutinee)
+                  Row(EmptyTree::ps, nsubst /*subst*/ , g, bx)
                 case _                                                     =>
                   Row(     pat ::ps, subst, g, bx)
               }}
-              (uacall, rootvdefs, rep.make(ntemps, nrows), nrepFail)
+              (uacall, Nil, rep.make(ntemps, nrows), nrepFail)
 
             case  1 => //special case for unapply(p), app.tpe is Option[T]
               val vtpe = app.tpe.typeArgs(0)
@@ -458,48 +459,48 @@ trait ParallelMatching  {
               val ntemps = vsym :: scrutinee :: rest.temp
               val nrows = column.zip(rest.row) map { case (pat, Row(ps, subst, g, bx)) => strip2(pat) match {
                 case UnApply(Apply(fn1,_),args) if (fn.symbol == fn1.symbol) =>
-                  rootvdefs = (strip1(pat).toList map bindToScrutinee) ::: rootvdefs
-                  Row(args(0)   :: EmptyTree :: ps, subst, g, bx)
+                  val nsubst = subst.add(strip1(pat).elements, scrutinee)
+                  Row(args(0)   :: EmptyTree :: ps, nsubst /*subst*/ , g, bx)
                 case _                                                           =>
                   Row(EmptyTree ::  pat      :: ps, subst, g, bx)
               }}
-              (uacall, rootvdefs:::List( typedValDef(vsym, Select(mkIdent(ures), nme.get))), rep.make(ntemps, nrows), nrepFail)
+              val vdef = typedValDef(vsym, Select(mkIdent(ures), nme.get))
+              (uacall, List(vdef), rep.make(ntemps, nrows), nrepFail)
 
             case _ => // app.tpe is Option[? <: ProductN[T1,...,Tn]]
               val uresGet = newVarCapture(ua.pos, app.tpe.typeArgs(0))
-              var vdefs = typedValDef(uresGet, Select(mkIdent(ures), nme.get))::Nil
+              val vdefs = new ListBuffer[Tree]
+              vdefs += typedValDef(uresGet, Select(mkIdent(ures), nme.get))
               var ts = definitions.getProductArgs(uresGet.tpe).get
               var i = 1;
               //Console.println("typeargs"+ts)
-              var vsyms:List[Symbol] = Nil
-              var dummies:List[Tree] = Nil
+              val vsyms = new ListBuffer[Symbol]
               while(ts ne Nil) {
                 val vtpe = ts.head
                 val vchild = newVarCapture(ua.pos, vtpe)
                 val accSym = definitions.productProj(uresGet, i)
                 val rhs = typed(Apply(Select(mkIdent(uresGet), accSym), List())) // nsc !
-                vdefs = typedValDef(vchild, rhs)::vdefs
-                vsyms   =  vchild  :: vsyms
-                dummies = EmptyTree::dummies
+                vdefs += typedValDef(vchild, rhs)
+                vsyms += vchild
                 ts = ts.tail
                 i += 1
               }
-              val ntemps  =  vsyms.reverse ::: scrutinee :: rest.temp
-              dummies     = dummies.reverse
+              val ntemps  = vsyms.toList ::: scrutinee :: rest.temp
+              val dummies = getDummies(i - 1)
               val nrows = column.zip(rest.row) map { case (pat,Row(ps, subst, g, bx)) => strip2(pat) match {
                 case UnApply(Apply(fn1,_),args) if (fn.symbol == fn1.symbol) =>
-                  rootvdefs = (strip1(pat).toList map bindToScrutinee) ::: rootvdefs
-                  Row(   args::: EmptyTree ::ps, subst, g, bx)
+                  val nsubst = subst.add(strip1(pat).elements, scrutinee)
+                  Row(   args::: EmptyTree ::ps, nsubst /*subst*/ , g, bx)
                 case _                                                       =>
                   Row(dummies:::     pat   ::ps, subst, g, bx)
               }}
-              (uacall, rootvdefs:::vdefs.reverse, rep.make(ntemps, nrows), nrepFail)
+              (uacall, vdefs.toList, rep.make(ntemps, nrows), nrepFail)
           }}
     } /* def getTransition(...) */
 
     final def tree(implicit theOwner: Symbol, failTree: Tree) = {
       val (uacall/*:ValDef*/ , vdefs,srep,frep) = this.getTransition // uacall is a Valdef
-      //Console.println("getTransition"+(uacall,vdefs,srep,frep))
+      DBG("getTransition"+(uacall,vdefs,srep,frep))
       val succ = repToTree(srep)
       val fail = if(frep.isEmpty) failTree else repToTree(frep.get)
       val cond =
@@ -655,9 +656,9 @@ trait ParallelMatching  {
     private val isCaseHead = isCaseClass(headPatternType)
     private val dummies = if(!isCaseHead) Nil else getDummies(headPatternType.typeSymbol.caseFieldAccessors.length)
 
-    //Console.println("headPatternType "+headPatternType)
-    //Console.println("isCaseHead = "+isCaseHead)
-    //Console.println("dummies = "+dummies)
+    DBG("headPatternType "+headPatternType)
+    DBG("isCaseHead = "+isCaseHead)
+    DBG("dummies = "+dummies)
 
     private def subpatterns(pat:Tree): List[Tree] = {
       //Console.print("subpatterns("+pat+")=")
@@ -972,16 +973,16 @@ trait ParallelMatching  {
       //Console.println(jumpT)
       return jump
     }
-    //DBG("requestbody("+bx+", "+subst+") isReached(bx)?"+isReached(bx)+" labels:"); // {for(s<-labels) Console.print({if(s ne null) {s} else "_"}+",")}
-    //DBG("vss(bx) = "+vss(bx))
+    DBG("requestbody("+bx+", "+subst+") isReached(bx)?"+isReached(bx)+" labels:");
+    //{for(s<-labels) Console.print({if(s ne null) {s} else "_"}+",")}
+    DBG("vss(bx) = "+vss(bx))
     if(!isReached(bx)) { // first time this bx is requested
       val argts = new ListBuffer[Type] // types of
       var vrev: List[Symbol] = Nil
       var vdefs:List[Tree] = Nil
-      //Console.println("vss = "+vss(bx))
       val it = vss(bx).elements; while(it.hasNext) {
         val v = it.next
-        //Console.println("v = "+v)
+        DBG("v = "+v)
         val substv = subst(v)
         if(substv ne null) {// might be bound elsewhere ( see `x @ unapply' )
           vrev   = v :: vrev
@@ -1067,7 +1068,7 @@ trait ParallelMatching  {
         var indexOfAlternative = -1
         var j = 0; while(opats ne Nil) {
           var opat = opats.head // original pattern
-          //DBG("opat = "+opat)
+          DBG("opat = "+opat)
           val (vars,strippedPat) = strip(opat)
           val vs = vars.toList
           def handle(prepat:Tree): Unit = prepat match {
@@ -1087,7 +1088,7 @@ trait ParallelMatching  {
               }
               pats = opat :: pats
 
-            case typat @ Typed(p:UnApply,tpt) =>
+            case typat @ Typed(p,tpt) if strip2(p).isInstanceOf[UnApply]=>
               pats = (if (temp(j).tpe <:< tpt.tpe) p else typat)::pats // what about the null-check?
 
             case Ident(nme.WILDCARD) | EmptyTree | _:Literal | _:Typed =>
@@ -1221,7 +1222,7 @@ trait ParallelMatching  {
 
           }
           handle(strippedPat)
-          //Console.println("!!added "+pats.head+":"+pats.head.tpe)
+          DBG("!!added "+pats.head+":"+pats.head.tpe)
           opats = opats.tail
           j += 1
         }

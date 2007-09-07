@@ -219,7 +219,7 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
 
          //non-fallback:
         case e: CantHandle => rep.cleanup(); return e
-        case e => throw e
+        case e => e.printStackTrace(); throw new FatalError(e.getMessage())
       }
     }
 
