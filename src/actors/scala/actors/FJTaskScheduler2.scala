@@ -1,3 +1,12 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2005-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+// $Id$
 
 package scala.actors
 
@@ -11,10 +20,12 @@ import scala.collection.mutable.{ArrayBuffer, Buffer, HashMap, Queue, Stack, Has
 /**
  * FJTaskScheduler2
  *
- * @version 0.9.8
+ * @version 0.9.9
  * @author Philipp Haller
  */
 class FJTaskScheduler2 extends Thread with IScheduler {
+  // as long as this thread runs, JVM should not exit
+  setDaemon(false)
 
   val printStats = false
   //val printStats = true
@@ -130,9 +141,7 @@ class FJTaskScheduler2 extends Thread with IScheduler {
   }
 
   def start(task: Runnable) {
-    this.synchronized {
-      pendingReactions = pendingReactions + 1
-    }
+    pendReaction
     executor.execute(task)
   }
 

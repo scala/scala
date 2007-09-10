@@ -42,36 +42,38 @@ private[actors] class ExitActorException extends Throwable
   def run() {
     val saved = Actor.tl.get.asInstanceOf[Actor]
     Actor.tl.set(a)
-    Scheduler.unPendReaction
     a.isDetached = false
     try {
-      try {
-        if (a.shouldExit) // links
-          a.exit()
-        else {
-          if (f == null)
-            a.act()
-          else
-            f(msg)
-          a.kill(); a.exit()
-        }
-      } catch {
-        case _: ExitActorException =>
+      if (a.shouldExit) // links
+        a.exit()
+      else {
+        if (f == null)
+          a.act()
+        else
+          f(msg)
+        a.kill(); a.exit()
       }
     }
     catch {
+      case eae: ExitActorException => {
+        Scheduler.unPendReaction
+      }
       case _: SuspendActorException => {
         // do nothing (continuation is already saved)
       }
       case t: Throwable => {
+        Debug.info(a+": caught "+t)
+        t.printStackTrace()
+        Scheduler.unPendReaction
         // links
         a.synchronized {
           if (!a.links.isEmpty)
             a.exitLinked(t)
         }
       }
+    } finally {
+      Actor.tl.set(saved)
     }
-    Actor.tl.set(saved)
   }
 
 }

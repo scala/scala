@@ -266,6 +266,7 @@ object Actor {
  * @version 0.9.9
  * @author Philipp Haller
  */
+@serializable
 trait Actor extends OutputChannel[Any] {
 
   private var received: Option[Any] = None
@@ -402,7 +403,6 @@ trait Actor extends OutputChannel[Any] {
   def react(f: PartialFunction[Any, Unit]): Nothing = {
     assert(Actor.self == this, "react on channel belonging to other actor")
     if (shouldExit) exit() // links
-    Scheduler.pendReaction
     this.synchronized {
       tick()
       val qel = mailbox.extractFirst((m: Any) => f.isDefinedAt(m))
@@ -431,7 +431,6 @@ trait Actor extends OutputChannel[Any] {
   def reactWithin(msec: Long)(f: PartialFunction[Any, Unit]): Nothing = {
     assert(Actor.self == this, "react on channel belonging to other actor")
     if (shouldExit) exit() // links
-    Scheduler.pendReaction
     this.synchronized {
       tick()
       // first, remove spurious TIMEOUT message from mailbox if any
@@ -652,7 +651,13 @@ trait Actor extends OutputChannel[Any] {
   /**
    * Starts this actor.
    */
-  def start(): Actor = {
+  def start(): Actor = synchronized {
+    // reset various flags
+    trapExit = false
+    exitReason = 'normal
+    exiting = false
+    shouldExit = false
+
     Scheduler start new Reaction(this)
     this
   }
@@ -669,7 +674,7 @@ trait Actor extends OutputChannel[Any] {
       case 'kill => Actor.self.kill()
     }, 'kill)
 
-    throw new ExitActorException
+    throw new SuspendActorException
   }
 
   private[actors] var links: List[Actor] = Nil
