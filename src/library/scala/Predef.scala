@@ -98,12 +98,12 @@ object Predef {
 
   def assume(assumption: Boolean) {
     if (!assumption)
-      throw new Error("assumption failed")
+      throw new java.lang.IllegalArgumentException("assumption failed")
   }
 
   def assume(assumption: Boolean, message: Any) {
     if (!assumption)
-      throw new Error("assumption failed: " + message)
+      throw new java.lang.IllegalArgumentException("assumption failed: " + message)
   }
 
   // tupling ------------------------------------------------------------

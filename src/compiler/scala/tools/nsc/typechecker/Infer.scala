@@ -194,8 +194,9 @@ trait Infer {
         "overloaded method " + tree.symbol + " with alternatives " + tree.tpe
       else
         tree.symbol.toString() +
-        (if (tree.tpe.paramSectionCount > 0) ": " else " of type ") +
-        tree.tpe +
+        (if (tree.symbol.isModule) ""
+         else if (tree.tpe.paramSectionCount > 0) ": "+tree.tpe
+         else " of type "+tree.tpe) +
         (if (tree.symbol.name == nme.apply) tree.symbol.locationString else "")
 
     def applyErrorMsg(tree: Tree, msg: String, argtpes: List[Type], pt: Type) = (
@@ -812,6 +813,8 @@ trait Infer {
         widen(tp.normalize)
       case rtp @ RefinedType(parents, decls) =>
         copyRefinedType(rtp, List.mapConserve(parents)(widen), decls)
+      case AnnotatedType(_, underlying) =>
+        widen(underlying)
       case _ =>
         tp
     }

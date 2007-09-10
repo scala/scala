@@ -398,16 +398,16 @@ abstract class TreeBuilder {
 
     case None =>
       //  in case there are no variables in pattern
-      //  val p = e  ==>  e.match (case p => ())
+      //  val/var p = e  ==>  e.match (case p => ())
       //
-      //  in case there is exactly one variable in pattern
-      //  val x_1 = e.match (case p => (x_1))
+      //  in case there is exactly one variable x_1 in pattern
+      //  val/var p = e  ==>  val/var x_1 = e.match (case p => (x_1))
       //
       //  in case there are more variables in pattern
-      //  val p = e  ==>  private synthetic val t$ = e.match (case p => (x_1, ..., x_N))
-      //                  val x_1 = t$._1
+      //  val/var p = e  ==>  private synthetic val t$ = e.match (case p => (x_1, ..., x_N))
+      //                  val/var x_1 = t$._1
       //                  ...
-      //                  val x_N = t$._N
+      //                  val/var x_N = t$._N
       val pat1 = patvarTransformer.transform(pat)
       val vars = getVariables(pat1)
       val matchExpr = atPos(pat1.pos){
@@ -422,7 +422,8 @@ abstract class TreeBuilder {
           List(ValDef(mods, vname, tpt, matchExpr))
         case _ =>
           val tmp = freshName(pat1.pos)
-          val firstDef = ValDef(Modifiers(PRIVATE | LOCAL | SYNTHETIC | (mods.flags & LAZY)), tmp, TypeTree(), matchExpr)
+          val firstDef = ValDef(Modifiers(PRIVATE | LOCAL | SYNTHETIC | (mods.flags & LAZY)),
+                                tmp, TypeTree(), matchExpr)
           var cnt = 0
           val restDefs = for (val (vname, tpt) <- vars) yield {
             cnt = cnt + 1

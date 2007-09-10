@@ -1329,7 +1329,6 @@ trait Typers { self: Analyzer =>
      */
     def typedCase(cdef: CaseDef, pattpe: Type, pt: Type): CaseDef = {
       val pat1: Tree = typedPattern(cdef.pat, pattpe)
-      //Console.println("UNAPPLY3:"+pat1+":"+pat1.tpe)
       val guard1: Tree = if (cdef.guard == EmptyTree) EmptyTree
                          else typed(cdef.guard, BooleanClass.tpe)
       var body1: Tree = typed(cdef.body, pt)
@@ -1665,27 +1664,25 @@ trait Typers { self: Analyzer =>
             //todo: replace arg with arg.asInstanceOf[inferTypedPattern(unappFormal, arg.tpe)] instead.
             argDummy.setInfo(arg.tpe) // bq: this line fixed #1281. w.r.t. comment ^^^, maybe good enough?
           }
-          val funPrefix = if (fun.symbol.owner.isMethod) NoPrefix else fun.tpe.prefix match {
+/*
+          val funPrefix = fun.tpe.prefix match {
             case tt @ ThisType(sym) =>
-              //Console.println("tt = "+tt+" sym.isModuleClass = "+sym.isModuleClass+" sym.isPackageClass = "+sym.isPackageClass+" isStaticModul="+sym.isStaticModule+" fso = "+fun.symbol.owner+" fso.isClass"+fun.symbol.owner.isClass)
-              if((sym eq fun.symbol.owner)|| !sym.isPackageClass) {
-                //Console.println("1 ThisType("+sym+")")
-                tt
-              } else {
+              //Console.println(" sym="+sym+" "+" .isPackageClass="+sym.isPackageClass+" .isModuleClass="+sym.isModuleClass);
+              //Console.println(" funsymown="+fun.symbol.owner+" .isClass+"+fun.symbol.owner.isClass);
+              //Console.println(" contains?"+sym.tpe.decls.lookup(fun.symbol.name));
+              if(sym != fun.symbol.owner && (sym.isPackageClass||sym.isModuleClass) /*(1)*/ ) { // (1) see 'files/pos/unapplyVal.scala'
+                if(fun.symbol.owner.isClass) {
+                  mkThisType(fun.symbol.owner)
+                } else {
                 //Console.println("2 ThisType("+fun.symbol.owner+")")
-                mkThisType(fun.symbol.owner) // see 'files/pos/unapplyVal.scala'
-              }
-                //if (sym.isPackageClass && fun.symbol.owner.isClass)  { // (1)
-                //mkThisType(fun.symbol.owner)
-              //} else {
-              //  Console.println("NoPrefix")
-              //  NoPrefix                                                  // see 'files/run/unapplyComplex.scala'
-             // }
-            case st @ SingleType(pre, sym) =>
+                  NoPrefix                                                 // see 'files/run/unapplyComplex.scala'
+                }
+              } else tt
+            case st @ SingleType(pre, sym) => st
               st
             case xx                        => xx // cannot happen?
           }
-          val fun1untyped = atPos(fun.pos) {
+          val fun1untyped = fun
             Apply(
               Select(
                 gen.mkAttributedRef(funPrefix, fun.symbol) setType null,
@@ -1693,6 +1690,15 @@ trait Typers { self: Analyzer =>
                 unapp),
               List(arg))
           }
+*/
+          val fun1untyped = atPos(fun.pos) {
+            Apply(
+              Select(
+                fun setType null, // setType null is necessary so that ref will be stabilized; see bug 881
+                unapp),
+              List(arg))
+          }
+
           val fun1 = typed(fun1untyped)
           if (fun1.tpe.isErroneous) setError(tree)
           else {

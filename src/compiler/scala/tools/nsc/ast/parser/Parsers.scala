@@ -1941,7 +1941,7 @@ trait Parsers {
         case VAL =>
           patDefOrDcl(mods)
         case VAR =>
-          varDefOrDcl(mods)
+          patDefOrDcl(mods | Flags.MUTABLE)
         case DEF =>
           List(funDefOrDcl(mods))
         case TYPE =>
@@ -1955,18 +1955,29 @@ trait Parsers {
 
     /** PatDef ::= Pattern2 {`,' Pattern2} [`:' Type] `=' Expr
      *  ValDcl ::= Id {`,' Id} `:' Type
+     *  VarDef ::= PatDef | Id {`,' Id} `:' Type `=' `_'
      */
     def patDefOrDcl(mods: Modifiers): List[Tree] = {
       var newmods = mods
-      var lhs = new ListBuffer[Tree]
+      val lhsBuf = new ListBuffer[Tree]
       do {
         inNextToken
-        lhs += stripParens(pattern2(false))
+        val p = pattern2(false)
+        lhsBuf += stripParens(p)
       } while (inToken == COMMA)
+      val lhs = lhsBuf.toList
       val tp = typedOpt()
       val rhs =
-        if (tp.isEmpty || inToken == EQUALS) equalsExpr()
-        else {
+        if (tp.isEmpty || inToken == EQUALS) {
+          accept(EQUALS)
+          if (!tp.isEmpty && newmods.hasFlag(Flags.MUTABLE) &&
+              (lhs.toList forall (_.isInstanceOf[Ident])) && inToken == USCORE) {
+            inNextToken
+            EmptyTree
+          } else {
+            expr()
+          }
+        } else {
           newmods = newmods | Flags.DEFERRED
           EmptyTree
         }
@@ -1979,10 +1990,11 @@ trait Parsers {
                      else
                        Typed(p, tp),
                      rhs.duplicate) map atPos(p.pos)
-        if (rhs == EmptyTree) {
+        if (newmods.hasFlag(Flags.DEFERRED)) {
           trees match {
             case List(ValDef(_, _, _, EmptyTree)) =>
-              if (mods.hasFlag(Flags.LAZY)) syntaxError(p.pos, "lazy values may not be abstract", false)
+              if (mods.hasFlag(Flags.LAZY))
+                syntaxError(p.pos, "lazy values may not be abstract", false)
             case _ => syntaxError(p.pos, "pattern definition may not be abstract", false)
           }
         }
@@ -1991,7 +2003,7 @@ trait Parsers {
       for (p <- lhs.toList; d <- mkDefs(p)) yield d
     }
 
-    /** VarDef ::= Id {`,' Id} [`:' Type] `=' Expr
+    /** VarDef ::= PatDef
      *           | Id {`,' Id} `:' Type `=' `_'
      *  VarDcl ::= Id {`,' Id} `:' Type
      */
@@ -2389,7 +2401,7 @@ trait Parsers {
     /** BlockStatSeq ::= { BlockStat semi } [ResultExpr]
      *  BlockStat    ::= Import
      *                 | Annotations [implicit] [lazy] Def
-     *                 | LocalModifiers TmplDef
+     *                 | Annotations LocalModifiers TmplDef
      *                 | Expr1
      *                 |
      */
@@ -2412,13 +2424,9 @@ trait Parsers {
         } else if (isExprIntro) {
           stats += expr(InBlock)
           if (inToken != RBRACE && inToken != CASE) acceptStatSep()
-        } else if (isDefIntro) {
-          localDef(NoMods)
-        } else if (isLocalModifier || inToken == AT) {
+        } else if (isDefIntro || isLocalModifier || in.token == AT) {
           val annots = annotations()
-          localDef(modifiers() withAnnotations annots)
-        } else if (!isStatSep) {
-          localDef(localModifiers())
+          localDef(localModifiers() withAnnotations annots)
         } else if (isStatSep) {
           inNextToken
         } else {
