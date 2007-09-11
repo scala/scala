@@ -88,8 +88,8 @@ trait Set[A] extends (A => Boolean) with Collection[A] {
      if (count == size) this
      else if (count == that.size) that
      else {
-       import scala.collection.jcl.LinkedHashSet
-       val ret = new LinkedHashSet[A]
+       import scala.collection.mutable.HashSet
+       val ret = new HashSet[A]
        ret ++= buf.projection.take(count)
        ret.readOnly
      }
