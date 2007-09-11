@@ -61,8 +61,10 @@ PROPERTIES
   <property name="lib.jar.name" value="scala-library.jar"/>
   <property name="dbc.jar.name" value="scala-dbc.jar"/>
   <property name="comp.jar.name" value="scala-compiler.jar"/>
+  <property name="partest.jar.name" value="scala-partest.jar"/>
   <property name="libsrc.jar.name" value="scala-library-src.jar"/>
   <property name="dbcsrc.jar.name" value="scala-dbc-src.jar"/>
+  <property name="parsrc.jar.name" value="scala-partest-src.jar"/>
   <property name="compsrc.jar.name" value="scala-compiler-src.jar"/>
   <property name="scala.exec.name" value="scala"/>
   <property name="scalac.exec.name" value="scalac"/>
@@ -568,6 +570,19 @@ BUILD QUICK-TEST LAYER
       message="copyright.string=${copyright.string}${line.separator}"
       append="true"
     />
+  <!-- Build partest -->
+    <mkdir dir="${quick.dir}/lib/partest"/>
+    <starr
+      srcdir="${src.dir}/partest"
+      destdir="${quick.dir}/lib/partest"
+      addparams="${nsc.params}"
+      deprecation="yes" unchecked="yes">
+      <classpath>
+        <pathelement location="${quick.dir}/lib/library"/>
+        <pathelement location="${quick.dir}/lib/compiler"/>
+        <pathelement location="${quick.dir}/lib/actors"/>
+      </classpath>
+    </starr>
   <!-- Timing the build -->
     <stopwatch name="timer.quick" action="total"/>
   <!-- Copy support files to build folder and links external libraries-->
@@ -955,7 +970,19 @@ TEST
       message="copyright.string=${copyright.string}${line.separator}"
       append="true"
     />
-
+  <!-- Build partest -->
+    <mkdir dir="${strap.dir}/lib/partest"/>
+    <starr
+      srcdir="${src.dir}/partest"
+      destdir="${strap.dir}/lib/partest"
+      addparams="${nsc.params}"
+      deprecation="yes" unchecked="yes">
+      <classpath>
+        <pathelement location="${strap.dir}/lib/library"/>
+        <pathelement location="${strap.dir}/lib/compiler"/>
+        <pathelement location="${strap.dir}/lib/actors"/>
+      </classpath>
+    </starr>
   <!-- Timing the build -->
     <stopwatch name="timer.strap" action="total"/>
   <!-- Copy support files to build folder and links external libraries-->
@@ -1290,6 +1317,33 @@ GENERATES A DISTRIBUTION
         <attribute name="Bundle-RequiredExecutionEnvironment" value="J2SE-1.4"/>
       </manifest>
     </jar>
+    <jar destfile="${dist.current.dir}/lib/${partest.jar.name}">
+      <fileset dir="${strap.dir}/lib/partest"/>
+      <manifest>
+        <attribute name="Signature-Version" value="${version.number}"/>
+        <attribute name="Built-By" value="${user.name}"/>
+        <attribute name="Main-Class" value="scala.tools.partest.TestRunner"/>
+        <attribute name="Class-Path" value="${lib.jar.name}"/>
+        <section name="scala/tools/partest">
+          <attribute name="Extension-Name" value="scala.tools.partest"/>
+          <attribute name="Specification-Title" value="Scala Test Utility"/>
+          <attribute name="Specification-Version" value="${version.number}"/>
+          <attribute name="Specification-Vendor" value="${vendor.name}"/>
+          <attribute name="Implementation-Title" value="scala.tools.partest"/>
+          <attribute name="Implementation-Version" value="${version.number}"/>
+          <attribute name="Implementation-Vendor" value="${vendor.name}"/>
+        </section>
+        <attribute name="Bundle-DocURL" value="http://www.scala-lang.org/"/>
+        <attribute name="Bundle-ManifestVersion" value="2"/>
+        <attribute name="Bundle-Name" value="Scala Test Bundle"/>
+        <attribute name="Bundle-SymbolicName" value="scala_compiler"/>
+        <attribute name="Bundle-Version" value="${osgi.version.number}"/>
+        <attribute name="Bundle-Vendor" value="${vendor.name}"/>
+        <attribute name="Export-Package" value="scala.tools.partest;version=&#34;${osgi.version.number}&#34;,scala.tools.partest.utils;version=&#34;${osgi.version.number}&#34;"/>
+        <attribute name="Import-Package" value="javax.swing"/>
+        <attribute name="Bundle-RequiredExecutionEnvironment" value="J2SE-1.4"/>
+      </manifest>
+    </jar>
 
     <!-- build source jars -->
     <jar
@@ -1300,6 +1354,11 @@ GENERATES A DISTRIBUTION
     <jar
       destfile="${dist.current.dir}/lib/${dbcsrc.jar.name}"
       basedir="${src.dir}/dbc"
+      includes="**/*.scala"
+      />
+    <jar
+      destfile="${dist.current.dir}/lib/${parsrc.jar.name}"
+      basedir="${src.dir}/partest"
       includes="**/*.scala"
       />
     <jar
