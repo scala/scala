@@ -11,12 +11,12 @@
 
 package scala.collection.mutable
 
-
+import Predef._
 import compat.Platform.ConcurrentModificationException
 
 /** The canonical factory methods for <a href="Set.html">mutable sets</a>.
-   * Currently these return <a href="HashSet.html">HashSet's</a>.
-   */
+ *  Currently these return <a href="HashSet.html">HashSet's</a>.
+ */
 object Set {
 
   /** The empty map of this type; this is implemented as a hashtable */
@@ -45,8 +45,9 @@ trait Set[A] extends collection.Set[A] with Scriptable[Message[A]] with Cloneabl
    *  <pre>set(elem) = true</pre>
    *
    */
-  def update(elem: A, included: Boolean): Unit =
+  def update(elem: A, included: Boolean) {
     if (included) this += elem else this -= elem
+  }
 
   /** Add a new element to the set.
    *
@@ -71,7 +72,7 @@ trait Set[A] extends collection.Set[A] with Scriptable[Message[A]] with Cloneabl
    *  <code>elems</code> to the set.
    *  @param elems  the iterator containing the elements to be added
    */
-  def ++=(elems: Iterator[A]): Unit = elems foreach +=
+  def ++=(elems: Iterator[A]) { elems foreach += }
 
   /** Add a new element to the set.
    *  @return the set itself with the element added.
@@ -129,7 +130,7 @@ trait Set[A] extends collection.Set[A] with Scriptable[Message[A]] with Cloneabl
   /** Remove all the elements provided by an iterator
    *  <code>elems</code> from the set.
    */
-  def --=(elems: Iterator[A]): Unit = elems foreach -=
+  def --=(elems: Iterator[A]) { elems foreach -= }
 
   /** Remove a new element from the set.
    *  @return the set itself with the element removed.
@@ -171,7 +172,7 @@ trait Set[A] extends collection.Set[A] with Scriptable[Message[A]] with Cloneabl
    *
    *  @param that the set to intersect with.
    */
-  def intersect(that: Set[A]): Unit = retain(that.contains)
+  def intersect(that: Set[A]) { retain(that.contains) }
 
   /** Method <code>retain removes all elements from the set for
    *  which the predicate <code>p</code> yields the value <code>false</code>.
@@ -183,7 +184,7 @@ trait Set[A] extends collection.Set[A] with Scriptable[Message[A]] with Cloneabl
   /** Removes all elements from the set. After this operation is completed,
    *  the set will be empty.
    */
-  def clear(): Unit = elements foreach -=
+  def clear() { elements foreach -= }
 
   /** Send a message to this scriptable object.
    *

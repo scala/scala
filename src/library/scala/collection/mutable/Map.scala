@@ -13,12 +13,10 @@ package scala.collection.mutable
 
 import Predef._
 
-//import Predef.UnsupportedOperationException
 
-
-/** The canonical factory methods for <a href="Map.html">mutable maps</a>.  These currently
-  *  return <a href="HashMap.html">HashMap's</a>.
-  */
+/** The canonical factory methods for <a href="Map.html">mutable maps</a>.
+ *  These currently return <a href="HashMap.html">HashMap's</a>.
+ */
 object Map {
 
   /** The empty map of this type; this is implemented as a hashtable */
@@ -158,13 +156,13 @@ trait Map[A, B] extends AnyRef
   /** Removes all mappings from the map. After this operation is
    *  completed, the map is empty.
    */
-  def clear(): Unit = keys foreach -=
+  def clear() { keys foreach -= }
 
   /** Check if this map maps <code>key</code> to a value.
     * Return that value if it exists, otherwise put <code>default</code>
     * as that key's value and return it.
     */
-  def getOrElseUpdate(key: A, default: =>B): B =
+  def getOrElseUpdate(key: A, default: => B): B =
     get(key) match {
       case Some(v) => v
       case None => val d = default; this(key) = d; d
@@ -228,7 +226,7 @@ trait Map[A, B] extends AnyRef
    * @deprecated   use <code>+=</code>
    */
   @deprecated
-  def incl(mappings: (A, B)*): Unit = this ++= mappings.elements
+  def incl(mappings: (A, B)*) { this ++= mappings.elements }
 
   /** This method will remove all the mappings for the given sequence
    *  of keys from the map.
@@ -237,11 +235,11 @@ trait Map[A, B] extends AnyRef
    * @deprecated    use <code>-=</code>
    */
   @deprecated
-  def excl(keys: A*): Unit = this --= keys.elements
+  def excl(keys: A*) { this --= keys.elements }
 
   @deprecated
   class MapTo(key: A) {
-    def ->(value: B): Unit = update(key, value)
+    def ->(value: B) { update(key, value) }
   }
 
 }
