@@ -41,7 +41,7 @@ class CompileSocket {
   protected val serverClass = "scala.tools.nsc.CompileServer"
 
   /** A regular expression for checking compiler output for errors */
-  val errorRegex = ".*errors? found.*"
+  val errorRegex = ".*(errors? found|don't know|bad option).*"
 
   /** A Pattern object for checking compiler output for errors */
   val errorPattern = Pattern.compile(errorRegex)
