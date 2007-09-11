@@ -495,7 +495,7 @@ abstract class GenJVM extends SubComponent {
       serialVUID match {
         case Some(value) =>
           val fieldName = "serialVersionUID"
-          jclass.addNewField(JAccessFlags.ACC_STATIC | JAccessFlags.ACC_PUBLIC,
+          jclass.addNewField(JAccessFlags.ACC_STATIC | JAccessFlags.ACC_PUBLIC | JAccessFlags.ACC_FINAL,
                              fieldName,
                              JType.LONG)
           clinit.emitPUSH(value)
