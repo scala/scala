@@ -99,11 +99,21 @@ abstract class DeadCodeElimination extends SubComponent {
               defs = defs + ((bb, idx)) -> rd.vars
 //              Console.println(i + ": " + (bb, idx) + " rd: " + rd + " and having: " + defs)
             case RETURN(_) | JUMP(_) | CJUMP(_, _, _, _) | CZJUMP(_, _, _, _) | STORE_FIELD(_, _) |
-                 DROP(_) | THROW()   | STORE_ARRAY_ITEM(_) | SCOPE_ENTER(_) | SCOPE_EXIT(_) |
+                 THROW()   | STORE_ARRAY_ITEM(_) | SCOPE_ENTER(_) | SCOPE_EXIT(_) |
                  LOAD_EXCEPTION() | SWITCH(_, _) | MONITOR_ENTER() | MONITOR_EXIT() => worklist += ((bb, idx))
-            case CALL_METHOD(m1, _) if isSideEffecting(m1) => worklist += ((bb, idx))
+            case CALL_METHOD(m1, _) if isSideEffecting(m1) => worklist += ((bb, idx)); log("marking " + m1)
             case CALL_METHOD(m1, SuperCall(_)) =>
               worklist += ((bb, idx)) // super calls to constructor
+            case DROP(_) =>
+              val necessary = findDefs(bb, idx, 1) exists { p =>
+                val (bb1, idx1) = p
+                bb1(idx1) match {
+                  case CALL_METHOD(m1, _) if isSideEffecting(m1) => true
+                  case LOAD_EXCEPTION() | DUP(_) | LOAD_MODULE(_) => true
+                  case _ => false
+                }
+              }
+              if (necessary) worklist += ((bb, idx))
             case _ => ()
           }
           rd = rdef.interpret(bb, idx, rd);
@@ -127,8 +137,10 @@ abstract class DeadCodeElimination extends SubComponent {
           useful(bb) += idx
           instr match {
             case LOAD_LOCAL(l1) =>
-              for ((l2, bb1, idx1) <- defs((bb, idx)) if l1 == l2; if !useful(bb1)(idx1))
+              for ((l2, bb1, idx1) <- defs((bb, idx)) if l1 == l2; if !useful(bb1)(idx1)) {
+                log("\tAdding " + bb1(idx1))
                 worklist += ((bb1, idx1))
+              }
 
             case nw @ NEW(REFERENCE(sym)) =>
               assert(nw.init ne null, "null new.init at: " + bb + ": " + idx + "(" + instr + ")")
@@ -140,8 +152,10 @@ abstract class DeadCodeElimination extends SubComponent {
               ()
 
             case _ =>
-              for ((bb1, idx1) <- findDefs(bb, idx, instr.consumed) if !useful(bb1)(idx1))
+              for ((bb1, idx1) <- findDefs(bb, idx, instr.consumed) if !useful(bb1)(idx1)) {
+                log("\tAdding " + bb1(idx1))
                 worklist += ((bb1, idx1))
+              }
           }
         }
       }
@@ -195,10 +209,12 @@ abstract class DeadCodeElimination extends SubComponent {
         assert(bb.isClosed, "Open block in computeCompensations")
         for ((i, idx) <- bb.toList.zipWithIndex) {
           if (!useful(bb)(idx)) {
-            val defs = findDefs(bb, idx, i.consumed)
-            for (d <- defs) {
-              if (!compensations.isDefinedAt(d))
-                compensations(d) = i.consumedTypes map DROP
+            for ((consumedType, depth) <- i.consumedTypes.reverse.zipWithIndex) {
+              val defs = findDefs(bb, idx, i.consumed, depth)
+              for (d <- defs) {
+                if (!compensations.isDefinedAt(d))
+                  compensations(d) = List(DROP(consumedType))
+              }
             }
           }
         }
@@ -230,7 +246,11 @@ abstract class DeadCodeElimination extends SubComponent {
       abort("could not find init in: " + method)
     }
 
-    def findDefs(bb: BasicBlock, idx: Int, m: Int): List[(BasicBlock, Int)] = if (idx > 0) {
+    /** Return the instructions that produced the 'm' elements on the stack, below given 'depth'.
+     *  for instance, findefs(bb, idx, 1, 1) returns the instructions that might have produced the
+     *  value found below the topmost element of the stack.
+     */
+    def findDefs(bb: BasicBlock, idx: Int, m: Int, depth: Int): List[(BasicBlock, Int)] = if (idx > 0) {
       assert(bb.isClosed)
       var instrs = bb.getArray
       var res: List[(BasicBlock, Int)] = Nil
@@ -266,12 +286,20 @@ abstract class DeadCodeElimination extends SubComponent {
       stack.take(m) flatMap (_.toList)
     }
 
+    /** Return the definitions that produced the topmost 'm' elements on the stack,
+     *  and that reach the instruction at index 'idx' in basic block 'bb'.
+     */
+    def findDefs(bb: BasicBlock, idx: Int, m: Int): List[(BasicBlock, Int)] =
+      findDefs(bb, idx, m, 0)
+
     /** Is 'sym' a side-effecting method? TODO: proper analysis.  */
     private def isSideEffecting(sym: Symbol): Boolean = {
       !(sym.isGetter // for testing only
        || (sym.isConstructor
            && sym.owner.owner == definitions.getModule("scala.runtime").moduleClass)
-       || (sym.isConstructor && inliner.isClosureClass(sym.owner)))
+       || (sym.isConstructor && inliner.isClosureClass(sym.owner))
+/*       || definitions.isBox(sym)
+       || definitions.isUnbox(sym)*/)
     }
   } /* DeadCode */
 }

@@ -308,6 +308,7 @@ abstract class Inliners extends SubComponent {
                       if (settings.debug.value)
                         log("\tlooked up method: " + concreteMethod.fullNameString)
                     }
+
                     if (settings.debug.value)
                       log("Treating " + i
                           + "\n\tclasses.contains: " + classes.contains(receiver)
@@ -335,12 +336,11 @@ abstract class Inliners extends SubComponent {
                             callsPrivate -= m;
                           } else {
                             if (settings.debug.value)
-                              log("inline failed because:\n\tinc.symbol != m.symbol: " + (inc.symbol != m.symbol)
+                              log("inline failed for " + inc + " because:\n\tinc.symbol != m.symbol: " + (inc.symbol != m.symbol)
                                   + "\n\t(inlinedMethods(inc.symbol) < 2): " + (inlinedMethods(inc.symbol) < 2)
-                                  + "\n\tinc.code ne null: " + (inc.code ne null)
-                                  + "\n\tinc.code.blocks.length < MAX_INLINE_SIZE: " + (inc.code.blocks.length < MAX_INLINE_SIZE) + "(" + inc.code.blocks.length + ")"
-                                  + "\n\tisSafeToInline(m, inc, info.stack): " + isSafeToInline(m, inc, info.stack)
-                                  + "\n\tshouldInline heuristics: " + shouldInline(m, inc));
+                                  + "\n\tinc.code ne null: " + (inc.code ne null) + (if (inc.code ne null)
+                                    "\n\tisSafeToInline(m, inc, info.stack): " + isSafeToInline(m, inc, info.stack)
+                                    + "\n\tshouldInline heuristics: " + shouldInline(m, inc) else ""));
                           }
                         case None =>
                           ();

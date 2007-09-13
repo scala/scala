@@ -452,14 +452,15 @@ abstract class CopyPropagation {
       out
     }
 
-    /** Drop everything known about record fields.
+    /** Drop everything known about mutable record fields.
      *
      *  @param state ...
      */
     final def invalidateRecords(state: copyLattice.State) {
       state.stack = state.stack map { v => v match {
         case Record(cls, bindings) =>
-          Record(cls, new HashMap[Symbol, Value])
+          bindings.retain { (sym: Symbol, v: Value) => !sym.hasFlag(symtab.Flags.MUTABLE) }
+          Record(cls, bindings)
         case _ => v
       }}
 

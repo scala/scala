@@ -209,7 +209,11 @@ abstract class TypeFlowAnalysis {
               stack.pop
               if (op != NOT)
                 stack.pop
-              stack push kind
+              val k = kind match {
+                case BYTE | SHORT | CHAR => INT
+                case _ => kind
+              }
+              stack push k
 
             case Logical(op, kind) =>
               stack.pop2

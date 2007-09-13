@@ -520,8 +520,6 @@ abstract class GenICode extends SubComponent  {
 
                 (pat.symbol.tpe.typeSymbol, kind, {
                   ctx: Context =>
-                    if (settings.Xdce.value)
-                      ctx.bb.emit(LOAD_EXCEPTION(), pat.pos)
                     ctx.bb.emit(STORE_LOCAL(exception), pat.pos);
                     val ctx1 = genLoad(body, ctx, kind);
                     if (guardResult) {
@@ -542,8 +540,6 @@ abstract class GenICode extends SubComponent  {
                                           .setFlag(Flags.SYNTHETIC)
                                           .setInfo(definitions.ThrowableClass.tpe),
                                           REFERENCE(definitions.ThrowableClass), false));
-              if (settings.Xdce.value)
-                ctx.bb.emit(LOAD_EXCEPTION())
               ctx.bb.emit(STORE_LOCAL(exception));
               val ctx1 = genLoad(finalizer, ctx, UNIT);
               ctx1.bb.emit(LOAD_LOCAL(exception));
@@ -1956,7 +1952,9 @@ abstract class GenICode extends SubComponent  {
 
         val exhs = handlers.map { handler =>
             val exh = this.newHandler(handler._1, handler._2)
-            val ctx1 = handler._3(outerCtx.enterHandler(exh))
+            var ctx1 = outerCtx.enterHandler(exh)
+            if (settings.Xdce.value) ctx1.bb.emit(LOAD_EXCEPTION())
+            ctx1 = handler._3(ctx1)
             ctx1.bb.emit(JUMP(afterCtx.bb))
             ctx1.bb.close
             exh

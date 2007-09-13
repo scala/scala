@@ -65,7 +65,9 @@ trait Opcodes { self: ICodes =>
     /** This abstract method returns the number of produced elements on the stack */
     def produced : Int = 0
 
-    /** This instruction consumes these types from the top of the stack. */
+    /** This instruction consumes these types from the top of the stack, the first
+     *  element in the list is the deepest element on the stack.
+     */
     def consumedTypes: List[TypeKind] = Nil
 
     /** This instruction produces these types on top of the stack. */
