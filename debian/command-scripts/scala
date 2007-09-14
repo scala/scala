@@ -1,7 +1,7 @@
 #!/bin/sh
 
 JAVA_DIR=/usr/share/java
-LIB_CLASSPATH=$JAVA_DIR/scala-library.jar:$JAVA_DIR/scala-compiler.jar
+LIB_CLASSPATH=$JAVA_DIR/scala-library.jar:$JAVA_DIR/scala-compiler.jar:$JAVA_DIR/jline.jar
 
 exec ${JAVACMD:=java} ${JAVA_OPTS:=-Xmx256M -Xms16M} \
   -Xbootclasspath/a:$LIB_CLASSPATH \

@@ -28,4 +28,4 @@ Package: scala-library
 Architecture: all
 Depends: gij | java-virtual-machine
 Description: The Scala standard library
- The Scala standard library.  This is needed to run Scala programs.
+ This run-time library is needed to run Scala programs.
