@@ -80,13 +80,12 @@ trait ParallelMatching  {
      //DBG(rest.toString)
      //DBG(")///")
      */
-    if(isEqualsPattern(column.head.tpe)) { //DBG("\n%%% MixEquals");
+    if(isEqualsPattern(column.head.tpe)) { DBG("\n%%% MixEquals");
       return new MixEquals(scrutinee, column, rest)
     }
     // the next condition is never true, @see isImplemented/CantHandleSeq
-    if(column.head.isInstanceOf[ArrayValue]) { //DBG("\n%%% MixSequence");
-      throw new FatalError("not implemented yet");
-      //return new MixSequence(scrutinee, column, rest)
+    if(column.head.isInstanceOf[ArrayValue]) { DBG("\n%%% MixSequence");
+      return new MixSequence(scrutinee, column, rest)
     }
     if(isSimpleSwitch) { //DBG("\n%%% MixLiterals")
       return new MixLiterals(scrutinee, column, rest)
@@ -94,17 +93,17 @@ trait ParallelMatching  {
 
     if(settings_casetags && (column.length > 1) && isFlatCases(column)) {
       //DBG("flat cases!"+column+"\n"+scrutinee.tpe.typeSymbol.children+"\n"+scrutinee.tpe.member(nme.tag))
-      //DBG("\n%%% MixCases")
+      DBG("\n%%% MixCases")
       return new MixCases(scrutinee, column, rest)
       // if(scrutinee.tpe./*?type?*/symbol.hasFlag(symtab.Flags.SEALED)) new MixCasesSealed(scrutinee, column, rest)
       // else new MixCases(scrutinee, column, rest)
     }
     //Console.println("isUnapplyHead = "+isUnapplyHead())
-    if(isUnapplyHead()) { //DBG("\n%%% MixUnapply")
+    if(isUnapplyHead()) { DBG("\n%%% MixUnapply")
       return new MixUnapply(scrutinee, column, rest)
     }
 
-    //DBG("\n%%% MixTypes")
+    DBG("\n%%% MixTypes")
     return new MixTypes(scrutinee, column, rest) // todo: handle type tests in unapply
   } /* def MixtureRule(scrutinee:Symbol, column:List[Tree], rest:Rep): RuleApplication */
 
@@ -512,20 +511,27 @@ trait ParallelMatching  {
     } /* def tree(implicit theOwner: Symbol, failTree: Tree) */
   } /* MixUnapply */
 
-  /** handle sequence pattern and ArrayValue
-  class MixSequence(val scrutinee:Symbol, val column:List[Tree], val rest:Rep) extends RuleApplication {
+  /** handle sequence pattern and ArrayValue (but not star patterns)
+   */
+  class MixSequence(val scrutinee:Symbol, val column:List[Tree], val rest:Rep)(implicit rep:RepFactory) extends RuleApplication(rep) {
+
+    final def getSubPatterns(len:Int, x:Tree) = x match {
+      case ArrayValue(_,xs) if xs.length == len => Some(xs)
+      case EmptyTree | Ident(nme.WILDCARD)      => Some(getDummies(len))
+      case _                                    => None
+    }
+
     // context (to be used in IF), success and failure Rep
     final def getTransition(implicit theOwner: Symbol): (Tree => Tree => Tree, Rep, Rep) = {
 
       assert(isSubType(scrutinee.tpe, column.head.tpe), "problem "+scrutinee.tpe+" not <: "+column.head.tpe)
+      assert(!isRightIgnoring(column.head.asInstanceOf[ArrayValue]), "is RI!")
 
       val treeAsSeq =
         if(!isSubType(scrutinee.tpe, column.head.tpe))
           typed(gen.mkAsInstanceOf(mkIdent(scrutinee), column.head.tpe, true))
         else
           mkIdent(scrutinee)
-
-      val failRep = repWithoutHead(column,rest)
 
       column.head match {
         case av @ ArrayValue(_, xs) =>
@@ -535,25 +541,45 @@ trait ParallelMatching  {
           var vs        = new ListBuffer[Symbol]
           var ix = 0
 
+        //build new temps on which we will match subpatterns
+
         // if is right ignoring, don't want last one
           var ys = if(isRightIgnoring(av)) xs.take(xs.length-1) else xs; while(ys ne Nil) {
-            val p = ys.head
+            val p = strip2(ys.head)
             childpats += p
-            val temp = newVar(p.pos, p.tpe)
-            Console.println("new temp:"+temp+":"+temp.tpe)
-            Console.println("seqelem:"+seqElement(treeAsSeq.duplicate, ix))
+            val temp = newVar(p.pos, getElemType_Sequence(scrutinee.tpe))
+            DBG("new temp:"+temp+":"+temp.tpe)
+            DBG("seqelem:"+seqElement(treeAsSeq.duplicate, ix))
             vs += temp
             bindings += typedValDef(temp, seqElement(treeAsSeq.duplicate, ix))
             ix += 1
             ys = ys.tail
           }
+          //bindings += typedValDef(temp, seqElement(treeAsSeq.duplicate, ix))
 
-          val childpatList = childpats.toList
-          val nrows = rest.row.map {
-            case Row(pats,subst,g,b) => Row(childpatList ::: pats,subst,g,b)
+
+          val nrows = new ListBuffer[Row]
+          val frows = new ListBuffer[Row]
+          //val childpatList = childpats.toList
+          var cs = column; var rw = rest.row; while (cs ne Nil)  {
+          assert(!cs.head.isInstanceOf[ArrayValue] || !isRightIgnoring(cs.head.asInstanceOf[ArrayValue]), "is RI!!")
+            (getSubPatterns(ix, cs.head),rw.head) match {
+              case (Some(ps), Row(pats,subst,g,b)) =>
+                  nrows += Row(     ps ::: pats, subst, g, b)
+                  if(isDefaultPattern(cs.head))
+                    frows += Row( cs.head :: pats, subst, g, b)
+              case (  None , Row(pats,subst,g,b) ) =>
+                  frows += Row( cs.head :: pats, subst, g, b)
+            }
+            cs = cs.tail
+            rw = rw.tail
           }
-          val succRep = rep.make( vs.toList ::: rest.temp, nrows)
 
+          val succRep = rep.make( vs.toList ::: rest.temp, nrows.toList)
+
+          val failRep = rep.make(  scrutinee :: rest.temp, frows.toList)
+
+        /*
           if(isRightIgnoring(av)) { // contains a _* at the end
             val minlen = xs.length-1;
 
@@ -568,12 +594,12 @@ trait ParallelMatching  {
               If(cond, squeezedBlock(bindings.toList, thenp), elsep)
                                   }}, succRep, failRep)
           }
-
+        */
           // fixed length
           val cond = seqHasLength(treeAsSeq.duplicate, column.head.tpe, xs.length)
-          return ({thenp:Tree => {elsep:Tree => If(cond, thenp, elsep)}}, succRep, failRep)
+          return ({thenp:Tree => {elsep:Tree => squeezedBlock(bindings.toList,If(cond, thenp, elsep))}}, succRep, failRep)
       }
-    }
+  }
 
     final def tree(implicit theOwner: Symbol, failTree: Tree) = {
       val (cx,srep,frep) = this.getTransition
@@ -581,9 +607,9 @@ trait ParallelMatching  {
       val fail = repToTree(frep)
       cx(succ)(fail)
     }
-
   }
-  */
+
+
   // @todo: equals test for same constant
   class MixEquals(val scrutinee:Symbol, val column:List[Tree], val rest:Rep)(implicit rep:RepFactory) extends RuleApplication(rep) {
     /** condition (to be used in IF), success and failure Rep */
@@ -720,7 +746,7 @@ trait ParallelMatching  {
             //Console.println("[2")
             (EmptyTree::ms, (j,dummies)::ss, rs);                                 // matching an object
 
-          case Typed(/*p @ __UnApply(_,_,_)*/ p, _) if (strip2(p).isInstanceOf[UnApply] && (patternType /*is never <equals>*/ <:< headPatternType)) =>
+          case Typed(p, _) if (strip2(p).isInstanceOf[UnApply] && (patternType /*is never <equals>*/ <:< headPatternType)) =>
             //Console.println("unapply arg is same or *more* specific")
             (p::ms, (j, dummies)::ss, rs);
 
@@ -1068,19 +1094,11 @@ trait ParallelMatching  {
         var indexOfAlternative = -1
         var j = 0; while(opats ne Nil) {
           var opat = opats.head // original pattern
-          DBG("opat = "+opat)
+          //DBG("opat = "+opat)
           val (vars,strippedPat) = strip(opat)
           val vs = vars.toList
-          def handle(prepat:Tree): Unit = prepat match {
+          (strippedPat: @unchecked) match {
 
-            /* annotations do not make sense on pattern
-            case Typed(p, tpt) if prepat.tpe.isInstanceOf[AnnotatedType] =>
-              Console.println("HELLO")
-              Console.println("p ="+p)
-              Console.println("p.tpe ="+p.tpe)
-              opat = makeBind(vs,p)
-              handle(p)
-              */
             case p @ Alternative(ps) =>
               if(indexOfAlternative == -1) {
                 unchanged = false
@@ -1095,16 +1113,6 @@ trait ParallelMatching  {
               pats = opat :: pats
 
             case o @ Ident(n) => // n != nme.WILDCARD
-              /*
-               Console.println("/'''''''''''' 1"+o.tpe)
-               Console.println("/'''''''''''' 2"+o.symbol)
-               Console.println("/'''''''''''' 3"+o.symbol.tpe)
-               Console.println("/'''''''''''' 4"+o.symbol.tpe.prefix)
-               Console.println("/'''''''''''' 5"+o.symbol.tpe.prefix.isStable)
-
-               Console.println("/'''''''''''' 6"+(o.symbol.tpe.typeSymbol hasFlag (Flags.CASE)))
-               Console.println("/'''''''''''' 7"+(o.symbol.tpe.termSymbol.hasFlag (Flags.CASE)))
-               */
               val tpe =
                 if (!o.symbol.isValue) {
                   singleType(o.tpe.prefix, o.symbol)
@@ -1145,8 +1153,8 @@ trait ParallelMatching  {
               val nmlzdPat = normalizedListPattern(xs, tptArg.tpe)
               pats = makeBind(vs, nmlzdPat) :: pats
 
-            //case /* ua @ */ __UnApply(_,argtpe,_) =>
-            //  val ua = prepat
+            //case  ua @ __UnApply(_,argtpe,_) =>
+              //val ua = prepat
             //  val npat = (if (temp(j).tpe <:< argtpe) ua else Typed(ua,TypeTree(argtpe)).setType(argtpe))
             //  pats = (makeBind(vs, npat) setType argtpe)::pats
 
@@ -1158,8 +1166,7 @@ trait ParallelMatching  {
                   pats = (makeBind(vs, npat) setType argtpe)::pats
               }
 
-            /** something too tricky is going on if the outer types don't match
-             */
+            // something too tricky is going on if the outer types don't match
             case o @ Apply(fn, List()) if !isCaseClass(o.tpe) =>
               //DBG("o.tpe   "+o.tpe)
               //DBG("fn is   ")
@@ -1218,11 +1225,11 @@ trait ParallelMatching  {
               pats = opat :: pats
 
             case ArrayValue(_,xs) =>
-              assert(false) // inactive, @see PatternMatchers::isImplemented
+              //assert(false) // inactive, @see PatternMatchers::isImplemented
+              pats = opat :: pats
 
           }
-          handle(strippedPat)
-          DBG("!!added "+pats.head+":"+pats.head.tpe)
+          //DBG("!!added "+pats.head+":"+pats.head.tpe)
           opats = opats.tail
           j += 1
         }

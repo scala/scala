@@ -257,7 +257,7 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
              //Console.println(app.symbol)
              //Console.println(fn.symbol)
              if(!xs.isEmpty) {
-               assert(false)
+               assert(false, "this never happens")
                return CantHandleApply // this should never happen
              }
              null
@@ -287,7 +287,7 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
         case p:Typed            => null // if(guard eq EmptyTree) null else CantHandleGuard
 
         // ArrayValue nodes can also appear in repeated parameter positions of case classes (e.g. xml.Elem)
-        case ArrayValue(_,xs)   => CantHandleSeq
+        case av @ ArrayValue(_,xs)   => if(isRightIgnoring(av)) CantHandleSeq else isImplemented(xs,guard)
 
         //@todo
         //case av @ ArrayValue(_,xs)   =>
