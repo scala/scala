@@ -173,13 +173,11 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
     }
 
     def constructParallel(cases: List[Tree]): Any = {
-      var cases1 = cases; while(cases1 ne Nil) {
-        val c = cases1.head.asInstanceOf[CaseDef]
-        //if(c.guard != EmptyTree) return CantHandleGuard // TEST
-        //hasUnapply.traverse(c.pat)
-        val e = isImplemented(c.pat, c.guard); if(e ne null) return e
-        cases1 = cases1.tail
-      }
+      //var cases1 = cases; while(cases1 ne Nil) {
+      //  val c = cases1.head.asInstanceOf[CaseDef]
+        //val e = isImplemented(c.pat, c.guard); if(e ne null) return e
+      //  cases1 = cases1.tail
+     // }
 
       implicit val rep = new RepFactory(handleOuter)
       try {
@@ -241,12 +239,15 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
       }
     }
 
+    /*
     def isImplemented(xs:List[Tree], guard:Tree): CantHandle =
       if(xs eq Nil) null else {
         val e = isImplemented(xs.head, guard)
         if(e ne null) e else isImplemented(xs.tail, guard)
       }
+      */
 
+    /*
     def isImplemented(x:Tree,guard:Tree): CantHandle = {
       //Console.println("isImplemented? "+x)
       x match {
@@ -287,7 +288,7 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
         case p:Typed            => null // if(guard eq EmptyTree) null else CantHandleGuard
 
         // ArrayValue nodes can also appear in repeated parameter positions of case classes (e.g. xml.Elem)
-        case av @ ArrayValue(_,xs)   => if(isRightIgnoring(av)) CantHandleSeq else isImplemented(xs,guard)
+        case av @ ArrayValue(_,xs)   => null; //if(isRightIgnoring(av)) CantHandleSeq else isImplemented(xs,guard)
 
         //@todo
         //case av @ ArrayValue(_,xs)   =>
@@ -296,10 +297,11 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
         //if(guard.isEmpty) isImplemented(xs, guard) else CantHandleSeq ; // null;
           //Console.println("PM:"+av+" isRI?"+isRightIgnoring(av))
           //if(isRightIgnoring(av)) CantHandleSeq else null // DEBUG
-        case Star(t)            => CantHandleSeq //isImplemented(t) //can't happen/ excluded by Transmatcher:isregular
+        case Star(t)            => null //CantHandleSeq //isImplemented(t) //can't happen/ excluded by Transmatcher:isregular
         //case Sequence(trees)    =>can't happen/ only appear below ArrayValue
       }
     }
+    */
 
     /** enter a single case into the pattern matcher */
     protected def enter(caseDef: Tree): Unit = caseDef match {

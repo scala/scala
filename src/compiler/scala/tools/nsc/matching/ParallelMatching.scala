@@ -84,8 +84,10 @@ trait ParallelMatching  {
       return new MixEquals(scrutinee, column, rest)
     }
     // the next condition is never true, @see isImplemented/CantHandleSeq
-    if(column.head.isInstanceOf[ArrayValue]) { DBG("\n%%% MixSequence");
-      return new MixSequence(scrutinee, column, rest)
+    if(column.head.isInstanceOf[ArrayValue]) {
+      val av = column.head.asInstanceOf[ArrayValue]
+      if(!isRightIgnoring(av)) { DBG("\n%%% MixSequence"); return new MixSequence(scrutinee, column, rest) }
+      else { DBG("\n%%% MixSequenceStar"); return new MixSequenceStar(scrutinee, column, rest) }
     }
     if(isSimpleSwitch) { //DBG("\n%%% MixLiterals")
       return new MixLiterals(scrutinee, column, rest)
@@ -511,13 +513,22 @@ trait ParallelMatching  {
     } /* def tree(implicit theOwner: Symbol, failTree: Tree) */
   } /* MixUnapply */
 
+
+
   /** handle sequence pattern and ArrayValue (but not star patterns)
    */
-  class MixSequence(val scrutinee:Symbol, val column:List[Tree], val rest:Rep)(implicit rep:RepFactory) extends RuleApplication(rep) {
+  sealed class MixSequence(val scrutinee:Symbol, val column:List[Tree], val rest:Rep)(implicit rep:RepFactory) extends RuleApplication(rep) {
 
-    final def getSubPatterns(len:Int, x:Tree) = x match {
-      case ArrayValue(_,xs) if xs.length == len => Some(xs)
-      case EmptyTree | Ident(nme.WILDCARD)      => Some(getDummies(len))
+    private val sequenceType = scrutinee.tpe.widen.baseType(definitions.SeqClass)
+    private val elementType  = getElemType_Sequence(scrutinee.tpe)
+
+    final def removeStar(xs:List[Tree]):List[Tree] =
+      xs.take(xs.length-1) ::: makeBind(strip1(xs.last).toList, mk_(sequenceType)) :: Nil
+
+    protected def getSubPatterns(len:Int, x:Tree):Option[List[Tree]] = x match {
+      case av @ ArrayValue(_,xs) if (!isRightIgnoring(av) && xs.length == len)   => Some(xs ::: List(EmptyTree))
+      case av @ ArrayValue(_,xs) if ( isRightIgnoring(av) && xs.length == len+1) => Some(removeStar(xs))
+      case EmptyTree | Ident(nme.WILDCARD)      => Some(getDummies(len+1))
       case _                                    => None
     }
 
@@ -525,7 +536,6 @@ trait ParallelMatching  {
     final def getTransition(implicit theOwner: Symbol): (Tree => Tree => Tree, Rep, Rep) = {
 
       assert(isSubType(scrutinee.tpe, column.head.tpe), "problem "+scrutinee.tpe+" not <: "+column.head.tpe)
-      assert(!isRightIgnoring(column.head.asInstanceOf[ArrayValue]), "is RI!")
 
       val treeAsSeq =
         if(!isSubType(scrutinee.tpe, column.head.tpe))
@@ -547,7 +557,7 @@ trait ParallelMatching  {
           var ys = if(isRightIgnoring(av)) xs.take(xs.length-1) else xs; while(ys ne Nil) {
             val p = strip2(ys.head)
             childpats += p
-            val temp = newVar(p.pos, getElemType_Sequence(scrutinee.tpe))
+            val temp = newVar(p.pos, elementType)
             DBG("new temp:"+temp+":"+temp.tpe)
             DBG("seqelem:"+seqElement(treeAsSeq.duplicate, ix))
             vs += temp
@@ -555,14 +565,14 @@ trait ParallelMatching  {
             ix += 1
             ys = ys.tail
           }
-          //bindings += typedValDef(temp, seqElement(treeAsSeq.duplicate, ix))
+          val tail = newVar(scrutinee.pos, sequenceType)
+          bindings += typedValDef(tail, {if(ix-1>0) seqDrop(treeAsSeq.duplicate, ix-1) else mkIdent(scrutinee)})
 
 
           val nrows = new ListBuffer[Row]
           val frows = new ListBuffer[Row]
           //val childpatList = childpats.toList
           var cs = column; var rw = rest.row; while (cs ne Nil)  {
-          assert(!cs.head.isInstanceOf[ArrayValue] || !isRightIgnoring(cs.head.asInstanceOf[ArrayValue]), "is RI!!")
             (getSubPatterns(ix, cs.head),rw.head) match {
               case (Some(ps), Row(pats,subst,g,b)) =>
                   nrows += Row(     ps ::: pats, subst, g, b)
@@ -575,9 +585,9 @@ trait ParallelMatching  {
             rw = rw.tail
           }
 
-          val succRep = rep.make( vs.toList ::: rest.temp, nrows.toList)
+          val succRep = rep.make( vs.toList ::: tail :: rest.temp, nrows.toList)
 
-          val failRep = rep.make(  scrutinee :: rest.temp, frows.toList)
+          val failRep = rep.make(          scrutinee :: rest.temp, frows.toList)
 
         /*
           if(isRightIgnoring(av)) { // contains a _* at the end
@@ -596,10 +606,13 @@ trait ParallelMatching  {
           }
         */
           // fixed length
-          val cond = seqHasLength(treeAsSeq.duplicate, column.head.tpe, xs.length)
+          val cond = getCond(treeAsSeq, xs.length)
           return ({thenp:Tree => {elsep:Tree => squeezedBlock(bindings.toList,If(cond, thenp, elsep))}}, succRep, failRep)
       }
-  }
+    }
+
+    // lengthArg is exact length
+    protected def getCond(tree:Tree, lengthArg:Int) = seqHasLength(tree.duplicate, column.head.tpe, lengthArg)
 
     final def tree(implicit theOwner: Symbol, failTree: Tree) = {
       val (cx,srep,frep) = this.getTransition
@@ -607,6 +620,21 @@ trait ParallelMatching  {
       val fail = repToTree(frep)
       cx(succ)(fail)
     }
+  }
+  /** handle sequence pattern and ArrayValue (but not star patterns)
+   */
+  final class MixSequenceStar(scrutinee:Symbol, column:List[Tree], rest:Rep)(implicit rep:RepFactory) extends MixSequence(scrutinee,column,rest) {
+    // in principle, we could optimize more, but variable binding gets complicated (@todo use finite state methods instead)
+    override def getSubPatterns(minlen:Int, x:Tree) = x match {
+      case av @ ArrayValue(_,xs) if (!isRightIgnoring(av) && xs.length   == minlen) => Some(xs ::: List(EmptyTree))
+      case av @ ArrayValue(_,xs) if ( isRightIgnoring(av) && xs.length-1 == minlen) => Some(removeStar(xs))
+      case EmptyTree | Ident(nme.WILDCARD)      => Some(getDummies(minlen+1))
+      case _                                    => None
+    }
+
+    // lengthArg is minimal length
+    protected override def getCond(tree:Tree, lengthArg:Int) = seqLongerThan(tree.duplicate, column.head.tpe, lengthArg - 1)
+
   }
 
 
@@ -682,9 +710,9 @@ trait ParallelMatching  {
     private val isCaseHead = isCaseClass(headPatternType)
     private val dummies = if(!isCaseHead) Nil else getDummies(headPatternType.typeSymbol.caseFieldAccessors.length)
 
-    DBG("headPatternType "+headPatternType)
-    DBG("isCaseHead = "+isCaseHead)
-    DBG("dummies = "+dummies)
+    //DBG("headPatternType "+headPatternType)
+    //DBG("isCaseHead = "+isCaseHead)
+    //DBG("dummies = "+dummies)
 
     private def subpatterns(pat:Tree): List[Tree] = {
       //Console.print("subpatterns("+pat+")=")
@@ -1001,14 +1029,14 @@ trait ParallelMatching  {
     }
     DBG("requestbody("+bx+", "+subst+") isReached(bx)?"+isReached(bx)+" labels:");
     //{for(s<-labels) Console.print({if(s ne null) {s} else "_"}+",")}
-    DBG("vss(bx) = "+vss(bx))
+    //DBG("vss(bx) = "+vss(bx))
     if(!isReached(bx)) { // first time this bx is requested
       val argts = new ListBuffer[Type] // types of
       var vrev: List[Symbol] = Nil
       var vdefs:List[Tree] = Nil
       val it = vss(bx).elements; while(it.hasNext) {
         val v = it.next
-        DBG("v = "+v)
+        //DBG("v = "+v)
         val substv = subst(v)
         if(substv ne null) {// might be bound elsewhere ( see `x @ unapply' )
           vrev   = v :: vrev
