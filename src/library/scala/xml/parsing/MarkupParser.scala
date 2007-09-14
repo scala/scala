@@ -1191,10 +1191,10 @@ trait MarkupParser extends AnyRef with TokenTests { self:  MarkupParser with Mar
               d = it.next
             } while(d != ';');
             nbuf.toString() match {
-              case "lt"    => cbuf.append('<')
-              case "gt"    => cbuf.append('>')
-              case "amp"   => cbuf.append('&')
-              case "quote" => cbuf.append('"')
+              //case "lt"    => cbuf.append('<')
+              //case "gt"    => cbuf.append('>')
+              //case "amp"   => cbuf.append('&')
+              //case "quote" => cbuf.append('"')
               case name =>
                 //don't handle entityrefs for now
                 cbuf.append('&')

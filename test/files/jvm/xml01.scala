@@ -220,7 +220,14 @@ object Test {
       assertTrue(c == '\u015e');
     }
 
+  // #60 test by round trip
+
+  val p = scala.xml.parsing.ConstructingParser.fromSource(scala.io.Source.fromString("<foo bar:attr='&amp;'/>"),true)
+  val n = p.element(new scala.xml.NamespaceBinding("bar","BAR",scala.xml.TopScope))(0)
+  assertFalse( n.attributes.get("BAR", n, "attr").isEmpty)
+
   }
+
 
 
 }
