@@ -20,7 +20,7 @@ import scala.collection.mutable.{ArrayBuffer, Buffer, HashMap, Queue, Stack, Has
 /**
  * FJTaskScheduler2
  *
- * @version 0.9.9
+ * @version 0.9.10
  * @author Philipp Haller
  */
 class FJTaskScheduler2 extends Thread with IScheduler {
@@ -30,8 +30,19 @@ class FJTaskScheduler2 extends Thread with IScheduler {
   val printStats = false
   //val printStats = true
 
-  val coreProp = System.getProperty("actors.corePoolSize")
-  val maxProp = System.getProperty("actors.maxPoolSize")
+  val coreProp = try {
+    System.getProperty("actors.corePoolSize")
+  } catch {
+    case ace: java.security.AccessControlException =>
+      null
+  }
+  val maxProp =
+    try {
+      System.getProperty("actors.maxPoolSize")
+    } catch {
+      case ace: java.security.AccessControlException =>
+        null
+    }
 
   val initCoreSize =
     if (null ne coreProp) Integer.parseInt(coreProp)
