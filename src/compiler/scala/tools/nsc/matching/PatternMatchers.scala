@@ -18,6 +18,7 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
   import typer.typed
   import symtab.Flags
 
+/*
   abstract class CantHandle // extends Exception
   object CantHandleSeq     extends CantHandle
   object CantHandleUnapply extends CantHandle
@@ -27,7 +28,7 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
   object CantHandleGuard   extends CantHandle
   object CantOptimize      extends CantHandle
   //object CantHandleLiteral extends Exception
-
+*/
   var nPatterns = 0
   var nParallel = 0
 
@@ -121,6 +122,7 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
     var dfatree: Tree = null
 
     /** enters a sequence of cases into the pattern matcher */
+/*
     def construct(cases: List[Tree]): Unit = {
       nPatterns = nPatterns + 1
 
@@ -171,7 +173,7 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
 
       constructIncremental(cases)
     }
-
+*/
     def constructParallel(cases: List[Tree]): Any = {
       //var cases1 = cases; while(cases1 ne Nil) {
       //  val c = cases1.head.asInstanceOf[CaseDef]
@@ -216,7 +218,7 @@ trait PatternMatchers { self: transform.ExplicitOuter with PatternNodes with Par
 	//	 return e // fallback
 
          //non-fallback:
-        case e: CantHandle => rep.cleanup(); return e
+        //case e: CantHandle => rep.cleanup(); return e
         case e => e.printStackTrace(); throw new FatalError(e.getMessage())
       }
     }

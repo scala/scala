@@ -29,9 +29,17 @@ object Test extends TestConsoleMain {
       SeqUnapply,
       applyFromJcl,
       new Test717,
-      new TestGuards,
+      TestGuards,
       TestEqualsPatternOpt,
-      new TestStream,
+      TestSequence01,
+      TestSequence02,
+      TestSequence03,
+      TestSequence04,
+      TestSequence05,
+      TestSequence06,
+      TestSequence07,
+      TestSequence08,
+      TestStream,
       new Test903,
       new Test1163_Order,
       new TestUnbox,
@@ -126,7 +134,7 @@ object Test extends TestConsoleMain {
     }
   }
 
-  class TestGuards extends TestCase("multiple guards for same pattern") with Shmeez {
+  object TestGuards extends TestCase("multiple guards for same pattern") with Shmeez {
     val tree:Tree = Beez(2)
     override def runTest = {
       val res = tree match {
@@ -153,7 +161,148 @@ object Test extends TestConsoleMain {
     }
   }
 
-  class TestStream extends TestCase("unapply for Streams") {
+  object TestSequence01 extends TestCase("uno (all ignoring patterns on List)") {
+    def doMatch(xs: List[String]): String = xs match {
+      case List(_*) => "ok"
+    }
+    override def runTest() {
+      val list1 = List()
+      assertEquals(doMatch(list1), "ok")
+      val list2 = List("1","2","3")
+      assertEquals(doMatch(list2), "ok")
+    }
+  }
+
+
+  object TestSequence02 extends TestCase("due (all ignoring patterns on Seq)") {
+    def doMatch(l: Seq[String]): String = l match {
+      case Seq(_*) => "ok"
+    }
+    override def runTest() {
+      val list1 = List()
+      assertEquals(doMatch(list1), "ok")
+      val list2 = List("1", "2", "3")
+      assertEquals(doMatch(list2), "ok")
+      val array3 = Array[String]()
+      assertEquals(doMatch(array3), "ok")
+      val array4 = Array[String]("ga", "gu")
+      assertEquals(doMatch(array4), "ok")
+    }
+  }
+
+  object TestSequence03 extends TestCase("tre (right-ignoring patterns on List, defaults)") {
+    def doMatch(xs: List[String]): String = xs match {
+      case List(_,_,_,_*) => "ok"
+      case _ => "not ok"
+    }
+    override def runTest() {
+      val list1 = List()
+      assertEquals(doMatch(list1), "not ok")
+      val list2 = List("1","2","3")
+      assertEquals(doMatch(list2), "ok")
+      val list3 = List("1","2","3","4")
+      assertEquals(doMatch(list3), "ok")
+    }
+  }
+
+
+  object TestSequence04 extends TestCase("quattro (all- and right-ignoring pattern on case class w/ seq param)") {
+    case class Foo(i: Int, chars: Char*)
+
+    override def runTest() = {
+      val a = Foo(0, 'a') match {
+        case Foo(i, c, chars @ _*) => c
+        case _ => null
+      }
+      assertEquals(a, 'a')
+
+      val b = Foo(0, 'a') match {
+        case Foo(i, chars @ _*) => 'b'
+        case _ => null
+      }
+      assertEquals(b, 'b')
+    }
+  }
+
+  object TestSequence05 extends TestCase("cinque (sealed case class with ignoring seq patterns)") {
+    sealed abstract class Con;
+
+    case class Foo() extends Con
+    case class Bar(xs:Con*) extends Con
+
+    override def runTest() {
+      val res = (Bar(Foo()):Con) match {
+        case Bar(xs@_*) => xs // this should be optimized away to a pattern Bar(xs)
+        case _ => Nil
+      }
+      assertEquals("res instance"+res.isInstanceOf[Seq[Con] forSome { type Con }]+" res(0)="+res(0), true, res.isInstanceOf[Seq[Foo] forSome { type Foo}] && res(0) == Foo() )
+    }
+  }
+
+  object TestSequence06 extends TestCase("sei (not regular) fancy guards / bug#644 ") {
+
+    case class A(i: Any)
+
+    def doMatch(x: Any, bla: int) = x match {
+      case x:A if (bla==1) => 0
+      case A(1) => 1
+      case A(A(1)) => 2
+    }
+
+    override def runTest() {
+      assertEquals(doMatch(A(null),1), 0)
+      assertEquals(doMatch(A(1),2), 1)
+      assertEquals(doMatch(A(A(1)),2), 2)
+    }
+
+  }
+
+  object TestSequence07 extends TestCase("sette List of chars") {
+    def doMatch1(xs: List[char]) = xs match {
+      case List(x, y, _*) => x::y::Nil
+    }
+    def doMatch2(xs:List[char]) = xs match {
+      case List(x, y, z, w) => List(z,w)
+    }
+    //def doMatch3(xs:List[char]) = xs match {
+    //  case List(_*, z, w) => w::Nil
+    //}
+    def doMatch4(xs:Seq[Char]) = xs match {
+      case Seq(x, y, _*) => x::y::Nil
+      case Seq(x, y, z, w) => List(z,w) // redundant!
+    }
+    def doMatch5(xs:Seq[Char]) = xs match {
+      case Seq(x, y, 'c', w @ _*) => x::y::Nil
+      case Seq(x, y, z @ _*)    => z
+    }
+    def doMatch6(xs:Seq[Char]) = xs match {
+      case Seq(x, 'b')            => x::'b'::Nil
+      case Seq(x, y, z @ _*)    => z.toList
+    }
+
+    override def runTest() {
+      assertEquals(List('a','b'), doMatch1(List('a','b','c','d')))
+      assertEquals(List('c','d'), doMatch2(List('a','b','c','d')))
+      //assertEquals(doMatch3(List('a','b','c','d')), List('d'))
+      assertEquals(List('a','b'), doMatch4(List('a','b','c','d')))
+      assertEquals(List('a','b'), doMatch5(List('a','b','c','d')))
+      assertEquals(List('c','d'), doMatch6(List('a','b','c','d')))
+    }
+  }
+
+  object TestSequence08 extends TestCase("backquoted identifiers in pattern") {
+    override def runTest() {
+      val xs = List(2, 3)
+      val ys = List(1, 2, 3) match {
+        case x :: `xs` => xs
+        case _ => Nil
+      }
+      assertEquals(xs, ys)
+    }
+  }
+
+
+  object TestStream extends TestCase("unapply for Streams") {
     def sum(stream: Stream[int]): int =
       stream match {
         case Stream.empty => 0

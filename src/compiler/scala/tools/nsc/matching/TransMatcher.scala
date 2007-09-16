@@ -240,7 +240,7 @@ trait TransMatcher { self: transform.ExplicitOuter with PatternNodes with CodeFa
       } else {
         val pm = new PatternMatcher()
         pm.initialize(sel, doCheckExhaustive, owner, handleOuter)
-        pm.construct(cases)
+        pm.constructParallel(cases)
         //if (global.log()) {
         //  global.log("internal pattern matching structure");
         //  pm.print();

@@ -75,11 +75,7 @@ trait ParallelMatching  {
           false
       }
     }
-    /*
-     //DBG("/// MixtureRule("+scrutinee.name+":"+scrutinee.tpe+","+column+", rep = ")
-     //DBG(rest.toString)
-     //DBG(")///")
-     */
+
     if(isEqualsPattern(column.head.tpe)) { DBG("\n%%% MixEquals");
       return new MixEquals(scrutinee, column, rest)
     }
@@ -527,13 +523,23 @@ trait ParallelMatching  {
 
     protected def getSubPatterns(len:Int, x:Tree):Option[List[Tree]] = x match {
       case av @ ArrayValue(_,xs) if (!isRightIgnoring(av) && xs.length == len)   => Some(xs ::: List(EmptyTree))
-      case av @ ArrayValue(_,xs) if ( isRightIgnoring(av) && xs.length == len+1) => Some(removeStar(xs))
+      case av @ ArrayValue(_,xs) if ( isRightIgnoring(av) && xs.length == len+1) => Some(removeStar(xs)) // (*)
       case EmptyTree | Ident(nme.WILDCARD)      => Some(getDummies(len+1))
       case _                                    => None
     }
 
+    protected def makeSuccRep(vs:List[Symbol], tail:Symbol, nrows:List[Row])(implicit theOwner: Symbol) =
+      rep.make( vs ::: tail :: rest.temp, nrows.toList)
+
+    /** returns true if x is more general than y */
+    protected def subsumes(x:Tree, y:Tree): Boolean = (x,y) match {
+      case (av @ ArrayValue(_,xs), bv @ ArrayValue(_,ys)) =>
+        isRightIgnoring(av) && !isRightIgnoring(bv) && xs.length == ys.length+1                   // (*)
+      case _ =>
+        false
+    }
     // context (to be used in IF), success and failure Rep
-    final def getTransition(implicit theOwner: Symbol): (Tree => Tree => Tree, Rep, Rep) = {
+     def getTransition(implicit theOwner: Symbol): (Tree => Tree => Tree, Rep, Rep) = {
 
       assert(isSubType(scrutinee.tpe, column.head.tpe), "problem "+scrutinee.tpe+" not <: "+column.head.tpe)
 
@@ -558,15 +564,15 @@ trait ParallelMatching  {
             val p = strip2(ys.head)
             childpats += p
             val temp = newVar(p.pos, elementType)
-            DBG("new temp:"+temp+":"+temp.tpe)
-            DBG("seqelem:"+seqElement(treeAsSeq.duplicate, ix))
+            //DBG("new temp:"+temp+":"+temp.tpe)
+            //DBG("seqelem:"+seqElement(treeAsSeq.duplicate, ix))
             vs += temp
             bindings += typedValDef(temp, seqElement(treeAsSeq.duplicate, ix))
             ix += 1
             ys = ys.tail
           }
           val tail = newVar(scrutinee.pos, sequenceType)
-          bindings += typedValDef(tail, {if(ix-1>0) seqDrop(treeAsSeq.duplicate, ix-1) else mkIdent(scrutinee)})
+          bindings += typedValDef(tail, {if(ix-1>0) seqDrop(treeAsSeq.duplicate, ix) else mkIdent(scrutinee)})
 
 
           val nrows = new ListBuffer[Row]
@@ -576,7 +582,7 @@ trait ParallelMatching  {
             (getSubPatterns(ix, cs.head),rw.head) match {
               case (Some(ps), Row(pats,subst,g,b)) =>
                   nrows += Row(     ps ::: pats, subst, g, b)
-                  if(isDefaultPattern(cs.head))
+                  if(isDefaultPattern(cs.head) || subsumes(cs.head, av))
                     frows += Row( cs.head :: pats, subst, g, b)
               case (  None , Row(pats,subst,g,b) ) =>
                   frows += Row( cs.head :: pats, subst, g, b)
@@ -585,7 +591,7 @@ trait ParallelMatching  {
             rw = rw.tail
           }
 
-          val succRep = rep.make( vs.toList ::: tail :: rest.temp, nrows.toList)
+          val succRep = makeSuccRep(vs.toList, tail, nrows.toList)
 
           val failRep = rep.make(          scrutinee :: rest.temp, frows.toList)
 
@@ -616,6 +622,8 @@ trait ParallelMatching  {
 
     final def tree(implicit theOwner: Symbol, failTree: Tree) = {
       val (cx,srep,frep) = this.getTransition
+      //DBG("MSSf:"+srep.toString)
+      //DBG("MSSs:"+frep.toString)
       val succ = repToTree(srep)
       val fail = repToTree(frep)
       cx(succ)(fail)
@@ -626,14 +634,25 @@ trait ParallelMatching  {
   final class MixSequenceStar(scrutinee:Symbol, column:List[Tree], rest:Rep)(implicit rep:RepFactory) extends MixSequence(scrutinee,column,rest) {
     // in principle, we could optimize more, but variable binding gets complicated (@todo use finite state methods instead)
     override def getSubPatterns(minlen:Int, x:Tree) = x match {
-      case av @ ArrayValue(_,xs) if (!isRightIgnoring(av) && xs.length   == minlen) => Some(xs ::: List(EmptyTree))
-      case av @ ArrayValue(_,xs) if ( isRightIgnoring(av) && xs.length-1 == minlen) => Some(removeStar(xs))
-      case EmptyTree | Ident(nme.WILDCARD)      => Some(getDummies(minlen+1))
-      case _                                    => None
+      case av @ ArrayValue(_,xs) if (!isRightIgnoring(av) && xs.length   == minlen) =>  // Seq(p1,...,pN)
+        Some(xs ::: gen.mkAttributedRef(definitions.NilModule)  :: EmptyTree :: Nil)
+      case av @ ArrayValue(_,xs) if ( isRightIgnoring(av) && xs.length-1 == minlen) =>  // Seq(p1,...,pN,_*)
+        Some(                                   removeStar(xs) ::: EmptyTree :: Nil)
+      case av @ ArrayValue(_,xs) if ( isRightIgnoring(av) && xs.length-1  < minlen) =>  // Seq(p1..,pJ,_*)   J < N
+        Some(                                  getDummies(minlen + 1) ::: x :: Nil)
+      case EmptyTree | Ident(nme.WILDCARD)      =>
+        Some(                                  getDummies(minlen + 1          + 1))
+      case _                                    =>
+        None
+
     }
 
+
+    override protected def makeSuccRep(vs:List[Symbol], tail:Symbol, nrows:List[Row])(implicit theOwner: Symbol) =
+      rep.make( vs ::: tail :: scrutinee :: rest.temp, nrows)
+
     // lengthArg is minimal length
-    protected override def getCond(tree:Tree, lengthArg:Int) = seqLongerThan(tree.duplicate, column.head.tpe, lengthArg - 1)
+    override protected def getCond(tree:Tree, lengthArg:Int) = seqLongerThan(tree.duplicate, column.head.tpe, lengthArg - 1)
 
   }
 
@@ -1027,7 +1046,7 @@ trait ParallelMatching  {
       //Console.println(jumpT)
       return jump
     }
-    DBG("requestbody("+bx+", "+subst+") isReached(bx)?"+isReached(bx)+" labels:");
+    //DBG("requestbody("+bx+", "+subst+") isReached(bx)?"+isReached(bx)+" labels:");
     //{for(s<-labels) Console.print({if(s ne null) {s} else "_"}+",")}
     //DBG("vss(bx) = "+vss(bx))
     if(!isReached(bx)) { // first time this bx is requested
