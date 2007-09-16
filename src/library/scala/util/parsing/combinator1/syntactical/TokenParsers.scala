@@ -48,15 +48,11 @@ trait TokenParsers extends Parsers {
    *           if <code>p</code> consumed all the input.
    */
   def phrase[t](p: Parser[t]) = new Parser[t] {
+    lastNoSuccess = null
     def apply(in: Input) = p(in) match {
       case s @ Success(out, in1) if in1.atEnd => s
       case s @ Success(out, in1) => Failure("end of input expected", in1)
-      case f @ Failure(_, in1) => in1.first match {
-        case lexical.ErrorToken(msg)  => Failure(msg, in1)
-        case lexical.EOF  => Failure("unexpected end of input", in1)
-        case t  => Failure("unexpected token "+t, in1)
-      }
-      case f => f
+      case f : NoSuccess => lastNoSuccess
     }
   }
 }

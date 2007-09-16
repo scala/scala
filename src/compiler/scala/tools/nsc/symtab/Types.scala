@@ -1601,6 +1601,7 @@ A type's typeSymbol should never be inspected directly.
       maybeRewrap(underlying.instantiateTypeParams(formals, actuals))
     override def baseType(clazz: Symbol) = maybeRewrap(underlying.baseType(clazz))
     override def closure = underlying.closure map maybeRewrap
+    override def isHigherKinded = false
 
     override def skolemizeExistential(owner: Symbol, origin: AnyRef) = {
       def mkSkolem(tparam: Symbol): Symbol = {

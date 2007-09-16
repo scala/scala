@@ -128,10 +128,14 @@ trait Parsers {
     val successful = true
   }
 
+  var lastNoSuccess: NoSuccess = null
+
   /** A common super-class for unsuccessful parse results
    */
   sealed abstract class NoSuccess(val msg: String, override val next: Input) extends ParseResult[Nothing] { // when we don't care about the difference between Failure and Error
     val successful = false
+    if (!(lastNoSuccess != null && next.pos < lastNoSuccess.next.pos))
+      lastNoSuccess = this
 
     def map[U](f: Nothing => U) = this
     def mapPartial[U](f: PartialFunction[Nothing, U], error: Nothing => String): ParseResult[U] = this
