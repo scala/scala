@@ -6,13 +6,13 @@
 
 // $Id$
 
-package scala.tools.nsc.reporters;
-import scala.collection.mutable.HashSet;
-import scala.tools.nsc.util.Position
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.IOException;
-import java.io.PrintWriter;
+package scala.tools.nsc.reporters
+import scala.collection.mutable.HashSet
+import scala.tools.nsc.util.{Position,SourceFile}
+import java.io.BufferedReader
+import java.io.InputStreamReader
+import java.io.IOException
+import java.io.PrintWriter
 
 /**
  * This class implements a Reporter that displays messages on a text
@@ -20,17 +20,15 @@ import java.io.PrintWriter;
  */
 class StoreReporter extends Reporter {
   class Info(val pos: Position, val msg: String, val severity: Severity) {
-    override def toString() = "pos: " + pos + " " + msg + " " + severity;
+    override def toString() = "pos: " + pos + " " + msg + " " + severity
   }
-
   val infos = new HashSet[Info];
-
   protected def info0(pos : Position, msg : String, severity : Severity, force : Boolean) : Unit = if (!force) {
-    infos += new Info(pos, msg, severity);
+    infos += new Info(pos, msg, severity)
     (severity).count = severity.count + 1
   }
   override def reset = {
-    super.reset;
-    infos.clear;
+    super.reset
+    infos.clear
   }
 }

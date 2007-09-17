@@ -8,14 +8,19 @@
 
 // $Id$
 package scala.tools.nsc.util
-
-trait Position {
-  def offset : Option[Int] = None
+object Position {
+  // a static field
   private val tabInc = 8
+}
+trait Position {
+  import Position.tabInc
+  def offset : Option[Int] = None
+  def source : Option[SourceFile] = None
+
   def line : Option[Int] =
-    if (source.isEmpty || offset.isEmpty) None else Some(source.get.offsetToLine(offset.get) + 1)
+    if (offset.isEmpty || source.isEmpty) None else Some(source.get.offsetToLine(offset.get) + 1)
   def column : Option[Int] = {
-    if (source.isEmpty || offset.isEmpty) return None
+    if (offset.isEmpty || source.isEmpty) return None
     var column = 1
     // find beginning offset for line
     val line = source.get.offsetToLine(offset.get)
@@ -23,33 +28,39 @@ trait Position {
     var continue = true
     while (continue) {
       if (coffset == offset.get(-1)) continue = false
-      else if (source.get.content(coffset) == '\t') column = ((column - 1) / tabInc * tabInc) + tabInc + 1
+      else if (source.get.asInstanceOf[BatchSourceFile].content(coffset) == '\t')
+        column = ((column - 1) / tabInc * tabInc) + tabInc + 1
       else column = column + 1
       coffset = coffset + 1
     }
     Some(column)
   }
-  def source : Option[SourceFile] = None
-  def lineContent: String =
-    if (!line.isEmpty && !source.isEmpty) source.get.lineToString(line.get - 1)
+  def lineContent: String = {
+    val line = this.line
+    if (!line.isEmpty) source.get.lineToString(line.get - 1)
     else "NO_LINE"
+  }
+
+
   /** Map this position to a position in an original source
    * file.  If the SourceFile is a normal SourceFile, simply
    * return this.
    */
-  def inUltimateSource = if (!source.isEmpty) source.get.positionInUltimateSource(this)
-                         else this
+  def inUltimateSource(source : SourceFile) =
+    if (source == null) this else source.positionInUltimateSource(this)
 
   def dbgString = {
     (if (source.isEmpty) "" else "source-" + source.get.path) +
       (if (line.isEmpty) "" else "line-" + line.get) +
-        (if (offset.isEmpty || source.isEmpty) ""
-         else if (offset.get >= source.get.content.length) "out-of-bounds-" + offset.get
+        (if (offset.isEmpty) ""
+         else if (offset.get >= source.get.length) "out-of-bounds-" + offset.get
          else {
            val ret = "offset=" + offset.get;
            var add = "";
-           while (offset.get + add.length < source.get.content.length &&
+           /*
+           while (offset.get + add.length < source.get.length &&
                   add.length < 10) add = add + source.get.content(offset.get + add.length());
+           */
            ret + " c[0..9]=\"" + add + "\"";
          })
   }
@@ -59,12 +70,12 @@ trait Position {
 object NoPosition extends Position;
 case class FakePos(msg : String) extends Position;
 
-case class LinePosition(line0 : Int, override val source : Option[SourceFile]) extends Position {
-  def this(line0 : Int) = this(line0, None)
+case class LinePosition(source0 : SourceFile, line0 : Int) extends Position {
   assert(line0 >= 1)
   override def offset = None
   override def column = None
   override def line = Some(line0)
+  override def source = Some(source0)
 }
 case class OffsetPosition(source0 : SourceFile, offset0 : Int) extends Position {
   override def source = Some(source0)

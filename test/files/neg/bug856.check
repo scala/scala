@@ -1,4 +1,4 @@
 bug856.scala:3: error: class ComplexRect needs to be abstract, since method _2 in trait Product2 of type => double is not defined
 class ComplexRect(val _1:double, _2:double) extends Complex {
-^
+      ^
 one error found

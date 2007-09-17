@@ -28,8 +28,10 @@ abstract class SymbolTable extends Names
   /** Are we compiling for .NET*/
   def forMSIL: Boolean
 
-  /** are we in a lampion presentation compiler? then disable caching. */
+  /** are we in a lampion presentation compiler? cannot get inIDE flag from global */
   def inIDE : Boolean
+  protected def trackTypeIDE(sym : Symbol) : Boolean = true
+  protected def recycle(sym : Symbol) : Symbol = sym
 
   /** A period is an ordinal number for a phase in a run.
    *  Phases in later runs have higher periods than phases in earlier runs.

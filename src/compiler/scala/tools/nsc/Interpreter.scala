@@ -17,7 +17,7 @@ import scala.collection.mutable.{ListBuffer, HashSet, ArrayBuffer}
 import io.PlainFile
 import reporters.{ConsoleReporter, Reporter}
 import symtab.Flags
-import util.{ClassPath, SourceFile}
+import util.{SourceFile,BatchSourceFile,ClassPath}
 import nsc.{InterpreterResults=>IR}
 
 /** <p>
@@ -59,6 +59,10 @@ import nsc.{InterpreterResults=>IR}
  */
 class Interpreter(val settings: Settings, out: PrintWriter) {
   import symtab.Names
+
+  /** the compiler to compile expressions with */
+  val compiler: scala.tools.nsc.Global = newCompiler(settings, reporter)
+
   import compiler.Traverser
   import compiler.{Tree, TermTree,
                    ValOrDefDef, ValDef, DefDef, Assign,
@@ -70,7 +74,8 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
 
   /** construct an interpreter that reports to Console */
   def this(settings: Settings) =
-    this(settings, new PrintWriter(new ConsoleWriter, true))
+    this(settings,
+         new PrintWriter(new ConsoleWriter, true))
 
   /** whether to print out result lines */
   private var printResults: Boolean = true
@@ -95,8 +100,8 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
 
   /** directory to save .class files to */
   val classfilePath = File.createTempFile("scalaint", "")
-  classfilePath.delete()  // the file is created as a file; make it a directory
-  classfilePath.mkdirs()
+  classfilePath.delete  // the file is created as a file; make it a directory
+  classfilePath.mkdirs
 
   /* set up the compiler's output directory */
   settings.outdir.value = classfilePath.getPath
@@ -108,10 +113,8 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   /** Instantiate a compiler.  Subclasses can override this to
    *  change the compiler class used by this interpreter. */
   protected def newCompiler(settings: Settings, reporter: Reporter)
-    = new Global(settings, reporter)
+    = new scala.tools.nsc.Global(settings, reporter)
 
-  /** the compiler to compile expressions with */
-  val compiler: Global = newCompiler(settings, reporter)
 
   /** the compiler's classpath, as URL's */
   val compilerClasspath: List[URL] =
@@ -350,7 +353,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
       def simpleParse(code: String): List[Tree] = {
         val unit =
           new CompilationUnit(
-            new SourceFile("<console>", code.toCharArray()))
+            new BatchSourceFile("<console>", code.toCharArray()))
         val scanner = new compiler.syntaxAnalyzer.UnitParser(unit);
         val xxx = scanner.templateStatSeq;
         xxx._2
@@ -384,7 +387,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
    *  compilation errors, or false otherwise.
    */
   def compileString(code: String): Boolean =
-    compileSources(List(new SourceFile("<script>", code.toCharArray)))
+    compileSources(List(new BatchSourceFile("<script>", code.toCharArray)))
 
   /** Build a request from the user. <code>trees</code> is <code>line</code>
    *  after being parsed.
@@ -701,7 +704,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
       val objRun = new compiler.Run()
       //println("source: "+objectSourceCode) //DEBUG
       objRun.compileSources(
-        List(new SourceFile("<console>", objectSourceCode.toCharArray))
+        List(new BatchSourceFile("<console>", objectSourceCode.toCharArray))
       )
       if (reporter.hasErrors) return false
 
@@ -711,7 +714,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
 
       // compile the result-extraction object
       new compiler.Run().compileSources(
-        List(new SourceFile("<console>", resultObjectSourceCode.toCharArray))
+        List(new BatchSourceFile("<console>", resultObjectSourceCode.toCharArray))
       )
 
       // success

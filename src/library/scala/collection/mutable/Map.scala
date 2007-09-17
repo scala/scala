@@ -133,6 +133,25 @@ trait Map[A, B] extends AnyRef
    */
   def - (key: A): Map[A, B] = { this -= key; this }
 
+  /** Remove <code>key</code> from this map and return the element
+   *  that the key was previously mapped to (if any).
+   */
+  def removeKey(key : A) : Option[B] = {
+    val ret = get(key)
+    this -= key
+    ret
+  }
+
+  /** Map <code>key</code> to <code>elem</code> in this map and return the element
+   *  that the key was previously mapped to (if any).
+   */
+  def put(key : A, elem : B) : Option[B] = {
+    val ret = get(key)
+    this(key) = elem
+    ret
+  }
+
+
   /** Remove two or more keys from this map
    *  @param    key1 the first key to be removed
    *  @param    key2 the second key to be removed

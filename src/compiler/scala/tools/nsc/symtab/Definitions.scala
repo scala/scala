@@ -356,7 +356,7 @@ trait Definitions {
 
     private def newClass(owner: Symbol, name: Name, parents: List[Type]): Symbol = {
       val clazz = owner.newClass(NoPosition, name.toTypeName)
-      clazz.setInfo(ClassInfoType(parents, newScope, clazz))
+      clazz.setInfo(ClassInfoType(parents, newClassScope, clazz))
       owner.info.decls.enter(clazz)
       clazz
     }
@@ -367,7 +367,7 @@ trait Definitions {
       clazz.setInfo(
         PolyType(
           List(tparam),
-          ClassInfoType(List(parent(tparam)), newScope, clazz)))
+          ClassInfoType(List(parent(tparam)), newClassScope, clazz)))
     }
 
     private def newAlias(owner: Symbol, name: Name, alias: Type): Symbol = {
@@ -442,7 +442,7 @@ trait Definitions {
       val module = ScalaPackageClass.newModule(NoPosition, name)
       ScalaPackageClass.info.decls.enter(module)
       val mclass = module.moduleClass
-      mclass.setInfo(ClassInfoType(List(), newScope, mclass))
+      mclass.setInfo(ClassInfoType(List(), newClassScope, mclass))
       module.setInfo(mclass.tpe)
 
       val box = newMethod(mclass, nme.box, List(clazz.typeConstructor),
@@ -645,7 +645,7 @@ trait Definitions {
       if (isInitialized) return
       isInitialized = true
 
-      EmptyPackageClass.setInfo(ClassInfoType(List(), newScope, EmptyPackageClass))
+      EmptyPackageClass.setInfo(ClassInfoType(List(), newClassScope, EmptyPackageClass))
       EmptyPackage.setInfo(EmptyPackageClass.tpe)
       RootClass.info.decls.enter(EmptyPackage)
       RootClass.info.decls.enter(RootPackage)
@@ -696,7 +696,7 @@ trait Definitions {
         EqualsPatternClass.setInfo(
           PolyType(
             List(tparam),
-            ClassInfoType(List(AnyClass.typeConstructor), newScope, EqualsPatternClass)))
+            ClassInfoType(List(AnyClass.typeConstructor), newClassScope, EqualsPatternClass)))
       }
 
       /* <unapply> */

@@ -6,17 +6,13 @@
 
 package scala.tools.nsc.ast.parser
 
-import scala.tools.nsc.util.{CharArrayReader, Position, OffsetPosition,
-                             SourceFile}
+import scala.tools.nsc.util._
 import SourceFile.{LF, FF, CR, SU}
 import Tokens._
 
 trait Scanners {
-  self: SyntaxAnalyzer =>
+  val global : Global
   import global._
-
-  /** ...
-   */
   abstract class AbstractTokenData {
     def token: Int
     type ScanPosition
@@ -60,7 +56,6 @@ trait Scanners {
   abstract class AbstractScanner extends AbstractTokenData {
     implicit def p2g(pos: Position): ScanPosition
     implicit def g2p(pos: ScanPosition): Position
-    def configuration: ScannerConfiguration
     def warning(pos: ScanPosition, msg: String): Unit
     def error  (pos: ScanPosition, msg: String): Unit
     def incompleteInputError(pos: ScanPosition, msg: String): Unit
@@ -81,7 +76,7 @@ trait Scanners {
     def flushDoc: String
   }
 
-  trait ScannerConfiguration {
+  object ScannerConfiguration {
 //  Keywords -----------------------------------------------------------------
     /** Keyword array; maps from name indices to tokens */
     private var key: Array[Byte] = _
@@ -268,9 +263,6 @@ trait Scanners {
       ret
     }
 
-    /** Process comments and strings in scanner */
-    protected def matchInScanner = true
-
     /** add the given character to the documentation buffer
      */
     protected def putDocChar(c: Char) {
@@ -287,6 +279,16 @@ trait Scanners {
     /** a stack which indicates whether line-ends can be statement separators
      */
     var sepRegions: List[Int] = List()
+
+    /** A new line was inserted where in version 1.0 it would not be.
+     *  Only significant if settings.migrate.value is set
+     */
+    var newNewLine = false
+
+    /** Parser is currently skipping ahead because of an error.
+     *  Only significant if settings.migrate.value is set
+     */
+    var skipping = false
 
 // Get next token ------------------------------------------------------------
 
@@ -421,23 +423,6 @@ trait Scanners {
                in.next
                getOperatorRest; // XXX
                return
-
-              case '/' if !matchInScanner =>
-                in.next
-                if (in.ch == '/') {
-                  in.next; token = LINE_COMMENT
-                  return
-                } else if (in.ch == '*') {
-                  in.next
-                  if (in.ch == '*') {
-                    in.next; token = DOC_START
-                  } else token = COMMENT_START
-                  return
-                } else {
-                  putChar('/')
-                  getOperatorRest
-                  return
-                }
               case '/' =>
                 in.next
                 if (!skipComment()) {
@@ -461,27 +446,10 @@ trait Scanners {
                 base = 10
                 getNumber
                 return
-              case '`' if !matchInScanner =>
-                in.next; token = BACK_QUOTE
-                return
               case '`' =>
                 in.next
                 getStringLit('`', BACKQUOTED_IDENT)
                 return
-              case '\"' if !matchInScanner =>
-                in.next
-                if (in.ch == '\"') {
-                  in.next
-                  if (in.ch == '\"') {
-                    in.next; token = MULTI_QUOTE
-                  } else {
-                    token = throw new Error
-                  }
-                  return
-                } else {
-                  token = DOUBLE_QUOTE
-                  return
-                }
               case '\"' =>
                 in.next
                 if (in.ch == '\"') {
@@ -577,7 +545,8 @@ trait Scanners {
                 in.next; token = RPAREN
                 return
               case '}' =>
-                in.next; token = RBRACE
+                in.next;
+                token = RBRACE
                 return
               case '[' =>
                 in.next; token = LBRACKET
@@ -611,7 +580,6 @@ trait Scanners {
     }
 
     private def skipComment(): Boolean = {
-      assert(matchInScanner)
       if (in.ch == '/') {
         do {
           in.next
@@ -710,6 +678,7 @@ trait Scanners {
                '5' | '6' | '7' | '8' | '9' =>
             putChar(in.ch)
             in.next
+
           case '_' =>
             putChar(in.ch)
             in.next
@@ -717,7 +686,7 @@ trait Scanners {
             return
           case SU =>
             setName
-            token = configuration.name2token(name)
+            token = ScannerConfiguration.name2token(name)
             return
           case _ =>
             if (Character.isUnicodeIdentifierPart(in.ch)) {
@@ -725,7 +694,7 @@ trait Scanners {
               in.next
             } else {
               setName
-              token = configuration.name2token(name)
+              token = ScannerConfiguration.name2token(name)
               return
             }
         }
@@ -743,14 +712,9 @@ trait Scanners {
             in.next
           case '/' =>
             in.next
-            if (matchInScanner && skipComment) {
+            if (skipComment) {
               setName
-              token = configuration.name2token(name)
-              return
-            } else if (!matchInScanner && (in.ch == '*' || in.ch == '/')) {
-              in.rewind
-              setName
-              token = configuration.name2token(name)
+              token = ScannerConfiguration.name2token(name)
               return
             } else putChar('/')
           case _ =>
@@ -759,7 +723,7 @@ trait Scanners {
               in.next
             } else {
               setName
-              token = configuration.name2token(name)
+              token = ScannerConfiguration.name2token(name)
               return
             }
         }
@@ -779,13 +743,12 @@ trait Scanners {
           if (isSpecial(in.ch)) getOperatorRest
           else {
             setName
-            token = configuration.name2token(name)
+            token = ScannerConfiguration.name2token(name)
           }
       }
     }
 
     private def getStringLit(delimiter: Char, litType: Int) {
-      assert(matchInScanner)
       //assert((litType==STRINGLIT) || (litType==IDENTIFIER))
       while (in.ch != delimiter && (in.isUnicode || in.ch != CR && in.ch != LF && in.ch != SU)) {
         getlitch()
@@ -801,7 +764,6 @@ trait Scanners {
     }
 
     private def getMultiLineStringLit {
-      assert(matchInScanner)
       if (in.ch == '\"') {
         in.next
         if (in.ch == '\"') {
@@ -1049,7 +1011,7 @@ trait Scanners {
       case COMMA =>
         ","
       case _ =>
-        configuration.token2string(token)
+        ScannerConfiguration.token2string(token)
     }
 
     /** INIT: read lookahead character and token.
@@ -1062,9 +1024,8 @@ trait Scanners {
 
   /** ...
    */
-  class UnitScanner(unit: CompilationUnit) extends Scanner with ScannerConfiguration {
-    override def configuration = this
-    val in = new CharArrayReader(unit.source.getContent(), !settings.nouescape.value, syntaxError)
+  class UnitScanner(unit: CompilationUnit) extends Scanner {
+    val in = new CharArrayReader(unit.source.asInstanceOf[BatchSourceFile].content, !settings.nouescape.value, syntaxError)
     def warning(pos: Int, msg: String) = unit.warning(pos, msg)
     def error  (pos: Int, msg: String) = unit.  error(pos, msg)
     def incompleteInputError(pos: Int, msg: String) = unit.incompleteInputError(pos, msg)

@@ -2,5 +2,5 @@ bug515.scala:7: error: type mismatch;
  found   : java.lang.String
  required: Test.this.Truc
   val parent: Truc = file.getMachin
-                         ^
+                          ^
 one error found

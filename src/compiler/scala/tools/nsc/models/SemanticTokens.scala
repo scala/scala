@@ -11,7 +11,7 @@ import java.lang.Character.isJavaIdentifierPart
 import scala.collection.mutable.{HashMap,HashSet}
 import scala.tools.nsc.Global
 import scala.tools.nsc.symtab.{Flags,Names}
-import scala.tools.nsc.util.{NameTransformer,Position,SourceFile,NoPosition}
+import scala.tools.nsc.util.{NameTransformer,Position,SourceFile,BatchSourceFile, NoPosition}
 import scala.tools.nsc.symtab.Flags.DEFERRED
 
 class SemanticTokens(val compiler: Global) {
@@ -35,10 +35,10 @@ class SemanticTokens(val compiler: Global) {
     def next: HasPrev
   }
 
-  def eatKeyword(source: SourceFile, pos: Int, keywords: List[String]) : Int = {
+  def eatKeyword(source: BatchSourceFile, pos: Int, keywords: List[String]) : Int = {
     if (keywords.isEmpty)
       pos
-    else if (pos == source.content.length)
+    else if (pos == source.length)
       -1
     else if (source.beginsWith(pos, " "))
       eatKeywords(source, pos + 1)
@@ -48,7 +48,7 @@ class SemanticTokens(val compiler: Global) {
       eatKeyword(source, pos, keywords.tail)
   }
 
-  def eatKeywords(source: SourceFile, pos: Int): Int = {
+  def eatKeywords(source: BatchSourceFile, pos: Int): Int = {
     val keywords =
       "package" :: "val" :: "var" :: "def" :: "class" :: "trait" :: "override" :: "case" ::
       "object" :: "sealed" :: "private" :: "protected" :: Nil
@@ -202,12 +202,10 @@ class SemanticTokens(val compiler: Global) {
     def build(tree0: Tree) : Unit = try {
       /* if (tree0.pos != NoPosition) */ tree0 match {
       case tree: ImplDef =>
-        val pos = eatKeywords(unit.source, tree.pos.offset.get)
+        val pos = eatKeywords(unit.source.asInstanceOf[BatchSourceFile], tree.pos.offset.get)
         if (pos == -1) {
-          // inner types.
-            // Console.err.println("NOPOS: " + tree.getClass() + " " + (new Position(unit.source, tree.pos)).dbgString);
-          //Thread.dumpStack();
-        } else buildDef(tree.symbol, eatKeywords(unit.source, tree.pos.offset.get));
+
+        } else buildDef(tree.symbol, eatKeywords(unit.source.asInstanceOf[BatchSourceFile], tree.pos.offset.get));
         tree match {
           case cdef: ClassDef => build(cdef.tparams)
           case _ => ;
@@ -222,7 +220,7 @@ class SemanticTokens(val compiler: Global) {
           // todo: review whether this is correct, or whether abstract getters should be included.
           {
             val pos : Int = if (tree.name.toString().equals("<init>")) -1 else
-              eatKeywords(unit.source, tree.pos.offset.get);
+              eatKeywords(unit.source.asInstanceOf[BatchSourceFile], tree.pos.offset.get);
           if (false) Console.err.println("VALDEF: tree=" + tree + " sym=" + tree.symbol + " pos0=" +
             tree.symbol.pos + " alias=" + tree.symbol.alias + " pos1=" +
             pos + " pos2=" + tree.pos.dbgString + " " + tree.symbol.hasFlag(Flags.SYNTHETIC));
@@ -261,7 +259,7 @@ class SemanticTokens(val compiler: Global) {
       case tree: PackageDef =>
         //Console.err.println("PACKAGE: " + tree.name);
         if (false) {
-          val pos = eatKeywords(unit.source, tree.pos.offset.get(-1))
+          val pos = eatKeywords(unit.source.asInstanceOf[BatchSourceFile], tree.pos.offset.get(-1))
           if (pos != -1)
             buildDef(tree.symbol, pos)
         }
@@ -272,9 +270,9 @@ class SemanticTokens(val compiler: Global) {
           val pos: Int =
             if (unit.source.beginsWith(arg.pos.offset.get(-1), "val "))
               unit.source.skipWhitespace(arg.pos.offset.get(-1) + ("val ").length())
-            else if (unit.source.content(arg.pos.offset.get) == ':') {
+            else if (unit.source.asInstanceOf[BatchSourceFile].content(arg.pos.offset.get) == ':') {
               var posx : Int = arg.pos.offset.get
-              while (unit.source.content(posx - 1).isWhitespace) posx = posx - 1
+              while (unit.source.asInstanceOf[BatchSourceFile].content(posx - 1).isWhitespace) posx = posx - 1
               posx - name.length()
             } else arg.pos.offset.get
           buildDef(arg.symbol, pos)
@@ -303,7 +301,6 @@ class SemanticTokens(val compiler: Global) {
             case ident : Ident => buildUse(tpe0.sym, ident.pos.offset.get(-1), tpe0);
             case select : Select =>
           if (select.symbol == NoSymbol)
-            if (false) Console.err.println("BUILD_SELECT: " + select + " @ " + tpe0 + " SYM=" + select.symbol + " " + (select.pos).dbgString);
               try {
                 // build(select);
             buildUse(tpe0.typeSymbol, selectPos(select), tpe0);
@@ -377,8 +374,6 @@ class SemanticTokens(val compiler: Global) {
 
         }
       case ctype : ConstantType =>
-        if (false) Console.err.println("UNKNOWN CONSTANT_TYPE: " + tree + " " + ctype + " " + (tree.pos).dbgString);
-
           case ErrorType =>
           case _ => {
         if (false) Console.err.println("UNKNOWN TPE4: " + tree + " " + tpe + " " + tpe.getClass() + " " + (tree.pos).dbgString);
@@ -419,7 +414,7 @@ class SemanticTokens(val compiler: Global) {
               case e : Error => Console.err.println("SELECTQ: " + tree + " " + tree.qualifier + " " + (tree.qualifier.pos).dbgString); throw e;
             }
             try {
-              if (tree.pos.offset.get >= unit.source.content.length) {
+              if (tree.pos.offset.get >= unit.source.length) {
                 if (false) Console.err.println("BAD_SELECT_QUALIFIER " + tree + " @ " + (tree.pos).dbgString);
 
         } else {
@@ -437,11 +432,11 @@ class SemanticTokens(val compiler: Global) {
       build(tree.fun)
       build(tree.args)
     case tree: Apply =>
-      //Console.err.println("NORM_APPLY: " + tree + " " + tree.pos.dbgString);
+
       build(tree.fun)
       build(tree.args)
       case tree: GenericApply =>
-        //Console.err.println("GEN_APPLY: " + tree + " " + tree.pos.dbgString);
+
         build(tree.fun)
         build(tree.args)
       case tree: Typed =>
@@ -472,7 +467,7 @@ class SemanticTokens(val compiler: Global) {
       case tree : Try        => build(tree.block); build(tree.catches); build(tree.finalizer);
       case tree : Alternative => build(tree.trees);
       case tree : This    =>
-        //Console.err.println("THIS: " + tree.symbol + " " + tree.qual + " " + tree.pos.dbgString + " " + tree.tpe);
+
         if (tree.symbol ne null) buildUse(tree.symbol, tree.pos.offset.get(-1), tree.tpe);
         //Thread.dumpStack();
       case tree : TypeDef =>
@@ -506,7 +501,7 @@ class SemanticTokens(val compiler: Global) {
     }
     else if (term != NoSymbol) {
       val name = NameTransformer.decode(term.name.toString()).toString().trim()
-      val buf = unit.source.content
+      val buf = unit.source.asInstanceOf[BatchSourceFile].content
       val cs = name.toChars
       var idx = 0
       if (cs.length + pos > buf.length) return
@@ -532,7 +527,7 @@ class SemanticTokens(val compiler: Global) {
     }
 
   def selectPos(tree : Select): Int = if (tree.pos == NoPosition) -1 else {
-    val buf = unit.source.content
+    val buf = unit.source.asInstanceOf[BatchSourceFile].content
     if (tree.pos.offset.get >= buf.length) {
       if (false) {
         Console.err.println("" + tree + "@" + tree.pos + " not in " +
@@ -598,16 +593,6 @@ class SemanticTokens(val compiler: Global) {
         if (sem.symbol != tok.symbol &&
             sem.symbol.getClass() == tok.symbol.getClass() &&
             sem.symbol.pos == tok.symbol.pos) return;
-
-        if (false) {
-          Console.err.println("NOT_GAP: " + sem.symbol + " " + sem.symbol.getClass() + " " + (sem.symbol.pos).dbgString + " " + sem.symbol.flags);
-          Console.err.println("NOT_GAP: " + tok.symbol + " " + tok.symbol.getClass() + " " + (tok.symbol.pos).dbgString + " " + tok.symbol.flags);
-          Console.err.println("LIST: " + this);
-          Console.err.println("POS: " + unit.source.dbg(offset));
-
-          Thread.dumpStack();
-          throw new Error();
-        }
       } else {
         val gap = cursor.token.asInstanceOf[Gap];
         if (!(offset - cursor.offset + tok.length <= gap.length)) {

@@ -15,9 +15,8 @@ abstract class TreeBuilder {
   val global: Global
   import global._
   import posAssigner.atPos;
-  def freshName(prefix: String, pos: Position): Name
-
-  def freshName(pos : Position): Name = freshName("x$", pos)
+  def freshName(pos : Position, prefix: String): Name
+  def freshName(pos : Position): Name = freshName(pos, "x$")
 
   def scalaDot(name: Name): Tree =
     Select(Ident(nme.scala_) setSymbol definitions.ScalaPackage, name)
@@ -57,16 +56,16 @@ abstract class TreeBuilder {
 
   /** Traverse pattern and collect all variable names with their types in buffer */
   private object getvarTraverser extends Traverser {
-    val buf = new ListBuffer[(Name, Tree)]
+    val buf = new ListBuffer[(Name, Tree, Position)]
     def init: Traverser = { buf.clear; this }
     override def traverse(tree: Tree): Unit = tree match {
       case Bind(name, Typed(tree1, tpt)) =>
         if ((name != nme.WILDCARD) && (buf.elements forall (name !=)))
-          buf += (name, if (treeInfo.mayBeTypePat(tpt)) TypeTree() else tpt)
+          buf += (name, if (treeInfo.mayBeTypePat(tpt)) TypeTree() else tpt, tree.pos)
         traverse(tree1)
       case Bind(name, tree1) =>
         if ((name != nme.WILDCARD) && (buf.elements forall (name !=)))
-          buf += (name, TypeTree())
+          buf += (name, TypeTree(), tree.pos)
         traverse(tree1)
       case _ =>
         super.traverse(tree)
@@ -76,7 +75,7 @@ abstract class TreeBuilder {
   /** Returns list of all pattern variables, possibly with their types,
    *  without duplicates
    */
-  private def getVariables(tree: Tree): List[(Name, Tree)] = {
+  private def getVariables(tree: Tree): List[(Name, Tree,Position)] = {
     getvarTraverser.init.traverse(tree)
     getvarTraverser.buf.toList
   }
@@ -378,7 +377,7 @@ abstract class TreeBuilder {
 
   /** Create visitor <x => x match cases> */
   def makeVisitor(cases: List[CaseDef], checkExhaustive: Boolean, prefix: String): Tree = {
-    val x = freshName(prefix, posAssigner.pos)
+    val x = freshName(posAssigner.pos, prefix)
     val sel = if (checkExhaustive) Ident(x) else makeUnchecked(Ident(x))
     Function(List(makeSyntheticParam(x)), Match(sel, cases))
   }
@@ -394,7 +393,7 @@ abstract class TreeBuilder {
   /** Create tree for pattern definition &lt;mods val pat0 = rhs&gt; */
   def makePatDef(mods: Modifiers, pat: Tree, rhs: Tree): List[Tree] = matchVarPattern(pat) match {
     case Some((name, tpt)) =>
-      List(ValDef(mods, name, tpt, rhs))
+      List(ValDef(mods, name, tpt, rhs).setPos(pat.pos))
 
     case None =>
       //  in case there are no variables in pattern
@@ -418,14 +417,14 @@ abstract class TreeBuilder {
       vars match {
         case List() =>
           List(matchExpr)
-        case List((vname, tpt)) =>
-          List(ValDef(mods, vname, tpt, matchExpr))
+        case List((vname, tpt, pos)) =>
+          List(ValDef(mods, vname, tpt, matchExpr).setPos(pos))
         case _ =>
           val tmp = freshName(pat1.pos)
           val firstDef = ValDef(Modifiers(PRIVATE | LOCAL | SYNTHETIC | (mods.flags & LAZY)),
                                 tmp, TypeTree(), matchExpr)
           var cnt = 0
-          val restDefs = for (val (vname, tpt) <- vars) yield {
+          val restDefs = for (val (vname, tpt, pos) <- vars) yield atPos(pos) {
             cnt = cnt + 1
             ValDef(mods, vname, tpt, Select(Ident(tmp), newTermName("_" + cnt)))
           }
@@ -446,7 +445,7 @@ abstract class TreeBuilder {
   /** Append implicit view section if for `implicitViews' if nonempty */
   def addImplicitViews(owner: Name, vparamss: List[List[ValDef]], implicitViews: List[Tree]): List[List[ValDef]] = {
     val mods = Modifiers(if (owner.isTypeName) PARAMACCESSOR | LOCAL | PRIVATE else PARAM)
-    def makeViewParam(tpt: Tree) = ValDef(mods | IMPLICIT, freshName("view$", tpt.pos), tpt, EmptyTree)
+    def makeViewParam(tpt: Tree) = ValDef(mods | IMPLICIT, freshName(tpt.pos, "view$"), tpt, EmptyTree)
     if (implicitViews.isEmpty) vparamss
     else vparamss ::: List(implicitViews map makeViewParam)
   }
@@ -454,9 +453,9 @@ abstract class TreeBuilder {
   /** Create a tree representing a packaging */
   def makePackaging(pkg: Tree, stats: List[Tree]): PackageDef = pkg match {
     case Ident(name) =>
-      PackageDef(name, stats)
+      PackageDef(name, stats).setPos(pkg.pos)
     case Select(qual, name) =>
-      makePackaging(qual, List(PackageDef(name, stats)))
+      makePackaging(qual, List(PackageDef(name, stats).setPos(pkg.pos)))
   }
 
   case class Parens(args: List[Tree]) extends Tree

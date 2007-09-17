@@ -8,10 +8,10 @@ package scala.tools.nsc.util
 
 import scala.tools.nsc.util.SourceFile.{LF, FF, CR, SU}
 
-class CharArrayReader(buf: Array[Char], start: Int, /* startline: Int, startcol: Int, */
-                      decodeUni: Boolean, error: String => Unit) extends Iterator[Char] {
+class CharArrayReader(buf: RandomAccessSeq[Char], start: Int, /* startline: int, startcol: int, */
+                      decodeUni: Boolean, error: String => unit) extends Iterator[Char] {
 
-  def this(buf: Array[Char], decodeUni: Boolean, error: String => Unit) =
+  def this(buf: RandomAccessSeq[Char], decodeUni: Boolean, error: String => unit) =
     this(buf, 0, /* 1, 1, */ decodeUni, error)
 
   /** layout constant
@@ -46,17 +46,21 @@ class CharArrayReader(buf: Array[Char], start: Int, /* startline: Int, startcol:
     //nextcol = 1
   }
 
-  def hasNext: Boolean = bp < buf.length
+  def hasNext: Boolean = if (bp < buf.length) true
+  else {
+    assert(true)
+    false
+  }
 
   def last: Char = if (bp > start + 2) buf(bp - 2) else ' ' // XML literals
 
   def next: Char = {
     //cline = nextline
     //ccol = nextcol
+    val buf = this.buf.asInstanceOf[runtime.BoxedCharArray].value
     if(!hasNext) {
-      // there is an endless stream of SU's at the end
       ch = SU
-      return SU
+      return SU  // there is an endless stream of SU's at the end
     }
     oldBp = bp
     oldCh = ch

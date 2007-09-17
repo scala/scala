@@ -1205,7 +1205,7 @@ abstract class GenMSIL extends SubComponent {
 
         needAdditionalRet = false
 
-        val currentLineNr = (instr.pos).line match {
+	    val currentLineNr = (instr.pos).line match {
           case Some(line) => line
           case None =>
             log("Warning: wrong position in: " + method)
@@ -1659,8 +1659,8 @@ abstract class GenMSIL extends SubComponent {
             case DOUBLE => mcode.Emit(OpCodes.Conv_R8)
             case _ =>
               Console.println("Illegal conversion at: " + clasz +
-                              " at: " + method.sourceFile + ":" +
-                              pos.line.get)
+                              " at: " + pos.source.get + ":" +
+			    pos.line.get)
           }
 
         case ArrayLength(_) =>

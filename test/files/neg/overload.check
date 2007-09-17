@@ -3,5 +3,5 @@ most specific definition is: method f in class C of type (int)Unit,
 yet alternative definition   method f in class D of type (Any)Unit
 is defined in a subclass
   (new D).f(1)
-         ^
+          ^
 one error found

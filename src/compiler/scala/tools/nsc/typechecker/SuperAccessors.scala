@@ -84,7 +84,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
         }
       }
 
-    override def transform(tree: Tree): Tree = tree match {
+    override def transform(tree: Tree): Tree = try { tree match {
       case ClassDef(_, _, _, _) =>
         checkCompanionNameClashes(tree.symbol)
         val decls = tree.symbol.info.decls
@@ -181,6 +181,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
           super.transform(tree)
 
       case Apply(fn, args) =>
+        assert(fn.tpe != null)
         copy.Apply(tree, transform(fn), transformArgs(args, fn.tpe.paramTypes))
       case Function(vparams, body) =>
         withInvalidOwner {
@@ -188,6 +189,12 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
         }
       case _ =>
         super.transform(tree)
+    }} catch {
+      case ex : AssertionError =>
+        if (tree.symbol != null && tree.symbol != NoSymbol)
+          Console.println("TRANSFORM: " + tree.symbol.sourceFile)
+        Console.println("TREE: " + tree)
+        throw ex
     }
 
     override def atOwner[A](owner: Symbol)(trans: => A): A = {

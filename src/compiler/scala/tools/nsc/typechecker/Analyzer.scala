@@ -26,7 +26,7 @@ trait Analyzer extends AnyRef
     val phaseName = "namer"
     def newPhase(_prev: Phase): StdPhase = new StdPhase(_prev) {
       def apply(unit: CompilationUnit): unit =
-        new Namer(rootContext(unit)).enterSym(unit.body)
+        newNamer(rootContext(unit)).enterSym(unit.body)
     }
   }
 

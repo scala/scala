@@ -7,7 +7,7 @@
 package scala.tools.nsc.symtab
 
 import scala.tools.nsc.io.AbstractFile
-import scala.tools.nsc.util.{Position, NoPosition, SourceFile}
+import scala.tools.nsc.util.{Position, NoPosition, SourceFile, BatchSourceFile}
 import Flags._
 
 trait Symbols {
@@ -50,7 +50,7 @@ trait Symbols {
     def pos = rawpos
     def setPos(pos: Position): this.type = { this.rawpos = pos; this }
 
-    def namePos(source: SourceFile) = {
+    def namePos(source: BatchSourceFile) = {
       val pos: Int = this.pos.offset.get(-1)
       val buf = source.content
       if (pos == -1) -1
@@ -496,6 +496,9 @@ trait Symbols {
       this
     }
 
+    /** check if info has been set before, used in the IDE */
+    def rawInfoSafe : Option[Type] = if (infos == null) None else Some(rawInfo)
+
     /** Return info without checking for initialization or completing */
     def rawInfo: Type = {
       var infos = this.infos
@@ -503,7 +506,7 @@ trait Symbols {
       val curPeriod = currentPeriod
       val curPid = phaseId(curPeriod)
 
-      if (validTo != NoPeriod) {
+      if (!inIDE && validTo != NoPeriod) {
 
         // skip any infos that concern later phases
         while (curPid < phaseId(infos.validFrom) && infos.prev != null)
@@ -670,6 +673,10 @@ trait Symbols {
 
     def suchThat(cond: Symbol => Boolean): Symbol = {
       val result = filter(cond)
+      // @S: seems like NoSymbol has the overloaded flag????
+      if (inIDE && (this eq result) && result != NoSymbol && (result hasFlag OVERLOADED)) {
+        return result
+      }
       assert(!(result hasFlag OVERLOADED), result.alternatives)
       result
     }
@@ -698,10 +705,12 @@ trait Symbols {
 
     /** The primary constructor of a class */
     def primaryConstructor: Symbol = {
-      val c = info.decl(
+      var c = info.decl(
         if (isTrait || isImplClass) nme.MIXIN_CONSTRUCTOR
         else nme.CONSTRUCTOR)
-      if (c hasFlag OVERLOADED) c.alternatives.head else c
+      c = if (c hasFlag OVERLOADED) c.alternatives.head else c
+      //assert(c != NoSymbol)
+      c
     }
 
     /** The self symbol of a class with explicit self type, or else the
@@ -953,8 +962,15 @@ trait Symbols {
         newTermName(fullNameString('$') + nme.EXPAND_SEPARATOR_STRING + name)
     }
 
-    def sourceFile: AbstractFile =
-      (if (isModule) moduleClass else toplevelClass).sourceFile
+    def sourceFile: AbstractFile = {
+      var ret = (if (isModule) moduleClass else toplevelClass).sourceFile
+      if (ret == null && inIDE && !isModule) this match {
+        case sym : ModuleSymbol if sym.referenced != null =>
+          ret = sym.referenced.sourceFile
+        case _ =>
+      }
+      ret
+    }
 
     def sourceFile_=(f: AbstractFile): Unit =
       throw new Error("sourceFile_= inapplicable for " + this)
@@ -1164,7 +1180,8 @@ trait Symbols {
     }
 
     def setLazyAccessor(sym: Symbol): TermSymbol = {
-      assert(hasFlag(LAZY) && referenced == NoSymbol, this)
+      // @S: in IDE setLazyAccessor can be called multiple times on same sym
+      assert(hasFlag(LAZY) && (referenced == NoSymbol || referenced == sym), this)
       referenced = sym
       this
     }

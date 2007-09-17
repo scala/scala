@@ -49,7 +49,7 @@ abstract class ClassfileParser {
   protected var hasMeta: Boolean = _        // does class file contain jaco meta attribute?s
   protected var busy: Boolean = false       // lock to detect recursive reads
   protected var classTParams = Map[Name,Symbol]()
-  protected val fresh = new FreshNameCreator
+  protected val fresh = new FreshNameCreator.Default
 
   private object metaParser extends MetaParser {
     val global: ClassfileParser.this.global.type = ClassfileParser.this.global
@@ -59,7 +59,7 @@ abstract class ClassfileParser {
     val global: ClassfileParser.this.global.type = ClassfileParser.this.global
   }
 
-  def parse(file: AbstractFile, root: Symbol) {
+  def parse(file: AbstractFile, root: Symbol) = try {
     def handleError(e: Exception) = {
       if (settings.debug.value) e.printStackTrace() //debug
       throw new IOException("class file '" + in.file + "' is broken\n(" + {
@@ -96,6 +96,7 @@ abstract class ClassfileParser {
       case e: FatalError => handleError(e)
       case e: RuntimeException => handleError(e)
     }
+  } finally {
     busy = false
   }
 
@@ -345,8 +346,8 @@ abstract class ClassfileParser {
     if (isAnnotation) ifaces = definitions.ClassfileAnnotationClass.tpe :: ifaces
     val parents = superType :: ifaces
 
-    instanceDefs = newScope
-    staticDefs = newScope
+    instanceDefs = newClassScope
+    staticDefs = newClassScope
     val classInfo = ClassInfoType(parents, instanceDefs, clazz)
     val staticInfo = ClassInfoType(List(), staticDefs, statics)
 
@@ -632,7 +633,8 @@ abstract class ClassfileParser {
             if ((sourceFile0 ne null) && (clazz.sourceFile eq null)) {
               clazz.sourceFile = sourceFile0
             }
-            staticModule.moduleClass.sourceFile = clazz.sourceFile
+            if (!inIDE || staticModule.moduleClass != NoSymbol)
+              staticModule.moduleClass.sourceFile = clazz.sourceFile
           }
         case nme.AnnotationDefaultATTR =>
           sym.attributes =

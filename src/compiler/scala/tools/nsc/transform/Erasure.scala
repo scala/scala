@@ -14,7 +14,10 @@ import Flags._
 abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
   import global._                  // the global environment
   import definitions._             // standard classes and methods
-  import typer.{typed}             // methods to type trees
+  // @S: XXX: why is this here? earsure is a typer, if you comment this
+  //          out erasure still works, uses its own typed methods.
+  lazy val typerXXX = this.typer
+  import typerXXX.{typed}             // methods to type trees
   import posAssigner.atPos         // for filling in tree positions
 
   val phaseName: String = "erasure"
@@ -501,6 +504,11 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
           //if (settings.debug.value)
           Console.println("exception when typing " + tree);
           throw ex
+        case er: TypeError =>
+          Console.println("exception when typing " + tree)
+          Console.println(er.msg + " in file " + context.owner.sourceFile)
+          er.printStackTrace
+          throw new Error
       }
       def adaptCase(cdef: CaseDef): CaseDef = {
         val body1 = adaptToType(cdef.body, tree1.tpe)
@@ -560,16 +568,16 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
         val tpe2 = atPhase(currentRun.refchecksPhase.next)(root.thisType.memberType(sym2))
         if (!tpe1.isErroneous && !tpe2.isErroneous)
           unit.error(
-            if (sym1.owner == root) sym1.pos else root.pos,
-            (if (sym1.owner == sym2.owner) "double definition:\n"
-             else if (sym1.owner == root) "name clash between defined and inherited member:\n"
-             else "name clash between inherited members:\n") +
-            sym1 + ":" + tpe1 +
-              (if (sym1.owner == root) "" else sym1.locationString) + " and\n" +
-            sym2 + ":" + tpe2 +
-              (if (sym2.owner == root) " at line " + (sym2.pos).line.get else sym2.locationString) +
-            "\nhave same type" +
-            (if (tpe1 =:= tpe2) "" else " after erasure: " + atPhase(phase.next)(sym1.tpe)))
+          if (sym1.owner == root) sym1.pos else root.pos,
+          (if (sym1.owner == sym2.owner) "double definition:\n"
+           else if (sym1.owner == root) "name clash between defined and inherited member:\n"
+           else "name clash between inherited members:\n") +
+          sym1 + ":" + tpe1 +
+            (if (sym1.owner == root) "" else sym1.locationString) + " and\n" +
+          sym2 + ":" + tpe2 +
+            (if (sym2.owner == root) " at line " + (sym2.pos).line.get else sym2.locationString) +
+          "\nhave same type" +
+          (if (tpe1 =:= tpe2) "" else " after erasure: " + atPhase(phase.next)(sym1.tpe)))
         sym1.setInfo(ErrorType)
       }
 
@@ -873,7 +881,19 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
             tpt.tpe = erasure(tree.symbol.tpe).resultType
             result
           case _ =>
-            super.transform(tree1) setType null
+            case class MyError(count : Int, ex : AssertionError) extends Error(ex.getMessage)
+            try {
+              super.transform(tree1) setType null
+            } catch {
+              case e @ MyError(n, ex) if n > 5 =>  throw e
+              case MyError(n,ex) =>
+                Console.println(tree1)
+                throw MyError(n + 1, ex)
+              case ex : AssertionError =>
+                Console.println(tree1)
+                throw MyError(0, ex)
+              case ex => throw ex
+            }
         }
       }
     }

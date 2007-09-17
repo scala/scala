@@ -5,7 +5,7 @@ method equals:(java.lang.Object)Boolean and
 method equals:(Any)Boolean in class Any
 have same type after erasure: (java.lang.Object)Boolean
   override def equals(o : Object) = false;
-           ^
+               ^
 
 nsc> 
 nsc> 

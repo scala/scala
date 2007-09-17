@@ -293,7 +293,7 @@ abstract class TreePrinters {
           print(fun); printRow(targs, "[", ", ", "]")
 
         case Apply(fun, vargs) =>
-          print(fun); printRow(vargs, "(", ", ", ")")
+          print(fun); print(vargs.mkString("(", ",", ")")) // printRow(vargs, "(", ", ", ")")
 
         case ApplyDynamic(qual, vargs) =>
           print("<apply-dynamic>("); print(qual); print("#"); print(tree.symbol.nameString)
@@ -362,6 +362,7 @@ abstract class TreePrinters {
           print(tpt);
           printColumn(whereClauses, " forSome { ", ";", "}")
 
+        case tree : StubTree => print(tree.toString)
         case tree =>
           print("<unknown tree of class "+tree.getClass+">")
       }

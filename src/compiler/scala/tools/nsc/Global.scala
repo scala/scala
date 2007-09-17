@@ -12,7 +12,7 @@ import java.nio.charset._
 import compat.Platform.currentTime
 import scala.tools.nsc.io.{SourceReader, AbstractFile}
 import scala.tools.nsc.reporters._
-import scala.tools.nsc.util.{ClassPath, SourceFile}
+import scala.tools.nsc.util.{ClassPath, SourceFile, BatchSourceFile}
 
 import scala.collection.mutable.{HashSet, HashMap, ListBuffer}
 
@@ -112,9 +112,9 @@ class Global(var settings: Settings, var reporter: Reporter) extends Trees
     else null
 
 // reporting -------------------------------------------------------
-
-  def error(msg: String) = reporter.error(null, msg)
-  def warning(msg: String) = reporter.warning(null, msg)
+  import nsc.util.NoPosition
+  def error(msg: String) = reporter.error(NoPosition, msg)
+  def warning(msg: String) = reporter.warning(NoPosition, msg)
   def inform(msg: String) = Console.err.println(msg)
   def inform[T](msg: String, value: T): T = { inform(msg+value); value }
 
@@ -200,7 +200,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends Trees
   }
 
   def getSourceFile(f: AbstractFile): SourceFile =
-    new SourceFile(f, reader.read(f))
+    new BatchSourceFile(f, reader.read(f))
 
   def getSourceFile(name: String): SourceFile = {
     val f = AbstractFile.getFile(name)
@@ -216,7 +216,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends Trees
     getSourceFile(ret.sourceFile)
   }
 
-  object loaders extends SymbolLoaders {
+  val loaders = new SymbolLoaders {
     val global: Global.this.type = Global.this
   }
 
@@ -246,6 +246,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends Trees
       if (settings.debug.value) inform("[running phase " + name + " on " + unit + "]")
       val unit0 = currentRun.currentUnit
       currentRun.currentUnit = unit
+      reporter.setSource(unit.source)
       if (!reporter.cancelled) apply(unit)
       currentRun.advanceUnit
       assert(currentRun.currentUnit == unit)
@@ -263,6 +264,10 @@ class Global(var settings: Settings, var reporter: Reporter) extends Trees
   }
 
   object analyzer extends Analyzer {
+    val global: Global.this.type = Global.this
+  }
+
+  object generateIdeMaps extends GenerateIdeMaps {
     val global: Global.this.type = Global.this
   }
 
@@ -382,6 +387,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends Trees
   protected def builtInPhaseDescriptors: List[SubComponent] = List(
     analyzer.namerFactory: SubComponent, // note: types are there because otherwise
     analyzer.typerFactory: SubComponent, // consistency check after refchecks would fail.
+    generateIdeMaps, // optionally generate .ide files from symbol info that can be used in the IDE
     superAccessors,  // add super accessors
     pickler,         // serializes symbol tables
     refchecks,       // perform reference and override checking, translate nested objects
@@ -503,7 +509,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends Trees
 
     private def addUnit(unit: CompilationUnit) {
       unitbuf += unit
-      fileset += unit.source.getFile()
+      fileset += unit.source.file
     }
 
     def units: Iterator[CompilationUnit] = unitbuf.elements
@@ -587,8 +593,11 @@ class Global(var settings: Settings, var reporter: Reporter) extends Trees
         addUnit(unit)
         var localPhase = firstPhase.asInstanceOf[GlobalPhase]
         while ((localPhase.id < globalPhase.id || localPhase.id <= namerPhase.id) && !reporter.hasErrors) {
+          val oldSource = reporter.getSource
+          reporter.setSource(unit.source)
           atPhase(localPhase)(localPhase.applyPhase(unit))
           localPhase = localPhase.next.asInstanceOf[GlobalPhase]
+          reporter.setSource(oldSource)
         }
         refreshProgress
       }
@@ -690,6 +699,11 @@ class Global(var settings: Settings, var reporter: Reporter) extends Trees
   def forCLDC: Boolean = settings.target.value == "cldc"
   def forMSIL: Boolean = settings.target.value == "msil"
   def onlyPresentation = settings.doc.value
-  // used to disable caching in lampion IDE.
-  def inIDE = false
+
+  override def inIDE = false
+  private val unpickleIDEHook0 : (( => Type) => Type) = f => f
+  def unpickleIDEHook : (( => Type) => Type) = unpickleIDEHook0
+  def doPickleHash = false
+  /* hook for IDE to detect source from class dependencies */
+  def attachSourceToClass(clazz : ClassSymbol, tpe : LazyType, sourceFile : AbstractFile) = clazz.sourceFile = sourceFile
 }

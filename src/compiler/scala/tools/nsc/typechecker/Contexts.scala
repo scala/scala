@@ -86,9 +86,12 @@ trait Contexts { self: Analyzer =>
       sc = sc.outer
     }
   }
-  class Context {
+  // IDE hooks
+  protected def sanitize(tree : Tree) : Tree = tree
+  protected def scopeFor(old : Scope, tree : Tree) : Scope = newScope(old)
+  class Context private[typechecker] {
     var unit: CompilationUnit = _
-    var tree: Tree = _                      // Tree associated with this context
+    var tree: Tree = _ // Tree associated with this context
     var owner: Symbol = NoSymbol// The current owner
     var scope: Scope = _                    // The current scope
     var outer: Context = _                  // The next outer context
@@ -113,39 +116,88 @@ trait Contexts { self: Analyzer =>
 
     var savedTypeBounds: List[(Symbol, Type)] = List()
 
-    override def equals(that : Any) = that match {
-      case that if (super.equals(that)) => true
-      case NoContext => false
-      case that : Context =>
-        val a0 = if (tree eq null) tree == that.tree else tree equalsStructure that.tree;
-        val a1 = owner == that.owner
-        val a2 = scope == that.scope
-        val a3 = outer == that.outer
-        val a4 = {
-          if (enclClass eq this) {
-            that.enclClass eq that;
-          } else enclClass == that.enclClass;
-        }
-        val a5 = {
-          if (enclMethod eq this)
-            that.enclMethod eq that;
-          else enclMethod == that.enclMethod;
-        }
-        val a6 = variance == that.variance;
-        val a7 = _undetparams == that._undetparams;
-        val a8 = depth == that.depth;
-        val a9 = if (imports.length != that.imports.length) false else
-          (for (x <- imports.zip(that.imports)) yield
-              (x._1.tree equalsStructure x._2.tree) && x._1.depth == x._2.depth).
-            foldLeft(true)((x,y) => x && y);
 
-        val a10 = prefix == that.prefix
-        val a11 = inConstructorSuffix == that.inConstructorSuffix
-        val a12 = implicitsEnabled == that.implicitsEnabled
-        val a13 = checking == that.checking
-        val a14 = retyping == that.retyping
-        val a15 = savedTypeBounds == that.savedTypeBounds
-        a0 && a1 && a2 && a3 && a4 && a5 && a6 && a7 && a8 && a9 && a10 && a11 && a12 && a13 && a14 && a15
+    def intern0 : Context = {
+      if (this eq NoContext) return this
+      val txt = new Context
+      txt.unit = unit
+      txt.tree = tree
+      txt.owner = owner
+      txt.scope = scope
+      assert(outer ne this) // stupid
+      txt.outer = outer // already interned
+      def f(what : Context) =
+        if (what eq this) txt
+        else what
+      txt.enclClass = f(enclClass)
+      txt.enclMethod = f(enclMethod)
+      txt.implicitsEnabled = implicitsEnabled
+      txt.variance = variance
+      txt._undetparams = _undetparams
+      txt.depth = depth
+      txt.imports = imports
+      txt.prefix = prefix
+      txt.inConstructorSuffix = inConstructorSuffix
+      txt.returnsSeen = returnsSeen
+      txt.reportGeneralErrors = reportGeneralErrors
+      txt.checking = checking
+      txt.retyping = retyping
+      txt.savedTypeBounds = savedTypeBounds
+      txt
+    }
+    override def equals(that : Any) : Boolean = that match {
+      case that : AnyRef if (this eq that) => true
+      case that if !inIDE => super.equals(that)
+      //case NoContext => false
+      case that : Context =>
+        if (that eq NoContext) return this eq NoContext
+        assert(that ne NoContext)
+        if (this eq NoContext) return false
+        assert(inIDE)
+        def eq[T](x : T, y : T) = x == y
+        val a0 = {
+          if (tree ne null) tree.setType(null)
+          if ((tree eq null) || (that.tree eq null)) tree == that.tree else
+            tree equalsStructure that.tree;
+        }
+        val a1 = eq(owner, that.owner)
+        val a2 = eq(scope, that.scope)
+        def f(txt0 : Context, txt1 : Context) =
+          ((this eq txt0) && (that eq txt1)) || (txt0 eq txt1)
+
+        val a3 = f(outer, that.outer)
+        val a4 = f(enclClass, that.enclClass)
+        val a5 = f(enclMethod, that.enclMethod)
+        val a6 = eq(variance, that.variance)
+        val a7 = eq(_undetparams, that._undetparams)
+        val a8 = eq(depth, that.depth)
+        val a9 = eq(imports, that.imports)
+
+        val a10 = eq(prefix, that.prefix)
+        val a11 = eq(inConstructorSuffix, that.inConstructorSuffix)
+        val a12 = eq(implicitsEnabled, that.implicitsEnabled)
+        val a13 = eq(checking, that.checking)
+        val a14 = eq(retyping, that.retyping)
+        val a15 = eq(savedTypeBounds, that.savedTypeBounds)
+        val a16 = eq(unit, that.unit)
+        val ret = a0 && a1 && a2 && a3 && a4 && a5 && a6 && a7 && a8 && a9 && a10 && a11 && a12 && a13 && a14 && a15 && a16
+        val a17 = {
+          if (implicitsRunId > that.implicitsRunId) {
+            that.implicitsRunId = NoRunId
+            that.implicitsCache = null
+          }
+          else if (that.implicitsRunId > implicitsRunId) {
+            implicitsRunId = NoRunId
+            implicitsCache = null
+          }
+          implicitsCache == that.implicitsCache
+        }
+        if (ret) {
+          if (!a17) {
+            assert(this.implicitsCache == null || that.implicitsCache == null)
+          }
+        }
+        ret
       case _ => false
     }
 
@@ -168,16 +220,23 @@ trait Contexts { self: Analyzer =>
              scope: Scope, imports: List[ImportInfo]): Context = {
       val c = new Context
       c.unit = unit
-      c.tree = tree
+      c.tree = sanitize(tree)
       c.owner = owner
       c.scope = scope
+
+      c.outer = intern(this)
+      def internIf(txt : Context) = {
+        if (txt eq this) c.outer // already interned!
+        else txt
+      }
+
       tree match {
         case Template(_, _, _) | PackageDef(_, _) =>
           c.enclClass = c
           c.prefix = c.owner.thisType
           c.inConstructorSuffix = false
         case _ =>
-          c.enclClass = this.enclClass
+          c.enclClass = internIf(this.enclClass)
           c.prefix =
             if (c.owner != this.owner && c.owner.isTerm) NoPrefix
             else this.prefix
@@ -187,7 +246,7 @@ trait Contexts { self: Analyzer =>
         case DefDef(_, _, _, _, _, _) =>
           c.enclMethod = c
         case _ =>
-          c.enclMethod = this.enclMethod
+          c.enclMethod = internIf(this.enclMethod)
       }
       c.variance = this.variance
       c.depth = if (scope == this.scope) this.depth else this.depth + 1
@@ -197,7 +256,6 @@ trait Contexts { self: Analyzer =>
       c.implicitsEnabled = this.implicitsEnabled
       c.checking = this.checking
       c.retyping = this.retyping
-      c.outer = this
       c
     }
 
@@ -212,14 +270,21 @@ trait Contexts { self: Analyzer =>
     def makeNewImport(imp: Import): Context =
       make(unit, imp, owner, scope, new ImportInfo(imp, depth) :: imports)
 
-    def make(tree: Tree, owner: Symbol, scope: Scope): Context =
+
+
+    def make(tree: Tree, owner: Symbol, scope: Scope): Context = {
+      if (tree == this.tree && owner == this.owner && scope == this.scope) this
+      else make0(tree, owner, scope)
+    }
+    private def make0(tree : Tree, owner : Symbol, scope : Scope) : Context = {
       make(unit, tree, owner, scope, imports)
+    }
 
     def makeNewScope(tree: Tree, owner: Symbol): Context =
-      make(tree, owner, newScope(scope))
+      make(tree, owner, scopeFor(scope, tree))
 
     def make(tree: Tree, owner: Symbol): Context =
-      make(tree, owner, scope)
+      make0(tree, owner, scope)
 
     def make(tree: Tree): Context =
       make(tree, owner)
@@ -242,7 +307,7 @@ trait Contexts { self: Analyzer =>
       //todo: find out why we need next line
       while (baseContext.tree.isInstanceOf[Template])
         baseContext = baseContext.outer
-      val argContext = Contexts.this.makeNewScope(baseContext, tree, owner)
+      val argContext = baseContext.makeNewScope(tree, owner)
       argContext.reportGeneralErrors = this.reportGeneralErrors
       argContext.reportAmbiguousErrors = this.reportAmbiguousErrors
       def enterElems(c: Context) {
@@ -364,6 +429,8 @@ trait Contexts { self: Analyzer =>
       def accessWithin(owner: Symbol): Boolean = {
         var c = this
         while (c != NoContext && c.owner != owner) {
+          if (false && inIDE) // XXX: we didn't get to update these syms....
+            assert(c.owner.fullNameString != owner.fullNameString)
           if (c.outer eq null) assert(false, "accessWithin(" + owner + ") " + c);//debug
           if (c.outer.enclClass eq null) assert(false, "accessWithin(" + owner + ") " + c);//debug
           c = c.outer.enclClass
@@ -422,6 +489,11 @@ trait Contexts { self: Analyzer =>
     private var implicitsCache: List[List[ImplicitInfo]] = null
     private var implicitsRunId = NoRunId
 
+    def resetCache : Unit = {
+      implicitsRunId = NoRunId
+      implicitsCache = null
+      if (outer != null && outer != this) outer.resetCache
+    }
     private def collectImplicits(syms: List[Symbol], pre: Type): List[ImplicitInfo] =
       for (sym <- syms if sym.hasFlag(IMPLICIT) && isAccessible(sym, pre, false))
       yield new ImplicitInfo(sym.name, pre, sym)
@@ -473,10 +545,33 @@ trait Contexts { self: Analyzer =>
       }
       implicitsCache
     }
+    override def hashCode = {
+      var hc = 0
+      implicit def b2i(b : Boolean) = if (b) 1 else 0
+      // assum enclClass/enclMethod/outer are all interned already.
+      hc += tree.hashCodeStructure
+      def f(txt : Context) = if (txt eq this) 0 else System.identityHashCode(txt)
+      hc += f(enclClass)
+      hc += f(enclMethod)
+      hc += f(outer)
+      hc += owner.hashCode
+      hc += scope.hashCode
+      hc += variance.hashCode
+      hc += _undetparams.hashCode
+      hc += depth
+      hc += imports.hashCode
+      hc += prefix.hashCode
+      hc += inConstructorSuffix
+      hc += checking
+      hc += retyping
+      hc += savedTypeBounds.hashCode
+      hc += (if (unit eq null) 0 else unit.hashCode)
+      hc
+    }
+
   }
-
+  def notifyImport(what : Name, container : Type, from : Name, to : Name) : Unit = {}
   class ImportInfo(val tree: Import, val depth: Int) {
-
     /** The prefix expression */
     def qual: Tree = tree.symbol.info match {
       case ImportType(expr) => expr
@@ -495,6 +590,9 @@ trait Contexts { self: Analyzer =>
       var renamed = false
       var selectors = tree.selectors
       while (selectors != Nil && result == NoSymbol) {
+        if (selectors.head._1 != nme.WILDCARD)
+          notifyImport(name, qual.tpe, selectors.head._1, selectors.head._2)
+
         if (selectors.head._2 == name.toTermName)
           result = qual.tpe.member(
             if (name.isTypeName) selectors.head._1.toTypeName else selectors.head._1)
@@ -508,6 +606,13 @@ trait Contexts { self: Analyzer =>
     }
 
     override def toString() = tree.toString()
+
+    override def hashCode = tree.hashCodeStructure + depth
+    override def equals(that : Any) = that match {
+      case that : ImportInfo =>
+        depth == that.depth && (tree equalsStructure that.tree)
+      case _ => false
+    }
   }
 
   class ImplicitInfo(val name: Name, val pre: Type, val sym: Symbol) {
@@ -521,5 +626,31 @@ trait Contexts { self: Analyzer =>
 
   val NoImplicitInfo = new ImplicitInfo(null, null, null)
 
-  case class ImportType(expr: Tree) extends Type
+  case class ImportType(expr: Tree) extends Type {
+    override def equals(that : Any) = that match {
+    case ImportType(expr) =>
+      if (inIDE) this.expr equalsStructure expr
+      else this.expr == expr
+    case _ => false
+    }
+    override def hashCode = if (inIDE) expr.hashCodeStructure else expr.hashCode
+  }
+
+  /* APIs for interning contexts */
+  import scala.collection.jcl
+  import scala.ref
+  protected def intern(txt : Context) = txt
+  class ContextInternMap extends jcl.WeakHashMap[Context,ref.WeakReference[Context]] {
+    var last : Context = _
+    override def default(txt : Context) : ref.WeakReference[Context] = {
+      if (txt eq NoContext) new ref.WeakReference(NoContext)
+      val txt0 = txt.intern0
+      last = txt0 // to prevent collection
+      val ret = new ref.WeakReference(txt0)
+      this(txt0) = ret
+      ret
+    }
+    def intern(txt : Context) = this(txt).get.get
+  }
+
 }

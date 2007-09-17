@@ -17,7 +17,6 @@ import scala.xml._
  */
 abstract class DocDriver extends ModelFrames with ModelToXML {
   import global._
-
   object additions extends jcl.LinkedHashSet[Symbol]
   object additions0 extends ModelAdditions(global) {
     override def addition(sym: global.Symbol) = {
@@ -42,7 +41,7 @@ abstract class DocDriver extends ModelFrames with ModelToXML {
         case _ =>
       }
     }
-    def f(pkg: Package, tree: Tree): Unit = if (!tree.symbol.hasFlag(symtab.Flags.PRIVATE)) tree match {
+    def f(pkg: Package, tree: Tree): Unit = if (tree != EmptyTree && !tree.symbol.hasFlag(symtab.Flags.PRIVATE)) tree match {
       case tree : PackageDef =>
         val pkg1 = new Package(tree.symbol.asInstanceOf[ModuleSymbol]);
         tree.stats.foreach(stat => f(pkg1, stat))

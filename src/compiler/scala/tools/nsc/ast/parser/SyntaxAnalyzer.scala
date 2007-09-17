@@ -8,7 +8,7 @@ package scala.tools.nsc.ast.parser
 
 /** An nsc sub-component.
  */
-abstract class SyntaxAnalyzer extends SubComponent with Parsers with MarkupParsers with Scanners {
+abstract class SyntaxAnalyzer extends SubComponent with Parsers with MarkupParsers with NewScanners {
 
   val phaseName = "parser"
 
@@ -17,7 +17,8 @@ abstract class SyntaxAnalyzer extends SubComponent with Parsers with MarkupParse
   class ParserPhase(prev: scala.tools.nsc.Phase) extends StdPhase(prev) {
     def apply(unit: global.CompilationUnit) {
       global.informProgress("parsing " + unit)
-      unit.body = new UnitParser(unit).parse()
+      val parser = new UnitParser(unit)
+      unit.body = parser.parse()
     }
   }
 }

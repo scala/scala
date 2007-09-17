@@ -309,9 +309,11 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
         if (mixinClass.owner.isTerm) gen.mkAttributedThis(mixinClass.owner.enclClass)
         else gen.mkAttributedQualifier(currentClass.thisType.baseType(mixinClass).prefix)
       val rhs = ExplicitOuterTransformer.this.transform(path)
+      rhs.setPos(currentClass.pos) // see note below
       localTyper.typed {
         atPos(currentClass.pos) {
-          DefDef(outerAcc, {vparamss=>rhs})
+          // @S: atPos not good enough because of nested atPos in DefDef method, which gives position from wrong class!
+          DefDef(outerAcc, {vparamss=>rhs}).setPos(currentClass.pos)
         }
       }
     }

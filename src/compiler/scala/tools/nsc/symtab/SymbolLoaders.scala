@@ -99,6 +99,9 @@ abstract class SymbolLoaders {
     protected var root: Symbol = _
 
     def enterPackage(name: String, completer: SymbolLoader) {
+      if (inIDE && root.info.decls.lookup(newTermName(name)) != NoSymbol) {
+        return // refresh
+      }
       val pkg = root.newPackage(NoPosition, newTermName(name))
       pkg.moduleClass.setInfo(completer)
       pkg.setInfo(pkg.moduleClass.tpe)
@@ -109,6 +112,10 @@ abstract class SymbolLoaders {
     def enterClassAndModule(name: String, completer: SymbolLoader): Symbol = {
       val owner = if (root.isRoot) definitions.EmptyPackageClass else root
       val className = newTermName(name)
+      if (inIDE && owner.info.decls.lookup(name) != NoSymbol) {
+        // refresh
+        return owner.info.decls.lookup(name)
+      }
       assert(owner.info.decls.lookup(name) == NoSymbol, owner.fullNameString + "." + name)
       val clazz = owner.newClass(NoPosition, name.toTypeName)
       val module = owner.newModule(NoPosition, name)
@@ -126,13 +133,20 @@ abstract class SymbolLoaders {
       //System.out.println("Added class " + clazz.fullNameString);
       clazz
     }
-
+    def checkAdd(name0 : String) = {
+      var name = name0
+      while (name.indexOf('$') != -1) {
+        name = name.substring(0, name.indexOf('$'))
+      }
+    }
     protected def doComplete(root: Symbol) {
       assert(root.isPackageClass, root)
       this.root = root
       val scope = newScope
-      root.setInfo(new PackageClassInfoType(scope, root))
-
+      root.setInfo(new PackageClassInfoType(scope, root, this))
+      refresh
+    }
+    def refresh = {
       /** Is the given name a valid input file base name? */
       def isValid(name: String): Boolean =
         name.length() > 0 && !name.endsWith("$class") && (settings.XbytecodeRead.value ||
@@ -246,23 +260,31 @@ abstract class SymbolLoaders {
       val global: SymbolLoaders.this.global.type = SymbolLoaders.this.global
     }
     protected def doComplete(root: Symbol) {
-      typeParser.parse(typ, root)
+      typeParser.parse(typ, root.asInstanceOf)
     }
     protected def kindString: String = typ.FullName
     protected def sourceString = typ.Assembly.FullName
   }
+  // IDE hook.
+  protected def completeClassfile(root : Symbol, loader : ClassfileLoader)(f : => Unit) : Unit = f
+  protected def completeSourcefile(root : Symbol, loader : SourcefileLoader)(f : => Unit) : Unit = f
 
-  class ClassfileLoader(classFile: AbstractFile, override val sourceFile: AbstractFile, sourcePath0: AbstractFile) extends SymbolLoader {
-    //throw new Error("classfile = " + classFile + "; sourcefile = " + sourceFile + "; sourcepath = " + sourcePath0)
+  class ClassfileLoader(val classFile: AbstractFile, override val sourceFile: AbstractFile, sourcePath0: AbstractFile) extends SymbolLoader {
     private object classfileParser extends ClassfileParser {
       val global: SymbolLoaders.this.global.type = SymbolLoaders.this.global
       override def sourcePath = sourcePath0 /* could be null */
     }
     protected def doComplete(root: Symbol) {
-      classfileParser.parse(classFile, root)
-      if (sourceFile ne null) root match {
-        case clazz : ClassSymbol => clazz.sourceFile = sourceFile
-        case _ =>
+      completeClassfile(root, this) {
+        classfileParser.parse(classFile, root)
+      }
+      root match {
+      case clazz : ClassSymbol =>
+        global.attachSourceToClass(clazz, this, if (sourceFile ne null) sourceFile else clazz.sourceFile)
+      case _ =>
+      }
+      if (root.sourceFile ne null) {
+        global.generateIdeMaps.sourceFiles(root.sourceFile) = classFile.container
       }
     }
     protected def kindString: String = "class file"
@@ -275,8 +297,9 @@ abstract class SymbolLoaders {
   }
 */
   class SourcefileLoader(override val sourceFile: AbstractFile) extends SymbolLoader {
-    protected def doComplete(root: Symbol): Unit =
+    protected def doComplete(root: Symbol): Unit = completeSourcefile(root, this){
       global.currentRun.compileLate(sourceFile)
+    }
     protected def kindString: String = "source file"
     protected def sourceString = sourceFile.toString()
   }

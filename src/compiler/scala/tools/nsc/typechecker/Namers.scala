@@ -39,14 +39,18 @@ trait Namers { self: Analyzer =>
     }
   }
   /** overridden by IDE to not manually enter value parameters */
-  protected final def doEnterValueParams = !inIDE;
-  protected def inIDE = false;
+  protected final def doEnterValueParams = true // !inIDE;
+  // can't use the other ones.
+  protected def newDecls(classSym : Symbol) : Scope = newClassScope
 
-  class Namer(val context: Context) {
+  private class NormalNamer(context : Context) extends Namer(context)
+  def newNamer(context : Context) : Namer = new NormalNamer(context)
+
+  abstract class Namer(val context: Context) {
 
     val typer = newTyper(context)
 
-    def setPrivateWithin(tree: Tree, sym: Symbol, mods: Modifiers): Symbol = {
+    def setPrivateWithin[Sym <: Symbol](tree: Tree, sym: Sym, mods: Modifiers): Sym = {
       if (!mods.privateWithin.isEmpty)
         sym.privateWithin = typer.qualifyingClassContext(tree, mods.privateWithin).owner
       sym
@@ -75,6 +79,10 @@ trait Namers { self: Analyzer =>
     }
 
     private var innerNamerCache: Namer = null
+    protected def makeConstructorScope(classContext : Context) : Context = {
+      val outerContext = classContext.outer.outer
+      outerContext.makeNewScope(outerContext.tree, outerContext.owner)
+    }
 
     def namerOf(sym: Symbol): Namer = {
 
@@ -82,46 +90,51 @@ trait Namers { self: Analyzer =>
         if (innerNamerCache eq null)
           innerNamerCache =
             if (!isTemplateContext(context)) this
-            else new Namer(context.make(context.tree, context.owner, newScope))
+            else newNamer(context.make(context.tree, context.owner, scopeFor(context.tree)))
         innerNamerCache
       }
 
       def primaryConstructorParamNamer: Namer = { //todo: can we merge this with SCCmode?
         val classContext = context.enclClass
-        val outerContext = classContext.outer.outer
-        val paramContext = outerContext.makeNewScope(outerContext.tree, outerContext.owner)
-        classContext.owner.unsafeTypeParams foreach(sym => paramContext.scope.enter(sym))
-        new Namer(paramContext)
+        val paramContext = makeConstructorScope(classContext)
+        val unsafeTypeParams = context.owner.unsafeTypeParams
+        unsafeTypeParams foreach(sym => paramContext.scope.enter(sym))
+        newNamer(paramContext)
       }
-
-      if (sym.isTerm &&
-          (sym.hasFlag(PARAM) && sym.owner.isPrimaryConstructor || sym.hasFlag(PARAMACCESSOR)))
-        primaryConstructorParamNamer
-      else
-        innerNamer
+      if (sym.isTerm) {
+        if (sym.hasFlag(PARAM) && sym.owner.isPrimaryConstructor)
+          primaryConstructorParamNamer
+        else if (sym.hasFlag(PARAMACCESSOR) && !inIDE)
+          primaryConstructorParamNamer
+        else innerNamer
+      } else innerNamer
     }
 
+    protected def conflict(newS : Symbol, oldS : Symbol) : Boolean = {
+      (!oldS.isSourceMethod ||
+        nme.isSetterName(newS.name) ||
+        newS.owner.isPackageClass) &&
+        !((newS.owner.isTypeParameter || newS.owner.isAbstractType) &&
+          newS.name.length==1 && newS.name(0)=='_') //@M: allow repeated use of `_' for higher-order type params
+    }
+    protected def setInfo[Sym <: Symbol](sym : Sym)(tpe : LazyType) : Sym = sym.setInfo(tpe)
     private def doubleDefError(pos: Position, sym: Symbol) {
       context.error(pos,
         sym.name.toString() + " is already defined as " +
         (if (sym.hasFlag(CASE)) "case class " + sym.name else sym.toString()))
     }
 
-    def enterInScope[A <: Symbol](sym: A): A = {
+    def enterInScope(sym: Symbol): Symbol = {
       // allow for overloaded methods
       if (!(sym.isSourceMethod && sym.owner.isClass && !sym.owner.isPackageClass)) {
         val prev = context.scope.lookupEntry(sym.name);
-        if ((prev ne null) && prev.owner == context.scope &&
-            (!prev.sym.isSourceMethod ||
-             nme.isSetterName(sym.name) ||
-             sym.owner.isPackageClass) &&
-             !((sym.owner.isTypeParameter || sym.owner.isAbstractType)
-               && sym.name.length==1 && sym.name(0)=='_')) { //@M: allow repeated use of `_' for higher-order type params
+        if ((prev ne null) && prev.owner == context.scope && conflict(sym, prev.sym)) {
            doubleDefError(sym.pos, prev.sym)
-           sym setInfo ErrorType
+           if (!inIDE) sym setInfo ErrorType // don't do this in IDE for stability
+           context.scope unlink prev.sym
+           context.scope enter sym
         } else context.scope enter sym
       } else context.scope enter sym
-      sym
     }
 
     def enterPackageSymbol(pos: Position, name: Name): Symbol = {
@@ -133,79 +146,102 @@ trait Namers { self: Analyzer =>
       } else {
         val cowner = if (context.owner == EmptyPackageClass) RootClass else context.owner
         val pkg = cowner.newPackage(pos, name)
-        pkg.moduleClass.setInfo(new PackageClassInfoType(newScope, pkg.moduleClass))
+        // IDE: newScope should be ok because packages are never destroyed.
+        if (inIDE) assert(pkg.moduleClass.rawInfoSafe.isEmpty  || !pkg.moduleClass.rawInfo.isComplete)
+        pkg.moduleClass.setInfo(new PackageClassInfoType(newScope, pkg.moduleClass, null))
         pkg.setInfo(pkg.moduleClass.tpe)
         enterInScope(pkg)
       }
     }
 
-    def inConstructorFlag: long =
+    def inConstructorFlag: Long =
       if (context.owner.isConstructor && !context.inConstructorSuffix || context.owner.isEarly) INCONSTRUCTOR
       else 0l
 
-    private def enterClassSymbol(pos: Position, flags: long, name: Name): Symbol = {
-      var c: Symbol = context.scope.lookup(name)
-      if (c.isType && !currentRun.compiles(c) && context.scope == c.owner.info.decls) {
-        updatePosFlags(c, pos, flags)
+    def enterClassSymbol(tree : ClassDef): Symbol = {
+      var c: Symbol = context.scope.lookup(tree.name);
+      // Never take the first path in the IDE because we could be completing c.owner's type!
+      // the other path will handle symbol re-use well enough.
+      if (!inIDE && c.isType && context.scope == c.owner.info.decls && !currentRun.compiles(c)) {
+        updatePosFlags(c, tree.pos, tree.mods.flags)
+        setPrivateWithin(tree, c, tree.mods)
       } else {
-        c = enterInScope(context.owner.newClass(pos, name)).setFlag(flags | inConstructorFlag)
+        //if (inIDE && c != NoSymbol) currentRun.compiles(c) // in IDE, will unload/save non-source symbol
+        var sym = context.owner.newClass(tree.pos, tree.name)
+        sym = sym.setFlag(tree.mods.flags | inConstructorFlag)
+        sym = setPrivateWithin(tree, sym, tree.mods)
+        c = enterInScope(sym)
       }
       if (c.owner.isPackageClass) {
-        val file = context.unit.source.getFile()
+        val file = context.unit.source.file
         val clazz = c.asInstanceOf[ClassSymbol]
         if (settings.debug.value && (clazz.sourceFile ne null) && !clazz.sourceFile.equals(file)) {
           Console.err.println("SOURCE MISMATCH: " + clazz.sourceFile + " vs. " + file + " SYM=" + c);
         }
         clazz.sourceFile = file
         if (clazz.sourceFile ne null) {
-          assert(!currentRun.compiles(clazz) || clazz.sourceFile == currentRun.symSource(c));
+          assert(inIDE || !currentRun.compiles(clazz) || clazz.sourceFile == currentRun.symSource(c));
           currentRun.symSource(c) = clazz.sourceFile
         }
       }
+      assert(c.name.toString.indexOf('(') == -1)
       c
     }
-
-    private def enterModuleSymbol(pos: Position, flags: long, name: Name): Symbol = {
-      var m: Symbol = context.scope.lookup(name)
-      if (m.isModule && !m.isPackage && !currentRun.compiles(m) &&
-         (context.scope == m.owner.info.decls)) {
-        updatePosFlags(m, pos, flags)
+    def enterModuleSymbol(tree : ModuleDef): Symbol = {
+      // .pos, mods.flags | MODULE | FINAL, name
+      assert(tree.name.isTermName)
+      var m: Symbol = context.scope.lookup(tree.name)
+      if (!inIDE && m.isModule && !m.isPackage && (context.scope == m.owner.info.decls) &&
+          !currentRun.compiles(m)) {
+        updatePosFlags(m, tree.pos, tree.mods.flags|MODULE|FINAL)
+        setPrivateWithin(tree, m, tree.mods)
       } else {
-        if (m.isTerm && !m.isPackage && !currentRun.compiles(m) && (context.scope == m.owner.info.decls))
+        if (m.isTerm && !m.isPackage && currentRun.compiles(m) && (context.scope == m.owner.info.decls))
           context.scope.unlink(m)
-        m = context.owner.newModule(pos, name)
-        m.setFlag(flags)
-        m.moduleClass.setFlag(flags | inConstructorFlag)
-        enterInScope(m)
+
+        m = context.owner.newModule(tree.pos, tree.name)
+        m.setFlag(tree.mods.flags)
+        m = setPrivateWithin(tree, m, tree.mods)
+        m = enterInScope(m)
+
+        m.moduleClass.setFlag(tree.mods.flags|MODULE|FINAL| inConstructorFlag)
+        setPrivateWithin(tree, m.moduleClass, tree.mods)
       }
       if (m.owner.isPackageClass) {
-        m.moduleClass.sourceFile = context.unit.source.getFile()
+        m.moduleClass.sourceFile = context.unit.source.file
         currentRun.symSource(m) = m.moduleClass.sourceFile
       }
       m
     }
 
-    private def enterCaseFactorySymbol(pos: Position, flags: long, name: Name): Symbol = {
+    def enterCaseFactorySymbol(tree : ClassDef): Symbol = {
+      val pos = tree.pos
+      val flags = tree.mods.flags & AccessFlags | METHOD | CASE
+      val name = tree.name.toTermName
       var m: Symbol = context.scope.lookup(name)
-      if (m.isTerm && !m.isPackage && !currentRun.compiles(m) && context.scope == m.owner.info.decls) {
+      if (!inIDE && m.isTerm && !m.isPackage && !currentRun.compiles(m) && context.scope == m.owner.info.decls) {
         updatePosFlags(m, pos, flags)
+        setPrivateWithin(tree, m, tree.mods)
       } else {
-        m = enterInScope(context.owner.newMethod(pos, name)).setFlag(flags)
+        // recycle the old fashion way.
+        m = enterInScope{
+          var sym = context.owner.newMethod(pos, name).setFlag(flags)
+          sym = setPrivateWithin(tree, sym, tree.mods)
+          sym
+        }
       }
       if (m.owner.isPackageClass)
-        currentRun.symSource(m) = context.unit.source.getFile()
+        currentRun.symSource(m) = context.unit.source.file
       m
     }
-
     def enterSyms(trees: List[Tree]): Namer = {
       var namer : Namer = this
       for (tree <- trees) {
         val txt = namer.enterSym(tree)
-        if (!(txt eq namer.context)) namer = new Namer(txt)
+        if (!(txt eq namer.context)) namer = newNamer(txt)
       }
       namer
     }
-
     def newTypeSkolems(tparams: List[Symbol]): List[Symbol] = {
       val tskolems = tparams map (_.newTypeSkolem)
       val ltp = new LazyType {
@@ -216,7 +252,6 @@ trait Namers { self: Analyzer =>
       tskolems foreach (_.setInfo(ltp))
       tskolems
     }
-
     /** Replace type parameters with their TypeSkolems, which can later be deskolemized to the original type param
      * (a skolem is a representation of a bound variable when viewed outside its scope)
      */
@@ -237,9 +272,14 @@ trait Namers { self: Analyzer =>
       override val typeParams: List[Symbol]= tparams map (_.symbol) //@M
       override def complete(sym: Symbol) {
         if(ownerSym.isAbstractType) //@M an abstract type's type parameters are entered -- TODO: change to isTypeMember ?
-          new Namer(ctx.makeNewScope(owner, ownerSym)).enterSyms(tparams) //@M
+          newNamer(ctx.makeNewScope(owner, ownerSym)).enterSyms(tparams) //@M
         restp.complete(sym)
       }
+    }
+    def reuse[T <: Tree](tree: T) = if (!inIDE) tree else {
+      val tree0 = tree.duplicate
+	    //tree0.symbol = tree.symbol
+      tree0
     }
 
     def enterSym(tree: Tree): Context = {
@@ -253,11 +293,11 @@ trait Namers { self: Analyzer =>
           //@M e.g., in [A[x <: B], B], A and B are entered first as both are in scope in the definition of x
           //@M x is only in scope in `A[x <: B]'
           if(!sym.isAbstractType) //@M TODO: change to isTypeMember ?
-            new Namer(context.makeNewScope(tree, sym)).enterSyms(tparams)
+            newNamer(context.makeNewScope(tree, sym)).enterSyms(tparams)
           ltype = new LazyPolyType(tparams, ltype, tree, sym, context) //@M
           if (sym.isTerm) skolemize(tparams)
         }
-        sym.setInfo(ltype)
+        setInfo(sym)(ltype)
       }
       def finish = finishWith(List())
 
@@ -267,45 +307,43 @@ trait Namers { self: Analyzer =>
         tree match {
           case PackageDef(name, stats) =>
             tree.symbol = enterPackageSymbol(tree.pos, name)
-            val namer = new Namer(
+            val namer = newNamer(
                 context.make(tree, tree.symbol.moduleClass, tree.symbol.info.decls))
             namer.enterSyms(stats)
-          case ClassDef(mods, name, tparams, impl) =>
-            if ((mods.flags & CASE) != 0) { // enter case factory method.
-              tree.symbol = enterCaseFactorySymbol(
-                  tree.pos, mods.flags & AccessFlags | METHOD | CASE, name.toTermName)
-              tree.symbol.setInfo(namerOf(tree.symbol).caseFactoryCompleter(tree))
-              setPrivateWithin(tree, tree.symbol, mods)
-            }
-            tree.symbol = enterClassSymbol(tree.pos, mods.flags, name)
-            setPrivateWithin(tree, tree.symbol, mods)
+          case tree @ ClassDef(mods, name, tparams, impl) =>
+            tree.symbol = enterClassSymbol(tree)
             finishWith(tparams)
-          case ModuleDef(mods, name, _) =>
-            tree.symbol = enterModuleSymbol(tree.pos, mods.flags | MODULE | FINAL, name)
-            setPrivateWithin(tree, tree.symbol, mods)
-            setPrivateWithin(tree, tree.symbol.moduleClass, mods)
-            tree.symbol.moduleClass.setInfo(namerOf(tree.symbol).moduleClassTypeCompleter(tree))
+            if ((mods.flags & CASE) != 0) { // enter case factory method.
+              val sym = enterCaseFactorySymbol(tree)
+              setInfo(sym)(namerOf(sym).caseFactoryCompleter(reuse(tree)))
+            }
+          case tree @ ModuleDef(mods, name, _) =>
+            tree.symbol = enterModuleSymbol(tree)
+            // IDE: do not use the setInfo call for the module class as it is initialized
+            //      through module symbol
+            tree.symbol.moduleClass.setInfo(namerOf(tree.symbol).moduleClassTypeCompleter(reuse(tree)))
             finish
+
           case ValDef(mods, name, tp, rhs) =>
             if (context.owner.isClass && (mods.flags & (PRIVATE | LOCAL)) != (PRIVATE | LOCAL)
                 || (mods.flags & LAZY) != 0) {
               val accflags: Long = ACCESSOR |
                 (if ((mods.flags & MUTABLE) != 0) mods.flags & ~MUTABLE & ~PRESUPER
                  else mods.flags & ~PRESUPER | STABLE)
-              val getter = owner.newMethod(tree.pos, name).setFlag(accflags)
-              getter.setInfo(namerOf(getter).getterTypeCompleter(tree))
+              var getter = owner.newMethod(tree.pos, name).setFlag(accflags)
               setPrivateWithin(tree, getter, mods)
-              enterInScope(getter)
+              getter = enterInScope(getter).asInstanceOf[TermSymbol]
+              setInfo(getter)(namerOf(getter).getterTypeCompleter(tree))
               if ((mods.flags & MUTABLE) != 0) {
-                val setter = owner.newMethod(tree.pos, nme.getterToSetter(name))
+                var setter = owner.newMethod(tree.pos, nme.getterToSetter(name))
                                 .setFlag(accflags & ~STABLE & ~CASEACCESSOR)
-                setter.setInfo(namerOf(setter).setterTypeCompleter(tree))
                 setPrivateWithin(tree, setter, mods)
-                enterInScope(setter)
+                setter = enterInScope(setter).asInstanceOf[TermSymbol]
+                setInfo(setter)(namerOf(setter).setterTypeCompleter(tree))
               }
               tree.symbol =
-                if ((mods.flags & DEFERRED) == 0) {
-                  val vsym =
+                if ((mods.flags & DEFERRED) == 0) { // not deferred
+                  var vsym =
                     if (!context.owner.isClass) {
                       assert((mods.flags & LAZY) != 0) // if not a field, it has to be a lazy val
                       owner.newValue(tree.pos, name + "$lzy" ).setFlag(mods.flags | MUTABLE)
@@ -313,39 +351,39 @@ trait Namers { self: Analyzer =>
                       owner.newValue(tree.pos, nme.getterToLocal(name))
                         .setFlag(mods.flags & FieldFlags | PRIVATE | LOCAL | (if ((mods.flags & LAZY) != 0) MUTABLE else 0))
                     }
-                  val value = enterInScope(vsym)
-                  value.setInfo(namerOf(value).typeCompleter(tree))
+                  vsym = enterInScope(vsym).asInstanceOf[TermSymbol]
+                  setInfo(vsym)(namerOf(vsym).typeCompleter(tree))
                   if ((mods.flags & LAZY) != 0)
-                    value.setLazyAccessor(getter)
-                  value
+                    vsym.setLazyAccessor(getter)
+                  vsym
                 } else getter;
             } else {
-              tree.symbol = enterInScope(owner.newValue(tree.pos, name))
-                .setFlag(mods.flags)
+              tree.symbol = enterInScope(owner.newValue(tree.pos, name)
+                .setFlag(mods.flags))
               finish
             }
           case DefDef(mods, nme.CONSTRUCTOR, tparams, _, _, _) =>
-            tree.symbol = enterInScope(owner.newConstructor(tree.pos))
-              .setFlag(mods.flags | owner.getFlag(ConstrFlags))
-            setPrivateWithin(tree, tree.symbol, mods)
+            var sym = owner.newConstructor(tree.pos).setFlag(mods.flags | owner.getFlag(ConstrFlags))
+            setPrivateWithin(tree, sym, mods)
+            tree.symbol = enterInScope(sym)
             finishWith(tparams)
           case DefDef(mods, name, tparams, _, _, _) =>
-            tree.symbol = enterInScope(owner.newMethod(tree.pos, name))
-              .setFlag(mods.flags)
-            setPrivateWithin(tree, tree.symbol, mods)
+            var sym = (owner.newMethod(tree.pos, name)).setFlag(mods.flags)
+            setPrivateWithin(tree, sym, mods)
+            tree.symbol = enterInScope(sym)
             finishWith(tparams)
           case TypeDef(mods, name, tparams, _) =>
             var flags: Long = mods.flags
             if ((flags & PARAM) != 0) flags |= DEFERRED
-            tree.symbol = enterInScope(new TypeSymbol(owner, tree.pos, name))
-              .setFlag(flags)
-            setPrivateWithin(tree, tree.symbol, mods)
+            var sym =new TypeSymbol(owner, tree.pos, name).setFlag(flags)
+            setPrivateWithin(tree, sym, mods)
+            tree.symbol = enterInScope(sym)
             finishWith(tparams)
           case DocDef(_, defn) =>
             enterSym(defn)
           case imp @ Import(_, _) =>
             tree.symbol = NoSymbol.newImport(tree.pos)
-            tree.symbol.setInfo(namerOf(tree.symbol).typeCompleter(tree))
+            setInfo(tree.symbol)(namerOf(tree.symbol).typeCompleter(tree))
             return (context.makeNewImport(imp))
           case _ =>
         }
@@ -451,11 +489,20 @@ trait Namers { self: Analyzer =>
 
     def enterValueParams(owner: Symbol, vparamss: List[List[ValDef]]): List[List[Symbol]] = {
       def enterValueParam(param: ValDef): Symbol = if (doEnterValueParams) {
-        param.symbol = owner.newValueParameter(param.pos, param.name)
-          .setInfo(typeCompleter(param))
-          .setFlag(param.mods.flags & (BYNAMEPARAM | IMPLICIT))
-        setPrivateWithin(param, param.symbol, param.mods)
-        enterInScope(param.symbol)
+        if (inIDE) param.symbol = {
+          var sym = owner.newValueParameter(param.pos, param.name).
+            setFlag(param.mods.flags & (BYNAMEPARAM | IMPLICIT))
+          setPrivateWithin(param, sym, param.mods)
+          sym = enterInScope(sym).asInstanceOf[TermSymbol]
+          if (!sym.rawInfoSafe.isDefined || sym.rawInfo.isComplete)
+            setInfo(sym)(typeCompleter(param))
+          sym
+        } else param.symbol = setInfo(
+          enterInScope{
+            val sym = owner.newValueParameter(param.pos, param.name).
+              setFlag(param.mods.flags & (BYNAMEPARAM | IMPLICIT))
+            setPrivateWithin(param, sym, param.mods)
+          })(typeCompleter(param))
         param.symbol
       } else param.symbol
       vparamss.map(_.map(enterValueParam))
@@ -477,7 +524,7 @@ trait Namers { self: Analyzer =>
       def enterSelf(self: ValDef) {
         if (!self.tpt.isEmpty) {
           clazz.typeOfThis = selfTypeCompleter(self.tpt)
-          self.symbol = clazz.thisSym
+          self.symbol = clazz.thisSym.setPos(self.pos)
         } else {
           self.tpt.tpe = NoType
           if (self.name != nme.WILDCARD) {
@@ -489,13 +536,13 @@ trait Namers { self: Analyzer =>
         }
         if (self.name != nme.WILDCARD) {
           self.symbol.name = self.name
-          context.scope enter self.symbol
+          self.symbol = context.scope enter self.symbol
         }
       }
       val parents = typer.parentTypes(templ) map checkParent
       enterSelf(templ.self)
-      val decls = newDecls(templ, clazz)
-      new Namer(context.make(templ, clazz, decls)).enterSyms(templ.body)
+      val decls = newDecls(clazz)
+      newNamer(context.make(templ, clazz, decls)).enterSyms(templ.body)
       ClassInfoType(parents, decls, clazz)
     }
 
@@ -507,7 +554,14 @@ trait Namers { self: Analyzer =>
       val meth = context.owner
 
       val tparamSyms = typer.reenterTypeParams(tparams)
-      var vparamSymss = enterValueParams(meth, vparamss)
+      var vparamSymss =
+        if (inIDE && meth.isPrimaryConstructor) {
+          // @S: because they have already been entered this way....
+          assert(true)
+          enterValueParams(meth.owner.owner, vparamss)
+        } else {
+          enterValueParams(meth, vparamss)
+        }
       if (tpt.isEmpty && meth.name == nme.CONSTRUCTOR) tpt.tpe = context.enclClass.owner.tpe
 
       if (onlyPresentation)
@@ -700,7 +754,7 @@ trait Namers { self: Analyzer =>
           val ainfos = for {
             annot <- defn.mods.annotations
             val ainfo = typer.typedAnnotation(annot)
-            if !ainfo.atp.isError
+            if !ainfo.atp.isError && annot != null
           } yield ainfo
           if (!ainfos.isEmpty) {
             val annotated = if (sym.isModule) sym.moduleClass else sym
@@ -712,17 +766,17 @@ trait Namers { self: Analyzer =>
         try {
           tree match {
             case ClassDef(_, _, tparams, impl) =>
-              new Namer(makeNewScope(context, tree, sym)).classSig(tparams, impl)
+              newNamer(context.makeNewScope(tree, sym)).classSig(tparams, impl)
 
             case ModuleDef(_, _, impl) =>
               val clazz = sym.moduleClass
-              clazz.setInfo(new Namer(makeNewScope(context, tree, clazz)).templateSig(impl))
+              clazz.setInfo(newNamer(context.makeNewScope(tree, clazz)).templateSig(impl))
               //clazz.typeOfThis = singleType(sym.owner.thisType, sym);
               clazz.tpe;
 
             case DefDef(_, _, tparams, vparamss, tpt, rhs) =>
               val result =
-                new Namer(makeNewScope(context, tree, sym)).methodSig(tparams, vparamss, tpt, rhs);
+                newNamer(context.makeNewScope(tree, sym)).methodSig(tparams, vparamss, tpt, rhs);
               checkContractive(sym, result)
 
             case vdef @ ValDef(mods, _, tpt, rhs) =>
@@ -741,7 +795,7 @@ trait Namers { self: Analyzer =>
               } else typer1.typedType(tpt).tpe
 
             case TypeDef(_, _, tparams, rhs) =>
-              new Namer(makeNewScope(context, tree, sym)).typeDefSig(sym, tparams, rhs) //@M!
+              newNamer(context.makeNewScope(tree, sym)).typeDefSig(sym, tparams, rhs) //@M!
 
             case Import(expr, selectors) =>
               val expr1 = typer.typedQualifier(expr)
@@ -813,7 +867,7 @@ trait Namers { self: Analyzer =>
       }
       if (sym.hasFlag(IMPLICIT) && !sym.isTerm)
         context.error(sym.pos, "`implicit' modifier can be used only for values, variables and methods")
-      if (sym.hasFlag(IMPLICIT) && sym.owner.isPackageClass)
+      if (sym.hasFlag(IMPLICIT) && sym.owner.isPackageClass && !inIDE)
         context.error(sym.pos, "`implicit' modifier cannot be used for top-level objects")
       if (sym.hasFlag(ABSTRACT) && !sym.isClass)
         context.error(sym.pos, "`abstract' modifier can be used only for classes; " +

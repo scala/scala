@@ -23,10 +23,13 @@ trait Map[K,E] extends MutableIterable[Tuple2[K,E]] with scala.collection.mutabl
       removals from the returned collection will remove the element from this map.
       @returns a projection of this map's elements.  */
   def valueSet : MutableIterable.Projection[E] = projection.map(_._2);
-  def put(key : K, elem : E) : Option[E];
-  def putAll(that : Iterable[Tuple2[K,E]]) : Unit =
+
+  override def put(key : K, elem : E) : Option[E] = throw new java.lang.AbstractMethodError
+
+  override def ++=(that : Iterable[(K,E)]) : Unit =
     that.foreach(p => put(p._1, p._2));
-  def removeKey(key : K) : Option[E] = {
+
+  override def removeKey(key : K) : Option[E] = {
     val i = elements;
     while (!i.hasNext) {
       val result = i.next;

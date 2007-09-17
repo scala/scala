@@ -14,7 +14,7 @@ import java.util.jar.{JarEntry, JarOutputStream}
 
 import scala.tools.nsc.io.PlainFile
 import scala.tools.nsc.reporters.{Reporter,ConsoleReporter}
-import scala.tools.nsc.util.{ClassPath, CompoundSourceFile, SourceFile, SourceFileFragment}
+import scala.tools.nsc.util.{ClassPath, CompoundSourceFile, BatchSourceFile, SourceFile, SourceFileFragment}
 
 /** An object that runs Scala code in script files.
  *
@@ -185,18 +185,17 @@ class ScriptRunner {
     getSourceFile: PlainFile => SourceFile): SourceFile =
   {
     val preamble =
-      new SourceFile("<script preamble>",
+      new BatchSourceFile("<script preamble>",
 		     preambleCode(objectName).toCharArray)
 
     val middle = {
       val f = new File(filename)
       new SourceFileFragment(
-          getSourceFile(new PlainFile(f)),
+          getSourceFile(new PlainFile(f)).asInstanceOf[BatchSourceFile],
           headerLength(filename),
           f.length.asInstanceOf[Int])
     }
-
-    val end = new SourceFile("<script trailer>", endCode.toCharArray)
+    val end = new BatchSourceFile("<script trailer>", "\n} }\n".toCharArray)
 
     new CompoundSourceFile(preamble, middle, end)
   }

@@ -1,5 +1,5 @@
 bug836.scala:6: error: type S cannot be accessed in A.this.MyObj
  because its instance type A.this.MyObj#S is malformed
   type S = MyObj#S
-                ^
+                 ^
 one error found

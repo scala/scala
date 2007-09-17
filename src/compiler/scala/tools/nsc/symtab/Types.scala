@@ -125,8 +125,12 @@ trait Types {
     override def isError = underlying.isError
     override def isErroneous = underlying.isErroneous
     override def isStable: Boolean = underlying.isStable
+    override def finalResultType = underlying.finalResultType
+    override def paramSectionCount = underlying.paramSectionCount
+    override def paramTypes = underlying.paramTypes
     override def termSymbol = underlying.termSymbol
     override def termSymbolDirect = underlying.termSymbolDirect
+    override def typeParams = underlying.typeParams
     override def typeSymbol = underlying.typeSymbol
     override def typeSymbolDirect = underlying.typeSymbolDirect
     @deprecated override def symbol = underlying.symbol
@@ -389,6 +393,7 @@ trait Types {
 
     /** The type of `sym', seen as a member of this type. */
     def memberType(sym: Symbol): Type = {
+      trackTypeIDE(sym)
       //@M don't prematurely instantiate higher-kinded types, they will be instantiated by transform, typedTypeApply, etc. when really necessary
      sym.tpeHK match {
         case ov @ OverloadedType(pre, alts) =>
@@ -596,7 +601,7 @@ trait Types {
         e = decls.lookupNextEntry(e)
       }
       if (alts.isEmpty) sym
-      else baseClasses.head.newOverloaded(this, alts)
+      else (baseClasses.head.newOverloaded(this, alts))
     }
 
     /**
@@ -648,7 +653,7 @@ trait Types {
                           if (self eq null) self = this.narrow;
                           (self.memberType(member) matches self.memberType(sym))
                         })) {
-                    members = newScope(List(member, sym))
+                    members = newThrowAwayScope(List(member, sym))
                   }
                 } else {
                   var prevEntry = members lookupEntry sym.name
@@ -684,7 +689,7 @@ trait Types {
       } else {
         if (util.Statistics.enabled) multMemberCount = multMemberCount + 1;
         //val pre = if (this.typeSymbol.isClass) this.typeSymbol.thisType else this;
-        baseClasses.head.newOverloaded(this, members.toList)
+        (baseClasses.head.newOverloaded(this, members.toList))
       }
     }
 
@@ -724,7 +729,11 @@ trait Types {
     override def baseType(clazz: Symbol): Type = supertype.baseType(clazz)
     override def closure: Array[Type] = supertype.closure
     override def closureDepth: Int = supertype.closureDepth
-    override def baseClasses: List[Symbol] = supertype.baseClasses
+    override def baseClasses: List[Symbol] = {
+      val supertype = this.supertype
+      if (inIDE && supertype == null) Nil
+      else supertype.baseClasses
+    }
     override def isNotNull = supertype.isNotNull
   }
 
@@ -852,6 +861,7 @@ trait Types {
     private var underlyingCache: Type = _
     private var underlyingPeriod = NoPeriod
     override def underlying: Type = {
+      // this kind of caching here won't work in the IDE
       if (inIDE) return pre.memberType(sym).resultType
       val period = underlyingPeriod
       if (period != currentPeriod) {
@@ -998,7 +1008,7 @@ trait Types {
               "\n --- because ---\n" + ex.getMessage())
         }
       val period = closurePeriod;
-      if (period != currentPeriod) {
+      if (period != currentPeriod) { // no caching in IDE
         closurePeriod = currentPeriod
         if (!isValidForBaseClasses(period)) {
           closureCache = null
@@ -1234,7 +1244,7 @@ trait Types {
     override def kind = "ClassInfoType"
   }
 
-  class PackageClassInfoType(decls: Scope, clazz: Symbol)
+  class PackageClassInfoType(decls: Scope, clazz: Symbol, val loader : LazyType)
   extends ClassInfoType(List(), decls, clazz)
 
   /** A class representing a constant type.
@@ -1562,6 +1572,10 @@ A type's typeSymbol should never be inspected directly.
     override def baseType(clazz: Symbol): Type = resultType.baseType(clazz)
     override def narrow: Type = resultType.narrow
 
+    override def deconst =
+      if (inIDE) PolyType(typeParams, resultType.deconst)
+      else super.deconst
+
     override def finalResultType: Type = resultType.finalResultType
 
     /** @M: abstractTypeSig now wraps a TypeBounds in a PolyType
@@ -1780,8 +1794,10 @@ A type's typeSymbol should never be inspected directly.
   }
 
   /** The canonical creator for this-types */
-  def mkThisType(sym: Symbol): Type =
-    if (phase.erasedTypes) sym.tpe else unique(new ThisType(sym) with UniqueType)
+  def mkThisType(sym: Symbol): Type = {
+    class UniqueThisType extends ThisType(sym) with UniqueType
+    if (phase.erasedTypes) sym.tpe else unique(new UniqueThisType)
+  }
 
   /** The canonical creator for single-types */
   def singleType(pre: Type, sym: Symbol): Type = {
@@ -1795,32 +1811,41 @@ A type's typeSymbol should never be inspected directly.
       if (pre1 ne pre) sym1 = rebind(pre1, sym1)
       if (checkMalformedSwitch && !pre1.isStable && !pre1.isError)
         throw new MalformedType(pre, sym.nameString)
-      else
-        unique(new SingleType(pre1, sym1) with UniqueType)
+      else {
+        class UniqueSingleType extends SingleType(pre1, sym1) with UniqueType
+        unique(new UniqueSingleType)
+      }
     }
   }
 
   /** The canonical creator for super-types */
   def mkSuperType(thistp: Type, supertp: Type): Type =
     if (phase.erasedTypes) supertp
-    else unique(new SuperType(thistp, supertp) with UniqueType)
+    else {
+      class UniqueSuperType extends SuperType(thistp, supertp) with UniqueType
+      unique(new UniqueSuperType)
+    }
 
   /** The canonical creator for type bounds */
-  def mkTypeBounds(lo: Type, hi: Type): TypeBounds =
-    unique(new TypeBounds(lo, hi) with UniqueType)
+  def mkTypeBounds(lo: Type, hi: Type): TypeBounds = {
+    class UniqueTypeBounds extends TypeBounds(lo, hi) with UniqueType
+    unique(new UniqueTypeBounds)
+  }
 
-  def refinementOfClass(clazz: Symbol, parents: List[Type], decls: Scope) =
-    new RefinedType(parents, decls) {
+  def refinementOfClass(clazz: Symbol, parents: List[Type], decls: Scope) = {
+    class RefinementOfClass extends RefinedType(parents, decls) {
       override def typeSymbol: Symbol = clazz
       @deprecated override def symbol: Symbol = clazz
     }
+    new RefinementOfClass
+  }
 
   /** the canonical creator for a refined type with a given scope */
   def refinedType(parents: List[Type], owner: Symbol, decls: Scope): Type = {
     if (phase.erasedTypes)
       if (parents.isEmpty) ObjectClass.tpe else parents.head
     else {
-      val clazz = owner.newRefinementClass(NoPosition)
+      val clazz = recycle(owner.newRefinementClass(if (inIDE) owner.pos else NoPosition))
       val result = refinementOfClass(clazz, parents, decls)
       clazz.setInfo(result)
       result
@@ -1834,7 +1859,7 @@ A type's typeSymbol should never be inspected directly.
    *  @return        ...
    */
   def refinedType(parents: List[Type], owner: Symbol): Type =
-    refinedType(parents, owner, newScope)
+    refinedType(parents, owner, newTempScope)
 
   def copyRefinedType(original: RefinedType, parents: List[Type], decls: Scope) =
     if ((parents eq original.parents) && (decls eq original.decls)) original
@@ -1851,8 +1876,10 @@ A type's typeSymbol should never be inspected directly.
     }
 
   /** the canonical creator for a constant type */
-  def mkConstantType(value: Constant): ConstantType =
-    unique(new ConstantType(value) with UniqueType)
+  def mkConstantType(value: Constant): ConstantType = {
+    class UniqueConstantType extends ConstantType(value) with UniqueType
+    unique(new UniqueConstantType)
+  }
 
   /** The canonical creator for typerefs
    *  todo: see how we can clean this up a bit
@@ -1892,8 +1919,10 @@ A type's typeSymbol should never be inspected directly.
   }
 
   /** create a type-ref as found, without checks or rebinds */
-  def rawTypeRef(pre: Type, sym: Symbol, args: List[Type]): Type =
-    unique(new TypeRef(pre, sym, args) with UniqueType)
+  def rawTypeRef(pre: Type, sym: Symbol, args: List[Type]): Type = {
+    class rawTypeRef extends TypeRef(pre, sym, args) with UniqueType
+    unique(new rawTypeRef)
+  }
 
   /** The canonical creator for implicit method types */
   def ImplicitMethodType(paramTypes: List[Type], resultType: Type): ImplicitMethodType =
@@ -2279,9 +2308,14 @@ A type's typeSymbol should never be inspected directly.
             if ((pre eq NoType) || (pre eq NoPrefix) || !clazz.isClass) mapOver(tp)
             //@M! see test pos/tcpoly_return_overriding.scala why mapOver is necessary
             else {
-              def throwError =
-                throw new Error("" + tp + sym.locationString +
-                                " cannot be instantiated from " + pre.widen);
+              def throwError : Nothing =
+                // IDE: in the IDE, this will occur because we complete everything
+                //      too eagerly. It doesn't matter, the error will be fixed when
+                //      the node is re-typed.
+                if (inIDE) throw new TypeError("internal error: " + tp + " in " + sym.owner +
+                  " cannot be instantiated from " + pre.widen)
+	             else throw new Error("" + tp + sym.locationString +
+                                     " cannot be instantiated from " + pre.widen)
               def instParam(ps: List[Symbol], as: List[Type]): Type =
                 if (ps.isEmpty) throwError
                 else if (sym eq ps.head)
@@ -2564,7 +2598,8 @@ A type's typeSymbol should never be inspected directly.
 
   object adaptToNewRunMap extends TypeMap {
     private def adaptToNewRun(pre: Type, sym: Symbol): Symbol = {
-      if (sym.isModuleClass && !phase.flatClasses) {
+      if (inIDE) sym // dependecies adapted at a finer granularity in IDE
+      else if (sym.isModuleClass && !phase.flatClasses) {
         adaptToNewRun(pre, sym.sourceModule).moduleClass
       } else if ((pre eq NoPrefix) || (pre eq NoType) || sym.owner.isPackageClass) {
         sym
@@ -2972,8 +3007,6 @@ A type's typeSymbol should never be inspected directly.
     if (subsametypeRecursions == 0) undoLog = List()
   }
 
-  /** hook for IDE */
-  protected def trackTypeIDE(sym : Symbol) : Boolean = true;
 
   /** Does this type have a prefix that begins with a type variable */
   def beginsWithTypeVar(tp: Type): Boolean = tp match {
@@ -3473,7 +3506,7 @@ A type's typeSymbol should never be inspected directly.
                 else {
                   def lubBounds(bnds: List[TypeBounds]): TypeBounds =
                     mkTypeBounds(glb(bnds map (_.lo), depth-1), lub(bnds map (_.hi), depth-1))
-                  proto.owner.newAbstractType(proto.pos, proto.name)
+                  recycle(proto.owner.newAbstractType(proto.pos, proto.name))
                     .setInfo(lubBounds(symtypes map (_.bounds)))
                 }
               }
@@ -3656,10 +3689,11 @@ A type's typeSymbol should never be inspected directly.
               val g = glb(as, depth-1)
               if (l <:< g) l
               else {
+                val owner = commonOwner(as)
                 val qvar =
-                  commonOwner(as).newAbstractType(NoPosition, freshTypeName())
+                  recycle(owner.newAbstractType(if (inIDE) owner.pos else NoPosition, freshTypeName()).setFlag(EXISTENTIAL))
                   .setInfo(TypeBounds(g, l))
-                  .setFlag(EXISTENTIAL)
+
                 capturedParams += qvar
                 qvar.tpe
               }

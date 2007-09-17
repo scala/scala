@@ -106,7 +106,7 @@ final class ZipArchive(file: File, val archive: ZipFile) extends PlainFile(file)
 
   /** Loads the archive and creates the root directory. */
   private def load() {
-    this.root = new DirEntry("<root>", "/")
+    this.root = new DirEntry(this, "<root>", "/")
     // A path to DirEntry map
     val dirs: Map[String, DirEntry] = new HashMap()
     dirs.update("/", root)
@@ -126,7 +126,7 @@ final class ZipArchive(file: File, val archive: ZipFile) extends PlainFile(file)
         val home = if (index < 0) "/"  else path.substring(0, index + 1)
         val parent: DirEntry = getDir(dirs, home)
         assert(!parent.entries.contains(path), this.toString() + " - " + path)
-        parent.entries.update(name, new FileEntry(name, path, entry))
+        parent.entries.update(name, new FileEntry(parent, name, path, entry))
       }
     }
   }
@@ -141,32 +141,33 @@ final class ZipArchive(file: File, val archive: ZipFile) extends PlainFile(file)
     dirs.get(path) match {
       case Some(dir) => dir
       case None =>
-        val index = path.lastIndexOf('/', path.length() - 2)
-        val name = if (index < 0) path else path.substring(index + 1)
-        val home = if (index < 0) "/"  else path.substring(0, index + 1)
-        val parent: DirEntry = getDir(dirs, home)
-        val dir = new DirEntry(name.substring(0, name.length() - 1), path)
-        parent.entries.update(name, dir)
-        dirs.update(path, dir)
+        val index = path.lastIndexOf('/', path.length() - 2);
+        val name = if (index < 0) path else path.substring(index + 1);
+        val home = if (index < 0) "/"  else path.substring(0, index + 1);
+        val parent: DirEntry = getDir(dirs, home);
+        val dir = new DirEntry(parent, name.substring(0, name.length() - 1), path);
+        parent.entries.update(name, dir);
+        dirs.update(path, dir);
         dir
-    }
+   }
 
   //########################################################################
   // Private Class - Entry
 
   /** Superclass of archive entries */
-  abstract class Entry(name: String, path: String)
-  extends VirtualFile(name, path) {
-    final override def path = ZipArchive.this.toString() + "(" + super.path + ")"
+  abstract class Entry(override val container : AbstractFile, name: String, path: String)
+    extends VirtualFile(name, path) {
+    final override def path = ZipArchive.this.toString() + "(" + pathInArchive + ")"
     final def getArchive = ZipArchive.this.archive
+    def pathInArchive = super.path
   }
 
   //########################################################################
   // Private Class - DirEntry
 
   /** A directory archive entry */
-  private final class DirEntry(name: String, path: String)
-                extends Entry(name, path)
+  private final class DirEntry(container : AbstractFile, name: String, path: String)
+                extends Entry(container, name, path)
   {
 
     val entries: Map[String, Entry] = new HashMap()
@@ -185,15 +186,15 @@ final class ZipArchive(file: File, val archive: ZipFile) extends PlainFile(file)
       entries.get(if (directory) name + "/" else name) match {
         case Some(dir) => dir
         case None => null
-      }
+    }
   }
 
   //########################################################################
   // Private Class - FileEntry
 
   /** A regular file archive entry */
-  final class FileEntry(name: String, path: String, val entry: ZipEntry)
-        extends Entry(name, path) {
+  final class FileEntry(container : AbstractFile, name: String, path: String, val entry: ZipEntry)
+        extends Entry(container, name, path) {
     def archive = ZipArchive.this.archive
     override def lastModified: Long = entry.getTime()
     override def input = archive.getInputStream(entry)
@@ -212,6 +213,8 @@ final class URLZipArchive(url: URL) extends AbstractFile {
   assert(url ne null)
 
   private var root: DirEntry = _
+
+  def container = throw new Error("unsupported")
 
   def name: String = url.getFile()
 

@@ -245,7 +245,7 @@ trait Infer {
     private def withDisambiguation[T](tp1: Type, tp2: Type)(op: => T): T = {
 
       def explainName(sym: Symbol) = {
-        if (!sym.name.toString.endsWith(")")) {
+        if (!sym.name.toString.endsWith(")") && !inIDE) {
           sym.name = newTypeName(sym.name.toString+"(in "+sym.owner+")")
         }
       }
@@ -259,7 +259,7 @@ trait Infer {
         val name = sym1.name
         explainName(sym1)
         explainName(sym2)
-        if (sym1.owner == sym2.owner) sym2.name = newTypeName("(some other)"+sym2.name)
+        if (sym1.owner == sym2.owner && !inIDE) sym2.name = newTypeName("(some other)"+sym2.name)
         patches += (sym1, sym2, name)
       }
 

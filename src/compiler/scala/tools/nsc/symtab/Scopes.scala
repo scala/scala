@@ -10,10 +10,6 @@ trait Scopes {
   self: SymbolTable =>
 
   class ScopeEntry(val sym: Symbol, val owner: Scope) {
-    /** hook to notify IDE that new symbol has been added to this scope */
-    owner.enter00(sym);
-
-
     /** the next entry in the hash bucket
      */
     var tail: ScopeEntry = _
@@ -46,24 +42,22 @@ trait Scopes {
    */
   def newScope(initElems: ScopeEntry): Scope = new NormalScope(initElems)
   final def newScope: Scope = newScope(null: ScopeEntry)
-  //final def newScope(base: Scope) : Scope = newScope(base.elems)
-  final def newScope(base: Scope) : Scope = if(base eq null) newScope else newScope(base.elems)
+  def newClassScope = newScope // for use in ClassInfoType creation
+  def newTempScope = newScope(null : ScopeEntry)
+
+  final def newScope(base: Scope) : Scope = newScope(base.elems)
   final def newScope(decls: List[Symbol]) : Scope = {
     val ret = newScope
     decls.foreach(d => ret.enter(d))
     ret
   }
+  def newThrowAwayScope(decls : List[Symbol]) : Scope = newScope(decls)
 
   private class NormalScope(initElems: ScopeEntry) extends Scope(initElems)
 
   abstract class Scope(initElems: ScopeEntry)  {
 
     var elems: ScopeEntry = initElems
-
-    /** hook for IDE
-     */
-    protected def enter0(sym: Symbol) {}
-    private[Scopes] def enter00(sym: Symbol) = enter0(sym)
 
     /** The number of times this scope is neted in another
      */
@@ -104,13 +98,13 @@ trait Scopes {
 
     def this(decls: List[Symbol]) = {
       this()
-      decls foreach enter
+      decls.foreach(sym => enter(sym))
     }
 
     /** Returns a new scope with the same content as this one. */
     def cloneScope: Scope = {
       val clone = newScope
-      this.toList foreach clone.enter
+      this.toList.foreach(sym => clone.enter(sym))
       clone
     }
 
@@ -147,7 +141,7 @@ trait Scopes {
      *
      *  @param sym ...
      */
-    def enter(sym: Symbol) { enter(newScopeEntry(sym, this)) }
+    def enter(sym: Symbol) : Symbol = { enter(newScopeEntry(sym, this)); sym }
 
     /** enter a symbol, asserting that no symbol with same name exists in scope
      *

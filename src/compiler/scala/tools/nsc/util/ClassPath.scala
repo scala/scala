@@ -81,7 +81,9 @@ class ClassPath(onlyPresentation: Boolean) {
     // assert(location           != null, "cannot find classpath location")
     // assert(location.getFile() != null, "cannot find classpath location " + " " + location + " " + location.getClass())
     def source: Source
-    override def toString() = location.toString()
+    override def toString() =
+      (if (location == null) "<none>" else location.toString) +
+        (if (source == null) "" else " source=" + source)
   }
 
   class Output(location0: AbstractFile, val sourceFile: AbstractFile) extends Entry(location0) {
@@ -100,7 +102,7 @@ class ClassPath(onlyPresentation: Boolean) {
         if (entries.isEmpty) new Context(Nil)
         else {
           val ret = find0(entries.tail)
-          val head = entries.head
+          val head = entries.head;
           val name0 = name + (if (!isDir) ".class" else "")
           val clazz = if (head.location eq null) null
                       else head.location.lookupPath(name0, isDir)
@@ -124,7 +126,9 @@ class ClassPath(onlyPresentation: Boolean) {
             }
             try {
               //Console.err.println("this=" + this + "\nclazz=" + clazz + "\nsource0=" + source0 + "\n")
-              new Context(entry :: ret.entries)
+
+              if (!isDir) new Context(entry :: Nil)
+              else new Context(entry :: ret.entries)
             } catch {
               case e: Error =>
               throw e
@@ -192,7 +196,7 @@ class ClassPath(onlyPresentation: Boolean) {
       val sourcePath0 = sourcePath
       if (sourcePath0 ne null) {
         if (!sourcePath0.isDirectory) {
-          Console.err.println(""+sourcePath0 + " cannot be a directory")
+          Console.err.println(""+sourcePath0 + " should be a directory")
           assert(false)
         }
       }
@@ -248,15 +252,35 @@ class ClassPath(onlyPresentation: Boolean) {
     }
 
     /**
-     *  @param classes ...
-     *  @param sources ...
+     *  @param classes where the class files come from and are written to
+     *  @param sources where the source files come from
+     */
+    def output(classes : String, sources : String) = {
+      assert(classes ne null)
+      assert(sources ne null)
+      val location = AbstractFile.getDirectory(classes)
+      val sources0 = AbstractFile.getDirectory(sources)
+      class Output0 extends Output(location, sources0)
+      entries += new Output0()
+    }
+    /**
+     *  @param classes where the class files come from
+     *  @param sources optional source file attachment, otherwise null
      */
     def library(classes: String, sources: String) {
       assert(classes ne null)
       val location = AbstractFile.getDirectory(classes)
-      val sourceFile0 =
+      var sourceFile0 =
         if (sources ne null) AbstractFile.getDirectory(sources)
         else null
+      if (sourceFile0 ne null) {
+        val file00 = sourceFile0.lookupPath("src", true)
+        if ((file00 ne null) && file00.isDirectory) {
+          assert(true)
+          sourceFile0 = file00
+        }
+      }
+
       class Library0 extends Library(location) {
         override def sourceFile = sourceFile0
       }

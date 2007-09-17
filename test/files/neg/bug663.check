@@ -3,5 +3,5 @@ method asMatch:(Test.this.Node)Any and
 method asMatch:(Test.this.Matchable)Any in trait MatchableImpl
 have same type after erasure: (test.Test#NodeImpl)java.lang.Object
     def asMatch(m : Node) : Any = {
-    ^
+        ^
 one error found

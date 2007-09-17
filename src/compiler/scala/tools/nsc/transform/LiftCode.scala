@@ -88,6 +88,7 @@ abstract class LiftCode extends Transform {
         if (rsym == reflect.NoSymbol) throw new TypeError("cannot reify symbol: " + tree.symbol)
         else reflect.Select(reify(qual), reify(tree.symbol))
 
+      case _ : StubTree => reflect.Literal(0)
       case Literal(constant) =>
         reflect.Literal(constant.value)
 
@@ -250,7 +251,7 @@ abstract class LiftCode extends Transform {
     new Reifier(new ReifyEnvironment(), reflect.NoSymbol).reify(tree)
 
   def inject(code: reflect.Tree): Tree =
-    new Injector(ListMap.empty, new FreshNameCreator).inject(code)
+    new Injector(ListMap.empty, new FreshNameCreator.Default).inject(code)
 
   def codify (tree: Tree): Tree =
     New(TypeTree(appliedType(definitions.CodeClass.typeConstructor,

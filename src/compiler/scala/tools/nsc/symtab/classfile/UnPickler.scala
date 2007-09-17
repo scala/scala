@@ -66,8 +66,8 @@ abstract class UnPickler {
     }
 
     /** The scope associated with given symbol */
-    private def symScope(sym: Symbol) = symScopes.get(sym) match {
-      case None => val s = newScope; symScopes(sym) = s; s
+    private def symScope(sym: Symbol)(f : => Scope) = symScopes.get(sym) match {
+      case None => val s = f; symScopes(sym) = s; s
       case Some(s) => s
     }
 
@@ -164,7 +164,6 @@ abstract class UnPickler {
             if (tag > PosOffset) readNat
             else -1
           }
-          val pos: Position = NoPosition
           val name = readNameRef()
           val owner = readSymbolRef()
           val flags = readNat()
@@ -176,17 +175,17 @@ abstract class UnPickler {
           }
           (tag % PosOffset) match {
             case TYPEsym =>
-              sym = owner.newAbstractType(pos, name)
+              sym = owner.newAbstractType(NoPosition, name)
             case ALIASsym =>
-              sym = owner.newAliasType(pos, name)
+              sym = owner.newAliasType(NoPosition, name)
             case CLASSsym =>
               sym =
                 if (name == classRoot.name && owner == classRoot.owner)
                   (if ((flags & MODULE) != 0) moduleRoot.moduleClass
-                   else classRoot).setPos(pos)
+                   else classRoot)
                 else
-                  if ((flags & MODULE) != 0) owner.newModuleClass(pos, name)
-                  else owner.newClass(pos, name)
+                  if ((flags & MODULE) != 0) owner.newModuleClass(NoPosition, name)
+                  else owner.newClass(NoPosition, name)
               if (readIndex != end) sym.typeOfThis = new LazyTypeRef(readNat())
             case MODULEsym =>
               val clazz = at(inforef, readType).typeSymbol
@@ -195,13 +194,13 @@ abstract class UnPickler {
                 else {
                   assert(clazz.isInstanceOf[ModuleClassSymbol], clazz)
                   val mclazz = clazz.asInstanceOf[ModuleClassSymbol]
-                  val m = owner.newModule(pos, name, mclazz)
+                  val m = owner.newModule(NoPosition, name, mclazz)
                   mclazz.setSourceModule(m)
                   m
                 }
             case VALsym =>
               sym = if (name == moduleRoot.name && owner == moduleRoot.owner) moduleRoot.resetFlag(MODULE)
-                    else owner.newValue(pos, name)
+                    else owner.newValue(NoPosition, name)
             case _ =>
               errorBadSignature("bad symbol tag: " + tag)
           }
@@ -214,7 +213,7 @@ abstract class UnPickler {
             else new LazyTypeRef(inforef))
           if (sym.owner.isClass && sym != classRoot && sym != moduleRoot &&
               !sym.isModuleClass && !sym.isRefinementClass && !sym.isTypeParameter)
-            symScope(sym.owner) enter sym
+            symScope(sym.owner)(newScope) enter sym
       }
       sym
     }
@@ -245,13 +244,13 @@ abstract class UnPickler {
           val dcls = symScope(clazz)
           new RefinedType(ps, dcls) { override def symbol = clazz }
 */
-          new RefinedType(until(end, readTypeRef), symScope(clazz)) {
-            @deprecated override def symbol = clazz
-            override def typeSymbol = clazz
+         new RefinedType(until(end, readTypeRef), symScope(clazz)(newTempScope)) {
+           @deprecated override def symbol = clazz
+           override def typeSymbol = clazz
           }
         case CLASSINFOtpe =>
           val clazz = readSymbolRef()
-          ClassInfoType(until(end, readTypeRef), symScope(clazz), clazz)
+          ClassInfoType(until(end, readTypeRef), symScope(clazz)(newClassScope), clazz)
         case METHODtpe =>
           val restpe = readTypeRef()
           MethodType(until(end, readTypeRef), restpe)
@@ -556,14 +555,17 @@ abstract class UnPickler {
       at(readNat(), readTreeAttrib)
 
     private def errorBadSignature(msg: String) =
-      throw new RuntimeException("malformed Scala signature of " + classRoot.name + " at " + readIndex + "; " + msg)
+      if (inIDE) throw new TypeError(msg)
+      else throw new RuntimeException("malformed Scala signature of " + classRoot.name + " at " + readIndex + "; " + msg)
 
     private class LazyTypeRef(i: Int) extends LazyType {
       private val definedAtRunId = currentRunId
+      // In IDE, captures class files dependencies so they can be reloaded when their dependencies change.
+      private val ideHook = unpickleIDEHook
       override def complete(sym: Symbol) {
-        val tp = at(i, readType)
+        val tp = ideHook(at(i, readType))
         sym setInfo tp
-        if (currentRunId != definedAtRunId) sym.setInfo(adaptToNewRunMap(tp))
+        if (!inIDE && currentRunId != definedAtRunId) sym.setInfo(adaptToNewRunMap(tp))
       }
       override def load(sym: Symbol) { complete(sym) }
     }

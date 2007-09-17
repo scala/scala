@@ -15,6 +15,7 @@ package scala.runtime
 import Predef._
 
 final class RichString(val self: String) extends Proxy with RandomAccessSeq[Char] with Ordered[String] {
+  import RichString._
   override def apply(n: Int) = self charAt n
   override def length = self.length
   override def toString = self
@@ -59,10 +60,6 @@ final class RichString(val self: String) extends Proxy with RandomAccessSeq[Char
 
   override def compare(other: String) = self compareTo other
 
-  private final val LF: Char = 0x0A
-  private final val FF: Char = 0x0C
-  private final val CR: Char = 0x0D
-  private final val SU: Char = 0x1A
 
   private def isLineBreak(c: Char) = c == LF || c == FF
 
@@ -182,5 +179,12 @@ final class RichString(val self: String) extends Proxy with RandomAccessSeq[Char
   def toLong: Long     = java.lang.Long.parseLong(self)
   def toFloat: Float   = java.lang.Float.parseFloat(self)
   def toDouble: Double = java.lang.Double.parseDouble(self)
-
 }
+object RichString {
+  // just statics for rich string.
+  private final val LF: Char = 0x0A
+  private final val FF: Char = 0x0C
+  private final val CR: Char = 0x0D
+  private final val SU: Char = 0x1A
+}
+

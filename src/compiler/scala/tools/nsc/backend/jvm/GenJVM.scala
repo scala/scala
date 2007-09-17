@@ -974,6 +974,8 @@ abstract class GenJVM extends SubComponent {
         }
 
         crtPC = jcode.getPC()
+
+        assert(instr.pos.source.isEmpty || instr.pos.source.get == (clasz.cunit.source), "sources don't match")
         val crtLine = instr.pos.line.get(lastLineNr);
         /*
         val crtLine = try {
@@ -1148,7 +1150,7 @@ abstract class GenJVM extends SubComponent {
             log("Converting from: " + src + " to: " + dst);
           if (dst == BOOL) {
             Console.println("Illegal conversion at: " + clasz +
-                            " at: " + method.sourceFile + ":" + pos.line.get(-1));
+                            " at: " + pos.source.get + ":" + pos.line.get(-1));
           } else
             jcode.emitT2T(javaType(src), javaType(dst));
 

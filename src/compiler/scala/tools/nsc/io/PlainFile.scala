@@ -37,6 +37,8 @@ class PlainFile(val file: File) extends AbstractFile {
   /** Returns the path of this abstract file. */
   def path = file.getPath()
 
+  override def container : AbstractFile = new PlainFile(file.getParentFile)
+
   override def input = new FileInputStream(file)
 
   override def size = Some(file.length.toInt)

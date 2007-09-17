@@ -102,7 +102,10 @@ abstract class AbstractFile extends AnyRef with Iterable[AbstractFile] {
   /** Returns the path of this abstract file. */
   def path: String
 
-  /** Returns the underlying File if any and <code>null</code> otherwise. */
+  /** Returns the containing directory of this abstract file */
+  def container : AbstractFile
+
+  /** Returns the underlying File if any and null otherwise. */
   def file: File
 
   /** Is this abstract file a directory? */

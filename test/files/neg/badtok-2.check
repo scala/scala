@@ -1,10 +1,7 @@
-badtok-2.scala:3: error: unclosed quoted identifier
-`x
- ^
-badtok-2.scala:3: error: illegal start of definition
+badtok-2.scala:3: error: unterminated quoted identifier
 `x
 ^
 badtok-2.scala:3: error: '}' expected but eof found.
 `x
-  ^
-three errors found
+ ^
+two errors found

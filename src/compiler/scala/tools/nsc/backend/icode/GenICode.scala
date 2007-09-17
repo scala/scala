@@ -83,7 +83,7 @@ abstract class GenICode extends SubComponent  {
         addClassFields(ctx, tree.symbol);
         classes += tree.symbol -> ctx.clazz
         unit.icode += ctx.clazz
-        gen(impl, ctx)
+          gen(impl, ctx)
         ctx setClass null
 
       // !! modules should be eliminated by refcheck... or not?
@@ -417,7 +417,7 @@ abstract class GenICode extends SubComponent  {
           var thenCtx = ctx.newBlock
           var elseCtx = ctx.newBlock
           val contCtx = ctx.newBlock
-          genCond(cond, ctx, thenCtx, elseCtx)
+            genCond(cond, ctx, thenCtx, elseCtx)
           val ifKind = toTypeKind(tree.tpe)
 
           val thenKind = toTypeKind(thenp.tpe)
@@ -1427,6 +1427,8 @@ abstract class GenICode extends SubComponent  {
             ctx.method.symbol.newVariable(l.pos, eqEqTempName).setFlag(Flags.SYNTHETIC)
           eqEqTempVar.setInfo(definitions.AnyRefClass.typeConstructor)
           val local = ctx.method.addLocal(new Local(eqEqTempVar, REFERENCE(definitions.AnyRefClass), false))
+          assert(l.pos.source.get == unit.source)
+          assert(r.pos.source.get == unit.source)
           local.start = (l.pos).line.get
           local.end   = (r.pos).line.get
           local

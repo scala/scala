@@ -623,6 +623,7 @@ abstract class ScalaPrimitives {
         }
 
       case LENGTH =>
+        assert(elem != null)
         toTypeKind(elem) match {
           case BOOL    => ZARRAY_LENGTH
           case BYTE    => BARRAY_LENGTH

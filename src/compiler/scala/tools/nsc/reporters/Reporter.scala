@@ -6,7 +6,7 @@
 
 package scala.tools.nsc.reporters
 
-import scala.tools.nsc.util.Position
+import scala.tools.nsc.util._
 
 /**
  * This interface provides methods to issue information, warning and
@@ -36,6 +36,10 @@ abstract class Reporter {
   def flush() { }
 
   protected def info0(pos: Position, msg: String, severity: Severity, force: Boolean): Unit
+
+  private var source : SourceFile = _
+  def setSource(source : SourceFile) : Unit = this.source = source
+  def getSource : SourceFile = source
 
   def    info(pos: Position, msg: String, force: Boolean): Unit = info0(pos, msg,    INFO, force)
   def warning(pos: Position, msg: String                ): Unit = info0(pos, msg, WARNING, false)

@@ -40,7 +40,7 @@ trait BufferWrapper[A] extends Buffer[A] with CollectionWrapper[A] {
     }
     override def elements = super[BufferWrapper].elements;
   }
-  class IteratorWrapper(underlying : java.util.ListIterator) extends super.IteratorWrapper(underlying) with BufferIterator[Int,A] {
+  class IteratorWrapper(underlying : java.util.ListIterator) extends MutableIterator.Wrapper[A](underlying) with BufferIterator[Int,A] {
     def add(a : A) = underlying.add(a);
     def set(a : A) = underlying.set(a);
     def hasPrevious = underlying.hasPrevious;

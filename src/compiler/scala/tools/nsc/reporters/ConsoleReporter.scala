@@ -7,7 +7,7 @@
 package scala.tools.nsc.reporters
 
 import java.io.{BufferedReader, InputStreamReader, IOException, PrintWriter}
-import util.{FakePos,Position,NoPosition}
+import util._
 
 import compat.StringBuilder
 
@@ -48,20 +48,24 @@ class ConsoleReporter(val settings: Settings, reader: BufferedReader, writer: Pr
   /** Prints the message with the given position indication. */
   def printMessage(posIn: Position, msg: String): Unit =
     if (posIn ne null) {
-      val pos = posIn.inUltimateSource
+      val pos = posIn.inUltimateSource(posIn.source.getOrElse(null))
       val buf = new StringBuilder(msg)
-      buf.insert(0, " ")
-      buf.insert(0, pos.line.map(ln => ":" + pos.line.get + ":").get(":"))
+      if (!pos.source.isEmpty) {
+        buf.insert(0, " ")
+        buf.insert(0, pos.line.map(ln => ":" + pos.line.get + ":").get(":"))
+      }
+      //println(getSource.file)
       pos match {
-        case NoPosition =>
-        case FakePos(msg) =>
-          buf.insert(0, msg)
-        case _ if !pos.source.isEmpty =>
-          val file = pos.source.get.file
-          buf.insert(0, if (shortname) file.name else file.path)
+      case FakePos(msg) =>
+        buf.insert(0, msg)
+      case _ if !pos.source.isEmpty =>
+        val file = pos.source.get.file
+        buf.insert(0, if (shortname) file.name else file.path)
+      case _ =>
       }
       printMessage(buf.toString())
-      printSourceLine(pos)
+      if (!pos.line.isEmpty)
+        printSourceLine(pos)
     } else
       printMessage(msg)
 

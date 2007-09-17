@@ -44,9 +44,11 @@ abstract class AbstractReporter extends Reporter {
    */
   private def testAndLog(pos: Position): Boolean = {
     if (pos eq null) return false
-    if (pos.column == 0) return false
+    if (pos.offset.isEmpty) return false
     if (positions contains pos) return true
+    //Console.println("ERROR @ " + pos + " into " + positions)
     positions += pos
+
     return false
   }
 

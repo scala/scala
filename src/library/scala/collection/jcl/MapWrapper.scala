@@ -29,9 +29,9 @@ trait MapWrapper[K,E] extends jcl.Map[K,E] {
     if (ret == null) None else Some(ret.asInstanceOf[E]);
   }
 
-  override def putAll(that : Iterable[Tuple2[K,E]]) : Unit = that match {
+  override def ++=(that : Iterable[Tuple2[K,E]]) : Unit = that match {
   case that : MapWrapper[_,_] => underlying.putAll(that.underlying);
-  case _ => super.putAll(that);
+  case _ => super.++=(that);
   }
   override def removeKey(key : K) = {
     val ret = underlying.remove(key);

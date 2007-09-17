@@ -29,7 +29,11 @@ import scala.collection.mutable.ListBuffer
 trait SyntheticMethods { self: Analyzer =>
   import global._                  // the global environment
   import definitions._             // standard classes and methods
-  import typer.{typed}             // methods to type trees
+  //import global.typer.{typed}      // methods to type trees
+  // @S: type hack: by default, we are used from global.analyzer context
+  // so this cast won't fail. If we aren't in global.analyzer, we have
+  // to override this method anyways.
+  protected def typer : Typer = global.typer.asInstanceOf[Typer]
 
   /**
    *  @param templ ...
@@ -42,15 +46,15 @@ trait SyntheticMethods { self: Analyzer =>
     val localContext = if (reporter.hasErrors) context.makeSilent(false) else context
     val localTyper = newTyper(localContext)
 
-    def hasImplementation(name: Name): Boolean = {
+    def hasImplementation(name: Name): Boolean = if (inIDE) true else {
       val sym = clazz.info.nonPrivateMember(name)
       sym.isTerm && !(sym hasFlag DEFERRED)
     }
 
-    def hasOverridingImplementation(meth: Symbol): Boolean = {
+    def hasOverridingImplementation(meth: Symbol): Boolean = if (inIDE) true else {
       val sym = clazz.info.nonPrivateMember(meth.name)
       sym.alternatives exists { sym =>
-        sym != meth && !(sym hasFlag DEFERRED) &&
+        sym != meth && !(sym hasFlag DEFERRED) && !(sym hasFlag SYNTHETIC) &&
         (clazz.thisType.memberType(sym) matches clazz.thisType.memberType(meth))
       }
     }
@@ -59,8 +63,11 @@ trait SyntheticMethods { self: Analyzer =>
       newSyntheticMethod(name, flags | OVERRIDE, tpe)
 
     def newSyntheticMethod(name: Name, flags: Int, tpe: Type) = {
-      val method = clazz.newMethod(clazz.pos, name) setFlag (flags) setInfo tpe
-      clazz.info.decls.enter(method)
+      var method = clazz.newMethod(clazz.pos, name) setFlag ({
+        if (inIDE) flags | SYNTHETIC
+        else flags
+      }) setInfo tpe
+      method = clazz.info.decls.enter(method).asInstanceOf[TermSymbol]
       method
     }
 
@@ -72,18 +79,18 @@ trait SyntheticMethods { self: Analyzer =>
     */
     def productPrefixMethod: Tree = {
       val method = syntheticMethod(nme.productPrefix, FINAL, PolyType(List(), StringClass.tpe))
-      typed(DefDef(method, vparamss => Literal(Constant(clazz.name.decode))))
+      typer.typed(DefDef(method, vparamss => Literal(Constant(clazz.name.decode))))
     }
 
     def productArityMethod(nargs:Int ): Tree = {
       val method = syntheticMethod(nme.productArity, FINAL, PolyType(List(), IntClass.tpe))
-      typed(DefDef(method, vparamss => Literal(Constant(nargs))))
+      typer.typed(DefDef(method, vparamss => Literal(Constant(nargs))))
     }
 
     def productElementMethod(accs: List[Symbol]): Tree = {
       //val retTpe = lub(accs map (_.tpe.resultType))
       val method = syntheticMethod(nme.productElement, FINAL, MethodType(List(IntClass.tpe), AnyClass.tpe/*retTpe*/))
-      typed(DefDef(method, vparamss => Match(Ident(vparamss.head.head), {
+      typer.typed(DefDef(method, vparamss => Match(Ident(vparamss.head.head), {
 	(for ((sym,i) <- accs.zipWithIndex) yield {
 	  CaseDef(Literal(Constant(i)),EmptyTree, Ident(sym))
 	}):::List(CaseDef(Ident(nme.WILDCARD), EmptyTree,
@@ -95,12 +102,12 @@ trait SyntheticMethods { self: Analyzer =>
 
     def moduleToStringMethod: Tree = {
       val method = syntheticMethod(nme.toString_, FINAL, MethodType(List(), StringClass.tpe))
-      typed(DefDef(method, vparamss => Literal(Constant(clazz.name.decode))))
+      typer.typed(DefDef(method, vparamss => Literal(Constant(clazz.name.decode))))
     }
 
     def tagMethod: Tree = {
       val method = syntheticMethod(nme.tag, FINAL, MethodType(List(), IntClass.tpe))
-      typed(DefDef(method, vparamss => Literal(Constant(clazz.tag))))
+      typer.typed(DefDef(method, vparamss => Literal(Constant(clazz.tag))))
     }
 
     def forwardingMethod(name: Name): Tree = {
@@ -110,7 +117,7 @@ trait SyntheticMethods { self: Analyzer =>
         else target.tpe.paramTypes.tail
       val method = syntheticMethod(
         name, 0, MethodType(paramtypes, target.tpe.resultType))
-      typed(DefDef(method, vparamss =>
+      typer.typed(DefDef(method, vparamss =>
         Apply(gen.mkAttributedRef(target), This(clazz) :: (vparamss.head map Ident))))
     }
 
@@ -148,7 +155,7 @@ trait SyntheticMethods { self: Analyzer =>
               val (pat, guard) = {
                 val guards = new ListBuffer[Tree]
                 val params = for ((acc, cpt) <- clazz.caseFieldAccessors zip constrParamTypes) yield {
-                  val name = context.unit.fresh.newName(acc.name+"$")
+                  val name = context.unit.fresh.newName(clazz.pos, acc.name+"$")
                   val isVarArg = cpt.typeSymbol == RepeatedParamClass
                   guards += Apply(
                     Select(
@@ -185,16 +192,16 @@ trait SyntheticMethods { self: Analyzer =>
       // but then it is renamed !!!
       val method = newSyntheticMethod(nme.readResolve, PROTECTED,
                                       MethodType(List(), ObjectClass.tpe))
-      typed(DefDef(method, vparamss => gen.mkAttributedRef(clazz.sourceModule)))
+      typer.typed(DefDef(method, vparamss => gen.mkAttributedRef(clazz.sourceModule)))
     }
 
     def newAccessorMethod(tree: Tree): Tree = tree match {
       case DefDef(_, _, _, _, _, rhs) =>
-        val newAcc = tree.symbol.cloneSymbol
-        newAcc.name = context.unit.fresh.newName(tree.symbol.name + "$")
+        var newAcc = tree.symbol.cloneSymbol
+        newAcc.name = context.unit.fresh.newName(tree.symbol.pos, tree.symbol.name + "$")
         newAcc.setFlag(SYNTHETIC).resetFlag(ACCESSOR | PARAMACCESSOR | PRIVATE)
-        newAcc.owner.info.decls enter newAcc
-        val result = typed(DefDef(newAcc, vparamss => rhs.duplicate))
+        newAcc = newAcc.owner.info.decls enter newAcc
+        val result = typer.typed(DefDef(newAcc, vparamss => rhs.duplicate))
         log("new accessor method " + result)
         result
     }
@@ -226,7 +233,7 @@ trait SyntheticMethods { self: Analyzer =>
     def addBeanGetterMethod(sym: Symbol) = {
       val getter = beanSetterOrGetter(sym)
       if (getter != NoSymbol)
-        ts += typed(DefDef(
+        ts += typer.typed(DefDef(
           getter,
           vparamss => if (sym hasFlag DEFERRED) EmptyTree else gen.mkAttributedRef(sym)))
     }
@@ -234,7 +241,7 @@ trait SyntheticMethods { self: Analyzer =>
     def addBeanSetterMethod(sym: Symbol) = {
       val setter = beanSetterOrGetter(sym)
       if (setter != NoSymbol)
-        ts += typed(DefDef(
+        ts += typer.typed(DefDef(
           setter,
           vparamss =>
             if (sym hasFlag DEFERRED) EmptyTree
@@ -257,7 +264,7 @@ trait SyntheticMethods { self: Analyzer =>
             }
           }
 
-          if (clazz.info.nonPrivateDecl(nme.tag) == NoSymbol) ts += tagMethod
+          if (!inIDE && clazz.info.nonPrivateDecl(nme.tag) == NoSymbol) ts += tagMethod
           if (clazz.isModuleClass) {
             if (!hasOverridingImplementation(Object_toString)) ts += moduleToStringMethod
           } else {

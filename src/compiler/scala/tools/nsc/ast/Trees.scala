@@ -157,6 +157,26 @@ abstract class Trees extends SymbolTable {
       case t: Tree => this eq t
       case _ => false
     }
+    def hashCodeStructure : Int = {
+      var hc = getClass.hashCode
+      def f(what : Any) : Unit = what match {
+      case what : Tree => hc += what.hashCodeStructure
+      case what : Iterable[_] => what.foreach(f)
+      case what : Product => g(what)
+      case null =>
+      case what => hc += what.hashCode
+      }
+      def g(what : Product) : Unit = {
+        hc += what.productArity
+        var i = 0
+        while (i < what.productArity) {
+          f(what.productElement(i))
+          i += 1
+        }
+      }
+      g(this.asInstanceOf[Product])
+      hc
+    }
 
     def equalsStructure(that: Tree): Boolean = {
       if (this == that) return true
@@ -181,8 +201,7 @@ abstract class Trees extends SymbolTable {
       val results = for (i <- 0.until(this0.productArity).toList) yield
         equals0(this0.productElement(i), that0.productElement(i))
       val b = results.foldLeft(true)((x,y) => x && y)
-      b && (if (tpe == null || tpe == NoType) that.tpe == null || that.tpe == NoType
-            else tpe == that.tpe)
+      b // ignore type!
     }
 
     def duplicate: this.type =
@@ -465,6 +484,10 @@ abstract class Trees extends SymbolTable {
        extends Tree {
     override def symbol: Symbol = definition.symbol
     override def symbol_=(sym: Symbol) { definition.symbol = sym }
+    // sean: seems to be important to the IDE
+    override def isDef = definition.isDef
+    override def isTerm = definition.isTerm
+    override def isType = definition.isType
   }
 
   /** Instantiation template
@@ -759,6 +782,9 @@ abstract class Trees extends SymbolTable {
   case class ExistentialTypeTree(tpt: Tree, whereClauses: List[Tree])
        extends TypTree
 
+  trait StubTree extends Tree {
+    override def equalsStructure(that: Tree): Boolean = this eq that
+  }
 /* A standard pattern match
   case EmptyTree =>
   case PackageDef(name, stats) =>
@@ -1325,6 +1351,7 @@ abstract class Trees extends SymbolTable {
         copy.TypeBoundsTree(tree, transform(lo), transform(hi))
       case ExistentialTypeTree(tpt, whereClauses) =>
         copy.ExistentialTypeTree(tree, transform(tpt), transformTrees(whereClauses))
+      case tree : StubTree => tree.duplicate
     }
 
     def transformTrees(trees: List[Tree]): List[Tree] =
@@ -1467,6 +1494,7 @@ abstract class Trees extends SymbolTable {
         traverse(lo); traverse(hi)
       case ExistentialTypeTree(tpt, whereClauses) =>
         traverse(tpt); traverseTrees(whereClauses)
+      case tree : StubTree =>
     }
 
     def traverseTrees(trees: List[Tree]) {

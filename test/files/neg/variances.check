@@ -15,6 +15,6 @@ variances.scala:14: error: covariant type A occurs in contravariant position in 
                            ^
 variances.scala:16: error: covariant type A occurs in invariant position in type test.C[A] with ScalaObject{def this(): object Foo.this.Baz} of object Baz
     object Baz extends C[A]
-    ^
+           ^
 three warnings found
 three errors found

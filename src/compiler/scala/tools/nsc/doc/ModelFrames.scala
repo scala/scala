@@ -23,6 +23,7 @@ trait ModelFrames extends ModelExtractor {
   val SyntheticClasses = new scala.collection.mutable.HashSet[global.Symbol];
   {
     import global.definitions._
+    global.definitions.init
     SyntheticClasses ++= List(
       AllClass, AllRefClass, AnyClass, AnyRefClass, AnyValClass,
       //value classes

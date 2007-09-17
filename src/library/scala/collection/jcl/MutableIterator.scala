@@ -10,6 +10,14 @@
 
 package scala.collection.jcl;
 
+object MutableIterator {
+  class Wrapper[A](val underlying : java.util.Iterator) extends MutableIterator[A] {
+    def hasNext = underlying.hasNext;
+    def next = underlying.next.asInstanceOf[A];
+    def remove = underlying.remove;
+  }
+}
+
 /** An iterator that supports the remove operation.
  *  These iterators wrap Java iterators, and so have the same fail fast
  *  behavior when dealing with concurrent modifications.
@@ -26,7 +34,7 @@ trait MutableIterator[A] extends Iterator[A] {
 
   override def map[B](f: A => B) : MutableIterator[B] = new Map(f);
   /** A type-safe version of contains.
-b   **/
+   **/
   def has(a: A) = exists(b => a == a);
 
   /** Finds and removes the first instance of "a" through the iterator.

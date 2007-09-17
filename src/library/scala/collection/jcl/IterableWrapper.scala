@@ -28,12 +28,14 @@ trait IterableWrapper[A] extends MutableIterable[A] {
   override def size = underlying.size;
   override def isEmpty = underlying.isEmpty;
   override def clear = underlying.clear;
-  override def elements : MutableIterator[A] = new IteratorWrapper(underlying.iterator);
+  override def elements : MutableIterator[A] = new MutableIterator.Wrapper[A](underlying.iterator);
+/* moved to MutableIterator
   class IteratorWrapper(underlying : java.util.Iterator) extends MutableIterator[A] {
     // val underlying = IterableWrapper.this.underlying.iterator;
     def hasNext = underlying.hasNext;
     def next = underlying.next.asInstanceOf[A];
     def remove = underlying.remove;
   }
+*/
 
 }

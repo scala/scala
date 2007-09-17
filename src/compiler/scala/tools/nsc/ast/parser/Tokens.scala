@@ -31,6 +31,16 @@ object Tokens {
   def isIdentifier(code : Int) =
     code >= IDENTIFIER && code <= BACKQUOTED_IDENT
 
+  def canBeginExpression(code : Int) = code match {
+  case IDENTIFIER|BACKQUOTED_IDENT|USCORE => true
+  case LBRACE|LPAREN|LBRACKET|COMMENT|STRINGLIT => true
+  case IF|DO|WHILE|FOR|NEW|TRY|THROW => true
+  case NULL|THIS|TRUE|FALSE => true
+  case code if isLiteral(code) => true
+  case _ => false
+  }
+
+
   /** keywords */
   final val IF = 20
   final val FOR = 21
@@ -79,6 +89,14 @@ object Tokens {
   def isKeyword(code : Int) =
     code >= IF && code <= LAZY
 
+  def isDefinition(code : Int) = code match {
+  case CLASS|TRAIT|OBJECT => true
+  case CASECLASS|CASEOBJECT => true
+  case DEF|VAL|VAR => true
+  case TYPE => true
+  case _ => false
+  }
+
 
   /** special symbols */
   final val COMMA = 70
@@ -100,7 +118,6 @@ object Tokens {
   def isSymbol(code : Int) =
     code >= COMMA && code <= VIEWBOUND
 
-
   /** parenthesis */
   final val LPAREN = 90
   final val RPAREN = 91
@@ -109,24 +126,29 @@ object Tokens {
   final val LBRACE = 94
   final val RBRACE = 95
 
-  def isParen(code : Int) =
+  def isBrace(code : Int) =
     code >= LPAREN && code <= RBRACE
+  def isOpenBrace(code : Int) = isBrace(code) && (code % 2 == 0)
+  def isCloseBrace(code : Int) = isBrace(code) && (code % 2 == 1)
 
   /** XML mode */
   final val XMLSTART = 96
 
   /** for IDE only */
-  final val LINE_COMMENT = 97
-  final val COMMENT_START = 98
-  final val COMMENT_END   = 99
-  final val DOC_START = 100
-  final val DOUBLE_QUOTE     = 101
-  final val BACK_QUOTE       = 102
-  final val MULTI_QUOTE      = 103
-  //final val EMPTY_STRING     = 104
+  final val COMMENT = 97
+
   final val WHITESPACE = 105
   final val IGNORE = 106
-  final val XML_SINGLEEND = 107
-  final val XML_STARTEND = 108
   final val ESCAPE = 109
+
+  def isSpace(at : Char) = at match {
+  case ' ' | '\t' => true
+  case _ => false
+  }
+  import scala.tools.nsc.util.SourceFile._
+
+  def isNewLine(at : Char) = at match {
+  case CR | LF | FF => true
+  case _ => false
+  }
 }

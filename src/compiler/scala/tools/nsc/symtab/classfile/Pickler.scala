@@ -47,6 +47,14 @@ abstract class Pickler extends SubComponent {
             add(sym, pickle)
             add(sym.linkedSym, pickle)
             pickle.finish
+            val doPickleHash = global.doPickleHash
+            if (doPickleHash) {
+              var i = 0
+              while (i < pickle.writeIndex) {
+                unit.pickleHash += pickle.bytes(i).toLong // toLong needed to work around bug
+                i = i + 1
+              }
+            }
           case _ =>
         }
       }
@@ -56,10 +64,10 @@ abstract class Pickler extends SubComponent {
 
   private class Pickle(rootName: Name, rootOwner: Symbol)
         extends PickleBuffer(new Array[Byte](4096), -1, 0) {
-    import scala.collection.mutable.HashMap
+    import scala.collection.jcl.LinkedHashMap
     private var entries = new Array[AnyRef](256)
     private var ep = 0
-    private val index = new HashMap[AnyRef, int]
+    private val index = new LinkedHashMap[AnyRef, int]
 
     /** Is root in symbol.owner*?
      *
@@ -326,10 +334,6 @@ abstract class Pickler extends SubComponent {
      */
     private def writeSymInfo(sym: Symbol): Int = {
       var posOffset = 0
-      if (sym.pos != NoPosition && sym.owner.isClass && !sym.pos.offset.isEmpty) {
-        writeNat(sym.pos.offset.get)
-        posOffset = PosOffset
-      }
       writeRef(sym.name)
       writeRef(sym.owner)
       writeNat((sym.flags & PickledFlags).asInstanceOf[int])

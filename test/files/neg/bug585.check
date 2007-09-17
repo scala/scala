@@ -1,4 +1,4 @@
-bug585.scala:1: error: unclosed comment
+bug585.scala:1: error: unterminated comment
 /*
- ^
+^
 one error found

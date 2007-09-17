@@ -8,7 +8,13 @@ package scala.tools.nsc.util
 
 import scala.collection.mutable.HashMap
 
-class FreshNameCreator {
+trait FreshNameCreator {
+  def newName(prefix : String) : String
+  def newName() : String
+  def newName(pos : util.Position, prefix : String) : String
+}
+object FreshNameCreator {
+  class Default extends FreshNameCreator {
 
   protected var counter = 0
   protected val counters = new HashMap[String, Int]
@@ -26,9 +32,11 @@ class FreshNameCreator {
     counters.update(prefix, count)
     prefix + count
   }
+  def newName(pos : util.Position, prefix : String) = newName(prefix)
 
   def newName(): String = {
     counter = counter + 1
     "$" + counter + "$"
   }
+}
 }

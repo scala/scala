@@ -34,10 +34,21 @@ trait EtaExpansion { self: Analyzer =>
    *    tree is already attributed
    *  </p>
    */
-  def etaExpand(tree: Tree): Tree = {
+  def etaExpand(unit : CompilationUnit, tree: Tree): Tree = {
     val tpe = tree.tpe
-    var cnt = 0
-    def freshName() = { cnt = cnt + 1; newTermName("eta$" + cnt) }
+    val symbolHash = if (!inIDE) "" else Integer.toString(tree.symbol.hashCode, 10 + ('z' - 'a')) + "$"
+    var cnt = 0 // for NoPosition
+    def freshName(pos : util.Position, n : Int) = {
+      cnt += 1
+      if (pos == util.NoPosition) {
+        newTermName("eta$" + symbolHash + (cnt - 1))
+      } else if (n == 0) {
+        newTermName(unit.fresh.newName(pos, "eta$" + symbolHash))
+      } else {
+        newTermName(unit.fresh.newName(pos, "eta$" + symbolHash + n + "$"))
+      }
+    }
+    // { cnt = cnt + 1; newTermName("eta$" + cnt) }
     val defs = new ListBuffer[Tree]
 
     /** Append to <code>defs</code> value definitions for all non-stable
@@ -50,7 +61,7 @@ trait EtaExpansion { self: Analyzer =>
       def liftout(tree: Tree): Tree =
         if (treeInfo.isPureExpr(tree)) tree
         else {
-          val vname: Name = freshName()
+          val vname: Name = freshName(tree.pos, 0)
           defs += atPos(tree.pos)(ValDef(Modifiers(SYNTHETIC), vname, TypeTree(), tree))
           Ident(vname) setPos tree.pos
         }
@@ -76,8 +87,13 @@ trait EtaExpansion { self: Analyzer =>
       case mt: ImplicitMethodType =>
         tree
       case MethodType(formals, restpe) =>
+        var cnt0 = 0
+        def cnt = {
+          cnt0 += 1
+          cnt0 - 1
+        }
         val params = formals map (formal =>
-          ValDef(Modifiers(SYNTHETIC | PARAM), freshName(), TypeTree()
+          ValDef(Modifiers(SYNTHETIC | PARAM), freshName(tree.pos, cnt), TypeTree()
             .setType(formal), EmptyTree))
         val args = params map (param => Ident(param.name))
         val applyArgs =

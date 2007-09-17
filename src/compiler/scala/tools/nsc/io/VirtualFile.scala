@@ -30,6 +30,12 @@ class VirtualFile(val name: String, _path: String) extends AbstractFile {
    */
   def this(name: String) = this(name, name)
 
+  override def hashCode = name.hashCode
+  override def equals(that : Any) = that match {
+  case that : VirtualFile => name == that.name
+  case _ => false
+  }
+
   //########################################################################
   // Public Methods
 
@@ -38,7 +44,9 @@ class VirtualFile(val name: String, _path: String) extends AbstractFile {
   /** Returns null. */
   final def file: File = null
 
-  def input: InputStream = throw new Error("not supported")
+  def input : InputStream = throw new Error("not supported");
+
+  def container : AbstractFile = throw new Error("not supported")
 
   /** Is this abstract file a directory? */
   def isDirectory: Boolean = false
