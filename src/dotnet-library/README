@@ -1,0 +1,18 @@
+The dotnet-library tree has been synchronized with
+revision 12880 of src/library on $Date$.
+
+Never, never, never, ever add/remove/edit files in the dotnet-library
+tree by hand. If you need to change sth use the opportunity to merge
+the changes that have occured since the last merge. Any manual intervention
+makes the merging harder and is to be considerd rude and 
+
+koko:~/scala/src/dotnet-library>svn merge \
+https://lampsvn.epfl.ch/svn-repos/scala/scala/trunk/src/library@12365 \
+https://lampsvn.epfl.ch/svn-repos/scala/scala/trunk/src/library@12879 .
+
+You'll get many "Skipped missing target: ..." messages because this tree
+only contains files that are different for MSIL. Hopefully, changes in those
+files do not introduce anything platform-specific because they will be copied
+from the src/library tree. If there are platform-specific changes, the
+offending file has to be added to the dotnet-library tree and modified to
+compile for .NET.

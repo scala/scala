@@ -19,35 +19,42 @@ final class RichString(val self: String) extends Proxy with RandomAccessSeq[Char
   override def length = self.length
   override def toString = self
   override def mkString = self
-  override def slice(from : Int, until : Int) : RichString = {
+
+  override def slice(from: Int, until: Int): RichString = {
     val from0 = if (from < 0) 0 else from
     val until0 = if (from >= until || from >= self.length) return new RichString("")
                  else if (until > self.length) self.length else until
     new RichString(self.substring(from0, until0))
   }
+
   //override def ++ [B >: A](that: Iterable[B]): Seq[B] = {
-  override def ++[B >: Char](that : Iterable[B]) : RandomAccessSeq[B] = that match {
-  case that : RichString => new RichString(self + that.self)
-  case that => super.++(that)
+  override def ++[B >: Char](that: Iterable[B]): RandomAccessSeq[B] = that match {
+    case that: RichString => new RichString(self + that.self)
+    case that => super.++(that)
   }
 
-  override def take(until : Int) : RichString = slice(0, until)
-  override def drop(from : Int)  : RichString = slice(from, self.length)
-  override def startsWith[B](that : Seq[B]) = that match {
-  case that : RichString => self startsWith that.self
-  case that => super.startsWith(that)
+  override def take(until: Int): RichString = slice(0, until)
+
+  override def drop(from: Int): RichString = slice(from, self.length)
+
+  override def startsWith[B](that: Seq[B]) = that match {
+    case that: RichString => self startsWith that.self
+    case that => super.startsWith(that)
   }
-  override def endsWith[B](that : Seq[B]) = that match {
-  case that : RichString => self endsWith that.self
-  case that => super.endsWith(that)
+
+  override def endsWith[B](that: Seq[B]) = that match {
+    case that: RichString => self endsWith that.self
+    case that => super.endsWith(that)
   }
-  override def indexOf[B](that : Seq[B]) = that match {
-  case that : RichString => self indexOf that.self
-  case that => super.indexOf(that)
+
+  override def indexOf[B](that: Seq[B]) = that match {
+    case that: RichString => self indexOf that.self
+    case that => super.indexOf(that)
   }
-  override def containsSlice[B](that : Seq[B]) = that match {
-  case that : RichString => self contains that.self
-  case that => super.containsSlice(that)
+
+  override def containsSlice[B](that: Seq[B]) = that match {
+    case that: RichString => self contains that.self
+    case that => super.containsSlice(that)
   }
 
   override def compare(other: String) = self compareTo other
@@ -165,4 +172,5 @@ final class RichString(val self: String) extends Proxy with RandomAccessSeq[Char
   def toLong: Long = System.Int64.Parse(self)
   def toFloat: Float = System.Single.Parse(self)
   def toDouble: Double = System.Double.Parse(self)
+
 }

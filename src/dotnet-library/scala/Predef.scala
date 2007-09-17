@@ -94,12 +94,12 @@ object Predef {
 
   def assume(assumption: Boolean) {
     if (!assumption)
-      throw new Error("assumption failed")
+      throw new IllegalArgumentException("assumption failed")
   }
 
   def assume(assumption: Boolean, message: Any) {
     if (!assumption)
-      throw new Error("assumption failed: " + message)
+      throw new IllegalArgumentException("assumption failed: " + message)
   }
 
   // tupling ------------------------------------------------------------
@@ -303,6 +303,8 @@ object Predef {
   implicit def long2double(x: Long): Double = x.toDouble
 
   implicit def float2double(x: Float): Double = x.toDouble
+
+  implicit def forceArrayProjection[A](x : Array.Projection[A]) : Array[A] = x.force
 
   def currentThread = System.Threading.Thread.CurrentThread
 
