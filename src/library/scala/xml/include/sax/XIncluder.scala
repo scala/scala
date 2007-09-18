@@ -1,24 +1,29 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+// $Id$
+
 package scala.xml.include.sax
 
-import org.xml.sax.SAXException;
-import org.xml.sax.SAXParseException;
-import org.xml.sax.ContentHandler;
-import org.xml.sax.EntityResolver;
-import org.xml.sax.helpers.XMLReaderFactory;
-import org.xml.sax.XMLReader;
-import org.xml.sax.Locator;
-import org.xml.sax.Attributes;
-import org.xml.sax.ext.LexicalHandler;
+import org.xml.sax.SAXException
+import org.xml.sax.SAXParseException
+import org.xml.sax.ContentHandler
+import org.xml.sax.EntityResolver
+import org.xml.sax.helpers.XMLReaderFactory
+import org.xml.sax.XMLReader
+import org.xml.sax.Locator
+import org.xml.sax.Attributes
+import org.xml.sax.ext.LexicalHandler
 
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.io.OutputStream;
-import java.io.Writer;
-import java.io.OutputStreamWriter;
-import java.io.File;
-import java.net.URL;
-import java.net.MalformedURLException;
-import java.util.Stack;
+import java.io.{File, IOException, OutputStream, OutputStreamWriter,
+                UnsupportedEncodingException, Writer}
+import java.net.{MalformedURLException, URL}
+import java.util.Stack
 
 /** XIncluder is a SAX <code>ContentHandler</code>
  * that writes its XML document onto an output stream after resolving
@@ -31,36 +36,36 @@ import java.util.Stack;
 class XIncluder(outs:OutputStream, encoding:String) extends Object
 with ContentHandler with LexicalHandler {
 
-  var out = new OutputStreamWriter(outs, encoding);
+  var out = new OutputStreamWriter(outs, encoding)
 
-  def setDocumentLocator(locator: Locator): Unit = {}
+  def setDocumentLocator(locator: Locator) {}
 
-  def startDocument(): Unit = {
+  def startDocument() {
     try {
       out.write("<?xml version='1.0' encoding='"
                 + encoding + "'?>\r\n");
     }
     catch {
       case e:IOException =>
-        throw new SAXException("Write failed", e);
+        throw new SAXException("Write failed", e)
     }
   }
 
-  def endDocument(): Unit = {
+  def endDocument() {
     try {
-      out.flush();
+      out.flush()
     }
     catch {
       case e:IOException =>
-        throw new SAXException("Flush failed", e);
+        throw new SAXException("Flush failed", e)
     }
   }
 
-  def startPrefixMapping(prefix: String , uri: String): Unit = {}
+  def startPrefixMapping(prefix: String , uri: String) {}
 
-  def endPrefixMapping(prefix: String): Unit = {}
+  def endPrefixMapping(prefix: String) {}
 
-  def startElement(namespaceURI: String , localName: String, qualifiedName: String , atts:Attributes ) = {
+  def startElement(namespaceURI: String, localName: String, qualifiedName: String, atts: Attributes) = {
     try {
       out.write("<" + qualifiedName);
       var i = 0; while (i < atts.getLength()) {
@@ -72,31 +77,29 @@ with ContentHandler with LexicalHandler {
         // can't support the character
         out.write(xml.Utility.escape(value))
         out.write("'");
-        i = i + 1;
+        i += 1
       }
-      out.write(">");
+      out.write(">")
     }
     catch {
       case e:IOException =>
-        throw new SAXException("Write failed", e);
+        throw new SAXException("Write failed", e)
     }
   }
 
-  def endElement(namespaceURI: String , localName:String , qualifiedName: String ): Unit = {
+  def endElement(namespaceURI: String, localName:String, qualifiedName: String) {
     try {
-      out.write("</" + qualifiedName + ">");
+      out.write("</" + qualifiedName + ">")
     }
     catch {
       case e: IOException =>
-        throw new SAXException("Write failed", e);
+        throw new SAXException("Write failed", e)
     }
-
   }
 
   // need to escape characters that are not in the given
   // encoding using character references????
-  def characters(ch: Array[char] , start: int , length: int ): Unit = {
-
+  def characters(ch: Array[Char], start: Int, length: Int) {
     try {
       var  i = 0; while (i < length) {
         val c = ch(start+i);
@@ -112,33 +115,32 @@ with ContentHandler with LexicalHandler {
     }
     catch {
       case e: IOException =>
-      throw new SAXException("Write failed", e);
+        throw new SAXException("Write failed", e);
     }
   }
 
-  def  ignorableWhitespace(ch: Array[char], start: int , length: int): Unit = {
-    this.characters(ch, start, length);
+  def  ignorableWhitespace(ch: Array[Char], start: Int , length: Int) {
+    this.characters(ch, start, length)
   }
 
   // do I need to escape text in PI????
-  def processingInstruction(target: String , data: String): Unit = {
-
+  def processingInstruction(target: String, data: String) {
     try {
-      out.write("<?" + target + " " + data + "?>");
+      out.write("<?" + target + " " + data + "?>")
     }
     catch {
       case e:IOException =>
-        throw new SAXException("Write failed", e);
+        throw new SAXException("Write failed", e)
     }
   }
 
-  def skippedEntity(name: String): Unit = {
+  def skippedEntity(name: String) {
     try {
-      out.write("&" + name + ";");
+      out.write("&" + name + ";")
     }
     catch {
       case e:IOException =>
-        throw new SAXException("Write failed", e);
+        throw new SAXException("Write failed", e)
     }
   }
 
@@ -162,39 +164,39 @@ with ContentHandler with LexicalHandler {
       }
     }
   }
-  def endDTD(): Unit =  { }
+  def endDTD() {}
 
-  def startEntity(name: String): Unit = {
-    entities.push(name);
+  def startEntity(name: String) {
+    entities.push(name)
   }
 
 
-  def endEntity(name: String): Unit = {
-    entities.pop();
+  def endEntity(name: String) {
+    entities.pop()
   }
 
-  def startCDATA(): Unit =  {}
-  def endCDATA(): Unit =  {}
+  def startCDATA() {}
+  def endCDATA() {}
 
   // Just need this reference so we can ask if a comment is
   // inside an include element or not
   private var filter: XIncludeFilter = null;
 
-  def setFilter(filter: XIncludeFilter): Unit = {
-    this.filter = filter;
+  def setFilter(filter: XIncludeFilter) {
+    this.filter = filter
   }
 
-  def comment(ch: Array[char], start: int, length: int): Unit = {
+  def comment(ch: Array[Char], start: Int, length: Int) {
 
     if (!inDTD && !filter.insideIncludeElement()) {
       try {
-        out.write("<!--");
-        out.write(ch, start, length);
-        out.write("-->");
+        out.write("<!--")
+        out.write(ch, start, length)
+        out.write("-->")
       }
       catch {
         case e:IOException =>
-          throw new SAXException("Write failed", e);
+          throw new SAXException("Write failed", e)
       }
     }
   }

@@ -11,9 +11,6 @@
 
 package scala.xml
 
-
-import compat.StringBuilder
-
 /** A hack to group XML nodes in one node for output.
  *
  *  @author  Burak Emir

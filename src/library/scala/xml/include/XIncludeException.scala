@@ -1,3 +1,13 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+// $Id$
+
 package scala.xml.include
 
 /**
@@ -20,9 +30,9 @@ class XIncludeException(message: String) extends Exception(message) {
   /**
    * uses <code>null</code> as its error detail message.
    */
-  def this() = this(null);
+  def this() = this(null)
 
-  private var rootCause: Throwable = null;
+  private var rootCause: Throwable = null
 
   /**
    * When an <code>IOException</code>, <code>MalformedURLException</code>
@@ -34,8 +44,8 @@ class XIncludeException(message: String) extends Exception(message) {
    * @param   nestedException   the underlying exception which
    caused the XIncludeException to be thrown
    */
-  def setRootCause(nestedException: Throwable ): Unit = {
-    this.rootCause = nestedException;
+  def setRootCause(nestedException: Throwable ) {
+    this.rootCause = nestedException
   }
 
   /**
@@ -46,11 +56,9 @@ class XIncludeException(message: String) extends Exception(message) {
    * This method allows you to retrieve the original exception.
    * It returns null if no such exception caused this <code>XIncludeException</code>.
    *
-   * @return   Throwable   the underlying exception which
-   caused the XIncludeException to be thrown
+   * @return Throwable   the underlying exception which caused the
+   *                     <code>XIncludeException</code> to be thrown
    */
-  def getRootCause(): Throwable = {
-    return this.rootCause;
-  }
+  def getRootCause(): Throwable = this.rootCause
 
 }

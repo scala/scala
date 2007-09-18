@@ -1,14 +1,28 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+// $Id$
+
 package scala.xml.persistent
 
-import java.io.{File,FileOutputStream}
+import java.io.{File, FileOutputStream}
 import java.nio.ByteBuffer
 import java.nio.channels.Channels
 
-/** mutable storage of immutable xml trees. Everything is kept in memory,
- *  with a thread periodically checking for changes and writing to file.
- *  To ensure atomicity, two files are used, filename1 and '$'+filename1.
- *  The implementation switches between the two, deleting the older one
- *  after a complete dump of the database has been written.
+/** <p>
+ *    Mutable storage of immutable xml trees. Everything is kept in memory,
+ *    with a thread periodically checking for changes and writing to file.
+ *    To ensure atomicity, two files are used, filename1 and '$'+filename1.
+ *    The implementation switches between the two, deleting the older one
+ *    after a complete dump of the database has been written.
+ *  </p>
+ *
+ *  @author Burak Emir
  */
 abstract class CachedFileStorage(private val file1: File)
 extends java.lang.Thread with scala.util.logging.Logged {
@@ -19,7 +33,7 @@ extends java.lang.Thread with scala.util.logging.Logged {
    */
   private var theFile: File = null
 
-  private def switch = { theFile = if( theFile == file1 ) file2 else file1; }
+  private def switch = { theFile = if (theFile == file1) file2 else file1; }
 
   /** this storage modified since last modification check */
   protected var dirty = false
@@ -49,10 +63,10 @@ extends java.lang.Thread with scala.util.logging.Logged {
   def nodes: Iterator[Node]
 
   /** adds a node, setting this.dirty to true as a side effect */
-  def += ( e:Node ): Unit
+  def += (e: Node): Unit
 
   /** removes a tree, setting this.dirty to true as a side effect */
-  def -= ( e:Node ): Unit
+  def -= (e: Node): Unit
 
   /* loads and parses XML from file */
   private def load: Iterator[Node] = {
@@ -68,13 +82,13 @@ extends java.lang.Thread with scala.util.logging.Logged {
   }
 
   /** saves the XML to file */
-  private def save = if( this.dirty ) {
+  private def save = if (this.dirty) {
     log("[save]\ndeleting "+theFile);
     theFile.delete();
     log("creating new "+theFile);
     theFile.createNewFile();
-    val fos = new FileOutputStream( theFile );
-    val c   = fos.getChannel();
+    val fos = new FileOutputStream(theFile)
+    val c   = fos.getChannel()
 
     // @todo: optimize
     val storageNode = <nodes>{ nodes.toList }</nodes>

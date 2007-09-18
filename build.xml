@@ -972,7 +972,7 @@ TEST
     />
   <!-- Build partest -->
     <mkdir dir="${strap.dir}/lib/partest"/>
-    <starr
+    <quick
       srcdir="${src.dir}/partest"
       destdir="${strap.dir}/lib/partest"
       addparams="${nsc.params}"
@@ -982,7 +982,7 @@ TEST
         <pathelement location="${strap.dir}/lib/compiler"/>
         <pathelement location="${strap.dir}/lib/actors"/>
       </classpath>
-    </starr>
+    </quick>
   <!-- Timing the build -->
     <stopwatch name="timer.strap" action="total"/>
   <!-- Copy support files to build folder and links external libraries-->

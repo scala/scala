@@ -1,24 +1,34 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+// $Id$
+
 package scala.xml.include.sax
 
-import org.xml.sax.Attributes;
-import org.xml.sax.SAXException;
-import org.xml.sax.XMLReader;
-import org.xml.sax.EntityResolver;
-import org.xml.sax.Locator;
-import org.xml.sax.helpers.XMLReaderFactory;
-import org.xml.sax.helpers.XMLFilterImpl;
-import org.xml.sax.helpers.NamespaceSupport;
-import org.xml.sax.helpers.AttributesImpl;
+import org.xml.sax.Attributes
+import org.xml.sax.SAXException
+import org.xml.sax.XMLReader
+import org.xml.sax.EntityResolver
+import org.xml.sax.Locator
+import org.xml.sax.helpers.XMLReaderFactory
+import org.xml.sax.helpers.XMLFilterImpl
+import org.xml.sax.helpers.NamespaceSupport
+import org.xml.sax.helpers.AttributesImpl
 
-import java.net.URL;
-import java.net.URLConnection;
-import java.net.MalformedURLException;
-import java.io.UnsupportedEncodingException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.BufferedInputStream;
-import java.io.InputStreamReader;
-import java.util.Stack;
+import java.net.URL
+import java.net.URLConnection
+import java.net.MalformedURLException
+import java.io.UnsupportedEncodingException
+import java.io.IOException
+import java.io.InputStream
+import java.io.BufferedInputStream
+import java.io.InputStreamReader
+import java.util.Stack
 
 /**
  * <p>
@@ -118,7 +128,7 @@ class XIncludeFilter extends XMLFilterImpl {
 
 
   // necessary to throw away contents of non-empty XInclude elements
-  private var level = 0;
+  private var level = 0
 
   /**
     * <p>
@@ -132,13 +142,10 @@ class XIncludeFilter extends XMLFilterImpl {
     *
     * @return boolean
     */
-  def insideIncludeElement(): boolean  = {
-    return level != 0;
-  }
+  def insideIncludeElement(): boolean = level != 0
 
-
-  override def startElement(uri: String, localName: String, qName: String, atts1: Attributes): Unit = {
-    var atts = atts1;
+  override def startElement(uri: String, localName: String, qName: String, atts1: Attributes) {
+    var atts = atts1
     if (level == 0) { // We're not inside an xi:include element
 
       // Adjust bases stack by pushing either the new
@@ -199,28 +206,26 @@ class XIncludeFilter extends XMLFilterImpl {
 
   }
 
-  override def endElement (uri: String , localName: String , qName: String ): Unit = {
-
+  override def endElement (uri: String, localName: String, qName: String ) {
     if (uri.equals(XINCLUDE_NAMESPACE)
         && localName.equals("include")) {
-          level = level - 1;
+          level -= 1;
         }
     else if (level == 0) {
       bases.pop();
       super.endElement(uri, localName, qName);
     }
-
   }
 
   private var depth = 0;
 
-  override def startDocument(): Unit = {
+  override def startDocument() {
     level = 0;
     if (depth == 0) super.startDocument();
-    depth = depth + 1;
+    depth += 1
   }
 
-  override def endDocument(): Unit = {
+  override def endDocument() {
     locators.pop();
     bases.pop(); // pop the URL for the document itself
     depth = depth - 1;
@@ -346,7 +351,7 @@ class XIncludeFilter extends XMLFilterImpl {
 
   }
 
-  private var atRoot = false;
+  private var atRoot = false
 
   /**
     * <p>
@@ -360,11 +365,11 @@ class XIncludeFilter extends XMLFilterImpl {
     * @throws SAXException if the requested document cannot
                            be downloaded from the specified URL.
     */
-  private def includeXMLDocument(url: String): Unit = {
-    var source: URL = null;
+  private def includeXMLDocument(url: String) {
+    var source: URL = null
     try {
-      val base = bases.peek().asInstanceOf[URL];
-      source = new URL(base, url);
+      val base = bases.peek().asInstanceOf[URL]
+      source = new URL(base, url)
     }
     catch {
       case e:MalformedURLException =>
@@ -376,7 +381,7 @@ class XIncludeFilter extends XMLFilterImpl {
 
     try {
       // make this more robust
-      var parser: XMLReader = null;
+      var parser: XMLReader = null
       try {
         parser = XMLReaderFactory.createXMLReader();
       } catch {
@@ -391,30 +396,30 @@ class XIncludeFilter extends XMLFilterImpl {
           }
       }
       if(parser != null) {
-        parser.setContentHandler(this);
-        val resolver = this.getEntityResolver();
+        parser.setContentHandler(this)
+        val resolver = this.getEntityResolver()
         if (resolver != null) parser.setEntityResolver(resolver);
         // save old level and base
-        val previousLevel = level;
-        this.level = 0;
+        val previousLevel = level
+        this.level = 0
         if (bases.contains(source)) {
           val e = new CircularIncludeException(
             "Circular XInclude Reference to " + source + getLocation()
           );
-          throw new SAXException("Circular XInclude Reference", e);
+          throw new SAXException("Circular XInclude Reference", e)
         }
-        bases.push(source);
-        atRoot = true;
-        parser.parse(source.toExternalForm());
+        bases.push(source)
+        atRoot = true
+        parser.parse(source.toExternalForm())
         // restore old level and base
-        this.level = previousLevel;
-        bases.pop();
+        this.level = previousLevel
+        bases.pop()
       }
     }
     catch {
       case e:IOException =>
         throw new SAXException("Document not found: "
-                               + source.toExternalForm() + getLocation(), e);
+                               + source.toExternalForm() + getLocation(), e)
     }
 
   }

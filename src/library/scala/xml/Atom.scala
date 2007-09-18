@@ -11,8 +11,6 @@
 
 package scala.xml
 
-import compat.StringBuilder
-
 /** The class <code>Atom</code> provides an XML node for text (PCDATA).
  *  It is used in both non-bound and bound XML representations.
  *

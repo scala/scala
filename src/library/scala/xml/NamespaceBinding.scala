@@ -12,7 +12,6 @@
 package scala.xml
 
 import Predef._
-import compat.StringBuilder
 
 /** The class <code>NamespaceBinding</code> represents namespace bindings
  *  and scopes. The binding for the default namespace is treated as a null

@@ -11,8 +11,6 @@
 
 package scala.xml
 
-import compat.StringBuilder
-
 /** <p>
  *    Attribute information item, and linked list of attribute information items.
  *    These are triples consisting of <code>prefix,key,value</code>. To obtain

@@ -1,3 +1,13 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+// $Id$
+
 package scala.xml.include.sax
 
 import org.xml.sax.SAXException
@@ -16,21 +26,21 @@ object Main {
       * @param args  contains the URLs and/or filenames
       *              of the documents to be procesed.
       */
-    def main(args: Array[String]): Unit = {
-      var parser: XMLReader = null;
-      var err = false;
+    def main(args: Array[String]) {
+      var parser: XMLReader = null
+      var err = false
       try {
-        parser = XMLReaderFactory.createXMLReader();
+        parser = XMLReaderFactory.createXMLReader()
       }
       catch {
         case e:SAXException =>
           try {
             parser = XMLReaderFactory.createXMLReader(
-              "org.apache.xerces.parsers.SAXParser");
+              "org.apache.xerces.parsers.SAXParser")
           } catch {
             case e2:SAXException =>
-              System.err.println("Could not find an XML parser");
-            err = true;
+              System.err.println("Could not find an XML parser")
+              err = true
           }
       }
 
@@ -61,7 +71,7 @@ object Main {
         }
         arg = 2;
       }
-      if(err) return;
+      if (err) return;
 
       while (arg < args.length) {
         try {
@@ -83,14 +93,14 @@ object Main {
         }
         catch {
           case e:SAXParseException =>
-            System.err.println(e);
+            System.err.println(e)
             System.err.println("Problem in " + e.getSystemId()
-                               + " at line " + e.getLineNumber());
+                               + " at line " + e.getLineNumber())
           case e: Exception => // be specific about exceptions????
-            System.err.println(e);
-            e.printStackTrace();
+            System.err.println(e)
+            e.printStackTrace()
         }
-        arg = arg + 1;
+        arg += 1
       }
     }
 }

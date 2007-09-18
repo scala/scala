@@ -1,8 +1,16 @@
-package scala.xml.include.sax;
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
 
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.InputStream;
+// $Id$
+
+package scala.xml.include.sax
+
+import java.io.{IOException, InputStreamReader, InputStream}
 
 /**
  * <p>
@@ -13,8 +21,10 @@ import java.io.InputStream;
  * If it fails to determine the type of the encoding,
  * it returns the default UTF-8.
  * </p>
+ * <p>
+ *   Translated from Elliotte Rusty Harold's Java source
+ * </p>
  *
- * translated from Elliotte Rusty Harold's Java source
  * @author Burak Emir
  */
 object EncodingHeuristics {

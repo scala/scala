@@ -12,7 +12,6 @@
 package scala.xml
 
 import scala.collection.Map
-import compat.StringBuilder
 
 /** Class for pretty printing. After instantiating, you can use the
  *  toPrettyXML methods to convert XML to a formatted string. The class

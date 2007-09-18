@@ -10,8 +10,6 @@
 
 package scala.xml
 
-// $Id$
-
 /** <p>
  *    Use this class to match on (unprefixed) attribute values
  *  <p><pre>
