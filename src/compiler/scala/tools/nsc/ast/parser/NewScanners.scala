@@ -386,13 +386,19 @@ trait NewScanners {
         case '\'' =>
           in.error(offset, "empty character literal")
           value(CHARLIT, 0.toChar)
-        case c if (Character.isUnicodeIdentifierStart(c)||isIdentifierPart(c)||isOperatorPart(c)) && in.head != '\'' => // symbol
+        case '\\' => endQ(escapeCode(offset))
+        case c if (Character.isUnicodeIdentifierStart(c)) && in.head != '\'' =>
           in.scratch.setLength(0)
           in.scratch append c
-          in.readWhile(c => isIdentifierPart(c) || isOperatorPart(c))
+          getIdentRest
           if (in.readIfStartsWith('\'')) in.error(offset, "unexpected quote after symbol")
           value(SYMBOLLIT, in.scratch.toString)
-        case '\\' => endQ(escapeCode(offset))
+        case c if isSpecial(c) && in.head != '\'' =>
+          in.scratch.setLength(0)
+          in.scratch append(c)
+          getOperatorRest
+          if (in.readIfStartsWith('\'')) in.error(offset, "unexpected quote after symbol")
+          value(SYMBOLLIT, in.scratch.toString)
         case c => endQ(c)
         }
       case '\"' =>
