@@ -472,7 +472,7 @@ abstract class GenerateIdeMaps extends SubComponent {
           case (p : OffsetPosition, sym) =>
             (p.offset0, if (sym.sourceFile == unit.source.file) {
               // internal reference
-              if (!sym.pos.offset.isDefined) Console.println("ERROR: " + sym + " in " + sym.sourceFile)
+              if (!sym.pos.offset.isDefined) scala.Console.println("ERROR: " + sym + " in " + sym.sourceFile)
               ":" + sym.pos.offset.getOrElse(0)
             } else {
               val url = sym2url(sym)
