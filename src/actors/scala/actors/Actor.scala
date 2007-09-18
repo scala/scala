@@ -57,7 +57,7 @@ object Actor {
   }
 
   /**
-   * Removes any reference to an <code>ActorProxy</code>
+   * Removes any reference to an <code>Actor</code> instance
    * currently stored in thread-local storage.
    *
    * This allows to release references from threads that are
@@ -65,10 +65,8 @@ object Actor {
    * a thread pool). Permanent references in thread-local storage
    * are a potential memory leak.
    */
-  def clearProxy {
-    val a = tl.get.asInstanceOf[Actor]
-    if ((null ne a) && a.isInstanceOf[ActorProxy])
-      tl.set(null)
+  def clearSelf {
+    tl.set(null)
   }
 
   /**
