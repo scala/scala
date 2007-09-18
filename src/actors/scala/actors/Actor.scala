@@ -57,6 +57,21 @@ object Actor {
   }
 
   /**
+   * Removes any reference to an <code>ActorProxy</code>
+   * currently stored in thread-local storage.
+   *
+   * This allows to release references from threads that are
+   * potentially long-running or being re-used (e.g. inside
+   * a thread pool). Permanent references in thread-local storage
+   * are a potential memory leak.
+   */
+  def clearProxy {
+    val a = tl.get.asInstanceOf[Actor]
+    if ((null ne a) && a.isInstanceOf[ActorProxy])
+      tl.set(null)
+  }
+
+  /**
    * <p>This function is used for the definition of actors.</p>
    * <p>The following example demonstrates its usage:</p><pre>
    * import scala.actors.Actor._
