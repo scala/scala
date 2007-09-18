@@ -216,9 +216,11 @@ class Global(var settings: Settings, var reporter: Reporter) extends Trees
     getSourceFile(ret.sourceFile)
   }
 
-  val loaders = new SymbolLoaders {
+  class GlobalSymbolLoaders extends SymbolLoaders {
     val global: Global.this.type = Global.this
   }
+
+  val loaders = new GlobalSymbolLoaders
 
   def rootLoader: LazyType =
     if (forMSIL) new loaders.NamespaceLoader(classPath.root)
