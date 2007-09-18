@@ -46,9 +46,10 @@ trait ModelExtractor {
     }
 
   protected def decodeComment(comment0 : String) : Comment = {
-    assert(comment0.startsWith("/**"))
-    assert(comment0.endsWith("*/"))
-    val comment = comment0.substring("/**".length, comment0.length - "*/".length)
+    //Console.println("COMMENT: " + comment0)
+  //  assert(comment0.startsWith("/**"))
+//    assert(comment0.endsWith("*/"))
+    val comment = comment0 // .substring("/**".length, comment0.length - "*/".length)
     val tok = new java.util.StringTokenizer(comment, LINE_SEPARATOR)
     val buf = new StringBuilder
     type AttrDescr = (String, String, StringBuilder)
