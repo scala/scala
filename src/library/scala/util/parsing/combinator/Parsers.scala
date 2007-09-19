@@ -268,6 +268,32 @@ trait Parsers {
       override def toString = "|"
     }
 
+    /** A parser combinator for alternative with longest match composition
+     *
+     *<p>`p ||| q' succeeds if `p' succeeds or `q' succeeds
+     *          If `p' and `q' both succeed, the parser that consumed the most
+     *          characters accepts.</p>
+     *
+     * @param q a parser that accepts if p consumes less characters.
+     * @return a `Parser' that returns the result of the parser consuming the most characteres (out of `p' and `q').
+     */
+    def ||| [U >: T](q: => Parser[U]): Parser[U] = new Parser[U] {
+      def apply(in: Input) = {
+        val res1 = Parser.this(in)
+        val res2 = q(in)
+
+        (res1, res2) match {
+          case (s1 @ Success(_, next1), s2 @ Success(_, next2)) => if (next2.pos < next1.pos) s1 else s2
+          case (s1 @ Success(_, _), _) => s1
+          case (_, s2 @ Success(_, _)) => s2
+          case (e1 @ Error(_, _), _) => e1
+          case (f1 @ Failure(_, next1), f2 @ Failure(_, next2)) => if (next2.pos < next1.pos) f1 else f2
+          case (f1 @ Failure(_, next1), e2 @ Error(_, next2)) => if (next2.pos < next1.pos) f1 else e2
+        }
+      }
+      override def toString = "|||"
+    }
+
     /** A parser combinator for function application
      *
      *<p>`p ^^ f' succeeds if `p' succeeds; it returns `f' applied to the result of `p'.</p>
@@ -465,6 +491,32 @@ trait Parsers {
         }
       }
       override def toString = "|"
+    }
+
+    /** A parser combinator for alternative with longest match composition
+     *
+     *<p>`p ||| q' succeeds if `p' succeeds or `q' succeeds
+     *          If `p' and `q' both succeed, the parser that consumed the most
+     *          characters accepts.</p>
+     *
+     * @param q a parser that accepts if p consumes less characters.
+     * @return a `Parser' that returns the result of the parser consuming the most characteres (out of `p' and `q').
+     */
+    def ||| [Q <% UnitParser](q: => Q): UnitParser = new UnitParser {
+      def apply(in: Input) = {
+        val res1 = UnitParser.this(in)
+        val res2 = q(in)
+
+        (res1, res2) match {
+          case (s1 @ Success(_, next1), s2 @ Success(_, next2)) => if (next2.pos < next1.pos) s1 else s2
+          case (s1 @ Success(_, _), _) => s1
+          case (_, s2 @ Success(_, _)) => s2
+          case (e1 @ Error(_, _), _) => e1
+          case (f1 @ Failure(_, next1), f2 @ Failure(_, next2)) => if (next2.pos < next1.pos) f1 else f2
+          case (f1 @ Failure(_, next1), e2 @ Error(_, next2)) => if (next2.pos < next1.pos) f1 else e2
+        }
+      }
+      override def toString = "|||"
     }
 
 
