@@ -77,13 +77,13 @@ trait Parsers extends NewScanners with MarkupParsers {
         xmlp0 = new MarkupParser(this, true)
       xmlp0
     }
-    private var xmlp0: MarkupParser = null
-    def xmlLiteral : Tree = xmlp.xLiteral
-    def xmlLiteralPattern : Tree = xmlp.xLiteralPattern
-    object symbXMLBuilder extends SymbolicXMLBuilder(treeBuilder, UnitParser.this, true) { // DEBUG choices
+    object symbXMLBuilder extends SymbolicXMLBuilder(treeBuilder, this, true) { // DEBUG choices
       val global: Parsers.this.global.type = Parsers.this.global
       def freshName(prefix: String): Name = UnitParser.this.freshName(NoPosition, prefix)
     }
+    private var xmlp0: MarkupParser = null
+    def xmlLiteral : Tree = xmlp.xLiteral
+    def xmlLiteralPattern : Tree = xmlp.xLiteralPattern
   }
   // parser constants, here so they don't pollute parser debug listing
   private object ParserConfiguration {

@@ -270,6 +270,11 @@ abstract class SymbolLoaders {
   protected def completeSourcefile(root : Symbol, loader : SourcefileLoader)(f : => Unit) : Unit = f
 
   class ClassfileLoader(val classFile: AbstractFile, override val sourceFile: AbstractFile, sourcePath0: AbstractFile) extends SymbolLoader {
+    if (sourcePath0 == null) {
+      assert(true)
+      assert(true)
+    }
+
     private object classfileParser extends ClassfileParser {
       val global: SymbolLoaders.this.global.type = SymbolLoaders.this.global
       override def sourcePath = sourcePath0 /* could be null */

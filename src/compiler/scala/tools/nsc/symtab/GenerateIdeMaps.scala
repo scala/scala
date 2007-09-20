@@ -383,7 +383,7 @@ abstract class GenerateIdeMaps extends SubComponent {
     })
   }
 
-  def sym2url(sym : Symbol) : String = {
+  def sym2url(sym : Symbol) : String = try {
     assert(!isRoot(sym))
     assert(sym != sym.owner)
     if (sym.isModuleClass) {
@@ -401,7 +401,12 @@ abstract class GenerateIdeMaps extends SubComponent {
       if (sym.isMethod) methodSig(sym.info)
       else if (!sym.name.isTypeName) ";" else ""
     }
+  } catch {
+    case e : Throwable =>
+      e.printStackTrace
+      throw new Error("Could not convert " + sym.fullNameString + " to URL")
   }
+
   def url2sym(paths : List[String], owner : Symbol) : Symbol = {
     if (paths.isEmpty) owner
     else {

@@ -599,7 +599,9 @@ trait MarkupParsers {self: Parsers =>
     def xEmbeddedExpr: Tree = {
       xEmbeddedBlock = false
       parser.in.resume(LBRACE)
+      parser.in.sepRegions = RBRACE :: parser.in.sepRegions
       val b = parser.block() //p.expr(true,false);
+      parser.in.sepRegions = parser.in.sepRegions.tail
       if (parser.in.token != RBRACE) {
         input = parser.in.flush
         reportSyntaxError(" expected end of Scala block")
