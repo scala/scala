@@ -39,6 +39,8 @@ class MessageQueue {
   // last == null iff list empty
   var last: MessageQueueElement = null
 
+  def isEmpty = null eq last
+
   def append(msg: Any, session: OutputChannel[Any]) = {
     if (null eq last) { // list empty
       val el = new MessageQueueElement

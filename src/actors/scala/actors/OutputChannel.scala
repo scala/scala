@@ -17,7 +17,7 @@ package scala.actors
  * @version 0.9.9
  * @author Philipp Haller
  */
-trait OutputChannel[Msg] {
+trait OutputChannel[-Msg] {
 
   /**
    * Sends <code>msg</code> to this

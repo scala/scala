@@ -353,6 +353,44 @@ trait Actor extends OutputChannel[Any] {
     result
   }
 
+/*
+  def receiveFrom[T, R](sendr: Sender[T], f: PartialFunction[Any, R]): R = {
+    assert(Actor.self == this, "receive from channel belonging to other actor")
+    if (shouldExit) exit() // links
+    this.synchronized {
+      tick()
+
+        val tested = new Queue[MessageQueueElement]
+        var tryMore = true
+        while (tryMore) {
+          val qel = mailbox.extractFirst((m: Any) => f.isDefinedAt(m))
+          if (null eq qel) {
+            // either mailbox empty or no match
+            tryMore = false
+            waitingFor = f.isDefinedAt
+            isSuspended = true
+            suspendActor()
+          } else {
+            if (qel.session.isInstanceOf[OutputChannel[T]]) {
+              received = Some(qel.msg)
+              sessions = qel.session :: sessions
+            } else {
+              // no match
+              tested += qel
+
+            }
+          }
+        }
+
+      waitingFor = waitingForNone
+      isSuspended = false
+    }
+    val result = f(received.get)
+    sessions = sessions.tail
+    result
+  }
+*/
+
   /**
    * Receives a message from this actor's mailbox within a certain
    * time span.
@@ -501,6 +539,12 @@ trait Actor extends OutputChannel[Any] {
     }
   }
 
+/*
+  def !?[R](msg: Any, res: OutputChannel[R]): R = {
+
+  }
+*/
+
   /**
    * Sends <code>msg</code> to this actor and awaits reply
    * (synchronous) within <code>msec</code> milliseconds.
@@ -577,7 +621,8 @@ trait Actor extends OutputChannel[Any] {
 
   private var rc: Channel[Any] = null
   private[actors] def replyChannel = rc
-  private[actors] def freshReplyChannel = { rc = new Channel[Any](this); rc }
+  private[actors] def freshReplyChannel: Channel[Any] =
+    { rc = new Channel[Any](this); rc }
 
   /**
    * Receives the next message from this actor's mailbox.
