@@ -122,6 +122,15 @@ object Test {
     Console.println(x);
   }
 
+  def withValue2: Unit = {
+    val x = try {
+      null
+    } finally {
+      Console.println("droped a null");
+    };
+    Console.println(x);
+  }
+
   def tryFinallyTry: Unit = {
     try {
       ()
@@ -245,6 +254,9 @@ object Test {
 
     Console.println("withValue1:");
     execute(withValue1);
+
+    Console.println("withValue2:");
+    execute(withValue2);
 
     Console.println("method2:");
     execute(method2);
