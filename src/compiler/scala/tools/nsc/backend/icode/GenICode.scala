@@ -1048,6 +1048,9 @@ abstract class GenICode extends SubComponent  {
       } else if (from == SCALA_ALLREF) {
         ctx.bb.emit(DROP(from))
         ctx.bb.emit(CONSTANT(Constant(null)))
+      } else (from, to) match  {
+        case (BYTE, LONG) | (SHORT, LONG) | (CHAR, LONG) | (INT, LONG) => ctx.bb.emit(CALL_PRIMITIVE(Conversion(INT, LONG)))
+        case _ => ()
       }
     }
 
