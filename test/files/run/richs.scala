@@ -53,6 +53,13 @@ object RichIntTest extends RichTest {
     println(length(m to n))
     println(length(n until m))
     println(length(n to m))
+
+    println(16.toBinaryString) // should be "10000"
+    println(16.toHexString)    // should be "10"
+    println(16.toOctalString)  // should be "20"
+
+    println(65537.toHexString) // should be "10001"
+    println((-1).toHexString)  // should be "ffffffff"
   }
 }
 object RichStringTest1 extends RichTest {

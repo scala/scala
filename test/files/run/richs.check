@@ -12,6 +12,11 @@ RichIntTest:
 13
 0
 0
+10000
+10
+20
+10001
+ffffffff
 
 RichStringTest1:
 s1: abc
