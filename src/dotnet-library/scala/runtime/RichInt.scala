@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id$
+// $Id: RichInt.scala 12529 2007-08-14 14:02:27Z michelou $
 
 
 package scala.runtime
@@ -33,7 +33,7 @@ final class RichInt(start: Int) extends Proxy with Ordered[Int] {
   def max(that: Int): Int = if (start > that) start else that
   def abs: Int = if (start < 0) -start else start
 
-  def toBinaryString: String = java.lang.Integer.toBinaryString(start)
-  def toHexString: String = java.lang.Integer.toHexString(start)
-  def toOctalString: String = java.lang.Integer.toOctalString(start)
+  def toBinaryString: String = System.Convert.ToString(start, 2)
+  def toHexString: String = System.Convert.ToString(start, 16)
+  def toOctalString: String = System.Convert.ToString(start, 8)
 }
