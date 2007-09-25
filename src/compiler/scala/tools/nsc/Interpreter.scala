@@ -351,11 +351,13 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     reporter.withIncompleteHandler((pos,msg) => {justNeedsMore = true}) {
       // simple parse: just parse it, nothing else
       def simpleParse(code: String): List[Tree] = {
+        //Console.println("CODE<<" + code + ">>")
         val unit =
           new CompilationUnit(
             new BatchSourceFile("<console>", code.toCharArray()))
         val scanner = new compiler.syntaxAnalyzer.UnitParser(unit);
         val xxx = scanner.templateStatSeq;
+        Console println xxx._2
         xxx._2
       }
 

@@ -21,6 +21,7 @@ trait NewScanners {
 
     def offset : Int
     def error(offset : Int, msg : String) : Unit
+    def incompleteError(offset : Int, msg : String) : Unit = error(offset, msg)
     def textFor(from : Int, until : Int) : RandomAccessSeq[Char]
   }
   trait ScannerInput extends CoreScannerInput {
@@ -226,7 +227,7 @@ trait NewScanners {
     implicit def in : CoreScannerInput
     ScannerConfiguration.hashCode // forces initialization
     import ScannerConfiguration._
-    var xmlOk = false
+    var xmlOk = true
 
     def iterator = new Iterator[(Int,Int,Int)] { // offset,length,code
       val current = new TokenHolder
@@ -328,7 +329,7 @@ trait NewScanners {
 
           var count = 0
           if (!empty) while (count != -1) in.next match {
-          case SU => in.error(offset, "unterminated comment"); count = -1
+          case SU => in.incompleteError(offset, "unterminated comment"); count = -1
           case '*' if in.readIfStartsWith('/') => count -= 1
           case '/' if in.readIfStartsWith('*') => count += 1
           case c =>
@@ -407,7 +408,7 @@ trait NewScanners {
             // multiline
             in.scratch setLength 0
             while (in.next match {
-            case SU if !in.isUnicode => in.error(offset, "unterminated multi-line string"); false
+            case SU if !in.isUnicode => in.incompleteError(offset, "unterminated multi-line string"); false
             case '\"' if in.readIfStartsWith('\"') =>
               if (in.readIfStartsWith('\"')) false
               else {
@@ -869,6 +870,8 @@ trait NewScanners {
     implicit val in =
       new DefaultInput(new NewCharArrayReader(unit.source.asInstanceOf[BatchSourceFile].content, !settings.nouescape.value, error)) {
         override def error(offset : Int, msg : String) : Unit = UnitScanner.this.error(offset, msg)
+        override def incompleteError(offset : Int, msg : String) =
+          unit.incompleteInputError(new OffsetPosition(unit.source, offset), msg)
       }
     init
     private def error(offset : Int, msg : String) : Unit = unit.error(new OffsetPosition(unit.source,offset), msg)
