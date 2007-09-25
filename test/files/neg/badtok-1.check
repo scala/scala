@@ -1,4 +1,7 @@
-badtok-1.scala:2: error: unexpected quote after symbol
+badtok-1.scala:2: error: expected class or object definition
 '42'
 ^
-one error found
+badtok-1.scala:2: error: unclosed character literal
+'42'
+    ^
+two errors found

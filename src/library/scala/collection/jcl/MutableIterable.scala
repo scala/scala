@@ -86,7 +86,14 @@ trait MutableIterable[A] extends scala.Collection[A] {
     }
     override def filter(p0 : A => Boolean) : MutableIterable.Projection[A] =
       MutableIterable.this.projection.filter(a => p(a) && p0(a));
-    def elements = MutableIterable.this.elements.filter(p);
+    def elements = {
+      val i = MutableIterable.this.elements.filter(p);
+      new MutableIterator[A] {
+	def next = i.next
+	def hasNext = i.hasNext
+	def remove : Unit = throw new Error
+      }
+    }
     def size = size0;
   }
 }

@@ -60,8 +60,8 @@ trait SortedSet[A] extends scala.collection.SortedSet[A] with jcl.Set[A] with So
     if (from == None && until == None) throw new IllegalArgumentException;
     if (from != None && until != None && !(SortedSet.this.compare(from.get, until.get) < 0))
       throw new IllegalArgumentException;
-    override def elements : MutableIterator[A] =
-      new RangeIterator(SortedSet.this.elements.buffered0);
+    //override def elements : MutableIterator[A] =
+    //  new RangeIterator(SortedSet.this.elements.buffered0);
     private def contains1(key : A) =
       (from == None || (compare(from.get,key) <= 0)) &&
         (until == None || (compare(key,until.get) < 0));
@@ -73,6 +73,7 @@ trait SortedSet[A] extends scala.collection.SortedSet[A] with jcl.Set[A] with So
       if (until != None && compare(this.until.get, until.get) < 0) return rangeImpl(from, this.until);
       SortedSet.this.rangeImpl(from, until);
     }
+    /*
     class RangeIterator(underlying : MutableIterator[A]#Buffered) extends MutableIterator[A] {
       if (from != None)
         underlying.seekNext(a => compare(from.get, a) <= 0);
@@ -87,6 +88,6 @@ trait SortedSet[A] extends scala.collection.SortedSet[A] with jcl.Set[A] with So
       case None => throw new NoSuchElementException;
       }
       def remove = underlying.remove;
-    }
+    }*/
   }
 }

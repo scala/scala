@@ -27,10 +27,12 @@ object MutableIterator {
 trait MutableIterator[A] extends Iterator[A] {
   def remove : Unit;
 
+  /* filter doesnt' support remove yet.
   override def filter(f : A => Boolean) : MutableIterator[A] = {
     val buffered = this.buffered0;
     new buffered.Filter(f);
   }
+  */
 
   override def map[B](f: A => B) : MutableIterator[B] = new Map(f);
   /** A type-safe version of contains.
@@ -59,51 +61,10 @@ trait MutableIterator[A] extends Iterator[A] {
     changed;
   }
 
-  private[jcl] def buffered0 : MutableIterator[A]#Buffered = new BufferedImpl;
-
   /** Standard implementation of a mapped iterator. **/
   class Map[B](f : A => B) extends MutableIterator[B] {
-    def hasNext = MutableIterator.this.hasNext;
-    def next = f(MutableIterator.this.next);
-    def remove = MutableIterator.this.remove;
-  }
-
-  private[jcl] trait Buffered extends MutableIterator[A] {
-    private[jcl] override def buffered0 : this.type = this;
-    private[jcl] def peekNext : A;
-    private[jcl] def seekNext(f : A => Boolean) : Option[A] = {
-      while (hasNext && !f(peekNext)) next;
-      if (hasNext) Some(peekNext) else None;
-    }
-    class Filter(p : A => Boolean) extends MutableIterator[A] {
-      // XXX: broken
-      private[jcl] def peekNext = Buffered.this.seekNext(p) match {
-      case Some(result) => result;
-      case None => throw new Predef.NoSuchElementException;
-      }
-      override def next = {
-        val ret = peekNext; val ret0 = Buffered.this.next; Predef.assert(ret == ret0); ret;
-      }
-      override def hasNext : Boolean = seekNext(p) != None;
-      override def remove : Unit = Buffered.this.remove;
-    }
-  }
-
-  private[jcl] class BufferedImpl extends Buffered {
-    protected var head : A = _;
-    protected def underlying = MutableIterator.this;
-    private[jcl] def peekNext = {
-      if (head == null) head = underlying.next;
-      head;
-    }
-    override def hasNext = head != null || underlying.hasNext;
-    override def next = {
-      val ret = peekNext; head = null.asInstanceOf[A]; ret;
-    }
-    override def remove = {
-      if (head != null) throw new Predef.NoSuchElementException;
-      underlying.remove;
-    }
-    override def toString = "buffered[" + underlying + "]";
+    def hasNext = MutableIterator.this.hasNext
+    def next = f(MutableIterator.this.next)
+    def remove = MutableIterator.this.remove
   }
 }

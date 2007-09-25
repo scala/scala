@@ -131,7 +131,7 @@ trait Namers { self: Analyzer =>
         if ((prev ne null) && prev.owner == context.scope && conflict(sym, prev.sym)) {
            doubleDefError(sym.pos, prev.sym)
            if (!inIDE) sym setInfo ErrorType // don't do this in IDE for stability
-           context.scope unlink prev.sym
+           if (!inIDE) context.scope unlink prev.sym // let them co-exist...
            context.scope enter sym
         } else context.scope enter sym
       } else context.scope enter sym

@@ -89,8 +89,15 @@ trait Map[K,E] extends MutableIterable[Tuple2[K,E]] with scala.collection.mutabl
   override def filterKeys(p : K => Boolean) : Map.Projection[K,E] = new Filter(p);
 
   protected class Filter(p : K => Boolean) extends Map.Projection[K,E] {
-    override def elements = Map.this.elements.filter(e => p(e._1));
-    override def removeKey(key : K) = {
+    override def elements = {
+      val i = Map.this.elements.filter(e => p(e._1));
+      new MutableIterator[(K,E)] {
+        def next = i.next
+        def hasNext = i.hasNext
+        def remove : Unit = throw new Error
+      }
+    }
+   override def removeKey(key : K) = {
       if (!p(key)) throw new IllegalArgumentException;
       Map.this.removeKey(key);
     }
