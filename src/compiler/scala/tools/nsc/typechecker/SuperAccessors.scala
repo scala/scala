@@ -329,6 +329,9 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
      *  A special case arises for classes with explicit self-types. If the
      *  self type is a Java class, and a protected accessor is needed, we issue
      *  an error. If the self type is a Scala class, we don't add an accessor.
+     *  An accessor is not needed if the access boundary is larger than the
+     *  enclosing package, since that translates to 'public' on the host system.
+     *  (as Java has no real package nesting).
      *
      * If the access happens inside a 'trait', access is more problematic since
      * the implementation code is moved to an '$class' class which does not
@@ -339,7 +342,8 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
       val res = /* settings.debug.value && */
       ((sym hasFlag PROTECTED)
        && (!validCurrentOwner || !(currentOwner.enclClass.thisSym isSubClass sym.owner))
-       && (enclPackage(sym.owner) != enclPackage(currentOwner)))
+       && (enclPackage(sym.owner) != enclPackage(currentOwner))
+       && (enclPackage(sym.owner) == sym.accessBoundary(sym.owner)))
 
       if (res) {
         val host = hostForAccessorOf(sym, currentOwner.enclClass)
