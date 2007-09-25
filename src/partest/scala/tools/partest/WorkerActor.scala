@@ -10,7 +10,7 @@
 
 package scala.tools.partest
 
-import java.io.{BufferedInputStream, BufferedReader, File, FileReader,
+import java.io.{BufferedInputStream, BufferedReader, File, FileReader, FileWriter
                 FileInputStream, FileOutputStream, InputStreamReader,
                 PrintStream, PrintWriter}
 import java.net.URL
@@ -22,7 +22,7 @@ import scala.tools.nsc.reporters.{Reporter, AbstractReporter, ConsoleReporter}
 
 class ExtConsoleReporter(override val settings: Settings, reader: BufferedReader, var writer: PrintWriter) extends ConsoleReporter(settings, reader, writer) {
   def this(settings: Settings) = {
-    this(settings, Console.in, new PrintWriter("/dev/null"))
+    this(settings, Console.in, new PrintWriter(new FileWriter("/dev/null")))
   }
   def hasWarnings: Boolean = WARNING.count != 0
 }
@@ -41,7 +41,7 @@ class WorkerActor(val master: MasterActor, val settings: Settings, var reporter:
   def newGlobal: ExtGlobal = new ExtGlobal(settings, reporter)
 
   def newGlobal(log: File): ExtGlobal = {
-    reporter = new ExtConsoleReporter(new Settings(x => ()), Console.in, new PrintWriter(log))
+    reporter = new ExtConsoleReporter(new Settings(x => ()), Console.in, new PrintWriter(new FileWriter(log)))
     reporter.shortname = true
     newGlobal
   }

@@ -177,7 +177,7 @@ object TestRunner {
             } else if (out eq con) {
               val file = new File(arg)
               if (file.isFile || file.createNewFile)
-                out = new PrintStream(file)
+                out = new PrintStream(new FileOutputStream(file))
               else {
                 println("Result file \"" + arg + "\" not found")
                 exit(1)
