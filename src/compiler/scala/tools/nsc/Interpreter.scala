@@ -357,7 +357,6 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
             new BatchSourceFile("<console>", code.toCharArray()))
         val scanner = new compiler.syntaxAnalyzer.UnitParser(unit);
         val xxx = scanner.templateStatSeq;
-        Console println xxx._2
         xxx._2
       }
 
