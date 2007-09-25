@@ -10,7 +10,7 @@
 
 package scala.tools.partest
 
-import java.io.{BufferedInputStream, BufferedReader, File, FileReader, FileWriter
+import java.io.{BufferedInputStream, BufferedReader, File, FileReader, FileWriter,
                 FileInputStream, FileOutputStream, InputStreamReader,
                 PrintStream, PrintWriter}
 import java.net.URL
