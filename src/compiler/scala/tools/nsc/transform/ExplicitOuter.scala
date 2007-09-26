@@ -9,14 +9,14 @@ package scala.tools.nsc.transform
 import symtab._
 import Flags._
 import scala.collection.mutable.{HashMap, ListBuffer}
-import matching.{TransMatcher, PatternNodes, CodeFactory, ParallelMatching, PatternMatchers}
+import matching.{TransMatcher, PatternNodes, CodeFactory, ParallelMatching}
 
 /** This class ...
  *
  *  @author  Martin Odersky
  *  @version 1.0
  */
-abstract class ExplicitOuter extends InfoTransform with TransMatcher with PatternNodes with CodeFactory with PatternMatchers with ParallelMatching with TypingTransformers {
+abstract class ExplicitOuter extends InfoTransform with TransMatcher with PatternNodes with CodeFactory with ParallelMatching with TypingTransformers {
   import global._
   import definitions._
   import posAssigner.atPos

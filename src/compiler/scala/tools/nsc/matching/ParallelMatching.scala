@@ -24,7 +24,7 @@ import collection.mutable.ListBuffer
  *  @author Burak Emir
  */
 trait ParallelMatching  {
-  self: transform.ExplicitOuter with PatternMatchers with PatternNodes with CodeFactory =>
+  self: transform.ExplicitOuter with PatternNodes with CodeFactory =>
 
   import global._
   import typer.typed
