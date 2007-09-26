@@ -79,8 +79,9 @@ trait CodeFactory {
 
   // --------- these are new
 
-
+/*
   final def renamingBind(defaultv: Set[Symbol], scrut: Symbol, ndefault: Tree) = {
+    Console.println("renamingbind "+defaultv+" "+scrut+" "+ndefault)
     if (!defaultv.isEmpty) {
       var dv: List[Symbol] = Nil
       var to: List[Symbol] = Nil
@@ -92,7 +93,7 @@ trait CodeFactory {
       tss.traverse(ndefault)
     }
   }
-
+*/
   final def emptynessCheck(vsym: Symbol) = {
     if (vsym.tpe.typeSymbol == definitions.SomeClass)  // is Some[_]
       Literal(Constant(true))

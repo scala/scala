@@ -31,31 +31,7 @@ trait TransMatcher { self: transform.ExplicitOuter with PatternNodes with Parall
   // cache these
   final val settings_debug       = settings.debug.value
   final val settings_squeeze     = settings.Xsqueeze.value == "on"
-  final val settings_useParallel = settings.Xmatchalgo.value != "incr"
-  final val settings_useIncr     = settings.Xmatchalgo.value != "par"
   final val settings_casetags    = settings.Xcasetags.value == "on"
-
-  /** returns true if apply is a "sequence apply". analyzer inserts Sequence nodes if something is a
-   *
-   *  - last update: discussion with Martin 2005-02-18
-   *
-   *  - if true, tree.fn must be ignored. The analyzer ensures that the selector will be a subtype
-   *    of fn; it thus assigns the expected type from the context (which is surely a subtype,
-   *    but may have different flags etc.
-   *
-   *  - so should be
-   *     (( tree.args.length == 1 ) && tree.args(0).isInstanceOf[Sequence])
-   *     but fails
-   */
-  final def isSeqApply(tree: Apply): Boolean = {
-    tree match {
-      case Apply(_, List(ArrayValue(_,_))) => (tree.tpe.typeSymbol.flags & Flags.CASE) == 0
-      case _ => false;
-    }
-  }
-
-    /**
-     */
 
   final def hasRegularPattern(pats1: List[Tree]): Boolean = {
     var pats = pats1; while(pats ne Nil) {
@@ -135,8 +111,16 @@ trait TransMatcher { self: transform.ExplicitOuter with PatternNodes with Parall
 
       case UnApply(fn, args) => copy.UnApply(pat, fn, args map { isRegular1 })
 
-        // a pattern of the form List(foo@_*)
-      case app @ Apply(fn, List(pat2@ ArrayValue( tt, List(b @ Bind(id, Star(wc @ Ident(nme.WILDCARD))))))) if isSeqApply(app) =>
+      /* a pattern of the form List(foo@_*), also called "sequence apply".
+       *
+       *  - last update: discussion with Martin 2005-02-18
+       *
+       *  - tree.fn must be ignored. The analyzer ensures that the selector will be a subtype
+       *    of fn; it thus assigns the expected type from the context (which is surely a subtype,
+       *    but may have different flags etc.
+       */
+      case app @ Apply(fn, List(pat2@ ArrayValue( tt, List(b @ Bind(id, Star(wc @ Ident(nme.WILDCARD))))))) if
+        (app.tpe.typeSymbol.flags & Flags.CASE) == 0 =>
         //Console.println("OPTIMIZING")
         //Console.println(pat)
         //Console.println(pat.tpe)
@@ -241,48 +225,76 @@ trait TransMatcher { self: transform.ExplicitOuter with PatternNodes with Parall
         //sel
         EmptyTree
       } else {
-
-
-
-//
-
-      implicit val theOwner = owner
-      if (settings_debug) {
-        Console.println("****")
-        Console.println("**** initalize, selector = "+selector+" selector.tpe = "+selector.tpe)
-        Console.println("****    doCheckExhaustive == "+doCheckExhaustive)
-      }
-
-      implicit val rep = new RepFactory(handleOuter)
-      try {
-        val irep = initRep(selector, cases, doCheckExhaustive, rep)
-        val root = irep.temp.head
-
-        implicit val fail: Tree = ThrowMatchError(selector.pos, mkIdent(root))
-        val vdef = typed{ValDef(root, selector)}
-
-        val mch  = typed{repToTree(irep)}
-        var dfatree = typed{squeezedBlock(List(vdef), mch)}
-
-        //DEBUG("**** finished\n"+dfatree.toString)
-        var bx = 0; var cs = cases; while(cs ne Nil) {
-          if(!rep.isReached(bx)) {
-            cunit.error(cs.head.asInstanceOf[CaseDef].body.pos, "unreachable code")
-          }
-          cs = cs.tail
-          bx += 1
+        implicit val theOwner = owner
+        if (settings_debug) {
+          Console.println("****")
+          Console.println("**** initalize, selector = "+selector+" selector.tpe = "+selector.tpe)
+          Console.println("****    doCheckExhaustive == "+doCheckExhaustive)
         }
-        dfatree = rep.cleanup(dfatree)
-        resetTrav.traverse(dfatree)
 
-        //constructParallel(cases) // ZZZ
-        return dfatree
-      } catch {
-        case e => e.printStackTrace(); throw new FatalError(e.getMessage())
-      }
+        implicit val rep = new RepFactory(handleOuter)
+        try {
 
+          val tmps = new ListBuffer[Symbol]
+          val vds  = new ListBuffer[Tree]
+          var root:Symbol = newVar(selector.pos, selector.tpe)
+          if (!doCheckExhaustive)
+            root.setFlag(symtab.Flags.TRANS_FLAG)
+
+          var vdef:Tree        = typed{ValDef(root, selector)}
+          var theFailTree:Tree = ThrowMatchError(selector.pos, mkIdent(root))
+
+          if(definitions.isTupleType(selector.tpe)) selector match {
+            case app @ Apply(fn, args)
+            if (fn.symbol eq selector.tpe.decls.lookup(nme.CONSTRUCTOR)) &&
+              (cases forall { x => x match {
+                case CaseDef(Apply(fn, pargs),_,_) => true ;
+                case CaseDef(Ident(nme.WILDCARD),_,_) => true  ;
+                case _ => false
+              }}) =>
+              var i = 0
+              var as = args
+              while(as ne Nil) {
+                val ti = as.head
+                val v = newVar(ti.pos, cunit.fresh.newName("tp"), selector.tpe.typeArgs(i))
+                if (!doCheckExhaustive)
+                  v.setFlag(symtab.Flags.TRANS_FLAG)
+                vds  += typedValDef(v, ti)
+                tmps += v
+                i = i + 1
+                as = as.tail
+              }
+              theFailTree = ThrowMatchError(selector.pos, copy.Apply(app, fn, tmps.toList map mkIdent))
+            case _ =>
+              tmps += root
+            vds  += vdef
+          } else {
+            tmps += root
+            vds  += vdef
+          }
+          val irep = initRep(tmps.toList, cases, rep)
+
+          implicit val fail: Tree = theFailTree
+
+          val mch  = typed{ repToTree(irep)}
+          var dfatree = typed{squeezedBlock(vds.toList, mch)}
+
+          //DEBUG("**** finished\n"+dfatree.toString)
+          var bx = 0; var cs = cases; while(cs ne Nil) {
+            if(!rep.isReached(bx)) {
+              cunit.error(cs.head.asInstanceOf[CaseDef].body.pos, "unreachable code")
+            }
+            cs = cs.tail
+            bx += 1
+          }
+          dfatree = rep.cleanup(dfatree)
+          resetTrav.traverse(dfatree)
+          return dfatree
+        } catch {
+          case e => e.printStackTrace(); throw new FatalError(e.getMessage())
+        }
       }
-                      }
+  }
 
   object resetTrav extends Traverser {
     override def traverse(x:Tree): unit = x match {
@@ -295,6 +307,5 @@ trait TransMatcher { self: transform.ExplicitOuter with PatternNodes with Parall
         super.traverse(x)
     }
   }
-
 
 }

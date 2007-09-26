@@ -85,7 +85,7 @@ trait ParallelMatching  {
       if(!isRightIgnoring(av)) { DBG("\n%%% MixSequence"); return new MixSequence(scrutinee, column, rest) }
       else { DBG("\n%%% MixSequenceStar"); return new MixSequenceStar(scrutinee, column, rest) }
     }
-    if(isSimpleSwitch) { //DBG("\n%%% MixLiterals")
+    if(isSimpleSwitch) { DBG("\n%%% MixLiterals")
       return new MixLiterals(scrutinee, column, rest)
     }
 
@@ -273,7 +273,7 @@ trait ParallelMatching  {
                   }
                 )}
 
-      renamingBind(defaultV, this.scrutinee, ndefault) // each v in defaultV gets bound to scrutinee
+      //?renamingBind(defaultV, this.scrutinee, ndefault) // each v in defaultV gets bound to scrutinee
 
       // make first case a default case.
       if(this.scrutinee.tpe.typeSymbol.hasFlag(symtab.Flags.SEALED) && defaultV.isEmpty) {
@@ -382,14 +382,14 @@ trait ParallelMatching  {
 
     final def tree(implicit theOwner: Symbol, failTree: Tree): Tree = {
       val (branches, defaultV, defaultRepOpt) = this.getTransition // tag body pairs
-      //DBG("[[mix literal transition: branches \n"+(branches.mkString("","\n",""))+"\ndefaults:"+defaultV+"\n"+defaultRepOpt+"\n]]")
+      DBG("[[mix literal transition: branches \n"+(branches.mkString("","\n",""))+"\ndefaults:"+defaultV+"\n"+defaultRepOpt+"\n]]")
       val cases = branches map {
         case (tag, r) =>
-          CaseDef(Literal(tag), EmptyTree, repToTree(rep.make(r.temp, r.row map { case Row(pat,bnd,g,bx) => Row(pat,bindVars(tag,bnd),g,bx) })))
+          val r2 = rep.make(r.temp, r.row map { case Row(pat,bnd,g,bx) => Row(pat,bindVars(tag,bnd),g,bx) })
+          val t2 = repToTree(r2)
+          CaseDef(Literal(tag), EmptyTree, t2)
       }
       var ndefault = if(defaultRepOpt.isEmpty) failTree else repToTree(defaultRepOpt.get)
-
-      renamingBind(defaultV, this.scrutinee, ndefault) // each v in defaultV gets bound to scrutinee
       if(cases.length == 1) {
         val CaseDef(lit,_,body) = cases.head
         If(Equals(mkIdent(this.scrutinee),lit), body, ndefault)
@@ -430,14 +430,14 @@ trait ParallelMatching  {
           val ures = newVarCapture(ua.pos, app.tpe)
           val n    = args.length
           val uacall = typedValDef(ures, Apply(fn, mkIdent(scrutinee) :: appargs.tail))
-          //Console.println("uacall:"+uacall)
+          //DBG("uacall:"+uacall)
 
           val nrowsOther = column.tail.zip(rest.row.tail) flatMap { case (pat, Row(ps, subst, g, bx)) => strip2(pat) match {
             case UnApply(app @ Apply(fn1,_),args) if fn.symbol==fn1.symbol => Nil
             case _                                                         => List(Row(pat::ps, subst, g, bx))
           }}
           val nrepFail = if(nrowsOther.isEmpty) None else Some(rep.make(scrutinee::rest.temp, nrowsOther))
-          //Console.println("active = "+column.head+" / nrepFail = "+nrepFail)
+          //DBG("active = "+column.head+" / nrepFail = "+nrepFail)
           n match {
             case 0  => //special case for unapply(), app.tpe is boolean
               val ntemps = scrutinee :: rest.temp
@@ -470,7 +470,7 @@ trait ParallelMatching  {
               vdefs += typedValDef(uresGet, Select(mkIdent(ures), nme.get))
               var ts = definitions.getProductArgs(uresGet.tpe).get
               var i = 1;
-              //Console.println("typeargs"+ts)
+              //DBG("typeargs"+ts)
               val vsyms = new ListBuffer[Symbol]
               while(ts ne Nil) {
                 val vtpe = ts.head
@@ -684,7 +684,7 @@ trait ParallelMatching  {
 
     final def tree(implicit theOwner: Symbol, failTree: Tree) = {
       val (cond, srep, fLabel, frep) = this.getTransition
-      //Console.println("MixEquals::tree -- cond "+cond)
+      //DBG("MixEquals::tree -- cond "+cond)
       val cond2 = typed { rep.handleOuter(cond) }
       //DBG("MixEquals, srep = "+srep)
       //DBG("MixEquals, frep = "+frep)
@@ -714,7 +714,7 @@ trait ParallelMatching  {
 
     val isExhaustive = !scrutinee.tpe.typeSymbol.hasFlag(symtab.Flags.SEALED) || {
       //DEBUG("check exha for column "+column)
-      val tpes = column.map {x => /*Console.println("--x:"+x+":"+x.tpe); */ x.tpe.typeSymbol}
+      val tpes = column.map {x => x.tpe.typeSymbol}
       scrutinee.tpe.typeSymbol.children.forall { sym => tpes.contains(sym) }
     }
 
@@ -985,13 +985,13 @@ trait ParallelMatching  {
         case blck @ Block(vdefs, ld @ LabelDef(name,params,body)) =>
           val bx = labelIndex(ld.symbol)
           if((bx >= 0) && !isReachedTwice(bx)) {
-            //Console.println("removing labeldef! ")
-            //Console.println("ld.symbol = "+ld.symbol)
-            //Console.println("bx = "+bx)
-            //Console.println("rtwice? "+isReachedTwice(bx))
-            //Console.println("reached = "+reached)
-             squeezedBlock(vdefs,body)
-           }
+            /*Console.println("removing labeldef! ")
+            Console.println("ld.symbol = "+ld.symbol)
+            Console.println("bx = "+bx)
+            Console.println("rtwice? "+isReachedTwice(bx))
+            Console.println("reached = "+reached) */
+            squeezedBlock(vdefs,body)
+          }
           else
             blck
 
@@ -1451,11 +1451,8 @@ trait ParallelMatching  {
 
   /** creates initial clause matrix
    */
-  final def initRep(selector: Tree, cases: List[Tree], checkExhaustive: Boolean, rep:RepFactory)(implicit theOwner: Symbol) = {
-    val root = newVar(selector.pos, selector.tpe)
+  final def initRep(roots: List[Symbol], cases: List[Tree], rep:RepFactory)(implicit theOwner: Symbol) = {
     // communicate whether exhaustiveness-checking is enabled via some flag
-    if (!checkExhaustive)
-      root.setFlag(symtab.Flags.TRANS_FLAG)
     var bx = 0;
     val targets = new ListBuffer[Tree]
     val vss = new ListBuffer[SymList]
@@ -1467,12 +1464,18 @@ trait ParallelMatching  {
         //Console.println("dv ::"+definedVars(pat))
         vss     += definedVars(pat)
         targets += b
-        row     += Row(List(pat), NoBinding, g, bx)
+        if(roots.length > 1) pat match {
+          case Apply(fn, pargs)    =>
+            row += Row(pargs, NoBinding, g, bx)
+          case Ident(nme.WILDCARD) =>
+            row += Row(getDummies(roots.length), NoBinding, g, bx)
+        } else
+          row     += Row(List(pat), NoBinding, g, bx)
         bx      += 1
         cs = cs.tail
     }
     //Console.println("leaving initRep")
-    /*val res = */rep.make(List(root), row.toList, targets.toList, vss.toList)
+    /*val res = */rep.make(roots, row.toList, targets.toList, vss.toList)
     //Console.println("left initRep")
     //res
   }

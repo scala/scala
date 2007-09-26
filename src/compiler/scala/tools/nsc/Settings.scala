@@ -143,7 +143,6 @@ class Settings(error: String => Unit) {
   val Xlinearizer   = ChoiceSetting     ("-Ylinearizer", "Linearizer to use", List("normal", "dfs", "rpo", "dump"), "rpo")
   val log           = PhasesSetting     ("-Ylog", "Log operations in")
   val logAll        = BooleanSetting    ("-Ylog-all", "Log all operations").hideToIDE
-  val Xmatchalgo    = ChoiceSetting     ("-Ymatch-algo", "which match algorithm to use", List("both","par","incr"), "both")
   val noimports     = BooleanSetting    ("-Yno-imports", "Compile without any implicit imports")
   val nopredefs     = BooleanSetting    ("-Yno-predefs", "Compile without any implicit predefined values")
   val script        = StringSetting     ("-Xscript", "object", "compile as a script, wrapping the code into object.main()", "").hideToIDE
