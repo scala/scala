@@ -1401,7 +1401,8 @@ A type's typeSymbol should never be inspected directly.
         // @M TODO: should not use PolyType, as that's the type of a polymorphic value -- we really want a type *function*
       } else if (isHigherKinded) {
         // @M TODO: should not use PolyType, as that's the type of a polymorphic value -- we really want a type *function*
-        PolyType(typeParams, typeRef(pre, sym, higherKindedArgs))
+		// @M: initialize needed (see test/files/pos/ticket0137.scala)
+        PolyType(typeParams, typeRef(pre, sym.initialize, higherKindedArgs))
       } else if (sym.isRefinementClass) {
         sym.info
       } else {
@@ -2839,6 +2840,7 @@ A type's typeSymbol should never be inspected directly.
   private def undoTo(limit: UndoLog) {
     while (undoLog ne limit)/* && !undoLog.isEmpty*/ { // @M added `&& !undoLog.isEmpty`
                     // Martin: I don't think the addition is necessary?
+// @M TODO: I had an example, but seem to have misplaced it :-)
       val (tv, constr) = undoLog.head
       undoLog = undoLog.tail
       tv.constr = constr
