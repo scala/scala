@@ -46,9 +46,11 @@ abstract class Reporter {
   def   error(pos: Position, msg: String                ): Unit = info0(pos, msg,   ERROR, false)
 
   /** An error that could possibly be fixed if the unit were longer.
-   *  This is used, for example, when the interpreter tries
+   *  This is used only when the interpreter tries
    *  to distinguish fatal errors from those that are due to
    *  needing more lines of input from the user.
+   *
+   * Should be re-factored into a subclass.
    */
   var incompleteInputError: (Position, String) => Unit = error
 

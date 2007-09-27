@@ -160,8 +160,6 @@ trait Namers { self: Analyzer =>
 
     def enterClassSymbol(tree : ClassDef): Symbol = {
       var c: Symbol = context.scope.lookup(tree.name);
-      // Never take the first path in the IDE because we could be completing c.owner's type!
-      // the other path will handle symbol re-use well enough.
       if (!inIDE && c.isType && context.scope == c.owner.info.decls && !currentRun.compiles(c)) {
         updatePosFlags(c, tree.pos, tree.mods.flags)
         setPrivateWithin(tree, c, tree.mods)
@@ -196,8 +194,8 @@ trait Namers { self: Analyzer =>
         updatePosFlags(m, tree.pos, tree.mods.flags|MODULE|FINAL)
         setPrivateWithin(tree, m, tree.mods)
       } else {
-        if (m.isTerm && !m.isPackage && currentRun.compiles(m) && (context.scope == m.owner.info.decls))
-          context.scope.unlink(m)
+        //if (m.isTerm && !m.isPackage && currentRun.compiles(m) && (context.scope == m.owner.info.decls))
+        //  context.scope.unlink(m)
 
         m = context.owner.newModule(tree.pos, tree.name)
         m.setFlag(tree.mods.flags)

@@ -16,6 +16,11 @@ import nsc.Settings
 abstract class AbstractReporter extends Reporter {
   private val positions = new HashSet[Position]()
 
+  override def reset = {
+    super.reset
+    positions.clear
+  }
+
   val settings: Settings
 
   def display(pos: Position, msg: String, severity: Severity): Unit

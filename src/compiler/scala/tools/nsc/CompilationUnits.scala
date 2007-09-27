@@ -61,8 +61,11 @@ trait CompilationUnits { self: Global =>
 
     def incompleteInputError(pos: Position, msg:String) =
       if (inIDE || !(errorPositions contains pos)) {
+        val hadErrors = !errorPositions.isEmpty
+        if (!hadErrors)
+          reporter.incompleteInputError((pos), msg)
+        else reporter.error((pos), msg)
         if (!inIDE) errorPositions += pos
-        reporter.incompleteInputError((pos), msg)
       }
 
     override def toString() = source.toString()

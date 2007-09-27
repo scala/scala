@@ -350,24 +350,19 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     var justNeedsMore = false
     reporter.withIncompleteHandler((pos,msg) => {justNeedsMore = true}) {
       // simple parse: just parse it, nothing else
-      def simpleParse(code: String): List[Tree] = {
-        //Console.println("CODE<<" + code + ">>")
+      def simpleParse(code: String): (List[Tree]) = {
+        reporter.reset
         val unit =
           new CompilationUnit(
             new BatchSourceFile("<console>", code.toCharArray()))
         val scanner = new compiler.syntaxAnalyzer.UnitParser(unit);
         val xxx = scanner.templateStatSeq;
-        xxx._2
+        (xxx._2)
       }
-
-      // parse the main code along with the imports
-      reporter.reset
-
-      val trees= simpleParse(line)
-
-      if (justNeedsMore)
+      val (trees) = simpleParse(line)
+      if (justNeedsMore) {
         None
-      else if (reporter.hasErrors)
+      } else if (reporter.hasErrors)
         Some(Nil) // the result did not parse, so stop
       else
         Some(trees)
@@ -442,7 +437,8 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     // parse
     val trees = parse(line) match {
       case None => return IR.Incomplete
-      case Some(Nil) => return IR.Error // parse error or empty input
+      case (Some(Nil)) => return IR.Error // parse error or empty input
+      case _ if reporter.hasErrors => return IR.Error
       case Some(trees) => trees
     }
 

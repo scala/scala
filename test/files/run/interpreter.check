@@ -139,14 +139,14 @@ def x => y => z
       ^
 <console>:1: error: illegal start of simple expression
 def x => y => z
-               ^
+              ^
 
 scala> <console>:1: error: identifier expected but integer literal found.
 [1,2,3]
  ^
 <console>:1: error: ']' expected but eof found.
 [1,2,3]
-       ^
+      ^
 
 scala> 
 scala> 
