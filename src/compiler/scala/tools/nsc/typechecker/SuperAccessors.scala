@@ -343,7 +343,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
       ((sym hasFlag PROTECTED)
        && (!validCurrentOwner || !(currentOwner.enclClass.thisSym isSubClass sym.owner))
        && (enclPackage(sym.owner) != enclPackage(currentOwner))
-       && (enclPackage(sym.owner) == sym.accessBoundary(sym.owner)))
+       && (enclPackage(sym.owner) == enclPackage(sym.accessBoundary(sym.owner))))
 
       if (res) {
         val host = hostForAccessorOf(sym, currentOwner.enclClass)
