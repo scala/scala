@@ -15,6 +15,7 @@ import java.io.{File, FileOutputStream, PrintStream}
 import javax.swing.Timer
 
 import scala.actors.Actor
+import scala.collection.mutable.SynchronizedQueue
 import scala.tools.nsc.Settings
 
 import utils.PrintMgr._
@@ -40,7 +41,6 @@ class MasterActor(testDir: File, out: PrintStream) extends Actor {
 
   //private var numOfActors = Math.min(4, Math.max(Integer.parseInt(System.getProperty("actors.maxPoolSize")),
   private val numOfActors = 4
-  //println("Starting with " + numOfActors + " actors...")
 
   private var workers = (for (i <- 0 until numOfActors) yield (new WorkerActor(this, new Settings(x => ()), new ExtConsoleReporter(globalSettings)), i)).toList
 
@@ -48,7 +48,7 @@ class MasterActor(testDir: File, out: PrintStream) extends Actor {
 
   private var timers = (for (i <- 0 until numOfActors) yield createTimer(workers(i)._1)).toList
 
-  private var testsToRun: List[Test] = List()
+  private var testsToRun = new SynchronizedQueue[Test]
 
   private var failedTests: List[Test] = List()
 
@@ -88,32 +88,24 @@ class MasterActor(testDir: File, out: PrintStream) extends Actor {
     newWorker ! (test, true, conservative)
   }
 
-  private def hasNextTest = !testsToRun.isEmpty
-
-  private def nextTest(): Test = {
-    val test = testsToRun.head
-    testsToRun = testsToRun.tail
-    test
-  }
-
   def act() {
     loop {
       react {
-        case (test: Test) =>
-          testsToRun = test :: testsToRun
+        case test: Test =>
+          testsToRun += test
 
         case ("start", conservative: Boolean) =>
           this.conservative = conservative
-          workers foreach ((x) => {
-              if (hasNextTest) {
-                x._1.start
-                val test = nextTest()
-                // TODO Change here should be x._1 ! (test, false, conservative)
-                x._1 ! (test, false, conservative)
-                timers(x._2).start
-                workingOn = (x._2, test) :: workingOn
-              }
-            })
+          workers foreach (x => {
+            if (!testsToRun.isEmpty) {
+              x._1.start
+              val test = testsToRun.dequeue
+              // TODO Change here should be x._1 ! (test, false, conservative)
+              x._1 ! (test, false, conservative)
+              timers(x._2).start
+              workingOn = (x._2, test) :: workingOn
+            }
+          })
 
         case (kind: String, succeeded: Boolean, file: File) =>
           val workerID = workers.find((_)._1 == sender) match {
@@ -122,8 +114,8 @@ class MasterActor(testDir: File, out: PrintStream) extends Actor {
           }
           if (workerID._2 != -1) {
             workingOn = workingOn.remove((_)._1 == workerID._2)
-            if (hasNextTest) {
-              val test = nextTest()
+            if (!testsToRun.isEmpty) {
+              val test = testsToRun.dequeue
               // TODO Change here should be x._1 ! (test, false, conservative)
               sender ! (test, false, conservative)
               timers(workerID._2).restart

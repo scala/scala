@@ -90,9 +90,9 @@ object SUnit {
       }
     }
 
-    def setUp() = {}
+    def setUp() {}
 
-    def tearDown() = {}
+    def tearDown() {}
 
     override def toString() = name
   }
@@ -115,8 +115,9 @@ object SUnit {
   class TestResult {
     val buf = new ArrayBuffer[(Test, Throwable)]()
 
-    def addFailure(test:Test, t:Throwable) =
+    def addFailure(test: Test, t: Throwable) {
       buf += (test, t)
+    }
 
     def failureCount() =
       buf.length
@@ -136,8 +137,9 @@ object SUnit {
 
     buf ++= tests
 
-    def addTest(t: Test) =
+    def addTest(t: Test) {
       buf += t
+    }
 
     def run(r: TestResult) {
       for (t <- buf) t.run(r)
@@ -146,10 +148,10 @@ object SUnit {
 
   /** an AssertFailed is thrown for a failed assertion */
   case class AssertFailed(msg: String) extends RuntimeException {
-    override def toString() = "failed assertion:" + msg
+    override def toString() = "failed assertion: " + msg
   }
 
-  /** this class defined useful assert methods */
+  /** this class defined useful <code>assert</code> methods */
   trait Assert {
 
     /** fails if expected != actual */
