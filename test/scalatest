@@ -644,12 +644,9 @@ case `$JAVACMD \-version 2>&1 | xargs` in
              * ) JAVA5="false";;
 esac;
 
-DIFF="diff";
-
-case `uname` in
-    CYGWIN* )
-        DIFF="diff --text --strip-trailing-cr";
-        ;;
+case "$UNAME" in
+    CYGWIN* ) DIFF="diff --text --strip-trailing-cr";;
+    *       ) DIFF="diff";;
 esac;
 
 while [ $# -gt 0 ]; do
@@ -831,7 +828,10 @@ END_SECONDS=`date +%s`;
 TOTAL_COUNT=`echo "$FAILURE_COUNT+$SUCCESS_COUNT" | bc`;
 
 ELAPSED_SECONDS=`expr $END_SECONDS - $START_SECONDS`;
-ELAPSED_TIME=`date --date="1970-01-01 $ELAPSED_SECONDS sec" +%T`;
+case "$UNAME" in
+    Darwin* ) ELAPSED_TIME=`date -r $ELAPSED_SECONDS +%T`;;
+    *       ) ELAPSED_TIME=`date --date="1970-01-01 $ELAPSED_SECONDS sec" +%T`;;
+esac;
 
 if [ $FAILURE_COUNT -eq 0 ]; then
     printf_success "All of $TOTAL_COUNT tests were successful (elapsed time: $ELAPSED_TIME)\\n";
