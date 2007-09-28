@@ -486,7 +486,6 @@ abstract class GenJVM extends SubComponent {
       val clinit = clinitMethod.getCode().asInstanceOf[JExtendedCode]
       if (isStaticModule(clasz.symbol)) {
         clinit.emitNEW(cls.getName())
-        clinit.emitDUP()
         clinit.emitINVOKESPECIAL(cls.getName(),
                                  JMethod.INSTANCE_CONSTRUCTOR_NAME,
                                  JMethodType.ARGLESS_VOID_FUNCTION)
