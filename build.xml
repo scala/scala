@@ -30,7 +30,7 @@ PROPERTIES
   <!-- Defines the product being built -->
   <property name="vendor.name" value="LAMP/EPFL"/>
   <property name="copyright.string" value="(c) 2002-2007 ${vendor.name}"/>
-  <property name="java.flags" value="&#34;-Xmx256M -Xms16M&#34;"/>
+  <property name="java.flags" value="-Xmx256M -Xms16M"/>
   <property name="number.file" value="${basedir}/build.number"/>
   <!-- Configuring how the compiler is run -->
   <property name="nsc.log-files" value="no"/>
