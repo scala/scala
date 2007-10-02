@@ -44,7 +44,7 @@ import scala.collection.mutable.ArrayBuffer
  *   a <code>main</code> method, for convenience.
  * </p>
  *
- * @author Burak Emir, Stephane Micheloud
+ * @author Burak Emir
  */
 object SUnit {
 
