@@ -47,7 +47,7 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
 
   def receiver: Actor = recv
 
-  private[actors] def this(recv: Actor) = {
+  def this(recv: Actor) = {
     this()
     this.recv = recv
   }
