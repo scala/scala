@@ -63,7 +63,7 @@ final class BoxedObjectArray(val value: Array[AnyRef]) extends BoxedArray {
     new BoxedObjectArray(result)
   }
   override protected def newArray(length : Int, elements : Iterator[Any]) = {
-    val result = new Array[AnyRef](length)
+    val result = create(length)
     elements.map(_.asInstanceOf[AnyRef]).copyToArray(result, 0)
     new BoxedObjectArray(result)
   }

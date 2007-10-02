@@ -182,7 +182,7 @@ object Array {
 
    trait Projection[A] extends RandomAccessSeq.MutableProjection[A] {
      protected def newArray[B >: A](length : Int, elements : Iterator[A]) : Array[B]
-     override def toArray[B >: A] = newArray(length, elements)
+     override def toArray[B >: A] = (newArray(length, elements))//:Any).asInstanceOf[Array[B]]
      override def force : Array[A] = toArray
      override def drop( from: Int) = slice(from, length)
      override def take(until: Int) = slice(0, until)

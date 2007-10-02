@@ -151,7 +151,7 @@ trait Set[A] extends AnyRef with collection.Set[A] {
    *
    *  @param that the set to intersect with
    */
-   def ** (that: collection.Set[A]): Set[A] = intersect(that)
+   override def ** (that: collection.Set[A]): Set[A] = intersect(that)
 
   /** Returns the set resulting from applying the given function <code>f</code> to each
    *  element of this set.

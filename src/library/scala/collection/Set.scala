@@ -72,8 +72,14 @@ trait Set[A] extends (A => Boolean) with Collection[A] {
    */
   def subsetOf(that: Set[A]): Boolean = forall(that.contains)
 
-  /** set intersection */
-  def *(that : Set[A]) : Set[A] = {
+  @deprecated def *(that : Set[A]) : Set[A] = this ** that
+
+  /** Intersect. It computes an intersection with set <code>that</code>.
+   *  It removes all the elements that are not present in <code>that</code>.
+   *
+   *  @param that the set to intersect with
+   */
+  def **(that : Set[A]) : Set[A] = {
      val min = Math.min(size, that.size)
      val buf = new Array[A](min)
      var count = 0
@@ -91,7 +97,7 @@ trait Set[A] extends (A => Boolean) with Collection[A] {
        import scala.collection.mutable.HashSet
        val ret = new HashSet[A]
        ret ++= buf.projection.take(count)
-       ret.readOnly
+       ret
      }
   }
   /** Compares this set with another object and returns true, iff the

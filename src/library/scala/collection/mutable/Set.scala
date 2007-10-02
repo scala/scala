@@ -209,7 +209,7 @@ trait Set[A] extends collection.Set[A] with Scriptable[Message[A]] with Cloneabl
   /** Return a read-only projection of this set */
   def readOnly : scala.collection.Set[A] = new scala.collection.Set[A] {
     def contains(item : A) = Set.this.contains(item)
-    override def toString = "read-only-" + Set.this.toString
+    override def toString = "ro-" + Set.this.toString
     override def size = Set.this.size
     override def elements = Set.this.elements
   }

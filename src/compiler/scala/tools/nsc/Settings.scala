@@ -349,6 +349,16 @@ class Settings(error: String => Unit) {
           value = choice
           rest
         }
+      case n :: choice :: rest if n == name => // alternative to be consistent with IDE
+        if (!(choices contains choice)) {
+          error(
+            if (choice == "") "missing " + argument
+            else "unknown " + argument + " '" + choice + "'")
+          args
+        } else {
+          value = choice
+          rest
+        }
       case _ => args
     }
 
