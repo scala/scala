@@ -1013,6 +1013,11 @@ trait Typers { self: Analyzer =>
       val impl1 = newTyper(context.make(cdef.impl, clazz, scopeFor(cdef.impl)))
         .typedTemplate(cdef.impl, parentTypes(cdef.impl))
       val impl2 = addSyntheticMethods(impl1, clazz, context)
+      if (clazz isNonBottomSubClass ClassfileAnnotationClass)
+	unit.warning (cdef.pos,
+          "implementation restriction: subclassing Classfile does not\n"+
+          "make your annotation visible at runtime.  If that is what\n"+
+	  "you want, you must write the annotation class in Java.")
       copy.ClassDef(cdef, typedMods, cdef.name, tparams1, impl2)
         .setType(NoType)
     }
