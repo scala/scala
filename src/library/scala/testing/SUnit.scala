@@ -44,7 +44,7 @@ import scala.collection.mutable.ArrayBuffer
  *   a <code>main</code> method, for convenience.
  * </p>
  *
- * @author Burak Emir
+ * @author Burak Emir, Stephane Micheloud
  */
 object SUnit {
 
@@ -147,12 +147,21 @@ object SUnit {
   }
 
   /** an AssertFailed is thrown for a failed assertion */
-  case class AssertFailed(msg: String) extends RuntimeException {
-    override def toString() = "failed assertion: " + msg
+  case class AssertFailed(msg: String, stackTrace: Boolean) extends RuntimeException {
+    private val msg0 = if (stackTrace) {
+      import java.io._
+      val wrt = new StringWriter
+      printStackTrace(new PrintWriter(wrt))
+      wrt.toString
+    } else msg
+    override def toString() =
+      if (msg0 eq null) "failed assertion: " + msg else msg0
   }
 
-  /** this class defined useful <code>assert</code> methods */
+  /** this class defines useful <code>assert</code> methods */
   trait Assert {
+
+    def enableStackTrace: Boolean = true
 
     /** fails if expected != actual */
     def assertEquals[A](msg: String, expected: A, actual: => A) {
@@ -258,13 +267,13 @@ object SUnit {
     /** throws <code>AssertFailed</code> with given message <code>msg</code>.
      */
     def fail(msg: String) {
-      throw new AssertFailed(msg)
+      throw AssertFailed(msg, enableStackTrace)
     }
 
     def fail[A](msg: String, expected: A, actual: => A) {
-      throw new AssertFailed(msg +
-                              ", expected: " + expected +
-                              ", actual: " + actual)
+      throw AssertFailed(msg +
+                         ", expected: " + expected +
+                         ", actual: " + actual, enableStackTrace)
     }
   }
 }
