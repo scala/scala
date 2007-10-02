@@ -90,13 +90,25 @@ def x => y => z
   d="dd"
 />&lt;/a>
 
+
+/*
+  /*
+    multi-line comment
+  */
+*/
+
+
+// multi-line string
+"""
+hello
+there
+"""
+
 (1 +   // give up early by typing two blank lines
 
 
 
-
 </code>.text
-
 
   /** A writer that skips the first line of text.  The first
    *  line of interpreter output is skipped because it includes
