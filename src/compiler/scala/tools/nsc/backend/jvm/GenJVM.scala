@@ -226,6 +226,13 @@ abstract class GenJVM extends SubComponent {
       addAttribute(jmethod, nme.ExceptionsATTR, buf)
     }
 
+    /** Whether an annotation should be emitted as a Java annotation */
+    private def shouldEmitAttribute(annot: AnnotationInfo) =
+      (annot.atp.typeSymbol.hasFlag(Flags.JAVA) &&
+       annot.atp.typeSymbol.isNonBottomSubClass(definitions.ClassfileAnnotationClass) &&
+       annot.isConstant)
+
+
     private def emitAttributes(buf: ByteBuffer, attributes: List[AnnotationInfo]): Int = {
       val cpool = jclass.getConstantPool()
 
@@ -278,9 +285,9 @@ abstract class GenJVM extends SubComponent {
       buf.putShort(0xbaba.toShort)
 
       for (attrib@AnnotationInfo(typ, consts, nvPairs) <- attributes;
-           if attrib.isConstant;
-           if typ.typeSymbol isNonBottomSubClass definitions.ClassfileAnnotationClass) {
-        nattr = nattr + 1
+           if shouldEmitAttribute(attrib))
+      {
+	nattr = nattr + 1
         val jtype = javaType(typ)
         buf.putShort(cpool.addUtf8(jtype.getSignature()).toShort)
         assert(consts.length <= 1, consts.toString)
@@ -301,7 +308,7 @@ abstract class GenJVM extends SubComponent {
     }
 
     def addAnnotations(jmember: JMember, attributes: List[AnnotationInfo]): Unit = {
-      val toEmit = attributes.filter(_.isConstant)
+      val toEmit = attributes.filter(shouldEmitAttribute(_))
 
       if (toEmit.isEmpty) return
 
