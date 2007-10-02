@@ -72,7 +72,7 @@ object scala extends Command {
     "specified in one of three ways:",
 
     NumberedList(
-        "With no arguments specified, an interactive interpreter starts " &
+        "With no arguments specified, a Scala shell starts " &
         "and reads commands interactively.",
 
         "With " & Mono("-howtorun:object") & " specified, the fully " &
@@ -136,7 +136,7 @@ object scala extends Command {
     "command line and must be followed by a bare hypen (" & Quote("-") &
     ") character. " &
     "If no arguments are specified after the optional compiler arguments, " &
-    "then an interactive interpreter is started.  Otherwise, either a " &
+    "then an interactive Scala shell is started.  Otherwise, either a " &
     "script file is run, or a pre-compiled Scala object is run.  It " &
     "is possible to distinguish the last two cases by using an explicit " &
     Mono("-object") & " or " & Mono("-script") & " flag, but usually the " &
