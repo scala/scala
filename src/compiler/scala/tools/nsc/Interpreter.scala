@@ -207,6 +207,19 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   private def clean(str: String) =
     truncPrintString(Interpreter.stripWrapperGunk(str))
 
+  /** Indent some code by the width of the scala> prompt.
+   *  This way, compiler error messages read beettr.
+   */
+  def indentCode(code: String) = {
+    val spaces = "       "
+
+    stringFrom(str =>
+      for(line <- code.lines) {
+	str.print(spaces)
+	str.println(line)
+      })
+  }
+
 
   /** Compute imports that allow definitions from previous
    *  requests to be visible in a new request.  Returns
@@ -350,7 +363,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     var justNeedsMore = false
     reporter.withIncompleteHandler((pos,msg) => {justNeedsMore = true}) {
       // simple parse: just parse it, nothing else
-      def simpleParse(code: String): (List[Tree]) = {
+      def simpleParse(code: String): List[Tree] = {
         reporter.reset
         val unit =
           new CompilationUnit(
@@ -360,12 +373,13 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
         (xxx._2)
       }
       val (trees) = simpleParse(line)
-      if (justNeedsMore) {
-        None
-      } else if (reporter.hasErrors)
+      if (reporter.hasErrors) {
         Some(Nil) // the result did not parse, so stop
-      else
+      } else if (justNeedsMore) {
+        None
+      } else {
         Some(trees)
+      }
     }
   }
 
@@ -387,11 +401,6 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
 
   /** Build a request from the user. <code>trees</code> is <code>line</code>
    *  after being parsed.
-   *
-   *  @param trees    ..
-   *  @param line     ..
-   *  @param lineName ..
-   *  @return         ..
    */
   private def buildRequest(trees: List[Tree], line: String, lineName: String): Request =
     trees match {
@@ -435,10 +444,9 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
       new compiler.Run // initialize the compiler
 
     // parse
-    val trees = parse(line) match {
+    val trees = parse(indentCode(line)) match {
       case None => return IR.Incomplete
       case (Some(Nil)) => return IR.Error // parse error or empty input
-      case _ if reporter.hasErrors => return IR.Error
       case Some(trees) => trees
     }
 
@@ -475,10 +483,10 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   /** Bind a specified name to a specified value.  The name may
    *  later be used by expressions passed to interpret.
    *
-   *  @param name      ...
-   *  @param boundType ...
-   *  @param value     ...
-   *  @return          ...
+   *  @param name      the variable name to bind
+   *  @param boundType the type of the variable, as a string
+   *  @param value     the object value to bind to it
+   *  @return          an indication of whether the binding succeeded
    */
   def bind(name: String, boundType: String, value: Any): IR.Result = {
     val binderName = "binder" + binderNum
@@ -655,9 +663,9 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
 
         // the variable to compute, if any
         if (needsVarName)
-          code.print("  val " + varName + " = ")
+          code.println("  val " + varName + " = ")
 
-        code.println(toCompute)
+        code.println(indentCode(toCompute))
 
         code.println(importsTrailer)
 
@@ -797,12 +805,15 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     override val needsVarName = true
 
     /** Perform the assignment, and then return the new value */
-    override def toCompute = "{" + line + ";" + lhs + "}"
+    override def toCompute = "{\n" + line + "\n;\n" + lhs + "\n}"
 
     /** Print out lhs instead of the generated varName */
     override def resultExtractionCode(code: PrintWriter) {
       code.print(" + \"" + lhs + ": " + typeOf(compiler.encode(varName)) +
                  " = \" + " + fullPath(varName) + " + \"\\n\"")
+//      override def resultExtractionCode(code: PrintWriter) {
+//        {wrapperObj; lhs}
+//    }
     }
   }
 

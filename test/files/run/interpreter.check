@@ -22,8 +22,8 @@ scala> four: anotherint = 4
 scala> <console>:5: error: type mismatch;
  found   : java.lang.String("hello")
  required: anotherint
-val bogus: anotherint = "hello"
-                        ^
+       val bogus: anotherint = "hello"
+                               ^
 
 scala> defined trait PointlessTrait
 
@@ -135,29 +135,40 @@ scala>
 scala> 
 scala> 
 scala> <console>:1: error: '=' expected but '=>' found.
-def x => y => z
-      ^
+       def x => y => z
+             ^
 <console>:1: error: illegal start of simple expression
-def x => y => z
-              ^
+       def x => y => z
+                      ^
 
 scala> <console>:1: error: identifier expected but integer literal found.
-[1,2,3]
- ^
-<console>:1: error: ']' expected but eof found.
-[1,2,3]
-      ^
+       [1,2,3]
+        ^
+<console>:1: error: ']' expected but ';' found.
+       [1,2,3]
+              ^
 
 scala> 
 scala> 
 scala> 
 scala>      |      |      |      | res2: scala.xml.Elem = 
 <a>
-<b d="dd" c="c"></b></a>
+       <b d="dd" c="c"></b></a>
+
+scala> 
+scala> 
+scala>      |      |      |      | 
+scala> 
+scala> 
+scala> 
+scala>      |      |      | res3: java.lang.String = 
+
+       hello
+       there
+       
 
 scala> 
 scala>      |      | You typed two blank lines.  Starting a new command.
 
-scala> 
 scala> 
 scala> 
