@@ -59,19 +59,19 @@ object Test1_scala {
     println("x1 = " + x1)
     println("y1 = " + y1)
     println("x1 eq y1: " + (x1 eq y1) + " - y1 eq x1: " + (y1 eq x1))
-    println()
+    println
     println("x2 = " + x2)
     println("y2 = " + y2)
     println("x2 eq y2: " + (x2 eq y2) + " - y2 eq x2: " + (y2 eq x2))
-    println()
+    println
     println("x3 = " + arrayToString(x3))
     println("y3 = " + arrayToString(y3))
     println("arrayEquals(x3, y3): " + arrayEquals(x3, y3))
-    println()
+    println
     println("x4 = <na>")
     println("y4 = <na>")
     println("x4(2): " + x4(2) + " - y4(2): " + y4(2))
-    println()
+    println
   }
   catch {
     case e: Exception =>

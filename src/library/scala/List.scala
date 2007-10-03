@@ -1226,24 +1226,28 @@ final case class ::[B](private var hd: B, private[scala] var tl: List[B]) extend
 
   import java.io._
 
-  private def writeObject(out : ObjectOutputStream) = {
+  private def writeObject(out: ObjectOutputStream) {
     val i = elements
     while (i.hasNext) out.writeObject(i.next)
     out.writeObject(ListSerializeEnd)
   }
-  private def readObject(in : ObjectInputStream) : Unit = {
+
+  private def readObject(in: ObjectInputStream) {
     hd = in.readObject.asInstanceOf[B]
     assert(hd != ListSerializeEnd)
-    var current : ::[B] = this
+    var current: ::[B] = this
     while (true) in.readObject match {
-    case ListSerializeEnd => current.tl = Nil; return
-    case a : Any =>
-      val list : ::[B] = new ::(a.asInstanceOf[B], Nil)
-      current.tl = list
-      current = list
+      case ListSerializeEnd =>
+        current.tl = Nil
+        return
+      case a : Any =>
+        val list : ::[B] = new ::(a.asInstanceOf[B], Nil)
+        current.tl = list
+        current = list
     }
   }
 }
+
 /** Only used for list serialization */
 @SerialVersionUID(0L - 8476791151975527571L)
 private[scala] case object ListSerializeEnd
