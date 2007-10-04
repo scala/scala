@@ -195,7 +195,15 @@ trait Stream[+A] extends Seq.Projection[A] {
   def tail: Stream[A]
 
   /** The length of this stream */
-  override def length: Int = if (isEmpty) 0 else tail.length + 1
+  override def length: Int = {
+    var len = 0
+    var here = this
+    while (!here.isEmpty) {
+      len += 1
+      here = here.tail
+    }
+    len
+  }
 
   /** returns length - l without calling length
    */
