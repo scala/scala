@@ -171,7 +171,9 @@ abstract class GenerateIdeMaps extends SubComponent {
     return null
   }
   def walk(sourceFile : SourceFile, tree: Tree, uses : scala.collection.mutable.Map[Position,Symbol], defs : LinkedHashMap[Symbol,Position]) : Unit = {
+    val visited = new LinkedHashSet[Tree]
     def f(t : Tree) : Unit = {
+      if (!visited.add(t)) return
       def fs(l : List[Tree]) : Unit = {
         val i = l.elements
         while (i.hasNext) f(i.next)

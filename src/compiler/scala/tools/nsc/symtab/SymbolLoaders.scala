@@ -286,6 +286,9 @@ abstract class SymbolLoaders {
       root match {
       case clazz : ClassSymbol =>
         global.attachSourceToClass(clazz, this, if (sourceFile ne null) sourceFile else clazz.sourceFile)
+      case module : ModuleSymbol =>
+        val clazz = module.moduleClass.asInstanceOf[ClassSymbol]
+        global.attachSourceToClass(module, this, if (sourceFile ne null) sourceFile else clazz.sourceFile)
       case _ =>
       }
       if (root.sourceFile ne null) {

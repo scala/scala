@@ -41,7 +41,8 @@ trait EtaExpansion { self: Analyzer =>
     def freshName(pos : util.Position, n : Int) = {
       cnt += 1
       if (pos == util.NoPosition) {
-        newTermName(unit.fresh.newName("eta$" + symbolHash + (cnt - 1)))
+        if (inIDE) newTermName(                  ("eta$" + symbolHash + (cnt - 1)))
+        else       newTermName(unit.fresh.newName("eta$" + symbolHash + (cnt - 1)))
       } else if (n == 0) {
         newTermName(unit.fresh.newName(pos, "eta$" + symbolHash))
       } else {

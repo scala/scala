@@ -337,8 +337,10 @@ abstract class ClassfileParser {
     var sflags = transFlags(jflags)
     if ((sflags & DEFERRED) != 0) sflags = sflags & ~DEFERRED | ABSTRACT
     val c = pool.getClassSymbol(in.nextChar)
-    if (c != clazz)
+    if (c != clazz) {
+      assert(true)
       throw new IOException("class file '" + in.file + "' contains wrong " + c)
+    }
     val superType = if (isAnnotation) { in.nextChar; definitions.AnnotationClass.tpe }
                     else pool.getSuperClass(in.nextChar).tpe
     val ifaceCount = in.nextChar
