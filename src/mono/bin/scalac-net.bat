@@ -58,7 +58,7 @@ if "%_ILASM%"=="" (
   if exist "%MONO_HOME%" (
     set _ILASM=%MONO_HOME%\bin\ilasm.bat
   ) else (
-    call :find_ilasm ilasm.bat
+    call :find_ilasm ilasm.exe
   )
 )
 
