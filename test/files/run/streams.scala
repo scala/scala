@@ -21,4 +21,9 @@ object Test extends Application {
   println(s2.drop(-1))
   println(s2.dropWhile(_ > 0))
   println
+
+  // ticket #153
+  def powers(x: Int) = if ((x&(x-1)) == 0) Some(x) else None
+  val s3 = Stream.range(1, 100000)
+  println(s3.flatMap(powers).reverse.head)
 }
