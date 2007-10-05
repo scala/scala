@@ -32,7 +32,7 @@ package scala.actors.remote
  *  </p><pre>
  *  actor {
  *    // ...
- *    <b>val</b> c = select(TcpNode("127.0.0.1", 9010), 'myName)
+ *    <b>val</b> c = select(Node("127.0.0.1", 9010), 'myName)
  *    c ! msg
  *    // ...
  *  }
@@ -49,7 +49,7 @@ object RemoteActor {
    * Makes <code>self</code> remotely accessible on TCP port
    * <code>port</code>.
    */
-  def alive(port: int): Unit = synchronized {
+  def alive(port: Int): Unit = synchronized {
     val serv = TcpService(port)
     kernels += Actor.self -> serv.kernel
   }
@@ -94,6 +94,9 @@ object RemoteActor {
 
 /**
  * This class represents a machine node on a TCP network.
+ *
+ * @param address the host name, or <code>null</code> for the loopback address.
+ * @param port    the port number.
  *
  * @author Philipp Haller
  */
