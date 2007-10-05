@@ -1,0 +1,7 @@
+errors.scala:7: error: in XML literal: expected closing tag of hello
+<hello> </there>
+              ^
+errors.scala:7: error: start tag was here: <hello>
+<hello> </there>
+
+two errors found
