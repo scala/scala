@@ -185,6 +185,7 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
     createInterpreter()
     for (cmd <- replayCommands) {
       out.println("Replaying: " + cmd)
+      out.flush()  // because maybe cmd will have its own output
       command(cmd)
       out.println
     }
@@ -276,11 +277,7 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
 	    InteractiveReader.createDefault()
       }
 
-    uglinessxxx =
-      new java.net.URLClassLoader(
-                 ClassPath.expandPath(settings.classpath.value).
-                         map(s => new File(s).toURL).toArray,
-		 classOf[InterpreterLoop].getClassLoader)
+    uglinessxxx =  classOf[InterpreterLoop].getClassLoader
 
     createInterpreter()
 
