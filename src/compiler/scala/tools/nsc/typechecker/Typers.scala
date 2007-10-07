@@ -1013,7 +1013,8 @@ trait Typers { self: Analyzer =>
       val impl1 = newTyper(context.make(cdef.impl, clazz, scopeFor(cdef.impl)))
         .typedTemplate(cdef.impl, parentTypes(cdef.impl))
       val impl2 = addSyntheticMethods(impl1, clazz, context)
-      if (clazz isNonBottomSubClass ClassfileAnnotationClass)
+      if ((clazz != ClassfileAnnotationClass) &&
+	  (clazz isNonBottomSubClass ClassfileAnnotationClass))
 	unit.warning (cdef.pos,
           "implementation restriction: subclassing Classfile does not\n"+
           "make your annotation visible at runtime.  If that is what\n"+
@@ -2125,7 +2126,7 @@ trait Typers { self: Analyzer =>
           copy.Assign(tree, lhs1, checkDead(rhs1)) setType UnitClass.tpe
         } else {
           if (!lhs1.tpe.isError) {
-            println(lhs1+" = "+rhs)
+            //println(lhs1+" = "+rhs)//DEBUG
             error(tree.pos, "assignment to non-variable ")
           }
           setError(tree)
