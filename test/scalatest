@@ -742,7 +742,8 @@ if [ "$USEFSC" = "true" ]; then
 else
     SCALAC_CMD="${BIN_DIR}scalac";
 fi;
-if [ ! -x "$SCALAC_CMD" ]; then
+
+if [ ! -x `which $SCALAC_CMD` ]; then
     printf_failure "Missing command \"$SCALAC_CMD\"; run 'ant <target>'.\\n";
     exit 1;
 fi;
