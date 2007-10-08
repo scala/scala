@@ -301,6 +301,7 @@ trait Definitions {
     var PatternWildcard: Symbol = _
 
     // boxed classes
+    lazy val BoxesUtilityClass = getModule("scala.runtime.BoxesUtility")
     lazy val BoxedArrayClass = getClass("scala.runtime.BoxedArray")
     lazy val BoxedAnyArrayClass = getClass("scala.runtime.BoxedAnyArray")
     lazy val BoxedObjectArrayClass = getClass("scala.runtime.BoxedObjectArray")

@@ -17,7 +17,7 @@ import scala.tools.nsc.util.{ClassPath, SourceFile, BatchSourceFile}
 import scala.collection.mutable.{HashSet, HashMap, ListBuffer}
 
 import symtab._
-import symtab.classfile.{PickleBuffer, Pickler, ICodeReader}
+import symtab.classfile.{PickleBuffer, Pickler}
 import util.Statistics
 import plugins.Plugins
 import ast._
@@ -69,10 +69,6 @@ class Global(var settings: Settings, var reporter: Reporter) extends Trees
   }
 
   object icodes extends ICodes {
-    val global: Global.this.type = Global.this
-  }
-
-  object icodeReader extends ICodeReader {
     val global: Global.this.type = Global.this
   }
 

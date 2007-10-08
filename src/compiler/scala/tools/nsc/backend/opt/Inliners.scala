@@ -309,16 +309,21 @@ abstract class Inliners extends SubComponent {
                         log("\tlooked up method: " + concreteMethod.fullNameString)
                     }
 
+                    if (receiver == definitions.PredefModule.moduleClass) {
+                      log("loading predef")
+                      icodes.icode(receiver, true)
+                    }
                     if (settings.debug.value)
                       log("Treating " + i
-                          + "\n\tclasses.contains: " + classes.contains(receiver)
+                          + "\n\treceiver: " + receiver
+                          + "\n\ticodes.available: " + icodes.available(receiver)
                           + "\n\tconcreteMethod.isFinal: " + concreteMethod.isFinal);
 
-                    if (   classes.contains(receiver)
+                    if (   icodes.available(receiver)
                         && (isClosureClass(receiver)
                             || concreteMethod.isFinal
                             || receiver.isFinal)) {
-                      classes(receiver).lookupMethod(concreteMethod) match {
+                      icodes.icode(receiver).get.lookupMethod(concreteMethod) match {
                         case Some(inc) =>
                           if (inc.symbol != m.symbol
                               && (inlinedMethods(inc.symbol) < 2)

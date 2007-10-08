@@ -105,7 +105,7 @@ abstract class DeadCodeElimination extends SubComponent {
             case CALL_METHOD(m1, SuperCall(_)) =>
               worklist += ((bb, idx)) // super calls to constructor
             case DROP(_) =>
-              val necessary = findDefs(bb, idx, 1) exists { p =>
+              val necessary = rdef.findDefs(bb, idx, 1) exists { p =>
                 val (bb1, idx1) = p
                 bb1(idx1) match {
                   case CALL_METHOD(m1, _) if isSideEffecting(m1) => true
@@ -152,7 +152,7 @@ abstract class DeadCodeElimination extends SubComponent {
               ()
 
             case _ =>
-              for ((bb1, idx1) <- findDefs(bb, idx, instr.consumed) if !useful(bb1)(idx1)) {
+              for ((bb1, idx1) <- rdef.findDefs(bb, idx, instr.consumed) if !useful(bb1)(idx1)) {
                 log("\tAdding " + bb1(idx1))
                 worklist += ((bb1, idx1))
               }
@@ -210,7 +210,8 @@ abstract class DeadCodeElimination extends SubComponent {
         for ((i, idx) <- bb.toList.zipWithIndex) {
           if (!useful(bb)(idx)) {
             for ((consumedType, depth) <- i.consumedTypes.reverse.zipWithIndex) {
-              val defs = findDefs(bb, idx, i.consumed, depth)
+              log("Finding definitions of: " + i + "\n\t" + consumedType + " at depth: " + depth)
+              val defs = rdef.findDefs(bb, idx, 1, depth)
               for (d <- defs) {
                 if (!compensations.isDefinedAt(d))
                   compensations(d) = List(DROP(consumedType))
@@ -245,52 +246,6 @@ abstract class DeadCodeElimination extends SubComponent {
         }
       abort("could not find init in: " + method)
     }
-
-    /** Return the instructions that produced the 'm' elements on the stack, below given 'depth'.
-     *  for instance, findefs(bb, idx, 1, 1) returns the instructions that might have produced the
-     *  value found below the topmost element of the stack.
-     */
-    def findDefs(bb: BasicBlock, idx: Int, m: Int, depth: Int): List[(BasicBlock, Int)] = if (idx > 0) {
-      assert(bb.isClosed)
-      var instrs = bb.getArray
-      var res: List[(BasicBlock, Int)] = Nil
-      var i = idx
-      var n = m
-      var d = 0
-      // "I look for who produced the 'n' elements below the 'd' topmost slots of the stack"
-      while (n > 0 && i > 0) {
-        i -= 1
-        val prod = instrs(i).produced
-        if (prod > d) {
-          res = (bb, i) :: res
-          n   = n - (prod - d)
-          if (bb(i) != LOAD_EXCEPTION)
-            d = instrs(i).consumed
-        } else {
-          d -= prod
-          d += instrs(i).consumed
-        }
-      }
-
-      if (n > 0) {
-        val stack = rdef.in(bb).stack
-        assert(stack.length >= n, "entry stack is too small, expected: " + n + " found: " + stack)
-        stack.drop(d).take(n) foreach { defs =>
-          res = defs.toList ::: res
-        }
-      }
-      res
-    } else {
-      val stack = rdef.in(bb).stack
-      assert(stack.length >= m, "entry stack is too small, expected: " + m + " found: " + stack)
-      stack.take(m) flatMap (_.toList)
-    }
-
-    /** Return the definitions that produced the topmost 'm' elements on the stack,
-     *  and that reach the instruction at index 'idx' in basic block 'bb'.
-     */
-    def findDefs(bb: BasicBlock, idx: Int, m: Int): List[(BasicBlock, Int)] =
-      findDefs(bb, idx, m, 0)
 
     /** Is 'sym' a side-effecting method? TODO: proper analysis.  */
     private def isSideEffecting(sym: Symbol): Boolean = {

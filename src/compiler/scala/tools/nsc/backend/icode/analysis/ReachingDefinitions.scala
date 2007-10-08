@@ -192,6 +192,52 @@ abstract class ReachingDefinitions {
       IState(locals, stack)
     }
 
+    /** Return the instructions that produced the 'm' elements on the stack, below given 'depth'.
+     *  for instance, findefs(bb, idx, 1, 1) returns the instructions that might have produced the
+     *  value found below the topmost element of the stack.
+     */
+    def findDefs(bb: BasicBlock, idx: Int, m: Int, depth: Int): List[(BasicBlock, Int)] = if (idx > 0) {
+      assert(bb.isClosed)
+      var instrs = bb.getArray
+      var res: List[(BasicBlock, Int)] = Nil
+      var i = idx
+      var n = m
+      var d = depth
+      // "I look for who produced the 'n' elements below the 'd' topmost slots of the stack"
+      while (n > 0 && i > 0) {
+        i -= 1
+        val prod = instrs(i).produced
+        if (prod > d) {
+          res = (bb, i) :: res
+          n   = n - (prod - d)
+          if (bb(i) != LOAD_EXCEPTION)
+            d = instrs(i).consumed
+        } else {
+          d -= prod
+          d += instrs(i).consumed
+        }
+      }
+
+      if (n > 0) {
+        val stack = this.in(bb).stack
+        assert(stack.length >= n, "entry stack is too small, expected: " + n + " found: " + stack)
+        stack.drop(d).take(n) foreach { defs =>
+          res = defs.toList ::: res
+        }
+      }
+      res
+    } else {
+      val stack = this.in(bb).stack
+      assert(stack.length >= m, "entry stack is too small, expected: " + m + " found: " + stack)
+      stack.take(m) flatMap (_.toList)
+    }
+
+    /** Return the definitions that produced the topmost 'm' elements on the stack,
+     *  and that reach the instruction at index 'idx' in basic block 'bb'.
+     */
+    def findDefs(bb: BasicBlock, idx: Int, m: Int): List[(BasicBlock, Int)] =
+      findDefs(bb, idx, m, 0)
+
     override def toString: String = {
       val sb = new compat.StringBuilder
       sb.append("rdef: \n")

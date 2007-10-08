@@ -12,6 +12,7 @@ import java.io.PrintWriter
 import scala.collection.mutable.HashMap
 import scala.tools.nsc.symtab._
 import analysis.{Liveness, ReachingDefinitions}
+import scala.tools.nsc.symtab.classfile.ICodeReader
 
 /** Glue together ICode parts.
  *
@@ -27,6 +28,7 @@ abstract class ICodes extends AnyRef
                                  with Primitives
                                  with Linearizers
                                  with Printers
+                                 with Repository
 {
   val global: Global
 
@@ -72,6 +74,10 @@ abstract class ICodes extends AnyRef
     settings.inline.value = true
     settings.Xcloselim.value = true
     settings.Xdce.value = true
+  }
+
+  object icodeReader extends ICodeReader {
+    lazy val global: ICodes.this.global.type = ICodes.this.global
   }
 
   /** A phase which works on icode. */

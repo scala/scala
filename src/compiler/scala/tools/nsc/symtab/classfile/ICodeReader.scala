@@ -45,7 +45,7 @@ abstract class ICodeReader extends ClassfileParser {
     var sym = cls
     isScalaModule = cls.isModule && !cls.hasFlag(JAVA)
     log("Reading class: " + cls + " isScalaModule?: " + isScalaModule)
-    val name = cls.fullNameString(java.io.File.separatorChar) + (if (isScalaModule) "$" else "")
+    val name = cls.fullNameString(java.io.File.separatorChar) + (if (sym.hasFlag(MODULE)) "$" else "")
     val entry = classPath.root.find(name, false)
     if (entry ne null) {
       classFile = entry.classFile
@@ -53,7 +53,6 @@ abstract class ICodeReader extends ClassfileParser {
         //sym = cls.linkedClassOfModule
       assert(classFile ne null, "No classfile for " + cls)
 
-      println("sym = " + sym)
 //    for (s <- cls.info.members)
 //      Console.println("" + s + ": " + s.tpe)
       this.instanceCode = new IClass(sym)
@@ -94,12 +93,12 @@ abstract class ICodeReader extends ClassfileParser {
   }
 
   override def parseField(): Unit = {
-    val (jflags, sym) = parseMember()
+    val (jflags, sym) = parseMember(true)
     getCode(jflags).addField(new IField(sym))
     skipAttributes()
   }
 
-  private def parseMember(): (Int, Symbol) = {
+  private def parseMember(field: Boolean): (Int, Symbol) = {
     val jflags = in.nextChar
     val name = pool.getName(in.nextChar)
     var tpe  = pool.getType(in.nextChar)
@@ -113,19 +112,55 @@ abstract class ICodeReader extends ClassfileParser {
     if ("<clinit>" == name.toString)
       (jflags, NoSymbol)
     else {
-      var sym = getOwner(jflags).info.member(name).suchThat(old => old.tpe =:= tpe);
+      val owner = getOwner(jflags)
+      var sym = owner.info.member(name).suchThat(old => sameType(old.tpe, tpe));
       if (sym == NoSymbol)
-        sym = getOwner(jflags).info.member(newTermName(name.toString + nme.LOCAL_SUFFIX)).suchThat(old => old.tpe =:= tpe);
-      if (sym == NoSymbol)
-        Console.println("Could not find symbol for " + name + ": " + tpe);
+        sym = owner.info.member(newTermName(name.toString + nme.LOCAL_SUFFIX)).suchThat(old => old.tpe =:= tpe);
+      if (sym == NoSymbol) {
+        log("Could not find symbol for " + name + ": " + tpe/* + " in " + owner.info.decls*/)
+        log(owner.info.member(name).tpe + " : " + tpe)
+        if (field)
+          sym = owner.newValue(owner.pos, name).setInfo(tpe).setFlag(MUTABLE | javaToScalaFlags(jflags))
+        else
+          sym = owner.newMethod(owner.pos, name).setInfo(tpe).setFlag(javaToScalaFlags(jflags))
+        owner.info.decls.enter(sym)
+        log("added " + sym + ": " + sym.tpe)
+      }
       (jflags, sym)
     }
   }
 
+  private def javaToScalaFlags(flags: Int): Long = {
+    import ch.epfl.lamp.fjbg.JAccessFlags._
+
+    var res = 0L
+    if ((flags & ACC_PRIVATE) == 1) res |= Flags.PRIVATE
+    if ((flags & ACC_PROTECTED) == 1) res |= Flags.PROTECTED
+    if ((flags & ACC_FINAL) == 1) res |= Flags.FINAL
+    if ((flags & ACC_ABSTRACT) == 1) res |= Flags.DEFERRED
+    if ((flags & ACC_SYNTHETIC) == 1) res |= Flags.SYNTHETIC
+
+    res
+  }
+
+  /** Checks if tp1 is the same type as tp2, modulo implict methods.
+   *  We don't care about the distinction between implcit and explicit
+   *  methods as this point, and we can't get back the information from
+   *  bytecode anyway.
+   */
+  private def sameType(tp1: Type, tp2: Type): Boolean = (tp1, tp2) match {
+    case (MethodType(args1, resTpe1), MethodType(args2, resTpe2)) =>
+      if (tp1.isInstanceOf[ImplicitMethodType] || tp2.isInstanceOf[ImplicitMethodType]) {
+        MethodType(args1, resTpe1) =:= MethodType(args2, resTpe2)
+      } else
+        tp1 =:= tp2
+    case _ => tp1 =:= tp2
+  }
+
   override def parseMethod() {
-    val (jflags, sym) = parseMember()
+    val (jflags, sym) = parseMember(false)
     if (sym != NoSymbol) {
-      Console.println("Parsing method " + sym.fullNameString + ": " + sym.tpe);
+      log("Parsing method " + sym.fullNameString + ": " + sym.tpe);
       this.method = new IMethod(sym);
       getCode(jflags).addMethod(this.method)
       if ((jflags & JAVA_ACC_NATIVE) != 0)
@@ -154,10 +189,16 @@ abstract class ICodeReader extends ClassfileParser {
       definitions.AllClass
     else if (name == nullName)
       definitions.AllRefClass
-    else if (name.endsWith("$"))
+    else if (name.endsWith("$class")) {
+      val iface = definitions.getClass(name.subName(0, name.length - "$class".length))
+      log("forcing " + iface)
+      iface.info // force the mixin type-transformer
+      definitions.getClass(name)
+    } else if (name.endsWith("$"))
       definitions.getModule(name.subName(0, name.length - 1))
     else
       definitions.getClass(name)
+        //super.classNameToSymbol(name)
     if (sym.isModule)
       sym.moduleClass
     else
@@ -478,7 +519,12 @@ abstract class ICodeReader extends ClassfileParser {
           code.emit(CALL_METHOD(m, style))
         case JVM.invokestatic    =>
           val m = pool.getMemberSymbol(in.nextChar, true); size += 2
-          code.emit(CALL_METHOD(m, Static(false)))
+          if (isBox(m))
+            code.emit(BOX(toTypeKind(m.info.paramTypes.head)))
+          else if (isUnbox(m))
+            code.emit(UNBOX(toTypeKind(m.info.resultType)))
+          else
+            code.emit(CALL_METHOD(m, Static(false)))
 
         case JVM.new_          =>
           code.emit(NEW(REFERENCE(pool.getClassSymbol(in.nextChar))))
@@ -574,11 +620,21 @@ abstract class ICodeReader extends ClassfileParser {
 
     code.toBasicBlock
     assert(method.code ne null)
+    // reverse parameters, as they were prepended during code generation
+    method.params = method.params.reverse
     if (code.containsDUPX) {
-
       code.resolveDups
     }
+    if (code.containsNEW) code.resolveNEWs
   }
+
+  /** TODO: move in Definitions and remove obsolete isBox/isUnbox found there. */
+  def isBox(m: Symbol): Boolean =
+    (m.owner == definitions.BoxesUtilityClass.moduleClass
+        && m.name.startsWith("boxTo"))
+  def isUnbox(m: Symbol): Boolean =
+    (m.owner == definitions.BoxesUtilityClass.moduleClass
+        && m.name.startsWith("unboxTo"))
 
   /** Return the icode class that should include members with the given flags.
    *  There are two possible classes, the static part and the instance part.
@@ -592,12 +648,14 @@ abstract class ICodeReader extends ClassfileParser {
     var locals: Map[Int, List[(Local, TypeKind)]] = new HashMap()
 
     var containsDUPX = false
+    var containsNEW  = false
 
     def emit(i: Instruction) = {
-//      Console.println(i);
       instrs += (pc, i)
       if (i.isInstanceOf[DupX])
         containsDUPX = true
+      if (i.isInstanceOf[opcodes.NEW])
+        containsNEW = true
     }
 
     /** Break this linear code in basic block representation
@@ -850,6 +908,35 @@ abstract class ICodeReader extends ClassfileParser {
           info = tfa.interpret(info, i)
         }
       }
+    }
+
+    /** Recover def-use chains for NEW and initializers. */
+    def resolveNEWs {
+      import opcodes._
+
+      val rdef = new reachingDefinitions.ReachingDefinitionsAnalysis;
+      rdef.init(method)
+      rdef.run
+
+      for (bb <- method.code.blocks) {
+        var info = rdef.in(bb)
+        for ((i, idx) <- bb.toList.zipWithIndex) i match {
+          case CALL_METHOD(m, Static(true)) if m.isClassConstructor =>
+            val defs = rdef.findDefs(bb, idx, 1, m.info.paramTypes.length)
+            //println("ctor: " + i + " found defs: " + defs)
+            assert(defs.length == 1)
+            val (bb1, idx1) = defs.head
+            var producer = bb1(idx1)
+            while (producer.isInstanceOf[DUP]) {
+              val (bb2, idx2) = rdef.findDefs(bb1, idx1, 1).head
+              producer = bb2(idx2)
+            }
+            assert(producer.isInstanceOf[NEW], producer)
+            producer.asInstanceOf[NEW].init = i.asInstanceOf[CALL_METHOD]
+          case _ =>
+        }
+      }
+
     }
 
     /** Return the local at given index, with the given type. */

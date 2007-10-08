@@ -263,9 +263,10 @@ abstract class ClassfileParser {
           c = sigToType(null, name)
           values(index) = c
         } else {
-          val sym = if (name.endsWith("$")) definitions.getModule(name.subName(0, name.length - 1))
+          val sym = classNameToSymbol(name)
+                  /*if (name.endsWith("$")) definitions.getModule(name.subName(0, name.length - 1))
                     else if (name.endsWith("$class")) definitions.getModule(name)
-                    else definitions.getClass(name)
+                    else definitions.getClass(name)*/
           values(index) = sym
           c = sym.tpe
         }
@@ -403,7 +404,7 @@ abstract class ClassfileParser {
     val jflags = in.nextChar
     var sflags = transFlags(jflags)
     if ((sflags & FINAL) == 0) sflags = sflags | MUTABLE
-    if ((sflags & PRIVATE) != 0 && !global.settings.XbytecodeRead.value) {
+    if ((sflags & PRIVATE) != 0 && !global.settings.XO.value) {
       in.skip(4); skipAttributes()
     } else {
       val name = pool.getName(in.nextChar)
@@ -420,14 +421,14 @@ abstract class ClassfileParser {
   def parseMethod() {
     val jflags = in.nextChar
     var sflags = transFlags(jflags)
-    if ((jflags & JAVA_ACC_PRIVATE) != 0 && !global.settings.XbytecodeRead.value) {
+    if ((jflags & JAVA_ACC_PRIVATE) != 0 && !global.settings.XO.value) {
       val name = pool.getName(in.nextChar)
       if (name == nme.CONSTRUCTOR)
         sawPrivateConstructor = true
       in.skip(2); skipAttributes()
     } else {
       if ((jflags & JAVA_ACC_BRIDGE) != 0) sflags = sflags | BRIDGE //PRIVATE
-      if ((sflags & PRIVATE) != 0 && !global.settings.XbytecodeRead.value) {
+      if ((sflags & PRIVATE) != 0 && global.settings.XO.value) {
         in.skip(4); skipAttributes()
       } else {
         val name = pool.getName(in.nextChar)
@@ -478,6 +479,7 @@ abstract class ClassfileParser {
         case BOOL_TAG   => definitions.BooleanClass.tpe
         case 'L' => {
           val classSym = classNameToSymbol(subName(c => ((c == ';') || (c == '<'))))
+          assert(!classSym.hasFlag(OVERLOADED), classSym.alternatives)
           val existentials = new ListBuffer[Symbol]()
           val tpe: Type = if (sig(index) == '<') {
             assert(sym != null)
