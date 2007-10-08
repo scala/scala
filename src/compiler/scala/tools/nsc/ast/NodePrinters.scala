@@ -148,7 +148,7 @@ abstract class NodePrinters {
             }
             printcln(")")
           case Block(stats, expr) =>
-            println("Block(")
+            println("Block(" + nodeinfo(tree))
             if (stats.isEmpty)
               println("  List() // no statement")
             else {
