@@ -149,7 +149,7 @@ abstract class SymbolLoaders {
     def refresh = {
       /** Is the given name a valid input file base name? */
       def isValid(name: String): Boolean =
-        name.length() > 0 && !name.endsWith("$class") && (settings.XbytecodeRead.value ||
+        name.length() > 0 && !name.endsWith("$class") && (settings.XO.value ||
           (name.indexOf("$anon") == -1));
 
       val classes  = new HashMap[String, global.classPath0.Context]
