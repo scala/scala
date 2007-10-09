@@ -78,7 +78,7 @@ class PickleBuffer(data: Array[Byte], from: Int, to: Int) {
     val y = x >> 8
     val z = x & 0xff
     if (-y != (z >> 7)) writeLong(y)
-    writeByte(z.asInstanceOf[int])
+    writeByte(z.asInstanceOf[Int])
   }
 
   // -- Basic input routines --------------------------------------------

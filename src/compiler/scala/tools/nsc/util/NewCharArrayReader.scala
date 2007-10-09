@@ -9,7 +9,7 @@ package scala.tools.nsc.util
 import scala.tools.nsc.util.SourceFile.{LF, FF, CR, SU}
 
 class NewCharArrayReader(val buf: RandomAccessSeq[Char], // should not change
-                       decodeUni: Boolean, error: (Int,String) => unit) extends Iterator[Char] {
+                       decodeUni: Boolean, error: (Int,String) => Unit) extends Iterator[Char] {
   private var idx : Int = 0
   private var isUnicode0 = false
   def isUnicode = isUnicode0

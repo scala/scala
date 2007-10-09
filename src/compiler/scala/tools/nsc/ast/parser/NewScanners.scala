@@ -1,4 +1,11 @@
+/* NSC -- new Scala compiler
+ * Copyright 2005-2007 LAMP/EPFL
+ * @author  Sean McDirmid
+ */
+// $Id$
+
 package scala.tools.nsc.ast.parser
+
 import scala.tools.nsc.util.SourceFile._
 import scala.tools.nsc.util._
 
@@ -735,7 +742,7 @@ trait NewScanners {
   }
 
   object ScannerConfiguration {
-    private var key: Array[byte] = _
+    private var key: Array[Byte] = _
     private var maxKey = 0
     private var tokenName = new Array[global.Name](128);
     {
@@ -806,18 +813,18 @@ trait NewScanners {
       enterKeyword(nme.ATkw, AT)
 
       // Build keyword array
-      key = new Array[byte](maxKey + 1)
+      key = new Array[Byte](maxKey + 1)
       for (i <- 0 to maxKey)
         key(i) = IDENTIFIER
       for (j <- 0 until tokenCount)
         if (tokenName(j) ne null)
-          key(tokenName(j).start) = j.asInstanceOf[byte]
+          key(tokenName(j).start) = j.asInstanceOf[Byte]
 
     }
 //Token representation -----------------------------------------------------
 
   /** Convert name to token */
-  def name2token(name: global.Name): int =
+  def name2token(name: global.Name): Int =
     if (name.start <= maxKey) key(name.start) else IDENTIFIER
 
   def isKeyword(code : Int) = code match {
@@ -825,7 +832,7 @@ trait NewScanners {
   case _ => false
   }
   /** Returns the string representation of given token. */
-  def token2string(token: int): String = token match {
+  def token2string(token: Int): String = token match {
     case IDENTIFIER | BACKQUOTED_IDENT => "identifier"
     case CHARLIT => "character literal"
     case INTLIT => "integer literal"

@@ -9,9 +9,9 @@ package scala.tools.nsc.util
 import scala.tools.nsc.util.SourceFile.{LF, FF, CR, SU}
 
 class CharArrayReader(buf: RandomAccessSeq[Char], start: Int, /* startline: int, startcol: int, */
-                      decodeUni: Boolean, error: String => unit) extends Iterator[Char] {
+                      decodeUni: Boolean, error: String => Unit) extends Iterator[Char] {
 
-  def this(buf: RandomAccessSeq[Char], decodeUni: Boolean, error: String => unit) =
+  def this(buf: RandomAccessSeq[Char], decodeUni: Boolean, error: String => Unit) =
     this(buf, 0, /* 1, 1, */ decodeUni, error)
 
   /** layout constant

@@ -113,17 +113,17 @@ class XIncludeFilter extends XMLFilterImpl {
     // what if this isn't called????
     // do I need to check this in startDocument() and push something
     // there????
-  override def setDocumentLocator(locator: Locator): Unit = {
-    locators.push(locator);
-    val base = locator.getSystemId();
+  override def setDocumentLocator(locator: Locator) {
+    locators.push(locator)
+    val base = locator.getSystemId()
     try {
-      bases.push(new URL(base));
+      bases.push(new URL(base))
     }
     catch {
       case e:MalformedURLException =>
-        throw new UnsupportedOperationException("Unrecognized SYSTEM ID: " + base);
+        throw new UnsupportedOperationException("Unrecognized SYSTEM ID: " + base)
     }
-    super.setDocumentLocator(locator);
+    super.setDocumentLocator(locator)
   }
 
 
@@ -142,7 +142,7 @@ class XIncludeFilter extends XMLFilterImpl {
     *
     * @return boolean
     */
-  def insideIncludeElement(): boolean = level != 0
+  def insideIncludeElement(): Boolean = level != 0
 
   override def startElement(uri: String, localName: String, qName: String, atts1: Attributes) {
     var atts = atts1
@@ -150,31 +150,31 @@ class XIncludeFilter extends XMLFilterImpl {
 
       // Adjust bases stack by pushing either the new
       // value of xml:base or the base of the parent
-      val base = atts.getValue(NamespaceSupport.XMLNS, "base");
-      val parentBase = bases.peek().asInstanceOf[URL];
-      var currentBase = parentBase;
+      val base = atts.getValue(NamespaceSupport.XMLNS, "base")
+      val parentBase = bases.peek().asInstanceOf[URL]
+      var currentBase = parentBase
       if (base != null) {
         try {
-          currentBase = new URL(parentBase, base);
+          currentBase = new URL(parentBase, base)
         }
         catch {
           case e: MalformedURLException =>
             throw new SAXException("Malformed base URL: "
-                                   + currentBase, e);
+                                   + currentBase, e)
         }
       }
       bases.push(currentBase);
 
       if (uri.equals(XINCLUDE_NAMESPACE) && localName.equals("include")) {
         // include external document
-        val href = atts.getValue("href");
+        val href = atts.getValue("href")
         // Verify that there is an href attribute
         if (href==null) {
-          throw new SAXException("Missing href attribute");
+          throw new SAXException("Missing href attribute")
         }
 
-        var parse = atts.getValue("parse");
-        if (parse == null) parse = "xml";
+        var parse = atts.getValue("parse")
+        if (parse == null) parse = "xml"
 
         if (parse.equals("text")) {
           val encoding = atts.getValue("encoding");
@@ -188,98 +188,93 @@ class XIncludeFilter extends XMLFilterImpl {
           throw new SAXException(
             "Illegal value for parse attribute: " + parse);
         }
-        level = level + 1;
+        level += 1
       }
-        else {
-          if (atRoot) {
-            // add xml:base attribute if necessary
-            val attsImpl = new AttributesImpl(atts);
-            attsImpl.addAttribute(NamespaceSupport.XMLNS, "base",
-                                  "xml:base", "CDATA", currentBase.toExternalForm());
-            atts = attsImpl;
-            atRoot = false;
-          }
-          super.startElement(uri, localName, qName, atts);
+      else {
+        if (atRoot) {
+          // add xml:base attribute if necessary
+          val attsImpl = new AttributesImpl(atts)
+          attsImpl.addAttribute(NamespaceSupport.XMLNS, "base",
+                                "xml:base", "CDATA", currentBase.toExternalForm())
+          atts = attsImpl
+          atRoot = false
         }
-
+        super.startElement(uri, localName, qName, atts)
+      }
     }
-
   }
 
-  override def endElement (uri: String, localName: String, qName: String ) {
+  override def endElement(uri: String, localName: String, qName: String) {
     if (uri.equals(XINCLUDE_NAMESPACE)
         && localName.equals("include")) {
           level -= 1;
-        }
+    }
     else if (level == 0) {
-      bases.pop();
-      super.endElement(uri, localName, qName);
+      bases.pop()
+      super.endElement(uri, localName, qName)
     }
   }
 
   private var depth = 0;
 
   override def startDocument() {
-    level = 0;
-    if (depth == 0) super.startDocument();
+    level = 0
+    if (depth == 0) super.startDocument()
     depth += 1
   }
 
   override def endDocument() {
-    locators.pop();
+    locators.pop()
     bases.pop(); // pop the URL for the document itself
-    depth = depth - 1;
-    if (depth == 0) super.endDocument();
+    depth -= 1
+    if (depth == 0) super.endDocument()
   }
 
-    // how do prefix mappings move across documents????
-  override def startPrefixMapping(prefix: String , uri: String ): Unit = {
-    if (level == 0) super.startPrefixMapping(prefix, uri);
+  // how do prefix mappings move across documents????
+  override def startPrefixMapping(prefix: String , uri: String) {
+    if (level == 0) super.startPrefixMapping(prefix, uri)
   }
 
-  override def endPrefixMapping(prefix: String): Unit = {
-    if (level == 0) super.endPrefixMapping(prefix);
+  override def endPrefixMapping(prefix: String) {
+    if (level == 0) super.endPrefixMapping(prefix)
   }
 
-  override def characters(ch: Array[char], start: int, length: int): Unit = {
-    if (level == 0) super.characters(ch, start, length);
+  override def characters(ch: Array[Char], start: Int, length: Int) {
+    if (level == 0) super.characters(ch, start, length)
   }
 
-  override def ignorableWhitespace(ch: Array[char] , start: int, length: int): Unit = {
-    if (level == 0) super.ignorableWhitespace(ch, start, length);
+  override def ignorableWhitespace(ch: Array[Char], start: Int, length: Int) {
+    if (level == 0) super.ignorableWhitespace(ch, start, length)
   }
 
-  override def processingInstruction(target: String, data: String): Unit = {
-    if (level == 0) super.processingInstruction(target, data);
+  override def processingInstruction(target: String, data: String) {
+    if (level == 0) super.processingInstruction(target, data)
   }
 
-  override def skippedEntity(name: String): Unit =  {
-    if (level == 0) super.skippedEntity(name);
+  override def skippedEntity(name: String) {
+    if (level == 0) super.skippedEntity(name)
   }
 
   // convenience method for error messages
   private def getLocation(): String = {
-
-    var locationString = "";
-    val locator = locators.peek().asInstanceOf[Locator];
-    var publicID = "";
-    var systemID = "";
-    var column = -1;
-    var line = -1;
+    var locationString = ""
+    val locator = locators.peek().asInstanceOf[Locator]
+    var publicID = ""
+    var systemID = ""
+    var column = -1
+    var line = -1
     if (locator != null) {
-      publicID = locator.getPublicId();
-      systemID = locator.getSystemId();
-      line = locator.getLineNumber();
-      column = locator.getColumnNumber();
+      publicID = locator.getPublicId()
+      systemID = locator.getSystemId()
+      line = locator.getLineNumber()
+      column = locator.getColumnNumber()
     }
     locationString = (" in document included from " + publicID
     + " at " + systemID
     + " at line " + line + ", column " + column);
 
-    return locationString;
-
+    locationString
   }
-
 
   /**
     * <p>
@@ -296,13 +291,13 @@ class XIncludeFilter extends XMLFilterImpl {
                            be downloaded from the specified URL
                            or if the encoding is not recognized
     */
-  private def includeTextDocument(url: String, encoding1: String): Unit = {
-    var encoding = encoding1;
+  private def includeTextDocument(url: String, encoding1: String) {
+    var encoding = encoding1
     if (encoding == null || encoding.trim().equals("")) encoding = "UTF-8";
-    var source: URL = null;
+    var source: URL = null
     try {
-      val base = bases.peek().asInstanceOf[URL];
-      source = new URL(base, url);
+      val base = bases.peek().asInstanceOf[URL]
+      source = new URL(base, url)
     }
     catch {
       case e: MalformedURLException =>
@@ -313,11 +308,12 @@ class XIncludeFilter extends XMLFilterImpl {
     }
 
     try {
-      val uc = source.openConnection();
-      val in = new BufferedInputStream(uc.getInputStream());
-      var encodingFromHeader = uc.getContentEncoding();
-      var contentType = uc.getContentType();
-      if (encodingFromHeader != null) encoding = encodingFromHeader;
+      val uc = source.openConnection()
+      val in = new BufferedInputStream(uc.getInputStream())
+      var encodingFromHeader = uc.getContentEncoding()
+      var contentType = uc.getContentType()
+      if (encodingFromHeader != null)
+        encoding = encodingFromHeader
       else {
         // What if file does not have a MIME type but name ends in .xml????
         // MIME types are case-insensitive
@@ -332,9 +328,9 @@ class XIncludeFilter extends XMLFilterImpl {
               }
         }
       }
-      val reader = new InputStreamReader(in, encoding);
-      val c = new Array[char](1024);
-      var charsRead: Int = 0; // bogus init value
+      val reader = new InputStreamReader(in, encoding)
+      val c = new Array[Char](1024)
+      var charsRead: Int = 0  // bogus init value
       do {
         charsRead = reader.read(c, 0, 1024);
         if (charsRead > 0) this.characters(c, 0, charsRead);
@@ -375,15 +371,15 @@ class XIncludeFilter extends XMLFilterImpl {
       case e:MalformedURLException =>
         val ex = new UnavailableResourceException("Unresolvable URL " + url
                                                   + getLocation());
-        ex.setRootCause(e);
-        throw new SAXException("Unresolvable URL " + url + getLocation(), ex);
+        ex.setRootCause(e)
+        throw new SAXException("Unresolvable URL " + url + getLocation(), ex)
     }
 
     try {
       // make this more robust
       var parser: XMLReader = null
       try {
-        parser = XMLReaderFactory.createXMLReader();
+        parser = XMLReaderFactory.createXMLReader()
       } catch {
         case e:SAXException =>
           try {
@@ -392,7 +388,7 @@ class XIncludeFilter extends XMLFilterImpl {
             );
           } catch {
             case e2: SAXException =>
-              System.err.println("Could not find an XML parser");
+              System.err.println("Could not find an XML parser")
           }
       }
       if(parser != null) {

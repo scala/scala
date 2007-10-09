@@ -17,14 +17,14 @@ import java.lang.ClassNotFoundException
 import java.io.{DataInputStream, DataOutputStream, EOFException, IOException}
 
 abstract class Serializer(val service: Service) {
-  def serialize(o: AnyRef): Array[byte]
-  def deserialize(a: Array[byte]): AnyRef
+  def serialize(o: AnyRef): Array[Byte]
+  def deserialize(a: Array[Byte]): AnyRef
 
   @throws(classOf[IOException])
-  def readBytes(inputStream: DataInputStream): Array[byte] = {
+  def readBytes(inputStream: DataInputStream): Array[Byte] = {
     try {
       val length = inputStream.readInt()
-      val bytes = new Array[byte](length)
+      val bytes = new Array[Byte](length)
       inputStream.readFully(bytes, 0, length)
       return bytes
     }
@@ -41,7 +41,7 @@ abstract class Serializer(val service: Service) {
   }
 
   @throws(classOf[IOException])
-  def writeBytes(outputStream: DataOutputStream, bytes: Array[byte]) {
+  def writeBytes(outputStream: DataOutputStream, bytes: Array[Byte]) {
     val length = bytes.length;
     // original length
     outputStream.writeInt(length)

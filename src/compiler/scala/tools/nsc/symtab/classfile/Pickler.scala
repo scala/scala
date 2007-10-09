@@ -52,7 +52,7 @@ abstract class Pickler extends SubComponent {
               var i = 0
               while (i < pickle.writeIndex) {
                 unit.pickleHash += pickle.bytes(i).toLong // toLong needed to work around bug
-                i = i + 1
+                i += 1
               }
             }
           case _ =>
@@ -67,7 +67,7 @@ abstract class Pickler extends SubComponent {
     import scala.collection.jcl.LinkedHashMap
     private var entries = new Array[AnyRef](256)
     private var ep = 0
-    private val index = new LinkedHashMap[AnyRef, int]
+    private val index = new LinkedHashMap[AnyRef, Int]
 
     /** Is root in symbol.owner*?
      *
@@ -336,7 +336,7 @@ abstract class Pickler extends SubComponent {
       var posOffset = 0
       writeRef(sym.name)
       writeRef(sym.owner)
-      writeNat((sym.flags & PickledFlags).asInstanceOf[int])
+      writeNat((sym.flags & PickledFlags).asInstanceOf[Int])
       if (sym.privateWithin != NoSymbol) writeRef(sym.privateWithin)
       writeRef(sym.info)
       posOffset

@@ -297,11 +297,11 @@ trait TransMatcher { self: transform.ExplicitOuter with PatternNodes with Parall
   }
 
   object resetTrav extends Traverser {
-    override def traverse(x:Tree): unit = x match {
-      case vd @ ValDef(_,_,_,_)=>
-        if(vd.symbol.hasFlag(symtab.Flags.SYNTHETIC))  {
-          vd.symbol.resetFlag(symtab.Flags.TRANS_FLAG)
-          vd.symbol.resetFlag(symtab.Flags.MUTABLE)
+    override def traverse(x: Tree): Unit = x match {
+      case vd @ ValDef(_, _, _, _) =>
+        if (vd.symbol hasFlag symtab.Flags.SYNTHETIC) {
+          vd.symbol resetFlag symtab.Flags.TRANS_FLAG
+          vd.symbol resetFlag symtab.Flags.MUTABLE
         }
       case _ =>
         super.traverse(x)

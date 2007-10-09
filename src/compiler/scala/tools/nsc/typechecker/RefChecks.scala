@@ -473,7 +473,7 @@ abstract class RefChecks extends InfoTransform {
     }
 
     private var currentLevel: LevelInfo = null
-    private val symIndex = new HashMap[Symbol, int]
+    private val symIndex = new HashMap[Symbol, Int]
 
     private def pushLevel() {
       currentLevel = new LevelInfo(currentLevel)

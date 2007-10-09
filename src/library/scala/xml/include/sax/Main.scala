@@ -51,14 +51,14 @@ object Main {
       }
       catch {
         case e:SAXException =>
-          System.err.println(e);
+          System.err.println(e)
           err = true
       }
-      if(err) return;
+      if (err) return
 
-      if (args.length == 0) return;
-      var resolver: EntityResolver = null;
-      var arg: int = 0;
+      if (args.length == 0) return
+      var resolver: EntityResolver = null
+      var arg: Int = 0
       if (args(0).equals("-r")) {
         try {
           resolver = Class.forName(args(1)).newInstance().asInstanceOf[EntityResolver];
@@ -66,30 +66,30 @@ object Main {
         }
         catch {
           case ex:Exception =>
-            System.err.println("Could not load requested EntityResolver");
-          err = true;
+            System.err.println("Could not load requested EntityResolver")
+            err = true
         }
-        arg = 2;
+        arg = 2
       }
-      if (err) return;
+      if (err) return
 
       while (arg < args.length) {
         try {
           val includer = new XIncludeFilter();
-          includer.setParent(parser);
-          val s = new XIncluder(System.out, "UTF-8");
-          includer.setContentHandler(s);
-          if (resolver != null) includer.setEntityResolver(resolver);
+          includer.setParent(parser)
+          val s = new XIncluder(System.out, "UTF-8")
+          includer.setContentHandler(s)
+          if (resolver != null) includer.setEntityResolver(resolver)
           try {
             includer.setProperty(
               "http://xml.org/sax/properties/lexical-handler",
-              s);
-            s.setFilter(includer);
+              s)
+            s.setFilter(includer)
           }
           catch {
             case e:SAXException => // Will not support comments
           }
-          includer.parse(args(arg));
+          includer.parse(args(arg))
         }
         catch {
           case e:SAXParseException =>

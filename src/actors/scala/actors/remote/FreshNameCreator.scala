@@ -13,7 +13,7 @@ package scala.actors.remote
 object FreshNameCreator {
 
   protected var counter = 0
-  protected val counters = new scala.collection.mutable.HashMap[String,int]
+  protected val counters = new scala.collection.mutable.HashMap[String, Int]
 
   /**
    * Create a fresh name with the given prefix. It is guaranteed

@@ -492,11 +492,11 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
      *  @param pt   ...
      *  @return     the adapted tree
      */
-    override protected def adapt(tree: Tree, mode: int, pt: Type): Tree =
+    override protected def adapt(tree: Tree, mode: Int, pt: Type): Tree =
       adaptToType(tree, pt)
 
     /** A replacement for the standard typer's `typed1' method */
-    override protected def typed1(tree: Tree, mode: int, pt: Type): Tree = {
+    override protected def typed1(tree: Tree, mode: Int, pt: Type): Tree = {
       var tree1 = try {
         super.typed1(adaptMember(tree), mode, pt)
       } catch {

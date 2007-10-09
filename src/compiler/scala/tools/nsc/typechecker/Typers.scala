@@ -482,7 +482,7 @@ trait Typers { self: Analyzer =>
      *  <!--(3)--><li>Turn tree type into stable type if possible and required by context.</li>
      *  </ol>
      */
-    private def stabilize(tree: Tree, pre: Type, mode: int, pt: Type): Tree = {
+    private def stabilize(tree: Tree, pre: Type, mode: Int, pt: Type): Tree = {
       def isDeprecated(sym: Symbol) = sym.isDeprecated
       if (tree.symbol.hasFlag(OVERLOADED) && (mode & FUNmode) == 0)
         inferExprAlternative(tree, pt)
@@ -607,7 +607,7 @@ trait Typers { self: Analyzer =>
      *  (13) When in mode EXPRmode, apply a view
      *  If all this fails, error
      */
-    protected def adapt(tree: Tree, mode: int, pt: Type): Tree = tree.tpe match {
+    protected def adapt(tree: Tree, mode: Int, pt: Type): Tree = tree.tpe match {
       case ct @ ConstantType(value) if ((mode & TYPEmode) == 0 && (ct <:< pt) && !inIDE) => // (0)
         copy.Literal(tree, value)
       case OverloadedType(pre, alts) if ((mode & FUNmode) == 0) => // (1)
@@ -799,7 +799,7 @@ trait Typers { self: Analyzer =>
      *  @param pt   ...
      *  @return     ...
      */
-    def instantiate(tree: Tree, mode: int, pt: Type): Tree = {
+    def instantiate(tree: Tree, mode: Int, pt: Type): Tree = {
       val tparams = context.undetparams
       context.undetparams = List()
       inferExprInstance(tree, tparams, pt)
@@ -2017,7 +2017,7 @@ trait Typers { self: Analyzer =>
      *  @param pt   ...
      *  @return     ...
      */
-    protected def typed1(tree: Tree, mode: int, pt: Type): Tree = {
+    protected def typed1(tree: Tree, mode: Int, pt: Type): Tree = {
       //Console.println("typed1("+tree.getClass()+","+Integer.toHexString(mode)+","+pt+")")
       def ptOrLub(tps: List[Type]) = if (isFullyDefined(pt)) pt else lub(tps map (_.deconst))
 

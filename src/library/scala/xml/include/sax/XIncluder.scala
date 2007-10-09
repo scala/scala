@@ -145,22 +145,22 @@ with ContentHandler with LexicalHandler {
   }
 
   // LexicalHandler methods
-  private var inDTD: boolean = false;
-  private val entities: Stack  = new Stack();
+  private var inDTD: Boolean = false
+  private val entities: Stack = new Stack()
 
-  def  startDTD(name: String, publicID: String, systemID: String): Unit = {
-    inDTD = true;
+  def startDTD(name: String, publicID: String, systemID: String) {
+    inDTD = true
     // if this is the source document, output a DOCTYPE declaration
     if (entities.size() == 0) {
-      var id = "";
+      var id = ""
       if (publicID != null) id = " PUBLIC \"" + publicID + "\" \"" + systemID + '"';
       else if (systemID != null) id = " SYSTEM \"" + systemID + '"';
       try {
-        out.write("<!DOCTYPE " + name + id + ">\r\n");
+        out.write("<!DOCTYPE " + name + id + ">\r\n")
       }
       catch {
         case e:IOException =>
-          throw new SAXException("Error while writing DOCTYPE", e);
+          throw new SAXException("Error while writing DOCTYPE", e)
       }
     }
   }
@@ -169,7 +169,6 @@ with ContentHandler with LexicalHandler {
   def startEntity(name: String) {
     entities.push(name)
   }
-
 
   def endEntity(name: String) {
     entities.pop()
@@ -180,14 +179,13 @@ with ContentHandler with LexicalHandler {
 
   // Just need this reference so we can ask if a comment is
   // inside an include element or not
-  private var filter: XIncludeFilter = null;
+  private var filter: XIncludeFilter = null
 
   def setFilter(filter: XIncludeFilter) {
     this.filter = filter
   }
 
   def comment(ch: Array[Char], start: Int, length: Int) {
-
     if (!inDTD && !filter.insideIncludeElement()) {
       try {
         out.write("<!--")
@@ -195,7 +193,7 @@ with ContentHandler with LexicalHandler {
         out.write("-->")
       }
       catch {
-        case e:IOException =>
+        case e: IOException =>
           throw new SAXException("Write failed", e)
       }
     }

@@ -119,7 +119,7 @@ object Actor {
    * @param  f    a partial function specifying patterns and actions
    * @return      the result of processing the received message
    */
-  def receiveWithin[R](msec: long)(f: PartialFunction[Any, R]): R =
+  def receiveWithin[R](msec: Long)(f: PartialFunction[Any, R]): R =
     self.receiveWithin(msec)(f)
 
   /**

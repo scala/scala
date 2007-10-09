@@ -22,7 +22,7 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
   import posAssigner.atPos
 
   /** The following flags may be set by this phase: */
-  override def phaseNewFlags: long = notPRIVATE | notPROTECTED | lateFINAL
+  override def phaseNewFlags: Long = notPRIVATE | notPROTECTED | lateFINAL
 
   /** the name of the phase: */
   val phaseName: String = "explicitouter"

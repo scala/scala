@@ -55,7 +55,7 @@ trait Contexts { self: Analyzer =>
   def rootContext(unit: CompilationUnit): Context =
     rootContext(unit, EmptyTree, false)
 
-  def rootContext(unit: CompilationUnit, tree: Tree, erasedTypes: boolean): Context = {
+  def rootContext(unit: CompilationUnit, tree: Tree, erasedTypes: Boolean): Context = {
     import definitions._
     var sc = startContext
     def addImport(pkg: Symbol) {
@@ -423,7 +423,7 @@ trait Contexts { self: Analyzer =>
      *  @param superAccess ...
      *  @return            ...
      */
-    def isAccessible(sym: Symbol, pre: Type, superAccess: boolean): boolean = {
+    def isAccessible(sym: Symbol, pre: Type, superAccess: Boolean): Boolean = {
 
       /** Are we inside definition of `owner'? */
       def accessWithin(owner: Symbol): Boolean = {

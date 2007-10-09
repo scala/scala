@@ -84,7 +84,7 @@ object Scheduler {
   def shutdown() = sched.shutdown()
 
   def onLockup(handler: () => Unit) = sched.onLockup(handler)
-  def onLockup(millis: int)(handler: () => Unit) = sched.onLockup(millis)(handler)
+  def onLockup(millis: Int)(handler: () => Unit) = sched.onLockup(millis)(handler)
   def printActorDump = sched.printActorDump
 }
 
@@ -112,7 +112,7 @@ trait IScheduler {
   def shutdown(): Unit
 
   def onLockup(handler: () => Unit): Unit
-  def onLockup(millis: int)(handler: () => Unit): Unit
+  def onLockup(millis: Int)(handler: () => Unit): Unit
   def printActorDump: Unit
 
   val QUIT_TASK = new Reaction(null) {

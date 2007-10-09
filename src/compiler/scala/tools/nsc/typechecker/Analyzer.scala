@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -18,15 +18,16 @@ trait Analyzer extends AnyRef
             with SyntheticMethods
             with Unapplies {
 
-  val global : Global;
-  import global._;
+  val global : Global
+  import global._
 
   object namerFactory extends SubComponent {
     val global: Analyzer.this.global.type = Analyzer.this.global
     val phaseName = "namer"
     def newPhase(_prev: Phase): StdPhase = new StdPhase(_prev) {
-      def apply(unit: CompilationUnit): unit =
+      def apply(unit: CompilationUnit) {
         newNamer(rootContext(unit)).enterSym(unit.body)
+      }
     }
   }
 
@@ -35,8 +36,9 @@ trait Analyzer extends AnyRef
     val phaseName = "typer"
     def newPhase(_prev: Phase): StdPhase = new StdPhase(_prev) {
       resetTyper
-      def apply(unit: CompilationUnit): unit =
+      def apply(unit: CompilationUnit) {
         unit.body = newTyper(rootContext(unit)).typed(unit.body)
+      }
     }
   }
 }
