@@ -16,7 +16,7 @@ if [ -z "${JAVA_HOME}" ]; then
 fi
 
 JAVAC=${JAVA_HOME}/bin/javac
-JAVAC_OPTIONS="-source 1.5"
+JAVAC_OPTIONS="-source 1.5 -target 1.5"
 
 JAR=${JAVA_HOME}/bin/jar
 
