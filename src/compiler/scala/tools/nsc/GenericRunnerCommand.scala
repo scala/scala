@@ -63,6 +63,11 @@ extends CompilerCommand(allargs, settings, error, false)
     "    object: it is an object name\n" +
     "    guess: (the default) try to guess\n" +
     "\n" +
+    "Option -i requests that a file be pre-loaded.  It is only\n" +
+    "meaningful for interactive shells.\n" +
+    "\n" +
+    "Option -e requests that its argument be executed as Scala code.\n" +
+    "\n" +
     "Option -savecompiled requests that the compiled script be saved\n" +
     "for future use.\n" +
     "\n" +
