@@ -167,6 +167,7 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
         return
     }
     val oldIn = in
+    val oldReplay = replayCommandsRev
     try {
       val inFile = new BufferedReader(fileIn)
       in = new SimpleReader(inFile, out, false)
@@ -175,6 +176,7 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
       repl
     } finally {
       in = oldIn
+      replayCommandsRev = oldReplay
       fileIn.close
     }
   }
@@ -260,6 +262,20 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
     }
   }
 
+  def loadFiles(settings: Settings) {
+    settings match {
+      case settings: GenericRunnerSettings =>
+	for (filename <- settings.loadfiles.value) {
+	  val cmd = ":load " + filename
+	  command(cmd)
+	  replayCommandsRev = cmd :: replayCommandsRev
+	  out.println()
+	}
+      case _ =>
+    }
+  }
+
+
   def main(settings: Settings) {
     this.settings = settings
 
@@ -280,6 +296,8 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
     uglinessxxx =  classOf[InterpreterLoop].getClassLoader
 
     createInterpreter()
+
+    loadFiles(settings)
 
     try {
       if (interpreter.reporter.hasErrors) {
