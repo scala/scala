@@ -19,6 +19,19 @@ extends Settings(error) {
       List("guess", "object", "script"),
       "guess")
 
+  val loadfiles =
+    MultiStringSetting(
+        "-i",
+        "file",
+        "load a file (assumes the code is given interactively)")
+
+  val execute =
+    StringSetting(
+        "-e",
+        "string",
+        "execute a single command",
+        "")
+
   val savecompiled =
     BooleanSetting(
         "-savecompiled",
@@ -28,6 +41,7 @@ extends Settings(error) {
     BooleanSetting(
         "-nocompdaemon",
         "do not use the fsc compilation daemon")
+
 
   /** For some reason, "object defines extends Setting(...)"
    *  does not work here.  The object is present but the setting
