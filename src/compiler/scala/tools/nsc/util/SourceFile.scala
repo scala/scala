@@ -159,18 +159,13 @@ extends BatchSourceFile(name, contents)
 {
   /** The usual constructor.  Specify a name for the compound file and
    *  a list of component sources.
-   *
-   *  @param name       ...
-   *  @param components ...
    */
   def this(name: String, components: BatchSourceFile*) = {
-    /* Note that the contents leaves off the final SU character
-     * of all components */
     this(
       name,
       components.toList,
       Array.concat(components.toList.map(comp =>
-        comp.content.slice(0, comp.content.length-1).toArray):_*))
+        CompoundSourceFile.stripSU(comp.content).toArray):_*))
   }
 
   /** Create an instance with the specified components and a generic name. */
@@ -189,6 +184,14 @@ extends BatchSourceFile(name, contents)
       compsLeft.head.positionInUltimateSource(new OffsetPosition(this, off))
     }
   }
+}
+
+object CompoundSourceFile {
+  private[util] def stripSU(chars: Array[Char]) =
+    if (chars.length > 0 && chars.last == SourceFile.SU)
+      chars.slice(0, chars.length-1)
+    else
+      chars
 }
 
 
