@@ -7,7 +7,8 @@
 package scala.tools.nsc
 
 import java.io.{BufferedReader, File, FileInputStream, FileOutputStream,
-                FileReader, InputStreamReader, PrintWriter}
+                FileReader, InputStreamReader, PrintWriter,
+	        FileWriter}
 import java.lang.reflect.InvocationTargetException
 import java.net.URL
 import java.util.jar.{JarEntry, JarOutputStream}
@@ -42,11 +43,7 @@ import scala.tools.nsc.util.{ClassPath, CompoundSourceFile, BatchSourceFile, Sou
  *  @todo    It would be better if error output went to stderr instead
  *           of stdout...
  */
-class ScriptRunner {
-  protected def compileClient: StandardCompileClient = CompileClient //todo: lazy val
-  protected def compileSocket: CompileSocket = CompileSocket //todo: make lazy val
-
-
+object ScriptRunner {
   /** Default name to use for the wrapped script */
   val defaultScriptMain = "Main"
 
@@ -104,6 +101,7 @@ class ScriptRunner {
       case _:Error => jarFile.delete // XXX what errors to catch?
     }
   }
+
 
   /** Read the entire contents of a file as a String. */
   private def contentsOfFile(filename: String): String = {
@@ -210,14 +208,14 @@ class ScriptRunner {
       settings: GenericRunnerSettings,
       scriptFileIn: String): Boolean =
   {
-    val scriptFile = compileClient.absFileName(scriptFileIn)
+    val scriptFile = CompileClient.absFileName(scriptFileIn)
     for (setting:settings.StringSetting <- List(
             settings.classpath,
             settings.sourcepath,
             settings.bootclasspath,
             settings.extdirs,
             settings.outdir))
-      setting.value = compileClient.absFileNames(setting.value)
+      setting.value = CompileClient.absFileNames(setting.value)
 
     val compSettingNames =
       (new Settings(error)).allSettings.map(_.name)
@@ -234,14 +232,14 @@ class ScriptRunner {
       (coreCompArgs :::
         List("-Xscript", scriptMain(settings), scriptFile))
 
-    val socket = compileSocket.getOrCreateSocket("")
+    val socket = CompileSocket.getOrCreateSocket("")
     if (socket eq null)
       return false
 
     val out = new PrintWriter(socket.getOutputStream(), true)
     val in = new BufferedReader(new InputStreamReader(socket.getInputStream()))
 
-    out.println(compileSocket.getPassword(socket.getPort))
+    out.println(CompileSocket.getPassword(socket.getPort))
     out.println(compArgs.mkString("", "\0", ""))
 
     var compok = true
@@ -249,7 +247,7 @@ class ScriptRunner {
     var fromServer = in.readLine()
     while (fromServer ne null) {
       Console.println(fromServer)
-      if (compileSocket.errorPattern.matcher(fromServer).matches)
+      if (CompileSocket.errorPattern.matcher(fromServer).matches)
         compok = false
 
       fromServer = in.readLine()
@@ -340,12 +338,41 @@ class ScriptRunner {
     }
   }
 
+
+  /** Run a script after it has been compiled */
+  private def runCompiled(settings: GenericRunnerSettings,
+			  compiledLocation: String,
+			  scriptArgs: List[String])
+  {
+    def fileToURL(f: File): Option[URL] =
+      try { Some(f.toURL) }
+    catch { case e => Console.println(e); None }
+
+    def paths(str: String, expandStar: Boolean): List[URL] =
+      for (
+        file <- ClassPath.expandPath(str, expandStar) map (new File(_)) if file.exists;
+        val url = fileToURL(file); if !url.isEmpty
+      ) yield url.get
+
+    val classpath =
+      (paths(settings.bootclasspath.value, true) :::
+       paths(compiledLocation, false) :::
+       paths(settings.classpath.value, true))
+
+    try {
+      ObjectRunner.run(
+        classpath,
+        scriptMain(settings),
+        scriptArgs.toArray)
+    } catch {
+      case e:InvocationTargetException =>
+        e.getCause.printStackTrace
+    }
+  }
+
+
   /** Run a script file with the specified arguments and compilation
    *  settings.
-   *
-   *  @param settings   ...
-   *  @param scriptFile ...
-   *  @param scriptArgs ...
    */
   def runScript(
       settings: GenericRunnerSettings,
@@ -358,34 +385,30 @@ class ScriptRunner {
       return
     }
 
-    withCompiledScript(settings, scriptFile)(compiledLocation => {
-      def fileToURL(f: File): Option[URL] =
-        try { Some(f.toURL) }
-        catch { case e => Console.println(e); None }
+    withCompiledScript(settings, scriptFile){compiledLocation =>
+      runCompiled(settings, compiledLocation, scriptArgs)
+    }
+  }
 
-      def paths(str: String, expandStar: Boolean): List[URL] =
-        for (
-         file <- ClassPath.expandPath(str, expandStar) map (new File(_)) if file.exists;
-          val url = fileToURL(file); if !url.isEmpty
-        ) yield url.get
+  /** Run a command */
+  def runCommand(
+    settings: GenericRunnerSettings,
+    command: String,
+    scriptArgs: List[String])
+  {
+    val scriptFile = File.createTempFile("scalacmd", ".scala")
 
-      val classpath: List[URL] =
-        paths(settings.bootclasspath.value, true) :::
-        paths(compiledLocation, false) :::
-        paths(settings.classpath.value, true)
+    // save the command to the file
+    {
+      val str = new FileWriter(scriptFile)
+      str.write(command)
+      str.close()
+    }
 
-      try {
-        ObjectRunner.run(
-          classpath,
-          scriptMain(settings),
-          scriptArgs.toArray)
-      } catch {
-        case e:InvocationTargetException =>
-          e.getCause.printStackTrace
-      }
-    })
+    withCompiledScript(settings, scriptFile.getPath){compiledLocation =>
+      scriptFile.delete()
+      runCompiled(settings, compiledLocation, scriptArgs)
+    }
+    scriptFile.delete()  // in case there was a compilation error
   }
 }
-
-
-object ScriptRunner extends ScriptRunner
