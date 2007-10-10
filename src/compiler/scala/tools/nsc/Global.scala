@@ -46,9 +46,6 @@ class Global(var settings: Settings, var reporter: Reporter) extends Trees
 
   //def this() = this(new Settings, new ConsoleReporter)
 
-  // helper modules
-  val scriptRunner: ScriptRunner = ScriptRunner
-
   // sub-components --------------------------------------------------
   object nodePrinters extends NodePrinters {
     val global: Global.this.type = Global.this
@@ -614,7 +611,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends Trees
           error("can only compile one script at a time")
         val sources = filenames map (
           if (scriptMain != "")
-            (x => scriptRunner.wrappedScript(scriptMain, x, getSourceFile _))
+            (x => ScriptRunner.wrappedScript(scriptMain, x, getSourceFile _))
           else
             getSourceFile)
         compileSources(sources)
