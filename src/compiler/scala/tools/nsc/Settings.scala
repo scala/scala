@@ -313,6 +313,11 @@ class Settings(error: String => Unit) {
 	  appendToValue(toadd)
 	  rest
 	}
+
+      case opt :: arg :: rest if(opt == name) =>
+	appendToValue(arg)
+        rest
+
       case _ => args
     }
 
