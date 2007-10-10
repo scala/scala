@@ -136,10 +136,12 @@ object MainGenericRunner {
       urls(settings.Xcodebase.value)
 
     command.thingToRun match {
-      case None if settings.execute.value != "" =>
+      case _ if settings.execute.value != "" =>
+        val fullArgs =
+	  command.thingToRun.toList ::: command.arguments
         ScriptRunner.runCommand(settings,
 				settings.execute.value,
-				command.arguments)
+				fullArgs)
 
       case None =>
         (new InterpreterLoop).main(settings)
