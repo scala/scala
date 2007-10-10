@@ -24,6 +24,6 @@ JAR=${JAVA_HOME}/bin/jar
 # commands
 
 mkdir -p ${OBJDIR}
-${JAVAC} ${JAVAC_OPTIONS} -d ${OBJDIR} SourceAnnotation.java
+${JAVAC} ${JAVAC_OPTIONS} -d ${OBJDIR} SourceAnnotation.java NestedAnnotations.java
 ${JAR} cf ../lib/annotations.jar -C ${OBJDIR} .
 rm -rf ${OBJDIR}
