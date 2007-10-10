@@ -31,6 +31,7 @@ trait Constants {
   final val ClassTag   = LITERALclass - LITERAL
   final val EnumTag    = ClassTag + 1
   final val ArrayTag   = EnumTag + 1
+  final val AnnotationTag = ArrayTag + 1
 
   def isNumeric(tag: Int) = ByteTag <= tag && tag <= DoubleTag
 
@@ -67,6 +68,7 @@ trait Constants {
       case NullTag    => AllRefClass.tpe
       case ClassTag   => Predef_classOfType(value.asInstanceOf[Type])
       case EnumTag    => symbolValue.owner.linkedClassOfClass.tpe
+      case AnnotationTag => AnnotationClass.tpe  // what should it be?
     }
 
     /** We need the equals method to take account of tags as well as values.
@@ -231,5 +233,12 @@ trait Constants {
                       override val tpe: Type)
   extends Constant(arrayValue) {
     override def toString() = arrayValue.mkString("Constant(", "," , ")")
+  }
+
+  /** A place-holder for annotation constants.  The contents of
+   *  the constant are not read. */
+  class AnnotationConstant()
+  extends Constant(null) {
+    override val tag = AnnotationTag
   }
 }

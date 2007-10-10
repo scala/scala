@@ -680,21 +680,52 @@ abstract class ClassfileParser {
           }
           new ArrayConstant(arr.toArray,
               appliedType(definitions.ArrayClass.typeConstructor, List(arr(0).tpe)))
+	case ANNOTATION_TAG =>
+	  parseAnnotation(index)  // skip it
+	  new AnnotationConstant()
       }
     }
+
+    /** Parse and return a single annotation.  If it is malformed,
+     *  throw an exception.  If it contains a nested annotation,
+     *  return None.
+     */
+    def parseAnnotation(attrNameIndex: Char): Option[AnnotationInfo] = {
+      val attrType = pool.getType(attrNameIndex)
+      val nargs = in.nextChar
+      val nvpairs = new ListBuffer[(Name,AnnotationArgument)]
+      var nestedAnnot = false  // if a nested annotation is seen,
+                               // then skip this annotation
+      for (i <- 0 until nargs) {
+        val name = pool.getName(in.nextChar)
+	val argConst = parseTaggedConstant
+	if (argConst.tag == AnnotationTag)
+	  nestedAnnot = true
+	else
+          nvpairs += ((name, new AnnotationArgument(argConst)))
+      }
+
+      if (nestedAnnot)
+	None
+      else
+	Some(AnnotationInfo(attrType, List(), nvpairs.toList))
+    }
+
+    /** Parse a sequence of annotations and attach them to the
+     *  current symbol sym.
+     */
     def parseAnnotations(len: Int) {
       val nAttr = in.nextChar
-      for (n <- 0 until nAttr) {
-        val attrNameIndex = in.nextChar
-        val attrType = pool.getType(attrNameIndex)
-        val nargs = in.nextChar
-        val nvpairs = new ListBuffer[(Name,AnnotationArgument)]
-        for (i <- 0 until nargs) {
-          val name = pool.getName(in.nextChar)
-          nvpairs += ((name, new AnnotationArgument(parseTaggedConstant)))
-        }
-        sym.attributes = AnnotationInfo(attrType, List(), nvpairs.toList) :: sym.attributes
-      }
+      for (n <- 0 until nAttr)
+	parseAnnotation(in.nextChar) match {
+	  case None =>
+	    if (settings.debug.value)
+              global.inform("dropping annotation on " +
+			    sym +
+			    " that has a nested annotation")
+	  case Some(annot) =>
+            sym.attributes = annot :: sym.attributes
+	}
     }
 
     def parseInnerClasses() {
