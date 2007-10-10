@@ -304,18 +304,18 @@ class Settings(error: String => Unit) {
 
     protected val nameColon = name + ":"
     def tryToSet(args: List[String]): List[String] = args match {
-      case arg :: rest if (arg.startsWith(nameColon)) =>
-	val toadd = arg.substring(nameColon.length())
+      case arg :: rest if (arg startsWith nameColon) =>
+        val toadd = arg.substring(nameColon.length())
         if (toadd.length == 0) {
-	  error("empty argument to " + nameColon)
-	  args
-	} else {
-	  appendToValue(toadd)
-	  rest
-	}
+          error("empty argument to " + nameColon)
+          args
+        } else {
+          appendToValue(toadd)
+          rest
+        }
 
-      case opt :: arg :: rest if(opt == name) =>
-	appendToValue(arg)
+      case opt :: arg :: rest if (opt == name) =>
+        appendToValue(arg)
         rest
 
       case _ => args
@@ -327,7 +327,6 @@ class Settings(error: String => Unit) {
       for (opt <- value)
 	yield nameColon+opt
   }
-
 
   /** A setting represented by a string in a given set of <code>choices</code>,
    *  (<code>default</code> unless set).

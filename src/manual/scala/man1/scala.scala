@@ -40,6 +40,15 @@ object scala extends Command {
         "."),
 
       Definition(
+        Mono("-i"),
+        "Requests that a file be pre-loaded.  It is only " &
+        "meaningful for interactive shells."),
+
+      Definition(
+        Mono("-e"),
+        "Requests that its argument be executed as Scala code."),
+
+      Definition(
         Mono("-savecompiled"),
         "Save this compiled version of scripts in order to speed up " &
         "later executions of the same script.  When running a script, " &
@@ -243,7 +252,7 @@ object scala extends Command {
     title = command
     date = lastModified
     author = "Stephane Micheloud"
-    version = "0.4"
+    version = "0.5"
     sections = List(
       name,
       synopsis,
