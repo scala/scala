@@ -195,7 +195,7 @@ trait Iterable[+A] {
    *           The relative order of the elements in the resulting iterables
    *           is the same as in the original iterable.
    */
-  def partition[T](p: A => Boolean): (Iterable[A], Iterable[A]) = {
+  def partition(p: A => Boolean): (Iterable[A], Iterable[A]) = {
     val matched = new ArrayBuffer[A]
     val failed = new ArrayBuffer[A]
     val elems = elements
