@@ -187,6 +187,22 @@ trait Iterable[+A] {
     buf
   }
 
+  /** Partitions this iterable in two iterables according to a predicate.
+   *
+   *  @param p the predicate on which to partition
+   *  @return  a pair of iterables: the iterable that satisfy the predicate
+   *           <code>p</code> and the iterable that do not.
+   *           The relative order of the elements in the resulting iterables
+   *           is the same as in the original iterable.
+   */
+  def partition[T](p: A => Boolean): (Iterable[A], Iterable[A]) = {
+    val matched = new ArrayBuffer[A]
+    val failed = new ArrayBuffer[A]
+    val elems = elements
+    while (elems.hasNext) { val x = elems.next; if (p(x)) matched += x else failed += x }
+    (matched, failed)
+  }
+
   /** Returns the longest prefix of this iterable whose elements satisfy
    *  the predicate <code>p</code>.
    *

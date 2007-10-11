@@ -8,7 +8,19 @@ object Test extends Application {
         else throw new IndexOutOfBoundsException("empty iterator")
     }
   }
-  val x = new Test(10)
-  println(x.isEmpty)
-  println(x.mkString(","))
+  {
+    val x = new Test(10)
+    println(x.isEmpty)
+    println(x.mkString(","))
+  }
+  {
+    val x = new Test(10)
+    println(x.filter(_ > 4).mkString(","))
+  }
+  {
+    val x = new Test(10)
+    val y = x.partition(_ % 2 == 0)
+    println(y._1.mkString(","))
+    println(y._2.mkString(","))
+  }
 }
