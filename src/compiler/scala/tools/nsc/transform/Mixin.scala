@@ -352,7 +352,9 @@ abstract class Mixin extends InfoTransform {
      *   - For every static implementation method:
      *       - remove override flag
      *       - create a new method definition that also has a `self' parameter
-     *         (which comes first)
+     *         (which comes first) Iuli: this position is assumed by tail call elimination
+     *         on a different receiver. Storing a new 'this' assumes it is located at
+     *         index 0 in the local variable table. See 'STORE_THIS' and GenJVM/GenMSIL.
      *   - Map implementation class types in type-apply's to their interfaces
      *   - Remove all fields in implementation classes
      */

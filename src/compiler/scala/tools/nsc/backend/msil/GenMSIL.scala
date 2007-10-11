@@ -1334,6 +1334,11 @@ abstract class GenMSIL extends SubComponent {
               }
             }
 
+          case STORE_THIS(_) =>
+            // this only works for impl classes because the self parameter comes first
+            // in the method signature. If that changes, this code has to be revisited.
+            mcode.Emit(OpCodes.Starg_S, 0)
+
           case STORE_FIELD(field, isStatic) =>
             val fieldInfo: FieldInfo = fields.get(field) match {
               case Some(fInfo) => fInfo

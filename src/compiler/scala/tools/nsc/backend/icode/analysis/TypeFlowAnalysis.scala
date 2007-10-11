@@ -128,6 +128,28 @@ abstract class TypeFlowAnalysis {
       }
     }
 
+    /** reinitialize the analysis, keeping around solutions from a previous run. */
+    def reinit(m: icodes.IMethod) {
+      if ((this.method eq null) || (this.method.symbol != m.symbol))
+        init(m)
+      else reinit {
+        for (b <- m.code.blocks; if !in.isDefinedAt(b)) {
+          for (p <- b.predecessors) {
+            worklist += p
+            if (out.isDefinedAt(p))
+              in(b) = out(p)
+            else
+              in(b)  = typeFlowLattice.bottom
+          }
+          out(b) = typeFlowLattice.bottom
+        }
+        for (exh <- m.exh; if !in.isDefinedAt(exh.startBlock)) {
+          worklist += exh.startBlock
+          in(exh.startBlock) = lattice.IState(in(exh.startBlock).vars, typeStackLattice.exceptionHandlerStack)
+        }
+      }
+    }
+
     def this(m: icodes.IMethod) {
       this()
       init(m)
@@ -186,6 +208,9 @@ abstract class TypeFlowAnalysis {
         case STORE_LOCAL(local) =>
           val t = stack.pop
           bindings += local -> t
+
+        case STORE_THIS(_) =>
+          stack.pop
 
         case STORE_FIELD(field, isStatic) =>
           if (isStatic)

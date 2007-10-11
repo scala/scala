@@ -109,7 +109,7 @@ abstract class ClosureElimination extends SubComponent {
                   bb.replaceInstruction(i, valueToInstruction(t));
                   log("replaced " + i + " with " + t)
 
-                case This() =>
+                case Deref(This) =>
                   bb.replaceInstruction(i, valueToInstruction(t));
                   log("replaced " + i + " with " + t)
 
@@ -182,7 +182,7 @@ abstract class ClosureElimination extends SubComponent {
       case Deref(LocalVar(v)) =>
         LOAD_LOCAL(v)
 
-      case This() =>
+      case Deref(This) =>
         THIS(definitions.ObjectClass)
     }
 

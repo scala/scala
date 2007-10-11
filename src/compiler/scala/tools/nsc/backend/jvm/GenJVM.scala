@@ -744,6 +744,11 @@ abstract class GenJVM extends SubComponent {
           case STORE_LOCAL(local) =>
             jcode.emitSTORE(indexOf(local), javaType(local.kind))
 
+          case STORE_THIS(_) =>
+            // this only works for impl classes because the self parameter comes first
+            // in the method signature. If that changes, this code has to be revisited.
+            jcode.emitASTORE_0()
+
           case STORE_FIELD(field, isStatic) =>
             val owner = javaName(field.owner) // + (if (field.owner.hasFlag(Flags.MODULE)) "$" else "");
             if (isStatic)

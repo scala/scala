@@ -178,6 +178,7 @@ trait StdNames {
     val BYNAME_PARAM_CLASS_NAME = newTermName("<byname>")
     val EQUALS_PATTERN_NAME = newTermName("<equals>")
     val SELF = newTermName("$this")
+    val THIS = newTermName("_$this")
 
     val CONSTRUCTOR = newTermName("<init>")
     val MIXIN_CONSTRUCTOR = newTermName("$init$")

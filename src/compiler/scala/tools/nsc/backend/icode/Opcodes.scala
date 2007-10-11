@@ -81,6 +81,11 @@ trait Opcodes { self: ICodes =>
 
     /** Used by dead code elimination. */
     var useful: Boolean = false
+
+    def setPos(p: Position): this.type = {
+      pos = p
+      this
+    }
   }
 
   object opcodes {
@@ -218,6 +223,17 @@ trait Opcodes { self: ICodes =>
           List(toTypeKind(field.tpe))
         else
           List(REFERENCE(field.owner), toTypeKind(field.tpe));
+    }
+
+    /** Store a value into the 'this' pointer.
+       * Stack: ...:ref
+       *    ->: ...
+       */
+    case class STORE_THIS(kind: TypeKind) extends Instruction {
+      override def toString() = "STORE_THIS(" + kind + ")"
+      override def consumed = 1
+      override def produced = 0
+      override def consumedTypes = List(kind)
     }
 
     /** Call a primitive function.

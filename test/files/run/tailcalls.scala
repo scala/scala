@@ -194,6 +194,11 @@ class TailCall[S](s: S) {
 
 }
 
+object FancyTailCalls {
+  val f1 = new FancyTailCalls
+  val f2 = new FancyTailCalls
+}
+
 class FancyTailCalls {
 
   def tcTryLocal(x: Int, v: Int): Int = {
@@ -214,6 +219,12 @@ class FancyTailCalls {
         tcTryCatch(x - 1, v)
     }
 
+  import FancyTailCalls._
+  final def differentInstance(n: Int, v: Int): Int = {
+    if (n == 0) v
+    else if ((n % 2) == 0) f1.differentInstance(n - 1, v)
+    else f2.differentInstance(n - 1, v)
+  }
 }
 
 class NonTailCall {
@@ -374,6 +385,7 @@ object Test {
     val FancyTailCalls = new FancyTailCalls;
     check_success("FancyTailCalls.tcTryLocal",   FancyTailCalls.tcTryLocal(max, max), max)
     check_success("FancyTailCalls.tcTryCatch",   FancyTailCalls.tcTryCatch(max, max), max)
+    check_success("FancyTailCalls.differentInstance",   FancyTailCalls.differentInstance(max, 42), 42)
   }
 }
 

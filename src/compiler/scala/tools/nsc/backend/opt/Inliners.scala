@@ -271,6 +271,7 @@ abstract class Inliners extends SubComponent {
 
 
     val tfa = new analysis.MethodTFA();
+    tfa.stat = settings.statistics.value
 
     def analyzeMethod(m: IMethod): Unit = try {
       var retry = false;
@@ -355,8 +356,9 @@ abstract class Inliners extends SubComponent {
                   case _ => ();
                 }
                 info = tfa.interpret(info, i)
-              }}}}
-      } while (retry && count < 15)
+              }}}
+        if (tfa.stat) log(m.symbol.fullNameString + " iterations: " + tfa.iterations + " (size: " + m.code.blocks.length + ")")
+      }} while (retry && count < 15)
       m.normalize
     } catch {
       case e =>

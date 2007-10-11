@@ -61,11 +61,15 @@ abstract class TailCalls extends Transform
    *   tail-position are not optimized.
    * </p>
    * <p>
-   *   A method call is self-recursive if it calls the current method on
-   *   the current instance and the method is final (otherwise, it could
+   *   A method call is self-recursive if it calls the current method and
+   *   the method is final (otherwise, it could
    *   be a call to an overridden method in a subclass). Furthermore, If
    *   the method has type parameters, the call must contain these
-   *   parameters as type arguments.
+   *   parameters as type arguments. Recursive calls on a different instance
+   *   are optimized. Since 'this' is not a local variable, a dummy local val
+   *   is added and used as a label parameter. The backend knows to load
+   *   the corresponding argument in the 'this' (local at index 0). This dummy local
+   *   is never used and should be cleand up by dead code elmination (when enabled).
    * </p>
    * <p>
    *   This phase has been moved before pattern matching to catch more
@@ -150,7 +154,7 @@ abstract class TailCalls extends Transform
           val newCtx = mkContext(ctx)
           newCtx.currentMethod = tree.symbol
           newCtx.makeLabel()
-          newCtx.label.setInfo(tree.symbol.info)
+          newCtx.label.setInfo(MethodType(currentClass.tpe :: tree.symbol.tpe.paramTypes, tree.symbol.tpe.finalResultType))
           newCtx.tailPos = true
 
           val t1 = if (newCtx.currentMethod.isFinal ||
@@ -161,19 +165,24 @@ abstract class TailCalls extends Transform
               case PolyType(tpes, restpe) =>
                 newCtx.tparams = tparams map (_.symbol)
                 newCtx.label.setInfo(
-                  restpe.substSym(tpes, tparams map (_.symbol)))
+                  newCtx.label.tpe.substSym(tpes, tparams map (_.symbol)))
               case _ => ()
             }
 
+            //println("label.tpe: " + newCtx.label.tpe)
             var newRHS = transform(rhs, newCtx);
             if (newCtx.accessed) {
               log("Rewrote def " + newCtx.currentMethod)
 
+              val newThis = newCtx.currentMethod.newValue(tree.pos, nme.THIS)
+                 .setInfo(currentClass.tpe)
+                 .setFlag(Flags.SYNTHETIC)
               newRHS =
-                  typed(atPos(tree.pos)(
+                  typed(atPos(tree.pos)(Block(List(
+                    ValDef(newThis, This(currentClass))),
                     LabelDef(newCtx.label,
-                             List.flatten(vparams) map (_.symbol),
-                             newRHS)));
+                             newThis :: (List.flatten(vparams) map (_.symbol)),
+                             newRHS))));
               copy.DefDef(tree, mods, name, tparams, vparams, tpt, newRHS);
             } else
               copy.DefDef(tree, mods, name, tparams, vparams, tpt, newRHS);
@@ -242,10 +251,13 @@ abstract class TailCalls extends Transform
           if ( ctx.currentMethod.isFinal &&
                ctx.tailPos &&
                isSameTypes(ctx.tparams, targs map (_.tpe.typeSymbol)) &&
-               isRecursiveCall(fun))
-                 rewriteTailCall(fun, transformTrees(vargs, mkContext(ctx, false)))
-               else
-                 copy.Apply(tree, tapply, transformTrees(vargs, mkContext(ctx, false)))
+               isRecursiveCall(fun)) {
+            fun match {
+              case Select(receiver, _) => rewriteTailCall(fun, receiver :: transformTrees(vargs, mkContext(ctx, false)))
+              case _ => rewriteTailCall(fun, This(currentClass) :: transformTrees(vargs, mkContext(ctx, false)))
+            }
+          } else
+            copy.Apply(tree, tapply, transformTrees(vargs, mkContext(ctx, false)))
 
         case TypeApply(fun, args) =>
           super.transform(tree)
@@ -257,9 +269,12 @@ abstract class TailCalls extends Transform
         case Apply(fun, args) =>
           if (ctx.currentMethod.isFinal &&
               ctx.tailPos &&
-              isRecursiveCall(fun))
-            rewriteTailCall(fun, transformTrees(args, mkContext(ctx, false)))
-          else
+              isRecursiveCall(fun)) {
+            fun match {
+              case Select(receiver, _) => rewriteTailCall(fun, receiver :: transformTrees(args, mkContext(ctx, false)))
+              case _ => rewriteTailCall(fun, This(currentClass) :: transformTrees(args, mkContext(ctx, false)))
+            }
+          } else
             copy.Apply(tree, fun, transformTrees(args, mkContext(ctx, false)))
 
         case Super(qual, mix) =>
@@ -286,6 +301,7 @@ abstract class TailCalls extends Transform
       log("Rewriting tail recursive method call at: " +
                       (fun.pos))
       ctx.accessed = true
+      //println("fun: " + fun + " args: " + args)
       typed(atPos(fun.pos)(
         Apply(Ident(ctx.label), args)))
     }
@@ -298,25 +314,14 @@ abstract class TailCalls extends Transform
     }
 
     /** Returns <code>true</code> if the fun tree refers to the same method as
-     *  the one saved in <code>ctx</code>. If it is a method call, we check
-     *  that it is applied to <code>this</code>.
+     *  the one saved in <code>ctx</code>.
      *
-     *  @param fun ...
-     *  @return    <code>true</code> ...
+     *  @param fun the expression that is applied
+     *  @return    <code>true</code> if the tree symbol refers to the innermost
+     *             enclosing method
      */
     private def isRecursiveCall(fun: Tree): Boolean =
-      if (fun.symbol eq ctx.currentMethod)
-        fun match {
-          case Select(t @ This(_), _) =>
-            assert(t.symbol == ctx.currentMethod.owner, "This refers to other class: " +
-                   t.symbol + ": " + ctx.currentMethod.owner)
-            true
-
-          case Ident(_) => true
-          case _ => false
-        }
-      else
-        false
+      (fun.symbol eq ctx.currentMethod)
   }
 
 }

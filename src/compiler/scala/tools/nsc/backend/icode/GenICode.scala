@@ -1076,24 +1076,32 @@ abstract class GenICode extends SubComponent  {
       var ctx1 = ctx
       var arg = args
       var param = label.params
+      val stores: ListBuffer[Instruction] = new ListBuffer
 
       // store arguments in reverse order on the stack
       while (arg != Nil) {
-        val Some(l) = ctx.method.lookupLocal(param.head)
-        ctx1 = genLoad(arg.head, ctx1, l.kind)
+        arg.head match {
+          case This(_) if param.head.name == nme.THIS =>
+            //println("skipping trivial argument for " + param.head)
+            () // skip trivial arguments
+          case Ident(_) if arg.head.symbol == param.head =>
+            //println("skipping trivial argument for " + param.head)
+           () // skip trivial arguments
+          case _ =>
+            val Some(l) = ctx.method.lookupLocal(param.head)
+            ctx1 = genLoad(arg.head, ctx1, l.kind)
+            if (param.head.name == nme.THIS)
+              STORE_THIS(toTypeKind(ctx1.clazz.symbol.tpe)).setPos(arg.head.pos) +: stores
+            else {
+              STORE_LOCAL(l).setPos(arg.head.pos) +: stores
+            }
+        }
         arg = arg.tail
         param = param.tail
       }
 
-      // store arguments in the right variables
-      arg = args.reverse; param = label.params.reverse;
-      while (arg != Nil) {
-        val Some(l) = ctx.method.lookupLocal(param.head)
-        ctx1.bb.emit(STORE_LOCAL(l), arg.head.pos)
-        arg = arg.tail
-        param = param.tail
-      }
-
+      //println("stores: " + stores)
+      ctx1.bb.emit(stores)
       ctx1
     }
 

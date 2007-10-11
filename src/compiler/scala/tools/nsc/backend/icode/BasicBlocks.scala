@@ -319,6 +319,10 @@ trait BasicBlocks {
       }
     }
 
+    def emit(instrs: Seq[Instruction]) {
+      instrs foreach (i => emit(i, i.pos))
+    }
+
     /** Close the block */
     def close = {
        assert(instructionList.length > 0,

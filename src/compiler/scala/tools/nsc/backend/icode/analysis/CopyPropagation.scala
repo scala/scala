@@ -21,16 +21,16 @@ abstract class CopyPropagation {
   import global._
   import icodes._
 
-  /** Locations can be local variables and fields. */
+  /** Locations can be local variables, this, and fields. */
   abstract sealed class Location;
   case class LocalVar(l: Local) extends Location
   case class Field(r: Record, sym: Symbol) extends Location
+  case object This extends Location
 
   /** Values that can be on the stack. */
   abstract class Value {
     def isRecord = false
   }
-  case class This extends Value
   case class Record(cls: Symbol, bindings: Map[Symbol, Value]) extends Value {
     override def isRecord = true
   }
@@ -114,7 +114,7 @@ abstract class CopyPropagation {
         var target: Value = r.bindings(f)
         target match {
           case Deref(LocalVar(l)) => Some(Deref(LocalVar(getAlias(l))))
-          case This()    => Some(target)
+          case Deref(This)    => Some(target)
           case _  => None
         }
       }
@@ -220,7 +220,7 @@ abstract class CopyPropagation {
 
       i match {
         case THIS(_) =>
-          out.stack = This :: out.stack
+          out.stack = Deref(This) :: out.stack
 
         case CONSTANT(k) =>
           if (k.tag != UnitTag)
@@ -266,6 +266,10 @@ abstract class CopyPropagation {
             case Nil => Predef.error("Incorrect icode in " + method + ". Expecting something on the stack.")
           }
           out.stack = out.stack drop 1;
+
+        case STORE_THIS(_) =>
+          cleanReferencesTo(out, This)
+          out.stack = out.stack drop 1
 
         case STORE_FIELD(field, isStatic) =>
           if (isStatic)
