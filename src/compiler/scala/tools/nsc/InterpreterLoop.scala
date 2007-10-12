@@ -125,7 +125,7 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
       out.flush()
 
       val line =
-	if (first) {
+        if (first) {
           /* For some reason, the first interpreted command always takes
            * a second or two.  So, wait until the welcome message
            * has been printed before calling bindSettings.  That way,
@@ -137,9 +137,9 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
           bindSettings()
           first = false
 
-	  futLine()
+          futLine()
       } else {
-	in.readLine(prompt)
+        in.readLine(prompt)
       }
 
       if (line eq null)
@@ -265,35 +265,34 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
   def loadFiles(settings: Settings) {
     settings match {
       case settings: GenericRunnerSettings =>
-	for (filename <- settings.loadfiles.value) {
-	  val cmd = ":load " + filename
-	  command(cmd)
-	  replayCommandsRev = cmd :: replayCommandsRev
-	  out.println()
-	}
+        for (filename <- settings.loadfiles.value) {
+          val cmd = ":load " + filename
+          command(cmd)
+          replayCommandsRev = cmd :: replayCommandsRev
+          out.println()
+        }
       case _ =>
     }
   }
-
 
   def main(settings: Settings) {
     this.settings = settings
 
     in =
       in0 match {
-	case Some(in0) =>
-	  new SimpleReader(in0, out, true)
+        case Some(in0) =>
+          new SimpleReader(in0, out, true)
 
-	case None =>
-	  val emacsShell = System.getProperty("env.emacs", "") != ""
-	  //println("emacsShell="+emacsShell) //debug
-	  if (settings.Xnojline.value || emacsShell)
-	    new SimpleReader()
-	  else
-	    InteractiveReader.createDefault()
+        case None =>
+          val emacsShell = System.getProperty("env.emacs", "") != ""
+          //println("emacsShell="+emacsShell) //debug
+          if (settings.Xnojline.value || emacsShell)
+            new SimpleReader()
+          else
+            InteractiveReader.createDefault()
       }
 
-    uglinessxxx =  classOf[InterpreterLoop].getClassLoader
+    uglinessxxx = classOf[InterpreterLoop].getClassLoader
 
     createInterpreter()
 
