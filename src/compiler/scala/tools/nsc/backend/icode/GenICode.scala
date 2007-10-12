@@ -203,11 +203,13 @@ abstract class GenICode extends SubComponent  {
         var ctx1 = ctx
         var resKind = toTypeKind(larg.tpe)
 
-        assert(args.length <= 1,
-               "Too many arguments for primitive function: " + fun.symbol)
-        assert(resKind.isNumericType | resKind == BOOL,
-               resKind.toString() + " is not a numeric or boolean type " +
-               "[operation: " + fun.symbol + "]")
+        if (settings.debug.value) {
+          assert(args.length <= 1,
+                 "Too many arguments for primitive function: " + fun.symbol)
+          assert(resKind.isNumericType | resKind == BOOL,
+                 resKind.toString() + " is not a numeric or boolean type " +
+                 "[operation: " + fun.symbol + "]")
+        }
 
         args match {
           // unary operation
@@ -291,13 +293,15 @@ abstract class GenICode extends SubComponent  {
 
         if (scalaPrimitives.isArrayGet(code)) {
           // load argument on stack
-          assert(args.length == 1,
-                 "Too many arguments for array get operation: " + tree);
+          if (settings.debug.value)
+            assert(args.length == 1,
+                   "Too many arguments for array get operation: " + tree);
           ctx1 = genLoad(args.head, ctx1, INT)
           generatedType = elem
         } else if (scalaPrimitives.isArraySet(code)) {
-          assert(args.length == 2,
-                 "Too many arguments for array set operation: " + tree);
+          if (settings.debug.value)
+            assert(args.length == 2,
+                   "Too many arguments for array set operation: " + tree);
           ctx1 = genLoad(args.head, ctx1, INT)
           ctx1 = genLoad(args.tail.head, ctx1, toTypeKind(args.tail.head.tpe))
           // the following line should really be here, but because of bugs in erasure
@@ -434,9 +438,10 @@ abstract class GenICode extends SubComponent  {
               log("Will drop result from an if branch");
             thenCtx = genLoad(thenp, thenCtx, UNIT)
             elseCtx = genLoad(elsep, elseCtx, UNIT)
-            assert(expectedType == UNIT,
-                   "I produce UNIT in a context where " +
-                   expectedType + " is expected!")
+            if (settings.debug.value)
+              assert(expectedType == UNIT,
+                     "I produce UNIT in a context where " +
+                     expectedType + " is expected!")
             generatedType = UNIT
           } else {
             thenCtx = genLoad(thenp, thenCtx, ifKind)
@@ -646,11 +651,13 @@ abstract class GenICode extends SubComponent  {
         // instance (on JVM, <init> methods return VOID).
         case Apply(fun @ Select(New(tpt), nme.CONSTRUCTOR), args) =>
           val ctor = fun.symbol
-          assert(ctor.isClassConstructor,
-                 "'new' call to non-constructor: " + ctor.name)
+          if (settings.debug.value)
+            assert(ctor.isClassConstructor,
+                   "'new' call to non-constructor: " + ctor.name)
 
           generatedType = toTypeKind(fun.tpe.resultType)
-          assert(generatedType.isReferenceType || generatedType.isArrayType,
+          if (settings.debug.value)
+            assert(generatedType.isReferenceType || generatedType.isArrayType,
                  "Non reference type cannot be instantiated: " + generatedType)
 
           var ctx1 = ctx
@@ -665,8 +672,9 @@ abstract class GenICode extends SubComponent  {
               ctx1.bb.emit(CREATE_ARRAY(elemKind, args.length), tree.pos)
 
             case rt @ REFERENCE(cls) =>
-              assert(ctor.owner == cls,
-                     "Symbol " + ctor.owner.fullNameString + " is different than " + tpt)
+              if (settings.debug.value)
+                assert(ctor.owner == cls,
+                       "Symbol " + ctor.owner.fullNameString + " is different than " + tpt)
               val nw = NEW(rt)
               ctx1.bb.emit(nw, tree.pos)
               ctx1.bb.emit(DUP(generatedType))
@@ -869,12 +877,13 @@ abstract class GenICode extends SubComponent  {
           ctx
 
         case Select(Ident(nme.EMPTY_PACKAGE_NAME), module) =>
-          assert(tree.symbol.isModule,
-                 "Selection of non-module from empty package: " + tree.toString() +
-                 " sym: " + tree.symbol +
-                 " at: " + (tree.pos))
-          if (settings.debug.value)
+          if (settings.debug.value) {
+            assert(tree.symbol.isModule,
+                   "Selection of non-module from empty package: " + tree.toString() +
+                   " sym: " + tree.symbol +
+                   " at: " + (tree.pos))
             log("LOAD_MODULE from Select(<emptypackage>): " + tree.symbol);
+          }
           assert(!tree.symbol.isPackageClass, "Cannot use package as value: " + tree)
           ctx.bb.emit(LOAD_MODULE(tree.symbol), tree.pos)
           ctx
@@ -938,7 +947,6 @@ abstract class GenICode extends SubComponent  {
           ctx
 
         case Block(stats, expr) =>
-//          assert(!(ctx.method eq null), "Block outside method")
           ctx.enterScope
           var ctx1 = genStat(stats, ctx)
           ctx1 = genLoad(expr, ctx1, expectedType)
@@ -1035,8 +1043,9 @@ abstract class GenICode extends SubComponent  {
               log("Dropped an " + from);
 
           case _ =>
+          if (settings.debug.value)
             assert(from != UNIT, "Can't convert from UNIT to " + to +
-                 tree + " at: " + (tree.pos));
+                   tree + " at: " + (tree.pos));
             assert(!from.isReferenceType && !to.isReferenceType, "type error: can't convert from " + from + " to " + to +" in unit "+this.unit)
             ctx.bb.emit(CALL_PRIMITIVE(Conversion(from, to)), tree.pos);
         }
@@ -1071,8 +1080,9 @@ abstract class GenICode extends SubComponent  {
      * Generate code that loads args into label parameters.
      */
     private def genLoadLabelArguments(args: List[Tree], label: Label, ctx: Context): Context = {
-      assert(args.length == label.params.length,
-             "Wrong number of arguments in call to label " + label.symbol)
+      if (settings.debug.value)
+        assert(args.length == label.params.length,
+               "Wrong number of arguments in call to label " + label.symbol)
       var ctx1 = ctx
       var arg = args
       var param = label.params
@@ -1106,8 +1116,6 @@ abstract class GenICode extends SubComponent  {
     }
 
     private def genLoadArguments(args: List[Tree], tpes: List[Type], ctx: Context): Context = {
-      assert(args.length == tpes.length, "Wrong number of arguments in call " + ctx);
-
       var ctx1 = ctx
       var arg = args
       var tpe = tpes
@@ -1242,9 +1250,6 @@ abstract class GenICode extends SubComponent  {
       val Apply(Select(larg, _), rarg) = tree
       var ctx1 = ctx
 
-      assert(rarg.length == 1,
-             "Too many parameters for string concatenation")
-
       val concatenations = liftStringConcat(tree)
       if (settings.debug.value)
         log("Lifted string concatenations for " + tree + "\n to: " + concatenations);
@@ -1359,8 +1364,6 @@ abstract class GenICode extends SubComponent  {
       tree match {
         case Apply(fun, args)
           if isPrimitive(fun.symbol) =>
-            assert(args.length <= 1,
-                   "Too many arguments for primitive function: " + fun.symbol)
             val code = scalaPrimitives.getPrimitive(fun.symbol)
 
             if (code == scalaPrimitives.ZNOT) {
@@ -1535,8 +1538,9 @@ abstract class GenICode extends SubComponent  {
      * class.
      */
     private def addClassFields(ctx: Context, cls: Symbol): Unit = {
-      assert(ctx.clazz.symbol eq cls,
-             "Classes are not the same: " + ctx.clazz.symbol + ", " + cls)
+      if (settings.debug.value)
+        assert(ctx.clazz.symbol eq cls,
+               "Classes are not the same: " + ctx.clazz.symbol + ", " + cls)
 
       for (f <- cls.info.decls.elements)
         if (!f.isMethod && f.isTerm)
@@ -1632,8 +1636,9 @@ abstract class GenICode extends SubComponent  {
                 if (settings.debug.value)
                   log("Pruning empty JMP branch.");
                 changed = true
-                assert(p.replaceInstruction(p.lastInstruction, JUMP(cont)),
-                       "Didn't find p.lastInstruction")
+                if (settings.debug.value)
+                  assert(p.replaceInstruction(p.lastInstruction, JUMP(cont)),
+                         "Didn't find p.lastInstruction")
 
               case SWITCH(tags, labels) =>
                 if (settings.debug.value)
