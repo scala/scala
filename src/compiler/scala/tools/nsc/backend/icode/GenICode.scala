@@ -1636,9 +1636,9 @@ abstract class GenICode extends SubComponent  {
                 if (settings.debug.value)
                   log("Pruning empty JMP branch.");
                 changed = true
+                val replaced = p.replaceInstruction(p.lastInstruction, JUMP(cont))
                 if (settings.debug.value)
-                  assert(p.replaceInstruction(p.lastInstruction, JUMP(cont)),
-                         "Didn't find p.lastInstruction")
+                  assert(replaced, "Didn't find p.lastInstruction")
 
               case SWITCH(tags, labels) =>
                 if (settings.debug.value)
