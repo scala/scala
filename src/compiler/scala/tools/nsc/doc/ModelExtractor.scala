@@ -206,6 +206,16 @@ trait ModelExtractor {
     0
   }
 
+  def isAccessible(sym: Symbol): Boolean = {
+    import symtab.Flags._
+    settings.memberaccess.value match {
+      case "private"   => sym.isPublic || (sym hasFlag PROTECTED) || (sym hasFlag PRIVATE)
+      case "protected" => sym.isPublic || (sym hasFlag PROTECTED)
+      case "public"    => sym.isPublic
+      case _           => false
+    }
+  }
+
   trait ClassOrObject extends Entity {
     def path : List[ClassOrObject] = this :: Nil;
     override def listName = path.map(_.name).mkString("",".","");
@@ -230,11 +240,11 @@ trait ModelExtractor {
         else this(arg) = new ConstructorParam(arg);
       });
     }
-    object decls extends jcl.LinkedHashMap[Symbol,Member] {
+    object decls extends jcl.LinkedHashMap[Symbol, Member] {
       sym.tpe.decls.elements.foreach(e => {
         if (!constructorArgs.contains(e)) {
-          val m = Member(e);
-          if (!m.isEmpty && !this.contains(e)) this.put(e, m.get);
+          val m = Member(e)
+          if (!m.isEmpty && !this.contains(e)) this.put(e, m.get)
         }
       });
     }
@@ -300,9 +310,9 @@ trait ModelExtractor {
       override def kind = "def"
     }
     case class Val(override val sym: TermSymbol) extends ValDef(sym) {
-      def resultType0 : Type = sym.tpe;
+      def resultType0: Type = sym.tpe
       override def kind = {
-        import symtab.Flags._;
+        import symtab.Flags._
         if (sym.hasFlag(ACCESSOR)) {
           val setterName = nme.getterToSetter(sym.name);
           val setter = sym.owner.info.decl(setterName);
@@ -313,22 +323,22 @@ trait ModelExtractor {
         }
       }
     }
-    case class AbstractType(override val sym : Symbol) extends Member(sym) {
-      override def kind = "type";
+    case class AbstractType(override val sym: Symbol) extends Member(sym) {
+      override def kind = "type"
     }
 
-    abstract class NestedClassOrObject(override val sym : Symbol) extends Member(sym) with ClassOrObject {
-      override def path : List[ClassOrObject] = ClassOrObject.this.path ::: (super.path);
+    abstract class NestedClassOrObject(override val sym: Symbol) extends Member(sym) with ClassOrObject {
+      override def path: List[ClassOrObject] = ClassOrObject.this.path ::: (super.path);
     }
 
     case class NestedClass(override val sym : ClassSymbol) extends NestedClassOrObject(sym) with Clazz;
     case class NestedObject(override val sym : ModuleSymbol) extends NestedClassOrObject(sym) with Object;
-    def isVisible(sym : Symbol) : Boolean = {
-      import symtab.Flags._;
+    def isVisible(sym : Symbol): Boolean = {
+      import symtab.Flags._
       if (sym.isLocalClass) return false
       if (sym.isLocal) return false
       if (sym.isPrivateLocal) return false
-      if (sym.hasFlag(PRIVATE)) return false
+      if (sym.hasFlag(PRIVATE)) return !inIDE //false
       if (sym.hasFlag(SYNTHETIC)) return false
       if (sym.hasFlag(BRIDGE)) return false
       if (sym.nameString.indexOf("$") != -1) return false
@@ -339,6 +349,7 @@ trait ModelExtractor {
       import global._
       import symtab.Flags
       if (!isVisible(sym)) return None;
+      if (!isAccessible(sym)) return None;
       if (sym.hasFlag(Flags.ACCESSOR)) {
         if (sym.isSetter) return None;
         assert(sym.isGetter);

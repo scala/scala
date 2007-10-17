@@ -144,7 +144,7 @@ class Settings(error: String => Unit) {
   val logAll        = BooleanSetting    ("-Ylog-all", "Log all operations").hideToIDE
   val noimports     = BooleanSetting    ("-Yno-imports", "Compile without any implicit imports")
   val nopredefs     = BooleanSetting    ("-Yno-predefs", "Compile without any implicit predefined values")
-  val script        = StringSetting     ("-Xscript", "object", "compile as a script, wrapping the code into object.main()", "").hideToIDE
+  val script        = StringSetting     ("-Xscript", "object", "Compile as a script, wrapping the code into object.main()", "").hideToIDE
   val Xshowtrees    = BooleanSetting    ("-Yshow-trees", "Show detailed trees when used in connection with -print:phase").hideToIDE
   val skip          = PhasesSetting     ("-Yskip", "Skip")
   val Xsqueeze      = ChoiceSetting     ("-Ysqueeze", "if on, creates compact code in matching", List("on","on","off"), "on")
@@ -156,6 +156,8 @@ class Settings(error: String => Unit) {
                                      /*default*/"off")
 
   /** scaladoc specific options */
+  val memberaccess   = ChoiceSetting    ("-access", "Show only public, protected/public (default) or all classes and members",
+                                         List("public", "protected", "private"), "protected").dependsOn(doc)
   val pagebottom     = StringSetting    ("-bottom", "pagebottom", "Include bottom text for each page", "").dependsOn(doc)
   val doccharset     = StringSetting    ("-charset", "doccharset", "Charset for cross-platform viewing of generated documentation.", "").dependsOn(doc)
   val doctitle       = StringSetting    ("-doctitle", "doctitle", "Include title for the overview page", "Scala 2<br/>API Specification").dependsOn(doc)

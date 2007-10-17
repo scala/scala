@@ -32,26 +32,33 @@ abstract class DocDriver extends ModelFrames with ModelToXML {
   }
 
   def process(units: Iterator[CompilationUnit]) {
-    assert(global.definitions != null);
+    assert(global.definitions != null)
 
     def g(pkg: Package, clazz: ClassOrObject) {
-      allClasses(pkg) += clazz;
-      clazz.decls.map(_._2).foreach {
-        case clazz : ClassOrObject => g(pkg, clazz)
-        case _ =>
+      if (isAccessible(clazz.sym)) {
+        allClasses(pkg) += clazz
+        clazz.decls.map(_._2).foreach {
+          case clazz : ClassOrObject => g(pkg, clazz)
+          case _ =>
+        }
       }
     }
-    def f(pkg: Package, tree: Tree): Unit = if (tree != EmptyTree && !tree.symbol.hasFlag(symtab.Flags.PRIVATE)) tree match {
-      case tree : PackageDef =>
-        val pkg1 = new Package(tree.symbol.asInstanceOf[ModuleSymbol]);
-        tree.stats.foreach(stat => f(pkg1, stat))
-      case tree : ClassDef =>
-        assert(pkg != null);
-        g(pkg, new TopLevelClass(tree.symbol.asInstanceOf[ClassSymbol]))
-      case tree : ModuleDef =>
-        assert(pkg != null);
-        g(pkg, new TopLevelObject(tree.symbol.asInstanceOf[ModuleSymbol]))
-      case _ =>
+    def f(pkg: Package, tree: Tree) {
+      if (tree != EmptyTree && tree.hasSymbol) {
+        val sym = tree.symbol
+        if (sym != NoSymbol && !sym.hasFlag(symtab.Flags.PRIVATE)) tree match {
+          case tree : PackageDef =>
+            val pkg1 = new Package(sym.asInstanceOf[ModuleSymbol])
+            tree.stats.foreach(stat => f(pkg1, stat))
+          case tree : ClassDef =>
+            assert(pkg != null)
+            g(pkg, new TopLevelClass(sym.asInstanceOf[ClassSymbol]))
+          case tree : ModuleDef =>
+            assert(pkg != null)
+            g(pkg, new TopLevelObject(sym.asInstanceOf[ModuleSymbol]))
+          case _ =>
+        }
+      }
     }
     units.foreach(unit => f(null, unit.body))
 
@@ -94,7 +101,7 @@ abstract class DocDriver extends ModelFrames with ModelToXML {
       }
 
     }
-    for ((pkg0,classes0) <- allClasses) {
+    for ((pkg0, classes0) <- allClasses) {
       new ListClassFrame with Frame {
         def title =
           "List of classes and objects in package " + pkg0.fullName('.')
@@ -115,21 +122,21 @@ abstract class DocDriver extends ModelFrames with ModelToXML {
       }
     }
     for (sym <- additions) sym match {
-    case sym :  ClassSymbol =>
+    case sym: ClassSymbol =>
       val add = new TopLevelClass(sym)
       new ClassContentFrame with Frame {
         def clazz = add
         def title =
           add.kind + " " + add.name + " in package " + add.sym.owner.fullNameString('.')
       }
-    case sym :TypeSymbol =>
+    case sym: TypeSymbol =>
       val add = new TopLevelClass(sym)
       new ClassContentFrame with Frame {
         def clazz = add
         def title =
           add.kind + " " + add.name + " in package " + add.sym.owner.fullNameString('.')
       }
-    case sym :ModuleSymbol =>
+    case sym: ModuleSymbol =>
       val add = new TopLevelObject(sym)
       new ClassContentFrame with Frame {
         def clazz = add

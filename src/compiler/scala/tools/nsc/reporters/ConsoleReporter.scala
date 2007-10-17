@@ -9,8 +9,6 @@ package scala.tools.nsc.reporters
 import java.io.{BufferedReader, InputStreamReader, IOException, PrintWriter}
 import util._
 
-import compat.StringBuilder
-
 /**
  * This class implements a Reporter that displays messages on a text
  * console.
@@ -25,7 +23,7 @@ class ConsoleReporter(val settings: Settings, reader: BufferedReader, writer: Pr
     case INFO    => null
   }
 
-  private def clabel(severity : Severity) = {
+  private def clabel(severity: Severity): String = {
     val label0 = label(severity)
     if (label0 eq null) "" else label0 + ": "
   }
@@ -41,12 +39,11 @@ class ConsoleReporter(val settings: Settings, reader: BufferedReader, writer: Pr
   private def getCountString(severity: Severity): String =
     countElementsAsString((severity).count, label(severity))
 
-
   /** Prints the message. */
   def printMessage(msg: String) = writer.println(msg)
 
   /** Prints the message with the given position indication. */
-  def printMessage(posIn: Position, msg: String): Unit =
+  def printMessage(posIn: Position, msg: String) {
     if (posIn ne null) {
       val pos = posIn.inUltimateSource(posIn.source.getOrElse(null))
       val buf = new StringBuilder(msg)
@@ -57,7 +54,7 @@ class ConsoleReporter(val settings: Settings, reader: BufferedReader, writer: Pr
       //println(getSource.file)
       pos match {
       case FakePos(msg) =>
-        buf.insert(0, msg)
+        buf.insert(0, msg + " ")
       case _ if !pos.source.isEmpty =>
         val file = pos.source.get.file
         buf.insert(0, if (shortname) file.name else file.path)
@@ -68,14 +65,16 @@ class ConsoleReporter(val settings: Settings, reader: BufferedReader, writer: Pr
         printSourceLine(pos)
     } else
       printMessage(msg)
+  }
 
-  def print(pos: Position, msg: String, severity: Severity) =
+  def print(pos: Position, msg: String, severity: Severity) {
     printMessage(pos, clabel(severity) + msg)
+  }
 
   /**
    *  @param pos ...
    */
-  def printSourceLine(pos: Position) = {
+  def printSourceLine(pos: Position) {
     printMessage(pos.lineContent.stripLineEnd)
     printColumnMarker(pos)
   }
@@ -89,20 +88,20 @@ class ConsoleReporter(val settings: Settings, reader: BufferedReader, writer: Pr
     var i = 1
     while (i < pos.column.get) {
       buffer.append(' ')
-      i = i + 1
+      i += 1
     }
     if (pos.column.get > 0) buffer.append('^')
     printMessage(buffer.toString())
   }
 
   /** Prints the number of errors and warnings if their are non-zero. */
-  def printSummary() = {
+  def printSummary() {
     if (WARNING.count > 0) printMessage(getCountString(WARNING) + " found")
     if (  ERROR.count > 0) printMessage(getCountString(ERROR  ) + " found")
   }
 
-  def display(pos: Position, msg: String, severity: Severity): Unit = {
-    severity.count = severity.count + 1
+  def display(pos: Position, msg: String, severity: Severity) {
+    severity.count += 1
     print(pos, msg, severity)
   }
 
@@ -114,9 +113,9 @@ class ConsoleReporter(val settings: Settings, reader: BufferedReader, writer: Pr
       var line = reader.readLine()
       if (line ne null) {
 	line = line.toLowerCase()
-	if ("abort".startsWith(line))
+	if ("abort" startsWith line)
             throw new Error("user abort")
-	if ("resume".startsWith(line)) continue = false
+	if ("resume" startsWith line) continue = false
       }
     }
   } catch {
