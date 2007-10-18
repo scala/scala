@@ -57,11 +57,10 @@ object DocUtil {
     }
 
     val encoding = Properties.encodingString
+    val generator = System.getProperty("doc.generator", "scaladoc (" + Properties.versionString + ")")
     val header =
-      <meta http-equiv="content-type"
-            content={"text/html; charset=" + encoding}/>
-      <meta name="generator"
-            content={"scaladoc (" + Properties.versionString +")"}/>
+      <meta http-equiv="content-type" content={"text/html; charset=" + encoding}/>
+      <meta name="generator" content={generator}/>
       <link rel="stylesheet" type="text/css" href={ relative + "style.css"}/>
       <script type="text/javascript" src={relative + "script.js"}></script>;
 
