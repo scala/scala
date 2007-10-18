@@ -23,6 +23,8 @@ var eclipse_api_root = 'http://help.eclipse.org/help32/topic/org.eclipse.platfor
 
 var fjbg_api_root = 'http://lamp.epfl.ch/~linuxsoft/fjbg/api/';
 
+var liftweb_api_root = 'http://lamp.epfl.ch/~linuxsoft/liftweb/apidocs/';
+
 function get_api_root(key) {
   root = null;
   if      (key.indexOf("ch/epfl/lamp/fjbg/") == 0) { root = fjbg_api_root; }
@@ -30,6 +32,7 @@ function get_api_root(key) {
   else if (key.indexOf("scala/"            ) == 0) { root = scala_api_root; }
   else if (key.indexOf("org/apache/tools/" ) == 0) { root = ant_api_root; }
   else if (key.indexOf("org/eclipse/"      ) == 0) { root = eclipse_api_root; }
+  else if (key.indexOf("net/liftweb/"      ) == 0) { root = liftweb_api_root; }
   return root;
 }
 
@@ -39,12 +42,15 @@ var comp_src_root = scala_src_root + 'src/compiler/';
 var actors_src_root = scala_src_root + 'src/actors/';
 var dbc_src_root = scala_src_root + 'src/dbc/';
 
+//var liftweb_src_root = 'http://liftweb.googlecode.com/svn/trunk/liftweb/lift/src/main/scala/';
+
 function get_src_root(key) {
   root = null;
   if      (key.indexOf("scala/actors/") == 0) { root = actors_src_root; }
   else if (key.indexOf("scala/dbc/"   ) == 0) { root = dbc_src_root; }
   else if (key.indexOf("scala/tools/" ) == 0) { root = comp_src_root; }
   else if (key.indexOf("scala/"       ) == 0) { root = lib_src_root; }
+  //else if (key.indexOf("net/liftweb/" ) == 0) { root = liftweb_src_root; }
   return root;
 }
 

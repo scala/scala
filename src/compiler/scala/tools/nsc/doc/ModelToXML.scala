@@ -22,12 +22,27 @@ trait ModelToXML extends ModelExtractor {
   protected def anchor(sym: Symbol)(implicit frame: Frame): NodeSeq
 
   def aref(href: String, label: String)(implicit frame: Frame): NodeSeq
-
+/*
   def link(entity: Symbol)(implicit frame: Frame): NodeSeq = {
     val url = urlFor(entity)
     // nothing to do but be verbose.
     if (url == null)
       Text(entity.owner.fullNameString('.') + '.' + entity.nameString)
+    else
+      aref(url, entity.nameString)
+  }
+*/
+  def link(entity: Symbol)(implicit frame: Frame): NodeSeq = {
+    val url = urlFor(entity)
+    if (url == null) { // external link (handled by script.js)
+      val (href, attr) =
+        if (entity.isClass)
+          ("", entity.owner.fullNameString('/') + '/' + entity.nameString)
+        else
+          ("#" + entity.nameString, entity.owner.fullNameString('/'))
+      val name = entity.owner.fullNameString('.') + '.' + entity.nameString
+      <a href={Utility.escape(href)} class={attr} target="contentFrame">{name}</a>;
+    }
     else
       aref(url, entity.nameString)
   }
