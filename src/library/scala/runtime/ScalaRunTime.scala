@@ -136,6 +136,5 @@ object ScalaRunTime {
     case x: Array[Boolean] => new BoxedBooleanArray(x)
     case x: Array[AnyRef] => new BoxedObjectArray(x)
     case x: BoxedArray => x
-    case null => null
   }
 }
