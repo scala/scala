@@ -13,6 +13,8 @@ var java_api_root = 'http://java.sun.com/javase/6/docs/api/';
 //var java_api_root = 'http://java.sun.com/j2se/1.5.0/docs/api/';
 //var java_api_root = 'http://lamp.epfl.ch/~linuxsoft/java/jdk1.5/docs/api/';
 
+var javax_servlet_api_root = 'http://java.sun.com/products/servlet/2.3/javadoc/';
+
 var scala_doc_url = parent.document.URL;
 var scala_api_root = scala_doc_url.substring(0, scala_doc_url.lastIndexOf("/")+1);
 
@@ -29,6 +31,7 @@ function get_api_root(key) {
   root = null;
   if      (key.indexOf("ch/epfl/lamp/fjbg/") == 0) { root = fjbg_api_root; }
   else if (key.indexOf("java/"             ) == 0) { root = java_api_root; }
+  else if (key.indexOf("javax/servlet/"    ) == 0) { root = javax_servlet_api_root; }
   else if (key.indexOf("scala/"            ) == 0) { root = scala_api_root; }
   else if (key.indexOf("org/apache/tools/" ) == 0) { root = ant_api_root; }
   else if (key.indexOf("org/eclipse/"      ) == 0) { root = eclipse_api_root; }
