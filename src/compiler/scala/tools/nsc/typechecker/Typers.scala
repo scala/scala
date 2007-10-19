@@ -3036,6 +3036,7 @@ trait Typers { self: Analyzer =>
         result
       } catch {
         case ex: TypeError =>
+          if (inIDE) throw ex
           tree.tpe = null
           //Console.println("caught "+ex+" in typed");//DEBUG
           reportTypeError(tree.pos, ex)

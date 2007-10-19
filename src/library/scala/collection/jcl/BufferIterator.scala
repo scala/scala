@@ -28,5 +28,4 @@ trait BufferIterator[K,A] extends SeqIterator[K,A] {
    *  If previous was last called, "a" is inserted before the element returned.
    */
   def add(a: A): Unit;
-
 }

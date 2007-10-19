@@ -335,7 +335,23 @@ abstract class GenerateIdeMaps extends SubComponent {
           dup.tpe = tree.tpe
           f(dup)
         } else f(tree.ref)
-      case tree : SelectFromTypeTree => f(tree.qualifier)
+      case tree : CompoundTypeTree => f(tree.templ)
+      case tree : Template => fs(tree.parents); f(tree.self); fs(tree.body)
+      case tree : SelectFromTypeTree => {
+        if (tree.qualifier.tpe == null) tree.tpe match {
+        case tpe : TypeRef =>
+          // give it a type!
+          tree.qualifier.tpe = tpe.prefix
+        case _ =>
+          // tree.tpe.pre
+        }
+        f(tree.qualifier)
+      }
+      case tree : Literal =>
+        if (tree.tpe != null && tree.tpe.typeSymbol == definitions.ClassClass) {
+          // nothing we can do without original tree.
+        }
+
       case tree : Typed => f(tree.expr); f(tree.tpt)
       case tree : Block => fs(tree.stats); f(tree.expr)
       case tree: CaseDef => f(tree.pat);f(tree.guard);f(tree.body)
@@ -392,8 +408,9 @@ abstract class GenerateIdeMaps extends SubComponent {
       if (sym.linkedModuleOfClass eq NoSymbol) {
         if (isRoot(sym.owner)) {
           return sym.name.toString
-        }
-        throw new Error(sym + " " + sym.moduleClass + " " + sym.isPackage + " " + sym.owner)
+        } else if (sym.owner != NoSymbol) return sym2url(sym.owner) + "." + sym.name.toString
+        Console.println("XXX: " + sym + " " + sym.moduleClass + " " + sym.isPackage + " " + sym.owner)
+        return sym.name.toString
       }
       return sym2url(sym.linkedModuleOfClass)
     }

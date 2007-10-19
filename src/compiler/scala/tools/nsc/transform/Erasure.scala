@@ -180,6 +180,11 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
   private def isSeqClass(sym: Symbol) =
     (SeqClass isNonBottomSubClass sym) && (sym != ObjectClass)
 
+  /** Decides if sym is a supertype of array, right now that includes
+      from RandomAccessSeq.Mutable */
+  private def isArraySuper(sym: Symbol) =
+    (RandomAccessSeqMutableClass isNonBottomSubClass sym) //&& (sym != ObjectClass)
+
 // -------- boxing/unboxing --------------------------------------------------------
 
   override def newTyper(context: Context) = new Eraser(context)
@@ -277,8 +282,8 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
     private def cast(tree: Tree, pt: Type): Tree = {
       assert(pt eq pt.normalize)
 
-      if (tree.tpe.typeSymbol == ObjectClass) {
-        if (pt.typeSymbol == ArrayClass)
+      if (isArraySuper(tree.tpe.typeSymbol)) { // == ObjectClass) {
+        if (pt.typeSymbol == ArrayClass) {
           typed {
             atPos(tree.pos) {
               gen.evalOnce(tree, context.owner, context.unit) { x =>
@@ -295,7 +300,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
               }
             }
           }
-        else if (pt.typeSymbol isNonBottomSubClass BoxedArrayClass)
+        } else if (pt.typeSymbol isNonBottomSubClass BoxedArrayClass) {
           typed {
             atPos(tree.pos) {
               gen.evalOnce(tree, context.owner, context.unit) { x =>
@@ -312,7 +317,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
               }
             }
           }
-        else if (isSeqClass(pt.typeSymbol))
+        } else if (isArraySuper(pt.typeSymbol)) {
           typed {
             atPos(tree.pos) {
               gen.evalOnce(tree, context.owner, context.unit) { x =>
@@ -329,7 +334,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
               }
             }
           }
-        else gen.mkAttributedCast(tree, pt)
+        } else gen.mkAttributedCast(tree, pt)
       } else gen.mkAttributedCast(tree, pt)
     }
 
@@ -439,16 +444,18 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
           val qual1 = typedQualifier(qual)
           val qualClass = qual1.tpe.typeSymbol
           val targClass = targ.tpe.typeSymbol
+
 /*
           if (isNumericValueClass(qualClass) && isNumericValueClass(targClass))
             // convert numeric type casts
             atPos(tree.pos)(Apply(Select(qual1, "to" + targClass.name), List()))
           else
 */
+	  assert(true)
           if (isValueType(targClass) ||
                    (targClass == ArrayClass && (qualClass isNonBottomSubClass BoxedArrayClass)))
             unbox(qual1, targ.tpe)
-          else if (targClass == ArrayClass && qualClass == ObjectClass || isSeqClass(targClass))
+          else if (((targClass == ArrayClass || isArraySuper(targClass)) && isArraySuper(qualClass)))
             cast(qual1, targ.tpe)
           else
             tree
@@ -825,7 +832,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
                         }
                       }
                     case _ =>
-                      if (isSeqClass(targ.tpe.typeSymbol)) {
+                      if (isArraySuper(targ.tpe.typeSymbol)) {
                         atPos(tree.pos) {
                           gen.evalOnce(qual, currentOwner, unit) { q =>
                             gen.mkOr(
@@ -833,6 +840,12 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
                               atPos(tree.pos) {
                                 Apply(gen.mkAttributedRef(isArrayMethod), List(q()))
                               })
+                          }
+                        }
+                      } else if (isArraySuper(qual.tpe.typeSymbol) && targ.tpe.typeSymbol == ArrayClass) {
+                        gen.evalOnce(qual, currentOwner, unit) { q =>
+                          atPos(tree.pos) {
+                            Apply(gen.mkAttributedRef(isArrayMethod), List(q()))
                           }
                         }
                       } else tree

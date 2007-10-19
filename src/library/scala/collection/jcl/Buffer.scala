@@ -14,7 +14,7 @@ package scala.collection.jcl;
  *
  *  @author Sean McDirmid
  */
-trait Buffer[A] extends Ranged[Int,A] with MutableSeq[A] with Collection[A] {
+trait Buffer[A] extends RandomAccessSeq.Mutable[A] with Ranged[Int,A] with MutableSeq[A] with Collection[A] {
   final protected type SortedSelf = Buffer[A];
 
   override def projection : Buffer.Projection[A] = new Buffer.Projection[A] {
@@ -200,13 +200,26 @@ trait Buffer[A] extends Ranged[Int,A] with MutableSeq[A] with Collection[A] {
       }
     }
   }
-  def replace(startOffset : Int, length : Int, added : Iterable[A]) : Unit = {
-
+  /*
+  protected class Map[B](f : A => B) extends super.Map[B](f) with Buffer.Projection[B] {
+    override def elements = Buffer.this.elements.map[B](f);
+    //override def apply(idx : Int) = f(MutableSeq.this.apply(idx));
+    //override def size = length;
   }
-
+  */
 }
 object Buffer {
-  trait Projection[A] extends MutableSeq.Projection[A] with Collection.Projection[A] with Buffer[A] {
-    override def projection = this
+  trait Projection0[A] extends MutableSeq.Projection[A] with RandomAccessSeq.Projection[A] {
+    override def projection : Projection0[A] = this
+    override def elements : SeqIterator[Int,A] = new DefaultSeqIterator
+
+    protected class MapProjection[B](f : A => B) extends super.MapProjection[B](f) with Projection0[B] {
+      override def projection = this
+    }
+    override def map[B](f: A => B) : Projection0[B] = new MapProjection[B](f)
+  }
+  class Projection[A] extends Collection.Projection[A] with RandomAccessSeq.MutableProjection[A] with Projection0[A] with Buffer[A] {
+    override def elements : BufferIterator[Int,A] = new DefaultBufferIterator
+    override def projection : Buffer.Projection[A] = this
   }
 }

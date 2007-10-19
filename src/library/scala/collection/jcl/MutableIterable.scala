@@ -42,7 +42,7 @@ trait MutableIterable[A] extends scala.Collection[A] {
   def -(t : A) : this.type = { remove(t); this; }
   /** retain only elements in the collection that predicate p is true for.
    */
-  def retain(p : A => Boolean) : Unit = elements.retain(p);
+  def retainOnly(p : A => Boolean) : Unit = elements.retain(p);
   /** retain only elements that are also in that.
    */
   def retainAll(that : Iterable[A]) : Boolean = elements.retain(s => that.exists(t => t == s));

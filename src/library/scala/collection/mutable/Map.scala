@@ -202,6 +202,7 @@ trait Map[A, B] extends AnyRef
    *  <code>p</code> returns <code>true</code>.
    *
    * @param p  The test predicate
+   * @deprecated cannot be type inferred because if retain in Iterable.
    */
   def retain(p: (A, B) => Boolean): Unit = toList foreach {
     case (key, value) => if (!p(key, value)) -=(key)

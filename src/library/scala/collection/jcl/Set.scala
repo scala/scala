@@ -24,7 +24,7 @@ trait Set[A] extends scala.collection.mutable.Set[A] with Collection[A] {
   override def --(i: Iterable[A]) : this.type = super[Collection].--(i)
   override def +(t: A) : this.type = super[Collection].+(t)
   override def -(t: A) : this.type = super[Collection].-(t)
-  override def retain(f: A => Boolean) = super[Collection].retain(f)
+  override final def retain(f: A => Boolean) = retainOnly(f)
   override def isEmpty = super[Collection].isEmpty
   override def clear() = super.clear()
   override def subsetOf(set : scala.collection.Set[A]) = set match {
@@ -46,8 +46,8 @@ trait Set[A] extends scala.collection.mutable.Set[A] with Collection[A] {
   }
   class Filter(pp : A => Boolean) extends super.Filter with Set.Projection[A] {
     override def p(a : A) = pp(a)
-    override def retain(p0 : A => Boolean): Unit =
-      Set.this.retain(e => !p(e) || p0(e))
+    override def retainOnly(p0 : A => Boolean): Unit =
+      Set.this.retainOnly(e => !p(e) || p0(e))
     override def add(a : A) = {
       if (!p(a)) throw new IllegalArgumentException
       else Set.this.add(a)

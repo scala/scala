@@ -330,7 +330,9 @@ abstract class ClassfileParser {
     val c = pool.getClassSymbol(in.nextChar)
     if (c != clazz) {
       assert(true)
-      throw new IOException("class file '" + in.file + "' contains wrong " + c)
+      if (inIDE) {
+        Console.println("WRONG CLASS: expected: " + clazz + " found " + c)
+      } else throw new IOException("class file '" + in.file + "' contains wrong " + c)
     }
     val superType = if (isAnnotation) { in.nextChar; definitions.AnnotationClass.tpe }
                     else pool.getSuperClass(in.nextChar).tpe
