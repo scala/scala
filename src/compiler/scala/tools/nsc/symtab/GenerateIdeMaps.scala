@@ -1,4 +1,11 @@
-package scala.tools.nsc.symtab;
+/* NSC -- new Scala compiler
+ * Copyright 2005-2007 LAMP/EPFL
+ * @author  Martin Odersky
+ */
+// $Id: $
+
+package scala.tools.nsc.symtab
+
 import scala.tools.nsc.io.{PlainFile,AbstractFile}
 import scala.tools.nsc.util._
 import java.io._
@@ -10,7 +17,7 @@ abstract class GenerateIdeMaps extends SubComponent {
   val phaseName = "gen-ide-map"
   def newPhase(prev: Phase): StdPhase = new GenIdeMapPhase(prev)
   import global._
-  private def assert(b : Boolean) : Unit = {
+  private def assert(b: Boolean) {
     if (!b) {
       assert(true)
       throw new AssertionError
@@ -409,7 +416,7 @@ abstract class GenerateIdeMaps extends SubComponent {
         if (isRoot(sym.owner)) {
           return sym.name.toString
         } else if (sym.owner != NoSymbol) return sym2url(sym.owner) + "." + sym.name.toString
-        Console.println("XXX: " + sym + " " + sym.moduleClass + " " + sym.isPackage + " " + sym.owner)
+        scala.Console.println("XXX: " + sym + " " + sym.moduleClass + " " + sym.isPackage + " " + sym.owner)
         return sym.name.toString
       }
       return sym2url(sym.linkedModuleOfClass)
