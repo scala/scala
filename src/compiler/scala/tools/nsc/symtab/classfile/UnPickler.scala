@@ -25,9 +25,13 @@ abstract class UnPickler {
   val global: Global
   import global._
 
-  /**
-   *  @param bytes    bytearray from which we unpickle
-   *  @param filename filename associated with bytearray, only used for error messages
+  /** Unpickle symbol table information descending from a class and/or module root
+   *  from an array of bytes.
+   *  @param bytes      bytearray from which we unpickle
+   *  @param offset     offset from which unpickling starts
+   *  @param classroot  the top-level class which is unpickled, or NoSymbol if unapplicable
+   *  @param moduleroot the top-level module which is unpickled, or NoSymbol if unapplicable
+   *  @param filename   filename associated with bytearray, only used for error messages
    */
   def unpickle(bytes: Array[Byte], offset: Int, classRoot: Symbol, moduleRoot: Symbol, filename: String) {
     try {
@@ -44,8 +48,14 @@ abstract class UnPickler {
   private class UnPickle(bytes: Array[Byte], offset: Int, classRoot: Symbol, moduleRoot: Symbol) extends PickleBuffer(bytes, offset, -1) {
     if (settings.debug.value) global.log("unpickle " + classRoot + " and " + moduleRoot)
     checkVersion()
+
+    /** A map from entry numbers to array offsets */
     private val index = createIndex
+
+    /** A map from entry numbers to symbols, types, or annotations */
     private val entries = new Array[AnyRef](index.length)
+
+    /** A map from symbols to their associated `decls' scopes */
     private val symScopes = new HashMap[Symbol, Scope]
 
     for (i <- 0 until index.length) {
@@ -55,7 +65,7 @@ abstract class UnPickler {
 
     if (settings.debug.value) global.log("unpickled " + classRoot + ":" + classRoot.rawInfo + ", " + moduleRoot + ":" + moduleRoot.rawInfo);//debug
 
-    private def checkVersion() = {
+    private def checkVersion() {
       val major = readNat()
       val minor = readNat()
       if (major != MajorVersion || minor > MinorVersion)
@@ -65,7 +75,7 @@ abstract class UnPickler {
                               "\n found: " + major + "." + minor)
     }
 
-    /** The scope associated with given symbol */
+    /** The `decls' scope associated with given symbol */
     private def symScope(sym: Symbol)(f : => Scope) = symScopes.get(sym) match {
       case None => val s = f; symScopes(sym) = s; s
       case Some(s) => s

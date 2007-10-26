@@ -456,9 +456,14 @@ sealed abstract class List[+A] extends Seq[A] {
    *  @param prefix the prefix to reverse and then prepend
    *  @return       the concatenation of the reversed prefix and the current list.
    */
-  def reverse_:::[B >: A](prefix: List[B]): List[B] = prefix match {
-    case Nil => this
-    case head :: tail => (head :: this).reverse_:::(tail)
+  def reverse_:::[B >: A](prefix: List[B]): List[B] = {
+    var these: List[B] = this
+    var pres = prefix
+    while (!pres.isEmpty) {
+      these = pres.head :: these
+      pres = pres.tail
+    }
+    these
   }
 
   /** Returns the number of elements in the list.
@@ -540,8 +545,15 @@ sealed abstract class List[+A] extends Seq[A] {
    */
   override def last: A =
     if (isEmpty) throw new Predef.NoSuchElementException("Nil.last")
-    else if (tail.isEmpty) head
-    else tail.last
+    else {
+      var cur = this
+      var next = this.tail
+      while (!next.isEmpty) {
+        cur = next
+        next = next.tail
+      }
+      cur.head
+    }
 
   /** Returns the <code>n</code> first elements of this list, or else the whole
    *  list, if it has less than <code>n</code> elements.
@@ -580,9 +592,15 @@ sealed abstract class List[+A] extends Seq[A] {
    *  @param n the number of elements to drop.
    *  @return the list without its <code>n</code> first elements.
    */
-  override def drop(n: Int): List[A] =
-    if (isEmpty || n <= 0) this
-    else (tail drop (n-1))
+  override def drop(n: Int): List[A] = {
+    var these = this
+    var count = n
+    while (!these.isEmpty && count > 0) {
+      these = these.tail
+      count -= 1
+    }
+    these
+  }
 
   /** Returns the rightmost <code>n</code> elements from this list.
    *

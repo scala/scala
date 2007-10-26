@@ -415,23 +415,24 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
           //assert(nselector.tpe =:= selector.tpe)
           //val ncases = transformCaseDefs(cases)
 
-        def makeGuardDef(vs:SymList, guard:Tree) = {
-          import symtab.Flags._
-          val gdname = cunit.fresh.newName("gd")
-          val fmls = new ListBuffer[Type]
-          val method = currentOwner.newMethod(mch.pos, gdname) setFlag (SYNTHETIC)
-          var vs1 = vs; while (vs1 ne Nil) {
-            fmls += vs1.head.tpe
-            vs1 = vs1.tail
+          def makeGuardDef(vs:SymList, guard:Tree) = {
+            import symtab.Flags._
+            val gdname = cunit.fresh.newName("gd")
+            val fmls = new ListBuffer[Type]
+            val method = currentOwner.newMethod(mch.pos, gdname) setFlag (SYNTHETIC)
+            var vs1 = vs; while (vs1 ne Nil) {
+              fmls += vs1.head.tpe
+              vs1 = vs1.tail
+            }
+            val tpe    = new MethodType(fmls.toList, definitions.BooleanClass.tpe)
+            method setInfo tpe
+            localTyper.
+            typed {
+              DefDef(method,
+                     {vparamss =>
+                        new ChangeOwnerTraverser(currentOwner, method).traverse(guard);
+                        new TreeSymSubstituter(vs, vparamss.head).traverse(guard);guard})}
           }
-          val tpe    = new MethodType(fmls.toList, definitions.BooleanClass.tpe)
-          method setInfo tpe
-          localTyper.
-          typed { DefDef(method,
-                         {vparamss =>
-                           new ChangeOwnerTraverser(currentOwner, method).traverse(guard);
-                           new TreeSymSubstituter(vs, vparamss.head).traverse(guard);guard})}
-        }
 
           val nguard = new ListBuffer[Tree]
           val ncases = new ListBuffer[CaseDef]
@@ -468,10 +469,13 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
           //Console.println("TransMatcher selector.tpe ="+selector.tpe+")")
           //Console.println("TransMatcher resultType ="+resultType+")")
 
+          //println("handle pattern = "+nselector+"/"+ncases.toList+"/"+currentOwner+"/"+tree.tpe)
           val t_untyped = handlePattern(nselector, ncases.toList, checkExhaustive, currentOwner, transform)
+          //println("t_untyped = "+t_untyped)
 	  try {
             //Console.println("t_untyped "+t_untyped.toString())
             val t = atPos(tree.pos) { localTyper.typed(t_untyped, resultType) }
+            //println("t_typed = "+t)
 
             //t = transform(t)
             //val t         = atPos(tree.pos) { typed(t_untyped, resultType) }

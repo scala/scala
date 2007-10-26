@@ -124,4 +124,8 @@ trait Set[A] extends (A => Boolean) with Collection[A] {
     copyToArray(result, 0)
     result
   }
+
+  /** Defines the prefix of this object's <code>toString</code> representation.
+   */
+  override protected def stringPrefix : String = "Set"
 }

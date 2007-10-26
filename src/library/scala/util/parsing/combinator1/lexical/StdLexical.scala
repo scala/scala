@@ -37,9 +37,9 @@ class StdLexical extends Lexical with StdTokens {
   def token: Parser[Token] =
     ( letter ~ rep( letter | digit )                    ^^ { case first ~ rest => processIdent(first :: rest mkString "") }
     | digit ~ rep( digit )                              ^^ { case first ~ rest => NumericLit(first :: rest mkString "") }
-    | '\'' ~ rep( chrExcept('\'', '\n', EofCh) ) ~ '\'' ^^ { case _ ~ chars ~ _ => StringLit(chars mkString "") }
-    | '\"' ~ rep( chrExcept('\"', '\n', EofCh) ) ~ '\"' ^^ { case _ ~ chars ~ _ => StringLit(chars mkString "") }
-    | EofCh                                             ^^ const(EOF)
+    | '\'' ~ rep( chrExcept('\'', '\n', EofCh) ) ~ '\'' ^^ { case '\'' ~ chars ~ '\'' => StringLit(chars mkString "") }
+    | '\"' ~ rep( chrExcept('\"', '\n', EofCh) ) ~ '\"' ^^ { case '\"' ~ chars ~ '\"' => StringLit(chars mkString "") }
+    | EofCh                                             ^^^ EOF
     | '\'' ~> failure("unclosed string literal")
     | '\"' ~> failure("unclosed string literal")
     | delim
@@ -70,7 +70,7 @@ class StdLexical extends Lexical with StdTokens {
 
   private var _delim: Parser[Token] = null
   protected def delim: Parser[Token] = {
-    if(_delim eq null) { // construct parser for delimiters by |'ing together the parsers for the individual delimiters,
+    if (_delim eq null) { // construct parser for delimiters by |'ing together the parsers for the individual delimiters,
     // starting with the longest one (hence the sort + reverse) -- otherwise a delimiter D will never be matched if
     // there is another delimiter that is a prefix of D
       def parseDelim(s: String): Parser[Token] = accept(s.toList) ^^ { x => Keyword(s) }

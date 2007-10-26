@@ -1336,7 +1336,7 @@ trait Typers { self: Analyzer =>
       val thistp = tp.typeSymbol.thisType
       for (sym <- clazz.info.decls.toList) {
         if (sym.isPublic && !sym.isClass && !sym.isConstructor)
-          addMember(thistp, tp, sym)
+          addMember(thistp, tp, sym.cloneSymbol(tp.typeSymbol).setInfo(sym.info))
       }
       tp
     }
@@ -2801,19 +2801,9 @@ trait Typers { self: Analyzer =>
 
         case UnApply(fun, args) =>
           val fun1 = typed(fun)
-          var tpes = fun.symbol.name match {
-            case nme.unapply    => unapplyTypeListFromReturnType   (fun.tpe)
-            case nme.unapplySeq => unapplyTypeListFromReturnTypeSeq(fun.tpe)
-          }
-          var as = args; while(as ne Nil) { // bq: typing a pattern never changes the tree
-            typedPattern(as.head, tpes.head match {
-              case TypeRef(_,sym,targs) if sym eq definitions.RepeatedParamClass => targs.head
-              case tpe                                                           => tpe
-            })
-            as = as.tail; tpes = tpes.tail
-          }
-          //val args1 = List.mapConserve(args)(typedPattern(_, WildcardType))
-          copy.UnApply(tree, fun1, args) setType pt
+          val tpes = formalTypes(unapplyTypeList(fun.symbol, fun1.tpe), args.length)
+          val args1 = List.map2(args, tpes)(typedPattern(_, _))
+          copy.UnApply(tree, fun1, args1) setType pt
 
         case ArrayValue(elemtpt, elems) =>
           typedArrayValue(elemtpt, elems)

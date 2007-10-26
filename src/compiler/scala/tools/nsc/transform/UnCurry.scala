@@ -46,7 +46,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
 //@MAT: uncurry and uncurryType fully expand type aliases in their input and output
 // note: don't normalize higher-kined types -- @M TODO: maybe split those uses of normalize?
 // OTOH, should be a problem as calls to normalize only occur on types with kind * in principle (in well-typed programs)
-  private def expandAlias(tp: Type): Type = if(!tp.isHigherKinded) tp.normalize else tp
+  private def expandAlias(tp: Type): Type = if (!tp.isHigherKinded) tp.normalize else tp
 
   private val uncurry: TypeMap = new TypeMap {
     def apply(tp0: Type): Type = {val tp=expandAlias(tp0); tp match {
@@ -310,6 +310,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
               Typed(
                 New(TypeTree(anonClass.tpe), List(List())),
                 TypeTree(fun.tpe)))
+
           }
         }
       }

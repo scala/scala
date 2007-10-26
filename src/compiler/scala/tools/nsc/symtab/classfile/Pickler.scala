@@ -161,7 +161,9 @@ abstract class Pickler extends SubComponent {
         case TypeBounds(lo, hi) =>
           putType(lo); putType(hi)
         case RefinedType(parents, decls) =>
-          putSymbol(tp.typeSymbol); putTypes(parents); putSymbols(decls.toList)
+          val rclazz = tp.typeSymbol
+          assert(decls.elements forall (_.owner == rclazz))
+          putSymbol(rclazz); putTypes(parents); putSymbols(decls.toList)
         case ClassInfoType(parents, decls, clazz) =>
           putSymbol(clazz); putTypes(parents); putSymbols(decls.toList)
         case MethodType(formals, restpe) =>

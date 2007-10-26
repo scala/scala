@@ -12,6 +12,7 @@ package scala
 
 /** This object contains utility methods to build responders.
  *
+ *  @author Martin Odersky
  *  @author Burak Emir
  *  @version 1.0
  *
@@ -60,6 +61,7 @@ object Responder {
  *  Scala while giving the impression that programs in these DSLs are
  *  written in direct style.
  *
+ *  @author Martin Odersky
  *  @author Burak Emir
  *  @version 1.0
  */

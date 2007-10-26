@@ -316,41 +316,38 @@ abstract class RefChecks extends InfoTransform {
       val seenTypes = new Array[Type](clazz.info.closure.length)
       var seenCaseClass = if (clazz hasFlag CASE) clazz else NoSymbol
 
-      def validateTypes(tps: List[Type], includeSuper: Boolean) {
-        if (!tps.isEmpty) {
-          for (val tp <- tps.tail.reverse) validateType(tp, false);
-          if (includeSuper) validateType(tps.head, true);
-        }
-      }
-
-      def validateType(tp: Type, includeSuper: Boolean) {
+      /** validate all base types of a class in reverse linear order. */
+      def validateType(tp: Type) {
         val baseClass = tp.typeSymbol
         if (baseClass.isClass) {
           val index = clazz.info.closurePos(baseClass)
           if (index >= 0) {
-            if ((seenTypes(index) ne null) && !(seenTypes(index) <:< tp))
-              unit.error(clazz.pos, "illegal inheritance;\n " + clazz +
-                         " inherits different type instances of " + baseClass +
-                         ":\n" + tp + " and " + seenTypes(index));
-            seenTypes(index) = tp;
-            // check that case classes do not inherit from case classes
-            if (baseClass hasFlag CASE) {
-              if (seenCaseClass != NoSymbol && seenCaseClass != baseClass)
-                unit.error(clazz.pos, "implementation restriction: case " +
-                           seenCaseClass + " and case " + baseClass +
-                           " cannot be combined in one object");
-              seenCaseClass = baseClass
+            if (seenTypes(index) ne null) {
+              if (!(seenTypes(index) <:< tp)) {
+                unit.error(clazz.pos, "illegal inheritance;\n " + clazz +
+                           " inherits different type instances of " + baseClass +
+                           ":\n" + tp + " and " + seenTypes(index));
+              }
+            } else {
+              seenTypes(index) = tp
+              // check that case classes do not inherit from case classes
+              if (baseClass hasFlag CASE) {
+                if (seenCaseClass != NoSymbol && seenCaseClass != baseClass)
+                  unit.error(clazz.pos, "implementation restriction: case " +
+                             seenCaseClass + " and case " + baseClass +
+                             " cannot be combined in one object");
+                seenCaseClass = baseClass
+              }
+              // check that inner classes do not inherit from Annotation
+              if (baseClass == ClassfileAnnotationClass)
+                if (!clazz.owner.isPackageClass)
+                  unit.error(clazz.pos, "inner classes cannot be classfile annotations")
             }
-            // check that inner classes do not inherit from Annotation
-            if (baseClass == ClassfileAnnotationClass)
-              if (!clazz.owner.isPackageClass)
-                unit.error(clazz.pos, "inner classes cannot be classfile annotations")
+            tp.parents foreach validateType
           }
-          validateTypes(tp.parents, includeSuper)
         }
       }
-
-      validateTypes(clazz.info.parents, true)
+      validateType(clazz.tpe)
     }
 
   // Variance Checking --------------------------------------------------------

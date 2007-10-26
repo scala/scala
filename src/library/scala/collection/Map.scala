@@ -191,4 +191,8 @@ trait Map[A, +B] extends PartialFunction[A, B] with Collection[(A, B)] {
     override def contains(key : A) = Map.this.contains(key)
     override def get(key : A) = Map.this.get(key).map(f)
   }
+
+  /** Defines the prefix of this object's <code>toString</code> representation.
+   */
+  override protected def stringPrefix : String = "Map"
 }
