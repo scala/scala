@@ -54,8 +54,7 @@ import nsc.{InterpreterResults=>IR}
  *    properly, because rebinding at the Java level is technically difficult.
  *  </p>
  *
- * @author Moez A. Abdel-Gawad
- * @author Lex Spoon
+ * @author Moez A. Abdel-Gawad, Lex Spoon
  */
 class Interpreter(val settings: Settings, out: PrintWriter) {
   import symtab.Names
@@ -162,7 +161,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   /** allocate a fresh line name */
   private def newLineName = {
     val num = nextLineNo
-    nextLineNo = nextLineNo + 1
+    nextLineNo += 1
     compiler.nme.INTERPRETER_LINE_PREFIX + num
   }
 
@@ -172,7 +171,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   /** allocate a fresh variable name */
   private def newVarName() = {
     val num = nextVarNameNo
-    nextVarNameNo = nextVarNameNo + 1
+    nextVarNameNo += 1
     compiler.nme.INTERPRETER_VAR_PREFIX + num
   }
 
@@ -190,17 +189,17 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   private def truncPrintString(str: String): String = {
     val maxpr = isettings.maxPrintString
 
-    if(maxpr <= 0)
+    if (maxpr <= 0)
       return str
 
-    if(str.length <= maxpr)
+    if (str.length <= maxpr)
       return str
 
     val trailer = "..."
-    if(maxpr >= trailer.length+1)
+    if (maxpr >= trailer.length+1)
       return str.substring(0, maxpr-3) + trailer
 
-    return str.substring(0, maxpr)
+    str.substring(0, maxpr)
   }
 
   /** Clean up a string for output */
@@ -214,12 +213,11 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     val spaces = "       "
 
     stringFrom(str =>
-      for(line <- code.lines) {
+      for (line <- code.lines) {
 	str.print(spaces)
 	str.println(line)
       })
   }
-
 
   /** Compute imports that allow definitions from previous
    *  requests to be visible in a new request.  Returns
@@ -243,7 +241,6 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
    * of them, which is not really necessary.
    * (3) It imports multiple same-named implicits, but only the
    * last one imported is actually usable.
-   *
    */
   private def importsCode(wanted: Set[Name]): (String, String, String) = {
     /** Narrow down the list of requests from which imports
@@ -255,11 +252,9 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
        *  which ones to keep.  'wanted' is the set of
        *  names that need to be imported, and
        *  'shadowed' is the list of names useless to import
-       *  because a later request will re-import it anyway. */
-      def select(reqs: List[Request],
-                 wanted: Set[Name])
-      :List[Request] =
-      {
+       *  because a later request will re-import it anyway.
+       */
+      def select(reqs: List[Request], wanted: Set[Name]): List[Request] = {
         reqs match {
           case Nil => Nil
 
@@ -550,7 +545,10 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
 
   /** One line of code submitted by the user for interpretation */
   private abstract class Request(val line: String, val lineName: String) {
-    val Some(trees) = parse(line)
+    val trees = parse(line) match {
+      case Some(ts) => ts
+      case None => Nil
+    }
 
     /** name to use for the object that will compute "line" */
     def objectName = lineName + compiler.nme.INTERPRETER_WRAPPER_SUFFIX
@@ -566,13 +564,12 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     var varNameCache: Option[String] = None
 
     /** A computed variable name, if one is needed */
-    def varName =
-      varNameCache match {
-        case None =>
-          varNameCache = Some(newVarName)
-          varNameCache.get
-        case Some(name) =>
-          name
+    def varName = varNameCache match {
+      case None =>
+        varNameCache = Some(newVarName)
+        varNameCache.get
+      case Some(name) =>
+        name
     }
 
     /** list of methods defined */
@@ -691,13 +688,14 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
         code.println(";}")
       })
 
-    def resultExtractionCode(code: PrintWriter): Unit =
+    def resultExtractionCode(code: PrintWriter) {
       for (vname <- valAndVarNames) {
         code.print(" + \"" + vname + ": " + typeOf(vname) + " = \" + " +
                    " (if(" + fullPath(vname) + ".toString.contains('\\n')) " +
                    " \"\\n\" else \"\") + " +
                    fullPath(vname) + " + \"\\n\"")
       }
+    }
 
     /** Compile the object file.  Returns whether the compilation succeeded.
      *  If all goes well, the "types" map is computed. */
@@ -835,7 +833,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     def moduleName = trees match {
       case List(ModuleDef(_, name, _)) => name
     }
-    override def resultExtractionCode(code: PrintWriter): Unit = {
+    override def resultExtractionCode(code: PrintWriter) {
       super.resultExtractionCode(code)
       code.println(" + \"defined module " + moduleName + "\\n\"")
     }
