@@ -42,8 +42,8 @@ x = Map(42 -> FortyTwo)
 y = Map(42 -> FortyTwo)
 x equals y: true - y equals x: true
 
-x = TreeSet(0, 2)
-y = TreeSet(0, 2)
+x = Set(0, 2)
+y = Set(0, 2)
 x equals y: true - y equals x: true
 
 x = ArrayBuffer(one, two)
@@ -58,8 +58,8 @@ x = Set(0, 8, 9)
 y = Set(0, 8, 9)
 x equals y: true - y equals x: true
 
-x = HashSet(layers, buffers, title)
-y = HashSet(layers, buffers, title)
+x = Set(layers, buffers, title)
+y = Set(layers, buffers, title)
 x equals y: true - y equals x: true
 
 x = LinkedList(2, 3)
