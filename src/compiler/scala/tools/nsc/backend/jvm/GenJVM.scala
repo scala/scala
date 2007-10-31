@@ -894,8 +894,12 @@ abstract class GenJVM extends SubComponent {
               case _ =>
                 (kind: @unchecked) match {
                   case LONG   => jcode.emitLCMP()
-                  case FLOAT  => jcode.emitFCMPG()
-                  case DOUBLE => jcode.emitDCMPG()
+                  case FLOAT  =>
+                    if (cond == LT || cond == LE) jcode.emitFCMPG()
+                    else jcode.emitFCMPL()
+                  case DOUBLE =>
+                    if (cond == LT || cond == LE) jcode.emitDCMPG()
+                    else jcode.emitDCMPL()
                 }
                 if (nextBlock == success) {
                   jcode.emitIF(conds(negate(cond)), labels(failure));
@@ -930,8 +934,14 @@ abstract class GenJVM extends SubComponent {
               case _ =>
                 (kind: @unchecked) match {
                   case LONG   => jcode.emitLCONST_0(); jcode.emitLCMP()
-                  case FLOAT  => jcode.emitFCONST_0(); jcode.emitFCMPL()
-                  case DOUBLE => jcode.emitDCONST_0(); jcode.emitDCMPL()
+                  case FLOAT  =>
+                    jcode.emitFCONST_0();
+                    if (cond == LT || cond == LE) jcode.emitFCMPG()
+                    else jcode.emitFCMPL()
+                  case DOUBLE =>
+                    jcode.emitDCONST_0();
+                    if (cond == LT || cond == LE) jcode.emitDCMPG()
+                    else jcode.emitDCMPL()
                 }
                 if (nextBlock == success) {
                   jcode.emitIF(conds(negate(cond)), labels(failure))
