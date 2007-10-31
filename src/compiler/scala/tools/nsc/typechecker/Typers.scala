@@ -165,12 +165,12 @@ trait Typers { self: Analyzer =>
         case OverloadedType(_, _) => EmptyTree
         case PolyType(_, _) => EmptyTree
         case _ =>
-          val result = inferImplicit(pos, functionType(List(from), to), true, reportAmbiguous)
+          val result = inferImplicit(pos, MethodType(List(from), to), reportAmbiguous)
           if (result != EmptyTree) result
           else inferImplicit(
             pos,
-            functionType(List(appliedType(ByNameParamClass.typeConstructor, List(from))), to),
-            true, reportAmbiguous)
+            MethodType(List(appliedType(ByNameParamClass.typeConstructor, List(from))), to),
+            reportAmbiguous)
       }
     }
 
@@ -379,7 +379,7 @@ trait Typers { self: Analyzer =>
             var o = owner
             while (o != NoSymbol && o != sym.owner &&
                    !o.isLocal && !o.hasFlag(PRIVATE) &&
-                   !o.privateWithin.ownerChain.contains(sym.owner))
+                   !o.privateWithin.hasTransOwner(sym.owner))
               o = o.owner
             if (o == sym.owner) addHidden(sym)
           } else if (sym.owner.isTerm && !sym.isTypeParameterOrSkolem) {
@@ -548,7 +548,7 @@ trait Typers { self: Analyzer =>
 
     /** The member with given name of given qualifier tree */
     def member(qual: Tree, name: Name) = qual.tpe match {
-      case ThisType(clazz) if (context.enclClass.owner.ownerChain contains clazz) =>
+      case ThisType(clazz) if (context.enclClass.owner.hasTransOwner(clazz)) =>
         qual.tpe.member(name)
       case _  =>
         if (phase.next.erasedTypes) qual.tpe.member(name)
@@ -1248,7 +1248,7 @@ trait Typers { self: Analyzer =>
 
     private def checkStructuralCondition(refinement: Symbol, vparam: ValDef) {
       val tp = vparam.symbol.tpe
-      if (tp.typeSymbol.isAbstractType && !(tp.typeSymbol.ownerChain contains refinement))
+      if (tp.typeSymbol.isAbstractType && !(tp.typeSymbol.hasTransOwner(refinement)))
         error(vparam.tpt.pos,"Parameter type in structural refinement may not refer to abstract type defined outside that same refinement")
     }
 
@@ -3148,29 +3148,45 @@ trait Typers { self: Analyzer =>
      *                 to <code>pt</code>, EmptyTree otherwise.
      *  @pre           <code>info.tpe</code> does not contain an error
      */
-    private def typedImplicit(pos: Position, info: ImplicitInfo, pt: Type, isLocal: Boolean): Tree = {
+    private def typedImplicit(pos: Position, info: ImplicitInfo, pt0: Type, pt: Type, isLocal: Boolean): Tree = {
       def isStable(tp: Type): Boolean = tp match {
         case TypeRef(pre, sym, _) => sym.isPackageClass || sym.isModuleClass && isStable(pre)
         case _ => tp.isStable
       }
+      // println("typed impl for "+pt+"? "+info.name+":"+info.tpe+(isPlausiblyCompatible(info.tpe, pt))+isCompatible(depoly(info.tpe), pt)+isStable(info.pre))
       if (isPlausiblyCompatible(info.tpe, pt) && isCompatible(depoly(info.tpe), pt) && isStable(info.pre)) {
         val tree = atPos(pos) {
           if (info.pre == NoPrefix/*isLocal*/) Ident(info.name)
           else Select(gen.mkAttributedQualifier(info.pre), info.name)
         }
+        // println("typed impl?? "+info.name+":"+info.tpe+" ==> "+tree+" with "+pt)
         def fail(reason: String, sym1: Symbol, sym2: Symbol): Tree = {
           if (settings.debug.value)
-            log(tree+" is not a valid implicit value because:\n"+reason + sym1+" "+sym2)
+            println(tree+" is not a valid implicit value because:\n"+reason + sym1+" "+sym2)
           EmptyTree
         }
         try {
-//        if (!isLocal) tree setSymbol info.sym
-          val tree1 = typed1(tree, EXPRmode, pt)
-          //if (settings.debug.value) log("typed implicit "+tree1+":"+tree1.tpe+", pt = "+pt)
-          val tree2 = adapt(tree1, EXPRmode, pt)
-          //if (settings.debug.value) log("adapted implicit "+tree1.symbol+":"+tree2.tpe+" to "+pt)
+          // if (!isLocal) tree setSymbol info.sym
+          val isView = (pt0 ne pt)
+          val tree1 =
+            if (isView)
+              typed1(Apply(tree, List(Ident("<argument>") setType pt0.paramTypes.head)), EXPRmode, pt0.resultType)
+            else
+              typed1(tree, EXPRmode, pt)
+          //if (settings.debug.value) println("typed implicit "+tree1+":"+tree1.tpe+", pt = "+pt)
+          val tree2 = if (isView) (tree1: @unchecked) match { case Apply(fun, _) => fun }
+                      else adapt(tree1, EXPRmode, pt)
+          //if (settings.debug.value) println("adapted implicit "+tree1.symbol+":"+tree2.tpe+" to "+pt)("adapted implicit "+tree1.symbol+":"+tree2.tpe+" to "+pt)
+          def hasMatchingSymbol(tree: Tree): Boolean = (tree.symbol == info.sym) || {
+            tree match {
+              case Apply(fun, _) => hasMatchingSymbol(fun)
+              case TypeApply(fun, _) => hasMatchingSymbol(fun)
+              case Select(pre, name) => name == nme.apply && pre.symbol == info.sym
+              case _ => false
+            }
+          }
           if (tree2.tpe.isError) EmptyTree
-          else if (info.sym == tree1.symbol) tree2
+          else if (hasMatchingSymbol(tree1)) tree2
           else fail("syms differ: ", tree1.symbol, info.sym)
         } catch {
           case ex: TypeError => fail(ex.getMessage(), NoSymbol, NoSymbol)
@@ -3181,7 +3197,7 @@ trait Typers { self: Analyzer =>
     /** Infer implicit argument or view.
      *
      *  @param  pos             position for error reporting
-     *  @param  pt              the expected type of the implicit
+     *  @param  pt0             the expected type of the implicit
      *  @param  isView          are we searching for a view? (this affects the error message)
      *  @param  reportAmbiguous should ambiguous errors be reported?
      *                          False iff we search for a view to find out
@@ -3189,7 +3205,9 @@ trait Typers { self: Analyzer =>
      *  @return                 ...
      *  @see                    <code>isCoercible</code>
      */
-    private def inferImplicit(pos: Position, pt: Type, isView: Boolean, reportAmbiguous: Boolean): Tree = {
+    private def inferImplicit(pos: Position, pt0: Type, reportAmbiguous: Boolean): Tree = {
+      val pt = normalize(pt0)
+      val isView = pt0.isInstanceOf[MethodType]
 
       if (util.Statistics.enabled) implcnt = implcnt + 1
       val startTime = if (util.Statistics.enabled) currentTime else 0l
@@ -3239,7 +3257,7 @@ trait Typers { self: Analyzer =>
           !containsError(info.tpe) &&
           !(isLocal && shadowed.contains(info.name)) &&
           (!isView || info.sym != Predef_identity) &&
-          tc.typedImplicit(pos, info, pt, isLocal) != EmptyTree
+          tc.typedImplicit(pos, info, pt0, pt, isLocal) != EmptyTree
         def applicableInfos(is: List[ImplicitInfo]) = {
           val result = is filter isApplicable
           if (isLocal)
@@ -3259,7 +3277,7 @@ trait Typers { self: Analyzer =>
                              "yet alternative definition  ",
                              "is defined in a subclass.\n Both definitions ")
             }
-          tc.typedImplicit(pos, best, pt, isLocal)
+          tc.typedImplicit(pos, best, pt0, pt, isLocal)
         }
       }
 
@@ -3305,7 +3323,7 @@ trait Typers { self: Analyzer =>
     def applyImplicitArgs(tree: Tree): Tree = tree.tpe match {
       case MethodType(formals, _) =>
         def implicitArg(pt: Type) = {
-          val arg = inferImplicit(tree.pos, pt, false, true)
+          val arg = inferImplicit(tree.pos, pt, true)
           if (arg != EmptyTree) arg
           else errorTree(tree, "no implicit argument matching parameter type "+pt+" was found.")
         }

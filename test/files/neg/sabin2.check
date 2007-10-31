@@ -1,5 +1,5 @@
-sabin2.scala:22: error: method set cannot be accessed in Test.this.Base#Inner
- because its instance type (Test.this.Base#T)Unit contains a malformed type: Test.this.Base#T
+sabin2.scala:22: error: method set cannot be accessed in Test.Base#Inner
+ because its instance type (Test.Base#T)Unit contains a malformed type: Test.Base#T
    a.set(b.get()) // Error
      ^
 one error found

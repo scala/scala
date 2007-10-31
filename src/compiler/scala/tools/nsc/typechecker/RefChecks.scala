@@ -169,8 +169,7 @@ abstract class RefChecks extends InfoTransform {
         val mb = member.accessBoundary(member.owner)
         val ob = other.accessBoundary(member.owner)
         if (mb != RootClass && mb != NoSymbol && // todo: change
-            (ob == RootClass || ob == NoSymbol ||
-             mb != ob && !(ob.ownerChain contains mb) ||
+            (ob == RootClass || ob == NoSymbol || !ob.hasTransOwner(mb) ||
              (other hasFlag PROTECTED) && !(member hasFlag PROTECTED))) {
           overrideAccessError()
         } else if (other hasFlag FINAL) { // (1.2)

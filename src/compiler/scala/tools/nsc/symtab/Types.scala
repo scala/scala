@@ -627,17 +627,21 @@ trait Types {
       checkMalformedSwitch = false
       while (continue) {
         continue = false
-        var bcs = baseClasses
+        val bcs0 = baseClasses
+        var bcs = bcs0
         while (!bcs.isEmpty) {
           val decls = bcs.head.info.decls
-          bcs = if (name == nme.CONSTRUCTOR) Nil else bcs.tail
           var entry =
             if (name == nme.ANYNAME) decls.elems else decls lookupEntry name
           while (entry ne null) {
             val sym = entry.sym
             if (sym.getFlag(requiredFlags) == requiredFlags) {
               val excl = sym.getFlag(excluded)
-              if (excl == 0) {
+              if (excl == 0 &&
+                  (// omit PRIVATE LOCALS unless selector class is contained in class owning the def.
+                   (bcs eq bcs0) ||
+                   sym.getFlag(PRIVATE | LOCAL) != (PRIVATE | LOCAL) ||
+                   (bcs0.head.hasTransOwner(bcs.head)))) {
                 if (name.isTypeName || stableOnly) {
                   checkMalformedSwitch = savedCheckMalformedSwitch
                   if (util.Statistics.enabled)
@@ -677,6 +681,7 @@ trait Types {
             entry = if (name == nme.ANYNAME) entry.next else decls lookupNextEntry entry
           } // while (entry ne null)
           // excluded = excluded | LOCAL
+          bcs = if (name == nme.CONSTRUCTOR) Nil else bcs.tail
         } // while (!bcs.isEmpty)
         excluded = excludedFlags
       } // while (continue)
@@ -833,7 +838,7 @@ trait Types {
       if (settings.debug.value) sym.nameString + ".this."
       else if (sym.isRoot || sym.isEmptyPackageClass || sym.isInterpreterWrapper || sym.isScalaPackageClass) ""
       else if (sym.isAnonymousClass || sym.isRefinementClass) "this."
-      else if (sym.isPackageClass) sym.fullNameString + "."
+      else if (sym.isModuleClass) sym.fullNameString + "."
       else sym.nameString + ".this."
     override def toString: String =
       if (sym.isRoot) "<root>"

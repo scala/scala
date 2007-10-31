@@ -327,6 +327,8 @@ trait Infer {
     def isPlausiblyCompatible(tp: Type, pt: Type): Boolean = tp match {
       case PolyType(_, restpe) =>
         isPlausiblyCompatible(restpe, pt)
+      case mt: ImplicitMethodType =>
+        isPlausiblyCompatible(mt.resultType, pt)
       case MethodType(formals, _) =>
         pt.normalize match {
           case TypeRef(pre, sym, args) =>
@@ -1081,7 +1083,11 @@ trait Infer {
     def inferExprAlternative(tree: Tree, pt: Type): Unit = tree.tpe match {
       case OverloadedType(pre, alts) => tryTwice {
         var alts1 = alts filter (alt => isCompatible(pre.memberType(alt), pt))
-        if (alts1.isEmpty) alts1 = alts
+        var secondTry = false
+        if (alts1.isEmpty) {
+          alts1 = alts
+          secondTry = true
+        }
         def improves(sym1: Symbol, sym2: Symbol): Boolean =
           sym2 == NoSymbol ||
           { val tp1 = pre.memberType(sym1)
@@ -1105,11 +1111,13 @@ trait Infer {
           }
           typeErrorTree(tree, tree.symbol.tpe, pt)
         } else if (!competing.isEmpty) {
-          if (!pt.isErroneous)
-            context.ambiguousError(tree.pos, pre, best, competing.head, "expected type " + pt)
-          setError(tree)
-          ()
-
+          if (secondTry) {
+            typeErrorTree(tree, tree.symbol.tpe, pt)
+          } else {
+            if (!pt.isErroneous)
+              context.ambiguousError(tree.pos, pre, best, competing.head, "expected type " + pt)
+            setError(tree)
+          }
         } else {
           val applicable = alts1 filter (alt =>
             global.typer.infer.isCompatible(pre.memberType(alt), pt))

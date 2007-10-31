@@ -1,16 +1,16 @@
 lubs.scala:11: error: type mismatch;
- found   : test1.this.A[test1.this.A[test1.this.A[Any]]]
- required: test1.this.A[test1.this.A[test1.this.A[test1.this.A[Any]]]]
+ found   : test1.A[test1.A[test1.A[Any]]]
+ required: test1.A[test1.A[test1.A[test1.A[Any]]]]
   val x4: A[A[A[A[Any]]]] = f
                             ^
 lubs.scala:24: error: type mismatch;
- found   : test2.this.A{type T >: test2.this.C with test2.this.D <: test2.this.A}
- required: test2.this.A{type T >: Null <: test2.this.A{type T >: Null <: test2.this.A}}
+ found   : test2.A{type T >: test2.C with test2.D <: test2.A}
+ required: test2.A{type T >: Null <: test2.A{type T >: Null <: test2.A}}
   val x3: A { type T >: Null <: A { type T >: Null <: A } } = f
                                                               ^
 lubs.scala:25: error: type mismatch;
- found   : test2.this.A{type T >: test2.this.C with test2.this.D <: test2.this.A}
- required: test2.this.A{type T >: Null <: test2.this.A{type T >: Null <: test2.this.A{type T >: Null <: test2.this.A}}}
+ found   : test2.A{type T >: test2.C with test2.D <: test2.A}
+ required: test2.A{type T >: Null <: test2.A{type T >: Null <: test2.A{type T >: Null <: test2.A}}}
   val x4: A { type T >: Null <: A { type T >: Null <: A { type T >: Null <: A } } } = f
                                                                                       ^
 three errors found

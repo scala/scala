@@ -43,10 +43,17 @@ trait EtaExpansion { self: Analyzer =>
       if (pos == util.NoPosition) {
         if (inIDE) newTermName(                  ("eta$" + symbolHash + (cnt - 1)))
         else       newTermName(unit.fresh.newName("eta$" + symbolHash + (cnt - 1)))
+/*
       } else if (n == 0) {
-        newTermName(unit.fresh.newName(pos, "eta$" + symbolHash))
+        newTermName(unit.fresh.newName(pos, "etaC$" + symbolHash))
+*/
       } else {
-        newTermName(unit.fresh.newName(pos, "eta$" + symbolHash + n + "$"))
+        newTermName(unit.fresh.newName(pos, "eta$" + symbolHash + (cnt - 1) + "$"))
+        // Martin to Sean: I removed the
+        // else if (n == 0) branch and changed `n' in the line above to `(cnt - 1)'
+        // this was necessary because otherwise curried eta-expansions would get the same
+        // symbol. An example which failes test/files/run/Course-2002-02.scala
+        // todo: review and get rid of the `n' argument (which is unused right now).
       }
     }
     // { cnt = cnt + 1; newTermName("eta$" + cnt) }

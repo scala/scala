@@ -41,7 +41,7 @@ object Flags extends Enumeration {
                                           // constructor.
   final val ABSOVERRIDE   = 0x00040000    // combination of abstract & override
   final val LOCAL         = 0x00080000    // symbol is local to current class.
-                                          // pre: PRIVATE is also set
+                                          // pre: PRIVATE or PROTECTED are also set
   final val JAVA          = 0x00100000    // symbol was defined by a Java class
   final val SYNTHETIC     = 0x00200000    // symbol is compiler-generated
   final val STABLE        = 0x00400000    // functions that are assumed to be stable

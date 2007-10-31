@@ -378,6 +378,12 @@ trait Symbols {
 
     def ownerChain: List[Symbol] = this :: owner.ownerChain
 
+    def hasTransOwner(sym: Symbol) = {
+      var o = this
+      while ((o ne sym) && (o ne NoSymbol)) o = o.owner
+      o eq sym
+    }
+
     def name: Name = rawname
 
     final def name_=(name: Name) {
