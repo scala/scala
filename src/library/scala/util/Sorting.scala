@@ -309,10 +309,13 @@ object Sorting {
       }
     }
     def med3(a: Int, b: Int, c: Int) = {
-      if (x(a) < x(b)) {
-        if (x(b) < x(c)) b else if (x(a) < x(c)) c else a
+      val ab = x(a) compare x(b)
+      val bc = x(b) compare x(c)
+      val ac = x(a) compare x(c)
+      if (ab < 0) {
+        if (bc < 0) b else if (ac < 0) c else a
       } else {
-        if (x(b) > x(c)) b else if (x(a) > x(c)) c else a
+        if (bc > 0) b else if (ac > 0) c else a
       }
     }
     def sort2(off: Int, len: Int) {
@@ -321,7 +324,7 @@ object Sorting {
         var i = off
         while (i < len + off) {
           var j = i
-          while (j>off && x(j-1) > x(j)) {
+          while (j > off && (x(j-1) compare x(j)) > 0) {
             swap(j, j-1)
             j -= 1
           }
@@ -350,19 +353,23 @@ object Sorting {
         var d = c
         var done = false
         while (!done) {
-          while (b <= c && x(b) <= v) {
-            if (x(b) == v) {
+          var bv = x(b) compare v
+          while (b <= c && bv <= 0) {
+            if (bv == 0) {
               swap(a, b)
               a += 1
             }
             b += 1
+            if (b <= c) bv = x(b) compare v
           }
-          while (c >= b && x(c) >= v) {
-            if (x(c) == v) {
+          var cv = x(c) compare v
+          while (c >= b && cv >= 0) {
+            if (cv == 0) {
               swap(c, d)
               d -= 1
             }
             c -= 1
+            if (c >= b) cv = x(c) compare v
           }
           if (b > c) {
             done = true
@@ -410,10 +417,13 @@ object Sorting {
       }
     }
     def med3(a: Int, b: Int, c: Int) = {
-      if (x(a) < x(b)) {
-        if (x(b) < x(c)) b else if (x(a) < x(c)) c else a
+      val ab = x(a) compare x(b)
+      val bc = x(b) compare x(c)
+      val ac = x(a) compare x(c)
+      if (ab < 0) {
+        if (bc < 0) b else if (ac < 0) c else a
       } else {
-        if (x(b) > x(c)) b else if (x(a) > x(c)) c else a
+        if (bc > 0) b else if (ac > 0) c else a
       }
     }
     def sort2(off: Int, len: Int) {
@@ -422,7 +432,7 @@ object Sorting {
         var i = off
         while (i < len + off) {
           var j = i
-          while (j>off && x(j-1) > x(j)) {
+          while (j > off && (x(j-1) compare x(j)) > 0) {
             swap(j, j-1)
             j -= 1
           }
@@ -451,19 +461,23 @@ object Sorting {
         var d = c
         var done = false
         while (!done) {
-          while (b <= c && x(b) <= v) {
-            if (x(b) == v) {
+          var bv = x(b) compare v
+          while (b <= c && bv <= 0) {
+            if (bv == 0) {
               swap(a, b)
               a += 1
             }
             b += 1
+            if (b <= c) bv = x(b) compare v
           }
-          while (c >= b && x(c) >= v) {
-            if (x(c) == v) {
+          var cv = x(c) compare v
+          while (c >= b && cv >= 0) {
+            if (cv == 0) {
               swap(c, d)
               d -= 1
             }
             c -= 1
+            if (c >= b) cv = x(c) compare v
           }
           if (b > c) {
             done = true
