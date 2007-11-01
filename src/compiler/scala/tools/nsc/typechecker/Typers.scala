@@ -358,7 +358,7 @@ trait Typers { self: Analyzer =>
         else if (hiddenSymbols exists (_.isErroneous)) setError(tree)
         else if (isFullyDefined(pt)) tree setType pt //todo: eliminate
         else if (tp1.typeSymbol.isAnonymousClass) // todo: eliminate
-          check(owner, scope, pt, tree setType classBound(tp1.typeSymbol))
+          check(owner, scope, pt, tree setType tp1.typeSymbol.classBound)
         else if (owner == NoSymbol)
           tree setType packSymbols(hiddenSymbols.reverse, tp1)
         else { // privates
@@ -1331,16 +1331,6 @@ trait Typers { self: Analyzer =>
       copy.LabelDef(ldef, ldef.name, ldef.params, rhs1) setType restpe
     }
 
-    def classBound(clazz: Symbol): Type = {
-      val tp = refinedType(clazz.info.parents, clazz.owner)
-      val thistp = tp.typeSymbol.thisType
-      for (sym <- clazz.info.decls.toList) {
-        if (sym.isPublic && !sym.isClass && !sym.isConstructor)
-          addMember(thistp, tp, sym.cloneSymbol(tp.typeSymbol).setInfo(sym.info))
-      }
-      tp
-    }
-
     protected def typedFunctionIDE(fun : Function, txt : Context) = {}
 
     /**
@@ -1857,8 +1847,7 @@ trait Typers { self: Analyzer =>
 
     protected def existentialBound(sym: Symbol): Type =
       if (sym.isClass)
-         parameterizedType(
-           sym.typeParams, mkTypeBounds(AllClass.tpe, classBound(sym)))
+         parameterizedType(sym.typeParams, mkTypeBounds(AllClass.tpe, sym.classBound))
       else if (sym.isAbstractType)
          sym.info
       else if (sym.isTerm)

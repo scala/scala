@@ -630,7 +630,7 @@ abstract class Mixin extends InfoTransform {
               // add modules
               val vdef = gen.mkModuleVarDef(sym)
               addDef(position(sym), vdef)
-              addDef(position(sym), gen.mkModuleAccessDef(sym, vdef.symbol))
+              addDef(position(sym), gen.mkCachedModuleAccessDef(sym, vdef.symbol))
             } else if (!sym.isMethod) {
               // add fields
               addDef(position(sym), ValDef(sym))

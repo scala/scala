@@ -598,8 +598,23 @@ abstract class RefChecks extends InfoTransform {
           .setPos(tree.pos)
           .setSymbol(sym.moduleClass)
           .setType(NoType);
-        if (sym.isStatic) List(transform(cdef))
-        else {
+        if (sym.isStatic) {
+          if (!sym.allOverriddenSymbols.isEmpty) {
+            val factory = sym.owner.newMethod(sym.pos, sym.name)
+              .setFlag(sym.flags | STABLE).resetFlag(MODULE)
+              .setInfo(PolyType(List(), sym.moduleClass.tpe))
+            sym.owner.info.decls.enter(factory)
+            val ddef =
+              atPhase(phase.next) {
+                localTyper.typed {
+                  gen.mkModuleAccessDef(factory, sym.tpe)
+                }
+              }
+            transformTrees(List(cdef, ddef))
+          } else {
+            List(transform(cdef))
+          }
+        } else {
           val vdef =
             localTyper.typed {
               atPos(tree.pos) {
@@ -611,7 +626,7 @@ abstract class RefChecks extends InfoTransform {
             atPhase(phase.next) {
               localTyper.typed {
                 if (sym.owner.isTrait) gen.mkModuleAccessDcl(sym)
-                else gen.mkModuleAccessDef(sym, vdef.symbol)
+                else gen.mkCachedModuleAccessDef(sym, vdef.symbol)
               }
             }
 

@@ -208,13 +208,20 @@ abstract class TreeGen {
     ValDef(mvar, if (mvar.owner.isClass) EmptyTree else Literal(Constant(null)))
   }
 
-  // def m: T = { if (m$ eq null) m$ = new m$class; m$ }
-  def mkModuleAccessDef(accessor: Symbol, mvar: Symbol) =
-    DefDef(accessor, vparamss =>
-      mkCached(mvar,
-        New(TypeTree(mvar.tpe),
-            List(for (pt <- mvar.tpe.typeSymbol.primaryConstructor.info.paramTypes)
-                 yield This(accessor.owner.enclClass)))))
+  // def m: T = { if (m$ eq null) m$ = new m$class(...) m$ }
+  // where (...) are eventual outer accessors
+  def mkCachedModuleAccessDef(accessor: Symbol, mvar: Symbol) =
+    DefDef(accessor, vparamss => mkCached(mvar, newModule(accessor, mvar.tpe)))
+
+  // def m: T = new tpe(...)
+  // where (...) are eventual outer accessors
+  def mkModuleAccessDef(accessor: Symbol, tpe: Type) =
+    DefDef(accessor, vparamss => newModule(accessor, tpe))
+
+  private def newModule(accessor: Symbol, tpe: Type) =
+    New(TypeTree(tpe),
+        List(for (pt <- tpe.typeSymbol.primaryConstructor.info.paramTypes)
+             yield This(accessor.owner.enclClass)))
 
   // def m: T;
   def mkModuleAccessDcl(accessor: Symbol) =

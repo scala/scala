@@ -611,6 +611,18 @@ trait Symbols {
     def getAttributes(clazz: Symbol): List[AnnotationInfo] =
       attributes.filter(_.atp.typeSymbol.isNonBottomSubClass(clazz))
 
+    /** The least proper supertype of a class; includes all parent types
+     *  and refinement where needed */
+    def classBound: Type = {
+      val tp = refinedType(info.parents, owner)
+      val thistp = tp.typeSymbol.thisType
+      for (sym <- info.decls.toList) {
+        if (sym.isPublic && !sym.isClass && !sym.isConstructor)
+          addMember(thistp, tp, sym.cloneSymbol(tp.typeSymbol).setInfo(sym.info))
+      }
+      tp
+    }
+
     /** Reset symbol to initial state
      */
     def reset(completer: Type) {
