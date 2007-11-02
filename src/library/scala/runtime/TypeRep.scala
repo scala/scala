@@ -19,6 +19,70 @@ abstract class TypeRep[A]
 
 object TypeRep {
 
+  def getType[A](x: A)(implicit rep: runtime.TypeRep[A]): runtime.TypeRep[A] = rep
+
+  implicit def boolRep: runtime.TypeRep[Boolean] = runtime.TypeRep.BooleanRep
+  implicit def byteRep: runtime.TypeRep[Byte] = runtime.TypeRep.ByteRep
+  implicit def charRep: runtime.TypeRep[Char] = runtime.TypeRep.CharRep
+  implicit def shortRep: runtime.TypeRep[Short] = runtime.TypeRep.ShortRep
+  implicit def intRep: runtime.TypeRep[Int] = runtime.TypeRep.IntRep
+  implicit def longRep: runtime.TypeRep[Long] = runtime.TypeRep.LongRep
+  implicit def floatRep: runtime.TypeRep[Float] = runtime.TypeRep.FloatRep
+  implicit def doubleRep: runtime.TypeRep[Double] = runtime.TypeRep.DoubleRep
+
+  implicit def unitRep: runtime.TypeRep[Unit] = runtime.TypeRep.UnitRep
+  implicit def classRep: runtime.TypeRep[Class] = runtime.TypeRep.ClassRep
+  implicit def stringRep: runtime.TypeRep[String] = runtime.TypeRep.StringRep
+  //implicit def noneRep: runtime.TypeRep[None.type] = runtime.TypeRep.NoneRep
+  //implicit def nilRep: runtime.TypeRep[Nil.type] = runtime.TypeRep.NilRep
+  implicit def anyRep: runtime.TypeRep[Any] = runtime.TypeRep.AnyRep
+
+  implicit def listRep[A](implicit elemrep: runtime.TypeRep[A]): runtime.TypeRep[List[A]] =
+    runtime.TypeRep.ListRep(elemrep)
+
+  implicit def arrayRep[A](implicit elemrep: runtime.TypeRep[A]): runtime.TypeRep[Array[A]] =
+    runtime.TypeRep.ArrayRep(elemrep)
+
+  implicit def tuple2Rep[A1, A2](implicit _1: runtime.TypeRep[A1], _2: runtime.TypeRep[A2]): runtime.TypeRep[Tuple2[A1, A2]] =
+    runtime.TypeRep.Tuple2Rep(_1, _2)
+  implicit def tuple3Rep[A1, A2, A3](implicit _1: runtime.TypeRep[A1], _2: runtime.TypeRep[A2], _3: runtime.TypeRep[A3]): runtime.TypeRep[Tuple3[A1, A2, A3]] =
+    runtime.TypeRep.Tuple3Rep(_1, _2, _3)
+  implicit def tuple4Rep[A1, A2, A3, A4](implicit _1: runtime.TypeRep[A1], _2: runtime.TypeRep[A2], _3: runtime.TypeRep[A3], _4: runtime.TypeRep[A4]): runtime.TypeRep[Tuple4[A1, A2, A3, A4]] =
+    runtime.TypeRep.Tuple4Rep(_1, _2, _3, _4)
+  implicit def tuple5Rep[A1, A2, A3, A4, A5](implicit _1: runtime.TypeRep[A1], _2: runtime.TypeRep[A2], _3: runtime.TypeRep[A3], _4: runtime.TypeRep[A4], _5: runtime.TypeRep[A5]): runtime.TypeRep[Tuple5[A1, A2, A3, A4, A5]] =
+    runtime.TypeRep.Tuple5Rep(_1, _2, _3, _4, _5)
+  implicit def tuple6Rep[A1, A2, A3, A4, A5, A6](implicit _1: runtime.TypeRep[A1], _2: runtime.TypeRep[A2], _3: runtime.TypeRep[A3], _4: runtime.TypeRep[A4], _5: runtime.TypeRep[A5], _6: runtime.TypeRep[A6]): runtime.TypeRep[Tuple6[A1, A2, A3, A4, A5, A6]] =
+    runtime.TypeRep.Tuple6Rep(_1, _2, _3, _4, _5, _6)
+  implicit def tuple7Rep[A1, A2, A3, A4, A5, A6, A7](implicit _1: runtime.TypeRep[A1], _2: runtime.TypeRep[A2], _3: runtime.TypeRep[A3], _4: runtime.TypeRep[A4], _5: runtime.TypeRep[A5], _6: runtime.TypeRep[A6], _7: runtime.TypeRep[A7]): runtime.TypeRep[Tuple7[A1, A2, A3, A4, A5, A6, A7]] =
+    runtime.TypeRep.Tuple7Rep(_1, _2, _3, _4, _5, _6, _7)
+  implicit def tuple8Rep[A1, A2, A3, A4, A5, A6, A7, A8](implicit _1: runtime.TypeRep[A1], _2: runtime.TypeRep[A2], _3: runtime.TypeRep[A3], _4: runtime.TypeRep[A4], _5: runtime.TypeRep[A5], _6: runtime.TypeRep[A6], _7: runtime.TypeRep[A7], _8: runtime.TypeRep[A8]): runtime.TypeRep[Tuple8[A1, A2, A3, A4, A5, A6, A7, A8]] =
+    runtime.TypeRep.Tuple8Rep(_1, _2, _3, _4, _5, _6, _7, _8)
+  implicit def tuple9Rep[A1, A2, A3, A4, A5, A6, A7, A8, A9](implicit _1: runtime.TypeRep[A1], _2: runtime.TypeRep[A2], _3: runtime.TypeRep[A3], _4: runtime.TypeRep[A4], _5: runtime.TypeRep[A5], _6: runtime.TypeRep[A6], _7: runtime.TypeRep[A7], _8: runtime.TypeRep[A8], _9: runtime.TypeRep[A9]): runtime.TypeRep[Tuple9[A1, A2, A3, A4, A5, A6, A7, A8, A9]] =
+    runtime.TypeRep.Tuple9Rep(_1, _2, _3, _4, _5, _6, _7, _8, _9)
+
+  implicit def func1Rep[A1, B](implicit a1: runtime.TypeRep[A1], b: runtime.TypeRep[B]): runtime.TypeRep[Function1[A1, B]] =
+    runtime.TypeRep.Function1Rep(a1, b)
+  implicit def func2Rep[A1, A2, B](implicit a1: runtime.TypeRep[A1], a2: runtime.TypeRep[A2], b: runtime.TypeRep[B]): runtime.TypeRep[Function2[A1, A2, B]] =
+    runtime.TypeRep.Function2Rep(a1, a2, b)
+  implicit def func3Rep[A1, A2, A3, B](implicit a1: runtime.TypeRep[A1], a2: runtime.TypeRep[A2], a3: runtime.TypeRep[A3], b: runtime.TypeRep[B]): runtime.TypeRep[Function3[A1, A2, A3, B]] =
+    runtime.TypeRep.Function3Rep(a1, a2, a3, b)
+  implicit def func4Rep[A1, A2, A3, A4, B](implicit a1: runtime.TypeRep[A1], a2: runtime.TypeRep[A2], a3: runtime.TypeRep[A3], a4: runtime.TypeRep[A4], b: runtime.TypeRep[B]): runtime.TypeRep[Function4[A1, A2, A3, A4, B]] =
+    runtime.TypeRep.Function4Rep(a1, a2, a3, a4, b)
+  implicit def func5Rep[A1, A2, A3, A4, A5, B](implicit a1: runtime.TypeRep[A1], a2: runtime.TypeRep[A2], a3: runtime.TypeRep[A3], a4: runtime.TypeRep[A4], a5: runtime.TypeRep[A5], b: runtime.TypeRep[B]): runtime.TypeRep[Function5[A1, A2, A3, A4, A5, B]] =
+    runtime.TypeRep.Function5Rep(a1, a2, a3, a4, a5, b)
+  implicit def func6Rep[A1, A2, A3, A4, A5, A6, B](implicit a1: runtime.TypeRep[A1], a2: runtime.TypeRep[A2], a3: runtime.TypeRep[A3], a4: runtime.TypeRep[A4], a5: runtime.TypeRep[A5], a6: runtime.TypeRep[A6], b: runtime.TypeRep[B]): runtime.TypeRep[Function6[A1, A2, A3, A4, A5, A6, B]] =
+    runtime.TypeRep.Function6Rep(a1, a2, a3, a4, a5, a6, b)
+  implicit def func7Rep[A1, A2, A3, A4, A5, A6, A7, B](implicit a1: runtime.TypeRep[A1], a2: runtime.TypeRep[A2], a3: runtime.TypeRep[A3], a4: runtime.TypeRep[A4], a5: runtime.TypeRep[A5], a6: runtime.TypeRep[A6], a7: runtime.TypeRep[A7], b: runtime.TypeRep[B]): runtime.TypeRep[Function7[A1, A2, A3, A4, A5, A6, A7, B]] =
+    runtime.TypeRep.Function7Rep(a1, a2, a3, a4, a5, a6, a7, b)
+  implicit def func8Rep[A1, A2, A3, A4, A5, A6, A7, A8, B](implicit a1: runtime.TypeRep[A1], a2: runtime.TypeRep[A2], a3: runtime.TypeRep[A3], a4: runtime.TypeRep[A4], a5: runtime.TypeRep[A5], a6: runtime.TypeRep[A6], a7: runtime.TypeRep[A7], a8: runtime.TypeRep[A8], b: runtime.TypeRep[B]): runtime.TypeRep[Function8[A1, A2, A3, A4, A5, A6, A7, A8, B]] =
+    runtime.TypeRep.Function8Rep(a1, a2, a3, a4, a5, a6, a7, a8, b)
+  implicit def func9Rep[A1, A2, A3, A4, A5, A6, A7, A8, A9, B](implicit a1: runtime.TypeRep[A1], a2: runtime.TypeRep[A2], a3: runtime.TypeRep[A3], a4: runtime.TypeRep[A4], a5: runtime.TypeRep[A5], a6: runtime.TypeRep[A6], a7: runtime.TypeRep[A7], a8: runtime.TypeRep[A8], a9: runtime.TypeRep[A9], b: runtime.TypeRep[B]): runtime.TypeRep[Function9[A1, A2, A3, A4, A5, A6, A7, A8, A9, B]] =
+    runtime.TypeRep.Function9Rep(a1, a2, a3, a4, a5, a6, a7, a8, a9, b)
+/*
+  implicit def objectRep[A <: AnyRef](obj: A)(implicit rep: runtime.TypeRep[A]): runtime.TypeRep[Class] =
+    runtime.TypeRep.ObjectRep(obj.getClass)
+*/
+
   case object BooleanRep extends TypeRep[Boolean] {
     override def toString = "Boolean"
   }

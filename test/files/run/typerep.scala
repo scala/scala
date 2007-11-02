@@ -1,3 +1,5 @@
+import runtime.TypeRep._
+
 object Test extends Application {
   testPrimitives
   testOptions
