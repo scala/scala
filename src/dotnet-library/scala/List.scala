@@ -787,7 +787,7 @@ sealed abstract class List[+A] extends Seq[A] {
    *           The relative order of the elements in the sub-lists is the
    *           same as in the original list.
    */
-  def partition(p: A => Boolean): (List[A], List[A]) = {
+  override def partition(p: A => Boolean): (List[A], List[A]) = {
     val btrue = new ListBuffer[A]
     val bfalse = new ListBuffer[A]
     var these = this
