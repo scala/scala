@@ -54,7 +54,8 @@ import nsc.{InterpreterResults=>IR}
  *    properly, because rebinding at the Java level is technically difficult.
  *  </p>
  *
- * @author Moez A. Abdel-Gawad, Lex Spoon
+ * @author Moez A. Abdel-Gawad
+ * @author Lex Spoon
  */
 class Interpreter(val settings: Settings, out: PrintWriter) {
   import symtab.Names

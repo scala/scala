@@ -9,7 +9,7 @@
 // $Id$
 
 
-package scala;
+package scala
 
 
 import Predef._
@@ -17,9 +17,11 @@ import Predef._
 object Option {
   /** An implicit conversion that converts an option to an iterable value
    */
-  implicit def option2Iterable[a](xo: Option[a]): Iterable[a] = xo.toList
-}
+  implicit def option2Iterable[A](xo: Option[A]): Iterable[A] = xo.toList
 
+  implicit def someRep[A](implicit elemrep: runtime.TypeRep[A]): runtime.TypeRep[Some[A]] =
+    runtime.TypeRep.SomeRep(elemrep)
+}
 
 /** This class represents optional values. Instances of <code>Option</code>
  *  are either instances of case class <code>Some</code> or it is case

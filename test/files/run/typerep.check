@@ -1,0 +1,40 @@
+Boolean
+Byte
+Char
+Int
+Long
+Float
+Double
+String
+Unit
+Class
+
+Some[Int]
+
+List[Int]
+List[Int]
+List[List[Int]]
+List[Any]
+
+Array[Int]
+Array[Array[Int]]
+Array[Int]
+Array[Int]
+Array[Int]
+Array[Int]
+
+Tuple2[Int, String]
+Tuple3[Char, Char, String]
+Tuple2[Tuple2[Int, String], Tuple2[Int, String]]
+
+Function1[Int, Int]
+Int
+Function1[Int, Int]
+Int
+Function1[Int, Function1[Int, Int]]
+Function1[Int, Int]
+Int
+Function3[Boolean, List[Char], Int, Int]
+Function2[Function1[Int, Int], Int, Int]
+Int
+

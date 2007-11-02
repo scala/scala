@@ -743,7 +743,8 @@ else
     SCALAC_CMD="${BIN_DIR}scalac";
 fi;
 
-if [ ! -x `which $SCALAC_CMD` ]; then
+scalac=`which "$SCALAC_CMD" 2> /dev/null`
+if [ -z "$scalac" ] || [ ! -x "$scalac" ]; then
     printf_failure "Missing command \"$SCALAC_CMD\"; run 'ant <target>'.\\n";
     exit 1;
 fi;
