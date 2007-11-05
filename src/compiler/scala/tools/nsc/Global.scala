@@ -379,7 +379,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends Trees
    */
   protected def builtInPhaseDescriptors: List[SubComponent] = List(
     analyzer.namerFactory: SubComponent, // note: types are there because otherwise
-    analyzer.typerFactory: SubComponent, // consistency check after refchecks would fail.
+    analyzer.typerFactory: SubComponent // consistency check after refchecks would fail.
   ) :::
   (if (inIDE) List(generateIdeMaps) else List()) ::: // optionally generate .ide files from symbol info that can be used in the IDE
   List(

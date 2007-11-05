@@ -2418,14 +2418,15 @@ trait Typers { self: Analyzer =>
             if (ps.isEmpty) {
               if (settings.debug.value)
                 Console.println(site.parents map (_.typeSymbol.name))//debug
-              error(tree.pos, mix+" does not name a parent class of "+clazz)
+              if (phase.erasedTypes && context.enclClass.owner.isImplClass) {
+                // the reference to super class got lost during erasure
+                unit.error(tree.pos, "implementation restriction: traits may not select fields or methods from to super[C] where C is a class")
+              } else {
+                error(tree.pos, mix+" does not name a parent class of "+clazz)
+              }
               ErrorType
             } else if (!ps.tail.isEmpty) {
               error(tree.pos, "ambiguous parent class qualifier")
-              ErrorType
-            } else if (ps.head.typeSymbol.isClass && !ps.head.typeSymbol.isTrait &&
-                       context.enclClass.owner.isTrait) {
-              error(tree.pos, "traits may not refer to super[C] where C is a class")
               ErrorType
             } else {
               ps.head
