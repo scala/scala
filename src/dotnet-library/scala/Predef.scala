@@ -195,7 +195,10 @@ object Predef {
         val those = that.elements
         while (res == 0 && these.hasNext)
           res = if (those.hasNext) these.next compare those.next else 1
-        res
+        if (res == 0) {
+          if (those.hasNext) -1 else 0
+        } else
+          res
       }
     }
 
