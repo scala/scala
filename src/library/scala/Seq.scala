@@ -368,8 +368,6 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Collection[A] {
   @deprecated
   def subseq(from: Int, end: Int): Seq[A] = slice(from, end - from)
 
-
-
   /** Converts this sequence to a fresh Array with <code>length</code> elements.
    */
   override def toArray[B >: A]: Array[B] = {

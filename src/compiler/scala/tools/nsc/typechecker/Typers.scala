@@ -705,7 +705,7 @@ trait Typers { self: Analyzer =>
             val prefix = tree.tpe.finalResultType.prefix
             val tree1 = TypeTree(clazz.primaryConstructor.tpe.asSeenFrom(prefix, clazz.owner)) setOriginal tree
             try {
-              inferConstructorInstance(tree1, clazz.typeParams, widen(pt))
+              inferConstructorInstance(tree1, clazz.typeParams, pt)
             } catch {
               case tpe : TypeError => throw tpe
               case t : Exception =>
@@ -1512,7 +1512,7 @@ trait Typers { self: Analyzer =>
         (accessed hasFlag LOCAL) && (accessed hasFlag PARAMACCESSOR) ||
         (accessor hasFlag ACCESSOR) &&
         !(accessed hasFlag ACCESSOR) && accessed.isPrivateLocal
-      def checkNoDoubleDefs(stats: List[Tree]) = {
+      def checkNoDoubleDefs(stats: List[Tree]) {
         val scope = if (inBlock) context.scope else context.owner.info.decls;
         var e = scope.elems;
         while ((e ne null) && e.owner == scope) {
@@ -1522,14 +1522,15 @@ trait Typers { self: Analyzer =>
                 (e.sym.isType || inBlock || (e.sym.tpe matches e1.sym.tpe)))
               if (!e.sym.isErroneous && !e1.sym.isErroneous && !inIDE)
                 error(e.sym.pos, e1.sym+" is defined twice"+
-        {if(!settings.debug.value) "" else " in "+unit.toString});
+                      {if(!settings.debug.value) "" else " in "+unit.toString})
             e1 = scope.lookupNextEntry(e1);
           }
           e = e.next
         }
-        stats
       }
-      checkNoDoubleDefs(List.mapConserve(stats)(typedStat))
+      val result = List.mapConserve(stats)(typedStat)
+      if (!phase.erasedTypes) checkNoDoubleDefs(result)
+      result
     }
 
     def typedArg(arg: Tree, mode: Int, newmode: Int, pt: Type): Tree =
@@ -2412,23 +2413,30 @@ trait Typers { self: Analyzer =>
           }
         if (clazz == NoSymbol) setError(tree)
         else {
+          def findMixinSuper(site: Type): Type = {
+            val ps = site.parents filter (p => compare(p.typeSymbol, mix))
+            if (ps.isEmpty) {
+              if (settings.debug.value)
+                Console.println(site.parents map (_.typeSymbol.name))//debug
+              error(tree.pos, mix+" does not name a parent class of "+clazz)
+              ErrorType
+            } else if (!ps.tail.isEmpty) {
+              error(tree.pos, "ambiguous parent class qualifier")
+              ErrorType
+            } else if (ps.head.typeSymbol.isClass && !ps.head.typeSymbol.isTrait &&
+                       context.enclClass.owner.isTrait) {
+              error(tree.pos, "traits may not refer to super[C] where C is a class")
+              ErrorType
+            } else {
+              ps.head
+            }
+          }
           val owntype =
-            if (mix.isEmpty)
+            if (mix.isEmpty) {
               if ((mode & SUPERCONSTRmode) != 0) clazz.info.parents.head
               else intersectionType(clazz.info.parents)
-            else {
-              val ps = clazz.info.parents filter (p => compare(p.typeSymbol, mix))
-              if (ps.isEmpty) {
-                if (settings.debug.value)
-                  Console.println(clazz.info.parents map (_.typeSymbol.name))//debug
-                error(tree.pos, mix+" does not name a parent class of "+clazz)
-                ErrorType
-              } else if (ps.tail.isEmpty) {
-                ps.head
-              } else {
-                error(tree.pos, "ambiguous parent class qualifier")
-                ErrorType
-              }
+            } else {
+              findMixinSuper(clazz.info)
             }
           tree setSymbol clazz setType mkSuperType(selftype, owntype)
         }
@@ -2859,7 +2867,7 @@ trait Typers { self: Analyzer =>
           val tpt1 = typedType(tpt)
           val expr1 = typed(expr, mode & stickyModes, tpt1.tpe.deconst)
           val owntype =
-            if ((mode & PATTERNmode) != 0) inferTypedPattern(tpt1.pos, tpt1.tpe, widen(pt))
+            if ((mode & PATTERNmode) != 0) inferTypedPattern(tpt1.pos, tpt1.tpe, pt)
             else tpt1.tpe
           //Console.println(typed pattern: "+tree+":"+", tp = "+tpt1.tpe+", pt = "+pt+" ==> "+owntype)//DEBUG
           copy.Typed(tree, expr1, tpt1) setType owntype

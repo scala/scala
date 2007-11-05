@@ -828,7 +828,9 @@ trait Infer {
      *  @param undetparams ...
      *  @param pt          ...
      */
-    def inferConstructorInstance(tree: Tree, undetparams: List[Symbol], pt: Type) {
+    def inferConstructorInstance(tree: Tree, undetparams: List[Symbol], pt0: Type) {
+      val pt = widen(pt0)
+      //println("infer constr inst "+tree+"/"+undetparams+"/"+pt0)
       var restpe = tree.tpe.finalResultType
       var tvars = undetparams map freshVar
 
@@ -968,7 +970,8 @@ trait Infer {
       }
     }
 
-    def inferTypedPattern(pos: Position, pattp: Type, pt: Type): Type = {
+    def inferTypedPattern(pos: Position, pattp: Type, pt0: Type): Type = {
+      val pt = widen(pt0)
       checkCheckable(pos, pattp, " pattern")
       if (!(pattp <:< pt)) {
         val tpparams = freeTypeParamsOfTerms.collect(pattp)
