@@ -141,7 +141,7 @@ object Predef {
   def println() = Console.println()
   def println(x: Any) = Console.println(x)
   def printf(text: String, xs: Any*) = Console.printf(text, xs: _*)
-  def format(text: String, xs: Any*) = Console.format(text, xs)
+  def format(text: String, xs: Any*) = Console.format(text, xs: _*)
 
   def readLine(): String = Console.readLine()
   def readLine(text: String, args: Any*) = Console.readLine(text, args)
