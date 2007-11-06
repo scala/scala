@@ -162,21 +162,17 @@ object Console {
   def println(x: Any): Unit = out.println(x)
 
   /** <p>
-   *    Format and print out some text (in a fashion similar to printf in C or
-   *    <code>printf</code> in Java 6).
+   *    Prints its arguments as a formatted string, based on a string
+   *    pattern (in a fashion similar to printf in C).
    *  </p>
    *  <p>
-   *    The format of the text to print is specified by the parameter
-   *    <code>text</code>. The arguments that are inserted into specific
-   *    locations in <code>text</code> are provided with parameter
-   *    <code>args</code>. See class <a href="" target="contentFrame"
-   *    class="java/text/MessageFormat"><code>java.text.MessageFormat</code></a>
-   *    for a full specification of the <a href="#syntax" target="contentFrame"
-   *    class="java/util/Formatter">format syntax</a>.
+   *    The interpretation of the formatting patterns is described in
+   *    <a href="" target="contentFrame" class="java/text/MessageFormat">
+   *    <code>java.text.MessageFormat</code></a>.
    *  </p>
    *
-   *  @param text the format of the text to print out.
-   *  @param args the parameters used to instantiate the format.
+   *  @param text the pattern for formatting the arguments.
+   *  @param args the arguments used to instantiating the pattern.
    *  @throws java.lang.IllegalArgumentException
    */
   def printf(text: String, args: Any*) { format(text, args: _*) }
