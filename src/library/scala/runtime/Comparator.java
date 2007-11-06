@@ -13,10 +13,12 @@ package scala.runtime;
 
 /** An object (static class) providing a correct notion of equality in
   * the general case, in particular with boxed values.
+  *
   * @author  Gilles Dubochet
   * @author  Martin Odersky
   * @contributor Stepan Koltsov
-  * @version 1.2 */
+  * @version 1.2
+  */
 public class Comparator {
 
     private static final int CHAR = 0, BYTE = 1, SHORT = 2, INT = 3, LONG = 4, FLOAT = 5, DOUBLE = 6, OTHER = 7;
@@ -32,13 +34,14 @@ public class Comparator {
         return OTHER;
     }
 
-    /** A rich implementation of the equals method that overrides the default
-	  * equals because Java's boxed primitives are utterly broken. This equals
+    /** A rich implementation of the <code>equals</code> method that overrides the
+      * default equals because Java's boxed primitives are utterly broken. This equals
       * is inserted instead of a normal equals by the Scala compiler (in the
       * ICode phase, method <code>genEqEqPrimitive</code>) only when either
       * side of the comparison is a subclass of <code>AnyVal</code>, of
       * <code>java.lang.Number</code>, of <code>java.lang.Character</code> or
-      * is exactly <code>Any</code> or <code>AnyRef</code>. */
+      * is exactly <code>Any</code> or <code>AnyRef</code>.
+      */
     public static boolean equals(Object a, Object b) {
         if (a == null || b == null)
             return a == b;
@@ -53,25 +56,25 @@ public class Comparator {
                 int bb = (bcode == CHAR) ? ((Character) b).charValue() : ((Number) b).intValue();
                 return aa == bb;
             }
-			else if (maxcode <= LONG) {
+            else if (maxcode <= LONG) {
                 long aa = (acode == CHAR) ? ((Character) a).charValue() : ((Number) a).longValue();
                 long bb = (bcode == CHAR) ? ((Character) b).charValue() : ((Number) b).longValue();
                 return aa == bb;
             }
-			else if (maxcode <= FLOAT) {
+            else if (maxcode <= FLOAT) {
                 float aa = (acode == CHAR) ? ((Character) a).charValue() : ((Number) a).floatValue();
                 float bb = (bcode == CHAR) ? ((Character) b).charValue() : ((Number) b).floatValue();
                 return aa == bb;
             }
-			else if (maxcode <= DOUBLE) {
+            else if (maxcode <= DOUBLE) {
                 double aa = (acode == CHAR) ? ((Character) a).charValue() : ((Number) a).doubleValue();
                 double bb = (bcode == CHAR) ? ((Character) b).charValue() : ((Number) b).doubleValue();
                 return aa == bb;
             }
-			else
+            else
                 return b.equals(a);
-		}
-		else
-			return false;
+        }
+        else
+            return false;
     }
 }
