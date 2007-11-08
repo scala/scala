@@ -667,6 +667,9 @@ abstract class GenICode extends SubComponent  {
               ctx1 = genLoadArguments(args, ctor.info.paramTypes, ctx)
               val dims = arr.dimensions
               var elemKind = arr.elementKind
+              if (args.length > dims)
+                unit.error(tree.pos, "too many arguments for array constructor: found " + args.length +
+                  " but array has only " + dims + " dimension(s)")
               if (args.length != dims)
                 for (i <- args.length until dims) elemKind = ARRAY(elemKind)
               ctx1.bb.emit(CREATE_ARRAY(elemKind, args.length), tree.pos)

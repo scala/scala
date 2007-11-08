@@ -1,0 +1,4 @@
+multi-array.scala:6: error: too many arguments for array constructor: found 2 but array has only 1 dimension(s)
+  val a: Array[Int] = new Array(10, 10)
+                      ^
+one error found
