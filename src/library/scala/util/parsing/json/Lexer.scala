@@ -22,10 +22,11 @@ import scala.util.parsing.input.CharArrayReader.EofCh
 class Lexer extends StdLexical with ImplicitConversions {
 
   override def token: Parser[Token] =
-    ('\"' ~ rep(charSeq | letter) ~ '\"' ^^ lift(StringLit)
+    //( '\"' ~ rep(charSeq | letter) ~ '\"' ^^ lift(StringLit)
+    ( string ^^ StringLit
     | number ~ letter ^^ { case n ~ l => ErrorToken("Invalid number format : " + n + l) }
-    | '-' ~ whitespace ~ number ~ letter ^^ {case ws ~ num ~ l => ErrorToken("Invalid number format : -" + num + l) }
-    | '-' ~ whitespace ~ number ^^ {case ws ~ num => NumericLit("-" + num)}
+    | '-' ~ whitespace ~ number ~ letter ^^ { case ws ~ num ~ l => ErrorToken("Invalid number format : -" + num + l) }
+    | '-' ~ whitespace ~ number ^^ { case ws ~ num => NumericLit("-" + num) }
     | number ^^ NumericLit
     | EofCh ^^ EOF
     | delim
@@ -35,23 +36,28 @@ class Lexer extends StdLexical with ImplicitConversions {
     )
 
   def checkKeyword(xs : List[Any]) = {
-    val strRep = xs.mkString("")
-    if (reserved.contains(strRep)) Keyword(strRep) else ErrorToken("Not a keyword: " + strRep)
+    val strRep = xs mkString ""
+    if (reserved contains strRep) Keyword(strRep) else ErrorToken("Not a keyword: " + strRep)
   }
+
+  /** A string is a collection of zero or more Unicode characters, wrapped in
+   *  double quotes, using backslash escapes (cf. http://www.json.org/).
+   */
+  def string = '\"' ~ rep(chrExcept('\"', '\n', EofCh)) ~ '\"' ^^ { _ mkString "" }
 
   override def whitespace = rep(whitespaceChar)
 
-  def number  = intPart ~ opt(fracPart) ~ opt(expPart) ^^ { case i ~ f ~ e =>
-    i + optString(".",f) + optString("",e)
+  def number = intPart ~ opt(fracPart) ~ opt(expPart) ^^ { case i ~ f ~ e =>
+    i + optString(".", f) + optString("", e)
   }
   def intPart = zero | intList
   def intList = nonzero ~ rep(digit) ^^ {case x ~ y => (x :: y) mkString ""}
-  def fracPart = '.' ~ rep(digit) ^^ {x => x.mkString("")}
+  def fracPart = '.' ~ rep(digit) ^^ { _ mkString "" }
   def expPart = exponent ~ opt(sign) ~ rep1(digit) ^^ { case e ~ s ~ d =>
-    e + optString("",s) + d.mkString("")
+    e + optString("", s) + d.mkString("")
   }
 
-  def optString[A](pre: String, a: Option[A]) = a match {
+  private def optString[A](pre: String, a: Option[A]) = a match {
     case Some(x) => pre + x.toString
     case None => ""
   }
@@ -75,10 +81,10 @@ class Lexer extends StdLexical with ImplicitConversions {
   val hexDigits = Set[Char]() ++ "0123456789abcdefABCDEF".toArray
   def hexDigit = elem("hex digit", hexDigits.contains(_))
 
- def unicodeBlock = hexDigit ~ hexDigit ~ hexDigit ~ hexDigit ^^ {
-   case a ~ b ~ c ~ d =>
-     new String(io.UTF8Codec.encode(Integer.parseInt(List(a,b,c,d).mkString(""),16)))
- }
+  private def unicodeBlock = hexDigit ~ hexDigit ~ hexDigit ~ hexDigit ^^ {
+    case a ~ b ~ c ~ d =>
+      new String(io.UTF8Codec.encode(Integer.parseInt(List(a, b, c, d) mkString "", 16)))
+  }
 
-  private def lift[T](f: String => T)(xs: List[Any]): T = f(xs.mkString(""))
+  //private def lift[T](f: String => T)(xs: List[Any]): T = f(xs mkString "")
 }

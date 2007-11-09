@@ -159,6 +159,25 @@ final class RichString(val self: String) extends Proxy with RandomAccessSeq[Char
    */
   def stripMargin: String = stripMargin('|')
 
+  /** <p>
+   *    Remove white space from both ends of each line and add
+   *    a blank (" ") between lines before merging them.
+   *  </p>
+   *  <p>
+   *    Equivalent to: <code>mergeLines(_.trim, " ")</code>.
+   *  </p>
+   */
+  def mergeLines: String = mergeLines(_.trim, " ")
+
+  /** <p>
+   *    Apply function <code>f</code> to each line and add
+   *    the string <code>eol</code> between lines before
+   *    merging them.
+   *  </p>
+   */
+  def mergeLines(f: String => String, eol: String): String =
+    lines map f mkString eol
+
   private def escape(ch: Char): String = ch match {
     case '.' | '$' | '^' | '\\' => "\\" + ch
     case _ => "" + ch
@@ -187,4 +206,5 @@ object RichString {
   private final val CR: Char = 0x0D
   private final val SU: Char = 0x1A
 }
+
 
