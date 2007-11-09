@@ -271,6 +271,19 @@ abstract class Mixin extends InfoTransform {
     }
   }
 
+  private def ensureSourceModule(owner: Symbol, clazz: Symbol) {
+    var sourceModule = owner.info.decls.lookup(clazz.name.toTermName)
+    if (sourceModule != NoSymbol) {
+      sourceModule setPos clazz.pos
+      sourceModule.flags = MODULE | FINAL
+    } else {
+      sourceModule = owner.newModule(
+        clazz.pos, clazz.name.toTermName, clazz.asInstanceOf[ClassSymbol])
+      owner.info.decls enter sourceModule
+    }
+    sourceModule setInfo clazz.tpe
+  }
+
   /** The info transform for this phase does the following:
    *   - The parents of every class are mapped from implementation class to interface
    *   - Implementation classes become modules that inherit nothing
@@ -284,21 +297,17 @@ abstract class Mixin extends InfoTransform {
     case ClassInfoType(parents, decls, clazz) =>
       var parents1 = parents
       var decls1 = decls
-      if (!clazz.isPackageClass) {
+      if (clazz.isPackageClass) {
+        var e = clazz.info.decls.elems
+        while (e ne null) {
+          if (e.sym.isImplClass) ensureSourceModule(clazz, e.sym)
+          e = e.next
+        }
+      } else {
         atPhase(phase.next)(clazz.owner.info)
         if (clazz.isImplClass) {
           clazz setFlag lateMODULE
-          var sourceModule = clazz.owner.info.decls.lookup(sym.name.toTermName)
-          if (sourceModule != NoSymbol) {
-            sourceModule setPos sym.pos
-            sourceModule.flags = MODULE | FINAL
-          } else {
-            sourceModule = clazz.owner.newModule(
-              sym.pos, sym.name.toTermName, sym.asInstanceOf[ClassSymbol])
-            clazz.owner.info.decls enter sourceModule
-          }
-          sourceModule setInfo sym.tpe
-          assert(clazz.sourceModule != NoSymbol)//debug
+          ensureSourceModule(clazz.owner, clazz)
           parents1 = List()
           decls1 = newScope(decls.toList filter isImplementedStatically)
         } else if (!parents.isEmpty) {
