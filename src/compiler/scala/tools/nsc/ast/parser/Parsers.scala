@@ -2411,10 +2411,15 @@ trait Parsers extends NewScanners with MarkupParsers {
       if (isExprIntro) {
         val first = expr(InTemplate) // @S: first statement is potentially converted so cannot be stubbed.
         if (inToken == ARROW) {
-          convertToParam(first) match {
-            case tree @ ValDef(_, name, tpt, EmptyTree) if (name != nme.ERROR) =>
-              self = makeSelfDef(name, tpt).setPos(tree.pos)
+          first match {
+            case Typed(tree @ This(name), tpt) if (name == nme.EMPTY.toTypeName) =>
+              self = makeSelfDef(nme.WILDCARD, tpt).setPos(tree.pos)
             case _ =>
+              convertToParam(first) match {
+                case tree @ ValDef(_, name, tpt, EmptyTree) if (name != nme.ERROR) =>
+                  self = makeSelfDef(name, tpt).setPos(tree.pos)
+                case _ =>
+              }
           }
           inNextToken
         } else stats += first
