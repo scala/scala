@@ -608,7 +608,7 @@ trait Typers { self: Analyzer =>
      *  If all this fails, error
      */
     protected def adapt(tree: Tree, mode: Int, pt: Type): Tree = tree.tpe match {
-      case ct @ ConstantType(value) if ((mode & TYPEmode) == 0 && (ct <:< pt) && !inIDE) => // (0)
+      case ct @ ConstantType(value) if ((mode & (TYPEmode | FUNmode)) == 0 && (ct <:< pt) && !inIDE) => // (0)
         copy.Literal(tree, value)
       case OverloadedType(pre, alts) if ((mode & FUNmode) == 0) => // (1)
         inferExprAlternative(tree, pt)
@@ -814,7 +814,8 @@ trait Typers { self: Analyzer =>
      */
     def adaptToMember(qual: Tree, name: Name, tp: Type): Tree = {
       val qtpe = qual.tpe.widen
-      if (qual.isTerm && ((qual.symbol eq null) || !qual.symbol.isTerm || qual.symbol.isValue) &&
+      if (qual.isTerm &&
+          ((qual.symbol eq null) || !qual.symbol.isTerm || qual.symbol.isValue) &&
           phase.id <= currentRun.typerPhase.id && !qtpe.isError && !tp.isError &&
           qtpe.typeSymbol != AllRefClass && qtpe.typeSymbol != AllClass && qtpe != WildcardType) {
         val coercion = inferView(qual.pos, qtpe, name, tp, true)
@@ -1264,6 +1265,10 @@ trait Typers { self: Analyzer =>
       val tparams1 = List.mapConserve(ddef.tparams)(typedTypeDef)
       val vparamss1 = List.mapConserve(ddef.vparamss)(vparams1 =>
         List.mapConserve(vparams1)(typedValDef))
+      for (vparams1 <- vparamss1; if !vparams1.isEmpty; vparam1 <- vparams1.init) {
+        if (vparam1.symbol.tpe.typeSymbol == RepeatedParamClass)
+          error(vparam1.pos, "*-parameter must come last")
+      }
       var tpt1 = checkNoEscaping.privates(meth, typedType(ddef.tpt))
       if (!settings.Xexperimental.value) {
         for (vparams <- vparamss1; vparam <- vparams) {

@@ -596,7 +596,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
 
       val opc = new overridingPairs.Cursor(root) {
         override def exclude(sym: Symbol): Boolean =
-          !sym.isTerm || (sym hasFlag (PRIVATE | BRIDGE)) || super.exclude(sym)
+          !sym.isTerm || sym.hasFlag(PRIVATE) || super.exclude(sym)
         override def matches(sym1: Symbol, sym2: Symbol): Boolean =
           atPhase(phase.next)(sym1.tpe =:= sym2.tpe)
       }
@@ -660,7 +660,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
         new overridingPairs.Cursor(owner) {
           override def parents: List[Type] = List(owner.info.parents.head)
           override def exclude(sym: Symbol): Boolean =
-            !sym.isMethod || (sym hasFlag (PRIVATE | BRIDGE)) || super.exclude(sym)
+            !sym.isMethod || sym.hasFlag(PRIVATE) || super.exclude(sym)
         }
       }
       while (opc.hasNext) {

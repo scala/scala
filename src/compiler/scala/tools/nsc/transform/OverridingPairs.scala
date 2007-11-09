@@ -24,7 +24,8 @@ abstract class OverridingPairs {
 
     private val self = base.thisType
 
-    protected def exclude(sym: Symbol): Boolean = sym.isConstructor || sym.isPrivateLocal
+    protected def exclude(sym: Symbol): Boolean =
+      sym.isConstructor || sym.isPrivateLocal || sym.hasFlag(BRIDGE)
 
     protected def parents: List[Type] = base.info.parents
 
