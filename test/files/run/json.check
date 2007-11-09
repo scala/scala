@@ -1,6 +1,7 @@
 Some(List((name,value)))
 Some(List((name,va1ue)))
 Some(List((name,List((name1,va1ue1), (name2,va1ue2)))))
+Some(List((name,")))
 
 Some(List((firstName,John), (lastName,Smith), (address,List((streetAddress,21 2nd Street), (city,New York), (state,NY), (postalCode,10021.0))), (phoneNumbers,List(212 732-1234, 646 123-4567))))
 
