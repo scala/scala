@@ -43,7 +43,7 @@ abstract class Mixin extends InfoTransform {
    */
   private def isImplementedStatically(sym: Symbol) =
     sym.owner.isImplClass && sym.isMethod &&
-    (!sym.isModule || sym.hasFlag(PRIVATE)) &&
+    (!sym.isModule || sym.hasFlag(PRIVATE | LIFTED)) &&
     (!(sym hasFlag (ACCESSOR | SUPERACCESSOR)) || sym.hasFlag(LAZY))
 
   /** A member of a trait is static only if it belongs only to the
@@ -271,19 +271,6 @@ abstract class Mixin extends InfoTransform {
     }
   }
 
-  private def ensureSourceModule(owner: Symbol, clazz: Symbol) {
-    var sourceModule = owner.info.decls.lookup(clazz.name.toTermName)
-    if (sourceModule != NoSymbol) {
-      sourceModule setPos clazz.pos
-      sourceModule.flags = MODULE | FINAL
-    } else {
-      sourceModule = owner.newModule(
-        clazz.pos, clazz.name.toTermName, clazz.asInstanceOf[ClassSymbol])
-      owner.info.decls enter sourceModule
-    }
-    sourceModule setInfo clazz.tpe
-  }
-
   /** The info transform for this phase does the following:
    *   - The parents of every class are mapped from implementation class to interface
    *   - Implementation classes become modules that inherit nothing
@@ -297,17 +284,21 @@ abstract class Mixin extends InfoTransform {
     case ClassInfoType(parents, decls, clazz) =>
       var parents1 = parents
       var decls1 = decls
-      if (clazz.isPackageClass) {
-        var e = clazz.info.decls.elems
-        while (e ne null) {
-          if (e.sym.isImplClass) ensureSourceModule(clazz, e.sym)
-          e = e.next
-        }
-      } else {
+      if (!clazz.isPackageClass) {
         atPhase(phase.next)(clazz.owner.info)
         if (clazz.isImplClass) {
           clazz setFlag lateMODULE
-          ensureSourceModule(clazz.owner, clazz)
+          var sourceModule = clazz.owner.info.decls.lookup(sym.name.toTermName)
+          if (sourceModule != NoSymbol) {
+            sourceModule setPos sym.pos
+            sourceModule.flags = MODULE | FINAL
+          } else {
+            sourceModule = clazz.owner.newModule(
+              sym.pos, sym.name.toTermName, sym.asInstanceOf[ClassSymbol])
+            clazz.owner.info.decls enter sourceModule
+          }
+          sourceModule setInfo sym.tpe
+          assert(clazz.sourceModule != NoSymbol)//debug
           parents1 = List()
           decls1 = newScope(decls.toList filter isImplementedStatically)
         } else if (!parents.isEmpty) {
