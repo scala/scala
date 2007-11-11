@@ -241,6 +241,11 @@ trait Typers { self: Analyzer =>
       if (treeInfo.isPureExpr(tree)) tree
       else errorTree(tree, "stable identifier required, but " + tree + " found.")
 
+    /** Check that `sym' refers to a non-refinement class type */
+    def checkClassType(pos: Position, sym: Symbol) {
+      if (!sym.isClass || sym.isRefinementClass) error(pos, "class type required")
+    }
+
     /** Check that type <code>tp</code> is not a subtype of itself.
      *
      *  @param pos ...
@@ -938,9 +943,8 @@ trait Typers { self: Analyzer =>
       def validateParentClass(parent: Tree, superclazz: Symbol) {
         if (!parent.tpe.isError) {
           val psym = parent.tpe.typeSymbol.initialize
-          if (!psym.isClass) {
-            error(parent.pos, "class type expected")
-          } else if (psym != superclazz) {
+          checkClassType(parent.pos, psym)
+          if (psym != superclazz) {
             if (psym.isTrait) {
               val ps = psym.info.parents
               if (!ps.isEmpty && !superclazz.isSubClass(ps.head.typeSymbol))
@@ -2237,8 +2241,7 @@ trait Typers { self: Analyzer =>
             val targs = args map (_.tpe)
             checkBounds(tree.pos, NoPrefix, NoSymbol, tparams, targs, "")
             if (fun.symbol == Predef_classOf) {
-              if (!targs.head.typeSymbol.isClass || targs.head.typeSymbol.isRefinementClass)
-                error(args.head.pos, "class type required");
+              checkClassType(args.head.pos, targs.head.typeSymbol)
               Literal(Constant(targs.head)) setPos tree.pos setType Predef_classOfType(targs.head)
               // @M: targs.head.normalize is not necessary --> toTypeKind eventually normalizes the type
             } else {
