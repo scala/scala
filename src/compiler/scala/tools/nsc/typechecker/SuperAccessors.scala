@@ -150,8 +150,8 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
             superAcc =
               clazz.newMethod(tree.pos, supername)
                 .setFlag(SUPERACCESSOR | PRIVATE)
-                .setInfo(clazz.thisType.memberType(sym))
                 .setAlias(sym)
+            superAcc.setInfo(clazz.thisType.memberType(sym).cloneInfo(superAcc))
             clazz.info.decls enter superAcc;
             accDefBuf(clazz) += typed(DefDef(superAcc, vparamss => EmptyTree))
           }

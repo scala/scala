@@ -884,41 +884,6 @@ trait Parsers extends NewScanners with MarkupParsers {
 
 //////// EXPRESSIONS ////////////////////////////////////////////////////////
 
-/*
-    // XX_LIFTED
-    var liftedGenerators = new collection.mutable.ListBuffer[ValFrom]
-
-    // XX_LIFTED
-    def wrapLiftedGenerators(t: Tree): Tree =
-      if (liftedGenerators.isEmpty) t
-      else {
-        val t1 = makeLifted(liftedGenerators.toList, t)
-        liftedGenerators.clear
-        t1
-      }
-
-    // XX_LIFTED
-    def noLifting(op: => Tree): Tree = {
-      val savedLiftedGenerators = liftedGenerators
-      if (!savedLiftedGenerators.isEmpty) // optimization to avoid buffer allocation
-        liftedGenerators = new collection.mutable.ListBuffer
-      val t = op
-      if (!liftedGenerators.isEmpty)
-        syntaxError(liftedGenerators.toList.head.pos, "no lifted expression allowed here", false)
-      liftedGenerators = savedLiftedGenerators
-      t
-    }
-
-    // XX_LIFTED
-    def liftingScope(op: => Tree): Tree = {
-      val savedLiftedGenerators = liftedGenerators
-      if (!savedLiftedGenerators.isEmpty) // optimization to avoid buffer allocation
-        liftedGenerators = new collection.mutable.ListBuffer
-      val t = wrapLiftedGenerators(op)
-      liftedGenerators = savedLiftedGenerators
-      t
-    }
-*/
     /** EqualsExpr ::= `=' Expr
      */
     def equalsExpr(): Tree = {

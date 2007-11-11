@@ -43,7 +43,7 @@ trait Symbols {
     var rawflags: Long = 0
     private var rawpos = initPos
     val id = { ids += 1; ids }
-//    assert(id != 4699, initName+"/"+initOwner)
+//    assert(id != 5413, initName+"/"+initOwner)
 
     var validTo: Period = NoPeriod
 

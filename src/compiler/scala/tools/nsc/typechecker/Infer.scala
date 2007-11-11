@@ -25,6 +25,8 @@ trait Infer {
   var normP = 0
   var normO = 0
 
+  private final val inferInfo = false
+
 /* -- Type parameter inference utility functions --------------------------- */
 
   def assertNonCyclic(tvar: TypeVar) =
@@ -735,12 +737,19 @@ trait Infer {
      */
     def inferArgumentInstance(tree: Tree, undetparams: List[Symbol],
                               strictPt: Type, lenientPt: Type) {
+      if (inferInfo)
+        println("infer argument instance "+tree+":"+tree.tpe+"\n"+
+                "  undetparams = "+undetparams+"\n"+
+                "  strict pt = "+strictPt+"\n"+
+                "  lenient pt = "+lenientPt)
       var targs = exprTypeArgs(undetparams, tree.tpe, strictPt)
-      if (targs eq null) targs = exprTypeArgs(undetparams, tree.tpe, lenientPt)
+      if ((targs eq null) || !(tree.tpe.subst(undetparams, targs) <:< strictPt)) {
+        targs = exprTypeArgs(undetparams, tree.tpe, lenientPt)
+      }
       substExpr(tree, undetparams, targs, lenientPt)
     }
 
-    /** Substitite free type variables `undetparams; of polymorphic expression
+    /** Substitute free type variables `undetparams; of polymorphic expression
      *  <code>tree</code>, given prototype <code>pt</code>.
      *
      *  @param tree ...
@@ -748,6 +757,10 @@ trait Infer {
      *  @param pt ...
      */
     def inferExprInstance(tree: Tree, undetparams: List[Symbol], pt: Type) {
+      if (inferInfo)
+        println("infer expr instance "+tree+"\n"+
+                "  undetparams = "+undetparams+"\n"+
+                "  pt = "+pt)
       substExpr(tree, undetparams, exprTypeArgs(undetparams, tree.tpe, pt), pt)
     }
 
@@ -782,6 +795,11 @@ trait Infer {
     def inferMethodInstance(fn: Tree, undetparams: List[Symbol],
                             args: List[Tree], pt: Type): List[Symbol] = fn.tpe match {
       case MethodType(formals0, _) =>
+        if (inferInfo)
+          println("infer method instance "+fn+"\n"+
+                  "  undetparams = "+undetparams+"\n"+
+                  "  args = "+args+"\n"+
+                  "  pt = "+pt)
         try {
           val formals = formalTypes(formals0, args.length)
           val argtpes = actualTypes(args map (_.tpe.deconst), formals.length)
