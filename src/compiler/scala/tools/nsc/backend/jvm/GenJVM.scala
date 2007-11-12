@@ -526,7 +526,8 @@ abstract class GenJVM extends SubComponent {
                                            clasz.cunit.source.toString)
       for (val m <- clasz.symbol.tpe.nonPrivateMembers;
            m.owner != definitions.ObjectClass && !m.hasFlag(Flags.PROTECTED) &&
-           m.isMethod && !m.hasFlag(Flags.CASE) && !m.isConstructor && !isStaticSymbol(m) )
+           m.isMethod && !m.hasFlag(Flags.CASE) && !m.isConstructor && !isStaticSymbol(m) &&
+           !definitions.ObjectClass.info.nonPrivateMembers.exists(_.name == m.name))
       {
         val paramJavaTypes = m.tpe.paramTypes map (t => toTypeKind(t));
         val paramNames: Array[String] = new Array[String](paramJavaTypes.length);
@@ -996,9 +997,8 @@ abstract class GenJVM extends SubComponent {
 
         crtPC = jcode.getPC()
 
-        assert(instr.pos.source.isEmpty || instr.pos.source.get == (clasz.cunit.source), "sources don't match")
-        val crtLine = instr.pos.line.get(lastLineNr);
-        /*
+//        assert(instr.pos.source.isEmpty || instr.pos.source.get == (clasz.cunit.source), "sources don't match")
+//        val crtLine = instr.pos.line.get(lastLineNr);
         val crtLine = try {
           (instr.pos).line.get
         } catch {
@@ -1006,7 +1006,6 @@ abstract class GenJVM extends SubComponent {
             log("Warning: wrong position in: " + method)
             lastLineNr
         }
-        */
 
         if (b.lastInstruction == instr)
           endPC(b) = jcode.getPC();
