@@ -106,7 +106,8 @@ trait Types {
     case PolyType(tparams, result) => "PolyType"+(tparams, debugString(result))
     case TypeBounds(lo, hi) => "TypeBounds "+debugString(lo)+","+debugString(hi)
     case TypeVar(origin, constr) => "TypeVar "+origin+","+constr
-    case _ => ""
+    case ExistentialType(tparams, qtpe) => "ExistentialType("+(tparams map (_.defString))+","+debugString(qtpe)+")"
+    case _ => tp.toString
   }
 
   /** A proxy for a type (identified by field `underlying') that forwards most
@@ -2271,9 +2272,31 @@ A type's typeSymbol should never be inspected directly.
     def apply(tp: Type): Type = { traverse(tp); tp }
   }
 
+  private val emptySymTypeMap = scala.collection.immutable.Map[Symbol, Type]()
+
+  private def makeExistential(owner: Symbol, lo: Type, hi: Type) =
+    recycle(
+      owner.newAbstractType(owner.pos, freshTypeName()).setFlag(EXISTENTIAL)
+    ).setInfo(TypeBounds(lo, hi))
+
   /** A map to compute the asSeenFrom method  */
   class AsSeenFromMap(pre: Type, clazz: Symbol) extends TypeMap {
     var capturedParams: List[Symbol] = List()
+    var capturedPre = emptySymTypeMap
+
+    // not yet used
+    def stabilize(pre: Type, clazz: Symbol) =
+      if (true || pre.isStable || pre.typeSymbol.isPackageClass) pre
+      else capturedPre get clazz match {
+        case Some(tp) => tp
+        case None =>
+          println("skolemizing "+pre)
+          val qvar = makeExistential(clazz, AllClass.tpe, pre)
+          capturedParams = qvar :: capturedParams
+          capturedPre += (clazz -> qvar.tpe)
+          qvar.tpe
+      }
+
     /** Return pre.baseType(clazz), or if that's NoType and clazz is a refinement, pre itself.
      *  See bug397.scala for an example where the second alternative is needed.
      *  The problem is that when forming the closure of an abstract type,
@@ -2307,7 +2330,7 @@ A type's typeSymbol should never be inspected directly.
             variance = v
             if (pre1 eq pre) tp
             else if (pre1.isStable) singleType(pre1, sym)
-            else pre1.memberType(sym).resultType
+            else pre1.memberType(sym).resultType //todo: this should be rolled into existential abstraction
           }
         case TypeRef(prefix, sym, args) if (sym.isTypeParameter) =>
           def toInstance(pre: Type, clazz: Symbol): Type =
@@ -3697,10 +3720,7 @@ A type's typeSymbol should never be inspected directly.
               if (l <:< g) l
               else {
                 val owner = commonOwner(as)
-                val qvar =
-                  recycle(owner.newAbstractType(if (inIDE) owner.pos else NoPosition, freshTypeName()).setFlag(EXISTENTIAL))
-                  .setInfo(TypeBounds(g, l))
-
+                val qvar = makeExistential(commonOwner(as), g, l)
                 capturedParams += qvar
                 qvar.tpe
               }

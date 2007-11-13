@@ -1377,22 +1377,13 @@ trait Typers { self: Analyzer =>
       var body1: Tree = typed(cdef.body, pt)
       if (!context.savedTypeBounds.isEmpty) {
         body1.tpe = context.restoreTypeBounds(body1.tpe)
-        if (isFullyDefined(pt)) {
-          // the following is a hack to make the pattern matcher work:
-          // add an .asInstanceOf[pt] unless there is already one.
-          // (the ...unless... part is necessary to make type checking idempotent).
-          body1 match {
-            case TypeApply(qual, List(targ))
-            if (qual.symbol == Any_asInstanceOf && targ.tpe <:< pt) =>
-              ;
-            case _ =>
-              body1 =
-                typed {
-                  atPos(body1.pos) {
-                    TypeApply(Select(body1, Any_asInstanceOf), List(TypeTree(pt))) // @M no need for pt.normalize here, is done in erasure
-                  }
-                }
-          }
+        if (isFullyDefined(pt) && !(body1.tpe <:< pt)) {
+          body1 =
+            typed {
+              atPos(body1.pos) {
+                TypeApply(Select(body1, Any_asInstanceOf), List(TypeTree(pt))) // @M no need for pt.normalize here, is done in erasure
+              }
+            }
         }
       }
 //    body1 = checkNoEscaping.locals(context.scope, pt, body1)
@@ -2708,36 +2699,43 @@ trait Typers { self: Analyzer =>
         val tpt1 = typed1(tpt, mode | FUNmode | TAPPmode, WildcardType)
         // @S: shouldn't be necessary now, fixed a problem with SimpleTypeProxy not relaying typeParams calls.
         // if (inIDE) tpt1.symbol.info // @S: seems like typeParams call doesn't force completion of symbol type in IDE.
-        val tparams = tpt1.symbol.typeParams
-
         if (tpt1.tpe.isError) {
           setError(tree)
-        } else if (tparams.length == args.length) {
+        } else {
+          val tparams = tpt1.symbol.typeParams
+          if (tparams.length == args.length) {
           // @M: kind-arity checking is done here and in adapt, full kind-checking is in checkKindBounds (in Infer)
-          val args1 = if(!tpt1.symbol.rawInfo.isComplete) List.mapConserve(args){(x: Tree) => typedHigherKindedType(x)} // if symbol hasn't been fully loaded, can't check kind-arity
-          else map2Conserve(args, tparams) {
-            (arg, tparam) => typedHigherKindedType(arg, parameterizedType(tparam.typeParams, AnyClass.tpe)) //@M! the polytype denotes the expected kind
-          }
-          val argtypes = args1 map (_.tpe)
-          val owntype = if (tpt1.symbol.isClass || tpt1.symbol.isTypeMember) // @M! added the latter condition
+            val args1 =
+              if(!tpt1.symbol.rawInfo.isComplete)
+                List.mapConserve(args){(x: Tree) => typedHigherKindedType(x)}
+                // if symbol hasn't been fully loaded, can't check kind-arity
+              else map2Conserve(args, tparams) {
+                (arg, tparam) =>
+                  typedHigherKindedType(arg, parameterizedType(tparam.typeParams, AnyClass.tpe))
+                  //@M! the polytype denotes the expected kind
+              }
+            val argtypes = args1 map (_.tpe)
+            val owntype = if (tpt1.symbol.isClass || tpt1.symbol.isTypeMember)
+                             // @M! added the latter condition
                              appliedType(tpt1.tpe, argtypes)
-                        else tpt1.tpe.instantiateTypeParams(tparams, argtypes)
-          List.map2(args, tparams) { (arg, tparam) => arg match {
-            // note: can't use args1 in selector, because Bind's got replaced
-            case Bind(_, _) =>
-              if (arg.symbol.isAbstractType)
-                arg.symbol setInfo // XXX, feedback. don't trackSymInfo here!
+                          else tpt1.tpe.instantiateTypeParams(tparams, argtypes)
+            List.map2(args, tparams) { (arg, tparam) => arg match {
+              // note: can't use args1 in selector, because Bind's got replaced
+              case Bind(_, _) =>
+                if (arg.symbol.isAbstractType)
+                  arg.symbol setInfo // XXX, feedback. don't trackSymInfo here!
                   TypeBounds(lub(List(arg.symbol.info.bounds.lo, tparam.info.bounds.lo)),
                              glb(List(arg.symbol.info.bounds.hi, tparam.info.bounds.hi)))
-            case _ =>
-          }}
-          TypeTree(owntype) setOriginal(tree) // setPos tree.pos
-        } else if (tparams.length == 0) {
-          errorTree(tree, tpt1.tpe+" does not take type parameters")
-        } else {
-          //Console.println("\{tpt1}:\{tpt1.symbol}:\{tpt1.symbol.info}")
-          if (settings.debug.value) Console.println(tpt1+":"+tpt1.symbol+":"+tpt1.symbol.info);//debug
-          errorTree(tree, "wrong number of type arguments for "+tpt1.tpe+", should be "+tparams.length)
+              case _ =>
+            }}
+            TypeTree(owntype) setOriginal(tree) // setPos tree.pos
+          } else if (tparams.length == 0) {
+            errorTree(tree, tpt1.tpe+" does not take type parameters")
+          } else {
+            //Console.println("\{tpt1}:\{tpt1.symbol}:\{tpt1.symbol.info}")
+            if (settings.debug.value) Console.println(tpt1+":"+tpt1.symbol+":"+tpt1.symbol.info);//debug
+            errorTree(tree, "wrong number of type arguments for "+tpt1.tpe+", should be "+tparams.length)
+          }
         }
       }
 
