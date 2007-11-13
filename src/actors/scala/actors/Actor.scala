@@ -811,6 +811,7 @@ trait Actor extends OutputChannel[Any] {
     // links
     if (!links.isEmpty)
       exitLinked()
+    kill()
     throw new ExitActorException
   }
 

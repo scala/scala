@@ -51,7 +51,19 @@ object RemoteActor {
    */
   def alive(port: Int): Unit = synchronized {
     val serv = TcpService(port)
-    kernels += Actor.self -> serv.kernel
+    val kern = serv.kernel
+    val s = Actor.self
+    kernels += s -> kern
+    Debug.info("registering kill handler")
+    s.kill = () => {
+      Debug.info("alive actor "+s+" terminated")
+      kernels -= s
+      if (kernels.isEmpty) {
+        Debug.info("interrupting "+serv)
+        // terminate TcpService
+        serv.interrupt()
+      }
+    }
   }
 
   /**
