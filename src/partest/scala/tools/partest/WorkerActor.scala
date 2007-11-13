@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: $
+// $Id$
 
 package scala.tools.partest
 
@@ -52,6 +52,10 @@ class WorkerActor(val master: MasterActor, val settings: Settings, var reporter:
     }
     dir.delete
   }
+
+  private val PATH_SEP = java.io.File.pathSeparatorChar
+  private val CLASSPATH = System.getProperty("CLASSPATH", "")
+  private val EXT_CLASSPATH = System.getProperty("JVMEXTCP", "")
 
   def act() {
     var compiler = newGlobal
@@ -175,7 +179,11 @@ class WorkerActor(val master: MasterActor, val settings: Settings, var reporter:
                 case _ => {}
               }
 
-              var classpath: List[URL] = outDir.toURL :: List((new File(test.dir)).toURL) ::: List.fromString(System.getProperty("CLASSPATH"), ':').map(x => (new File(x)).toURL) ::: List.fromString(System.getProperty("JVMEXTCP"), ':').map(x => (new File(x)).toURL)
+              var classpath: List[URL] =
+                outDir.toURL ::
+                List((new File(test.dir)).toURL) :::
+                (List.fromString(CLASSPATH, PATH_SEP) map { x => (new File(x)).toURL }) :::
+                (List.fromString(EXT_CLASSPATH, PATH_SEP) map { x => (new File(x)).toURL })
 
               try {
                 //println(this.toString + " " + "Launching test " + test.fileBase)
@@ -230,13 +238,21 @@ class WorkerActor(val master: MasterActor, val settings: Settings, var reporter:
             case (_, NegTest(_)) =>
             case (true, _) =>
               result = true
-              var javaoptsFile = new File(test.dir, test.fileBase + ".javaopts")
+              //var javaoptsFile = new File(test.dir, test.fileBase + ".javaopts")
               //var javaNewOpts = (new BufferedFileReader(javaoptsFile)).readLine
               //if (javaoptsFile.exists && javaNewOpts != null) {}
-              //Use Runtime.exec to execute the compiled file and pipe the standard system out and the console out to the logfile
-              var cmd = "env JAVACMD=java JAVA_OPTS=-Djava.library.path="+test.dir+" "+System.getProperty("SCALA")+" -Dscalatest.lib="+System.getProperty("scalatest.lib")+" -Dscalatest.cwd="+test.dir+" -Dscalatest.output="+outDir+" -classpath "+outDir+":"+System.getProperty("CLASSPATH")+":"+System.getProperty("JVMEXTCP")+" Test jvm"
+              //Use Runtime.exec to execute the compiled file and pipe the standard system
+              //out and the console out to the logfile
+              var cmd =
+                "env JAVACMD=java JAVA_OPTS=-Djava.library.path=\"" + test.dir + "\" " +
+                System.getProperty("SCALA")+
+                " -Dscalatest.lib=\"" + System.getProperty("scalatest.lib") + "\" " +
+                "-Dscalatest.cwd=\"" + test.dir + "\" " +
+                "-Dscalatest.output=" + outDir +
+                " -classpath " + outDir + PATH_SEP + CLASSPATH + PATH_SEP + EXT_CLASSPATH +
+                " Test jvm"
 
-              //println(cmd)
+              TestRunner.printVerbose("Worker command: " + cmd)
 
               var execution = Runtime.getRuntime.exec(cmd)
 

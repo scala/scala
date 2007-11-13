@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: $
+// $Id$
 
 package scala.tools.partest
 
@@ -134,16 +134,22 @@ object TestRunner {
 
   private def printUsage {
     println("Usage: TestRunner [<options>] <testdir> [<resfile>]")
-    println("    --pos          ...")
-    println("    --neg          ...")
-    println("    --jvm          ...")
-    println("    --run          ...")
+    println("    --pos          next files test a compilation success")
+    println("    --neg          next files test a compilation failure")
+    println("    --jvm          next files test the JVM backend")
+    println("    --run          next files test the interpreter and all backends")
     println("    --shootout     ...")
     println("    --conservative ...")
     println("    --verbose      display progress information")
+    println("    --version      output version information and exit")
     println
     println("Send bugs to <scala@listes.epfl.ch>")
     exit(1)
+  }
+
+  private def printVersion {
+    println(util.Properties.versionMsg)
+    exit(0)
   }
 
   final def printVerbose(msg: String) {
@@ -166,6 +172,7 @@ object TestRunner {
           case "--shootout"     => shootoutCheck = true
           case "--conservative" => conservative = true
           case "--verbose"      => verbose = true
+          case "--version"      => printVersion
           case _ =>
             if (testDir eq null) {
               val dir = new File(arg)

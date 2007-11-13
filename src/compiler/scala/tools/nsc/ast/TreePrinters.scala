@@ -229,7 +229,7 @@ abstract class TreePrinters {
           selectorType = selectorType1
 
         case CaseDef(pat, guard, body) =>
-          print("case ");
+          print("case ")
           def patConstr(pat: Tree): Tree = pat match {
             case Apply(fn, args) => patConstr(fn)
             case _ => pat
@@ -362,7 +362,9 @@ abstract class TreePrinters {
           print(tpt);
           printColumn(whereClauses, " forSome { ", ";", "}")
 
-        case tree : StubTree => print(tree.toString)
+        case tree: StubTree =>
+          print(tree.toString)
+
         case tree =>
           print("<unknown tree of class "+tree.getClass+">")
       }

@@ -68,7 +68,7 @@ trait Position {
 
 }
 
-object NoPosition extends Position
+case object NoPosition extends Position
 case class FakePos(msg: String) extends Position
 
 case class LinePosition(source0: SourceFile, line0: Int) extends Position {

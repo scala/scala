@@ -449,10 +449,10 @@ test_check_kind() {
       fi;
       scala_lib=`get_os_filename "$SCALA_LIB"` &&
       classpath=`get_os_pathlist $CLASSPATH` &&
-      # -Djava.library.path
       $SCALA -DSCALA=$SCALA -DJAVA_OPTS="$java_opts -Xss16M" \
-          -DJVMEXTCP=$JVM_EXT_CLASSPATH -Dscalatest.lib=$scala_lib -DCLASSPATH=$classpath \
+          -DJVMEXTCP=$JVM_EXT_CLASSPATH -DCLASSPATH=$classpath \
           -Dactors.corePoolsize=7 -Dactors.maxPoolSize=8 \
+          -Dscalatest.lib=$scala_lib -classpath $classpath \
           scala.tools.partest.TestRunner --"$kind" $testdir $resfile 2> /dev/null;
       load_results;
     elif [ "$kind" = "shootout" ]; then

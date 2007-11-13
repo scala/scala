@@ -73,6 +73,7 @@ PROPERTIES
   <property name="fsc.exec.name" value="fsc"/>
   <property name="comp.prop.name" value="compiler.properties"/>
   <property name="lib.prop.name" value="library.properties"/>
+  <property name="par.prop.name" value="partest.properties"/>
   <!-- if available, faster stability checking -->
   <property name="stability.tool" value="/home/linuxsoft/apps/stability/stability"/>
 <!-- ===========================================================================
@@ -584,6 +585,16 @@ BUILD QUICK-TEST LAYER
         <pathelement location="${quick.dir}/lib/actors"/>
       </classpath>
     </starr>
+    <echo
+      file="${quick.dir}/lib/partest/${par.prop.name}"
+      message="version.number=${version.number}${line.separator}"
+      append="false"
+    />
+    <echo
+      file="${quick.dir}/lib/partest/${par.prop.name}"
+      message="copyright.string=${copyright.string}${line.separator}"
+      append="true"
+    />
   <!-- Timing the build -->
     <stopwatch name="timer.quick" action="total"/>
   <!-- Copy support files to build folder and links external libraries-->
@@ -984,6 +995,16 @@ TEST
         <pathelement location="${strap.dir}/lib/actors"/>
       </classpath>
     </quick>
+    <echo
+      file="${strap.dir}/lib/partest/${par.prop.name}"
+      message="version.number=${version.number}${line.separator}"
+      append="false"
+    />
+    <echo
+      file="${strap.dir}/lib/partest/${par.prop.name}"
+      message="copyright.string=${copyright.string}${line.separator}"
+      append="true"
+    />
   <!-- Timing the build -->
     <stopwatch name="timer.strap" action="total"/>
   <!-- Copy support files to build folder and links external libraries-->

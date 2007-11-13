@@ -22,10 +22,16 @@ final class RichString(val self: String) extends Proxy with RandomAccessSeq[Char
   override def mkString = self
 
   override def slice(from: Int, until: Int): RichString = {
-    val from0 = if (from < 0) 0 else from
-    val until0 = if (from >= until || from >= self.length) return new RichString("")
-                 else if (until > self.length) self.length else until
-    new RichString(self.substring(from0, until0))
+    val len = self.length
+    new RichString(
+      if (from >= until || from >= len)
+        ""
+      else {
+        val from0 = if (from < 0) 0 else from
+        val until0 = if (until > len) len else until
+        self.substring(from0, until0)
+      }
+    )
   }
 
   //override def ++ [B >: A](that: Iterable[B]): Seq[B] = {
@@ -158,25 +164,6 @@ final class RichString(val self: String) extends Proxy with RandomAccessSeq[Char
    *  </blockquote>
    */
   def stripMargin: String = stripMargin('|')
-
-  /** <p>
-   *    Remove white space from both ends of each line and add
-   *    a blank (" ") between lines before merging them.
-   *  </p>
-   *  <p>
-   *    Equivalent to: <code>mergeLines(_.trim, " ")</code>.
-   *  </p>
-   */
-  def mergeLines: String = mergeLines(_.trim, " ")
-
-  /** <p>
-   *    Apply function <code>f</code> to each line and add
-   *    the string <code>eol</code> between lines before
-   *    merging them.
-   *  </p>
-   */
-  def mergeLines(f: String => String, eol: String): String =
-    lines map f mkString eol
 
   private def escape(ch: Char): String = ch match {
     case '.' | '$' | '^' | '\\' => "\\" + ch
