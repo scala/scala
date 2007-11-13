@@ -49,6 +49,7 @@ import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
  *    <li>addparams,</li>
  *    <li>scalacdebugging,</li>
  *    <li>deprecation,</li>
+ *    <li>optimise,</li>
  *    <li>unchecked,</li>
  *    <li>failonerror.</li>
  *  </ul>
@@ -140,6 +141,8 @@ class Scalac extends MatchingTask {
   private var addParams: String = ""
   /** Instruct the compiler to generate deprecation information. */
   private var deprecation: Option[Boolean] = None
+  /** Instruct the compiler to run optimizations. */
+  private var optimise: Option[Boolean] = None
   /** Instruct the compiler to generate unchecked information. */
   private var unchecked: Option[Boolean] = None
   /** Indicates whether compilation errors will fail the build; defaults to true. */
@@ -318,6 +321,15 @@ class Scalac extends MatchingTask {
       deprecation = Some("yes" == input || "on" == input)
     else
       error("Unknown deprecation flag '" + input + "'")
+  }
+
+  /** Set the <code>optimise</code> info attribute.
+   *  @param input One of the flags <code>yes/no</code> or <code>on/off</code>. */
+  def setOptimise(input: String) {
+    if (Flag.isPermissible(input))
+      optimise = Some("yes" == input || "on" == input)
+    else
+      error("Unknown optimisation flag '" + input + "'")
   }
 
   /** Set the <code>unchecked</code> info attribute.
@@ -538,6 +550,7 @@ class Scalac extends MatchingTask {
     if (!usepredefs.isEmpty) settings.nopredefs.value = !usepredefs.get
     if (!debugInfo.isEmpty) settings.debuginfo.value = debugInfo.get
     if (!deprecation.isEmpty) settings.deprecation.value = deprecation.get
+    if (!optimise.isEmpty) settings.XO.value = optimise.get
     if (!unchecked.isEmpty) settings.unchecked.value = unchecked.get
 
     if (!assemname.isEmpty) settings.assemname.value = assemname.get

@@ -124,8 +124,8 @@ trait Printers { self: ICodes =>
     }
 
     def printInstruction(i: Instruction): Unit = {
-      if (settings.Xdce.value)
-        print(if (i.useful) "   " else " * ");
+//      if (settings.Xdce.value)
+//        print(if (i.useful) "   " else " * ");
       if (settings.debug.value)
         print(i.pos.line.map(_.toString).getOrElse("No line"))
       println(i.toString());

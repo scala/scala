@@ -72,14 +72,14 @@ trait TypeKinds { self: ICodes =>
     def maxType(other: TypeKind): TypeKind
 
     /** Simple subtyping check */
-    def <:<(other: TypeKind): Boolean = this match {
+    def <:<(other: TypeKind): Boolean = (this eq other) || (this match {
       case BOOL | BYTE | SHORT | CHAR =>
         other match {
           case INT | LONG => true
           case _ => false
         }
       case _ => this eq other
-    }
+    })
 
     override def equals(other: Any): Boolean =
       this eq other.asInstanceOf[AnyRef]
@@ -117,6 +117,9 @@ trait TypeKinds { self: ICodes =>
     else (a, b) match {
       case (BOXED(a1), BOXED(b1)) => if (a1 == b1) a else REFERENCE(definitions.AnyRefClass)
       case (BOXED(_), REFERENCE(_)) | (REFERENCE(_), BOXED(_)) => REFERENCE(definitions.AnyRefClass)
+      case (BYTE, INT) | (INT, BYTE) => INT
+      case (SHORT, INT) | (INT, SHORT) => INT
+      case (CHAR, INT) | (INT, CHAR) => INT
       case _ => throw new CheckerError("Incompatible types: " + a + " with " + b)
     }
   }

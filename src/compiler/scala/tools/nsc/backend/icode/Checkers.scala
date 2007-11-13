@@ -537,6 +537,16 @@ abstract class Checkers {
             checkBool(stack.pop.isReferenceType,
                       "MONITOR_EXIT on non-reference type")
 
+          case BOX(kind) =>
+            checkStack(1)
+            checkType(stack.pop, kind)
+            stack.push(icodes.AnyRefReference)
+
+          case UNBOX(kind) =>
+            checkStack(1)
+            stack.pop
+            stack.push(kind)
+
           case _ =>
             abort("Unknown instruction: " + instr)
         }
