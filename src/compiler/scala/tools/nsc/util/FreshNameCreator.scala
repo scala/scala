@@ -25,12 +25,10 @@ object FreshNameCreator {
    * call to this function (provided the prefix does not end in a digit).
    */
   def newName(prefix: String): String = {
-    val count = counters.get(prefix) match {
-      case Some(last) => last + 1
-      case None => 0
-    }
-    counters.update(prefix, count)
-    prefix + count
+    val safePrefix = prefix.replace("<", "$").replace(">", "$")
+    val count = counters.getOrElse(safePrefix, 0) + 1
+    counters(safePrefix) = count
+    safePrefix + count
   }
   def newName(pos : util.Position, prefix : String) = newName(prefix)
 
