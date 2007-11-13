@@ -154,6 +154,23 @@ object Stream {
    * @return the stream starting at value <code>start</code>.
    */
   def from(start: Int): Stream[Int] = from(start, 1)
+
+  /**
+   * Create an infinite stream containing the given element.
+   *
+   * @param elem the element composing the resulting stream
+   * @return the stream containing an inifinite number of elem
+   */
+  def const[A](elem: A): Stream[A] = cons(elem, const(elem))
+
+  /** Create a stream containing several copies of an element.
+   *
+   *  @param n    the length of the resulting stream
+   *  @param elem the element composing the resulting stream
+   *  @return     the stream composed of n elements all equal to elem
+   */
+  def make[A](n: Int, elem: A): Stream[A] =
+    Stream.const(elem).take(n)
 }
 
 /**
