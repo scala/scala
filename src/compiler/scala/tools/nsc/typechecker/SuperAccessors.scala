@@ -380,6 +380,10 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
       case ThisType(sym) => (sym.isClass && !sym.isPackageClass)
       case TypeRef(pref, _, _) => isThisType(pref)
       case SingleType(pref, _) => isThisType(pref)
+      case RefinedType(parents, defs) =>
+        parents.exists(isThisType(_))
+      case AnnotatedType(attribs, tp) =>
+        isThisType(tp)
       case _ => false
     }
   }
