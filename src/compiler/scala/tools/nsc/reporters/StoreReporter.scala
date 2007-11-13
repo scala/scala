@@ -1,18 +1,15 @@
-/*     ____ ____  ____ ____  ______                                     *\
-**    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
-**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
-** /_____/\____/\___/\____/____/                                        **
-\*                                                                      */
-
+/* NSC -- new Scala compiler
+ * Copyright 2002-2007 LAMP/EPFL
+ * @author Martin Odersky
+ */
 // $Id$
 
 package scala.tools.nsc.reporters
+
+import java.io.{BufferedReader, InputStreamReader, IOException, PrintWriter}
+
 import scala.collection.mutable.HashSet
-import scala.tools.nsc.util.{Position,SourceFile}
-import java.io.BufferedReader
-import java.io.InputStreamReader
-import java.io.IOException
-import java.io.PrintWriter
+import scala.tools.nsc.util.{Position, SourceFile}
 
 /**
  * This class implements a Reporter that displays messages on a text
@@ -22,12 +19,15 @@ class StoreReporter extends Reporter {
   class Info(val pos: Position, val msg: String, val severity: Severity) {
     override def toString() = "pos: " + pos + " " + msg + " " + severity
   }
-  val infos = new HashSet[Info];
-  protected def info0(pos : Position, msg : String, severity : Severity, force : Boolean) : Unit = if (!force) {
-    infos += new Info(pos, msg, severity)
-    (severity).count = severity.count + 1
+  val infos = new HashSet[Info]
+  protected def info0(pos: Position, msg: String, severity: Severity, force: Boolean) {
+    if (!force) {
+      infos += new Info(pos, msg, severity)
+      severity.count += 1
+    }
   }
-  override def reset = {
+
+  override def reset {
     super.reset
     infos.clear
   }
