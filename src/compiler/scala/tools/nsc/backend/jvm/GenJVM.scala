@@ -389,8 +389,12 @@ abstract class GenJVM extends SubComponent {
           attributes = attributes | JAccessFlags.ACC_VOLATILE
         case _ => ();
       }}
+      var flags = javaFlags(f.symbol)
+   /* if (!f.symbol.hasFlag(Flags.MUTABLE))
+        flags = flags | JAccessFlags.ACC_FINAL
+      */
       val jfield =
-        jclass.addNewField(javaFlags(f.symbol) | attributes,
+        jclass.addNewField(flags | attributes,
                            javaName(f.symbol),
                            javaType(f.symbol.tpe));
 
@@ -421,9 +425,10 @@ abstract class GenJVM extends SubComponent {
                                     javaTypes(m.params map (_.kind)),
                                     javaNames(m.params map (_.sym)));
 
-      if (m.symbol.hasFlag(Flags.BRIDGE))
+      if (m.symbol.hasFlag(Flags.BRIDGE) && settings.target.value == "jvm-1.4") {
         jmethod.addAttribute(fjbgContext.JOtherAttribute(jclass, jmethod, "Bridge",
                                                          new Array[Byte](0)))
+      }
       if (remoteClass ||
           (m.symbol.hasAttribute(RemoteAttr) && jmethod.isPublic() && !forCLDC)) {
           val ainfo = AnnotationInfo(ThrowsAttr.tpe, List(new AnnotationArgument(Constant(RemoteException))), List())
@@ -1363,6 +1368,8 @@ abstract class GenJVM extends SubComponent {
                        && !sym.isClassConstructor) ACC_FINAL else 0)
       jf = jf | (if (isStaticSymbol(sym)) ACC_STATIC else 0)
       jf = jf | (if (sym hasFlag Flags.ACCESSOR) ACC_SYNTHETIC else 0)
+      if (settings.target.value == "jvm-1.5")
+        jf = jf | (if (sym hasFlag Flags.BRIDGE) ACC_BRIDGE else 0)
       jf
     }
 
