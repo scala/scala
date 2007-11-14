@@ -1370,6 +1370,8 @@ abstract class GenJVM extends SubComponent {
       jf = jf | (if (sym hasFlag Flags.ACCESSOR) ACC_SYNTHETIC else 0)
       if (settings.target.value == "jvm-1.5")
         jf = jf | (if (sym hasFlag Flags.BRIDGE) ACC_BRIDGE else 0)
+      if (sym.isClass && !sym.hasFlag(Flags.INTERFACE))
+        jf = jf | ACC_SUPER
       jf
     }
 
