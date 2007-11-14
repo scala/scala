@@ -293,7 +293,7 @@ abstract class TreePrinters {
           print(fun); printRow(targs, "[", ", ", "]")
 
         case Apply(fun, vargs) =>
-          print(fun); print(vargs.mkString("(", ",", ")")) // printRow(vargs, "(", ", ", ")")
+          print(fun); printRow(vargs, "(", ", ", ")")
 
         case ApplyDynamic(qual, vargs) =>
           print("<apply-dynamic>("); print(qual); print("#"); print(tree.symbol.nameString)
