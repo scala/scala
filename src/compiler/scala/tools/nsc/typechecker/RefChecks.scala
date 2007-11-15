@@ -587,7 +587,8 @@ abstract class RefChecks extends InfoTransform {
     }
 
     /** Implements lazy value accessors:
-     *    - for lazy fields inside traits, the rhs is the initializer itself
+     *    - for lazy values of type Unit and all lazy fields inside traits,
+     *      the rhs is the initializer itself
      *    - for all other lazy values z the accessor is a block of this form:
      *      { z = <rhs>; z } where z can be an identifier or a field.
      */
@@ -666,17 +667,22 @@ abstract class RefChecks extends InfoTransform {
         if (tree.symbol.hasFlag(LAZY)) {
           assert(tree.symbol.isTerm, tree.symbol)
           val vsym = tree.symbol
+          val hasUnitType = (tree.symbol.tpe.typeSymbol == definitions.UnitClass)
           val lazyDefSym = vsym.lazyAccessor
           assert(lazyDefSym != NoSymbol, vsym)
           val ownerTransformer = new ChangeOwnerTraverser(vsym, lazyDefSym)
           val lazyDef = atPos(tree.pos)(
               DefDef(lazyDefSym, vparamss => ownerTransformer(
-                if (tree.symbol.owner.isTrait) rhs // for traits, this is further tranformed in mixins
+                if (tree.symbol.owner.isTrait // for traits, this is further tranformed in mixins
+                    || hasUnitType) rhs
                 else Block(List(
                        Assign(gen.mkAttributedRef(vsym), rhs)),
                        gen.mkAttributedRef(vsym)))))
           log("Made lazy def: " + lazyDef)
-          typed(ValDef(vsym, EmptyTree)) :: typed(lazyDef) :: Nil
+          if (hasUnitType)
+            typed(lazyDef) :: Nil
+          else
+            typed(ValDef(vsym, EmptyTree)) :: typed(lazyDef) :: Nil
         } else {
           if (tree.symbol.isLocal && index <= currentLevel.maxindex && !tree.symbol.hasFlag(LAZY)) {
             if (settings.debug.value) Console.println(currentLevel.refsym);

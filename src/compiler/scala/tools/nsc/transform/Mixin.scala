@@ -240,6 +240,10 @@ abstract class Mixin extends InfoTransform {
                 case MethodType(List(), ConstantType(_)) =>
                   // member is a constant; only getter is needed
                   ;
+                case MethodType(List(), TypeRef(_, tpeSym, _))
+                  if member.hasFlag(LAZY) && tpeSym == definitions.UnitClass =>
+                  // member is a lazy value of type unit. No field needed
+                  ;
                 case _ =>
                   // otherwise mixin a field as well
                   addMember(clazz,
@@ -533,7 +537,7 @@ abstract class Mixin extends InfoTransform {
        *  where bitmap$n is an int value acting as a bitmap of initialized values. It is
        *  the 'n' is (offset / 32), the MASK is (1 << (offset % 32)).
        */
-      def mkLazyDef(clazz: Symbol, init: Tree, fieldSym: Symbol, offset: Int): Tree = {
+      def mkLazyDef(clazz: Symbol, init: Tree, retVal: Tree, offset: Int): Tree = {
 
         /** Return the bitmap field for 'offset', create one if not inheriting it already. */
         def bitmapFor(offset: Int): Symbol = {
@@ -571,17 +575,21 @@ abstract class Mixin extends InfoTransform {
                         Literal(Constant(()))),
                  EmptyTree)),
              EmptyTree)
-        localTyper.typed(Block(List(result), Select(This(clazz), fieldSym)))
+        localTyper.typed(atPos(init.pos)(Block(List(result), retVal)))
       }
 
       /** Complete lazy field accessors. Applies only to classes, for it's own (non inherited) lazy fields. */
       def lazifyOwnFields(clazz: Symbol, stats: List[Tree]): List[Tree] = {
-        var offset = clazz.info.findMember(nme.ANYNAME, METHOD, LAZY, false).alternatives.filter(_.owner != clazz).length
+        var offset = clazz.info.findMember(nme.ANYNAME, 0, METHOD | LAZY, false).alternatives.filter(_.owner != clazz).length
         val stats1 = for (stat <- stats; sym = stat.symbol) yield stat match {
           case DefDef(mods, name, tp, vp, tpt, rhs)
             if sym.hasFlag(LAZY) && rhs != EmptyTree && !clazz.isImplClass =>
-              val Block(List(assignment), res) = rhs
-              val rhs1 = mkLazyDef(clazz, assignment, res.symbol, offset)
+              val rhs1 = if (sym.tpe.resultType.typeSymbol == definitions.UnitClass)
+                mkLazyDef(clazz, rhs, Literal(()), offset)
+              else {
+                val Block(List(assignment), res) = rhs
+                mkLazyDef(clazz, assignment, Select(This(clazz), res.symbol), offset)
+              }
               offset += 1
               copy.DefDef(stat, mods, name, tp, vp, tpt, rhs1)
           case _ => stat
@@ -591,7 +599,7 @@ abstract class Mixin extends InfoTransform {
 
 
       // the number of inherited lazy fields that are not mixed in
-      offset = (clazz.info.findMember(nme.ANYNAME, METHOD, LAZY, false)
+      offset = (clazz.info.findMember(nme.ANYNAME, 0, METHOD | LAZY, false)
                 .alternatives filter { f => f.owner != clazz || !f.hasFlag(MIXEDIN)}).length
       // begin addNewDefs
       var stats1 = lazifyOwnFields(clazz, stats)
@@ -613,11 +621,15 @@ abstract class Mixin extends InfoTransform {
                   case _ =>
                     // if it is a mixed-in lazy value, complete the accessor
                     if (sym.hasFlag(LAZY) && sym.isGetter) {
-                      val assign =
-                        Assign(Select(This(sym.accessed.owner), sym.accessed) /*gen.mkAttributedRef(sym.accessed)*/,
-                            Apply(staticRef(initializer(sym)), gen.mkAttributedThis(clazz) :: Nil))
-
-                      val rhs1 = mkLazyDef(clazz, assign, sym.accessed, offset)
+                      val rhs1 = if (sym.tpe.resultType.typeSymbol == definitions.UnitClass)
+                        mkLazyDef(clazz, Apply(staticRef(initializer(sym)), List(gen.mkAttributedThis(clazz))), Literal(()), offset)
+                      else {
+                        val assign = atPos(sym.pos) {
+                          Assign(Select(This(sym.accessed.owner), sym.accessed) /*gen.mkAttributedRef(sym.accessed)*/,
+                              Apply(staticRef(initializer(sym)), gen.mkAttributedThis(clazz) :: Nil))
+                        }
+                        mkLazyDef(clazz, assign, Select(This(clazz), sym.accessed), offset)
+                      }
                       offset += 1
                       rhs1
                     } else

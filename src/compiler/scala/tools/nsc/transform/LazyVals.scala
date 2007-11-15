@@ -69,7 +69,10 @@ abstract class LazyVals extends Transform {
      *  {
      *    l$ = <rhs>
      *    l$
-     *  }
+     *  } or
+     *  <rhs> when the lazy value has type Unit (for which there is no field
+     *  to cache it's value.
+     *
      *  The result will be a tree of the form
      *  {
      *    if ((bitmap$n & MASK) == 0) {
@@ -79,19 +82,36 @@ abstract class LazyVals extends Transform {
      *    l$
      *  }
      *  where bitmap$n is an int value acting as a bitmap of initialized values. It is
-     *  the 'n' is (offset / 32), the MASK is (1 << (offset % 32)).
+     *  the 'n' is (offset / 32), the MASK is (1 << (offset % 32)). If the value has type
+     *  unit, no field is used to chache the value, so the resulting code is:
+     *  {
+     *    if ((bitmap$n & MASK) == 0) {
+     *       <rhs>;
+     *       bitmap$n = bimap$n | MASK
+     *    }
+     *    ()
+     *  }
      */
     private def mkLazyDef(meth: Symbol, tree: Tree, offset: Int): Tree = {
       val bitmapSym = getBitmapFor(meth, offset)
-      val Block(List(assignment), res) = tree
       val mask = Literal(Constant(1 << (offset % FLAGS_PER_WORD)))
-      val result =
+
+      val (block, res) = tree match {
+        case Block(List(assignment), res) =>
+          (Block(List(assignment, mkSetFlag(bitmapSym, mask)), Literal(Constant(()))), res)
+        case rhs =>
+          assert(meth.tpe.finalResultType.typeSymbol == definitions.UnitClass)
+          (Block(List(rhs, mkSetFlag(bitmapSym, mask)), Literal(Constant(()))), Literal(()))
+      }
+
+      val result = atPos(tree.pos) {
         If(Apply(
             Select(
               Apply(Select(Ident(bitmapSym), Int_And),
                     List(mask)),
               Int_==),
-            List(Literal(Constant(0)))), Block(List(assignment, mkSetFlag(bitmapSym, mask)), Literal(Constant(()))), EmptyTree)
+            List(Literal(Constant(0)))), block, EmptyTree)
+      }
       typed(Block(List(result), res))
     }
 
