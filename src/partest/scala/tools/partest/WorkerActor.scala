@@ -55,7 +55,12 @@ class WorkerActor(val master: MasterActor, val settings: Settings, var reporter:
 
   private val PATH_SEP = java.io.File.pathSeparatorChar
   private val CLASSPATH = System.getProperty("CLASSPATH", "")
-  private val EXT_CLASSPATH = System.getProperty("JVMEXTCP", "")
+  private val EXT_CLASSPATH = System.getProperty("EXT_CLASSPATH", "")
+
+  private val GREP_COMMAND = "grep"
+  private val GREP_PATTERNS =
+    List("Console.read", "Scheduler.impl",
+         "System.exit", "System.out").foldLeft("")((x, y) => x + " -e " + y)
 
   def act() {
     var compiler = newGlobal
@@ -68,9 +73,8 @@ class WorkerActor(val master: MasterActor, val settings: Settings, var reporter:
           var bypassObjectRunner = bypass
           if (!bypassObjectRunner) {
             // TODO check the shootout source files for "dangerous" patterns, such as: Console.read, Scheduler.impl,
-            val dangerousCode = List("Console.read", "Scheduler.impl", "System.exit", "System.out").foldLeft("")((x, y) => x + " -e " + y)
-            val grepCmd = "grep " + test.file.getPath + " " + dangerousCode
-            TestRunner.printVerbose("grep cmd: " + grepCmd + "\n")
+            val grepCmd = GREP_COMMAND + " " + test.file.getPath + " " + GREP_PATTERNS
+            TestRunner.printVerbose(grepCmd)
 
             val grep = Runtime.getRuntime.exec(grepCmd)
 
@@ -101,7 +105,7 @@ class WorkerActor(val master: MasterActor, val settings: Settings, var reporter:
               compiler = newGlobal(test.logFile)
 
             case JVMTest(_) =>
-              //println(test.file.getPath + ": " + test.checkFile.exists + " / " + test.logFile.exists)
+              TestRunner.printVerbose(test.file.getPath + ": " + test.checkFile.exists + " / " + test.logFile.exists)
               if (test.checkFile.exists) {
                 var checkReader = new BufferedReader(new FileReader(test.checkFile))
                 var firstLine = checkReader.readLine
@@ -164,24 +168,25 @@ class WorkerActor(val master: MasterActor, val settings: Settings, var reporter:
             case _ =>
           }
 
-          var result = test match {
+          var success = test match {
             case NegTest(_) => reporter.hasErrors
             case _ => !reporter.hasErrors
           }
 
-          (bypassObjectRunner, result, test) match {
+          (bypassObjectRunner, success, test) match {
             case (_, _, PosTest(_)) =>
             case (_, _, NegTest(_)) =>
             case (false, true, _) =>
+              /*
               System.setProperty("scalatest.output", outDir.toString)
               test match {
                 case ShootoutTest(_) => System.setProperty("scalatest.cwd", test.dir)
                 case _ => {}
               }
-
+              */
               var classpath: List[URL] =
                 outDir.toURL ::
-                List((new File(test.dir)).toURL) :::
+                List(test.dir.toURL) :::
                 (List.fromString(CLASSPATH, PATH_SEP) map { x => (new File(x)).toURL }) :::
                 (List.fromString(EXT_CLASSPATH, PATH_SEP) map { x => (new File(x)).toURL })
 
@@ -194,18 +199,21 @@ class WorkerActor(val master: MasterActor, val settings: Settings, var reporter:
                 out.flush
                 out.close
                 //println(this.toString + " " + "Finished running " + test.fileBase)
-              } catch { case t => println(t) }
+              } catch {
+                case e =>
+                  println(e + " (" + test.file.getPath + ")")
+              }
 
             case _ =>
           }
-          (!bypassObjectRunner && result, test.checkFile.exists, test) match {
+          (!bypassObjectRunner && success, test.checkFile.exists, test) match {
             case (_, _, PosTest(_)) =>
             case (true, true, _) =>
               /*var cmd: String = "diff " + test.logFile + "  " + test.checkFile
               //println(this.toString + " Comparing files " + test.fileBase)
               var proc: Process = Runtime.getRuntime.exec(cmd)
               proc.waitFor
-              result = (proc.exitValue == 0)*/
+              success = (proc.exitValue == 0)*/
               var equalNow = true
               if (test.checkFile.canRead) {
                 val originStream = new FileInputStream(test.logFile)
@@ -216,43 +224,43 @@ class WorkerActor(val master: MasterActor, val settings: Settings, var reporter:
                     for (idx <- 0 until originSize)
                       equalNow = equalNow && (originBuffer(idx) == destBuffer(idx))
                     if (!equalNow) {
-                      result = false
+                      success = false
                       //println("Diff1: diffs found")
                     }
                   }
                   else {
-                    result = false
+                    success = false
                     //println("Diff1: diffs found")
                   }
                   originSize = originStream.read(originBuffer)
                 }
-                if (destStream.read(destBuffer) >= 0) result = false
+                if (destStream.read(destBuffer) >= 0) success = false
               }
 
             case _ =>
               //println("Not testing diff... " + test.test)
           }
 
-          (bypassObjectRunner || !result, test) match {
+          (bypassObjectRunner || !success, test) match {
             case (_, PosTest(_)) =>
             case (_, NegTest(_)) =>
             case (true, _) =>
-              result = true
+              success = true
               //var javaoptsFile = new File(test.dir, test.fileBase + ".javaopts")
               //var javaNewOpts = (new BufferedFileReader(javaoptsFile)).readLine
               //if (javaoptsFile.exists && javaNewOpts != null) {}
               //Use Runtime.exec to execute the compiled file and pipe the standard system
               //out and the console out to the logfile
-              var cmd =
-                "env JAVACMD=java JAVA_OPTS=-Djava.library.path=\"" + test.dir + "\" " +
+              val cmd =
+                "env JAVACMD=java JAVA_OPTS=-Djava.library.path=\"" + test.dirpath + "\" " +
                 System.getProperty("SCALA")+
                 " -Dscalatest.lib=\"" + System.getProperty("scalatest.lib") + "\" " +
-                "-Dscalatest.cwd=\"" + test.dir + "\" " +
+                "-Dscalatest.cwd=\"" + test.dirpath + "\" " +
                 "-Dscalatest.output=" + outDir +
                 " -classpath " + outDir + PATH_SEP + CLASSPATH + PATH_SEP + EXT_CLASSPATH +
                 " Test jvm"
 
-              TestRunner.printVerbose("Worker command: " + cmd)
+              TestRunner.printVerbose(cmd)
 
               var execution = Runtime.getRuntime.exec(cmd)
 
@@ -273,7 +281,7 @@ class WorkerActor(val master: MasterActor, val settings: Settings, var reporter:
               /*var diff = Runtime.getRuntime.exec("diff " + test.logFile + " " + test.checkFile)
               diff.waitFor
 
-              result = (diff.exitValue == 0)*/
+              success = (diff.exitValue == 0)*/
               var equalNow = true
               if (test.checkFile.canRead) {
                 val originStream = new FileInputStream(test.logFile)
@@ -284,33 +292,33 @@ class WorkerActor(val master: MasterActor, val settings: Settings, var reporter:
                     for (idx <- 0 until originSize)
                       equalNow = equalNow && (originBuffer(idx) == destBuffer(idx))
                     if (!equalNow) {
-                      result = false
+                      success = false
                       //println("Differences found between the log and check files..")
                     }
                   }
                   else {
-                    result = false
+                    success = false
                     //println("Differences found between the log and check files..")
                   }
 
                   originSize = originStream.read(originBuffer)
                 }
-                if (destStream.read(destBuffer) >= 0) result = false
+                if (destStream.read(destBuffer) >= 0) success = false
               }
               //else reportMissing(originFile)
 
             case _ =>
               //println("Not Using runtime... " + test.test)
           }
-          test.logFile.delete
+          if (success) test.logFile.delete
 
           var end = System.currentTimeMillis
 
           //println(test.test + ": " + (end - start))
 
-          //printSuccess(this.toString + " " + fileBase + ": "+ result + "\n")
-          master ! (test.kind, result, test.file)
-          dirDelete(outDir)
+          //println(this.toString + ": "+ success)
+          master ! (test.kind, success, test.file)
+          if (success) dirDelete(outDir)
         }
         case false =>
           exit

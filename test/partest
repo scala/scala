@@ -272,7 +272,7 @@ MSIL="msil"
 EXE="exe"
 # Tests the .NET backend.
 test_run_msil() {
-    assemblies=`get_os_pathlist $LATEST_ASSEM`;
+    assemblies=`get_os_pathlist $SCALA_ASSEM`;
     rm -f "$dstbase".$MSIL &&
     rm -f "$dstbase".$EXE &&
 
@@ -431,14 +431,10 @@ test_check_kind() {
     [ $# -ge 2 ] || abort "internal error";
     header="$1"; shift 1;
     kind="$1"; shift 1;
-    testdir=`get_os_filename "$TESTROOT"`;
+    srcdir=`get_os_filename "$SRCDIR"`;
     resfile=`get_os_filename "$RESFILE"`;
     if [ "$kind" = "res" ]; then TEST_EXT="res"; else TEST_EXT="scala"; fi;
-    if [ "$kind" = "pos" -o "$kind" = "neg" ]; then
-      $SCALA -Dactors.corePoolsize=7 -Dactors.maxPoolSize=8 \
-          scala.tools.partest.TestRunner --"$kind" $testdir $resfile 2> /dev/null;
-      load_results;
-    elif [ "$kind" = "jvm" ]; then
+    if [ "$kind" = "testrunner" ]; then
       javaopts=$JAVA_OPTS;
       if [ -f "$os_srcbase".javaopts ]; then
         javaopts="$javaopts `cat "$os_srcbase".javaopts`"
@@ -447,43 +443,22 @@ test_check_kind() {
              javaopts=`echo "$javaopts" | sed -e "s/-Xss[0-9]*[MmKk]//g"`
         fi;
       fi;
+      if [ "$TEST_TYPE" = "auto" ]; then
+        testargs="$FILES_POS $FILES_NEG $FILES_RUN $FILES_JVM $FILES_SHOOTOUT";
+      else
+        testargs=`echo "$TEST_OPTS" --"$TEST_TYPE"`
+      fi;
       scala_lib=`get_os_filename "$SCALA_LIB"` &&
       classpath=`get_os_pathlist $CLASSPATH` &&
-      $SCALA -DSCALA=$SCALA -DJAVA_OPTS="$java_opts -Xss16M" \
-          -DJVMEXTCP=$JVM_EXT_CLASSPATH -DCLASSPATH=$classpath \
+      $SCALA -DSCALA=$SCALA -DJAVA_OPTS="$javaopts" \
+          -DEXT_CLASSPATH=$JVM_EXT_CLASSPATH -DCLASSPATH=$classpath \
           -Dactors.corePoolsize=7 -Dactors.maxPoolSize=8 \
-          -Dscalatest.lib=$scala_lib -classpath $classpath \
-          scala.tools.partest.TestRunner --"$kind" $testdir $resfile 2> /dev/null;
-      load_results;
-    elif [ "$kind" = "shootout" ]; then
-      javaopts=$JAVA_OPTS;
-      if [ -f "$os_srcbase".javaopts ]; then
-        javaopts="$javaopts `cat "$os_srcbase".javaopts`"
-        if [ "$JAVA5" = "false" ]; then
-             # -Xss option available in Java versions 1.5 or newer
-             javaopts=`echo "$javaopts" | sed -e "s/-Xss[0-9]*[MmKk]//g"`
-        fi;
-      fi;
-      for file in "" "$@"; do
-        [ -z "$file" ] && continue;
-	if [ -d "$file" ]; then
-          for file2 in "" `find "$file" -name "*.obj" -prune -o -name "*.scala" -a -type f -print`; do
-	    [ -z "$file"/"$file2" ] && continue;
-	    filename=`basename "$file"/"$file2" .scala`;
-	    rm -rf "$file"/"$filename"-"$kind".obj;
-            mkdir "$file"/"$filename"-"$kind".obj;
-            cat "$file"/"$filename".scala.runner "$file"/"$filename".scala > "$file"/"$filename"-"$kind".obj/Test.scala 2>/dev/null;
-          done
-        fi;
-      done
-      scala_lib=`get_os_filename "$SCALA_LIB"` &&
-      classpath=`get_os_pathlist $CLASSPATH` &&
-      env JAVACMD="$JAVACMDE" $SCALA -DSCALA=$SCALA -DJVMEXTCP=$JVM_EXT_CLASSPATH \
-          -Dscalatest.lib=$scala_lib -DCLASSPATH=$classpath \
-          -Dactors.corePoolsize=5 -Dactors.maxPoolSize=6 \
-          scala.tools.partest.TestRunner --"$kind" $testdir $resfile 2> /dev/null;
+          -Dscalatest.cwd=$srcdir -Dscalatest.lib=$scala_lib \
+          -classpath $classpath \
+          scala.tools.partest.TestRunner $testargs $resfile 2> /dev/null;
       load_results;
     else
+      [ "$@" ] && printf_outline "$header\\n";
       for file in "" "$@"; do
         [ -z "$file" ] && continue;
         test_check_file "$file";
@@ -498,12 +473,6 @@ test_check_all() {
     [ $# = 0 ] || abort "internal error";
     test_check_kind "Testing disassembler" \
         "dis" $FILES_DIS;
-    [ "$FILES_JVM" = "" ] || test_check_kind "Testing JVM backend" \
-        "jvm" $FILES_RUN $FILES_JVM;
-    [ "$FILES_POS" = "" ] || test_check_kind "Testing compiler (on files whose compilation should succeed)" \
-        "pos" $FILES_POS;
-    [ "$FILES_NEG" = "" ] || test_check_kind "Testing compiler (on files whose compilation should fail)" \
-        "neg" $FILES_NEG;
     test_check_kind "Testing .NET backend" \
         "msil" $FILES_MSIL;
     test_check_kind "Testing Scala embedded in script files"  \
@@ -512,8 +481,8 @@ test_check_all() {
         "ant" $FILES_ANT;
     test_check_kind "Testing resident compiler" \
         "res" $FILES_RES;
-    [ "$FILES_SHOOTOUT" = "" ] || test_check_kind "Testing shootout benchmarks" \
-        "shootout" $FILES_SHOOTOUT;        
+    test_check_kind "(ignored)" \
+        "testrunner" "";
 }
 
 
@@ -625,6 +594,7 @@ OBJDIR="""";
 
 TEST_ALL="true";
 TEST_TYPE="auto";
+TEST_OPTS="";
 FILES_RUN="";
 FILES_JVM="";
 FILES_POS="";
@@ -641,6 +611,7 @@ QUICK_LIB="$PREFIX/build/quick/lib/library"
 QUICK_COMP="$PREFIX/build/quick/lib/compiler"
 QUICK_ACT="$PREFIX/build/quick/lib/actors"
 QUICK_PAR="$PREFIX/build/quick/lib/partest"
+QUICK_PREDEF="$PREFIX/build/quick/lib/predef.dll"
 
 JVM_EXT_CLASSPATH=`get_ext_classpath $TESTROOT/files/lib`
 
@@ -650,22 +621,19 @@ if [ -d "$PREFIX/dists" ]; then
     LATEST_COMP="$PREFIX/dists/latest/lib/scala-compiler.jar";
     LATEST_PAR="$PREFIX/dists/latest/lib/scala-partest.jar";
     LATEST_PREDEF="$PREFIX/dists/latest/lib/predef.dll";
-    LATEST_ASSEM="$LATEST_PREDEF;$PREFIX/lib/scalaruntime.dll:$PREFIX/lib/mscorlib.dll";
 elif [ -d "$PREFIX/build" ]; then
     LATEST="$QUICK";
     LATEST_LIB=$QUICK_LIB
     LATEST_COMP=$QUICK_COMP
     LATEST_ACT=$QUICK_ACT
     LATEST_PAR=$QUICK_PAR
-    LATEST_PREDEF="$PREFIX/build/quick/lib/predef.dll";
-    LATEST_ASSEM="$LATEST_PREDEF:$PREFIX/build/quick/lib/scalaruntime.dll:$PREFIX/build/quick/lib/mscorlib.dll";
+    LATEST_PREDEF="$QUICK_PREDEF";
 elif [ -d "$PREFIX/bin" ]; then
     LATEST="$PREFIX/bin";
     LATEST_LIB="$PREFIX/lib/scala-library.jar";
     LATEST_COMP="$PREFIX/lib/scala-compiler.jar";
     LATEST_PAR="$PREFIX/lib/scala-partest.jar";
     LATEST_PREDEF="$PREFIX/lib/predef.dll";
-    LATEST_ASSEM="$LATEST_PREDEF:$PREFIX/lib/scalaruntime.dll:$PREFIX/lib/mscorlib.dll";
 else
     abort "Scala binaries could not be found";
 fi;
@@ -676,6 +644,8 @@ SCALA_LIB="$LATEST_LIB";
 SCALA_COMP="$LATEST_COMP";
 SCALA_ACT="$LATEST_ACT";
 SCALA_PAR="$LATEST_PAR";
+SCALA_PREDEF="$LATEST_PREDEF";
+SCALA_RUNTIME="$LATEST_RUNTIME";
 
 [ -x "$JAVACMD" ] || JAVACMD=java;
 [ -n "$JAVA_OPTS" ] || JAVA_OPTS="-Xmx256M -Xms16M";
@@ -710,7 +680,8 @@ while [ $# -gt 0 ]; do
         --shootout   ) TEST_TYPE="shootout"; shift 1;;
         --quick      ) BIN_DIR="$QUICK/"; SCALA_LIB=$QUICK_LIB;
                        SCALA_COMP=$QUICK_COMP; SCALA_ACT=$QUICK_ACT;
-                       SCALA_PAR=$QUICK_PAR; shift 1;;
+                       SCALA_PAR=$QUICK_PAR; SCALA_PREDEF=$QUICK_PREDEF;
+                       shift 1;;
         --installed  ) BIN_DIR=""; shift 1;;
         --no-run     ) NORUN="true"; shift 1;;
         --show-log   ) SHOWLOG="true"; shift 1;;
@@ -726,14 +697,12 @@ while [ $# -gt 0 ]; do
         --color=*    ) COLOR=`expr "$1" : "--color=\(.*\)"`; shift 1;;
         --objdir=*   ) OBJDIR=`expr "$1" : "--objdir=\(.*\)"`; shift 1;;
         --help| -?   ) test_print_help; exit 0;;
+        --verbose    ) TEST_OPTS="--verbose"; shift 1;;
         --version    ) test_print_version; exit 0;;
-	--profile    ) JAVACMDE="$JAVACMD -agentpath:/localhome/thhofer/netbeans-5.5.1/profiler1/lib/deployed/jdk15/linux/libprofilerinterface.so=/localhome/thhofer/netbeans-5.5.1/profiler1/lib,5140"; shift 1;; 
         -*           ) abort "unknown option $1";;
         *            ) test_add_file "$1"; shift 1;;
     esac;
 done;
-
-[ -x "$JAVACMDE" ] || JAVACMDE=java;
 
 if [ "$JAVA5" = "true" -a "$TEST_TYPE" != "msil" ]; then
     FLAGS="$FLAGS -target:jvm-1.5"
@@ -808,6 +777,7 @@ SCALAC="$SCALAC_CMD $SCALAC_OPTS";
 SCALAP="scalap";
 
 CLASSPATH=$SCALA_COMP:$SCALA_ACT:$SCALA_PAR
+SCALA_ASSEM=$SCALA_PREDEF:$PREFIX/lib/scalaruntime.dll:$PREFIX/lib/mscorlib.dll
 
 RESFILE=`mktemp -t results.XXXXXX`;
 [ -f "$RESFILE" ] || RESFILE=`get_os_filename "$TESTROOT"/.results.txt`
@@ -858,8 +828,8 @@ if [ $TEST_TYPE = "msil" ]; then
     printf_outline "ILasm version is    : $ilasm_version\\n";
     mono_version=`$MONO --version | head -1`;
     printf_outline "Mono version is     : $mono_version\\n";
-    if [ -f "$LATEST_PREDEF" ]; then
-        printf_outline "DLL library is      : $LATEST_PREDEF\\n";
+    if [ -f "$SCALA_PREDEF" ]; then
+        printf_outline "DLL library is      : $SCALA_PREDEF\\n";
     else
         printf_failure "Missing library \"predef.dll\"; run 'ant msil'.\\n";
         exit 1;

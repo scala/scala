@@ -27,7 +27,7 @@ import utils.PrintMgr._
 class MasterActor(testDir: File, out: PrintStream) extends Actor {
   import scala.actors.Actor._
 
-  private final val testPathLen = testDir.getPath.length
+  private final val testPathLen = testDir.getAbsolutePath.length
 
   private final val WIDTH = 56
   private final val TIMEOUT = 1360000
@@ -129,7 +129,7 @@ class MasterActor(testDir: File, out: PrintStream) extends Actor {
           }
           counter += 1
           printOutline("testing: ")
-          val name = file.getPath.substring(testPathLen)
+          val name = file.getAbsolutePath.substring(testPathLen)
           print("[...]" + name + List.toString(List.make(WIDTH - name.length, ' ')) + "[")
           if (succeeded) {
             printSuccess("  OK  ")
@@ -143,7 +143,7 @@ class MasterActor(testDir: File, out: PrintStream) extends Actor {
             out.println(counter - failed)
             out.close
             println
-            exit
+            System.exit(1) //exit  // Help! Philipp.
           }
 
         case msg =>
