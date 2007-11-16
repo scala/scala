@@ -1,6 +1,7 @@
 /* NSC -- new Scala compiler
  * Copyright 2005-2007 LAMP/EPFL
- * @author Burak Emir
+ * Copyright 2007 Google Inc. All Rights Reserved.
+ * Author: bqe@google.com (Burak Emir)
  */
 // $Id$
 
@@ -21,11 +22,8 @@ trait TransMatcher { self: transform.ExplicitOuter with PatternNodes with Parall
   import collection.mutable.ListBuffer
 
   var cunit: CompilationUnit = _
-
   def fresh = cunit.fresh
-
   var nPatterns = 0
-
   var resultType: Type = _
 
   // cache these
@@ -39,6 +37,7 @@ trait TransMatcher { self: transform.ExplicitOuter with PatternNodes with Parall
     }
     return false
   }
+
   final def isRegularPattern(pat: Tree): Boolean = {
     pat match {
       case Alternative(trees)    => hasRegularPattern(trees)
@@ -55,8 +54,6 @@ trait TransMatcher { self: transform.ExplicitOuter with PatternNodes with Parall
     }
   }
 
-
-
   // @todo: this should be isNotRegular :-/ premature opt src of all evil
   // check special case Seq(p1,...,pk,_*) where pi not regular
   protected def isRightIgnoring(p: ArrayValue): Boolean = {
@@ -68,9 +65,9 @@ trait TransMatcher { self: transform.ExplicitOuter with PatternNodes with Parall
     p match {
       case ArrayValue(s, trees) =>
         var ts = trees
-        var c: Tree = null
-        while ((ts ne Nil) && {c = ts.head; ts = ts.tail; !isRegularPattern(c)}) {}
-        (ts eq Nil) && isDefaultStar(c)
+	var c: Tree = null
+	while ((ts ne Nil) && {c = ts.head; ts = ts.tail; !isRegularPattern(c)}) {}
+	(ts eq Nil) && isDefaultStar(c)
     }
   }
 
@@ -98,64 +95,31 @@ trait TransMatcher { self: transform.ExplicitOuter with PatternNodes with Parall
         pat
 
       case Bind(id, empt @ Sequence(List())) =>
-        nilVars = pat.symbol /*id.symbol()*/ :: nilVars
+        nilVars = pat.symbol :: nilVars
         empt
 
       case Bind(n, pat1) =>
         copy.Bind(pat, n, isRegular1(pat1))
 
       case Sequence(trees) =>
-        //isReg = isReg || ( trees.length == 0 );
-        isReg = true // cause there are ArrayValues now
+        isReg = true
         copy.Sequence(pat, trees map { isRegular1 })
 
       case UnApply(fn, args) => copy.UnApply(pat, fn, args map { isRegular1 })
 
-      /* a pattern of the form List(foo@_*), also called "sequence apply".
-       *
-       *  - last update: discussion with Martin 2005-02-18
-       *
-       *  - tree.fn must be ignored. The analyzer ensures that the selector will be a subtype
-       *    of fn; it thus assigns the expected type from the context (which is surely a subtype,
-       *    but may have different flags etc.
-       */
-      case app @ Apply(fn, List(pat2@ ArrayValue( tt, List(b @ Bind(id, Star(wc @ Ident(nme.WILDCARD))))))) if
-        (app.tpe.typeSymbol.flags & Flags.CASE) == 0 =>
-        //Console.println("OPTIMIZING")
-        //Console.println(pat)
-        //Console.println(pat.tpe)
-        //Console.println(tt.tpe)
-        //Console.println("b.tpe "+b.tpe+" widened"+b.tpe.widen)
-        //Console.println("b.symbol.tpe "+b.symbol.tpe+" widened"+b.symbol.tpe.widen)
-        //Console.println("pat2.tpe "+pat2.tpe+" widened"+pat2.tpe.widen)
+      case app @ Apply(fn, List(pat2@ ArrayValue( tt, List(b @ Bind(id, Star(wc @ Ident(nme.WILDCARD))))))) if (app.tpe.typeSymbol.flags & Flags.CASE) == 0 =>
         val tpe1:Type = pat2.tpe.widen.baseType( definitions.SeqClass ).typeArgs(0)
+	val tpe = appliedType(definitions.SeqClass.typeConstructor, List(tpe1))
+	b.symbol.setInfo(tpe)
+	b.setType(tpe)
+        copy.Bind(b, id, wc)
 
-        val tpe = appliedType(definitions.SeqClass.typeConstructor, List(tpe1))
-        b.symbol.setInfo(tpe)
-        b.setType(tpe)
-        val res = copy.Bind(b, id, wc)
-        //Console.println("====>")
-        //Console.println(res)
-        res
-
-      // a pattern of the form MyCaseConstructor(foo@_*)
-      case app @ Apply(fn, List(pat2@ ArrayValue( tt, List(b @ Bind(id, Star(wc @ Ident(nme.WILDCARD)))))))  =>
-        //Console.println("OPTIMIZING")
-        //Console.println(pat)
-        //Console.println(pat.tpe)
-        //Console.println(tt.tpe)
-        //Console.println("b.tpe "+b.tpe+" widened"+b.tpe.widen)
-        //Console.println("b.symbol.tpe "+b.symbol.tpe+" widened"+b.symbol.tpe.widen)
-        //Console.println("pat2.tpe "+pat2.tpe+" widened"+pat2.tpe.widen)
+      case app @ Apply(fn, List(pat2@ ArrayValue( tt, List(b @ Bind(id, Star(wc @ Ident(nme.WILDCARD))))))) =>  // a pattern of the form MyCaseConstructor(foo@_*)
         val tpe1:Type = pat2.tpe.widen.baseType( definitions.SeqClass ).typeArgs(0)
-
-        val tpe = appliedType(definitions.SeqClass.typeConstructor, List(tpe1))
-        b.symbol.setInfo(tpe)
-        b.setType(tpe)
-        val res =  copy.Apply(pat, fn, List(copy.Bind(b, id, wc)))
-        //Console.println("====>")
-        //Console.println(res)
-        res
+	val tpe = appliedType(definitions.SeqClass.typeConstructor, List(tpe1))
+	b.symbol.setInfo(tpe)
+	b.setType(tpe)
+        copy.Apply(pat, fn, List(copy.Bind(b, id, wc)))
 
       case av @ ArrayValue(s, trees) =>
         if (isRightIgnoring(av)) pat
@@ -165,8 +129,6 @@ trait TransMatcher { self: transform.ExplicitOuter with PatternNodes with Parall
         pat
 
       case Apply(fn, trees) =>
-        //Console.println(" IN isRegular, apply node "+pat.toString());
-        //Console.println(" trees are:"+(trees map {x => x.getClass().toString()}));
         copy.Apply(pat, fn, (trees map { isRegular1 }))
 
       case Literal(_) =>
@@ -178,14 +140,9 @@ trait TransMatcher { self: transform.ExplicitOuter with PatternNodes with Parall
       case Typed(_, _) =>
         pat
 
-      case This(_) => // Sean's feature request #1134, compiled incorrectly
+      case This(_) =>
         val stpe = mkThisType(pat.tpe.typeSymbol)
         Typed(Ident(nme.WILDCARD) setType stpe, TypeTree(stpe))
-
-      //case _ =>
-      //  Console.println(pat);
-      //  Console.println(pat.getClass());
-      //  scala.Predef.error(" what is this ? ")
     }
 
     var res = new ListBuffer[CaseDef]
@@ -208,92 +165,83 @@ trait TransMatcher { self: transform.ExplicitOuter with PatternNodes with Parall
   }
 
   /** handles all translation of pattern matching
-     */
-    def handlePattern(selector: Tree, ocases: List[CaseDef], doCheckExhaustive: Boolean,
-                      owner: Symbol, handleOuter: Tree => Tree): Tree = {
-      // TEMPORARY
-      //new NewMatcher().toIR(sel, ocases)
-      //
-      // 1. is there a regular pattern?
+   */
+  def handlePattern(selector: Tree, ocases: List[CaseDef], doCheckExhaustive: Boolean, owner: Symbol, handleOuter: Tree => Tree): Tree = {
+    val (cases, containsReg) = isRegular(ocases)
+    // @todo: remove unused variables
+    if (containsReg) {
+      cunit.error(selector.pos, "regular expressions not yet implemented")
+      //sel
+      EmptyTree
+    } else {
+      implicit val theOwner = owner
+      if (settings_debug) {
+        Console.println("****")
+        Console.println("**** initalize, selector = "+selector+" selector.tpe = "+selector.tpe)
+        Console.println("****    doCheckExhaustive == "+doCheckExhaustive)
+      }
 
-      val (cases, containsReg) = isRegular(ocases)
+      implicit val rep = new RepFactory(handleOuter)
+      try {
+        val tmps = new ListBuffer[Symbol]
+        val vds  = new ListBuffer[Tree]
+        var root:Symbol = newVar(selector.pos, selector.tpe)
+        if (!doCheckExhaustive)
+          root.setFlag(symtab.Flags.TRANS_FLAG)
 
-      // @todo: remove unused variables
+        var vdef:Tree        = typed{ValDef(root, selector)}
+        var theFailTree:Tree = ThrowMatchError(selector.pos, mkIdent(root))
 
-      if (containsReg) {
-        cunit.error(selector.pos, "regular expressions not yet implemented")
-        //sel
-        EmptyTree
-      } else {
-        implicit val theOwner = owner
-        if (settings_debug) {
-          Console.println("****")
-          Console.println("**** initalize, selector = "+selector+" selector.tpe = "+selector.tpe)
-          Console.println("****    doCheckExhaustive == "+doCheckExhaustive)
-        }
-
-        implicit val rep = new RepFactory(handleOuter)
-        try {
-
-          val tmps = new ListBuffer[Symbol]
-          val vds  = new ListBuffer[Tree]
-          var root:Symbol = newVar(selector.pos, selector.tpe)
-          if (!doCheckExhaustive)
-            root.setFlag(symtab.Flags.TRANS_FLAG)
-
-          var vdef:Tree        = typed{ValDef(root, selector)}
-          var theFailTree:Tree = ThrowMatchError(selector.pos, mkIdent(root))
-
-          if(definitions.isTupleType(selector.tpe)) selector match {
-            case app @ Apply(fn, args)
-            if (fn.symbol eq selector.tpe.decls.lookup(nme.CONSTRUCTOR)) &&
-              (cases forall { x => x match {
-                case CaseDef(Apply(fn, pargs),_,_) => true ;
-                case CaseDef(Ident(nme.WILDCARD),_,_) => true  ;
-                case _ => false
-              }}) =>
-              var i = 0
-              var as = args
-              while(as ne Nil) {
-                val ti = as.head
-                val v = newVar(ti.pos, cunit.fresh.newName("tp"), selector.tpe.typeArgs(i))
-                if (!doCheckExhaustive)
-                  v.setFlag(symtab.Flags.TRANS_FLAG)
-                vds  += typedValDef(v, ti)
-                tmps += v
-                i = i + 1
-                as = as.tail
-              }
-              theFailTree = ThrowMatchError(selector.pos, copy.Apply(app, fn, tmps.toList map mkIdent))
-            case _ =>
-              tmps += root
-            vds  += vdef
-          } else {
+        if (definitions.isTupleType(selector.tpe)) selector match {
+          case app @ Apply(fn, args)
+          if (fn.symbol eq selector.tpe.decls.lookup(nme.CONSTRUCTOR)) &&
+          (cases forall { x => x match {
+            case CaseDef(Apply(fn, pargs),_,_) => true ;
+            case CaseDef(Ident(nme.WILDCARD),_,_) => true  ;
+            case _ => false
+          }}) =>
+            var i = 0
+            var as = args
+            while(as ne Nil) {
+              val ti = as.head
+              val v = newVar(ti.pos, cunit.fresh.newName("tp"), selector.tpe.typeArgs(i))
+              if (!doCheckExhaustive)
+                v.setFlag(symtab.Flags.TRANS_FLAG)
+              vds  += typedValDef(v, ti)
+              tmps += v
+              i = i + 1
+              as = as.tail
+            }
+          theFailTree = ThrowMatchError(selector.pos, copy.Apply(app, fn, tmps.toList map mkIdent))
+          case _ =>
             tmps += root
             vds  += vdef
-          }
-          val irep = initRep(tmps.toList, cases, rep)
-
-          implicit val fail: Tree = theFailTree
-
-          val mch  = typed{ repToTree(irep)}
-          var dfatree = typed{squeezedBlock(vds.toList, mch)}
-
-          //DEBUG("**** finished\n"+dfatree.toString)
-          var bx = 0; var cs = cases; while(cs ne Nil) {
-            if(!rep.isReached(bx)) {
-              cunit.error(cs.head.asInstanceOf[CaseDef].body.pos, "unreachable code")
-            }
-            cs = cs.tail
-            bx += 1
-          }
-          dfatree = rep.cleanup(dfatree)
-          resetTrav.traverse(dfatree)
-          return dfatree
-        } catch {
-          case e => e.printStackTrace(); throw new FatalError(e.getMessage())
+        } else {
+          tmps += root
+          vds  += vdef
         }
+        val irep = initRep(tmps.toList, cases, rep)
+
+        implicit val fail: Tree = theFailTree
+
+        val mch  = typed{ repToTree(irep)}
+        var dfatree = typed{squeezedBlock(vds.toList, mch)}
+
+        //DEBUG("**** finished\n"+dfatree.toString)
+        var bx = 0; var cs = cases; while(cs ne Nil) {
+          if (!rep.isReached(bx)) {
+            cunit.error(cs.head.asInstanceOf[CaseDef].body.pos, "unreachable code")
+          }
+          cs = cs.tail
+          bx += 1
+        }
+        dfatree = rep.cleanup(dfatree)
+        resetTrav.traverse(dfatree)
+        return dfatree
+      } catch {
+        case e => e.printStackTrace(); throw new FatalError(e.getMessage())
       }
+    }
   }
 
   object resetTrav extends Traverser {
@@ -307,5 +255,4 @@ trait TransMatcher { self: transform.ExplicitOuter with PatternNodes with Parall
         super.traverse(x)
     }
   }
-
 }
