@@ -190,15 +190,16 @@ object scala extends Command {
         CmdLine(CmdOption("classpath", "classes") & "hello.HelloWorld")),
 
       Definition(
-          "Execute a Scala program using a user-defined " & MBold("java") & " " &
-          "command",
-          MBold("JAVACMD") & Mono("=/usr/local/bin/cacao ") &
-          CmdLine(CmdOption("classpath", "classes") & "hello.HelloWorld")),
+        "Execute a Scala program using a user-defined " & MBold("java") & " " &
+        "command",
+        MBold("env JAVACMD") & Mono("=/usr/local/bin/cacao ") &
+        CmdLine(CmdOption("classpath", "classes") & "hello.HelloWorld")),
 
       Definition(
-          "Execute a Scala program using JVM options",
-          MBold("JAVACMD") & Mono("=\"java -Dmsg=hello -enableassertions\" ") &
-          CmdLine(CmdOption("classpath", "classes") & "hello.HelloWorld"))),
+        "Execute a Scala program using JVM options",
+        MBold("env JAVACMD") & Mono("=java ") &
+        MBold("JAVA_OPTS") & Mono("=\"-Dmsg=hello -enableassertions\" ") &
+        CmdLine(CmdOption("classpath", "classes") & "hello.HelloWorld"))),
 
     "Here is a complete Scala script for Unix: ",
 
@@ -225,12 +226,11 @@ object scala extends Command {
     "command:",
 
     CodeSample(
-        "#!/bin/sh\n" +
-        "exec scala -savecompiled \"$0\" \"$@\"\n" +
-        "!#\n" +
-        "Console.println(\"Hello, world!\")\n" +
-        "argv.toList foreach Console.println"))
-
+      "#!/bin/sh\n" +
+      "exec scala -savecompiled \"$0\" \"$@\"\n" +
+      "!#\n" +
+      "Console.println(\"Hello, world!\")\n" +
+      "argv.toList foreach Console.println"))
 
   val exitStatus = Section("EXIT STATUS",
 

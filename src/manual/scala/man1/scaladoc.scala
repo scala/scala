@@ -69,6 +69,10 @@ object scaladoc extends Command {
           CmdOption("d", Argument("directory")),
           "Specify where to place generated class files."),
         Definition(
+          CmdOption("access:<access>"),
+          "Show only public, protected/public (default) or all classes " &
+          "and members (" & Mono("public") & ",protected,private)"),
+        Definition(
           CmdOption("windowtitle", Argument("windowtitle")),
           "Specify window title of generated HTML documentation"),
         Definition(
