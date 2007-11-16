@@ -51,7 +51,7 @@ private[actors] class ExitActorException extends Throwable
           a.act()
         else
           f(msg)
-        a.exit()
+        a.kill(); a.exit()
       }
     }
     catch {

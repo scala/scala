@@ -15,11 +15,11 @@ import scala.compat.Platform
 
 /**
  * The <code>Actor</code> object provides functions for the definition of
- * actors, as well as all actor operations, such as
+ * actors, as well as actor operations, such as
  * <code>receive</code>, <code>react</code>, <code>reply</code>,
  * etc.
  *
- * @version 0.9.8
+ * @version 0.9.10
  * @author Philipp Haller
  */
 object Actor {
@@ -180,11 +180,11 @@ object Actor {
   def reply(): Unit = self.reply(())
 
   private[actors] trait Body[a] {
-    def andThen[b](other: => b): Nothing
+    def andThen[b](other: => b): Unit
   }
 
   implicit def mkBody[a](body: => a) = new Body[a] {
-    def andThen[b](other: => b): Nothing = self.seq(body, other)
+    def andThen[b](other: => b): Unit = self.seq(body, other)
   }
 
   /**
@@ -193,7 +193,18 @@ object Actor {
    *
    * @param body the code block to be executed
    */
-  def loop(body: => Unit): Nothing = body andThen loop(body)
+  def loop(body: => Unit): Unit = body andThen loop(body)
+
+  /**
+   * Causes <code>self</code> to repeatedly execute
+   * <code>body</code> while the condition
+   * <code>cond</code> is <code>true</code>.
+   *
+   * @param cond the condition to test
+   * @param body the code block to be executed
+   */
+  def loopWhile(cond: => Boolean)(body: => Unit): Unit =
+    if (cond) { body andThen loopWhile(cond)(body) }
 
   /**
    * Links <code>self</code> to actor <code>to</code>.
@@ -255,10 +266,7 @@ object Actor {
 
 /**
  * <p>
- *   This class provides (together with <code>Channel</code>) an
- *   implementation of event-based actors.
- * </p>
- * <p>
+ *   This class provides an implementation of event-based actors.
  *   The main ideas of our approach are explained in the two papers
  * </p>
  * <ul>
@@ -276,7 +284,7 @@ object Actor {
  *   </li>
  * </ul>
  *
- * @version 0.9.9
+ * @version 0.9.10
  * @author Philipp Haller
  */
 @serializable
@@ -352,44 +360,6 @@ trait Actor extends OutputChannel[Any] {
     sessions = sessions.tail
     result
   }
-
-/*
-  def receiveFrom[T, R](sendr: Sender[T], f: PartialFunction[Any, R]): R = {
-    assert(Actor.self == this, "receive from channel belonging to other actor")
-    if (shouldExit) exit() // links
-    this.synchronized {
-      tick()
-
-        val tested = new Queue[MessageQueueElement]
-        var tryMore = true
-        while (tryMore) {
-          val qel = mailbox.extractFirst((m: Any) => f.isDefinedAt(m))
-          if (null eq qel) {
-            // either mailbox empty or no match
-            tryMore = false
-            waitingFor = f.isDefinedAt
-            isSuspended = true
-            suspendActor()
-          } else {
-            if (qel.session.isInstanceOf[OutputChannel[T]]) {
-              received = Some(qel.msg)
-              sessions = qel.session :: sessions
-            } else {
-              // no match
-              tested += qel
-
-            }
-          }
-        }
-
-      waitingFor = waitingForNone
-      isSuspended = false
-    }
-    val result = f(received.get)
-    sessions = sessions.tail
-    result
-  }
-*/
 
   /**
    * Receives a message from this actor's mailbox within a certain
@@ -538,12 +508,6 @@ trait Actor extends OutputChannel[Any] {
       case x => x
     }
   }
-
-/*
-  def !?[R](msg: Any, res: OutputChannel[R]): R = {
-
-  }
-*/
 
   /**
    * Sends <code>msg</code> to this actor and awaits reply
@@ -720,19 +684,19 @@ trait Actor extends OutputChannel[Any] {
     this
   }
 
-  private def seq[a, b](first: => a, next: => b): Nothing = {
+  private def seq[a, b](first: => a, next: => b): Unit = {
     val s = Actor.self
     val killNext = s.kill
-    s.kill = () => { s.kill = killNext; next; s.kill() }
+    s.kill = () => {
+      s.kill = killNext
+
+      // to avoid stack overflow:
+      // instead of directly executing `next`,
+      // schedule as continuation
+      scheduleActor({ case _ => next }, 1)
+      throw new SuspendActorException
+    }
     first
-
-    // to avoid stack overflow: instead of directly executing,
-    // schedule task that executes s.kill()
-    scheduleActor({
-      case 'kill => Actor.self.kill()
-    }, 'kill)
-
-    throw new SuspendActorException
   }
 
   private[actors] var links: List[Actor] = Nil
@@ -811,7 +775,6 @@ trait Actor extends OutputChannel[Any] {
     // links
     if (!links.isEmpty)
       exitLinked()
-    kill()
     throw new ExitActorException
   }
 
