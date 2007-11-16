@@ -2018,15 +2018,26 @@ A type's typeSymbol should never be inspected directly.
   def existentialAbstraction(tparams: List[Symbol], tpe: Type): Type =
     if (tparams.isEmpty) tpe
     else {
+      var occurCount = emptySymCount ++ (tparams map (_ -> 0))
+      for (t <- tpe) {
+        t match {
+          case TypeRef(_, sym, _) =>
+            occurCount get sym match {
+              case Some(count) => occurCount += (sym -> (count + 1))
+              case None =>
+            }
+          case _ =>
+        }
+      }
       val extrapolate = new TypeMap {
         variance = 1
         def apply(tp: Type): Type = {
           val tp1 = mapOver(tp)
           tp1 match {
-            case TypeRef(pre, sym, args) if (tparams contains sym) && (variance != 0) =>
+            case TypeRef(pre, sym, args) if (variance != 0) && (occurCount isDefinedAt sym) =>
               val repl = if (variance == 1) dropSingletonType(tp1.bounds.hi) else tp1.bounds.lo
               if (repl.typeSymbol != AllClass && repl.typeSymbol != AllRefClass &&
-                  !(tparams exists (repl.contains))) repl
+                  occurCount(sym) == 1 && !(tparams exists (repl.contains))) repl
               else tp1
             case _ =>
               tp1
@@ -2271,6 +2282,7 @@ A type's typeSymbol should never be inspected directly.
   }
 
   private val emptySymMap = scala.collection.immutable.Map[Symbol, Symbol]()
+  private val emptySymCount = scala.collection.immutable.Map[Symbol, Int]()
 
   private def makeExistential(suffix: String, owner: Symbol, lo: Type, hi: Type) =
     recycle(
@@ -2281,7 +2293,6 @@ A type's typeSymbol should never be inspected directly.
   class AsSeenFromMap(pre: Type, clazz: Symbol) extends TypeMap {
     var capturedParams: List[Symbol] = List()
     var capturedPre = emptySymMap
-    variance = 1
 
     def stabilize(pre: Type, clazz: Symbol): Type = {
       capturedPre get clazz match {
@@ -2318,8 +2329,7 @@ A type's typeSymbol should never be inspected directly.
                 case SuperType(thistp, _) => thistp
                 case _ => pre
               }
-              if (!(variance == 1 ||
-                    pre1.isStable ||
+              if (!(pre1.isStable ||
                     pre1.typeSymbol.isPackageClass ||
                     pre1.typeSymbol.isModuleClass && pre1.typeSymbol.isStatic)) {
 //                throw new MalformedType("non-stable type "+pre1+" replacing a stable reference "+tp)
