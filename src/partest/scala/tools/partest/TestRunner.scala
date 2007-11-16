@@ -175,29 +175,29 @@ object TestRunner {
 
     val posFiles = getFiles("pos", posCheck)
     if (! posFiles.isEmpty) {
-      printOutline("Testing compiler (on files whose compilation should succeed)\n")
+      printOutline("\nTesting compiler (on files whose compilation should succeed)\n")
       for (file <- posFiles) master ! PosTest(file)
     }
     val negFiles = getFiles("neg", negCheck)
     if (! negFiles.isEmpty) {
-      printOutline("Testing compiler (on files whose compilation should fail)\n")
+      printOutline("\nTesting compiler (on files whose compilation should fail)\n")
       for (file <- negFiles) master ! NegTest(file)
     }
     val jvmFiles = getFiles("jvm", jvmCheck) ::: getFiles("run", jvmCheck) :::
                    getFiles("jvm5", jvmCheck && isJava5)
     if (! jvmFiles.isEmpty) {
-      printOutline("Testing JVM backend\n")
+      printOutline("\nTesting JVM backend\n")
       for (file <- jvmFiles) master ! JVMTest(file)
     } else {
       val runFiles = getFiles("run", runCheck)
       if (! runFiles.isEmpty) {
-        printOutline("Testing JVM backend\n")
+        printOutline("\nTesting JVM backend\n")
         for (file <- runFiles) master ! JVMTest(file)
       }
     }
     val shootFiles = getFiles("shootout", shootoutCheck)
     if (! shootFiles.isEmpty) {
-      printOutline("Testing shootout benchmarks\n")
+      printOutline("\nTesting shootout benchmarks\n")
       for (file <- shootFiles) master! ShootoutTest(createTestFile(file, "shootout"))
     }
 

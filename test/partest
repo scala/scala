@@ -431,10 +431,10 @@ test_check_kind() {
     [ $# -ge 2 ] || abort "internal error";
     header="$1"; shift 1;
     kind="$1"; shift 1;
-    srcdir=`get_os_filename "$SRCDIR"`;
-    resfile=`get_os_filename "$RESFILE"`;
     if [ "$kind" = "res" ]; then TEST_EXT="res"; else TEST_EXT="scala"; fi;
     if [ "$kind" = "testrunner" ]; then
+      srcdir=`get_os_filename "$SRCDIR"`;
+      resfile=`get_os_filename "$RESFILE"`;
       javaopts=$JAVA_OPTS;
       if [ -f "$os_srcbase".javaopts ]; then
         javaopts="$javaopts `cat "$os_srcbase".javaopts`"
@@ -458,7 +458,7 @@ test_check_kind() {
           scala.tools.partest.TestRunner $testargs $resfile 2> /dev/null;
       load_results;
     else
-      [ "$@" ] && printf_outline "$header\\n";
+      [ "$@" ] && printf_outline "\\n$header\\n";
       for file in "" "$@"; do
         [ -z "$file" ] && continue;
         test_check_file "$file";
@@ -850,7 +850,6 @@ else
         printf_outline "Ant version is      : $ant_version\\n";
     fi
 fi;
-printf_outline "\\n";
 
 START_SECONDS=`date +%s`;
 test_check_all;
