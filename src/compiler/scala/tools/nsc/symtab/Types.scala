@@ -72,7 +72,7 @@ trait Types {
   var subtypeMillis = 0l
 
   private var explainSwitch = false
-  private var checkMalformedSwitch = true
+  private var checkMalformedSwitch = false // todo: it's now always false. Remove all code that depends on this switch.
 
   private final val LubGlbMargin = 0
   private final val LogPendingSubTypesThreshold = 50
@@ -697,6 +697,23 @@ trait Types {
         //val pre = if (this.typeSymbol.isClass) this.typeSymbol.thisType else this;
         (baseClasses.head.newOverloaded(this, members.toList))
       }
+    }
+
+    /** The existential skolems and existentially quantifed variables which are free in this type */
+    def existentialSkolems: List[Symbol] = {
+      var boundSyms: List[Symbol] = List()
+      var skolems: List[Symbol] = List()
+      for (t <- this) {
+        t match {
+          case ExistentialType(tparams, qtpe) =>
+            boundSyms = boundSyms ::: tparams
+          case TypeRef(_, sym, _) =>
+            if ((sym hasFlag EXISTENTIAL) && !(boundSyms contains sym) && !(skolems contains sym))
+              skolems = sym :: skolems
+          case _ =>
+        }
+      }
+      skolems
     }
 
     /** Return the attributes on this type */
@@ -1641,16 +1658,8 @@ A type's typeSymbol should never be inspected directly.
 
     override def toString: String = {
       val str =
-        underlying+(quantified map tparamToString mkString(" forSome { ", "; ", " }"))
+        underlying+(quantified map (_.existentialToString) mkString(" forSome { ", "; ", " }"))
       if (settings.explaintypes.value) "("+str+")" else str
-    }
-
-    private def tparamToString(tparam: Symbol) = {
-      val tname = tparam.name.toString
-      if ((tname endsWith ".type") && (tparam.info.bounds.hi.typeSymbol isSubClass SingletonClass) &&
-          !settings.debug.value)
-        "val "+tname.substring(0, tname.length - 5)+": "+dropSingletonType(tparam.info.bounds.hi)
-      else tparam.defString
     }
 
     override def cloneInfo(owner: Symbol) = {
@@ -1734,7 +1743,6 @@ A type's typeSymbol should never be inspected directly.
 
       attString + underlying
     }
-
 
     /** Add a number of attributes to this type */
     override def withAttributes(attribs: List[AnnotationInfo]): Type =
@@ -2012,13 +2020,13 @@ A type's typeSymbol should never be inspected directly.
     else {
       val extrapolate = new TypeMap {
         variance = 1
-        stableNeeded = false
         def apply(tp: Type): Type = {
           val tp1 = mapOver(tp)
           tp1 match {
             case TypeRef(pre, sym, args) if (tparams contains sym) && (variance != 0) =>
               val repl = if (variance == 1) dropSingletonType(tp1.bounds.hi) else tp1.bounds.lo
-              if ((!stableNeeded || repl.isStable) && !(tparams exists (repl.contains))) repl
+              if (repl.typeSymbol != AllClass && repl.typeSymbol != AllRefClass &&
+                  !(tparams exists (repl.contains))) repl
               else tp1
             case _ =>
               tp1
@@ -2042,7 +2050,7 @@ A type's typeSymbol should never be inspected directly.
     }
 
   /** Remove any occurrence of type <singleton> from this type and its parents */
-  private object dropSingletonType extends TypeMap {
+  object dropSingletonType extends TypeMap {
     def apply(tp: Type): Type = {
       tp match {
         case TypeRef(_, sym, _) if (sym == SingletonClass) =>
@@ -2116,10 +2124,6 @@ A type's typeSymbol should never be inspected directly.
      */
     var variance = 0
 
-    /** Is a stable type needed here?
-     */
-    var stableNeeded = false
-
     /** Map this function over given type */
     def mapOver(tp: Type): Type = tp match {
       case ErrorType => tp
@@ -2132,11 +2136,7 @@ A type's typeSymbol should never be inspected directly.
       case SingleType(pre, sym) =>
         if (sym.isPackageClass) tp // short path
         else {
-          val v = variance; variance = 0
-          val s = stableNeeded; stableNeeded = true
           val pre1 = this(pre)
-          variance = v
-          stableNeeded = s
           if (pre1 eq pre) tp
           else singleType(pre1, sym)
         }
@@ -2146,9 +2146,7 @@ A type's typeSymbol should never be inspected directly.
         if ((thistp1 eq thistp) && (supertp1 eq supertp)) tp
         else mkSuperType(thistp1, supertp1)
       case TypeRef(pre, sym, args) =>
-        val s = stableNeeded; stableNeeded = true
         val pre1 = this(pre)
-        stableNeeded = s
         //val args1 = List.mapConserve(args)(this)
         val args1 = if (args.isEmpty) args
                     else {
@@ -2272,30 +2270,30 @@ A type's typeSymbol should never be inspected directly.
     def apply(tp: Type): Type = { traverse(tp); tp }
   }
 
-  private val emptySymTypeMap = scala.collection.immutable.Map[Symbol, Type]()
+  private val emptySymMap = scala.collection.immutable.Map[Symbol, Symbol]()
 
-  private def makeExistential(owner: Symbol, lo: Type, hi: Type) =
+  private def makeExistential(suffix: String, owner: Symbol, lo: Type, hi: Type) =
     recycle(
-      owner.newAbstractType(owner.pos, freshTypeName()).setFlag(EXISTENTIAL)
+      owner.newAbstractType(owner.pos, newTypeName(freshTypeName()+suffix)).setFlag(EXISTENTIAL)
     ).setInfo(TypeBounds(lo, hi))
 
   /** A map to compute the asSeenFrom method  */
   class AsSeenFromMap(pre: Type, clazz: Symbol) extends TypeMap {
     var capturedParams: List[Symbol] = List()
-    var capturedPre = emptySymTypeMap
+    var capturedPre = emptySymMap
+    variance = 1
 
-    // not yet used
-    def stabilize(pre: Type, clazz: Symbol) =
-      if (true || pre.isStable || pre.typeSymbol.isPackageClass) pre
-      else capturedPre get clazz match {
-        case Some(tp) => tp
+    def stabilize(pre: Type, clazz: Symbol): Type = {
+      capturedPre get clazz match {
         case None =>
-          println("skolemizing "+pre)
-          val qvar = makeExistential(clazz, AllClass.tpe, pre)
+          val qvar = makeExistential(".type", clazz, AllClass.tpe, intersectionType(List(pre, SingletonClass.tpe)))
+          capturedPre += (clazz -> qvar)
           capturedParams = qvar :: capturedParams
-          capturedPre += (clazz -> qvar.tpe)
-          qvar.tpe
+          qvar
+        case Some(qvar) =>
+          qvar
       }
+    }.tpe
 
     /** Return pre.baseType(clazz), or if that's NoType and clazz is a refinement, pre itself.
      *  See bug397.scala for an example where the second alternative is needed.
@@ -2315,19 +2313,26 @@ A type's typeSymbol should never be inspected directly.
           def toPrefix(pre: Type, clazz: Symbol): Type =
             if ((pre eq NoType) || (pre eq NoPrefix) || !clazz.isClass) tp
             else if ((sym isNonBottomSubClass clazz) &&
-                     (pre.widen.typeSymbol isNonBottomSubClass sym))
-              pre match {
+                     (pre.widen.typeSymbol isNonBottomSubClass sym)) {
+              val pre1 = pre match {
                 case SuperType(thistp, _) => thistp
                 case _ => pre
               }
-            else toPrefix(base(pre, clazz).prefix, clazz.owner);
+              if (!(variance == 1 ||
+                    pre1.isStable ||
+                    pre1.typeSymbol.isPackageClass ||
+                    pre1.typeSymbol.isModuleClass && pre1.typeSymbol.isStatic)) {
+//                throw new MalformedType("non-stable type "+pre1+" replacing a stable reference "+tp)
+                stabilize(pre1, sym)
+              } else {
+                pre1
+              }
+            } else toPrefix(base(pre, clazz).prefix, clazz.owner);
           toPrefix(pre, clazz)
         case SingleType(pre, sym) =>
           if (sym.isPackageClass) tp // short path
           else {
-            val v = variance; variance = 0
             val pre1 = this(pre)
-            variance = v
             if (pre1 eq pre) tp
             else if (pre1.isStable) singleType(pre1, sym)
             else pre1.memberType(sym).resultType //todo: this should be rolled into existential abstraction
@@ -2343,7 +2348,7 @@ A type's typeSymbol should never be inspected directly.
                 //      the node is re-typed.
                 if (inIDE) throw new TypeError("internal error: " + tp + " in " + sym.owner +
                   " cannot be instantiated from " + pre.widen)
-	             else throw new Error("" + tp + sym.locationString +
+                     else throw new Error("" + tp + sym.locationString +
                                      " cannot be instantiated from " + pre.widen)
               def instParam(ps: List[Symbol], as: List[Type]): Type =
                 if (ps.isEmpty) throwError
@@ -3720,7 +3725,7 @@ A type's typeSymbol should never be inspected directly.
               if (l <:< g) l
               else {
                 val owner = commonOwner(as)
-                val qvar = makeExistential(commonOwner(as), g, l)
+                val qvar = makeExistential("", commonOwner(as), g, l)
                 capturedParams += qvar
                 qvar.tpe
               }

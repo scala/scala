@@ -1154,6 +1154,15 @@ trait Symbols {
     /** Concatenate strings separated by spaces */
     private def compose(ss: List[String]): String =
       ss.filter("" !=).mkString("", " ", "")
+
+    /** String representation of existentially bound variable */
+    def existentialToString = {
+      val tname = name.toString
+      if ((tname endsWith ".type") && (info.bounds.hi.typeSymbol isSubClass SingletonClass) &&
+          !settings.debug.value)
+        "val "+tname.substring(0, tname.length - 5)+": "+dropSingletonType(info.bounds.hi)
+      else defString
+    }
   }
 
   /** A class for term symbols */

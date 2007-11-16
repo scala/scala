@@ -1,5 +1,0 @@
-bug839.scala:25: error: method set cannot be accessed in object Test.this.FileImpl#treeBuilder
- because its instance type (Test.this.Global#Tree)Unit contains a malformed type: Test.this.Global#Tree
-  file.treeBuilder.set(nsc.get);
-                   ^
-one error found

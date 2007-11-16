@@ -160,6 +160,8 @@ trait Infer {
     case PolyType(List(), restpe) =>
       if (util.Statistics.enabled) normP = normP + 1
       normalize(restpe)
+    case ExistentialType(tparams, qtpe) =>
+      ExistentialType(tparams, normalize(qtpe))
     case tp1 =>
       if (util.Statistics.enabled) normO = normO + 1
       tp1 // @MAT aliases already handled by subtyping
@@ -201,14 +203,20 @@ trait Infer {
          else " of type "+tree.tpe) +
         (if (tree.symbol.name == nme.apply) tree.symbol.locationString else "")
 
-    def applyErrorMsg(tree: Tree, msg: String, argtpes: List[Type], pt: Type) = (
+    def applyErrorMsg(tree: Tree, msg: String, argtpes: List[Type], pt: Type) =
       treeSymTypeMsg(tree) + msg + argtpes.mkString("(", ",", ")") +
        (if (pt == WildcardType) "" else " with expected result type " + pt)
-    )
+
+    // todo: use also for other error messages
+    def existentialContext(tp: Type) = tp.existentialSkolems match {
+      case List() => ""
+      case skolems => " where "+(skolems map (_.existentialToString) mkString ", ")
+    }
 
     def foundReqMsg(found: Type, req: Type): String =
       withDisambiguation(found, req) {
-        ";\n found   : " + found.toLongString + "\n required: " + req
+        ";\n found   : " + found.toLongString + existentialContext(found) +
+         "\n required: " + req + existentialContext(req)
       }
 
     def typeErrorMsg(found: Type, req: Type) =
@@ -331,6 +339,8 @@ trait Infer {
         isPlausiblyCompatible(restpe, pt)
       case mt: ImplicitMethodType =>
         isPlausiblyCompatible(mt.resultType, pt)
+      case ExistentialType(tparams, qtpe) =>
+        isPlausiblyCompatible(qtpe, pt)
       case MethodType(formals, _) =>
         pt.normalize match {
           case TypeRef(pre, sym, args) =>
@@ -519,6 +529,8 @@ trait Infer {
     def isApplicable(undetparams: List[Symbol], ftpe: Type,
                      argtpes0: List[Type], pt: Type): Boolean =
       ftpe match {
+        case ExistentialType(tparams, qtpe) =>
+          isApplicable(undetparams, qtpe, argtpes0, pt)
         case MethodType(formals0, _) =>
           val formals = formalTypes(formals0, argtpes0.length)
           val argtpes = actualTypes(argtpes0, formals.length)
@@ -567,6 +579,8 @@ trait Infer {
      *  @return      ...
      */
     def specializes(ftpe1: Type, ftpe2: Type): Boolean = ftpe1 match {
+      case et: ExistentialType =>
+        et.withTypeVars(specializes(_, ftpe2))
       case MethodType(formals, _) =>
         isApplicable(List(), ftpe2, formals, WildcardType)
       case PolyType(tparams, MethodType(formals, _)) =>
@@ -580,8 +594,12 @@ trait Infer {
     /** Is type `tpe1' a strictly better expression alternative than type `tpe2'?
      */
     def isStrictlyBetterExpr(tpe1: Type, tpe2: Type) = {
-      def isNullary(tpe: Type) = tpe.paramSectionCount == 0 || tpe.paramTypes.isEmpty
-      def isMethod(tpe: Type) = tpe match {
+      def isNullary(tpe: Type): Boolean = tpe match {
+        case tp: RewrappingTypeProxy => isNullary(tp.underlying)
+        case _ => tpe.paramSectionCount == 0 || tpe.paramTypes.isEmpty
+      }
+      def isMethod(tpe: Type): Boolean = tpe match {
+        case tp: RewrappingTypeProxy => isMethod(tp.underlying)
         case MethodType(_, _) | PolyType(_, _) => true
         case _ => false
       }

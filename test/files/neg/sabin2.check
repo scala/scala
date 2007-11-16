@@ -1,5 +1,6 @@
-sabin2.scala:22: error: method set cannot be accessed in Test.Base#Inner
- because its instance type (Test.Base#T)Unit contains a malformed type: Test.Base#T
+sabin2.scala:22: error: type mismatch;
+ found   : Test.Base#T
+ required: _1.T where val _1: Test.Base
    a.set(b.get()) // Error
-     ^
+           ^
 one error found

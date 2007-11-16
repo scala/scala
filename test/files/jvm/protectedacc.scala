@@ -136,7 +136,8 @@ package p {
         m(self)
 
         trait InnerInner {
-          getB.tie(self2)
+          val g = getB
+          g.tie(self2.asInstanceOf[g.Node])
         }
       }
     }
