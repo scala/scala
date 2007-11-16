@@ -31,13 +31,12 @@ object fringe extends Application {
           self ! Equal(ch1.?, ch2.?)
 
         case Equal(atom1, atom2) =>
-          println("comparing "+atom1+" and "+atom2)
           if (atom1 == atom2) atom1 match {
             case None =>
               println("same fringe")
               exit()
             case _ =>
-              self ! Triple('Equal, ch1.?, ch2.?)
+              self ! Equal(ch1.?, ch2.?)
           } else {
             println("fringes differ")
             exit()
@@ -56,7 +55,6 @@ object fringe extends Application {
 
         case Extract(tree) => tree match {
           case atom @ Leaf(_) =>
-            println("sending "+Some(atom))
             output ! Some(atom)
             sender ! 'Continue
 
@@ -79,6 +77,6 @@ object fringe extends Application {
     }
   }
 
-  comparator ! ('Fringe, Node(Leaf(5), Node(Leaf(7), Leaf(3))),
+  comparator ! CompareFringe(Node(Leaf(5), Node(Leaf(7), Leaf(3))),
                 Node(Leaf(5), Node(Leaf(7), Leaf(3))))
 }
