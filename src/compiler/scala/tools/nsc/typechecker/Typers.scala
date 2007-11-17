@@ -2163,7 +2163,7 @@ trait Typers { self: Analyzer =>
             .setOriginal(tpt1) /* .setPos(tpt1.pos) */
             .setType(appliedType(tpt1.tpe, context.undetparams map (_.tpe)))
         }
-        if (!tpt1.tpe.typeSymbol.isClass || (tpt1.tpe.typeSymbol hasFlag ABSTRACT))
+        if (tpt1.tpe.typeSymbol.isAbstractType || (tpt1.tpe.typeSymbol hasFlag ABSTRACT))
           error(tree.pos, tpt1.tpe.typeSymbol + " is abstract; cannot be instantiated")
         else if (tpt1.tpe.typeSymbol.thisSym != tpt1.tpe.typeSymbol &&
                  !(tpt1.tpe <:< tpt1.tpe.typeOfThis) &&
