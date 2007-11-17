@@ -1419,7 +1419,7 @@ trait Typers { self: Analyzer =>
              ||
              pt.typeSymbol == PartialFunctionClass &&
              fun.vparams.length == 1 && fun.body.isInstanceOf[Match])
-            && // see bug901 for a reason why next conditions are neeed
+             && // see bug901 for a reason why next conditions are neeed
             (pt.normalize.typeArgs.length - 1 == fun.vparams.length
              ||
              fun.vparams.exists(_.tpt.isEmpty)))
@@ -1435,10 +1435,8 @@ trait Typers { self: Analyzer =>
         val vparamSyms = List.map2(fun.vparams, argpts) { (vparam, argpt) =>
           if (vparam.tpt.isEmpty)
             vparam.tpt.tpe =
-              if (argpt == NoType || argpt == WildcardType) {
-                error(vparam.pos, "missing parameter type"); ErrorType
-              }
-              else argpt
+              if (isFullyDefined(argpt)) argpt
+              else { error(vparam.pos, "missing parameter type"); ErrorType }
           enterSym(context, vparam)
           if (context.retyping) context.scope enter vparam.symbol
           vparam.symbol
@@ -2165,7 +2163,7 @@ trait Typers { self: Analyzer =>
             .setOriginal(tpt1) /* .setPos(tpt1.pos) */
             .setType(appliedType(tpt1.tpe, context.undetparams map (_.tpe)))
         }
-        if (tpt1.tpe.typeSymbol hasFlag ABSTRACT)
+        if (!tpt1.tpe.typeSymbol.isClass || (tpt1.tpe.typeSymbol hasFlag ABSTRACT))
           error(tree.pos, tpt1.tpe.typeSymbol + " is abstract; cannot be instantiated")
         else if (tpt1.tpe.typeSymbol.thisSym != tpt1.tpe.typeSymbol &&
                  !(tpt1.tpe <:< tpt1.tpe.typeOfThis) &&

@@ -86,7 +86,9 @@ class HashSet[A] extends Set[A] with mutable.FlatHashTable[A] {
 
   override def elements = synchronized {
     makeCopyIfUpdated()
-    super.elements
+    // note need to cache because (later versions of) set might be mutated while elements are traversed.
+    val cached = new mutable.ArrayBuffer() ++ super.elements
+    cached.elements
   }
 
   private def logLimit: Int = Math.sqrt(table.length).toInt

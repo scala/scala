@@ -2036,6 +2036,7 @@ A type's typeSymbol should never be inspected directly.
           tp1 match {
             case TypeRef(pre, sym, args) if (variance != 0) && (occurCount isDefinedAt sym) =>
               val repl = if (variance == 1) dropSingletonType(tp1.bounds.hi) else tp1.bounds.lo
+              //println("eliminate "+sym+"/"+repl+"/"+occurCount(sym)+"/"+(tparams exists (repl.contains)))//DEBUG
               if (repl.typeSymbol != AllClass && repl.typeSymbol != AllRefClass &&
                   occurCount(sym) == 1 && !(tparams exists (repl.contains))) repl
               else tp1
