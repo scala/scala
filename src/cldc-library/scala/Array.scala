@@ -167,6 +167,38 @@ object Array {
    *  @return  array wrapped in an option
    */
    def unapplySeq[A](x: Array[A]): Option[Seq[A]] = Some(x)
+
+   trait Projection[A] extends RandomAccessSeq.MutableProjection[A] {
+     protected def newArray[B >: A](length : Int, elements : Iterator[A]) : Array[B]
+     override def toArray[B >: A] = (newArray(length, elements))//:Any).asInstanceOf[Array[B]]
+     override def force : Array[A] = toArray
+     override def drop( from: Int) = slice(from, length)
+     override def take(until: Int) = slice(0, until)
+     override def slice(from0 : Int, until0 : Int) : Projection[A] = new RandomAccessSeq.MutableSlice[A] with Projection[A] {
+       override def from = from0
+       override def until = until0
+       override def underlying = Projection.this
+       override protected def newArray[B >: A](length : Int, elements : Iterator[A]) =
+         underlying.newArray(length, elements)
+       override def slice(from0 : Int, until0 : Int) =
+         Projection.this.slice(from + from0, from + until0)
+     }
+     override def reverse : Projection[A] = new Projection[A] {
+       override protected def newArray[B >: A](length : Int, elements : Iterator[A]) =
+         Projection.this.newArray(length, elements)
+       def update(idx : Int, what : A) : Unit = Projection.this.update(length - idx - 1, what)
+       def length = Projection.this.length
+       def apply(idx : Int) = Projection.this.apply(length - idx - 1)
+       override def stringPrefix = Projection.this.stringPrefix + "R"
+     }
+   }
+   trait Array0[A] extends RandomAccessSeq.Mutable[A] {
+     override def projection : Projection[A] = throw new Error
+     override def slice(from : Int, until : Int) : Projection[A] = projection.slice(from, until)
+     override def take(until : Int) : Projection[A] = projection.take(until)
+     override def drop(from : Int) : Projection[A] = projection.drop(from)
+     override def reverse = projection.reverse
+   }
 }
 
 /** This class represents polymorphic arrays. <code>Array[T]</code> is Scala's representation
@@ -175,7 +207,55 @@ object Array {
  *  @author Martin Odersky
  *  @version 1.0
  */
-final class Array[A](_length: Int) extends RandomAccessSeq[A] {
+final class Array[A](_length: Int) extends Array.Array0[A] {
+
+   /** Multidimensional array creation */
+   def this(dim1: Int, dim2: Int) = {
+     this(dim1);
+     throw new Error()
+   }
+
+   /** Multidimensional array creation */
+   def this(dim1: Int, dim2: Int, dim3: Int) = {
+     this(dim1);
+     throw new Error()
+   }
+
+   /** Multidimensional array creation */
+   def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int) = {
+     this(dim1);
+     throw new Error()
+   }
+
+   /** Multidimensional array creation */
+   def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int, dim5: Int) = {
+     this(dim1);
+     throw new Error()
+   }
+
+   /** Multidimensional array creation */
+   def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int, dim5: Int, dim6: Int) = {
+     this(dim1);
+     throw new Error()
+   }
+
+   /** Multidimensional array creation */
+   def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int, dim5: Int, dim6: Int, dim7: Int) = {
+     this(dim1);
+     throw new Error()
+   }
+
+   /** Multidimensional array creation */
+   def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int, dim5: Int, dim6: Int, dim7: Int, dim8: Int) = {
+     this(dim1);
+     throw new Error()
+   }
+
+   /** Multidimensional array creation */
+   def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int, dim5: Int, dim6: Int, dim7: Int, dim8: Int, dim9: Int) = {
+     this(dim1);
+     throw new Error()
+   }
 
   /** The length of the array */
   def length: Int = throw new Error()
@@ -213,24 +293,14 @@ final class Array[A](_length: Int) extends RandomAccessSeq[A] {
    *  @throws ArrayIndexOutOfBoundsException if <code>i < 0</code> or
    *          <code>length <= i</code>
    */
-  def update(i: Int, x: A): Unit = throw new Error()
+  override def update(i: Int, x: A): Unit = throw new Error()
 
   /** An iterator returning the elements of this array, starting from 0.
    */
   override def elements: Iterator[A] = throw new Error()
 
-  /** @deprecated  use slice instead */
+  /** @deprecated  use <code>slice(from,end).force</code> instead */
   def subArray(from: Int, end: Int): Array[A] = throw new Error()
-
-  /** A sub-array of <code>len</code> elements
-   *  starting at index <code>from</code>
-   *
-   *  @param from   The index of the first element of the slice
-   *  @param end    The index of the element following the slice
-   *  @throws IndexOutOfBoundsException if <code>from &lt; 0</code>
-   *          or <code>length &lt; from + len<code>
-   */
-  override def slice(from: Int, end: Int): Array[A] = throw new Error()
 
   /** Returns an array consisting of all elements of this array that satisfy the
    *  predicate <code>p</code>. The order of the elements is preserved.
@@ -239,6 +309,24 @@ final class Array[A](_length: Int) extends RandomAccessSeq[A] {
    *  @return the elements of this array satisfying <code>p</code>.
    */
   override def filter(p: A => Boolean): Array[A] = throw new Error()
+
+  /** Returns the longest prefix of this array whose elements satisfy
+   *  the predicate <code>p</code>.
+   *
+   *  @param p the test predicate.
+   *  @return  the longest prefix of this array whose elements satisfy
+   *           the predicate <code>p</code>.
+   */
+  override def takeWhile(p: A => Boolean): Array[A] = throw new Error()
+
+  /** Returns the longest suffix of this array whose first element
+   *  does not satisfy the predicate <code>p</code>.
+   *
+   *  @param p the test predicate.
+   *  @return  the longest suffix of the array whose first element
+   *           does not satisfy the predicate <code>p</code>.
+   */
+  override def dropWhile(p: A => Boolean): Array[A] = throw new Error()
 
   /** Returns an array consisting of all elements of this array followed
    *  by all elements of the argument iterable.
@@ -282,8 +370,11 @@ final class Array[A](_length: Int) extends RandomAccessSeq[A] {
    */
   def zipWithIndex: Array[Tuple2[A,Int]] = throw new Error()
 
+  /** Returns an array that contains all indices of this array */
+  def indices: Array[Int] = throw new Error()
+
   /**
-   *  @return a deep string representation of this sequence.
+   *  @return a deep string representation of this array.
    */
   def deepToString(): String = throw new Error()
 
@@ -335,4 +426,5 @@ final class Array[A](_length: Int) extends RandomAccessSeq[A] {
    *  @return     <code>true</code> iff both arrays are deeply equal.
    */
   def deepEquals(that: Any): Boolean = throw new Error()
+
 }

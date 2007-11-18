@@ -28,7 +28,7 @@ object ScalaRunTime {
   val DoubleTag = ".Double"
   val BooleanTag = ".Boolean"
 
-  def isArray(x: AnyRef): Boolean = x != null && x.getClass.isArray
+  def isArray(x: AnyRef): Boolean = (x != null && x.getClass.isArray) || (x != null && x.isInstanceOf[BoxedArray])
   def isValueTag(tag: String) = tag.charAt(0) == '.'
   //def isValueClass(clazz: Class) = clazz.isPrimitive()
   def isValueClass(clazz: Class) = (clazz == classOf[Boolean]

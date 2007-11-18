@@ -315,9 +315,9 @@ object Predef {
   implicit def boolean2Boolean(x: Boolean) = java.lang.Boolean.valueOf(x)
 
   /** any array projection can be automatically converted into an array */
-  implicit def forceArrayProjection[A](x : Array.Projection[A]) : Array[A] = x.force
+  implicit def forceArrayProjection[A](x: Array.Projection[A]): Array[A] = x.force
   /** any random access character seq (including rich string can be converted into a string */
-  implicit def forceRandomAccessCharSeq(x : runtime.RichString) : String = x.mkString
+  implicit def forceRandomAccessCharSeq(x: runtime.RichString): String = x.mkString
 
   def currentThread = java.lang.Thread.currentThread()
 

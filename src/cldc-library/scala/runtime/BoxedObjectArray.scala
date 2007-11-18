@@ -22,7 +22,7 @@ final class BoxedObjectArray(val value: Array[AnyRef]) extends BoxedArray {
 
   def apply(index: Int): Any = value(index)
 
-  def update(index: Int, elem: Any): Unit = {
+  def update(index: Int, elem: Any) {
     value(index) = elem.asInstanceOf[AnyRef]
   }
 
@@ -51,23 +51,23 @@ final class BoxedObjectArray(val value: Array[AnyRef]) extends BoxedArray {
     var len = 0
     var i = 0
     while (i < value.length) {
-      if (p(value(i))) { include(i) = true; len = len + 1 }
-      i = i + 1
+      if (p(value(i))) { include(i) = true; len += 1 }
+      i += 1
     }
     val result = create(len)
     len = 0
     i = 0
     while (len < result.length) {
-      if (include(i)) { result(len) = value(i); len = len + 1 }
-      i = i + 1
+      if (include(i)) { result(len) = value(i); len += 1 }
+      i += 1
     }
     new BoxedObjectArray(result)
   }
 
-  final override def slice(start: Int, end: Int): BoxedArray = {
-    val len = end - start
-    val result = create(len)
-    Array.copy(value, start, result, 0, len)
+  override protected def newArray(length: Int, elements: Iterator[Any]) = {
+    val result = create(length)
+    elements.map(_.asInstanceOf[AnyRef]).copyToArray(result, 0)
     new BoxedObjectArray(result)
   }
 }
+

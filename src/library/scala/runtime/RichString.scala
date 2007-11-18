@@ -66,7 +66,6 @@ final class RichString(val self: String) extends Proxy with RandomAccessSeq[Char
 
   override def compare(other: String) = self compareTo other
 
-
   private def isLineBreak(c: Char) = c == LF || c == FF
 
   /** <p>
@@ -186,6 +185,7 @@ final class RichString(val self: String) extends Proxy with RandomAccessSeq[Char
   def toFloat: Float   = java.lang.Float.parseFloat(self)
   def toDouble: Double = java.lang.Double.parseDouble(self)
 }
+
 object RichString {
   // just statics for rich string.
   private final val LF: Char = 0x0A
@@ -193,5 +193,4 @@ object RichString {
   private final val CR: Char = 0x0D
   private final val SU: Char = 0x1A
 }
-
 

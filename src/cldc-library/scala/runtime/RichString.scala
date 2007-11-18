@@ -14,26 +14,57 @@ package scala.runtime
 
 import Predef._
 
-final class RichString(val self: String) extends Seq[Char] with Ordered[String] with Proxy {
+final class RichString(val self: String) extends Proxy with RandomAccessSeq[Char] with Ordered[String] {
+  import RichString._
+  override def apply(n: Int) = self charAt n
+  override def length = self.length
+  override def toString = self
+  override def mkString = self
 
-  // Ordered[String]
-  def compare(other: String) = self compareTo other
+  override def slice(from: Int, until: Int): RichString = {
+    val len = self.length
+    new RichString(
+      if (from >= until || from >= len)
+        ""
+      else {
+        val from0 = if (from < 0) 0 else from
+        val until0 = if (until > len) len else until
+        self.substring(from0, until0)
+      }
+    )
+  }
 
-  // Seq[Char]
-  def length = self.length
-  override def elements = Iterator.fromString(self)
+  //override def ++ [B >: A](that: Iterable[B]): Seq[B] = {
+  override def ++[B >: Char](that: Iterable[B]): RandomAccessSeq[B] = that match {
+    case that: RichString => new RichString(self + that.self)
+    case that => super.++(that)
+  }
 
-  /** Retrieve the n-th character of the string
-   *
-   *  @param   index into the string
-   *  @return  the character at position <code>index</code>.
-   */
-  def apply(n: Int) = self charAt n
+  override def take(until: Int): RichString = slice(0, until)
 
-  private final val LF: Char = 0x0A
-  private final val FF: Char = 0x0C
-  private final val CR: Char = 0x0D
-  private final val SU: Char = 0x1A
+  override def drop(from: Int): RichString = slice(from, self.length)
+
+  override def startsWith[B](that: Seq[B]) = that match {
+    case that: RichString => self startsWith that.self
+    case that => super.startsWith(that)
+  }
+
+  override def endsWith[B](that: Seq[B]) = that match {
+    case that: RichString => self endsWith that.self
+    case that => super.endsWith(that)
+  }
+
+  override def indexOf[B](that: Seq[B]) = that match {
+    case that: RichString => self indexOf that.self
+    case that => super.indexOf(that)
+  }
+
+  override def containsSlice[B](that: Seq[B]) = that match {
+    case that: RichString => self contains that.self
+    case that => super.containsSlice(that)
+  }
+
+  override def compare(other: String) = self compareTo other
 
   private def isLineBreak(c: Char) = c == LF || c == FF
 
@@ -83,8 +114,8 @@ final class RichString(val self: String) extends Seq[Char] with Ordered[String] 
     def next(): String = {
       if (index >= len) throw new NoSuchElementException("next on empty iterator")
       val start = index
-      while (index < len && !isLineBreak(apply(index))) index = index + 1
-      index = index + 1
+      while (index < len && !isLineBreak(apply(index))) index += 1
+      index += 1
       self.substring(start, index min len)
     }
   }
@@ -112,11 +143,11 @@ final class RichString(val self: String) extends Seq[Char] with Ordered[String] 
    *  </blockquote>
    */
   def stripMargin(marginChar: Char): String = {
-    val buf = new scala.compat.StringBuilder()
+    val buf = new StringBuilder()
     for (line <- linesWithSeparators) {
       val len = line.length
-      var index = 0;
-      while (index < len && line.charAt(index) <= ' ') index = index + 1
+      var index = 0
+      while (index < len && line.charAt(index) <= ' ') index += 1
       buf append
         (if (index < len && line.charAt(index) == marginChar) line.substring(index + 1) else line)
     }
@@ -132,12 +163,34 @@ final class RichString(val self: String) extends Seq[Char] with Ordered[String] 
    *  </blockquote>
    */
   def stripMargin: String = stripMargin('|')
+/*
+  private def escape(ch: Char): String = ch match {
+    case '.' | '$' | '^' | '\\' => "\\" + ch
+    case _ => "" + ch
+  }
 
-  //def split(separator: Char): Array[String] = self.split(separator.toString())
+  @throws(classOf[java.util.regex.PatternSyntaxException])
+  def split(separator: Char): Array[String] = self.split(escape(separator))
 
-  def toByte: Byte = java.lang.Byte.parseByte(self)
-  def toShort: Short = java.lang.Short.parseShort(self)
-  def toInt: Int = java.lang.Integer.parseInt(self)
-  def toLong: Long = java.lang.Long.parseLong(self)
-
+  @throws(classOf[java.util.regex.PatternSyntaxException])
+  def split(separators: Array[Char]): Array[String] = {
+    val re = separators.foldLeft("[")(_+_) + "]"
+    self.split(re)
+  }
+*/
+  def toByte: Byte     = java.lang.Byte.parseByte(self)
+  def toShort: Short   = java.lang.Short.parseShort(self)
+  def toInt: Int       = java.lang.Integer.parseInt(self)
+  def toLong: Long     = java.lang.Long.parseLong(self)
+  //def toFloat: Float   = java.lang.Float.parseFloat(self)
+  //def toDouble: Double = java.lang.Double.parseDouble(self)
 }
+
+object RichString {
+  // just statics for rich string.
+  private final val LF: Char = 0x0A
+  private final val FF: Char = 0x0C
+  private final val CR: Char = 0x0D
+  private final val SU: Char = 0x1A
+}
+

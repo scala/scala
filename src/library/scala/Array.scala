@@ -190,12 +190,14 @@ object Array {
        override def from = from0
        override def until = until0
        override def underlying = Projection.this
-       override protected def newArray[B >: A](length : Int, elements : Iterator[A]) = underlying.newArray(length, elements)
+       override protected def newArray[B >: A](length : Int, elements : Iterator[A]) =
+         underlying.newArray(length, elements)
        override def slice(from0 : Int, until0 : Int) =
          Projection.this.slice(from + from0, from + until0)
      }
      override def reverse : Projection[A] = new Projection[A] {
-       override protected def newArray[B >: A](length : Int, elements : Iterator[A]) = Projection.this.newArray(length, elements)
+       override protected def newArray[B >: A](length : Int, elements : Iterator[A]) =
+         Projection.this.newArray(length, elements)
        def update(idx : Int, what : A) : Unit = Projection.this.update(length - idx - 1, what)
        def length = Projection.this.length
        def apply(idx : Int) = Projection.this.apply(length - idx - 1)
@@ -311,8 +313,6 @@ final class Array[A](_length: Int) extends Array.Array0[A] {
 
   /** @deprecated  use <code>slice(from,end).force</code> instead */
   def subArray(from: Int, end: Int): Array[A] = throw new Error()
-
-
 
   /** Returns an array consisting of all elements of this array that satisfy the
    *  predicate <code>p</code>. The order of the elements is preserved.

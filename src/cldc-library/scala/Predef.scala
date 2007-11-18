@@ -33,8 +33,14 @@ object Predef {
   type boolean = scala.Boolean
   type unit    = scala.Unit
 
-  type All    = Nothing
-  type AllRef = Null
+  /** @deprecated use <code>Nothing</code> instead */
+  @deprecated type All = Nothing
+  /** @deprecated use <code>Null</code> instead */
+  @deprecated type AllRef = Null
+  /** @deprecated use <code>Int</code> instead */
+  @deprecated type Integer = java.lang.Integer
+  /** @deprecated use <code>Char</code> instead */
+  @deprecated type Character = java.lang.Character
 
   type String        = java.lang.String
   type StringBuilder = compat.StringBuilder
@@ -91,12 +97,12 @@ object Predef {
 
   def assume(assumption: Boolean) {
     if (!assumption)
-      throw new Error("assumption failed")
+      throw new IllegalArgumentException("assumption failed")
   }
 
   def assume(assumption: Boolean, message: Any) {
     if (!assumption)
-      throw new Error("assumption failed: " + message)
+      throw new IllegalArgumentException("assumption failed: " + message)
   }
 
   // tupling ------------------------------------------------------------
@@ -147,6 +153,7 @@ object Predef {
   implicit def booleanWrapper(x: Boolean)  = new runtime.RichBoolean(x)
 
   implicit def stringWrapper(x: String) = new runtime.RichString(x)
+  implicit def stringBuilderWrapper(x : StringBuilder) = new runtime.RichStringBuilder(x)
 
   implicit def any2stringadd(x: Any) = new runtime.StringAdd(x)
 
@@ -166,7 +173,10 @@ object Predef {
         val those = that.elements
         while (res == 0 && these.hasNext)
           res = if (those.hasNext) these.next compare those.next else 1
-        res
+        if (res == 0) {
+          if (those.hasNext) -1 else 0
+        } else
+          res
       }
     }
 
@@ -268,6 +278,11 @@ object Predef {
   implicit def int2Integer(x: Int) = new java.lang.Integer(x)
   implicit def long2Long(x: Long) = new java.lang.Long(x)
   implicit def boolean2Boolean(x: Boolean) = new java.lang.Boolean(x)
+
+  /** any array projection can be automatically converted into an array */
+  implicit def forceArrayProjection[A](x: Array.Projection[A]): Array[A] = x.force
+  /** any random access character seq (including rich string can be converted into a string */
+  implicit def forceRandomAccessCharSeq(x: runtime.RichString): String = x.mkString
 
   def currentThread = java.lang.Thread.currentThread()
 
