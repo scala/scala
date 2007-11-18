@@ -13,6 +13,7 @@ package scala.tools.partest
 import java.awt.event.{ActionEvent, ActionListener}
 import java.io.{File, FilenameFilter, FileInputStream, FileOutputStream,
                 PrintStream}
+import java.net.URI
 
 import scala.tools.nsc.Settings
 
@@ -95,7 +96,7 @@ object TestRunner {
   private val srcDir = {
     val dirname = System.getProperty("scalatest.cwd", "")
     val dir = if (dirname.isEmpty) { // guess
-      val libDir = new File(classOf[Test].getResource("/").toURI)
+      val libDir = new File(new URI(classOf[Test].getResource("/").toString))
       val path = libDir.getAbsolutePath
       val parent = libDir.getParentFile
       val rootDir =
