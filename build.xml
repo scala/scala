@@ -656,8 +656,8 @@ BUILD QUICK-TEST LAYER
 <!-- ===========================================================================
 CLDC
 ============================================================================ -->
-  <property name="cldc.name" value="cldcapi10.jar"/>
-  <property name="cldc.jar" value="${lib.dir}/${cldc.name}"/>
+
+  <property name="cldcapi.jar" value="${lib.dir}/cldcapi10.jar"/>
 
   <target name="cldc.sources"
           description="Create the source directory for the J2ME (CLDC) library"
@@ -693,15 +693,16 @@ CLDC
     depends="setup.quick, cldc.sources"
     description="Builds the Scala library for J2ME (CLDC)"
   >
+    <mkdir dir="${cldc.dir}/lib/library"/>
     <javac
       srcdir="${cldc.dir}/src"
-      destdir="${cldc.dir}"
+      destdir="${cldc.dir}/lib/library"
       source="1.1"
       target="1.1"
       deprecation="${jc.deprecation}"
     >
       <bootclasspath>
-        <pathelement location="${cldc.jar}"/>
+        <pathelement location="${cldcapi.jar}"/>
       </bootclasspath>
       <include name="**/*.java"/>
       <exclude name="scala/runtime/FloatRef.java"/>
@@ -710,14 +711,14 @@ CLDC
 
     <quick
       srcdir="${cldc.dir}/src"
-      destdir="${cldc.dir}"
+      destdir="${cldc.dir}/lib/library"
       usepredefs="no"
       addparams="${nsc.params}"
       target="cldc"
       scalacdebugging="${nsc.log-files}"
     >
       <bootclasspath>
-        <pathelement location="${cldc.jar}"/>
+        <pathelement location="${cldcapi.jar}"/>
       </bootclasspath>
       <classpath>
         <pathelement location="${cldc.dir}"/>
@@ -726,13 +727,13 @@ CLDC
     </quick>
     <quick
       srcdir="${cldc.dir}/src"
-      destdir="${cldc.dir}"
+      destdir="${cldc.dir}/lib/library"
       target="cldc"
       addparams="${nsc.params}"
       scalacdebugging="${nsc.log-files}"
     >
       <bootclasspath>
-        <pathelement location="${cldc.jar}"/>
+        <pathelement location="${cldcapi.jar}"/>
       </bootclasspath>
       <classpath>
         <pathelement location="${cldc.dir}"/>
@@ -754,7 +755,11 @@ CLDC
       <exclude name="scala/xml/**"/>
       <excludesfile name="${nsc.excludes}" if="excludes.avail"/>
     </quick>
-
+    <jar
+      destfile="${cldc.dir}/lib/scala-cldc-library.jar"
+      basedir="${cldc.dir}/lib/library"
+      includes="scala/**/*.class"
+    />
   </target>
 
 <!-- ===========================================================================
@@ -1505,6 +1510,16 @@ GENERATES A DISTRIBUTION
       link="${sbaz.universe}/scala-msil-${version.number}.sbp">
       <binset dir="${quick.dir}/bin" includes="scala*net*"/>
       <libset dir="${quick.dir}/lib" includes="*.dll"/>
+    </quicksbaz>
+  <!-- Creates the CLDC package -->
+    <quicksbaz
+      file="${dist.dir}/scala-cldc-${version.number}.sbp"
+      adfile="${dist.dir}/scala-cldc-${version.number}.advert"
+      name="scala-cldc"
+      version="${version.number}"
+      desc="The Scala CLDC package contains everything needed to use Scala on CLDC devices."
+      link="${sbaz.universe}/scala-cldc-${version.number}.sbp">
+      <libset dir="${cldc.dir}/lib" includes="*.jar"/>
     </quicksbaz>
   </target>
 

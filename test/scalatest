@@ -315,6 +315,32 @@ test_run_msil() {
     rm -f "$dstbase".$MSIL;
 }
 
+# Tests the CLDC backend/runtime.
+test_run_cldc() {
+    rm -rf "$dstbase".unverified "$dstbase".preverified &&
+    mkdir -p "$dstbase".unverified "$dstbase".preverified &&
+    cpath=`get_os_pathlist $KVEM_CLDC:$KVEM_MIDP:$SCALA_CLDC:"$dstbase".unverified` &&
+    $SCALAC -bootclasspath $cpath -target:cldc -d "$os_dstbase".unverified "$os_srcbase".scala &&
+    $KVEM_PREVERIFY -classpath $cpath -target cldc1.0 -d "$os_dstbase".preverified "$os_dstbase".unverified &&
+    ( echo MIDlet-Name: Test;
+      echo MIDlet-Version: 1.0.0;
+      echo MIDlet-Vendor: LAMP ) > "$dstbase".mf &&
+    $JARCMD cfm "$dstbase".jar "$dstbase".mf -C "$os_dstbase".preverified . &&
+    jarsize=`wc -c "$dstbase".jar  | cut -d ' ' -f 1` &&
+    ( echo MIDlet-1: Test, , Test;
+      echo MIDlet-Name: Test;
+      echo MIDlet-Version: 1.0.0;
+      echo MIDlet-Vendor: LAMP;
+      echo MIDlet-Jar-URL: "$dstbase".jar;
+      echo MIDlet-Jar-Size: $jarsize;
+      echo MicroEdition-Profile: MIDP-1.0;
+      echo MicroEdition-Configuration: CLDC-1.0 ) > "$dstbase".jad &&
+    cpath=`get_os_pathlist $SCALA_CLDC:"$dstbase".jar` &&
+    $KVEM_EMULATOR -cp $cpath -Xdescriptor:"$dstbase".jad 2> /dev/null &&
+    head $logfile -n 4 | tail -n 1 > $logfile.0 &&
+    mv $logfile.0 $logfile
+}
+
 # Tests a script with Scala code embedded in it
 test_run_script() {
     argsfile="$srcbase.args"
@@ -476,6 +502,8 @@ test_check_all() {
         "res" $FILES_RES;
     test_check_kind "Testing shootout benchmarks" \
         "shootout" $FILES_SHOOTOUT;        
+    test_check_kind "Testing CLDC benchmarks" \
+        "cldc" $FILES_CLDC;        
 }
 
 
@@ -495,6 +523,7 @@ test_add_file() {
     TEST_ALL="false";
     case "$TEST_TYPE" in
         auto   ) ;;
+        cldc   ) FILES_CLDC="$FILES_CLDC $1"; return;;
         dis    ) FILES_DIS="$FILES_DIS $1"; return;;
         run    ) FILES_RUN="$FILES_RUN $1"; return;;
         jvm    ) FILES_JVM="$FILES_JVM $1"; return;;
@@ -508,6 +537,7 @@ test_add_file() {
         *      ) abort "unknown test type \`$TEST_TYPE'";;
     esac;
     case "$1" in
+        cldc | */cldc | */cldc/* | cldc/* ) FILES_CLDC="$FILES_CLDC $1";;
         dis  | */dis  | */dis/*  | dis/*  ) FILES_DIS="$FILES_DIS $1";;
         run  | */run  | */run/*  | run/*  ) FILES_RUN="$FILES_RUN $1";;
         jvm5 | */jvm5 | */jvm5*  | jvm5/* )
@@ -597,11 +627,13 @@ FILES_SCRIPT="";
 FILES_DIS="";
 FILES_ANT="";
 FILES_SHOOTOUT="";
+FILES_CLDC="";
 
 QUICK="$PREFIX/build/quick/bin"
 QUICK_LIB="$PREFIX/build/quick/lib/library"
 QUICK_COMP="$PREFIX/build/quick/lib/compiler"
 QUICK_ACT="$PREFIX/build/quick/lib/actors"
+QUICK_CLDC="$PREFIX/build/cldc/lib/library"
 
 JVM_EXT_CLASSPATH=`get_ext_classpath $TESTROOT/files/lib`
 
@@ -633,6 +665,7 @@ BIN_DIR="$LATEST/"  # BIN_DIR should have a trailing / when needed, so that
 SCALA_LIB="$LATEST_LIB";
 SCALA_COMP="$LATEST_COMP";
 SCALA_ACT="$LATEST_ACT";
+SCALA_CLDC="$QUICK_CLDC";
 
 [ -x "$JAVACMD" ] || JAVACMD=java;
 [ -n "$JAVA_OPTS" ] || JAVA_OPTS="-Xmx256M -Xms16M";
@@ -652,6 +685,7 @@ esac;
 while [ $# -gt 0 ]; do
     case "$1" in
         --auto       ) TEST_TYPE="auto"; shift 1;;
+        --cldc       ) TEST_TYPE="cldc"; shift 1;;
         --dis        ) TEST_TYPE="dis"; shift 1;;
         --run        ) TEST_TYPE="run"; shift 1;;
         --jvm        ) TEST_TYPE="jvm"; shift 1;;
@@ -699,6 +733,9 @@ fi;
 printf_initialization "${COLOR:-many}";
 
 if [ "$TEST_ALL" = "true" ]; then
+    case "$TEST_TYPE" in
+        cldc ) FILES_CLDC="$FILES_CLDC $SRCDIR/cldc";;
+    esac;
     case "$TEST_TYPE" in
         dis ) FILES_DIS="$FILES_DIS $SRCDIR/dis";;
     esac;
@@ -819,6 +856,18 @@ else
     if [ "$TEST_TYPE" = "ant" ]; then
         ant_version=`$ANT -version`;
         printf_outline "Ant version is      : $ant_version\\n";
+    elif [ "$TEST_TYPE" = "cldc" ]; then
+        if [ -d "$KVEM_HOME" ]; then
+            KVEM_PREVERIFY="$KVEM_HOME/bin/preverify";
+            KVEM_EMULATOR="$KVEM_HOME/bin/emulator";
+            KVEM_CLDC=$PREFIX/lib/cldcapi10.jar;
+            KVEM_MIDP=$KVEM_HOME/lib/midpapi10.jar;
+            JARCMD=$bin_dir/jar;
+        else
+            abort "option 'cldc' requires variable KVEM_HOME to be set";
+        fi
+        kvem_version=`$KVEM_EMULATOR -version | head -1`;
+        printf_outline "Emulator version is : $kvem_version\\n";
     fi
 fi;
 printf_outline "\\n";
