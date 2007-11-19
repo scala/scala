@@ -15,8 +15,8 @@ package scala.compat
 import java.lang.{String, StringBuffer}
 
 
-/**  Consult the documentation of java.lang.StringBuffer for more details
- *   (see http://java.sun.com/javame/reference/apis/jsr030/).
+/** Consult the documentation of <code>java.lang.StringBuffer</code> for more
+ *  details (see http://java.sun.com/javame/reference/apis/jsr030/).
  */
 final class StringBuilder(val self: StringBuffer) extends (Int => Char) with Proxy {
 
@@ -63,7 +63,7 @@ final class StringBuilder(val self: StringBuffer) extends (Int => Char) with Pro
   def insert(at: Int, x: Long):    StringBuilder = { self.insert(at, x); this }
   def insert(at: Int, x: String):  StringBuilder = { self.insert(at, x); this }
   def insert(at: Int, x: Array[Char]):  StringBuilder = { self.insert(at, x); this }
-  //def insert(at: Int, x: Array[Char], start: Int, length: Int): StringBuilder =
-  //  { self.insert(at, x, start, length); this }
+  def insert(at: Int, x: Array[Char], start: Int, length: Int): StringBuilder =
+    { self.insert(at, x.slice(start, length)); this }
 
 }

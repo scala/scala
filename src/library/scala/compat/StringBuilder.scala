@@ -15,7 +15,8 @@ package scala.compat
 import java.lang.{String, StringBuffer}
 
 
-/**  Consult the documentation of java.lang.StringBuffer for more details
+/** Consult the documentation of <code>java.lang.StringBuffer</code> for more
+ *  details (see http://java.sun.com/javase/6/docs/api/).
  */
 final class StringBuilder(val self: StringBuffer) extends (Int => Char) with Proxy {
 

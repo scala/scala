@@ -143,7 +143,7 @@ class MasterActor(testDir: File, out: PrintStream) extends Actor {
             out.println(counter - failed)
             out.close
             println
-            System.exit(1) //exit  // Help! Philipp.
+            exit
           }
 
         case msg =>
