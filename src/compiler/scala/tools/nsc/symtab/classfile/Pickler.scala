@@ -162,7 +162,8 @@ abstract class Pickler extends SubComponent {
           putType(lo); putType(hi)
         case RefinedType(parents, decls) =>
           val rclazz = tp.typeSymbol
-          assert(decls.elements forall (_.owner == rclazz))
+          for (m <- decls.elements)
+            if (m.owner != rclazz) assert(false, "bad refinement member "+m+" of "+tp+", owner = "+m.owner)
           putSymbol(rclazz); putTypes(parents); putSymbols(decls.toList)
         case ClassInfoType(parents, decls, clazz) =>
           putSymbol(clazz); putTypes(parents); putSymbols(decls.toList)

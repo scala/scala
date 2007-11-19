@@ -1320,9 +1320,13 @@ trait Types {
       sym.isModuleClass || sym == AllClass || isValueClass(sym) || super.isNotNull
 
     // @M: propagate actual type params (args) to `tp', by replacing formal type parameters with actual ones
-    def transform(tp: Type): Type =
-      tp.asSeenFrom(pre, sym.owner).instantiateTypeParams(sym.typeParams, argsMaybeDummy)
+    def transform(tp: Type): Type = {
+      val args = argsMaybeDummy
+      if (args.length == sym.typeParams.length)
+        tp.asSeenFrom(pre, sym.owner).instantiateTypeParams(sym.typeParams, argsMaybeDummy)
+      else { assert(args exists (_.isError)); tp }
       // @M TODO maybe we shouldn't instantiate type params if isHigherKinded -- probably needed for partial type application though
+    }
 
     //@M! use appliedType on the polytype that represents the bounds (or if aliastype, the rhs)
     def transformInfo(tp: Type): Type =
@@ -3552,7 +3556,7 @@ A type's typeSymbol should never be inspected directly.
                 else {
                   def lubBounds(bnds: List[TypeBounds]): TypeBounds =
                     mkTypeBounds(glb(bnds map (_.lo), depth-1), lub(bnds map (_.hi), depth-1))
-                  recycle(proto.owner.newAbstractType(proto.pos, proto.name))
+                  recycle(lubRefined.typeSymbol.newAbstractType(proto.pos, proto.name))
                     .setInfo(lubBounds(symtypes map (_.bounds)))
                 }
               }
