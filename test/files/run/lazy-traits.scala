@@ -136,6 +136,23 @@ package x.y {
   }
 }
 
+/** Test successful compilation of lazy values of type Unit.  */
+class UnitLazy extends A {
+  lazy val lz = Console.println("UnitLazy.lz forced")
+}
+
+trait UnitLazyT {
+  lazy val lzt = Console.println("UnitLazyT.lzt forced")
+}
+
+class MixedUnitLazy extends UnitLazy with UnitLazyT {
+  override def toString() = {
+    lz
+    lzt
+    "MixedUnitLazy"
+  }
+}
+
 object Test extends Application {
 
   def test(name: String, v: A) {
@@ -149,4 +166,5 @@ object Test extends Application {
   test("Cls2", new Cls2)
   test("Cls with B", new ClsB)
   test("OverflownLazyFields with A", new OverflownLazyFields)
+  test("Unit lazy values", new MixedUnitLazy)
 }

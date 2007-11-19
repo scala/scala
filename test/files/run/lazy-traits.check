@@ -152,3 +152,9 @@ zc29 = lazy zc29
 zc30 = lazy zc30
 zc31 = lazy zc31
 z1 = lazy z1
+Unit lazy values test:
+UnitLazy.lz forced
+UnitLazyT.lzt forced
+MixedUnitLazy
+MixedUnitLazy
+MixedUnitLazy
