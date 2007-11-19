@@ -1,0 +1,4 @@
+t0214.scala:3: error: missing parameter type
+  a2p(x => x._1,(2,3))
+      ^
+one error found

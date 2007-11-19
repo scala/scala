@@ -1,0 +1,6 @@
+t0209.scala:15: error: type mismatch;
+ found   : C
+ required: _1.type where val _1: A
+    (new B: A).f(new C)
+                 ^
+one error found
