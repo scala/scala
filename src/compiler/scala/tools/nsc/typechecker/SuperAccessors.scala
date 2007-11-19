@@ -151,7 +151,13 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
               clazz.newMethod(tree.pos, supername)
                 .setFlag(SUPERACCESSOR | PRIVATE)
                 .setAlias(sym)
-            superAcc.setInfo(clazz.thisType.memberType(sym).cloneInfo(superAcc))
+            var superAccTpe = clazz.thisType.memberType(sym)
+            if (sym.isModule && !sym.isMethod) {
+              // the super accessor always needs to be a method. See #231
+              superAccTpe = PolyType(List(), superAccTpe)
+            }
+            superAcc.setInfo(superAccTpe.cloneInfo(superAcc))
+            //println("creating super acc "+superAcc+":"+superAcc.tpe)//DEBUG
             clazz.info.decls enter superAcc;
             accDefBuf(clazz) += typed(DefDef(superAcc, vparamss => EmptyTree))
           }

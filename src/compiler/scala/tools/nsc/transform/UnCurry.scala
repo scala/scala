@@ -49,43 +49,49 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
   private def expandAlias(tp: Type): Type = if (!tp.isHigherKinded) tp.normalize else tp
 
   private val uncurry: TypeMap = new TypeMap {
-    def apply(tp0: Type): Type = {val tp=expandAlias(tp0); tp match {
-      case MethodType(formals, MethodType(formals1, restpe)) =>
-        apply(MethodType(formals ::: formals1, restpe))
-      case MethodType(formals, ExistentialType(tparams, restpe @ MethodType(_, _))) =>
-        assert(false, "unexpected curried method types with intervening exitential")
-        tp0
-      case mt: ImplicitMethodType =>
-        apply(MethodType(mt.paramTypes, mt.resultType))
-      case PolyType(List(), restpe) =>
-        apply(MethodType(List(), restpe))
-      case PolyType(tparams, restpe) =>
-        PolyType(tparams, apply(MethodType(List(), restpe)))
-      /*
-      case TypeRef(pre, sym, List(arg1, arg2)) if (arg1.typeSymbol == ByNameParamClass) =>
-        assert(sym == FunctionClass(1))
-        apply(typeRef(pre, definitions.ByNameFunctionClass, List(expandAlias(arg1.typeArgs(0)), arg2)))
-      */
-      case TypeRef(pre, sym, List(arg)) if (sym == ByNameParamClass) =>
-        apply(functionType(List(), arg))
-      case TypeRef(pre, sym, args) if (sym == RepeatedParamClass) =>
-        apply(rawTypeRef(pre, SeqClass, args))
-      case _ =>
-        expandAlias(mapOver(tp))
-    }}
+    def apply(tp0: Type): Type = {
+      val tp = expandAlias(tp0)
+      tp match {
+        case MethodType(formals, MethodType(formals1, restpe)) =>
+          apply(MethodType(formals ::: formals1, restpe))
+        case MethodType(formals, ExistentialType(tparams, restpe @ MethodType(_, _))) =>
+          assert(false, "unexpected curried method types with intervening exitential")
+          tp0
+        case mt: ImplicitMethodType =>
+          apply(MethodType(mt.paramTypes, mt.resultType))
+        case PolyType(List(), restpe) =>
+          apply(MethodType(List(), restpe))
+        case PolyType(tparams, restpe) =>
+          PolyType(tparams, apply(MethodType(List(), restpe)))
+        /*
+         case TypeRef(pre, sym, List(arg1, arg2)) if (arg1.typeSymbol == ByNameParamClass) =>
+         assert(sym == FunctionClass(1))
+         apply(typeRef(pre, definitions.ByNameFunctionClass, List(expandAlias(arg1.typeArgs(0)), arg2)))
+         */
+        case TypeRef(pre, sym, List(arg)) if (sym == ByNameParamClass) =>
+          apply(functionType(List(), arg))
+        case TypeRef(pre, sym, args) if (sym == RepeatedParamClass) =>
+          apply(rawTypeRef(pre, SeqClass, args))
+        case _ =>
+          expandAlias(mapOver(tp))
+      }
+    }
   }
 
   private val uncurryType = new TypeMap {
-    def apply(tp0: Type): Type = {val tp=expandAlias(tp0); tp match {
-      case ClassInfoType(parents, decls, clazz) =>
-        val parents1 = List.mapConserve(parents)(uncurry)
-        if (parents1 eq parents) tp
-        else ClassInfoType(parents1, decls, clazz) // @MAT normalize in decls??
-      case PolyType(_, _) =>
-        mapOver(tp)
-      case _ =>
-        tp
-    }}
+    def apply(tp0: Type): Type = {
+      val tp = expandAlias(tp0)
+      tp match {
+        case ClassInfoType(parents, decls, clazz) =>
+          val parents1 = List.mapConserve(parents)(uncurry)
+          if (parents1 eq parents) tp
+          else ClassInfoType(parents1, decls, clazz) // @MAT normalize in decls??
+        case PolyType(_, _) =>
+          mapOver(tp)
+        case _ =>
+          tp
+      }
+    }
   }
 
   /** - return symbol's transformed type,

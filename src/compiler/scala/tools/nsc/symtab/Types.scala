@@ -1324,7 +1324,7 @@ trait Types {
       val args = argsMaybeDummy
       if (args.length == sym.typeParams.length)
         tp.asSeenFrom(pre, sym.owner).instantiateTypeParams(sym.typeParams, argsMaybeDummy)
-      else { assert(args exists (_.isError)); tp }
+      else { assert(sym.typeParams.isEmpty || (args exists (_.isError)), tp); tp }
       // @M TODO maybe we shouldn't instantiate type params if isHigherKinded -- probably needed for partial type application though
     }
 
@@ -3760,6 +3760,8 @@ A type's typeSymbol should never be inspected directly.
       } catch {
         case ex: MalformedType => None
       }
+    case _ =>
+      assert(false, tps); None
   }
 
   /** Make symbol `sym' a member of scope `tp.decls'
