@@ -246,7 +246,7 @@ abstract class LambdaLift extends InfoTransform {
       for (sym <- renamable.elements) {
         val base =
           if (sym.isAnonymousFunction && sym.owner.isMethod)
-            sym.owner.name.toString() + sym.name.toString() + "$"
+            sym.name.toString() + "$" + sym.owner.name.toString() + "$"
           else sym.name.toString() + "$"
         sym.name = unit.fresh.newName(base)
         if (settings.debug.value) log("renamed: " + sym.name)
