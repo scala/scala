@@ -906,7 +906,7 @@ trait Symbols {
       var sym: Symbol = NoSymbol
       while (!bcs.isEmpty && sym == NoSymbol) {
         bcs = bcs.tail
-        if (!bcs.head.isImplClass)
+        if (!bcs.isEmpty && bcs.head.isImplClass)
           sym = matchingSymbol(bcs.head, base.thisType).suchThat(sym => !sym.hasFlag(DEFERRED))
       }
       sym
