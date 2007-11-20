@@ -658,6 +658,7 @@ CLDC
 ============================================================================ -->
 
   <property name="cldcapi.jar" value="${lib.dir}/cldcapi10.jar"/>
+  <property name="midpapi.jar" value="${lib.dir}/midpapi10.jar"/>
 
   <target name="cldc.sources"
           description="Create the source directory for the J2ME (CLDC) library"
@@ -755,11 +756,44 @@ CLDC
       <exclude name="scala/xml/**"/>
       <excludesfile name="${nsc.excludes}" if="excludes.avail"/>
     </quick>
+    <macrodef name="preverify">
+      <attribute name="srcdir"/>
+      <attribute name="destdir"/>
+      <sequential>
+        <exec executable="preverify" failonerror="false">
+          <arg line="-classpath ${cldcapi.jar}${path.separator}${midpapi.jar}"/>
+          <arg line="-target cldc1.0"/>
+          <arg line="-d @{destdir}"/>
+          <arg value="@{srcdir}"/>
+        </exec>
+      </sequential>
+    </macrodef>
+    <mkdir dir="${cldc.dir}/lib/preverified"/>
+    <preverify
+      srcdir="${cldc.dir}/lib/library"
+      destdir="${cldc.dir}/lib/preverified"
+    />
     <jar
       destfile="${cldc.dir}/lib/scala-cldc-library.jar"
       basedir="${cldc.dir}/lib/library"
-      includes="scala/**/*.class"
-    />
+      includes="scala/**/*.class">
+      <manifest>
+        <attribute name="Created-By" value="${version.number} (${vendor.name})"/>
+      </manifest>
+    </jar>
+    <!-- see http://java.sun.com/j2me/docs/uei_specs.pdf -->
+    <jar
+      destfile="${cldc.dir}/lib/scala-cldc-api.jar"
+      basedir="${cldc.dir}/lib/preverified"
+      includes="scala/**/*.class">
+      <manifest>
+        <attribute name="Created-By" value="${version.number} (${vendor.name})"/>
+        <attribute name="API-Specification-Version" value="1.0"/>
+        <attribute name="API" value="Scala CLDC"/>
+        <attribute name="API-Name" value="Scala Connected Limited Device Configuration"/>
+        <attribute name="API-Type" value="Configuration"/>
+      </manifest>
+    </jar>
   </target>
 
 <!-- ===========================================================================

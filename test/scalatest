@@ -335,7 +335,7 @@ test_run_cldc() {
       echo MIDlet-Jar-Size: $jarsize;
       echo MicroEdition-Profile: MIDP-1.0;
       echo MicroEdition-Configuration: CLDC-1.0 ) > "$dstbase".jad &&
-    cpath=`get_os_pathlist $SCALA_CLDC:"$dstbase".jar` &&
+    cpath=`get_os_pathlist $SCALA_CLDC_API:"$dstbase".jar` &&
     $KVEM_EMULATOR -cp $cpath -Xdescriptor:"$dstbase".jad 2> /dev/null &&
     head $logfile -n 4 | tail -n 1 > $logfile.0 &&
     mv $logfile.0 $logfile
@@ -633,7 +633,8 @@ QUICK="$PREFIX/build/quick/bin"
 QUICK_LIB="$PREFIX/build/quick/lib/library"
 QUICK_COMP="$PREFIX/build/quick/lib/compiler"
 QUICK_ACT="$PREFIX/build/quick/lib/actors"
-QUICK_CLDC="$PREFIX/build/cldc/lib/library"
+QUICK_CLDC="$PREFIX/build/cldc/lib/scala-cldc-library.jar"  # unverified
+QUICK_CLDC_API="$PREFIX/build/cldc/lib/scala-cldc-api.jar"  # preverified
 
 JVM_EXT_CLASSPATH=`get_ext_classpath $TESTROOT/files/lib`
 
@@ -666,6 +667,7 @@ SCALA_LIB="$LATEST_LIB";
 SCALA_COMP="$LATEST_COMP";
 SCALA_ACT="$LATEST_ACT";
 SCALA_CLDC="$QUICK_CLDC";
+SCALA_CLDC_API="$QUICK_CLDC_API";
 
 [ -x "$JAVACMD" ] || JAVACMD=java;
 [ -n "$JAVA_OPTS" ] || JAVA_OPTS="-Xmx256M -Xms16M";
@@ -863,8 +865,11 @@ else
             KVEM_CLDC=$PREFIX/lib/cldcapi10.jar;
             KVEM_MIDP=$KVEM_HOME/lib/midpapi10.jar;
             JARCMD=$bin_dir/jar;
+        elif [ -d "/home/linuxsoft/apps/" ]; then
+            error "option '--cldc' requires variable KVEM_HOME to be set"
+            abort "(eg. export KVEM_HOME=/home/linuxsoft/apps/java-wtk)";
         else
-            abort "option 'cldc' requires variable KVEM_HOME to be set";
+            abort "option '--cldc' requires variable KVEM_HOME to be set";
         fi
         kvem_version=`$KVEM_EMULATOR -version | head -1`;
         printf_outline "Emulator version is : $kvem_version\\n";

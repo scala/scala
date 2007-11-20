@@ -9,8 +9,8 @@ class Test extends MIDlet with CommandListener {
     val mainForm = new Form("randoms")
     mainForm append "Welcome to the world of MIDlets!"
     mainForm append "(build with Scala)"
-    //val rnd = new Random
-    //for (i <- 0 until 10) mainForm append rnd.nextInt.toString
+    val rnd = new Random
+    for (i <- 0 until 10) mainForm append rnd.nextInt.toString
 
     val exitCommand = new Command("Exit", Command.EXIT, 0)
     mainForm addCommand exitCommand
