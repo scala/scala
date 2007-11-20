@@ -1447,7 +1447,7 @@ GENERATES A DISTRIBUTION
   </target>
 
   <!-- Create the SBaz packages -->
-  <target name="build.sbaz" depends="build.dist">
+  <target name="build.sbaz" depends="build.dist,cldclib">
     <property name="sbaz.universe" value="http://www.scala-lang.org/downloads/packages"/>
     <mkdir dir="${dist.dir}"/>
   <!-- Create the Scala library package -->
