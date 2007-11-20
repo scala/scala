@@ -48,3 +48,5 @@ Normal execution...
 inner finally
 finally inside finally
 Outer finally
+Throw in catch and finally:
+ABC

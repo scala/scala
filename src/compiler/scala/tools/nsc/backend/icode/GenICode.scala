@@ -537,22 +537,6 @@ abstract class GenICode extends SubComponent  {
                 })
             }
 
-          if (finalizer != EmptyTree)
-            handlers = (NoSymbol, kind, {
-              ctx: Context =>
-                val exception = ctx.method.addLocal(new Local(ctx.method.symbol
-                                          .newVariable(finalizer.pos, unit.fresh.newName("exc"))
-                                          .setFlag(Flags.SYNTHETIC)
-                                          .setInfo(definitions.ThrowableClass.tpe),
-                                          REFERENCE(definitions.ThrowableClass), false));
-              ctx.bb.emit(STORE_LOCAL(exception));
-              val ctx1 = genLoad(finalizer, ctx, UNIT);
-              ctx1.bb.emit(LOAD_LOCAL(exception));
-              ctx1.bb.emit(THROW());
-              ctx1.bb.enterIgnoreMode;
-              ctx1
-            }) :: handlers;
-
           val duppedFinalizer = (new DuplicateLabels(ctx.labels.keySet))(ctx, finalizer)
           if (settings.debug.value)
             log("Duplicated finalizer: " + duppedFinalizer)
@@ -1924,6 +1908,15 @@ abstract class GenICode extends SubComponent  {
         exh
       }
 
+      /** Add an active exception handler in this context. It will cover all new basic blocks
+       *  created from now on. */
+      private def addActiveHandler(exh: ExceptionHandler) {
+        handlerCount += 1
+        handlers = exh :: handlers
+        if (settings.debug.value)
+          log("added handler: " + exh);
+      }
+
       /** Return a new context for generating code for the given
        * exception handler.
        */
@@ -1968,8 +1961,28 @@ abstract class GenICode extends SubComponent  {
       def Try(body: Context => Context,
               handlers: List[(Symbol, TypeKind, (Context => Context))],
               finalizer: Tree) = {
-        val outerCtx = this.dup
+        val outerCtx = this.dup       // context for generating exception handlers, covered by finalizer
+        val finalizerCtx = this.dup   // context for generating finalizer handler
         val afterCtx = outerCtx.newBlock
+
+        val finalizerExh = if (finalizer != EmptyTree) Some({
+          val exh = outerCtx.newHandler(NoSymbol, toTypeKind(finalizer.tpe)) // finalizer covers exception handlers
+          this.addActiveHandler(exh)  // .. and body aswell
+          val ctx = finalizerCtx.enterHandler(exh)
+          val exception = ctx.method.addLocal(new Local(ctx.method.symbol
+                                    .newVariable(finalizer.pos, unit.fresh.newName("exc"))
+                                    .setFlag(Flags.SYNTHETIC)
+                                    .setInfo(definitions.ThrowableClass.tpe),
+                                    REFERENCE(definitions.ThrowableClass), false));
+          if (settings.Xdce.value) ctx.bb.emit(LOAD_EXCEPTION())
+          ctx.bb.emit(STORE_LOCAL(exception));
+          val ctx1 = genLoad(finalizer, ctx, UNIT);
+          ctx1.bb.emit(LOAD_LOCAL(exception));
+          ctx1.bb.emit(THROW());
+          ctx1.bb.enterIgnoreMode;
+          ctx1.bb.close
+          exh
+        }) else None
 
         val exhs = handlers.map { handler =>
             val exh = this.newHandler(handler._1, handler._2)
@@ -1990,8 +2003,9 @@ abstract class GenICode extends SubComponent  {
         outerCtx.bb.close
 
         exhs.reverse foreach finalCtx.removeHandler
-        if (finalizer != EmptyTree)
+        if (finalizer != EmptyTree) {
           finalCtx.removeFinalizer(finalizer)
+        }
 
         finalCtx.bb.emit(JUMP(afterCtx.bb))
         finalCtx.bb.close

@@ -235,6 +235,19 @@ object Test {
     }
   }
 
+  def tryThrowFinally: Unit = {
+    try {
+      print("A")
+      throw new Exception
+    } catch {
+      case e : Exception =>
+        print("B")
+      throw e
+    } finally {
+      println("C")
+    }
+  }
+
   def execute(f: => Unit) = try {
     f;
   } catch {
@@ -294,5 +307,8 @@ object Test {
 
     Console.println("Return inside body and return in finally inside finally:");
     execute(returnInBodyAndInFinally2);
+
+    Console.println("Throw in catch and finally:");
+    execute(tryThrowFinally);
   }
 }
