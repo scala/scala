@@ -448,7 +448,6 @@ class Global(var settings: Settings, var reporter: Reporter) extends Trees
     phase = firstPhase
     definitions.init  // needs firstPhase and phase to be defined != NoPhase,
                       // that's why it is placed here.
-    icodes.init
 
     /** Deprecation warnings occurred */
     var deprecationWarnings: Boolean = false
