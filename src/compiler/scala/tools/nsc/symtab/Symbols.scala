@@ -902,15 +902,13 @@ trait Symbols {
      *  pre: `this.owner' is in the base class sequence of `base'.
      */
     final def superSymbol(base: Symbol): Symbol = {
-      var bcs = base.info.baseClasses.dropWhile(owner !=).tail
+      var bcs = base.info.baseClasses.dropWhile(owner != _)
       var sym: Symbol = NoSymbol
       while (!bcs.isEmpty && sym == NoSymbol) {
-        if (!bcs.head.isImplClass)
-          sym = matchingSymbol(bcs.head, base.thisType).suchThat(
-            sym => !sym.hasFlag(DEFERRED))
         bcs = bcs.tail
+        if (!bcs.head.isImplClass)
+          sym = matchingSymbol(bcs.head, base.thisType).suchThat(sym => !sym.hasFlag(DEFERRED))
       }
-      sym
     }
 
     /** The getter of this value or setter definition in class `base', or NoSymbol if
