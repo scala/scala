@@ -909,6 +909,7 @@ trait Symbols {
         if (!bcs.head.isImplClass)
           sym = matchingSymbol(bcs.head, base.thisType).suchThat(sym => !sym.hasFlag(DEFERRED))
       }
+      sym
     }
 
     /** The getter of this value or setter definition in class `base', or NoSymbol if
