@@ -129,7 +129,7 @@ trait TypeKinds { self: ICodes =>
     def maxType(other: TypeKind): TypeKind = other match {
       case UNIT => UNIT
       case REFERENCE(a) if a == definitions.AllClass => UNIT
-      case _ => abort("Uncomparabale type kinds: UNIT with " + other)
+      case _ => abort("Uncomparable type kinds: UNIT with " + other)
     }
   }
 
@@ -138,7 +138,7 @@ trait TypeKinds { self: ICodes =>
     override def maxType(other: TypeKind): TypeKind = other match {
       case BOOL => BOOL
       case REFERENCE(a) if a == definitions.AllClass => BOOL
-      case _ => abort("Uncomparabale type kinds: BOOL with " + other)
+      case _ => abort("Uncomparable type kinds: BOOL with " + other)
     }
   }
 
@@ -148,7 +148,7 @@ trait TypeKinds { self: ICodes =>
       other match {
         case BYTE | SHORT | CHAR | INT | LONG | FLOAT | DOUBLE => other
         case REFERENCE(a) if a == definitions.AllClass => BYTE
-        case _ => abort("Uncomparabale type kinds: BYTE with " + other)
+        case _ => abort("Uncomparable type kinds: BYTE with " + other)
       }
   }
 
@@ -159,7 +159,7 @@ trait TypeKinds { self: ICodes =>
         case BYTE | SHORT | CHAR => SHORT
         case REFERENCE(a) if a == definitions.AllClass => SHORT
         case INT | LONG | FLOAT | DOUBLE => other
-        case _ => abort("Uncomparabale type kinds: SHORT with " + other)
+        case _ => abort("Uncomparable type kinds: SHORT with " + other)
       }
   }
 
@@ -170,7 +170,7 @@ trait TypeKinds { self: ICodes =>
         case BYTE | SHORT | CHAR => CHAR
         case REFERENCE(a) if a == definitions.AllClass => CHAR
         case INT | LONG | FLOAT | DOUBLE => other
-        case _ => abort("Uncomparabale type kinds: CHAR with " + other)
+        case _ => abort("Uncomparable type kinds: CHAR with " + other)
       }
   }
 
@@ -182,7 +182,7 @@ trait TypeKinds { self: ICodes =>
         case BYTE | SHORT | CHAR | INT => INT
         case REFERENCE(a) if a == definitions.AllClass => INT
         case LONG | FLOAT | DOUBLE => other
-        case _ => abort("Uncomparabale type kinds: INT with " + other)
+        case _ => abort("Uncomparable type kinds: INT with " + other)
       }
   }
 
@@ -193,7 +193,7 @@ trait TypeKinds { self: ICodes =>
         case BYTE | SHORT | CHAR | INT | LONG => LONG
         case REFERENCE(a) if a == definitions.AllClass => LONG
         case FLOAT | DOUBLE => DOUBLE
-        case _ => abort("Uncomparabale type kinds: LONG with " + other)
+        case _ => abort("Uncomparable type kinds: LONG with " + other)
       }
   }
 
@@ -203,7 +203,7 @@ trait TypeKinds { self: ICodes =>
       case BYTE | SHORT | CHAR | INT | LONG | FLOAT => FLOAT
         case REFERENCE(a) if a == definitions.AllClass => FLOAT
       case DOUBLE => DOUBLE
-      case _ => abort("Uncomparabale type kinds: FLOAT with " + other)
+      case _ => abort("Uncomparable type kinds: FLOAT with " + other)
     }
   }
 
@@ -213,7 +213,7 @@ trait TypeKinds { self: ICodes =>
       if (other.isNumericType)
         DOUBLE
       else if (other == REFERENCE(definitions.AllClass)) DOUBLE
-      else abort("Uncomparabale type kinds: DOUBLE with " + other)
+      else abort("Uncomparable type kinds: DOUBLE with " + other)
   }
 
   /** A string reference */
