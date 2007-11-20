@@ -221,7 +221,7 @@ object TestRunner {
   }
 
   private def printVersion {
-    println(util.Properties.versionMsg)
+    println(utils.Properties.versionMsg)
     exit(0)
   }
 

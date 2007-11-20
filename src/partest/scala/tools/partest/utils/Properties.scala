@@ -8,7 +8,7 @@
 
 // $Id$
 
-package scala.tools.partest.util
+package scala.tools.partest.utils
 
 /** A utility to load the library properties from a Java properties file
  *  included in the jar.
