@@ -264,16 +264,6 @@ trait Namers { self: Analyzer =>
 
     def deSkolemize: TypeMap = new DeSkolemizeMap(applicableTypeParams(context.owner))
 
-    /** A class representing a lazy type with known type parameters.
-     */
-    class LazyPolyType(tparams: List[Tree], restp: Type, owner: Tree, ownerSym: Symbol, ctx: Context) extends LazyType { //@M
-      override val typeParams: List[Symbol]= tparams map (_.symbol) //@M
-      override def complete(sym: Symbol) {
-        if(ownerSym.isAbstractType) //@M an abstract type's type parameters are entered -- TODO: change to isTypeMember ?
-          newNamer(ctx.makeNewScope(owner, ownerSym)).enterSyms(tparams) //@M
-        restp.complete(sym)
-      }
-    }
     def reuse[T <: Tree](tree: T) = if (!inIDE) tree else {
       val tree0 = tree.duplicate
 	    //tree0.symbol = tree.symbol
@@ -285,14 +275,14 @@ trait Namers { self: Analyzer =>
       def finishWith(tparams: List[TypeDef]) {
         val sym = tree.symbol
         if (settings.debug.value) log("entered " + sym + " in " + context.owner + ", scope-id = " + context.scope.hashCode());
-        var ltype: LazyType = namerOf(sym).typeCompleter(tree)
+        var ltype = namerOf(sym).typeCompleter(tree)
         if (!tparams.isEmpty) {
           //@M! TypeDef's type params are handled differently
           //@M e.g., in [A[x <: B], B], A and B are entered first as both are in scope in the definition of x
           //@M x is only in scope in `A[x <: B]'
           if(!sym.isAbstractType) //@M TODO: change to isTypeMember ?
             newNamer(context.makeNewScope(tree, sym)).enterSyms(tparams)
-          ltype = new LazyPolyType(tparams, ltype, tree, sym, context) //@M
+          ltype = new PolyTypeCompleter(tparams, ltype, tree, sym, context) //@M
           if (sym.isTerm) skolemize(tparams)
         }
         setInfo(sym)(ltype)
@@ -391,74 +381,61 @@ trait Namers { self: Analyzer =>
 
 // --- Lazy Type Assignment --------------------------------------------------
 
-    def typeCompleter(tree: Tree) = new TypeCompleter(tree) {
-      override def complete(sym: Symbol) {
-        if (settings.debug.value) log("defining " + sym + Flags.flagsToString(sym.flags));
-        val tp = typeSig(tree)
-        // check that
-        tp match {
-          case TypeBounds(lo, hi) =>
-            // check that lower bound is not an F-bound
-            for (val t <- lo) {
-              t match {
-                case TypeRef(_, sym, _) => sym.initialize
-                case _ =>
-              }
+    def typeCompleter(tree: Tree) = mkTypeCompleter(tree) { sym =>
+      if (settings.debug.value) log("defining " + sym + Flags.flagsToString(sym.flags));
+      val tp = typeSig(tree)
+      tp match {
+        case TypeBounds(lo, hi) =>
+          // check that lower bound is not an F-bound
+          for (val t <- lo) {
+            t match {
+              case TypeRef(_, sym, _) => sym.initialize
+              case _ =>
             }
-          case _ =>
-        }
-        sym.setInfo(tp)
-        if ((sym.isAliasType || sym.isAbstractType) && !(sym hasFlag PARAM) &&
-            !typer.checkNonCyclic(tree.pos, tp))
-          sym.setInfo(ErrorType) // this early test is there to avoid infinite baseTypes when
-                                 // adding setters and getters --> bug798
-        if (settings.debug.value) log("defined " + sym);
-        validate(sym)
+          }
+        case _ =>
       }
+      sym.setInfo(tp)
+      if ((sym.isAliasType || sym.isAbstractType) && !(sym hasFlag PARAM) &&
+          !typer.checkNonCyclic(tree.pos, tp))
+        sym.setInfo(ErrorType) // this early test is there to avoid infinite baseTypes when
+                               // adding setters and getters --> bug798
+      if (settings.debug.value) log("defined " + sym);
+      validate(sym)
     }
 
-    def moduleClassTypeCompleter(tree: Tree) = new TypeCompleter(tree) {
-      override def complete(sym: Symbol) {
-        tree.symbol.info // sets moduleClass info as a side effect.
-      }
+    def moduleClassTypeCompleter(tree: Tree) = mkTypeCompleter(tree) { sym =>
+      tree.symbol.info // sets moduleClass info as a side effect.
     }
 
-    def getterTypeCompleter(tree: Tree) = new TypeCompleter(tree) {
-      override def complete(sym: Symbol) {
-        if (settings.debug.value) log("defining " + sym)
-        sym.setInfo(PolyType(List(), typeSig(tree)))
-        if (settings.debug.value) log("defined " + sym)
-        validate(sym)
-      }
+    def getterTypeCompleter(tree: Tree) = mkTypeCompleter(tree) { sym =>
+      if (settings.debug.value) log("defining " + sym)
+      sym.setInfo(PolyType(List(), typeSig(tree)))
+      if (settings.debug.value) log("defined " + sym)
+      validate(sym)
     }
 
-    def setterTypeCompleter(tree: Tree) = new TypeCompleter(tree) {
-      override def complete(sym: Symbol) {
-        if (settings.debug.value) log("defining " + sym);
-        sym.setInfo(MethodType(List(typeSig(tree)), UnitClass.tpe))
-        if (settings.debug.value) log("defined " + sym);
-        validate(sym)
-      }
+    def setterTypeCompleter(tree: Tree) = mkTypeCompleter(tree) { sym =>
+      if (settings.debug.value) log("defining " + sym);
+      sym.setInfo(MethodType(List(typeSig(tree)), UnitClass.tpe))
+      if (settings.debug.value) log("defined " + sym);
+      validate(sym)
     }
 
-    def selfTypeCompleter(tree: Tree) = new TypeCompleter(tree) {
-      override def complete(sym: Symbol) {
-        var selftpe = typer.typedType(tree).tpe
-        if (!(selftpe.typeSymbol isNonBottomSubClass sym.owner))
-          selftpe = intersectionType(List(sym.owner.tpe, selftpe))
-//      println("completing self of "+sym.owner+": "+selftpe)
-        sym.setInfo(selftpe)
-      }
+    def selfTypeCompleter(tree: Tree) = mkTypeCompleter(tree) { sym =>
+      var selftpe = typer.typedType(tree).tpe
+      if (!(selftpe.typeSymbol isNonBottomSubClass sym.owner))
+        selftpe = intersectionType(List(sym.owner.tpe, selftpe))
+//    println("completing self of "+sym.owner+": "+selftpe)
+      sym.setInfo(selftpe)
     }
 
-    def caseFactoryCompleter(tree: Tree) = new TypeCompleter(tree) {
-      override def complete(sym: Symbol) {
-        val clazz = tree.symbol
-        var tpe = clazz.primaryConstructor.tpe
-        val tparams = clazz.typeParams
-        if (!tparams.isEmpty) tpe = PolyType(tparams, tpe).cloneInfo(sym);
-        sym.setInfo(tpe)
-      }
+    def caseFactoryCompleter(tree: Tree) = mkTypeCompleter(tree) { sym =>
+      val clazz = tree.symbol
+      var tpe = clazz.primaryConstructor.tpe
+      val tparams = clazz.typeParams
+      if (!tparams.isEmpty) tpe = PolyType(tparams, tpe).cloneInfo(sym);
+      sym.setInfo(tpe)
     }
 
     private def widenIfNotFinal(sym: Symbol, tpe: Type, pt: Type): Type = {
@@ -941,7 +918,26 @@ trait Namers { self: Analyzer =>
     }
   }
 
-  abstract class TypeCompleter(val tree: Tree) extends LazyType
+  abstract class TypeCompleter extends LazyType {
+    val tree: Tree
+  }
+
+  def mkTypeCompleter(t: Tree)(c: Symbol => Unit) = new TypeCompleter {
+    val tree = t
+    override def complete(sym: Symbol) = c(sym)
+  }
+
+  /** A class representing a lazy type with known type parameters.
+   */
+  class PolyTypeCompleter(tparams: List[Tree], restp: TypeCompleter, owner: Tree, ownerSym: Symbol, ctx: Context) extends TypeCompleter {
+    override val typeParams: List[Symbol]= tparams map (_.symbol) //@M
+    override val tree = restp.tree
+    override def complete(sym: Symbol) {
+      if(ownerSym.isAbstractType) //@M an abstract type's type parameters are entered -- TODO: change to isTypeMember ?
+        newNamer(ctx.makeNewScope(owner, ownerSym)).enterSyms(tparams) //@M
+      restp.complete(sym)
+    }
+  }
 
   /** The symbol that which this accessor represents (possibly in part).
    *  This is used for error messages, where we want to speak in terms
