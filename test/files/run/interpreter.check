@@ -144,7 +144,7 @@ scala> <console>:1: error: '=' expected but '=>' found.
 scala> <console>:1: error: identifier expected but integer literal found.
        [1,2,3]
         ^
-<console>:1: error: ']' expected but ';' found.
+<console>:1: error: ']' expected but eof found.
        [1,2,3]
               ^
 

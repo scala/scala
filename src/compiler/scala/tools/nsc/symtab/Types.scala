@@ -2260,9 +2260,16 @@ A type's typeSymbol should never be inspected directly.
 
     /** Map this function over given list of symbols */
     def mapOver(origSyms: List[Symbol]): List[Symbol] = {
-      val origInfos = origSyms map (_.info)
-      val newInfos = List.mapConserve(origInfos)(this)
-      if (newInfos eq origInfos) origSyms // fast path in case nothing changes due to map
+      var change = false
+      val newInfos = for (sym <- origSyms) yield {
+        val v = variance
+        if (sym.isAliasType) variance = 0
+        val result = this(sym.info)
+        if (result ne sym.info) change = true
+        variance = v
+        result
+      }
+      if (!change) origSyms // fast path in case nothing changes due to map
       else { // map is not the identity --> do cloning properly
         val clonedSyms = origSyms map (_.cloneSymbol)
         val clonedInfos = clonedSyms map (_.info.substSym(origSyms, clonedSyms))
