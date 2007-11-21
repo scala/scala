@@ -227,6 +227,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
 
       /** Return a list of list of types of all value parameter sections. */
       def allParamTypes(tpe: Type): List[List[Type]] = tpe match {
+        case PolyType(_, restpe) => allParamTypes(restpe)
         case MethodType(pts, res) => pts :: allParamTypes(res)
         case _ => Nil
       }
