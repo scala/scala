@@ -1,9 +1,12 @@
 10
 meth1(1) = 2
+meth1(1.0) = 2.0
 meth2(1)(1) = prefix: 0
 meth2(1)(1) = prefix: 0
 meth3 = class [I
 100 = 100
+id(1) = 1
+id('a') = a
 count before: 3
 count after: 4
 10

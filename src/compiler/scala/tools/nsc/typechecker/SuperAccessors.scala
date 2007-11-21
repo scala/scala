@@ -113,6 +113,14 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
 	accDefs = accDefs.tail;
 	copy.Template(tree, parents, self, ownAccDefs.toList ::: body1);
 
+      case TypeApply(sel @ Select(This(_), name), args) =>
+        val sym = tree.symbol
+        if (needsProtectedAccessor(sym, tree.pos)) {
+          if (settings.debug.value) log("Adding protected accessor for " + tree);
+          transform(makeAccessor(sel.asInstanceOf[Select], args))
+        } else
+          tree
+
       case Select(qual @ This(_), name) =>
         val sym = tree.symbol
          if ((sym hasFlag PARAMACCESSOR) && (sym.alias != NoSymbol)) {
@@ -127,7 +135,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
         } else {
           if (needsProtectedAccessor(sym, tree.pos)) {
             if (settings.debug.value) log("Adding protected accessor for " + tree);
-            transform(makeAccessor(tree.asInstanceOf[Select]))
+            transform(makeAccessor(tree.asInstanceOf[Select], List(EmptyTree)))
           } else
             tree
         }
@@ -166,11 +174,19 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
           }
         } else tree
 
+      case TypeApply(sel @ Select(qual, name), args) =>
+        val sym = tree.symbol
+        if (needsProtectedAccessor(sym, tree.pos)) {
+          if (settings.debug.value) log("Adding protected accessor for tree: " + tree);
+          transform(makeAccessor(sel.asInstanceOf[Select], args))
+        } else
+          super.transform(tree)
+
       case Select(qual, name) =>
         val sym = tree.symbol
         if (needsProtectedAccessor(sym, tree.pos)) {
           if (settings.debug.value) log("Adding protected accessor for tree: " + tree);
-          transform(makeAccessor(tree.asInstanceOf[Select]))
+          transform(makeAccessor(tree.asInstanceOf[Select], List(EmptyTree)))
         } else
           super.transform(tree)
 
@@ -220,7 +236,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
      *  the accessor and returns the the same member. The result is already
      *  typed.
      */
-    private def makeAccessor(tree: Select): Tree = {
+    private def makeAccessor(tree: Select, targs: List[Tree]): Tree = {
       val Select(qual, name) = tree
       val sym = tree.symbol
       val clazz = hostForAccessorOf(sym, currentOwner.enclClass)
@@ -233,22 +249,29 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
       }
 
       assert(clazz != NoSymbol, sym)
-      if (settings.debug.value)
-        log("Decided for host class: " + clazz)
-      val accName = nme.protName(sym.originalName)
-      var protAcc = clazz.info.decl(accName)
-      val hasArgs = sym.tpe.paramTypes != Nil
-      if (protAcc == NoSymbol) {
-        val argTypes = tree.tpe // transform(sym.tpe)
-        // if the result type depends on the this type of an enclosing class, the accessor
-        // has to take an object of exactly this type, otherwise it's more general
-	val objType = if (isThisType(argTypes.finalResultType)) clazz.thisType else clazz.typeOfThis
+      if (settings.debug.value)  log("Decided for host class: " + clazz)
 
-        protAcc = clazz.newMethod(tree.pos, nme.protName(sym.originalName))
-                           .setInfo(MethodType(List(objType),argTypes))
+      val accName = nme.protName(sym.originalName)
+      val hasArgs = sym.tpe.paramTypes != Nil
+      val memberType = sym.tpe // transform(sym.tpe)
+
+      // if the result type depends on the this type of an enclosing class, the accessor
+      // has to take an object of exactly this type, otherwise it's more general
+      val objType = if (isThisType(memberType.finalResultType)) clazz.thisType else clazz.typeOfThis
+      val accType = memberType match {
+        case PolyType(tparams, restpe) =>
+          PolyType(tparams, MethodType(List(objType), restpe.asSeenFrom(qual.tpe, sym.owner)))
+        case _ =>
+          MethodType(List(objType), memberType.asSeenFrom(qual.tpe, sym.owner))
+      }
+      if (settings.debug.value) log("accType: " + accType)
+
+      var protAcc = clazz.info.decl(accName).suchThat(_.tpe == accType)
+      if (protAcc == NoSymbol) {
+        protAcc = clazz.newMethod(tree.pos, nme.protName(sym.originalName)).setInfo(accType)
         clazz.info.decls.enter(protAcc);
         val code = DefDef(protAcc, vparamss => {
-          val obj = vparamss.head.head
+          val obj = vparamss.head.head // receiver
           vparamss.tail.zip(allParamTypes(sym.tpe)).foldLeft(Select(Ident(obj), sym): Tree) (
               (fun, pvparams) => {
                 Apply(fun, (List.map2(pvparams._1, pvparams._2) { (v, origTpe) => makeArg(v, obj, origTpe) } ))
@@ -259,7 +282,12 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
           log(code)
         accDefBuf(clazz) += typers(clazz).typed(code)
       }
-      var res: Tree = atPos(tree.pos) { Apply(Select(This(clazz), protAcc), List(qual)) }
+      var res: Tree = atPos(tree.pos) {
+        if (targs.head == EmptyTree)
+          Apply(Select(This(clazz), protAcc), List(qual))
+        else
+          Apply(TypeApply(Select(This(clazz), protAcc), targs), List(qual))
+      }
       if (settings.debug.value)
         log("Replaced " + tree + " with " + res)
       if (hasArgs) typer.typedOperator(res) else typer.typed(res)

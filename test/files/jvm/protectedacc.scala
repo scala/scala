@@ -29,8 +29,11 @@ package p {
       protected val x = 10;
 
       protected def meth1(x: Int) = x + 1;
+      protected def meth1(x: Double) = x + 1
       protected def meth2(x: Int)(y: String) = y + (x - 1);
       protected def meth3 = Array(1, 2)
+
+      protected def f[a](x: a) = x
 
       def getA: this.type = this;
     }
@@ -78,6 +81,7 @@ package p {
         def m = {
           Console.println(x);
           Console.println("meth1(1) = " + meth1(1));
+          Console.println("meth1(1.0) = " + meth1(1.0));
           // test accesses from closures
           for (val x <- 1 until 3)
             Console.println("meth2(1)(1) = " + meth2(1)("prefix: "));
@@ -86,6 +90,9 @@ package p {
 
           val inc = meth2(1)_;
           Console.println("100 = " + inc("10"));
+
+          Console.println("id(1) = " + f(1))
+          Console.println("id('a') = " + f("a"))
 
           getA.x;
         }
