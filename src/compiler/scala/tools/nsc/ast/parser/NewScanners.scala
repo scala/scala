@@ -180,7 +180,10 @@ trait NewScanners {
         assert(xmlOk)
         val headIsRBRACE = if (sepRegions.isEmpty) true else sepRegions.head == RBRACE
         val hasNewline = fillNext
-        if (headIsRBRACE && ((inLastOfStat(lastCode) && inFirstOfStat(next.code)) || next.code == EOF)) {
+        if (headIsRBRACE && ((inLastOfStat(lastCode) && inFirstOfStat(next.code))
+           /* This need to be commented out, otherwise line
+              continuation in the interpreter will not work
+              || next.code == EOF */ )) {
           //if (hasNewline) current.code = NEWLINES
         } else {
           currentIsNext
