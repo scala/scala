@@ -695,9 +695,11 @@ CLDC
     description="Builds the Scala library for J2ME (CLDC)"
   >
     <mkdir dir="${cldc.dir}/lib/library"/>
+    <!-- javac versions > 1.4 do not support 1.1 target anymore -->
     <javac
       srcdir="${cldc.dir}/src"
       destdir="${cldc.dir}/lib/library"
+      compiler="javac1.4"
       source="1.1"
       target="1.1"
       deprecation="${jc.deprecation}"
