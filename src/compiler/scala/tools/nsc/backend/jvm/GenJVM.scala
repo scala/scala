@@ -74,12 +74,9 @@ abstract class GenJVM extends SubComponent {
     val RemoteAttr       = definitions.getClass("scala.remote")
     val ThrowsAttr       = definitions.getClass("scala.throws")
 
-    val CloneableClass   =
-      if (forCLDC) null else definitions.getClass("java.lang.Cloneable")
-    val RemoteInterface  =
-      if (forCLDC) null else definitions.getClass("java.rmi.Remote")
-    val RemoteException  =
-      if (forCLDC) null else definitions.getClass("java.rmi.RemoteException").tpe
+    lazy val CloneableClass  = definitions.getClass("java.lang.Cloneable")
+    lazy val RemoteInterface = definitions.getClass("java.rmi.Remote")
+    lazy val RemoteException = definitions.getClass("java.rmi.RemoteException").tpe
 
     var clasz: IClass = _
     var method: IMethod = _
