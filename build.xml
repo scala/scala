@@ -834,12 +834,24 @@ ANDROID
       </not></condition>
     </fail>
     
-    <mkdir dir="${android.dir}"/>
-    <echo message="android.home=${android.home}"/>
+    <mkdir dir="${android.dir}/lib/library"/>
+    <javac
+      srcdir="${android.dir}/src"
+      destdir="${android.dir}/lib/library"
+      compiler="javac1.4"
+      source="1.1"
+      target="1.1"
+      deprecation="${jc.deprecation}"
+    >
+      <bootclasspath>
+        <pathelement location="${android.home}/android.jar}"/>
+      </bootclasspath>
+      <include name="**/*.java"/>
+    </javac>
 
     <quick
       srcdir="${android.dir}/src"
-      destdir="${android.dir}"
+      destdir="${android.dir}/lib/library"
       usepredefs="no"
       addparams="${nsc.params}"
       extdirs=""
@@ -847,21 +859,19 @@ ANDROID
     >
       <bootclasspath>
         <pathelement location="${android.home}/android.jar"/>
-        <pathelement location="${quick.dir}/lib/library"/>
       </bootclasspath>
       <include name="scala/Predef.scala"/>
     </quick>
 
     <quick
       srcdir="${android.dir}/src"
-      destdir="${android.dir}"
+      destdir="${android.dir}/lib/library"
       extdirs=""
       addparams="${nsc.params}"
       scalacdebugging="${nsc.log-files}"
     >
       <bootclasspath>
         <pathelement location="${android.home}/android.jar"/>
-        <pathelement location="${quick.dir}/lib/library"/>
       </bootclasspath>
       <classpath>
         <pathelement location="${android.dir}"/>
