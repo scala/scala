@@ -224,7 +224,9 @@ extends BatchSourceFile(name, contents) {
   override def positionInUltimateSource(position: Position) = {
     if (position.offset.isEmpty)
       super.positionInUltimateSource(position)
-    else positionInUltimateSource(
-      new OffsetPosition(this, position.offset.get + start))
+    else {
+      super.positionInUltimateSource(
+      new OffsetPosition(this, position.offset.get))
+    }
   }
 }
