@@ -49,7 +49,7 @@ object Array {
    *
    *  @param xs ...
    */
-  def concat[T](xs: Array[T]*) = {
+  def concat[T](xs: Seq[T]*) = {
     var len = 0
     for (x <- xs) len += x.length
     val result = new Array[T](len)
@@ -195,6 +195,8 @@ object Array {
        override def slice(from0 : Int, until0 : Int) =
          Projection.this.slice(from + from0, from + until0)
      }
+
+
      override def reverse : Projection[A] = new Projection[A] {
        override protected def newArray[B >: A](length : Int, elements : Iterator[A]) =
          Projection.this.newArray(length, elements)
