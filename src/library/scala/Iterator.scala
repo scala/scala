@@ -282,20 +282,21 @@ trait Iterator[+A] {
   }
 
   protected class PredicatedIterator(p : A => Boolean) extends BufferedIterator.Default[A] {
-    protected def skip0 : Seq[A] = fill(1)
-    protected override def fill(sz : Int) : Seq[A] =
-      if (!Iterator.this.hasNext) return Nil
-      else {
-        val ret = Iterator.this.next;
-        if (p(ret)) return ret :: Nil;
-        return skip0
+    protected def doEnd : Boolean = false
+    protected override def fill(sz : Int) : Seq[A] = {
+      while (true) {
+        if (!Iterator.this.hasNext) return Nil
+        val ret = Iterator.this.next
+        if (p(ret)) return ret :: Nil
+        if (doEnd) return Nil
       }
+      throw new Error
+    }
   }
   protected class TakeWhileIterator(p : A => Boolean) extends PredicatedIterator(p) {
     private var ended = false
-    override protected def skip0 : Seq[A] = {
-      ended = true
-      Nil
+    override protected def doEnd = {
+      ended = true; true
     }
     override protected def fill(sz : Int) : Seq[A] =
       if (ended) Nil else super.fill(sz)
