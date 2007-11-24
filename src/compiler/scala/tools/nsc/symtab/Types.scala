@@ -893,6 +893,7 @@ trait Types {
           underlyingCache = pre.memberType(sym).resultType;
         }
       }
+      assert(underlyingCache ne this, this)
       underlyingCache
     }
 /*
@@ -3012,15 +3013,20 @@ A type's typeSymbol should never be inspected directly.
         isSameType(atp, tp2)
       case (_, AnnotatedType(_,atp)) =>
         isSameType(tp1, atp)
+      case (_: SingletonType, _: SingletonType) =>
+        var origin1 = tp1
+        while (origin1.underlying.isInstanceOf[SingletonType]) {
+          assert(origin1 ne origin1.underlying, origin1)
+          origin1 = origin1.underlying
+        }
+        var origin2 = tp2
+        while (origin2.underlying.isInstanceOf[SingletonType]) {
+          assert(origin2 ne origin2.underlying, origin2)
+          origin2 = origin2.underlying
+        }
+        ((origin1 ne tp1) || (origin2 ne tp2)) && (origin1 =:= origin2)
       case _ =>
-        if (tp1.isStable && tp2.isStable) {
-          //todo: replace with widen?
-          var origin1 = tp1
-          while (origin1.underlying.isStable) origin1 = origin1.underlying
-          var origin2 = tp2
-          while (origin2.underlying.isStable) origin2 = origin2.underlying
-          ((origin1 ne tp1) || (origin2 ne tp2)) && (origin1 =:= origin2)
-        } else false
+        false
     }
   } || {
     val tp1n = tp1.normalize
