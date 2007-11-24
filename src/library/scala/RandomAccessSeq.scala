@@ -87,7 +87,7 @@ object RandomAccessSeq {
       def until = until0
       def underlying = Mutable.this
     }
-    override def reverse : Mutable[A] = new MutableProjection[A] {
+    override def reverse : MutableProjection[A] = new MutableProjection[A] {
       def update(idx : Int, what : A) : Unit = Mutable.this.update(length - idx - 1, what)
       def length = Mutable.this.length
       def apply(idx : Int) = Mutable.this.apply(length - idx - 1)
