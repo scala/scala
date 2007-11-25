@@ -15,7 +15,7 @@ object Test extends TestConsoleMain {
 
   val bx = <hello foo="bar&amp;x"></hello>
 
-  class XmlEx extends TestCase("attributes") with Assert {
+  object XmlEx extends TestCase("attributes") with Assert {
 
     override def runTest = {
       assertTrue("@one",       ax \ "@foo" == "bar")              // uses NodeSeq.view!
@@ -27,7 +27,7 @@ object Test extends TestConsoleMain {
     }
   }
 
-  class XmlPat extends TestCase("patterns") with Assert {
+  object XmlPat extends TestCase("patterns") with Assert {
     override def runTest = {
       assertTrue(<hello/> match { case <hello/> => true; case _ => false; })
       assertTrue(<x:ga xmlns:x="z"/> match { case <x:ga/> => true; case _ => false; });
@@ -36,8 +36,15 @@ object Test extends TestConsoleMain {
     }
   }
 
+  object DodgyNamespace extends TestCase("DodgyNamespace") with Assert {
+    override def runTest = {
+      val x = <flog xmlns:ee="http://ee.com"><foo xmlns:dog="http://dog.com"><dog:cat/></foo></flog>
+      assertTrue(x.toString.contains("xmlns:dog=\"http://dog.com\""));
+    }
+  }
   def suite = new TestSuite(
-    new XmlEx,
-	new XmlPat
+    XmlEx,
+    XmlPat,
+    DodgyNamespace
   )
 }
