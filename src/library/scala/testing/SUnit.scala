@@ -164,39 +164,39 @@ object SUnit {
     def enableStackTrace: Boolean = true
 
     /** fails if expected != actual */
-    def assertEquals[A](msg: String, expected: A, actual: => A) {
+    def assertEquals[A](msg: String, expected: A, actual: A) {
       if (expected != actual) fail(msg, expected, actual)
     }
 
     /** fails if expected != actual */
-    def assertEquals[A](expected: A, actual: => A) {
+    def assertEquals[A](expected: A, actual: A) {
       assertEquals("(no message)", expected, actual)
     }
 
     /** succeeds if actual is false */
-    def assertFalse(msg: String, actual: => Boolean) {
+    def assertFalse(msg: String, actual: Boolean) {
       assertEquals(msg, false, actual)
     }
 
     /** succeeds if actual is false */
-    def assertFalse(actual: => Boolean) {
+    def assertFalse(actual: Boolean) {
       assertFalse("(no message)", actual)
     }
 
     /** fails if null eq actual */
-    def assertNotNull(msg: String, actual: => AnyRef) {
+    def assertNotNull(msg: String, actual: AnyRef) {
       if (null eq actual) fail(msg)
     }
 
     /** fails if null eq actual */
-    def assertNotNull(actual: => AnyRef): Unit  =
+    def assertNotNull(actual: AnyRef): Unit  =
       assertNotNull("(no message)", actual)
 
     /**
      *  @deprecated use assertNotEq instead
      */
     @deprecated
-    def assertNotSame(msg: String, expected: => AnyRef, actual: => AnyRef) {
+    def assertNotSame(msg: String, expected: AnyRef, actual: AnyRef) {
       if (expected eq actual) fail(msg)
     }
 
@@ -204,27 +204,27 @@ object SUnit {
      *  @deprecated use assertNotEq instead
      */
     @deprecated
-    def assertNotSame(expected: => AnyRef, actual: => AnyRef) {
+    def assertNotSame(expected: AnyRef, actual: AnyRef) {
       assertNotEq("(no message)", expected, actual)
     }
 
     /** fail if expected eq actual */
-    def assertNotEq(msg: String, expected: => AnyRef, actual: => AnyRef) {
+    def assertNotEq(msg: String, expected: AnyRef, actual: AnyRef) {
       if (expected eq actual) fail(msg)
     }
 
     /** fail if expected eq actual */
-    def assertNotEq(expected: => AnyRef, actual: => AnyRef) {
+    def assertNotEq(expected: AnyRef, actual: AnyRef) {
       assertNotEq("(no message)", expected, actual)
     }
 
     /** fails if actual ne null */
-    def assertNull(msg: String, actual: => AnyRef) {
+    def assertNull(msg: String, actual: AnyRef) {
       if (null ne actual) fail(msg)
     }
 
     /** fails if actual ne null */
-    def assertNull(actual: => AnyRef) {
+    def assertNull(actual: AnyRef) {
       assertNull("(no message)", actual)
     }
 
@@ -232,7 +232,7 @@ object SUnit {
      *  @deprecated use assertEq instead
      */
     @deprecated
-    def assertSame(msg: String, expected: => AnyRef, actual: => AnyRef) {
+    def assertSame(msg: String, expected: AnyRef, actual: AnyRef) {
       if (expected ne actual) fail(msg)
     }
 
@@ -240,27 +240,27 @@ object SUnit {
      *  @deprecated use assertEq instead
      */
     @deprecated
-    def assertSame(expected: => AnyRef, actual: => AnyRef) {
+    def assertSame(expected: AnyRef, actual: AnyRef) {
       assertEq("(no message)", expected, actual)
     }
 
     /** fails if expected ne actual */
-    def assertEq(msg: String, expected: => AnyRef, actual: => AnyRef) {
+    def assertEq(msg: String, expected: AnyRef, actual: AnyRef) {
       if (expected ne actual) fail(msg)
     }
 
     /** fails if expected ne actual */
-    def assertEq(expected: => AnyRef, actual: => AnyRef) {
+    def assertEq(expected: AnyRef, actual: AnyRef) {
       assertEq("(no message)", expected, actual)
     }
 
     /** succeeds if actual == true */
-    def assertTrue(msg: String, actual: => Boolean) {
+    def assertTrue(msg: String, actual: Boolean) {
       assertEquals(msg, true, actual)
     }
 
     /** succeeds if actual == true */
-    def assertTrue(actual: => Boolean) {
+    def assertTrue(actual: Boolean) {
       assertTrue("(no message)", actual)
     }
 
@@ -270,7 +270,7 @@ object SUnit {
       throw AssertFailed(msg, enableStackTrace)
     }
 
-    def fail[A](msg: String, expected: A, actual: => A) {
+    def fail[A](msg: String, expected: A, actual: A) {
       throw AssertFailed(msg +
                          ", expected: " + expected +
                          ", actual: " + actual, enableStackTrace)
