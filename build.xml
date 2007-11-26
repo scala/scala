@@ -849,13 +849,6 @@ ANDROID
       <include name="**/*.java"/>
     </javac>
 
-    <javac
-      srcdir="${android.dir}/src"
-      destdir="${android.dir}"
-      source="1.4" target="1.4" deprecation="yes"
-      classpath="${android.dir}"
-      includes="**/*.java"
-    />
     <quick
       srcdir="${android.dir}/src"
       destdir="${android.dir}/lib/library"
@@ -887,28 +880,6 @@ ANDROID
       <exclude name="scala/Predef.scala"/>
       <excludesfile name="${nsc.excludes}" if="excludes.avail"/>
     </quick>
-  </target>
-
-  <target name="dex" depends="android.lib"
-          description="Convert this project's .class files into .dex files">
-    <exec executable="${android.home}/tools/dx" failonerror="false">
-      <arg value="-JXmx384M"/>
-      <arg value="--dex"/>
-      <arg value="--output=${android.dir}/classes.dex"/>
-      <arg value="--locals=full"/>
-      <arg value="--positions=lines"/>
-      <arg path="${android.dir}"/>
-    </exec>
-    <jar
-      destfile="${android.dir}/scala.jar"
-      basedir="${android.dir}"
-      includes="classes.dex"
-    />
-    <jar
-      destfile="${android.dir}/scala-library.jar"
-      basedir="${android.dir}"
-      includes="scala/**/*.class"
-    />
   </target>
 
 <!-- ===========================================================================
