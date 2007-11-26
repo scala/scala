@@ -18,17 +18,11 @@ final class StringAdd(self: Any) {
 
   def +(other: String) = self.toString + other
 
-  /** Formats string according to given <code>locale</code> and
-   *  <code>format</code> string. Formatstrings are as for
-   *  <code>String.format</code> (@see java.lang.String.format)
-   */
-  def format(locale: java.util.Locale, format: String): String =
-    String.format(locale, format, Array(self.asInstanceOf[Object]))
-
   /** Formats string according to given <code>format</code> string.
-   *  Format strings are as for <code>String.format</code>
-   *  (@see java.lang.String.format).
+   *  Format strings are as for <code>String.format</code> (@see
+   *  http://msdn2.microsoft.com/en-us/library/system.string.format(VS.71).aspx
+   *  and http://www.codeproject.com/books/0735616485.asp).
    */
   def format(format: String): String =
-    String.format(format, Array(self.asInstanceOf[Object]))
+    String.Format(format, Array(self.asInstanceOf[Object]))
 }
