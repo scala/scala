@@ -11,7 +11,7 @@
 package scala.actors.remote
 
 /**
- * @version 0.9.8
+ * @version 0.9.10
  * @author Philipp Haller
  */
 trait Service {
@@ -19,4 +19,5 @@ trait Service {
   val serializer: Serializer
   def node: Node
   def send(node: Node, data: Array[Byte]): Unit
+  def terminate(): Unit
 }

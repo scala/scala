@@ -22,7 +22,7 @@ import scala.collection.mutable.{ArrayBuffer, Buffer, HashMap, Queue, Stack, Has
  * The <code>Scheduler</code> object is used by
  * <code>Actor</code> to execute tasks of an execution of an actor.
  *
- * @version 0.9.8
+ * @version 0.9.10
  * @author Philipp Haller
  */
 object Scheduler {
@@ -79,7 +79,22 @@ object Scheduler {
   def tick(a: Actor) = sched.tick(a)
   def terminated(a: Actor) = sched.terminated(a)
   def pendReaction: Unit = sched.pendReaction
-  def unPendReaction: Unit = sched.unPendReaction
+
+  private val termHandlers = new HashMap[Actor, () => Unit]
+  def onTerminate(a: Actor)(f: => Unit) {
+    termHandlers += (a -> (() => f))
+  }
+
+  def unPendReaction(a: Actor) {
+    // execute registered termination handler (if any)
+    termHandlers.get(a) match {
+      case Some(handler) => handler()
+      case None => // do nothing
+    }
+
+    // notify scheduler
+    sched.unPendReaction
+  }
 
   def shutdown() = sched.shutdown()
 

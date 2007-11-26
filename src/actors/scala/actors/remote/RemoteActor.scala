@@ -38,7 +38,7 @@ package scala.actors.remote
  *  }
  *  </pre>
  *
- * @version 0.9.9
+ * @version 0.9.10
  * @author Philipp Haller
  */
 object RemoteActor {
@@ -54,14 +54,14 @@ object RemoteActor {
     val kern = serv.kernel
     val s = Actor.self
     kernels += s -> kern
-    Debug.info("registering kill handler")
-    s.kill = () => {
+
+    Scheduler.onTerminate(s) {
       Debug.info("alive actor "+s+" terminated")
       kernels -= s
       if (kernels.isEmpty) {
-        Debug.info("interrupting "+serv)
-        // terminate TcpService
-        serv.interrupt()
+        Debug.info("terminating "+kern)
+        // terminate NetKernel
+        kern.terminate()
       }
     }
   }

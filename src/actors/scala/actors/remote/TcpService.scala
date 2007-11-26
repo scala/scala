@@ -61,7 +61,7 @@ object TcpService {
 
 /* Class TcpService.
  *
- * @version 0.9.8
+ * @version 0.9.10
  * @author Philipp Haller
  */
 class TcpService(port: Int) extends Thread with Service {
@@ -119,16 +119,26 @@ class TcpService(port: Int) extends Thread with Service {
     }
   }
 
+  def terminate() {
+    shouldTerminate = true
+    new Socket(internalNode.address, internalNode.port)
+  }
+
+  private var shouldTerminate = false
+
   override def run() {
     try {
       val socket = new ServerSocket(port)
-      while (true) {
+      while (!shouldTerminate) {
         Debug.info(this+": waiting for new connection...")
         val nextClient = socket.accept()
-        val worker = new TcpServiceWorker(this, nextClient)
-        Debug.info("Started new "+worker)
-        worker.readNode
-        worker.start()
+        if (!shouldTerminate) {
+          val worker = new TcpServiceWorker(this, nextClient)
+          Debug.info("Started new "+worker)
+          worker.readNode
+          worker.start()
+        } else
+          nextClient.close()
       }
     } catch {
       case ioe: IOException =>
@@ -139,6 +149,10 @@ class TcpService(port: Int) extends Thread with Service {
         Debug.info(this+": caught "+e)
     } finally {
       Debug.info(this+": shutting down...")
+
+      var workers: List[TcpServiceWorker] = List()
+      connections.values foreach { w => workers = w :: workers }
+      workers foreach { w => w.halt }
     }
   }
 
@@ -250,6 +264,6 @@ class TcpServiceWorker(parent: TcpService, so: Socket) extends Thread {
         Debug.info(this+": caught "+e)
         parent nodeDown connectedNode
     }
-    Debug.info(this+": shutting down...")
+    Debug.info(this+": terminated")
   }
 }

@@ -56,7 +56,8 @@ private[actors] class ExitActorException extends Throwable
     }
     catch {
       case eae: ExitActorException => {
-        Scheduler.unPendReaction
+        //Debug.info(a+": exiting...")
+        Scheduler.unPendReaction(a)
       }
       case _: SuspendActorException => {
         // do nothing (continuation is already saved)
@@ -64,7 +65,7 @@ private[actors] class ExitActorException extends Throwable
       case t: Throwable => {
         Debug.info(a+": caught "+t)
         t.printStackTrace()
-        Scheduler.unPendReaction
+        Scheduler.unPendReaction(a)
         // links
         a.synchronized {
           if (!a.links.isEmpty)

@@ -20,9 +20,10 @@ case class Reply(senderName: Symbol, receiver: Symbol, data: Array[Byte])
 case class SendTo(a: Actor, msg: Any)
 case class SyncSendTo(a: Actor, msg: Any, receiver: Symbol)
 case class ReplyTo(a: Actor, msg: Any)
+case object Terminate
 
 /**
- * @version 0.9.8
+ * @version 0.9.10
  * @author Philipp Haller
  */
 class NetKernel(service: Service) {
@@ -140,6 +141,14 @@ class NetKernel(service: Service) {
         }
     }
   }
+
+  def terminate() {
+    // tell all proxies to terminate
+    proxies.values foreach { p => p.send(Terminate, null) }
+
+    // tell service to terminate
+    service.terminate()
+  }
 }
 
 class Proxy(node: Node, name: Symbol, kernel: NetKernel) extends Actor {
@@ -169,6 +178,10 @@ class Proxy(node: Node, name: Symbol, kernel: NetKernel) extends Actor {
         case cmd@ReplyTo(a, msg) =>
           Debug.info(this+": processing "+cmd)
           a.replyChannel ! msg
+
+        case cmd@Terminate =>
+          Debug.info(this+": processing "+cmd)
+          exit()
       }
     }
   }
