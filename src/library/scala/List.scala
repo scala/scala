@@ -354,9 +354,15 @@ object List {
    *  @param xss the list of lists
    *  @return    the transposed list of lists
    */
-  def transpose[A](xss: List[List[A]]): List[List[A]] =
-    if (xss.head.isEmpty) List()
-    else (xss map (xs => xs.head)) :: transpose(xss map (xs => xs.tail))
+  def transpose[A](xss: List[List[A]]): List[List[A]] = {
+    val buf = new ListBuffer[List[A]]
+    var yss = xss
+    while (!yss.head.isEmpty) {
+      buf += (yss map (_.head))
+      yss = (yss map (_.tail))
+    }
+    buf.toList
+  }
 
   /** Lists with ordered elements are ordered
   implicit def list2ordered[a <% Ordered[a]](x: List[a]): Ordered[List[a]] = new Ordered[List[a]] {
