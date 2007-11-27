@@ -85,11 +85,15 @@ object Scheduler {
     termHandlers += (a -> (() => f))
   }
 
-  def unPendReaction(a: Actor) {
+  def unPendReaction(a: Actor) = synchronized {
     // execute registered termination handler (if any)
     termHandlers.get(a) match {
-      case Some(handler) => handler()
-      case None => // do nothing
+      case Some(handler) =>
+        handler()
+        // remove mapping
+        termHandlers -= a
+      case None =>
+        // do nothing
     }
 
     // notify scheduler
@@ -159,7 +163,8 @@ class SingleThreadedScheduler extends IScheduler {
   }
 
   def execute(task: Runnable) {
-    if (Actor.tl.get.isInstanceOf[ActorProxy]) {
+    val a = Actor.tl.get.asInstanceOf[Actor]
+    if ((null ne a) && a.isInstanceOf[ActorProxy]) {
       // execute task immediately on same thread
       task.run()
       while (taskQ.length > 0) {

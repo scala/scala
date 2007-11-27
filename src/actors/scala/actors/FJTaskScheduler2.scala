@@ -114,7 +114,8 @@ class FJTaskScheduler2 extends Thread with IScheduler {
             if (Platform.currentTime - lastActivity >= TICK_FREQ
                 && coreSize < maxSize
                 && executor.checkPoolSize()) {
-                  // do nothing
+                  coreSize += 1
+                  lastActivity = Platform.currentTime
                 }
             else {
               if (pendingReactions <= 0) {

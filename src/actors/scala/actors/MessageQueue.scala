@@ -41,7 +41,16 @@ class MessageQueue {
 
   def isEmpty = null eq last
 
+  private var _size = 0
+  def size = _size
+
+  protected def changeSize(diff: Int) = {
+    _size += diff
+  }
+
   def append(msg: Any, session: OutputChannel[Any]) = {
+    changeSize(1) // size always increases by 1
+
     if (null eq last) { // list empty
       val el = new MessageQueueElement
       el.msg = msg
@@ -59,7 +68,9 @@ class MessageQueue {
   }
 
   def extractFirst(p: Any => Boolean): MessageQueueElement = {
-    if (null eq last) null
+    changeSize(-1) // assume size decreases by 1
+
+    val msg = if (null eq last) null
     else {
       // test first element
       if (p(first.msg)) {
@@ -95,5 +106,10 @@ class MessageQueue {
         null
       }
     }
+
+    if (null eq msg)
+      changeSize(1) // correct wrong assumption
+
+    msg
   }
 }
