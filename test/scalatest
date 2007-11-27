@@ -293,7 +293,7 @@ MSIL="msil"
 EXE="exe"
 # Tests the .NET backend.
 test_run_msil() {
-    assemblies=`get_os_pathlist $LATEST_ASSEM`;
+    assemblies=`get_os_pathlist $SCALA_ASSEM`;
     rm -f "$dstbase".$MSIL &&
     rm -f "$dstbase".$EXE &&
 
@@ -315,7 +315,7 @@ test_run_msil() {
     rm -f "$dstbase".$MSIL;
 }
 
-# Tests the CLDC backend/runtime.
+# Tests the CLDC target platform.
 test_run_cldc() {
     rm -rf "$dstbase".unverified "$dstbase".preverified &&
     mkdir -p "$dstbase".unverified "$dstbase".preverified &&
@@ -335,10 +335,31 @@ test_run_cldc() {
       echo MIDlet-Jar-Size: $jarsize;
       echo MicroEdition-Profile: MIDP-1.0;
       echo MicroEdition-Configuration: CLDC-1.0 ) > "$dstbase".jad &&
-    cpath=`get_os_pathlist $SCALA_CLDC_API:"$dstbase".jar` &&
+    cpath=`get_os_pathlist $SCALA_CLDCAPI:"$dstbase".jar` &&
     $KVEM_EMULATOR -cp $cpath -Xdescriptor:"$dstbase".jad 2> /dev/null &&
     head $logfile -n 4 | tail -n 1 > $logfile.0 &&
     mv $logfile.0 $logfile
+}
+
+# Tests the Android target platform.
+test_run_android() {
+    rm -rf "$dstbase" &&
+    os_classes=`get_os_filename "$dstbase"/classes` &&
+    mkdir -p "$os_classes" &&
+    xml_file=`get_os_filename "$dstbase"/AndroidManifest.xml` &&
+    cp "$srcbase".xml $xml_file &&
+    cpath=`get_os_pathlist $ANDROID_LIB:"$dstbase"` &&
+    $SCALAC -bootclasspath $cpath -cp "$os_classes" -d "$os_classes" -encoding ascii "$os_srcbase".scala &&
+#    echo $JAVACCMD -bootclasspath $cpath -cp "$os_classes" -d "$os_classes" -encoding ascii "$os_srcbase"/**/*.java &&
+    (cd "$os_classes" && $JARCMD xf $SCALA_LIB) &&
+    extdirs=`get_os_pathlist "$ANDROID_HOME/tools/lib"` &&
+    dex_file=`get_os_filename "$os_dstbase"/classes.dex` &&
+    $JAVACMD -Djava.ext.dirs=$extdirs -Xmx384M -jar $DX_LIB \
+        --dex --output=$dex_file --locals=full --positions=lines \
+        "$os_classes" &&
+    (cd "$dstbase" && zip -9q Test.apk *.xml *.dex &&
+     $ANDROID_ADB shell '"cd data/app; rm Test.apk"' 2>&1 1> /dev/null &&
+     $ANDROID_ADB install Test.apk 2> /dev/null)
 }
 
 # Tests a script with Scala code embedded in it
@@ -501,9 +522,11 @@ test_check_all() {
     test_check_kind "Testing resident compiler" \
         "res" $FILES_RES;
     test_check_kind "Testing shootout benchmarks" \
-        "shootout" $FILES_SHOOTOUT;        
+        "shootout" $FILES_SHOOTOUT;
     test_check_kind "Testing CLDC benchmarks" \
         "cldc" $FILES_CLDC;        
+    test_check_kind "Testing Android benchmarks" \
+        "android" $FILES_ANDROID;        
 }
 
 
@@ -523,6 +546,7 @@ test_add_file() {
     TEST_ALL="false";
     case "$TEST_TYPE" in
         auto   ) ;;
+        android) FILES_ANDROID="$FILES_ANDROID $1"; return;;
         cldc   ) FILES_CLDC="$FILES_CLDC $1"; return;;
         dis    ) FILES_DIS="$FILES_DIS $1"; return;;
         run    ) FILES_RUN="$FILES_RUN $1"; return;;
@@ -537,6 +561,7 @@ test_add_file() {
         *      ) abort "unknown test type \`$TEST_TYPE'";;
     esac;
     case "$1" in
+        android | */android | */android/* | android/* ) FILES_ANDROID="$FILES_ANDROID $1";;
         cldc | */cldc | */cldc/* | cldc/* ) FILES_CLDC="$FILES_CLDC $1";;
         dis  | */dis  | */dis/*  | dis/*  ) FILES_DIS="$FILES_DIS $1";;
         run  | */run  | */run/*  | run/*  ) FILES_RUN="$FILES_RUN $1";;
@@ -628,13 +653,15 @@ FILES_DIS="";
 FILES_ANT="";
 FILES_SHOOTOUT="";
 FILES_CLDC="";
+FILES_ANDROID="";
 
 QUICK="$PREFIX/build/quick/bin"
 QUICK_LIB="$PREFIX/build/quick/lib/library"
 QUICK_COMP="$PREFIX/build/quick/lib/compiler"
 QUICK_ACT="$PREFIX/build/quick/lib/actors"
-QUICK_CLDC="$PREFIX/build/cldc/lib/scala-cldc-library.jar"  # unverified
-QUICK_CLDC_API="$PREFIX/build/cldc/lib/scala-cldc-api.jar"  # preverified
+QUICK_PREDEF="$PREFIX/build/quick/lib/predef.dll"
+QUICK_CLDC="$PREFIX/build/cldc/lib/scalaapi10-unverified.jar"  # unverified
+QUICK_CLDCAPI="$PREFIX/build/cldc/lib/scalaapi10.jar"  # preverified
 
 JVM_EXT_CLASSPATH=`get_ext_classpath $TESTROOT/files/lib`
 
@@ -643,20 +670,23 @@ if [ -d "$PREFIX/dists" ]; then
     LATEST_LIB="$PREFIX/dists/latest/lib/scala-library.jar";
     LATEST_COMP="$PREFIX/dists/latest/lib/scala-compiler.jar";
     LATEST_PREDEF="$PREFIX/dists/latest/lib/predef.dll";
-    LATEST_ASSEM="$LATEST_PREDEF;$PREFIX/lib/scalaruntime.dll:$PREFIX/lib/mscorlib.dll";
+    LATEST_CLDC=$QUICK_CLDC;
+    LATEST_CLDCAPI=$QUICK_CLDCAPI;
 elif [ -d "$PREFIX/build" ]; then
     LATEST="$QUICK";
-    LATEST_LIB=$QUICK_LIB
-    LATEST_COMP=$QUICK_COMP
-    LATEST_ACT=$QUICK_ACT
-    LATEST_PREDEF="$PREFIX/build/quick/lib/predef.dll";
-    LATEST_ASSEM="$LATEST_PREDEF:$PREFIX/build/quick/lib/scalaruntime.dll:$PREFIX/build/quick/lib/mscorlib.dll";
+    LATEST_LIB=$QUICK_LIB;
+    LATEST_COMP=$QUICK_COMP;
+    LATEST_ACT=$QUICK_ACT;
+    LATEST_PREDEF=$QUICK_PREDEF;
+    LATEST_CLDC=$QUICK_CLDC;
+    LATEST_CLDCAPI=$QUICK_CLDCAPI;
 elif [ -d "$PREFIX/bin" ]; then
     LATEST="$PREFIX/bin";
     LATEST_LIB="$PREFIX/lib/scala-library.jar";
     LATEST_COMP="$PREFIX/lib/scala-compiler.jar";
     LATEST_PREDEF="$PREFIX/lib/predef.dll";
-    LATEST_ASSEM="$LATEST_PREDEF:$PREFIX/lib/scalaruntime.dll:$PREFIX/lib/mscorlib.dll";
+    LATEST_CLDC="$PREFIX/lib/scalaapi10-unverified.jar";
+    LATEST_CLDCAPI="$PREFIX/lib/scalaapi10.jar";
 else
     abort "Scala binaries could not be found";
 fi;
@@ -666,8 +696,8 @@ BIN_DIR="$LATEST/"  # BIN_DIR should have a trailing / when needed, so that
 SCALA_LIB="$LATEST_LIB";
 SCALA_COMP="$LATEST_COMP";
 SCALA_ACT="$LATEST_ACT";
-SCALA_CLDC="$QUICK_CLDC";
-SCALA_CLDC_API="$QUICK_CLDC_API";
+SCALA_CLDC="$LATEST_CLDC";
+SCALA_CLDCAPI="$LATEST_CLDCAPI";
 
 [ -x "$JAVACMD" ] || JAVACMD=java;
 [ -n "$JAVA_OPTS" ] || JAVA_OPTS="-Xmx256M -Xms16M";
@@ -686,6 +716,7 @@ esac;
 
 while [ $# -gt 0 ]; do
     case "$1" in
+        --android    ) TEST_TYPE="android"; shift 1;;
         --auto       ) TEST_TYPE="auto"; shift 1;;
         --cldc       ) TEST_TYPE="cldc"; shift 1;;
         --dis        ) TEST_TYPE="dis"; shift 1;;
@@ -699,7 +730,8 @@ while [ $# -gt 0 ]; do
         --ant        ) TEST_TYPE="ant"; shift 1;;
         --shootout   ) TEST_TYPE="shootout"; shift 1;;
         --quick      ) BIN_DIR="$QUICK/"; SCALA_LIB=$QUICK_LIB;
-                       SCALA_COMP=$QUICK_COMP; SCALA_ACT=$QUICK_ACT; shift 1;;
+                       SCALA_COMP=$QUICK_COMP; SCALA_ACT=$QUICK_ACT;
+                       SCALA_PREDEF=$QUICK_PREDEF; shift 1;;
         --installed  ) BIN_DIR=""; shift 1;;
         --no-run     ) NORUN="true"; shift 1;;
         --show-log   ) SHOWLOG="true"; shift 1;;
@@ -735,6 +767,9 @@ fi;
 printf_initialization "${COLOR:-many}";
 
 if [ "$TEST_ALL" = "true" ]; then
+    case "$TEST_TYPE" in
+        android ) FILES_ANDROID="$FILES_ANDROID $SRCDIR/android";;
+    esac;
     case "$TEST_TYPE" in
         cldc ) FILES_CLDC="$FILES_CLDC $SRCDIR/cldc";;
     esac;
@@ -791,6 +826,7 @@ SCALAC="$SCALAC_CMD $SCALAC_OPTS";
 SCALAP="scalap";
 
 CLASSPATH=$SCALA_COMP:$SCALA_ACT
+SCALA_ASSEM=$SCALA_PREDEF:$PREFIX/lib/scalaruntime.dll:$PREFIX/lib/mscorlib.dll
 
 if [ -z "$ANT" ]; then
     if [ -d "$ANT_HOME" ]; then
@@ -838,8 +874,8 @@ if [ $TEST_TYPE = "msil" ]; then
     printf_outline "ILasm version is    : $ilasm_version\\n";
     mono_version=`$MONO --version | head -1`;
     printf_outline "Mono version is     : $mono_version\\n";
-    if [ -f "$LATEST_PREDEF" ]; then
-        printf_outline "DLL library is      : $LATEST_PREDEF\\n";
+    if [ -f "$SCALA_PREDEF" ]; then
+        printf_outline "DLL library is      : $SCALA_PREDEF\\n";
     else
         printf_failure "Missing library \"predef.dll\"; run 'ant msil'.\\n";
         exit 1;
@@ -862,17 +898,35 @@ else
         if [ -d "$KVEM_HOME" ]; then
             KVEM_PREVERIFY="$KVEM_HOME/bin/preverify";
             KVEM_EMULATOR="$KVEM_HOME/bin/emulator";
-            KVEM_CLDC=$PREFIX/lib/cldcapi10.jar;
+            KVEM_CLDC=$KVEM_HOME/lib/cldcapi10.jar;
             KVEM_MIDP=$KVEM_HOME/lib/midpapi10.jar;
-            JARCMD=$bin_dir/jar;
+            JARCMD="$bin_dir/jar";
         elif [ -d "/home/linuxsoft/apps/" ]; then
             error "option '--cldc' requires variable KVEM_HOME to be set"
             abort "(eg. export KVEM_HOME=/home/linuxsoft/apps/java-wtk)";
         else
             abort "option '--cldc' requires variable KVEM_HOME to be set";
-        fi
+        fi;
         kvem_version=`$KVEM_EMULATOR -version | head -1`;
         printf_outline "Emulator version is : $kvem_version\\n";
+    elif [ "$TEST_TYPE" = "android" ]; then
+      if [ -s "$ANDROID_HOME" ]; then
+            ANDROID_ADB="$ANDROID_HOME/tools/adb";
+            ANDROID_EMULATOR="$ANDROID_HOME/tools/emulator";
+            ANDROID_LIB="$ANDROID_HOME/android.jar";
+            DX_LIB="$ANDROID_HOME/tools/lib/dx.jar";
+            JAVACCMD="$bin_dir/javac";
+            JARCMD="$bin_dir/jar";
+        elif [ -d "/home/linuxsoft/apps/" ]; then
+            error "option '--android' requires variable ANDROID_HOME to be set"
+            abort "(eg. export ANDROID_HOME=/home/linuxsoft/apps/android)";
+        else
+            abort "option '--android' requires variable ANDROID_HOME to be set";
+        fi;
+        android_version="m3-rc22a"; #not yet available through command
+        printf_outline "Emulator version is : $android_version\\n";
+        status=`$ANDROID_ADB shell '"exit"' 2>&1 | wc -l` &&
+        [ "$status" = "0" ] || abort "Start the Android emulator before running the tests!!!";
     fi
 fi;
 printf_outline "\\n";

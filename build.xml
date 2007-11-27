@@ -692,7 +692,7 @@ CLDC
 
   </target>
 
-  <target name="cldclib"
+  <target name="cldc.libraries"
     depends="setup.quick, cldc.sources"
     description="Builds the Scala library for J2ME (CLDC)"
   >
@@ -778,7 +778,7 @@ CLDC
       destdir="${cldc.dir}/lib/preverified"
     />
     <jar
-      destfile="${cldc.dir}/lib/scala-cldc-library.jar"
+      destfile="${cldc.dir}/lib/scalaapi10-unverified.jar"
       basedir="${cldc.dir}/lib/library"
       includes="scala/**/*.class">
       <manifest>
@@ -787,7 +787,7 @@ CLDC
     </jar>
     <!-- see http://java.sun.com/j2me/docs/uei_specs.pdf -->
     <jar
-      destfile="${cldc.dir}/lib/scala-cldc-api.jar"
+      destfile="${cldc.dir}/lib/scalaapi10.jar"
       basedir="${cldc.dir}/lib/preverified"
       includes="scala/**/*.class">
       <manifest>
@@ -800,9 +800,15 @@ CLDC
     </jar>
   </target>
 
+  <target name="cldc" depends="cldc.libraries">
+    <!-- exemples ? -->
+  </target>
+
 <!-- ===========================================================================
 ANDROID
 ============================================================================ -->
+
+  <property name="dx.jar" value="${android.home}/tools/lib/dx.jar"/>
 
   <target name="android.sources"
           description="Create the source directory for Android library"
@@ -825,7 +831,7 @@ ANDROID
     </copy>
   </target>
 
-  <target name="android.lib" 
+  <target name="android.libraries" 
           depends="setup.quick, android.sources"
           description="Builds the Scala library for Android">
     <fail message="Android home is not set or could not find android.jar in ${android.home}">
@@ -838,9 +844,6 @@ ANDROID
     <javac
       srcdir="${android.dir}/src"
       destdir="${android.dir}/lib/library"
-      compiler="javac1.4"
-      source="1.1"
-      target="1.1"
       deprecation="${jc.deprecation}"
     >
       <bootclasspath>
@@ -880,6 +883,30 @@ ANDROID
       <exclude name="scala/Predef.scala"/>
       <excludesfile name="${nsc.excludes}" if="excludes.avail"/>
     </quick>
+  </target>
+
+  <target name="android" depends="android.libraries"
+          description="Convert this project's .class files into .dex files">
+    <java jar="${dx.jar}" fork="true" failonerror="true">
+      <jvmarg value="-Djava.ext.dirs=${android.home}${file.separator}tools${file.separator}lib"/>
+      <jvmarg value="-Xmx384M"/>
+      <arg value="--dex"/>
+      <arg value="--output=${android.dir}/lib/classes.dex"/>
+      <arg value="--locals=full"/>
+      <arg value="--positions=lines"/>
+      <arg value="${android.dir}/lib/library"/>
+    </java>
+    <jar
+      destfile="${android.dir}/lib/scala.jar"
+      basedir="${android.dir}/lib"
+      includes="classes.dex"
+    />
+    <jar
+      destfile="${android.dir}/lib/scala-android.jar"
+      basedir="${android.dir}/lib/library"
+      includes="scala/**/*.class"
+    />
+    <!-- examples ? -->
   </target>
 
 <!-- ===========================================================================
@@ -1671,7 +1698,7 @@ GENERATES A DISTRIBUTION
   </target>
 
   <target name="build.dist"
-    depends="binaries,docs,docs.manual,msil"
+    depends="binaries,docs,docs.manual,msil,cldc,android"
     description="Creates the latest Scala distribution">
   <!-- Copy the API, examples and man -->
     <copy todir="${dist.current.dir}/doc/scala">
@@ -1698,7 +1725,7 @@ GENERATES A DISTRIBUTION
   </target>
 
   <!-- Create the SBaz packages -->
-  <target name="build.sbaz" depends="build.dist,cldclib">
+  <target name="build.sbaz" depends="build.dist">
     <property name="sbaz.universe" value="http://www.scala-lang.org/downloads/packages"/>
     <mkdir dir="${dist.dir}"/>
   <!-- Create the Scala library package -->
@@ -1771,6 +1798,16 @@ GENERATES A DISTRIBUTION
       desc="The Scala CLDC package contains everything needed to use Scala on CLDC devices."
       link="${sbaz.universe}/scala-cldc-${version.number}.sbp">
       <libset dir="${cldc.dir}/lib" includes="*.jar"/>
+    </quicksbaz>
+  <!-- Creates the Android package -->
+    <quicksbaz
+      file="${dist.dir}/scala-android-${version.number}.sbp"
+      adfile="${dist.dir}/scala-android-${version.number}.advert"
+      name="scala-android"
+      version="${version.number}"
+      desc="The Scala Android package contains everything needed to use Scala on Android."
+      link="${sbaz.universe}/scala-android-${version.number}.sbp">
+      <libset dir="${android.dir}/lib" includes="*.jar"/>
     </quicksbaz>
   </target>
 
