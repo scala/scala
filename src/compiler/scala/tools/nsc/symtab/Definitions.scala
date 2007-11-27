@@ -673,6 +673,7 @@ trait Definitions {
 
       UnitClass =
         newClass(ScalaPackageClass, nme.Unit, List(AnyValClass.typeConstructor))
+        .setFlag(ABSTRACT | FINAL)
       abbrvTag(UnitClass) = 'V'
 
       BooleanClass = newValueClass(nme.Boolean, 'Z')
