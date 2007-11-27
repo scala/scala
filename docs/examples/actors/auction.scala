@@ -23,7 +23,7 @@ case class AuctionConcluded(seller: Actor, client: Actor) // auction concluded
 case object AuctionFailed extends AuctionReply            // failed with no bids
 case object AuctionOver extends AuctionReply              // bidding is closed
 
-class Auction(seller: Actor, minBid: int, closing: Date) extends Actor {
+class AuctionActor(seller: Actor, minBid: int, closing: Date) extends Actor {
   val timeToShutdown = 3000 // msec
   val bidIncrement = 10
 
@@ -74,7 +74,7 @@ object auction {
   val closing = new Date(new Date().getTime() + 4000)
 
   val seller = Actor.actor { }
-  val auction = new Auction(seller, minBid, closing)
+  val auction = new AuctionActor(seller, minBid, closing)
 
   def client(i: int, increment: int, top: int) = new Actor {
     val name = "Client " + i
