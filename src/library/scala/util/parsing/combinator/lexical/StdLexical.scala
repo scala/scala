@@ -33,9 +33,16 @@ import collection.mutable.HashSet
  * @author Martin Odersky, Iulian Dragos, Adriaan Moors
  */
 class StdLexical extends Lexical with StdTokens {
+
+  // override this parser to change the characters allowed at the beginning of an identifier
+  def identBegin: Parser[Char] = ('_' ^^ '_') | letter
+
+  // override this parser to change the characters allowed in an identifier (i.e., after the first character)
+  def identCont: Parser[Char] = ('_' ^^ '_') | letter | digit
+
   // see `token' in `Scanners'
   def token: Parser[Token] =
-    ( letter ~ rep( letter | digit )                    ^^ lift2(processIdent)
+    ( identBegin ~ rep( identCont )                     ^^ lift2(processIdent)
     | digit ~ rep( digit )                              ^^ lift2(NumericLit)
     | '\'' ~ rep( chrExcept('\'', '\n', EofCh) ) ~ '\'' ^^ lift(StringLit)
     | '\"' ~ rep( chrExcept('\"', '\n', EofCh) ) ~ '\"' ^^ lift(StringLit)
